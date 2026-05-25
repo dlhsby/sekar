@@ -192,7 +192,11 @@ Per `illustrations.html § Splash screen`:
 - **Dark** — navy `#1A4D2E` background, pinwheel hero (white-stroked variant), wordmark in paper white.
 - **Green** — sage primary background, pinwheel (yellow center prominent).
 
-Mobile: iOS `LaunchScreen.storyboard` + Android `res/drawable/splash_*.xml` + `AndroidManifest.xml` themes (uses `react-native-bootsplash` config).
+**M3 revamp status — WL-1 splash ✅ (2026-05-25):** WL-1 is now a **dedicated screen**, not a carousel slide. `components/auth/SplashSlide.tsx` renders the Green-variant lockup — sage→deep-green vertical gradient (`react-native-svg` `LinearGradient`, primary → primaryActive), tilted (-4°) white pinwheel box (`components/brand/SekarPinwheel.tsx`, ported from the hi-fi WL-1 SVG), "SEKAR" wordmark (`display-xl`), and a `PulsingDots` loader. It's shown two ways: (1) the native boot splash (sage + pinwheel) covers the cold-start bundle load; (2) `screens/auth/SplashScreen.tsx` then shows the full lockup (with wordmark + animated dots the OS splash can't render) for ~1.5s before routing to the carousel. The carousel itself **no longer includes WL-1** — it opens on WL-2 ("Pantau real-time") to avoid duplicating the splash. **Reconciliation:** the hi-fi tagline "SISTEM KEAMANAN AREA" is a placeholder back-formation; the implemented tagline uses the real product name — **"SISTEM EVALUASI KERJA SATGAS RTH"** — matching `LoginScreen`.
+
+**M3 revamp status — native OS splash ✅ (2026-05-25):** Implemented dependency-free (no `react-native-bootsplash`) via the classic launch-theme technique, Green variant for a seamless handoff into WL-1.
+- **Android:** `BootTheme` (`res/values/styles.xml`) sets `windowBackground` → `res/drawable/bootsplash.xml` (layer-list: `@color/bootsplash_background` sage `#7FBC8C` + centered `@drawable/pinwheel_logo` VectorDrawable). Also sets the Android-12+ `windowSplashScreenBackground` / `windowSplashScreenAnimatedIcon`. `AndroidManifest.xml` launches `MainActivity` under `BootTheme`; `MainActivity.onCreate` calls `setTheme(R.style.AppTheme)` before `super` so the splash doesn't linger. Requires a native rebuild (`npm run android`), not a Metro reload.
+- **iOS:** `LaunchScreen.storyboard` rebranded — sage background + centered bold "SEKAR" wordmark (system font). **Follow-up:** the pinwheel vector isn't yet in `Images.xcassets`; iOS shows the wordmark only until a PDF/SVG logo asset is exported from `design/`.
 
 ### 3.4 Empty-state illustrations (6 SVGs)
 
@@ -299,4 +303,23 @@ Tokens are dark-mode-ready (paired -fg/-bg, neutral scale spans light + dark). P
 
 ---
 
-**Last Updated:** 2026-05-22
+## Design ambiguity resolutions (M3a+b, 2026-05-24)
+
+The 10 ambiguities surfaced during M2's exploration were resolved inline as the entry flow shipped. Recording here so future contributors don't re-debate them.
+
+| # | Ambiguity | M3 resolution |
+|---|---|---|
+| 1 | Carousel auto-advance timing | **Revised (M3, 2026-05-25):** WL-1 is now a standalone `SplashScreen` (≈1.5s hold → carousel), not a carousel slide. The carousel (WL-2…WL-5) has **no** auto-advance — the user drives it with "Lanjut". |
+| 2 | "Lewati" behavior | Navigates to Login. Available on **WL-2…WL-4** (WL-1 is the branded splash with no skip; WL-5 swaps to a single "Mulai (Masuk)"). **Revised (M3, 2026-05-25):** the carousel now **always** leads the logged-out flow — `carousel_seen` is no longer a navigation gate (still written by `markCarouselSeen`, but unread). |
+| 3 | AS-4 rayon contact scope | Lists every rayon (n=7) with phone + WhatsApp deep-links. Anonymous fetch. |
+| 4 | OB-2 permission order | Location → Camera → Notifications (sequential, single-card UI per row). |
+| 5 | OB-2 skip behavior | Every permission is skippable. No hard blockers; AreaPreview always reachable. |
+| 6 | OB-3 role-aware CTA | 3 variants: `clockable` (Mulai Bekerja), `kecamatan` (Kelola Permohonan), `admin` (Buka Dashboard). Variant resolution lives in `OnboardingAreaPreviewScreen.variantFor`. |
+| 7 | Password-change mid-session | Check on app launch + post-login only. No mid-session interruption — `password_must_change` polled via Redux `user`, not via JWT decode. |
+| 8 | `onboarding_completed` scope | User-scoped key `@sekar:onboarding_completed:{userId}`. Persists across logout/login on same device. |
+| 9 | Carousel back-button | Logged-out native stack = **Splash (initial) → WelcomeCarousel → Login → ForgotPassword**. **Revised (M3, 2026-05-25):** splash + carousel show on every cold start while unauthenticated and replay after logout (no `carousel_seen` short-circuit). Logged-in users skip the whole stack and land on Home directly. `RootNavigator` gates only on auth/onboarding now. |
+| 10 | Role-home routing | `OnboardingAreaPreviewScreen` chooses the destination based on `user.role`; `RootNavigator` does not branch on role itself. |
+
+---
+
+**Last Updated:** 2026-05-24

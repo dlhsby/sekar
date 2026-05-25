@@ -149,3 +149,22 @@ dependencies {
         implementation jscFlavor
     }
 }
+
+// ──────────────────────────────────────────────────────────────────────────
+// Pre-build guard. The claude-mem plugin auto-generates `CLAUDE.md` context
+// files per directory; when one lands under `src/main/res/**` the Android
+// resource merger aborts ("file name must end with .xml or .png"). Strip any
+// stray non-resource docs from res/ before every build so they can't break it.
+// ──────────────────────────────────────────────────────────────────────────
+tasks.register('stripStrayResourceDocs') {
+    doFirst {
+        def resDir = file("src/main/res")
+        if (resDir.exists()) {
+            fileTree(dir: resDir).matching { include '**/*.md' }.each { f ->
+                println "stripStrayResourceDocs: removing stray ${f}"
+                f.delete()
+            }
+        }
+    }
+}
+tasks.matching { it.name == 'preBuild' }.configureEach { dependsOn 'stripStrayResourceDocs' }

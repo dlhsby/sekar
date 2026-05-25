@@ -16,14 +16,12 @@ import fcmService from '../services/notifications/fcmService';
 import LoginScreen from '../screens/auth/LoginScreen';
 import MainNavigator from './MainNavigator';
 // Phase 4 M3a+b — entry flow gates
+import SplashScreen from '../screens/auth/SplashScreen';
 import WelcomeCarouselScreen from '../screens/auth/WelcomeCarouselScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import ChangePasswordScreen from '../screens/auth/ChangePasswordScreen';
 import OnboardingNavigator from './OnboardingNavigator';
-import {
-  hasCompletedOnboarding,
-  hasSeenCarousel,
-} from '../services/storage/asyncStorageKeys';
+import { hasCompletedOnboarding } from '../services/storage/asyncStorageKeys';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -63,19 +61,12 @@ function RootNavigator(): React.JSX.Element {
   const { isAuthenticated, user } = useAppSelector((state) => state.auth);
   const cleanupRef = useRef<(() => void) | null>(null);
 
-  // Phase 4 M3a+b — entry-flow gates. Default both to `true` (i.e., "skip
-  // carousel/onboarding") so the synchronous first render lands on the post-
-  // gate flow. The async storage probes flip the flags only when needed,
-  // which causes a one-tick re-render on first install — acceptable tradeoff
-  // for test stability (no async setup required in 50+ existing test files).
-  const [carouselSeen, setCarouselSeen] = React.useState<boolean>(true);
+  // Phase 4 M3a+b — onboarding gate. Default to `true` (i.e., "skip onboarding")
+  // so the synchronous first render lands on the post-gate flow. The async storage
+  // probe flips it only when needed, which causes a one-tick re-render on first
+  // login — acceptable tradeoff for test stability (no async setup required in
+  // 50+ existing test files).
   const [onboardingDone, setOnboardingDone] = React.useState<boolean>(true);
-
-  useEffect(() => {
-    hasSeenCarousel()
-      .then(setCarouselSeen)
-      .catch(() => setCarouselSeen(true)); // fail-open: don't trap user in carousel on storage error
-  }, []);
 
   useEffect(() => {
     if (!user?.id) {
@@ -116,12 +107,13 @@ function RootNavigator(): React.JSX.Element {
   }, [isAuthenticated]);
 
   // Gate precedence (Phase 4 M3a+b):
-  //   1. !carouselSeen          → WelcomeCarousel stack
-  //   2. !isAuthenticated/!user → Login stack (Login + ForgotPassword sibling)
-  //   3. user.password_must_change → ChangePassword (forced, no back)
-  //   4. !onboardingDone        → Onboarding stack
-  //   5. otherwise              → MainTabs
-  const showCarousel = !carouselSeen;
+  //   1. !isAuthenticated/!user → unauthenticated stack: Splash (initial) →
+  //      WelcomeCarousel → Login → ForgotPassword. The branded splash + carousel
+  //      always lead the logged-out flow; "Masuk"/"Lewati" route on to Login.
+  //   2. user.password_must_change → ChangePassword (forced, no back)
+  //   3. !onboardingDone        → Onboarding stack
+  //   4. otherwise              → MainTabs (logged-in users skip splash/carousel
+  //      entirely and land on Home directly).
   const loggedIn = isAuthenticated && !!user;
   const forceChange = loggedIn && user?.password_must_change === true;
   const showOnboarding = loggedIn && !forceChange && !onboardingDone;
@@ -129,10 +121,10 @@ function RootNavigator(): React.JSX.Element {
   return (
     <NavigationContainer ref={navigationRef}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {showCarousel ? (
-          <Stack.Screen name="WelcomeCarousel" component={WelcomeCarouselScreen} />
-        ) : !loggedIn ? (
+        {!loggedIn ? (
           <>
+            <Stack.Screen name="Splash" component={SplashScreen} />
+            <Stack.Screen name="WelcomeCarousel" component={WelcomeCarouselScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen
               name="ForgotPassword"

@@ -10,6 +10,7 @@ import type { CompositeScreenProps } from '@react-navigation/native';
 // Root Stack Navigator (Auth flow)
 export type RootStackParamList = {
   // Phase 4 M3a+b entry flow gates
+  Splash: undefined;
   WelcomeCarousel: undefined;
   Login: undefined;
   ForgotPassword: undefined;

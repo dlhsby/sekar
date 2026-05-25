@@ -144,15 +144,26 @@ jest.mock('react-native-svg', () => {
 
   const PatternComponent = (props) => React.createElement(View, props, props.children);
 
+  const Leaf = (props) => React.createElement(View, props);
+  const Group = (props) => React.createElement(View, props, props.children);
+
   return {
     __esModule: true,
-    default: (props) => React.createElement(View, props, props.children),
-    Svg: (props) => React.createElement(View, props, props.children),
-    Rect: (props) => React.createElement(View, props),
-    Circle: (props) => React.createElement(View, props),
-    Line: (props) => React.createElement(View, props),
-    G: (props) => React.createElement(View, props, props.children),
-    Defs: (props) => React.createElement(View, props, props.children),
+    default: Group,
+    Svg: Group,
+    Rect: Leaf,
+    Circle: Leaf,
+    Line: Leaf,
+    Path: Leaf,
+    Polyline: Leaf,
+    Polygon: Leaf,
+    Ellipse: Leaf,
+    Text: Group,
+    G: Group,
+    Defs: Group,
+    ClipPath: Group,
+    LinearGradient: Group,
+    Stop: Leaf,
     Pattern: PatternComponent,
   };
 });

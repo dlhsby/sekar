@@ -4,6 +4,22 @@
     <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
         <!-- Customize your theme here. -->
         <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
+        <!-- Sage base so the boot splash → WL-1 (also sage) hands off without a
+             white flash. App screens are opaque, so this only shows for the
+             pre-first-frame moment + brief native transitions. -->
+        <item name="android:windowBackground">@color/bootsplash_background</item>
+    </style>
+
+    <!-- Cold-start launch theme: shows the sage + pinwheel splash as the window
+         background until MainActivity swaps to AppTheme in onCreate. -->
+    <style name="BootTheme" parent="AppTheme">
+        <!-- Pre-Android-12 cold start: the layer-list (sage + centered pinwheel). -->
+        <item name="android:windowBackground">@drawable/bootsplash</item>
+        <item name="android:statusBarColor">@color/bootsplash_background</item>
+        <!-- Android 12+ system SplashScreen API (ignored on older OS versions).
+             Uses the padded splash_icon so the circular icon mask doesn't crop blades. -->
+        <item name="android:windowSplashScreenBackground">@color/bootsplash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
     </style>
 
 </resources>

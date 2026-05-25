@@ -30,6 +30,27 @@ jest.mock('../../screens/auth/LoginScreen', () => {
   };
 });
 
+// Splash is the initial route of the logged-out stack (shown before the carousel).
+jest.mock('../../screens/auth/SplashScreen', () => {
+  const { Text } = require('react-native');
+  return {
+    __esModule: true,
+    default: function MockSplashScreen() {
+      return <Text testID="splash-screen">Splash</Text>;
+    },
+  };
+});
+
+jest.mock('../../screens/auth/WelcomeCarouselScreen', () => {
+  const { Text } = require('react-native');
+  return {
+    __esModule: true,
+    default: function MockWelcomeCarousel() {
+      return <Text testID="welcome-carousel-screen">Welcome Carousel</Text>;
+    },
+  };
+});
+
 jest.mock('../MainNavigator', () => {
   const { Text } = require('react-native');
   return function MockMainNavigator() {
@@ -55,7 +76,7 @@ function createTestStore(preloadedState?: any) {
 
 describe('RootNavigator', () => {
   describe('unauthenticated state', () => {
-    it('should render Login screen when not authenticated', () => {
+    it('should render the Splash (entry) when not authenticated', () => {
       const store = createTestStore({
         auth: {
           user: null,
@@ -72,15 +93,17 @@ describe('RootNavigator', () => {
         </Provider>
       );
 
-      expect(screen.getByTestId('login-screen')).toBeTruthy();
+      // Splash is the initial route of the logged-out stack; it leads to the
+      // carousel, then Login.
+      expect(screen.getByTestId('splash-screen')).toBeTruthy();
     });
 
-    it('should render Login screen when user is null', () => {
+    it('should render the Splash when user is null', () => {
       const store = createTestStore({
         auth: {
           user: null,
           assignedArea: null,
-          isAuthenticated: true, // Even if authenticated, no user means login
+          isAuthenticated: true, // Even if authenticated, no user means logged-out
           isLoading: false,
           error: null,
         },
@@ -92,7 +115,7 @@ describe('RootNavigator', () => {
         </Provider>
       );
 
-      expect(screen.getByTestId('login-screen')).toBeTruthy();
+      expect(screen.getByTestId('splash-screen')).toBeTruthy();
     });
   });
 

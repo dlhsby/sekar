@@ -1,0 +1,4 @@
+<resources>
+    <!-- Boot splash — sage primary, matches the in-app WL-1 SplashSlide. -->
+    <color name="bootsplash_background">#7FBC8C</color>
+</resources>

@@ -1,18 +1,18 @@
 /**
- * WelcomeCarouselScreen — Phase 4 M3a / ADR-042 / Hifi WL-1…WL-5
+ * WelcomeCarouselScreen — Phase 4 M3a / ADR-042 / Hifi WL-2…WL-5
  *
- * 5-slide pre-login carousel shown on first launch. After dismissal
- * (`carousel_seen=true`), RootNavigator skips this gate and lands users on
- * Login directly.
+ * 4-slide pre-login carousel shown to logged-out users after the Splash screen.
+ * It opens on "Pantau real-time" (WL-2) — the WL-1 brand splash is no longer a
+ * slide here; it lives in `SplashScreen` + the native boot splash, so showing it
+ * again would duplicate it.
  *
- * Behavior decisions (resolved inline, ui-ux.md ambiguity table):
- * - Auto-advance: 2.5s on WL-1 only. Slides 2-5 wait for user input.
- * - "Lewati" (Skip) on slides 1-4 jumps to Login + sets the flag.
- * - "Lanjut" advances; "Masuk" on WL-5 finishes + navigates to Login.
- * - Swipe-back disabled — this is a linear onboarding, not exploration.
+ * Behavior:
+ * - "Lanjut" advances; "Masuk" on the last slide finishes → Login.
+ * - "Lewati" (Skip) on slides 2-4 jumps straight to Login.
+ * - Swipe-back disabled — this is a linear intro, not exploration.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   Dimensions,
   FlatList,
@@ -28,7 +28,6 @@ import { OnboardingSlide } from '../../components/auth/OnboardingSlide';
 import { markCarouselSeen } from '../../services/storage/asyncStorageKeys';
 
 const { width } = Dimensions.get('window');
-const AUTO_ADVANCE_MS = 2500;
 
 interface Slide {
   id: string;
@@ -40,12 +39,6 @@ interface Slide {
 }
 
 const SLIDES: Slide[] = [
-  {
-    id: 'WL-1',
-    title: 'SEKAR',
-    body: 'Pantau dan kelola ruang hijau Surabaya.',
-    emoji: '🌳',
-  },
   {
     id: 'WL-2',
     title: 'Pantau Real-time',
@@ -69,13 +62,12 @@ const SLIDES: Slide[] = [
     title: 'Bekerja Offline',
     body: 'Tetap produktif di lapangan walau sinyal tidak stabil.',
     emoji: '📡',
-    backgroundColor: '#1A4D2E', // navy per hifi WL-5
-    textColor: '#FFFFFF',
+    backgroundColor: nbColors.navy, // deep navy per hifi WL-5
+    textColor: nbColors.white,
   },
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Props = NativeStackScreenProps<any, 'WelcomeCarousel'>;
+type Props = NativeStackScreenProps<Record<string, undefined>, 'WelcomeCarousel'>;
 
 export function WelcomeCarouselScreen({ navigation }: Props): React.JSX.Element {
   const [index, setIndex] = useState(0);
@@ -94,14 +86,6 @@ export function WelcomeCarouselScreen({ navigation }: Props): React.JSX.Element 
       return next;
     });
   }, []);
-
-  // Auto-advance only fires on WL-1; users drive the rest manually so reading
-  // pace isn't dictated by a timer.
-  useEffect(() => {
-    if (index !== 0) return;
-    const t = setTimeout(advance, AUTO_ADVANCE_MS);
-    return () => clearTimeout(t);
-  }, [index, advance]);
 
   const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const newIndex = Math.round(e.nativeEvent.contentOffset.x / width);
@@ -150,9 +134,7 @@ export function WelcomeCarouselScreen({ navigation }: Props): React.JSX.Element 
       style={[
         styles.root,
         {
-          backgroundColor:
-            SLIDES[index]?.backgroundColor ??
-            ((nbColors as Record<string, string>).paper ?? '#F5F0EB'),
+          backgroundColor: SLIDES[index]?.backgroundColor ?? nbColors.bgCanvas,
         },
       ]}
       testID="welcome-carousel-screen"
