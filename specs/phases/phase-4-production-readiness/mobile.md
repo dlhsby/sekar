@@ -61,9 +61,11 @@
 
 | Hi-Fi ID | Name | Current file | Action |
 |----------|------|--------------|--------|
-| HOME-1 | Home · Satgas | `fe/mobile/src/screens/field/HomeScreen.tsx` | Revamp |
-| HOME-2 | Home · Korlap | `fe/mobile/src/screens/monitoring/MonitoringHomeScreen.tsx` (or equivalent) | Revamp |
-| HOME-3 | Home · Admin Data | (current admin home) | Revamp |
+| (anchor) | Home dispatcher (role-aware) | `fe/mobile/src/screens/home/HomeScreen.tsx` | ✅ Done (Checkpoint 1c) — switches on `auth.user.role` |
+| HOME-1 | Home · Satgas/Linmas | `fe/mobile/src/screens/home/FieldHomeScreen.tsx` | Body refresh pending (moved + wired; was `screens/field/HomeScreen.tsx`) |
+| HOME-2 | Home · Korlap/Kepala Rayon | `fe/mobile/src/screens/home/CoordinatorHomeScreen.tsx` (to create) | NEW dashboard — net-new (roles currently fall through to FieldHomeScreen) |
+| HOME-3 | Home · Admin Data | `fe/mobile/src/screens/home/AdminDataHomeScreen.tsx` (to create) | NEW dashboard — net-new (falls through to FieldHomeScreen for now) |
+| (chrome) | Shared masthead + bottom tab bar | `components/navigation/FieldHomeHeader.tsx`, `navigation/MainNavigator.tsx` | ✅ Done (Checkpoints 1a/1b) |
 | ABS-1 | Clock-in · GPS + selfie | existing absensi screen | Revamp |
 | ABS-2 | Clock-in · Di luar area | existing | Revamp |
 | ABS-3 | Shift history | existing | Revamp |

@@ -20,7 +20,7 @@ const MockScreen = ({ name }: { name: string }) => {
   );
 };
 
-jest.mock('../../screens/field/HomeScreen', () => ({
+jest.mock('../../screens/home/HomeScreen', () => ({
   HomeScreen: () => MockScreen({ name: 'Home' }),
 }));
 jest.mock('../../screens/field/ClockInOutScreen', () => ({

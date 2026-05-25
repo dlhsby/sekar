@@ -14,7 +14,7 @@ import { LoadingSpinner } from '../../components/common';
 import { NBAlert, NBBackgroundPattern } from '../../components/nb';
 import { NBButton, NBCard, NBText } from '../../components/nb';
 import { ShiftDetailModal, TodayActivitiesModal, TodayWorkHoursModal, LocationMapModal } from '../../components/modals';
-import { nbColors, nbSpacing, nbBorders, nbBorderRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbBorders, nbBorderRadius, withAlpha } from '../../constants/nbTokens';
 // Fix 15: canonical import path is store/hooks (matches majority of screens)
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { shiftsApi, activitiesApi } from '../../services/api';
@@ -27,14 +27,16 @@ import { LocationStatusCard } from '../../components/home/LocationStatusCard';
 import type { Activity } from '../../types/models.types';
 
 /**
- * Worker Home Screen - Main dashboard for field workers
- * Phase 2C: uses activities instead of reports
+ * Field Home Screen (hi-fi HOME-1) — dashboard for clockable field roles
+ * (satgas, linmas, and — until HOME-2/HOME-3 land — korlap/kepala_rayon/admin_data).
+ * Selected by the role-aware `HomeScreen` dispatcher.
+ * Phase 2C: uses activities instead of reports.
  */
 
 // Fix 14: pad moved to module scope to avoid re-creation on every render
 const pad = (num: number): string => String(num).padStart(2, '0');
 
-export function HomeScreen(): React.JSX.Element {
+export function FieldHomeScreen(): React.JSX.Element {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
 
@@ -639,4 +641,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default HomeScreen;
+export default FieldHomeScreen;

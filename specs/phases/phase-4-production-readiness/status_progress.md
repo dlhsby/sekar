@@ -22,6 +22,12 @@ First slice of the **Home-as-role-aware-anchor** revamp (full plan: shared chrom
 
 ---
 
+## May 25, 2026 — M3 Home revamp · Checkpoint 1c: role-aware Home dispatcher
+
+Introduced the **Home anchor seam** so each role can get its own dashboard while sharing one tab entry. `git mv src/screens/field/HomeScreen.tsx → src/screens/home/FieldHomeScreen.tsx` (R100; the field dashboard body is unchanged, export renamed `HomeScreen` → `FieldHomeScreen`) and its test alongside (`screens/home/__tests__/FieldHomeScreen.test.tsx`, import aliased `FieldHomeScreen as HomeScreen` so the 32 `<HomeScreen/>` body refs are untouched). New thin **`src/screens/home/HomeScreen.tsx` dispatcher** reads `auth.user.role` and switches to the per-role variant: satgas/linmas → `FieldHomeScreen` (HOME-1); korlap/kepala_rayon → HOME-2 and admin_data → HOME-3 are commented placeholders filled in the next checkpoints. **Until then every Home-tab role falls through to `FieldHomeScreen` — behavior is identical to before** (korlap/admin_data already landed on the field home). `MainNavigator` `SCREEN_MAP.Home` import repointed `screens/field/HomeScreen` → `screens/home/HomeScreen`; the `MainNavigator.test` mock path updated to match. New dispatcher test (6 cases: 5 roles + undefined → field). Cleaned a pre-existing unused `nbShadows` import that rode along with the move. **Full mobile suite green (4152 passed); `tsc` no new errors beyond the relocated baseline; ESLint clean.** Checkpoint 1 (shared chrome + dispatcher) is now complete — HOME-1 body refresh + HOME-2/HOME-3 dashboards follow.
+
+---
+
 ## May 25, 2026 — M3 entry-flow visual revamp: WL-1 splash + native boot splash + WL-2…5 carousel
 
 Pixel-fidelity rebuild of the cold-start journey against `design/project/hifi-mobile.html`, working screen-by-screen with a checkpoint after each. Three commits.

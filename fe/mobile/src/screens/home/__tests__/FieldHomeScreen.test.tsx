@@ -8,7 +8,7 @@ import { render, waitFor, act, fireEvent } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import { Provider } from 'react-redux';
 import { NavigationContainer } from '@react-navigation/native';
-import { HomeScreen } from '../HomeScreen';
+import { FieldHomeScreen as HomeScreen } from '../FieldHomeScreen';
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../../../store/slices/authSlice';
 import shiftReducer from '../../../store/slices/shiftSlice';

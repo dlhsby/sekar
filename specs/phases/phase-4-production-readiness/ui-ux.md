@@ -238,6 +238,8 @@ Per `illustrations.html § Splash screen`:
 
 **M3 revamp status — Home bottom tab bar ✅ (2026-05-25) — Checkpoint 1b:** `MainNavigator` tab bar restyled to hi-fi, tokens-only — active icon in a **sage box** (2px border + `sh-xs`), mono `NBText` labels (active black / inactive gray600). No IA change (per-role `TAB_CONFIGS` untouched). **Reconciliation:** labels kept sentence-case (not hi-fi uppercase) to avoid overflow on the app's longer labels (e.g. "Tugas & Aktivitas"). `nav` suites 36/36.
 
+**M3 revamp status — Home role-aware dispatcher ✅ (2026-05-25) — Checkpoint 1c:** Home is now a single **role-aware anchor**: `src/screens/home/HomeScreen.tsx` reads `auth.user.role` and dispatches to the per-role dashboard. The old field `HomeScreen` moved to `screens/home/FieldHomeScreen.tsx` (HOME-1, body unchanged). korlap/kepala_rayon → HOME-2 and admin_data → HOME-3 are placeholders (next checkpoints); until then all Home-tab roles fall through to the field dashboard (no behavior change). Completes **Checkpoint 1 (shared chrome + dispatcher)**. Full suite 4152 passing.
+
 ### 3.4 Empty-state illustrations (6 SVGs)
 
 | ID | File | Used by |

@@ -16,7 +16,7 @@ import { useAppSelector } from '../store/hooks';
 import { FieldHomeHeader } from '../components/navigation/FieldHomeHeader';
 
 // Field screens (clockable roles)
-import { HomeScreen } from '../screens/field/HomeScreen';
+import { HomeScreen } from '../screens/home/HomeScreen';
 import { ClockInOutScreen } from '../screens/field/ClockInOutScreen';
 import { ActivitySubmissionScreen } from '../screens/field/ActivitySubmissionScreen';
 import { TasksActivityScreen } from '../screens/taskActivity';
