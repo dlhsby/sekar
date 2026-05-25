@@ -22,6 +22,18 @@ First slice of the **Home-as-role-aware-anchor** revamp (full plan: shared chrom
 
 ---
 
+## May 25, 2026 — M3 Home revamp · Checkpoint 2a: reusable Home widgets
+
+The shared building blocks for the role dashboards (HOME-1/2/3), `src/components/home/`, tokens-only, all hard-edge v2.1:
+- **`StatusPill`** — mono-uppercase status chip mapping a semantic tone (`ok`/`warn`/`bad`/`info`/`neutral`) to the 5-status token palette (`NBBadge` can't express the status-bg + full-radius + mono-uppercase pill the hi-fi `.pill` needs).
+- **`HomeSectionDivider`** — mono-uppercase section label + hairline rule + optional trailing slot (e.g. a "3 tersisa" pill). Hi-fi `.div-h`.
+- **`HomeStatTile`** — KPI tile (label / big value / detail) on a tone-tinted card, optional `onPress`. Hi-fi `.stat-tile`. Feeds HOME-1 summary, HOME-2 KPI grid, HOME-3 disposition breakdown.
+- **`HomeListRow`** — list item (pill + right meta on top, title, sub-meta) on a white hard-edge card, optional `onPress`. Feeds HOME-1 tasks, HOME-2 alerts, HOME-3 approvals.
+
+Widget test 9/9; `tsc` + ESLint clean. **Next (2b):** rebuild `FieldHomeScreen` (HOME-1) using these — absensi hero, real "Tugas hari ini" list, summary tiles.
+
+---
+
 ## May 25, 2026 — M3 Home revamp · Checkpoint 1c: role-aware Home dispatcher
 
 Introduced the **Home anchor seam** so each role can get its own dashboard while sharing one tab entry. `git mv src/screens/field/HomeScreen.tsx → src/screens/home/FieldHomeScreen.tsx` (R100; the field dashboard body is unchanged, export renamed `HomeScreen` → `FieldHomeScreen`) and its test alongside (`screens/home/__tests__/FieldHomeScreen.test.tsx`, import aliased `FieldHomeScreen as HomeScreen` so the 32 `<HomeScreen/>` body refs are untouched). New thin **`src/screens/home/HomeScreen.tsx` dispatcher** reads `auth.user.role` and switches to the per-role variant: satgas/linmas → `FieldHomeScreen` (HOME-1); korlap/kepala_rayon → HOME-2 and admin_data → HOME-3 are commented placeholders filled in the next checkpoints. **Until then every Home-tab role falls through to `FieldHomeScreen` — behavior is identical to before** (korlap/admin_data already landed on the field home). `MainNavigator` `SCREEN_MAP.Home` import repointed `screens/field/HomeScreen` → `screens/home/HomeScreen`; the `MainNavigator.test` mock path updated to match. New dispatcher test (6 cases: 5 roles + undefined → field). Cleaned a pre-existing unused `nbShadows` import that rode along with the move. **Full mobile suite green (4152 passed); `tsc` no new errors beyond the relocated baseline; ESLint clean.** Checkpoint 1 (shared chrome + dispatcher) is now complete — HOME-1 body refresh + HOME-2/HOME-3 dashboards follow.
