@@ -1,48 +1,29 @@
 /**
  * ForgotPasswordScreen — Phase 4 M3 / ADR-041 / Hifi AS-4
  *
- * SEKAR has no self-serve reset — credentials are admin-controlled. We show the
- * rayon admin contacts so the user can WhatsApp / call for a temporary password.
+ * SEKAR has no self-serve reset — credentials are admin-controlled. We show a
+ * support hotline (WhatsApp + phone) so the user can request a temporary password.
  *
- * Reconciliation: the hi-fi shows two fixed channels; the real feature lists every
- * rayon's contacts (anonymous fetch), styled with the hi-fi contact-card treatment.
+ * NOTE: contacts are static for now. `/rayons` is auth-protected and this is a
+ * pre-login screen, and we can't infer the caller's rayon anyway — so a single
+ * hotline is shown. TODO: source these from env or a public config/DB endpoint.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { NBButton, NBCard, NBText } from '../../components/nb';
+import { NBButton, NBText } from '../../components/nb';
 import { ContactChannelCard } from '../../components/auth/ContactChannelCard';
 import { nbColors, nbBorders, nbRadius, nbShadows, nbSpacing } from '../../constants/nbTokens';
-import { getRayons } from '../../services/api/rayonsApi';
-import type { Rayon } from '../../types/models.types';
 
-interface RayonContact extends Rayon {
-  contact_phone?: string | null;
-  contact_whatsapp?: string | null;
-}
+// Static support hotline — TODO: source from env / public config / DB per region.
+const SUPPORT_WHATSAPP = '081200000000';
+const SUPPORT_PHONE = '0317788990';
 
 export function ForgotPasswordScreen(): React.JSX.Element {
   const navigation = useNavigation();
-  const [rayons, setRayons] = useState<RayonContact[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await getRayons();
-        if (!cancelled) setRayons((res.data ?? []) as RayonContact[]);
-      } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Gagal memuat daftar rayon.');
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const openTel = useCallback((phone: string) => {
     void Linking.openURL(`tel:${phone}`);
@@ -79,62 +60,24 @@ export function ForgotPasswordScreen(): React.JSX.Element {
             Sandi tidak bisa di-reset sendiri
           </NBText>
           <NBText variant="body-sm" color="gray600" align="center">
-            Akun Anda dikelola admin SEKAR. Hubungi admin rayon Anda untuk meminta sandi baru.
+            Akun Anda dikelola admin SEKAR. Hubungi admin untuk meminta sandi baru.
           </NBText>
         </View>
 
-        {error ? (
-          <NBCard style={styles.stateCard} testID="forgot-password-error">
-            <NBText variant="body-sm" color="dangerDark">
-              {error}
-            </NBText>
-          </NBCard>
-        ) : null}
-
-        {rayons == null && !error ? (
-          <NBText variant="body-sm" color="gray500" style={styles.stateText}>
-            Memuat daftar rayon…
-          </NBText>
-        ) : null}
-
-        {rayons?.length === 0 ? (
-          <NBCard testID="forgot-password-empty">
-            <NBText variant="body-sm" color="gray600">
-              Belum ada kontak rayon yang tersedia.
-            </NBText>
-          </NBCard>
-        ) : null}
-
-        {rayons?.map((r) => (
-          <View key={r.id} style={styles.rayonGroup} testID={`rayon-${r.id}`}>
-            <NBText variant="mono-sm" color="gray600" uppercase style={styles.rayonName}>
-              {r.name}
-            </NBText>
-            {r.contact_whatsapp ? (
-              <ContactChannelCard
-                variant="whatsapp"
-                title="Chat WhatsApp Admin"
-                value={r.contact_whatsapp}
-                onPress={() => openWhatsApp(r.contact_whatsapp!)}
-                testID={`rayon-wa-${r.id}`}
-              />
-            ) : null}
-            {r.contact_phone ? (
-              <ContactChannelCard
-                variant="phone"
-                title="Telepon Kantor"
-                value={r.contact_phone}
-                onPress={() => openTel(r.contact_phone!)}
-                testID={`rayon-tel-${r.id}`}
-              />
-            ) : null}
-            {!r.contact_whatsapp && !r.contact_phone ? (
-              <NBText variant="caption" color="gray500">
-                Kontak belum dilengkapi.
-              </NBText>
-            ) : null}
-          </View>
-        ))}
+        <ContactChannelCard
+          variant="whatsapp"
+          title="Chat WhatsApp Admin"
+          value={SUPPORT_WHATSAPP}
+          onPress={() => openWhatsApp(SUPPORT_WHATSAPP)}
+          testID="forgot-wa"
+        />
+        <ContactChannelCard
+          variant="phone"
+          title="Telepon Kantor"
+          value={SUPPORT_PHONE}
+          onPress={() => openTel(SUPPORT_PHONE)}
+          testID="forgot-tel"
+        />
 
         <View style={styles.note}>
           <NBText variant="body-sm" color="gray700">
@@ -193,10 +136,6 @@ const styles = StyleSheet.create({
     ...nbShadows.sm,
   },
   heroTitle: { marginTop: nbSpacing.xs },
-  stateCard: { borderColor: nbColors.dangerDark },
-  stateText: { opacity: 0.8 },
-  rayonGroup: { gap: nbSpacing.sm },
-  rayonName: { letterSpacing: 0.6 },
   note: {
     borderWidth: nbBorders.widthThin,
     borderColor: nbColors.gray400,

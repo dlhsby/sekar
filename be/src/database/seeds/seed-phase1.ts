@@ -126,6 +126,16 @@ async function seedPhase1() {
     `);
     console.log('  Created 1 user: admin (superadmin)');
 
+    // Dummy account to exercise the forced password-change flow (AS-5). Temp
+    // password is "password123"; password_must_change=TRUE forces the change
+    // screen on first login. Remove/disable before production.
+    await queryRunner.query(`
+      INSERT INTO users (id, username, password_hash, full_name, phone_number, role, is_active, password_must_change) VALUES
+        ('a0000000-0000-4000-8000-000000000099', 'resettest', '${PASSWORD_HASH}', 'Reset Test User', '081200000099', 'satgas', TRUE, TRUE)
+      ON CONFLICT (username) DO NOTHING
+    `);
+    console.log('  Created 1 user: resettest (satgas, password_must_change) — password: password123');
+
     // ============================================================
     // AREA TYPES (4)
     // ============================================================
