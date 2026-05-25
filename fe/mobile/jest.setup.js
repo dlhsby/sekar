@@ -115,11 +115,15 @@ jest.mock('react-native-device-info', () => ({
   getDeviceId: jest.fn(() => 'mock-device-id'),
   getUniqueId: jest.fn(() => Promise.resolve('mock-unique-id')),
   getFreeDiskStorage: jest.fn(() => Promise.resolve(5 * 1024 * 1024 * 1024)), // Default 5GB free
+  getVersion: jest.fn(() => '1.0.0'),
+  getBuildNumber: jest.fn(() => '1'),
   default: {
     getBatteryLevel: jest.fn(() => Promise.resolve(0.75)),
     getDeviceId: jest.fn(() => 'mock-device-id'),
     getUniqueId: jest.fn(() => Promise.resolve('mock-unique-id')),
     getFreeDiskStorage: jest.fn(() => Promise.resolve(5 * 1024 * 1024 * 1024)),
+    getVersion: jest.fn(() => '1.0.0'),
+    getBuildNumber: jest.fn(() => '1'),
   },
 }));
 

@@ -1,13 +1,15 @@
 /**
- * Login Screen
- * Authentication screen for username/password login
- * Uses Neo Brutalism design system
+ * LoginScreen — Phase 4 M3 / Hifi AS-1…AS-3
+ *
+ * Identifier (phone OR username) + password. Validation is split: per-field
+ * inline errors (AS-2, shown after a field is touched, submit gated until valid)
+ * and a top toast for server-side auth failures (AS-3, generic copy so the failing
+ * field can't be enumerated).
  */
 
 import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
-  Text,
   Pressable,
   StyleSheet,
   KeyboardAvoidingView,
@@ -16,16 +18,18 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { getVersion } from 'react-native-device-info';
+import { nbColors, nbSpacing } from '../../constants/nbTokens';
 import {
-  nbColors,
-  nbTypography,
-  nbSpacing,
-  nbShadows,
-  nbBorders,
-  nbBorderRadius,
-} from '../../constants/nbTokens';
-import { NBButton, NBTextInput, NBPasswordInput, NBBackgroundPattern, NBText, NBToast, NBToastProvider } from '../../components/nb';
+  NBButton,
+  NBTextInput,
+  NBPasswordInput,
+  NBBackgroundPattern,
+  NBText,
+  NBToast,
+  NBToastProvider,
+} from '../../components/nb';
+import { SekarLogoBox } from '../../components/brand/SekarLogoBox';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { setLoading, setUser } from '../../store/slices/authSlice';
 import { login, getMe } from '../../services/api/authApi';
@@ -36,11 +40,13 @@ import { isClockableRole } from '../../constants/roles';
 import type { LoginResponse } from '../../types/api.types';
 import type { UserRole } from '../../types/models.types';
 
+const APP_VERSION = getVersion();
+
 function LoginScreen(): React.JSX.Element {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const [identifierError, setIdentifierError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
+  const [touchedId, setTouchedId] = useState(false);
+  const [touchedPw, setTouchedPw] = useState(false);
 
   const passwordInputRef = useRef<TextInputType>(null);
   const navigation = useNavigation();
@@ -48,70 +54,78 @@ function LoginScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const { isLoading } = useAppSelector((state) => state.auth);
 
+  const idValid = isValidUsername(identifier);
+  const pwValid = isValidPassword(password);
+  const formValid = idValid && pwValid;
+
+  // Inline errors surface only once a field has been touched (blur or submit).
+  const idError = touchedId
+    ? identifier.trim()
+      ? idValid
+        ? ''
+        : 'Minimal 3 karakter'
+      : 'No. HP / Username wajib diisi'
+    : '';
+  const pwError = touchedPw
+    ? password
+      ? pwValid
+        ? ''
+        : 'Kata Sandi minimal 6 karakter'
+      : 'Kata Sandi wajib diisi'
+    : '';
+
   const handleLogin = useCallback(async () => {
+    setTouchedId(true);
+    setTouchedPw(true);
+    if (!isValidUsername(identifier) || !isValidPassword(password)) return;
 
-    // Reset local field errors
-    setIdentifierError('');
-    setPasswordError('');
-
-    // Validate inputs — identifier accepts username (min 3 chars) or phone number
-    if (!isValidUsername(identifier)) {
-      setIdentifierError('Username / No. HP harus diisi (minimal 3 karakter)');
-      return;
-    }
-
-    if (!isValidPassword(password)) {
-      setPasswordError('Password harus diisi (minimal 6 karakter)');
-      return;
-    }
-
-    // Attempt login
     dispatch(setLoading(true));
-
     try {
       const response = await login(identifier, password);
 
       if (response.error || !response.data) {
-        const errMsg = response.error || 'Login gagal';
-        NBToast.show({ level: 'danger', title: 'Login Gagal', body: errMsg, persistent: true });
+        // Generic copy (AS-3) — never reveal which field was wrong.
+        NBToast.show({
+          level: 'danger',
+          title: 'Gagal Masuk',
+          body: 'No. HP atau Kata Sandi salah. Coba lagi.',
+          durationMs: 4000,
+        });
         return;
       }
 
-      // Type-safe response handling
       const loginData = response.data as LoginResponse;
 
-      // Store access token and refresh token
       if (!loginData.access_token) {
-        NBToast.show({ level: 'danger', title: 'Error', body: 'Invalid response from server', persistent: true });
+        NBToast.show({
+          level: 'danger',
+          title: 'Gagal Masuk',
+          body: 'Server bermasalah, coba lagi sebentar lagi.',
+          durationMs: 4000,
+        });
         return;
       }
 
       await setToken(loginData.access_token);
-
-      // Store refresh token if provided (two-token system)
-      // Fix 5: refresh_token is optional (? in type) so this guard is correct
       if (loginData.refresh_token) {
         await setRefreshToken(loginData.refresh_token);
       }
-
       await setUserStorage(loginData.user);
 
-      // Fetch assigned area and updated user fields for clockable users
+      // Fetch assigned area + updated fields for clockable users.
       let assignedArea = null;
       let enrichedUser = loginData.user;
       if (isClockableRole(loginData.user.role as UserRole)) {
         try {
           const meResponse = await getMe();
           if (meResponse.data) {
-            // Merge area_id/rayon_id from getMe (schedule-based) into user
             enrichedUser = {
               ...loginData.user,
               area_id: meResponse.data.area_id ?? loginData.user.area_id,
               rayon_id: meResponse.data.rayon_id ?? loginData.user.rayon_id,
             };
             if (meResponse.data.assigned_area) {
-              // Ensure GPS coordinates are numbers, not strings
-              // Transform GeoJSON Polygon → flat [lng, lat][] for mobile gpsUtils
+              // Transform GeoJSON Polygon → flat [lng, lat][] for mobile gpsUtils.
               const rawPolygon = (meResponse.data.assigned_area as any).boundary_polygon;
               assignedArea = {
                 ...meResponse.data.assigned_area,
@@ -126,18 +140,12 @@ function LoginScreen(): React.JSX.Element {
           if (__DEV__) {
             console.warn('Failed to fetch assigned area:', err);
           }
-          // Continue without assigned area - user can still login
         }
       }
 
-      // Update Redux state with user and assigned area (null -> undefined to match payload type)
       dispatch(setUser({ user: enrichedUser, area: assignedArea ?? undefined }));
 
-      // FCM token registration is handled by App.tsx after permissions are granted.
-      // Do not call fcmService.getToken() here — service isn't initialized yet.
-
-      // Load current shift for clockable roles only
-      // This ensures the home screen shows correct shift status immediately after login
+      // Load current shift for clockable roles so Home reflects status immediately.
       if (isClockableRole(loginData.user.role as UserRole)) {
         loadAndSyncCurrentShift(dispatch).catch((err) => {
           if (__DEV__) {
@@ -145,9 +153,13 @@ function LoginScreen(): React.JSX.Element {
           }
         });
       }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Terjadi kesalahan';
-      NBToast.show({ level: 'danger', title: 'Error', body: message, persistent: true });
+    } catch {
+      NBToast.show({
+        level: 'danger',
+        title: 'Gagal Masuk',
+        body: 'Tidak bisa terhubung. Coba lagi.',
+        durationMs: 4000,
+      });
     } finally {
       dispatch(setLoading(false));
     }
@@ -156,201 +168,111 @@ function LoginScreen(): React.JSX.Element {
   return (
     <NBBackgroundPattern
       pattern="grid"
-      backgroundColor={nbColors.background}
+      backgroundColor={nbColors.bgCanvas}
       patternColor={nbColors.primary}
-      opacity={0.06}                          // Subtle pattern overlay
+      opacity={0.06}
     >
       <SafeAreaView style={styles.safeArea}>
-        {navigation.canGoBack() ? (
-          <Pressable
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="Kembali"
-            testID="login-back"
-          >
-            <MaterialCommunityIcons name="chevron-left" size={28} color={nbColors.black} />
-          </Pressable>
-        ) : null}
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.container}>
+          style={styles.flex}
+        >
           <View style={styles.content}>
-          {/* Logo/Title */}
-          <View style={styles.header}>
-            {/* Logo icon container - Neo Brutalism style */}
-            <View style={styles.logoContainer}>
-              <MaterialCommunityIcons
-                name="leaf"
-                size={56}
-                color={nbColors.white}
-              />
+            <View style={styles.header}>
+              <SekarLogoBox size={88} testID="login-logo" />
+              <NBText variant="h1" align="center" style={styles.heading}>
+                Selamat datang.
+              </NBText>
+              <NBText variant="body-sm" color="gray600" align="center">
+                Masuk menggunakan No. HP atau username Anda
+              </NBText>
             </View>
-            <NBText variant="h1" color="primary" style={styles.title}>SEKAR</NBText>
-            <NBText variant="body-sm" color="gray500" align="center" style={styles.subtitle}>
-              Sistem Evaluasi Kerja Satgas RTH
-            </NBText>
-            <NBText variant="caption" color="gray500" align="center" style={styles.organization}>
-              DLH Kota Surabaya
-            </NBText>
-          </View>
 
-          {/* Login Form */}
-          <View style={styles.form}>
-            {/* Identifier Input — accepts username or phone number (Phase 2E) */}
-            <NBTextInput
-              label="Username / No. HP"
-              placeholder="Masukkan username atau nomor HP"
-              value={identifier}
-              onChangeText={(text) => {
-                setIdentifier(text);
-                setIdentifierError('');
-              }}
-              error={identifierError}
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!isLoading}
-              returnKeyType="next"
-              onSubmitEditing={() => passwordInputRef.current?.focus()}
-              blurOnSubmit={false}
-              testID="username-input"
-            />
+            <View style={styles.form}>
+              <NBTextInput
+                label="No. Handphone / Username"
+                placeholder="081234567890"
+                value={identifier}
+                onChangeText={setIdentifier}
+                onBlur={() => setTouchedId(true)}
+                error={idError}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="default"
+                editable={!isLoading}
+                returnKeyType="next"
+                onSubmitEditing={() => passwordInputRef.current?.focus()}
+                blurOnSubmit={false}
+                testID="username-input"
+              />
 
-            {/* Password Input - Using NBPasswordInput */}
-            <NBPasswordInput
-              ref={passwordInputRef}
-              label="Password"
-              placeholder="Masukkan password"
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                setPasswordError('');
-              }}
-              error={passwordError}
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!isLoading}
-              returnKeyType="go"
-              onSubmitEditing={handleLogin}
-              testID="password-input"
-            />
+              <NBPasswordInput
+                ref={passwordInputRef}
+                label="Kata Sandi"
+                placeholder="Masukkan kata sandi"
+                value={password}
+                onChangeText={setPassword}
+                onBlur={() => setTouchedPw(true)}
+                error={pwError}
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!isLoading}
+                returnKeyType="go"
+                onSubmitEditing={handleLogin}
+                testID="password-input"
+              />
 
-            {/* Error Message */}
-            {/* Login Button */}
+              <Pressable
+                style={styles.forgotWrap}
+                onPress={() => navigation.navigate('ForgotPassword' as never)}
+                disabled={isLoading}
+                hitSlop={8}
+                testID="forgot-password-link"
+              >
+                <NBText variant="body-sm" color="secondary" style={styles.forgotText}>
+                  Lupa sandi?
+                </NBText>
+              </Pressable>
+            </View>
+
+            <View style={styles.spacer} />
+
             <NBButton
               title="Masuk"
               onPress={handleLogin}
               loading={isLoading}
-              disabled={isLoading}
+              disabled={!formValid || isLoading}
               fullWidth
               variant="primary"
               testID="login-button"
             />
-
-            {/* Phase 4-7 (M3a, AS-4): contact-admin password recovery (ADR-041). */}
-            <NBButton
-              title="Lupa sandi?"
-              onPress={() => navigation.navigate('ForgotPassword' as never)}
-              disabled={isLoading}
-              fullWidth
-              variant="ghost"
-              testID="forgot-password-link"
-            />
+            <NBText variant="mono-sm" color="gray500" align="center" style={styles.version}>
+              v{APP_VERSION}
+            </NBText>
           </View>
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>DLH Surabaya © 2026</Text>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
-    <NBToastProvider />
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+      <NBToastProvider />
     </NBBackgroundPattern>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: 'transparent', // Let NBBackgroundPattern handle background
-  },
-  // Back to the carousel (Login is pushed on top of WelcomeCarousel).
-  backButton: {
-    position: 'absolute',
-    top: nbSpacing.md,
-    left: nbSpacing.md,
-    zIndex: 10,
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: nbColors.white,
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.base,
-    ...nbShadows.xs,
-  },
-  container: {
-    flex: 1,
-  },
+  safeArea: { flex: 1, backgroundColor: 'transparent' },
+  flex: { flex: 1 },
   content: {
     flex: 1,
     paddingHorizontal: nbSpacing.lg,
-    justifyContent: 'center',
+    paddingTop: nbSpacing['2xl'],
+    paddingBottom: nbSpacing.xl,
   },
-  header: {
-    alignItems: 'center',
-    marginBottom: nbSpacing['2xl'],
-  },
-  // Neo Brutalism logo container: minimal rounded corners, thick border, hard-edge shadow
-  // Nature theme: green from Neo Brutalism palette
-  logoContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: nbBorderRadius.base, // 6px - NB 2.0 softened style
-    backgroundColor: nbColors.primary,
-    borderWidth: nbBorders.base, // 3px
-    borderColor: nbColors.black,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: nbSpacing.lg,
-    // Hard-edge shadow - NB style
-    ...nbShadows.md,
-  },
-  title: {
-    fontSize: nbTypography.fontSize['3xl'],
-    fontWeight: nbTypography.fontWeight.extrabold,
-    color: nbColors.primary, // Forest green title
-    marginBottom: nbSpacing.xs,
-    letterSpacing: 2,
-  },
-  subtitle: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray['600'],
-    textAlign: 'center',
-  },
-  organization: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.gray['500'],
-    textAlign: 'center',
-    marginTop: nbSpacing.xs,
-  },
-  form: {
-    marginBottom: nbSpacing.xl,
-  },
-  footer: {
-    alignItems: 'center',
-    paddingVertical: nbSpacing.lg,
-  },
-  footerText: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.gray['500'],
-  },
+  header: { alignItems: 'center' },
+  heading: { marginTop: nbSpacing.lg, marginBottom: nbSpacing.xs },
+  form: { marginTop: nbSpacing['2xl'] },
+  forgotWrap: { alignSelf: 'flex-end', marginTop: nbSpacing.sm },
+  forgotText: { textDecorationLine: 'underline' },
+  spacer: { flex: 1 },
+  version: { marginTop: nbSpacing.lg },
 });
 
 export default LoginScreen;

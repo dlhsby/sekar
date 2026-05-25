@@ -1,11 +1,11 @@
 /**
- * LoginScreen Tests
- * Unit tests for authentication screen
+ * LoginScreen Tests — Phase 4 M3 (AS-1…AS-3)
+ * Inputs/button queried by testID (stable across the v2.1 revamp). Validation is
+ * blur-triggered + submit-gated; server auth failures surface as a generic toast.
  */
 
 import React from 'react';
-import { render, fireEvent, waitFor, act, cleanup } from '@testing-library/react-native';
-import { Alert } from 'react-native';
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import LoginScreen from '../LoginScreen';
@@ -14,12 +14,9 @@ import * as authApi from '../../../services/api/authApi';
 import * as secureStorage from '../../../services/storage/secureStorage';
 import { loadAndSyncCurrentShift } from '../../../services/shift';
 
-// Mock the APIs
 jest.mock('../../../services/api/authApi');
 jest.mock('../../../services/storage/secureStorage');
 
-// Phase 4 M3a: LoginScreen calls useNavigation() for the "Lupa sandi?" link.
-// Existing tests render the screen bare (no NavigationContainer) — stub it.
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({ navigate: jest.fn(), goBack: jest.fn(), canGoBack: () => true }),
 }));
@@ -32,7 +29,6 @@ jest.mock('../../../components/nb/NBBackgroundPattern', () => ({
   NBBackgroundPattern: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-// Mock NBToast — replaced Alert.alert for error reporting in Phase 3 3-R3
 const mockNBToastShow = jest.fn();
 jest.mock('../../../components/nb/NBToast', () => ({
   NBToast: { show: (...args: any[]) => mockNBToastShow(...args), hide: jest.fn() },
@@ -40,12 +36,9 @@ jest.mock('../../../components/nb/NBToast', () => ({
   nbToastConfig: {},
 }));
 
-// Helper to create test store
-const createTestStore = (initialState?: Partial<ReturnType<typeof authReducer>>) => {
-  return configureStore({
-    reducer: {
-      auth: authReducer,
-    },
+const createTestStore = (initialState?: Partial<ReturnType<typeof authReducer>>) =>
+  configureStore({
+    reducer: { auth: authReducer },
     preloadedState: {
       auth: {
         user: null,
@@ -56,407 +49,161 @@ const createTestStore = (initialState?: Partial<ReturnType<typeof authReducer>>)
         error: null,
         ...initialState,
       },
-    },
+    } as any,
   });
-};
 
-// Helper to render LoginScreen with providers
-const renderLoginScreen = (store = createTestStore()) => {
-  return render(
+const renderLoginScreen = (store = createTestStore()) =>
+  render(
     <Provider store={store}>
       <LoginScreen />
-    </Provider>
+    </Provider>,
   );
+
+// Fill valid credentials (≥3-char identifier, ≥6-char password) so the gated
+// submit button is enabled.
+const fillValid = (q: ReturnType<typeof renderLoginScreen>, id = 'worker1', pw = 'worker123') => {
+  fireEvent.changeText(q.getByTestId('username-input'), id);
+  fireEvent.changeText(q.getByTestId('password-input'), pw);
 };
 
 describe('LoginScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Setup Alert spy in beforeEach to prevent cross-test pollution
-    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
     (secureStorage.setToken as jest.Mock).mockResolvedValue(undefined);
     (secureStorage.setUser as jest.Mock).mockResolvedValue(undefined);
   });
 
   afterEach(async () => {
-    // Flush any pending async operations to prevent "import after teardown" errors
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
   });
 
   describe('rendering', () => {
-    it('should render login form correctly', () => {
-      const { getByText, getByPlaceholderText } = renderLoginScreen();
-
-      expect(getByText('SEKAR')).toBeTruthy();
-      expect(getByText('Sistem Evaluasi Kerja Satgas RTH')).toBeTruthy();
-      expect(getByText('Username / No. HP')).toBeTruthy();
-      expect(getByText('Password')).toBeTruthy();
-      expect(getByPlaceholderText('Masukkan username atau nomor HP')).toBeTruthy();
-      expect(getByPlaceholderText('Masukkan password')).toBeTruthy();
+    it('renders the AS-1 layout (heading, fields, CTA, version)', () => {
+      const { getByText, getByTestId, getByPlaceholderText } = renderLoginScreen();
+      expect(getByText('Selamat datang.')).toBeTruthy();
+      expect(getByText('Masuk menggunakan No. HP atau username Anda')).toBeTruthy();
+      expect(getByText('No. Handphone / Username')).toBeTruthy();
+      expect(getByText('Kata Sandi')).toBeTruthy();
+      expect(getByPlaceholderText('081234567890')).toBeTruthy();
+      expect(getByTestId('login-logo')).toBeTruthy();
       expect(getByText('Masuk')).toBeTruthy();
+      expect(getByText('v1.0.0')).toBeTruthy();
     });
 
-    it('should render footer with copyright', () => {
-      const { getByText } = renderLoginScreen();
-
-      expect(getByText('DLH Surabaya © 2026')).toBeTruthy();
-    });
-
-    it('should show loading indicator when isLoading is true', () => {
-      const store = createTestStore({ isLoading: true });
-      const { getByTestId, queryByText } = renderLoginScreen(store);
-
-      // Button should not show "Masuk" text when loading
+    it('shows the loading state instead of the "Masuk" label', () => {
+      const { queryByText } = renderLoginScreen(createTestStore({ isLoading: true }));
       expect(queryByText('Masuk')).toBeNull();
     });
   });
 
-  describe('form validation', () => {
-    it('should show error when username is less than 3 characters', async () => {
-      const { getByPlaceholderText, getByText } = renderLoginScreen();
-
-      const usernameInput = getByPlaceholderText('Masukkan username atau nomor HP');
-      const passwordInput = getByPlaceholderText('Masukkan password');
-      const loginButton = getByText('Masuk');
-
-      fireEvent.changeText(usernameInput, 'ab');
-      fireEvent.changeText(passwordInput, 'password123');
-      fireEvent.press(loginButton);
-
-      await waitFor(() => {
-        expect(getByText('Username / No. HP harus diisi (minimal 3 karakter)')).toBeTruthy();
-      });
-
+  describe('form validation (AS-2, blur-triggered + submit-gated)', () => {
+    it('flags a too-short identifier on blur and does not call login', async () => {
+      const q = renderLoginScreen();
+      fireEvent.changeText(q.getByTestId('username-input'), 'ab');
+      fireEvent(q.getByTestId('username-input'), 'blur');
+      await waitFor(() => expect(q.getByText('Minimal 3 karakter')).toBeTruthy());
       expect(authApi.login).not.toHaveBeenCalled();
     });
 
-    it('should show error when password is less than 6 characters', async () => {
-      const { getByPlaceholderText, getByText } = renderLoginScreen();
-
-      const usernameInput = getByPlaceholderText('Masukkan username atau nomor HP');
-      const passwordInput = getByPlaceholderText('Masukkan password');
-      const loginButton = getByText('Masuk');
-
-      fireEvent.changeText(usernameInput, 'worker1');
-      fireEvent.changeText(passwordInput, '12345');
-      fireEvent.press(loginButton);
-
-      await waitFor(() => {
-        expect(getByText('Password harus diisi (minimal 6 karakter)')).toBeTruthy();
-      });
-
-      expect(authApi.login).not.toHaveBeenCalled();
+    it('flags an empty identifier on blur', async () => {
+      const q = renderLoginScreen();
+      fireEvent(q.getByTestId('username-input'), 'blur');
+      await waitFor(() => expect(q.getByText('No. HP / Username wajib diisi')).toBeTruthy());
     });
 
-    it('should show error when username is empty', async () => {
-      const { getByPlaceholderText, getByText } = renderLoginScreen();
-
-      const passwordInput = getByPlaceholderText('Masukkan password');
-      const loginButton = getByText('Masuk');
-
-      fireEvent.changeText(passwordInput, 'password123');
-      fireEvent.press(loginButton);
-
-      await waitFor(() => {
-        expect(getByText('Username / No. HP harus diisi (minimal 3 karakter)')).toBeTruthy();
-      });
+    it('flags a too-short password on blur', async () => {
+      const q = renderLoginScreen();
+      fireEvent.changeText(q.getByTestId('password-input'), '12345');
+      fireEvent(q.getByTestId('password-input'), 'blur');
+      await waitFor(() => expect(q.getByText('Kata Sandi minimal 6 karakter')).toBeTruthy());
     });
 
-    it('should show error when password is empty', async () => {
-      const { getByPlaceholderText, getByText } = renderLoginScreen();
-
-      const usernameInput = getByPlaceholderText('Masukkan username atau nomor HP');
-      const loginButton = getByText('Masuk');
-
-      fireEvent.changeText(usernameInput, 'worker1');
-      fireEvent.press(loginButton);
-
-      await waitFor(() => {
-        expect(getByText('Password harus diisi (minimal 6 karakter)')).toBeTruthy();
-      });
+    it('flags an empty password on blur', async () => {
+      const q = renderLoginScreen();
+      fireEvent(q.getByTestId('password-input'), 'blur');
+      await waitFor(() => expect(q.getByText('Kata Sandi wajib diisi')).toBeTruthy());
     });
 
-    it('should clear error when user starts typing', async () => {
-      const { getByPlaceholderText, getByText, queryByText } = renderLoginScreen();
-
-      const usernameInput = getByPlaceholderText('Masukkan username atau nomor HP');
-      const loginButton = getByText('Masuk');
-
-      // Trigger validation error
-      fireEvent.press(loginButton);
-
-      await waitFor(() => {
-        expect(getByText('Username / No. HP harus diisi (minimal 3 karakter)')).toBeTruthy();
-      });
-
-      // Start typing to clear error
-      fireEvent.changeText(usernameInput, 'w');
-
-      await waitFor(() => {
-        expect(queryByText('Username / No. HP harus diisi (minimal 3 karakter)')).toBeNull();
-      });
+    it('clears the identifier error once it becomes valid', async () => {
+      const q = renderLoginScreen();
+      fireEvent(q.getByTestId('username-input'), 'blur');
+      await waitFor(() => expect(q.getByText('No. HP / Username wajib diisi')).toBeTruthy());
+      fireEvent.changeText(q.getByTestId('username-input'), 'worker1');
+      await waitFor(() => expect(q.queryByText('No. HP / Username wajib diisi')).toBeNull());
     });
   });
 
   describe('successful login', () => {
-    it('should call login API with correct credentials for worker', async () => {
-      const mockUser = {
-        id: 1,
-        username: 'worker1',
-        full_name: 'Test Worker',
-        role: 'satgas',
-      };
-      const mockToken = 'test-access-token';
+    const satgasUser = { id: 1, username: 'worker1', full_name: 'Test Worker', role: 'satgas' };
+    const withArea = {
+      ...satgasUser,
+      assigned_area: { id: 1, name: 'Park A', gps_lat: '-7.25', gps_lng: '112.75', radius_meters: '100' },
+    };
 
-      (authApi.login as jest.Mock).mockResolvedValue({
-        data: {
-          access_token: mockToken,
-          user: mockUser,
-        },
-      });
+    it('calls login with the entered credentials and stores the token/user', async () => {
+      (authApi.login as jest.Mock).mockResolvedValue({ data: { access_token: 'tok', user: satgasUser } });
+      (authApi.getMe as jest.Mock).mockResolvedValue({ data: withArea });
 
-      (authApi.getMe as jest.Mock).mockResolvedValue({
-        data: {
-          ...mockUser,
-          assigned_area: {
-            id: 1,
-            name: 'Park A',
-            gps_lat: '-7.25',
-            gps_lng: '112.75',
-            radius_meters: '100',
-          },
-        },
-      });
+      const q = renderLoginScreen();
+      fillValid(q);
+      fireEvent.press(q.getByTestId('login-button'));
 
-      const { getByPlaceholderText, getByText } = renderLoginScreen();
-
-      const usernameInput = getByPlaceholderText('Masukkan username atau nomor HP');
-      const passwordInput = getByPlaceholderText('Masukkan password');
-      const loginButton = getByText('Masuk');
-
-      fireEvent.changeText(usernameInput, 'worker1');
-      fireEvent.changeText(passwordInput, 'worker123');
-      fireEvent.press(loginButton);
-
+      await waitFor(() => expect(authApi.login).toHaveBeenCalledWith('worker1', 'worker123'));
       await waitFor(() => {
-        expect(authApi.login).toHaveBeenCalledWith('worker1', 'worker123');
-      });
-
-      await waitFor(() => {
-        expect(secureStorage.setToken).toHaveBeenCalledWith(mockToken);
-        expect(secureStorage.setUser).toHaveBeenCalledWith(mockUser);
+        expect(secureStorage.setToken).toHaveBeenCalledWith('tok');
+        expect(secureStorage.setUser).toHaveBeenCalledWith(satgasUser);
       });
     });
 
-    it('should call loadAndSyncCurrentShift for worker users after login', async () => {
-      const mockUser = {
-        id: 1,
-        username: 'worker1',
-        full_name: 'Test Worker',
-        role: 'satgas',
-      };
+    it('loads the current shift for clockable users', async () => {
+      (authApi.login as jest.Mock).mockResolvedValue({ data: { access_token: 'tok', user: satgasUser } });
+      (authApi.getMe as jest.Mock).mockResolvedValue({ data: withArea });
 
-      (authApi.login as jest.Mock).mockResolvedValue({
-        data: {
-          access_token: 'test-token',
-          user: mockUser,
-        },
-      });
+      const q = renderLoginScreen();
+      fillValid(q);
+      fireEvent.press(q.getByTestId('login-button'));
 
-      (authApi.getMe as jest.Mock).mockResolvedValue({
-        data: {
-          ...mockUser,
-          assigned_area: {
-            id: 1,
-            name: 'Park A',
-            gps_lat: '-7.25',
-            gps_lng: '112.75',
-            radius_meters: '100',
-          },
-        },
-      });
-
-      const { getByPlaceholderText, getByText } = renderLoginScreen();
-
-      fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
-      fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
-      fireEvent.press(getByText('Masuk'));
-
-      await waitFor(() => {
-        expect(authApi.login).toHaveBeenCalled();
-      });
-
-      // Wait a bit for the async loadAndSyncCurrentShift call
-      await waitFor(() => {
-        expect(loadAndSyncCurrentShift).toHaveBeenCalled();
-      }, { timeout: 1000 });
+      await waitFor(() => expect(loadAndSyncCurrentShift).toHaveBeenCalled(), { timeout: 1000 });
     });
 
-    it('should fetch assigned area for worker users', async () => {
-      const mockUser = {
-        id: 1,
-        username: 'worker1',
-        full_name: 'Test Worker',
-        role: 'satgas',
-      };
+    it('fetches the assigned area for clockable users', async () => {
+      (authApi.login as jest.Mock).mockResolvedValue({ data: { access_token: 'tok', user: satgasUser } });
+      (authApi.getMe as jest.Mock).mockResolvedValue({ data: withArea });
 
-      (authApi.login as jest.Mock).mockResolvedValue({
-        data: {
-          access_token: 'test-token',
-          user: mockUser,
-        },
-      });
+      const q = renderLoginScreen();
+      fillValid(q);
+      fireEvent.press(q.getByTestId('login-button'));
 
-      (authApi.getMe as jest.Mock).mockResolvedValue({
-        data: {
-          ...mockUser,
-          assigned_area: {
-            id: 1,
-            name: 'Park A',
-            gps_lat: '-7.25',
-            gps_lng: '112.75',
-            radius_meters: '100',
-          },
-        },
-      });
-
-      const { getByPlaceholderText, getByText } = renderLoginScreen();
-
-      fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
-      fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
-      fireEvent.press(getByText('Masuk'));
-
-      await waitFor(() => {
-        expect(authApi.getMe).toHaveBeenCalled();
-      });
+      await waitFor(() => expect(authApi.getMe).toHaveBeenCalled());
     });
 
-    it('should not fetch assigned area for non-clockable users', async () => {
-      const mockUser = {
-        id: 1,
-        username: 'manager1',
-        full_name: 'Test Manager',
-        role: 'top_management',
-      };
+    it('does not fetch area / shift for non-clockable users', async () => {
+      const manager = { id: 1, username: 'manager1', full_name: 'Mgr', role: 'top_management' };
+      (authApi.login as jest.Mock).mockResolvedValue({ data: { access_token: 'tok', user: manager } });
 
-      (authApi.login as jest.Mock).mockResolvedValue({
-        data: {
-          access_token: 'test-token',
-          user: mockUser,
-        },
-      });
+      const q = renderLoginScreen();
+      fillValid(q, 'manager1', 'manager123');
+      fireEvent.press(q.getByTestId('login-button'));
 
-      const { getByPlaceholderText, getByText } = renderLoginScreen();
-
-      fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'manager1');
-      fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'manager123');
-      fireEvent.press(getByText('Masuk'));
-
-      await waitFor(() => {
-        expect(authApi.login).toHaveBeenCalled();
-      });
-
-      // Should not call getMe for non-clockable roles
+      await waitFor(() => expect(authApi.login).toHaveBeenCalled());
       expect(authApi.getMe).not.toHaveBeenCalled();
-
-      // Should not call loadAndSyncCurrentShift for non-clockable roles
       expect(loadAndSyncCurrentShift).not.toHaveBeenCalled();
     });
 
-    it('should not crash if loadAndSyncCurrentShift fails for worker', async () => {
-      const mockUser = {
-        id: 1,
-        username: 'worker1',
-        full_name: 'Test Worker',
-        role: 'satgas',
-      };
-
-      (authApi.login as jest.Mock).mockResolvedValue({
-        data: {
-          access_token: 'test-token',
-          user: mockUser,
-        },
-      });
-
-      (authApi.getMe as jest.Mock).mockResolvedValue({
-        data: {
-          ...mockUser,
-          assigned_area: null,
-        },
-      });
-
-      // Mock loadAndSyncCurrentShift to reject
-      (loadAndSyncCurrentShift as jest.Mock).mockRejectedValueOnce(
-        new Error('Shift load failed')
-      );
+    it('converts assigned-area GPS strings to numbers', async () => {
+      (authApi.login as jest.Mock).mockResolvedValue({ data: { access_token: 'tok', user: satgasUser } });
+      (authApi.getMe as jest.Mock).mockResolvedValue({ data: withArea });
 
       const store = createTestStore();
-      const { getByPlaceholderText, getByText } = render(
+      const q = render(
         <Provider store={store}>
           <LoginScreen />
-        </Provider>
+        </Provider>,
       );
-
-      fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
-      fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
-      fireEvent.press(getByText('Masuk'));
-
-      await waitFor(() => {
-        expect(authApi.login).toHaveBeenCalled();
-      });
-
-      // Login should still succeed even if shift load fails
-      await waitFor(() => {
-        const state = store.getState().auth;
-        expect(state.user).toEqual(mockUser);
-      });
-
-      // Should not show an alert (error is caught silently)
-      expect(mockNBToastShow).not.toHaveBeenCalledWith(
-        expect.objectContaining({ body: expect.stringContaining('Shift') }),
-      );
-    });
-
-    it('should convert GPS coordinates to numbers', async () => {
-      const mockUser = {
-        id: 1,
-        username: 'worker1',
-        full_name: 'Test Worker',
-        role: 'satgas',
-      };
-
-      (authApi.login as jest.Mock).mockResolvedValue({
-        data: {
-          access_token: 'test-token',
-          user: mockUser,
-        },
-      });
-
-      (authApi.getMe as jest.Mock).mockResolvedValue({
-        data: {
-          ...mockUser,
-          assigned_area: {
-            id: 1,
-            name: 'Park A',
-            gps_lat: '-7.25',
-            gps_lng: '112.75',
-            radius_meters: '100',
-          },
-        },
-      });
-
-      const store = createTestStore();
-      const { getByPlaceholderText, getByText } = render(
-        <Provider store={store}>
-          <LoginScreen />
-        </Provider>
-      );
-
-      fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
-      fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
-      fireEvent.press(getByText('Masuk'));
+      fillValid(q);
+      fireEvent.press(q.getByTestId('login-button'));
 
       await waitFor(() => {
         const state = store.getState().auth;
@@ -467,377 +214,159 @@ describe('LoginScreen', () => {
         }
       });
     });
-  });
 
-  describe('error handling', () => {
-    it('should show alert when login fails with API error', async () => {
-      (authApi.login as jest.Mock).mockResolvedValue({
-        error: 'Invalid credentials',
-      });
-
-      const { getByPlaceholderText, getByText } = renderLoginScreen();
-
-      fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
-      fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'wrongpassword');
-      fireEvent.press(getByText('Masuk'));
-
-      await waitFor(() => {
-        expect(mockNBToastShow).toHaveBeenCalledWith(
-          expect.objectContaining({ level: 'danger', body: 'Invalid credentials' }),
-        );
-      });
-    });
-
-    it('should show alert when login fails with null data', async () => {
-      (authApi.login as jest.Mock).mockResolvedValue({
-        data: null,
-      });
-
-      const { getByPlaceholderText, getByText } = renderLoginScreen();
-
-      fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
-      fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
-      fireEvent.press(getByText('Masuk'));
-
-      await waitFor(() => {
-        expect(mockNBToastShow).toHaveBeenCalledWith(
-          expect.objectContaining({ level: 'danger', body: 'Login gagal' }),
-        );
-      });
-    });
-
-    it('should show alert when token is missing from response', async () => {
-      (authApi.login as jest.Mock).mockResolvedValue({
-        data: {
-          user: { id: 1, username: 'worker1', role: 'satgas' },
-          // No access_token
-        },
-      });
-
-      const { getByPlaceholderText, getByText } = renderLoginScreen();
-
-      fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
-      fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
-      fireEvent.press(getByText('Masuk'));
-
-      await waitFor(() => {
-        expect(mockNBToastShow).toHaveBeenCalledWith(
-          expect.objectContaining({ level: 'danger', body: 'Invalid response from server' }),
-        );
-      });
-    });
-
-    it('should show alert when network error occurs', async () => {
-      (authApi.login as jest.Mock).mockRejectedValue(new Error('Network error'));
-
-      const { getByPlaceholderText, getByText } = renderLoginScreen();
-
-      fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
-      fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
-      fireEvent.press(getByText('Masuk'));
-
-      await waitFor(() => {
-        expect(mockNBToastShow).toHaveBeenCalledWith(
-          expect.objectContaining({ level: 'danger', body: 'Network error' }),
-        );
-      });
-    });
-
-    it('should continue login if getMe fails for worker', async () => {
-      const mockUser = {
-        id: 1,
-        username: 'worker1',
-        full_name: 'Test Worker',
-        role: 'satgas',
-      };
-
-      (authApi.login as jest.Mock).mockResolvedValue({
-        data: {
-          access_token: 'test-token',
-          user: mockUser,
-        },
-      });
-
+    it('continues login even if getMe fails', async () => {
+      (authApi.login as jest.Mock).mockResolvedValue({ data: { access_token: 'tok', user: satgasUser } });
       (authApi.getMe as jest.Mock).mockRejectedValue(new Error('Failed to fetch'));
 
       const store = createTestStore();
-      const { getByPlaceholderText, getByText } = render(
+      const q = render(
         <Provider store={store}>
           <LoginScreen />
-        </Provider>
+        </Provider>,
       );
-
-      fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
-      fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
-      fireEvent.press(getByText('Masuk'));
+      fillValid(q);
+      fireEvent.press(q.getByTestId('login-button'));
 
       await waitFor(() => {
-        // Login should still succeed even if getMe fails
         expect(secureStorage.setToken).toHaveBeenCalled();
-        expect(secureStorage.setUser).toHaveBeenCalledWith(mockUser);
+        expect(secureStorage.setUser).toHaveBeenCalledWith(satgasUser);
       });
+      expect(store.getState().auth.user).toEqual(satgasUser);
+    });
+  });
 
-      // User should be logged in
-      const state = store.getState().auth;
-      expect(state.user).toEqual(mockUser);
+  describe('error handling (AS-3, generic toast)', () => {
+    it('shows a generic auth-fail toast on API error', async () => {
+      (authApi.login as jest.Mock).mockResolvedValue({ error: 'Invalid credentials' });
+      const q = renderLoginScreen();
+      fillValid(q, 'worker1', 'wrongpass');
+      fireEvent.press(q.getByTestId('login-button'));
+      await waitFor(() =>
+        expect(mockNBToastShow).toHaveBeenCalledWith(
+          expect.objectContaining({ level: 'danger', body: 'No. HP atau Kata Sandi salah. Coba lagi.' }),
+        ),
+      );
+    });
+
+    it('shows the generic toast on null data', async () => {
+      (authApi.login as jest.Mock).mockResolvedValue({ data: null });
+      const q = renderLoginScreen();
+      fillValid(q);
+      fireEvent.press(q.getByTestId('login-button'));
+      await waitFor(() =>
+        expect(mockNBToastShow).toHaveBeenCalledWith(
+          expect.objectContaining({ body: 'No. HP atau Kata Sandi salah. Coba lagi.' }),
+        ),
+      );
+    });
+
+    it('shows a server-error toast when the token is missing', async () => {
+      (authApi.login as jest.Mock).mockResolvedValue({ data: { user: { id: 1, username: 'w', role: 'satgas' } } });
+      const q = renderLoginScreen();
+      fillValid(q);
+      fireEvent.press(q.getByTestId('login-button'));
+      await waitFor(() =>
+        expect(mockNBToastShow).toHaveBeenCalledWith(
+          expect.objectContaining({ body: 'Server bermasalah, coba lagi sebentar lagi.' }),
+        ),
+      );
+    });
+
+    it('shows a connection toast on a thrown error', async () => {
+      (authApi.login as jest.Mock).mockRejectedValue(new Error('Network error'));
+      const q = renderLoginScreen();
+      fillValid(q);
+      fireEvent.press(q.getByTestId('login-button'));
+      await waitFor(() =>
+        expect(mockNBToastShow).toHaveBeenCalledWith(
+          expect.objectContaining({ level: 'danger', body: 'Tidak bisa terhubung. Coba lagi.' }),
+        ),
+      );
+    });
+
+    it('shows the connection toast even for a non-Error throw', async () => {
+      (authApi.login as jest.Mock).mockRejectedValue('string-error');
+      const q = renderLoginScreen();
+      fillValid(q);
+      fireEvent.press(q.getByTestId('login-button'));
+      await waitFor(() =>
+        expect(mockNBToastShow).toHaveBeenCalledWith(
+          expect.objectContaining({ body: 'Tidak bisa terhubung. Coba lagi.' }),
+        ),
+      );
     });
   });
 
   describe('loading state', () => {
-    it('should disable inputs when loading', async () => {
-      (authApi.login as jest.Mock).mockImplementation(
-        () => new Promise(() => {})
-      );
-
-      const { getByPlaceholderText, getByText } = renderLoginScreen();
-
-      const usernameInput = getByPlaceholderText('Masukkan username atau nomor HP');
-      const passwordInput = getByPlaceholderText('Masukkan password');
-      const loginButton = getByText('Masuk');
-
-      fireEvent.changeText(usernameInput, 'worker1');
-      fireEvent.changeText(passwordInput, 'worker123');
-      fireEvent.press(loginButton);
-
-      // Check that inputs are disabled while loading
-      // Note: React Native doesn't have a direct "disabled" query, so we check the editable prop
+    it('disables inputs while logging in', async () => {
+      (authApi.login as jest.Mock).mockImplementation(() => new Promise(() => {}));
+      const q = renderLoginScreen();
+      fillValid(q);
+      fireEvent.press(q.getByTestId('login-button'));
       await waitFor(() => {
-        expect(usernameInput.props.editable).toBe(false);
-        expect(passwordInput.props.editable).toBe(false);
+        // Props live on the inner TextInput (NBTextInput's testID is on the wrapper).
+        expect(q.getByPlaceholderText('081234567890').props.editable).toBe(false);
+        expect(q.getByPlaceholderText('Masukkan kata sandi').props.editable).toBe(false);
       });
     });
 
-    it('should disable button when loading', async () => {
-      (authApi.login as jest.Mock).mockImplementation(
-        () => new Promise(() => {})
-      );
-
-      const { getByPlaceholderText, getByText } = renderLoginScreen();
-
-      fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
-      fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
-
-      const loginButton = getByText('Masuk');
-      fireEvent.press(loginButton);
-
-      // Button should be disabled (can't press again)
-      // This is implied by the disabled prop on TouchableOpacity
-      await waitFor(() => {
-        // The button should show loading state
-        expect(authApi.login).toHaveBeenCalledTimes(1);
+    it('calls login exactly once per press', async () => {
+      (authApi.login as jest.Mock).mockResolvedValue({
+        data: { access_token: 'tok', user: { id: 1, username: 'm', full_name: 'M', role: 'top_management' } },
       });
+      const q = renderLoginScreen();
+      fillValid(q);
+      fireEvent.press(q.getByTestId('login-button'));
+      await waitFor(() => expect(authApi.login).toHaveBeenCalledTimes(1));
     });
   });
 
   describe('input handling', () => {
-    it('should update username state on change', () => {
-      const { getByPlaceholderText } = renderLoginScreen();
-      const usernameInput = getByPlaceholderText('Masukkan username atau nomor HP');
-
-      fireEvent.changeText(usernameInput, 'testuser');
-
-      expect(usernameInput.props.value).toBe('testuser');
+    it('updates identifier + password values on change', () => {
+      const q = renderLoginScreen();
+      fireEvent.changeText(q.getByPlaceholderText('081234567890'), 'testuser');
+      fireEvent.changeText(q.getByPlaceholderText('Masukkan kata sandi'), 'testpassword');
+      expect(q.getByPlaceholderText('081234567890').props.value).toBe('testuser');
+      expect(q.getByPlaceholderText('Masukkan kata sandi').props.value).toBe('testpassword');
     });
 
-    it('should update password state on change', () => {
-      const { getByPlaceholderText } = renderLoginScreen();
-      const passwordInput = getByPlaceholderText('Masukkan password');
-
-      fireEvent.changeText(passwordInput, 'testpassword');
-
-      expect(passwordInput.props.value).toBe('testpassword');
-    });
-
-    it('should have secureTextEntry for password input', () => {
-      const { getByPlaceholderText } = renderLoginScreen();
-      const passwordInput = getByPlaceholderText('Masukkan password');
-
-      expect(passwordInput.props.secureTextEntry).toBe(true);
-    });
-
-    it('should have autoCapitalize none for both inputs', () => {
-      const { getByPlaceholderText } = renderLoginScreen();
-      const usernameInput = getByPlaceholderText('Masukkan username atau nomor HP');
-      const passwordInput = getByPlaceholderText('Masukkan password');
-
-      expect(usernameInput.props.autoCapitalize).toBe('none');
-      expect(passwordInput.props.autoCapitalize).toBe('none');
-    });
-  });
-});
-
-// ============================================================
-// Code Review Fixes — Feb 18, 2026
-// ============================================================
-
-describe('LoginScreen — Fix 1: FCM console calls gated behind __DEV__', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-    (secureStorage.setToken as jest.Mock).mockResolvedValue(undefined);
-    (secureStorage.setUser as jest.Mock).mockResolvedValue(undefined);
-  });
-
-  it('should NOT emit console.error or console.warn in production (__DEV__ = false)', async () => {
-    // Save and override __DEV__
-    const originalDev = (global as any).__DEV__;
-    (global as any).__DEV__ = false;
-
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-
-    const mockUser = { id: 1, username: 'worker1', full_name: 'Worker', role: 'satgas' };
-
-    // FCM service throws — this used to always log even in prod
-    jest.mock('../../../services/notifications/fcmService', () => ({
-      default: { getToken: jest.fn().mockRejectedValue(new Error('FCM error')), registerToken: jest.fn() },
-    }), { virtual: true });
-
-    (authApi.login as jest.Mock).mockResolvedValue({
-      data: { access_token: 'token', user: mockUser },
-    });
-    (authApi.getMe as jest.Mock).mockResolvedValue({ data: { ...mockUser, assigned_area: null } });
-
-    const store = configureStore({ reducer: { auth: authReducer } });
-    const { getByPlaceholderText, getByText } = render(
-      <Provider store={store}><LoginScreen /></Provider>
-    );
-
-    fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
-    fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
-
-    await act(async () => {
-      fireEvent.press(getByText('Masuk'));
-      await new Promise(resolve => setTimeout(resolve, 50));
-    });
-
-    // No FCM-related console output should appear in production
-    const fcmConsoleErrors = consoleSpy.mock.calls.filter(
-      (args) => String(args[0]).includes('FCM')
-    );
-    const fcmConsoleWarns = warnSpy.mock.calls.filter(
-      (args) => String(args[0]).includes('FCM') || String(args[0]).includes('No FCM')
-    );
-    expect(fcmConsoleErrors).toHaveLength(0);
-    expect(fcmConsoleWarns).toHaveLength(0);
-
-    consoleSpy.mockRestore();
-    warnSpy.mockRestore();
-    (global as any).__DEV__ = originalDev;
-  });
-});
-
-describe('LoginScreen — Fix 4: clearError dispatched at start of handleLogin', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-    (secureStorage.setToken as jest.Mock).mockResolvedValue(undefined);
-    (secureStorage.setUser as jest.Mock).mockResolvedValue(undefined);
-  });
-
-  it('should clear stale Redux error before attempting login', async () => {
-    // Pre-populate the store with an existing error
-    const store = configureStore({
-      reducer: { auth: authReducer },
-      preloadedState: {
-        auth: {
-          user: null,
-          assignedArea: null,
-          isAuthenticated: false,
-          isLoading: false,
-          isRestoring: false,
-          error: 'Previous error from last attempt',
-        },
-      } as any,
-    });
-
-    (authApi.login as jest.Mock).mockResolvedValue({
-      data: {
-        access_token: 'token',
-        user: { id: 1, username: 'worker1', full_name: 'Worker', role: 'satgas' },
-      },
-    });
-    (authApi.getMe as jest.Mock).mockResolvedValue({ data: { id: 1, username: 'worker1', full_name: 'Worker', role: 'satgas', assigned_area: null } });
-
-    const { getByPlaceholderText, getByText } = render(
-      <Provider store={store}><LoginScreen /></Provider>
-    );
-
-    // Verify stale error exists before login
-    expect(store.getState().auth.error).toBe('Previous error from last attempt');
-
-    fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
-    fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
-
-    await act(async () => {
-      fireEvent.press(getByText('Masuk'));
-      await new Promise(resolve => setTimeout(resolve, 50));
-    });
-
-    // Error should be cleared immediately when handleLogin runs (clearError dispatched first)
-    // After a successful login, error remains null
-    await waitFor(() => {
-      expect(store.getState().auth.error).toBeNull();
+    it('uses secureTextEntry + autoCapitalize=none', () => {
+      const q = renderLoginScreen();
+      expect(q.getByPlaceholderText('Masukkan kata sandi').props.secureTextEntry).toBe(true);
+      expect(q.getByPlaceholderText('081234567890').props.autoCapitalize).toBe('none');
+      expect(q.getByPlaceholderText('Masukkan kata sandi').props.autoCapitalize).toBe('none');
     });
   });
 
-  it('should press login button only once per press event (useCallback stability)', async () => {
-    (authApi.login as jest.Mock).mockResolvedValue({
-      data: {
-        access_token: 'token',
-        user: { id: 1, username: 'worker1', full_name: 'Worker', role: 'top_management' },
-      },
-    });
+  describe('production logging is quiet (__DEV__ = false)', () => {
+    it('does not emit FCM console output in production', async () => {
+      const originalDev = (global as any).__DEV__;
+      (global as any).__DEV__ = false;
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const { getByPlaceholderText, getByText } = renderLoginScreen();
+      const user = { id: 1, username: 'worker1', full_name: 'Worker', role: 'satgas' };
+      (authApi.login as jest.Mock).mockResolvedValue({ data: { access_token: 'tok', user } });
+      (authApi.getMe as jest.Mock).mockResolvedValue({ data: { ...user, assigned_area: null } });
 
-    fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
-    fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
-    fireEvent.press(getByText('Masuk'));
-
-    await waitFor(() => {
-      // handleLogin is called exactly once per button press
-      expect(authApi.login).toHaveBeenCalledTimes(1);
-    });
-  });
-});
-
-describe('LoginScreen — Fix 3: catch (err: unknown) with safe narrowing', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-  });
-
-  it('should show Error.message when caught error is an Error instance', async () => {
-    (authApi.login as jest.Mock).mockRejectedValue(new Error('Koneksi terputus'));
-
-    const { getByPlaceholderText, getByText } = renderLoginScreen();
-
-    fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
-    fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
-    fireEvent.press(getByText('Masuk'));
-
-    await waitFor(() => {
-      expect(mockNBToastShow).toHaveBeenCalledWith(
-        expect.objectContaining({ level: 'danger', body: 'Koneksi terputus' }),
+      const q = render(
+        <Provider store={createTestStore()}>
+          <LoginScreen />
+        </Provider>,
       );
-    });
-  });
+      fillValid(q);
+      await act(async () => {
+        fireEvent.press(q.getByTestId('login-button'));
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      });
 
-  it('should show fallback message when caught error is not an Error instance', async () => {
-    // Throwing a non-Error value (e.g. a string)
-    (authApi.login as jest.Mock).mockRejectedValue('string-error');
+      expect(consoleSpy.mock.calls.filter((a) => String(a[0]).includes('FCM'))).toHaveLength(0);
+      expect(warnSpy.mock.calls.filter((a) => String(a[0]).includes('FCM'))).toHaveLength(0);
 
-    const { getByPlaceholderText, getByText } = renderLoginScreen();
-
-    fireEvent.changeText(getByPlaceholderText('Masukkan username atau nomor HP'), 'worker1');
-    fireEvent.changeText(getByPlaceholderText('Masukkan password'), 'worker123');
-    fireEvent.press(getByText('Masuk'));
-
-    await waitFor(() => {
-      expect(mockNBToastShow).toHaveBeenCalledWith(
-        expect.objectContaining({ level: 'danger', body: 'Terjadi kesalahan' }),
-      );
+      consoleSpy.mockRestore();
+      warnSpy.mockRestore();
+      (global as any).__DEV__ = originalDev;
     });
   });
 });

@@ -210,6 +210,13 @@ Per `illustrations.html § Splash screen`:
 - **WL-4** `scenes/SceneRequests.tsx` — two stacked, tilted permohonan cards (one DISETUJUI / green pill, one DIPROSES / stone pill) on the accent-pink panel.
 - **WL-5** `scenes/SceneOffline.tsx` — navy panel + faint diagonal stripe wash + white icon box with a wifi-off mark (red slash) + a "3 ITEM ANTRI" queue chip.
 
+**M3 revamp status — AS-1…AS-3 Login ✅ (2026-05-25):** `LoginScreen` rebuilt to the hi-fi AS-1 layout and migrated off the legacy token shims (`nbTypography`/`nbBorderRadius`/nested `gray`/`background` → `NBText` variants + `nbType`/`nbRadius`/flat `gray*`/`bgCanvas`).
+- **Logo (client-revised):** the hi-fi "S" lettermark is replaced with the **pinwheel** via a new reusable `components/brand/SekarLogoBox.tsx` (white NB box + `SekarPinwheel`), **centered and enlarged to an 88px box** (the left-aligned small logo read awkwardly).
+- **Layout:** **centered header** (logo + "Selamat datang." + "Masuk menggunakan No. HP atau username Anda"); `NBTextInput` (**No. Handphone / Username**) + `NBPasswordInput` (**Kata Sandi**); inline right-aligned underlined "Lupa sandi?" link above the CTA; full-width "Masuk"; real version footer via `react-native-device-info` `getVersion()` with **bottom padding** so it isn't glued to the screen edge. **Back button removed** (per client).
+- **AS-2 error handling:** per-field inline errors surface **on blur** (then live: "No. HP / Username wajib diisi" / "Minimal 3 karakter"; "Kata Sandi wajib diisi" / "Kata Sandi minimal 6 karakter"), and the "Masuk" CTA is **gated** (disabled) until both fields are valid.
+- **AS-3 error handling:** server auth failures show a **generic top toast** ("No. HP atau Kata Sandi salah. Coba lagi.", auto-dismiss 4s) so the failing field can't be enumerated; missing-token → "Server bermasalah…"; network/throw → "Tidak bisa terhubung. Coba lagi.".
+- Tests: LoginScreen suite rewritten to the new contract (testID/placeholder queries, blur-triggered validation, gated submit, generic toasts) — 23/23; the `react-native-device-info` jest mock gained `getVersion`/`getBuildNumber`.
+
 ### 3.4 Empty-state illustrations (6 SVGs)
 
 | ID | File | Used by |
