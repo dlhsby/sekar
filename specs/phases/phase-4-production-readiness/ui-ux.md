@@ -244,6 +244,8 @@ Per `illustrations.html § Splash screen`:
 
 **M3 revamp status — HOME-2 Coordinator ✅ (2026-05-25) — Checkpoint 3:** new `CoordinatorHomeScreen` (korlap/kepala_rayon), dispatcher-routed. Team-status hero (`{active}/{total} aktif` + avatar grid + "Lihat semua →" Monitoring), 2×2 KPI grid from `statusCounts` (Tim aktif / Di luar area / Tidak hadir / Offline), and **derived** Peringatan rows (out-of-area + missing live users). **Reconciliations:** dropped hi-fi "Tugas tim"/"Perantingan" tiles (no clean korlap-scoped aggregate) → real 5-status breakdown; **omitted the hi-fi "SLA 4 jam" alert** (no SLA feed). Tests: Coordinator 4 + dispatcher updated; full suite 4170 passing. **Next:** HOME-3 (admin_data).
 
+**M3 revamp status — HOME-3 Admin Data ✅ (2026-05-26) — Checkpoint 4 (completes the role-aware Home):** new `AdminDataHomeScreen` (admin_data), dispatcher-routed. Perantingan-queue hero (incoming count + "{submitted} baru" pill + "Buka antrian →" → PruningReviewQueue), 2×2 disposition-breakdown tiles (Baru masuk / Review / Disetujui / Ditolak from `adminList`), and a real **"Perantingan berjalan"** list (assigned/in_progress → PruningDetail). **Reconciliations:** dropped the hi-fi **"Approval lembur"** section (admin_data is not an overtime approver) and substituted the backed "berjalan" list; **omitted "+3 sejak kemarin"** (no baseline) and **"SLA <6j"** (scheduledDate has no hour granularity). Tests: AdminData 4 + dispatcher updated; full suite 4174 passing. **All Home role dashboards (HOME-1/2/3) now complete** — next mobile targets: Absensi, Monitoring, Tugas, Aktivitas, Lembur, Perantingan, Profile, Notifications.
+
 ### 3.4 Empty-state illustrations (6 SVGs)
 
 | ID | File | Used by |

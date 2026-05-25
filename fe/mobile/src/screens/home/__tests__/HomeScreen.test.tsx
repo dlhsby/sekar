@@ -25,6 +25,13 @@ jest.mock('../CoordinatorHomeScreen', () => ({
   },
 }));
 
+jest.mock('../AdminDataHomeScreen', () => ({
+  AdminDataHomeScreen: () => {
+    const { Text } = require('react-native');
+    return <Text testID="admin-home">ADMIN_HOME</Text>;
+  },
+}));
+
 const renderForRole = (role: UserRole | undefined) => {
   const store = configureStore({
     reducer: { auth: authReducer },
@@ -57,12 +64,13 @@ const renderForRole = (role: UserRole | undefined) => {
 };
 
 describe('HomeScreen dispatcher', () => {
-  it.each<UserRole>(['satgas', 'linmas', 'admin_data'])(
-    'renders the field dashboard for %s (admin_data → HOME-3 not yet split out)',
+  it.each<UserRole>(['satgas', 'linmas'])(
+    'renders the field dashboard (HOME-1) for %s',
     (role) => {
       const { getByTestId, queryByTestId } = renderForRole(role);
       expect(getByTestId('field-home')).toBeTruthy();
       expect(queryByTestId('coordinator-home')).toBeNull();
+      expect(queryByTestId('admin-home')).toBeNull();
     }
   );
 
@@ -74,6 +82,12 @@ describe('HomeScreen dispatcher', () => {
       expect(queryByTestId('field-home')).toBeNull();
     }
   );
+
+  it('renders the admin-data dashboard (HOME-3) for admin_data', () => {
+    const { getByTestId, queryByTestId } = renderForRole('admin_data');
+    expect(getByTestId('admin-home')).toBeTruthy();
+    expect(queryByTestId('field-home')).toBeNull();
+  });
 
   it('renders the field dashboard when the role is undefined', () => {
     const { getByTestId } = renderForRole(undefined);

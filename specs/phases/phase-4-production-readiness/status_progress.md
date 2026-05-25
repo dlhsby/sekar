@@ -22,6 +22,21 @@ First slice of the **Home-as-role-aware-anchor** revamp (full plan: shared chrom
 
 ---
 
+## May 26, 2026 — M3 Home revamp · Checkpoint 4: HOME-3 admin-data dashboard (completes the role-aware Home)
+
+New `src/screens/home/AdminDataHomeScreen.tsx` (hi-fi **HOME-3**) for **admin_data**, dispatcher-routed (`HomeScreen` now covers all Home-tab roles: satgas/linmas → Field, korlap/kepala_rayon → Coordinator, admin_data → AdminData). Reads the rayon-scoped `pruningRequests.adminList` (`fetchAdminPruningRequests({})` on mount + focus):
+- **Perantingan-queue hero** (lilac card): "PERANTINGAN MASUK", big **incoming** count (submitted + under_review), a "{submitted} baru" pill, "menunggu disposisi", and **"Buka antrian →"** → the `PruningReviewQueue` tab.
+- **Breakdown disposisi** — 2×2 `HomeStatTile`s by status: Baru masuk (submitted) · Review (under_review) · Disetujui (approved) · Ditolak (rejected).
+- **"Perantingan berjalan"** — `HomeListRow`s for `assigned`/`in_progress` requests (pill Ditugaskan/Berjalan, kecamatan title + scheduled-date meta + ref-code), tap → `PruningDetail` (adminMode). Hidden when none.
+
+**Reconciliations vs hi-fi:** (a) the hi-fi **"Approval lembur"** section is **dropped** — admin_data is **not** in `OVERTIME_APPROVERS` (korlap/kepala_rayon/top_management), so they have no overtime-approval authority; replaced with the real, backed **"Perantingan berjalan"** list. (b) hi-fi **"+3 sejak kemarin"** delta **omitted** (no prev-day baseline stored). (c) hi-fi **"2 SLA <6j"** pill **omitted** — `scheduledDate` is a date (no hour granularity) so a 6-hour SLA can't be computed; the hero pill shows the real "{submitted} baru" instead.
+
+**Tests:** `AdminDataHomeScreen` 4 (hero + incoming count, breakdown tiles, berjalan list, empty-berjalan) + dispatcher test updated (admin_data → admin-home). Full mobile suite **4174 passed / 0 failed**; `tsc` + ESLint clean on the new files.
+
+**Home revamp status:** shared chrome (masthead + tab bar) ✅ · role-aware dispatcher ✅ · HOME-1 (Field) ✅ · HOME-2 (Coordinator) ✅ · HOME-3 (Admin Data) ✅ — **all role dashboards complete.** Remaining mobile screens (Absensi/clock-in, Monitoring, Tugas, Aktivitas, Lembur, Perantingan, Profile, Notifications) are the subsequent revamp targets.
+
+---
+
 ## May 25, 2026 — M3 Home revamp · Checkpoint 3: HOME-2 coordinator dashboard
 
 New `src/screens/home/CoordinatorHomeScreen.tsx` (hi-fi **HOME-2**) for **korlap + kepala_rayon**, wired into the dispatcher (`HomeScreen` now routes korlap/kepala_rayon → Coordinator; admin_data still falls through to Field pending HOME-3). Reads the role-scoped monitoring slice — `fetchLiveUsers(undefined)` on mount + focus (the backend scopes `getLiveUsers` to the caller's team), reusing the 2a widgets:

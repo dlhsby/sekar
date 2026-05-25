@@ -64,7 +64,7 @@
 | (anchor) | Home dispatcher (role-aware) | `fe/mobile/src/screens/home/HomeScreen.tsx` | ✅ Done (Checkpoint 1c) — switches on `auth.user.role` |
 | HOME-1 | Home · Satgas/Linmas | `fe/mobile/src/screens/home/FieldHomeScreen.tsx` | ✅ Done (Checkpoint 2b) — absensi hero + "Tugas hari ini" list + "Ringkasan hari ini" tiles |
 | HOME-2 | Home · Korlap/Kepala Rayon | `fe/mobile/src/screens/home/CoordinatorHomeScreen.tsx` | ✅ Done (Checkpoint 3) — team-status hero + 5-status KPI grid + derived out-of-area/missing alerts |
-| HOME-3 | Home · Admin Data | `fe/mobile/src/screens/home/AdminDataHomeScreen.tsx` (to create) | NEW dashboard — net-new (falls through to FieldHomeScreen for now) |
+| HOME-3 | Home · Admin Data | `fe/mobile/src/screens/home/AdminDataHomeScreen.tsx` | ✅ Done (Checkpoint 4) — perantingan-queue hero + disposition breakdown + "berjalan" list (overtime-approvals dropped: admin_data isn't an approver) |
 | (chrome) | Shared masthead + bottom tab bar | `components/navigation/FieldHomeHeader.tsx`, `navigation/MainNavigator.tsx` | ✅ Done (Checkpoints 1a/1b) |
 | ABS-1 | Clock-in · GPS + selfie | existing absensi screen | Revamp |
 | ABS-2 | Clock-in · Di luar area | existing | Revamp |
