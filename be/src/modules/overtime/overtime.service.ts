@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   NotFoundException,
   Logger,
+  Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -21,6 +22,8 @@ import { ShiftsService } from '../shifts/shifts.service';
 import { ClockInDto } from '../shifts/dto/clock-in.dto';
 import { ClockOutDto } from '../shifts/dto/clock-out.dto';
 import { AuditLogService } from '../audit/audit.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/entities/notification.entity';
 
 const ALLOWED_SORT_FIELDS: Record<string, string> = {
   created_at: 'overtime.created_at',
@@ -40,7 +43,37 @@ export class OvertimeService {
     private userRepo: Repository<User>,
     private shiftsService: ShiftsService,
     private readonly auditLogService: AuditLogService,
+    // Phase 4-3 (M2): overtime approve/reject FCM notifications. Optional
+    // so legacy specs that don't provide NotificationsService keep working —
+    // the prod app wires it via OvertimeModule import.
+    @Optional()
+    private readonly notificationsService?: NotificationsService,
   ) {}
+
+  private notifyOvertimeDecision(
+    overtimeId: string,
+    userId: string,
+    decision: 'approved' | 'rejected',
+    reason?: string,
+  ): void {
+    if (!this.notificationsService) return;
+    const isApproved = decision === 'approved';
+    this.notificationsService
+      .sendToUser({
+        user_id: userId,
+        title: isApproved ? 'Lembur disetujui' : 'Lembur ditolak',
+        body: isApproved
+          ? 'Pengajuan lembur Anda telah disetujui.'
+          : `Pengajuan lembur Anda ditolak${reason ? `: ${reason}` : '.'}`,
+        type: isApproved ? NotificationType.OVERTIME_APPROVED : NotificationType.OVERTIME_REJECTED,
+        data: { overtime_id: overtimeId, ...(reason ? { reason } : {}) },
+      })
+      .catch((err) =>
+        this.logger.error(
+          `Failed to enqueue overtime ${decision} notification for ${userId}: ${err.message}`,
+        ),
+      );
+  }
 
   async startOvertime(dto: StartOvertimeDto, user: User): Promise<Overtime> {
     if (!CLOCKABLE_ROLES.includes(user.role as any)) {
@@ -243,6 +276,9 @@ export class OvertimeService {
       })
       .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
 
+    // Phase 4-3 (M2): notify the overtime submitter
+    this.notifyOvertimeDecision(overtimeId, overtime.user_id, 'approved');
+
     return saved;
   }
 
@@ -279,6 +315,9 @@ export class OvertimeService {
         new_value: { status: OvertimeStatus.REJECTED, rejection_reason: dto.reason },
       })
       .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
+
+    // Phase 4-3 (M2): notify the overtime submitter with the rejection reason
+    this.notifyOvertimeDecision(overtimeId, overtime.user_id, 'rejected', dto.reason);
 
     return saved;
   }
@@ -391,9 +430,7 @@ export class OvertimeService {
       }
     } else if (approver.role === UserRole.TOP_MANAGEMENT) {
       if (submitterRole !== 'kepala_rayon') {
-        throw new ForbiddenException(
-          'Top management can only approve overtime from kepala_rayon',
-        );
+        throw new ForbiddenException('Top management can only approve overtime from kepala_rayon');
       }
       // No area/rayon scope check — top_management has city-wide visibility
     } else {

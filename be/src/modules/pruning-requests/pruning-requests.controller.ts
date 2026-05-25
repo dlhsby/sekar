@@ -45,9 +45,7 @@ import { User, UserRole } from '../users/entities/user.entity';
 @Controller('pruning-requests')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PruningRequestsController {
-  constructor(
-    private readonly pruningRequestsService: PruningRequestsService,
-  ) {}
+  constructor(private readonly pruningRequestsService: PruningRequestsService) {}
 
   /**
    * Submit a new pruning request.
@@ -188,11 +186,7 @@ export class PruningRequestsController {
         throw new BadRequestException('Invalid offset value');
       }
 
-      return this.pruningRequestsService.findMine(
-        user,
-        parsedLimit,
-        parsedOffset,
-      );
+      return this.pruningRequestsService.findMine(user, parsedLimit, parsedOffset);
     }
 
     // Admin list: status/rayon/date filters
@@ -227,6 +221,19 @@ export class PruningRequestsController {
    * @returns The pruning request
    */
   @Get(':id')
+  // Defence-in-depth: the controller-level RolesGuard already runs, but listing
+  // the allowed roles at the method level prevents a future refactor of the
+  // service-side scope check (or its removal) from silently widening access.
+  // Ownership / rayon scoping is still enforced inside `findById`.
+  @Roles(
+    UserRole.STAFF_KECAMATAN,
+    UserRole.ADMIN_DATA,
+    UserRole.KEPALA_RAYON,
+    UserRole.KORLAP,
+    UserRole.TOP_MANAGEMENT,
+    UserRole.ADMIN_SYSTEM,
+    UserRole.SUPERADMIN,
+  )
   @ApiOperation({
     summary: 'Get pruning request by ID',
     description:
@@ -255,10 +262,7 @@ export class PruningRequestsController {
     status: 404,
     description: 'Pruning request not found',
   })
-  async findOne(
-    @Param('id') id: string,
-    @GetUser() user: User,
-  ): Promise<PruningRequest> {
+  async findOne(@Param('id') id: string, @GetUser() user: User): Promise<PruningRequest> {
     return this.pruningRequestsService.findById(id, user);
   }
 
@@ -412,8 +416,7 @@ export class PruningRequestsController {
   )
   @ApiOperation({
     summary: 'Reschedule a pruning request',
-    description:
-      'Update expected_date for a pruning request without converting it to a task.',
+    description: 'Update expected_date for a pruning request without converting it to a task.',
   })
   @ApiParam({ name: 'id', description: 'Pruning request UUID', type: 'string' })
   @ApiResponse({ status: 200, type: PruningRequest })

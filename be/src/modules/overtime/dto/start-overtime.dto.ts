@@ -1,13 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsNumber,
-  IsString,
-  IsOptional,
-  Min,
-  Max,
-  MaxLength,
-  Matches,
-} from 'class-validator';
+import { IsNumber, IsString, IsOptional, Min, Max, MaxLength, Matches } from 'class-validator';
 
 export class StartOvertimeDto {
   @ApiProperty({ description: 'GPS latitude', example: -7.2905 })

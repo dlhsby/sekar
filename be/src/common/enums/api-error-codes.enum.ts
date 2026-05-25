@@ -15,6 +15,9 @@ export enum ApiErrorCode {
   AUTH_TOKEN_INVALID = 'AUTH_TOKEN_INVALID',
   AUTH_ACCOUNT_INACTIVE = 'AUTH_ACCOUNT_INACTIVE',
   AUTH_USER_NOT_FOUND = 'AUTH_USER_NOT_FOUND',
+  // Phase 4-7 (M2): refresh-token rotation + blacklist
+  AUTH_REFRESH_EXPIRED = 'AUTH_010',
+  AUTH_REFRESH_INVALID = 'AUTH_011',
 
   // ==================== Shift Errors ====================
   SHIFT_ALREADY_ACTIVE = 'SHIFT_ALREADY_ACTIVE',

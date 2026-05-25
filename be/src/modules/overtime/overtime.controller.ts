@@ -31,10 +31,7 @@ export class OvertimeController {
   @Roles(...CLOCKABLE_ROLES)
   @ApiOperation({ summary: 'Start overtime (clock-in to overtime shift)' })
   @ApiResponse({ status: 201, description: 'Overtime started', type: Overtime })
-  async startOvertime(
-    @Body() dto: StartOvertimeDto,
-    @GetUser() user: User,
-  ): Promise<Overtime> {
+  async startOvertime(@Body() dto: StartOvertimeDto, @GetUser() user: User): Promise<Overtime> {
     return this.overtimeService.startOvertime(dto, user);
   }
 
@@ -42,10 +39,7 @@ export class OvertimeController {
   @Roles(...CLOCKABLE_ROLES)
   @ApiOperation({ summary: 'End overtime (clock-out + activity submission)' })
   @ApiResponse({ status: 201, description: 'Overtime ended', type: Overtime })
-  async endOvertime(
-    @Body() dto: EndOvertimeDto,
-    @GetUser() user: User,
-  ): Promise<Overtime> {
+  async endOvertime(@Body() dto: EndOvertimeDto, @GetUser() user: User): Promise<Overtime> {
     return this.overtimeService.endOvertime(dto, user);
   }
 

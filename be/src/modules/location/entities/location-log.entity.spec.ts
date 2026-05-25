@@ -41,6 +41,7 @@ describe('LocationLog Entity', () => {
       profile_picture_url: null,
       role: UserRole.SATGAS,
       is_active: true,
+      password_must_change: false,
       created_at: new Date(),
       updated_at: new Date(),
     };

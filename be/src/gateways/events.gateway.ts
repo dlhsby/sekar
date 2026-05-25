@@ -460,9 +460,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
           for (const areaId of areaIds) {
             client.join(`monitoring:area:${areaId}`);
           }
-          this.logger.log(
-            `Client ${client.id} auto-joined ${areaIds.length} area rooms`,
-          );
+          this.logger.log(`Client ${client.id} auto-joined ${areaIds.length} area rooms`);
         } else if (user.area_id) {
           // Fallback to legacy single area
           client.join(`monitoring:area:${user.area_id}`);

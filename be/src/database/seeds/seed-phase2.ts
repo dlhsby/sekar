@@ -176,19 +176,19 @@ const USER_SATGAS_BUNGKUL_2_ID = 'd7b4f1e9-3c6a-4d2f-a8e5-2b9f4d7c1e6a'; // satg
 
 // Admin data per rayon — 6 new users (excluding Pusat which already has admin_data_pusat_1)
 const USER_ADMIN_DATA_SELATAN_ID = '1a4c7e9b-2d5f-4a8c-93e6-7f9a1c4e7b2d';
-const USER_ADMIN_DATA_UTARA_ID   = '2b5d8f0c-3e6a-4b9d-a4f7-8a0b2d5f8c3e';
-const USER_ADMIN_DATA_TIMUR1_ID  = '3c6e9a1d-4f7b-4c0e-b5a8-9b1c3e6a9d4f';
-const USER_ADMIN_DATA_TIMUR2_ID  = '4d7f0b2e-5a8c-4d1f-86b9-0c2d4f7b0e5a';
-const USER_ADMIN_DATA_BARAT1_ID  = '5e8a1c3f-6b9d-4e2a-97c0-1d3e5a8c1f6b';
-const USER_ADMIN_DATA_BARAT2_ID  = '6f9b2d4a-7c0e-4f3b-a8d1-2e4f6b9d2a7c';
+const USER_ADMIN_DATA_UTARA_ID = '2b5d8f0c-3e6a-4b9d-a4f7-8a0b2d5f8c3e';
+const USER_ADMIN_DATA_TIMUR1_ID = '3c6e9a1d-4f7b-4c0e-b5a8-9b1c3e6a9d4f';
+const USER_ADMIN_DATA_TIMUR2_ID = '4d7f0b2e-5a8c-4d1f-86b9-0c2d4f7b0e5a';
+const USER_ADMIN_DATA_BARAT1_ID = '5e8a1c3f-6b9d-4e2a-97c0-1d3e5a8c1f6b';
+const USER_ADMIN_DATA_BARAT2_ID = '6f9b2d4a-7c0e-4f3b-a8d1-2e4f6b9d2a7c';
 
 // Korlap per rayon — 6 new users (excluding Pusat which already has korlap_pusat_1/korlap_pusat_2)
 const USER_KORLAP_HARMONI_ID = '7a0c3e5b-8d1f-4a4c-b9e2-3f5a7c0e3b8d';
-const USER_KORLAP_UTARA_ID   = '8b1d4f6c-9e2a-4b5d-a0f3-4a6b8d1f4c9e';
-const USER_KORLAP_TIMUR1_ID  = '9c2e5a7d-0f3b-4c6e-b1a4-5b7c9e2a5d0f';
-const USER_KORLAP_TIMUR2_ID  = 'ad3f6b8e-1a4c-4d7f-82b5-6c8d0f3b6e1a';
-const USER_KORLAP_BARAT1_ID  = 'be4a7c9f-2b5d-4e8a-93c6-7d9e1a4c7f2b';
-const USER_KORLAP_BARAT2_ID  = 'cf5b8d0a-3c6e-4f9b-a4d7-8e0f2b5d8a3c';
+const USER_KORLAP_UTARA_ID = '8b1d4f6c-9e2a-4b5d-a0f3-4a6b8d1f4c9e';
+const USER_KORLAP_TIMUR1_ID = '9c2e5a7d-0f3b-4c6e-b1a4-5b7c9e2a5d0f';
+const USER_KORLAP_TIMUR2_ID = 'ad3f6b8e-1a4c-4d7f-82b5-6c8d0f3b6e1a';
+const USER_KORLAP_BARAT1_ID = 'be4a7c9f-2b5d-4e8a-93c6-7d9e1a4c7f2b';
+const USER_KORLAP_BARAT2_ID = 'cf5b8d0a-3c6e-4f9b-a4d7-8e0f2b5d8a3c';
 
 // Notification token IDs
 const NOTIF_TOKEN_1_ID = '9f4e2d8b-1c7a-4f9e-b3d6-7a2c5e1f4b8d'; // → satgas_pusat_1
@@ -242,7 +242,6 @@ const RAYON_TASK_1_ID = 'a6b7c8d9-e0f1-4a2b-9c4d-4e5f6a7b8c9d';
 const RAYON_TASK_2_ID = 'b7c8d9e0-f1a2-4b3c-8d5e-5f6a7b8c9d0e';
 const RAYON_TASK_3_ID = 'c8d9e0f1-a2b3-4c4d-ae6f-6a7b8c9d0e1f';
 const RAYON_TASK_4_ID = 'd9e0f1a2-b3c4-4d5e-bf7a-7b8c9d0e1f2a';
-
 
 async function seedPhase2() {
   console.log('🌱 Phase 2 Seeding Started...');
@@ -329,7 +328,9 @@ async function seedPhase2() {
       `UPDATE rayons SET center_lat = $1, center_lng = $2 WHERE code = 'TAMAN_AKTIF'`,
       [-7.291347, 112.739764],
     );
-    console.log('  ✓ Updated 7 Rayon boundaries (real KMZ polygons) + Taman Aktif center on Bungkul');
+    console.log(
+      '  ✓ Updated 7 Rayon boundaries (real KMZ polygons) + Taman Aktif center on Bungkul',
+    );
 
     // ==========================================
     // STEP 2: Seed Shift Definitions
@@ -420,12 +421,12 @@ async function seedPhase2() {
     console.log('📍 Seeding Areas from KMZ...');
     const RAYON_ID_BY_CODE: Record<RayonCode, string> = {
       SELATAN: RAYON_1_ID,
-      UTARA:   RAYON_2_ID,
-      PUSAT:   RAYON_3_ID,
-      TIMUR1:  RAYON_4_ID,
-      TIMUR2:  RAYON_5_ID,
-      BARAT1:  RAYON_6_ID,
-      BARAT2:  RAYON_7_ID,
+      UTARA: RAYON_2_ID,
+      PUSAT: RAYON_3_ID,
+      TIMUR1: RAYON_4_ID,
+      TIMUR2: RAYON_5_ID,
+      BARAT1: RAYON_6_ID,
+      BARAT2: RAYON_7_ID,
       TAMAN_AKTIF: RAYON_TAMAN_AKTIF_ID,
     };
     const ALL_AREA_DEFS: AreaDef[] = [...RAYON_PUSAT_AREAS, ...TIMUR2_AREAS];
@@ -540,7 +541,9 @@ async function seedPhase2() {
         ('${USER_SATGAS_BUNGKUL_2_ID}', 'satgas_pusat_4', '${passwordHash}', 'Satgas Pusat Empat',  '081300000017', 'satgas', '${RAYON_3_ID}', '${tamanBungkulId}', TRUE)
       ON CONFLICT (username) DO NOTHING;
     `);
-    console.log('  ✓ Created 11 additional users with Phase 2C roles (incl. linmas_pusat_1, linmas_pusat_2, korlap_pusat_2, satgas_pusat_3, satgas_pusat_4)');
+    console.log(
+      '  ✓ Created 11 additional users with Phase 2C roles (incl. linmas_pusat_1, linmas_pusat_2, korlap_pusat_2, satgas_pusat_3, satgas_pusat_4)',
+    );
 
     // Add 15 more users for 5 missing rayons (PUSAT, TIMUR1, TIMUR2, BARAT1, BARAT2)
     await queryRunner.query(`
@@ -584,7 +587,9 @@ async function seedPhase2() {
         ('${USER_KORLAP_BARAT2_ID}',  'korlap_barat_2_1',  '${passwordHash}', 'Korlap Barat 2 Satu', '081300000029', 'korlap', '${RAYON_7_ID}', NULL, TRUE)
       ON CONFLICT (username) DO NOTHING;
     `);
-    console.log('  ✓ Created 12 users: admin_data + korlap for Selatan, Utara, Timur1, Timur2, Barat1, Barat2');
+    console.log(
+      '  ✓ Created 12 users: admin_data + korlap for Selatan, Utara, Timur1, Timur2, Barat1, Barat2',
+    );
 
     // 2026-05-18 — top-up: 8 users so every rayon has the full 5-role matrix.
     // Selatan/Utara had no satgas; only Pusat had linmas. Phones 030–037.
@@ -600,7 +605,9 @@ async function seedPhase2() {
         ('5a020008-0000-4002-8002-000000000008', 'linmas_barat_2_1',  '${passwordHash}', 'Linmas Barat 2 Satu',  '081300000037', 'linmas', '${RAYON_7_ID}', NULL, TRUE)
       ON CONFLICT (username) DO NOTHING;
     `);
-    console.log('  ✓ Created 8 fill-in users: satgas Selatan/Utara + linmas for all 6 non-Pusat rayons (linmas_timur_2_1 → Taman Buk Tong)');
+    console.log(
+      '  ✓ Created 8 fill-in users: satgas Selatan/Utara + linmas for all 6 non-Pusat rayons (linmas_timur_2_1 → Taman Buk Tong)',
+    );
 
     // ==========================================
     // STEP 8.1: Scenario remap — repoint legacy "Taman Pusat / Timur / Barat /
@@ -609,8 +616,12 @@ async function seedPhase2() {
     console.log('🌳 Remapping legacy dev users onto KMZ areas...');
     // satgas_pusat_1 + satgas_pusat_2 used Taman Pusat → Bungkul / Darmo Pulau 2.
     // satgas_pusat_2 also drives the outside_area scenario (GPS-driven, area-agnostic).
-    await queryRunner.query(`UPDATE users SET area_id = '${BUNGKUL_AREA_ID}' WHERE username = 'satgas_pusat_1';`);
-    await queryRunner.query(`UPDATE users SET area_id = '${DARMO_P2_AREA_ID}' WHERE username = 'satgas_pusat_2';`);
+    await queryRunner.query(
+      `UPDATE users SET area_id = '${BUNGKUL_AREA_ID}' WHERE username = 'satgas_pusat_1';`,
+    );
+    await queryRunner.query(
+      `UPDATE users SET area_id = '${DARMO_P2_AREA_ID}' WHERE username = 'satgas_pusat_2';`,
+    );
     // Rayon Timur 1 has no KMZ areas, but we still want every rayon to keep
     // a full role matrix. Keep satgas_timur_1_1 in Rayon Timur 1 (area_id = NULL
     // — exercises the "satgas without default area" path) and only move
@@ -631,7 +642,9 @@ async function seedPhase2() {
     `);
     // Rayon Barat 1/2 still have no KMZ areas — satgas_barat_*_* keep area_id = NULL.
     // They exercise the "satgas with no default area" / understaffing UI path.
-    console.log('  ✓ Scenario remap done — Pusat users → Bungkul/Darmo, Timur 1 users → Rayon Timur 2 (Taman Buk Tong)');
+    console.log(
+      '  ✓ Scenario remap done — Pusat users → Bungkul/Darmo, Timur 1 users → Rayon Timur 2 (Taman Buk Tong)',
+    );
 
     // Extra staff requirements for the real park areas that anchor scenarios.
     // Taman Bungkul already has 14 requirements (STEP 7). Mirror that for the
@@ -670,7 +683,9 @@ async function seedPhase2() {
       FROM users u WHERE u.username = 'linmas_pusat_1' LIMIT 1
       ON CONFLICT (id) DO NOTHING;
     `);
-    console.log('  ✓ Created 3 notification tokens (satgas_pusat_1, satgas_timur_1_2, linmas_pusat_1)');
+    console.log(
+      '  ✓ Created 3 notification tokens (satgas_pusat_1, satgas_timur_1_2, linmas_pusat_1)',
+    );
 
     // ==========================================
     // STEP 8.5: Assign area_id + rayon_id to field workers
@@ -713,7 +728,9 @@ async function seedPhase2() {
        WHERE username = 'korlap_timur_2_1' AND area_id IS NULL`,
       [TAMAN_BUK_TONG_ID],
     );
-    console.log('  ✓ Assigned korlap_timur_2_1 → Taman Buk Tong; other rayon korlap stay area_id NULL (no KMZ areas)');
+    console.log(
+      '  ✓ Assigned korlap_timur_2_1 → Taman Buk Tong; other rayon korlap stay area_id NULL (no KMZ areas)',
+    );
 
     // ==========================================
     // STEP 9: Seed Schedules
@@ -987,7 +1004,9 @@ async function seedPhase2() {
               NOW() - INTERVAL '1 day', -7.2906, 112.7399, NOW() - INTERVAL '1 day 8 hours', NOW() - INTERVAL '1 day')
         `);
         shiftCount += 1;
-        console.log('  ✓ Created 1 completed shift for linmas_pusat_1 (clocked-out, ready for live clock-in)');
+        console.log(
+          '  ✓ Created 1 completed shift for linmas_pusat_1 (clocked-out, ready for live clock-in)',
+        );
       }
 
       if (shiftKorlap1.length > 0) {
@@ -1002,7 +1021,9 @@ async function seedPhase2() {
               NOW() - INTERVAL '1 day', -7.2906, 112.7399, NOW() - INTERVAL '1 day 8 hours', NOW() - INTERVAL '1 day')
         `);
         shiftCount += 1;
-        console.log('  ✓ Created 1 completed shift for korlap_pusat_1 (clocked-out, ready for live clock-in)');
+        console.log(
+          '  ✓ Created 1 completed shift for korlap_pusat_1 (clocked-out, ready for live clock-in)',
+        );
       }
 
       if (shiftAdminData.length > 0) {
@@ -1094,7 +1115,6 @@ async function seedPhase2() {
       const a1 = taskAreas[0]?.id;
       const a2 = taskAreas[1]?.id ?? a1;
       const a3 = taskAreas[2]?.id ?? a1;
-
 
       // 8 core satgas tasks — covers all 8 statuses after UPDATE pass below
       await queryRunner.query(`
@@ -1332,7 +1352,6 @@ async function seedPhase2() {
       const patroliKorlapId = at('patroli_korlap');
       const cekAlatId = at('cek_alat');
 
-
       if (perawatanId && patroliId && cekKendaraanId) {
         // 12 Satgas activities spanning 4 weeks
         await queryRunner.query(`
@@ -1497,7 +1516,9 @@ async function seedPhase2() {
     //
     // Defensive guard: re-assert offline + clear any latent open shift left from a
     // prior seed run (should already be a no-op when DB was wiped).
-    console.log('  [D.3] Monitoring tracking — leaving all clockable users offline (Phase 3 directive)');
+    console.log(
+      '  [D.3] Monitoring tracking — leaving all clockable users offline (Phase 3 directive)',
+    );
     await queryRunner.query(`
       UPDATE user_tracking_status SET
         status = 'offline',
@@ -1513,7 +1534,9 @@ async function seedPhase2() {
         updated_at = NOW()
       WHERE clock_out_time IS NULL
     `);
-    console.log('    ✓ All user_tracking_status reset to offline (live clock-in via mobile to test worker monitoring)');
+    console.log(
+      '    ✓ All user_tracking_status reset to offline (live clock-in via mobile to test worker monitoring)',
+    );
 
     // ==========================================
     // SECTION E: Phase 2E Data (Client Feedback II)
@@ -1563,7 +1586,9 @@ async function seedPhase2() {
       UPDATE users SET phone_number = '081300000028' WHERE username = 'korlap_barat_1_1' AND phone_number IS NULL;
       UPDATE users SET phone_number = '081300000029' WHERE username = 'korlap_barat_2_1' AND phone_number IS NULL;
     `);
-    console.log('    ✓ phone_number ensured for all 39 users (1 admin + 11 phase2c + 12 per-rayon admin_data/korlap + 15 rayon-based)');
+    console.log(
+      '    ✓ phone_number ensured for all 39 users (1 admin + 11 phase2c + 12 per-rayon admin_data/korlap + 15 rayon-based)',
+    );
 
     // E2: user_areas — korlap multi-area + satgas multi-area assignments
     console.log('  🗺️ Creating user_areas assignments...');
@@ -1646,8 +1671,12 @@ async function seedPhase2() {
       ON CONFLICT DO NOTHING;
     `);
 
-    console.log('    ✓ user_areas: korlap_pusat_1→Bungkul+Darmo P1 (same rayon), korlap_pusat_2→Darmo P1');
-    console.log('    ✓ user_areas: satgas_pusat_1→Bungkul+Darmo P2, satgas_timur_1_2→Taman Buk Tong (Rayon Timur 2 after remap)');
+    console.log(
+      '    ✓ user_areas: korlap_pusat_1→Bungkul+Darmo P1 (same rayon), korlap_pusat_2→Darmo P1',
+    );
+    console.log(
+      '    ✓ user_areas: satgas_pusat_1→Bungkul+Darmo P2, satgas_timur_1_2→Taman Buk Tong (Rayon Timur 2 after remap)',
+    );
     console.log('    ✓ user_areas: satgas_pusat_3→Bungkul, satgas_pusat_4→Bungkul+Darmo P1');
 
     // Per-rayon korlap area assignments. Only Rayon Timur 2 has a KMZ area
@@ -1660,14 +1689,22 @@ async function seedPhase2() {
       WHERE u.username = 'korlap_timur_2_1' AND a.id = '${TAMAN_BUK_TONG_ID}'
       ON CONFLICT DO NOTHING;
     `);
-    console.log('    ✓ user_areas: korlap_timur_2_1 → Taman Buk Tong; other rayon korlap have no user_areas (intentional)');
+    console.log(
+      '    ✓ user_areas: korlap_timur_2_1 → Taman Buk Tong; other rayon korlap have no user_areas (intentional)',
+    );
 
     console.log('  ✓ Section E (Phase 2E) complete');
 
     console.log('');
-    console.log('╔══════════════════════════════════════════════════════════════════════════════════╗');
-    console.log('║  ✅  Phase 2 Seeding Completed Successfully                                     ║');
-    console.log('╚══════════════════════════════════════════════════════════════════════════════════╝');
+    console.log(
+      '╔══════════════════════════════════════════════════════════════════════════════════╗',
+    );
+    console.log(
+      '║  ✅  Phase 2 Seeding Completed Successfully                                     ║',
+    );
+    console.log(
+      '╚══════════════════════════════════════════════════════════════════════════════════╝',
+    );
     console.log('');
     console.log('  📦 Reference Data');
     console.log('     ──────────────────────────────────────────────────────────────────────────');
@@ -1676,14 +1713,18 @@ async function seedPhase2() {
     console.log('');
     console.log('  👥 Users  (40 total — all passwords: password123)');
     console.log('     ──────────────────────────────────────────────────────────────────────────');
-    console.log('       1 admin (Phase 1) ·  3 system-wide (superadmin / admin_system / top_management)');
+    console.log(
+      '       1 admin (Phase 1) ·  3 system-wide (superadmin / admin_system / top_management)',
+    );
     console.log('       8 kepala_rayon  (1 per rayon)   ·  7 admin_data  (1 per rayon)');
     console.log('      ~7 korlap        (primary area)  · ~14 satgas/linmas (across all rayons)');
     console.log('       Login with username OR phone_number as the "identifier"');
     console.log('');
     console.log('  📋 Workflow Data');
     console.log('     ──────────────────────────────────────────────────────────────────────────');
-    console.log('      Tasks       — 19 core (8 satgas + 4 linmas + 3 korlap + 4 rayon) + 25 extended');
+    console.log(
+      '      Tasks       — 19 core (8 satgas + 4 linmas + 3 korlap + 4 rayon) + 25 extended',
+    );
     console.log('      Activities  — 50 total (20 core + 30 extended), spanning the last 60 days');
     console.log('      Overtimes   — 10 records · Phase 2C shifts pre-populated');
     console.log('      Notifications — 3 device tokens registered');
@@ -1699,10 +1740,14 @@ async function seedPhase2() {
     console.log('      satgas_pusat_1   → Pusat + Bungkul  (permanent multi-area)');
     console.log('      satgas_timur_1_2  → Timur 1 default + Timur 2 (task_based)');
     console.log('      satgas_pusat_4 → Bungkul + Darmo  (permanent multi-area)');
-    console.log('      korlap_selatan_1 / utara / timur1 / timur2 / barat1 / barat2 → primary area each');
+    console.log(
+      '      korlap_selatan_1 / utara / timur1 / timur2 / barat1 / barat2 → primary area each',
+    );
     console.log('');
     console.log('  ▶  Next: Phase 3 seed adds 31 kecamatans + 31 staff_kecamatan users +');
-    console.log('     plant_species, area_plants, pruning_requests, plant_seeds, service_capacity.');
+    console.log(
+      '     plant_species, area_plants, pruning_requests, plant_seeds, service_capacity.',
+    );
     console.log('');
 
     // ─── Verbose live audit (May 9, 2026) ────────────────────────────────
@@ -1722,15 +1767,15 @@ async function seedPhase2() {
       rayon_name: string | null;
     }>;
     console.log('🔎  USER AUDIT — every seeded row, grouped by role');
-    console.log('══════════════════════════════════════════════════════════════════════════════════════');
+    console.log(
+      '══════════════════════════════════════════════════════════════════════════════════════',
+    );
     let prevRole = '';
     for (const u of userAudit) {
       if (u.role !== prevRole) {
         console.log('');
         console.log(`  ── ${u.role} ──`);
-        console.log(
-          `  ${'Username'.padEnd(34)} ${'Phone'.padEnd(13)} Rayon`,
-        );
+        console.log(`  ${'Username'.padEnd(34)} ${'Phone'.padEnd(13)} Rayon`);
         prevRole = u.role;
       }
       console.log(
@@ -1740,100 +1785,160 @@ async function seedPhase2() {
     console.log('');
     console.log(`  Total users in DB: ${userAudit.length}`);
     console.log('');
-    console.log('══════════════════════════════════════════════════════════════════════════════════════');
+    console.log(
+      '══════════════════════════════════════════════════════════════════════════════════════',
+    );
     console.log('🧪  TEST USERS — all passwords: password123');
     console.log('    Login with username OR phone number as "identifier"');
-    console.log('══════════════════════════════════════════════════════════════════════════════════════');
+    console.log(
+      '══════════════════════════════════════════════════════════════════════════════════════',
+    );
     console.log('');
-    console.log('  ── SYSTEM-WIDE ROLES (no area scope) ──────────────────────────────────────────────');
+    console.log(
+      '  ── SYSTEM-WIDE ROLES (no area scope) ──────────────────────────────────────────────',
+    );
     console.log('  Role            Username           Phone          Notes');
-    console.log('  superadmin      admin              081200000000   Full system access (Phase 1 admin)');
+    console.log(
+      '  superadmin      admin              081200000000   Full system access (Phase 1 admin)',
+    );
     console.log('  admin_system    admin_system_1      081234567898   System administration');
     console.log('  top_management  top_management_1    081234567890   City-wide read-only view');
     console.log('');
-    console.log('  ── RAYON PUSAT ─────────────────────────────────────────────────────────────────────');
+    console.log(
+      '  ── RAYON PUSAT ─────────────────────────────────────────────────────────────────────',
+    );
     console.log('  Areas: Taman Bungkul (aktif) · Jalan Raya Darmo (pasif) · Taman Pusat (aktif)');
     console.log('');
     console.log('  Role            Username           Phone          Area');
-    console.log('  admin_data      admin_data_pusat_1        081234567897   Rayon Pusat — data entry & reports');
+    console.log(
+      '  admin_data      admin_data_pusat_1        081234567897   Rayon Pusat — data entry & reports',
+    );
     console.log('  kepala_rayon    kepala_rayon_pusat_1 081300000001   Rayon Pusat head');
-    console.log('  korlap          korlap_pusat_1     081234567893   Taman Bungkul + Jalan Raya Darmo (multi, same rayon)');
+    console.log(
+      '  korlap          korlap_pusat_1     081234567893   Taman Bungkul + Jalan Raya Darmo (multi, same rayon)',
+    );
     console.log('  korlap          korlap_pusat_2       081234567896   Jalan Raya Darmo');
-    console.log('  satgas          satgas_pusat_1     081300000002   Taman Pusat + Taman Bungkul (multi) [ACTIVE]');
-    console.log('  satgas          satgas_pusat_2     081300000003   Taman Pusat [OUTSIDE_AREA status]');
+    console.log(
+      '  satgas          satgas_pusat_1     081300000002   Taman Pusat + Taman Bungkul (multi) [ACTIVE]',
+    );
+    console.log(
+      '  satgas          satgas_pusat_2     081300000003   Taman Pusat [OUTSIDE_AREA status]',
+    );
     console.log('  linmas          linmas_pusat_1   081234567894   Taman Bungkul [ACTIVE status]');
     console.log('  linmas          linmas_pusat_2     081234567895   Jalan Raya Darmo');
     console.log('  satgas          satgas_pusat_3   081300000016   Taman Bungkul (single area)');
-    console.log('  satgas          satgas_pusat_4   081300000017   Taman Bungkul + Jalan Raya Darmo (multi)');
+    console.log(
+      '  satgas          satgas_pusat_4   081300000017   Taman Bungkul + Jalan Raya Darmo (multi)',
+    );
     console.log('');
-    console.log('  ── RAYON SELATAN ───────────────────────────────────────────────────────────────────');
-    console.log('  Areas: Taman Harmoni (aktif) · Taman Pelangi (aktif, empty — understaffing test)');
+    console.log(
+      '  ── RAYON SELATAN ───────────────────────────────────────────────────────────────────',
+    );
+    console.log(
+      '  Areas: Taman Harmoni (aktif) · Taman Pelangi (aktif, empty — understaffing test)',
+    );
     console.log('');
     console.log('  Role            Username              Phone          Area');
     console.log('  kepala_rayon    kepala_rayon_selatan_1  081234567891   Rayon Selatan head');
-    console.log('  admin_data      admin_data_selatan_1    081300000018   Rayon Selatan — data entry & reports');
+    console.log(
+      '  admin_data      admin_data_selatan_1    081300000018   Rayon Selatan — data entry & reports',
+    );
     console.log('  korlap          korlap_selatan_1        081300000024   Taman Harmoni');
     console.log('');
-    console.log('  ── RAYON UTARA ─────────────────────────────────────────────────────────────────────');
+    console.log(
+      '  ── RAYON UTARA ─────────────────────────────────────────────────────────────────────',
+    );
     console.log('  Area: Taman Utara (NEW)');
     console.log('');
     console.log('  Role            Username              Phone          Area');
     console.log('  kepala_rayon    kepala_rayon_utara_1    081234567892   Rayon Utara head');
-    console.log('  admin_data      admin_data_utara_1      081300000019   Rayon Utara — data entry & reports');
+    console.log(
+      '  admin_data      admin_data_utara_1      081300000019   Rayon Utara — data entry & reports',
+    );
     console.log('  korlap          korlap_utara_1          081300000025   Taman Utara');
     console.log('');
-    console.log('  ── RAYON TIMUR 1 ───────────────────────────────────────────────────────────────────');
+    console.log(
+      '  ── RAYON TIMUR 1 ───────────────────────────────────────────────────────────────────',
+    );
     console.log('  Area: Taman Timur 1');
     console.log('');
     console.log('  Role            Username              Phone          Area / Monitoring Status');
     console.log('  kepala_rayon    kepala_rayon_timur_1_1   081300000004   Rayon Timur 1 head');
-    console.log('  admin_data      admin_data_timur_1_1     081300000020   Rayon Timur 1 — data entry & reports');
+    console.log(
+      '  admin_data      admin_data_timur_1_1     081300000020   Rayon Timur 1 — data entry & reports',
+    );
     console.log('  korlap          korlap_timur_1_1         081300000026   Taman Timur 1');
-    console.log('  satgas          satgas_timur_1_1       081300000005   Taman Timur 1 [MISSING — no ping 3h+]');
-    console.log('  satgas          satgas_timur_1_2       081300000006   Taman Timur 1 [INACTIVE 35min]');
+    console.log(
+      '  satgas          satgas_timur_1_1       081300000005   Taman Timur 1 [MISSING — no ping 3h+]',
+    );
+    console.log(
+      '  satgas          satgas_timur_1_2       081300000006   Taman Timur 1 [INACTIVE 35min]',
+    );
     console.log('');
-    console.log('  ── RAYON TIMUR 2 ───────────────────────────────────────────────────────────────────');
+    console.log(
+      '  ── RAYON TIMUR 2 ───────────────────────────────────────────────────────────────────',
+    );
     console.log('  Area: Taman Timur 2');
     console.log('');
     console.log('  Role            Username              Phone          Area');
     console.log('  kepala_rayon    kepala_rayon_timur_2_1   081300000007   Rayon Timur 2 head');
-    console.log('  admin_data      admin_data_timur_2_1     081300000021   Rayon Timur 2 — data entry & reports');
+    console.log(
+      '  admin_data      admin_data_timur_2_1     081300000021   Rayon Timur 2 — data entry & reports',
+    );
     console.log('  korlap          korlap_timur_2_1         081300000027   Taman Timur 2');
     console.log('  satgas          satgas_timur_2_1       081300000008   Taman Timur 2');
     console.log('  satgas          satgas_timur_2_2       081300000009   Taman Timur 2');
     console.log('');
-    console.log('  ── RAYON BARAT 1 ───────────────────────────────────────────────────────────────────');
+    console.log(
+      '  ── RAYON BARAT 1 ───────────────────────────────────────────────────────────────────',
+    );
     console.log('  Area: Taman Barat 1');
     console.log('');
     console.log('  Role            Username              Phone          Area');
     console.log('  kepala_rayon    kepala_rayon_barat_1_1   081300000010   Rayon Barat 1 head');
-    console.log('  admin_data      admin_data_barat_1_1     081300000022   Rayon Barat 1 — data entry & reports');
+    console.log(
+      '  admin_data      admin_data_barat_1_1     081300000022   Rayon Barat 1 — data entry & reports',
+    );
     console.log('  korlap          korlap_barat_1_1         081300000028   Taman Barat 1');
     console.log('  satgas          satgas_barat_1_1       081300000011   Taman Barat 1');
     console.log('  satgas          satgas_barat_1_2       081300000012   Taman Barat 1');
     console.log('');
-    console.log('  ── RAYON BARAT 2 ───────────────────────────────────────────────────────────────────');
+    console.log(
+      '  ── RAYON BARAT 2 ───────────────────────────────────────────────────────────────────',
+    );
     console.log('  Area: Taman Barat 2');
     console.log('');
     console.log('  Role            Username              Phone          Area');
     console.log('  kepala_rayon    kepala_rayon_barat_2_1   081300000013   Rayon Barat 2 head');
-    console.log('  admin_data      admin_data_barat_2_1     081300000023   Rayon Barat 2 — data entry & reports');
+    console.log(
+      '  admin_data      admin_data_barat_2_1     081300000023   Rayon Barat 2 — data entry & reports',
+    );
     console.log('  korlap          korlap_barat_2_1         081300000029   Taman Barat 2');
     console.log('  satgas          satgas_barat_2_1       081300000014   Taman Barat 2');
     console.log('  satgas          satgas_barat_2_2       081300000015   Taman Barat 2');
     console.log('');
-    console.log('  ── MONITORING STATUS SCENARIOS (Phase 2D) ──────────────────────────────────────────');
+    console.log(
+      '  ── MONITORING STATUS SCENARIOS (Phase 2D) ──────────────────────────────────────────',
+    );
     console.log('  ACTIVE       satgas_pusat_1, linmas_pusat_1   recent GPS ping within boundary');
     console.log('  INACTIVE     satgas_timur_1_2                    last ping 35 min ago');
     console.log('  OUTSIDE_AREA satgas_pusat_2                     GPS outside boundary polygon');
     console.log('  MISSING      satgas_timur_1_1                    no ping for 3+ hours');
     console.log('  OFFLINE      all remaining users');
     console.log('');
-    console.log('  ── MULTI-AREA ASSIGNMENTS (Phase 2E — user_areas table) ────────────────────────────');
+    console.log(
+      '  ── MULTI-AREA ASSIGNMENTS (Phase 2E — user_areas table) ────────────────────────────',
+    );
     console.log('  korlap_pusat_1  Taman Bungkul (permanent) + Taman Harmoni (permanent)');
-    console.log('  satgas_pusat_1  Taman Pusat (permanent default) + Taman Bungkul (permanent extra)');
-    console.log('  satgas_timur_1_2 Taman Timur 1 (permanent default) + Taman Timur 2 (task_based)');
-    console.log('══════════════════════════════════════════════════════════════════════════════════════');
+    console.log(
+      '  satgas_pusat_1  Taman Pusat (permanent default) + Taman Bungkul (permanent extra)',
+    );
+    console.log(
+      '  satgas_timur_1_2 Taman Timur 1 (permanent default) + Taman Timur 2 (task_based)',
+    );
+    console.log(
+      '══════════════════════════════════════════════════════════════════════════════════════',
+    );
   } catch (error) {
     console.error('❌ Error during Phase 2 seeding:', error);
     throw error;

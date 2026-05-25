@@ -1,19 +1,5 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Param,
-  Body,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiParam,
-} from '@nestjs/swagger';
+import { Controller, Get, Post, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { PlantSeedsService } from './plant-seeds.service';
 import { PlantSeed } from './entities/plant-seed.entity';
 import { SeedTransaction } from './entities/seed-transaction.entity';
@@ -46,19 +32,12 @@ export class PlantSeedsController {
   @ApiResponse({ status: 200, description: 'List of seeds', type: [PlantSeed] })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
-  async findAll(
-    @Query() query: ListSeedsQueryDto,
-  ): Promise<{ items: PlantSeed[]; total: number }> {
+  async findAll(@Query() query: ListSeedsQueryDto): Promise<{ items: PlantSeed[]; total: number }> {
     return this.service.findAll(query);
   }
 
   @Post()
-  @Roles(
-    UserRole.ADMIN_DATA,
-    UserRole.KEPALA_RAYON,
-    UserRole.TOP_MANAGEMENT,
-    UserRole.SUPERADMIN,
-  )
+  @Roles(UserRole.ADMIN_DATA, UserRole.KEPALA_RAYON, UserRole.TOP_MANAGEMENT, UserRole.SUPERADMIN)
   @ApiOperation({ summary: 'Create new seed SKU' })
   @ApiResponse({ status: 201, description: 'Seed created', type: PlantSeed })
   @ApiResponse({ status: 400, description: 'Bad request' })
@@ -86,12 +65,7 @@ export class PlantSeedsController {
   }
 
   @Post(':id/transactions')
-  @Roles(
-    UserRole.ADMIN_DATA,
-    UserRole.KEPALA_RAYON,
-    UserRole.TOP_MANAGEMENT,
-    UserRole.SUPERADMIN,
-  )
+  @Roles(UserRole.ADMIN_DATA, UserRole.KEPALA_RAYON, UserRole.TOP_MANAGEMENT, UserRole.SUPERADMIN)
   @ApiOperation({ summary: 'Record seed transaction' })
   @ApiParam({ name: 'id', description: 'Seed ID' })
   @ApiResponse({ status: 201, description: 'Transaction recorded' })

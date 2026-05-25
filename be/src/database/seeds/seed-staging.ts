@@ -1,9 +1,6 @@
 import { DataSource } from 'typeorm';
 import { config } from 'dotenv';
-import {
-  seedPhase3Reference,
-  seedPhase3ServiceCapacity,
-} from './seed-phase3';
+import { seedPhase3Reference, seedPhase3ServiceCapacity } from './seed-phase3';
 import {
   RAYON_BOUNDARIES,
   RAYON_PUSAT_AREAS,
@@ -100,12 +97,12 @@ config();
 // REFERENCE DATA UUIDs — reused from seed-reference.ts
 // ============================================================
 const RAYON_SELATAN_ID = '085a298f-d8e9-435c-8a3b-998ffa47a26e';
-const RAYON_UTARA_ID   = '861a7e7c-8bd5-4e73-8aa7-e92988959dca';
-const RAYON_PUSAT_ID   = 'd564809d-316f-4a2a-a1c6-671eebb49653';
-const RAYON_TIMUR1_ID  = '42934ad5-4ea0-4537-abb6-cf7e984e2d39';
-const RAYON_TIMUR2_ID  = '742a135b-ddeb-45ca-8d0a-88d7d08aa78a';
-const RAYON_BARAT1_ID  = 'bf040137-fce4-4016-b5e7-704ad82c1594';
-const RAYON_BARAT2_ID  = '7422e6ee-0693-4565-9016-d4f759bdeed2';
+const RAYON_UTARA_ID = '861a7e7c-8bd5-4e73-8aa7-e92988959dca';
+const RAYON_PUSAT_ID = 'd564809d-316f-4a2a-a1c6-671eebb49653';
+const RAYON_TIMUR1_ID = '42934ad5-4ea0-4537-abb6-cf7e984e2d39';
+const RAYON_TIMUR2_ID = '742a135b-ddeb-45ca-8d0a-88d7d08aa78a';
+const RAYON_BARAT1_ID = 'bf040137-fce4-4016-b5e7-704ad82c1594';
+const RAYON_BARAT2_ID = '7422e6ee-0693-4565-9016-d4f759bdeed2';
 /** Logical (non-geographic) rayon for taman aktif parks city-wide. */
 const RAYON_TAMAN_AKTIF_ID = '8a8a8a8a-1111-4222-9333-444444444444';
 
@@ -113,25 +110,25 @@ const SHIFT_1_ID = 'ca18ac41-2577-4f67-abfa-adaae27b75c8';
 const SHIFT_2_ID = '28822613-65de-47e4-a9b4-7b9bfd437f8a';
 const SHIFT_3_ID = '85860407-7b2d-425a-87cc-7a94bb47e5d8';
 
-const AT_PERAWATAN_ID          = 'ddc94ad6-a625-4c27-964f-10f3a79a6794';
-const AT_PENANAMAN_ID          = 'a8cf5d46-1435-413b-ae03-8ea135bd5fb3';
-const AT_PERANTINGAN_ID        = '8a890970-5fc8-4672-ae6f-b945cb80bba5';
-const AT_PENYIRAMAN_ID         = '2eaed437-c662-4285-b9a7-8c7d5d0755b7';
-const AT_PENYULAMAN_ID         = '70c75e9a-df48-4c71-89d5-91978112103f';
-const AT_POTONG_RUMPUT_ID      = '715b8196-8473-4afe-9103-adb6c2ee7c50';
-const AT_ANGKUT_SAMPAH_ID      = 'eef48fdc-e235-4a03-9fc4-517cff92c8bb';
-const AT_LAINNYA_SATGAS_ID     = '4153cd86-c6bf-4f06-b536-5016a74114d5';
-const AT_PATROLI_ID            = 'dd7efc02-36fe-4e70-b4b5-bfa163fc3bb0';
-const AT_INSIDEN_ID            = '3a37e00b-7702-4296-b387-96964b45e251';
-const AT_PERIKSA_FASILITAS_ID  = 'b4e7c1a2-3d5f-4e8a-9b0c-1d2e3f4a5b6c';
-const AT_HALAU_PKL_ID          = 'c5f8d2b3-4e6a-4f9b-8c1d-2e3f4a5b6c7d';
-const AT_LAINNYA_LINMAS_ID     = 'd6a9e3c4-5f7b-4a0c-9d2e-3f4a5b6c7d8e';
-const AT_CEK_KENDARAAN_ID      = 'e7b0f4d5-6a8c-4b1d-8e3f-4a5b6c7d8e9f';
-const AT_PATROLI_KORLAP_ID     = 'f8c1a5e6-7b9d-4c2e-9f4a-5b6c7d8e9f0a';
-const AT_CEK_ALAT_ID           = 'a9d2b6f7-8c0e-4d3f-8a5b-6c7d8e9f0a1b';
-const AT_LAINNYA_KORLAP_ID     = 'b0e3c7a8-9d1f-4e4a-9b6c-7d8e9f0a1b2c';
-const AT_CEK_ABSENSI_ID        = 'c1f4d8b9-0e2a-4f5b-8c7d-8e9f0a1b2c3d';
-const AT_ENTRI_LAPORAN_ID      = 'd2a5e9c0-1f3b-4a6c-9d8e-9f0a1b2c3d4e';
+const AT_PERAWATAN_ID = 'ddc94ad6-a625-4c27-964f-10f3a79a6794';
+const AT_PENANAMAN_ID = 'a8cf5d46-1435-413b-ae03-8ea135bd5fb3';
+const AT_PERANTINGAN_ID = '8a890970-5fc8-4672-ae6f-b945cb80bba5';
+const AT_PENYIRAMAN_ID = '2eaed437-c662-4285-b9a7-8c7d5d0755b7';
+const AT_PENYULAMAN_ID = '70c75e9a-df48-4c71-89d5-91978112103f';
+const AT_POTONG_RUMPUT_ID = '715b8196-8473-4afe-9103-adb6c2ee7c50';
+const AT_ANGKUT_SAMPAH_ID = 'eef48fdc-e235-4a03-9fc4-517cff92c8bb';
+const AT_LAINNYA_SATGAS_ID = '4153cd86-c6bf-4f06-b536-5016a74114d5';
+const AT_PATROLI_ID = 'dd7efc02-36fe-4e70-b4b5-bfa163fc3bb0';
+const AT_INSIDEN_ID = '3a37e00b-7702-4296-b387-96964b45e251';
+const AT_PERIKSA_FASILITAS_ID = 'b4e7c1a2-3d5f-4e8a-9b0c-1d2e3f4a5b6c';
+const AT_HALAU_PKL_ID = 'c5f8d2b3-4e6a-4f9b-8c1d-2e3f4a5b6c7d';
+const AT_LAINNYA_LINMAS_ID = 'd6a9e3c4-5f7b-4a0c-9d2e-3f4a5b6c7d8e';
+const AT_CEK_KENDARAAN_ID = 'e7b0f4d5-6a8c-4b1d-8e3f-4a5b6c7d8e9f';
+const AT_PATROLI_KORLAP_ID = 'f8c1a5e6-7b9d-4c2e-9f4a-5b6c7d8e9f0a';
+const AT_CEK_ALAT_ID = 'a9d2b6f7-8c0e-4d3f-8a5b-6c7d8e9f0a1b';
+const AT_LAINNYA_KORLAP_ID = 'b0e3c7a8-9d1f-4e4a-9b6c-7d8e9f0a1b2c';
+const AT_CEK_ABSENSI_ID = 'c1f4d8b9-0e2a-4f5b-8c7d-8e9f0a1b2c3d';
+const AT_ENTRI_LAPORAN_ID = 'd2a5e9c0-1f3b-4a6c-9d8e-9f0a1b2c3d4e';
 const AT_LAINNYA_ADMIN_DATA_ID = 'e3b6f0d1-2a4c-4b7d-8e9f-0a1b2c3d4e5f';
 
 const SPECIAL_DAY_1_ID = 'aee11144-0a99-458f-90b2-3df456f5bdf0';
@@ -146,39 +143,39 @@ const SPECIAL_DAY_4_ID = '8a8ff3d8-8c45-461e-b66c-8563c04cbbd5';
 // MAZAYA.kmz. Rayon Pusat user_area assignments below still scope only to
 // the 13 Pusat areas — Timur 2 has its own staffing.
 // ============================================================
-const AREA_BUNGKUL_ID    = BUNGKUL_AREA_ID;
-const AREA_DARMO_P1_ID   = DARMO_P1_AREA_ID;
-const AREA_DARMO_P2_ID   = DARMO_P2_AREA_ID;
+const AREA_BUNGKUL_ID = BUNGKUL_AREA_ID;
+const AREA_DARMO_P1_ID = DARMO_P1_AREA_ID;
+const AREA_DARMO_P2_ID = DARMO_P2_AREA_ID;
 
 // ============================================================
 // STAGING USER UUIDs
 // ============================================================
 // Test users
-const USER_SUPERADMIN_ID       = '53b4c5d6-e7f8-4690-1234-567879809102'; // superadmin
-const USER_ADMIN_SYS_ID        = '53c5d6e7-f8a9-4701-2345-678980910213'; // admin_system_1
-const USER_TOP_MGMT_ID         = '53d6e7f8-a9b0-4812-3456-789091021324'; // top_management_1
-const USER_KEPALA_RAYON_ID     = '53e7f8a9-b0c1-4923-4567-890102132435'; // kepala_rayon_pusat_1
-const USER_ADMIN_DATA_ID       = '53f8a9b0-c1d2-4a34-5678-901213243546'; // admin_data_pusat_1
-const USER_KORLAP_PUSAT1_ID    = '54a9b0c1-d2e3-4b45-6789-012324354657'; // korlap_pusat_1
-const USER_KORLAP_PUSAT2_ID    = '54b0c1d2-e3f4-4c56-7890-123435465768'; // korlap_pusat_2
-const USER_KORLAP_BUNGKUL_ID   = '54c1d2e3-f4a5-4d67-8901-234546576879'; // korlap_pusat_3
-const USER_SATGAS_PUSAT1_ID    = '54d2e3f4-a5b6-4e78-9012-345657687980'; // satgas_pusat_1
-const USER_SATGAS_PUSAT2_ID    = '54e3f4a5-b6c7-4f89-0123-456768798091'; // satgas_pusat_2
-const USER_LINMAS_PUSAT1_ID    = '54f4a5b6-c7d8-4090-1234-567879809102'; // linmas_pusat_1
-const USER_LINMAS_PUSAT2_ID    = '55a5b6c7-d8e9-4101-2345-678980910213'; // linmas_pusat_2
-const USER_SATGAS_BUNGKUL_ID   = '55b6c7d8-e9f0-4212-3456-789091021324'; // satgas_pusat_3
-const USER_STAFF_KECAMATAN_PUSAT_ID  = '55b6c7d8-e9f0-4212-3456-789091021325'; // staff_kecamatan_pusat_1 (Phase 3 — public intake)
+const USER_SUPERADMIN_ID = '53b4c5d6-e7f8-4690-1234-567879809102'; // superadmin
+const USER_ADMIN_SYS_ID = '53c5d6e7-f8a9-4701-2345-678980910213'; // admin_system_1
+const USER_TOP_MGMT_ID = '53d6e7f8-a9b0-4812-3456-789091021324'; // top_management_1
+const USER_KEPALA_RAYON_ID = '53e7f8a9-b0c1-4923-4567-890102132435'; // kepala_rayon_pusat_1
+const USER_ADMIN_DATA_ID = '53f8a9b0-c1d2-4a34-5678-901213243546'; // admin_data_pusat_1
+const USER_KORLAP_PUSAT1_ID = '54a9b0c1-d2e3-4b45-6789-012324354657'; // korlap_pusat_1
+const USER_KORLAP_PUSAT2_ID = '54b0c1d2-e3f4-4c56-7890-123435465768'; // korlap_pusat_2
+const USER_KORLAP_BUNGKUL_ID = '54c1d2e3-f4a5-4d67-8901-234546576879'; // korlap_pusat_3
+const USER_SATGAS_PUSAT1_ID = '54d2e3f4-a5b6-4e78-9012-345657687980'; // satgas_pusat_1
+const USER_SATGAS_PUSAT2_ID = '54e3f4a5-b6c7-4f89-0123-456768798091'; // satgas_pusat_2
+const USER_LINMAS_PUSAT1_ID = '54f4a5b6-c7d8-4090-1234-567879809102'; // linmas_pusat_1
+const USER_LINMAS_PUSAT2_ID = '55a5b6c7-d8e9-4101-2345-678980910213'; // linmas_pusat_2
+const USER_SATGAS_BUNGKUL_ID = '55b6c7d8-e9f0-4212-3456-789091021324'; // satgas_pusat_3
+const USER_STAFF_KECAMATAN_PUSAT_ID = '55b6c7d8-e9f0-4212-3456-789091021325'; // staff_kecamatan_pusat_1 (Phase 3 — public intake)
 // Real users
-const USER_PRAMUDITA_ID        = '55c7d8e9-f0a1-4323-4567-890102132435'; // pramudita_yustiani
-const USER_WAHYU_ID            = '55d8e9f0-a1b2-4434-5678-901213243546'; // wahyu_tri_p
-const USER_BUDI_ID             = '55e9f0a1-b2c3-4545-6789-012324354657'; // budi_setyo_utomo
-const USER_PONCO_ID            = '55f0a1b2-c3d4-4656-7890-123435465768'; // ponco_adi_prabowo
-const USER_RAKHMAT_ID          = '56a1b2c3-d4e5-4767-8901-234546576879'; // rakhmat_novianto
-const USER_ROY_ID              = '56b2c3d4-e5f6-4878-9012-345657687980'; // roy_junaidi
-const USER_EDI_ID              = '56c3d4e5-f6a7-4989-0123-456768798091'; // edi_santoso
-const USER_JIHAN_ID            = '56d4e5f6-a7b8-4090-1234-567879809102'; // jihan_nabila_safitri
-const USER_DENI_ID             = '56e5f6a7-b8c9-4101-2345-678980910213'; // deni_purwanto
-const USER_AGUS_ID             = '56f6a7b8-c9d0-4212-3456-789091021324'; // agus_ramadhan
+const USER_PRAMUDITA_ID = '55c7d8e9-f0a1-4323-4567-890102132435'; // pramudita_yustiani
+const USER_WAHYU_ID = '55d8e9f0-a1b2-4434-5678-901213243546'; // wahyu_tri_p
+const USER_BUDI_ID = '55e9f0a1-b2c3-4545-6789-012324354657'; // budi_setyo_utomo
+const USER_PONCO_ID = '55f0a1b2-c3d4-4656-7890-123435465768'; // ponco_adi_prabowo
+const USER_RAKHMAT_ID = '56a1b2c3-d4e5-4767-8901-234546576879'; // rakhmat_novianto
+const USER_ROY_ID = '56b2c3d4-e5f6-4878-9012-345657687980'; // roy_junaidi
+const USER_EDI_ID = '56c3d4e5-f6a7-4989-0123-456768798091'; // edi_santoso
+const USER_JIHAN_ID = '56d4e5f6-a7b8-4090-1234-567879809102'; // jihan_nabila_safitri
+const USER_DENI_ID = '56e5f6a7-b8c9-4101-2345-678980910213'; // deni_purwanto
+const USER_AGUS_ID = '56f6a7b8-c9d0-4212-3456-789091021324'; // agus_ramadhan
 
 // Pre-computed bcrypt hash for "password123" (10 salt rounds)
 const PASSWORD_HASH = '$2b$10$gF9qXRA.0ZtNWgbrwoYHMOmdUFUbaL4AkGdxAEMDMrMZtFexnH.H.';
@@ -188,20 +185,20 @@ const PASSWORD_HASH = '$2b$10$gF9qXRA.0ZtNWgbrwoYHMOmdUFUbaL4AkGdxAEMDMrMZtFexnH
 // has its own staffing baseline; per-user multi-area assignment for Timur 2
 // is left for UAT testers to configure as needed.
 const PUSAT_AREA_DEFS: AreaDef[] = RAYON_PUSAT_AREAS;
-const PEDESTRIAN_AREA_IDS = PUSAT_AREA_DEFS
-  .filter((a) => a.typeCode === 'pedestrian')
-  .map((a) => a.id);
+const PEDESTRIAN_AREA_IDS = PUSAT_AREA_DEFS.filter((a) => a.typeCode === 'pedestrian').map(
+  (a) => a.id,
+);
 const ALL_AREA_IDS = PUSAT_AREA_DEFS.map((a) => a.id);
 
 // Rayon ID → code lookup so the boundary-update loop can hit the right row.
 const RAYON_ID_BY_CODE: Record<RayonCode, string> = {
   SELATAN: RAYON_SELATAN_ID,
-  UTARA:   RAYON_UTARA_ID,
-  PUSAT:   RAYON_PUSAT_ID,
-  TIMUR1:  RAYON_TIMUR1_ID,
-  TIMUR2:  RAYON_TIMUR2_ID,
-  BARAT1:  RAYON_BARAT1_ID,
-  BARAT2:  RAYON_BARAT2_ID,
+  UTARA: RAYON_UTARA_ID,
+  PUSAT: RAYON_PUSAT_ID,
+  TIMUR1: RAYON_TIMUR1_ID,
+  TIMUR2: RAYON_TIMUR2_ID,
+  BARAT1: RAYON_BARAT1_ID,
+  BARAT2: RAYON_BARAT2_ID,
   TAMAN_AKTIF: RAYON_TAMAN_AKTIF_ID,
 };
 
@@ -211,9 +208,13 @@ const RAYON_ID_BY_CODE: Record<RayonCode, string> = {
 
 async function seedStaging() {
   console.log('');
-  console.log('╔══════════════════════════════════════════════════════════════════════════════════╗');
+  console.log(
+    '╔══════════════════════════════════════════════════════════════════════════════════╗',
+  );
   console.log('║  🚀 Staging / UAT Seeder — Rayon Pusat                                         ║');
-  console.log('╚══════════════════════════════════════════════════════════════════════════════════╝');
+  console.log(
+    '╚══════════════════════════════════════════════════════════════════════════════════╝',
+  );
   console.log('');
   console.log('⚠️  DESTRUCTIVE — all tables will be wiped before seeding.');
   console.log('');
@@ -596,24 +597,19 @@ async function seedStaging() {
     // STEP 9: USERS (13 test + 10 real = 23 total)
     // ============================================================
     console.log('\n👥 Seeding users (verbose — every row is announced)...');
-    console.log(
-      '  ─────────────────────────────────────────────────────────────────────────────',
-    );
+    console.log('  ─────────────────────────────────────────────────────────────────────────────');
     console.log(
       `  ${'Marker'.padEnd(7)} ${'Username'.padEnd(34)} ${'Role'.padEnd(15)} ${'Phone'.padEnd(13)} Rayon`,
     );
-    console.log(
-      '  ─────────────────────────────────────────────────────────────────────────────',
-    );
+    console.log('  ─────────────────────────────────────────────────────────────────────────────');
 
     // Cache rayon names for verbose log lines so we don't N×SELECT inside the
     // user-insert loop. Falls back to '—' when rayonId is null (system-wide).
-    const insertUserRayonRows = (await queryRunner.query(
-      `SELECT id, name FROM rayons`,
-    )) as Array<{ id: string; name: string }>;
-    const insertUserRayonName = new Map(
-      insertUserRayonRows.map((r) => [r.id, r.name]),
-    );
+    const insertUserRayonRows = (await queryRunner.query(`SELECT id, name FROM rayons`)) as Array<{
+      id: string;
+      name: string;
+    }>;
+    const insertUserRayonName = new Map(insertUserRayonRows.map((r) => [r.id, r.name]));
 
     let usersInserted = 0;
     let usersExisting = 0;
@@ -641,43 +637,142 @@ async function seedStaging() {
       if (inserted) usersInserted += 1;
       else usersExisting += 1;
       const marker = inserted ? '  ✚    ' : '  ·    ';
-      const rayonName = rayonId ? insertUserRayonName.get(rayonId) ?? '—' : '—';
+      const rayonName = rayonId ? (insertUserRayonName.get(rayonId) ?? '—') : '—';
       console.log(
         `${marker} ${username.padEnd(34)} ${role.padEnd(15)} ${phone.padEnd(13)} ${rayonName}`,
       );
     };
 
     // ── System-wide (no area/rayon scope) ──────────────────────
-    await insertUser(USER_SUPERADMIN_ID, 'superadmin',       'Super Admin',          'superadmin',    '081200000010');
-    await insertUser(USER_ADMIN_SYS_ID,  'admin_system_1',    'Admin Sistem Satu',    'admin_system',  '081200000011');
-    await insertUser(USER_TOP_MGMT_ID,   'top_management_1',  'Top Management Satu',  'top_management','081200000012');
+    await insertUser(USER_SUPERADMIN_ID, 'superadmin', 'Super Admin', 'superadmin', '081200000010');
+    await insertUser(
+      USER_ADMIN_SYS_ID,
+      'admin_system_1',
+      'Admin Sistem Satu',
+      'admin_system',
+      '081200000011',
+    );
+    await insertUser(
+      USER_TOP_MGMT_ID,
+      'top_management_1',
+      'Top Management Satu',
+      'top_management',
+      '081200000012',
+    );
 
     // ── Rayon Pusat — management ───────────────────────────────
-    await insertUser(USER_KEPALA_RAYON_ID, 'kepala_rayon_pusat_1',  'Kepala Rayon Pusat Satu',   'kepala_rayon', '081200000013', RAYON_PUSAT_ID);
-    await insertUser(USER_ADMIN_DATA_ID,   'admin_data_pusat_1',  'Admin Data Pusat Satu',   'admin_data',   '081200000014', RAYON_PUSAT_ID);
+    await insertUser(
+      USER_KEPALA_RAYON_ID,
+      'kepala_rayon_pusat_1',
+      'Kepala Rayon Pusat Satu',
+      'kepala_rayon',
+      '081200000013',
+      RAYON_PUSAT_ID,
+    );
+    await insertUser(
+      USER_ADMIN_DATA_ID,
+      'admin_data_pusat_1',
+      'Admin Data Pusat Satu',
+      'admin_data',
+      '081200000014',
+      RAYON_PUSAT_ID,
+    );
 
     // ── Rayon Pusat — korlap (primary area = Taman Bungkul; extras via user_areas) ──
-    await insertUser(USER_KORLAP_PUSAT1_ID,  'korlap_pusat_1',  'Korlap Pusat Satu',  'korlap', '081200000015', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
-    await insertUser(USER_KORLAP_PUSAT2_ID,  'korlap_pusat_2',  'Korlap Pusat Dua',  'korlap', '081200000016', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
-    await insertUser(USER_KORLAP_BUNGKUL_ID, 'korlap_pusat_3',  'Korlap Pusat Tiga', 'korlap', '081200000017', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
+    await insertUser(
+      USER_KORLAP_PUSAT1_ID,
+      'korlap_pusat_1',
+      'Korlap Pusat Satu',
+      'korlap',
+      '081200000015',
+      RAYON_PUSAT_ID,
+      AREA_BUNGKUL_ID,
+    );
+    await insertUser(
+      USER_KORLAP_PUSAT2_ID,
+      'korlap_pusat_2',
+      'Korlap Pusat Dua',
+      'korlap',
+      '081200000016',
+      RAYON_PUSAT_ID,
+      AREA_BUNGKUL_ID,
+    );
+    await insertUser(
+      USER_KORLAP_BUNGKUL_ID,
+      'korlap_pusat_3',
+      'Korlap Pusat Tiga',
+      'korlap',
+      '081200000017',
+      RAYON_PUSAT_ID,
+      AREA_BUNGKUL_ID,
+    );
 
     // ── Rayon Pusat — satgas / linmas ──────────────────────────
     // satgas_pusat_1: all 13 areas → primary = Taman Bungkul
-    await insertUser(USER_SATGAS_PUSAT1_ID,  'satgas_pusat_1',   'Satgas Pusat Satu',   'satgas', '081200000018', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
+    await insertUser(
+      USER_SATGAS_PUSAT1_ID,
+      'satgas_pusat_1',
+      'Satgas Pusat Satu',
+      'satgas',
+      '081200000018',
+      RAYON_PUSAT_ID,
+      AREA_BUNGKUL_ID,
+    );
     // satgas_pusat_2: 12 pedestrian only → primary = Darmo Pulau 1
-    await insertUser(USER_SATGAS_PUSAT2_ID,  'satgas_pusat_2',   'Satgas Pusat Dua',    'satgas', '081200000019', RAYON_PUSAT_ID, AREA_DARMO_P1_ID);
+    await insertUser(
+      USER_SATGAS_PUSAT2_ID,
+      'satgas_pusat_2',
+      'Satgas Pusat Dua',
+      'satgas',
+      '081200000019',
+      RAYON_PUSAT_ID,
+      AREA_DARMO_P1_ID,
+    );
     // linmas_pusat_1: all 13 areas → primary = Taman Bungkul
-    await insertUser(USER_LINMAS_PUSAT1_ID,  'linmas_pusat_1',   'Linmas Pusat Satu',   'linmas', '081200000020', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
+    await insertUser(
+      USER_LINMAS_PUSAT1_ID,
+      'linmas_pusat_1',
+      'Linmas Pusat Satu',
+      'linmas',
+      '081200000020',
+      RAYON_PUSAT_ID,
+      AREA_BUNGKUL_ID,
+    );
     // linmas_pusat_2: Taman Bungkul only
-    await insertUser(USER_LINMAS_PUSAT2_ID,  'linmas_pusat_2',   'Linmas Pusat Dua',    'linmas', '081200000021', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
+    await insertUser(
+      USER_LINMAS_PUSAT2_ID,
+      'linmas_pusat_2',
+      'Linmas Pusat Dua',
+      'linmas',
+      '081200000021',
+      RAYON_PUSAT_ID,
+      AREA_BUNGKUL_ID,
+    );
     // satgas_pusat_3: Taman Bungkul only
-    await insertUser(USER_SATGAS_BUNGKUL_ID, 'satgas_pusat_3',   'Satgas Pusat Tiga',   'satgas', '081200000022', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
+    await insertUser(
+      USER_SATGAS_BUNGKUL_ID,
+      'satgas_pusat_3',
+      'Satgas Pusat Tiga',
+      'satgas',
+      '081200000022',
+      RAYON_PUSAT_ID,
+      AREA_BUNGKUL_ID,
+    );
 
     // ── Phase 3 — public intake (staff_kecamatan) ──────────────
     // staff_kecamatan_pusat_1: scoped to Rayon Pusat for testing pruning_requests workflow.
     // Apr 27 redesign: kecamatan_name attribution added so the redesigned mobile
     // submit form can preset rayon + kecamatan from the user profile.
-    await insertUser(USER_STAFF_KECAMATAN_PUSAT_ID, 'staff_kecamatan_pusat_1', 'Staff Kecamatan Pusat Satu', 'staff_kecamatan', '081200000023', RAYON_PUSAT_ID, null, 'Tegalsari');
+    await insertUser(
+      USER_STAFF_KECAMATAN_PUSAT_ID,
+      'staff_kecamatan_pusat_1',
+      'Staff Kecamatan Pusat Satu',
+      'staff_kecamatan',
+      '081200000023',
+      RAYON_PUSAT_ID,
+      null,
+      'Tegalsari',
+    );
 
     // ── Per-rayon dummy users (5 roles × 6 non-Pusat rayons = 30 users) ──
     // 2026-05-18 — added so UAT can exercise every rayon (Selatan / Utara /
@@ -694,12 +789,17 @@ async function seedStaging() {
       label: string;
       defaultAreaId: string | null;
     }> = [
-      { slug: 'selatan',  rayonId: RAYON_SELATAN_ID, label: 'Selatan',  defaultAreaId: null              },
-      { slug: 'utara',    rayonId: RAYON_UTARA_ID,   label: 'Utara',    defaultAreaId: null              },
-      { slug: 'timur_1',  rayonId: RAYON_TIMUR1_ID,  label: 'Timur 1',  defaultAreaId: null              },
-      { slug: 'timur_2',  rayonId: RAYON_TIMUR2_ID,  label: 'Timur 2',  defaultAreaId: TAMAN_BUK_TONG_ID },
-      { slug: 'barat_1',  rayonId: RAYON_BARAT1_ID,  label: 'Barat 1',  defaultAreaId: null              },
-      { slug: 'barat_2',  rayonId: RAYON_BARAT2_ID,  label: 'Barat 2',  defaultAreaId: null              },
+      { slug: 'selatan', rayonId: RAYON_SELATAN_ID, label: 'Selatan', defaultAreaId: null },
+      { slug: 'utara', rayonId: RAYON_UTARA_ID, label: 'Utara', defaultAreaId: null },
+      { slug: 'timur_1', rayonId: RAYON_TIMUR1_ID, label: 'Timur 1', defaultAreaId: null },
+      {
+        slug: 'timur_2',
+        rayonId: RAYON_TIMUR2_ID,
+        label: 'Timur 2',
+        defaultAreaId: TAMAN_BUK_TONG_ID,
+      },
+      { slug: 'barat_1', rayonId: RAYON_BARAT1_ID, label: 'Barat 1', defaultAreaId: null },
+      { slug: 'barat_2', rayonId: RAYON_BARAT2_ID, label: 'Barat 2', defaultAreaId: null },
     ];
     const PER_RAYON_ROLES: Array<{
       role: string;
@@ -707,29 +807,54 @@ async function seedStaging() {
       fullNamePrefix: string;
       assignArea: boolean;
     }> = [
-      { role: 'kepala_rayon', usernamePrefix: 'kepala_rayon', fullNamePrefix: 'Kepala Rayon', assignArea: false },
-      { role: 'admin_data',   usernamePrefix: 'admin_data',   fullNamePrefix: 'Admin Data',   assignArea: false },
-      { role: 'korlap',       usernamePrefix: 'korlap',       fullNamePrefix: 'Korlap',       assignArea: true  },
-      { role: 'satgas',       usernamePrefix: 'satgas',       fullNamePrefix: 'Satgas',       assignArea: true  },
-      { role: 'linmas',       usernamePrefix: 'linmas',       fullNamePrefix: 'Linmas',       assignArea: true  },
+      {
+        role: 'kepala_rayon',
+        usernamePrefix: 'kepala_rayon',
+        fullNamePrefix: 'Kepala Rayon',
+        assignArea: false,
+      },
+      {
+        role: 'admin_data',
+        usernamePrefix: 'admin_data',
+        fullNamePrefix: 'Admin Data',
+        assignArea: false,
+      },
+      { role: 'korlap', usernamePrefix: 'korlap', fullNamePrefix: 'Korlap', assignArea: true },
+      { role: 'satgas', usernamePrefix: 'satgas', fullNamePrefix: 'Satgas', assignArea: true },
+      { role: 'linmas', usernamePrefix: 'linmas', fullNamePrefix: 'Linmas', assignArea: true },
     ];
     // Pre-allocated UUIDs — stable across re-seeds. 5 roles × 6 rayons = 30.
     const PER_RAYON_USER_IDS = [
-      '5a010101-0000-4001-8001-000000000001', '5a010102-0000-4001-8001-000000000002',
-      '5a010103-0000-4001-8001-000000000003', '5a010104-0000-4001-8001-000000000004',
-      '5a010105-0000-4001-8001-000000000005', '5a010106-0000-4001-8001-000000000006',
-      '5a010201-0000-4001-8002-000000000007', '5a010202-0000-4001-8002-000000000008',
-      '5a010203-0000-4001-8002-000000000009', '5a010204-0000-4001-8002-00000000000a',
-      '5a010205-0000-4001-8002-00000000000b', '5a010206-0000-4001-8002-00000000000c',
-      '5a010301-0000-4001-8003-00000000000d', '5a010302-0000-4001-8003-00000000000e',
-      '5a010303-0000-4001-8003-00000000000f', '5a010304-0000-4001-8003-000000000010',
-      '5a010305-0000-4001-8003-000000000011', '5a010306-0000-4001-8003-000000000012',
-      '5a010401-0000-4001-8004-000000000013', '5a010402-0000-4001-8004-000000000014',
-      '5a010403-0000-4001-8004-000000000015', '5a010404-0000-4001-8004-000000000016',
-      '5a010405-0000-4001-8004-000000000017', '5a010406-0000-4001-8004-000000000018',
-      '5a010501-0000-4001-8005-000000000019', '5a010502-0000-4001-8005-00000000001a',
-      '5a010503-0000-4001-8005-00000000001b', '5a010504-0000-4001-8005-00000000001c',
-      '5a010505-0000-4001-8005-00000000001d', '5a010506-0000-4001-8005-00000000001e',
+      '5a010101-0000-4001-8001-000000000001',
+      '5a010102-0000-4001-8001-000000000002',
+      '5a010103-0000-4001-8001-000000000003',
+      '5a010104-0000-4001-8001-000000000004',
+      '5a010105-0000-4001-8001-000000000005',
+      '5a010106-0000-4001-8001-000000000006',
+      '5a010201-0000-4001-8002-000000000007',
+      '5a010202-0000-4001-8002-000000000008',
+      '5a010203-0000-4001-8002-000000000009',
+      '5a010204-0000-4001-8002-00000000000a',
+      '5a010205-0000-4001-8002-00000000000b',
+      '5a010206-0000-4001-8002-00000000000c',
+      '5a010301-0000-4001-8003-00000000000d',
+      '5a010302-0000-4001-8003-00000000000e',
+      '5a010303-0000-4001-8003-00000000000f',
+      '5a010304-0000-4001-8003-000000000010',
+      '5a010305-0000-4001-8003-000000000011',
+      '5a010306-0000-4001-8003-000000000012',
+      '5a010401-0000-4001-8004-000000000013',
+      '5a010402-0000-4001-8004-000000000014',
+      '5a010403-0000-4001-8004-000000000015',
+      '5a010404-0000-4001-8004-000000000016',
+      '5a010405-0000-4001-8004-000000000017',
+      '5a010406-0000-4001-8004-000000000018',
+      '5a010501-0000-4001-8005-000000000019',
+      '5a010502-0000-4001-8005-00000000001a',
+      '5a010503-0000-4001-8005-00000000001b',
+      '5a010504-0000-4001-8005-00000000001c',
+      '5a010505-0000-4001-8005-00000000001d',
+      '5a010506-0000-4001-8005-00000000001e',
     ];
     let perRayonIdx = 0;
     let perRayonPhone = 30; // → 081200000030
@@ -754,20 +879,86 @@ async function seedStaging() {
     }
 
     // ── Real users ─────────────────────────────────────────────
-    await insertUser(USER_PRAMUDITA_ID, 'pramudita_yustiani',   'Pramudita Yustiani',   'top_management', '08563302643');
-    await insertUser(USER_WAHYU_ID,     'wahyu_tri_p',          'Wahyu Tri P',          'superadmin',     '081232939377');
-    await insertUser(USER_BUDI_ID,      'budi_setyo_utomo',     'Budi Setyo Utomo',     'kepala_rayon',   '081200000001', RAYON_PUSAT_ID);
-    await insertUser(USER_PONCO_ID,     'ponco_adi_prabowo',    'Ponco Adi Frabowo',    'admin_data',     '081200000002', RAYON_PUSAT_ID);
-    await insertUser(USER_RAKHMAT_ID,   'rakhmat_novianto',     'RAKHMAT NOVIANTO',     'satgas',         '087825841818', RAYON_PUSAT_ID, AREA_DARMO_P1_ID);
-    await insertUser(USER_ROY_ID,       'roy_junaidi',          'ROY JUNAIDI',          'satgas',         '083854355341', RAYON_PUSAT_ID, AREA_DARMO_P2_ID);
-    await insertUser(USER_EDI_ID,       'edi_santoso',          'EDI SANTOSO',          'satgas',         '085855434561', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
-    await insertUser(USER_JIHAN_ID,     'jihan_nabila_safitri', 'JIHAN NABILA SAFITRI', 'satgas',         '08970900786',  RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
-    await insertUser(USER_DENI_ID,      'deni_purwanto',        'DENI PURWANTO',        'linmas',         '081554017822', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
-    await insertUser(USER_AGUS_ID,      'agus_ramadhan',        'AGUS RAMADHAN',        'linmas',         '083831353889', RAYON_PUSAT_ID, AREA_BUNGKUL_ID);
-
-    console.log(
-      `  ─────────────────────────────────────────────────────────────────────────────`,
+    await insertUser(
+      USER_PRAMUDITA_ID,
+      'pramudita_yustiani',
+      'Pramudita Yustiani',
+      'top_management',
+      '08563302643',
     );
+    await insertUser(USER_WAHYU_ID, 'wahyu_tri_p', 'Wahyu Tri P', 'superadmin', '081232939377');
+    await insertUser(
+      USER_BUDI_ID,
+      'budi_setyo_utomo',
+      'Budi Setyo Utomo',
+      'kepala_rayon',
+      '081200000001',
+      RAYON_PUSAT_ID,
+    );
+    await insertUser(
+      USER_PONCO_ID,
+      'ponco_adi_prabowo',
+      'Ponco Adi Frabowo',
+      'admin_data',
+      '081200000002',
+      RAYON_PUSAT_ID,
+    );
+    await insertUser(
+      USER_RAKHMAT_ID,
+      'rakhmat_novianto',
+      'RAKHMAT NOVIANTO',
+      'satgas',
+      '087825841818',
+      RAYON_PUSAT_ID,
+      AREA_DARMO_P1_ID,
+    );
+    await insertUser(
+      USER_ROY_ID,
+      'roy_junaidi',
+      'ROY JUNAIDI',
+      'satgas',
+      '083854355341',
+      RAYON_PUSAT_ID,
+      AREA_DARMO_P2_ID,
+    );
+    await insertUser(
+      USER_EDI_ID,
+      'edi_santoso',
+      'EDI SANTOSO',
+      'satgas',
+      '085855434561',
+      RAYON_PUSAT_ID,
+      AREA_BUNGKUL_ID,
+    );
+    await insertUser(
+      USER_JIHAN_ID,
+      'jihan_nabila_safitri',
+      'JIHAN NABILA SAFITRI',
+      'satgas',
+      '08970900786',
+      RAYON_PUSAT_ID,
+      AREA_BUNGKUL_ID,
+    );
+    await insertUser(
+      USER_DENI_ID,
+      'deni_purwanto',
+      'DENI PURWANTO',
+      'linmas',
+      '081554017822',
+      RAYON_PUSAT_ID,
+      AREA_BUNGKUL_ID,
+    );
+    await insertUser(
+      USER_AGUS_ID,
+      'agus_ramadhan',
+      'AGUS RAMADHAN',
+      'linmas',
+      '083831353889',
+      RAYON_PUSAT_ID,
+      AREA_BUNGKUL_ID,
+    );
+
+    console.log(`  ─────────────────────────────────────────────────────────────────────────────`);
     console.log(
       `  ✓ ${usersInserted} users inserted, ${usersExisting} already existed (idempotent)`,
     );
@@ -786,29 +977,22 @@ async function seedStaging() {
     // Map rayon_id → human-readable rayon name so the verbose log shows the
     // pairing each kecamatan user lands in. Saves UAT testers from having to
     // cross-reference a separate rayons table.
-    const stagingRayonRows = (await queryRunner.query(
-      `SELECT id, name FROM rayons`,
-    )) as Array<{ id: string; name: string }>;
-    const stagingRayonNameById = new Map(
-      stagingRayonRows.map((r) => [r.id, r.name]),
-    );
+    const stagingRayonRows = (await queryRunner.query(`SELECT id, name FROM rayons`)) as Array<{
+      id: string;
+      name: string;
+    }>;
+    const stagingRayonNameById = new Map(stagingRayonRows.map((r) => [r.id, r.name]));
 
     let kecPhoneSeq = 100;
     let kecInserted = 0;
     let kecExisting = 0;
 
-    console.log(
-      `  Pattern: staff_kecamatan_<code>_1   (e.g. staff_kecamatan_tegalsari_1)`,
-    );
-    console.log(
-      '  ─────────────────────────────────────────────────────────────────────────────',
-    );
+    console.log(`  Pattern: staff_kecamatan_<code>_1   (e.g. staff_kecamatan_tegalsari_1)`);
+    console.log('  ─────────────────────────────────────────────────────────────────────────────');
     console.log(
       `  ${'#'.padStart(2)}  ${'Username'.padEnd(34)} ${'Phone'.padEnd(13)} ${'Kecamatan'.padEnd(20)} Rayon`,
     );
-    console.log(
-      '  ─────────────────────────────────────────────────────────────────────────────',
-    );
+    console.log('  ─────────────────────────────────────────────────────────────────────────────');
     let kIdx = 0;
     for (const k of kecRows) {
       kIdx += 1;
@@ -822,7 +1006,15 @@ async function seedStaging() {
                             role, rayon_id, area_id, kecamatan_name, kecamatan_id, is_active)
          VALUES ($1, $2, $3, $4, 'staff_kecamatan', $5, NULL, $6, $7, TRUE)
          ON CONFLICT (username) DO NOTHING`,
-        [username, PASSWORD_HASH, `Staff Kecamatan ${k.name} Satu`, phone, k.rayon_id, k.name, k.id],
+        [
+          username,
+          PASSWORD_HASH,
+          `Staff Kecamatan ${k.name} Satu`,
+          phone,
+          k.rayon_id,
+          k.name,
+          k.id,
+        ],
       );
       const inserted = result && (result as any).rowCount > 0;
       if (inserted) kecInserted += 1;
@@ -834,9 +1026,7 @@ async function seedStaging() {
         `  ${String(kIdx).padStart(2)} ${marker} ${username.padEnd(34)} ${phone.padEnd(13)} ${k.name.padEnd(20)} ${rayonName}`,
       );
     }
-    console.log(
-      `  ✓ ${kecInserted} inserted, ${kecExisting} already existed (idempotent)`,
-    );
+    console.log(`  ✓ ${kecInserted} inserted, ${kecExisting} already existed (idempotent)`);
     await queryRunner.query(`
       UPDATE users u SET kecamatan_id = k.id
       FROM kecamatans k
@@ -855,7 +1045,9 @@ async function seedStaging() {
         AND u.kecamatan_id = k.id
         AND (u.rayon_id IS DISTINCT FROM k.rayon_id)
     `);
-    console.log(`  ✓ 31 per-kecamatan staff users seeded; rayon_id realigned to current kecamatan mapping`);
+    console.log(
+      `  ✓ 31 per-kecamatan staff users seeded; rayon_id realigned to current kecamatan mapping`,
+    );
 
     // ============================================================
     // STEP 10: DERIVE rayon_id FOR FIELD WORKERS (from area.rayon_id)
@@ -928,7 +1120,9 @@ async function seedStaging() {
     for (const uid of [USER_EDI_ID, USER_JIHAN_ID, USER_DENI_ID, USER_AGUS_ID]) {
       await assignArea(uid, AREA_BUNGKUL_ID);
     }
-    console.log('  ✓ edi_santoso, jihan_nabila_safitri, deni_purwanto, agus_ramadhan → Taman Bungkul');
+    console.log(
+      '  ✓ edi_santoso, jihan_nabila_safitri, deni_purwanto, agus_ramadhan → Taman Bungkul',
+    );
 
     // ============================================================
     // STEP 12: USER_TRACKING_STATUS (all clockable → offline)
@@ -1022,23 +1216,39 @@ async function seedStaging() {
     `)) as Array<{ username: string; phone_number: string; kecamatan: string; rayon: string }>;
 
     console.log('');
-    console.log('╔══════════════════════════════════════════════════════════════════════════════════╗');
-    console.log('║  ✅  Staging Seeding Completed Successfully                                     ║');
-    console.log('╚══════════════════════════════════════════════════════════════════════════════════╝');
+    console.log(
+      '╔══════════════════════════════════════════════════════════════════════════════════╗',
+    );
+    console.log(
+      '║  ✅  Staging Seeding Completed Successfully                                     ║',
+    );
+    console.log(
+      '╚══════════════════════════════════════════════════════════════════════════════════╝',
+    );
     console.log('');
     console.log('  📦 Reference Data');
     console.log('     ──────────────────────────────────────────────────────────────────────────');
     console.log('       4 area_types ·  3 shift_definitions ·  7 rayons ·  20 activity_types');
     console.log('       4 special_day_overrides ·  5 + 4 monitoring_configs (Phase 2D + Phase 3)');
     console.log('     128 plant_species');
-    console.log(`     ${String(sc.kecamatans).padStart(3)} kecamatans (FK to rayons) — NEW May 2026`);
-    console.log(`     ${String(sc.service_capacity).padStart(3)} service_capacity rows (7 rayons × 12 ISO weeks × pruning, capacity_units=5)`);
+    console.log(
+      `     ${String(sc.kecamatans).padStart(3)} kecamatans (FK to rayons) — NEW May 2026`,
+    );
+    console.log(
+      `     ${String(sc.service_capacity).padStart(3)} service_capacity rows (7 rayons × 12 ISO weeks × pruning, capacity_units=5)`,
+    );
     console.log('');
     console.log('  🏞️  Rayon Pusat UAT Footprint');
     console.log('     ──────────────────────────────────────────────────────────────────────────');
-    console.log('      13 Pusat areas — 1 Taman Bungkul (aktif) + 12 Kawasan Darmo pedestrian (pasif)');
-    console.log('      25 Timur 2 areas — 1 Taman Buk Tong (aktif) + 24 pedestrian (Kawasan Kertajaya / Pucang / Ngagel Utara / Menur-Manyar)');
-    console.log(`      ${54 + (sc.staff_kec_users ?? 0)} users — 14 test + 30 per-rayon dummy + 10 real + ${sc.staff_kec_users ?? 0} staff_kecamatan`);
+    console.log(
+      '      13 Pusat areas — 1 Taman Bungkul (aktif) + 12 Kawasan Darmo pedestrian (pasif)',
+    );
+    console.log(
+      '      25 Timur 2 areas — 1 Taman Buk Tong (aktif) + 24 pedestrian (Kawasan Kertajaya / Pucang / Ngagel Utara / Menur-Manyar)',
+    );
+    console.log(
+      `      ${54 + (sc.staff_kec_users ?? 0)} users — 14 test + 30 per-rayon dummy + 10 real + ${sc.staff_kec_users ?? 0} staff_kecamatan`,
+    );
     console.log(`      ${clockable_count} clockable users — user_tracking_status set to offline`);
     console.log('      76 area_staff_requirements (38 areas × satgas + linmas, SHIFT1/WEEKDAY)');
     console.log('      user_areas — permanent multi-area assignments per spec (Rayon Pusat only)');
@@ -1049,20 +1259,30 @@ async function seedStaging() {
     console.log('      0 area_plants · 0 notable_plants · 0 pruning_requests');
     console.log('      0 plant_seeds · 0 seed_transactions');
     console.log('');
-    console.log('══════════════════════════════════════════════════════════════════════════════════════');
+    console.log(
+      '══════════════════════════════════════════════════════════════════════════════════════',
+    );
     console.log('🧪  TEST USERS  (all passwords: password123 · login with username OR phone)');
-    console.log('══════════════════════════════════════════════════════════════════════════════════════');
+    console.log(
+      '══════════════════════════════════════════════════════════════════════════════════════',
+    );
     console.log('');
-    console.log('  ── System-wide ─────────────────────────────────────────────────────────────────');
+    console.log(
+      '  ── System-wide ─────────────────────────────────────────────────────────────────',
+    );
     console.log('  Role            Username             Phone           Notes');
     console.log('  superadmin      superadmin           081200000010    Full access');
     console.log('  admin_system    admin_system_1        081200000011    System administration');
     console.log('  top_management  top_management_1      081200000012    City-wide read-only');
     console.log('');
-    console.log('  ── Rayon Pusat ─────────────────────────────────────────────────────────────────');
+    console.log(
+      '  ── Rayon Pusat ─────────────────────────────────────────────────────────────────',
+    );
     console.log('  Role            Username             Phone           Area / Notes');
     console.log('  kepala_rayon    kepala_rayon_pusat_1   081200000013    Rayon Pusat head');
-    console.log('  admin_data      admin_data_pusat_1   081200000014    Rayon Pusat — review/convert');
+    console.log(
+      '  admin_data      admin_data_pusat_1   081200000014    Rayon Pusat — review/convert',
+    );
     console.log('  korlap          korlap_pusat_1       081200000015    All 13 areas');
     console.log('  korlap          korlap_pusat_2       081200000016    All 13 areas');
     console.log('  korlap          korlap_pusat_3     081200000017    Taman Bungkul');
@@ -1072,25 +1292,37 @@ async function seedStaging() {
     console.log('  linmas          linmas_pusat_2       081200000021    Taman Bungkul');
     console.log('  satgas          satgas_pusat_3     081200000022    Taman Bungkul');
     console.log('');
-    console.log('  ── Staff Kecamatan (NEW — Phase 3 public intake) ───────────────────────────────');
+    console.log(
+      '  ── Staff Kecamatan (NEW — Phase 3 public intake) ───────────────────────────────',
+    );
     console.log('  Username pattern: staff_kecamatan_<code>_<n>  (e.g. staff_kecamatan_wiyung_1)');
     console.log('  Each user is auto-linked to their kecamatan_id + rayon_id; the mobile submit');
     console.log('  form pre-fills + locks both fields on login.');
     console.log('');
     console.log('  Username                       Phone          Kecamatan         Rayon');
-    console.log('  ──────────────────────────────────────────────────────────────────────────────────');
+    console.log(
+      '  ──────────────────────────────────────────────────────────────────────────────────',
+    );
     for (const u of kecSamples) {
       console.log(
         `  ${u.username.padEnd(30)} ${(u.phone_number ?? '').padEnd(14)} ${(u.kecamatan ?? '—').padEnd(17)} ${u.rayon ?? '—'}`,
       );
     }
-    console.log(`  … plus ${Math.max(0, (sc.staff_kec_users ?? 0) - kecSamples.length)} more — one user per kecamatan, all 31 covered.`);
+    console.log(
+      `  … plus ${Math.max(0, (sc.staff_kec_users ?? 0) - kecSamples.length)} more — one user per kecamatan, all 31 covered.`,
+    );
     console.log('');
-    console.log('  Legacy single-rayon staff_kecamatan_pusat_1 is also retained (081200000023) for back-compat.');
+    console.log(
+      '  Legacy single-rayon staff_kecamatan_pusat_1 is also retained (081200000023) for back-compat.',
+    );
     console.log('');
-    console.log('══════════════════════════════════════════════════════════════════════════════════════');
+    console.log(
+      '══════════════════════════════════════════════════════════════════════════════════════',
+    );
     console.log('👤  REAL USERS  (production-bound, all passwords: password123)');
-    console.log('══════════════════════════════════════════════════════════════════════════════════════');
+    console.log(
+      '══════════════════════════════════════════════════════════════════════════════════════',
+    );
     console.log('');
     console.log('  Role            Username             Phone          Area');
     console.log('  top_management  pramudita_yustiani   08563302643    —');
@@ -1105,7 +1337,7 @@ async function seedStaging() {
     console.log('  linmas          agus_ramadhan        083831353889   Taman Bungkul');
     console.log('');
     console.log('  💡 UAT walkthrough tip — keep all three actors in the SAME rayon so the');
-    console.log('     permohonan actually lands in the admin\'s queue:');
+    console.log("     permohonan actually lands in the admin's queue:");
     console.log('     1. Log in as `staff_kecamatan_tegalsari_1` (Rayon Pusat) → submit a pruning');
     console.log('        request (rayon + kecamatan are pre-filled and locked).');
     console.log('     2. Switch to `admin_data_pusat_1`   (Rayon Pusat) → review + convert.');
@@ -1113,7 +1345,9 @@ async function seedStaging() {
     console.log('     For other rayons pair the matching trio, e.g.');
     console.log('       staff_kecamatan_wiyung_1 → admin_data_selatan_1 → satgas_selatan_1');
     console.log('       staff_kecamatan_tambaksari_1 → admin_data_timur_1_1 → satgas_timur_1_1');
-    console.log('══════════════════════════════════════════════════════════════════════════════════════');
+    console.log(
+      '══════════════════════════════════════════════════════════════════════════════════════',
+    );
   } catch (error) {
     console.error('\n❌ Staging seeding failed:', error);
     throw error;

@@ -11,6 +11,10 @@ import { PruningRequestsService } from './pruning-requests.service';
 import { PruningRequest } from './entities/pruning-request.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { CreatePruningRequestDto } from './dto/create-pruning-request.dto';
+import { Task } from '../tasks/entities/task.entity';
+import { ServiceCapacityService } from '../service-capacity/service-capacity.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { UsersService } from '../users/users.service';
 
 // Use offsets relative to the test run so fixtures don't rot when the calendar advances.
 function futureDateString(daysFromNow: number): string {
@@ -40,6 +44,7 @@ describe('PruningRequestsService', () => {
     role: UserRole.STAFF_KECAMATAN,
     rayon_id: mockRayonId,
     is_active: true,
+    password_must_change: false,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -54,6 +59,7 @@ describe('PruningRequestsService', () => {
     role: UserRole.ADMIN_DATA,
     rayon_id: mockRayonId,
     is_active: true,
+    password_must_change: false,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -68,6 +74,7 @@ describe('PruningRequestsService', () => {
     role: UserRole.KEPALA_RAYON,
     rayon_id: mockRayonId,
     is_active: true,
+    password_must_change: false,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -81,6 +88,7 @@ describe('PruningRequestsService', () => {
     profile_picture_url: null,
     role: UserRole.SUPERADMIN,
     is_active: true,
+    password_must_change: false,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -95,6 +103,7 @@ describe('PruningRequestsService', () => {
     role: UserRole.SATGAS,
     rayon_id: 'different-rayon-id',
     is_active: true,
+    password_must_change: false,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -175,7 +184,7 @@ describe('PruningRequestsService', () => {
           useValue: mockUserRepository,
         },
         {
-          provide: getRepositoryToken(require('../tasks/entities/task.entity').Task),
+          provide: getRepositoryToken(Task),
           useValue: mockTaskRepository,
         },
         {
@@ -183,16 +192,15 @@ describe('PruningRequestsService', () => {
           useValue: mockDataSource,
         },
         {
-          provide: require('../service-capacity/service-capacity.service')
-            .ServiceCapacityService,
+          provide: ServiceCapacityService,
           useValue: mockServiceCapacityService,
         },
         {
-          provide: require('../notifications/notifications.service').NotificationsService,
+          provide: NotificationsService,
           useValue: { sendToUser: jest.fn().mockResolvedValue({}) },
         },
         {
-          provide: require('../users/users.service').UsersService,
+          provide: UsersService,
           useValue: {
             findOne: jest.fn().mockResolvedValue({ id: 'sat-id', role: 'satgas' }),
           },
@@ -201,12 +209,10 @@ describe('PruningRequestsService', () => {
     }).compile();
 
     service = module.get<PruningRequestsService>(PruningRequestsService);
-    pruningRequestRepository = module.get(
-      getRepositoryToken(PruningRequest),
-    ) as jest.Mocked<Repository<PruningRequest>>;
-    userRepository = module.get(
-      getRepositoryToken(User),
-    ) as jest.Mocked<Repository<User>>;
+    pruningRequestRepository = module.get(getRepositoryToken(PruningRequest)) as jest.Mocked<
+      Repository<PruningRequest>
+    >;
+    userRepository = module.get(getRepositoryToken(User)) as jest.Mocked<Repository<User>>;
   });
 
   afterEach(async () => {
@@ -259,9 +265,7 @@ describe('PruningRequestsService', () => {
         target_count: 15,
       };
 
-      await expect(service.create(dto, mockStaffKecamatan)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.create(dto, mockStaffKecamatan)).rejects.toThrow(BadRequestException);
       await expect(service.create(dto, mockStaffKecamatan)).rejects.toThrow(
         'Detail date must be today or in the future',
       );
@@ -331,9 +335,7 @@ describe('PruningRequestsService', () => {
         expected_iso_week: 1,
       };
 
-      await expect(service.create(dto, mockStaffKecamatan)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.create(dto, mockStaffKecamatan)).rejects.toThrow(BadRequestException);
     });
 
     it('derives the ISO week from a legacy detail_date submission', async () => {
@@ -377,6 +379,8 @@ describe('PruningRequestsService', () => {
         take: 20,
         skip: 0,
         relations: ['submitter', 'reviewer', 'rayon'],
+        // Audit H1: project list trims joined user rows to public-safe columns.
+        select: expect.any(Object),
       });
     });
 
@@ -392,6 +396,8 @@ describe('PruningRequestsService', () => {
         take: 50,
         skip: 100,
         relations: ['submitter', 'reviewer', 'rayon'],
+        // Audit H1: project list trims joined user rows to public-safe columns.
+        select: expect.any(Object),
       });
     });
 
@@ -407,9 +413,7 @@ describe('PruningRequestsService', () => {
 
   describe('findById', () => {
     it('should return request for owner', async () => {
-      mockPruningRequestRepository.findOne.mockResolvedValue(
-        mockPruningRequest,
-      );
+      mockPruningRequestRepository.findOne.mockResolvedValue(mockPruningRequest);
 
       const result = await service.findById(mockRequestId, mockStaffKecamatan);
 
@@ -417,13 +421,13 @@ describe('PruningRequestsService', () => {
       expect(mockPruningRequestRepository.findOne).toHaveBeenCalledWith({
         where: { id: mockRequestId },
         relations: ['submitter', 'reviewer', 'rayon'],
+        // Audit H1: project list trims joined user rows to public-safe columns.
+        select: expect.any(Object),
       });
     });
 
     it('should return request for rayon-scoped admin_data with matching rayon', async () => {
-      mockPruningRequestRepository.findOne.mockResolvedValue(
-        mockPruningRequest,
-      );
+      mockPruningRequestRepository.findOne.mockResolvedValue(mockPruningRequest);
 
       const result = await service.findById(mockRequestId, mockAdminData);
 
@@ -436,24 +440,20 @@ describe('PruningRequestsService', () => {
         ...mockPruningRequest,
         rayonId: 'request-rayon-id-11111111',
       };
-      mockPruningRequestRepository.findOne.mockResolvedValue(
-        requestDifferentRayon,
-      );
+      mockPruningRequestRepository.findOne.mockResolvedValue(requestDifferentRayon);
 
       const adminDifferentRayon = {
         ...mockAdminData,
         rayon_id: differentRayonId, // Different from request's rayon
       };
 
-      await expect(
-        service.findById(mockRequestId, adminDifferentRayon),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.findById(mockRequestId, adminDifferentRayon)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should return request for kepala_rayon with matching rayon', async () => {
-      mockPruningRequestRepository.findOne.mockResolvedValue(
-        mockPruningRequest,
-      );
+      mockPruningRequestRepository.findOne.mockResolvedValue(mockPruningRequest);
 
       const result = await service.findById(mockRequestId, mockKepalaRayon);
 
@@ -461,9 +461,7 @@ describe('PruningRequestsService', () => {
     });
 
     it('should return request for superadmin (unrestricted)', async () => {
-      mockPruningRequestRepository.findOne.mockResolvedValue(
-        mockPruningRequest,
-      );
+      mockPruningRequestRepository.findOne.mockResolvedValue(mockPruningRequest);
 
       const result = await service.findById(mockRequestId, mockSuperadmin);
 
@@ -471,30 +469,28 @@ describe('PruningRequestsService', () => {
     });
 
     it('should deny access for random user (non-owner, non-admin)', async () => {
-      mockPruningRequestRepository.findOne.mockResolvedValue(
-        mockPruningRequest,
-      );
+      mockPruningRequestRepository.findOne.mockResolvedValue(mockPruningRequest);
 
-      await expect(
-        service.findById(mockRequestId, mockRandomUser),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.findById(mockRequestId, mockRandomUser)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException for non-existent request', async () => {
       mockPruningRequestRepository.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.findById('non-existent-id', mockStaffKecamatan),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.findById('non-existent-id', mockStaffKecamatan)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw NotFoundException with correct message', async () => {
       const id = 'non-existent-id';
       mockPruningRequestRepository.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.findById(id, mockStaffKecamatan),
-      ).rejects.toThrow(`Pruning request with ID ${id} not found`);
+      await expect(service.findById(id, mockStaffKecamatan)).rejects.toThrow(
+        `Pruning request with ID ${id} not found`,
+      );
     });
   });
 
@@ -530,9 +526,9 @@ describe('PruningRequestsService', () => {
       // backend guard that prevents approved-without-date limbo.
       mockPruningRequestRepository.findOne.mockResolvedValue(mockPruningRequest);
 
-      await expect(
-        service.review(mockRequestId, dto, mockAdminData),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.review(mockRequestId, dto, mockAdminData)).rejects.toThrow(
+        ConflictException,
+      );
       expect(mockPruningRequestRepository.save).not.toHaveBeenCalled();
     });
 
@@ -587,9 +583,9 @@ describe('PruningRequestsService', () => {
       };
       mockPruningRequestRepository.findOne.mockResolvedValue(mismatchedRequest);
 
-      await expect(
-        service.review(mockRequestId, dto, mockAdminData),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.review(mockRequestId, dto, mockAdminData)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should reject review of already-approved request (conflict)', async () => {
@@ -600,18 +596,18 @@ describe('PruningRequestsService', () => {
       };
       mockPruningRequestRepository.findOne.mockResolvedValue(approvedRequest);
 
-      await expect(
-        service.review(mockRequestId, dto, mockAdminData),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.review(mockRequestId, dto, mockAdminData)).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('should reject review of non-existent request', async () => {
       const dto = { decision: 'approve' as const };
       mockPruningRequestRepository.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.review(mockRequestId, dto, mockAdminData),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.review(mockRequestId, dto, mockAdminData)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -710,9 +706,9 @@ describe('PruningRequestsService', () => {
       };
       mockPruningRequestRepository.findOne.mockResolvedValue(mismatchedRequest);
 
-      await expect(
-        service.assignToTask(mockRequestId, dto, mockAdminData),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.assignToTask(mockRequestId, dto, mockAdminData)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should reject conversion of non-approved request', async () => {
@@ -730,9 +726,9 @@ describe('PruningRequestsService', () => {
       };
       mockPruningRequestRepository.findOne.mockResolvedValue(submittedRequest);
 
-      await expect(
-        service.assignToTask(mockRequestId, dto, mockAdminData),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.assignToTask(mockRequestId, dto, mockAdminData)).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('should propagate capacity booking conflict', async () => {
@@ -757,9 +753,9 @@ describe('PruningRequestsService', () => {
         return cb({});
       });
 
-      await expect(
-        service.assignToTask(mockRequestId, dto, mockAdminData),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.assignToTask(mockRequestId, dto, mockAdminData)).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     // ── ADR-035 amendment 2026-05-01 (auto-pick day inside requested week) ──
@@ -781,7 +777,7 @@ describe('PruningRequestsService', () => {
         expectedYear: futureYear,
         expectedIsoWeek: 25,
         expectedDate: null,
-    scheduledDate: null,
+        scheduledDate: null,
       };
 
       const mockTask = {
@@ -837,13 +833,13 @@ describe('PruningRequestsService', () => {
         expectedYear: null,
         expectedIsoWeek: null,
         expectedDate: null,
-    scheduledDate: null,
+        scheduledDate: null,
       };
       mockPruningRequestRepository.findOne.mockResolvedValue(approvedRequest);
 
-      await expect(
-        service.assignToTask(mockRequestId, dto, mockAdminData),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.assignToTask(mockRequestId, dto, mockAdminData)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should reject conversion of non-existent request', async () => {
@@ -857,9 +853,9 @@ describe('PruningRequestsService', () => {
 
       mockPruningRequestRepository.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.assignToTask(mockRequestId, dto, mockAdminData),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.assignToTask(mockRequestId, dto, mockAdminData)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -868,19 +864,19 @@ describe('PruningRequestsService', () => {
       const requests = [mockPruningRequest];
       const mockQueryBuilder = {
         andWhere: jest.fn().mockReturnThis(),
+        // Audit H1: findAll now also calls leftJoin + addSelect to project
+        // safe user columns on submitter/reviewer; mocks include those too.
+        leftJoin: jest.fn().mockReturnThis(),
         leftJoinAndSelect: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
-        getManyAndCount: jest
-          .fn()
-          .mockResolvedValue([requests, 1]),
+        getManyAndCount: jest.fn().mockResolvedValue([requests, 1]),
       };
 
-      mockPruningRequestRepository.createQueryBuilder.mockReturnValue(
-        mockQueryBuilder,
-      );
+      mockPruningRequestRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
 
       const result = await service.findAll(mockSuperadmin, {
         page: 1,
@@ -895,19 +891,19 @@ describe('PruningRequestsService', () => {
     it('should auto-filter admin_data by their rayon', async () => {
       const mockQueryBuilder = {
         andWhere: jest.fn().mockReturnThis(),
+        // Audit H1: findAll now also calls leftJoin + addSelect to project
+        // safe user columns on submitter/reviewer; mocks include those too.
+        leftJoin: jest.fn().mockReturnThis(),
         leftJoinAndSelect: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
-        getManyAndCount: jest
-          .fn()
-          .mockResolvedValue([[mockPruningRequest], 1]),
+        getManyAndCount: jest.fn().mockResolvedValue([[mockPruningRequest], 1]),
       };
 
-      mockPruningRequestRepository.createQueryBuilder.mockReturnValue(
-        mockQueryBuilder,
-      );
+      mockPruningRequestRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
 
       await service.findAll(mockAdminData, {
         page: 1,
@@ -915,32 +911,30 @@ describe('PruningRequestsService', () => {
       });
 
       // Since no status filter is provided, should call where (not andWhere)
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-        'pr.rayonId = :rayonId',
-        { rayonId: mockRayonId },
-      );
-      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
-        'pr.rayonId = :rayonId',
-        { rayonId: mockRayonId },
-      );
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('pr.rayonId = :rayonId', {
+        rayonId: mockRayonId,
+      });
+      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith('pr.rayonId = :rayonId', {
+        rayonId: mockRayonId,
+      });
     });
 
     it('should filter by status', async () => {
       const mockQueryBuilder = {
         andWhere: jest.fn().mockReturnThis(),
+        // Audit H1: findAll now also calls leftJoin + addSelect to project
+        // safe user columns on submitter/reviewer; mocks include those too.
+        leftJoin: jest.fn().mockReturnThis(),
         leftJoinAndSelect: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
-        getManyAndCount: jest
-          .fn()
-          .mockResolvedValue([[mockPruningRequest], 1]),
+        getManyAndCount: jest.fn().mockResolvedValue([[mockPruningRequest], 1]),
       };
 
-      mockPruningRequestRepository.createQueryBuilder.mockReturnValue(
-        mockQueryBuilder,
-      );
+      mockPruningRequestRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
 
       await service.findAll(mockSuperadmin, {
         status: 'approved',
@@ -948,28 +942,27 @@ describe('PruningRequestsService', () => {
         limit: 20,
       });
 
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-        'pr.status = :status',
-        { status: 'approved' },
-      );
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('pr.status = :status', {
+        status: 'approved',
+      });
     });
 
     it('should apply pagination correctly', async () => {
       const mockQueryBuilder = {
         andWhere: jest.fn().mockReturnThis(),
+        // Audit H1: findAll now also calls leftJoin + addSelect to project
+        // safe user columns on submitter/reviewer; mocks include those too.
+        leftJoin: jest.fn().mockReturnThis(),
         leftJoinAndSelect: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
-        getManyAndCount: jest
-          .fn()
-          .mockResolvedValue([[], 100]),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 100]),
       };
 
-      mockPruningRequestRepository.createQueryBuilder.mockReturnValue(
-        mockQueryBuilder,
-      );
+      mockPruningRequestRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
 
       const result = await service.findAll(mockSuperadmin, {
         page: 3,
@@ -984,16 +977,18 @@ describe('PruningRequestsService', () => {
     it('should apply from/to date range filters', async () => {
       const mockQueryBuilder = {
         andWhere: jest.fn().mockReturnThis(),
+        // Audit H1: findAll now also calls leftJoin + addSelect to project
+        // safe user columns on submitter/reviewer; mocks include those too.
+        leftJoin: jest.fn().mockReturnThis(),
         leftJoinAndSelect: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
         getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
       };
-      mockPruningRequestRepository.createQueryBuilder.mockReturnValue(
-        mockQueryBuilder,
-      );
+      mockPruningRequestRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
 
       await service.findAll(mockSuperadmin, {
         from: '2026-04-01',
@@ -1002,11 +997,11 @@ describe('PruningRequestsService', () => {
         limit: 20,
       });
 
-      const fromCalls = mockQueryBuilder.andWhere.mock.calls.filter(
-        ([clause]: [string]) => clause.includes(':from'),
+      const fromCalls = mockQueryBuilder.andWhere.mock.calls.filter(([clause]: [string]) =>
+        clause.includes(':from'),
       );
-      const toCalls = mockQueryBuilder.andWhere.mock.calls.filter(
-        ([clause]: [string]) => clause.includes(':to'),
+      const toCalls = mockQueryBuilder.andWhere.mock.calls.filter(([clause]: [string]) =>
+        clause.includes(':to'),
       );
       expect(fromCalls.length).toBe(1);
       expect(toCalls.length).toBe(1);
@@ -1015,23 +1010,24 @@ describe('PruningRequestsService', () => {
     it('should use where (not andWhere) for rayon filter when no status filter', async () => {
       const mockQueryBuilder = {
         andWhere: jest.fn().mockReturnThis(),
+        // Audit H1: findAll now also calls leftJoin + addSelect to project
+        // safe user columns on submitter/reviewer; mocks include those too.
+        leftJoin: jest.fn().mockReturnThis(),
         leftJoinAndSelect: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
         getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
       };
-      mockPruningRequestRepository.createQueryBuilder.mockReturnValue(
-        mockQueryBuilder,
-      );
+      mockPruningRequestRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
 
       await service.findAll(mockAdminData, { page: 1, limit: 20 });
 
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-        'pr.rayonId = :rayonId',
-        { rayonId: mockRayonId },
-      );
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('pr.rayonId = :rayonId', {
+        rayonId: mockRayonId,
+      });
     });
   });
 
@@ -1052,9 +1048,9 @@ describe('PruningRequestsService', () => {
       mockPruningRequestRepository.findOne.mockResolvedValue(approvedRequest);
       mockDataSource.transaction.mockImplementation(async (cb) => cb({}));
 
-      await expect(
-        service.assignToTask(mockRequestId, dto, mockSuperadmin),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.assignToTask(mockRequestId, dto, mockSuperadmin)).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('should rethrow non-ConflictException errors from bookAtomic', async () => {
@@ -1076,9 +1072,9 @@ describe('PruningRequestsService', () => {
       );
       mockDataSource.transaction.mockImplementation(async (cb) => cb({}));
 
-      await expect(
-        service.assignToTask(mockRequestId, dto, mockAdminData),
-      ).rejects.toThrow('Database connection lost');
+      await expect(service.assignToTask(mockRequestId, dto, mockAdminData)).rejects.toThrow(
+        'Database connection lost',
+      );
     });
   });
 
@@ -1117,11 +1113,7 @@ describe('PruningRequestsService', () => {
       });
 
       await expect(
-        service.reschedule(
-          mockRequestId,
-          { expectedDate: futureIso },
-          mockAdminData,
-        ),
+        service.reschedule(mockRequestId, { expectedDate: futureIso }, mockAdminData),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -1135,11 +1127,7 @@ describe('PruningRequestsService', () => {
       });
 
       await expect(
-        service.reschedule(
-          mockRequestId,
-          { expectedDate: futureIso },
-          mockKepalaRayon,
-        ),
+        service.reschedule(mockRequestId, { expectedDate: futureIso }, mockKepalaRayon),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -1150,11 +1138,7 @@ describe('PruningRequestsService', () => {
       });
 
       await expect(
-        service.reschedule(
-          mockRequestId,
-          { expectedDate: futureIso },
-          mockKepalaRayon,
-        ),
+        service.reschedule(mockRequestId, { expectedDate: futureIso }, mockKepalaRayon),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -1165,11 +1149,7 @@ describe('PruningRequestsService', () => {
       });
 
       await expect(
-        service.reschedule(
-          mockRequestId,
-          { expectedDate: '2020-01-01' },
-          mockKepalaRayon,
-        ),
+        service.reschedule(mockRequestId, { expectedDate: '2020-01-01' }, mockKepalaRayon),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -1196,9 +1176,7 @@ describe('PruningRequestsService', () => {
           if (arg2 !== undefined) return Promise.resolve(arg2);
           return Promise.resolve(arg1);
         });
-        mockDataSource.transaction.mockImplementation(async (cb: any) =>
-          cb({ save: tmSave }),
-        );
+        mockDataSource.transaction.mockImplementation(async (cb: any) => cb({ save: tmSave }));
         mockTaskRepository.findOne.mockResolvedValue(linkedTask());
       });
 
@@ -1288,9 +1266,7 @@ describe('PruningRequestsService', () => {
           mockKepalaRayon,
         );
 
-        expect(result.scheduledDate).toEqual(
-          new Date(newDate.toISOString().slice(0, 10)),
-        );
+        expect(result.scheduledDate).toEqual(new Date(newDate.toISOString().slice(0, 10)));
         expect(mockServiceCapacityService.bookAtomic).toHaveBeenCalled();
       });
 
@@ -1308,9 +1284,7 @@ describe('PruningRequestsService', () => {
           mockKepalaRayon,
         );
 
-        expect(result.scheduledDate).toEqual(
-          new Date(newDate.toISOString().slice(0, 10)),
-        );
+        expect(result.scheduledDate).toEqual(new Date(newDate.toISOString().slice(0, 10)));
         expect(mockServiceCapacityService.bookAtomic).not.toHaveBeenCalled();
       });
     });
@@ -1379,7 +1353,9 @@ describe('PruningRequestsService', () => {
 
     it('forbids non-submitter, non-admin from cancelling', async () => {
       pruningRequestRepository.findOne.mockResolvedValue(baseSave('submitted') as any);
-      await expect(service.cancel(mockRequestId, mockRandomUser)).rejects.toThrow(ForbiddenException);
+      await expect(service.cancel(mockRequestId, mockRandomUser)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('throws NotFoundException when request missing', async () => {

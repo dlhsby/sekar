@@ -302,9 +302,15 @@ export class TasksController {
   @ApiOperation({ summary: 'Add user tags to a task (batch) — creator or current assignee' })
   @ApiParam({ name: 'id', description: 'Task ID (UUID)' })
   @ApiResponse({ status: 200, description: 'Tags added successfully', type: Task })
-  @ApiResponse({ status: 400, description: 'Task is sealed (completed/verified/declined) or invalid input' })
+  @ApiResponse({
+    status: 400,
+    description: 'Task is sealed (completed/verified/declined) or invalid input',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - only task creator or current assignee can add tags' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - only task creator or current assignee can add tags',
+  })
   @ApiResponse({ status: 404, description: 'Task or user not found' })
   async addTags(
     @Param('id', ParseUUIDPipe) id: string,
@@ -326,7 +332,10 @@ export class TasksController {
   @ApiResponse({ status: 204, description: 'Tag removed successfully' })
   @ApiResponse({ status: 400, description: 'Task is sealed (completed/verified/declined)' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - only task creator or current assignee can remove tags' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - only task creator or current assignee can remove tags',
+  })
   @ApiResponse({ status: 404, description: 'Tag not found' })
   async removeTag(
     @Param('id', ParseUUIDPipe) id: string,
@@ -361,7 +370,13 @@ export class TasksController {
    * Updates completed_plant_count; optionally spawns a child task for tomorrow.
    */
   @Post(':id/partial-complete')
-  @Roles(UserRole.SATGAS, UserRole.LINMAS, UserRole.KORLAP, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN)
+  @Roles(
+    UserRole.SATGAS,
+    UserRole.LINMAS,
+    UserRole.KORLAP,
+    UserRole.ADMIN_SYSTEM,
+    UserRole.SUPERADMIN,
+  )
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Partial-complete a task — updates completed_plant_count, optionally spawns child',
@@ -385,7 +400,13 @@ export class TasksController {
    * Resume a task — spawns a child task with remaining target_plant_count.
    */
   @Post(':id/resume')
-  @Roles(UserRole.SATGAS, UserRole.LINMAS, UserRole.KORLAP, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN)
+  @Roles(
+    UserRole.SATGAS,
+    UserRole.LINMAS,
+    UserRole.KORLAP,
+    UserRole.ADMIN_SYSTEM,
+    UserRole.SUPERADMIN,
+  )
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Resume a task — spawns child task with remaining target_plant_count' })
   @ApiParam({ name: 'id', description: 'Task UUID' })
@@ -393,10 +414,7 @@ export class TasksController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Task not found' })
-  async resume(
-    @Param('id', ParseUUIDPipe) id: string,
-    @GetUser() user: User,
-  ): Promise<Task> {
+  async resume(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User): Promise<Task> {
     return this.tasksService.resume(id, user);
   }
 
@@ -430,7 +448,14 @@ export class TasksController {
    * Get the full task lineage — parent chain plus child tasks.
    */
   @Get(':id/lineage')
-  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.SATGAS, UserRole.LINMAS, UserRole.KEPALA_RAYON, UserRole.TOP_MANAGEMENT)
+  @Roles(
+    ...USER_MANAGERS,
+    UserRole.KORLAP,
+    UserRole.SATGAS,
+    UserRole.LINMAS,
+    UserRole.KEPALA_RAYON,
+    UserRole.TOP_MANAGEMENT,
+  )
   @ApiOperation({ summary: 'Get task lineage — parent chain + children' })
   @ApiParam({ name: 'id', description: 'Task UUID' })
   @ApiResponse({ status: 200, description: 'Task lineage returned' })

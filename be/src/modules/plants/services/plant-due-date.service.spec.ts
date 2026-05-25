@@ -238,17 +238,25 @@ describe('PlantDueDateService', () => {
     });
 
     it('should integrate override cycle with species cycle precedence', () => {
-      // Mar 18 + 50 days = May 7 (10 days from Apr 27)
-      const plant = {
-        ...mockAreaPlant,
-        lastPrunedAt: new Date('2026-03-18'),
-        overrideCycleDays: 50, // Override takes precedence over species 90-day default
-      };
+      // Mar 18 + 50 days = May 7 (10 days from Apr 27).
+      // Pin "now" to Apr 27 so the assertion is wall-clock-independent —
+      // without this, the test classifies May 7 as `overdue` once the real
+      // calendar moves past it.
+      jest.useFakeTimers().setSystemTime(new Date('2026-04-27T00:00:00Z'));
+      try {
+        const plant = {
+          ...mockAreaPlant,
+          lastPrunedAt: new Date('2026-03-18'),
+          overrideCycleDays: 50, // Override takes precedence over species 90-day default
+        };
 
-      const result = service.recomputeAreaPlant(plant, mockSpecies, mockAreaType);
+        const result = service.recomputeAreaPlant(plant, mockSpecies, mockAreaType);
 
-      // May 7 is 10 days from Apr 27, within the 14-day due window
-      expect(result.status).toBe('due_soon');
+        // May 7 is 10 days from Apr 27, within the 14-day due window
+        expect(result.status).toBe('due_soon');
+      } finally {
+        jest.useRealTimers();
+      }
     });
   });
 
@@ -261,11 +269,7 @@ describe('PlantDueDateService', () => {
         defaultPruningCycleDays: 365,
       };
 
-      const result = service.computeNextDueDate(
-        speciesLeap,
-        mockAreaType,
-        leapDayPruned,
-      );
+      const result = service.computeNextDueDate(speciesLeap, mockAreaType, leapDayPruned);
 
       // Feb 29 + 365 days = Feb 28, 2025 (or Feb 29, 2026 depending on leap logic)
       expect(result).not.toBeNull();

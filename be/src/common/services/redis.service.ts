@@ -32,10 +32,12 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     this.client = new Redis(url, { lazyConnect: true, maxRetriesPerRequest: 3 });
     this.subscriber = new Redis(url, { lazyConnect: true, maxRetriesPerRequest: 3 });
 
-    this.client.connect().catch((e) => this.logger.warn(`Redis client connect failed: ${e.message}`));
-    this.subscriber.connect().catch((e) =>
-      this.logger.warn(`Redis subscriber connect failed: ${e.message}`),
-    );
+    this.client
+      .connect()
+      .catch((e) => this.logger.warn(`Redis client connect failed: ${e.message}`));
+    this.subscriber
+      .connect()
+      .catch((e) => this.logger.warn(`Redis subscriber connect failed: ${e.message}`));
   }
 
   async onModuleDestroy(): Promise<void> {
@@ -115,8 +117,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     count = 100,
     blockMs = 0,
   ): Promise<StreamMessage[]> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const xreadgroupFn = this.client.xreadgroup.bind(this.client) as (...args: any[]) => Promise<any>;
+    const xreadgroupFn = this.client.xreadgroup.bind(this.client) as (
+      ...args: any[]
+    ) => Promise<any>;
     const result = (await xreadgroupFn(
       'GROUP',
       group,

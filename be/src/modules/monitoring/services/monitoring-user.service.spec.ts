@@ -137,7 +137,9 @@ describe('MonitoringUserService', () => {
     areaRepository = module.get<jest.Mocked<Repository<Area>>>(getRepositoryToken(Area));
     shiftRepository = module.get<jest.Mocked<Repository<Shift>>>(getRepositoryToken(Shift));
     taskRepository = module.get<jest.Mocked<Repository<Task>>>(getRepositoryToken(Task));
-    activityRepository = module.get<jest.Mocked<Repository<Activity>>>(getRepositoryToken(Activity));
+    activityRepository = module.get<jest.Mocked<Repository<Activity>>>(
+      getRepositoryToken(Activity),
+    );
     locationRepository = module.get<jest.Mocked<Repository<LocationLog>>>(
       getRepositoryToken(LocationLog),
     );

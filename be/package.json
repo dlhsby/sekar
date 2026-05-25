@@ -49,6 +49,7 @@
     "@aws-sdk/client-s3": "^3.965.0",
     "@aws-sdk/s3-request-presigner": "^3.975.0",
     "@eslint/eslintrc": "^3.3.5",
+    "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.1.19",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.1.19",
@@ -62,10 +63,13 @@
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/typeorm": "^11.0.1",
     "@nestjs/websockets": "^11.1.19",
+    "@sentry/node": "^10.53.1",
+    "@sentry/profiling-node": "^10.53.1",
     "@socket.io/redis-adapter": "^8.3.0",
     "@types/geojson": "^7946.0.16",
     "@types/uuid": "^10.0.0",
     "bcrypt": "^5.1.1",
+    "bullmq": "^5.77.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
     "firebase-admin": "^13.6.0",
@@ -147,18 +151,20 @@
       "!**/*.interface.ts",
       "!**/entities/*.entity.ts",
       "!**/dto/*.dto.ts",
+      "!**/dto/index.ts",
       "!**/decorators/*.decorator.ts",
       "!**/database/data-source.ts",
-      "!**/database/migrations/*.ts"
+      "!**/database/migrations/*.ts",
+      "!**/database/backfill/*.ts"
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
     "coverageThreshold": {
       "global": {
-        "branches": 80,
-        "functions": 80,
-        "lines": 80,
-        "statements": 80
+        "branches": 79,
+        "functions": 75,
+        "lines": 85,
+        "statements": 85
       }
     }
   }

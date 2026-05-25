@@ -60,5 +60,7 @@ export class AuthResponseDto {
     kecamatan_name: string | null;
     phone_number: string | null;
     profile_picture_url: string | null;
+    // Phase 4-7 (M3a): drives the mobile ChangePasswordScreen forced flow.
+    password_must_change: boolean;
   };
 }

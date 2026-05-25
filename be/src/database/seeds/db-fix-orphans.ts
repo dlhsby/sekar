@@ -35,10 +35,7 @@ async function fixOrphans(): Promise<void> {
     username: process.env.DATABASE_USER || 'postgres',
     password: process.env.DATABASE_PASSWORD || 'postgres',
     database: process.env.DATABASE_NAME || 'sekar_db',
-    ssl:
-      process.env.DATABASE_SSL === 'true'
-        ? { rejectUnauthorized: false }
-        : false,
+    ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
     synchronize: false,
     entities: [],
     logging: false,

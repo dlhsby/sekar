@@ -11,7 +11,10 @@ import { Activity } from '../../activities/entities/activity.entity';
 import { LocationLog } from '../../location/entities/location-log.entity';
 import { Rayon } from '../../rayons/entities/rayon.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
-import { AreaStaffRequirement, DayType } from '../../area-staff-requirements/entities/area-staff-requirement.entity';
+import {
+  AreaStaffRequirement,
+  DayType,
+} from '../../area-staff-requirements/entities/area-staff-requirement.entity';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
 import { User } from '../../users/entities/user.entity';
 
@@ -161,8 +164,12 @@ describe('MonitoringStatsService', () => {
     areaRepository = module.get<jest.Mocked<Repository<Area>>>(getRepositoryToken(Area));
     shiftRepository = module.get<jest.Mocked<Repository<Shift>>>(getRepositoryToken(Shift));
     taskRepository = module.get<jest.Mocked<Repository<Task>>>(getRepositoryToken(Task));
-    activityRepository = module.get<jest.Mocked<Repository<Activity>>>(getRepositoryToken(Activity));
-    locationRepository = module.get<jest.Mocked<Repository<LocationLog>>>(getRepositoryToken(LocationLog));
+    activityRepository = module.get<jest.Mocked<Repository<Activity>>>(
+      getRepositoryToken(Activity),
+    );
+    locationRepository = module.get<jest.Mocked<Repository<LocationLog>>>(
+      getRepositoryToken(LocationLog),
+    );
     rayonRepository = module.get<jest.Mocked<Repository<Rayon>>>(getRepositoryToken(Rayon));
     shiftDefinitionRepository = module.get<jest.Mocked<Repository<ShiftDefinition>>>(
       getRepositoryToken(ShiftDefinition),

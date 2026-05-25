@@ -1,5 +1,7 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { InjectQueue } from '@nestjs/bullmq';
+import type { Queue } from 'bullmq';
 import { Repository, FindOptionsWhere } from 'typeorm';
 import { NotificationToken } from './entities/notification-token.entity';
 import { Notification, NotificationType } from './entities/notification.entity';
@@ -9,6 +11,7 @@ import { NotificationFilterDto } from './dto/notification-filter.dto';
 import { SendNotificationDto } from './dto/send-notification.dto';
 import { UsersService } from '../users/users.service';
 import { getMessaging, isFirebaseInitialized } from '../../config/firebase.config';
+import { FCM_RETRY_QUEUE } from '../queue/queue.constants';
 
 /**
  * Service for managing notifications and FCM tokens
@@ -27,6 +30,11 @@ export class NotificationsService {
     @InjectRepository(Notification)
     private readonly notificationRepository: Repository<Notification>,
     private readonly usersService: UsersService,
+    // Optional so existing specs that don't provide the queue keep working.
+    // BullMQ queue for FCM retry — populated when QueueModule wires Redis.
+    @Optional()
+    @InjectQueue(FCM_RETRY_QUEUE)
+    private readonly fcmRetryQueue?: Queue<{ notification_id: string; attempt: number }>,
   ) {}
 
   /**
@@ -448,10 +456,33 @@ export class NotificationsService {
       notification.error_message = error.message;
       await this.notificationRepository.save(notification);
 
-      // Retry if under max attempts
+      // Phase 4-3 (M2): enqueue retry to BullMQ instead of recursing in-process.
+      // Synchronous recursion blocked the HTTP response on every retry and could
+      // run for minutes if FCM was flapping. The queue handles backoff per the
+      // `fcm-retry` queue's exponential schedule.
+      if (notification.send_attempts < this.MAX_RETRY_ATTEMPTS && this.fcmRetryQueue) {
+        await this.fcmRetryQueue.add(
+          'fcm-retry',
+          {
+            notification_id: notification.id,
+            attempt: notification.send_attempts,
+          },
+          // Per-job retry attempts already configured in QueueModule defaults;
+          // jobId guards against duplicates if the same send fails repeatedly
+          // within a single request lifecycle.
+          { jobId: `${notification.id}:${notification.send_attempts}` },
+        );
+        this.logger.warn(
+          `Enqueued FCM retry for notification ${notification.id} (attempt ${notification.send_attempts})`,
+        );
+        return;
+      }
+
+      // No queue (single-process dev or queue uninitialized) — fall back to
+      // the legacy in-process retry so dev workflows still validate retries.
       if (notification.send_attempts < this.MAX_RETRY_ATTEMPTS) {
         this.logger.warn(
-          `Retrying notification ${notification.id} (attempt ${notification.send_attempts + 1})`,
+          `Retrying notification ${notification.id} in-process (attempt ${notification.send_attempts + 1}) — queue unavailable`,
         );
         await this.sendPushNotification(notification);
       } else {
@@ -459,6 +490,22 @@ export class NotificationsService {
         throw error;
       }
     }
+  }
+
+  /**
+   * Replay a previously-failed FCM send. Called by FcmRetryProcessor when a
+   * `fcm-retry` queue job fires. Returns once the send result is persisted;
+   * throws to surface failure to BullMQ so the next backoff attempt fires.
+   */
+  async retrySend(notificationId: string): Promise<void> {
+    const notification = await this.notificationRepository.findOne({
+      where: { id: notificationId },
+    });
+    if (!notification) {
+      this.logger.warn(`retrySend: notification ${notificationId} not found — dropping job`);
+      return;
+    }
+    await this.sendPushNotification(notification);
   }
 
   /**

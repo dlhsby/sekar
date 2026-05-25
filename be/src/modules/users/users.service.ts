@@ -146,10 +146,9 @@ export class UsersService {
           'user.rayon_id',
           'user.created_at',
         ])
-        .where(
-          '(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)',
-          { rayonId: requestingUser.rayon_id },
-        )
+        .where('(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)', {
+          rayonId: requestingUser.rayon_id,
+        })
         .orderBy('user.created_at', 'DESC')
         .skip((page - 1) * limit)
         .take(limit);

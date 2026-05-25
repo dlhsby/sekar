@@ -266,9 +266,7 @@ describe('PlantsService', () => {
     it('should throw NotFoundException if area does not exist', async () => {
       mockAreaRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.listAreaPlants('non-existent-id')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.listAreaPlants('non-existent-id')).rejects.toThrow(NotFoundException);
       await expect(service.listAreaPlants('non-existent-id')).rejects.toThrow(
         'Area with ID non-existent-id not found',
       );
@@ -294,9 +292,7 @@ describe('PlantsService', () => {
     it('should throw NotFoundException if area does not exist', async () => {
       mockAreaRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.listNotablePlants('non-existent-id')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.listNotablePlants('non-existent-id')).rejects.toThrow(NotFoundException);
     });
   });
 

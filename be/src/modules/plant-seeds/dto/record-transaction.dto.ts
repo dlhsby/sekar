@@ -8,7 +8,10 @@ export class RecordTransactionDto {
   seedId: string;
 
   @IsIn(['purchase', 'distribution', 'adjustment'])
-  @ApiProperty({ description: 'Transaction type', enum: ['purchase', 'distribution', 'adjustment'] })
+  @ApiProperty({
+    description: 'Transaction type',
+    enum: ['purchase', 'distribution', 'adjustment'],
+  })
   transactionType: 'purchase' | 'distribution' | 'adjustment';
 
   @IsNumber()
@@ -46,7 +49,11 @@ export class RecordTransactionDto {
 
   @IsOptional()
   @IsString()
-  @ApiProperty({ description: 'Recipient name for distribution', example: 'Pak Joko', required: false })
+  @ApiProperty({
+    description: 'Recipient name for distribution',
+    example: 'Pak Joko',
+    required: false,
+  })
   recipientName?: string;
 
   @Type(() => Date)

@@ -5,6 +5,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, IsNull } from 'typeorm';
@@ -13,6 +14,7 @@ import { ActivityTag } from './entities/activity-tag.entity';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { UpdateActivityDto } from './dto/update-activity.dto';
 import { S3Service } from '../../shared/services/s3.service';
+import { TaskTypeRegistry } from '../tasks/registry/task-type-registry';
 import { Shift } from '../shifts/entities/shift.entity';
 import { ActivityType } from '../activity-types/entities/activity-type.entity';
 import { ActivityPlantItem } from '../plants/entities/activity-plant-item.entity';
@@ -23,6 +25,8 @@ import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { ACTIVITY_SUBMITTERS, MONITORING_CITY } from '../users/constants/role-groups';
 import { AuditLogService } from '../audit/audit.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/entities/notification.entity';
 
 /** Generate a reference code in the format SEKAR-YYYYMM + 6 random alphanumeric chars. */
 function generateReferenceCode(): string {
@@ -60,7 +64,41 @@ export class ActivitiesService {
     private s3Service: S3Service,
     private readonly usersService: UsersService,
     private readonly auditLogService: AuditLogService,
+    // Audit M7 (2026-05-23): validate `custom_fields` against the registry
+    // schema on the activity side too — previously only TasksService called
+    // it, so the same column accepted any JSON when reached via /activities.
+    private readonly taskTypeRegistry: TaskTypeRegistry,
+    // Phase 4-3 (M2): activity approve/reject FCM notifications. Optional so
+    // legacy specs that don't provide NotificationsService keep working — the
+    // prod app wires it via NotificationsModule import in ActivitiesModule.
+    @Optional()
+    private readonly notificationsService?: NotificationsService,
   ) {}
+
+  private notifyActivityDecision(
+    activityId: string,
+    userId: string,
+    decision: 'approved' | 'rejected',
+    reason?: string,
+  ): void {
+    if (!this.notificationsService) return;
+    const isApproved = decision === 'approved';
+    this.notificationsService
+      .sendToUser({
+        user_id: userId,
+        title: isApproved ? 'Aktivitas disetujui' : 'Aktivitas ditolak',
+        body: isApproved
+          ? 'Aktivitas yang Anda submit telah disetujui.'
+          : `Aktivitas yang Anda submit ditolak${reason ? `: ${reason}` : '.'}`,
+        type: isApproved ? NotificationType.ACTIVITY_APPROVED : NotificationType.ACTIVITY_REJECTED,
+        data: { activity_id: activityId, ...(reason ? { reason } : {}) },
+      })
+      .catch((err) =>
+        this.logger.error(
+          `Failed to enqueue activity ${decision} notification for ${userId}: ${err.message}`,
+        ),
+      );
+  }
 
   /**
    * Resolve the set of area UUIDs a korlap is permanently assigned to via
@@ -124,6 +162,23 @@ export class ActivitiesService {
       );
     }
 
+    // 3b. Audit M7 (2026-05-23): validate `custom_fields` against the
+    // TaskTypeRegistry schema. The activity's case_type acts as the routing
+    // key — when present, fields are expected to satisfy the pruning schema
+    // (ADR-031). Unknown / unset case_type falls through to the generic
+    // passthrough schema (no-op), preserving the existing behaviour for
+    // non-pruning activities.
+    if (dto.custom_fields !== undefined && dto.custom_fields !== null) {
+      const registryType = dto.case_type ? 'pruning' : 'generic';
+      try {
+        this.taskTypeRegistry.validate(registryType, dto.custom_fields);
+      } catch {
+        throw new BadRequestException(
+          `custom_fields is invalid for an activity with case_type "${dto.case_type ?? 'none'}". Check required fields per ADR-031.`,
+        );
+      }
+    }
+
     // 4. Create activity
     const activity = this.activitiesRepository.create({
       user_id: userId,
@@ -167,9 +222,7 @@ export class ActivitiesService {
     // yourself is a no-op, not an error. FCM push is intentionally not
     // emitted here yet; a follow-up commit wires it via NotificationsService.
     if (dto.tagged_user_ids && dto.tagged_user_ids.length > 0) {
-      const uniqueIds = Array.from(new Set(dto.tagged_user_ids)).filter(
-        (id) => id !== userId,
-      );
+      const uniqueIds = Array.from(new Set(dto.tagged_user_ids)).filter((id) => id !== userId);
       if (uniqueIds.length > 0) {
         const tagEntities = uniqueIds.map((taggedUserId) =>
           this.activityTagRepository.create({
@@ -179,9 +232,7 @@ export class ActivitiesService {
           }),
         );
         await this.activityTagRepository.save(tagEntities);
-        this.logger.log(
-          `Tagged ${tagEntities.length} users on activity ${savedActivity.id}`,
-        );
+        this.logger.log(`Tagged ${tagEntities.length} users on activity ${savedActivity.id}`);
       }
     }
 
@@ -560,6 +611,9 @@ export class ActivitiesService {
       })
       .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
 
+    // Phase 4-3 (M2): notify the activity owner
+    this.notifyActivityDecision(activityId, activity.user_id, 'approved');
+
     // Re-fetch with all relations for the response
     return this.activitiesRepository.findOneOrFail({
       where: { id: activityId },
@@ -616,6 +670,9 @@ export class ActivitiesService {
         new_value: { status: ActivityStatus.REJECTED, rejection_reason: reason },
       })
       .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
+
+    // Phase 4-3 (M2): notify the activity owner with the rejection reason
+    this.notifyActivityDecision(activityId, activity.user_id, 'rejected', reason);
 
     // Re-fetch with all relations for the response
     return this.activitiesRepository.findOneOrFail({
@@ -728,18 +785,14 @@ export class ActivitiesService {
       throw new ForbiddenException('Only the activity owner can untag users');
     }
     if (activity.status === ActivityStatus.APPROVED) {
-      throw new BadRequestException(
-        'Cannot untag users on an approved activity',
-      );
+      throw new BadRequestException('Cannot untag users on an approved activity');
     }
     const result = await this.activityTagRepository.delete({
       activity_id: activityId,
       user_id: targetUserId,
     });
     if (!result.affected) {
-      throw new NotFoundException(
-        `User ${targetUserId} is not tagged on activity ${activityId}`,
-      );
+      throw new NotFoundException(`User ${targetUserId} is not tagged on activity ${activityId}`);
     }
     this.logger.log(
       `Untagged user ${targetUserId} from activity ${activityId} by owner ${requestingUserId}`,
@@ -752,10 +805,16 @@ export class ActivitiesService {
    * the controller after the standard activity-read scope check passes.
    */
   async findActivityTags(activityId: string): Promise<ActivityTag[]> {
-    return this.activityTagRepository.find({
-      where: { activity_id: activityId },
-      relations: ['user'],
-      order: { created_at: 'ASC' },
-    });
+    // 2026-05-23 audit (finding H1): project only the user columns the UI
+    // renders. Previous `relations: ['user']` shape eager-loaded
+    // phone_number, kecamatan_id, internal flags etc., leaking PII across
+    // role boundaries.
+    return this.activityTagRepository
+      .createQueryBuilder('t')
+      .leftJoin('t.user', 'u')
+      .addSelect(['u.id', 'u.username', 'u.full_name', 'u.role', 'u.profile_picture_url'])
+      .where('t.activity_id = :activityId', { activityId })
+      .orderBy('t.created_at', 'ASC')
+      .getMany();
   }
 }

@@ -154,9 +154,7 @@ export class PlantsService {
 
     const saved = await this.notablePlantRepository.save(notable);
 
-    this.logger.log(
-      `Created notable plant: ${saved.id} (${species.nameId} in ${area.name})`,
-    );
+    this.logger.log(`Created notable plant: ${saved.id} (${species.nameId} in ${area.name})`);
 
     const result = await this.notablePlantRepository.findOne({
       where: { id: saved.id },

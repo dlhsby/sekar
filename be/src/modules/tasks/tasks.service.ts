@@ -72,7 +72,10 @@ export class TasksService {
    * @param creatorId - ID of the user creating the task
    * @returns The created task
    */
-  async create(createTaskDto: CreateTaskDto | CreateTaskTypedDto, creatorId: string): Promise<Task> {
+  async create(
+    createTaskDto: CreateTaskDto | CreateTaskTypedDto,
+    creatorId: string,
+  ): Promise<Task> {
     this.logger.log(`Creating task: ${createTaskDto.title}`);
 
     // Get creator to validate hierarchy
@@ -421,9 +424,7 @@ export class TasksService {
           actor_id: actorId,
           new_value: { status: newStatus, source_task_id: taskId },
         })
-        .catch((err) =>
-          this.logger.error(`Audit log failed on request cascade: ${err.message}`),
-        );
+        .catch((err) => this.logger.error(`Audit log failed on request cascade: ${err.message}`));
 
       // Best-effort push to the submitter so the kecamatan sees status flip
       // in real-time. Maps to TASK_UPDATED so it surfaces in the generic
@@ -677,9 +678,7 @@ export class TasksService {
     // ADR-038: notify the new assignee. Best-effort — the assignment is
     // already persisted, so a notification failure must not throw.
     try {
-      const title = input.task_title
-        ? `Tugas baru: ${input.task_title}`
-        : 'Tugas baru';
+      const title = input.task_title ? `Tugas baru: ${input.task_title}` : 'Tugas baru';
       await this.notificationsService.sendToUser({
         user_id: input.to_user_id,
         title,
@@ -965,12 +964,9 @@ export class TasksService {
       TaskStatus.IN_PROGRESS,
       TaskStatus.REVISION_NEEDED,
     ];
-    const canEdit =
-      isCreator || (isAssignee && assigneeAcceptedStates.includes(task.status));
+    const canEdit = isCreator || (isAssignee && assigneeAcceptedStates.includes(task.status));
     if (!canEdit) {
-      throw new ForbiddenException(
-        'Only the task creator or accepted assignee can modify tags',
-      );
+      throw new ForbiddenException('Only the task creator or accepted assignee can modify tags');
     }
     const sealedStatuses: TaskStatus[] = [
       TaskStatus.COMPLETED,
@@ -978,9 +974,7 @@ export class TasksService {
       TaskStatus.DECLINED,
     ];
     if (sealedStatuses.includes(task.status)) {
-      throw new BadRequestException(
-        `Cannot modify tags on a task with status "${task.status}"`,
-      );
+      throw new BadRequestException(`Cannot modify tags on a task with status "${task.status}"`);
     }
 
     for (const taggedUserId of taggedUserIds) {
@@ -1029,12 +1023,9 @@ export class TasksService {
       TaskStatus.IN_PROGRESS,
       TaskStatus.REVISION_NEEDED,
     ];
-    const canEdit =
-      isCreator || (isAssignee && assigneeAcceptedStates.includes(task.status));
+    const canEdit = isCreator || (isAssignee && assigneeAcceptedStates.includes(task.status));
     if (!canEdit) {
-      throw new ForbiddenException(
-        'Only the task creator or accepted assignee can remove tags',
-      );
+      throw new ForbiddenException('Only the task creator or accepted assignee can remove tags');
     }
     const sealedStatuses: TaskStatus[] = [
       TaskStatus.COMPLETED,
@@ -1042,9 +1033,7 @@ export class TasksService {
       TaskStatus.DECLINED,
     ];
     if (sealedStatuses.includes(task.status)) {
-      throw new BadRequestException(
-        `Cannot modify tags on a task with status "${task.status}"`,
-      );
+      throw new BadRequestException(`Cannot modify tags on a task with status "${task.status}"`);
     }
 
     const tag = await this.taskTagRepository.findOne({
@@ -1117,9 +1106,7 @@ export class TasksService {
     extra?: string,
   ): void {
     const recipientId =
-      event === 'accepted' || event === 'declined'
-        ? task.created_by
-        : task.assigned_to;
+      event === 'accepted' || event === 'declined' ? task.created_by : task.assigned_to;
     if (!recipientId || recipientId === actorId) return;
 
     const titleMap = {
@@ -1428,7 +1415,9 @@ export class TasksService {
     }
 
     const newCompleted = (task.completedPlantCount ?? 0) + dto.completed_count;
-    const isFullyDone = task.targetPlantCount ? newCompleted >= task.targetPlantCount : !dto.resume_tomorrow;
+    const isFullyDone = task.targetPlantCount
+      ? newCompleted >= task.targetPlantCount
+      : !dto.resume_tomorrow;
 
     task.completedPlantCount = newCompleted;
     const becomesCompleted = isFullyDone && task.status === TaskStatus.IN_PROGRESS;
@@ -1450,7 +1439,17 @@ export class TasksService {
     if (dto.resume_tomorrow && !isFullyDone) {
       const remaining = task.targetPlantCount ? task.targetPlantCount - newCompleted : undefined;
       const child = this.taskRepository.create({
-        ...pick(task, ['title', 'description', 'area_id', 'rayon_id', 'taskType', 'assigned_to', 'deadline', 'priority', 'created_by']),
+        ...pick(task, [
+          'title',
+          'description',
+          'area_id',
+          'rayon_id',
+          'taskType',
+          'assigned_to',
+          'deadline',
+          'priority',
+          'created_by',
+        ]),
         status: TaskStatus.ASSIGNED,
         parentTaskId: task.id,
         targetPlantCount: remaining ?? null,
@@ -1497,7 +1496,16 @@ export class TasksService {
       : undefined;
 
     const child = this.taskRepository.create({
-      ...pick(parent, ['description', 'area_id', 'rayon_id', 'taskType', 'assigned_to', 'deadline', 'priority', 'created_by']),
+      ...pick(parent, [
+        'description',
+        'area_id',
+        'rayon_id',
+        'taskType',
+        'assigned_to',
+        'deadline',
+        'priority',
+        'created_by',
+      ]),
       title: `[Lanjutan] ${parent.title}`,
       status: TaskStatus.ASSIGNED,
       parentTaskId: parent.id,

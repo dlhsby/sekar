@@ -11,7 +11,9 @@ import { ActivityPlantItemsService } from './services/activity-plant-items.servi
 import { PlantDueDateService } from './services/plant-due-date.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([PlantSpecies, AreaPlant, NotablePlant, ActivityPlantItem, Area])],
+  imports: [
+    TypeOrmModule.forFeature([PlantSpecies, AreaPlant, NotablePlant, ActivityPlantItem, Area]),
+  ],
   controllers: [PlantsController],
   providers: [PlantsService, ActivityPlantItemsService, PlantDueDateService],
   exports: [TypeOrmModule, PlantsService, ActivityPlantItemsService, PlantDueDateService],

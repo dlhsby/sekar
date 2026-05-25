@@ -734,7 +734,10 @@ describe('OvertimeService', () => {
 
     it('should throw BadRequestException if active normal shift exists', async () => {
       // A normal (non-overtime) active shift blocks starting overtime
-      mockShiftsService.findActiveShift.mockResolvedValue({ id: 'normal-shift', is_overtime: false });
+      mockShiftsService.findActiveShift.mockResolvedValue({
+        id: 'normal-shift',
+        is_overtime: false,
+      });
 
       await expect(service.startOvertime(startDto, clockableUser)).rejects.toThrow(
         BadRequestException,

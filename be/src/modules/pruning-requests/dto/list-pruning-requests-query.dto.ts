@@ -133,8 +133,7 @@ export class ListPruningRequestsQueryDto {
    * @example true
    */
   @ApiPropertyOptional({
-    description:
-      "If true, return only the caller's own submissions (submitter view).",
+    description: "If true, return only the caller's own submissions (submitter view).",
     example: true,
   })
   @IsOptional()

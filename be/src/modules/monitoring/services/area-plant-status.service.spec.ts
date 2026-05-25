@@ -191,11 +191,7 @@ describe('AreaPlantStatusService', () => {
 
     it('should aggregate status counts correctly', async () => {
       areaRepository.findOne.mockResolvedValue(mockArea);
-      areaPlantRepository.find.mockResolvedValue([
-        mockAreaPlant1,
-        mockAreaPlant2,
-        mockAreaPlant3,
-      ]);
+      areaPlantRepository.find.mockResolvedValue([mockAreaPlant1, mockAreaPlant2, mockAreaPlant3]);
 
       plantDueDateService.recomputeAreaPlant
         .mockReturnValueOnce({
@@ -255,11 +251,7 @@ describe('AreaPlantStatusService', () => {
 
     it('should compute total count from all plants', async () => {
       areaRepository.findOne.mockResolvedValue(mockArea);
-      areaPlantRepository.find.mockResolvedValue([
-        mockAreaPlant1,
-        mockAreaPlant2,
-        mockAreaPlant3,
-      ]);
+      areaPlantRepository.find.mockResolvedValue([mockAreaPlant1, mockAreaPlant2, mockAreaPlant3]);
 
       plantDueDateService.recomputeAreaPlant.mockReturnValue({
         nextDueAt: new Date('2026-05-01'),

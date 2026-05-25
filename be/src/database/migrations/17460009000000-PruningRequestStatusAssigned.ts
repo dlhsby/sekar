@@ -17,9 +17,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *   `converted_task_id` → `assigned_task_id` to keep the relationship
  *   self-consistent.
  */
-export class PruningRequestStatusAssigned17460009000000
-  implements MigrationInterface
-{
+export class PruningRequestStatusAssigned17460009000000 implements MigrationInterface {
   name = 'PruningRequestStatusAssigned17460009000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {

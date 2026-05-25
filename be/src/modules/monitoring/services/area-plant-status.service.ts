@@ -129,9 +129,12 @@ export class AreaPlantStatusService {
    * @param statuses — Array of PlantStatus values
    * @returns Object with counts per status
    */
-  private aggregateStatuses(
-    statuses: PlantStatus[],
-  ): { ok: number; due_soon: number; overdue: number; unknown: number } {
+  private aggregateStatuses(statuses: PlantStatus[]): {
+    ok: number;
+    due_soon: number;
+    overdue: number;
+    unknown: number;
+  } {
     return statuses.reduce(
       (acc, status) => {
         acc[status]++;

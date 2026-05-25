@@ -1,9 +1,4 @@
-import {
-  getIsoWeek,
-  isoWeekStart,
-  isoWeekEnd,
-  isoWeekDays,
-} from '../iso-week.util';
+import { getIsoWeek, isoWeekStart, isoWeekEnd, isoWeekDays } from '../iso-week.util';
 
 describe('iso-week util', () => {
   describe('getIsoWeek', () => {

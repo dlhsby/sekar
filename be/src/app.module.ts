@@ -38,6 +38,10 @@ import { PlantsModule } from './modules/plants/plants.module';
 import { PruningRequestsModule } from './modules/pruning-requests/pruning-requests.module';
 import { ServiceCapacityModule } from './modules/service-capacity/service-capacity.module';
 import { PlantSeedsModule } from './modules/plant-seeds/plant-seeds.module';
+// Phase 4 sub-phase 4-1: production hardening
+import { HealthModule } from './modules/health/health.module';
+// Phase 4 sub-phase 4-3 (M2): BullMQ-backed FCM retry queue
+import { QueueModule } from './modules/queue/queue.module';
 
 @Module({
   imports: [
@@ -121,6 +125,7 @@ import { PlantSeedsModule } from './modules/plant-seeds/plant-seeds.module';
     SchedulesModule, // Worker scheduling
     SpecialDayOverridesModule, // Special day overrides (holidays, etc.)
     TasksModule, // Task management for workers
+    QueueModule, // Phase 4-3 (M2): BullMQ wiring — must precede NotificationsModule
     NotificationsModule, // Push notifications and FCM token management
     MonitoringModule, // Real-time monitoring and statistics
     ImportModule, // KMZ/KML import for areas
@@ -133,6 +138,7 @@ import { PlantSeedsModule } from './modules/plant-seeds/plant-seeds.module';
     PruningRequestsModule,
     ServiceCapacityModule,
     PlantSeedsModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [

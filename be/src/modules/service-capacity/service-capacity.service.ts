@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  ConflictException,
-  Inject,
-} from '@nestjs/common';
+import { Injectable, ConflictException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { ServiceCapacity } from './entities/service-capacity.entity';
@@ -43,11 +39,11 @@ export class ServiceCapacityService {
 
     // Fill missing weeks with placeholders if fromWeek/toWeek specified
     if (fromWeek && toWeek) {
-      const resultMap = new Map(
-        results.map((r) => [`${r.isoWeek}:${r.serviceType}`, r]),
-      );
+      const resultMap = new Map(results.map((r) => [`${r.isoWeek}:${r.serviceType}`, r]));
       const filled: ServiceCapacity[] = [];
-      const serviceTypes = serviceType ? [serviceType] : [...new Set(results.map((r) => r.serviceType))];
+      const serviceTypes = serviceType
+        ? [serviceType]
+        : [...new Set(results.map((r) => r.serviceType))];
       if (serviceTypes.length === 0) {
         serviceTypes.push('default');
       }

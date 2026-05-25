@@ -140,11 +140,7 @@ describe('PlantSeedsController', () => {
         occurredAt: new Date(),
       };
 
-      const result = await controller.recordTransaction(
-        mockSeedId,
-        dto,
-        mockUser as any,
-      );
+      const result = await controller.recordTransaction(mockSeedId, dto, mockUser as any);
 
       expect(result.transaction).toEqual(mockTransaction);
       expect(service.recordTransaction).toHaveBeenCalledWith(
@@ -173,10 +169,7 @@ describe('PlantSeedsController', () => {
 
       await controller.recordTransaction(mockSeedId, dto, mockUser as any);
 
-      expect(service.recordTransaction).toHaveBeenCalledWith(
-        expect.any(Object),
-        mockUserId,
-      );
+      expect(service.recordTransaction).toHaveBeenCalledWith(expect.any(Object), mockUserId);
     });
   });
 

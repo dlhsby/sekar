@@ -13,9 +13,7 @@ function isoWeekOf(date: Date): { year: number; week: number } {
   const dayNum = target.getUTCDay() || 7; // Monday=1..Sunday=7
   target.setUTCDate(target.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
-  const week = Math.ceil(
-    ((target.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
-  );
+  const week = Math.ceil(((target.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   return { year: target.getUTCFullYear(), week };
 }
 
@@ -24,12 +22,7 @@ function isoWeekOf(date: Date): { year: number; week: number } {
  * get `scheduled_date` populated; everything else leaves it NULL (the
  * kecamatan only expressed a week preference).
  */
-const ADMIN_DATED_STATUSES = new Set([
-  'approved',
-  'assigned',
-  'in_progress',
-  'done',
-]);
+const ADMIN_DATED_STATUSES = new Set(['approved', 'assigned', 'in_progress', 'done']);
 
 /**
  * Phase 3 Seed Script
@@ -188,9 +181,7 @@ export function getIsoWeek(date: Date): { year: number; week: number } {
 
 async function seedPhase3(dataSource: DataSource): Promise<void> {
   // Guard: skip gracefully if Phase 3 migration hasn't been run yet
-  const check = await dataSource.query(
-    `SELECT to_regclass('public.plant_species') AS exists`,
-  );
+  const check = await dataSource.query(`SELECT to_regclass('public.plant_species') AS exists`);
   if (!check[0]?.exists) {
     console.log('');
     console.log('⚠️  Phase 3 tables not found — skipping Phase 3 seed.');
@@ -221,7 +212,9 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
       );
       if (result && (result as any).rowCount > 0) inserted++;
     }
-    console.log(`  ✓ ${inserted} new plant_species inserted (${PLANT_SPECIES.length - inserted} already existed)`);
+    console.log(
+      `  ✓ ${inserted} new plant_species inserted (${PLANT_SPECIES.length - inserted} already existed)`,
+    );
 
     // ==========================================
     // SECTION 2: monitoring_configs (new Phase 3 configs)
@@ -305,64 +298,135 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
      */
     const AREA_PLANT_PLAN: Record<string, AreaPlantSeed[]> = {
       'Taman Bungkul': [
-        { species: 'TREMBESI',         count: 8,  lastPrunedDaysAgo: 200, cycleDays: 90,  status: 'overdue'  },
-        { species: 'MAHONI',           count: 12, lastPrunedDaysAgo: 80,  cycleDays: 90,  status: 'due_soon' },
-        { species: 'KETEPENG KENCANA', count: 6,  lastPrunedDaysAgo: 30,  cycleDays: 180, status: 'ok'       },
-        { species: 'TABEBUYA',         count: 5,  lastPrunedDaysAgo: 25,  cycleDays: 240, status: 'ok'       },
-        { species: 'GLODOKAN TIYANG',  count: 9,  lastPrunedDaysAgo: 15,  cycleDays: 180, status: 'ok'       },
+        { species: 'TREMBESI', count: 8, lastPrunedDaysAgo: 200, cycleDays: 90, status: 'overdue' },
+        { species: 'MAHONI', count: 12, lastPrunedDaysAgo: 80, cycleDays: 90, status: 'due_soon' },
+        {
+          species: 'KETEPENG KENCANA',
+          count: 6,
+          lastPrunedDaysAgo: 30,
+          cycleDays: 180,
+          status: 'ok',
+        },
+        { species: 'TABEBUYA', count: 5, lastPrunedDaysAgo: 25, cycleDays: 240, status: 'ok' },
+        {
+          species: 'GLODOKAN TIYANG',
+          count: 9,
+          lastPrunedDaysAgo: 15,
+          cycleDays: 180,
+          status: 'ok',
+        },
       ],
       'Taman Pusat': [
-        { species: 'TABEBUYA KUNING',  count: 14, lastPrunedDaysAgo: 240, cycleDays: 180, status: 'overdue'  },
-        { species: 'GLODOKAN',         count: 10, lastPrunedDaysAgo: 95,  cycleDays: 100, status: 'due_soon' },
-        { species: 'MAHONI',           count: 11, lastPrunedDaysAgo: 30,  cycleDays: 180, status: 'ok'       },
-        { species: 'TANJUNG',          count: 6,  lastPrunedDaysAgo: 50,  cycleDays: 365, status: 'ok'       },
+        {
+          species: 'TABEBUYA KUNING',
+          count: 14,
+          lastPrunedDaysAgo: 240,
+          cycleDays: 180,
+          status: 'overdue',
+        },
+        {
+          species: 'GLODOKAN',
+          count: 10,
+          lastPrunedDaysAgo: 95,
+          cycleDays: 100,
+          status: 'due_soon',
+        },
+        { species: 'MAHONI', count: 11, lastPrunedDaysAgo: 30, cycleDays: 180, status: 'ok' },
+        { species: 'TANJUNG', count: 6, lastPrunedDaysAgo: 50, cycleDays: 365, status: 'ok' },
       ],
       'Jl. Raya Darmo Pulau 1 (Depan Taman Bungkul)': [
-        { species: 'TABEBUYA PINK',    count: 18, lastPrunedDaysAgo: 220, cycleDays: 180, status: 'overdue'  },
-        { species: 'TABEBUYA MERAH',   count: 16, lastPrunedDaysAgo: 110, cycleDays: 120, status: 'due_soon' },
-        { species: 'PALEM RAJA',       count: 22, lastPrunedDaysAgo: 95,  cycleDays: 100, status: 'due_soon' },
-        { species: 'BERINGIN',         count: 4,  lastPrunedDaysAgo: 25,  cycleDays: 365, status: 'ok'       },
+        {
+          species: 'TABEBUYA PINK',
+          count: 18,
+          lastPrunedDaysAgo: 220,
+          cycleDays: 180,
+          status: 'overdue',
+        },
+        {
+          species: 'TABEBUYA MERAH',
+          count: 16,
+          lastPrunedDaysAgo: 110,
+          cycleDays: 120,
+          status: 'due_soon',
+        },
+        {
+          species: 'PALEM RAJA',
+          count: 22,
+          lastPrunedDaysAgo: 95,
+          cycleDays: 100,
+          status: 'due_soon',
+        },
+        { species: 'BERINGIN', count: 4, lastPrunedDaysAgo: 25, cycleDays: 365, status: 'ok' },
       ],
       'Taman Harmoni': [
-        { species: 'TREMBESI',         count: 6,  lastPrunedDaysAgo: 35,  cycleDays: 180, status: 'ok'       },
-        { species: 'KAMBOJA',          count: 9,  lastPrunedDaysAgo: 22,  cycleDays: 240, status: 'ok'       },
-        { species: 'PALEM PUTRI',      count: 12, lastPrunedDaysAgo: 18,  cycleDays: 180, status: 'ok'       },
+        { species: 'TREMBESI', count: 6, lastPrunedDaysAgo: 35, cycleDays: 180, status: 'ok' },
+        { species: 'KAMBOJA', count: 9, lastPrunedDaysAgo: 22, cycleDays: 240, status: 'ok' },
+        { species: 'PALEM PUTRI', count: 12, lastPrunedDaysAgo: 18, cycleDays: 180, status: 'ok' },
       ],
       'Taman Pelangi': [
-        { species: 'FLAMBOYANT',       count: 5,  lastPrunedDaysAgo: 210, cycleDays: 180, status: 'overdue'  },
-        { species: 'KAYU PUTIH',       count: 7,  lastPrunedDaysAgo: 30,  cycleDays: 180, status: 'ok'       },
-        { species: 'TANJUNG',          count: 4,  lastPrunedDaysAgo: 20,  cycleDays: 240, status: 'ok'       },
+        {
+          species: 'FLAMBOYANT',
+          count: 5,
+          lastPrunedDaysAgo: 210,
+          cycleDays: 180,
+          status: 'overdue',
+        },
+        { species: 'KAYU PUTIH', count: 7, lastPrunedDaysAgo: 30, cycleDays: 180, status: 'ok' },
+        { species: 'TANJUNG', count: 4, lastPrunedDaysAgo: 20, cycleDays: 240, status: 'ok' },
       ],
       'Taman Utara': [
-        { species: 'CEMARA UDANG',     count: 10, lastPrunedDaysAgo: 100, cycleDays: 110, status: 'due_soon' },
-        { species: 'PALEM EKOR TUPAI', count: 14, lastPrunedDaysAgo: 92,  cycleDays: 100, status: 'due_soon' },
-        { species: 'WARU',             count: 6,  lastPrunedDaysAgo: 40,  cycleDays: 200, status: 'ok'       },
-        { species: 'NYAMPLUNG',        count: 5,  lastPrunedDaysAgo: 28,  cycleDays: 240, status: 'ok'       },
+        {
+          species: 'CEMARA UDANG',
+          count: 10,
+          lastPrunedDaysAgo: 100,
+          cycleDays: 110,
+          status: 'due_soon',
+        },
+        {
+          species: 'PALEM EKOR TUPAI',
+          count: 14,
+          lastPrunedDaysAgo: 92,
+          cycleDays: 100,
+          status: 'due_soon',
+        },
+        { species: 'WARU', count: 6, lastPrunedDaysAgo: 40, cycleDays: 200, status: 'ok' },
+        { species: 'NYAMPLUNG', count: 5, lastPrunedDaysAgo: 28, cycleDays: 240, status: 'ok' },
       ],
       'Taman Timur 1': [
-        { species: 'JATI',             count: 7,  lastPrunedDaysAgo: 250, cycleDays: 200, status: 'overdue'  },
-        { species: 'KENANGGA',         count: 5,  lastPrunedDaysAgo: 95,  cycleDays: 100, status: 'due_soon' },
-        { species: 'KAMBOJA',          count: 8,  lastPrunedDaysAgo: 30,  cycleDays: 240, status: 'ok'       },
+        { species: 'JATI', count: 7, lastPrunedDaysAgo: 250, cycleDays: 200, status: 'overdue' },
+        {
+          species: 'KENANGGA',
+          count: 5,
+          lastPrunedDaysAgo: 95,
+          cycleDays: 100,
+          status: 'due_soon',
+        },
+        { species: 'KAMBOJA', count: 8, lastPrunedDaysAgo: 30, cycleDays: 240, status: 'ok' },
       ],
       // Renamed 2026-05-18 — dev/staging Rayon Timur 2 now uses real KMZ data;
       // Taman Buk Tong is the only park-type area in that rayon.
       'Taman Buk Tong': [
-        { species: 'PALEM KIPAS',      count: 10, lastPrunedDaysAgo: 90,  cycleDays: 100, status: 'due_soon' },
-        { species: 'SAWO KECIK',       count: 6,  lastPrunedDaysAgo: 25,  cycleDays: 240, status: 'ok'       },
-        { species: 'GLODOKAN',         count: 9,  lastPrunedDaysAgo: 18,  cycleDays: 180, status: 'ok'       },
+        {
+          species: 'PALEM KIPAS',
+          count: 10,
+          lastPrunedDaysAgo: 90,
+          cycleDays: 100,
+          status: 'due_soon',
+        },
+        { species: 'SAWO KECIK', count: 6, lastPrunedDaysAgo: 25, cycleDays: 240, status: 'ok' },
+        { species: 'GLODOKAN', count: 9, lastPrunedDaysAgo: 18, cycleDays: 180, status: 'ok' },
       ],
       'Taman Barat 1': [
-        { species: 'AKASIA',           count: 12, lastPrunedDaysAgo: 230, cycleDays: 180, status: 'overdue'  },
-        { species: 'SAPU TANGAN',      count: 4,  lastPrunedDaysAgo: 22,  cycleDays: 240, status: 'ok'       },
+        { species: 'AKASIA', count: 12, lastPrunedDaysAgo: 230, cycleDays: 180, status: 'overdue' },
+        { species: 'SAPU TANGAN', count: 4, lastPrunedDaysAgo: 22, cycleDays: 240, status: 'ok' },
       ],
       'Taman Barat 2': [
-        { species: 'BUNGUR',           count: 8,  lastPrunedDaysAgo: 35,  cycleDays: 180, status: 'ok'       },
-        { species: 'KENANGGA',         count: 5,  lastPrunedDaysAgo: 28,  cycleDays: 240, status: 'ok'       },
+        { species: 'BUNGUR', count: 8, lastPrunedDaysAgo: 35, cycleDays: 180, status: 'ok' },
+        { species: 'KENANGGA', count: 5, lastPrunedDaysAgo: 28, cycleDays: 240, status: 'ok' },
       ],
     };
 
-    const daysAgoIso = (n: number): string =>
-      new Date(Date.now() - n * 86400000).toISOString();
+    const daysAgoIso = (n: number): string => new Date(Date.now() - n * 86400000).toISOString();
 
     let areaPlantInserted = 0;
     let areaPlantUpdated = 0;
@@ -426,15 +490,15 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     // matches the deterministic plan above (so the screen never shows a
     // legacy "AKASIA" left over from a prior random insert).
     const allowedAreaNames = Object.keys(AREA_PLANT_PLAN);
-    const allowedSpeciesByArea = Object.entries(AREA_PLANT_PLAN).map(
-      ([name, plan]) => ({ name, species: plan.map((r) => r.species) }),
-    );
+    const allowedSpeciesByArea = Object.entries(AREA_PLANT_PLAN).map(([name, plan]) => ({
+      name,
+      species: plan.map((r) => r.species),
+    }));
     let areaPlantPurged = 0;
     for (const { name, species } of allowedSpeciesByArea) {
-      const areaRow = await queryRunner.query(
-        `SELECT id FROM areas WHERE name = $1 LIMIT 1`,
-        [name],
-      );
+      const areaRow = await queryRunner.query(`SELECT id FROM areas WHERE name = $1 LIMIT 1`, [
+        name,
+      ]);
       if (areaRow.length === 0) continue;
       const purge = await queryRunner.query(
         `DELETE FROM area_plants
@@ -448,10 +512,10 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     }
     console.log(
       `  ✓ ${areaPlantInserted} inserted, ${areaPlantUpdated} updated, ` +
-      `${areaPlantPurged} stale rows purged across ${allowedAreaNames.length} areas` +
-      (areaPlantSkippedSpecies > 0
-        ? ` (skipped ${areaPlantSkippedSpecies} species missing from catalog)`
-        : ''),
+        `${areaPlantPurged} stale rows purged across ${allowedAreaNames.length} areas` +
+        (areaPlantSkippedSpecies > 0
+          ? ` (skipped ${areaPlantSkippedSpecies} species missing from catalog)`
+          : ''),
     );
 
     // notable_plants — Phase 3 heritage trees pinned on the map.
@@ -466,25 +530,39 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
       notes: string;
     };
     const notables: NotableSeed[] = [
-      { areaName: 'Taman Bungkul', species: 'TREMBESI',
-        lat: -7.2906, lng: 112.7378, heritage: true,
+      {
+        areaName: 'Taman Bungkul',
+        species: 'TREMBESI',
+        lat: -7.2906,
+        lng: 112.7378,
+        heritage: true,
         label: 'Trembesi Heritage 1924',
-        notes: 'Pohon trembesi peninggalan kolonial, lingkar batang ±4.2 m' },
-      { areaName: 'Taman Bungkul', species: 'BERINGIN',
-        lat: -7.2911, lng: 112.7382, heritage: true,
+        notes: 'Pohon trembesi peninggalan kolonial, lingkar batang ±4.2 m',
+      },
+      {
+        areaName: 'Taman Bungkul',
+        species: 'BERINGIN',
+        lat: -7.2911,
+        lng: 112.7382,
+        heritage: true,
         label: 'Beringin Tua Selatan Bungkul',
-        notes: 'Beringin tua dengan akar gantung, masuk daftar pohon dilindungi' },
-      { areaName: 'Jl. Raya Darmo Pulau 1 (Depan Taman Bungkul)', species: 'TABEBUYA PINK',
-        lat: -7.2901, lng: 112.7405, heritage: false,
+        notes: 'Beringin tua dengan akar gantung, masuk daftar pohon dilindungi',
+      },
+      {
+        areaName: 'Jl. Raya Darmo Pulau 1 (Depan Taman Bungkul)',
+        species: 'TABEBUYA PINK',
+        lat: -7.2901,
+        lng: 112.7405,
+        heritage: false,
         label: 'Tabebuya Pink Jalur Darmo',
-        notes: 'Penanda musim semi Surabaya — mekar serentak sekitar Mei' },
+        notes: 'Penanda musim semi Surabaya — mekar serentak sekitar Mei',
+      },
     ];
     let notableInserted = 0;
     for (const n of notables) {
-      const areaRow = await queryRunner.query(
-        `SELECT id FROM areas WHERE name = $1 LIMIT 1`,
-        [n.areaName],
-      );
+      const areaRow = await queryRunner.query(`SELECT id FROM areas WHERE name = $1 LIMIT 1`, [
+        n.areaName,
+      ]);
       if (areaRow.length === 0) continue;
       const speciesId = await lookupSpeciesId(n.species);
       if (!speciesId) continue;
@@ -519,9 +597,10 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     console.log('🏘️  ======== SECTION 3.4: Kecamatans (31 Surabaya) ========');
     // Idempotent — seeded here (rather than seed-reference) because db:seed
     // pipeline runs phase1 → phase2 → phase3, and rayons exist after phase2.
-    const rayonIdByCode = await queryRunner.query(
-      `SELECT id, code FROM rayons`,
-    ) as Array<{ id: string; code: string }>;
+    const rayonIdByCode = (await queryRunner.query(`SELECT id, code FROM rayons`)) as Array<{
+      id: string;
+      code: string;
+    }>;
     const rIdx: Record<string, string> = {};
     for (const r of rayonIdByCode) rIdx[r.code] = r.id;
     // Kecamatan → Rayon mapping (May 9, 2026 fix). The 4 administratively
@@ -603,8 +682,7 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
 
     console.log('');
     console.log('🧑‍💼 ======== SECTION 3.5: Staff Kecamatan Users ========');
-    const STAFF_KEC_PWD_HASH =
-      '$2b$10$gF9qXRA.0ZtNWgbrwoYHMOmdUFUbaL4AkGdxAEMDMrMZtFexnH.H.';
+    const STAFF_KEC_PWD_HASH = '$2b$10$gF9qXRA.0ZtNWgbrwoYHMOmdUFUbaL4AkGdxAEMDMrMZtFexnH.H.';
 
     // May 2026 — one staff_kecamatan user per kecamatan (31 total) so the
     // submit form can pre-fill rayon + kecamatan from the logged-in user.
@@ -620,9 +698,10 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     // Map rayon_id → human-readable rayon name so the verbose log shows the
     // pairing each staff_kecamatan user lands in. Saves the reader from having
     // to cross-reference a separate rayons table during UAT.
-    const rayonNameRows = (await queryRunner.query(
-      `SELECT id, name FROM rayons`,
-    )) as Array<{ id: string; name: string }>;
+    const rayonNameRows = (await queryRunner.query(`SELECT id, name FROM rayons`)) as Array<{
+      id: string;
+      name: string;
+    }>;
     const rayonNameById = new Map(rayonNameRows.map((r) => [r.id, r.name]));
 
     let staffKecInserted = 0;
@@ -632,15 +711,11 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     console.log(
       `\n  Seeding ${allKec.length} per-kecamatan staff_kecamatan users — pattern: staff_kecamatan_<code>_1`,
     );
-    console.log(
-      '  ─────────────────────────────────────────────────────────────────────────────',
-    );
+    console.log('  ─────────────────────────────────────────────────────────────────────────────');
     console.log(
       `  ${'#'.padStart(2)}  ${'Username'.padEnd(34)} ${'Phone'.padEnd(13)} ${'Kecamatan'.padEnd(20)} Rayon`,
     );
-    console.log(
-      '  ─────────────────────────────────────────────────────────────────────────────',
-    );
+    console.log('  ─────────────────────────────────────────────────────────────────────────────');
     let i = 0;
     for (const k of allKec) {
       i += 1;
@@ -681,7 +756,9 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
         AND lower(k.name) = lower(u.kecamatan_name)
     `);
 
-    console.log(`  ✓ ${staffKecInserted} new staff_kecamatan users seeded (one per kecamatan, password: password123)`);
+    console.log(
+      `  ✓ ${staffKecInserted} new staff_kecamatan users seeded (one per kecamatan, password: password123)`,
+    );
     console.log(`     legacy staff_kec_* users backfilled with kecamatan_id`);
 
     // ==========================================
@@ -697,33 +774,100 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     // and contact fields so MyRequestsScreen / RequestDetailScreen show realistic
     // data on first login.
     const sampleRequests = [
-      { kec: 'Tegalsari', addr: 'Jl. Pemuda No. 1',         status: 'submitted',   photos: 3, count: 5,
-        height: '5-7 meter',  diameter: '30-40 cm', reqName: 'Budi Santoso',  reqPhone: '081234567001', rtName: 'Pak Joko',  rtPhone: '081298765001' },
-      { kec: 'Genteng',   addr: 'Jl. Tunjungan No. 12',     status: 'submitted',   photos: 4, count: 8,
-        height: '8-10 meter', diameter: '40-60 cm', reqName: 'Siti Aminah',   reqPhone: '081234567002', rtName: 'Pak Hendra',rtPhone: '081298765002' },
-      { kec: 'Wonokromo', addr: 'Jl. Raya Darmo No. 99',    status: 'approved',    photos: 5, count: 12,
-        height: '10-12 meter',diameter: '50-70 cm', reqName: 'Andi Wijaya',   reqPhone: '081234567003', rtName: 'Pak Slamet',rtPhone: '081298765003' },
-      { kec: 'Kenjeran',  addr: 'Jl. Raya Kenjeran No. 50', status: 'rejected',    photos: 3, count: 4,
-        height: '4-5 meter',  diameter: '20-30 cm', reqName: 'Dewi Lestari',  reqPhone: '081234567004', rtName: 'Pak Budi',  rtPhone: '081298765004' },
-      { kec: 'Krembangan',addr: 'Jl. Tanjungsari No. 100',  status: 'assigned',   photos: 4, count: 10,
-        height: '7-9 meter',  diameter: '35-50 cm', reqName: 'Rina Susanti',  reqPhone: '081234567005', rtName: 'Pak Wahyu', rtPhone: '081298765005' },
-      { kec: 'Tegalsari', addr: 'Jl. Embong Malang No. 7',  status: 'in_progress', photos: 5, count: 6,
-        height: '6-8 meter',  diameter: '30-45 cm', reqName: 'Eko Pranoto',   reqPhone: '081234567006', rtName: 'Pak Agus',  rtPhone: '081298765006' },
+      {
+        kec: 'Tegalsari',
+        addr: 'Jl. Pemuda No. 1',
+        status: 'submitted',
+        photos: 3,
+        count: 5,
+        height: '5-7 meter',
+        diameter: '30-40 cm',
+        reqName: 'Budi Santoso',
+        reqPhone: '081234567001',
+        rtName: 'Pak Joko',
+        rtPhone: '081298765001',
+      },
+      {
+        kec: 'Genteng',
+        addr: 'Jl. Tunjungan No. 12',
+        status: 'submitted',
+        photos: 4,
+        count: 8,
+        height: '8-10 meter',
+        diameter: '40-60 cm',
+        reqName: 'Siti Aminah',
+        reqPhone: '081234567002',
+        rtName: 'Pak Hendra',
+        rtPhone: '081298765002',
+      },
+      {
+        kec: 'Wonokromo',
+        addr: 'Jl. Raya Darmo No. 99',
+        status: 'approved',
+        photos: 5,
+        count: 12,
+        height: '10-12 meter',
+        diameter: '50-70 cm',
+        reqName: 'Andi Wijaya',
+        reqPhone: '081234567003',
+        rtName: 'Pak Slamet',
+        rtPhone: '081298765003',
+      },
+      {
+        kec: 'Kenjeran',
+        addr: 'Jl. Raya Kenjeran No. 50',
+        status: 'rejected',
+        photos: 3,
+        count: 4,
+        height: '4-5 meter',
+        diameter: '20-30 cm',
+        reqName: 'Dewi Lestari',
+        reqPhone: '081234567004',
+        rtName: 'Pak Budi',
+        rtPhone: '081298765004',
+      },
+      {
+        kec: 'Krembangan',
+        addr: 'Jl. Tanjungsari No. 100',
+        status: 'assigned',
+        photos: 4,
+        count: 10,
+        height: '7-9 meter',
+        diameter: '35-50 cm',
+        reqName: 'Rina Susanti',
+        reqPhone: '081234567005',
+        rtName: 'Pak Wahyu',
+        rtPhone: '081298765005',
+      },
+      {
+        kec: 'Tegalsari',
+        addr: 'Jl. Embong Malang No. 7',
+        status: 'in_progress',
+        photos: 5,
+        count: 6,
+        height: '6-8 meter',
+        diameter: '30-45 cm',
+        reqName: 'Eko Pranoto',
+        reqPhone: '081234567006',
+        rtName: 'Pak Agus',
+        rtPhone: '081298765006',
+      },
     ];
 
     // Prefer all staff_kecamatan users so each user has some requests in their
     // `mine=true` view; fall back to admin_data if none exist.
-    const staffKecUsers = await queryRunner.query(
+    const staffKecUsers = (await queryRunner.query(
       `SELECT id, rayon_id, username FROM users
        WHERE role = 'staff_kecamatan' AND is_active = true
        ORDER BY username`,
-    ) as Array<{ id: string; rayon_id: string | null; username: string }>;
-    const fallbackAdmin = staffKecUsers.length === 0
-      ? await queryRunner.query(`SELECT id, rayon_id FROM users WHERE role = 'admin_data' LIMIT 1`)
-      : [];
-    const submitterId = staffKecUsers.length > 0
-      ? staffKecUsers[0].id
-      : fallbackAdmin[0]?.id;
+    )) as Array<{ id: string; rayon_id: string | null; username: string }>;
+    const fallbackAdmin =
+      staffKecUsers.length === 0
+        ? await queryRunner.query(
+            `SELECT id, rayon_id FROM users WHERE role = 'admin_data' LIMIT 1`,
+          )
+        : [];
+    const submitterId = staffKecUsers.length > 0 ? staffKecUsers[0].id : fallbackAdmin[0]?.id;
     // Pick the canonical Pusat staff_kecamatan user for the original 6 sample
     // requests so the demo login still sees varied statuses. After the May 9
     // username standardization the Pusat-Tegalsari user is
@@ -746,13 +890,14 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
       for (let i = 0; i < sampleRequests.length; i++) {
         const r = sampleRequests[i];
         const refCode = `PR-${Date.now()}-${i}`;
-        const photoUrls = Array.from({ length: r.photos }, (_, n) =>
-          `https://placehold.co/600x400?text=PR-${i}-${n + 1}`,
+        const photoUrls = Array.from(
+          { length: r.photos },
+          (_, n) => `https://placehold.co/600x400?text=PR-${i}-${n + 1}`,
         );
-        const expectedDate = new Date(Date.now() + (i + 1) * 86400000)
-          .toISOString().split('T')[0];
+        const expectedDate = new Date(Date.now() + (i + 1) * 86400000).toISOString().split('T')[0];
         const reviewedAt = ['approved', 'rejected', 'assigned', 'in_progress'].includes(r.status)
-          ? new Date().toISOString() : null;
+          ? new Date().toISOString()
+          : null;
 
         const result = await queryRunner.query(
           `INSERT INTO pruning_requests
@@ -764,13 +909,28 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
               reviewed_by, reviewed_at)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::text[],$17,$18,$19,$20)
            ON CONFLICT (reference_code) DO NOTHING`,
-          [refCode, sampleSubmitterId, r.kec, r.addr,
-           -7.2575 + (i * 0.001), 112.7521 + (i * 0.001),
-           expectedDate, r.count, r.count,
-           r.height, r.diameter,
-           r.reqName, r.reqPhone, r.rtName, r.rtPhone,
-           photoUrls, r.status, rayonIdForReq,
-           reviewedAt ? reviewerId : null, reviewedAt],
+          [
+            refCode,
+            sampleSubmitterId,
+            r.kec,
+            r.addr,
+            -7.2575 + i * 0.001,
+            112.7521 + i * 0.001,
+            expectedDate,
+            r.count,
+            r.count,
+            r.height,
+            r.diameter,
+            r.reqName,
+            r.reqPhone,
+            r.rtName,
+            r.rtPhone,
+            photoUrls,
+            r.status,
+            rayonIdForReq,
+            reviewedAt ? reviewerId : null,
+            reviewedAt,
+          ],
         );
         if (result && (result as any).rowCount > 0) pruningInserted++;
       }
@@ -780,34 +940,86 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
       // calendar dates so PerantinganListScreen / ReviewQueueScreen exercise
       // every chip and both sort orders without being seeded against a single
       // status bucket. Stays idempotent via reference_code.
-      const STATUSES = ['submitted', 'under_review', 'approved', 'rejected',
-                         'assigned', 'in_progress', 'done', 'cancelled'] as const;
-      const KECS = ['Tegalsari', 'Genteng', 'Wonokromo', 'Kenjeran',
-                    'Krembangan', 'Sukolilo', 'Mulyorejo', 'Gubeng', 'Bulak'];
-      const STREETS = ['Jl. Mawar', 'Jl. Anggrek', 'Jl. Melati', 'Jl. Cendana',
-                       'Jl. Cemara', 'Jl. Jati', 'Jl. Kenanga', 'Jl. Flamboyan',
-                       'Jl. Beringin', 'Jl. Kamboja', 'Jl. Kemuning', 'Jl. Mahoni'];
-      const REQ_NAMES = ['Bagas', 'Citra', 'Dimas', 'Endah', 'Fajar', 'Galuh',
-                         'Hanif', 'Indra', 'Jihan', 'Kemal', 'Laras', 'Maharani'];
-      const RT_NAMES = ['Pak Hamid', 'Pak Yusuf', 'Pak Rahmat', 'Pak Bambang',
-                        'Pak Subagyo', 'Pak Maulana', 'Pak Iwan', 'Pak Darto'];
-      const HEIGHTS = ['3-5 meter', '5-7 meter', '7-9 meter', '9-12 meter',
-                       '12-15 meter', '15-18 meter'];
-      const DIAMETERS = ['15-25 cm', '25-35 cm', '35-50 cm', '50-70 cm',
-                         '70-90 cm', '90-110 cm'];
+      const STATUSES = [
+        'submitted',
+        'under_review',
+        'approved',
+        'rejected',
+        'assigned',
+        'in_progress',
+        'done',
+        'cancelled',
+      ] as const;
+      const KECS = [
+        'Tegalsari',
+        'Genteng',
+        'Wonokromo',
+        'Kenjeran',
+        'Krembangan',
+        'Sukolilo',
+        'Mulyorejo',
+        'Gubeng',
+        'Bulak',
+      ];
+      const STREETS = [
+        'Jl. Mawar',
+        'Jl. Anggrek',
+        'Jl. Melati',
+        'Jl. Cendana',
+        'Jl. Cemara',
+        'Jl. Jati',
+        'Jl. Kenanga',
+        'Jl. Flamboyan',
+        'Jl. Beringin',
+        'Jl. Kamboja',
+        'Jl. Kemuning',
+        'Jl. Mahoni',
+      ];
+      const REQ_NAMES = [
+        'Bagas',
+        'Citra',
+        'Dimas',
+        'Endah',
+        'Fajar',
+        'Galuh',
+        'Hanif',
+        'Indra',
+        'Jihan',
+        'Kemal',
+        'Laras',
+        'Maharani',
+      ];
+      const RT_NAMES = [
+        'Pak Hamid',
+        'Pak Yusuf',
+        'Pak Rahmat',
+        'Pak Bambang',
+        'Pak Subagyo',
+        'Pak Maulana',
+        'Pak Iwan',
+        'Pak Darto',
+      ];
+      const HEIGHTS = [
+        '3-5 meter',
+        '5-7 meter',
+        '7-9 meter',
+        '9-12 meter',
+        '12-15 meter',
+        '15-18 meter',
+      ];
+      const DIAMETERS = ['15-25 cm', '25-35 cm', '35-50 cm', '50-70 cm', '70-90 cm', '90-110 cm'];
 
       // Resolve rayon_id from the kecamatan name so each bulk row's
       // (kecamatan_name, rayon_id) pair is consistent with the kecamatans
       // table. Previously these were picked independently and produced
       // mismatches like "Tegalsari → Rayon Barat 1", which broke
       // admin_data review queues that filter by rayon_id.
-      const kecRayonRows = await queryRunner.query(
+      const kecRayonRows = (await queryRunner.query(
         `SELECT name, rayon_id FROM kecamatans`,
-      ) as Array<{ name: string; rayon_id: string }>;
+      )) as Array<{ name: string; rayon_id: string }>;
       const rayonByKec = new Map<string, string>();
       for (const k of kecRayonRows) rayonByKec.set(k.name, k.rayon_id);
-      const rayonForKec = (kec: string): string =>
-        rayonByKec.get(kec) ?? rayonIdForReq;
+      const rayonForKec = (kec: string): string => rayonByKec.get(kec) ?? rayonIdForReq;
 
       const BULK_COUNT = 25;
       // All bulk rows submitted by the canonical Pusat staff_kecamatan demo
@@ -823,8 +1035,8 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
         const rtName = RT_NAMES[i % RT_NAMES.length];
         const height = HEIGHTS[i % HEIGHTS.length];
         const diameter = DIAMETERS[i % DIAMETERS.length];
-        const treeCount = ((i % 9) + 2);
-        const photoCount = ((i % 4) + 1);
+        const treeCount = (i % 9) + 2;
+        const photoCount = (i % 4) + 1;
         const ageDays = i; // 0 → today, 1 → yesterday … 24 → ~3.5 weeks ago
         const createdAt = new Date(Date.now() - ageDays * 86400000).toISOString();
         const targetDate = new Date(Date.now() + ((i % 14) + 1) * 86400000);
@@ -835,13 +1047,21 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
         // acted (whitelist via ADMIN_DATED_STATUSES).
         const isoWk = isoWeekOf(targetDate);
         const scheduledDate = ADMIN_DATED_STATUSES.has(status) ? targetIsoDate : null;
-        const reviewedAt = ['approved', 'rejected', 'assigned', 'in_progress',
-                             'done', 'cancelled', 'under_review'].includes(status)
+        const reviewedAt = [
+          'approved',
+          'rejected',
+          'assigned',
+          'in_progress',
+          'done',
+          'cancelled',
+          'under_review',
+        ].includes(status)
           ? new Date(Date.now() - ageDays * 86400000 + 3600 * 1000).toISOString()
           : null;
         const refCode = `PR-BULK-${i.toString().padStart(3, '0')}`;
-        const photoUrls = Array.from({ length: photoCount }, (_, n) =>
-          `https://placehold.co/600x400?text=PR-BULK-${i}-${n + 1}`,
+        const photoUrls = Array.from(
+          { length: photoCount },
+          (_, n) => `https://placehold.co/600x400?text=PR-BULK-${i}-${n + 1}`,
         );
 
         const result = await queryRunner.query(
@@ -855,20 +1075,37 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
               reviewed_by, reviewed_at, created_at)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18::text[],$19,$20,$21,$22,$23)
            ON CONFLICT (reference_code) DO NOTHING`,
-          [refCode, sampleSubmitterId, kec, `${street} No. ${100 + i}`,
-           -7.2575 + (i * 0.0007), 112.7521 + (i * 0.0007),
-           isoWk.year, isoWk.week, scheduledDate,
-           treeCount, treeCount,
-           height, diameter,
-           `${reqName} ${i + 1}`, `0812345${(80000 + i).toString().slice(-5)}`,
-           rtName, `0812987${(60000 + i).toString().slice(-5)}`,
-           photoUrls, status, rayonForKec(kec),
-           reviewedAt ? reviewerId : null, reviewedAt,
-           createdAt],
+          [
+            refCode,
+            sampleSubmitterId,
+            kec,
+            `${street} No. ${100 + i}`,
+            -7.2575 + i * 0.0007,
+            112.7521 + i * 0.0007,
+            isoWk.year,
+            isoWk.week,
+            scheduledDate,
+            treeCount,
+            treeCount,
+            height,
+            diameter,
+            `${reqName} ${i + 1}`,
+            `0812345${(80000 + i).toString().slice(-5)}`,
+            rtName,
+            `0812987${(60000 + i).toString().slice(-5)}`,
+            photoUrls,
+            status,
+            rayonForKec(kec),
+            reviewedAt ? reviewerId : null,
+            reviewedAt,
+            createdAt,
+          ],
         );
         if (result && (result as any).rowCount > 0) bulkInserted++;
       }
-      console.log(`  ✓ ${bulkInserted} additional bulk pruning_requests inserted (volume + status + date variety)`);
+      console.log(
+        `  ✓ ${bulkInserted} additional bulk pruning_requests inserted (volume + status + date variety)`,
+      );
       pruningInserted += bulkInserted;
 
       // Heal existing rows whose kecamatan_name disagrees with rayon_id
@@ -884,7 +1121,9 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
       `);
       const healedCount = (healed as any)?.[1] ?? 0;
       if (healedCount) {
-        console.log(`  ✓ ${healedCount} existing pruning_requests realigned to their kecamatan's rayon`);
+        console.log(
+          `  ✓ ${healedCount} existing pruning_requests realigned to their kecamatan's rayon`,
+        );
       }
     }
     console.log(`  ✓ ${pruningInserted} pruning_requests total (sample + bulk volume rows)`);
@@ -1000,10 +1239,12 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
       }
       console.log(
         `  ✓ ${capacityInserted} new + ${capacityUpdated} refreshed service_capacity rows ` +
-        `(${rayons.length} rayons × ${weeksToSeed.length} weeks, capacity_units=${DEV_CAPACITY}, ` +
-        `booked rotated through [${BOOK_PATTERN.join(',')}])`,
+          `(${rayons.length} rayons × ${weeksToSeed.length} weeks, capacity_units=${DEV_CAPACITY}, ` +
+          `booked rotated through [${BOOK_PATTERN.join(',')}])`,
       );
-      console.log(`    Range: ${startYear}-W${startWeek} → ${weeksToSeed[weeksToSeed.length - 1].year}-W${weeksToSeed[weeksToSeed.length - 1].week}`);
+      console.log(
+        `    Range: ${startYear}-W${startWeek} → ${weeksToSeed[weeksToSeed.length - 1].year}-W${weeksToSeed[weeksToSeed.length - 1].week}`,
+      );
     }
 
     await queryRunner.commitTransaction();
@@ -1032,46 +1273,88 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
       WHERE u.role = 'staff_kecamatan'
       ORDER BY r.name, k.name
       LIMIT 8
-    `)) as Array<{ username: string; full_name: string; phone_number: string; kecamatan: string; rayon: string }>;
+    `)) as Array<{
+      username: string;
+      full_name: string;
+      phone_number: string;
+      kecamatan: string;
+      rayon: string;
+    }>;
 
     console.log('');
-    console.log('╔══════════════════════════════════════════════════════════════════════════════════╗');
-    console.log('║  ✅  Phase 3 Seeding Completed Successfully                                     ║');
-    console.log('╚══════════════════════════════════════════════════════════════════════════════════╝');
+    console.log(
+      '╔══════════════════════════════════════════════════════════════════════════════════╗',
+    );
+    console.log(
+      '║  ✅  Phase 3 Seeding Completed Successfully                                     ║',
+    );
+    console.log(
+      '╚══════════════════════════════════════════════════════════════════════════════════╝',
+    );
     console.log('');
     console.log('  [1] Reference Data');
-    console.log('      ─────────────────────────────────────────────────────────────────────────────');
-    console.log(`      ${String(c.plant_species).padStart(3)} plant_species  · ${String(c.kecamatans).padStart(3)} kecamatans (FK to rayons)`);
-    console.log(`      ${String(c.service_capacity).padStart(3)} service_capacity rows (rayons × ISO weeks × pruning)`);
+    console.log(
+      '      ─────────────────────────────────────────────────────────────────────────────',
+    );
+    console.log(
+      `      ${String(c.plant_species).padStart(3)} plant_species  · ${String(c.kecamatans).padStart(3)} kecamatans (FK to rayons)`,
+    );
+    console.log(
+      `      ${String(c.service_capacity).padStart(3)} service_capacity rows (rayons × ISO weeks × pruning)`,
+    );
     console.log('');
     console.log('  [2] Sample Showcase Data (dev only)');
-    console.log('      ─────────────────────────────────────────────────────────────────────────────');
-    console.log(`      ${String(c.area_plants).padStart(3)} area_plants    · ${String(c.notable_plants).padStart(3)} notable_plants`);
-    console.log(`      ${String(c.pruning_requests).padStart(3)} pruning_requests across all 8 statuses`);
-    console.log(`      ${String(c.plant_seeds).padStart(3)} plant_seeds    · ${String(c.seed_transactions).padStart(3)} seed_transactions`);
+    console.log(
+      '      ─────────────────────────────────────────────────────────────────────────────',
+    );
+    console.log(
+      `      ${String(c.area_plants).padStart(3)} area_plants    · ${String(c.notable_plants).padStart(3)} notable_plants`,
+    );
+    console.log(
+      `      ${String(c.pruning_requests).padStart(3)} pruning_requests across all 8 statuses`,
+    );
+    console.log(
+      `      ${String(c.plant_seeds).padStart(3)} plant_seeds    · ${String(c.seed_transactions).padStart(3)} seed_transactions`,
+    );
     console.log('');
     console.log('  [3] Staff Kecamatan Users (NEW — May 9, 2026)');
-    console.log('      ─────────────────────────────────────────────────────────────────────────────');
-    console.log(`      ${String(c.staff_kec_users).padStart(3)} staff_kecamatan users — one per kecamatan, all password: password123`);
-    console.log('      Username pattern: staff_kecamatan_<code>_<n>  (e.g. staff_kecamatan_wiyung_1)');
+    console.log(
+      '      ─────────────────────────────────────────────────────────────────────────────',
+    );
+    console.log(
+      `      ${String(c.staff_kec_users).padStart(3)} staff_kecamatan users — one per kecamatan, all password: password123`,
+    );
+    console.log(
+      '      Username pattern: staff_kecamatan_<code>_<n>  (e.g. staff_kecamatan_wiyung_1)',
+    );
     console.log('      Each user is auto-linked to their kecamatan_id + rayon_id so the mobile');
     console.log('      submit form pre-fills + locks both fields on login.');
     console.log('');
-    console.log('══════════════════════════════════════════════════════════════════════════════════════');
+    console.log(
+      '══════════════════════════════════════════════════════════════════════════════════════',
+    );
     console.log('🧪  STAFF KECAMATAN — sample logins (all passwords: password123)');
-    console.log('══════════════════════════════════════════════════════════════════════════════════════');
+    console.log(
+      '══════════════════════════════════════════════════════════════════════════════════════',
+    );
     console.log('');
     console.log('  Username                       Phone          Kecamatan         Rayon');
-    console.log('  ──────────────────────────────────────────────────────────────────────────────────');
+    console.log(
+      '  ──────────────────────────────────────────────────────────────────────────────────',
+    );
     for (const u of sampleStaff) {
       console.log(
         `  ${u.username.padEnd(30)} ${(u.phone_number ?? '').padEnd(14)} ${(u.kecamatan ?? '—').padEnd(17)} ${u.rayon ?? '—'}`,
       );
     }
-    console.log(`  … and ${Math.max(0, c.staff_kec_users - sampleStaff.length)} more (one for every kecamatan).`);
+    console.log(
+      `  … and ${Math.max(0, c.staff_kec_users - sampleStaff.length)} more (one for every kecamatan).`,
+    );
     console.log('');
     console.log('  All 31 Surabaya Kecamatans seeded (per-rayon assignment):');
-    console.log('  ──────────────────────────────────────────────────────────────────────────────────');
+    console.log(
+      '  ──────────────────────────────────────────────────────────────────────────────────',
+    );
     console.log('  Rayon Pusat    (4): Bubutan, Genteng, Simokerto, Tegalsari');
     console.log('  Rayon Timur 1  (3): Tambaksari, Gubeng, Sukolilo');
     console.log('  Rayon Timur 2  (4): Mulyorejo, Rungkut, Tenggilis Mejoyo, Gunung Anyar');
@@ -1083,9 +1366,11 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     console.log('');
     console.log('  Tip: pair `staff_kecamatan_tegalsari_1` (Rayon Pusat) for the submit flow with');
     console.log('       `admin_data_pusat_1` (Rayon Pusat) to review + convert — both share Rayon');
-    console.log('       Pusat so the request lands in the admin\'s queue. For other rayons use the');
+    console.log("       Pusat so the request lands in the admin's queue. For other rayons use the");
     console.log('       matching admin (e.g. staff_kecamatan_wiyung_1 → admin_data_selatan_1).');
-    console.log('══════════════════════════════════════════════════════════════════════════════════════');
+    console.log(
+      '══════════════════════════════════════════════════════════════════════════════════════',
+    );
   } catch (error) {
     await queryRunner.rollbackTransaction();
     console.error('❌ Phase 3 seed failed, rolling back:', error);
@@ -1126,13 +1411,39 @@ export async function seedPhase3Reference(queryRunner: QueryRunner): Promise<voi
     );
     if (rows.length > 0) speciesInserted++;
   }
-  console.log(`  ✓ ${speciesInserted} new plant_species inserted (${PLANT_SPECIES.length - speciesInserted} already existed)`);
+  console.log(
+    `  ✓ ${speciesInserted} new plant_species inserted (${PLANT_SPECIES.length - speciesInserted} already existed)`,
+  );
 
   const phase3Configs = [
-    { key: 'plants_forecast', value: { default_pruning_cycle_days: 90, overdue_threshold_days: 30, due_soon_window_days: 14 }, description: 'Plant pruning forecast configuration (Phase 3)' },
-    { key: 'service_capacity_defaults', value: { default_capacity_per_week: 5, overbooking_tolerance: 10, booking_window_weeks: 12 }, description: 'Service capacity booking defaults (Phase 3)' },
-    { key: 'pruning_request_workflow', value: { auto_assign_to_rayon: false, review_deadline_days: 7, reference_code_prefix: 'PR' }, description: 'Pruning request workflow settings (Phase 3)' },
-    { key: 'seed_inventory', value: { low_stock_threshold_grams: 500, low_stock_threshold_pieces: 50, reorder_notification: true }, description: 'Seed inventory alert thresholds (Phase 3)' },
+    {
+      key: 'plants_forecast',
+      value: {
+        default_pruning_cycle_days: 90,
+        overdue_threshold_days: 30,
+        due_soon_window_days: 14,
+      },
+      description: 'Plant pruning forecast configuration (Phase 3)',
+    },
+    {
+      key: 'service_capacity_defaults',
+      value: { default_capacity_per_week: 5, overbooking_tolerance: 10, booking_window_weeks: 12 },
+      description: 'Service capacity booking defaults (Phase 3)',
+    },
+    {
+      key: 'pruning_request_workflow',
+      value: { auto_assign_to_rayon: false, review_deadline_days: 7, reference_code_prefix: 'PR' },
+      description: 'Pruning request workflow settings (Phase 3)',
+    },
+    {
+      key: 'seed_inventory',
+      value: {
+        low_stock_threshold_grams: 500,
+        low_stock_threshold_pieces: 50,
+        reorder_notification: true,
+      },
+      description: 'Seed inventory alert thresholds (Phase 3)',
+    },
   ];
   let configsInserted = 0;
   for (const cfg of phase3Configs) {
@@ -1145,7 +1456,9 @@ export async function seedPhase3Reference(queryRunner: QueryRunner): Promise<voi
     );
     if (rows.length > 0) configsInserted++;
   }
-  console.log(`  ✓ ${configsInserted} new Phase 3 monitoring_configs inserted (${phase3Configs.length - configsInserted} already existed)`);
+  console.log(
+    `  ✓ ${configsInserted} new Phase 3 monitoring_configs inserted (${phase3Configs.length - configsInserted} already existed)`,
+  );
 }
 
 /**
@@ -1171,7 +1484,10 @@ export async function seedPhase3ServiceCapacity(
   for (let i = 0; i < 12; i++) {
     weeks.push({ year: yr, week: wk });
     wk++;
-    if (wk > getMaxIsoWeek(yr)) { wk = 1; yr++; }
+    if (wk > getMaxIsoWeek(yr)) {
+      wk = 1;
+      yr++;
+    }
   }
   let inserted = 0;
   for (const r of rayons) {
@@ -1186,7 +1502,9 @@ export async function seedPhase3ServiceCapacity(
       if (rows.length > 0) inserted++;
     }
   }
-  console.log(`  ✓ ${inserted} new service_capacity rows (${rayons.length} rayons × ${weeks.length} weeks, capacity_units=${capacityUnits})`);
+  console.log(
+    `  ✓ ${inserted} new service_capacity rows (${rayons.length} rayons × ${weeks.length} weeks, capacity_units=${capacityUnits})`,
+  );
 }
 
 /**
@@ -1209,7 +1527,10 @@ export async function seedPhase3SampleData(queryRunner: QueryRunner): Promise<vo
     let inserted = 0;
     for (const area of areas) {
       for (const m of mappings) {
-        const sp = await queryRunner.query(`SELECT id FROM plant_species WHERE name_id = $1 LIMIT 1`, [m.speciesName]);
+        const sp = await queryRunner.query(
+          `SELECT id FROM plant_species WHERE name_id = $1 LIMIT 1`,
+          [m.speciesName],
+        );
         if (sp.length > 0) {
           const rows = await queryRunner.query(
             `INSERT INTO area_plants (area_id, species_id, count)
@@ -1230,9 +1551,33 @@ export async function seedPhase3SampleData(queryRunner: QueryRunner): Promise<vo
   // Sample notable_plants — heritage specimens (heritage=true) linked to areas
   if (areas.length > 0) {
     const notablePlantSamples = [
-      { areaIndex: 0, speciesName: 'BERINGIN', lat: -7.2506, lng: 112.7508, heritage: true, label: 'Pohon Beringin Tua Keramat', notes: 'Pohon bersejarah usia 150 tahun' },
-      { areaIndex: 1, speciesName: 'MAHONI', lat: -7.2575, lng: 112.7665, heritage: true, label: 'Mahoni Koleksi 1990', notes: 'Specimen dari Jepang, perlu perawatan khusus' },
-      { areaIndex: 2, speciesName: 'JATI', lat: -7.2450, lng: 112.7450, heritage: false, label: 'Jati Benih Unggul', notes: 'Jati dari proyek hutan tanaman 2020' },
+      {
+        areaIndex: 0,
+        speciesName: 'BERINGIN',
+        lat: -7.2506,
+        lng: 112.7508,
+        heritage: true,
+        label: 'Pohon Beringin Tua Keramat',
+        notes: 'Pohon bersejarah usia 150 tahun',
+      },
+      {
+        areaIndex: 1,
+        speciesName: 'MAHONI',
+        lat: -7.2575,
+        lng: 112.7665,
+        heritage: true,
+        label: 'Mahoni Koleksi 1990',
+        notes: 'Specimen dari Jepang, perlu perawatan khusus',
+      },
+      {
+        areaIndex: 2,
+        speciesName: 'JATI',
+        lat: -7.245,
+        lng: 112.745,
+        heritage: false,
+        label: 'Jati Benih Unggul',
+        notes: 'Jati dari proyek hutan tanaman 2020',
+      },
     ];
     let notableInserted = 0;
     for (const notable of notablePlantSamples) {
@@ -1251,7 +1596,16 @@ export async function seedPhase3SampleData(queryRunner: QueryRunner): Promise<vo
             await queryRunner.query(
               `INSERT INTO notable_plants (area_id, species_id, gps_lat, gps_lng, label, heritage, notes, photo_urls)
                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-              [areas[notable.areaIndex].id, sp[0].id, notable.lat, notable.lng, notable.label, notable.heritage, notable.notes, []],
+              [
+                areas[notable.areaIndex].id,
+                sp[0].id,
+                notable.lat,
+                notable.lng,
+                notable.label,
+                notable.heritage,
+                notable.notes,
+                [],
+              ],
             );
             notableInserted++;
           }
@@ -1281,18 +1635,84 @@ export async function seedPhase3SampleData(queryRunner: QueryRunner): Promise<vo
     // Phase 3 Apr 27 redesign — sample rows now include the new tree-detail
     // and contact fields populated by the redesigned mobile submit form.
     const samples = [
-      { kecamatan: 'Tegalsari',  address: 'Jl. Pemuda No. 1',         status: 'submitted'   as const, estimatedCount: 12, daysFromNow: 30,
-        height: '8-10 meter', diameter: '40-60 cm',  reqName: 'Budi Santoso',   reqPhone: '081234567001', rtName: 'Pak Joko',  rtPhone: '081298765001' },
-      { kecamatan: 'Wonokromo',  address: 'Jl. Raya Darmo No. 50',    status: 'submitted'   as const, estimatedCount: 8,  daysFromNow: 45,
-        height: '6-8 meter',  diameter: '30-45 cm',  reqName: 'Siti Aminah',    reqPhone: '081234567002', rtName: 'Pak Hendra',rtPhone: '081298765002' },
-      { kecamatan: 'Kenjeran',   address: 'Jl. Kenjeran No. 100',     status: 'approved'    as const, estimatedCount: 15, daysFromNow: 14,
-        height: '10-12 meter',diameter: '50-70 cm',  reqName: 'Andi Wijaya',    reqPhone: '081234567003', rtName: 'Pak Slamet',rtPhone: '081298765003' },
-      { kecamatan: 'Krembangan', address: 'Jl. Tanjungsari No. 25',   status: 'rejected'    as const, estimatedCount: 6,  daysFromNow: -5,
-        height: '4-5 meter',  diameter: '20-30 cm',  reqName: 'Dewi Lestari',   reqPhone: '081234567004', rtName: 'Pak Budi',  rtPhone: '081298765004' },
-      { kecamatan: 'Genteng',    address: 'Jl. Tunjungan No. 12',     status: 'assigned'   as const, estimatedCount: 10, daysFromNow: 7,
-        height: '7-9 meter',  diameter: '35-50 cm',  reqName: 'Rina Susanti',   reqPhone: '081234567005', rtName: 'Pak Wahyu', rtPhone: '081298765005' },
-      { kecamatan: 'Tegalsari',  address: 'Jl. Embong Malang No. 7',  status: 'in_progress' as const, estimatedCount: 6,  daysFromNow: 3,
-        height: '5-7 meter',  diameter: '30-40 cm',  reqName: 'Eko Pranoto',    reqPhone: '081234567006', rtName: 'Pak Agus',  rtPhone: '081298765006' },
+      {
+        kecamatan: 'Tegalsari',
+        address: 'Jl. Pemuda No. 1',
+        status: 'submitted' as const,
+        estimatedCount: 12,
+        daysFromNow: 30,
+        height: '8-10 meter',
+        diameter: '40-60 cm',
+        reqName: 'Budi Santoso',
+        reqPhone: '081234567001',
+        rtName: 'Pak Joko',
+        rtPhone: '081298765001',
+      },
+      {
+        kecamatan: 'Wonokromo',
+        address: 'Jl. Raya Darmo No. 50',
+        status: 'submitted' as const,
+        estimatedCount: 8,
+        daysFromNow: 45,
+        height: '6-8 meter',
+        diameter: '30-45 cm',
+        reqName: 'Siti Aminah',
+        reqPhone: '081234567002',
+        rtName: 'Pak Hendra',
+        rtPhone: '081298765002',
+      },
+      {
+        kecamatan: 'Kenjeran',
+        address: 'Jl. Kenjeran No. 100',
+        status: 'approved' as const,
+        estimatedCount: 15,
+        daysFromNow: 14,
+        height: '10-12 meter',
+        diameter: '50-70 cm',
+        reqName: 'Andi Wijaya',
+        reqPhone: '081234567003',
+        rtName: 'Pak Slamet',
+        rtPhone: '081298765003',
+      },
+      {
+        kecamatan: 'Krembangan',
+        address: 'Jl. Tanjungsari No. 25',
+        status: 'rejected' as const,
+        estimatedCount: 6,
+        daysFromNow: -5,
+        height: '4-5 meter',
+        diameter: '20-30 cm',
+        reqName: 'Dewi Lestari',
+        reqPhone: '081234567004',
+        rtName: 'Pak Budi',
+        rtPhone: '081298765004',
+      },
+      {
+        kecamatan: 'Genteng',
+        address: 'Jl. Tunjungan No. 12',
+        status: 'assigned' as const,
+        estimatedCount: 10,
+        daysFromNow: 7,
+        height: '7-9 meter',
+        diameter: '35-50 cm',
+        reqName: 'Rina Susanti',
+        reqPhone: '081234567005',
+        rtName: 'Pak Wahyu',
+        rtPhone: '081298765005',
+      },
+      {
+        kecamatan: 'Tegalsari',
+        address: 'Jl. Embong Malang No. 7',
+        status: 'in_progress' as const,
+        estimatedCount: 6,
+        daysFromNow: 3,
+        height: '5-7 meter',
+        diameter: '30-40 cm',
+        reqName: 'Eko Pranoto',
+        reqPhone: '081234567006',
+        rtName: 'Pak Agus',
+        rtPhone: '081298765006',
+      },
     ];
     let inserted = 0;
     for (let i = 0; i < samples.length; i++) {
@@ -1301,8 +1721,9 @@ export async function seedPhase3SampleData(queryRunner: QueryRunner): Promise<vo
       targetDate.setDate(targetDate.getDate() + samples[i].daysFromNow);
       const targetIsoDate = targetDate.toISOString().split('T')[0];
 
-      const photoUrls = Array.from({ length: 3 + (i % 3) }, (_, n) =>
-        `https://placehold.co/600x400?text=PR-${i + 1}-${n + 1}`,
+      const photoUrls = Array.from(
+        { length: 3 + (i % 3) },
+        (_, n) => `https://placehold.co/600x400?text=PR-${i + 1}-${n + 1}`,
       );
 
       const s = samples[i];
@@ -1323,7 +1744,7 @@ export async function seedPhase3SampleData(queryRunner: QueryRunner): Promise<vo
         isoWk.week,
         scheduledDate,
         s.estimatedCount,
-        s.estimatedCount,            // tree_count mirrors estimated_plant_count
+        s.estimatedCount, // tree_count mirrors estimated_plant_count
         s.height,
         s.diameter,
         s.reqName,
@@ -1337,7 +1758,11 @@ export async function seedPhase3SampleData(queryRunner: QueryRunner): Promise<vo
       // Add review metadata for any reviewed/post-review status
       const reviewed = ['approved', 'rejected', 'assigned', 'in_progress'].includes(s.status);
       if (reviewed) {
-        insertParams.push(adminId, new Date().toISOString(), `Reviewed by admin on ${new Date().toLocaleDateString()}`);
+        insertParams.push(
+          adminId,
+          new Date().toISOString(),
+          `Reviewed by admin on ${new Date().toLocaleDateString()}`,
+        );
       } else {
         insertParams.push(null, null, null);
       }
@@ -1357,13 +1782,17 @@ export async function seedPhase3SampleData(queryRunner: QueryRunner): Promise<vo
       );
       if (rows.length > 0) inserted++;
     }
-    console.log(`  ✓ ${inserted} pruning_requests inserted (mixed statuses + tree details + contacts)`);
+    console.log(
+      `  ✓ ${inserted} pruning_requests inserted (mixed statuses + tree details + contacts)`,
+    );
   } else {
     console.log('  ⚠ No staff_kecamatan/admin_data user found, skipping pruning_requests');
   }
 
   // Sample plant_seeds + seed_transactions
-  const recorder = await queryRunner.query(`SELECT id FROM users WHERE role = 'admin_data' LIMIT 1`);
+  const recorder = await queryRunner.query(
+    `SELECT id FROM users WHERE role = 'admin_data' LIMIT 1`,
+  );
   const recorderId = recorder.length > 0 ? recorder[0].id : null;
   const seeds = [
     { nameId: 'AKASIA_SEEDS', unit: 'gram', qty: 1000 },

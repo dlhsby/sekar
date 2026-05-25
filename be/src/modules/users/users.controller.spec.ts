@@ -21,6 +21,7 @@ describe('UsersController', () => {
     profile_picture_url: null,
     role: UserRole.SATGAS,
     is_active: true,
+    password_must_change: false,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -104,6 +105,7 @@ describe('UsersController', () => {
         role: UserRole.ADMIN_DATA,
         rayon_id: 'rayon-uuid-1',
         is_active: true,
+        password_must_change: false,
         created_at: new Date(),
         updated_at: new Date(),
       };
@@ -131,6 +133,7 @@ describe('UsersController', () => {
         role: UserRole.KEPALA_RAYON,
         rayon_id: 'rayon-uuid-2',
         is_active: true,
+        password_must_change: false,
         created_at: new Date(),
         updated_at: new Date(),
       };
@@ -213,6 +216,7 @@ describe('UsersController', () => {
         profile_picture_url: null,
         role: UserRole.SATGAS,
         is_active: true,
+        password_must_change: false,
         created_at: new Date(),
         updated_at: new Date(),
       };
@@ -250,7 +254,10 @@ describe('UsersController', () => {
       const expectedBase64 = `data:image/jpeg;base64,${mockFile.buffer.toString('base64')}`;
 
       expect(result).toEqual({ profile_picture_url: expectedBase64 });
-      expect(mockUsersService.updateProfilePicture).toHaveBeenCalledWith(mockUser.id, expectedBase64);
+      expect(mockUsersService.updateProfilePicture).toHaveBeenCalledWith(
+        mockUser.id,
+        expectedBase64,
+      );
     });
 
     it('should allow admin to upload for other user', async () => {

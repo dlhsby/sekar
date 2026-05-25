@@ -21,6 +21,7 @@ import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { AuditLogService } from '../audit/audit.service';
 import { ActivityPlantItem } from '../plants/entities/activity-plant-item.entity';
 import { ActivityTag } from './entities/activity-tag.entity';
+import { TaskTypeRegistry } from '../tasks/registry/task-type-registry';
 
 describe('ActivitiesService', () => {
   let module: TestingModule;
@@ -86,6 +87,11 @@ describe('ActivitiesService', () => {
     find: jest.fn(),
     remove: jest.fn(),
     createQueryBuilder: jest.fn(),
+    // KORLAP scope (find / findOne) reads `user_areas` via
+    // `this.activitiesRepository.manager.query(...)`. Without this mock
+    // the access-control assertion throws TypeError on undefined `manager`
+    // instead of the expected ApiException — silently masking guard logic.
+    manager: { query: jest.fn().mockResolvedValue([]) },
   };
 
   const mockShiftsRepo = {
@@ -155,6 +161,14 @@ describe('ActivitiesService', () => {
         {
           provide: AuditLogService,
           useValue: { log: jest.fn().mockResolvedValue({}) },
+        },
+        {
+          // Audit M7: TaskTypeRegistry is injected into ActivitiesService so
+          // custom_fields can be schema-validated on submission. Tests don't
+          // exercise the schema itself (covered by TaskTypeRegistry tests);
+          // a permissive stub keeps the wiring satisfied.
+          provide: TaskTypeRegistry,
+          useValue: { validate: jest.fn() },
         },
       ],
     }).compile();
@@ -350,9 +364,14 @@ describe('ActivitiesService', () => {
       const result = await service.findAllPaginated({}, korlapUser as any, 1, 50);
 
       expect(result.data).toHaveLength(1);
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('activity.area_id = :areaId', {
-        areaId: korlapUser.area_id,
-      });
+      // Multi-area scope (ADR-013): KORLAP filters via `area_id IN (:...korlapAreaIds)`
+      // sourced from `user_areas` (with fallback to `[user.area_id]` when the table
+      // is empty — which is the case here because the mocked
+      // `activitiesRepository.manager.query` returns `[]`).
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'activity.area_id IN (:...korlapAreaIds)',
+        { korlapAreaIds: [korlapUser.area_id] },
+      );
     });
 
     it('should return paginated activities for KEPALA_RAYON (rayon-scoped)', async () => {
@@ -1174,9 +1193,9 @@ describe('ActivitiesService', () => {
       } as any);
       mockActivityTagRepo.delete.mockResolvedValue({ affected: 0 } as any);
 
-      await expect(
-        service.untagUser(mockActivity.id, 'never-tagged', mockUser.id),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.untagUser(mockActivity.id, 'never-tagged', mockUser.id)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

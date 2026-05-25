@@ -7,6 +7,7 @@ import { ActivityType } from '../activity-types/entities/activity-type.entity';
 import { User } from '../users/entities/user.entity';
 import { ShiftsModule } from '../shifts/shifts.module';
 import { AuditModule } from '../audit/audit.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 /**
  * Overtime Module
@@ -18,7 +19,12 @@ import { AuditModule } from '../audit/audit.module';
  * - Area-scoped approvals
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([Overtime, ActivityType, User]), ShiftsModule, AuditModule],
+  imports: [
+    TypeOrmModule.forFeature([Overtime, ActivityType, User]),
+    ShiftsModule,
+    AuditModule,
+    NotificationsModule, // Phase 4-3 (M2): overtime approve/reject FCM triggers
+  ],
   controllers: [OvertimeController],
   providers: [OvertimeService],
   exports: [OvertimeService],

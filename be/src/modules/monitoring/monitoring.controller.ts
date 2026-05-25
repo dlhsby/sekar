@@ -236,14 +236,22 @@ export class MonitoringController {
   @Roles(...MONITORING_CITY, ...MONITORING_RAYON, ...MONITORING_AREA)
   @ApiOperation({ summary: 'Unified monitoring snapshot — workers + scope metadata' })
   @ApiQuery({ name: 'scope', enum: ['city', 'rayon', 'area'], required: false })
-  @ApiQuery({ name: 'id', required: false, description: 'Rayon or Area UUID (required for rayon/area scope)' })
+  @ApiQuery({
+    name: 'id',
+    required: false,
+    description: 'Rayon or Area UUID (required for rayon/area scope)',
+  })
   @ApiResponse({ status: 200, description: 'Snapshot returned successfully' })
   async getSnapshot(
     @GetUser() user: User,
     @Query('scope') scope: 'city' | 'rayon' | 'area' = 'city',
     @Query('id') id?: string,
   ) {
-    const cityOnlyRoles: UserRole[] = [UserRole.SUPERADMIN, UserRole.ADMIN_SYSTEM, UserRole.TOP_MANAGEMENT];
+    const cityOnlyRoles: UserRole[] = [
+      UserRole.SUPERADMIN,
+      UserRole.ADMIN_SYSTEM,
+      UserRole.TOP_MANAGEMENT,
+    ];
     if (scope === 'city' && !cityOnlyRoles.includes(user.role as UserRole)) {
       throw new ForbiddenException('City-scope snapshot requires city-level role');
     }

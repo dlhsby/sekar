@@ -21,9 +21,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *   • both (sync collision) → backfill new from old, then DROP old
  *   • neither (impossible)  → no-op
  */
-export class PruningRequestAssignedTaskRename17460010000000
-  implements MigrationInterface
-{
+export class PruningRequestAssignedTaskRename17460010000000 implements MigrationInterface {
   name = 'PruningRequestAssignedTaskRename17460010000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {

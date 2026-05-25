@@ -9,11 +9,13 @@ import { User } from '../users/entities/user.entity';
 import { Schedule } from '../schedules/entities/schedule.entity';
 import { Area } from '../areas/entities/area.entity';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { CommonModule } from '../../common/common.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Schedule, Area]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
+    CommonModule, // Phase 4-7 (M2): exposes RedisService for refresh-token blacklist
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

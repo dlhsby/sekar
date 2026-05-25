@@ -33,6 +33,7 @@ import { AreaPlant } from '../plants/entities/area-plant.entity';
 import { EventsModule } from '../../gateways/events.module';
 import { UserAreasModule } from '../user-areas/user-areas.module';
 import { PlantsModule } from '../plants/plants.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { PlantsModule } from '../plants/plants.module';
     forwardRef(() => EventsModule),
     UserAreasModule,
     PlantsModule,
+    NotificationsModule, // Phase 4-3 (M2): missing-worker alert FCM trigger
   ],
   controllers: [MonitoringController],
   providers: [

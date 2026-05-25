@@ -123,7 +123,7 @@ describe('TasksController', () => {
 
       const result = await controller.findMyTasks(mockUser as User);
 
-      expect(tasksService.findMyTasks).toHaveBeenCalledWith(mockUser.id, false, undefined, "all");
+      expect(tasksService.findMyTasks).toHaveBeenCalledWith(mockUser.id, false, undefined, 'all');
       expect(result).toEqual(paginated);
     });
 
@@ -134,7 +134,7 @@ describe('TasksController', () => {
 
       const result = await controller.findMyTasks(mockUser as User, 'false');
 
-      expect(tasksService.findMyTasks).toHaveBeenCalledWith(mockUser.id, false, undefined, "all");
+      expect(tasksService.findMyTasks).toHaveBeenCalledWith(mockUser.id, false, undefined, 'all');
       expect(result).toEqual(paginated);
     });
 
@@ -145,7 +145,7 @@ describe('TasksController', () => {
 
       const result = await controller.findMyTasks(mockUser as User, 'true');
 
-      expect(tasksService.findMyTasks).toHaveBeenCalledWith(mockUser.id, true, undefined, "all");
+      expect(tasksService.findMyTasks).toHaveBeenCalledWith(mockUser.id, true, undefined, 'all');
       expect(result).toEqual(paginated);
     });
   });

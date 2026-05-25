@@ -106,7 +106,10 @@ describe('UserAreasService', () => {
 
   describe('getPermanentAreaIds', () => {
     it('should return only area_id strings', async () => {
-      mockUserAreaRepo.find.mockResolvedValue([{ area_id: 'area-uuid-1' }, { area_id: 'area-uuid-2' }]);
+      mockUserAreaRepo.find.mockResolvedValue([
+        { area_id: 'area-uuid-1' },
+        { area_id: 'area-uuid-2' },
+      ]);
 
       const result = await service.getPermanentAreaIds('user-uuid-1');
 
@@ -183,9 +186,9 @@ describe('UserAreasService', () => {
     it('should throw NotFoundException if not found', async () => {
       mockUserAreaRepo.delete.mockResolvedValue({ affected: 0 });
 
-      await expect(
-        service.removeAssignment('user-uuid-1', 'nonexistent-area'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.removeAssignment('user-uuid-1', 'nonexistent-area')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

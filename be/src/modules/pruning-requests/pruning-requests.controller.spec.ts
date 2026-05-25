@@ -25,6 +25,7 @@ describe('PruningRequestsController', () => {
     role: UserRole.STAFF_KECAMATAN,
     rayon_id: mockRayonId,
     is_active: true,
+    password_must_change: false,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -86,12 +87,8 @@ describe('PruningRequestsController', () => {
       ],
     }).compile();
 
-    controller = module.get<PruningRequestsController>(
-      PruningRequestsController,
-    );
-    service = module.get(PruningRequestsService) as jest.Mocked<
-      PruningRequestsService
-    >;
+    controller = module.get<PruningRequestsController>(PruningRequestsController);
+    service = module.get(PruningRequestsService) as jest.Mocked<PruningRequestsService>;
   });
 
   afterEach(async () => {
@@ -146,14 +143,12 @@ describe('PruningRequestsController', () => {
         new BadRequestException('Detail date must be today or in the future'),
       );
 
-      await expect(controller.create(dto, mockStaffKecamatan)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(controller.create(dto, mockStaffKecamatan)).rejects.toThrow(BadRequestException);
     });
   });
 
   describe('findAll', () => {
-    it('should return user\'s requests when mine=true', async () => {
+    it("should return user's requests when mine=true", async () => {
       const requests: PruningRequest[] = [mockPruningRequest];
       service.findMine.mockResolvedValue(requests);
 
@@ -167,7 +162,13 @@ describe('PruningRequestsController', () => {
       const requests: PruningRequest[] = [mockPruningRequest];
       service.findMine.mockResolvedValue(requests);
 
-      const result = await controller.findAll('true', undefined, undefined, undefined, mockStaffKecamatan);
+      const result = await controller.findAll(
+        'true',
+        undefined,
+        undefined,
+        undefined,
+        mockStaffKecamatan,
+      );
 
       expect(result).toEqual(requests);
       expect(service.findMine).toHaveBeenCalledWith(mockStaffKecamatan, 20, 0);
@@ -179,11 +180,7 @@ describe('PruningRequestsController', () => {
 
       await controller.findAll('true', '50', '100', undefined, mockStaffKecamatan);
 
-      expect(service.findMine).toHaveBeenCalledWith(
-        mockStaffKecamatan,
-        50,
-        100,
-      );
+      expect(service.findMine).toHaveBeenCalledWith(mockStaffKecamatan, 50, 100);
     });
 
     it('should reject invalid limit', async () => {
@@ -269,13 +266,9 @@ describe('PruningRequestsController', () => {
     });
 
     it('should pass through service exceptions', async () => {
-      service.findById.mockRejectedValue(
-        new Error('Not found'),
-      );
+      service.findById.mockRejectedValue(new Error('Not found'));
 
-      await expect(
-        controller.findOne(mockRequestId, mockStaffKecamatan),
-      ).rejects.toThrow();
+      await expect(controller.findOne(mockRequestId, mockStaffKecamatan)).rejects.toThrow();
     });
   });
 
@@ -316,13 +309,9 @@ describe('PruningRequestsController', () => {
 
     it('should pass through service exceptions', async () => {
       const dto = { decision: 'approve' as const };
-      service.review.mockRejectedValue(
-        new Error('Not reviewable'),
-      );
+      service.review.mockRejectedValue(new Error('Not reviewable'));
 
-      await expect(
-        controller.review(mockRequestId, dto, mockStaffKecamatan),
-      ).rejects.toThrow();
+      await expect(controller.review(mockRequestId, dto, mockStaffKecamatan)).rejects.toThrow();
     });
   });
 
@@ -353,19 +342,11 @@ describe('PruningRequestsController', () => {
         task: mockTask as any,
       });
 
-      const result = await controller.assignToTask(
-        mockRequestId,
-        dto,
-        mockStaffKecamatan,
-      );
+      const result = await controller.assignToTask(mockRequestId, dto, mockStaffKecamatan);
 
       expect(result.request.status).toBe('assigned');
       expect(result.task.id).toBe('task-id');
-      expect(service.assignToTask).toHaveBeenCalledWith(
-        mockRequestId,
-        dto,
-        mockStaffKecamatan,
-      );
+      expect(service.assignToTask).toHaveBeenCalledWith(mockRequestId, dto, mockStaffKecamatan);
     });
 
     it('should return existing task if already converted (idempotent)', async () => {
@@ -389,11 +370,7 @@ describe('PruningRequestsController', () => {
         task: existingTask as any,
       });
 
-      const result = await controller.assignToTask(
-        mockRequestId,
-        dto,
-        mockStaffKecamatan,
-      );
+      const result = await controller.assignToTask(mockRequestId, dto, mockStaffKecamatan);
 
       expect(result.task.id).toBe('existing-task-id');
     });
@@ -407,9 +384,7 @@ describe('PruningRequestsController', () => {
         pruningAction: 'PM' as const,
       };
 
-      service.assignToTask.mockRejectedValue(
-        new Error('Cannot convert'),
-      );
+      service.assignToTask.mockRejectedValue(new Error('Cannot convert'));
 
       await expect(
         controller.assignToTask(mockRequestId, dto, mockStaffKecamatan),
@@ -423,22 +398,14 @@ describe('PruningRequestsController', () => {
       const updated: PruningRequest = {
         ...mockPruningRequest,
         expectedDate: new Date('2026-05-12'),
-    scheduledDate: null,
+        scheduledDate: null,
       };
       service.reschedule.mockResolvedValue(updated);
 
-      const result = await controller.reschedule(
-        mockRequestId,
-        dto,
-        mockStaffKecamatan,
-      );
+      const result = await controller.reschedule(mockRequestId, dto, mockStaffKecamatan);
 
       expect(result.expectedDate).toEqual(new Date('2026-05-12'));
-      expect(service.reschedule).toHaveBeenCalledWith(
-        mockRequestId,
-        dto,
-        mockStaffKecamatan,
-      );
+      expect(service.reschedule).toHaveBeenCalledWith(mockRequestId, dto, mockStaffKecamatan);
     });
 
     it('should pass through service exceptions', async () => {
@@ -481,13 +448,7 @@ describe('PruningRequestsController', () => {
         limit: 20,
       });
 
-      await controller.findAll(
-        undefined,
-        undefined,
-        undefined,
-        query,
-        mockStaffKecamatan,
-      );
+      await controller.findAll(undefined, undefined, undefined, query, mockStaffKecamatan);
 
       expect(service.findAll).toHaveBeenCalledWith(
         mockStaffKecamatan,
@@ -518,13 +479,7 @@ describe('PruningRequestsController', () => {
 
     it('should reject invalid mine parameter', async () => {
       await expect(
-        controller.findAll(
-          'invalid',
-          undefined,
-          undefined,
-          {},
-          mockStaffKecamatan,
-        ),
+        controller.findAll('invalid', undefined, undefined, {}, mockStaffKecamatan),
       ).rejects.toThrow(BadRequestException);
     });
   });

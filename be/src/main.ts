@@ -2,6 +2,9 @@
 // time (e.g. @Throttle on auth.controller) see the env vars. ConfigModule alone
 // runs after class-decorator literals are already locked in.
 import 'dotenv/config';
+import { initSentry } from './common/sentry/sentry';
+// Initialize Sentry as early as possible so app-factory errors are captured.
+initSentry();
 import { NestFactory, Reflector } from '@nestjs/core';
 import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';

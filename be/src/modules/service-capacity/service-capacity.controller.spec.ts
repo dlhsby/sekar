@@ -36,6 +36,7 @@ describe('ServiceCapacityController', () => {
     role: UserRole.ADMIN_DATA,
     rayon_id: mockRayonId,
     is_active: true,
+    password_must_change: false,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -50,6 +51,7 @@ describe('ServiceCapacityController', () => {
     role: UserRole.KEPALA_RAYON,
     rayon_id: mockRayonId,
     is_active: true,
+    password_must_change: false,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -63,6 +65,7 @@ describe('ServiceCapacityController', () => {
     profile_picture_url: null,
     role: UserRole.TOP_MANAGEMENT,
     is_active: true,
+    password_must_change: false,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -76,6 +79,7 @@ describe('ServiceCapacityController', () => {
     profile_picture_url: null,
     role: UserRole.SUPERADMIN,
     is_active: true,
+    password_must_change: false,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -90,6 +94,7 @@ describe('ServiceCapacityController', () => {
     role: UserRole.STAFF_KECAMATAN,
     rayon_id: mockRayonId,
     is_active: true,
+    password_must_change: false,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -112,12 +117,8 @@ describe('ServiceCapacityController', () => {
       ],
     }).compile();
 
-    controller = module.get<ServiceCapacityController>(
-      ServiceCapacityController,
-    );
-    service = module.get(ServiceCapacityService) as jest.Mocked<
-      ServiceCapacityService
-    >;
+    controller = module.get<ServiceCapacityController>(ServiceCapacityController);
+    service = module.get(ServiceCapacityService) as jest.Mocked<ServiceCapacityService>;
   });
 
   afterEach(() => {
@@ -128,9 +129,13 @@ describe('ServiceCapacityController', () => {
     it('should return calendar for admin_data in own rayon', async () => {
       mockService.findCalendar.mockResolvedValue([mockCapacity]);
 
-      const result = await controller.findCalendar(mockRayonId, {
-        year: mockYear,
-      }, mockAdminData);
+      const result = await controller.findCalendar(
+        mockRayonId,
+        {
+          year: mockYear,
+        },
+        mockAdminData,
+      );
 
       expect(result).toEqual([mockCapacity]);
       expect(service.findCalendar).toHaveBeenCalledWith({
@@ -150,9 +155,13 @@ describe('ServiceCapacityController', () => {
     it('should allow kepala_rayon access any rayon', async () => {
       mockService.findCalendar.mockResolvedValue([mockCapacity]);
 
-      const result = await controller.findCalendar(mockRayonId, {
-        year: mockYear,
-      }, mockKepalaRayon);
+      const result = await controller.findCalendar(
+        mockRayonId,
+        {
+          year: mockYear,
+        },
+        mockKepalaRayon,
+      );
 
       expect(result).toEqual([mockCapacity]);
     });
@@ -160,9 +169,13 @@ describe('ServiceCapacityController', () => {
     it('should allow top_management access any rayon', async () => {
       mockService.findCalendar.mockResolvedValue([mockCapacity]);
 
-      const result = await controller.findCalendar(mockRayonId, {
-        year: mockYear,
-      }, mockTopManagement);
+      const result = await controller.findCalendar(
+        mockRayonId,
+        {
+          year: mockYear,
+        },
+        mockTopManagement,
+      );
 
       expect(result).toEqual([mockCapacity]);
     });
@@ -170,9 +183,13 @@ describe('ServiceCapacityController', () => {
     it('should allow superadmin access any rayon', async () => {
       mockService.findCalendar.mockResolvedValue([mockCapacity]);
 
-      const result = await controller.findCalendar(mockRayonId, {
-        year: mockYear,
-      }, mockSuperadmin);
+      const result = await controller.findCalendar(
+        mockRayonId,
+        {
+          year: mockYear,
+        },
+        mockSuperadmin,
+      );
 
       expect(result).toEqual([mockCapacity]);
     });

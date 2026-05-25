@@ -2,7 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import type { Request } from 'express';
 import { JwtStrategy } from './jwt.strategy';
+import { AuthService } from '../auth.service';
 import { User, UserRole } from '../../users/entities/user.entity';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { ApiException } from '../../../common/exceptions/api.exception';
@@ -22,6 +24,7 @@ describe('JwtStrategy', () => {
     profile_picture_url: null,
     role: UserRole.SATGAS,
     is_active: true,
+    password_must_change: false,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -34,6 +37,15 @@ describe('JwtStrategy', () => {
     get: jest.fn().mockReturnValue('test-secret-key'),
   };
 
+  const mockAuthService = {
+    isTokenBlacklisted: jest.fn().mockResolvedValue(false),
+  };
+
+  // ExtractJwt.fromAuthHeaderAsBearerToken() reads req.headers.authorization.
+  const mockReq = {
+    headers: { authorization: 'Bearer valid-access-token' },
+  } as unknown as Request;
+
   beforeEach(async () => {
     module = await Test.createTestingModule({
       providers: [
@@ -45,6 +57,10 @@ describe('JwtStrategy', () => {
         {
           provide: ConfigService,
           useValue: mockConfigService,
+        },
+        {
+          provide: AuthService,
+          useValue: mockAuthService,
         },
       ],
     }).compile();
@@ -77,6 +93,10 @@ describe('JwtStrategy', () => {
               provide: ConfigService,
               useValue: mockConfigWithoutSecret,
             },
+            {
+              provide: AuthService,
+              useValue: mockAuthService,
+            },
           ],
         }).compile(),
       ).rejects.toThrow(
@@ -100,6 +120,10 @@ describe('JwtStrategy', () => {
             provide: ConfigService,
             useValue: mockConfigWithSecret,
           },
+          {
+            provide: AuthService,
+            useValue: mockAuthService,
+          },
         ],
       }).compile();
 
@@ -121,7 +145,7 @@ describe('JwtStrategy', () => {
     it('should return user if found and active', async () => {
       mockUserRepository.findOne.mockResolvedValue(mockUser);
 
-      const result = await strategy.validate(payload);
+      const result = await strategy.validate(mockReq, payload);
 
       expect(result).toEqual(mockUser);
       expect(userRepository.findOne).toHaveBeenCalledWith({
@@ -133,7 +157,7 @@ describe('JwtStrategy', () => {
       mockUserRepository.findOne.mockResolvedValue(null);
 
       try {
-        await strategy.validate(payload);
+        await strategy.validate(mockReq, payload);
         fail('Should have thrown ApiException');
       } catch (error) {
         expect(error).toBeInstanceOf(ApiException);
@@ -147,12 +171,27 @@ describe('JwtStrategy', () => {
       mockUserRepository.findOne.mockResolvedValue(null);
 
       try {
-        await strategy.validate(payload);
+        await strategy.validate(mockReq, payload);
         fail('Should have thrown ApiException');
       } catch (error) {
         expect(error).toBeInstanceOf(ApiException);
         expect(error.getCode()).toBe(ApiErrorCode.AUTH_USER_NOT_FOUND);
       }
+    });
+
+    it('should reject a revoked (blacklisted) token before user lookup', async () => {
+      mockAuthService.isTokenBlacklisted.mockResolvedValueOnce(true);
+
+      try {
+        await strategy.validate(mockReq, payload);
+        fail('Should have thrown ApiException');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiException);
+        expect(error.getCode()).toBe(ApiErrorCode.AUTH_TOKEN_INVALID);
+        expect(error.message).toBe('Token has been revoked');
+      }
+      // Blacklisted tokens must short-circuit before hitting the DB.
+      expect(mockUserRepository.findOne).not.toHaveBeenCalled();
     });
 
     it('should validate with different user roles', async () => {
@@ -165,7 +204,7 @@ describe('JwtStrategy', () => {
       const adminUser = { ...mockUser, role: UserRole.SUPERADMIN };
       mockUserRepository.findOne.mockResolvedValue(adminUser);
 
-      const result = await strategy.validate(adminPayload);
+      const result = await strategy.validate(mockReq, adminPayload);
 
       expect(result).toEqual(adminUser);
     });
@@ -180,7 +219,7 @@ describe('JwtStrategy', () => {
       const supervisorUser = { ...mockUser, role: UserRole.KORLAP };
       mockUserRepository.findOne.mockResolvedValue(supervisorUser);
 
-      const result = await strategy.validate(supervisorPayload);
+      const result = await strategy.validate(mockReq, supervisorPayload);
 
       expect(result).toEqual(supervisorUser);
     });

@@ -70,4 +70,8 @@ export class MeResponseDto {
 
   @ApiPropertyOptional({ type: AssignedAreaDto, nullable: true })
   assigned_area?: AssignedAreaDto | null;
+
+  // Phase 4-7 (M3a): mobile reads this to gate ChangePasswordScreen.
+  @ApiProperty({ example: false })
+  password_must_change: boolean;
 }

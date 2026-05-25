@@ -99,10 +99,7 @@ export class PlantSeedsService {
           throw new ConflictException('Insufficient stock for distribution');
         }
         seed.stockQty -= dto.qty;
-      } else if (
-        dto.transactionType === 'purchase' ||
-        dto.transactionType === 'adjustment'
-      ) {
+      } else if (dto.transactionType === 'purchase' || dto.transactionType === 'adjustment') {
         seed.stockQty += dto.qty;
       }
 
@@ -142,7 +139,8 @@ export class PlantSeedsService {
       throw new NotFoundException('Seed not found');
     }
 
-    let query = this.transactionRepository.createQueryBuilder('st')
+    let query = this.transactionRepository
+      .createQueryBuilder('st')
       .where('st.seedId = :seedId', { seedId });
 
     if (params.type) {

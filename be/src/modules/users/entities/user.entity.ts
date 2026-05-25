@@ -86,7 +86,8 @@ export class User {
   // inherit `kecamatan_name` and `rayon_id` from this profile at submit time.
   // Other roles leave this null.
   @ApiProperty({
-    description: 'Kecamatan name for staff_kecamatan role (free text — no separate Kecamatan table)',
+    description:
+      'Kecamatan name for staff_kecamatan role (free text — no separate Kecamatan table)',
     required: false,
   })
   @Column({ name: 'kecamatan_name', type: 'varchar', length: 100, nullable: true })
@@ -106,6 +107,12 @@ export class User {
 
   @Column({ default: true })
   is_active: boolean;
+
+  // Phase 4 sub-phase 4-7 (M3a): set true by admin password reset to force the
+  // user through ChangePasswordScreen on next login; cleared by
+  // POST /auth/change-password (ADR-041).
+  @Column({ name: 'password_must_change', type: 'boolean', default: false })
+  password_must_change: boolean;
 
   @CreateDateColumn()
   created_at: Date;

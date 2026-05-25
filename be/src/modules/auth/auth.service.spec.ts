@@ -8,6 +8,7 @@ import { User, UserRole } from '../users/entities/user.entity';
 import { LoginDto } from './dto/login.dto';
 import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
+import { RedisService } from '../../common/services/redis.service';
 
 describe('AuthService', () => {
   let module: TestingModule;
@@ -24,6 +25,7 @@ describe('AuthService', () => {
     profile_picture_url: null,
     role: UserRole.SATGAS,
     is_active: true,
+    password_must_change: false,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -180,7 +182,7 @@ describe('AuthService', () => {
       expect(mockJwtService.sign).toHaveBeenCalledTimes(2); // Once for access, once for refresh
     });
 
-    it('should throw ApiException with AUTH_TOKEN_INVALID when token type is not refresh', async () => {
+    it('should throw ApiException with AUTH_REFRESH_INVALID when token type is not refresh', async () => {
       const invalidPayload = { ...mockPayload, type: 'access' as const };
       mockJwtService.verify = jest.fn().mockResolvedValue(invalidPayload);
 
@@ -189,7 +191,7 @@ describe('AuthService', () => {
         fail('Should have thrown ApiException');
       } catch (error) {
         expect(error).toBeInstanceOf(ApiException);
-        expect(error.getCode()).toBe(ApiErrorCode.AUTH_TOKEN_INVALID);
+        expect(error.getCode()).toBe(ApiErrorCode.AUTH_REFRESH_INVALID);
         expect(error.message).toContain('Invalid token type');
         expect(error.getStatus()).toBe(401);
       }
@@ -224,7 +226,7 @@ describe('AuthService', () => {
       }
     });
 
-    it('should throw ApiException with AUTH_TOKEN_EXPIRED when refresh token has expired', async () => {
+    it('should throw ApiException with AUTH_REFRESH_EXPIRED when refresh token has expired', async () => {
       const expiredError = new Error('jwt expired');
       expiredError.name = 'TokenExpiredError';
       mockJwtService.verify = jest.fn().mockRejectedValue(expiredError);
@@ -234,13 +236,13 @@ describe('AuthService', () => {
         fail('Should have thrown ApiException');
       } catch (error) {
         expect(error).toBeInstanceOf(ApiException);
-        expect(error.getCode()).toBe(ApiErrorCode.AUTH_TOKEN_EXPIRED);
+        expect(error.getCode()).toBe(ApiErrorCode.AUTH_REFRESH_EXPIRED);
         expect(error.message).toContain('Refresh token has expired');
         expect(error.getStatus()).toBe(401);
       }
     });
 
-    it('should throw ApiException with AUTH_TOKEN_INVALID when token is malformed', async () => {
+    it('should throw ApiException with AUTH_REFRESH_INVALID when token is malformed', async () => {
       const jwtError = new Error('invalid token');
       jwtError.name = 'JsonWebTokenError';
       mockJwtService.verify = jest.fn().mockRejectedValue(jwtError);
@@ -250,13 +252,13 @@ describe('AuthService', () => {
         fail('Should have thrown ApiException');
       } catch (error) {
         expect(error).toBeInstanceOf(ApiException);
-        expect(error.getCode()).toBe(ApiErrorCode.AUTH_TOKEN_INVALID);
+        expect(error.getCode()).toBe(ApiErrorCode.AUTH_REFRESH_INVALID);
         expect(error.message).toContain('Invalid refresh token');
         expect(error.getStatus()).toBe(401);
       }
     });
 
-    it('should throw ApiException with AUTH_TOKEN_INVALID when unexpected error occurs', async () => {
+    it('should throw ApiException with AUTH_REFRESH_INVALID when unexpected error occurs', async () => {
       const unexpectedError = new Error('Unexpected error');
       mockJwtService.verify = jest.fn().mockRejectedValue(unexpectedError);
 
@@ -265,10 +267,167 @@ describe('AuthService', () => {
         fail('Should have thrown ApiException');
       } catch (error) {
         expect(error).toBeInstanceOf(ApiException);
-        expect(error.getCode()).toBe(ApiErrorCode.AUTH_TOKEN_INVALID);
+        expect(error.getCode()).toBe(ApiErrorCode.AUTH_REFRESH_INVALID);
         expect(error.message).toContain('Token refresh failed');
         expect(error.getStatus()).toBe(401);
       }
+    });
+  });
+
+  describe('Phase 4-7 (M3a) changePassword', () => {
+    const dto = { old_password: 'oldpass123', new_password: 'newpass456' };
+
+    beforeEach(() => {
+      mockJwtService.sign = jest.fn().mockReturnValue('new.token');
+    });
+
+    it('rotates tokens and clears password_must_change on success', async () => {
+      mockUserRepository.findOne.mockResolvedValue({
+        ...mockUser,
+        password_hash: 'hash',
+        password_must_change: true,
+      });
+      mockUserRepository.save = jest.fn().mockImplementation((u) => Promise.resolve(u));
+      jest.spyOn(bcrypt, 'compare').mockImplementation(() => Promise.resolve(true));
+      jest.spyOn(bcrypt, 'hash').mockImplementation(() => Promise.resolve('new.hash'));
+
+      const result = await service.changePassword(mockUser.id, dto);
+
+      expect(result.user.password_must_change).toBe(false);
+      expect(result.access_token).toBeDefined();
+      expect(result.refresh_token).toBeDefined();
+      expect(mockUserRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ password_hash: 'new.hash', password_must_change: false }),
+      );
+    });
+
+    it('throws AUTH_INVALID_CREDENTIALS when old password is wrong', async () => {
+      mockUserRepository.findOne.mockResolvedValue({ ...mockUser, password_hash: 'hash' });
+      jest.spyOn(bcrypt, 'compare').mockImplementation(() => Promise.resolve(false));
+
+      try {
+        await service.changePassword(mockUser.id, dto);
+        fail('should have thrown');
+      } catch (err) {
+        expect((err as ApiException).getCode()).toBe(ApiErrorCode.AUTH_INVALID_CREDENTIALS);
+      }
+    });
+
+    it('throws AUTH_USER_NOT_FOUND when user does not exist', async () => {
+      mockUserRepository.findOne.mockResolvedValue(null);
+      try {
+        await service.changePassword('missing', dto);
+        fail('should have thrown');
+      } catch (err) {
+        expect((err as ApiException).getCode()).toBe(ApiErrorCode.AUTH_USER_NOT_FOUND);
+      }
+    });
+
+    it('throws AUTH_ACCOUNT_INACTIVE for inactive user', async () => {
+      mockUserRepository.findOne.mockResolvedValue({ ...mockUser, is_active: false });
+      try {
+        await service.changePassword(mockUser.id, dto);
+        fail('should have thrown');
+      } catch (err) {
+        expect((err as ApiException).getCode()).toBe(ApiErrorCode.AUTH_ACCOUNT_INACTIVE);
+      }
+    });
+  });
+
+  describe('Phase 4-7 rotation + blacklist', () => {
+    const buildWithRedis = async (
+      redisGet: jest.Mock,
+      redisSet: jest.Mock,
+    ): Promise<AuthService> => {
+      const decodeMock = jest.fn().mockReturnValue({ exp: Math.floor(Date.now() / 1000) + 600 });
+      const mod = await Test.createTestingModule({
+        providers: [
+          AuthService,
+          { provide: getRepositoryToken(User), useValue: mockUserRepository },
+          {
+            provide: JwtService,
+            useValue: {
+              sign: jest.fn().mockReturnValue('new.jwt.token'),
+              verify: jest.fn().mockResolvedValue({ sub: mockUser.id, type: 'refresh' }),
+              decode: decodeMock,
+            },
+          },
+          {
+            provide: RedisService,
+            useValue: {
+              getClient: () => ({ get: redisGet, set: redisSet }),
+            },
+          },
+        ],
+      }).compile();
+      return mod.get(AuthService);
+    };
+
+    it('rejects a blacklisted refresh token with AUTH_REFRESH_INVALID', async () => {
+      const get = jest.fn().mockResolvedValue('1');
+      const set = jest.fn().mockResolvedValue('OK');
+      const svc = await buildWithRedis(get, set);
+
+      try {
+        await svc.refreshToken('blacklisted.refresh.token');
+        fail('should have thrown');
+      } catch (err) {
+        expect(err).toBeInstanceOf(ApiException);
+        expect((err as ApiException).getCode()).toBe(ApiErrorCode.AUTH_REFRESH_INVALID);
+      }
+      expect(get).toHaveBeenCalledWith(expect.stringMatching(/^auth:blacklist:[0-9a-f]{64}$/));
+    });
+
+    it('blacklists the old refresh token on successful rotation', async () => {
+      const get = jest.fn().mockResolvedValue(null); // not blacklisted
+      const set = jest.fn().mockResolvedValue('OK');
+      mockUserRepository.findOne.mockResolvedValue(mockUser);
+      const svc = await buildWithRedis(get, set);
+
+      await svc.refreshToken('valid.refresh.token');
+
+      expect(set).toHaveBeenCalledWith(
+        expect.stringMatching(/^auth:blacklist:[0-9a-f]{64}$/),
+        '1',
+        'EX',
+        expect.any(Number),
+      );
+    });
+
+    it('logout blacklists both access and refresh tokens', async () => {
+      const get = jest.fn().mockResolvedValue(null);
+      const set = jest.fn().mockResolvedValue('OK');
+      const svc = await buildWithRedis(get, set);
+
+      await svc.logout(mockUser.id, 'access.token', 'refresh.token');
+
+      // Two SET calls — one per token.
+      expect(set).toHaveBeenCalledTimes(2);
+    });
+
+    it('logout is a no-op for omitted tokens', async () => {
+      const get = jest.fn().mockResolvedValue(null);
+      const set = jest.fn().mockResolvedValue('OK');
+      const svc = await buildWithRedis(get, set);
+
+      await svc.logout(mockUser.id);
+      expect(set).not.toHaveBeenCalled();
+    });
+
+    it('isTokenBlacklisted returns true when Redis says so', async () => {
+      const get = jest.fn().mockResolvedValue('1');
+      const set = jest.fn().mockResolvedValue('OK');
+      const svc = await buildWithRedis(get, set);
+
+      expect(await svc.isTokenBlacklisted('any.token')).toBe(true);
+    });
+
+    it('isTokenBlacklisted returns false when Redis errors (fail-open)', async () => {
+      const get = jest.fn().mockRejectedValue(new Error('redis down'));
+      const set = jest.fn().mockResolvedValue('OK');
+      const svc = await buildWithRedis(get, set);
+
+      expect(await svc.isTokenBlacklisted('any.token')).toBe(false);
     });
   });
 

@@ -241,6 +241,7 @@ describe('MonitoringController', () => {
             getLocationHistory: jest.fn(),
             getUserDaySummary: jest.fn(),
             getStaffingSummary: jest.fn(),
+            getSnapshot: jest.fn(),
           },
         },
         {
@@ -741,6 +742,149 @@ describe('MonitoringController', () => {
       expect(service.getStaffingSummary).toHaveBeenCalledWith(
         expect.objectContaining({ area_id: 'area-1' }),
       );
+    });
+  });
+
+  describe('getAreaPlantStatus', () => {
+    let plantStatusService: any;
+    let userAreasService: any;
+
+    beforeEach(() => {
+      plantStatusService = controller['areaPlantStatusService'];
+      userAreasService = controller['userAreasService'];
+    });
+
+    it('should return area plant status for superadmin', async () => {
+      const mockStatus = { area_id: 'area-1', overdue: 0 };
+      plantStatusService.getAreaPlantStatus.mockResolvedValue(mockStatus);
+
+      const result = await controller.getAreaPlantStatus('area-1', mockSuperadmin);
+
+      expect(plantStatusService.getAreaPlantStatus).toHaveBeenCalledWith('area-1');
+      expect(result).toEqual(mockStatus);
+    });
+
+    it('should allow korlap to access assigned area', async () => {
+      const mockStatus = { area_id: 'area-1', overdue: 0 };
+      plantStatusService.getAreaPlantStatus.mockResolvedValue(mockStatus);
+      userAreasService.getPermanentAreaIds.mockResolvedValue(['area-1', 'area-9']);
+
+      await controller.getAreaPlantStatus('area-1', mockKorlap);
+
+      expect(plantStatusService.getAreaPlantStatus).toHaveBeenCalledWith('area-1');
+    });
+
+    it('should deny korlap access to non-assigned area when they have multi-area assignment', async () => {
+      userAreasService.getPermanentAreaIds.mockResolvedValue(['area-9', 'area-10']);
+
+      await expect(controller.getAreaPlantStatus('area-1', mockKorlap)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should deny korlap access to mismatched legacy single area', async () => {
+      userAreasService.getPermanentAreaIds.mockResolvedValue([]);
+
+      await expect(controller.getAreaPlantStatus('area-other', mockKorlap)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+  });
+
+  describe('getSnapshot', () => {
+    it('should return city snapshot for superadmin', async () => {
+      const mockSnapshot = { scope: 'city', workers: [] };
+      service.getSnapshot.mockResolvedValue(mockSnapshot as any);
+
+      const result = await controller.getSnapshot(mockSuperadmin, 'city');
+
+      expect(service.getSnapshot).toHaveBeenCalledWith('city', undefined);
+      expect(result).toEqual(mockSnapshot);
+    });
+
+    it('should reject city scope for non-city role', async () => {
+      await expect(controller.getSnapshot(mockKepalaRayon, 'city')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should enforce rayon scope for kepala_rayon', async () => {
+      service.getSnapshot.mockResolvedValue({ scope: 'rayon' } as any);
+
+      await controller.getSnapshot(mockKepalaRayon, 'rayon', 'rayon-1');
+
+      expect(service.getSnapshot).toHaveBeenCalledWith('rayon', 'rayon-1');
+    });
+
+    it('should reject rayon scope for kepala_rayon viewing other rayon', async () => {
+      await expect(controller.getSnapshot(mockKepalaRayon, 'rayon', 'rayon-other')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should enforce area scope for korlap', async () => {
+      const userAreasService = controller['userAreasService'] as any;
+      userAreasService.getPermanentAreaIds.mockResolvedValue(['area-1']);
+      service.getSnapshot.mockResolvedValue({ scope: 'area' } as any);
+
+      await controller.getSnapshot(mockKorlap, 'area', 'area-1');
+
+      expect(service.getSnapshot).toHaveBeenCalledWith('area', 'area-1');
+    });
+
+    it('should reject area scope for korlap accessing non-assigned area', async () => {
+      const userAreasService = controller['userAreasService'] as any;
+      userAreasService.getPermanentAreaIds.mockResolvedValue(['area-9']);
+
+      await expect(controller.getSnapshot(mockKorlap, 'area', 'area-1')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+  });
+
+  describe('applyScopeFilters — korlap with assigned areas', () => {
+    it('should set area_ids when korlap has multi-area assignment', async () => {
+      const userAreasService = controller['userAreasService'] as any;
+      userAreasService.getPermanentAreaIds.mockResolvedValue(['area-1', 'area-2']);
+      service.getStaffingSummary.mockResolvedValue({ items: [], generated_at: new Date() } as any);
+
+      await controller.getStaffingSummary({}, mockKorlap);
+
+      expect(service.getStaffingSummary).toHaveBeenCalledWith(
+        expect.objectContaining({ area_ids: ['area-1', 'area-2'], rayon_id: 'rayon-1' }),
+      );
+    });
+  });
+
+  describe('enforceScopeUser — korlap branches', () => {
+    it('should allow korlap when target user has no area_id', async () => {
+      service.getUserDaySummary.mockResolvedValue({ area_id: null } as any);
+      service.getLocationHistory.mockResolvedValue({ points: [] } as any);
+
+      await controller.getLocationHistory('user-1', { date: '2026-05-24' }, mockKorlap);
+
+      expect(service.getLocationHistory).toHaveBeenCalled();
+    });
+
+    it('should allow korlap to view user in assigned multi-area', async () => {
+      const userAreasService = controller['userAreasService'] as any;
+      userAreasService.getPermanentAreaIds.mockResolvedValue(['area-1', 'area-2']);
+      service.getUserDaySummary.mockResolvedValue({ area_id: 'area-2' } as any);
+      service.getLocationHistory.mockResolvedValue({ points: [] } as any);
+
+      await controller.getLocationHistory('user-1', { date: '2026-05-24' }, mockKorlap);
+
+      expect(service.getLocationHistory).toHaveBeenCalled();
+    });
+
+    it('should deny korlap viewing user outside assigned multi-area set', async () => {
+      const userAreasService = controller['userAreasService'] as any;
+      userAreasService.getPermanentAreaIds.mockResolvedValue(['area-1', 'area-2']);
+      service.getUserDaySummary.mockResolvedValue({ area_id: 'area-9' } as any);
+
+      await expect(
+        controller.getLocationHistory('user-1', { date: '2026-05-24' }, mockKorlap),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 

@@ -21,6 +21,12 @@ export enum NotificationType {
   REPORT_SUBMITTED = 'report_submitted',
   ANNOUNCEMENT = 'announcement',
   SYSTEM = 'system',
+  // Phase 4 sub-phase 4-3 (M2)
+  ACTIVITY_APPROVED = 'activity_approved',
+  ACTIVITY_REJECTED = 'activity_rejected',
+  OVERTIME_APPROVED = 'overtime_approved',
+  OVERTIME_REJECTED = 'overtime_rejected',
+  MISSING_WORKER_ALERT = 'missing_worker_alert',
 }
 
 /**

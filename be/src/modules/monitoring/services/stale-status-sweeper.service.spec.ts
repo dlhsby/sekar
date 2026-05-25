@@ -122,7 +122,7 @@ describe('StaleStatusSweeperService', () => {
       const batch2 = makeBatch(3, 'b');
 
       mockFind
-        .mockResolvedValueOnce(batch1)  // offset 0  → 50 workers
+        .mockResolvedValueOnce(batch1) // offset 0  → 50 workers
         .mockResolvedValueOnce(batch2); // offset 50 → 3 workers, terminates
 
       await service.sweep();

@@ -114,9 +114,7 @@ export class LocationService {
               userId,
               parseFloat(latestLog.gps_lat.toString()),
               parseFloat(latestLog.gps_lng.toString()),
-              latestLog.accuracy_meters
-                ? parseFloat(latestLog.accuracy_meters.toString())
-                : null,
+              latestLog.accuracy_meters ? parseFloat(latestLog.accuracy_meters.toString()) : null,
               latestLog.battery_level ?? null,
               latestLog.logged_at,
             )

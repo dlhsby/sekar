@@ -29,11 +29,21 @@ describe('UsersService', () => {
     profile_picture_url: null,
     role: UserRole.SATGAS,
     is_active: true,
+    password_must_change: false,
     created_at: new Date(),
     updated_at: new Date(),
   };
 
-  const mockUserRepository = {
+  const mockUserRepository: {
+    findOne: jest.Mock;
+    find: jest.Mock;
+    findAndCount: jest.Mock;
+    create: jest.Mock;
+    save: jest.Mock;
+    remove: jest.Mock;
+    createQueryBuilder: jest.Mock;
+    update: jest.Mock;
+  } = {
     findOne: jest.fn(),
     find: jest.fn(),
     findAndCount: jest.fn(),
@@ -41,6 +51,7 @@ describe('UsersService', () => {
     save: jest.fn(),
     remove: jest.fn(),
     createQueryBuilder: jest.fn(),
+    update: jest.fn(),
   };
 
   const mockAuthService = {
@@ -102,6 +113,77 @@ describe('UsersService', () => {
 
       await expect(service.create(createUserDto)).rejects.toThrow(ConflictException);
       await expect(service.create(createUserDto)).rejects.toThrow('Username already exists');
+    });
+
+    it('should create a user with phone_number when unique', async () => {
+      const dtoWithPhone: CreateUserDto = {
+        ...createUserDto,
+        phone_number: '081200000099',
+      };
+      mockUserRepository.findOne
+        .mockResolvedValueOnce(null) // username check
+        .mockResolvedValueOnce(null); // phone_number check
+      mockUserRepository.create.mockReturnValue({ ...mockUser, phone_number: '081200000099' });
+      mockUserRepository.save.mockResolvedValue({ ...mockUser, phone_number: '081200000099' });
+
+      const result = await service.create(dtoWithPhone);
+
+      expect(result.phone_number).toBe('081200000099');
+      expect(mockUserRepository.findOne).toHaveBeenCalledWith({
+        where: { phone_number: '081200000099' },
+      });
+    });
+
+    it('should throw ConflictException if phone_number already in use', async () => {
+      const dtoWithPhone: CreateUserDto = {
+        ...createUserDto,
+        phone_number: '081200000099',
+      };
+      mockUserRepository.findOne.mockImplementation((opts: any) => {
+        if (opts?.where?.username) return Promise.resolve(null);
+        if (opts?.where?.phone_number) {
+          return Promise.resolve({ ...mockUser, phone_number: '081200000099' });
+        }
+        return Promise.resolve(null);
+      });
+
+      await expect(service.create(dtoWithPhone)).rejects.toThrow(ConflictException);
+      await expect(service.create(dtoWithPhone)).rejects.toThrow('Phone number already in use');
+    });
+  });
+
+  describe('findByRoles', () => {
+    it('should fetch active users filtered by roles', async () => {
+      const users = [mockUser];
+      const mockQueryBuilder = {
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(users),
+      };
+      mockUserRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
+
+      const result = await service.findByRoles(['satgas', 'linmas']);
+
+      expect(result).toEqual(users);
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('user.role IN (:...roles)', {
+        roles: ['satgas', 'linmas'],
+      });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('user.is_active = :isActive', {
+        isActive: true,
+      });
+    });
+  });
+
+  describe('updateProfilePicture', () => {
+    it('should update profile picture URL', async () => {
+      mockUserRepository.update = jest.fn().mockResolvedValue({ affected: 1 });
+
+      await service.updateProfilePicture(mockUser.id, 'https://example.com/avatar.png');
+
+      expect(mockUserRepository.update).toHaveBeenCalledWith(mockUser.id, {
+        profile_picture_url: 'https://example.com/avatar.png',
+      });
     });
   });
 
@@ -215,9 +297,12 @@ describe('UsersService', () => {
 
       expect(mockUserRepository.createQueryBuilder).toHaveBeenCalled();
       expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith('user.area', 'area');
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)', {
-        rayonId: 'rayon-uuid-1',
-      });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        '(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)',
+        {
+          rayonId: 'rayon-uuid-1',
+        },
+      );
     });
 
     it('should filter users by rayon for kepala_rayon user', async () => {
@@ -243,9 +328,12 @@ describe('UsersService', () => {
 
       expect(mockUserRepository.createQueryBuilder).toHaveBeenCalled();
       expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith('user.area', 'area');
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)', {
-        rayonId: 'rayon-uuid-2',
-      });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        '(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)',
+        {
+          rayonId: 'rayon-uuid-2',
+        },
+      );
     });
 
     it('should not filter users for admin_system user', async () => {
@@ -297,9 +385,12 @@ describe('UsersService', () => {
       const result = await service.findAllPaginated(1, 50, adminDataUser as any);
 
       expect(mockUserRepository.createQueryBuilder).toHaveBeenCalled();
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)', {
-        rayonId: 'empty-rayon-uuid',
-      });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        '(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)',
+        {
+          rayonId: 'empty-rayon-uuid',
+        },
+      );
       expect(result.data).toHaveLength(0);
       expect(result.meta.total).toBe(0);
     });
@@ -325,9 +416,12 @@ describe('UsersService', () => {
       const result = await service.findAllPaginated(1, 50, kepalaRayonUser as any);
 
       expect(mockUserRepository.createQueryBuilder).toHaveBeenCalled();
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)', {
-        rayonId: 'empty-rayon-uuid-2',
-      });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        '(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)',
+        {
+          rayonId: 'empty-rayon-uuid-2',
+        },
+      );
       expect(result.data).toHaveLength(0);
       expect(result.meta.total).toBe(0);
     });
@@ -357,9 +451,12 @@ describe('UsersService', () => {
       const result = await service.findAllPaginated(1, 50, adminDataUser as any);
 
       expect(mockUserRepository.createQueryBuilder).toHaveBeenCalled();
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)', {
-        rayonId: 'rayon-uuid-1',
-      });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        '(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)',
+        {
+          rayonId: 'rayon-uuid-1',
+        },
+      );
       expect(result.data).toHaveLength(2);
       expect(result.meta.total).toBe(2);
     });
@@ -412,6 +509,38 @@ describe('UsersService', () => {
 
       expect(authService.hashPassword).toHaveBeenCalledWith(updateWithPassword.password);
       expect(mockUserRepository.save).toHaveBeenCalled();
+    });
+
+    it('should update phone_number when unique', async () => {
+      mockUserRepository.findOne
+        .mockResolvedValueOnce(mockUser) // findOne(id)
+        .mockResolvedValueOnce(null); // phone duplicate check
+      mockUserRepository.save.mockResolvedValue({ ...mockUser, phone_number: '081200000088' });
+
+      const result = await service.update(mockUser.id, { phone_number: '081200000088' });
+
+      expect(result.phone_number).toBe('081200000088');
+    });
+
+    it('should throw ConflictException if phone_number belongs to another user', async () => {
+      mockUserRepository.findOne
+        .mockResolvedValueOnce(mockUser) // findOne(id)
+        .mockResolvedValueOnce({ ...mockUser, id: 'other-user-uuid' }); // phone in use elsewhere
+
+      await expect(service.update(mockUser.id, { phone_number: '081200000077' })).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('should allow updating phone_number to value already on same user', async () => {
+      mockUserRepository.findOne
+        .mockResolvedValueOnce({ ...mockUser, phone_number: '081200000066' })
+        .mockResolvedValueOnce({ ...mockUser, phone_number: '081200000066' }); // same user
+      mockUserRepository.save.mockResolvedValue({ ...mockUser, phone_number: '081200000066' });
+
+      const result = await service.update(mockUser.id, { phone_number: '081200000066' });
+
+      expect(result.phone_number).toBe('081200000066');
     });
   });
 

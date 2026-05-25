@@ -17,7 +17,9 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
         updated_at TIMESTAMPTZ DEFAULT NOW()
       )
     `);
-    await queryRunner.query(`CREATE UNIQUE INDEX IF NOT EXISTS uidx_plant_species_name_id ON plant_species (name_id)`);
+    await queryRunner.query(
+      `CREATE UNIQUE INDEX IF NOT EXISTS uidx_plant_species_name_id ON plant_species (name_id)`,
+    );
 
     // 2. area_plants
     await queryRunner.query(`
@@ -41,8 +43,12 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
       EXCEPTION WHEN duplicate_object THEN NULL;
       END $$
     `);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_area_plants_area_status ON area_plants (area_id, status)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_area_plants_next_due ON area_plants (next_due_at)`);
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_area_plants_area_status ON area_plants (area_id, status)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_area_plants_next_due ON area_plants (next_due_at)`,
+    );
 
     // 3. notable_plants
     await queryRunner.query(`
@@ -60,7 +66,9 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
         updated_at TIMESTAMPTZ DEFAULT NOW()
       )
     `);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_notable_plants_area ON notable_plants (area_id)`);
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_notable_plants_area ON notable_plants (area_id)`,
+    );
 
     // 4. pruning_requests (converted_task_id nullable to avoid circular FK)
     await queryRunner.query(`
@@ -86,9 +94,15 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
         updated_at TIMESTAMPTZ DEFAULT NOW()
       )
     `);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_pruning_requests_status_rayon ON pruning_requests (status, rayon_id)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_pruning_requests_submitter ON pruning_requests (submitted_by, status)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_pruning_requests_ref ON pruning_requests (reference_code)`);
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_pruning_requests_status_rayon ON pruning_requests (status, rayon_id)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_pruning_requests_submitter ON pruning_requests (submitted_by, status)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_pruning_requests_ref ON pruning_requests (reference_code)`,
+    );
 
     // 5. activity_plant_items
     await queryRunner.query(`
@@ -101,7 +115,9 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_activity_plant_items_activity ON activity_plant_items (activity_id)`);
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_activity_plant_items_activity ON activity_plant_items (activity_id)`,
+    );
 
     // 6. service_capacity
     await queryRunner.query(`
@@ -125,7 +141,9 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
       EXCEPTION WHEN duplicate_object THEN NULL;
       END $$
     `);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_service_capacity_rayon_week ON service_capacity (rayon_id, year, iso_week)`);
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_service_capacity_rayon_week ON service_capacity (rayon_id, year, iso_week)`,
+    );
 
     // 7. plant_seeds
     await queryRunner.query(`
@@ -166,8 +184,12 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_seed_tx_seed_occurred ON seed_transactions (seed_id, occurred_at DESC)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_seed_tx_type_occurred ON seed_transactions (transaction_type, occurred_at DESC)`);
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_seed_tx_seed_occurred ON seed_transactions (seed_id, occurred_at DESC)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_seed_tx_type_occurred ON seed_transactions (transaction_type, occurred_at DESC)`,
+    );
 
     // 9. ALTER activities (all IF NOT EXISTS via DO block for columns)
     await queryRunner.query(`
@@ -180,9 +202,15 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
         BEGIN ALTER TABLE activities ADD COLUMN pruning_request_id UUID NULL REFERENCES pruning_requests(id) ON DELETE SET NULL; EXCEPTION WHEN duplicate_column THEN NULL; END;
       END $$
     `);
-    await queryRunner.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_activities_reference_unique ON activities (reference_code) WHERE reference_code IS NOT NULL`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_activities_case_type ON activities (case_type) WHERE case_type IS NOT NULL`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_activities_pruning_req ON activities (pruning_request_id) WHERE pruning_request_id IS NOT NULL`);
+    await queryRunner.query(
+      `CREATE UNIQUE INDEX IF NOT EXISTS idx_activities_reference_unique ON activities (reference_code) WHERE reference_code IS NOT NULL`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_activities_case_type ON activities (case_type) WHERE case_type IS NOT NULL`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_activities_pruning_req ON activities (pruning_request_id) WHERE pruning_request_id IS NOT NULL`,
+    );
     await queryRunner.query(`
       DO $$ BEGIN
         ALTER TABLE activities ADD CONSTRAINT chk_pruning_case_type
@@ -210,8 +238,12 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
       EXCEPTION WHEN duplicate_object THEN NULL;
       END $$
     `);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_tasks_type_status ON tasks (task_type, status)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_tasks_parent ON tasks (parent_task_id) WHERE parent_task_id IS NOT NULL`);
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_tasks_type_status ON tasks (task_type, status)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_tasks_parent ON tasks (parent_task_id) WHERE parent_task_id IS NOT NULL`,
+    );
 
     // 11. Extend users.role CHECK constraint to include staff_kecamatan
     // (role column is varchar(30), not a native PG enum — Phase2C used CHECK constraint)
@@ -226,8 +258,12 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
     `);
 
     // 12. user_tracking_status indexes
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_user_tracking_area_updated ON user_tracking_status (area_id, updated_at DESC)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_user_tracking_within_area ON user_tracking_status (is_within_area, area_id)`);
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_user_tracking_area_updated ON user_tracking_status (area_id, updated_at DESC)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_user_tracking_within_area ON user_tracking_status (is_within_area, area_id)`,
+    );
   }
 
   async down(queryRunner: QueryRunner): Promise<void> {
@@ -247,7 +283,9 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
 
     await queryRunner.query(`DROP INDEX IF EXISTS idx_tasks_parent`);
     await queryRunner.query(`DROP INDEX IF EXISTS idx_tasks_type_status`);
-    await queryRunner.query(`ALTER TABLE tasks DROP CONSTRAINT IF EXISTS chk_completed_plant_count`);
+    await queryRunner.query(
+      `ALTER TABLE tasks DROP CONSTRAINT IF EXISTS chk_completed_plant_count`,
+    );
     await queryRunner.query(`
       ALTER TABLE tasks
         DROP COLUMN IF EXISTS task_type,
@@ -257,7 +295,9 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
         DROP COLUMN IF EXISTS completed_plant_count
     `);
 
-    await queryRunner.query(`ALTER TABLE activities DROP CONSTRAINT IF EXISTS chk_pruning_case_type`);
+    await queryRunner.query(
+      `ALTER TABLE activities DROP CONSTRAINT IF EXISTS chk_pruning_case_type`,
+    );
     await queryRunner.query(`DROP INDEX IF EXISTS idx_activities_pruning_req`);
     await queryRunner.query(`DROP INDEX IF EXISTS idx_activities_case_type`);
     await queryRunner.query(`DROP INDEX IF EXISTS idx_activities_reference_unique`);

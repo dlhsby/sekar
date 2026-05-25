@@ -9,13 +9,7 @@ import {
   UseGuards,
   ForbiddenException,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiParam,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { ServiceCapacityService } from './service-capacity.service';
 import { ServiceCapacity } from './entities/service-capacity.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -73,15 +67,10 @@ export class ServiceCapacityController {
   }
 
   @Put()
-  @Roles(
-    UserRole.KEPALA_RAYON,
-    UserRole.TOP_MANAGEMENT,
-    UserRole.SUPERADMIN,
-  )
+  @Roles(UserRole.KEPALA_RAYON, UserRole.TOP_MANAGEMENT, UserRole.SUPERADMIN)
   @ApiOperation({
     summary: 'Override capacity units',
-    description:
-      'Set capacity units for a week/service-type. admin_data cannot override.',
+    description: 'Set capacity units for a week/service-type. admin_data cannot override.',
   })
   @ApiParam({ name: 'rayonId', description: 'Rayon ID' })
   @ApiResponse({
@@ -102,15 +91,10 @@ export class ServiceCapacityController {
   }
 
   @Post('book')
-  @Roles(
-    UserRole.KEPALA_RAYON,
-    UserRole.TOP_MANAGEMENT,
-    UserRole.SUPERADMIN,
-  )
+  @Roles(UserRole.KEPALA_RAYON, UserRole.TOP_MANAGEMENT, UserRole.SUPERADMIN)
   @ApiOperation({
     summary: 'Book capacity units',
-    description:
-      'Atomically book units; throws ConflictException if capacity exceeded.',
+    description: 'Atomically book units; throws ConflictException if capacity exceeded.',
   })
   @ApiParam({ name: 'rayonId', description: 'Rayon ID' })
   @ApiResponse({

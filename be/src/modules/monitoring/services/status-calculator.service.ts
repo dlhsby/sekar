@@ -14,6 +14,8 @@ import {
 } from '../../../gateways/dto/events.dto';
 import { AreaStaffRequirement } from '../../area-staff-requirements/entities/area-staff-requirement.entity';
 import { StaffingDebouncerService } from './staffing-debouncer.service';
+import { NotificationsService } from '../../notifications/notifications.service';
+import { NotificationType } from '../../notifications/entities/notification.entity';
 
 export interface StatusInput {
   hasActiveShift: boolean;
@@ -39,7 +41,52 @@ export class StatusCalculatorService {
     private readonly eventsGateway: EventsGateway,
     @Optional()
     private readonly staffingDebouncer: StaffingDebouncerService | undefined,
+    // Phase 4-3 (M2): missing-worker alert. Optional so legacy tests that don't
+    // wire NotificationsService keep working.
+    @Optional()
+    private readonly notificationsService?: NotificationsService,
   ) {}
+
+  /**
+   * Phase 4-3 (M2): notify korlap users responsible for an area when one of
+   * their workers transitions to MISSING.
+   *
+   * Notification scope: every korlap whose `users.area_id` matches the worker's
+   * area. (Multi-area korlap support via `user_areas` is M3 — for now we match
+   * the primary `users.area_id` column.)
+   */
+  private async notifyKorlapMissingWorker(
+    workerUserId: string,
+    areaId: string | null,
+  ): Promise<void> {
+    if (!this.notificationsService || !areaId) return;
+    try {
+      const worker = await this.userRepository.findOne({
+        where: { id: workerUserId },
+        select: ['id', 'full_name'],
+      });
+      const workerName = worker?.full_name ?? 'pekerja';
+      const korlaps = await this.userRepository.find({
+        where: { role: UserRole.KORLAP, area_id: areaId, is_active: true },
+        select: ['id'],
+      });
+      await Promise.all(
+        korlaps.map((k) =>
+          this.notificationsService!.sendToUser({
+            user_id: k.id,
+            title: 'Pekerja hilang',
+            body: `${workerName} terdeteksi MISSING di area Anda. Mohon segera periksa.`,
+            type: NotificationType.MISSING_WORKER_ALERT,
+            data: { worker_user_id: workerUserId, area_id: areaId },
+          }),
+        ),
+      );
+    } catch (err) {
+      this.logger.warn(
+        `notifyKorlapMissingWorker failed for worker ${workerUserId}: ${(err as Error).message}`,
+      );
+    }
+  }
 
   calculateStatus(
     input: StatusInput,
@@ -105,6 +152,12 @@ export class StatusCalculatorService {
 
       await this.broadcastStatusChanged(existing, previousStatus, newStatus, now);
       await this.emitStaffingChangedIfNeeded(existing.area_id, previousStatus, newStatus, now);
+
+      // Phase 4-3 (M2): alert korlap on transition into MISSING. Fire-and-forget;
+      // do not block the status calculation if notification dispatch fails.
+      if (newStatus === TrackingStatus.MISSING && previousStatus !== TrackingStatus.MISSING) {
+        void this.notifyKorlapMissingWorker(userId, existing.area_id);
+      }
 
       this.logger.debug(`User ${userId} status: ${previousStatus} → ${newStatus}`);
     }
@@ -194,9 +247,18 @@ export class StatusCalculatorService {
     battery: number | null,
     loggedAt: Date,
   ): Promise<void> {
+    // Audit M6 (2026-05-23): eager-load `user` + `area` alongside the
+    // tracking row so the broadcast helpers don't have to re-query for
+    // context. Cuts the per-ping DB cost from ~3 reads (tracking + user
+    // + area) to 1. Column projection mirrors `resolveUserContext`'s
+    // select-list so we don't pull `password_hash`, etc.
     const existing = await this.trackingRepository.findOne({
       where: { user_id: userId },
-      relations: ['shift_definition'],
+      relations: ['shift_definition', 'user', 'area'],
+      select: {
+        user: { id: true, full_name: true, role: true },
+        area: { id: true, name: true, rayon_id: true },
+      } as any,
     });
 
     if (!existing || !existing.shift_id) {
@@ -235,8 +297,13 @@ export class StatusCalculatorService {
 
     await this.trackingRepository.save(existing);
 
-    // Resolve context once for all broadcasts
-    const context = await this.resolveUserContext(existing.user_id, existing.area_id);
+    // Audit M6: prefer the eager-loaded relations from the initial findOne.
+    // Fall back to `resolveUserContext` only when the join produced nothing
+    // (e.g. user row vanished between fetch and broadcast — unlikely but
+    // defensive) so we keep parity with the previous behaviour.
+    const context = existing.user
+      ? { user: existing.user, area: existing.area ?? null }
+      : await this.resolveUserContext(existing.user_id, existing.area_id);
 
     // Broadcast boundary crossing events via WebSocket
     if (previousWithinArea && !isWithinArea) {

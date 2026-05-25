@@ -1,4 +1,13 @@
-import { Controller, Post, Body, Get, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Headers,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThanOrEqual, MoreThanOrEqual, Or, IsNull } from 'typeorm';
@@ -6,6 +15,8 @@ import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { LogoutDto } from './dto/logout.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { MeResponseDto } from './dto/me-response.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -198,9 +209,42 @@ export class AuthController {
       },
     },
   })
-  async logout(@GetUser() user: User): Promise<{ message: string }> {
-    await this.authService.logout(user.id);
+  @ApiBody({ type: LogoutDto })
+  async logout(
+    @GetUser() user: User,
+    @Body() dto: LogoutDto,
+    @Headers('authorization') authHeader?: string,
+  ): Promise<{ message: string }> {
+    // Phase 4-7 (M2): logout now requires `{ refresh_token }` so both tokens
+    // can be blacklisted. Access token is extracted from the bearer header.
+    const accessToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
+    await this.authService.logout(user.id, accessToken, dto.refresh_token);
     return { message: 'Logged out successfully' };
+  }
+
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @Throttle({
+    default: {
+      limit: parseInt(process.env.AUTH_CHANGE_PASSWORD_THROTTLE_LIMIT || '3', 10),
+      ttl: parseInt(process.env.AUTH_CHANGE_PASSWORD_THROTTLE_TTL || '60000', 10),
+    },
+  })
+  @ApiOperation({
+    summary: 'Change password',
+    description:
+      "Change the authenticated user's password. Used for both voluntary change and the forced flow after admin reset (ADR-041, Phase 4-7). Returns new access + refresh tokens — client must replace local tokens with these. Clears `password_must_change`.",
+  })
+  @ApiBody({ type: ChangePasswordDto })
+  @ApiResponse({ status: 200, description: 'Password changed; new token pair returned.' })
+  @ApiResponse({ status: 401, description: 'Old password incorrect or session invalid.' })
+  async changePassword(
+    @GetUser() user: User,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<AuthResponseDto> {
+    return this.authService.changePassword(user.id, dto);
   }
 
   /**
@@ -252,6 +296,7 @@ export class AuthController {
       kecamatan_id: user.kecamatan_id || null,
       kecamatan_name: user.kecamatan_name || null,
       created_at: user.created_at,
+      password_must_change: user.password_must_change ?? false,
     };
 
     // Include area info for field roles

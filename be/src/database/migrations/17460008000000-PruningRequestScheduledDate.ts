@@ -18,9 +18,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *
  * Related ADRs: ADR-035 (capacity model), ADR-038 (week-based intake).
  */
-export class PruningRequestScheduledDate17460008000000
-  implements MigrationInterface
-{
+export class PruningRequestScheduledDate17460008000000 implements MigrationInterface {
   name = 'PruningRequestScheduledDate17460008000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {

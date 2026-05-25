@@ -25,6 +25,32 @@ import { ServiceCapacityService } from '../service-capacity/service-capacity.ser
 import { getIsoWeek, isoWeekDays, isoWeekEnd } from './utils/iso-week.util';
 
 /**
+ * Audit H1 (2026-05-23) — safe User-column projection for joined relations.
+ *
+ * Used by `find` / `findOne` calls that hydrate `submitter` and `reviewer`.
+ * Limits the relation rows to fields the UI actually renders, so we don't
+ * leak `phone_number`, `kecamatan_id`, `is_active`, timestamps, etc. across
+ * role boundaries. The QueryBuilder path in `findAll` mirrors this list via
+ * explicit `addSelect([...])`.
+ */
+const SAFE_PRUNING_REQUEST_SELECT = {
+  submitter: {
+    id: true,
+    username: true,
+    full_name: true,
+    role: true,
+    profile_picture_url: true,
+  },
+  reviewer: {
+    id: true,
+    username: true,
+    full_name: true,
+    role: true,
+    profile_picture_url: true,
+  },
+} as const;
+
+/**
  * Service for managing pruning requests.
  *
  * Handles submission by `staff_kecamatan` users, review/approval/rejection by admins,
@@ -61,9 +87,7 @@ export class PruningRequestsService {
     request: PruningRequest,
   ): Promise<void> {
     if (!rayonId) {
-      this.logger.warn(
-        `Skipping rayon-admin notification for request ${request.id} — no rayon_id`,
-      );
+      this.logger.warn(`Skipping rayon-admin notification for request ${request.id} — no rayon_id`);
       return;
     }
     try {
@@ -139,10 +163,7 @@ export class PruningRequestsService {
    * @param user - Authenticated user submitting the request (should be staff_kecamatan)
    * @returns The created pruning request
    */
-  async create(
-    dto: CreatePruningRequestDto,
-    user: User,
-  ): Promise<PruningRequest> {
+  async create(dto: CreatePruningRequestDto, user: User): Promise<PruningRequest> {
     this.logger.log(`Creating pruning request from user ${user.id}`);
 
     // ADR-035 amendment 2026-05-01: kecamatan picks an ISO week, not a day.
@@ -166,18 +187,14 @@ export class PruningRequestsService {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       if (weekEnd < today) {
-        throw new BadRequestException(
-          'Preferred week has already passed',
-        );
+        throw new BadRequestException('Preferred week has already passed');
       }
     } else if (dto.detail_date) {
       detailDate = new Date(dto.detail_date);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       if (detailDate < today) {
-        throw new BadRequestException(
-          'Detail date must be today or in the future',
-        );
+        throw new BadRequestException('Detail date must be today or in the future');
       }
       // Derive the ISO week from the legacy single-day input so the new
       // (expectedYear, expectedIsoWeek) columns are always populated when the
@@ -256,11 +273,7 @@ export class PruningRequestsService {
    * @param offset - Pagination offset (default 0)
    * @returns Array of pruning requests created by the user
    */
-  async findMine(
-    user: User,
-    limit = 20,
-    offset = 0,
-  ): Promise<PruningRequest[]> {
+  async findMine(user: User, limit = 20, offset = 0): Promise<PruningRequest[]> {
     this.logger.log(
       `Fetching pruning requests for user ${user.id} (limit ${limit}, offset ${offset})`,
     );
@@ -270,9 +283,12 @@ export class PruningRequestsService {
       order: { createdAt: 'DESC' },
       take: limit,
       skip: offset,
-      // Submitter is always self here, but we still hydrate so the list card
-      // renders the same chip on both kecamatan and admin views.
       relations: ['submitter', 'reviewer', 'rayon'],
+      // Audit H1 (2026-05-23): project safe user columns only on the joined
+      // submitter / reviewer rows. Without this, every User column is eager-
+      // loaded (phone_number, kecamatan_id, is_active, timestamps) and leaks
+      // to peer roles via task / pruning / tag responses.
+      select: SAFE_PRUNING_REQUEST_SELECT,
     });
   }
 
@@ -294,13 +310,13 @@ export class PruningRequestsService {
    * @throws ForbiddenException if user lacks authorization
    */
   async findById(id: string, user: User): Promise<PruningRequest> {
-    this.logger.log(
-      `Fetching pruning request ${id} for user ${user.id} (role: ${user.role})`,
-    );
+    this.logger.log(`Fetching pruning request ${id} for user ${user.id} (role: ${user.role})`);
 
     const request = await this.pruningRequestRepository.findOne({
       where: { id },
       relations: ['submitter', 'reviewer', 'rayon'],
+      // Audit H1 — see SAFE_PRUNING_REQUEST_SELECT definition above.
+      select: SAFE_PRUNING_REQUEST_SELECT,
     });
 
     if (!request) {
@@ -325,17 +341,13 @@ export class PruningRequestsService {
     ].includes(user.role as UserRole);
 
     const hasAccess =
-      isOwner ||
-      isUnrestrictedAdmin ||
-      (isAdmin && rayonMatches && request.rayonId !== null);
+      isOwner || isUnrestrictedAdmin || (isAdmin && rayonMatches && request.rayonId !== null);
 
     if (!hasAccess) {
       this.logger.warn(
         `Access denied for user ${user.id} to request ${id}. Submitter: ${request.submittedBy}, Request rayon: ${request.rayonId}, User rayon: ${user.rayon_id}`,
       );
-      throw new ForbiddenException(
-        'You do not have permission to access this pruning request',
-      );
+      throw new ForbiddenException('You do not have permission to access this pruning request');
     }
 
     return request;
@@ -355,11 +367,7 @@ export class PruningRequestsService {
    * @throws ForbiddenException if user lacks authorization (admin_data + mismatched rayon)
    * @throws ConflictException if request is not reviewable (wrong status)
    */
-  async review(
-    id: string,
-    dto: ReviewPruningRequestDto,
-    user: User,
-  ): Promise<PruningRequest> {
+  async review(id: string, dto: ReviewPruningRequestDto, user: User): Promise<PruningRequest> {
     this.logger.log(
       `Reviewing pruning request ${id} (decision: ${dto.decision}) by user ${user.id}`,
     );
@@ -378,9 +386,7 @@ export class PruningRequestsService {
         this.logger.warn(
           `Access denied for admin_data ${user.id} to request ${id}. Request rayon: ${request.rayonId}, User rayon: ${user.rayon_id}`,
         );
-        throw new ForbiddenException(
-          'You do not have permission to review this pruning request',
-        );
+        throw new ForbiddenException('You do not have permission to review this pruning request');
       }
     }
 
@@ -398,9 +404,7 @@ export class PruningRequestsService {
     // state that leaves the warga without a real expectation. Use
     // `under_review` for tentative dispositions instead.
     if (dto.decision === 'approve' && !request.scheduledDate) {
-      throw new ConflictException(
-        'Atur jadwal terlebih dahulu sebelum menyetujui permohonan',
-      );
+      throw new ConflictException('Atur jadwal terlebih dahulu sebelum menyetujui permohonan');
     }
 
     request.status = dto.decision === 'approve' ? 'approved' : 'rejected';
@@ -409,9 +413,7 @@ export class PruningRequestsService {
     request.reviewNotes = dto.reviewNotes || null;
 
     const updated = await this.pruningRequestRepository.save(request);
-    this.logger.log(
-      `Pruning request ${id} reviewed: ${dto.decision} by ${user.id}`,
-    );
+    this.logger.log(`Pruning request ${id} reviewed: ${dto.decision} by ${user.id}`);
 
     // May 13 — close the loop on the submitter side. Approved → "your
     // request is approved + scheduled for date". Rejected → "your
@@ -456,9 +458,7 @@ export class PruningRequestsService {
     dto: AssignPruningRequestDto,
     user: User,
   ): Promise<{ request: PruningRequest; task: Task }> {
-    this.logger.log(
-      `Converting pruning request ${id} to task by user ${user.id}`,
-    );
+    this.logger.log(`Converting pruning request ${id} to task by user ${user.id}`);
 
     const request = await this.pruningRequestRepository.findOne({
       where: { id },
@@ -471,9 +471,7 @@ export class PruningRequestsService {
     // Check authorization: admin_data scoped by rayon
     if (user.role === UserRole.ADMIN_DATA) {
       if (request.rayonId !== user.rayon_id) {
-        throw new ForbiddenException(
-          'You do not have permission to convert this pruning request',
-        );
+        throw new ForbiddenException('You do not have permission to convert this pruning request');
       }
     }
 
@@ -558,9 +556,7 @@ export class PruningRequestsService {
           });
         } catch (error) {
           if (error instanceof ConflictException) {
-            throw new ConflictException(
-              'Capacity booking failed: ' + error.message,
-            );
+            throw new ConflictException('Capacity booking failed: ' + error.message);
           }
           throw error;
         }
@@ -600,9 +596,7 @@ export class PruningRequestsService {
         }
         // Defensive: bookedAny should always be true once we reach here.
         if (!bookedAny || !scheduledDateObj) {
-          throw new ConflictException(
-            'No day in the preferred week could be booked',
-          );
+          throw new ConflictException('No day in the preferred week could be booked');
         }
       }
 
@@ -703,9 +697,7 @@ export class PruningRequestsService {
     dto: ReschedulePruningRequestDto,
     user: User,
   ): Promise<PruningRequest> {
-    this.logger.log(
-      `Rescheduling pruning request ${id} to ${dto.expectedDate} by user ${user.id}`,
-    );
+    this.logger.log(`Rescheduling pruning request ${id} to ${dto.expectedDate} by user ${user.id}`);
 
     const request = await this.pruningRequestRepository.findOne({ where: { id } });
     if (!request) {
@@ -713,9 +705,7 @@ export class PruningRequestsService {
     }
 
     if (user.role === UserRole.ADMIN_DATA && request.rayonId !== user.rayon_id) {
-      throw new ForbiddenException(
-        'You do not have permission to reschedule this pruning request',
-      );
+      throw new ForbiddenException('You do not have permission to reschedule this pruning request');
     }
 
     // May 10, 2026 (late+1) — `in_progress` joined the whitelist on user
@@ -755,8 +745,7 @@ export class PruningRequestsService {
     // `assignedTaskId` FK is set the moment assign-to-task creates the
     // task, so it's a more reliable predicate than the request status.
     const hasLinkedTask =
-      ['assigned', 'in_progress'].includes(request.status) &&
-      request.assignedTaskId != null;
+      ['assigned', 'in_progress'].includes(request.status) && request.assignedTaskId != null;
 
     // The non-cascade path is unchanged — just update the date. No task,
     // no capacity booking yet (capacity is consumed at assign-to-task time).
@@ -769,13 +758,10 @@ export class PruningRequestsService {
     // commit all of {capacity rebook, task.deadline, request.scheduledDate,
     // delegation audit row} or none. Capacity is week-aggregated; we only
     // touch it when the ISO week changes (intra-week moves are free).
-    const oldIso =
-      oldScheduledDate != null ? getIsoWeek(oldScheduledDate) : null;
+    const oldIso = oldScheduledDate != null ? getIsoWeek(oldScheduledDate) : null;
     const newIso = getIsoWeek(newDate);
     const weekChanged =
-      oldIso == null ||
-      oldIso.year !== newIso.year ||
-      oldIso.isoWeek !== newIso.isoWeek;
+      oldIso == null || oldIso.year !== newIso.year || oldIso.isoWeek !== newIso.isoWeek;
 
     const task = await this.taskRepository.findOne({
       where: { id: request.assignedTaskId! },
@@ -880,9 +866,7 @@ export class PruningRequestsService {
             },
           })
           .catch((err) =>
-            this.logger.error(
-              `Failed to send reschedule notification: ${(err as Error).message}`,
-            ),
+            this.logger.error(`Failed to send reschedule notification: ${(err as Error).message}`),
           );
       }
       void this.notifySubmitter(
@@ -924,10 +908,7 @@ export class PruningRequestsService {
     page: number;
     limit: number;
   }> {
-    this.logger.log(
-      `Fetching pruning requests for user ${user.id} with filters:`,
-      query,
-    );
+    this.logger.log(`Fetching pruning requests for user ${user.id} with filters:`, query);
 
     const page = query.page ?? 1;
     const limit = Math.min(query.limit ?? 20, 100);
@@ -935,9 +916,27 @@ export class PruningRequestsService {
 
     let qb = this.pruningRequestRepository
       .createQueryBuilder('pr')
-      .leftJoinAndSelect('pr.submitter', 'submitter')
-      .leftJoinAndSelect('pr.reviewer', 'reviewer')
-      .leftJoinAndSelect('pr.rayon', 'rayon');
+      .leftJoin('pr.submitter', 'submitter')
+      .leftJoin('pr.reviewer', 'reviewer')
+      .leftJoinAndSelect('pr.rayon', 'rayon')
+      // Audit H1: cherry-pick the public-safe User columns on submitter /
+      // reviewer (was leftJoinAndSelect, which dumped every column incl.
+      // phone_number, kecamatan_id, internal flags). Mirrors the select-list
+      // used by the find/findOne paths above.
+      .addSelect([
+        'submitter.id',
+        'submitter.username',
+        'submitter.full_name',
+        'submitter.role',
+        'submitter.profile_picture_url',
+      ])
+      .addSelect([
+        'reviewer.id',
+        'reviewer.username',
+        'reviewer.full_name',
+        'reviewer.role',
+        'reviewer.profile_picture_url',
+      ]);
 
     // Status filter
     if (query.status) {
@@ -1018,8 +1017,7 @@ export class PruningRequestsService {
     }
 
     const isSubmitter = request.submittedBy === user.id;
-    const isAdminScoped =
-      user.role === UserRole.ADMIN_DATA && request.rayonId === user.rayon_id;
+    const isAdminScoped = user.role === UserRole.ADMIN_DATA && request.rayonId === user.rayon_id;
     const isAdminBroad = [
       UserRole.KEPALA_RAYON,
       UserRole.TOP_MANAGEMENT,
@@ -1028,20 +1026,12 @@ export class PruningRequestsService {
     ].includes(user.role);
 
     if (!isSubmitter && !isAdminScoped && !isAdminBroad) {
-      throw new ForbiddenException(
-        'You do not have permission to cancel this pruning request',
-      );
+      throw new ForbiddenException('You do not have permission to cancel this pruning request');
     }
 
-    const CANCELLABLE_STATUSES: PruningRequestStatus[] = [
-      'submitted',
-      'under_review',
-      'approved',
-    ];
+    const CANCELLABLE_STATUSES: PruningRequestStatus[] = ['submitted', 'under_review', 'approved'];
     if (!CANCELLABLE_STATUSES.includes(request.status)) {
-      throw new ConflictException(
-        `Cannot cancel a permohonan that is already ${request.status}`,
-      );
+      throw new ConflictException(`Cannot cancel a permohonan that is already ${request.status}`);
     }
 
     request.status = 'cancelled';

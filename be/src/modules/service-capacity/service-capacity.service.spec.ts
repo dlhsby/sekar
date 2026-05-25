@@ -68,9 +68,9 @@ describe('ServiceCapacityService', () => {
     }).compile();
 
     service = module.get<ServiceCapacityService>(ServiceCapacityService);
-    repository = module.get(
-      getRepositoryToken(ServiceCapacity),
-    ) as jest.Mocked<Repository<ServiceCapacity>>;
+    repository = module.get(getRepositoryToken(ServiceCapacity)) as jest.Mocked<
+      Repository<ServiceCapacity>
+    >;
     dataSource = module.get(DataSource) as jest.Mocked<DataSource>;
   });
 
@@ -132,10 +132,9 @@ describe('ServiceCapacityService', () => {
         serviceType: mockServiceType,
       });
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'sc.serviceType = :serviceType',
-        { serviceType: mockServiceType },
-      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('sc.serviceType = :serviceType', {
+        serviceType: mockServiceType,
+      });
     });
   });
 
@@ -194,7 +193,7 @@ describe('ServiceCapacityService', () => {
       });
 
       (dataSource.transaction as jest.Mock).mockImplementation(
-        (callback: Function) => callback(mockTransactionManager),
+        (callback: (em: unknown) => Promise<unknown>) => callback(mockTransactionManager),
       );
 
       const result = await service.bookAtomic({
@@ -223,7 +222,7 @@ describe('ServiceCapacityService', () => {
 
       mockTransactionManager.createQueryBuilder.mockReturnValue(qb as any);
       (dataSource.transaction as jest.Mock).mockImplementation(
-        (callback: Function) => callback(mockTransactionManager),
+        (callback: (em: unknown) => Promise<unknown>) => callback(mockTransactionManager),
       );
 
       await expect(
@@ -248,7 +247,7 @@ describe('ServiceCapacityService', () => {
 
       mockTransactionManager.createQueryBuilder.mockReturnValue(qb as any);
       (dataSource.transaction as jest.Mock).mockImplementation(
-        (callback: Function) => callback(mockTransactionManager),
+        (callback: (em: unknown) => Promise<unknown>) => callback(mockTransactionManager),
       );
 
       await expect(
@@ -276,7 +275,7 @@ describe('ServiceCapacityService', () => {
 
       mockTransactionManager.createQueryBuilder.mockReturnValue(qb as any);
       (dataSource.transaction as jest.Mock).mockImplementation(
-        (callback: Function) => callback(mockTransactionManager),
+        (callback: (em: unknown) => Promise<unknown>) => callback(mockTransactionManager),
       );
 
       await expect(
@@ -308,7 +307,7 @@ describe('ServiceCapacityService', () => {
       });
 
       (dataSource.transaction as jest.Mock).mockImplementation(
-        (callback: Function) => callback(mockTransactionManager),
+        (callback: (em: unknown) => Promise<unknown>) => callback(mockTransactionManager),
       );
 
       const result = await service.releaseAtomic({
@@ -341,7 +340,7 @@ describe('ServiceCapacityService', () => {
       });
 
       (dataSource.transaction as jest.Mock).mockImplementation(
-        (callback: Function) => callback(mockTransactionManager),
+        (callback: (em: unknown) => Promise<unknown>) => callback(mockTransactionManager),
       );
 
       const result = await service.releaseAtomic({
@@ -366,7 +365,7 @@ describe('ServiceCapacityService', () => {
 
       mockTransactionManager.createQueryBuilder.mockReturnValue(qb as any);
       (dataSource.transaction as jest.Mock).mockImplementation(
-        (callback: Function) => callback(mockTransactionManager),
+        (callback: (em: unknown) => Promise<unknown>) => callback(mockTransactionManager),
       );
 
       await expect(

@@ -32,9 +32,7 @@ interface SeedTargets {
 }
 
 async function pickTargets(qr: QueryRunner): Promise<SeedTargets> {
-  const rayonRows = await qr.query(
-    `SELECT id FROM rayons ORDER BY created_at ASC LIMIT 1`,
-  );
+  const rayonRows = await qr.query(`SELECT id FROM rayons ORDER BY created_at ASC LIMIT 1`);
   if (!rayonRows.length) {
     throw new Error('No rayons found — run `npm run db:seed` first.');
   }
@@ -55,7 +53,9 @@ export async function seedLoadtest(dataSource: DataSource): Promise<void> {
   await qr.connect();
   await qr.startTransaction();
   try {
-    console.log(`🔧 Load-test seed: generating ${LOADTEST_USER_COUNT} ${USERNAME_PREFIX}{N} users…`);
+    console.log(
+      `🔧 Load-test seed: generating ${LOADTEST_USER_COUNT} ${USERNAME_PREFIX}{N} users…`,
+    );
     const { rayonId, areaId } = await pickTargets(qr);
     console.log(`   target rayon=${rayonId} area=${areaId}`);
 
@@ -82,8 +82,12 @@ export async function seedLoadtest(dataSource: DataSource): Promise<void> {
     }
 
     await qr.commitTransaction();
-    console.log(`✅ Load-test seed done — inserted ${inserted}, skipped ${skipped} (already existed).`);
-    console.log(`   Run k6: WORKER_COUNT=${LOADTEST_USER_COUNT} WORKER_PREFIX=${USERNAME_PREFIX} k6 run infra/loadtest/monitoring-500w.js`);
+    console.log(
+      `✅ Load-test seed done — inserted ${inserted}, skipped ${skipped} (already existed).`,
+    );
+    console.log(
+      `   Run k6: WORKER_COUNT=${LOADTEST_USER_COUNT} WORKER_PREFIX=${USERNAME_PREFIX} k6 run infra/loadtest/monitoring-500w.js`,
+    );
   } catch (err) {
     await qr.rollbackTransaction();
     throw err;

@@ -9,9 +9,7 @@ import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { GpsUtil } from '../../common/utils/gps.util';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
-import {
-  getMinimumShiftDurationMinutes,
-} from '../../common/constants/shift.constants';
+import { getMinimumShiftDurationMinutes } from '../../common/constants/shift.constants';
 import { Schedule } from '../schedules/entities/schedule.entity';
 import { Area } from '../areas/entities/area.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';

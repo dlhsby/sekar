@@ -23,6 +23,7 @@ describe('UserAreasController', () => {
     profile_picture_url: null,
     role: UserRole.ADMIN_SYSTEM,
     is_active: true,
+    password_must_change: false,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -30,9 +31,7 @@ describe('UserAreasController', () => {
   beforeEach(async () => {
     module = await Test.createTestingModule({
       controllers: [UserAreasController],
-      providers: [
-        { provide: UserAreasService, useValue: mockUserAreasService },
-      ],
+      providers: [{ provide: UserAreasService, useValue: mockUserAreasService }],
     }).compile();
 
     controller = module.get<UserAreasController>(UserAreasController);

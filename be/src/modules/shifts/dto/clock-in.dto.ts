@@ -51,8 +51,7 @@ export class ClockInDto {
   gps_lng: number;
 
   @ApiProperty({
-    description:
-      'Base64 encoded selfie photo (optional). Max size ~7.5MB (10MB base64 encoded)',
+    description: 'Base64 encoded selfie photo (optional). Max size ~7.5MB (10MB base64 encoded)',
     example: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD...',
     required: false,
   })

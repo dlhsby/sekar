@@ -113,10 +113,7 @@ export class AreasController {
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
   })
-  findAll(
-    @GetUser() user: User,
-    @Query('area_type') areaType?: string,
-  ): Promise<Area[]> {
+  findAll(@GetUser() user: User, @Query('area_type') areaType?: string): Promise<Area[]> {
     return this.areasService.findAll(user, areaType);
   }
 

@@ -47,7 +47,9 @@ export class StatusProjectorService implements OnModuleInit {
       await this.redis.streamCreateGroup(STREAM, GROUP);
       this.logger.log(`StatusProjector ready (stream=${STREAM}, group=${GROUP})`);
     } catch (e: any) {
-      this.logger.warn(`StatusProjector: could not create consumer group — Redis unavailable? ${e.message}`);
+      this.logger.warn(
+        `StatusProjector: could not create consumer group — Redis unavailable? ${e.message}`,
+      );
     }
   }
 

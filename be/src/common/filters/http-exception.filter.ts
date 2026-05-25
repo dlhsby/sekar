@@ -9,6 +9,11 @@ import {
 import { Request, Response } from 'express';
 import { ApiException } from '../exceptions/api.exception';
 import { ApiErrorCode } from '../enums/api-error-codes.enum';
+import { captureException } from '../sentry/sentry';
+
+interface AuthenticatedRequest extends Request {
+  user?: { id?: string; role?: string };
+}
 
 /**
  * Global HTTP Exception Filter
@@ -92,6 +97,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
         `HTTP ${statusCode} Error: ${JSON.stringify(errorResponse)}`,
         exception instanceof Error ? exception.stack : undefined,
       );
+      // Capture to Sentry (no-op when SENTRY_DSN unset). Skip 4xx — those are
+      // validation/auth/permission failures and create noise, not anomalies.
+      const authReq = request as AuthenticatedRequest;
+      const reqId = request.headers?.['x-request-id'];
+      captureException(exception, {
+        userId: authReq.user?.id,
+        role: authReq.user?.role,
+        requestId: typeof reqId === 'string' ? reqId : undefined,
+        route: request.url,
+      });
     } else if (statusCode >= 400) {
       this.logger.warn(`HTTP ${statusCode} Error: ${errorResponse.message} - Path: ${request.url}`);
     }

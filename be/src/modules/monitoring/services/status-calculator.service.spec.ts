@@ -391,4 +391,107 @@ describe('StatusCalculatorService', () => {
       expect(eventsGateway.emitUserStatusChanged).not.toHaveBeenCalled();
     });
   });
+
+  describe('Phase 4-3 (M2) missing-worker alert', () => {
+    const buildWithNotifications = async (sendToUser: jest.Mock) => {
+      const { NotificationsService } = await import('../../notifications/notifications.service');
+      const mod = await Test.createTestingModule({
+        providers: [
+          StatusCalculatorService,
+          { provide: getRepositoryToken(UserTrackingStatus), useValue: trackingRepository },
+          { provide: getRepositoryToken(User), useValue: userRepository },
+          { provide: getRepositoryToken(Area), useValue: areaRepository },
+          {
+            provide: getRepositoryToken(AreaStaffRequirement),
+            useValue: staffRequirementRepository,
+          },
+          { provide: MonitoringCacheService, useValue: cacheService },
+          { provide: EventsGateway, useValue: eventsGateway },
+          { provide: NotificationsService, useValue: { sendToUser } },
+        ],
+      }).compile();
+      return mod.get(StatusCalculatorService);
+    };
+
+    it('notifies korlap users in the worker’s area when status flips to MISSING', async () => {
+      const sendToUser = jest.fn().mockResolvedValue({});
+      const svc = await buildWithNotifications(sendToUser);
+
+      trackingRepository.findOne.mockResolvedValue({
+        user_id: 'user-1',
+        shift_id: 'shift-1',
+        area_id: 'area-1',
+        status: TrackingStatus.ACTIVE,
+        is_within_area: true,
+        last_location_at: new Date(Date.now() - 2 * 3600 * 1000), // 2h ago → MISSING
+        updated_at: new Date(),
+      });
+      trackingRepository.save.mockImplementation((e: any) => Promise.resolve(e));
+      // First find: worker. Second find query is for korlap (uses find() not findOne).
+      userRepository.findOne.mockResolvedValue({ id: 'user-1', full_name: 'Bob the Worker' });
+      userRepository.find = jest.fn().mockResolvedValue([{ id: 'korlap-1' }, { id: 'korlap-2' }]);
+
+      const result = await svc.recalculate('user-1');
+      expect(result?.status).toBe(TrackingStatus.MISSING);
+
+      // Flush the void-promise notify call.
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(sendToUser).toHaveBeenCalledTimes(2);
+      expect(sendToUser).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_id: 'korlap-1',
+          type: 'missing_worker_alert',
+          data: { worker_user_id: 'user-1', area_id: 'area-1' },
+        }),
+      );
+    });
+
+    it('does NOT notify when status was already MISSING', async () => {
+      const sendToUser = jest.fn().mockResolvedValue({});
+      const svc = await buildWithNotifications(sendToUser);
+
+      trackingRepository.findOne.mockResolvedValue({
+        user_id: 'user-1',
+        shift_id: 'shift-1',
+        area_id: 'area-1',
+        status: TrackingStatus.MISSING, // already MISSING
+        is_within_area: true,
+        last_location_at: new Date(Date.now() - 2 * 3600 * 1000),
+        updated_at: new Date(),
+      });
+      trackingRepository.save.mockImplementation((e: any) => Promise.resolve(e));
+      userRepository.find = jest.fn();
+
+      await svc.recalculate('user-1');
+      await Promise.resolve();
+
+      expect(sendToUser).not.toHaveBeenCalled();
+      expect(userRepository.find).not.toHaveBeenCalled();
+    });
+
+    it('is a no-op when areaId is null', async () => {
+      const sendToUser = jest.fn();
+      const svc = await buildWithNotifications(sendToUser);
+
+      trackingRepository.findOne.mockResolvedValue({
+        user_id: 'user-1',
+        shift_id: 'shift-1',
+        area_id: null,
+        status: TrackingStatus.ACTIVE,
+        is_within_area: true,
+        last_location_at: new Date(Date.now() - 2 * 3600 * 1000),
+        updated_at: new Date(),
+      });
+      trackingRepository.save.mockImplementation((e: any) => Promise.resolve(e));
+      userRepository.findOne.mockResolvedValue({ id: 'user-1', full_name: 'Bob' });
+      userRepository.find = jest.fn();
+
+      await svc.recalculate('user-1');
+      await Promise.resolve();
+
+      expect(sendToUser).not.toHaveBeenCalled();
+    });
+  });
 });

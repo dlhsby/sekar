@@ -34,11 +34,12 @@ export class PruningRequest {
   // May 9, 2026 — explicit relation so the API can return submitter context
   // (full_name / username / role) for the list card + detail screen header.
   // Column already exists (`submitted_by`); we only add the join, no schema
-  // change. `onDelete: 'CASCADE'` matches the NOT NULL business rule — a
-  // pruning request without a submitter is invalid, so removing the user
-  // removes their requests too. Dev FK violations on stale rows are handled
-  // by `npm run db:fix-orphans`, which DELETEs the offending rows.
-  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  // change. `onDelete: 'RESTRICT'` matches the migration
+  // (`17460000000000-Phase3Schema.ts:70`). Pruning requests are part of the
+  // audit trail: deleting a kecamatan submitter must not silently destroy
+  // their history. Soft-delete users instead, or reassign requests before
+  // hard-delete via `npm run db:fix-orphans`.
+  @ManyToOne(() => User, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'submitted_by' })
   submitter?: User;
 

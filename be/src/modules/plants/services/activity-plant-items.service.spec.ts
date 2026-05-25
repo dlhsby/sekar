@@ -85,10 +85,13 @@ describe('ActivityPlantItemsService', () => {
         },
       ];
 
-      repository.create.mockImplementation((item) => ({
-        ...item,
-        notes: item.notes ?? null,
-      }) as any);
+      repository.create.mockImplementation(
+        (item) =>
+          ({
+            ...item,
+            notes: item.notes ?? null,
+          }) as any,
+      );
       repository.save.mockResolvedValue(created as any);
 
       const result = await service.createBatch('activity-1', items);

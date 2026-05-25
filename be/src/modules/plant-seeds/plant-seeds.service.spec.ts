@@ -1,11 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import {
-  NotFoundException,
-  ConflictException,
-  BadRequestException,
-} from '@nestjs/common';
+import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PlantSeedsService } from './plant-seeds.service';
 import { PlantSeed } from './entities/plant-seed.entity';
 import { SeedTransaction } from './entities/seed-transaction.entity';
@@ -99,12 +95,12 @@ describe('PlantSeedsService', () => {
     }).compile();
 
     service = module.get<PlantSeedsService>(PlantSeedsService);
-    seedRepository = module.get(
-      getRepositoryToken(PlantSeed),
-    ) as jest.Mocked<Repository<PlantSeed>>;
-    transactionRepository = module.get(
-      getRepositoryToken(SeedTransaction),
-    ) as jest.Mocked<Repository<SeedTransaction>>;
+    seedRepository = module.get(getRepositoryToken(PlantSeed)) as jest.Mocked<
+      Repository<PlantSeed>
+    >;
+    transactionRepository = module.get(getRepositoryToken(SeedTransaction)) as jest.Mocked<
+      Repository<SeedTransaction>
+    >;
     dataSource = module.get(DataSource) as jest.Mocked<DataSource>;
   });
 
@@ -114,9 +110,7 @@ describe('PlantSeedsService', () => {
 
   describe('findAll', () => {
     it('should return seeds list with pagination', async () => {
-      mockSeedRepository.createQueryBuilder.mockReturnValue(
-        mockQueryBuilder as any,
-      );
+      mockSeedRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.where.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.orderBy.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.skip.mockReturnValue(mockQueryBuilder as any);
@@ -130,9 +124,7 @@ describe('PlantSeedsService', () => {
     });
 
     it('should search by nameId using ILIKE', async () => {
-      mockSeedRepository.createQueryBuilder.mockReturnValue(
-        mockQueryBuilder as any,
-      );
+      mockSeedRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.where.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.orderBy.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.skip.mockReturnValue(mockQueryBuilder as any);
@@ -145,16 +137,13 @@ describe('PlantSeedsService', () => {
         limit: 20,
       });
 
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-        'ps.nameId ILIKE :search',
-        { search: '%Pucuk%' },
-      );
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('ps.nameId ILIKE :search', {
+        search: '%Pucuk%',
+      });
     });
 
     it('should apply default pagination', async () => {
-      mockSeedRepository.createQueryBuilder.mockReturnValue(
-        mockQueryBuilder as any,
-      );
+      mockSeedRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.where.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.orderBy.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.skip.mockReturnValue(mockQueryBuilder as any);
@@ -180,9 +169,7 @@ describe('PlantSeedsService', () => {
     it('should throw NotFoundException when seed not found', async () => {
       mockSeedRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.findOne(mockSeedId)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findOne(mockSeedId)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -251,7 +238,7 @@ describe('PlantSeedsService', () => {
       };
 
       (dataSource.transaction as jest.Mock).mockImplementation(
-        (callback: Function) => callback(transactionManager),
+        (callback: (em: unknown) => Promise<unknown>) => callback(transactionManager),
       );
 
       await service.recordTransaction(
@@ -285,7 +272,7 @@ describe('PlantSeedsService', () => {
       };
 
       (dataSource.transaction as jest.Mock).mockImplementation(
-        (callback: Function) => callback(transactionManager),
+        (callback: (em: unknown) => Promise<unknown>) => callback(transactionManager),
       );
 
       const result = await service.recordTransaction(
@@ -321,7 +308,7 @@ describe('PlantSeedsService', () => {
       };
 
       (dataSource.transaction as jest.Mock).mockImplementation(
-        (callback: Function) => callback(transactionManager),
+        (callback: (em: unknown) => Promise<unknown>) => callback(transactionManager),
       );
 
       await expect(
@@ -354,7 +341,7 @@ describe('PlantSeedsService', () => {
       };
 
       (dataSource.transaction as jest.Mock).mockImplementation(
-        (callback: Function) => callback(transactionManager),
+        (callback: (em: unknown) => Promise<unknown>) => callback(transactionManager),
       );
 
       const result = await service.recordTransaction(
@@ -401,7 +388,7 @@ describe('PlantSeedsService', () => {
       };
 
       (dataSource.transaction as jest.Mock).mockImplementation(
-        (callback: Function) => callback(transactionManager),
+        (callback: (em: unknown) => Promise<unknown>) => callback(transactionManager),
       );
 
       await service.recordTransaction(
@@ -433,7 +420,7 @@ describe('PlantSeedsService', () => {
       };
 
       (dataSource.transaction as jest.Mock).mockImplementation(
-        (callback: Function) => callback(transactionManager),
+        (callback: (em: unknown) => Promise<unknown>) => callback(transactionManager),
       );
 
       await expect(
@@ -453,16 +440,12 @@ describe('PlantSeedsService', () => {
   describe('getTransactions', () => {
     it('should return transactions for a seed with pagination', async () => {
       mockSeedRepository.findOne.mockResolvedValue(mockSeed);
-      mockTransactionRepository.createQueryBuilder.mockReturnValue(
-        mockQueryBuilder as any,
-      );
+      mockTransactionRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.where.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.orderBy.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.skip.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.take.mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getManyAndCount.mockResolvedValue(
-        [[mockTransaction], 1],
-      );
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockTransaction], 1]);
 
       const result = await service.getTransactions(mockSeedId, {
         page: 1,
@@ -475,17 +458,13 @@ describe('PlantSeedsService', () => {
 
     it('should filter by transaction type', async () => {
       mockSeedRepository.findOne.mockResolvedValue(mockSeed);
-      mockTransactionRepository.createQueryBuilder.mockReturnValue(
-        mockQueryBuilder as any,
-      );
+      mockTransactionRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.where.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.andWhere.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.orderBy.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.skip.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.take.mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getManyAndCount.mockResolvedValue(
-        [[mockTransaction], 1],
-      );
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockTransaction], 1]);
 
       await service.getTransactions(mockSeedId, {
         type: 'purchase',
@@ -493,25 +472,20 @@ describe('PlantSeedsService', () => {
         limit: 20,
       });
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'st.transactionType = :type',
-        { type: 'purchase' },
-      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('st.transactionType = :type', {
+        type: 'purchase',
+      });
     });
 
     it('should filter by date range', async () => {
       mockSeedRepository.findOne.mockResolvedValue(mockSeed);
-      mockTransactionRepository.createQueryBuilder.mockReturnValue(
-        mockQueryBuilder as any,
-      );
+      mockTransactionRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.where.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.andWhere.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.orderBy.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.skip.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.take.mockReturnValue(mockQueryBuilder as any);
-      mockQueryBuilder.getManyAndCount.mockResolvedValue(
-        [[mockTransaction], 1],
-      );
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockTransaction], 1]);
 
       const from = new Date('2026-04-01');
       const to = new Date('2026-04-30');
@@ -523,29 +497,21 @@ describe('PlantSeedsService', () => {
         limit: 20,
       });
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'st.occurredAt >= :from',
-        { from },
-      );
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'st.occurredAt <= :to',
-        { to },
-      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('st.occurredAt >= :from', { from });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('st.occurredAt <= :to', { to });
     });
 
     it('should throw NotFoundException if seed does not exist', async () => {
       mockSeedRepository.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.getTransactions(mockSeedId, { page: 1, limit: 20 }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getTransactions(mockSeedId, { page: 1, limit: 20 })).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should sort by occurredAt DESC', async () => {
       mockSeedRepository.findOne.mockResolvedValue(mockSeed);
-      mockTransactionRepository.createQueryBuilder.mockReturnValue(
-        mockQueryBuilder as any,
-      );
+      mockTransactionRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.where.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.orderBy.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.skip.mockReturnValue(mockQueryBuilder as any);
@@ -557,10 +523,7 @@ describe('PlantSeedsService', () => {
         limit: 20,
       });
 
-      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(
-        'st.occurredAt',
-        'DESC',
-      );
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('st.occurredAt', 'DESC');
     });
   });
 });

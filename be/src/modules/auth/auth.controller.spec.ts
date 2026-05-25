@@ -21,6 +21,7 @@ describe('AuthController', () => {
     profile_picture_url: null,
     role: UserRole.SATGAS,
     is_active: true,
+    password_must_change: false,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -322,14 +323,19 @@ describe('AuthController', () => {
   });
 
   describe('logout', () => {
-    it('should call authService.logout and return success message', async () => {
+    it('blacklists both tokens and returns success', async () => {
       mockAuthService.logout.mockResolvedValue(undefined);
 
-      const result = await controller.logout(mockUser);
+      const result = await controller.logout(mockUser, { refresh_token: 'rt-1' }, 'Bearer at-1');
 
       expect(result).toEqual({ message: 'Logged out successfully' });
-      expect(authService.logout).toHaveBeenCalledWith(mockUser.id);
-      expect(authService.logout).toHaveBeenCalledTimes(1);
+      expect(authService.logout).toHaveBeenCalledWith(mockUser.id, 'at-1', 'rt-1');
+    });
+
+    it('still calls service when auth header is missing', async () => {
+      mockAuthService.logout.mockResolvedValue(undefined);
+      await controller.logout(mockUser, { refresh_token: 'rt-2' }, undefined);
+      expect(authService.logout).toHaveBeenCalledWith(mockUser.id, undefined, 'rt-2');
     });
   });
 });
