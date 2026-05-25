@@ -4,6 +4,18 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## May 25, 2026 — M3 Home revamp · Checkpoint 1a: shared masthead + CRITICAL stale-token-shadowing fix
+
+First slice of the **Home-as-role-aware-anchor** revamp (full plan: shared chrome → HOME-1 satgas/linmas → HOME-2 korlap/kepala_rayon → HOME-3 admin_data, one role per session). This checkpoint = the shared **masthead** + a critical token-pipeline bug found while building it. Tab bar + Home dispatcher are the next checkpoints.
+
+**🔴 CRITICAL — stale `tokens.js` was shadowing the canonical `tokens.ts` app-wide.** A compiled `fe/mobile/src/constants/generated/tokens.js` (NB 1.0 values: radius base 6 / shadow sm 4 / thick border 3) was accidentally committed in `e7d5324` and **git-tracked**. Both Metro and Jest resolve `.js` before `.ts`, so the entire app + test suite were loading the **old NB 1.0 tokens** — silently neutralizing the v2.1 reconciliation that the May 25 M1+M2 checkpoint had already written into `tokens.json`/`tokens.ts` (radii 10/14/20, shadows 3/4/6, thick 2.5) **and** hiding the 9 `role.*` accents (so the new role-colored avatar resolved to `undefined`). The pipeline (`scripts/build-tokens.ts`) only ever emits `tokens.ts` — the `.js` was pure cruft. **Fix:** `git rm` the stale `tokens.js`. Now `./generated/tokens` resolves to the canonical `.ts` (71 colour keys incl. `roleSatgas`…); the v2.1 radii/shadows finally render at runtime. Two value-lock suites (`nbTokens.test.ts`, `nbShadow.test.tsx`, 13 assertions) were locked to the stale NB 1.0 numbers — realigned to the canonical v2.1 values (the source of truth is `tokens.json`). Full mobile suite green afterward (4146 passed); only those 2 suites asserted the old values, so blast radius was contained. **Visual impact: app-wide — every corner radius + hard-edge shadow shifts from NB 1.0 to v2.1 (the intended M3 look).**
+
+**Masthead — `FieldHomeHeader` (used by every tab + every sub-screen header).** Reconciled to the hi-fi HOME-1/2/3 masthead, decision **"adopt hi-fi, keep status chip"**: the leaf-icon box became a **role-colored avatar** (initials from `full_name`, bg `withAlpha(role,0.22)` + 2px role-accent border via `nbColors.role*`, decorative/`accessibilityElementsHidden` since role+name already announce identity); the "Halo, {name}!" greeting became a **mono uppercase role label** (`ROLE_LABELS`, `· {area}` appended when `auth.assignedArea` is set) **above** the display name (`NBText` `h3`); the existing **online/offline + sync/pending status chip is retained** (no hi-fi equivalent but load-bearing for offline UX), restyled to v2.1 (`nbRadius.sm`). `NotificationBell` (already shows the unread count) unchanged. Back-arrow + page-title sub-screen modes + all behavior preserved. Migrated off legacy token shims (`nbTypography`/`nbBorders.base`/`borderRadius:0` → `NBText`/`nbBorders.widthBase`/`nbRadius`). `NBText` imported from its direct path (not the `../nb` barrel) to avoid pulling heavy primitives into the header's test. Tests rewritten to the new structure (38/38): avatar initials (queried with `includeHiddenElements` since decorative), role label per role, area-suffix, retained status-chip priority, sub-screen/back modes.
+
+**Verification:** `tsc` clean on `FieldHomeHeader.tsx` (test-file `preloadedState` typing noise unchanged from baseline); ESLint `no-inline-hex-colors` clean; `jest` full suite 4146 passed / 0 failed.
+
+---
+
 ## May 25, 2026 — M3 entry-flow visual revamp: WL-1 splash + native boot splash + WL-2…5 carousel
 
 Pixel-fidelity rebuild of the cold-start journey against `design/project/hifi-mobile.html`, working screen-by-screen with a checkpoint after each. Three commits.

@@ -2,11 +2,14 @@
  * Field Home Header
  * Unified 3-column navigation header for all screens.
  *
- * Main screens (no `onBack` prop):  [leaf icon 40×40]   | [Halo, name! + role badge] | [online status]
- * Sub screens (with `onBack`):      [back arrow 44×44]  | [page title 18px]          | [online status]
+ * Main screens (no `onBack` prop):  [role avatar 40×40] | [ROLE LABEL + name]  | [bell + online status]
+ * Sub screens (with `onBack`):      [back arrow 44×44]  | [page title 18px]     | [online status]
  *
  * All sub-screens must supply onBack — there is no spacer case.
- * Phase 2C: replaces WorkerHomeHeader and is the standard for all screens.
+ * Phase 4 M3 (Home revamp): the leaf icon became a role-colored avatar and the
+ * greeting became a mono role label above the display name (hi-fi HOME-1/2/3
+ * masthead). The online/offline + sync/pending status chip is retained — it has
+ * no hi-fi equivalent but is load-bearing for offline UX.
  */
 
 import React from 'react';
@@ -14,29 +17,66 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAppSelector } from '../../store/store';
 import { selectTotalPendingCount } from '../../store/slices/offlineSlice';
-import { NBBadge } from '../nb';
-import { nbColors, nbTypography, nbSpacing, nbBorders, nbShadows, withAlpha } from '../../constants/nbTokens';
+import { NBText } from '../nb/NBText';
+import {
+  nbColors,
+  nbSpacing,
+  nbBorders,
+  nbRadius,
+  nbShadows,
+  withAlpha,
+} from '../../constants/nbTokens';
 import { ROLE_LABELS } from '../../constants/roles';
+import type { UserRole } from '../../types/models.types';
 import { NotificationBell } from './NotificationBell';
 
 interface FieldHomeHeaderProps {
-  /** When provided: back arrow is shown; otherwise leaf icon */
+  /** When provided: back arrow is shown; otherwise role avatar */
   onBack?: () => void;
-  /** When provided: shown as page title; otherwise greeting + role badge are shown */
+  /** When provided: shown as page title; otherwise role label + name are shown */
   title?: string;
 }
 
+/** Role → avatar accent token. Falls back to primary for unknown/undefined roles. */
+const ROLE_AVATAR_COLOR: Record<UserRole, string> = {
+  satgas: nbColors.roleSatgas,
+  linmas: nbColors.roleLinmas,
+  korlap: nbColors.roleKorlap,
+  admin_data: nbColors.roleAdminData,
+  kepala_rayon: nbColors.roleKepala,
+  top_management: nbColors.roleTop,
+  admin_system: nbColors.roleAdminSys,
+  superadmin: nbColors.roleSuperadmin,
+  staff_kecamatan: nbColors.roleKecamatan,
+};
+
+/** First + last initial from a full name, e.g. "Budi Santoso" → "BS". */
+function getInitials(name?: string): string {
+  if (!name) {
+    return '?';
+  }
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) {
+    return '?';
+  }
+  const first = parts[0][0] ?? '';
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+  return (first + last).toUpperCase();
+}
+
 export const FieldHomeHeader: React.FC<FieldHomeHeaderProps> = ({ onBack, title }) => {
-  const { user } = useAppSelector((state) => state.auth);
+  const { user, assignedArea } = useAppSelector((state) => state.auth);
   const { isOnline, isSyncing } = useAppSelector((state) => state.offline);
   const pendingCount = useAppSelector(selectTotalPendingCount);
+
   const roleLabel = user?.role ? ROLE_LABELS[user.role] : 'User';
+  const roleColor = user?.role ? ROLE_AVATAR_COLOR[user.role] : nbColors.primary;
+  const displayName = user?.full_name ?? 'Pengguna';
+  const areaSuffix = assignedArea?.name ? ` · ${assignedArea.name}` : '';
 
   return (
     <View style={styles.container}>
-      {/* Left column — 2 cases:
-          - onBack provided: back arrow 44×44 WCAG touch target
-          - no onBack:       leaf icon 40×40 (main tab screens)
+      {/* Left column — back arrow (sub-screens) or role avatar (main screens).
           All sub-screens must supply onBack; there is no spacer case. */}
       {onBack ? (
         <TouchableOpacity
@@ -48,12 +88,21 @@ export const FieldHomeHeader: React.FC<FieldHomeHeaderProps> = ({ onBack, title 
           <MaterialCommunityIcons name="arrow-left" size={24} color={nbColors.black} />
         </TouchableOpacity>
       ) : (
-        <View style={styles.iconContainer}>
-          <MaterialCommunityIcons name="leaf" size={24} color={nbColors.white} />
+        <View
+          style={[
+            styles.avatar,
+            { backgroundColor: withAlpha(roleColor, 0.22), borderColor: roleColor },
+          ]}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          <NBText variant="mono-sm" color="black" style={styles.avatarText}>
+            {getInitials(user?.full_name)}
+          </NBText>
         </View>
       )}
 
-      {/* Center column — page title (sub screens) or greeting + role badge (main screens) */}
+      {/* Center column — page title (sub screens) or role label + name (main screens) */}
       <View style={styles.center}>
         {title ? (
           <Text style={styles.pageTitle} numberOfLines={1} ellipsizeMode="tail">
@@ -61,10 +110,25 @@ export const FieldHomeHeader: React.FC<FieldHomeHeaderProps> = ({ onBack, title 
           </Text>
         ) : (
           <>
-            <Text style={styles.greeting} numberOfLines={1} ellipsizeMode="tail">
-              Halo, {user?.full_name}!
-            </Text>
-            <NBBadge text={roleLabel} color="success" size="sm" />
+            <NBText
+              variant="mono-sm"
+              color="gray600"
+              uppercase
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              style={styles.roleLabel}
+            >
+              {roleLabel}{areaSuffix}
+            </NBText>
+            <NBText
+              variant="h3"
+              color="black"
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              style={styles.name}
+            >
+              {displayName}
+            </NBText>
           </>
         )}
       </View>
@@ -108,45 +172,48 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     height: 56,
   },
-  /* Left column — leaf icon (main screens) */
-  iconContainer: {
+  /* Left column — role-colored avatar (main screens). 40×40 + 8px gap = 48px
+     total, matching the back button's 44+4 so the center text holds its x. */
+  avatar: {
     width: 40,
     height: 40,
-    backgroundColor: nbColors.primary,
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.black,
-    borderRadius: 0,
+    borderWidth: nbBorders.widthBase,
+    borderRadius: nbRadius.base,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: nbSpacing.sm,  // 8px gap after left slot
-    ...nbShadows.sm,
+    marginRight: nbSpacing.sm,
+    ...nbShadows.xs,
   },
-  /* Left column — back arrow button (sub-screens with back, 44×44 WCAG)
-     alignItems: 'flex-start' → arrow icon starts at 16px from screen edge (same as leaf box).
-     marginRight: xs (4px) so total left-slot width = 44+4 = 48px = leaf's 40+8 = 48px,
-     keeping the center text at the same x-position on every screen. */
+  avatarText: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  /* Left column — back arrow button (sub-screens with back, 44×44 WCAG).
+     alignItems: 'flex-start' → arrow icon starts at 16px from screen edge.
+     marginRight: xs so total left-slot width = 44+4 = 40+8 = 48px. */
   backButton: {
     width: 44,
     height: 44,
     justifyContent: 'center',
     alignItems: 'flex-start',
-    marginRight: nbSpacing.xs,  // 4px (leaf uses 8px, but 44+4 = 40+8 = 48px total)
+    marginRight: nbSpacing.xs,
   },
   /* Center column */
   center: {
     flex: 1,
     justifyContent: 'center',
-    marginRight: nbSpacing.xs,  // 4px gap before right slot
+    marginRight: nbSpacing.xs,
   },
-  greeting: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.extrabold,
-    color: nbColors.black,
-    marginBottom: 2,
+  roleLabel: {
+    letterSpacing: 0.6,
+    marginBottom: 1,
+  },
+  name: {
+    // size/weight from NBText variant="h3"
   },
   pageTitle: {
-    fontSize: nbTypography.fontSize.lg,    // 18px (was xl=20px) — better overflow protection
-    fontWeight: nbTypography.fontWeight.extrabold,
+    fontSize: 18,
+    fontWeight: '800',
     color: nbColors.black,
     textAlign: 'left',
   },
@@ -161,13 +228,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 8,    // was 6 — improves readability
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderWidth: 2,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
-    borderRadius: 0,
+    borderRadius: nbRadius.sm,
     backgroundColor: nbColors.white,
-    minWidth: 64,             // was 60
+    minWidth: 64,
   },
   onlineBadge: {
     backgroundColor: withAlpha(nbColors.success, 0.12),
@@ -185,14 +252,14 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.white,
     borderColor: nbColors.black,
   },
-  statusDot: { width: 8, height: 8, borderRadius: 0 },
+  statusDot: { width: 8, height: 8, borderRadius: nbRadius.full },
   online: { backgroundColor: nbColors.success },
   offline: { backgroundColor: nbColors.danger },
-  syncingDot: { width: 8, height: 8, borderRadius: 0, backgroundColor: nbColors.accentSky },
-  pendingDot: { width: 8, height: 8, borderRadius: 0, backgroundColor: nbColors.warning },
+  syncingDot: { width: 8, height: 8, borderRadius: nbRadius.full, backgroundColor: nbColors.accentSky },
+  pendingDot: { width: 8, height: 8, borderRadius: nbRadius.full, backgroundColor: nbColors.warning },
   statusBadgeText: {
-    fontSize: 11,             // was 10 — WCAG minimum for bold text
-    fontWeight: nbTypography.fontWeight.bold,
+    fontSize: 11,
+    fontWeight: '700',
     color: nbColors.black,
     textTransform: 'uppercase',
     letterSpacing: 0.3,

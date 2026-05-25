@@ -1,5 +1,9 @@
 /**
  * FieldHomeHeader Component Tests
+ *
+ * Phase 4 M3 (Home revamp): the leaf icon became a role-colored avatar (initials)
+ * and the "Halo, {name}!" greeting became a mono ROLE LABEL above the display name.
+ * The online/sync/pending status chip is retained.
  */
 
 import React from 'react';
@@ -7,23 +11,14 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { FieldHomeHeader } from '../FieldHomeHeader';
-import type { UserRole } from '../../../types/models.types';
+import type { UserRole, Area } from '../../../types/models.types';
 import authReducer from '../../../store/slices/authSlice';
 import offlineReducer from '../../../store/slices/offlineSlice';
 
-// Mock NBBadge component
-jest.mock('../../nb', () => ({
-  NBBadge: ({ text, testID }: any) => {
-    const { Text } = require('react-native');
-    return <Text testID={testID}>{text}</Text>;
-  },
-}));
-
-// Phase 4 M3d — `FieldHomeHeader` now embeds `NotificationBell`, which
-// calls `useNavigation()` and reads the `notifications` slice. The
-// existing tests render the header bare (no NavigationContainer, no
-// notifications reducer in the mock store); stub the bell to a noop so
-// the assertions stay focused on header content.
+// `FieldHomeHeader` embeds `NotificationBell`, which calls `useNavigation()` and
+// reads the `notifications` slice. The tests render the header bare (no
+// NavigationContainer, no notifications reducer); stub the bell to a noop so the
+// assertions stay focused on header content.
 jest.mock('../NotificationBell', () => ({
   NotificationBell: () => null,
 }));
@@ -34,7 +29,8 @@ describe('FieldHomeHeader', () => {
     fullName: string = 'Ahmad Satgas',
     isOnline: boolean = true,
     isSyncing: boolean = false,
-    pendingCount: number = 0
+    pendingCount: number = 0,
+    assignedArea: Area | null = null
   ) => {
     return configureStore({
       reducer: {
@@ -52,7 +48,7 @@ describe('FieldHomeHeader', () => {
             created_at: new Date('2026-01-01T00:00:00Z'),
             updated_at: new Date('2026-01-01T00:00:00Z'),
           },
-          assignedArea: null,
+          assignedArea,
           token: 'mock-token',
           isAuthenticated: true,
           loading: false,
@@ -74,18 +70,19 @@ describe('FieldHomeHeader', () => {
   };
 
   describe('Rendering', () => {
-    it('should render header component', () => {
+    it('should render the display name (no "Halo," prefix)', () => {
       const store = createMockStore();
-      const { getByText } = render(
+      const { getByText, queryByText } = render(
         <Provider store={store}>
           <FieldHomeHeader />
         </Provider>
       );
 
-      expect(getByText('Halo, Ahmad Satgas!')).toBeTruthy();
+      expect(getByText('Ahmad Satgas')).toBeTruthy();
+      expect(queryByText(/Halo,/)).toBeNull();
     });
 
-    it('should display user full name in greeting', () => {
+    it('should display user full name', () => {
       const store = createMockStore('satgas', 'Budi Pekerja');
       const { getByText } = render(
         <Provider store={store}>
@@ -93,25 +90,23 @@ describe('FieldHomeHeader', () => {
         </Provider>
       );
 
-      expect(getByText('Halo, Budi Pekerja!')).toBeTruthy();
+      expect(getByText('Budi Pekerja')).toBeTruthy();
     });
 
-    it('should render leaf icon', () => {
-      const store = createMockStore();
-      const { UNSAFE_getByType } = render(
+    it('should render the role avatar with initials', () => {
+      const store = createMockStore('satgas', 'Budi Santoso');
+      const { getByText } = render(
         <Provider store={store}>
           <FieldHomeHeader />
         </Provider>
       );
 
-      const MaterialCommunityIcons = require('react-native-vector-icons/MaterialCommunityIcons').default;
-      const icons = UNSAFE_getByType(MaterialCommunityIcons);
-      expect(icons).toBeTruthy();
+      expect(getByText('BS', { includeHiddenElements: true })).toBeTruthy();
     });
   });
 
-  describe('Role Badge Display', () => {
-    it('should display Satgas role badge', () => {
+  describe('Role Label Display', () => {
+    it('should display Satgas role label', () => {
       const store = createMockStore('satgas');
       const { getByText } = render(
         <Provider store={store}>
@@ -122,7 +117,7 @@ describe('FieldHomeHeader', () => {
       expect(getByText('Satgas')).toBeTruthy();
     });
 
-    it('should display Linmas role badge', () => {
+    it('should display Linmas role label', () => {
       const store = createMockStore('linmas', 'Siti Linmas');
       const { getByText } = render(
         <Provider store={store}>
@@ -133,7 +128,7 @@ describe('FieldHomeHeader', () => {
       expect(getByText('Linmas')).toBeTruthy();
     });
 
-    it('should display Korlap role badge', () => {
+    it('should display Korlap role label', () => {
       const store = createMockStore('korlap', 'Joko Korlap');
       const { getByText } = render(
         <Provider store={store}>
@@ -144,7 +139,7 @@ describe('FieldHomeHeader', () => {
       expect(getByText('Korlap')).toBeTruthy();
     });
 
-    it('should display Admin Data role badge', () => {
+    it('should display Admin Data role label', () => {
       const store = createMockStore('admin_data', 'Rina Admin');
       const { getByText } = render(
         <Provider store={store}>
@@ -155,7 +150,7 @@ describe('FieldHomeHeader', () => {
       expect(getByText('Admin Data')).toBeTruthy();
     });
 
-    it('should display Kepala Rayon role badge', () => {
+    it('should display Kepala Rayon role label', () => {
       const store = createMockStore('kepala_rayon', 'Pak Rayon');
       const { getByText } = render(
         <Provider store={store}>
@@ -166,7 +161,7 @@ describe('FieldHomeHeader', () => {
       expect(getByText('Kepala Rayon')).toBeTruthy();
     });
 
-    it('should display Top Management role badge', () => {
+    it('should display Top Management role label', () => {
       const store = createMockStore('top_management', 'Bu Kepala');
       const { getByText } = render(
         <Provider store={store}>
@@ -177,7 +172,7 @@ describe('FieldHomeHeader', () => {
       expect(getByText('Top Management')).toBeTruthy();
     });
 
-    it('should display Admin Sistem role badge', () => {
+    it('should display Admin Sistem role label', () => {
       const store = createMockStore('admin_system', 'Admin Sys');
       const { getByText } = render(
         <Provider store={store}>
@@ -188,7 +183,7 @@ describe('FieldHomeHeader', () => {
       expect(getByText('Admin Sistem')).toBeTruthy();
     });
 
-    it('should display Superadmin role badge', () => {
+    it('should display Superadmin role label', () => {
       const store = createMockStore('superadmin', 'Super User');
       const { getByText } = render(
         <Provider store={store}>
@@ -238,6 +233,25 @@ describe('FieldHomeHeader', () => {
       );
 
       expect(getByText('User')).toBeTruthy();
+    });
+
+    it('should append the assigned area to the role label when present', () => {
+      const area = {
+        id: 1,
+        name: 'Taman Bungkul',
+        gps_lat: -7.25,
+        gps_lng: 112.75,
+        radius_meters: 100,
+      } as unknown as Area;
+      const store = createMockStore('korlap', 'Ibu Marni', true, false, 0, area);
+
+      const { getByText } = render(
+        <Provider store={store}>
+          <FieldHomeHeader />
+        </Provider>
+      );
+
+      expect(getByText('Korlap · Taman Bungkul')).toBeTruthy();
     });
   });
 
@@ -390,26 +404,29 @@ describe('FieldHomeHeader', () => {
         },
       });
 
-      const { queryByText } = render(
-        <Provider store={store}>
-          <FieldHomeHeader />
-        </Provider>
-      );
-
-      expect(queryByText(/Halo,/)).toBeTruthy();
-    });
-
-    it('should handle very long names with ellipsis', () => {
-      const store = createMockStore('satgas', 'Ahmad Budi Santoso Wijaya Kusuma Permana');
       const { getByText } = render(
         <Provider store={store}>
           <FieldHomeHeader />
         </Provider>
       );
 
-      const greetingElement = getByText(/Halo,/);
-      expect(greetingElement.props.numberOfLines).toBe(1);
-      expect(greetingElement.props.ellipsizeMode).toBe('tail');
+      // Falls back to "Pengguna" name + "User" role label, avatar "?"
+      expect(getByText('Pengguna')).toBeTruthy();
+      expect(getByText('User')).toBeTruthy();
+    });
+
+    it('should handle very long names with ellipsis', () => {
+      const longName = 'Ahmad Budi Santoso Wijaya Kusuma Permana';
+      const store = createMockStore('satgas', longName);
+      const { getByText } = render(
+        <Provider store={store}>
+          <FieldHomeHeader />
+        </Provider>
+      );
+
+      const nameEl = getByText(longName);
+      expect(nameEl.props.numberOfLines).toBe(1);
+      expect(nameEl.props.ellipsizeMode).toBe('tail');
     });
 
     it('should handle zero pending count', () => {
@@ -437,38 +454,39 @@ describe('FieldHomeHeader', () => {
   });
 
   describe('Layout and Styling', () => {
-    it('should render icon container with leaf icon', () => {
-      const store = createMockStore();
-      const { UNSAFE_getByType } = render(
+    it('should render the avatar with initials (no leaf icon)', () => {
+      const store = createMockStore('satgas', 'Ahmad Satgas');
+      const { getByText, UNSAFE_queryAllByType } = render(
         <Provider store={store}>
           <FieldHomeHeader />
         </Provider>
       );
 
+      expect(getByText('AS', { includeHiddenElements: true })).toBeTruthy();
+      // No MaterialCommunityIcons on main-screen header (avatar is text; bell stubbed)
       const MaterialCommunityIcons = require('react-native-vector-icons/MaterialCommunityIcons').default;
-      const icon = UNSAFE_getByType(MaterialCommunityIcons);
-      expect(icon.props.name).toBe('leaf');
-      expect(icon.props.size).toBe(24);
+      expect(UNSAFE_queryAllByType(MaterialCommunityIcons).length).toBe(0);
     });
   });
 
   describe('Accessibility', () => {
     it('should truncate long names for screen readers', () => {
-      const store = createMockStore('satgas', 'Very Long Name That Should Be Truncated');
+      const longName = 'Very Long Name That Should Be Truncated';
+      const store = createMockStore('satgas', longName);
       const { getByText } = render(
         <Provider store={store}>
           <FieldHomeHeader />
         </Provider>
       );
 
-      const greeting = getByText(/Halo,/);
-      expect(greeting.props.ellipsizeMode).toBe('tail');
-      expect(greeting.props.numberOfLines).toBe(1);
+      const nameEl = getByText(longName);
+      expect(nameEl.props.ellipsizeMode).toBe('tail');
+      expect(nameEl.props.numberOfLines).toBe(1);
     });
   });
 
   describe('Sub-screen mode (title prop)', () => {
-    it('should show page title instead of greeting when title is provided', () => {
+    it('should show page title instead of name when title is provided', () => {
       const store = createMockStore();
       const { getByText, queryByText } = render(
         <Provider store={store}>
@@ -477,10 +495,10 @@ describe('FieldHomeHeader', () => {
       );
 
       expect(getByText('Detail Tugas')).toBeTruthy();
-      expect(queryByText(/Halo,/)).toBeNull();
+      expect(queryByText('Ahmad Satgas')).toBeNull();
     });
 
-    it('should NOT show role badge when title is provided', () => {
+    it('should NOT show role label when title is provided', () => {
       const store = createMockStore('satgas');
       const { queryByText } = render(
         <Provider store={store}>
@@ -541,33 +559,32 @@ describe('FieldHomeHeader', () => {
       expect(onBack).toHaveBeenCalledTimes(1);
     });
 
-    it('should show leaf icon (not back button) when used as main screen header', () => {
-      const store = createMockStore();
-      const { queryByLabelText, UNSAFE_getByType } = render(
+    it('should show role avatar (not back button) when used as main screen header', () => {
+      const store = createMockStore('satgas', 'Ahmad Satgas');
+      const { queryByLabelText, getByText, UNSAFE_queryAllByType } = render(
         <Provider store={store}>
           <FieldHomeHeader />
         </Provider>
       );
 
       expect(queryByLabelText('Kembali')).toBeNull();
+      expect(getByText('AS', { includeHiddenElements: true })).toBeTruthy();
       const MaterialCommunityIcons = require('react-native-vector-icons/MaterialCommunityIcons').default;
-      const icon = UNSAFE_getByType(MaterialCommunityIcons);
-      expect(icon.props.name).toBe('leaf');
+      expect(UNSAFE_queryAllByType(MaterialCommunityIcons).length).toBe(0);
     });
 
-    it('should show leaf icon (not back button) when title is provided without onBack', () => {
-      const store = createMockStore();
-      const { queryByLabelText, UNSAFE_queryAllByType } = render(
+    it('should show role avatar (not back button) when title is provided without onBack', () => {
+      const store = createMockStore('satgas', 'Ahmad Satgas');
+      const { queryByLabelText, getByText, UNSAFE_queryAllByType } = render(
         <Provider store={store}>
           <FieldHomeHeader title="Detail Tugas" />
         </Provider>
       );
 
       expect(queryByLabelText('Kembali')).toBeNull();
+      expect(getByText('AS', { includeHiddenElements: true })).toBeTruthy();
       const MaterialCommunityIcons = require('react-native-vector-icons/MaterialCommunityIcons').default;
-      const icons = UNSAFE_queryAllByType(MaterialCommunityIcons);
-      expect(icons.length).toBe(1);
-      expect(icons[0].props.name).toBe('leaf');
+      expect(UNSAFE_queryAllByType(MaterialCommunityIcons).length).toBe(0);
     });
 
     it('should show arrow-left icon when onBack is provided', () => {

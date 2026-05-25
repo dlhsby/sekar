@@ -19,7 +19,7 @@ describe('nbTokens', () => {
     it('should have border width values with widthBase naming (generated)', () => {
       expect(nbBorders.widthThin).toBe(1);
       expect(nbBorders.widthBase).toBe(2);
-      expect(nbBorders.widthThick).toBe(3);
+      expect(nbBorders.widthThick).toBe(2.5);
       expect(nbBorders.widthExtra).toBe(4);
       expect(nbBorders.color).toBe('#1C1917');
     });
@@ -27,7 +27,7 @@ describe('nbTokens', () => {
     it('should expose backward-compat border aliases for Phase 2 call sites', () => {
       expect(nbBorders.thin).toBe(1);
       expect(nbBorders.base).toBe(2);
-      expect(nbBorders.thick).toBe(3);
+      expect(nbBorders.thick).toBe(2.5);
       expect(nbBorders.extra).toBe(4);
     });
 
@@ -39,9 +39,9 @@ describe('nbTokens', () => {
     it('should have border radius values (via nbBorderRadius alias)', () => {
       expect(nbBorderRadius.none).toBe(0);
       expect(nbBorderRadius.sm).toBe(4);
-      expect(nbBorderRadius.base).toBe(6);
-      expect(nbBorderRadius.md).toBe(8);
-      expect(nbBorderRadius.lg).toBe(12);
+      expect(nbBorderRadius.base).toBe(10);
+      expect(nbBorderRadius.md).toBe(14);
+      expect(nbBorderRadius.lg).toBe(20);
       expect(nbBorderRadius.full).toBe(9999);
     });
 
@@ -52,20 +52,20 @@ describe('nbTokens', () => {
       expect(nbShadows.xs.shadowOffset?.width).toBe(2);
       expect(nbShadows.xs.shadowOffset?.height).toBe(2);
 
-      // sm shadow — 4px offset
+      // sm shadow — 3px offset
       expect(nbShadows.sm.shadowOpacity).toBe(1);
       expect(nbShadows.sm.shadowRadius).toBe(0);
-      expect(nbShadows.sm.shadowOffset?.width).toBe(4);
+      expect(nbShadows.sm.shadowOffset?.width).toBe(3);
 
-      // md shadow — 6px offset
+      // md shadow — 4px offset
       expect(nbShadows.md.shadowOpacity).toBe(1);
       expect(nbShadows.md.shadowRadius).toBe(0);
-      expect(nbShadows.md.shadowOffset?.width).toBe(6);
+      expect(nbShadows.md.shadowOffset?.width).toBe(4);
 
-      // lg shadow — 8px offset
+      // lg shadow — 6px offset
       expect(nbShadows.lg.shadowOpacity).toBe(1);
       expect(nbShadows.lg.shadowRadius).toBe(0);
-      expect(nbShadows.lg.shadowOffset?.width).toBe(8);
+      expect(nbShadows.lg.shadowOffset?.width).toBe(6);
     });
 
     it('should use warm stone black for shadow color', () => {
