@@ -7,52 +7,69 @@ jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({ navigate: mockNavigate }),
 }));
 
-const mockRequestLocation = jest.fn();
-const mockRequestCamera = jest.fn();
-const mockRequestNotification = jest.fn();
+const mockReq = {
+  notifications: jest.fn(),
+  location: jest.fn(),
+  background_location: jest.fn(),
+  camera: jest.fn(),
+  gallery: jest.fn(),
+};
 jest.mock('../../../services/permissions', () => ({
   permissionManager: {
-    requestLocationPermission: () => mockRequestLocation(),
-    requestCameraPermission: () => mockRequestCamera(),
-    requestNotificationPermission: () => mockRequestNotification(),
+    requestNotificationPermission: () => mockReq.notifications(),
+    requestLocationPermission: () => mockReq.location(),
+    requestBackgroundLocationPermission: () => mockReq.background_location(),
+    requestCameraPermission: () => mockReq.camera(),
+    requestGalleryPermission: () => mockReq.gallery(),
   },
 }));
+
+const KEYS = ['notifications', 'location', 'background_location', 'camera', 'gallery'] as const;
 
 describe('OnboardingPermissionsScreen', () => {
   beforeEach(() => {
     mockNavigate.mockReset();
-    mockRequestLocation.mockReset().mockResolvedValue({ granted: true });
-    mockRequestCamera.mockReset().mockResolvedValue({ granted: true });
-    mockRequestNotification.mockReset().mockResolvedValue({ granted: false });
+    KEYS.forEach((k) => mockReq[k].mockReset().mockResolvedValue({ granted: true }));
   });
 
-  it('renders the 3 permission rows', () => {
+  it('renders all five permission rows with Izinkan buttons', () => {
     const { getByTestId } = render(<OnboardingPermissionsScreen />);
-    expect(getByTestId('perm-row-location')).toBeTruthy();
-    expect(getByTestId('perm-row-camera')).toBeTruthy();
-    expect(getByTestId('perm-row-notifications')).toBeTruthy();
+    KEYS.forEach((k) => {
+      expect(getByTestId(`perm-row-${k}`)).toBeTruthy();
+      expect(getByTestId(`perm-grant-${k}`)).toBeTruthy();
+    });
   });
 
-  it('tapping a pending row requests the permission → DIBERIKAN', async () => {
+  it('tapping Izinkan requests the permission → DIBERIKAN', async () => {
     const { getByTestId } = render(<OnboardingPermissionsScreen />);
-    fireEvent.press(getByTestId('perm-row-location'));
+    fireEvent.press(getByTestId('perm-grant-location'));
     await waitFor(() => {
       expect(getByTestId('perm-status-location').props.children).toBe('DIBERIKAN');
     });
-    expect(mockRequestLocation).toHaveBeenCalled();
+    expect(mockReq.location).toHaveBeenCalled();
   });
 
   it('a declined permission shows DITOLAK', async () => {
-    mockRequestLocation.mockResolvedValue({ granted: false });
+    mockReq.location.mockResolvedValue({ granted: false });
     const { getByTestId } = render(<OnboardingPermissionsScreen />);
-    fireEvent.press(getByTestId('perm-row-location'));
+    fireEvent.press(getByTestId('perm-grant-location'));
     await waitFor(() => {
       expect(getByTestId('perm-status-location').props.children).toBe('DITOLAK');
     });
   });
 
-  it('Lanjut navigates to OnboardingAreaPreview (everything is skippable)', () => {
+  it('Lanjut is gated until every permission is addressed (no skip)', async () => {
     const { getByTestId } = render(<OnboardingPermissionsScreen />);
+
+    // Disabled at first — pressing does nothing.
+    fireEvent.press(getByTestId('onboarding-permissions-continue'));
+    expect(mockNavigate).not.toHaveBeenCalled();
+
+    // Address every permission, then it advances.
+    for (const k of KEYS) {
+      fireEvent.press(getByTestId(`perm-grant-${k}`));
+      await waitFor(() => expect(getByTestId(`perm-status-${k}`)).toBeTruthy());
+    }
     fireEvent.press(getByTestId('onboarding-permissions-continue'));
     expect(mockNavigate).toHaveBeenCalledWith('OnboardingAreaPreview');
   });

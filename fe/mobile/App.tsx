@@ -8,7 +8,7 @@
 import { initSentry } from './src/services/crashReporting/sentry';
 // Initialize Sentry as early as possible so init-time errors are captured.
 initSentry();
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider } from 'react-redux';
@@ -22,10 +22,8 @@ import fcmService from './src/services/notifications/fcmService';
 import { NBToastProvider } from './src/components/nb';
 import {
   ErrorBoundary,
-  PermissionRequestModal,
   PermissionRevocationBanner,
 } from './src/components/common';
-import { permissionManager } from './src/services/permissions';
 import { locationTracker } from './src/services/location';
 import { useAppSelector } from './src/store/hooks';
 
@@ -34,7 +32,6 @@ import { useAppSelector } from './src/store/hooks';
  */
 function AppContent(): React.JSX.Element {
   const { isAuthenticated, isRestoring } = useAppSelector((state) => state.auth);
-  const [showPermissionModal, setShowPermissionModal] = useState(false);
 
   useEffect(() => {
     // Initialize sync manager for offline queue processing
@@ -50,50 +47,42 @@ function AppContent(): React.JSX.Element {
   }, []);
 
   /**
-   * Check if we should show permission modal after auth restoration or login
+   * On auth-ready: bootstrap FCM (idempotent) + register the token under the
+   * current user, and start location tracking if a shift is active. Permission
+   * priming is owned by the OB-2 onboarding screen — there is no startup modal.
    */
   useEffect(() => {
-    const checkPermissions = async () => {
+    const onAuthReady = async () => {
       if (isAuthenticated && !isRestoring) {
-        const shouldShow = await permissionManager.shouldShowPermissionRequest();
-        setShowPermissionModal(shouldShow);
-
-        // May 12 late+2 — bootstrap FCM unconditionally on auth-ready.
-        // Previously `fcmService.initialize` was ONLY called from
-        // `handlePermissionsComplete` (the permission modal callback),
-        // which fires once per install. After the first onboarding,
-        // shouldShow=false -> modal stays hidden -> initialize is never
-        // called on subsequent app launches -> foreground notifications
-        // never display (no foreground handler attached, no token
-        // re-registered to the currently logged-in user).
-        // initialize() is idempotent for the same session.
-        if (!shouldShow) {
-          try {
-            await fcmService.initialize(store);
-            // Always re-register the token after auth-ready so the
-            // backend's device_tokens row is associated with the
-            // CURRENT user. Important after logout-then-login-as-other.
-            const token = await fcmService.getToken();
-            if (token) {
-              await fcmService.registerToken(token);
-            }
-          } catch (err) {
-            console.warn('[FCM] Post-auth bootstrap failed:', err);
+        try {
+          await fcmService.initialize(store);
+          // Re-register the token after auth-ready so the backend's
+          // device_tokens row tracks the CURRENT user (e.g. after
+          // logout-then-login-as-other). initialize() is idempotent.
+          const token = await fcmService.getToken();
+          if (token) {
+            await fcmService.registerToken(token);
           }
+        } catch (err) {
+          console.warn('[FCM] Post-auth bootstrap failed:', err);
         }
-      } else {
-        setShowPermissionModal(false);
-        // On logout (auth flipped to false), tear down FCM so the next
-        // login can re-initialize and register the token under the new
-        // user. Without this, `this.initialized=true` persists in the
-        // singleton, and the next initialize() call short-circuits.
-        if (!isAuthenticated && !isRestoring) {
-          fcmService.cleanup();
+
+        try {
+          const state = store.getState();
+          const currentShift = state.shift.currentShift;
+          if (currentShift?.id && state.auth.user?.role) {
+            await locationTracker.initialize(String(currentShift.id));
+          }
+        } catch (err) {
+          console.error('[App] Failed to start location tracking:', err);
         }
+      } else if (!isAuthenticated && !isRestoring) {
+        // On logout, tear down FCM so the next login re-initializes + re-registers.
+        fcmService.cleanup();
       }
     };
 
-    checkPermissions();
+    onAuthReady();
   }, [isAuthenticated, isRestoring]);
 
   // May 13 — re-register FCM token on every foreground transition while
@@ -126,35 +115,6 @@ function AppContent(): React.JSX.Element {
     return () => sub.remove();
   }, [isAuthenticated]);
 
-  /**
-   * Initialize FCM and LocationTracker after permissions are granted
-   */
-  const handlePermissionsComplete = async () => {
-    setShowPermissionModal(false);
-
-    // Initialize FCM service for push notifications after permissions granted
-    try {
-      await fcmService.initialize(store);
-      console.log('[FCM] Service initialized successfully');
-    } catch (error) {
-      console.error('[FCM] Failed to initialize:', error);
-    }
-
-    // Start LocationTracker if there's an active shift
-    try {
-      const state = store.getState();
-      const currentShift = state.shift.currentShift;
-      const user = state.auth.user;
-
-      if (currentShift?.id && user?.role) {
-        console.log('[App] Starting location tracking for active shift');
-        await locationTracker.initialize(String(currentShift.id));
-      }
-    } catch (error) {
-      console.error('[App] Failed to start location tracking:', error);
-    }
-  };
-
   return (
     <AuthProvider>
       {/* Phase 4-2 (M2): three-state ConnectivityBanner sits above the
@@ -166,11 +126,6 @@ function AppContent(): React.JSX.Element {
           system Settings. Hook re-evaluates on every foreground transition. */}
       <PermissionRevocationBanner enabled={isAuthenticated && !isRestoring} />
       <RootNavigator />
-      <PermissionRequestModal
-        visible={showPermissionModal}
-        onComplete={handlePermissionsComplete}
-        onSkip={handlePermissionsComplete}
-      />
       {/* Global toast renderer — replaces ad-hoc Alert/inline NBAlert usage. */}
       <NBToastProvider />
     </AuthProvider>

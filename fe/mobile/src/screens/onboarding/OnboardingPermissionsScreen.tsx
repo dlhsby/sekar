@@ -1,17 +1,17 @@
 /**
  * OnboardingPermissionsScreen — Phase 4 M3 / ADR-042 / Hifi OB-2
  *
- * Permission primer. Tapping a row triggers the native prompt; the status pill
- * updates after. Everything is skippable (no hard blockers) — "Lanjut" always
- * advances to the area preview.
+ * Permission primer — this REPLACES the old startup PermissionRequestModal.
+ * Each row has an "Izinkan" button that triggers the native prompt; the status
+ * pill updates after. There is no skip — "Lanjut" stays disabled until every
+ * permission has been addressed (granted or denied).
  *
- * Reconciliation: the app's PermissionManager exposes three permissions
- * (location · camera · notifications); the hi-fi's extra "optional" group
- * (gallery/phone/SMS) isn't backed by the app, so it isn't shown.
+ * Set reconciled with the legacy modal: notifications · location · background
+ * location · camera · gallery (location is requested before background location).
  */
 
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NBButton, NBText, type NBTextColor } from '../../components/nb';
@@ -32,22 +32,6 @@ interface PermRow {
 
 const ROWS: PermRow[] = [
   {
-    key: 'location',
-    title: 'Lokasi',
-    why: 'Untuk presensi & geofence pos.',
-    icon: '📍',
-    tint: nbColors.bgAccentMint,
-    request: () => permissionManager.requestLocationPermission(),
-  },
-  {
-    key: 'camera',
-    title: 'Kamera',
-    why: 'Foto laporan aktivitas.',
-    icon: '📷',
-    tint: nbColors.bgAccentYellow,
-    request: () => permissionManager.requestCameraPermission(),
-  },
-  {
     key: 'notifications',
     title: 'Notifikasi',
     why: 'Pengingat shift & penugasan.',
@@ -55,10 +39,41 @@ const ROWS: PermRow[] = [
     tint: nbColors.bgAccentPink,
     request: () => permissionManager.requestNotificationPermission(),
   },
+  {
+    key: 'location',
+    title: 'Lokasi',
+    why: 'Presensi & geofence pos.',
+    icon: '📍',
+    tint: nbColors.bgAccentMint,
+    request: () => permissionManager.requestLocationPermission(),
+  },
+  {
+    key: 'background_location',
+    title: 'Lokasi latar belakang',
+    why: 'Pelacakan posisi selama shift berjalan.',
+    icon: '🛰️',
+    tint: nbColors.bgAccentGreen,
+    request: () => permissionManager.requestBackgroundLocationPermission(),
+  },
+  {
+    key: 'camera',
+    title: 'Kamera',
+    why: 'Foto laporan & swafoto clock-in.',
+    icon: '📷',
+    tint: nbColors.bgAccentYellow,
+    request: () => permissionManager.requestCameraPermission(),
+  },
+  {
+    key: 'gallery',
+    title: 'Galeri',
+    why: 'Lampirkan foto dari galeri.',
+    icon: '🖼️',
+    tint: nbColors.bgAccentLilac,
+    request: () => permissionManager.requestGalleryPermission(),
+  },
 ];
 
-const PILL: Record<PermStatus, { label: string; bg: string; fg: NBTextColor }> = {
-  pending: { label: 'TAP UNTUK IZIN', bg: nbColors.statusIdleBg, fg: 'statusIdle' },
+const PILL: Record<'granted' | 'denied', { label: string; bg: string; fg: NBTextColor }> = {
   granted: { label: 'DIBERIKAN', bg: nbColors.statusActiveBg, fg: 'statusActive' },
   denied: { label: 'DITOLAK', bg: nbColors.statusMissingBg, fg: 'statusMissing' },
 };
@@ -66,20 +81,14 @@ const PILL: Record<PermStatus, { label: string; bg: string; fg: NBTextColor }> =
 function PermissionRowView({
   row,
   status,
-  onPress,
+  onGrant,
 }: {
   row: PermRow;
   status: PermStatus;
-  onPress: () => void;
+  onGrant: () => void;
 }): React.JSX.Element {
-  const pill = PILL[status];
   return (
-    <Pressable
-      style={styles.row}
-      onPress={status === 'pending' ? onPress : undefined}
-      accessibilityRole="button"
-      testID={`perm-row-${row.key}`}
-    >
+    <View style={styles.row} testID={`perm-row-${row.key}`}>
       <View style={[styles.pico, { backgroundColor: row.tint }]}>
         <Text style={styles.picoIcon}>{row.icon}</Text>
       </View>
@@ -91,21 +100,31 @@ function PermissionRowView({
           {row.why}
         </NBText>
       </View>
-      <View style={[styles.pill, { backgroundColor: pill.bg }]}>
-        <NBText variant="mono-sm" color={pill.fg} testID={`perm-status-${row.key}`}>
-          {pill.label}
-        </NBText>
-      </View>
-    </Pressable>
+      {status === 'pending' ? (
+        <NBButton
+          title="Izinkan"
+          variant="primary"
+          size="sm"
+          onPress={onGrant}
+          testID={`perm-grant-${row.key}`}
+        />
+      ) : (
+        <View style={[styles.pill, { backgroundColor: PILL[status].bg }]}>
+          <NBText variant="mono-sm" color={PILL[status].fg} testID={`perm-status-${row.key}`}>
+            {PILL[status].label}
+          </NBText>
+        </View>
+      )}
+    </View>
   );
 }
 
 export function OnboardingPermissionsScreen(): React.JSX.Element {
   const navigation = useNavigation();
   const [statuses, setStatuses] = useState<Record<string, PermStatus>>(() => {
-    const init: Partial<Record<string, PermStatus>> = {};
+    const init: Record<string, PermStatus> = {};
     ROWS.forEach((r) => (init[r.key] = 'pending'));
-    return init as Record<string, PermStatus>;
+    return init;
   });
 
   const grant = async (row: PermRow) => {
@@ -117,13 +136,15 @@ export function OnboardingPermissionsScreen(): React.JSX.Element {
     }
   };
 
+  const allProcessed = ROWS.every((r) => statuses[r.key] !== 'pending');
+
   return (
     <SafeAreaView style={styles.root} testID="onboarding-permissions-screen">
       <ScrollView contentContainerStyle={styles.content}>
         <PaginationDots variant="bars" total={3} index={1} style={styles.dots} />
         <NBText variant="h2">Beri akses ke HP-mu</NBText>
         <NBText variant="body-sm" color="gray600" style={styles.subtitle}>
-          Kami pakai hanya untuk tugas. Bisa diubah di Pengaturan kapan saja.
+          Aplikasi memerlukan izin berikut agar berfungsi penuh. Bisa diubah di Pengaturan kapan saja.
         </NBText>
 
         <View style={styles.list}>
@@ -132,7 +153,7 @@ export function OnboardingPermissionsScreen(): React.JSX.Element {
               key={row.key}
               row={row}
               status={statuses[row.key]}
-              onPress={() => grant(row)}
+              onGrant={() => grant(row)}
             />
           ))}
         </View>
@@ -143,6 +164,7 @@ export function OnboardingPermissionsScreen(): React.JSX.Element {
           title="Lanjut"
           variant="primary"
           fullWidth
+          disabled={!allProcessed}
           onPress={() => navigation.navigate('OnboardingAreaPreview' as never)}
           testID="onboarding-permissions-continue"
         />
