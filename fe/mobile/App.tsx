@@ -20,10 +20,7 @@ import { connectivityMonitor } from './src/services/sync/connectivityMonitor.ins
 import { ConnectivityBanner } from './src/components/common/ConnectivityBanner';
 import fcmService from './src/services/notifications/fcmService';
 import { NBToastProvider } from './src/components/nb';
-import {
-  ErrorBoundary,
-  PermissionRevocationBanner,
-} from './src/components/common';
+import { ErrorBoundary } from './src/components/common';
 import { locationTracker } from './src/services/location';
 import { useAppSelector } from './src/store/hooks';
 
@@ -120,11 +117,6 @@ function AppContent(): React.JSX.Element {
       {/* Phase 4-2 (M2): three-state ConnectivityBanner sits above the
           navigator so it persists across screen transitions. */}
       <ConnectivityBanner monitor={connectivityMonitor} />
-      {/* Phase 4 M3a+b — runtime re-check for revoked permissions. The
-          OB-2 onboarding handles first-install grants; this banner handles
-          the case where a logged-in user revokes a permission later from
-          system Settings. Hook re-evaluates on every foreground transition. */}
-      <PermissionRevocationBanner enabled={isAuthenticated && !isRestoring} />
       <RootNavigator />
       {/* Global toast renderer — replaces ad-hoc Alert/inline NBAlert usage. */}
       <NBToastProvider />

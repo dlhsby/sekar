@@ -10,8 +10,8 @@
  * location · camera · gallery (location is requested before background location).
  */
 
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { AppState, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NBButton, NBText, type NBTextColor } from '../../components/nb';
@@ -127,7 +127,50 @@ export function OnboardingPermissionsScreen(): React.JSX.Element {
     return init;
   });
 
+  // Re-read actual status on foreground return — catches permissions the user
+  // grants from system Settings (notably background location on Android 11+,
+  // which has no inline prompt). Only upgrades to 'granted', never downgrades.
+  const refresh = useCallback(async () => {
+    const all = await permissionManager.checkAllPermissions();
+    setStatuses((s) => ({
+      ...s,
+      notifications: all.notifications.granted ? 'granted' : s.notifications,
+      location: all.location.granted ? 'granted' : s.location,
+      background_location: all.backgroundLocation.granted ? 'granted' : s.background_location,
+      camera: all.camera.granted ? 'granted' : s.camera,
+      gallery: all.gallery.granted ? 'granted' : s.gallery,
+    }));
+  }, []);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') void refresh();
+    });
+    return () => sub.remove();
+  }, [refresh]);
+
   const grant = async (row: PermRow) => {
+    // Background location: needs foreground location first, and on Android 11+
+    // can only be granted via Settings ("Izinkan sepanjang waktu").
+    if (row.key === 'background_location') {
+      const fg = await permissionManager.requestLocationPermission();
+      setStatuses((s) => ({ ...s, location: fg.granted ? 'granted' : 'denied' }));
+      if (!fg.granted) {
+        setStatuses((s) => ({ ...s, background_location: 'denied' }));
+        return;
+      }
+      const bg = await permissionManager.requestBackgroundLocationPermission();
+      if (bg.granted) {
+        setStatuses((s) => ({ ...s, background_location: 'granted' }));
+      } else {
+        // Mark addressed (so "Lanjut" isn't trapped) and send to Settings; the
+        // foreground re-check upgrades the pill if the user allows it there.
+        setStatuses((s) => ({ ...s, background_location: 'denied' }));
+        await permissionManager.openSettings();
+      }
+      return;
+    }
+
     try {
       const res = await row.request();
       setStatuses((s) => ({ ...s, [row.key]: res.granted ? 'granted' : 'denied' }));
