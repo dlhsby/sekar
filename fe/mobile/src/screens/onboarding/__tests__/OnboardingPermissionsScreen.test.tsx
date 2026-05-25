@@ -14,6 +14,7 @@ const mockReq = {
   camera: jest.fn(),
   gallery: jest.fn(),
 };
+const notGranted = { granted: false };
 jest.mock('../../../services/permissions', () => ({
   permissionManager: {
     requestNotificationPermission: () => mockReq.notifications(),
@@ -21,10 +22,18 @@ jest.mock('../../../services/permissions', () => ({
     requestBackgroundLocationPermission: () => mockReq.background_location(),
     requestCameraPermission: () => mockReq.camera(),
     requestGalleryPermission: () => mockReq.gallery(),
+    checkAllPermissions: async () => ({
+      notifications: notGranted,
+      location: notGranted,
+      backgroundLocation: notGranted,
+      camera: notGranted,
+      gallery: notGranted,
+    }),
   },
 }));
 
 const KEYS = ['notifications', 'location', 'background_location', 'camera', 'gallery'] as const;
+const REQUIRED = ['notifications', 'location', 'camera', 'gallery'] as const;
 
 describe('OnboardingPermissionsScreen', () => {
   beforeEach(() => {
@@ -49,24 +58,25 @@ describe('OnboardingPermissionsScreen', () => {
     expect(mockReq.location).toHaveBeenCalled();
   });
 
-  it('a declined permission shows DITOLAK', async () => {
-    mockReq.location.mockResolvedValue({ granted: false });
+  it('background location requests foreground first, then background', async () => {
     const { getByTestId } = render(<OnboardingPermissionsScreen />);
-    fireEvent.press(getByTestId('perm-grant-location'));
+    fireEvent.press(getByTestId('perm-grant-background_location'));
     await waitFor(() => {
-      expect(getByTestId('perm-status-location').props.children).toBe('DITOLAK');
+      expect(getByTestId('perm-status-background_location').props.children).toBe('DIBERIKAN');
     });
+    expect(mockReq.location).toHaveBeenCalled();
+    expect(mockReq.background_location).toHaveBeenCalled();
   });
 
-  it('Lanjut is gated until every permission is addressed (no skip)', async () => {
+  it('Lanjut is gated on the required permissions; background location is optional', async () => {
     const { getByTestId } = render(<OnboardingPermissionsScreen />);
 
     // Disabled at first — pressing does nothing.
     fireEvent.press(getByTestId('onboarding-permissions-continue'));
     expect(mockNavigate).not.toHaveBeenCalled();
 
-    // Address every permission, then it advances.
-    for (const k of KEYS) {
+    // Address only the required permissions (NOT background location).
+    for (const k of REQUIRED) {
       fireEvent.press(getByTestId(`perm-grant-${k}`));
       await waitFor(() => expect(getByTestId(`perm-status-${k}`)).toBeTruthy());
     }

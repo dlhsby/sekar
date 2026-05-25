@@ -147,7 +147,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.sm,
     paddingVertical: nbSpacing.xs,
   },
-  card: { gap: nbSpacing.xs },
+  // NBCard's default vertical padding is a compact 8px (for dense lists); the
+  // area card needs room to breathe, so give it comfortable 16px all round.
+  card: { gap: nbSpacing.xs, padding: nbSpacing.md },
   spacer: { flex: 1 },
 });
 

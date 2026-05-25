@@ -27,6 +27,7 @@ interface PermRow {
   why: string;
   icon: string;
   tint: string;
+  required: boolean;
   request: () => Promise<{ granted: boolean }>;
 }
 
@@ -37,6 +38,7 @@ const ROWS: PermRow[] = [
     why: 'Pengingat shift & penugasan.',
     icon: '🔔',
     tint: nbColors.bgAccentPink,
+    required: true,
     request: () => permissionManager.requestNotificationPermission(),
   },
   {
@@ -45,15 +47,8 @@ const ROWS: PermRow[] = [
     why: 'Presensi & geofence pos.',
     icon: '📍',
     tint: nbColors.bgAccentMint,
+    required: true,
     request: () => permissionManager.requestLocationPermission(),
-  },
-  {
-    key: 'background_location',
-    title: 'Lokasi latar belakang',
-    why: 'Pelacakan posisi selama shift berjalan.',
-    icon: '🛰️',
-    tint: nbColors.bgAccentGreen,
-    request: () => permissionManager.requestBackgroundLocationPermission(),
   },
   {
     key: 'camera',
@@ -61,6 +56,7 @@ const ROWS: PermRow[] = [
     why: 'Foto laporan & swafoto clock-in.',
     icon: '📷',
     tint: nbColors.bgAccentYellow,
+    required: true,
     request: () => permissionManager.requestCameraPermission(),
   },
   {
@@ -69,7 +65,20 @@ const ROWS: PermRow[] = [
     why: 'Lampirkan foto dari galeri.',
     icon: '🖼️',
     tint: nbColors.bgAccentLilac,
+    required: true,
     request: () => permissionManager.requestGalleryPermission(),
+  },
+  {
+    // Optional: Android 11+ grants "all the time" only from Settings, which is a
+    // poor onboarding experience — so this doesn't block "Lanjut". The app can
+    // re-prompt at clock-in where background tracking is actually used.
+    key: 'background_location',
+    title: 'Lokasi latar belakang',
+    why: 'Pelacakan rute selama shift berjalan.',
+    icon: '🛰️',
+    tint: nbColors.bgAccentGreen,
+    required: false,
+    request: () => permissionManager.requestBackgroundLocationPermission(),
   },
 ];
 
@@ -93,9 +102,16 @@ function PermissionRowView({
         <Text style={styles.picoIcon}>{row.icon}</Text>
       </View>
       <View style={styles.rowBody}>
-        <NBText variant="body-sm" color="black" style={styles.rowTitle}>
-          {row.title}
-        </NBText>
+        <View style={styles.titleRow}>
+          <NBText variant="body-sm" color="black" style={styles.rowTitle}>
+            {row.title}
+          </NBText>
+          {!row.required ? (
+            <NBText variant="mono-sm" color="gray500">
+              · Opsional
+            </NBText>
+          ) : null}
+        </View>
         <NBText variant="caption" color="gray600">
           {row.why}
         </NBText>
@@ -153,21 +169,15 @@ export function OnboardingPermissionsScreen(): React.JSX.Element {
     // Background location: needs foreground location first, and on Android 11+
     // can only be granted via Settings ("Izinkan sepanjang waktu").
     if (row.key === 'background_location') {
+      // Foreground location must be granted first, then attempt background inline.
+      // No Settings dump (poor UX) — background is optional; the AppState re-check
+      // upgrades the pill if the user later allows it from system Settings.
       const fg = await permissionManager.requestLocationPermission();
       setStatuses((s) => ({ ...s, location: fg.granted ? 'granted' : 'denied' }));
-      if (!fg.granted) {
-        setStatuses((s) => ({ ...s, background_location: 'denied' }));
-        return;
-      }
-      const bg = await permissionManager.requestBackgroundLocationPermission();
-      if (bg.granted) {
-        setStatuses((s) => ({ ...s, background_location: 'granted' }));
-      } else {
-        // Mark addressed (so "Lanjut" isn't trapped) and send to Settings; the
-        // foreground re-check upgrades the pill if the user allows it there.
-        setStatuses((s) => ({ ...s, background_location: 'denied' }));
-        await permissionManager.openSettings();
-      }
+      const bg = fg.granted
+        ? await permissionManager.requestBackgroundLocationPermission()
+        : { granted: false };
+      setStatuses((s) => ({ ...s, background_location: bg.granted ? 'granted' : 'denied' }));
       return;
     }
 
@@ -179,7 +189,11 @@ export function OnboardingPermissionsScreen(): React.JSX.Element {
     }
   };
 
-  const allProcessed = ROWS.every((r) => statuses[r.key] !== 'pending');
+  // "Lanjut" is gated on the required permissions only; background location is
+  // optional (can't be one-tapped on Android 11+).
+  const requiredAddressed = ROWS.filter((r) => r.required).every(
+    (r) => statuses[r.key] !== 'pending',
+  );
 
   return (
     <SafeAreaView style={styles.root} testID="onboarding-permissions-screen">
@@ -207,7 +221,7 @@ export function OnboardingPermissionsScreen(): React.JSX.Element {
           title="Lanjut"
           variant="primary"
           fullWidth
-          disabled={!allProcessed}
+          disabled={!requiredAddressed}
           onPress={() => navigation.navigate('OnboardingAreaPreview' as never)}
           testID="onboarding-permissions-continue"
         />
@@ -244,6 +258,7 @@ const styles = StyleSheet.create({
   },
   picoIcon: { fontSize: 20 },
   rowBody: { flex: 1 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs, flexWrap: 'wrap' },
   rowTitle: { fontWeight: '700' },
   pill: {
     borderWidth: nbBorders.widthThin,

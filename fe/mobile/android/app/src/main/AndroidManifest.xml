@@ -6,6 +6,9 @@
     <!-- Location permissions for GPS tracking -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Required so the OS offers "Allow all the time" for shift tracking. Without
+         this declared, the background-location request is silently unavailable. -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <!-- Camera permission for selfie capture -->
     <uses-permission android:name="android.permission.CAMERA" />
