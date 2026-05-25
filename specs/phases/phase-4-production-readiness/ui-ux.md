@@ -203,7 +203,12 @@ Per `illustrations.html § Splash screen`:
 - **"Lewati"** jumps to the **last slide** (it no longer redirects straight to Login); the user then taps "Mulai (Masuk)" to enter Login.
 - **Login is pushed (`navigate`), not replaced**, and `LoginScreen` shows a back button (`testID=login-back`, only when `canGoBack`) so the user can return to the carousel.
 
-**Reconciliations:** (1) WL-5's navy is the **illustration panel** background (`.scene-illust.deep`), not the whole screen. (2) Pagination reflects the **4-slide** carousel (WL-2…WL-5), not the hi-fi's "x/5" (which counted the now-separate splash). (3) The redundant top progress bars from the hi-fi were dropped in favor of the single footer dot pagination. (4) Body copy adopted from the hi-fi scene subtitles. WL-3/WL-4/WL-5 still use emoji placeholders pending `SceneChecklist` / `SceneRequests` / `SceneOffline`.
+**Reconciliations:** (1) WL-5's navy is the **illustration panel** background (`.scene-illust.deep`), not the whole screen. (2) Pagination reflects the **4-slide** carousel (WL-2…WL-5), not the hi-fi's "x/5" (which counted the now-separate splash). (3) The redundant top progress bars from the hi-fi were dropped in favor of the single footer dot pagination. (4) Body copy adopted from the hi-fi scene subtitles.
+
+**M3 revamp status — WL-3/4/5 scenes ✅ (2026-05-25):** all carousel illustrations now built (no emoji placeholders left); `Slide.scene` is required.
+- **WL-3** `scenes/SceneChecklist.tsx` — tilted (-1.5°) patrol checklist card (two done items struck through with sage check-boxes, two pending) + a 2/4 progress bar, on the accent-yellow panel.
+- **WL-4** `scenes/SceneRequests.tsx` — two stacked, tilted permohonan cards (one DISETUJUI / green pill, one DIPROSES / stone pill) on the accent-pink panel.
+- **WL-5** `scenes/SceneOffline.tsx` — navy panel + faint diagonal stripe wash + white icon box with a wifi-off mark (red slash) + a "3 ITEM ANTRI" queue chip.
 
 ### 3.4 Empty-state illustrations (6 SVGs)
 

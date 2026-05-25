@@ -4,6 +4,20 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## May 25, 2026 — M3 entry-flow visual revamp: WL-1 splash + native boot splash + WL-2…5 carousel
+
+Pixel-fidelity rebuild of the cold-start journey against `design/project/hifi-mobile.html`, working screen-by-screen with a checkpoint after each. Three commits.
+
+**WL-1 splash + native boot splash (commit `3f390c6`).** WL-1 is now a **dedicated screen**, not a carousel slide. `components/auth/SplashSlide.tsx` renders the Green-variant lockup — sage→deep-green `react-native-svg` gradient, tilted (-4°) white pinwheel box (`components/brand/SekarPinwheel.tsx`, ported from the hi-fi WL-1 SVG), "SEKAR" wordmark, tagline, `components/common/PulsingDots.tsx`. **Reconciliation:** hi-fi tagline "SISTEM KEAMANAN AREA" is a wrong back-formation → used the real "SISTEM EVALUASI KERJA SATGAS RTH". Native boot splash done **dependency-free** (launch-theme technique, no `react-native-bootsplash`): Android `BootTheme` windowBackground → `bootsplash.xml` (sage + centered `pinwheel_logo` VectorDrawable) + Android-12 `windowSplashScreen*` using a **padded `splash_icon`** so the circular mask doesn't crop the blades; `MainActivity` swaps to `AppTheme` in `onCreate`; iOS `LaunchScreen.storyboard` → sage + "SEKAR" (pinwheel asset is an iOS follow-up). **Entry-flow restructure (`RootNavigator`):** logged-out stack = `Splash → WelcomeCarousel → Login → ForgotPassword`; the splash + carousel **always** lead the logged-out flow (dropped the `carousel_seen` gate); logged-in users skip straight to Home. **Build guard:** `app/build.gradle` `stripStrayResourceDocs` deletes stray `*.md` from `res/` before `preBuild` (the claude-mem plugin regenerates `CLAUDE.md` per dir; one under `res/` breaks `mergeResources`).
+
+**WL-2 carousel + split swipe (commit `d96aeea`).** Per client feedback the carousel is **split**: each slide's illustration panel (`CarouselScenePanel`) + title (one sage-accent word) + subtitle swipe together; only the dot pagination (`PaginationDots`) + CTAs are pinned in a fixed footer reflecting the active slide. CTAs: WL-2…4 = "Lanjut" (advance) + "Lewati" (ghost); WL-5 = single "Mulai (Masuk)". "Lewati" jumps to the **last slide** (not straight to Login). Login is **pushed** (not replaced) and gained a back button (`testID=login-back`, shown when `canGoBack`) → returns to the carousel. Removed the old all-in-one `OnboardingSlide`.
+
+**WL-3/4/5 scenes + description-crop fix (this commit).** All carousel illustrations built (no emoji left; `Slide.scene` required): `SceneLiveMap` (WL-2 mini map — grid + 5 status pins + Aktif/Off-area chips), `SceneChecklist` (WL-3 tilted checklist + 2/4 progress), `SceneRequests` (WL-4 two stacked permohonan cards + DISETUJUI/DIPROSES pills), `SceneOffline` (WL-5 navy panel + wifi-off icon box + "3 ITEM ANTRI" chip). **Fix:** the slide description was clipped because `swipeArea` had `paddingTop` while items were sized to the full measured height — moved padding onto the item (top+bottom) so the FlatList viewport and item height match.
+
+**Reconciliations vs hi-fi:** WL-5 navy is the illustration-panel bg (not the whole screen); pagination reflects the real 4-slide carousel (not "x/5", which counted the now-separate splash); dropped the hi-fi's redundant top progress bars; "DIPROSES" pill uses `gray200` ≈ design's stone `paper-2`; scene titles use the `h1` token (28px) vs hi-fi 26. Tests: WelcomeCarousel 5/5, SplashScreen 2/2, RootNavigator updated; auth+nav suites 57/57; `tsc` + ESLint clean on changed files. Specs synced in `ui-ux.md` §3.3 + ambiguities #1/#2/#9.
+
+---
+
 ## May 25, 2026 — M1 + M2 checkpoint: design-token reconciliation + NB component hardening + security review
 
 User-requested checkpoint scoped to **M1 + M2 only** (M3 explicitly out of scope): verify the milestones, reconcile design tokens to the canonical `design/` bundle, harden the NB component library for reusability, run a full quality + security review of the M1/M2 backend, and commit the self-contained slice.

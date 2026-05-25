@@ -17,7 +17,6 @@ import {
   Dimensions,
   FlatList,
   StyleSheet,
-  Text,
   View,
   type LayoutChangeEvent,
   type NativeScrollEvent,
@@ -30,6 +29,9 @@ import { NBButton, NBText } from '../../components/nb';
 import { CarouselScenePanel } from '../../components/auth/CarouselScenePanel';
 import { PaginationDots } from '../../components/auth/PaginationDots';
 import { SceneLiveMap } from '../../components/auth/scenes/SceneLiveMap';
+import { SceneChecklist } from '../../components/auth/scenes/SceneChecklist';
+import { SceneRequests } from '../../components/auth/scenes/SceneRequests';
+import { SceneOffline } from '../../components/auth/scenes/SceneOffline';
 import { markCarouselSeen } from '../../services/storage/asyncStorageKeys';
 
 const { width } = Dimensions.get('window');
@@ -40,8 +42,7 @@ interface Slide {
   highlight: string;
   body: string;
   illustrationBg?: string;
-  scene?: React.ReactNode;
-  emoji?: string; // placeholder until the slide's scene illustration is built
+  scene: React.ReactNode;
 }
 
 const SLIDES: Slide[] = [
@@ -57,7 +58,7 @@ const SLIDES: Slide[] = [
     title: 'Tugas terstruktur tiap shift',
     highlight: 'terstruktur',
     body: 'Korlap kasih briefing & checklist. Selesai patroli, tinggal tap.',
-    emoji: '📋',
+    scene: <SceneChecklist />,
     illustrationBg: nbColors.bgAccentYellow,
   },
   {
@@ -65,7 +66,7 @@ const SLIDES: Slide[] = [
     title: 'Permohonan kecamatan, cepat',
     highlight: 'cepat',
     body: 'Ajukan perantingan langsung dari lapangan. Admin lihat, putuskan.',
-    emoji: '📨',
+    scene: <SceneRequests />,
     illustrationBg: nbColors.bgAccentPink,
   },
   {
@@ -73,7 +74,7 @@ const SLIDES: Slide[] = [
     title: 'Tetap jalan tanpa sinyal',
     highlight: 'jalan',
     body: 'Catatan tersimpan offline. Sinkron otomatis saat sinyal balik.',
-    emoji: '📡',
+    scene: <SceneOffline />,
     illustrationBg: nbColors.navy,
   },
 ];
@@ -130,11 +131,7 @@ export function WelcomeCarouselScreen({ navigation }: Props): React.JSX.Element 
     ({ item }: { item: Slide }) => (
       <View style={[styles.slidePage, { width, height: areaHeight }]}>
         <CarouselScenePanel bg={item.illustrationBg} testID={`carousel-slide-${item.id}`}>
-          {item.scene ?? (
-            <Text style={styles.illoEmoji} accessibilityLabel={item.title}>
-              {item.emoji}
-            </Text>
-          )}
+          {item.scene}
         </CarouselScenePanel>
         <SlideTitle title={item.title} highlight={item.highlight} />
         <NBText variant="body-sm" color="gray700" style={styles.body}>
@@ -189,9 +186,14 @@ export function WelcomeCarouselScreen({ navigation }: Props): React.JSX.Element 
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: nbColors.bgCanvas },
-  swipeArea: { flex: 1, paddingTop: nbSpacing.md },
-  slidePage: { paddingHorizontal: nbSpacing.lg },
-  illoEmoji: { fontSize: 96 },
+  // No padding here: areaHeight (measured) must equal the FlatList viewport so
+  // item height matches and the slide's description isn't clipped at the bottom.
+  swipeArea: { flex: 1 },
+  slidePage: {
+    paddingHorizontal: nbSpacing.lg,
+    paddingTop: nbSpacing.md,
+    paddingBottom: nbSpacing.md,
+  },
   title: { marginTop: nbSpacing.md, marginBottom: nbSpacing.sm },
   body: { marginBottom: nbSpacing.sm },
   footer: { paddingHorizontal: nbSpacing.lg, paddingBottom: nbSpacing.lg, paddingTop: nbSpacing.sm },
