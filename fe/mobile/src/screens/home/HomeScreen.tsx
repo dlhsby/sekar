@@ -12,16 +12,17 @@
 import React from 'react';
 import { useAppSelector } from '../../store/hooks';
 import { FieldHomeScreen } from './FieldHomeScreen';
+import { CoordinatorHomeScreen } from './CoordinatorHomeScreen';
 
 export function HomeScreen(): React.JSX.Element {
   const role = useAppSelector((state) => state.auth.user?.role);
 
   switch (role) {
-    // case 'korlap':
-    // case 'kepala_rayon':
-    //   return <CoordinatorHomeScreen />;
+    case 'korlap':
+    case 'kepala_rayon':
+      return <CoordinatorHomeScreen />;
     // case 'admin_data':
-    //   return <AdminDataHomeScreen />;
+    //   return <AdminDataHomeScreen />;  // HOME-3, next checkpoint
     default:
       return <FieldHomeScreen />;
   }

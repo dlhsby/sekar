@@ -22,6 +22,19 @@ First slice of the **Home-as-role-aware-anchor** revamp (full plan: shared chrom
 
 ---
 
+## May 25, 2026 — M3 Home revamp · Checkpoint 3: HOME-2 coordinator dashboard
+
+New `src/screens/home/CoordinatorHomeScreen.tsx` (hi-fi **HOME-2**) for **korlap + kepala_rayon**, wired into the dispatcher (`HomeScreen` now routes korlap/kepala_rayon → Coordinator; admin_data still falls through to Field pending HOME-3). Reads the role-scoped monitoring slice — `fetchLiveUsers(undefined)` on mount + focus (the backend scopes `getLiveUsers` to the caller's team), reusing the 2a widgets:
+- **Team-status hero** (mint card): "TIM HARI INI" + a `{active}/{total} aktif` `StatusPill` + an avatar grid (initials of the first 6 live users + "+N") + a "Lihat semua →" button → the Monitoring tab.
+- **KPI grid (2×2)** from `statusCounts`: Tim aktif (ok, "dari {total}") · Di luar area (bad, + first 2 names) · Tidak hadir (warn) · Offline (neutral).
+- **Peringatan** — `HomeListRow`s **derived** from `liveUsers`: out-of-area (`bad` "Di luar area") + missing (`warn` "Tidak hadir"), with relative last-seen + area; tap → Monitoring. Section hidden when there are none.
+
+**Reconciliations vs hi-fi:** the hi-fi KPI tiles "Tugas tim" + "Perantingan" are **dropped** — neither has a clean korlap-scoped aggregate in the mobile monitoring slice; the 2×2 uses the real 5-status breakdown instead. The hi-fi **"SLA 4 jam" alert is omitted** (no SLA feed on mobile); alerts are derived purely from live-user status. "Lihat semua" routes to the existing Monitoring map rather than a bespoke roster.
+
+**Tests:** `CoordinatorHomeScreen` 4 (hero + pill, KPI tiles, derived alerts, empty-alerts) + dispatcher test updated (korlap/kepala_rayon → coordinator; satgas/linmas/admin_data/undefined → field). Full mobile suite **4170 passed / 0 failed**; `tsc` + ESLint clean on the new files. **Next:** HOME-3 (admin_data) perantingan-queue dashboard.
+
+---
+
 ## May 25, 2026 — M3 Home revamp · Checkpoint 2b: HOME-1 field dashboard
 
 Rebuilt `FieldHomeScreen` body to the hi-fi **HOME-1** using the Checkpoint-2a widgets; data loading, the live timer, the 5-min a11y announcement, and the modals are all preserved.
