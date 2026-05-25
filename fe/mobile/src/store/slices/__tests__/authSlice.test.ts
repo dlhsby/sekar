@@ -21,6 +21,7 @@ describe('authSlice', () => {
     isLoading: false,
     isRestoring: true,
     error: null,
+    onboardingCompleted: false,
   };
 
   const mockUser = {
