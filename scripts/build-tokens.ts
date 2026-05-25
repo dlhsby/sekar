@@ -129,8 +129,8 @@ interface ViewStyleShape {
 }
 
 function parseSpace(v: string): number | string {
-  const m = /^(\d+)px$/.exec(v);
-  if (m) return parseInt(m[1], 10);
+  const m = v.match(/^(\d+(?:\.\d+)?)px$/);
+  if (m) return parseFloat(m[1]);
   if (v === '0') return 0;
   return v;
 }

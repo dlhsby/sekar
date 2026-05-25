@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { View, Text, StyleSheet, StyleProp, ViewStyle, TextStyle } from 'react-native';
 import {
   nbColors,
   nbBorders,
@@ -34,9 +34,9 @@ export interface NBBadgeProps {
   /** Size preset */
   size?: NBBadgeSize;
   /** Custom container style */
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   /** Custom text style */
-  textStyle?: TextStyle;
+  textStyle?: StyleProp<TextStyle>;
   /** Test ID for testing */
   testID?: string;
   /** Accessibility label override */

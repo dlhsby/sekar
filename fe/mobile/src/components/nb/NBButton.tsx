@@ -14,6 +14,7 @@ import {
   View,
   StyleSheet,
   ActivityIndicator,
+  StyleProp,
   ViewStyle,
   TextStyle,
   AccessibilityProps,
@@ -65,9 +66,9 @@ export interface NBButtonProps extends AccessibilityProps {
   /** Full width button */
   fullWidth?: boolean;
   /** Custom container style */
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   /** Custom text style */
-  textStyle?: TextStyle;
+  textStyle?: StyleProp<TextStyle>;
   /** Test ID for testing */
   testID?: string;
 }

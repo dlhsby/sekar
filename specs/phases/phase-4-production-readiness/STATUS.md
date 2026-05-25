@@ -1,9 +1,9 @@
 # Phase 4: Production Readiness, Rebrand & UI/UX Revamp — Implementation Status
 
-**Status:** 🟡 Not Started — spec re-baselined May 22, 2026
-**Last Updated:** May 22, 2026
-**Overall Progress:** 0%
-**Branch:** TBD
+**Status:** 🔵 In Progress — Milestone 3a+b (entry flow) shipped May 24; M1+M2 checkpoint review May 25, 2026
+**Last Updated:** May 25, 2026 (M1+M2 checkpoint: design-token reconciliation to design/ + NB component hardening + security review — see [`status_progress.md`](./status_progress.md) for the authoritative shipped trail)
+**Overall Progress:** ~50% (M1: 4-0 + 4-1 · M2: 4-2 + 4-3 + 4-7 + Sentry + BullMQ + coverage · M3a+b: entry-flow gates + ADRs 040-042 Accepted + pre-existing lint/typecheck clear)
+**Branch:** main (M1 + M2 + M3a+b committed in-tree pending PR)
 **Related ADRs:** [ADR-016](../../architecture/decisions/ADR-016-redis-websocket-scaling.md), [ADR-017](../../architecture/decisions/ADR-017-maestro-mobile-e2e.md), [ADR-018](../../architecture/decisions/ADR-018-export-format-strategy.md), [ADR-019](../../architecture/decisions/ADR-019-offline-connectivity-model.md), **NEW** [ADR-040](../../architecture/decisions/ADR-040-design-system-v2.1.md), [ADR-041](../../architecture/decisions/ADR-041-forgot-password-contact-admin.md), [ADR-042](../../architecture/decisions/ADR-042-onboarding-flow.md), [ADR-043](../../architecture/decisions/ADR-043-production-gap-closure.md)
 
 ---
@@ -47,32 +47,33 @@
 
 ## Overall Progress
 
-| Sub-Phase | Name | Tasks | Complete | Progress |
-|-----------|------|-------|----------|----------|
-| **4-0** | **Design Bundle Adoption + Token Re-baseline** (NEW) | 12 | 0 | 0% |
-| **4-R** | **UI/UX Revamp Sweep (mobile + web)** (NEW) | 50 | 0 | 0% |
-| **4-V** | **Production-Readiness Gap Audit** (NEW) | 5 | 0 | 0% |
-| 4-1 | Infrastructure & Evaluation (trimmed) | 6 | 0 | 0% |
-| 4-2 | Offline Sync Completion | 9 | 0 | 0% |
-| 4-3 | Push Notification — Hardening (renamed) | 6 | 0 | 0% |
-| 4-4 | Worker Reassignment Workflow | 8 | 0 | 0% |
-| 4-5 | Export & Import Data | 9 | 0 | 0% |
-| 4-6 | Real Data Seeder & Data Management | 7 | 0 | 0% |
-| 4-7 | Refactor, Optimization & Security | 17 | 0 | 0% |
-| 4-8 | Mobile & Web Production Hardening (trimmed) | 6 | 0 | 0% |
-| 4-9 | E2E Testing | 5 | 0 | 0% |
-| 4-10 | Documentation Sync | 9 | 0 | 0% |
-| **Total** | | **149** | **0** | **0%** |
+> **Reconciliation note (May 25, 2026):** the per-task counts in the grid below are the original *planning* breakdown. They lagged reality — M1, M2 and M3a–d have shipped slices since. The **authoritative "what shipped when" trail is [`status_progress.md`](./status_progress.md)**; the `Milestone` column here maps each sub-phase to the milestone that delivered (or will deliver) it. Per-task tables further down are being reconciled milestone-by-milestone; M1+M2 rows are reconciled, M3+ rows still reflect the original plan.
 
-### Sub-Phase 4-0: Design Bundle Adoption + Token Re-baseline ⏳ NOT STARTED
+| Sub-Phase | Name | Milestone | Status |
+|-----------|------|-----------|--------|
+| **4-0** | **Design Bundle Adoption + Token Re-baseline** | M1 + (4-0 reconciled to design/ May 25) | 🟡 Token pipeline ✅ v2.1.1 (sage + hard-edge + 5-status + 9 role + lilac, matched to `design/`); brand-asset integration (icons/splash/illustrations B1-B6) ⏳ |
+| **4-R** | **UI/UX Revamp Sweep (mobile + web)** | M3a–d | 🟡 Mobile entry-flow + 22-screen v2.1 sweep ✅; web revamp ⏳; brand assets ⏳ |
+| **4-V** | **Production-Readiness Gap Audit** | post-M3 | ⏳ Not started |
+| 4-1 | Infrastructure & Evaluation (trimmed) | M1 | 🟡 Health module (`/live`,`/ready`+real 503) ✅; Sentry + BullMQ scaffolding ✅; structured-logging/tracing items ⏳ |
+| 4-2 | Offline Sync Completion | M2 | 🟢 3-state connectivity + banner + queue expansion ✅ (staging field-test = 4-V) |
+| 4-3 | Push Notification — Hardening | M2 | 🟢 5 FCM triggers + `fcm-retry` BullMQ queue ✅ (processor stub; staging e2e = 4-V) |
+| 4-4 | Worker Reassignment Workflow | — | ⏳ Not started |
+| 4-5 | Export & Import Data | — | ⏳ Not started |
+| 4-6 | Real Data Seeder & Data Management | — | ⏳ Not started |
+| 4-7 | Refactor, Optimization & Security | M2 (partial) | 🟡 JWT refresh rotation + Redis blacklist + **strategy-level revocation enforcement (May 25)** ✅; remaining refactor/optimization/security items ⏳ |
+| 4-8 | Mobile & Web Production Hardening (trimmed) | — | ⏳ Not started |
+| 4-9 | E2E Testing | M3d (deferred) | ⏳ Maestro flows not started |
+| 4-10 | Documentation Sync | ongoing | 🟡 Partial (this checkpoint syncs STATUS + design-tokens + COMPLETION_STATUS) |
+
+### Sub-Phase 4-0: Design Bundle Adoption + Token Re-baseline 🟡 TOKEN PIPELINE COMPLETE (brand assets pending)
 
 | Task | Status | Notes |
 |------|--------|-------|
 | A1. Vendor `design/` bundle | ✅ | Done May 22 — 224 KB from Claude Design |
-| A2. Regenerate `specs/ui-ux/tokens.json` from `hifi-shared.css` | ⏳ | Script-assisted port |
-| A3. Update `specs/ui-ux/design-tokens.md` v2.1 note | ⏳ | Document yellow→green diff |
-| A4. Run `npm run tokens:build` | ⏳ | Regenerates web `tokens.css` + mobile `tokens.ts` |
-| A5. Visual diff snapshot | ⏳ | Story-driven, key NB primitives |
+| A2. Regenerate `specs/ui-ux/tokens.json` from `hifi-shared.css` | ✅ | M1 baseline (v2.1.0) + **May 25 fidelity reconciliation to v2.1.1**: radius/shadow/border matched to `hifi-shared.css`, 9 role accents + `accent.lilac` added |
+| A3. Update `specs/ui-ux/design-tokens.md` v2.1 note | ✅ | v2.1 + §v2.1.1 reconciliation appendix |
+| A4. Run `npm run tokens:build` | ✅ | Regenerated web `tokens.css` + mobile `tokens.ts`; `tokens:verify` clean; `test:tokens` 40/40 |
+| A5. Visual diff snapshot | ⏳ | Story-driven, key NB primitives (deferred to a visual-regression sub-phase) |
 | B1. Extract pinwheel SVG to brand assets | ⏳ | Mobile + web `brand/sekar-mark.svg` |
 | B2. Replace app icon (iOS + Android) | ⏳ | iOS AppIcon, Android adaptive icon |
 | B3. Replace splash screen (light/dark/green) | ⏳ | iOS LaunchScreen, Android splash |

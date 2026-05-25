@@ -1,8 +1,8 @@
 # Design Tokens — Platform-Wide Foundation
 
 **Version:** 2.1 (Phase 4 rebrand re-baseline — see [ADR-040](../architecture/decisions/ADR-040-design-system-v2.1.md))
-**Status:** Accepted v1.0 (Phase 3 M1-R) · Proposed v2.1 (Phase 4 Sub-Phase 4-0)
-**Last Updated:** 2026-05-22 (v2.1 diff added — see §v2.1 below; full body reflects v1.0)
+**Status:** Accepted v2.1 (Phase 4 Sub-Phase 4-0, applied 2026-05-23) · reconciled to design/ as v2.1.1 (2026-05-25) · prior: Accepted v1.0 (Phase 3 M1-R)
+**Last Updated:** 2026-05-25 (`tokens.json` `_meta.version` → 2.1.1: radius/shadow/border reconciled to `design/`, role + lilac tokens added — see §v2.1.1 below)
 **Owner:** Design systems
 **Design language:** [Neo Brutalism 2.0](./neo-brutalism.md)
 **See also:** [responsive-design.md](./responsive-design.md), [typography.md](./typography.md), [accessibility.md](./accessibility.md)
@@ -37,6 +37,34 @@ Detailed token diff lives in [`specs/phases/phase-4-production-readiness/ui-ux.m
 - New tokens added: `--primary-deep`, `--primary-hover`, `--primary-soft`, `--brand-sun` / `--accent-yellow`, `--navy`, `--secondary`, full status-* and role-* sets.
 - Brand identity ships alongside tokens: pinwheel SVG, app icons, splash variants, 6 empty-state illustrations, 3 onboarding scenes — see [`design/project/illustrations.html`](../../design/project/illustrations.html).
 - App-store re-submission required (icon + splash change).
+
+### v2.1.1 — design/ fidelity reconciliation (May 25, 2026)
+
+A checkpoint audit of `tokens.json` against the canonical [`design/project/hifi-shared.css`](../../design/project/hifi-shared.css) found drift that this revision corrects. `_meta.version` bumped `2.1.0 → 2.1.1`. Amends [ADR-040](../architecture/decisions/ADR-040-design-system-v2.1.md) (values only; generator + three-layer model unchanged).
+
+**Value corrections (now match `hifi-shared.css` exactly):**
+
+| Token | was (2.1.0) | now (design/) |
+|-------|-------------|---------------|
+| `radius.base` | 6px | **10px** (`--r-base`) |
+| `radius.md` | 8px | **14px** (`--r-md`) |
+| `radius.lg` | 12px | **20px** (`--r-lg`) |
+| `shadow.sm` | 4/4 | **3/3** (`--sh-sm`) |
+| `shadow.md` | 6/6 | **4/4** (`--sh-md`) |
+| `shadow.lg` | 8/8 | **6/6** (`--sh-lg`) |
+| `shadow.hover` | 8/8 | **6/6** (tracks new `lg`) |
+| `border.width.thick` | 3px | **2.5px** (`--bw-thick`) |
+
+`shadow.xs` (2/2), `shadow.xl` (10/10), `shadow.active` (2/2) already matched.
+
+**Additive (were defined + used in `design/` but missing from `tokens.json`):**
+
+- 9 role accents under `color.role.*` → web `--color-role-{satgas,linmas,korlap,admin-data,kepala,top,admin-sys,superadmin,kecamatan}`, mobile `nbColors.role{Satgas,…}`. Values per `hifi-shared.css` lines 50-59 (used by `.av.*` avatar tints).
+- `bg.accent.lilac` `#E8DFF5` → web `--color-bg-accent-lilac`, mobile `nbColors.bgAccentLilac` (used by `.pill.lilac` / `.card.lilac`).
+
+**Generator note:** `scripts/build-tokens.ts` `parseSpace()` extended to parse decimal `px` (so `2.5px` emits the numeric `2.5` for RN `borderWidth`). No structural/schema change; role tokens ride the existing `color` map via explicit `webVar`.
+
+> The radius/shadow value shift repaints every card/button/input (larger corners, slightly tighter shadows). Token consumers update automatically; no per-component code change was required.
 
 ---
 

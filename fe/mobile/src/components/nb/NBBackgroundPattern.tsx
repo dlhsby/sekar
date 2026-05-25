@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
+import { View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import Svg, { Rect, Circle, Line, Defs, Pattern as SvgPattern } from 'react-native-svg';
 import { nbColors } from '../../constants/nbTokens';
 
@@ -24,7 +24,7 @@ interface NBBackgroundPatternProps {
   /** Pattern opacity (0-1) */
   opacity?: number;
   /** Custom container style */
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   /** Children to render on top of pattern */
   children?: React.ReactNode;
 }

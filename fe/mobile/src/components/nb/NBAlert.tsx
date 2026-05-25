@@ -12,6 +12,7 @@ import {
   View,
   Text,
   StyleSheet,
+  StyleProp,
   ViewStyle,
   TextStyle,
   Platform,
@@ -47,11 +48,11 @@ export interface NBAlertProps {
   /** Action button handler */
   onAction?: () => void;
   /** Custom container style */
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   /** Custom title style */
-  titleStyle?: TextStyle;
+  titleStyle?: StyleProp<TextStyle>;
   /** Custom message style */
-  messageStyle?: TextStyle;
+  messageStyle?: StyleProp<TextStyle>;
   /** Test ID for testing */
   testID?: string;
 }

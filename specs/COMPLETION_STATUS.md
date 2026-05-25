@@ -1,9 +1,9 @@
 # SEKAR Project - Comprehensive Status
 
-**Last Updated:** May 22, 2026 (Phase 4 spec re-baselined with Design System v2.1 rebrand + production-readiness gap audit; Phase 3 tail ~70% — being finalised in a separate session)
-**Current Phase:** Phase 3 Plants Management + Monitoring Rebuild + Public Intake — 🟡 In Progress (~70% weighted)
-**Next Phase:** Phase 4 Production Readiness, **Rebrand & UI/UX Revamp** (67-87 dev-days; 13 sub-phases including 4-0 Token Re-baseline, 4-R UI/UX Revamp, 4-V Gap Audit, plus 4-1…4-10; ADRs 040-043 NEW)
-**Overall Progress:** Phase 1: 100% ✅ | Phase 2B: 100% ✅ **DEPLOYED** | Phase 2C: 100% ✅ **DEPLOYED** | Phase 2D: 100% ✅ **DEPLOYED** | Phase 2E: 100% ✅ **DEPLOYED (Apr 25, 2026)** | Phase 3: ~48% (M1-R 5/5 ✅ + 3-1 ✅ + 3-2 ✅ + 3-3 ✅ + 3-4 ✅ + 3-5 ✅, 10/21) | Phase 4: 0% | Phase 5: 0%
+**Last Updated:** May 23, 2026 (Phase 3 gap audit + Waves 1–7 remediation complete — see `specs/phases/phase-3-plants-monitoring-rebuild/GAP-AUDIT-2026-05-23.md` and `status_reviews.md` § "Phase 3 Sign-Off Review". Phase 3 now ready for closure; 9 items deferred to Phase 4 with explicit reasons.)
+**Current Phase:** Phase 3 Plants Management + Monitoring Rebuild + Public Intake — ✅ **Ready for sign-off** (2026-05-23)
+**Next Phase:** Phase 4 Production Readiness, **Rebrand & UI/UX Revamp** (67-87 dev-days; 13 sub-phases including 4-0 Token Re-baseline, 4-R UI/UX Revamp, 4-V Gap Audit, plus 4-1…4-10; ADRs 040-043 NEW). **Sub-phase 4-3 now also owns the 9 Phase 3 deferrals** (seeds mobile + web, capacity web, plants web, kecamatan web submit, overdue alerts UX/FCM, cluster-marker rollout, visreg infra, CSV backfill execution).
+**Overall Progress:** Phase 1: 100 % ✅ | Phase 2B: 100 % ✅ **DEPLOYED** | Phase 2C: 100 % ✅ **DEPLOYED** | Phase 2D: 100 % ✅ **DEPLOYED** | Phase 2E: 100 % ✅ **DEPLOYED (Apr 25, 2026)** | Phase 3: ✅ **Sign-off ready (May 23, 2026)** — 15 clean + 5 done-with-caveats (Phase 4 polish) + 1 scaffolded (3-13). All Waves 1–7 remediations landed. | Phase 4: ~50 % (M1 + M2 + M3a+b shipped May 23-24, 2026 — token re-baseline + infra + offline sync + FCM full + JWT rotation + Sentry + BullMQ + coverage + entry-flow gates (WL-1…5 + AS-4/5 + OB-1…3) + ADRs 040-042 Accepted. **May 25 M1+M2 checkpoint:** design tokens reconciled to `design/` (v2.1.1 — radius/shadow/border + 9 role accents + lilac), NB primitives hardened to `StyleProp`, security review fixed a CRITICAL JWT-blacklist gap + health `/ready` 503. See `phases/phase-4-production-readiness/status_progress.md`) | Phase 5: 0 %
 
 ---
 

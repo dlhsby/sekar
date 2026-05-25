@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   TextInputProps,
+  StyleProp,
   ViewStyle,
   TextStyle,
   NativeSyntheticEvent,
@@ -41,11 +42,11 @@ export interface NBPasswordInputProps extends Omit<TextInputProps, 'style' | 'se
   /** Helper text */
   helperText?: string;
   /** Custom container style */
-  containerStyle?: ViewStyle;
+  containerStyle?: StyleProp<ViewStyle>;
   /** Custom input style */
-  inputStyle?: TextStyle;
+  inputStyle?: StyleProp<TextStyle>;
   /** Custom label style */
-  labelStyle?: TextStyle;
+  labelStyle?: StyleProp<TextStyle>;
   /** Test ID for testing */
   testID?: string;
   /** Show password label (accessibility) */

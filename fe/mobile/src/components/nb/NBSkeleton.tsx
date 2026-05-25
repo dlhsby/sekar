@@ -12,6 +12,7 @@ import {
   View,
   Animated,
   StyleSheet,
+  StyleProp,
   ViewStyle,
   Easing,
 } from 'react-native';
@@ -34,7 +35,7 @@ export interface NBSkeletonProps {
   /** Custom height (number in pixels) */
   height?: number;
   /** Custom container style */
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   /** Test ID for testing */
   testID?: string;
 }

@@ -33,7 +33,7 @@ describe('scripts/build-tokens', () => {
     });
 
     it('emits hard-edge shadow utilities (zero blur)', () => {
-      expect(css).toContain('--shadow-nb-md: 6px 6px 0 #1C1917;');
+      expect(css).toContain('--shadow-nb-md: 4px 4px 0 #1C1917;');
     });
 
     it('terminates with newline (LF)', () => {

@@ -13,6 +13,7 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  StyleProp,
   ViewStyle,
   TextStyle,
   Platform,
@@ -46,15 +47,15 @@ export interface NBTabProps {
   /** Tab change handler */
   onTabChange: (key: string) => void;
   /** Custom container style */
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   /** Custom tab style */
-  tabStyle?: ViewStyle;
+  tabStyle?: StyleProp<ViewStyle>;
   /** Custom active tab style */
-  activeTabStyle?: ViewStyle;
+  activeTabStyle?: StyleProp<ViewStyle>;
   /** Custom text style */
-  textStyle?: TextStyle;
+  textStyle?: StyleProp<TextStyle>;
   /** Custom active text style */
-  activeTextStyle?: TextStyle;
+  activeTextStyle?: StyleProp<TextStyle>;
   /** Test ID for testing */
   testID?: string;
 }

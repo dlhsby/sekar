@@ -9,6 +9,7 @@ import type { ViewStyle } from 'react-native';
 
 export const nbColors = {
   bgAccentGreen: "#B5D2AD",
+  bgAccentLilac: "#E8DFF5",
   bgAccentMint: "#DAF5F0",
   bgAccentPink: "#FCDFFF",
   bgAccentYellow: "#FDFD96",
@@ -46,6 +47,15 @@ export const nbColors = {
   requestRejected: "#DC2626",
   requestSubmitted: "#6B7280",
   requestUnderReview: "#2563EB",
+  roleAdminData: "#9333EA",
+  roleAdminSys: "#57534E",
+  roleKecamatan: "#FDFD96",
+  roleKepala: "#F48572",
+  roleKorlap: "#E3A018",
+  roleLinmas: "#2563EB",
+  roleSatgas: "#7FBC8C",
+  roleSuperadmin: "#1C1917",
+  roleTop: "#1A4D2E",
   secondary: "#8B7355",
   secondaryHover: "#725E45",
   sidebarActive: "#0F3520",
@@ -83,31 +93,31 @@ export const nbShadows: Record<string, ViewStyle> = {
     shadowRadius: 0,
   },
   hover: {
-    elevation: 8,
-    shadowColor: "#1C1917",
-    shadowOffset: {
-      height: 8,
-      width: 8,
-    },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-  },
-  lg: {
-    elevation: 8,
-    shadowColor: "#1C1917",
-    shadowOffset: {
-      height: 8,
-      width: 8,
-    },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-  },
-  md: {
     elevation: 6,
     shadowColor: "#1C1917",
     shadowOffset: {
       height: 6,
       width: 6,
+    },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+  },
+  lg: {
+    elevation: 6,
+    shadowColor: "#1C1917",
+    shadowOffset: {
+      height: 6,
+      width: 6,
+    },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+  },
+  md: {
+    elevation: 4,
+    shadowColor: "#1C1917",
+    shadowOffset: {
+      height: 4,
+      width: 4,
     },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -123,11 +133,11 @@ export const nbShadows: Record<string, ViewStyle> = {
     shadowRadius: 0,
   },
   sm: {
-    elevation: 4,
+    elevation: 3,
     shadowColor: "#1C1917",
     shadowOffset: {
-      height: 4,
-      width: 4,
+      height: 3,
+      width: 3,
     },
     shadowOpacity: 1,
     shadowRadius: 0,
@@ -170,15 +180,15 @@ export const nbBorders = {
   style: "solid",
   widthBase: 2,
   widthExtra: 4,
-  widthThick: 3,
+  widthThick: 2.5,
   widthThin: 1,
 } as const;
 
 export const nbRadius = {
-  base: 6,
+  base: 10,
   full: 9999,
-  lg: 12,
-  md: 8,
+  lg: 20,
+  md: 14,
   none: 0,
   sm: 4,
 } as const;

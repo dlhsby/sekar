@@ -12,6 +12,7 @@ import {
   View,
   Text,
   StyleSheet,
+  StyleProp,
   ViewStyle,
   TextStyle,
 } from 'react-native';
@@ -50,11 +51,11 @@ export interface NBEmptyStateProps {
   /** CTA button press handler */
   onCTA?: () => void;
   /** Custom container style */
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   /** Custom title style */
-  titleStyle?: TextStyle;
+  titleStyle?: StyleProp<TextStyle>;
   /** Custom description style */
-  descriptionStyle?: TextStyle;
+  descriptionStyle?: StyleProp<TextStyle>;
   /** Test ID for testing */
   testID?: string;
 }
