@@ -16,6 +16,12 @@ First slice of the **Home-as-role-aware-anchor** revamp (full plan: shared chrom
 
 ---
 
+## May 25, 2026 — M3 Home revamp · Checkpoint 1b: bottom tab bar → hi-fi
+
+`MainNavigator` bottom tab bar restyled to the hi-fi tab bar, tokens-only (no structural/IA change — the per-role `TAB_CONFIGS` and labels are untouched). New module-scope `TabBarIcon`: the **active** tab's icon sits in a **sage box** (`nbColors.primary` bg, 2px black border, `nbRadius.sm`, hard-edge `sh-xs`); inactive icons are bare `gray600`. Tab labels now render via a `tabBarLabel` function returning `NBText` (`mono-sm`, 9.5px, `numberOfLines={1}`) — active `black`, inactive `gray600` — replacing the legacy `nbTypography` label style. Tab bar height 68, `widthThick` top border, `sh-md`. **Reconciliation:** labels kept sentence-case (not hi-fi uppercase) — the app's labels ("Tugas & Aktivitas") are longer than the hi-fi's single words and would overflow 5 tabs if uppercased; mono + the active sage box carry the hi-fi cue. `nav` suites green (MainNavigator 30 + RootNavigator 6 = 36); `tsc` + ESLint clean.
+
+---
+
 ## May 25, 2026 — M3 entry-flow visual revamp: WL-1 splash + native boot splash + WL-2…5 carousel
 
 Pixel-fidelity rebuild of the cold-start journey against `design/project/hifi-mobile.html`, working screen-by-screen with a checkpoint after each. Three commits.

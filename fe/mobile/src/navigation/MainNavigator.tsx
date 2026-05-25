@@ -5,12 +5,13 @@
  */
 
 import React, { useMemo } from 'react';
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import type { MainTabParamList } from '../types/navigation.types';
 import type { UserRole } from '../types/models.types';
-import { nbColors, nbBorders, nbShadows, nbTypography } from '../constants/nbTokens';
+import { nbColors, nbBorders, nbShadows, nbRadius, nbTypography } from '../constants/nbTokens';
+import { NBText } from '../components/nb/NBText';
 import { useAppSelector } from '../store/hooks';
 import { FieldHomeHeader } from '../components/navigation/FieldHomeHeader';
 
@@ -136,6 +137,22 @@ const SCREEN_MAP: Record<string, React.ComponentType<any>> = {
   PruningReviewQueue: ReviewQueueScreen,
 };
 
+/**
+ * Bottom-tab icon — hi-fi treatment: the active tab's icon sits in a sage box
+ * (2px black border + hard-edge xs shadow); inactive icons are bare gray.
+ */
+function TabBarIcon({ focused, name }: { focused: boolean; name: string }): React.JSX.Element {
+  return (
+    <View style={focused ? styles.tabIconActive : styles.tabIconInactive}>
+      <MaterialCommunityIcons
+        name={name}
+        size={20}
+        color={focused ? nbColors.black : nbColors.gray600}
+      />
+    </View>
+  );
+}
+
 function MainNavigator(): React.JSX.Element {
   const user = useAppSelector((state) => state.auth.user);
   const role = user?.role ?? 'satgas';
@@ -183,9 +200,7 @@ function MainNavigator(): React.JSX.Element {
           width: 0,
         },
         tabBarStyle: styles.tabBar,
-        tabBarLabelStyle: styles.tabBarLabel,
         tabBarItemStyle: styles.tabBarItem,
-        tabBarIconStyle: styles.tabBarIcon,
       }}>
       {/* Visible tabs based on role */}
       {visibleTabs.map((tab) => (
@@ -195,9 +210,18 @@ function MainNavigator(): React.JSX.Element {
           component={SCREEN_MAP[tab.name]}
           options={{
             headerTitle: () => <FieldHomeHeader />,
-            tabBarLabel: tab.label,
-            tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name={tab.icon} color={color} size={size} />
+            tabBarLabel: ({ focused }) => (
+              <NBText
+                variant="mono-sm"
+                color={focused ? 'black' : 'gray600'}
+                numberOfLines={1}
+                style={styles.tabLabel}
+              >
+                {tab.label}
+              </NBText>
+            ),
+            tabBarIcon: ({ focused }) => (
+              <TabBarIcon focused={focused} name={tab.icon} />
             ),
           }}
         />
@@ -407,25 +431,40 @@ function MainNavigator(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   tabBar: {
-    height: 65,
+    height: 68,
     backgroundColor: nbColors.white,
-    borderTopWidth: nbBorders.thick,
+    borderTopWidth: nbBorders.widthThick,
     borderTopColor: nbColors.black,
     ...nbShadows.md,
-    paddingBottom: Platform.OS === 'ios' ? 4 : 4,
+    paddingBottom: 6,
     paddingTop: 6,
-  },
-  tabBarLabel: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.semibold,
-    marginTop: -2,
-    marginBottom: 2,
   },
   tabBarItem: {
     paddingVertical: 2,
   },
-  tabBarIcon: {
-    marginTop: 4,
+  /* Active icon sits in a sage box with hard-edge border + shadow (hi-fi). */
+  tabIconActive: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: nbColors.primary,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.sm,
+    ...nbShadows.xs,
+  },
+  tabIconInactive: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabLabel: {
+    fontSize: 9.5,
+    lineHeight: 12,
+    letterSpacing: 0.2,
+    marginTop: 2,
   },
 });
 
