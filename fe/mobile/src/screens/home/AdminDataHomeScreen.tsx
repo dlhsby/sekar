@@ -199,68 +199,8 @@ export function AdminDataHomeScreen(): React.JSX.Element {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[nbColors.primary]} />}
         >
-          {/* Absensi saya — clock-in card first */}
+          {/* Absensi saya — clock-in card */}
           <HomeSectionDivider label="Absensi saya" />
-          <View style={styles.hero} testID="perantingan-hero">
-            <View style={styles.heroTopRow}>
-              <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroLabel}>
-                Perantingan masuk
-              </NBText>
-              <StatusPill tone={counts.submitted > 0 ? 'warn' : 'neutral'} label={`${counts.submitted} baru`} />
-            </View>
-            <NBText variant="display" color="black" style={styles.heroValue}>
-              {String(incoming)}
-            </NBText>
-            <NBText variant="mono-sm" color="gray700" style={styles.heroMeta}>
-              menunggu disposisi
-            </NBText>
-            <View style={styles.heroButton}>
-              <NBButton title="Buka antrian →" onPress={goToQueue} variant="primary" size="md" testID="open-queue" />
-            </View>
-          </View>
-
-          {/* Disposition breakdown */}
-          <HomeSectionDivider label="Breakdown disposisi" />
-          <View style={styles.tilesRow}>
-            <HomeStatTile label="Baru masuk" value={counts.submitted} variant="neutral" testID="disp-submitted" />
-            <HomeStatTile label="Review" value={counts.under_review} variant="warn" testID="disp-review" />
-          </View>
-          <View style={styles.tilesRow}>
-            <HomeStatTile label="Disetujui" value={counts.approved} variant="ok" testID="disp-approved" />
-            <HomeStatTile label="Ditolak" value={counts.rejected} variant="bad" testID="disp-rejected" />
-          </View>
-
-          {/* Ringkasan hari ini — personal stats + perantingan overview */}
-          <HomeSectionDivider label="Ringkasan hari ini" />
-
-          {/* Personal stat tiles (activities, work hours, tasks) */}
-          <View style={styles.statTiles}>
-            <HomeStatTile
-              label="Aktivitas"
-              value={todayActivitiesCount}
-              variant="neutral"
-              onPress={() => setActivitiesModalVisible(true)}
-              testID="stat-activities"
-            />
-            <HomeStatTile
-              label="Jam kerja"
-              value={totalTodayDuration}
-              variant="yellow"
-              onPress={() => setWorkHoursModalVisible(true)}
-              testID="stat-workhours"
-            />
-            {isTaskReceiver && (
-              <HomeStatTile
-                label="Tugas"
-                value={activeTasks.length}
-                variant="ok"
-                onPress={() => setTasksModalVisible(true)}
-                testID="stat-tasks"
-              />
-            )}
-          </View>
-
-          {/* Perantingan-queue hero */}
           {currentShift ? (
             <TouchableOpacity
               style={styles.absensi}
@@ -316,6 +256,66 @@ export function AdminDataHomeScreen(): React.JSX.Element {
               </View>
             </View>
           )}
+
+          {/* Ringkasan hari ini — personal stats + perantingan overview */}
+          <HomeSectionDivider label="Ringkasan hari ini" />
+
+          {/* Personal stat tiles (activities, work hours, tasks) */}
+          <View style={styles.statTiles}>
+            <HomeStatTile
+              label="Aktivitas"
+              value={todayActivitiesCount}
+              variant="neutral"
+              onPress={() => setActivitiesModalVisible(true)}
+              testID="stat-activities"
+            />
+            <HomeStatTile
+              label="Jam kerja"
+              value={totalTodayDuration}
+              variant="yellow"
+              onPress={() => setWorkHoursModalVisible(true)}
+              testID="stat-workhours"
+            />
+            {isTaskReceiver && (
+              <HomeStatTile
+                label="Tugas"
+                value={activeTasks.length}
+                variant="ok"
+                onPress={() => setTasksModalVisible(true)}
+                testID="stat-tasks"
+              />
+            )}
+          </View>
+
+          {/* Tim hari ini — perantingan-queue hero */}
+          <View style={styles.hero} testID="perantingan-hero">
+            <View style={styles.heroTopRow}>
+              <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroLabel}>
+                Perantingan masuk
+              </NBText>
+              <StatusPill tone={counts.submitted > 0 ? 'warn' : 'neutral'} label={`${counts.submitted} baru`} />
+            </View>
+            <NBText variant="display" color="black" style={styles.heroValue}>
+              {String(incoming)}
+            </NBText>
+            <NBText variant="mono-sm" color="gray700" style={styles.heroMeta}>
+              menunggu disposisi
+            </NBText>
+            <View style={styles.heroButton}>
+              <NBButton title="Buka antrian →" onPress={goToQueue} variant="primary" size="md" testID="open-queue" />
+            </View>
+          </View>
+
+          {/* Disposition breakdown */}
+          <HomeSectionDivider label="Breakdown disposisi" />
+          <View style={styles.tilesRow}>
+            <HomeStatTile label="Baru masuk" value={counts.submitted} variant="neutral" testID="disp-submitted" />
+            <HomeStatTile label="Review" value={counts.under_review} variant="warn" testID="disp-review" />
+          </View>
+          <View style={styles.tilesRow}>
+            <HomeStatTile label="Disetujui" value={counts.approved} variant="ok" testID="disp-approved" />
+            <HomeStatTile label="Ditolak" value={counts.rejected} variant="bad" testID="disp-rejected" />
+          </View>
 
           {/* Perantingan berjalan (assigned + in progress) */}
           {inflight.length > 0 && (

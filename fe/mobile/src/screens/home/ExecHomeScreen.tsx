@@ -91,6 +91,9 @@ export function ExecHomeScreen(): React.JSX.Element {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[nbColors.primary]} />}
         >
+          {/* Ringkasan hari ini — city-wide overview */}
+          <HomeSectionDivider label="Ringkasan hari ini" />
+
           {/* City-overview hero */}
           <View style={styles.hero} testID="city-hero">
             <View style={styles.heroTopRow}>

@@ -205,95 +205,8 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[nbColors.primary]} />}
         >
-          {/* Absensi saya — clock-in card first */}
+          {/* Absensi saya — clock-in card */}
           <HomeSectionDivider label="Absensi saya" />
-          <View style={styles.hero} testID="team-hero">
-            <View style={styles.heroTopRow}>
-              <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroLabel}>
-                Tim hari ini
-              </NBText>
-              <StatusPill tone={active > 0 ? 'ok' : 'neutral'} label={`${active}/${total} aktif`} />
-            </View>
-            {total > 0 ? (
-              <View
-                style={styles.avatars}
-                accessibilityElementsHidden
-                importantForAccessibility="no-hide-descendants"
-              >
-                {liveUsers.slice(0, 6).map((u) => (
-                  <RoleAvatar
-                    key={u.id}
-                    name={u.full_name}
-                    role={viewerRole}
-                    size={30}
-                    radius={nbRadius.full}
-                  />
-                ))}
-                {total > 6 && (
-                  <View style={[styles.avatar, styles.avatarMore]}>
-                    <NBText variant="mono-sm" color="gray700" style={styles.avatarText}>
-                      {`+${total - 6}`}
-                    </NBText>
-                  </View>
-                )}
-              </View>
-            ) : (
-              <NBText variant="body-sm" color="gray600" style={styles.heroEmpty}>
-                Belum ada anggota tim aktif.
-              </NBText>
-            )}
-            <View style={styles.heroButton}>
-              <NBButton title="Lihat semua →" onPress={goToMonitoring} variant="secondary" size="md" testID="team-see-all" />
-            </View>
-          </View>
-
-          {/* KPI grid (5-status breakdown — the data cleanly available to korlap) */}
-          <View style={styles.tilesRow}>
-            <HomeStatTile label="Tim aktif" value={active} detail={`dari ${total}`} variant="ok" testID="kpi-active" />
-            <HomeStatTile
-              label="Di luar area"
-              value={statusCounts.outside_area}
-              detail={outsideNames || undefined}
-              variant="bad"
-              testID="kpi-outside"
-            />
-          </View>
-          <View style={styles.tilesRow}>
-            <HomeStatTile label="Tidak hadir" value={statusCounts.missing} variant="warn" testID="kpi-missing" />
-            <HomeStatTile label="Offline" value={statusCounts.offline} variant="neutral" testID="kpi-offline" />
-          </View>
-
-          {/* Ringkasan hari ini — personal stats + team overview */}
-          <HomeSectionDivider label="Ringkasan hari ini" />
-
-          {/* Personal stat tiles (activities, work hours, tasks) */}
-          <View style={styles.statTiles}>
-            <HomeStatTile
-              label="Aktivitas"
-              value={todayActivitiesCount}
-              variant="neutral"
-              onPress={() => setActivitiesModalVisible(true)}
-              testID="stat-activities"
-            />
-            <HomeStatTile
-              label="Jam kerja"
-              value={totalTodayDuration}
-              variant="yellow"
-              onPress={() => setWorkHoursModalVisible(true)}
-              testID="stat-workhours"
-            />
-            {isTaskReceiver && (
-              <HomeStatTile
-                label="Tugas"
-                value={activeTasks.length}
-                variant="ok"
-                onPress={() => setTasksModalVisible(true)}
-                testID="stat-tasks"
-              />
-            )}
-          </View>
-
-          {/* Team-status hero */}
           {currentShift ? (
             <TouchableOpacity
               style={styles.absensi}
@@ -349,6 +262,93 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
               </View>
             </View>
           )}
+
+          {/* Ringkasan hari ini — personal stats + team overview */}
+          <HomeSectionDivider label="Ringkasan hari ini" />
+
+          {/* Personal stat tiles (activities, work hours, tasks) */}
+          <View style={styles.statTiles}>
+            <HomeStatTile
+              label="Aktivitas"
+              value={todayActivitiesCount}
+              variant="neutral"
+              onPress={() => setActivitiesModalVisible(true)}
+              testID="stat-activities"
+            />
+            <HomeStatTile
+              label="Jam kerja"
+              value={totalTodayDuration}
+              variant="yellow"
+              onPress={() => setWorkHoursModalVisible(true)}
+              testID="stat-workhours"
+            />
+            {isTaskReceiver && (
+              <HomeStatTile
+                label="Tugas"
+                value={activeTasks.length}
+                variant="ok"
+                onPress={() => setTasksModalVisible(true)}
+                testID="stat-tasks"
+              />
+            )}
+          </View>
+
+          {/* Tim hari ini — team-status hero */}
+          <View style={styles.hero} testID="team-hero">
+            <View style={styles.heroTopRow}>
+              <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroLabel}>
+                Tim hari ini
+              </NBText>
+              <StatusPill tone={active > 0 ? 'ok' : 'neutral'} label={`${active}/${total} aktif`} />
+            </View>
+            {total > 0 ? (
+              <View
+                style={styles.avatars}
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+              >
+                {liveUsers.slice(0, 6).map((u) => (
+                  <RoleAvatar
+                    key={u.id}
+                    name={u.full_name}
+                    role={viewerRole}
+                    size={30}
+                    radius={nbRadius.full}
+                  />
+                ))}
+                {total > 6 && (
+                  <View style={[styles.avatar, styles.avatarMore]}>
+                    <NBText variant="mono-sm" color="gray700" style={styles.avatarText}>
+                      {`+${total - 6}`}
+                    </NBText>
+                  </View>
+                )}
+              </View>
+            ) : (
+              <NBText variant="body-sm" color="gray600" style={styles.heroEmpty}>
+                Belum ada anggota tim aktif.
+              </NBText>
+            )}
+            <View style={styles.heroButton}>
+              <NBButton title="Lihat semua →" onPress={goToMonitoring} variant="secondary" size="md" testID="team-see-all" />
+            </View>
+          </View>
+
+          {/* KPI grid (5-status breakdown — the data cleanly available to korlap) */}
+          <View style={styles.tilesRow}>
+            <HomeStatTile label="Tim aktif" value={active} detail={`dari ${total}`} variant="ok" testID="kpi-active" />
+            <HomeStatTile
+              label="Di luar area"
+              value={statusCounts.outside_area}
+              detail={outsideNames || undefined}
+              variant="bad"
+              testID="kpi-outside"
+            />
+          </View>
+          <View style={styles.tilesRow}>
+            <HomeStatTile label="Tidak hadir" value={statusCounts.missing} variant="warn" testID="kpi-missing" />
+            <HomeStatTile label="Offline" value={statusCounts.offline} variant="neutral" testID="kpi-offline" />
+          </View>
 
           {/* Peringatan — derived from live users (out-of-area + missing) */}
           {alerts.length > 0 && (
