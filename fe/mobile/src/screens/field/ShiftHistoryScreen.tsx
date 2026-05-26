@@ -12,15 +12,13 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { NBCard, NBEmptyState, NBBackgroundPattern, NBText } from '../../components/nb';
+import { NBEmptyState, NBBackgroundPattern, NBText } from '../../components/nb';
 import { ShiftCard } from '../../components/common';
 import { getMyShifts } from '../../services/api/shiftsApi';
-import { getToken, getRefreshToken } from '../../services/storage/secureStorage';
-import { isTokenExpired, getTokenTimeRemaining } from '../../utils/tokenUtils';
 import {
   nbColors,
   nbSpacing,
-  nbBorderRadius,
+  nbRadius,
   nbShadows,
   nbBorders,
 } from '../../constants/nbTokens';
@@ -119,7 +117,7 @@ function DateHeader({ date }: DateHeaderProps): React.JSX.Element {
       <MaterialCommunityIcons
         name="calendar"
         size={16}
-        color={nbColors.gray['500']}
+        color={nbColors.gray500}
         style={styles.dateIcon}
       />
       <NBText variant="h3" color="gray700">{formatDate(date)}</NBText>
@@ -143,20 +141,10 @@ export function ShiftHistoryScreen(): React.JSX.Element {
     try {
       setError(null);
 
-      // DEBUG: Check token status before making API call
-      if (__DEV__) {
-        const token = await getToken();
-        const refreshToken = await getRefreshToken();
-        const expired = await isTokenExpired();
-        const timeRemaining = await getTokenTimeRemaining();
-
-        // Token debug info available via: token, refreshToken, expired, timeRemaining
-      }
 
       const response = await getMyShifts();
 
       if (response.error) {
-        if (__DEV__) { console.error('[ShiftHistory] API Error:', response.error); }
         setError(response.error);
         return;
       }
@@ -169,10 +157,8 @@ export function ShiftHistoryScreen(): React.JSX.Element {
             new Date(a.clock_in_time).getTime()
         );
         setShifts(sortedShifts);
-        // Loaded shifts successfully
       }
     } catch (err: any) {
-      if (__DEV__) { console.error('[ShiftHistory] Exception:', err); }
       setError(err.message || 'Gagal memuat riwayat shift');
     } finally {
       setIsLoading(false);
@@ -292,7 +278,7 @@ export function ShiftHistoryScreen(): React.JSX.Element {
     >
       <View style={styles.container}>
         {/* Summary Header */}
-        <NBCard variant="elevated" style={styles.summaryCard}>
+        <View style={styles.summaryCard}>
           <View style={styles.summaryItem}>
             <NBText variant="display" color="primary">{shifts.length}</NBText>
             <NBText variant="caption" color="gray600" style={styles.summaryLabel}>TOTAL SHIFT</NBText>
@@ -311,7 +297,7 @@ export function ShiftHistoryScreen(): React.JSX.Element {
             </NBText>
             <NBText variant="caption" color="gray600" style={styles.summaryLabel}>TOTAL JAM</NBText>
           </View>
-        </NBCard>
+        </View>
 
         {/* Shifts List */}
         <FlatList
@@ -363,10 +349,10 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.white,
     marginHorizontal: nbSpacing.md,
     marginTop: nbSpacing.md,
-    marginBottom: nbSpacing.sm,
-    paddingVertical: 12, // Compact style (was lg: 24px)
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
+    marginBottom: nbSpacing.md,
+    paddingVertical: nbSpacing.sm,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },
@@ -375,9 +361,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   summaryDivider: {
-    width: nbBorders.base, // 3px for NB consistency
+    width: nbBorders.widthBase,
     height: 40,
-    backgroundColor: nbColors.black, // Bold divider for NB
+    backgroundColor: nbColors.black,
   },
   summaryValue: {
     // Typography handled by NBText variant="display" color="primary"

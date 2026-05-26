@@ -7,15 +7,18 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ImagePreviewModal } from '../../components/common';
 import { useNavigation } from '@react-navigation/native';
-import { NBButton, NBCard, NBBackgroundPattern, NBText } from '../../components/nb';
+import { NBButton, NBBackgroundPattern, NBText } from '../../components/nb';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
 import {
   nbColors,
   nbSpacing,
   nbShadows,
   nbBorders,
+  nbRadius,
+  withAlpha,
 } from '../../constants/nbTokens';
 import config from '../../constants/config';
 import { useClockInOut } from '../../hooks';
@@ -129,7 +132,12 @@ export const ClockInOutScreen = (): React.JSX.Element => {
           {/* Offline Banner (top of scroll) */}
           {!isOnline && isClockIn && (
             <View style={styles.offlineBanner}>
-              <NBText variant="h2" color="black" style={styles.offlineBannerIcon}>📵</NBText>
+              <MaterialCommunityIcons
+                name="wifi-off"
+                size={20}
+                color={nbColors.danger}
+                style={{ marginRight: nbSpacing.sm }}
+              />
               <NBText variant="body-sm" color="danger" style={styles.offlineBannerText}>Mode Offline - Clock in memerlukan koneksi</NBText>
             </View>
           )}
@@ -145,21 +153,26 @@ export const ClockInOutScreen = (): React.JSX.Element => {
 
           {/* Area Info Card - Collapsible (hidden for rayon-scoped roles without area) */}
           {assignedArea ? (
-            <NBCard variant="elevated" style={styles.card}>
+            <View style={styles.card}>
               <TouchableOpacity
                 style={styles.collapsibleHeader}
                 onPress={() => setIsAreaExpanded(v => !v)}
                 accessibilityLabel={isAreaExpanded ? 'Sembunyikan detail area' : 'Tampilkan detail area'}
               >
                 <View style={styles.collapsibleHeaderLeft}>
-                  <NBText variant="body-sm" color="gray600" style={styles.cardTitle}>Area Ditugaskan</NBText>
-                  <NBText variant="h3" color="black" style={styles.areaName}>{assignedArea.name}</NBText>
+                  <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6, marginBottom: nbSpacing.xs }}>Area Ditugaskan</NBText>
+                  <NBText variant="h3" color="black">{assignedArea.name}</NBText>
                 </View>
-                <NBText variant="h3" color="black" style={styles.chevron}>{isAreaExpanded ? '▼' : '▶'}</NBText>
+                <MaterialCommunityIcons
+                  name={isAreaExpanded ? 'chevron-up' : 'chevron-down'}
+                  size={20}
+                  color={nbColors.gray700}
+                  style={styles.chevron}
+                />
               </TouchableOpacity>
               {isAreaExpanded && (
                 <View style={styles.collapsibleBody}>
-                  {assignedArea.address && <NBText variant="body-sm" color="gray600" style={styles.areaAddress}>{assignedArea.address}</NBText>}
+                  {assignedArea.address && <NBText variant="body-sm" color="gray600" style={{ marginBottom: nbSpacing.sm }}>{assignedArea.address}</NBText>}
                   <View style={styles.infoRow}>
                     <NBText variant="body-sm" color="gray600" style={styles.infoLabel}>Tipe Area:</NBText>
                     <NBText variant="body" color="black" style={styles.infoValue}>{assignedArea.area_type?.name || 'N/A'}</NBText>
@@ -180,17 +193,17 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                   )}
                 </View>
               )}
-            </NBCard>
+            </View>
           ) : isRayonScoped ? (
-            <NBCard variant="elevated" style={styles.card}>
-              <NBText variant="body-sm" color="gray600" style={styles.cardTitle}>Cakupan Rayon</NBText>
-              <NBText variant="h3" color="black" style={styles.areaName}>Clock in tanpa area spesifik</NBText>
-            </NBCard>
+            <View style={styles.card}>
+              <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6, marginBottom: nbSpacing.xs }}>Cakupan Rayon</NBText>
+              <NBText variant="h3" color="black">Clock in tanpa area spesifik</NBText>
+            </View>
           ) : null}
 
           {/* Selfie Card (Clock In only) - Collapsible, default closed */}
           {isClockIn && (
-            <NBCard variant="elevated" style={styles.card}>
+            <View style={styles.card}>
               <TouchableOpacity
                 style={styles.collapsibleHeader}
                 onPress={() => setIsSelfieExpanded(v => !v)}
@@ -199,10 +212,15 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                 accessibilityState={{ expanded: isSelfieExpanded }}
               >
                 <View style={styles.collapsibleHeaderLeft}>
-                  <NBText variant="body-sm" color="gray600" style={styles.cardTitle}>Foto Selfie</NBText>
-                  {selfie && <NBText variant="body-sm" color="success" style={styles.areaAddress}>Selfie sudah diambil</NBText>}
+                  <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6, marginBottom: nbSpacing.xs }}>Foto Selfie</NBText>
+                  {selfie && <NBText variant="body-sm" color="success">Selfie sudah diambil</NBText>}
                 </View>
-                <NBText variant="h3" color="black" style={styles.chevron}>{isSelfieExpanded ? '▼' : '▶'}</NBText>
+                <MaterialCommunityIcons
+                  name={isSelfieExpanded ? 'chevron-up' : 'chevron-down'}
+                  size={20}
+                  color={nbColors.gray700}
+                  style={styles.chevron}
+                />
               </TouchableOpacity>
               {isSelfieExpanded && (
                 <View style={styles.collapsibleBody}>
@@ -226,20 +244,23 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                   )}
                 </View>
               )}
-            </NBCard>
+            </View>
           )}
 
           {/* Location Card - Collapsible, default open */}
-          <NBCard variant="elevated" style={styles.card}>
+          <View style={styles.card}>
             <TouchableOpacity
               style={styles.collapsibleHeader}
               onPress={() => setIsLocationExpanded(v => !v)}
               accessibilityLabel={isLocationExpanded ? 'Sembunyikan detail lokasi' : 'Tampilkan detail lokasi'}
             >
-              <NBText variant="h3" style={styles.cardTitle}>Lokasi Anda</NBText>
-              <NBText variant="body" color="gray600" style={styles.chevron}>
-                {isLocationExpanded ? '▼' : '▶'}
-              </NBText>
+              <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>Lokasi Anda</NBText>
+              <MaterialCommunityIcons
+                name={isLocationExpanded ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color={nbColors.gray700}
+                style={styles.chevron}
+              />
             </TouchableOpacity>
             {isLocationExpanded && (
               location.error ? (
@@ -265,7 +286,12 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                   )}
                   {location.accuracy !== null && location.accuracy > config.GPS_ACCURACY_THRESHOLD && (
                     <View style={styles.warningBox}>
-                      <NBText variant="body-lg" style={styles.warningIcon}>⚠️</NBText>
+                      <MaterialCommunityIcons
+                        name="crosshairs-question"
+                        size={20}
+                        color={nbColors.statusIdle}
+                        style={{ marginRight: nbSpacing.sm }}
+                      />
                       <NBText variant="body-sm" color="gray700" style={styles.warningText}>
                         GPS kurang akurat. Pindah ke area terbuka untuk hasil lebih baik.
                       </NBText>
@@ -274,15 +300,25 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                   {/* Location Status Banner - bilateral feedback for both clock-in and clock-out */}
                   {isWithinBoundary ? (
                     <View style={styles.insideAreaBanner}>
-                      <NBText variant="body-lg" style={styles.insideAreaIcon}>✅</NBText>
-                      <NBText variant="body-sm" color="white" style={styles.insideAreaText}>
+                      <MaterialCommunityIcons
+                        name="check-circle"
+                        size={20}
+                        color={nbColors.statusActive}
+                        style={{ marginRight: nbSpacing.sm }}
+                      />
+                      <NBText variant="body-sm" color="black" style={styles.insideAreaText}>
                         Anda berada di dalam area kerja
                       </NBText>
                     </View>
                   ) : (
                     <View style={styles.softWarningBanner}>
-                      <NBText variant="body-lg" style={styles.softWarningIcon}>⚠️</NBText>
-                      <NBText variant="body-sm" style={styles.softWarningText}>
+                      <MaterialCommunityIcons
+                        name="alert"
+                        size={20}
+                        color={nbColors.statusIdle}
+                        style={{ marginRight: nbSpacing.sm }}
+                      />
+                      <NBText variant="body-sm" color="black" style={styles.softWarningText}>
                         Anda berada di luar area kerja. Absen tetap dicatat.
                       </NBText>
                     </View>
@@ -291,10 +327,10 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                   {!isClockIn && currentShift && (
                     <View style={styles.clockInInfo}>
                       <View style={styles.timerContainer}>
-                        <NBText variant="body-sm" color="gray600" style={styles.timerLabel}>
+                        <NBText variant="body-sm" color="gray600">
                           Waktu Shift:
                         </NBText>
-                        <NBText variant="display" color="warning" style={styles.timerValue}>{timer}</NBText>
+                        <NBText variant="display" color="statusIdle" style={styles.timerValue}>{timer}</NBText>
                       </View>
                       <View style={styles.clockInTimeRow}>
                         <NBText variant="caption" color="gray600" style={styles.clockInLabel}>Clock In:</NBText>
@@ -311,7 +347,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                 </View>
               )
             )}
-          </NBCard>
+          </View>
         </ScrollView>
 
         {/* Offline warnings — between scroll and submit button */}
@@ -390,9 +426,14 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {},
   card: {
+    backgroundColor: nbColors.white,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.md,
+    padding: nbSpacing.md,
     marginHorizontal: nbSpacing.md,
-    marginBottom: nbSpacing.sm,
-    padding: 10,
+    marginBottom: nbSpacing.md,
+    ...nbShadows.sm,
   },
   collapsibleHeader: {
     flexDirection: 'row',
@@ -408,19 +449,10 @@ const styles = StyleSheet.create({
   chevron: {
     marginLeft: nbSpacing.sm,
   },
-  cardTitle: {
-    marginBottom: nbSpacing.xs,
-  },
-  areaName: {
-    marginBottom: 2,
-  },
-  areaAddress: {
-    marginBottom: nbSpacing.sm,
-  },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 6,
+    marginBottom: nbSpacing.xs,
   },
   infoLabel: {},
   infoValue: {},
@@ -430,11 +462,11 @@ const styles = StyleSheet.create({
   selfieImage: {
     width: '100%',
     height: 250,
-    borderRadius: 0,
-    borderWidth: nbBorders.base,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     marginBottom: nbSpacing.sm,
-    backgroundColor: nbColors.gray[200],
+    backgroundColor: nbColors.gray200,
   },
   selfiePrompt: {
     textAlign: 'center',
@@ -451,8 +483,8 @@ const styles = StyleSheet.create({
     marginBottom: nbSpacing.xs,
     padding: nbSpacing.sm,
     backgroundColor: nbColors.white,
-    borderRadius: 0,
-    borderWidth: nbBorders.base,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.warning,
     ...nbShadows.sm,
   },
@@ -462,18 +494,14 @@ const styles = StyleSheet.create({
   offlineBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: nbColors.danger,
+    backgroundColor: withAlpha(nbColors.danger, 0.08),
     padding: nbSpacing.sm,
-    marginBottom: nbSpacing.sm,
-    borderRadius: 0,
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.black,
+    marginHorizontal: nbSpacing.md,
+    marginBottom: nbSpacing.md,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.danger,
     ...nbShadows.sm,
-  },
-  offlineBannerIcon: {
-    fontSize: 20,
-    marginRight: nbSpacing.sm,
   },
   offlineBannerText: {
     flex: 1,
@@ -483,15 +511,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: nbSpacing.sm,
     padding: nbSpacing.sm,
-    backgroundColor: nbColors.white,
-    borderRadius: 0,
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.warning,
+    backgroundColor: nbColors.statusIdleBg,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
     ...nbShadows.sm,
-  },
-  warningIcon: {
-    fontSize: 20,
-    marginRight: nbSpacing.sm,
   },
   warningText: {
     flex: 1,
@@ -502,15 +526,11 @@ const styles = StyleSheet.create({
     marginTop: nbSpacing.sm,
     marginBottom: nbSpacing.xs,
     padding: nbSpacing.sm,
-    backgroundColor: nbColors.accentGrass,
-    borderRadius: 0,
-    borderWidth: nbBorders.base,
+    backgroundColor: nbColors.statusActiveBg,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     ...nbShadows.sm,
-  },
-  insideAreaIcon: {
-    fontSize: 18,
-    marginRight: nbSpacing.sm,
   },
   insideAreaText: {
     flex: 1,
@@ -521,33 +541,26 @@ const styles = StyleSheet.create({
     marginTop: nbSpacing.sm,
     marginBottom: nbSpacing.xs,
     padding: nbSpacing.sm,
-    backgroundColor: nbColors.warning,
-    borderRadius: 0,
-    borderWidth: nbBorders.base,
+    backgroundColor: nbColors.statusIdleBg,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     ...nbShadows.sm,
-  },
-  softWarningIcon: {
-    fontSize: 18,
-    marginRight: nbSpacing.sm,
   },
   softWarningText: {
     flex: 1,
   },
   clockInInfo: {
     marginTop: nbSpacing.sm,
-    padding: 6,
-    backgroundColor: nbColors.gray[50],
-    borderRadius: 0,
-    borderWidth: nbBorders.thin,
+    padding: nbSpacing.sm,
+    backgroundColor: nbColors.gray50,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthThin,
     borderColor: nbColors.black,
   },
   timerContainer: {
     alignItems: 'center',
-    marginBottom: 2,
-  },
-  timerLabel: {
-    marginBottom: 1,
+    marginBottom: nbSpacing.xs,
   },
   timerValue: {
     letterSpacing: 1,
@@ -557,9 +570,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 2,
-    borderTopWidth: 1,
-    borderTopColor: nbColors.gray[300],
+    paddingTop: nbSpacing.xs,
+    borderTopWidth: nbBorders.widthThin,
+    borderTopColor: nbColors.gray300,
   },
   clockInLabel: {},
   clockInTime: {},

@@ -49,9 +49,6 @@ import { setCurrentShift, clockOutSuccess } from '../../store/slices/shiftSlice'
 import { PhotoUploader } from '../../components/common';
 import {
   NBButton,
-  NBCard,
-  NBCardHeader,
-  NBCardContent,
   NBBackgroundPattern,
   NBSelect,
   NBCardTextInput,
@@ -61,7 +58,7 @@ import {
   nbColors,
   nbSpacing,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
   nbShadows,
   withAlpha,
 } from '../../constants/nbTokens';
@@ -512,7 +509,7 @@ export const OvertimeSubmitScreen: React.FC<
       patternColor={nbColors.primary}
       opacity={0.06}
     >
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
@@ -523,7 +520,7 @@ export const OvertimeSubmitScreen: React.FC<
             <>
               {/* Error summary */}
               {Object.values(startErrors).some(Boolean) && (
-                <View style={styles.errorSummary}>
+                <View style={[styles.errorSummary, styles.card]}>
                   <NBText variant="body-sm" color="danger" style={styles.errorSummaryTitle}>Mohon lengkapi data berikut:</NBText>
                   {Object.values(startErrors).filter(Boolean).map((msg, i) => (
                     <NBText key={i} variant="body-sm" color="black" style={styles.errorSummaryItem}>- {msg}</NBText>
@@ -536,7 +533,7 @@ export const OvertimeSubmitScreen: React.FC<
                 <MaterialCommunityIcons
                   name="clock-plus-outline"
                   size={20}
-                  color={nbColors.gray[600]}
+                  color={nbColors.gray600}
                 />
                 <NBText variant="body-sm" color="gray600" style={styles.subtitleText}>
                   Konfirmasi lokasi GPS untuk memulai lembur
@@ -554,22 +551,24 @@ export const OvertimeSubmitScreen: React.FC<
               />
 
               {/* Selfie (optional) - Collapsible, default closed */}
-              <NBCard style={styles.card}>
+              <View style={styles.card}>
                 <TouchableOpacity
                   onPress={() => setIsStartSelfieExpanded(v => !v)}
                   accessibilityRole="button"
                   accessibilityLabel={isStartSelfieExpanded ? 'Sembunyikan selfie mulai' : 'Tampilkan selfie mulai'}
                   accessibilityState={{ expanded: isStartSelfieExpanded }}
+                  style={styles.collapsibleHeaderRow}
                 >
-                  <NBCardHeader>
-                    <View style={styles.collapsibleHeaderRow}>
-                      <NBText variant="h2" color="black" style={styles.sectionTitle}>SELFIE MULAI (OPSIONAL)</NBText>
-                      <NBText variant="caption" color="black" style={styles.chevron}>{isStartSelfieExpanded ? '▼' : '▶'}</NBText>
-                    </View>
-                  </NBCardHeader>
+                  <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>SELFIE MULAI (OPSIONAL)</NBText>
+                  <MaterialCommunityIcons
+                    name={isStartSelfieExpanded ? 'chevron-up' : 'chevron-down'}
+                    size={20}
+                    color={nbColors.gray700}
+                    style={styles.chevron}
+                  />
                 </TouchableOpacity>
                 {isStartSelfieExpanded && (
-                  <NBCardContent>
+                  <View>
                     {startSelfie ? (
                       <View>
                         <TouchableOpacity
@@ -600,27 +599,23 @@ export const OvertimeSubmitScreen: React.FC<
                         />
                       </View>
                     )}
-                  </NBCardContent>
+                  </View>
                 )}
-              </NBCard>
+              </View>
 
               {/* Lokasi GPS */}
-              <NBCard style={styles.card}>
-                <NBCardHeader>
-                  <NBText variant="h2" color="black" style={styles.sectionTitle}>
-                    LOKASI GPS{' '}
-                    <NBText variant="h2" color="danger" style={styles.requiredAsterisk}>*</NBText>
-                  </NBText>
-                </NBCardHeader>
-                <NBCardContent>
-                  <GPSLocationSection
-                    location={location}
-                    isCapturing={isCapturingLocation}
-                    onRefresh={captureLocation}
-                    error={startErrors.location}
-                  />
-                </NBCardContent>
-              </NBCard>
+              <View style={styles.card}>
+                <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6, marginBottom: nbSpacing.sm }}>
+                  LOKASI GPS{' '}
+                  <NBText variant="mono-sm" color="danger" style={{ textTransform: 'none' }}>*</NBText>
+                </NBText>
+                <GPSLocationSection
+                  location={location}
+                  isCapturing={isCapturingLocation}
+                  onRefresh={captureLocation}
+                  error={startErrors.location}
+                />
+              </View>
 
             </>
           )}
@@ -639,60 +634,52 @@ export const OvertimeSubmitScreen: React.FC<
               )}
 
               {/* Active overtime info */}
-              <NBCard style={styles.card}>
-                <NBCardHeader>
-                  <NBText variant="h2" color="black" style={styles.sectionTitle}>LEMBUR BERLANGSUNG</NBText>
-                </NBCardHeader>
-                <NBCardContent>
-                  <View style={styles.timerContainer}>
-                    <NBText variant="body-sm" color="gray600" style={styles.timerLabel}>Durasi Lembur</NBText>
-                    <NBText variant="display-xl" color="warning" style={styles.timerValue}>{elapsed}</NBText>
+              <View style={styles.card}>
+                <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6, marginBottom: nbSpacing.sm }}>LEMBUR BERLANGSUNG</NBText>
+                <View style={styles.timerContainer}>
+                  <NBText variant="body-sm" color="gray600" style={styles.timerLabel}>Durasi Lembur</NBText>
+                  <NBText variant="display-xl" color="statusIdle" style={styles.timerValue}>{elapsed}</NBText>
+                </View>
+                <View style={styles.startTimeRow}>
+                  <NBText variant="body-sm" color="gray600" style={styles.startTimeLabel}>Mulai:</NBText>
+                  <NBText variant="body-sm" color="black" style={styles.startTimeValue}>
+                    {formatTime(activeOvertime.start_datetime)}
+                  </NBText>
+                </View>
+                {activeOvertime.reason && (
+                  <View style={styles.reasonRow}>
+                    <NBText variant="body-sm" color="gray600" style={styles.startTimeLabel}>Alasan:</NBText>
+                    <NBText variant="body-sm" color="black" style={styles.reasonValue}>{activeOvertime.reason}</NBText>
                   </View>
-                  <View style={styles.startTimeRow}>
-                    <NBText variant="body-sm" color="gray600" style={styles.startTimeLabel}>Mulai:</NBText>
-                    <NBText variant="body-sm" color="black" style={styles.startTimeValue}>
-                      {formatTime(activeOvertime.start_datetime)}
-                    </NBText>
-                  </View>
-                  {activeOvertime.reason && (
-                    <View style={styles.reasonRow}>
-                      <NBText variant="body-sm" color="gray600" style={styles.startTimeLabel}>Alasan:</NBText>
-                      <NBText variant="body-sm" color="black" style={styles.reasonValue}>{activeOvertime.reason}</NBText>
-                    </View>
-                  )}
-                </NBCardContent>
-              </NBCard>
+                )}
+              </View>
 
               {/* Jenis Aktivitas */}
-              <NBCard style={styles.card}>
-                <NBCardHeader>
-                  <NBText variant="h2" color="black" style={styles.sectionTitle}>
-                    JENIS AKTIVITAS{' '}
-                    <NBText variant="h2" color="danger" style={styles.requiredAsterisk}>*</NBText>
+              <View style={styles.card}>
+                <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6, marginBottom: nbSpacing.sm }}>
+                  JENIS AKTIVITAS{' '}
+                  <NBText variant="mono-sm" color="danger" style={{ textTransform: 'none' }}>*</NBText>
+                </NBText>
+                {loadingActivityTypes ? (
+                  <ActivityIndicator style={styles.activityIndicator} />
+                ) : activityTypes.length === 0 ? (
+                  <NBText variant="body-sm" color="warning" style={styles.warningText}>
+                    Tidak ada jenis aktivitas tersedia. Hubungi administrator.
                   </NBText>
-                </NBCardHeader>
-                <NBCardContent>
-                  {loadingActivityTypes ? (
-                    <ActivityIndicator style={styles.activityIndicator} />
-                  ) : activityTypes.length === 0 ? (
-                    <NBText variant="body-sm" color="warning" style={styles.warningText}>
-                      Tidak ada jenis aktivitas tersedia. Hubungi administrator.
-                    </NBText>
-                  ) : (
-                    <NBSelect
-                      value={endActivityTypeId || ''}
-                      onValueChange={(v) => setEndActivityTypeId(String(v))}
-                      options={activityTypeOptions}
-                      placeholder="Pilih jenis aktivitas..."
-                      searchable
-                      searchPlaceholder="Cari jenis aktivitas..."
-                    />
-                  )}
-                  {endErrors.activityType && (
-                    <NBText variant="body-sm" color="danger" style={styles.errorText}>{endErrors.activityType}</NBText>
-                  )}
-                </NBCardContent>
-              </NBCard>
+                ) : (
+                  <NBSelect
+                    value={endActivityTypeId || ''}
+                    onValueChange={(v) => setEndActivityTypeId(String(v))}
+                    options={activityTypeOptions}
+                    placeholder="Pilih jenis aktivitas..."
+                    searchable
+                    searchPlaceholder="Cari jenis aktivitas..."
+                  />
+                )}
+                {endErrors.activityType && (
+                  <NBText variant="body-sm" color="danger" style={styles.errorText}>{endErrors.activityType}</NBText>
+                )}
+              </View>
 
               {/* Deskripsi */}
               <NBCardTextInput
@@ -707,43 +694,41 @@ export const OvertimeSubmitScreen: React.FC<
               />
 
               {/* Foto Bukti */}
-              <NBCard style={styles.card}>
-                <NBCardHeader>
-                  <NBText variant="h2" color="black" style={styles.sectionTitle}>
-                    FOTO BUKTI{' '}
-                    <NBText variant="h2" color="danger" style={styles.requiredAsterisk}>*</NBText>
-                  </NBText>
-                  <NBText variant="body-sm" color="gray600" style={styles.sectionSubtitle}>Tambahkan 1-3 foto pekerjaan lembur</NBText>
-                </NBCardHeader>
-                <NBCardContent>
-                  <PhotoUploader
-                    photos={endPhotos}
-                    onAdd={(photo) => setEndPhotos((prev) => [...prev, photo])}
-                    onRemove={(photoId) =>
-                      setEndPhotos((prev) => prev.filter((p) => p.id !== photoId))
-                    }
-                    error={endErrors.photos}
-                  />
-                </NBCardContent>
-              </NBCard>
+              <View style={styles.card}>
+                <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6, marginBottom: nbSpacing.xs }}>
+                  FOTO BUKTI{' '}
+                  <NBText variant="mono-sm" color="danger" style={{ textTransform: 'none' }}>*</NBText>
+                </NBText>
+                <NBText variant="body-sm" color="gray600" style={{ marginBottom: nbSpacing.sm }}>Tambahkan 1-3 foto pekerjaan lembur</NBText>
+                <PhotoUploader
+                  photos={endPhotos}
+                  onAdd={(photo) => setEndPhotos((prev) => [...prev, photo])}
+                  onRemove={(photoId) =>
+                    setEndPhotos((prev) => prev.filter((p) => p.id !== photoId))
+                  }
+                  error={endErrors.photos}
+                />
+              </View>
 
               {/* Selfie (optional for end) - Collapsible, default closed */}
-              <NBCard style={styles.card}>
+              <View style={styles.card}>
                 <TouchableOpacity
                   onPress={() => setIsEndSelfieExpanded(v => !v)}
                   accessibilityRole="button"
                   accessibilityLabel={isEndSelfieExpanded ? 'Sembunyikan selfie selesai' : 'Tampilkan selfie selesai'}
                   accessibilityState={{ expanded: isEndSelfieExpanded }}
+                  style={styles.collapsibleHeaderRow}
                 >
-                  <NBCardHeader>
-                    <View style={styles.collapsibleHeaderRow}>
-                      <NBText variant="h2" color="black" style={styles.sectionTitle}>SELFIE SELESAI (OPSIONAL)</NBText>
-                      <NBText variant="caption" color="black" style={styles.chevron}>{isEndSelfieExpanded ? '▼' : '▶'}</NBText>
-                    </View>
-                  </NBCardHeader>
+                  <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>SELFIE SELESAI (OPSIONAL)</NBText>
+                  <MaterialCommunityIcons
+                    name={isEndSelfieExpanded ? 'chevron-up' : 'chevron-down'}
+                    size={20}
+                    color={nbColors.gray700}
+                    style={styles.chevron}
+                  />
                 </TouchableOpacity>
                 {isEndSelfieExpanded && (
-                  <NBCardContent>
+                  <View>
                     {endSelfie ? (
                       <View>
                         <TouchableOpacity
@@ -774,27 +759,23 @@ export const OvertimeSubmitScreen: React.FC<
                         />
                       </View>
                     )}
-                  </NBCardContent>
+                  </View>
                 )}
-              </NBCard>
+              </View>
 
               {/* Lokasi GPS */}
-              <NBCard style={styles.card}>
-                <NBCardHeader>
-                  <NBText variant="h2" color="black" style={styles.sectionTitle}>
-                    LOKASI GPS{' '}
-                    <NBText variant="h2" color="danger" style={styles.requiredAsterisk}>*</NBText>
-                  </NBText>
-                </NBCardHeader>
-                <NBCardContent>
-                  <GPSLocationSection
-                    location={location}
-                    isCapturing={isCapturingLocation}
-                    onRefresh={captureLocation}
-                    error={endErrors.location}
-                  />
-                </NBCardContent>
-              </NBCard>
+              <View style={styles.card}>
+                <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6, marginBottom: nbSpacing.sm }}>
+                  LOKASI GPS{' '}
+                  <NBText variant="mono-sm" color="danger" style={{ textTransform: 'none' }}>*</NBText>
+                </NBText>
+                <GPSLocationSection
+                  location={location}
+                  isCapturing={isCapturingLocation}
+                  onRefresh={captureLocation}
+                  error={endErrors.location}
+                />
+              </View>
             </>
           )}
         </ScrollView>
@@ -830,7 +811,7 @@ export const OvertimeSubmitScreen: React.FC<
             />
           )}
         </View>
-      </SafeAreaView>
+      </View>
     </NBBackgroundPattern>
   );
 };
@@ -854,7 +835,13 @@ const styles = StyleSheet.create({
     paddingBottom: nbSpacing.sm,
   },
   card: {
+    backgroundColor: nbColors.white,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.md,
+    padding: nbSpacing.md,
     marginBottom: nbSpacing.md,
+    ...nbShadows.sm,
   },
   subtitleRow: {
     flexDirection: 'row',
@@ -867,11 +854,6 @@ const styles = StyleSheet.create({
     // Typography handled by NBText variant="body-sm" color="gray600"
     lineHeight: 18,
   },
-  sectionTitle: {
-    // Typography (fontSize, fontWeight, color) handled by NBText variant="h2" color="black"
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
   collapsibleHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -882,22 +864,14 @@ const styles = StyleSheet.create({
     // Typography handled by NBText variant="caption" color="black"
     marginLeft: nbSpacing.sm,
   },
-  requiredAsterisk: {
-    // Typography handled by NBText variant="h2" color="danger"
-    textTransform: 'none',
-  },
-  sectionSubtitle: {
-    // Typography handled by NBText variant="body-sm" color="gray600"
-    marginTop: nbSpacing.xs,
-  },
   selfieImage: {
     width: '100%',
     height: 200,
-    borderRadius: 0,
-    borderWidth: nbBorders.base,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     marginBottom: nbSpacing.sm,
-    backgroundColor: nbColors.gray[200],
+    backgroundColor: nbColors.gray200,
   },
   selfiePrompt: {
     // Typography handled by NBText variant="body-sm" color="gray600"
@@ -922,8 +896,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop: nbSpacing.xs,
-    borderTopWidth: nbBorders.thin,
-    borderTopColor: nbColors.gray[300],
+    borderTopWidth: nbBorders.widthThin,
+    borderTopColor: nbColors.gray300,
   },
   reasonRow: {
     flexDirection: 'row',
@@ -954,9 +928,9 @@ const styles = StyleSheet.create({
   },
   errorSummary: {
     backgroundColor: withAlpha(nbColors.danger, 0.05),
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.danger,
-    borderRadius: nbBorderRadius.base,
+    borderRadius: nbRadius.base,
     padding: nbSpacing.md,
     marginBottom: nbSpacing.md,
     ...nbShadows.sm,
