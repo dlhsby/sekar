@@ -134,7 +134,11 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
               <StatusPill tone={active > 0 ? 'ok' : 'neutral'} label={`${active}/${total} aktif`} />
             </View>
             {total > 0 ? (
-              <View style={styles.avatars}>
+              <View
+                style={styles.avatars}
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+              >
                 {liveUsers.slice(0, 6).map((u) => (
                   <View key={u.id} style={styles.avatar}>
                     <NBText variant="mono-sm" color="black" style={styles.avatarText}>

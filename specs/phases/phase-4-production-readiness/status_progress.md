@@ -37,7 +37,7 @@ The four roles with **no Home tab** (top_management, admin_system, superadmin, s
 
 ---
 
-## May 26, 2026 — M3 Home revamp · Checkpoint 4: HOME-3 admin-data dashboard (completes the role-aware Home)
+## May 26, 2026 — M3 Home revamp · Checkpoint 4: HOME-3 admin-data dashboard (completes the hi-fi HOME-1/2/3)
 
 New `src/screens/home/AdminDataHomeScreen.tsx` (hi-fi **HOME-3**) for **admin_data**, dispatcher-routed (`HomeScreen` now covers all Home-tab roles: satgas/linmas → Field, korlap/kepala_rayon → Coordinator, admin_data → AdminData). Reads the rayon-scoped `pruningRequests.adminList` (`fetchAdminPruningRequests({})` on mount + focus):
 - **Perantingan-queue hero** (lilac card): "PERANTINGAN MASUK", big **incoming** count (submitted + under_review), a "{submitted} baru" pill, "menunggu disposisi", and **"Buka antrian →"** → the `PruningReviewQueue` tab.
@@ -48,7 +48,7 @@ New `src/screens/home/AdminDataHomeScreen.tsx` (hi-fi **HOME-3**) for **admin_da
 
 **Tests:** `AdminDataHomeScreen` 4 (hero + incoming count, breakdown tiles, berjalan list, empty-berjalan) + dispatcher test updated (admin_data → admin-home). Full mobile suite **4174 passed / 0 failed**; `tsc` + ESLint clean on the new files.
 
-**Home revamp status:** shared chrome (masthead + tab bar) ✅ · role-aware dispatcher ✅ · HOME-1 (Field) ✅ · HOME-2 (Coordinator) ✅ · HOME-3 (Admin Data) ✅ — **all role dashboards complete.** Remaining mobile screens (Absensi/clock-in, Monitoring, Tugas, Aktivitas, Lembur, Perantingan, Profile, Notifications) are the subsequent revamp targets.
+**Home revamp status (after this checkpoint):** shared chrome (masthead + tab bar) ✅ · role-aware dispatcher ✅ · HOME-1 (Field) ✅ · HOME-2 (Coordinator) ✅ · HOME-3 (Admin Data) ✅ — **all hi-fi-defined Home roles complete.** The four previously Home-less roles (top_management/admin_system/superadmin/staff_kecamatan) get their (net-new, no-hi-fi) Home in **Checkpoint 5** below. After that, the remaining mobile screen groups (Absensi/clock-in, Monitoring, Tugas, Aktivitas, Lembur, Perantingan, Profile, Notifications) are the subsequent revamp targets.
 
 ---
 
