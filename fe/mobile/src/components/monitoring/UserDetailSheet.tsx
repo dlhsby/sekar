@@ -7,25 +7,24 @@
 import React, { useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   View,
-  Text,
-  TouchableOpacity,
   StyleSheet,
   Linking,
   ActivityIndicator,
-  ScrollView,
 } from 'react-native';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import type { BottomSheetDefaultBackdropProps } from '@gorhom/bottom-sheet/lib/typescript/components/bottomSheetBackdrop/types';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
   nbBorders,
-  nbBorderRadius,
-  nbShadows,
+  nbRadius,
 } from '../../constants/nbTokens';
-import { getStatusColor, getStatusLabel, getRoleIcon } from '../../utils/mapUtils';
+import { NBText } from '../nb/NBText';
+import { NBButton } from '../nb/NBButton';
+import { RoleAvatar } from '../common/RoleAvatar';
+import { StatusPill } from '../home/StatusPill';
+import { HomeStatTile } from '../home/HomeStatTile';
+import { getStatusLabel } from '../../utils/mapUtils';
 import { ROLE_LABELS } from '../../constants/roles';
 import type { LiveUser, UserDaySummary, UserRole } from '../../types/models.types';
 
@@ -71,16 +70,7 @@ function formatTime(isoString: string): string {
   return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 }
 
-const TASK_STATUS_COLORS: Record<string, string> = {
-  pending: nbColors.warning,
-  in_progress: nbColors.accentSky,
-  completed: nbColors.successDark,
-  verified: nbColors.successDark,
-};
-
 // ─── Component ────────────────────────────────────────────────────────────────
-
-const REASSIGN_ROLES: UserRole[] = ['superadmin', 'admin_system', 'kepala_rayon'];
 
 export function UserDetailSheet({
   user,
@@ -88,17 +78,10 @@ export function UserDetailSheet({
   isLoadingDaySummary,
   onClose,
   onTrailPress,
-  onReassignPress,
-  currentUserRole,
 }: UserDetailSheetProps): React.JSX.Element {
   const sheetRef = useRef<BottomSheet>(null);
-  // Match BoundaryDetailModal's `maxHeight: '70%'` so worker + area details
-  // open at the same standard size. Second snap point allows expanding further.
   const snapPoints = useMemo(() => ['70%', '90%'], []);
 
-  // Use both controlled `index` prop AND imperative snapToIndex/close calls so
-  // the sheet opens reliably even on first render (gorhom ignores snapToIndex
-  // during its initial layout if it hasn't fully mounted yet).
   useEffect(() => {
     if (user) {
       sheetRef.current?.snapToIndex(0);
@@ -120,19 +103,6 @@ export function UserDetailSheet({
     [],
   );
 
-  const handleClose = useCallback(() => {
-    sheetRef.current?.close();
-    onClose();
-  }, [onClose]);
-
-  const handleWhatsApp = useCallback(() => {
-    if (!user?.phone) { return; }
-    const phone = formatPhone(user.phone);
-    if (phone) {
-      Linking.openURL(`https://wa.me/${phone}`).catch(() => {});
-    }
-  }, [user?.phone]);
-
   const handleCall = useCallback(() => {
     if (!user?.phone) { return; }
     const phone = formatPhone(user.phone);
@@ -145,15 +115,6 @@ export function UserDetailSheet({
     if (user) { onTrailPress(user); }
   }, [user, onTrailPress]);
 
-  const handleReassign = useCallback(() => {
-    if (user) { onReassignPress?.(user); }
-  }, [user, onReassignPress]);
-
-  const canReassign = !!user && currentUserRole && REASSIGN_ROLES.includes(currentUserRole);
-
-  const statusColor = user ? getStatusColor(user.status) : nbColors.gray['400'];
-  const roleIcon = user ? getRoleIcon(user.role) : 'account';
-  const roleLabel = user ? (ROLE_LABELS[user.role as UserRole] ?? user.role) : '';
   const hasPhone = Boolean(user?.phone);
 
   return (
@@ -170,33 +131,30 @@ export function UserDetailSheet({
       <BottomSheetScrollView contentContainerStyle={styles.content}>
       {user && (
         <>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={[styles.statusIndicator, { backgroundColor: statusColor }]} />
-          <View style={styles.headerInfo}>
-            <Text style={styles.userName}>{user.full_name}</Text>
-            <Text style={styles.userMeta}>
-              {roleLabel}  {user.area_name}
-            </Text>
+        {/* Drag handle bar */}
+        <View style={styles.dragHandle} />
+
+        {/* Profile row: avatar + name + role + status */}
+        <View style={styles.profileRow}>
+          <RoleAvatar
+            name={user.full_name}
+            role={user.role}
+            photoUrl={undefined}
+            size={48}
+          />
+          <View style={styles.profileInfo}>
+            <NBText variant="h2">{user.full_name}</NBText>
+            <NBText variant="mono-sm" color="gray600">
+              {ROLE_LABELS[user.role as UserRole] ?? user.role} · {user.area_name}
+            </NBText>
           </View>
-          <TouchableOpacity
-            onPress={handleClose}
-            style={styles.closeBtn}
-            accessibilityLabel="Tutup"
-            accessibilityRole="button"
-          >
-            <MaterialCommunityIcons name="close" size={20} color={nbColors.gray['700']} />
-          </TouchableOpacity>
+          <StatusPill
+            tone={user.status === 'active' ? 'ok' : user.status === 'inactive' ? 'warn' : 'bad'}
+            label={getStatusLabel(user.status)}
+          />
         </View>
 
-        {/* Status badge */}
-        <View style={[styles.statusBadge, { backgroundColor: `${statusColor}22` }]}>
-          <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-          <Text style={[styles.statusBadgeText, { color: statusColor }]}>
-            {getStatusLabel(user.status)}
-          </Text>
-        </View>
-
+        {/* 3-stat grid */}
         {isLoadingDaySummary ? (
           <ActivityIndicator
             size="small"
@@ -204,46 +162,66 @@ export function UserDetailSheet({
             style={styles.loader}
           />
         ) : (
-          <DaySummaryContent
-            daySummary={daySummary}
-            user={user}
-          />
+          <View style={styles.statGrid}>
+            <HomeStatTile
+              label="Lokasi"
+              value={user.latitude !== undefined && user.longitude !== undefined
+                ? `${user.latitude.toFixed(2)}, ${user.longitude.toFixed(2)}`
+                : '—'}
+            />
+            <HomeStatTile
+              label="Update"
+              value={user.last_update
+                ? formatRelativeTime(user.last_update)
+                : '—'}
+            />
+            <HomeStatTile
+              label="Jam kerja"
+              value={daySummary?.shift
+                ? formatDuration(daySummary.shift.duration_minutes)
+                : '—'}
+            />
+          </View>
+        )}
+
+        {/* Activities section */}
+        {daySummary && Array.isArray(daySummary.activities_today) && daySummary.activities_today.length > 0 && (
+          <View style={styles.section}>
+            <NBText variant="mono-sm" uppercase color="gray600" style={styles.sectionTitle}>
+              Aktivitas hari ini
+            </NBText>
+            <View style={styles.activityList}>
+              {daySummary.activities_today.slice(0, 5).map(act => (
+                <View key={act.id} style={styles.timelineRow}>
+                  <View style={styles.timelineDot} />
+                  <View style={styles.timelineContent}>
+                    <NBText variant="caption" style={{ fontWeight: '700' }}>
+                      {formatTime(act.created_at)}
+                    </NBText>
+                    <NBText variant="body-sm">{act.title}</NBText>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
         )}
 
         {/* Action buttons */}
         <View style={styles.actionRow}>
-          {/* eslint-disable-next-line sekar-design/no-inline-hex-colors -- WhatsApp brand color; no NB token equivalent. */}
-          <ActionButton
-            icon="whatsapp"
-            label="WhatsApp"
-            color="#25D366"
-            disabled={!hasPhone}
-            onPress={handleWhatsApp}
-          />
-          <ActionButton
-            icon="phone"
-            label="Telepon"
-            color={nbColors.accentSky}
+          <NBButton
+            variant="secondary"
+            title="Hubungi"
             disabled={!hasPhone}
             onPress={handleCall}
+            size="sm"
           />
-          <ActionButton
-            icon="map-marker-path"
-            label="Trail"
-            color={nbColors.primary}
+          <NBButton
+            variant="primary"
+            title="Lihat profil"
             disabled={false}
             onPress={handleTrail}
+            size="sm"
           />
-          {canReassign && (
-            <ActionButton
-              icon="account-switch"
-              label="Reassign"
-              // Audit H7: was '#2563EB' (exact match to nbColors.requestUnderReview).
-              color={nbColors.requestUnderReview}
-              disabled={false}
-              onPress={handleReassign}
-            />
-          )}
         </View>
         </>
       )}
@@ -252,336 +230,87 @@ export function UserDetailSheet({
   );
 }
 
-// ─── DaySummaryContent sub-component ─────────────────────────────────────────
-
-interface DaySummaryContentProps {
-  daySummary: UserDaySummary | null;
-  user: LiveUser;
-}
-
-function DaySummaryContent({ daySummary, user }: DaySummaryContentProps): React.JSX.Element {
-  return (
-    <>
-      {/* Shift Info */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Info Shift</Text>
-        {daySummary?.shift ? (
-          <View style={styles.infoBox}>
-            <InfoRow label="Shift" value={daySummary.shift.name} />
-            <InfoRow label="Masuk" value={formatTime(daySummary.shift.clock_in_time)} />
-            <InfoRow
-              label="Durasi"
-              value={formatDuration(daySummary.shift.duration_minutes)}
-            />
-            <InfoRow
-              label="Batas Area"
-              value={daySummary.shift.outside_boundary ? 'Di Luar Area' : 'Di Dalam Area'}
-              valueColor={daySummary.shift.outside_boundary ? nbColors.dangerDark : nbColors.successDark}
-            />
-          </View>
-        ) : (
-          <Text style={styles.emptyText}>Belum ada data shift hari ini</Text>
-        )}
-      </View>
-
-      {/* Last Location */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Lokasi Terakhir</Text>
-        {daySummary?.last_location ? (
-          <View style={styles.infoBox}>
-            <InfoRow
-              label="Koordinat"
-              value={`${daySummary.last_location.latitude.toFixed(4)}, ${daySummary.last_location.longitude.toFixed(4)}`}
-            />
-            {daySummary.last_location.accuracy != null && (
-              <InfoRow label="Akurasi" value={`±${daySummary.last_location.accuracy.toFixed(0)}m`} />
-            )}
-            {daySummary.last_location.battery_level != null && (
-              <InfoRow label="Baterai" value={`${daySummary.last_location.battery_level}%`} />
-            )}
-            <InfoRow
-              label="Diperbarui"
-              value={formatRelativeTime(daySummary.last_location.logged_at)}
-            />
-          </View>
-        ) : (
-          <View style={styles.infoBox}>
-            <InfoRow
-              label="Koordinat"
-              value={`${user.latitude.toFixed(4)}, ${user.longitude.toFixed(4)}`}
-            />
-          </View>
-        )}
-      </View>
-
-      {/* Activities Today */}
-      {daySummary && Array.isArray(daySummary.activities_today) && daySummary.activities_today.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            Aktivitas Hari Ini ({daySummary.activities_today.length})
-          </Text>
-          <View style={styles.infoBox}>
-            {daySummary.activities_today.slice(0, 5).map(act => (
-              <View key={act.id} style={styles.listRow}>
-                <Text style={styles.listBullet}>•</Text>
-                <Text style={styles.listLabel} numberOfLines={1}>{act.title}</Text>
-                <Text style={styles.listTime}>{formatTime(act.created_at)}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
-
-      {/* Tasks Today */}
-      {daySummary && Array.isArray(daySummary.tasks_today) && daySummary.tasks_today.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            Tugas Hari Ini ({daySummary.tasks_today.length})
-          </Text>
-          <View style={styles.infoBox}>
-            {daySummary.tasks_today.map(task => (
-              <View key={task.id} style={styles.listRow}>
-                <Text style={styles.listBullet}>•</Text>
-                <Text style={styles.listLabel} numberOfLines={1}>{task.title}</Text>
-                <View
-                  style={[
-                    styles.taskStatusBadge,
-                    {
-                      backgroundColor:
-                        TASK_STATUS_COLORS[task.status] ?? nbColors.gray['300'],
-                    },
-                  ]}
-                >
-                  <Text style={styles.taskStatusText}>{task.status}</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-      )}
-    </>
-  );
-}
-
-// ─── InfoRow helper ───────────────────────────────────────────────────────────
-
-interface InfoRowProps {
-  label: string;
-  value: string;
-  valueColor?: string;
-}
-
-function InfoRow({ label, value, valueColor }: InfoRowProps): React.JSX.Element {
-  return (
-    <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={[styles.infoValue, valueColor ? { color: valueColor } : {}]}>
-        {value}
-      </Text>
-    </View>
-  );
-}
-
-// ─── ActionButton helper ──────────────────────────────────────────────────────
-
-interface ActionButtonProps {
-  icon: string;
-  label: string;
-  color: string;
-  disabled: boolean;
-  onPress: () => void;
-}
-
-function ActionButton({ icon, label, color, disabled, onPress }: ActionButtonProps): React.JSX.Element {
-  return (
-    <TouchableOpacity
-      style={[styles.actionBtn, disabled && styles.actionBtnDisabled]}
-      onPress={onPress}
-      disabled={disabled}
-      activeOpacity={0.75}
-      accessibilityLabel={label}
-      accessibilityRole="button"
-    >
-      <MaterialCommunityIcons
-        name={icon}
-        size={22}
-        color={disabled ? nbColors.gray['400'] : color}
-      />
-      <Text style={[styles.actionBtnText, disabled && styles.actionBtnTextDisabled]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
-
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   sheetBackground: {
     backgroundColor: nbColors.white,
-    borderTopLeftRadius: nbBorderRadius.lg,
-    borderTopRightRadius: nbBorderRadius.lg,
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.black,
+    borderTopWidth: nbBorders.widthThick,
+    borderTopColor: nbColors.black,
+    borderTopLeftRadius: nbRadius.lg,
+    borderTopRightRadius: nbRadius.lg,
   },
   handle: {
-    backgroundColor: nbColors.gray['400'],
+    display: 'none', // Hidden — using custom dragHandle instead
+  },
+  dragHandle: {
     width: 40,
+    height: 5,
+    backgroundColor: nbColors.gray400,
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginTop: nbSpacing.sm,
+    marginBottom: nbSpacing.md,
   },
   content: {
     paddingHorizontal: nbSpacing.md,
     paddingBottom: nbSpacing.xl,
   },
-  header: {
+  profileRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: nbSpacing.md,
+    alignItems: 'flex-start',
     gap: nbSpacing.sm,
+    paddingBottom: nbSpacing.md,
+    borderBottomWidth: nbBorders.widthThin,
+    borderBottomColor: nbColors.gray200,
   },
-  statusIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    flexShrink: 0,
-  },
-  headerInfo: {
+  profileInfo: {
     flex: 1,
-  },
-  userName: {
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
-  },
-  userMeta: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['600'],
-    marginTop: 2,
-  },
-  closeBtn: {
-    padding: nbSpacing.sm,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    borderRadius: nbBorderRadius.full,
-    paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.xs,
-    marginBottom: nbSpacing.md,
     gap: nbSpacing.xs,
   },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  statusBadgeText: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.semibold,
+  statGrid: {
+    flexDirection: 'row',
+    gap: nbSpacing.sm,
+    paddingVertical: nbSpacing.md,
+    borderBottomWidth: nbBorders.widthThin,
+    borderBottomColor: nbColors.gray200,
   },
   loader: {
     marginVertical: nbSpacing.xl,
   },
   section: {
+    marginTop: nbSpacing.md,
     marginBottom: nbSpacing.md,
   },
   sectionTitle: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray['700'],
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: nbSpacing.xs,
+    marginBottom: nbSpacing.sm,
   },
-  infoBox: {
-    backgroundColor: nbColors.gray['100'],
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.thin,
-    borderColor: nbColors.gray['300'],
-    padding: nbSpacing.sm,
-    gap: nbSpacing.xs,
+  activityList: {
+    gap: nbSpacing.sm,
   },
-  infoRow: {
+  timelineRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    gap: nbSpacing.sm,
+    alignItems: 'flex-start',
   },
-  infoLabel: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['600'],
-  },
-  infoValue: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray['800'],
-    maxWidth: '60%',
-    textAlign: 'right',
-  },
-  emptyText: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['500'],
-    fontStyle: 'italic',
-  },
-  listRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: nbSpacing.xs,
-  },
-  listBullet: {
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray['500'],
+  timelineDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: nbColors.statusActive,
+    marginTop: nbSpacing.xs,
     flexShrink: 0,
   },
-  listLabel: {
+  timelineContent: {
     flex: 1,
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['700'],
-  },
-  listTime: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray['500'],
-    flexShrink: 0,
-  },
-  taskStatusBadge: {
-    borderRadius: nbBorderRadius.sm,
-    paddingHorizontal: nbSpacing.xs,
-    paddingVertical: 2,
-    flexShrink: 0,
-  },
-  taskStatusText: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.white,
-    fontWeight: nbTypography.fontWeight.semibold,
+    gap: nbSpacing.xs,
   },
   actionRow: {
     flexDirection: 'row',
     gap: nbSpacing.sm,
     marginTop: nbSpacing.md,
     paddingTop: nbSpacing.md,
-    borderTopWidth: nbBorders.thin,
-    borderTopColor: nbColors.gray['300'],
+    borderTopWidth: nbBorders.widthThin,
+    borderTopColor: nbColors.gray200,
   },
-  actionBtn: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: nbSpacing.sm,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.thin,
-    borderColor: nbColors.gray['300'],
-    backgroundColor: nbColors.gray['100'],
-    gap: nbSpacing.xs,
-    minHeight: 48,
-  },
-  actionBtnDisabled: {
-    opacity: 0.4,
-  },
-  actionBtnText: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray['700'],
-  },
-  actionBtnTextDisabled: {
-    color: nbColors.gray['400'],
-  },
-});
+});;

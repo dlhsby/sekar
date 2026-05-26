@@ -219,56 +219,21 @@ describe('UserDetailSheet', () => {
     });
   });
 
-  // ── Shift info section ──────────────────────────────────────────────────────
+  // ── Stat grid ───────────────────────────────────────────────────────────────
 
-  describe('shift info section', () => {
-    it('renders "Info Shift" section title', () => {
+  describe('stat grid', () => {
+    it('renders "Lokasi" stat tile label', () => {
       const { getByText } = render(<UserDetailSheet {...defaultProps} />);
-      expect(getByText('Info Shift')).toBeTruthy();
+      expect(getByText('Lokasi')).toBeTruthy();
     });
 
-    it('renders shift name when shift data is available', () => {
+    it('renders user coordinates in Lokasi tile (toFixed 2)', () => {
       const { getByText } = render(<UserDetailSheet {...defaultProps} />);
-      expect(getByText('Shift Pagi')).toBeTruthy();
+      // latitude: -7.250445 → '-7.25', longitude: 112.768845 → '112.77'
+      expect(getByText('-7.25, 112.77')).toBeTruthy();
     });
 
-    it('shows "Belum ada data shift hari ini" when daySummary has no shift', () => {
-      const noShiftSummary: UserDaySummary = { ...mockDaySummary, shift: null };
-      const { getByText } = render(
-        <UserDetailSheet {...defaultProps} daySummary={noShiftSummary} />
-      );
-      expect(getByText('Belum ada data shift hari ini')).toBeTruthy();
-    });
-
-    it('shows "Di Dalam Area" boundary label when outside_boundary is false', () => {
-      const { getByText } = render(<UserDetailSheet {...defaultProps} />);
-      expect(getByText('Di Dalam Area')).toBeTruthy();
-    });
-
-    it('shows "Di Luar Area" boundary label when outside_boundary is true', () => {
-      const outsideSummary: UserDaySummary = {
-        ...mockDaySummary,
-        shift: { ...mockDaySummary.shift!, outside_boundary: true },
-      };
-      const { getByText } = render(
-        <UserDetailSheet {...defaultProps} daySummary={outsideSummary} />
-      );
-      // The boundary row value
-      const matches = getByText('Di Luar Area');
-      expect(matches).toBeTruthy();
-    });
-  });
-
-  // ── Last location ───────────────────────────────────────────────────────────
-
-  describe('last location section', () => {
-    it('renders last location coordinates from daySummary', () => {
-      const { getByText } = render(<UserDetailSheet {...defaultProps} />);
-      // -7.250445 toFixed(4) = '-7.2504', 112.768845 toFixed(4) = '112.7688'
-      expect(getByText('-7.2504, 112.7688')).toBeTruthy();
-    });
-
-    it('falls back to user coordinates when daySummary has no last_location', () => {
+    it('renders Lokasi coordinates even when daySummary has no last_location', () => {
       const noLocationSummary: UserDaySummary = {
         ...mockDaySummary,
         last_location: null,
@@ -276,7 +241,7 @@ describe('UserDetailSheet', () => {
       const { getByText } = render(
         <UserDetailSheet {...defaultProps} daySummary={noLocationSummary} />
       );
-      expect(getByText('-7.2504, 112.7688')).toBeTruthy();
+      expect(getByText('-7.25, 112.77')).toBeTruthy();
     });
   });
 
@@ -288,9 +253,9 @@ describe('UserDetailSheet', () => {
       expect(getByText('Penyiraman')).toBeTruthy();
     });
 
-    it('renders activities section title with count', () => {
+    it('renders "Aktivitas hari ini" section label', () => {
       const { getByText } = render(<UserDetailSheet {...defaultProps} />);
-      expect(getByText('Aktivitas Hari Ini (1)')).toBeTruthy();
+      expect(getByText('Aktivitas hari ini')).toBeTruthy();
     });
 
     it('does not render activities section when activities list is empty', () => {
@@ -301,56 +266,16 @@ describe('UserDetailSheet', () => {
       const { queryByText } = render(
         <UserDetailSheet {...defaultProps} daySummary={noActivitiesSummary} />
       );
-      expect(queryByText(/Aktivitas Hari Ini/)).toBeNull();
-    });
-  });
-
-  // ── Tasks list ──────────────────────────────────────────────────────────────
-
-  describe('tasks today section', () => {
-    it('renders task title when tasks exist', () => {
-      const { getByText } = render(<UserDetailSheet {...defaultProps} />);
-      expect(getByText('Potong rumput')).toBeTruthy();
-    });
-
-    it('renders task status badge text', () => {
-      const { getByText } = render(<UserDetailSheet {...defaultProps} />);
-      expect(getByText('in_progress')).toBeTruthy();
-    });
-
-    it('renders tasks section title with count', () => {
-      const { getByText } = render(<UserDetailSheet {...defaultProps} />);
-      expect(getByText('Tugas Hari Ini (1)')).toBeTruthy();
-    });
-
-    it('does not render tasks section when tasks list is empty', () => {
-      const noTasksSummary: UserDaySummary = {
-        ...mockDaySummary,
-        tasks_today: [],
-      };
-      const { queryByText } = render(
-        <UserDetailSheet {...defaultProps} daySummary={noTasksSummary} />
-      );
-      expect(queryByText(/Tugas Hari Ini/)).toBeNull();
+      expect(queryByText(/Aktivitas hari ini/)).toBeNull();
     });
   });
 
   // ── Action buttons ──────────────────────────────────────────────────────────
 
   describe('action buttons', () => {
-    it('calls Linking.openURL with WhatsApp URL when WhatsApp button is pressed', async () => {
-      const { getByLabelText } = render(<UserDetailSheet {...defaultProps} />);
-      fireEvent.press(getByLabelText('WhatsApp'));
-      await waitFor(() => {
-        expect(Linking.openURL).toHaveBeenCalledWith(
-          expect.stringMatching(/^https:\/\/wa\.me\/62/)
-        );
-      });
-    });
-
-    it('calls Linking.openURL with tel: URL when Telepon button is pressed', async () => {
-      const { getByLabelText } = render(<UserDetailSheet {...defaultProps} />);
-      fireEvent.press(getByLabelText('Telepon'));
+    it('calls Linking.openURL with tel: URL when Hubungi button is pressed', async () => {
+      const { getByText } = render(<UserDetailSheet {...defaultProps} />);
+      fireEvent.press(getByText('Hubungi'));
       await waitFor(() => {
         expect(Linking.openURL).toHaveBeenCalledWith(
           expect.stringMatching(/^tel:\+62/)
@@ -358,29 +283,23 @@ describe('UserDetailSheet', () => {
       });
     });
 
-    it('does not call Linking.openURL when WhatsApp pressed and phone is null', () => {
+    it('does not call Linking.openURL when Hubungi pressed and phone is null', () => {
       const userNoPhone = createMockUser({ phone: null });
-      const { getByLabelText } = render(
+      const { getByText } = render(
         <UserDetailSheet {...defaultProps} user={userNoPhone} />
       );
-      fireEvent.press(getByLabelText('WhatsApp'));
+      fireEvent.press(getByText('Hubungi'));
       expect(Linking.openURL).not.toHaveBeenCalled();
     });
 
-    it('calls onTrailPress with the current user when Trail button is pressed', () => {
+    it('calls onTrailPress with the current user when Lihat profil is pressed', () => {
       const user = createMockUser();
-      const { getByLabelText } = render(
+      const { getByText } = render(
         <UserDetailSheet {...defaultProps} user={user} />
       );
-      fireEvent.press(getByLabelText('Trail'));
+      fireEvent.press(getByText('Lihat profil'));
       expect(mockOnTrailPress).toHaveBeenCalledTimes(1);
       expect(mockOnTrailPress).toHaveBeenCalledWith(user);
-    });
-
-    it('calls onClose when the close button is pressed', () => {
-      const { getByLabelText } = render(<UserDetailSheet {...defaultProps} />);
-      fireEvent.press(getByLabelText('Tutup'));
-      expect(mockOnClose).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -394,14 +313,14 @@ describe('UserDetailSheet', () => {
       expect(getByTestId('bottom-sheet')).toBeTruthy();
     });
 
-    it('normalises phone number starting with 0 to 62 prefix for WhatsApp', async () => {
+    it('normalises phone number starting with 0 to 62 prefix for tel call', async () => {
       const user = createMockUser({ phone: '08123456789' });
-      const { getByLabelText } = render(
+      const { getByText } = render(
         <UserDetailSheet {...defaultProps} user={user} />
       );
-      fireEvent.press(getByLabelText('WhatsApp'));
+      fireEvent.press(getByText('Hubungi'));
       await waitFor(() => {
-        expect(Linking.openURL).toHaveBeenCalledWith('https://wa.me/628123456789');
+        expect(Linking.openURL).toHaveBeenCalledWith('tel:+628123456789');
       });
     });
 

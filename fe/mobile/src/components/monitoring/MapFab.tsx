@@ -9,7 +9,7 @@
 import React from 'react';
 import { TouchableOpacity, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { nbColors, nbBorders, nbShadows } from '../../constants/nbTokens';
+import { nbColors, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
 
 interface MapFabProps {
   icon: string;
@@ -42,11 +42,11 @@ const styles = StyleSheet.create({
   fab: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: nbRadius.base,
     backgroundColor: nbColors.white,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     ...nbShadows.md,
   },

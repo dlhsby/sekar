@@ -33,7 +33,7 @@ import {
   nbSpacing,
   nbShadows,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
 } from '../../constants/nbTokens';
 import { NBBackgroundPattern } from '../../components/nb';
 import { NBText } from '../../components/nb/NBText';
@@ -120,6 +120,8 @@ export function MapDashboardScreen(): React.JSX.Element {
   // Incremented on focus and on manual refresh to force BoundaryOverlay remount,
   // ensuring Android native Polygon/Circle overlays are recreated when tabs switch.
   const [boundaryKey, setBoundaryKey] = useState(0);
+  // MON-3: Tools FAB expanded state
+  const [toolsExpanded, setToolsExpanded] = useState(false);
 
   // Auto-focus on filter changes
   useMapAutoFocus(mapRef, filters, boundaries, liveUsers);
@@ -558,29 +560,79 @@ export function MapDashboardScreen(): React.JSX.Element {
             </View>
           )}
 
-          {/* FAB column — right side */}
+          {/* FAB column — MON-3 refactored with tools overlay */}
           <View style={styles.fabColumn}>
-            <MapFab
-              icon="filter-variant"
-              onPress={() => setFilterModalVisible(true)}
-              accessibilityLabel="Filter"
-            />
-            {/* Phase 3: Layer visibility toggle */}
-            <MapFab
-              icon="layers"
-              onPress={() => setToggleSheetVisible(true)}
-              accessibilityLabel="Tampilan peta"
-            />
+            {/* Locate me FAB */}
             <MapFab
               icon="crosshairs-gps"
               onPress={handleMyLocation}
               accessibilityLabel="Lokasi saya"
             />
+            {/* Refresh FAB */}
             <MapFab
               icon="refresh"
               onPress={handleRefresh}
               accessibilityLabel="Perbarui"
             />
+            {/* Tools FAB */}
+            <MapFab
+              icon="wrench"
+              onPress={() => setToolsExpanded(!toolsExpanded)}
+              accessibilityLabel="Alat peta"
+            />
+
+            {/* Tools overlay card — inline JSX, shown/hidden with toolsExpanded state */}
+            {toolsExpanded && (
+              <View style={styles.toolsOverlay}>
+                <NBText variant="mono-sm" uppercase style={styles.toolsHeader}>
+                  Tools
+                </NBText>
+
+                {/* Filter tool row */}
+                <TouchableOpacity
+                  style={[
+                    styles.toolRow,
+                    filterModalVisible && styles.toolRowActive,
+                  ]}
+                  onPress={() => {
+                    setFilterModalVisible(true);
+                    setToolsExpanded(false);
+                  }}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.toolIconChip}>
+                    <MaterialCommunityIcons
+                      name="filter-variant"
+                      size={16}
+                      color={nbColors.black}
+                    />
+                  </View>
+                  <NBText variant="body-sm">Filter</NBText>
+                </TouchableOpacity>
+
+                {/* Layers tool row */}
+                <TouchableOpacity
+                  style={[
+                    styles.toolRow,
+                    toggleSheetVisible && styles.toolRowActive,
+                  ]}
+                  onPress={() => {
+                    setToggleSheetVisible(true);
+                    setToolsExpanded(false);
+                  }}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.toolIconChip}>
+                    <MaterialCommunityIcons
+                      name="layers"
+                      size={16}
+                      color={nbColors.black}
+                    />
+                  </View>
+                  <NBText variant="body-sm">Tampilan</NBText>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
 
@@ -679,9 +731,9 @@ const styles = StyleSheet.create({
     paddingVertical: nbSpacing.sm,
     paddingHorizontal: nbSpacing.md,
     backgroundColor: nbColors.warningLight,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.base,
+    borderRadius: nbRadius.base,
     ...nbShadows.xs,
   },
   map: {
@@ -698,8 +750,8 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.primary,
     paddingHorizontal: nbSpacing.lg,
     paddingVertical: nbSpacing.md,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
   },
   retryText: {},
@@ -709,5 +761,49 @@ const styles = StyleSheet.create({
     bottom: PEEK_HEIGHT + nbSpacing.md,
     gap: nbSpacing.sm,
     pointerEvents: 'box-none',
+  },
+  toolsOverlay: {
+    position: 'absolute',
+    bottom: 44 + nbSpacing.sm + nbSpacing.sm, // above the tools FAB
+    right: 0,
+    width: 200,
+    borderRadius: nbRadius.md,
+    borderWidth: nbBorders.widthThick,
+    borderColor: nbColors.black,
+    backgroundColor: nbColors.white,
+    paddingVertical: nbSpacing.sm,
+    paddingHorizontal: nbSpacing.sm,
+    ...nbShadows.md,
+  },
+  toolsHeader: {
+    paddingHorizontal: nbSpacing.xs,
+    paddingVertical: nbSpacing.xs,
+    marginBottom: nbSpacing.xs,
+    color: nbColors.black,
+  },
+  toolRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.sm,
+    paddingVertical: nbSpacing.xs + 2,
+    paddingHorizontal: nbSpacing.xs,
+    marginVertical: nbSpacing.xs - 2,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthThin,
+    borderColor: nbColors.black,
+    backgroundColor: nbColors.white,
+  },
+  toolRowActive: {
+    backgroundColor: nbColors.bgAccentMint,
+  },
+  toolIconChip: {
+    width: 24,
+    height: 24,
+    borderRadius: nbRadius.sm,
+    borderWidth: nbBorders.widthThin,
+    borderColor: nbColors.black,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: nbColors.white,
   },
 });

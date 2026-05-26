@@ -140,14 +140,13 @@ describe('AttendanceScreen', () => {
 
   describe('date navigation', () => {
     it('should navigate to previous day when left arrow is pressed', async () => {
-      const { getByText } = render(<AttendanceScreen />);
+      const { getByTestId } = render(<AttendanceScreen />);
 
       await waitFor(() => {
         expect(monitoringApi.getAttendance).toHaveBeenCalled();
       });
 
-      const prevButton = getByText('◀');
-      fireEvent.press(prevButton);
+      fireEvent.press(getByTestId('date-nav-prev'));
 
       await waitFor(() => {
         // API should be called twice: initial + after navigation
@@ -156,14 +155,13 @@ describe('AttendanceScreen', () => {
     });
 
     it('should not navigate to future when on today', async () => {
-      const { getByText, queryByText } = render(<AttendanceScreen />);
+      const { getByTestId } = render(<AttendanceScreen />);
 
       await waitFor(() => {
-        expect(getByText('▶')).toBeTruthy();
+        expect(monitoringApi.getAttendance).toHaveBeenCalled();
       });
 
-      const nextButton = getByText('▶');
-      fireEvent.press(nextButton);
+      fireEvent.press(getByTestId('date-nav-next'));
 
       // Should only call API once (initial load), not after pressing next
       await waitFor(() => {
@@ -172,21 +170,21 @@ describe('AttendanceScreen', () => {
     });
 
     it('should navigate to next day after going to previous day', async () => {
-      const { getByText } = render(<AttendanceScreen />);
+      const { getByTestId } = render(<AttendanceScreen />);
 
       await waitFor(() => {
         expect(monitoringApi.getAttendance).toHaveBeenCalled();
       });
 
       // Go to previous day
-      fireEvent.press(getByText('◀'));
+      fireEvent.press(getByTestId('date-nav-prev'));
 
       await waitFor(() => {
         expect(monitoringApi.getAttendance).toHaveBeenCalledTimes(2);
       });
 
       // Now next button should work
-      fireEvent.press(getByText('▶'));
+      fireEvent.press(getByTestId('date-nav-next'));
 
       await waitFor(() => {
         expect(monitoringApi.getAttendance).toHaveBeenCalledTimes(3);

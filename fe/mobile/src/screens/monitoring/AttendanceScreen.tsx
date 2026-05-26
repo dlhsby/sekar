@@ -13,15 +13,15 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   nbColors,
   nbSpacing,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
   nbShadows,
 } from '../../constants/nbTokens';
-import { NBCard, NBButton, NBBackgroundPattern, NBText } from '../../components/nb';
+import { NBButton, NBBackgroundPattern, NBText } from '../../components/nb';
 import { getAttendance } from '../../services/api/monitoringApi';
 import { formatDate } from '../../utils/dateUtils';
 import AttendanceCard from '../../components/monitoring/AttendanceCard';
@@ -178,7 +178,7 @@ export default function AttendanceScreen() {
    */
   const renderSectionHeader = ({ section }: { section: SectionData }) => (
     <View style={styles.sectionHeader}>
-      <NBText variant="caption" color="gray600" uppercase style={styles.sectionHeaderText}>{section.title}</NBText>
+      <NBText variant="mono-sm" uppercase color="gray600" style={styles.sectionHeaderText}>{section.title}</NBText>
     </View>
   );
 
@@ -212,7 +212,7 @@ export default function AttendanceScreen() {
       patternColor={nbColors.primary}
       opacity={0.06}
     >
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
           <NBText variant="h1" style={styles.headerTitle}>Kehadiran</NBText>
@@ -221,7 +221,8 @@ export default function AttendanceScreen() {
       {/* Date Navigator */}
       <View style={styles.dateNavigator}>
         <NBButton
-          title="◀"
+          leftIcon="chevron-left"
+          title=""
           onPress={goToPreviousDay}
           variant="secondary"
           size="sm"
@@ -234,7 +235,8 @@ export default function AttendanceScreen() {
         </View>
 
         <NBButton
-          title="▶"
+          leftIcon="chevron-right"
+          title=""
           onPress={goToNextDay}
           variant="secondary"
           size="sm"
@@ -247,14 +249,14 @@ export default function AttendanceScreen() {
       {/* Summary Cards */}
       {attendanceData && (
         <View style={styles.summaryContainer}>
-          <NBCard variant="elevated" style={[styles.summaryCard, styles.summaryCardPresent]}>
+          <View style={[styles.summaryCard, styles.summaryCardPresent]}>
             <NBText variant="display" color="white" align="center" style={styles.summaryCount}>{attendanceData.clocked_in_count}</NBText>
             <NBText variant="body" color="white" align="center" style={styles.summaryLabel}>Hadir</NBText>
-          </NBCard>
-          <NBCard variant="elevated" style={[styles.summaryCard, styles.summaryCardAbsent]}>
+          </View>
+          <View style={[styles.summaryCard, styles.summaryCardAbsent]}>
             <NBText variant="display" color="white" align="center" style={styles.summaryCount}>{attendanceData.not_clocked_in.length}</NBText>
             <NBText variant="body" color="white" align="center" style={styles.summaryLabel}>Tidak Hadir</NBText>
-          </NBCard>
+          </View>
         </View>
       )}
 
@@ -289,12 +291,20 @@ export default function AttendanceScreen() {
       {/* Note about clocked-in workers */}
       {!loading && attendanceData && attendanceData.clocked_in_count > 0 && (
         <View style={styles.noteContainer}>
-          <NBText variant="body-sm" color="gray600" style={styles.noteText}>
-            💡 {attendanceData.clocked_in_count} pekerja sudah masuk. Lihat lokasi mereka di peta dashboard.
-          </NBText>
+          <View style={styles.noteContent}>
+            <MaterialCommunityIcons
+              name="information-outline"
+              size={16}
+              color={nbColors.primary}
+              style={{ marginTop: 2 }}
+            />
+            <NBText variant="body-sm" color="gray600" style={{ flex: 1 }}>
+              {attendanceData.clocked_in_count} pekerja sudah masuk. Lihat lokasi mereka di peta dashboard.
+            </NBText>
+          </View>
         </View>
       )}
-    </SafeAreaView>
+      </View>
     </NBBackgroundPattern>
   );
 }
@@ -308,7 +318,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.white,
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.md,
-    borderBottomWidth: nbBorders.base,
+    borderBottomWidth: nbBorders.widthBase,
     borderBottomColor: nbColors.black,
   },
   headerTitle: {
@@ -320,7 +330,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.white,
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.md,
-    borderBottomWidth: nbBorders.base,
+    borderBottomWidth: nbBorders.widthBase,
     borderBottomColor: nbColors.black,
   },
   dateNavButton: {
@@ -341,9 +351,9 @@ const styles = StyleSheet.create({
   summaryCard: {
     flex: 1,
     padding: nbSpacing.md,
-    borderRadius: nbBorderRadius.base,
+    borderRadius: nbRadius.base,
     alignItems: 'center',
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     ...nbShadows.md,
   },
@@ -371,11 +381,11 @@ const styles = StyleSheet.create({
     padding: nbSpacing.md,
   },
   sectionHeader: {
-    backgroundColor: nbColors.gray['200'],
+    backgroundColor: nbColors.gray200,
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.sm,
-    borderRadius: nbBorderRadius.sm,
-    borderWidth: nbBorders.thin,
+    borderRadius: nbRadius.sm,
+    borderWidth: nbBorders.widthThin,
     borderColor: nbColors.black,
     marginBottom: nbSpacing.sm,
   },
@@ -389,16 +399,19 @@ const styles = StyleSheet.create({
   emptyStateText: {
   },
   noteContainer: {
-    backgroundColor: nbColors.gray['50'],
+    backgroundColor: nbColors.gray50,
     padding: nbSpacing.md,
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.md,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.thin,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthThin,
     borderColor: nbColors.black,
-    borderLeftWidth: nbBorders.thick,
+    borderLeftWidth: nbBorders.widthThick,
     borderLeftColor: nbColors.primary,
   },
-  noteText: {
+  noteContent: {
+    flexDirection: 'row',
+    gap: nbSpacing.sm,
+    alignItems: 'flex-start',
   },
 });

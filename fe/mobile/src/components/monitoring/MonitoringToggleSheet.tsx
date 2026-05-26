@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: nbSpacing.sm,
-    borderBottomWidth: nbBorders.thin,
+    borderBottomWidth: nbBorders.widthThin,
     borderBottomColor: nbColors.gray200,
     minHeight: 48,
   },

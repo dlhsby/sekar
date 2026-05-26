@@ -73,9 +73,9 @@
 | ABS-1 | Clock-in · GPS + selfie | existing absensi screen | Revamp |
 | ABS-2 | Clock-in · Di luar area | existing | Revamp |
 | ABS-3 | Shift history | existing | Revamp |
-| MON-1 | Map · Korlap view | monitoring screen + `components/monitoring/*` | Revamp — map FAB + bottom-sheet redesign |
-| MON-2 | Personnel sheet | `UserDetailSheet.tsx` | Revamp |
-| MON-3 | Tools FAB · expanded | new sub-component | Revamp — grouped FAB replaces ad-hoc map buttons |
+| MON-1 | Map · Korlap view | monitoring screen + `components/monitoring/*` | ✅ Done (2026-05-26) — tokens clean; MapFab rounded-square |
+| MON-2 | Personnel sheet | `UserDetailSheet.tsx` | ✅ Done (2026-05-26) — RoleAvatar + HomeStatTile + NBText/NBButton; Info Shift/Tasks/WhatsApp OMITTED per hi-fi |
+| MON-3 | Tools FAB · expanded | `MapDashboardScreen` inline toolbox | ✅ Done (2026-05-26) — wrench FAB + inline overlay card replaces 4-button column |
 | TUG-1 | Tugas list · filtered tabs | tasks list screen | Revamp |
 | TUG-2 | Tugas detail | TaskDetailScreen | Revamp |
 | TUG-3 | Selesaikan tugas | task completion screen | Revamp |

@@ -8,7 +8,7 @@ import { MonitoringStatCard } from './MonitoringStatCard';
 import {
   nbColors,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
   nbSpacing,
   nbShadows,
 } from '../../constants/nbTokens';
@@ -189,7 +189,7 @@ function SummaryRow({
 }): React.JSX.Element {
   return (
     <View style={[styles.summaryRow, !isLast && styles.summaryRowBorder]}>
-      <MaterialCommunityIcons name={icon} size={16} color={nbColors.gray['500']} />
+      <MaterialCommunityIcons name={icon} size={16} color={nbColors.gray500} />
       <NBText variant="body-sm" color="gray700" style={styles.summaryLabel}>{label}</NBText>
       <NBText
         variant="body-sm"
@@ -236,7 +236,7 @@ function WorkerRow({
         <NBText variant="caption" color="gray400">{lastSeen}</NBText>
       )}
       {onPress && (
-        <MaterialCommunityIcons name="chevron-right" size={16} color={nbColors.gray['400']} />
+        <MaterialCommunityIcons name="chevron-right" size={16} color={nbColors.gray400} />
       )}
     </TouchableOpacity>
   );
@@ -251,13 +251,13 @@ function ItemSeparator(): React.JSX.Element {
 const styles = StyleSheet.create({
   sheetBackground: {
     backgroundColor: nbColors.white,
-    borderTopWidth: nbBorders.base,
+    borderTopWidth: nbBorders.widthBase,
     borderTopColor: nbColors.black,
-    borderTopLeftRadius: nbBorderRadius.lg,
-    borderTopRightRadius: nbBorderRadius.lg,
+    borderTopLeftRadius: nbRadius.lg,
+    borderTopRightRadius: nbRadius.lg,
   },
   handle: {
-    backgroundColor: nbColors.gray['400'],
+    backgroundColor: nbColors.gray400,
     width: 40,
     height: 4,
     borderRadius: 2,
@@ -272,9 +272,9 @@ const styles = StyleSheet.create({
   summarySection: {
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.sm,
-    borderWidth: nbBorders.thin,
-    borderColor: nbColors.gray['200'],
-    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.widthThin,
+    borderColor: nbColors.gray200,
+    borderRadius: nbRadius.base,
     overflow: 'hidden',
   },
   summaryRow: {
@@ -286,8 +286,8 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.white,
   },
   summaryRowBorder: {
-    borderBottomWidth: nbBorders.thin,
-    borderBottomColor: nbColors.gray['100'],
+    borderBottomWidth: nbBorders.widthThin,
+    borderBottomColor: nbColors.gray100,
   },
   summaryLabel: {
     flex: 1,
@@ -303,8 +303,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.md,
     paddingTop: nbSpacing.sm,
     paddingBottom: nbSpacing.xs,
-    borderBottomWidth: nbBorders.thin,
-    borderBottomColor: nbColors.gray['200'],
+    borderBottomWidth: nbBorders.widthThin,
+    borderBottomColor: nbColors.gray200,
   },
   listContent: {
     paddingBottom: nbSpacing.xl,
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 1,
-    backgroundColor: nbColors.gray['100'],
+    backgroundColor: nbColors.gray100,
     marginLeft: nbSpacing.md + 10 + nbSpacing.sm, // align with worker name
   },
 });

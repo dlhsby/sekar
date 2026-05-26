@@ -4,6 +4,39 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## May 26, 2026 — M3 Monitoring revamp · MON-1 / MON-2 / MON-3 + AttendanceScreen
+
+Token pass + hi-fi reconciliation across all monitoring-related files.
+
+**MON-1 (MapDashboardScreen + MapFab):**
+- `MapFab`: `borderRadius: 22` (circle) → `nbRadius.base` (rounded square per hi-fi); `nbBorders.base` → `nbBorders.widthBase`.
+- `MapDashboardScreen`: `nbBorderRadius` → `nbRadius` import; `nbBorders.base` → `nbBorders.widthBase`; `nbBorderRadius.base` → `nbRadius.base` in `emptyAreaCallout` + `retryButton` styles.
+- **MON-3 FAB consolidation**: replaced the 4-button FAB column (filter / layers / crosshairs / refresh) with 2 standalone FABs (locate-me + refresh) + 1 "wrench" Tools FAB that expands an inline overlay toolbox card (`width:200`, `nbRadius.md`, `nbBorders.widthThick`, `nbShadows.md`). Toolbox has "TOOLS" mono-sm header + Filter row + Layers row with active-state mint tint. Pressing a tool row opens the modal/sheet and collapses the toolbox. **Reconciliations:** overlay toolbox replaces the hi-fi expanded-FAB concept; MonitoringToggleSheet (NBModal with Switch rows) retained for the layers tool row as it covers more layer options than the hi-fi shows.
+
+**MON-2 (UserDetailSheet) — major rewrite:**
+- Removed: `Text` (RN primitive) → `NBText` throughout; removed `nbTypography` + `nbBorderRadius` imports.
+- Sheet chrome: custom drag handle bar (40×5 px, `nbColors.gray400`, `borderRadius:3`); `borderTopWidth: nbBorders.widthThick`; `borderTopLeftRadius/RightRadius: nbRadius.lg`.
+- Profile row: `RoleAvatar` (size 48) + `NBText variant="h2"` name + `NBText variant="mono-sm"` role·area + `StatusPill` — matches hi-fi MON-2 profile row.
+- 3-stat grid: `HomeStatTile` for Lokasi / Update / Jam kerja — replaces old manual "Info Shift" section and coordinate row. **Reconciliations:** "Info Shift" section (shift name, "Di Dalam/Luar Area" boundary) **OMITTED** (not in hi-fi MON-2); coordinates now show from `user.latitude/longitude` at `toFixed(2)` in Lokasi tile; Jam kerja from `daySummary.shift.duration_minutes`.
+- Activities: "Aktivitas hari ini" mono-sm section label + timeline rows (dot + bold time + body-sm title). Tasks section **OMITTED** (not in hi-fi MON-2).
+- Action buttons: `NBButton variant="secondary"` "Hubungi" (calls `tel:`) + `NBButton variant="primary"` "Lihat profil" (calls onTrailPress). WhatsApp button **OMITTED** (not in hi-fi MON-2).
+- All existing logic preserved: BottomSheet snap points, `daySummary` data, phone formatting, trail/reassign/close callbacks.
+
+**MON-3 (MonitoringToggleSheet):** `nbBorders.thin` → `nbBorders.widthThin`.
+
+**MonitoringStatusSheet:** `nbBorderRadius` → `nbRadius`; `nbBorders.base/thin` → `nbBorders.widthBase/widthThin`; bracket-notation colors → flat.
+
+**AttendanceScreen (complete token pass):**
+- `SafeAreaView` → `View`; `NBCard variant="elevated"` → plain Views; `nbBorderRadius` → `nbRadius`.
+- `nbBorders.base/thin/thick` → `widthBase/widthThin/widthThick`; `nbColors.gray['200'/'50']` → flat.
+- `title="◀"/"▶"` NBButton → `leftIcon="chevron-left/right" title=""` (chevron icons, accessed via testID in tests).
+- Emoji `💡` → `MaterialCommunityIcons name="information-outline"` in flex-row note container.
+- Section header: `variant="caption"` → `variant="mono-sm"`.
+
+**Tests:** `UserDetailSheet` suite updated — removed shift/tasks/WhatsApp/Trail/Tutup tests (sections removed per hi-fi); added stat-grid coordinate tests (`toFixed(2)`) and updated action button tests (Hubungi/Lihat profil text queries). `AttendanceScreen` nav tests: `getByText('◀'/'▶')` → `getByTestId('date-nav-prev/next')`. 515 monitoring tests passing / 0 failed.
+
+---
+
 ## May 26, 2026 — M3 Home revamp · Checkpoint 8: Home consistency pass (all 9 roles)
 
 Full cross-role audit and synchronization of the Home screens.
