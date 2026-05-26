@@ -1,10 +1,11 @@
 /**
  * LocationMapModal Tests
- * Phase 2D: Tests for map modal showing user GPS position and area boundary.
+ * Component now delegates modal chrome to NBModal — tests verify map, overlays, and info strip.
  */
 
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { LocationMapModal } from '../LocationMapModal';
 
 // ─── Mocks ──────────────────────────────────────────────────────────────────
@@ -34,38 +35,74 @@ jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
     React.createElement(Text, { testID: `icon-${props.name}`, ...props }, props.name);
 });
 
+// NBText stub — avoids loading the NB barrel (NBButton crashes jest due to nbTouchTarget)
+jest.mock('../../nb/NBText', () => ({
+  NBText: ({ children, accessibilityLabel, style }: any) => {
+    const React = require('react');
+    const { Text } = require('react-native');
+    return React.createElement(Text, { accessibilityLabel, style }, children);
+  },
+}));
+
+// NBModal stub — renders title + children + close button
+jest.mock('../../nb/NBModal', () => ({
+  NBModal: ({ visible, onClose, title, children, footer }: any) => {
+    const React = require('react');
+    const { View, Text, TouchableOpacity } = require('react-native');
+    if (!visible) return null;
+    return React.createElement(
+      View,
+      { testID: 'nb-modal' },
+      title ? React.createElement(Text, null, title) : null,
+      React.createElement(
+        TouchableOpacity,
+        { onPress: onClose, accessibilityLabel: 'Tutup' },
+        React.createElement(Text, null, '×'),
+      ),
+      children,
+      footer,
+    );
+  },
+}));
+
+// nb barrel stub — provides what LocationMapModal uses from '../nb'
+jest.mock('../../nb', () => ({
+  NBModal: ({ visible, onClose, title, children, footer }: any) => {
+    const React = require('react');
+    const { View, Text, TouchableOpacity } = require('react-native');
+    if (!visible) return null;
+    return React.createElement(
+      View,
+      { testID: 'nb-modal' },
+      title ? React.createElement(Text, null, title) : null,
+      React.createElement(
+        TouchableOpacity,
+        { onPress: onClose, accessibilityLabel: 'Tutup' },
+        React.createElement(Text, null, '×'),
+      ),
+      children,
+      footer,
+    );
+  },
+}));
+
 jest.mock('../../../constants/nbTokens', () => ({
   nbColors: {
     black: '#000000',
     white: '#FFFFFF',
-    gray: { '100': '#F5F5F5', '400': '#BDBDBD', '500': '#9E9E9E', '600': '#757575', '700': '#616161' },
-    surface: '#FFFFFF',
-    overlay: 'rgba(0,0,0,0.5)',
-    primary: '#F97316',
-    warning: '#EAB308',
+    gray100: '#F5F5F5',
+    gray400: '#BDBDBD',
     gray500: '#9E9E9E',
     gray600: '#757575',
     gray700: '#616161',
-  },
-  nbType: {
-    'display-xl': { fontFamily: "'Space Grotesk'", fontSize: 56, fontWeight: '800', lineHeight: 56 },
-    display: { fontFamily: "'Space Grotesk'", fontSize: 40, fontWeight: '700', lineHeight: 42 },
-    h1: { fontFamily: "'Space Grotesk'", fontSize: 28, fontWeight: '700', lineHeight: 34 },
-    h2: { fontFamily: "'Space Grotesk'", fontSize: 22, fontWeight: '600', lineHeight: 29 },
-    h3: { fontFamily: "'Space Grotesk'", fontSize: 18, fontWeight: '600', lineHeight: 24 },
-    bodyLg: { fontFamily: "'Inter'", fontSize: 18, fontWeight: '500', lineHeight: 28 },
-    body: { fontFamily: "'Inter'", fontSize: 16, fontWeight: '400', lineHeight: 24 },
-    bodySm: { fontFamily: "'Inter'", fontSize: 14, fontWeight: '400', lineHeight: 20 },
-    caption: { fontFamily: "'Inter'", fontSize: 12, fontWeight: '500', lineHeight: 17 },
-    monoSm: { fontFamily: "'JetBrains Mono'", fontSize: 12, fontWeight: '500', lineHeight: 17 },
+    warning: '#EAB308',
+    successDark: '#15803D',
+    statusIdle: '#F59E0B',
+    requestUnderReview: '#2563EB',
   },
   nbSpacing: { xs: 4, sm: 8, md: 16, lg: 24 },
-  nbTypography: {
-    fontSize: { xs: 10, sm: 12, base: 14, lg: 16, xl: 20 },
-    fontWeight: { regular: '400', medium: '500', bold: '700' },
-  },
-  nbBorders: { base: 2 },
-  nbBorderRadius: { base: 8 },
+  nbBorders: { base: 1, thick: 2 },
+  nbRadius: { base: 8, sm: 6 },
   nbShadows: { md: {}, lg: {} },
   withAlpha: (hex: string, _alpha: number) => hex,
 }));
@@ -120,6 +157,13 @@ describe('LocationMapModal', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('does not render when visible=false', () => {
+    const { queryByTestId } = render(
+      <LocationMapModal visible={false} onClose={onClose} location={VALID_LOCATION} />,
+    );
+    expect(queryByTestId('nb-modal')).toBeNull();
   });
 
   describe('rendering with valid coordinates', () => {
@@ -274,57 +318,96 @@ describe('LocationMapModal', () => {
   });
 
   describe('close interaction', () => {
-    it('calls onClose when close button is pressed', () => {
+    it('calls onClose when NBModal close is triggered', () => {
       const { getByLabelText } = render(
         <LocationMapModal visible onClose={onClose} location={VALID_LOCATION} />,
       );
 
-      fireEvent.press(getByLabelText('Tutup modal'));
+      fireEvent.press(getByLabelText('Tutup'));
       expect(onClose).toHaveBeenCalledTimes(1);
     });
-
-    it('calls onClose when overlay is pressed', () => {
-      const { getByTestId } = render(
-        <LocationMapModal visible onClose={onClose} location={VALID_LOCATION} />,
-      );
-
-      // The overlay is the Pressable wrapper
-      const overlay = getByTestId('map-view').parent?.parent?.parent?.parent;
-      // Simplify: just test close button works (overlay press tested above)
-      expect(onClose).not.toHaveBeenCalled();
-    });
   });
 
-  describe('area name', () => {
-    it('renders area name in subtitle', () => {
-      const { getByText } = render(
-        <LocationMapModal
-          visible
-          onClose={onClose}
-          location={VALID_LOCATION}
-          area={POLYGON_AREA}
-        />,
-      );
-
-      expect(getByText('Taman Bungkul')).toBeTruthy();
-    });
-
-    it('does not render subtitle when no area is provided', () => {
-      const { queryByText } = render(
-        <LocationMapModal visible onClose={onClose} location={VALID_LOCATION} />,
-      );
-
-      expect(queryByText('Taman Bungkul')).toBeNull();
-    });
-  });
-
-  describe('header', () => {
-    it('always renders "Lokasi Anda" title', () => {
+  describe('title and props', () => {
+    it('renders default title "Lokasi Anda"', () => {
       const { getByText } = render(
         <LocationMapModal visible onClose={onClose} location={VALID_LOCATION} />,
       );
 
       expect(getByText('Lokasi Anda')).toBeTruthy();
+    });
+
+    it('renders custom title when provided', () => {
+      const { getByText } = render(
+        <LocationMapModal
+          visible
+          onClose={onClose}
+          location={VALID_LOCATION}
+          title="Lokasi Perantingan"
+        />,
+      );
+
+      expect(getByText('Lokasi Perantingan')).toBeTruthy();
+    });
+
+    it('hides area status badge when hideAreaStatus=true', () => {
+      const { queryByText } = render(
+        <LocationMapModal
+          visible
+          onClose={onClose}
+          location={VALID_LOCATION}
+          hideAreaStatus
+        />,
+      );
+
+      expect(queryByText('Di dalam area kerja')).toBeNull();
+      expect(queryByText('Di luar area kerja')).toBeNull();
+    });
+
+    it('hides updatedAt when hideUpdatedAt=true', () => {
+      const { queryByText } = render(
+        <LocationMapModal
+          visible
+          onClose={onClose}
+          location={VALID_LOCATION}
+          hideUpdatedAt
+        />,
+      );
+
+      expect(queryByText('Diperbarui baru saja')).toBeNull();
+    });
+  });
+
+  describe('MultiPolygon boundary', () => {
+    it('renders polygon overlay for MultiPolygon boundary type', () => {
+      const multiPolygonArea = {
+        gps_lat: -7.2888,
+        gps_lng: 112.7378,
+        radius_meters: 150,
+        boundary_polygon: {
+          type: 'MultiPolygon' as const,
+          coordinates: [
+            [
+              [
+                [112.768, -7.250] as [number, number],
+                [112.770, -7.252] as [number, number],
+                [112.766, -7.252] as [number, number],
+              ],
+            ],
+          ],
+        },
+      };
+
+      const { getByTestId } = render(
+        <LocationMapModal
+          visible
+          onClose={onClose}
+          location={VALID_LOCATION}
+          area={multiPolygonArea}
+        />,
+      );
+
+      expect(getByTestId('polygon')).toBeTruthy();
     });
   });
 });

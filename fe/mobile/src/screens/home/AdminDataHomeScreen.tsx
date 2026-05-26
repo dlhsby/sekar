@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, ScrollView, RefreshControl, StyleSheet } from 'react-native';
+import { View, ScrollView, RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { LoadingSpinner } from '../../components/common';
 import { NBBackgroundPattern, NBButton, NBText } from '../../components/nb';
 import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
@@ -10,7 +11,9 @@ import { HomeListRow } from '../../components/home/HomeListRow';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchAdminPruningRequests } from '../../store/slices/pruningRequestsSlice';
-import { formatDate } from '../../utils/dateUtils';
+import { setCurrentShift, setError } from '../../store/slices/shiftSlice';
+import { shiftsApi } from '../../services/api';
+import { formatDate, formatTime } from '../../utils/dateUtils';
 import type { PruningRequest, PruningRequestStatus } from '../../types/models.types';
 
 /**
@@ -42,12 +45,24 @@ export function AdminDataHomeScreen(): React.JSX.Element {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
   const { adminList, adminListLoading } = useAppSelector((state) => state.pruningRequests);
+  const { currentShift } = useAppSelector((state) => state.shift);
 
   const [refreshing, setRefreshing] = useState(false);
+  const [absensiExpanded, setAbsensiExpanded] = useState(false);
+
+  const loadShift = useCallback(async () => {
+    try {
+      const response = await shiftsApi.getCurrentShift();
+      if (!response.error) dispatch(setCurrentShift(response.data ?? null));
+      else dispatch(setError(response.error));
+    } catch {
+      dispatch(setCurrentShift(null));
+    }
+  }, [dispatch]);
 
   const load = useCallback(async () => {
-    await dispatch(fetchAdminPruningRequests({}));
-  }, [dispatch]);
+    await Promise.all([dispatch(fetchAdminPruningRequests({})), loadShift()]);
+  }, [dispatch, loadShift]);
 
   useEffect(() => {
     void load();
@@ -69,6 +84,14 @@ export function AdminDataHomeScreen(): React.JSX.Element {
     await load();
     setRefreshing(false);
   }, [load]);
+
+  const handleClockInOut = useCallback(() => {
+    if (currentShift?.is_overtime) {
+      navigation.navigate('OvertimeSubmit' as never);
+    } else {
+      navigation.navigate('ClockInOut' as never);
+    }
+  }, [currentShift, navigation]);
 
   const counts = useMemo(() => {
     const c = { ...EMPTY_COUNTS } as Record<PruningRequestStatus, number>;
@@ -140,6 +163,64 @@ export function AdminDataHomeScreen(): React.JSX.Element {
             <HomeStatTile label="Ditolak" value={counts.rejected} variant="bad" testID="disp-rejected" />
           </View>
 
+          {/* Absensi card — collapsible when clocked in (prevents accidental clock-out) */}
+          <HomeSectionDivider label="Absensi saya" />
+          {currentShift ? (
+            <TouchableOpacity
+              style={styles.absensi}
+              testID="absensi-card"
+              activeOpacity={0.9}
+              onPress={() => setAbsensiExpanded((prev) => !prev)}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: absensiExpanded }}
+            >
+              <View style={styles.absensiTopRow}>
+                <View style={styles.absensiClockArea}>
+                  <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroLabel}>
+                    {currentShift.is_overtime ? 'Lembur aktif' : 'Sedang bertugas'}
+                  </NBText>
+                  <NBText variant="body-sm" color="gray700" style={styles.absensiMeta}>
+                    {`Mulai ${formatTime(currentShift.clock_in_time)}`}
+                  </NBText>
+                </View>
+                <MaterialCommunityIcons
+                  name={absensiExpanded ? 'chevron-up' : 'chevron-down'}
+                  size={20}
+                  color={nbColors.gray700}
+                />
+              </View>
+              {absensiExpanded && (
+                <View style={styles.absensiButton}>
+                  <NBButton
+                    title={currentShift.is_overtime ? 'Clock Out Lembur' : 'Clock Out'}
+                    onPress={handleClockInOut}
+                    variant="danger"
+                    size="md"
+                    testID="absensi-clock-button"
+                  />
+                </View>
+              )}
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.absensi} testID="absensi-card">
+              <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroLabel}>
+                Belum clock in
+              </NBText>
+              <NBText variant="h3" color="black" style={styles.absensiMeta}>
+                Mulai shift hari ini
+              </NBText>
+              <View style={styles.absensiButton}>
+                <NBButton
+                  title="Clock In"
+                  onPress={handleClockInOut}
+                  variant="primary"
+                  size="md"
+                  testID="absensi-clock-button"
+                />
+              </View>
+            </View>
+          )}
+
           {/* Perantingan berjalan (assigned + in progress) */}
           {inflight.length > 0 && (
             <>
@@ -193,6 +274,20 @@ const styles = StyleSheet.create({
 
   tilesRow: { flexDirection: 'row', gap: nbSpacing.sm, marginBottom: nbSpacing.sm },
   list: { gap: nbSpacing.sm },
+
+  absensi: {
+    backgroundColor: nbColors.white,
+    borderWidth: nbBorders.widthThick,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.md,
+    padding: nbSpacing.md,
+    marginBottom: nbSpacing.md,
+    ...nbShadows.sm,
+  },
+  absensiTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  absensiClockArea: { flex: 1 },
+  absensiMeta: { marginTop: nbSpacing.xs },
+  absensiButton: { marginTop: nbSpacing.md },
 });
 
 export default AdminDataHomeScreen;

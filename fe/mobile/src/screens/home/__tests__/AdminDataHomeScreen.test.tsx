@@ -9,10 +9,17 @@ import { NavigationContainer } from '@react-navigation/native';
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../../../store/slices/authSlice';
 import pruningRequestsReducer from '../../../store/slices/pruningRequestsSlice';
+import shiftReducer from '../../../store/slices/shiftSlice';
 import * as pruningApi from '../../../services/api/pruningRequestsApi';
 import { AdminDataHomeScreen } from '../AdminDataHomeScreen';
 
 jest.mock('../../../services/api/pruningRequestsApi');
+jest.mock('../../../services/api/shiftsApi', () => ({
+  getCurrentShift: jest.fn().mockResolvedValue({ data: null, error: null }),
+  clockIn: jest.fn(),
+  clockOut: jest.fn(),
+  getMyShifts: jest.fn().mockResolvedValue({ data: [] }),
+}));
 
 jest.mock('../../../components/nb/NBBackgroundPattern', () => ({
   NBBackgroundPattern: ({ children }: { children: React.ReactNode }) => children,
@@ -43,7 +50,7 @@ const req = (over: Record<string, unknown>) => ({
 
 const renderScreen = () => {
   const store = configureStore({
-    reducer: { auth: authReducer, pruningRequests: pruningRequestsReducer },
+    reducer: { auth: authReducer, pruningRequests: pruningRequestsReducer, shift: shiftReducer },
     preloadedState: {
       auth: {
         user: { id: 'a1', username: 'admin1', full_name: 'Pak Hadi', role: 'admin_data' },

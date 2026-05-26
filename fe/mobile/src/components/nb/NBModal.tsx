@@ -1,22 +1,27 @@
-import React from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   View,
-  Text,
   Modal,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
-  Pressable,
-  KeyboardAvoidingView,
   Platform,
+  KeyboardAvoidingView,
+  ScrollView,
 } from 'react-native';
+import BottomSheet, {
+  BottomSheetScrollView,
+  BottomSheetBackdrop,
+  BottomSheetView,
+} from '@gorhom/bottom-sheet';
+import type { BottomSheetDefaultBackdropProps } from '@gorhom/bottom-sheet/lib/typescript/components/bottomSheetBackdrop/types';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { NBText } from './NBText';
 import {
   nbColors,
   nbSpacing,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
   nbShadows,
   nbTypography,
 } from '../../constants/nbTokens';
@@ -34,17 +39,20 @@ export interface NBModalProps {
   avoidKeyboard?: boolean;
   noPadding?: boolean;
   footer?: React.ReactNode;
+  /** Fullscreen only: renders to the right of the title in the header bar */
+  headerRight?: React.ReactNode;
   children: React.ReactNode;
   testID?: string;
 }
 
-const SIZE_MAX_HEIGHT: Record<NBModalSize, string> = {
-  sm: '48%',
-  md: '65%',
-  lg: '88%',
+// First snap = initial open height; second (where present) = max drag-up height
+const SNAP_POINTS: Record<NBModalSize, string[]> = {
+  sm: ['48%'],
+  md: ['65%', '88%'],
+  lg: ['88%', '95%'],
 };
 
-// ─── Sheet variant ────────────────────────────────────────────────────────────
+// ─── Sheet variant (gorhom bottom sheet) ─────────────────────────────────────
 
 function SheetModal({
   visible,
@@ -58,78 +66,81 @@ function SheetModal({
   children,
   testID,
 }: NBModalProps) {
-  const maxHeight = SIZE_MAX_HEIGHT[size ?? 'md'];
+  const sheetRef = useRef<BottomSheet>(null);
+  const snapPoints = useMemo(() => SNAP_POINTS[size ?? 'md'], [size]);
 
-  const content = scrollable ? (
-    <ScrollView
-      style={styles.content}
+  useEffect(() => {
+    if (visible) {
+      sheetRef.current?.snapToIndex(0);
+    } else {
+      sheetRef.current?.close();
+    }
+  }, [visible]);
+
+  const renderBackdrop = useCallback(
+    (props: BottomSheetDefaultBackdropProps) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.4}
+        pressBehavior="close"
+      />
+    ),
+    [],
+  );
+
+  const contentBody = scrollable ? (
+    <BottomSheetScrollView
+      style={styles.contentFlex}
       contentContainerStyle={noPadding ? styles.scrollContentNoPadding : styles.scrollContent}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
       {children}
-    </ScrollView>
+    </BottomSheetScrollView>
   ) : (
-    <View style={[styles.content, noPadding ? null : styles.contentPadding]}>{children}</View>
-  );
-
-  const sheetCard = (
-    <View
-      style={[styles.sheet, { maxHeight }]}
-      onStartShouldSetResponder={() => true}
-      onMoveShouldSetResponder={() => false}
-      testID={testID}
-    >
-      {title ? (
-        <View style={styles.titleBar}>
-          <Text style={styles.titleText} accessibilityRole="header">
-            {title.toUpperCase()}
-          </Text>
-          <TouchableOpacity
-            onPress={onClose}
-            style={styles.closeBtn}
-            accessibilityLabel="Tutup"
-            accessibilityRole="button"
-          >
-            <Text style={styles.closeBtnText}>✕</Text>
-          </TouchableOpacity>
-        </View>
-      ) : null}
-      {content}
-      {footer ? <View style={styles.footerWrap}>{footer}</View> : null}
-    </View>
+    <BottomSheetView style={[styles.contentFlex, noPadding ? null : styles.contentPadded]}>
+      {children}
+    </BottomSheetView>
   );
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      // May 12 — switched from "slide" to "fade" to dodge a known
-      // React Native 0.83 + Fabric bug where the slide animation's
-      // native node gets freed mid-flight when the host screen is
-      // navigated away from (e.g. tapping Lihat Tugas right after
-      // dismissing AssignToTaskSheet). Surfaced as:
-      //   connectAnimatedNodeToView: Animated node with tag [N] does not exist
-      // which kills the JS context. Fade is also native-driven but
-      // is opacity-only so it doesn't trip the same race.
-      animationType="fade"
-      hardwareAccelerated={false}
-      statusBarTranslucent
-      onRequestClose={onClose}
+    <BottomSheet
+      ref={sheetRef}
+      index={visible ? 0 : -1}
+      snapPoints={snapPoints}
+      enableDynamicSizing={false}
+      enablePanDownToClose
+      backdropComponent={renderBackdrop}
+      onClose={onClose}
+      backgroundStyle={styles.sheetBackground}
+      handleIndicatorStyle={styles.handle}
+      keyboardBehavior={avoidKeyboard ? 'interactive' : undefined}
     >
-      <Pressable style={styles.overlay} onPress={onClose}>
-        {avoidKeyboard ? (
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.kav}
-          >
-            {sheetCard}
-          </KeyboardAvoidingView>
-        ) : (
-          sheetCard
-        )}
-      </Pressable>
-    </Modal>
+      {/* gorhom BottomSheet prop types don't expose testID — attach it to the inner wrapper */}
+      <View testID={testID} style={styles.contentFlex}>
+        {title ? (
+          <View style={styles.titleBar}>
+            <NBText variant="h3" color="black" style={styles.titleText}>
+              {title}
+            </NBText>
+            <TouchableOpacity
+              onPress={onClose}
+              style={styles.closeBtnHitArea}
+              accessibilityLabel="Tutup"
+              accessibilityRole="button"
+            >
+              <View style={styles.closeBtnVisual}>
+                <MaterialCommunityIcons name="close" size={16} color={nbColors.gray700} />
+              </View>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+        {contentBody}
+        {footer ? <View style={styles.footerWrap}>{footer}</View> : null}
+      </View>
+    </BottomSheet>
   );
 }
 
@@ -140,49 +151,75 @@ function FullscreenModal({
   onClose,
   title,
   scrollable = false,
+  avoidKeyboard = false,
+  noPadding = false,
   footer,
+  headerRight,
   children,
   testID,
 }: NBModalProps) {
   const insets = useSafeAreaInsets();
-  const ContentWrapper = scrollable ? ScrollView : View;
-  const contentStyle = scrollable ? styles.fullscreenScroll : styles.fullscreenBody;
+
+  const body = scrollable ? (
+    <ScrollView
+      style={styles.fullscreenScroll}
+      contentContainerStyle={noPadding ? styles.fullscreenScrollContentNoPadding : styles.fullscreenScrollContent}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
+      {children}
+    </ScrollView>
+  ) : (
+    <View style={[styles.fullscreenBody, noPadding && styles.fullscreenBodyNoPadding]}>{children}</View>
+  );
+
+  const inner = avoidKeyboard ? (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.fullscreenFlex}
+    >
+      {body}
+      {footer ? <View style={styles.fullscreenFooter}>{footer}</View> : null}
+    </KeyboardAvoidingView>
+  ) : (
+    <>
+      {body}
+      {footer ? <View style={styles.fullscreenFooter}>{footer}</View> : null}
+    </>
+  );
 
   return (
     <Modal
       visible={visible}
-      // See SheetModal — same Fabric race avoided by using fade.
+      // See Phase 4 M3 comment: fade avoids Fabric race on slide animation
       animationType="fade"
       hardwareAccelerated={false}
       presentationStyle="fullScreen"
       onRequestClose={onClose}
       testID={testID}
     >
-      <View style={styles.fullscreenContainer}>
-        <View style={[styles.fullscreenHeader, { paddingTop: insets.top + nbSpacing.md }]}>
+      <View style={[styles.fullscreenContainer, { paddingTop: insets.top }]}>
+        <View style={styles.fullscreenHeader}>
           <TouchableOpacity
             onPress={onClose}
             style={styles.backButton}
             accessibilityLabel="Kembali"
             accessibilityRole="button"
           >
-            <MaterialCommunityIcons
-              name="arrow-left"
-              size={22}
-              color={nbColors.black}
-            />
+            <MaterialCommunityIcons name="arrow-left" size={22} color={nbColors.black} />
           </TouchableOpacity>
           {title ? (
-            <Text style={styles.fullscreenTitle} accessibilityRole="header">
-              {title.toUpperCase()}
-            </Text>
+            <NBText variant="h3" color="black" style={styles.fullscreenTitleText}>
+              {title}
+            </NBText>
           ) : null}
-          <View style={styles.headerSpacer} />
+          {headerRight ? (
+            <View style={styles.headerRightSlot}>{headerRight}</View>
+          ) : (
+            <View style={styles.headerSpacer} />
+          )}
         </View>
-        <ContentWrapper style={contentStyle}>
-          {children}
-        </ContentWrapper>
-        {footer ? <View style={styles.fullscreenFooter}>{footer}</View> : null}
+        {inner}
       </View>
     </Modal>
   );
@@ -200,26 +237,18 @@ export function NBModal({ type = 'sheet', ...props }: NBModalProps) {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  // Sheet
-  overlay: {
-    flex: 1,
-    backgroundColor: nbColors.overlay,
-    justifyContent: 'flex-end',
-  },
-  kav: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  sheet: {
+  // Sheet (gorhom)
+  sheetBackground: {
     backgroundColor: nbColors.white,
-    borderTopWidth: nbBorders.thick,
-    borderLeftWidth: nbBorders.thick,
-    borderRightWidth: nbBorders.thick,
+    borderTopLeftRadius: nbRadius.lg,
+    borderTopRightRadius: nbRadius.lg,
+    borderWidth: nbBorders.thick,
     borderColor: nbColors.black,
-    borderTopLeftRadius: nbBorderRadius.md,
-    borderTopRightRadius: nbBorderRadius.md,
-    flexShrink: 1,
     ...nbShadows.lg,
+  },
+  handle: {
+    backgroundColor: nbColors.gray400,
+    width: 48,
   },
   titleBar: {
     flexDirection: 'row',
@@ -231,39 +260,39 @@ const styles = StyleSheet.create({
     borderBottomColor: nbColors.black,
   },
   titleText: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
-    letterSpacing: 0.8,
     flex: 1,
+    marginRight: nbSpacing.sm,
   },
-  closeBtn: {
-    width: 36,
-    height: 36,
+  closeBtnHitArea: {
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  closeBtnVisual: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: nbColors.white,
     borderWidth: nbBorders.base,
-    borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.sm,
-    ...nbShadows.xs,
+    borderColor: nbColors.gray400,
+    borderRadius: nbRadius.sm,
   },
-  closeBtnText: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.black,
-    fontWeight: nbTypography.fontWeight.bold,
+  contentFlex: {
+    flex: 1,
   },
-  content: {
-    flexShrink: 1,
-  },
-  contentPadding: {
+  contentPadded: {
     padding: nbSpacing.md,
     paddingBottom: nbSpacing.sm,
   },
   scrollContent: {
     padding: nbSpacing.md,
+    paddingBottom: nbSpacing.lg,
+  },
+  scrollContentNoPadding: {
     paddingBottom: nbSpacing.sm,
   },
-  scrollContentNoPadding: {},
   footerWrap: {
     borderTopWidth: nbBorders.base,
     borderTopColor: nbColors.black,
@@ -275,6 +304,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: nbColors.bgCanvas,
   },
+  fullscreenFlex: {
+    flex: 1,
+  },
   fullscreenHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -285,10 +317,6 @@ const styles = StyleSheet.create({
     borderBottomColor: nbColors.black,
     ...nbShadows.sm,
   },
-  // Minimal back button — matches the unframed `arrow-left` icon used by
-  // FieldHomeHeader (the chevron seen on detail permohonan / detail tugas /
-  // detail aktivitas). The boxed-icon variant felt too heavy for a stack
-  // back action; keep the WCAG 44×44 hit area but drop the visible chrome.
   backButton: {
     width: 44,
     height: 44,
@@ -296,28 +324,34 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: nbSpacing.sm,
   },
-  backButtonText: {
-    fontSize: nbTypography.fontSize.lg,
-    color: nbColors.black,
-    fontWeight: nbTypography.fontWeight.bold,
-  },
-  fullscreenTitle: {
+  fullscreenTitleText: {
     flex: 1,
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.extrabold,
-    color: nbColors.black,
-    letterSpacing: 1,
   },
   headerSpacer: {
-    width: 40,
+    width: 44,
   },
   fullscreenBody: {
     flex: 1,
     padding: nbSpacing.lg,
   },
+  fullscreenBodyNoPadding: {
+    padding: 0,
+  },
   fullscreenScroll: {
     flex: 1,
     paddingHorizontal: nbSpacing.lg,
+  },
+  fullscreenScrollContent: {
+    paddingVertical: nbSpacing.md,
+    paddingBottom: nbSpacing.xl,
+  },
+  fullscreenScrollContentNoPadding: {
+    paddingBottom: 0,
+  },
+  headerRightSlot: {
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    minWidth: 44,
   },
   fullscreenFooter: {
     paddingHorizontal: nbSpacing.lg,

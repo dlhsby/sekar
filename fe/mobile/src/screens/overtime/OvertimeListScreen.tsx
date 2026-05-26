@@ -397,7 +397,7 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
         <SortModal
           visible={isSortModalOpen}
           onClose={() => setIsSortModalOpen(false)}
-          title="URUTKAN LEMBUR"
+          title="Urutkan Lembur"
           options={SORT_OPTIONS}
           selectedOption={sort}
           onSelect={handleSortSelect}

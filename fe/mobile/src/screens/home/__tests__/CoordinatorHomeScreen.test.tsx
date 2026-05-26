@@ -9,10 +9,17 @@ import { NavigationContainer } from '@react-navigation/native';
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../../../store/slices/authSlice';
 import monitoringReducer from '../../../store/slices/monitoringSlice';
+import shiftReducer from '../../../store/slices/shiftSlice';
 import * as monitoringApi from '../../../services/api/monitoringApi';
 import { CoordinatorHomeScreen } from '../CoordinatorHomeScreen';
 
 jest.mock('../../../services/api/monitoringApi');
+jest.mock('../../../services/api/shiftsApi', () => ({
+  getCurrentShift: jest.fn().mockResolvedValue({ data: null, error: null }),
+  clockIn: jest.fn(),
+  clockOut: jest.fn(),
+  getMyShifts: jest.fn().mockResolvedValue({ data: [] }),
+}));
 
 jest.mock('../../../components/nb/NBBackgroundPattern', () => ({
   NBBackgroundPattern: ({ children }: { children: React.ReactNode }) => children,
@@ -44,7 +51,7 @@ const liveUser = (over: Record<string, unknown>) => ({
 
 const renderScreen = () => {
   const store = configureStore({
-    reducer: { auth: authReducer, monitoring: monitoringReducer },
+    reducer: { auth: authReducer, monitoring: monitoringReducer, shift: shiftReducer },
     preloadedState: {
       auth: {
         user: { id: 'k1', username: 'korlap1', full_name: 'Ibu Marni', role: 'korlap' },

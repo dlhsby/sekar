@@ -79,7 +79,7 @@ export function LocationTrailModal({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="fade"
       onRequestClose={onClose}
       presentationStyle="fullScreen"
       statusBarTranslucent

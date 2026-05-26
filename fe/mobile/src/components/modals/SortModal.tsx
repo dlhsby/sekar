@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBModal } from '../nb';
-import { nbColors, nbTypography, nbBorders } from '../../constants/nbTokens';
+import { nbColors, nbTypography, nbBorders, nbSpacing } from '../../constants/nbTokens';
 
 export interface SortOption {
   key: string;
@@ -60,17 +60,17 @@ export function SortModal({
 const styles = StyleSheet.create({
   option: {
     minHeight: 52,
-    paddingHorizontal: 16,
+    paddingHorizontal: nbSpacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: nbColors.gray['200'],
+    borderBottomWidth: nbBorders.base,
+    borderBottomColor: nbColors.gray200,
   },
   optionActive: {
-    borderLeftWidth: 4,
+    borderLeftWidth: nbBorders.thick,
     borderLeftColor: nbColors.primary,
-    paddingLeft: 12,
+    paddingLeft: nbSpacing.sm,
   },
   optionText: {
     fontSize: nbTypography.fontSize.base,

@@ -13,20 +13,21 @@ import React, {
 import {
   View,
   Text,
-  Modal,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { NBModal } from '../nb';
+import { NBButton } from '../nb';
+import { NBText } from '../nb/NBText';
 import {
   nbColors,
   nbSpacing,
   nbTypography,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
   nbShadows,
 } from '../../constants/nbTokens';
 import { getStatusLabel } from '../../utils/mapUtils';
@@ -212,143 +213,138 @@ export function MonitoringFilterModal({
     [],
   );
 
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="fullScreen"
-      onRequestClose={onClose}
+  const headerRightContent = (
+    <TouchableOpacity
+      onPress={handleReset}
+      style={styles.resetBtn}
+      accessibilityRole="button"
+      accessibilityLabel="Reset filter"
     >
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.backBtn}>
-            <MaterialCommunityIcons name="arrow-left" size={22} color={nbColors.black} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Filter Monitoring</Text>
-          <TouchableOpacity onPress={handleReset} style={styles.resetBtn}>
-            <Text style={styles.resetText}>Reset</Text>
-          </TouchableOpacity>
-        </View>
+      <NBText variant="body-sm" color="dangerDark">
+        Reset
+      </NBText>
+    </TouchableOpacity>
+  );
 
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* Status multiselect */}
-          <FilterSection title="Status">
-            <NBSelect
-              options={statusOptions}
-              selectedValues={selectedStatuses}
-              onValuesChange={(vals: string[]) => setSelectedStatuses(vals as TrackingStatus[])}
-              placeholder="Pilih Status"
-              searchable
-            />
-          </FilterSection>
+  const footerContent = (
+    <NBButton
+      title="Terapkan"
+      variant="primary"
+      onPress={handleApply}
+      fullWidth
+    />
+  );
 
-          {/* Rayon picker */}
-          {!hideRayon && (
-            <FilterSection title="Rayon">
-              {hasFixedRayon ? (
-                <View style={styles.fixedValue}>
-                  <MaterialCommunityIcons
-                    name="lock"
-                    size={14}
-                    color={nbColors.gray['500']}
-                  />
-                  <Text style={styles.fixedValueText}>
-                    {currentUser.rayon?.name ?? 'Rayon Anda'}
-                  </Text>
-                </View>
-              ) : (
-                <NBSelect
-                  options={rayonOptions}
-                  value={selectedRayonId}
-                  onValueChange={(val: string) => {
-                    setSelectedRayonId(val || undefined);
-                    setSelectedAreaId(undefined);
-                  }}
-                  placeholder="Pilih Rayon"
-                />
-              )}
-            </FilterSection>
-          )}
+  return (
+    <NBModal
+      visible={visible}
+      onClose={onClose}
+      title="Filter Monitoring"
+      type="fullscreen"
+      scrollable
+      avoidKeyboard
+      headerRight={headerRightContent}
+      footer={footerContent}
+    >
+      {/* Status multiselect */}
+      <FilterSection title="Status">
+        <NBSelect
+          options={statusOptions}
+          selectedValues={selectedStatuses}
+          onValuesChange={(vals: string[]) => setSelectedStatuses(vals as TrackingStatus[])}
+          placeholder="Pilih Status"
+          searchable
+        />
+      </FilterSection>
 
-          {/* Area picker */}
-          <FilterSection title="Area">
-            <NBSelect
-              options={areaOptions}
-              value={selectedAreaId}
-              onValueChange={(val: string) => setSelectedAreaId(val || undefined)}
-              placeholder="Pilih Area"
-            />
-          </FilterSection>
-
-          {/* Role multiselect */}
-          <FilterSection title="Jabatan">
-            <NBSelect
-              options={roleOptions}
-              selectedValues={selectedRoles}
-              onValuesChange={handleRoleToggle}
-              placeholder="Pilih Jabatan"
-              searchable
-            />
-          </FilterSection>
-
-          {/* Search user */}
-          <FilterSection title="Cari Pengguna">
-            <View style={styles.searchInput}>
+      {/* Rayon picker */}
+      {!hideRayon && (
+        <FilterSection title="Rayon">
+          {hasFixedRayon ? (
+            <View style={styles.fixedValue}>
               <MaterialCommunityIcons
-                name="magnify"
-                size={18}
-                color={nbColors.gray['500']}
+                name="lock"
+                size={14}
+                color={nbColors.gray500}
               />
-              <TextInput
-                style={styles.searchText}
-                value={searchText}
-                onChangeText={setSearchText}
-                placeholder="Ketik nama pengguna..."
-                placeholderTextColor={nbColors.gray['400']}
-                returnKeyType="search"
-              />
-              {searchText.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchText('')}>
-                  <MaterialCommunityIcons
-                    name="close-circle"
-                    size={16}
-                    color={nbColors.gray['400']}
-                  />
-                </TouchableOpacity>
-              )}
+              <Text style={styles.fixedValueText}>
+                {currentUser.rayon?.name ?? 'Rayon Anda'}
+              </Text>
             </View>
-          </FilterSection>
-
-          {/* Staffing summary - always visible */}
-          <FilterSection title="Kepegawaian">
-            <StaffingSummarySection
-              items={staffing}
-              isLoading={isLoadingStaffing}
-              currentDayTypeLabel={currentDayTypeLabel}
-              selectedRayonId={selectedRayonId}
-              selectedAreaId={selectedAreaId}
+          ) : (
+            <NBSelect
+              options={rayonOptions}
+              value={selectedRayonId}
+              onValueChange={(val: string) => {
+                setSelectedRayonId(val || undefined);
+                setSelectedAreaId(undefined);
+              }}
+              placeholder="Pilih Rayon"
             />
-          </FilterSection>
-        </ScrollView>
+          )}
+        </FilterSection>
+      )}
 
-        {/* Apply button */}
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={styles.applyBtn}
-            onPress={handleApply}
-            activeOpacity={0.8}
-            accessibilityLabel="Terapkan filter"
-            accessibilityRole="button"
-          >
-            <Text style={styles.applyBtnText}>Terapkan</Text>
-          </TouchableOpacity>
+      {/* Area picker */}
+      <FilterSection title="Area">
+        <NBSelect
+          options={areaOptions}
+          value={selectedAreaId}
+          onValueChange={(val: string) => setSelectedAreaId(val || undefined)}
+          placeholder="Pilih Area"
+        />
+      </FilterSection>
+
+      {/* Role multiselect */}
+      <FilterSection title="Jabatan">
+        <NBSelect
+          options={roleOptions}
+          selectedValues={selectedRoles}
+          onValuesChange={handleRoleToggle}
+          placeholder="Pilih Jabatan"
+          searchable
+        />
+      </FilterSection>
+
+      {/* Search user */}
+      <FilterSection title="Cari Pengguna">
+        <View style={styles.searchInput}>
+          <MaterialCommunityIcons
+            name="magnify"
+            size={18}
+            color={nbColors.gray500}
+          />
+          <TextInput
+            style={styles.searchText}
+            value={searchText}
+            onChangeText={setSearchText}
+            placeholder="Ketik nama pengguna..."
+            placeholderTextColor={nbColors.gray400}
+            returnKeyType="search"
+          />
+          {searchText.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchText('')}>
+              <MaterialCommunityIcons
+                name="close-circle"
+                size={16}
+                color={nbColors.gray400}
+              />
+            </TouchableOpacity>
+          )}
         </View>
-      </View>
-    </Modal>
+      </FilterSection>
+
+      {/* Staffing summary - always visible */}
+      <FilterSection title="Kepegawaian">
+        <StaffingSummarySection
+          items={staffing}
+          isLoading={isLoadingStaffing}
+          currentDayTypeLabel={currentDayTypeLabel}
+          selectedRayonId={selectedRayonId}
+          selectedAreaId={selectedAreaId}
+        />
+      </FilterSection>
+    </NBModal>
   );
 }
 
@@ -367,43 +363,8 @@ function FilterSection({ title, children }: { title: string; children: React.Rea
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: nbColors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: nbSpacing.md,
-    paddingTop: nbSpacing.xl,
-    paddingBottom: nbSpacing.md,
-    backgroundColor: nbColors.white,
-    borderBottomWidth: nbBorders.base,
-    borderBottomColor: nbColors.black,
-    ...nbShadows.sm,
-  },
-  backBtn: {
-    padding: nbSpacing.sm,
-    marginRight: nbSpacing.sm,
-  },
-  headerTitle: {
-    flex: 1,
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
-  },
   resetBtn: {
-    padding: nbSpacing.sm,
-  },
-  resetText: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.dangerDark,
-    fontWeight: nbTypography.fontWeight.semibold,
-  },
-  scrollContent: {
-    padding: nbSpacing.md,
-    gap: nbSpacing.md,
-    paddingBottom: nbSpacing['2xl'],
+    paddingHorizontal: nbSpacing.sm,
   },
   section: {
     gap: nbSpacing.sm,
@@ -411,7 +372,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: nbTypography.fontSize.sm,
     fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray['700'],
+    color: nbColors.gray700,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -419,24 +380,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: nbSpacing.xs,
-    backgroundColor: nbColors.gray['100'],
-    borderRadius: nbBorderRadius.base,
+    backgroundColor: nbColors.gray100,
+    borderRadius: nbRadius.base,
     borderWidth: nbBorders.thin,
-    borderColor: nbColors.gray['300'],
+    borderColor: nbColors.gray300,
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.sm,
   },
   fixedValueText: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['600'],
+    color: nbColors.gray600,
   },
   searchInput: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: nbColors.white,
-    borderRadius: nbBorderRadius.base,
+    borderRadius: nbRadius.base,
     borderWidth: nbBorders.thin,
-    borderColor: nbColors.gray['300'],
+    borderColor: nbColors.gray300,
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.sm,
     gap: nbSpacing.sm,
@@ -446,26 +407,5 @@ const styles = StyleSheet.create({
     fontSize: nbTypography.fontSize.base,
     color: nbColors.black,
     padding: 0,
-  },
-  footer: {
-    padding: nbSpacing.md,
-    backgroundColor: nbColors.white,
-    borderTopWidth: nbBorders.base,
-    borderTopColor: nbColors.black,
-    ...nbShadows.md,
-  },
-  applyBtn: {
-    backgroundColor: nbColors.primary,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.black,
-    paddingVertical: nbSpacing.md,
-    alignItems: 'center',
-    ...nbShadows.md,
-  },
-  applyBtnText: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
   },
 });

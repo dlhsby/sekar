@@ -22,6 +22,7 @@ import {
   nbTypography,
   nbBorders,
   nbShadows,
+  nbRadius,
 } from '../../constants/nbTokens';
 import type { LocationHistoryPoint } from '../../types/models.types';
 import { calculateDistance } from '../../utils/gpsUtils';
@@ -161,7 +162,7 @@ export function OvertimeTrailModal({
   }, [coordinates]);
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} animationType="fade" onRequestClose={onClose}>
       <SafeAreaView style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -174,7 +175,7 @@ export function OvertimeTrailModal({
             <MaterialCommunityIcons name="arrow-left" size={24} color={nbColors.black} />
           </TouchableOpacity>
           <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>RUTE LEMBUR</Text>
+            <Text style={styles.headerTitle}>Rute Lembur</Text>
             <Text style={styles.headerSubtitle}>{userName}</Text>
           </View>
           <TouchableOpacity
@@ -190,7 +191,7 @@ export function OvertimeTrailModal({
               <MaterialCommunityIcons
                 name="refresh"
                 size={22}
-                color={isLoading ? nbColors.gray[400] : nbColors.primary}
+                color={isLoading ? nbColors.gray400 : nbColors.primary}
               />
             )}
           </TouchableOpacity>
@@ -223,12 +224,12 @@ export function OvertimeTrailModal({
             </View>
           ) : error ? (
             <View style={styles.centeredContainer}>
-              <MaterialCommunityIcons name="map-marker-off" size={48} color={nbColors.gray[400]} />
+              <MaterialCommunityIcons name="map-marker-off" size={48} color={nbColors.gray400} />
               <Text style={styles.errorText}>{error}</Text>
             </View>
           ) : points.length === 0 ? (
             <View style={styles.centeredContainer}>
-              <MaterialCommunityIcons name="map-marker-off" size={48} color={nbColors.gray[400]} />
+              <MaterialCommunityIcons name="map-marker-off" size={48} color={nbColors.gray400} />
               <Text style={styles.errorText}>Tidak ada data lokasi untuk lembur ini</Text>
             </View>
           ) : (
@@ -427,7 +428,7 @@ const styles = StyleSheet.create({
   zoomBtn: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: nbRadius.full,
     backgroundColor: nbColors.white,
     justifyContent: 'center',
     alignItems: 'center',

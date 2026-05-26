@@ -7,30 +7,29 @@
 import React, { useMemo } from 'react';
 import {
   View,
-  Modal,
   StyleSheet,
-  Pressable,
   TouchableOpacity,
   Platform,
 } from 'react-native';
 import MapView, { Circle, Marker, Polygon, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBText } from '../nb/NBText';
+import { NBModal } from '../nb';
 import {
   nbColors,
   nbSpacing,
   nbBorders,
   nbShadows,
-  nbBorderRadius,
+  nbRadius,
   withAlpha,
 } from '../../constants/nbTokens';
+import type { GeoJsonGeometry } from '../../types/models.types';
 
 interface AreaBoundary {
   gps_lat: number;
   gps_lng: number;
   radius_meters: number;
-  /** GeoJSON Polygon as returned by the backend */
-  boundary_polygon?: { type: 'Polygon'; coordinates: [number, number][][] } | null;
+  boundary_polygon?: GeoJsonGeometry | null;
   name?: string;
 }
 
@@ -91,7 +90,7 @@ const PADDING = 1.4; // extra padding factor around bounding box
 /** Extract outer ring from GeoJSON Polygon and convert to LatLng array.
  *  Coerces to Number to handle TypeORM returning decimals as strings. */
 function toLatLngArray(
-  polygon: { type: 'Polygon'; coordinates: [number, number][][] },
+  polygon: { coordinates: [number, number][][] },
 ): { latitude: number; longitude: number }[] {
   return (polygon.coordinates[0] ?? []).map(([lng, lat]) => ({
     latitude: Number(lat),
@@ -152,8 +151,12 @@ export function LocationMapModal({
   const accuracyWarning = location.accuracy !== null && location.accuracy > 50;
 
   const polygonCoords = useMemo(() => {
-    const ring = area?.boundary_polygon?.coordinates?.[0];
-    return ring && ring.length >= 3 ? toLatLngArray(area!.boundary_polygon!) : null;
+    const bp = area?.boundary_polygon;
+    if (!bp) return null;
+    // Normalize MultiPolygon → use first polygon's rings (same as Polygon layout)
+    const polygonArg = bp.type === 'Polygon' ? bp : { coordinates: bp.coordinates[0] };
+    const ring = polygonArg.coordinates[0];
+    return ring && ring.length >= 3 ? toLatLngArray(polygonArg) : null;
   }, [area?.boundary_polygon]);
 
   const region = useMemo<Region | undefined>(() => {
@@ -193,164 +196,146 @@ export function LocationMapModal({
     return fitRegion(points);
   }, [hasCoords, lat, lng, polygonCoords, area]);
 
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
+  const footerContent = footerActionLabel && onFooterAction && hasCoords ? (
+    <TouchableOpacity
+      onPress={onFooterAction}
+      accessibilityRole="button"
+      accessibilityLabel={footerActionLabel}
+      style={styles.footerAction}
+      testID="location-modal-footer-action"
     >
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <View
-          style={styles.modalContent}
-          onStartShouldSetResponder={() => true}
-          onMoveShouldSetResponder={() => false}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.titleContainer}>
-              <NBText variant="h2" color="black">{title}</NBText>
-              {area?.name && (
-                <NBText variant="body-sm" color="gray600" style={styles.subtitleTop}>
-                  {area.name}
-                </NBText>
-              )}
-            </View>
-            <TouchableOpacity
-              onPress={onClose}
-              style={styles.closeButton}
-              accessibilityRole="button"
-              accessibilityLabel="Tutup modal"
-            >
-              <MaterialCommunityIcons name="close" size={24} color={nbColors.black} />
-            </TouchableOpacity>
-          </View>
+      <MaterialCommunityIcons name="google-maps" size={20} color={nbColors.white} />
+      <NBText variant="body" color="white" style={styles.footerActionText}>
+        {footerActionLabel}
+      </NBText>
+    </TouchableOpacity>
+  ) : null;
 
-          {/* Map */}
-          <View style={styles.mapContainer}>
-            {region ? (
-              <MapView
-                style={styles.map}
-                provider={PROVIDER_GOOGLE}
-                region={region}
-                scrollEnabled={true}
-                zoomEnabled={true}
-                pitchEnabled={false}
-                rotateEnabled={false}
-              >
-                {/* Area boundary — polygon if available, circle as fallback */}
-                {polygonCoords ? (
-                  <Polygon
-                    coordinates={polygonCoords}
-                    fillColor={AREA_FILL}
-                    strokeColor={AREA_STROKE}
-                    strokeWidth={2}
-                  />
-                ) : area ? (
-                  <Circle
-                    center={{ latitude: Number(area.gps_lat), longitude: Number(area.gps_lng) }}
-                    radius={Number(area.radius_meters)}
-                    fillColor={AREA_FILL}
-                    strokeColor={AREA_STROKE}
-                    strokeWidth={2}
-                  />
-                ) : null}
+  return (
+    <NBModal
+      visible={visible}
+      onClose={onClose}
+      title={title}
+      type="sheet"
+      size="lg"
+      noPadding
+      footer={footerContent}
+    >
+      {/* Map container */}
+      <View style={styles.mapContainer}>
+        {region ? (
+          <MapView
+            style={styles.map}
+            provider={PROVIDER_GOOGLE}
+            region={region}
+            scrollEnabled={true}
+            zoomEnabled={true}
+            pitchEnabled={false}
+            rotateEnabled={false}
+          >
+            {/* Area boundary — polygon if available, circle as fallback */}
+            {polygonCoords ? (
+              <Polygon
+                coordinates={polygonCoords}
+                fillColor={AREA_FILL}
+                strokeColor={AREA_STROKE}
+                strokeWidth={2}
+              />
+            ) : area ? (
+              <Circle
+                center={{ latitude: Number(area.gps_lat), longitude: Number(area.gps_lng) }}
+                radius={Number(area.radius_meters)}
+                fillColor={AREA_FILL}
+                strokeColor={AREA_STROKE}
+                strokeWidth={2}
+              />
+            ) : null}
 
-                {/* User location marker */}
-                {hasCoords && (
-                  <Marker
-                    coordinate={{ latitude: lat!, longitude: lng! }}
-                    title={markerTitle}
-                    description={
-                      location.accuracy !== null
-                        ? `Akurasi: ±${Math.round(location.accuracy)}m`
-                        : undefined
-                    }
-                  />
-                )}
-              </MapView>
-            ) : (
-              <View style={styles.noLocationContainer}>
-                <MaterialCommunityIcons
-                  name="map-marker-off"
-                  size={48}
-                  color={nbColors.gray400}
-                />
-                <NBText variant="body" color="gray500">Lokasi tidak tersedia</NBText>
-              </View>
+            {/* User location marker */}
+            {hasCoords && (
+              <Marker
+                coordinate={{ latitude: lat!, longitude: lng! }}
+                title={markerTitle}
+                description={
+                  location.accuracy !== null
+                    ? `Akurasi: ±${Math.round(location.accuracy)}m`
+                    : undefined
+                }
+              />
             )}
+          </MapView>
+        ) : (
+          <View style={styles.noLocationContainer}>
+            <MaterialCommunityIcons
+              name="map-marker-off"
+              size={48}
+              color={nbColors.gray400}
+            />
+            <NBText variant="body" color="gray500">
+              Lokasi tidak tersedia
+            </NBText>
           </View>
+        )}
+      </View>
 
-          {/* Info strip */}
-          <View style={styles.infoStrip}>
-            {hasCoords ? (
-              <>
-                <NBText
-                  variant="mono-sm"
-                  color="black"
-                  style={styles.coordsFont}
-                  accessibilityLabel={`Koordinat: ${lat!.toFixed(6)}, ${lng!.toFixed(6)}`}
-                >
-                  {lat!.toFixed(6)}, {lng!.toFixed(6)}
-                </NBText>
+      {/* Info strip — with padding since noPadding applies to the sheet container */}
+      <View style={styles.infoStrip}>
+        {hasCoords ? (
+          <>
+            <NBText
+              variant="mono-sm"
+              color="black"
+              style={styles.coordsFont}
+              accessibilityLabel={`Koordinat: ${lat!.toFixed(6)}, ${lng!.toFixed(6)}`}
+            >
+              {lat!.toFixed(6)}, {lng!.toFixed(6)}
+            </NBText>
 
-                {(location.accuracy !== null || !hideAreaStatus) ? (
-                  <View style={styles.infoRow}>
-                    {location.accuracy !== null && (
-                      <NBText variant="body-sm" style={[styles.accuracyText, accuracyWarning && styles.accuracyWarning]}>
-                        {accuracyWarning ? '⚠️ ' : ''}Akurasi: ±{Math.round(location.accuracy)}m
-                      </NBText>
-                    )}
-                    {!hideAreaStatus && (
-                      <View
-                        style={[
-                          styles.areaBadge,
-                          location.isWithinArea ? styles.areaBadgeInside : styles.areaBadgeOutside,
-                        ]}
-                      >
-                        <NBText
-                          variant="caption"
-                          style={[
-                            styles.areaBadgeTextBold,
-                            location.isWithinArea
-                              ? styles.areaBadgeTextInside
-                              : styles.areaBadgeTextOutside,
-                          ]}
-                        >
-                          {location.isWithinArea ? 'Di dalam area kerja' : 'Di luar area kerja'}
-                        </NBText>
-                      </View>
-                    )}
-                  </View>
-                ) : null}
-                {!hideUpdatedAt && (
-                  <NBText variant="caption" color="gray500" style={styles.updatedTopMargin}>
-                    {formatUpdatedAt(location.updatedAt)}
+            {(location.accuracy !== null || !hideAreaStatus) ? (
+              <View style={styles.infoRow}>
+                {location.accuracy !== null && (
+                  <NBText
+                    variant="body-sm"
+                    style={[styles.accuracyText, accuracyWarning && styles.accuracyWarning]}
+                  >
+                    {accuracyWarning ? '⚠️ ' : ''}Akurasi: ±{Math.round(location.accuracy)}m
                   </NBText>
                 )}
-              </>
-            ) : (
-              <NBText variant="body" color="gray500">GPS tidak aktif atau belum tersedia</NBText>
-            )}
-          </View>
-
-          {footerActionLabel && onFooterAction && hasCoords ? (
-            <TouchableOpacity
-              onPress={onFooterAction}
-              accessibilityRole="button"
-              accessibilityLabel={footerActionLabel}
-              style={styles.footerAction}
-              testID="location-modal-footer-action"
-            >
-              <MaterialCommunityIcons name="google-maps" size={20} color={nbColors.white} />
-              <NBText variant="body" color="white" style={styles.footerActionText}>
-                {footerActionLabel}
+                {!hideAreaStatus && (
+                  <View
+                    style={[
+                      styles.areaBadge,
+                      location.isWithinArea ? styles.areaBadgeInside : styles.areaBadgeOutside,
+                    ]}
+                  >
+                    <NBText
+                      variant="caption"
+                      style={[
+                        styles.areaBadgeTextBold,
+                        location.isWithinArea
+                          ? styles.areaBadgeTextInside
+                          : styles.areaBadgeTextOutside,
+                      ]}
+                    >
+                      {location.isWithinArea ? 'Di dalam area kerja' : 'Di luar area kerja'}
+                    </NBText>
+                  </View>
+                )}
+              </View>
+            ) : null}
+            {!hideUpdatedAt && (
+              <NBText variant="caption" color="gray500" style={styles.updatedTopMargin}>
+                {formatUpdatedAt(location.updatedAt)}
               </NBText>
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      </Pressable>
-    </Modal>
+            )}
+          </>
+        ) : (
+          <NBText variant="body" color="gray500">
+            GPS tidak aktif atau belum tersedia
+          </NBText>
+        )}
+      </View>
+    </NBModal>
   );
 }
 
@@ -362,47 +347,9 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.black,
     paddingVertical: nbSpacing[3],
     gap: nbSpacing[2],
-    borderTopWidth: nbBorders.base,
-    borderColor: nbColors.black,
   },
   footerActionText: {
     fontWeight: '700',
-  },
-  overlay: {
-    flex: 1,
-    backgroundColor: nbColors.overlay,
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: nbColors.surface,
-    borderTopWidth: nbBorders.base,
-    borderLeftWidth: nbBorders.base,
-    borderRightWidth: nbBorders.base,
-    borderColor: nbColors.black,
-    maxHeight: '85%',
-    flexShrink: 1,
-    ...nbShadows.lg,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.md,
-    borderBottomWidth: nbBorders.base,
-    borderBottomColor: nbColors.black,
-  },
-  titleContainer: {
-    flex: 1,
-  },
-  subtitleTop: {
-    marginTop: 2,
-  },
-  closeButton: {
-    width: 48,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   mapContainer: {
     height: 320,
@@ -421,7 +368,8 @@ const styles = StyleSheet.create({
     gap: nbSpacing.sm,
   },
   infoStrip: {
-    padding: nbSpacing.md,
+    paddingHorizontal: nbSpacing.md,
+    paddingVertical: nbSpacing.sm,
     gap: nbSpacing.xs,
   },
   coordsFont: {
@@ -444,7 +392,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.sm,
     paddingVertical: nbSpacing.xs,
     borderWidth: nbBorders.base,
-    borderRadius: nbBorderRadius.base,
+    borderRadius: nbRadius.base,
   },
   areaBadgeInside: {
     backgroundColor: withAlpha(nbColors.successDark, 0.12),

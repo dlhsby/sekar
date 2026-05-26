@@ -409,7 +409,7 @@ export function PerantinganListScreen(): React.JSX.Element {
         <SortModal
           visible={isSortModalOpen}
           onClose={() => setIsSortModalOpen(false)}
-          title="URUTKAN PERMOHONAN"
+          title="Urutkan Permohonan"
           options={SORT_OPTIONS}
           selectedOption={sort}
           onSelect={handleSortSelect}
