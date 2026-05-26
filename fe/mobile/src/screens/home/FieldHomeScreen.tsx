@@ -103,7 +103,13 @@ export function FieldHomeScreen(): React.JSX.Element {
 
   const activeTasks = useMemo(() => {
     const list = Array.isArray(tasks) ? tasks : [];
-    return list.filter((t) => ACTIVE_TASK_STATUSES.includes(t.status));
+    const eod = new Date();
+    eod.setHours(23, 59, 59, 999);
+    return list.filter((t) => {
+      if (!ACTIVE_TASK_STATUSES.includes(t.status)) return false;
+      if (!t.deadline) return true; // no deadline → always relevant
+      return new Date(t.deadline) <= eod; // due today or overdue
+    });
   }, [tasks]);
 
   useEffect(() => {
@@ -297,35 +303,7 @@ export function FieldHomeScreen(): React.JSX.Element {
             />
           )}
 
-          {/* Ringkasan hari ini — at-a-glance counters; each tile opens its detail sheet */}
-          <HomeSectionDivider label="Ringkasan hari ini" />
-          <View style={styles.tiles}>
-            <HomeStatTile
-              label="Aktivitas"
-              value={todayActivitiesCount}
-              variant="neutral"
-              onPress={() => setActivitiesModalVisible(true)}
-              testID="stat-activities"
-            />
-            <HomeStatTile
-              label="Jam kerja"
-              value={totalTodayDuration}
-              variant="yellow"
-              onPress={() => setWorkHoursModalVisible(true)}
-              testID="stat-workhours"
-            />
-            {isTaskReceiver && (
-              <HomeStatTile
-                label="Tugas"
-                value={activeTasks.length}
-                variant="ok"
-                onPress={() => setTasksModalVisible(true)}
-                testID="stat-tasks"
-              />
-            )}
-          </View>
-
-          {/* Absensi saya divider */}
+          {/* Absensi saya — clock-in hero first */}
           <HomeSectionDivider label="Absensi saya" />
 
           {/* Absensi hero — collapsible; the whole card toggles open/closed. */}
@@ -424,6 +402,34 @@ export function FieldHomeScreen(): React.JSX.Element {
               )}
             </View>
           )}
+
+          {/* Ringkasan hari ini — at-a-glance counters; each tile opens its detail sheet */}
+          <HomeSectionDivider label="Ringkasan hari ini" />
+          <View style={styles.tiles}>
+            <HomeStatTile
+              label="Aktivitas"
+              value={todayActivitiesCount}
+              variant="neutral"
+              onPress={() => setActivitiesModalVisible(true)}
+              testID="stat-activities"
+            />
+            <HomeStatTile
+              label="Jam kerja"
+              value={totalTodayDuration}
+              variant="yellow"
+              onPress={() => setWorkHoursModalVisible(true)}
+              testID="stat-workhours"
+            />
+            {isTaskReceiver && (
+              <HomeStatTile
+                label="Tugas"
+                value={activeTasks.length}
+                variant="ok"
+                onPress={() => setTasksModalVisible(true)}
+                testID="stat-tasks"
+              />
+            )}
+          </View>
 
           {/* Not-assigned hint (field roles only — rayon-scoped roles excluded) */}
           {!assignedArea && !currentShift &&

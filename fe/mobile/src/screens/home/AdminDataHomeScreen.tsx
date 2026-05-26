@@ -166,7 +166,13 @@ export function AdminDataHomeScreen(): React.JSX.Element {
 
   const activeTasks = useMemo(() => {
     const list = Array.isArray(tasks) ? tasks : [];
-    return list.filter((t) => ACTIVE_TASK_STATUSES.includes(t.status));
+    const eod = new Date();
+    eod.setHours(23, 59, 59, 999);
+    return list.filter((t) => {
+      if (!ACTIVE_TASK_STATUSES.includes(t.status)) return false;
+      if (!t.deadline) return true;
+      return new Date(t.deadline) <= eod;
+    });
   }, [tasks]);
 
   const goToQueue = useCallback(() => {
@@ -193,7 +199,38 @@ export function AdminDataHomeScreen(): React.JSX.Element {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[nbColors.primary]} />}
         >
-          {/* Ringkasan hari ini — perantingan overview + breakdown */}
+          {/* Absensi saya — clock-in card first */}
+          <HomeSectionDivider label="Absensi saya" />
+          <View style={styles.hero} testID="perantingan-hero">
+            <View style={styles.heroTopRow}>
+              <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroLabel}>
+                Perantingan masuk
+              </NBText>
+              <StatusPill tone={counts.submitted > 0 ? 'warn' : 'neutral'} label={`${counts.submitted} baru`} />
+            </View>
+            <NBText variant="display" color="black" style={styles.heroValue}>
+              {String(incoming)}
+            </NBText>
+            <NBText variant="mono-sm" color="gray700" style={styles.heroMeta}>
+              menunggu disposisi
+            </NBText>
+            <View style={styles.heroButton}>
+              <NBButton title="Buka antrian →" onPress={goToQueue} variant="primary" size="md" testID="open-queue" />
+            </View>
+          </View>
+
+          {/* Disposition breakdown */}
+          <HomeSectionDivider label="Breakdown disposisi" />
+          <View style={styles.tilesRow}>
+            <HomeStatTile label="Baru masuk" value={counts.submitted} variant="neutral" testID="disp-submitted" />
+            <HomeStatTile label="Review" value={counts.under_review} variant="warn" testID="disp-review" />
+          </View>
+          <View style={styles.tilesRow}>
+            <HomeStatTile label="Disetujui" value={counts.approved} variant="ok" testID="disp-approved" />
+            <HomeStatTile label="Ditolak" value={counts.rejected} variant="bad" testID="disp-rejected" />
+          </View>
+
+          {/* Ringkasan hari ini — personal stats + perantingan overview */}
           <HomeSectionDivider label="Ringkasan hari ini" />
 
           {/* Personal stat tiles (activities, work hours, tasks) */}
@@ -224,37 +261,6 @@ export function AdminDataHomeScreen(): React.JSX.Element {
           </View>
 
           {/* Perantingan-queue hero */}
-          <View style={styles.hero} testID="perantingan-hero">
-            <View style={styles.heroTopRow}>
-              <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroLabel}>
-                Perantingan masuk
-              </NBText>
-              <StatusPill tone={counts.submitted > 0 ? 'warn' : 'neutral'} label={`${counts.submitted} baru`} />
-            </View>
-            <NBText variant="display" color="black" style={styles.heroValue}>
-              {String(incoming)}
-            </NBText>
-            <NBText variant="mono-sm" color="gray700" style={styles.heroMeta}>
-              menunggu disposisi
-            </NBText>
-            <View style={styles.heroButton}>
-              <NBButton title="Buka antrian →" onPress={goToQueue} variant="primary" size="md" testID="open-queue" />
-            </View>
-          </View>
-
-          {/* Disposition breakdown */}
-          <HomeSectionDivider label="Breakdown disposisi" />
-          <View style={styles.tilesRow}>
-            <HomeStatTile label="Baru masuk" value={counts.submitted} variant="neutral" testID="disp-submitted" />
-            <HomeStatTile label="Review" value={counts.under_review} variant="warn" testID="disp-review" />
-          </View>
-          <View style={styles.tilesRow}>
-            <HomeStatTile label="Disetujui" value={counts.approved} variant="ok" testID="disp-approved" />
-            <HomeStatTile label="Ditolak" value={counts.rejected} variant="bad" testID="disp-rejected" />
-          </View>
-
-          {/* Absensi card — collapsible when clocked in (prevents accidental clock-out) */}
-          <HomeSectionDivider label="Absensi saya" />
           {currentShift ? (
             <TouchableOpacity
               style={styles.absensi}

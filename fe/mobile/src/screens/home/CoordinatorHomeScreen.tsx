@@ -179,7 +179,13 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
 
   const activeTasks = useMemo(() => {
     const list = Array.isArray(tasks) ? tasks : [];
-    return list.filter((t) => ACTIVE_TASK_STATUSES.includes(t.status));
+    const eod = new Date();
+    eod.setHours(23, 59, 59, 999);
+    return list.filter((t) => {
+      if (!ACTIVE_TASK_STATUSES.includes(t.status)) return false;
+      if (!t.deadline) return true;
+      return new Date(t.deadline) <= eod;
+    });
   }, [tasks]);
 
   const goToMonitoring = useCallback(() => {
@@ -199,37 +205,8 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[nbColors.primary]} />}
         >
-          {/* Ringkasan hari ini — team overview + KPI grid */}
-          <HomeSectionDivider label="Ringkasan hari ini" />
-
-          {/* Personal stat tiles (activities, work hours, tasks) */}
-          <View style={styles.statTiles}>
-            <HomeStatTile
-              label="Aktivitas"
-              value={todayActivitiesCount}
-              variant="neutral"
-              onPress={() => setActivitiesModalVisible(true)}
-              testID="stat-activities"
-            />
-            <HomeStatTile
-              label="Jam kerja"
-              value={totalTodayDuration}
-              variant="yellow"
-              onPress={() => setWorkHoursModalVisible(true)}
-              testID="stat-workhours"
-            />
-            {isTaskReceiver && (
-              <HomeStatTile
-                label="Tugas"
-                value={activeTasks.length}
-                variant="ok"
-                onPress={() => setTasksModalVisible(true)}
-                testID="stat-tasks"
-              />
-            )}
-          </View>
-
-          {/* Team-status hero */}
+          {/* Absensi saya — clock-in card first */}
+          <HomeSectionDivider label="Absensi saya" />
           <View style={styles.hero} testID="team-hero">
             <View style={styles.heroTopRow}>
               <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroLabel}>
@@ -286,8 +263,37 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
             <HomeStatTile label="Offline" value={statusCounts.offline} variant="neutral" testID="kpi-offline" />
           </View>
 
-          {/* Absensi card — collapsible when clocked in (prevents accidental clock-out) */}
-          <HomeSectionDivider label="Absensi saya" />
+          {/* Ringkasan hari ini — personal stats + team overview */}
+          <HomeSectionDivider label="Ringkasan hari ini" />
+
+          {/* Personal stat tiles (activities, work hours, tasks) */}
+          <View style={styles.statTiles}>
+            <HomeStatTile
+              label="Aktivitas"
+              value={todayActivitiesCount}
+              variant="neutral"
+              onPress={() => setActivitiesModalVisible(true)}
+              testID="stat-activities"
+            />
+            <HomeStatTile
+              label="Jam kerja"
+              value={totalTodayDuration}
+              variant="yellow"
+              onPress={() => setWorkHoursModalVisible(true)}
+              testID="stat-workhours"
+            />
+            {isTaskReceiver && (
+              <HomeStatTile
+                label="Tugas"
+                value={activeTasks.length}
+                variant="ok"
+                onPress={() => setTasksModalVisible(true)}
+                testID="stat-tasks"
+              />
+            )}
+          </View>
+
+          {/* Team-status hero */}
           {currentShift ? (
             <TouchableOpacity
               style={styles.absensi}
