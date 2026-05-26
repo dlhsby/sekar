@@ -150,7 +150,7 @@ export function ExecHomeScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   scrollView: { flex: 1 },
-  content: { padding: nbSpacing.md, flexGrow: 1 },
+  content: { paddingHorizontal: nbSpacing.md, paddingTop: nbSpacing.sm, paddingBottom: nbSpacing.md, flexGrow: 1 },
 
   hero: {
     backgroundColor: nbColors.bgAccentMint,

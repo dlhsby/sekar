@@ -119,6 +119,9 @@ export function KecamatanHomeScreen(): React.JSX.Element {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[nbColors.primary]} />}
         >
+          {/* Ringkasan hari ini — request overview */}
+          <HomeSectionDivider label="Ringkasan hari ini" />
+
           {/* My-requests hero */}
           <View style={styles.hero} testID="kecamatan-hero">
             <View style={styles.heroTopRow}>
@@ -186,7 +189,7 @@ export function KecamatanHomeScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   scrollView: { flex: 1 },
-  content: { padding: nbSpacing.md, flexGrow: 1 },
+  content: { paddingHorizontal: nbSpacing.md, paddingTop: nbSpacing.sm, paddingBottom: nbSpacing.md, flexGrow: 1 },
 
   hero: {
     backgroundColor: nbColors.bgAccentYellow,

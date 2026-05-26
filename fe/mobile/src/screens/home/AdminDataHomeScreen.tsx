@@ -8,7 +8,7 @@ import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
 import { HomeSectionDivider } from '../../components/home/HomeSectionDivider';
 import { HomeStatTile } from '../../components/home/HomeStatTile';
 import { HomeListRow } from '../../components/home/HomeListRow';
-import { TodayActivitiesModal, TodayWorkHoursModal, TodayTasksModal } from '../../components/modals';
+import { ShiftDetailModal, TodayActivitiesModal, TodayWorkHoursModal, TodayTasksModal } from '../../components/modals';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
 import { CLOCKABLE_ROLES, TASK_RECEIVERS } from '../../constants/roles';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
@@ -20,6 +20,8 @@ import { activitiesApi, tasksApi, shiftsApi } from '../../services/api';
 import { formatDate, formatTime, isToday, calculateDuration } from '../../utils/dateUtils';
 import { ACTIVE_TASK_STATUSES } from '../../utils/taskStatus';
 import type { PruningRequest, PruningRequestStatus } from '../../types/models.types';
+
+const pad = (n: number): string => String(n).padStart(2, '0');
 
 /**
  * Admin Data Home Screen (hi-fi HOME-3) — perantingan-disposition dashboard for
@@ -60,9 +62,25 @@ export function AdminDataHomeScreen(): React.JSX.Element {
 
   const [refreshing, setRefreshing] = useState(false);
   const [absensiExpanded, setAbsensiExpanded] = useState(false);
+  const [shiftModalVisible, setShiftModalVisible] = useState(false);
   const [activitiesModalVisible, setActivitiesModalVisible] = useState(false);
   const [workHoursModalVisible, setWorkHoursModalVisible] = useState(false);
   const [tasksModalVisible, setTasksModalVisible] = useState(false);
+  const [timer, setTimer] = useState('00:00:00');
+
+  useEffect(() => {
+    if (!currentShift) { setTimer('00:00:00'); return; }
+    const update = () => {
+      const elapsed = Date.now() - new Date(currentShift.clock_in_time).getTime();
+      const h = Math.floor(elapsed / 3600000);
+      const m = Math.floor((elapsed % 3600000) / 60000);
+      const s = Math.floor((elapsed % 60000) / 1000);
+      setTimer(`${pad(h)}:${pad(m)}:${pad(s)}`);
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [currentShift?.id]);
 
   const loadShift = useCallback(async () => {
     try {
@@ -199,50 +217,74 @@ export function AdminDataHomeScreen(): React.JSX.Element {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[nbColors.primary]} />}
         >
-          {/* Absensi saya — clock-in card */}
+          {/* Absensi saya — clock-in card (matches FieldHomeScreen structure) */}
           <HomeSectionDivider label="Absensi saya" />
           {currentShift ? (
             <TouchableOpacity
-              style={styles.absensi}
+              style={[styles.absensi, currentShift.is_overtime ? styles.absensiLembur : styles.absensiActive]}
               testID="absensi-card"
               activeOpacity={0.9}
               onPress={() => setAbsensiExpanded((prev) => !prev)}
               accessibilityRole="button"
               accessibilityState={{ expanded: absensiExpanded }}
+              accessibilityLabel={currentShift.is_overtime ? 'Lembur aktif' : 'Sedang bertugas'}
             >
               <View style={styles.absensiTopRow}>
                 <View style={styles.absensiClockArea}>
-                  <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroLabel}>
+                  <NBText variant="mono-sm" color="gray700" uppercase style={styles.absensiLabel}>
                     {currentShift.is_overtime ? 'Lembur aktif' : 'Sedang bertugas'}
                   </NBText>
-                  <NBText variant="body-sm" color="gray700" style={styles.absensiMeta}>
-                    {`Mulai ${formatTime(currentShift.clock_in_time)}`}
+                  <NBText
+                    variant="display"
+                    color="black"
+                    style={styles.absensiClock}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                  >
+                    {timer}
                   </NBText>
                 </View>
                 <MaterialCommunityIcons
                   name={absensiExpanded ? 'chevron-up' : 'chevron-down'}
-                  size={20}
+                  size={24}
                   color={nbColors.gray700}
+                  style={styles.absensiChevron}
                 />
               </View>
               {absensiExpanded && (
-                <View style={styles.absensiButton}>
-                  <NBButton
-                    title={currentShift.is_overtime ? 'Clock Out Lembur' : 'Clock Out'}
-                    onPress={handleClockInOut}
-                    variant="danger"
-                    size="md"
-                    testID="absensi-clock-button"
-                  />
-                </View>
+                <>
+                  <NBText variant="mono-sm" color="gray700" style={styles.absensiMeta}>
+                    {`Mulai ${formatTime(currentShift.clock_in_time)}`}
+                  </NBText>
+                  <View style={styles.absensiButton}>
+                    <NBButton
+                      title={currentShift.is_overtime ? 'Clock Out Lembur' : 'Clock Out'}
+                      onPress={handleClockInOut}
+                      variant="danger"
+                      size="md"
+                      testID="absensi-clock-button"
+                    />
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setShiftModalVisible(true)}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    style={styles.absensiDetailLink}
+                    testID="shift-detail-link"
+                  >
+                    <NBText variant="mono-sm" color="gray700" uppercase style={styles.absensiDetailText}>
+                      Detail shift →
+                    </NBText>
+                  </TouchableOpacity>
+                </>
               )}
             </TouchableOpacity>
           ) : (
-            <View style={styles.absensi} testID="absensi-card">
-              <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroLabel}>
+            <View style={[styles.absensi, styles.absensiIdle]} testID="absensi-card">
+              <NBText variant="mono-sm" color="gray600" uppercase style={styles.absensiLabel}>
                 Belum clock in
               </NBText>
-              <NBText variant="h3" color="black" style={styles.absensiMeta}>
+              <NBText variant="h2" color="black" style={styles.absensiIdleTitle}>
                 Mulai shift hari ini
               </NBText>
               <View style={styles.absensiButton}>
@@ -346,6 +388,7 @@ export function AdminDataHomeScreen(): React.JSX.Element {
       </View>
 
       {/* Personal data modals */}
+      <ShiftDetailModal visible={shiftModalVisible} onClose={() => setShiftModalVisible(false)} shift={currentShift} />
       <TodayActivitiesModal
         visible={activitiesModalVisible}
         onClose={() => setActivitiesModalVisible(false)}
@@ -392,18 +435,26 @@ const styles = StyleSheet.create({
   list: { gap: nbSpacing.sm },
 
   absensi: {
-    backgroundColor: nbColors.white,
     borderWidth: nbBorders.widthThick,
     borderColor: nbColors.black,
     borderRadius: nbRadius.md,
     padding: nbSpacing.md,
     marginBottom: nbSpacing.md,
-    ...nbShadows.sm,
+    ...nbShadows.md,
   },
-  absensiTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  absensiActive: { backgroundColor: nbColors.statusActiveBg },
+  absensiLembur: { backgroundColor: nbColors.statusIdleBg },
+  absensiIdle: { backgroundColor: nbColors.white },
+  absensiTopRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: nbSpacing.sm },
   absensiClockArea: { flex: 1 },
-  absensiMeta: { marginTop: nbSpacing.xs },
+  absensiChevron: { marginTop: 1 },
+  absensiLabel: { letterSpacing: 0.6, marginBottom: 2 },
+  absensiClock: { fontSize: 34, lineHeight: 38, letterSpacing: 0.5 },
+  absensiMeta: { marginTop: nbSpacing.sm },
+  absensiIdleTitle: { marginTop: 2 },
   absensiButton: { marginTop: nbSpacing.md },
+  absensiDetailLink: { marginTop: nbSpacing.sm, alignSelf: 'flex-start' },
+  absensiDetailText: { letterSpacing: 0.6 },
 });
 
 export default AdminDataHomeScreen;

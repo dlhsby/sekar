@@ -4,6 +4,33 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## May 26, 2026 — M3 Home revamp · Checkpoint 8: Home consistency pass (all 9 roles)
+
+Full cross-role audit and synchronization of the Home screens.
+
+**Issues found and fixed:**
+
+1. **Absensi card inconsistent on korlap / kepala_rayon / admin_data.** `CoordinatorHomeScreen` and `AdminDataHomeScreen` had a visually different absensi card: always white background, static "Mulai {time}" text (no live timer), 20 px chevron vs 24 px, `h3` idle title vs `h2`, smaller shadow (`sm` vs `md`). These roles are all in `CLOCKABLE_ROLES` — their shift card should be identical to `FieldHomeScreen`'s. Fixed:
+   - Added `pad()` helper + `timer` state + 1-second `useEffect` interval (same pattern as FieldHome, keyed on `currentShift?.id`).
+   - Active card: `statusActiveBg` / `statusIdleBg` background variants (was always `white`), `display`-variant live timer with `adjustsFontSizeToFit` / `numberOfLines={1}` (was static `body-sm` time string), 24 px chevron, `sh-md` shadow, expanded section shows "Detail shift →" → `ShiftDetailModal`.
+   - Idle card: `h2` "Mulai shift hari ini" (was `h3`), same `white` bg.
+   - Imported `ShiftDetailModal`; added `shiftModalVisible` state; added `absensiActive` / `absensiLembur` / `absensiIdle` style variants; style shapes (`topRow`, `clockArea`, `chevron`, `label`, `clock`, `meta`, `idleTitle`, `button`, `detailLink`, `detailText`) now match FieldHome exactly.
+
+2. **Layout scramble on CoordinatorHomeScreen / AdminDataHomeScreen (absensi card not first).** Coordinator had the team hero (Tim hari ini) placed directly under "Absensi saya" — the absensi card came after the stat tiles. AdminData had the perantingan hero under "Absensi saya". Fixed in the previous commit (Checkpoint layout fix, committed earlier this session). "Tim hari ini" and the perantingan hero are now inside the "Ringkasan hari ini" section, after the personal stat tiles.
+
+3. **ExecHomeScreen content padding inconsistent.** Used `padding: nbSpacing.md` (all four sides equal) vs other screens which use `paddingHorizontal: nbSpacing.md, paddingTop: nbSpacing.sm, paddingBottom: nbSpacing.md` (tighter top gap to header). Fixed to match.
+
+4. **KecamatanHomeScreen content padding inconsistent + missing "Ringkasan hari ini" divider.** Same padding fix as Exec; added `HomeSectionDivider label="Ringkasan hari ini"` above the "Permohonan saya" hero (parallel to how ExecHome got it earlier this session).
+
+**Consistent layout contract (all Home screens after this pass):**
+- Clockable roles (satgas/linmas/korlap/kepala_rayon/admin_data): "Absensi saya" divider → absensi card (timer + colors) → "Ringkasan hari ini" divider → personal stat tiles (Aktivitas / Jam kerja / Tugas) → role-specific team/overview section.
+- Non-clockable roles (top_management/admin_system/superadmin/staff_kecamatan): "Ringkasan hari ini" divider → role-specific overview hero → stat tiles.
+- All screens: `paddingHorizontal: nbSpacing.md, paddingTop: nbSpacing.sm, paddingBottom: nbSpacing.md`.
+
+**Tests:** 15 passed across all four affected suites (CoordinatorHomeScreen 4, AdminDataHomeScreen 4, ExecHomeScreen 3, KecamatanHomeScreen 4). `tsc` clean on modified files; ESLint `no-inline-hex-colors` clean.
+
+---
+
 ## May 26, 2026 — M3 Home revamp · Checkpoint 7: satgas Home restructure + bottom-sheet revamp
 
 Second round of manual-review feedback (satgas Home + the Ringkasan bottom sheets):
