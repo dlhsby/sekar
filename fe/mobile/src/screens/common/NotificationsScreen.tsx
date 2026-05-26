@@ -11,13 +11,13 @@
  *
  * Backed by the existing `notificationsApi` (Phase 2) and the
  * `notificationsSlice` (already populated by FCM foreground handler).
+ * Header (title + back arrow) is provided by MainNavigator via FieldHomeHeader.
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
   RefreshControl,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -40,8 +40,8 @@ import {
   markAsRead,
 } from '../../services/api/notificationsApi';
 import type { Notification } from '../../types/models.types';
-import { nbBorders, nbColors, nbSpacing } from '../../constants/nbTokens';
-import { NBEmptyState } from '../../components/nb';
+import { nbBorders, nbColors, nbRadius, nbSpacing } from '../../constants/nbTokens';
+import { NBEmptyState, NBText } from '../../components/nb';
 
 function formatRelativeTime(iso: string): string {
   try {
@@ -69,8 +69,6 @@ export function NotificationsScreen(): React.JSX.Element {
     dispatch(setLoading(true));
     try {
       const res = await getNotifications({ page: 1, limit: 50 });
-      // The list response wraps the array as `data.data`; `res.data` is the
-      // outer API wrapper (`ApiResponse<NotificationsListResponse>`).
       const list = (res.data?.data ?? []) as Notification[];
       dispatch(setNotifications(list));
     } catch (err) {
@@ -96,12 +94,9 @@ export function NotificationsScreen(): React.JSX.Element {
         try {
           await markAsRead(n.id);
         } catch {
-          // Optimistic: keep local state even if remote ack fails; next
-          // page refresh will reconcile.
+          // Optimistic: keep local state even if remote ack fails
         }
       }
-      // Deep-link by data — mirrors deepLinkFromNotificationData in
-      // RootNavigator so tray-tap and inbox-tap behave the same.
       const data = (n.data ?? {}) as Record<string, unknown>;
       const taskId = typeof data.task_id === 'string' ? data.task_id : undefined;
       const requestId =
@@ -125,18 +120,20 @@ export function NotificationsScreen(): React.JSX.Element {
   }, [dispatch]);
 
   return (
-    <SafeAreaView style={styles.root} testID="notifications-screen">
+    <SafeAreaView style={styles.root} edges={['bottom']} testID="notifications-screen">
       {unreadCount > 0 ? (
         <View style={styles.actionsBar}>
-          <Text style={styles.unreadLabel}>
+          <NBText variant="mono-sm" color="gray700" uppercase>
             {unreadCount} belum dibaca
-          </Text>
+          </NBText>
           <TouchableOpacity
             onPress={handleMarkAllRead}
             accessibilityRole="button"
             testID="notifications-mark-all-read"
           >
-            <Text style={styles.actionLink}>Tandai semua dibaca</Text>
+            <NBText variant="mono-sm" color="primary" uppercase style={styles.actionLink}>
+              Tandai semua dibaca
+            </NBText>
           </TouchableOpacity>
         </View>
       ) : null}
@@ -147,31 +144,40 @@ export function NotificationsScreen(): React.JSX.Element {
           notifications.length === 0 ? styles.emptyContent : styles.listContent
         }
         refreshControl={
-          <RefreshControl refreshing={refreshing || isLoading} onRefresh={onRefresh} />
+          <RefreshControl
+            refreshing={refreshing || isLoading}
+            onRefresh={onRefresh}
+            colors={[nbColors.primary]}
+          />
         }
         renderItem={({ item }) => (
           <TouchableOpacity
             onPress={() => handlePress(item)}
-            style={[styles.row, !item.read ? styles.rowUnread : null]}
+            style={[styles.row, !item.read && styles.rowUnread]}
             testID={`notification-row-${item.id}`}
+            accessibilityRole="button"
           >
-            <View
-              style={[
-                styles.unreadDot,
-                { opacity: item.read ? 0 : 1 },
-              ]}
-            />
+            <View style={[styles.unreadDot, { opacity: item.read ? 0 : 1 }]} />
             <View style={styles.rowBody}>
-              <Text
-                style={[styles.title, !item.read ? styles.titleUnread : null]}
+              <NBText
+                variant="body-sm"
+                color={item.read ? 'gray700' : 'black'}
+                style={item.read ? undefined : styles.titleUnread}
                 numberOfLines={1}
               >
                 {item.title}
-              </Text>
-              <Text style={styles.body} numberOfLines={2}>
+              </NBText>
+              <NBText
+                variant="body-sm"
+                color="gray600"
+                style={styles.bodyText}
+                numberOfLines={2}
+              >
                 {item.body}
-              </Text>
-              <Text style={styles.meta}>{formatRelativeTime(item.created_at)}</Text>
+              </NBText>
+              <NBText variant="caption" color="gray500">
+                {formatRelativeTime(item.created_at)}
+              </NBText>
             </View>
           </TouchableOpacity>
         )}
@@ -193,72 +199,53 @@ export function NotificationsScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: (nbColors as unknown as Record<string, string>).paper ?? '#F5F0EB',
+    backgroundColor: nbColors.bgCanvas,
   },
   actionsBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: nbSpacing?.md ?? 16,
-    paddingVertical: 10,
-    borderBottomWidth: nbBorders?.thin ?? 1,
-    borderBottomColor: nbColors.black ?? '#1C1917',
-  },
-  unreadLabel: {
-    fontWeight: '700',
-    fontSize: 12,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.04,
-    color: nbColors.black ?? '#1C1917',
+    paddingHorizontal: nbSpacing.md,
+    paddingVertical: nbSpacing.sm,
+    borderBottomWidth: nbBorders.thin,
+    borderBottomColor: nbColors.black,
+    backgroundColor: nbColors.white,
   },
   actionLink: {
-    fontWeight: '800',
-    fontSize: 12,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.04,
-    color: nbColors.primary ?? '#1A4D2E',
+    letterSpacing: 0.4,
   },
-  listContent: { paddingVertical: 8 },
+  listContent: { paddingVertical: nbSpacing.xs },
   emptyContent: { flexGrow: 1, justifyContent: 'center' },
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingHorizontal: nbSpacing?.md ?? 16,
-    paddingVertical: 12,
-    borderBottomWidth: nbBorders?.thin ?? 1,
-    borderBottomColor: '#E5E0D8',
-    gap: 10,
+    paddingHorizontal: nbSpacing.md,
+    paddingVertical: nbSpacing.sm + 4,
+    borderBottomWidth: nbBorders.thin,
+    borderBottomColor: nbColors.gray200,
+    gap: nbSpacing.sm,
     backgroundColor: 'transparent',
   },
   rowUnread: {
-    backgroundColor: '#FFF7EA',
+    backgroundColor: nbColors.bgAccentYellow,
+    borderLeftWidth: nbBorders.thick,
+    borderLeftColor: nbColors.warning,
   },
   unreadDot: {
     width: 8,
     height: 8,
-    marginTop: 6,
-    backgroundColor: nbColors.danger ?? '#E53935',
+    marginTop: 5,
+    borderRadius: nbRadius.full,
+    backgroundColor: nbColors.danger,
+    flexShrink: 0,
   },
   rowBody: { flex: 1 },
-  title: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: nbColors.black ?? '#1C1917',
-    marginBottom: 2,
-  },
   titleUnread: {
-    fontWeight: '800',
+    fontWeight: '700',
   },
-  body: {
-    fontSize: 13,
-    color: nbColors.black ?? '#1C1917',
-    opacity: 0.8,
-    marginBottom: 4,
-  },
-  meta: {
-    fontSize: 11,
-    color: nbColors.black ?? '#1C1917',
-    opacity: 0.6,
+  bodyText: {
+    marginTop: 2,
+    marginBottom: 2,
   },
 });
 

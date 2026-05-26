@@ -133,6 +133,9 @@ export function AdminDataHomeScreen(): React.JSX.Element {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[nbColors.primary]} />}
         >
+          {/* Ringkasan hari ini — perantingan overview + breakdown */}
+          <HomeSectionDivider label="Ringkasan hari ini" />
+
           {/* Perantingan-queue hero */}
           <View style={styles.hero} testID="perantingan-hero">
             <View style={styles.heroTopRow}>

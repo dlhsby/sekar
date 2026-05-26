@@ -58,8 +58,8 @@ export function FieldHomeScreen(): React.JSX.Element {
   // Live shift timer
   const [timer, setTimer] = useState('00:00:00');
 
-  // Active-shift hero collapse (default open). Toggled by tapping the whole card.
-  const [shiftExpanded, setShiftExpanded] = useState(true);
+  // Active-shift hero collapse (default closed). Toggled by tapping the whole card.
+  const [shiftExpanded, setShiftExpanded] = useState(false);
 
   // Modal states
   const [shiftModalVisible, setShiftModalVisible] = useState(false);
@@ -297,6 +297,34 @@ export function FieldHomeScreen(): React.JSX.Element {
             />
           )}
 
+          {/* Ringkasan hari ini — at-a-glance counters; each tile opens its detail sheet */}
+          <HomeSectionDivider label="Ringkasan hari ini" />
+          <View style={styles.tiles}>
+            <HomeStatTile
+              label="Aktivitas"
+              value={todayActivitiesCount}
+              variant="neutral"
+              onPress={() => setActivitiesModalVisible(true)}
+              testID="stat-activities"
+            />
+            <HomeStatTile
+              label="Jam kerja"
+              value={totalTodayDuration}
+              variant="yellow"
+              onPress={() => setWorkHoursModalVisible(true)}
+              testID="stat-workhours"
+            />
+            {isTaskReceiver && (
+              <HomeStatTile
+                label="Tugas"
+                value={activeTasks.length}
+                variant="ok"
+                onPress={() => setTasksModalVisible(true)}
+                testID="stat-tasks"
+              />
+            )}
+          </View>
+
           {/* Absensi hero — collapsible; the whole card toggles open/closed. */}
           {currentShift ? (
             <TouchableOpacity
@@ -393,35 +421,6 @@ export function FieldHomeScreen(): React.JSX.Element {
               )}
             </View>
           )}
-
-          {/* Ringkasan hari ini — the day's at-a-glance counters; each tile opens
-              its detail bottom sheet (Aktivitas / Jam kerja / Tugas). */}
-          <HomeSectionDivider label="Ringkasan hari ini" />
-          <View style={styles.tiles}>
-            <HomeStatTile
-              label="Aktivitas"
-              value={todayActivitiesCount}
-              variant="neutral"
-              onPress={() => setActivitiesModalVisible(true)}
-              testID="stat-activities"
-            />
-            <HomeStatTile
-              label="Jam kerja"
-              value={totalTodayDuration}
-              variant="yellow"
-              onPress={() => setWorkHoursModalVisible(true)}
-              testID="stat-workhours"
-            />
-            {isTaskReceiver && (
-              <HomeStatTile
-                label="Tugas"
-                value={activeTasks.length}
-                variant="ok"
-                onPress={() => setTasksModalVisible(true)}
-                testID="stat-tasks"
-              />
-            )}
-          </View>
 
           {/* Not-assigned hint (field roles only — rayon-scoped roles excluded) */}
           {!assignedArea && !currentShift &&

@@ -152,9 +152,12 @@ export function LocationMapModal({
 
   const polygonCoords = useMemo(() => {
     const bp = area?.boundary_polygon;
-    if (!bp) return null;
-    // Normalize MultiPolygon → use first polygon's rings (same as Polygon layout)
-    const polygonArg = bp.type === 'Polygon' ? bp : { coordinates: bp.coordinates[0] };
+    // Guard: undefined/null or a JSONB string not yet parsed (TypeORM serialization edge case)
+    if (!bp || typeof bp !== 'object') return null;
+    if (bp.type !== 'Polygon' && bp.type !== 'MultiPolygon') return null;
+    const polygonArg: { coordinates: [number, number][][] } =
+      bp.type === 'Polygon' ? bp : { coordinates: bp.coordinates[0] ?? [] };
+    if (!Array.isArray(polygonArg.coordinates)) return null;
     const ring = polygonArg.coordinates[0];
     return ring && ring.length >= 3 ? toLatLngArray(polygonArg) : null;
   }, [area?.boundary_polygon]);

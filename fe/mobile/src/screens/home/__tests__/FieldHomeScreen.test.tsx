@@ -418,7 +418,7 @@ describe('HomeScreen Clock In/Out FAB', () => {
     });
   });
 
-  it('should render Clock Out FAB when shift is active', async () => {
+  it('should render Clock Out button inside expanded absensi hero when shift is active', async () => {
     const shift = createShift(new Date());
     (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({ data: shift });
     (shiftsApi.getMyShifts as jest.Mock).mockResolvedValue({ data: [shift] });
@@ -433,6 +433,10 @@ describe('HomeScreen Clock In/Out FAB', () => {
     );
 
     await act(async () => { jest.advanceTimersByTime(100); });
+
+    // Hero starts collapsed — expand it first.
+    await waitFor(() => { expect(getByTestId('absensi-hero')).toBeTruthy(); });
+    await act(async () => { fireEvent.press(getByTestId('absensi-hero')); });
 
     await waitFor(() => {
       expect(getByTestId('clock-button')).toBeTruthy();
@@ -899,9 +903,15 @@ describe('FieldHomeScreen HOME-1 body', () => {
     const { getByText, getByTestId } = renderHome(store);
     await act(async () => { jest.advanceTimersByTime(200); });
 
+    // Hero card is visible but starts collapsed — clock-button is hidden until expanded.
     await waitFor(() => {
       expect(getByTestId('absensi-hero')).toBeTruthy();
       expect(getByText('Sedang bertugas')).toBeTruthy();
+    });
+
+    // Expand the card to reveal the clock-out button.
+    await act(async () => { fireEvent.press(getByTestId('absensi-hero')); });
+    await waitFor(() => {
       expect(getByTestId('clock-button')).toBeTruthy();
     });
   });
@@ -967,7 +977,7 @@ describe('FieldHomeScreen HOME-1 body', () => {
     });
   });
 
-  it('collapses the active hero (whole card is the tap target)', async () => {
+  it('expands and collapses the active hero (whole card is the tap target)', async () => {
     const shift = createShift(new Date());
     (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({ data: shift });
     (shiftsApi.getMyShifts as jest.Mock).mockResolvedValue({ data: [shift] });
@@ -975,21 +985,20 @@ describe('FieldHomeScreen HOME-1 body', () => {
     const { getByTestId, queryByTestId } = renderHome(store);
     await act(async () => { jest.advanceTimersByTime(200); });
 
-    // Default expanded: clock-out + detail link visible.
-    await waitFor(() => {
-      expect(getByTestId('clock-button')).toBeTruthy();
-      expect(getByTestId('shift-detail-link')).toBeTruthy();
-    });
+    // Default collapsed: clock-out + detail link hidden, card itself visible.
+    await waitFor(() => { expect(getByTestId('absensi-hero')).toBeTruthy(); });
+    expect(queryByTestId('clock-button')).toBeNull();
+    expect(queryByTestId('shift-detail-link')).toBeNull();
 
-    // Tapping the card collapses it → body (clock-out + detail link) hidden,
-    // but the card itself (the live timer / label) stays.
+    // First tap expands → clock-out + detail link appear.
+    await act(async () => { fireEvent.press(getByTestId('absensi-hero')); });
+    expect(getByTestId('clock-button')).toBeTruthy();
+    expect(getByTestId('shift-detail-link')).toBeTruthy();
+
+    // Second tap collapses again.
     await act(async () => { fireEvent.press(getByTestId('absensi-hero')); });
     expect(queryByTestId('clock-button')).toBeNull();
     expect(queryByTestId('shift-detail-link')).toBeNull();
     expect(getByTestId('absensi-hero')).toBeTruthy();
-
-    // Tapping again re-expands.
-    await act(async () => { fireEvent.press(getByTestId('absensi-hero')); });
-    expect(getByTestId('clock-button')).toBeTruthy();
   });
 });

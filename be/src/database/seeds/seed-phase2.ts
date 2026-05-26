@@ -1416,6 +1416,38 @@ async function seedPhase2() {
           ON CONFLICT (id) DO NOTHING;
         `);
         console.log('  ✓ Created 30 extended activities (scroll test coverage)');
+
+        // 10 activities for satgas_pusat_1 created TODAY — needed so the
+        // "Ringkasan hari ini" tile shows a non-zero count on a fresh dev install
+        // and the TodayActivitiesModal has enough rows to test sheet scrollability.
+        await queryRunner.query(`
+          INSERT INTO activities (id, user_id, shift_id, area_id, activity_type_id, description, photo_urls, gps_lat, gps_lng, created_at)
+          SELECT
+            gen_random_uuid(),
+            '${aS1}'::UUID,
+            '${aSh}',
+            '${aAr}',
+            CASE gs.n % 4
+              WHEN 0 THEN '${perawatanId}'
+              WHEN 1 THEN '${penyiramanId}'
+              WHEN 2 THEN '${potongRumputId}'
+              ELSE '${penanamanId}'
+            END,
+            'Aktivitas hari ini #' || gs.n || ' - ' ||
+              CASE gs.n % 4
+                WHEN 0 THEN 'perawatan area taman pagi ini.'
+                WHEN 1 THEN 'penyiraman seluruh area taman.'
+                WHEN 2 THEN 'pemangkasan rumput zona A.'
+                ELSE 'penanaman bibit baru di area timur.'
+              END,
+            ARRAY['https://sekar-media-dev.s3.amazonaws.com/activities/today-' || gs.n || '.jpg'],
+            -7.2905 + ((gs.n % 5) * 0.0003),
+            112.7395 + ((gs.n % 5) * 0.0003),
+            NOW() - (gs.n * INTERVAL '30 minutes')
+          FROM generate_series(1, 10) AS gs(n)
+          ON CONFLICT (id) DO NOTHING;
+        `);
+        console.log('  ✓ Created 10 today-dated activities for satgas_pusat_1 (ringkasan hari ini)');
       } else {
         console.log('  ⚠ Activity types not found, skipping activities');
       }

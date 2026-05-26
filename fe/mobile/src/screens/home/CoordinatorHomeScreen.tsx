@@ -140,6 +140,9 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[nbColors.primary]} />}
         >
+          {/* Ringkasan hari ini — team overview + KPI grid */}
+          <HomeSectionDivider label="Ringkasan hari ini" />
+
           {/* Team-status hero */}
           <View style={styles.hero} testID="team-hero">
             <View style={styles.heroTopRow}>
