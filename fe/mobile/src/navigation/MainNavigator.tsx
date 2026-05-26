@@ -385,6 +385,7 @@ function MainNavigator(): React.JSX.Element {
             <FieldHomeHeader title="Notifikasi" onBack={() => navigation.goBack()} />
           ),
           tabBarButton: () => null,
+          tabBarStyle: { display: 'none' as const },
         })}
       />
 

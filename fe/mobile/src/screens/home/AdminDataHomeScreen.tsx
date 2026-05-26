@@ -8,12 +8,17 @@ import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
 import { HomeSectionDivider } from '../../components/home/HomeSectionDivider';
 import { HomeStatTile } from '../../components/home/HomeStatTile';
 import { HomeListRow } from '../../components/home/HomeListRow';
+import { TodayActivitiesModal, TodayWorkHoursModal, TodayTasksModal } from '../../components/modals';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
+import { CLOCKABLE_ROLES, TASK_RECEIVERS } from '../../constants/roles';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchAdminPruningRequests } from '../../store/slices/pruningRequestsSlice';
-import { setCurrentShift, setError } from '../../store/slices/shiftSlice';
-import { shiftsApi } from '../../services/api';
-import { formatDate, formatTime } from '../../utils/dateUtils';
+import { setCurrentShift, setShiftHistory, setError } from '../../store/slices/shiftSlice';
+import { setActivities } from '../../store/slices/activitiesSlice';
+import { setTasks } from '../../store/slices/tasksSlice';
+import { activitiesApi, tasksApi, shiftsApi } from '../../services/api';
+import { formatDate, formatTime, isToday, calculateDuration } from '../../utils/dateUtils';
+import { ACTIVE_TASK_STATUSES } from '../../utils/taskStatus';
 import type { PruningRequest, PruningRequestStatus } from '../../types/models.types';
 
 /**
@@ -45,10 +50,19 @@ export function AdminDataHomeScreen(): React.JSX.Element {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
   const { adminList, adminListLoading } = useAppSelector((state) => state.pruningRequests);
-  const { currentShift } = useAppSelector((state) => state.shift);
+  const { currentShift, shiftHistory } = useAppSelector((state) => state.shift);
+  const { activitiesList } = useAppSelector((state) => state.activities);
+  const { tasks } = useAppSelector((state) => state.tasks);
+  const viewerRole = useAppSelector((state) => state.auth.user?.role);
+
+  const isClockable = !!viewerRole && CLOCKABLE_ROLES.includes(viewerRole as any);
+  const isTaskReceiver = !!viewerRole && TASK_RECEIVERS.includes(viewerRole as any);
 
   const [refreshing, setRefreshing] = useState(false);
   const [absensiExpanded, setAbsensiExpanded] = useState(false);
+  const [activitiesModalVisible, setActivitiesModalVisible] = useState(false);
+  const [workHoursModalVisible, setWorkHoursModalVisible] = useState(false);
+  const [tasksModalVisible, setTasksModalVisible] = useState(false);
 
   const loadShift = useCallback(async () => {
     try {
@@ -60,9 +74,29 @@ export function AdminDataHomeScreen(): React.JSX.Element {
     }
   }, [dispatch]);
 
+  const loadPersonalData = useCallback(async () => {
+    const today = new Date().toISOString().split('T')[0];
+    const promises: Promise<void>[] = [
+      activitiesApi.getMyActivities({ from_date: today })
+        .then(r => { if (r.data) dispatch(setActivities(r.data.data ?? [])); })
+        .catch(() => {}),
+      shiftsApi.getMyShifts()
+        .then(r => { if (!r.error) dispatch(setShiftHistory(r.data ?? [])); })
+        .catch(() => {}),
+    ];
+    if (isTaskReceiver) {
+      promises.push(
+        tasksApi.getMyTasks({ scope: 'assigned', sort_by: 'deadline', sort_dir: 'asc' })
+          .then(r => { if (r.data) dispatch(setTasks(r.data.data ?? [])); })
+          .catch(() => {})
+      );
+    }
+    await Promise.all(promises);
+  }, [dispatch, isTaskReceiver]);
+
   const load = useCallback(async () => {
-    await Promise.all([dispatch(fetchAdminPruningRequests({})), loadShift()]);
-  }, [dispatch, loadShift]);
+    await Promise.all([dispatch(fetchAdminPruningRequests({})), loadShift(), loadPersonalData()]);
+  }, [dispatch, loadShift, loadPersonalData]);
 
   useEffect(() => {
     void load();
@@ -109,6 +143,32 @@ export function AdminDataHomeScreen(): React.JSX.Element {
     [adminList]
   );
 
+  const todayActivitiesCount = useMemo(() => {
+    const list = Array.isArray(activitiesList) ? activitiesList : [];
+    return list.filter((a) => isToday(a.created_at)).length;
+  }, [activitiesList]);
+
+  const todayShifts = useMemo(() => {
+    const list = Array.isArray(shiftHistory) ? shiftHistory : [];
+    return list.filter((s) => isToday(s.clock_in_time));
+  }, [shiftHistory]);
+
+  const totalTodayDuration = useMemo(() => {
+    let totalMinutes = 0;
+    todayShifts.forEach((shift) => {
+      const endTime = shift.clock_out_time ? new Date(shift.clock_out_time) : new Date();
+      totalMinutes += calculateDuration(new Date(shift.clock_in_time), endTime).totalMinutes;
+    });
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    return `${h}j ${m}m`;
+  }, [todayShifts]);
+
+  const activeTasks = useMemo(() => {
+    const list = Array.isArray(tasks) ? tasks : [];
+    return list.filter((t) => ACTIVE_TASK_STATUSES.includes(t.status));
+  }, [tasks]);
+
   const goToQueue = useCallback(() => {
     navigation.navigate('PruningReviewQueue');
   }, [navigation]);
@@ -135,6 +195,33 @@ export function AdminDataHomeScreen(): React.JSX.Element {
         >
           {/* Ringkasan hari ini — perantingan overview + breakdown */}
           <HomeSectionDivider label="Ringkasan hari ini" />
+
+          {/* Personal stat tiles (activities, work hours, tasks) */}
+          <View style={styles.statTiles}>
+            <HomeStatTile
+              label="Aktivitas"
+              value={todayActivitiesCount}
+              variant="neutral"
+              onPress={() => setActivitiesModalVisible(true)}
+              testID="stat-activities"
+            />
+            <HomeStatTile
+              label="Jam kerja"
+              value={totalTodayDuration}
+              variant="yellow"
+              onPress={() => setWorkHoursModalVisible(true)}
+              testID="stat-workhours"
+            />
+            {isTaskReceiver && (
+              <HomeStatTile
+                label="Tugas"
+                value={activeTasks.length}
+                variant="ok"
+                onPress={() => setTasksModalVisible(true)}
+                testID="stat-tasks"
+              />
+            )}
+          </View>
 
           {/* Perantingan-queue hero */}
           <View style={styles.hero} testID="perantingan-hero">
@@ -251,6 +338,25 @@ export function AdminDataHomeScreen(): React.JSX.Element {
           )}
         </ScrollView>
       </View>
+
+      {/* Personal data modals */}
+      <TodayActivitiesModal
+        visible={activitiesModalVisible}
+        onClose={() => setActivitiesModalVisible(false)}
+        activities={Array.isArray(activitiesList) ? activitiesList.filter((a) => isToday(a.created_at)) : []}
+      />
+      <TodayWorkHoursModal
+        visible={workHoursModalVisible}
+        onClose={() => setWorkHoursModalVisible(false)}
+        shifts={todayShifts}
+      />
+      {isTaskReceiver && (
+        <TodayTasksModal
+          visible={tasksModalVisible}
+          onClose={() => setTasksModalVisible(false)}
+          tasks={activeTasks}
+        />
+      )}
     </NBBackgroundPattern>
   );
 }
@@ -258,7 +364,7 @@ export function AdminDataHomeScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   scrollView: { flex: 1 },
-  content: { padding: nbSpacing.md, flexGrow: 1 },
+  content: { paddingHorizontal: nbSpacing.md, paddingTop: nbSpacing.sm, paddingBottom: nbSpacing.md, flexGrow: 1 },
 
   hero: {
     backgroundColor: nbColors.bgAccentLilac,
@@ -276,6 +382,7 @@ const styles = StyleSheet.create({
   heroButton: { marginTop: nbSpacing.md },
 
   tilesRow: { flexDirection: 'row', gap: nbSpacing.sm, marginBottom: nbSpacing.sm },
+  statTiles: { flexDirection: 'row', gap: nbSpacing.sm, marginBottom: nbSpacing.md },
   list: { gap: nbSpacing.sm },
 
   absensi: {

@@ -10,6 +10,8 @@ import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../../../store/slices/authSlice';
 import pruningRequestsReducer from '../../../store/slices/pruningRequestsSlice';
 import shiftReducer from '../../../store/slices/shiftSlice';
+import activitiesReducer from '../../../store/slices/activitiesSlice';
+import tasksReducer from '../../../store/slices/tasksSlice';
 import * as pruningApi from '../../../services/api/pruningRequestsApi';
 import { AdminDataHomeScreen } from '../AdminDataHomeScreen';
 
@@ -19,6 +21,12 @@ jest.mock('../../../services/api/shiftsApi', () => ({
   clockIn: jest.fn(),
   clockOut: jest.fn(),
   getMyShifts: jest.fn().mockResolvedValue({ data: [] }),
+}));
+jest.mock('../../../services/api/activitiesApi', () => ({
+  getMyActivities: jest.fn().mockResolvedValue({ data: { data: [] } }),
+}));
+jest.mock('../../../services/api/tasksApi', () => ({
+  getMyTasks: jest.fn().mockResolvedValue({ data: { data: [] } }),
 }));
 
 jest.mock('../../../components/nb/NBBackgroundPattern', () => ({
@@ -50,7 +58,7 @@ const req = (over: Record<string, unknown>) => ({
 
 const renderScreen = () => {
   const store = configureStore({
-    reducer: { auth: authReducer, pruningRequests: pruningRequestsReducer, shift: shiftReducer },
+    reducer: { auth: authReducer, pruningRequests: pruningRequestsReducer, shift: shiftReducer, activities: activitiesReducer, tasks: tasksReducer },
     preloadedState: {
       auth: {
         user: { id: 'a1', username: 'admin1', full_name: 'Pak Hadi', role: 'admin_data' },

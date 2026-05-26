@@ -10,6 +10,8 @@ import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../../../store/slices/authSlice';
 import monitoringReducer from '../../../store/slices/monitoringSlice';
 import shiftReducer from '../../../store/slices/shiftSlice';
+import activitiesReducer from '../../../store/slices/activitiesSlice';
+import tasksReducer from '../../../store/slices/tasksSlice';
 import * as monitoringApi from '../../../services/api/monitoringApi';
 import { CoordinatorHomeScreen } from '../CoordinatorHomeScreen';
 
@@ -19,6 +21,12 @@ jest.mock('../../../services/api/shiftsApi', () => ({
   clockIn: jest.fn(),
   clockOut: jest.fn(),
   getMyShifts: jest.fn().mockResolvedValue({ data: [] }),
+}));
+jest.mock('../../../services/api/activitiesApi', () => ({
+  getMyActivities: jest.fn().mockResolvedValue({ data: { data: [] } }),
+}));
+jest.mock('../../../services/api/tasksApi', () => ({
+  getMyTasks: jest.fn().mockResolvedValue({ data: { data: [] } }),
 }));
 
 jest.mock('../../../components/nb/NBBackgroundPattern', () => ({
@@ -51,7 +59,7 @@ const liveUser = (over: Record<string, unknown>) => ({
 
 const renderScreen = () => {
   const store = configureStore({
-    reducer: { auth: authReducer, monitoring: monitoringReducer, shift: shiftReducer },
+    reducer: { auth: authReducer, monitoring: monitoringReducer, shift: shiftReducer, activities: activitiesReducer, tasks: tasksReducer },
     preloadedState: {
       auth: {
         user: { id: 'k1', username: 'korlap1', full_name: 'Ibu Marni', role: 'korlap' },

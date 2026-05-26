@@ -90,20 +90,24 @@ function SheetModal({
     [],
   );
 
-  const contentBody = scrollable ? (
-    <BottomSheetScrollView
-      style={styles.contentFlex}
-      contentContainerStyle={noPadding ? styles.scrollContentNoPadding : styles.scrollContent}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-    >
-      {children}
-    </BottomSheetScrollView>
-  ) : (
-    <BottomSheetView style={[styles.contentFlex, noPadding ? null : styles.contentPadded]}>
-      {children}
-    </BottomSheetView>
-  );
+  // Extract title bar node to avoid duplication
+  const titleBarNode = title ? (
+    <View style={styles.titleBar}>
+      <NBText variant="h3" color="black" style={styles.titleText}>
+        {title}
+      </NBText>
+      <TouchableOpacity
+        onPress={onClose}
+        style={styles.closeBtnHitArea}
+        accessibilityLabel="Tutup"
+        accessibilityRole="button"
+      >
+        <View style={styles.closeBtnVisual}>
+          <MaterialCommunityIcons name="close" size={16} color={nbColors.gray700} />
+        </View>
+      </TouchableOpacity>
+    </View>
+  ) : null;
 
   return (
     <BottomSheet
@@ -118,28 +122,29 @@ function SheetModal({
       handleIndicatorStyle={styles.handle}
       keyboardBehavior={avoidKeyboard ? 'interactive' : undefined}
     >
-      {/* gorhom BottomSheet prop types don't expose testID — attach it to the inner wrapper */}
-      <View testID={testID} style={styles.contentFlex}>
-        {title ? (
-          <View style={styles.titleBar}>
-            <NBText variant="h3" color="black" style={styles.titleText}>
-              {title}
-            </NBText>
-            <TouchableOpacity
-              onPress={onClose}
-              style={styles.closeBtnHitArea}
-              accessibilityLabel="Tutup"
-              accessibilityRole="button"
-            >
-              <View style={styles.closeBtnVisual}>
-                <MaterialCommunityIcons name="close" size={16} color={nbColors.gray700} />
-              </View>
-            </TouchableOpacity>
-          </View>
-        ) : null}
-        {contentBody}
-        {footer ? <View style={styles.footerWrap}>{footer}</View> : null}
-      </View>
+      {scrollable ? (
+        <>
+          {titleBarNode}
+          <BottomSheetScrollView
+            testID={testID}
+            style={styles.contentFlex}
+            contentContainerStyle={noPadding ? styles.scrollContentNoPadding : styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {children}
+          </BottomSheetScrollView>
+          {footer ? <View style={styles.footerWrap}>{footer}</View> : null}
+        </>
+      ) : (
+        <View testID={testID} style={styles.contentFlex}>
+          {titleBarNode}
+          <BottomSheetView style={[styles.contentFlex, noPadding ? null : styles.contentPadded]}>
+            {children}
+          </BottomSheetView>
+          {footer ? <View style={styles.footerWrap}>{footer}</View> : null}
+        </View>
+      )}
     </BottomSheet>
   );
 }

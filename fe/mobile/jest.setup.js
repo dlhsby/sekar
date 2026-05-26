@@ -73,11 +73,16 @@ jest.mock('react-native-permissions', () => ({
   PERMISSIONS: {
     ANDROID: {
       ACCESS_FINE_LOCATION: 'android.permission.ACCESS_FINE_LOCATION',
+      ACCESS_BACKGROUND_LOCATION: 'android.permission.ACCESS_BACKGROUND_LOCATION',
       CAMERA: 'android.permission.CAMERA',
+      READ_MEDIA_IMAGES: 'android.permission.READ_MEDIA_IMAGES',
+      READ_EXTERNAL_STORAGE: 'android.permission.READ_EXTERNAL_STORAGE',
     },
     IOS: {
       LOCATION_WHEN_IN_USE: 'ios.permission.LOCATION_WHEN_IN_USE',
+      LOCATION_ALWAYS: 'ios.permission.LOCATION_ALWAYS',
       CAMERA: 'ios.permission.CAMERA',
+      PHOTO_LIBRARY: 'ios.permission.PHOTO_LIBRARY',
     },
   },
   RESULTS: {
@@ -87,8 +92,10 @@ jest.mock('react-native-permissions', () => ({
     LIMITED: 'limited',
     UNAVAILABLE: 'unavailable',
   },
-  check: jest.fn(),
-  request: jest.fn(),
+  check: jest.fn(() => Promise.resolve('granted')),
+  request: jest.fn(() => Promise.resolve('granted')),
+  checkNotifications: jest.fn(() => Promise.resolve({ status: 'granted', settings: {} })),
+  requestNotifications: jest.fn(() => Promise.resolve({ status: 'granted', settings: {} })),
   openSettings: jest.fn(),
 }));
 
@@ -126,6 +133,23 @@ jest.mock('react-native-device-info', () => ({
     getBuildNumber: jest.fn(() => '1'),
   },
 }));
+
+// Mock react-native-maps (requires native TurboModule — stub for Jest)
+jest.mock('react-native-maps', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  const MockMapView = (props) => React.createElement(View, props, props.children);
+  const MockMarker = (props) => React.createElement(View, props, props.children);
+  const MockPolygon = (props) => React.createElement(View, props);
+  return {
+    __esModule: true,
+    default: MockMapView,
+    Marker: MockMarker,
+    Polygon: MockPolygon,
+    PROVIDER_GOOGLE: 'google',
+    PROVIDER_DEFAULT: null,
+  };
+});
 
 // Mock react-native-haptic-feedback
 jest.mock('react-native-haptic-feedback', () => ({

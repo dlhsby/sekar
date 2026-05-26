@@ -325,6 +325,9 @@ export function FieldHomeScreen(): React.JSX.Element {
             )}
           </View>
 
+          {/* Absensi saya divider */}
+          <HomeSectionDivider label="Absensi saya" />
+
           {/* Absensi hero — collapsible; the whole card toggles open/closed. */}
           {currentShift ? (
             <TouchableOpacity
@@ -462,7 +465,7 @@ export function FieldHomeScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   scrollView: { flex: 1 },
-  content: { padding: nbSpacing.md, flexGrow: 1 },
+  content: { paddingHorizontal: nbSpacing.md, paddingTop: nbSpacing.sm, paddingBottom: nbSpacing.md, flexGrow: 1 },
   banner: { marginBottom: nbSpacing.md },
 
   /* Absensi hero */
