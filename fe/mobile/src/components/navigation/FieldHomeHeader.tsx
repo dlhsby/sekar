@@ -18,16 +18,15 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useAppSelector } from '../../store/store';
 import { selectTotalPendingCount } from '../../store/slices/offlineSlice';
 import { NBText } from '../nb/NBText';
+import { RoleAvatar } from '../common/RoleAvatar';
 import {
   nbColors,
   nbSpacing,
   nbBorders,
   nbRadius,
-  nbShadows,
   withAlpha,
 } from '../../constants/nbTokens';
 import { ROLE_LABELS } from '../../constants/roles';
-import type { UserRole } from '../../types/models.types';
 import { NotificationBell } from './NotificationBell';
 
 interface FieldHomeHeaderProps {
@@ -37,40 +36,12 @@ interface FieldHomeHeaderProps {
   title?: string;
 }
 
-/** Role → avatar accent token. Falls back to primary for unknown/undefined roles. */
-const ROLE_AVATAR_COLOR: Record<UserRole, string> = {
-  satgas: nbColors.roleSatgas,
-  linmas: nbColors.roleLinmas,
-  korlap: nbColors.roleKorlap,
-  admin_data: nbColors.roleAdminData,
-  kepala_rayon: nbColors.roleKepala,
-  top_management: nbColors.roleTop,
-  admin_system: nbColors.roleAdminSys,
-  superadmin: nbColors.roleSuperadmin,
-  staff_kecamatan: nbColors.roleKecamatan,
-};
-
-/** First + last initial from a full name, e.g. "Budi Santoso" → "BS". */
-function getInitials(name?: string): string {
-  if (!name) {
-    return '?';
-  }
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) {
-    return '?';
-  }
-  const first = parts[0][0] ?? '';
-  const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
-  return (first + last).toUpperCase();
-}
-
 export const FieldHomeHeader: React.FC<FieldHomeHeaderProps> = ({ onBack, title }) => {
   const { user, assignedArea } = useAppSelector((state) => state.auth);
   const { isOnline, isSyncing } = useAppSelector((state) => state.offline);
   const pendingCount = useAppSelector(selectTotalPendingCount);
 
   const roleLabel = user?.role ? ROLE_LABELS[user.role] : 'User';
-  const roleColor = user?.role ? ROLE_AVATAR_COLOR[user.role] : nbColors.primary;
   const displayName = user?.full_name ?? 'Pengguna';
   const areaSuffix = assignedArea?.name ? ` · ${assignedArea.name}` : '';
 
@@ -88,18 +59,15 @@ export const FieldHomeHeader: React.FC<FieldHomeHeaderProps> = ({ onBack, title 
           <MaterialCommunityIcons name="arrow-left" size={24} color={nbColors.black} />
         </TouchableOpacity>
       ) : (
-        <View
-          style={[
-            styles.avatar,
-            { backgroundColor: withAlpha(roleColor, 0.22), borderColor: roleColor },
-          ]}
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-        >
-          <NBText variant="mono-sm" color="black" style={styles.avatarText}>
-            {getInitials(user?.full_name)}
-          </NBText>
-        </View>
+        <RoleAvatar
+          name={user?.full_name}
+          role={user?.role}
+          photoUrl={user?.profile_picture_url}
+          size={40}
+          radius={nbRadius.base}
+          withShadow
+          style={styles.avatarSpacing}
+        />
       )}
 
       {/* Center column — page title (sub screens) or role label + name (main screens) */}
@@ -133,12 +101,12 @@ export const FieldHomeHeader: React.FC<FieldHomeHeaderProps> = ({ onBack, title 
         )}
       </View>
 
-      {/* Right column — bell + online/syncing/pending status. The bell is
-          hidden on sub-screens (when onBack is provided) to keep the right
-          slot from overflowing on small devices and because notifications
-          are reachable from the main-tab headers anyway. */}
+      {/* Right column — online/syncing/pending status (left) + bell (rightmost).
+          The status chip sits to the LEFT of the notification bell. The bell is
+          hidden on sub-screens (when onBack is provided) to keep the right slot
+          from overflowing on small devices and because notifications are
+          reachable from the main-tab headers anyway. */}
       <View style={styles.right}>
-        {!onBack ? <NotificationBell /> : null}
         {isSyncing ? (
           <View style={[styles.statusBadge, styles.syncingBadge]}>
             <View style={styles.syncingDot} />
@@ -155,6 +123,7 @@ export const FieldHomeHeader: React.FC<FieldHomeHeaderProps> = ({ onBack, title 
             <Text style={styles.statusBadgeText}>{isOnline ? 'Online' : 'Offline'}</Text>
           </View>
         )}
+        {!onBack ? <NotificationBell /> : null}
       </View>
     </View>
   );
@@ -172,25 +141,10 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     height: 56,
   },
-  /* Left column — role-colored avatar (main screens). 40×40 + 8px gap = 48px
-     total, matching the back button's 44+4 so the center text holds its x.
-     A11y: the fill is the role accent at 0.22 alpha over the white header (a pale
-     tint) so BLACK initials clear WCAG AA for every role — worst case (superadmin)
-     is 10.9:1. Do NOT switch to a solid role fill: white-on-sage/yellow would fail. */
-  avatar: {
-    width: 40,
-    height: 40,
-    borderWidth: nbBorders.widthBase,
-    borderRadius: nbRadius.base,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: nbSpacing.sm,
-    ...nbShadows.xs,
-  },
-  avatarText: {
-    fontSize: 15, // hi-fi avatar initials size (one-off; no scale token at 15)
-    fontWeight: '700',
-  },
+  /* Left column — role avatar (main screens). 40×40 + 8px gap = 48px total,
+     matching the back button's 44+4 so the center text holds its x. Visuals +
+     a11y + profile-photo fallback live in the shared `RoleAvatar` primitive. */
+  avatarSpacing: { marginRight: nbSpacing.sm },
   /* Left column — back arrow button (sub-screens with back, 44×44 WCAG).
      alignItems: 'flex-start' → arrow icon starts at 16px from screen edge.
      marginRight: xs so total left-slot width = 44+4 = 40+8 = 48px. */
@@ -208,11 +162,18 @@ const styles = StyleSheet.create({
     marginRight: nbSpacing.xs,
   },
   roleLabel: {
-    letterSpacing: 0.6,
+    // Smaller than the mono-sm default (12) so the role + assigned-area suffix
+    // fits the narrow masthead slot before it ellipsizes (one-off; no 10px token).
+    fontSize: 10,
+    lineHeight: 13,
+    letterSpacing: 0.5,
     marginBottom: 1,
   },
   name: {
-    // size/weight from NBText variant="h3"
+    // Smaller than the h3 default (18) so longer names show in full on one line
+    // before tail-ellipsis kicks in (one-off; family/weight kept from h3).
+    fontSize: 15,
+    lineHeight: 19,
   },
   pageTitle: {
     fontSize: 18,

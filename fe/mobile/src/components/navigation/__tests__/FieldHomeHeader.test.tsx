@@ -103,6 +103,53 @@ describe('FieldHomeHeader', () => {
 
       expect(getByText('BS', { includeHiddenElements: true })).toBeTruthy();
     });
+
+    it('should render the profile photo (not initials) when profile_picture_url is set', () => {
+      const store = configureStore({
+        reducer: { auth: authReducer, offline: offlineReducer },
+        preloadedState: {
+          auth: {
+            user: {
+              id: 'user1',
+              username: 'budi',
+              full_name: 'Budi Santoso',
+              email: 'budi@test.com',
+              role: 'satgas',
+              profile_picture_url: 'https://cdn.example.com/budi.jpg',
+              created_at: new Date('2026-01-01T00:00:00Z'),
+              updated_at: new Date('2026-01-01T00:00:00Z'),
+            },
+            assignedArea: null,
+            token: 'mock-token',
+            isAuthenticated: true,
+            loading: false,
+            error: null,
+          },
+          offline: {
+            isOnline: true,
+            isSyncing: false,
+            queue: [],
+            pendingShiftsCount: 0,
+            pendingReportsCount: 0,
+            pendingMediaCount: 0,
+            pendingLocationsCount: 0,
+            lastSyncTime: null,
+            syncError: null,
+          },
+        } as any,
+      });
+      const { UNSAFE_getAllByType, queryByText } = render(
+        <Provider store={store}>
+          <FieldHomeHeader />
+        </Provider>
+      );
+
+      const { Image } = require('react-native');
+      const images = UNSAFE_getAllByType(Image);
+      expect(images.some((img: any) => img.props.source?.uri === 'https://cdn.example.com/budi.jpg')).toBe(true);
+      // Initials are not rendered when a photo is present.
+      expect(queryByText('BS', { includeHiddenElements: true })).toBeNull();
+    });
   });
 
   describe('Role Label Display', () => {

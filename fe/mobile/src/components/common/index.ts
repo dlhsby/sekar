@@ -17,6 +17,7 @@ export { ErrorBoundary } from './ErrorBoundary';
 export { PermissionRequestModal } from './PermissionRequestModal';
 export { PermissionRevocationBanner } from './PermissionRevocationBanner';
 export { ProfileHeader } from './ProfileHeader';
+export { RoleAvatar, roleAccent, getInitials, ROLE_AVATAR_COLOR } from './RoleAvatar';
 export { ProfileMenu, type MenuItem } from './ProfileMenu';
 export { SyncStatusCard, type SyncStatus } from './SyncStatusCard';
 export { CollapsibleCard } from './CollapsibleCard';

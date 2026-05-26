@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, ScrollView, RefreshControl, StyleSheet } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { LoadingSpinner } from '../../components/common';
+import { LoadingSpinner, RoleAvatar } from '../../components/common';
 import { NBBackgroundPattern, NBButton, NBText } from '../../components/nb';
 import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
 import { HomeSectionDivider } from '../../components/home/HomeSectionDivider';
@@ -19,14 +19,6 @@ import { formatRelativeTime } from '../../utils/dateUtils';
  * Reads the role-scoped monitoring slice (the backend scopes `getLiveUsers` to
  * the caller's team): team-status hero → 5-status KPI grid → derived alerts.
  */
-
-/** First + last initial from a full name. */
-function initials(name?: string): string {
-  if (!name) return '?';
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '?';
-  return ((parts[0][0] ?? '') + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
-}
 
 interface TeamAlert {
   id: string;
@@ -140,11 +132,13 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
                 importantForAccessibility="no-hide-descendants"
               >
                 {liveUsers.slice(0, 6).map((u) => (
-                  <View key={u.id} style={styles.avatar}>
-                    <NBText variant="mono-sm" color="black" style={styles.avatarText}>
-                      {initials(u.full_name)}
-                    </NBText>
-                  </View>
+                  <RoleAvatar
+                    key={u.id}
+                    name={u.full_name}
+                    role={u.role}
+                    size={30}
+                    radius={nbRadius.full}
+                  />
                 ))}
                 {total > 6 && (
                   <View style={[styles.avatar, styles.avatarMore]}>

@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { CLOCKABLE_ROLES, TASK_RECEIVERS } from '../../constants/roles';
 import { LoadingSpinner } from '../../components/common';
 import { NBAlert, NBBackgroundPattern, NBButton, NBText } from '../../components/nb';
@@ -80,6 +81,9 @@ export function FieldHomeScreen(): React.JSX.Element {
 
   // Live shift timer
   const [timer, setTimer] = useState('00:00:00');
+
+  // Active-shift hero collapse (default open). Toggled by tapping the whole card.
+  const [shiftExpanded, setShiftExpanded] = useState(true);
 
   // Modal states
   const [shiftModalVisible, setShiftModalVisible] = useState(false);
@@ -315,21 +319,20 @@ export function FieldHomeScreen(): React.JSX.Element {
             />
           )}
 
-          {/* Absensi hero */}
+          {/* Absensi hero — collapsible; the whole card toggles open/closed. */}
           {currentShift ? (
-            <View
+            <TouchableOpacity
               style={[styles.hero, currentShift.is_overtime ? styles.heroLembur : styles.heroActive]}
               testID="absensi-hero"
+              activeOpacity={0.9}
+              onPress={() => setShiftExpanded((prev) => !prev)}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: shiftExpanded }}
+              accessibilityLabel={currentShift.is_overtime ? 'Lembur aktif' : 'Sedang bertugas'}
+              accessibilityHint={shiftExpanded ? 'Ketuk untuk tutup detail' : 'Ketuk untuk buka detail'}
             >
               <View style={styles.heroTopRow}>
-                <TouchableOpacity
-                  style={styles.heroClockArea}
-                  onPress={() => setShiftModalVisible(true)}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel={currentShift.is_overtime ? 'Lembur aktif' : 'Sedang bertugas'}
-                  accessibilityHint="Ketuk untuk detail shift"
-                >
+                <View style={styles.heroClockArea}>
                   <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroLabel}>
                     {currentShift.is_overtime ? 'Lembur aktif' : 'Sedang bertugas'}
                   </NBText>
@@ -341,32 +344,55 @@ export function FieldHomeScreen(): React.JSX.Element {
                   >
                     {timer}
                   </NBText>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setLocationMapVisible(true)}
-                  disabled={!hasActiveShift}
-                  activeOpacity={0.7}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Status lokasi: ${areaLabel}. Ketuk untuk peta.`}
-                >
-                  <StatusPill tone={areaTone} label={areaLabel} />
-                </TouchableOpacity>
-              </View>
-              <NBText variant="mono-sm" color="gray700" style={styles.heroMeta}>
-                {`Mulai ${formatTime(currentShift.clock_in_time)} · ${heroAreaName}`}
-              </NBText>
-              {isClockable && (
-                <View style={styles.heroButton}>
-                  <NBButton
-                    title={currentShift.is_overtime ? 'Clock Out Lembur' : 'Clock Out'}
-                    onPress={handleClockInOut}
-                    variant="danger"
-                    size="md"
-                    testID="clock-button"
+                </View>
+                <View style={styles.heroTopRight}>
+                  <TouchableOpacity
+                    onPress={() => setLocationMapVisible(true)}
+                    disabled={!hasActiveShift}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Status lokasi: ${areaLabel}. Ketuk untuk peta.`}
+                  >
+                    <StatusPill tone={areaTone} label={areaLabel} />
+                  </TouchableOpacity>
+                  <MaterialCommunityIcons
+                    name={shiftExpanded ? 'chevron-up' : 'chevron-down'}
+                    size={24}
+                    color={nbColors.gray700}
+                    style={styles.heroChevron}
                   />
                 </View>
+              </View>
+              {shiftExpanded && (
+                <>
+                  <NBText variant="mono-sm" color="gray700" style={styles.heroMeta}>
+                    {`Mulai ${formatTime(currentShift.clock_in_time)} · ${heroAreaName}`}
+                  </NBText>
+                  {isClockable && (
+                    <View style={styles.heroButton}>
+                      <NBButton
+                        title={currentShift.is_overtime ? 'Clock Out Lembur' : 'Clock Out'}
+                        onPress={handleClockInOut}
+                        variant="danger"
+                        size="md"
+                        testID="clock-button"
+                      />
+                    </View>
+                  )}
+                  <TouchableOpacity
+                    onPress={() => setShiftModalVisible(true)}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    style={styles.heroDetailLink}
+                    testID="shift-detail-link"
+                  >
+                    <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroDetailText}>
+                      Detail shift →
+                    </NBText>
+                  </TouchableOpacity>
+                </>
               )}
-            </View>
+            </TouchableOpacity>
           ) : (
             <View style={[styles.hero, styles.heroIdle]} testID="absensi-hero">
               <NBText variant="mono-sm" color="gray600" uppercase style={styles.heroLabel}>
@@ -503,11 +529,15 @@ const styles = StyleSheet.create({
     gap: nbSpacing.sm,
   },
   heroClockArea: { flex: 1 },
+  heroTopRight: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs },
+  heroChevron: { marginTop: 1 },
   heroLabel: { letterSpacing: 0.6, marginBottom: 2 },
   heroClock: { letterSpacing: 1 },
   heroMeta: { marginTop: nbSpacing.sm },
   heroIdleTitle: { marginTop: 2 },
   heroButton: { marginTop: nbSpacing.md },
+  heroDetailLink: { marginTop: nbSpacing.sm, alignSelf: 'flex-start' },
+  heroDetailText: { letterSpacing: 0.6 },
 
   /* Lists + tiles */
   list: { gap: nbSpacing.sm },

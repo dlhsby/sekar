@@ -4,6 +4,19 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## May 26, 2026 — M3 Home revamp · Checkpoint 6: manual-review polish (avatar primitive, masthead fit, collapsible hero)
+
+First round of **manual-review feedback** on the Home work (satgas Home + cross-cutting chrome). Four changes, tokens-only:
+
+1. **New `RoleAvatar` primitive** (`src/components/common/RoleAvatar.tsx`) — the shared v2.1 avatar: role-accent tint fill (`withAlpha(accent, 0.22)`) + role-accent border + **black initials** (AA-safe on the pale tint), and renders the **profile photo** (`<Image>`) when a `photoUrl` is set, falling back to initials otherwise. Decorative for screen readers. Exports `roleAccent()` + `getInitials()`. Initials auto-scale to box size (≈0.375×), so one primitive serves the 40 px masthead and 30 px team grid. *(ProfileHeader / CollapsibleCard were left on legacy NB 1.0 tokens — not reused here to avoid regressing the v2.1 look.)*
+2. **Masthead now uses `RoleAvatar`** (so the logged-in user's `profile_picture_url` shows when set, else tinted initials) **and the role-label + name fonts were reduced** (role `mono-sm` 12 → 10, name `h3` 18 → 15, weight/family kept) so the role `· {area}` suffix and longer names show more before tail-ellipsis. `numberOfLines={1}` + ellipsize retained (never wraps).
+3. **Masthead right slot reordered** per request — the online/sync/pending **status chip now sits to the LEFT of the notification bell** (bell is rightmost). Bell still hidden on sub-screens.
+4. **Active "Sedang bertugas" hero is collapsible again** (HOME-1) — **the whole card is the tap target** (not just the clock) and toggles open/closed via a chevron (`accessibilityState.expanded`). Collapsed shows the label + live clock + in-area pill; expanded adds the "Mulai … · area" meta, the **Clock-out** button, and a **"Detail shift →"** link (opens the shift-detail modal — its old clock-tap trigger was replaced by the collapse toggle). The location pill still opens the map (nested touchable). *This restores the collapsibility that Checkpoint 2b had dropped, now on v2.1 tokens.* The **Coordinator** team-avatar grid likewise switched to role-tinted `RoleAvatar`s (was plain white circles).
+
+**Tests:** new `RoleAvatar` suite (8) + masthead profile-photo test + FieldHome collapse-toggle test; touched home/navigation suites green (104 passed across 9 suites). `tsc` (no new prod errors — pre-existing `LocationMapModal` `AreaBoundary` mismatch only) + ESLint `no-inline-hex-colors` clean.
+
+---
+
 ## May 25, 2026 — M3 Home revamp · Checkpoint 1a: shared masthead + CRITICAL stale-token-shadowing fix
 
 First slice of the **Home-as-role-aware-anchor** revamp (full plan: shared chrome → HOME-1 satgas/linmas → HOME-2 korlap/kepala_rayon → HOME-3 admin_data, one role per session). This checkpoint = the shared **masthead** + a critical token-pipeline bug found while building it. Tab bar + Home dispatcher are the next checkpoints.
