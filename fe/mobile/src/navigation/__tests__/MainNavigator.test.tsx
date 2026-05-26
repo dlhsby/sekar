@@ -198,21 +198,30 @@ describe('MainNavigator', () => {
       expect(TAB_CONFIGS.kepala_rayon.some((tab) => tab.name === 'Profile')).toBe(true);
     });
 
-    it('top_management has 3 tabs', () => {
-      expect(TAB_CONFIGS.top_management).toHaveLength(3);
+    it('top_management has 4 tabs incl. Home (Checkpoint 5)', () => {
+      expect(TAB_CONFIGS.top_management).toHaveLength(4);
+      expect(TAB_CONFIGS.top_management.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.top_management.some((tab) => tab.name === 'Monitoring')).toBe(true);
       expect(TAB_CONFIGS.top_management.some((tab) => tab.name === 'Profile')).toBe(true);
     });
 
-    it('admin_system has 3 tabs', () => {
-      expect(TAB_CONFIGS.admin_system).toHaveLength(3);
+    it('admin_system has 4 tabs incl. Home (Checkpoint 5)', () => {
+      expect(TAB_CONFIGS.admin_system).toHaveLength(4);
+      expect(TAB_CONFIGS.admin_system.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.admin_system.some((tab) => tab.name === 'Monitoring')).toBe(true);
     });
 
-    it('superadmin has 4 tabs including Overtime', () => {
-      expect(TAB_CONFIGS.superadmin).toHaveLength(4);
+    it('superadmin has 5 tabs including Home + Overtime', () => {
+      expect(TAB_CONFIGS.superadmin).toHaveLength(5);
+      expect(TAB_CONFIGS.superadmin.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.superadmin.some((tab) => tab.name === 'Monitoring')).toBe(true);
       expect(TAB_CONFIGS.superadmin.some((tab) => tab.name === 'Overtime')).toBe(true);
+    });
+
+    it('staff_kecamatan has 3 tabs incl. Home (Checkpoint 5)', () => {
+      expect(TAB_CONFIGS.staff_kecamatan).toHaveLength(3);
+      expect(TAB_CONFIGS.staff_kecamatan.some((tab) => tab.name === 'Home')).toBe(true);
+      expect(TAB_CONFIGS.staff_kecamatan.some((tab) => tab.name === 'Perantingan')).toBe(true);
     });
 
     it('all tab configs have valid structure', () => {
@@ -251,11 +260,14 @@ describe('MainNavigator', () => {
       });
     });
 
-    it('non-clockable roles do not have Home tab', () => {
-      const nonClockableRoles = ['top_management', 'admin_system', 'superadmin'];
-      nonClockableRoles.forEach((role) => {
+    it('monitoring-first + kecamatan roles now have a Home tab (Checkpoint 5)', () => {
+      // Phase 4 M3 Checkpoint 5 gave the previously Home-less roles a Beranda
+      // tab (city overview for management/system; "my requests" for kecamatan).
+      // They remain non-clockable — the clock FAB is gated separately by role.
+      const homeAddedRoles = ['top_management', 'admin_system', 'superadmin', 'staff_kecamatan'];
+      homeAddedRoles.forEach((role) => {
         const hasHome = TAB_CONFIGS[role].some((tab) => tab.name === 'Home');
-        expect(hasHome).toBe(false);
+        expect(hasHome).toBe(true);
       });
     });
 

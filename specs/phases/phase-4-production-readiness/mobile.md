@@ -65,6 +65,8 @@
 | HOME-1 | Home · Satgas/Linmas | `fe/mobile/src/screens/home/FieldHomeScreen.tsx` | ✅ Done (Checkpoint 2b) — absensi hero + "Tugas hari ini" list + "Ringkasan hari ini" tiles |
 | HOME-2 | Home · Korlap/Kepala Rayon | `fe/mobile/src/screens/home/CoordinatorHomeScreen.tsx` | ✅ Done (Checkpoint 3) — team-status hero + 5-status KPI grid + derived out-of-area/missing alerts |
 | HOME-3 | Home · Admin Data | `fe/mobile/src/screens/home/AdminDataHomeScreen.tsx` | ✅ Done (Checkpoint 4) — perantingan-queue hero + disposition breakdown + "berjalan" list (overtime-approvals dropped: admin_data isn't an approver) |
+| (no hi-fi) | Home · Top Mgmt / Admin Sys / Superadmin | `fe/mobile/src/screens/home/ExecHomeScreen.tsx` | ✅ Done (Checkpoint 5) — NET-NEW (no hi-fi): city-overview hero + personnel KPI grid + per-rayon roll-up. Added a Beranda tab to these roles. |
+| (no hi-fi) | Home · Staff Kecamatan | `fe/mobile/src/screens/home/KecamatanHomeScreen.tsx` | ✅ Done (Checkpoint 5) — NET-NEW (no hi-fi): "my requests" hero + status breakdown + recent list. Added a Beranda tab. |
 | (chrome) | Shared masthead + bottom tab bar | `components/navigation/FieldHomeHeader.tsx`, `navigation/MainNavigator.tsx` | ✅ Done (Checkpoints 1a/1b) |
 | ABS-1 | Clock-in · GPS + selfie | existing absensi screen | Revamp |
 | ABS-2 | Clock-in · Di luar area | existing | Revamp |

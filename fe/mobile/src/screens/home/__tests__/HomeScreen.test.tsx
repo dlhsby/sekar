@@ -32,6 +32,20 @@ jest.mock('../AdminDataHomeScreen', () => ({
   },
 }));
 
+jest.mock('../ExecHomeScreen', () => ({
+  ExecHomeScreen: () => {
+    const { Text } = require('react-native');
+    return <Text testID="exec-home">EXEC_HOME</Text>;
+  },
+}));
+
+jest.mock('../KecamatanHomeScreen', () => ({
+  KecamatanHomeScreen: () => {
+    const { Text } = require('react-native');
+    return <Text testID="kecamatan-home">KECAMATAN_HOME</Text>;
+  },
+}));
+
 const renderForRole = (role: UserRole | undefined) => {
   const store = configureStore({
     reducer: { auth: authReducer },
@@ -86,6 +100,21 @@ describe('HomeScreen dispatcher', () => {
   it('renders the admin-data dashboard (HOME-3) for admin_data', () => {
     const { getByTestId, queryByTestId } = renderForRole('admin_data');
     expect(getByTestId('admin-home')).toBeTruthy();
+    expect(queryByTestId('field-home')).toBeNull();
+  });
+
+  it.each<UserRole>(['top_management', 'admin_system', 'superadmin'])(
+    'renders the exec city-overview dashboard for %s',
+    (role) => {
+      const { getByTestId, queryByTestId } = renderForRole(role);
+      expect(getByTestId('exec-home')).toBeTruthy();
+      expect(queryByTestId('field-home')).toBeNull();
+    }
+  );
+
+  it('renders the kecamatan dashboard for staff_kecamatan', () => {
+    const { getByTestId, queryByTestId } = renderForRole('staff_kecamatan');
+    expect(getByTestId('kecamatan-home')).toBeTruthy();
     expect(queryByTestId('field-home')).toBeNull();
   });
 

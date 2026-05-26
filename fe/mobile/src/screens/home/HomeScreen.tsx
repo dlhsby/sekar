@@ -14,6 +14,8 @@ import { useAppSelector } from '../../store/hooks';
 import { FieldHomeScreen } from './FieldHomeScreen';
 import { CoordinatorHomeScreen } from './CoordinatorHomeScreen';
 import { AdminDataHomeScreen } from './AdminDataHomeScreen';
+import { ExecHomeScreen } from './ExecHomeScreen';
+import { KecamatanHomeScreen } from './KecamatanHomeScreen';
 
 export function HomeScreen(): React.JSX.Element {
   const role = useAppSelector((state) => state.auth.user?.role);
@@ -24,6 +26,13 @@ export function HomeScreen(): React.JSX.Element {
       return <CoordinatorHomeScreen />;
     case 'admin_data':
       return <AdminDataHomeScreen />;
+    case 'top_management':
+    case 'admin_system':
+    case 'superadmin':
+      return <ExecHomeScreen />;
+    case 'staff_kecamatan':
+      return <KecamatanHomeScreen />;
+    // satgas / linmas (and any unknown role) get the field dashboard.
     default:
       return <FieldHomeScreen />;
   }

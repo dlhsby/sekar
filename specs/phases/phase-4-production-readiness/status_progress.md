@@ -22,6 +22,21 @@ First slice of the **Home-as-role-aware-anchor** revamp (full plan: shared chrom
 
 ---
 
+## May 26, 2026 — M3 Home revamp · Checkpoint 5: Home for the previously Home-less roles (all 9 roles covered)
+
+The four roles with **no Home tab** (top_management, admin_system, superadmin, staff_kecamatan) now get a Beranda tab + dashboard — there is **no hi-fi frame** for them, so both are composed from available data, reusing the 2a widgets. `MainNavigator` `TAB_CONFIGS` gains a leading `Home` tab for all four (so Home becomes their landing screen), and the dispatcher routes them.
+
+- **`ExecHomeScreen`** (top_management / admin_system / superadmin — city/monitoring scope): reads the role-scoped monitoring slice (`fetchLiveUsers`, which the backend returns at city scope for these roles). City-overview hero ("{active}/{total} aktif" + "Lihat peta →" → Monitoring), a 4-tile personnel breakdown (Petugas aktif / Di luar area / Tidak hadir / Offline from `statusCounts`), and a **per-rayon roll-up** list (active/total per `rayon_name`, tap → Monitoring).
+- **`KecamatanHomeScreen`** (staff_kecamatan): reads `pruningRequests.mine` (`fetchMyPruningRequests`). "Permohonan saya" hero (total + "{waiting} diproses" pill + **"Ajukan permohonan →"** → `PerantinganSubmit`), a 4-tile status breakdown (Menunggu / Disetujui / Dijadwalkan / Selesai), and a **recent-requests** list (tap → `PruningDetail`), with an empty hint.
+
+**Dispatcher hardened:** every known role is now explicitly routed (Field / Coordinator / AdminData / Exec / Kecamatan); the `default` (field clock screen) only catches satgas/linmas + truly-unknown roles — the prior risk of a city/kecamatan user landing on the clock screen is gone.
+
+**IA note:** this **adds a new first/landing tab** for the four roles (top_management/admin_system/superadmin now open on Beranda rather than Monitoring; staff_kecamatan opens on Beranda rather than Perantingan). Both monitoring and the requests list remain one tap away.
+
+**Tests:** `ExecHomeScreen` 3 + `KecamatanHomeScreen` 4 + dispatcher updated (exec roles → exec-home, staff_kecamatan → kecamatan-home) + `MainNavigator` tab-count/Home assertions updated (top_management/admin_system 4, superadmin 5, staff_kecamatan 3; the old "non-clockable roles have no Home" test flipped to "now have Home"). Full mobile suite **4186 passed / 0 failed**; `tsc` + ESLint clean. **Every SEKAR role (9/9) now has a role-appropriate Home.**
+
+---
+
 ## May 26, 2026 — M3 Home revamp · Checkpoint 4: HOME-3 admin-data dashboard (completes the role-aware Home)
 
 New `src/screens/home/AdminDataHomeScreen.tsx` (hi-fi **HOME-3**) for **admin_data**, dispatcher-routed (`HomeScreen` now covers all Home-tab roles: satgas/linmas → Field, korlap/kepala_rayon → Coordinator, admin_data → AdminData). Reads the rayon-scoped `pruningRequests.adminList` (`fetchAdminPruningRequests({})` on mount + focus):

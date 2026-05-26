@@ -97,24 +97,29 @@ export const TAB_CONFIGS: Record<string, TabConfig[]> = {
     { name: 'Overtime', label: 'Lembur', icon: 'clock-check-outline' },
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
+  // Phase 4 M3 Checkpoint 5 — city-overview Home for management/system roles.
   top_management: [
+    { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
     { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
   admin_system: [
+    { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
     { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
   superadmin: [
+    { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
     { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
     { name: 'Overtime', label: 'Lembur', icon: 'clock-check-outline' },
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],
-  // Phase 3 Apr 27 — staff_kecamatan: 2-tab layout (request submission + profile)
+  // Phase 3 Apr 27 — staff_kecamatan; Phase 4 M3 Checkpoint 5 adds a "my requests" Home.
   staff_kecamatan: [
+    { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'Perantingan', label: 'Perantingan', icon: 'tree-outline' },
     { name: 'Profile', label: 'Profil', icon: 'account' },
   ],

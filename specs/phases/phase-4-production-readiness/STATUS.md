@@ -52,7 +52,7 @@
 | Sub-Phase | Name | Milestone | Status |
 |-----------|------|-----------|--------|
 | **4-0** | **Design Bundle Adoption + Token Re-baseline** | M1 + (4-0 reconciled to design/ May 25) | 🟡 Token pipeline ✅ v2.1.1 (sage + hard-edge + 5-status + 9 role + lilac, matched to `design/`); brand-asset integration (icons/splash/illustrations B1-B6) ⏳ |
-| **4-R** | **UI/UX Revamp Sweep (mobile + web)** | M3a–d | 🟡 Mobile entry-flow ✅ + Home **role-aware anchor complete** (shared masthead + tab bar + dispatcher + HOME-1 Field + HOME-2 Coordinator + HOME-3 Admin Data) ✅ + critical stale-`tokens.js` fix (v2.1 renders app-wide) ✅; remaining mobile screens (Absensi/Monitoring/Tugas/Aktivitas/Lembur/Perantingan/Profile/Notif) ⏳; web revamp ⏳; brand assets ⏳ |
+| **4-R** | **UI/UX Revamp Sweep (mobile + web)** | M3a–d | 🟡 Mobile entry-flow ✅ + Home **role-aware anchor complete for ALL 9 roles** (shared masthead + tab bar + dispatcher; HOME-1 Field, HOME-2 Coordinator, HOME-3 Admin Data, + net-new Exec city-overview [top_mgmt/admin_sys/superadmin] + Kecamatan "my requests") ✅ + critical stale-`tokens.js` fix (v2.1 renders app-wide) ✅; remaining mobile screens (Absensi/Monitoring/Tugas/Aktivitas/Lembur/Perantingan/Profile/Notif) ⏳; web revamp ⏳; brand assets ⏳ |
 | **4-V** | **Production-Readiness Gap Audit** | post-M3 | ⏳ Not started |
 | 4-1 | Infrastructure & Evaluation (trimmed) | M1 | 🟡 Health module (`/live`,`/ready`+real 503) ✅; Sentry + BullMQ scaffolding ✅; structured-logging/tracing items ⏳ |
 | 4-2 | Offline Sync Completion | M2 | 🟢 3-state connectivity + banner + queue expansion ✅ (staging field-test = 4-V) |
