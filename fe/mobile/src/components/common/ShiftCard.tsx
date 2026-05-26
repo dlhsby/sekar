@@ -12,17 +12,16 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
 } from '../../constants/nbTokens';
 import { formatTime, calculateDuration } from '../../utils/dateUtils';
-import { NBCard } from '../nb';
+import { NBCard, NBText } from '../nb';
 import type { Shift } from '../../types/models.types';
 
 interface ShiftCardProps {
@@ -36,7 +35,7 @@ export function ShiftCard({
   shift,
   shiftNumber,
   compact = false,
-}: ShiftCardProps): JSX.Element {
+}: ShiftCardProps): React.JSX.Element {
   const isActive = !shift.clock_out_time;
 
   // Calculate duration (use current time if shift is still active)
@@ -46,19 +45,19 @@ export function ShiftCard({
   );
 
   return (
-    <NBCard style={[styles.card, compact && styles.cardCompact]} variant="outlined">
+    <NBCard style={[styles.card, compact && styles.cardCompact]} variant="default">
       {/* Header: Area Info + Status Badge */}
       <View style={styles.header}>
         <View style={styles.areaInfo}>
           {shiftNumber ? (
-            <Text style={styles.shiftNumber}>Shift #{shiftNumber}</Text>
+            <NBText variant="body" color="gray700" style={styles.bold}>Shift #{shiftNumber}</NBText>
           ) : (
             <>
-              <Text style={styles.areaName} numberOfLines={1}>
+              <NBText variant="body" color="gray700" numberOfLines={1} style={styles.semibold}>
                 {shift.area?.name || 'Area tidak diketahui'}
-              </Text>
+              </NBText>
               {shift.area?.area_type?.name && (
-                <Text style={styles.areaType}>{shift.area.area_type.name}</Text>
+                <NBText variant="body-sm" color="gray500">{shift.area.area_type.name}</NBText>
               )}
             </>
           )}
@@ -68,13 +67,14 @@ export function ShiftCard({
             styles.statusBadge,
             isActive ? styles.statusActive : styles.statusCompleted,
           ]}>
-          <Text
-            style={[
-              styles.statusText,
-              isActive ? styles.statusTextActive : styles.statusTextCompleted,
-            ]}>
+          <NBText
+            variant="mono-sm"
+            color={isActive ? 'white' : 'gray600'}
+            uppercase
+            style={styles.statusText}
+          >
             {isActive ? 'AKTIF' : 'SELESAI'}
-          </Text>
+          </NBText>
         </View>
       </View>
 
@@ -89,8 +89,8 @@ export function ShiftCard({
             style={styles.timeIcon}
           />
           <View>
-            <Text style={styles.timeLabel}>CLOCK IN</Text>
-            <Text style={styles.timeValue}>{formatTime(shift.clock_in_time)}</Text>
+            <NBText variant="mono-sm" color="gray600" style={styles.timeLabel}>CLOCK IN</NBText>
+            <NBText variant="body-sm" color="gray700" style={styles.semibold}>{formatTime(shift.clock_in_time)}</NBText>
           </View>
         </View>
 
@@ -105,10 +105,10 @@ export function ShiftCard({
             style={styles.timeIcon}
           />
           <View>
-            <Text style={styles.timeLabel}>CLOCK OUT</Text>
-            <Text style={[styles.timeValue, isActive && styles.timeValueInactive]}>
+            <NBText variant="mono-sm" color="gray600" style={styles.timeLabel}>CLOCK OUT</NBText>
+            <NBText variant="body-sm" color={isActive ? 'gray400' : 'gray700'} style={styles.semibold}>
               {shift.clock_out_time ? formatTime(shift.clock_out_time) : '--:--'}
-            </Text>
+            </NBText>
           </View>
         </View>
 
@@ -123,10 +123,10 @@ export function ShiftCard({
             style={styles.timeIcon}
           />
           <View>
-            <Text style={styles.timeLabel}>DURASI</Text>
-            <Text style={[styles.timeValue, styles.durationValue]}>
+            <NBText variant="mono-sm" color="gray600" style={styles.timeLabel}>DURASI</NBText>
+            <NBText variant="body-sm" color="successDark" style={styles.semibold}>
               {duration.formatted}
-            </Text>
+            </NBText>
           </View>
         </View>
       </View>
@@ -157,28 +157,13 @@ const styles = StyleSheet.create({
     marginRight: nbSpacing.sm,
   },
 
-  areaName: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray['700'],
-    marginBottom: nbSpacing.xs / 2,
-  },
-
-  areaType: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['500'],
-  },
-
-  shiftNumber: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray['700'],
-  },
+  semibold: { fontWeight: '600' },
+  bold: { fontWeight: '700' },
 
   statusBadge: {
     width: 70, // Fixed width for consistency
     paddingVertical: nbSpacing.xs / 2,
-    borderRadius: nbBorderRadius.sm,
+    borderRadius: nbRadius.sm,
     borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     alignItems: 'center',
@@ -194,19 +179,8 @@ const styles = StyleSheet.create({
   },
 
   statusText: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.bold,
-    textTransform: 'uppercase',
     letterSpacing: 0.5,
     textAlign: 'center',
-  },
-
-  statusTextActive: {
-    color: nbColors.white,
-  },
-
-  statusTextCompleted: {
-    color: nbColors.gray['600'],
   },
 
   // Time Row (3 columns)
@@ -234,25 +208,7 @@ const styles = StyleSheet.create({
   },
 
   timeLabel: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray['600'],
     marginBottom: 2,
-    textTransform: 'uppercase',
     letterSpacing: 0.5,
-  },
-
-  timeValue: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray['700'],
-  },
-
-  timeValueInactive: {
-    color: nbColors.gray['400'],
-  },
-
-  durationValue: {
-    color: nbColors.primary,
   },
 });

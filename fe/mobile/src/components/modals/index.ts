@@ -6,6 +6,7 @@
 export { ShiftDetailModal } from './ShiftDetailModal';
 export { TodayActivitiesModal } from './TodayActivitiesModal';
 export { TodayWorkHoursModal } from './TodayWorkHoursModal';
+export { TodayTasksModal } from './TodayTasksModal';
 export { TaskFilterModal } from './TaskFilterModal';
 export { ActivityFilterModal } from './ActivityFilterModal';
 export { SortModal } from './SortModal';

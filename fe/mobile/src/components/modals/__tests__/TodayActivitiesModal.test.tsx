@@ -82,7 +82,8 @@ describe('TodayActivitiesModal', () => {
         />
       );
 
-      expect(getByText(`Aktivitas Hari Ini (${mockActivities.length})`)).toBeTruthy();
+      // NBModal renders the title in uppercase.
+      expect(getByText(`AKTIVITAS HARI INI (${mockActivities.length})`)).toBeTruthy();
     });
 
     it('should not render content when visible is false', () => {
@@ -94,7 +95,7 @@ describe('TodayActivitiesModal', () => {
         />
       );
 
-      expect(queryByText('Aktivitas Hari Ini (2)')).toBeNull();
+      expect(queryByText('AKTIVITAS HARI INI (2)')).toBeNull();
     });
 
     it('should render close button', () => {
@@ -106,7 +107,7 @@ describe('TodayActivitiesModal', () => {
         />
       );
 
-      expect(getByLabelText('Tutup modal')).toBeTruthy();
+      expect(getByLabelText('Tutup')).toBeTruthy();
     });
 
     it('should display activity count in header', () => {
@@ -118,7 +119,7 @@ describe('TodayActivitiesModal', () => {
         />
       );
 
-      expect(getByText('Aktivitas Hari Ini (2)')).toBeTruthy();
+      expect(getByText('AKTIVITAS HARI INI (2)')).toBeTruthy();
     });
 
     it('should display today date in subtitle', () => {
@@ -148,18 +149,6 @@ describe('TodayActivitiesModal', () => {
 
       expect(getByText('Belum ada aktivitas hari ini')).toBeTruthy();
       expect(getByText('Aktivitas yang Anda buat akan muncul di sini')).toBeTruthy();
-    });
-
-    it('should display empty state icon', () => {
-      const { getByText } = render(
-        <TodayActivitiesModal
-          visible={true}
-          onClose={mockOnClose}
-          activities={[]}
-        />
-      );
-
-      expect(getByText('📝')).toBeTruthy();
     });
   });
 
@@ -302,23 +291,8 @@ describe('TodayActivitiesModal', () => {
         />
       );
 
-      const closeButton = getByLabelText('Tutup modal');
+      const closeButton = getByLabelText('Tutup');
       fireEvent.press(closeButton);
-
-      expect(mockOnClose).toHaveBeenCalled();
-    });
-
-    it('should call onClose when overlay is pressed', () => {
-      const { getByLabelText } = render(
-        <TodayActivitiesModal
-          visible={true}
-          onClose={mockOnClose}
-          activities={mockActivities}
-        />
-      );
-
-      // Press the overlay (outer Pressable)
-      fireEvent(getByLabelText('Tutup modal').parent?.parent?.parent, 'press');
 
       expect(mockOnClose).toHaveBeenCalled();
     });
@@ -334,7 +308,7 @@ describe('TodayActivitiesModal', () => {
         />
       );
 
-      expect(getByLabelText('Tutup modal')).toBeTruthy();
+      expect(getByLabelText('Tutup')).toBeTruthy();
       expect(getByLabelText('Lihat detail aktivitas Pemeliharaan')).toBeTruthy();
     });
 
@@ -398,7 +372,7 @@ describe('TodayActivitiesModal', () => {
         />
       );
 
-      expect(getByText('Aktivitas Hari Ini (2)')).toBeTruthy();
+      expect(getByText('AKTIVITAS HARI INI (2)')).toBeTruthy();
     });
   });
 });

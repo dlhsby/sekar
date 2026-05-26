@@ -12,11 +12,10 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { CLOCKABLE_ROLES, TASK_RECEIVERS } from '../../constants/roles';
 import { LoadingSpinner } from '../../components/common';
 import { NBAlert, NBBackgroundPattern, NBButton, NBText } from '../../components/nb';
-import { ShiftDetailModal, TodayActivitiesModal, TodayWorkHoursModal, LocationMapModal } from '../../components/modals';
+import { ShiftDetailModal, TodayActivitiesModal, TodayWorkHoursModal, TodayTasksModal, LocationMapModal } from '../../components/modals';
 import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
 import { HomeSectionDivider } from '../../components/home/HomeSectionDivider';
 import { HomeStatTile } from '../../components/home/HomeStatTile';
-import { HomeListRow } from '../../components/home/HomeListRow';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { shiftsApi, activitiesApi, tasksApi } from '../../services/api';
@@ -24,9 +23,10 @@ import { setCurrentShift, setShiftHistory, setError } from '../../store/slices/s
 import { setActivities } from '../../store/slices/activitiesSlice';
 import { setTasks } from '../../store/slices/tasksSlice';
 import { formatTime, calculateDuration, isToday } from '../../utils/dateUtils';
+import { ACTIVE_TASK_STATUSES } from '../../utils/taskStatus';
 import { useLocationPermission } from '../../hooks';
 import { useHomeLocation } from '../../hooks/useHomeLocation';
-import type { Activity, Task, TaskStatus } from '../../types/models.types';
+import type { Activity, Task } from '../../types/models.types';
 
 /**
  * Field Home Screen (hi-fi HOME-1) — dashboard for clockable field roles
@@ -38,30 +38,6 @@ import type { Activity, Task, TaskStatus } from '../../types/models.types';
  */
 
 const pad = (num: number): string => String(num).padStart(2, '0');
-
-// Active (actionable) task statuses surfaced under "Tugas hari ini".
-const ACTIVE_TASK_STATUSES: TaskStatus[] = [
-  'pending',
-  'assigned',
-  'accepted',
-  'in_progress',
-  'revision_needed',
-];
-
-/** Map a task status to a StatusPill tone + Indonesian label. */
-function taskPill(status: TaskStatus): { tone: StatusTone; label: string } {
-  switch (status) {
-    case 'in_progress':
-      return { tone: 'ok', label: 'Berjalan' };
-    case 'assigned':
-    case 'accepted':
-      return { tone: 'warn', label: 'Siap mulai' };
-    case 'revision_needed':
-      return { tone: 'bad', label: 'Revisi' };
-    default:
-      return { tone: 'neutral', label: 'Menunggu' };
-  }
-}
 
 export function FieldHomeScreen(): React.JSX.Element {
   const navigation = useNavigation<any>();
@@ -89,6 +65,7 @@ export function FieldHomeScreen(): React.JSX.Element {
   const [shiftModalVisible, setShiftModalVisible] = useState(false);
   const [activitiesModalVisible, setActivitiesModalVisible] = useState(false);
   const [workHoursModalVisible, setWorkHoursModalVisible] = useState(false);
+  const [tasksModalVisible, setTasksModalVisible] = useState(false);
   const [locationMapVisible, setLocationMapVisible] = useState(false);
 
   // Announce shift time every 5 minutes for screen-reader users.
@@ -256,6 +233,7 @@ export function FieldHomeScreen(): React.JSX.Element {
   }, [navigation]);
 
   const openTask = useCallback((task: Task) => {
+    setTasksModalVisible(false);
     navigation.navigate('TaskDetail', { taskId: task.id, from: 'Home' });
   }, [navigation]);
 
@@ -340,6 +318,8 @@ export function FieldHomeScreen(): React.JSX.Element {
                     variant="display"
                     color="black"
                     style={styles.heroClock}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
                     accessibilityLabel={`Waktu shift berjalan: ${timer}`}
                   >
                     {timer}
@@ -414,44 +394,8 @@ export function FieldHomeScreen(): React.JSX.Element {
             </View>
           )}
 
-          {/* Tugas hari ini */}
-          {isTaskReceiver && (
-            <>
-              <HomeSectionDivider
-                label="Tugas hari ini"
-                trailing={
-                  <StatusPill
-                    tone={activeTasks.length > 0 ? 'warn' : 'neutral'}
-                    label={`${activeTasks.length} tersisa`}
-                  />
-                }
-              />
-              {activeTasks.length === 0 ? (
-                <NBText variant="body-sm" color="gray500" style={styles.emptyHint}>
-                  Tidak ada tugas aktif hari ini.
-                </NBText>
-              ) : (
-                <View style={styles.list}>
-                  {activeTasks.slice(0, 5).map((task) => {
-                    const p = taskPill(task.status);
-                    return (
-                      <HomeListRow
-                        key={task.id}
-                        pill={<StatusPill tone={p.tone} label={p.label} />}
-                        title={task.title}
-                        meta={task.deadline ? formatTime(task.deadline) : undefined}
-                        subMeta={task.area?.name}
-                        onPress={() => openTask(task)}
-                        testID={`home-task-${task.id}`}
-                      />
-                    );
-                  })}
-                </View>
-              )}
-            </>
-          )}
-
-          {/* Ringkasan hari ini */}
+          {/* Ringkasan hari ini — the day's at-a-glance counters; each tile opens
+              its detail bottom sheet (Aktivitas / Jam kerja / Tugas). */}
           <HomeSectionDivider label="Ringkasan hari ini" />
           <View style={styles.tiles}>
             <HomeStatTile
@@ -469,7 +413,13 @@ export function FieldHomeScreen(): React.JSX.Element {
               testID="stat-workhours"
             />
             {isTaskReceiver && (
-              <HomeStatTile label="Tugas" value={activeTasks.length} variant="ok" testID="stat-tasks" />
+              <HomeStatTile
+                label="Tugas"
+                value={activeTasks.length}
+                variant="ok"
+                onPress={() => setTasksModalVisible(true)}
+                testID="stat-tasks"
+              />
             )}
           </View>
 
@@ -494,6 +444,12 @@ export function FieldHomeScreen(): React.JSX.Element {
         onActivityPress={handleViewActivities}
       />
       <TodayWorkHoursModal visible={workHoursModalVisible} onClose={() => setWorkHoursModalVisible(false)} shifts={todayShifts} />
+      <TodayTasksModal
+        visible={tasksModalVisible}
+        onClose={() => setTasksModalVisible(false)}
+        tasks={activeTasks}
+        onTaskPress={openTask}
+      />
       <LocationMapModal
         visible={locationMapVisible}
         onClose={() => setLocationMapVisible(false)}
@@ -532,16 +488,17 @@ const styles = StyleSheet.create({
   heroTopRight: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs },
   heroChevron: { marginTop: 1 },
   heroLabel: { letterSpacing: 0.6, marginBottom: 2 },
-  heroClock: { letterSpacing: 1 },
+  // Smaller than the display default (40) so "HH:MM:SS" stays on one line next
+  // to the status pill + chevron on narrow phones (one-off; adjustsFontSizeToFit
+  // shrinks further if needed). Applies to both collapsed + expanded states.
+  heroClock: { fontSize: 34, lineHeight: 38, letterSpacing: 0.5 },
   heroMeta: { marginTop: nbSpacing.sm },
   heroIdleTitle: { marginTop: 2 },
   heroButton: { marginTop: nbSpacing.md },
   heroDetailLink: { marginTop: nbSpacing.sm, alignSelf: 'flex-start' },
   heroDetailText: { letterSpacing: 0.6 },
 
-  /* Lists + tiles */
-  list: { gap: nbSpacing.sm },
-  emptyHint: { fontStyle: 'italic', paddingVertical: nbSpacing.sm },
+  /* Tiles */
   tiles: { flexDirection: 'row', gap: nbSpacing.sm },
 
   warningCard: {

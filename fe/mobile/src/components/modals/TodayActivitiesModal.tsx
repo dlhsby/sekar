@@ -1,26 +1,21 @@
 /**
- * TodayActivitiesModal Component
- * Shows list of today's activities with Neo Brutalism badge colors
- * Phase 2C: Renamed from TodayReportsModal (ADR-010)
+ * TodayActivitiesModal — v2.1 bottom sheet listing today's activities.
+ * Opened from the Home "Aktivitas" Ringkasan tile. Rebuilt on `NBModal` +
+ * `NBText` + design tokens (Phase 4 M3 Checkpoint 7).
  */
 
 import React from 'react';
-import {
-  View,
-  Text,
-  Modal,
-  StyleSheet,
-  ScrollView,
-  Pressable,
-  TouchableOpacity,
-} from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { NBModal } from '../nb/NBModal';
+import { NBText } from '../nb/NBText';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
   nbBorders,
+  nbRadius,
   nbShadows,
+  withAlpha,
 } from '../../constants/nbTokens';
 import { formatDateTime, formatDate } from '../../utils/dateUtils';
 import type { Activity } from '../../types/models.types';
@@ -32,309 +27,129 @@ interface TodayActivitiesModalProps {
   onActivityPress?: (activity: Activity) => void;
 }
 
-const activityTypeBadgeColors: Record<string, { bg: string; border: string; text: string }> = {
-  default: {
-    bg: nbColors.gray['100'],
-    border: nbColors.gray['400'],
-    text: 'Aktivitas',
-  },
-};
-
 export function TodayActivitiesModal({
   visible,
   onClose,
   activities,
   onActivityPress,
-}: TodayActivitiesModalProps): JSX.Element {
-  const getBadgeInfo = (activityTypeName?: string) => {
-    if (!activityTypeName) return activityTypeBadgeColors.default;
-    return {
-      bg: nbColors.successLight,
-      border: nbColors.success,
-      text: activityTypeName,
-    };
-  };
-
+}: TodayActivitiesModalProps): React.JSX.Element {
   const todayDate = formatDate(new Date());
 
   return (
-    <Modal
+    <NBModal
       visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
+      onClose={onClose}
+      title={`Aktivitas Hari Ini (${activities.length})`}
+      type="sheet"
+      size="lg"
+      scrollable
+      testID="today-activities-modal"
     >
-      <Pressable style={styles.overlay} onPress={onClose}>
-        {/* View instead of Pressable: onStartShouldSetResponder blocks overlay tap
-            propagation. onMoveShouldSetResponder=false releases the responder during
-            moves so ScrollView can claim scroll gestures cleanly. */}
-        <View
-          style={styles.modalContent}
-          onStartShouldSetResponder={() => true}
-          onMoveShouldSetResponder={() => false}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.titleContainer}>
-              <Text style={styles.title}>Aktivitas Hari Ini ({activities.length})</Text>
-              <Text style={styles.subtitle}>{todayDate}</Text>
-            </View>
-            <TouchableOpacity
-              onPress={onClose}
-              style={styles.closeButton}
-              accessibilityRole="button"
-              accessibilityLabel="Tutup modal"
-            >
-              <MaterialCommunityIcons
-                name="close"
-                size={24}
-                color={nbColors.black}
-              />
-            </TouchableOpacity>
-          </View>
+      <NBText variant="mono-sm" color="gray600" style={styles.dateLine}>
+        {todayDate}
+      </NBText>
 
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {activities.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyIcon}>📝</Text>
-                <Text style={styles.emptyText}>Belum ada aktivitas hari ini</Text>
-                <Text style={styles.emptySubtext}>
-                  Aktivitas yang Anda buat akan muncul di sini
-                </Text>
-              </View>
-            ) : (
-              activities.map((activity, index) => {
-                const badgeInfo = getBadgeInfo(activity.activityType?.name);
-                return (
-                  <TouchableOpacity
-                    key={activity.id}
-                    style={[
-                      styles.reportCard,
-                      index % 2 === 0 && styles.reportCardEven,
-                    ]}
-                    onPress={() => onActivityPress?.(activity)}
-                    activeOpacity={0.7}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Lihat detail aktivitas ${badgeInfo.text}`}
-                  >
-                    {/* Accent Bar */}
-                    <View
-                      style={[
-                        styles.accentBar,
-                        { backgroundColor: badgeInfo.border },
-                      ]}
-                    />
-
-                    {/* Header Row */}
-                    <View style={styles.reportContent}>
-                    <View style={styles.reportHeader}>
-                      <View
-                        style={[
-                          styles.typeBadge,
-                          {
-                            backgroundColor: badgeInfo.bg,
-                            borderColor: badgeInfo.border,
-                          },
-                        ]}
-                      >
-                        <Text style={styles.typeText}>{badgeInfo.text}</Text>
-                      </View>
-                      <Text style={styles.time}>{formatDateTime(activity.created_at)}</Text>
-                    </View>
-
-                    {/* Description */}
-                    {activity.description && (
-                      <Text style={styles.description} numberOfLines={2}>
-                        {activity.description}
-                      </Text>
-                    )}
-
-                    {/* Location */}
-                    {activity.area?.name && (
-                      <View style={styles.locationRow}>
-                        <MaterialCommunityIcons
-                          name="map-marker"
-                          size={14}
-                          color={nbColors.gray['600']}
-                        />
-                        <Text style={styles.locationText}>{activity.area.name}</Text>
-                      </View>
-                    )}
-
-                    {/* Photo count */}
-                    {activity.photo_urls && activity.photo_urls.length > 0 && (
-                      <View style={styles.photoRow}>
-                        <MaterialCommunityIcons
-                          name="camera"
-                          size={14}
-                          color={nbColors.gray['600']}
-                        />
-                        <Text style={styles.photoText}>
-                          {activity.photo_urls.length} foto
-                        </Text>
-                      </View>
-                    )}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })
-            )}
-          </ScrollView>
+      {activities.length === 0 ? (
+        <View style={styles.empty}>
+          <NBText variant="h3" color="gray600" align="center">
+            Belum ada aktivitas hari ini
+          </NBText>
+          <NBText variant="body-sm" color="gray500" align="center" style={styles.emptySub}>
+            Aktivitas yang Anda buat akan muncul di sini
+          </NBText>
         </View>
-      </Pressable>
-    </Modal>
+      ) : (
+        <View style={styles.list}>
+          {activities.map((activity) => {
+            const typeName = activity.activityType?.name ?? 'Aktivitas';
+            return (
+              <TouchableOpacity
+                key={activity.id}
+                style={styles.card}
+                onPress={() => onActivityPress?.(activity)}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={`Lihat detail aktivitas ${typeName}`}
+              >
+                <View style={styles.accentBar} />
+                <View style={styles.cardBody}>
+                  <View style={styles.cardHeader}>
+                    <View style={styles.typeChip}>
+                      <NBText variant="mono-sm" color="successDark" uppercase style={styles.typeChipText}>
+                        {typeName}
+                      </NBText>
+                    </View>
+                    <NBText variant="caption" color="gray600">
+                      {formatDateTime(activity.created_at)}
+                    </NBText>
+                  </View>
+
+                  {activity.description ? (
+                    <NBText variant="body-sm" color="gray700" numberOfLines={2} style={styles.description}>
+                      {activity.description}
+                    </NBText>
+                  ) : null}
+
+                  {activity.area?.name ? (
+                    <View style={styles.metaRow}>
+                      <MaterialCommunityIcons name="map-marker" size={14} color={nbColors.gray600} />
+                      <NBText variant="caption" color="gray600" style={styles.metaText}>
+                        {activity.area.name}
+                      </NBText>
+                    </View>
+                  ) : null}
+
+                  {activity.photo_urls && activity.photo_urls.length > 0 ? (
+                    <View style={styles.metaRow}>
+                      <MaterialCommunityIcons name="camera" size={14} color={nbColors.gray600} />
+                      <NBText variant="caption" color="gray600" style={styles.metaText}>
+                        {activity.photo_urls.length} foto
+                      </NBText>
+                    </View>
+                  ) : null}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+    </NBModal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: nbColors.overlay,
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: nbColors.surface,
-    borderTopLeftRadius: 0, // Sharp corners for Neo Brutalism
-    borderTopRightRadius: 0,
-    borderTopWidth: nbBorders.base,
-    borderLeftWidth: nbBorders.base,
-    borderRightWidth: nbBorders.base,
-    borderColor: nbColors.black,
-    maxHeight: '80%',
-    // flexShrink: 1 ensures the container participates in bounded flex layout,
-    // giving ScrollView a constrained parent height so scrolling engages.
-    flexShrink: 1,
-    ...nbShadows.lg,
-  },
-  header: {
+  dateLine: { marginBottom: nbSpacing.sm, letterSpacing: 0.4 },
+  list: { gap: nbSpacing.sm },
+  card: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.md,
-    borderBottomWidth: nbBorders.base,
-    borderBottomColor: nbColors.black,
-  },
-  titleContainer: {
-    flex: 1,
-  },
-  title: {
-    fontSize: nbTypography.fontSize.xl,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
-    marginBottom: 2,
-  },
-  subtitle: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray['600'],
-  },
-  closeButton: {
-    width: 48,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 0, // Sharp corners
-    marginLeft: nbSpacing.sm,
-  },
-  scrollContent: {
-    padding: nbSpacing.md,
-    paddingBottom: nbSpacing.xl + nbSpacing.lg, // 24px + 32px bottom padding
-  },
-  reportCard: {
-    backgroundColor: nbColors.surface,
-    borderWidth: nbBorders.thick,
+    backgroundColor: nbColors.white,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
-    borderRadius: 0,
-    marginBottom: nbSpacing.md,
-    ...nbShadows.sm,
+    borderRadius: nbRadius.md,
     overflow: 'hidden',
-    flexDirection: 'row',
+    ...nbShadows.sm,
   },
-  reportCardEven: {
-    backgroundColor: nbColors.gray['50'],
-  },
-  accentBar: {
-    width: 4,
-  },
-  reportContent: {
-    flex: 1,
-    padding: nbSpacing.sm,
-  },
-  reportHeader: {
+  accentBar: { width: 5, backgroundColor: nbColors.success },
+  cardBody: { flex: 1, padding: nbSpacing.sm },
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: nbSpacing.xs,
+    gap: nbSpacing.sm,
   },
-  typeBadge: {
-    borderWidth: nbBorders.base,
-    borderRadius: 0, // Sharp corners
-    paddingVertical: 4,
+  typeChip: {
+    backgroundColor: withAlpha(nbColors.success, 0.14),
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.success,
+    borderRadius: nbRadius.sm,
     paddingHorizontal: nbSpacing.xs,
+    paddingVertical: 2,
   },
-  typeText: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
-  },
-  time: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray['600'],
-  },
-  description: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.gray['700'],
-    marginBottom: nbSpacing.xs,
-  },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: nbSpacing.xs,
-    marginTop: nbSpacing.xs,
-  },
-  locationText: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray['600'],
-    marginLeft: 4,
-  },
-  photoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: nbSpacing.xs,
-  },
-  photoText: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray['600'],
-    marginLeft: 4,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: nbSpacing['3xl'],
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: nbSpacing.md,
-  },
-  emptyText: {
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray['600'],
-    textAlign: 'center',
-    marginBottom: nbSpacing.xs,
-  },
-  emptySubtext: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.gray['500'],
-    textAlign: 'center',
-  },
+  typeChipText: { letterSpacing: 0.4 },
+  description: { marginBottom: nbSpacing.xs },
+  metaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+  metaText: { marginLeft: 4 },
+  empty: { alignItems: 'center', justifyContent: 'center', paddingVertical: nbSpacing.xl },
+  emptySub: { marginTop: nbSpacing.xs },
 });

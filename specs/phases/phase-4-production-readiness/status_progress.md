@@ -4,6 +4,19 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## May 26, 2026 — M3 Home revamp · Checkpoint 7: satgas Home restructure + bottom-sheet revamp
+
+Second round of manual-review feedback (satgas Home + the Ringkasan bottom sheets):
+
+1. **Coordinator team grid → uniform tint.** The team-avatar grid now tints every `RoleAvatar` with the **coordinator's own role accent** (`auth.user.role`) instead of each member's role — reads as one cohesive team, not a rainbow.
+2. **Active-hero clock fixed.** The live timer was wrapping on the second-group digits; shrunk the `display` clock (40 → 34, `adjustsFontSizeToFit` + `numberOfLines={1}`) so "HH:MM:SS" stays on one line in **both** collapsed and expanded states.
+3. **FieldHome (HOME-1) restructured.** "Ringkasan hari ini" moved directly under the hero; the inline **"Tugas hari ini" list was removed**. The Ringkasan **"Tugas" tile is now pressable** → opens a tasks bottom sheet (mirrors how the Aktivitas tile opens its sheet). The three tiles (Aktivitas / Jam kerja / Tugas) are the single entry point to the day's detail sheets. Shared `taskPill` + `ACTIVE_TASK_STATUSES` extracted to `utils/taskStatus.ts` (used by the screen + the new sheet).
+4. **Bottom sheets revamped to v2.1.** New **`TodayTasksModal`** built on `NBModal` + `HomeListRow`/`StatusPill`. **`TodayActivitiesModal`** and **`TodayWorkHoursModal`** rebuilt on `NBModal` + `NBText` + tokens (dropped the legacy bespoke sheet shell, `nbTypography`, `borderRadius:0`, emoji empty states → tokenized NBText empty states). **`ShiftCard`** (the Jam-kerja content, also used by `ShiftHistoryScreen`) converted `Text`→`NBText`, `nbTypography`/`nbBorderRadius`→variants/`nbRadius`, fixed a latent `variant="outlined"` (invalid) → `"default"` and `JSX.Element`→`React.JSX.Element`.
+
+**Tests:** new `TodayTasksModal` suite (4); `TodayActivitiesModal`/`TodayWorkHoursModal` suites updated for NBModal chrome (uppercase title, `Tutup` close label, tokenized empty states); `FieldHomeScreen` task tests rewritten (tasks now open via the Tugas sheet, not inline); `ShiftCard`/`ShiftHistoryScreen` green after the NBText swap. Full mobile suite **4195 passed / 0 failed**; `tsc` (no new prod errors) + ESLint clean.
+
+---
+
 ## May 26, 2026 — M3 Home revamp · Checkpoint 6: manual-review polish (avatar primitive, masthead fit, collapsible hero)
 
 First round of **manual-review feedback** on the Home work (satgas Home + cross-cutting chrome). Four changes, tokens-only:

@@ -91,8 +91,8 @@ describe('TodayWorkHoursModal', () => {
         />
       );
 
-      // Title includes total suffix when shifts exist: "Jam Kerja Hari Ini (Xj Ym)"
-      expect(getByText(/Jam Kerja Hari Ini/)).toBeTruthy();
+      // NBModal renders the title uppercase, with total suffix: "JAM KERJA HARI INI (Xj Ym)"
+      expect(getByText(/JAM KERJA HARI INI/)).toBeTruthy();
     });
 
     it('should not render content when visible is false', () => {
@@ -104,7 +104,7 @@ describe('TodayWorkHoursModal', () => {
         />
       );
 
-      expect(queryByText('Jam Kerja Hari Ini')).toBeNull();
+      expect(queryByText('JAM KERJA HARI INI')).toBeNull();
     });
 
     it('should render close button', () => {
@@ -116,7 +116,7 @@ describe('TodayWorkHoursModal', () => {
         />
       );
 
-      expect(getByLabelText('Tutup modal')).toBeTruthy();
+      expect(getByLabelText('Tutup')).toBeTruthy();
     });
 
     it('should display today date in subtitle', () => {
@@ -146,18 +146,6 @@ describe('TodayWorkHoursModal', () => {
       expect(getByText('Belum ada shift hari ini')).toBeTruthy();
       expect(getByText('Clock in terlebih dahulu untuk memulai shift')).toBeTruthy();
     });
-
-    it('should display empty state icon', () => {
-      const { getByText } = render(
-        <TodayWorkHoursModal
-          visible={true}
-          onClose={mockOnClose}
-          shifts={[]}
-        />
-      );
-
-      expect(getByText('⏰')).toBeTruthy();
-    });
   });
 
   describe('Total Duration', () => {
@@ -170,8 +158,8 @@ describe('TodayWorkHoursModal', () => {
         />
       );
 
-      // Total is shown inline in the title: "Jam Kerja Hari Ini (Xj Ym)"
-      expect(getByText(/Jam Kerja Hari Ini \(\d+j \d+m\)/)).toBeTruthy();
+      // Total is shown inline in the (uppercased) title: "JAM KERJA HARI INI (Xj Ym)"
+      expect(getByText(/JAM KERJA HARI INI \(\d+J \d+M\)/)).toBeTruthy();
     });
 
     it('should calculate total duration from completed shifts', () => {
@@ -183,8 +171,8 @@ describe('TodayWorkHoursModal', () => {
         />
       );
 
-      // 08:00 to 17:00 = 9 hours — appears in title suffix
-      expect(getByText(/9j/)).toBeTruthy();
+      // 08:00 to 17:00 = 9 hours — appears in (uppercased) title suffix
+      expect(getByText(/9J/)).toBeTruthy();
     });
 
     it('should include active shift duration with current time', () => {
@@ -197,7 +185,7 @@ describe('TodayWorkHoursModal', () => {
       );
 
       // Should show total including active shift (allows negative due to mock date)
-      expect(getByText(/[-]?\d+j [-]?\d+m/)).toBeTruthy();
+      expect(getByText(/[-]?\d+J [-]?\d+M/)).toBeTruthy();
     });
 
     it('should not show duration suffix in title when no shifts', () => {
@@ -209,8 +197,8 @@ describe('TodayWorkHoursModal', () => {
         />
       );
 
-      // Title has no suffix when there are no shifts
-      expect(getByText('Jam Kerja Hari Ini')).toBeTruthy();
+      // Title has no suffix when there are no shifts (uppercased by NBModal)
+      expect(getByText('JAM KERJA HARI INI')).toBeTruthy();
     });
   });
 
@@ -266,22 +254,8 @@ describe('TodayWorkHoursModal', () => {
         />
       );
 
-      const closeButton = getByLabelText('Tutup modal');
+      const closeButton = getByLabelText('Tutup');
       fireEvent.press(closeButton);
-
-      expect(mockOnClose).toHaveBeenCalled();
-    });
-
-    it('should call onClose when overlay is pressed', () => {
-      const { getByLabelText } = render(
-        <TodayWorkHoursModal
-          visible={true}
-          onClose={mockOnClose}
-          shifts={mockShifts}
-        />
-      );
-
-      fireEvent(getByLabelText('Tutup modal').parent?.parent?.parent, 'press');
 
       expect(mockOnClose).toHaveBeenCalled();
     });
@@ -297,7 +271,7 @@ describe('TodayWorkHoursModal', () => {
         />
       );
 
-      expect(getByLabelText('Tutup modal')).toBeTruthy();
+      expect(getByLabelText('Tutup')).toBeTruthy();
     });
 
     it('should have accessibility role button for close button', () => {
@@ -309,7 +283,7 @@ describe('TodayWorkHoursModal', () => {
         />
       );
 
-      const closeButton = getByLabelText('Tutup modal');
+      const closeButton = getByLabelText('Tutup');
       expect(closeButton.props.accessibilityRole).toBe('button');
     });
   });
@@ -327,7 +301,7 @@ describe('TodayWorkHoursModal', () => {
         />
       );
 
-      expect(getByText(/Jam Kerja Hari Ini/)).toBeTruthy();
+      expect(getByText(/JAM KERJA HARI INI/)).toBeTruthy();
     });
   });
 
@@ -366,8 +340,8 @@ describe('TodayWorkHoursModal', () => {
         />
       );
 
-      // 15 minutes = 0h 15m
-      expect(getByText(/0j 15m/)).toBeTruthy();
+      // 15 minutes = 0h 15m (title suffix uppercased by NBModal)
+      expect(getByText(/0J 15M/)).toBeTruthy();
     });
 
     it('should handle single active shift', () => {

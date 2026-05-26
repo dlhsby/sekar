@@ -918,7 +918,7 @@ describe('FieldHomeScreen HOME-1 body', () => {
     });
   });
 
-  it('renders today\'s active tasks as list rows', async () => {
+  it('shows today\'s active tasks in the Tugas bottom sheet (not inline)', async () => {
     // NOTE: createTestStore() resets the getMyTasks mock to empty, so the
     // populated mock must be set AFTER the store is created.
     const store = createTestStore(null);
@@ -939,23 +939,31 @@ describe('FieldHomeScreen HOME-1 body', () => {
         ],
       },
     });
-    const { getByText, getByTestId } = renderHome(store);
+    const { getByText, getByTestId, queryByText } = renderHome(store);
     await act(async () => { jest.advanceTimersByTime(300); await Promise.resolve(); });
 
+    // The inline "Tugas hari ini" list was removed — tasks now live in a sheet.
+    expect(queryByText('Pangkas pohon Trembesi')).toBeNull();
+
+    // Open the sheet from the Ringkasan "Tugas" tile.
+    await act(async () => { fireEvent.press(getByTestId('stat-tasks')); });
+
     await waitFor(() => {
+      expect(getByTestId('today-task-t1')).toBeTruthy();
       expect(getByText('Pangkas pohon Trembesi')).toBeTruthy();
-      expect(getByTestId('home-task-t1')).toBeTruthy();
       expect(getByText('Siap mulai')).toBeTruthy();
     });
   });
 
-  it('shows the empty-task hint when there are no active tasks', async () => {
+  it('shows the empty-task hint inside the Tugas bottom sheet', async () => {
     const store = createTestStore(null);
-    const { getByText } = renderHome(store);
+    const { getByText, getByTestId } = renderHome(store);
     await act(async () => { jest.advanceTimersByTime(200); });
 
+    await act(async () => { fireEvent.press(getByTestId('stat-tasks')); });
+
     await waitFor(() => {
-      expect(getByText('Tidak ada tugas aktif hari ini.')).toBeTruthy();
+      expect(getByText('Tidak ada tugas aktif hari ini')).toBeTruthy();
     });
   });
 

@@ -62,13 +62,14 @@
 | Hi-Fi ID | Name | Current file | Action |
 |----------|------|--------------|--------|
 | (anchor) | Home dispatcher (role-aware) | `fe/mobile/src/screens/home/HomeScreen.tsx` | ✅ Done (Checkpoint 1c) — switches on `auth.user.role` |
-| HOME-1 | Home · Satgas/Linmas | `fe/mobile/src/screens/home/FieldHomeScreen.tsx` | ✅ Done (Checkpoint 2b; polished 6) — absensi hero (**collapsible**, whole-card tap → toggle; "Detail shift →" link) + "Tugas hari ini" list + "Ringkasan hari ini" tiles |
+| HOME-1 | Home · Satgas/Linmas | `fe/mobile/src/screens/home/FieldHomeScreen.tsx` | ✅ Done (Checkpoint 2b; polished 6, 7) — absensi hero (**collapsible**, whole-card tap → toggle; "Detail shift →" link) + **"Ringkasan hari ini" tiles directly under hero**. Inline Tugas list removed; the **Tugas tile opens `TodayTasksModal`** (like Aktivitas/Jam kerja). |
 | HOME-2 | Home · Korlap/Kepala Rayon | `fe/mobile/src/screens/home/CoordinatorHomeScreen.tsx` | ✅ Done (Checkpoint 3; polished 6) — team-status hero (**role-tinted `RoleAvatar` grid**) + 5-status KPI grid + derived out-of-area/missing alerts |
 | HOME-3 | Home · Admin Data | `fe/mobile/src/screens/home/AdminDataHomeScreen.tsx` | ✅ Done (Checkpoint 4) — perantingan-queue hero + disposition breakdown + "berjalan" list (overtime-approvals dropped: admin_data isn't an approver) |
 | (no hi-fi) | Home · Top Mgmt / Admin Sys / Superadmin | `fe/mobile/src/screens/home/ExecHomeScreen.tsx` | ✅ Done (Checkpoint 5) — NET-NEW (no hi-fi): city-overview hero + personnel KPI grid + per-rayon roll-up. Added a Beranda tab to these roles. |
 | (no hi-fi) | Home · Staff Kecamatan | `fe/mobile/src/screens/home/KecamatanHomeScreen.tsx` | ✅ Done (Checkpoint 5) — NET-NEW (no hi-fi): "my requests" hero + status breakdown + recent list. Added a Beranda tab. |
 | (chrome) | Shared masthead + bottom tab bar | `components/navigation/FieldHomeHeader.tsx`, `navigation/MainNavigator.tsx` | ✅ Done (Checkpoints 1a/1b; polished 6) — masthead uses shared **`RoleAvatar`** (profile photo when set, else role-tinted initials), smaller role/name fonts, status chip left of the bell |
 | (primitive) | `RoleAvatar` (v2.1 avatar) | `fe/mobile/src/components/common/RoleAvatar.tsx` | ✅ Done (Checkpoint 6) — role-accent tint + black initials, renders `profile_picture_url` when set; used by masthead + team grid |
+| (sheets) | Home Ringkasan bottom sheets | `components/modals/Today{Activities,WorkHours,Tasks}Modal.tsx`, `components/common/ShiftCard.tsx` | ✅ Done (Checkpoint 7) — all three on `NBModal` + `NBText`/tokens; `TodayTasksModal` new; `ShiftCard` Text→NBText |
 | ABS-1 | Clock-in · GPS + selfie | existing absensi screen | Revamp |
 | ABS-2 | Clock-in · Di luar area | existing | Revamp |
 | ABS-3 | Shift history | existing | Revamp |

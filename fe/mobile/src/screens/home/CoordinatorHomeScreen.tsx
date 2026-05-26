@@ -33,6 +33,7 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
   const { liveUsers, statusCounts, isLoading } = useAppSelector((state) => state.monitoring);
+  const viewerRole = useAppSelector((state) => state.auth.user?.role);
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -135,7 +136,7 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
                   <RoleAvatar
                     key={u.id}
                     name={u.full_name}
-                    role={u.role}
+                    role={viewerRole}
                     size={30}
                     radius={nbRadius.full}
                   />
