@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
   heroDetailText: { letterSpacing: 0.6 },
 
   /* Tiles */
-  tiles: { flexDirection: 'row', gap: nbSpacing.sm },
+  tiles: { flexDirection: 'row', gap: nbSpacing.sm, marginBottom: nbSpacing.md },
 
   warningCard: {
     backgroundColor: withAlpha(nbColors.warningLight, 0.125),

@@ -1432,7 +1432,7 @@ async function seedPhase2() {
               WHEN 1 THEN '${penyiramanId}'
               WHEN 2 THEN '${potongRumputId}'
               ELSE '${penanamanId}'
-            END,
+            END::UUID,
             'Aktivitas hari ini #' || gs.n || ' - ' ||
               CASE gs.n % 4
                 WHEN 0 THEN 'perawatan area taman pagi ini.'
