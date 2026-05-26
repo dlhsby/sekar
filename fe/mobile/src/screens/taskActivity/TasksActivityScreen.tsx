@@ -18,7 +18,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useAppSelector } from '../../store/hooks';
 import { NBBackgroundPattern, NBButton, NBTab, NBText } from '../../components/nb';
 import { TaskFilterModal, ActivityFilterModal } from '../../components/modals';
-import { nbColors, nbSpacing, nbBorders, nbBorderRadius, nbShadows } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
 import { ACTIVITY_SUBMITTERS, TASK_CREATORS, canMonitor } from '../../constants/roles';
 import { getTaskStatusLabel } from '../../utils/statusHelpers';
 import type { MainTabParamList } from '../../types/navigation.types';
@@ -718,8 +718,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.sm,
     paddingVertical: nbSpacing.xs,
     backgroundColor: nbColors.white,
-    borderBottomWidth: nbBorders.extra,
-    borderBottomColor: nbColors.gray[300],
+    borderBottomWidth: nbBorders.widthBase,
+    borderBottomColor: nbColors.gray300,
     ...nbShadows.md,
     marginBottom: nbSpacing.sm,
     minHeight: 48,
@@ -760,7 +760,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     backgroundColor: nbColors.danger,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.white,
     justifyContent: 'center',
     alignItems: 'center',
@@ -773,9 +773,9 @@ const styles = StyleSheet.create({
   miniChip: {
     paddingHorizontal: nbSpacing.sm,
     paddingVertical: nbSpacing.xs,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.sm,
+    borderRadius: nbRadius.sm,
     height: 32,
     justifyContent: 'center',
   },

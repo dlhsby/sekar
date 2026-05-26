@@ -31,7 +31,7 @@ import {
   NBCardTextInput,
   NBText,
 } from '../../components/nb';
-import { nbColors, nbSpacing, nbBorders, nbBorderRadius } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbBorders, nbRadius } from '../../constants/nbTokens';
 import { PartialCompleteSheet } from '../../components/tasks/PartialCompleteSheet';
 
 import { formatDateTime } from '../../utils/dateUtils';
@@ -626,7 +626,7 @@ export function TaskDetailScreen(): React.JSX.Element {
             <View style={styles.metaGrid}>
               {task.deadline && (
                 <View style={styles.metaItem}>
-                  <Icon name="calendar-clock" size={14} color={isDeadlinePast ? nbColors.danger : nbColors.gray['500']} />
+                  <Icon name="calendar-clock" size={14} color={isDeadlinePast ? nbColors.danger : nbColors.gray500} />
                   <NBText variant="caption" style={[styles.metaTextStyle, isDeadlinePast && styles.metaTextDangerStyle]}>
                     {formatDateTime(task.deadline)}
                   </NBText>
@@ -634,13 +634,13 @@ export function TaskDetailScreen(): React.JSX.Element {
               )}
               {task.area && (
                 <View style={styles.metaItem}>
-                  <Icon name="map-marker" size={14} color={nbColors.gray['500']} />
+                  <Icon name="map-marker" size={14} color={nbColors.gray500} />
                   <NBText variant="caption" style={styles.metaTextStyle}>{task.area.name}</NBText>
                 </View>
               )}
               {task.rayon && (
                 <View style={styles.metaItem}>
-                  <Icon name="map" size={14} color={nbColors.gray['500']} />
+                  <Icon name="map" size={14} color={nbColors.gray500} />
                   <NBText variant="caption" style={styles.metaTextStyle}>{task.rayon.name}</NBText>
                 </View>
               )}
@@ -658,7 +658,7 @@ export function TaskDetailScreen(): React.JSX.Element {
               <View style={styles.assignBlock}>
                 <NBText variant="body-sm" style={styles.assignLabelStyle}>Dibuat oleh</NBText>
                 <View style={styles.assignUserRow}>
-                  <Icon name="account-circle" size={16} color={nbColors.gray['500']} />
+                  <Icon name="account-circle" size={16} color={nbColors.gray500} />
                   <NBText variant="body-sm" style={styles.assignValueStyle}>{formatUser(task.creator)}</NBText>
                 </View>
                 {task.created_at && (
@@ -667,7 +667,7 @@ export function TaskDetailScreen(): React.JSX.Element {
               </View>
 
               <View style={styles.assignArrow}>
-                <Icon name="arrow-right" size={20} color={nbColors.gray['400']} />
+                <Icon name="arrow-right" size={20} color={nbColors.gray400} />
               </View>
 
               <View style={styles.assignBlock}>
@@ -676,7 +676,7 @@ export function TaskDetailScreen(): React.JSX.Element {
                   <Icon
                     name={task.assigned_to ? 'account' : 'account-question'}
                     size={16}
-                    color={task.assigned_to ? nbColors.primary : nbColors.gray['400']}
+                    color={task.assigned_to ? nbColors.primary : nbColors.gray400}
                   />
                   <NBText variant="body-sm" style={[styles.assignValueStyle, !task.assigned_to && styles.assignValueEmptyStyle]} color={!task.assigned_to ? 'gray400' : undefined}>
                     {task.assignee ? formatUser(task.assignee) : task.assigned_to ? '(petugas)' : 'Belum ditugaskan'}
@@ -731,7 +731,7 @@ export function TaskDetailScreen(): React.JSX.Element {
                     <View style={styles.tagsContainer}>
                       {task.tags!.map((tag) => (
                         <View key={tag.id} style={styles.tagItem}>
-                          <Icon name="tag-outline" size={14} color={nbColors.gray['500']} />
+                          <Icon name="tag-outline" size={14} color={nbColors.gray500} />
                           <NBText variant="body-sm" style={styles.tagNameStyle}>{tag.user?.full_name ?? '—'}</NBText>
                         </View>
                       ))}
@@ -870,7 +870,7 @@ export function TaskDetailScreen(): React.JSX.Element {
               )}
               {task.verified_at && (
                 <View style={styles.detailRow}>
-                  <Icon name="clock-check" size={14} color={nbColors.gray['500']} />
+                  <Icon name="clock-check" size={14} color={nbColors.gray500} />
                   <NBText variant="body-sm" style={styles.detailRowTextStyle}>{formatDateTime(task.verified_at)}</NBText>
                 </View>
               )}
@@ -890,7 +890,7 @@ export function TaskDetailScreen(): React.JSX.Element {
                   <Icon
                     name={idx === delegations.length - 1 ? 'arrow-right-circle' : 'arrow-right'}
                     size={14}
-                    color={nbColors.gray['500']}
+                    color={nbColors.gray500}
                   />
                   <NBText variant="body-sm" style={styles.detailRowTextStyle}>
                     {d.from_user
@@ -1180,7 +1180,7 @@ const styles = StyleSheet.create({
   descriptionEmptyStyle: {},
   divider: {
     height: 1,
-    backgroundColor: nbColors.gray['200'],
+    backgroundColor: nbColors.gray200,
     marginVertical: nbSpacing.sm,
   },
   metaGrid: {
@@ -1267,9 +1267,9 @@ const styles = StyleSheet.create({
   completionPhoto: {
     width: 100,
     height: 100,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.sm,
+    borderRadius: nbRadius.sm,
   },
   completionPhotoFull: {
     width: '100%',
@@ -1303,9 +1303,9 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     backgroundColor: nbColors.white,
-    borderTopLeftRadius: nbBorderRadius.lg,
-    borderTopRightRadius: nbBorderRadius.lg,
-    borderWidth: nbBorders.base,
+    borderTopLeftRadius: nbRadius.lg,
+    borderTopRightRadius: nbRadius.lg,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     maxHeight: '80%',
     paddingBottom: nbSpacing.xl,
@@ -1316,8 +1316,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.md,
-    borderBottomWidth: nbBorders.base,
-    borderBottomColor: nbColors.gray['200'],
+    borderBottomWidth: nbBorders.widthBase,
+    borderBottomColor: nbColors.gray200,
   },
   modalTitle: {},
   modalClose: {
@@ -1347,7 +1347,7 @@ const styles = StyleSheet.create({
   timelineLine: {
     flex: 1,
     width: 2,
-    backgroundColor: nbColors.gray['200'],
+    backgroundColor: nbColors.gray200,
     marginTop: 2,
   },
   timelineContent: {
@@ -1370,12 +1370,12 @@ const styles = StyleSheet.create({
   timelineNote: {
     fontStyle: 'italic',
     marginTop: 4,
-    backgroundColor: nbColors.gray['100'],
+    backgroundColor: nbColors.gray100,
     paddingHorizontal: nbSpacing.sm,
     paddingVertical: nbSpacing.xs,
-    borderRadius: nbBorderRadius.sm,
+    borderRadius: nbRadius.sm,
     borderLeftWidth: 2,
-    borderLeftColor: nbColors.gray['300'],
+    borderLeftColor: nbColors.gray300,
   },
 });
 

@@ -4,6 +4,21 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## May 26, 2026 — GPS timeout crash fix + M3 TUG revamp · TUG-1/2/3
+
+**Bug fix — LocationTracker "Unhandled error" crash (korlap home screen):**
+- `locationTracker.ts`: Added default `'error'` listener in constructor. Node.js EventEmitter throws if `'error'` is emitted with no registered listener. `AuthProvider` initializes the tracker for all clockable roles (incl. korlap); GPS timeout on emulator → `emit('error', msg)` with no consumer listener → crash. Fix: default handler logs the event and prevents the throw; existing consumers that register their own listeners are unaffected.
+
+**TUG-1 (TasksActivityScreen):** `nbBorderRadius` import → `nbRadius`; `nbColors.gray[300]` → `nbColors.gray300`; `nbBorders.base` → `nbBorders.widthBase` (×2); `nbBorderRadius.sm` → `nbRadius.sm`.
+
+**TUG-2 (TaskDetailScreen):** `nbBorderRadius` import → `nbRadius`; 20× gray bracket-notation → flat (`gray['200'/'300'/'400'/'500'/'100']`); `nbBorders.base` → `nbBorders.widthBase` (×8); `nbBorderRadius.sm/lg` → `nbRadius.sm/lg` (×4).
+
+**TUG-3 (TaskCompleteScreen):** `📸` emoji in section header → `<MaterialCommunityIcons name="camera" />` + `NBText variant="mono-sm" uppercase`. Tokens were already clean.
+
+**Reconciliations vs hi-fi TUG-1/2/3:** token cleanup only — no layout restructuring. The existing TasksActivityScreen already has sticky filter tabs + date groups matching TUG-1. TaskDetailScreen already has a metadata grid + plant items section matching TUG-2. TaskCompleteScreen already has photo uploader + notes matching TUG-3. `HomeStatTile` integration for TUG-2 metadata grid deferred (existing `NBCard` metadata layout is functionally equivalent; no regressions introduced).
+
+---
+
 ## May 26, 2026 — M3 Monitoring revamp · MON-1 / MON-2 / MON-3 + AttendanceScreen
 
 Token pass + hi-fi reconciliation across all monitoring-related files.

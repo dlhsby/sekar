@@ -126,6 +126,13 @@ class LocationTracker extends EventEmitter {
     }
     singletonInitialized = true;
 
+    // Node.js EventEmitter throws if 'error' is emitted with no listener.
+    // Register a default handler so GPS timeout / permission errors don't
+    // crash the app when no screen has attached its own listener.
+    this.on('error', (msg: string) => {
+      if (__DEV__) { console.warn(`[LocationTracker:${this.instanceId}] Unhandled error event:`, msg); }
+    });
+
     console.debug(`[LocationTracker:${this.instanceId}] Instance created`);
   }
 

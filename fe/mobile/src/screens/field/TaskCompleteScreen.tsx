@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBButton, NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern, NBCardTextInput, NBText } from '../../components/nb';
 import { PhotoUploader } from '../../components/common';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
@@ -167,7 +168,10 @@ export function TaskCompleteScreen(): React.JSX.Element {
         {/* Photo Evidence */}
         <NBCard style={styles.card}>
           <NBCardHeader>
-            <NBText variant="h3" style={styles.sectionTitleStyle}>📸 FOTO BUKTI *</NBText>
+            <View style={styles.photoHeaderRow}>
+              <MaterialCommunityIcons name="camera" size={16} color={nbColors.black} />
+              <NBText variant="mono-sm" style={styles.photoHeaderText}>FOTO BUKTI *</NBText>
+            </View>
             <NBText variant="body-sm" style={styles.sectionSubtitleStyle}>Tambahkan 1-3 foto hasil pekerjaan</NBText>
           </NBCardHeader>
           <NBCardContent>
@@ -207,6 +211,8 @@ const styles = StyleSheet.create({
   sectionSubtitleStyle: { marginBottom: nbSpacing.md },
   taskTitleStyle: { marginBottom: nbSpacing.xs },
   taskAreaStyle: {},
+  photoHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs },
+  photoHeaderText: { textTransform: 'uppercase' },
   actionContainer: { marginHorizontal: nbSpacing.md, marginTop: nbSpacing.md, gap: nbSpacing.sm },
 });
 

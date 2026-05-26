@@ -76,9 +76,9 @@
 | MON-1 | Map · Korlap view | monitoring screen + `components/monitoring/*` | ✅ Done (2026-05-26) — tokens clean; MapFab rounded-square |
 | MON-2 | Personnel sheet | `UserDetailSheet.tsx` | ✅ Done (2026-05-26) — RoleAvatar + HomeStatTile + NBText/NBButton; Info Shift/Tasks/WhatsApp OMITTED per hi-fi |
 | MON-3 | Tools FAB · expanded | `MapDashboardScreen` inline toolbox | ✅ Done (2026-05-26) — wrench FAB + inline overlay card replaces 4-button column |
-| TUG-1 | Tugas list · filtered tabs | tasks list screen | Revamp |
-| TUG-2 | Tugas detail | TaskDetailScreen | Revamp |
-| TUG-3 | Selesaikan tugas | task completion screen | Revamp |
+| TUG-1 | Tugas list · filtered tabs | `fe/mobile/src/screens/taskActivity/TasksActivityScreen.tsx` | ✅ Done (2026-05-26) — Phase 2 token shims removed; `nbBorders.base→widthBase`, `nbBorderRadius→nbRadius`, `gray[xxx]→grayXXX` |
+| TUG-2 | Tugas detail | `fe/mobile/src/screens/field/TaskDetailScreen.tsx` | ✅ Done (2026-05-26) — 20× gray bracket-notation → flat; all nbBorders.base/nbBorderRadius shims migrated |
+| TUG-3 | Selesaikan tugas | `fe/mobile/src/screens/field/TaskCompleteScreen.tsx` | ✅ Done (2026-05-26) — 📸 emoji → MaterialCommunityIcons camera; tokens were already clean |
 | AKT-1 | Submit aktivitas | ActivitySubmissionScreen | Revamp |
 | AKT-2 | Aktivitas list | ActivitiesScreen | Revamp |
 | LBR-1 | Lembur list | OvertimeListScreen | Revamp |
