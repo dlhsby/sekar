@@ -70,3 +70,7 @@ export type { NBModalProps, NBModalType, NBModalSize } from './NBModal';
 // Toast (Phase 3 M1-R 3-R3)
 export { NBToast, NBToastProvider, nbToastConfig } from './NBToast';
 export type { NBToastOptions, NBToastLevel } from './NBToast';
+
+// Collapsible Card
+export { NBCollapsibleCard } from './NBCollapsibleCard';
+export type { NBCollapsibleCardProps } from './NBCollapsibleCard';

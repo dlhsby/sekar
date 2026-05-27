@@ -436,7 +436,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       });
 
       // Expand the card
-      fireEvent.press(getByLabelText('Tampilkan detail area'));
+      fireEvent.press(getByLabelText('Detail area'));
 
       await waitFor(() => {
         expect(getByText('Tipe Area:')).toBeTruthy();
