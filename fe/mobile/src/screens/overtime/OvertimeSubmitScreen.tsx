@@ -98,6 +98,17 @@ function formatTime(isoString: string): string {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+// ─── Date hero helpers ────────────────────────────────────────────────────────
+
+const DATE_HERO_DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const DATE_HERO_MONTH_NAMES = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+function formatDateHero(d: Date): string {
+  const day = DATE_HERO_DAY_NAMES[d.getDay()];
+  const month = DATE_HERO_MONTH_NAMES[d.getMonth()];
+  return `${day}, ${d.getDate()} ${month} ${d.getFullYear()}`;
+}
+
 // ─── Form Errors ──────────────────────────────────────────────────────────────
 
 interface StartErrors {
@@ -518,6 +529,12 @@ export const OvertimeSubmitScreen: React.FC<
           {/* ── STATE A: No active overtime ────────────────────────────────── */}
           {!activeOvertime && (
             <>
+              {/* Date hero */}
+              <View style={styles.dateHero}>
+                <NBText variant="mono-sm" color="gray600" uppercase style={{ letterSpacing: 0.8 }}>TANGGAL</NBText>
+                <NBText variant="h2" color="black" style={{ marginTop: 2 }}>{formatDateHero(new Date())}</NBText>
+              </View>
+
               {/* Error summary */}
               {Object.values(startErrors).some(Boolean) && (
                 <View style={[styles.errorSummary, styles.card]}>
@@ -633,13 +650,10 @@ export const OvertimeSubmitScreen: React.FC<
                 </View>
               )}
 
-              {/* Active overtime info */}
-              <View style={styles.card}>
-                <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6, marginBottom: nbSpacing.sm }}>LEMBUR BERLANGSUNG</NBText>
-                <View style={styles.timerContainer}>
-                  <NBText variant="body-sm" color="gray600" style={styles.timerLabel}>Durasi Lembur</NBText>
-                  <NBText variant="display-xl" color="statusIdle" style={styles.timerValue}>{elapsed}</NBText>
-                </View>
+              {/* Active overtime info — DURASI tinted card */}
+              <View style={[styles.card, styles.durasiCard]}>
+                <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.8, marginBottom: nbSpacing.xs }}>DURASI</NBText>
+                <NBText variant="display-xl" color="statusIdle" style={styles.timerValue}>{elapsed}</NBText>
                 <View style={styles.startTimeRow}>
                   <NBText variant="body-sm" color="gray600" style={styles.startTimeLabel}>Mulai:</NBText>
                   <NBText variant="body-sm" color="black" style={styles.startTimeValue}>
@@ -878,13 +892,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: nbSpacing.sm,
   },
+  dateHero: {
+    alignItems: 'center',
+    paddingVertical: nbSpacing.md,
+    paddingHorizontal: nbSpacing.md,
+    backgroundColor: withAlpha(nbColors.primary, 0.1),
+    borderRadius: nbRadius.md,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    marginBottom: nbSpacing.md,
+    ...nbShadows.sm,
+  },
+  durasiCard: {
+    backgroundColor: withAlpha(nbColors.statusIdle, 0.08),
+    alignItems: 'center',
+  },
   timerContainer: {
     alignItems: 'center',
     marginBottom: nbSpacing.sm,
-  },
-  timerLabel: {
-    // Typography handled by NBText variant="body-sm" color="gray600"
-    marginBottom: nbSpacing.xs,
   },
   timerValue: {
     // Typography handled by NBText variant="display-xl" color="warning"

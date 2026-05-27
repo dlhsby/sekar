@@ -4,6 +4,17 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## May 27, 2026 — M3 LBR revamp · LBR-2 (OvertimeSubmitScreen)
+
+**LBR-2 — OvertimeSubmitScreen hi-fi layout revamp:**
+- State A: date hero card inserted above subtitle row — "TANGGAL" mono-sm label + Indonesian full date (`h2`), `withAlpha(primary, 0.1)` tinted bg + hard-edge shadow.
+- State B: active overtime card restructured — "DURASI" mono-sm uppercase header replaces "LEMBUR BERLANGSUNG", `withAlpha(statusIdle, 0.08)` amber tint, centred `display-xl` elapsed timer with no secondary "Durasi Lembur" label.
+- No business logic changes (validation, draft, GPS, offline handling untouched).
+
+**30/30 tests pass (0 regressions).**
+
+---
+
 ## May 27, 2026 — M3 LBR revamp · LBR-1 (OvertimeCard + OvertimeListScreen)
 
 **LBR-1 — OvertimeCard token violations fixed:**
