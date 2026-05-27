@@ -4,6 +4,23 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## May 27, 2026 — M3 LBR revamp · LBR-1 (OvertimeCard + OvertimeListScreen)
+
+**LBR-1 — OvertimeCard token violations fixed:**
+- Replaced `<Text>` → `<NBText>` for all text nodes (activity name, timestamp, description, meta chips, creator row).
+- Replaced `nbTypography.fontSize.*` / `nbTypography.fontWeight.*` → NBText variants (no manual fontSize in StyleSheet).
+- Replaced `nbColors.gray['500']`/`nbColors.gray['600']` → flat `nbColors.gray500`/`gray600`.
+- Emoji meta chips (🕐📍📸👤) → `MaterialCommunityIcons` + `NBText` rows.
+
+**LBR-1 — OvertimeListScreen monthly summary card:**
+- `monthlySummary` useMemo: filters `allOvertimes` to current month → `approvedCount / totalCount` + total approved hours.
+- Summary card (primary-tinted bg): "JAM LEMBUR · BULAN INI" label + large hour display + "X dari Y ACC" status pill.
+- `nbBorderRadius.sm` → `nbRadius.sm` (×2 Phase 2 shim removed).
+
+**31/31 tests pass (20 OvertimeCard + 11 OvertimeList, 0 regressions).**
+
+---
+
 ## May 27, 2026 — M3 ABS revamp · ABS-3 (ShiftHistoryScreen)
 
 **ABS-3 — ShiftHistoryScreen hi-fi layout revamp:**

@@ -4,12 +4,12 @@
  */
 
 import React from 'react';
-import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
-import { NBCard, NBBadge } from '../../../components/nb';
+import { TouchableOpacity, View, StyleSheet } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { NBCard, NBBadge, NBText } from '../../../components/nb';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
 } from '../../../constants/nbTokens';
 import {
   getOvertimeStatusColor,
@@ -25,7 +25,7 @@ interface OvertimeCardProps {
 }
 
 export function OvertimeCard({ overtime, onPress }: OvertimeCardProps): React.JSX.Element {
-  const durationStr = formatDurationHours(overtime.start_datetime, overtime.end_datetime);
+  const durationStr = formatDurationHours(overtime.start_datetime ?? '', overtime.end_datetime ?? '');
   const createdDate = formatDateIndonesian(overtime.created_at);
   const createdTime = new Date(overtime.created_at).toLocaleTimeString('id-ID', {
     hour: '2-digit',
@@ -45,12 +45,12 @@ export function OvertimeCard({ overtime, onPress }: OvertimeCardProps): React.JS
         {/* Header: activity type + created time | status badge */}
         <View style={styles.itemHeader}>
           <View style={styles.itemHeaderLeft}>
-            <Text style={styles.itemPrimary} numberOfLines={1}>
+            <NBText variant="body" color="black" numberOfLines={1} style={{ marginBottom: 2 }}>
               {overtime.activityType?.name ?? 'Lembur'}
-            </Text>
-            <Text style={styles.itemTimestamp}>
+            </NBText>
+            <NBText variant="caption" color="gray500">
               {createdDate} · {createdTime}
-            </Text>
+            </NBText>
           </View>
           <View style={styles.itemHeaderRight}>
             <NBBadge
@@ -62,27 +62,39 @@ export function OvertimeCard({ overtime, onPress }: OvertimeCardProps): React.JS
 
         {/* Description */}
         {overtime.description ? (
-          <Text style={styles.itemDescription} numberOfLines={2}>
+          <NBText variant="body-sm" color="gray600" numberOfLines={2} style={{ marginBottom: nbSpacing.xs }}>
             {overtime.description}
-          </Text>
+          </NBText>
         ) : null}
 
         {/* Meta row: duration, area, photos */}
         <View style={styles.itemMeta}>
-          <Text style={styles.itemMetaChip}>🕐 {durationStr}</Text>
+          <View style={styles.metaChip}>
+            <MaterialCommunityIcons name="clock-outline" size={12} color={nbColors.gray500} style={{ marginRight: 3 }} />
+            <NBText variant="caption" color="gray500">{durationStr}</NBText>
+          </View>
           {overtime.area && (
-            <Text style={styles.itemMetaChip}>📍 {overtime.area.name}</Text>
+            <View style={styles.metaChip}>
+              <MaterialCommunityIcons name="map-marker-outline" size={12} color={nbColors.gray500} style={{ marginRight: 3 }} />
+              <NBText variant="caption" color="gray500">{overtime.area.name}</NBText>
+            </View>
           )}
           {overtime.photo_urls && overtime.photo_urls.length > 0 && (
-            <Text style={styles.itemMetaChip}>📸 {overtime.photo_urls.length} foto</Text>
+            <View style={styles.metaChip}>
+              <MaterialCommunityIcons name="camera-outline" size={12} color={nbColors.gray500} style={{ marginRight: 3 }} />
+              <NBText variant="caption" color="gray500">{overtime.photo_urls.length} foto</NBText>
+            </View>
           )}
         </View>
 
         {/* Creator row */}
         {overtime.user && (
-          <Text style={styles.itemCreator}>
-            👤 {overtime.user.role} - {overtime.user.full_name}
-          </Text>
+          <View style={styles.creatorRow}>
+            <MaterialCommunityIcons name="account-outline" size={12} color={nbColors.gray500} style={{ marginRight: 3 }} />
+            <NBText variant="caption" color="gray500">
+              {overtime.user.role} - {overtime.user.full_name}
+            </NBText>
+          </View>
         )}
       </NBCard>
     </TouchableOpacity>
@@ -109,35 +121,19 @@ const styles = StyleSheet.create({
   itemHeaderRight: {
     alignItems: 'flex-end',
   },
-  itemPrimary: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
-    marginBottom: 2,
-  },
-  itemTimestamp: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray[500],
-  },
-  itemDescription: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[600],
-    marginBottom: nbSpacing.xs,
-    lineHeight: 18,
-  },
   itemMeta: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: nbSpacing.xs,
     marginTop: 2,
   },
-  itemMetaChip: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray[500],
+  metaChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  itemCreator: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray[500],
+  creatorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: nbSpacing.xs,
   },
 });

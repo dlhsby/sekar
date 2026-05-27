@@ -81,7 +81,7 @@
 | TUG-3 | Selesaikan tugas | `fe/mobile/src/screens/field/TaskCompleteScreen.tsx` | ✅ Done (2026-05-26) — 📸 emoji → MaterialCommunityIcons camera; tokens were already clean |
 | AKT-1 | Submit aktivitas | `fe/mobile/src/screens/field/ActivitySubmissionScreen.tsx` | ✅ Done (2026-05-27) — emoji section headers → MaterialCommunityIcons; all Phase 2 token shims removed; supporting files: ActivityCard, ActivitiesTab, ActivityDetailScreen, TaskCard, TasksTab, PlantStatusChip, SortModal, TaskCreateScreen |
 | AKT-2 | Aktivitas list | `fe/mobile/src/screens/taskActivity/tabs/ActivitiesTab.tsx` | ✅ Done (2026-05-27) — raw Text → NBText; nbTypography/nbBorderRadius shims removed |
-| LBR-1 | Lembur list | OvertimeListScreen | Revamp |
+| LBR-1 | Lembur list | OvertimeListScreen | ✅ Done (2026-05-27) — monthly summary card (JAM LEMBUR · BULAN INI, X dari Y ACC pill); OvertimeCard: raw Text→NBText, nbTypography→variants, emoji chips→MaterialCommunityIcons |
 | LBR-2 | Ajukan lembur | OvertimeCreateScreen | Revamp |
 | LBR-3 | Detail lembur · disetujui | OvertimeDetailScreen | Revamp |
 | PRT-1 | Submit · Kecamatan | `fe/mobile/src/screens/pruningRequests/SubmitScreen.tsx` | Revamp (keeps Apr-27/28 Phase 3 redesign; visual pass to v2.1) |
