@@ -486,7 +486,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardOutside: {
-    borderColor: nbColors.statusOutside,
     backgroundColor: withAlpha(nbColors.statusOutsideBg, 0.5),
   },
   header: {

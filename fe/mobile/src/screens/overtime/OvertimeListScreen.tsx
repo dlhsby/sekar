@@ -32,8 +32,6 @@ import {
   nbSpacing,
   nbBorders,
   nbRadius,
-  nbShadows,
-  withAlpha,
 } from '../../constants/nbTokens';
 import type { MainTabParamList } from '../../types/navigation.types';
 import type { OvertimeFilter } from '../../types/api.types';
@@ -102,24 +100,6 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
     if (filters.user_id) { count++; }
     return count;
   }, [filters]);
-
-  // Monthly summary (JAM LEMBUR · BULAN INI)
-  const monthlySummary = useMemo(() => {
-    const now = new Date();
-    const thisMonth = allOvertimes.filter((o) => {
-      const d = new Date(o.start_datetime ?? o.created_at);
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    });
-    const approvedCount = thisMonth.filter((o) => o.status === 'approved').length;
-    const totalCount = thisMonth.length;
-    const totalHours = thisMonth
-      .filter((o) => o.status === 'approved' && o.start_datetime && o.end_datetime)
-      .reduce((acc, o) => {
-        const ms = new Date(o.end_datetime!).getTime() - new Date(o.start_datetime!).getTime();
-        return acc + ms / (1000 * 60 * 60);
-      }, 0);
-    return { approvedCount, totalCount, totalHours: Math.round(totalHours) };
-  }, [allOvertimes]);
 
   // Filter chips — colored like TasksActivityScreen
   const filterChips = useMemo(() => {
@@ -271,31 +251,7 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
           <NBText variant="h3" style={styles.pageTitle}>Lembur</NBText>
         </View>
 
-        {/* Monthly Summary Card */}
-        <View style={styles.monthlySummaryCard}>
-          <View style={styles.monthlySummaryLeft}>
-            <NBText variant="mono-sm" color="gray600" uppercase style={{ letterSpacing: 0.6 }}>
-              JAM LEMBUR · BULAN INI
-            </NBText>
-            <NBText variant="display" color="black" style={{ marginTop: 2 }}>
-              {monthlySummary.totalHours}j
-            </NBText>
-          </View>
-          <View style={styles.monthlySummaryRight}>
-            <View style={[
-              styles.monthlySummaryPill,
-              monthlySummary.approvedCount === monthlySummary.totalCount && monthlySummary.totalCount > 0
-                ? styles.pillAllApproved
-                : styles.pillPartial,
-            ]}>
-              <NBText variant="caption" color="black">
-                {monthlySummary.approvedCount} dari {monthlySummary.totalCount} ACC
-              </NBText>
-            </View>
-          </View>
-        </View>
-
-        {/* Filter Bar — indented with outer margin, matching TAT */}
+        {/* Filter Bar */}
         <View style={[styles.filterBarCollapsed, activeFilterCount > 0 && styles.filterBarActive]}>
           <View style={styles.filterBarLeft}>
             {filterChips.length > 0 ? (
@@ -479,50 +435,14 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   // Monthly summary card
-  monthlySummaryCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginHorizontal: nbSpacing.md,
-    marginBottom: nbSpacing.sm,
-    padding: nbSpacing.md,
-    backgroundColor: withAlpha(nbColors.primary, 0.1),
-    borderRadius: nbRadius.md,
-    borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.black,
-    ...nbShadows.sm,
-  },
-  monthlySummaryLeft: {
-    flex: 1,
-  },
-  monthlySummaryRight: {
-    alignItems: 'flex-end',
-  },
-  monthlySummaryPill: {
-    paddingHorizontal: nbSpacing.sm,
-    paddingVertical: 3,
-    borderRadius: nbRadius.sm,
-    borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.black,
-  },
-  pillAllApproved: {
-    backgroundColor: nbColors.statusActiveBg,
-  },
-  pillPartial: {
-    backgroundColor: nbColors.warningLight,
-  },
-  // Filter bar — marginHorizontal matches TAT contentWrapper padding
   filterBarCollapsed: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: nbSpacing.sm,
+    paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.xs,
     backgroundColor: nbColors.white,
-    borderBottomWidth: nbBorders.extra,
+    borderBottomWidth: nbBorders.widthBase,
     borderBottomColor: nbColors.gray300,
-    ...nbShadows.md,
-    marginHorizontal: nbSpacing.md,
-    marginBottom: nbSpacing.sm,
     minHeight: 48,
   },
   filterBarActive: {
@@ -612,7 +532,6 @@ const styles = StyleSheet.create({
     bottom: nbSpacing.md,
     left: nbSpacing.md,
     right: nbSpacing.md,
-    zIndex: 10,
   },
   fabBlockedHint: {
     // Typography (fontSize, fontWeight, color) handled by NBText variant="body-sm" color="warning"
