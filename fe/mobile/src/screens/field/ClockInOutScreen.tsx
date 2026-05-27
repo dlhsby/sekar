@@ -266,6 +266,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             }
             defaultExpanded
             accessibilityLabel="Lokasi GPS"
+            style={styles.gpsCard}
           >
             {/* GPS status row */}
             <View style={styles.gpsStatusRow}>
@@ -447,8 +448,11 @@ const styles = StyleSheet.create({
   cardLabel: {
     marginBottom: nbSpacing.xs,
   },
-  staticCard: {
+  gpsCard: {
     backgroundColor: nbColors.statusIdleBg,
+  },
+  staticCard: {
+    backgroundColor: nbColors.white,
     borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     borderRadius: nbRadius.md,

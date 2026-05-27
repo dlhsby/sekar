@@ -64,7 +64,7 @@ export function NBCollapsibleCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: nbColors.statusIdleBg,
+    backgroundColor: nbColors.white,
     borderRadius: nbRadius.md,
     borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
