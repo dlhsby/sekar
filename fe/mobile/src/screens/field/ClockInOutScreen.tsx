@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
   timeHeroCard: {
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.md,
-    backgroundColor: withAlpha(nbColors.primary, 0.1),
+    backgroundColor: nbColors.white,
     borderRadius: nbRadius.md,
     borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
@@ -533,7 +533,7 @@ const styles = StyleSheet.create({
     paddingBottom: nbSpacing.sm,
     paddingTop: nbSpacing.xs,
     borderTopWidth: nbBorders.widthThin,
-    borderTopColor: withAlpha(nbColors.black, 0.15),
+    borderTopColor: nbColors.gray200,
     alignItems: 'center',
   },
   timeHeroTime: {
@@ -547,9 +547,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  cardOutside: {
-    backgroundColor: withAlpha(nbColors.statusOutsideBg, 0.5),
-  },
+  cardOutside: {},
   header: {
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.sm,
