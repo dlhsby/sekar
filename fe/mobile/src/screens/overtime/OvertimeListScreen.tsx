@@ -514,6 +514,7 @@ const styles = StyleSheet.create({
   // List — wrapper shrinks the frame above FAB, mirrors TAT contentWrapper pattern
   listWrapper: {
     flex: 1,
+    paddingTop: nbSpacing.sm,
   },
   listWrapperWithFab: {
     paddingBottom: 80,

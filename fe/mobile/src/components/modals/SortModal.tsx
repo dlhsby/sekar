@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { NBModal } from '../nb';
-import { nbColors, nbTypography, nbBorders, nbSpacing } from '../../constants/nbTokens';
+import { NBModal, NBText } from '../nb';
+import { nbColors, nbBorders, nbSpacing } from '../../constants/nbTokens';
 
 export interface SortOption {
   key: string;
@@ -44,9 +44,13 @@ export function SortModal({
             accessibilityLabel={opt.label}
             accessibilityState={{ selected: selectedOption === opt.key }}
           >
-            <Text style={[styles.optionText, selectedOption === opt.key && styles.optionTextActive]}>
+            <NBText
+              variant="body"
+              color={selectedOption === opt.key ? 'black' : 'black'}
+              style={selectedOption === opt.key ? styles.optionTextActive : undefined}
+            >
               {opt.label}
-            </Text>
+            </NBText>
             {selectedOption === opt.key && (
               <MaterialCommunityIcons name="check-bold" size={18} color={nbColors.primary} />
             )}
@@ -64,21 +68,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderBottomWidth: nbBorders.base,
+    borderBottomWidth: nbBorders.widthBase,
     borderBottomColor: nbColors.gray200,
   },
   optionActive: {
-    borderLeftWidth: nbBorders.thick,
+    borderLeftWidth: nbBorders.widthThick,
     borderLeftColor: nbColors.primary,
     paddingLeft: nbSpacing.sm,
   },
-  optionText: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.black,
-  },
   optionTextActive: {
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
+    fontWeight: '700',
   },
 });

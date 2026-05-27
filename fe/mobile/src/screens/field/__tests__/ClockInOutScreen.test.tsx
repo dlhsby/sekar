@@ -433,7 +433,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       },
     });
 
-    const { getByText } = render(
+    const { getByText, getAllByText } = render(
       <Provider store={store}>
         <NavigationContainer>
           <ClockInOutScreen />
@@ -441,14 +441,15 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       </Provider>
     );
 
-    // Clock-out subtitle should appear
-    await waitFor(() => {
-      expect(getByText('Konfirmasi lokasi untuk mengakhiri shift')).toBeTruthy();
-    });
-
     // Clock Out button should be available (no selfie required for clock-out)
     await waitFor(() => {
       expect(getByText('Clock Out')).toBeTruthy();
+    });
+
+    // Expand time hero to see subtitle (first \d{2}:\d{2} match is the time hero)
+    fireEvent.press(getAllByText(/\d{2}:\d{2}/)[0]);
+    await waitFor(() => {
+      expect(getByText('Konfirmasi lokasi untuk mengakhiri shift')).toBeTruthy();
     });
   });
 

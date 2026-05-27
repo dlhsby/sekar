@@ -1,27 +1,23 @@
 /**
  * GPS Location Section
  * Reusable component for displaying and refreshing GPS location.
- * Matches the style of ActivitySubmissionScreen's GPS section.
- * Used in OvertimeSubmitScreen, can be used in any form requiring GPS.
+ * Used in OvertimeSubmitScreen and any form requiring GPS capture.
  */
 
 import React from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ActivityIndicator,
   Platform,
 } from 'react-native';
-import { NBButton } from '../nb';
+import { NBButton, NBText } from '../nb';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
   nbShadows,
-  withAlpha,
 } from '../../constants/nbTokens';
 import type { Coordinates } from '../../types/models.types';
 
@@ -40,26 +36,28 @@ export function GPSLocationSection({
 }: GPSLocationSectionProps) {
   return (
     <View style={styles.container}>
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {error ? <NBText variant="body-sm" color="danger">{error}</NBText> : null}
 
       {isCapturing ? (
         <View style={styles.locationLoading}>
           <ActivityIndicator color={nbColors.primary} />
-          <Text style={styles.locationLoadingText}>Mendapatkan lokasi...</Text>
+          <NBText variant="body-sm" color="gray600" style={{ marginLeft: nbSpacing.sm }}>
+            Mendapatkan lokasi...
+          </NBText>
         </View>
       ) : location ? (
         <View style={styles.locationInfo}>
-          <Text style={styles.locationText}>
+          <NBText variant="body-sm" color="black" style={styles.locationText}>
             {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
-          </Text>
+          </NBText>
           {location.accuracy != null && (
-            <Text style={styles.locationAccuracy}>
+            <NBText variant="caption" color="gray600" style={{ marginTop: nbSpacing.xs }}>
               Akurasi: ±{Math.round(location.accuracy)}m
-            </Text>
+            </NBText>
           )}
         </View>
       ) : (
-        <Text style={styles.locationUnavailable}>Lokasi tidak tersedia</Text>
+        <NBText variant="body-sm" color="danger">Lokasi tidak tersedia</NBText>
       )}
 
       <NBButton
@@ -79,40 +77,18 @@ const styles = StyleSheet.create({
   locationLoading: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: nbSpacing.md,
-  },
-  locationLoadingText: {
-    marginLeft: nbSpacing.sm,
-    color: nbColors.gray['600'],
-    fontSize: nbTypography.fontSize.sm,
+    padding: nbSpacing.sm,
   },
   locationInfo: {
-    padding: nbSpacing.lg,
-    backgroundColor: withAlpha(nbColors.accentSky, 0.15),
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
+    padding: nbSpacing.md,
+    backgroundColor: nbColors.gray50,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },
   locationText: {
-    fontSize: nbTypography.fontSize.lg,
-    color: nbColors.black,
-    fontWeight: nbTypography.fontWeight.bold,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  locationAccuracy: {
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray['700'],
-    fontWeight: nbTypography.fontWeight.medium,
-    marginTop: nbSpacing.sm,
-  },
-  locationUnavailable: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.danger,
-    fontWeight: nbTypography.fontWeight.regular,
-  },
-  errorText: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.danger,
+    letterSpacing: 0.5,
   },
 });

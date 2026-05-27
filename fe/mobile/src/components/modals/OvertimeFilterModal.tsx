@@ -7,16 +7,14 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
 
-import { NBSelect, NBDatePicker, NBModal } from '../nb';
+import { NBSelect, NBDatePicker, NBModal, NBText } from '../nb';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
   nbBorders,
 } from '../../constants/nbTokens';
 import type { OvertimeFilter } from '../../types/api.types';
@@ -218,21 +216,21 @@ export function OvertimeFilterModal({
             onPress={handleReset}
             accessibilityRole="button"
           >
-            <Text style={styles.resetButtonText}>Reset</Text>
+            <NBText variant="body-sm" color="black" style={styles.actionButtonText}>Reset</NBText>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionButton, styles.applyButton]}
             onPress={handleApply}
             accessibilityRole="button"
           >
-            <Text style={styles.applyButtonText}>Terapkan</Text>
+            <NBText variant="body-sm" color="white" style={styles.actionButtonText}>Terapkan</NBText>
           </TouchableOpacity>
         </View>
       }
     >
       {/* 1. Status */}
       <View style={styles.filterSection}>
-        <Text style={styles.filterLabel}>Status</Text>
+        <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>Status</NBText>
         <NBSelect
           value={localStatus || 'all'}
           onValueChange={(v) => setLocalStatus(v === 'all' ? '' : String(v))}
@@ -248,7 +246,7 @@ export function OvertimeFilterModal({
 
       {/* 2. Rentang Tanggal */}
       <View style={styles.filterSection}>
-        <Text style={styles.filterLabel}>Rentang Tanggal</Text>
+        <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>Rentang Tanggal</NBText>
         <View style={styles.dateRangeRow}>
           <View style={styles.dateButtonHalf}>
             <NBDatePicker
@@ -258,7 +256,7 @@ export function OvertimeFilterModal({
               maximumDate={dateToParsed ?? undefined}
             />
           </View>
-          <Text style={styles.dateSeparator}>→</Text>
+          <NBText variant="body" color="gray500" style={styles.dateSeparator}>→</NBText>
           <View style={styles.dateButtonHalf}>
             <NBDatePicker
               value={dateToParsed}
@@ -273,7 +271,7 @@ export function OvertimeFilterModal({
       {/* 3. Rayon — role-gated */}
       {showRayon && (
         <View style={styles.filterSection}>
-          <Text style={styles.filterLabel}>Rayon</Text>
+          <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>Rayon</NBText>
           {isRayonFixed ? (
             <NBSelect
               value={userRayonId ?? 'all'}
@@ -301,7 +299,7 @@ export function OvertimeFilterModal({
 
       {/* 4. Area */}
       <View style={styles.filterSection}>
-        <Text style={styles.filterLabel}>Area</Text>
+        <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>Area</NBText>
         {isAreaFixed ? (
           <NBSelect
             value={userAreaId ?? 'all'}
@@ -329,7 +327,7 @@ export function OvertimeFilterModal({
       {/* 5. Dibuat Oleh — hidden for satgas/linmas */}
       {!isFieldWorker && (
         <View style={styles.filterSection}>
-          <Text style={styles.filterLabel}>Dibuat Oleh</Text>
+          <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>Dibuat Oleh</NBText>
           <NBSelect
             value={localUserId || 'all'}
             onValueChange={(v) => setLocalUserId(v === 'all' ? '' : String(v))}
@@ -353,14 +351,10 @@ export function OvertimeFilterModal({
 
 const styles = StyleSheet.create({
   filterSection: {
-    marginBottom: nbSpacing.md + 4,
+    marginBottom: nbSpacing.md,
   },
   filterLabel: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray['600'],
-    marginBottom: nbSpacing.xs + 2,
-    textTransform: 'uppercase',
+    marginBottom: nbSpacing.xs,
     letterSpacing: 0.8,
   },
   dateRangeRow: {
@@ -372,8 +366,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dateSeparator: {
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray['500'],
     alignSelf: 'center',
     paddingHorizontal: 2,
   },
@@ -386,26 +378,18 @@ const styles = StyleSheet.create({
     paddingVertical: nbSpacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     minHeight: 46,
+  },
+  actionButtonText: {
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   resetButton: {
     backgroundColor: nbColors.white,
   },
-  resetButtonText: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
-    letterSpacing: 0.3,
-  },
   applyButton: {
     backgroundColor: nbColors.primary,
-  },
-  applyButtonText: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.white,
-    letterSpacing: 0.3,
   },
 });

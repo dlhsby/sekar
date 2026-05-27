@@ -123,7 +123,7 @@ function SheetModal({
       keyboardBehavior={avoidKeyboard ? 'interactive' : undefined}
     >
       {scrollable ? (
-        <>
+        <View style={styles.contentFlex}>
           {titleBarNode}
           <BottomSheetScrollView
             testID={testID}
@@ -135,7 +135,7 @@ function SheetModal({
             {children}
           </BottomSheetScrollView>
           {footer ? <View style={styles.footerWrap}>{footer}</View> : null}
-        </>
+        </View>
       ) : (
         <View testID={testID} style={styles.contentFlex}>
           {titleBarNode}

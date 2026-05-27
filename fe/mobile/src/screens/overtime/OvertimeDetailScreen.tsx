@@ -801,7 +801,6 @@ const styles = StyleSheet.create({
   },
   descriptionText: {
     // Typography handled by NBText variant="body" color="black"
-    lineHeight: 1.5,
   },
   descriptionPlaceholder: {
     // Color handled by NBText color="gray400"

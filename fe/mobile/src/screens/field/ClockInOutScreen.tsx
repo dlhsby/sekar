@@ -47,6 +47,8 @@ export const ClockInOutScreen = (): React.JSX.Element => {
   const [isAreaExpanded, setIsAreaExpanded] = useState(false);
   const [isLocationExpanded, setIsLocationExpanded] = useState(true);
   const [isSelfieExpanded, setIsSelfieExpanded] = useState(false);
+  const [isTimeHeroExpanded, setIsTimeHeroExpanded] = useState(false);
+  const [isGpsExpanded, setIsGpsExpanded] = useState(true);
   const [selfiePreviewUri, setSelfiePreviewUri] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(() => new Date());
 
@@ -159,20 +161,36 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             </View>
           )}
 
-          {/* Time Hero */}
-          <View style={styles.timeHero}>
+          {/* Time Hero — collapsible */}
+          <TouchableOpacity
+            style={styles.timeHeroCollapsed}
+            onPress={() => setIsTimeHeroExpanded(v => !v)}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={isTimeHeroExpanded ? 'Sembunyikan jam' : 'Tampilkan detail waktu'}
+            accessibilityState={{ expanded: isTimeHeroExpanded }}
+          >
             <NBText variant="display" color="black" style={styles.timeHeroTime}>
               {formatTimeHero(currentTime)}
             </NBText>
-            <NBText variant="mono-sm" color="gray600">
-              {formatDateHero(currentTime)}
-            </NBText>
-            <NBText variant="body-sm" color="gray600" style={{ marginTop: nbSpacing.xs, textAlign: 'center' }}>
-              {isClockIn
-                ? 'Ambil foto diri dan konfirmasi lokasi untuk memulai shift'
-                : 'Konfirmasi lokasi untuk mengakhiri shift'}
-            </NBText>
-          </View>
+            <MaterialCommunityIcons
+              name={isTimeHeroExpanded ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={nbColors.gray700}
+            />
+          </TouchableOpacity>
+          {isTimeHeroExpanded && (
+            <View style={styles.timeHeroBody}>
+              <NBText variant="mono-sm" color="gray600">
+                {formatDateHero(currentTime)}
+              </NBText>
+              <NBText variant="body-sm" color="gray600" style={{ marginTop: nbSpacing.xs, textAlign: 'center' }}>
+                {isClockIn
+                  ? 'Ambil foto diri dan konfirmasi lokasi untuk memulai shift'
+                  : 'Konfirmasi lokasi untuk mengakhiri shift'}
+              </NBText>
+            </View>
+          )}
 
           {/* Area Info Card - Collapsible (hidden for rayon-scoped roles without area) */}
           {assignedArea ? (
@@ -273,130 +291,149 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             </View>
           )}
 
-          {/* Location Card */}
+          {/* Location Card — collapsible */}
           <View style={[
             styles.card,
             (location.latitude != null && !isWithinBoundary) ? styles.cardOutside : null,
           ]}>
-            {/* Always-visible GPS status summary */}
-            <View style={styles.gpsStatusRow}>
-              <MaterialCommunityIcons
-                name={location.latitude ? 'crosshairs-gps' : 'crosshairs'}
-                size={18}
-                color={location.latitude
-                  ? (isWithinBoundary ? nbColors.statusActive : nbColors.statusOutside)
-                  : nbColors.gray500
-                }
-                style={{ marginRight: nbSpacing.sm }}
-              />
-              <View style={{ flex: 1 }}>
-                <NBText variant="body-sm" color={location.latitude ? 'black' : 'gray600'}>
-                  {location.latitude
-                    ? (assignedArea?.name ?? `${location.latitude.toFixed(4)}, ${location.longitude?.toFixed(4)}`)
-                    : 'Mendapatkan lokasi...'}
-                </NBText>
-                {location.accuracy !== null && (
-                  <NBText variant="caption" color="gray600">±{location.accuracy.toFixed(0)}m akurasi</NBText>
-                )}
-              </View>
-              {location.latitude && (
-                <NBBadge
-                  text={isWithinBoundary ? 'DI AREA' : 'LUAR AREA'}
-                  color={isWithinBoundary ? 'success' : 'danger'}
-                  size="sm"
-                />
-              )}
-            </View>
-
-            {/* Area status alert */}
-            {location.latitude != null && (
-              <View style={{ marginTop: nbSpacing.sm }}>
-                {isWithinBoundary ? (
-                  <NBAlert
-                    variant="success"
-                    message="Anda berada di dalam area kerja"
-                  />
-                ) : (
-                  <NBAlert
-                    variant="warning"
-                    message="Anda berada di luar area kerja. Absen tetap dicatat."
-                  />
-                )}
-              </View>
-            )}
-
-            {/* Collapsible detail toggle */}
+            {/* Collapsible header: label + status badge + chevron */}
             <TouchableOpacity
-              style={[styles.collapsibleHeader, { marginTop: nbSpacing.sm }]}
-              onPress={() => setIsLocationExpanded(v => !v)}
-              accessibilityLabel={isLocationExpanded ? 'Sembunyikan detail lokasi' : 'Tampilkan detail lokasi'}
+              style={styles.collapsibleHeader}
+              onPress={() => setIsGpsExpanded(v => !v)}
+              accessibilityRole="button"
+              accessibilityLabel={isGpsExpanded ? 'Sembunyikan lokasi GPS' : 'Tampilkan lokasi GPS'}
+              accessibilityState={{ expanded: isGpsExpanded }}
             >
-              <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>Detail Lokasi</NBText>
-              <MaterialCommunityIcons
-                name={isLocationExpanded ? 'chevron-up' : 'chevron-down'}
-                size={20}
-                color={nbColors.gray700}
-                style={styles.chevron}
-              />
+              <View style={styles.collapsibleHeaderLeft}>
+                <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>Lokasi GPS</NBText>
+              </View>
+              <View style={styles.gpsHeaderRight}>
+                {location.latitude && (
+                  <NBBadge
+                    text={isWithinBoundary ? 'DI AREA' : 'LUAR AREA'}
+                    color={isWithinBoundary ? 'success' : 'danger'}
+                    size="sm"
+                  />
+                )}
+                <MaterialCommunityIcons
+                  name={isGpsExpanded ? 'chevron-up' : 'chevron-down'}
+                  size={20}
+                  color={nbColors.gray700}
+                  style={{ marginLeft: nbSpacing.xs }}
+                />
+              </View>
             </TouchableOpacity>
-            {isLocationExpanded && (
-              location.error ? (
-                <View style={styles.collapsibleBody}>
-                  <NBText variant="body-sm" color="danger" style={styles.errorText}>
-                    {location.error}
-                  </NBText>
-                  <NBButton title="Coba Lagi" onPress={getCurrentLocation} variant="secondary" fullWidth />
-                </View>
-              ) : location.latitude && location.longitude ? (
-                <View style={styles.collapsibleBody}>
-                  <View style={styles.infoRow}>
-                    <NBText variant="body-sm" color="gray700" style={styles.infoLabel}>GPS:</NBText>
-                    <NBText variant="body-sm" style={styles.infoValue}>
-                      {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
+
+            {isGpsExpanded && (
+              <View style={styles.collapsibleBody}>
+                {/* GPS status row */}
+                <View style={styles.gpsStatusRow}>
+                  <MaterialCommunityIcons
+                    name={location.latitude ? 'crosshairs-gps' : 'crosshairs'}
+                    size={18}
+                    color={location.latitude
+                      ? (isWithinBoundary ? nbColors.statusActive : nbColors.statusOutside)
+                      : nbColors.gray500
+                    }
+                    style={{ marginRight: nbSpacing.sm }}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <NBText variant="body-sm" color={location.latitude ? 'black' : 'gray600'}>
+                      {location.latitude
+                        ? (assignedArea?.name ?? `${location.latitude.toFixed(4)}, ${location.longitude?.toFixed(4)}`)
+                        : 'Mendapatkan lokasi...'}
                     </NBText>
+                    {location.accuracy !== null && (
+                      <NBText variant="caption" color="gray600">±{location.accuracy.toFixed(0)}m akurasi</NBText>
+                    )}
                   </View>
-                  {location.accuracy !== null && (
-                    <View style={styles.infoRow}>
-                      <NBText variant="body-sm" color="gray700" style={styles.infoLabel}>Akurasi:</NBText>
-                      <NBText variant="body-sm" style={styles.infoValue}>{location.accuracy.toFixed(0)}m</NBText>
-                    </View>
-                  )}
-                  {location.accuracy !== null && location.accuracy > config.GPS_ACCURACY_THRESHOLD && (
-                    <View style={styles.warningBox}>
-                      <MaterialCommunityIcons
-                        name="crosshairs-question"
-                        size={20}
-                        color={nbColors.statusIdle}
-                        style={{ marginRight: nbSpacing.sm }}
-                      />
-                      <NBText variant="body-sm" color="gray700" style={styles.warningText}>
-                        GPS kurang akurat. Pindah ke area terbuka untuk hasil lebih baik.
+                </View>
+
+                {/* Area status alert */}
+                {location.latitude != null && (
+                  <View style={{ marginTop: nbSpacing.sm }}>
+                    {isWithinBoundary ? (
+                      <NBAlert variant="success" message="Anda berada di dalam area kerja" />
+                    ) : (
+                      <NBAlert variant="warning" message="Anda berada di luar area kerja. Absen tetap dicatat." />
+                    )}
+                  </View>
+                )}
+
+                {/* Detail toggle */}
+                <TouchableOpacity
+                  style={[styles.collapsibleHeader, { marginTop: nbSpacing.sm }]}
+                  onPress={() => setIsLocationExpanded(v => !v)}
+                  accessibilityLabel={isLocationExpanded ? 'Sembunyikan detail lokasi' : 'Tampilkan detail lokasi'}
+                >
+                  <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>Detail Lokasi</NBText>
+                  <MaterialCommunityIcons
+                    name={isLocationExpanded ? 'chevron-up' : 'chevron-down'}
+                    size={20}
+                    color={nbColors.gray700}
+                    style={styles.chevron}
+                  />
+                </TouchableOpacity>
+                {isLocationExpanded && (
+                  location.error ? (
+                    <View style={styles.collapsibleBody}>
+                      <NBText variant="body-sm" color="danger" style={styles.errorText}>
+                        {location.error}
                       </NBText>
+                      <NBButton title="Coba Lagi" onPress={getCurrentLocation} variant="secondary" fullWidth />
                     </View>
-                  )}
-                  <NBButton title="Perbarui Lokasi" onPress={getCurrentLocation} variant="info" fullWidth disabled={location.loading} />
-                  {!isClockIn && currentShift && (
-                    <View style={styles.clockInInfo}>
-                      <View style={styles.timerContainer}>
-                        <NBText variant="body-sm" color="gray600">
-                          Waktu Shift:
-                        </NBText>
-                        <NBText variant="display" color="statusIdle" style={styles.timerValue}>{timer}</NBText>
-                      </View>
-                      <View style={styles.clockInTimeRow}>
-                        <NBText variant="caption" color="gray600" style={styles.clockInLabel}>Clock In:</NBText>
-                        <NBText variant="body-sm" style={styles.clockInTime}>
-                          {formatDateTime(currentShift.clock_in_time)}
+                  ) : location.latitude && location.longitude ? (
+                    <View style={styles.collapsibleBody}>
+                      <View style={styles.infoRow}>
+                        <NBText variant="body-sm" color="gray700" style={styles.infoLabel}>GPS:</NBText>
+                        <NBText variant="body-sm" style={styles.infoValue}>
+                          {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
                         </NBText>
                       </View>
+                      {location.accuracy !== null && (
+                        <View style={styles.infoRow}>
+                          <NBText variant="body-sm" color="gray700" style={styles.infoLabel}>Akurasi:</NBText>
+                          <NBText variant="body-sm" style={styles.infoValue}>{location.accuracy.toFixed(0)}m</NBText>
+                        </View>
+                      )}
+                      {location.accuracy !== null && location.accuracy > config.GPS_ACCURACY_THRESHOLD && (
+                        <View style={styles.warningBox}>
+                          <MaterialCommunityIcons
+                            name="crosshairs-question"
+                            size={20}
+                            color={nbColors.statusIdle}
+                            style={{ marginRight: nbSpacing.sm }}
+                          />
+                          <NBText variant="body-sm" color="gray700" style={styles.warningText}>
+                            GPS kurang akurat. Pindah ke area terbuka untuk hasil lebih baik.
+                          </NBText>
+                        </View>
+                      )}
+                      <NBButton title="Perbarui Lokasi" onPress={getCurrentLocation} variant="info" fullWidth disabled={location.loading} />
+                      {!isClockIn && currentShift && (
+                        <View style={styles.clockInInfo}>
+                          <View style={styles.timerContainer}>
+                            <NBText variant="body-sm" color="gray600">
+                              Waktu Shift:
+                            </NBText>
+                            <NBText variant="display" color="statusIdle" style={styles.timerValue}>{timer}</NBText>
+                          </View>
+                          <View style={styles.clockInTimeRow}>
+                            <NBText variant="caption" color="gray600" style={styles.clockInLabel}>Clock In:</NBText>
+                            <NBText variant="body-sm" style={styles.clockInTime}>
+                              {formatDateTime(currentShift.clock_in_time)}
+                            </NBText>
+                          </View>
+                        </View>
+                      )}
                     </View>
-                  )}
-                </View>
-              ) : (
-                <View style={styles.collapsibleBody}>
-                  <ActivityIndicator size="small" color={nbColors.primary} />
-                </View>
-              )
+                  ) : (
+                    <View style={styles.collapsibleBody}>
+                      <ActivityIndicator size="small" color={nbColors.primary} />
+                    </View>
+                  )
+                )}
+              </View>
             )}
           </View>
         </ScrollView>
@@ -467,19 +504,39 @@ const styles = StyleSheet.create({
     paddingTop: nbSpacing.md,
     paddingBottom: nbSpacing.xs,
   },
-  timeHero: {
+  timeHeroCollapsed: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginHorizontal: nbSpacing.md,
-    marginBottom: nbSpacing.md,
-    paddingVertical: nbSpacing.md,
+    marginBottom: nbSpacing.sm,
+    paddingVertical: nbSpacing.sm,
+    paddingHorizontal: nbSpacing.md,
     backgroundColor: withAlpha(nbColors.primary, 0.1),
     borderRadius: nbRadius.md,
     borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },
+  timeHeroBody: {
+    alignItems: 'center',
+    marginHorizontal: nbSpacing.md,
+    marginBottom: nbSpacing.md,
+    paddingBottom: nbSpacing.sm,
+    paddingHorizontal: nbSpacing.md,
+    backgroundColor: withAlpha(nbColors.primary, 0.1),
+    borderBottomLeftRadius: nbRadius.md,
+    borderBottomRightRadius: nbRadius.md,
+    borderWidth: nbBorders.widthBase,
+    borderTopWidth: 0,
+    borderColor: nbColors.black,
+  },
   timeHeroTime: {
     letterSpacing: 1,
+  },
+  gpsHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   gpsStatusRow: {
     flexDirection: 'row',

@@ -15,6 +15,7 @@ jest.mock('../../nb', () => {
       React.createElement(TouchableOpacity, { onPress, accessibilityRole: 'button' },
         React.createElement(Text, null, title),
       ),
+    NBText: ({ children }: any) => React.createElement(Text, null, children),
   };
 });
 
