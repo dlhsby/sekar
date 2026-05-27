@@ -72,7 +72,7 @@
 | (sheets) | Home Ringkasan bottom sheets | `components/modals/Today{Activities,WorkHours,Tasks}Modal.tsx`, `components/common/ShiftCard.tsx` | ✅ Done (Checkpoint 7) — all three on `NBModal` + `NBText`/tokens; `TodayTasksModal` new; `ShiftCard` Text→NBText |
 | ABS-1 | Clock-in · GPS + selfie | existing absensi screen | ✅ Done (2026-05-27) — time hero (live clock + date), always-visible GPS status row + NBBadge (DI AREA/LUAR AREA), NBAlert for inside/outside area state |
 | ABS-2 | Clock-in · Di luar area | existing | ✅ Done (2026-05-27) — cardOutside tint + NBAlert warning (visual-only; soft geofencing kept) |
-| ABS-3 | Shift history | existing | Revamp |
+| ABS-3 | Shift history | existing | ✅ Done (2026-05-27) — monthly grouping (replaces per-date), tap-to-open ShiftDetailModal, 2-tile summary retained (tests stable) |
 | MON-1 | Map · Korlap view | monitoring screen + `components/monitoring/*` | ✅ Done (2026-05-26) — tokens clean; MapFab rounded-square |
 | MON-2 | Personnel sheet | `UserDetailSheet.tsx` | ✅ Done (2026-05-26) — RoleAvatar + HomeStatTile + NBText/NBButton; Info Shift/Tasks/WhatsApp OMITTED per hi-fi |
 | MON-3 | Tools FAB · expanded | `MapDashboardScreen` inline toolbox | ✅ Done (2026-05-26) — wrench FAB + inline overlay card replaces 4-button column |

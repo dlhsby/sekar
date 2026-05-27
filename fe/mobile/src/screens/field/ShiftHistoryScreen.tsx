@@ -10,10 +10,12 @@ import {
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBEmptyState, NBBackgroundPattern, NBText } from '../../components/nb';
 import { ShiftCard } from '../../components/common';
+import { ShiftDetailModal } from '../../components/modals/ShiftDetailModal';
 import { getMyShifts } from '../../services/api/shiftsApi';
 import {
   nbColors,
@@ -23,32 +25,8 @@ import {
   nbBorders,
 } from '../../constants/nbTokens';
 import type { CurrentShiftResponse } from '../../types/api.types';
+import type { Shift } from '../../types/models.types';
 
-
-/**
- * Format date to Indonesian format
- */
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  const options: Intl.DateTimeFormatOptions = {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  };
-  return date.toLocaleDateString('id-ID', options);
-}
-
-/**
- * Format time to HH:MM
- */
-function formatTime(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleTimeString('id-ID', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 /**
  * Calculate duration between two dates
@@ -78,49 +56,42 @@ function calculateDuration(
   return { hours, minutes, formatted: `${minutes}m` };
 }
 
-/**
- * Group shifts by date for section list
- */
-function groupShiftsByDate(
+const MONTH_NAMES_ID = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+function monthKey(dateString: string): string {
+  const d = new Date(dateString);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function monthLabel(key: string): string {
+  const [year, month] = key.split('-');
+  return `${MONTH_NAMES_ID[parseInt(month, 10) - 1]} ${year}`;
+}
+
+function groupShiftsByMonth(
   shifts: CurrentShiftResponse[]
-): { date: string; shifts: CurrentShiftResponse[] }[] {
+): { monthKey: string; shifts: CurrentShiftResponse[] }[] {
   const grouped: { [key: string]: CurrentShiftResponse[] } = {};
-
   shifts.forEach((shift) => {
-    const date = new Date(shift.clock_in_time).toDateString();
-    if (!grouped[date]) {
-      grouped[date] = [];
-    }
-    grouped[date].push(shift);
+    const key = monthKey(shift.clock_in_time);
+    if (!grouped[key]) { grouped[key] = []; }
+    grouped[key].push(shift);
   });
-
-  // Sort dates in descending order (newest first)
   return Object.keys(grouped)
-    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())
-    .map((date) => ({
-      date,
-      shifts: grouped[date],
-    }));
+    .sort((a, b) => b.localeCompare(a))
+    .map((key) => ({ monthKey: key, shifts: grouped[key] }));
 }
 
-
-/**
- * Date Header Component
- */
-interface DateHeaderProps {
-  date: string;
-}
-
-function DateHeader({ date }: DateHeaderProps): React.JSX.Element {
+function MonthHeader({ label }: { label: string }): React.JSX.Element {
   return (
     <View style={styles.dateHeader}>
       <MaterialCommunityIcons
-        name="calendar"
+        name="calendar-month"
         size={16}
         color={nbColors.gray500}
         style={styles.dateIcon}
       />
-      <NBText variant="h3" color="gray700">{formatDate(date)}</NBText>
+      <NBText variant="h3" color="gray700">{label}</NBText>
     </View>
   );
 }
@@ -133,6 +104,7 @@ export function ShiftHistoryScreen(): React.JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
 
   /**
    * Load shifts from API
@@ -246,28 +218,28 @@ export function ShiftHistoryScreen(): React.JSX.Element {
     );
   }
 
-  // Group shifts by date
-  const groupedShifts = groupShiftsByDate(shifts);
+  const groupedShifts = groupShiftsByMonth(shifts);
 
-  /**
-   * Render shift item with date header
-   */
   const renderItem = ({
     item,
-    index,
   }: {
-    item: { date: string; shifts: CurrentShiftResponse[] };
-    index: number;
-  }) => {
-    return (
-      <View>
-        <DateHeader date={item.date} />
-        {item.shifts.map((shift) => (
-          <ShiftCard key={shift.id} shift={shift} />
-        ))}
-      </View>
-    );
-  };
+    item: { monthKey: string; shifts: CurrentShiftResponse[] };
+  }) => (
+    <View>
+      <MonthHeader label={monthLabel(item.monthKey)} />
+      {item.shifts.map((shift) => (
+        <TouchableOpacity
+          key={shift.id}
+          onPress={() => setSelectedShift(shift)}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={`Detail shift ${shift.area?.name ?? ''}`}
+        >
+          <ShiftCard shift={shift} />
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
 
   return (
     <NBBackgroundPattern
@@ -287,12 +259,9 @@ export function ShiftHistoryScreen(): React.JSX.Element {
           <View style={styles.summaryItem}>
             <NBText variant="display" color="primary">
               {shifts.reduce((acc, shift) => {
-                if (!shift.clock_out_time) {return acc;}
-                const duration = calculateDuration(
-                  shift.clock_in_time,
-                  shift.clock_out_time
-                );
-                return acc + duration.hours + duration.minutes / 60;
+                if (!shift.clock_out_time) { return acc; }
+                const dur = calculateDuration(shift.clock_in_time, shift.clock_out_time);
+                return acc + dur.hours + dur.minutes / 60;
               }, 0).toFixed(1)}
             </NBText>
             <NBText variant="caption" color="gray600" style={styles.summaryLabel}>TOTAL JAM</NBText>
@@ -303,7 +272,7 @@ export function ShiftHistoryScreen(): React.JSX.Element {
         <FlatList
           data={groupedShifts}
           renderItem={renderItem}
-          keyExtractor={(item) => item.date}
+          keyExtractor={(item) => item.monthKey}
           contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl
@@ -314,6 +283,12 @@ export function ShiftHistoryScreen(): React.JSX.Element {
             />
           }
           showsVerticalScrollIndicator={false}
+        />
+
+        <ShiftDetailModal
+          visible={selectedShift !== null}
+          onClose={() => setSelectedShift(null)}
+          shift={selectedShift}
         />
       </View>
     </NBBackgroundPattern>
@@ -365,17 +340,13 @@ const styles = StyleSheet.create({
     height: 40,
     backgroundColor: nbColors.black,
   },
-  summaryValue: {
-    // Typography handled by NBText variant="display" color="primary"
-    marginBottom: nbSpacing.xs,
-  },
   summaryLabel: {
     // Typography (fontSize, fontWeight, color) handled by NBText variant="caption" color="gray600"
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
 
-  // Date Header
+  // Month Header
   dateHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -384,9 +355,6 @@ const styles = StyleSheet.create({
   },
   dateIcon: {
     marginRight: nbSpacing.sm,
-  },
-  dateText: {
-    // Typography handled by NBText variant="h3" color="gray700"
   },
 
 });

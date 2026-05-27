@@ -4,6 +4,18 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## May 27, 2026 — M3 ABS revamp · ABS-3 (ShiftHistoryScreen)
+
+**ABS-3 — ShiftHistoryScreen hi-fi layout revamp:**
+- Monthly grouping: `groupShiftsByMonth` replaces `groupShiftsByDate`; `MonthHeader` shows "Mei 2026"-style labels with calendar-month icon.
+- Tap-to-detail: each `ShiftCard` wrapped in `TouchableOpacity`; opens `ShiftDetailModal` (existing component, import-only).
+- Removed unused `formatDate`, `formatTime` helper functions (ShiftCard handles its own formatting).
+- Summary 2-tile layout retained to avoid collision with ShiftCard badge text ('SELESAI'/'AKTIF'); hi-fi monthly grouping is the primary visual change.
+
+**23/23 tests pass (0 regressions).**
+
+---
+
 ## May 27, 2026 — M3 ABS revamp · ABS-1/ABS-2 (ClockInOutScreen)
 
 **ABS-1/ABS-2 — ClockInOutScreen hi-fi layout revamp:**
