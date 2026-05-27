@@ -83,7 +83,7 @@
 | AKT-2 | Aktivitas list | `fe/mobile/src/screens/taskActivity/tabs/ActivitiesTab.tsx` | ✅ Done (2026-05-27) — raw Text → NBText; nbTypography/nbBorderRadius shims removed |
 | LBR-1 | Lembur list | OvertimeListScreen | ✅ Done (2026-05-27) — monthly summary card (JAM LEMBUR · BULAN INI, X dari Y ACC pill); OvertimeCard: raw Text→NBText, nbTypography→variants, emoji chips→MaterialCommunityIcons |
 | LBR-2 | Ajukan lembur | OvertimeSubmitScreen | ✅ Done (2026-05-27) — State A: date hero card (TANGGAL · Indonesian date, primary tint); State B: DURASI tinted card (amber bg, display-xl elapsed timer) |
-| LBR-3 | Detail lembur · disetujui | OvertimeDetailScreen | Revamp |
+| LBR-3 | Detail lembur · disetujui | OvertimeDetailScreen | ✅ Done (2026-05-27) — status header with `#XXXXXXXX` ID code + badge; 2-tile info grid (TANGGAL/JAM, statusIdleBg tint); RIWAYAT PENGAJUAN timeline (Diajukan→Disetujui/Ditolak→Akan dijalankan); Phase 2 shims removed (nbBorderRadius→nbRadius, nbBorders.base→widthBase, gray[50]→gray50) |
 | PRT-1 | Submit · Kecamatan | `fe/mobile/src/screens/pruningRequests/SubmitScreen.tsx` | Revamp (keeps Apr-27/28 Phase 3 redesign; visual pass to v2.1) |
 | PRT-2 | Review queue · Admin Data | pruning-requests list (admin filter) | Revamp |
 | PRT-3 | Detail permohonan | RequestDetailScreen | Revamp |

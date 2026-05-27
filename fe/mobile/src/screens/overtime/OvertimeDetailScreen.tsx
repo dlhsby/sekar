@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ImagePreviewModal } from '../../components/common';
 import { useNavigation, useRoute, useFocusEffect, type RouteProp } from '@react-navigation/native';
 import type { MainTabParamList, MainTabScreenProps } from '../../types/navigation.types';
@@ -35,17 +36,93 @@ import {
   nbColors,
   nbSpacing,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
   nbShadows,
+  withAlpha,
 } from '../../constants/nbTokens';
 import {
   getOvertimeStatusColor,
   getOvertimeStatusLabel,
   formatDateTimeIndonesian,
+  formatDateIndonesian,
   formatDurationHours,
 } from '../../utils/statusHelpers';
 import { useAppSelector } from '../../store/hooks';
 import type { Overtime } from '../../types/models.types';
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function padTwo(n: number): string { return String(n).padStart(2, '0'); }
+
+function formatTimeShort(isoString: string): string {
+  const d = new Date(isoString);
+  return `${padTwo(d.getHours())}:${padTwo(d.getMinutes())}`;
+}
+
+function overtimeCode(id: string): string {
+  return `#${id.replace(/-/g, '').slice(0, 8).toUpperCase()}`;
+}
+
+// ─── Timeline ─────────────────────────────────────────────────────────────────
+
+interface TimelineStepProps {
+  done: boolean;
+  label: string;
+  timestamp?: string;
+  note?: string;
+  isLast: boolean;
+}
+
+function TimelineStep({ done, label, timestamp, note, isLast }: TimelineStepProps): React.JSX.Element {
+  return (
+    <View style={tlStyles.step}>
+      <View style={tlStyles.iconCol}>
+        <MaterialCommunityIcons
+          name={done ? 'circle' : 'circle-outline'}
+          size={16}
+          color={done ? nbColors.primary : nbColors.gray400}
+        />
+        {!isLast && <View style={tlStyles.connector} />}
+      </View>
+      <View style={tlStyles.content}>
+        <NBText variant="body-sm" color={done ? 'black' : 'gray400'}>{label}</NBText>
+        {timestamp ? (
+          <NBText variant="caption" color="gray500" style={{ marginTop: 1 }}>{timestamp}</NBText>
+        ) : null}
+        {note ? (
+          <NBText variant="caption" color="gray600" style={{ marginTop: 2 }}>{note}</NBText>
+        ) : null}
+        {!isLast && <View style={tlStyles.contentSpacer} />}
+      </View>
+    </View>
+  );
+}
+
+const tlStyles = StyleSheet.create({
+  step: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  iconCol: {
+    alignItems: 'center',
+    width: 24,
+    marginRight: nbSpacing.sm,
+  },
+  connector: {
+    width: 2,
+    flex: 1,
+    minHeight: 16,
+    backgroundColor: nbColors.gray300,
+    marginTop: 2,
+  },
+  content: {
+    flex: 1,
+    paddingBottom: nbSpacing.sm,
+  },
+  contentSpacer: {
+    height: nbSpacing.xs,
+  },
+});
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -257,22 +334,25 @@ export function OvertimeDetailScreen(): React.JSX.Element {
               <NBText variant="h2" color="black" style={styles.sectionTitle}>📋 INFORMASI UMUM</NBText>
             </NBCardHeader>
             <NBCardContent>
-              <View style={styles.infoRow}>
-                <NBText variant="body-sm" color="gray600" style={styles.label}>Mulai</NBText>
-                <NBText variant="body" color="black" style={styles.value}>{formatDateTimeIndonesian(overtime.start_datetime)}</NBText>
+              {/* 2-tile grid: Tanggal | Jam */}
+              <View style={styles.infoTileRow}>
+                <View style={styles.infoTile}>
+                  <NBText variant="mono-sm" color="gray500" uppercase style={{ letterSpacing: 0.6, marginBottom: 4 }}>TANGGAL</NBText>
+                  <NBText variant="body-sm" color="black">{formatDateIndonesian(overtime.start_datetime)}</NBText>
+                </View>
+                <View style={[styles.infoTile, styles.infoTileJam]}>
+                  <NBText variant="mono-sm" color="gray500" uppercase style={{ letterSpacing: 0.6, marginBottom: 4 }}>JAM</NBText>
+                  <NBText variant="body-sm" color="black">
+                    {formatTimeShort(overtime.start_datetime)}{overtime.end_datetime ? ` — ${formatTimeShort(overtime.end_datetime)}` : ''}
+                  </NBText>
+                  {overtime.end_datetime && (
+                    <NBText variant="caption" color="gray600" style={{ marginTop: 2 }}>
+                      {formatDurationHours(overtime.start_datetime, overtime.end_datetime)}
+                    </NBText>
+                  )}
+                </View>
               </View>
-              <View style={styles.infoRow}>
-                <NBText variant="body-sm" color="gray600" style={styles.label}>Selesai</NBText>
-                <NBText variant="body" color="black" style={styles.value}>
-                  {overtime.end_datetime ? formatDateTimeIndonesian(overtime.end_datetime) : '(Belum selesai)'}
-                </NBText>
-              </View>
-              <View style={styles.infoRow}>
-                <NBText variant="body-sm" color="gray600" style={styles.label}>Durasi</NBText>
-                <NBText variant="body" color="black" style={styles.value}>
-                  {overtime.end_datetime ? formatDurationHours(overtime.start_datetime, overtime.end_datetime) : '-'}
-                </NBText>
-              </View>
+
               {overtime.user && (
                 <View style={styles.infoRow}>
                   <NBText variant="body-sm" color="gray600" style={styles.label}>Petugas</NBText>
@@ -306,7 +386,10 @@ export function OvertimeDetailScreen(): React.JSX.Element {
           <NBCard style={styles.card}>
             <NBCardHeader>
               <View style={styles.statusRow}>
-                <NBText variant="h2" color="black" style={styles.sectionTitle}>📋 STATUS</NBText>
+                <View>
+                  <NBText variant="mono-sm" color="gray500" style={{ letterSpacing: 0.6 }}>{overtimeCode(overtime.id)}</NBText>
+                  <NBText variant="body-sm" color="gray600" style={{ marginTop: 1 }}>ID Pengajuan</NBText>
+                </View>
                 <NBBadge
                   text={getOvertimeStatusLabel(overtime.status)}
                   color={getOvertimeStatusColor(overtime.status)}
@@ -319,6 +402,39 @@ export function OvertimeDetailScreen(): React.JSX.Element {
                   <NBText variant="body-sm" color="danger" style={[styles.label, styles.dangerLabel]}>Alasan Penolakan</NBText>
                   <NBText variant="body" color="black" style={styles.value}>{overtime.rejection_reason}</NBText>
                 </View>
+              )}
+            </NBCardContent>
+          </NBCard>
+
+          {/* Timeline Card */}
+          <NBCard style={styles.card}>
+            <NBCardHeader>
+              <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>RIWAYAT PENGAJUAN</NBText>
+            </NBCardHeader>
+            <NBCardContent>
+              <TimelineStep
+                done
+                label="Diajukan"
+                timestamp={formatDateTimeIndonesian(overtime.created_at)}
+                note={overtime.user?.full_name}
+                isLast={overtime.status === 'pending' && !overtime.approved_at}
+              />
+              {(overtime.status === 'approved' || overtime.status === 'rejected') && (
+                <TimelineStep
+                  done
+                  label={overtime.status === 'approved' ? 'Disetujui' : 'Ditolak'}
+                  timestamp={overtime.approved_at ? formatDateTimeIndonesian(overtime.approved_at) : formatDateTimeIndonesian(overtime.updated_at)}
+                  note={overtime.approver?.full_name}
+                  isLast={overtime.status === 'rejected'}
+                />
+              )}
+              {overtime.status === 'approved' && (
+                <TimelineStep
+                  done={false}
+                  label="Akan dijalankan"
+                  timestamp={formatDateTimeIndonesian(overtime.start_datetime)}
+                  isLast
+                />
               )}
             </NBCardContent>
           </NBCard>
@@ -622,6 +738,22 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     gap: nbSpacing.xs,
   },
+  infoTileRow: {
+    flexDirection: 'row',
+    gap: nbSpacing.sm,
+    marginBottom: nbSpacing.md,
+  },
+  infoTile: {
+    flex: 1,
+    padding: nbSpacing.sm,
+    borderRadius: nbRadius.sm,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    backgroundColor: nbColors.white,
+  },
+  infoTileJam: {
+    backgroundColor: nbColors.statusIdleBg,
+  },
   infoRow: {
     marginBottom: nbSpacing.md,
   },
@@ -654,16 +786,16 @@ const styles = StyleSheet.create({
   photo: {
     width: 160,
     height: 160,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },
   locationContainer: {
     padding: nbSpacing.md,
-    backgroundColor: nbColors.gray[50],
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
+    backgroundColor: nbColors.gray50,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
   },
   locationText: {

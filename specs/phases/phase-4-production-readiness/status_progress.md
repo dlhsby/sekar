@@ -4,6 +4,19 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## May 27, 2026 — M3 LBR revamp · LBR-3 (OvertimeDetailScreen)
+
+**LBR-3 — OvertimeDetailScreen hi-fi layout revamp:**
+- Status card header restructured: `#XXXXXXXX` mono-sm ID code (left) + "ID Pengajuan" label + status badge (right). Removes `📋 STATUS` emoji title.
+- Info card: added 2-tile grid (`TANGGAL` tile + `JAM` tile with `statusIdleBg` tint) showing date and time range. Creator/area rows retained below tiles.
+- Timeline section added (`RIWAYAT PENGAJUAN` header): `TimelineStep` sub-component with filled/outline circles + connector lines. Steps: Diajukan (always) → Disetujui/Ditolak (if approved/rejected) → Akan dijalankan (if approved).
+- Phase 2 shims removed: `nbBorderRadius.base` → `nbRadius.base`, `nbBorders.base` → `nbBorders.widthBase`, `nbColors.gray[50]` → `nbColors.gray50`.
+- `MaterialCommunityIcons`, `withAlpha`, `nbRadius`, `formatDateIndonesian` added to imports.
+
+**Test status: Pre-existing parse error in test file (`'pending' as const` syntax); 0 new regressions introduced.**
+
+---
+
 ## May 27, 2026 — M3 LBR revamp · LBR-2 (OvertimeSubmitScreen)
 
 **LBR-2 — OvertimeSubmitScreen hi-fi layout revamp:**
