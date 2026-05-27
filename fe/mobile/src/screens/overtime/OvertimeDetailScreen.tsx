@@ -3,7 +3,7 @@
  * Phase 2C: Read-only view with inline approval/rejection — matches ActivityDetailScreen pattern
  */
 
-import React, { useState, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   ScrollView,
@@ -157,10 +157,15 @@ export function OvertimeDetailScreen(): React.JSX.Element {
 
   const handleTolakPress = useCallback(() => {
     setShowRejectInput(true);
-    setTimeout(() => {
+  }, []);
+
+  useEffect(() => {
+    if (!showRejectInput) { return; }
+    const id = setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 150);
-  }, []);
+    return () => clearTimeout(id);
+  }, [showRejectInput]);
 
   const fetchDetail = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
@@ -331,7 +336,10 @@ export function OvertimeDetailScreen(): React.JSX.Element {
           {/* General Info Card */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <NBText variant="h2" color="black" style={styles.sectionTitle}>📋 INFORMASI UMUM</NBText>
+              <View style={styles.sectionHeaderRow}>
+                <MaterialCommunityIcons name="information-outline" size={14} color={nbColors.gray700} style={{ marginRight: nbSpacing.xs }} />
+                <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>INFORMASI UMUM</NBText>
+              </View>
             </NBCardHeader>
             <NBCardContent>
               {/* 2-tile grid: Tanggal | Jam */}
@@ -373,7 +381,10 @@ export function OvertimeDetailScreen(): React.JSX.Element {
           {/* Reason Card */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <NBText variant="h2" color="black" style={styles.sectionTitle}>💬 ALASAN LEMBUR</NBText>
+              <View style={styles.sectionHeaderRow}>
+                <MaterialCommunityIcons name="message-text-outline" size={14} color={nbColors.gray700} style={{ marginRight: nbSpacing.xs }} />
+                <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>ALASAN LEMBUR</NBText>
+              </View>
             </NBCardHeader>
             <NBCardContent>
               <NBText variant="body" color={!overtime.reason ? 'gray400' : 'black'} style={[styles.descriptionText, !overtime.reason && styles.descriptionPlaceholder]}>
@@ -443,7 +454,10 @@ export function OvertimeDetailScreen(): React.JSX.Element {
           {overtime.activityType && (
             <NBCard style={styles.card}>
               <NBCardHeader>
-                <NBText variant="h2" color="black" style={styles.sectionTitle}>🏷️ JENIS AKTIVITAS</NBText>
+                <View style={styles.sectionHeaderRow}>
+                  <MaterialCommunityIcons name="tag-outline" size={14} color={nbColors.gray700} style={{ marginRight: nbSpacing.xs }} />
+                  <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>JENIS AKTIVITAS</NBText>
+                </View>
               </NBCardHeader>
               <NBCardContent>
                 <NBText variant="body" color="black" style={styles.value}>{overtime.activityType.name}</NBText>
@@ -457,7 +471,10 @@ export function OvertimeDetailScreen(): React.JSX.Element {
           {/* Description Card */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <NBText variant="h2" color="black" style={styles.sectionTitle}>📝 DESKRIPSI</NBText>
+              <View style={styles.sectionHeaderRow}>
+                <MaterialCommunityIcons name="text-box-outline" size={14} color={nbColors.gray700} style={{ marginRight: nbSpacing.xs }} />
+                <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>DESKRIPSI</NBText>
+              </View>
             </NBCardHeader>
             <NBCardContent>
               <NBText variant="body" color={!overtime.description ? 'gray400' : 'black'} style={[styles.descriptionText, !overtime.description && styles.descriptionPlaceholder]}>
@@ -471,7 +488,10 @@ export function OvertimeDetailScreen(): React.JSX.Element {
             <NBCard style={styles.card}>
               <NBCardHeader>
                 <View style={styles.headerColumn}>
-                  <NBText variant="h2" color="black" style={styles.sectionTitle}>📸 FOTO BUKTI</NBText>
+                  <View style={styles.sectionHeaderRow}>
+                    <MaterialCommunityIcons name="image-multiple-outline" size={14} color={nbColors.gray700} style={{ marginRight: nbSpacing.xs }} />
+                    <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>FOTO BUKTI</NBText>
+                  </View>
                   <NBText variant="body-sm" color="gray600" style={styles.sectionSubtitle}>{overtime.photo_urls!.length} foto dilampirkan</NBText>
                 </View>
               </NBCardHeader>
@@ -505,7 +525,10 @@ export function OvertimeDetailScreen(): React.JSX.Element {
           {(overtime.shift?.clock_in_photo_url || overtime.shift?.clock_out_photo_url) && (
             <NBCard style={styles.card}>
               <NBCardHeader>
-                <NBText variant="h2" color="black" style={styles.sectionTitle}>🤳 SELFIE VERIFIKASI</NBText>
+                <View style={styles.sectionHeaderRow}>
+                  <MaterialCommunityIcons name="account-circle-outline" size={14} color={nbColors.gray700} style={{ marginRight: nbSpacing.xs }} />
+                  <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>SELFIE VERIFIKASI</NBText>
+                </View>
               </NBCardHeader>
               <NBCardContent>
                 <ScrollView
@@ -554,7 +577,10 @@ export function OvertimeDetailScreen(): React.JSX.Element {
           {overtime.gps_lat != null && overtime.gps_lng != null ? (
             <NBCard style={styles.card}>
               <NBCardHeader>
-                <NBText variant="h2" color="black" style={styles.sectionTitle}>📍 LOKASI GPS</NBText>
+                <View style={styles.sectionHeaderRow}>
+                  <MaterialCommunityIcons name="map-marker-outline" size={14} color={nbColors.gray700} style={{ marginRight: nbSpacing.xs }} />
+                  <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>LOKASI GPS</NBText>
+                </View>
               </NBCardHeader>
               <NBCardContent>
                 <View style={styles.locationContainer}>
@@ -570,7 +596,10 @@ export function OvertimeDetailScreen(): React.JSX.Element {
           {canViewTrail && (
             <NBCard style={styles.card}>
               <NBCardHeader>
-                <NBText variant="h2" color="black" style={styles.sectionTitle}>🗺️ RUTE LOKASI</NBText>
+                <View style={styles.sectionHeaderRow}>
+                  <MaterialCommunityIcons name="map-outline" size={14} color={nbColors.gray700} style={{ marginRight: nbSpacing.xs }} />
+                  <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>RUTE LOKASI</NBText>
+                </View>
               </NBCardHeader>
               <NBCardContent>
                 <NBButton
@@ -598,7 +627,7 @@ export function OvertimeDetailScreen(): React.JSX.Element {
           {/* Inline reject reason input */}
           {canApprove && showRejectInput && (
             <NBCardTextInput
-              title="📝 Alasan Penolakan"
+              title="ALASAN PENOLAKAN"
               required
               value={rejectReason}
               onChangeText={setRejectReason}
@@ -720,10 +749,9 @@ const styles = StyleSheet.create({
     marginBottom: nbSpacing.md,
     ...nbShadows.sm,
   },
-  sectionTitle: {
-    // Typography handled by NBText variant="h2" color="black"
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   sectionSubtitle: {
     // Typography handled by NBText variant="body-sm" color="gray600"

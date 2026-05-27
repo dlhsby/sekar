@@ -24,7 +24,7 @@ interface OvertimeCardProps {
   onPress: () => void;
 }
 
-export function OvertimeCard({ overtime, onPress }: OvertimeCardProps): React.JSX.Element {
+export const OvertimeCard = React.memo(function OvertimeCard({ overtime, onPress }: OvertimeCardProps): React.JSX.Element {
   const durationStr = formatDurationHours(overtime.start_datetime ?? '', overtime.end_datetime ?? '');
   const createdDate = formatDateIndonesian(overtime.created_at);
   const createdTime = new Date(overtime.created_at).toLocaleTimeString('id-ID', {
@@ -99,7 +99,7 @@ export function OvertimeCard({ overtime, onPress }: OvertimeCardProps): React.JS
       </NBCard>
     </TouchableOpacity>
   );
-}
+});
 
 const styles = StyleSheet.create({
   itemCard: {

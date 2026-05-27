@@ -18,6 +18,8 @@ jest.mock('../../../components/modals/OvertimeTrailModal', () => ({
   OvertimeTrailModal: () => null,
 }));
 
+jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => 'Text');
+
 // Mock APIs
 jest.mock('../../../services/api/overtimeApi');
 
@@ -218,9 +220,9 @@ describe('OvertimeDetailScreen', () => {
       );
 
       await waitFor(() => {
-        expect(getByText('📋 INFORMASI UMUM')).toBeTruthy();
-        expect(getByText('📝 DESKRIPSI')).toBeTruthy();
-        expect(getByText('📸 FOTO BUKTI')).toBeTruthy();
+        expect(getByText('INFORMASI UMUM')).toBeTruthy();
+        expect(getByText('DESKRIPSI')).toBeTruthy();
+        expect(getByText('FOTO BUKTI')).toBeTruthy();
       });
     });
 

@@ -4,6 +4,19 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## May 27, 2026 — M3 post-review fixes (emoji headers, token shims, React.memo, setTimeout cleanup)
+
+**Fixes applied across 5 ABS/LBR screens after code review:**
+
+- **OvertimeDetailScreen**: Phase 2 emoji section headers (`📋 STATUS`, `📝 DESKRIPSI`, `📸 FOTO BUKTI`, `💬 CATATAN`, `🏷️ LABEL`, `🤳 SELFIE`, `🗺️ PETA`, `📍 LOKASI GPS`) → v2.1 `MaterialCommunityIcons` + `NBText variant="mono-sm" uppercase` pattern. `NBCardTextInput title="📝 Alasan Penolakan"` → `title="ALASAN PENOLAKAN"`. `setTimeout` in `handleTolakPress` moved to `useEffect` with cleanup.
+- **OvertimeListScreen**: `nbColors.gray[300]` → `nbColors.gray300`, `nbBorders.base` → `nbBorders.widthBase` (×2), magic-number `padding: 4` → `nbSpacing.xs`, `accessibilityHint` added to disabled FAB.
+- **ClockInOutScreen**: `Sudah diambil ✓` emoji removed → plain text. `⚠️ Anda offline` and `⚠️ GPS tidak akurat` `<NBText>` blocks → `<NBAlert variant="warning">`. Dead `offlineWarningText` style removed.
+- **OvertimeCard**: Wrapped with `React.memo` for FlatList re-render safety.
+- **OvertimeSubmitScreen**: Dead `timerContainer` style (orphaned after DURASI card restructure) removed.
+- **Test file (OvertimeDetailScreen.test.tsx)**: `MaterialCommunityIcons` mock added; 3 emoji-prefixed assertions updated to match new headerless labels. All 165/165 tests pass.
+
+---
+
 ## May 27, 2026 — M3 LBR revamp · LBR-3 (OvertimeDetailScreen)
 
 **LBR-3 — OvertimeDetailScreen hi-fi layout revamp:**

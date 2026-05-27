@@ -237,7 +237,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                 <View style={styles.collapsibleHeaderLeft}>
                   <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6, marginBottom: nbSpacing.xs }}>Foto Selfie</NBText>
                   {selfie
-                    ? <NBText variant="body-sm" color="success">Sudah diambil ✓</NBText>
+                    ? <NBText variant="body-sm" color="success">Sudah diambil</NBText>
                     : <NBText variant="body-sm" color="gray600">Opsional</NBText>
                   }
                 </View>
@@ -404,16 +404,12 @@ export const ClockInOutScreen = (): React.JSX.Element => {
         {/* Offline warnings — between scroll and submit button */}
         {!isOnline && isClockIn && (
           <View style={styles.offlineWarning}>
-            <NBText variant="body-sm" color="warning" style={styles.offlineWarningText}>
-              ⚠️ Anda harus online untuk clock in. Sambungkan ke internet terlebih dahulu.
-            </NBText>
+            <NBAlert variant="warning" message="Anda harus online untuk clock in. Sambungkan ke internet terlebih dahulu." />
           </View>
         )}
         {!isOnline && !isClockIn && (
           <View style={styles.offlineWarning}>
-            <NBText variant="body-sm" color="warning" style={styles.offlineWarningText}>
-              ⚠️ Mode offline. Clock out akan disinkronkan saat online.
-            </NBText>
+            <NBAlert variant="warning" message="Mode offline. Clock out akan disinkronkan saat online." />
           </View>
         )}
 
@@ -563,9 +559,6 @@ const styles = StyleSheet.create({
     borderWidth: nbBorders.widthBase,
     borderColor: nbColors.warning,
     ...nbShadows.sm,
-  },
-  offlineWarningText: {
-    textAlign: 'center',
   },
   offlineBanner: {
     flexDirection: 'row',

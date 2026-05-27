@@ -907,10 +907,6 @@ const styles = StyleSheet.create({
     backgroundColor: withAlpha(nbColors.statusIdle, 0.08),
     alignItems: 'center',
   },
-  timerContainer: {
-    alignItems: 'center',
-    marginBottom: nbSpacing.sm,
-  },
   timerValue: {
     // Typography handled by NBText variant="display-xl" color="warning"
     letterSpacing: 1,

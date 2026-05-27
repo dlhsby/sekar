@@ -109,11 +109,11 @@ Source: [`design/project/hifi-mobile.html`](../../../design/project/hifi-mobile.
 | Login & auth (AS-1…AS-5) | 5 | **2 NEW** (AS-4, AS-5) | 3 (AS-1, AS-2, AS-3) | — |
 | Onboarding & permissions (OB-1…OB-3) | 3 | **3 NEW** | — | — |
 | Home (HOME-1…HOME-3, role-aware) | 3 | — | 3 | — |
-| Absensi (ABS-1…ABS-3) | 3 | — | 3 | — |
-| Monitoring (MON-1…MON-3) | 3 | — | 3 | — |
-| Tugas (TUG-1…TUG-3) | 3 | — | 3 | — |
-| Aktivitas (AKT-1…AKT-2) | 2 | — | 2 | — |
-| Lembur (LBR-1…LBR-3) | 3 | — | 3 | — |
+| Absensi (ABS-1…ABS-3) | 3 | — | 3 ✅ | — |
+| Monitoring (MON-1…MON-3) | 3 | — | 3 ✅ | — |
+| Tugas (TUG-1…TUG-3) | 3 | — | 3 ✅ | — |
+| Aktivitas (AKT-1…AKT-2) | 2 | — | 2 ✅ | — |
+| Lembur (LBR-1…LBR-3) | 3 | — | 3 ✅ | — |
 | Perantingan (PRT-1…PRT-4) | 4 | — | 3 | 1 |
 | Profile & settings (PRF-1…PRF-3) | 3 | — | 2 | 1 |
 | Notifikasi (NOTIF-1) | 1 | **1 NEW** | — | — |

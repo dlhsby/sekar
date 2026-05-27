@@ -422,6 +422,7 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
                   size="lg"
                   fullWidth
                   disabled
+                  accessibilityHint="Tombol dinonaktifkan karena Anda masih memiliki shift aktif"
                 />
               </>
             ) : (
@@ -518,7 +519,7 @@ const styles = StyleSheet.create({
     paddingVertical: nbSpacing.xs,
     backgroundColor: nbColors.white,
     borderBottomWidth: nbBorders.extra,
-    borderBottomColor: nbColors.gray[300],
+    borderBottomColor: nbColors.gray300,
     ...nbShadows.md,
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.sm,
@@ -550,7 +551,7 @@ const styles = StyleSheet.create({
   miniChip: {
     paddingHorizontal: nbSpacing.sm,
     paddingVertical: nbSpacing.xs,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     borderRadius: nbRadius.sm,
     height: 32,
@@ -564,15 +565,15 @@ const styles = StyleSheet.create({
     // Typography handled by NBText variant="caption"
   },
   filterClearButton: {
-    padding: 4,
-    marginLeft: 4,
+    padding: nbSpacing.xs,
+    marginLeft: nbSpacing.xs,
   },
   filterIconButton: {
     width: 36,
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 2,
+    marginLeft: nbSpacing.xs,
   },
   filterBadge: {
     position: 'absolute',
@@ -582,7 +583,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     backgroundColor: nbColors.danger,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.white,
     justifyContent: 'center',
     alignItems: 'center',
