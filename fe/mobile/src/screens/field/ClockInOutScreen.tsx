@@ -161,36 +161,39 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             </View>
           )}
 
-          {/* Time Hero — collapsible */}
-          <TouchableOpacity
-            style={styles.timeHeroCollapsed}
-            onPress={() => setIsTimeHeroExpanded(v => !v)}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel={isTimeHeroExpanded ? 'Sembunyikan jam' : 'Tampilkan detail waktu'}
-            accessibilityState={{ expanded: isTimeHeroExpanded }}
-          >
-            <NBText variant="display" color="black" style={styles.timeHeroTime}>
-              {formatTimeHero(currentTime)}
-            </NBText>
-            <MaterialCommunityIcons
-              name={isTimeHeroExpanded ? 'chevron-up' : 'chevron-down'}
-              size={20}
-              color={nbColors.gray700}
-            />
-          </TouchableOpacity>
-          {isTimeHeroExpanded && (
-            <View style={styles.timeHeroBody}>
-              <NBText variant="mono-sm" color="gray600">
-                {formatDateHero(currentTime)}
+          {/* Time Hero — single card, collapsible */}
+          <View style={styles.timeHeroCard}>
+            <TouchableOpacity
+              style={styles.timeHeroHeader}
+              onPress={() => setIsTimeHeroExpanded(v => !v)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={isTimeHeroExpanded ? 'Sembunyikan detail waktu' : 'Tampilkan detail waktu'}
+              accessibilityState={{ expanded: isTimeHeroExpanded }}
+            >
+              <NBText variant="h2" color="black" style={styles.timeHeroTime}>
+                {formatTimeHero(currentTime)}
               </NBText>
-              <NBText variant="body-sm" color="gray600" style={{ marginTop: nbSpacing.xs, textAlign: 'center' }}>
-                {isClockIn
-                  ? 'Ambil foto diri dan konfirmasi lokasi untuk memulai shift'
-                  : 'Konfirmasi lokasi untuk mengakhiri shift'}
-              </NBText>
-            </View>
-          )}
+              <View style={styles.timeHeroHeaderRight}>
+                <NBText variant="mono-sm" color="gray600">{formatDateHero(currentTime)}</NBText>
+                <MaterialCommunityIcons
+                  name={isTimeHeroExpanded ? 'chevron-up' : 'chevron-down'}
+                  size={18}
+                  color={nbColors.gray600}
+                  style={{ marginLeft: nbSpacing.xs }}
+                />
+              </View>
+            </TouchableOpacity>
+            {isTimeHeroExpanded && (
+              <View style={styles.timeHeroBody}>
+                <NBText variant="body-sm" color="gray600" style={{ textAlign: 'center' }}>
+                  {isClockIn
+                    ? 'Ambil foto diri dan konfirmasi lokasi untuk memulai shift'
+                    : 'Konfirmasi lokasi untuk mengakhiri shift'}
+                </NBText>
+              </View>
+            )}
+          </View>
 
           {/* Area Info Card - Collapsible (hidden for rayon-scoped roles without area) */}
           {assignedArea ? (
@@ -504,35 +507,37 @@ const styles = StyleSheet.create({
     paddingTop: nbSpacing.md,
     paddingBottom: nbSpacing.xs,
   },
-  timeHeroCollapsed: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  timeHeroCard: {
     marginHorizontal: nbSpacing.md,
-    marginBottom: nbSpacing.sm,
-    paddingVertical: nbSpacing.sm,
-    paddingHorizontal: nbSpacing.md,
+    marginBottom: nbSpacing.md,
     backgroundColor: withAlpha(nbColors.primary, 0.1),
     borderRadius: nbRadius.md,
     borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
+    overflow: 'hidden',
     ...nbShadows.sm,
   },
-  timeHeroBody: {
+  timeHeroHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: nbSpacing.md,
-    marginBottom: nbSpacing.md,
-    paddingBottom: nbSpacing.sm,
+    justifyContent: 'space-between',
+    paddingVertical: nbSpacing.sm,
     paddingHorizontal: nbSpacing.md,
-    backgroundColor: withAlpha(nbColors.primary, 0.1),
-    borderBottomLeftRadius: nbRadius.md,
-    borderBottomRightRadius: nbRadius.md,
-    borderWidth: nbBorders.widthBase,
-    borderTopWidth: 0,
-    borderColor: nbColors.black,
+  },
+  timeHeroHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  timeHeroBody: {
+    paddingHorizontal: nbSpacing.md,
+    paddingBottom: nbSpacing.sm,
+    paddingTop: nbSpacing.xs,
+    borderTopWidth: nbBorders.widthThin,
+    borderTopColor: withAlpha(nbColors.black, 0.15),
+    alignItems: 'center',
   },
   timeHeroTime: {
-    letterSpacing: 1,
+    letterSpacing: 0.5,
   },
   gpsHeaderRight: {
     flexDirection: 'row',

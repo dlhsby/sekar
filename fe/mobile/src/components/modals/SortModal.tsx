@@ -32,7 +32,7 @@ export function SortModal({
   };
 
   return (
-    <NBModal visible={visible} onClose={onClose} title={title} size="sm" noPadding>
+    <NBModal visible={visible} onClose={onClose} title={title} size="sm" noPadding scrollable>
       <View>
         {options.map((opt) => (
           <TouchableOpacity
