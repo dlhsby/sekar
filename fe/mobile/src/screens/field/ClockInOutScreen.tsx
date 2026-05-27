@@ -10,7 +10,7 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ImagePreviewModal } from '../../components/common';
 import { useNavigation } from '@react-navigation/native';
-import { NBButton, NBBackgroundPattern, NBText } from '../../components/nb';
+import { NBButton, NBBackgroundPattern, NBText, NBAlert, NBBadge } from '../../components/nb';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
 import {
   nbColors,
@@ -26,6 +26,17 @@ import { useAppSelector } from '../../store/hooks';
 import { formatDateTime } from '../../utils/dateUtils';
 import type { MainTabScreenProps } from '../../types/navigation.types';
 
+const DAY_NAMES_ID = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const MONTH_NAMES_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
+
+function formatTimeHero(d: Date): string {
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function formatDateHero(d: Date): string {
+  return `${DAY_NAMES_ID[d.getDay()]}, ${d.getDate()} ${MONTH_NAMES_ID[d.getMonth()]}`;
+}
+
 /**
  * Clock In/Out Screen
  * Phase 2C: Soft geofencing (warnings only), auto-detect area from schedule
@@ -37,6 +48,12 @@ export const ClockInOutScreen = (): React.JSX.Element => {
   const [isLocationExpanded, setIsLocationExpanded] = useState(true);
   const [isSelfieExpanded, setIsSelfieExpanded] = useState(false);
   const [selfiePreviewUri, setSelfiePreviewUri] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(() => new Date());
+
+  useEffect(() => {
+    const tick = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(tick);
+  }, []);
 
   const {
     location,
@@ -142,9 +159,15 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             </View>
           )}
 
-          {/* Header Subtitle */}
-          <View style={styles.header}>
-            <NBText variant="body-sm" color="gray600" style={styles.headerSubtitle}>
+          {/* Time Hero */}
+          <View style={styles.timeHero}>
+            <NBText variant="display" color="black" style={styles.timeHeroTime}>
+              {formatTimeHero(currentTime)}
+            </NBText>
+            <NBText variant="mono-sm" color="gray600">
+              {formatDateHero(currentTime)}
+            </NBText>
+            <NBText variant="body-sm" color="gray600" style={{ marginTop: nbSpacing.xs, textAlign: 'center' }}>
               {isClockIn
                 ? 'Ambil foto diri dan konfirmasi lokasi untuk memulai shift'
                 : 'Konfirmasi lokasi untuk mengakhiri shift'}
@@ -213,7 +236,10 @@ export const ClockInOutScreen = (): React.JSX.Element => {
               >
                 <View style={styles.collapsibleHeaderLeft}>
                   <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6, marginBottom: nbSpacing.xs }}>Foto Selfie</NBText>
-                  {selfie && <NBText variant="body-sm" color="success">Selfie sudah diambil</NBText>}
+                  {selfie
+                    ? <NBText variant="body-sm" color="success">Sudah diambil ✓</NBText>
+                    : <NBText variant="body-sm" color="gray600">Opsional</NBText>
+                  }
                 </View>
                 <MaterialCommunityIcons
                   name={isSelfieExpanded ? 'chevron-up' : 'chevron-down'}
@@ -247,14 +273,65 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             </View>
           )}
 
-          {/* Location Card - Collapsible, default open */}
-          <View style={styles.card}>
+          {/* Location Card */}
+          <View style={[
+            styles.card,
+            (location.latitude != null && !isWithinBoundary) ? styles.cardOutside : null,
+          ]}>
+            {/* Always-visible GPS status summary */}
+            <View style={styles.gpsStatusRow}>
+              <MaterialCommunityIcons
+                name={location.latitude ? 'crosshairs-gps' : 'crosshairs'}
+                size={18}
+                color={location.latitude
+                  ? (isWithinBoundary ? nbColors.statusActive : nbColors.statusOutside)
+                  : nbColors.gray500
+                }
+                style={{ marginRight: nbSpacing.sm }}
+              />
+              <View style={{ flex: 1 }}>
+                <NBText variant="body-sm" color={location.latitude ? 'black' : 'gray600'}>
+                  {location.latitude
+                    ? (assignedArea?.name ?? `${location.latitude.toFixed(4)}, ${location.longitude?.toFixed(4)}`)
+                    : 'Mendapatkan lokasi...'}
+                </NBText>
+                {location.accuracy !== null && (
+                  <NBText variant="caption" color="gray600">±{location.accuracy.toFixed(0)}m akurasi</NBText>
+                )}
+              </View>
+              {location.latitude && (
+                <NBBadge
+                  text={isWithinBoundary ? 'DI AREA' : 'LUAR AREA'}
+                  color={isWithinBoundary ? 'success' : 'danger'}
+                  size="sm"
+                />
+              )}
+            </View>
+
+            {/* Area status alert */}
+            {location.latitude != null && (
+              <View style={{ marginTop: nbSpacing.sm }}>
+                {isWithinBoundary ? (
+                  <NBAlert
+                    variant="success"
+                    message="Anda berada di dalam area kerja"
+                  />
+                ) : (
+                  <NBAlert
+                    variant="warning"
+                    message="Anda berada di luar area kerja. Absen tetap dicatat."
+                  />
+                )}
+              </View>
+            )}
+
+            {/* Collapsible detail toggle */}
             <TouchableOpacity
-              style={styles.collapsibleHeader}
+              style={[styles.collapsibleHeader, { marginTop: nbSpacing.sm }]}
               onPress={() => setIsLocationExpanded(v => !v)}
               accessibilityLabel={isLocationExpanded ? 'Sembunyikan detail lokasi' : 'Tampilkan detail lokasi'}
             >
-              <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>Lokasi Anda</NBText>
+              <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>Detail Lokasi</NBText>
               <MaterialCommunityIcons
                 name={isLocationExpanded ? 'chevron-up' : 'chevron-down'}
                 size={20}
@@ -294,32 +371,6 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                       />
                       <NBText variant="body-sm" color="gray700" style={styles.warningText}>
                         GPS kurang akurat. Pindah ke area terbuka untuk hasil lebih baik.
-                      </NBText>
-                    </View>
-                  )}
-                  {/* Location Status Banner - bilateral feedback for both clock-in and clock-out */}
-                  {isWithinBoundary ? (
-                    <View style={styles.insideAreaBanner}>
-                      <MaterialCommunityIcons
-                        name="check-circle"
-                        size={20}
-                        color={nbColors.statusActive}
-                        style={{ marginRight: nbSpacing.sm }}
-                      />
-                      <NBText variant="body-sm" color="black" style={styles.insideAreaText}>
-                        Anda berada di dalam area kerja
-                      </NBText>
-                    </View>
-                  ) : (
-                    <View style={styles.softWarningBanner}>
-                      <MaterialCommunityIcons
-                        name="alert"
-                        size={20}
-                        color={nbColors.statusIdle}
-                        style={{ marginRight: nbSpacing.sm }}
-                      />
-                      <NBText variant="body-sm" color="black" style={styles.softWarningText}>
-                        Anda berada di luar area kerja. Absen tetap dicatat.
                       </NBText>
                     </View>
                   )}
@@ -386,8 +437,11 @@ export const ClockInOutScreen = (): React.JSX.Element => {
               isSubmitting || location.loading || !location.latitude || !location.longitude ||
               (isClockIn && !isOnline)
             }
+            accessibilityLabel={isClockIn ? 'Tombol Clock In' : 'Tombol Clock Out'}
             accessibilityHint={
-              isClockIn ? 'Mulai shift kerja dengan verifikasi foto diri dan lokasi' : 'Akhiri shift kerja saat ini'
+              isClockIn
+                ? (isWithinBoundary ? 'Mulai shift kerja dengan verifikasi lokasi' : 'Mulai shift kerja — Anda di luar area, absen tetap dicatat')
+                : 'Akhiri shift kerja saat ini'
             }
           />
         </View>
@@ -416,6 +470,28 @@ const styles = StyleSheet.create({
   content: {
     paddingTop: nbSpacing.md,
     paddingBottom: nbSpacing.xs,
+  },
+  timeHero: {
+    alignItems: 'center',
+    marginHorizontal: nbSpacing.md,
+    marginBottom: nbSpacing.md,
+    paddingVertical: nbSpacing.md,
+    backgroundColor: withAlpha(nbColors.primary, 0.1),
+    borderRadius: nbRadius.md,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    ...nbShadows.sm,
+  },
+  timeHeroTime: {
+    letterSpacing: 1,
+  },
+  gpsStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cardOutside: {
+    borderColor: nbColors.statusOutside,
+    backgroundColor: withAlpha(nbColors.statusOutsideBg, 0.5),
   },
   header: {
     marginHorizontal: nbSpacing.md,
@@ -518,36 +594,6 @@ const styles = StyleSheet.create({
     ...nbShadows.sm,
   },
   warningText: {
-    flex: 1,
-  },
-  insideAreaBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: nbSpacing.sm,
-    marginBottom: nbSpacing.xs,
-    padding: nbSpacing.sm,
-    backgroundColor: nbColors.statusActiveBg,
-    borderRadius: nbRadius.base,
-    borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.black,
-    ...nbShadows.sm,
-  },
-  insideAreaText: {
-    flex: 1,
-  },
-  softWarningBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: nbSpacing.sm,
-    marginBottom: nbSpacing.xs,
-    padding: nbSpacing.sm,
-    backgroundColor: nbColors.statusIdleBg,
-    borderRadius: nbRadius.base,
-    borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.black,
-    ...nbShadows.sm,
-  },
-  softWarningText: {
     flex: 1,
   },
   clockInInfo: {

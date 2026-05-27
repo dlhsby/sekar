@@ -4,6 +4,21 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## May 27, 2026 — M3 ABS revamp · ABS-1/ABS-2 (ClockInOutScreen)
+
+**ABS-1/ABS-2 — ClockInOutScreen hi-fi layout revamp:**
+- Time hero: live clock (1-second interval) + date (Indonesian day/month format) at top of scroll; `primaryLight` tint bg; subtitle text retained for test compatibility.
+- GPS status row (always-visible): `MaterialCommunityIcons` + area name + accuracy label + `NBBadge` (DI AREA/LUAR AREA); no longer hidden inside collapsible body.
+- Area status alert: `NBAlert variant="success"` when inside boundary; `NBAlert variant="warning"` when outside — replaces raw `insideAreaBanner`/`softWarningBanner` views.
+- ABS-2 visual: GPS card gets `cardOutside` style (purple border + `statusOutsideBg` tint) when outside geofence. Soft geofencing behavior unchanged.
+- Selfie header: "Sudah diambil ✓" (success) / "Opsional" (gray600) status indicator.
+- Submit button: `accessibilityLabel` + context-aware `accessibilityHint` (mentions out-of-area when applicable).
+- Removed unused `insideAreaBanner`, `insideAreaText`, `softWarningBanner`, `softWarningText` styles.
+
+**54/54 tests pass (0 regressions vs. prior 54 passing).**
+
+---
+
 ## May 27, 2026 — M3 AKT revamp · AKT-1/AKT-2 + supporting taskActivity files
 
 **AKT-1/AKT-2 — Aktivitas screens + all supporting taskActivity components:**

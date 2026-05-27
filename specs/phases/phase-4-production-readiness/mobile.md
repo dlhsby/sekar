@@ -70,8 +70,8 @@
 | (chrome) | Shared masthead + bottom tab bar | `components/navigation/FieldHomeHeader.tsx`, `navigation/MainNavigator.tsx` | ✅ Done (Checkpoints 1a/1b; polished 6) — masthead uses shared **`RoleAvatar`** (profile photo when set, else role-tinted initials), smaller role/name fonts, status chip left of the bell |
 | (primitive) | `RoleAvatar` (v2.1 avatar) | `fe/mobile/src/components/common/RoleAvatar.tsx` | ✅ Done (Checkpoint 6) — role-accent tint + black initials, renders `profile_picture_url` when set; used by masthead + team grid |
 | (sheets) | Home Ringkasan bottom sheets | `components/modals/Today{Activities,WorkHours,Tasks}Modal.tsx`, `components/common/ShiftCard.tsx` | ✅ Done (Checkpoint 7) — all three on `NBModal` + `NBText`/tokens; `TodayTasksModal` new; `ShiftCard` Text→NBText |
-| ABS-1 | Clock-in · GPS + selfie | existing absensi screen | Revamp |
-| ABS-2 | Clock-in · Di luar area | existing | Revamp |
+| ABS-1 | Clock-in · GPS + selfie | existing absensi screen | ✅ Done (2026-05-27) — time hero (live clock + date), always-visible GPS status row + NBBadge (DI AREA/LUAR AREA), NBAlert for inside/outside area state |
+| ABS-2 | Clock-in · Di luar area | existing | ✅ Done (2026-05-27) — cardOutside tint + NBAlert warning (visual-only; soft geofencing kept) |
 | ABS-3 | Shift history | existing | Revamp |
 | MON-1 | Map · Korlap view | monitoring screen + `components/monitoring/*` | ✅ Done (2026-05-26) — tokens clean; MapFab rounded-square |
 | MON-2 | Personnel sheet | `UserDetailSheet.tsx` | ✅ Done (2026-05-26) — RoleAvatar + HomeStatTile + NBText/NBButton; Info Shift/Tasks/WhatsApp OMITTED per hi-fi |
