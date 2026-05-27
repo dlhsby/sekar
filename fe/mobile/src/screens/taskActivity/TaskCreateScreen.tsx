@@ -7,7 +7,6 @@
 import React, { useState, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import {
   View,
-  Text,
   ScrollView,
   StyleSheet,
   SafeAreaView,
@@ -15,6 +14,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { MainTabScreenProps } from '../../types/navigation.types';
@@ -26,6 +26,7 @@ import { getRayons, getAreasByRayonId } from '../../services/api/rayonsApi';
 import { VALID_TASK_ASSIGNMENTS } from '../../constants/roles';
 import {
   NBButton,
+  NBText,
   NBTextInput,
   NBCard,
   NBCardHeader,
@@ -35,7 +36,7 @@ import {
   NBSelect,
 } from '../../components/nb';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
-import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
 import type { CreateTaskRequest } from '../../types/api.types';
 import type { NBSelectOption } from '../../components/nb/NBSelect';
 import type { TaskPriority, User, UserRole } from '../../types/models.types';
@@ -44,7 +45,7 @@ import type { TaskPriority, User, UserRole } from '../../types/models.types';
  * Priority options with color coding
  */
 const PRIORITY_OPTIONS: { value: TaskPriority; label: string; color: string }[] = [
-  { value: 'low', label: 'Rendah', color: nbColors.gray[500] },
+  { value: 'low', label: 'Rendah', color: nbColors.gray500 },
   { value: 'medium', label: 'Biasa', color: nbColors.accentSky },
   { value: 'high', label: 'Tinggi', color: nbColors.accentSunshine },
   { value: 'urgent', label: 'Mendesak', color: nbColors.danger },
@@ -484,9 +485,12 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
           {/* Validation error summary */}
           {Object.values(errors).some(Boolean) && (
             <View style={styles.errorSummary}>
-              <Text style={styles.errorSummaryTitle}>⚠️ Mohon lengkapi data berikut:</Text>
+              <View style={styles.errorSummaryTitleRow}>
+                <MaterialCommunityIcons name="alert-circle-outline" size={14} color={nbColors.danger} />
+                <NBText variant="body-sm" style={styles.errorSummaryTitle}> Mohon lengkapi data berikut:</NBText>
+              </View>
               {Object.values(errors).filter(Boolean).map((msg, i) => (
-                <Text key={i} style={styles.errorSummaryItem}>• {msg}</Text>
+                <NBText key={i} variant="body-sm" style={styles.errorSummaryItem}>• {msg}</NBText>
               ))}
             </View>
           )}
@@ -494,8 +498,11 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
           {/* Title & Description */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <Text style={styles.sectionTitle}>{'📝 DETAIL TUGAS'}<Text style={styles.requiredAsterisk}> *</Text></Text>
-              <Text style={styles.sectionSubtitle}>Isi judul dan deskripsi tugas</Text>
+              <View style={styles.sectionTitleRow}>
+                <MaterialCommunityIcons name="text-box-outline" size={16} color={nbColors.black} />
+                <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> DETAIL TUGAS<NBText variant="mono-sm" style={styles.requiredAsterisk}> *</NBText></NBText>
+              </View>
+              <NBText variant="body-sm" style={styles.sectionSubtitle}>Isi judul dan deskripsi tugas</NBText>
             </NBCardHeader>
             <NBCardContent>
               <NBTextInput
@@ -528,20 +535,23 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
           {/* Location (Rayon + Area) */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <Text style={styles.sectionTitle}>{'📍 LOKASI'}</Text>
-              <Text style={styles.sectionSubtitle}>
+              <View style={styles.sectionTitleRow}>
+                <MaterialCommunityIcons name="map-marker" size={16} color={nbColors.black} />
+                <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> LOKASI</NBText>
+              </View>
+              <NBText variant="body-sm" style={styles.sectionSubtitle}>
                 {isRayonFixed && isAreaFixed
                   ? 'Lokasi otomatis dari profil Anda'
                   : 'Pilih lokasi penugasan'}
-              </Text>
+              </NBText>
             </NBCardHeader>
             <NBCardContent>
               {/* Rayon Select */}
-              <Text style={styles.fieldLabel}>Rayon</Text>
+              <NBText variant="body-sm" style={styles.fieldLabel}>Rayon</NBText>
               {isLoadingRayons ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator color={nbColors.primary} />
-                  <Text style={styles.loadingText}>Memuat rayon...</Text>
+                  <NBText variant="body-sm" color="gray600" style={styles.loadingText}>Memuat rayon...</NBText>
                 </View>
               ) : (
                 <NBSelect
@@ -562,11 +572,11 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
               <View style={styles.fieldSpacer} />
 
               {/* Area Select */}
-              <Text style={styles.fieldLabel}>Area</Text>
+              <NBText variant="body-sm" style={styles.fieldLabel}>Area</NBText>
               {isLoadingAreas ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator color={nbColors.primary} />
-                  <Text style={styles.loadingText}>Memuat area...</Text>
+                  <NBText variant="body-sm" color="gray600" style={styles.loadingText}>Memuat area...</NBText>
                 </View>
               ) : (
                 <NBSelect
@@ -591,7 +601,10 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
           {/* Priority */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <Text style={styles.sectionTitle}>{'🔥 PRIORITAS'}</Text>
+              <View style={styles.sectionTitleRow}>
+                <MaterialCommunityIcons name="flag-outline" size={16} color={nbColors.black} />
+                <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> PRIORITAS</NBText>
+              </View>
             </NBCardHeader>
             <NBCardContent>
               {PRIORITY_OPTIONS.map((option) => (
@@ -605,14 +618,15 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
                     setForm((prev) => ({ ...prev, priority: option.value }))
                   }
                 >
-                  <Text
+                  <NBText
+                    variant="body"
                     style={[
                       styles.optionText,
                       form.priority === option.value && styles.optionTextActive,
                     ]}
                   >
                     {form.priority === option.value ? '✓ ' : ''}{option.label}
-                  </Text>
+                  </NBText>
                 </TouchableOpacity>
               ))}
             </NBCardContent>
@@ -621,8 +635,11 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
           {/* Deadline */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <Text style={styles.sectionTitle}>{'📅 BATAS WAKTU'}</Text>
-              <Text style={styles.sectionSubtitle}>Opsional — tentukan tenggat tugas (waktu default 23:59)</Text>
+              <View style={styles.sectionTitleRow}>
+                <MaterialCommunityIcons name="calendar-clock" size={16} color={nbColors.black} />
+                <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> BATAS WAKTU</NBText>
+              </View>
+              <NBText variant="body-sm" style={styles.sectionSubtitle}>Opsional — tentukan tenggat tugas (waktu default 23:59)</NBText>
             </NBCardHeader>
             <NBCardContent>
               {/* Date picker */}
@@ -674,20 +691,23 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
           {/* Assignee (mandatory) — NBSelect with search */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <Text style={styles.sectionTitle}>{'👤 PENUGASAN'}<Text style={styles.requiredAsterisk}> *</Text></Text>
-              <Text style={styles.sectionSubtitle}>Pilih petugas yang ditugaskan</Text>
+              <View style={styles.sectionTitleRow}>
+                <MaterialCommunityIcons name="account-arrow-right" size={16} color={nbColors.black} />
+                <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> PENUGASAN<NBText variant="mono-sm" style={styles.requiredAsterisk}> *</NBText></NBText>
+              </View>
+              <NBText variant="body-sm" style={styles.sectionSubtitle}>Pilih petugas yang ditugaskan</NBText>
             </NBCardHeader>
             <NBCardContent>
               {needsAreaSelection ? (
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>
+                  <NBText variant="body-sm" color="gray600" style={styles.emptyText}>
                     Pilih lokasi terlebih dahulu
-                  </Text>
+                  </NBText>
                 </View>
               ) : isLoadingUsers ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator color={nbColors.primary} />
-                  <Text style={styles.loadingText}>Memuat daftar petugas...</Text>
+                  <NBText variant="body-sm" color="gray600" style={styles.loadingText}>Memuat daftar petugas...</NBText>
                 </View>
               ) : assigneeOptions.length > 0 ? (
                 <NBSelect
@@ -708,13 +728,13 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
                 />
               ) : (
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>
+                  <NBText variant="body-sm" color="gray600" style={styles.emptyText}>
                     Tidak ada petugas yang dapat ditugaskan di area ini
-                  </Text>
+                  </NBText>
                 </View>
               )}
               {errors.assignedTo && (
-                <Text style={styles.errorText}>{errors.assignedTo}</Text>
+                <NBText variant="body-sm" style={styles.errorText}>{errors.assignedTo}</NBText>
               )}
             </NBCardContent>
           </NBCard>
@@ -722,20 +742,23 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
           {/* Tagged Users (optional, multi-select with search) */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <Text style={styles.sectionTitle}>{'🏷️ TAG PETUGAS'}</Text>
-              <Text style={styles.sectionSubtitle}>Opsional — pilih beberapa petugas untuk di-tag</Text>
+              <View style={styles.sectionTitleRow}>
+                <MaterialCommunityIcons name="tag-multiple-outline" size={16} color={nbColors.black} />
+                <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> TAG PETUGAS</NBText>
+              </View>
+              <NBText variant="body-sm" style={styles.sectionSubtitle}>Opsional — pilih beberapa petugas untuk di-tag</NBText>
             </NBCardHeader>
             <NBCardContent>
               {needsAreaSelection ? (
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>
+                  <NBText variant="body-sm" color="gray600" style={styles.emptyText}>
                     Pilih lokasi terlebih dahulu
-                  </Text>
+                  </NBText>
                 </View>
               ) : isLoadingUsers ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator color={nbColors.primary} />
-                  <Text style={styles.loadingText}>Memuat daftar petugas...</Text>
+                  <NBText variant="body-sm" color="gray600" style={styles.loadingText}>Memuat daftar petugas...</NBText>
                 </View>
               ) : taggableOptions.length > 0 ? (
                 <NBSelect
@@ -749,11 +772,11 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
                 />
               ) : (
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>
+                  <NBText variant="body-sm" color="gray600" style={styles.emptyText}>
                     {form.assignedTo
                       ? 'Tidak ada petugas lain untuk di-tag'
                       : 'Tidak ada petugas yang dapat di-tag di area ini'}
-                  </Text>
+                  </NBText>
                 </View>
               )}
             </NBCardContent>
@@ -816,25 +839,18 @@ const styles = StyleSheet.create({
   card: {
     marginBottom: nbSpacing.md,
   },
-  sectionTitle: {
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.extrabold,
-    color: nbColors.black,
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: nbSpacing.xs,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
   },
-  sectionSubtitle: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray['600'],
-  },
+  sectionTitleStyle: {},
+  sectionSubtitle: {},
   fieldSpacer: {
     height: nbSpacing.sm,
   },
   fieldLabel: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.semibold,
+    fontWeight: '600',
     color: nbColors.black,
     marginBottom: nbSpacing.xs,
     textTransform: 'uppercase',
@@ -845,8 +861,8 @@ const styles = StyleSheet.create({
   },
   optionButton: {
     padding: nbSpacing.md,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     marginBottom: nbSpacing.sm,
     backgroundColor: nbColors.white,
@@ -857,13 +873,12 @@ const styles = StyleSheet.create({
     ...nbShadows.sm,
   },
   optionText: {
-    fontSize: nbTypography.fontSize.base,
     color: nbColors.black,
     textAlign: 'left',
   },
   optionTextActive: {
     color: nbColors.primary,
-    fontWeight: nbTypography.fontWeight.semibold,
+    fontWeight: '600',
   },
   clearButton: {
     marginTop: nbSpacing.sm,
@@ -875,21 +890,15 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginLeft: nbSpacing.sm,
-    color: nbColors.gray['600'],
-    fontSize: nbTypography.fontSize.sm,
   },
   emptyContainer: {
     alignItems: 'center',
     padding: nbSpacing.lg,
   },
-  emptyText: {
-    color: nbColors.gray['600'],
-    fontSize: nbTypography.fontSize.sm,
-  },
+  emptyText: {},
   errorText: {
     color: nbColors.danger,
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.semibold,
+    fontWeight: '600',
     marginBottom: nbSpacing.sm,
   },
   requiredAsterisk: {
@@ -898,20 +907,21 @@ const styles = StyleSheet.create({
   },
   errorSummary: {
     backgroundColor: withAlpha(nbColors.danger, 0.06),
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.danger,
-    borderRadius: nbBorderRadius.sm,
+    borderRadius: nbRadius.sm,
     padding: nbSpacing.sm,
     marginBottom: nbSpacing.md,
   },
-  errorSummaryTitle: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.danger,
+  errorSummaryTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: nbSpacing.xs,
   },
+  errorSummaryTitle: {
+    color: nbColors.danger,
+  },
   errorSummaryItem: {
-    fontSize: nbTypography.fontSize.sm,
     color: nbColors.danger,
     marginTop: 2,
   },

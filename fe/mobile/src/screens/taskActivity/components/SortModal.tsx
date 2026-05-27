@@ -8,12 +8,12 @@ import React from 'react';
 import {
   Modal,
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { nbColors, nbTypography, nbBorders } from '../../../constants/nbTokens';
+import { NBText } from '../../../components/nb';
+import { nbColors, nbBorders } from '../../../constants/nbTokens';
 
 type TaskSortOption = 'created_at_desc' | 'created_at_asc' | 'deadline_asc' | 'priority_desc';
 type ActivitySortOption = 'created_at_desc' | 'created_at_asc';
@@ -81,9 +81,9 @@ export function SortModal({
           onStartShouldSetResponder={() => true}
         >
           <View style={styles.sortModalHeader}>
-            <Text style={styles.sortModalTitle}>
+            <NBText variant="mono-sm" uppercase style={styles.sortModalTitle}>
               {isTasksTab ? 'URUTKAN TUGAS' : 'URUTKAN AKTIVITAS'}
-            </Text>
+            </NBText>
             <TouchableOpacity
               style={styles.sortModalCloseButton}
               onPress={onClose}
@@ -104,9 +104,9 @@ export function SortModal({
               accessibilityLabel={opt.label}
               accessibilityState={{ selected: activeSort === opt.value }}
             >
-              <Text style={[styles.sortOptionText, activeSort === opt.value && styles.sortOptionTextActive]}>
+              <NBText variant="body" style={[styles.sortOptionText, activeSort === opt.value && styles.sortOptionTextActive]}>
                 {opt.label}
-              </Text>
+              </NBText>
               {activeSort === opt.value && (
                 <MaterialCommunityIcons name="check-bold" size={18} color={nbColors.primary} />
               )}
@@ -126,9 +126,9 @@ const styles = StyleSheet.create({
   },
   sortModalSheet: {
     backgroundColor: nbColors.white,
-    borderTopWidth: nbBorders.thick,
-    borderLeftWidth: nbBorders.thick,
-    borderRightWidth: nbBorders.thick,
+    borderTopWidth: nbBorders.widthThick,
+    borderLeftWidth: nbBorders.widthThick,
+    borderRightWidth: nbBorders.widthThick,
     borderBottomWidth: 0,
     borderColor: nbColors.black,
   },
@@ -138,14 +138,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: nbColors.gray[100],
+    backgroundColor: nbColors.gray100,
   },
   sortModalTitle: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: '700' as const,
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.5,
-    color: nbColors.black,
     flex: 1,
   },
   sortModalCloseButton: {
@@ -155,7 +150,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center' as const,
   },
   sortModalDivider: {
-    height: nbBorders.thick,
+    height: nbBorders.widthThick,
     backgroundColor: nbColors.black,
   },
   sortOption: {
@@ -165,7 +160,7 @@ const styles = StyleSheet.create({
     alignItems: 'center' as const,
     justifyContent: 'space-between' as const,
     borderBottomWidth: 1,
-    borderBottomColor: nbColors.gray[200],
+    borderBottomColor: nbColors.gray200,
   },
   sortOptionActive: {
     borderLeftWidth: 4,
@@ -173,8 +168,6 @@ const styles = StyleSheet.create({
     paddingLeft: 12,
   },
   sortOptionText: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: '400' as const,
     color: nbColors.black,
   },
   sortOptionTextActive: {

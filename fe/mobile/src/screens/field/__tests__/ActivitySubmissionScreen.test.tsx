@@ -183,10 +183,10 @@ describe('ActivitySubmissionScreen', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('📸 FOTO AKTIVITAS')).toBeTruthy();
-      expect(getByText('🏷️ JENIS AKTIVITAS')).toBeTruthy();
-      expect(getByText('📝 Deskripsi Pekerjaan', { exact: false })).toBeTruthy();
-      expect(getByText('📍 LOKASI GPS')).toBeTruthy();
+      expect(getByText(/FOTO AKTIVITAS/)).toBeTruthy();
+      expect(getByText(/JENIS AKTIVITAS/)).toBeTruthy();
+      expect(getByText(/Deskripsi Pekerjaan/i)).toBeTruthy();
+      expect(getByText(/LOKASI GPS/)).toBeTruthy();
     });
   });
 
@@ -420,7 +420,7 @@ describe('ActivitySubmissionScreen', () => {
 
     // Location error is shown when location is not available
     await waitFor(() => {
-      expect(getByText('📍 LOKASI GPS')).toBeTruthy();
+      expect(getByText(/LOKASI GPS/)).toBeTruthy();
     });
   });
 
@@ -534,7 +534,7 @@ describe('ActivitySubmissionScreen', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('📸 FOTO AKTIVITAS')).toBeTruthy();
+      expect(getByText(/FOTO AKTIVITAS/)).toBeTruthy();
     });
   });
 });

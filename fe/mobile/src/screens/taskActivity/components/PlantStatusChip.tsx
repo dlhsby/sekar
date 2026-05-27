@@ -5,9 +5,8 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Text } from 'react-native';
 import { getAreaPlantStatus } from '../../../services/api/monitoringApi';
-import { nbTypography, nbColors } from '../../../constants/nbTokens';
+import { NBText } from '../../../components/nb';
 
 interface PlantStatusChipProps {
   areaId: string;
@@ -67,13 +66,8 @@ export function PlantStatusChip({ areaId, taskTitle }: PlantStatusChipProps): Re
   }
 
   return (
-    <Text
-      style={{
-        fontSize: nbTypography.fontSize.xs,
-        color: nbColors.gray[600],
-      }}
-    >
+    <NBText variant="caption" color="gray600">
       {statusEmoji}
-    </Text>
+    </NBText>
   );
 }

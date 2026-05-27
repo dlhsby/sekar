@@ -167,7 +167,7 @@ describe('ActivityDetailScreen', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('🏷️ JENIS AKTIVITAS')).toBeTruthy();
+      expect(getByText(/JENIS AKTIVITAS/)).toBeTruthy();
       expect(getByText('Menyiram')).toBeTruthy();
     });
   });
@@ -193,7 +193,7 @@ describe('ActivityDetailScreen', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('📝 DESKRIPSI PEKERJAAN')).toBeTruthy();
+      expect(getByText(/DESKRIPSI PEKERJAAN/)).toBeTruthy();
       expect(getByText('Detailed activity description here')).toBeTruthy();
     });
   });
@@ -222,7 +222,7 @@ describe('ActivityDetailScreen', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('📸 FOTO AKTIVITAS')).toBeTruthy();
+      expect(getByText(/FOTO AKTIVITAS/)).toBeTruthy();
       expect(getByText('2 foto dilampirkan')).toBeTruthy();
     });
   });
@@ -248,7 +248,7 @@ describe('ActivityDetailScreen', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('📍 LOKASI GPS')).toBeTruthy();
+      expect(getByText(/LOKASI GPS/)).toBeTruthy();
       expect(getByText('-7.256789, 112.754321')).toBeTruthy();
     });
   });
@@ -283,7 +283,7 @@ describe('ActivityDetailScreen', () => {
 
     await waitFor(() => {
       // Check merged card header
-      expect(getByText('📋 INFORMASI UMUM')).toBeTruthy();
+      expect(getByText(/INFORMASI UMUM/)).toBeTruthy();
       // Check time information
       expect(getByText('Tanggal & Waktu')).toBeTruthy();
       // Check user information

@@ -4,9 +4,10 @@
  */
 
 import React from 'react';
-import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
-import { NBCard, NBBadge } from '../../../components/nb';
-import { nbColors, nbSpacing, nbTypography } from '../../../constants/nbTokens';
+import { TouchableOpacity, View, StyleSheet } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { NBCard, NBBadge, NBText } from '../../../components/nb';
+import { nbColors, nbSpacing } from '../../../constants/nbTokens';
 import type { Activity } from '../../../types/models.types';
 import { formatDate, formatTime, getActivityStatusLabel, getActivityStatusColor } from '../../../utils/statusHelpers';
 
@@ -29,12 +30,12 @@ export function ActivityCard({ activity, onPress, currentUserId }: ActivityCardP
         {/* Header: activity type + created time | status badge */}
         <View style={styles.itemHeader}>
           <View style={styles.itemHeaderLeft}>
-            <Text style={styles.itemPrimary} numberOfLines={1}>
+            <NBText variant="body" style={styles.itemPrimary} numberOfLines={1}>
               {activity.activityType?.name || 'Aktivitas'}
-            </Text>
-            <Text style={styles.itemTimestamp}>
+            </NBText>
+            <NBText variant="caption" color="gray500">
               {formatDate(activity.created_at)} · {formatTime(activity.created_at)}
-            </Text>
+            </NBText>
           </View>
           <View style={styles.itemHeaderRight}>
             {isTaggedIn && (
@@ -50,24 +51,31 @@ export function ActivityCard({ activity, onPress, currentUserId }: ActivityCardP
         </View>
         {/* Description */}
         {activity.description ? (
-          <Text style={styles.itemDescription} numberOfLines={2}>
+          <NBText variant="body-sm" color="gray600" style={styles.itemDescription} numberOfLines={2}>
             {activity.description}
-          </Text>
+          </NBText>
         ) : null}
         {/* Meta row */}
         <View style={styles.itemMeta}>
           {activity.area && (
-            <Text style={styles.itemMetaChip}>📍 {activity.area.name}</Text>
+            <View style={styles.itemMetaChip}>
+              <MaterialCommunityIcons name="map-marker" size={11} color={nbColors.gray500} />
+              <NBText variant="caption" color="gray500"> {activity.area.name}</NBText>
+            </View>
           )}
           {activity.photo_urls && activity.photo_urls.length > 0 && (
-            <Text style={styles.itemMetaChip}>📸 {activity.photo_urls.length} foto</Text>
+            <View style={styles.itemMetaChip}>
+              <MaterialCommunityIcons name="camera" size={11} color={nbColors.gray500} />
+              <NBText variant="caption" color="gray500"> {activity.photo_urls.length} foto</NBText>
+            </View>
           )}
         </View>
         {/* Creator row */}
         {activity.user && (
-          <Text style={styles.itemCreator}>
-            👤 {activity.user.role} - {activity.user.full_name}
-          </Text>
+          <View style={styles.itemCreatorRow}>
+            <MaterialCommunityIcons name="account" size={11} color={nbColors.gray500} />
+            <NBText variant="caption" color="gray500"> {activity.user.role} - {activity.user.full_name}</NBText>
+          </View>
         )}
       </NBCard>
     </TouchableOpacity>
@@ -96,20 +104,11 @@ const styles = StyleSheet.create({
     gap: nbSpacing.xs,
   },
   itemPrimary: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
+    fontWeight: '700',
     marginBottom: 2,
   },
-  itemTimestamp: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray[500],
-  },
   itemDescription: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[600],
     marginBottom: nbSpacing.xs,
-    lineHeight: 18,
   },
   itemMeta: {
     flexDirection: 'row',
@@ -118,12 +117,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   itemMetaChip: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray[500],
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  itemCreator: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray['500'],
+  itemCreatorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: nbSpacing.xs,
   },
 });

@@ -4,6 +4,25 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## May 27, 2026 — M3 AKT revamp · AKT-1/AKT-2 + supporting taskActivity files
+
+**AKT-1/AKT-2 — Aktivitas screens + all supporting taskActivity components:**
+- `ActivitySubmissionScreen`: 3× emoji section headers → `MaterialCommunityIcons` + `NBText`; error-summary row → icon+NBText row; `nbBorders.base` → `nbBorders.widthBase` (×3); `nbBorderRadius.base/sm` → `nbRadius.base/sm`.
+- `ActivityDetailScreen`: 6× emoji section headers → icon+NBText rows; `nbBorderRadius.base` → `nbRadius.base` (×2); `nbBorders.base` → `nbBorders.widthBase` (×2); `nbColors.gray[50]` → `nbColors.gray50`.
+- `ActivitiesTab`: raw `Text` → `NBText` with color variants; `nbTypography/nbBorderRadius/nbBorders.base` shims removed; `nbColors.gray['600'/'400']` bracket notation removed.
+- `ActivityCard`: raw `Text` → `NBText`; emoji meta chips (📍👤🏷️) → `MaterialCommunityIcons` + `NBText` rows; `nbTypography` removed; `gray[500]` flat.
+- `TasksTab`: mirrors ActivitiesTab changes — raw `Text` → `NBText`; all Phase 2 token shims removed.
+- `TaskCard`: emoji meta chips (👤📍🗺️🔥⏰🏷️) → icon+NBText rows; `nbTypography` removed; `gray[500/600]` flat.
+- `PlantStatusChip`: raw `Text` with inline style → `NBText variant="caption" color="gray600"`; `nbTypography` import removed.
+- `SortModal`: raw `Text` → `NBText`; `nbBorders.thick` → `nbBorders.widthThick` (×3); `nbColors.gray[100/200]` → `nbColors.gray100/gray200`; `nbTypography` removed.
+- `TaskCreateScreen`: `Text` → `NBText`; 6× emoji section headers → icon+NBText rows; `nbTypography/nbBorders.base/nbBorderRadius` shims removed; `gray['600']` (×3) removed.
+
+**Test fixes:** `ActivityDetailScreen.test.tsx` — 5× exact emoji assertions → regex; `ActivitySubmissionScreen.test.tsx` — 4× exact emoji assertions → regex.
+
+**81 tests pass across all 7 affected test suites (0 regressions).**
+
+---
+
 ## May 26, 2026 — GPS timeout crash fix + M3 TUG revamp · TUG-1/2/3
 
 **Bug fix — LocationTracker "Unhandled error" crash (korlap home screen):**

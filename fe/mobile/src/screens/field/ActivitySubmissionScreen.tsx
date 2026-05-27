@@ -15,9 +15,10 @@ import {
   Platform,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBAlert, NBBackgroundPattern, NBText } from '../../components/nb';
 import { NBButton, NBCard, NBCardHeader, NBCardContent, NBSelect, NBCardTextInput, type NBSelectOption } from '../../components/nb';
-import { nbColors, nbSpacing, nbBorders, nbBorderRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
 import { PhotoUploader } from '../../components/common';
 import { useActivityForm } from '../../hooks';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
@@ -153,7 +154,10 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
           {/* Validation error summary */}
           {Object.values(errors).some(Boolean) && (
             <View style={styles.errorSummary}>
-              <NBText variant="body-sm" style={styles.errorSummaryTitleStyle}>⚠️ Mohon lengkapi data berikut:</NBText>
+              <View style={styles.errorSummaryTitleRow}>
+                <MaterialCommunityIcons name="alert-circle-outline" size={14} color={nbColors.danger} />
+                <NBText variant="body-sm" style={styles.errorSummaryTitleStyle}> Mohon lengkapi data berikut:</NBText>
+              </View>
               {Object.values(errors).filter(Boolean).map((msg, i) => (
                 <NBText key={i} variant="body-sm" style={styles.errorSummaryItemStyle}>• {msg}</NBText>
               ))}
@@ -175,7 +179,7 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
           {!isOnline && (
             <NBCard style={styles.offlineWarning}>
               <NBText variant="body-sm" color="warning" style={styles.offlineWarningTextStyle}>
-                ⚠️ Mode Offline - Aktivitas akan disimpan dan dikirim saat online
+                Mode Offline - Aktivitas akan disimpan dan dikirim saat online
               </NBText>
             </NBCard>
           )}
@@ -183,7 +187,10 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
           {/* Photos section */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <NBText variant="h3" style={styles.sectionTitleStyle}>📸 FOTO AKTIVITAS</NBText>
+              <View style={styles.sectionTitleRow}>
+                <MaterialCommunityIcons name="camera" size={16} color={nbColors.black} />
+                <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> FOTO AKTIVITAS</NBText>
+              </View>
               <NBText variant="body-sm" style={styles.sectionSubtitleStyle}>Tambahkan 1-3 foto pekerjaan yang dilakukan</NBText>
             </NBCardHeader>
             <NBCardContent>
@@ -354,13 +361,11 @@ const styles = StyleSheet.create({
   card: {
     marginBottom: nbSpacing.md,
   },
-  sectionTitleStyle: {
-    marginBottom: nbSpacing.xs,
-  },
+  sectionTitleStyle: {},
   sectionSubtitleStyle: {},
   offlineWarning: {
     backgroundColor: nbColors.warningLight,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.warning,
     marginBottom: nbSpacing.md,
     ...nbShadows.sm,
@@ -377,8 +382,8 @@ const styles = StyleSheet.create({
   locationInfo: {
     padding: nbSpacing.lg,
     backgroundColor: withAlpha(nbColors.accentSky, 0.15),
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },
@@ -406,15 +411,23 @@ const styles = StyleSheet.create({
   },
   errorSummary: {
     backgroundColor: withAlpha(nbColors.danger, 0.06),
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.danger,
-    borderRadius: nbBorderRadius.sm,
+    borderRadius: nbRadius.sm,
     padding: nbSpacing.sm,
     marginBottom: nbSpacing.md,
   },
-  errorSummaryTitleStyle: {
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: nbSpacing.xs,
   },
+  errorSummaryTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: nbSpacing.xs,
+  },
+  errorSummaryTitleStyle: {},
   errorSummaryItemStyle: {
     marginTop: 2,
   },

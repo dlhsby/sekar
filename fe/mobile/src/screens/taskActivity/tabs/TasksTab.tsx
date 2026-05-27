@@ -7,7 +7,6 @@
 import React from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
@@ -15,8 +14,8 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import { NBEmptyState } from '../../../components/nb';
-import { nbColors, nbSpacing, nbTypography, nbBorders, nbBorderRadius, nbShadows } from '../../../constants/nbTokens';
+import { NBEmptyState, NBText } from '../../../components/nb';
+import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../../constants/nbTokens';
 import { TaskCard } from '../components/TaskCard';
 import type { Task } from '../../../types/models.types';
 
@@ -53,7 +52,7 @@ export function TasksTab({
     return (
       <View style={styles.centerContent}>
         <ActivityIndicator size="large" color={nbColors.primary} />
-        <Text style={styles.loadingText}>Memuat tugas...</Text>
+        <NBText variant="body" color="gray600" style={styles.loadingText}>Memuat tugas...</NBText>
       </View>
     );
   }
@@ -65,9 +64,9 @@ export function TasksTab({
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View style={styles.centerContentInline}>
-          <Text style={styles.errorText}>{tasksError}</Text>
+          <NBText variant="body" color="danger" style={styles.errorText}>{tasksError}</NBText>
           <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
-            <Text style={styles.retryButtonText}>Coba Lagi</Text>
+            <NBText variant="body" color="white" style={styles.retryButtonText}>Coba Lagi</NBText>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -120,7 +119,7 @@ export function TasksTab({
           </View>
         ) : !hasMore && tasks.length > 0 ? (
           <View style={styles.footerEnd}>
-            <Text style={styles.footerEndText}>Tidak ada lagi</Text>
+            <NBText variant="body-sm" color="gray400" style={styles.footerEndText}>Tidak ada lagi</NBText>
           </View>
         ) : null
       }
@@ -136,8 +135,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: nbSpacing.md,
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray['600'],
   },
   listContent: {
     paddingBottom: nbSpacing.lg,
@@ -157,8 +154,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorText: {
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.danger,
     marginBottom: nbSpacing.md,
     textAlign: 'center',
   },
@@ -166,15 +161,13 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.primary,
     paddingHorizontal: nbSpacing.lg,
     paddingVertical: nbSpacing.sm,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.base,
+    borderRadius: nbRadius.base,
     ...nbShadows.sm,
   },
   retryButtonText: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.white,
+    fontWeight: '700',
   },
   footerLoader: {
     paddingVertical: nbSpacing.md,
@@ -185,8 +178,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerEndText: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['400'],
     fontStyle: 'italic',
   },
 });

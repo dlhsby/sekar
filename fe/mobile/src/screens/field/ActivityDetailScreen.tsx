@@ -15,10 +15,11 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import type { MainTabParamList, MainTabScreenProps } from '../../types/navigation.types';
 import { getActivityById, approveActivity, rejectActivity } from '../../services/api/activitiesApi';
 import { NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern, NBBadge, NBButton, NBCardTextInput, NBText } from '../../components/nb';
-import { nbColors, nbSpacing, nbBorders, nbBorderRadius, nbShadows } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
 import type { Activity } from '../../types/models.types';
 import { useAppSelector } from '../../store/hooks';
 
@@ -218,7 +219,10 @@ export function ActivityDetailScreen(): React.JSX.Element {
           {/* General Information Card - Merged Time & Worker */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <NBText variant="h3" style={styles.sectionTitleStyle}>📋 INFORMASI UMUM</NBText>
+              <View style={styles.sectionTitleRow}>
+                <MaterialCommunityIcons name="information-outline" size={16} color={nbColors.black} />
+                <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> INFORMASI UMUM</NBText>
+              </View>
             </NBCardHeader>
             <NBCardContent>
               <View style={styles.infoRow}>
@@ -244,7 +248,10 @@ export function ActivityDetailScreen(): React.JSX.Element {
           <NBCard style={styles.card}>
             <NBCardHeader>
               <View style={styles.statusRow}>
-                <NBText variant="h3" style={styles.sectionTitleStyle}>📋 STATUS</NBText>
+                <View style={styles.sectionTitleRow}>
+                  <MaterialCommunityIcons name="check-circle-outline" size={16} color={nbColors.black} />
+                  <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> STATUS</NBText>
+                </View>
                 <NBBadge
                   text={getActivityStatusLabel(activity.status)}
                   color={getActivityStatusVariant(activity.status)}
@@ -277,7 +284,10 @@ export function ActivityDetailScreen(): React.JSX.Element {
           {activity.photo_urls.length > 0 && (
             <NBCard style={styles.card}>
               <NBCardHeader>
-                <NBText variant="h3" style={styles.sectionTitleStyle}>📸 FOTO AKTIVITAS</NBText>
+                <View style={styles.sectionTitleRow}>
+                  <MaterialCommunityIcons name="camera" size={16} color={nbColors.black} />
+                  <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> FOTO AKTIVITAS</NBText>
+                </View>
                 <NBText variant="body-sm" style={styles.sectionSubtitleStyle}>{activity.photo_urls.length} foto dilampirkan</NBText>
               </NBCardHeader>
               <NBCardContent>
@@ -303,7 +313,10 @@ export function ActivityDetailScreen(): React.JSX.Element {
           {activity.activityType && (
             <NBCard style={styles.card}>
               <NBCardHeader>
-                <NBText variant="h3" style={styles.sectionTitleStyle}>🏷️ JENIS AKTIVITAS</NBText>
+                <View style={styles.sectionTitleRow}>
+                  <MaterialCommunityIcons name="tag-outline" size={16} color={nbColors.black} />
+                  <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> JENIS AKTIVITAS</NBText>
+                </View>
               </NBCardHeader>
               <NBCardContent>
                 <NBText variant="body" style={styles.valueStyle}>{activity.activityType.name}</NBText>
@@ -317,7 +330,10 @@ export function ActivityDetailScreen(): React.JSX.Element {
           {/* Description Card */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <NBText variant="h3" style={styles.sectionTitleStyle}>📝 DESKRIPSI PEKERJAAN</NBText>
+              <View style={styles.sectionTitleRow}>
+                <MaterialCommunityIcons name="text-box-outline" size={16} color={nbColors.black} />
+                <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> DESKRIPSI PEKERJAAN</NBText>
+              </View>
             </NBCardHeader>
             <NBCardContent>
               <NBText variant="body" style={styles.descriptionTextStyle}>{activity.description}</NBText>
@@ -328,7 +344,10 @@ export function ActivityDetailScreen(): React.JSX.Element {
           {activity.gps_lat != null && activity.gps_lng != null ? (
             <NBCard style={styles.card}>
               <NBCardHeader>
-                <NBText variant="h3" style={styles.sectionTitleStyle}>📍 LOKASI GPS</NBText>
+                <View style={styles.sectionTitleRow}>
+                  <MaterialCommunityIcons name="map-marker" size={16} color={nbColors.black} />
+                  <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> LOKASI GPS</NBText>
+                </View>
               </NBCardHeader>
               <NBCardContent>
                 <View style={styles.locationContainer}>
@@ -343,7 +362,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
           {/* Rejection reason input — shown inline in scroll when rejecting */}
           {canApprove && showRejectInput && (
             <NBCardTextInput
-              title="📝 Alasan Penolakan"
+              title="Alasan Penolakan"
               required
               value={rejectReason}
               onChangeText={setRejectReason}
@@ -443,6 +462,10 @@ const styles = StyleSheet.create({
     marginBottom: nbSpacing.md,
     ...nbShadows.sm,
   },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   sectionTitleStyle: {},
   sectionSubtitleStyle: {
     marginTop: nbSpacing.xs,
@@ -470,16 +493,16 @@ const styles = StyleSheet.create({
   photo: {
     width: 160,
     height: 160,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },
   locationContainer: {
     padding: nbSpacing.md,
-    backgroundColor: nbColors.gray[50],
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
+    backgroundColor: nbColors.gray50,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
   },
   locationTextStyle: {},

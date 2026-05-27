@@ -4,9 +4,10 @@
  */
 
 import React from 'react';
-import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
-import { NBCard, NBBadge } from '../../../components/nb';
-import { nbColors, nbSpacing, nbTypography } from '../../../constants/nbTokens';
+import { TouchableOpacity, View, StyleSheet } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { NBCard, NBBadge, NBText } from '../../../components/nb';
+import { nbColors, nbSpacing } from '../../../constants/nbTokens';
 import type { Task, TaskStatus } from '../../../types/models.types';
 import { getTaskStatusLabel, getTaskStatusColor, TASK_PRIORITY_LABEL, formatDate, formatTime } from '../../../utils/statusHelpers';
 import { PlantStatusChip } from './PlantStatusChip';
@@ -24,12 +25,12 @@ export function TaskCard({ task, onPress }: TaskCardProps): React.JSX.Element {
         {/* Header: primary text + created time | status badge */}
         <View style={styles.itemHeader}>
           <View style={styles.itemHeaderLeft}>
-            <Text style={styles.itemPrimary} numberOfLines={1}>
+            <NBText variant="body" style={styles.itemPrimary} numberOfLines={1}>
               {task.title}
-            </Text>
-            <Text style={styles.itemTimestamp}>
+            </NBText>
+            <NBText variant="caption" color="gray500" style={styles.itemTimestamp}>
               {formatDate(task.created_at)} · {formatTime(task.created_at)}
-            </Text>
+            </NBText>
           </View>
           <View style={styles.itemHeaderRight}>
             <NBBadge
@@ -40,29 +41,47 @@ export function TaskCard({ task, onPress }: TaskCardProps): React.JSX.Element {
         </View>
         {/* Description */}
         {task.description ? (
-          <Text style={styles.itemDescription} numberOfLines={2}>
+          <NBText variant="body-sm" color="gray600" style={styles.itemDescription} numberOfLines={2}>
             {task.description}
-          </Text>
+          </NBText>
         ) : null}
         {/* Meta row */}
         <View style={styles.itemMeta}>
           {task.assignee && (
-            <Text style={styles.itemMetaChip}>👤 {task.assignee.full_name}</Text>
+            <View style={styles.itemMetaChip}>
+              <MaterialCommunityIcons name="account" size={11} color={nbColors.gray500} />
+              <NBText variant="caption" color="gray500"> {task.assignee.full_name}</NBText>
+            </View>
           )}
           {task.area && (
-            <Text style={styles.itemMetaChip}>📍 {task.area.name}</Text>
+            <View style={styles.itemMetaChip}>
+              <MaterialCommunityIcons name="map-marker" size={11} color={nbColors.gray500} />
+              <NBText variant="caption" color="gray500"> {task.area.name}</NBText>
+            </View>
           )}
           {!task.area && task.rayon && (
-            <Text style={styles.itemMetaChip}>🗺️ {task.rayon.name}</Text>
+            <View style={styles.itemMetaChip}>
+              <MaterialCommunityIcons name="map-outline" size={11} color={nbColors.gray500} />
+              <NBText variant="caption" color="gray500"> {task.rayon.name}</NBText>
+            </View>
           )}
           {task.priority && (
-            <Text style={styles.itemMetaChip}>🔥 {TASK_PRIORITY_LABEL[task.priority] ?? task.priority}</Text>
+            <View style={styles.itemMetaChip}>
+              <MaterialCommunityIcons name="alert-circle-outline" size={11} color={nbColors.gray500} />
+              <NBText variant="caption" color="gray500"> {TASK_PRIORITY_LABEL[task.priority] ?? task.priority}</NBText>
+            </View>
           )}
           {task.deadline && (
-            <Text style={styles.itemMetaChip}>⏰ {formatDate(task.deadline)}</Text>
+            <View style={styles.itemMetaChip}>
+              <MaterialCommunityIcons name="clock-outline" size={11} color={nbColors.gray500} />
+              <NBText variant="caption" color="gray500"> {formatDate(task.deadline)}</NBText>
+            </View>
           )}
           {task.tags && task.tags.length > 0 && (
-            <Text style={styles.itemMetaChip}>🏷️ {task.tags.length} tag</Text>
+            <View style={styles.itemMetaChip}>
+              <MaterialCommunityIcons name="tag-outline" size={11} color={nbColors.gray500} />
+              <NBText variant="caption" color="gray500"> {task.tags.length} tag</NBText>
+            </View>
           )}
           {/* Plant status for pruning tasks with area assigned */}
           {task.area_id && (
@@ -71,9 +90,10 @@ export function TaskCard({ task, onPress }: TaskCardProps): React.JSX.Element {
         </View>
         {/* Creator row */}
         {task.creator && (
-          <Text style={styles.itemCreator}>
-            👤 {task.creator.role} - {task.creator.full_name}
-          </Text>
+          <View style={styles.itemCreatorRow}>
+            <MaterialCommunityIcons name="account-outline" size={11} color={nbColors.gray500} />
+            <NBText variant="caption" color="gray500"> {task.creator.role} - {task.creator.full_name}</NBText>
+          </View>
         )}
       </NBCard>
     </TouchableOpacity>
@@ -101,20 +121,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   itemPrimary: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
+    fontWeight: '700',
     color: nbColors.black,
     marginBottom: 2,
   },
-  itemTimestamp: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray[500],
-  },
+  itemTimestamp: {},
   itemDescription: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[600],
     marginBottom: nbSpacing.xs,
-    lineHeight: 18,
   },
   itemMeta: {
     flexDirection: 'row',
@@ -123,12 +136,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   itemMetaChip: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray[500],
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  itemCreator: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray[500],
+  itemCreatorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: nbSpacing.xs,
   },
 });

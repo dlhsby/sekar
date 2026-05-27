@@ -79,8 +79,8 @@
 | TUG-1 | Tugas list · filtered tabs | `fe/mobile/src/screens/taskActivity/TasksActivityScreen.tsx` | ✅ Done (2026-05-26) — Phase 2 token shims removed; `nbBorders.base→widthBase`, `nbBorderRadius→nbRadius`, `gray[xxx]→grayXXX` |
 | TUG-2 | Tugas detail | `fe/mobile/src/screens/field/TaskDetailScreen.tsx` | ✅ Done (2026-05-26) — 20× gray bracket-notation → flat; all nbBorders.base/nbBorderRadius shims migrated |
 | TUG-3 | Selesaikan tugas | `fe/mobile/src/screens/field/TaskCompleteScreen.tsx` | ✅ Done (2026-05-26) — 📸 emoji → MaterialCommunityIcons camera; tokens were already clean |
-| AKT-1 | Submit aktivitas | ActivitySubmissionScreen | Revamp |
-| AKT-2 | Aktivitas list | ActivitiesScreen | Revamp |
+| AKT-1 | Submit aktivitas | `fe/mobile/src/screens/field/ActivitySubmissionScreen.tsx` | ✅ Done (2026-05-27) — emoji section headers → MaterialCommunityIcons; all Phase 2 token shims removed; supporting files: ActivityCard, ActivitiesTab, ActivityDetailScreen, TaskCard, TasksTab, PlantStatusChip, SortModal, TaskCreateScreen |
+| AKT-2 | Aktivitas list | `fe/mobile/src/screens/taskActivity/tabs/ActivitiesTab.tsx` | ✅ Done (2026-05-27) — raw Text → NBText; nbTypography/nbBorderRadius shims removed |
 | LBR-1 | Lembur list | OvertimeListScreen | Revamp |
 | LBR-2 | Ajukan lembur | OvertimeCreateScreen | Revamp |
 | LBR-3 | Detail lembur · disetujui | OvertimeDetailScreen | Revamp |
