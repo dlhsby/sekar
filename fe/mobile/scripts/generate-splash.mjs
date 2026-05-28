@@ -56,8 +56,9 @@ const lockup = () => {
   );
 };
 
-// 320×236 dp artwork: lockup (top) + SEKAR + tagline. Transparent so the sage
-// layer-list canvas shows through.
+// 320×236 dp artwork: lockup (top) + SEKAR + tagline. Kept for reference /
+// pre-API-31 fallback but no longer used by bootsplash.xml (superseded by the
+// two-asset approach: splash_icon + splash_branding).
 const W = 320;
 const H = 236;
 const splashSvg = (scale) =>
@@ -65,6 +66,18 @@ const splashSvg = (scale) =>
   `<g transform="translate(100 8)">${lockup()}</g>` +
   `<text x="160" y="176" text-anchor="middle" font-family="Space Grotesk" font-weight="700" font-size="40" letter-spacing="-1" fill="${INK}">SEKAR</text>` +
   `<text x="160" y="204" text-anchor="middle" font-family="Inter" font-weight="500" font-size="12.5" letter-spacing="2" fill="${TAGLINE_GRAY}">SISTEM EVALUASI KINERJA SATGAS RTH</text>` +
+  `</svg>`;
+
+// 320×80 dp branding strip: "SEKAR" + tagline. Transparent background.
+// Used by both windowSplashScreenBrandingImage (OS splash, API 31+) and the
+// bootsplash.xml layer-list (window background). Both render it at natural size
+// at the bottom of the screen — making both stages visually identical.
+const BW = 320;
+const BH = 80;
+const brandingSvg = (scale) =>
+  `<svg xmlns="http://www.w3.org/2000/svg" width="${BW * scale}" height="${BH * scale}" viewBox="0 0 ${BW} ${BH}">` +
+  `<text x="160" y="46" text-anchor="middle" font-family="Space Grotesk" font-weight="700" font-size="34" letter-spacing="-1" fill="${INK}">SEKAR</text>` +
+  `<text x="160" y="70" text-anchor="middle" font-family="Inter" font-weight="500" font-size="10" letter-spacing="2" fill="${TAGLINE_GRAY}">SISTEM EVALUASI KINERJA SATGAS RTH</text>` +
   `</svg>`;
 
 const RES = join(ROOT, 'android/app/src/main/res');
@@ -76,5 +89,13 @@ for (const [dir, scale] of Object.entries(DENSITY)) {
   mkdirSync(dirname(out), { recursive: true });
   await sharp(Buffer.from(splashSvg(scale))).png().toFile(out);
   console.log('  ✓', out.replace(ROOT + '/', ''), `(${Math.round(W * scale)}×${Math.round(H * scale)})`);
+}
+
+console.log('Android splash branding strip (SEKAR + tagline):');
+for (const [dir, scale] of Object.entries(DENSITY)) {
+  const out = join(RES, dir, 'splash_branding.png');
+  mkdirSync(dirname(out), { recursive: true });
+  await sharp(Buffer.from(brandingSvg(scale))).png().toFile(out);
+  console.log('  ✓', out.replace(ROOT + '/', ''), `(${Math.round(BW * scale)}×${Math.round(BH * scale)})`);
 }
 console.log('Done.');

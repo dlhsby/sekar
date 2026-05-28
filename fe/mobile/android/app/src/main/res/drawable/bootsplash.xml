@@ -1,10 +1,22 @@
-<!-- Cold-start launch background: sage canvas + centered SEKAR lockup, "SEKAR"
-     wordmark and tagline (baked into splash_logo at each density by
-     scripts/generate-splash.mjs). Shown by BootTheme.windowBackground until the
-     React view mounts (WL-1). Centered at the artwork's intrinsic density size. -->
+<!-- Cold-start launch background (API < 31 and the window-background gap on API 31+).
+     Three-layer layout mirrors the Android 12 OS splash exactly:
+       1. Sage canvas
+       2. Box-lockup icon centered  (matches windowSplashScreenAnimatedIcon position)
+       3. Branding strip at bottom  (matches windowSplashScreenBrandingImage position)
+     Both stages therefore show the same composition — no visual jump. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Layer 1: sage canvas -->
     <item android:drawable="@color/bootsplash_background" />
+    <!-- Layer 2: box-lockup icon, centered, same visual size as OS splash icon area -->
     <item
         android:gravity="center"
-        android:drawable="@drawable/splash_logo" />
+        android:width="200dp"
+        android:height="200dp"
+        android:drawable="@drawable/splash_icon" />
+    <!-- Layer 3: SEKAR + tagline strip, bottom-centered at 60dp from edge,
+         matching windowSplashScreenBrandingImage placement -->
+    <item
+        android:gravity="bottom|center_horizontal"
+        android:bottom="60dp"
+        android:drawable="@drawable/splash_branding" />
 </layer-list>
