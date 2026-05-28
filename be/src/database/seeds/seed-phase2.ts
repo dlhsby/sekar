@@ -1055,6 +1055,57 @@ async function seedPhase2() {
       }
 
       console.log(`  ✓ Total: ${shiftCount} Phase 2C shifts created`);
+
+      // ── satgas_pusat_1: rich shift history for mobile RiwayatShift testing ──
+      // Spreads shifts across: this week, last week, this month, last month,
+      // and 2 months ago — so date-range filters (this week / this month / etc.)
+      // and the scrollable list all have meaningful data to display.
+      await queryRunner.query(`
+        INSERT INTO shifts (
+          user_id, area_id,
+          clock_in_time, clock_in_gps_lat, clock_in_gps_lng, clock_in_photo_url,
+          clock_out_time, clock_out_gps_lat, clock_out_gps_lng,
+          created_at, updated_at
+        )
+        SELECT
+          u.id,
+          u.area_id,
+          t.cin,
+          -7.2905, 112.7398,
+          'https://sekar-media.s3.ap-southeast-1.amazonaws.com/clock-in/satgas_pusat1-dummy.jpg',
+          t.cout,
+          -7.2906, 112.7399,
+          t.cin, t.cout
+        FROM users u
+        CROSS JOIN (VALUES
+          -- This week (Mon–today, assuming up to Wed)
+          (NOW() - INTERVAL '0 days 9 hours',  NOW() - INTERVAL '0 days 1 hour'),
+          (NOW() - INTERVAL '1 day 8 hours',   NOW() - INTERVAL '1 day 0 hours'),
+          (NOW() - INTERVAL '2 days 8 hours',  NOW() - INTERVAL '2 days 0 hours'),
+          -- Last week
+          (NOW() - INTERVAL '7 days 8 hours',  NOW() - INTERVAL '7 days 0 hours'),
+          (NOW() - INTERVAL '8 days 9 hours',  NOW() - INTERVAL '8 days 1 hour'),
+          (NOW() - INTERVAL '9 days 8 hours',  NOW() - INTERVAL '9 days 30 minutes'),
+          (NOW() - INTERVAL '11 days 7 hours 30 minutes', NOW() - INTERVAL '11 days 0 hours'),
+          -- Earlier this month (~2–3 weeks ago)
+          (NOW() - INTERVAL '14 days 8 hours', NOW() - INTERVAL '14 days 0 hours'),
+          (NOW() - INTERVAL '16 days 9 hours', NOW() - INTERVAL '16 days 1 hour'),
+          (NOW() - INTERVAL '18 days 8 hours 30 minutes', NOW() - INTERVAL '18 days 0 hours'),
+          (NOW() - INTERVAL '20 days 8 hours', NOW() - INTERVAL '20 days 30 minutes'),
+          -- Last month (~5–6 weeks ago)
+          (NOW() - INTERVAL '32 days 8 hours', NOW() - INTERVAL '32 days 0 hours'),
+          (NOW() - INTERVAL '35 days 9 hours', NOW() - INTERVAL '35 days 1 hour'),
+          (NOW() - INTERVAL '38 days 8 hours', NOW() - INTERVAL '38 days 0 hours'),
+          (NOW() - INTERVAL '42 days 7 hours 30 minutes', NOW() - INTERVAL '42 days 0 hours'),
+          (NOW() - INTERVAL '45 days 8 hours', NOW() - INTERVAL '45 days 30 minutes'),
+          -- Two months ago (~8–9 weeks ago)
+          (NOW() - INTERVAL '60 days 8 hours', NOW() - INTERVAL '60 days 0 hours'),
+          (NOW() - INTERVAL '63 days 9 hours', NOW() - INTERVAL '63 days 1 hour'),
+          (NOW() - INTERVAL '67 days 8 hours', NOW() - INTERVAL '67 days 0 hours')
+        ) AS t(cin, cout)
+        WHERE u.username = 'satgas_pusat_1'
+      `);
+      console.log('  ✓ Created 19 shifts for satgas_pusat_1 (spread across 2+ months for filter/scroll testing)');
     } else {
       console.log('  ⚠ No areas found, skipping Phase 2C shifts');
     }
