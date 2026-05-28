@@ -6,3 +6,6 @@ infra/localstack/be/src/database/migrations/.backup/
 
 # Root-level npm workspaces (Phase 3 onward — see ADR-036)
 /node_modules/
+
+# Per-session scratch prompts / planning notes — not part of the repo
+prompts/
