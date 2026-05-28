@@ -1,55 +1,31 @@
-<!-- Android 12+ system-splash icon: the SEKAR pinwheel mark padded into a
-     180-unit viewport so the system's circular icon mask (~2/3 of the canvas)
-     does not clip the blade tips. (Bare pinwheel — the boxed lockup would be
-     cropped by the round mask; the layer-list bootsplash uses the box lockup.) -->
+<!-- Android 12+ system-splash icon: the SEKAR box lockup (white NB box + pinwheel),
+     tilted -6°, sized so its bounding circle fits inside the system's circular icon
+     mask (~2/3 of the canvas). Pair with windowSplashScreenIconBackgroundColor = sage
+     so the masked circle blends into the bootsplash canvas. The pre-Android-12
+     cold-start path uses the same lockup via drawable-*/splash_logo.png. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="180dp"
     android:height="180dp"
     android:viewportWidth="180"
     android:viewportHeight="180">
-    <group android:translateX="90" android:translateY="90">
-        <group android:rotation="0">
-            <path android:pathData="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z"
-                android:fillColor="#7FBC8C" android:strokeColor="#1C1917"
-                android:strokeWidth="3" android:strokeLineJoin="round" />
+    <group android:name="lockup" android:rotation="-6" android:pivotX="90" android:pivotY="90">
+        <!-- Hard-edge offset shadow -->
+        <path android:pathData="M71,53 H117 A18,18 0 0 1 135,71 V117 A18,18 0 0 1 117,135 H71 A18,18 0 0 1 53,117 V71 A18,18 0 0 1 71,53 Z"
+            android:fillColor="#1C1917" />
+        <!-- White box + black border -->
+        <path android:pathData="M67,49 H113 A18,18 0 0 1 131,67 V113 A18,18 0 0 1 113,131 H67 A18,18 0 0 1 49,113 V67 A18,18 0 0 1 67,49 Z"
+            android:fillColor="#FFFFFF" android:strokeColor="#1C1917" android:strokeWidth="3.5" android:strokeLineJoin="round" />
+        <!-- Pinwheel, centered in the box -->
+        <group android:translateX="90" android:translateY="90" android:scaleX="0.62" android:scaleY="0.62">
+            <group android:rotation="0"><path android:pathData="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" android:fillColor="#7FBC8C" android:strokeColor="#1C1917" android:strokeWidth="5" android:strokeLineJoin="round" /></group>
+            <group android:rotation="45"><path android:pathData="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" android:fillColor="#7FBC8C" android:strokeColor="#1C1917" android:strokeWidth="5" android:strokeLineJoin="round" /></group>
+            <group android:rotation="90"><path android:pathData="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" android:fillColor="#7FBC8C" android:strokeColor="#1C1917" android:strokeWidth="5" android:strokeLineJoin="round" /></group>
+            <group android:rotation="135"><path android:pathData="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" android:fillColor="#7FBC8C" android:strokeColor="#1C1917" android:strokeWidth="5" android:strokeLineJoin="round" /></group>
+            <group android:rotation="180"><path android:pathData="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" android:fillColor="#7FBC8C" android:strokeColor="#1C1917" android:strokeWidth="5" android:strokeLineJoin="round" /></group>
+            <group android:rotation="225"><path android:pathData="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" android:fillColor="#7FBC8C" android:strokeColor="#1C1917" android:strokeWidth="5" android:strokeLineJoin="round" /></group>
+            <group android:rotation="270"><path android:pathData="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" android:fillColor="#7FBC8C" android:strokeColor="#1C1917" android:strokeWidth="5" android:strokeLineJoin="round" /></group>
+            <group android:rotation="315"><path android:pathData="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" android:fillColor="#7FBC8C" android:strokeColor="#1C1917" android:strokeWidth="5" android:strokeLineJoin="round" /></group>
+            <path android:pathData="M 0 -12 A 12 12 0 1 1 0 12 A 12 12 0 1 1 0 -12 Z" android:fillColor="#FDFD96" android:strokeColor="#1C1917" android:strokeWidth="5" android:strokeLineJoin="round" />
         </group>
-        <group android:rotation="45">
-            <path android:pathData="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z"
-                android:fillColor="#7FBC8C" android:strokeColor="#1C1917"
-                android:strokeWidth="3" android:strokeLineJoin="round" />
-        </group>
-        <group android:rotation="90">
-            <path android:pathData="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z"
-                android:fillColor="#7FBC8C" android:strokeColor="#1C1917"
-                android:strokeWidth="3" android:strokeLineJoin="round" />
-        </group>
-        <group android:rotation="135">
-            <path android:pathData="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z"
-                android:fillColor="#7FBC8C" android:strokeColor="#1C1917"
-                android:strokeWidth="3" android:strokeLineJoin="round" />
-        </group>
-        <group android:rotation="180">
-            <path android:pathData="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z"
-                android:fillColor="#7FBC8C" android:strokeColor="#1C1917"
-                android:strokeWidth="3" android:strokeLineJoin="round" />
-        </group>
-        <group android:rotation="225">
-            <path android:pathData="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z"
-                android:fillColor="#7FBC8C" android:strokeColor="#1C1917"
-                android:strokeWidth="3" android:strokeLineJoin="round" />
-        </group>
-        <group android:rotation="270">
-            <path android:pathData="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z"
-                android:fillColor="#7FBC8C" android:strokeColor="#1C1917"
-                android:strokeWidth="3" android:strokeLineJoin="round" />
-        </group>
-        <group android:rotation="315">
-            <path android:pathData="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z"
-                android:fillColor="#7FBC8C" android:strokeColor="#1C1917"
-                android:strokeWidth="3" android:strokeLineJoin="round" />
-        </group>
-        <path android:pathData="M 0 -12 A 12 12 0 1 1 0 12 A 12 12 0 1 1 0 -12 Z"
-            android:fillColor="#FDFD96" android:strokeColor="#1C1917"
-            android:strokeWidth="3" android:strokeLineJoin="round" />
     </group>
 </vector>

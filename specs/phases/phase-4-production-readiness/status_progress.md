@@ -16,8 +16,12 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
   left untouched (Material legacy). Tests added to `NBEmptyState.test.tsx` (80 passing across
   touched suites).
 - **Icon cleanup**: removed the now-unused `drawable/pinwheel_logo.xml` (bootsplash uses
-  `splash_logo.png`); the Android-12 `splash_icon.xml` (bare pinwheel for the round system
-  mask) stays. Comment de-referenced the deleted file.
+  `splash_logo.png`).
+- **Android-12 system splash → box lockup**: `drawable/splash_icon.xml` rewritten from the
+  bare pinwheel to the boxed tilted lockup (white NB box + border + offset shadow + pinwheel),
+  sized to fit the system's circular icon mask; `windowSplashScreenIconBackgroundColor` set to
+  sage so the mask blends into the canvas. Now all native splash surfaces (pre-12 layer-list,
+  Android-12 system splash, iOS LaunchScreen) show the same lockup. Native rebuild to verify.
 
 ## May 28, 2026 — M3 Profile follow-ups: nav fix, NBToast sweep, 3D icon, tests
 

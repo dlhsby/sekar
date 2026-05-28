@@ -17,9 +17,12 @@
         <item name="android:windowBackground">@drawable/bootsplash</item>
         <item name="android:statusBarColor">@color/bootsplash_background</item>
         <!-- Android 12+ system SplashScreen API (ignored on older OS versions).
-             Uses the padded splash_icon so the circular icon mask doesn't crop blades. -->
+             splash_icon is the boxed lockup, sized to fit the circular icon mask. -->
         <item name="android:windowSplashScreenBackground">@color/bootsplash_background</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
+        <!-- Sage icon-background so the system's circular icon mask blends into the
+             sage canvas — the boxed lockup then reads as a box floating on sage. -->
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/bootsplash_background</item>
     </style>
 
 </resources>
