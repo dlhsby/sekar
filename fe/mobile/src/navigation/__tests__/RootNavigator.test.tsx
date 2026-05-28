@@ -75,6 +75,27 @@ jest.mock('../OnboardingNavigator', () => {
   };
 });
 
+jest.mock('../../services/permissions/PermissionManager', () => ({
+  permissionManager: {
+    checkAllPermissions: jest.fn(() =>
+      Promise.resolve({
+        notifications: { granted: true },
+        location: { granted: true },
+        backgroundLocation: { granted: true },
+        camera: { granted: true },
+        gallery: { granted: true },
+      })
+    ),
+  },
+}));
+
+jest.mock('../../services/storage/asyncStorageKeys', () => ({
+  hasCompletedOnboarding: jest.fn(() => Promise.resolve(true)),
+  markOnboardingCompleted: jest.fn(() => Promise.resolve()),
+  hasSeenCarousel: jest.fn(() => Promise.resolve(true)),
+  markCarouselSeen: jest.fn(() => Promise.resolve()),
+}));
+
 // Helper to create store with preloaded state
 function createTestStore(preloadedState?: any) {
   return configureStore({

@@ -3,7 +3,9 @@
  * Phase 2C: unified navigator for all 8 roles (no Worker/Supervisor split)
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
+import { AppState } from 'react-native';
+import type { AppStateStatus } from 'react-native';
 import {
   NavigationContainer,
   createNavigationContainerRef,
@@ -21,7 +23,11 @@ import WelcomeCarouselScreen from '../screens/auth/WelcomeCarouselScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import ChangePasswordScreen from '../screens/auth/ChangePasswordScreen';
 import OnboardingNavigator from './OnboardingNavigator';
-import { hasCompletedOnboarding } from '../services/storage/asyncStorageKeys';
+import {
+  hasCompletedOnboarding,
+  markOnboardingCompleted,
+} from '../services/storage/asyncStorageKeys';
+import { permissionManager } from '../services/permissions/PermissionManager';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -68,15 +74,63 @@ function RootNavigator(): React.JSX.Element {
   // 50+ existing test files).
   const [onboardingDone, setOnboardingDone] = React.useState<boolean>(true);
 
+  // Phase 4 M3 feedback — check permissions on every app open; if all are already
+  // granted (including background location), auto-mark onboarding done and skip it.
+  // A stable ref to user.id avoids stale-closure issues inside the AppState listener.
+  const userIdRef = useRef<string | undefined>(user?.id);
   useEffect(() => {
-    if (!user?.id) {
+    userIdRef.current = user?.id;
+  });
+
+  const resolveOnboardingGate = useCallback(async () => {
+    const uid = userIdRef.current;
+    if (!uid) {
       setOnboardingDone(true);
       return;
     }
-    hasCompletedOnboarding(user.id)
-      .then(setOnboardingDone)
-      .catch(() => setOnboardingDone(true)); // fail-open
-  }, [user?.id]);
+    try {
+      const alreadyDone = await hasCompletedOnboarding(uid);
+      if (alreadyDone) {
+        setOnboardingDone(true);
+        return;
+      }
+      // Not formally completed — check if all permissions are already granted
+      // (user may have granted them outside the app or on a previous install).
+      const status = await permissionManager.checkAllPermissions();
+      const allGranted =
+        status.notifications.granted &&
+        status.location.granted &&
+        status.backgroundLocation.granted &&
+        status.camera.granted &&
+        status.gallery.granted;
+      if (allGranted) {
+        await markOnboardingCompleted(uid);
+        setOnboardingDone(true);
+      } else {
+        setOnboardingDone(false);
+      }
+    } catch {
+      setOnboardingDone(true); // fail-open
+    }
+  }, []);
+
+  useEffect(() => {
+    resolveOnboardingGate();
+  }, [user?.id, resolveOnboardingGate]);
+
+  // Re-check when app returns to foreground — handles the case where the user
+  // grants permissions via OS Settings and then switches back to SEKAR.
+  useEffect(() => {
+    const subscription = AppState.addEventListener(
+      'change',
+      (nextState: AppStateStatus) => {
+        if (nextState === 'active') {
+          resolveOnboardingGate();
+        }
+      },
+    );
+    return () => subscription.remove();
+  }, [resolveOnboardingGate]);
 
   // May 13 — wire up deep-linking from push notifications. Two paths:
   // (1) onNotificationOpened: user tapped a tray notification while app

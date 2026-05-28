@@ -240,6 +240,17 @@ export function NBDatePicker({
     }
   }, [triggerless, controlledVisible, value]);
 
+  const handleToday = useCallback(() => {
+    if (mode !== 'date') { return; }
+    const today = new Date();
+    const constrained =
+      (minimumDate && today < minimumDate) ? minimumDate :
+      (maximumDate && today > maximumDate) ? maximumDate :
+      today;
+    onChange(constrained);
+    setModalVisible(false);
+  }, [mode, minimumDate, maximumDate, onChange, setModalVisible]);
+
   const handleConfirm = useCallback(() => {
     if (mode === 'date') {
       const maxDay = getDaysInMonth(tempYear, tempMonth);
@@ -404,18 +415,19 @@ export function NBDatePicker({
             </View>
 
             <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={handleCancel}
-              >
-                <Text style={styles.cancelButtonText}>Batal</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.confirmButton}
-                onPress={handleConfirm}
-              >
-                <Text style={styles.confirmButtonText}>OK</Text>
-              </TouchableOpacity>
+              {mode === 'date' ? (
+                <TouchableOpacity style={styles.todayButton} onPress={handleToday}>
+                  <Text style={styles.todayButtonText}>Hari ini</Text>
+                </TouchableOpacity>
+              ) : <View />}
+              <View style={styles.buttonRowRight}>
+                <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+                  <Text style={styles.cancelButtonText}>Batal</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
+                  <Text style={styles.confirmButtonText}>OK</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </TouchableOpacity>
         </TouchableOpacity>
@@ -525,9 +537,22 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: nbSpacing.md,
+  },
+  buttonRowRight: {
+    flexDirection: 'row',
     gap: nbSpacing.sm,
+  },
+  todayButton: {
+    paddingVertical: nbSpacing.sm,
+    paddingHorizontal: nbSpacing.sm,
+  },
+  todayButtonText: {
+    fontSize: nbTypography.fontSize.md,
+    fontWeight: nbTypography.fontWeight.semibold,
+    color: nbColors.primary,
   },
   cancelButton: {
     paddingVertical: nbSpacing.sm,
