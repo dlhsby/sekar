@@ -2,11 +2,11 @@
 
 ## Status
 
-Proposed
+Accepted (Phase 4 M1, 2026-05-23 — `tokens.json` `_meta.version` bumped to 2.1.0; web + mobile generated files regenerated; verified by `npm run tokens:verify`).
 
 ## Date
 
-2026-05-22
+2026-05-22 (proposed) · 2026-05-23 (accepted)
 
 ## Context
 

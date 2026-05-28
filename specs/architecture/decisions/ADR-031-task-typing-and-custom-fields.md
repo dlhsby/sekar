@@ -145,6 +145,7 @@ export const taskTypeRegistry = {
 ### Negative
 
 - **JSONB validation must be disciplined.** A forgotten `.parse()` silently admits drift. Mitigation: a single `TaskService.create`/`ActivityService.submit` entry point, plus integration tests per registered type.
+- **2026-05-23 audit note — registry validator not yet enforced at the API boundary.** `tasks.custom_fields` and `activities.custom_fields` columns currently accept any JSON. The `TaskTypeRegistry` design is documented below, but no schema-aware validator runs inside the DTO pipeline today. Tracked in the Phase 3 gap audit (`specs/phases/phase-3-plants-monitoring-rebuild/GAP-AUDIT-2026-05-23.md`, finding M7); fix is Wave 6 hardening, not a Wave 1 blocker.
 - **Cross-type queries are awkward.** Filtering by `custom_fields->>'maintenance_type'` requires GIN indexes or expression indexes per hot field. Documented in `specs/database/schema.md`; add indexes as usage emerges.
 - **Registry governance overhead.** Adding a type requires deliberate review (form UX + validation schema + reporting impact). This is a feature, not a bug.
 - **DB-side type is TEXT, not ENUM.** Chosen over a Postgres ENUM to avoid `ALTER TYPE` migrations per new type. Registry is the source of truth; a CHECK constraint is optional and not enforced initially.

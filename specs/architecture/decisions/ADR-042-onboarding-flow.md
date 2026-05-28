@@ -2,11 +2,11 @@
 
 ## Status
 
-Proposed
+Accepted (Phase 4 M3b, 2026-05-24 — WelcomeCarouselScreen (WL-1…5), OnboardingWelcome (OB-1), OnboardingPermissions (OB-2), OnboardingAreaPreview (OB-3) shipped; `PermissionRequestModal` retired).
 
 ## Date
 
-2026-05-22
+2026-05-22 (proposed) · 2026-05-24 (accepted)
 
 ## Context
 

@@ -82,7 +82,14 @@ CREATE TABLE area_plants (
     count INT NOT NULL DEFAULT 0,
     last_pruned_at TIMESTAMPTZ NULL,
     next_due_at TIMESTAMPTZ NULL,
-    status TEXT NOT NULL DEFAULT 'ok',  -- 'ok' | 'due' | 'overdue'
+    status TEXT NOT NULL DEFAULT 'ok',  -- 'ok' | 'due_soon' | 'overdue' | 'unknown'
+                                        -- 2026-05-23 audit reconciliation: 4 values
+                                        -- (was '… | due | overdue'). Matches
+                                        -- PlantDueDateService.classifyStatus. No DB
+                                        -- CHECK — enum enforced in the service layer.
+                                        -- 'unknown' = never pruned / no cycle;
+                                        -- 'due_soon' = inside 14-day window before
+                                        -- next_due_at; 'overdue' = next_due_at < now.
     override_cycle_days INT NULL,       -- manual override of forecast
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -272,6 +279,12 @@ CREATE TABLE task_delegations (
     from_user_id UUID NULL REFERENCES users(id) ON DELETE SET NULL,
       -- NULL on `initial_assign` (task creation)
     to_user_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    -- 2026-05-23 audit added: role snapshots are persisted alongside the
+    -- user IDs so the audit chain survives later role changes. Populated by
+    -- TasksService.recordDelegation() from the user's current role at the
+    -- time of the hop. Source: migration 17460005000000-TaskDelegations.ts.
+    from_role TEXT NULL,             -- NULL when from_user_id is NULL
+    to_role   TEXT NOT NULL,
     action TEXT NOT NULL CHECK (action IN ('initial_assign','reassign','delegate','self_handle')),
     reason TEXT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -413,7 +426,7 @@ INSERT INTO monitoring_configs (key, value, description) VALUES
 
 | Table | Rows | Source | Idempotency key |
 |-------|------|--------|-----------------|
-| `plant_species` | 131 | CSV column 6, deduped | `name_id` |
+| `plant_species` | 143 (dev seed `seed-phase3.ts` — superset of CSV; includes ornamentals not in historic data) — STATUS.md "Preconditions" count of 128 reflects the previous seed revision and is also stale; reconcile next time the seed list is touched | CSV column 6 + hand-curated additions | `name_id` |
 | `service_capacity` | 7 rayons × 12 weeks | synthetic | `(rayon_id, year, iso_week, service_type)` |
 | `monitoring_configs` | +4 | see above | `key` (already unique) |
 | `activities` (backfill) | 5,008 | CSV rows | `reference_code` |

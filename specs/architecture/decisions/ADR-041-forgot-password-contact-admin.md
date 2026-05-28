@@ -2,11 +2,11 @@
 
 ## Status
 
-Proposed
+Accepted (Phase 4 M3a, 2026-05-24 — backend `users.password_must_change` + `POST /auth/change-password` shipped; mobile ForgotPasswordScreen (AS-4) + ChangePasswordScreen (AS-5) shipped).
 
 ## Date
 
-2026-05-22
+2026-05-22 (proposed) · 2026-05-24 (accepted)
 
 ## Context
 
