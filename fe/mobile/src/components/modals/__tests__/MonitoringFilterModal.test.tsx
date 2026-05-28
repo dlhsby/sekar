@@ -30,7 +30,7 @@ jest.mock('../../../services/api/monitoringApi', () => ({
   getStaffingSummary: jest.fn().mockResolvedValue({ data: { items: [] } }),
 }));
 
-// NBSelect renders a minimal stub so option/value interaction is testable
+// NBSelect, NBButton, NBText render minimal stubs so option/value/button interaction is testable
 jest.mock('../../nb', () => ({
   NBSelect: (props: any) => {
     const React = require('react');
@@ -63,6 +63,42 @@ jest.mock('../../nb', () => ({
         ),
       ),
     );
+  },
+  NBButton: (props: any) => {
+    const React = require('react');
+    const { TouchableOpacity, Text } = require('react-native');
+    return React.createElement(
+      TouchableOpacity,
+      { onPress: props.onPress, disabled: props.disabled, ...props },
+      React.createElement(Text, null, props.title || props.label || props.children),
+    );
+  },
+  NBModal: (props: any) => {
+    const React = require('react');
+    const { View, Text } = require('react-native');
+    if (!props.visible) {
+      return null;
+    }
+    return React.createElement(
+      View,
+      { testID: 'nb-modal' },
+      React.createElement(
+        View,
+        { testID: 'modal-header' },
+        props.title && React.createElement(Text, null, props.title),
+        props.headerRight && React.createElement(View, { testID: 'header-right' }, props.headerRight),
+      ),
+      React.createElement(View, null, props.children),
+      props.footer && React.createElement(View, { testID: 'modal-footer' }, props.footer),
+    );
+  },
+}));
+
+jest.mock('../../nb/NBText', () => ({
+  NBText: (props: any) => {
+    const React = require('react');
+    const { Text } = require('react-native');
+    return React.createElement(Text, { ...props }, props.children);
   },
 }));
 
@@ -523,24 +559,8 @@ describe('MonitoringFilterModal', () => {
     });
   });
 
-  // ── Back / close ────────────────────────────────────────────────────────────
-
-  describe('back button', () => {
-    it('calls onClose when the back arrow button is pressed', async () => {
-      const onClose = jest.fn();
-      const { getByTestId } = render(
-        <MonitoringFilterModal {...buildDefaultProps({ onClose })} />
-      );
-      await waitFor(() => {
-        expect(getByTestId('icon-arrow-left')).toBeTruthy();
-      });
-
-      fireEvent.press(getByTestId('icon-arrow-left').parent!);
-      expect(onClose).toHaveBeenCalledTimes(1);
-    });
-  });
-
   // ── Filter sync ─────────────────────────────────────────────────────────────
+  // Note: back button is now handled by NBModal, tested at the NBModal component level
 
   describe('filter sync with currentFilters', () => {
     it('pre-selects statuses from currentFilters when modal opens', async () => {

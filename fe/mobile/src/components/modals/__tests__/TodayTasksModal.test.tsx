@@ -26,11 +26,11 @@ describe('TodayTasksModal', () => {
 
   afterEach(() => jest.clearAllMocks());
 
-  it('renders the uppercase title with the task count', () => {
+  it('renders the title with the task count', () => {
     const { getByText } = render(
       <TodayTasksModal visible onClose={onClose} tasks={[task({}), task({ id: 't2' })]} />
     );
-    expect(getByText('TUGAS HARI INI (2)')).toBeTruthy();
+    expect(getByText('Tugas Hari Ini (2)')).toBeTruthy();
   });
 
   it('lists each task with its status pill and fires onTaskPress', () => {

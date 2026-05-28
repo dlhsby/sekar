@@ -219,10 +219,10 @@ describe('ReassignWorkerModal', () => {
   // ── Worker list display ──────────────────────────────────────────────────────
 
   describe('worker list display', () => {
-    it('renders header title "Reassign Petugas"', async () => {
+    it('renders header title "Pindah Petugas"', async () => {
       const { getByText } = render(<ReassignWorkerModal {...buildDefaultProps()} />);
       await waitFor(() => {
-        expect(getByText('Reassign Petugas')).toBeTruthy();
+        expect(getByText('Pindah Petugas')).toBeTruthy();
       });
     });
 
@@ -383,19 +383,33 @@ describe('ReassignWorkerModal', () => {
 
   describe('submit button', () => {
     it('submit button is disabled before any worker is selected', async () => {
-      const { getByText } = render(<ReassignWorkerModal {...buildDefaultProps()} />);
+      const { getByText, debug } = render(<ReassignWorkerModal {...buildDefaultProps()} />);
 
-      await waitFor(() => expect(getByText('Konfirmasi Reassign')).toBeTruthy());
+      await waitFor(() => expect(getByText('Konfirmasi Pindah')).toBeTruthy());
 
-      // Walk up the tree: Text -> TouchableOpacity (which carries accessibilityState)
-      const textEl = getByText('Konfirmasi Reassign');
-      const btn = textEl.parent;
-      const disabled =
-        btn?.props.accessibilityState?.disabled ??
-        btn?.props.disabled ??
-        // TouchableOpacity in some RNTL versions wraps one more level
-        textEl.parent?.parent?.props.accessibilityState?.disabled;
-      expect(disabled).toBe(true);
+      // NBButton wraps the Text in multiple Views. Walk up to find the TouchableOpacity.
+      let current: any = getByText('Konfirmasi Pindah');
+      let found = false;
+      let disabled = false;
+
+      // Walk up 5 levels to find TouchableOpacity with disabled prop
+      for (let i = 0; i < 5; i++) {
+        current = current.parent;
+        if (!current) break;
+        if (current.props?.disabled !== undefined) {
+          disabled = current.props.disabled;
+          found = true;
+          break;
+        }
+        if (current.props?.accessibilityState?.disabled !== undefined) {
+          disabled = current.props.accessibilityState.disabled;
+          found = true;
+          break;
+        }
+      }
+
+      // If button is disabled, we expect disabled to be true
+      expect(found && disabled).toBeTruthy();
     });
 
     it('submit button becomes enabled after selecting a worker', async () => {
@@ -405,8 +419,24 @@ describe('ReassignWorkerModal', () => {
       fireEvent.press(getByText('Ahmad Satgas'));
 
       await waitFor(() => {
-        const btn = getByText('Konfirmasi Reassign').parent;
-        expect(btn?.props.accessibilityState?.disabled ?? btn?.props.disabled).toBeFalsy();
+        // After selecting, the button should be enabled (disabled = false)
+        let current: any = getByText('Konfirmasi Pindah');
+        let disabled = undefined;
+
+        for (let i = 0; i < 5; i++) {
+          current = current.parent;
+          if (!current) break;
+          if (current.props?.disabled !== undefined) {
+            disabled = current.props.disabled;
+            break;
+          }
+          if (current.props?.accessibilityState?.disabled !== undefined) {
+            disabled = current.props.accessibilityState.disabled;
+            break;
+          }
+        }
+
+        expect(disabled).toBe(false);
       });
     });
   });
@@ -419,7 +449,7 @@ describe('ReassignWorkerModal', () => {
 
       await waitFor(() => expect(getByText('Ahmad Satgas')).toBeTruthy());
       fireEvent.press(getByText('Ahmad Satgas'));
-      fireEvent.press(getByText('Konfirmasi Reassign'));
+      fireEvent.press(getByText('Konfirmasi Pindah'));
 
       await waitFor(() => {
         expect(mockReassignWorker).toHaveBeenCalledTimes(1);
@@ -446,7 +476,7 @@ describe('ReassignWorkerModal', () => {
         getByPlaceholderText('Tuliskan alasan reassign...'),
         '  Kekurangan petugas  '
       );
-      fireEvent.press(getByText('Konfirmasi Reassign'));
+      fireEvent.press(getByText('Konfirmasi Pindah'));
 
       await waitFor(() => {
         expect(mockReassignWorker).toHaveBeenCalledWith(
@@ -470,7 +500,7 @@ describe('ReassignWorkerModal', () => {
         getByPlaceholderText('Tuliskan alasan reassign...'),
         '   '
       );
-      fireEvent.press(getByText('Konfirmasi Reassign'));
+      fireEvent.press(getByText('Konfirmasi Pindah'));
 
       await waitFor(() => {
         expect(mockReassignWorker).toHaveBeenCalledWith(
@@ -488,7 +518,7 @@ describe('ReassignWorkerModal', () => {
 
       await waitFor(() => expect(getByText('Ahmad Satgas')).toBeTruthy());
       fireEvent.press(getByText('Ahmad Satgas'));
-      fireEvent.press(getByText('Konfirmasi Reassign'));
+      fireEvent.press(getByText('Konfirmasi Pindah'));
 
       await waitFor(() => {
         expect(alertSpy).toHaveBeenCalledWith(
@@ -510,7 +540,7 @@ describe('ReassignWorkerModal', () => {
 
       await waitFor(() => expect(getByText('Ahmad Satgas')).toBeTruthy());
       fireEvent.press(getByText('Ahmad Satgas'));
-      fireEvent.press(getByText('Konfirmasi Reassign'));
+      fireEvent.press(getByText('Konfirmasi Pindah'));
 
       await waitFor(() => {
         expect(onSuccess).toHaveBeenCalledTimes(1);
@@ -525,7 +555,7 @@ describe('ReassignWorkerModal', () => {
 
       await waitFor(() => expect(getByText('Ahmad Satgas')).toBeTruthy());
       fireEvent.press(getByText('Ahmad Satgas'));
-      fireEvent.press(getByText('Konfirmasi Reassign'));
+      fireEvent.press(getByText('Konfirmasi Pindah'));
 
       await waitFor(() => {
         expect(onClose).toHaveBeenCalledTimes(1);
@@ -546,7 +576,7 @@ describe('ReassignWorkerModal', () => {
 
       await waitFor(() => expect(getByText('Ahmad Satgas')).toBeTruthy());
       fireEvent.press(getByText('Ahmad Satgas'));
-      fireEvent.press(getByText('Konfirmasi Reassign'));
+      fireEvent.press(getByText('Konfirmasi Pindah'));
 
       await waitFor(() => {
         expect(alertSpy).toHaveBeenCalledWith('Gagal', 'Worker tidak tersedia');
@@ -567,7 +597,7 @@ describe('ReassignWorkerModal', () => {
 
       await waitFor(() => expect(getByText('Ahmad Satgas')).toBeTruthy());
       fireEvent.press(getByText('Ahmad Satgas'));
-      fireEvent.press(getByText('Konfirmasi Reassign'));
+      fireEvent.press(getByText('Konfirmasi Pindah'));
 
       await waitFor(() => {
         expect(alertSpy).toHaveBeenCalledWith('Gagal', 'Server error');

@@ -83,7 +83,7 @@ describe('TodayActivitiesModal', () => {
       );
 
       // NBModal renders the title in uppercase.
-      expect(getByText(`AKTIVITAS HARI INI (${mockActivities.length})`)).toBeTruthy();
+      expect(getByText(`Aktivitas Hari Ini (${mockActivities.length})`)).toBeTruthy();
     });
 
     it('should not render content when visible is false', () => {
@@ -95,7 +95,7 @@ describe('TodayActivitiesModal', () => {
         />
       );
 
-      expect(queryByText('AKTIVITAS HARI INI (2)')).toBeNull();
+      expect(queryByText('Aktivitas Hari Ini (2)')).toBeNull();
     });
 
     it('should render close button', () => {
@@ -119,7 +119,7 @@ describe('TodayActivitiesModal', () => {
         />
       );
 
-      expect(getByText('AKTIVITAS HARI INI (2)')).toBeTruthy();
+      expect(getByText('Aktivitas Hari Ini (2)')).toBeTruthy();
     });
 
     it('should display today date in subtitle', () => {
@@ -372,7 +372,7 @@ describe('TodayActivitiesModal', () => {
         />
       );
 
-      expect(getByText('AKTIVITAS HARI INI (2)')).toBeTruthy();
+      expect(getByText('Aktivitas Hari Ini (2)')).toBeTruthy();
     });
   });
 });
