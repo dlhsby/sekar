@@ -29,6 +29,12 @@
                                 <color key="textColor" red="0.10980392156862745" green="0.09803921568627451" blue="0.09019607843137255" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                 <nil key="highlightedColor"/>
                             </label>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="SISTEM EVALUASI KINERJA SATGAS RTH" textAlignment="center" lineBreakMode="wordWrap" numberOfLines="2" baselineAdjustment="alignBaselines" minimumFontSize="9" translatesAutoresizingMaskIntoConstraints="NO" id="tag-00-lbl">
+                                <rect key="frame" x="40" y="368" width="295" height="16"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="12"/>
+                                <color key="textColor" red="0.34117647058823529" green="0.32549019607843138" blue="0.30588235294117649" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <nil key="highlightedColor"/>
+                            </label>
                         </subviews>
                         <color key="backgroundColor" red="0.4980392156862745" green="0.7372549019607844" blue="0.5490196078431373" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
@@ -38,6 +44,10 @@
                             <constraint firstItem="Bcu-3y-fUS" firstAttribute="trailing" secondItem="GJd-Yh-RWb" secondAttribute="trailing" id="trl-0a-001"/>
                             <constraint firstItem="pwh-00-img" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="pwh-cx-001"/>
                             <constraint firstItem="GJd-Yh-RWb" firstAttribute="top" secondItem="pwh-00-img" secondAttribute="bottom" constant="24" id="pwh-gap-001"/>
+                            <constraint firstItem="tag-00-lbl" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="tag-cx-001"/>
+                            <constraint firstItem="tag-00-lbl" firstAttribute="top" secondItem="GJd-Yh-RWb" secondAttribute="bottom" constant="4" id="tag-gap-001"/>
+                            <constraint firstItem="tag-00-lbl" firstAttribute="leading" secondItem="Bcu-3y-fUS" secondAttribute="leading" constant="24" id="tag-led-001"/>
+                            <constraint firstItem="Bcu-3y-fUS" firstAttribute="trailing" secondItem="tag-00-lbl" secondAttribute="trailing" constant="24" id="tag-trl-001"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="Bcu-3y-fUS"/>
                     </view>

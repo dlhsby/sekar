@@ -36,7 +36,7 @@ export function SplashSlide({ testID }: SplashSlideProps): React.JSX.Element {
           SEKAR
         </NBText>
         <NBText variant="mono-sm" align="center" color="gray700" style={styles.tagline}>
-          SISTEM EVALUASI KERJA SATGAS RTH
+          SISTEM EVALUASI KINERJA SATGAS RTH
         </NBText>
         <PulsingDots />
       </View>

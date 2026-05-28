@@ -1,10 +1,10 @@
-<!-- Cold-start launch background: sage canvas + centered SEKAR box lockup.
-     Shown by BootTheme.windowBackground until the React view mounts (WL-1). -->
+<!-- Cold-start launch background: sage canvas + centered SEKAR lockup, "SEKAR"
+     wordmark and tagline (baked into splash_logo at each density by
+     scripts/generate-splash.mjs). Shown by BootTheme.windowBackground until the
+     React view mounts (WL-1). Centered at the artwork's intrinsic density size. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@color/bootsplash_background" />
     <item
-        android:width="120dp"
-        android:height="120dp"
         android:gravity="center"
         android:drawable="@drawable/splash_logo" />
 </layer-list>

@@ -4,6 +4,19 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## May 28, 2026 — Native splash: wordmark + tagline under the lockup
+
+- **Android cold-start splash** now shows the box lockup + **SEKAR** wordmark + tagline,
+  baked into `drawable-{dpi}/splash_logo.png` by new `scripts/generate-splash.mjs` (text
+  rendered with the bundled Space Grotesk / Inter TTFs via a temp fontconfig). `bootsplash.xml`
+  drops the 120dp clamp so the artwork shows centered at its intrinsic density size. Splash
+  artwork generation moved out of `generate-app-icon.mjs` (which now only does icons + the iOS
+  launch imageset).
+- **iOS LaunchScreen** gains a tagline `UILabel` below the SEKAR label (native text).
+- **Tagline wording**: uses "SISTEM EVALUASI KINERJA SATGAS RTH" (per request); the JS WL-1
+  `SplashSlide` tagline updated to match. NOTE: the About dialog (ProfileScreen) + Settings
+  footer + project docs still say "Kerja" — left as-is pending a decision on a global rename.
+
 ## May 28, 2026 — Brand: empty-state illustrations + icon cleanup
 
 - **Empty-state illustrations (CP3)**: new `components/nb/illustrations/index.tsx` — 6 inline

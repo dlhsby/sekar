@@ -144,14 +144,9 @@ async function ios() {
   console.log('  ✓ Contents.json (single 1024 universal)');
 }
 
-// ─── Native splash logos (box lockup on the sage canvas) ──────────────────────
-async function androidSplash() {
-  console.log('Android splash:');
-  const sizes = { 'drawable-mdpi': 120, 'drawable-hdpi': 180, 'drawable-xhdpi': 240, 'drawable-xxhdpi': 360, 'drawable-xxxhdpi': 480 };
-  for (const [dir, size] of Object.entries(sizes)) {
-    await png(splashLockupSvg, size, join(RES, dir, 'splash_logo.png'));
-  }
-}
+// Note: the Android cold-start splash artwork (box lockup + SEKAR + tagline) lives in
+// scripts/generate-splash.mjs (it bakes brand-font text). This script only handles the
+// iOS launch imageset + app icons.
 
 async function iosLaunch() {
   const iosDir = join(ROOT, 'ios');
@@ -169,6 +164,5 @@ async function iosLaunch() {
 
 await android();
 await ios();
-await androidSplash();
 await iosLaunch();
 console.log('Done.');
