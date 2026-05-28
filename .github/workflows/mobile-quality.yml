@@ -1,0 +1,66 @@
+# SEKAR Mobile Quality Gate (lint + type check + unit tests)
+#
+# Lightweight successor to the parked `mobile-ci-cd.yml.disabled` workflow.
+# Runs the design-system ESLint rules (no-inline-hex-colors, rn-no-shadow-radius,
+# etc. — configured in fe/mobile/eslint.config.js) and the Jest suite on every
+# PR that touches mobile. Does NOT build an APK; that lives in the disabled
+# workflow until Android signing + release infra is ready.
+
+name: Mobile Quality Gate
+
+on:
+  push:
+    branches: [main, staging, develop]
+    paths:
+      - 'fe/mobile/**'
+      - 'specs/ui-ux/tokens.json'
+      - 'scripts/build-tokens.ts'
+      - 'tools/eslint-plugin-sekar-design/**'
+      - '.github/workflows/mobile-quality.yml'
+  pull_request:
+    branches: [main, staging, develop]
+    paths:
+      - 'fe/mobile/**'
+      - 'specs/ui-ux/tokens.json'
+      - 'scripts/build-tokens.ts'
+      - 'tools/eslint-plugin-sekar-design/**'
+
+env:
+  NODE_VERSION: '24'
+
+jobs:
+  lint-and-test:
+    name: Lint + Type Check + Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            fe/mobile/package-lock.json
+
+      - name: Install root tooling (eslint-plugin-sekar-design symlink)
+        run: npm ci
+
+      - name: Install mobile deps
+        run: npm ci
+        working-directory: fe/mobile
+
+      - name: ESLint (includes sekar-design rules)
+        run: npm run lint
+        working-directory: fe/mobile
+
+      - name: TypeScript check
+        run: npx tsc --noEmit
+        working-directory: fe/mobile
+
+      - name: Jest
+        run: npm test -- --watchAll=false --ci
+        working-directory: fe/mobile
