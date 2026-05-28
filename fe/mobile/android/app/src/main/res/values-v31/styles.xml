@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Android 12+ (API 31+): the OS SplashScreen API is the only splash surface.
+        Override BootTheme to use a plain sage window background so the OS system
+        splash (windowSplashScreenAnimatedIcon) transitions directly into the app
+        without a second custom splash layer appearing underneath.
+    -->
+    <style name="BootTheme" parent="AppTheme">
+        <item name="android:windowBackground">@color/bootsplash_background</item>
+        <item name="android:statusBarColor">@color/bootsplash_background</item>
+        <item name="android:windowSplashScreenBackground">@color/bootsplash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/bootsplash_background</item>
+    </style>
+</resources>
