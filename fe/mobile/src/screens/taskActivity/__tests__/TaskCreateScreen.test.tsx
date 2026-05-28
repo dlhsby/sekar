@@ -6,6 +6,7 @@
 import React from 'react';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { Alert } from 'react-native';
+import { NBToast } from '../../../components/nb';
 import { Provider } from 'react-redux';
 import { NavigationContainer } from '@react-navigation/native';
 import { TaskCreateScreen } from '../TaskCreateScreen';
@@ -167,6 +168,7 @@ describe('TaskCreateScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    jest.spyOn(NBToast, 'show').mockImplementation(() => {});
 
     // Reset AsyncStorage mocks
     (AsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
@@ -453,10 +455,8 @@ describe('TaskCreateScreen', () => {
     );
 
     await waitFor(() => {
-      expect(Alert.alert).toHaveBeenCalledWith(
-        'Akses Ditolak',
-        'Anda tidak memiliki izin untuk membuat tugas',
-        expect.any(Array)
+      expect(NBToast.show).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'danger', title: 'Akses Ditolak' }),
       );
     });
   });
@@ -589,7 +589,9 @@ describe('TaskCreateScreen', () => {
     });
 
     await waitFor(() => {
-      expect(Alert.alert).toHaveBeenCalledWith('Gagal', 'Failed to create task');
+      expect(NBToast.show).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'danger', title: 'Gagal', body: 'Failed to create task' }),
+      );
     });
   });
 

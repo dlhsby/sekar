@@ -8,6 +8,7 @@
 import React from 'react';
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { Alert } from 'react-native';
+import { NBToast } from '../../../components/nb';
 import { Provider } from 'react-redux';
 import { NavigationContainer } from '@react-navigation/native';
 import Geolocation from 'react-native-geolocation-service';
@@ -317,6 +318,7 @@ describe('OvertimeSubmitScreen', () => {
     (overtimeApi.endOvertime as jest.Mock).mockResolvedValue({ data: null });
 
     alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    jest.spyOn(NBToast, 'show').mockImplementation(() => {});
 
     (Geolocation.getCurrentPosition as jest.Mock).mockImplementation((success: any) => {
       success({ coords: { latitude: -7.250445, longitude: 112.768845, accuracy: 10 } });
@@ -590,9 +592,8 @@ describe('OvertimeSubmitScreen', () => {
       });
 
       await waitFor(() => {
-        expect(alertSpy).toHaveBeenCalledWith(
-          'Gagal Mulai Lembur',
-          expect.any(String),
+        expect(NBToast.show).toHaveBeenCalledWith(
+          expect.objectContaining({ level: 'danger', title: 'Gagal Mulai Lembur' }),
         );
       });
     });
@@ -724,12 +725,11 @@ describe('OvertimeSubmitScreen', () => {
       });
 
       await waitFor(() => {
-        expect(alertSpy).toHaveBeenCalledWith(
-          'Berhasil',
-          'Lembur berhasil diselesaikan',
-          expect.any(Array),
+        expect(NBToast.show).toHaveBeenCalledWith(
+          expect.objectContaining({ level: 'success', title: 'Berhasil' }),
         );
       });
+      expect(mockNavigate).toHaveBeenCalledWith('Overtime');
     });
 
     it('shows error alert when endOvertime returns an API error', async () => {
@@ -756,9 +756,8 @@ describe('OvertimeSubmitScreen', () => {
       });
 
       await waitFor(() => {
-        expect(alertSpy).toHaveBeenCalledWith(
-          'Gagal Selesai Lembur',
-          'Tidak ada lembur aktif',
+        expect(NBToast.show).toHaveBeenCalledWith(
+          expect.objectContaining({ level: 'danger', title: 'Gagal Selesai Lembur', body: 'Tidak ada lembur aktif' }),
         );
       });
     });

@@ -34,6 +34,7 @@ import {
   NBBackgroundPattern,
   NBDatePicker,
   NBSelect,
+  NBToast,
 } from '../../components/nb';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
@@ -259,9 +260,8 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
   // Check access
   useEffect(() => {
     if (!canCreateTask) {
-      Alert.alert('Akses Ditolak', 'Anda tidak memiliki izin untuk membuat tugas', [
-        { text: 'OK', onPress: () => (navigation as any).navigate('TasksActivities', { initialTab: 'tasks' }) },
-      ]);
+      NBToast.show({ level: 'danger', title: 'Akses Ditolak', body: 'Anda tidak memiliki izin untuk membuat tugas.' });
+      (navigation as any).navigate('TasksActivities', { initialTab: 'tasks' });
     }
   }, [canCreateTask, navigation]);
 
@@ -427,15 +427,14 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
       if (response.data) {
         await clearDraft();
         resetForm();
-        Alert.alert('Berhasil', 'Tugas berhasil dibuat', [
-          { text: 'OK', onPress: () => (navigation as any).navigate('TasksActivities', { initialTab: 'tasks' }) },
-        ]);
+        NBToast.show({ level: 'success', title: 'Berhasil', body: 'Tugas berhasil dibuat.' });
+        (navigation as any).navigate('TasksActivities', { initialTab: 'tasks' });
       } else if (response.error) {
-        Alert.alert('Gagal', response.error);
+        NBToast.show({ level: 'danger', title: 'Gagal', body: response.error });
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Gagal membuat tugas';
-      Alert.alert('Gagal', message);
+      NBToast.show({ level: 'danger', title: 'Gagal', body: message });
     } finally {
       setIsSubmitting(false);
     }

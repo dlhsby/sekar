@@ -6,12 +6,11 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
-import { NBButton, NBBackgroundPattern, NBModal, NBText } from '../../components/nb';
+import { NBBackgroundPattern, NBModal, NBText } from '../../components/nb';
 import { ProfileHeader } from '../../components/common/ProfileHeader';
 import { ProfileMenu } from '../../components/common/ProfileMenu';
+import { ProfileStatsRow } from '../../components/profile/ProfileStatsRow';
 import { SyncStatusCard } from '../../components/common/SyncStatusCard';
-import { FieldStatsCard } from '../../components/profile/FieldStatsCard';
-import { MonitoringStatsCard } from '../../components/profile/MonitoringStatsCard';
 import { AssignedAreaCard } from '../../components/profile/AssignedAreaCard';
 import { AssignedKecamatanCard } from '../../components/profile/AssignedKecamatanCard';
 import { getRayons } from '../../services/api/rayonsApi';
@@ -21,7 +20,6 @@ import { useProfileSync } from '../../hooks/useProfileSync';
 import { useProfileLogout } from '../../hooks/useProfileLogout';
 import { locationTracker } from '../../services/location/locationTracker';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
-import type { MenuItem } from '../../components/common/ProfileMenu';
 
 export function ProfileScreen({ navigation }: any): React.JSX.Element {
   const {
@@ -117,27 +115,6 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
     );
   }
 
-  const extraMenuItems: MenuItem[] = [
-    {
-      key: 'edit-profile',
-      icon: 'account-edit-outline',
-      label: 'Edit Profil',
-      onPress: () => navigation.navigate('EditProfile'),
-      testID: 'edit-profile-button',
-    },
-    ...(isField
-      ? [
-          {
-            key: 'shift-history',
-            icon: 'clock-outline',
-            label: 'Riwayat Shift',
-            onPress: () => navigation.navigate('ShiftHistory'),
-            testID: 'shift-history-button',
-          },
-        ]
-      : []),
-  ];
-
   const areaData = assignedArea || profileData?.assigned_area || null;
 
   return (
@@ -179,26 +156,19 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
         )}
 
         {isField ? (
-          <FieldStatsCard stats={fieldStats} />
+          <ProfileStatsRow mode="field" stats={fieldStats} />
         ) : isStaffKecamatan ? null : (
-          <MonitoringStatsCard stats={monitoringStats} />
+          <ProfileStatsRow mode="monitoring" stats={monitoringStats} />
         )}
 
         <ProfileMenu
-          extraItems={extraMenuItems}
+          onEditProfile={() => navigation.navigate('EditProfile')}
           onChangePassword={() => setIsChangePasswordModalVisible(true)}
-          onAbout={handleAbout}
+          onShiftHistory={isField ? () => navigation.navigate('ShiftHistory') : undefined}
           onSettings={() => navigation.navigate('Settings')}
+          onAbout={handleAbout}
+          onLogout={handleLogout}
         />
-
-        <View style={styles.logoutButtonContainer}>
-          <NBButton
-            title="Keluar"
-            onPress={handleLogout}
-            variant="danger"
-            fullWidth
-          />
-        </View>
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
@@ -241,11 +211,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: nbSpacing.md,
   },
-  logoutButtonContainer: {
-    paddingHorizontal: nbSpacing.md,
-    marginBottom: nbSpacing.md,
-  },
   bottomSpacer: {
-    height: nbSpacing.xl + nbSpacing.lg,
+    height: nbSpacing.md,
   },
 });

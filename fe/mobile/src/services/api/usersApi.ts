@@ -3,7 +3,7 @@
  * Handles user profile operations including password changes
  */
 
-import { get, post } from './apiClient';
+import { get, patch } from './apiClient';
 import type { ApiResponse } from '../../types/api.types';
 import type { User } from '../../types/models.types';
 import { getToken } from '../storage/secureStorage';
@@ -90,7 +90,7 @@ export async function changePassword(
   newPassword: string,
 ): Promise<ApiResponse<void>> {
   try {
-    const response = await post<void>('/users/me/change-password', {
+    const response = await patch<void>('/users/me/change-password', {
       current_password: currentPassword,
       new_password: newPassword,
     });

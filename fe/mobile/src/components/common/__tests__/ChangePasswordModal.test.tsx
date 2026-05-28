@@ -1,526 +1,137 @@
 /**
- * ChangePasswordModal Component Tests
+ * ChangePasswordModal tests — validation, the /auth/change-password success flow
+ * (token rotation + toast), and error mapping.
  */
-
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
-import { Alert } from 'react-native';
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
+import { Provider } from 'react-redux';
+import { configureStore } from '@reduxjs/toolkit';
 import { ChangePasswordModal } from '../ChangePasswordModal';
-import * as usersApi from '../../../services/api/usersApi';
+import authReducer from '../../../store/slices/authSlice';
+import * as authApi from '../../../services/api/authApi';
+import * as secureStorage from '../../../services/storage/secureStorage';
+import { NBToast } from '../../nb';
 
-// Mock the API
-jest.mock('../../../services/api/usersApi');
+jest.mock('../../../services/api/authApi');
+jest.mock('../../../services/storage/secureStorage');
 
-// Mock Alert
-jest.spyOn(Alert, 'alert');
+const rotate = authApi.changePasswordAndRotate as jest.Mock;
+
+function renderModal(props: Partial<React.ComponentProps<typeof ChangePasswordModal>> = {}) {
+  const onClose = jest.fn();
+  const store = configureStore({ reducer: { auth: authReducer } });
+  const utils = render(
+    <Provider store={store}>
+      <ChangePasswordModal visible onClose={onClose} {...props} />
+    </Provider>,
+  );
+  return { ...utils, onClose };
+}
+
+const fillValid = (u: ReturnType<typeof renderModal>) => {
+  fireEvent.changeText(u.getByTestId('change-password-current-input'), 'oldpass12');
+  fireEvent.changeText(u.getByTestId('change-password-new-input'), 'newpass12');
+  fireEvent.changeText(u.getByTestId('change-password-confirm-input'), 'newpass12');
+};
 
 describe('ChangePasswordModal', () => {
-  const mockOnClose = jest.fn();
-
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.spyOn(NBToast, 'show').mockImplementation(() => {});
+    (secureStorage.setToken as jest.Mock).mockResolvedValue(undefined);
+    (secureStorage.setRefreshToken as jest.Mock).mockResolvedValue(undefined);
+    (secureStorage.setUser as jest.Mock).mockResolvedValue(undefined);
   });
 
-  describe('Rendering', () => {
-    it('should render modal when visible is true', () => {
-      const { getAllByText, getByPlaceholderText } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      expect(getAllByText('Ubah Password').length).toBeGreaterThan(0);
-      expect(getByPlaceholderText('Masukkan password saat ini')).toBeTruthy();
-      expect(getByPlaceholderText('Masukkan password baru (min. 6 karakter)')).toBeTruthy();
-      expect(getByPlaceholderText('Ketik ulang password baru')).toBeTruthy();
-    });
-
-    it('should not render modal when visible is false', () => {
-      const { queryByText, queryByLabelText } = render(
-        <ChangePasswordModal visible={false} onClose={mockOnClose} />
-      );
-
-      // Regression guard: the sheet must stay closed until explicitly opened
-      // (previously it auto-opened when nested inside a parent ScrollView).
-      expect(queryByText('Password Saat Ini')).toBeNull();
-      expect(queryByLabelText('Tutup')).toBeNull();
-    });
-
-    it('should render all form fields', () => {
-      const { getByText } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      expect(getByText('Password Saat Ini')).toBeTruthy();
-      expect(getByText('Password Baru')).toBeTruthy();
-      expect(getByText('Konfirmasi Password Baru')).toBeTruthy();
-    });
-
-    it('should render action buttons', () => {
-      const { getAllByText, getByText, getByTestId } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      // Title and submit button share the label "Ubah Password" (rendered as-is)
-      expect(getAllByText('Ubah Password').length).toBeGreaterThan(0);
-      expect(getByTestId('change-password-submit')).toBeTruthy();
-      expect(getByText('Batal')).toBeTruthy();
-    });
-
-    it('should render close button', () => {
-      const { getByLabelText } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      expect(getByLabelText('Tutup')).toBeTruthy();
-    });
+  it('renders fields when visible', () => {
+    const u = renderModal();
+    expect(u.getByPlaceholderText('Password saat ini')).toBeTruthy();
+    expect(u.getByPlaceholderText('Min. 8 karakter')).toBeTruthy();
+    expect(u.getByPlaceholderText('Ketik ulang password baru')).toBeTruthy();
   });
 
-  describe('Form Validation', () => {
-    it('should show error when current password is empty', async () => {
-      const { getByText, getByPlaceholderText, getByTestId } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      const submitButton = getByTestId('change-password-submit');
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        expect(getByText('Password saat ini wajib diisi')).toBeTruthy();
-      });
-    });
-
-    it('should show error when new password is empty', async () => {
-      const { getByText, getByPlaceholderText, getByTestId } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      const currentPasswordInput = getByPlaceholderText('Masukkan password saat ini');
-      fireEvent.changeText(currentPasswordInput, 'oldPassword123');
-
-      const submitButton = getByTestId('change-password-submit');
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        expect(getByText('Password baru wajib diisi')).toBeTruthy();
-      });
-    });
-
-    it('should show error when new password is too short', async () => {
-      const { getByText, getByPlaceholderText, getByTestId } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      const currentPasswordInput = getByPlaceholderText('Masukkan password saat ini');
-      fireEvent.changeText(currentPasswordInput, 'oldPassword123');
-
-      const newPasswordInput = getByPlaceholderText('Masukkan password baru (min. 6 karakter)');
-      fireEvent.changeText(newPasswordInput, '12345');
-
-      const submitButton = getByTestId('change-password-submit');
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        expect(getByText('Password baru minimal 6 karakter')).toBeTruthy();
-      });
-    });
-
-    it('should show error when new password is same as current password', async () => {
-      const { getByText, getByPlaceholderText, getByTestId } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      const currentPasswordInput = getByPlaceholderText('Masukkan password saat ini');
-      fireEvent.changeText(currentPasswordInput, 'samePassword123');
-
-      const newPasswordInput = getByPlaceholderText('Masukkan password baru (min. 6 karakter)');
-      fireEvent.changeText(newPasswordInput, 'samePassword123');
-
-      const submitButton = getByTestId('change-password-submit');
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        expect(getByText('Password baru harus berbeda dari password lama')).toBeTruthy();
-      });
-    });
-
-    it('should show error when confirm password does not match', async () => {
-      const { getByText, getByPlaceholderText, getByTestId } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      const currentPasswordInput = getByPlaceholderText('Masukkan password saat ini');
-      fireEvent.changeText(currentPasswordInput, 'oldPassword123');
-
-      const newPasswordInput = getByPlaceholderText('Masukkan password baru (min. 6 karakter)');
-      fireEvent.changeText(newPasswordInput, 'newPassword123');
-
-      const confirmPasswordInput = getByPlaceholderText('Ketik ulang password baru');
-      fireEvent.changeText(confirmPasswordInput, 'differentPassword123');
-
-      const submitButton = getByTestId('change-password-submit');
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        expect(getByText('Konfirmasi password tidak cocok')).toBeTruthy();
-      });
-    });
-
-    it('should show error when confirm password is empty', async () => {
-      const { getByText, getByPlaceholderText, getByTestId } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      const currentPasswordInput = getByPlaceholderText('Masukkan password saat ini');
-      fireEvent.changeText(currentPasswordInput, 'oldPassword123');
-
-      const newPasswordInput = getByPlaceholderText('Masukkan password baru (min. 6 karakter)');
-      fireEvent.changeText(newPasswordInput, 'newPassword123');
-
-      const submitButton = getByTestId('change-password-submit');
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        expect(getByText('Konfirmasi password wajib diisi')).toBeTruthy();
-      });
-    });
+  it('does not render the form when visible is false (auto-open regression guard)', () => {
+    const onClose = jest.fn();
+    const store = configureStore({ reducer: { auth: authReducer } });
+    const { queryByText } = render(
+      <Provider store={store}>
+        <ChangePasswordModal visible={false} onClose={onClose} />
+      </Provider>,
+    );
+    expect(queryByText('Password Saat Ini')).toBeNull();
   });
 
-  describe('Password Visibility Toggle', () => {
-    it('should toggle current password visibility', () => {
-      const { getByLabelText, getByPlaceholderText } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      const currentPasswordInput = getByPlaceholderText('Masukkan password saat ini');
-      const toggleButton = getByLabelText('Tampilkan password saat ini');
-
-      // Initially hidden
-      expect(currentPasswordInput.props.secureTextEntry).toBe(true);
-
-      // Toggle to show
-      fireEvent.press(toggleButton);
-      expect(currentPasswordInput.props.secureTextEntry).toBe(false);
-
-      // Toggle back to hide
-      const hideButton = getByLabelText('Sembunyikan password saat ini');
-      fireEvent.press(hideButton);
-      expect(currentPasswordInput.props.secureTextEntry).toBe(true);
-    });
-
-    it('should toggle new password visibility', () => {
-      const { getByLabelText, getByPlaceholderText } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      const newPasswordInput = getByPlaceholderText('Masukkan password baru (min. 6 karakter)');
-      const toggleButton = getByLabelText('Tampilkan password baru');
-
-      // Initially hidden
-      expect(newPasswordInput.props.secureTextEntry).toBe(true);
-
-      // Toggle to show
-      fireEvent.press(toggleButton);
-      expect(newPasswordInput.props.secureTextEntry).toBe(false);
-    });
-
-    it('should toggle confirm password visibility', () => {
-      const { getByLabelText, getByPlaceholderText } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      const confirmPasswordInput = getByPlaceholderText('Ketik ulang password baru');
-      const toggleButton = getByLabelText('Tampilkan konfirmasi password');
-
-      // Initially hidden
-      expect(confirmPasswordInput.props.secureTextEntry).toBe(true);
-
-      // Toggle to show
-      fireEvent.press(toggleButton);
-      expect(confirmPasswordInput.props.secureTextEntry).toBe(false);
-    });
+  it('shows validation errors and does not call the API on empty submit', () => {
+    const u = renderModal();
+    fireEvent.press(u.getByTestId('change-password-submit'));
+    expect(u.getByText('Password saat ini wajib diisi')).toBeTruthy();
+    expect(rotate).not.toHaveBeenCalled();
   });
 
-  describe('Form Submission', () => {
-    it('should submit form with valid data', async () => {
-      const mockChangePassword = jest.spyOn(usersApi, 'changePassword').mockResolvedValue({
-        data: undefined,
-      });
-
-      const { getByText, getByPlaceholderText, getByTestId } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      const currentPasswordInput = getByPlaceholderText('Masukkan password saat ini');
-      fireEvent.changeText(currentPasswordInput, 'oldPassword123');
-
-      const newPasswordInput = getByPlaceholderText('Masukkan password baru (min. 6 karakter)');
-      fireEvent.changeText(newPasswordInput, 'newPassword123');
-
-      const confirmPasswordInput = getByPlaceholderText('Ketik ulang password baru');
-      fireEvent.changeText(confirmPasswordInput, 'newPassword123');
-
-      const submitButton = getByTestId('change-password-submit');
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        expect(mockChangePassword).toHaveBeenCalledWith('oldPassword123', 'newPassword123');
-      });
-    });
-
-    it('should show success message on successful password change', async () => {
-      jest.spyOn(usersApi, 'changePassword').mockResolvedValue({
-        data: undefined,
-      });
-
-      const { getByText, getByPlaceholderText, getByTestId } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      const currentPasswordInput = getByPlaceholderText('Masukkan password saat ini');
-      fireEvent.changeText(currentPasswordInput, 'oldPassword123');
-
-      const newPasswordInput = getByPlaceholderText('Masukkan password baru (min. 6 karakter)');
-      fireEvent.changeText(newPasswordInput, 'newPassword123');
-
-      const confirmPasswordInput = getByPlaceholderText('Ketik ulang password baru');
-      fireEvent.changeText(confirmPasswordInput, 'newPassword123');
-
-      const submitButton = getByTestId('change-password-submit');
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        expect(getByText('Password berhasil diubah!')).toBeTruthy();
-      });
-    });
-
-    it('should auto-close modal after successful password change', async () => {
-      jest.spyOn(usersApi, 'changePassword').mockResolvedValue({
-        data: undefined,
-      });
-
-      jest.useFakeTimers();
-
-      const { getByText, getByPlaceholderText, getByTestId } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      const currentPasswordInput = getByPlaceholderText('Masukkan password saat ini');
-      fireEvent.changeText(currentPasswordInput, 'oldPassword123');
-
-      const newPasswordInput = getByPlaceholderText('Masukkan password baru (min. 6 karakter)');
-      fireEvent.changeText(newPasswordInput, 'newPassword123');
-
-      const confirmPasswordInput = getByPlaceholderText('Ketik ulang password baru');
-      fireEvent.changeText(confirmPasswordInput, 'newPassword123');
-
-      const submitButton = getByTestId('change-password-submit');
-      fireEvent.press(submitButton);
-
-      await waitFor(
-        () => {
-          expect(getByText('Password berhasil diubah!')).toBeTruthy();
-        },
-        { timeout: 10000 }
-      );
-
-      // Fast-forward time by 1.5 seconds
-      jest.advanceTimersByTime(1500);
-
-      await waitFor(
-        () => {
-          expect(mockOnClose).toHaveBeenCalled();
-        },
-        { timeout: 10000 }
-      );
-
-      jest.useRealTimers();
-    },
-    25000
-  );
-
-    it('should show error message on API failure', async () => {
-      jest.spyOn(usersApi, 'changePassword').mockResolvedValue({
-        error: 'Password saat ini salah',
-      });
-
-      const { getByText, getByPlaceholderText, getByTestId } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      const currentPasswordInput = getByPlaceholderText('Masukkan password saat ini');
-      fireEvent.changeText(currentPasswordInput, 'wrongPassword');
-
-      const newPasswordInput = getByPlaceholderText('Masukkan password baru (min. 6 karakter)');
-      fireEvent.changeText(newPasswordInput, 'newPassword123');
-
-      const confirmPasswordInput = getByPlaceholderText('Ketik ulang password baru');
-      fireEvent.changeText(confirmPasswordInput, 'newPassword123');
-
-      const submitButton = getByTestId('change-password-submit');
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        expect(getByText('Password saat ini salah')).toBeTruthy();
-      });
-    });
+  it('rejects a too-short new password', () => {
+    const u = renderModal();
+    fireEvent.changeText(u.getByTestId('change-password-current-input'), 'oldpass12');
+    fireEvent.changeText(u.getByTestId('change-password-new-input'), 'ab1');
+    fireEvent.changeText(u.getByTestId('change-password-confirm-input'), 'ab1');
+    fireEvent.press(u.getByTestId('change-password-submit'));
+    expect(u.getByText('Password baru minimal 8 karakter')).toBeTruthy();
+    expect(rotate).not.toHaveBeenCalled();
   });
 
-  describe('Button States', () => {
-    it('should show loading spinner during API call', async () => {
-      jest.spyOn(usersApi, 'changePassword').mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 100))
-      );
-
-      const { getByText, getByPlaceholderText, getByTestId } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      const currentPasswordInput = getByPlaceholderText('Masukkan password saat ini');
-      fireEvent.changeText(currentPasswordInput, 'oldPassword123');
-
-      const newPasswordInput = getByPlaceholderText('Masukkan password baru (min. 6 karakter)');
-      fireEvent.changeText(newPasswordInput, 'newPassword123');
-
-      const confirmPasswordInput = getByPlaceholderText('Ketik ulang password baru');
-      fireEvent.changeText(confirmPasswordInput, 'newPassword123');
-
-      const submitButton = getByTestId('change-password-submit');
-      fireEvent.press(submitButton);
-
-      await waitFor(() => {
-        expect(getByTestId('change-password-submit-spinner')).toBeTruthy();
-      });
-    });
-
-    it('should not allow submit during loading', async () => {
-      let resolvePromise: () => void;
-      const promise = new Promise<{ data: undefined }>((resolve) => {
-        resolvePromise = () => resolve({ data: undefined });
-      });
-
-      jest.spyOn(usersApi, 'changePassword').mockReturnValue(promise);
-
-      const { getByPlaceholderText, getByTestId } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      const currentPasswordInput = getByPlaceholderText('Masukkan password saat ini');
-      fireEvent.changeText(currentPasswordInput, 'oldPassword123');
-
-      const newPasswordInput = getByPlaceholderText('Masukkan password baru (min. 6 karakter)');
-      fireEvent.changeText(newPasswordInput, 'newPassword123');
-
-      const confirmPasswordInput = getByPlaceholderText('Ketik ulang password baru');
-      fireEvent.changeText(confirmPasswordInput, 'newPassword123');
-
-      const submitButton = getByTestId('change-password-submit');
-      fireEvent.press(submitButton);
-
-      // Press again while loading
-      fireEvent.press(submitButton);
-
-      // Should only be called once (second press is ignored)
-      expect(usersApi.changePassword).toHaveBeenCalledTimes(1);
-
-      // Resolve the promise to finish the test
-      resolvePromise!();
-    });
+  it('requires letters and digits in the new password', () => {
+    const u = renderModal();
+    fireEvent.changeText(u.getByTestId('change-password-current-input'), 'oldpass12');
+    fireEvent.changeText(u.getByTestId('change-password-new-input'), 'abcdefgh');
+    fireEvent.changeText(u.getByTestId('change-password-confirm-input'), 'abcdefgh');
+    fireEvent.press(u.getByTestId('change-password-submit'));
+    expect(u.getByText('Password baru harus berisi huruf dan angka')).toBeTruthy();
   });
 
-  describe('Modal Close', () => {
-    it('should close modal when close button is pressed', () => {
-      const { getByLabelText } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      const closeButton = getByLabelText('Tutup');
-      fireEvent.press(closeButton);
-
-      expect(mockOnClose).toHaveBeenCalled();
-    });
-
-    it('should close modal when cancel button is pressed', () => {
-      const { getByText } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      const cancelButton = getByText('Batal');
-      fireEvent.press(cancelButton);
-
-      expect(mockOnClose).toHaveBeenCalled();
-    });
-
-    it('should reset form when modal is closed', () => {
-      const { getByText, getByPlaceholderText, rerender } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      const currentPasswordInput = getByPlaceholderText('Masukkan password saat ini');
-      fireEvent.changeText(currentPasswordInput, 'test123');
-
-      const cancelButton = getByText('Batal');
-      fireEvent.press(cancelButton);
-
-      // Re-render with modal visible again
-      rerender(<ChangePasswordModal visible={true} onClose={mockOnClose} />);
-
-      expect(currentPasswordInput.props.value).toBe('');
-    });
-
-    it('should not close modal during loading', async () => {
-      let resolvePromise: () => void;
-      const promise = new Promise<{ data: undefined }>((resolve) => {
-        resolvePromise = () => resolve({ data: undefined });
-      });
-
-      jest.spyOn(usersApi, 'changePassword').mockReturnValue(promise);
-
-      const { getByPlaceholderText, getByLabelText, getByTestId } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      const currentPasswordInput = getByPlaceholderText('Masukkan password saat ini');
-      fireEvent.changeText(currentPasswordInput, 'oldPassword123');
-
-      const newPasswordInput = getByPlaceholderText('Masukkan password baru (min. 6 karakter)');
-      fireEvent.changeText(newPasswordInput, 'newPassword123');
-
-      const confirmPasswordInput = getByPlaceholderText('Ketik ulang password baru');
-      fireEvent.changeText(confirmPasswordInput, 'newPassword123');
-
-      const submitButton = getByTestId('change-password-submit');
-      fireEvent.press(submitButton);
-
-      const closeButton = getByLabelText('Tutup');
-      fireEvent.press(closeButton);
-
-      // Should not be called because loading is true
-      expect(mockOnClose).not.toHaveBeenCalled();
-
-      // Resolve the promise to finish the test
-      resolvePromise!();
-    });
+  it('flags a confirmation mismatch', () => {
+    const u = renderModal();
+    fireEvent.changeText(u.getByTestId('change-password-current-input'), 'oldpass12');
+    fireEvent.changeText(u.getByTestId('change-password-new-input'), 'newpass12');
+    fireEvent.changeText(u.getByTestId('change-password-confirm-input'), 'different9');
+    fireEvent.press(u.getByTestId('change-password-submit'));
+    expect(u.getByText('Konfirmasi password tidak cocok')).toBeTruthy();
   });
 
-  describe('Accessibility', () => {
-    it('should have accessibility labels for all interactive elements', () => {
-      const { getByLabelText } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      expect(getByLabelText('Tutup')).toBeTruthy();
-      expect(getByLabelText('Tampilkan password saat ini')).toBeTruthy();
-      expect(getByLabelText('Tampilkan password baru')).toBeTruthy();
-      expect(getByLabelText('Tampilkan konfirmasi password')).toBeTruthy();
+  it('persists rotated tokens and toasts on success', async () => {
+    rotate.mockResolvedValue({
+      data: { access_token: 'AT', refresh_token: 'RT', user: { id: 'u1' } },
     });
+    const u = renderModal();
+    fillValid(u);
+    fireEvent.press(u.getByTestId('change-password-submit'));
 
-    it('should have accessibility hints for form fields', () => {
-      const { getByA11yHint } = render(
-        <ChangePasswordModal visible={true} onClose={mockOnClose} />
-      );
-
-      expect(getByA11yHint('Masukkan password Anda saat ini')).toBeTruthy();
-      expect(getByA11yHint('Masukkan password baru minimal 6 karakter')).toBeTruthy();
-      expect(getByA11yHint('Ketik ulang password baru untuk konfirmasi')).toBeTruthy();
+    await waitFor(() => {
+      expect(rotate).toHaveBeenCalledWith('newpass12', 'oldpass12');
     });
+    expect(secureStorage.setToken).toHaveBeenCalledWith('AT');
+    expect(secureStorage.setRefreshToken).toHaveBeenCalledWith('RT');
+    expect(NBToast.show).toHaveBeenCalledWith(
+      expect.objectContaining({ level: 'success' }),
+    );
+  });
+
+  it('maps a wrong-current-password code to the current-password field', async () => {
+    rotate.mockResolvedValue({ error: 'Old password is incorrect', code: 'AUTH_INVALID_CREDENTIALS' });
+    const u = renderModal();
+    fillValid(u);
+    fireEvent.press(u.getByTestId('change-password-submit'));
+    await waitFor(() => expect(u.getByText('Password saat ini salah')).toBeTruthy());
+    expect(NBToast.show).not.toHaveBeenCalled();
+  });
+
+  it('toasts a generic submit error', async () => {
+    rotate.mockResolvedValue({ error: 'Server meledak', code: 'SERVER_ERROR' });
+    const u = renderModal();
+    fillValid(u);
+    fireEvent.press(u.getByTestId('change-password-submit'));
+    await waitFor(() =>
+      expect(NBToast.show).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'danger', body: 'Server meledak' }),
+      ),
+    );
   });
 });

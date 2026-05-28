@@ -54,6 +54,7 @@ import {
   NBCardTextInput,
   NBText,
   NBCollapsibleCard,
+  NBToast,
 } from '../../components/nb';
 import {
   nbColors,
@@ -191,14 +192,14 @@ export const OvertimeSubmitScreen: React.FC<
     (setSelfie: (photo: Photo) => void) => async () => {
       const permResult = await requestCameraPermission();
       if (!permResult.granted) {
-        Alert.alert('Izin Kamera', 'Akses kamera diperlukan. Aktifkan di Pengaturan aplikasi.');
+        NBToast.show({ level: 'warning', title: 'Izin Kamera', body: 'Akses kamera diperlukan. Aktifkan di Pengaturan aplikasi.' });
         return;
       }
       try {
         const photo = await mediaService.capturePhoto(true);
         if (photo) { setSelfie(photo); }
       } catch (err) {
-        Alert.alert('Error', err instanceof Error ? err.message : 'Gagal mengambil foto');
+        NBToast.show({ level: 'danger', title: 'Gagal', body: err instanceof Error ? err.message : 'Gagal mengambil foto' });
       }
     },
     [],
@@ -363,12 +364,12 @@ export const OvertimeSubmitScreen: React.FC<
         const errMsg = response.error.includes('end normal shift')
           ? 'Anda masih memiliki shift aktif. Selesaikan Clock Out shift biasa sebelum memulai lembur.'
           : response.error;
-        Alert.alert('Gagal Mulai Lembur', errMsg);
+        NBToast.show({ level: 'danger', title: 'Gagal Mulai Lembur', body: errMsg });
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Gagal memulai lembur';
       dispatch(setError(msg));
-      Alert.alert('Gagal', msg);
+      NBToast.show({ level: 'danger', title: 'Gagal', body: msg });
     } finally {
       dispatch(setSubmitting(false));
     }
@@ -425,18 +426,16 @@ export const OvertimeSubmitScreen: React.FC<
         // Shift already ended server-side — stop without uploading (avoids 400 race).
         locationTracker.stopImmediate();
         dispatch(clockOutSuccess());
-        Alert.alert('Berhasil', 'Lembur berhasil diselesaikan', [
-          { text: 'OK', onPress: () => navigation.navigate('Overtime' as any) },
-        ]);
+        NBToast.show({ level: 'success', title: 'Berhasil', body: 'Lembur berhasil diselesaikan.' });
+        navigation.navigate('Overtime' as any);
       } else if (response.error) {
         dispatch(setError(response.error));
-        const errMsg = response.error;
-        Alert.alert('Gagal Selesai Lembur', errMsg);
+        NBToast.show({ level: 'danger', title: 'Gagal Selesai Lembur', body: response.error });
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Gagal menyelesaikan lembur';
       dispatch(setError(msg));
-      Alert.alert('Gagal', msg);
+      NBToast.show({ level: 'danger', title: 'Gagal', body: msg });
     } finally {
       dispatch(setSubmitting(false));
     }

@@ -16,6 +16,13 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
+                            <imageView opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleAspectFit" image="SekarPinwheel" translatesAutoresizingMaskIntoConstraints="NO" id="pwh-00-img">
+                                <rect key="frame" x="127.5" y="163" width="120" height="120"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="120" id="pwh-00-wid"/>
+                                    <constraint firstAttribute="height" constant="120" id="pwh-00-hgt"/>
+                                </constraints>
+                            </imageView>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="SEKAR" textAlignment="center" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" minimumFontSize="18" translatesAutoresizingMaskIntoConstraints="NO" id="GJd-Yh-RWb">
                                 <rect key="frame" x="0.0" y="307" width="375" height="53"/>
                                 <fontDescription key="fontDescription" type="boldSystem" pointSize="44"/>
@@ -29,6 +36,8 @@
                             <constraint firstItem="GJd-Yh-RWb" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="ctr-y0-001"/>
                             <constraint firstItem="GJd-Yh-RWb" firstAttribute="leading" secondItem="Bcu-3y-fUS" secondAttribute="leading" id="led-0a-001"/>
                             <constraint firstItem="Bcu-3y-fUS" firstAttribute="trailing" secondItem="GJd-Yh-RWb" secondAttribute="trailing" id="trl-0a-001"/>
+                            <constraint firstItem="pwh-00-img" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="pwh-cx-001"/>
+                            <constraint firstItem="GJd-Yh-RWb" firstAttribute="top" secondItem="pwh-00-img" secondAttribute="bottom" constant="24" id="pwh-gap-001"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="Bcu-3y-fUS"/>
                     </view>
@@ -38,4 +47,7 @@
             <point key="canvasLocation" x="52.173913043478265" y="375"/>
         </scene>
     </scenes>
+    <resources>
+        <image name="SekarPinwheel" width="120" height="120"/>
+    </resources>
 </document>

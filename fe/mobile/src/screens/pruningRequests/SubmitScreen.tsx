@@ -408,7 +408,7 @@ export function SubmitScreen(): React.JSX.Element {
   // ── Photo capture ───────────────────────────────────────────────────────
   const handlePickFromCamera = useCallback(async () => {
     if (photos.length >= MAX_PHOTOS) {
-      Alert.alert('Batas foto', `Maksimal ${MAX_PHOTOS} foto.`);
+      NBToast.show({ level: 'warning', title: 'Batas foto', body: `Maksimal ${MAX_PHOTOS} foto.` });
       return;
     }
     const perm = await requestCameraPermission();
@@ -429,14 +429,14 @@ export function SubmitScreen(): React.JSX.Element {
         setPhotos((prev) => [...prev, photo]);
       }
     } catch (e) {
-      Alert.alert('Gagal mengambil foto', e instanceof Error ? e.message : 'Unknown error');
+      NBToast.show({ level: 'danger', title: 'Gagal mengambil foto', body: e instanceof Error ? e.message : 'Unknown error' });
     }
   }, [photos.length]);
 
   const handlePickFromGallery = useCallback(async () => {
     const remaining = MAX_PHOTOS - photos.length;
     if (remaining <= 0) {
-      Alert.alert('Batas foto', `Maksimal ${MAX_PHOTOS} foto.`);
+      NBToast.show({ level: 'warning', title: 'Batas foto', body: `Maksimal ${MAX_PHOTOS} foto.` });
       return;
     }
     try {
@@ -445,7 +445,7 @@ export function SubmitScreen(): React.JSX.Element {
         setPhotos((prev) => [...prev, ...newPhotos].slice(0, MAX_PHOTOS));
       }
     } catch (e) {
-      Alert.alert('Gagal memilih foto', e instanceof Error ? e.message : 'Unknown error');
+      NBToast.show({ level: 'danger', title: 'Gagal memilih foto', body: e instanceof Error ? e.message : 'Unknown error' });
     }
   }, [photos.length]);
 

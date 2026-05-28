@@ -1,402 +1,353 @@
 /**
- * Settings Screen
- * App settings and preferences with NB 2.0 design system
+ * Settings Screen (PRF-2)
+ * Phase 4 M3 revamp: hi-fi sections (Notifikasi / Lokasi & data / Offline sync /
+ * Tentang) with NB-styled toggles and an offline-sync queue card. Logout lives in
+ * the Profile menu, so it is intentionally absent here.
  *
- * Features:
- * - Notification preferences
- * - Display settings (theme, font size)
- * - Privacy settings (location, analytics)
- * - Account actions (change password, logout)
- *
- * @see specs/ui-ux/neo-brutalism.md
+ * @see specs/ui-ux/design-tokens.md
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
-  Switch,
   TouchableOpacity,
   Alert,
-  SafeAreaView,
 } from 'react-native';
-import { useDispatch } from 'react-redux';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import DeviceInfo from 'react-native-device-info';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { NBCard, NBBackgroundPattern, NBAlert, NBText } from '../../components/nb';
-import { logout } from '../../store/slices/authSlice';
-import { resetState as resetShiftState } from '../../store/slices/shiftSlice';
-import { resetState as resetActivitiesState } from '../../store/slices/activitiesSlice';
-import { resetState as resetOfflineState } from '../../store/slices/offlineSlice';
+import { NBBackgroundPattern, NBButton, NBText } from '../../components/nb';
+import { useProfileSync } from '../../hooks/useProfileSync';
 import {
   nbColors,
   nbSpacing,
+  nbRadius,
   nbBorders,
-  nbBorderRadius,
-  nbTouchTarget,
+  nbShadows,
 } from '../../constants/nbTokens';
 
-/**
- * Settings section interface
- */
-interface SettingItem {
-  key: string;
-  label: string;
-  description?: string;
-  type: 'toggle' | 'button' | 'navigation';
-  value?: boolean;
-  icon: string;
-  onPress?: () => void;
-  onToggle?: (value: boolean) => void;
-  danger?: boolean;
-}
-
-/**
- * Screen props type - works with all 8 roles via unified MainNavigator
- */
 type SettingsScreenProps = NativeStackScreenProps<{ Settings: undefined }, 'Settings'>;
 
-/**
- * Settings Screen Component
- */
+// ─── NBToggle ───────────────────────────────────────────────────────────────
+
+interface NBToggleProps {
+  value: boolean;
+  onValueChange: (value: boolean) => void;
+  label: string;
+  testID?: string;
+}
+
+function NBToggle({ value, onValueChange, label, testID }: NBToggleProps): React.JSX.Element {
+  return (
+    <TouchableOpacity
+      onPress={() => onValueChange(!value)}
+      activeOpacity={0.8}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: value }}
+      accessibilityLabel={label}
+      testID={testID}
+      style={[
+        styles.toggleTrack,
+        value ? styles.toggleTrackOn : styles.toggleTrackOff,
+      ]}
+    >
+      <View style={[styles.toggleKnob, value ? styles.toggleKnobOn : styles.toggleKnobOff]} />
+    </TouchableOpacity>
+  );
+}
+
+// ─── Setting row ────────────────────────────────────────────────────────────
+
+interface ToggleRowProps {
+  label: string;
+  description?: string;
+  value: boolean;
+  onToggle: (value: boolean) => void;
+  isLast?: boolean;
+  testID?: string;
+}
+
+function ToggleRow({
+  label,
+  description,
+  value,
+  onToggle,
+  isLast,
+  testID,
+}: ToggleRowProps): React.JSX.Element {
+  return (
+    <View style={[styles.row, !isLast && styles.rowDivider]}>
+      <View style={styles.rowText}>
+        <NBText variant="body-sm" color="black" style={styles.rowLabel}>{label}</NBText>
+        {description ? (
+          <NBText variant="mono-sm" color="gray600" style={styles.rowDescription}>{description}</NBText>
+        ) : null}
+      </View>
+      <NBToggle value={value} onValueChange={onToggle} label={label} testID={testID} />
+    </View>
+  );
+}
+
+function SectionTitle({ children }: { children: string }): React.JSX.Element {
+  return (
+    <NBText variant="mono-sm" color="gray600" uppercase style={styles.sectionTitle}>
+      {children}
+    </NBText>
+  );
+}
+
+// ─── Screen ─────────────────────────────────────────────────────────────────
+
 export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
-  const dispatch = useDispatch();
-
-  // State for toggles
   const [pushNotifications, setPushNotifications] = useState(true);
-  const [emailNotifications, setEmailNotifications] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
-  const [locationBackground, setLocationBackground] = useState(true);
-  const [analytics, setAnalytics] = useState(false);
+  const [soundVibrate, setSoundVibrate] = useState(false);
+  const [backgroundTracking, setBackgroundTracking] = useState(true);
+  const [dataSaver, setDataSaver] = useState(false);
 
-  // Modal states
-  const [showLogoutAlert, setShowLogoutAlert] = useState(false);
+  const { syncStatus, isSyncing, loadSyncStatus, handleSyncNow } = useProfileSync();
 
-  // App info
+  useEffect(() => {
+    loadSyncStatus();
+  }, [loadSyncStatus]);
+
   const appVersion = DeviceInfo.getVersion();
   const buildNumber = DeviceInfo.getBuildNumber();
 
-  /**
-   * Handle logout
-   */
-  const handleLogout = useCallback(() => {
-    setShowLogoutAlert(true);
+  const pendingTotal = syncStatus.pendingCount + syncStatus.failedCount;
+  const hasPending = pendingTotal > 0;
+
+  const handleHelp = useCallback(() => {
+    Alert.alert('Bantuan & FAQ', 'Hubungi admin sistem untuk bantuan lebih lanjut.');
   }, []);
 
-  /**
-   * Confirm logout
-   */
-  const confirmLogout = useCallback(() => {
-    setShowLogoutAlert(false);
-    // Reset all states
-    dispatch(resetShiftState());
-    dispatch(resetActivitiesState());
-    dispatch(resetOfflineState());
-    dispatch(logout());
-  }, [dispatch]);
-
-  /**
-   * Settings sections configuration
-   */
-  const notificationSettings: SettingItem[] = [
-    {
-      key: 'push',
-      label: 'Notifikasi Push',
-      description: 'Terima notifikasi untuk tugas dan pengingat',
-      type: 'toggle',
-      value: pushNotifications,
-      icon: 'bell',
-      onToggle: setPushNotifications,
-    },
-    {
-      key: 'email',
-      label: 'Notifikasi Email',
-      description: 'Terima ringkasan harian via email',
-      type: 'toggle',
-      value: emailNotifications,
-      icon: 'email',
-      onToggle: setEmailNotifications,
-    },
-  ];
-
-  const displaySettings: SettingItem[] = [
-    {
-      key: 'darkMode',
-      label: 'Mode Gelap',
-      description: 'Gunakan tema gelap untuk layar',
-      type: 'toggle',
-      value: darkMode,
-      icon: 'weather-night',
-      onToggle: (value) => {
-        setDarkMode(value);
-        // TODO: Implement dark mode theme switching
-        if (value) {
-          Alert.alert('Info', 'Mode gelap akan tersedia di versi mendatang');
-          setDarkMode(false);
-        }
-      },
-    },
-  ];
-
-  const privacySettings: SettingItem[] = [
-    {
-      key: 'locationBg',
-      label: 'Lokasi Latar Belakang',
-      description: 'Izinkan pelacakan lokasi saat aplikasi ditutup',
-      type: 'toggle',
-      value: locationBackground,
-      icon: 'map-marker',
-      onToggle: setLocationBackground,
-    },
-    {
-      key: 'analytics',
-      label: 'Analitik',
-      description: 'Bantu tingkatkan aplikasi dengan data anonim',
-      type: 'toggle',
-      value: analytics,
-      icon: 'chart-bar',
-      onToggle: setAnalytics,
-    },
-  ];
-
-  const accountSettings: SettingItem[] = [
-    {
-      key: 'logout',
-      label: 'Keluar',
-      description: 'Keluar dari akun Anda',
-      type: 'button',
-      icon: 'logout',
-      onPress: handleLogout,
-      danger: true,
-    },
-  ];
-
-  /**
-   * Render a setting item row
-   */
-  const renderSettingItem = (item: SettingItem) => (
-    <TouchableOpacity
-      key={item.key}
-      style={styles.settingItem}
-      onPress={item.type === 'button' ? item.onPress : undefined}
-      activeOpacity={item.type === 'toggle' ? 1 : 0.7}
-      accessibilityRole={item.type === 'toggle' ? 'switch' : 'button'}
-      accessibilityLabel={item.label}
-      accessibilityHint={item.description}
-      accessibilityState={item.type === 'toggle' ? { checked: item.value } : undefined}
+  return (
+    <NBBackgroundPattern
+      pattern="grid"
+      backgroundColor={nbColors.background}
+      patternColor={nbColors.primary}
+      opacity={0.03}
     >
-      <View style={styles.settingItemLeft}>
-        <View style={[styles.iconContainer, item.danger && styles.iconContainerDanger]}>
-          <MaterialCommunityIcons
-            name={item.icon}
-            size={22}
-            color={item.danger ? nbColors.danger : nbColors.black}
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Notifikasi */}
+        <SectionTitle>Notifikasi</SectionTitle>
+        <View style={styles.card}>
+          <ToggleRow
+            label="Push notifikasi"
+            description="Tugas baru, peringatan, perubahan jadwal"
+            value={pushNotifications}
+            onToggle={setPushNotifications}
+            testID="toggle-push"
+          />
+          <ToggleRow
+            label="Suara & getar"
+            value={soundVibrate}
+            onToggle={setSoundVibrate}
+            isLast
+            testID="toggle-sound"
           />
         </View>
-        <View style={styles.settingItemText}>
-          <NBText
-            variant="body"
-            color={item.danger ? 'danger' : 'black'}
-            style={styles.settingLabel}
-          >
-            {item.label}
+
+        {/* Lokasi & data */}
+        <SectionTitle>Lokasi &amp; data</SectionTitle>
+        <View style={styles.card}>
+          <ToggleRow
+            label="Background tracking"
+            description="Saat aplikasi tertutup"
+            value={backgroundTracking}
+            onToggle={setBackgroundTracking}
+            testID="toggle-tracking"
+          />
+          <ToggleRow
+            label="Hemat data"
+            value={dataSaver}
+            onToggle={setDataSaver}
+            isLast
+            testID="toggle-data-saver"
+          />
+        </View>
+
+        {/* Offline sync */}
+        <SectionTitle>Offline sync</SectionTitle>
+        <View style={[styles.card, styles.syncCard, hasPending && styles.syncCardPending]}>
+          <View style={styles.syncHeader}>
+            <NBText variant="mono-sm" color="gray700" uppercase style={styles.syncHeaderText}>
+              Antrian Sync
+            </NBText>
+            <View style={[styles.syncPill, hasPending ? styles.syncPillPending : styles.syncPillClear]}>
+              <NBText variant="mono-sm" color="black" uppercase style={styles.syncPillText}>
+                {hasPending ? `${pendingTotal} pending` : 'tersinkron'}
+              </NBText>
+            </View>
+          </View>
+          <NBText variant="mono-sm" color="gray700" style={styles.syncDetail}>
+            {hasPending
+              ? `${syncStatus.pendingCount} tertunda · ${syncStatus.failedCount} gagal`
+              : 'Semua data sudah tersinkron.'}
           </NBText>
-          {item.description && (
-            <NBText variant="body-sm" color="gray600" style={styles.settingDescription}>
-              {item.description}
-            </NBText>
-          )}
-        </View>
-      </View>
-      {item.type === 'toggle' && (
-        <Switch
-          value={item.value}
-          onValueChange={item.onToggle}
-          trackColor={{
-            false: nbColors.gray['300'],
-            true: nbColors.primaryHover,
-          }}
-          thumbColor={item.value ? nbColors.primary : nbColors.gray['100']}
-          ios_backgroundColor={nbColors.gray['300']}
-        />
-      )}
-      {item.type === 'button' && (
-        <MaterialCommunityIcons
-          name="chevron-right"
-          size={24}
-          color={item.danger ? nbColors.danger : nbColors.gray['500']}
-        />
-      )}
-    </TouchableOpacity>
-  );
-
-  /**
-   * Render a settings section
-   */
-  const renderSection = (title: string, items: SettingItem[]) => (
-    <View style={styles.section}>
-      <NBText variant="caption" color="gray600" uppercase style={styles.sectionTitle}>
-        {title}
-      </NBText>
-      <NBCard style={styles.sectionCard}>
-        {items.map((item, index) => (
-          <React.Fragment key={item.key}>
-            {renderSettingItem(item)}
-            {index < items.length - 1 && <View style={styles.divider} />}
-          </React.Fragment>
-        ))}
-      </NBCard>
-    </View>
-  );
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <NBBackgroundPattern
-        pattern="grid"
-        backgroundColor={nbColors.background}
-        patternColor={nbColors.primary}
-        opacity={0.03}
-      >
-        <ScrollView
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-        >
-          <NBText variant="h1" style={styles.pageTitle}>Pengaturan</NBText>
-
-        {/* Notification Settings */}
-        {renderSection('Notifikasi', notificationSettings)}
-
-        {/* Display Settings */}
-        {renderSection('Tampilan', displaySettings)}
-
-        {/* Privacy Settings */}
-        {renderSection('Privasi', privacySettings)}
-
-        {/* Account Settings */}
-        {renderSection('Akun', accountSettings)}
-
-          <View style={styles.appInfo}>
-            <NBText variant="body-sm" color="gray500" style={styles.appInfoText}>
-              Versi {appVersion} | Build {buildNumber}
-            </NBText>
-            <NBText variant="caption" color="gray400" align="center">
-              SEKAR - Sistem Evaluasi Kerja Satgas RTH
-            </NBText>
-            <NBText variant="caption" color="gray400" align="center">
-              DLH Surabaya 2026
-            </NBText>
-          </View>
-        </ScrollView>
-      </NBBackgroundPattern>
-
-      {showLogoutAlert && (
-        <View style={styles.alertOverlay}>
-          <View style={styles.alertContainer}>
-            <NBAlert
-              variant="warning"
-              title="Konfirmasi Keluar"
-              message="Apakah Anda yakin ingin keluar dari aplikasi?"
-              dismissible
-              onDismiss={() => setShowLogoutAlert(false)}
-              actionLabel="Keluar"
-              onAction={confirmLogout}
-              testID="logout-alert"
+          {hasPending ? (
+            <NBButton
+              title="Sync sekarang"
+              onPress={handleSyncNow}
+              variant="secondary"
+              size="sm"
+              fullWidth
+              loading={isSyncing}
+              disabled={isSyncing}
+              style={styles.syncButton}
+              testID="sync-now-button"
             />
-          </View>
+          ) : null}
         </View>
-      )}
 
-    </SafeAreaView>
+        {/* Tentang */}
+        <SectionTitle>Tentang</SectionTitle>
+        <View style={styles.card}>
+          <View style={[styles.row, styles.rowDivider]}>
+            <NBText variant="body-sm" color="black" style={styles.rowLabel}>Versi</NBText>
+            <NBText variant="mono-sm" color="gray600">v{appVersion} (build {buildNumber})</NBText>
+          </View>
+          <TouchableOpacity
+            style={styles.row}
+            onPress={handleHelp}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Bantuan dan FAQ"
+            testID="help-row"
+          >
+            <NBText variant="body-sm" color="black" style={styles.rowLabel}>Bantuan &amp; FAQ</NBText>
+            <MaterialCommunityIcons name="chevron-right" size={18} color={nbColors.gray['400']} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.appInfo}>
+          <NBText variant="caption" color="gray400" align="center">
+            SEKAR — Sistem Evaluasi Kerja Satgas RTH
+          </NBText>
+          <NBText variant="caption" color="gray400" align="center">
+            DLH Surabaya 2026
+          </NBText>
+        </View>
+      </ScrollView>
+    </NBBackgroundPattern>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: nbColors.background,
-  },
   content: {
     padding: nbSpacing.md,
     paddingBottom: nbSpacing['2xl'],
-  },
-  pageTitle: {
-    marginBottom: nbSpacing.lg,
-  },
-  section: {
-    marginBottom: nbSpacing.lg,
   },
   sectionTitle: {
     letterSpacing: 0.5,
     marginBottom: nbSpacing.sm,
     marginLeft: nbSpacing.xs,
   },
-  sectionCard: {
-    padding: 0,
+  card: {
+    backgroundColor: nbColors.white,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
     overflow: 'hidden',
+    marginBottom: nbSpacing.lg,
+    ...nbShadows.sm,
   },
-  settingItem: {
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: nbSpacing.sm,
+    paddingHorizontal: nbSpacing.md,
+    minHeight: 52,
+  },
+  rowDivider: {
+    borderBottomWidth: 1.5,
+    borderBottomColor: nbColors.gray['300'],
+    borderStyle: 'dashed',
+  },
+  rowText: {
+    flex: 1,
+    marginRight: nbSpacing.sm,
+  },
+  rowLabel: {
+    flex: 1,
+    fontWeight: '600',
+  },
+  rowDescription: {
+    marginTop: 2,
+  },
+  // ─── Toggle ───
+  toggleTrack: {
+    width: 44,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    justifyContent: 'center',
+  },
+  toggleTrackOn: {
+    backgroundColor: nbColors.primary,
+    ...nbShadows.xs,
+  },
+  toggleTrackOff: {
+    backgroundColor: nbColors.gray['200'],
+  },
+  toggleKnob: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: nbColors.white,
+    borderWidth: 1.5,
+    borderColor: nbColors.black,
+    position: 'absolute',
+  },
+  toggleKnobOn: {
+    right: 3,
+  },
+  toggleKnobOff: {
+    left: 3,
+  },
+  // ─── Offline sync card ───
+  syncCard: {
+    padding: nbSpacing.md,
+  },
+  syncCardPending: {
+    backgroundColor: nbColors.warningLight,
+  },
+  syncHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: nbTouchTarget.minHeight,
-    paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.sm,
+    marginBottom: nbSpacing.sm,
   },
-  settingItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: nbSpacing.md,
+  syncHeaderText: {
+    letterSpacing: 0.5,
   },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: nbBorderRadius.base,
-    backgroundColor: nbColors.gray['100'],
-    borderWidth: nbBorders.thin,
+  syncPill: {
+    paddingHorizontal: nbSpacing.sm,
+    paddingVertical: 2,
+    borderRadius: nbRadius.sm,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: nbSpacing.sm,
   },
-  iconContainerDanger: {
-    backgroundColor: nbColors.dangerLight,
+  syncPillPending: {
+    backgroundColor: nbColors.warning,
   },
-  settingItemText: {
-    flex: 1,
+  syncPillClear: {
+    backgroundColor: nbColors.statusActiveBg,
   },
-  settingLabel: {},
-  settingDescription: {
-    marginTop: 2,
+  syncPillText: {
+    letterSpacing: 0.3,
   },
-  divider: {
-    height: 1,
-    backgroundColor: nbColors.gray['200'],
-    marginLeft: nbSpacing.md + 40 + nbSpacing.sm, // Align with text after icon
+  syncDetail: {
+    letterSpacing: 0.2,
+  },
+  syncButton: {
+    marginTop: nbSpacing.md,
   },
   appInfo: {
     alignItems: 'center',
-    marginTop: nbSpacing.xl,
-    paddingTop: nbSpacing.lg,
-  },
-  appInfoText: {
-    marginBottom: nbSpacing.xs,
-  },
-  alertOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: nbColors.overlay,
-  },
-  alertContainer: {
-    width: '90%',
-    maxWidth: 400,
+    marginTop: nbSpacing.md,
   },
 });
 

@@ -1,50 +1,36 @@
 /**
- * Edit Profile Screen
- * Phase 2E: Allows users to update their profile picture
- * Displays current profile info (read-only) and photo upload controls
+ * Edit Profile Screen (PRF-3)
+ * Phase 4 M3 revamp: profile photo is the only mutable field (admin-managed
+ * accounts). Identity fields are surfaced read-only in a locked card so users
+ * understand the contact path for changes.
  */
 
 import React, { useState, useCallback } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
-  Image,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { NBButton, NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern } from '../../components/nb';
-import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
+import { NBButton, NBBackgroundPattern, NBText, NBToast } from '../../components/nb';
+import { RoleAvatar } from '../../components/common/RoleAvatar';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { setUser } from '../../store/slices/authSlice';
 import { uploadProfilePicture } from '../../services/api/usersApi';
+import { ROLE_LABELS } from '../../constants/roles';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
+  nbRadius,
   nbBorders,
-  nbBorderRadius,
   nbShadows,
 } from '../../constants/nbTokens';
+import type { UserRole } from '../../types/models.types';
 import type { MainTabScreenProps } from '../../types/navigation.types';
-
-// ─── Role label mapping ───────────────────────────────────────────────────────
-
-const ROLE_LABELS: Record<string, string> = {
-  satgas: 'Satgas RTH',
-  linmas: 'Linmas',
-  korlap: 'Koordinator Lapangan',
-  admin_data: 'Admin Data',
-  kepala_rayon: 'Kepala Rayon',
-  top_management: 'Top Management',
-  admin_system: 'Admin Sistem',
-  superadmin: 'Superadmin',
-};
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -57,7 +43,7 @@ export function EditProfileScreen(): React.JSX.Element {
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  const goBack = useCallback(() => navigation.goBack(), [navigation]);
+  const goBack = useCallback(() => navigation.navigate('Profile'), [navigation]);
 
   // ─── Image picker ─────────────────────────────────────────────────────────
 
@@ -74,14 +60,14 @@ export function EditProfileScreen(): React.JSX.Element {
       });
       if (result.didCancel) { return; }
       if (result.errorCode) {
-        Alert.alert('Error', 'Gagal membuka kamera. Periksa izin akses.');
+        NBToast.show({ level: 'danger', title: 'Gagal', body: 'Gagal membuka kamera. Periksa izin akses.' });
         return;
       }
       if (result.assets?.[0]?.uri) {
         setPreviewUri(result.assets[0].uri);
       }
     } catch {
-      Alert.alert('Error', 'Gagal membuka kamera.');
+      NBToast.show({ level: 'danger', title: 'Gagal', body: 'Gagal membuka kamera.' });
     }
   }, []);
 
@@ -97,14 +83,14 @@ export function EditProfileScreen(): React.JSX.Element {
       });
       if (result.didCancel) { return; }
       if (result.errorCode) {
-        Alert.alert('Error', 'Gagal membuka galeri. Periksa izin akses.');
+        NBToast.show({ level: 'danger', title: 'Gagal', body: 'Gagal membuka galeri. Periksa izin akses.' });
         return;
       }
       if (result.assets?.[0]?.uri) {
         setPreviewUri(result.assets[0].uri);
       }
     } catch {
-      Alert.alert('Error', 'Gagal membuka galeri.');
+      NBToast.show({ level: 'danger', title: 'Gagal', body: 'Gagal membuka galeri.' });
     }
   }, []);
 
@@ -124,11 +110,11 @@ export function EditProfileScreen(): React.JSX.Element {
 
   const handleSave = useCallback(async () => {
     if (!previewUri) {
-      Alert.alert('Info', 'Pilih foto baru terlebih dahulu.');
+      NBToast.show({ level: 'info', title: 'Info', body: 'Pilih foto baru terlebih dahulu.' });
       return;
     }
     if (!user?.id) {
-      Alert.alert('Error', 'Data pengguna tidak tersedia. Silakan login ulang.');
+      NBToast.show({ level: 'danger', title: 'Gagal', body: 'Data pengguna tidak tersedia. Silakan login ulang.' });
       return;
     }
 
@@ -136,7 +122,6 @@ export function EditProfileScreen(): React.JSX.Element {
     try {
       const response = await uploadProfilePicture(user.id, previewUri);
       if (response.data) {
-        // Update Redux store with new profile picture URL
         dispatch(
           setUser({
             user: {
@@ -146,17 +131,17 @@ export function EditProfileScreen(): React.JSX.Element {
             area: undefined,
           }),
         );
-        Alert.alert('Berhasil', 'Foto profil berhasil diperbarui.', [
-          { text: 'OK', onPress: goBack },
-        ]);
+        NBToast.show({ level: 'success', title: 'Berhasil', body: 'Foto profil berhasil diperbarui.' });
+        goBack();
       } else {
-        Alert.alert('Gagal', response.error || 'Gagal mengunggah foto profil.');
+        NBToast.show({ level: 'danger', title: 'Gagal', body: response.error || 'Gagal mengunggah foto profil.' });
       }
     } catch (err) {
-      Alert.alert(
-        'Gagal',
-        err instanceof Error ? err.message : 'Gagal mengunggah foto profil.',
-      );
+      NBToast.show({
+        level: 'danger',
+        title: 'Gagal',
+        body: err instanceof Error ? err.message : 'Gagal mengunggah foto profil.',
+      });
     } finally {
       setIsUploading(false);
     }
@@ -165,7 +150,18 @@ export function EditProfileScreen(): React.JSX.Element {
   // ─── Derived values ───────────────────────────────────────────────────────
 
   const displayImageUri = previewUri ?? user?.profile_picture_url ?? null;
-  const roleLabel = user?.role ? (ROLE_LABELS[user.role] ?? user.role) : '-';
+  const roleLabel = user?.role ? (ROLE_LABELS[user.role as UserRole] ?? user.role) : '—';
+  const rayonName = user?.rayon?.name ?? null;
+  const roleAndRayon = rayonName ? `${roleLabel} · ${rayonName}` : roleLabel;
+
+  const lockedRows: { label: string; value: string }[] = [
+    { label: 'Nama Lengkap', value: user?.full_name ?? '—' },
+    { label: 'Username', value: user?.username ?? '—' },
+    { label: 'Role & Rayon', value: roleAndRayon },
+    ...(user?.phone_number
+      ? [{ label: 'No. Handphone', value: user.phone_number }]
+      : []),
+  ];
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -181,108 +177,84 @@ export function EditProfileScreen(): React.JSX.Element {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Avatar section */}
-        <NBCard style={styles.card}>
-          <NBCardContent>
-            <View style={styles.avatarSection}>
-              <TouchableOpacity
-                style={styles.avatarWrapper}
-                onPress={handlePickImage}
-                accessibilityLabel="Ganti foto profil"
-                accessibilityHint="Ketuk untuk memilih foto baru dari kamera atau galeri"
-                activeOpacity={0.75}
-              >
-                {displayImageUri ? (
-                  <Image
-                    source={{ uri: displayImageUri }}
-                    style={styles.avatar}
-                  />
-                ) : (
-                  <View style={styles.avatarPlaceholder}>
-                    <MaterialCommunityIcons
-                      name="account-circle"
-                      size={80}
-                      color={nbColors.gray[400]}
-                    />
-                  </View>
-                )}
-                {/* Camera badge overlay */}
-                <View style={styles.cameraBadge}>
-                  <MaterialCommunityIcons
-                    name="camera"
-                    size={16}
-                    color={nbColors.white}
-                  />
-                </View>
-              </TouchableOpacity>
-
-              {previewUri && (
-                <View style={styles.newPhotoBadge}>
-                  <MaterialCommunityIcons
-                    name="check-circle"
-                    size={14}
-                    color={nbColors.primary}
-                  />
-                  <Text style={styles.newPhotoBadgeText}>Foto baru dipilih</Text>
-                </View>
-              )}
-
-              <NBButton
-                title="Ganti Foto Profil"
-                onPress={handlePickImage}
-                variant="secondary"
-                size="sm"
-                style={styles.changePhotoButton}
-              />
+        {/* Avatar + edit badge */}
+        <View style={styles.avatarSection}>
+          <TouchableOpacity
+            onPress={handlePickImage}
+            accessibilityLabel="Ganti foto profil"
+            accessibilityHint="Ketuk untuk memilih foto baru dari kamera atau galeri"
+            activeOpacity={0.75}
+            style={styles.avatarWrapper}
+          >
+            <RoleAvatar
+              name={user?.full_name}
+              role={user?.role}
+              photoUrl={displayImageUri}
+              size={88}
+              radius={nbRadius.base}
+              withShadow
+            />
+            <View style={styles.editBadge}>
+              <MaterialCommunityIcons name="pencil" size={14} color={nbColors.black} />
             </View>
-          </NBCardContent>
-        </NBCard>
+          </TouchableOpacity>
 
-        {/* User info (read-only) */}
-        <NBCard style={styles.card}>
-          <NBCardHeader>
-            <Text style={styles.sectionTitle}>INFORMASI AKUN</Text>
-          </NBCardHeader>
-          <NBCardContent>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Nama Lengkap</Text>
-              <Text style={styles.infoValue}>{user?.full_name ?? '-'}</Text>
+          {previewUri ? (
+            <View style={styles.newPhotoBadge}>
+              <MaterialCommunityIcons name="check-circle" size={14} color={nbColors.primary} />
+              <NBText variant="caption" color="primary" style={styles.newPhotoText}>
+                Foto baru dipilih
+              </NBText>
             </View>
-            <View style={styles.divider} />
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Username</Text>
-              <Text style={styles.infoValue}>{user?.username ?? '-'}</Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Jabatan</Text>
-              <Text style={styles.infoValue}>{roleLabel}</Text>
-            </View>
-            {user?.phone_number && (
-              <>
-                <View style={styles.divider} />
-                <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>Nomor HP</Text>
-                  <Text style={styles.infoValue}>{user.phone_number}</Text>
-                </View>
-              </>
-            )}
-          </NBCardContent>
-        </NBCard>
+          ) : null}
 
-        {/* Save button */}
-        <View style={styles.saveContainer}>
           <NBButton
-            title={isUploading ? 'Menyimpan...' : 'Simpan'}
-            onPress={handleSave}
-            variant="primary"
-            size="lg"
-            fullWidth
-            loading={isUploading}
-            disabled={isUploading || !previewUri}
+            title="Ganti Foto Profil"
+            onPress={handlePickImage}
+            variant="secondary"
+            size="sm"
+            style={styles.changePhotoButton}
           />
         </View>
+
+        {/* Locked account fields */}
+        <NBText variant="mono-sm" color="gray600" uppercase style={styles.sectionTitle}>
+          Tidak bisa diubah
+        </NBText>
+        <View style={styles.lockedCard}>
+          {lockedRows.map((row, index) => (
+            <View
+              key={row.label}
+              style={[styles.lockedRow, index < lockedRows.length - 1 && styles.lockedRowDivider]}
+            >
+              <NBText variant="mono-sm" color="gray600" style={styles.lockedLabel}>
+                {row.label}
+              </NBText>
+              <NBText variant="mono-sm" color="black" style={styles.lockedValue} numberOfLines={1}>
+                {row.value}
+              </NBText>
+            </View>
+          ))}
+        </View>
+
+        <NBText variant="body-sm" color="gray600" style={styles.helperNote}>
+          Field yang dikunci hanya bisa diubah oleh admin sistem. Hubungi admin
+          untuk perubahan data akun.
+        </NBText>
       </ScrollView>
+
+      {/* Sticky save footer */}
+      <View style={styles.footer}>
+        <NBButton
+          title={isUploading ? 'Menyimpan...' : 'Simpan Perubahan'}
+          onPress={handleSave}
+          variant="primary"
+          size="lg"
+          fullWidth
+          loading={isUploading}
+          disabled={isUploading || !previewUri}
+        />
+      </View>
     </NBBackgroundPattern>
   );
 }
@@ -296,51 +268,28 @@ const styles = StyleSheet.create({
     padding: nbSpacing.md,
     paddingBottom: nbSpacing.xl,
   },
-  card: {
-    marginBottom: nbSpacing.md,
-  },
   avatarSection: {
     alignItems: 'center',
     paddingVertical: nbSpacing.md,
+    marginBottom: nbSpacing.sm,
   },
   avatarWrapper: {
     position: 'relative',
-    width: 120,
-    height: 120,
     marginBottom: nbSpacing.sm,
   },
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: nbBorders.thick,
-    borderColor: nbColors.black,
-    backgroundColor: nbColors.gray[200],
-  },
-  avatarPlaceholder: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: nbBorders.thick,
-    borderColor: nbColors.black,
-    backgroundColor: nbColors.gray[100],
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...nbShadows.sm,
-  },
-  cameraBadge: {
+  editBadge: {
     position: 'absolute',
-    bottom: 4,
-    right: 4,
+    bottom: -4,
+    right: -4,
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: nbRadius.full,
     backgroundColor: nbColors.primary,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     justifyContent: 'center',
     alignItems: 'center',
-    ...nbShadows.sm,
+    ...nbShadows.xs,
   },
   newPhotoBadge: {
     flexDirection: 'row',
@@ -348,44 +297,54 @@ const styles = StyleSheet.create({
     gap: nbSpacing.xs,
     marginBottom: nbSpacing.sm,
   },
-  newPhotoBadgeText: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.primary,
+  newPhotoText: {
+    fontWeight: '600',
   },
   changePhotoButton: {
     marginTop: nbSpacing.xs,
   },
   sectionTitle: {
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.extrabold,
-    color: nbColors.black,
-    textTransform: 'uppercase',
     letterSpacing: 0.5,
+    marginBottom: nbSpacing.sm,
+    marginLeft: nbSpacing.xs,
   },
-  infoRow: {
+  lockedCard: {
+    backgroundColor: nbColors.white,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    overflow: 'hidden',
+    ...nbShadows.sm,
+  },
+  lockedRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: nbSpacing.sm,
+    paddingHorizontal: nbSpacing.md,
   },
-  infoLabel: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray[600],
+  lockedRowDivider: {
+    borderBottomWidth: 1.5,
+    borderBottomColor: nbColors.gray['300'],
+    borderStyle: 'dashed',
   },
-  infoValue: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.black,
-    maxWidth: '60%',
+  lockedLabel: {
+    flex: 1,
+  },
+  lockedValue: {
+    flexShrink: 1,
     textAlign: 'right',
+    marginLeft: nbSpacing.sm,
   },
-  divider: {
-    height: nbBorders.thin,
-    backgroundColor: nbColors.gray[200],
+  helperNote: {
+    marginTop: nbSpacing.md,
+    marginHorizontal: nbSpacing.xs,
+    lineHeight: 20,
   },
-  saveContainer: {
-    marginTop: nbSpacing.xs,
+  footer: {
+    backgroundColor: nbColors.white,
+    borderTopWidth: nbBorders.widthBase,
+    borderTopColor: nbColors.black,
+    paddingHorizontal: nbSpacing.md,
+    paddingVertical: nbSpacing.md,
   },
 });

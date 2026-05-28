@@ -1,74 +1,145 @@
 /**
- * ProfileMenu Component
- * Shared menu list for profile screens with common and custom menu items
+ * ProfileMenu — Design System v2.1 grouped menu (PRF-1).
+ *
+ * Two titled sections ("Akun" / "Aplikasi") of chip-icon rows with dashed
+ * dividers. Logout is rendered as a danger row at the end of the Aplikasi group.
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { NBText } from '../nb/NBText';
 import {
   nbColors,
-  nbTypography,
   nbSpacing,
-  nbBorderRadius,
-  nbShadows,
+  nbRadius,
   nbBorders,
+  nbShadows,
+  withAlpha,
 } from '../../constants/nbTokens';
-import { NBCard } from '../nb';
 
 export interface MenuItem {
   key: string;
   icon: string;
   label: string;
   onPress: () => void;
+  /** Chip background tint (defaults to gray100). */
+  chipColor?: string;
+  /** Danger styling: red label, no chevron. */
+  danger?: boolean;
   testID?: string;
 }
 
 interface ProfileMenuProps {
-  /**
-   * Additional menu items specific to the role
-   * Will be inserted before "About" menu item
-   */
-  extraItems?: MenuItem[];
-
-  /**
-   * Handler for change password
-   */
+  onEditProfile: () => void;
   onChangePassword: () => void;
-
-  /**
-   * Handler for about app
-   */
+  /** Field-only — row hidden when omitted. */
+  onShiftHistory?: () => void;
+  onSettings: () => void;
   onAbout: () => void;
-
-  /**
-   * Optional handler for settings
-   */
-  onSettings?: () => void;
-
+  onLogout: () => void;
   testID?: string;
 }
 
-/**
- * ProfileMenu Component
- */
+function MenuRow({ item, isLast }: { item: MenuItem; isLast: boolean }): React.JSX.Element {
+  return (
+    <TouchableOpacity
+      style={[styles.row, !isLast && styles.rowDivider]}
+      onPress={item.onPress}
+      activeOpacity={0.7}
+      testID={item.testID}
+      accessibilityRole="button"
+      accessibilityLabel={item.label}
+    >
+      <View
+        style={[
+          styles.chip,
+          { backgroundColor: item.chipColor ?? nbColors.gray['100'] },
+        ]}
+      >
+        <MaterialCommunityIcons
+          name={item.icon}
+          size={16}
+          color={item.danger ? nbColors.danger : nbColors.black}
+        />
+      </View>
+      <NBText
+        variant="body-sm"
+        color={item.danger ? 'danger' : 'black'}
+        style={styles.label}
+      >
+        {item.label}
+      </NBText>
+      {!item.danger && (
+        <MaterialCommunityIcons name="chevron-right" size={18} color={nbColors.gray['400']} />
+      )}
+    </TouchableOpacity>
+  );
+}
+
+function MenuGroup({ title, items }: { title: string; items: MenuItem[] }): React.JSX.Element {
+  return (
+    <View style={styles.group}>
+      <NBText variant="mono-sm" color="gray600" uppercase style={styles.groupTitle}>
+        {title}
+      </NBText>
+      <View style={styles.groupCard}>
+        {items.map((item, index) => (
+          <MenuRow key={item.key} item={item} isLast={index === items.length - 1} />
+        ))}
+      </View>
+    </View>
+  );
+}
+
 export const ProfileMenu: React.FC<ProfileMenuProps> = ({
-  extraItems = [],
+  onEditProfile,
   onChangePassword,
-  onAbout,
+  onShiftHistory,
   onSettings,
+  onAbout,
+  onLogout,
   testID = 'profile-menu',
 }) => {
-  // Build complete menu items list
-  const menuItems: MenuItem[] = [
+  const akunItems: MenuItem[] = [
+    {
+      key: 'edit-profile',
+      icon: 'account-edit-outline',
+      label: 'Edit Profil',
+      chipColor: nbColors.bgAccentMint,
+      onPress: onEditProfile,
+      testID: 'edit-profile-button',
+    },
     {
       key: 'change-password',
       icon: 'lock-outline',
       label: 'Ubah Password',
+      chipColor: nbColors.bgAccentYellow,
       onPress: onChangePassword,
       testID: 'change-password-button',
     },
-    ...extraItems,
+    ...(onShiftHistory
+      ? [
+          {
+            key: 'shift-history',
+            icon: 'clock-outline',
+            label: 'Riwayat Shift',
+            chipColor: nbColors.bgAccentPink,
+            onPress: onShiftHistory,
+            testID: 'shift-history-button',
+          },
+        ]
+      : []),
+  ];
+
+  const aplikasiItems: MenuItem[] = [
+    {
+      key: 'settings',
+      icon: 'cog-outline',
+      label: 'Pengaturan',
+      onPress: onSettings,
+      testID: 'settings-button',
+    },
     {
       key: 'about',
       icon: 'information-outline',
@@ -76,81 +147,64 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
       onPress: onAbout,
       testID: 'about-button',
     },
+    {
+      key: 'logout',
+      icon: 'logout',
+      label: 'Keluar',
+      chipColor: withAlpha(nbColors.danger, 0.18),
+      danger: true,
+      onPress: onLogout,
+      testID: 'logout-button',
+    },
   ];
 
-  // Add settings if provided
-  if (onSettings) {
-    menuItems.push({
-      key: 'settings',
-      icon: 'cog-outline',
-      label: 'Pengaturan',
-      onPress: onSettings,
-      testID: 'settings-button',
-    });
-  }
-
   return (
-    <NBCard variant="elevated" style={styles.menuContainer} testID={testID}>
-      {menuItems.map((item, index) => (
-        <React.Fragment key={item.key}>
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={item.onPress}
-            activeOpacity={0.7}
-            testID={item.testID}
-            accessibilityRole="button"
-            accessibilityLabel={item.label}
-          >
-            <MaterialCommunityIcons
-              name={item.icon}
-              size={24}
-              color={nbColors.gray['600']}
-              style={styles.menuIcon}
-            />
-            <Text style={styles.menuText}>{item.label}</Text>
-            <MaterialCommunityIcons
-              name="chevron-right"
-              size={24}
-              color={nbColors.gray['600']}
-            />
-          </TouchableOpacity>
-
-          {/* Divider between items (but not after last item) */}
-          {index < menuItems.length - 1 && <View style={styles.menuDivider} />}
-        </React.Fragment>
-      ))}
-    </NBCard>
+    <View testID={testID}>
+      <MenuGroup title="Akun" items={akunItems} />
+      <MenuGroup title="Aplikasi" items={aplikasiItems} />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  menuContainer: {
-    backgroundColor: nbColors.white,
+  group: {
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.md,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
+  },
+  groupTitle: {
+    letterSpacing: 0.5,
+    marginBottom: nbSpacing.sm,
+    marginLeft: nbSpacing.xs,
+  },
+  groupCard: {
+    backgroundColor: nbColors.white,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     overflow: 'hidden',
     ...nbShadows.sm,
   },
-  menuItem: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: nbSpacing.md,
+    paddingVertical: nbSpacing.sm,
     paddingHorizontal: nbSpacing.md,
+    gap: nbSpacing.sm,
   },
-  menuIcon: {
-    marginRight: nbSpacing.md,
+  rowDivider: {
+    borderBottomWidth: 1.5,
+    borderBottomColor: nbColors.gray['300'],
+    borderStyle: 'dashed',
   },
-  menuText: {
+  chip: {
+    width: 30,
+    height: 30,
+    borderRadius: nbRadius.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  label: {
     flex: 1,
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.black,
-  },
-  menuDivider: {
-    height: nbBorders.thin,
-    backgroundColor: nbColors.black,
-    marginLeft: nbSpacing.md + 24 + nbSpacing.md, // icon width + margins
+    fontWeight: '600',
   },
 });

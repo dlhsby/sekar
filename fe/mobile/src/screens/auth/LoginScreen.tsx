@@ -179,7 +179,12 @@ function LoginScreen(): React.JSX.Element {
         >
           <View style={styles.content}>
             <View style={styles.header}>
-              <SekarLogoBox size={64} testID="login-logo" />
+              <View style={styles.logoRow}>
+                <SekarLogoBox size={56} testID="login-logo" />
+                <NBText variant="display" style={styles.wordmark}>
+                  SEKAR
+                </NBText>
+              </View>
               <NBText variant="h1" style={styles.heading}>
                 Selamat datang.
               </NBText>
@@ -266,8 +271,10 @@ const styles = StyleSheet.create({
     paddingTop: nbSpacing['2xl'],
     paddingBottom: nbSpacing.xl,
   },
-  // Hi-fi AS-1: pinwheel logo on top-left, then a left-aligned greeting + instruction.
+  // Hi-fi AS-1: pinwheel logo + wordmark on top-left, then a left-aligned greeting.
   header: { alignItems: 'flex-start' },
+  logoRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.md },
+  wordmark: { letterSpacing: -1 },
   heading: { marginTop: nbSpacing.lg, marginBottom: nbSpacing.xs, lineHeight: 30 },
   subtitle: { lineHeight: 21 },
   form: { marginTop: nbSpacing['2xl'] },

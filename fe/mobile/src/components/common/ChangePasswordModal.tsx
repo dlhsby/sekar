@@ -1,9 +1,18 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { NBTextInput, NBAlert, NBModal } from '../nb';
-import { changePassword } from '../../services/api/usersApi';
-import { nbColors, nbSpacing, nbTypography, nbBorders } from '../../constants/nbTokens';
+import { View, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { NBPasswordInput, NBModal, NBText, NBToast } from '../nb';
+import { changePasswordAndRotate } from '../../services/api/authApi';
+import {
+  setToken,
+  setRefreshToken,
+  setUser as setUserStorage,
+} from '../../services/storage/secureStorage';
+import { useAppDispatch } from '../../store/hooks';
+import { setUser } from '../../store/slices/authSlice';
+import { nbColors, nbSpacing, nbBorders } from '../../constants/nbTokens';
+
+/** Backend (auth DTO) requires ≥ 8 chars; we additionally enforce letters + digits. */
+const MIN_PASSWORD_LENGTH = 8;
 
 interface ChangePasswordModalProps {
   visible: boolean;
@@ -19,15 +28,12 @@ interface ValidationErrors {
 export function ChangePasswordModal({
   visible,
   onClose,
-}: ChangePasswordModalProps): JSX.Element {
+}: ChangePasswordModalProps): React.JSX.Element {
+  const dispatch = useAppDispatch();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
 
@@ -35,11 +41,7 @@ export function ChangePasswordModal({
     setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
-    setShowCurrentPassword(false);
-    setShowNewPassword(false);
-    setShowConfirmPassword(false);
     setIsLoading(false);
-    setError('');
     setSuccess(false);
     setValidationErrors({});
   }, []);
@@ -60,8 +62,10 @@ export function ChangePasswordModal({
 
     if (!newPassword.trim()) {
       errors.newPassword = 'Password baru wajib diisi';
-    } else if (newPassword.length < 6) {
-      errors.newPassword = 'Password baru minimal 6 karakter';
+    } else if (newPassword.length < MIN_PASSWORD_LENGTH) {
+      errors.newPassword = `Password baru minimal ${MIN_PASSWORD_LENGTH} karakter`;
+    } else if (!(/[A-Za-z]/.test(newPassword) && /\d/.test(newPassword))) {
+      errors.newPassword = 'Password baru harus berisi huruf dan angka';
     } else if (newPassword === currentPassword) {
       errors.newPassword = 'Password baru harus berbeda dari password lama';
     }
@@ -77,7 +81,6 @@ export function ChangePasswordModal({
   }, [currentPassword, newPassword, confirmPassword]);
 
   const handleSubmit = useCallback(async () => {
-    setError('');
     setSuccess(false);
 
     if (!validateForm()) {
@@ -87,39 +90,44 @@ export function ChangePasswordModal({
     setIsLoading(true);
 
     try {
-      const response = await changePassword(currentPassword, newPassword);
+      // POST /auth/change-password (canonical, ADR-041): proves the current
+      // password and returns a rotated token pair the client MUST persist.
+      const response = await changePasswordAndRotate(newPassword, currentPassword);
+      const data = response.data;
 
-      if (response.error) {
-        setError(response.error);
-        setIsLoading(false);
-      } else {
+      if (data?.access_token) {
+        // Persist the rotated pair + user before flipping Redux so a storage
+        // failure can't leave the session valid in state only.
+        await Promise.all([
+          setToken(data.access_token),
+          data.refresh_token ? setRefreshToken(data.refresh_token) : Promise.resolve(),
+          setUserStorage(data.user),
+        ]);
+        dispatch(setUser({ user: data.user }));
         setSuccess(true);
+        NBToast.show({ level: 'success', title: 'Berhasil', body: 'Password berhasil diubah.' });
         setTimeout(() => {
           handleClose();
         }, 1500);
+        return;
       }
+
+      // Map known backend failures: field-specific ones inline, generic to a toast.
+      const code = response.code ?? '';
+      const message = response.error ?? 'Gagal mengubah password';
+      if (code === 'AUTH_INVALID_CREDENTIALS' || /old password|password lama|incorrect/i.test(message)) {
+        setValidationErrors((prev) => ({ ...prev, currentPassword: 'Password saat ini salah' }));
+      } else if (/differ|different|berbeda|sama/i.test(message)) {
+        setValidationErrors((prev) => ({ ...prev, newPassword: 'Password baru harus berbeda dari password lama' }));
+      } else {
+        NBToast.show({ level: 'danger', title: 'Gagal', body: message });
+      }
+      setIsLoading(false);
     } catch (err: any) {
-      setError(err.message || 'Gagal mengubah password');
+      NBToast.show({ level: 'danger', title: 'Gagal', body: err?.message || 'Gagal mengubah password' });
       setIsLoading(false);
     }
-  }, [currentPassword, newPassword, validateForm, handleClose]);
-
-  const togglePasswordVisibility = useCallback(
-    (field: 'current' | 'new' | 'confirm') => {
-      switch (field) {
-        case 'current':
-          setShowCurrentPassword((prev) => !prev);
-          break;
-        case 'new':
-          setShowNewPassword((prev) => !prev);
-          break;
-        case 'confirm':
-          setShowConfirmPassword((prev) => !prev);
-          break;
-      }
-    },
-    [],
-  );
+  }, [currentPassword, newPassword, validateForm, handleClose, dispatch]);
 
   return (
     <NBModal
@@ -136,7 +144,9 @@ export function ChangePasswordModal({
             accessibilityRole="button"
             accessibilityLabel="Batal"
           >
-            <Text style={styles.cancelButtonText}>Batal</Text>
+            <NBText variant="body-sm" color="black" uppercase style={styles.actionButtonText}>
+              Batal
+            </NBText>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionButton, styles.submitButton, (isLoading || success) && styles.submitButtonDisabled]}
@@ -149,151 +159,58 @@ export function ChangePasswordModal({
             {isLoading ? (
               <ActivityIndicator size="small" color={nbColors.white} testID="change-password-submit-spinner" />
             ) : (
-              <Text style={styles.submitButtonText}>{success ? 'Berhasil!' : 'Ubah Password'}</Text>
+              <NBText variant="body-sm" color="white" uppercase style={styles.actionButtonText}>
+                {success ? 'Berhasil!' : 'Ubah Password'}
+              </NBText>
             )}
           </TouchableOpacity>
         </View>
       }
     >
-      {success && (
-        <View style={styles.successBanner}>
-          <MaterialCommunityIcons name="check-circle" size={20} color={nbColors.success} />
-          <Text style={styles.successText}>Password berhasil diubah!</Text>
-        </View>
-      )}
-
-      {error ? (
-        <NBAlert
-          variant="danger"
-          message={error}
-          dismissible
-          onDismiss={() => setError('')}
-          testID="change-password-error"
-        />
-      ) : null}
-
       <View style={styles.form}>
-        <View style={styles.inputContainer}>
-          <NBTextInput
-            label="Password Saat Ini"
-            value={currentPassword}
-            onChangeText={setCurrentPassword}
-            secureTextEntry={!showCurrentPassword}
-            placeholder="Masukkan password saat ini"
-            error={validationErrors.currentPassword}
-            editable={!isLoading && !success}
-            autoCapitalize="none"
-            accessibilityHint="Masukkan password Anda saat ini"
-          />
-          <TouchableOpacity
-            style={styles.eyeButton}
-            onPress={() => togglePasswordVisibility('current')}
-            disabled={isLoading || success}
-            accessibilityRole="button"
-            accessibilityLabel={
-              showCurrentPassword ? 'Sembunyikan password saat ini' : 'Tampilkan password saat ini'
-            }
-          >
-            <MaterialCommunityIcons
-              name={showCurrentPassword ? 'eye-off' : 'eye'}
-              size={24}
-              color={nbColors.gray['600']}
-            />
-          </TouchableOpacity>
-        </View>
+        <NBPasswordInput
+          label="Password Saat Ini"
+          value={currentPassword}
+          onChangeText={setCurrentPassword}
+          placeholder="Password saat ini"
+          error={validationErrors.currentPassword}
+          editable={!isLoading && !success}
+          autoCapitalize="none"
+          accessibilityHint="Masukkan password Anda saat ini"
+          testID="change-password-current"
+        />
 
-        <View style={styles.inputContainer}>
-          <NBTextInput
-            label="Password Baru"
-            value={newPassword}
-            onChangeText={setNewPassword}
-            secureTextEntry={!showNewPassword}
-            placeholder="Masukkan password baru (min. 6 karakter)"
-            error={validationErrors.newPassword}
-            editable={!isLoading && !success}
-            autoCapitalize="none"
-            accessibilityHint="Masukkan password baru minimal 6 karakter"
-          />
-          <TouchableOpacity
-            style={styles.eyeButton}
-            onPress={() => togglePasswordVisibility('new')}
-            disabled={isLoading || success}
-            accessibilityRole="button"
-            accessibilityLabel={
-              showNewPassword ? 'Sembunyikan password baru' : 'Tampilkan password baru'
-            }
-          >
-            <MaterialCommunityIcons
-              name={showNewPassword ? 'eye-off' : 'eye'}
-              size={24}
-              color={nbColors.gray['600']}
-            />
-          </TouchableOpacity>
-        </View>
+        <NBPasswordInput
+          label="Password Baru"
+          value={newPassword}
+          onChangeText={setNewPassword}
+          placeholder="Min. 8 karakter"
+          error={validationErrors.newPassword}
+          editable={!isLoading && !success}
+          autoCapitalize="none"
+          accessibilityHint="Masukkan password baru minimal 6 karakter"
+          testID="change-password-new"
+        />
 
-        <View style={styles.inputContainer}>
-          <NBTextInput
-            label="Konfirmasi Password Baru"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry={!showConfirmPassword}
-            placeholder="Ketik ulang password baru"
-            error={validationErrors.confirmPassword}
-            editable={!isLoading && !success}
-            autoCapitalize="none"
-            accessibilityHint="Ketik ulang password baru untuk konfirmasi"
-          />
-          <TouchableOpacity
-            style={styles.eyeButton}
-            onPress={() => togglePasswordVisibility('confirm')}
-            disabled={isLoading || success}
-            accessibilityRole="button"
-            accessibilityLabel={
-              showConfirmPassword ? 'Sembunyikan konfirmasi password' : 'Tampilkan konfirmasi password'
-            }
-          >
-            <MaterialCommunityIcons
-              name={showConfirmPassword ? 'eye-off' : 'eye'}
-              size={24}
-              color={nbColors.gray['600']}
-            />
-          </TouchableOpacity>
-        </View>
+        <NBPasswordInput
+          label="Konfirmasi Password Baru"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          placeholder="Ketik ulang password baru"
+          error={validationErrors.confirmPassword}
+          editable={!isLoading && !success}
+          autoCapitalize="none"
+          accessibilityHint="Ketik ulang password baru untuk konfirmasi"
+          testID="change-password-confirm"
+        />
       </View>
     </NBModal>
   );
 }
 
 const styles = StyleSheet.create({
-  successBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: nbColors.successLight,
-    padding: nbSpacing.md,
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.success,
-    marginBottom: nbSpacing.md,
-  },
-  successText: {
-    marginLeft: nbSpacing.sm,
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.success,
-    flex: 1,
-  },
   form: {
     marginBottom: nbSpacing.sm,
-  },
-  inputContainer: {
-    position: 'relative',
-    marginBottom: nbSpacing.md,
-  },
-  eyeButton: {
-    position: 'absolute',
-    right: nbSpacing.md,
-    top: 38,
-    padding: nbSpacing.xs,
-    zIndex: 10,
   },
   actions: {
     flexDirection: 'row',
@@ -304,18 +221,12 @@ const styles = StyleSheet.create({
     paddingVertical: nbSpacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     minHeight: 46,
   },
   cancelButton: {
     backgroundColor: nbColors.white,
-  },
-  cancelButtonText: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
-    letterSpacing: 0.3,
   },
   submitButton: {
     backgroundColor: nbColors.primary,
@@ -323,10 +234,8 @@ const styles = StyleSheet.create({
   submitButtonDisabled: {
     opacity: 0.6,
   },
-  submitButtonText: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.white,
+  actionButtonText: {
+    fontWeight: '700',
     letterSpacing: 0.3,
   },
 });

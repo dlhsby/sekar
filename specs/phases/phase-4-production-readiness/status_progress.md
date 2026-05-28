@@ -4,6 +4,27 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## May 28, 2026 — M3 Profile follow-ups: nav fix, NBToast sweep, 3D icon, tests
+
+- **Back navigation**: `Settings` + `EditProfile` header back now `navigate('Profile')` (tab-navigator `goBack()` landed on Home) — mirrors the existing `ShiftHistory` fix. `EditProfileScreen` success also routes to Profile.
+- **NBToast consistency**: form submit success/error now use `NBToast` instead of `Alert.alert`/inline banners across `EditProfileScreen`, `ChangePasswordModal`, `OvertimeSubmitScreen`, `TaskCreateScreen`, `TaskCompleteScreen`, and pruning `SubmitScreen` photo errors. Confirmation/choice dialogs (draft prompts, "Batalkan?", permission→Settings) intentionally stay as `Alert`.
+- **App icon — 3D tilted lockup**: `scripts/generate-app-icon.mjs` now renders the pinwheel inside a white NB box (thick border + hard-edge ink offset shadow) tilted -8°, mirroring `SekarLogoBox`/splash. Regenerated Android (legacy + adaptive) + iOS 1024 (opaque).
+- **Brand lockup standardized**: `SekarLogoBox` is now the canonical SEKAR mark — white NB box (border + hard-edge shadow) holding the pinwheel, tilted (`tilt` prop, default -6°). Wired into the JS splash (`SplashSlide`), Login (with a `SEKAR` wordmark beside it), the app icon (stone field removed → white box lockup only), and the native splash (`splash_logo.png` on the sage boot canvas + iOS `SekarPinwheel.imageset`). Icon/splash assets regenerated via `scripts/generate-app-icon.mjs`; adaptive bg color → white. Native rebuild required to see icon/splash.
+- **Tests (1a–1d)**: rewrote/added suites — `ProfileHeader`, `ProfileMenu`, `ProfileStatsRow`, `AssignedAreaCard`, `ChangePasswordModal`, `ProfileScreen` (composition, child-mocked), `SettingsScreen`, `EditProfileScreen`; updated `OvertimeSubmit`/`TaskCreate` assertions to expect `NBToast`. 127/127 green across the touched suites.
+
+## May 28, 2026 — M3 Profile cluster revamp + change-password fix + branding (icons)
+
+**Profile cluster (PRF-1/2/3) revamped to Design System v2.1:**
+
+- **ProfileScreen (PRF-1)**: new composition — compact horizontal identity strip (`ProfileHeader` rewritten: `RoleAvatar` 52px + name `h3` + `ROLE · RAYON` mono line + `@username · sejak <year>`), `SyncStatusCard`, `AssignedAreaCard` (relaid out tighter, NBText), `ProfileStatsRow` (new — 3 `HomeStatTile`s; field=Hadir/Tugas/Jam, monitoring=Tim/Area/Aktivitas, `—` for 0), grouped `ProfileMenu` (rewritten: Akun/Aplikasi sections, chip-icons, dashed dividers, logout danger row). Dead `FieldStatsCard`/`MonitoringStatsCard` deleted. `ChangePasswordModal`/About `NBModal` kept as siblings outside the ScrollView (gorhom auto-open guard).
+- **EditProfileScreen (PRF-3)**: `RoleAvatar` 88px + pencil edit badge, "Tidak bisa diubah" locked mono card, sticky Save footer. Removed duplicate local `ROLE_LABELS` + unused `FieldHomeHeader`.
+- **SettingsScreen (PRF-2)**: hi-fi sections (Notifikasi / Lokasi & data / Offline sync / Tentang), custom NB toggle, live offline-sync card via `useProfileSync`. Duplicate in-body title removed (top header already shows it). Logout intentionally dropped (lives in Profile menu).
+- **ChangePasswordModal**: switched body/footer to `NBPasswordInput` + `NBText` (centered eye toggle, shorter placeholder).
+
+**Change-password 404 fix:** modal POSTed `/users/me/change-password` (that route is a **PATCH** → 404). Repointed to canonical `POST /auth/change-password` via `authApi.changePasswordAndRotate`, persisting the rotated token pair (mirrors forced-flow `ChangePasswordScreen`). Client validation aligned to backend: min 8 + letters/digits; wrong-current and reuse errors mapped to fields. Corrected stale `usersApi.changePassword` POST→PATCH.
+
+**Branding — app icons (CP5):** added `scripts/generate-app-icon.mjs` (sharp) rasterizing the brand pinwheel (`#sekar-mark`) into Android legacy `ic_launcher{,_round}.png` (5 densities) + adaptive `ic_launcher_foreground.png` + `mipmap-anydpi-v26/ic_launcher{,_round}.xml` + `values/ic_launcher_background.xml` (warm-stone `#F5F0EB`), and iOS `AppIcon.appiconset/icon-1024.png` (opaque, single universal). **iOS LaunchScreen (CP4):** added `SekarPinwheel.imageset` (1x/2x/3x) and a centered `UIImageView` above the SEKAR label in `LaunchScreen.storyboard`. Android bootsplash unchanged (already correct). Both require a **native rebuild** to verify.
+
 ## May 28, 2026 — M3 code-review fixes + test hardening (ABS/LBR screens)
 
 **Code-review issues fixed across ABS + LBR screens:**

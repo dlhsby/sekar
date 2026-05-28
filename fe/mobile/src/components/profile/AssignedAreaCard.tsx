@@ -1,12 +1,13 @@
 /**
  * AssignedAreaCard Component
- * Displays the user's assigned work area
+ * Compact display of the user's assigned work area (PRF-1).
  */
 
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { nbColors, nbTypography, nbSpacing, nbBorderRadius, nbBorders, nbShadows } from '../../constants/nbTokens';
-import { NBCard } from '../nb';
+import { View, StyleSheet } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { NBText } from '../nb/NBText';
+import { nbColors, nbSpacing, nbRadius, nbBorders, nbShadows } from '../../constants/nbTokens';
 
 interface AssignedAreaCardProps {
   area: {
@@ -22,69 +23,89 @@ export const AssignedAreaCard: React.FC<AssignedAreaCardProps> = ({
   area,
   testID = 'assigned-area-card',
 }) => {
+  const metaParts = [area?.area_type?.name, area?.radius_meters ? `${area.radius_meters}m radius` : null]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
-    <NBCard variant="elevated" style={styles.card} testID={testID}>
-      <Text style={styles.cardTitle}>Area Ditugaskan</Text>
-      {area ? (
-        <View style={styles.areaInfo}>
-          <Text style={styles.areaName}>{area.name}</Text>
-          <Text style={styles.areaType}>
-            {area.area_type?.name} - {area.radius_meters}m radius
-          </Text>
-          {area.address && (
-            <Text style={styles.areaAddress} numberOfLines={2}>
-              {area.address}
-            </Text>
-          )}
-        </View>
-      ) : (
-        <Text style={styles.noArea}>Tidak ada area ditugaskan</Text>
-      )}
-    </NBCard>
+    <View style={styles.wrapper} testID={testID}>
+      <NBText variant="mono-sm" color="gray600" uppercase style={styles.title}>
+        Area Ditugaskan
+      </NBText>
+      <View style={styles.card}>
+        {area ? (
+          <View style={styles.row}>
+            <View style={styles.iconChip}>
+              <MaterialCommunityIcons name="map-marker-radius" size={16} color={nbColors.black} />
+            </View>
+            <View style={styles.body}>
+              <NBText variant="body-sm" color="black" style={styles.areaName} numberOfLines={1}>
+                {area.name ?? '—'}
+              </NBText>
+              {metaParts ? (
+                <NBText variant="mono-sm" color="gray600" numberOfLines={1}>
+                  {metaParts}
+                </NBText>
+              ) : null}
+              {area.address ? (
+                <NBText variant="mono-sm" color="gray500" numberOfLines={2} style={styles.address}>
+                  {area.address}
+                </NBText>
+              ) : null}
+            </View>
+          </View>
+        ) : (
+          <NBText variant="body-sm" color="gray500" align="center" style={styles.noArea}>
+            Tidak ada area ditugaskan
+          </NBText>
+        )}
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: nbColors.white,
+  wrapper: {
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.md,
+  },
+  title: {
+    letterSpacing: 0.5,
+    marginBottom: nbSpacing.sm,
+    marginLeft: nbSpacing.xs,
+  },
+  card: {
+    backgroundColor: nbColors.white,
     padding: nbSpacing.md,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },
-  cardTitle: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.black,
-    marginBottom: nbSpacing.md,
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: nbSpacing.sm,
   },
-  areaInfo: {
-    paddingTop: nbSpacing.xs,
+  iconChip: {
+    width: 30,
+    height: 30,
+    borderRadius: nbRadius.sm,
+    backgroundColor: nbColors.bgAccentMint,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  body: {
+    flex: 1,
+    gap: 2,
   },
   areaName: {
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
-    marginBottom: nbSpacing.xs,
+    fontWeight: '700',
   },
-  areaType: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['600'],
-    marginBottom: nbSpacing.xs,
-  },
-  areaAddress: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['600'],
-    lineHeight: nbTypography.fontSize.sm * nbTypography.lineHeight.normal,
+  address: {
+    marginTop: 2,
   },
   noArea: {
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray['500'],
     fontStyle: 'italic',
-    textAlign: 'center',
-    paddingVertical: nbSpacing.md,
   },
 });

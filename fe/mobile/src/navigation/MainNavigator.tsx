@@ -365,7 +365,7 @@ function MainNavigator(): React.JSX.Element {
         name="Settings"
         component={SettingsScreen}
         options={({ navigation }) => ({
-          headerTitle: () => <FieldHomeHeader title="Pengaturan" onBack={() => navigation.goBack()} />,
+          headerTitle: () => <FieldHomeHeader title="Pengaturan" onBack={() => navigation.navigate('Profile')} />,
           tabBarButton: () => null,
         })}
       />
@@ -382,7 +382,7 @@ function MainNavigator(): React.JSX.Element {
         component={EditProfileScreen}
         options={({ navigation }) => ({
           headerTitle: () => (
-            <FieldHomeHeader title="Edit Profil" onBack={() => navigation.goBack()} />
+            <FieldHomeHeader title="Edit Profil" onBack={() => navigation.navigate('Profile')} />
           ),
           tabBarButton: () => null,
         })}

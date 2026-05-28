@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { NBButton, NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern, NBCardTextInput, NBText } from '../../components/nb';
+import { NBButton, NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern, NBCardTextInput, NBText, NBToast } from '../../components/nb';
 import { PhotoUploader } from '../../components/common';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
@@ -44,9 +44,8 @@ export function TaskCompleteScreen(): React.JSX.Element {
           setTask(response.data);
         }
       } catch (error) {
-        Alert.alert('Error', 'Gagal memuat detail tugas', [
-          { text: 'OK', onPress: () => navigation.goBack() },
-        ]);
+        NBToast.show({ level: 'danger', title: 'Gagal', body: 'Gagal memuat detail tugas.' });
+        navigation.goBack();
       } finally {
         setIsLoading(false);
       }
@@ -81,11 +80,11 @@ export function TaskCompleteScreen(): React.JSX.Element {
   const handleSubmit = useCallback(async () => {
     if (!task) return;
     if (photos.length === 0) {
-      Alert.alert('Error', 'Minimal 1 foto bukti penyelesaian wajib diambil');
+      NBToast.show({ level: 'danger', title: 'Belum lengkap', body: 'Minimal 1 foto bukti penyelesaian wajib diambil.' });
       return;
     }
     if (!description.trim()) {
-      Alert.alert('Error', 'Deskripsi penyelesaian wajib diisi');
+      NBToast.show({ level: 'danger', title: 'Belum lengkap', body: 'Deskripsi penyelesaian wajib diisi.' });
       return;
     }
 
@@ -101,11 +100,10 @@ export function TaskCompleteScreen(): React.JSX.Element {
         completion_photo_urls: photoBase64Array,
       });
       clearForm();
-      Alert.alert('Berhasil', 'Tugas berhasil diselesaikan', [
-        { text: 'OK', onPress: () => navigation.navigate('TasksActivities', { initialTab: 'tasks' }) },
-      ]);
+      NBToast.show({ level: 'success', title: 'Berhasil', body: 'Tugas berhasil diselesaikan.' });
+      navigation.navigate('TasksActivities', { initialTab: 'tasks' });
     } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'Gagal menyelesaikan tugas. Silakan coba lagi.');
+      NBToast.show({ level: 'danger', title: 'Gagal', body: error instanceof Error ? error.message : 'Gagal menyelesaikan tugas. Silakan coba lagi.' });
     } finally {
       setIsSubmitting(false);
     }

@@ -8,9 +8,9 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
-import { nbColors, nbShadows, nbSpacing } from '../../constants/nbTokens';
+import { nbColors, nbSpacing } from '../../constants/nbTokens';
 import { NBText } from '../nb';
-import { SekarPinwheel } from '../brand/SekarPinwheel';
+import { SekarLogoBox } from '../brand/SekarLogoBox';
 import { PulsingDots } from '../common/PulsingDots';
 
 export interface SplashSlideProps {
@@ -31,11 +31,7 @@ export function SplashSlide({ testID }: SplashSlideProps): React.JSX.Element {
       </Svg>
 
       <View style={styles.center}>
-        <View style={styles.logoBox}>
-          <View style={styles.logoInner}>
-            <SekarPinwheel size={92} />
-          </View>
-        </View>
+        <SekarLogoBox size={120} style={styles.logo} />
         <NBText variant="display-xl" align="center" style={styles.wordmark}>
           SEKAR
         </NBText>
@@ -56,21 +52,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: nbSpacing.xl,
   },
-  logoBox: {
-    width: 120,
-    height: 120,
-    backgroundColor: nbColors.white,
-    borderWidth: 3,
-    borderColor: nbColors.black,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 14,
-    marginBottom: 28,
-    transform: [{ rotate: '-4deg' }],
-    ...nbShadows.lg,
-  },
-  logoInner: { transform: [{ rotate: '4deg' }] },
+  logo: { marginBottom: 28 },
   wordmark: { letterSpacing: -1, marginBottom: nbSpacing.sm },
   tagline: { letterSpacing: 2, marginBottom: nbSpacing.xl },
 });
