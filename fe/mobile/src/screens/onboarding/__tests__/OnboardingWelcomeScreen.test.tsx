@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { fireEvent, render } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { OnboardingWelcomeScreen } from '../OnboardingWelcomeScreen';
@@ -50,10 +50,9 @@ describe('OnboardingWelcomeScreen', () => {
     expect(mockNavigate).toHaveBeenCalledWith('OnboardingPermissions');
   });
 
-  it('skip marks onboarding complete (routes to Home)', async () => {
-    const { store, getByTestId } = renderScreen();
-    fireEvent.press(getByTestId('onboarding-welcome-skip'));
-    await waitFor(() => expect(store.getState().auth.onboardingCompleted).toBe(true));
-    expect(mockNavigate).not.toHaveBeenCalled();
+  // Permissions are enforced (ADR-042 / OB-1) — there is no skip option.
+  it('does not render a skip option', () => {
+    const { queryByTestId } = renderScreen();
+    expect(queryByTestId('onboarding-welcome-skip')).toBeNull();
   });
 });

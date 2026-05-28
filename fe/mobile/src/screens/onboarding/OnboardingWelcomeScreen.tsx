@@ -2,31 +2,23 @@
  * OnboardingWelcomeScreen — Phase 4 M3 / ADR-042 / Hifi OB-1
  *
  * First onboarding step after login (or a forced password change). Greets the
- * user by name and bridges to the permission primer. "Lewati" skips the whole
- * onboarding (marks it complete) so the user lands on Home.
+ * user by name and bridges to the permission primer. Permissions are enforced —
+ * there is no skip option.
  */
 
-import React, { useCallback } from 'react';
+import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NBButton, NBText } from '../../components/nb';
 import { PaginationDots } from '../../components/auth/PaginationDots';
 import { nbColors, nbBorders, nbRadius, nbShadows, nbSpacing } from '../../constants/nbTokens';
-import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { completeOnboarding } from '../../store/slices/authSlice';
-import { markOnboardingCompleted } from '../../services/storage/asyncStorageKeys';
+import { useAppSelector } from '../../store/hooks';
 
 export function OnboardingWelcomeScreen(): React.JSX.Element {
   const navigation = useNavigation();
-  const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user);
   const firstName = user?.full_name?.trim().split(' ')[0] ?? '';
-
-  const skip = useCallback(async () => {
-    if (user?.id) await markOnboardingCompleted(user.id);
-    dispatch(completeOnboarding());
-  }, [user, dispatch]);
 
   return (
     <SafeAreaView style={styles.root} testID="onboarding-welcome-screen">
@@ -61,13 +53,6 @@ export function OnboardingWelcomeScreen(): React.JSX.Element {
           fullWidth
           onPress={() => navigation.navigate('OnboardingPermissions' as never)}
           testID="onboarding-welcome-continue"
-        />
-        <NBButton
-          title="Lewati"
-          variant="ghost"
-          fullWidth
-          onPress={skip}
-          testID="onboarding-welcome-skip"
         />
       </View>
     </SafeAreaView>

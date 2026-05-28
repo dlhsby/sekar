@@ -239,8 +239,8 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       expect(getCurrentPositionMock).toHaveBeenCalledTimes(1);
     });
 
-    // Click refresh button (Indonesian: "Perbarui Lokasi")
-    const refreshButton = getByText('Perbarui Lokasi');
+    // Click refresh button (Indonesian: "Perbarui GPS")
+    const refreshButton = getByText('Perbarui GPS');
     fireEvent.press(refreshButton);
 
     // Wait for second location request
@@ -289,8 +289,8 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       { timeout: 3000 }
     );
 
-    // Verify retry button is available (Indonesian: "Coba Lagi")
-    expect(getByText('Coba Lagi')).toBeTruthy();
+    // Verify retry is available — the GPS refresh button doubles as retry
+    expect(getByText('Perbarui GPS')).toBeTruthy();
   });
 
   it('should handle location with low accuracy', async () => {
@@ -357,8 +357,8 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       });
     });
 
-    // Click refresh to get new location (Indonesian: "Perbarui Lokasi")
-    const refreshButton = getByText('Perbarui Lokasi');
+    // Click refresh to get new location (Indonesian: "Perbarui GPS")
+    const refreshButton = getByText('Perbarui GPS');
     fireEvent.press(refreshButton);
 
     // Phase 2C: Should show soft warning (yellow banner) but NOT block clock-in
