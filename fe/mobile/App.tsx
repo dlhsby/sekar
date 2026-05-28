@@ -11,6 +11,8 @@ initSentry();
 import React, { useEffect, useRef } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { Provider } from 'react-redux';
 import { store } from './src/store/store';
 import RootNavigator from './src/navigation/RootNavigator';
@@ -127,13 +129,22 @@ function AppContent(): React.JSX.Element {
 function App(): React.JSX.Element {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ErrorBoundary>
-        <Provider store={store}>
-          <NetworkProvider>
-            <AppContent />
-          </NetworkProvider>
-        </Provider>
-      </ErrorBoundary>
+      {/* SafeAreaProvider must sit ABOVE BottomSheetModalProvider so that sheet
+          content portaled by gorhom (e.g. NBSelect inside a filter sheet) still
+          has safe-area context — otherwise useSafeAreaInsets() throws. */}
+      <SafeAreaProvider>
+        <ErrorBoundary>
+          <Provider store={store}>
+            <NetworkProvider>
+              {/* Hosts all NBModal sheets (BottomSheetModal) so they portal above
+                  the navigator — including over the top header. */}
+              <BottomSheetModalProvider>
+                <AppContent />
+              </BottomSheetModalProvider>
+            </NetworkProvider>
+          </Provider>
+        </ErrorBoundary>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

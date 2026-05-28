@@ -58,7 +58,7 @@ describe('ActivityFilterModal', () => {
     it('renders when visible', async () => {
       const { getByText } = render(<ActivityFilterModal {...defaultProps} />);
       await waitFor(() => {
-        expect(getByText('FILTER AKTIVITAS')).toBeTruthy();
+        expect(getByText('Filter Aktivitas')).toBeTruthy();
       });
     });
 
@@ -92,7 +92,7 @@ describe('ActivityFilterModal', () => {
       const { queryByText } = render(
         <ActivityFilterModal {...defaultProps} visible={false} />
       );
-      expect(queryByText('FILTER AKTIVITAS')).toBeNull();
+      expect(queryByText('Filter Aktivitas')).toBeNull();
     });
   });
 
@@ -145,7 +145,7 @@ describe('ActivityFilterModal', () => {
         />
       );
       await waitFor(() => {
-        expect(getByText('FILTER AKTIVITAS')).toBeTruthy();
+        expect(getByText('Filter Aktivitas')).toBeTruthy();
       });
     });
   });

@@ -41,8 +41,6 @@ export function TodayActivitiesModal({
       onClose={onClose}
       title={`Aktivitas Hari Ini (${activities.length})`}
       type="sheet"
-      size="lg"
-      scrollable
       testID="today-activities-modal"
     >
       <NBText variant="mono-sm" color="gray600" style={styles.dateLine}>

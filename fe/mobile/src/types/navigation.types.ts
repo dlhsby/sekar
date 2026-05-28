@@ -34,7 +34,7 @@ export type MainTabParamList = {
   // Hidden stack screens
   ClockInOut: undefined;
   ActivitySubmission: undefined;
-  ActivityDetail: { activityId: string };
+  ActivityDetail: { activityId: string; from?: string; fromParams?: Record<string, unknown> };
   TaskDetail: { taskId: string };
   TaskComplete: { taskId: string };
   TaskCreate: undefined;

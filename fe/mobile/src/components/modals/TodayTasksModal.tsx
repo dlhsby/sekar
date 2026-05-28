@@ -32,8 +32,6 @@ export function TodayTasksModal({
       onClose={onClose}
       title={`Tugas Hari Ini (${tasks.length})`}
       type="sheet"
-      size="lg"
-      scrollable
       testID="today-tasks-modal"
     >
       {tasks.length === 0 ? (

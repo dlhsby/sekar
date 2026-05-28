@@ -199,7 +199,7 @@ describe('TasksActivityScreen', () => {
     // Initially filter modal is not open
     await waitFor(() => {
       expect(getByLabelText('Filter tugas')).toBeTruthy();
-      expect(queryByText('FILTER TUGAS')).toBeNull(); // Modal title not visible
+      expect(queryByText('Filter Tugas')).toBeNull(); // Modal title not visible
     });
 
     // Press filter button to open modal
@@ -208,7 +208,7 @@ describe('TasksActivityScreen', () => {
 
     await waitFor(() => {
       // TaskFilterModal should now be visible with its sections
-      expect(getByText('FILTER TUGAS')).toBeTruthy(); // Modal title (NBModal uppercases)
+      expect(getByText('Filter Tugas')).toBeTruthy(); // Modal title (rendered as-is)
       expect(getByText('Penugasan')).toBeTruthy();     // Penugasan filter section
       expect(getByText('Status')).toBeTruthy();       // Status filter section
     });

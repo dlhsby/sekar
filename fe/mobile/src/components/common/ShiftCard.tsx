@@ -12,7 +12,7 @@
  */
 
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   nbColors,
@@ -29,12 +29,14 @@ interface ShiftCardProps {
   showDate?: boolean;        // Show date header above card (for history, handled by parent)
   shiftNumber?: number;       // Display "Shift #N" label (for today's modal)
   compact?: boolean;          // Use compact padding
+  onPress?: () => void;       // When set, the card is tappable (e.g. open shift detail)
 }
 
 export function ShiftCard({
   shift,
   shiftNumber,
   compact = false,
+  onPress,
 }: ShiftCardProps): React.JSX.Element {
   const isActive = !shift.clock_out_time;
 
@@ -44,7 +46,7 @@ export function ShiftCard({
     shift.clock_out_time ? new Date(shift.clock_out_time) : new Date()
   );
 
-  return (
+  const card = (
     <NBCard style={[styles.card, compact && styles.cardCompact]} variant="default">
       {/* Header: Area Info + Status Badge */}
       <View style={styles.header}>
@@ -132,6 +134,22 @@ export function ShiftCard({
       </View>
     </NBCard>
   );
+
+  if (onPress) {
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel={`Detail shift ${shift.area?.name ?? ''}`}
+        accessibilityHint="Ketuk untuk melihat detail shift"
+      >
+        {card}
+      </TouchableOpacity>
+    );
+  }
+
+  return card;
 }
 
 const styles = StyleSheet.create({

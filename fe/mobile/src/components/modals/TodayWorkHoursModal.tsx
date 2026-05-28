@@ -17,12 +17,14 @@ interface TodayWorkHoursModalProps {
   visible: boolean;
   onClose: () => void;
   shifts: Shift[];
+  onShiftPress?: (shift: Shift) => void;
 }
 
 export function TodayWorkHoursModal({
   visible,
   onClose,
   shifts,
+  onShiftPress,
 }: TodayWorkHoursModalProps): React.JSX.Element {
   // Total duration across all shifts (active shift uses current time).
   const totalDuration = shifts.reduce((acc, shift) => {
@@ -41,8 +43,6 @@ export function TodayWorkHoursModal({
       onClose={onClose}
       title={`Jam Kerja Hari Ini${titleSuffix}`}
       type="sheet"
-      size="lg"
-      scrollable
       testID="today-workhours-modal"
     >
       <NBText variant="mono-sm" color="gray600" style={styles.dateLine}>
@@ -61,7 +61,12 @@ export function TodayWorkHoursModal({
       ) : (
         <View style={styles.list}>
           {shifts.map((shift, index) => (
-            <ShiftCard key={shift.id} shift={shift} shiftNumber={index + 1} />
+            <ShiftCard
+              key={shift.id}
+              shift={shift}
+              shiftNumber={index + 1}
+              onPress={onShiftPress ? () => onShiftPress(shift) : undefined}
+            />
           ))}
         </View>
       )}

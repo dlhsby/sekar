@@ -13,8 +13,9 @@ import {
   ActivityIndicator,
   Platform,
   SafeAreaView,
+  BackHandler,
 } from 'react-native';
-import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect, type RouteProp } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import type { MainTabParamList, MainTabScreenProps } from '../../types/navigation.types';
 import { getActivityById, approveActivity, rejectActivity } from '../../services/api/activitiesApi';
@@ -56,6 +57,31 @@ export function ActivityDetailScreen(): React.JSX.Element {
   const navigation = useNavigation<MainTabScreenProps<'ActivityDetail'>['navigation']>();
   const route = useRoute<RouteProp<MainTabParamList, 'ActivityDetail'>>();
   const { activityId } = route.params;
+
+  // Optional caller-supplied back target (e.g. Home → "Aktivitas Hari Ini" passes
+  // `from: 'Home'`). When unset, defaults to the Aktivitas list tab — so opening a
+  // detail from the list returns to the list, and from Home returns to Home.
+  const backTarget = (route.params as any)?.from as string | undefined;
+  const backTargetParams = (route.params as any)?.fromParams as Record<string, unknown> | undefined;
+  const handleBack = useCallback(() => {
+    if (backTarget) {
+      (navigation as any).navigate(backTarget, backTargetParams);
+    } else {
+      (navigation as any).navigate('TasksActivities', { initialTab: 'activities' });
+    }
+  }, [backTarget, backTargetParams, navigation]);
+
+  // Route Android hardware back through handleBack (not the Tab navigator's
+  // default goBack, which lands on the previously-focused tab). Scoped to focus.
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        handleBack();
+        return true;
+      });
+      return () => sub.remove();
+    }, [handleBack]),
+  );
 
   const user = useAppSelector((state) => state.auth.user);
 
@@ -191,7 +217,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
           <NBButton
             title="Kembali"
             variant="secondary"
-            onPress={() => navigation.navigate('TasksActivities', { initialTab: 'activities' })}
+            onPress={handleBack}
           />
         </View>
       </NBBackgroundPattern>

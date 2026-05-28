@@ -211,8 +211,6 @@ export function ActivityFilterModal({
       visible={visible}
       onClose={onClose}
       title="Filter Aktivitas"
-      size="lg"
-      scrollable
       footer={
         <View style={styles.actionButtons}>
           <TouchableOpacity

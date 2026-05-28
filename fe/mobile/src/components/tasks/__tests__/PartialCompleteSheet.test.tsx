@@ -67,7 +67,7 @@ describe('PartialCompleteSheet', () => {
       </Provider>,
     );
     // Modal should not show content when not visible
-    const queries = screen.queryByText('SELESAI SEBAGIAN');
+    const queries = screen.queryByText('Selesai Sebagian');
     expect(queries).toBeNull();
   });
 
@@ -82,7 +82,7 @@ describe('PartialCompleteSheet', () => {
         />
       </Provider>,
     );
-    expect(screen.getByText('SELESAI SEBAGIAN')).toBeTruthy();
+    expect(screen.getByText('Selesai Sebagian')).toBeTruthy();
   });
 
   it('displays target plant count', () => {

@@ -43,6 +43,7 @@ jest.mock('@react-navigation/native', () => ({
     setOptions: mockSetOptions,
   }),
   useRoute: () => mockRoute,
+  useFocusEffect: (cb: () => void | (() => void)) => cb(),
   NavigationContainer: ({ children }: any) => children,
 }));
 

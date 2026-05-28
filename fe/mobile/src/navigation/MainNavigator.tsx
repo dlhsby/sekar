@@ -295,19 +295,30 @@ function MainNavigator(): React.JSX.Element {
         }}
       />
 
-      {/* ActivityDetail: navigates back to TasksActivities (not generic goBack) */}
+      {/* ActivityDetail: back honors `from`/`fromParams` route params (e.g. Home →
+          "Aktivitas Hari Ini" passes from:'Home'); defaults to the Aktivitas list. */}
       <Tab.Screen
         name="ActivityDetail"
         component={ActivityDetailScreen}
-        options={({ navigation }) => ({
-          headerTitle: () => (
-            <FieldHomeHeader
-              title="Detail Aktivitas"
-              onBack={() => navigation.navigate('TasksActivities')}
-            />
-          ),
-          tabBarButton: () => null,
-        })}
+        options={({ navigation, route }) => {
+          const params = (route.params ?? {}) as {
+            from?: string;
+            fromParams?: Record<string, unknown>;
+          };
+          const onBack = () => {
+            if (params.from) {
+              navigation.navigate(params.from as any, params.fromParams as any);
+            } else {
+              navigation.navigate('TasksActivities', { initialTab: 'activities' });
+            }
+          };
+          return {
+            headerTitle: () => (
+              <FieldHomeHeader title="Detail Aktivitas" onBack={onBack} />
+            ),
+            tabBarButton: () => null,
+          };
+        }}
       />
 
       {/* ShiftHistory: navigates back to Profile (not generic goBack) */}

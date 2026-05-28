@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Modal,
@@ -7,13 +7,16 @@ import {
   Platform,
   KeyboardAvoidingView,
   ScrollView,
+  Dimensions,
 } from 'react-native';
-import BottomSheet, {
+import {
+  BottomSheetModal,
   BottomSheetScrollView,
   BottomSheetBackdrop,
-  BottomSheetView,
+  BottomSheetFooter,
 } from '@gorhom/bottom-sheet';
 import type { BottomSheetDefaultBackdropProps } from '@gorhom/bottom-sheet/lib/typescript/components/bottomSheetBackdrop/types';
+import type { BottomSheetFooterProps } from '@gorhom/bottom-sheet';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NBText } from './NBText';
@@ -23,57 +26,79 @@ import {
   nbBorders,
   nbRadius,
   nbShadows,
-  nbTypography,
 } from '../../constants/nbTokens';
 
 export type NBModalType = 'sheet' | 'fullscreen';
-export type NBModalSize = 'sm' | 'md' | 'lg';
 
 export interface NBModalProps {
   visible: boolean;
   onClose: () => void;
   title?: string;
   type?: NBModalType;
-  size?: NBModalSize;
-  scrollable?: boolean;
   avoidKeyboard?: boolean;
   noPadding?: boolean;
   footer?: React.ReactNode;
   /** Fullscreen only: renders to the right of the title in the header bar */
   headerRight?: React.ReactNode;
+  /**
+   * Fullscreen only. Wraps the body in a ScrollView. Sheets always scroll, so this
+   * is ignored for the sheet variant. Leave false for fullscreen modals whose body
+   * must fill the viewport (maps, calendars) rather than scroll.
+   */
+  scrollable?: boolean;
   children: React.ReactNode;
   testID?: string;
 }
 
-// First snap = initial open height; second (where present) = max drag-up height
-const SNAP_POINTS: Record<NBModalSize, string[]> = {
-  sm: ['48%'],
-  md: ['65%', '88%'],
-  lg: ['88%', '95%'],
-};
-
 // ─── Sheet variant (gorhom bottom sheet) ─────────────────────────────────────
+//
+// One behavior: the sheet hugs its content (small content → small sheet) and grows
+// up to the top safe-area inset (above the app header, below the status bar). Once
+// content exceeds that cap, the body scrolls while the title and footer stay fixed.
+//
+// Mechanics: `enableDynamicSizing` measures the BottomSheetScrollView content height
+// (including its paddings) as the snap point. The title is an absolutely-positioned
+// top overlay and the footer is rendered via gorhom's `footerComponent`; neither is
+// part of the dynamic measurement, so their measured heights are fed back as
+// paddingTop/paddingBottom on the scroll content to reserve space beneath them.
 
 function SheetModal({
   visible,
   onClose,
   title,
-  size = 'md',
-  scrollable = false,
   avoidKeyboard = false,
   noPadding = false,
   footer,
   children,
   testID,
 }: NBModalProps) {
-  const sheetRef = useRef<BottomSheet>(null);
-  const snapPoints = useMemo(() => SNAP_POINTS[size ?? 'md'], [size]);
+  const sheetRef = useRef<BottomSheetModal>(null);
+  const insets = useSafeAreaInsets();
+  const screenHeight = Dimensions.get('window').height;
+  // Grow above the app header but stop below the status bar.
+  const maxHeight = screenHeight - insets.top;
 
+  // Title/footer live outside the scroll measurement (absolute overlay + gorhom
+  // footer), so their heights pad the scroll content. The initial estimates must
+  // be close to reality: the modal instance stays mounted while `visible` toggles,
+  // so onLayout-measured values persist across re-opens (which is why a re-open
+  // looks correct) — but the FIRST open relies on these estimates. The footer
+  // includes the safe-area bottom inset, so the estimate must too, otherwise the
+  // last content row is hidden behind the footer on first open.
+  const [titleH, setTitleH] = useState(title ? 52 : 0);
+  const [footerH, setFooterH] = useState(footer ? 68 + insets.bottom : 0);
+
+  // Standard gaps between the fixed title/footer and the content (top + bottom margin).
+  const topGap = noPadding ? 0 : nbSpacing.md;
+  const bottomGap = nbSpacing.md;
+
+  // present()/dismiss() drive the portaled modal. Android hardware back is handled
+  // natively by gorhom's modal; every dismissal funnels through onDismiss → onClose.
   useEffect(() => {
     if (visible) {
-      sheetRef.current?.snapToIndex(0);
+      sheetRef.current?.present();
     } else {
-      sheetRef.current?.close();
+      sheetRef.current?.dismiss();
     }
   }, [visible]);
 
@@ -90,62 +115,73 @@ function SheetModal({
     [],
   );
 
-  // Extract title bar node to avoid duplication
-  const titleBarNode = title ? (
-    <View style={styles.titleBar}>
-      <NBText variant="h3" color="black" style={styles.titleText}>
-        {title}
-      </NBText>
-      <TouchableOpacity
-        onPress={onClose}
-        style={styles.closeBtnHitArea}
-        accessibilityLabel="Tutup"
-        accessibilityRole="button"
-      >
-        <View style={styles.closeBtnVisual}>
-          <MaterialCommunityIcons name="close" size={16} color={nbColors.gray700} />
+  const renderFooter = useCallback(
+    (props: BottomSheetFooterProps) => (
+      <BottomSheetFooter {...props} bottomInset={0}>
+        <View
+          testID="nbmodal-footer"
+          style={[styles.footerWrap, insets.bottom > 0 && { paddingBottom: insets.bottom }]}
+          onLayout={(e) => setFooterH(Math.round(e.nativeEvent.layout.height))}
+        >
+          {footer}
         </View>
-      </TouchableOpacity>
-    </View>
-  ) : null;
+      </BottomSheetFooter>
+    ),
+    [footer, insets.bottom],
+  );
 
   return (
-    <BottomSheet
+    <BottomSheetModal
       ref={sheetRef}
-      index={visible ? 0 : -1}
-      snapPoints={snapPoints}
-      enableDynamicSizing={false}
+      enableDynamicSizing
+      maxDynamicContentSize={maxHeight}
       enablePanDownToClose
       backdropComponent={renderBackdrop}
-      onClose={onClose}
+      footerComponent={footer ? renderFooter : undefined}
+      onDismiss={onClose}
       backgroundStyle={styles.sheetBackground}
       handleIndicatorStyle={styles.handle}
       keyboardBehavior={avoidKeyboard ? 'interactive' : undefined}
     >
-      {scrollable ? (
-        <View style={styles.contentFlex}>
-          {titleBarNode}
-          <BottomSheetScrollView
-            testID={testID}
-            style={styles.contentFlex}
-            contentContainerStyle={noPadding ? styles.scrollContentNoPadding : styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
+      <BottomSheetScrollView
+        testID={testID}
+        contentContainerStyle={[
+          noPadding ? styles.scrollContentNoPadding : styles.scrollContent,
+          {
+            paddingTop: titleH + topGap,
+            // Reserve the footer height + a margin so the last row clears the
+            // sticky footer; when there is no footer, use a plain bottom margin.
+            paddingBottom: footer ? footerH + bottomGap : nbSpacing.lg,
+          },
+        ]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {children}
+      </BottomSheetScrollView>
+
+      {title ? (
+        <View
+          testID="nbmodal-title-bar"
+          style={[styles.titleBar, styles.overlayTop]}
+          onLayout={(e) => setTitleH(Math.round(e.nativeEvent.layout.height))}
+        >
+          <NBText variant="h3" color="black" style={styles.titleText}>
+            {title}
+          </NBText>
+          <TouchableOpacity
+            onPress={() => sheetRef.current?.dismiss()}
+            style={styles.closeBtnHitArea}
+            accessibilityLabel="Tutup"
+            accessibilityRole="button"
           >
-            {children}
-          </BottomSheetScrollView>
-          {footer ? <View style={styles.footerWrap}>{footer}</View> : null}
+            <View style={styles.closeBtnVisual}>
+              <MaterialCommunityIcons name="close" size={16} color={nbColors.gray700} />
+            </View>
+          </TouchableOpacity>
         </View>
-      ) : (
-        <View testID={testID} style={styles.contentFlex}>
-          {titleBarNode}
-          <BottomSheetView style={[styles.contentFlex, noPadding ? null : styles.contentPadded]}>
-            {children}
-          </BottomSheetView>
-          {footer ? <View style={styles.footerWrap}>{footer}</View> : null}
-        </View>
-      )}
-    </BottomSheet>
+      ) : null}
+    </BottomSheetModal>
   );
 }
 
@@ -234,9 +270,9 @@ function FullscreenModal({
 
 export function NBModal({ type = 'sheet', ...props }: NBModalProps) {
   if (type === 'fullscreen') {
-    return <FullscreenModal type={type} {...props} />;
+    return <FullscreenModal {...props} />;
   }
-  return <SheetModal type={type} {...props} />;
+  return <SheetModal {...props} />;
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -247,7 +283,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.white,
     borderTopLeftRadius: nbRadius.lg,
     borderTopRightRadius: nbRadius.lg,
-    borderWidth: nbBorders.thick,
+    borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     ...nbShadows.lg,
   },
@@ -284,13 +320,6 @@ const styles = StyleSheet.create({
     borderColor: nbColors.gray400,
     borderRadius: nbRadius.sm,
   },
-  contentFlex: {
-    flex: 1,
-  },
-  contentPadded: {
-    padding: nbSpacing.md,
-    paddingBottom: nbSpacing.sm,
-  },
   scrollContent: {
     padding: nbSpacing.md,
     paddingBottom: nbSpacing.lg,
@@ -299,10 +328,19 @@ const styles = StyleSheet.create({
     paddingBottom: nbSpacing.sm,
   },
   footerWrap: {
+    backgroundColor: nbColors.white,
     borderTopWidth: nbBorders.base,
     borderTopColor: nbColors.black,
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.sm + 2,
+  },
+  overlayTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: nbColors.white,
+    zIndex: 10,
   },
   // Fullscreen
   fullscreenContainer: {
@@ -362,7 +400,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.lg,
     paddingBottom: nbSpacing.xl,
     paddingTop: nbSpacing.md,
-    borderTopWidth: nbBorders.thin,
-    borderTopColor: nbColors.gray200,
+    borderTopWidth: nbBorders.base,
+    borderTopColor: nbColors.black,
   },
 });

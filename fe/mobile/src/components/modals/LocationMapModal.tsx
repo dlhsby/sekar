@@ -220,7 +220,6 @@ export function LocationMapModal({
       onClose={onClose}
       title={title}
       type="sheet"
-      size="lg"
       noPadding
       footer={footerContent}
     >

@@ -272,8 +272,6 @@ export function AssignToTaskSheet({
       onClose={handleClose}
       title="Tugaskan ke Petugas"
       type="sheet"
-      size="lg"
-      scrollable={true}
       avoidKeyboard={true}
     >
       <KeyboardAvoidingView

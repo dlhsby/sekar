@@ -1,25 +1,13 @@
-/**
- * ShiftDetailModal Component
- * Shows detailed shift info with improved location status indicator
- * Redesigned with Neo Brutalism principles (sharp corners, bold borders)
- */
-
 import React from 'react';
-import {
-  View,
-  Text,
-  Modal,
-  StyleSheet,
-  ScrollView,
-  Pressable,
-  TouchableOpacity,
-} from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { NBModal } from '../nb/NBModal';
+import { NBText } from '../nb/NBText';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
   nbBorders,
+  nbRadius,
   nbShadows,
 } from '../../constants/nbTokens';
 import { formatDateTime } from '../../utils/dateUtils';
@@ -32,14 +20,8 @@ interface ShiftDetailModalProps {
   shift: Shift | null;
 }
 
-export function ShiftDetailModal({
-  visible,
-  onClose,
-  shift,
-}: ShiftDetailModalProps): JSX.Element {
-  // Calculate location validation
-  const calculateLocationStatus = () => {
-    // Check if area and valid GPS coordinates exist
+export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalProps) {
+  const locationStatus = React.useMemo(() => {
     if (
       !shift?.area?.gps_lat ||
       !shift?.area?.gps_lng ||
@@ -48,382 +30,263 @@ export function ShiftDetailModal({
     ) {
       return { isInside: false, distance: 0 };
     }
-
     const distance = calculateDistance(
       shift.clock_in_gps_lat,
       shift.clock_in_gps_lng,
       shift.area.gps_lat,
-      shift.area.gps_lng
+      shift.area.gps_lng,
     );
+    return { isInside: distance <= (shift.area.radius_meters ?? 100), distance };
+  }, [shift]);
 
-    const radiusMeters = shift.area.radius_meters ?? 100;
-    const isInside = distance <= radiusMeters;
-
-    return { isInside, distance };
-  };
-
-  const { isInside, distance } = shift ? calculateLocationStatus() : { isInside: false, distance: 0 };
+  const { isInside, distance } = locationStatus;
 
   return (
-    <Modal
+    <NBModal
+      type="sheet"
       visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
+      onClose={onClose}
+      title="Detail Shift"
+      testID="shift-detail-modal"
     >
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <View
-          style={styles.modalContent}
-          onStartShouldSetResponder={() => true}
-          onMoveShouldSetResponder={() => false}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.titleContainer}>
-              <Text style={styles.title}>Detail Shift</Text>
-            </View>
-            <TouchableOpacity
-              onPress={onClose}
-              style={styles.closeButton}
-              accessibilityRole="button"
-              accessibilityLabel="Tutup modal"
-            >
-              <MaterialCommunityIcons
-                name="close"
-                size={24}
-                color={nbColors.black}
-              />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {!shift ? (
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyIcon}>📋</Text>
-                <Text style={styles.emptyText}>Tidak ada shift aktif</Text>
-              </View>
-            ) : (
-              <>
-                {/* Table-style rows with alternating backgrounds and icons */}
-
-                {/* Area Name */}
-                <View style={[styles.tableRow, styles.tableRowEven]}>
-                  <MaterialCommunityIcons
-                    name="map-marker"
-                    size={20}
-                    color={nbColors.gray['700']}
-                    style={styles.rowIcon}
-                  />
-                  <Text style={styles.tableLabel}>Area</Text>
-                  <View style={styles.tableValueContainer}>
-                    <Text style={styles.tableValue}>
-                      {shift.area?.name || 'Tidak diketahui'}
-                    </Text>
-                    {shift.area?.address && (
-                      <Text style={styles.tableSubtext}>{shift.area.address}</Text>
-                    )}
-                    {shift.area?.gps_lat && shift.area?.gps_lng && (
-                      <Text style={styles.tableSubtext}>
-                        Pusat: {Number(shift.area.gps_lat).toFixed(6)}, {Number(shift.area.gps_lng).toFixed(6)}
-                      </Text>
-                    )}
-                  </View>
-                </View>
-
-                {/* Area Type */}
-                {shift.area?.area_type?.name && (
-                  <View style={styles.tableRow}>
-                    <MaterialCommunityIcons
-                      name="office-building"
-                      size={20}
-                      color={nbColors.gray['700']}
-                      style={styles.rowIcon}
-                    />
-                    <Text style={styles.tableLabel}>Tipe Area</Text>
-                    <Text style={styles.tableValue}>{shift.area.area_type.name}</Text>
-                  </View>
-                )}
-
-                {/* Clock In Time */}
-                <View style={[styles.tableRow, styles.tableRowEven]}>
-                  <MaterialCommunityIcons
-                    name="clock-outline"
-                    size={20}
-                    color={nbColors.gray['700']}
-                    style={styles.rowIcon}
-                  />
-                  <Text style={styles.tableLabel}>Clock In</Text>
-                  <Text style={styles.tableValue}>
-                    {formatDateTime(shift.clock_in_time)}
-                  </Text>
-                </View>
-
-                {/* Clock In GPS */}
-                <View style={styles.tableRow}>
-                  <MaterialCommunityIcons
-                    name="crosshairs-gps"
-                    size={20}
-                    color={nbColors.gray['700']}
-                    style={styles.rowIcon}
-                  />
-                  <Text style={styles.tableLabel}>GPS Clock In</Text>
-                  <Text style={styles.tableValueMono}>
-                    {shift.clock_in_gps_lat != null && shift.clock_in_gps_lng != null
-                      ? `${Number(shift.clock_in_gps_lat).toFixed(6)}, ${Number(shift.clock_in_gps_lng).toFixed(6)}`
-                      : 'N/A'}
-                  </Text>
-                </View>
-
-                {/* Colored Validation Section */}
-                <View style={[
-                  styles.validationSection,
-                  isInside ? styles.validationSuccess : styles.validationError
-                ]}>
-                  <View style={[
-                    styles.accentBar,
-                    { backgroundColor: isInside ? nbColors.successDark : nbColors.dangerDark }
-                  ]} />
-
-                  <View style={styles.validationContent}>
-                    <View style={styles.validationHeader}>
-                      <View style={[
-                        styles.iconContainer,
-                        { backgroundColor: isInside ? nbColors.successLight : nbColors.dangerLight }
-                      ]}>
-                        <MaterialCommunityIcons
-                          name={isInside ? 'check-circle' : 'alert-circle'}
-                          size={24}
-                          color={isInside ? nbColors.successDark : nbColors.dangerDark}
-                        />
-                      </View>
-                      <Text style={styles.validationTitle}>Validasi Lokasi Clock In</Text>
-                      <View style={[
-                        styles.validationBadge,
-                        { backgroundColor: isInside ? nbColors.successDark : nbColors.dangerDark }
-                      ]}>
-                        <Text style={styles.badgeText}>
-                          {isInside ? 'Di Dalam Area' : 'Di Luar Area'}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <View style={styles.metricsGrid}>
-                      <View style={styles.metricCard}>
-                        <Text style={styles.metricLabel}>Jarak</Text>
-                        <Text style={styles.metricValue}>{Math.round(distance)}m</Text>
-                      </View>
-                      <View style={styles.metricCard}>
-                        <Text style={styles.metricLabel}>Radius</Text>
-                        <Text style={styles.metricValue}>{shift.area?.radius_meters || 100}m</Text>
-                      </View>
-                    </View>
-                  </View>
-                </View>
-
-              </>
-            )}
-          </ScrollView>
+      {!shift ? (
+        <View style={styles.empty}>
+          <NBText variant="h3" color="gray600" style={styles.emptyText}>
+            Tidak ada shift aktif
+          </NBText>
         </View>
-      </Pressable>
-    </Modal>
+      ) : (
+        <View>
+          <InfoRow
+            icon="map-marker"
+            label="Area"
+            even
+          >
+            <NBText variant="body" color="black">{shift.area?.name || 'Tidak diketahui'}</NBText>
+            {!!shift.area?.address && (
+              <NBText variant="caption" color="gray600">{shift.area.address}</NBText>
+            )}
+            {!!shift.area?.gps_lat && !!shift.area?.gps_lng && (
+              <NBText variant="mono-sm" color="gray600">
+                {`${Number(shift.area.gps_lat).toFixed(6)}, ${Number(shift.area.gps_lng).toFixed(6)}`}
+              </NBText>
+            )}
+          </InfoRow>
+
+          {!!shift.area?.area_type?.name && (
+            <InfoRow icon="office-building" label="Tipe Area">
+              <NBText variant="body" color="black">{shift.area.area_type.name}</NBText>
+            </InfoRow>
+          )}
+
+          <InfoRow icon="clock-outline" label="Clock In" even>
+            <NBText variant="body" color="black">{formatDateTime(shift.clock_in_time)}</NBText>
+          </InfoRow>
+
+          <InfoRow icon="crosshairs-gps" label="GPS Clock In">
+            <NBText variant="mono-sm" color="black">
+              {shift.clock_in_gps_lat != null && shift.clock_in_gps_lng != null
+                ? `${Number(shift.clock_in_gps_lat).toFixed(6)}, ${Number(shift.clock_in_gps_lng).toFixed(6)}`
+                : 'N/A'}
+            </NBText>
+          </InfoRow>
+
+          {/* Location validation */}
+          <View
+            style={[
+              styles.validationSection,
+              isInside ? styles.validationOk : styles.validationFail,
+            ]}
+          >
+            <View
+              style={[
+                styles.accentBar,
+                { backgroundColor: isInside ? nbColors.successDark : nbColors.dangerDark },
+              ]}
+            />
+            <View style={styles.validationBody}>
+              <View style={styles.validationRow}>
+                <View
+                  style={[
+                    styles.validationIconBox,
+                    {
+                      backgroundColor: isInside
+                        ? nbColors.successLight
+                        : nbColors.dangerLight,
+                    },
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    name={isInside ? 'check-circle' : 'alert-circle'}
+                    size={22}
+                    color={isInside ? nbColors.successDark : nbColors.dangerDark}
+                  />
+                </View>
+                <NBText variant="body" color="black" style={styles.validationLabel}>
+                  Validasi Lokasi Clock In
+                </NBText>
+                <View
+                  style={[
+                    styles.validationBadge,
+                    { backgroundColor: isInside ? nbColors.successDark : nbColors.dangerDark },
+                  ]}
+                >
+                  <NBText variant="caption" color="white">
+                    {isInside ? 'Dalam Area' : 'Luar Area'}
+                  </NBText>
+                </View>
+              </View>
+
+              <View style={styles.metricsRow}>
+                <MetricTile label="Jarak" value={`${Math.round(distance)}m`} />
+                <MetricTile label="Radius" value={`${shift.area?.radius_meters || 100}m`} />
+              </View>
+            </View>
+          </View>
+        </View>
+      )}
+    </NBModal>
   );
 }
 
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function InfoRow({
+  icon,
+  label,
+  even,
+  children,
+}: {
+  icon: string;
+  label: string;
+  even?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <View style={[styles.row, even && styles.rowEven]}>
+      <MaterialCommunityIcons
+        name={icon}
+        size={18}
+        color={nbColors.gray700}
+        style={styles.rowIcon}
+      />
+      <NBText variant="body-sm" color="gray600" style={styles.rowLabel}>
+        {label}
+      </NBText>
+      <View style={styles.rowValue}>{children}</View>
+    </View>
+  );
+}
+
+function MetricTile({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.metricTile}>
+      <NBText variant="caption" color="gray600" style={styles.metricLabel}>
+        {label.toUpperCase()}
+      </NBText>
+      <NBText variant="h3" color="black">{value}</NBText>
+    </View>
+  );
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: nbColors.overlay,
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: nbColors.surface,
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
-    borderTopWidth: nbBorders.base,
-    borderLeftWidth: nbBorders.base,
-    borderRightWidth: nbBorders.base,
-    borderColor: nbColors.black,
-    maxHeight: '80%',
-    flexShrink: 1,
-    ...nbShadows.lg,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  empty: {
     alignItems: 'center',
-    paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.md,
-    borderBottomWidth: nbBorders.base,
-    borderBottomColor: nbColors.black,
+    paddingVertical: nbSpacing['2xl'],
   },
-  titleContainer: {
-    flex: 1,
+  emptyText: {
+    textAlign: 'center',
   },
-  title: {
-    fontSize: nbTypography.fontSize.xl,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
-    marginBottom: 2,
-  },
-  closeButton: {
-    width: 48,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 0, // Sharp corners
-  },
-  scrollContent: {
-    padding: nbSpacing.md,
-    paddingBottom: nbSpacing.xl + nbSpacing.lg, // 24px + 32px bottom padding
-  },
-  tableRow: {
+  row: {
     flexDirection: 'row',
     paddingVertical: nbSpacing.sm,
-    paddingHorizontal: nbSpacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: nbColors.gray['200'],
+    paddingHorizontal: nbSpacing.xs,
+    borderBottomWidth: nbBorders.thin,
+    borderBottomColor: nbColors.gray200,
     alignItems: 'flex-start',
   },
-  tableRowEven: {
-    backgroundColor: nbColors.gray['50'],
+  rowEven: {
+    backgroundColor: nbColors.gray50,
   },
   rowIcon: {
     marginRight: nbSpacing.sm,
     marginTop: 2,
   },
-  tableLabel: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray['600'],
-    width: 110,
+  rowLabel: {
+    width: 100,
     flexShrink: 0,
+    fontWeight: '600',
   },
-  tableValueContainer: {
+  rowValue: {
     flex: 1,
   },
-  tableValue: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.black,
-    flex: 1,
-  },
-  tableValueMono: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.black,
-    fontFamily: nbTypography.fontFamily.mono,
-    flex: 1,
-  },
-  tableSubtext: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.gray['600'],
-    marginTop: 4,
-  },
-  validationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
+  // Validation section
   validationSection: {
     marginTop: nbSpacing.md,
-    marginBottom: nbSpacing.md,
     borderWidth: nbBorders.thick,
-    borderRadius: 0,
+    borderRadius: nbRadius.base,
     overflow: 'hidden',
     flexDirection: 'row',
+    ...nbShadows.sm,
   },
-  validationSuccess: {
-    backgroundColor: nbColors.infoLight,
+  validationOk: {
+    backgroundColor: nbColors.successLight,
     borderColor: nbColors.successDark,
   },
-  validationError: {
+  validationFail: {
     backgroundColor: nbColors.dangerLight,
     borderColor: nbColors.dangerDark,
   },
   accentBar: {
     width: 4,
   },
-  validationContent: {
+  validationBody: {
     flex: 1,
-    padding: nbSpacing.md,
+    padding: nbSpacing.sm,
   },
-  validationHeader: {
+  validationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: nbSpacing.md,
+    marginBottom: nbSpacing.sm,
   },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
+  validationIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: nbRadius.sm,
     borderWidth: nbBorders.base,
     borderColor: nbColors.black,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: nbSpacing.sm,
   },
-  validationTitle: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
+  validationLabel: {
     flex: 1,
-    marginLeft: nbSpacing.sm,
+    fontWeight: '700',
   },
   validationBadge: {
     paddingHorizontal: nbSpacing.sm,
-    paddingVertical: nbSpacing.xs,
-    borderRadius: 0,
+    paddingVertical: 3,
+    borderRadius: nbRadius.sm,
     borderWidth: nbBorders.base,
     borderColor: nbColors.black,
   },
-  badgeText: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.white,
-    letterSpacing: 0.5,
-  },
-  metricsGrid: {
+  metricsRow: {
     flexDirection: 'row',
     gap: nbSpacing.sm,
   },
-  metricCard: {
+  metricTile: {
     flex: 1,
     backgroundColor: nbColors.white,
     padding: nbSpacing.sm,
-    borderRadius: 0,
+    borderRadius: nbRadius.sm,
     borderWidth: nbBorders.base,
     borderColor: nbColors.black,
     alignItems: 'center',
   },
   metricLabel: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray['600'],
-    textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  metricValue: {
-    fontSize: nbTypography.fontSize.xl,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: nbSpacing['2xl'],
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: nbSpacing.md,
-  },
-  emptyText: {
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray['600'],
-    textAlign: 'center',
+    marginBottom: 2,
   },
 });

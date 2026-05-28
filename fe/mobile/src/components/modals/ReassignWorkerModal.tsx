@@ -121,8 +121,6 @@ export function ReassignWorkerModal({
       onClose={onClose}
       title="Pindah Petugas"
       type="sheet"
-      size="md"
-      scrollable
       avoidKeyboard
       footer={footerContent}
     >

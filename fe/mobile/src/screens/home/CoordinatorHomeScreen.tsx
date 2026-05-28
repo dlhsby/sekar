@@ -19,6 +19,7 @@ import { setTasks } from '../../store/slices/tasksSlice';
 import { activitiesApi, tasksApi, shiftsApi } from '../../services/api';
 import { formatRelativeTime, formatTime, isToday, calculateDuration } from '../../utils/dateUtils';
 import { ACTIVE_TASK_STATUSES } from '../../utils/taskStatus';
+import type { Activity, Task, Shift } from '../../types/models.types';
 
 const pad = (n: number): string => String(n).padStart(2, '0');
 
@@ -53,7 +54,7 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
 
   const [refreshing, setRefreshing] = useState(false);
   const [absensiExpanded, setAbsensiExpanded] = useState(false);
-  const [shiftModalVisible, setShiftModalVisible] = useState(false);
+  const [detailShift, setDetailShift] = useState<Shift | null>(null);
   const [activitiesModalVisible, setActivitiesModalVisible] = useState(false);
   const [workHoursModalVisible, setWorkHoursModalVisible] = useState(false);
   const [tasksModalVisible, setTasksModalVisible] = useState(false);
@@ -135,6 +136,21 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
       navigation.navigate('ClockInOut' as never);
     }
   }, [currentShift, navigation]);
+
+  const handleViewActivity = useCallback((activity: Activity) => {
+    setActivitiesModalVisible(false);
+    navigation.navigate('ActivityDetail', { activityId: activity.id, from: 'Home' });
+  }, [navigation]);
+
+  const handleViewShift = useCallback((shift: Shift) => {
+    setWorkHoursModalVisible(false);
+    setDetailShift(shift);
+  }, []);
+
+  const handleViewTask = useCallback((task: Task) => {
+    setTasksModalVisible(false);
+    navigation.navigate('TaskDetail', { taskId: task.id, from: 'Home' });
+  }, [navigation]);
 
   const total = liveUsers.length;
   const active = statusCounts.active;
@@ -272,7 +288,7 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
                     />
                   </View>
                   <TouchableOpacity
-                    onPress={() => setShiftModalVisible(true)}
+                    onPress={() => setDetailShift(currentShift)}
                     activeOpacity={0.7}
                     accessibilityRole="button"
                     style={styles.absensiDetailLink}
@@ -415,22 +431,25 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
       </View>
 
       {/* Personal data modals */}
-      <ShiftDetailModal visible={shiftModalVisible} onClose={() => setShiftModalVisible(false)} shift={currentShift} />
+      <ShiftDetailModal visible={detailShift !== null} onClose={() => setDetailShift(null)} shift={detailShift} />
       <TodayActivitiesModal
         visible={activitiesModalVisible}
         onClose={() => setActivitiesModalVisible(false)}
         activities={Array.isArray(activitiesList) ? activitiesList.filter((a) => isToday(a.created_at)) : []}
+        onActivityPress={handleViewActivity}
       />
       <TodayWorkHoursModal
         visible={workHoursModalVisible}
         onClose={() => setWorkHoursModalVisible(false)}
         shifts={todayShifts}
+        onShiftPress={handleViewShift}
       />
       {isTaskReceiver && (
         <TodayTasksModal
           visible={tasksModalVisible}
           onClose={() => setTasksModalVisible(false)}
           tasks={activeTasks}
+          onTaskPress={handleViewTask}
         />
       )}
     </NBBackgroundPattern>

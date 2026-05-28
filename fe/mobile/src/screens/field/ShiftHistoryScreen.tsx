@@ -124,7 +124,6 @@ function ShiftFilterModal({
       visible={visible}
       onClose={onClose}
       title="Filter Riwayat Shift"
-      autoSize
       footer={
         <View style={modalStyles.footer}>
           <TouchableOpacity

@@ -201,18 +201,17 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
         </View>
 
         <View style={styles.bottomSpacer} />
-
-        <ChangePasswordModal
-          visible={isChangePasswordModalVisible}
-          onClose={() => setIsChangePasswordModalVisible(false)}
-        />
       </ScrollView>
+
+      <ChangePasswordModal
+        visible={isChangePasswordModalVisible}
+        onClose={() => setIsChangePasswordModalVisible(false)}
+      />
 
       <NBModal
         visible={isAboutModalVisible}
         onClose={() => setIsAboutModalVisible(false)}
         title="Tentang SEKAR"
-        size="sm"
       >
         <NBText variant="body" style={{ marginBottom: 8 }}>
           Sistem Evaluasi Kerja Satgas RTH

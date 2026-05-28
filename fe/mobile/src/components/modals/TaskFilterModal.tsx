@@ -295,8 +295,6 @@ export function TaskFilterModal({
       visible={visible}
       onClose={onClose}
       title="Filter Tugas"
-      size="lg"
-      scrollable
       footer={
         <View style={styles.actionButtons}>
           <TouchableOpacity

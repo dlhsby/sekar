@@ -34,11 +34,14 @@ describe('ChangePasswordModal', () => {
     });
 
     it('should not render modal when visible is false', () => {
-      const { queryByText } = render(
+      const { queryByText, queryByLabelText } = render(
         <ChangePasswordModal visible={false} onClose={mockOnClose} />
       );
 
+      // Regression guard: the sheet must stay closed until explicitly opened
+      // (previously it auto-opened when nested inside a parent ScrollView).
       expect(queryByText('Password Saat Ini')).toBeNull();
+      expect(queryByLabelText('Tutup')).toBeNull();
     });
 
     it('should render all form fields', () => {
@@ -52,12 +55,13 @@ describe('ChangePasswordModal', () => {
     });
 
     it('should render action buttons', () => {
-      const { getAllByText, getByText } = render(
+      const { getAllByText, getByText, getByTestId } = render(
         <ChangePasswordModal visible={true} onClose={mockOnClose} />
       );
 
-      expect(getByText('UBAH PASSWORD')).toBeTruthy(); // Title (uppercased by NBModal)
-      expect(getByText('Ubah Password')).toBeTruthy(); // Submit button
+      // Title and submit button share the label "Ubah Password" (rendered as-is)
+      expect(getAllByText('Ubah Password').length).toBeGreaterThan(0);
+      expect(getByTestId('change-password-submit')).toBeTruthy();
       expect(getByText('Batal')).toBeTruthy();
     });
 
@@ -72,11 +76,11 @@ describe('ChangePasswordModal', () => {
 
   describe('Form Validation', () => {
     it('should show error when current password is empty', async () => {
-      const { getAllByText, getByText, getByPlaceholderText } = render(
+      const { getByText, getByPlaceholderText, getByTestId } = render(
         <ChangePasswordModal visible={true} onClose={mockOnClose} />
       );
 
-      const submitButton = getByText('Ubah Password'); // title is UBAH PASSWORD (uppercased by NBModal)
+      const submitButton = getByTestId('change-password-submit');
       fireEvent.press(submitButton);
 
       await waitFor(() => {
@@ -85,14 +89,14 @@ describe('ChangePasswordModal', () => {
     });
 
     it('should show error when new password is empty', async () => {
-      const { getAllByText, getByText, getByPlaceholderText } = render(
+      const { getByText, getByPlaceholderText, getByTestId } = render(
         <ChangePasswordModal visible={true} onClose={mockOnClose} />
       );
 
       const currentPasswordInput = getByPlaceholderText('Masukkan password saat ini');
       fireEvent.changeText(currentPasswordInput, 'oldPassword123');
 
-      const submitButton = getByText('Ubah Password'); // title is UBAH PASSWORD (uppercased by NBModal)
+      const submitButton = getByTestId('change-password-submit');
       fireEvent.press(submitButton);
 
       await waitFor(() => {
@@ -101,7 +105,7 @@ describe('ChangePasswordModal', () => {
     });
 
     it('should show error when new password is too short', async () => {
-      const { getAllByText, getByText, getByPlaceholderText } = render(
+      const { getByText, getByPlaceholderText, getByTestId } = render(
         <ChangePasswordModal visible={true} onClose={mockOnClose} />
       );
 
@@ -111,7 +115,7 @@ describe('ChangePasswordModal', () => {
       const newPasswordInput = getByPlaceholderText('Masukkan password baru (min. 6 karakter)');
       fireEvent.changeText(newPasswordInput, '12345');
 
-      const submitButton = getByText('Ubah Password'); // title is UBAH PASSWORD (uppercased by NBModal)
+      const submitButton = getByTestId('change-password-submit');
       fireEvent.press(submitButton);
 
       await waitFor(() => {
@@ -120,7 +124,7 @@ describe('ChangePasswordModal', () => {
     });
 
     it('should show error when new password is same as current password', async () => {
-      const { getAllByText, getByText, getByPlaceholderText } = render(
+      const { getByText, getByPlaceholderText, getByTestId } = render(
         <ChangePasswordModal visible={true} onClose={mockOnClose} />
       );
 
@@ -130,7 +134,7 @@ describe('ChangePasswordModal', () => {
       const newPasswordInput = getByPlaceholderText('Masukkan password baru (min. 6 karakter)');
       fireEvent.changeText(newPasswordInput, 'samePassword123');
 
-      const submitButton = getByText('Ubah Password'); // title is UBAH PASSWORD (uppercased by NBModal)
+      const submitButton = getByTestId('change-password-submit');
       fireEvent.press(submitButton);
 
       await waitFor(() => {
@@ -139,7 +143,7 @@ describe('ChangePasswordModal', () => {
     });
 
     it('should show error when confirm password does not match', async () => {
-      const { getAllByText, getByText, getByPlaceholderText } = render(
+      const { getByText, getByPlaceholderText, getByTestId } = render(
         <ChangePasswordModal visible={true} onClose={mockOnClose} />
       );
 
@@ -152,7 +156,7 @@ describe('ChangePasswordModal', () => {
       const confirmPasswordInput = getByPlaceholderText('Ketik ulang password baru');
       fireEvent.changeText(confirmPasswordInput, 'differentPassword123');
 
-      const submitButton = getByText('Ubah Password'); // title is UBAH PASSWORD (uppercased by NBModal)
+      const submitButton = getByTestId('change-password-submit');
       fireEvent.press(submitButton);
 
       await waitFor(() => {
@@ -161,7 +165,7 @@ describe('ChangePasswordModal', () => {
     });
 
     it('should show error when confirm password is empty', async () => {
-      const { getAllByText, getByText, getByPlaceholderText } = render(
+      const { getByText, getByPlaceholderText, getByTestId } = render(
         <ChangePasswordModal visible={true} onClose={mockOnClose} />
       );
 
@@ -171,7 +175,7 @@ describe('ChangePasswordModal', () => {
       const newPasswordInput = getByPlaceholderText('Masukkan password baru (min. 6 karakter)');
       fireEvent.changeText(newPasswordInput, 'newPassword123');
 
-      const submitButton = getByText('Ubah Password'); // title is UBAH PASSWORD (uppercased by NBModal)
+      const submitButton = getByTestId('change-password-submit');
       fireEvent.press(submitButton);
 
       await waitFor(() => {
@@ -241,7 +245,7 @@ describe('ChangePasswordModal', () => {
         data: undefined,
       });
 
-      const { getAllByText, getByText, getByPlaceholderText } = render(
+      const { getByText, getByPlaceholderText, getByTestId } = render(
         <ChangePasswordModal visible={true} onClose={mockOnClose} />
       );
 
@@ -254,7 +258,7 @@ describe('ChangePasswordModal', () => {
       const confirmPasswordInput = getByPlaceholderText('Ketik ulang password baru');
       fireEvent.changeText(confirmPasswordInput, 'newPassword123');
 
-      const submitButton = getByText('Ubah Password'); // title is UBAH PASSWORD (uppercased by NBModal)
+      const submitButton = getByTestId('change-password-submit');
       fireEvent.press(submitButton);
 
       await waitFor(() => {
@@ -267,7 +271,7 @@ describe('ChangePasswordModal', () => {
         data: undefined,
       });
 
-      const { getAllByText, getByText, getByPlaceholderText } = render(
+      const { getByText, getByPlaceholderText, getByTestId } = render(
         <ChangePasswordModal visible={true} onClose={mockOnClose} />
       );
 
@@ -280,7 +284,7 @@ describe('ChangePasswordModal', () => {
       const confirmPasswordInput = getByPlaceholderText('Ketik ulang password baru');
       fireEvent.changeText(confirmPasswordInput, 'newPassword123');
 
-      const submitButton = getByText('Ubah Password'); // title is UBAH PASSWORD (uppercased by NBModal)
+      const submitButton = getByTestId('change-password-submit');
       fireEvent.press(submitButton);
 
       await waitFor(() => {
@@ -295,7 +299,7 @@ describe('ChangePasswordModal', () => {
 
       jest.useFakeTimers();
 
-      const { getAllByText, getByText, getByPlaceholderText } = render(
+      const { getByText, getByPlaceholderText, getByTestId } = render(
         <ChangePasswordModal visible={true} onClose={mockOnClose} />
       );
 
@@ -308,7 +312,7 @@ describe('ChangePasswordModal', () => {
       const confirmPasswordInput = getByPlaceholderText('Ketik ulang password baru');
       fireEvent.changeText(confirmPasswordInput, 'newPassword123');
 
-      const submitButton = getByText('Ubah Password'); // title is UBAH PASSWORD (uppercased by NBModal)
+      const submitButton = getByTestId('change-password-submit');
       fireEvent.press(submitButton);
 
       await waitFor(
@@ -338,7 +342,7 @@ describe('ChangePasswordModal', () => {
         error: 'Password saat ini salah',
       });
 
-      const { getAllByText, getByText, getByPlaceholderText } = render(
+      const { getByText, getByPlaceholderText, getByTestId } = render(
         <ChangePasswordModal visible={true} onClose={mockOnClose} />
       );
 
@@ -351,7 +355,7 @@ describe('ChangePasswordModal', () => {
       const confirmPasswordInput = getByPlaceholderText('Ketik ulang password baru');
       fireEvent.changeText(confirmPasswordInput, 'newPassword123');
 
-      const submitButton = getByText('Ubah Password'); // title is UBAH PASSWORD (uppercased by NBModal)
+      const submitButton = getByTestId('change-password-submit');
       fireEvent.press(submitButton);
 
       await waitFor(() => {
@@ -379,7 +383,7 @@ describe('ChangePasswordModal', () => {
       const confirmPasswordInput = getByPlaceholderText('Ketik ulang password baru');
       fireEvent.changeText(confirmPasswordInput, 'newPassword123');
 
-      const submitButton = getByText('Ubah Password');
+      const submitButton = getByTestId('change-password-submit');
       fireEvent.press(submitButton);
 
       await waitFor(() => {
@@ -395,7 +399,7 @@ describe('ChangePasswordModal', () => {
 
       jest.spyOn(usersApi, 'changePassword').mockReturnValue(promise);
 
-      const { getByText, getByPlaceholderText } = render(
+      const { getByPlaceholderText, getByTestId } = render(
         <ChangePasswordModal visible={true} onClose={mockOnClose} />
       );
 
@@ -408,7 +412,7 @@ describe('ChangePasswordModal', () => {
       const confirmPasswordInput = getByPlaceholderText('Ketik ulang password baru');
       fireEvent.changeText(confirmPasswordInput, 'newPassword123');
 
-      const submitButton = getByText('Ubah Password');
+      const submitButton = getByTestId('change-password-submit');
       fireEvent.press(submitButton);
 
       // Press again while loading
@@ -470,7 +474,7 @@ describe('ChangePasswordModal', () => {
 
       jest.spyOn(usersApi, 'changePassword').mockReturnValue(promise);
 
-      const { getByText, getByPlaceholderText, getByLabelText } = render(
+      const { getByPlaceholderText, getByLabelText, getByTestId } = render(
         <ChangePasswordModal visible={true} onClose={mockOnClose} />
       );
 
@@ -483,7 +487,7 @@ describe('ChangePasswordModal', () => {
       const confirmPasswordInput = getByPlaceholderText('Ketik ulang password baru');
       fireEvent.changeText(confirmPasswordInput, 'newPassword123');
 
-      const submitButton = getByText('Ubah Password');
+      const submitButton = getByTestId('change-password-submit');
       fireEvent.press(submitButton);
 
       const closeButton = getByLabelText('Tutup');

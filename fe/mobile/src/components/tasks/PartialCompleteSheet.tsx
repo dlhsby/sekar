@@ -134,8 +134,6 @@ export function PartialCompleteSheet({
       onClose={handleClose}
       title="Selesai Sebagian"
       type="sheet"
-      size="md"
-      scrollable
       avoidKeyboard
       footer={footer}
       testID="partial-complete-sheet"

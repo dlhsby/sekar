@@ -65,7 +65,7 @@ export type { NBTextProps, NBTextVariant, NBTextColor, NBTextAlign } from './NBT
 
 // Modal (Phase 3 M1-R 3-R3)
 export { NBModal } from './NBModal';
-export type { NBModalProps, NBModalType, NBModalSize } from './NBModal';
+export type { NBModalProps, NBModalType } from './NBModal';
 
 // Toast (Phase 3 M1-R 3-R3)
 export { NBToast, NBToastProvider, nbToastConfig } from './NBToast';
@@ -74,3 +74,9 @@ export type { NBToastOptions, NBToastLevel } from './NBToast';
 // Collapsible Card
 export { NBCollapsibleCard } from './NBCollapsibleCard';
 export type { NBCollapsibleCardProps } from './NBCollapsibleCard';
+
+// Page Header (global screen-edge spacing rule)
+export { NBPageHeader } from './NBPageHeader';
+
+// FAB Bar (standard FAB container — sm top gap, sm bottom edge)
+export { NBFabBar, NB_FAB_BAR_HEIGHT } from './NBFabBar';

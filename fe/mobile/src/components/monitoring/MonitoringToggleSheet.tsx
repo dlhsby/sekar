@@ -62,7 +62,6 @@ export function MonitoringToggleSheet({
       onClose={onClose}
       title="Tampilan Peta"
       type="sheet"
-      size="sm"
     >
       {LAYER_ROWS.map((row, idx) => (
         <LayerToggleRow

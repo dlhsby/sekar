@@ -26,7 +26,7 @@ import { formatTime, calculateDuration, isToday } from '../../utils/dateUtils';
 import { ACTIVE_TASK_STATUSES } from '../../utils/taskStatus';
 import { useLocationPermission } from '../../hooks';
 import { useHomeLocation } from '../../hooks/useHomeLocation';
-import type { Activity, Task } from '../../types/models.types';
+import type { Activity, Task, Shift } from '../../types/models.types';
 
 /**
  * Field Home Screen (hi-fi HOME-1) — dashboard for clockable field roles
@@ -62,7 +62,7 @@ export function FieldHomeScreen(): React.JSX.Element {
   const [shiftExpanded, setShiftExpanded] = useState(false);
 
   // Modal states
-  const [shiftModalVisible, setShiftModalVisible] = useState(false);
+  const [detailShift, setDetailShift] = useState<Shift | null>(null);
   const [activitiesModalVisible, setActivitiesModalVisible] = useState(false);
   const [workHoursModalVisible, setWorkHoursModalVisible] = useState(false);
   const [tasksModalVisible, setTasksModalVisible] = useState(false);
@@ -233,10 +233,15 @@ export function FieldHomeScreen(): React.JSX.Element {
     }
   };
 
-  const handleViewActivities = useCallback((_activity: Activity) => {
+  const handleViewActivities = useCallback((activity: Activity) => {
     setActivitiesModalVisible(false);
-    navigation.navigate('Activities' as never);
+    navigation.navigate('ActivityDetail', { activityId: activity.id, from: 'Home' });
   }, [navigation]);
+
+  const handleViewShift = useCallback((shift: Shift) => {
+    setWorkHoursModalVisible(false);
+    setDetailShift(shift);
+  }, []);
 
   const openTask = useCallback((task: Task) => {
     setTasksModalVisible(false);
@@ -369,7 +374,7 @@ export function FieldHomeScreen(): React.JSX.Element {
                     </View>
                   )}
                   <TouchableOpacity
-                    onPress={() => setShiftModalVisible(true)}
+                    onPress={() => setDetailShift(currentShift)}
                     activeOpacity={0.7}
                     accessibilityRole="button"
                     style={styles.heroDetailLink}
@@ -444,14 +449,19 @@ export function FieldHomeScreen(): React.JSX.Element {
       </View>
 
       {/* Modals */}
-      <ShiftDetailModal visible={shiftModalVisible} onClose={() => setShiftModalVisible(false)} shift={currentShift} />
+      <ShiftDetailModal visible={detailShift !== null} onClose={() => setDetailShift(null)} shift={detailShift} />
       <TodayActivitiesModal
         visible={activitiesModalVisible}
         onClose={() => setActivitiesModalVisible(false)}
         activities={activitiesList.filter((activity) => isToday(activity.created_at))}
         onActivityPress={handleViewActivities}
       />
-      <TodayWorkHoursModal visible={workHoursModalVisible} onClose={() => setWorkHoursModalVisible(false)} shifts={todayShifts} />
+      <TodayWorkHoursModal
+        visible={workHoursModalVisible}
+        onClose={() => setWorkHoursModalVisible(false)}
+        shifts={todayShifts}
+        onShiftPress={handleViewShift}
+      />
       <TodayTasksModal
         visible={tasksModalVisible}
         onClose={() => setTasksModalVisible(false)}

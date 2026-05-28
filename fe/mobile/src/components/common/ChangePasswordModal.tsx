@@ -126,8 +126,6 @@ export function ChangePasswordModal({
       visible={visible}
       onClose={handleClose}
       title="Ubah Password"
-      size="lg"
-      scrollable
       avoidKeyboard
       footer={
         <View style={styles.actions}>

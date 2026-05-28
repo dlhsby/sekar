@@ -148,8 +148,6 @@ export function PruningRequestFilterModal({
       visible={visible}
       onClose={onClose}
       title="Filter Permohonan"
-      size="lg"
-      scrollable
       footer={
         <View style={styles.actionButtons}>
           <TouchableOpacity

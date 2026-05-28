@@ -62,15 +62,15 @@ describe('TaskFilterModal', () => {
         <TaskFilterModal {...DEFAULT_PROPS} visible={false} />,
       );
 
-      expect(queryByText('FILTER TUGAS')).toBeNull();
+      expect(queryByText('Filter Tugas')).toBeNull();
     });
 
-    it('shows modal title FILTER TUGAS when visible is true', () => {
+    it('shows modal title Filter Tugas when visible is true', () => {
       const { getByText } = render(
         <TaskFilterModal {...DEFAULT_PROPS} visible={true} />,
       );
 
-      expect(getByText('FILTER TUGAS')).toBeTruthy();
+      expect(getByText('Filter Tugas')).toBeTruthy();
     });
 
     it('shows Penugasan section label when visible', () => {
@@ -720,11 +720,11 @@ describe('TaskFilterModal', () => {
 
       // Pressing the inner content area (title area) should not trigger onClose
       await act(async () => {
-        fireEvent.press(getByText('FILTER TUGAS'));
+        fireEvent.press(getByText('Filter Tugas'));
       });
 
       // The modal should still be visible
-      expect(getByText('FILTER TUGAS')).toBeTruthy();
+      expect(getByText('Filter Tugas')).toBeTruthy();
     });
   });
 

@@ -308,7 +308,7 @@ describe('ProfileScreen', () => {
         fireEvent.press(getByText('Tentang Aplikasi'));
       });
       await waitFor(() => {
-        expect(getByText('TENTANG SEKAR')).toBeTruthy();
+        expect(getByText('Tentang SEKAR')).toBeTruthy();
         expect(getByText('Sistem Evaluasi Kerja Satgas RTH')).toBeTruthy();
       });
     });

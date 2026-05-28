@@ -677,24 +677,30 @@ Three new mobile NB components ship in Phase 3 M1-R sub-phase 3-R3 to complete t
 
 ```tsx
 <NBModal
-  type="sheet" | "fullscreen"
+  type="sheet" | "fullscreen"   // default "sheet"
   visible={boolean}
   onClose={() => void}
-  snapPoints={['45%']}      // sheet only; default 45%
-  title?: string             // optional NB title bar (uppercase + Lucide back icon)
-  scrollable?: boolean       // sheet content; default true
-  footer?: React.ReactNode   // sticky footer (typically NBButton primary)
+  title?: string                 // optional NB title bar (rendered as-is, with close/back icon)
+  footer?: React.ReactNode       // sticky footer (action buttons); body scrolls beneath it
+  noPadding?: boolean            // edge-to-edge body (maps, option lists)
+  avoidKeyboard?: boolean        // keep footer/inputs above the keyboard
+  headerRight?: React.ReactNode  // fullscreen only — slot right of the title
+  scrollable?: boolean           // fullscreen only — wrap body in a ScrollView (sheets always scroll)
 >
   {children}
 </NBModal>
 ```
 
-**Variants:**
-- **`type="sheet"`** — bottom sheet for ≤50 % viewport content (filter sheets, partial-complete confirmations, convert-to-task forms, area detail drawer). Snaps to provided `snapPoints` (default `['45%']`); supports `['10%','45%','90%']` for drag-up monitoring detail. Hard-edge top border (3 px), shadow `0 -4px 0 #1C1917`, 4-px gray grabber. Backdrop tap closes; `Esc` (RN keyboard event) closes.
-- **`type="fullscreen"`** — RN `<Modal>` with NB chrome for complex forms: species autocomplete (131-row fuzzy match), `PartialCompleteSheet`, `ConvertToTaskSheet`, seed transaction form, photo picker, image gallery viewer.
+**Sizing (sheet):** a single auto behavior — the sheet **hugs its content** (small content → small sheet) via gorhom `enableDynamicSizing`, and **grows up to `screenHeight − top safe-area inset`** (above the app header, status bar still visible). Once content exceeds that cap the **body scrolls** while the **title and footer stay fixed**. There is no `size`/`snapPoints`/`autoSize` knob — sizing is automatic and consistent across every sheet. (Removed in the Phase 4 modal-consistency pass.)
 
-**States:** open / closed; opening animation 200 ms ease-out; closing 250 ms ease-in.
-**Accessibility:** focus trap when open; `Esc` closes; backdrop has `accessibilityLabel="Tutup modal"`; sheet grabber has `accessibilityRole="adjustable"` + `accessibilityActions={['increment','decrement']}` to expose snap-point changes to screen readers.
+**Variants:**
+- **`type="sheet"`** — bottom sheet (filter sheets, Ringkasan Hari Ini summaries, sort/option pickers, partial-complete + convert-to-task forms, detail drawers, change-password). Built on gorhom **`BottomSheetModal`** (portaled), so it floats **above everything including the navigation header** — requires `<BottomSheetModalProvider>` near the app root (mounted in `App.tsx` inside `GestureHandlerRootView`). Title is a fixed top overlay; footer uses gorhom `BottomSheetFooter` (sticky, keyboard-aware). Hard-edge top border (2 px), shadow `lg`, gray grabber. A standard `md` (16 px) gap separates the content from both the fixed title bar (top) and the sticky footer (bottom). The footer's reserved space includes the safe-area bottom inset from first open (estimated up-front, then corrected via `onLayout`) so the last content row is never clipped behind the footer on the initial open.
+- **`type="fullscreen"`** — RN `<Modal>` with NB chrome for full-viewport content: map pin-pickers, availability calendar, monitoring filter. Use `scrollable` for long forms; leave it off when the body must fill the viewport (maps/calendars).
+
+**Dismissal:** all paths dismiss to `onClose` — close (X) / back icon, swipe-down (`enablePanDownToClose`), backdrop tap, action buttons (consumer calls `onClose`), **Android hardware back**, and **navigating away** (sheet closes on unmount).
+
+**States:** open / closed; gorhom spring animation on the sheet; fullscreen uses `animationType="fade"`.
+**Accessibility:** close button `accessibilityLabel="Tutup"`; fullscreen back button `accessibilityLabel="Kembali"`; backdrop tap closes.
 
 ### NBToast
 

@@ -207,8 +207,6 @@ export function OvertimeFilterModal({
       visible={visible}
       onClose={onClose}
       title="Filter Lembur"
-      size="lg"
-      scrollable
       footer={
         <View style={styles.actionButtons}>
           <TouchableOpacity
