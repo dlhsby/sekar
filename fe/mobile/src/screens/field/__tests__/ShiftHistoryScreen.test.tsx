@@ -28,12 +28,48 @@ jest.mock('../../../utils/tokenUtils', () => ({
 // Mock MaterialCommunityIcons
 jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => 'MockIcon');
 
-describe('ShiftHistoryScreen', () => {
-  const mockNavigation = {
-    navigate: jest.fn(),
-    setOptions: jest.fn(),
-    goBack: jest.fn(),
+// Mock NBModal and NBDatePicker (used by ShiftFilterModal inside ShiftHistoryScreen)
+jest.mock('../../../components/nb', () => {
+  const React = require('react');
+  const { View, Text } = require('react-native');
+  return {
+    NBEmptyState: ({ title, description, ctaLabel, onCTA, variant }: any) =>
+      React.createElement(View, { testID: `empty-state-${variant}` },
+        React.createElement(Text, null, title),
+        description ? React.createElement(Text, null, description) : null,
+        ctaLabel ? React.createElement(Text, { onPress: onCTA }, ctaLabel) : null,
+      ),
+    NBBackgroundPattern: ({ children }: any) => React.createElement(View, null, children),
+    NBText: ({ children, variant, color, uppercase, style, numberOfLines }: any) =>
+      React.createElement(Text, { style }, children),
+    NBModal: ({ visible, children, footer }: any) =>
+      visible
+        ? React.createElement(View, null, children, footer)
+        : null,
+    NBDatePicker: ({ label, value, onChange }: any) =>
+      React.createElement(Text, null, label),
   };
+});
+
+// Mock ShiftDetailModal to avoid bottom-sheet and complex modal rendering
+jest.mock('../../../components/modals/ShiftDetailModal', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return {
+    ShiftDetailModal: ({ visible }: any) =>
+      visible ? React.createElement(View, { testID: 'shift-detail-modal' }) : null,
+  };
+});
+
+describe('ShiftHistoryScreen', () => {
+  // Build ISO strings for today so they always fall within "this week" (the
+  // default filter) regardless of when the tests are run.
+  const makeToday = (hours: number, minutes = 0) => {
+    const d = new Date();
+    d.setHours(hours, minutes, 0, 0);
+    return d.toISOString();
+  };
+
   const mockShifts = [
     {
       id: 1,
@@ -56,14 +92,14 @@ describe('ShiftHistoryScreen', () => {
         created_at: '2026-01-01T00:00:00Z',
         updated_at: '2026-01-01T00:00:00Z',
       },
-      clock_in_time: '2026-01-20T08:00:00Z',
-      clock_out_time: '2026-01-20T16:30:00Z',
+      clock_in_time: makeToday(8, 0),    // today 08:00 (within this week)
+      clock_out_time: makeToday(16, 30), // today 16:30 → 8h30m duration
       clock_in_gps_lat: -7.2905,
       clock_in_gps_lng: 112.7398,
       clock_out_gps_lat: -7.2905,
       clock_out_gps_lng: 112.7398,
-      created_at: '2026-01-20T08:00:00Z',
-      updated_at: '2026-01-20T16:30:00Z',
+      created_at: makeToday(8, 0),
+      updated_at: makeToday(16, 30),
     },
     {
       id: 2,
@@ -86,14 +122,14 @@ describe('ShiftHistoryScreen', () => {
         created_at: '2026-01-01T00:00:00Z',
         updated_at: '2026-01-01T00:00:00Z',
       },
-      clock_in_time: '2026-01-19T07:30:00Z',
-      clock_out_time: '2026-01-19T15:00:00Z',
+      clock_in_time: makeToday(7, 30),
+      clock_out_time: makeToday(15, 0),
       clock_in_gps_lat: -7.2905,
       clock_in_gps_lng: 112.7398,
       clock_out_gps_lat: -7.2905,
       clock_out_gps_lng: 112.7398,
-      created_at: '2026-01-19T07:30:00Z',
-      updated_at: '2026-01-19T15:00:00Z',
+      created_at: makeToday(7, 30),
+      updated_at: makeToday(15, 0),
     },
     {
       id: 3,
@@ -116,12 +152,12 @@ describe('ShiftHistoryScreen', () => {
         created_at: '2026-01-01T00:00:00Z',
         updated_at: '2026-01-01T00:00:00Z',
       },
-      clock_in_time: '2026-01-18T08:15:00Z',
+      clock_in_time: makeToday(8, 15),
       clock_out_time: null, // Active shift
       clock_in_gps_lat: -7.2800,
       clock_in_gps_lng: 112.7400,
-      created_at: '2026-01-18T08:15:00Z',
-      updated_at: '2026-01-18T08:15:00Z',
+      created_at: makeToday(8, 15),
+      updated_at: makeToday(8, 15),
     },
   ];
 
@@ -134,7 +170,7 @@ describe('ShiftHistoryScreen', () => {
       // Never-resolving promise keeps component in loading state
       (shiftsApi.getMyShifts as jest.Mock).mockReturnValue(new Promise(() => {}));
 
-      const { getByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+      const { getByText } = render(<ShiftHistoryScreen />);
 
       // isLoading defaults to true, so loading text shows on initial render
       expect(getByText('Memuat riwayat shift...')).toBeTruthy();
@@ -152,7 +188,7 @@ describe('ShiftHistoryScreen', () => {
     it(
       'should display shifts list after loading',
       async () => {
-        const { getAllByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+        const { getAllByText } = render(<ShiftHistoryScreen />);
 
         await waitFor(
           () => {
@@ -166,7 +202,7 @@ describe('ShiftHistoryScreen', () => {
     );
 
     it('should display area type for each shift', async () => {
-      const { getAllByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+      const { getAllByText } = render(<ShiftHistoryScreen />);
 
       await waitFor(() => {
         expect(getAllByText('Taman').length).toBeGreaterThan(0);
@@ -174,7 +210,7 @@ describe('ShiftHistoryScreen', () => {
     });
 
     it('should display different area shifts', async () => {
-      const { getByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+      const { getByText } = render(<ShiftHistoryScreen />);
 
       await waitFor(() => {
         expect(getByText('Pedestrian Darmo')).toBeTruthy();
@@ -182,7 +218,7 @@ describe('ShiftHistoryScreen', () => {
     });
 
     it('should show status badge for active shift', async () => {
-      const { getByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+      const { getByText } = render(<ShiftHistoryScreen />);
 
       await waitFor(() => {
         expect(getByText('AKTIF')).toBeTruthy();
@@ -190,7 +226,7 @@ describe('ShiftHistoryScreen', () => {
     });
 
     it('should show status badge for completed shift', async () => {
-      const { getAllByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+      const { getAllByText } = render(<ShiftHistoryScreen />);
 
       await waitFor(() => {
         const selesaiBadges = getAllByText('SELESAI');
@@ -199,16 +235,16 @@ describe('ShiftHistoryScreen', () => {
     });
 
     it('should show summary card with total shifts', async () => {
-      const { getByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+      const { getByText } = render(<ShiftHistoryScreen />);
 
       await waitFor(() => {
         expect(getByText('TOTAL SHIFT')).toBeTruthy();
-        expect(getByText('3')).toBeTruthy(); // 3 shifts
+        expect(getByText('3')).toBeTruthy(); // 3 shifts visible (within this week)
       });
     });
 
     it('should show summary card with total hours', async () => {
-      const { getByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+      const { getByText } = render(<ShiftHistoryScreen />);
 
       await waitFor(() => {
         expect(getByText('TOTAL JAM')).toBeTruthy();
@@ -216,7 +252,7 @@ describe('ShiftHistoryScreen', () => {
     });
 
     it('should display clock-in time for shifts', async () => {
-      const { getAllByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+      const { getAllByText } = render(<ShiftHistoryScreen />);
 
       await waitFor(() => {
         expect(getAllByText('CLOCK IN').length).toBe(3);
@@ -224,7 +260,7 @@ describe('ShiftHistoryScreen', () => {
     });
 
     it('should display clock-out time for completed shifts', async () => {
-      const { getAllByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+      const { getAllByText } = render(<ShiftHistoryScreen />);
 
       await waitFor(() => {
         expect(getAllByText('CLOCK OUT').length).toBe(3);
@@ -232,7 +268,7 @@ describe('ShiftHistoryScreen', () => {
     });
 
     it('should display duration for shifts', async () => {
-      const { getAllByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+      const { getAllByText } = render(<ShiftHistoryScreen />);
 
       await waitFor(() => {
         expect(getAllByText('DURASI').length).toBe(3);
@@ -240,7 +276,7 @@ describe('ShiftHistoryScreen', () => {
     });
 
     it('should show "--:--" for active shift clock-out time', async () => {
-      const { getByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+      const { getByText } = render(<ShiftHistoryScreen />);
 
       await waitFor(() => {
         expect(getByText('--:--')).toBeTruthy();
@@ -248,7 +284,7 @@ describe('ShiftHistoryScreen', () => {
     });
 
     it('should show active badge for active shift', async () => {
-      const { getByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+      const { getByText } = render(<ShiftHistoryScreen />);
 
       await waitFor(() => {
         expect(getByText('AKTIF')).toBeTruthy();
@@ -263,7 +299,7 @@ describe('ShiftHistoryScreen', () => {
         error: null,
       });
 
-      const { getByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+      const { getByText } = render(<ShiftHistoryScreen />);
 
       await waitFor(() => {
         expect(getByText('Belum Ada Riwayat Shift')).toBeTruthy();
@@ -276,7 +312,7 @@ describe('ShiftHistoryScreen', () => {
         error: null,
       });
 
-      const { getByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+      const { getByText } = render(<ShiftHistoryScreen />);
 
       await waitFor(() => {
         expect(
@@ -293,7 +329,7 @@ describe('ShiftHistoryScreen', () => {
         error: 'Gagal memuat data',
       });
 
-      const { getByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+      const { getByText } = render(<ShiftHistoryScreen />);
 
       await waitFor(() => {
         expect(getByText('Gagal memuat data')).toBeTruthy();
@@ -306,7 +342,7 @@ describe('ShiftHistoryScreen', () => {
         error: 'Network error',
       });
 
-      const { getByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+      const { getByText } = render(<ShiftHistoryScreen />);
 
       await waitFor(() => {
         expect(getByText('Coba Lagi')).toBeTruthy();
@@ -318,7 +354,7 @@ describe('ShiftHistoryScreen', () => {
         .mockResolvedValueOnce({ data: null, error: 'Network error' })
         .mockResolvedValueOnce({ data: mockShifts, error: null });
 
-      const { getByText, getAllByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+      const { getByText, getAllByText } = render(<ShiftHistoryScreen />);
 
       await waitFor(() => {
         expect(getByText('Coba Lagi')).toBeTruthy();
@@ -335,50 +371,44 @@ describe('ShiftHistoryScreen', () => {
   });
 
   describe('Pull to Refresh', () => {
-    it('should call getMyShifts on refresh', async () => {
+    it('should call getMyShifts on initial load', async () => {
       (shiftsApi.getMyShifts as jest.Mock).mockResolvedValue({
         data: mockShifts,
         error: null,
       });
 
-      const { getByTestId, UNSAFE_getByType } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+      render(<ShiftHistoryScreen />);
 
       await waitFor(() => {
         expect(shiftsApi.getMyShifts).toHaveBeenCalledTimes(1);
       });
-
-      // Note: Testing RefreshControl is complex in React Native Testing Library
-      // This test verifies initial load - pull-to-refresh would need integration tests
     });
   });
 
   describe('Date Grouping', () => {
-    it('should group shifts by date', async () => {
+    it('should group shifts by month', async () => {
       (shiftsApi.getMyShifts as jest.Mock).mockResolvedValue({
         data: mockShifts,
         error: null,
       });
 
-      const { getAllByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+      const { getAllByText } = render(<ShiftHistoryScreen />);
 
-      // Shifts should be grouped by their dates
-      // Each date should appear as a header
       await waitFor(() => {
-        // Multiple shifts should be displayed grouped by date
-        expect(getAllByText('Taman Bungkul').length).toBe(2); // Two Taman Bungkul shifts
+        expect(getAllByText('Taman Bungkul').length).toBe(2);
       });
     });
   });
 
   describe('Duration Calculation', () => {
     it('should calculate hours correctly for completed shifts', async () => {
-      // First shift: 08:00 to 16:30 = 8h 30m
+      // shift 1: 08:00 → 16:30 = 8h30m
       (shiftsApi.getMyShifts as jest.Mock).mockResolvedValue({
-        data: [mockShifts[0]], // Only first shift (8h 30m)
+        data: [mockShifts[0]],
         error: null,
       });
 
-      const { getByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+      const { getByText } = render(<ShiftHistoryScreen />);
 
       await waitFor(() => {
         expect(getByText('8j 30m')).toBeTruthy();
@@ -388,8 +418,8 @@ describe('ShiftHistoryScreen', () => {
     it('should show short duration format for less than 1 hour', async () => {
       const shortShift = {
         ...mockShifts[0],
-        clock_in_time: '2026-01-20T08:00:00Z',
-        clock_out_time: '2026-01-20T08:45:00Z', // 45 minutes
+        clock_in_time: makeToday(8, 0),
+        clock_out_time: makeToday(8, 45), // 45 minutes
       };
 
       (shiftsApi.getMyShifts as jest.Mock).mockResolvedValue({
@@ -397,7 +427,7 @@ describe('ShiftHistoryScreen', () => {
         error: null,
       });
 
-      const { getByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+      const { getByText } = render(<ShiftHistoryScreen />);
 
       await waitFor(() => {
         expect(getByText('45m')).toBeTruthy();
@@ -412,10 +442,9 @@ describe('ShiftHistoryScreen', () => {
         error: null,
       });
 
-      const { getByText } = render(<ShiftHistoryScreen navigation={mockNavigation} />);
+      const { getByText } = render(<ShiftHistoryScreen />);
 
       await waitFor(() => {
-        // Screen content should be accessible
         expect(getByText('TOTAL SHIFT')).toBeTruthy();
         expect(getByText('TOTAL JAM')).toBeTruthy();
       });

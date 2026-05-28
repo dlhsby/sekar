@@ -26,7 +26,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
 import Geolocation from 'react-native-geolocation-service';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import type { MainTabScreenProps } from '../../types/navigation.types';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import {
@@ -48,11 +47,13 @@ import { locationTracker } from '../../services/location/locationTracker';
 import { setCurrentShift, clockOutSuccess } from '../../store/slices/shiftSlice';
 import { PhotoUploader } from '../../components/common';
 import {
+  NBBadge,
   NBButton,
   NBBackgroundPattern,
   NBSelect,
   NBCardTextInput,
   NBText,
+  NBCollapsibleCard,
 } from '../../components/nb';
 import {
   nbColors,
@@ -63,6 +64,7 @@ import {
   withAlpha,
 } from '../../constants/nbTokens';
 import { GPSLocationSection, ImagePreviewModal } from '../../components/common';
+import { isWithinAreaBoundary } from '../../utils/gpsUtils';
 import type { StartOvertimeRequest, EndOvertimeRequest } from '../../types/api.types';
 import type { Overtime } from '../../types/models.types';
 import type { Coordinates } from '../../types/models.types';
@@ -98,15 +100,17 @@ function formatTime(isoString: string): string {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-// ─── Date hero helpers ────────────────────────────────────────────────────────
+// ─── Time hero helpers (matches ClockInOutScreen) ────────────────────────────
 
-const DATE_HERO_DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-const DATE_HERO_MONTH_NAMES = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+const DAY_NAMES_ID = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const MONTH_NAMES_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
+
+function formatTimeHero(d: Date): string {
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
 
 function formatDateHero(d: Date): string {
-  const day = DATE_HERO_DAY_NAMES[d.getDay()];
-  const month = DATE_HERO_MONTH_NAMES[d.getMonth()];
-  return `${day}, ${d.getDate()} ${month} ${d.getFullYear()}`;
+  return `${DAY_NAMES_ID[d.getDay()]}, ${d.getDate()} ${MONTH_NAMES_ID[d.getMonth()]}`;
 }
 
 // ─── Form Errors ──────────────────────────────────────────────────────────────
@@ -131,6 +135,7 @@ export const OvertimeSubmitScreen: React.FC<
     useNavigation<MainTabScreenProps<'OvertimeSubmit'>['navigation']>();
   const dispatch = useAppDispatch();
   const isSubmitting = useAppSelector(selectOvertimeSubmitting);
+  const assignedArea = useAppSelector((state) => state.auth.assignedArea);
   const { activityTypes, isLoading: loadingActivityTypes } = useActivityTypes();
   const isFocused = useIsFocused();
 
@@ -138,6 +143,12 @@ export const OvertimeSubmitScreen: React.FC<
 
   const [isLoadingActive, setIsLoadingActive] = useState(true);
   const [activeOvertime, setActiveOvertime] = useState<Overtime | null>(null);
+  const [currentTime, setCurrentTime] = useState(() => new Date());
+
+  useEffect(() => {
+    const tick = setInterval(() => setCurrentTime(new Date()), 1_000);
+    return () => clearInterval(tick);
+  }, []);
 
   // ─── Image preview ───────────────────────────────────────────────────────────
 
@@ -147,6 +158,11 @@ export const OvertimeSubmitScreen: React.FC<
 
   const [location, setLocation] = useState<Coordinates | null>(null);
   const [isCapturingLocation, setIsCapturingLocation] = useState(false);
+
+  const isWithinBoundary = useMemo(() => {
+    if (!location || !assignedArea) { return undefined; }
+    return isWithinAreaBoundary(location.latitude, location.longitude, assignedArea);
+  }, [location, assignedArea]);
 
   const captureLocation = useCallback(() => {
     setIsCapturingLocation(true);
@@ -170,8 +186,6 @@ export const OvertimeSubmitScreen: React.FC<
 
   const [startSelfie, setStartSelfie] = useState<Photo | null>(null);
   const [endSelfie, setEndSelfie] = useState<Photo | null>(null);
-  const [isStartSelfieExpanded, setIsStartSelfieExpanded] = useState(false);
-  const [isEndSelfieExpanded, setIsEndSelfieExpanded] = useState(false);
 
   const makeCaptureHandler = useCallback(
     (setSelfie: (photo: Photo) => void) => async () => {
@@ -209,9 +223,11 @@ export const OvertimeSubmitScreen: React.FC<
   useEffect(() => {
     if (activeOvertime !== null || isLoadingActive) { return; }
 
+    let isMounted = true;
+
     AsyncStorage.getItem(DRAFT_KEY)
       .then((raw) => {
-        if (!raw) { return; }
+        if (!isMounted || !raw) { return; }
         const draft = JSON.parse(raw) as StartDraft;
         const age = Date.now() - new Date(draft.savedAt).getTime();
         if (age > DRAFT_MAX_AGE_MS) {
@@ -231,15 +247,15 @@ export const OvertimeSubmitScreen: React.FC<
             {
               text: 'Lanjutkan Draft',
               onPress: () => {
-                setReason(draft.reason);
+                if (isMounted) { setReason(draft.reason); }
               },
             },
           ],
         );
       })
-      .catch(() => {
-        // Ignore storage read errors silently
-      });
+      .catch(() => {});
+
+    return () => { isMounted = false; };
   // Run once after active-overtime check resolves
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoadingActive]);
@@ -529,11 +545,23 @@ export const OvertimeSubmitScreen: React.FC<
           {/* ── STATE A: No active overtime ────────────────────────────────── */}
           {!activeOvertime && (
             <>
-              {/* Date hero */}
-              <View style={styles.dateHero}>
-                <NBText variant="mono-sm" color="gray600" uppercase style={{ letterSpacing: 0.8 }}>TANGGAL</NBText>
-                <NBText variant="h2" color="black" style={{ marginTop: 2 }}>{formatDateHero(new Date())}</NBText>
-              </View>
+              {/* Time hero — matches ClockInOutScreen */}
+              <NBCollapsibleCard
+                style={styles.selfieCard}
+                headerLeft={
+                  <NBText variant="h2" color="black" style={styles.timeHeroTime}>
+                    {formatTimeHero(currentTime)}
+                  </NBText>
+                }
+                headerRight={
+                  <NBText variant="mono-sm" color="gray600">{formatDateHero(currentTime)}</NBText>
+                }
+                accessibilityLabel="Detail waktu"
+              >
+                <NBText variant="body-sm" color="gray600" style={styles.centerText}>
+                  Konfirmasi lokasi GPS untuk memulai lembur
+                </NBText>
+              </NBCollapsibleCard>
 
               {/* Error summary */}
               {Object.values(startErrors).some(Boolean) && (
@@ -545,18 +573,6 @@ export const OvertimeSubmitScreen: React.FC<
                 </View>
               )}
 
-              {/* Subtitle */}
-              <View style={styles.subtitleRow}>
-                <MaterialCommunityIcons
-                  name="clock-plus-outline"
-                  size={20}
-                  color={nbColors.gray600}
-                />
-                <NBText variant="body-sm" color="gray600" style={styles.subtitleText}>
-                  Konfirmasi lokasi GPS untuk memulai lembur
-                </NBText>
-              </View>
-
               {/* Alasan Lembur (optional) */}
               <NBCardTextInput
                 title="ALASAN LEMBUR (OPSIONAL)"
@@ -564,75 +580,91 @@ export const OvertimeSubmitScreen: React.FC<
                 onChangeText={setReason}
                 placeholder="Contoh: Pekerjaan tambahan setelah jam kerja..."
                 numberOfLines={4}
-                style={styles.card}
+                style={styles.textInputCard}
               />
 
               {/* Selfie (optional) - Collapsible, default closed */}
-              <View style={styles.card}>
-                <TouchableOpacity
-                  onPress={() => setIsStartSelfieExpanded(v => !v)}
-                  accessibilityRole="button"
-                  accessibilityLabel={isStartSelfieExpanded ? 'Sembunyikan selfie mulai' : 'Tampilkan selfie mulai'}
-                  accessibilityState={{ expanded: isStartSelfieExpanded }}
-                  style={styles.collapsibleHeaderRow}
-                >
-                  <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>SELFIE MULAI (OPSIONAL)</NBText>
-                  <MaterialCommunityIcons
-                    name={isStartSelfieExpanded ? 'chevron-up' : 'chevron-down'}
-                    size={20}
-                    color={nbColors.gray700}
-                    style={styles.chevron}
-                  />
-                </TouchableOpacity>
-                {isStartSelfieExpanded && (
+              <NBCollapsibleCard
+                style={styles.selfieCard}
+                accessibilityLabel="Selfie mulai lembur"
+                headerLeft={
                   <View>
+                    <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>
+                      SELFIE MULAI (OPSIONAL)
+                    </NBText>
                     {startSelfie ? (
-                      <View>
-                        <TouchableOpacity
-                          onPress={() => setPreviewUri(startSelfie.uri)}
-                          accessibilityRole="button"
-                          accessibilityLabel="Lihat selfie penuh"
-                          accessibilityHint="Ketuk untuk melihat foto dalam ukuran penuh"
-                        >
-                          <Image source={{ uri: startSelfie.uri }} style={styles.selfieImage} />
-                        </TouchableOpacity>
-                        <NBButton
-                          title="Ambil Ulang"
-                          onPress={handleCaptureStartSelfie}
-                          variant="secondary"
-                          fullWidth
-                        />
-                      </View>
+                      <NBText variant="body-sm" color="success">Sudah diambil ✓</NBText>
                     ) : (
-                      <View>
-                        <NBText variant="body-sm" color="gray600" style={styles.selfiePrompt}>
-                          Foto selfie untuk verifikasi mulai lembur (tidak wajib)
-                        </NBText>
-                        <NBButton
-                          title="Ambil Selfie"
-                          onPress={handleCaptureStartSelfie}
-                          variant="secondary"
-                          fullWidth
-                        />
-                      </View>
+                      <NBText variant="body-sm" color="gray600">Opsional</NBText>
                     )}
                   </View>
+                }
+              >
+                {startSelfie ? (
+                  <View>
+                    <TouchableOpacity
+                      onPress={() => setPreviewUri(startSelfie.uri)}
+                      accessibilityRole="button"
+                      accessibilityLabel="Lihat selfie penuh"
+                      accessibilityHint="Ketuk untuk melihat foto dalam ukuran penuh"
+                    >
+                      <Image source={{ uri: startSelfie.uri }} style={styles.selfieImage} />
+                    </TouchableOpacity>
+                    <NBButton
+                      title="Ambil Ulang"
+                      onPress={handleCaptureStartSelfie}
+                      variant="secondary"
+                      fullWidth
+                    />
+                  </View>
+                ) : (
+                  <View>
+                    <NBText variant="body-sm" color="gray600" style={styles.selfiePrompt}>
+                      Foto selfie untuk verifikasi mulai lembur (tidak wajib)
+                    </NBText>
+                    <NBButton
+                      title="Ambil Selfie"
+                      onPress={handleCaptureStartSelfie}
+                      variant="secondary"
+                      fullWidth
+                    />
+                  </View>
                 )}
-              </View>
+              </NBCollapsibleCard>
 
               {/* Lokasi GPS */}
-              <View style={styles.card}>
-                <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6, marginBottom: nbSpacing.sm }}>
-                  LOKASI GPS{' '}
-                  <NBText variant="mono-sm" color="danger" style={{ textTransform: 'none' }}>*</NBText>
-                </NBText>
+              <NBCollapsibleCard
+                style={[styles.selfieCard, styles.gpsCard]}
+                defaultExpanded
+                accessibilityLabel="Lokasi GPS"
+                headerLeft={
+                  <View>
+                    <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>
+                      {'LOKASI GPS '}
+                      <NBText variant="mono-sm" color="danger" style={{ textTransform: 'none' }}>*</NBText>
+                    </NBText>
+                  </View>
+                }
+                headerRight={location != null
+                  ? <NBBadge
+                      text={isWithinBoundary ? 'DI AREA' : 'LUAR AREA'}
+                      color={isWithinBoundary ? 'success' : 'danger'}
+                      size="sm"
+                    />
+                  : undefined
+                }
+              >
                 <GPSLocationSection
-                  location={location}
+                  latitude={location?.latitude ?? null}
+                  longitude={location?.longitude ?? null}
+                  accuracy={location?.accuracy ?? null}
                   isCapturing={isCapturingLocation}
                   onRefresh={captureLocation}
                   error={startErrors.location}
+                  isWithinBoundary={isWithinBoundary}
+                  areaName={assignedArea?.name}
                 />
-              </View>
+              </NBCollapsibleCard>
 
             </>
           )}
@@ -725,71 +757,87 @@ export const OvertimeSubmitScreen: React.FC<
               </View>
 
               {/* Selfie (optional for end) - Collapsible, default closed */}
-              <View style={styles.card}>
-                <TouchableOpacity
-                  onPress={() => setIsEndSelfieExpanded(v => !v)}
-                  accessibilityRole="button"
-                  accessibilityLabel={isEndSelfieExpanded ? 'Sembunyikan selfie selesai' : 'Tampilkan selfie selesai'}
-                  accessibilityState={{ expanded: isEndSelfieExpanded }}
-                  style={styles.collapsibleHeaderRow}
-                >
-                  <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>SELFIE SELESAI (OPSIONAL)</NBText>
-                  <MaterialCommunityIcons
-                    name={isEndSelfieExpanded ? 'chevron-up' : 'chevron-down'}
-                    size={20}
-                    color={nbColors.gray700}
-                    style={styles.chevron}
-                  />
-                </TouchableOpacity>
-                {isEndSelfieExpanded && (
+              <NBCollapsibleCard
+                style={styles.selfieCard}
+                accessibilityLabel="Selfie selesai lembur"
+                headerLeft={
                   <View>
+                    <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>
+                      SELFIE SELESAI (OPSIONAL)
+                    </NBText>
                     {endSelfie ? (
-                      <View>
-                        <TouchableOpacity
-                          onPress={() => setPreviewUri(endSelfie.uri)}
-                          accessibilityRole="button"
-                          accessibilityLabel="Lihat selfie penuh"
-                          accessibilityHint="Ketuk untuk melihat foto dalam ukuran penuh"
-                        >
-                          <Image source={{ uri: endSelfie.uri }} style={styles.selfieImage} />
-                        </TouchableOpacity>
-                        <NBButton
-                          title="Ambil Ulang"
-                          onPress={handleCaptureEndSelfie}
-                          variant="secondary"
-                          fullWidth
-                        />
-                      </View>
+                      <NBText variant="body-sm" color="success">Sudah diambil ✓</NBText>
                     ) : (
-                      <View>
-                        <NBText variant="body-sm" color="gray600" style={styles.selfiePrompt}>
-                          Foto selfie untuk verifikasi selesai (tidak wajib)
-                        </NBText>
-                        <NBButton
-                          title="Ambil Selfie"
-                          onPress={handleCaptureEndSelfie}
-                          variant="secondary"
-                          fullWidth
-                        />
-                      </View>
+                      <NBText variant="body-sm" color="gray600">Opsional</NBText>
                     )}
                   </View>
+                }
+              >
+                {endSelfie ? (
+                  <View>
+                    <TouchableOpacity
+                      onPress={() => setPreviewUri(endSelfie.uri)}
+                      accessibilityRole="button"
+                      accessibilityLabel="Lihat selfie penuh"
+                      accessibilityHint="Ketuk untuk melihat foto dalam ukuran penuh"
+                    >
+                      <Image source={{ uri: endSelfie.uri }} style={styles.selfieImage} />
+                    </TouchableOpacity>
+                    <NBButton
+                      title="Ambil Ulang"
+                      onPress={handleCaptureEndSelfie}
+                      variant="secondary"
+                      fullWidth
+                    />
+                  </View>
+                ) : (
+                  <View>
+                    <NBText variant="body-sm" color="gray600" style={styles.selfiePrompt}>
+                      Foto selfie untuk verifikasi selesai (tidak wajib)
+                    </NBText>
+                    <NBButton
+                      title="Ambil Selfie"
+                      onPress={handleCaptureEndSelfie}
+                      variant="secondary"
+                      fullWidth
+                    />
+                  </View>
                 )}
-              </View>
+              </NBCollapsibleCard>
 
               {/* Lokasi GPS */}
-              <View style={styles.card}>
-                <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6, marginBottom: nbSpacing.sm }}>
-                  LOKASI GPS{' '}
-                  <NBText variant="mono-sm" color="danger" style={{ textTransform: 'none' }}>*</NBText>
-                </NBText>
+              <NBCollapsibleCard
+                style={[styles.selfieCard, styles.gpsCard]}
+                defaultExpanded
+                accessibilityLabel="Lokasi GPS"
+                headerLeft={
+                  <View>
+                    <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>
+                      {'LOKASI GPS '}
+                      <NBText variant="mono-sm" color="danger" style={{ textTransform: 'none' }}>*</NBText>
+                    </NBText>
+                  </View>
+                }
+                headerRight={location != null
+                  ? <NBBadge
+                      text={isWithinBoundary ? 'DI AREA' : 'LUAR AREA'}
+                      color={isWithinBoundary ? 'success' : 'danger'}
+                      size="sm"
+                    />
+                  : undefined
+                }
+              >
                 <GPSLocationSection
-                  location={location}
+                  latitude={location?.latitude ?? null}
+                  longitude={location?.longitude ?? null}
+                  accuracy={location?.accuracy ?? null}
                   isCapturing={isCapturingLocation}
                   onRefresh={captureLocation}
                   error={endErrors.location}
+                  isWithinBoundary={isWithinBoundary}
+                  areaName={assignedArea?.name}
                 />
-              </View>
+              </NBCollapsibleCard>
             </>
           )}
         </ScrollView>
@@ -845,7 +893,8 @@ const styles = StyleSheet.create({
     // Typography handled by NBText variant="body" color="gray600"
   },
   scrollContent: {
-    padding: nbSpacing.md,
+    paddingHorizontal: nbSpacing.md,
+    paddingTop: nbSpacing.sm,
     paddingBottom: nbSpacing.sm,
   },
   card: {
@@ -857,26 +906,14 @@ const styles = StyleSheet.create({
     marginBottom: nbSpacing.md,
     ...nbShadows.sm,
   },
-  subtitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: nbSpacing.xs,
+  textInputCard: {
     marginBottom: nbSpacing.md,
   },
-  subtitleText: {
-    flex: 1,
-    // Typography handled by NBText variant="body-sm" color="gray600"
-    lineHeight: 18,
+  selfieCard: {
+    marginHorizontal: 0,
   },
-  collapsibleHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    flex: 1,
-  },
-  chevron: {
-    // Typography handled by NBText variant="caption" color="black"
-    marginLeft: nbSpacing.sm,
+  gpsCard: {
+    backgroundColor: nbColors.statusIdleBg,
   },
   selfieImage: {
     width: '100%',
@@ -892,16 +929,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: nbSpacing.sm,
   },
-  dateHero: {
-    alignItems: 'center',
-    paddingVertical: nbSpacing.md,
-    paddingHorizontal: nbSpacing.md,
-    backgroundColor: withAlpha(nbColors.primary, 0.1),
-    borderRadius: nbRadius.md,
-    borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.black,
-    marginBottom: nbSpacing.md,
-    ...nbShadows.sm,
+  timeHeroTime: {
+    letterSpacing: 0.5,
+  },
+  centerText: {
+    textAlign: 'center',
+  },
+  cardLabel: {
+    letterSpacing: 0.6,
   },
   durasiCard: {
     backgroundColor: withAlpha(nbColors.statusIdle, 0.08),
@@ -967,6 +1002,7 @@ const styles = StyleSheet.create({
   },
   submitBar: {
     paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.md,
+    paddingTop: nbSpacing.sm,
+    paddingBottom: nbSpacing.sm,
   },
 });

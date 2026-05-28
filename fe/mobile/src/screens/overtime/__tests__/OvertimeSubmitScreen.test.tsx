@@ -216,25 +216,27 @@ jest.mock('../../../components/common/ImagePreviewModal', () => ({
 // ─── GPSLocationSection mock ──────────────────────────────────────────────────
 
 jest.mock('../../../components/common/GPSLocationSection', () => ({
-  GPSLocationSection: ({ location, isCapturing, onRefresh, error }: any) => {
+  GPSLocationSection: ({ latitude, longitude, isCapturing, onRefresh, error }: any) => {
+    const React = require('react');
     const { View, Text, TouchableOpacity } = require('react-native');
-    return require('react').createElement(
+    const hasLocation = latitude != null && longitude != null;
+    return React.createElement(
       View,
       null,
-      error ? require('react').createElement(Text, null, error) : null,
+      error ? React.createElement(Text, null, error) : null,
       isCapturing
-        ? require('react').createElement(Text, null, 'Mendapatkan lokasi...')
-        : location
-          ? require('react').createElement(
+        ? React.createElement(Text, null, 'Mendapatkan lokasi...')
+        : hasLocation
+          ? React.createElement(
               Text,
               null,
-              `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`,
+              `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
             )
-          : require('react').createElement(Text, null, 'Lokasi tidak tersedia'),
-      require('react').createElement(
+          : React.createElement(Text, null, 'Lokasi tidak tersedia'),
+      React.createElement(
         TouchableOpacity,
         { onPress: onRefresh, testID: 'refresh-gps' },
-        require('react').createElement(Text, null, 'Perbarui GPS'),
+        React.createElement(Text, null, 'Perbarui GPS'),
       ),
     );
   },

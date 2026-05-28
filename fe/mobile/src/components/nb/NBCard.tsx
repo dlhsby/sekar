@@ -226,7 +226,8 @@ const styles = StyleSheet.create({
     borderBottomColor: nbColors.black,
   },
   content: {
-    padding: nbSpacing.md, // Use token for consistency
+    paddingHorizontal: nbSpacing.md,
+    paddingVertical: nbSpacing.sm,
   },
   footer: {
     padding: nbSpacing.md,

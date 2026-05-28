@@ -1,70 +1,124 @@
-/**
- * GPS Location Section
- * Reusable component for displaying and refreshing GPS location.
- * Used in OvertimeSubmitScreen and any form requiring GPS capture.
- */
-
 import React from 'react';
-import {
-  View,
-  StyleSheet,
-  ActivityIndicator,
-  Platform,
-} from 'react-native';
-import { NBButton, NBText } from '../nb';
-import {
-  nbColors,
-  nbSpacing,
-  nbBorders,
-  nbRadius,
-  nbShadows,
-} from '../../constants/nbTokens';
-import type { Coordinates } from '../../types/models.types';
+import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { NBAlert, NBButton, NBText } from '../nb';
+import { nbColors, nbSpacing, nbBorders, nbRadius } from '../../constants/nbTokens';
+import config from '../../constants/config';
 
 export interface GPSLocationSectionProps {
-  location: Coordinates | null;
+  latitude: number | null;
+  longitude: number | null;
+  accuracy?: number | null;
   isCapturing: boolean;
   onRefresh: () => void;
-  error?: string;
+  error?: string | null;
+  isWithinBoundary?: boolean;
+  areaName?: string;
 }
 
 export function GPSLocationSection({
-  location,
+  latitude,
+  longitude,
+  accuracy,
   isCapturing,
   onRefresh,
   error,
+  isWithinBoundary,
+  areaName,
 }: GPSLocationSectionProps) {
+  const hasLocation = latitude != null && longitude != null;
+
+  const iconName = hasLocation ? 'crosshairs-gps' : 'crosshairs';
+  const iconColor = hasLocation
+    ? (isWithinBoundary === false ? nbColors.statusOutside : nbColors.statusActive)
+    : nbColors.gray500;
+
   return (
     <View style={styles.container}>
-      {error ? <NBText variant="body-sm" color="danger">{error}</NBText> : null}
 
-      {isCapturing ? (
-        <View style={styles.locationLoading}>
-          <ActivityIndicator color={nbColors.primary} />
-          <NBText variant="body-sm" color="gray600" style={{ marginLeft: nbSpacing.sm }}>
-            Mendapatkan lokasi...
+      {/* Status row — icon + primary text + accuracy */}
+      <View style={styles.statusRow}>
+        {isCapturing ? (
+          <ActivityIndicator size="small" color={nbColors.primary} style={{ marginRight: nbSpacing.sm }} />
+        ) : (
+          <MaterialCommunityIcons
+            name={iconName}
+            size={18}
+            color={iconColor}
+            style={{ marginRight: nbSpacing.sm }}
+          />
+        )}
+        <View style={{ flex: 1 }}>
+          <NBText variant="body-sm" color={hasLocation ? 'black' : 'gray600'}>
+            {isCapturing
+              ? 'Mendapatkan lokasi...'
+              : hasLocation
+                ? (areaName ?? `${latitude!.toFixed(4)}, ${longitude!.toFixed(4)}`)
+                : 'Lokasi tidak tersedia'}
           </NBText>
-        </View>
-      ) : location ? (
-        <View style={styles.locationInfo}>
-          <NBText variant="body-sm" color="black" style={styles.locationText}>
-            {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
-          </NBText>
-          {location.accuracy != null && (
-            <NBText variant="caption" color="gray600" style={{ marginTop: nbSpacing.xs }}>
-              Akurasi: ±{Math.round(location.accuracy)}m
+          {hasLocation && accuracy != null && (
+            <NBText variant="caption" color="gray600">
+              ±{Math.round(accuracy)}m akurasi
             </NBText>
           )}
         </View>
-      ) : (
-        <NBText variant="body-sm" color="danger">Lokasi tidak tersedia</NBText>
+      </View>
+
+      {/* Area status alert — only when boundary check is provided */}
+      {hasLocation && isWithinBoundary !== undefined && (
+        <View>
+          {isWithinBoundary ? (
+            <NBAlert variant="success" message="Anda berada di dalam area kerja" />
+          ) : (
+            <NBAlert variant="warning" message="Anda berada di luar area kerja. Absen tetap dicatat." />
+          )}
+        </View>
       )}
 
+      {/* Full coordinate detail */}
+      {hasLocation && (
+        <View style={styles.detailRow}>
+          <View style={styles.infoRow}>
+            <NBText variant="body-sm" color="gray700">GPS:</NBText>
+            <NBText variant="body-sm" color="black">
+              {latitude!.toFixed(6)}, {longitude!.toFixed(6)}
+            </NBText>
+          </View>
+          {accuracy != null && (
+            <View style={styles.infoRow}>
+              <NBText variant="body-sm" color="gray700">Akurasi:</NBText>
+              <NBText variant="body-sm" color="black">{Math.round(accuracy)}m</NBText>
+            </View>
+          )}
+          {accuracy != null && accuracy > config.GPS_ACCURACY_THRESHOLD && (
+            <View style={styles.warningBox}>
+              <MaterialCommunityIcons
+                name="crosshairs-question"
+                size={18}
+                color={nbColors.statusIdle}
+                style={{ marginRight: nbSpacing.sm }}
+              />
+              <NBText variant="body-sm" color="gray700" style={{ flex: 1 }}>
+                GPS kurang akurat. Pindah ke area terbuka untuk hasil lebih baik.
+              </NBText>
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* Error */}
+      {error ? (
+        <NBText variant="body-sm" color="danger">{error}</NBText>
+      ) : null}
+
+      {/* Refresh button */}
       <NBButton
         title="Perbarui GPS"
         variant="secondary"
         size="sm"
         onPress={onRefresh}
+        disabled={isCapturing}
+        fullWidth
       />
     </View>
   );
@@ -74,21 +128,30 @@ const styles = StyleSheet.create({
   container: {
     gap: nbSpacing.sm,
   },
-  locationLoading: {
+  statusRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    padding: nbSpacing.sm,
+    alignItems: 'flex-start',
   },
-  locationInfo: {
-    padding: nbSpacing.md,
+  detailRow: {
+    paddingHorizontal: nbSpacing.sm,
+    paddingVertical: nbSpacing.xs,
     backgroundColor: nbColors.gray50,
     borderRadius: nbRadius.base,
     borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.black,
-    ...nbShadows.sm,
+    borderColor: nbColors.gray300,
+    gap: nbSpacing.xs,
   },
-  locationText: {
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-    letterSpacing: 0.5,
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  warningBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingTop: nbSpacing.xs,
+    borderTopWidth: nbBorders.widthThin,
+    borderTopColor: nbColors.gray200,
+    marginTop: nbSpacing.xs,
   },
 });

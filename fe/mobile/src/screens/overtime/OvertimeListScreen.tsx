@@ -20,7 +20,7 @@ import type { RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import { NBBackgroundPattern, NBButton, NBEmptyState, NBText } from '../../components/nb';
+import { NBBackgroundPattern, NBButton, NBEmptyState, NBFabBar, NB_FAB_BAR_HEIGHT, NBPageHeader, NBText } from '../../components/nb';
 import { SortModal, OvertimeFilterModal } from '../../components/modals';
 import { OvertimeCard } from './components/OvertimeCard';
 import { getOvertimeStatusLabel } from '../../utils/statusHelpers';
@@ -246,10 +246,8 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
     >
       <SafeAreaView style={styles.safeArea}>
 
-        {/* Page Title — same style as Tugas & Aktivitas */}
-        <View style={styles.headerContainer}>
-          <NBText variant="h3" style={styles.pageTitle}>Lembur</NBText>
-        </View>
+        {/* Page Title */}
+        <NBPageHeader title="Lembur" />
 
         {/* Filter Bar */}
         <View style={[styles.filterBarCollapsed, activeFilterCount > 0 && styles.filterBarActive]}>
@@ -331,6 +329,10 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
           renderItem={renderItem}
           keyExtractor={keyExtractor}
           contentContainerStyle={styles.listContent}
+          removeClippedSubviews
+          maxToRenderPerBatch={10}
+          updateCellsBatchingPeriod={50}
+          windowSize={10}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
@@ -355,7 +357,7 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
 
         {/* FAB */}
         {canSubmitOvertime && (
-          <View style={styles.fab}>
+          <NBFabBar>
             {activeOvertime ? (
               // Active overtime in progress — go to end-overtime form
               <NBButton
@@ -364,6 +366,7 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
                 variant="danger"
                 size="lg"
                 fullWidth
+                accessibilityLabel="Clock out lembur yang sedang aktif"
               />
             ) : hasActiveRegularShift ? (
               // Regular shift still open — block new overtime
@@ -378,6 +381,7 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
                   size="lg"
                   fullWidth
                   disabled
+                  accessibilityLabel="Ajukan lembur dinonaktifkan, selesaikan shift aktif terlebih dahulu"
                   accessibilityHint="Tombol dinonaktifkan karena Anda masih memiliki shift aktif"
                 />
               </>
@@ -388,9 +392,10 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
                 variant="primary"
                 size="lg"
                 fullWidth
+                accessibilityLabel="Ajukan lembur baru"
               />
             )}
-          </View>
+          </NBFabBar>
         )}
 
         {/* Sort Modal */}
@@ -425,27 +430,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-  // Page title — matches Tugas & Aktivitas headerContainer pattern
-  headerContainer: {
-    paddingHorizontal: nbSpacing.md,
-    paddingTop: nbSpacing.md,
-    paddingBottom: nbSpacing.xs,
-  },
-  pageTitle: {
-    marginBottom: 0,
-  },
   // Monthly summary card
   filterBarCollapsed: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: nbSpacing.md,
+    paddingHorizontal: nbSpacing.sm,
     paddingVertical: nbSpacing.xs,
+    marginHorizontal: nbSpacing.md,
     backgroundColor: nbColors.white,
+    borderTopWidth: nbBorders.widthBase,
+    borderTopColor: nbColors.gray300,
     borderBottomWidth: nbBorders.widthBase,
     borderBottomColor: nbColors.gray300,
     minHeight: 48,
   },
   filterBarActive: {
+    borderTopColor: nbColors.primary,
     borderBottomColor: nbColors.primary,
   },
   filterBarLeft: {
@@ -517,7 +517,7 @@ const styles = StyleSheet.create({
     paddingTop: nbSpacing.sm,
   },
   listWrapperWithFab: {
-    paddingBottom: 80,
+    paddingBottom: NB_FAB_BAR_HEIGHT,
   },
   list: {
     flex: 1,
@@ -526,13 +526,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.md,
     paddingBottom: nbSpacing['2xl'],
     flexGrow: 1,
-  },
-  // FAB
-  fab: {
-    position: 'absolute',
-    bottom: nbSpacing.md,
-    left: nbSpacing.md,
-    right: nbSpacing.md,
   },
   fabBlockedHint: {
     // Typography (fontSize, fontWeight, color) handled by NBText variant="body-sm" color="warning"

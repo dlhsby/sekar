@@ -4,6 +4,27 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## May 28, 2026 — M3 code-review fixes + test hardening (ABS/LBR screens)
+
+**Code-review issues fixed across ABS + LBR screens:**
+
+- **OvertimeSubmitScreen**: Time hero card replaced `dateHero`/`subtitleRow` Views with `NBCollapsibleCard` (matches ClockInOutScreen pattern). `style={styles.card}` on `NBCardTextInput` caused double-padding — replaced with `textInputCard: { marginBottom: nbSpacing.md }`. `isMounted` guard added to AsyncStorage draft-restore `useEffect`. `MaterialCommunityIcons` import removed (no longer used). Helpers: `DAY_NAMES_ID`, `MONTH_NAMES_ID` (abbreviated), `formatTimeHero`, `formatDateHero` + `currentTime` 1-second interval state. `assignedArea` + `isWithinBoundary` useMemo + `NBBadge` wired.
+- **ShiftHistoryScreen**: `renderItem` moved before early returns (was after `if (isLoading)`) + wrapped in `useCallback`. FlatList performance props added: `removeClippedSubviews`, `maxToRenderPerBatch={10}`, `updateCellsBatchingPeriod={50}`, `windowSize={10}`. `accessibilityHint` added to ShiftRow.
+- **OvertimeListScreen**: FlatList performance props (same 4). `accessibilityLabel`/`accessibilityHint` added to all 3 FAB states (active overtime, blocked, normal).
+- **NBCard**: `NBCardContent` inner padding normalized to `paddingHorizontal: md, paddingVertical: sm` (was `padding: md`).
+- **NBCardTextInput**: Title → `NBText variant="mono-sm" color="gray700" uppercase`, asterisk → nested `NBText variant="mono-sm" color="danger"`, subtitle → `NBText variant="body-sm" color="gray600"`. `placeholderTextColor={nbColors.gray400}` (flat token).
+- **GPSLocationSection**: API migrated to flat nullable props (`latitude`, `longitude`, `accuracy?`, `isWithinBoundary?`, `areaName?`) — removes nested `location` object.
+
+**Test hardening:**
+
+- **GPSLocationSection.test.tsx**: Full rewrite for flat prop API. 17 tests covering loading, null location, captured coordinates, accuracy badge, areaName, boundary true/false/undefined, no-boundary-when-no-location, error prop, refresh button.
+- **ShiftHistoryScreen.test.tsx**: Added mocks for `NBModal`, `NBDatePicker` (ShiftFilterModal deps) and `ShiftDetailModal` — resolves "Unable to find node on unmounted component" failures. 23/23 passing.
+- **OvertimeSubmitScreen.test.tsx**: GPSLocationSection mock updated to flat prop API.
+
+**Test totals: 78/78 passing across GPSLocationSection + OvertimeSubmit + OvertimeList + ShiftHistory. 20 pre-existing failures in other suites (unrelated to this session's changes).**
+
+---
+
 ## May 27, 2026 — M3 post-review fixes (emoji headers, token shims, React.memo, setTimeout cleanup)
 
 **Fixes applied across 5 ABS/LBR screens after code review:**
