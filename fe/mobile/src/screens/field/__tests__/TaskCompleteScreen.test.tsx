@@ -132,7 +132,7 @@ describe('TaskCompleteScreen', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('📸 FOTO BUKTI *')).toBeTruthy();
+      expect(getByText('FOTO BUKTI *')).toBeTruthy();
     });
 
     expect(getByText('Foto')).toBeTruthy(); // The "+" button with "Foto" label
@@ -304,7 +304,7 @@ describe('TaskCompleteScreen', () => {
       expect(getByText('Tugas')).toBeTruthy();
     });
 
-    expect(getByText('📸 FOTO BUKTI *')).toBeTruthy();
+    expect(getByText('FOTO BUKTI *')).toBeTruthy();
     expect(getByText('Deskripsi Penyelesaian *')).toBeTruthy();
 
     // Phase 2C: No GPS section

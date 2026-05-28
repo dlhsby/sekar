@@ -227,9 +227,9 @@ describe('TaskCreateScreen', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('📝 DETAIL TUGAS', { exact: false })).toBeTruthy();
-      expect(getByText('🔥 PRIORITAS')).toBeTruthy();
-      expect(getByText('📅 BATAS WAKTU')).toBeTruthy();
+      expect(getByText(/DETAIL TUGAS/)).toBeTruthy();
+      expect(getByText(/PRIORITAS/)).toBeTruthy();
+      expect(getByText(/BATAS WAKTU/)).toBeTruthy();
       expect(getByText('Judul *')).toBeTruthy();
       expect(getByText('Deskripsi')).toBeTruthy();
       expect(getByPlaceholderText('Masukkan judul tugas...')).toBeTruthy();
@@ -249,7 +249,7 @@ describe('TaskCreateScreen', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('📍 LOKASI')).toBeTruthy();
+      expect(getByText(/LOKASI/)).toBeTruthy();
       expect(getByText('Rayon')).toBeTruthy();
       expect(getByText('Area')).toBeTruthy();
     });
@@ -267,8 +267,8 @@ describe('TaskCreateScreen', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('👤 PENUGASAN', { exact: false })).toBeTruthy();
-      expect(getByText('🏷️ TAG PETUGAS')).toBeTruthy();
+      expect(getByText(/PENUGASAN/)).toBeTruthy();
+      expect(getByText(/TAG PETUGAS/)).toBeTruthy();
     });
   });
 
