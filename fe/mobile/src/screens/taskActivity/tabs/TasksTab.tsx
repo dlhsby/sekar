@@ -81,6 +81,7 @@ export function TasksTab({
       >
         <NBEmptyState
           variant="noData"
+          illustration="illo-reports"
           style={styles.emptyStateStretch}
           title={
             taskFilter === 'tagged' ? 'Belum ada tag' :

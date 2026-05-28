@@ -4,6 +4,21 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## May 28, 2026 — Brand: empty-state illustrations + icon cleanup
+
+- **Empty-state illustrations (CP3)**: new `components/nb/illustrations/index.tsx` — 6 inline
+  react-native-svg components (`illo-reports/shifts/offline/location/search/personnel`,
+  token colors, no inline hex) + `ILLUSTRATIONS` registry. `NBEmptyState` gains an
+  `illustration?: EmptyIllustrationKey | ReactNode` prop that renders the illo (120px) in
+  place of the icon; unknown string keys fall back to the icon. Wired into ShiftHistory
+  (illo-shifts / illo-offline / illo-search), OvertimeList (illo-reports / illo-search), and
+  the Tasks/Activities tabs (illo-reports). Deprecated `components/common/EmptyState.tsx`
+  left untouched (Material legacy). Tests added to `NBEmptyState.test.tsx` (80 passing across
+  touched suites).
+- **Icon cleanup**: removed the now-unused `drawable/pinwheel_logo.xml` (bootsplash uses
+  `splash_logo.png`); the Android-12 `splash_icon.xml` (bare pinwheel for the round system
+  mask) stays. Comment de-referenced the deleted file.
+
 ## May 28, 2026 — M3 Profile follow-ups: nav fix, NBToast sweep, 3D icon, tests
 
 - **Back navigation**: `Settings` + `EditProfile` header back now `navigate('Profile')` (tab-navigator `goBack()` landed on Home) — mirrors the existing `ShiftHistory` fix. `EditProfileScreen` success also routes to Profile.

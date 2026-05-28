@@ -25,6 +25,7 @@ import {
   nbTypography,
 } from '../../constants/nbTokens';
 import { NBButton } from './NBButton';
+import { ILLUSTRATIONS, type EmptyIllustrationKey } from './illustrations';
 
 export type NBEmptyStateVariant =
   | 'noData'
@@ -46,6 +47,8 @@ export interface NBEmptyStateProps {
   description?: string;
   /** Custom icon component */
   icon?: React.ReactNode;
+  /** Branded illustration shown in place of the icon (key or custom node). */
+  illustration?: EmptyIllustrationKey | React.ReactNode;
   /** Optional call-to-action button label */
   ctaLabel?: string;
   /** CTA button press handler */
@@ -120,6 +123,7 @@ export const NBEmptyState: React.FC<NBEmptyStateProps> = ({
   title,
   description,
   icon,
+  illustration,
   ctaLabel,
   onCTA,
   style,
@@ -132,6 +136,16 @@ export const NBEmptyState: React.FC<NBEmptyStateProps> = ({
   const displayDescription =
     description !== undefined ? description : variantDescriptions[variant];
 
+  // Resolve a branded illustration: a known string key → its component; a custom
+  // node → used as-is; an unknown string → ignored (falls back to the icon, since a
+  // bare string child would crash outside <Text>).
+  const illustrationNode =
+    typeof illustration === 'string'
+      ? illustration in ILLUSTRATIONS
+        ? React.createElement(ILLUSTRATIONS[illustration as EmptyIllustrationKey], { size: 120 })
+        : undefined
+      : (illustration as React.ReactNode | undefined);
+
   return (
     <View
       style={[styles.container, style]}
@@ -140,19 +154,30 @@ export const NBEmptyState: React.FC<NBEmptyStateProps> = ({
       accessibilityLabel={`${title}. ${displayDescription || ''}`}
     >
       <View style={styles.card}>
-        {/* Icon */}
-        <View
-          style={styles.iconContainer}
-          testID={`${testID}-icon-container`}
-          accessibilityElementsHidden={true}
-          importantForAccessibility="no-hide-descendants"
-        >
-          {typeof displayIcon === 'string' ? (
-            <Text style={styles.iconText}>{displayIcon}</Text>
-          ) : (
-            displayIcon
-          )}
-        </View>
+        {/* Illustration (preferred) or icon */}
+        {illustrationNode ? (
+          <View
+            style={styles.illustrationContainer}
+            testID={`${testID}-illustration`}
+            accessibilityElementsHidden={true}
+            importantForAccessibility="no-hide-descendants"
+          >
+            {illustrationNode}
+          </View>
+        ) : (
+          <View
+            style={styles.iconContainer}
+            testID={`${testID}-icon-container`}
+            accessibilityElementsHidden={true}
+            importantForAccessibility="no-hide-descendants"
+          >
+            {typeof displayIcon === 'string' ? (
+              <Text style={styles.iconText}>{displayIcon}</Text>
+            ) : (
+              displayIcon
+            )}
+          </View>
+        )}
 
         {/* Title */}
         <Text
@@ -206,6 +231,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     maxWidth: 400,
     ...nbShadows.md,
+  },
+  illustrationContainer: {
+    marginBottom: nbSpacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   iconContainer: {
     marginBottom: nbSpacing.lg,

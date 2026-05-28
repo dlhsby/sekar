@@ -1,6 +1,7 @@
-<!-- Android 12+ system-splash icon: same pinwheel as pinwheel_logo but padded
-     into a 180-unit viewport so the system's circular icon mask (~2/3 of the
-     canvas) does not clip the blade tips. -->
+<!-- Android 12+ system-splash icon: the SEKAR pinwheel mark padded into a
+     180-unit viewport so the system's circular icon mask (~2/3 of the canvas)
+     does not clip the blade tips. (Bare pinwheel — the boxed lockup would be
+     cropped by the round mask; the layer-list bootsplash uses the box lockup.) -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="180dp"
     android:height="180dp"

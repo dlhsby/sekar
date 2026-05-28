@@ -343,6 +343,7 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
             loading ? null : (
               <NBEmptyState
                 variant="noData"
+                illustration={activeFilterCount > 0 ? 'illo-search' : 'illo-reports'}
                 title="Tidak ada data lembur"
                 description={
                   activeFilterCount > 0

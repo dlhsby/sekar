@@ -387,4 +387,62 @@ describe('NBEmptyState', () => {
       expect(getByText('Coba gunakan kata kunci lain')).toBeTruthy();
     });
   });
+
+  describe('illustration prop', () => {
+    it('renders the illustration slot (not the icon) for a known key', () => {
+      const { getByTestId, queryByTestId } = render(
+        <NBEmptyState
+          variant="noData"
+          illustration="illo-shifts"
+          title="Belum Ada Shift"
+          testID="illo-state"
+        />,
+      );
+      expect(getByTestId('illo-state-illustration')).toBeTruthy();
+      expect(queryByTestId('illo-state-icon-container')).toBeNull();
+    });
+
+    it('renders a custom illustration node when provided', () => {
+      const { getByTestId, queryByTestId } = render(
+        <NBEmptyState
+          title="Custom"
+          illustration={<Text testID="custom-illo">x</Text>}
+          testID="custom-state"
+        />,
+      );
+      expect(getByTestId('custom-illo')).toBeTruthy();
+      expect(queryByTestId('custom-state-icon-container')).toBeNull();
+    });
+
+    it('falls back to the icon when no illustration is given', () => {
+      const { getByTestId, queryByTestId } = render(
+        <NBEmptyState variant="noData" title="No illo" testID="icon-state" />,
+      );
+      expect(getByTestId('icon-state-icon-container')).toBeTruthy();
+      expect(queryByTestId('icon-state-illustration')).toBeNull();
+    });
+
+    it('falls back to the icon for an unknown string key', () => {
+      const { getByTestId, queryByTestId } = render(
+        <NBEmptyState
+          variant="noData"
+          // @ts-expect-error — intentionally invalid key
+          illustration="illo-nope"
+          title="Bad key"
+          testID="bad-state"
+        />,
+      );
+      expect(getByTestId('bad-state-icon-container')).toBeTruthy();
+      expect(queryByTestId('bad-state-illustration')).toBeNull();
+    });
+
+    it('keeps the illustration slot hidden from accessibility', () => {
+      const { getByTestId } = render(
+        <NBEmptyState illustration="illo-reports" title="Test" testID="a11y-state" />,
+      );
+      const slot = getByTestId('a11y-state-illustration');
+      expect(slot.props.accessibilityElementsHidden).toBe(true);
+      expect(slot.props.importantForAccessibility).toBe('no-hide-descendants');
+    });
+  });
 });

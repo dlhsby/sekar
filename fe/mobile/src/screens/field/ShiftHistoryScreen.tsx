@@ -481,6 +481,7 @@ export function ShiftHistoryScreen(): React.JSX.Element {
         <View style={styles.container}>
           <NBEmptyState
             variant="error"
+            illustration="illo-offline"
             title="Gagal Memuat Data"
             description={error}
             ctaLabel="Coba Lagi"
@@ -584,6 +585,7 @@ export function ShiftHistoryScreen(): React.JSX.Element {
           ListEmptyComponent={
             <NBEmptyState
               variant="noData"
+              illustration={shifts.length === 0 ? 'illo-shifts' : 'illo-search'}
               title={shifts.length === 0 ? 'Belum Ada Riwayat Shift' : 'Tidak Ada Shift'}
               description={
                 shifts.length === 0

@@ -80,6 +80,7 @@ export function ActivitiesTab({
       >
         <NBEmptyState
           variant="noData"
+          illustration="illo-reports"
           style={styles.emptyStateStretch}
           title="Belum ada aktivitas"
           description="Aktivitas yang Anda buat akan muncul di sini"
