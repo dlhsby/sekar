@@ -23,17 +23,25 @@ const TONE: Record<StatusTone, { bg: string; border: string; fg: NBTextColor }> 
 interface StatusPillProps {
   tone?: StatusTone;
   label: string;
+  /** Render a leading status dot (hi-fi `.pill .d`). */
+  dot?: boolean;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 }
 
-export function StatusPill({ tone = 'neutral', label, style, testID }: StatusPillProps): React.JSX.Element {
+export function StatusPill({ tone = 'neutral', label, dot = false, style, testID }: StatusPillProps): React.JSX.Element {
   const t = TONE[tone];
   return (
     <View
       style={[styles.pill, { backgroundColor: t.bg, borderColor: t.border }, style]}
       testID={testID}
     >
+      {dot ? (
+        <View
+          style={[styles.dot, { backgroundColor: t.border }]}
+          testID={testID ? `${testID}-dot` : undefined}
+        />
+      ) : null}
       <NBText variant="mono-sm" color={t.fg} uppercase style={styles.label}>
         {label}
       </NBText>
@@ -43,11 +51,19 @@ export function StatusPill({ tone = 'neutral', label, style, testID }: StatusPil
 
 const styles = StyleSheet.create({
   pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
     alignSelf: 'flex-start',
     paddingHorizontal: nbSpacing.sm,
     paddingVertical: 2,
     borderWidth: nbBorders.widthThin,
     borderRadius: nbRadius.full,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 5,
   },
   label: {
     fontSize: 10,

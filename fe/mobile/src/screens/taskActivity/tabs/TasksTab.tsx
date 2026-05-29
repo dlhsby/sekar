@@ -9,13 +9,12 @@ import {
   View,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
 import { NBEmptyState, NBText } from '../../../components/nb';
-import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../../constants/nbTokens';
+import { nbColors, nbSpacing } from '../../../constants/nbTokens';
 import { TaskCard } from '../components/TaskCard';
 import type { Task } from '../../../types/models.types';
 
@@ -29,6 +28,8 @@ export interface TasksTabProps {
   tasksError: string | null;
   refreshing: boolean;
   taskFilter: TaskFilterType;
+  /** True when any filter is active — drives the filtered-empty state. */
+  isFiltered?: boolean;
   onRefresh: () => void;
   onRetry: () => void;
   onLoadMore: () => void;
@@ -43,6 +44,7 @@ export function TasksTab({
   tasksError,
   refreshing,
   taskFilter,
+  isFiltered = false,
   onRefresh,
   onRetry,
   onLoadMore,
@@ -60,15 +62,18 @@ export function TasksTab({
   if (tasksError) {
     return (
       <ScrollView
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={styles.emptyListContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <View style={styles.centerContentInline}>
-          <NBText variant="body" color="danger" style={styles.errorText}>{tasksError}</NBText>
-          <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
-            <NBText variant="body" color="white" style={styles.retryButtonText}>Coba Lagi</NBText>
-          </TouchableOpacity>
-        </View>
+        <NBEmptyState
+          variant="error"
+          illustration="illo-offline"
+          style={styles.emptyStateStretch}
+          title="Gagal memuat tugas"
+          description={tasksError}
+          ctaLabel="Coba Lagi"
+          onCTA={onRetry}
+        />
       </ScrollView>
     );
   }
@@ -80,15 +85,17 @@ export function TasksTab({
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <NBEmptyState
-          variant="noData"
-          illustration="illo-reports"
+          variant={isFiltered ? 'noResults' : 'noData'}
+          illustration={isFiltered ? 'illo-search' : 'illo-reports'}
           style={styles.emptyStateStretch}
           title={
+            isFiltered ? 'Tidak ada tugas yang cocok' :
             taskFilter === 'tagged' ? 'Belum ada tag' :
             taskFilter === 'created_by_me' ? 'Belum ada tugas yang dibuat' :
             'Belum ada tugas'
           }
           description={
+            isFiltered ? 'Coba ubah atau reset filter' :
             taskFilter === 'tagged' ? 'Tugas yang menandai Anda akan muncul di sini' :
             taskFilter === 'created_by_me' ? 'Tugas yang Anda buat akan muncul di sini' :
             taskFilter === 'assigned' ? 'Tugas yang ditugaskan ke Anda akan muncul di sini' :
@@ -149,26 +156,6 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     paddingHorizontal: 0,
     paddingVertical: 0,
-  },
-  centerContentInline: {
-    paddingVertical: nbSpacing.xl,
-    alignItems: 'center',
-  },
-  errorText: {
-    marginBottom: nbSpacing.md,
-    textAlign: 'center',
-  },
-  retryButton: {
-    backgroundColor: nbColors.primary,
-    paddingHorizontal: nbSpacing.lg,
-    paddingVertical: nbSpacing.sm,
-    borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.black,
-    borderRadius: nbRadius.base,
-    ...nbShadows.sm,
-  },
-  retryButtonText: {
-    fontWeight: '700',
   },
   footerLoader: {
     paddingVertical: nbSpacing.md,

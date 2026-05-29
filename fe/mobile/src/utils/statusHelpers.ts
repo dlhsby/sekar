@@ -158,6 +158,19 @@ export function formatDurationHours(start: string, end: string): string {
   return crossesMidnight ? `${h}j (lintas tengah malam)` : `${h}j`;
 }
 
+// Elapsed time since an ISO datetime until now, short form: "04m", "1j 04m".
+// Returns null when the input is empty or in the future (nothing to show).
+export function formatElapsed(fromISO: string, now: number = Date.now()): string | null {
+  if (!fromISO) { return null; }
+  const diffMs = now - new Date(fromISO).getTime();
+  if (diffMs <= 0) { return null; }
+  const totalMinutes = Math.floor(diffMs / (1000 * 60));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const mm = minutes.toString().padStart(2, '0');
+  return hours > 0 ? `${hours}j ${mm}m` : `${minutes}m`;
+}
+
 // ─── Pruning Request status (Phase 3) ───────────────────────────────────────
 //
 // Maps the 8 pruning_request statuses onto the 6-color NBBadge palette

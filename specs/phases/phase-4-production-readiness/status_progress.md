@@ -4,6 +4,39 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## May 29, 2026 — Brand: Android-12 splash alignment + SekarLogoBox 3D shadow
+
+**Android-12 double-splash: icon-only native stages (definitive fix)**
+- `windowSplashScreenBrandingImage` removed from `values-v31/styles.xml`. Android always stretches this drawable to fill the full screen width and places it at a device-specific bottom offset (`navBarHeight + 24dp`) — both values are uncontrollable, making pixel-identical layout matching impossible. Both native stages (OS system splash + `bootsplash.xml` window background) now show **only the box-lockup icon** on the sage canvas. `bootsplash.xml` simplified to two layers: sage bg + centered `@drawable/splash_icon` (200dp). SEKAR wordmark + tagline appear in WL-1 (`SplashSlide.tsx`) after JS loads.
+- `scripts/generate-splash.mjs` updated to generate `splash_branding.png` at 320×80dp (down from 420×160dp).
+
+**`SekarLogoBox` — proper hard-edge 3D ink shadow**
+- `components/brand/SekarLogoBox.tsx` rewritten with an absolute-positioned solid `nbColors.black` View behind the white box, offset by `size × 0.075` to bottom-right — the same formula as `generate-app-icon.mjs`. Previously used `nbShadows.sm` (`elevation: 3`) which renders as a soft blurred ambient shadow on Android; `shadowOffset/shadowOpacity/shadowRadius` are iOS-only and have no effect. Border width changed to `max(2, size × 0.04)` (was `nbBorders.widthThick = 2.5dp`); corner radius changed to `size × 0.2` (was `nbRadius.md = 14dp`). Both now match the app icon and native splash geometry exactly at every size.
+
+---
+
+## May 28, 2026 — M3 TUG-1 revamp: Tugas list card + states (Checkpoint 1)
+
+- **`TaskCard`** (`screens/taskActivity/components/TaskCard.tsx`) rebuilt on the canonical
+  `HomeListRow` + `StatusPill` (mirrors `TodayTasksModal`) — dotted status pill +
+  right-aligned mono meta (in_progress elapsed via new `formatElapsed` / deadline / created)
+  + title + one subMeta line (`area ?? rayon` · assignee). Dropped the prior bespoke
+  `NBCard` clutter (priority/tags/creator chips + async `PlantStatusChip`); those move to
+  the TUG-2 detail. `PlantStatusChip.tsx` left in place for TUG-2.
+- **`StatusPill`** gains an additive `dot?: boolean` (hi-fi `.pill .d`) — small tone-colored
+  leading circle; defaults off, so Home/monitoring callers are unchanged.
+- **`taskPill`** (`utils/taskStatus.ts`) extended to all 8 statuses (completed→info
+  "Menunggu verifikasi", verified→ok "Terverifikasi", declined→bad "Ditolak") before the
+  default — backward-compatible (active-task surfaces only ever pass active statuses).
+- **`formatElapsed(fromISO)`** added to `utils/statusHelpers.ts` ("1j 04m" / "04m" form;
+  null for empty/future).
+- **`TasksTab`** states: error now renders `NBEmptyState` (`illo-offline` + "Coba Lagi"
+  retry) instead of the hand-rolled view; filtered-empty shows `illo-search` + "Tidak ada
+  tugas yang cocok" via a new `isFiltered` prop (passed from `TasksActivityScreen` as
+  `activeFilterCount > 0`). Filter/sort/pagination logic untouched.
+- No status segment tabs / no date grouping (scope decisions). `tsc` clean on touched files
+  (pre-existing unrelated errors remain). Metro reload to verify; tests pending user OK.
+
 ## May 28, 2026 — Native splash: wordmark + tagline under the lockup
 
 - **Android cold-start splash** now shows the box lockup + **SEKAR** wordmark + tagline,

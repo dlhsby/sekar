@@ -25,6 +25,12 @@ export function taskPill(status: TaskStatus): { tone: StatusTone; label: string 
       return { tone: 'warn', label: 'Siap mulai' };
     case 'revision_needed':
       return { tone: 'bad', label: 'Revisi' };
+    case 'completed':
+      return { tone: 'info', label: 'Menunggu verifikasi' };
+    case 'verified':
+      return { tone: 'ok', label: 'Terverifikasi' };
+    case 'declined':
+      return { tone: 'bad', label: 'Ditolak' };
     default:
       return { tone: 'neutral', label: 'Menunggu' };
   }

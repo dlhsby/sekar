@@ -582,6 +582,7 @@ export function TasksActivityScreen({ navigation, route }: Props): React.JSX.Ele
                 tasksError={tasksError}
                 refreshing={refreshing}
                 taskFilter={taskFilter}
+                isFiltered={activeFilterCount > 0}
                 onRefresh={handleRefresh}
                 onRetry={() => fetchTasks(1, true)}
                 onLoadMore={loadMoreTasks}
