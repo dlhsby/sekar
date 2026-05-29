@@ -68,13 +68,13 @@ describe('ShiftCard', () => {
     it('should render with active shift', () => {
       const { getByText } = render(<ShiftCard shift={mockActiveShift} />);
       expect(getByText('Taman Bungkul')).toBeTruthy();
-      expect(getByText('AKTIF')).toBeTruthy();
+      expect(getByText('Aktif')).toBeTruthy();
     });
 
     it('should render with completed shift', () => {
       const { getByText } = render(<ShiftCard shift={mockCompletedShift} />);
       expect(getByText('Taman Bungkul')).toBeTruthy();
-      expect(getByText('SELESAI')).toBeTruthy();
+      expect(getByText('Selesai')).toBeTruthy();
     });
 
     it('should render area name', () => {
@@ -91,17 +91,17 @@ describe('ShiftCard', () => {
   describe('Status Badge', () => {
     it('should show AKTIF for active shift', () => {
       const { getByText } = render(<ShiftCard shift={mockActiveShift} />);
-      expect(getByText('AKTIF')).toBeTruthy();
+      expect(getByText('Aktif')).toBeTruthy();
     });
 
     it('should show SELESAI for completed shift', () => {
       const { getByText } = render(<ShiftCard shift={mockCompletedShift} />);
-      expect(getByText('SELESAI')).toBeTruthy();
+      expect(getByText('Selesai')).toBeTruthy();
     });
 
     it('should apply correct styles for active status', () => {
       const { getByText } = render(<ShiftCard shift={mockActiveShift} />);
-      const statusText = getByText('AKTIF');
+      const statusText = getByText('Aktif');
       const statusBadge = statusText.parent;
       // Badge View has array style [statusBadge, statusActive]
       expect(statusBadge).toBeTruthy();
@@ -109,7 +109,7 @@ describe('ShiftCard', () => {
 
     it('should apply correct styles for completed status', () => {
       const { getByText } = render(<ShiftCard shift={mockCompletedShift} />);
-      const statusText = getByText('SELESAI');
+      const statusText = getByText('Selesai');
       const statusBadge = statusText.parent;
       expect(statusBadge).toBeTruthy();
     });
@@ -181,20 +181,20 @@ describe('ShiftCard', () => {
       expect(getByText('Shift #5')).toBeTruthy();
     });
 
-    it('should not display area name when shift number provided', () => {
-      const { queryByText, getByText } = render(
+    it('shows shift number (right) alongside the area title', () => {
+      const { getByText } = render(
         <ShiftCard shift={mockActiveShift} shiftNumber={1} />
       );
+      // v2.1: status pill + area title with the shift number on the right.
       expect(getByText('Shift #1')).toBeTruthy();
-      // Area name should still be in data but shift number takes precedence in header
-      expect(queryByText('Taman Bungkul')).toBeNull();
+      expect(getByText('Taman Bungkul')).toBeTruthy();
     });
 
-    it('should not display area type when shift number provided', () => {
-      const { queryByText } = render(
+    it('still shows area type when shift number provided', () => {
+      const { getByText } = render(
         <ShiftCard shift={mockActiveShift} shiftNumber={1} />
       );
-      expect(queryByText('Taman Kota')).toBeNull();
+      expect(getByText('Taman Kota')).toBeTruthy();
     });
   });
 
@@ -269,7 +269,7 @@ describe('ShiftCard', () => {
     it('should render header section', () => {
       const { getByText } = render(<ShiftCard shift={mockActiveShift} />);
       expect(getByText('Taman Bungkul')).toBeTruthy();
-      expect(getByText('AKTIF')).toBeTruthy();
+      expect(getByText('Aktif')).toBeTruthy();
     });
 
     it('should render time row with 3 columns', () => {
@@ -320,8 +320,8 @@ describe('ShiftCard', () => {
       );
 
       expect(getAllByText('Taman Bungkul')).toHaveLength(2);
-      expect(getAllByText('AKTIF')).toHaveLength(1);
-      expect(getAllByText('SELESAI')).toHaveLength(1);
+      expect(getAllByText('Aktif')).toHaveLength(1);
+      expect(getAllByText('Selesai')).toHaveLength(1);
     });
   });
 
@@ -370,10 +370,10 @@ describe('ShiftCard', () => {
       const { getByText, rerender } = render(
         <ShiftCard shift={mockActiveShift} />
       );
-      expect(getByText('AKTIF')).toBeTruthy();
+      expect(getByText('Aktif')).toBeTruthy();
 
       rerender(<ShiftCard shift={mockCompletedShift} />);
-      expect(getByText('SELESAI')).toBeTruthy();
+      expect(getByText('Selesai')).toBeTruthy();
     });
 
     it('should update when shift number changes', () => {

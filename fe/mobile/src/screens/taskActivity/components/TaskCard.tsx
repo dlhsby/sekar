@@ -1,17 +1,15 @@
 /**
- * TaskCard — single task row in the Tugas list (hi-fi TUG-1).
- * Built on the canonical HomeListRow + StatusPill, mirroring TodayTasksModal:
- * dotted status pill + right-aligned mono meta (elapsed/deadline/created) + title
- * + one meta line (area · assignee).
+ * TaskCard — a single task row in the Tugas list, on the shared ListItemCard so
+ * Tugas / Aktivitas / Lembur read identically (status pill · created date · title
+ * · description · meta · creator).
  */
 
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { HomeListRow } from '../../../components/home/HomeListRow';
-import { StatusPill } from '../../../components/home/StatusPill';
+import { StyleSheet } from 'react-native';
+import { ListItemCard, type ListItemMeta } from '../../../components/common';
 import { nbSpacing } from '../../../constants/nbTokens';
 import { taskPill } from '../../../utils/taskStatus';
-import { formatDate, formatTime, formatElapsed } from '../../../utils/statusHelpers';
+import { formatDate, formatTime, TASK_PRIORITY_LABEL } from '../../../utils/statusHelpers';
 import type { Task } from '../../../types/models.types';
 
 interface TaskCardProps {
@@ -19,36 +17,36 @@ interface TaskCardProps {
   onPress: () => void;
 }
 
-function rightMeta(task: Task): string | undefined {
-  if (task.status === 'in_progress' && task.started_at) {
-    const elapsed = formatElapsed(task.started_at);
-    if (elapsed) { return `⏱ ${elapsed}`; }
-  }
-  if (task.deadline) { return `${formatDate(task.deadline)} · ${formatTime(task.deadline)}`; }
-  return formatDate(task.created_at);
+function buildMeta(task: Task): ListItemMeta[] {
+  const meta: ListItemMeta[] = [];
+  const location = task.area?.name ?? task.rayon?.name;
+  if (location) { meta.push({ icon: 'map-marker', label: location }); }
+  if (task.deadline) { meta.push({ icon: 'clock-outline', label: formatDate(task.deadline) }); }
+  if (task.priority) { meta.push({ icon: 'flag-outline', label: TASK_PRIORITY_LABEL[task.priority] ?? task.priority }); }
+  return meta;
 }
 
 export function TaskCard({ task, onPress }: TaskCardProps): React.JSX.Element {
   const pill = taskPill(task.status);
-  const location = task.area?.name ?? task.rayon?.name;
-  const subMeta = [location, task.assignee?.full_name].filter(Boolean).join(' · ') || undefined;
-
   return (
-    <View style={styles.wrapper}>
-      <HomeListRow
-        pill={<StatusPill dot tone={pill.tone} label={pill.label} />}
-        title={task.title}
-        meta={rightMeta(task)}
-        subMeta={subMeta}
-        onPress={onPress}
-        testID="task-card"
-      />
-    </View>
+    <ListItemCard
+      statusTone={pill.tone}
+      statusLabel={pill.label}
+      rightText={`${formatDate(task.created_at)} · ${formatTime(task.created_at)}`}
+      title={task.title}
+      description={task.description || undefined}
+      meta={buildMeta(task)}
+      creatorText={task.creator ? `${task.creator.role} · ${task.creator.full_name}` : undefined}
+      onPress={onPress}
+      style={styles.spacing}
+      accessibilityLabel={`Detail tugas ${task.title}`}
+      testID="task-card"
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
+  spacing: {
     marginBottom: nbSpacing.sm,
   },
 });

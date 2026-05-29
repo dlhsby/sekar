@@ -4,6 +4,7 @@
  */
 
 import type { OvertimeStatus, ActivityStatus, TaskStatus, PruningRequestStatus } from '../types/models.types';
+import type { StatusTone } from '../components/home/StatusPill';
 
 // Overtime status helpers
 export function getOvertimeStatusColor(status: OvertimeStatus): 'success' | 'warning' | 'danger' {
@@ -158,17 +159,26 @@ export function formatDurationHours(start: string, end: string): string {
   return crossesMidnight ? `${h}j (lintas tengah malam)` : `${h}j`;
 }
 
-// Elapsed time since an ISO datetime until now, short form: "04m", "1j 04m".
-// Returns null when the input is empty or in the future (nothing to show).
-export function formatElapsed(fromISO: string, now: number = Date.now()): string | null {
-  if (!fromISO) { return null; }
-  const diffMs = now - new Date(fromISO).getTime();
-  if (diffMs <= 0) { return null; }
-  const totalMinutes = Math.floor(diffMs / (1000 * 60));
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  const mm = minutes.toString().padStart(2, '0');
-  return hours > 0 ? `${hours}j ${mm}m` : `${minutes}m`;
+// ─── StatusPill tone mappers (shared list card) ──────────────────────────────
+// Map Activity / Overtime statuses to a StatusPill tone + Indonesian label, the
+// same shape as `taskPill` (utils/taskStatus.ts), so the shared ListItemCard can
+// render a consistent dotted status pill across Tugas / Aktivitas / Lembur.
+
+export function activityPill(status?: ActivityStatus): { tone: StatusTone; label: string } {
+  switch (status) {
+    case 'approved': return { tone: 'ok', label: 'Disetujui' };
+    case 'pending': return { tone: 'warn', label: 'Menunggu' };
+    case 'rejected': return { tone: 'bad', label: 'Ditolak' };
+    default: return { tone: 'neutral', label: 'Tercatat' };
+  }
+}
+
+export function overtimePill(status: OvertimeStatus): { tone: StatusTone; label: string } {
+  switch (status) {
+    case 'approved': return { tone: 'ok', label: 'Disetujui' };
+    case 'rejected': return { tone: 'bad', label: 'Ditolak' };
+    default: return { tone: 'warn', label: 'Menunggu' };
+  }
 }
 
 // ─── Pruning Request status (Phase 3) ───────────────────────────────────────

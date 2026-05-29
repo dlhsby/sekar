@@ -1,15 +1,15 @@
 /**
- * ActivityCard
- * Extracted from TasksActivityScreen — renders a single activity item in the list.
+ * ActivityCard — a single activity row in the Aktivitas list, on the shared
+ * ListItemCard so it reads identically to Tugas / Lembur.
  */
 
 import React from 'react';
-import { TouchableOpacity, View, StyleSheet } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { NBCard, NBBadge, NBText } from '../../../components/nb';
-import { nbColors, nbSpacing } from '../../../constants/nbTokens';
+import { StyleSheet } from 'react-native';
+import { NBBadge } from '../../../components/nb';
+import { ListItemCard, type ListItemMeta } from '../../../components/common';
+import { nbSpacing } from '../../../constants/nbTokens';
+import { activityPill, formatDate, formatTime } from '../../../utils/statusHelpers';
 import type { Activity } from '../../../types/models.types';
-import { formatDate, formatTime, getActivityStatusLabel, getActivityStatusColor } from '../../../utils/statusHelpers';
 
 interface ActivityCardProps {
   activity: Activity;
@@ -18,111 +18,42 @@ interface ActivityCardProps {
   currentUserId?: string;
 }
 
+function buildMeta(activity: Activity): ListItemMeta[] {
+  const meta: ListItemMeta[] = [];
+  if (activity.area) { meta.push({ icon: 'map-marker', label: activity.area.name }); }
+  if (activity.photo_urls && activity.photo_urls.length > 0) {
+    meta.push({ icon: 'camera', label: `${activity.photo_urls.length} foto` });
+  }
+  return meta;
+}
+
 export function ActivityCard({ activity, onPress, currentUserId }: ActivityCardProps): React.JSX.Element {
   // ADR-038: when the activity is owned by someone else, the viewer is here via tag.
   const isTaggedIn = Boolean(
     currentUserId && activity.user_id && activity.user_id !== currentUserId,
   );
+  const pill = activityPill(activity.status);
 
   return (
-    <TouchableOpacity style={styles.itemCard} onPress={onPress} testID="activity-card">
-      <NBCard variant="elevated" style={styles.cardInner}>
-        {/* Header: activity type + created time | status badge */}
-        <View style={styles.itemHeader}>
-          <View style={styles.itemHeaderLeft}>
-            <NBText variant="body" style={styles.itemPrimary} numberOfLines={1}>
-              {activity.activityType?.name || 'Aktivitas'}
-            </NBText>
-            <NBText variant="caption" color="gray500">
-              {formatDate(activity.created_at)} · {formatTime(activity.created_at)}
-            </NBText>
-          </View>
-          <View style={styles.itemHeaderRight}>
-            {isTaggedIn && (
-              <NBBadge text="Diikutsertakan" color="navy" />
-            )}
-            {activity.status && (
-              <NBBadge
-                text={getActivityStatusLabel(activity.status)}
-                color={getActivityStatusColor(activity.status)}
-              />
-            )}
-          </View>
-        </View>
-        {/* Description */}
-        {activity.description ? (
-          <NBText variant="body-sm" color="gray600" style={styles.itemDescription} numberOfLines={2}>
-            {activity.description}
-          </NBText>
-        ) : null}
-        {/* Meta row */}
-        <View style={styles.itemMeta}>
-          {activity.area && (
-            <View style={styles.itemMetaChip}>
-              <MaterialCommunityIcons name="map-marker" size={11} color={nbColors.gray500} />
-              <NBText variant="caption" color="gray500"> {activity.area.name}</NBText>
-            </View>
-          )}
-          {activity.photo_urls && activity.photo_urls.length > 0 && (
-            <View style={styles.itemMetaChip}>
-              <MaterialCommunityIcons name="camera" size={11} color={nbColors.gray500} />
-              <NBText variant="caption" color="gray500"> {activity.photo_urls.length} foto</NBText>
-            </View>
-          )}
-        </View>
-        {/* Creator row */}
-        {activity.user && (
-          <View style={styles.itemCreatorRow}>
-            <MaterialCommunityIcons name="account" size={11} color={nbColors.gray500} />
-            <NBText variant="caption" color="gray500"> {activity.user.role} - {activity.user.full_name}</NBText>
-          </View>
-        )}
-      </NBCard>
-    </TouchableOpacity>
+    <ListItemCard
+      statusTone={pill.tone}
+      statusLabel={pill.label}
+      extraTag={isTaggedIn ? <NBBadge text="Diikutsertakan" color="navy" size="sm" /> : undefined}
+      rightText={`${formatDate(activity.created_at)} · ${formatTime(activity.created_at)}`}
+      title={activity.activityType?.name || 'Aktivitas'}
+      description={activity.description || undefined}
+      meta={buildMeta(activity)}
+      creatorText={activity.user ? `${activity.user.role} · ${activity.user.full_name}` : undefined}
+      onPress={onPress}
+      style={styles.spacing}
+      accessibilityLabel={`Detail aktivitas ${activity.activityType?.name ?? ''}`}
+      testID="activity-card"
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  itemCard: {
+  spacing: {
     marginBottom: nbSpacing.sm,
-  },
-  cardInner: {
-    padding: nbSpacing.md,
-  },
-  itemHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: nbSpacing.xs,
-  },
-  itemHeaderLeft: {
-    flex: 1,
-    marginRight: nbSpacing.sm,
-  },
-  itemHeaderRight: {
-    alignItems: 'flex-end',
-    gap: nbSpacing.xs,
-  },
-  itemPrimary: {
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  itemDescription: {
-    marginBottom: nbSpacing.xs,
-  },
-  itemMeta: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: nbSpacing.xs,
-    marginTop: 2,
-  },
-  itemMetaChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  itemCreatorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: nbSpacing.xs,
   },
 });

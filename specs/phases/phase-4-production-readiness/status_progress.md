@@ -15,27 +15,34 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
-## May 28, 2026 — M3 TUG-1 revamp: Tugas list card + states (Checkpoint 1)
+## May 29, 2026 — M3: standardized list card across Tugas / Aktivitas / Lembur (+ Home sheets, Shift history)
 
-- **`TaskCard`** (`screens/taskActivity/components/TaskCard.tsx`) rebuilt on the canonical
-  `HomeListRow` + `StatusPill` (mirrors `TodayTasksModal`) — dotted status pill +
-  right-aligned mono meta (in_progress elapsed via new `formatElapsed` / deadline / created)
-  + title + one subMeta line (`area ?? rayon` · assignee). Dropped the prior bespoke
-  `NBCard` clutter (priority/tags/creator chips + async `PlantStatusChip`); those move to
-  the TUG-2 detail. `PlantStatusChip.tsx` left in place for TUG-2.
-- **`StatusPill`** gains an additive `dot?: boolean` (hi-fi `.pill .d`) — small tone-colored
-  leading circle; defaults off, so Home/monitoring callers are unchanged.
-- **`taskPill`** (`utils/taskStatus.ts`) extended to all 8 statuses (completed→info
-  "Menunggu verifikasi", verified→ok "Terverifikasi", declined→bad "Ditolak") before the
-  default — backward-compatible (active-task surfaces only ever pass active statuses).
-- **`formatElapsed(fromISO)`** added to `utils/statusHelpers.ts` ("1j 04m" / "04m" form;
-  null for empty/future).
-- **`TasksTab`** states: error now renders `NBEmptyState` (`illo-offline` + "Coba Lagi"
-  retry) instead of the hand-rolled view; filtered-empty shows `illo-search` + "Tidak ada
-  tugas yang cocok" via a new `isFiltered` prop (passed from `TasksActivityScreen` as
-  `activeFilterCount > 0`). Filter/sort/pagination logic untouched.
+**Goal:** one consistent list-row anatomy so the user always finds status, created date,
+title, description, meta, and creator in the same place.
+
+- **New shared `ListItemCard`** (`components/common/ListItemCard.tsx`): dotted `StatusPill`
+  (top-left) + created date·time (top-right) + bold title + 2-line description + icon meta
+  chips + creator row. Optional `extraTag`, `rightText`, `style` (list screens pass a bottom
+  margin; gap-based sheets don't). Exported from `components/common`.
+- **`StatusPill`** gains additive `dot?: boolean` (hi-fi `.pill .d`); defaults off →
+  Home/monitoring callers unchanged.
+- **Status→pill mappers**: `taskPill` (`utils/taskStatus.ts`) extended to all 8 statuses
+  (backward-compatible); new `activityPill` / `overtimePill` added to `utils/statusHelpers.ts`.
+- **Cards rebuilt as thin wrappers** over `ListItemCard`: `TaskCard`, `ActivityCard`
+  (keeps the "Diikutsertakan" tag via `extraTag`), `OvertimeCard`. Right-side is the created
+  date for all three; entity-specific meta as chips (task: area/deadline/priority; activity:
+  area/photos; overtime: duration/area/photos).
+- **Home "hari ini" sheets**: `TodayTasksModal` + `TodayActivitiesModal` now use
+  `ListItemCard` (creator omitted — personal view). `TodayWorkHoursModal` updates via
+  `ShiftCard`.
+- **Shifts (header aligned, time grid kept)**: `ShiftCard` and `ShiftHistoryScreen`'s
+  `ShiftRow` headers now lead with a dotted `StatusPill` (Aktif=ok / Selesai=neutral) + area
+  title, matching the standard, while keeping the Clock In | Clock Out | Durasi grid.
+- **`TasksTab`** states: error → `NBEmptyState` (`illo-offline` + "Coba Lagi"); filtered-empty
+  → `illo-search` via new `isFiltered` prop (from `TasksActivityScreen`, `activeFilterCount > 0`).
 - No status segment tabs / no date grouping (scope decisions). `tsc` clean on touched files
-  (pre-existing unrelated errors remain). Metro reload to verify; tests pending user OK.
+  (pre-existing unrelated errors remain). Existing card tests (Task/Activity/Overtime) will
+  need updating in the test phase. Metro reload to verify; tests pending user OK.
 
 ## May 28, 2026 — Native splash: wordmark + tagline under the lockup
 

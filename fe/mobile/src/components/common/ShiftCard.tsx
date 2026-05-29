@@ -18,10 +18,10 @@ import {
   nbColors,
   nbSpacing,
   nbBorders,
-  nbRadius,
 } from '../../constants/nbTokens';
 import { formatTime, calculateDuration } from '../../utils/dateUtils';
 import { NBCard, NBText } from '../nb';
+import { StatusPill } from '../home/StatusPill';
 import type { Shift } from '../../types/models.types';
 
 interface ShiftCardProps {
@@ -48,37 +48,22 @@ export function ShiftCard({
 
   const card = (
     <NBCard style={[styles.card, compact && styles.cardCompact]} variant="default">
-      {/* Header: Area Info + Status Badge */}
+      {/* Header: status pill (left) + shift # / date (right) — matches the shared
+          ListItemCard anatomy used by Tugas / Aktivitas / Lembur. */}
       <View style={styles.header}>
-        <View style={styles.areaInfo}>
-          {shiftNumber ? (
-            <NBText variant="body" color="gray700" style={styles.bold}>Shift #{shiftNumber}</NBText>
-          ) : (
-            <>
-              <NBText variant="body" color="gray700" numberOfLines={1} style={styles.semibold}>
-                {shift.area?.name || 'Area tidak diketahui'}
-              </NBText>
-              {shift.area?.area_type?.name && (
-                <NBText variant="body-sm" color="gray500">{shift.area.area_type.name}</NBText>
-              )}
-            </>
-          )}
-        </View>
-        <View
-          style={[
-            styles.statusBadge,
-            isActive ? styles.statusActive : styles.statusCompleted,
-          ]}>
-          <NBText
-            variant="mono-sm"
-            color={isActive ? 'white' : 'gray600'}
-            uppercase
-            style={styles.statusText}
-          >
-            {isActive ? 'AKTIF' : 'SELESAI'}
-          </NBText>
-        </View>
+        <StatusPill dot tone={isActive ? 'ok' : 'neutral'} label={isActive ? 'Aktif' : 'Selesai'} />
+        {shiftNumber ? (
+          <NBText variant="mono-sm" color="gray500" style={styles.rightText}>Shift #{shiftNumber}</NBText>
+        ) : null}
       </View>
+
+      {/* Title: area */}
+      <NBText variant="body" color="black" numberOfLines={1} style={styles.title}>
+        {shift.area?.name || 'Area tidak diketahui'}
+      </NBText>
+      {shift.area?.area_type?.name ? (
+        <NBText variant="body-sm" color="gray500" style={styles.areaType}>{shift.area.area_type.name}</NBText>
+      ) : null}
 
       {/* Time Row: 3 columns with dividers */}
       <View style={styles.timeRow}>
@@ -162,50 +147,28 @@ const styles = StyleSheet.create({
     padding: nbSpacing.xs,
   },
 
-  // Header (Area + Status)
+  // Header (status pill + shift # / date)
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: nbSpacing.md,
+    alignItems: 'center',
+    gap: nbSpacing.sm,
+    marginBottom: nbSpacing.xs,
   },
 
-  areaInfo: {
-    flex: 1,
-    marginRight: nbSpacing.sm,
-  },
+  rightText: { fontSize: 10 },
 
   semibold: { fontWeight: '600' },
-  bold: { fontWeight: '700' },
 
-  statusBadge: {
-    width: 70, // Fixed width for consistency
-    paddingVertical: nbSpacing.xs / 2,
-    borderRadius: nbRadius.sm,
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.black,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  statusActive: {
-    backgroundColor: nbColors.success,
-  },
-
-  statusCompleted: {
-    backgroundColor: nbColors.gray['200'],
-  },
-
-  statusText: {
-    letterSpacing: 0.5,
-    textAlign: 'center',
-  },
+  title: { fontWeight: '700' },
+  areaType: { marginTop: 2 },
 
   // Time Row (3 columns)
   timeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: nbSpacing.md,
   },
 
   timeItem: {

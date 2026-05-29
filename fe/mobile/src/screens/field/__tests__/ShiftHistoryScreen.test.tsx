@@ -221,7 +221,7 @@ describe('ShiftHistoryScreen', () => {
       const { getByText } = render(<ShiftHistoryScreen />);
 
       await waitFor(() => {
-        expect(getByText('AKTIF')).toBeTruthy();
+        expect(getByText('Aktif')).toBeTruthy();
       });
     });
 
@@ -229,7 +229,7 @@ describe('ShiftHistoryScreen', () => {
       const { getAllByText } = render(<ShiftHistoryScreen />);
 
       await waitFor(() => {
-        const selesaiBadges = getAllByText('SELESAI');
+        const selesaiBadges = getAllByText('Selesai');
         expect(selesaiBadges.length).toBe(2); // Two completed shifts
       });
     });
@@ -287,7 +287,7 @@ describe('ShiftHistoryScreen', () => {
       const { getByText } = render(<ShiftHistoryScreen />);
 
       await waitFor(() => {
-        expect(getByText('AKTIF')).toBeTruthy();
+        expect(getByText('Aktif')).toBeTruthy();
       });
     });
   });

@@ -1,20 +1,16 @@
 /**
- * OvertimeCard
- * Extracted from OvertimeListScreen — renders a single overtime item in the list.
+ * OvertimeCard — a single overtime row in the Lembur list, on the shared
+ * ListItemCard so it reads identically to Tugas / Aktivitas.
  */
 
 import React from 'react';
-import { TouchableOpacity, View, StyleSheet } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { NBCard, NBBadge, NBText } from '../../../components/nb';
+import { StyleSheet } from 'react-native';
+import { ListItemCard, type ListItemMeta } from '../../../components/common';
+import { nbSpacing } from '../../../constants/nbTokens';
 import {
-  nbColors,
-  nbSpacing,
-} from '../../../constants/nbTokens';
-import {
-  getOvertimeStatusColor,
-  getOvertimeStatusLabel,
-  formatDateIndonesian,
+  overtimePill,
+  formatDate,
+  formatTime,
   formatDurationHours,
 } from '../../../utils/statusHelpers';
 import type { Overtime } from '../../../types/models.types';
@@ -24,116 +20,38 @@ interface OvertimeCardProps {
   onPress: () => void;
 }
 
+function buildMeta(overtime: Overtime): ListItemMeta[] {
+  const meta: ListItemMeta[] = [];
+  const duration = formatDurationHours(overtime.start_datetime ?? '', overtime.end_datetime ?? '');
+  if (duration && duration !== '-') { meta.push({ icon: 'clock-outline', label: duration }); }
+  if (overtime.area) { meta.push({ icon: 'map-marker-outline', label: overtime.area.name }); }
+  if (overtime.photo_urls && overtime.photo_urls.length > 0) {
+    meta.push({ icon: 'camera-outline', label: `${overtime.photo_urls.length} foto` });
+  }
+  return meta;
+}
+
 export const OvertimeCard = React.memo(function OvertimeCard({ overtime, onPress }: OvertimeCardProps): React.JSX.Element {
-  const durationStr = formatDurationHours(overtime.start_datetime ?? '', overtime.end_datetime ?? '');
-  const createdDate = formatDateIndonesian(overtime.created_at);
-  const createdTime = new Date(overtime.created_at).toLocaleTimeString('id-ID', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Asia/Jakarta',
-  });
-
+  const pill = overtimePill(overtime.status);
   return (
-    <TouchableOpacity
-      style={styles.itemCard}
+    <ListItemCard
+      statusTone={pill.tone}
+      statusLabel={pill.label}
+      rightText={`${formatDate(overtime.created_at)} · ${formatTime(overtime.created_at)}`}
+      title={overtime.activityType?.name ?? 'Lembur'}
+      description={overtime.description || undefined}
+      meta={buildMeta(overtime)}
+      creatorText={overtime.user ? `${overtime.user.role} · ${overtime.user.full_name}` : undefined}
       onPress={onPress}
-      activeOpacity={0.7}
-      accessibilityRole="button"
+      style={styles.spacing}
       accessibilityLabel={`Detail lembur ${overtime.activityType?.name ?? 'Lembur'}`}
-    >
-      <NBCard variant="elevated" style={styles.cardInner}>
-        {/* Header: activity type + created time | status badge */}
-        <View style={styles.itemHeader}>
-          <View style={styles.itemHeaderLeft}>
-            <NBText variant="body" color="black" numberOfLines={1} style={{ marginBottom: 2 }}>
-              {overtime.activityType?.name ?? 'Lembur'}
-            </NBText>
-            <NBText variant="caption" color="gray500">
-              {createdDate} · {createdTime}
-            </NBText>
-          </View>
-          <View style={styles.itemHeaderRight}>
-            <NBBadge
-              text={getOvertimeStatusLabel(overtime.status)}
-              color={getOvertimeStatusColor(overtime.status)}
-            />
-          </View>
-        </View>
-
-        {/* Description */}
-        {overtime.description ? (
-          <NBText variant="body-sm" color="gray600" numberOfLines={2} style={{ marginBottom: nbSpacing.xs }}>
-            {overtime.description}
-          </NBText>
-        ) : null}
-
-        {/* Meta row: duration, area, photos */}
-        <View style={styles.itemMeta}>
-          <View style={styles.metaChip}>
-            <MaterialCommunityIcons name="clock-outline" size={12} color={nbColors.gray500} style={{ marginRight: 3 }} />
-            <NBText variant="caption" color="gray500">{durationStr}</NBText>
-          </View>
-          {overtime.area && (
-            <View style={styles.metaChip}>
-              <MaterialCommunityIcons name="map-marker-outline" size={12} color={nbColors.gray500} style={{ marginRight: 3 }} />
-              <NBText variant="caption" color="gray500">{overtime.area.name}</NBText>
-            </View>
-          )}
-          {overtime.photo_urls && overtime.photo_urls.length > 0 && (
-            <View style={styles.metaChip}>
-              <MaterialCommunityIcons name="camera-outline" size={12} color={nbColors.gray500} style={{ marginRight: 3 }} />
-              <NBText variant="caption" color="gray500">{overtime.photo_urls.length} foto</NBText>
-            </View>
-          )}
-        </View>
-
-        {/* Creator row */}
-        {overtime.user && (
-          <View style={styles.creatorRow}>
-            <MaterialCommunityIcons name="account-outline" size={12} color={nbColors.gray500} style={{ marginRight: 3 }} />
-            <NBText variant="caption" color="gray500">
-              {overtime.user.role} - {overtime.user.full_name}
-            </NBText>
-          </View>
-        )}
-      </NBCard>
-    </TouchableOpacity>
+      testID="overtime-card"
+    />
   );
 });
 
 const styles = StyleSheet.create({
-  itemCard: {
+  spacing: {
     marginBottom: nbSpacing.sm,
-  },
-  cardInner: {
-    padding: nbSpacing.md,
-  },
-  itemHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: nbSpacing.xs,
-  },
-  itemHeaderLeft: {
-    flex: 1,
-    marginRight: nbSpacing.sm,
-  },
-  itemHeaderRight: {
-    alignItems: 'flex-end',
-  },
-  itemMeta: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: nbSpacing.xs,
-    marginTop: 2,
-  },
-  metaChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  creatorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: nbSpacing.xs,
   },
 });

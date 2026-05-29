@@ -6,11 +6,10 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { NBModal } from '../nb/NBModal';
 import { NBText } from '../nb/NBText';
-import { StatusPill } from '../home/StatusPill';
-import { HomeListRow } from '../home/HomeListRow';
+import { ListItemCard, type ListItemMeta } from '../common';
 import { nbSpacing } from '../../constants/nbTokens';
-import { formatTime } from '../../utils/dateUtils';
 import { taskPill } from '../../utils/taskStatus';
+import { formatDate, formatTime } from '../../utils/statusHelpers';
 import type { Task } from '../../types/models.types';
 
 interface TodayTasksModalProps {
@@ -47,14 +46,20 @@ export function TodayTasksModal({
         <View style={styles.list}>
           {tasks.map((task) => {
             const p = taskPill(task.status);
+            const meta: ListItemMeta[] = [];
+            if (task.area?.name) { meta.push({ icon: 'map-marker', label: task.area.name }); }
+            if (task.deadline) { meta.push({ icon: 'clock-outline', label: formatDate(task.deadline) }); }
             return (
-              <HomeListRow
+              <ListItemCard
                 key={task.id}
-                pill={<StatusPill tone={p.tone} label={p.label} />}
+                statusTone={p.tone}
+                statusLabel={p.label}
+                rightText={`${formatDate(task.created_at)} · ${formatTime(task.created_at)}`}
                 title={task.title}
-                meta={task.deadline ? formatTime(task.deadline) : undefined}
-                subMeta={task.area?.name}
-                onPress={onTaskPress ? () => onTaskPress(task) : undefined}
+                description={task.description || undefined}
+                meta={meta}
+                onPress={() => onTaskPress?.(task)}
+                accessibilityLabel={`Detail tugas ${task.title}`}
                 testID={`today-task-${task.id}`}
               />
             );

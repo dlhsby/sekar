@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBEmptyState, NBBackgroundPattern, NBText, NBDatePicker, NBModal } from '../../components/nb';
+import { StatusPill } from '../../components/home/StatusPill';
 import { ShiftDetailModal } from '../../components/modals/ShiftDetailModal';
 import { getMyShifts } from '../../services/api/shiftsApi';
 import { formatTime } from '../../utils/dateUtils';
@@ -254,28 +255,18 @@ function ShiftRow({
       accessibilityHint="Ketuk untuk melihat detail shift"
     >
       <View style={styles.shiftRow}>
+        {/* Header: status pill (matches Tugas/Aktivitas/Lembur) + area title */}
         <View style={styles.shiftRowHeader}>
-          <View style={styles.shiftRowAreaInfo}>
-            <NBText variant="body" color="gray700" style={styles.semibold} numberOfLines={1}>
-              {shift.area?.name ?? 'Area tidak diketahui'}
-            </NBText>
-            {shift.area?.area_type?.name ? (
-              <NBText variant="body-sm" color="gray500">
-                {shift.area.area_type.name}
-              </NBText>
-            ) : null}
-          </View>
-          <View style={[styles.shiftStatusBadge, isActive ? styles.shiftStatusActive : styles.shiftStatusDone]}>
-            <NBText
-              variant="mono-sm"
-              color={isActive ? 'white' : 'gray600'}
-              uppercase
-              style={styles.shiftStatusText}
-            >
-              {isActive ? 'AKTIF' : 'SELESAI'}
-            </NBText>
-          </View>
+          <StatusPill dot tone={isActive ? 'ok' : 'neutral'} label={isActive ? 'Aktif' : 'Selesai'} />
         </View>
+        <NBText variant="body" color="black" style={styles.shiftRowTitle} numberOfLines={1}>
+          {shift.area?.name ?? 'Area tidak diketahui'}
+        </NBText>
+        {shift.area?.area_type?.name ? (
+          <NBText variant="body-sm" color="gray500" style={styles.shiftRowAreaType}>
+            {shift.area.area_type.name}
+          </NBText>
+        ) : null}
 
         <View style={styles.shiftTimeGrid}>
           <View style={styles.shiftTimeCell}>
@@ -767,37 +758,22 @@ const styles = StyleSheet.create({
   },
   shiftRowHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: nbSpacing.sm,
+    alignItems: 'center',
+    marginBottom: nbSpacing.xs,
   },
-  shiftRowAreaInfo: {
-    flex: 1,
-    marginRight: nbSpacing.sm,
+  shiftRowTitle: {
+    fontWeight: '700',
+  },
+  shiftRowAreaType: {
+    marginTop: 2,
   },
   semibold: {
     fontWeight: '600',
   },
-  shiftStatusBadge: {
-    width: 72,
-    paddingVertical: 3,
-    borderRadius: nbRadius.sm,
-    borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.black,
-    alignItems: 'center',
-  },
-  shiftStatusActive: {
-    backgroundColor: nbColors.success,
-  },
-  shiftStatusDone: {
-    backgroundColor: nbColors.gray200,
-  },
-  shiftStatusText: {
-    letterSpacing: 0.5,
-  },
   shiftTimeGrid: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    marginTop: nbSpacing.md,
   },
   shiftTimeCell: {
     flex: 1,

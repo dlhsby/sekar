@@ -65,34 +65,29 @@ describe('OvertimeCard', () => {
     });
   });
 
-  describe('Status badge', () => {
-    // NBBadge renders text in UPPERCASE and exposes an accessibilityLabel
-    // in the form "<color> badge: <label>". We assert via getByLabelText.
-
-    it('renders the status badge for pending with correct accessibility label', () => {
-      const { getByLabelText } = render(
+  describe('Status pill (overtimePill)', () => {
+    // StatusPill renders the label as its text node.
+    it('renders the status pill "Menunggu" for pending', () => {
+      const { getByText } = render(
         <OvertimeCard overtime={BASE_OVERTIME} onPress={() => {}} />,
       );
-      // getOvertimeStatusLabel('pending') → 'Menunggu', color → 'warning'
-      expect(getByLabelText('warning badge: Menunggu')).toBeTruthy();
+      expect(getByText('Menunggu')).toBeTruthy();
     });
 
-    it('renders the status badge for approved with correct accessibility label', () => {
+    it('renders the status pill "Disetujui" for approved', () => {
       const overtime = { ...BASE_OVERTIME, status: 'approved' } as Overtime;
-      const { getByLabelText } = render(
+      const { getByText } = render(
         <OvertimeCard overtime={overtime} onPress={() => {}} />,
       );
-      // getOvertimeStatusLabel('approved') → 'Disetujui', color → 'success'
-      expect(getByLabelText('success badge: Disetujui')).toBeTruthy();
+      expect(getByText('Disetujui')).toBeTruthy();
     });
 
-    it('renders the status badge for rejected with correct accessibility label', () => {
+    it('renders the status pill "Ditolak" for rejected', () => {
       const overtime = { ...BASE_OVERTIME, status: 'rejected' } as Overtime;
-      const { getByLabelText } = render(
+      const { getByText } = render(
         <OvertimeCard overtime={overtime} onPress={() => {}} />,
       );
-      // getOvertimeStatusLabel('rejected') → 'Ditolak', color → 'danger'
-      expect(getByLabelText('danger badge: Ditolak')).toBeTruthy();
+      expect(getByText('Ditolak')).toBeTruthy();
     });
   });
 

@@ -69,35 +69,34 @@ describe('ActivityCard', () => {
     expect(queryByText(/foto/)).toBeNull();
   });
 
-  describe('status badge', () => {
-    // NBBadge renders text uppercase; use accessibilityLabel for assertion
+  describe('status pill (activityPill)', () => {
+    // StatusPill renders the label as its text node.
     it('shows "Disetujui" for approved status', () => {
-      const { getByLabelText } = render(
+      const { getByText } = render(
         <ActivityCard activity={{ ...BASE_ACTIVITY, status: 'approved' } as any} onPress={() => {}} />
       );
-      expect(getByLabelText(/Disetujui/i)).toBeTruthy();
+      expect(getByText('Disetujui')).toBeTruthy();
     });
 
     it('shows "Ditolak" for rejected status', () => {
-      const { getByLabelText } = render(
+      const { getByText } = render(
         <ActivityCard activity={{ ...BASE_ACTIVITY, status: 'rejected' } as any} onPress={() => {}} />
       );
-      expect(getByLabelText(/Ditolak/i)).toBeTruthy();
+      expect(getByText('Ditolak')).toBeTruthy();
     });
 
-    it('shows "Menunggu Persetujuan" for pending status', () => {
-      const { getByLabelText } = render(
+    it('shows "Menunggu" for pending status', () => {
+      const { getByText } = render(
         <ActivityCard activity={{ ...BASE_ACTIVITY, status: 'pending' } as any} onPress={() => {}} />
       );
-      expect(getByLabelText(/Menunggu Persetujuan/i)).toBeTruthy();
+      expect(getByText('Menunggu')).toBeTruthy();
     });
 
-    it('does not render badge when no status', () => {
-      const { queryByLabelText } = render(
+    it('shows "Tercatat" when status is absent', () => {
+      const { getByText } = render(
         <ActivityCard activity={{ ...BASE_ACTIVITY, status: undefined } as any} onPress={() => {}} />
       );
-      expect(queryByLabelText(/Menunggu/i)).toBeNull();
-      expect(queryByLabelText(/Disetujui/i)).toBeNull();
+      expect(getByText('Tercatat')).toBeTruthy();
     });
   });
 

@@ -3,11 +3,6 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { TaskCard } from '../components/TaskCard';
 import type { Task } from '../../../types/models.types';
 
-// Mock PlantStatusChip to avoid API calls in tests
-jest.mock('../components/PlantStatusChip', () => ({
-  PlantStatusChip: ({ areaId, taskTitle }: any) => null,
-}));
-
 const BASE_TASK: Task = {
   id: 'task-1',
   title: 'Bersihkan Taman Bungkul',
@@ -48,9 +43,15 @@ describe('TaskCard', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
-  it('shows assigned user name', () => {
-    const { getByText } = render(<TaskCard task={BASE_TASK} onPress={() => {}} />);
-    expect(getByText(/Budi Santoso/)).toBeTruthy();
+  it('shows creator role and name when creator present', () => {
+    const task = { ...BASE_TASK, creator: { role: 'korlap', full_name: 'Andi' } } as any;
+    const { getByText } = render(<TaskCard task={task} onPress={() => {}} />);
+    expect(getByText(/korlap · Andi/)).toBeTruthy();
+  });
+
+  it('omits creator row when creator absent', () => {
+    const { queryByText } = render(<TaskCard task={BASE_TASK} onPress={() => {}} />);
+    expect(queryByText(/korlap · Andi/)).toBeNull();
   });
 
   it('shows area name when area present', () => {
@@ -77,30 +78,24 @@ describe('TaskCard', () => {
     expect(dateTexts.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('shows tags count when tags present', () => {
-    const taskWithTags = { ...BASE_TASK, tags: [{ id: 't1' }, { id: 't2' }] } as any;
-    const { getByText } = render(<TaskCard task={taskWithTags} onPress={() => {}} />);
-    expect(getByText(/2 tag/)).toBeTruthy();
-  });
-
-  describe('status badge labels', () => {
-    // NBBadge renders text uppercase; use accessibilityLabel for assertion
+  describe('status pill labels (taskPill)', () => {
+    // StatusPill renders the label as its text node (uppercase is CSS-only).
     const cases: Array<[Task['status'], string]> = [
       ['pending', 'Menunggu'],
-      ['assigned', 'Ditugaskan'],
-      ['accepted', 'Diterima'],
+      ['assigned', 'Siap mulai'],
+      ['accepted', 'Siap mulai'],
       ['declined', 'Ditolak'],
-      ['in_progress', 'Dikerjakan'],
-      ['completed', 'Menunggu Verifikasi'],
+      ['in_progress', 'Berjalan'],
+      ['completed', 'Menunggu verifikasi'],
       ['verified', 'Terverifikasi'],
-      ['revision_needed', 'Perlu Revisi'],
+      ['revision_needed', 'Revisi'],
     ];
 
-    test.each(cases)('status %s → label "%s"', (status, label) => {
-      const { getByLabelText } = render(
+    test.each(cases)('status %s → pill "%s"', (status, label) => {
+      const { getByText } = render(
         <TaskCard task={{ ...BASE_TASK, status } as any} onPress={() => {}} />
       );
-      expect(getByLabelText(new RegExp(label, 'i'))).toBeTruthy();
+      expect(getByText(label)).toBeTruthy();
     });
   });
 

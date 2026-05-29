@@ -15,6 +15,8 @@ import {
   formatTime,
   formatDateIndonesian,
   formatDurationHours,
+  activityPill,
+  overtimePill,
 } from '../statusHelpers';
 
 describe('statusHelpers', () => {
@@ -169,6 +171,50 @@ describe('statusHelpers', () => {
 
     it('returns the raw string for an unknown status (default)', () => {
       expect(getTaskStatusLabel('some_unknown')).toBe('some_unknown');
+    });
+  });
+
+  // ─── activityPill (StatusPill tone + label) ─────────────────────────────────
+
+  describe('activityPill', () => {
+    it('maps approved → ok / Disetujui', () => {
+      expect(activityPill('approved')).toEqual({ tone: 'ok', label: 'Disetujui' });
+    });
+
+    it('maps pending → warn / Menunggu', () => {
+      expect(activityPill('pending')).toEqual({ tone: 'warn', label: 'Menunggu' });
+    });
+
+    it('maps rejected → bad / Ditolak', () => {
+      expect(activityPill('rejected')).toEqual({ tone: 'bad', label: 'Ditolak' });
+    });
+
+    it('maps undefined → neutral / Tercatat', () => {
+      expect(activityPill(undefined)).toEqual({ tone: 'neutral', label: 'Tercatat' });
+    });
+
+    it('maps an unknown status → neutral / Tercatat (default)', () => {
+      expect(activityPill('weird' as any)).toEqual({ tone: 'neutral', label: 'Tercatat' });
+    });
+  });
+
+  // ─── overtimePill (StatusPill tone + label) ─────────────────────────────────
+
+  describe('overtimePill', () => {
+    it('maps approved → ok / Disetujui', () => {
+      expect(overtimePill('approved')).toEqual({ tone: 'ok', label: 'Disetujui' });
+    });
+
+    it('maps rejected → bad / Ditolak', () => {
+      expect(overtimePill('rejected')).toEqual({ tone: 'bad', label: 'Ditolak' });
+    });
+
+    it('maps pending → warn / Menunggu', () => {
+      expect(overtimePill('pending')).toEqual({ tone: 'warn', label: 'Menunggu' });
+    });
+
+    it('maps an unknown status → warn / Menunggu (default)', () => {
+      expect(overtimePill('weird' as any)).toEqual({ tone: 'warn', label: 'Menunggu' });
     });
   });
 

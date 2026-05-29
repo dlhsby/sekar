@@ -1,5 +1,5 @@
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { render, fireEvent } from '@testing-library/react-native';
 import { TasksTab } from '../tabs/TasksTab';
 
 jest.mock('../../../components/nb/NBBackgroundPattern', () => ({
@@ -35,12 +35,23 @@ describe('TasksTab', () => {
     expect(getByText('Belum ada tugas')).toBeTruthy();
   });
 
-  it('renders error state with retry button', () => {
+  it('renders error state with retry button and fires onRetry', () => {
     const mockRetry = jest.fn();
     const { getByText } = render(
-      <TasksTab {...BASE_PROPS} tasksError="Gagal memuat tugas" onRetry={mockRetry} />
+      <TasksTab {...BASE_PROPS} tasksError="Koneksi terputus" onRetry={mockRetry} />
     );
-    expect(getByText('Gagal memuat tugas')).toBeTruthy();
-    expect(getByText('Coba Lagi')).toBeTruthy();
+    expect(getByText('Gagal memuat tugas')).toBeTruthy(); // NBEmptyState title
+    expect(getByText('Koneksi terputus')).toBeTruthy(); // description = tasksError
+    const cta = getByText('Coba Lagi');
+    expect(cta).toBeTruthy();
+    fireEvent.press(cta);
+    expect(mockRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows filtered-empty state when isFiltered is set', () => {
+    const { getByText } = render(
+      <TasksTab {...BASE_PROPS} tasks={[]} isFiltered onRetry={jest.fn()} />
+    );
+    expect(getByText('Tidak ada tugas yang cocok')).toBeTruthy();
   });
 });

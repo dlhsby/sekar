@@ -290,7 +290,7 @@ describe('OvertimeListScreen', () => {
     const { getByText, getAllByText } = renderScreen();
     await waitFor(() => {
       expect(getByText('Penyiraman tambahan')).toBeTruthy();
-      expect(getAllByText(/satgas - Satgas 1/).length).toBeGreaterThan(0);
+      expect(getAllByText(/satgas · Satgas 1/).length).toBeGreaterThan(0);
     });
   });
 
