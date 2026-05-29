@@ -1,23 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!--
-        Android 12+ (API 31+): three-stage launch, all visually identical:
-          1. OS system splash  — icon + branding image (windowSplashScreen*)
-          2. Window background — full artwork (windowBackground = bootsplash)
-          3. WL-1 JS splash    — full branding (SplashSlide.tsx)
+        Android 12+ (API 31+): two visually identical native stages + JS branding:
+          1. OS system splash  — icon on sage canvas (windowSplashScreen*)
+          2. Window background — icon on sage canvas (windowBackground = bootsplash)
+          3. WL-1 JS splash    — full SEKAR branding (SplashSlide.tsx)
+
+        windowSplashScreenBrandingImage is intentionally omitted: the system
+        always stretches the branding image to the full screen width and positions
+        it at a device-specific bottom offset, making it impossible to match the
+        window background layout.  SEKAR wordmark + tagline appear in WL-1 instead.
 
         windowBackground MUST be the full artwork (not just the color) so there
-        is no bare-sage flash between the OS splash exit animation and React
-        Native's first frame.
+        is no bare-sage flash between the OS splash exit and React Native's first frame.
     -->
     <style name="BootTheme" parent="AppTheme">
         <!-- Full artwork shown as window background during RN load — no green flash. -->
         <item name="android:windowBackground">@drawable/bootsplash</item>
         <item name="android:statusBarColor">@color/bootsplash_background</item>
-        <!-- OS system splash: icon centered + branding (SEKAR + tagline) at bottom. -->
+        <!-- OS system splash: icon centered on sage canvas. -->
         <item name="android:windowSplashScreenBackground">@color/bootsplash_background</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
+        <!-- Sage icon background so the circular mask blends into the canvas. -->
         <item name="android:windowSplashScreenIconBackgroundColor">@color/bootsplash_background</item>
-        <item name="android:windowSplashScreenBrandingImage">@drawable/splash_branding</item>
     </style>
 </resources>

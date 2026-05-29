@@ -1,22 +1,14 @@
-<!-- Cold-start launch background (API < 31 and the window-background gap on API 31+).
-     Three-layer layout mirrors the Android 12 OS splash exactly:
-       1. Sage canvas
-       2. Box-lockup icon centered  (matches windowSplashScreenAnimatedIcon position)
-       3. Branding strip at bottom  (matches windowSplashScreenBrandingImage position)
-     Both stages therefore show the same composition — no visual jump. -->
+<!-- Cold-start window background: sage canvas + centered icon.
+     Matches the Android 12 OS splash exactly (stage 1 = stage 2 = icon on sage).
+     SEKAR wordmark + tagline appear in WL-1 (SplashSlide.tsx) after JS loads.
+     windowSplashScreenBrandingImage is NOT used — Android always stretches it
+     to fill the screen width and positions it at a device-specific offset,
+     making pixel-identical matching between stages impossible. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Layer 1: sage canvas -->
     <item android:drawable="@color/bootsplash_background" />
-    <!-- Layer 2: box-lockup icon, centered, same visual size as OS splash icon area -->
     <item
         android:gravity="center"
         android:width="200dp"
         android:height="200dp"
         android:drawable="@drawable/splash_icon" />
-    <!-- Layer 3: SEKAR + tagline strip, bottom-centered at 60dp from edge,
-         matching windowSplashScreenBrandingImage placement -->
-    <item
-        android:gravity="bottom|center_horizontal"
-        android:bottom="60dp"
-        android:drawable="@drawable/splash_branding" />
 </layer-list>
