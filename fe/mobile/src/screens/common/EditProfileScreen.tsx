@@ -39,6 +39,7 @@ export function EditProfileScreen(): React.JSX.Element {
     useNavigation<MainTabScreenProps<'EditProfile'>['navigation']>();
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
+  const assignedArea = useAppSelector((state) => state.auth.assignedArea);
 
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -128,7 +129,7 @@ export function EditProfileScreen(): React.JSX.Element {
               ...user,
               profile_picture_url: response.data.profile_picture_url,
             },
-            area: undefined,
+            area: assignedArea ?? undefined,
           }),
         );
         NBToast.show({ level: 'success', title: 'Berhasil', body: 'Foto profil berhasil diperbarui.' });

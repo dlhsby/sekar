@@ -3,7 +3,7 @@
  * Shared status color/label utilities for overtime, activities, and tasks
  */
 
-import type { OvertimeStatus, ActivityStatus, TaskStatus, PruningRequestStatus } from '../types/models.types';
+import type { OvertimeStatus, ActivityStatus, TaskStatus, PruningRequestStatus, TrackingStatus } from '../types/models.types';
 import type { StatusTone } from '../components/home/StatusPill';
 
 // Overtime status helpers
@@ -178,6 +178,20 @@ export function overtimePill(status: OvertimeStatus): { tone: StatusTone; label:
     case 'approved': return { tone: 'ok', label: 'Disetujui' };
     case 'rejected': return { tone: 'bad', label: 'Ditolak' };
     default: return { tone: 'warn', label: 'Menunggu' };
+  }
+}
+
+// Maps the 5 TrackingStatus values to the StatusPill tone + hi-fi vocabulary
+// used across Monitoring (MON-1/2 pill surfaces). Note: this label set is the
+// hi-fi vocab ("Tidak aktif" / "Luar area" / "Hilang"), distinct from
+// `getStatusLabel` in utils/mapUtils.ts which still backs markers + overlays.
+export function presencePill(status: TrackingStatus): { tone: StatusTone; label: string } {
+  switch (status) {
+    case 'active':       return { tone: 'ok', label: 'Aktif' };
+    case 'inactive':     return { tone: 'warn', label: 'Tidak aktif' };
+    case 'outside_area': return { tone: 'bad', label: 'Luar area' };
+    case 'missing':      return { tone: 'bad', label: 'Hilang' };
+    case 'offline':      return { tone: 'neutral', label: 'Offline' };
   }
 }
 

@@ -36,6 +36,7 @@ interface ProfileMenuProps {
   /** Field-only — row hidden when omitted. */
   onShiftHistory?: () => void;
   onSettings: () => void;
+  onDiagnostics: () => void;
   onAbout: () => void;
   onLogout: () => void;
   testID?: string;
@@ -97,6 +98,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
   onChangePassword,
   onShiftHistory,
   onSettings,
+  onDiagnostics,
   onAbout,
   onLogout,
   testID = 'profile-menu',
@@ -139,6 +141,14 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
       label: 'Pengaturan',
       onPress: onSettings,
       testID: 'settings-button',
+    },
+    {
+      key: 'diagnostics',
+      icon: 'stethoscope',
+      label: 'Diagnostik & Izin',
+      chipColor: withAlpha(nbColors.info, 0.18),
+      onPress: onDiagnostics,
+      testID: 'diagnostics-button',
     },
     {
       key: 'about',

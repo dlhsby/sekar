@@ -23,7 +23,7 @@ import { setCurrentShift, setShiftHistory, setError } from '../../store/slices/s
 import { setActivities } from '../../store/slices/activitiesSlice';
 import { setTasks } from '../../store/slices/tasksSlice';
 import { formatTime, calculateDuration, isToday } from '../../utils/dateUtils';
-import { ACTIVE_TASK_STATUSES } from '../../utils/taskStatus';
+import { isTaskScopedToday } from '../../utils/taskStatus';
 import { useLocationPermission } from '../../hooks';
 import { useHomeLocation } from '../../hooks/useHomeLocation';
 import type { Activity, Task, Shift } from '../../types/models.types';
@@ -101,15 +101,12 @@ export function FieldHomeScreen(): React.JSX.Element {
     return list.filter((shift) => isToday(shift.clock_in_time));
   }, [shiftHistory]);
 
+  // "Tugas hari ini" — all statuses, scoped to today (deadline, created_at,
+  // or completed_at falls today). Shared with the Monitoring user detail sheet
+  // via isTaskScopedToday so both surfaces always agree.
   const activeTasks = useMemo(() => {
     const list = Array.isArray(tasks) ? tasks : [];
-    const eod = new Date();
-    eod.setHours(23, 59, 59, 999);
-    return list.filter((t) => {
-      if (!ACTIVE_TASK_STATUSES.includes(t.status)) return false;
-      if (!t.deadline) return true; // no deadline → always relevant
-      return new Date(t.deadline) <= eod; // due today or overdue
-    });
+    return list.filter(isTaskScopedToday);
   }, [tasks]);
 
   useEffect(() => {

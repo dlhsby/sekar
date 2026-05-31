@@ -193,6 +193,7 @@ export class UsersService {
         'is_active',
         'area_id',
         'rayon_id',
+        'profile_picture_url',
         'created_at',
         'updated_at',
       ],

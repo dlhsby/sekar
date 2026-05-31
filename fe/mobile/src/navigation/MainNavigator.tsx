@@ -35,6 +35,7 @@ import { default as AttendanceScreen } from '../screens/monitoring/AttendanceScr
 import { ProfileScreen } from '../screens/common/ProfileScreen';
 import { SettingsScreen } from '../screens/common/SettingsScreen';
 import { EditProfileScreen } from '../screens/common/EditProfileScreen';
+import { DiagnosticsScreen } from '../screens/common/DiagnosticsScreen';
 
 // Overtime screens
 import { OvertimeListScreen } from '../screens/overtime/OvertimeListScreen';
@@ -99,6 +100,7 @@ const ProfileWithHeader    = withProfileHeader(ProfileScreen,    'Profil');
 const ShiftHistoryWithHeader = withProfileHeader(ShiftHistoryScreen, 'Riwayat Shift');
 const SettingsWithHeader   = withProfileHeader(SettingsScreen,   'Pengaturan');
 const EditProfileWithHeader = withProfileHeader(EditProfileScreen, 'Edit Profil');
+const DiagnosticsWithHeader = withProfileHeader(DiagnosticsScreen, 'Diagnostik');
 
 interface TabConfig {
   name: keyof MainTabParamList;
@@ -419,6 +421,11 @@ function MainNavigator(): React.JSX.Element {
       <MainStack.Screen
         name="EditProfile"
         component={EditProfileWithHeader}
+        options={{ animation: 'slide_from_left' }}
+      />
+      <MainStack.Screen
+        name="Diagnostics"
+        component={DiagnosticsWithHeader}
         options={{ animation: 'slide_from_left' }}
       />
     </MainStack.Navigator>

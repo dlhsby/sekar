@@ -32,6 +32,15 @@ export async function getUsers(limit = 100): Promise<ApiResponse<User[]>> {
 }
 
 /**
+ * Get a single user by id. Backed by `GET /users/:id`.
+ * Used in monitoring to fetch the worker's profile picture + full profile
+ * fields not present on LiveUser / UserDaySummary.
+ */
+export async function getUserById(id: string): Promise<ApiResponse<User>> {
+  return get<User>(`/users/${id}`);
+}
+
+/**
  * Upload profile picture for a user (Phase 2E)
  * Sends multipart/form-data with the image file under the 'file' key.
  * @param userId - Target user's ID

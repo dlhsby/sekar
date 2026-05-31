@@ -15,6 +15,23 @@ export const ACTIVE_TASK_STATUSES: TaskStatus[] = [
   'revision_needed',
 ];
 
+/**
+ * "Tugas hari ini" scope — any task whose deadline, creation, or completion
+ * falls on the current local day. Status-agnostic (all statuses included),
+ * so Home and Monitoring share the same definition and produce the same count.
+ */
+export function isTaskScopedToday(task: { deadline?: string; created_at?: string; completed_at?: string }): boolean {
+  const now = new Date();
+  const sod = new Date(now); sod.setHours(0, 0, 0, 0);
+  const eod = new Date(now); eod.setHours(23, 59, 59, 999);
+  const within = (iso?: string): boolean => {
+    if (!iso) { return false; }
+    const t = new Date(iso).getTime();
+    return t >= sod.getTime() && t <= eod.getTime();
+  };
+  return within(task.deadline) || within(task.created_at) || within(task.completed_at);
+}
+
 /** Map a task status to a StatusPill tone + Indonesian label. */
 export function taskPill(status: TaskStatus): { tone: StatusTone; label: string } {
   switch (status) {

@@ -27,6 +27,7 @@ export type MainStackParamList = {
   EditProfile: undefined;
   Settings: undefined;
   ShiftHistory: undefined;
+  Diagnostics: undefined;
 };
 
 export type MainStackScreenProps<T extends keyof MainStackParamList> =

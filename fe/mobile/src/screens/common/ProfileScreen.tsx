@@ -168,6 +168,7 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
           onChangePassword={() => setIsChangePasswordModalVisible(true)}
           onShiftHistory={isField ? () => navigation.navigate('ShiftHistory') : undefined}
           onSettings={() => navigation.navigate('Settings')}
+          onDiagnostics={() => navigation.navigate('Diagnostics')}
           onAbout={handleAbout}
           onLogout={handleLogout}
         />

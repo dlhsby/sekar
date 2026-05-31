@@ -11,6 +11,7 @@ function setup(extra = {}) {
     onEditProfile: jest.fn(),
     onChangePassword: jest.fn(),
     onSettings: jest.fn(),
+    onDiagnostics: jest.fn(),
     onAbout: jest.fn(),
     onLogout: jest.fn(),
   };
@@ -27,7 +28,7 @@ describe('ProfileMenu', () => {
 
   it('renders the core Akun + Aplikasi rows', () => {
     const { getByText } = setup();
-    ['Edit Profil', 'Ubah Password', 'Pengaturan', 'Tentang Aplikasi', 'Keluar'].forEach((label) =>
+    ['Edit Profil', 'Ubah Password', 'Pengaturan', 'Diagnostik & Izin', 'Tentang Aplikasi', 'Keluar'].forEach((label) =>
       expect(getByText(label)).toBeTruthy(),
     );
   });
@@ -48,6 +49,7 @@ describe('ProfileMenu', () => {
     ['edit-profile-button', 'onEditProfile'],
     ['change-password-button', 'onChangePassword'],
     ['settings-button', 'onSettings'],
+    ['diagnostics-button', 'onDiagnostics'],
     ['about-button', 'onAbout'],
     ['logout-button', 'onLogout'],
   ])('wires %s to %s', (testID, handlerName) => {
@@ -58,7 +60,7 @@ describe('ProfileMenu', () => {
 
   it('exposes accessible button roles/labels for every row', () => {
     const { getByLabelText } = setup({ onShiftHistory: jest.fn() });
-    ['Edit Profil', 'Ubah Password', 'Riwayat Shift', 'Pengaturan', 'Tentang Aplikasi', 'Keluar'].forEach(
+    ['Edit Profil', 'Ubah Password', 'Riwayat Shift', 'Pengaturan', 'Diagnostik & Izin', 'Tentang Aplikasi', 'Keluar'].forEach(
       (label) => expect(getByLabelText(label)).toBeTruthy(),
     );
   });
