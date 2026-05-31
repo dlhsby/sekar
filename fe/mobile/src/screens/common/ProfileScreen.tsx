@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NBBackgroundPattern, NBModal, NBText } from '../../components/nb';
 import { ProfileHeader } from '../../components/common/ProfileHeader';
 import { ProfileMenu } from '../../components/common/ProfileMenu';
@@ -22,6 +23,7 @@ import { locationTracker } from '../../services/location/locationTracker';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
 
 export function ProfileScreen({ navigation }: any): React.JSX.Element {
+  const { bottom: bottomInset } = useSafeAreaInsets();
   const {
     user,
     assignedArea,
@@ -127,7 +129,7 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
       <ScrollView
         testID="ProfileScrollView"
         style={styles.container}
-        contentContainerStyle={styles.contentContainer}
+        contentContainerStyle={[styles.contentContainer, { paddingBottom: nbSpacing.md + bottomInset }]}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -170,7 +172,6 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
           onLogout={handleLogout}
         />
 
-        <View style={styles.bottomSpacer} />
       </ScrollView>
 
       <ChangePasswordModal
@@ -199,8 +200,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   contentContainer: {
-    paddingVertical: nbSpacing.md,
-    flexGrow: 1,
+    paddingTop: nbSpacing.md,
   },
   loadingContainer: {
     flex: 1,
@@ -210,8 +210,5 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: nbSpacing.md,
-  },
-  bottomSpacer: {
-    height: nbSpacing.md,
   },
 });

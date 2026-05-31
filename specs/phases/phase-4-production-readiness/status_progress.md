@@ -4,6 +4,30 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## May 31, 2026 — M3: Profile moved out of bottom tab bar → header avatar tap
+
+**Goal:** free up a tab slot (Profile was a low-touch screen that didn't belong in the primary nav) and make the avatar in the top header the obvious entry point to Profile, matching common mobile patterns.
+
+**Navigation architecture change (`MainNavigator.tsx`)**
+- `createNativeStackNavigator` (`MainStack`) wraps `TabNavigator` (inner bottom-tab component). Profile, EditProfile, Settings, ShiftHistory are now `MainStack` screens — they slide in from the left with `animation: 'slide_from_left'` and cover the full viewport (no bottom tab bar visible). `goBack()` from any of them returns to whichever tab was active, with its scroll/filter state preserved.
+- `withProfileHeader(Component, title)` HOC defined at module level (stable component reference prevents remount on re-renders). Supplies a 76 px JS-rendered header that is pixel-identical to the bottom-tab navigator's header — same `NB_HEADER_STYLE` constant is used by both, eliminating drift.
+- `NB_HEADER_STYLE` extracted as a named export (`height:76, borderBottomWidth, borderBottomColor, nbShadows.md spread, elevation:0`) — single source of truth for header chrome.
+- `Profile` entry removed from all 8 `TAB_CONFIGS` role arrays (tab count reduced by 1 per role).
+- `MainStackParamList` added to `navigation.types.ts` (`Tabs | Profile | EditProfile | Settings | ShiftHistory`).
+
+**FieldHomeHeader tap-to-profile (`FieldHomeHeader.tsx`)**
+- `RoleAvatar` on main-screen headers (when `!onBack`) wrapped in `TouchableOpacity` → `navigation.navigate('Profile')` via `useNavigation()`. `accessibilityLabel="Buka Profil"`, `accessibilityRole="button"`.
+
+**ProfileScreen bottom gap fix (`ProfileScreen.tsx`)**
+- Removed `flexGrow: 1` from `contentContainerStyle` (was inflating the scroll container to fill the full NativeStack screen height, creating blank space at the bottom — previously masked by the tab bar's 68 px height).
+- `useSafeAreaInsets().bottom` used for `paddingBottom` on the scroll container so content clears the home indicator / gesture bar correctly.
+
+**Tests**
+- `MainNavigator.test.tsx`: tab counts updated (-1 per role), Profile-in-tab-bar assertions inverted, new `NB_HEADER_STYLE` shape tests, new "Profile accessible via MainStack" group.
+- `FieldHomeHeader.test.tsx`: added `useNavigation` mock; two new tests — avatar tap calls `navigate('Profile')`, back-button screens do not show the avatar tap target.
+
+---
+
 ## May 29, 2026 — Brand: Android-12 splash alignment + SekarLogoBox 3D shadow
 
 **Android-12 double-splash: icon-only native stages (definitive fix)**

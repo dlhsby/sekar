@@ -23,6 +23,13 @@ jest.mock('../NotificationBell', () => ({
   NotificationBell: () => null,
 }));
 
+// `FieldHomeHeader` now calls `useNavigation()` directly for avatar tap-to-profile.
+// Stub it so tests can render without a NavigationContainer.
+jest.mock('@react-navigation/native', () => ({
+  ...jest.requireActual('@react-navigation/native'),
+  useNavigation: () => ({ navigate: jest.fn() }),
+}));
+
 describe('FieldHomeHeader', () => {
   const createMockStore = (
     role: UserRole = 'satgas',
@@ -646,6 +653,37 @@ describe('FieldHomeHeader', () => {
       const icons = UNSAFE_getAllByType(MaterialCommunityIcons);
       const backIcon = icons.find((el: any) => el.props.name === 'arrow-left');
       expect(backIcon).toBeTruthy();
+    });
+  });
+
+  describe('Avatar tap-to-profile', () => {
+    it('should navigate to Profile when avatar is tapped on main screen header', () => {
+      const mockNavigate = jest.fn();
+      // Override the module-level mock to capture navigate calls.
+      jest.spyOn(require('@react-navigation/native'), 'useNavigation')
+        .mockReturnValue({ navigate: mockNavigate });
+
+      const store = createMockStore('satgas', 'Ahmad Satgas');
+      const { getByLabelText } = render(
+        <Provider store={store}>
+          <FieldHomeHeader />
+        </Provider>
+      );
+
+      fireEvent.press(getByLabelText('Buka Profil'));
+      expect(mockNavigate).toHaveBeenCalledWith('Profile');
+    });
+
+    it('should not show the profile tap target when onBack is provided', () => {
+      const store = createMockStore('satgas', 'Ahmad Satgas');
+      const { queryByLabelText } = render(
+        <Provider store={store}>
+          <FieldHomeHeader title="Detail Tugas" onBack={() => {}} />
+        </Provider>
+      );
+
+      expect(queryByLabelText('Buka Profil')).toBeNull();
+      expect(queryByLabelText('Kembali')).toBeTruthy();
     });
   });
 });

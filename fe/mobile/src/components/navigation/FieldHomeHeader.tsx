@@ -15,6 +15,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useNavigation } from '@react-navigation/native';
 import { useAppSelector } from '../../store/store';
 import { selectTotalPendingCount } from '../../store/slices/offlineSlice';
 import { NBText } from '../nb/NBText';
@@ -40,6 +41,7 @@ export const FieldHomeHeader: React.FC<FieldHomeHeaderProps> = ({ onBack, title 
   const { user, assignedArea } = useAppSelector((state) => state.auth);
   const { isOnline, isSyncing } = useAppSelector((state) => state.offline);
   const pendingCount = useAppSelector(selectTotalPendingCount);
+  const navigation = useNavigation<any>();
 
   const roleLabel = user?.role ? ROLE_LABELS[user.role] : 'User';
   const displayName = user?.full_name ?? 'Pengguna';
@@ -59,15 +61,22 @@ export const FieldHomeHeader: React.FC<FieldHomeHeaderProps> = ({ onBack, title 
           <MaterialCommunityIcons name="arrow-left" size={24} color={nbColors.black} />
         </TouchableOpacity>
       ) : (
-        <RoleAvatar
-          name={user?.full_name}
-          role={user?.role}
-          photoUrl={user?.profile_picture_url}
-          size={40}
-          radius={nbRadius.base}
-          withShadow
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Profile')}
           style={styles.avatarSpacing}
-        />
+          accessibilityLabel="Buka Profil"
+          accessibilityRole="button"
+          activeOpacity={0.7}
+        >
+          <RoleAvatar
+            name={user?.full_name}
+            role={user?.role}
+            photoUrl={user?.profile_picture_url}
+            size={40}
+            radius={nbRadius.base}
+            withShadow
+          />
+        </TouchableOpacity>
       )}
 
       {/* Center column — page title (sub screens) or role label + name (main screens) */}

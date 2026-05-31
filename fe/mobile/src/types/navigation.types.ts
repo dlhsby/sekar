@@ -20,6 +20,18 @@ export type RootStackParamList = {
   KecamatanTabs: undefined;
 };
 
+// Main Stack Navigator — wraps the bottom tabs and surfaces Profile as a slide-in screen
+export type MainStackParamList = {
+  Tabs: undefined;
+  Profile: undefined;
+  EditProfile: undefined;
+  Settings: undefined;
+  ShiftHistory: undefined;
+};
+
+export type MainStackScreenProps<T extends keyof MainStackParamList> =
+  NativeStackScreenProps<MainStackParamList, T>;
+
 export type RootStackScreenProps<T extends keyof RootStackParamList> =
   NativeStackScreenProps<RootStackParamList, T>;
 

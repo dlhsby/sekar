@@ -68,6 +68,24 @@ jest.mock('../../screens/overtime/OvertimeDetailScreen', () => ({
 jest.mock('../../screens/common/SettingsScreen', () => ({
   SettingsScreen: () => MockScreen({ name: 'Settings' }),
 }));
+jest.mock('../../screens/common/EditProfileScreen', () => ({
+  EditProfileScreen: () => MockScreen({ name: 'EditProfile' }),
+}));
+jest.mock('../../screens/common/NotificationsScreen', () => ({
+  NotificationsScreen: () => MockScreen({ name: 'Notifications' }),
+}));
+jest.mock('../../screens/pruningRequests/ReviewQueueScreen', () => ({
+  ReviewQueueScreen: () => MockScreen({ name: 'ReviewQueue' }),
+}));
+jest.mock('../../screens/pruningRequests/RequestDetailScreen', () => ({
+  RequestDetailScreen: () => MockScreen({ name: 'RequestDetail' }),
+}));
+jest.mock('../../screens/pruningRequests/PerantinganListScreen', () => ({
+  PerantinganListScreen: () => MockScreen({ name: 'PerantinganList' }),
+}));
+jest.mock('../../screens/pruningRequests/SubmitScreen', () => ({
+  SubmitScreen: () => MockScreen({ name: 'PerantinganSubmit' }),
+}));
 jest.mock('../../components/navigation/FieldHomeHeader', () => ({
   FieldHomeHeader: () => null,
 }));
@@ -81,7 +99,7 @@ import authReducer from '../../store/slices/authSlice';
 import shiftReducer from '../../store/slices/shiftSlice';
 import activitiesReducer from '../../store/slices/activitiesSlice';
 import offlineReducer from '../../store/slices/offlineSlice';
-import MainNavigator, { TAB_CONFIGS } from '../MainNavigator';
+import MainNavigator, { TAB_CONFIGS, NB_HEADER_STYLE } from '../MainNavigator';
 
 // Create test store with configurable role
 const createTestStore = (role: string = 'satgas') => {
@@ -158,68 +176,68 @@ describe('MainNavigator', () => {
       expect(TAB_CONFIGS).toHaveProperty('superadmin');
     });
 
-    it('satgas has 4 tabs', () => {
-      expect(TAB_CONFIGS.satgas).toHaveLength(4);
+    it('satgas has 3 tabs (Profile moved to header avatar)', () => {
+      expect(TAB_CONFIGS.satgas).toHaveLength(3);
       expect(TAB_CONFIGS.satgas.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.satgas.some((tab) => tab.name === 'TasksActivities')).toBe(true);
-      expect(TAB_CONFIGS.satgas.some((tab) => tab.name === 'Profile')).toBe(true);
+      expect(TAB_CONFIGS.satgas.some((tab) => tab.name === 'Profile')).toBe(false);
     });
 
-    it('linmas has 4 tabs', () => {
-      expect(TAB_CONFIGS.linmas).toHaveLength(4);
+    it('linmas has 3 tabs (Profile moved to header avatar)', () => {
+      expect(TAB_CONFIGS.linmas).toHaveLength(3);
       expect(TAB_CONFIGS.linmas.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.linmas.some((tab) => tab.name === 'TasksActivities')).toBe(true);
-      expect(TAB_CONFIGS.linmas.some((tab) => tab.name === 'Profile')).toBe(true);
+      expect(TAB_CONFIGS.linmas.some((tab) => tab.name === 'Profile')).toBe(false);
     });
 
-    it('korlap has 5 tabs including Profile', () => {
-      expect(TAB_CONFIGS.korlap).toHaveLength(5);
+    it('korlap has 4 tabs (Profile moved to header avatar)', () => {
+      expect(TAB_CONFIGS.korlap).toHaveLength(4);
       expect(TAB_CONFIGS.korlap.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.korlap.some((tab) => tab.name === 'Monitoring')).toBe(true);
       expect(TAB_CONFIGS.korlap.some((tab) => tab.name === 'TasksActivities')).toBe(true);
-      expect(TAB_CONFIGS.korlap.some((tab) => tab.name === 'Profile')).toBe(true);
+      expect(TAB_CONFIGS.korlap.some((tab) => tab.name === 'Profile')).toBe(false);
     });
 
-    it('admin_data has 6 tabs incl. Perantingan review (clockable)', () => {
-      expect(TAB_CONFIGS.admin_data).toHaveLength(6);
+    it('admin_data has 5 tabs incl. Perantingan review (Profile moved to header avatar)', () => {
+      expect(TAB_CONFIGS.admin_data).toHaveLength(5);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'TasksActivities')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'PruningReviewQueue')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Monitoring')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Overtime')).toBe(true);
-      expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Profile')).toBe(true);
+      expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Profile')).toBe(false);
     });
 
-    it('kepala_rayon has 5 tabs with Home (clockable)', () => {
-      expect(TAB_CONFIGS.kepala_rayon).toHaveLength(5);
+    it('kepala_rayon has 4 tabs with Home (Profile moved to header avatar)', () => {
+      expect(TAB_CONFIGS.kepala_rayon).toHaveLength(4);
       expect(TAB_CONFIGS.kepala_rayon.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.kepala_rayon.some((tab) => tab.name === 'Monitoring')).toBe(true);
       expect(TAB_CONFIGS.kepala_rayon.some((tab) => tab.name === 'Overtime')).toBe(true);
-      expect(TAB_CONFIGS.kepala_rayon.some((tab) => tab.name === 'Profile')).toBe(true);
+      expect(TAB_CONFIGS.kepala_rayon.some((tab) => tab.name === 'Profile')).toBe(false);
     });
 
-    it('top_management has 4 tabs incl. Home (Checkpoint 5)', () => {
-      expect(TAB_CONFIGS.top_management).toHaveLength(4);
+    it('top_management has 3 tabs incl. Home (Profile moved to header avatar)', () => {
+      expect(TAB_CONFIGS.top_management).toHaveLength(3);
       expect(TAB_CONFIGS.top_management.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.top_management.some((tab) => tab.name === 'Monitoring')).toBe(true);
-      expect(TAB_CONFIGS.top_management.some((tab) => tab.name === 'Profile')).toBe(true);
+      expect(TAB_CONFIGS.top_management.some((tab) => tab.name === 'Profile')).toBe(false);
     });
 
-    it('admin_system has 4 tabs incl. Home (Checkpoint 5)', () => {
-      expect(TAB_CONFIGS.admin_system).toHaveLength(4);
+    it('admin_system has 3 tabs incl. Home (Profile moved to header avatar)', () => {
+      expect(TAB_CONFIGS.admin_system).toHaveLength(3);
       expect(TAB_CONFIGS.admin_system.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.admin_system.some((tab) => tab.name === 'Monitoring')).toBe(true);
     });
 
-    it('superadmin has 5 tabs including Home + Overtime', () => {
-      expect(TAB_CONFIGS.superadmin).toHaveLength(5);
+    it('superadmin has 4 tabs including Home + Overtime (Profile moved to header avatar)', () => {
+      expect(TAB_CONFIGS.superadmin).toHaveLength(4);
       expect(TAB_CONFIGS.superadmin.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.superadmin.some((tab) => tab.name === 'Monitoring')).toBe(true);
       expect(TAB_CONFIGS.superadmin.some((tab) => tab.name === 'Overtime')).toBe(true);
     });
 
-    it('staff_kecamatan has 3 tabs incl. Home (Checkpoint 5)', () => {
-      expect(TAB_CONFIGS.staff_kecamatan).toHaveLength(3);
+    it('staff_kecamatan has 2 tabs incl. Home (Profile moved to header avatar)', () => {
+      expect(TAB_CONFIGS.staff_kecamatan).toHaveLength(2);
       expect(TAB_CONFIGS.staff_kecamatan.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.staff_kecamatan.some((tab) => tab.name === 'Perantingan')).toBe(true);
     });
@@ -245,10 +263,10 @@ describe('MainNavigator', () => {
       });
     });
 
-    it('all roles have Profile tab', () => {
+    it('no role has Profile in the tab bar (Profile is header-avatar-accessible)', () => {
       Object.keys(TAB_CONFIGS).forEach((role) => {
         const hasProfile = TAB_CONFIGS[role].some((tab) => tab.name === 'Profile');
-        expect(hasProfile).toBe(true);
+        expect(hasProfile).toBe(false);
       });
     });
 
@@ -295,11 +313,11 @@ describe('MainNavigator', () => {
       expect(getAllByText('Home').length).toBeGreaterThanOrEqual(1);
     });
 
-    it('should render tab labels for satgas role', () => {
-      const { getByText } = renderNavigator('satgas');
+    it('should render tab labels for satgas role (no Profil tab)', () => {
+      const { getByText, queryByText } = renderNavigator('satgas');
       expect(getByText('Tugas & Aktivitas')).toBeTruthy();
       expect(getByText('Lembur')).toBeTruthy();
-      expect(getByText('Profil')).toBeTruthy();
+      expect(queryByText('Profil')).toBeNull();
     });
 
     it('should render for korlap role with Monitoring tab', () => {
@@ -307,41 +325,41 @@ describe('MainNavigator', () => {
       expect(getByText('Monitoring')).toBeTruthy();
     });
 
-    it('should render for top_management role', () => {
-      const { getByText } = renderNavigator('top_management');
+    it('should render for top_management role (no Profil tab)', () => {
+      const { getByText, queryByText } = renderNavigator('top_management');
       expect(getByText('Monitoring')).toBeTruthy();
       expect(getByText('Tugas & Aktivitas')).toBeTruthy();
-      expect(getByText('Profil')).toBeTruthy();
+      expect(queryByText('Profil')).toBeNull();
     });
 
-    it('should render for admin_data role with Home tab', () => {
-      const { getByText } = renderNavigator('admin_data');
+    it('should render for admin_data role with Home tab (no Profil tab)', () => {
+      const { getByText, queryByText } = renderNavigator('admin_data');
       expect(getByText('Beranda')).toBeTruthy();
       expect(getByText('Tugas & Aktivitas')).toBeTruthy();
       expect(getByText('Monitoring')).toBeTruthy();
       expect(getByText('Lembur')).toBeTruthy();
-      expect(getByText('Profil')).toBeTruthy();
+      expect(queryByText('Profil')).toBeNull();
     });
 
-    it('should render for kepala_rayon role with Home tab', () => {
-      const { getByText } = renderNavigator('kepala_rayon');
+    it('should render for kepala_rayon role with Home tab (no Profil tab)', () => {
+      const { getByText, queryByText } = renderNavigator('kepala_rayon');
       expect(getByText('Beranda')).toBeTruthy();
       expect(getByText('Tugas & Aktivitas')).toBeTruthy();
       expect(getByText('Monitoring')).toBeTruthy();
-      expect(getByText('Profil')).toBeTruthy();
+      expect(queryByText('Profil')).toBeNull();
     });
 
-    it('should render for superadmin role', () => {
-      const { getByText } = renderNavigator('superadmin');
+    it('should render for superadmin role (no Profil tab)', () => {
+      const { getByText, queryByText } = renderNavigator('superadmin');
       expect(getByText('Monitoring')).toBeTruthy();
       expect(getByText('Tugas & Aktivitas')).toBeTruthy();
-      expect(getByText('Profil')).toBeTruthy();
+      expect(queryByText('Profil')).toBeNull();
     });
 
-    it('should fallback to satgas tabs for unknown role', () => {
-      const { getAllByText } = renderNavigator('unknown_role');
+    it('should fallback to satgas tabs for unknown role (no Profil tab)', () => {
+      const { getAllByText, queryByText } = renderNavigator('unknown_role');
       expect(getAllByText('Home').length).toBeGreaterThanOrEqual(1);
-      expect(getAllByText('Profil').length).toBeGreaterThanOrEqual(1);
+      expect(queryByText('Profil')).toBeNull();
     });
 
     it('should fallback to satgas tabs when user is null', () => {
@@ -396,6 +414,36 @@ describe('MainNavigator', () => {
       );
       // Falls back to satgas (default)
       expect(getAllByText('Home').length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe('NB_HEADER_STYLE shared constant', () => {
+    it('should export a header style with height 76', () => {
+      expect(NB_HEADER_STYLE.height).toBe(76);
+    });
+
+    it('should have elevation 0 (NB hard-edge border, not material shadow)', () => {
+      expect(NB_HEADER_STYLE.elevation).toBe(0);
+    });
+
+    it('should have a borderBottomWidth (NB black border line)', () => {
+      expect(NB_HEADER_STYLE.borderBottomWidth).toBeGreaterThan(0);
+      expect(NB_HEADER_STYLE.borderBottomColor).toBe('#1C1917');
+    });
+  });
+
+  describe('Profile accessible via MainStack (not tab bar)', () => {
+    it('Profile screen is not in any TAB_CONFIGS entry', () => {
+      Object.entries(TAB_CONFIGS).forEach(([role, tabs]) => {
+        const profileTab = tabs.find((t) => t.name === 'Profile');
+        expect(profileTab).toBeUndefined();
+      });
+    });
+
+    it('all roles have at least 2 tabs after removing Profile from the bar', () => {
+      Object.entries(TAB_CONFIGS).forEach(([role, tabs]) => {
+        expect(tabs.length).toBeGreaterThanOrEqual(2);
+      });
     });
   });
 });
