@@ -1,345 +1,492 @@
 /**
- * UserDetailSheet Component Tests
- * Phase 2D: Bottom sheet showing user detail when a marker or list card is tapped.
- * Tests rendering, day summary, action buttons, and onClose / onTrailPress callbacks.
+ * UserDetailSheet tests — Phase 4 M3 CP1 rebuild on NBModal.
+ *
+ * Covers: NBModal visibility, profile header (avatar + presence pill + last
+ * update), 4 stat tiles (skeleton → resolved values, Lokasi opens map modal),
+ * nested sheets (shift + lembur, tugas, aktivitas — full Task/Activity data),
+ * action buttons (Hubungi / WhatsApp / Lihat jejak).
+ *
+ * Mocks: api modules (tasks/activities/overtime/users), Linking. Maps + WS +
+ * gorhom bottom-sheet are stubbed globally via __mocks__/jest.setup.
  */
 
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { Linking } from 'react-native';
+
 import { UserDetailSheet } from '../UserDetailSheet';
-import type { LiveUser, UserDaySummary } from '../../../types/models.types';
+import type {
+  LiveUser,
+  UserDaySummary,
+  Task,
+  Activity,
+  Overtime,
+  User,
+} from '../../../types/models.types';
 
-// ─── Mocks ────────────────────────────────────────────────────────────────────
+// ─── Module mocks ─────────────────────────────────────────────────────────────
 
-jest.mock('@gorhom/bottom-sheet', () => {
-  const React = require('react');
-  const { View, ScrollView } = require('react-native');
+jest.mock('../../../services/api/tasksApi');
+jest.mock('../../../services/api/activitiesApi');
+jest.mock('../../../services/api/overtimeApi');
+jest.mock('../../../services/api/usersApi');
 
-  const BottomSheet = React.forwardRef(({ children, index }: any, ref: any) => {
-    React.useImperativeHandle(ref, () => ({
-      snapToIndex: jest.fn(),
-      close: jest.fn(),
-    }));
-    // Mirror real-sheet behavior: index === -1 means closed → render nothing.
-    if (index === -1 || index === undefined) { return null; }
-    return React.createElement(View, { testID: 'bottom-sheet' }, children);
-  });
-  BottomSheet.displayName = 'BottomSheet';
+import { getTasks } from '../../../services/api/tasksApi';
+import { getActivities } from '../../../services/api/activitiesApi';
+import { getOvertimes } from '../../../services/api/overtimeApi';
+import { getUserById } from '../../../services/api/usersApi';
 
-  return {
-    __esModule: true,
-    default: BottomSheet,
-    BottomSheetScrollView: ({ children }: any) =>
-      React.createElement(ScrollView, { testID: 'bs-scroll' }, children),
-  };
-});
+const mockGetTasks = getTasks as jest.MockedFunction<typeof getTasks>;
+const mockGetActivities = getActivities as jest.MockedFunction<typeof getActivities>;
+const mockGetOvertimes = getOvertimes as jest.MockedFunction<typeof getOvertimes>;
+const mockGetUserById = getUserById as jest.MockedFunction<typeof getUserById>;
 
-jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
-  const React = require('react');
-  const { Text } = require('react-native');
-  return (props: any) =>
-    React.createElement(Text, { testID: `icon-${props.name}`, ...props }, props.name);
-});
-
-jest.spyOn(Linking, 'openURL').mockResolvedValue(true as never);
+// Suppress noisy "act(...)" warnings from promise resolves we explicitly flush.
+const linkingSpy = jest.spyOn(Linking, 'openURL').mockResolvedValue(true as never);
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-const createMockUser = (overrides?: Partial<LiveUser>): LiveUser => ({
+const today = (h: number, m = 0): string => {
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  return d.toISOString();
+};
+
+const createUser = (overrides?: Partial<LiveUser>): LiveUser => ({
   id: 'user-123',
   full_name: 'Ahmad Satgas',
   role: 'satgas',
   phone: '08123456789',
   status: 'active',
-  area_id: 'area-123',
-  area_name: 'Taman A',
+  area_id: 'area-1',
+  area_name: 'Taman Bungkul',
   rayon_id: 'rayon-1',
   rayon_name: 'Rayon 1',
   latitude: -7.250445,
   longitude: 112.768845,
-  accuracy: 10,
+  accuracy: 8,
   battery_level: 85,
-  last_update: '2026-03-05T08:00:00Z',
+  last_update: today(9),
   is_within_area: true,
-  shift_id: 'shift-123',
-  shift_name: 'Shift Pagi',
+  outside_boundary: false,
+  shift_id: 'shift-1',
+  shift_name: 'Pagi',
   shift_definition_id: null,
-  clock_in_time: '2026-03-05T07:00:00Z',
+  clock_in_time: today(6),
   current_task_status: null,
   current_task_title: null,
   ...overrides,
 });
 
-const mockDaySummary: UserDaySummary = {
+const createDaySummary = (overrides?: Partial<UserDaySummary>): UserDaySummary => ({
   user_id: 'user-123',
   full_name: 'Ahmad Satgas',
   username: 'satgas1',
   role: 'satgas',
   phone: '08123456789',
   status: 'active',
-  area_id: 'area-123',
-  area_name: 'Taman A',
+  area_id: 'area-1',
+  area_name: 'Taman Bungkul',
   rayon_id: 'rayon-1',
   rayon_name: 'Rayon 1',
   shift: {
-    id: 'shift-123',
-    name: 'Shift Pagi',
-    clock_in_time: '2026-03-05T07:00:00Z',
+    id: 'shift-1',
+    name: 'Pagi',
+    clock_in_time: today(6),
     clock_out_time: null,
-    duration_minutes: 120,
+    duration_minutes: 180,
     outside_boundary: false,
   },
-  last_location: {
-    latitude: -7.250445,
-    longitude: 112.768845,
-    accuracy: 10,
-    battery_level: 85,
-    logged_at: '2026-03-05T09:00:00Z',
-    is_within_area: true,
-  },
-  activities_today: [
-    { id: 'act-1', title: 'Penyiraman', activity_type: 'watering', created_at: '2026-03-05T08:00:00Z', photo_url: null },
-  ],
-  tasks_today: [
-    { id: 'task-1', title: 'Potong rumput', status: 'in_progress', priority: 'medium' },
-  ],
+  last_location: null,
+  activities_today: [],
+  tasks_today: [],
   whatsapp_links: {
     chat: 'https://wa.me/628123456789',
-    call: 'https://wa.me/628123456789',
+    call: 'tel:+628123456789',
   },
+  ...overrides,
+});
+
+const fullTask = (overrides?: Partial<Task>): Task => ({
+  id: 'task-1',
+  title: 'Potong rumput pintu utama',
+  description: 'Area depan, sebelah patung',
+  status: 'in_progress',
+  priority: 'high',
+  deadline: today(17),
+  area_id: 'area-1',
+  area: { id: 'area-1', name: 'Taman Bungkul' } as any,
+  assigned_to: 'user-123',
+  created_by: 'sup-1',
+  created_at: today(7),
+  updated_at: today(7),
+  ...overrides,
+});
+
+const fullActivity = (overrides?: Partial<Activity>): Activity => ({
+  id: 'act-1',
+  user_id: 'user-123',
+  shift_id: 'shift-1',
+  area_id: 'area-1',
+  area: { id: 'area-1', name: 'Taman Bungkul' } as any,
+  activity_type_id: 'at-1',
+  activityType: { id: 'at-1', name: 'Penyiraman' } as any,
+  description: 'Sirami semua pot depan',
+  photo_urls: ['p1.jpg', 'p2.jpg'],
+  status: 'approved',
+  created_at: today(8),
+  updated_at: today(8),
+  ...overrides,
+});
+
+const overtimeFixture: Overtime = {
+  id: 'ot-1',
+  user_id: 'user-123',
+  area: { id: 'area-1', name: 'Taman Bungkul' } as any,
+  start_datetime: today(18),
+  end_datetime: today(20),
+  reason: 'Acara CFD',
+  status: 'approved',
+  activityType: { id: 'at-2', name: 'Lembur Penyiraman' } as any,
+  created_at: today(18),
+  updated_at: today(18),
 };
+
+const userFixture: User = {
+  id: 'user-123',
+  username: 'satgas1',
+  full_name: 'Ahmad Satgas',
+  role: 'satgas',
+  is_active: true,
+  area_id: 'area-1',
+  rayon_id: 'rayon-1',
+  profile_picture_url: 'data:image/png;base64,iVBORw0KGgo=',
+  created_at: today(0),
+  updated_at: today(0),
+} as any;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const okList = <T,>(items: T[]) => ({
+  data: {
+    data: items,
+    meta: { total: items.length, page: 1, limit: 50, totalPages: 1 },
+  },
+});
+
+const flushAll = async () => {
+  // Flush all pending promise resolves inside act() so React state updates apply.
+  await act(async () => { await Promise.resolve(); });
+  await act(async () => { await Promise.resolve(); });
+};
+
+const setupDefaultMocks = () => {
+  mockGetTasks.mockResolvedValue(okList([]) as any);
+  mockGetActivities.mockResolvedValue(okList([]) as any);
+  mockGetOvertimes.mockResolvedValue(okList([]) as any);
+  mockGetUserById.mockResolvedValue({ data: userFixture } as any);
+};
+
+const defaultProps = () => ({
+  user: createUser(),
+  daySummary: createDaySummary(),
+  isLoadingDaySummary: false,
+  onClose: jest.fn(),
+  onTrailPress: jest.fn(),
+});
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
-describe('UserDetailSheet', () => {
-  const mockOnClose = jest.fn();
-  const mockOnTrailPress = jest.fn();
-
-  const defaultProps = {
-    user: createMockUser(),
-    daySummary: mockDaySummary,
-    isLoadingDaySummary: false,
-    onClose: mockOnClose,
-    onTrailPress: mockOnTrailPress,
-  };
-
+describe('UserDetailSheet (CP1)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    linkingSpy.mockClear();
+    setupDefaultMocks();
   });
 
-  // ── Null guard ──────────────────────────────────────────────────────────────
-
-  describe('null guard', () => {
-    it('returns null when user prop is null', () => {
+  describe('visibility', () => {
+    it('renders nothing when user is null (NBModal stays dismissed)', () => {
       const { queryByTestId } = render(
-        <UserDetailSheet
-          {...defaultProps}
-          user={null}
-        />
+        <UserDetailSheet {...defaultProps()} user={null} />
       );
       expect(queryByTestId('bottom-sheet')).toBeNull();
+      expect(mockGetUserById).not.toHaveBeenCalled();
     });
-  });
 
-  // ── Basic rendering ─────────────────────────────────────────────────────────
-
-  describe('rendering', () => {
-    it('renders the bottom sheet when user is provided', () => {
-      const { getByTestId } = render(<UserDetailSheet {...defaultProps} />);
+    it('mounts the NBModal sheet when user is non-null', async () => {
+      const { getByTestId } = render(<UserDetailSheet {...defaultProps()} />);
+      await flushAll();
       expect(getByTestId('bottom-sheet')).toBeTruthy();
     });
+  });
 
-    it('displays the user full name', () => {
-      const { getByText } = render(<UserDetailSheet {...defaultProps} />);
+  describe('profile header', () => {
+    it('shows full name + role · area meta line', async () => {
+      const { getByText } = render(<UserDetailSheet {...defaultProps()} />);
+      await flushAll();
       expect(getByText('Ahmad Satgas')).toBeTruthy();
+      expect(getByText(/Satgas.*Taman Bungkul/)).toBeTruthy();
     });
 
-    it('displays the role label in the header meta line', () => {
-      const { getAllByText } = render(<UserDetailSheet {...defaultProps} />);
-      // ROLE_LABELS['satgas'] === 'Satgas' — may appear in icon mock too
-      expect(getAllByText(/Satgas/).length).toBeGreaterThanOrEqual(1);
+    it.each([
+      ['active',       'Aktif'],
+      ['inactive',     'Tidak aktif'],
+      ['outside_area', 'Luar area'],
+      ['missing',      'Hilang'],
+      ['offline',      'Offline'],
+    ] as const)('renders the presencePill label "%s" → "%s"', async (status, label) => {
+      const { getByText } = render(
+        <UserDetailSheet {...defaultProps()} user={createUser({ status })} />
+      );
+      await flushAll();
+      expect(getByText(label)).toBeTruthy();
     });
 
-    it('displays the area name in the header meta line', () => {
-      const { getByText } = render(<UserDetailSheet {...defaultProps} />);
-      expect(getByText(/Taman A/)).toBeTruthy();
+    it('renders the relative last-update under the status pill', async () => {
+      // last_update set to now → "baru saja"
+      const fresh = createUser({ last_update: new Date().toISOString() });
+      const { getByText } = render(
+        <UserDetailSheet {...defaultProps()} user={fresh} />
+      );
+      await flushAll();
+      expect(getByText('baru saja')).toBeTruthy();
+    });
+
+    it('uses fetched profile_picture_url for the avatar', async () => {
+      const { UNSAFE_getAllByType } = render(
+        <UserDetailSheet {...defaultProps()} />
+      );
+      await flushAll();
+      const { Image } = require('react-native');
+      const images = UNSAFE_getAllByType(Image);
+      const dataUri = (userFixture as any).profile_picture_url;
+      expect(images.some((img: any) => img.props.source?.uri === dataUri)).toBe(true);
     });
   });
 
-  // ── Status badge ────────────────────────────────────────────────────────────
-
-  describe('status badge', () => {
-    it('shows "Aktif" status label for active status', () => {
-      const { getByText } = render(
-        <UserDetailSheet {...defaultProps} user={createMockUser({ status: 'active' })} />
-      );
-      expect(getByText('Aktif')).toBeTruthy();
+  describe('Lokasi tile', () => {
+    it('renders area name + "±Xm · lat, lng" detail', async () => {
+      const { getByText } = render(<UserDetailSheet {...defaultProps()} />);
+      await flushAll();
+      expect(getByText('Taman Bungkul')).toBeTruthy();
+      expect(getByText('±8m · -7.25045, 112.76884')).toBeTruthy();
     });
 
-    it('shows "Idle" status label for inactive status', () => {
-      const { getByText } = render(
-        <UserDetailSheet {...defaultProps} user={createMockUser({ status: 'inactive' })} />
+    it('falls back to "—" when area name is missing', async () => {
+      const u = createUser({ area_name: '' });
+      const { getAllByText } = render(
+        <UserDetailSheet {...defaultProps()} user={u} />
       );
-      expect(getByText('Idle')).toBeTruthy();
-    });
-
-    it('shows "Di Luar Area" status label for outside_area status', () => {
-      const { getByText } = render(
-        <UserDetailSheet {...defaultProps} user={createMockUser({ status: 'outside_area' })} />
-      );
-      expect(getByText('Di Luar Area')).toBeTruthy();
-    });
-
-    it('shows "Tidak Terdeteksi" status label for missing status', () => {
-      const { getByText } = render(
-        <UserDetailSheet {...defaultProps} user={createMockUser({ status: 'missing' })} />
-      );
-      expect(getByText('Tidak Terdeteksi')).toBeTruthy();
+      await flushAll();
+      // "—" can appear in other tiles too; assert at least one.
+      expect(getAllByText('—').length).toBeGreaterThanOrEqual(1);
     });
   });
 
-  // ── Loading state ───────────────────────────────────────────────────────────
+  describe('Jam kerja / Tugas / Aktivitas tile counts', () => {
+    it('shows skeletons while data is loading, then renders the counts', async () => {
+      // Keep tasks/activities pending so we can observe the skeleton frame.
+      let resolveTasks: (v: any) => void = () => {};
+      let resolveActs: (v: any) => void = () => {};
+      mockGetTasks.mockReturnValueOnce(new Promise((r) => { resolveTasks = r; }) as any);
+      mockGetActivities.mockReturnValueOnce(new Promise((r) => { resolveActs = r; }) as any);
 
-  describe('loading state', () => {
-    it('shows ActivityIndicator when isLoadingDaySummary is true', () => {
-      const { UNSAFE_getByType } = render(
-        <UserDetailSheet {...defaultProps} isLoadingDaySummary={true} daySummary={null} />
+      const { getByText, queryByText } = render(
+        <UserDetailSheet
+          {...defaultProps()}
+          isLoadingDaySummary
+          daySummary={null}
+        />
       );
-      const { ActivityIndicator } = require('react-native');
-      expect(UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
+
+      // Tile values absent during load (the labels too — tiles replaced by skeletons).
+      expect(queryByText('Tugas')).toBeNull();
+      expect(queryByText('Aktivitas')).toBeNull();
+
+      // Resolve fetches; daySummary stays null so Jam kerja still skeletons —
+      // toggle isLoadingDaySummary via re-render.
+      await act(async () => {
+        resolveTasks(okList([fullTask()]));
+        resolveActs(okList([fullActivity(), fullActivity({ id: 'act-2' })]));
+      });
+      await flushAll();
+
+      // Tugas and Aktivitas resolved; their labels render now.
+      expect(getByText('Tugas')).toBeTruthy();
+      expect(getByText('Aktivitas')).toBeTruthy();
     });
 
-    it('does not show ActivityIndicator when isLoadingDaySummary is false', () => {
-      const { UNSAFE_queryByType } = render(
-        <UserDetailSheet {...defaultProps} isLoadingDaySummary={false} />
-      );
-      const { ActivityIndicator } = require('react-native');
-      expect(UNSAFE_queryByType(ActivityIndicator)).toBeNull();
+    it('shows the task count once the fetch resolves', async () => {
+      mockGetTasks.mockResolvedValueOnce(okList([fullTask(), fullTask({ id: 't-2', title: 'B' })]) as any);
+      const { getByText } = render(<UserDetailSheet {...defaultProps()} />);
+      await flushAll();
+      expect(getByText('Tugas')).toBeTruthy();
+      expect(getByText('2')).toBeTruthy();
+    });
+
+    it('only counts tasks whose deadline/created/completed is today (isTaskScopedToday)', async () => {
+      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+      const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+      mockGetTasks.mockResolvedValueOnce(okList([
+        fullTask({ id: 'today', deadline: today(17) }),
+        fullTask({ id: 'past',  deadline: yesterday.toISOString(), created_at: yesterday.toISOString() }),
+        fullTask({ id: 'future', deadline: tomorrow.toISOString(), created_at: tomorrow.toISOString() }),
+      ]) as any);
+      const { getByText } = render(<UserDetailSheet {...defaultProps()} />);
+      await flushAll();
+      // Only the "today" task should be counted.
+      expect(getByText('1')).toBeTruthy();
     });
   });
 
-  // ── Stat grid ───────────────────────────────────────────────────────────────
-
-  describe('stat grid', () => {
-    it('renders "Lokasi" stat tile label', () => {
-      const { getByText } = render(<UserDetailSheet {...defaultProps} />);
-      expect(getByText('Lokasi')).toBeTruthy();
+  describe('Tugas modal', () => {
+    it('opens with full Task rows (title + area + priority + deadline + description)', async () => {
+      mockGetTasks.mockResolvedValueOnce(okList([fullTask()]) as any);
+      const { getByText, getAllByText, getByTestId } = render(<UserDetailSheet {...defaultProps()} />);
+      await flushAll();
+      fireEvent.press(getByText('Tugas'));
+      await flushAll();
+      expect(getByTestId('user-tasks-modal')).toBeTruthy();
+      expect(getByText(/Tugas Hari Ini \(1\)/)).toBeTruthy();
+      expect(getByText('Potong rumput pintu utama')).toBeTruthy();
+      expect(getByText('Area depan, sebelah patung')).toBeTruthy();
+      // "Taman Bungkul" appears twice now (Lokasi tile + area chip in row).
+      expect(getAllByText('Taman Bungkul').length).toBeGreaterThanOrEqual(2);
+      expect(getByText('Tinggi')).toBeTruthy();  // priority "high" → "Tinggi"
     });
 
-    it('renders user coordinates in Lokasi tile (toFixed 2)', () => {
-      const { getByText } = render(<UserDetailSheet {...defaultProps} />);
-      // latitude: -7.250445 → '-7.25', longitude: 112.768845 → '112.77'
-      expect(getByText('-7.25, 112.77')).toBeTruthy();
-    });
-
-    it('renders Lokasi coordinates even when daySummary has no last_location', () => {
-      const noLocationSummary: UserDaySummary = {
-        ...mockDaySummary,
-        last_location: null,
-      };
-      const { getByText } = render(
-        <UserDetailSheet {...defaultProps} daySummary={noLocationSummary} />
-      );
-      expect(getByText('-7.25, 112.77')).toBeTruthy();
+    it('shows empty copy when there are no tasks scoped to today', async () => {
+      mockGetTasks.mockResolvedValueOnce(okList([]) as any);
+      const { getByText } = render(<UserDetailSheet {...defaultProps()} />);
+      await flushAll();
+      fireEvent.press(getByText('Tugas'));
+      await flushAll();
+      expect(getByText('Belum ada tugas hari ini')).toBeTruthy();
     });
   });
 
-  // ── Activities list ─────────────────────────────────────────────────────────
-
-  describe('activities today section', () => {
-    it('renders activity title when activities exist', () => {
-      const { getByText } = render(<UserDetailSheet {...defaultProps} />);
+  describe('Aktivitas modal', () => {
+    it('opens with full Activity rows (activityType.name title + area + photo count + description)', async () => {
+      mockGetActivities.mockResolvedValueOnce(okList([fullActivity()]) as any);
+      const { getByText, getByTestId } = render(<UserDetailSheet {...defaultProps()} />);
+      await flushAll();
+      fireEvent.press(getByText('Aktivitas'));
+      await flushAll();
+      expect(getByTestId('user-activities-modal')).toBeTruthy();
+      expect(getByText(/Aktivitas Hari Ini \(1\)/)).toBeTruthy();
       expect(getByText('Penyiraman')).toBeTruthy();
+      expect(getByText('Sirami semua pot depan')).toBeTruthy();
+      expect(getByText('2 foto')).toBeTruthy();
     });
 
-    it('renders "Aktivitas hari ini" section label', () => {
-      const { getByText } = render(<UserDetailSheet {...defaultProps} />);
-      expect(getByText('Aktivitas hari ini')).toBeTruthy();
-    });
-
-    it('does not render activities section when activities list is empty', () => {
-      const noActivitiesSummary: UserDaySummary = {
-        ...mockDaySummary,
-        activities_today: [],
-      };
-      const { queryByText } = render(
-        <UserDetailSheet {...defaultProps} daySummary={noActivitiesSummary} />
-      );
-      expect(queryByText(/Aktivitas hari ini/)).toBeNull();
+    it('shows empty copy when no activities returned', async () => {
+      mockGetActivities.mockResolvedValueOnce(okList([]) as any);
+      const { getByText } = render(<UserDetailSheet {...defaultProps()} />);
+      await flushAll();
+      fireEvent.press(getByText('Aktivitas'));
+      await flushAll();
+      expect(getByText('Belum ada aktivitas hari ini')).toBeTruthy();
     });
   });
 
-  // ── Action buttons ──────────────────────────────────────────────────────────
+  describe('Jam kerja modal (shift + lembur)', () => {
+    it('opens with the shift card and a lembur row when overtimes exist', async () => {
+      mockGetOvertimes.mockResolvedValueOnce(okList([overtimeFixture]) as any);
+      const { getByText, getByTestId } = render(<UserDetailSheet {...defaultProps()} />);
+      await flushAll();
+      fireEvent.press(getByText('Jam kerja'));
+      await flushAll();
+      expect(getByTestId('user-shift-modal')).toBeTruthy();
+      expect(getByText('Lembur Hari Ini (1)')).toBeTruthy();
+      expect(getByText('Lembur Penyiraman')).toBeTruthy();
+    });
+
+    it('shows the empty-lembur copy when none returned', async () => {
+      mockGetOvertimes.mockResolvedValueOnce(okList([]) as any);
+      const { getByText } = render(<UserDetailSheet {...defaultProps()} />);
+      await flushAll();
+      fireEvent.press(getByText('Jam kerja'));
+      await flushAll();
+      expect(getByText('Belum ada lembur hari ini')).toBeTruthy();
+    });
+  });
 
   describe('action buttons', () => {
-    it('calls Linking.openURL with tel: URL when Hubungi button is pressed', async () => {
-      const { getByText } = render(<UserDetailSheet {...defaultProps} />);
+    it('Hubungi dials tel:+<E164 phone>', async () => {
+      const { getByText } = render(<UserDetailSheet {...defaultProps()} />);
+      await flushAll();
       fireEvent.press(getByText('Hubungi'));
-      await waitFor(() => {
-        expect(Linking.openURL).toHaveBeenCalledWith(
-          expect.stringMatching(/^tel:\+62/)
-        );
-      });
+      expect(linkingSpy).toHaveBeenCalledWith('tel:+628123456789');
     });
 
-    it('does not call Linking.openURL when Hubungi pressed and phone is null', () => {
-      const userNoPhone = createMockUser({ phone: null });
+    it('Hubungi does nothing when phone is null', async () => {
       const { getByText } = render(
-        <UserDetailSheet {...defaultProps} user={userNoPhone} />
+        <UserDetailSheet {...defaultProps()} user={createUser({ phone: null })} />
       );
+      await flushAll();
       fireEvent.press(getByText('Hubungi'));
-      expect(Linking.openURL).not.toHaveBeenCalled();
+      expect(linkingSpy).not.toHaveBeenCalled();
     });
 
-    it('calls onTrailPress with the current user when Lihat profil is pressed', () => {
-      const user = createMockUser();
+    it('Chat WhatsApp prefers daySummary.whatsapp_links.chat', async () => {
+      const { getByText } = render(<UserDetailSheet {...defaultProps()} />);
+      await flushAll();
+      fireEvent.press(getByText('Chat WhatsApp'));
+      expect(linkingSpy).toHaveBeenCalledWith('https://wa.me/628123456789');
+    });
+
+    it('Chat WhatsApp falls back to wa.me/<phone> when whatsapp_links is null', async () => {
+      const sumNoLinks = createDaySummary({ whatsapp_links: null });
       const { getByText } = render(
-        <UserDetailSheet {...defaultProps} user={user} />
+        <UserDetailSheet {...defaultProps()} daySummary={sumNoLinks} />
       );
-      fireEvent.press(getByText('Lihat profil'));
-      expect(mockOnTrailPress).toHaveBeenCalledTimes(1);
-      expect(mockOnTrailPress).toHaveBeenCalledWith(user);
+      await flushAll();
+      fireEvent.press(getByText('Chat WhatsApp'));
+      expect(linkingSpy).toHaveBeenCalledWith('https://wa.me/628123456789');
+    });
+
+    it('Lihat jejak forwards the current user to onTrailPress', async () => {
+      const onTrailPress = jest.fn();
+      const user = createUser();
+      const { getByText } = render(
+        <UserDetailSheet {...defaultProps()} user={user} onTrailPress={onTrailPress} />
+      );
+      await flushAll();
+      fireEvent.press(getByText('Lihat jejak'));
+      expect(onTrailPress).toHaveBeenCalledTimes(1);
+      expect(onTrailPress).toHaveBeenCalledWith(user);
     });
   });
 
-  // ── Edge cases ──────────────────────────────────────────────────────────────
-
-  describe('edge cases', () => {
-    it('renders without crashing when daySummary is null', () => {
-      const { getByTestId } = render(
-        <UserDetailSheet {...defaultProps} daySummary={null} />
+  describe('API call shape', () => {
+    it('fires getUserById + getTasks + getActivities exactly once per user id', async () => {
+      render(<UserDetailSheet {...defaultProps()} />);
+      await flushAll();
+      expect(mockGetUserById).toHaveBeenCalledTimes(1);
+      expect(mockGetUserById).toHaveBeenCalledWith('user-123');
+      expect(mockGetTasks).toHaveBeenCalledTimes(1);
+      expect(mockGetTasks).toHaveBeenCalledWith(expect.objectContaining({ assigned_to: 'user-123' }));
+      // Critical: NO from_date/to_date on /tasks (that endpoint returns 400 for them).
+      const tasksCall = mockGetTasks.mock.calls[0][0] as Record<string, unknown>;
+      expect(tasksCall).not.toHaveProperty('from_date');
+      expect(tasksCall).not.toHaveProperty('to_date');
+      expect(mockGetActivities).toHaveBeenCalledTimes(1);
+      expect(mockGetActivities).toHaveBeenCalledWith(
+        expect.objectContaining({ user_id: 'user-123' }),
       );
-      expect(getByTestId('bottom-sheet')).toBeTruthy();
     });
 
-    it('normalises phone number starting with 0 to 62 prefix for tel call', async () => {
-      const user = createMockUser({ phone: '08123456789' });
-      const { getByText } = render(
-        <UserDetailSheet {...defaultProps} user={user} />
-      );
-      fireEvent.press(getByText('Hubungi'));
-      await waitFor(() => {
-        expect(Linking.openURL).toHaveBeenCalledWith('tel:+628123456789');
-      });
-    });
+    it('refetches when user id changes', async () => {
+      const { rerender } = render(<UserDetailSheet {...defaultProps()} />);
+      await flushAll();
+      expect(mockGetUserById).toHaveBeenCalledTimes(1);
 
-    it('renders multiple activities up to the display cap without crashing', () => {
-      const manySummary: UserDaySummary = {
-        ...mockDaySummary,
-        activities_today: Array.from({ length: 8 }, (_, i) => ({
-          id: `act-${i}`,
-          title: `Aktivitas ${i + 1}`,
-          activity_type: 'general',
-          created_at: '2026-03-05T08:00:00Z',
-          photo_url: null,
-        })),
-      };
-      const { getByText } = render(
-        <UserDetailSheet {...defaultProps} daySummary={manySummary} />
+      rerender(
+        <UserDetailSheet {...defaultProps()} user={createUser({ id: 'user-999' })} />
       );
-      // Component slices at 5 — first item still shows
-      expect(getByText('Aktivitas 1')).toBeTruthy();
+      await flushAll();
+      expect(mockGetUserById).toHaveBeenCalledTimes(2);
+      expect(mockGetUserById).toHaveBeenLastCalledWith('user-999');
     });
   });
 });

@@ -17,6 +17,7 @@ import {
   formatDurationHours,
   activityPill,
   overtimePill,
+  presencePill,
 } from '../statusHelpers';
 
 describe('statusHelpers', () => {
@@ -215,6 +216,24 @@ describe('statusHelpers', () => {
 
     it('maps an unknown status → warn / Menunggu (default)', () => {
       expect(overtimePill('weird' as any)).toEqual({ tone: 'warn', label: 'Menunggu' });
+    });
+  });
+
+  // ─── presencePill (Monitoring) ──────────────────────────────────────────────
+  //
+  // Hi-fi vocab — different from getStatusLabel in utils/mapUtils.ts, which
+  // still backs markers/overlays with the older "Idle / Di Luar Area" labels.
+  // The pill version is used on the supervisor's MON-2 sheet + status bar.
+
+  describe('presencePill', () => {
+    it.each([
+      ['active',       'ok',      'Aktif'],
+      ['inactive',     'warn',    'Tidak aktif'],
+      ['outside_area', 'bad',     'Luar area'],
+      ['missing',      'bad',     'Hilang'],
+      ['offline',      'neutral', 'Offline'],
+    ] as const)('maps %s → %s / %s', (status, tone, label) => {
+      expect(presencePill(status)).toEqual({ tone, label });
     });
   });
 
