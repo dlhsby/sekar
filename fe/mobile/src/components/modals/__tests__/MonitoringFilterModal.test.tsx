@@ -455,32 +455,38 @@ describe('MonitoringFilterModal', () => {
   // ── Search input ────────────────────────────────────────────────────────────
 
   describe('search input', () => {
-    it('renders the search user text input', async () => {
-      const { getByPlaceholderText } = render(
-        <MonitoringFilterModal {...buildDefaultProps()} />
+    // Phase 4 M3: "Cari Pengguna" is now a searchable NBSelect over the live
+    // users, not a free-text field. Its trigger shows the placeholder until a
+    // user is picked; the picked name is sent as the `search` filter.
+    const searchUsers = [
+      { id: 'u1', full_name: 'Ahmad Satgas', role: 'satgas' },
+      { id: 'u2', full_name: 'Budi Linmas', role: 'linmas' },
+    ] as any;
+
+    it('renders the Cari Pengguna search select', async () => {
+      const { getByText } = render(
+        <MonitoringFilterModal {...buildDefaultProps()} users={searchUsers} />
       );
       await waitFor(() => {
-        expect(getByPlaceholderText('Ketik nama pengguna...')).toBeTruthy();
+        expect(getByText('Cari Pengguna')).toBeTruthy();
+        expect(getByText('Pilih pengguna')).toBeTruthy();
       });
     });
 
-    it('includes search text in applied filters when text is entered', async () => {
+    it('includes the picked user in applied filters', async () => {
       const onApply = jest.fn();
-      const { getByPlaceholderText, getByText } = render(
-        <MonitoringFilterModal {...buildDefaultProps({ onApply })} />
+      const { getByText } = render(
+        <MonitoringFilterModal {...buildDefaultProps({ onApply })} users={searchUsers} />
       );
-      await waitFor(() =>
-        expect(getByPlaceholderText('Ketik nama pengguna...')).toBeTruthy()
-      );
+      await waitFor(() => expect(getByText('Pilih pengguna')).toBeTruthy());
 
-      fireEvent.changeText(
-        getByPlaceholderText('Ketik nama pengguna...'),
-        'Ahmad'
-      );
+      // Open the select, pick a user, then apply.
+      fireEvent.press(getByText('Pilih pengguna'));
+      fireEvent.press(getByText('Ahmad Satgas'));
       fireEvent.press(getByText('Terapkan'));
 
       expect(onApply).toHaveBeenCalledWith(
-        expect.objectContaining({ search: 'Ahmad' })
+        expect.objectContaining({ search: 'Ahmad Satgas' })
       );
     });
 
@@ -503,18 +509,17 @@ describe('MonitoringFilterModal', () => {
   describe('reset', () => {
     it('clears all filter selections when Reset is pressed', async () => {
       const onApply = jest.fn();
-      const { getByText, getByPlaceholderText } = render(
-        <MonitoringFilterModal {...buildDefaultProps({ onApply })} />
+      const resetUsers = [{ id: 'u1', full_name: 'Ahmad Satgas', role: 'satgas' }] as any;
+      const { getByText } = render(
+        <MonitoringFilterModal {...buildDefaultProps({ onApply })} users={resetUsers} />
       );
       await waitFor(() => expect(getByText('Aktif')).toBeTruthy());
 
       // Select some filters first
       fireEvent.press(getByText('Aktif'));
       fireEvent.press(getByText('Satgas'));
-      fireEvent.changeText(
-        getByPlaceholderText('Ketik nama pengguna...'),
-        'Ahmad'
-      );
+      fireEvent.press(getByText('Pilih pengguna'));
+      fireEvent.press(getByText('Ahmad Satgas'));
 
       // Reset
       fireEvent.press(getByText('Reset'));

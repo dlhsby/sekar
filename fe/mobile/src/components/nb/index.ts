@@ -67,6 +67,10 @@ export type { NBTextProps, NBTextVariant, NBTextColor, NBTextAlign } from './NBT
 export { NBModal } from './NBModal';
 export type { NBModalProps, NBModalType } from './NBModal';
 
+// Peek sheet (Phase 4 M3 — persistent non-modal bottom sheet)
+export { NBPeekSheet } from './NBPeekSheet';
+export type { NBPeekSheetProps } from './NBPeekSheet';
+
 // Toast (Phase 3 M1-R 3-R3)
 export { NBToast, NBToastProvider, nbToastConfig } from './NBToast';
 export type { NBToastOptions, NBToastLevel } from './NBToast';

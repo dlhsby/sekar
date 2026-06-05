@@ -4,7 +4,7 @@
  * Layer order: rayon polygons -> area polygons -> area center markers -> rayon center markers.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Marker, Polygon, Circle } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -17,6 +17,7 @@ import {
 } from '../../constants/nbTokens';
 import type { RayonBoundary, AreaBoundary } from '../../types/models.types';
 import { geometryToRings } from '../../utils/geoJsonUtils';
+import { buildRayonColorMap, rayonColor } from './rayonColors';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -42,18 +43,30 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
   showRayons = true,
   showAreas = true,
 }: BoundaryOverlayProps): React.JSX.Element {
+  // Stable per-rayon colors (sorted-id → fixed palette), built once per rayon set.
+  const rayonColors = useMemo(
+    () => buildRayonColorMap(rayons.map(r => r.id)),
+    [rayons],
+  );
+
   return (
     <>
       {/* Layer 1: Rayon polygons (one <Polygon> per outer ring — handles
-          both Polygon and MultiPolygon geometries). */}
+          both Polygon and MultiPolygon geometries). Each rayon gets its own
+          fixed color so the 7 Rayon are visually separable. */}
       {showRayons && rayons.flatMap(rayon => {
         const rings = geometryToRings(rayon.boundary_polygon);
+        // Prefer the DB-driven color; fall back to the deterministic palette
+        // (covers rayons seeded before the color column / non-geographic ones).
+        const { stroke, fill } = rayon.color
+          ? { stroke: rayon.color, fill: withAlpha(rayon.color, 0.14) }
+          : rayonColor(rayonColors, rayon.id);
         return rings.map((ring, i) => (
           <Polygon
             key={`rayon-poly-${rayon.id}-${i}`}
             coordinates={ring}
-            strokeColor={nbColors.requestUnderReview}
-            fillColor={withAlpha(nbColors.requestUnderReview, 0.08)}
+            strokeColor={stroke}
+            fillColor={fill}
             strokeWidth={2}
             lineDashPattern={[8, 4]}
           />

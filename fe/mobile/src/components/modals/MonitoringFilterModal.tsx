@@ -12,11 +12,7 @@ import React, {
 } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  ActivityIndicator,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBModal } from '../nb';
@@ -25,16 +21,17 @@ import { NBText } from '../nb/NBText';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
   nbBorders,
   nbRadius,
-  nbShadows,
 } from '../../constants/nbTokens';
 import { getStatusLabel } from '../../utils/mapUtils';
 import { NBSelect } from '../nb';
+import type { LiveUser } from '../../types/models.types';
 import { getAreas, getAreasByRayonId, getRayons } from '../../services/api';
 import { getStaffingSummary } from '../../services/api/monitoringApi';
 import { StaffingSummarySection } from '../monitoring/StaffingSummarySection';
+import { LAYER_ROWS } from '../monitoring/MonitoringToggleSheet';
+import type { MonitoringV2VisibleLayers } from '../../store/slices/monitoringV2Slice';
 import type { MonitoringFilters } from '../../types/api.types';
 import type { TrackingStatus, StaffingSummaryItem, User } from '../../types/models.types';
 import type { Area, Rayon } from '../../types/models.types';
@@ -43,6 +40,7 @@ import {
   ROLES_WITH_RAYON,
   ROLES_WITH_FIXED_RAYON,
   ROLES_WITHOUT_RAYON,
+  FILTER_SUBORDINATE_ROLES,
 } from '../../constants/roles';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -53,6 +51,12 @@ interface MonitoringFilterModalProps {
   onApply: (filters: MonitoringFilters) => void;
   currentFilters: MonitoringFilters;
   currentUser: User;
+  /** Live users that back the searchable "Cari Pengguna" select. */
+  users?: LiveUser[];
+  /** Map layer visibility (merged "Lapisan Peta" section). Omit to hide it. */
+  visibleLayers?: MonitoringV2VisibleLayers;
+  /** Toggle a map layer (applied immediately, not on Terapkan). */
+  onToggleLayer?: (layer: keyof MonitoringV2VisibleLayers) => void;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -62,9 +66,8 @@ const STATUS_OPTIONS: TrackingStatus[] = [
   'inactive',
   'outside_area',
   'missing',
+  'offline',
 ];
-
-const FIELD_ROLES = ['satgas', 'linmas', 'korlap', 'admin_data', 'kepala_rayon'] as const;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -74,6 +77,9 @@ export function MonitoringFilterModal({
   onApply,
   currentFilters,
   currentUser,
+  users = [],
+  visibleLayers,
+  onToggleLayer,
 }: MonitoringFilterModalProps): React.JSX.Element {
   const [selectedStatuses, setSelectedStatuses] = useState<TrackingStatus[]>(
     currentFilters.status ?? [],
@@ -208,31 +214,72 @@ export function MonitoringFilterModal({
     [],
   );
 
+  // Jabatan filter is scoped to roles the current user supervises (roles below
+  // them in the hierarchy) — a korlap can't filter by kepala_rayon, etc.
   const roleOptions = useMemo(
-    () => FIELD_ROLES.map(r => ({ label: ROLE_LABELS[r] ?? r, value: r })),
+    () =>
+      (FILTER_SUBORDINATE_ROLES[userRole] ?? []).map(r => ({
+        label: ROLE_LABELS[r] ?? r,
+        value: r,
+      })),
+    [userRole],
+  );
+
+  // "Cari Pengguna" is a searchable (typeahead) select over the live users,
+  // de-duped by name. The selected name is sent as the `search` filter.
+  const userOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const opts: { label: string; value: string }[] = [];
+    for (const u of users) {
+      if (u.full_name && !seen.has(u.full_name)) {
+        seen.add(u.full_name);
+        opts.push({ label: u.full_name, value: u.full_name });
+      }
+    }
+    return opts;
+  }, [users]);
+
+  // "Tampilan Peta" multi-select: options are the 5 map layers; the selected
+  // set mirrors the currently-visible layers (its default), and changing the
+  // selection dispatches a toggle for each layer whose visibility flipped.
+  const layerOptions = useMemo(
+    () => LAYER_ROWS.map(r => ({ label: r.label, value: r.key as string })),
     [],
   );
 
-  const headerRightContent = (
-    <TouchableOpacity
-      onPress={handleReset}
-      style={styles.resetBtn}
-      accessibilityRole="button"
-      accessibilityLabel="Reset filter"
-    >
-      <NBText variant="body-sm" color="dangerDark">
-        Reset
-      </NBText>
-    </TouchableOpacity>
+  const selectedLayers = useMemo(
+    () => (visibleLayers ? LAYER_ROWS.filter(r => visibleLayers[r.key]).map(r => r.key as string) : []),
+    [visibleLayers],
   );
 
+  const handleLayersChange = useCallback(
+    (vals: string[]) => {
+      if (!visibleLayers || !onToggleLayer) { return; }
+      LAYER_ROWS.forEach(r => {
+        const nextVisible = vals.includes(r.key as string);
+        if (nextVisible !== visibleLayers[r.key]) { onToggleLayer(r.key); }
+      });
+    },
+    [visibleLayers, onToggleLayer],
+  );
+
+  // Sheet variant ignores `headerRight`, so Reset lives in the footer alongside
+  // Terapkan (a two-button row).
   const footerContent = (
-    <NBButton
-      title="Terapkan"
-      variant="primary"
-      onPress={handleApply}
-      fullWidth
-    />
+    <View style={styles.footerRow}>
+      <NBButton
+        title="Reset"
+        variant="secondary"
+        onPress={handleReset}
+        style={styles.footerResetBtn}
+      />
+      <NBButton
+        title="Terapkan"
+        variant="primary"
+        onPress={handleApply}
+        style={styles.footerApplyBtn}
+      />
+    </View>
   );
 
   return (
@@ -240,110 +287,109 @@ export function MonitoringFilterModal({
       visible={visible}
       onClose={onClose}
       title="Filter Monitoring"
-      type="fullscreen"
-      scrollable
+      type="sheet"
       avoidKeyboard
-      headerRight={headerRightContent}
       footer={footerContent}
     >
-      {/* Status multiselect */}
-      <FilterSection title="Status">
-        <NBSelect
-          options={statusOptions}
-          selectedValues={selectedStatuses}
-          onValuesChange={(vals: string[]) => setSelectedStatuses(vals as TrackingStatus[])}
-          placeholder="Pilih Status"
-          searchable
-        />
-      </FilterSection>
-
-      {/* Rayon picker */}
-      {!hideRayon && (
-        <FilterSection title="Rayon">
-          {hasFixedRayon ? (
-            <View style={styles.fixedValue}>
-              <MaterialCommunityIcons
-                name="lock"
-                size={14}
-                color={nbColors.gray500}
-              />
-              <Text style={styles.fixedValueText}>
-                {currentUser.rayon?.name ?? 'Rayon Anda'}
-              </Text>
-            </View>
-          ) : (
-            <NBSelect
-              options={rayonOptions}
-              value={selectedRayonId}
-              onValueChange={(val: string) => {
-                setSelectedRayonId(val || undefined);
-                setSelectedAreaId(undefined);
-              }}
-              placeholder="Pilih Rayon"
-            />
-          )}
+      <View style={styles.body}>
+        {/* Status multiselect */}
+        <FilterSection title="Status">
+          <NBSelect
+            options={statusOptions}
+            selectedValues={selectedStatuses}
+            onValuesChange={(vals: string[]) => setSelectedStatuses(vals as TrackingStatus[])}
+            placeholder="Pilih Status"
+            searchable
+          />
         </FilterSection>
-      )}
 
-      {/* Area picker */}
-      <FilterSection title="Area">
-        <NBSelect
-          options={areaOptions}
-          value={selectedAreaId}
-          onValueChange={(val: string) => setSelectedAreaId(val || undefined)}
-          placeholder="Pilih Area"
-        />
-      </FilterSection>
-
-      {/* Role multiselect */}
-      <FilterSection title="Jabatan">
-        <NBSelect
-          options={roleOptions}
-          selectedValues={selectedRoles}
-          onValuesChange={handleRoleToggle}
-          placeholder="Pilih Jabatan"
-          searchable
-        />
-      </FilterSection>
-
-      {/* Search user */}
-      <FilterSection title="Cari Pengguna">
-        <View style={styles.searchInput}>
-          <MaterialCommunityIcons
-            name="magnify"
-            size={18}
-            color={nbColors.gray500}
-          />
-          <TextInput
-            style={styles.searchText}
-            value={searchText}
-            onChangeText={setSearchText}
-            placeholder="Ketik nama pengguna..."
-            placeholderTextColor={nbColors.gray400}
-            returnKeyType="search"
-          />
-          {searchText.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchText('')}>
-              <MaterialCommunityIcons
-                name="close-circle"
-                size={16}
-                color={nbColors.gray400}
+        {/* Rayon picker */}
+        {!hideRayon && (
+          <FilterSection title="Rayon">
+            {hasFixedRayon ? (
+              <View style={styles.fixedValue}>
+                <MaterialCommunityIcons
+                  name="lock"
+                  size={14}
+                  color={nbColors.gray500}
+                />
+                <NBText variant="body-sm" color="gray700">
+                  {currentUser.rayon?.name ?? 'Rayon Anda'}
+                </NBText>
+              </View>
+            ) : (
+              <NBSelect
+                options={rayonOptions}
+                value={selectedRayonId}
+                onValueChange={(val: string) => {
+                  setSelectedRayonId(val || undefined);
+                  setSelectedAreaId(undefined);
+                }}
+                placeholder="Pilih Rayon"
               />
-            </TouchableOpacity>
-          )}
-        </View>
-      </FilterSection>
+            )}
+          </FilterSection>
+        )}
 
-      {/* Staffing summary - always visible */}
-      <FilterSection title="Kepegawaian">
-        <StaffingSummarySection
-          items={staffing}
-          isLoading={isLoadingStaffing}
-          currentDayTypeLabel={currentDayTypeLabel}
-          selectedRayonId={selectedRayonId}
-          selectedAreaId={selectedAreaId}
-        />
-      </FilterSection>
+        {/* Area picker */}
+        <FilterSection title="Area">
+          <NBSelect
+            options={areaOptions}
+            value={selectedAreaId}
+            onValueChange={(val: string) => setSelectedAreaId(val || undefined)}
+            placeholder="Pilih Area"
+          />
+        </FilterSection>
+
+        {/* Role multiselect — only shown when the user supervises sub-roles */}
+        {roleOptions.length > 0 && (
+          <FilterSection title="Jabatan">
+            <NBSelect
+              options={roleOptions}
+              selectedValues={selectedRoles}
+              onValuesChange={handleRoleToggle}
+              placeholder="Pilih Jabatan"
+              searchable
+            />
+          </FilterSection>
+        )}
+
+        {/* Search user — searchable (typeahead) select over the live users */}
+        <FilterSection title="Cari Pengguna">
+          <NBSelect
+            options={userOptions}
+            value={searchText}
+            onValueChange={(val: string) => setSearchText(val)}
+            placeholder="Pilih pengguna"
+            searchable
+          />
+        </FilterSection>
+
+        {/* Map layer visibility — merged from the old "Lapisan Peta" sheet, as a
+            multi-select. Selected = currently-visible layers (its default state);
+            changing the selection dispatches the diff immediately (Redux). */}
+        {visibleLayers && onToggleLayer && (
+          <FilterSection title="Tampilan Peta">
+            <NBSelect
+              options={layerOptions}
+              selectedValues={selectedLayers}
+              onValuesChange={handleLayersChange}
+              placeholder="Pilih lapisan"
+            />
+          </FilterSection>
+        )}
+
+        {/* Staffing summary - always visible */}
+        <FilterSection title="Kepegawaian">
+          <StaffingSummarySection
+            items={staffing}
+            isLoading={isLoadingStaffing}
+            currentDayTypeLabel={currentDayTypeLabel}
+            selectedRayonId={selectedRayonId}
+            selectedAreaId={selectedAreaId}
+          />
+        </FilterSection>
+      </View>
     </NBModal>
   );
 }
@@ -353,7 +399,7 @@ export function MonitoringFilterModal({
 function FilterSection({ title, children }: { title: string; children: React.ReactNode }): React.JSX.Element {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <NBText variant="mono-sm" uppercase color="gray700">{title}</NBText>
       {children}
     </View>
   );
@@ -363,18 +409,21 @@ function FilterSection({ title, children }: { title: string; children: React.Rea
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  resetBtn: {
-    paddingHorizontal: nbSpacing.sm,
+  footerRow: {
+    flexDirection: 'row',
+    gap: nbSpacing.sm,
+  },
+  footerResetBtn: {
+    flex: 1,
+  },
+  footerApplyBtn: {
+    flex: 2,
+  },
+  body: {
+    gap: nbSpacing.lg,
   },
   section: {
     gap: nbSpacing.sm,
-  },
-  sectionTitle: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray700,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   fixedValue: {
     flexDirection: 'row',
@@ -386,26 +435,5 @@ const styles = StyleSheet.create({
     borderColor: nbColors.gray300,
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.sm,
-  },
-  fixedValueText: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray600,
-  },
-  searchInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: nbColors.white,
-    borderRadius: nbRadius.base,
-    borderWidth: nbBorders.thin,
-    borderColor: nbColors.gray300,
-    paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.sm,
-    gap: nbSpacing.sm,
-  },
-  searchText: {
-    flex: 1,
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.black,
-    padding: 0,
   },
 });

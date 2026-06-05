@@ -14,11 +14,12 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Platform,
+  ScrollView,
+  Pressable,
 } from 'react-native';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { featureFlags } from '../../utils/featureFlags';
 import { ClusteredUserMarkers } from '../../components/monitoring/ClusteredUserMarkers';
-import { MonitoringToggleSheet } from '../../components/monitoring/MonitoringToggleSheet';
 import { AreaStatusOverlay } from '../../components/monitoring/AreaStatusOverlay';
 import { PlantOverlayLayer } from '../../components/monitoring/PlantOverlayLayer';
 import {
@@ -107,7 +108,6 @@ export function MapDashboardScreen(): React.JSX.Element {
   );
 
   // Local UI state
-  const [toggleSheetVisible, setToggleSheetVisible] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [statusFilter, setStatusFilter] = useState<TrackingStatus | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -356,6 +356,8 @@ export function MapDashboardScreen(): React.JSX.Element {
   }, []);
 
   const handleMyLocation = useCallback(() => {
+    // maximumAge: 0 forces a fresh GPS fix (never a cached one) so the map
+    // always recenters on the device's current position.
     Geolocation.getCurrentPosition(
       pos => {
         mapRef.current?.animateToRegion(
@@ -369,9 +371,40 @@ export function MapDashboardScreen(): React.JSX.Element {
         );
       },
       () => {},
-      { enableHighAccuracy: true, timeout: 5000 },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     );
   }, []);
+
+  // Reset the camera bearing/pitch to north-up (tools-overlay compass).
+  const resetHeading = useCallback(() => {
+    mapRef.current?.animateCamera({ heading: 0, pitch: 0 }, { duration: 300 });
+  }, []);
+
+  // Zoom by halving / doubling the current viewport deltas (cross-platform —
+  // avoids getCamera().zoom which is Google-Maps-only on Android).
+  const handleZoomIn = useCallback(() => {
+    mapRef.current?.animateToRegion(
+      {
+        latitude: currentRegion.latitude,
+        longitude: currentRegion.longitude,
+        latitudeDelta: currentRegion.latitudeDelta / 2,
+        longitudeDelta: currentRegion.longitudeDelta / 2,
+      },
+      250,
+    );
+  }, [currentRegion]);
+
+  const handleZoomOut = useCallback(() => {
+    mapRef.current?.animateToRegion(
+      {
+        latitude: currentRegion.latitude,
+        longitude: currentRegion.longitude,
+        latitudeDelta: currentRegion.latitudeDelta * 2,
+        longitudeDelta: currentRegion.longitudeDelta * 2,
+      },
+      250,
+    );
+  }, [currentRegion]);
 
   const handleApplyFilters = useCallback(
     (newFilters: MonitoringFilters) => {
@@ -560,9 +593,25 @@ export function MapDashboardScreen(): React.JSX.Element {
             </View>
           )}
 
+          {/* Transparent scrim — a tap anywhere outside the tools overlay dismisses
+              it. Sits below the FAB column so the wrench toggle still works. */}
+          {toolsExpanded && (
+            <Pressable
+              style={styles.toolsScrim}
+              onPress={() => setToolsExpanded(false)}
+              accessibilityLabel="Tutup alat peta"
+            />
+          )}
+
           {/* FAB column — MON-3 refactored with tools overlay */}
           <View style={styles.fabColumn}>
-            {/* Locate me FAB */}
+            {/* Tools FAB — opens the map-tools overlay (compass, zoom, filter, layers) */}
+            <MapFab
+              icon="wrench"
+              onPress={() => setToolsExpanded(!toolsExpanded)}
+              accessibilityLabel="Alat peta"
+            />
+            {/* Locate me FAB — recenter on a fresh GPS fix */}
             <MapFab
               icon="crosshairs-gps"
               onPress={handleMyLocation}
@@ -574,64 +623,47 @@ export function MapDashboardScreen(): React.JSX.Element {
               onPress={handleRefresh}
               accessibilityLabel="Perbarui"
             />
-            {/* Tools FAB */}
-            <MapFab
-              icon="wrench"
-              onPress={() => setToolsExpanded(!toolsExpanded)}
-              accessibilityLabel="Alat peta"
-            />
 
-            {/* Tools overlay card — inline JSX, shown/hidden with toolsExpanded state */}
+            {/* Tools overlay card — a left-anchored popover from the wrench FAB.
+                MON-3: compass + zoom map controls plus the Filter entry (which now
+                also hosts the merged "Tampilan Peta" layer toggles). */}
             {toolsExpanded && (
-              <View style={styles.toolsOverlay}>
+              <ScrollView
+                style={styles.toolsOverlay}
+                contentContainerStyle={styles.toolsOverlayContent}
+                showsVerticalScrollIndicator={false}
+              >
+                {/* Map controls */}
                 <NBText variant="mono-sm" uppercase style={styles.toolsHeader}>
-                  Tools
+                  Peta
                 </NBText>
+                <ToolActionRow
+                  icon="compass-outline"
+                  label="Arah utara"
+                  onPress={resetHeading}
+                />
+                <ToolActionRow
+                  icon="magnify-plus-outline"
+                  label="Perbesar"
+                  onPress={handleZoomIn}
+                />
+                <ToolActionRow
+                  icon="magnify-minus-outline"
+                  label="Perkecil"
+                  onPress={handleZoomOut}
+                />
 
-                {/* Filter tool row */}
-                <TouchableOpacity
-                  style={[
-                    styles.toolRow,
-                    filterModalVisible && styles.toolRowActive,
-                  ]}
-                  onPress={() => {
-                    setFilterModalVisible(true);
-                    setToolsExpanded(false);
-                  }}
-                  activeOpacity={0.75}
-                >
-                  <View style={styles.toolIconChip}>
-                    <MaterialCommunityIcons
-                      name="filter-variant"
-                      size={16}
-                      color={nbColors.black}
-                    />
-                  </View>
-                  <NBText variant="body-sm">Filter</NBText>
-                </TouchableOpacity>
-
-                {/* Layers tool row */}
-                <TouchableOpacity
-                  style={[
-                    styles.toolRow,
-                    toggleSheetVisible && styles.toolRowActive,
-                  ]}
-                  onPress={() => {
-                    setToggleSheetVisible(true);
-                    setToolsExpanded(false);
-                  }}
-                  activeOpacity={0.75}
-                >
-                  <View style={styles.toolIconChip}>
-                    <MaterialCommunityIcons
-                      name="layers"
-                      size={16}
-                      color={nbColors.black}
-                    />
-                  </View>
-                  <NBText variant="body-sm">Tampilan</NBText>
-                </TouchableOpacity>
-              </View>
+                {/* Filter (status / area / jabatan / layer visibility) */}
+                <NBText variant="mono-sm" uppercase style={styles.toolsHeader}>
+                  Filter
+                </NBText>
+                <ToolActionRow
+                  icon="filter-variant"
+                  label="Filter monitoring"
+                  active={filterModalVisible}
+                  onPress={() => setFilterModalVisible(true)}
+                />
+              </ScrollView>
             )}
           </View>
         </View>
@@ -666,6 +698,9 @@ export function MapDashboardScreen(): React.JSX.Element {
             onApply={handleApplyFilters}
             currentFilters={filters}
             currentUser={currentUser}
+            users={liveUsers ?? []}
+            visibleLayers={visibleLayers}
+            onToggleLayer={handleToggleLayer}
           />
         )}
 
@@ -677,14 +712,6 @@ export function MapDashboardScreen(): React.JSX.Element {
           onClose={() => setBoundaryDetailVisible(false)}
         />
 
-        {/* Phase 3: Layer visibility toggle sheet */}
-        <MonitoringToggleSheet
-          visible={toggleSheetVisible}
-          visibleLayers={visibleLayers}
-          onToggleLayer={handleToggleLayer}
-          onClose={() => setToggleSheetVisible(false)}
-        />
-
         {/* Trail viewer — separate fullscreen modal with its own MapView so the
             main monitoring map is never disturbed by trail-specific overlays. */}
         <LocationTrailModal
@@ -694,6 +721,35 @@ export function MapDashboardScreen(): React.JSX.Element {
         />
       </View>
     </NBBackgroundPattern>
+  );
+}
+
+// ─── ToolActionRow ────────────────────────────────────────────────────────────
+// A tappable action row inside the tools overlay (compass / zoom / filter).
+// Shares the icon-chip + label chrome with the legacy tool rows; the layer
+// toggles use LayerToggleRow (with a Switch) instead.
+
+interface ToolActionRowProps {
+  icon: string;
+  label: string;
+  onPress: () => void;
+  active?: boolean;
+}
+
+function ToolActionRow({ icon, label, onPress, active = false }: ToolActionRowProps): React.JSX.Element {
+  return (
+    <TouchableOpacity
+      style={[styles.toolRow, active && styles.toolRowActive]}
+      onPress={onPress}
+      activeOpacity={0.75}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      <View style={styles.toolIconChip}>
+        <MaterialCommunityIcons name={icon} size={16} color={nbColors.black} />
+      </View>
+      <NBText variant="body-sm">{label}</NBText>
+    </TouchableOpacity>
   );
 }
 
@@ -762,18 +818,28 @@ const styles = StyleSheet.create({
     gap: nbSpacing.sm,
     pointerEvents: 'box-none',
   },
+  // Invisible full-bleed catcher for outside-taps while the tools overlay is open.
+  toolsScrim: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  // Left-anchored popover from the wrench FAB (which is now the top FAB). Sits
+  // beside the column so it never covers the FABs; maxHeight + internal scroll
+  // keeps the (now taller) tool list on-screen on short devices.
   toolsOverlay: {
     position: 'absolute',
-    bottom: 44 + nbSpacing.sm + nbSpacing.sm, // above the tools FAB
-    right: 0,
-    width: 200,
+    bottom: 0,
+    right: 44 + nbSpacing.sm, // to the left of the 44px FAB column
+    width: 210,
+    maxHeight: 360,
     borderRadius: nbRadius.md,
     borderWidth: nbBorders.widthThick,
     borderColor: nbColors.black,
     backgroundColor: nbColors.white,
+    ...nbShadows.md,
+  },
+  toolsOverlayContent: {
     paddingVertical: nbSpacing.sm,
     paddingHorizontal: nbSpacing.sm,
-    ...nbShadows.md,
   },
   toolsHeader: {
     paddingHorizontal: nbSpacing.xs,

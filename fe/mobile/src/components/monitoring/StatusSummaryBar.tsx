@@ -1,31 +1,28 @@
 /**
  * StatusSummaryBar Component
- * Phase 2D: Horizontal bar showing four-status counts as tappable chips.
- * Tapping a chip filters the map to show only that status.
+ * Phase 2D: bar showing the four-status counts as tappable cards.
+ * Tapping a card filters the map to show only that status.
+ *
+ * Phase 4 M3 (CP2): merged the peek status row + the old "Ringkasan" tile grid
+ * into this single surface. The statuses render as fixed-size tone-tinted cards
+ * (big count + status dot + mono label) in a horizontal scroller — fixed width
+ * AND height keep the cards symmetrical regardless of label length, and the
+ * scroll content is padded on every side so the hard-edge shadow has room
+ * instead of being clipped at the viewport edges. The active card gets a black
+ * border + heavier shadow.
  */
 
 import React, { useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 // react-native-gesture-handler's ScrollView is the correct nested scroller
-// inside @gorhom/bottom-sheet. Its native gesture handler coordinates with
-// the sheet's pan handler so horizontal drags don't get swallowed by either
-// the sheet's vertical pan or the parent BottomSheetFlatList that hosts this
-// bar in its ListHeaderComponent.
-//
-// `BottomSheetScrollView` from gorhom is wrong for this case — that one is
-// meant to be the PRIMARY content scroll inside the sheet, not a nested
-// horizontal carousel; using it here resulted in completely unscrollable
-// chips on Android (the sheet's vertical handler captured every pan).
+// inside @gorhom/bottom-sheet — its native gesture handler coordinates with the
+// sheet's pan handler so horizontal drags aren't swallowed by the sheet's
+// vertical pan or the parent BottomSheetFlatList hosting this bar.
 import { ScrollView } from 'react-native-gesture-handler';
-import {
-  nbColors,
-  nbSpacing,
-  nbTypography,
-  nbBorders,
-  nbBorderRadius,
-  nbShadows,
-} from '../../constants/nbTokens';
-import { getStatusColor, getStatusLabel } from '../../utils/mapUtils';
+import { NBText } from '../nb/NBText';
+import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
+import { presencePill } from '../../utils/statusHelpers';
+import { getStatusColor } from '../../utils/mapUtils';
 import type { TrackingStatus } from '../../types/models.types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -53,6 +50,14 @@ const DISPLAYED_STATUSES: TrackingStatus[] = [
   'missing',
 ];
 
+const STATUS_BG: Record<TrackingStatus, string> = {
+  active: nbColors.statusActiveBg,
+  inactive: nbColors.statusIdleBg,
+  outside_area: nbColors.statusOutsideBg,
+  missing: nbColors.statusMissingBg,
+  offline: nbColors.statusOfflineBg,
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function StatusSummaryBar({
@@ -73,9 +78,6 @@ export function StatusSummaryBar({
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        // Android's underlying ScrollView host needs nestedScrollEnabled to opt
-        // into NestedScrollingChild so the parent FlatList lets us consume the
-        // horizontal pan; iOS ignores the prop without harm.
         nestedScrollEnabled
       >
         {DISPLAYED_STATUSES.map(status => (
@@ -102,37 +104,31 @@ interface StatusChipProps {
 }
 
 function StatusChip({ status, count, isActive, onPress }: StatusChipProps): React.JSX.Element {
-  const color = getStatusColor(status);
-  const label = getStatusLabel(status);
+  const { label } = presencePill(status);
+  const accent = getStatusColor(status);
 
   return (
     <TouchableOpacity
-      style={[
-        styles.chip,
-        isActive && { backgroundColor: color, borderColor: nbColors.black },
-      ]}
       onPress={() => onPress(status)}
       activeOpacity={0.75}
       accessibilityLabel={`Filter ${label}: ${count}`}
       accessibilityRole="button"
+      accessibilityState={{ selected: isActive }}
+      testID={`status-chip-${status}`}
     >
-      <View style={[styles.dot, { backgroundColor: color }]} />
-      <Text
+      <View
         style={[
-          styles.countText,
-          isActive && styles.countTextActive,
+          styles.chip,
+          { backgroundColor: STATUS_BG[status], borderColor: accent },
+          isActive && styles.chipActive,
         ]}
       >
-        {count}
-      </Text>
-      <Text
-        style={[
-          styles.labelText,
-          isActive && styles.labelTextActive,
-        ]}
-      >
-        {label}
-      </Text>
+        <View style={[styles.dot, { backgroundColor: accent }]} />
+        <NBText variant="h3" color="black">{count}</NBText>
+        <NBText variant="mono-sm" uppercase color="gray700" style={styles.chipLabel}>
+          {label}
+        </NBText>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -142,45 +138,39 @@ function StatusChip({ status, count, isActive, onPress }: StatusChipProps): Reac
 const styles = StyleSheet.create({
   container: {
     backgroundColor: nbColors.white,
-    borderBottomWidth: nbBorders.thin,
-    borderBottomColor: nbColors.gray['300'],
+    borderBottomWidth: nbBorders.widthThin,
+    borderBottomColor: nbColors.gray300,
   },
   scrollContent: {
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.sm,
     gap: nbSpacing.sm,
   },
+  // Auto-width: the card hugs its content (dot + count + label on one row).
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: nbColors.gray['100'],
-    borderRadius: nbBorderRadius.full,
-    borderWidth: nbBorders.thin,
-    borderColor: nbColors.gray['300'],
-    paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.xs,
     gap: nbSpacing.xs,
+    paddingHorizontal: nbSpacing.md,
+    paddingVertical: nbSpacing.sm,
+    borderWidth: nbBorders.widthBase,
+    borderRadius: nbRadius.base,
     ...nbShadows.xs,
   },
+  // Active filter: black ring + heavier hard-edge shadow over the tone fill.
+  chipActive: {
+    borderColor: nbColors.black,
+    ...nbShadows.sm,
+  },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: nbColors.black,
   },
-  countText: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray['700'],
-  },
-  countTextActive: {
-    color: nbColors.white,
-  },
-  labelText: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray['600'],
-  },
-  labelTextActive: {
-    color: nbColors.white,
+  chipLabel: {
+    fontSize: 10,
+    letterSpacing: 0.3,
   },
 });

@@ -181,16 +181,16 @@ export function overtimePill(status: OvertimeStatus): { tone: StatusTone; label:
   }
 }
 
-// Maps the 5 TrackingStatus values to the StatusPill tone + hi-fi vocabulary
-// used across Monitoring (MON-1/2 pill surfaces). Note: this label set is the
-// hi-fi vocab ("Tidak aktif" / "Luar area" / "Hilang"), distinct from
-// `getStatusLabel` in utils/mapUtils.ts which still backs markers + overlays.
+// Maps the 5 TrackingStatus values to the StatusPill tone + shortened pill
+// vocabulary used across Monitoring (MON-1/2 pill surfaces). Labels stay aligned
+// with the canonical `getStatusLabel` vocab in utils/mapUtils.ts (which backs
+// markers + overlays); the pill versions are just trimmed to fit the chip.
 export function presencePill(status: TrackingStatus): { tone: StatusTone; label: string } {
   switch (status) {
     case 'active':       return { tone: 'ok', label: 'Aktif' };
     case 'inactive':     return { tone: 'warn', label: 'Tidak aktif' };
     case 'outside_area': return { tone: 'bad', label: 'Luar area' };
-    case 'missing':      return { tone: 'bad', label: 'Hilang' };
+    case 'missing':      return { tone: 'bad', label: 'Tidak terdeteksi' };
     case 'offline':      return { tone: 'neutral', label: 'Offline' };
   }
 }

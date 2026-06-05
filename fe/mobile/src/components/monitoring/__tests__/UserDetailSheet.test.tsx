@@ -232,7 +232,7 @@ describe('UserDetailSheet (CP1)', () => {
       ['active',       'Aktif'],
       ['inactive',     'Tidak aktif'],
       ['outside_area', 'Luar area'],
-      ['missing',      'Hilang'],
+      ['missing',      'Tidak terdeteksi'],
       ['offline',      'Offline'],
     ] as const)('renders the presencePill label "%s" → "%s"', async (status, label) => {
       const { getByText } = render(

@@ -651,6 +651,8 @@ export interface RayonBoundary {
   area_count: number;
   is_understaffed: boolean;
   understaffed_area_count: number;
+  /** DB-driven hex color for the rayon polygon; falls back to a deterministic palette. */
+  color?: string | null;
 }
 
 export interface BoundariesResponse {

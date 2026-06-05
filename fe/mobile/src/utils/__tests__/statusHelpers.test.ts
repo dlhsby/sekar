@@ -230,7 +230,7 @@ describe('statusHelpers', () => {
       ['active',       'ok',      'Aktif'],
       ['inactive',     'warn',    'Tidak aktif'],
       ['outside_area', 'bad',     'Luar area'],
-      ['missing',      'bad',     'Hilang'],
+      ['missing',      'bad',     'Tidak terdeteksi'],
       ['offline',      'neutral', 'Offline'],
     ] as const)('maps %s → %s / %s', (status, tone, label) => {
       expect(presencePill(status)).toEqual({ tone, label });

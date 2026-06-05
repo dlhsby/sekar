@@ -25,13 +25,13 @@ import type { MonitoringV2VisibleLayers } from '../../store/slices/monitoringV2S
 
 // ─── Layer definitions ────────────────────────────────────────────────────────
 
-interface LayerRow {
+export interface LayerRow {
   key: keyof MonitoringV2VisibleLayers;
   label: string;
   icon: string;
 }
 
-const LAYER_ROWS: LayerRow[] = [
+export const LAYER_ROWS: LayerRow[] = [
   { key: 'workers', label: 'Petugas', icon: 'account-hard-hat' },
   { key: 'plants', label: 'Tanaman', icon: 'tree' },
   { key: 'overdue', label: 'Jatuh Tempo', icon: 'alert-circle' },
@@ -79,7 +79,7 @@ export function MonitoringToggleSheet({
 
 // ─── LayerToggleRow sub-component ─────────────────────────────────────────────
 
-interface LayerToggleRowProps {
+export interface LayerToggleRowProps {
   icon: string;
   label: string;
   enabled: boolean;
@@ -87,7 +87,7 @@ interface LayerToggleRowProps {
   isLast: boolean;
 }
 
-function LayerToggleRow({
+export function LayerToggleRow({
   icon,
   label,
   enabled,

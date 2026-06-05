@@ -57,6 +57,16 @@ jest.mock('../../../constants/nbTokens', () => ({
     black: '#1C1917',
     dangerDark: '#B91C1C',
     requestUnderReview: '#2563EB',
+    warning: '#F59E0B',
+    warningLight: '#FCD34D',
+    // Rayon palette (consumed by rayonColors.ts for the no-DB-color fallback).
+    roleSatgas: '#7FBC8C',
+    roleLinmas: '#2563EB',
+    roleKorlap: '#E3A018',
+    roleAdminData: '#9333EA',
+    roleKepala: '#F48572',
+    roleTop: '#1A4D2E',
+    roleKecamatan: '#FDFD96',
   },
   nbType: {
     'display-xl': { fontFamily: "'Space Grotesk'", fontSize: 56, fontWeight: '800', lineHeight: 56 },
@@ -126,6 +136,9 @@ function buildRayon(
     area_count: areas.length,
     is_understaffed: false,
     understaffed_area_count: 0,
+    // DB-driven boundary color (Phase 4 M3). The overlay prefers this over the
+    // deterministic palette; '#2563EB' keeps the legacy stroke assertions valid.
+    color: '#2563EB',
     ...overrides,
   };
 }
@@ -172,14 +185,26 @@ describe('BoundaryOverlay', () => {
       expect(polygons.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('applies blue stroke color to the rayon polygon', () => {
+    it('applies the rayon DB color as the polygon stroke', () => {
       const { getAllByTestId } = render(
         <BoundaryOverlay rayons={[buildRayon()]} {...defaultProps} />,
       );
 
       const polygons = getAllByTestId('polygon');
       const rayonPoly = polygons[0];
+      // Default fixture sets color: '#2563EB' → preferred over the palette.
       expect(rayonPoly.props.strokeColor).toBe('#2563EB');
+    });
+
+    it('falls back to a deterministic palette color when no DB color is set', () => {
+      const rayon = buildRayon([buildArea()], { color: undefined });
+      const { getAllByTestId } = render(
+        <BoundaryOverlay rayons={[rayon]} {...defaultProps} />,
+      );
+
+      const polygons = getAllByTestId('polygon');
+      // Single sorted rayon → first palette slot (roleSatgas '#7FBC8C').
+      expect(polygons[0].props.strokeColor).toBe('#7FBC8C');
     });
 
     it('applies dashed line pattern to the rayon polygon', () => {
