@@ -12,6 +12,7 @@ import {
   View,
   Text,
   TouchableOpacity,
+  ScrollView,
   StyleSheet,
   StyleProp,
   ViewStyle,
@@ -46,6 +47,13 @@ export interface NBTabProps {
   activeTab: string;
   /** Tab change handler */
   onTabChange: (key: string) => void;
+  /**
+   * Horizontally scrollable mode — same segmented NB style, but tabs hug their
+   * content (labels + counts never wrap/clip) and the bar scrolls if it's wider
+   * than the viewport, with edge padding. Use for many tabs / long labels.
+   * Default false (equal-width tabs filling the row, e.g. Tugas/Aktivitas).
+   */
+  scrollable?: boolean;
   /** Custom container style */
   style?: StyleProp<ViewStyle>;
   /** Custom tab style */
@@ -77,6 +85,7 @@ export const NBTab: React.FC<NBTabProps> = ({
   tabs,
   activeTab,
   onTabChange,
+  scrollable = false,
   style,
   tabStyle,
   activeTabStyle,
@@ -99,67 +108,77 @@ export const NBTab: React.FC<NBTabProps> = ({
     [activeTab, onTabChange],
   );
 
-  return (
-    <View
-      style={[styles.container, style]}
-      testID={testID}
-      accessibilityRole="tablist"
-    >
-      {tabs.map((tab, index) => {
-        const isActive = tab.key === activeTab;
-        const isFirst = index === 0;
-        const isLast = index === tabs.length - 1;
+  const tabNodes = tabs.map((tab, index) => {
+    const isActive = tab.key === activeTab;
+    const isLast = index === tabs.length - 1;
 
-        return (
-          <TouchableOpacity
-            key={tab.key}
-            activeOpacity={0.8}
-            onPress={() => handleTabPress(tab.key)}
-            accessible
-            accessibilityRole="tab"
-            accessibilityState={{ selected: isActive }}
-            accessibilityLabel={`${tab.label}${tab.count ? `, ${tab.count} items` : ''}`}
-            testID={testID ? `${testID}-${tab.key}` : undefined}
+    return (
+      <TouchableOpacity
+        key={tab.key}
+        activeOpacity={0.8}
+        onPress={() => handleTabPress(tab.key)}
+        accessible
+        accessibilityRole="tab"
+        accessibilityState={{ selected: isActive }}
+        accessibilityLabel={`${tab.label}${tab.count ? `, ${tab.count} items` : ''}`}
+        testID={testID ? `${testID}-${tab.key}` : undefined}
+        style={[
+          styles.tab,
+          // Equal-width tabs only in the default layout; scrollable tabs hug
+          // their content so labels + counts never wrap or clip.
+          !scrollable && styles.tabFlex,
+          isLast && styles.lastTab,
+          isActive && styles.activeTab,
+          tabStyle,
+          isActive && activeTabStyle,
+        ]}
+      >
+        <View style={styles.tabContent}>
+          {tab.icon && <View style={styles.icon}>{tab.icon}</View>}
+          <Text
             style={[
-              styles.tab,
-              isFirst && styles.firstTab,
-              isLast && styles.lastTab,
-              isActive && styles.activeTab,
-              tabStyle,
-              isActive && activeTabStyle,
+              styles.tabText,
+              isActive && styles.activeTabText,
+              textStyle,
+              isActive && activeTextStyle,
             ]}
           >
-            <View style={styles.tabContent}>
-              {tab.icon && <View style={styles.icon}>{tab.icon}</View>}
-              <Text
-                style={[
-                  styles.tabText,
-                  isActive && styles.activeTabText,
-                  textStyle,
-                  isActive && activeTextStyle,
-                ]}
-              >
-                {tab.label}
+            {tab.label}
+          </Text>
+          {tab.count !== undefined && tab.count > 0 && (
+            <View
+              style={[styles.badge, isActive && styles.activeBadge]}
+              testID={testID ? `${testID}-${tab.key}-count` : undefined}
+            >
+              <Text style={[styles.badgeText, isActive && styles.activeBadgeText]}>
+                {tab.count > 99 ? '99+' : tab.count}
               </Text>
-              {tab.count !== undefined && tab.count > 0 && (
-                <View
-                  style={[styles.badge, isActive && styles.activeBadge]}
-                  testID={testID ? `${testID}-${tab.key}-count` : undefined}
-                >
-                  <Text
-                    style={[
-                      styles.badgeText,
-                      isActive && styles.activeBadgeText,
-                    ]}
-                  >
-                    {tab.count > 99 ? '99+' : tab.count}
-                  </Text>
-                </View>
-              )}
             </View>
-          </TouchableOpacity>
-        );
-      })}
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  });
+
+  if (scrollable) {
+    return (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        style={[styles.scrollView, style]}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <View style={styles.container} testID={testID} accessibilityRole="tablist">
+          {tabNodes}
+        </View>
+      </ScrollView>
+    );
+  }
+
+  return (
+    <View style={[styles.container, style]} testID={testID} accessibilityRole="tablist">
+      {tabNodes}
     </View>
   );
 };
@@ -174,7 +193,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden', // Clip child elements to rounded border
   },
   tab: {
-    flex: 1,
     minHeight: nbTouchTarget.minHeight,
     justifyContent: 'center',
     alignItems: 'center',
@@ -184,8 +202,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.sm,
   },
-  firstTab: {
-    // No special styling needed
+  // Equal-width tabs (default, non-scrollable layout).
+  tabFlex: {
+    flex: 1,
+  },
+  // Pin the scroller to exactly the pill height (touch target + its 2px border
+  // top/bottom). A horizontal ScrollView otherwise grows to fill the parent
+  // column, leaving big gaps above/below the centred pill. flexGrow:0 stops any
+  // residual stretch.
+  scrollView: {
+    height: nbTouchTarget.minHeight + nbBorders.base * 2,
+    flexGrow: 0,
+  },
+  scrollContent: {
+    paddingHorizontal: nbSpacing.md,
+    alignItems: 'center',
   },
   lastTab: {
     borderRightWidth: 0,

@@ -381,4 +381,29 @@ describe('NBTab', () => {
       expect(getByText('PROFIL')).toBeTruthy();
     });
   });
+
+  describe('scrollable mode', () => {
+    const manyTabs: NBTabItem[] = [
+      { key: 'semua', label: 'SEMUA', count: 12 },
+      { key: 'petugas', label: 'PETUGAS', count: 8 },
+      { key: 'area', label: 'AREA', count: 3 },
+      { key: 'rayon', label: 'RAYON', count: 1 },
+    ];
+
+    it('renders all tabs + counts without clipping', () => {
+      const { getByText, getByTestId } = render(
+        <NBTab scrollable tabs={manyTabs} activeTab="semua" onTabChange={mockOnTabChange} testID="search-tabs" />,
+      );
+      ['SEMUA', 'PETUGAS', 'AREA', 'RAYON'].forEach((l) => expect(getByText(l)).toBeTruthy());
+      expect(getByTestId('search-tabs-petugas-count')).toBeTruthy();
+    });
+
+    it('fires onTabChange on a scrollable tab press', () => {
+      const { getByTestId } = render(
+        <NBTab scrollable tabs={manyTabs} activeTab="semua" onTabChange={mockOnTabChange} testID="search-tabs" />,
+      );
+      fireEvent.press(getByTestId('search-tabs-area'));
+      expect(mockOnTabChange).toHaveBeenCalledWith('area');
+    });
+  });
 });

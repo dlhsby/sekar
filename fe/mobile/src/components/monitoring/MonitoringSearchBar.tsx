@@ -1,63 +1,79 @@
-import React from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {
-  nbColors,
-  nbBorders,
-  nbBorderRadius,
-  nbSpacing,
-  nbTypography,
-  nbShadows,
-} from '../../constants/nbTokens';
+/**
+ * MonitoringSearchBar
+ *
+ * Compact pill floating over the monitoring map. It is now a non-editable
+ * trigger: tapping it opens the fullscreen MonitoringSearchModal (typing happens
+ * there). Kept bespoke (not NBTextInput — that's a labeled form field) on
+ * canonical tokens, with accessibility annotations.
+ *
+ * React.memo'd — it lives on the hot map-render path.
+ */
 
-// ─── Props ────────────────────────────────────────────────────────────────────
+import React from 'react';
+import { TouchableOpacity, StyleSheet } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { NBText } from '../nb/NBText';
+import { nbColors, nbBorders, nbRadius, nbSpacing, nbShadows } from '../../constants/nbTokens';
 
 interface MonitoringSearchBarProps {
-  value: string;
-  onChangeText: (text: string) => void;
-  onClear: () => void;
+  /** Opens the search modal. */
+  onPress: () => void;
+  /** Active query text shown in the pill (optional — empty shows the placeholder). */
+  value?: string;
+  /** Clears the active query (shows the × affordance when `value` is non-empty). */
+  onClear?: () => void;
   placeholder?: string;
+  testID?: string;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 export const MonitoringSearchBar = React.memo(function MonitoringSearchBar({
+  onPress,
   value,
-  onChangeText,
   onClear,
-  placeholder = 'Cari petugas...',
+  placeholder = 'Cari petugas, area, rayon…',
+  testID = 'monitoring-search',
 }: MonitoringSearchBarProps): React.JSX.Element {
+  const hasValue = !!value && value.length > 0;
+
   return (
-    <View style={styles.container}>
-      <MaterialCommunityIcons name="magnify" size={20} color={nbColors.gray['500']} />
-      <TextInput
-        style={styles.input}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={nbColors.gray['400']}
-        returnKeyType="search"
-        clearButtonMode="never"
-        autoCorrect={false}
-        autoCapitalize="none"
-      />
-      {value.length > 0 && (
-        <TouchableOpacity onPress={onClear} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <MaterialCommunityIcons name="close-circle" size={18} color={nbColors.gray['400']} />
+    <TouchableOpacity
+      style={styles.container}
+      onPress={onPress}
+      activeOpacity={0.8}
+      accessibilityRole="search"
+      accessibilityLabel={hasValue ? `Pencarian: ${value}` : placeholder}
+      testID={testID}
+    >
+      <MaterialCommunityIcons name="magnify" size={20} color={nbColors.gray500} />
+      <NBText
+        variant="body"
+        color={hasValue ? 'black' : 'gray400'}
+        numberOfLines={1}
+        style={styles.text}
+      >
+        {hasValue ? value : placeholder}
+      </NBText>
+      {hasValue && onClear ? (
+        <TouchableOpacity
+          onPress={onClear}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel="Hapus pencarian"
+          testID={`${testID}-clear`}
+        >
+          <MaterialCommunityIcons name="close-circle" size={18} color={nbColors.gray400} />
         </TouchableOpacity>
-      )}
-    </View>
+      ) : null}
+    </TouchableOpacity>
   );
 });
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {
     height: 48,
     backgroundColor: nbColors.white,
-    borderRadius: nbBorderRadius.full,
-    borderWidth: nbBorders.base,
+    borderRadius: nbRadius.full,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     paddingHorizontal: nbSpacing.md,
     flexDirection: 'row',
@@ -65,10 +81,7 @@ const styles = StyleSheet.create({
     gap: nbSpacing.sm,
     ...nbShadows.sm,
   },
-  input: {
+  text: {
     flex: 1,
-    fontSize: nbTypography.fontSize.base,
-    color: nbColors.black,
-    paddingVertical: 0,
   },
 });

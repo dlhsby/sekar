@@ -43,6 +43,9 @@ import { MarkerPreview, type MarkerPreviewData } from '../../components/monitori
 import { MapErrorBoundary } from '../../components/monitoring/MapErrorBoundary';
 import { MonitoringStatusSheet } from '../../components/monitoring/MonitoringStatusSheet';
 import { MonitoringSearchBar } from '../../components/monitoring/MonitoringSearchBar';
+import { MonitoringSearchModal } from '../../components/monitoring/MonitoringSearchModal';
+import type { SearchResult } from '../../hooks/useMonitoringSearch';
+import { addRecentSearch } from '../../services/storage/recentSearches';
 import { UserDetailSheet } from '../../components/monitoring/UserDetailSheet';
 import { LocationTrailModal } from '../../components/monitoring/LocationTrailModal';
 import { MapFab } from '../../components/monitoring/MapFab';
@@ -123,8 +126,8 @@ export function MapDashboardScreen(): React.JSX.Element {
   // Local UI state
   const [mapReady, setMapReady] = useState(false);
   const [statusFilter, setStatusFilter] = useState<TrackingStatus | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [searchModalVisible, setSearchModalVisible] = useState(false);
   const [trailUser, setTrailUser] = useState<LiveUser | null>(null);
   const [currentRegion, setCurrentRegion] = useState(SURABAYA_CITY_REGION);
   const [boundaryDetailVisible, setBoundaryDetailVisible] = useState(false);
@@ -286,15 +289,8 @@ export function MapDashboardScreen(): React.JSX.Element {
     if (statusFilter) {
       users = users.filter(u => u.status === statusFilter);
     }
-    if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase();
-      users = users.filter(u =>
-        u.full_name?.toLowerCase().includes(q) ||
-        u.username?.toLowerCase().includes(q),
-      );
-    }
     return users;
-  }, [liveUsers, statusFilter, visibleLayers.workers, searchQuery]);
+  }, [liveUsers, statusFilter, visibleLayers.workers]);
 
   const staffedAreas = useMemo(() => {
     if (!Array.isArray(liveUsers)) { return 0; }
@@ -462,6 +458,27 @@ export function MapDashboardScreen(): React.JSX.Element {
       },
     );
   }, [showMarkerPreview]);
+
+  // Search result selected → close modal, remember it, fly to it and pop its
+  // bubble. Reuses the marker-tap handlers (recenter + preview) by resolving the
+  // full entity from the result id.
+  const handleSearchSelect = useCallback(
+    (result: SearchResult) => {
+      setSearchModalVisible(false);
+      addRecentSearch(result);
+      if (result.type === 'petugas') {
+        const user = liveUsers.find((u) => u.id === result.id);
+        if (user) { handleMarkerPress(user); }
+      } else if (result.type === 'area') {
+        const area = boundaries?.rayons.flatMap((r) => r.areas).find((a) => a.id === result.id);
+        if (area) { handleAreaPress(area); }
+      } else {
+        const rayon = boundaries?.rayons.find((r) => r.id === result.id);
+        if (rayon) { handleRayonPress(rayon); }
+      }
+    },
+    [liveUsers, boundaries, handleMarkerPress, handleAreaPress, handleRayonPress],
+  );
 
   const handleMyLocation = useCallback(() => {
     // maximumAge: 0 forces a fresh GPS fix (never a cached one) so the map
@@ -690,13 +707,9 @@ export function MapDashboardScreen(): React.JSX.Element {
           {/* Marker preview card — pinned over the tapped marker (custom callout). */}
           {markerPreview && <MarkerPreview data={markerPreview} />}
 
-          {/* Floating search bar */}
+          {/* Floating search bar — opens the fullscreen search modal */}
           <View style={styles.searchBarOverlay} pointerEvents="box-none">
-            <MonitoringSearchBar
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              onClear={() => setSearchQuery('')}
-            />
+            <MonitoringSearchBar onPress={() => setSearchModalVisible(true)} />
           </View>
 
           {/* Empty-boundaries warning */}
@@ -833,6 +846,15 @@ export function MapDashboardScreen(): React.JSX.Element {
           visible={trailUser !== null}
           user={trailUser}
           onClose={handleCloseTrail}
+        />
+
+        {/* Fullscreen search — find a petugas / area / rayon and fly to it. */}
+        <MonitoringSearchModal
+          visible={searchModalVisible}
+          onClose={() => setSearchModalVisible(false)}
+          liveUsers={liveUsers}
+          rayons={boundaries?.rayons}
+          onSelect={handleSearchSelect}
         />
       </View>
     </NBBackgroundPattern>

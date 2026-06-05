@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
+  Text,
   Modal,
   StyleSheet,
   TouchableOpacity,
@@ -308,25 +309,32 @@ function FullscreenModal({
       testID={testID}
     >
       <View style={[styles.fullscreenContainer, { paddingTop: insets.top }]}>
+        {/* Identical to the app's sub-screen header: NB_HEADER_STYLE chrome
+            (76px, thick black bottom border, md shadow) wrapping a centered
+            FieldHomeHeader-style row (back arrow 24 + 18/800 title). */}
         <View style={styles.fullscreenHeader}>
-          <TouchableOpacity
-            onPress={onClose}
-            style={styles.backButton}
-            accessibilityLabel="Kembali"
-            accessibilityRole="button"
-          >
-            <MaterialCommunityIcons name="arrow-left" size={22} color={nbColors.black} />
-          </TouchableOpacity>
-          {title ? (
-            <NBText variant="h3" color="black" style={styles.fullscreenTitleText}>
-              {title}
-            </NBText>
-          ) : null}
-          {headerRight ? (
-            <View style={styles.headerRightSlot}>{headerRight}</View>
-          ) : (
-            <View style={styles.headerSpacer} />
-          )}
+          <View style={styles.fullscreenHeaderRow}>
+            <TouchableOpacity
+              onPress={onClose}
+              style={styles.backButton}
+              accessibilityLabel="Kembali"
+              accessibilityRole="button"
+            >
+              <MaterialCommunityIcons name="arrow-left" size={24} color={nbColors.black} />
+            </TouchableOpacity>
+            <View style={styles.fullscreenHeaderCenter}>
+              {title ? (
+                <Text style={styles.fullscreenTitleText} numberOfLines={1} ellipsizeMode="tail">
+                  {title}
+                </Text>
+              ) : null}
+            </View>
+            {headerRight ? (
+              <View style={styles.headerRightSlot}>{headerRight}</View>
+            ) : (
+              <View style={styles.headerSpacer} />
+            )}
+          </View>
         </View>
         {inner}
       </View>
@@ -425,25 +433,40 @@ const styles = StyleSheet.create({
   fullscreenFlex: {
     flex: 1,
   },
+  // Chrome — identical to MainNavigator's NB_HEADER_STYLE (used by every screen
+  // header) so a fullscreen modal header matches a screen pixel-for-pixel.
   fullscreenHeader: {
+    height: 76,
+    backgroundColor: nbColors.white,
+    borderBottomWidth: nbBorders.widthThick,
+    borderBottomColor: nbColors.black,
+    ...nbShadows.md,
+    justifyContent: 'center',
+  },
+  // Inner row — matches FieldHomeHeader's container (centred in the 76px chrome).
+  fullscreenHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: nbSpacing.lg,
-    paddingVertical: nbSpacing.md,
-    backgroundColor: nbColors.white,
-    borderBottomWidth: nbBorders.thick,
-    borderBottomColor: nbColors.black,
-    ...nbShadows.sm,
+    paddingHorizontal: nbSpacing.md,
   },
   backButton: {
     width: 44,
     height: 44,
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'center',
-    marginRight: nbSpacing.sm,
+    marginRight: nbSpacing.xs,
   },
-  fullscreenTitleText: {
+  fullscreenHeaderCenter: {
     flex: 1,
+    justifyContent: 'center',
+    marginRight: nbSpacing.xs,
+  },
+  // Matches FieldHomeHeader's pageTitle (raw Text, system font, 18/800).
+  fullscreenTitleText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: nbColors.black,
+    textAlign: 'left',
   },
   headerSpacer: {
     width: 44,
