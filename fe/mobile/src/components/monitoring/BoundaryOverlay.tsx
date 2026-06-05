@@ -110,7 +110,7 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
           <Marker
             key={`area-center-${area.id}`}
             coordinate={{ latitude: Number(area.center_lat), longitude: Number(area.center_lng) }}
-            onPress={() => onAreaPress(area)}
+            onPress={(e) => { e?.stopPropagation?.(); onAreaPress(area); }}
             tracksViewChanges={false}
             zIndex={20}
             anchor={{ x: 0.5, y: 0.5 }}
@@ -134,7 +134,7 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
         <Marker
           key={`rayon-center-${rayon.id}`}
           coordinate={{ latitude: Number(rayon.center_lat), longitude: Number(rayon.center_lng) }}
-          onPress={() => onRayonPress(rayon)}
+          onPress={(e) => { e?.stopPropagation?.(); onRayonPress(rayon); }}
           tracksViewChanges={false}
           zIndex={10}
           anchor={{ x: 0.5, y: 0.5 }}

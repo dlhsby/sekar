@@ -39,6 +39,7 @@ import {
 import { NBBackgroundPattern } from '../../components/nb';
 import { NBText } from '../../components/nb/NBText';
 import { UserMarker, type LabelMode } from '../../components/monitoring/UserMarker';
+import { MarkerPreview, type MarkerPreviewData } from '../../components/monitoring/MarkerPreview';
 import { MapErrorBoundary } from '../../components/monitoring/MapErrorBoundary';
 import { MonitoringStatusSheet } from '../../components/monitoring/MonitoringStatusSheet';
 import { MonitoringSearchBar } from '../../components/monitoring/MonitoringSearchBar';
@@ -51,7 +52,9 @@ import {
   SURABAYA_CITY_REGION,
   shouldCluster,
   clusterUsers,
+  getRoleIcon,
 } from '../../utils/mapUtils';
+import { ROLE_LABELS } from '../../constants/roles';
 import type { AppDispatch, RootState } from '../../store/store';
 import type { LiveUser, TrackingStatus, UserRole } from '../../types/models.types';
 import type { MonitoringFilters } from '../../types/api.types';
@@ -78,6 +81,10 @@ import type { RayonBoundary, AreaBoundary } from '../../types/models.types';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const PEEK_HEIGHT = 88;
+
+// MapView mapPadding — the reported region maps to this padded viewport, so the
+// coordinate→screen projection for the marker preview must account for it.
+const MAP_PADDING = { top: 60, right: 64, bottom: PEEK_HEIGHT, left: 0 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -123,6 +130,11 @@ export function MapDashboardScreen(): React.JSX.Element {
   const [boundaryDetailVisible, setBoundaryDetailVisible] = useState(false);
   const [boundaryDetailType, setBoundaryDetailType] = useState<'rayon' | 'area'>('area');
   const [boundaryDetailData, setBoundaryDetailData] = useState<RayonBoundary | AreaBoundary | null>(null);
+  // Marker preview card (custom callout pinned over the tapped marker). null = hidden.
+  const [markerPreview, setMarkerPreview] = useState<MarkerPreviewData | null>(null);
+  // MapView pixel size — used to project a marker's coordinate to a screen point
+  // for the preview card (deterministic; avoids the flaky native pointForCoordinate).
+  const [mapLayout, setMapLayout] = useState({ width: 0, height: 0 });
   // Incremented on focus and on manual refresh to force BoundaryOverlay remount,
   // ensuring Android native Polygon/Circle overlays are recreated when tabs switch.
   const [boundaryKey, setBoundaryKey] = useState(0);
@@ -342,13 +354,63 @@ export function MapDashboardScreen(): React.JSX.Element {
     return 'full';
   }, [currentRegion.latitudeDelta]);
 
-  // Marker press
+  const dismissPreview = useCallback(() => {
+    setMarkerPreview((prev) => (prev ? null : prev));
+  }, []);
+
+  // Show the custom preview card over a tapped marker. Rather than projecting the
+  // coordinate (fragile — mapPadding + Mercator), we RECENTER the marker in the
+  // padded viewport and render the card at that fixed center point. Always correct
+  // regardless of zoom/region, and no native call to fail. (Native <Callout>
+  // crashes on Fabric/Android with a custom marker icon — see MarkerPreview.)
+  const showMarkerPreview = useCallback(
+    (
+      coordinate: { latitude: number; longitude: number },
+      card: MarkerPreviewData['card'],
+      anchorOffset: number,
+      onDetail: () => void,
+    ) => {
+      const { width, height } = mapLayout;
+      if (width <= 0 || height <= 0) { return; }
+      // Animate the marker to the centre of the padded viewport.
+      mapRef.current?.animateToRegion(
+        {
+          latitude: coordinate.latitude,
+          longitude: coordinate.longitude,
+          latitudeDelta: currentRegion.latitudeDelta,
+          longitudeDelta: currentRegion.longitudeDelta,
+        },
+        300,
+      );
+      // The marker now sits at the padded-viewport centre — a fixed screen point.
+      const x = MAP_PADDING.left + (width - MAP_PADDING.left - MAP_PADDING.right) / 2;
+      const y = MAP_PADDING.top + (height - MAP_PADDING.top - MAP_PADDING.bottom) / 2;
+      setMarkerPreview({ x, y, anchorOffset, card, onDetail });
+    },
+    [mapLayout, currentRegion],
+  );
+
+  // Marker press → show the preview card; "Lihat detail" opens the detail sheet.
   const handleMarkerPress = useCallback(
     (user: LiveUser) => {
-      dispatch(setSelectedUser(user));
-      dispatch(fetchUserDaySummary(user.id));
+      showMarkerPreview(
+        { latitude: user.latitude, longitude: user.longitude },
+        {
+          title: user.full_name,
+          typeText: 'Petugas',
+          roleText: ROLE_LABELS[user.role as UserRole] ?? user.role,
+          accent: nbColors.primary,
+          icon: getRoleIcon(user.role),
+        },
+        46,
+        () => {
+          dispatch(setSelectedUser(user));
+          dispatch(fetchUserDaySummary(user.id));
+          setMarkerPreview(null);
+        },
+      );
     },
-    [dispatch],
+    [dispatch, showMarkerPreview],
   );
 
   const handleCloseSheet = useCallback(() => {
@@ -364,16 +426,42 @@ export function MapDashboardScreen(): React.JSX.Element {
   }, []);
 
   const handleRayonPress = useCallback((rayon: RayonBoundary) => {
-    setBoundaryDetailType('rayon');
-    setBoundaryDetailData(rayon);
-    setBoundaryDetailVisible(true);
-  }, []);
+    showMarkerPreview(
+      { latitude: Number(rayon.center_lat), longitude: Number(rayon.center_lng) },
+      {
+        title: rayon.name,
+        typeText: 'Rayon',
+        accent: nbColors.requestUnderReview,
+        icon: 'office-building',
+      },
+      18,
+      () => {
+        setBoundaryDetailType('rayon');
+        setBoundaryDetailData(rayon);
+        setBoundaryDetailVisible(true);
+        setMarkerPreview(null);
+      },
+    );
+  }, [showMarkerPreview]);
 
   const handleAreaPress = useCallback((area: AreaBoundary) => {
-    setBoundaryDetailType('area');
-    setBoundaryDetailData(area);
-    setBoundaryDetailVisible(true);
-  }, []);
+    showMarkerPreview(
+      { latitude: Number(area.center_lat), longitude: Number(area.center_lng) },
+      {
+        title: area.name,
+        typeText: 'Area',
+        accent: nbColors.warning,
+        icon: 'map-marker',
+      },
+      18,
+      () => {
+        setBoundaryDetailType('area');
+        setBoundaryDetailData(area);
+        setBoundaryDetailVisible(true);
+        setMarkerPreview(null);
+      },
+    );
+  }, [showMarkerPreview]);
 
   const handleMyLocation = useCallback(() => {
     // maximumAge: 0 forces a fresh GPS fix (never a cached one) so the map
@@ -511,11 +599,14 @@ export function MapDashboardScreen(): React.JSX.Element {
               showsUserLocation={false}
               showsMyLocationButton={false}
               toolbarEnabled={false}
-              mapPadding={{ top: 60, right: 64, bottom: PEEK_HEIGHT, left: 0 }}
+              mapPadding={MAP_PADDING}
               onMapReady={() => {
                 setMapReady(true);
                 mapRef.current?.animateToRegion(SURABAYA_CITY_REGION, 0);
               }}
+              onLayout={(e) => setMapLayout(e.nativeEvent.layout)}
+              onPress={dismissPreview}
+              onPanDrag={dismissPreview}
               onRegionChangeComplete={setCurrentRegion}
             >
               {/* Boundary overlays */}
@@ -595,6 +686,9 @@ export function MapDashboardScreen(): React.JSX.Element {
               )}
             </MapView>
           </MapErrorBoundary>
+
+          {/* Marker preview card — pinned over the tapped marker (custom callout). */}
+          {markerPreview && <MarkerPreview data={markerPreview} />}
 
           {/* Floating search bar */}
           <View style={styles.searchBarOverlay} pointerEvents="box-none">
