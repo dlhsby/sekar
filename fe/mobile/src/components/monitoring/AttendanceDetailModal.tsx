@@ -211,11 +211,15 @@ function SelectableStat({
 }): React.JSX.Element {
   const accent = tone === 'ok' ? nbColors.statusActive : nbColors.statusIdle;
   const bg = tone === 'ok' ? nbColors.statusActiveBg : nbColors.statusIdleBg;
+  // Selected = solid accent fill; green takes white text, amber takes black (AA).
+  const onKey = tone === 'ok' ? 'white' : 'black';
   return (
     <TouchableOpacity
       style={[
         styles.stat,
-        { backgroundColor: bg, borderColor: selected ? nbColors.black : accent },
+        selected
+          ? { backgroundColor: accent, borderColor: nbColors.black }
+          : { backgroundColor: bg, borderColor: accent },
         selected && styles.statSelected,
       ]}
       onPress={onPress}
@@ -224,8 +228,15 @@ function SelectableStat({
       accessibilityState={{ selected }}
       testID={testID}
     >
-      <NBText variant="h2" color="black">{String(value)}</NBText>
-      <NBText variant="mono-sm" uppercase color="gray700" style={styles.statLabel}>{label}</NBText>
+      <NBText variant="h2" color={selected ? onKey : 'black'}>{String(value)}</NBText>
+      <NBText
+        variant="mono-sm"
+        uppercase
+        color={selected ? onKey : 'gray700'}
+        style={styles.statLabel}
+      >
+        {label}
+      </NBText>
     </TouchableOpacity>
   );
 }

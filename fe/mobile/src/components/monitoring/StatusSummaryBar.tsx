@@ -58,6 +58,17 @@ const STATUS_BG: Record<TrackingStatus, string> = {
   offline: nbColors.statusOfflineBg,
 };
 
+// Text color for the SELECTED (solid-fill) chip — WCAG AA on each accent.
+// Idle/amber (#D97706) is too light for white, so it gets black; the rest get
+// white on their darker accents.
+const SELECTED_ON: Record<TrackingStatus, 'white' | 'black'> = {
+  active: 'white',
+  inactive: 'black',
+  outside_area: 'white',
+  missing: 'white',
+  offline: 'white',
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function StatusSummaryBar({
@@ -107,6 +118,10 @@ function StatusChip({ status, count, isActive, onPress }: StatusChipProps): Reac
   const { label } = presencePill(status);
   const accent = getStatusColor(status);
 
+  // Selected = solid accent fill + contrasting text; unselected = tinted bg.
+  const onKey = SELECTED_ON[status];
+  const onColor = onKey === 'white' ? nbColors.white : nbColors.black;
+
   return (
     <TouchableOpacity
       onPress={() => onPress(status)}
@@ -119,13 +134,20 @@ function StatusChip({ status, count, isActive, onPress }: StatusChipProps): Reac
       <View
         style={[
           styles.chip,
-          { backgroundColor: STATUS_BG[status], borderColor: accent },
+          isActive
+            ? { backgroundColor: accent, borderColor: nbColors.black }
+            : { backgroundColor: STATUS_BG[status], borderColor: accent },
           isActive && styles.chipActive,
         ]}
       >
-        <View style={[styles.dot, { backgroundColor: accent }]} />
-        <NBText variant="h3" color="black">{count}</NBText>
-        <NBText variant="mono-sm" uppercase color="gray700" style={styles.chipLabel}>
+        <View style={[styles.dot, { backgroundColor: isActive ? onColor : accent }]} />
+        <NBText variant="h3" color={isActive ? onKey : 'black'}>{count}</NBText>
+        <NBText
+          variant="mono-sm"
+          uppercase
+          color={isActive ? onKey : 'gray700'}
+          style={styles.chipLabel}
+        >
           {label}
         </NBText>
       </View>
