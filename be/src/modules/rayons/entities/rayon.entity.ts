@@ -6,7 +6,7 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
 } from 'typeorm';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
  * Rayon Entity
@@ -38,6 +38,13 @@ export class Rayon {
   })
   @Column({ length: 20, unique: true })
   code: string;
+
+  @ApiPropertyOptional({
+    description: 'Hex color for the rayon boundary on the monitoring map',
+    example: '#7FBC8C',
+  })
+  @Column({ length: 9, nullable: true })
+  color?: string;
 
   @ApiProperty({
     description: 'Description of the rayon',

@@ -128,15 +128,15 @@ async function seedReference() {
     // ============================================================
     console.log('\n🗺️  Seeding rayons...');
     await queryRunner.query(`
-      INSERT INTO rayons (id, name, code, description) VALUES
-        ('${RAYON_1_ID}', 'Rayon Selatan', 'SELATAN', 'Wilayah Surabaya Selatan - Wonokromo, Wonocolo, Gayungan, Jambangan'),
-        ('${RAYON_2_ID}', 'Rayon Utara',   'UTARA',   'Wilayah Surabaya Utara - Krembangan, Pabean Cantian, Semampir, Kenjeran, Bulak'),
-        ('${RAYON_3_ID}', 'Rayon Pusat',   'PUSAT',   'Wilayah Surabaya Pusat - Tegalsari, Genteng, Bubutan, Simokerto'),
-        ('${RAYON_4_ID}', 'Rayon Timur 1', 'TIMUR1',  'Wilayah Surabaya Timur bagian 1 - Tambaksari, Gubeng, Sukolilo'),
-        ('${RAYON_5_ID}', 'Rayon Timur 2', 'TIMUR2',  'Wilayah Surabaya Timur bagian 2 - Mulyorejo, Rungkut, Tenggilis Mejoyo, Gunung Anyar'),
-        ('${RAYON_6_ID}', 'Rayon Barat 1', 'BARAT1',  'Wilayah Surabaya Barat bagian 1 - Sukomanunggal, Tandes, Asemrowo, Benowo'),
-        ('${RAYON_7_ID}', 'Rayon Barat 2', 'BARAT2',  'Wilayah Surabaya Barat bagian 2 - Sawahan, Dukuh Pakis, Wiyung, Karang Pilang, Lakarsantri, Sambikerep'),
-        ('${RAYON_TAMAN_AKTIF_ID}', 'Rayon Taman Aktif', 'TAMAN_AKTIF', 'Bucket logis untuk taman aktif (active parks) lintas-rayon — tidak punya batas geografis')
+      INSERT INTO rayons (id, name, code, description, color) VALUES
+        ('${RAYON_1_ID}', 'Rayon Selatan', 'SELATAN', 'Wilayah Surabaya Selatan - Wonokromo, Wonocolo, Gayungan, Jambangan', '#7FBC8C'),
+        ('${RAYON_2_ID}', 'Rayon Utara',   'UTARA',   'Wilayah Surabaya Utara - Krembangan, Pabean Cantian, Semampir, Kenjeran, Bulak', '#2563EB'),
+        ('${RAYON_3_ID}', 'Rayon Pusat',   'PUSAT',   'Wilayah Surabaya Pusat - Tegalsari, Genteng, Bubutan, Simokerto', '#E3A018'),
+        ('${RAYON_4_ID}', 'Rayon Timur 1', 'TIMUR1',  'Wilayah Surabaya Timur bagian 1 - Tambaksari, Gubeng, Sukolilo', '#9333EA'),
+        ('${RAYON_5_ID}', 'Rayon Timur 2', 'TIMUR2',  'Wilayah Surabaya Timur bagian 2 - Mulyorejo, Rungkut, Tenggilis Mejoyo, Gunung Anyar', '#F48572'),
+        ('${RAYON_6_ID}', 'Rayon Barat 1', 'BARAT1',  'Wilayah Surabaya Barat bagian 1 - Sukomanunggal, Tandes, Asemrowo, Benowo', '#1A4D2E'),
+        ('${RAYON_7_ID}', 'Rayon Barat 2', 'BARAT2',  'Wilayah Surabaya Barat bagian 2 - Sawahan, Dukuh Pakis, Wiyung, Karang Pilang, Lakarsantri, Sambikerep', '#FDFD96'),
+        ('${RAYON_TAMAN_AKTIF_ID}', 'Rayon Taman Aktif', 'TAMAN_AKTIF', 'Bucket logis untuk taman aktif (active parks) lintas-rayon — tidak punya batas geografis', NULL) lintas-rayon — tidak punya batas geografis')
       ON CONFLICT (code) DO NOTHING
     `);
     console.log('  ✓ 8 rayons (7 geographic + Rayon Taman Aktif)');

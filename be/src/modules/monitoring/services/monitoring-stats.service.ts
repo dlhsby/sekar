@@ -604,6 +604,7 @@ export class MonitoringStatsService {
               id: rayon.id,
               name: rayon.name,
               code: rayon.code,
+              color: (rayon as any).color ?? null,
               boundary_polygon: (rayon as any).boundary_polygon || null,
               center_lat: (rayon as any).center_lat
                 ? parseFloat((rayon as any).center_lat.toString())
@@ -665,6 +666,7 @@ export class MonitoringStatsService {
           id: rayon.id,
           name: rayon.name,
           code: rayon.code,
+          color: (rayon as any).color ?? null,
           boundary_polygon: (rayon as any).boundary_polygon || null,
           center_lat: (rayon as any).center_lat
             ? parseFloat((rayon as any).center_lat.toString())

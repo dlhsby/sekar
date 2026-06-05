@@ -56,6 +56,9 @@ export class RayonBoundaryDto {
   @ApiProperty({ example: 'SELATAN' })
   code: string;
 
+  @ApiPropertyOptional({ example: '#7FBC8C' })
+  color: string | null;
+
   @ApiPropertyOptional()
   boundary_polygon: object | null;
 

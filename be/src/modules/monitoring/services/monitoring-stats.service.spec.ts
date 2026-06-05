@@ -35,6 +35,7 @@ describe('MonitoringStatsService', () => {
     id: 'rayon-1',
     name: 'Rayon 1',
     code: 'R1',
+    color: '#7FBC8C',
     created_at: new Date(),
     updated_at: new Date(),
   } as Rayon;
