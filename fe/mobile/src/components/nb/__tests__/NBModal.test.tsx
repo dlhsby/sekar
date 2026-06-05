@@ -9,7 +9,7 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 import React from 'react';
-import { Text, Platform } from 'react-native';
+import { Text, Platform, StyleSheet } from 'react-native';
 import { render, fireEvent } from '@testing-library/react-native';
 import { NBText } from '../NBText';
 import { NBModal } from '../NBModal';
@@ -184,6 +184,58 @@ describe('NBModal', () => {
       );
       expect(getByTestId('nbmodal-footer')).toBeTruthy();
       expect(getByText('Simpan')).toBeTruthy();
+    });
+  });
+
+  describe('fixed-height sheet (sheetHeight)', () => {
+    it('renders children in a non-scrolling fixed-height body', () => {
+      const { getByText, getByTestId } = render(
+        <NBModal visible onClose={onClose} sheetHeight="92%" testID="map-sheet" title="Peta">
+          <Text>MapBody</Text>
+        </NBModal>,
+      );
+      expect(getByTestId('map-sheet')).toBeTruthy();
+      expect(getByText('MapBody')).toBeTruthy();
+    });
+
+    it('renders the headerRight slot in the sheet title bar', () => {
+      const { getByText } = render(
+        <NBModal
+          visible
+          onClose={onClose}
+          sheetHeight="92%"
+          title="Ahmad"
+          headerRight={<NBText>Stepper</NBText>}
+        >
+          <></>
+        </NBModal>,
+      );
+      expect(getByText('Stepper')).toBeTruthy();
+    });
+
+    it('applies the titleStyle override to the title text', () => {
+      const { getByText } = render(
+        <NBModal
+          visible
+          onClose={onClose}
+          sheetHeight="92%"
+          title="Nama Sangat Panjang Sekali"
+          titleStyle={{ fontSize: 12 }}
+        >
+          <></>
+        </NBModal>,
+      );
+      const flat = StyleSheet.flatten(getByText('Nama Sangat Panjang Sekali').props.style);
+      expect(flat.fontSize).toBe(12);
+    });
+
+    it('resolves a numeric sheetHeight too', () => {
+      const { getByText } = render(
+        <NBModal visible onClose={onClose} sheetHeight={500} title="Peta">
+          <Text>NumBody</Text>
+        </NBModal>,
+      );
+      expect(getByText('NumBody')).toBeTruthy();
     });
   });
 

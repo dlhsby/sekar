@@ -39,12 +39,12 @@ function toISODate(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
-// Compact label — day + short month (no year) keeps the stepper narrow enough
-// for the header; the picker shows the full date when needed.
+// Compact label — day + short month + year (e.g. "5 Jun 2026").
 function formatShortDate(dateStr: string): string {
   return parseISODate(dateStr).toLocaleDateString('id-ID', {
     day: 'numeric',
     month: 'short',
+    year: 'numeric',
   });
 }
 

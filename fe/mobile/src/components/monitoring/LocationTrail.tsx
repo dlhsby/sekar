@@ -340,6 +340,9 @@ interface LocationTrailOverlayProps {
   error: string | null;
   /** Retry handler for the error state (typically the same refetch as the FAB). */
   onRetry?: () => void;
+  /** Bottom safe-area inset (px), passed from the modal so the stats bar text
+   *  clears the home indicator — useSafeAreaInsets reads 0 inside the portal. */
+  bottomInset?: number;
 }
 
 /**
@@ -353,6 +356,7 @@ export function LocationTrailOverlay({
   isLoading,
   error,
   onRetry,
+  bottomInset = 0,
 }: LocationTrailOverlayProps): React.JSX.Element {
   const hasPoints = !!history && history.points.length > 0;
   // History loaded for the date but no GPS points were recorded — distinct from
@@ -362,7 +366,7 @@ export function LocationTrailOverlay({
   return (
     <>
       {hasPoints && !isLoading && !error && (
-        <TrailInfoBar history={history} />
+        <TrailInfoBar history={history} bottomInset={bottomInset} />
       )}
 
       {/* Loading — translucent pill, map stays interactive underneath. */}

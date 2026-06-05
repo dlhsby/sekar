@@ -1,22 +1,29 @@
 /**
  * LocationTrailModal
  *
- * Fullscreen NBModal that hosts its OWN MapView for showing a worker's GPS trail.
- * Keeping this MapView separate from the main monitoring map means:
+ * A tall NBModal *sheet* (~92% height, drag-to-dismiss from the handle) that
+ * hosts its OWN MapView for a worker's GPS trail. Keeping this MapView separate
+ * from the main monitoring map means:
  *   - the main map keeps its boundary overlays + worker markers untouched
  *   - this map only ever has trail features (Polyline + Marker), so
  *     react-native-maps' Fabric MapView.addFeature stays in its happy path
  *
- * Chrome comes from NBModal's fullscreen frame (the variant uses `animationType
- * ="fade"` specifically to avoid the Fabric race on a hosted map):
- *   - Header: NBModal back button + worker name (title) + date stepper (headerRight)
- *   - Body (noPadding): MapView fills it; Polyline + Marker children only
- *   - Overlays: bottom stats bar + loading/error/empty states (siblings of MapView)
- *   - Float:  refresh FAB above the stats bar
+ * Sheet config that makes a hosted map usable:
+ *   - `sheetHeight="92%"` — a fixed snap (a map has no intrinsic content height)
+ *   - `enableContentPanningGesture={false}` — map pans don't fight the sheet;
+ *     drag-to-close works from the handle only
+ *   - non-scrolling body (NBModal renders BottomSheetView for fixed sheets) so
+ *     the map's flex:1 container fills the sheet
+ *
+ * Layout:
+ *   - Title bar: worker name + date stepper (headerRight) + close
+ *   - Body: MapView (absoluteFill) + bottom stats bar + loading/error/empty
+ *   - Float: refresh FAB above the stats bar
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import { NBModal } from '../nb/NBModal';
 import { nbSpacing } from '../../constants/nbTokens';
@@ -49,6 +56,8 @@ export function LocationTrailModal({
   onClose,
 }: LocationTrailModalProps): React.JSX.Element {
   const mapRef = useRef<MapView>(null);
+  // Read here (in the normal tree) — inside gorhom's portal the inset reads 0.
+  const insets = useSafeAreaInsets();
   const [date, setDate] = useState<string>(todayISODate);
 
   // Reset to today whenever the modal opens for a new user
@@ -67,6 +76,17 @@ export function LocationTrailModal({
     setDate(next);
   }, []);
 
+  const title = user?.full_name ?? 'Riwayat Lokasi';
+  // Shrink long names so they fit the title bar alongside the date stepper +
+  // close; short names keep the default h3 size.
+  const titleStyle = useMemo(() => {
+    const n = title.length;
+    if (n <= 16) { return undefined; }
+    if (n <= 22) { return { fontSize: 16 }; }
+    if (n <= 30) { return { fontSize: 14 }; }
+    return { fontSize: 12 };
+  }, [title]);
+
   const initialRegion = useMemo(() => {
     if (user?.latitude != null && user?.longitude != null) {
       return {
@@ -83,9 +103,12 @@ export function LocationTrailModal({
     <NBModal
       visible={visible}
       onClose={onClose}
-      type="fullscreen"
+      type="sheet"
+      sheetHeight="92%"
+      enableContentPanningGesture={false}
       noPadding
-      title={user?.full_name ?? 'Riwayat Lokasi'}
+      title={title}
+      titleStyle={titleStyle}
       headerRight={user ? <TrailDateStepper date={date} onDateChange={handleDateChange} /> : undefined}
       testID="location-trail-modal"
     >
@@ -94,7 +117,7 @@ export function LocationTrailModal({
           ref={mapRef}
           provider={PROVIDER_GOOGLE}
           userInterfaceStyle="light"
-          style={styles.map}
+          style={StyleSheet.absoluteFill}
           initialRegion={initialRegion}
           showsUserLocation={false}
           showsMyLocationButton={false}
@@ -116,6 +139,7 @@ export function LocationTrailModal({
             isLoading={isLoading}
             error={error}
             onRetry={refresh}
+            bottomInset={insets.bottom}
           />
         )}
 
@@ -135,9 +159,6 @@ export function LocationTrailModal({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-  },
-  map: {
     flex: 1,
   },
   fabAnchor: {

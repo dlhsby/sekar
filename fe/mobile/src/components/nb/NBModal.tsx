@@ -9,8 +9,10 @@ import {
   ScrollView,
   Dimensions,
 } from 'react-native';
+import type { StyleProp, TextStyle } from 'react-native';
 import {
   BottomSheetModal,
+  BottomSheetView,
   BottomSheetScrollView,
   BottomSheetBackdrop,
   BottomSheetFooter,
@@ -34,12 +36,29 @@ export interface NBModalProps {
   visible: boolean;
   onClose: () => void;
   title?: string;
+  /** Optional style override for the title text (e.g. a smaller fontSize to fit
+   *  a long title). Merged after the variant style. */
+  titleStyle?: StyleProp<TextStyle>;
   type?: NBModalType;
   avoidKeyboard?: boolean;
   noPadding?: boolean;
   footer?: React.ReactNode;
-  /** Fullscreen only: renders to the right of the title in the header bar */
+  /** Renders to the right of the title in the header/title bar (fullscreen, or
+   *  a fixed-height sheet). */
   headerRight?: React.ReactNode;
+  /**
+   * Sheet only. Fixed snap height (e.g. '90%' or a pixel number). Disables
+   * dynamic content sizing and renders children in a non-scrolling
+   * BottomSheetView so a child can flex to fill — e.g. a hosted MapView. Leave
+   * unset for the default hug-content sheet.
+   */
+  sheetHeight?: string | number;
+  /**
+   * Sheet only. Pass-through to gorhom. Set false when the body hosts a pannable
+   * surface (a map) so content drags don't move/dismiss the sheet — drag-to-close
+   * then only works from the handle. Defaults to true (gorhom's default).
+   */
+  enableContentPanningGesture?: boolean;
   /**
    * Fullscreen only. Wraps the body in a ScrollView. Sheets always scroll, so this
    * is ignored for the sheet variant. Leave false for fullscreen modals whose body
@@ -48,6 +67,13 @@ export interface NBModalProps {
   scrollable?: boolean;
   children: React.ReactNode;
   testID?: string;
+}
+
+/** Resolve a gorhom snap point ('92%' or a pixel number) to pixels. */
+function resolveSnapPx(snap: string | number, screenH: number): number {
+  if (typeof snap === 'number') { return snap; }
+  const m = /^(\d+(?:\.\d+)?)%$/.exec(snap.trim());
+  return m ? (parseFloat(m[1]) / 100) * screenH : screenH;
 }
 
 // ─── Sheet variant (gorhom bottom sheet) ─────────────────────────────────────
@@ -66,9 +92,13 @@ function SheetModal({
   visible,
   onClose,
   title,
+  titleStyle,
   avoidKeyboard = false,
   noPadding = false,
   footer,
+  headerRight,
+  sheetHeight,
+  enableContentPanningGesture = true,
   children,
   testID,
 }: NBModalProps) {
@@ -77,6 +107,26 @@ function SheetModal({
   const screenHeight = Dimensions.get('window').height;
   // Grow above the app header but stop below the status bar.
   const maxHeight = screenHeight - insets.top;
+
+  // Fixed-height mode: a single explicit snap point (e.g. a map sheet) instead of
+  // hugging content. Children render in a non-scrolling BottomSheetView given an
+  // EXPLICIT pixel height — gorhom's BottomSheetView wraps its content rather than
+  // stretching, so a flex:1 child (a hosted MapView) would otherwise collapse to
+  // zero and not render. We size the body to the snap height minus the handle.
+  const fixed = sheetHeight != null;
+  const snapPoints = React.useMemo(
+    () => (sheetHeight != null ? [sheetHeight] : undefined),
+    [sheetHeight],
+  );
+  // gorhom resolves '%' snaps against the full screen height; mirror that so the
+  // body height matches the actual sheet height. Reserve the handle area, biased
+  // slightly high so the body UNDERSHOOTS rather than overshoots — an overshoot
+  // pushes bottom-anchored content (its padding) off-screen, whereas a small
+  // undershoot just leaves a seamless white strip (same as the sheet bg).
+  const HANDLE_AREA = 44;
+  const fixedBodyHeight = fixed
+    ? resolveSnapPx(sheetHeight as string | number, screenHeight) - HANDLE_AREA
+    : undefined;
 
   // Title/footer live outside the scroll measurement (absolute overlay + gorhom
   // footer), so their heights pad the scroll content. The initial estimates must
@@ -133,9 +183,11 @@ function SheetModal({
   return (
     <BottomSheetModal
       ref={sheetRef}
-      enableDynamicSizing
-      maxDynamicContentSize={maxHeight}
+      enableDynamicSizing={!fixed}
+      snapPoints={snapPoints}
+      maxDynamicContentSize={fixed ? undefined : maxHeight}
       enablePanDownToClose
+      enableContentPanningGesture={enableContentPanningGesture}
       backdropComponent={renderBackdrop}
       footerComponent={footer ? renderFooter : undefined}
       onDismiss={onClose}
@@ -143,22 +195,35 @@ function SheetModal({
       handleIndicatorStyle={styles.handle}
       keyboardBehavior={avoidKeyboard ? 'interactive' : undefined}
     >
-      <BottomSheetScrollView
-        testID={testID}
-        contentContainerStyle={[
-          noPadding ? styles.scrollContentNoPadding : styles.scrollContent,
-          {
-            paddingTop: titleH + topGap,
-            // Reserve the footer height + a margin so the last row clears the
-            // sticky footer; when there is no footer, use a plain bottom margin.
-            paddingBottom: footer ? footerH + bottomGap : nbSpacing.lg,
-          },
-        ]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {children}
-      </BottomSheetScrollView>
+      {fixed ? (
+        // Non-scrolling body: a flex:1 child (map) fills the fixed sheet.
+        <BottomSheetView
+          testID={testID}
+          style={[
+            styles.fixedSheetBody,
+            { height: fixedBodyHeight, paddingTop: titleH, paddingBottom: footer ? footerH : 0 },
+          ]}
+        >
+          {children}
+        </BottomSheetView>
+      ) : (
+        <BottomSheetScrollView
+          testID={testID}
+          contentContainerStyle={[
+            noPadding ? styles.scrollContentNoPadding : styles.scrollContent,
+            {
+              paddingTop: titleH + topGap,
+              // Reserve the footer height + a margin so the last row clears the
+              // sticky footer; when there is no footer, use a plain bottom margin.
+              paddingBottom: footer ? footerH + bottomGap : nbSpacing.lg,
+            },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {children}
+        </BottomSheetScrollView>
+      )}
 
       {title ? (
         <View
@@ -166,9 +231,12 @@ function SheetModal({
           style={[styles.titleBar, styles.overlayTop]}
           onLayout={(e) => setTitleH(Math.round(e.nativeEvent.layout.height))}
         >
-          <NBText variant="h3" color="black" style={styles.titleText}>
+          <NBText variant="h3" color="black" style={[styles.titleText, titleStyle]} numberOfLines={1}>
             {title}
           </NBText>
+          {headerRight ? (
+            <View style={styles.sheetHeaderRight}>{headerRight}</View>
+          ) : null}
           <TouchableOpacity
             onPress={() => sheetRef.current?.dismiss()}
             style={styles.closeBtnHitArea}
@@ -319,6 +387,13 @@ const styles = StyleSheet.create({
     borderWidth: nbBorders.base,
     borderColor: nbColors.gray400,
     borderRadius: nbRadius.sm,
+  },
+  fixedSheetBody: {
+    width: '100%',
+  },
+  sheetHeaderRight: {
+    justifyContent: 'center',
+    marginRight: nbSpacing.sm,
   },
   scrollContent: {
     padding: nbSpacing.md,

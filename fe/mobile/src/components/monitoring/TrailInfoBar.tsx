@@ -21,6 +21,9 @@ import type { LocationHistory } from '../../types/models.types';
 
 interface TrailInfoBarProps {
   history: LocationHistory;
+  /** Bottom safe-area inset (px) added below the stats so they clear the home
+   *  indicator while the bar's background still reaches the screen edge. */
+  bottomInset?: number;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -43,9 +46,9 @@ import { TRAIL_INSIDE_COLOR, TRAIL_OUTSIDE_COLOR } from './trailColors';
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function TrailInfoBar({ history }: TrailInfoBarProps): React.JSX.Element {
+export function TrailInfoBar({ history, bottomInset = 0 }: TrailInfoBarProps): React.JSX.Element {
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: nbSpacing.md + bottomInset }]}>
       <Stat
         icon="map-marker-distance"
         label="Total Jarak"
