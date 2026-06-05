@@ -14,6 +14,8 @@ import { LiveUsersResponseDto, LiveUserDto, LiveUsersFilterDto } from '../dto/li
 import { LocationHistoryResponseDto, LocationHistoryPointDto } from '../dto/location-history.dto';
 import { UserDaySummaryDto } from '../dto/user-day-summary.dto';
 import { GpsUtil } from '../../../common/utils/gps.util';
+import { StatusCalculatorService } from './status-calculator.service';
+import { MonitoringCacheService } from './monitoring-cache.service';
 
 @Injectable()
 export class MonitoringUserService {
@@ -38,6 +40,8 @@ export class MonitoringUserService {
     private readonly shiftDefinitionRepository: Repository<ShiftDefinition>,
     @InjectRepository(UserTrackingStatus)
     private readonly trackingRepository: Repository<UserTrackingStatus>,
+    private readonly statusCalculator: StatusCalculatorService,
+    private readonly cacheService: MonitoringCacheService,
   ) {}
 
   async getLiveUsers(filters?: LiveUsersFilterDto): Promise<LiveUsersResponseDto> {
@@ -79,13 +83,22 @@ export class MonitoringUserService {
     const areaIds = [...new Set(trackingRecords.map((r) => r.area_id).filter(Boolean))];
     const userIds = trackingRecords.map((r) => r.user_id);
 
-    const [rayonMap, taskMap] = await Promise.all([
+    const [rayonMap, taskMap, thresholds] = await Promise.all([
       this.buildRayonMap(areaIds as string[]),
       this.buildCurrentTaskMap(userIds),
+      this.cacheService.getThresholds(),
     ]);
 
     const users: LiveUserDto[] = trackingRecords.map((uts) => {
       const rayonId = uts.area?.rayon_id || null;
+      const axes = this.statusCalculator.calculateAxes(
+        {
+          hasActiveShift: !!uts.shift_id,
+          lastLocationAt: uts.last_location_at,
+          isWithinArea: uts.is_within_area,
+        },
+        thresholds,
+      );
       return {
         id: uts.user.id,
         full_name: uts.user.full_name,
@@ -101,6 +114,8 @@ export class MonitoringUserService {
         battery_level: uts.last_battery_level,
         last_update: uts.last_location_at || uts.shift?.clock_in_time || new Date(),
         status: uts.status,
+        activity: axes.activity,
+        location: axes.location,
         is_within_area: uts.is_within_area,
         outside_boundary: uts.shift?.clock_in_outside_boundary || false,
         shift_id: uts.shift_id || '',

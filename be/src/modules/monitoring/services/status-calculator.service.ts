@@ -1,7 +1,7 @@
 import { Injectable, Logger, forwardRef, Inject, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
+import { UserTrackingStatus, TrackingStatus, ActivityStatus, LocationStatus } from '../entities/user-tracking-status.entity';
 import { MonitoringCacheService, StatusThresholds } from './monitoring-cache.service';
 import { User, UserRole } from '../../users/entities/user.entity';
 import { Area } from '../../areas/entities/area.entity';
@@ -120,6 +120,37 @@ export class StatusCalculatorService {
     }
 
     return TrackingStatus.INACTIVE;
+  }
+
+  calculateAxes(
+    input: StatusInput,
+    thresholds: StatusThresholds,
+    now: Date = new Date(),
+  ): { activity: ActivityStatus; location: LocationStatus } {
+    let activity: ActivityStatus;
+    if (!input.hasActiveShift) {
+      activity = 'offline';
+    } else if (!input.lastLocationAt) {
+      activity = 'missing';
+    } else {
+      const ageSeconds = (now.getTime() - input.lastLocationAt.getTime()) / 1000;
+      if (ageSeconds > thresholds.missing_threshold_seconds) {
+        activity = 'missing';
+      } else if (ageSeconds > thresholds.active_max_age_seconds) {
+        activity = 'idle';
+      } else {
+        activity = 'aktif';
+      }
+    }
+
+    const location: LocationStatus =
+      activity === 'offline' || activity === 'missing'
+        ? 'unknown'
+        : input.isWithinArea
+          ? 'dalam_area'
+          : 'luar_area';
+
+    return { activity, location };
   }
 
   async recalculate(userId: string): Promise<UserTrackingStatus | null> {
@@ -345,6 +376,17 @@ export class StatusCalculatorService {
       preResolved ?? (await this.resolveUserContext(tracking.user_id, tracking.area_id));
     if (!context) return;
 
+    const thresholds = await this.cacheService.getThresholds();
+    const axes = this.calculateAxes(
+      {
+        hasActiveShift: !!tracking.shift_id,
+        lastLocationAt: tracking.last_location_at,
+        isWithinArea: tracking.is_within_area,
+      },
+      thresholds,
+      timestamp,
+    );
+
     const event: UserStatusChangedEvent = {
       user_id: tracking.user_id,
       user_name: context.user.full_name,
@@ -356,6 +398,8 @@ export class StatusCalculatorService {
       new_status: newStatus,
       latitude: tracking.last_latitude,
       longitude: tracking.last_longitude,
+      activity: axes.activity,
+      location: axes.location,
       timestamp,
     };
 
@@ -412,6 +456,17 @@ export class StatusCalculatorService {
       preResolved ?? (await this.resolveUserContext(tracking.user_id, tracking.area_id));
     if (!context) return;
 
+    const thresholds = await this.cacheService.getThresholds();
+    const axes = this.calculateAxes(
+      {
+        hasActiveShift: !!tracking.shift_id,
+        lastLocationAt: tracking.last_location_at,
+        isWithinArea,
+      },
+      thresholds,
+      timestamp,
+    );
+
     const event: UserLocationEvent = {
       user_id: tracking.user_id,
       user_name: context.user.full_name,
@@ -427,6 +482,8 @@ export class StatusCalculatorService {
       battery_level: battery,
       status,
       is_within_area: isWithinArea,
+      activity: axes.activity,
+      location: axes.location,
       timestamp,
     };
 

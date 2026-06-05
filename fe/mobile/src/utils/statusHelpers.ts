@@ -3,7 +3,7 @@
  * Shared status color/label utilities for overtime, activities, and tasks
  */
 
-import type { OvertimeStatus, ActivityStatus, TaskStatus, PruningRequestStatus, TrackingStatus } from '../types/models.types';
+import type { OvertimeStatus, ActivityStatus, TaskStatus, PruningRequestStatus, TrackingStatus, PresenceActivity, PresenceLocation } from '../types/models.types';
 import type { StatusTone } from '../components/home/StatusPill';
 
 // Overtime status helpers
@@ -192,6 +192,66 @@ export function presencePill(status: TrackingStatus): { tone: StatusTone; label:
     case 'outside_area': return { tone: 'bad', label: 'Luar area' };
     case 'missing':      return { tone: 'bad', label: 'Tidak terdeteksi' };
     case 'offline':      return { tone: 'neutral', label: 'Offline' };
+  }
+}
+
+// ─── Two-axis presence (CP6) ────────────────────────────────────────────────
+
+// Compatibility mapper: derive the activity + location axes from the legacy
+// flattened `status` + `is_within_area`, for payloads that predate the backend
+// two-axis change. `active`/`outside_area` are both fresh GPS → `aktif`;
+// `inactive` → `idle`; `missing`/`offline` have no usable fix → `unknown` location.
+export function deriveAxes(
+  status: TrackingStatus,
+  isWithinArea: boolean,
+): { activity: PresenceActivity; location: PresenceLocation } {
+  let activity: PresenceActivity;
+  switch (status) {
+    case 'active':
+    case 'outside_area': activity = 'aktif'; break;
+    case 'inactive':     activity = 'idle'; break;
+    case 'missing':      activity = 'missing'; break;
+    case 'offline':      activity = 'offline'; break;
+  }
+  const location: PresenceLocation =
+    activity === 'missing' || activity === 'offline'
+      ? 'unknown'
+      : isWithinArea ? 'dalam_area' : 'luar_area';
+  return { activity, location };
+}
+
+// Read the two axes off a live user — prefer the explicit backend fields, fall
+// back to `deriveAxes` while the backend rolls out. The single accessor all
+// CP6 mobile surfaces should use.
+export function userAxes(user: {
+  status: TrackingStatus;
+  activity?: PresenceActivity;
+  location?: PresenceLocation;
+  is_within_area: boolean;
+}): { activity: PresenceActivity; location: PresenceLocation } {
+  if (user.activity && user.location) {
+    return { activity: user.activity, location: user.location };
+  }
+  return deriveAxes(user.status, user.is_within_area);
+}
+
+// Activity axis → StatusPill tone + label (mirrors presencePill for the 3 shown
+// activity states + offline). Named presence* to avoid the existing activityPill
+// (activity-submission status) above.
+export function presenceActivityPill(activity: PresenceActivity): { tone: StatusTone; label: string } {
+  switch (activity) {
+    case 'aktif':   return { tone: 'ok', label: 'Aktif' };
+    case 'idle':    return { tone: 'warn', label: 'Tidak aktif' };
+    case 'missing': return { tone: 'bad', label: 'Tidak terdeteksi' };
+    case 'offline': return { tone: 'neutral', label: 'Offline' };
+  }
+}
+
+export function locationLabel(location: PresenceLocation): string {
+  switch (location) {
+    case 'dalam_area': return 'Dalam area';
+    case 'luar_area':  return 'Luar area';
+    case 'unknown':    return '—';
   }
 }
 

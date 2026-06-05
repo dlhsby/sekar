@@ -83,6 +83,93 @@ describe('StatusCalculatorService', () => {
     service = module.get<StatusCalculatorService>(StatusCalculatorService);
   });
 
+  describe('calculateAxes', () => {
+    const now = new Date('2026-03-04T10:00:00Z');
+
+    const testCases = [
+      {
+        name: 'offline (no shift)',
+        input: { hasActiveShift: false, lastLocationAt: null, isWithinArea: true },
+        expectedActivity: 'offline',
+        expectedLocation: 'unknown',
+      },
+      {
+        name: 'missing (active shift, no fix)',
+        input: { hasActiveShift: true, lastLocationAt: null, isWithinArea: true },
+        expectedActivity: 'missing',
+        expectedLocation: 'unknown',
+      },
+      {
+        name: 'missing (age > missing_threshold)',
+        input: {
+          hasActiveShift: true,
+          lastLocationAt: new Date('2026-03-04T08:30:00Z'), // 90 min ago
+          isWithinArea: true,
+        },
+        expectedActivity: 'missing',
+        expectedLocation: 'unknown',
+      },
+      {
+        name: 'idle (age > active_max but < missing)',
+        input: {
+          hasActiveShift: true,
+          lastLocationAt: new Date('2026-03-04T09:48:00Z'), // 12 min ago
+          isWithinArea: true,
+        },
+        expectedActivity: 'idle',
+        expectedLocation: 'dalam_area',
+      },
+      {
+        name: 'aktif + dalam_area (age < active_max, within)',
+        input: {
+          hasActiveShift: true,
+          lastLocationAt: new Date('2026-03-04T09:57:00Z'), // 3 min ago
+          isWithinArea: true,
+        },
+        expectedActivity: 'aktif',
+        expectedLocation: 'dalam_area',
+      },
+      {
+        name: 'aktif + luar_area (age < active_max, outside)',
+        input: {
+          hasActiveShift: true,
+          lastLocationAt: new Date('2026-03-04T09:57:00Z'), // 3 min ago
+          isWithinArea: false,
+        },
+        expectedActivity: 'aktif',
+        expectedLocation: 'luar_area',
+      },
+      {
+        name: 'idle + dalam_area (age between thresholds, within)',
+        input: {
+          hasActiveShift: true,
+          lastLocationAt: new Date('2026-03-04T09:40:00Z'), // 20 min ago
+          isWithinArea: true,
+        },
+        expectedActivity: 'idle',
+        expectedLocation: 'dalam_area',
+      },
+      {
+        name: 'idle + luar_area (age between thresholds, outside)',
+        input: {
+          hasActiveShift: true,
+          lastLocationAt: new Date('2026-03-04T09:40:00Z'), // 20 min ago
+          isWithinArea: false,
+        },
+        expectedActivity: 'idle',
+        expectedLocation: 'luar_area',
+      },
+    ];
+
+    testCases.forEach(({ name, input, expectedActivity, expectedLocation }) => {
+      it(`should return ${expectedActivity}/${expectedLocation} when ${name}`, () => {
+        const result = service.calculateAxes(input, defaultThresholds, now);
+        expect(result.activity).toBe(expectedActivity);
+        expect(result.location).toBe(expectedLocation);
+      });
+    });
+  });
+
   describe('calculateStatus (pure function)', () => {
     const now = new Date('2026-03-04T10:00:00Z');
 

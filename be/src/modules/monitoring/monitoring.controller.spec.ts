@@ -205,6 +205,8 @@ describe('MonitoringController', () => {
         role: UserRole.SATGAS,
         phone: '081234567890',
         status: TrackingStatus.ACTIVE,
+        activity: 'aktif',
+        location: 'dalam_area',
         area_id: 'area-1',
         area_name: 'Taman Bungkul',
         rayon_id: 'rayon-1',

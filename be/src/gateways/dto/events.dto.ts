@@ -1,6 +1,6 @@
 import { IsString, IsUUID, IsNumber, IsOptional, IsEnum, IsBoolean } from 'class-validator';
 import { UserRole } from '../../modules/users/entities/user.entity';
-import { TrackingStatus } from '../../modules/monitoring/entities/user-tracking-status.entity';
+import { TrackingStatus, ActivityStatus, LocationStatus } from '../../modules/monitoring/entities/user-tracking-status.entity';
 
 /**
  * Subscribe to area events
@@ -84,6 +84,12 @@ export class UserLocationEvent {
 
   @IsBoolean()
   is_within_area: boolean;
+
+  @IsString()
+  activity: ActivityStatus;
+
+  @IsString()
+  location: LocationStatus;
 
   timestamp: Date;
 }
@@ -279,6 +285,12 @@ export class UserStatusChangedEvent {
   @IsNumber()
   @IsOptional()
   longitude: number | null;
+
+  @IsString()
+  activity: ActivityStatus;
+
+  @IsString()
+  location: LocationStatus;
 
   timestamp: Date;
 }

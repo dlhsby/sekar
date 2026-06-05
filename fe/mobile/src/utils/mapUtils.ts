@@ -5,7 +5,7 @@
  */
 
 import type { ActiveUserData } from '../types/api.types';
-import type { TrackingStatus, LiveUser } from '../types/models.types';
+import type { TrackingStatus, LiveUser, PresenceActivity } from '../types/models.types';
 import type { Region } from 'react-native-maps';
 import { nbColors } from '../constants/nbTokens';
 
@@ -31,6 +31,21 @@ export function getStatusColor(status: TrackingStatus): string {
     offline: nbColors.statusOffline,
   };
   return colors[status] ?? nbColors.statusOffline;
+}
+
+/**
+ * Get hex color for the activity axis (CP6). Reuses the status tokens:
+ * aktif→green, idle→amber, missing→red, offline→gray. Location (luar_area) is
+ * shown as a ring on the marker, not via this fill color.
+ */
+export function getActivityColor(activity: PresenceActivity): string {
+  const colors: Record<PresenceActivity, string> = {
+    aktif: nbColors.statusActive,
+    idle: nbColors.statusIdle,
+    missing: nbColors.statusMissing,
+    offline: nbColors.statusOffline,
+  };
+  return colors[activity] ?? nbColors.statusOffline;
 }
 
 /**

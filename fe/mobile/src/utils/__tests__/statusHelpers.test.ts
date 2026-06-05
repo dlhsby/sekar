@@ -18,6 +18,10 @@ import {
   activityPill,
   overtimePill,
   presencePill,
+  deriveAxes,
+  userAxes,
+  presenceActivityPill,
+  locationLabel,
 } from '../statusHelpers';
 
 describe('statusHelpers', () => {
@@ -308,6 +312,56 @@ describe('statusHelpers', () => {
       const result = formatDurationHours('2026-02-14T06:00:00Z', '2026-02-14T09:00:00Z');
       expect(result).toContain('3');
       expect(result).toContain('j');
+    });
+  });
+
+  // ─── Two-axis presence (CP6) ───────────────────────────────────────────────
+
+  describe('deriveAxes', () => {
+    it('maps active → aktif/dalam_area', () => {
+      expect(deriveAxes('active', true)).toEqual({ activity: 'aktif', location: 'dalam_area' });
+    });
+    it('maps outside_area → aktif/luar_area', () => {
+      expect(deriveAxes('outside_area', false)).toEqual({ activity: 'aktif', location: 'luar_area' });
+    });
+    it('maps inactive → idle, location from is_within_area', () => {
+      expect(deriveAxes('inactive', true)).toEqual({ activity: 'idle', location: 'dalam_area' });
+      expect(deriveAxes('inactive', false)).toEqual({ activity: 'idle', location: 'luar_area' });
+    });
+    it('maps missing/offline → unknown location regardless of is_within_area', () => {
+      expect(deriveAxes('missing', true)).toEqual({ activity: 'missing', location: 'unknown' });
+      expect(deriveAxes('offline', true)).toEqual({ activity: 'offline', location: 'unknown' });
+    });
+  });
+
+  describe('userAxes', () => {
+    it('prefers explicit backend fields when present', () => {
+      expect(
+        userAxes({ status: 'active', activity: 'idle', location: 'luar_area', is_within_area: true }),
+      ).toEqual({ activity: 'idle', location: 'luar_area' });
+    });
+    it('falls back to deriveAxes when the fields are absent', () => {
+      expect(userAxes({ status: 'outside_area', is_within_area: false })).toEqual({
+        activity: 'aktif',
+        location: 'luar_area',
+      });
+    });
+  });
+
+  describe('presenceActivityPill', () => {
+    it('maps each activity to a tone + label', () => {
+      expect(presenceActivityPill('aktif')).toEqual({ tone: 'ok', label: 'Aktif' });
+      expect(presenceActivityPill('idle')).toEqual({ tone: 'warn', label: 'Tidak aktif' });
+      expect(presenceActivityPill('missing')).toEqual({ tone: 'bad', label: 'Tidak terdeteksi' });
+      expect(presenceActivityPill('offline')).toEqual({ tone: 'neutral', label: 'Offline' });
+    });
+  });
+
+  describe('locationLabel', () => {
+    it('labels each location', () => {
+      expect(locationLabel('dalam_area')).toBe('Dalam area');
+      expect(locationLabel('luar_area')).toBe('Luar area');
+      expect(locationLabel('unknown')).toBe('—');
     });
   });
 });

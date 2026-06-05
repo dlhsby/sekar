@@ -301,6 +301,8 @@ describe('EventsGateway', () => {
       battery_level: 85,
       status: TrackingStatus.ACTIVE,
       is_within_area: true,
+      activity: 'aktif',
+      location: 'dalam_area',
       timestamp: new Date(),
     };
 
@@ -620,6 +622,8 @@ describe('EventsGateway', () => {
       new_status: TrackingStatus.INACTIVE,
       latitude: -7.29,
       longitude: 112.74,
+      activity: 'idle',
+      location: 'dalam_area',
       timestamp: new Date(),
     };
 

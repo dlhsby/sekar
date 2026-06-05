@@ -362,6 +362,14 @@ export interface Notification {
 // Tracking status — Phase 2D: server-computed five-status model
 export type TrackingStatus = 'active' | 'inactive' | 'outside_area' | 'missing' | 'offline';
 
+// Phase 4 M3 (CP6): two-axis presence model. `status` (above) is the legacy
+// flattened enum kept for back-compat; these are the independent axes. Named
+// Presence* to avoid clashing with the activity-submission `ActivityStatus` above.
+// - Activity (GPS recency): aktif ≤5min · idle 5min–1hr · missing >1hr/never · offline (no shift)
+// - Location (geofence): dalam_area · luar_area · unknown (no usable fix)
+export type PresenceActivity = 'aktif' | 'idle' | 'missing' | 'offline';
+export type PresenceLocation = 'dalam_area' | 'luar_area' | 'unknown';
+
 // Monitoring Stats
 export interface MonitoringStats {
   total_users: number;
@@ -382,6 +390,10 @@ export interface LiveUser {
   role: string;
   phone: string | null;
   status: TrackingStatus;
+  // Two-axis presence (CP6). Optional during rollout — derive from `status` +
+  // `is_within_area` via `deriveAxes` when the backend payload omits them.
+  activity?: PresenceActivity;
+  location?: PresenceLocation;
   area_id: string | null;
   area_name: string;
   rayon_id: string | null;

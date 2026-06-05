@@ -3,6 +3,8 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { MonitoringUserService } from './monitoring-user.service';
+import { StatusCalculatorService } from './status-calculator.service';
+import { MonitoringCacheService } from './monitoring-cache.service';
 import { User } from '../../users/entities/user.entity';
 import { Area } from '../../areas/entities/area.entity';
 import { Shift } from '../../shifts/entities/shift.entity';
@@ -127,6 +129,23 @@ describe('MonitoringUserService', () => {
           useValue: {
             findOne: jest.fn(),
             createQueryBuilder: jest.fn(),
+          },
+        },
+        {
+          provide: StatusCalculatorService,
+          useValue: {
+            calculateAxes: jest.fn().mockReturnValue({ activity: 'aktif', location: 'dalam_area' }),
+          },
+        },
+        {
+          provide: MonitoringCacheService,
+          useValue: {
+            getThresholds: jest.fn().mockResolvedValue({
+              active_max_age_seconds: 300,
+              inactive_threshold_seconds: 900,
+              missing_threshold_seconds: 3600,
+              location_ping_interval_seconds: 60,
+            }),
           },
         },
       ],

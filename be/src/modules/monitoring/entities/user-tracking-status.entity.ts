@@ -14,6 +14,9 @@ export enum TrackingStatus {
   OFFLINE = 'offline',
 }
 
+export type ActivityStatus = 'aktif' | 'idle' | 'missing' | 'offline';
+export type LocationStatus = 'dalam_area' | 'luar_area' | 'unknown';
+
 @Entity('user_tracking_status')
 export class UserTrackingStatus {
   @ApiProperty({ description: 'User ID (primary key)' })
