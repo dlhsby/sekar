@@ -1,29 +1,29 @@
 /**
  * BoundaryDetailModal Component
- * Phase 2D Gap #2: Shows rayon/area staffing details when center marker is tapped.
- * Rayon mode: list of areas with understaffed highlighted.
- * Area mode: per-role staffing breakdown table.
+ * Phase 2D Gap #2: rayon/area staffing detail when a center marker is tapped.
+ *
+ * Phase 4 M3 (CP7): rebuilt onto the UserDetailSheet design language —
+ * NBModal sheet + a hero header (type-tinted icon chip · name · sub-line ·
+ * StatusPill), HomeStatTile KPI row, tokenised staffing rows, and a nested
+ * "Tanaman" sub-sheet (plant status + heritage trees) mirroring UserDetailSheet's
+ * task/activity sub-sheets.
+ *   Rayon mode: KPI (Area · Kurang staf) + list of areas with an understaffed pill.
+ *   Area mode:  KPI (Aktif · Petugas) + per-role staffing rows + Reassign + Tanaman.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-} from 'react-native';
-import BottomSheet, {
-  BottomSheetScrollView,
-  BottomSheetBackdrop,
-} from '@gorhom/bottom-sheet';
-import type { BottomSheetDefaultBackdropProps } from '@gorhom/bottom-sheet/lib/typescript/components/bottomSheetBackdrop/types';
+import React, { useEffect, useState } from 'react';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBText } from '../nb/NBText';
+import { NBButton } from '../nb/NBButton';
+import { NBModal } from '../nb/NBModal';
+import { HomeStatTile } from '../home/HomeStatTile';
+import { StatusPill } from '../home/StatusPill';
 import {
   nbColors,
   nbSpacing,
   nbBorders,
-  nbBorderRadius,
-  nbShadows,
+  nbRadius,
 } from '../../constants/nbTokens';
 import { ROLE_LABELS } from '../../constants/roles';
 import type {
@@ -55,21 +55,23 @@ export function BoundaryDetailModal({
   onReassign,
 }: BoundaryDetailModalProps): React.JSX.Element {
   const isRayon = type === 'rayon';
-  const rayonData = !data ? null : (isRayon ? (data as RayonBoundary) : null);
-  const areaData = !data ? null : (!isRayon ? (data as AreaBoundary) : null);
+  const rayonData = !data ? null : isRayon ? (data as RayonBoundary) : null;
+  const areaData = !data ? null : !isRayon ? (data as AreaBoundary) : null;
 
   // Phase 3 sub-phase 3-8 hookup: fetch plants for the selected area so the
-  // modal shows tanaman info (status mix + heritage trees). The rayon-scoped
-  // "Permohonan Pangkas" section was intentionally dropped — it was ambiguous
-  // because pruning_requests are rayon-scoped, not area-scoped.
+  // "Tanaman" sub-sheet shows status mix + heritage trees. The rayon-scoped
+  // "Permohonan Pangkas" section was intentionally dropped — pruning_requests
+  // are rayon-scoped, not area-scoped.
   const [plants, setPlants] = useState<AreaPlant[]>([]);
   const [notable, setNotable] = useState<NotablePlant[]>([]);
   const [loadingPlants, setLoadingPlants] = useState(false);
+  const [plantsOpen, setPlantsOpen] = useState(false);
 
   useEffect(() => {
     if (!visible || isRayon || !areaData) {
       setPlants([]);
       setNotable([]);
+      setPlantsOpen(false);
       return;
     }
     let cancelled = false;
@@ -78,214 +80,244 @@ export function BoundaryDetailModal({
     setLoadingPlants(true);
     Promise.all([listAreaPlants(areaId), listNotablePlants(areaId)])
       .then(([plantsRes, notableRes]) => {
-        if (cancelled) return;
+        if (cancelled) { return; }
         setPlants(plantsRes.data ?? []);
         setNotable(notableRes.data ?? []);
       })
       .catch(() => {
-        if (cancelled) return;
+        if (cancelled) { return; }
         setPlants([]);
         setNotable([]);
       })
       .finally(() => {
-        if (!cancelled) setLoadingPlants(false);
+        if (!cancelled) { setLoadingPlants(false); }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [visible, isRayon, areaData]);
+    // Key on the area ID, not the object — reopening the same area with a fresh
+    // object reference still refetches, but an unrelated re-render won't.
+  }, [visible, isRayon, areaData?.id]);
 
-  const sheetRef = useRef<BottomSheet>(null);
-  // Match UserDetailSheet — same snap points so worker + area details open at
-  // identical heights and both can be expanded by dragging the handle.
-  const snapPoints = useMemo(() => ['70%', '90%'], []);
   const isOpen = visible && !!data;
 
-  useEffect(() => {
-    if (isOpen) {
-      sheetRef.current?.snapToIndex(0);
-    } else {
-      sheetRef.current?.close();
-    }
-  }, [isOpen]);
-
-  const renderBackdrop = useCallback(
-    (props: BottomSheetDefaultBackdropProps) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        opacity={0.4}
-        pressBehavior="close"
-      />
-    ),
-    [],
-  );
+  // Understaffed → "Understaffed" (bad); otherwise "Cukup" (ok). Both rayon and
+  // area carry `is_understaffed`.
+  const understaffed = isRayon
+    ? rayonData?.is_understaffed
+    : areaData?.is_understaffed;
 
   return (
-    <BottomSheet
-      ref={sheetRef}
-      index={isOpen ? 0 : -1}
-      snapPoints={snapPoints}
-      enablePanDownToClose
-      backdropComponent={renderBackdrop}
-      onClose={onClose}
-      backgroundStyle={styles.sheetBackground}
-      handleIndicatorStyle={styles.handle}
-    >
-      <BottomSheetScrollView contentContainerStyle={styles.body}>
-        {data && (
+    <>
+      <NBModal visible={isOpen} onClose={onClose} type="sheet" testID="boundary-detail-sheet">
+        {data ? (
           <>
-          {/* Header */}
-          <View style={styles.header}>
-            <MaterialCommunityIcons
-              name={isRayon ? 'office-building' : 'map-marker'}
-              size={20}
-              color={isRayon ? nbColors.requestUnderReview : nbColors.statusIdle}
-            />
-            <NBText variant="body-lg" color="black" style={styles.headerTitleFlex}>
-              {isRayon ? rayonData!.name : areaData!.name}
-            </NBText>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <MaterialCommunityIcons name="close" size={20} color={nbColors.gray700} />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.bodyInner}>
-            {/* Rayon mode: list areas */}
-            {isRayon && rayonData && (
-              <>
-                <NBText variant="body-sm" color="gray700" style={styles.sectionLabel}>
-                  {rayonData.areas.length} Area
-                  {rayonData.understaffed_area_count > 0
-                    ? ` (${rayonData.understaffed_area_count} kurang staf)`
-                    : ''}
+            {/* Hero header — type-tinted icon chip · name · sub-line · pill */}
+            <View style={styles.hero}>
+              <View style={styles.iconChip}>
+                <MaterialCommunityIcons
+                  name={isRayon ? 'office-building' : 'map-marker'}
+                  size={22}
+                  color={isRayon ? nbColors.requestUnderReview : nbColors.statusIdle}
+                />
+              </View>
+              <View style={styles.heroInfo}>
+                <NBText variant="h3" color="black" numberOfLines={2}>
+                  {isRayon ? rayonData!.name : areaData!.name}
                 </NBText>
-                {rayonData.areas.map(area => (
-                  <View
-                    key={area.id}
-                    style={[
-                      styles.areaRow,
-                      area.is_understaffed && styles.areaRowUnderstaffed,
-                    ]}
-                  >
-                    <View style={styles.areaRowLeft}>
-                      <NBText variant="body" color="black">{area.name}</NBText>
-                      <NBText variant="body-sm" color="gray600">
-                        {area.total_active}/{area.total_required} aktif
-                      </NBText>
-                    </View>
-                    {area.is_understaffed ? (
-                      <View style={styles.warningBadge}>
-                        <MaterialCommunityIcons name="alert" size={14} color={nbColors.white} />
-                      </View>
-                    ) : (
-                      <View style={styles.checkBadge}>
-                        <MaterialCommunityIcons name="check" size={14} color={nbColors.white} />
-                      </View>
-                    )}
-                  </View>
-                ))}
-              </>
-            )}
+                <NBText variant="mono-sm" color="gray600">
+                  {isRayon
+                    ? `${rayonData!.area_count} area`
+                    : areaData!.rayon_name}
+                </NBText>
+              </View>
+              <StatusPill
+                dot
+                tone={understaffed ? 'bad' : 'ok'}
+                label={understaffed ? 'Understaffed' : 'Cukup'}
+              />
+            </View>
 
-            {/* Area mode: per-role staffing table */}
-            {!isRayon && areaData && (
+            {/* KPI tiles */}
+            <View style={styles.statRow}>
+              {isRayon && rayonData ? (
+                <>
+                  <HomeStatTile
+                    label="Area"
+                    value={rayonData.area_count}
+                    testID="boundary-stat-area-count"
+                  />
+                  <HomeStatTile
+                    label="Kurang Staf"
+                    value={rayonData.understaffed_area_count}
+                    variant={rayonData.understaffed_area_count > 0 ? 'warn' : 'ok'}
+                    testID="boundary-stat-understaffed"
+                  />
+                </>
+              ) : areaData ? (
+                <>
+                  <HomeStatTile
+                    label="Aktif"
+                    value={`${areaData.total_active}/${areaData.total_required}`}
+                    variant={areaData.is_understaffed ? 'bad' : 'ok'}
+                    testID="boundary-stat-active"
+                  />
+                  <HomeStatTile
+                    label="Petugas"
+                    value={areaData.assigned_count}
+                    detail="ditugaskan"
+                    testID="boundary-stat-assigned"
+                  />
+                </>
+              ) : null}
+            </View>
+
+            {/* Rayon mode: list of areas */}
+            {isRayon && rayonData ? (
+              <View style={styles.section}>
+                <NBText variant="mono-sm" uppercase color="gray600" style={styles.sectionTitle}>
+                  Daftar Area ({rayonData.areas.length})
+                </NBText>
+                {rayonData.areas.length === 0 ? (
+                  <NBText variant="body-sm" color="gray500" align="center">
+                    Belum ada area di rayon ini
+                  </NBText>
+                ) : (
+                  rayonData.areas.map(area => (
+                    <View key={area.id} style={styles.areaRow}>
+                      <View style={styles.areaRowLeft}>
+                        <NBText variant="body" color="black">{area.name}</NBText>
+                        <NBText variant="mono-sm" color="gray600">
+                          {area.total_active}/{area.total_required} aktif
+                        </NBText>
+                      </View>
+                      <StatusPill
+                        dot
+                        tone={area.is_understaffed ? 'bad' : 'ok'}
+                        label={area.is_understaffed ? 'Kurang' : 'Cukup'}
+                      />
+                    </View>
+                  ))
+                )}
+              </View>
+            ) : null}
+
+            {/* Area mode: per-role staffing + reassign + tanaman sub-sheet */}
+            {!isRayon && areaData ? (
               <>
-                <View style={styles.summaryRow}>
-                  <NBText variant="body" color="gray700" style={styles.semibold}>Total Aktif</NBText>
-                  <NBText variant="body-lg" color="black">
-                    {areaData.total_active}/{areaData.total_required}
+                <View style={styles.section}>
+                  <NBText variant="mono-sm" uppercase color="gray600" style={styles.sectionTitle}>
+                    Kebutuhan per Jabatan
+                  </NBText>
+                  {(areaData.staffing ?? []).length === 0 ? (
+                    <NBText variant="body-sm" color="gray500" align="center">
+                      Belum ada kebutuhan jabatan
+                    </NBText>
+                  ) : (
+                    (areaData.staffing ?? []).map(item => {
+                      const delta = item.active - item.required;
+                      return (
+                        <View key={item.role} style={styles.roleRow}>
+                          <NBText variant="body-sm" color="black" style={styles.roleLabel}>
+                            {ROLE_LABELS[item.role as UserRole] ?? item.role}
+                          </NBText>
+                          <NBText variant="mono-sm" color="gray600" style={styles.roleCount}>
+                            {item.active}/{item.required}
+                          </NBText>
+                          <StatusPill
+                            tone={delta >= 0 ? 'ok' : 'bad'}
+                            label={delta >= 0 ? `+${delta}` : String(delta)}
+                          />
+                        </View>
+                      );
+                    })
+                  )}
+                </View>
+
+                {/* Reassign — only for understaffed areas with a handler */}
+                {areaData.is_understaffed && onReassign ? (
+                  <NBButton
+                    variant="primary"
+                    title="Reassign Petugas"
+                    leftIcon="account-arrow-right"
+                    onPress={() => onReassign(areaData)}
+                    size="md"
+                    fullWidth
+                    style={styles.reassignBtn}
+                  />
+                ) : null}
+
+                {/* Tanaman — opens the plant status + heritage sub-sheet */}
+                <TouchableOpacity
+                  style={styles.subSheetTrigger}
+                  onPress={() => setPlantsOpen(true)}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Lihat tanaman"
+                  testID="boundary-tanaman-trigger"
+                >
+                  <MaterialCommunityIcons name="tree" size={20} color={nbColors.successDark} />
+                  <View style={styles.subSheetTriggerText}>
+                    <NBText variant="body" color="black">Tanaman</NBText>
+                    <NBText variant="mono-sm" color="gray600">
+                      {loadingPlants
+                        ? 'Memuat data tanaman…'
+                        : `${plants.length} jenis · ${notable.length} heritage`}
+                    </NBText>
+                  </View>
+                  <MaterialCommunityIcons name="chevron-right" size={20} color={nbColors.gray400} />
+                </TouchableOpacity>
+              </>
+            ) : null}
+          </>
+        ) : null}
+      </NBModal>
+
+      {/* ─── Tanaman sub-sheet (area only) ─────────────────────────────────── */}
+      {areaData ? (
+        <NBModal
+          visible={plantsOpen}
+          onClose={() => setPlantsOpen(false)}
+          type="sheet"
+          title={`Tanaman ${areaData.name}`}
+          testID="boundary-tanaman-sheet"
+        >
+          {loadingPlants ? (
+            <NBText variant="body-sm" color="gray600" align="center">
+              Memuat data tanaman…
+            </NBText>
+          ) : plants.length === 0 ? (
+            <NBText variant="body" color="gray600" align="center">
+              Belum ada data tanaman terdaftar untuk area ini.
+            </NBText>
+          ) : (
+            <PlantSummaryBlock plants={plants} />
+          )}
+
+          {notable.length > 0 ? (
+            <View style={styles.heritageSection}>
+              <NBText variant="mono-sm" uppercase color="gray600" style={styles.sectionTitle}>
+                Pohon Heritage ({notable.length})
+              </NBText>
+              {notable.map(n => (
+                <View key={n.id} style={styles.heritageRow}>
+                  <MaterialCommunityIcons name="tree" size={14} color={nbColors.successDark} />
+                  <NBText variant="body-sm" color="gray800" style={styles.heritageLabel}>
+                    {n.label ?? 'Tanpa label'}
+                    {n.species?.nameId ? ` · ${formatSpeciesName(n.species.nameId)}` : ''}
                   </NBText>
                 </View>
-
-                <NBText variant="body-sm" color="gray700" style={styles.sectionLabel}>Detail</NBText>
-                <View style={styles.staffingTable}>
-                  <View style={styles.tableHeader}>
-                    <NBText variant="caption" color="gray700" style={[styles.tableHeaderCell, styles.tableRoleCol]}>Jabatan</NBText>
-                    <NBText variant="caption" color="gray700" style={styles.tableHeaderCell}>Dibutuhkan</NBText>
-                    <NBText variant="caption" color="gray700" style={styles.tableHeaderCell}>Aktif</NBText>
-                    <NBText variant="caption" color="gray700" style={styles.tableHeaderCell}>Delta</NBText>
-                  </View>
-                  {(areaData.staffing ?? []).map(item => {
-                    const delta = item.active - item.required;
-                    return (
-                      <View key={item.role} style={styles.tableRow}>
-                        <NBText variant="body-sm" color="gray800" style={[styles.tableCell, styles.tableRoleCol]}>
-                          {ROLE_LABELS[item.role as UserRole] ?? item.role}
-                        </NBText>
-                        <NBText variant="body-sm" color="gray800" style={styles.tableCell}>{item.required}</NBText>
-                        <NBText variant="body-sm" color="gray800" style={styles.tableCell}>{item.active}</NBText>
-                        <NBText
-                          variant="body-sm"
-                          style={[
-                            styles.tableCell,
-                            { color: delta >= 0 ? nbColors.successDark : nbColors.dangerDark },
-                          ]}
-                        >
-                          {delta >= 0 ? `+${delta}` : delta}
-                        </NBText>
-                      </View>
-                    );
-                  })}
-                </View>
-
-                {/* Reassign button for understaffed areas */}
-                {areaData.is_understaffed && onReassign && (
-                  <TouchableOpacity
-                    style={styles.reassignBtn}
-                    onPress={() => onReassign(areaData)}
-                    activeOpacity={0.8}
-                  >
-                    <MaterialCommunityIcons name="account-switch" size={18} color={nbColors.black} />
-                    <NBText variant="body" color="black">Reassign Petugas</NBText>
-                  </TouchableOpacity>
-                )}
-
-                {/* Phase 3: Plant status section */}
-                <NBText variant="body-sm" color="gray700" style={styles.sectionLabel}>
-                  Status Tanaman
-                </NBText>
-                {loadingPlants ? (
-                  <NBText variant="body-sm" color="gray600">Memuat data tanaman…</NBText>
-                ) : plants.length === 0 ? (
-                  <View style={styles.placeholderBox}>
-                    <NBText variant="body-sm" color="gray600">
-                      Belum ada data tanaman terdaftar untuk area ini.
-                    </NBText>
-                  </View>
-                ) : (
-                  <PlantSummaryBlock plants={plants} />
-                )}
-
-                {notable.length > 0 && (
-                  <>
-                    <NBText variant="body-sm" color="gray700" style={styles.sectionLabel}>
-                      Pohon Heritage ({notable.length})
-                    </NBText>
-                    {notable.map((n) => (
-                      <View key={n.id} style={styles.heritageRow}>
-                        <MaterialCommunityIcons name="tree" size={14} color={nbColors.successDark} />
-                        <NBText variant="body-sm" color="gray800" style={styles.heritageLabel}>
-                          {n.label ?? 'Tanpa label'}
-                          {n.species?.nameId ? ` · ${formatSpeciesName(n.species.nameId)}` : ''}
-                        </NBText>
-                      </View>
-                    ))}
-                  </>
-                )}
-              </>
-            )}
-          </View>
-          </>
-        )}
-      </BottomSheetScrollView>
-    </BottomSheet>
+              ))}
+            </View>
+          ) : null}
+        </NBModal>
+      ) : null}
+    </>
   );
 }
 
-// ─── Phase 3 sub-components ───────────────────────────────────────────────────
+// ─── Plant sub-components ─────────────────────────────────────────────────────
 
 /**
  * Convert backend `name_id` (e.g. `KETAPANG_KENCANA`) into display form
@@ -293,12 +325,12 @@ export function BoundaryDetailModal({
  * species relation isn't loaded.
  */
 function formatSpeciesName(nameId: string | null | undefined): string {
-  if (!nameId) return 'Jenis pohon belum diketahui';
+  if (!nameId) { return 'Jenis pohon belum diketahui'; }
   return nameId
     .toLowerCase()
     .split(/[_\s]+/)
     .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ');
 }
 
@@ -312,30 +344,27 @@ function PlantSummaryBlock({ plants }: PlantSummaryBlockProps): React.JSX.Elemen
   let overdueCount = 0;
   for (const p of plants) {
     const status = p.status as string;
-    if (status === 'overdue') overdueCount += 1;
-    else if (status === 'due' || status === 'due_soon') dueCount += 1;
-    else if (status === 'ok') okCount += 1;
+    if (status === 'overdue') { overdueCount += 1; }
+    else if (status === 'due' || status === 'due_soon') { dueCount += 1; }
+    else if (status === 'ok') { okCount += 1; }
   }
   const totalCount = plants.reduce((acc, p) => acc + (p.count ?? 0), 0);
 
   return (
     <View>
-      <View style={styles.statusRow}>
-        <StatusPill label="OK" count={okCount} tint={nbColors.successDark} />
-        <StatusPill label="Hampir" count={dueCount} tint={nbColors.warning} />
-        <StatusPill label="Lewat" count={overdueCount} tint={nbColors.dangerDark} />
+      <View style={styles.statRow}>
+        <HomeStatTile label="OK" value={okCount} variant="ok" />
+        <HomeStatTile label="Hampir" value={dueCount} variant="warn" />
+        <HomeStatTile label="Lewat" value={overdueCount} variant="bad" />
       </View>
-      <NBText variant="caption" color="gray600" style={styles.plantSubLabel}>
+      <NBText variant="mono-sm" color="gray600" style={styles.plantSubLabel}>
         {plants.length} jenis pohon · {totalCount} pohon terdata
       </NBText>
-      {plants.slice(0, 5).map((p) => {
+      {plants.slice(0, 5).map(p => {
         const status = p.status as string;
-        const tint =
-          status === 'overdue'
-            ? nbColors.dangerDark
-            : status === 'due' || status === 'due_soon'
-              ? nbColors.warning
-              : nbColors.gray700;
+        const tone: 'ok' | 'warn' | 'bad' =
+          status === 'overdue' ? 'bad' : status === 'due' || status === 'due_soon' ? 'warn' : 'ok';
+        const label = status === 'overdue' ? 'LEWAT' : status === 'due' || status === 'due_soon' ? 'HAMPIR' : 'OK';
         const speciesName = formatSpeciesName(p.species?.nameId);
         const lastPruned = p.lastPrunedAt
           ? new Date(p.lastPrunedAt).toLocaleDateString('id-ID', {
@@ -352,13 +381,7 @@ function PlantSummaryBlock({ plants }: PlantSummaryBlockProps): React.JSX.Elemen
                 {p.count} pohon · {lastPruned}
               </NBText>
             </View>
-            <NBText variant="caption" style={{ color: tint, fontWeight: '700' }}>
-              {status === 'overdue'
-                ? 'LEWAT'
-                : status === 'due' || status === 'due_soon'
-                  ? 'HAMPIR'
-                  : 'OK'}
-            </NBText>
+            <StatusPill tone={tone} label={label} />
           </View>
         );
       })}
@@ -366,195 +389,97 @@ function PlantSummaryBlock({ plants }: PlantSummaryBlockProps): React.JSX.Elemen
   );
 }
 
-interface StatusPillProps {
-  label: string;
-  count: number;
-  tint: string;
-}
-
-function StatusPill({ label, count, tint }: StatusPillProps): React.JSX.Element {
-  return (
-    <View style={[styles.statusPill, { borderColor: tint }]}>
-      <NBText variant="body-lg" style={{ color: tint, fontWeight: '900' }}>
-        {count}
-      </NBText>
-      <NBText variant="caption" color="gray700">{label}</NBText>
-    </View>
-  );
-}
-
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  // Bottom-sheet chrome — kept identical to UserDetailSheet so worker + area
-  // details share the same handle indicator + border treatment.
-  sheetBackground: {
-    backgroundColor: nbColors.white,
-    borderTopLeftRadius: nbBorderRadius.lg,
-    borderTopRightRadius: nbBorderRadius.lg,
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.black,
-  },
-  handle: {
-    backgroundColor: nbColors.gray400,
-    width: 40,
-  },
-  bodyInner: {
-    paddingHorizontal: nbSpacing.md,
-    paddingTop: 0,
-    paddingBottom: nbSpacing.md,
-  },
-  header: {
+  hero: {
     flexDirection: 'row',
-    alignItems: 'center',
-    padding: nbSpacing.md,
-    borderBottomWidth: nbBorders.thin,
-    borderBottomColor: nbColors.gray300,
+    alignItems: 'flex-start',
     gap: nbSpacing.sm,
+    paddingBottom: nbSpacing.md,
+    borderBottomWidth: nbBorders.widthThin,
+    borderBottomColor: nbColors.gray200,
   },
-  headerTitleFlex: {
+  iconChip: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: nbColors.gray100,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.base,
+  },
+  heroInfo: {
     flex: 1,
+    gap: nbSpacing.xs,
   },
-  closeBtn: {
-    padding: nbSpacing.xs,
+  statRow: {
+    flexDirection: 'row',
+    gap: nbSpacing.sm,
+    paddingVertical: nbSpacing.md,
   },
-  body: {
-    paddingBottom: nbSpacing.xl,
+  section: {
+    gap: nbSpacing.xs,
+    paddingBottom: nbSpacing.sm,
   },
-  sectionLabel: {
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: nbSpacing.sm,
+  sectionTitle: {
+    letterSpacing: 0.4,
+    marginBottom: nbSpacing.xs,
   },
   areaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: nbSpacing.sm,
     paddingVertical: nbSpacing.sm,
     paddingHorizontal: nbSpacing.sm,
-    borderRadius: nbBorderRadius.base,
-    marginBottom: nbSpacing.xs,
     backgroundColor: nbColors.gray100,
-  },
-  areaRowUnderstaffed: {
-    backgroundColor: nbColors.statusMissingBg,
-    borderWidth: 1,
-    borderColor: nbColors.dangerDark,
+    borderWidth: nbBorders.widthThin,
+    borderColor: nbColors.gray200,
+    borderRadius: nbRadius.base,
   },
   areaRowLeft: {
     flex: 1,
+    gap: nbSpacing.xs,
   },
-  warningBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: nbColors.dangerDark,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: nbColors.successDark,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  summaryRow: {
+  roleRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: nbSpacing.md,
+    gap: nbSpacing.sm,
     paddingVertical: nbSpacing.sm,
-    paddingHorizontal: nbSpacing.sm,
-    backgroundColor: nbColors.gray100,
-    borderRadius: nbBorderRadius.base,
+    borderBottomWidth: nbBorders.widthThin,
+    borderBottomColor: nbColors.gray200,
   },
-  semibold: {
-    fontWeight: '600',
-  },
-  staffingTable: {
-    borderWidth: nbBorders.thin,
-    borderColor: nbColors.gray300,
-    borderRadius: nbBorderRadius.base,
-    overflow: 'hidden',
-    marginBottom: nbSpacing.md,
-  },
-  tableHeader: {
-    flexDirection: 'row',
-    backgroundColor: nbColors.gray200,
-    paddingVertical: nbSpacing.xs,
-    paddingHorizontal: nbSpacing.sm,
-  },
-  tableHeaderCell: {
+  roleLabel: {
     flex: 1,
-    textAlign: 'center',
   },
-  tableRoleCol: {
-    flex: 2,
-    textAlign: 'left',
-  },
-  tableRow: {
-    flexDirection: 'row',
-    paddingVertical: nbSpacing.xs,
-    paddingHorizontal: nbSpacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: nbColors.gray200,
-  },
-  tableCell: {
-    flex: 1,
-    textAlign: 'center',
+  roleCount: {
+    minWidth: 44,
+    textAlign: 'right',
   },
   reassignBtn: {
+    marginBottom: nbSpacing.sm,
+  },
+  subSheetTrigger: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: nbColors.primary,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.black,
-    paddingVertical: nbSpacing.sm,
-    gap: nbSpacing.xs,
-    marginBottom: nbSpacing.md,
-    ...nbShadows.sm,
-  },
-  placeholderBox: {
-    paddingVertical: nbSpacing.sm,
+    gap: nbSpacing.sm,
+    minHeight: 44,
+    paddingVertical: nbSpacing.md,
     paddingHorizontal: nbSpacing.sm,
-    backgroundColor: nbColors.gray100,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: 1,
-    borderColor: nbColors.gray200,
-    marginBottom: nbSpacing.sm,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    gap: nbSpacing.xs,
-    marginBottom: nbSpacing.xs,
-  },
-  statusPill: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: nbSpacing.xs,
-    paddingHorizontal: nbSpacing.xs,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: 2,
     backgroundColor: nbColors.white,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.base,
   },
-  plantSubLabel: {
-    marginBottom: nbSpacing.sm,
-  },
-  plantRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: nbSpacing.xs,
-    borderTopWidth: 1,
-    borderTopColor: nbColors.gray200,
-  },
-  plantRowLeft: {
+  subSheetTriggerText: {
     flex: 1,
-    marginRight: nbSpacing.sm,
+    gap: nbSpacing.xs,
+  },
+  heritageSection: {
+    marginTop: nbSpacing.md,
+    gap: nbSpacing.xs,
   },
   heritageRow: {
     flexDirection: 'row',
@@ -564,5 +489,21 @@ const styles = StyleSheet.create({
   },
   heritageLabel: {
     flex: 1,
+  },
+  plantSubLabel: {
+    marginBottom: nbSpacing.sm,
+  },
+  plantRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: nbSpacing.sm,
+    paddingVertical: nbSpacing.xs,
+    borderTopWidth: nbBorders.widthThin,
+    borderTopColor: nbColors.gray200,
+  },
+  plantRowLeft: {
+    flex: 1,
+    marginRight: nbSpacing.sm,
   },
 });

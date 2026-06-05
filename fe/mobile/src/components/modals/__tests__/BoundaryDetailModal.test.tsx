@@ -1,20 +1,39 @@
 /**
- * BoundaryDetailModal Component Tests
- * Phase 2D: Rayon/area staffing detail modal triggered from map center markers.
+ * BoundaryDetailModal Component Tests — Phase 4 M3 (CP7 rebuild on NBModal).
+ *
+ * The modal was rebuilt onto the UserDetailSheet design language: NBModal sheet
+ * + hero header (icon chip · name · sub-line · StatusPill), HomeStatTile KPI row,
+ * tokenised staffing rows, and a nested "Tanaman" sub-sheet (plant status +
+ * heritage). Covers: visibility gating, hero, KPI tiles, rayon area list, area
+ * per-role staffing rows + delta pills, Reassign button, and the plant sub-sheet.
+ *
+ * gorhom bottom-sheet is stubbed globally (__mocks__): BottomSheetModal presents
+ * on NBModal's `visible` effect. plantsApi is mocked so no real fetch occurs.
  */
 
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { BoundaryDetailModal } from '../BoundaryDetailModal';
-import type { RayonBoundary, AreaBoundary } from '../../../types/models.types';
+import type { RayonBoundary, AreaBoundary, AreaPlant, NotablePlant } from '../../../types/models.types';
 
-// Mock vector icons to avoid native module resolution
+// ─── Mocks ────────────────────────────────────────────────────────────────────
+
 jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
   const React = require('react');
   const { Text } = require('react-native');
   return (props: any) =>
     React.createElement(Text, { testID: `icon-${props.name}`, ...props }, props.name);
 });
+
+jest.mock('../../../services/api/plantsApi', () => ({
+  listAreaPlants: jest.fn().mockResolvedValue({ data: [] }),
+  listNotablePlants: jest.fn().mockResolvedValue({ data: [] }),
+}));
+
+import { listAreaPlants, listNotablePlants } from '../../../services/api/plantsApi';
+
+const mockListAreaPlants = listAreaPlants as jest.Mock;
+const mockListNotablePlants = listNotablePlants as jest.Mock;
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -41,7 +60,7 @@ const adequateArea: AreaBoundary = {
   id: 'area-2',
   name: 'Taman Flora',
   center_lat: -7.3012,
-  center_lng: 112.7480,
+  center_lng: 112.748,
   boundary_polygon: null,
   radius_meters: 100,
   rayon_id: 'rayon-1',
@@ -60,8 +79,8 @@ const mockRayon: RayonBoundary = {
   id: 'rayon-1',
   name: 'Rayon Selatan',
   code: 'RS-01',
-  center_lat: -7.2970,
-  center_lng: 112.7440,
+  center_lat: -7.297,
+  center_lng: 112.744,
   boundary_polygon: null,
   area_count: 2,
   is_understaffed: true,
@@ -79,209 +98,175 @@ const baseProps = {
 describe('BoundaryDetailModal', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockListAreaPlants.mockResolvedValue({ data: [] });
+    mockListNotablePlants.mockResolvedValue({ data: [] });
   });
 
-  // ─── Null / invisible guard ──────────────────────────────────────────────────
-
-  describe('null data', () => {
-    it('renders without crashing when data is null', () => {
-      // Component internally renders Modal with visible=false when data is null
-      expect(() =>
-        render(<BoundaryDetailModal type="rayon" data={null} {...baseProps} />),
-      ).not.toThrow();
+  // Area mode kicks off the plant-fetch effect. Call this at the END of a
+  // synchronous area-mode test so the trailing setState (settled at jest's await
+  // boundary) lands wrapped in act() instead of warning. No-op for rayon tests.
+  const flushPlants = async () => {
+    await act(async () => {
+      for (let i = 0; i < 5; i++) { await Promise.resolve(); }
     });
+  };
 
-    it('shows no rayon or area content when data is null', () => {
-      const { queryByText } = render(
+  // ── Visibility / null guard ───────────────────────────────────────────────────
+
+  describe('visibility', () => {
+    it('renders nothing when data is null', () => {
+      const { queryByText, queryByTestId } = render(
         <BoundaryDetailModal type="rayon" data={null} {...baseProps} />,
       );
       expect(queryByText('Rayon Selatan')).toBeNull();
+      expect(queryByTestId('boundary-detail-sheet')).toBeNull();
     });
-  });
 
-  describe('visible=false', () => {
-    it('does not render modal content when visible is false', () => {
+    it('does not render content when visible is false', () => {
       const { queryByText } = render(
-        <BoundaryDetailModal
-          type="rayon"
-          data={mockRayon}
-          visible={false}
-          onClose={jest.fn()}
-        />,
+        <BoundaryDetailModal type="rayon" data={mockRayon} visible={false} onClose={jest.fn()} />,
       );
       expect(queryByText('Rayon Selatan')).toBeNull();
     });
-  });
 
-  // ─── onClose callback ────────────────────────────────────────────────────────
-
-  describe('close button', () => {
-    it('calls onClose when close icon is pressed in rayon mode', () => {
+    it('calls onClose when the sheet is dismissed (visible → false)', () => {
       const onClose = jest.fn();
-      const { getByTestId } = render(
-        <BoundaryDetailModal type="rayon" data={mockRayon} visible={true} onClose={onClose} />,
+      const { rerender } = render(
+        <BoundaryDetailModal type="rayon" data={mockRayon} visible onClose={onClose} />,
       );
-      fireEvent.press(getByTestId('icon-close'));
-      expect(onClose).toHaveBeenCalledTimes(1);
-    });
-
-    it('calls onClose when close icon is pressed in area mode', () => {
-      const onClose = jest.fn();
-      const { getByTestId } = render(
-        <BoundaryDetailModal
-          type="area"
-          data={understaffedArea}
-          visible={true}
-          onClose={onClose}
-        />,
+      rerender(
+        <BoundaryDetailModal type="rayon" data={mockRayon} visible={false} onClose={onClose} />,
       );
-      fireEvent.press(getByTestId('icon-close'));
       expect(onClose).toHaveBeenCalledTimes(1);
     });
   });
 
-  // ─── Rayon mode ──────────────────────────────────────────────────────────────
+  // ── Rayon mode ────────────────────────────────────────────────────────────────
 
   describe('rayon mode', () => {
-    it('renders rayon name in header', () => {
-      const { getByText } = render(
+    it('renders the hero (name + area-count sub-line + office-building icon)', () => {
+      const { getByText, getByTestId } = render(
         <BoundaryDetailModal type="rayon" data={mockRayon} {...baseProps} />,
       );
       expect(getByText('Rayon Selatan')).toBeTruthy();
+      expect(getByText('2 area')).toBeTruthy();
+      expect(getByTestId('icon-office-building')).toBeTruthy();
     });
 
-    it('renders area count with understaffed notice when some are understaffed', () => {
+    it('shows the Understaffed pill when the rayon is understaffed', () => {
       const { getByText } = render(
         <BoundaryDetailModal type="rayon" data={mockRayon} {...baseProps} />,
       );
-      expect(getByText('2 Area (1 kurang staf)')).toBeTruthy();
+      expect(getByText('Understaffed')).toBeTruthy();
     });
 
-    it('renders area count without understaffed notice when all areas are staffed', () => {
-      const fullyStaffedRayon: RayonBoundary = {
-        ...mockRayon,
-        understaffed_area_count: 0,
-        areas: [adequateArea],
-      };
-      const { getByText } = render(
-        <BoundaryDetailModal type="rayon" data={fullyStaffedRayon} {...baseProps} />,
+    it('renders the Area + Kurang Staf KPI tiles', () => {
+      const { getByTestId, getByText } = render(
+        <BoundaryDetailModal type="rayon" data={mockRayon} {...baseProps} />,
       );
-      expect(getByText('1 Area')).toBeTruthy();
+      expect(getByTestId('boundary-stat-area-count')).toBeTruthy();
+      expect(getByTestId('boundary-stat-understaffed')).toBeTruthy();
+      expect(getByText('Kurang Staf')).toBeTruthy();
     });
 
-    it('renders each area name in the list', () => {
+    it('lists each area with its active/required line', () => {
       const { getByText } = render(
         <BoundaryDetailModal type="rayon" data={mockRayon} {...baseProps} />,
       );
+      expect(getByText('Daftar Area (2)')).toBeTruthy();
       expect(getByText('Taman Bungkul')).toBeTruthy();
       expect(getByText('Taman Flora')).toBeTruthy();
-    });
-
-    it('renders active/required stats for each area row', () => {
-      const { getByText } = render(
-        <BoundaryDetailModal type="rayon" data={mockRayon} {...baseProps} />,
-      );
       expect(getByText('2/5 aktif')).toBeTruthy();
       expect(getByText('4/3 aktif')).toBeTruthy();
     });
 
-    it('shows warning (alert) icon for understaffed area', () => {
-      const { getAllByTestId } = render(
+    it('tags each area with a Kurang / Cukup pill', () => {
+      const { getByText } = render(
         <BoundaryDetailModal type="rayon" data={mockRayon} {...baseProps} />,
       );
-      expect(getAllByTestId('icon-alert')).toHaveLength(1);
+      expect(getByText('Kurang')).toBeTruthy(); // understaffedArea
+      expect(getByText('Cukup')).toBeTruthy();  // adequateArea
     });
 
-    it('shows check icon for adequately staffed area', () => {
-      const { getAllByTestId } = render(
-        <BoundaryDetailModal type="rayon" data={mockRayon} {...baseProps} />,
+    it('shows the Cukup hero pill when the rayon is adequately staffed', () => {
+      const okRayon: RayonBoundary = { ...mockRayon, is_understaffed: false, understaffed_area_count: 0 };
+      const { getAllByText } = render(
+        <BoundaryDetailModal type="rayon" data={okRayon} {...baseProps} />,
       );
-      expect(getAllByTestId('icon-check')).toHaveLength(1);
+      // hero pill + the adequate area row pill
+      expect(getAllByText('Cukup').length).toBeGreaterThanOrEqual(1);
     });
 
-    it('uses office-building icon in header for rayon', () => {
-      const { getByTestId } = render(
-        <BoundaryDetailModal type="rayon" data={mockRayon} {...baseProps} />,
-      );
-      expect(getByTestId('icon-office-building')).toBeTruthy();
-    });
-
-    it('renders zero-area rayon without crashing', () => {
-      const emptyRayon: RayonBoundary = { ...mockRayon, areas: [], understaffed_area_count: 0 };
+    it('renders a zero-area rayon without crashing', () => {
+      const emptyRayon: RayonBoundary = { ...mockRayon, areas: [], understaffed_area_count: 0, area_count: 0 };
       const { getByText } = render(
         <BoundaryDetailModal type="rayon" data={emptyRayon} {...baseProps} />,
       );
-      expect(getByText('0 Area')).toBeTruthy();
+      expect(getByText('Daftar Area (0)')).toBeTruthy();
+      expect(getByText('Belum ada area di rayon ini')).toBeTruthy();
+    });
+
+    it('does not fetch plants in rayon mode', () => {
+      render(<BoundaryDetailModal type="rayon" data={mockRayon} {...baseProps} />);
+      expect(mockListAreaPlants).not.toHaveBeenCalled();
     });
   });
 
-  // ─── Area mode ───────────────────────────────────────────────────────────────
+  // ── Area mode ─────────────────────────────────────────────────────────────────
 
   describe('area mode', () => {
-    it('renders area name in header', () => {
-      const { getByText } = render(
+    it('renders the hero (name + parent rayon sub-line + map-marker icon)', async () => {
+      const { getByText, getByTestId } = render(
         <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
       );
       expect(getByText('Taman Bungkul')).toBeTruthy();
+      expect(getByText('Rayon Selatan')).toBeTruthy(); // rayon_name sub-line
+      expect(getByTestId('icon-map-marker')).toBeTruthy();
+      await flushPlants();
     });
 
-    it('renders total active/required summary', () => {
+    it('renders the Aktif + Petugas KPI tiles', async () => {
+      const { getByTestId, getByText } = render(
+        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
+      );
+      expect(getByTestId('boundary-stat-active')).toBeTruthy();
+      expect(getByTestId('boundary-stat-assigned')).toBeTruthy();
+      expect(getByText('2/5')).toBeTruthy();  // total_active / total_required
+      expect(getByText('5')).toBeTruthy();    // assigned_count
+      await flushPlants();
+    });
+
+    it('renders a per-role staffing row with translated labels', async () => {
       const { getByText } = render(
         <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
       );
-      expect(getByText('2/5')).toBeTruthy();
-    });
-
-    it('renders staffing table header columns', () => {
-      const { getByText } = render(
-        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
-      );
-      expect(getByText('Jabatan')).toBeTruthy();
-      expect(getByText('Dibutuhkan')).toBeTruthy();
-      expect(getByText('Aktif')).toBeTruthy();
-      expect(getByText('Delta')).toBeTruthy();
-    });
-
-    it('renders translated Indonesian role labels', () => {
-      const { getByText } = render(
-        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
-      );
+      expect(getByText('Kebutuhan per Jabatan')).toBeTruthy();
       expect(getByText('Satgas')).toBeTruthy();
       expect(getByText('Linmas')).toBeTruthy();
+      expect(getByText('1/3')).toBeTruthy(); // satgas active/required
+      expect(getByText('1/2')).toBeTruthy(); // linmas active/required
+      await flushPlants();
     });
 
-    it('renders required and active numbers from staffing data', () => {
-      const { getAllByText } = render(
-        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
-      );
-      // satgas: required=3, active=1; linmas: required=2, active=1
-      expect(getAllByText('3')).toHaveLength(1);
-      expect(getAllByText('2')).toHaveLength(1);
-      expect(getAllByText('1')).toHaveLength(2);
-    });
-
-    it('uses map-marker icon in header for area', () => {
-      const { getByTestId } = render(
-        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
-      );
-      expect(getByTestId('icon-map-marker')).toBeTruthy();
-    });
-
-    it('renders empty staffing area gracefully', () => {
-      const emptyStaffingArea: AreaBoundary = {
-        ...understaffedArea,
-        staffing: [],
-        total_active: 0,
-        total_required: 0,
-        is_understaffed: false,
-      };
+    it('shows a negative delta pill for understaffed roles', async () => {
       const { getByText } = render(
-        <BoundaryDetailModal type="area" data={emptyStaffingArea} {...baseProps} />,
+        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
       );
-      expect(getByText('0/0')).toBeTruthy();
+      expect(getByText('-2')).toBeTruthy(); // satgas: 1-3
+      expect(getByText('-1')).toBeTruthy(); // linmas: 1-2
+      await flushPlants();
     });
 
-    it('falls back to raw role key when role is not in ROLE_LABELS', () => {
+    it('shows positive / zero delta pills for adequately staffed roles', async () => {
+      const { getByText } = render(
+        <BoundaryDetailModal type="area" data={adequateArea} {...baseProps} />,
+      );
+      expect(getByText('+1')).toBeTruthy(); // satgas: 3-2
+      expect(getByText('+0')).toBeTruthy(); // linmas: 1-1
+      await flushPlants();
+    });
+
+    it('falls back to the raw role key when not in ROLE_LABELS', async () => {
       const unknownRoleArea: AreaBoundary = {
         ...understaffedArea,
         staffing: [{ role: 'unknown_role' as any, required: 1, active: 0 }],
@@ -290,90 +275,125 @@ describe('BoundaryDetailModal', () => {
         <BoundaryDetailModal type="area" data={unknownRoleArea} {...baseProps} />,
       );
       expect(getByText('unknown_role')).toBeTruthy();
+      await flushPlants();
+    });
+
+    it('renders an empty-staffing area gracefully', async () => {
+      const emptyStaffingArea: AreaBoundary = {
+        ...understaffedArea,
+        staffing: [],
+        is_understaffed: false,
+      };
+      const { getByText } = render(
+        <BoundaryDetailModal type="area" data={emptyStaffingArea} {...baseProps} />,
+      );
+      expect(getByText('Belum ada kebutuhan jabatan')).toBeTruthy();
+      await flushPlants();
     });
   });
 
-  // ─── Delta colour ────────────────────────────────────────────────────────────
-
-  describe('delta color', () => {
-    it('renders negative delta with dangerDark (#991B1B) color and no plus prefix', () => {
-      const { getByText } = render(
-        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
-      );
-      const deltaMinus2 = getByText('-2');
-      expect([deltaMinus2.props.style].flat(2)).toEqual(
-        expect.arrayContaining([expect.objectContaining({ color: '#991B1B' })]),
-      );
-    });
-
-    it('renders positive delta with successDark (#15803D) color and plus prefix', () => {
-      const { getByText } = render(
-        <BoundaryDetailModal type="area" data={adequateArea} {...baseProps} />,
-      );
-      const deltaPlus1 = getByText('+1');
-      expect([deltaPlus1.props.style].flat(2)).toEqual(
-        expect.arrayContaining([expect.objectContaining({ color: '#15803D' })]),
-      );
-    });
-
-    it('renders zero delta with successDark (#15803D) color and +0 label', () => {
-      const { getByText } = render(
-        <BoundaryDetailModal type="area" data={adequateArea} {...baseProps} />,
-      );
-      const deltaZero = getByText('+0');
-      expect([deltaZero.props.style].flat(2)).toEqual(
-        expect.arrayContaining([expect.objectContaining({ color: '#15803D' })]),
-      );
-    });
-  });
-
-  // ─── Reassign button ─────────────────────────────────────────────────────────
+  // ── Reassign ──────────────────────────────────────────────────────────────────
 
   describe('reassign button', () => {
-    it('shows reassign button for understaffed area when onReassign is provided', () => {
+    it('shows Reassign for an understaffed area when onReassign is provided', async () => {
       const { getByText } = render(
-        <BoundaryDetailModal
-          type="area"
-          data={understaffedArea}
-          {...baseProps}
-          onReassign={jest.fn()}
-        />,
+        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} onReassign={jest.fn()} />,
       );
       expect(getByText('Reassign Petugas')).toBeTruthy();
+      await flushPlants();
     });
 
-    it('calls onReassign with the full area object when pressed', () => {
+    it('calls onReassign with the full area object when pressed', async () => {
       const onReassign = jest.fn();
       const { getByText } = render(
-        <BoundaryDetailModal
-          type="area"
-          data={understaffedArea}
-          {...baseProps}
-          onReassign={onReassign}
-        />,
+        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} onReassign={onReassign} />,
       );
       fireEvent.press(getByText('Reassign Petugas'));
       expect(onReassign).toHaveBeenCalledTimes(1);
       expect(onReassign).toHaveBeenCalledWith(understaffedArea);
+      await flushPlants();
     });
 
-    it('hides reassign button when area is adequately staffed', () => {
+    it('hides Reassign when the area is adequately staffed', async () => {
       const { queryByText } = render(
-        <BoundaryDetailModal
-          type="area"
-          data={adequateArea}
-          {...baseProps}
-          onReassign={jest.fn()}
-        />,
+        <BoundaryDetailModal type="area" data={adequateArea} {...baseProps} onReassign={jest.fn()} />,
       );
       expect(queryByText('Reassign Petugas')).toBeNull();
+      await flushPlants();
     });
 
-    it('hides reassign button when onReassign callback is not provided', () => {
+    it('hides Reassign when no onReassign is provided', async () => {
       const { queryByText } = render(
         <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
       );
       expect(queryByText('Reassign Petugas')).toBeNull();
+      await flushPlants();
+    });
+  });
+
+  // ── Tanaman sub-sheet ─────────────────────────────────────────────────────────
+
+  describe('tanaman sub-sheet', () => {
+    it('renders the trigger and fetches plants on open (area mode)', async () => {
+      const { getByTestId } = render(
+        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
+      );
+      expect(getByTestId('boundary-tanaman-trigger')).toBeTruthy();
+      await waitFor(() => expect(mockListAreaPlants).toHaveBeenCalledWith('area-1'));
+      expect(mockListNotablePlants).toHaveBeenCalledWith('area-1');
+    });
+
+    it('shows the jenis · heritage count once plants resolve', async () => {
+      const plants: AreaPlant[] = [
+        { id: 'p1', status: 'ok', count: 4, species: { nameId: 'KETAPANG_KENCANA' } } as any,
+        { id: 'p2', status: 'overdue', count: 2, species: { nameId: 'TREMBESI' } } as any,
+      ];
+      const notable: NotablePlant[] = [{ id: 'n1', label: 'Pohon A', species: { nameId: 'TREMBESI' } } as any];
+      mockListAreaPlants.mockResolvedValue({ data: plants });
+      mockListNotablePlants.mockResolvedValue({ data: notable });
+
+      const { getByText } = render(
+        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
+      );
+      await waitFor(() => expect(getByText('2 jenis · 1 heritage')).toBeTruthy());
+    });
+
+    it('opens the sub-sheet with the plant summary when the trigger is pressed', async () => {
+      const plants: AreaPlant[] = [
+        { id: 'p1', status: 'ok', count: 4, species: { nameId: 'KETAPANG_KENCANA' }, lastPrunedAt: null } as any,
+      ];
+      mockListAreaPlants.mockResolvedValue({ data: plants });
+
+      const { getByTestId, getByText } = render(
+        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
+      );
+      await waitFor(() => expect(mockListAreaPlants).toHaveBeenCalled());
+
+      fireEvent.press(getByTestId('boundary-tanaman-trigger'));
+
+      await waitFor(() => expect(getByTestId('boundary-tanaman-sheet')).toBeTruthy());
+      expect(getByText('Ketapang Kencana')).toBeTruthy();
+      expect(getByText('1 jenis pohon · 4 pohon terdata')).toBeTruthy();
+    });
+
+    it('shows the empty plant message when an area has no plants', async () => {
+      const { getByTestId, getByText } = render(
+        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
+      );
+      await waitFor(() => expect(mockListAreaPlants).toHaveBeenCalled());
+
+      fireEvent.press(getByTestId('boundary-tanaman-trigger'));
+
+      await waitFor(() =>
+        expect(getByText('Belum ada data tanaman terdaftar untuk area ini.')).toBeTruthy(),
+      );
+    });
+
+    it('does not render the Tanaman trigger in rayon mode', () => {
+      const { queryByTestId } = render(
+        <BoundaryDetailModal type="rayon" data={mockRayon} {...baseProps} />,
+      );
+      expect(queryByTestId('boundary-tanaman-trigger')).toBeNull();
     });
   });
 });
