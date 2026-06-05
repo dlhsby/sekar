@@ -65,7 +65,9 @@ import {
   fetchStaffingSummary,
   updateLiveUser,
 } from '../../store/slices/monitoringSlice';
-import { getLiveUsers } from '../../services/api/monitoringApi';
+import { getLiveUsers, getAttendance } from '../../services/api/monitoringApi';
+import { formatDate } from '../../utils/dateUtils';
+import type { AttendanceResponse } from '../../types/api.types';
 import websocketService from '../../services/websocket/websocketService';
 import type { UserLocationEvent } from '../../services/websocket/websocketService';
 import { BoundaryOverlay } from '../../components/monitoring/BoundaryOverlay';
@@ -83,6 +85,10 @@ export function MapDashboardScreen(): React.JSX.Element {
   const mapRef = useRef<MapView>(null);
   const statusSheetRef = useRef<BottomSheet>(null);
   const dispatch = useDispatch<AppDispatch>();
+
+  // Today's attendance summary — surfaced as the peek sheet's "Kehadiran" section
+  // (summary card + detail modal). Null = not loaded / unavailable for this role.
+  const [attendance, setAttendance] = useState<AttendanceResponse | null>(null);
 
   // Monitoring slice state
   const {
@@ -226,6 +232,18 @@ export function MapDashboardScreen(): React.JSX.Element {
     [dispatch],
   );
 
+  // Today's attendance for the peek-sheet "Kehadiran" section. Supervisor-scoped
+  // endpoint; on any failure (incl. 403 for non-supervisor roles) it stays null
+  // and the section is simply hidden.
+  const fetchAttendanceData = useCallback(async () => {
+    try {
+      const res = await getAttendance({ date: formatDate(new Date()) });
+      setAttendance(res.data ?? null);
+    } catch {
+      setAttendance(null);
+    }
+  }, []);
+
   // Refresh boundaries + users whenever this tab gains focus.
   // Also increments boundaryKey to force BoundaryOverlay remount, since Android
   // drops native Polygon/Circle overlays when the MapView is hidden by tab switching.
@@ -233,15 +251,17 @@ export function MapDashboardScreen(): React.JSX.Element {
     useCallback(() => {
       dispatch(fetchBoundaries());
       void fetchLiveUsersWithFilters(filters);
+      void fetchAttendanceData();
       setBoundaryKey(k => k + 1);
-    }, [dispatch, filters, fetchLiveUsersWithFilters]),
+    }, [dispatch, filters, fetchLiveUsersWithFilters, fetchAttendanceData]),
   );
 
   const handleRefresh = useCallback(() => {
     dispatch(fetchBoundaries());
     void fetchLiveUsersWithFilters(filters);
+    void fetchAttendanceData();
     setBoundaryKey(k => k + 1);
-  }, [dispatch, fetchLiveUsersWithFilters, filters]);
+  }, [dispatch, fetchLiveUsersWithFilters, fetchAttendanceData, filters]);
 
   // Filtered users for display.
   // Phase 3 fix: respect `visibleLayers.workers` so toggling Petugas off in
@@ -679,6 +699,7 @@ export function MapDashboardScreen(): React.JSX.Element {
           totalAreas={totalAreas}
           staffedAreas={staffedAreas}
           onUserPress={handleMarkerPress}
+          attendance={attendance}
         />
 
         {/* User detail bottom sheet */}

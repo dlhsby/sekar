@@ -8,6 +8,7 @@ import type {
   ActivitiesFilter,
   AttendanceFilter,
   AttendanceResponse,
+  UserAttendanceDetail,
   ApiResponse,
   ActiveUserData,
   CityMonitoringResponse,
@@ -82,6 +83,16 @@ export async function getAttendance(
   return get<AttendanceResponse>('/supervisor/attendance', filters);
 }
 
+export async function getUserAttendanceDetail(
+  userId: string,
+  date?: string,
+): Promise<ApiResponse<UserAttendanceDetail>> {
+  return get<UserAttendanceDetail>(
+    `/supervisor/attendance/${userId}`,
+    date ? { date } : {},
+  );
+}
+
 // ─── Phase 2D New Endpoints ────────────────────────────────────────────────────
 
 export async function getUserDaySummary(
@@ -152,6 +163,7 @@ export default {
   getAllActivities,
   getActivityDetails,
   getAttendance,
+  getUserAttendanceDetail,
   getUserDaySummary,
   getUserLocationHistory,
   getStaffingSummary,

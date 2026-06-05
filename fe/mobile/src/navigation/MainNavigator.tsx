@@ -29,7 +29,6 @@ import { ShiftHistoryScreen } from '../screens/field/ShiftHistoryScreen';
 import { ActivityDetailScreen } from '../screens/field/ActivityDetailScreen';
 // Monitoring screens
 import { MapDashboardScreen } from '../screens/monitoring/MapDashboardScreen';
-import { default as AttendanceScreen } from '../screens/monitoring/AttendanceScreen';
 
 // Profile cluster (all live in MainStack, not the bottom tabs)
 import { ProfileScreen } from '../screens/common/ProfileScreen';
@@ -340,14 +339,6 @@ function TabNavigator(): React.JSX.Element {
         component={OvertimeDetailScreen}
         options={({ navigation }) => ({
           headerTitle: () => <FieldHomeHeader title="Detail Lembur" onBack={() => navigation.navigate('Overtime' as any)} />,
-          tabBarButton: () => null,
-        })}
-      />
-      <Tab.Screen
-        name="Attendance"
-        component={AttendanceScreen}
-        options={({ navigation }) => ({
-          headerTitle: () => <FieldHomeHeader title="Kehadiran" onBack={() => navigation.goBack()} />,
           tabBarButton: () => null,
         })}
       />

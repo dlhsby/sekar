@@ -1,270 +1,71 @@
 /**
- * AttendanceCard Component Tests
- * Unit tests for worker attendance status card
+ * AttendanceCard tests — Phase 4 M3 (CP3).
+ *
+ * AttendanceCard is now a thin adapter over the standardized ListItemCard.
+ * Covers: presence pill (clocked-in vs not), worker name title, area meta,
+ * right-text (clock-in time vs "Belum clock in"), and press passthrough.
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { render, fireEvent } from '@testing-library/react-native';
 import AttendanceCard from '../AttendanceCard';
 
+jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
+  const React = require('react');
+  const { Text } = require('react-native');
+  return (props: any) => React.createElement(Text, { testID: `icon-${props.name}` }, props.name);
+});
+
 describe('AttendanceCard', () => {
-  const defaultClockedInProps = {
-    workerName: 'John Doe',
-    status: 'clocked_in' as const,
-    clockInTime: '2026-01-19T08:30:00Z',
-    hoursWorked: 4.5,
-    isLate: false,
-    areaName: 'Taman Bungkul',
-  };
-
-  const defaultNotClockedInProps = {
-    workerName: 'Jane Smith',
-    status: 'not_clocked_in' as const,
-    areaName: 'Taman Harmoni',
-  };
-
-  describe('rendering', () => {
-    it('should render worker name', () => {
-      render(<AttendanceCard {...defaultClockedInProps} />);
-
-      expect(screen.getByText('John Doe')).toBeTruthy();
-    });
-
-    it('should render worker initials from two-word name', () => {
-      render(<AttendanceCard {...defaultClockedInProps} />);
-
-      expect(screen.getByText('JD')).toBeTruthy();
-    });
-
-    it('should render initials from single-word name', () => {
-      render(
-        <AttendanceCard
-          workerName="Budi"
-          status="clocked_in"
-          clockInTime="2026-01-19T08:30:00Z"
-        />
-      );
-
-      expect(screen.getByText('BU')).toBeTruthy();
-    });
-
-    it('should render initials from multi-word name using first and last', () => {
-      render(
-        <AttendanceCard
-          workerName="Ahmad Budi Santoso"
-          status="clocked_in"
-          clockInTime="2026-01-19T08:30:00Z"
-        />
-      );
-
-      expect(screen.getByText('AS')).toBeTruthy();
-    });
+  it('renders the worker name and area', () => {
+    const { getByText } = render(
+      <AttendanceCard workerName="Jane Smith" status="not_clocked_in" areaName="Taman Harmoni" />,
+    );
+    expect(getByText('Jane Smith')).toBeTruthy();
+    expect(getByText('Taman Harmoni')).toBeTruthy();
   });
 
-  describe('clocked_in status', () => {
-    it('should render clock in time formatted as HH:MM', () => {
-      // Create a date that will be formatted in local timezone
-      const clockInDate = new Date('2026-01-19T08:30:00Z');
-      const expectedHours = String(clockInDate.getHours()).padStart(2, '0');
-      const expectedMinutes = String(clockInDate.getMinutes()).padStart(2, '0');
-      const expectedTime = `${expectedHours}:${expectedMinutes}`;
-
-      render(<AttendanceCard {...defaultClockedInProps} />);
-
-      expect(screen.getByText(`Masuk: ${expectedTime}`)).toBeTruthy();
-    });
-
-    it('should render duration with hours and minutes', () => {
-      render(<AttendanceCard {...defaultClockedInProps} />);
-
-      expect(screen.getByText('Durasi: 4 jam 30 menit')).toBeTruthy();
-    });
-
-    it('should render duration with only hours when minutes are 0', () => {
-      render(
-        <AttendanceCard
-          workerName="John Doe"
-          status="clocked_in"
-          clockInTime="2026-01-19T08:00:00Z"
-          hoursWorked={3}
-        />
-      );
-
-      expect(screen.getByText('Durasi: 3 jam')).toBeTruthy();
-    });
-
-    it('should render area name', () => {
-      render(<AttendanceCard {...defaultClockedInProps} />);
-
-      expect(screen.getByText('Taman Bungkul')).toBeTruthy();
-    });
-
-    it('should render checkmark status indicator', () => {
-      render(<AttendanceCard {...defaultClockedInProps} />);
-
-      expect(screen.getByText('✓')).toBeTruthy();
-    });
-
-    it('should not render absent text', () => {
-      render(<AttendanceCard {...defaultClockedInProps} />);
-
-      expect(screen.queryByText('Belum absen hari ini')).toBeNull();
-    });
+  it('shows the "Tidak aktif" pill and "Belum clock in" for not-clocked-in', () => {
+    const { getByText } = render(
+      <AttendanceCard workerName="Jane Smith" status="not_clocked_in" areaName="Taman Harmoni" />,
+    );
+    expect(getByText('Tidak aktif')).toBeTruthy();
+    expect(getByText('Belum clock in')).toBeTruthy();
   });
 
-  describe('not_clocked_in status', () => {
-    it('should render absent text', () => {
-      render(<AttendanceCard {...defaultNotClockedInProps} />);
-
-      expect(screen.getByText('Belum absen hari ini')).toBeTruthy();
-    });
-
-    it('should render X status indicator', () => {
-      render(<AttendanceCard {...defaultNotClockedInProps} />);
-
-      expect(screen.getByText('✕')).toBeTruthy();
-    });
-
-    it('should render area name with prefix', () => {
-      render(<AttendanceCard {...defaultNotClockedInProps} />);
-
-      expect(screen.getByText('Area: Taman Harmoni')).toBeTruthy();
-    });
-
-    it('should not render clock in time', () => {
-      render(<AttendanceCard {...defaultNotClockedInProps} />);
-
-      expect(screen.queryByText(/Masuk:/)).toBeNull();
-    });
-
-    it('should not render duration', () => {
-      render(<AttendanceCard {...defaultNotClockedInProps} />);
-
-      expect(screen.queryByText(/Durasi:/)).toBeNull();
-    });
+  it('shows the "Aktif" pill and the clock-in time for clocked-in', () => {
+    const { getByText } = render(
+      <AttendanceCard
+        workerName="John Doe"
+        status="clocked_in"
+        clockInTime="2026-01-19T08:30:00Z"
+        areaName="Taman Bungkul"
+      />,
+    );
+    expect(getByText('Aktif')).toBeTruthy();
+    // 08:30 UTC → rendered in local tz as HH:MM; just assert a time-like string.
+    expect(getByText(/^\d{2}:\d{2}$/)).toBeTruthy();
   });
 
-  describe('late status', () => {
-    it('should render late badge when isLate is true and clocked in', () => {
-      render(
-        <AttendanceCard
-          {...defaultClockedInProps}
-          isLate={true}
-        />
-      );
-
-      expect(screen.getByText('TERLAMBAT')).toBeTruthy();
-    });
-
-    it('should not render late badge when isLate is false', () => {
-      render(<AttendanceCard {...defaultClockedInProps} isLate={false} />);
-
-      expect(screen.queryByText('TERLAMBAT')).toBeNull();
-    });
-
-    it('should not render late badge when isLate is not provided (default false)', () => {
-      render(
-        <AttendanceCard
-          workerName="John Doe"
-          status="clocked_in"
-          clockInTime="2026-01-19T08:30:00Z"
-        />
-      );
-
-      expect(screen.queryByText('Terlambat')).toBeNull();
-    });
+  it('falls back to an em dash when no area is given', () => {
+    const { getByText } = render(
+      <AttendanceCard workerName="No Area" status="not_clocked_in" />,
+    );
+    expect(getByText('—')).toBeTruthy();
   });
 
-  describe('optional props', () => {
-    it('should render without clockInTime', () => {
-      render(
-        <AttendanceCard
-          workerName="John Doe"
-          status="clocked_in"
-        />
-      );
-
-      expect(screen.getByText('John Doe')).toBeTruthy();
-      expect(screen.queryByText(/Masuk:/)).toBeNull();
-    });
-
-    it('should render without hoursWorked', () => {
-      render(
-        <AttendanceCard
-          workerName="John Doe"
-          status="clocked_in"
-          clockInTime="2026-01-19T08:30:00Z"
-        />
-      );
-
-      expect(screen.queryByText(/Durasi:/)).toBeNull();
-    });
-
-    it('should render without areaName', () => {
-      render(
-        <AttendanceCard
-          workerName="John Doe"
-          status="clocked_in"
-          clockInTime="2026-01-19T08:30:00Z"
-          hoursWorked={2}
-        />
-      );
-
-      expect(screen.queryByText('Area:')).toBeNull();
-    });
-  });
-
-  describe('edge cases', () => {
-    it('should handle zero hours worked', () => {
-      render(
-        <AttendanceCard
-          workerName="John Doe"
-          status="clocked_in"
-          clockInTime="2026-01-19T08:30:00Z"
-          hoursWorked={0}
-        />
-      );
-
-      expect(screen.getByText('Durasi: 0 jam')).toBeTruthy();
-    });
-
-    it('should handle fractional hours correctly', () => {
-      render(
-        <AttendanceCard
-          workerName="John Doe"
-          status="clocked_in"
-          clockInTime="2026-01-19T08:30:00Z"
-          hoursWorked={2.25}
-        />
-      );
-
-      expect(screen.getByText('Durasi: 2 jam 15 menit')).toBeTruthy();
-    });
-
-    it('should handle hours less than 1', () => {
-      render(
-        <AttendanceCard
-          workerName="John Doe"
-          status="clocked_in"
-          clockInTime="2026-01-19T08:30:00Z"
-          hoursWorked={0.5}
-        />
-      );
-
-      expect(screen.getByText('Durasi: 0 jam 30 menit')).toBeTruthy();
-    });
-
-    it('should handle long worker names', () => {
-      render(
-        <AttendanceCard
-          workerName="Muhammad Abdullah Bin Rashid Al-Maktoum"
-          status="clocked_in"
-          clockInTime="2026-01-19T08:30:00Z"
-        />
-      );
-
-      expect(screen.getByText('Muhammad Abdullah Bin Rashid Al-Maktoum')).toBeTruthy();
-      expect(screen.getByText('MA')).toBeTruthy(); // First and last initials
-    });
+  it('calls onPress when tapped', () => {
+    const onPress = jest.fn();
+    const { getByTestId } = render(
+      <AttendanceCard
+        workerName="Jane Smith"
+        status="not_clocked_in"
+        areaName="Taman Harmoni"
+        onPress={onPress}
+        testID="att-row"
+      />,
+    );
+    fireEvent.press(getByTestId('att-row'));
+    expect(onPress).toHaveBeenCalledTimes(1);
   });
 });

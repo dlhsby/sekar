@@ -48,10 +48,6 @@ jest.mock('../../screens/field/ActivityDetailScreen', () => ({
 jest.mock('../../screens/monitoring/MapDashboardScreen', () => ({
   MapDashboardScreen: () => MockScreen({ name: 'MapDashboard' }),
 }));
-jest.mock('../../screens/monitoring/AttendanceScreen', () => ({
-  __esModule: true,
-  default: () => MockScreen({ name: 'Attendance' }),
-}));
 jest.mock('../../screens/common/ProfileScreen', () => ({
   ProfileScreen: () => MockScreen({ name: 'Profile' }),
 }));

@@ -55,7 +55,6 @@ export type MainTabParamList = {
   OvertimeDetail: { overtimeId: string };
   ShiftHistory: undefined;
   Settings: undefined;
-  Attendance: undefined;
   EditProfile: undefined;
   // Phase 4 M3d (NOTIF-1) — in-app notifications inbox
   Notifications: undefined;

@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBText } from '../nb/NBText';
@@ -8,14 +8,17 @@ import { NBPeekSheet } from '../nb/NBPeekSheet';
 import { StatusSummaryBar } from './StatusSummaryBar';
 import { WorkerTile } from './WorkerTile';
 import { PersonnelGroupCard, type PersonnelGroup } from './PersonnelGroupCard';
+import { AttendanceDetailModal } from './AttendanceDetailModal';
 import { ROLE_LABELS } from '../../constants/roles';
 import {
   nbColors,
   nbBorders,
   nbRadius,
   nbSpacing,
+  nbShadows,
 } from '../../constants/nbTokens';
 import type { LiveUser, TrackingStatus, UserRole } from '../../types/models.types';
+import type { AttendanceResponse } from '../../types/api.types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -37,6 +40,8 @@ interface MonitoringStatusSheetProps {
   totalAreas: number;
   staffedAreas: number;
   onUserPress?: (user: LiveUser) => void;
+  /** Today's attendance summary; renders the "Kehadiran" section + detail modal. */
+  attendance?: AttendanceResponse | null;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -75,10 +80,12 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
   totalAreas,
   staffedAreas,
   onUserPress,
+  attendance,
 }: MonitoringStatusSheetProps): React.JSX.Element {
   const snapPoints = useMemo(() => [PEEK_HEIGHT, '50%', '90%'], []);
 
   const [selectedGroup, setSelectedGroup] = useState<PersonnelGroup | null>(null);
+  const [attendanceOpen, setAttendanceOpen] = useState(false);
 
   const staleCount = useMemo(() => {
     const now = Date.now();
@@ -134,6 +141,20 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
         onFilterChange={onFilterChange}
       />
 
+      {/* Kehadiran — today's clock-in summary; tap for the detail modal */}
+      {attendance && (
+        <View style={styles.section}>
+          <NBText variant="mono-sm" uppercase color="gray600" style={styles.sectionTitle}>
+            Kehadiran
+          </NBText>
+          <KehadiranCard
+            clockedIn={attendance.clocked_in_count}
+            notClockedIn={attendance.not_clocked_in.meta.total}
+            onPress={() => setAttendanceOpen(true)}
+          />
+        </View>
+      )}
+
       {/* Operasional — info card */}
       <View style={styles.section}>
         <NBText variant="mono-sm" uppercase color="gray600" style={styles.sectionTitle}>
@@ -173,7 +194,7 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
         <NBText variant="caption" color="gray500">{liveUsers.length} petugas</NBText>
       </View>
     </>
-  ), [statusCounts, activeFilter, onFilterChange, liveUsers.length, staffedAreas, totalAreas, staleCount, lastUpdated]);
+  ), [statusCounts, activeFilter, onFilterChange, liveUsers.length, staffedAreas, totalAreas, staleCount, lastUpdated, attendance]);
 
   const groupLabel = selectedGroup
     ? ROLE_LABELS[selectedGroup.role as UserRole] ?? selectedGroup.role
@@ -214,6 +235,13 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
           ))}
         </View>
       </NBModal>
+
+      {/* Kehadiran detail — date picker + selectable lists + per-user detail */}
+      <AttendanceDetailModal
+        visible={attendanceOpen}
+        onClose={() => setAttendanceOpen(false)}
+        initialAttendance={attendance}
+      />
     </>
   );
 });
@@ -242,6 +270,56 @@ function SummaryRow({
         style={[styles.summaryValue, valueColor ? { color: valueColor } : undefined]}
       >
         {value}
+      </NBText>
+    </View>
+  );
+}
+
+// ─── Kehadiran summary card (peek sheet) ──────────────────────────────────────
+
+function KehadiranCard({
+  clockedIn,
+  notClockedIn,
+  onPress,
+}: {
+  clockedIn: number;
+  notClockedIn: number;
+  onPress: () => void;
+}): React.JSX.Element {
+  return (
+    <TouchableOpacity
+      style={styles.kehadiranCard}
+      onPress={onPress}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={`Kehadiran: ${clockedIn} sudah masuk, ${notClockedIn} belum masuk`}
+      testID="kehadiran-card"
+    >
+      <View style={styles.attendanceStats}>
+        <AttendanceStat tone="ok" value={clockedIn} label="Sudah Clock In" />
+        <AttendanceStat tone="warn" value={notClockedIn} label="Belum Clock In" />
+      </View>
+      <MaterialCommunityIcons name="chevron-right" size={20} color={nbColors.gray400} />
+    </TouchableOpacity>
+  );
+}
+
+function AttendanceStat({
+  tone,
+  value,
+  label,
+}: {
+  tone: 'ok' | 'warn';
+  value: number;
+  label: string;
+}): React.JSX.Element {
+  const accent = tone === 'ok' ? nbColors.statusActive : nbColors.statusIdle;
+  const bg = tone === 'ok' ? nbColors.statusActiveBg : nbColors.statusIdleBg;
+  return (
+    <View style={[styles.attendanceStat, { backgroundColor: bg, borderColor: accent }]}>
+      <NBText variant="h2" color="black">{String(value)}</NBText>
+      <NBText variant="mono-sm" uppercase color="gray700" style={styles.attendanceStatLabel}>
+        {label}
       </NBText>
     </View>
   );
@@ -311,5 +389,34 @@ const styles = StyleSheet.create({
   },
   groupList: {
     gap: nbSpacing.sm,
+  },
+  kehadiranCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.sm,
+    backgroundColor: nbColors.white,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.base,
+    paddingHorizontal: nbSpacing.sm,
+    paddingVertical: nbSpacing.sm,
+    ...nbShadows.sm,
+  },
+  attendanceStats: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: nbSpacing.sm,
+  },
+  attendanceStat: {
+    flex: 1,
+    alignItems: 'center',
+    borderWidth: nbBorders.widthBase,
+    borderRadius: nbRadius.base,
+    paddingVertical: nbSpacing.sm,
+    gap: 2,
+  },
+  attendanceStatLabel: {
+    fontSize: 10,
+    letterSpacing: 0.3,
   },
 });

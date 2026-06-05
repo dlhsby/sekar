@@ -171,20 +171,66 @@ export interface AttendanceFilter {
   area_type?: string;
 }
 
+export interface AttendancePageMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export interface AttendanceResponse {
   date: string;
   total_workers: number;
   clocked_in_count: number;
-  not_clocked_in: NotClockedInUser[];
+  // Both lists are paginated: `data` is the page, `meta.total` the full count.
+  clocked_in: {
+    data: ClockedInUser[];
+    meta: AttendancePageMeta;
+  };
+  not_clocked_in: {
+    data: NotClockedInUser[];
+    meta: AttendancePageMeta;
+  };
+}
+
+export interface AttendanceArea {
+  id: string;
+  name: string;
 }
 
 export interface NotClockedInUser {
   id: string;
   username: string;
   full_name: string;
-  area?: {
+  area?: AttendanceArea | null;
+}
+
+export interface ClockedInUser {
+  id: string;
+  username: string;
+  full_name: string;
+  area: AttendanceArea | null;
+  clock_in_time: string;
+  clock_out_time: string | null;
+}
+
+export interface UserAttendanceDetail {
+  date: string;
+  user: {
     id: string;
-    name: string;
+    username: string;
+    full_name: string;
+    role: string;
+    area: AttendanceArea | null;
+  };
+  clocked_in: boolean;
+  shift: {
+    id: string;
+    clock_in_time: string;
+    clock_out_time: string | null;
+    duration_minutes: number | null;
+    clock_in_outside_boundary: boolean;
+    clock_out_outside_boundary: boolean;
   } | null;
 }
 

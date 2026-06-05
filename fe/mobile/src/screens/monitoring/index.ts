@@ -1,7 +1,6 @@
 /**
  * Monitoring Screens
- * Export all monitoring-related screens (map dashboard, attendance, profile)
+ * Export all monitoring-related screens (map dashboard, profile)
  */
 
 export { MapDashboardScreen } from './MapDashboardScreen';
-export { default as AttendanceScreen } from './AttendanceScreen';

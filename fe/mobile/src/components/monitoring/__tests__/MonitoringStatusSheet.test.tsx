@@ -22,6 +22,14 @@ jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
   return (props: any) => React.createElement(Text, { testID: `icon-${props.name}` }, props.name);
 });
 
+// The Kehadiran card opens AttendanceDetailModal, which pulls in the date picker
+// + supervisor API — stub both so this suite stays focused on the sheet.
+jest.mock('../../nb/NBDatePicker', () => ({ NBDatePicker: () => null }));
+jest.mock('../../../services/api/monitoringApi', () => ({
+  getAttendance: jest.fn(() => Promise.resolve({ data: null })),
+  getUserAttendanceDetail: jest.fn(() => Promise.resolve({ data: null })),
+}));
+
 const user = (id: string, role: string, status: LiveUser['status']): LiveUser => ({
   id,
   full_name: `User ${id}`,
@@ -55,7 +63,15 @@ const liveUsers: LiveUser[] = [
 
 const statusCounts = { active: 2, inactive: 1, outside_area: 0, missing: 0, offline: 0 };
 
-function renderSheet(overrides?: { onUserPress?: jest.Mock }) {
+const attendance = {
+  date: '2026-06-04',
+  total_workers: 3,
+  clocked_in_count: 2,
+  clocked_in: { data: [], meta: { total: 2, page: 1, limit: 50, totalPages: 1 } },
+  not_clocked_in: { data: [], meta: { total: 1, page: 1, limit: 50, totalPages: 1 } },
+} as any;
+
+function renderSheet(overrides?: { onUserPress?: jest.Mock; attendance?: any }) {
   const sheetRef = React.createRef<any>();
   return render(
     <MonitoringStatusSheet
@@ -68,6 +84,7 @@ function renderSheet(overrides?: { onUserPress?: jest.Mock }) {
       totalAreas={12}
       staffedAreas={3}
       onUserPress={overrides?.onUserPress ?? jest.fn()}
+      attendance={overrides?.attendance}
     />,
   );
 }
@@ -135,5 +152,27 @@ describe('MonitoringStatusSheet', () => {
       />,
     );
     expect(getByText('Belum ada petugas dipantau')).toBeTruthy();
+  });
+
+  describe('Kehadiran section', () => {
+    it('hides the Kehadiran section when no attendance is provided', () => {
+      const { queryByTestId, queryByText } = renderSheet();
+      expect(queryByText('Kehadiran')).toBeNull();
+      expect(queryByTestId('kehadiran-card')).toBeNull();
+    });
+
+    it('renders the Kehadiran card with the clock-in summary when attendance is provided', () => {
+      const { getByTestId, getByText } = renderSheet({ attendance });
+      expect(getByTestId('kehadiran-card')).toBeTruthy();
+      expect(getByText('Sudah Clock In')).toBeTruthy();
+      expect(getByText('Belum Clock In')).toBeTruthy();
+    });
+
+    it('opens the attendance detail modal when the Kehadiran card is tapped', () => {
+      const { getByTestId } = renderSheet({ attendance });
+      expect(() => getByTestId('attendance-modal')).toThrow();
+      fireEvent.press(getByTestId('kehadiran-card'));
+      expect(getByTestId('attendance-modal')).toBeTruthy();
+    });
   });
 });
