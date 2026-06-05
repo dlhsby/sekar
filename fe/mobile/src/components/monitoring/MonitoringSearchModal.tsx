@@ -59,6 +59,7 @@ function ResultRow({ result, onPress }: { result: SearchResult; onPress: () => v
       onPress={onPress}
       activeOpacity={0.7}
       accessibilityRole="button"
+      accessibilityLabel={`Pilih ${result.name}`}
       testID={`search-result-${result.type}-${result.id}`}
     >
       <View style={[styles.rowIcon, { backgroundColor: withAlpha(meta.accent, 0.16), borderColor: meta.accent }]}>
@@ -99,12 +100,17 @@ export function MonitoringSearchModal({
   const results = useMonitoringSearch(liveUsers, rayons, query);
   const hasQuery = query.trim().length > 0;
 
-  // Load recents + reset query/tab whenever the modal opens.
+  // Load recents + reset query/tab whenever the modal opens. Guard the async
+  // setState so it can't fire after the modal closes/unmounts.
   useEffect(() => {
     if (!visible) { return; }
+    let active = true;
     setQuery('');
     setTab('semua');
-    getRecentSearches().then(setRecents);
+    getRecentSearches().then((r) => {
+      if (active) { setRecents(r); }
+    });
+    return () => { active = false; };
   }, [visible]);
 
   const handleClearAll = useCallback(() => {
@@ -187,8 +193,8 @@ export function MonitoringSearchModal({
             <FlatList
               style={styles.list}
               data={rows}
-              keyExtractor={(item, i) =>
-                item.kind === 'header' ? `h-${item.title}-${i}` : `${item.result.type}-${item.result.id}`
+              keyExtractor={(item) =>
+                item.kind === 'header' ? `header-${item.title}` : `${item.result.type}-${item.result.id}`
               }
               renderItem={renderRow}
               keyboardShouldPersistTaps="handled"
@@ -218,7 +224,12 @@ export function MonitoringSearchModal({
                   <NBText variant="mono-sm" uppercase color="gray600">
                     Terakhir dilihat
                   </NBText>
-                  <TouchableOpacity onPress={handleClearAll} accessibilityRole="button" testID="recents-clear-all">
+                  <TouchableOpacity
+                    onPress={handleClearAll}
+                    accessibilityRole="button"
+                    accessibilityLabel="Hapus semua pencarian terakhir"
+                    testID="recents-clear-all"
+                  >
                     <NBText variant="caption" color="danger" style={styles.clearAll}>
                       Hapus semua
                     </NBText>

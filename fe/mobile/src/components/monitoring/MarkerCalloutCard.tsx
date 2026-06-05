@@ -59,7 +59,7 @@ export function MarkerCalloutCard({
         </View>
 
         <View style={styles.footer}>
-          <NBText variant="caption" color="black" style={[styles.detailText, { color: accent }]}>
+          <NBText variant="caption" style={[styles.detailText, { color: accent }]}>
             Lihat detail
           </NBText>
           <MaterialCommunityIcons name="chevron-right" size={16} color={accent} />
