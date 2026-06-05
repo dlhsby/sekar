@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, Between } from 'typeorm';
 import { Shift } from '../shifts/entities/shift.entity';
@@ -7,7 +7,15 @@ import { Area } from '../areas/entities/area.entity';
 import { LocationLog } from '../location/entities/location-log.entity';
 import { ActiveUsersResponseDto, ActiveUserDto } from './dto/active-users-response.dto';
 import { AreaStatusResponseDto, AreaStatusDto } from './dto/area-status-response.dto';
-import { AttendanceResponseDto, NotClockedInWorkerDto } from './dto/attendance-response.dto';
+import {
+  AttendanceResponseDto,
+  NotClockedInWorkerDto,
+  ClockedInWorkerDto,
+  UserAttendanceDetailDto,
+  UserAttendanceDetailUserDto,
+  AttendanceAreaDto,
+  UserShiftDetailDto,
+} from './dto/attendance-response.dto';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
 /**
@@ -178,74 +186,18 @@ export class SupervisorService {
   }
 
   /**
-   * Get daily attendance report
+   * Get daily attendance report (non-paginated, defaults to page 1 with large limit)
+   * Kept for backward compatibility; new code should use getAttendancePaginated
    *
    * @param date Target date (ISO format, defaults to today)
    * @returns Attendance statistics
    */
   async getAttendance(date?: string): Promise<AttendanceResponseDto> {
-    // Get date parameter (default: today)
-    const targetDate = date ? new Date(date) : new Date();
-    const startOfDay = new Date(targetDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(targetDate);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    this.logger.log(`Fetching attendance for ${targetDate.toISOString().split('T')[0]}`);
-
-    // Get all active workers
-    const allWorkers = await this.usersRepository.find({
-      where: { role: UserRole.SATGAS, is_active: true },
-    });
-
-    // Get workers who clocked in today
-    const clockedInShifts = await this.shiftsRepository.find({
-      where: {
-        clock_in_time: Between(startOfDay, endOfDay),
-      },
-      relations: ['user'],
-    });
-
-    const clockedInWorkerIds = clockedInShifts.map((s) => s.user.id);
-
-    // Get not-clocked-in workers with their area assignments
-    const notClockedInWorkers = allWorkers.filter((w) => !clockedInWorkerIds.includes(w.id));
-
-    const notClockedIn: NotClockedInWorkerDto[] = await Promise.all(
-      notClockedInWorkers.map(async (worker) => {
-        // Get area from user.area_id if set
-        let area = null;
-        if (worker.area_id) {
-          const areaEntity = await this.areasRepository.findOne({
-            where: { id: worker.area_id },
-          });
-          if (areaEntity) {
-            area = {
-              id: areaEntity.id,
-              name: areaEntity.name,
-            };
-          }
-        }
-
-        return {
-          id: worker.id,
-          username: worker.username,
-          full_name: worker.full_name,
-          area,
-        };
-      }),
-    );
-
-    return {
-      date: targetDate.toISOString().split('T')[0],
-      total_workers: allWorkers.length,
-      clocked_in_count: clockedInWorkerIds.length,
-      not_clocked_in: notClockedIn,
-    };
+    return this.getAttendancePaginated(date, 1, 10000);
   }
 
   /**
-   * Get paginated daily attendance report
+   * Get paginated daily attendance report with both clocked-in and not-clocked-in lists
    *
    * @param date Target date (ISO format, defaults to today)
    * @param page Page number
@@ -256,12 +208,7 @@ export class SupervisorService {
     date?: string,
     page: number = 1,
     limit: number = 50,
-  ): Promise<{
-    date: string;
-    total_workers: number;
-    clocked_in_count: number;
-    not_clocked_in: PaginatedResponseDto<NotClockedInWorkerDto>;
-  }> {
+  ): Promise<AttendanceResponseDto> {
     // Get date parameter (default: today)
     const targetDate = date ? new Date(date) : new Date();
     const startOfDay = new Date(targetDate);
@@ -276,25 +223,59 @@ export class SupervisorService {
       where: { role: UserRole.SATGAS, is_active: true },
     });
 
-    // Get workers who clocked in today
+    // Get workers who clocked in today (with relations for area)
     const clockedInShifts = await this.shiftsRepository.find({
       where: {
         clock_in_time: Between(startOfDay, endOfDay),
       },
-      relations: ['user'],
+      relations: ['user', 'area'],
+      order: { clock_in_time: 'ASC' },
     });
 
     const clockedInWorkerIds = clockedInShifts.map((s) => s.user.id);
+
+    // Build clocked-in list (paginated)
+    const clockedInTotal = clockedInWorkerIds.length;
+    const paginatedClockInShifts = clockedInShifts.slice((page - 1) * limit, page * limit);
+
+    const clockedIn: ClockedInWorkerDto[] = await Promise.all(
+      paginatedClockInShifts.map(async (shift) => {
+        // Resolve area: prefer shift.area, fallback to user.area_id
+        let area: AttendanceAreaDto | null = null;
+        if (shift.area) {
+          area = { id: shift.area.id, name: shift.area.name };
+        } else if (shift.user.area_id) {
+          const areaEntity = await this.areasRepository.findOne({
+            where: { id: shift.user.area_id },
+          });
+          if (areaEntity) {
+            area = { id: areaEntity.id, name: areaEntity.name };
+          }
+        }
+
+        return {
+          id: shift.user.id,
+          username: shift.user.username,
+          full_name: shift.user.full_name,
+          area,
+          clock_in_time: shift.clock_in_time.toISOString(),
+          clock_out_time: shift.clock_out_time ? shift.clock_out_time.toISOString() : null,
+        };
+      }),
+    );
 
     // Get not-clocked-in workers with their area assignments
     const notClockedInWorkers = allWorkers.filter((w) => !clockedInWorkerIds.includes(w.id));
 
     // Apply pagination
-    const total = notClockedInWorkers.length;
-    const paginatedWorkers = notClockedInWorkers.slice((page - 1) * limit, page * limit);
+    const notClockedInTotal = notClockedInWorkers.length;
+    const paginatedNotClockedInWorkers = notClockedInWorkers.slice(
+      (page - 1) * limit,
+      page * limit,
+    );
 
     const notClockedIn: NotClockedInWorkerDto[] = await Promise.all(
-      paginatedWorkers.map(async (worker) => {
+      paginatedNotClockedInWorkers.map(async (worker) => {
         // Get area from user.area_id if set
         let area = null;
         if (worker.area_id) {
@@ -321,8 +302,86 @@ export class SupervisorService {
     return {
       date: targetDate.toISOString().split('T')[0],
       total_workers: allWorkers.length,
-      clocked_in_count: clockedInWorkerIds.length,
-      not_clocked_in: new PaginatedResponseDto(notClockedIn, total, page, limit),
+      clocked_in_count: clockedInTotal,
+      clocked_in: new PaginatedResponseDto(clockedIn, clockedInTotal, page, limit),
+      not_clocked_in: new PaginatedResponseDto(notClockedIn, notClockedInTotal, page, limit),
     };
+  }
+
+  /**
+   * Get per-user attendance detail for a specific date
+   *
+   * @param userId Target user ID
+   * @param date Target date (ISO format, defaults to today)
+   * @returns User attendance details
+   * @throws NotFoundException if user doesn't exist or isn't trackable
+   */
+  async getUserAttendanceDetail(userId: string, date?: string): Promise<UserAttendanceDetailDto> {
+    // Get the user
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    if (!user || user.role !== UserRole.SATGAS) {
+      throw new NotFoundException('User not found or not a trackable worker');
+    }
+
+    // Get date parameter (default: today)
+    const targetDate = date ? new Date(date) : new Date();
+    const startOfDay = new Date(targetDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(targetDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    this.logger.log(
+      `Fetching attendance detail for user ${userId} on ${targetDate.toISOString().split('T')[0]}`,
+    );
+
+    // Get user's shift for the target date
+    const shift = await this.shiftsRepository.findOne({
+      where: {
+        user_id: userId,
+        clock_in_time: Between(startOfDay, endOfDay),
+      },
+      relations: ['area'],
+    });
+
+    // Resolve user's area
+    let userArea: AttendanceAreaDto | null = null;
+    if (user.area_id) {
+      const areaEntity = await this.areasRepository.findOne({
+        where: { id: user.area_id },
+      });
+      if (areaEntity) {
+        userArea = { id: areaEntity.id, name: areaEntity.name };
+      }
+    }
+
+    const userDetail: UserAttendanceDetailUserDto = {
+      id: user.id,
+      username: user.username,
+      full_name: user.full_name,
+      role: user.role,
+      area: userArea,
+    };
+
+    const shiftDetail: UserShiftDetailDto | null = shift
+      ? {
+          id: shift.id,
+          clock_in_time: shift.clock_in_time.toISOString(),
+          clock_out_time: shift.clock_out_time ? shift.clock_out_time.toISOString() : null,
+          duration_minutes: shift.clock_out_time
+            ? Math.round((shift.clock_out_time.getTime() - shift.clock_in_time.getTime()) / 60000)
+            : null,
+          clock_in_outside_boundary: shift.clock_in_outside_boundary,
+          clock_out_outside_boundary: shift.clock_out_outside_boundary,
+        }
+      : null;
+
+    const result: UserAttendanceDetailDto = {
+      date: targetDate.toISOString().split('T')[0],
+      user: userDetail,
+      clocked_in: !!shift,
+      shift: shiftDetail,
+    };
+
+    return result;
   }
 }

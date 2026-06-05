@@ -3,9 +3,10 @@ import { SupervisorController } from './supervisor.controller';
 import { SupervisorService } from './supervisor.service';
 import { ActiveUsersResponseDto, ActiveUserDto } from './dto/active-users-response.dto';
 import { AreaStatusResponseDto, AreaStatusDto } from './dto/area-status-response.dto';
-import { AttendanceResponseDto } from './dto/attendance-response.dto';
+import { AttendanceResponseDto, UserAttendanceDetailDto } from './dto/attendance-response.dto';
 import { AttendanceFilterDto } from './dto/attendance-filter.dto';
 import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
+import { UserRole } from '../users/entities/user.entity';
 
 describe('SupervisorController', () => {
   let module: TestingModule;
@@ -18,6 +19,7 @@ describe('SupervisorController', () => {
     getAreaStatus: jest.fn(),
     getAttendance: jest.fn(),
     getAttendancePaginated: jest.fn(),
+    getUserAttendanceDetail: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -162,23 +164,46 @@ describe('SupervisorController', () => {
         date: '2026-01-09',
         total_workers: 10,
         clocked_in_count: 8,
-        not_clocked_in: [
-          {
-            id: 'worker-uuid-1',
-            username: 'worker1',
-            full_name: 'Worker One',
-            area: {
-              id: 'area-uuid-1',
-              name: 'Taman Bungkul',
+        clocked_in: new PaginatedResponseDto(
+          [
+            {
+              id: 'worker-uuid-1',
+              username: 'worker1',
+              full_name: 'Worker One',
+              area: {
+                id: 'area-uuid-1',
+                name: 'Taman Bungkul',
+              },
+              clock_in_time: '2026-01-09T08:00:00.000Z',
+              clock_out_time: '2026-01-09T16:00:00.000Z',
             },
-          },
-          {
-            id: 'worker-uuid-2',
-            username: 'worker2',
-            full_name: 'Worker Two',
-            area: null,
-          },
-        ],
+          ],
+          8,
+          1,
+          50,
+        ),
+        not_clocked_in: new PaginatedResponseDto(
+          [
+            {
+              id: 'worker-uuid-9',
+              username: 'worker9',
+              full_name: 'Worker Nine',
+              area: {
+                id: 'area-uuid-1',
+                name: 'Taman Bungkul',
+              },
+            },
+            {
+              id: 'worker-uuid-10',
+              username: 'worker10',
+              full_name: 'Worker Ten',
+              area: null,
+            },
+          ],
+          2,
+          1,
+          50,
+        ),
       };
 
       mockSupervisorService.getAttendancePaginated.mockResolvedValue(mockResponse);
@@ -189,7 +214,8 @@ describe('SupervisorController', () => {
       expect(result).toEqual(mockResponse);
       expect(result.total_workers).toBe(10);
       expect(result.clocked_in_count).toBe(8);
-      expect(result.not_clocked_in).toHaveLength(2);
+      expect(result.clocked_in.data).toHaveLength(1);
+      expect(result.not_clocked_in.data).toHaveLength(2);
     });
 
     it('should return attendance report for specific date', async () => {
@@ -197,14 +223,20 @@ describe('SupervisorController', () => {
         date: '2026-01-08',
         total_workers: 10,
         clocked_in_count: 7,
-        not_clocked_in: [
-          {
-            id: 'worker-uuid-1',
-            username: 'worker1',
-            full_name: 'Worker One',
-            area: null,
-          },
-        ],
+        clocked_in: new PaginatedResponseDto([], 7, 1, 50),
+        not_clocked_in: new PaginatedResponseDto(
+          [
+            {
+              id: 'worker-uuid-1',
+              username: 'worker1',
+              full_name: 'Worker One',
+              area: null,
+            },
+          ],
+          3,
+          1,
+          50,
+        ),
       };
 
       mockSupervisorService.getAttendancePaginated.mockResolvedValue(mockResponse);
@@ -225,14 +257,121 @@ describe('SupervisorController', () => {
         date: '2026-01-09',
         total_workers: 10,
         clocked_in_count: 10,
-        not_clocked_in: [],
+        clocked_in: new PaginatedResponseDto(
+          [
+            {
+              id: 'worker-uuid-1',
+              username: 'worker1',
+              full_name: 'Worker One',
+              area: null,
+              clock_in_time: '2026-01-09T08:00:00.000Z',
+              clock_out_time: null,
+            },
+          ],
+          10,
+          1,
+          50,
+        ),
+        not_clocked_in: new PaginatedResponseDto([], 0, 1, 50),
       };
 
       mockSupervisorService.getAttendancePaginated.mockResolvedValue(mockResponse);
 
       const result = await controller.getAttendance({});
 
-      expect(result.not_clocked_in).toHaveLength(0);
+      expect(result.not_clocked_in.data).toHaveLength(0);
+    });
+  });
+
+  describe('getUserAttendanceDetail', () => {
+    it('should return user attendance detail when clocked in', async () => {
+      const mockResponse: UserAttendanceDetailDto = {
+        date: '2026-01-09',
+        user: {
+          id: 'worker-uuid-1',
+          username: 'worker1',
+          full_name: 'Worker One',
+          role: UserRole.SATGAS,
+          area: {
+            id: 'area-uuid-1',
+            name: 'Taman Bungkul',
+          },
+        },
+        clocked_in: true,
+        shift: {
+          id: 'shift-uuid-1',
+          clock_in_time: '2026-01-09T08:00:00.000Z',
+          clock_out_time: '2026-01-09T16:00:00.000Z',
+          duration_minutes: 480,
+          clock_in_outside_boundary: false,
+          clock_out_outside_boundary: false,
+        },
+      };
+
+      mockSupervisorService.getUserAttendanceDetail.mockResolvedValue(mockResponse);
+
+      const result = await controller.getUserAttendanceDetail('worker-uuid-1', {});
+
+      expect(service.getUserAttendanceDetail).toHaveBeenCalledWith('worker-uuid-1', undefined);
+      expect(result).toEqual(mockResponse);
+      expect(result.clocked_in).toBe(true);
+      expect(result.shift).not.toBeNull();
+      expect(result.shift!.duration_minutes).toBe(480);
+    });
+
+    it('should return user attendance detail when not clocked in', async () => {
+      const mockResponse: UserAttendanceDetailDto = {
+        date: '2026-01-09',
+        user: {
+          id: 'worker-uuid-1',
+          username: 'worker1',
+          full_name: 'Worker One',
+          role: UserRole.SATGAS,
+          area: null,
+        },
+        clocked_in: false,
+        shift: null,
+      };
+
+      mockSupervisorService.getUserAttendanceDetail.mockResolvedValue(mockResponse);
+
+      const result = await controller.getUserAttendanceDetail('worker-uuid-1', {
+        date: '2026-01-09',
+      });
+
+      expect(service.getUserAttendanceDetail).toHaveBeenCalledWith('worker-uuid-1', '2026-01-09');
+      expect(result.clocked_in).toBe(false);
+      expect(result.shift).toBeNull();
+    });
+
+    it('should include shift boundary details', async () => {
+      const mockResponse: UserAttendanceDetailDto = {
+        date: '2026-01-09',
+        user: {
+          id: 'worker-uuid-1',
+          username: 'worker1',
+          full_name: 'Worker One',
+          role: UserRole.SATGAS,
+          area: null,
+        },
+        clocked_in: true,
+        shift: {
+          id: 'shift-uuid-1',
+          clock_in_time: '2026-01-09T08:00:00.000Z',
+          clock_out_time: null,
+          duration_minutes: null,
+          clock_in_outside_boundary: true,
+          clock_out_outside_boundary: false,
+        },
+      };
+
+      mockSupervisorService.getUserAttendanceDetail.mockResolvedValue(mockResponse);
+
+      const result = await controller.getUserAttendanceDetail('worker-uuid-1', {});
+
+      expect(result.shift!.clock_in_outside_boundary).toBe(true);
+      expect(result.shift!.clock_out_outside_boundary).toBe(false);
+      expect(result.shift!.duration_minutes).toBeNull();
     });
   });
 });

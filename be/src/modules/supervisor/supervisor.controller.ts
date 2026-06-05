@@ -1,5 +1,5 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { Controller, Get, Query, Param, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { SupervisorService } from './supervisor.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -9,6 +9,7 @@ import { USER_MANAGERS } from '../users/constants/role-groups';
 import { ActiveUserDto } from './dto/active-users-response.dto';
 import { AreaStatusResponseDto } from './dto/area-status-response.dto';
 import { AttendanceFilterDto } from './dto/attendance-filter.dto';
+import { AttendanceResponseDto, UserAttendanceDetailDto } from './dto/attendance-response.dto';
 import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
 /**
@@ -115,12 +116,33 @@ export class SupervisorController {
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 50 })
   @ApiResponse({
     status: 200,
-    description: 'Paginated attendance report',
+    description: 'Paginated attendance report with clocked-in and not-clocked-in lists',
     schema: {
       example: {
         date: '2026-01-16',
         total_workers: 50,
         clocked_in_count: 45,
+        clocked_in: {
+          data: [
+            {
+              id: 'worker-uuid-1',
+              username: 'worker1',
+              full_name: 'Pekerja Satu',
+              area: {
+                id: 'area-uuid',
+                name: 'Taman A',
+              },
+              clock_in_time: '2026-01-16T08:00:00.000Z',
+              clock_out_time: '2026-01-16T16:00:00.000Z',
+            },
+          ],
+          meta: {
+            total: 45,
+            page: 1,
+            limit: 50,
+            totalPages: 1,
+          },
+        },
         not_clocked_in: {
           data: [
             {
@@ -143,11 +165,73 @@ export class SupervisorController {
       },
     },
   })
-  async getAttendance(@Query() filterDto: AttendanceFilterDto): Promise<any> {
+  async getAttendance(@Query() filterDto: AttendanceFilterDto): Promise<AttendanceResponseDto> {
     return this.supervisorService.getAttendancePaginated(
       filterDto.date,
       filterDto.page,
       filterDto.limit,
     );
+  }
+
+  /**
+   * Get per-user attendance detail for a specific date
+   * Shows whether a specific worker clocked in and their shift details
+   */
+  @Get('attendance/:userId')
+  @ApiOperation({
+    summary: 'Get per-user attendance detail (Admin, Korlap)',
+    description: 'Returns clock-in/out details for a specific user on a specific date (defaults to today)',
+  })
+  @ApiParam({
+    name: 'userId',
+    required: true,
+    type: String,
+    description: 'User UUID',
+    example: 'f634880a-7498-449a-a293-9c5204176300',
+  })
+  @ApiQuery({
+    name: 'date',
+    required: false,
+    type: String,
+    description: 'Date in YYYY-MM-DD format (defaults to today)',
+    example: '2026-01-09',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User attendance detail for the specified date',
+    schema: {
+      example: {
+        date: '2026-01-16',
+        user: {
+          id: 'f634880a-7498-449a-a293-9c5204176300',
+          username: 'satgas1',
+          full_name: 'Satgas One',
+          role: 'satgas',
+          area: {
+            id: 'area-uuid',
+            name: 'Taman Bungkul',
+          },
+        },
+        clocked_in: true,
+        shift: {
+          id: 'shift-uuid',
+          clock_in_time: '2026-01-16T08:00:00.000Z',
+          clock_out_time: '2026-01-16T16:00:00.000Z',
+          duration_minutes: 480,
+          clock_in_outside_boundary: false,
+          clock_out_outside_boundary: false,
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found or not a trackable worker',
+  })
+  async getUserAttendanceDetail(
+    @Param('userId') userId: string,
+    @Query() filterDto: AttendanceFilterDto,
+  ): Promise<UserAttendanceDetailDto> {
+    return this.supervisorService.getUserAttendanceDetail(userId, filterDto.date);
   }
 }

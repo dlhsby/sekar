@@ -19,11 +19,13 @@ describe('SupervisorService', () => {
     find: jest.fn(),
     count: jest.fn(),
     findAndCount: jest.fn(),
+    findOne: jest.fn(),
   };
 
   const mockUsersRepository = {
     find: jest.fn(),
     count: jest.fn(),
+    findOne: jest.fn(),
   };
 
   const mockAreasRepository = {
@@ -67,12 +69,11 @@ describe('SupervisorService', () => {
 
   afterEach(async () => {
     await module.close();
-    jest.clearAllMocks();
-    jest.restoreAllMocks();
   });
 
   describe('getActiveUsersPaginated', () => {
     beforeEach(() => {
+      jest.clearAllMocks();
       mockShiftsRepository.findAndCount = jest.fn();
     });
 
@@ -295,7 +296,7 @@ describe('SupervisorService', () => {
   });
 
   describe('getAttendance', () => {
-    it('should return attendance report for today', async () => {
+    it('should return paginated attendance report for today', async () => {
       const mockAllWorkers = [
         {
           id: 'worker-1',
@@ -303,6 +304,7 @@ describe('SupervisorService', () => {
           full_name: 'Worker One',
           role: UserRole.SATGAS,
           is_active: true,
+          area_id: null,
         },
         {
           id: 'worker-2',
@@ -310,6 +312,7 @@ describe('SupervisorService', () => {
           full_name: 'Worker Two',
           role: UserRole.SATGAS,
           is_active: true,
+          area_id: null,
         },
         {
           id: 'worker-3',
@@ -317,10 +320,26 @@ describe('SupervisorService', () => {
           full_name: 'Worker Three',
           role: UserRole.SATGAS,
           is_active: true,
+          area_id: null,
         },
       ];
 
-      const mockClockedInShifts = [{ user: { id: 'worker-1' } }, { user: { id: 'worker-2' } }];
+      const mockClockedInShifts = [
+        {
+          id: 'shift-1',
+          user: { id: 'worker-1', area_id: null },
+          area: null,
+          clock_in_time: new Date('2026-01-16T08:00:00Z'),
+          clock_out_time: new Date('2026-01-16T16:00:00Z'),
+        },
+        {
+          id: 'shift-2',
+          user: { id: 'worker-2', area_id: null },
+          area: null,
+          clock_in_time: new Date('2026-01-16T08:30:00Z'),
+          clock_out_time: null,
+        },
+      ];
 
       mockUsersRepository.find.mockResolvedValue(mockAllWorkers);
       mockShiftsRepository.find.mockResolvedValue(mockClockedInShifts);
@@ -329,11 +348,11 @@ describe('SupervisorService', () => {
 
       expect(result.total_workers).toBe(3);
       expect(result.clocked_in_count).toBe(2);
-      expect(result.not_clocked_in).toHaveLength(1);
-      expect(result.not_clocked_in[0].id).toBe('worker-3');
+      expect(result.not_clocked_in.data).toHaveLength(1);
+      expect(result.not_clocked_in.data[0].id).toBe('worker-3');
     });
 
-    it('should return attendance report for specific date', async () => {
+    it('should return paginated attendance report for specific date', async () => {
       const mockAllWorkers = [
         {
           id: 'worker-1',
@@ -341,6 +360,7 @@ describe('SupervisorService', () => {
           full_name: 'Worker One',
           role: UserRole.SATGAS,
           is_active: true,
+          area_id: null,
         },
       ];
 
@@ -352,7 +372,7 @@ describe('SupervisorService', () => {
       expect(result.date).toBe('2026-01-08');
       expect(result.total_workers).toBe(1);
       expect(result.clocked_in_count).toBe(0);
-      expect(result.not_clocked_in).toHaveLength(1);
+      expect(result.not_clocked_in.data).toHaveLength(1);
     });
 
     it('should handle 100% attendance', async () => {
@@ -363,10 +383,19 @@ describe('SupervisorService', () => {
           full_name: 'Worker One',
           role: UserRole.SATGAS,
           is_active: true,
+          area_id: null,
         },
       ];
 
-      const mockClockedInShifts = [{ user: { id: 'worker-1' } }];
+      const mockClockedInShifts = [
+        {
+          id: 'shift-1',
+          user: { id: 'worker-1', area_id: null },
+          area: null,
+          clock_in_time: new Date('2026-01-16T08:00:00Z'),
+          clock_out_time: new Date('2026-01-16T16:00:00Z'),
+        },
+      ];
 
       mockUsersRepository.find.mockResolvedValue(mockAllWorkers);
       mockShiftsRepository.find.mockResolvedValue(mockClockedInShifts);
@@ -375,12 +404,13 @@ describe('SupervisorService', () => {
 
       expect(result.total_workers).toBe(1);
       expect(result.clocked_in_count).toBe(1);
-      expect(result.not_clocked_in).toHaveLength(0);
+      expect(result.not_clocked_in.data).toHaveLength(0);
+      expect(result.clocked_in.data).toHaveLength(1);
     });
   });
 
   describe('getAttendancePaginated', () => {
-    it('should return paginated attendance report for today', async () => {
+    it('should return paginated attendance report with clocked_in and not_clocked_in lists', async () => {
       const mockAllWorkers = [
         {
           id: 'worker-1',
@@ -388,6 +418,7 @@ describe('SupervisorService', () => {
           full_name: 'Worker One',
           role: UserRole.SATGAS,
           is_active: true,
+          area_id: null,
         },
         {
           id: 'worker-2',
@@ -395,6 +426,7 @@ describe('SupervisorService', () => {
           full_name: 'Worker Two',
           role: UserRole.SATGAS,
           is_active: true,
+          area_id: null,
         },
         {
           id: 'worker-3',
@@ -402,22 +434,42 @@ describe('SupervisorService', () => {
           full_name: 'Worker Three',
           role: UserRole.SATGAS,
           is_active: true,
+          area_id: null,
         },
       ];
 
-      const mockClockedInShifts = [{ user: { id: 'worker-1' } }, { user: { id: 'worker-2' } }];
+      const mockClockedInShifts = [
+        {
+          id: 'shift-1',
+          user: { id: 'worker-1', area_id: null },
+          area: { id: 'area-1', name: 'Taman A' },
+          clock_in_time: new Date('2026-01-16T08:00:00Z'),
+          clock_out_time: new Date('2026-01-16T16:00:00Z'),
+        },
+        {
+          id: 'shift-2',
+          user: { id: 'worker-2', area_id: null },
+          area: null,
+          clock_in_time: new Date('2026-01-16T08:30:00Z'),
+          clock_out_time: null,
+        },
+      ];
 
       mockUsersRepository.find.mockResolvedValue(mockAllWorkers);
       mockShiftsRepository.find.mockResolvedValue(mockClockedInShifts);
+      mockAreasRepository.findOne.mockResolvedValue(null);
 
       const result = await service.getAttendancePaginated(undefined, 1, 50);
 
       expect(result.total_workers).toBe(3);
       expect(result.clocked_in_count).toBe(2);
+      expect(result.clocked_in.data).toHaveLength(2);
+      expect(result.clocked_in.data[0].id).toBe('worker-1');
+      expect(result.clocked_in.data[0].clock_in_time).toBe('2026-01-16T08:00:00.000Z');
+      expect(result.clocked_in.meta.total).toBe(2);
       expect(result.not_clocked_in.data).toHaveLength(1);
       expect(result.not_clocked_in.data[0].id).toBe('worker-3');
       expect(result.not_clocked_in.meta.total).toBe(1);
-      expect(result.not_clocked_in.meta.page).toBe(1);
     });
 
     it('should return paginated attendance report for specific date', async () => {
@@ -428,6 +480,7 @@ describe('SupervisorService', () => {
           full_name: 'Worker One',
           role: UserRole.SATGAS,
           is_active: true,
+          area_id: null,
         },
       ];
 
@@ -439,16 +492,18 @@ describe('SupervisorService', () => {
       expect(result.date).toBe('2026-01-08');
       expect(result.total_workers).toBe(1);
       expect(result.clocked_in_count).toBe(0);
+      expect(result.clocked_in.data).toHaveLength(0);
       expect(result.not_clocked_in.data).toHaveLength(1);
     });
 
-    it('should handle pagination with multiple pages', async () => {
+    it('should handle pagination with multiple pages for both lists', async () => {
       const mockAllWorkers = Array.from({ length: 100 }, (_, i) => ({
         id: `worker-${i}`,
         username: `worker${i}`,
         full_name: `Worker ${i}`,
         role: UserRole.SATGAS,
         is_active: true,
+        area_id: null,
       }));
 
       mockUsersRepository.find.mockResolvedValue(mockAllWorkers);
@@ -460,6 +515,7 @@ describe('SupervisorService', () => {
       expect(result.not_clocked_in.meta.page).toBe(2);
       expect(result.not_clocked_in.meta.total).toBe(100);
       expect(result.not_clocked_in.meta.totalPages).toBe(2);
+      expect(result.clocked_in.meta.page).toBe(2);
     });
 
     it('should handle 100% attendance in paginated results', async () => {
@@ -470,10 +526,19 @@ describe('SupervisorService', () => {
           full_name: 'Worker One',
           role: UserRole.SATGAS,
           is_active: true,
+          area_id: null,
         },
       ];
 
-      const mockClockedInShifts = [{ user: { id: 'worker-1' } }];
+      const mockClockedInShifts = [
+        {
+          id: 'shift-1',
+          user: { id: 'worker-1', area_id: null },
+          area: null,
+          clock_in_time: new Date('2026-01-16T08:00:00Z'),
+          clock_out_time: new Date('2026-01-16T16:00:00Z'),
+        },
+      ];
 
       mockUsersRepository.find.mockResolvedValue(mockAllWorkers);
       mockShiftsRepository.find.mockResolvedValue(mockClockedInShifts);
@@ -482,8 +547,70 @@ describe('SupervisorService', () => {
 
       expect(result.total_workers).toBe(1);
       expect(result.clocked_in_count).toBe(1);
+      expect(result.clocked_in.data).toHaveLength(1);
       expect(result.not_clocked_in.data).toHaveLength(0);
       expect(result.not_clocked_in.meta.total).toBe(0);
+    });
+
+    it('should include area info from shift for clocked-in workers', async () => {
+      const mockAllWorkers = [
+        {
+          id: 'worker-1',
+          username: 'worker1',
+          full_name: 'Worker One',
+          role: UserRole.SATGAS,
+          is_active: true,
+          area_id: null,
+        },
+      ];
+
+      const mockClockedInShifts = [
+        {
+          id: 'shift-1',
+          user: { id: 'worker-1', area_id: 'user-area-1' },
+          area: { id: 'shift-area-1', name: 'Shift Area' },
+          clock_in_time: new Date('2026-01-16T08:00:00Z'),
+          clock_out_time: null,
+        },
+      ];
+
+      mockUsersRepository.find.mockResolvedValue(mockAllWorkers);
+      mockShiftsRepository.find.mockResolvedValue(mockClockedInShifts);
+
+      const result = await service.getAttendancePaginated(undefined, 1, 50);
+
+      expect(result.clocked_in.data[0].area).toEqual({ id: 'shift-area-1', name: 'Shift Area' });
+    });
+
+    it('should fallback to user area_id when shift has no area for clocked-in workers', async () => {
+      const mockAllWorkers = [
+        {
+          id: 'worker-1',
+          username: 'worker1',
+          full_name: 'Worker One',
+          role: UserRole.SATGAS,
+          is_active: true,
+          area_id: 'user-area-1',
+        },
+      ];
+
+      const mockClockedInShifts = [
+        {
+          id: 'shift-1',
+          user: { id: 'worker-1', area_id: 'user-area-1' },
+          area: null,
+          clock_in_time: new Date('2026-01-16T08:00:00Z'),
+          clock_out_time: null,
+        },
+      ];
+
+      mockUsersRepository.find.mockResolvedValue(mockAllWorkers);
+      mockShiftsRepository.find.mockResolvedValue(mockClockedInShifts);
+      mockAreasRepository.findOne.mockResolvedValue({ id: 'user-area-1', name: 'User Area' });
+
+      const result = await service.getAttendancePaginated(undefined, 1, 50);
+
+      expect(result.clocked_in.data[0].area).toEqual({ id: 'user-area-1', name: 'User Area' });
     });
 
     it('should include area info when not-clocked-in worker has area_id and area is found', async () => {
@@ -548,7 +675,10 @@ describe('SupervisorService', () => {
 
       const result = await service.getAttendance();
 
-      expect(result.not_clocked_in[0].area).toEqual({ id: 'area-1', name: 'Taman Bungkul' });
+      expect(result.not_clocked_in.data[0].area).toEqual({
+        id: 'area-1',
+        name: 'Taman Bungkul',
+      });
     });
 
     it('should set area to null when worker has area_id but area is not found', async () => {
@@ -569,7 +699,216 @@ describe('SupervisorService', () => {
 
       const result = await service.getAttendance();
 
-      expect(result.not_clocked_in[0].area).toBeNull();
+      expect(result.not_clocked_in.data[0].area).toBeNull();
+    });
+  });
+
+  describe('getUserAttendanceDetail', () => {
+    it('should return user attendance detail when user clocked in today', async () => {
+      const mockUser = {
+        id: 'worker-1',
+        username: 'worker1',
+        full_name: 'Worker One',
+        role: UserRole.SATGAS,
+        is_active: true,
+        area_id: 'area-1',
+      };
+
+      const mockShift = {
+        id: 'shift-1',
+        user_id: 'worker-1',
+        clock_in_time: new Date('2026-01-16T08:00:00Z'),
+        clock_out_time: new Date('2026-01-16T16:00:00Z'),
+        clock_in_outside_boundary: false,
+        clock_out_outside_boundary: false,
+        area: null,
+      };
+
+      (mockUsersRepository.findOne as jest.Mock).mockResolvedValueOnce(mockUser);
+      (mockShiftsRepository.findOne as jest.Mock).mockResolvedValueOnce(mockShift);
+      (mockAreasRepository.findOne as jest.Mock).mockResolvedValueOnce({
+        id: 'area-1',
+        name: 'Taman Bungkul',
+      });
+
+      const result = await service.getUserAttendanceDetail('worker-1', '2026-01-16');
+
+      expect(result.user.id).toBe('worker-1');
+      expect(result.clocked_in).toBe(true);
+      expect(result.shift).not.toBeNull();
+      expect(result.shift!.id).toBe('shift-1');
+      expect(result.shift!.duration_minutes).toBe(480);
+    });
+
+    it('should return user attendance detail when user did not clock in', async () => {
+      const mockUser = {
+        id: 'worker-1',
+        username: 'worker1',
+        full_name: 'Worker One',
+        role: UserRole.SATGAS,
+        is_active: true,
+        area_id: 'area-1',
+      };
+
+      (mockUsersRepository.findOne as jest.Mock).mockResolvedValueOnce(mockUser);
+      (mockShiftsRepository.findOne as jest.Mock).mockResolvedValueOnce(null);
+      (mockAreasRepository.findOne as jest.Mock).mockResolvedValueOnce({
+        id: 'area-1',
+        name: 'Taman Bungkul',
+      });
+
+      const result = await service.getUserAttendanceDetail('worker-1', '2026-01-16');
+
+      expect(result.user.id).toBe('worker-1');
+      expect(result.clocked_in).toBe(false);
+      expect(result.shift).toBeNull();
+    });
+
+    it('should return correct duration when shift has clock_out_time', async () => {
+      const mockUser = {
+        id: 'worker-1',
+        username: 'worker1',
+        full_name: 'Worker One',
+        role: UserRole.SATGAS,
+        is_active: true,
+        area_id: null,
+      };
+
+      const mockShift = {
+        id: 'shift-1',
+        user_id: 'worker-1',
+        clock_in_time: new Date('2026-01-16T08:00:00Z'),
+        clock_out_time: new Date('2026-01-16T16:30:00Z'),
+        clock_in_outside_boundary: true,
+        clock_out_outside_boundary: false,
+        area: null,
+      };
+
+      (mockUsersRepository.findOne as jest.Mock).mockResolvedValueOnce(mockUser);
+      (mockShiftsRepository.findOne as jest.Mock).mockResolvedValueOnce(mockShift);
+      (mockAreasRepository.findOne as jest.Mock).mockResolvedValueOnce(null);
+
+      const result = await service.getUserAttendanceDetail('worker-1', '2026-01-16');
+
+      expect(result.shift!.duration_minutes).toBe(510);
+      expect(result.shift!.clock_in_outside_boundary).toBe(true);
+      expect(result.shift!.clock_out_outside_boundary).toBe(false);
+    });
+
+    it('should return null duration when shift does not have clock_out_time', async () => {
+      const mockUser = {
+        id: 'worker-1',
+        username: 'worker1',
+        full_name: 'Worker One',
+        role: UserRole.SATGAS,
+        is_active: true,
+        area_id: null,
+      };
+
+      const mockShift = {
+        id: 'shift-1',
+        user_id: 'worker-1',
+        clock_in_time: new Date('2026-01-16T08:00:00Z'),
+        clock_out_time: null,
+        clock_in_outside_boundary: false,
+        clock_out_outside_boundary: false,
+        area: null,
+      };
+
+      (mockUsersRepository.findOne as jest.Mock).mockResolvedValueOnce(mockUser);
+      (mockShiftsRepository.findOne as jest.Mock).mockResolvedValueOnce(mockShift);
+
+      const result = await service.getUserAttendanceDetail('worker-1', '2026-01-16');
+
+      expect(result.clocked_in).toBe(true);
+      expect(result.shift!.clock_out_time).toBeNull();
+      expect(result.shift!.duration_minutes).toBeNull();
+    });
+
+    it('should throw NotFoundException when user does not exist', async () => {
+      (mockUsersRepository.findOne as jest.Mock).mockResolvedValueOnce(null);
+
+      await expect(service.getUserAttendanceDetail('nonexistent-id')).rejects.toThrow(
+        'User not found or not a trackable worker',
+      );
+    });
+
+    it('should throw NotFoundException when user is not SATGAS role', async () => {
+      const mockUser = {
+        id: 'admin-1',
+        username: 'admin',
+        full_name: 'Admin User',
+        role: UserRole.SUPERADMIN,
+        is_active: true,
+        area_id: null,
+      };
+
+      (mockUsersRepository.findOne as jest.Mock).mockResolvedValueOnce(mockUser);
+
+      await expect(service.getUserAttendanceDetail('admin-1')).rejects.toThrow(
+        'User not found or not a trackable worker',
+      );
+    });
+
+    it('should default to today when date is not provided', async () => {
+      const mockUser = {
+        id: 'worker-1',
+        username: 'worker1',
+        full_name: 'Worker One',
+        role: UserRole.SATGAS,
+        is_active: true,
+        area_id: null,
+      };
+
+      (mockUsersRepository.findOne as jest.Mock).mockResolvedValueOnce(mockUser);
+      (mockShiftsRepository.findOne as jest.Mock).mockResolvedValueOnce(null);
+
+      const result = await service.getUserAttendanceDetail('worker-1');
+
+      expect(result.date).toBeDefined();
+      expect(result.clocked_in).toBe(false);
+      expect((mockShiftsRepository.findOne as jest.Mock)).toHaveBeenCalled();
+    });
+
+    it('should include user area when area_id is set and area is found', async () => {
+      const mockUser = {
+        id: 'worker-1',
+        username: 'worker1',
+        full_name: 'Worker One',
+        role: UserRole.SATGAS,
+        is_active: true,
+        area_id: 'area-1',
+      };
+
+      const mockArea = { id: 'area-1', name: 'Taman Bungkul' };
+
+      jest.clearAllMocks();
+      mockUsersRepository.findOne = jest.fn().mockResolvedValue(mockUser);
+      mockShiftsRepository.findOne = jest.fn().mockResolvedValue(null);
+      mockAreasRepository.findOne = jest.fn().mockResolvedValue(mockArea);
+
+      const result = await service.getUserAttendanceDetail('worker-1');
+
+      expect(result.user.area).toEqual(mockArea);
+      expect(mockAreasRepository.findOne).toHaveBeenCalled();
+    });
+
+    it('should have null user area when area_id is not set', async () => {
+      const mockUser = {
+        id: 'worker-1',
+        username: 'worker1',
+        full_name: 'Worker One',
+        role: UserRole.SATGAS,
+        is_active: true,
+        area_id: null,
+      };
+
+      (mockUsersRepository.findOne as jest.Mock).mockResolvedValueOnce(mockUser);
+      (mockShiftsRepository.findOne as jest.Mock).mockResolvedValueOnce(null);
+
+      const result = await service.getUserAttendanceDetail('worker-1');
+
+      expect(result.user.area).toBeNull();
     });
   });
 });
