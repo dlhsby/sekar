@@ -117,9 +117,6 @@ jest.mock('../../../components/modals/BoundaryDetailModal', () => ({
 jest.mock('../../../components/monitoring/ClusteredUserMarkers', () => ({
   ClusteredUserMarkers: () => null,
 }));
-jest.mock('../../../components/monitoring/MonitoringToggleSheet', () => ({
-  MonitoringToggleSheet: () => null,
-}));
 jest.mock('../../../components/monitoring/AreaStatusOverlay', () => ({
   AreaStatusOverlay: () => null,
 }));

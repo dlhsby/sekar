@@ -30,7 +30,7 @@ import type { LiveUser } from '../../types/models.types';
 import { getAreas, getAreasByRayonId, getRayons } from '../../services/api';
 import { getStaffingSummary } from '../../services/api/monitoringApi';
 import { StaffingSummarySection } from '../monitoring/StaffingSummarySection';
-import { LAYER_ROWS } from '../monitoring/MonitoringToggleSheet';
+import { LAYER_ROWS } from '../monitoring/monitoringLayers';
 import type { MonitoringV2VisibleLayers } from '../../store/slices/monitoringV2Slice';
 import type { MonitoringFilters } from '../../types/api.types';
 import type { PresenceLocation, StaffingSummaryItem, User } from '../../types/models.types';
