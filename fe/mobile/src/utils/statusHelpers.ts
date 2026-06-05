@@ -215,6 +215,9 @@ export function deriveAxes(
     // No usable fix → location unknown.
     case 'missing':      return { activity: 'missing', location: 'unknown' };
     case 'offline':      return { activity: 'offline', location: 'unknown' };
+    // Defensive: runtime data can carry an unexpected/missing status; never
+    // return undefined (callers destructure the result).
+    default:             return { activity: 'offline', location: 'unknown' };
   }
 }
 

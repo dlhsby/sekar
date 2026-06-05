@@ -12,7 +12,7 @@
  * border + heavier shadow.
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 // react-native-gesture-handler's ScrollView is the correct nested scroller
 // inside @gorhom/bottom-sheet — its native gesture handler coordinates with the
@@ -21,66 +21,74 @@ import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { NBText } from '../nb/NBText';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
-import { presencePill } from '../../utils/statusHelpers';
-import { getStatusColor } from '../../utils/mapUtils';
-import type { TrackingStatus } from '../../types/models.types';
+import { userAxes, presenceActivityPill } from '../../utils/statusHelpers';
+import { getActivityColor } from '../../utils/mapUtils';
+import type { LiveUser, PresenceActivity } from '../../types/models.types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface StatusCounts {
-  active: number;
-  inactive: number;
-  outside_area: number;
-  missing: number;
-  offline: number;
+interface ActivityBucket {
+  total: number;
+  dalam: number;
+  luar: number;
 }
 
 interface StatusSummaryBarProps {
-  statusCounts: StatusCounts;
-  activeFilter: TrackingStatus | null;
-  onFilterChange: (status: TrackingStatus | null) => void;
+  liveUsers: LiveUser[];
+  /** Active ACTIVITY filter (CP6) — location is filtered via the wrench, not here. */
+  activeActivity: PresenceActivity | null;
+  onActivityChange: (activity: PresenceActivity | null) => void;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const DISPLAYED_STATUSES: TrackingStatus[] = [
-  'active',
-  'inactive',
-  'outside_area',
-  'missing',
-];
+// Three activity chips (CP6). Offline (not clocked in) isn't shown on the map.
+const DISPLAYED_ACTIVITIES: PresenceActivity[] = ['aktif', 'idle', 'missing'];
 
-const STATUS_BG: Record<TrackingStatus, string> = {
-  active: nbColors.statusActiveBg,
-  inactive: nbColors.statusIdleBg,
-  outside_area: nbColors.statusOutsideBg,
+const ACTIVITY_BG: Record<string, string> = {
+  aktif: nbColors.statusActiveBg,
+  idle: nbColors.statusIdleBg,
   missing: nbColors.statusMissingBg,
-  offline: nbColors.statusOfflineBg,
 };
 
-// Text color for the SELECTED (solid-fill) chip — WCAG AA on each accent.
-// Idle/amber (#D97706) is too light for white, so it gets black; the rest get
-// white on their darker accents.
-const SELECTED_ON: Record<TrackingStatus, 'white' | 'black'> = {
-  active: 'white',
-  inactive: 'black',
-  outside_area: 'white',
+// Text color on the SELECTED (solid-fill) chip — WCAG AA on each accent.
+// Idle/amber (#D97706) is too light for white, so it gets black.
+const ACTIVITY_SELECTED_ON: Record<string, 'white' | 'black'> = {
+  aktif: 'white',
+  idle: 'black',
   missing: 'white',
-  offline: 'white',
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function StatusSummaryBar({
-  statusCounts,
-  activeFilter,
-  onFilterChange,
+  liveUsers,
+  activeActivity,
+  onActivityChange,
 }: StatusSummaryBarProps): React.JSX.Element {
+  // Tally the 3 activity buckets + their dalam/luar split, from the live roster.
+  const buckets = useMemo(() => {
+    const acc: Record<PresenceActivity, ActivityBucket> = {
+      aktif: { total: 0, dalam: 0, luar: 0 },
+      idle: { total: 0, dalam: 0, luar: 0 },
+      missing: { total: 0, dalam: 0, luar: 0 },
+      offline: { total: 0, dalam: 0, luar: 0 },
+    };
+    for (const u of liveUsers) {
+      const { activity, location } = userAxes(u);
+      const b = acc[activity];
+      b.total += 1;
+      if (location === 'dalam_area') { b.dalam += 1; }
+      else if (location === 'luar_area') { b.luar += 1; }
+    }
+    return acc;
+  }, [liveUsers]);
+
   const handleChipPress = useCallback(
-    (status: TrackingStatus) => {
-      onFilterChange(activeFilter === status ? null : status);
+    (activity: PresenceActivity) => {
+      onActivityChange(activeActivity === activity ? null : activity);
     },
-    [activeFilter, onFilterChange],
+    [activeActivity, onActivityChange],
   );
 
   return (
@@ -91,12 +99,12 @@ export function StatusSummaryBar({
         contentContainerStyle={styles.scrollContent}
         nestedScrollEnabled
       >
-        {DISPLAYED_STATUSES.map(status => (
-          <StatusChip
-            key={status}
-            status={status}
-            count={statusCounts[status] ?? 0}
-            isActive={activeFilter === status}
+        {DISPLAYED_ACTIVITIES.map(activity => (
+          <ActivityChip
+            key={activity}
+            activity={activity}
+            bucket={buckets[activity]}
+            isActive={activeActivity === activity}
             onPress={handleChipPress}
           />
         ))}
@@ -105,51 +113,70 @@ export function StatusSummaryBar({
   );
 }
 
-// ─── StatusChip sub-component ─────────────────────────────────────────────────
+// ─── ActivityChip sub-component ───────────────────────────────────────────────
 
-interface StatusChipProps {
-  status: TrackingStatus;
-  count: number;
+interface ActivityChipProps {
+  activity: PresenceActivity;
+  bucket: ActivityBucket;
   isActive: boolean;
-  onPress: (status: TrackingStatus) => void;
+  onPress: (activity: PresenceActivity) => void;
 }
 
-function StatusChip({ status, count, isActive, onPress }: StatusChipProps): React.JSX.Element {
-  const { label } = presencePill(status);
-  const accent = getStatusColor(status);
+function ActivityChip({ activity, bucket, isActive, onPress }: ActivityChipProps): React.JSX.Element {
+  const { label } = presenceActivityPill(activity);
+  const accent = getActivityColor(activity);
+  // Missing has no usable fix → no dalam/luar split line.
+  const hasLocation = activity !== 'missing';
 
   // Selected = solid accent fill + contrasting text; unselected = tinted bg.
-  const onKey = SELECTED_ON[status];
+  const onKey = ACTIVITY_SELECTED_ON[activity];
   const onColor = onKey === 'white' ? nbColors.white : nbColors.black;
 
   return (
     <TouchableOpacity
-      onPress={() => onPress(status)}
+      onPress={() => onPress(activity)}
       activeOpacity={0.75}
-      accessibilityLabel={`Filter ${label}: ${count}`}
+      accessibilityLabel={`Filter ${label}: ${bucket.total}${hasLocation ? `, ${bucket.dalam} dalam, ${bucket.luar} luar` : ''}`}
       accessibilityRole="button"
       accessibilityState={{ selected: isActive }}
-      testID={`status-chip-${status}`}
+      testID={`activity-chip-${activity}`}
     >
       <View
         style={[
           styles.chip,
           isActive
             ? { backgroundColor: accent, borderColor: nbColors.black }
-            : { backgroundColor: STATUS_BG[status], borderColor: accent },
+            : { backgroundColor: ACTIVITY_BG[activity], borderColor: accent },
           isActive && styles.chipActive,
         ]}
       >
-        <View style={[styles.dot, { backgroundColor: isActive ? onColor : accent }]} />
-        <NBText variant="h3" color={isActive ? onKey : 'black'}>{count}</NBText>
-        <NBText
-          variant="mono-sm"
-          uppercase
-          color={isActive ? onKey : 'gray700'}
-          style={styles.chipLabel}
-        >
-          {label}
-        </NBText>
+        <View style={styles.chipTop}>
+          <View style={[styles.dot, { backgroundColor: isActive ? onColor : accent }]} />
+          <NBText variant="h3" color={isActive ? onKey : 'black'}>{bucket.total}</NBText>
+          <NBText
+            variant="mono-sm"
+            uppercase
+            color={isActive ? onKey : 'gray700'}
+            style={styles.chipLabel}
+          >
+            {label}
+          </NBText>
+        </View>
+        {hasLocation ? (
+          <NBText
+            variant="caption"
+            color={isActive ? onKey : 'gray600'}
+            style={styles.chipSplit}
+          >
+            {`${bucket.dalam} dalam · ${bucket.luar} luar`}
+          </NBText>
+        ) : (
+          // Missing has no dalam/luar — keep an invisible spacer so all three
+          // chips share the same height and the activity row stays aligned.
+          <NBText variant="caption" style={[styles.chipSplit, styles.chipSplitSpacer]}>
+            —
+          </NBText>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -168,16 +195,20 @@ const styles = StyleSheet.create({
     paddingVertical: nbSpacing.sm,
     gap: nbSpacing.sm,
   },
-  // Auto-width: the card hugs its content (dot + count + label on one row).
+  // Auto-width 2-line card: [dot count label] on top, "X dalam · Y luar" below.
   chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: nbSpacing.xs,
+    alignItems: 'flex-start',
+    gap: 2,
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.sm,
     borderWidth: nbBorders.widthBase,
     borderRadius: nbRadius.base,
     ...nbShadows.xs,
+  },
+  chipTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
   },
   // Active filter: black ring + heavier hard-edge shadow over the tone fill.
   chipActive: {
@@ -194,5 +225,11 @@ const styles = StyleSheet.create({
   chipLabel: {
     fontSize: 10,
     letterSpacing: 0.3,
+  },
+  chipSplit: {
+    fontSize: 10,
+  },
+  chipSplitSpacer: {
+    opacity: 0,
   },
 });

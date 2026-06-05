@@ -104,7 +104,6 @@ export function MapDashboardScreen(): React.JSX.Element {
   // Monitoring slice state
   const {
     liveUsers,
-    statusCounts,
     selectedUser,
     filters,
     userDaySummary,
@@ -126,7 +125,7 @@ export function MapDashboardScreen(): React.JSX.Element {
 
   // Local UI state
   const [mapReady, setMapReady] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<TrackingStatus | null>(null);
+  const [activityFilter, setActivityFilter] = useState<PresenceActivity | null>(null);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [searchModalVisible, setSearchModalVisible] = useState(false);
   const [trailUser, setTrailUser] = useState<LiveUser | null>(null);
@@ -293,11 +292,16 @@ export function MapDashboardScreen(): React.JSX.Element {
     if (!visibleLayers.workers) { return []; }
     if (!Array.isArray(liveUsers)) { return []; }
     let users = liveUsers.filter(u => u.status !== 'offline');
-    if (statusFilter) {
-      users = users.filter(u => u.status === statusFilter);
+    if (activityFilter) {
+      users = users.filter(u => userAxes(u).activity === activityFilter);
+    }
+    // CP6: location axis filter from the wrench (client-side — not a backend field).
+    if (filters.location && filters.location.length > 0) {
+      const locs = filters.location;
+      users = users.filter(u => locs.includes(userAxes(u).location));
     }
     return users;
-  }, [liveUsers, statusFilter, visibleLayers.workers]);
+  }, [liveUsers, activityFilter, filters.location, visibleLayers.workers]);
 
   const staffedAreas = useMemo(() => {
     if (!Array.isArray(liveUsers)) { return 0; }
@@ -806,9 +810,8 @@ export function MapDashboardScreen(): React.JSX.Element {
         {/* Monitoring status peek sheet */}
         <MonitoringStatusSheet
           sheetRef={statusSheetRef}
-          statusCounts={statusCounts}
-          activeFilter={statusFilter}
-          onFilterChange={setStatusFilter}
+          activeActivity={activityFilter}
+          onActivityChange={setActivityFilter}
           liveUsers={liveUsers ?? []}
           lastUpdated={lastUpdated}
           totalAreas={totalAreas}

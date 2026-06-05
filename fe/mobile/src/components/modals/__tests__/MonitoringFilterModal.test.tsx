@@ -1,8 +1,10 @@
 /**
  * MonitoringFilterModal Component Tests
- * Phase 2D: Full-screen filter modal for map monitoring.
- * Tests rendering, status chips, rayon/area pickers (role-gated), role chips,
- * search input, reset, apply, and filter sync.
+ * Phase 2D + Phase 4 M3 (CP6c): Full-screen filter modal for map monitoring.
+ * Tests rendering, the Lokasi (location-axis) select, rayon/area pickers
+ * (role-gated), role chips, search input, reset, apply, and filter sync.
+ * CP6c moved status (activity) onto the peek chips; the wrench filters by
+ * LOCATION (Dalam area / Luar area) instead.
  */
 
 import React from 'react';
@@ -229,62 +231,51 @@ describe('MonitoringFilterModal', () => {
     });
   });
 
-  // ── Status chips ────────────────────────────────────────────────────────────
+  // ── Lokasi (location axis) select ─────────────────────────────────────────────
 
-  describe('status filter chips', () => {
-    it('renders all 4 status filter chips', async () => {
+  describe('location filter', () => {
+    it('renders the Lokasi section with both location options', async () => {
       const { getByText } = render(
         <MonitoringFilterModal {...buildDefaultProps()} />
       );
       await waitFor(() => {
-        expect(getByText('Aktif')).toBeTruthy();
-        expect(getByText('Idle')).toBeTruthy();
-        expect(getByText('Di Luar Area')).toBeTruthy();
-        expect(getByText('Tidak Terdeteksi')).toBeTruthy();
+        expect(getByText('Lokasi')).toBeTruthy();
+        expect(getByText('Dalam area')).toBeTruthy();
+        expect(getByText('Luar area')).toBeTruthy();
       });
     });
 
-    it('toggles "Aktif" chip on first press (selects it)', async () => {
-      const { getByText } = render(
-        <MonitoringFilterModal {...buildDefaultProps()} />
-      );
-      await waitFor(() => expect(getByText('Aktif')).toBeTruthy());
-
-      // We verify the toggle does not throw and can be pressed multiple times
-      fireEvent.press(getByText('Aktif'));
-      fireEvent.press(getByText('Aktif'));
-    });
-
-    it('multiple status chips can be selected simultaneously', async () => {
+    it('applies the selected locations under the `location` key', async () => {
       const onApply = jest.fn();
       const { getByText } = render(
         <MonitoringFilterModal {...buildDefaultProps({ onApply })} />
       );
-      await waitFor(() => expect(getByText('Aktif')).toBeTruthy());
+      await waitFor(() => expect(getByText('Dalam area')).toBeTruthy());
 
-      fireEvent.press(getByText('Aktif'));
-      fireEvent.press(getByText('Idle'));
+      fireEvent.press(getByText('Dalam area'));
+      fireEvent.press(getByText('Luar area'));
       fireEvent.press(getByText('Terapkan'));
 
       expect(onApply).toHaveBeenCalledWith(
-        expect.objectContaining({ status: expect.arrayContaining(['active', 'inactive']) })
+        expect.objectContaining({
+          location: expect.arrayContaining(['dalam_area', 'luar_area']),
+        })
       );
     });
 
-    it('deselects a chip when pressed a second time', async () => {
+    it('deselects a location when pressed a second time', async () => {
       const onApply = jest.fn();
       const { getByText } = render(
         <MonitoringFilterModal {...buildDefaultProps({ onApply })} />
       );
-      await waitFor(() => expect(getByText('Aktif')).toBeTruthy());
+      await waitFor(() => expect(getByText('Dalam area')).toBeTruthy());
 
-      fireEvent.press(getByText('Aktif'));
-      fireEvent.press(getByText('Aktif')); // deselect
+      fireEvent.press(getByText('Dalam area'));
+      fireEvent.press(getByText('Dalam area')); // deselect
       fireEvent.press(getByText('Terapkan'));
 
-      // status should be absent or empty in the applied filters
       const calledWith = onApply.mock.calls[0][0] as MonitoringFilters;
-      expect(calledWith.status).toBeUndefined();
+      expect(calledWith.location).toBeUndefined();
     });
   });
 
@@ -513,10 +504,10 @@ describe('MonitoringFilterModal', () => {
       const { getByText } = render(
         <MonitoringFilterModal {...buildDefaultProps({ onApply })} users={resetUsers} />
       );
-      await waitFor(() => expect(getByText('Aktif')).toBeTruthy());
+      await waitFor(() => expect(getByText('Dalam area')).toBeTruthy());
 
       // Select some filters first
-      fireEvent.press(getByText('Aktif'));
+      fireEvent.press(getByText('Dalam area'));
       fireEvent.press(getByText('Satgas'));
       fireEvent.press(getByText('Pilih pengguna'));
       fireEvent.press(getByText('Ahmad Satgas'));
@@ -527,7 +518,7 @@ describe('MonitoringFilterModal', () => {
       // Apply and assert empty filters
       fireEvent.press(getByText('Terapkan'));
       const calledWith = onApply.mock.calls[0][0] as MonitoringFilters;
-      expect(calledWith.status).toBeUndefined();
+      expect(calledWith.location).toBeUndefined();
       expect(calledWith.role).toBeUndefined();
       expect(calledWith.search).toBeUndefined();
     });
@@ -541,14 +532,14 @@ describe('MonitoringFilterModal', () => {
       const { getByText } = render(
         <MonitoringFilterModal {...buildDefaultProps({ onApply })} />
       );
-      await waitFor(() => expect(getByText('Aktif')).toBeTruthy());
+      await waitFor(() => expect(getByText('Dalam area')).toBeTruthy());
 
-      fireEvent.press(getByText('Aktif'));
+      fireEvent.press(getByText('Dalam area'));
       fireEvent.press(getByText('Terapkan'));
 
       expect(onApply).toHaveBeenCalledTimes(1);
       expect(onApply).toHaveBeenCalledWith(
-        expect.objectContaining({ status: ['active'] })
+        expect.objectContaining({ location: ['dalam_area'] })
       );
     });
 
@@ -568,10 +559,10 @@ describe('MonitoringFilterModal', () => {
   // Note: back button is now handled by NBModal, tested at the NBModal component level
 
   describe('filter sync with currentFilters', () => {
-    it('pre-selects statuses from currentFilters when modal opens', async () => {
+    it('pre-selects locations from currentFilters when modal opens', async () => {
       const onApply = jest.fn();
       const currentFilters: MonitoringFilters = {
-        status: ['active', 'inactive'],
+        location: ['dalam_area', 'luar_area'],
         role: 'satgas',
         search: 'Budi',
       };
@@ -588,7 +579,7 @@ describe('MonitoringFilterModal', () => {
 
       expect(onApply).toHaveBeenCalledWith(
         expect.objectContaining({
-          status: expect.arrayContaining(['active', 'inactive']),
+          location: expect.arrayContaining(['dalam_area', 'luar_area']),
           role: 'satgas',
           search: 'Budi',
         })
@@ -597,7 +588,7 @@ describe('MonitoringFilterModal', () => {
 
     it('re-syncs with new currentFilters when visible changes to true', async () => {
       const onApply = jest.fn();
-      const initialFilters: MonitoringFilters = { status: ['active'] };
+      const initialFilters: MonitoringFilters = { location: ['dalam_area'] };
 
       const { rerender, getByText } = render(
         <MonitoringFilterModal
@@ -605,7 +596,7 @@ describe('MonitoringFilterModal', () => {
         />
       );
 
-      const updatedFilters: MonitoringFilters = { status: ['missing'] };
+      const updatedFilters: MonitoringFilters = { location: ['luar_area'] };
 
       await act(async () => {
         rerender(
@@ -623,7 +614,7 @@ describe('MonitoringFilterModal', () => {
       fireEvent.press(getByText('Terapkan'));
 
       expect(onApply).toHaveBeenCalledWith(
-        expect.objectContaining({ status: ['missing'] })
+        expect.objectContaining({ location: ['luar_area'] })
       );
     });
   });

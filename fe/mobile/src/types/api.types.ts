@@ -25,6 +25,7 @@ import type {
   Overtime,
   OvertimeStatus,
   TrackingStatus,
+  PresenceLocation,
 } from './models.types';
 
 // Auth API
@@ -508,6 +509,8 @@ export interface MonitoringFilters {
   area_id?: string;
   role?: string;
   status?: TrackingStatus[];
+  /** CP6 — location axis filter (dalam_area / luar_area), applied client-side. */
+  location?: PresenceLocation[];
   search?: string;
 }
 

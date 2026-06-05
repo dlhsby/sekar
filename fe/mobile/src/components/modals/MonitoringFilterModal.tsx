@@ -24,7 +24,7 @@ import {
   nbBorders,
   nbRadius,
 } from '../../constants/nbTokens';
-import { getStatusLabel } from '../../utils/mapUtils';
+import { locationLabel } from '../../utils/statusHelpers';
 import { NBSelect } from '../nb';
 import type { LiveUser } from '../../types/models.types';
 import { getAreas, getAreasByRayonId, getRayons } from '../../services/api';
@@ -33,7 +33,7 @@ import { StaffingSummarySection } from '../monitoring/StaffingSummarySection';
 import { LAYER_ROWS } from '../monitoring/MonitoringToggleSheet';
 import type { MonitoringV2VisibleLayers } from '../../store/slices/monitoringV2Slice';
 import type { MonitoringFilters } from '../../types/api.types';
-import type { TrackingStatus, StaffingSummaryItem, User } from '../../types/models.types';
+import type { PresenceLocation, StaffingSummaryItem, User } from '../../types/models.types';
 import type { Area, Rayon } from '../../types/models.types';
 import {
   ROLE_LABELS,
@@ -61,13 +61,8 @@ interface MonitoringFilterModalProps {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const STATUS_OPTIONS: TrackingStatus[] = [
-  'active',
-  'inactive',
-  'outside_area',
-  'missing',
-  'offline',
-];
+// CP6: the wrench filters by LOCATION (dalam/luar); activity lives on the peek chips.
+const LOCATION_OPTIONS: PresenceLocation[] = ['dalam_area', 'luar_area'];
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -81,8 +76,8 @@ export function MonitoringFilterModal({
   visibleLayers,
   onToggleLayer,
 }: MonitoringFilterModalProps): React.JSX.Element {
-  const [selectedStatuses, setSelectedStatuses] = useState<TrackingStatus[]>(
-    currentFilters.status ?? [],
+  const [selectedLocations, setSelectedLocations] = useState<PresenceLocation[]>(
+    currentFilters.location ?? [],
   );
   const [selectedRayonId, setSelectedRayonId] = useState<string | undefined>(
     currentFilters.rayon_id,
@@ -159,7 +154,7 @@ export function MonitoringFilterModal({
   // Sync with current filters when modal opens
   useEffect(() => {
     if (visible) {
-      setSelectedStatuses(currentFilters.status ?? []);
+      setSelectedLocations(currentFilters.location ?? []);
       setSelectedRayonId(currentFilters.rayon_id);
       setSelectedAreaId(currentFilters.area_id);
       setSelectedRoles(currentFilters.role ? [currentFilters.role] : []);
@@ -172,7 +167,7 @@ export function MonitoringFilterModal({
   }, []);
 
   const handleReset = useCallback(() => {
-    setSelectedStatuses([]);
+    setSelectedLocations([]);
     setSelectedRayonId(undefined);
     setSelectedAreaId(undefined);
     setSelectedRoles([]);
@@ -181,7 +176,7 @@ export function MonitoringFilterModal({
 
   const handleApply = useCallback(() => {
     const filters: MonitoringFilters = {};
-    if (selectedStatuses.length > 0) { filters.status = selectedStatuses; }
+    if (selectedLocations.length > 0) { filters.location = selectedLocations; }
     if (selectedRayonId) { filters.rayon_id = selectedRayonId; }
     if (selectedAreaId) { filters.area_id = selectedAreaId; }
     if (selectedRoles.length === 1) { filters.role = selectedRoles[0]; }
@@ -190,7 +185,7 @@ export function MonitoringFilterModal({
     onApply(filters);
     onClose();
   }, [
-    selectedStatuses,
+    selectedLocations,
     selectedRayonId,
     selectedAreaId,
     selectedRoles,
@@ -209,8 +204,8 @@ export function MonitoringFilterModal({
     [areas],
   );
 
-  const statusOptions = useMemo(
-    () => STATUS_OPTIONS.map(s => ({ label: getStatusLabel(s), value: s })),
+  const locationOptions = useMemo(
+    () => LOCATION_OPTIONS.map(l => ({ label: locationLabel(l), value: l })),
     [],
   );
 
@@ -292,14 +287,13 @@ export function MonitoringFilterModal({
       footer={footerContent}
     >
       <View style={styles.body}>
-        {/* Status multiselect */}
-        <FilterSection title="Status">
+        {/* Lokasi (location axis) multiselect — activity lives on the peek chips. */}
+        <FilterSection title="Lokasi">
           <NBSelect
-            options={statusOptions}
-            selectedValues={selectedStatuses}
-            onValuesChange={(vals: string[]) => setSelectedStatuses(vals as TrackingStatus[])}
-            placeholder="Pilih Status"
-            searchable
+            options={locationOptions}
+            selectedValues={selectedLocations}
+            onValuesChange={(vals: string[]) => setSelectedLocations(vals as PresenceLocation[])}
+            placeholder="Pilih Lokasi"
           />
         </FilterSection>
 

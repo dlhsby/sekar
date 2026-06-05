@@ -17,24 +17,16 @@ import {
   nbSpacing,
   nbShadows,
 } from '../../constants/nbTokens';
-import type { LiveUser, TrackingStatus, UserRole } from '../../types/models.types';
+import type { LiveUser, PresenceActivity, UserRole } from '../../types/models.types';
 import type { AttendanceResponse } from '../../types/api.types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface StatusCounts {
-  active: number;
-  inactive: number;
-  outside_area: number;
-  missing: number;
-  offline: number;
-}
-
 interface MonitoringStatusSheetProps {
   sheetRef: React.RefObject<BottomSheet | null>;
-  statusCounts: StatusCounts;
-  activeFilter: TrackingStatus | null;
-  onFilterChange: (filter: TrackingStatus | null) => void;
+  /** Active ACTIVITY filter (CP6) — the chips filter by activity; location → wrench. */
+  activeActivity: PresenceActivity | null;
+  onActivityChange: (activity: PresenceActivity | null) => void;
   liveUsers: LiveUser[];
   lastUpdated: string | null;
   totalAreas: number;
@@ -72,9 +64,8 @@ const STALE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
 
 export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
   sheetRef,
-  statusCounts,
-  activeFilter,
-  onFilterChange,
+  activeActivity,
+  onActivityChange,
   liveUsers,
   lastUpdated,
   totalAreas,
@@ -136,9 +127,9 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
     <>
       {/* Status row — single source for the per-status counts; tap to filter */}
       <StatusSummaryBar
-        statusCounts={statusCounts}
-        activeFilter={activeFilter}
-        onFilterChange={onFilterChange}
+        liveUsers={liveUsers}
+        activeActivity={activeActivity}
+        onActivityChange={onActivityChange}
       />
 
       {/* Kehadiran — today's clock-in summary; tap for the detail modal */}
@@ -194,7 +185,7 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
         <NBText variant="caption" color="gray500">{liveUsers.length} petugas</NBText>
       </View>
     </>
-  ), [statusCounts, activeFilter, onFilterChange, liveUsers.length, staffedAreas, totalAreas, staleCount, lastUpdated, attendance]);
+  ), [activeActivity, onActivityChange, liveUsers, staffedAreas, totalAreas, staleCount, lastUpdated, attendance]);
 
   const groupLabel = selectedGroup
     ? ROLE_LABELS[selectedGroup.role as UserRole] ?? selectedGroup.role

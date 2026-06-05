@@ -61,8 +61,6 @@ const liveUsers: LiveUser[] = [
   user('3', 'linmas', 'active'),
 ];
 
-const statusCounts = { active: 2, inactive: 1, outside_area: 0, missing: 0, offline: 0 };
-
 const attendance = {
   date: '2026-06-04',
   total_workers: 3,
@@ -76,9 +74,8 @@ function renderSheet(overrides?: { onUserPress?: jest.Mock; attendance?: any }) 
   return render(
     <MonitoringStatusSheet
       sheetRef={sheetRef}
-      statusCounts={statusCounts}
-      activeFilter={null}
-      onFilterChange={jest.fn()}
+      activeActivity={null}
+      onActivityChange={jest.fn()}
       liveUsers={liveUsers}
       lastUpdated={new Date().toISOString()}
       totalAreas={12}
@@ -92,10 +89,11 @@ function renderSheet(overrides?: { onUserPress?: jest.Mock; attendance?: any }) 
 describe('MonitoringStatusSheet', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('renders the merged status row chips', () => {
+  it('renders the merged activity chips', () => {
     const { getByTestId } = renderSheet();
-    expect(getByTestId('status-chip-active')).toBeTruthy();
-    expect(getByTestId('status-chip-missing')).toBeTruthy();
+    expect(getByTestId('activity-chip-aktif')).toBeTruthy();
+    expect(getByTestId('activity-chip-idle')).toBeTruthy();
+    expect(getByTestId('activity-chip-missing')).toBeTruthy();
   });
 
   it('renders the Operasional card with total + area coverage', () => {
@@ -141,9 +139,8 @@ describe('MonitoringStatusSheet', () => {
     const { getByText } = render(
       <MonitoringStatusSheet
         sheetRef={sheetRef}
-        statusCounts={{ active: 0, inactive: 0, outside_area: 0, missing: 0, offline: 0 }}
-        activeFilter={null}
-        onFilterChange={jest.fn()}
+        activeActivity={null}
+        onActivityChange={jest.fn()}
         liveUsers={[]}
         lastUpdated={null}
         totalAreas={0}
