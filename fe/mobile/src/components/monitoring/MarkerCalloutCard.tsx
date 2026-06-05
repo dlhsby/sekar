@@ -19,6 +19,9 @@ import {
   nbShadows,
   withAlpha,
 } from '../../constants/nbTokens';
+import { presenceActivityPill, locationLabel } from '../../utils/statusHelpers';
+import { getActivityColor } from '../../utils/mapUtils';
+import type { PresenceActivity, PresenceLocation } from '../../types/models.types';
 
 interface MarkerCalloutCardProps {
   title: string;
@@ -30,6 +33,8 @@ interface MarkerCalloutCardProps {
   accent: string;
   /** Type icon (MaterialCommunityIcons name). */
   icon?: string;
+  /** Petugas only — two-axis presence shown as an activity dot + label · location. */
+  presence?: { activity: PresenceActivity; location: PresenceLocation };
 }
 
 export function MarkerCalloutCard({
@@ -38,6 +43,7 @@ export function MarkerCalloutCard({
   roleText,
   accent,
   icon,
+  presence,
 }: MarkerCalloutCardProps): React.JSX.Element {
   const meta = roleText ? `${typeText} · ${roleText}` : typeText;
 
@@ -57,6 +63,23 @@ export function MarkerCalloutCard({
             </NBText>
           </View>
         </View>
+
+        {presence ? (
+          <View style={styles.presenceRow}>
+            <View style={[styles.presenceDot, { backgroundColor: getActivityColor(presence.activity) }]} />
+            <NBText variant="caption" color="black" style={styles.presenceText}>
+              {presenceActivityPill(presence.activity).label}
+            </NBText>
+            {presence.location !== 'unknown' ? (
+              <NBText
+                variant="caption"
+                color={presence.location === 'luar_area' ? 'statusOutside' : 'gray600'}
+              >
+                {` · ${locationLabel(presence.location)}`}
+              </NBText>
+            ) : null}
+          </View>
+        ) : null}
 
         <View style={styles.footer}>
           <NBText variant="caption" style={[styles.detailText, { color: accent }]}>
@@ -106,6 +129,22 @@ const styles = StyleSheet.create({
   },
   title: {
     fontWeight: '700',
+  },
+  presenceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: nbSpacing.xs,
+  },
+  presenceDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: nbColors.black,
+  },
+  presenceText: {
+    fontWeight: '600',
   },
   footer: {
     flexDirection: 'row',

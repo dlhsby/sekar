@@ -54,6 +54,9 @@ export interface UserLocationEvent {
   accuracy?: number;
   battery_level?: number;
   status: string;
+  // Two-axis presence (CP6) — optional during backend rollout.
+  activity?: string;
+  location?: string;
   is_within_area: boolean;
   shift_name: string;
   timestamp: Date | string;

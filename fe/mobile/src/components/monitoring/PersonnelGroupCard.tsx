@@ -10,10 +10,11 @@ import { TouchableOpacity, View, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBText } from '../nb/NBText';
 import { roleAccent } from '../common/RoleAvatar';
-import { getStatusColor } from '../../utils/mapUtils';
+import { getActivityColor } from '../../utils/mapUtils';
+import { userAxes } from '../../utils/statusHelpers';
 import { ROLE_LABELS } from '../../constants/roles';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
-import type { LiveUser, TrackingStatus, UserRole } from '../../types/models.types';
+import type { LiveUser, PresenceActivity, UserRole } from '../../types/models.types';
 
 const ROLE_ICON: Record<string, string> = {
   satgas: 'account-hard-hat',
@@ -23,9 +24,9 @@ const ROLE_ICON: Record<string, string> = {
   admin_data: 'account-cog',
 };
 
-// Statuses shown in the compact breakdown row (offline is omitted — it's the
-// "no fix ever" bucket and isn't actionable at a glance).
-const BREAKDOWN_STATUSES: TrackingStatus[] = ['active', 'inactive', 'outside_area', 'missing'];
+// Activity buckets shown in the compact breakdown row (CP6). Offline is omitted
+// (no fix ever); location (luar area) is a separate axis, not shown here.
+const BREAKDOWN_ACTIVITIES: PresenceActivity[] = ['aktif', 'idle', 'missing'];
 
 export interface PersonnelGroup {
   role: string;
@@ -50,9 +51,10 @@ export const PersonnelGroupCard = React.memo(function PersonnelGroupCard({
   const breakdown = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const u of group.users) {
-      counts[u.status] = (counts[u.status] ?? 0) + 1;
+      const { activity } = userAxes(u);
+      counts[activity] = (counts[activity] ?? 0) + 1;
     }
-    return BREAKDOWN_STATUSES.map(status => ({ status, count: counts[status] ?? 0 }));
+    return BREAKDOWN_ACTIVITIES.map(activity => ({ activity, count: counts[activity] ?? 0 }));
   }, [group.users]);
 
   const handlePress = useCallback(() => onPress(group), [onPress, group]);
@@ -77,9 +79,9 @@ export const PersonnelGroupCard = React.memo(function PersonnelGroupCard({
           {label}
         </NBText>
         <View style={styles.breakdownRow}>
-          {breakdown.map(({ status, count }) => (
-            <View key={status} style={styles.breakdownItem}>
-              <View style={[styles.dot, { backgroundColor: getStatusColor(status) }]} />
+          {breakdown.map(({ activity, count }) => (
+            <View key={activity} style={styles.breakdownItem}>
+              <View style={[styles.dot, { backgroundColor: getActivityColor(activity) }]} />
               <NBText
                 variant="caption"
                 color={count > 0 ? 'gray700' : 'gray400'}

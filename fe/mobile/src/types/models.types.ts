@@ -589,6 +589,9 @@ export interface UserStatusChangedEvent {
   rayon_id: string | null;
   previous_status: TrackingStatus;
   new_status: TrackingStatus;
+  // Two-axis presence (CP6) — optional during backend rollout.
+  activity?: PresenceActivity;
+  location?: PresenceLocation;
   latitude: number | null;
   longitude: number | null;
   timestamp: string;

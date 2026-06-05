@@ -57,9 +57,10 @@ import {
   clusterUsers,
   getRoleIcon,
 } from '../../utils/mapUtils';
+import { userAxes } from '../../utils/statusHelpers';
 import { ROLE_LABELS } from '../../constants/roles';
 import type { AppDispatch, RootState } from '../../store/store';
-import type { LiveUser, TrackingStatus, UserRole } from '../../types/models.types';
+import type { LiveUser, TrackingStatus, UserRole, PresenceActivity, PresenceLocation } from '../../types/models.types';
 import type { MonitoringFilters } from '../../types/api.types';
 import {
   setLiveUsers,
@@ -174,6 +175,10 @@ export function MapDashboardScreen(): React.JSX.Element {
         battery_level: data.battery_level,
         last_update: typeof data.timestamp === 'string' ? data.timestamp : new Date(data.timestamp).toISOString(),
         is_within_area: data.is_within_area,
+        // Consume the backend's two-axis fields when present (CP6); userAxes
+        // falls back to deriveAxes from status + is_within_area otherwise.
+        ...(data.activity ? { activity: data.activity as PresenceActivity } : {}),
+        ...(data.location ? { location: data.location as PresenceLocation } : {}),
       }));
     });
 
@@ -182,6 +187,8 @@ export function MapDashboardScreen(): React.JSX.Element {
       dispatch(updateLiveUser({
         id: data.user_id,
         status: data.new_status as TrackingStatus,
+        ...(data.activity ? { activity: data.activity } : {}),
+        ...(data.location ? { location: data.location } : {}),
       }));
     });
 
@@ -397,6 +404,7 @@ export function MapDashboardScreen(): React.JSX.Element {
           roleText: ROLE_LABELS[user.role as UserRole] ?? user.role,
           accent: nbColors.primary,
           icon: getRoleIcon(user.role),
+          presence: userAxes(user),
         },
         46,
         () => {

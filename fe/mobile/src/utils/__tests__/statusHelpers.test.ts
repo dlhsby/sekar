@@ -332,6 +332,11 @@ describe('statusHelpers', () => {
       expect(deriveAxes('missing', true)).toEqual({ activity: 'missing', location: 'unknown' });
       expect(deriveAxes('offline', true)).toEqual({ activity: 'offline', location: 'unknown' });
     });
+    it('trusts the status for active/outside_area, ignoring a stale is_within_area', () => {
+      // active is inside by definition; outside_area is outside by definition.
+      expect(deriveAxes('active', false)).toEqual({ activity: 'aktif', location: 'dalam_area' });
+      expect(deriveAxes('outside_area', true)).toEqual({ activity: 'aktif', location: 'luar_area' });
+    });
   });
 
   describe('userAxes', () => {

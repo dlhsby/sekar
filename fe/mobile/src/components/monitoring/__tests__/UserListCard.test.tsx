@@ -129,19 +129,19 @@ describe('UserListCard', () => {
       expect(statusDot).toBeTruthy();
     });
 
-    it('should render a status dot with the correct color for outside_area status', () => {
-      // Arrange — outside_area status color is '#9333EA'
+    it('colors the dot by ACTIVITY — outside_area is fresh GPS → aktif (green)', () => {
+      // CP6: the dot now reflects the activity axis. outside_area = fresh fix
+      // outside the area → activity 'aktif' → statusActive green (#15803D).
+      // (The "outside" location is shown via the marker ring, not this dot.)
       const user = createMockUser({ status: 'outside_area' });
 
-      // Act
       const { UNSAFE_getAllByType } = render(
         <UserListCard user={user} onPress={mockOnPress} />
       );
 
-      // Assert
       const views = UNSAFE_getAllByType('View');
       const statusDot = views.find(
-        v => v.props.style && JSON.stringify(v.props.style).includes('#9333EA')
+        v => v.props.style && JSON.stringify(v.props.style).includes('#15803D')
       );
       expect(statusDot).toBeTruthy();
     });

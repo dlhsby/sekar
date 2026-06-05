@@ -6,6 +6,7 @@ import {
   StyleSheet,
   AccessibilityInfo,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -87,7 +88,7 @@ export function FieldHomeScreen(): React.JSX.Element {
   });
 
   // Home-screen location (drives the in-area pill + the map modal).
-  const { location: homeLocation, hasActiveShift } = useHomeLocation();
+  const { location: homeLocation, refresh: refreshLocation, hasActiveShift } = useHomeLocation();
 
   // Defensive Array.isArray guards: stale HMR/hydration snapshots have crashed
   // this tree before when a list briefly hydrated as a non-array.
@@ -359,6 +360,33 @@ export function FieldHomeScreen(): React.JSX.Element {
                   <NBText variant="mono-sm" color="gray700" style={styles.heroMeta}>
                     {`Mulai ${formatTime(currentShift.clock_in_time)} · ${heroAreaName}`}
                   </NBText>
+                  {/* Current GPS + force-refresh (force-uploads the location). */}
+                  <View style={styles.heroGpsRow}>
+                    <MaterialCommunityIcons name="crosshairs-gps" size={16} color={nbColors.gray700} />
+                    <NBText variant="mono-sm" color="gray700" numberOfLines={1} style={styles.heroGpsText}>
+                      {homeLocation.latitude !== null && homeLocation.longitude !== null
+                        ? `${homeLocation.latitude.toFixed(5)}, ${homeLocation.longitude.toFixed(5)}${
+                            homeLocation.accuracy !== null ? ` · ±${Math.round(homeLocation.accuracy)}m` : ''
+                          }`
+                        : homeLocation.loading
+                        ? 'Mencari lokasi…'
+                        : 'Lokasi tidak tersedia'}
+                    </NBText>
+                    <TouchableOpacity
+                      onPress={refreshLocation}
+                      disabled={homeLocation.loading}
+                      style={styles.heroGpsRefresh}
+                      accessibilityRole="button"
+                      accessibilityLabel="Perbarui lokasi"
+                      testID="hero-refresh-location"
+                    >
+                      {homeLocation.loading ? (
+                        <ActivityIndicator size="small" color={nbColors.black} />
+                      ) : (
+                        <MaterialCommunityIcons name="refresh" size={18} color={nbColors.black} />
+                      )}
+                    </TouchableOpacity>
+                  </View>
                   {isClockable && (
                     <View style={styles.heroButton}>
                       <NBButton
@@ -509,6 +537,28 @@ const styles = StyleSheet.create({
   heroClock: { fontSize: 34, lineHeight: 38, letterSpacing: 0.5 },
   heroMeta: { marginTop: nbSpacing.sm },
   heroIdleTitle: { marginTop: 2 },
+  // Plain inline coords (no card) + a compact white refresh button right after.
+  heroGpsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+    marginTop: nbSpacing.xs,
+  },
+  // flexShrink (not flex:1) so the button hugs the coords instead of being
+  // pushed to the far right; text truncates only if the row is too narrow.
+  heroGpsText: { flexShrink: 1, fontSize: 11 },
+  heroGpsRefresh: {
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    // Extra breathing room from the coords (on top of the row gap).
+    marginLeft: nbSpacing.sm,
+    backgroundColor: nbColors.white,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.sm,
+  },
   heroButton: { marginTop: nbSpacing.md },
   heroDetailLink: { marginTop: nbSpacing.sm, alignSelf: 'flex-start' },
   heroDetailText: { letterSpacing: 0.6 },

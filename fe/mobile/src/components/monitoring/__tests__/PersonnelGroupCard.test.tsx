@@ -63,15 +63,15 @@ describe('PersonnelGroupCard', () => {
     expect(getByText('total')).toBeTruthy();
   });
 
-  it('surfaces all four statuses in the breakdown, including zeros', () => {
+  it('surfaces the 3 activity buckets in the breakdown, including zeros', () => {
     const { getByText, getAllByText } = render(
       <PersonnelGroupCard group={group} onPress={jest.fn()} />,
     );
-    // active 3, inactive 1, outside 0, missing 0
+    // CP6 activity buckets: 3 active → aktif 3, 1 inactive → idle 1, missing 0.
     expect(getByText('3')).toBeTruthy();
     expect(getByText('1')).toBeTruthy();
-    // two zero buckets (outside_area + missing)
-    expect(getAllByText('0')).toHaveLength(2);
+    // one zero bucket (missing)
+    expect(getAllByText('0')).toHaveLength(1);
   });
 
   it('falls back to the raw role string for an unknown role', () => {
@@ -80,11 +80,11 @@ describe('PersonnelGroupCard', () => {
     expect(getByText('mystery_role')).toBeTruthy();
   });
 
-  it('renders all four breakdown buckets even when the group is empty', () => {
+  it('renders all 3 activity buckets even when the group is empty', () => {
     const empty: PersonnelGroup = { role: 'satgas', users: [] };
     const { getAllByText } = render(<PersonnelGroupCard group={empty} onPress={jest.fn()} />);
-    // 4 status buckets all at 0, plus the headcount 0 → 5 occurrences of "0".
-    expect(getAllByText('0')).toHaveLength(5);
+    // 3 activity buckets all at 0, plus the headcount 0 → 4 occurrences of "0".
+    expect(getAllByText('0')).toHaveLength(4);
   });
 
   it('calls onPress with the group when tapped', () => {

@@ -11,7 +11,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { NBText } from '../nb/NBText';
 import { StatusPill } from '../home/StatusPill';
 import { RoleAvatar } from '../common/RoleAvatar';
-import { presencePill } from '../../utils/statusHelpers';
+import { userAxes, presenceActivityPill } from '../../utils/statusHelpers';
 import { ROLE_LABELS } from '../../constants/roles';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
 import type { LiveUser, UserRole } from '../../types/models.types';
@@ -32,7 +32,8 @@ export const WorkerTile = React.memo(function WorkerTile({
   user,
   onPress,
 }: WorkerTileProps): React.JSX.Element {
-  const { tone, label } = presencePill(user.status);
+  const { activity, location } = userAxes(user);
+  const { tone, label } = presenceActivityPill(activity);
   const roleLabel = ROLE_LABELS[user.role as UserRole] ?? user.role;
   const lastSeen = formatLastSeen(user.last_update);
   const isStale = user.last_update
@@ -62,6 +63,14 @@ export const WorkerTile = React.memo(function WorkerTile({
         </NBText>
         <View style={styles.metaRow}>
           <StatusPill dot tone={tone} label={label} />
+          {location === 'luar_area' ? (
+            <View style={styles.outsideChip}>
+              <MaterialCommunityIcons name="map-marker-alert" size={11} color={nbColors.statusOutside} />
+              <NBText variant="caption" color="statusOutside" style={styles.outsideLabel}>
+                Luar area
+              </NBText>
+            </View>
+          ) : null}
           {isStale ? (
             <View style={styles.staleChip}>
               <MaterialCommunityIcons name="wifi-off" size={11} color={nbColors.statusMissing} />
@@ -119,6 +128,14 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   staleLabel: {
+    fontSize: 10,
+  },
+  outsideChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  outsideLabel: {
     fontSize: 10,
   },
   right: {

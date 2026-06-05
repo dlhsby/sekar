@@ -41,4 +41,32 @@ describe('MarkerCalloutCard', () => {
     // No " · " separator without a role.
     expect(queryByText(/·/)).toBeNull();
   });
+
+  it('renders the presence row (activity + location) when provided', () => {
+    const { getByText } = render(
+      <MarkerCalloutCard
+        title="Budi Santoso"
+        typeText="Petugas"
+        roleText="Satgas"
+        accent={nbColors.primary}
+        icon="account"
+        presence={{ activity: 'idle', location: 'luar_area' }}
+      />,
+    );
+    expect(getByText('Tidak aktif')).toBeTruthy();
+    expect(getByText(/Luar area/)).toBeTruthy();
+  });
+
+  it('omits the location part of the presence row when unknown', () => {
+    const { getByText, queryByText } = render(
+      <MarkerCalloutCard
+        title="Budi"
+        typeText="Petugas"
+        accent={nbColors.primary}
+        presence={{ activity: 'missing', location: 'unknown' }}
+      />,
+    );
+    expect(getByText('Tidak terdeteksi')).toBeTruthy();
+    expect(queryByText(/Dalam area|Luar area/)).toBeNull();
+  });
 });

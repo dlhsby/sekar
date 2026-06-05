@@ -14,7 +14,8 @@ import {
   nbBorders,
 } from '../../constants/nbTokens';
 import { NBText } from '../nb/NBText';
-import { getStatusColor, getRoleIcon } from '../../utils/mapUtils';
+import { getActivityColor, getRoleIcon } from '../../utils/mapUtils';
+import { userAxes } from '../../utils/statusHelpers';
 import { ROLE_LABELS } from '../../constants/roles';
 import type { LiveUser, UserRole } from '../../types/models.types';
 
@@ -86,7 +87,10 @@ export const UserMarker = React.memo(function UserMarker({
   dimmed = false,
 }: UserMarkerProps): React.JSX.Element {
   const isCluster = (clusterCount ?? 0) > 1;
-  const markerColor = getStatusColor(user.status);
+  // Two-axis (CP6): fill = activity color; a ring marks luar_area.
+  const { activity, location } = userAxes(user);
+  const markerColor = getActivityColor(activity);
+  const isOutside = location === 'luar_area';
   const roleIcon = getRoleIcon(user.role);
   const label = isCluster ? null : getMarkerLabel(user, labelMode);
   const isCloseZoom = labelMode === 'full';
@@ -103,7 +107,7 @@ export const UserMarker = React.memo(function UserMarker({
     setTracksViewChanges(true);
     const t = setTimeout(() => setTracksViewChanges(false), 250);
     return () => clearTimeout(t);
-  }, [labelMode, user.status, user.full_name, isCluster, clusterCount]);
+  }, [labelMode, user.status, user.activity, user.location, user.is_within_area, user.full_name, isCluster, clusterCount]);
 
   return (
     <Marker
@@ -132,12 +136,16 @@ export const UserMarker = React.memo(function UserMarker({
           </View>
         ) : (
           <>
-            <View style={[styles.marker, { backgroundColor: markerColor }]}>
-              <MaterialCommunityIcons
-                name={roleIcon}
-                size={16}
-                color={nbColors.white}
-              />
+            {/* Ring marks luar_area; transparent (but same size) otherwise so the
+                cached bitmap dimensions stay stable on Android. */}
+            <View style={[styles.markerRing, isOutside && styles.markerRingOutside]}>
+              <View style={[styles.marker, { backgroundColor: markerColor }]}>
+                <MaterialCommunityIcons
+                  name={roleIcon}
+                  size={16}
+                  color={nbColors.white}
+                />
+              </View>
             </View>
             <View style={[styles.markerArrow, { borderTopColor: markerColor }]} />
             {/* Always render label placeholder to keep view hierarchy stable on Android
@@ -175,6 +183,19 @@ const styles = StyleSheet.create({
   },
   dimmed: {
     opacity: 0.2,
+  },
+  // Outer ring (luar_area indicator). Always rendered at the same size with a
+  // 2px padding + 2px border so the Android bitmap is stable; the border is
+  // transparent for dalam_area and location-tinted for luar_area.
+  markerRing: {
+    borderRadius: 20,
+    padding: 2,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  markerRingOutside: {
+    borderColor: nbColors.statusOutside,
+    backgroundColor: nbColors.white,
   },
   marker: {
     width: 32,

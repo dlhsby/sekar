@@ -15,7 +15,8 @@ import {
   nbShadows,
 } from '../../constants/nbTokens';
 import { NBText } from '../nb/NBText';
-import { getStatusColor, getRoleIcon } from '../../utils/mapUtils';
+import { getActivityColor, getRoleIcon } from '../../utils/mapUtils';
+import { userAxes } from '../../utils/statusHelpers';
 import { ROLE_LABELS } from '../../constants/roles';
 import type { LiveUser, UserRole } from '../../types/models.types';
 
@@ -43,7 +44,10 @@ function getRelativeTime(isoString: string): string {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function UserListCard({ user, onPress }: UserListCardProps): React.JSX.Element {
-  const statusColor = useMemo(() => getStatusColor(user.status), [user.status]);
+  const statusColor = useMemo(
+    () => getActivityColor(userAxes(user).activity),
+    [user.status, user.activity, user.location, user.is_within_area],
+  );
   const roleIcon = useMemo(() => getRoleIcon(user.role), [user.role]);
   const roleLabel = useMemo(
     () => ROLE_LABELS[user.role as UserRole] ?? user.role,

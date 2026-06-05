@@ -12,6 +12,7 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { MarkerCalloutCard } from './MarkerCalloutCard';
+import type { PresenceActivity, PresenceLocation } from '../../types/models.types';
 
 // Fixed footprint so the card can be centered + lifted with constant transforms
 // (no onLayout measure → no reflow/jump → snappy). The bubble (min 160 / max 240)
@@ -31,6 +32,7 @@ export interface MarkerPreviewData {
     roleText?: string;
     accent: string;
     icon?: string;
+    presence?: { activity: PresenceActivity; location: PresenceLocation };
   };
   /** Opens the detail surface (UserDetailSheet / BoundaryDetailModal). */
   onDetail: () => void;
@@ -68,6 +70,7 @@ export function MarkerPreview({ data }: MarkerPreviewProps): React.JSX.Element {
           roleText={card.roleText}
           accent={card.accent}
           icon={card.icon}
+          presence={card.presence}
         />
       </TouchableOpacity>
     </View>

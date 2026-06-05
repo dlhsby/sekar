@@ -55,11 +55,27 @@ describe('WorkerTile', () => {
     expect(getByText('Satgas · Taman Bungkul')).toBeTruthy();
   });
 
-  it('renders the presence pill label for the status', () => {
+  it('renders the activity pill label for the status', () => {
     const { getByText } = render(
       <WorkerTile user={createUser({ status: 'inactive' })} onPress={jest.fn()} />,
     );
     expect(getByText('Tidak aktif')).toBeTruthy();
+  });
+
+  it('shows the "Luar area" chip for an outside worker (CP6)', () => {
+    // outside_area = fresh fix outside → activity "Aktif" + a "Luar area" chip.
+    const { getByText } = render(
+      <WorkerTile user={createUser({ status: 'outside_area' })} onPress={jest.fn()} />,
+    );
+    expect(getByText('Aktif')).toBeTruthy();
+    expect(getByText('Luar area')).toBeTruthy();
+  });
+
+  it('does not show the "Luar area" chip when inside the area', () => {
+    const { queryByText } = render(
+      <WorkerTile user={createUser({ status: 'active' })} onPress={jest.fn()} />,
+    );
+    expect(queryByText('Luar area')).toBeNull();
   });
 
   it('shows the GPS-stale chip when the last update is older than 10 minutes', () => {

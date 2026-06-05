@@ -23,7 +23,7 @@ import { StatusPill } from '../home/StatusPill';
 import { HomeStatTile } from '../home/HomeStatTile';
 import { ListItemCard, type ListItemMeta } from '../common';
 import { LocationMapModal } from '../modals/LocationMapModal';
-import { presencePill, overtimePill, activityPill, formatDate, formatTime as formatTimeShort } from '../../utils/statusHelpers';
+import { userAxes, presenceActivityPill, overtimePill, activityPill, formatDate, formatTime as formatTimeShort } from '../../utils/statusHelpers';
 import { taskPill, isTaskScopedToday } from '../../utils/taskStatus';
 import { ROLE_LABELS } from '../../constants/roles';
 import { getOvertimes } from '../../services/api/overtimeApi';
@@ -269,8 +269,16 @@ export function UserDetailSheet({
               </View>
               <View style={styles.profileMeta}>
                 {(() => {
-                  const pill = presencePill(user.status);
-                  return <StatusPill dot tone={pill.tone} label={pill.label} />;
+                  const { activity, location } = userAxes(user);
+                  const pill = presenceActivityPill(activity);
+                  return (
+                    <>
+                      <StatusPill dot tone={pill.tone} label={pill.label} />
+                      {location === 'luar_area' ? (
+                        <StatusPill dot tone="bad" label="Luar area" />
+                      ) : null}
+                    </>
+                  );
                 })()}
                 {user.last_update ? (
                   <NBText variant="mono-sm" color="gray500" style={styles.lastUpdate}>

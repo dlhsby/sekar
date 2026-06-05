@@ -205,19 +205,17 @@ export function deriveAxes(
   status: TrackingStatus,
   isWithinArea: boolean,
 ): { activity: PresenceActivity; location: PresenceLocation } {
-  let activity: PresenceActivity;
   switch (status) {
-    case 'active':
-    case 'outside_area': activity = 'aktif'; break;
-    case 'inactive':     activity = 'idle'; break;
-    case 'missing':      activity = 'missing'; break;
-    case 'offline':      activity = 'offline'; break;
+    // `active`/`outside_area` encode the location directly (fresh fix inside vs
+    // outside) — trust the status, not a possibly-stale is_within_area flag.
+    case 'active':       return { activity: 'aktif', location: 'dalam_area' };
+    case 'outside_area': return { activity: 'aktif', location: 'luar_area' };
+    // `inactive` (idle) keeps its last-known location from is_within_area.
+    case 'inactive':     return { activity: 'idle', location: isWithinArea ? 'dalam_area' : 'luar_area' };
+    // No usable fix → location unknown.
+    case 'missing':      return { activity: 'missing', location: 'unknown' };
+    case 'offline':      return { activity: 'offline', location: 'unknown' };
   }
-  const location: PresenceLocation =
-    activity === 'missing' || activity === 'offline'
-      ? 'unknown'
-      : isWithinArea ? 'dalam_area' : 'luar_area';
-  return { activity, location };
 }
 
 // Read the two axes off a live user — prefer the explicit backend fields, fall
