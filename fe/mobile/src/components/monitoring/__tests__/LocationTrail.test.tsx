@@ -1,98 +1,41 @@
 /**
- * LocationTrail Component Tests
- * Phase 2D: Polyline overlay on the map showing a user's GPS history.
- * Tests loading, polyline segment rendering, start/end flag markers, intermediate dots,
- * trail info/control bars, error handling, and close callback.
+ * LocationTrailOverlay tests — Phase 4 M3 (CP4).
+ *
+ * The overlay sits on top of the trail MapView and renders exactly one of:
+ *   - the bottom info bar (when history has points),
+ *   - a loading pill,
+ *   - an NBEmptyState error card with a "Coba Lagi" retry CTA,
+ *   - an NBEmptyState "no data" card (history present but zero points).
+ *
+ * The header (back + worker name + date stepper) now lives in NBModal's frame,
+ * so it's not part of this component anymore. react-native-maps is mocked
+ * because LocationTrail.tsx imports it at module scope (Marker/Polyline/Callout).
  */
 
 import React from 'react';
-import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
-// TODO: rewrite this suite. LocationTrail was split into LocationTrailMapLayers,
-// LocationTrailOverlay, and useLocationHistory to fix a Fabric MapView crash —
-// the old combined component is gone and these integration tests need to be
-// re-authored against the new public API. Suite is describe.skip'd until then;
-// the stub below keeps the file compiling without dragging in the new types.
-const LocationTrail: React.ComponentType<any> = () => null;
+import { render, fireEvent } from '@testing-library/react-native';
+import { LocationTrailOverlay } from '../LocationTrail';
 import type { LocationHistory, LocationHistoryPoint } from '../../../types/models.types';
-
-// ─── Mocks ────────────────────────────────────────────────────────────────────
 
 jest.mock('react-native-maps', () => {
   const React = require('react');
-  const { View, Text } = require('react-native');
-
+  const { View } = require('react-native');
   return {
-    Marker: ({ children, coordinate, tracksViewChanges, ...rest }: any) =>
-      React.createElement(
-        View,
-        { testID: 'marker', coordinate, tracksViewChanges, ...rest },
-        children,
-      ),
-    Polyline: ({ strokeColor, coordinates, ...rest }: any) =>
-      React.createElement(View, { testID: 'polyline', strokeColor, coordinates, ...rest }),
-    Callout: ({ children, ...rest }: any) =>
-      React.createElement(View, { testID: 'callout', ...rest }, children),
+    Marker: ({ children, ...rest }: any) => React.createElement(View, rest, children),
+    Polyline: (props: any) => React.createElement(View, props),
+    Callout: ({ children, ...rest }: any) => React.createElement(View, rest, children),
   };
 });
 
 jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
   const React = require('react');
   const { Text } = require('react-native');
-  return (props: any) =>
-    React.createElement(Text, { testID: `icon-${props.name}`, ...props }, props.name);
+  return (props: any) => React.createElement(Text, { testID: `icon-${props.name}` }, props.name);
 });
 
-jest.mock('../../../services/api/monitoringApi', () => ({
-  getUserLocationHistory: jest.fn(),
-}));
+// ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-// Mock TrailControlBar to render a simplified close button
-jest.mock('../TrailControlBar', () => {
-  const React = require('react');
-  const { View, TouchableOpacity, Text } = require('react-native');
-  return {
-    TrailControlBar: ({ onClose }: any) =>
-      React.createElement(
-        View,
-        { testID: 'trail-control-bar' },
-        React.createElement(
-          TouchableOpacity,
-          { onPress: onClose, accessibilityLabel: 'Tutup trail' },
-          React.createElement(Text, null, 'Close'),
-        ),
-      ),
-  };
-});
-
-// Mock TrailInfoBar to render summary text
-jest.mock('../TrailInfoBar', () => {
-  const React = require('react');
-  const { View, Text } = require('react-native');
-  return {
-    TrailInfoBar: ({ history, date }: any) => {
-      if (!history) return null;
-      const dist = history.total_distance_meters;
-      const distText = dist >= 1000 ? `${(dist / 1000).toFixed(1)} km` : `${dist} m`;
-      return React.createElement(
-        View,
-        { testID: 'trail-info-bar' },
-        React.createElement(Text, null, history.user_name),
-        React.createElement(Text, null, date),
-        React.createElement(Text, null, distText),
-      );
-    },
-  };
-});
-
-import { getUserLocationHistory } from '../../../services/api/monitoringApi';
-
-const mockGetUserLocationHistory = getUserLocationHistory as jest.Mock;
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function buildPoint(
-  overrides?: Partial<LocationHistoryPoint & { latitude: number; longitude: number }>,
-): LocationHistoryPoint {
+function buildPoint(overrides?: Partial<LocationHistoryPoint>): LocationHistoryPoint {
   return {
     latitude: -7.250445,
     longitude: 112.768845,
@@ -104,10 +47,7 @@ function buildPoint(
   };
 }
 
-function buildLocationHistory(
-  points: LocationHistoryPoint[],
-  overrides?: Partial<LocationHistory>,
-): LocationHistory {
+function buildHistory(points: LocationHistoryPoint[]): LocationHistory {
   return {
     user_id: 'user-123',
     user_name: 'Ahmad Satgas',
@@ -125,334 +65,64 @@ function buildLocationHistory(
     time_inside_area_minutes: 90,
     time_outside_area_minutes: 30,
     generated_at: '2026-03-05T09:30:00Z',
-    ...overrides,
   };
 }
 
-const INSIDE_COLOR = '#15803D';
-const OUTSIDE_COLOR = '#9333EA';
-
-// ─── Tests ────────────────────────────────────────────────────────────────────
-
-describe.skip('LocationTrail (skipped — needs rewrite for split components)', () => {
-  const mockOnClose = jest.fn();
-
-  const defaultProps = {
-    userId: 'user-123',
-    date: '2026-03-05',
-    onClose: mockOnClose,
-  };
-
-  beforeEach(() => {
-    jest.clearAllMocks();
+describe('LocationTrailOverlay', () => {
+  it('renders the info bar when history has points', () => {
+    const history = buildHistory([buildPoint(), buildPoint()]);
+    const { getByText, queryByTestId } = render(
+      <LocationTrailOverlay history={history} isLoading={false} error={null} />,
+    );
+    // Info bar stats present…
+    expect(getByText('Total Jarak')).toBeTruthy();
+    expect(getByText('500 m')).toBeTruthy();
+    // …and neither empty nor error state.
+    expect(queryByTestId('trail-empty-title')).toBeNull();
+    expect(queryByTestId('trail-error-title')).toBeNull();
   });
 
-  // ── Loading state ───────────────────────────────────────────────────────────
-
-  describe('loading state', () => {
-    it('shows loading text while data is loading', async () => {
-      mockGetUserLocationHistory.mockReturnValue(new Promise(() => {}));
-
-      const { getByText } = render(<LocationTrail {...defaultProps} />);
-      expect(getByText('Memuat riwayat lokasi...')).toBeTruthy();
-    });
-
-    it('calls getUserLocationHistory with correct arguments', async () => {
-      mockGetUserLocationHistory.mockResolvedValue({
-        data: buildLocationHistory([buildPoint(), buildPoint({ latitude: -7.251 })]),
-      });
-
-      render(
-        <LocationTrail
-          {...defaultProps}
-          userId="user-999"
-          date="2026-03-05"
-          shiftId="shift-abc"
-        />
-      );
-
-      await waitFor(() => {
-        expect(mockGetUserLocationHistory).toHaveBeenCalledWith(
-          'user-999',
-          '2026-03-05',
-          'shift-abc',
-        );
-      });
-    });
+  it('shows the no-data state (and no info bar) when history has zero points', () => {
+    const history = buildHistory([]);
+    const { getByTestId, queryByText } = render(
+      <LocationTrailOverlay history={history} isLoading={false} error={null} />,
+    );
+    expect(getByTestId('trail-empty-title')).toBeTruthy();
+    // The misleading all-zero info bar must NOT render.
+    expect(queryByText('Total Jarak')).toBeNull();
   });
 
-  // ── Polyline segments ───────────────────────────────────────────────────────
+  it('shows the error state with a retry CTA that calls onRetry', () => {
+    const onRetry = jest.fn();
+    const { getByTestId, queryByText } = render(
+      <LocationTrailOverlay
+        history={null}
+        isLoading={false}
+        error="Gagal memuat riwayat lokasi"
+        onRetry={onRetry}
+      />,
+    );
+    expect(getByTestId('trail-error-title')).toBeTruthy();
+    expect(queryByText('Total Jarak')).toBeNull();
 
-  describe('polyline segments', () => {
-    it('renders polyline segments after data loads', async () => {
-      const points = [buildPoint(), buildPoint({ latitude: -7.251 })];
-      mockGetUserLocationHistory.mockResolvedValue({
-        data: buildLocationHistory(points),
-      });
-
-      const { getAllByTestId } = render(<LocationTrail {...defaultProps} />);
-
-      await waitFor(() => {
-        const polylines = getAllByTestId('polyline');
-        expect(polylines.length).toBeGreaterThan(0);
-      });
-    });
-
-    it('renders green polyline for inside_area points', async () => {
-      const points = [
-        buildPoint({ is_within_area: true }),
-        buildPoint({ latitude: -7.251, is_within_area: true }),
-      ];
-      mockGetUserLocationHistory.mockResolvedValue({
-        data: buildLocationHistory(points),
-      });
-
-      const { getAllByTestId } = render(<LocationTrail {...defaultProps} />);
-
-      await waitFor(() => {
-        const polylines = getAllByTestId('polyline');
-        const greenPolyline = polylines.find(p => p.props.strokeColor === INSIDE_COLOR);
-        expect(greenPolyline).toBeTruthy();
-      });
-    });
-
-    it('renders purple polyline for outside_area points', async () => {
-      const points = [
-        buildPoint({ is_within_area: false }),
-        buildPoint({ latitude: -7.251, is_within_area: false }),
-      ];
-      mockGetUserLocationHistory.mockResolvedValue({
-        data: buildLocationHistory(points),
-      });
-
-      const { getAllByTestId } = render(<LocationTrail {...defaultProps} />);
-
-      await waitFor(() => {
-        const polylines = getAllByTestId('polyline');
-        const purplePolyline = polylines.find(p => p.props.strokeColor === OUTSIDE_COLOR);
-        expect(purplePolyline).toBeTruthy();
-      });
-    });
-
-    it('does not render polylines when there are fewer than 2 points', async () => {
-      const points = [buildPoint()];
-      mockGetUserLocationHistory.mockResolvedValue({
-        data: buildLocationHistory(points),
-      });
-
-      const { queryAllByTestId } = render(<LocationTrail {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(queryAllByTestId('polyline')).toHaveLength(0);
-      });
-    });
+    fireEvent.press(getByTestId('trail-error-cta'));
+    expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
-  // ── Start and end flag markers ──────────────────────────────────────────────
-
-  describe('start and end markers', () => {
-    it('renders start marker with "Mulai" flag', async () => {
-      const points = [
-        buildPoint({ latitude: -7.250445 }),
-        buildPoint({ latitude: -7.251 }),
-      ];
-      mockGetUserLocationHistory.mockResolvedValue({
-        data: buildLocationHistory(points),
-      });
-
-      const { getAllByText } = render(<LocationTrail {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(getAllByText(/Mulai/).length).toBeGreaterThan(0);
-      });
-    });
-
-    it('renders end marker with "Akhir" flag', async () => {
-      const points = [
-        buildPoint({ latitude: -7.250445 }),
-        buildPoint({ latitude: -7.251 }),
-      ];
-      mockGetUserLocationHistory.mockResolvedValue({
-        data: buildLocationHistory(points),
-      });
-
-      const { getAllByText } = render(<LocationTrail {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(getAllByText(/Akhir/).length).toBeGreaterThan(0);
-      });
-    });
-
-    it('does not render end marker when only one point exists', async () => {
-      const points = [buildPoint()];
-      mockGetUserLocationHistory.mockResolvedValue({
-        data: buildLocationHistory(points),
-      });
-
-      const { queryByText } = render(<LocationTrail {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(queryByText(/Akhir/)).toBeNull();
-      });
-    });
+  it('omits the retry CTA when no onRetry is provided', () => {
+    const { getByTestId, queryByTestId } = render(
+      <LocationTrailOverlay history={null} isLoading={false} error="boom" />,
+    );
+    expect(getByTestId('trail-error-title')).toBeTruthy();
+    expect(queryByTestId('trail-error-cta')).toBeNull();
   });
 
-  // ── Intermediate dot markers ────────────────────────────────────────────────
-
-  describe('intermediate dot markers', () => {
-    it('renders intermediate dot markers for every 5th intermediate point', async () => {
-      // Build 12 points: index 0 = start, index 11 = end
-      // intermediate = indices 1-10 (10 points), every 5th = indices 0 and 5
-      const points = Array.from({ length: 12 }, (_, i) =>
-        buildPoint({ latitude: -7.250445 - i * 0.001 }),
-      );
-      mockGetUserLocationHistory.mockResolvedValue({
-        data: buildLocationHistory(points),
-      });
-
-      const { getAllByTestId } = render(<LocationTrail {...defaultProps} />);
-
-      await waitFor(() => {
-        const markers = getAllByTestId('marker');
-        // start + end + 2 intermediate dot markers (idx 0 and 5 of the intermediates)
-        expect(markers.length).toBeGreaterThanOrEqual(4);
-      });
-    });
-
-    it('renders no intermediate markers when only start and end exist', async () => {
-      const points = [buildPoint(), buildPoint({ latitude: -7.251 })];
-      mockGetUserLocationHistory.mockResolvedValue({
-        data: buildLocationHistory(points),
-      });
-
-      const { getAllByTestId } = render(<LocationTrail {...defaultProps} />);
-
-      await waitFor(() => {
-        const markers = getAllByTestId('marker');
-        // only start and end
-        expect(markers.length).toBe(2);
-      });
-    });
-  });
-
-  // ── Trail info bar ─────────────────────────────────────────────────────────
-
-  describe('trail info bar', () => {
-    it('renders user name and date in the info bar after data loads', async () => {
-      const points = [buildPoint(), buildPoint({ latitude: -7.251 })];
-      mockGetUserLocationHistory.mockResolvedValue({
-        data: buildLocationHistory(points),
-      });
-
-      const { getByText } = render(<LocationTrail {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(getByText(/Ahmad Satgas/)).toBeTruthy();
-        expect(getByText(/2026-03-05/)).toBeTruthy();
-      });
-    });
-
-    it('renders total distance in the info bar after data loads', async () => {
-      const points = [buildPoint(), buildPoint({ latitude: -7.251 })];
-      mockGetUserLocationHistory.mockResolvedValue({
-        data: buildLocationHistory(points, { total_distance_meters: 500 }),
-      });
-
-      const { getByText } = render(<LocationTrail {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(getByText(/500 m/)).toBeTruthy();
-      });
-    });
-
-    it('formats distance in km when total_distance_meters >= 1000', async () => {
-      const points = [buildPoint(), buildPoint({ latitude: -7.261 })];
-      mockGetUserLocationHistory.mockResolvedValue({
-        data: buildLocationHistory(points, { total_distance_meters: 1500 }),
-      });
-
-      const { getByText } = render(<LocationTrail {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(getByText(/1\.5 km/)).toBeTruthy();
-      });
-    });
-  });
-
-  // ── Error handling ──────────────────────────────────────────────────────────
-
-  describe('error handling', () => {
-    it('shows error message when API returns an error field', async () => {
-      mockGetUserLocationHistory.mockResolvedValue({
-        error: 'Data tidak ditemukan',
-      });
-
-      const { getByText } = render(<LocationTrail {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(getByText('Data tidak ditemukan')).toBeTruthy();
-      });
-    });
-
-    it('shows fallback error message when API call rejects', async () => {
-      mockGetUserLocationHistory.mockRejectedValue(new Error('Network error'));
-
-      const { getByText } = render(<LocationTrail {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(getByText('Gagal memuat riwayat lokasi')).toBeTruthy();
-      });
-    });
-  });
-
-  // ── Close button ────────────────────────────────────────────────────────────
-
-  describe('close button', () => {
-    it('calls onClose when the close button is pressed', async () => {
-      mockGetUserLocationHistory.mockResolvedValue({
-        data: buildLocationHistory([buildPoint(), buildPoint({ latitude: -7.251 })]),
-      });
-
-      const { getByLabelText } = render(<LocationTrail {...defaultProps} />);
-
-      await waitFor(() => {
-        expect(getByLabelText('Tutup trail')).toBeTruthy();
-      });
-
-      fireEvent.press(getByLabelText('Tutup trail'));
-      expect(mockOnClose).toHaveBeenCalledTimes(1);
-    });
-
-    it('close button is accessible during loading state', () => {
-      mockGetUserLocationHistory.mockReturnValue(new Promise(() => {}));
-
-      const { getByLabelText } = render(<LocationTrail {...defaultProps} />);
-      expect(getByLabelText('Tutup trail')).toBeTruthy();
-    });
-  });
-
-  // ── Cleanup ─────────────────────────────────────────────────────────────────
-
-  describe('cleanup', () => {
-    it('cancels the async request when component unmounts', async () => {
-      let resolveFn: (value: any) => void = () => {};
-      const pendingPromise = new Promise(resolve => {
-        resolveFn = resolve;
-      });
-      mockGetUserLocationHistory.mockReturnValue(pendingPromise);
-
-      const { unmount } = render(<LocationTrail {...defaultProps} />);
-      unmount();
-
-      // Resolve after unmount — should not cause state-update warnings
-      await act(async () => {
-        resolveFn({
-          data: buildLocationHistory([buildPoint(), buildPoint({ latitude: -7.251 })]),
-        });
-      });
-
-      // If the component handles cancellation correctly there are no warnings
-      expect(true).toBe(true);
-    });
+  it('shows the loading pill while loading', () => {
+    const { getByText, queryByTestId } = render(
+      <LocationTrailOverlay history={null} isLoading error={null} />,
+    );
+    expect(getByText('Memuat riwayat lokasi…')).toBeTruthy();
+    expect(queryByTestId('trail-error-title')).toBeNull();
+    expect(queryByTestId('trail-empty-title')).toBeNull();
   });
 });

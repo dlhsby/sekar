@@ -36,7 +36,7 @@ describe('TrailInfoBar', () => {
   describe('column labels', () => {
     it('renders all three uppercase stat labels', () => {
       const { getByText } = render(
-        <TrailInfoBar history={baseHistory} date="2026-03-08" />,
+        <TrailInfoBar history={baseHistory} />,
       );
       expect(getByText('Total Jarak')).toBeTruthy();
       expect(getByText('Di Area')).toBeTruthy();
@@ -48,7 +48,7 @@ describe('TrailInfoBar', () => {
     it('shows meters when distance is below 1000m', () => {
       const history = { ...baseHistory, total_distance_meters: 500 };
       const { getByText } = render(
-        <TrailInfoBar history={history} date="2026-03-08" />,
+        <TrailInfoBar history={history} />,
       );
       expect(getByText('500 m')).toBeTruthy();
     });
@@ -56,7 +56,7 @@ describe('TrailInfoBar', () => {
     it('rounds meters to the nearest integer', () => {
       const history = { ...baseHistory, total_distance_meters: 999.6 };
       const { getByText } = render(
-        <TrailInfoBar history={history} date="2026-03-08" />,
+        <TrailInfoBar history={history} />,
       );
       expect(getByText('1000 m')).toBeTruthy();
     });
@@ -64,7 +64,7 @@ describe('TrailInfoBar', () => {
     it('shows km with one decimal place when distance is exactly 1000m', () => {
       const history = { ...baseHistory, total_distance_meters: 1000 };
       const { getByText } = render(
-        <TrailInfoBar history={history} date="2026-03-08" />,
+        <TrailInfoBar history={history} />,
       );
       expect(getByText('1.0 km')).toBeTruthy();
     });
@@ -72,7 +72,7 @@ describe('TrailInfoBar', () => {
     it('shows km with one decimal place for distances above 1000m', () => {
       const history = { ...baseHistory, total_distance_meters: 1500 };
       const { getByText } = render(
-        <TrailInfoBar history={history} date="2026-03-08" />,
+        <TrailInfoBar history={history} />,
       );
       expect(getByText('1.5 km')).toBeTruthy();
     });
@@ -80,7 +80,7 @@ describe('TrailInfoBar', () => {
     it('shows km correctly for large distances', () => {
       const history = { ...baseHistory, total_distance_meters: 12300 };
       const { getByText } = render(
-        <TrailInfoBar history={history} date="2026-03-08" />,
+        <TrailInfoBar history={history} />,
       );
       expect(getByText('12.3 km')).toBeTruthy();
     });
@@ -90,7 +90,7 @@ describe('TrailInfoBar', () => {
     it('shows minutes only when time is less than one hour', () => {
       const history = { ...baseHistory, time_inside_area_minutes: 45 };
       const { getByText } = render(
-        <TrailInfoBar history={history} date="2026-03-08" />,
+        <TrailInfoBar history={history} />,
       );
       expect(getByText('45m')).toBeTruthy();
     });
@@ -102,7 +102,7 @@ describe('TrailInfoBar', () => {
         time_outside_area_minutes: 10,
       };
       const { getAllByText } = render(
-        <TrailInfoBar history={history} date="2026-03-08" />,
+        <TrailInfoBar history={history} />,
       );
       // The "0m" string could match more than one column; existence is enough.
       expect(getAllByText('0m').length).toBeGreaterThanOrEqual(1);
@@ -111,7 +111,7 @@ describe('TrailInfoBar', () => {
     it('shows hours and minutes when time is 60 minutes or more', () => {
       const history = { ...baseHistory, time_inside_area_minutes: 90 };
       const { getByText } = render(
-        <TrailInfoBar history={history} date="2026-03-08" />,
+        <TrailInfoBar history={history} />,
       );
       expect(getByText('1j 30m')).toBeTruthy();
     });
@@ -119,7 +119,7 @@ describe('TrailInfoBar', () => {
     it('shows hours and zero minutes for exact hour multiples', () => {
       const history = { ...baseHistory, time_inside_area_minutes: 120 };
       const { getByText } = render(
-        <TrailInfoBar history={history} date="2026-03-08" />,
+        <TrailInfoBar history={history} />,
       );
       expect(getByText('2j 0m')).toBeTruthy();
     });
@@ -133,7 +133,7 @@ describe('TrailInfoBar', () => {
         time_outside_area_minutes: 10,
       };
       const { getByText } = render(
-        <TrailInfoBar history={history} date="2026-03-08" />,
+        <TrailInfoBar history={history} />,
       );
       expect(getByText('10m')).toBeTruthy();
     });
@@ -141,7 +141,7 @@ describe('TrailInfoBar', () => {
     it('shows hours and minutes when time is 60 minutes or more', () => {
       const history = { ...baseHistory, time_outside_area_minutes: 75 };
       const { getByText } = render(
-        <TrailInfoBar history={history} date="2026-03-08" />,
+        <TrailInfoBar history={history} />,
       );
       expect(getByText('1j 15m')).toBeTruthy();
     });
@@ -156,7 +156,7 @@ describe('TrailInfoBar', () => {
         time_outside_area_minutes: 30,
       };
       const { getByText } = render(
-        <TrailInfoBar history={history} date="2026-03-08" />,
+        <TrailInfoBar history={history} />,
       );
 
       expect(getByText('2.5 km')).toBeTruthy();

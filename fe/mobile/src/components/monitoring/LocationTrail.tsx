@@ -2,8 +2,8 @@
  * LocationTrail
  *
  * Split into three exports because react-native-maps' MapView crashes on Fabric
- * (Android, New Arch) when given non-feature children — TrailControlBar /
- * TrailInfoBar / loading-and-error <View>s fall through MapView.addFeature() to
+ * (Android, New Arch) when given non-feature children — TrailInfoBar /
+ * loading-and-error <View>s fall through MapView.addFeature() to
  * a generic ViewGroup.addView and trip "specified child already has a parent".
  *
  *   - useLocationHistory(userId, date, shiftId): owns the API fetch + refresh
@@ -23,12 +23,13 @@ import {
   nbColors,
   nbBorders,
   nbBorderRadius,
+  nbRadius,
   nbShadows,
   nbSpacing,
 } from '../../constants/nbTokens';
 import { NBText } from '../nb/NBText';
+import { NBEmptyState } from '../nb/NBEmptyState';
 import { getUserLocationHistory } from '../../services/api/monitoringApi';
-import { TrailControlBar } from './TrailControlBar';
 import { TrailInfoBar } from './TrailInfoBar';
 import type { LocationHistoryPoint, LocationHistory } from '../../types/models.types';
 
@@ -331,52 +332,79 @@ export function LocationTrailMapLayers({
   );
 }
 
-// ─── Overlay views only (TrailControlBar + TrailInfoBar + loading/error) ──────
+// ─── Overlay views only (TrailInfoBar + loading/error/empty states) ───────────
 
 interface LocationTrailOverlayProps {
   history: LocationHistory | null;
   isLoading: boolean;
   error: string | null;
-  date: string;
-  onDateChange: (date: string) => void;
-  userName?: string;
-  onClose: () => void;
+  /** Retry handler for the error state (typically the same refetch as the FAB). */
+  onRetry?: () => void;
 }
 
+/**
+ * Trail overlays that sit on top of the MapView (siblings, never MapView
+ * children): the bottom info bar plus the loading / error / empty states. The
+ * header (back + worker name + date stepper) lives in NBModal's frame, so this
+ * component no longer owns navigation or the date control.
+ */
 export function LocationTrailOverlay({
   history,
   isLoading,
   error,
-  date,
-  onDateChange,
-  userName,
-  onClose,
+  onRetry,
 }: LocationTrailOverlayProps): React.JSX.Element {
+  const hasPoints = !!history && history.points.length > 0;
+  // History loaded for the date but no GPS points were recorded — distinct from
+  // a fetch error. Show a "no data" state instead of a misleading all-zero bar.
+  const isEmpty = !isLoading && !error && !!history && history.points.length === 0;
+
   return (
     <>
-      <TrailControlBar
-        userName={userName}
-        date={date}
-        onDateChange={onDateChange}
-        onClose={onClose}
-      />
-
-      {!isLoading && !error && history && (
-        <TrailInfoBar history={history} date={date} />
+      {hasPoints && !isLoading && !error && (
+        <TrailInfoBar history={history} />
       )}
 
+      {/* Loading — translucent pill, map stays interactive underneath. */}
       {isLoading && (
-        <View style={styles.loadingOverlay}>
-          <NBText variant="body-sm" color="white" style={styles.loadingText}>
-            Memuat riwayat lokasi...
-          </NBText>
+        <View style={styles.centerOverlay} pointerEvents="none">
+          <View style={styles.loadingPill}>
+            <NBText variant="body-sm" color="white">
+              Memuat riwayat lokasi…
+            </NBText>
+          </View>
         </View>
       )}
+
+      {/* Error — full NB empty-state card with a retry CTA. */}
       {error && (
-        <View style={styles.loadingOverlay}>
-          <NBText variant="body-sm" color="dangerDark" style={styles.errorText}>
-            {error}
-          </NBText>
+        <View style={styles.centerOverlay}>
+          <View style={styles.stateCard}>
+            <NBEmptyState
+              variant="error"
+              illustration="illo-offline"
+              title="Gagal Memuat Riwayat"
+              description={error}
+              ctaLabel={onRetry ? 'Coba Lagi' : undefined}
+              onCTA={onRetry}
+              testID="trail-error"
+            />
+          </View>
+        </View>
+      )}
+
+      {/* No GPS points for the selected date. */}
+      {isEmpty && (
+        <View style={styles.centerOverlay} pointerEvents="none">
+          <View style={styles.stateCard}>
+            <NBEmptyState
+              variant="noData"
+              illustration="illo-location"
+              title="Tidak Ada Riwayat"
+              description="Belum ada titik GPS yang terekam untuk tanggal ini."
+              testID="trail-empty"
+            />
+          </View>
         </View>
       )}
     </>
@@ -422,23 +450,28 @@ const styles = StyleSheet.create({
     minWidth: 120,
   },
 
-  loadingOverlay: {
-    position: 'absolute',
-    top: '50%',
-    left: 0,
-    right: 0,
+  // Centers loading/error/empty content over the map (below the control bar).
+  centerOverlay: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: nbSpacing.lg,
   },
-  loadingText: {
-    backgroundColor: 'rgba(0,0,0,0.7)',
+  loadingPill: {
+    backgroundColor: nbColors.black,
     paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.xs,
-    borderRadius: nbBorderRadius.base,
+    paddingVertical: nbSpacing.sm,
+    borderRadius: nbRadius.full,
+    ...nbShadows.sm,
   },
-  errorText: {
-    backgroundColor: 'rgba(255,255,255,0.9)',
+  // NB card wrapping NBEmptyState so it reads over the map.
+  stateCard: {
+    backgroundColor: nbColors.white,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.base,
     paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.xs,
-    borderRadius: nbBorderRadius.base,
+    paddingVertical: nbSpacing.md,
+    ...nbShadows.md,
   },
 });

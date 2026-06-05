@@ -21,7 +21,6 @@ import type { LocationHistory } from '../../types/models.types';
 
 interface TrailInfoBarProps {
   history: LocationHistory;
-  date: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -109,7 +108,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.md,
     paddingTop: nbSpacing.sm,
     paddingBottom: nbSpacing.md,
-    borderTopWidth: nbBorders.base,
+    borderTopWidth: nbBorders.widthBase,
     borderTopColor: nbColors.black,
     ...nbShadows.sm,
   },
@@ -124,7 +123,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   divider: {
-    width: nbBorders.thin,
+    width: nbBorders.widthThin,
     backgroundColor: nbColors.black,
     marginVertical: 2,
   },

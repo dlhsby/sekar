@@ -1,29 +1,32 @@
 /**
  * LocationTrailModal
  *
- * Fullscreen modal that hosts its OWN MapView for showing a worker's GPS trail.
+ * Fullscreen NBModal that hosts its OWN MapView for showing a worker's GPS trail.
  * Keeping this MapView separate from the main monitoring map means:
  *   - the main map keeps its boundary overlays + worker markers untouched
  *   - this map only ever has trail features (Polyline + Marker), so
  *     react-native-maps' Fabric MapView.addFeature stays in its happy path
  *
- * Layout:
- *   - Top:    NB header (back arrow + worker name + date stepper / picker)
- *   - Map:    fills the remaining space; Polyline + Marker children only
- *   - Bottom: NB stats bar (distance / in-area / out-of-area)
- *   - Float:  refresh FAB at bottom-right above the stats bar
+ * Chrome comes from NBModal's fullscreen frame (the variant uses `animationType
+ * ="fade"` specifically to avoid the Fabric race on a hosted map):
+ *   - Header: NBModal back button + worker name (title) + date stepper (headerRight)
+ *   - Body (noPadding): MapView fills it; Polyline + Marker children only
+ *   - Overlays: bottom stats bar + loading/error/empty states (siblings of MapView)
+ *   - Float:  refresh FAB above the stats bar
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, View, StyleSheet, StatusBar } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
-import { nbColors, nbSpacing } from '../../constants/nbTokens';
+import { NBModal } from '../nb/NBModal';
+import { nbSpacing } from '../../constants/nbTokens';
 import { SURABAYA_CITY_REGION } from '../../utils/mapUtils';
 import {
   LocationTrailMapLayers,
   LocationTrailOverlay,
   useLocationHistory,
 } from './LocationTrail';
+import { TrailDateStepper } from './TrailDateStepper';
 import { MapFab } from './MapFab';
 import type { LiveUser } from '../../types/models.types';
 
@@ -77,14 +80,15 @@ export function LocationTrailModal({
   }, [user]);
 
   return (
-    <Modal
+    <NBModal
       visible={visible}
-      animationType="fade"
-      onRequestClose={onClose}
-      presentationStyle="fullScreen"
-      statusBarTranslucent
+      onClose={onClose}
+      type="fullscreen"
+      noPadding
+      title={user?.full_name ?? 'Riwayat Lokasi'}
+      headerRight={user ? <TrailDateStepper date={date} onDateChange={handleDateChange} /> : undefined}
+      testID="location-trail-modal"
     >
-      <StatusBar barStyle="dark-content" backgroundColor={nbColors.white} />
       <View style={styles.container}>
         <MapView
           ref={mapRef}
@@ -111,10 +115,7 @@ export function LocationTrailModal({
             history={history}
             isLoading={isLoading}
             error={error}
-            date={date}
-            onDateChange={handleDateChange}
-            userName={user.full_name}
-            onClose={onClose}
+            onRetry={refresh}
           />
         )}
 
@@ -128,14 +129,13 @@ export function LocationTrailModal({
           />
         </View>
       </View>
-    </Modal>
+    </NBModal>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: nbColors.background,
   },
   map: {
     flex: 1,
