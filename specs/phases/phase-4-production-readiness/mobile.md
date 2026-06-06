@@ -29,31 +29,31 @@
 
 | Hi-Fi ID | Name | Current file | Action | Notes |
 |----------|------|--------------|--------|-------|
-| WL-1 | Splash · 1/5 | none | **NEW** | First slide — pinwheel hero + tagline "Sistem Evaluasi Kerja Satgas RTH" |
-| WL-2 | Pantau real-time · 2/5 | none | **NEW** | Monitoring illustration |
-| WL-3 | Tugas terstruktur · 3/5 | none | **NEW** | Task workflow illustration |
-| WL-4 | Permohonan kecamatan · 4/5 | none | **NEW** | Perantingan illustration |
-| WL-5 | Offline-ready · 5/5 | none | **NEW** | Offline illustration + "Masuk" CTA |
+| WL-1 | Splash · 1/5 | `screens/auth/SplashScreen.tsx` | ✅ Done (2026-05-25, `3f390c6`) | **Dedicated screen** (not a carousel slide): `SplashSlide` + `SekarPinwheel` (Green lockup, real tagline "Sistem Evaluasi Kerja Satgas RTH") + `PulsingDots`; dependency-free native boot splash (launch-theme technique) |
+| WL-2 | Pantau real-time · 2/5 | `screens/auth/WelcomeCarouselScreen.tsx` | ✅ Done (2026-05-25, `d96aeea`) | Split-swipe carousel — `CarouselScenePanel` (illustration+title+subtitle swipe together); pinned `PaginationDots` + CTAs |
+| WL-3 | Tugas terstruktur · 3/5 | WelcomeCarouselScreen | ✅ Done (2026-05-25) | Lanjut/Lewati CTAs ("Lewati" jumps to the last slide) |
+| WL-4 | Permohonan kecamatan · 4/5 | WelcomeCarouselScreen | ✅ Done (2026-05-25) | Perantingan illustration scene |
+| WL-5 | Offline-ready · 5/5 | WelcomeCarouselScreen | ✅ Done (2026-05-25) | Single "Mulai (Masuk)" CTA; Login pushed (back button → carousel) |
 
-**One file:** `fe/mobile/src/screens/auth/WelcomeCarouselScreen.tsx` + `OnboardingSlide.tsx` reusable card. Skippable; "Lewati" goes to Login. `AsyncStorage` flag `carousel_seen` prevents re-showing.
+**Files:** `screens/auth/SplashScreen.tsx` (WL-1, dedicated) + `screens/auth/WelcomeCarouselScreen.tsx` (WL-2…5) with `components/auth/CarouselScenePanel` + `components/common/PaginationDots`. Splash + carousel **always** lead the logged-out flow (the `carousel_seen` gate was dropped); the old all-in-one `OnboardingSlide` was removed.
 
 ### Login & auth (5 screens — 3 revamp + 2 NEW)
 
 | Hi-Fi ID | Name | Current file | Action | Notes |
 |----------|------|--------------|--------|-------|
-| AS-1 | Login · idle | `fe/mobile/src/screens/auth/LoginScreen.tsx` | Revamp | Hi-fi layout (Selamat datang hero + Identifier + Password + Masuk button + Lupa sandi link) |
-| AS-2 | Login · field error | LoginScreen | Revamp | Inline per-field validation states |
-| AS-3 | Login · auth-fail toast | LoginScreen | Revamp | NBToast instead of native `Alert` |
-| AS-4 | Lupa sandi · contact admin | none | **NEW** | `ForgotPasswordScreen.tsx` — informational, no API call. tel:/wa.me deep-links per [ADR-041](../../architecture/decisions/ADR-041-forgot-password-contact-admin.md) |
-| AS-5 | Ganti sandi · forced after reset + success | none | **NEW** | `ChangePasswordScreen.tsx` — tied to backend `users.password_must_change` boolean; auth-guard pushes user here on first login post-reset |
+| AS-1 | Login · idle | `fe/mobile/src/screens/auth/LoginScreen.tsx` | ✅ Done (2026-05-25) | Hi-fi layout (Selamat datang hero + Identifier + Password + Masuk button + Lupa sandi link); back button (`testID=login-back`) → carousel when `canGoBack` |
+| AS-2 | Login · field error | LoginScreen | ✅ Done (2026-05-25) | Inline per-field validation states |
+| AS-3 | Login · auth-fail toast | LoginScreen | ✅ Done (2026-05-25) | NBToast instead of native `Alert` |
+| AS-4 | Lupa sandi · contact admin | `screens/auth/ForgotPasswordScreen.tsx` | ✅ Done (2026-05-25) | Informational, no API call. tel:/wa.me deep-links per [ADR-041](../../architecture/decisions/ADR-041-forgot-password-contact-admin.md) |
+| AS-5 | Ganti sandi · forced after reset + success | `screens/auth/ChangePasswordScreen.tsx` | ✅ Done (2026-05-25) | Tied to backend `users.password_must_change`; RootNavigator routes here on first login post-reset (precedes onboarding) |
 
 ### Onboarding & permissions (3 NEW screens)
 
 | Hi-Fi ID | Name | Current file | Action | Notes |
 |----------|------|--------------|--------|-------|
-| OB-1 | Welcome (greeting + role badge) | none | **NEW** | `OnboardingWelcomeScreen.tsx` — `onb-clockin.svg`; role-aware greeting; "Lanjut" CTA |
-| OB-2 | Permissions · 2/3 · 6 items | partial: `PermissionsModal.tsx` | **NEW (replaces modal)** | `OnboardingPermissionsScreen.tsx` — per-permission card with justification; sequential request flow; `onb-photo.svg` |
-| OB-3 | Area preview · 3/3 | none | **NEW** | `OnboardingAreaPreviewScreen.tsx` — embedded map + your-area card + clock-in CTA; `onb-monitor.svg` |
+| OB-1 | Welcome (greeting + role badge) | `screens/onboarding/OnboardingWelcomeScreen.tsx` | ✅ Done (2026-05-25) | Waving card + "Hai, {firstName}" (sage name chip) + Lanjut/Lewati; reuses `PaginationDots` |
+| OB-2 | Permissions · 2/3 | `screens/onboarding/OnboardingPermissionsScreen.tsx` | ✅ Done (2026-05-25) — **replaced** `PermissionsModal` | 5 permission rows (notif/location/background-location/camera/gallery), per-row "Izinkan" + status pill, **no skip** (Lanjut gated until all addressed); old startup modal removed from App.tsx; +runtime re-check on resume |
+| OB-3 | Area preview · 3/3 | `screens/onboarding/OnboardingAreaPreviewScreen.tsx` | ✅ Done (2026-05-25) | Area name + radius + static pin from `auth.area`, role-variant CTA (korlap card omitted — no data); routing via Redux `onboardingCompleted` + AsyncStorage flag |
 
 **First-launch detection:** `AsyncStorage` flag `onboarding_completed` set on OB-3 completion. Auth-guard routes: not-authenticated → carousel/login; authenticated + `password_must_change=true` → AS-5; authenticated + `!onboarding_completed` → OB-1; else → role-aware home.
 
@@ -92,7 +92,7 @@
 | PRF-1 | Profile · Satgas | ProfileScreen | ✅ Done (2026-05-28) — compact identity strip (`ProfileHeader` = RoleAvatar 52px + `ROLE · RAYON` mono line + `@username · sejak <year>`), `ProfileStatsRow` (3 HomeStatTiles, field/monitoring, `—` fallback), grouped `ProfileMenu` (Akun/Aplikasi chip-rows + logout danger row), `AssignedAreaCard` relaid out; dead Field/MonitoringStatsCard removed; ChangePassword/About modals kept outside ScrollView |
 | PRF-2 | Pengaturan | SettingsScreen | ✅ Done (2026-05-28) — hi-fi sections (Notifikasi/Lokasi & data/Offline sync/Tentang), custom NB toggle, live offline-sync card via `useProfileSync`, duplicate title removed, shims gone |
 | PRF-3 | Edit profil | EditProfileScreen | ✅ Done (2026-05-28) — RoleAvatar 88px + edit badge, "Tidak bisa diubah" locked mono card, sticky Save footer, NBToast feedback, back→Profile |
-| NOTIF-1 | Inbox · 3 baru | none | **NEW** — `fe/mobile/src/screens/notifications/NotificationsScreen.tsx` |
+| NOTIF-1 | Inbox · 3 baru | `fe/mobile/src/screens/common/NotificationsScreen.tsx` | ✅ Done (2026-05-24, M3d) — `FlatList` inbox (pull-to-refresh, mark-all-read, row tap → optimistic read + deep-link to TaskDetail/PruningDetail), `NBEmptyState`; `components/navigation/NotificationBell.tsx` (unread badge, caps 99+) in every authenticated header; registered as a hidden tab (`tabBarButton: () => null`) |
 
 ### Navigation routing changes
 
