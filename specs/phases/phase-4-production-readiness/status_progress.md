@@ -4,6 +4,26 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 9, 2026 — Project-wide TypeScript errors eliminated (679 → 0)
+
+**Goal:** drive the mobile workspace to a clean `tsc` typecheck. At session start `tsc --noEmit` reported **679** pre-existing errors (type-only — jest passes regardless since babel-jest strips types); the pruning cleanup took it to 539, and this pass cleared the rest across **~90 files**.
+
+**How:** partitioned the remaining ~539 errors by area and ran them down in parallel passes, then manually reconciled cross-file regressions. Type-only — no runtime/behavior change (full jest stays green).
+
+**Dominant fixes (mostly test files, 421 of the errors):**
+- Untyped test stores → `makeStore()` helper + `ReturnType<typeof makeStore>` so thunk dispatch + awaited results type correctly (cleared the bulk of `unknown`/`AsyncThunkAction` errors).
+- Mock entity fixtures corrected against `models.types` (string ids, required fields, relations as ids not objects); removed invented `ApiResponse` fields (`success`/`meta`) and object-shaped `error`s, fixing the matching assertions.
+- Legacy/partial `preloadedState` → cast the offending **slice value** `as any` (never the whole preloadedState — that breaks `configureStore`'s reducer-overload and yields "X does not exist in Reducer<…>").
+
+**Production fixes (118 errors) — including real bugs:**
+- **`syncManager.syncClockIn` called `clockIn()` with args in the wrong order** (passed `area_id` as `gpsLat`); corrected to the real `(gpsLat, gpsLng, selfiePhoto?, areaId?)` signature. Also: `apiClient` is a default export (named-import was undefined at runtime in the overtime/task/reassign sync paths); `store` import path corrected to `store/store`.
+- Wrong/typo token refs that rendered `undefined`: `nbColors.gray5`→`gray500`, `nbColors.border`→`gray300`, `nbColors.grayMedium`→`gray400`, `nbBorders.radiusSm`→`nbRadius.sm`.
+- Reducer `action.payload` undefined-guards (`plantsSlice`/`plantSeedsSlice`/`tasksSlice`); over-narrow `StyleSheet` inference cast to `ViewStyle`; misc API import-path/return-shape fixes.
+
+**Verification:** `tsc --noEmit` → **0 errors** (was 679). `eslint .` → unchanged 18 pre-existing errors (a few unused-var *warnings* added, no new errors). Full jest → **211 suites pass**; the only failing suite (`usersApi.test`, 4 tests) is pre-existing and unrelated (verified identical on clean main). Commit: 103 files.
+
+---
+
 ## June 9, 2026 — nbTypography → nbType migration (last token shim removed; 3-R5 fully complete)
 
 **Goal:** finish the design-system token cleanup by removing the `nbTypography` shim — the one piece deferred from the 3-R5 mechanical sweep because it needed per-call-site judgment, not a value-identical rename.
