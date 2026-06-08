@@ -24,22 +24,24 @@ import type { PruningRequest } from '../../../types/models.types';
 // Mock the API
 jest.mock('../../../services/api/pruningRequestsApi');
 
+const makeStore = () =>
+  configureStore({ reducer: { pruningRequests: pruningRequestsReducer } });
+
 describe('pruningRequestsSlice', () => {
-  let store: ReturnType<typeof configureStore>;
+  let store: ReturnType<typeof makeStore>;
 
   const mockPruningRequest: PruningRequest = {
     id: 'pr-001',
     referenceCode: 'PR-2026-001',
-    submittedBy: {
-      id: 'user-1',
-      name: 'Test User',
-      role: 'staff_kecamatan',
-    },
+    submittedBy: 'user-1',
     kecamatanName: 'Surabaya Pusat',
     address: 'Jln Pemuda No. 123',
     gpsLat: -7.2575,
     gpsLng: 112.7521,
     expectedDate: '2026-05-01',
+    expectedYear: null,
+    expectedIsoWeek: null,
+    scheduledDate: null,
     estimatedPlantCount: 15,
     photoUrls: ['https://example.com/photo1.jpg'],
     notes: 'Pohon sudah tua',
@@ -48,12 +50,14 @@ describe('pruningRequestsSlice', () => {
     rayon: {
       id: 'rayon-1',
       name: 'Rayon 1',
+      code: 'R1',
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z',
     },
     reviewedBy: null,
     reviewedAt: null,
     reviewNotes: null,
     assignedTaskId: null,
-    convertedTask: null,
     createdAt: '2026-04-27T10:00:00Z',
     updatedAt: '2026-04-27T10:00:00Z',
   };

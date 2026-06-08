@@ -207,7 +207,8 @@ function createMockStore(
         myListError: null,
         submitting: false,
         selectedId: null,
-      },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy partial slice fixture
+      } as any,
       auth: {
         isAuthenticated: true,
         user: {
@@ -218,7 +219,8 @@ function createMockStore(
           role: 'admin_data',
           rayon_id: 'rayon-pusat',
         },
-      },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- partial auth fixture
+      } as any,
     },
   });
 }

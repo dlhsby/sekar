@@ -47,14 +47,16 @@ const renderScreen = (items: ReturnType<typeof req>[]) => {
     reducer: { auth: authReducer, pruningRequests: pruningRequestsReducer },
     preloadedState: {
       auth: {
-        user: { id: 'k1', username: 'kec', full_name: 'Pak Lurah', role: 'staff_kecamatan' },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- partial User fixture
+        user: { id: 'k1', username: 'kec', full_name: 'Pak Lurah', role: 'staff_kecamatan' } as any,
         assignedArea: null,
         isAuthenticated: true,
         isLoading: false,
         isRestoring: false,
         error: null,
+        onboardingCompleted: true,
       },
-    } as any,
+    },
   });
   return render(
     <Provider store={store}>

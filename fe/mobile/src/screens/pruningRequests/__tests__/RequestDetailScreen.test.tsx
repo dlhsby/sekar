@@ -340,17 +340,14 @@ import pruningRequestsReducer, {
 import * as pruningRequestsApi from '../../../services/api/pruningRequestsApi';
 import type { PruningRequest } from '../../../types/models.types';
 
+
 describe('RequestDetailScreen', () => {
   let store: ReturnType<typeof configureStore>;
 
   const mockPruningRequest: PruningRequest = {
     id: 'pr-001',
     referenceCode: 'PR-2026-001',
-    submittedBy: {
-      id: 'user-1',
-      name: 'Test User',
-      role: 'staff_kecamatan',
-    },
+    submittedBy: 'user-1',
     kecamatanName: 'Surabaya Pusat',
     address: 'Jln Pemuda No. 123',
     gpsLat: -7.2575,
@@ -359,6 +356,8 @@ describe('RequestDetailScreen', () => {
     // NULL going forward). Use `scheduledDate` for the admin-confirmed day
     // that the detail screen renders.
     expectedDate: null,
+    expectedYear: null,
+    expectedIsoWeek: null,
     scheduledDate: '2026-05-01',
     estimatedPlantCount: 15,
     photoUrls: ['https://example.com/photo1.jpg', 'https://example.com/photo2.jpg'],
@@ -368,12 +367,14 @@ describe('RequestDetailScreen', () => {
     rayon: {
       id: 'rayon-1',
       name: 'Rayon 1',
+      code: 'R1',
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z',
     },
     reviewedBy: null,
     reviewedAt: null,
     reviewNotes: null,
     assignedTaskId: null,
-    convertedTask: null,
     createdAt: '2026-04-27T10:00:00Z',
     updatedAt: '2026-04-27T10:00:00Z',
   };
@@ -381,7 +382,7 @@ describe('RequestDetailScreen', () => {
   const mockReviewedRequest: PruningRequest = {
     ...mockPruningRequest,
     status: 'approved' as const,
-    reviewedBy: { id: 'reviewer-1', name: 'Admin', role: 'admin_data' },
+    reviewedBy: 'reviewer-1',
     reviewedAt: '2026-04-28T10:00:00Z',
     reviewNotes: 'Lokasi sudah diverifikasi',
   };
@@ -390,7 +391,6 @@ describe('RequestDetailScreen', () => {
     ...mockPruningRequest,
     status: 'assigned' as const,
     assignedTaskId: 'task-123',
-    convertedTask: { id: 'task-123', name: 'Pemangkasan Pohon' },
   };
 
   const mockNavigate = jest.fn();
@@ -426,7 +426,7 @@ describe('RequestDetailScreen', () => {
           submitError: null,
           reviewingId: null,
           converting: {},
-        },
+        } as any,
       },
     });
   });
@@ -472,7 +472,7 @@ describe('RequestDetailScreen', () => {
             submitError: null,
             reviewingId: null,
             converting: {},
-          },
+          } as any,
         },
       });
 
@@ -593,7 +593,7 @@ describe('RequestDetailScreen', () => {
             submitError: null,
             reviewingId: null,
             converting: {},
-          },
+          } as any,
         },
       });
 
@@ -625,7 +625,7 @@ describe('RequestDetailScreen', () => {
             submitError: null,
             reviewingId: null,
             converting: {},
-          },
+          } as any,
         },
       });
 
@@ -657,7 +657,7 @@ describe('RequestDetailScreen', () => {
             submitError: null,
             reviewingId: null,
             converting: {},
-          },
+          } as any,
         },
       });
 
@@ -690,7 +690,7 @@ describe('RequestDetailScreen', () => {
             submitError: null,
             reviewingId: null,
             converting: {},
-          },
+          } as any,
         },
       });
 
@@ -731,7 +731,7 @@ describe('RequestDetailScreen', () => {
             submitError: null,
             reviewingId: null,
             converting: {},
-          },
+          } as any,
         },
       });
 

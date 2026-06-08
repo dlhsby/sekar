@@ -39,9 +39,7 @@ describe('pruningRequestsApi', () => {
   describe('getAdminPruningRequests', () => {
     it('returns list of pruning requests on success', async () => {
       const mockResponse = {
-        success: true,
         data: [mockPruningRequest],
-        meta: { total: 1, page: 1, limit: 20 },
       };
 
       mockGet.mockResolvedValue(mockResponse);
@@ -49,13 +47,12 @@ describe('pruningRequestsApi', () => {
       const result = await pruningRequestsApi.getAdminPruningRequests();
 
       expect(result).toEqual(mockResponse);
-      expect(result.success).toBe(true);
+      expect(result.error).toBeUndefined();
       expect(result.data).toEqual([mockPruningRequest]);
     });
 
     it('calls API endpoint without mine parameter', async () => {
       mockGet.mockResolvedValue({
-        success: true,
         data: [],
       });
 
@@ -69,7 +66,6 @@ describe('pruningRequestsApi', () => {
 
     it('includes status filter when provided', async () => {
       mockGet.mockResolvedValue({
-        success: true,
         data: [],
       });
 
@@ -87,7 +83,6 @@ describe('pruningRequestsApi', () => {
 
     it('includes rayonId filter when provided', async () => {
       mockGet.mockResolvedValue({
-        success: true,
         data: [],
       });
 
@@ -105,7 +100,6 @@ describe('pruningRequestsApi', () => {
 
     it('includes pagination parameters', async () => {
       mockGet.mockResolvedValue({
-        success: true,
         data: [],
       });
 
@@ -125,7 +119,6 @@ describe('pruningRequestsApi', () => {
 
     it('includes date range filters', async () => {
       mockGet.mockResolvedValue({
-        success: true,
         data: [],
       });
 
@@ -145,9 +138,7 @@ describe('pruningRequestsApi', () => {
 
     it('handles empty result', async () => {
       mockGet.mockResolvedValue({
-        success: true,
         data: [],
-        meta: { total: 0, page: 1, limit: 20 },
       });
 
       const result = await pruningRequestsApi.getAdminPruningRequests();
@@ -157,7 +148,7 @@ describe('pruningRequestsApi', () => {
 
     it('handles API error response', async () => {
       const mockError = {
-        error: { error: 'Forbidden', code: 'ERR_FORBIDDEN' },
+        error: 'Forbidden', code: 'ERR_FORBIDDEN',
         data: null,
       };
 
@@ -165,7 +156,8 @@ describe('pruningRequestsApi', () => {
 
       const result = await pruningRequestsApi.getAdminPruningRequests();
 
-      expect(result.error).toEqual({ error: 'Forbidden', code: 'ERR_FORBIDDEN' });
+      expect(result.error).toBe('Forbidden');
+      expect(result.code).toBe('ERR_FORBIDDEN');
     });
 
     it('handles network error', async () => {
@@ -183,7 +175,6 @@ describe('pruningRequestsApi', () => {
   describe('reviewPruningRequest', () => {
     it('approves pruning request', async () => {
       const mockResponse = {
-        success: true,
         data: { ...mockPruningRequest, status: 'approved' as const },
       };
 
@@ -199,7 +190,6 @@ describe('pruningRequestsApi', () => {
 
     it('rejects pruning request', async () => {
       const mockResponse = {
-        success: true,
         data: { ...mockPruningRequest, status: 'rejected' as const },
       };
 
@@ -215,7 +205,6 @@ describe('pruningRequestsApi', () => {
 
     it('includes review notes when provided', async () => {
       mockPost.mockResolvedValue({
-        success: true,
         data: mockPruningRequest,
       });
 
@@ -235,7 +224,6 @@ describe('pruningRequestsApi', () => {
 
     it('calls correct API endpoint', async () => {
       mockPost.mockResolvedValue({
-        success: true,
         data: mockPruningRequest,
       });
 
@@ -251,7 +239,7 @@ describe('pruningRequestsApi', () => {
 
     it('handles API error on review', async () => {
       const mockError = {
-        error: { error: 'Request not found', code: 'ERR_NOT_FOUND' },
+        error: 'Request not found', code: 'ERR_NOT_FOUND',
         data: null,
       };
 
@@ -261,10 +249,8 @@ describe('pruningRequestsApi', () => {
         decision: 'approve',
       });
 
-      expect(result.error).toEqual({
-        error: 'Request not found',
-        code: 'ERR_NOT_FOUND',
-      });
+      expect(result.error).toBe('Request not found');
+      expect(result.code).toBe('ERR_NOT_FOUND');
     });
 
     it('handles network error on review', async () => {
@@ -282,7 +268,6 @@ describe('pruningRequestsApi', () => {
 
     it('accepts both approve and reject decisions', async () => {
       mockPost.mockResolvedValue({
-        success: true,
         data: mockPruningRequest,
       });
 
@@ -318,7 +303,6 @@ describe('pruningRequestsApi', () => {
 
     it('converts pruning request to task', async () => {
       const mockResponse = {
-        success: true,
         data: {
           request: { ...mockPruningRequest, status: 'assigned' as const },
           task: { id: 'task1', name: 'Task 1' },
@@ -338,7 +322,6 @@ describe('pruningRequestsApi', () => {
 
     it('includes all conversion fields', async () => {
       mockPost.mockResolvedValue({
-        success: true,
         data: mockPruningRequest,
       });
 
@@ -355,7 +338,6 @@ describe('pruningRequestsApi', () => {
 
     it('calls correct API endpoint', async () => {
       mockPost.mockResolvedValue({
-        success: true,
         data: mockPruningRequest,
       });
 
@@ -369,7 +351,6 @@ describe('pruningRequestsApi', () => {
 
     it('handles different case types', async () => {
       mockPost.mockResolvedValue({
-        success: true,
         data: mockPruningRequest,
       });
 
@@ -390,7 +371,6 @@ describe('pruningRequestsApi', () => {
 
     it('handles different pruning actions', async () => {
       mockPost.mockResolvedValue({
-        success: true,
         data: mockPruningRequest,
       });
 
@@ -411,7 +391,6 @@ describe('pruningRequestsApi', () => {
 
     it('handles variable unit counts', async () => {
       mockPost.mockResolvedValue({
-        success: true,
         data: mockPruningRequest,
       });
 
@@ -428,10 +407,8 @@ describe('pruningRequestsApi', () => {
 
     it('handles API error on conversion', async () => {
       const mockError = {
-        error: {
-          error: 'Capacity exceeded',
-          code: 'ERR_CAPACITY_EXCEEDED',
-        },
+        error: 'Capacity exceeded',
+        code: 'ERR_CAPACITY_EXCEEDED',
         data: null,
       };
 
@@ -442,10 +419,8 @@ describe('pruningRequestsApi', () => {
         conversionData,
       );
 
-      expect(result.error).toEqual({
-        error: 'Capacity exceeded',
-        code: 'ERR_CAPACITY_EXCEEDED',
-      });
+      expect(result.error).toBe('Capacity exceeded');
+      expect(result.code).toBe('ERR_CAPACITY_EXCEEDED');
     });
 
     it('handles network error on conversion', async () => {
@@ -464,7 +439,6 @@ describe('pruningRequestsApi', () => {
 
     it('validates request ID', async () => {
       mockPost.mockResolvedValue({
-        success: true,
         data: mockPruningRequest,
       });
 
@@ -478,7 +452,6 @@ describe('pruningRequestsApi', () => {
 
     it('preserves all data fields in request', async () => {
       mockPost.mockResolvedValue({
-        success: true,
         data: mockPruningRequest,
       });
 
@@ -525,13 +498,11 @@ describe('pruningRequestsApi', () => {
   describe('Return Type Validation', () => {
     it('returns ApiResponse type', async () => {
       mockGet.mockResolvedValue({
-        success: true,
         data: [mockPruningRequest],
       });
 
       const result = await pruningRequestsApi.getAdminPruningRequests();
 
-      expect(result).toHaveProperty('success');
       expect(result).toHaveProperty('data');
     });
   });
@@ -545,9 +516,7 @@ describe('pruningRequestsApi', () => {
       ];
 
       mockGet.mockResolvedValue({
-        success: true,
         data: requests,
-        meta: { total: 3, page: 1, limit: 20 },
       });
 
       const result = await pruningRequestsApi.getAdminPruningRequests();
@@ -568,7 +537,6 @@ describe('pruningRequestsApi', () => {
 
     it.each(statusValues)('filters by status %s', async (status) => {
       mockGet.mockResolvedValue({
-        success: true,
         data: [{ ...mockPruningRequest, status }],
       });
 
