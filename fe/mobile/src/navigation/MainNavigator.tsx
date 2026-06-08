@@ -13,7 +13,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import type { MainTabParamList, MainStackParamList } from '../types/navigation.types';
 import type { UserRole } from '../types/models.types';
-import { nbColors, nbBorders, nbShadows, nbRadius, nbTypography } from '../constants/nbTokens';
+import { nbColors, nbBorders, nbShadows, nbRadius, nbType } from '../constants/nbTokens';
 import { NBText } from '../components/nb/NBText';
 import { useAppSelector } from '../store/hooks';
 import { FieldHomeHeader } from '../components/navigation/FieldHomeHeader';
@@ -197,8 +197,8 @@ function TabNavigator(): React.JSX.Element {
         headerShown: true,
         headerStyle: NB_HEADER_STYLE,
         headerTitleStyle: {
-          fontSize: nbTypography.fontSize['2xl'],
-          fontWeight: nbTypography.fontWeight.bold,
+          fontSize: nbType.h2.fontSize,
+          fontWeight: nbType.h1.fontWeight,
           color: nbColors.black,
         },
         headerTitleAlign: 'left' as const,

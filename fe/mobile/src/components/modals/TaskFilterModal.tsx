@@ -17,7 +17,7 @@ import { NBSelect, NBDatePicker, NBModal } from '../nb';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
+  nbType,
   nbBorders,
 } from '../../constants/nbTokens';
 import type { TaskStatus, UserRole, Rayon, Area, User } from '../../types/models.types';
@@ -467,8 +467,8 @@ const styles = StyleSheet.create({
     marginBottom: nbSpacing.md + 4,
   },
   filterLabel: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.bold,
+    fontSize: nbType.caption.fontSize,
+    fontWeight: nbType.h1.fontWeight,
     color: nbColors.gray600,
     marginBottom: nbSpacing.xs + 2,
     textTransform: 'uppercase',
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dateSeparator: {
-    fontSize: nbTypography.fontSize.base,
+    fontSize: nbType.body.fontSize,
     color: nbColors.gray500,
     alignSelf: 'center',
     paddingHorizontal: 2,
@@ -505,8 +505,8 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.white,
   },
   resetButtonText: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.bold,
+    fontSize: nbType.bodySm.fontSize,
+    fontWeight: nbType.h1.fontWeight,
     color: nbColors.black,
     letterSpacing: 0.3,
   },
@@ -514,8 +514,8 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.primary,
   },
   applyButtonText: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.bold,
+    fontSize: nbType.bodySm.fontSize,
+    fontWeight: nbType.h1.fontWeight,
     color: nbColors.white,
     letterSpacing: 0.3,
   },

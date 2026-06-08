@@ -67,40 +67,9 @@ export const nbAnimation = {
   ...nbMotion,
 } as const;
 
-// ─── nbTypography ─────────────────────────────────────────────────────────────
-// Phase 2 code reads nbTypography.fontSize.xl, fontWeight.bold, etc.
-// Updated to match Phase 3 canonical type scale (drift fixes from 3-R2).
-// Migrate call sites to nbType in 3-R5.
-export const nbTypography = {
-  fontFamily: {
-    sans: 'Inter',
-    display: "'Space Grotesk'",
-    mono: "'JetBrains Mono'",
-  },
-  fontWeight: {
-    regular: '400' as const,
-    medium: '500' as const,
-    semibold: '600' as const,
-    bold: '700' as const,
-    extrabold: '800' as const,
-  },
-  fontSize: {
-    xs: 12,
-    sm: 14,
-    base: 16,
-    md: 16, // Phase 2 alias for base — remove in 3-R5
-    lg: 18,
-    xl: 20,
-    '2xl': 24,
-    '3xl': 28,
-    '4xl': 36,
-  },
-  lineHeight: {
-    tight: 1.25,
-    normal: 1.5,
-    relaxed: 1.75,
-  },
-};
+// nbTypography removed in 3-R5 — all call sites migrated to the generated
+// `nbType` variant scale (caption/bodySm/body/bodyLg/h1/h2/…). Use `nbType` for
+// raw style objects and `<NBText variant>` for components.
 
 // ─── nbTextStyles ─────────────────────────────────────────────────────────────
 // Typography presets (size + weight + lineHeight only; no fontFamily).
@@ -163,7 +132,7 @@ export const nbTheme = {
   borders: { color: nbColors.black, style: 'solid' as const, widthThin: 1, widthBase: 2, widthThick: 3, widthExtra: 4 },
   borderRadius: nbRadius,
   spacing: nbSpacing,
-  typography: nbTypography,
+  typography: nbType,
   textStyles: nbTextStyles,
   touchTarget: nbTouchTarget,
   animation: nbMotion,

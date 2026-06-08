@@ -35,7 +35,7 @@ import { requestLocationPermission } from '../../services/permissions/permission
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
+  nbType,
   nbBorders,
   nbRadius,
   nbShadows,

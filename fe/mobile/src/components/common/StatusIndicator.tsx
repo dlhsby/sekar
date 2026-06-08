@@ -10,7 +10,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
+  nbType,
   nbBorders,
 } from '../../constants/nbTokens';
 
@@ -106,22 +106,22 @@ const styles = StyleSheet.create({
     marginBottom: nbSpacing.sm,
   },
   title: {
-    fontSize: nbTypography.fontSize.xl,
-    fontWeight: nbTypography.fontWeight.bold,
+    fontSize: nbType.h2.fontSize,
+    fontWeight: nbType.h1.fontWeight,
     color: nbColors.black,
     textAlign: 'center',
     marginBottom: nbSpacing.xs,
   },
   subtitle: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.medium,
+    fontSize: nbType.body.fontSize,
+    fontWeight: nbType.bodyLg.fontWeight,
     color: nbColors.gray700,
     textAlign: 'center',
     marginBottom: nbSpacing.xs,
   },
   metadata: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.regular,
+    fontSize: nbType.bodySm.fontSize,
+    fontWeight: nbType.body.fontWeight,
     color: nbColors.gray600,
     textAlign: 'center',
   },

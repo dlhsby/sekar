@@ -25,7 +25,7 @@ import {
   nbSpacing,
   nbBorders,
   nbRadius,
-  nbTypography,
+  nbType,
   nbTouchTarget,
 } from '../../constants/nbTokens';
 
@@ -234,8 +234,8 @@ const styles = StyleSheet.create({
     marginRight: nbSpacing.xs,
   },
   tabText: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.semibold,
+    fontSize: nbType.bodySm.fontSize,
+    fontWeight: nbType.h2.fontWeight,
     color: nbColors.black,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -256,8 +256,8 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.white,
   },
   badgeText: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.bold,
+    fontSize: nbType.caption.fontSize,
+    fontWeight: nbType.h1.fontWeight,
     color: nbColors.black,
   },
   activeBadgeText: {

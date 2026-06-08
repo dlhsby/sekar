@@ -18,7 +18,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
+  nbType,
   nbBorders,
 } from '../../constants/nbTokens';
 
@@ -459,21 +459,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   label: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.medium,
+    fontSize: nbType.caption.fontSize,
+    fontWeight: nbType.bodyLg.fontWeight,
     color: nbColors.gray500,
     marginBottom: 2,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   value: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.semibold,
+    fontSize: nbType.bodySm.fontSize,
+    fontWeight: nbType.h2.fontWeight,
     color: nbColors.black,
   },
   placeholder: {
     color: nbColors.gray400,
-    fontWeight: nbTypography.fontWeight.regular,
+    fontWeight: nbType.body.fontWeight,
   },
   valueDisabled: {
     color: nbColors.gray500,
@@ -491,8 +491,8 @@ const styles = StyleSheet.create({
     padding: nbSpacing.md,
   },
   modalTitle: {
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.bold,
+    fontSize: nbType.bodyLg.fontSize,
+    fontWeight: nbType.h1.fontWeight,
     color: nbColors.black,
     textAlign: 'center',
     marginBottom: nbSpacing.md,
@@ -521,17 +521,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   wheelText: {
-    fontSize: nbTypography.fontSize.md,
+    fontSize: nbType.body.fontSize,
     color: nbColors.gray400,
   },
   wheelTextSelected: {
     color: nbColors.black,
-    fontWeight: nbTypography.fontWeight.bold,
-    fontSize: nbTypography.fontSize.lg,
+    fontWeight: nbType.h1.fontWeight,
+    fontSize: nbType.bodyLg.fontSize,
   },
   timeSeparator: {
     fontSize: 24,
-    fontWeight: nbTypography.fontWeight.bold,
+    fontWeight: nbType.h1.fontWeight,
     color: nbColors.black,
     marginHorizontal: 4,
   },
@@ -550,8 +550,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.sm,
   },
   todayButtonText: {
-    fontSize: nbTypography.fontSize.md,
-    fontWeight: nbTypography.fontWeight.semibold,
+    fontSize: nbType.body.fontSize,
+    fontWeight: nbType.h2.fontWeight,
     color: nbColors.primary,
   },
   cancelButton: {
@@ -559,8 +559,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.md,
   },
   cancelButtonText: {
-    fontSize: nbTypography.fontSize.md,
-    fontWeight: nbTypography.fontWeight.semibold,
+    fontSize: nbType.body.fontSize,
+    fontWeight: nbType.h2.fontWeight,
     color: nbColors.gray500,
   },
   confirmButton: {
@@ -571,8 +571,8 @@ const styles = StyleSheet.create({
     borderColor: nbColors.black,
   },
   confirmButtonText: {
-    fontSize: nbTypography.fontSize.md,
-    fontWeight: nbTypography.fontWeight.bold,
+    fontSize: nbType.body.fontSize,
+    fontWeight: nbType.h1.fontWeight,
     color: nbColors.black,
   },
 });

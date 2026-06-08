@@ -17,7 +17,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
+  nbType,
   nbBorders,
   nbRadius,
 } from '../../constants/nbTokens';
@@ -201,11 +201,11 @@ const styles = StyleSheet.create({
   },
   dayTypeBadgeText: {
     color: nbColors.white,
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.semibold,
+    fontSize: nbType.caption.fontSize,
+    fontWeight: nbType.h2.fontWeight,
   },
   emptyText: {
-    fontSize: nbTypography.fontSize.sm,
+    fontSize: nbType.bodySm.fontSize,
     color: nbColors.gray500,
     fontStyle: 'italic',
   },
@@ -227,12 +227,12 @@ const styles = StyleSheet.create({
     marginRight: nbSpacing.sm,
   },
   itemName: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.bold,
+    fontSize: nbType.bodySm.fontSize,
+    fontWeight: nbType.h1.fontWeight,
     color: nbColors.black,
   },
   itemStats: {
-    fontSize: nbTypography.fontSize.xs,
+    fontSize: nbType.caption.fontSize,
     color: nbColors.gray600,
     marginTop: 2,
   },
@@ -247,9 +247,9 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   shortageLabelText: {
-    fontSize: nbTypography.fontSize.xs,
+    fontSize: nbType.caption.fontSize,
     color: nbColors.dangerDark,
-    fontWeight: nbTypography.fontWeight.semibold,
+    fontWeight: nbType.h2.fontWeight,
   },
   progressTrack: {
     height: 4,
@@ -271,11 +271,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   roleLabel: {
-    fontSize: nbTypography.fontSize.sm,
+    fontSize: nbType.bodySm.fontSize,
     color: nbColors.gray600,
   },
   roleValue: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.semibold,
+    fontSize: nbType.bodySm.fontSize,
+    fontWeight: nbType.h2.fontWeight,
   },
 });

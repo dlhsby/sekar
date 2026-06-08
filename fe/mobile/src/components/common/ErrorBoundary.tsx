@@ -25,7 +25,7 @@
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { NBButton } from '../nb';
-import { nbColors, nbSpacing, nbTypography, nbBorders, nbShadows } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbType, nbBorders, nbShadows } from '../../constants/nbTokens';
 
 interface ErrorBoundaryProps {
   /** Child components to wrap */
@@ -192,18 +192,18 @@ const styles = StyleSheet.create({
     marginBottom: nbSpacing.md,
   },
   title: {
-    fontSize: nbTypography.fontSize['2xl'],
-    fontWeight: nbTypography.fontWeight.bold,
+    fontSize: nbType.h2.fontSize,
+    fontWeight: nbType.h1.fontWeight,
     color: nbColors.black,
     textAlign: 'center',
     marginBottom: nbSpacing.sm,
   },
   message: {
-    fontSize: nbTypography.fontSize.base,
+    fontSize: nbType.body.fontSize,
     color: nbColors.gray600,
     textAlign: 'center',
     marginBottom: nbSpacing.lg,
-    lineHeight: nbTypography.fontSize.base * nbTypography.lineHeight.relaxed,
+    lineHeight: nbType.body.lineHeight,
   },
   errorDetails: {
     marginBottom: nbSpacing.lg,
@@ -214,19 +214,19 @@ const styles = StyleSheet.create({
     borderRadius: 0,
   },
   errorTitle: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.bold,
+    fontSize: nbType.bodySm.fontSize,
+    fontWeight: nbType.h1.fontWeight,
     color: nbColors.danger,
     marginBottom: nbSpacing.xs,
   },
   errorText: {
-    fontSize: nbTypography.fontSize.sm,
+    fontSize: nbType.bodySm.fontSize,
     color: nbColors.danger,
     marginBottom: nbSpacing.xs,
     fontFamily: 'monospace',
   },
   errorStack: {
-    fontSize: nbTypography.fontSize.xs,
+    fontSize: nbType.caption.fontSize,
     color: nbColors.gray700,
     fontFamily: 'monospace',
     marginTop: nbSpacing.xs,

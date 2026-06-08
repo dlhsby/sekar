@@ -14,7 +14,7 @@ import {
   nbBorders,
   nbRadius,
   nbSpacing,
-  nbTypography,
+  nbType,
 } from '../../constants/nbTokens';
 
 export type NBBadgeColor =
@@ -80,17 +80,17 @@ const sizeStyles: Record<
   sm: {
     paddingHorizontal: nbSpacing.sm,
     paddingVertical: 2,
-    fontSize: nbTypography.fontSize.xs,
+    fontSize: nbType.caption.fontSize,
   },
   md: {
     paddingHorizontal: nbSpacing.sm,
     paddingVertical: nbSpacing.xs,
-    fontSize: nbTypography.fontSize.xs,
+    fontSize: nbType.caption.fontSize,
   },
   lg: {
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.sm,
-    fontSize: nbTypography.fontSize.sm,
+    fontSize: nbType.bodySm.fontSize,
   },
 };
 
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   text: {
-    fontWeight: nbTypography.fontWeight.bold,
+    fontWeight: nbType.h1.fontWeight,
     letterSpacing: 0.5,
     textAlign: 'center',
   },

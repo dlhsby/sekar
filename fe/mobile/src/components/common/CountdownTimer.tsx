@@ -8,7 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { Text, StyleSheet } from 'react-native';
 import {
   nbColors,
-  nbTypography,
+  nbType,
 } from '../../constants/nbTokens';
 
 type TimerColor = 'yellow' | 'green' | 'red';
@@ -72,7 +72,7 @@ export function CountdownTimer({
 
 const styles = StyleSheet.create({
   timer: {
-    fontWeight: nbTypography.fontWeight.extrabold,
+    fontWeight: nbType.displayXl.fontWeight,
     textAlign: 'center',
     letterSpacing: 1,
   },

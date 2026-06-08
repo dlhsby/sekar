@@ -24,7 +24,7 @@ import {
   nbSpacing,
   nbBorders,
   nbRadius,
-  nbTypography,
+  nbType,
 } from '../../constants/nbTokens';
 import { NBButton } from './NBButton';
 
@@ -282,18 +282,18 @@ const styles = StyleSheet.create({
     marginRight: nbSpacing.sm,
   },
   title: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
-    lineHeight: nbTypography.fontSize.base * 1.5,
+    fontSize: nbType.body.fontSize,
+    fontWeight: nbType.h1.fontWeight,
+    lineHeight: nbType.body.fontSize * 1.5,
     marginBottom: nbSpacing.xs,
   },
   message: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.regular,
-    lineHeight: nbTypography.fontSize.sm * 1.5,
+    fontSize: nbType.bodySm.fontSize,
+    fontWeight: nbType.body.fontWeight,
+    lineHeight: nbType.bodySm.fontSize * 1.5,
   },
   messageWithTitle: {
-    fontSize: nbTypography.fontSize.sm,
+    fontSize: nbType.bodySm.fontSize,
   },
   actions: {
     flexDirection: 'row',
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   dismissButtonText: {
-    fontSize: nbTypography.fontSize.lg,
+    fontSize: nbType.bodyLg.fontSize,
   },
 });
 

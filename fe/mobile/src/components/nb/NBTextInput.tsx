@@ -26,7 +26,7 @@ import {
   nbSpacing,
   nbBorders,
   nbRadius,
-  nbTypography,
+  nbType,
   nbTouchTarget,
 } from '../../constants/nbTokens';
 
@@ -198,8 +198,8 @@ const styles = StyleSheet.create({
     marginBottom: nbSpacing.md,
   },
   label: {
-    fontSize: nbTypography.fontSize.sm,
-    fontWeight: nbTypography.fontWeight.semibold,
+    fontSize: nbType.bodySm.fontSize,
+    fontWeight: nbType.h2.fontWeight,
     color: nbColors.black,
     marginBottom: nbSpacing.xs,
   },
@@ -210,19 +210,19 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.white,
     // borderWidth and borderColor now dynamic (see getBorderWidth/getBorderColor)
     borderRadius: nbRadius.base, // 2px - softened NB
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.regular,
+    fontSize: nbType.body.fontSize,
+    fontWeight: nbType.body.fontWeight,
     color: nbColors.black,
   },
   error: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.medium,
+    fontSize: nbType.caption.fontSize,
+    fontWeight: nbType.bodyLg.fontWeight,
     color: nbColors.danger,
     marginTop: nbSpacing.xs,
   },
   helperText: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.regular,
+    fontSize: nbType.caption.fontSize,
+    fontWeight: nbType.body.fontWeight,
     color: nbColors.gray600,
     marginTop: nbSpacing.xs,
   },

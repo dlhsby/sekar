@@ -8,7 +8,7 @@ import {
   nbBorders,
   nbRadius,
   nbShadows,
-  nbTypography,
+  nbType,
 } from '../../constants/nbTokens';
 
 export type NBToastLevel = 'info' | 'success' | 'warning' | 'danger';
@@ -173,13 +173,13 @@ const styles = StyleSheet.create({
     paddingRight: nbSpacing.xs,
   },
   title: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.bold,
+    fontSize: nbType.caption.fontSize,
+    fontWeight: nbType.h1.fontWeight,
     color: nbColors.black,
     letterSpacing: 0.5,
   },
   body: {
-    fontSize: nbTypography.fontSize.xs,
+    fontSize: nbType.caption.fontSize,
     color: nbColors.gray700,
     marginTop: 2,
   },
@@ -192,8 +192,8 @@ const styles = StyleSheet.create({
     borderRadius: nbRadius.sm,
   },
   actionLabel: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.bold,
+    fontSize: nbType.caption.fontSize,
+    fontWeight: nbType.h1.fontWeight,
     color: nbColors.black,
   },
   dismissButton: {

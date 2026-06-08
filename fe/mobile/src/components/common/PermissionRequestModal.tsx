@@ -27,7 +27,7 @@ import { NBButton } from '../nb';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
+  nbType,
   nbBorders,
   nbShadows,
   nbRadius,
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
     ...nbTextStyles.body,
     color: nbColors.gray700,
     textAlign: 'center',
-    lineHeight: nbTypography.fontSize.base * nbTypography.lineHeight.relaxed,
+    lineHeight: nbType.body.lineHeight,
   },
   androidNote: {
     flexDirection: 'row',
@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
     ...nbTextStyles.bodySmall,
     color: nbColors.gray700,
     flex: 1,
-    lineHeight: nbTypography.fontSize.sm * nbTypography.lineHeight.relaxed,
+    lineHeight: nbType.bodySm.lineHeight,
   },
   requiredBadge: {
     backgroundColor: nbColors.danger,
@@ -543,7 +543,7 @@ const styles = StyleSheet.create({
   },
   requiredBadgeText: {
     ...nbTextStyles.caption,
-    fontWeight: nbTypography.fontWeight.bold,
+    fontWeight: nbType.h1.fontWeight,
     color: nbColors.white,
   },
   infoBox: {
@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
     ...nbTextStyles.bodySmall,
     color: nbColors.gray700,
     flex: 1,
-    lineHeight: nbTypography.fontSize.sm * nbTypography.lineHeight.normal,
+    lineHeight: nbType.bodySm.lineHeight,
   },
   actions: {
     padding: nbSpacing.lg,

@@ -29,7 +29,7 @@ import {
   nbSpacing,
   nbBorders,
   nbRadius,
-  nbTypography,
+  nbType,
   nbTouchTarget,
 } from '../../constants/nbTokens';
 
@@ -116,13 +116,13 @@ const sizeStyles: Record<
   NBButtonSize,
   { height: number; paddingHorizontal: number; fontSize: number }
 > = {
-  sm: { height: 36, paddingHorizontal: 16, fontSize: nbTypography.fontSize.sm },
+  sm: { height: 36, paddingHorizontal: 16, fontSize: nbType.bodySm.fontSize },
   md: {
     height: nbTouchTarget.minHeight,
     paddingHorizontal: 24,
-    fontSize: nbTypography.fontSize.base,
+    fontSize: nbType.body.fontSize,
   },
-  lg: { height: 56, paddingHorizontal: 32, fontSize: nbTypography.fontSize.lg },
+  lg: { height: 56, paddingHorizontal: 32, fontSize: nbType.bodyLg.fontSize },
 };
 
 /**
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
     borderRadius: nbRadius.base, // 2px - softened NB
   },
   text: {
-    fontWeight: nbTypography.fontWeight.semibold,
+    fontWeight: nbType.h2.fontWeight,
     textAlign: 'center',
   },
   contentRow: {

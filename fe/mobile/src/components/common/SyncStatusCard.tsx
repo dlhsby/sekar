@@ -7,7 +7,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import {
   nbColors,
-  nbTypography,
+  nbType,
   nbSpacing,
   nbRadius,
   nbShadows,
@@ -112,8 +112,8 @@ const styles = StyleSheet.create({
     ...nbShadows.sm,
   },
   cardTitle: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.semibold,
+    fontSize: nbType.body.fontSize,
+    fontWeight: nbType.h2.fontWeight,
     color: nbColors.black,
     marginBottom: nbSpacing.md,
   },
@@ -123,12 +123,12 @@ const styles = StyleSheet.create({
     marginBottom: nbSpacing.xs,
   },
   syncLabel: {
-    fontSize: nbTypography.fontSize.base,
+    fontSize: nbType.body.fontSize,
     color: nbColors.gray600,
   },
   syncValue: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.semibold,
+    fontSize: nbType.body.fontSize,
+    fontWeight: nbType.h2.fontWeight,
     color: nbColors.black,
   },
   syncWarning: {

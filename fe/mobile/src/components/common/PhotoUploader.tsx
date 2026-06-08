@@ -30,7 +30,7 @@ import { ImagePreviewModal } from './ImagePreviewModal';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
+  nbType,
   nbBorders,
   nbRadius,
   nbShadows,
@@ -155,10 +155,10 @@ export function PhotoUploader({
 
 const styles = StyleSheet.create({
   errorText: {
-    fontSize: nbTypography.fontSize.sm,
+    fontSize: nbType.bodySm.fontSize,
     color: nbColors.danger,
     marginBottom: nbSpacing.xs,
-    fontWeight: nbTypography.fontWeight.medium,
+    fontWeight: nbType.bodyLg.fontWeight,
   },
   list: {
     marginTop: nbSpacing.sm,
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   removeText: {
     color: nbColors.white,
     fontSize: 24,
-    fontWeight: nbTypography.fontWeight.bold,
+    fontWeight: nbType.h1.fontWeight,
   },
   addButton: {
     width: 160,
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   },
   addText: {
     color: nbColors.gray600,
-    fontSize: nbTypography.fontSize.xs,
+    fontSize: nbType.caption.fontSize,
     marginTop: nbSpacing.xs,
   },
 });

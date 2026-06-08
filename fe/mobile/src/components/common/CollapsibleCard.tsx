@@ -18,7 +18,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
+  nbType,
   nbBorders,
   nbRadius,
   nbShadows,
@@ -121,8 +121,8 @@ const styles = StyleSheet.create({
     minHeight: 48, // Touch target
   },
   title: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
+    fontSize: nbType.body.fontSize,
+    fontWeight: nbType.h1.fontWeight,
     color: nbColors.black,
     flex: 1,
   },

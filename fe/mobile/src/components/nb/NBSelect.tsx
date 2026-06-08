@@ -25,7 +25,7 @@ import {
   nbColors,
   nbBorders,
   nbShadows,
-  nbTypography,
+  nbType,
   nbMotion,
   nbTouchTarget,
 } from '../../constants/nbTokens';
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   triggerText: {
-    fontSize: nbTypography.fontSize.base,
+    fontSize: nbType.body.fontSize,
     fontWeight: '600',
     color: nbColors.black,
     flex: 1,
@@ -479,7 +479,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.gray100,
   },
   sheetTitle: {
-    fontSize: nbTypography.fontSize.sm,
+    fontSize: nbType.bodySm.fontSize,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -497,7 +497,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   clearAllText: {
-    fontSize: nbTypography.fontSize.xs,
+    fontSize: nbType.caption.fontSize,
     fontWeight: '600',
     color: nbColors.danger,
     textTransform: 'uppercase',
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
     paddingLeft: 12,
   },
   optionText: {
-    fontSize: nbTypography.fontSize.base,
+    fontSize: nbType.body.fontSize,
     fontWeight: '400',
     color: nbColors.black,
     flex: 1,
@@ -547,7 +547,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: nbTypography.fontSize.base,
+    fontSize: nbType.body.fontSize,
     color: nbColors.black,
     marginLeft: 8,
     marginRight: 8,
@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.gray50,
   },
   clearOptionText: {
-    fontSize: nbTypography.fontSize.base,
+    fontSize: nbType.body.fontSize,
     fontWeight: '500',
     color: nbColors.danger,
     marginLeft: 10,
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
     borderColor: nbColors.black,
   },
   doneButtonText: {
-    fontSize: nbTypography.fontSize.base,
+    fontSize: nbType.body.fontSize,
     fontWeight: '700',
     color: nbColors.white,
     textTransform: 'uppercase',

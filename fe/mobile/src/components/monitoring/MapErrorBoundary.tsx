@@ -9,7 +9,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   nbColors,
-  nbTypography,
+  nbType,
   nbSpacing,
   nbRadius,
   nbBorders,
@@ -149,17 +149,17 @@ const styles = StyleSheet.create({
     marginBottom: nbSpacing.lg,
   },
   title: {
-    fontSize: nbTypography.fontSize.xl,
-    fontWeight: nbTypography.fontWeight.bold,
+    fontSize: nbType.h2.fontSize,
+    fontWeight: nbType.h1.fontWeight,
     color: nbColors.black,
     textAlign: 'center',
     marginBottom: nbSpacing.sm,
   },
   description: {
-    fontSize: nbTypography.fontSize.md,
+    fontSize: nbType.body.fontSize,
     color: nbColors.gray600,
     textAlign: 'center',
-    lineHeight: nbTypography.fontSize.md * 1.5,
+    lineHeight: nbType.body.fontSize * 1.5,
     marginBottom: nbSpacing.lg,
   },
   errorDetails: {
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   errorText: {
-    fontSize: nbTypography.fontSize.sm,
+    fontSize: nbType.bodySm.fontSize,
     fontFamily: 'monospace',
     color: nbColors.dangerDark,
   },
@@ -192,8 +192,8 @@ const styles = StyleSheet.create({
     marginRight: nbSpacing.sm,
   },
   retryButtonText: {
-    fontSize: nbTypography.fontSize.md,
-    fontWeight: nbTypography.fontWeight.bold,
+    fontSize: nbType.body.fontSize,
+    fontWeight: nbType.h1.fontWeight,
     color: nbColors.bgSurface,
   },
 });

@@ -22,7 +22,7 @@ import {
   nbSpacing,
   nbBorders,
   nbRadius,
-  nbTypography,
+  nbType,
 } from '../../constants/nbTokens';
 import { NBButton } from './NBButton';
 import { ILLUSTRATIONS, type EmptyIllustrationKey } from './illustrations';
@@ -251,18 +251,18 @@ const styles = StyleSheet.create({
     lineHeight: 56,
   },
   title: {
-    fontSize: nbTypography.fontSize.xl,
-    fontWeight: nbTypography.fontWeight.bold,
+    fontSize: nbType.h2.fontSize,
+    fontWeight: nbType.h1.fontWeight,
     color: nbColors.black,
     textAlign: 'center',
     marginBottom: nbSpacing.sm,
   },
   description: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.regular,
+    fontSize: nbType.body.fontSize,
+    fontWeight: nbType.body.fontWeight,
     color: nbColors.gray600,
     textAlign: 'center',
-    lineHeight: nbTypography.fontSize.base * 1.5,
+    lineHeight: nbType.body.fontSize * 1.5,
     marginBottom: nbSpacing.md,
   },
   ctaButton: {

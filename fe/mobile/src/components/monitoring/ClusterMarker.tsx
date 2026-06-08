@@ -19,7 +19,7 @@ import {
   nbColors,
   nbBorders,
   nbShadows,
-  nbTypography,
+  nbType,
 } from '../../constants/nbTokens';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -76,8 +76,8 @@ const styles = StyleSheet.create({
     ...nbShadows.sm,
   },
   countText: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
+    fontSize: nbType.body.fontSize,
+    fontWeight: nbType.h1.fontWeight,
     color: nbColors.black,
     textAlign: 'center',
   },

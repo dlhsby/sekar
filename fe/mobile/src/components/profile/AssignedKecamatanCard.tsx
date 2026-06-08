@@ -9,7 +9,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import {
   nbColors,
-  nbTypography,
+  nbType,
   nbSpacing,
   nbRadius,
   nbBorders,
@@ -62,8 +62,8 @@ const styles = StyleSheet.create({
     ...nbShadows.sm,
   },
   cardTitle: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.semibold,
+    fontSize: nbType.body.fontSize,
+    fontWeight: nbType.h2.fontWeight,
     color: nbColors.black,
     marginBottom: nbSpacing.md,
   },
@@ -77,13 +77,13 @@ const styles = StyleSheet.create({
     paddingVertical: nbSpacing.xs,
   },
   label: {
-    fontSize: nbTypography.fontSize.sm,
+    fontSize: nbType.bodySm.fontSize,
     color: nbColors.gray600,
-    fontWeight: nbTypography.fontWeight.medium,
+    fontWeight: nbType.bodyLg.fontWeight,
   },
   value: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
+    fontSize: nbType.body.fontSize,
+    fontWeight: nbType.h1.fontWeight,
     color: nbColors.black,
   },
   divider: {
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     marginVertical: nbSpacing.xs,
   },
   empty: {
-    fontSize: nbTypography.fontSize.base,
+    fontSize: nbType.body.fontSize,
     color: nbColors.gray500,
     fontStyle: 'italic',
     textAlign: 'center',
