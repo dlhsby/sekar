@@ -662,9 +662,9 @@ describe('pruningRequestsSlice', () => {
         ...mockPruningRequest,
         status: 'assigned' as const,
       };
+      // Real API returns { request, task } — the reducer indexes `request`.
       mockApi.mockResolvedValue({
-        success: true,
-        data: convertedRequest,
+        data: { request: convertedRequest, task: { id: 'task-1' } },
       });
 
       store = configureStore({
@@ -774,8 +774,7 @@ describe('pruningRequestsSlice', () => {
         status: 'assigned' as const,
       };
       mockApi.mockResolvedValue({
-        success: true,
-        data: convertedRequest,
+        data: { request: convertedRequest, task: { id: 'task-1' } },
       });
 
       store = configureStore({

@@ -30,7 +30,10 @@ export function AvailabilityModal({
   onSelect,
   loading,
 }: AvailabilityModalProps): React.JSX.Element {
-  const handleSelect = (date: string) => {
+  const handleSelect = (date: string | null) => {
+    // AvailabilityCalendar can emit null (clear); the modal only commits a
+    // concrete date pick.
+    if (!date) { return; }
     onSelect(date);
     onClose();
   };

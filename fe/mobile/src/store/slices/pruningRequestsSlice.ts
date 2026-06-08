@@ -126,10 +126,10 @@ export const submitPruningRequest = createAsyncThunk(
 export const fetchMyPruningRequests = createAsyncThunk(
   'pruningRequests/fetchMine',
   async (
-    filters?: {
+    filters: {
       limit?: number;
       offset?: number;
-    },
+    } | undefined,
     { rejectWithValue },
   ) => {
     try {
@@ -172,14 +172,14 @@ export const fetchPruningRequestById = createAsyncThunk(
 export const fetchAdminPruningRequests = createAsyncThunk(
   'pruningRequests/fetchAdmin',
   async (
-    filters?: {
+    filters: {
       status?: string;
       rayonId?: string;
       from?: string;
       to?: string;
       page?: number;
       limit?: number;
-    },
+    } | undefined,
     { rejectWithValue },
   ) => {
     try {
@@ -416,6 +416,7 @@ const pruningRequestsSlice = createSlice({
         state.isSubmitting = false;
         state.submitStatus = 'success';
         const request = action.payload;
+        if (!request) { return; }
         // Prepend to mine array (newest first)
         state.mine.unshift(request);
         // Store in byId map
@@ -458,6 +459,7 @@ const pruningRequestsSlice = createSlice({
       .addCase(fetchPruningRequestById.fulfilled, (state, action) => {
         state.isLoading = false;
         const request = action.payload;
+        if (!request) { return; }
         state.byId[request.id] = request;
         // Update in mine if it exists
         const existingIndex = state.mine.findIndex((r) => r.id === request.id);
@@ -503,6 +505,7 @@ const pruningRequestsSlice = createSlice({
       .addCase(reviewPruningRequest.fulfilled, (state, action) => {
         state.reviewingId = null;
         const request = action.payload;
+        if (!request) { return; }
         state.byId[request.id] = request;
         // Update in adminList
         const adminIndex = state.adminList.findIndex((r) => r.id === request.id);
@@ -524,7 +527,9 @@ const pruningRequestsSlice = createSlice({
       })
       .addCase(assignPruningRequestToTask.fulfilled, (state, action) => {
         state.convertingId = null;
-        const request = action.payload;
+        // Payload is { request, task } — index the updated request, not the wrapper.
+        const request = action.payload?.request;
+        if (!request) { return; }
         state.byId[request.id] = request;
         // Update in adminList
         const adminIndex = state.adminList.findIndex((r) => r.id === request.id);

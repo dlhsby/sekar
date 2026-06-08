@@ -27,6 +27,7 @@ import {
   Platform,
   Linking,
   Alert,
+  type ImageStyle,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
@@ -206,7 +207,10 @@ function ContactRow({ label, name, phone, isLast }: ContactRowProps): React.JSX.
 export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
-  const { requestId, adminMode = false } = props.route.params;
+  const { requestId, adminMode = false } = (props.route.params ?? {}) as {
+    requestId: string;
+    adminMode?: boolean;
+  };
   const userRole = useUserRole();
 
   const { byId, isLoading, error, reviewingId } = useAppSelector(
@@ -647,7 +651,7 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
                       accessibilityRole="button"
                       accessibilityLabel={`Foto ${index + 1} dari ${request.photoUrls.length}`}
                     >
-                      <Image source={{ uri: photoUrl }} style={styles.photo} />
+                      <Image source={{ uri: photoUrl }} style={styles.photo as ImageStyle} />
                     </TouchableOpacity>
                   ))}
                 </ScrollView>

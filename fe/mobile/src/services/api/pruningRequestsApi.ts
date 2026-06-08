@@ -54,7 +54,6 @@ export async function submitPruningRequest(
   // Invalid response shape
   return {
     error: 'Invalid response shape from server',
-    success: false,
   };
 }
 
@@ -125,7 +124,6 @@ export async function reviewPruningRequest(
 
   return {
     error: 'Invalid response shape from server',
-    success: false,
   };
 }
 
@@ -167,7 +165,6 @@ export async function assignPruningRequestToTask(
 
   return {
     error: 'Invalid response shape from server',
-    success: false,
   };
 }
 
