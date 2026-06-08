@@ -4,6 +4,22 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 9, 2026 — Pruning module tsc debt cleared (140 → 0) + latent convert bug fixed
+
+**Goal:** clear the long-standing TypeScript debt in the pruning module (slice, api, and their tests) — ~140 pre-existing `tsc` errors that didn't fail jest (babel strips types) but blocked a clean typecheck.
+
+**Production (real code-health, committed first):**
+- `pruningRequestsApi`: dropped dead `success: false` (not in `ApiResponse`).
+- slice: fixed `TS1016` thunk signatures (`filters?:` → `filters: … | undefined`); guarded reducer payloads (`PruningRequest | undefined`) before mutating the Immer draft.
+- **slice — fixed a latent runtime bug:** `assignPruningRequestToTask.fulfilled` indexed `state.byId[undefined]` because the payload is `{ request, task }`, not a bare request; now destructures `payload.request` so `byId`/`adminList` update on convert (was masked by the detail screen's post-convert refetch).
+- `AvailabilityModal`: widened `onSelect` to `(string | null)`; `RequestDetailScreen`: typed `route.params`, cast photo style to `ImageStyle`.
+
+**Tests:** typed the slice test store via a `makeStore()` helper (gives thunk dispatch — cleared the bulk of `unknown`/`AsyncThunkAction` errors); corrected `mockPruningRequest` fixtures (`submittedBy` string, full `Rayon`, required `expected*`/`scheduledDate`); fixed the api test's invented `success`/`meta`/object-`error` mocks + assertions; completed `AuthState` (`onboardingCompleted`) + cast partial `User` in the screen/home tests (the outer `as any` had been breaking `configureStore` overload resolution); cast the legacy partial-slice `preloadedState` blocks.
+
+**Verification:** pruning module `tsc` **140 → 0** (project total 679 → 539). `eslint .` unchanged (18 pre-existing errors, 0 new). Full jest **211 suites pass** (the lone `usersApi.test` failure is pre-existing and unrelated — confirmed on clean main). Commits: production fix, then the two test-debt commits.
+
+---
+
 ## June 8, 2026 — 3-R5 — backward-compat token shims removed (mechanical sweep)
 
 **Goal:** the final design-system token cleanup — migrate every call site off the Phase-2 backward-compat shims in `nbTokens.ts` and delete the shims, so the mobile codebase uses only the flat generated token names.
