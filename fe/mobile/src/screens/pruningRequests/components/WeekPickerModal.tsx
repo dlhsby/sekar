@@ -7,15 +7,14 @@
  */
 
 import React from 'react';
-import { Modal, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Modal, View, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { NBBackgroundPattern } from '../../../components/nb';
+import { NBBackgroundPattern, NBText } from '../../../components/nb';
 import { WeekPicker, type PickedWeek } from './WeekPicker';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
   nbBorders,
   nbShadows,
 } from '../../../constants/nbTokens';
@@ -66,7 +65,7 @@ export function WeekPickerModal({
           >
             <MaterialCommunityIcons name="arrow-left" size={24} color={nbColors.black} />
           </TouchableOpacity>
-          <Text style={styles.title} numberOfLines={1}>Pilih Minggu Preferensi</Text>
+          <NBText variant="h3" style={styles.title} numberOfLines={1}>Pilih Minggu Preferensi</NBText>
         </View>
         <NBBackgroundPattern>
           <View style={styles.body}>
@@ -98,7 +97,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: nbSpacing.md,
     backgroundColor: nbColors.white,
-    borderBottomWidth: nbBorders.thick,
+    borderBottomWidth: nbBorders.widthThick,
     borderBottomColor: nbColors.black,
     ...nbShadows.md,
   },
@@ -114,9 +113,7 @@ const styles = StyleSheet.create({
   // Perantingan' / etc.
   title: {
     flex: 1,
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.extrabold,
-    color: nbColors.black,
+    // Typography handled by NBText variant="h3"
   },
   body: {
     flex: 1,

@@ -217,7 +217,7 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
             testID="help-row"
           >
             <NBText variant="body-sm" color="black" style={styles.rowLabel}>Bantuan &amp; FAQ</NBText>
-            <MaterialCommunityIcons name="chevron-right" size={18} color={nbColors.gray['400']} />
+            <MaterialCommunityIcons name="chevron-right" size={18} color={nbColors.gray400} />
           </TouchableOpacity>
         </View>
 
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
   },
   rowDivider: {
     borderBottomWidth: 1.5,
-    borderBottomColor: nbColors.gray['300'],
+    borderBottomColor: nbColors.gray300,
     borderStyle: 'dashed',
   },
   rowText: {
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
     ...nbShadows.xs,
   },
   toggleTrackOff: {
-    backgroundColor: nbColors.gray['200'],
+    backgroundColor: nbColors.gray200,
   },
   toggleKnob: {
     width: 16,

@@ -26,7 +26,7 @@ import {
   nbColors,
   nbSpacing,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
 } from '../../../constants/nbTokens';
 import {
   buildThreeMonthRange,
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    borderWidth: nbBorders.thin,
+    borderWidth: nbBorders.widthThin,
     borderColor: nbColors.black,
   },
   scroll: {
@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
     gap: nbSpacing.sm,
   },
   cardSelected: {
-    borderWidth: nbBorders.thick,
+    borderWidth: nbBorders.widthThick,
     borderColor: nbColors.black,
   },
   cardHeaderRow: {
@@ -374,9 +374,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingTop: nbSpacing.xs,
-    borderTopWidth: nbBorders.thin,
+    borderTopWidth: nbBorders.widthThin,
     borderTopColor: nbColors.gray200,
-    borderRadius: nbBorderRadius.sm,
+    borderRadius: nbRadius.sm,
   },
   dayDotCell: {
     alignItems: 'center',
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
     width: 14,
     height: 14,
     borderRadius: 7,
-    borderWidth: nbBorders.thin,
+    borderWidth: nbBorders.widthThin,
     borderColor: nbColors.black,
   },
   dayNum: {

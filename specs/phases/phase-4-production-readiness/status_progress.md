@@ -4,6 +4,26 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 8, 2026 — 4-R completeness sweep — 6 residual screens/components token-cleaned
+
+**Goal:** after the PRT sweep, re-audit the whole **4-R** mobile matrix for any screen still on legacy tokens. A repo-wide grep of `src/screens` (excluding the NB primitives in `components/nb/*`, which keep the backward-compat shims **deliberately until 3-R5**) surfaced **6 files** still dirty — three of them in screens the matrix had already marked ✅.
+
+**Swept (legacy-token aliases → v2.1 flat; identical values, no visual drift):**
+- `screens/pruningRequests/components/WeekPickerModal.tsx` — `nbTypography.fontSize.lg/fontWeight.extrabold` on a raw `<Text>` title → `NBText variant="h3"` (matches the `NBPageHeader` title convention); `nbBorders.thick`→`widthThick`; dropped the `nbTypography`/`Text` imports. **Worst offender — the only one with `nbTypography` + raw `<Text>`.**
+- `screens/pruningRequests/components/WeekPicker.tsx` — `nbBorders.thin/.thick`→`widthThin/widthThick`, `nbBorderRadius.sm`→`nbRadius.sm` + import.
+- `screens/pruningRequests/components/AvailabilityCalendar.tsx` — `nbBorders.thin`→`widthThin`, `nbBorderRadius.sm`→`nbRadius.sm` + import. (Capacity/ISO-week logic untouched per the PRT plan; its 8 raw `<Text>` use no `nbTypography`, left as-is — calendar internals.)
+- `screens/common/SettingsScreen.tsx` (PRF-2) — `gray['400'/'300'/'200']` bracket → flat. (Matrix said "shims gone" — was inaccurate.)
+- `screens/common/EditProfileScreen.tsx` (PRF-3) — `gray['300']` → flat. (Matrix said "shims gone" — was inaccurate.)
+- `screens/common/NotificationsScreen.tsx` (NOTIF-1) — `nbBorders.thin/.thick`→`widthThin/widthThick`.
+
+**Why these were missed:** the 3 PRT sub-components (Submit/Reschedule helpers) were flagged "sweep tokens only if dirty" in the CP4 plan but never re-checked; the 3 `common` screens were marked ✅ in May without a token re-scan.
+
+**Tests:** `AvailabilityCalendar.test.tsx` `nbTokens` mock extended with `widthThin/widthBase/widthThick/widthExtra` + `nbRadius` (it previously only stubbed `thin/base/…` + `nbBorderRadius`, so the swept code crashed the suite). All `screens/pruningRequests` + `screens/common` suites green — **130 passed / 13 suites**. ESLint clean on all 6; no new tsc errors.
+
+**✅ 4-R mobile matrix now genuinely complete** — every `src/screens` file is on v2.1 flat tokens. Remaining legacy-token usage is confined to `components/nb/*` + shared `common`/`monitoring` primitives via the intentional backward-compat shims, scheduled for removal in the separate **3-R5** sweep (not 4-R).
+
+---
+
 ## June 8, 2026 — M3: Perantingan (PRT) revamp CP5 — SubmitScreen token sweep + submit-flow tests (PRT sweep complete)
 
 **Goal:** close out the PRT v2.1 sweep with the last screen — a token-only pass on the staff_kecamatan creation form — and finally back-fill the submit-flow test coverage the file header had flagged as pending.

@@ -18,8 +18,9 @@ jest.mock('../../../../constants/nbTokens', () => {
   return {
     nbColors: new Proxy({}, handler),
     nbSpacing: new Proxy({}, handler),
-    nbBorders: { thin: 1, base: 2, thick: 3, extra: 4 },
+    nbBorders: { thin: 1, base: 2, thick: 3, extra: 4, widthThin: 1, widthBase: 2, widthThick: 3, widthExtra: 4 },
     nbBorderRadius: new Proxy({}, handler),
+    nbRadius: new Proxy({}, handler),
   };
 });
 

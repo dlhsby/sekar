@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
   },
   lockedRowDivider: {
     borderBottomWidth: 1.5,
-    borderBottomColor: nbColors.gray['300'],
+    borderBottomColor: nbColors.gray300,
     borderStyle: 'dashed',
   },
   lockedLabel: {

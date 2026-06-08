@@ -37,7 +37,7 @@ import {
   nbColors,
   nbSpacing,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
 } from '../../../constants/nbTokens';
 import {
   buildEightWeekRange,
@@ -439,9 +439,9 @@ const styles = StyleSheet.create({
     gap: nbSpacing.sm,
     paddingVertical: 6,
     paddingHorizontal: nbSpacing.sm,
-    borderWidth: nbBorders.thin,
+    borderWidth: nbBorders.widthThin,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.sm,
+    borderRadius: nbRadius.sm,
     backgroundColor: nbColors.gray100,
     marginBottom: 6,
   },
@@ -471,9 +471,9 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     paddingHorizontal: nbSpacing.sm,
     backgroundColor: nbColors.white,
-    borderWidth: nbBorders.thin,
+    borderWidth: nbBorders.widthThin,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.sm,
+    borderRadius: nbRadius.sm,
   },
   infoStripClearText: {
     fontSize: 11,
@@ -497,7 +497,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    borderWidth: nbBorders.thin,
+    borderWidth: nbBorders.widthThin,
     borderColor: nbColors.black,
   },
   legendLabel: {
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: 4,
     paddingBottom: 4,
-    borderBottomWidth: nbBorders.thin,
+    borderBottomWidth: nbBorders.widthThin,
     borderBottomColor: nbColors.black,
   },
   col: {
@@ -566,8 +566,8 @@ const styles = StyleSheet.create({
   cell: {
     width: CELL_SIZE,
     height: CELL_SIZE,
-    borderRadius: nbBorderRadius.sm,
-    borderWidth: nbBorders.thin,
+    borderRadius: nbRadius.sm,
+    borderWidth: nbBorders.widthThin,
     borderColor: nbColors.black,
     alignItems: 'center',
     justifyContent: 'center',
