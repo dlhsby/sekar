@@ -59,7 +59,7 @@ import {
   nbColors,
   nbSpacing,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
   nbShadows,
 } from '../../constants/nbTokens';
 import { formatDate, formatDateTime, formatIsoWeekLabel } from '../../utils/dateUtils';
@@ -1010,20 +1010,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: nbSpacing[2],
   },
-  gpsValueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: nbSpacing[2],
-  },
   viewMapCta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: nbSpacing[2],
     paddingVertical: nbSpacing[3],
     paddingHorizontal: nbSpacing[3],
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.primary,
-    borderRadius: nbBorderRadius.base,
+    borderRadius: nbRadius.base,
     backgroundColor: nbColors.gray100,
   },
   viewMapCtaText: {
@@ -1060,9 +1055,9 @@ const styles = StyleSheet.create({
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: nbBorders.thin,
+    borderWidth: nbBorders.widthThin,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.sm,
+    borderRadius: nbRadius.sm,
     backgroundColor: nbColors.white,
   },
   copyBtn: {
@@ -1082,8 +1077,8 @@ const styles = StyleSheet.create({
   photo: {
     width: 160,
     height: 160,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },

@@ -4,6 +4,23 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 8, 2026 — M3: Perantingan (PRT) revamp CP4 — RequestDetailScreen token sweep
+
+**Goal:** finish the detail-view sweep. The screen was already redesigned (Round 6) to mirror `ActivityDetailScreen`'s `NBCardHeader`/`sectionTitle`/`infoRow` language and was fully `NBText` + `NBCard`-based, so CP4 is a tight token sweep — no restyle.
+
+**Scope decision — kept the detail-screen language, did NOT redesign.** The plan floated converging this screen toward the monitoring-modal `UserDetailSheet`/`BoundaryDetailModal` language (status hero + `HomeStatTile` KPI row). Skipped deliberately: its true siblings — `ActivityDetailScreen`, `OvertimeDetailScreen` — use the same `NBCard` + `NBCardHeader` + `sectionTitle` pattern (verified), so a hero/KPI redesign would make this screen a visual island and break detail-screen family consistency ("hi-fi is inspiration, not law"). Code-reviewer concurred (redesign-skip "approved").
+
+**`RequestDetailScreen.tsx`** (styles + one import only — zero logic/JSX change)
+- Token renames (all in the StyleSheet): `nbBorders.base`→`widthBase` (×3), `nbBorders.thin`→`widthThin`, `nbBorderRadius.base`→`nbRadius.base` (×2), `nbBorderRadius.sm`→`nbRadius.sm`; swapped the `nbBorderRadius` import for `nbRadius`. Backward-compat shims guarantee identical values, so no visual drift.
+- Removed dead style `gpsValueRow` (defined, never referenced — the GPS row uses `infoRow`/`valueMono`).
+- Untouched: WhatsApp `#25D366` ESLint exemption, and all wiring — approve/reject (inline reason + scroll), reschedule (`RescheduleSheet`), assign-to-task (`AssignToTaskSheet`), submitter-only cancel, photo viewer, `LocationMapModal`, status gating.
+
+**Tests:** none added — a token-alias rename produces byte-identical output and the dead style never rendered; the existing `RequestDetailScreen.test.tsx` (18 cases) already covers behavior and stays green. Blast-radius: all `pruningRequests` + `PruningRequestFilterModal` + `statusHelpers` → **112 passed / 10 suites**. ESLint exit 0 (WA hex exempted); the 3 tsc errors in the file are pre-existing (untyped `route.params`, RN `ImageStyle.overflow` quirk — verified identical on clean main, unrelated to CP4).
+
+**Scope note:** CP4 done. Only CP5 (SubmitScreen token-only, optional) remains in the PRT sweep.
+
+---
+
 ## June 8, 2026 — M3: Perantingan (PRT) revamp CP3 — ReviewQueueScreen sweep + derived SLA pill
 
 **Goal:** finish the admin review inbox sweep — token + header parity with CP2, plus a derived SLA-urgency tag on each open request (no DB column). Restyle + additive derived data only; all wiring preserved.
