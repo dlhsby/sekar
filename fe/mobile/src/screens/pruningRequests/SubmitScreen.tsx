@@ -26,7 +26,6 @@ import {
   Image,
   Alert,
   ActivityIndicator,
-  Platform,
   Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -44,7 +43,7 @@ import {
 import { fetchCapacity } from '../../store/slices/serviceCapacitySlice';
 import { WeekPickerModal } from './components/WeekPickerModal';
 import type { PickedWeek } from './components/WeekPicker';
-import { getISOWeek, formatDateLong } from '../../utils/dateUtils';
+import { getISOWeek } from '../../utils/dateUtils';
 import {
   NBCard,
   NBCardContent,
