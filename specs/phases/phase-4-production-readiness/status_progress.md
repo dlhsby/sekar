@@ -4,6 +4,30 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 8, 2026 — M3: Perantingan (PRT) revamp CP2 — PerantinganListScreen + PruningRequestFilterModal sweep
+
+**Goal:** bring the staff_kecamatan `Perantingan` tab + its shared filter modal onto Design-System v2.1 and the canonical list-screen language, mirroring the already-shipped `OvertimeListScreen`/`OvertimeFilterModal` (which the file headers already claimed parity with). Restyle only — all wiring preserved.
+
+**`PerantinganListScreen.tsx`**
+- Page title `View`+styled `<Text>` → `NBPageHeader title="Permohonan Perantingan"` (same primitive Lembur/Tugas/Aktivitas use); FAB `View` (absolute, hand-positioned) → `NBFabBar`, and the `80` magic-number bottom padding → `NB_FAB_BAR_HEIGHT` token.
+- All 4 raw `<Text>` (mini-chips, "Semua Permohonan" placeholder, filter-count badge) → `NBText` with `variant`+`color`.
+- Tokens: `nbBorders.extra/.base`→`widthExtra/widthBase`, `nbBorderRadius.sm`→`nbRadius.sm`, `gray[300]/[400]`→`gray300/gray400`; dropped all `nbTypography.fontSize/fontWeight` literals (carried by `NBText`). Removed dead `headerContainer`/`pageTitle`/`fab` styles + the `Text`/`nbTypography`/`nbBorderRadius` imports.
+
+**`PruningRequestFilterModal.tsx`** (shared by CP2 list + CP3 review queue)
+- All 6 raw `<Text>` (4 section labels, date `→` separator, Reset/Terapkan footer buttons) → `NBText`, matching `OvertimeFilterModal` exactly: labels `mono-sm gray700 uppercase`, separator `body gray500`, buttons `body-sm` + shared `actionButtonText` (`fontWeight:'700'`).
+- Tokens: `nbBorders.base`→`widthBase`, `gray['600']/['500']`→flat; dropped `nbTypography` literals; merged `resetButtonText`/`applyButtonText` into one `actionButtonText`.
+
+**Wiring preserved:** FAB-create nav, filter/sort modals, active-chip bar + reset, badge count, `NBEmptyState` (create-CTA vs filter-aware copy), toast-on-error, rayon role-gating, date-range parsing — all untouched.
+
+**Tests** (both files previously had *zero* coverage)
+- New `screens/pruningRequests/__tests__/PerantinganListScreen.test.tsx` (12 cases, real store + real `ListItemCard`): title via `NBPageHeader`, fetch-on-mount, card rows, default placeholder, filter/sort modal open, status filter narrows list, card-press → `selectRequest` + `PruningDetail` nav, FAB → `PerantinganSubmit`, create-CTA empty state, filter-aware empty copy (no CTA), error-renders-without-crash.
+- New `components/modals/__tests__/PruningRequestFilterModal.test.tsx` (14 cases, real NB primitives à la `TaskFilterModal.test`): visibility, section labels, Dari/Sampai, Reset/Terapkan callbacks, trimmed refCode/requesterName apply, sync-on-open, rayon role-gating (hidden staff_kecamatan / fixed admin_data no-fetch / selectable top_management loads / load-error graceful).
+- Blast-radius green: `statusHelpers` + all `pruningRequests` + `modals` suites → **349 passed / 19 suites** (+26 tests, +2 suites vs CP1). ESLint + tsc clean on all four files.
+
+**Scope note:** CP2 done. Remaining: ReviewQueueScreen + SLA `extraTag` pill = CP3, RequestDetailScreen = CP4, SubmitScreen (optional) = CP5.
+
+---
+
 ## June 8, 2026 — M3: Perantingan (PRT) revamp CP1 — shared card + pruningPill + dead-code removal
 
 **Goal:** start the Perantingan v2.1 sweep (last mobile-screen cluster in the 4-R design-system pass) with the highest-leverage change — the shared list-card row that feeds both the staff list (PRT-4) and the admin review queue (PRT-2).

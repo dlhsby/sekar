@@ -19,7 +19,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
-  Text,
   FlatList,
   RefreshControl,
   StyleSheet,
@@ -41,6 +40,10 @@ import {
   NBButton,
   NBEmptyState,
   NBToast,
+  NBPageHeader,
+  NBFabBar,
+  NB_FAB_BAR_HEIGHT,
+  NBText,
 } from '../../components/nb';
 import {
   SortModal,
@@ -52,9 +55,8 @@ import { getPruningRequestStatusLabel } from '../../utils/statusHelpers';
 import {
   nbColors,
   nbSpacing,
-  nbTypography,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
   nbShadows,
 } from '../../constants/nbTokens';
 import type { PruningRequest } from '../../types/models.types';
@@ -284,9 +286,7 @@ export function PerantinganListScreen(): React.JSX.Element {
     >
       <SafeAreaView style={styles.safeArea}>
         {/* Page Title — same style as Tugas / Aktivitas / Lembur */}
-        <View style={styles.headerContainer}>
-          <Text style={styles.pageTitle}>Permohonan Perantingan</Text>
-        </View>
+        <NBPageHeader title="Permohonan Perantingan" />
 
         {/* Filter bar — mini chips (left) + sort/filter icons (right) */}
         <View
@@ -312,12 +312,12 @@ export function PerantinganListScreen(): React.JSX.Element {
                       chip.chipStyle === 'location' && styles.miniChipLocation,
                     ]}
                   >
-                    <Text style={styles.miniChipText}>{chip.text}</Text>
+                    <NBText variant="caption" color="black" style={styles.miniChipText}>{chip.text}</NBText>
                   </View>
                 ))}
               </ScrollView>
             ) : (
-              <Text style={styles.filterBarPlaceholder}>Semua Permohonan</Text>
+              <NBText variant="body-sm" color="gray400" style={styles.filterBarPlaceholder}>Semua Permohonan</NBText>
             )}
             {activeFilterCount > 0 && (
               <TouchableOpacity
@@ -363,7 +363,7 @@ export function PerantinganListScreen(): React.JSX.Element {
               />
               {activeFilterCount > 0 && (
                 <View style={styles.filterBadge}>
-                  <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+                  <NBText variant="caption" color="white" style={styles.filterBadgeText}>{activeFilterCount}</NBText>
                 </View>
               )}
             </TouchableOpacity>
@@ -394,7 +394,7 @@ export function PerantinganListScreen(): React.JSX.Element {
         </View>
 
         {/* FAB — Buat Permohonan */}
-        <View style={styles.fab} pointerEvents="box-none">
+        <NBFabBar>
           <NBButton
             title="+ Buat Permohonan"
             variant="primary"
@@ -403,7 +403,7 @@ export function PerantinganListScreen(): React.JSX.Element {
             onPress={handleSubmit}
             testID="perantingan-submit-fab"
           />
-        </View>
+        </NBFabBar>
 
         {/* Sort modal */}
         <SortModal
@@ -438,24 +438,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-  headerContainer: {
-    paddingHorizontal: nbSpacing.md,
-    paddingTop: nbSpacing.md,
-    paddingBottom: nbSpacing.xs,
-  },
-  pageTitle: {
-    fontSize: nbTypography.fontSize.lg,
-    fontWeight: nbTypography.fontWeight.extrabold,
-    color: nbColors.black,
-  },
   filterBarCollapsed: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: nbSpacing.sm,
     paddingVertical: nbSpacing.xs,
     backgroundColor: nbColors.white,
-    borderBottomWidth: nbBorders.extra,
-    borderBottomColor: nbColors.gray[300],
+    borderBottomWidth: nbBorders.widthExtra,
+    borderBottomColor: nbColors.gray300,
     ...nbShadows.md,
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.sm,
@@ -476,9 +466,8 @@ const styles = StyleSheet.create({
     marginLeft: nbSpacing.xs,
   },
   filterBarPlaceholder: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[400],
     fontStyle: 'italic',
+    // Color/size handled by NBText variant="body-sm" color="gray400"
   },
   miniChipsContent: {
     flexDirection: 'row',
@@ -488,9 +477,9 @@ const styles = StyleSheet.create({
   miniChip: {
     paddingHorizontal: nbSpacing.sm,
     paddingVertical: nbSpacing.xs,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.sm,
+    borderRadius: nbRadius.sm,
     height: 32,
     justifyContent: 'center',
   },
@@ -498,9 +487,7 @@ const styles = StyleSheet.create({
   miniChipDate: { backgroundColor: nbColors.warning },
   miniChipLocation: { backgroundColor: nbColors.infoLight },
   miniChipText: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.black,
+    // Typography handled by NBText variant="caption"
   },
   filterClearButton: {
     padding: 4,
@@ -521,21 +508,19 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     backgroundColor: nbColors.danger,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.white,
     justifyContent: 'center',
     alignItems: 'center',
   },
   filterBadgeText: {
-    fontSize: nbTypography.fontSize.xs,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.white,
+    // Typography handled by NBText variant="caption"
   },
   listWrapper: {
     flex: 1,
   },
   listWrapperWithFab: {
-    paddingBottom: 80,
+    paddingBottom: NB_FAB_BAR_HEIGHT,
   },
   list: {
     flex: 1,
@@ -544,12 +529,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.md,
     paddingBottom: nbSpacing['2xl'],
     flexGrow: 1,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: nbSpacing.md,
-    left: nbSpacing.md,
-    right: nbSpacing.md,
-    zIndex: 10,
   },
 });
