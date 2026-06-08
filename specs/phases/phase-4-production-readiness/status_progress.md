@@ -4,6 +4,31 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 8, 2026 — M3: Perantingan (PRT) revamp CP3 — ReviewQueueScreen sweep + derived SLA pill
+
+**Goal:** finish the admin review inbox sweep — token + header parity with CP2, plus a derived SLA-urgency tag on each open request (no DB column). Restyle + additive derived data only; all wiring preserved.
+
+**`ReviewQueueScreen.tsx`**
+- Page title `View`+`NBText h1` → `NBPageHeader` (parity with CP2/the other list screens; h1→h3); removed dead `headerContainer`/`pageTitle` styles.
+- Tokens: `nbBorders.extra/.base`→`widthExtra/widthBase`, `nbBorderRadius.sm`→`nbRadius.sm`, `gray[300]/[400]`→`gray300/gray400`; chip/placeholder/badge `NBText` now carry `color` props (matching CP2); dropped the `nbBorderRadius` import. (Screen already used `NBText` throughout — no raw `<Text>` to convert.)
+- `renderItem` now derives the SLA tag and hangs it off the CP1 card's `extraTag` slot as a `StatusPill` — the shared `ListItemCard` primitive stays untouched (no row-tint). Open requests only; closed statuses get nothing.
+
+**SLA derivation (`screens/pruningRequests/utils/sla.ts`, new)**
+- `pruningSlaTag(request, now = Date.now()) => { tone: StatusTone; label } | null`. Pure, with injectable `now` for deterministic tests. Tag only for open statuses (`submitted`, `under_review`); `null` for closed statuses and unparseable `createdAt`.
+- Urgency = how long the request has *waited* (longer wait → more urgent — this deliberately inverts the plan's literal `<6h → bad` text, which read backwards for a review queue; user confirmed): `<6h → neutral` · `[6h,24h) → warn` · `≥24h → bad`. Label `SLA {hours}j` (`j` = jam; shows whole hours waited, user-confirmed Indonesian-only unit). Future `createdAt` clamps to `SLA 0j`.
+- No SLA *sort* added — that would be a behavior change; existing `created_at`/`expected` sort untouched.
+
+**Wiring preserved:** server-side status fetch + local filter predicate, sort, auth gate (`ADMIN_ROLES`), filter/sort modals, toast-on-error, refresh — all untouched.
+
+**Tests**
+- New `screens/pruningRequests/utils/__tests__/sla.test.ts`: open-vs-closed status gate, the three urgency buckets + exact `Math.floor` boundaries (5h59m→neutral, 6h→warn, 24h→bad, 72h→bad), unparseable date→null, future date→`SLA 0j`, default-`now`.
+- `ReviewQueueScreen.test.tsx`: added `NBPageHeader` to the `components/nb` mock (the new header was crashing all 10 cases) + a new assertion that exactly 2 SLA pills render (the open requests, not the approved one) with a note on the real-`Date.now()` fixture dependency.
+- Blast-radius green: all `pruningRequests` + `statusHelpers` suites → **98 passed / 9 suites** (full mobile pruning+modals+helpers earlier: 365 / 20). ESLint + tsc clean on the two production files.
+
+**Scope note:** CP3 done. Remaining: RequestDetailScreen = CP4, SubmitScreen (optional) = CP5.
+
+---
+
 ## June 8, 2026 — M3: Perantingan (PRT) revamp CP2 — PerantinganListScreen + PruningRequestFilterModal sweep
 
 **Goal:** bring the staff_kecamatan `Perantingan` tab + its shared filter modal onto Design-System v2.1 and the canonical list-screen language, mirroring the already-shipped `OvertimeListScreen`/`OvertimeFilterModal` (which the file headers already claimed parity with). Restyle only — all wiring preserved.

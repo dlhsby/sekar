@@ -50,19 +50,22 @@ import {
   NBEmptyState,
   NBToast,
   NBText,
+  NBPageHeader,
 } from '../../components/nb';
 import {
   SortModal,
   PruningRequestFilterModal,
   type PruningRequestFilterValue,
 } from '../../components/modals';
+import { StatusPill } from '../../components/home/StatusPill';
 import { PerantinganRequestCard } from './components/PerantinganRequestCard';
+import { pruningSlaTag } from './utils/sla';
 import { getPruningRequestStatusLabel } from '../../utils/statusHelpers';
 import {
   nbColors,
   nbSpacing,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
   nbShadows,
 } from '../../constants/nbTokens';
 import { useUserRole } from '../../hooks/useUserRole';
@@ -281,12 +284,18 @@ export function ReviewQueueScreen(): React.JSX.Element {
 
   // ── Render helpers ───────────────────────────────────────────────────────
   const renderItem = useCallback(
-    ({ item }: { item: PruningRequest }) => (
-      <PerantinganRequestCard
-        request={item}
-        onPress={() => handleRequestPress(item.id)}
-      />
-    ),
+    ({ item }: { item: PruningRequest }) => {
+      // SLA urgency is derived (no DB column) and hung off the card's extraTag
+      // slot as a StatusPill — open requests only; closed ones get nothing.
+      const sla = pruningSlaTag(item);
+      return (
+        <PerantinganRequestCard
+          request={item}
+          onPress={() => handleRequestPress(item.id)}
+          extraTag={sla ? <StatusPill tone={sla.tone} label={sla.label} /> : undefined}
+        />
+      );
+    },
     [handleRequestPress],
   );
 
@@ -332,9 +341,7 @@ export function ReviewQueueScreen(): React.JSX.Element {
     >
       <SafeAreaView style={styles.safeArea}>
         {/* Page Title — same style as Tugas / Aktivitas / Lembur */}
-        <View style={styles.headerContainer}>
-          <NBText variant="h1" style={styles.pageTitle}>Review Permohonan Perantingan</NBText>
-        </View>
+        <NBPageHeader title="Review Permohonan Perantingan" />
 
         {/* Filter bar — mini chips (left) + sort/filter icons (right) */}
         <View
@@ -360,12 +367,12 @@ export function ReviewQueueScreen(): React.JSX.Element {
                       chip.chipStyle === 'location' && styles.miniChipLocation,
                     ]}
                   >
-                    <NBText variant="caption" style={styles.miniChipText}>{chip.text}</NBText>
+                    <NBText variant="caption" color="black" style={styles.miniChipText}>{chip.text}</NBText>
                   </View>
                 ))}
               </ScrollView>
             ) : (
-              <NBText variant="body-sm" style={styles.filterBarPlaceholder}>Semua Permohonan</NBText>
+              <NBText variant="body-sm" color="gray400" style={styles.filterBarPlaceholder}>Semua Permohonan</NBText>
             )}
             {activeFilterCount > 0 && (
               <TouchableOpacity
@@ -411,7 +418,7 @@ export function ReviewQueueScreen(): React.JSX.Element {
               />
               {activeFilterCount > 0 && (
                 <View style={styles.filterBadge}>
-                  <NBText variant="caption" style={styles.filterBadgeText}>{activeFilterCount}</NBText>
+                  <NBText variant="caption" color="white" style={styles.filterBadgeText}>{activeFilterCount}</NBText>
                 </View>
               )}
             </TouchableOpacity>
@@ -480,22 +487,14 @@ const styles = StyleSheet.create({
     padding: nbSpacing.md,
     justifyContent: 'center',
   },
-  headerContainer: {
-    paddingHorizontal: nbSpacing.md,
-    paddingTop: nbSpacing.md,
-    paddingBottom: nbSpacing.xs,
-  },
-  pageTitle: {
-    color: nbColors.black,
-  },
   filterBarCollapsed: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: nbSpacing.sm,
     paddingVertical: nbSpacing.xs,
     backgroundColor: nbColors.white,
-    borderBottomWidth: nbBorders.extra,
-    borderBottomColor: nbColors.gray[300],
+    borderBottomWidth: nbBorders.widthExtra,
+    borderBottomColor: nbColors.gray300,
     ...nbShadows.md,
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.sm,
@@ -516,8 +515,8 @@ const styles = StyleSheet.create({
     marginLeft: nbSpacing.xs,
   },
   filterBarPlaceholder: {
-    color: nbColors.gray[400],
     fontStyle: 'italic',
+    // Color handled by NBText color="gray400"
   },
   miniChipsContent: {
     flexDirection: 'row',
@@ -527,9 +526,9 @@ const styles = StyleSheet.create({
   miniChip: {
     paddingHorizontal: nbSpacing.sm,
     paddingVertical: nbSpacing.xs,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.sm,
+    borderRadius: nbRadius.sm,
     height: 32,
     justifyContent: 'center',
   },
@@ -537,7 +536,7 @@ const styles = StyleSheet.create({
   miniChipDate: { backgroundColor: nbColors.warning },
   miniChipLocation: { backgroundColor: nbColors.infoLight },
   miniChipText: {
-    color: nbColors.black,
+    // Color handled by NBText color="black"
   },
   filterClearButton: {
     padding: 4,
@@ -558,13 +557,13 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     backgroundColor: nbColors.danger,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.white,
     justifyContent: 'center',
     alignItems: 'center',
   },
   filterBadgeText: {
-    color: nbColors.white,
+    // Color handled by NBText color="white"
   },
   listWrapper: {
     flex: 1,

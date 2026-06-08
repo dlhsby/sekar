@@ -64,6 +64,8 @@ jest.mock('../../../components/nb', () => {
   return {
     NBBackgroundPattern: ({ children }: any) =>
       React.createElement(View, { testID: 'nb-background' }, children),
+    NBPageHeader: ({ title }: any) =>
+      React.createElement(Text, { testID: 'page-header' }, title),
     NBEmptyState: ({ title, description }: any) =>
       React.createElement(
         View,
@@ -250,6 +252,20 @@ describe('ReviewQueueScreen', () => {
     expect(screen.getByText('PR-003')).toBeTruthy();
     expect(screen.getByText('Jl. Test 1')).toBeTruthy();
     expect(screen.getByText(/5 pohon/)).toBeTruthy();
+  });
+
+  it('renders a derived SLA pill on open requests only', () => {
+    // Fixtures are dated 2026-05-01 (>24h old), so the two open requests
+    // (submitted, under_review) get an SLA pill; the approved one does not.
+    // Uses real Date.now() (the screen calls pruningSlaTag without an override),
+    // so this stays valid as long as the fixtures remain ≥24h in the past — the
+    // pure bucket math is covered deterministically in utils/__tests__/sla.test.ts.
+    render(
+      <Provider store={createMockStore()}>
+        <ReviewQueueScreen />
+      </Provider>,
+    );
+    expect(screen.getAllByText(/^SLA /).length).toBe(2);
   });
 
   it('shows the default filter placeholder when no filters are active', () => {
