@@ -49,8 +49,12 @@ const mockPruningApi = pruningApi as jest.Mocked<typeof pruningApi>;
 jest.mock('../../../components/common', () => {
   const React = require('react');
   const { View } = require('react-native');
+  // ListItemCard is real here — PerantinganRequestCard renders on it, and the
+  // screen test asserts the resulting row text (ref code / address / tree line).
+  const actual = jest.requireActual('../../../components/common');
   return {
     LoadingSpinner: () => React.createElement(View, { testID: 'loading-spinner' }),
+    ListItemCard: actual.ListItemCard,
   };
 });
 

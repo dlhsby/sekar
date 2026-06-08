@@ -1,158 +1,78 @@
 /**
- * PerantinganRequestCard
- * List-item card for `pruning_requests`. Visual structure mirrors
- * `OvertimeCard` / `TaskCard` / `ActivityCard` so all four list screens share
- * the same look-and-feel: NBCard variant="elevated" with header (primary
- * label + timestamp | status badge), optional description, meta chip row,
- * and creator footer.
+ * PerantinganRequestCard — a single pruning-request row on the shared
+ * ListItemCard so Perantingan reads identically to Tugas / Aktivitas / Lembur
+ * (status pill · created date · title · description · meta · creator).
+ *
+ * `extraTag` is forwarded straight through so the admin Review Queue can hang an
+ * SLA-urgency pill after the status pill; the staff_kecamatan list omits it.
  */
 
 import React from 'react';
-import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
-import { NBCard, NBBadge } from '../../../components/nb';
-import {
-  nbColors,
-  nbSpacing,
-  nbTypography,
-} from '../../../constants/nbTokens';
-import {
-  getPruningRequestStatusColor,
-  getPruningRequestStatusLabel,
-  formatDateIndonesian,
-} from '../../../utils/statusHelpers';
+import { StyleSheet } from 'react-native';
+import { ListItemCard, type ListItemMeta } from '../../../components/common';
+import { nbSpacing } from '../../../constants/nbTokens';
+import { pruningPill, formatDate, formatTime } from '../../../utils/statusHelpers';
 import type { PruningRequest } from '../../../types/models.types';
 
 interface PerantinganRequestCardProps {
   request: PruningRequest;
   onPress: () => void;
+  /** Optional chip after the status pill (Review Queue passes an SLA pill). */
+  extraTag?: React.ReactNode;
+}
+
+// Tree-detail summary line, e.g. "12 pohon · ±5 m · ⌀30 cm" (null parts skipped).
+function buildDescription(request: PruningRequest): string | undefined {
+  const treeCount = request.treeCount ?? request.estimatedPlantCount ?? null;
+  const parts: string[] = [];
+  if (treeCount != null) { parts.push(`${treeCount} pohon`); }
+  if (request.treeHeightEstimate) { parts.push(`±${request.treeHeightEstimate}`); }
+  if (request.treeDiameterEstimate) { parts.push(`⌀${request.treeDiameterEstimate}`); }
+  return parts.length > 0 ? parts.join(' · ') : undefined;
+}
+
+// Meta chips carry the scannable context: reference code (how the citizen cites
+// the request to support), kecamatan (where), and attachment count. The tree
+// count lives in the description line, not here, to avoid duplicating it.
+function buildMeta(request: PruningRequest): ListItemMeta[] {
+  const meta: ListItemMeta[] = [];
+  if (request.referenceCode) { meta.push({ icon: 'bookmark-outline', label: request.referenceCode }); }
+  if (request.kecamatanName) { meta.push({ icon: 'map-marker', label: request.kecamatanName }); }
+  const photoCount = request.photoUrls?.length ?? 0;
+  if (photoCount > 0) { meta.push({ icon: 'camera', label: `${photoCount} foto` }); }
+  return meta;
 }
 
 export function PerantinganRequestCard({
   request,
   onPress,
+  extraTag,
 }: PerantinganRequestCardProps): React.JSX.Element {
-  const createdDate = formatDateIndonesian(request.createdAt);
-  const createdTime = new Date(request.createdAt).toLocaleTimeString('id-ID', {
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZone: 'Asia/Jakarta',
-  });
-
-  const treeCount = request.treeCount ?? request.estimatedPlantCount ?? null;
-  const photoCount = request.photoUrls?.length ?? 0;
+  const pill = pruningPill(request.status);
+  // Address is the most scannable title; fall back to kecamatan, then ref code.
+  const title = request.address || request.kecamatanName || request.referenceCode;
+  const creatorText = request.submitter?.full_name ?? request.requesterName ?? undefined;
 
   return (
-    <TouchableOpacity
-      style={styles.itemCard}
+    <ListItemCard
+      statusTone={pill.tone}
+      statusLabel={pill.label}
+      extraTag={extraTag}
+      rightText={`${formatDate(request.createdAt)} · ${formatTime(request.createdAt)}`}
+      title={title}
+      description={buildDescription(request)}
+      meta={buildMeta(request)}
+      creatorText={creatorText}
       onPress={onPress}
-      activeOpacity={0.7}
-      accessibilityRole="button"
+      style={styles.spacing}
       accessibilityLabel={`Detail permohonan ${request.referenceCode}`}
-    >
-      <NBCard variant="elevated" style={styles.cardInner}>
-        {/* Header: reference code + created time | status badge */}
-        <View style={styles.itemHeader}>
-          <View style={styles.itemHeaderLeft}>
-            <Text style={styles.itemPrimary} numberOfLines={1}>
-              {request.referenceCode}
-            </Text>
-            <Text style={styles.itemTimestamp}>
-              {createdDate} · {createdTime}
-            </Text>
-          </View>
-          <View style={styles.itemHeaderRight}>
-            <NBBadge
-              text={getPruningRequestStatusLabel(request.status)}
-              color={getPruningRequestStatusColor(request.status)}
-            />
-          </View>
-        </View>
-
-        {/* Address as the descriptive line */}
-        {request.address ? (
-          <Text style={styles.itemDescription} numberOfLines={2}>
-            {request.address}
-          </Text>
-        ) : null}
-
-        {/* Meta row: kecamatan, pemohon, tree count, photo count */}
-        <View style={styles.itemMeta}>
-          {request.kecamatanName ? (
-            <Text style={styles.itemMetaChip}>🏘️ {request.kecamatanName}</Text>
-          ) : null}
-          {request.requesterName ? (
-            <Text style={styles.itemMetaChip}>🧑 {request.requesterName}</Text>
-          ) : null}
-          {treeCount != null ? (
-            <Text style={styles.itemMetaChip}>🌳 {treeCount} pohon</Text>
-          ) : null}
-          {photoCount > 0 ? (
-            <Text style={styles.itemMetaChip}>📸 {photoCount} foto</Text>
-          ) : null}
-        </View>
-
-        {/* Creator row — admin views show submitter; staff_kecamatan sees their own.
-            Role label intentionally omitted: every submitter is staff_kecamatan,
-            so printing it adds noise without adding information. */}
-        {request.submitter?.full_name ? (
-          <Text style={styles.itemCreator}>
-            👤 {request.submitter.full_name}
-          </Text>
-        ) : null}
-      </NBCard>
-    </TouchableOpacity>
+      testID="pruning-request-card"
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  itemCard: {
+  spacing: {
     marginBottom: nbSpacing.sm,
-  },
-  cardInner: {
-    padding: nbSpacing.md,
-  },
-  itemHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: nbSpacing.xs,
-  },
-  itemHeaderLeft: {
-    flex: 1,
-    marginRight: nbSpacing.sm,
-  },
-  itemHeaderRight: {
-    alignItems: 'flex-end',
-  },
-  itemPrimary: {
-    fontSize: nbTypography.fontSize.base,
-    fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.black,
-    marginBottom: 2,
-  },
-  itemTimestamp: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray[500],
-  },
-  itemDescription: {
-    fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray[600],
-    marginBottom: nbSpacing.xs,
-    lineHeight: 18,
-  },
-  itemMeta: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: nbSpacing.xs,
-    marginTop: 2,
-  },
-  itemMetaChip: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray[500],
-  },
-  itemCreator: {
-    fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray[500],
-    marginTop: nbSpacing.xs,
   },
 });

@@ -86,9 +86,9 @@
 | LBR-2 | Ajukan lembur | OvertimeSubmitScreen | ✅ Done (2026-05-27) — State A: date hero card (TANGGAL · Indonesian date, primary tint); State B: DURASI tinted card (amber bg, display-xl elapsed timer) |
 | LBR-3 | Detail lembur · disetujui | OvertimeDetailScreen | ✅ Done (2026-05-27) — status header with `#XXXXXXXX` ID code + badge; 2-tile info grid (TANGGAL/JAM, statusIdleBg tint); RIWAYAT PENGAJUAN timeline (Diajukan→Disetujui/Ditolak→Akan dijalankan); Phase 2 shims removed (nbBorderRadius→nbRadius, nbBorders.base→widthBase, gray[50]→gray50) |
 | PRT-1 | Submit · Kecamatan | `fe/mobile/src/screens/pruningRequests/SubmitScreen.tsx` | Revamp (keeps Apr-27/28 Phase 3 redesign; visual pass to v2.1) |
-| PRT-2 | Review queue · Admin Data | pruning-requests list (admin filter) | Revamp |
+| PRT-2 | Review queue · Admin Data | ReviewQueueScreen (pruning-requests list, admin filter) | Revamp — rows now use the CP1 shared `PerantinganRequestCard`; screen token-sweep + SLA `extraTag` pill = CP3 |
 | PRT-3 | Detail permohonan | RequestDetailScreen | Revamp |
-| PRT-4 | Pengajuan saya · Kecamatan | "my requests" list | Token-only |
+| PRT-4 | Pengajuan saya · Kecamatan | PerantinganListScreen (live `Perantingan` tab) | 🔶 CP1 done (2026-06-08) — shared `PerantinganRequestCard` rebuilt on `ListItemCard` + new `pruningPill` mapper; dead `MyRequestsScreen` (orphaned dup) deleted. Screen token-sweep = CP2 |
 | PRF-1 | Profile · Satgas | ProfileScreen | ✅ Done (2026-05-28) — compact identity strip (`ProfileHeader` = RoleAvatar 52px + `ROLE · RAYON` mono line + `@username · sejak <year>`), `ProfileStatsRow` (3 HomeStatTiles, field/monitoring, `—` fallback), grouped `ProfileMenu` (Akun/Aplikasi chip-rows + logout danger row), `AssignedAreaCard` relaid out; dead Field/MonitoringStatsCard removed; ChangePassword/About modals kept outside ScrollView |
 | PRF-2 | Pengaturan | SettingsScreen | ✅ Done (2026-05-28) — hi-fi sections (Notifikasi/Lokasi & data/Offline sync/Tentang), custom NB toggle, live offline-sync card via `useProfileSync`, duplicate title removed, shims gone |
 | PRF-3 | Edit profil | EditProfileScreen | ✅ Done (2026-05-28) — RoleAvatar 88px + edit badge, "Tidak bisa diubah" locked mono card, sticky Save footer, NBToast feedback, back→Profile |

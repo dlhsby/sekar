@@ -290,3 +290,22 @@ export function getPruningRequestStatusLabel(status: PruningRequestStatus): stri
     default:             return status;
   }
 }
+
+// StatusPill tone mapper for the shared ListItemCard — same shape as taskPill /
+// activityPill / overtimePill so PerantinganRequestCard renders an identical
+// dotted status pill. The 3 in-flight states (under_review / assigned /
+// in_progress) map to `info` (mint) to read as "in the pipeline", distinct from
+// the warn (awaiting) / ok (resolved-good) / bad (rejected) / neutral semantics.
+export function pruningPill(status: PruningRequestStatus): { tone: StatusTone; label: string } {
+  switch (status) {
+    case 'submitted':    return { tone: 'warn',    label: 'Menunggu' };
+    case 'under_review': return { tone: 'info',    label: 'Direview' };
+    case 'approved':     return { tone: 'ok',      label: 'Disetujui' };
+    case 'rejected':     return { tone: 'bad',     label: 'Ditolak' };
+    case 'assigned':     return { tone: 'info',    label: 'Ditugaskan' };
+    case 'in_progress':  return { tone: 'info',    label: 'Diproses' };
+    case 'done':         return { tone: 'ok',      label: 'Selesai' };
+    case 'cancelled':    return { tone: 'neutral', label: 'Dibatalkan' };
+    default:             return { tone: 'neutral', label: getPruningRequestStatusLabel(status) };
+  }
+}

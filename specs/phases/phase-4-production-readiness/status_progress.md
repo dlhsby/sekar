@@ -4,6 +4,31 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 8, 2026 — M3: Perantingan (PRT) revamp CP1 — shared card + pruningPill + dead-code removal
+
+**Goal:** start the Perantingan v2.1 sweep (last mobile-screen cluster in the 4-R design-system pass) with the highest-leverage change — the shared list-card row that feeds both the staff list (PRT-4) and the admin review queue (PRT-2).
+
+**`pruningPill` status mapper (`utils/statusHelpers.ts`)**
+- New `pruningPill(status) => { tone: StatusTone; label }` next to `taskPill`/`activityPill`/`overtimePill`/`presenceActivityPill`, the canonical shape the shared `ListItemCard`/`StatusPill` consume. Maps the 8 pruning statuses: `submitted→{warn,'Menunggu'}` · `under_review/assigned/in_progress→{info,…}` (the 3 in-flight states read as "in the pipeline" via mint `info`) · `approved/done→{ok,…}` · `rejected→{bad,'Ditolak'}` · `cancelled→{neutral,'Dibatalkan'}`. Existing `getPruningRequestStatusColor/Label` retained (still used by RequestDetailScreen + the two filter-chip labels).
+
+**`PerantinganRequestCard` rebuilt on `ListItemCard` (`screens/pruningRequests/components/PerantinganRequestCard.tsx`)**
+- 158-line hand-rolled `NBCard` (raw `<Text>`, `nbTypography`, `gray[...]`, emoji chips) → ~80-line thin `ListItemCard` wrapper mirroring `TaskCard`/`ActivityCard`/`OvertimeCard` exactly, so Perantingan rows now read identically to Tugas/Aktivitas/Lembur.
+- Mapping: `statusTone/Label` ← `pruningPill`; `rightText` ← created date·time; `title` ← `address → kecamatan → refCode`; `description` ← tree-detail line (`12 pohon · ±5 m · ⌀30 cm`, nulls skipped); `meta[]` ← `[🔖 refCode, 📍 kecamatan, 📷 N foto]` (tree count lives in the description, not duplicated as a chip); `creatorText` ← submitter/requesterName.
+- New optional `extraTag?` prop forwarded straight to `ListItemCard` so CP3's review queue can hang an SLA-urgency pill; the staff list omits it.
+
+**Dead-code removal — `MyRequestsScreen` deleted**
+- `screens/pruningRequests/MyRequestsScreen.tsx` (284 lines) + `__tests__/MyRequestsScreen.test.tsx` (657 lines) removed. It was orphaned — `MainNavigator` wires the `Perantingan` tab to `PerantinganListScreen`, and grep confirmed zero references to `MyRequestsScreen` anywhere but its own test. Both rendered the same `fetchMyPruningRequests` data via the same card, so it was an unreachable duplicate of the live tab.
+
+**Tests**
+- `utils/__tests__/statusHelpers.test.ts`: added `pruningPill` (8 statuses + tone-vocabulary guard + unknown fallback) and table-driven `getPruningRequestStatusColor`/`Label` coverage.
+- New `screens/pruningRequests/components/__tests__/PerantinganRequestCard.test.tsx` (mirrors `TaskCard.test`): title/fallback, tree-detail description + estimatedPlantCount fallback, meta chips, no tree-count duplication, creator fallback, `extraTag` passthrough, `onPress`, `testID`, all 8 pill labels.
+- `ReviewQueueScreen.test.tsx`: `components/common` mock now supplies the real `ListItemCard` (the card renders on it) — card-row text assertions kept.
+- Blast-radius green: `statusHelpers` + all `pruningRequests` suites + `PruningRequestFilterModal` → **164 passed / 8 suites**.
+
+**Scope note:** CP1 swept the shared card row only. The PRT screens themselves (PerantinganListScreen = CP2, ReviewQueueScreen + SLA pill = CP3, RequestDetailScreen = CP4) remain to be token-swept.
+
+---
+
 ## May 31, 2026 — M3: Profile moved out of bottom tab bar → header avatar tap
 
 **Goal:** free up a tab slot (Profile was a low-touch screen that didn't belong in the primary nav) and make the avatar in the top header the obvious entry point to Profile, matching common mobile patterns.

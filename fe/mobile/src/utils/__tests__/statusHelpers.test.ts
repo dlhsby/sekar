@@ -22,7 +22,12 @@ import {
   userAxes,
   presenceActivityPill,
   locationLabel,
+  pruningPill,
+  getPruningRequestStatusColor,
+  getPruningRequestStatusLabel,
 } from '../statusHelpers';
+import type { PruningRequestStatus } from '../../types/models.types';
+import type { StatusTone } from '../../components/home/StatusPill';
 
 describe('statusHelpers', () => {
   // ─── Overtime ──────────────────────────────────────────────────────────────
@@ -367,6 +372,73 @@ describe('statusHelpers', () => {
       expect(locationLabel('dalam_area')).toBe('Dalam area');
       expect(locationLabel('luar_area')).toBe('Luar area');
       expect(locationLabel('unknown')).toBe('—');
+    });
+  });
+
+  // ─── Pruning request status (8 statuses) ────────────────────────────────────
+
+  const ALL_PRUNING_STATUSES: PruningRequestStatus[] = [
+    'submitted', 'under_review', 'approved', 'rejected',
+    'assigned', 'in_progress', 'done', 'cancelled',
+  ];
+
+  describe('pruningPill', () => {
+    const cases: Array<[PruningRequestStatus, StatusTone, string]> = [
+      ['submitted',    'warn',    'Menunggu'],
+      ['under_review', 'info',    'Direview'],
+      ['approved',     'ok',      'Disetujui'],
+      ['rejected',     'bad',     'Ditolak'],
+      ['assigned',     'info',    'Ditugaskan'],
+      ['in_progress',  'info',    'Diproses'],
+      ['done',         'ok',      'Selesai'],
+      ['cancelled',    'neutral', 'Dibatalkan'],
+    ];
+
+    test.each(cases)('maps %s → { tone: %s, label: %s }', (status, tone, label) => {
+      expect(pruningPill(status)).toEqual({ tone, label });
+    });
+
+    it('keeps tone within the StatusTone vocabulary for every status', () => {
+      const allowed: StatusTone[] = ['ok', 'warn', 'bad', 'info', 'neutral'];
+      ALL_PRUNING_STATUSES.forEach((status) => {
+        expect(allowed).toContain(pruningPill(status).tone);
+      });
+    });
+
+    it('falls back to neutral + the canonical label for an unknown status', () => {
+      expect(pruningPill('weird' as any)).toEqual({ tone: 'neutral', label: 'weird' });
+    });
+  });
+
+  describe('getPruningRequestStatusColor', () => {
+    const cases: Array<[PruningRequestStatus, string]> = [
+      ['submitted', 'warning'],
+      ['under_review', 'navy'],
+      ['approved', 'success'],
+      ['rejected', 'danger'],
+      ['assigned', 'primary'],
+      ['in_progress', 'primary'],
+      ['done', 'success'],
+      ['cancelled', 'gray'],
+    ];
+    test.each(cases)('maps %s → %s', (status, color) => {
+      expect(getPruningRequestStatusColor(status)).toBe(color);
+    });
+  });
+
+  describe('getPruningRequestStatusLabel', () => {
+    const cases: Array<[PruningRequestStatus, string]> = [
+      ['submitted', 'Menunggu'],
+      ['under_review', 'Direview'],
+      ['approved', 'Disetujui'],
+      ['rejected', 'Ditolak'],
+      ['assigned', 'Ditugaskan'],
+      ['in_progress', 'Diproses'],
+      ['done', 'Selesai'],
+      ['cancelled', 'Dibatalkan'],
+    ];
+    test.each(cases)('maps %s → %s', (status, label) => {
+      expect(getPruningRequestStatusLabel(status)).toBe(label);
     });
   });
 });
