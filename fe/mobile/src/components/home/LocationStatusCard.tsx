@@ -19,7 +19,7 @@ import {
   nbColors,
   nbSpacing,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
   withAlpha,
 } from '../../constants/nbTokens';
 
@@ -192,8 +192,8 @@ const styles = StyleSheet.create({
   insideAreaBanner: {
     backgroundColor: withAlpha(nbColors.successDark, 0.15),
     borderColor: nbColors.successDark,
-    borderWidth: nbBorders.base,
-    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.widthBase,
+    borderRadius: nbRadius.base,
     paddingVertical: nbSpacing.xs,
     paddingHorizontal: nbSpacing.sm,
   },
@@ -205,8 +205,8 @@ const styles = StyleSheet.create({
   outsideAreaBanner: {
     backgroundColor: withAlpha(nbColors.statusIdle, 0.15),
     borderColor: nbColors.statusIdle,
-    borderWidth: nbBorders.base,
-    borderRadius: nbBorderRadius.base,
+    borderWidth: nbBorders.widthBase,
+    borderRadius: nbRadius.base,
     paddingVertical: nbSpacing.xs,
     paddingHorizontal: nbSpacing.sm,
   },

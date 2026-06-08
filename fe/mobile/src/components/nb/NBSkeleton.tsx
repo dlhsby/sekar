@@ -20,7 +20,7 @@ import {
   nbColors,
   nbSpacing,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
 } from '../../constants/nbTokens';
 
 export type NBSkeletonVariant = 'text' | 'card' | 'avatar' | 'list' | 'button';
@@ -173,16 +173,16 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   skeleton: {
-    backgroundColor: nbColors.gray['200'],
-    borderWidth: nbBorders.thin,
+    backgroundColor: nbColors.gray200,
+    borderWidth: nbBorders.widthThin,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.sm, // 4px - NB 2.0 skeleton radius
+    borderRadius: nbRadius.sm, // 4px - NB 2.0 skeleton radius
     overflow: 'hidden',
     position: 'relative',
   },
   shimmer: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: nbColors.gray['300'],
+    backgroundColor: nbColors.gray300,
   },
 });
 

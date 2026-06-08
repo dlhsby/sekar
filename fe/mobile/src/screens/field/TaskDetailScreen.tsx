@@ -130,7 +130,7 @@ function buildAuditEvents(task: Task | null): AuditEvent[] {
       event: 'Ditugaskan',
       timestamp: task.assigned_at,
       icon: 'account-arrow-right',
-      color: nbColors.accentSunshine,
+      color: nbColors.warningLight,
       actor: task.assignee ? formatUser(task.assignee) : undefined,
     });
   }
@@ -186,7 +186,7 @@ function buildAuditEvents(task: Task | null): AuditEvent[] {
       event: 'Diminta Revisi',
       timestamp: task.updated_at,
       icon: 'pencil-circle',
-      color: nbColors.accentSunshine,
+      color: nbColors.warningLight,
       actor: task.verifier ? formatUser(task.verifier) : undefined,
       note: task.revision_reason,
     });
@@ -529,7 +529,7 @@ export function TaskDetailScreen(): React.JSX.Element {
 
   if (isLoading) {
     return (
-      <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.background} patternColor={nbColors.primary} opacity={0.06}>
+      <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.bgCanvas} patternColor={nbColors.primary} opacity={0.06}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
           <NBText variant="body" style={styles.loadingTextMargin}>Memuat tugas...</NBText>
@@ -540,7 +540,7 @@ export function TaskDetailScreen(): React.JSX.Element {
 
   if (!task) {
     return (
-      <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.background} patternColor={nbColors.primary} opacity={0.06}>
+      <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.bgCanvas} patternColor={nbColors.primary} opacity={0.06}>
         <View style={styles.container}>
           <NBAlert
             variant="danger"
@@ -594,7 +594,7 @@ export function TaskDetailScreen(): React.JSX.Element {
   const completionPhotos = task.completion_photo_urls ?? [];
 
   return (
-    <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.background} patternColor={nbColors.primary} opacity={0.06}>
+    <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.bgCanvas} patternColor={nbColors.primary} opacity={0.06}>
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.contentContainer}

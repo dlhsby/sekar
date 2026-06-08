@@ -11,7 +11,7 @@ import {
   nbColors,
   nbTypography,
   nbSpacing,
-  nbBorderRadius,
+  nbRadius,
   nbBorders,
   nbShadows,
 } from '../../constants/nbTokens';
@@ -104,7 +104,7 @@ export class MapErrorBoundary extends Component<Props, State> {
               <MaterialCommunityIcons
                 name="refresh"
                 size={20}
-                color={nbColors.surface}
+                color={nbColors.bgSurface}
                 style={styles.retryIcon}
               />
               <Text style={styles.retryButtonText}>Coba Lagi</Text>
@@ -123,13 +123,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: nbColors.background,
+    backgroundColor: nbColors.bgCanvas,
     padding: nbSpacing.lg,
   },
   errorCard: {
-    backgroundColor: nbColors.surface,
-    borderRadius: nbBorderRadius.lg,
-    borderWidth: nbBorders.base,
+    backgroundColor: nbColors.bgSurface,
+    borderRadius: nbRadius.lg,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     padding: nbSpacing.xl,
     alignItems: 'center',
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     height: 96,
     borderRadius: 48,
     backgroundColor: nbColors.dangerLight,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.dangerDark,
     justifyContent: 'center',
     alignItems: 'center',
@@ -157,16 +157,16 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: nbTypography.fontSize.md,
-    color: nbColors.gray['600'],
+    color: nbColors.gray600,
     textAlign: 'center',
     lineHeight: nbTypography.fontSize.md * 1.5,
     marginBottom: nbSpacing.lg,
   },
   errorDetails: {
-    backgroundColor: nbColors.gray['100'],
-    borderRadius: nbBorderRadius.sm,
+    backgroundColor: nbColors.gray100,
+    borderRadius: nbRadius.sm,
     borderWidth: 1,
-    borderColor: nbColors.gray['300'],
+    borderColor: nbColors.gray300,
     padding: nbSpacing.md,
     marginBottom: nbSpacing.lg,
     width: '100%',
@@ -182,8 +182,8 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.primary,
     paddingVertical: nbSpacing.md,
     paddingHorizontal: nbSpacing.lg,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     minHeight: 48,
     ...nbShadows.sm,
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
   retryButtonText: {
     fontSize: nbTypography.fontSize.md,
     fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.surface,
+    color: nbColors.bgSurface,
   },
 });
 

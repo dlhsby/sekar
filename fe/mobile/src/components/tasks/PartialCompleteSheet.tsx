@@ -23,7 +23,7 @@ import {
   nbColors,
   nbSpacing,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
   nbShadows,
 } from '../../constants/nbTokens';
 
@@ -253,9 +253,9 @@ const styles = StyleSheet.create({
   },
   infoBox: {
     backgroundColor: nbColors.bgAccentMint,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.sm,
+    borderRadius: nbRadius.sm,
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.md,
     alignItems: 'center',
@@ -268,9 +268,9 @@ const styles = StyleSheet.create({
   },
   remainingBox: {
     backgroundColor: nbColors.bgAccentGreen,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.sm,
+    borderRadius: nbRadius.sm,
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.md,
     alignItems: 'center',

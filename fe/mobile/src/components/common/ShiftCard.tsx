@@ -88,7 +88,7 @@ export function ShiftCard({
           <MaterialCommunityIcons
             name="logout"
             size={18}
-            color={isActive ? nbColors.gray['400'] : nbColors.danger}
+            color={isActive ? nbColors.gray400 : nbColors.danger}
             style={styles.timeIcon}
           />
           <View>
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   },
 
   timeDivider: {
-    width: nbBorders.thin,
+    width: nbBorders.widthThin,
     height: 32,
     backgroundColor: nbColors.black,
     marginHorizontal: nbSpacing.sm,

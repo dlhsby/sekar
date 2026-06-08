@@ -310,7 +310,7 @@ export const PruningTaskForm: React.FC<PruningTaskFormProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: nbColors.background,
+    backgroundColor: nbColors.bgCanvas,
   },
   scrollView: {
     padding: nbSpacing.md,

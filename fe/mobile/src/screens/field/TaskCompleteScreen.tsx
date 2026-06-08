@@ -117,7 +117,7 @@ export function TaskCompleteScreen(): React.JSX.Element {
 
   if (isLoading) {
     return (
-      <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.background} patternColor={nbColors.primary} opacity={0.06}>
+      <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.bgCanvas} patternColor={nbColors.primary} opacity={0.06}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
           <NBText variant="body" style={styles.loadingTextMargin}>Memuat...</NBText>
@@ -128,7 +128,7 @@ export function TaskCompleteScreen(): React.JSX.Element {
 
   if (!task) {
     return (
-      <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.background} patternColor={nbColors.primary} opacity={0.06}>
+      <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.bgCanvas} patternColor={nbColors.primary} opacity={0.06}>
         <View style={styles.errorContainer}>
           <NBText variant="body-sm" color="danger" style={styles.errorTextMargin}>Tugas tidak ditemukan</NBText>
           <NBButton title="Kembali" variant="secondary" onPress={() => navigation.goBack()} />
@@ -138,7 +138,7 @@ export function TaskCompleteScreen(): React.JSX.Element {
   }
 
   return (
-    <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.background} patternColor={nbColors.primary} opacity={0.06}>
+    <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.bgCanvas} patternColor={nbColors.primary} opacity={0.06}>
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} keyboardShouldPersistTaps="handled">
         {/* Task Info */}
         <NBCard style={styles.card}>

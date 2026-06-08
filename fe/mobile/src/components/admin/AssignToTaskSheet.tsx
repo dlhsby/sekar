@@ -26,7 +26,7 @@ import {
   NBAlert,
 } from '../../components/nb';
 import { NBText } from '../../components/nb/NBText';
-import { nbColors, nbSpacing, nbBorders, nbBorderRadius } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbBorders, nbRadius } from '../../constants/nbTokens';
 import { NBToast } from '../../components/nb/NBToast';
 import type { PruningRequest } from '../../types/models.types';
 import { formatDateLong, getISOWeek } from '../../utils/dateUtils';
@@ -425,9 +425,9 @@ const styles = StyleSheet.create({
   readOnlyChip: {
     paddingVertical: nbSpacing[3],
     paddingHorizontal: nbSpacing[3],
-    borderWidth: nbBorders.thin,
+    borderWidth: nbBorders.widthThin,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.sm,
+    borderRadius: nbRadius.sm,
     backgroundColor: nbColors.gray100,
   },
   capacityBox: {

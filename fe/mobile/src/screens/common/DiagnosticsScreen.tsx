@@ -397,7 +397,7 @@ export function DiagnosticsScreen(): React.JSX.Element {
   return (
     <NBBackgroundPattern
       pattern="dots"
-      backgroundColor={nbColors.background}
+      backgroundColor={nbColors.bgCanvas}
       patternColor={nbColors.primary}
       opacity={0.06}
     >

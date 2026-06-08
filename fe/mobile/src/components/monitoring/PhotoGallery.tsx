@@ -17,7 +17,7 @@ import {
 import {
   nbColors,
   nbSpacing,
-  nbBorderRadius,
+  nbRadius,
   nbBorders,
   nbShadows,
 } from '../../constants/nbTokens';
@@ -99,7 +99,7 @@ export function PhotoGallery({ photos, testID }: PhotoGalleryProps): JSX.Element
               {imageLoading && (
                 <ActivityIndicator
                   size="large"
-                  color={nbColors.surface}
+                  color={nbColors.bgSurface}
                   style={styles.loader}
                 />
               )}
@@ -135,11 +135,11 @@ const styles = StyleSheet.create({
   },
   thumbnailContainer: {
     marginHorizontal: nbSpacing.xs,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     overflow: 'hidden',
-    backgroundColor: nbColors.gray['200'],
+    backgroundColor: nbColors.gray200,
     ...nbShadows.sm,
   },
   thumbnail: {
@@ -150,10 +150,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: nbSpacing.lg,
-    backgroundColor: nbColors.gray['100'],
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.gray['300'],
+    backgroundColor: nbColors.gray100,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.gray300,
   },
   modalContainer: {
     flex: 1,
@@ -185,8 +185,8 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     backgroundColor: nbColors.danger,
-    borderWidth: nbBorders.base,
-    borderColor: nbColors.surface,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.bgSurface,
     justifyContent: 'center',
     alignItems: 'center',
     ...nbShadows.md,

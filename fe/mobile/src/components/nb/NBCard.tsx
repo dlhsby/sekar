@@ -24,7 +24,7 @@ import {
   nbShadows,
   nbSpacing,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
 } from '../../constants/nbTokens';
 
 export type NBCardVariant = 'default' | 'elevated';
@@ -215,14 +215,14 @@ export const NBCardFooter: React.FC<NBCardSectionProps> = ({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: nbColors.white,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.base, // from design token (v2.1.1: 10px)
+    borderRadius: nbRadius.base, // from design token (v2.1.1: 10px)
   },
   header: {
     padding: nbSpacing.sm, // Reduced from md (16px) to sm (8px) for less vertical padding
     paddingHorizontal: nbSpacing.md, // Keep horizontal padding at 16px
-    borderBottomWidth: nbBorders.thin,
+    borderBottomWidth: nbBorders.widthThin,
     borderBottomColor: nbColors.black,
   },
   content: {
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     padding: nbSpacing.md,
-    borderTopWidth: nbBorders.thin,
+    borderTopWidth: nbBorders.widthThin,
     borderTopColor: nbColors.black,
     flexDirection: 'row',
     gap: nbSpacing.sm,

@@ -38,7 +38,7 @@ const statusConfig = {
     iconColor: nbColors.dangerDark,
   },
   loading: {
-    color: nbColors.gray['300'],
+    color: nbColors.gray300,
     darkColor: nbColors.grayMedium,
     icon: 'dots-horizontal-circle' as const,
     iconColor: nbColors.grayMedium,
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   circle: {
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: nbBorders.thick,
+    borderWidth: nbBorders.widthThick,
     borderColor: nbColors.black,
     marginBottom: nbSpacing.sm,
   },
@@ -115,14 +115,14 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: nbTypography.fontSize.base,
     fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray['700'],
+    color: nbColors.gray700,
     textAlign: 'center',
     marginBottom: nbSpacing.xs,
   },
   metadata: {
     fontSize: nbTypography.fontSize.sm,
     fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.gray['600'],
+    color: nbColors.gray600,
     textAlign: 'center',
   },
 });

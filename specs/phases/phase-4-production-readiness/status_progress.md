@@ -4,6 +4,28 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 8, 2026 — 3-R5 — backward-compat token shims removed (mechanical sweep)
+
+**Goal:** the final design-system token cleanup — migrate every call site off the Phase-2 backward-compat shims in `nbTokens.ts` and delete the shims, so the mobile codebase uses only the flat generated token names.
+
+**Migrated (77 files, value-identical — no visual drift):**
+- `nbBorders.thin/base/thick/extra` → `widthThin/widthBase/widthThick/widthExtra`
+- `nbBorderRadius` → `nbRadius`
+- `nbColors.gray['xxx']` (nested bracket) → flat `nbColors.grayXxx`
+- `nbColors.background/overlay/surface` → `bgCanvas/bgOverlay/bgSurface`
+- accent aliases `accentSky/Grass/Sunshine/Earth` → `info/primary/warningLight/secondary`
+- `nbAnimation.normal` (200) → `nbMotion.enter.duration` (NBSelect); unused `nbAnimation` import dropped from NBButton
+
+**Shims deleted from `nbTokens.ts`:** the nested `gray` object, `background/overlay/surface`, the four `accent*` aliases, `nbBorders.thin/base/thick/extra`, the `export { nbRadius as nbBorderRadius }` alias, and `nbAnimation.normal`. `nbColors`/`nbBorders` are now just the flat generated spreads.
+
+**Caught by verification (sed gaps + mock dups):** two optional-chained refs the regex missed (`nbBorders?.thick`→`?.widthThick` in `PermissionRevocationBanner`, `nbBorders?.thin`→`?.widthThin` in `NotificationBell`); duplicate `nbRadius` mock keys in three test files (the sed renamed each mock's `nbBorderRadius:` key onto an existing `nbRadius:`) — deduped/merged.
+
+**Verification:** ESLint `eslint .` → 0 new errors (net −1 warning vs baseline); `tsc` → **0 net new errors** (per-file count check: no file gained errors; total 679→678); full jest **211 suites pass** (the lone failure, `usersApi.test`, is pre-existing and unrelated — confirmed identical on clean main). No token drift (`generated/` + `tokens.json` untouched).
+
+**Remaining (separate task, NOT 3-R5 mechanical scope):** `nbTypography` is still used in ~32 files. Its canonical migration is to `NBText` variants (changes heading font family — not a value-identical rename), so it needs per-file NBText conversion with visual review and is tracked as its own follow-up rather than rushed into this mechanical pass.
+
+---
+
 ## June 8, 2026 — 4-R completeness sweep — 6 residual screens/components token-cleaned
 
 **Goal:** after the PRT sweep, re-audit the whole **4-R** mobile matrix for any screen still on legacy tokens. A repo-wide grep of `src/screens` (excluding the NB primitives in `components/nb/*`, which keep the backward-compat shims **deliberately until 3-R5**) surfaced **6 files** still dirty — three of them in screens the matrix had already marked ✅.

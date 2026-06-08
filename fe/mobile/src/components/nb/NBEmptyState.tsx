@@ -21,7 +21,7 @@ import {
   nbShadows,
   nbSpacing,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
   nbTypography,
 } from '../../constants/nbTokens';
 import { NBButton } from './NBButton';
@@ -223,9 +223,9 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: nbColors.white,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.base, // 2px - softened NB
+    borderRadius: nbRadius.base, // 2px - softened NB
     paddingHorizontal: nbSpacing.xl,
     paddingVertical: nbSpacing['2xl'],
     alignItems: 'center',
@@ -240,10 +240,10 @@ const styles = StyleSheet.create({
   iconContainer: {
     marginBottom: nbSpacing.lg,
     padding: nbSpacing.md,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.base, // 2px - softened NB
-    backgroundColor: nbColors.gray['50'],
+    borderRadius: nbRadius.base, // 2px - softened NB
+    backgroundColor: nbColors.gray50,
     ...nbShadows.sm,
   },
   iconText: {
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   description: {
     fontSize: nbTypography.fontSize.base,
     fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.gray['600'],
+    color: nbColors.gray600,
     textAlign: 'center',
     lineHeight: nbTypography.fontSize.base * 1.5,
     marginBottom: nbSpacing.md,

@@ -36,13 +36,13 @@ interface NBBackgroundPatternProps {
  * Patterns are subtle and don't interfere with content readability.
  *
  * @example
- * <NBBackgroundPattern pattern="grid" backgroundColor={nbColors.background}>
+ * <NBBackgroundPattern pattern="grid" backgroundColor={nbColors.bgCanvas}>
  *   <LoginForm />
  * </NBBackgroundPattern>
  */
 export const NBBackgroundPattern: React.FC<NBBackgroundPatternProps> = ({
   pattern = 'grid',
-  backgroundColor = nbColors.background,
+  backgroundColor = nbColors.bgCanvas,
   patternColor = nbColors.black,
   opacity = 0.03,
   style,

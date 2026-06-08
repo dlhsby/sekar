@@ -334,7 +334,7 @@ export function NBDatePicker({
         <MaterialCommunityIcons
           name={iconName}
           size={18}
-          color={disabled ? nbColors.gray[400] : nbColors.primary}
+          color={disabled ? nbColors.gray400 : nbColors.primary}
           style={styles.icon}
         />
         <View style={styles.textContainer}>
@@ -442,14 +442,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: nbSpacing.sm,
     paddingHorizontal: nbSpacing.sm,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     backgroundColor: nbColors.white,
     minHeight: 54,
     gap: nbSpacing.xs,
   },
   triggerDisabled: {
-    backgroundColor: nbColors.gray[100],
+    backgroundColor: nbColors.gray100,
     opacity: 0.7,
   },
   icon: {
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: nbTypography.fontSize.xs,
     fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray[500],
+    color: nbColors.gray500,
     marginBottom: 2,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -472,11 +472,11 @@ const styles = StyleSheet.create({
     color: nbColors.black,
   },
   placeholder: {
-    color: nbColors.gray[400],
+    color: nbColors.gray400,
     fontWeight: nbTypography.fontWeight.regular,
   },
   valueDisabled: {
-    color: nbColors.gray[500],
+    color: nbColors.gray500,
   },
   overlay: {
     flex: 1,
@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: nbColors.white,
-    borderWidth: nbBorders.thick,
+    borderWidth: nbBorders.widthThick,
     borderColor: nbColors.black,
     padding: nbSpacing.md,
   },
@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
   },
   wheelText: {
     fontSize: nbTypography.fontSize.md,
-    color: nbColors.gray[400],
+    color: nbColors.gray400,
   },
   wheelTextSelected: {
     color: nbColors.black,
@@ -561,13 +561,13 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: nbTypography.fontSize.md,
     fontWeight: nbTypography.fontWeight.semibold,
-    color: nbColors.gray[500],
+    color: nbColors.gray500,
   },
   confirmButton: {
     paddingVertical: nbSpacing.sm,
     paddingHorizontal: nbSpacing.lg,
     backgroundColor: nbColors.primary,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
   },
   confirmButtonText: {

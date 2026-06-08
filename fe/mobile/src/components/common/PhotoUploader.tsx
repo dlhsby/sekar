@@ -32,7 +32,7 @@ import {
   nbSpacing,
   nbTypography,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
   nbShadows,
 } from '../../constants/nbTokens';
 
@@ -174,8 +174,8 @@ const styles = StyleSheet.create({
   thumbnail: {
     width: 160,
     height: 160,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
   },
   removeButton: {
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     alignItems: 'center',
     justifyContent: 'center',
@@ -200,20 +200,20 @@ const styles = StyleSheet.create({
   addButton: {
     width: 160,
     height: 160,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: nbColors.gray['50'],
+    backgroundColor: nbColors.gray50,
   },
   addIcon: {
     fontSize: 32,
-    color: nbColors.gray['600'],
+    color: nbColors.gray600,
   },
   addText: {
-    color: nbColors.gray['600'],
+    color: nbColors.gray600,
     fontSize: nbTypography.fontSize.xs,
     marginTop: nbSpacing.xs,
   },

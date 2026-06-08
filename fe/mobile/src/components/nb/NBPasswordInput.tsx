@@ -27,7 +27,7 @@ import {
   nbShadows,
   nbSpacing,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
   nbTypography,
   nbTouchTarget,
 } from '../../constants/nbTokens';
@@ -114,21 +114,21 @@ export const NBPasswordInput = forwardRef<TextInput, NBPasswordInputProps>(
     const getBorderColor = () => {
       if (error) {return nbColors.danger;}
       if (success) {return nbColors.success;}
-      if (isFocused) {return nbColors.accentGrass;} // Bright grass green for visibility
+      if (isFocused) {return nbColors.primary;} // Bright grass green for visibility
       return nbColors.black;
     };
 
     // Determine border width based on state (thicker when focused)
     const getBorderWidth = () => {
-      if (isFocused) {return nbBorders.thick;} // 4px when focused
-      return nbBorders.base; // 3px default
+      if (isFocused) {return nbBorders.widthThick;} // 4px when focused
+      return nbBorders.widthBase; // 3px default
     };
 
     // Custom shadow for focused state (colored shadow for NB impact)
     const getFocusedShadow = () => {
       if (isFocused && !isDisabled) {
         return {
-          shadowColor: nbColors.accentGrass, // Bright green shadow
+          shadowColor: nbColors.primary, // Bright green shadow
           shadowOffset: { width: 6, height: 6 },
           shadowOpacity: 1,
           shadowRadius: 0,
@@ -169,7 +169,7 @@ export const NBPasswordInput = forwardRef<TextInput, NBPasswordInputProps>(
             secureTextEntry={!showPassword}
             onFocus={handleFocus}
             onBlur={handleBlur}
-            placeholderTextColor={nbColors.gray['400']}
+            placeholderTextColor={nbColors.gray400}
             testID={testID ? `${testID}-input` : undefined}
             accessibilityLabel={
               textInputProps.accessibilityLabel ||
@@ -197,7 +197,7 @@ export const NBPasswordInput = forwardRef<TextInput, NBPasswordInputProps>(
             <MaterialCommunityIcons
               name={showPassword ? 'eye-off' : 'eye'}
               size={24}
-              color={isDisabled ? nbColors.gray['400'] : nbColors.gray['600']}
+              color={isDisabled ? nbColors.gray400 : nbColors.gray600}
             />
           </TouchableOpacity>
         </View>
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: nbColors.white,
     // borderWidth and borderColor now dynamic (see getBorderWidth/getBorderColor)
-    borderRadius: nbBorderRadius.base, // 2px - softened NB
+    borderRadius: nbRadius.base, // 2px - softened NB
     minHeight: nbTouchTarget.minHeight,
   },
   input: {
@@ -267,11 +267,11 @@ const styles = StyleSheet.create({
   helperText: {
     fontSize: nbTypography.fontSize.xs,
     fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.gray['600'],
+    color: nbColors.gray600,
     marginTop: nbSpacing.xs,
   },
   disabled: {
-    backgroundColor: nbColors.gray['100'],
+    backgroundColor: nbColors.gray100,
     ...nbShadows.none,
   },
 });

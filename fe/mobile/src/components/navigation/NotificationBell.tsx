@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     height: 16,
     paddingHorizontal: 3,
     borderRadius: 0,
-    borderWidth: nbBorders?.thin ?? 1,
+    borderWidth: nbBorders?.widthThin ?? 1,
     borderColor: nbColors.black ?? '#1C1917',
     backgroundColor: nbColors.danger ?? '#E53935',
     justifyContent: 'center',

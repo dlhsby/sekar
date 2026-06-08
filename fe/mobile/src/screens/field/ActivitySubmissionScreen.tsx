@@ -140,7 +140,7 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
   return (
     <NBBackgroundPattern
       pattern="dots"
-      backgroundColor={nbColors.background}
+      backgroundColor={nbColors.bgCanvas}
       patternColor={nbColors.primary}
       opacity={0.06}
     >
@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
   },
   locationInfo: {
     padding: nbSpacing.lg,
-    backgroundColor: withAlpha(nbColors.accentSky, 0.15),
+    backgroundColor: withAlpha(nbColors.info, 0.15),
     borderRadius: nbRadius.base,
     borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,

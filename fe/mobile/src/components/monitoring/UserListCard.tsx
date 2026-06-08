@@ -11,7 +11,7 @@ import {
   nbColors,
   nbSpacing,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
   nbShadows,
 } from '../../constants/nbTokens';
 import { NBText } from '../nb/NBText';
@@ -86,7 +86,7 @@ export function UserListCard({ user, onPress }: UserListCardProps): React.JSX.El
         <MaterialCommunityIcons
           name={roleIcon}
           size={12}
-          color={nbColors.gray['600']}
+          color={nbColors.gray600}
         />
         <NBText variant="caption" color="gray600" style={styles.roleText} numberOfLines={1}>
           {roleLabel}
@@ -108,8 +108,8 @@ const styles = StyleSheet.create({
     width: 160,
     height: 80,
     backgroundColor: nbColors.white,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.thin,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthThin,
     borderColor: nbColors.black,
     padding: nbSpacing.sm,
     justifyContent: 'space-between',
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   },
   name: {
     flex: 1,
-    color: nbColors.gray['800'],
+    color: nbColors.gray800,
   },
   time: {
     flexShrink: 0,

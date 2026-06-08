@@ -193,7 +193,7 @@ function TabNavigator(): React.JSX.Element {
     <Tab.Navigator
       screenOptions={{
         tabBarActiveTintColor: nbColors.primary,
-        tabBarInactiveTintColor: nbColors.gray[600],
+        tabBarInactiveTintColor: nbColors.gray600,
         headerShown: true,
         headerStyle: NB_HEADER_STYLE,
         headerTitleStyle: {

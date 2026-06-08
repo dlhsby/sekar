@@ -2,7 +2,7 @@ import {
   withAlpha,
   nbColors,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
   nbShadows,
 } from '../nbTokens';
 
@@ -25,24 +25,24 @@ describe('nbTokens', () => {
     });
 
     it('should expose backward-compat border aliases for Phase 2 call sites', () => {
-      expect(nbBorders.thin).toBe(1);
-      expect(nbBorders.base).toBe(2);
-      expect(nbBorders.thick).toBe(2.5);
-      expect(nbBorders.extra).toBe(4);
+      expect(nbBorders.widthThin).toBe(1);
+      expect(nbBorders.widthBase).toBe(2);
+      expect(nbBorders.widthThick).toBe(2.5);
+      expect(nbBorders.widthExtra).toBe(4);
     });
 
-    it('should expose nbColors.background alias for Phase 2 call sites', () => {
-      expect(nbColors.background).toBe('#F5F0EB');
+    it('should expose nbColors.bgCanvas alias for Phase 2 call sites', () => {
+      expect(nbColors.bgCanvas).toBe('#F5F0EB');
       expect(nbColors.bgCanvas).toBe('#F5F0EB');
     });
 
-    it('should have border radius values (via nbBorderRadius alias)', () => {
-      expect(nbBorderRadius.none).toBe(0);
-      expect(nbBorderRadius.sm).toBe(4);
-      expect(nbBorderRadius.base).toBe(10);
-      expect(nbBorderRadius.md).toBe(14);
-      expect(nbBorderRadius.lg).toBe(20);
-      expect(nbBorderRadius.full).toBe(9999);
+    it('should have border radius values (via nbRadius alias)', () => {
+      expect(nbRadius.none).toBe(0);
+      expect(nbRadius.sm).toBe(4);
+      expect(nbRadius.base).toBe(10);
+      expect(nbRadius.md).toBe(14);
+      expect(nbRadius.lg).toBe(20);
+      expect(nbRadius.full).toBe(9999);
     });
 
     it('should have hard-edge shadows (NB stamp: zero blur, opaque — 3-R2 lock)', () => {
@@ -75,10 +75,10 @@ describe('nbTokens', () => {
     });
 
     it('should expose nested gray for backward compat (Phase 2 call sites)', () => {
-      expect(nbColors.gray['50']).toBe('#FAFAF9');
-      expect(nbColors.gray['200']).toBe('#E7E5E4');
-      expect(nbColors.gray['500']).toBe('#78716C');
-      expect(nbColors.gray['900']).toBe('#1C1917');
+      expect(nbColors.gray50).toBe('#FAFAF9');
+      expect(nbColors.gray200).toBe('#E7E5E4');
+      expect(nbColors.gray500).toBe('#78716C');
+      expect(nbColors.gray900).toBe('#1C1917');
     });
   });
 

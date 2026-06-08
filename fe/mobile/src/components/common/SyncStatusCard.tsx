@@ -9,7 +9,7 @@ import {
   nbColors,
   nbTypography,
   nbSpacing,
-  nbBorderRadius,
+  nbRadius,
   nbShadows,
   nbBorders,
 } from '../../constants/nbTokens';
@@ -106,8 +106,8 @@ const styles = StyleSheet.create({
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.md,
     padding: nbSpacing.md,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
   },
   syncLabel: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray['600'],
+    color: nbColors.gray600,
   },
   syncValue: {
     fontSize: nbTypography.fontSize.base,

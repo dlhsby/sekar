@@ -23,7 +23,7 @@ import {
   nbShadows,
   nbSpacing,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
   nbTypography,
 } from '../../constants/nbTokens';
 import { NBButton } from './NBButton';
@@ -258,8 +258,8 @@ export const NBAlert: React.FC<NBAlertProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    borderWidth: nbBorders.base,
-    borderRadius: nbBorderRadius.base, // 2px - softened NB
+    borderWidth: nbBorders.widthBase,
+    borderRadius: nbRadius.base, // 2px - softened NB
     paddingVertical: nbSpacing.md,
     paddingHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.md,

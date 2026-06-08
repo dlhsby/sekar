@@ -28,10 +28,9 @@ import {
   nbShadows,
   nbSpacing,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
   nbTypography,
   nbTouchTarget,
-  nbAnimation,
 } from '../../constants/nbTokens';
 
 export type NBButtonVariant =
@@ -94,7 +93,7 @@ const getVariantStyles = () => {
       border: nbColors.black,
     },
     info: {
-      bg: nbColors.accentSky, // Sky blue - for secondary actions
+      bg: nbColors.info, // Sky blue - for secondary actions
       text: nbColors.white,
       border: nbColors.black,
     },
@@ -244,7 +243,7 @@ export const NBButton: React.FC<NBButtonProps> = ({
           backgroundColor: variantStyle.bg,
           height: sizeStyle.height,
           paddingHorizontal: sizeStyle.paddingHorizontal,
-          borderWidth: isGhost ? 0 : nbBorders.base,
+          borderWidth: isGhost ? 0 : nbBorders.widthBase,
           borderColor: variantStyle.border,
           transform: pressTransform,
         },
@@ -316,7 +315,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: nbTouchTarget.minWidth,
-    borderRadius: nbBorderRadius.base, // 2px - softened NB
+    borderRadius: nbRadius.base, // 2px - softened NB
   },
   text: {
     fontWeight: nbTypography.fontWeight.semibold,

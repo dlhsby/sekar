@@ -24,7 +24,7 @@ import {
   nbColors,
   nbSpacing,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
   nbTypography,
   nbTouchTarget,
 } from '../../constants/nbTokens';
@@ -186,9 +186,9 @@ export const NBTab: React.FC<NBTabProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.base, // 2px - softened NB
+    borderRadius: nbRadius.base, // 2px - softened NB
     backgroundColor: nbColors.white,
     overflow: 'hidden', // Clip child elements to rounded border
   },
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: nbColors.white,
-    borderRightWidth: nbBorders.base,
+    borderRightWidth: nbBorders.widthBase,
     borderRightColor: nbColors.black,
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.sm,
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   // column, leaving big gaps above/below the centred pill. flexGrow:0 stops any
   // residual stretch.
   scrollView: {
-    height: nbTouchTarget.minHeight + nbBorders.base * 2,
+    height: nbTouchTarget.minHeight + nbBorders.widthBase * 2,
     flexGrow: 0,
   },
   scrollContent: {
@@ -244,10 +244,10 @@ const styles = StyleSheet.create({
     color: nbColors.white,
   },
   badge: {
-    backgroundColor: nbColors.gray['200'],
+    backgroundColor: nbColors.gray200,
     paddingHorizontal: nbSpacing.xs,
     paddingVertical: 2,
-    borderRadius: nbBorderRadius.base, // 2px - softened NB
+    borderRadius: nbRadius.base, // 2px - softened NB
     minWidth: 20,
     alignItems: 'center',
     justifyContent: 'center',

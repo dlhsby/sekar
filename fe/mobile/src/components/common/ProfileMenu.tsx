@@ -55,7 +55,7 @@ function MenuRow({ item, isLast }: { item: MenuItem; isLast: boolean }): React.J
       <View
         style={[
           styles.chip,
-          { backgroundColor: item.chipColor ?? nbColors.gray['100'] },
+          { backgroundColor: item.chipColor ?? nbColors.gray100 },
         ]}
       >
         <MaterialCommunityIcons
@@ -72,7 +72,7 @@ function MenuRow({ item, isLast }: { item: MenuItem; isLast: boolean }): React.J
         {item.label}
       </NBText>
       {!item.danger && (
-        <MaterialCommunityIcons name="chevron-right" size={18} color={nbColors.gray['400']} />
+        <MaterialCommunityIcons name="chevron-right" size={18} color={nbColors.gray400} />
       )}
     </TouchableOpacity>
   );
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   },
   rowDivider: {
     borderBottomWidth: 1.5,
-    borderBottomColor: nbColors.gray['300'],
+    borderBottomColor: nbColors.gray300,
     borderStyle: 'dashed',
   },
   chip: {

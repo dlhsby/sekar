@@ -171,14 +171,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: nbColors.background,
+    backgroundColor: nbColors.bgCanvas,
     justifyContent: 'center',
     alignItems: 'center',
     padding: nbSpacing.lg,
   },
   card: {
     backgroundColor: nbColors.white,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     borderRadius: 0,
     padding: nbSpacing.xl,
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   },
   message: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray['600'],
+    color: nbColors.gray600,
     textAlign: 'center',
     marginBottom: nbSpacing.lg,
     lineHeight: nbTypography.fontSize.base * nbTypography.lineHeight.relaxed,
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     marginBottom: nbSpacing.lg,
     padding: nbSpacing.md,
     backgroundColor: nbColors.dangerLight,
-    borderWidth: nbBorders.thin,
+    borderWidth: nbBorders.widthThin,
     borderColor: nbColors.danger,
     borderRadius: 0,
   },
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   },
   errorStack: {
     fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray['700'],
+    color: nbColors.gray700,
     fontFamily: 'monospace',
     marginTop: nbSpacing.xs,
   },

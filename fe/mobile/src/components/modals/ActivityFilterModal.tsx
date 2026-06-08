@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
   filterLabel: {
     fontSize: nbTypography.fontSize.xs,
     fontWeight: nbTypography.fontWeight.bold,
-    color: nbColors.gray['600'],
+    color: nbColors.gray600,
     marginBottom: nbSpacing.xs + 2,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
   },
   dateSeparator: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray['500'],
+    color: nbColors.gray500,
     alignSelf: 'center',
     paddingHorizontal: 2,
   },
@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
     paddingVertical: nbSpacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     minHeight: 46,
   },

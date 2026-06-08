@@ -54,7 +54,7 @@ jest.mock('../../../constants/nbTokens', () => ({
     fontWeight: { regular: '400', medium: '500', bold: '700' },
   },
   nbBorders: { base: 2 },
-  nbBorderRadius: { base: 8 },
+  nbRadius: { base: 8 },
   withAlpha: (hex: string, _alpha: number) => hex,
 }));
 

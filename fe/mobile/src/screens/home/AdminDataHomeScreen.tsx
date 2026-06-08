@@ -224,7 +224,7 @@ export function AdminDataHomeScreen(): React.JSX.Element {
   }
 
   return (
-    <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.background} patternColor={nbColors.primary} opacity={0.06}>
+    <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.bgCanvas} patternColor={nbColors.primary} opacity={0.06}>
       <View style={styles.container}>
         <ScrollView
           style={styles.scrollView}

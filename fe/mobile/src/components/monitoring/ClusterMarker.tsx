@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     // Hard-edge Neo Brutalism shadow: offset 2/2, opacity 1, radius 0
     ...nbShadows.sm,

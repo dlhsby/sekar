@@ -125,7 +125,7 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
   return (
     <NBBackgroundPattern
       pattern="grid"
-      backgroundColor={nbColors.background}
+      backgroundColor={nbColors.bgCanvas}
       patternColor={nbColors.primary}
       opacity={0.03}
     >

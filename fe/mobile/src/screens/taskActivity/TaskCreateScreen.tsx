@@ -47,8 +47,8 @@ import type { TaskPriority, User, UserRole } from '../../types/models.types';
  */
 const PRIORITY_OPTIONS: { value: TaskPriority; label: string; color: string }[] = [
   { value: 'low', label: 'Rendah', color: nbColors.gray500 },
-  { value: 'medium', label: 'Biasa', color: nbColors.accentSky },
-  { value: 'high', label: 'Tinggi', color: nbColors.accentSunshine },
+  { value: 'medium', label: 'Biasa', color: nbColors.info },
+  { value: 'high', label: 'Tinggi', color: nbColors.warningLight },
   { value: 'urgent', label: 'Mendesak', color: nbColors.danger },
 ];
 
@@ -470,7 +470,7 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
   return (
     <NBBackgroundPattern
       pattern="dots"
-      backgroundColor={nbColors.background}
+      backgroundColor={nbColors.bgCanvas}
       patternColor={nbColors.primary}
       opacity={0.06}
     >

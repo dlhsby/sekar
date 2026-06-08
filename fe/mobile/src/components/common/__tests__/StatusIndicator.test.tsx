@@ -286,7 +286,7 @@ describe('StatusIndicator', () => {
       expect(circle.props.style).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            backgroundColor: expect.any(String), // nbColors.gray['300']
+            backgroundColor: expect.any(String), // nbColors.gray300
           }),
         ])
       );

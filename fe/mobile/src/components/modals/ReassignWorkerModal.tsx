@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   reasonInput: {
     backgroundColor: nbColors.gray100,
     borderRadius: nbRadius.base,
-    borderWidth: nbBorders.thin,
+    borderWidth: nbBorders.widthThin,
     borderColor: nbColors.gray300,
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.sm,

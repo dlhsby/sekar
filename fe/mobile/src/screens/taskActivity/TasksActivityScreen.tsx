@@ -535,7 +535,7 @@ export function TasksActivityScreen({ navigation, route }: Props): React.JSX.Ele
   return (
     <NBBackgroundPattern
       pattern="dots"
-      backgroundColor={nbColors.background}
+      backgroundColor={nbColors.bgCanvas}
       patternColor={nbColors.primary}
       opacity={0.06}
     >

@@ -19,7 +19,7 @@ import {
   nbSpacing,
   nbTypography,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
 } from '../../constants/nbTokens';
 import { ROLE_LABELS } from '../../constants/roles';
 import type { StaffingSummaryItem, UserRole, AreaBoundary } from '../../types/models.types';
@@ -38,7 +38,7 @@ interface StaffingSummarySectionProps {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getDayTypeBadgeColor(label: string | null): string {
-  if (!label) return nbColors.gray['500'];
+  if (!label) return nbColors.gray500;
   if (label.includes('Libur')) return nbColors.dangerDark;
   if (label.includes('Pekan')) return nbColors.warning;
   return nbColors.successDark;
@@ -137,7 +137,7 @@ export function StaffingSummarySection({
                   <MaterialCommunityIcons
                     name={isExpanded ? 'chevron-up' : 'chevron-down'}
                     size={18}
-                    color={nbColors.gray['500']}
+                    color={nbColors.gray500}
                   />
                 </View>
               </TouchableOpacity>
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    borderRadius: nbBorderRadius.full,
+    borderRadius: nbRadius.full,
     paddingHorizontal: nbSpacing.sm,
     paddingVertical: 2,
     gap: 4,
@@ -206,14 +206,14 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['500'],
+    color: nbColors.gray500,
     fontStyle: 'italic',
   },
   itemCard: {
     backgroundColor: nbColors.white,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.thin,
-    borderColor: nbColors.gray['300'],
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthThin,
+    borderColor: nbColors.gray300,
     overflow: 'hidden',
   },
   itemHeader: {
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
   },
   itemStats: {
     fontSize: nbTypography.fontSize.xs,
-    color: nbColors.gray['600'],
+    color: nbColors.gray600,
     marginTop: 2,
   },
   itemHeaderRight: {
@@ -253,16 +253,16 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     height: 4,
-    backgroundColor: nbColors.gray['200'],
+    backgroundColor: nbColors.gray200,
   },
   progressFill: {
     height: 4,
   },
   expandedContent: {
     padding: nbSpacing.sm,
-    backgroundColor: nbColors.gray['50'],
+    backgroundColor: nbColors.gray50,
     borderTopWidth: 1,
-    borderTopColor: nbColors.gray['200'],
+    borderTopColor: nbColors.gray200,
     gap: nbSpacing.xs,
   },
   roleRow: {
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   },
   roleLabel: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['600'],
+    color: nbColors.gray600,
   },
   roleValue: {
     fontSize: nbTypography.fontSize.sm,

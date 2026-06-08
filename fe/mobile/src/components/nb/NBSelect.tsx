@@ -26,7 +26,7 @@ import {
   nbBorders,
   nbShadows,
   nbTypography,
-  nbAnimation,
+  nbMotion,
   nbTouchTarget,
 } from '../../constants/nbTokens';
 
@@ -108,7 +108,7 @@ export function NBSelect({
     chevronAnim.stopAnimation();
     Animated.timing(chevronAnim, {
       toValue: 1,
-      duration: nbAnimation.normal,
+      duration: nbMotion.enter.duration,
       // May 12 — JS-driven on purpose. Fabric (RN 0.83) raises
       // `disconnect/connectAnimatedNodeFromView: Animated node with tag [N]
       // does not exist` when the chevron Animated.View unmounts while
@@ -126,7 +126,7 @@ export function NBSelect({
     chevronAnim.stopAnimation();
     Animated.timing(chevronAnim, {
       toValue: 0,
-      duration: nbAnimation.normal,
+      duration: nbMotion.enter.duration,
       // May 12 — JS-driven on purpose. Fabric (RN 0.83) raises
       // `disconnect/connectAnimatedNodeFromView: Animated node with tag [N]
       // does not exist` when the chevron Animated.View unmounts while
@@ -212,7 +212,7 @@ export function NBSelect({
             <MaterialCommunityIcons
               name={isSelected ? 'checkbox-marked' : 'checkbox-blank-outline'}
               size={22}
-              color={isSelected ? nbColors.primary : nbColors.gray['400']}
+              color={isSelected ? nbColors.primary : nbColors.gray400}
               style={styles.checkboxIcon}
             />
           )}
@@ -279,7 +279,7 @@ export function NBSelect({
             <MaterialCommunityIcons
               name="close-circle"
               size={20}
-              color={nbColors.gray['500']}
+              color={nbColors.gray500}
             />
           </TouchableOpacity>
         ) : (
@@ -287,7 +287,7 @@ export function NBSelect({
             <MaterialCommunityIcons
               name="chevron-down"
               size={22}
-              color={disabled ? nbColors.gray['400'] : nbColors.black}
+              color={disabled ? nbColors.gray400 : nbColors.black}
             />
           </Animated.View>
         )}
@@ -350,14 +350,14 @@ export function NBSelect({
                 <MaterialCommunityIcons
                   name="magnify"
                   size={20}
-                  color={nbColors.gray['400']}
+                  color={nbColors.gray400}
                 />
                 <TextInput
                   style={styles.searchInput}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                   placeholder={searchPlaceholder}
-                  placeholderTextColor={nbColors.gray['400']}
+                  placeholderTextColor={nbColors.gray400}
                   autoFocus
                 />
                 {searchQuery.length > 0 && (
@@ -365,7 +365,7 @@ export function NBSelect({
                     <MaterialCommunityIcons
                       name="close-circle"
                       size={18}
-                      color={nbColors.gray['400']}
+                      color={nbColors.gray400}
                     />
                   </TouchableOpacity>
                 )}
@@ -431,14 +431,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 0,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     backgroundColor: nbColors.white,
   },
   triggerDisabled: {
-    backgroundColor: nbColors.gray['100'],
-    borderColor: nbColors.gray['400'],
-    borderWidth: nbBorders.thin,
+    backgroundColor: nbColors.gray100,
+    borderColor: nbColors.gray400,
+    borderWidth: nbBorders.widthThin,
     opacity: 0.6,
   },
   triggerText: {
@@ -449,11 +449,11 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   triggerTextPlaceholder: {
-    color: nbColors.gray['400'],
+    color: nbColors.gray400,
     fontWeight: '400',
   },
   triggerTextDisabled: {
-    color: nbColors.gray['400'],
+    color: nbColors.gray400,
   },
   overlay: {
     flex: 1,
@@ -462,9 +462,9 @@ const styles = StyleSheet.create({
   },
   sheet: {
     backgroundColor: nbColors.white,
-    borderTopWidth: nbBorders.thick,
-    borderLeftWidth: nbBorders.thick,
-    borderRightWidth: nbBorders.thick,
+    borderTopWidth: nbBorders.widthThick,
+    borderLeftWidth: nbBorders.widthThick,
+    borderRightWidth: nbBorders.widthThick,
     borderBottomWidth: 0,
     borderColor: nbColors.black,
     borderRadius: 0,
@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: nbColors.gray['100'],
+    backgroundColor: nbColors.gray100,
   },
   sheetTitle: {
     fontSize: nbTypography.fontSize.sm,
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   headerDivider: {
-    height: nbBorders.thick,
+    height: nbBorders.widthThick,
     backgroundColor: nbColors.black,
   },
   option: {
@@ -533,7 +533,7 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 1,
-    backgroundColor: nbColors.gray['200'],
+    backgroundColor: nbColors.gray200,
     marginLeft: 20,
   },
   searchContainer: {
@@ -542,7 +542,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: nbColors.gray['200'],
+    borderBottomColor: nbColors.gray200,
     backgroundColor: nbColors.white,
   },
   searchInput: {
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: nbColors.gray['50'],
+    backgroundColor: nbColors.gray50,
   },
   clearOptionText: {
     fontSize: nbTypography.fontSize.base,
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
   doneButtonContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderTopWidth: nbBorders.thick,
+    borderTopWidth: nbBorders.widthThick,
     borderTopColor: nbColors.black,
   },
   doneButton: {
@@ -577,7 +577,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
   },
   doneButtonText: {

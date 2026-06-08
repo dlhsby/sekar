@@ -514,7 +514,7 @@ export const OvertimeSubmitScreen: React.FC<
     return (
       <NBBackgroundPattern
         pattern="dots"
-        backgroundColor={nbColors.background}
+        backgroundColor={nbColors.bgCanvas}
         patternColor={nbColors.primary}
         opacity={0.06}
       >
@@ -531,7 +531,7 @@ export const OvertimeSubmitScreen: React.FC<
   return (
     <NBBackgroundPattern
       pattern="dots"
-      backgroundColor={nbColors.background}
+      backgroundColor={nbColors.bgCanvas}
       patternColor={nbColors.primary}
       opacity={0.06}
     >

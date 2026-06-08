@@ -47,7 +47,7 @@ jest.mock('../../../constants/nbTokens', () => ({
     monoSm: { fontFamily: 'JetBrains Mono', fontWeight: '500', fontSize: 12, lineHeight: 17 },
   },
   nbBorders: { thin: 1 },
-  nbBorderRadius: { base: 8, full: 9999 },
+  nbRadius: { base: 8, full: 9999 },
 }));
 
 jest.mock('../../../constants/roles', () => ({

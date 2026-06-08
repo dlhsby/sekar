@@ -12,7 +12,7 @@ import { View, Text, StyleSheet, StyleProp, ViewStyle, TextStyle } from 'react-n
 import {
   nbColors,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
   nbSpacing,
   nbTypography,
 } from '../../constants/nbTokens';
@@ -65,7 +65,7 @@ const colorStyles: Record<
   },
   danger: { bg: nbColors.danger, text: nbColors.white, border: nbColors.black },
   gray: {
-    bg: nbColors.gray['200'],
+    bg: nbColors.gray200,
     text: nbColors.black,
     border: nbColors.black,
   },
@@ -148,8 +148,8 @@ export const NBBadge: React.FC<NBBadgeProps> = ({
 
 const styles = StyleSheet.create({
   badge: {
-    borderWidth: nbBorders.thin,
-    borderRadius: nbBorderRadius.sm, // 4px - NB 2.0 badge radius
+    borderWidth: nbBorders.widthThin,
+    borderRadius: nbRadius.sm, // 4px - NB 2.0 badge radius
     alignSelf: 'flex-start',
   },
   text: {

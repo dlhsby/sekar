@@ -335,7 +335,7 @@ export function ReviewQueueScreen(): React.JSX.Element {
   return (
     <NBBackgroundPattern
       pattern="dots"
-      backgroundColor={nbColors.background}
+      backgroundColor={nbColors.bgCanvas}
       patternColor={nbColors.primary}
       opacity={0.06}
     >
@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
   },
   unauthorizedContainer: {
     flex: 1,
-    backgroundColor: nbColors.background,
+    backgroundColor: nbColors.bgCanvas,
     padding: nbSpacing.md,
     justifyContent: 'center',
   },

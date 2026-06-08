@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
   },
   mapContainer: {
     height: 320,
-    borderBottomWidth: nbBorders.base,
+    borderBottomWidth: nbBorders.widthBase,
     borderBottomColor: nbColors.black,
     overflow: 'hidden',
   },
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   areaBadge: {
     paddingHorizontal: nbSpacing.sm,
     paddingVertical: nbSpacing.xs,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderRadius: nbRadius.base,
   },
   areaBadgeInside: {

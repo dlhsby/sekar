@@ -33,7 +33,6 @@ jest.mock('../../../constants/nbTokens', () => {
     nbType: new Proxy({}, { get: () => typeVariant }),
     nbFonts: { body: fontStack('Inter'), display: fontStack('Space Grotesk'), mono: fontStack('JetBrains Mono') },
     nbBorders: new Proxy({}, { get: () => 2 }),
-    nbBorderRadius: new Proxy({}, { get: () => 4 }),
     nbRadius: new Proxy({}, { get: () => 4 }),
     nbShadows: new Proxy({}, { get: () => ({}) }),
     nbShadow: new Proxy({}, { get: () => ({}) }),

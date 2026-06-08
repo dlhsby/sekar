@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.sm,
-    borderBottomWidth: nbBorders.thick,
+    borderBottomWidth: nbBorders.widthThick,
     borderBottomColor: nbColors.black,
     backgroundColor: nbColors.white,
     ...nbShadows.md,
@@ -394,21 +394,21 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: nbTypography.fontSize.sm,
     fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray[600],
+    color: nbColors.gray600,
   },
   statsBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.xs,
-    backgroundColor: nbColors.gray[50],
-    borderBottomWidth: nbBorders.thin,
-    borderBottomColor: nbColors.gray[300],
+    backgroundColor: nbColors.gray50,
+    borderBottomWidth: nbBorders.widthThin,
+    borderBottomColor: nbColors.gray300,
   },
   statsText: {
     fontSize: nbTypography.fontSize.xs,
     fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray[600],
+    color: nbColors.gray600,
   },
   mapContainer: {
     flex: 1,
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.white,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     ...nbShadows.md,
   },
@@ -445,12 +445,12 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: nbTypography.fontSize.base,
     fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray[600],
+    color: nbColors.gray600,
   },
   errorText: {
     fontSize: nbTypography.fontSize.base,
     fontWeight: nbTypography.fontWeight.medium,
-    color: nbColors.gray[500],
+    color: nbColors.gray500,
     textAlign: 'center',
     paddingHorizontal: nbSpacing.xl,
   },
@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
   calloutText: {
     fontSize: nbTypography.fontSize.xs,
     fontWeight: nbTypography.fontWeight.regular,
-    color: nbColors.gray[700],
+    color: nbColors.gray700,
     marginTop: 1,
   },
   calloutUser: {

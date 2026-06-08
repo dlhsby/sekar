@@ -22,7 +22,6 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import {
   nbColors,
   nbBorders,
-  nbBorderRadius,
   nbRadius,
   nbShadows,
   nbSpacing,
@@ -423,8 +422,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 6,
     paddingVertical: 3,
-    borderRadius: nbBorderRadius.sm,
-    borderWidth: nbBorders.thin,
+    borderRadius: nbRadius.sm,
+    borderWidth: nbBorders.widthThin,
     borderColor: nbColors.black,
     gap: 3,
     ...nbShadows.sm,
@@ -449,7 +448,7 @@ const styles = StyleSheet.create({
 
   callout: {
     backgroundColor: nbColors.black,
-    borderRadius: nbBorderRadius.sm,
+    borderRadius: nbRadius.sm,
     padding: nbSpacing.xs,
     minWidth: 120,
   },

@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   statusDot: { width: 8, height: 8, borderRadius: nbRadius.full },
   online: { backgroundColor: nbColors.success },
   offline: { backgroundColor: nbColors.danger },
-  syncingDot: { width: 8, height: 8, borderRadius: nbRadius.full, backgroundColor: nbColors.accentSky },
+  syncingDot: { width: 8, height: 8, borderRadius: nbRadius.full, backgroundColor: nbColors.info },
   pendingDot: { width: 8, height: 8, borderRadius: nbRadius.full, backgroundColor: nbColors.warning },
   statusBadgeText: {
     fontSize: 11,

@@ -45,56 +45,26 @@ export const nbSpacing = {
   16: 64, // 3xl
 } as const;
 
-// ─── nbColors (augmented) ────────────────────────────────────────────────────
-// Generated nbColors is flat (gray100, gray200, bgCanvas, …). Phase 2 code
-// accesses nested shape (nbColors.gray['200']) and nbColors.background.
-// Backward-compat shims kept until 3-R5 sweep.
+// ─── nbColors ────────────────────────────────────────────────────────────────
+// Flat generated palette (gray50…gray900, bgCanvas/bgOverlay/bgSurface, info,
+// primary, warningLight, secondary, …). Phase-2 compat shims (nested gray,
+// background/overlay/surface, accent* aliases) removed in 3-R5 — all call sites
+// now use the flat generated names directly.
 export const nbColors = {
   ..._gen,
-  // Phase 2 aliases — remove in 3-R5
-  background: _gen.bgCanvas,
-  overlay: _gen.bgOverlay,
-  surface: _gen.bgSurface,
-  // Accent compat shims (old semantic names → nearest generated token) — remove in 3-R5
-  accentSky: _gen.info,          // #69D2E7 sky-blue used for secondary actions / GPS
-  accentGrass: _gen.primary,     // #7FBC8C bright green used for focused inputs
-  accentSunshine: _gen.warningLight, // #FFDB58 yellow used for warning icons
-  accentEarth: _gen.secondary,   // #8B7355 brown used for earth-tone icons
-  // Backward-compat nested gray — remove in 3-R5
-  gray: {
-    '50': _gen.gray50,
-    '100': _gen.gray100,
-    '200': _gen.gray200,
-    '300': _gen.gray300,
-    '400': _gen.gray400,
-    '500': _gen.gray500,
-    '600': _gen.gray600,
-    '700': _gen.gray700,
-    '800': _gen.gray800,
-    '900': _gen.gray900,
-  },
 } as const;
 
-// ─── nbBorders (augmented) ────────────────────────────────────────────────────
-// Generated nbBorders uses widthThin/widthBase/… naming. Phase 2 code uses
-// nbBorders.thin/base/thick/extra. Backward-compat shims kept until 3-R5 sweep.
+// ─── nbBorders ───────────────────────────────────────────────────────────────
+// Generated widthThin/widthBase/widthThick/widthExtra. Phase-2 thin/base/thick/
+// extra aliases removed in 3-R5.
 export const nbBorders = {
   ..._genBorders,
-  // Phase 2 aliases — remove in 3-R5
-  thin: _genBorders.widthThin,
-  base: _genBorders.widthBase,
-  thick: _genBorders.widthThick,
-  extra: _genBorders.widthExtra,
 } as const;
 
-// ─── Backward-compat aliases ──────────────────────────────────────────────────
-// Remove in 3-R5 once all call sites use generated names directly.
-export { nbRadius as nbBorderRadius } from './generated/tokens';
-
-// nbAnimation: augmented with Phase 2 `normal` duration key — remove in 3-R5
+// ─── nbAnimation ───────────────────────────────────────────────────────────────
+// Phase-2 `normal` duration alias removed in 3-R5; use nbMotion.enter/exit.
 export const nbAnimation = {
   ...nbMotion,
-  normal: 200, // Phase 2 alias — remove in 3-R5
 } as const;
 
 // ─── nbTypography ─────────────────────────────────────────────────────────────

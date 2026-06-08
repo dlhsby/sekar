@@ -11,7 +11,7 @@ import {
   nbColors,
   nbTypography,
   nbSpacing,
-  nbBorderRadius,
+  nbRadius,
   nbBorders,
   nbShadows,
 } from '../../constants/nbTokens';
@@ -56,8 +56,8 @@ const styles = StyleSheet.create({
     marginHorizontal: nbSpacing.md,
     marginBottom: nbSpacing.md,
     padding: nbSpacing.md,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: nbTypography.fontSize.sm,
-    color: nbColors.gray['600'],
+    color: nbColors.gray600,
     fontWeight: nbTypography.fontWeight.medium,
   },
   value: {
@@ -88,12 +88,12 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: nbColors.gray['200'],
+    backgroundColor: nbColors.gray200,
     marginVertical: nbSpacing.xs,
   },
   empty: {
     fontSize: nbTypography.fontSize.base,
-    color: nbColors.gray['500'],
+    color: nbColors.gray500,
     fontStyle: 'italic',
     textAlign: 'center',
     paddingVertical: nbSpacing.md,

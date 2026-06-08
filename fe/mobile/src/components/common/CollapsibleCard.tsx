@@ -20,7 +20,7 @@ import {
   nbSpacing,
   nbTypography,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
   nbShadows,
 } from '../../constants/nbTokens';
 
@@ -107,9 +107,9 @@ export function CollapsibleCard({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: nbColors.surface,
-    borderRadius: nbBorderRadius.base,
-    borderWidth: nbBorders.base,
+    backgroundColor: nbColors.bgSurface,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     ...nbShadows.sm,
   },
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: nbSpacing.sm,
     paddingBottom: nbSpacing.sm,
-    borderTopWidth: nbBorders.thin,
-    borderTopColor: nbColors.gray['200'],
+    borderTopWidth: nbBorders.widthThin,
+    borderTopColor: nbColors.gray200,
   },
 });
