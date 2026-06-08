@@ -4,6 +4,23 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 8, 2026 — M3: Perantingan (PRT) revamp CP5 — SubmitScreen token sweep + submit-flow tests (PRT sweep complete)
+
+**Goal:** close out the PRT v2.1 sweep with the last screen — a token-only pass on the staff_kecamatan creation form — and finally back-fill the submit-flow test coverage the file header had flagged as pending.
+
+**`SubmitScreen.tsx`** (styles + one import only — zero logic/JSX change)
+- Token renames: `nbBorders.base`→`widthBase` (×4) and `nbBorderRadius.base`→`nbRadius.base` (×4), on `presetItem`/`dateRow`/`gpsRefresh`/`photoWrap`; swapped the `nbBorderRadius` import for `nbRadius`. Backward-compat shims = identical values, no visual drift. (No `nbTypography`/`gray[...]`/raw `<Text>`/inline hex were present.)
+- The 5-card form, draft-autosave, GPS/permission flow, rayon load, media picker, ISO-week preference, validation, and submit are all untouched.
+
+**Tests — expanded the smoke suite (3 → 7) per the file's own "Phase 4 polish" TODO**
+- New `mediaService.convertToBase64` + `pruningRequestsApi` module mocks, a hoisted `mockNavigate`, and a `getCurrentPosition` mock that resolves a fixed Surabaya coordinate.
+- Added: GPS auto-capture renders the coordinate; gallery photo add → thumbnail → remove; **validation gate** (incomplete form does NOT call `submitPruningRequest`); **happy-path submit** (fills all required fields, converts the photo to base64, dispatches `submitPruningRequest` with the expected payload, navigates back to `Perantingan`).
+- Blast-radius: all `pruningRequests` + `PruningRequestFilterModal` + `statusHelpers` → **116 passed / 10 suites**. ESLint clean (2 pre-existing unused-import warnings `Platform`/`formatDateLong` left alone — unrelated to tokens); tsc clean on both CP5 files.
+
+**🏁 PRT sweep complete (CP1–CP5).** Every Perantingan screen + the shared card + filter modal is on Design-System v2.1: `PerantinganRequestCard`/`pruningPill` (CP1), `PerantinganListScreen` + `PruningRequestFilterModal` (CP2), `ReviewQueueScreen` + derived SLA pill (CP3), `RequestDetailScreen` (CP4), `SubmitScreen` (CP5). This was the last mobile-screen cluster in the Phase-4 4-R design-system sweep.
+
+---
+
 ## June 8, 2026 — M3: Perantingan (PRT) revamp CP4 — RequestDetailScreen token sweep
 
 **Goal:** finish the detail-view sweep. The screen was already redesigned (Round 6) to mirror `ActivityDetailScreen`'s `NBCardHeader`/`sectionTitle`/`infoRow` language and was fully `NBText` + `NBCard`-based, so CP4 is a tight token sweep — no restyle.

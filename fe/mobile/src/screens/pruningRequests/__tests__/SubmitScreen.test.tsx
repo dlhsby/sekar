@@ -53,9 +53,15 @@ jest.mock('../../../components/navigation/FieldHomeHeader', () => ({
   },
 }));
 
+// GPS auto-capture resolves to a fixed Surabaya coordinate so the Lokasi card
+// and the submit-flow gate have a usable position.
+const mockGetCurrentPosition = jest.fn(
+  (success: (pos: any) => void) =>
+    success({ coords: { latitude: -7.2575, longitude: 112.7521, accuracy: 8 } }),
+);
 jest.mock('react-native-geolocation-service', () => ({
   __esModule: true,
-  default: { getCurrentPosition: jest.fn() },
+  default: { getCurrentPosition: (success: (pos: any) => void) => mockGetCurrentPosition(success) },
 }));
 
 jest.mock('react-native-maps', () => {
@@ -84,12 +90,21 @@ jest.mock('../../../services/media/mediaService', () => ({
   mediaService: {
     capturePhoto: jest.fn(),
     pickFromGallery: jest.fn(),
+    convertToBase64: jest.fn().mockResolvedValue('data:image/jpeg;base64,AAAA'),
   },
 }));
 
+// Submit-flow API mock — the slice imports `* as pruningRequestsApi`, so we
+// stub the whole module and assert on submitPruningRequest.
+jest.mock('../../../services/api/pruningRequestsApi', () => ({
+  submitPruningRequest: jest.fn().mockResolvedValue({ data: { id: 'pr-new' } }),
+  getMyPruningRequests: jest.fn().mockResolvedValue({ data: [] }),
+}));
+
+const mockNavigate = jest.fn();
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({
-    navigate: jest.fn(),
+    navigate: mockNavigate,
     goBack: jest.fn(),
     setOptions: jest.fn(),
     addListener: jest.fn(() => () => {}),
@@ -121,14 +136,33 @@ jest.mock('../../../services/api', () => ({
 }));
 
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import pruningRequestsReducer from '../../../store/slices/pruningRequestsSlice';
 import serviceCapacityReducer from '../../../store/slices/serviceCapacitySlice';
 import authReducer from '../../../store/slices/authSlice';
+import { mediaService } from '../../../services/media/mediaService';
+import * as pruningRequestsApi from '../../../services/api/pruningRequestsApi';
 
 import { SubmitScreen } from '../SubmitScreen';
+
+const mockMedia = mediaService as jest.Mocked<typeof mediaService>;
+const mockApi = pruningRequestsApi as jest.Mocked<typeof pruningRequestsApi>;
+
+/** Fill every required field with valid values (GPS auto-captures on mount). */
+function fillValidForm(screen: ReturnType<typeof render>): void {
+  fireEvent.changeText(screen.getByPlaceholderText('Contoh: Jl. Raya Darmo No. 123, RT 02 / RW 05'), 'Jl. Pemuda No. 123');
+  fireEvent.changeText(screen.getByPlaceholderText('Contoh: 3'), '4');
+  fireEvent.changeText(screen.getByPlaceholderText('Contoh: 5'), '6');
+  fireEvent.changeText(screen.getByPlaceholderText('Contoh: 30'), '35');
+  const names = screen.getAllByPlaceholderText('Nama lengkap');
+  fireEvent.changeText(names[0], 'Budi Santoso');
+  fireEvent.changeText(names[1], 'Pak RT Joko');
+  const phones = screen.getAllByPlaceholderText('08xxxxxxxxxx');
+  fireEvent.changeText(phones[0], '081234567890');
+  fireEvent.changeText(phones[1], '081298765432');
+}
 
 function makeStore() {
   return configureStore({
@@ -160,6 +194,15 @@ function makeStore() {
 }
 
 describe('SubmitScreen (Phase 3 Apr 27 redesign)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockMedia.convertToBase64.mockResolvedValue('data:image/jpeg;base64,AAAA');
+    mockApi.submitPruningRequest.mockResolvedValue({ data: { id: 'pr-new' } } as any);
+    mockGetCurrentPosition.mockImplementation((success: (pos: any) => void) =>
+      success({ coords: { latitude: -7.2575, longitude: 112.7521, accuracy: 8 } }),
+    );
+  });
+
   it('renders all five cards (Lokasi / Foto / Detail Pohon / Kontak / Catatan) without crashing', () => {
     const { getByText } = render(
       <Provider store={makeStore()}>
@@ -192,5 +235,86 @@ describe('SubmitScreen (Phase 3 Apr 27 redesign)', () => {
     expect(getByText('Minggu Preferensi (Opsional)')).toBeTruthy();
     expect(getByTestId('perantingan-pick-week')).toBeTruthy();
     expect(getByText('Pilih minggu…')).toBeTruthy();
+  });
+
+  it('auto-captures and displays the GPS coordinate on mount', async () => {
+    const screen = render(
+      <Provider store={makeStore()}>
+        <SubmitScreen />
+      </Provider>,
+    );
+    await waitFor(() => {
+      expect(mockGetCurrentPosition).toHaveBeenCalled();
+      // Coordinate rendered to 6 dp with the accuracy suffix.
+      expect(screen.getByText(/-7\.257500, 112\.752100/)).toBeTruthy();
+    });
+  });
+
+  it('adds a gallery photo then removes it', async () => {
+    mockMedia.pickFromGallery.mockResolvedValue([
+      { uri: 'file:///p1.jpg', type: 'image/jpeg', fileName: 'p1.jpg' } as any,
+    ]);
+    const screen = render(
+      <Provider store={makeStore()}>
+        <SubmitScreen />
+      </Provider>,
+    );
+    expect(screen.getByText('Belum ada foto. Ambil dari kamera atau pilih dari galeri.')).toBeTruthy();
+
+    await act(async () => { fireEvent.press(screen.getByText('Galeri')); });
+    await waitFor(() => expect(screen.getByLabelText('Hapus foto 1')).toBeTruthy());
+
+    fireEvent.press(screen.getByLabelText('Hapus foto 1'));
+    await waitFor(() =>
+      expect(screen.getByText('Belum ada foto. Ambil dari kamera atau pilih dari galeri.')).toBeTruthy(),
+    );
+  });
+
+  it('blocks submit and does not call the API when the form is incomplete', async () => {
+    const screen = render(
+      <Provider store={makeStore()}>
+        <SubmitScreen />
+      </Provider>,
+    );
+    // Empty form (only GPS captured) — validation must short-circuit submit.
+    await act(async () => { fireEvent.press(screen.getByTestId('perantingan-submit-cta')); });
+    expect(mockApi.submitPruningRequest).not.toHaveBeenCalled();
+  });
+
+  it('submits a valid form: converts photos, dispatches with the expected payload, navigates back', async () => {
+    mockMedia.pickFromGallery.mockResolvedValue([
+      { uri: 'file:///p1.jpg', type: 'image/jpeg', fileName: 'p1.jpg' } as any,
+    ]);
+    const screen = render(
+      <Provider store={makeStore()}>
+        <SubmitScreen />
+      </Provider>,
+    );
+
+    await act(async () => { fireEvent.press(screen.getByText('Galeri')); });
+    await waitFor(() => expect(screen.getByLabelText('Hapus foto 1')).toBeTruthy());
+    fillValidForm(screen);
+
+    await act(async () => { fireEvent.press(screen.getByTestId('perantingan-submit-cta')); });
+
+    await waitFor(() => expect(mockApi.submitPruningRequest).toHaveBeenCalledTimes(1));
+    expect(mockMedia.convertToBase64).toHaveBeenCalledTimes(1);
+    expect(mockApi.submitPruningRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        address: 'Jl. Pemuda No. 123',
+        lat: -7.2575,
+        lng: 112.7521,
+        photo_keys: ['data:image/jpeg;base64,AAAA'],
+        tree_count: 4,
+        target_count: 4,
+        tree_height_estimate: '6',
+        tree_diameter_estimate: '35',
+        requester_name: 'Budi Santoso',
+        requester_phone: '081234567890',
+        rt_leader_name: 'Pak RT Joko',
+        rt_leader_phone: '081298765432',
+      }),
+    );
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('Perantingan'));
   });
 });

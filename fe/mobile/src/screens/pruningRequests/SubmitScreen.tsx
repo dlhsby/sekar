@@ -67,7 +67,7 @@ import {
   nbColors,
   nbSpacing,
   nbBorders,
-  nbBorderRadius,
+  nbRadius,
 } from '../../constants/nbTokens';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -991,9 +991,9 @@ const styles = StyleSheet.create({
   presetItem: {
     flex: 1,
     padding: nbSpacing[3],
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.base,
+    borderRadius: nbRadius.base,
     backgroundColor: nbColors.bgSurface,
   },
   presetLabel: {
@@ -1017,9 +1017,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: nbSpacing[3],
     paddingHorizontal: nbSpacing[3],
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.base,
+    borderRadius: nbRadius.base,
     backgroundColor: nbColors.white,
     gap: nbSpacing[2],
   },
@@ -1028,9 +1028,9 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.base,
+    borderRadius: nbRadius.base,
     backgroundColor: nbColors.white,
     marginLeft: nbSpacing[2],
   },
@@ -1058,9 +1058,9 @@ const styles = StyleSheet.create({
   photoWrap: {
     width: 80,
     height: 80,
-    borderWidth: nbBorders.base,
+    borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
-    borderRadius: nbBorderRadius.base,
+    borderRadius: nbRadius.base,
     backgroundColor: nbColors.gray200,
     overflow: 'hidden',
     position: 'relative',
