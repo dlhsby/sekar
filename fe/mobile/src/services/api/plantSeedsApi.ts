@@ -50,7 +50,6 @@ export async function createSeed(data: {
 
   return {
     error: 'Invalid response shape from server',
-    success: false,
   };
 }
 
@@ -97,7 +96,6 @@ export async function recordTransaction(
 
   return {
     error: 'Invalid response shape from server',
-    success: false,
   };
 }
 

@@ -409,7 +409,7 @@ export function TasksActivityScreen({ navigation, route }: Props): React.JSX.Ele
     const onReset = isTasksTab ? handleResetFilters : handleResetActivityFilters;
     const label = isTasksTab ? 'tugas' : 'aktivitas';
 
-    const chips: { text: string; style: typeof styles.miniChipStatus }[] = [];
+    const chips: { text: string; style: any }[] = [];
     if (isTasksTab) {
       if (taskFilter !== 'assigned') {
         chips.push({

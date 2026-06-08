@@ -6,6 +6,7 @@
 import { getCurrentShift } from '../api/shiftsApi';
 import { setCurrentShift } from '../../store/slices/shiftSlice';
 import type { AppDispatch } from '../../store/store';
+import type { Shift } from '../../types/models.types';
 
 /**
  * Type guard to check if error is an Axios-like error with response status
@@ -32,7 +33,7 @@ export async function loadAndSyncCurrentShift(
 ): Promise<void> {
   try {
     const response = await getCurrentShift();
-    dispatch(setCurrentShift(response.data));
+    dispatch(setCurrentShift(response.data as Shift | null));
   } catch (error: unknown) {
     // 404 = no active shift, set null (expected state for workers who haven't clocked in)
     if (isAxiosError(error) && error.response?.status === 404) {

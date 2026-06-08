@@ -119,10 +119,11 @@ const mockOvertimes: Overtime[] = [
     activityType: {
       id: 'type-1',
       name: 'Penyiraman',
+      code: 'SIRAM',
       description: 'Penyiraman tanaman',
       applicable_roles: ['satgas'],
+      is_active: true,
       created_at: '2026-01-01T00:00:00Z',
-      updated_at: '2026-01-01T00:00:00Z',
     },
   },
   {
@@ -149,10 +150,11 @@ const mockOvertimes: Overtime[] = [
     activityType: {
       id: 'type-2',
       name: 'Pemotongan Rumput',
+      code: 'POTONG',
       description: 'Pemotongan rumput liar',
       applicable_roles: ['satgas'],
+      is_active: true,
       created_at: '2026-01-01T00:00:00Z',
-      updated_at: '2026-01-01T00:00:00Z',
     },
   },
 ];
@@ -160,7 +162,9 @@ const mockOvertimes: Overtime[] = [
 const createTestStore = () =>
   configureStore({
     reducer: { auth: authReducer, shift: shiftReducer },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test preloadedState
     preloadedState: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test preloadedState
       auth: {
         user: {
           id: '1',
@@ -170,9 +174,18 @@ const createTestStore = () =>
         },
         token: 'test-token',
         isAuthenticated: true,
-        loading: false,
+        isLoading: false,
+        isRestoring: false,
         error: null,
         assignedArea: null,
+        onboardingCompleted: false,
+      } as any,
+      shift: {
+        currentShift: null,
+        shiftHistory: [],
+        isClockingIn: false,
+        isClockingOut: false,
+        error: null,
       },
     },
   });

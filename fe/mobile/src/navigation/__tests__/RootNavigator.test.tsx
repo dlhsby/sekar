@@ -98,18 +98,19 @@ jest.mock('../../services/storage/asyncStorageKeys', () => ({
 
 // Helper to create store with preloaded state
 function createTestStore(preloadedState?: any) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture type inference mismatch
   return configureStore({
     reducer: {
-      auth: authReducer,
-      shift: shiftReducer,
-      activities: activitiesReducer,
-      offline: offlineReducer,
-      tasks: tasksReducer,
-      notifications: notificationsReducer,
-      overtime: overtimeReducer,
+      auth: authReducer as any,
+      shift: shiftReducer as any,
+      activities: activitiesReducer as any,
+      offline: offlineReducer as any,
+      tasks: tasksReducer as any,
+      notifications: notificationsReducer as any,
+      overtime: overtimeReducer as any,
     },
-    preloadedState,
-  });
+    preloadedState: preloadedState as any,
+  } as any);
 }
 
 describe('RootNavigator', () => {

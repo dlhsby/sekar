@@ -35,7 +35,6 @@ describe('PlantStatusChip', () => {
 
   it('should not render if task is not pruning-related', async () => {
     mockGetAreaPlantStatus.mockResolvedValue({
-      success: true,
       data: {
         areaId: 'area-1',
         areaName: 'Test Area',
@@ -68,7 +67,6 @@ describe('PlantStatusChip', () => {
 
   it('should display overdue status when plants are overdue', async () => {
     mockGetAreaPlantStatus.mockResolvedValue({
-      success: true,
       data: {
         areaId: 'area-1',
         areaName: 'Test Area',
@@ -94,7 +92,6 @@ describe('PlantStatusChip', () => {
 
   it('should display due_soon status when no overdue plants', async () => {
     mockGetAreaPlantStatus.mockResolvedValue({
-      success: true,
       data: {
         areaId: 'area-1',
         areaName: 'Test Area',
@@ -120,7 +117,6 @@ describe('PlantStatusChip', () => {
 
   it('should display ok status when all plants are healthy', async () => {
     mockGetAreaPlantStatus.mockResolvedValue({
-      success: true,
       data: {
         areaId: 'area-1',
         areaName: 'Test Area',
@@ -158,8 +154,7 @@ describe('PlantStatusChip', () => {
 
   it('should not render when data is null or totals missing', async () => {
     mockGetAreaPlantStatus.mockResolvedValue({
-      success: true,
-      data: null,
+      data: undefined,
     });
 
     const { getByTestId } = render(

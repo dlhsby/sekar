@@ -33,14 +33,14 @@ const mockAreas: Array<{ id: number; gps_lat: number; gps_lng: number; radius_me
 ];
 
 const mockUser1: ActiveUserData = {
-  id: 1,
+  id: '1',
   username: 'worker1',
   full_name: 'Worker One',
   shift: {
-    id: 101,
+    id: '101',
     clock_in_time: '2026-01-17T08:00:00.000Z',
     area: {
-      id: 1,
+      id: '1',
       name: 'Taman Bungkul',
     },
   },
@@ -52,14 +52,14 @@ const mockUser1: ActiveUserData = {
 };
 
 const mockUser2: ActiveUserData = {
-  id: 2,
+  id: '2',
   username: 'worker2',
   full_name: 'Worker Two',
   shift: {
-    id: 102,
+    id: '102',
     clock_in_time: '2026-01-17T08:00:00.000Z',
     area: {
-      id: 1,
+      id: '1',
       name: 'Taman Bungkul',
     },
   },
@@ -71,14 +71,14 @@ const mockUser2: ActiveUserData = {
 };
 
 const mockUser3: ActiveUserData = {
-  id: 3,
+  id: '3',
   username: 'worker3',
   full_name: 'Worker Three',
   shift: {
-    id: 103,
+    id: '103',
     clock_in_time: '2026-01-17T08:00:00.000Z',
     area: {
-      id: 1,
+      id: '1',
       name: 'Taman Bungkul',
     },
   },
@@ -90,14 +90,14 @@ const mockUser3: ActiveUserData = {
 };
 
 const mockUserNoLocation: ActiveUserData = {
-  id: 4,
+  id: '4',
   username: 'worker4',
   full_name: 'Worker Four',
   shift: {
-    id: 104,
+    id: '104',
     clock_in_time: '2026-01-17T08:00:00.000Z',
     area: {
-      id: 1,
+      id: '1',
       name: 'Taman Bungkul',
     },
   },
@@ -161,7 +161,7 @@ describe('mapUtils', () => {
       const closeWorker1 = mockUser1;
       const closeWorker2 = {
         ...mockUser1,
-        id: 5,
+        id: '5',
         latest_location: {
           gps_lat: -7.29051, // Very close to mockUser1
           gps_lng: 112.73981,
@@ -180,7 +180,7 @@ describe('mapUtils', () => {
   describe('filterUsersByArea', () => {
     it('should return all workers when areaId is null', () => {
       const workers = [mockUser1, mockUser2, mockUser3];
-      const filtered = filterUsersByArea(workers, null);
+      const filtered = filterUsersByArea(workers, null as any as string);
 
       expect(filtered).toHaveLength(3);
       expect(filtered).toEqual(workers);
@@ -189,10 +189,10 @@ describe('mapUtils', () => {
     it('should filter workers by specific area', () => {
       const worker2DifferentArea = {
         ...mockUser2,
-        shift: { ...mockUser2.shift, area: { id: 2, name: 'Other Area' } },
+        shift: { ...mockUser2.shift, area: { id: '2', name: 'Other Area' } },
       };
       const workers = [mockUser1, worker2DifferentArea, mockUser3];
-      const filtered = filterUsersByArea(workers, 1);
+      const filtered = filterUsersByArea(workers, '1');
 
       expect(filtered).toHaveLength(2);
       expect(filtered).toEqual([mockUser1, mockUser3]);
@@ -200,14 +200,14 @@ describe('mapUtils', () => {
 
     it('should return empty array when no workers match area', () => {
       const workers = [mockUser1, mockUser2, mockUser3];
-      const filtered = filterUsersByArea(workers, 999);
+      const filtered = filterUsersByArea(workers, '999');
 
       expect(filtered).toHaveLength(0);
     });
 
     it('should handle empty worker list', () => {
       const workers: ActiveUserData[] = [];
-      const filtered = filterUsersByArea(workers, 1);
+      const filtered = filterUsersByArea(workers, '1');
 
       expect(filtered).toHaveLength(0);
     });
@@ -216,9 +216,9 @@ describe('mapUtils', () => {
   describe('getAreaCircles', () => {
     const fullAreas: Area[] = [
       {
-        id: 1,
+        id: '1',
         name: 'Taman Bungkul',
-        area_type_id: 1,
+        area_type_id: '1',
         gps_lat: -7.2905,
         gps_lng: 112.7398,
         radius_meters: 100,
@@ -227,9 +227,9 @@ describe('mapUtils', () => {
         updated_at: '2026-01-01T00:00:00.000Z',
       },
       {
-        id: 2,
+        id: '2',
         name: 'Taman Jayengrono',
-        area_type_id: 1,
+        area_type_id: '1',
         gps_lat: -7.2575,
         gps_lng: 112.7521,
         radius_meters: 150,
@@ -392,7 +392,7 @@ describe('mapUtils', () => {
     it('should create single cluster for nearby workers', () => {
       const nearbyWorker: ActiveUserData = {
         ...mockUser1,
-        id: 5,
+        id: '5',
         latest_location: {
           gps_lat: -7.29051, // Very close
           gps_lng: 112.73981,
@@ -410,7 +410,7 @@ describe('mapUtils', () => {
     it('should create separate clusters for far apart workers', () => {
       const farWorker: ActiveUserData = {
         ...mockUser1,
-        id: 6,
+        id: '6',
         latest_location: {
           gps_lat: -7.25, // Far from mockUser1
           gps_lng: 112.75,
@@ -426,7 +426,7 @@ describe('mapUtils', () => {
     it('should calculate cluster center as average of worker positions', () => {
       const worker2Nearby: ActiveUserData = {
         ...mockUser1,
-        id: 7,
+        id: '7',
         latest_location: {
           gps_lat: -7.2906,
           gps_lng: 112.7399,
@@ -495,7 +495,7 @@ describe('mapUtils', () => {
     it('should handle large number of workers', () => {
       const manyWorkers: ActiveUserData[] = Array.from({ length: 100 }, (_, i) => ({
         ...mockUser1,
-        id: i,
+        id: String(i),
         latest_location: {
           gps_lat: -7.29 + (i * 0.001),
           gps_lng: 112.74 + (i * 0.001),
@@ -624,7 +624,7 @@ describe('mapUtils', () => {
       // Test with typical dataset of 50 workers
       const workers: ActiveUserData[] = Array.from({ length: 50 }, (_, i) => ({
         ...mockUser1,
-        id: i,
+        id: String(i),
         latest_location: {
           gps_lat: -7.29 + (i * 0.001),
           gps_lng: 112.74 + (i * 0.001),

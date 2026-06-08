@@ -31,7 +31,7 @@ export function CountdownTimer({
   color = 'yellow',
   fontSize = 40,
   accessibilityLabel,
-}: CountdownTimerProps): JSX.Element {
+}: CountdownTimerProps): React.ReactElement {
   const [timer, setTimer] = useState('00:00:00');
 
   useEffect(() => {

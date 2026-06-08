@@ -36,7 +36,7 @@ const THUMBNAIL_SIZE = 100;
  * Photo Gallery Component
  * Horizontal scrollable gallery with tap to fullscreen
  */
-export function PhotoGallery({ photos, testID }: PhotoGalleryProps): JSX.Element {
+export function PhotoGallery({ photos, testID }: PhotoGalleryProps): React.ReactElement {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(false);

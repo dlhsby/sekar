@@ -511,7 +511,7 @@ export function OvertimeDetailScreen(): React.JSX.Element {
                     >
                       <Image
                         source={{ uri: url }}
-                        style={styles.photo}
+                        style={styles.photo as any}
                         resizeMode="cover"
                       />
                     </TouchableOpacity>
@@ -545,7 +545,7 @@ export function OvertimeDetailScreen(): React.JSX.Element {
                       >
                         <Image
                           source={{ uri: overtime.shift.clock_in_photo_url }}
-                          style={styles.photo}
+                          style={styles.photo as any}
                           resizeMode="cover"
                         />
                       </TouchableOpacity>
@@ -561,7 +561,7 @@ export function OvertimeDetailScreen(): React.JSX.Element {
                       >
                         <Image
                           source={{ uri: overtime.shift.clock_out_photo_url }}
-                          style={styles.photo}
+                          style={styles.photo as any}
                           resizeMode="cover"
                         />
                       </TouchableOpacity>

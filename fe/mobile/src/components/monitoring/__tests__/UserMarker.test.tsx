@@ -222,42 +222,42 @@ describe('UserMarker', () => {
   describe('status colors', () => {
     it('should render for active status', () => {
       const user = createMockUser({ status: 'active' });
-      const { UNSAFE_getAllByType } = render(
+      const { getByTestId } = render(
         <UserMarker user={user} onPress={mockOnPress} labelMode="none" />
       );
-      expect(UNSAFE_getAllByType('View').length).toBeGreaterThan(0);
+      expect(getByTestId('marker')).toBeTruthy();
     });
 
     it('should render for inactive status', () => {
       const user = createMockUser({ status: 'inactive' });
-      const { UNSAFE_getAllByType } = render(
+      const { getByTestId } = render(
         <UserMarker user={user} onPress={mockOnPress} labelMode="none" />
       );
-      expect(UNSAFE_getAllByType('View').length).toBeGreaterThan(0);
+      expect(getByTestId('marker')).toBeTruthy();
     });
 
     it('should render for outside_area status', () => {
       const user = createMockUser({ status: 'outside_area' });
-      const { UNSAFE_getAllByType } = render(
+      const { getByTestId } = render(
         <UserMarker user={user} onPress={mockOnPress} labelMode="none" />
       );
-      expect(UNSAFE_getAllByType('View').length).toBeGreaterThan(0);
+      expect(getByTestId('marker')).toBeTruthy();
     });
 
     it('should render for missing status', () => {
       const user = createMockUser({ status: 'missing' });
-      const { UNSAFE_getAllByType } = render(
+      const { getByTestId } = render(
         <UserMarker user={user} onPress={mockOnPress} labelMode="none" />
       );
-      expect(UNSAFE_getAllByType('View').length).toBeGreaterThan(0);
+      expect(getByTestId('marker')).toBeTruthy();
     });
 
     it('should render for offline status', () => {
       const user = createMockUser({ status: 'offline' });
-      const { UNSAFE_getAllByType } = render(
+      const { getByTestId } = render(
         <UserMarker user={user} onPress={mockOnPress} labelMode="none" />
       );
-      expect(UNSAFE_getAllByType('View').length).toBeGreaterThan(0);
+      expect(getByTestId('marker')).toBeTruthy();
     });
   });
 

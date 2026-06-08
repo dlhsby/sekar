@@ -46,11 +46,11 @@ const initialState: PlantSeedsState = {
 export const fetchSeeds = createAsyncThunk(
   'plantSeeds/fetchSeeds',
   async (
-    filters?: {
+    filters: {
       search?: string;
       page?: number;
       limit?: number;
-    },
+    } | undefined,
     { rejectWithValue },
   ) => {
     try {
@@ -264,6 +264,9 @@ const plantSeedsSlice = createSlice({
       .addCase(fetchSeedById.fulfilled, (state, action) => {
         state.isLoading = false;
         const seed = action.payload;
+        if (!seed) {
+          return;
+        }
         state.byId[seed.id] = seed;
         // Update in seeds list if it exists
         const index = state.seeds.findIndex((s) => s.id === seed.id);
@@ -289,6 +292,9 @@ const plantSeedsSlice = createSlice({
       .addCase(createSeed.fulfilled, (state, action) => {
         state.isLoading = false;
         const seed = action.payload;
+        if (!seed) {
+          return;
+        }
         state.seeds.unshift(seed); // Prepend new seed
         state.byId[seed.id] = seed;
         state.seedsTotal += 1;
@@ -310,7 +316,11 @@ const plantSeedsSlice = createSlice({
       })
       .addCase(recordTransaction.fulfilled, (state, action) => {
         state.isRecording = false;
-        const { seed, transaction } = action.payload;
+        const payload = action.payload;
+        if (!payload) {
+          return;
+        }
+        const { seed, transaction } = payload;
         // Update seed in state
         state.byId[seed.id] = seed;
         const seedIndex = state.seeds.findIndex((s) => s.id === seed.id);

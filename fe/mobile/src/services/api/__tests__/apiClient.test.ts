@@ -30,10 +30,12 @@ describe('API Client', () => {
 
     // Restore Alert mock after clearAllMocks (which clears it)
     const RN = require('react-native');
-    if (global.__ALERT_MOCK__ && global.__PROMPT_MOCK__) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- global test fixtures from jest.setup.js
+    const globalAny = global as any;
+    if (globalAny.__ALERT_MOCK__ && globalAny.__PROMPT_MOCK__) {
       RN.Alert = {
-        alert: global.__ALERT_MOCK__,
-        prompt: global.__PROMPT_MOCK__,
+        alert: globalAny.__ALERT_MOCK__,
+        prompt: globalAny.__PROMPT_MOCK__,
       };
     }
 
@@ -236,8 +238,11 @@ describe('API Client', () => {
 
       // Programmatic error handling by code
       if (apiError.code === ApiErrorCode.SHIFT_GPS_OUT_OF_BOUNDS) {
-        expect(apiError.details.distance).toBe(150);
-        expect(apiError.details.maxDistance).toBe(100);
+        const details = apiError.details as unknown;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- details is from API response
+        expect((details as any).distance).toBe(150);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- details is from API response
+        expect((details as any).maxDistance).toBe(100);
       } else {
         fail('Expected SHIFT_GPS_OUT_OF_BOUNDS error code');
       }

@@ -282,20 +282,27 @@ describe('GPS Utils', () => {
   describe('isWithinAreaBoundary', () => {
     it('should use polygon when boundary_polygon exists', () => {
       const area = {
-        boundary_polygon: [
-          [112.739, -7.291],
-          [112.741, -7.291],
-          [112.741, -7.289],
-          [112.739, -7.289],
-        ] as [number, number][],
+        boundary_polygon: {
+          type: 'Polygon' as const,
+          coordinates: [
+            [
+              [112.739, -7.291],
+              [112.741, -7.291],
+              [112.741, -7.289],
+              [112.739, -7.289],
+            ],
+          ],
+        },
         gps_lat: -7.2905,
         gps_lng: 112.7398,
         radius_meters: 100,
       };
       // Inside polygon
-      expect(gpsUtils.isWithinAreaBoundary(-7.2905, 112.7398, area)).toBe(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture polygon structure
+      expect(gpsUtils.isWithinAreaBoundary(-7.2905, 112.7398, area as any)).toBe(true);
       // Outside polygon
-      expect(gpsUtils.isWithinAreaBoundary(-7.285, 112.7398, area)).toBe(false);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture polygon structure
+      expect(gpsUtils.isWithinAreaBoundary(-7.285, 112.7398, area as any)).toBe(false);
     });
 
     it('should fallback to radius when no polygon', () => {
@@ -316,9 +323,18 @@ describe('GPS Utils', () => {
 
     it('should return true when polygon has fewer than 3 points', () => {
       const area = {
-        boundary_polygon: [[112.739, -7.291], [112.741, -7.291]] as [number, number][],
+        boundary_polygon: {
+          type: 'Polygon' as const,
+          coordinates: [
+            [
+              [112.739, -7.291],
+              [112.741, -7.291],
+            ],
+          ],
+        },
       };
-      expect(gpsUtils.isWithinAreaBoundary(-7.2905, 112.7398, area)).toBe(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture polygon structure
+      expect(gpsUtils.isWithinAreaBoundary(-7.2905, 112.7398, area as any)).toBe(true);
     });
 
     it('should return true when radius is 0 or null', () => {

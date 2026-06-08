@@ -43,9 +43,11 @@ const liveUser = (over: Record<string, unknown>) => ({
 });
 
 const renderScreen = () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test preloadedState
   const store = configureStore({
     reducer: { auth: authReducer, monitoring: monitoringReducer },
     preloadedState: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test preloadedState
       auth: {
         user: { id: 't1', username: 'mgmt', full_name: 'Bu Kepala', role: 'top_management' },
         assignedArea: null,
@@ -53,9 +55,32 @@ const renderScreen = () => {
         isLoading: false,
         isRestoring: false,
         error: null,
+        onboardingCompleted: false,
+        token: null,
+      } as any,
+      monitoring: {
+        liveUsers: [],
+        cityStats: null,
+        rayonStats: {},
+        areaStats: {},
+        filters: { statuses: [] },
+        selectedUser: null,
+        userDaySummary: null,
+        locationHistory: null,
+        staffingSummary: [],
+        boundaries: null,
+        isLoadingBoundaries: false,
+        currentDayType: null,
+        currentDayTypeLabel: null,
+        statusCounts: { active: 0, inactive: 0, outside_area: 0, missing: 0, offline: 0 },
+        isLoading: false,
+        isLoadingDaySummary: false,
+        isLoadingLocationHistory: false,
+        isLoadingStaffing: false,
+        error: null,
       },
     } as any,
-  });
+  } as any);
   return render(
     <Provider store={store}>
       <NavigationContainer>

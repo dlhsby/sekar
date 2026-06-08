@@ -13,16 +13,19 @@ jest.mock('@react-navigation/native', () => ({
 const makeStore = (name = 'Budi Santoso') =>
   configureStore({
     reducer: { auth: authReducer },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test preloadedState
     preloadedState: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test preloadedState
       auth: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         user: { id: 'u-1', role: 'satgas', full_name: name } as any,
+        assignedArea: null,
         isAuthenticated: true,
         isLoading: false,
         isRestoring: false,
         error: null,
         onboardingCompleted: false,
-      },
+        token: null,
+      } as any,
     },
   });
 

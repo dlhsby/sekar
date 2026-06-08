@@ -72,8 +72,8 @@ export const NBTextInput = forwardRef<TextInput, NBTextInputProps>(
       inputStyle,
       labelStyle,
       testID,
-      onFocus,
-      onBlur,
+      onFocus: onFocusProp,
+      onBlur: onBlurProp,
       editable = true,
       ...textInputProps
     },
@@ -81,20 +81,22 @@ export const NBTextInput = forwardRef<TextInput, NBTextInputProps>(
   ) => {
     const [isFocused, setIsFocused] = useState(false);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- event type compatibility
     const handleFocus = useCallback(
-      (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+      (e: any) => {
         setIsFocused(true);
-        onFocus?.(e);
+        onFocusProp?.(e);
       },
-      [onFocus],
+      [onFocusProp],
     );
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- event type compatibility
     const handleBlur = useCallback(
-      (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+      (e: any) => {
         setIsFocused(false);
-        onBlur?.(e);
+        onBlurProp?.(e);
       },
-      [onBlur],
+      [onBlurProp],
     );
 
     // Determine border color based on state
@@ -139,7 +141,7 @@ export const NBTextInput = forwardRef<TextInput, NBTextInputProps>(
         )}
         <TextInput
           ref={ref}
-          {...textInputProps}
+          {...(textInputProps as Omit<typeof textInputProps, 'onFocus' | 'onBlur'>)}
           editable={editable}
           onFocus={handleFocus}
           onBlur={handleBlur}

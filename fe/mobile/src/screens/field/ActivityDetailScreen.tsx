@@ -326,7 +326,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
                     <Image
                       key={index}
                       source={{ uri: url }}
-                      style={styles.photo}
+                      style={styles.photo as any}
                       resizeMode="cover"
                     />
                   ))}
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
     paddingBottom: nbSpacing.md,
   },
   contentContainerWithReject: {
-    paddingBottom: nbSpacing['4xl'],
+    paddingBottom: nbSpacing['3xl'],
   },
   card: {
     marginHorizontal: nbSpacing.md,

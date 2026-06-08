@@ -41,11 +41,12 @@ const mockRemoveItem = EncryptedStorage.removeItem as jest.MockedFunction<typeof
 
 const createTestStore = () =>
   configureStore({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture type inference mismatch
     reducer: {
-      auth: authReducer,
-      shift: shiftReducer,
-      activities: activitiesReducer,
-      offline: offlineReducer,
+      auth: authReducer as any,
+      shift: shiftReducer as any,
+      activities: activitiesReducer as any,
+      offline: offlineReducer as any,
     },
     preloadedState: {
       auth: {
@@ -55,7 +56,7 @@ const createTestStore = () =>
         loading: false,
         error: null,
         assignedArea: null,
-      },
+      } as any,
       shift: {
         currentShift: null,
         shifts: [],
@@ -96,7 +97,8 @@ describe('useProfileLogout', () => {
     });
     mockClearQueueForCurrentUser.mockResolvedValue(undefined);
     mockClearOrphanedItems.mockResolvedValue(undefined);
-    mockRemoveItem.mockResolvedValue();
+    // Mock EncryptedStorage.removeItem to resolve
+    (EncryptedStorage.removeItem as any).mockResolvedValue(undefined);
   });
 
   describe('return values', () => {

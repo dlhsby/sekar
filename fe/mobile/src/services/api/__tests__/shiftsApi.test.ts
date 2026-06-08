@@ -259,48 +259,44 @@ describe('shiftsApi', () => {
     it('should enforce correct return types', async () => {
       const mockResponse = {
         data: {
-          shift_id: 1,
-          message: 'Success',
+          shift_id: 'shift-123',
+          clock_in_time: '2026-06-09T10:00:00Z',
         },
-        error: null,
       };
 
       (apiClient.post as jest.Mock).mockResolvedValue(mockResponse);
 
-      const result = await clockIn(mockAreaId, -7.250445, 112.768845, mockBase64);
+      const result = await clockIn(-7.250445, 112.768845, mockBase64, mockAreaId);
 
       // Should have ApiResponse structure
       expect(result).toHaveProperty('data');
-      expect(result).toHaveProperty('error');
 
       // Data should match ClockInResponse type
       if (result.data) {
         expect(result.data).toHaveProperty('shift_id');
-        expect(typeof result.data.shift_id).toBe('number');
+        expect(typeof result.data.shift_id).toBe('string');
       }
     });
 
     it('should handle both success and error response types', async () => {
       // Success response
       const successResponse = {
-        data: { shift_id: 1, message: 'Success' },
-        error: null,
+        data: { shift_id: 'shift-123', clock_in_time: '2026-06-09T10:00:00Z' },
       };
 
       (apiClient.post as jest.Mock).mockResolvedValue(successResponse);
       const successResult = await clockIn(-7.250445, 112.768845, mockBase64, mockAreaId);
       expect(successResult.data).toBeTruthy();
-      expect(successResult.error).toBeNull();
 
       // Error response
       const errorResponse = {
-        data: null,
         error: 'Error message',
+        code: 'ERROR',
       };
 
       (apiClient.post as jest.Mock).mockResolvedValue(errorResponse);
       const errorResult = await clockIn(-7.250445, 112.768845, mockBase64);
-      expect(errorResult.data).toBeNull();
+      expect(errorResult.data).toBeUndefined();
       expect(errorResult.error).toBeTruthy();
     });
   });

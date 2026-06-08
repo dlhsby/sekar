@@ -309,7 +309,6 @@ export function AssignToTaskSheet({
               options={roleOptions}
               placeholder="Pilih jabatan"
               searchable
-              testID="convert-role-select"
             />
           </View>
           <View style={styles.field}>
@@ -326,7 +325,6 @@ export function AssignToTaskSheet({
                   : 'Pilih pengguna'
               }
               searchable
-              testID="convert-assignee-select"
             />
           </View>
 

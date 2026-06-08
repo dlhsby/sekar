@@ -347,10 +347,10 @@ describe('offlineQueue', () => {
       ];
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify(items));
 
-      const userItems = await getQueueForUser(1);
+      const userItems = await getQueueForUser(1 as unknown as string);
 
       expect(userItems).toHaveLength(2);
-      expect(userItems.every(item => item.user_id === 1)).toBe(true);
+      expect(userItems.every(item => (item.user_id as unknown as number) === 1)).toBe(true);
     });
   });
 
@@ -364,7 +364,7 @@ describe('offlineQueue', () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify(items));
       (AsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
 
-      await clearQueueForUser(1);
+      await clearQueueForUser(1 as unknown as string);
 
       const savedData = JSON.parse((AsyncStorage.setItem as jest.Mock).mock.calls[0][1]);
       expect(savedData).toHaveLength(1);

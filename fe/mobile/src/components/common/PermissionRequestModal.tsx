@@ -120,7 +120,7 @@ export function PermissionRequestModal({
   visible,
   onComplete,
   onSkip,
-}: PermissionRequestModalProps): JSX.Element {
+}: PermissionRequestModalProps): React.ReactElement {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isRequesting, setIsRequesting] = useState(false);
   const [stepResults, setStepResults] = useState<PermissionResult[]>([]);

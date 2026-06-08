@@ -51,19 +51,17 @@ describe('UserInfoCard', () => {
   });
 
   describe('rendering', () => {
-    it('should render empty view when user is null', () => {
-      // Arrange & Act
-      const { UNSAFE_queryByType } = render(
-        <UserInfoCard
-          user={null}
-          visible={true}
-          onClose={mockOnClose}
-        />
-      );
-
-      // Assert
-      const views = UNSAFE_queryByType('View');
-      expect(views).toBeTruthy();
+    it('should render component when user is null', () => {
+      // Arrange & Act - should not crash
+      expect(() =>
+        render(
+          <UserInfoCard
+            user={null}
+            visible={true}
+            onClose={mockOnClose}
+          />
+        )
+      ).not.toThrow();
     });
 
     it('should render card with user information when visible', () => {
@@ -593,9 +591,15 @@ describe('UserInfoCard', () => {
         />
       );
 
-      // Assert - should contain multiple View components including handle
-      const views = UNSAFE_getAllByType('View');
-      expect(views.length).toBeGreaterThan(0);
+      // Assert - should render the card
+      const { getByTestId } = render(
+        <UserInfoCard
+          user={user}
+          visible={true}
+          onClose={mockOnClose}
+        />
+      );
+      expect(getByTestId('overlay')).toBeTruthy();
     });
 
     it('should render info rows in correct order', () => {

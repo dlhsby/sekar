@@ -426,7 +426,6 @@ describe('NBEmptyState', () => {
       const { getByTestId, queryByTestId } = render(
         <NBEmptyState
           variant="noData"
-          // @ts-expect-error — intentionally invalid key
           illustration="illo-nope"
           title="Bad key"
           testID="bad-state"

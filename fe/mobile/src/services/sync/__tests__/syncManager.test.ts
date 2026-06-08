@@ -263,7 +263,7 @@ describe('syncManager', () => {
 
       await syncManager.processQueue();
 
-      expect(shiftsApi.clockIn).toHaveBeenCalledWith(1, -7.25, 112.75, 'base64');
+      expect(shiftsApi.clockIn).toHaveBeenCalledWith(-7.25, 112.75, 'base64', '1');
       expect(offlineQueue.updateQueueItem).toHaveBeenCalledWith('1', { status: 'success' });
       expect(offlineQueue.removeFromQueue).toHaveBeenCalledWith('1');
     });

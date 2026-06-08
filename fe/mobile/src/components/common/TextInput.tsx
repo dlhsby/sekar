@@ -33,7 +33,7 @@ export function TextInput({
   onFocus,
   onBlur,
   ...props
-}: CustomTextInputProps): JSX.Element {
+}: CustomTextInputProps): React.ReactElement {
   const [isFocused, setIsFocused] = useState(false);
 
   const handleFocus = (e: any) => {

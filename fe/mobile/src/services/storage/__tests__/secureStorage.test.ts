@@ -141,7 +141,7 @@ describe('secureStorage', () => {
 
   describe('setUser', () => {
     const mockUser = {
-      id: 1,
+      id: 'user-1',
       username: 'worker1',
       full_name: 'Test Worker',
       role: 'satgas' as const,

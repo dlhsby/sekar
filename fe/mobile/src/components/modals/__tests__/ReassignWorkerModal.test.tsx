@@ -48,8 +48,17 @@ function buildLiveUser(overrides?: Partial<LiveUser>): LiveUser {
     longitude: 112.75,
     accuracy: 10,
     battery_level: 80,
+    last_update: new Date().toISOString(),
+    is_within_area: true,
+    outside_boundary: false,
+    shift_id: 'shift-1',
+    shift_name: 'Shift Pagi',
+    shift_definition_id: 'def-1',
+    current_task_status: null,
+    current_task_title: null,
     ...overrides,
-  };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture
+  } as any;
 }
 
 const workerA = buildLiveUser({ id: 'user-1', full_name: 'Ahmad Satgas', area_id: 'area-source' });

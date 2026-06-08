@@ -132,12 +132,14 @@ describe('locationApi', () => {
           longitude: 112.75,
           accuracy: 10,
           timestamp: '2026-01-19T10:00:00Z',
+          shift_id: 'shift-123',
         },
         {
           latitude: -7.251,
           longitude: 112.751,
           accuracy: 12,
           timestamp: '2026-01-19T10:05:00Z',
+          shift_id: 'shift-123',
         },
       ];
 
@@ -169,7 +171,9 @@ describe('locationApi', () => {
         {
           latitude: -7.25,
           longitude: 112.75,
+          accuracy: 0,
           timestamp: '2026-01-19T10:00:00Z',
+          shift_id: 'shift-123',
         },
       ];
 
@@ -179,7 +183,7 @@ describe('locationApi', () => {
         {
           gps_lat: -7.25,
           gps_lng: 112.75,
-          accuracy_meters: undefined,
+          accuracy_meters: 0,
           logged_at: '2026-01-19T10:00:00Z',
         },
       ]);

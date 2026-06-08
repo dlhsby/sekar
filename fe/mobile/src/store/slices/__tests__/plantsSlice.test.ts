@@ -43,8 +43,10 @@ const mockNotablePlant: NotablePlant = {
   speciesId: '1',
   gpsLat: -7.25,
   gpsLng: 112.75,
-  description: 'Large specimen tree',
-  age: 50,
+  label: 'Large specimen tree',
+  heritage: true,
+  photoUrls: ['https://example.com/photo.jpg'],
+  notes: 'Historic tree',
   species: mockPlantSpecies,
   createdAt: '2024-01-01T00:00:00Z',
   updatedAt: '2024-01-01T00:00:00Z',
@@ -241,7 +243,7 @@ describe('plantsSlice', () => {
         isCreating: false,
         error: null,
       },
-    };
+    } as any; // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock state
 
     it('selectSpeciesCatalog returns catalog array', () => {
       const result = selectSpeciesCatalog(mockState);

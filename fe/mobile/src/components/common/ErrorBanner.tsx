@@ -40,7 +40,7 @@ export function ErrorBanner({
   actionText,
   onAction,
   style,
-}: ErrorBannerProps): JSX.Element {
+}: ErrorBannerProps): React.ReactElement {
   const isWarning = variant === 'warning';
   const containerStyle = [styles.container, { backgroundColor: VARIANT_BG[variant] }, style];
   const textColor = isWarning ? 'black' : 'white';

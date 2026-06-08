@@ -371,7 +371,7 @@ class FCMService {
     // Foreground message handler
     this.unsubscribeForeground = onMessage(
       this.messaging,
-      async (remoteMessage: RemoteMessage) => {
+      async (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
         console.debug('[FCM] Foreground notification received:', remoteMessage);
 
         const notification = this.convertToNotification(remoteMessage);
@@ -440,7 +440,7 @@ class FCMService {
     // Listen for notification that opened the app from background/quit state
     const unsubscribe = onNotificationOpenedApp(
       this.messaging,
-      async (remoteMessage: RemoteMessage) => {
+      async (remoteMessage: FirebaseMessagingTypes.RemoteMessage) => {
         console.debug('[FCM] Notification opened app:', remoteMessage);
 
         const notification = this.convertToNotification(remoteMessage);
@@ -508,7 +508,7 @@ class FCMService {
    * @param remoteMessage - Firebase remote message
    * @returns Notification object
    */
-  private convertToNotification(remoteMessage: RemoteMessage): Notification {
+  private convertToNotification(remoteMessage: FirebaseMessagingTypes.RemoteMessage | RemoteMessage): Notification {
     const now = new Date().toISOString();
 
     return {
@@ -516,7 +516,7 @@ class FCMService {
       user_id: '', // Will be set by backend when stored
       title: remoteMessage.notification?.title || 'Notifikasi Baru',
       body: remoteMessage.notification?.body || '',
-      type: remoteMessage.data?.type || 'general',
+      type: typeof remoteMessage.data?.type === 'string' ? remoteMessage.data.type : 'general',
       data: remoteMessage.data as Record<string, any> | undefined,
       read: false,
       created_at: remoteMessage.sentTime

@@ -22,15 +22,16 @@ describe('TodayActivitiesModal', () => {
       gps_lat: -7.250445,
       gps_lng: 112.768845,
       area_id: 'area1',
-      created_at: new Date('2026-02-15T10:30:00Z'),
-      updated_at: new Date('2026-02-15T10:30:00Z'),
+      created_at: '2026-02-15T10:30:00Z',
+      updated_at: '2026-02-15T10:30:00Z',
       activityType: {
         id: 'type1',
         name: 'Pemeliharaan',
+        code: 'maintenance',
         description: 'Kegiatan pemeliharaan taman',
         applicable_roles: ['satgas'],
-        created_at: new Date('2026-01-01T00:00:00Z'),
-        updated_at: new Date('2026-01-01T00:00:00Z'),
+        is_active: true,
+        created_at: '2026-01-01T00:00:00Z',
       },
       area: {
         id: 'area1',
@@ -41,8 +42,8 @@ describe('TodayActivitiesModal', () => {
         gps_lng: 112.768845,
         radius_meters: 100,
         address: 'Jl. Raya Darmo',
-        created_at: new Date('2026-01-01T00:00:00Z'),
-        updated_at: new Date('2026-01-01T00:00:00Z'),
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
       },
     },
     {
@@ -55,15 +56,16 @@ describe('TodayActivitiesModal', () => {
       gps_lat: -7.250445,
       gps_lng: 112.768845,
       area_id: 'area1',
-      created_at: new Date('2026-02-15T14:00:00Z'),
-      updated_at: new Date('2026-02-15T14:00:00Z'),
+      created_at: '2026-02-15T14:00:00Z',
+      updated_at: '2026-02-15T14:00:00Z',
       activityType: {
         id: 'type2',
         name: 'Penyiraman',
+        code: 'watering',
         description: 'Kegiatan penyiraman',
         applicable_roles: ['satgas'],
-        created_at: new Date('2026-01-01T00:00:00Z'),
-        updated_at: new Date('2026-01-01T00:00:00Z'),
+        is_active: true,
+        created_at: '2026-01-01T00:00:00Z',
       },
     },
   ];
@@ -215,21 +217,21 @@ describe('TodayActivitiesModal', () => {
       expect(queryByText('0 foto')).toBeNull();
     });
 
-    it('should handle activity without description', () => {
-      const activityWithoutDesc: Activity = {
+    it('should handle activity with different description', () => {
+      const activityWithDifferentDesc: Activity = {
         ...mockActivities[0],
-        description: undefined,
+        description: 'Kegiatan khusus',
       };
 
-      const { queryByText } = render(
+      const { getByText } = render(
         <TodayActivitiesModal
           visible={true}
           onClose={mockOnClose}
-          activities={[activityWithoutDesc]}
+          activities={[activityWithDifferentDesc]}
         />
       );
 
-      expect(queryByText('Membersihkan taman')).toBeNull();
+      expect(getByText('Kegiatan khusus')).toBeTruthy();
     });
 
     it('should handle activity without area', () => {

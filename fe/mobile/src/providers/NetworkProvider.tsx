@@ -21,7 +21,7 @@ interface NetworkProviderProps {
  *
  * @param children - Child components to wrap
  */
-export function NetworkProvider({ children }: NetworkProviderProps): JSX.Element {
+export function NetworkProvider({ children }: NetworkProviderProps): React.ReactElement {
   const dispatch = useAppDispatch();
   const previousOnlineStatus = useRef<boolean | null>(null);
 

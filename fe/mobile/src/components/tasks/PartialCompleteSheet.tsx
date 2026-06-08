@@ -49,7 +49,9 @@ export function PartialCompleteSheet({
   const [resumeTomorrow, setResumeTomorrow] = useState(false);
   const [validationError, setValidationError] = useState('');
 
-  const targetCount = task?.target_plant_count ?? 0;
+  // Note: target_plant_count is not yet in the Task type definition.
+  // This property is expected from pruning tasks but missing from the interface.
+  const targetCount = (task as any)?.target_plant_count ?? 0;
   const completedNum = parseInt(completedCount, 10) || 0;
   const remainingCount = Math.max(0, targetCount - completedNum);
 
@@ -92,9 +94,9 @@ export function PartialCompleteSheet({
       ).unwrap();
 
       NBToast.show({
-        type: 'success',
-        text1: 'BERHASIL',
-        text2: 'Tugas sebagian diselesaikan',
+        level: 'success',
+        title: 'BERHASIL',
+        body: 'Tugas sebagian diselesaikan',
       });
       handleClose();
       onSuccess?.();
@@ -157,15 +159,12 @@ export function PartialCompleteSheet({
           {/* Completed Count Input */}
           <View style={styles.inputSection}>
             <NBCardTextInput
-              label="Jumlah Diselesaikan"
+              title="Jumlah Diselesaikan"
               placeholder="0"
               value={completedCount}
               onChangeText={setCompletedCount}
-              keyboardType="number-pad"
               maxLength={5}
               testID="completed-count-input"
-              accessibilityLabel="Jumlah tanaman yang diselesaikan"
-              accessibilityHint={`Masukkan angka antara 0 dan ${targetCount}`}
             />
           </View>
 
@@ -202,16 +201,13 @@ export function PartialCompleteSheet({
           {/* Notes Input */}
           <View style={styles.inputSection}>
             <NBCardTextInput
-              label="Catatan (Opsional)"
+              title="Catatan (Opsional)"
               placeholder="Masukkan catatan atau kendala..."
               value={notes}
               onChangeText={setNotes}
-              multiline
               numberOfLines={4}
               maxLength={500}
               testID="notes-input"
-              accessibilityLabel="Catatan tambahan"
-              accessibilityHint="Jelaskan kendala atau catatan penting tentang penyelesaian tugas"
             />
           </View>
 

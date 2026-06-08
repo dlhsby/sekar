@@ -6,6 +6,7 @@
 import axios, {
   type AxiosInstance,
   type AxiosRequestConfig,
+  type InternalAxiosRequestConfig,
   type AxiosResponse,
   type AxiosError,
 } from 'axios';
@@ -100,7 +101,7 @@ async function refreshAccessToken(): Promise<string | null> {
  * Request interceptor to add JWT token
  */
 apiClient.interceptors.request.use(
-  async (requestConfig: AxiosRequestConfig) => {
+  async (requestConfig: InternalAxiosRequestConfig) => {
     const token = await getToken();
 
     if (token && requestConfig.headers) {
@@ -151,8 +152,8 @@ apiClient.interceptors.response.use(
       const errorCode = error.response.data?.code || 'UNKNOWN_ERROR';
       // For SHIFT_DURATION_TOO_SHORT, use actual minimumRequired from details (configurable per env)
       let localizedMessage: string;
-      if (errorCode === 'SHIFT_DURATION_TOO_SHORT' && error.response.data?.details?.minimumRequired != null) {
-        const min = error.response.data.details.minimumRequired;
+      if (errorCode === 'SHIFT_DURATION_TOO_SHORT' && (error.response.data?.details as any)?.minimumRequired != null) {
+        const min = (error.response.data.details as any).minimumRequired;
         localizedMessage = `Durasi shift terlalu singkat. Minimal ${min} menit diperlukan sebelum Clock Out.`;
       } else {
         // May 13 — NestJS ValidationPipe returns `message` as a string[]

@@ -100,11 +100,12 @@ import MainNavigator, { TAB_CONFIGS, NB_HEADER_STYLE } from '../MainNavigator';
 // Create test store with configurable role
 const createTestStore = (role: string = 'satgas') => {
   return configureStore({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture type inference mismatch
     reducer: {
-      auth: authReducer,
-      shift: shiftReducer,
-      activities: activitiesReducer,
-      offline: offlineReducer,
+      auth: authReducer as any,
+      shift: shiftReducer as any,
+      activities: activitiesReducer as any,
+      offline: offlineReducer as any,
     },
     preloadedState: {
       auth: {
@@ -119,7 +120,7 @@ const createTestStore = (role: string = 'satgas') => {
         loading: false,
         error: null,
         assignedArea: null,
-      },
+      } as any,
       shift: {
         currentShift: null,
         shiftHistory: [],
@@ -360,11 +361,12 @@ describe('MainNavigator', () => {
 
     it('should fallback to satgas tabs when user is null', () => {
       const store = configureStore({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture type inference mismatch
         reducer: {
-          auth: authReducer,
-          shift: shiftReducer,
-          activities: activitiesReducer,
-          offline: offlineReducer,
+          auth: authReducer as any,
+          shift: shiftReducer as any,
+          activities: activitiesReducer as any,
+          offline: offlineReducer as any,
         },
         preloadedState: {
           auth: {
@@ -374,7 +376,7 @@ describe('MainNavigator', () => {
             loading: false,
             error: null,
             assignedArea: null,
-          },
+          } as any,
           shift: {
             currentShift: null,
             shiftHistory: [],

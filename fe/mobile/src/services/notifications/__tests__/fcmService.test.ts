@@ -81,14 +81,16 @@ jest.mock('@notifee/react-native', () => ({
 }));
 
 import fcmService, { NotificationPermission } from '../fcmService';
-import { getMessaging, FirebaseMessagingTypes } from '@react-native-firebase/messaging';
+import { getMessaging } from '@react-native-firebase/messaging';
 import { registerDevice, unregisterDevice } from '../../api/notificationsApi';
 
 // Get reference to the mock
 const mockGetMessaging = getMessaging as jest.MockedFunction<typeof getMessaging>;
 
-// AuthorizationStatus shorthand for test readability
-const AuthorizationStatus = FirebaseMessagingTypes.AuthorizationStatus;
+// Get the mock FirebaseMessagingTypes from the mock
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing mock object
+const mockFirebaseModule = jest.requireMock('@react-native-firebase/messaging') as any;
+const AuthorizationStatus = mockFirebaseModule.FirebaseMessagingTypes.AuthorizationStatus;
 
 describe('FCMService', () => {
   let store: ReturnType<typeof configureStore>;

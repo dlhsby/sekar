@@ -7,12 +7,12 @@
 import { get, post, put, del } from './apiClient';
 import type { ApiResponse } from '../../types/api.types';
 import type {
-  Notification,
   RegisterDeviceRequest,
   NotificationsFilter,
   NotificationsListResponse,
   BroadcastNotificationRequest,
 } from '../../types/api.types';
+import type { Notification } from '../../types/models.types';
 
 /**
  * Register device for push notifications

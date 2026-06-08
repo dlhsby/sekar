@@ -19,7 +19,7 @@ export function LoadingSpinner({
   style,
   fullScreen = false,
   message,
-}: LoadingSpinnerProps): JSX.Element {
+}: LoadingSpinnerProps): React.ReactElement {
   if (fullScreen) {
     return (
       <View style={styles.fullScreenContainer} testID="loading-container">

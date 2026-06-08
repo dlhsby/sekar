@@ -55,11 +55,11 @@ describe('syncManager - Error Scenarios', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          user_id: 1,
+          user_id: 'user-1',
         },
       ]);
 
-      mockShiftsApi.clockIn.mockResolvedValue({ data: { id: 's1' } });
+      mockShiftsApi.clockIn.mockResolvedValue({ data: { shift_id: 's1', clock_in_time: '2026-06-09T10:00:00Z' } });
       mockOfflineQueue.removeFromQueue.mockRejectedValue(new Error('Remove failed'));
       mockOfflineQueue.updateQueueItem.mockResolvedValue(undefined);
 
@@ -82,13 +82,14 @@ describe('syncManager - Error Scenarios', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          user_id: 1,
+          user_id: 'user-1',
         },
       ]);
 
       mockShiftsApi.clockIn.mockResolvedValue({
-        success: false,
-        error: { status: 500, code: 'SERVER_ERROR', message: 'Error' },
+        error: 'Server error',
+        code: 'SERVER_ERROR',
+        message: 'Error',
       });
 
       mockOfflineQueue.updateQueueItem.mockRejectedValue(new Error('Update failed'));

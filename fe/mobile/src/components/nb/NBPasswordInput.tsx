@@ -78,8 +78,8 @@ export const NBPasswordInput = forwardRef<TextInput, NBPasswordInputProps>(
       inputStyle,
       labelStyle,
       testID,
-      onFocus,
-      onBlur,
+      onFocus: onFocusProp,
+      onBlur: onBlurProp,
       editable = true,
       showPasswordLabel = 'Tampilkan password',
       hidePasswordLabel = 'Sembunyikan password',
@@ -90,20 +90,22 @@ export const NBPasswordInput = forwardRef<TextInput, NBPasswordInputProps>(
     const [isFocused, setIsFocused] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- event type compatibility
     const handleFocus = useCallback(
-      (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+      (e: any) => {
         setIsFocused(true);
-        onFocus?.(e);
+        onFocusProp?.(e);
       },
-      [onFocus],
+      [onFocusProp],
     );
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- event type compatibility
     const handleBlur = useCallback(
-      (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
+      (e: any) => {
         setIsFocused(false);
-        onBlur?.(e);
+        onBlurProp?.(e);
       },
-      [onBlur],
+      [onBlurProp],
     );
 
     const togglePasswordVisibility = useCallback(() => {
@@ -164,7 +166,7 @@ export const NBPasswordInput = forwardRef<TextInput, NBPasswordInputProps>(
         >
           <TextInput
             ref={ref}
-            {...textInputProps}
+            {...(textInputProps as Omit<typeof textInputProps, 'onFocus' | 'onBlur'>)}
             editable={editable}
             secureTextEntry={!showPassword}
             onFocus={handleFocus}

@@ -27,15 +27,11 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
 
     // Default: user is logged in
     mockSecureStorage.getUser.mockResolvedValue({
-      id: 1,
+      id: 'user-1',
       username: 'test-user',
       full_name: 'Test User',
       role: 'satgas',
-      area_id: 1,
-      rayon_id: 1,
-      is_active: true,
-      created_at: '2026-01-01T00:00:00Z',
-      updated_at: '2026-01-01T00:00:00Z',
+      rayon_id: 'rayon-1',
     });
   });
 
@@ -65,7 +61,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          user_id: 1,
+          user_id: 'user-1',
         },
       ];
 
@@ -86,7 +82,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
     it('should handle getQueueForUser with storage error', async () => {
       mockAsyncStorage.getItem.mockRejectedValue(new Error('Storage error'));
 
-      const items = await offlineQueue.getQueueForUser(1);
+      const items = await offlineQueue.getQueueForUser('1');
 
       expect(items).toEqual([]);
     });
@@ -156,7 +152,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
       mockAsyncStorage.getItem.mockResolvedValue('[]');
       mockAsyncStorage.setItem.mockRejectedValue(new Error('Storage error'));
 
-      await expect(offlineQueue.clearQueueForUser(1)).rejects.toThrow('Storage error');
+      await expect(offlineQueue.clearQueueForUser('1')).rejects.toThrow('Storage error');
     });
 
     it('should handle clearQueueForCurrentUser with no user', async () => {
@@ -250,7 +246,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending' as const,
-          user_id: 1,
+          user_id: 'user-1',
         }] : [];
         callCount++;
         return JSON.stringify(existing);
@@ -258,7 +254,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
 
       const promises = [
         offlineQueue.addToQueue('clock-in', { data: 1 }),
-        offlineQueue.addToQueue('report', { data: 2 }),
+        offlineQueue.addToQueue('activity', { data: 2 }),
         offlineQueue.addToQueue('location', { data: 3 }),
       ];
 
@@ -278,7 +274,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          user_id: 1,
+          user_id: 'user-1',
         },
         {
           id: 'item-2',
@@ -287,7 +283,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          user_id: 1,
+          user_id: 'user-1',
         },
       ];
 
@@ -312,7 +308,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          user_id: 1,
+          user_id: 'user-1',
         },
         {
           id: 'item-2',
@@ -321,7 +317,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          user_id: 1,
+          user_id: 'user-1',
         },
       ];
 
@@ -377,7 +373,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          user_id: 1,
+          user_id: 'user-1',
         },
         {
           id: 'item-2',
@@ -386,7 +382,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          user_id: 2,
+          user_id: 'user-2',
         },
         {
           id: 'item-3',
@@ -395,21 +391,17 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          user_id: 1,
+          user_id: 'user-1',
         },
       ];
 
       mockAsyncStorage.getItem.mockResolvedValue(JSON.stringify(items));
       mockSecureStorage.getUser.mockResolvedValue({
-        id: 1,
+        id: 'user-1',
         username: 'user1',
         full_name: 'User 1',
         role: 'satgas',
-        area_id: 1,
-        rayon_id: 1,
-        is_active: true,
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
+        rayon_id: 'rayon-1',
       });
 
       const count = await offlineQueue.getPendingCount();
@@ -426,7 +418,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 3,
           status: 'failed',
-          user_id: 1,
+          user_id: 'user-1',
         },
         {
           id: 'item-2',
@@ -435,21 +427,17 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 3,
           status: 'failed',
-          user_id: 2,
+          user_id: 'user-2',
         },
       ];
 
       mockAsyncStorage.getItem.mockResolvedValue(JSON.stringify(items));
       mockSecureStorage.getUser.mockResolvedValue({
-        id: 1,
+        id: 'user-1',
         username: 'user1',
         full_name: 'User 1',
         role: 'satgas',
-        area_id: 1,
-        rayon_id: 1,
-        is_active: true,
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
+        rayon_id: 'rayon-1',
       });
 
       const count = await offlineQueue.getFailedCount();
@@ -466,7 +454,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          user_id: 1, // Current user
+          user_id: 'user-1', // Current user
         },
         {
           id: 'item-2',
@@ -475,7 +463,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          user_id: 2, // Different user - orphaned
+          user_id: 'user-2', // Different user - orphaned
         },
         {
           id: 'item-3',
@@ -490,15 +478,11 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
 
       mockAsyncStorage.getItem.mockResolvedValue(JSON.stringify(items));
       mockSecureStorage.getUser.mockResolvedValue({
-        id: 1,
+        id: 'user-1',
         username: 'user1',
         full_name: 'User 1',
         role: 'satgas',
-        area_id: 1,
-        rayon_id: 1,
-        is_active: true,
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
+        rayon_id: 'rayon-1',
       });
 
       const orphanedItems = await offlineQueue.getOrphanedItems();
@@ -543,7 +527,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          user_id: 1, // Has user - should NOT be migrated
+          user_id: 'user-1', // Has user - should NOT be migrated
         },
       ];
 
@@ -570,7 +554,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          user_id: 1,
+          user_id: 'user-1',
         },
       ];
 
@@ -593,7 +577,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          user_id: 1,
+          user_id: 'user-1',
         },
       ];
 
@@ -624,7 +608,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           retryCount: 2,
           status: 'failed',
           error: 'Network error',
-          user_id: 1,
+          user_id: 'user-1',
         },
         {
           id: 'item-2',
@@ -634,7 +618,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           retryCount: 3,
           status: 'failed',
           error: 'Server error',
-          user_id: 2, // Different user
+          user_id: 'user-2', // Different user
         },
         {
           id: 'item-3',
@@ -643,21 +627,17 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 1,
           status: 'pending', // Not failed
-          user_id: 1,
+          user_id: 'user-1',
         },
       ];
 
       mockAsyncStorage.getItem.mockResolvedValue(JSON.stringify(items));
       mockSecureStorage.getUser.mockResolvedValue({
-        id: 1,
+        id: 'user-1',
         username: 'user1',
         full_name: 'User 1',
         role: 'satgas',
-        area_id: 1,
-        rayon_id: 1,
-        is_active: true,
-        created_at: '2026-01-01T00:00:00Z',
-        updated_at: '2026-01-01T00:00:00Z',
+        rayon_id: 'rayon-1',
       });
 
       const count = await offlineQueue.retryFailedItems();
@@ -680,7 +660,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          user_id: 1,
+          user_id: 'user-1',
         },
       ];
 
@@ -703,7 +683,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          user_id: 1,
+          user_id: 'user-1',
         },
         {
           id: 'item-2',
@@ -712,13 +692,13 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          user_id: 2,
+          user_id: 'user-2',
         },
       ];
 
       mockAsyncStorage.getItem.mockResolvedValue(JSON.stringify(items));
 
-      await offlineQueue.clearQueueForUser(1);
+      await offlineQueue.clearQueueForUser('user-1');
 
       const savedData = JSON.parse(mockAsyncStorage.setItem.mock.calls[0][1]);
       expect(savedData).toHaveLength(1);
@@ -734,7 +714,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 3,
           status: 'failed',
-          user_id: 1,
+          user_id: 'user-1',
         },
         {
           id: 'item-2',
@@ -743,7 +723,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          user_id: 1,
+          user_id: 'user-1',
         },
         {
           id: 'item-3',
@@ -752,7 +732,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 3,
           status: 'failed',
-          user_id: 2,
+          user_id: 'user-2',
         },
       ];
 
@@ -774,7 +754,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          user_id: 1, // Has user_id and not orphaned status
+          user_id: 'user-1', // Has user_id and not orphaned status
         },
         {
           id: 'item-2',
@@ -814,7 +794,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'success',
-          user_id: 1,
+          user_id: 'user-1',
         },
         {
           id: 'item-2',
@@ -823,7 +803,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          user_id: 1,
+          user_id: 'user-1',
         },
         {
           id: 'item-3',
@@ -832,7 +812,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 3,
           status: 'failed',
-          user_id: 1,
+          user_id: 'user-1',
         },
       ];
 

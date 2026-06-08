@@ -8,10 +8,10 @@
 import { get } from './apiClient';
 import type { ApiResponse } from '../../types/api.types';
 import type {
-  ShiftDefinition,
   ShiftDefinitionsListResponse,
   CurrentShiftDefinitionResponse,
 } from '../../types/api.types';
+import type { ShiftDefinition } from '../../types/models.types';
 
 /**
  * Get all shift definitions

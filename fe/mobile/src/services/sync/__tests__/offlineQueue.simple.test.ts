@@ -92,7 +92,7 @@ describe('offlineQueue - Uncovered Scenarios', () => {
         ])
       );
 
-      const items = await offlineQueue.getQueueForUser(5);
+      const items = await offlineQueue.getQueueForUser(5 as unknown as string);
 
       expect(items).toHaveLength(1);
       expect(items[0].id).toBe('1');
@@ -108,7 +108,7 @@ describe('offlineQueue - Uncovered Scenarios', () => {
         ])
       );
 
-      await offlineQueue.clearQueueForUser(1);
+      await offlineQueue.clearQueueForUser(1 as unknown as string);
 
       const remaining = await offlineQueue.getQueuedItems();
       expect(remaining).toHaveLength(1);

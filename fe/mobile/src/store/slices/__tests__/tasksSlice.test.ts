@@ -49,7 +49,6 @@ describe('tasksSlice', () => {
     status: 'pending',
     priority: 'medium',
     area_id: 'area-001',
-    activity_type_id: 'activity-001',
     created_by: 'user-001',
     created_at: '2026-01-19T10:00:00Z',
     updated_at: '2026-01-19T10:00:00Z',
@@ -305,7 +304,9 @@ describe('tasksSlice', () => {
     it('should reset to initial state', () => {
       const modifiedState = {
         tasks: mockTasks,
+        taggedTasks: [],
         selectedTask: mockTask,
+        lineageById: {},
         isLoading: true,
         isSubmitting: true,
         error: 'Some error',
@@ -319,7 +320,7 @@ describe('tasksSlice', () => {
   describe('selectors', () => {
     describe('selectFilteredTasks', () => {
       it('should return all tasks when filter is all', () => {
-        const state = { tasks: { ...initialState, tasks: mockTasks } };
+        const state = { tasks: { ...initialState, tasks: mockTasks } } as any; // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock state
         const result = selectFilteredTasks(state);
         expect(result).toEqual(mockTasks);
       });
@@ -331,7 +332,7 @@ describe('tasksSlice', () => {
             tasks: mockTasks,
             filter: { status: 'pending' as TaskStatus | 'all', type: 'all' as 'assigned' | 'tagged' | 'created' | 'all' },
           },
-        };
+        } as any; // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock state
         const result = selectFilteredTasks(state);
         expect(result).toHaveLength(1);
         expect(result[0].status).toBe('pending');
@@ -344,7 +345,7 @@ describe('tasksSlice', () => {
           ...mockTasks,
           { ...mockTask, id: 'task-004', status: 'assigned' as TaskStatus },
         ];
-        const state = { tasks: { ...initialState, tasks: tasksWithAssigned } };
+        const state = { tasks: { ...initialState, tasks: tasksWithAssigned } } as any; // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock state
         const result = selectPendingTasksCount(state);
         expect(result).toBe(2); // 1 pending + 1 assigned
       });
@@ -352,7 +353,7 @@ describe('tasksSlice', () => {
 
     describe('selectInProgressTasksCount', () => {
       it('should count only in_progress tasks', () => {
-        const state = { tasks: { ...initialState, tasks: mockTasks } };
+        const state = { tasks: { ...initialState, tasks: mockTasks } } as any; // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test mock state
         const result = selectInProgressTasksCount(state);
         expect(result).toBe(1); // Only 1 in_progress (no 'accepted' status in Phase 2C)
       });

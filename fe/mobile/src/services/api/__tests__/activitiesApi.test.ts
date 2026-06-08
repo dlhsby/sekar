@@ -22,14 +22,13 @@ describe('activitiesApi', () => {
   describe('createActivity', () => {
     it('creates activity with correct data', async () => {
       const activityData = {
-        shift_id: 'shift-123',
         activity_type_id: 'type-001',
         description: 'Menyiram tanaman',
-        photos: ['data:image/jpeg;base64,abc123'],
+        photo_urls: ['https://example.com/photo1.jpg'],
         gps_lat: -7.25,
         gps_lng: 112.75,
       };
-      const mockResponse = { data: { id: 'activity-001', ...activityData } };
+      const mockResponse = { data: { id: 'activity-001', created_at: '2026-06-09T10:00:00Z' } };
       mockPost.mockResolvedValue(mockResponse);
 
       const result = await activitiesApi.createActivity(activityData);
@@ -40,18 +39,17 @@ describe('activitiesApi', () => {
 
     it('creates activity with multiple photos', async () => {
       const activityData = {
-        shift_id: 'shift-123',
         activity_type_id: 'type-002',
         description: 'Pemotongan rumput',
-        photos: [
-          'data:image/jpeg;base64,photo1',
-          'data:image/jpeg;base64,photo2',
-          'data:image/jpeg;base64,photo3',
+        photo_urls: [
+          'https://example.com/photo1.jpg',
+          'https://example.com/photo2.jpg',
+          'https://example.com/photo3.jpg',
         ],
         gps_lat: -7.26,
         gps_lng: 112.76,
       };
-      const mockResponse = { data: { id: 'activity-002', ...activityData } };
+      const mockResponse = { data: { id: 'activity-002', created_at: '2026-06-09T10:00:00Z' } };
       mockPost.mockResolvedValue(mockResponse);
 
       const result = await activitiesApi.createActivity(activityData);
@@ -73,12 +71,12 @@ describe('activitiesApi', () => {
     });
 
     it('gets activities with date filter', async () => {
-      const mockResponse = { data: [{ id: 'act-1' }] };
+      const mockResponse = { data: { data: [{ id: 'act-1' }], meta: { total: 1, page: 1, limit: 20, totalPages: 1 } } };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await activitiesApi.getMyActivities({ date: '2026-02-14' });
+      const result = await activitiesApi.getMyActivities({ from_date: '2026-02-14' });
 
-      expect(mockGet).toHaveBeenCalledWith('/activities', { date: '2026-02-14' });
+      expect(mockGet).toHaveBeenCalledWith('/activities', { from_date: '2026-02-14' });
       expect(result).toEqual(mockResponse);
     });
 

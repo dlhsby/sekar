@@ -172,16 +172,11 @@ describe('StaffingSummarySection', () => {
     });
 
     it('renders badge with red background for Libur label', () => {
-      const { getByText, UNSAFE_getByType } = render(
+      const { getByText } = render(
         <StaffingSummarySection {...defaultProps} currentDayTypeLabel="Libur Nasional" />,
       );
       const badge = getByText('Libur Nasional');
       expect(badge).toBeTruthy();
-      // Parent View carries the background color
-      const { View } = require('react-native');
-      const badgeView = UNSAFE_getByType(View, { deep: false });
-      // Traverse up to find the badge container with backgroundColor
-      const allViews = UNSAFE_getByType !== undefined ? [] : [];
       expect(badge.props).toBeDefined();
     });
 

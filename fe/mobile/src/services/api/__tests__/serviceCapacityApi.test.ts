@@ -28,7 +28,6 @@ describe('serviceCapacityApi', () => {
   describe('getCapacityCalendar', () => {
     it('returns capacity calendar data on success', async () => {
       const mockResponse = {
-        success: true,
         data: [mockCapacityRow],
       };
 
@@ -42,13 +41,11 @@ describe('serviceCapacityApi', () => {
       });
 
       expect(result).toEqual(mockResponse);
-      expect(result.success).toBe(true);
       expect(result.data).toEqual([mockCapacityRow]);
     });
 
     it('calls API with correct rayon ID', async () => {
       mockGet.mockResolvedValue({
-        success: true,
         data: [mockCapacityRow],
       });
 
@@ -70,7 +67,6 @@ describe('serviceCapacityApi', () => {
 
     it('includes all query parameters', async () => {
       mockGet.mockResolvedValue({
-        success: true,
         data: [mockCapacityRow],
       });
 
@@ -94,7 +90,6 @@ describe('serviceCapacityApi', () => {
 
     it('handles optional parameters', async () => {
       mockGet.mockResolvedValue({
-        success: true,
         data: [],
       });
 
@@ -108,7 +103,8 @@ describe('serviceCapacityApi', () => {
 
     it('returns error object on API error', async () => {
       const mockErrorResponse = {
-        error: { error: 'API Error', code: 'ERR_API' },
+        error: 'API Error',
+        code: 'ERR_API',
         data: null,
       };
 
@@ -116,12 +112,12 @@ describe('serviceCapacityApi', () => {
 
       const result = await serviceCapacityApi.getCapacityCalendar('r1', {});
 
-      expect(result.error).toEqual({ error: 'API Error', code: 'ERR_API' });
+      expect(result.error).toBe('API Error');
+      expect(result.code).toBe('ERR_API');
     });
 
     it('returns empty array when data is null', async () => {
       mockGet.mockResolvedValue({
-        success: true,
         data: null,
       });
 
@@ -161,7 +157,6 @@ describe('serviceCapacityApi', () => {
       ];
 
       mockGet.mockResolvedValue({
-        success: true,
         data: multiWeekData,
       });
 
@@ -176,7 +171,6 @@ describe('serviceCapacityApi', () => {
 
     it('correctly formats query parameters as URL params', async () => {
       mockGet.mockResolvedValue({
-        success: true,
         data: [],
       });
 
@@ -199,7 +193,6 @@ describe('serviceCapacityApi', () => {
 
     it('supports different rayons', async () => {
       mockGet.mockResolvedValue({
-        success: true,
         data: [mockCapacityRow],
       });
 
@@ -220,7 +213,6 @@ describe('serviceCapacityApi', () => {
       };
 
       mockGet.mockResolvedValue({
-        success: true,
         data: [customCapacity],
       });
 
@@ -232,9 +224,7 @@ describe('serviceCapacityApi', () => {
 
     it('preserves response structure', async () => {
       const mockResponse = {
-        success: true,
         data: [mockCapacityRow],
-        meta: { total: 1, page: 1 },
       };
 
       mockGet.mockResolvedValue(mockResponse);
@@ -248,7 +238,6 @@ describe('serviceCapacityApi', () => {
   describe('Service Type Parameter', () => {
     it('passes pruning as serviceType', async () => {
       mockGet.mockResolvedValue({
-        success: true,
         data: [],
       });
 
@@ -266,7 +255,6 @@ describe('serviceCapacityApi', () => {
 
     it('passes other as serviceType', async () => {
       mockGet.mockResolvedValue({
-        success: true,
         data: [],
       });
 
@@ -284,7 +272,6 @@ describe('serviceCapacityApi', () => {
 
     it('omits serviceType when not provided', async () => {
       mockGet.mockResolvedValue({
-        success: true,
         data: [],
       });
 
@@ -293,7 +280,10 @@ describe('serviceCapacityApi', () => {
       });
 
       const callArgs = mockGet.mock.calls[0];
-      expect(callArgs[1].serviceType).toBeUndefined();
+      expect(callArgs).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing mock call args
+      const params = (callArgs as any)?.[1];
+      expect(params.serviceType).toBeUndefined();
     });
   });
 
@@ -335,19 +325,18 @@ describe('serviceCapacityApi', () => {
   describe('Return Type Validation', () => {
     it('returns ApiResponse<CapacityRow[]>', async () => {
       mockGet.mockResolvedValue({
-        success: true,
         data: [mockCapacityRow],
       });
 
       const result = await serviceCapacityApi.getCapacityCalendar('r1', {});
 
-      expect(result).toHaveProperty('success');
       expect(result).toHaveProperty('data');
     });
 
     it('returns error property in response', async () => {
       const errorResponse = {
-        error: { error: 'Not found', code: 'ERR_NOT_FOUND' },
+        error: 'Not found',
+        code: 'ERR_NOT_FOUND',
         data: null,
       };
 
@@ -362,7 +351,6 @@ describe('serviceCapacityApi', () => {
   describe('Year and Week Parameters', () => {
     it('passes year parameter', async () => {
       mockGet.mockResolvedValue({
-        success: true,
         data: [],
       });
 
@@ -378,7 +366,6 @@ describe('serviceCapacityApi', () => {
 
     it('passes fromWeek and toWeek parameters', async () => {
       mockGet.mockResolvedValue({
-        success: true,
         data: [],
       });
 
@@ -398,7 +385,6 @@ describe('serviceCapacityApi', () => {
 
     it('handles single week query', async () => {
       mockGet.mockResolvedValue({
-        success: true,
         data: [mockCapacityRow],
       });
 
@@ -408,8 +394,11 @@ describe('serviceCapacityApi', () => {
       });
 
       const callArgs = mockGet.mock.calls[0];
-      expect(callArgs[1].fromWeek).toBe(18);
-      expect(callArgs[1].toWeek).toBe(18);
+      expect(callArgs).toBeDefined();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- accessing mock call args
+      const params = (callArgs as any)?.[1];
+      expect(params.fromWeek).toBe(18);
+      expect(params.toWeek).toBe(18);
     });
   });
 });

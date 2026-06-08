@@ -138,8 +138,9 @@ const mockUseRoleAccess = useRoleAccess as jest.MockedFunction<typeof useRoleAcc
 // Helper to create test store
 const createTestStore = (overrides?: Record<string, any>) => {
   return configureStore({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture type inference mismatch
     reducer: {
-      auth: authReducer,
+      auth: authReducer as any,
     },
     preloadedState: {
       auth: {
@@ -159,7 +160,7 @@ const createTestStore = (overrides?: Record<string, any>) => {
         isAuthenticated: true,
         loading: false,
         error: null,
-      },
+      } as any,
     },
   });
 };
@@ -178,14 +179,14 @@ describe('TaskCreateScreen', () => {
     // Re-apply useRoleAccess mock (clearAllMocks resets implementations)
     mockUseRoleAccess.mockReturnValue({
       role: 'korlap' as any,
-      canCreateTask: true,
-      canApproveOvertime: false,
-      canSubmitOvertime: false,
+      canClock: false,
       canSubmitActivity: false,
-      canViewMonitoring: true,
-      canManageSchedules: false,
-      canManageUsers: false,
-      canAccessAdminPanel: false,
+      canCreateTask: true,
+      canReceiveTask: true,
+      canSubmitOvertime: false,
+      canApproveOvertime: false,
+      canMonitor: false,
+      monitoringScope: null,
     });
 
     // Mock users API
@@ -438,10 +439,10 @@ describe('TaskCreateScreen', () => {
       canApproveOvertime: false,
       canSubmitOvertime: false,
       canSubmitActivity: true,
-      canViewMonitoring: false,
-      canManageSchedules: false,
-      canManageUsers: false,
-      canAccessAdminPanel: false,
+      canClock: false,
+      canReceiveTask: true,
+      canMonitor: false,
+      monitoringScope: null,
     });
 
     const store = createTestStore({ role: 'satgas' });
@@ -598,14 +599,14 @@ describe('TaskCreateScreen', () => {
   it('top_management can select rayon and area', async () => {
     mockUseRoleAccess.mockReturnValue({
       role: 'top_management' as any,
-      canCreateTask: true,
-      canApproveOvertime: false,
-      canSubmitOvertime: false,
+      canClock: false,
       canSubmitActivity: false,
-      canViewMonitoring: true,
-      canManageSchedules: false,
-      canManageUsers: false,
-      canAccessAdminPanel: false,
+      canCreateTask: true,
+      canReceiveTask: false,
+      canSubmitOvertime: false,
+      canApproveOvertime: false,
+      canMonitor: true,
+      monitoringScope: 'rayon',
     });
 
     const store = createTestStore({ role: 'top_management', rayon_id: undefined, area_id: undefined });
@@ -706,14 +707,14 @@ describe('TaskCreateScreen', () => {
   it('kepala_rayon has fixed rayon but can select area', async () => {
     mockUseRoleAccess.mockReturnValue({
       role: 'kepala_rayon' as any,
-      canCreateTask: true,
-      canApproveOvertime: false,
-      canSubmitOvertime: false,
+      canClock: false,
       canSubmitActivity: false,
-      canViewMonitoring: true,
-      canManageSchedules: false,
-      canManageUsers: false,
-      canAccessAdminPanel: false,
+      canCreateTask: true,
+      canReceiveTask: false,
+      canSubmitOvertime: false,
+      canApproveOvertime: false,
+      canMonitor: true,
+      monitoringScope: 'rayon',
     });
 
     const store = createTestStore({ role: 'kepala_rayon', area_id: undefined, area: undefined });

@@ -16,7 +16,7 @@ export function SyncStatusIndicator({
   isOnline,
   isSyncing,
   pendingCount = 0,
-}: SyncStatusIndicatorProps): JSX.Element {
+}: SyncStatusIndicatorProps): React.ReactElement {
   // Determine descriptive accessibility label based on state
   const getAccessibilityLabel = () => {
     if (isSyncing) {

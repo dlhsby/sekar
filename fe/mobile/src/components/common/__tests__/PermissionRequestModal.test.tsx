@@ -1344,9 +1344,11 @@ describe('PermissionRequestModal', () => {
     });
 
     it('should handle pressing request button while another request is in progress', async () => {
-      let resolveRequest: ((value: any) => void) | null = null;
-      const requestPromise = new Promise(resolve => {
-        resolveRequest = resolve as (value: any) => void;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture
+      let resolveRequest: ((value: any) => void) = jest.fn();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture
+      const requestPromise = new Promise<any>(resolve => {
+        resolveRequest = resolve;
       });
 
       (permissionManager.requestNotificationPermission as jest.Mock).mockReturnValue(requestPromise);
@@ -1367,13 +1369,11 @@ describe('PermissionRequestModal', () => {
       fireEvent.press(button);
 
       // Resolve the request
-      if (resolveRequest) {
-        resolveRequest({
-          granted: true,
-          status: RESULTS.GRANTED,
-          canRequest: false,
-        });
-      }
+      resolveRequest({
+        granted: true,
+        status: RESULTS.GRANTED,
+        canRequest: false,
+      });
 
       await waitFor(() => {
         const locationButtons = getAllByText('Izinkan');

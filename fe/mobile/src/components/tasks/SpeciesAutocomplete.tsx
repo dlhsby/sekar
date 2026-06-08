@@ -12,7 +12,7 @@ import {
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { searchSpecies } from '../../store/slices/plantsSlice';
 import { PlantSpecies } from '../../types/models.types';
-import { nbColors, nbSpacing, nbBorders, nbShadows, nbType } from '../../constants/generated/tokens';
+import { nbColors, nbSpacing, nbBorders, nbShadows, nbType, nbRadius } from '../../constants/generated/tokens';
 
 interface SpeciesAutocompleteProps {
   multi?: boolean;
@@ -128,7 +128,7 @@ export const SpeciesAutocomplete: React.FC<SpeciesAutocompleteProps> = ({
               key={species.id}
               style={styles.chip}
               accessible={true}
-              accessibilityRole="listitem"
+              accessibilityRole="button"
               accessibilityLabel={`${species.nameId}, ketuk untuk hapus`}
             >
               <Text
@@ -157,7 +157,7 @@ export const SpeciesAutocomplete: React.FC<SpeciesAutocompleteProps> = ({
           ref={inputRef}
           style={styles.input}
           placeholder={placeholder}
-          placeholderTextColor={nbColors.gray5}
+          placeholderTextColor={nbColors.gray50}
           value={searchInput}
           onChangeText={setSearchInput}
           onFocus={() => searchInput.trim().length > 0 && setShowDropdown(true)}
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.primary,
     paddingHorizontal: nbSpacing.sm,
     paddingVertical: nbSpacing.xs,
-    borderRadius: parseInt(nbBorders.radiusSm as string),
+    borderRadius: nbRadius.sm,
     borderWidth: 1,
     borderColor: nbColors.primary,
   },
@@ -287,8 +287,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: nbColors.border,
-    borderRadius: parseInt(nbBorders.radiusSm as string),
+    borderColor: nbColors.gray300,
+    borderRadius: nbRadius.sm,
     backgroundColor: nbColors.white,
     paddingHorizontal: nbSpacing.sm,
     minHeight: 44,
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
     height: 44,
     fontSize: 14,
     fontFamily: nbType.body.fontFamily,
-    color: nbColors.text,
+    color: nbColors.black,
   },
   clearButton: {
     padding: nbSpacing.xs,
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   clearIcon: {
-    color: nbColors.gray5,
+    color: nbColors.gray50,
     fontSize: 20,
     fontWeight: 'bold',
   },
@@ -318,8 +318,8 @@ const styles = StyleSheet.create({
   dropdown: {
     marginTop: nbSpacing.xs,
     borderWidth: 1,
-    borderColor: nbColors.border,
-    borderRadius: parseInt(nbBorders.radiusSm as string),
+    borderColor: nbColors.gray300,
+    borderRadius: nbRadius.sm,
     backgroundColor: nbColors.white,
     maxHeight: 250,
     ...nbShadows.sm,
@@ -330,16 +330,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.sm,
     paddingVertical: nbSpacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: nbColors.border,
+    borderBottomColor: nbColors.gray300,
   },
   resultItemSelected: {
-    backgroundColor: nbColors.gray1,
+    backgroundColor: nbColors.gray100,
   },
   checkbox: {
     width: 20,
     height: 20,
     borderWidth: 1,
-    borderColor: nbColors.gray5,
+    borderColor: nbColors.gray50,
     borderRadius: 2,
     marginRight: nbSpacing.sm,
     justifyContent: 'center',
@@ -361,13 +361,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: nbType.body.fontFamily,
     fontWeight: '500',
-    color: nbColors.text,
+    color: nbColors.black,
   },
   resultSecondary: {
     fontSize: 12,
     fontFamily: nbType.body.fontFamily,
     fontStyle: 'italic',
-    color: nbColors.gray5,
+    color: nbColors.gray50,
     marginTop: 2,
   },
   emptyMessage: {
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
   emptyMessageText: {
     fontSize: 13,
     fontFamily: nbType.body.fontFamily,
-    color: nbColors.gray5,
+    color: nbColors.gray50,
     textAlign: 'center',
   },
 });

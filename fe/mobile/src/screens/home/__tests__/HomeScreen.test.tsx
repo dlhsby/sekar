@@ -57,8 +57,8 @@ const renderForRole = (role: UserRole | undefined) => {
               username: 'u',
               full_name: 'Test User',
               role,
-              created_at: new Date('2026-01-01T00:00:00Z'),
-              updated_at: new Date('2026-01-01T00:00:00Z'),
+              created_at: '2026-01-01T00:00:00Z',
+              updated_at: '2026-01-01T00:00:00Z',
             }
           : null,
         assignedArea: null,
@@ -67,6 +67,7 @@ const renderForRole = (role: UserRole | undefined) => {
         isRestoring: false,
         error: null,
         onboardingCompleted: false,
+        token: null,
       },
     },
   });

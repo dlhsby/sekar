@@ -229,10 +229,11 @@ describe('tasksApi', () => {
       expect(result).toEqual(mockResponse);
     });
 
-    it('completes task with only description', async () => {
+    it('completes task with description and empty photos array', async () => {
       const taskId = 'task-456';
       const completeData = {
         description: 'Finished the work',
+        completion_photo_urls: [],
       };
       const mockResponse = { data: { id: taskId, status: 'completed' } };
       mockPost.mockResolvedValue(mockResponse);

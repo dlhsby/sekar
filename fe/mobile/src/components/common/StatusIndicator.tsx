@@ -39,9 +39,9 @@ const statusConfig = {
   },
   loading: {
     color: nbColors.gray300,
-    darkColor: nbColors.grayMedium,
+    darkColor: nbColors.gray400,
     icon: 'dots-horizontal-circle' as const,
-    iconColor: nbColors.grayMedium,
+    iconColor: nbColors.gray400,
   },
 };
 
@@ -51,7 +51,7 @@ export function StatusIndicator({
   subtitle,
   metadata,
   size = 100,
-}: StatusIndicatorProps): JSX.Element {
+}: StatusIndicatorProps): React.ReactElement {
   const config = statusConfig[status];
 
   return (

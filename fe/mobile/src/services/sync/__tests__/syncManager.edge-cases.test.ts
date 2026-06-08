@@ -51,12 +51,13 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
       return unsubscribe;
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- NetInfoState is complex external type
     mockNetInfo.fetch.mockResolvedValue({
       isConnected: true,
       isInternetReachable: true,
       type: 'wifi',
       details: null,
-    });
+    } as any);
 
     // Mock AppState
     (AppState.addEventListener as jest.Mock).mockImplementation((event, callback) => {
@@ -210,12 +211,13 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
 
   describe('Process Queue - Network Checks', () => {
     it('should skip sync when offline', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- NetInfoState is complex external type
       mockNetInfo.fetch.mockResolvedValue({
         isConnected: false,
         isInternetReachable: false,
         type: 'none',
         details: null,
-      });
+      } as any);
 
       await syncManager.processQueue();
 
@@ -256,7 +258,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
         timestamp: Date.now(),
         retryCount: 0,
         status: 'pending',
-        user_id: 1,
+        user_id: 'user-1',
       };
 
       mockOfflineQueue.getQueuedItems.mockResolvedValue([item]);
@@ -293,7 +295,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
         timestamp: Date.now(),
         retryCount: 0,
         status: 'pending',
-        user_id: 1,
+        user_id: 'user-1',
       };
 
       mockOfflineQueue.getQueuedItems.mockResolvedValue([item]);
@@ -315,7 +317,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
         timestamp: Date.now(),
         retryCount: 0,
         status: 'pending',
-        user_id: 1,
+        user_id: 'user-1',
       };
 
       mockOfflineQueue.getQueuedItems.mockResolvedValue([item]);
@@ -345,7 +347,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
         timestamp: Date.now(),
         retryCount: 0,
         status: 'pending',
-        user_id: 1,
+        user_id: 'user-1',
       };
 
       mockOfflineQueue.getQueuedItems.mockResolvedValue([item]);
@@ -370,7 +372,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
         timestamp: Date.now(),
         retryCount: 0,
         status: 'pending',
-        user_id: 1,
+        user_id: 'user-1',
       };
 
       mockOfflineQueue.getQueuedItems.mockResolvedValue([item]);
@@ -395,7 +397,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
         timestamp: Date.now(),
         retryCount: 0,
         status: 'pending',
-        user_id: 1,
+        user_id: 'user-1',
       };
 
       mockOfflineQueue.getQueuedItems.mockResolvedValue([item]);
@@ -428,7 +430,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
         timestamp: Date.now(),
         retryCount: 0,
         status: 'pending',
-        user_id: 1,
+        user_id: 'user-1',
       };
 
       mockOfflineQueue.getQueuedItems.mockResolvedValue([item]);
@@ -461,12 +463,12 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
         timestamp: Date.now(),
         retryCount: 0,
         status: 'pending',
-        user_id: 1,
+        user_id: 'user-1',
       };
 
       mockOfflineQueue.getQueuedItems.mockResolvedValue([item]);
       mockLocationApi.uploadLocationBatch.mockResolvedValue({
-        data: { success: true },
+        data: { inserted_count: 1 },
       });
 
       await syncManager.processQueue();
@@ -486,7 +488,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
         timestamp: Date.now(),
         retryCount: 0,
         status: 'pending',
-        user_id: 1,
+        user_id: 'user-1',
       };
 
       mockOfflineQueue.getQueuedItems.mockResolvedValue([item]);
@@ -510,7 +512,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
         timestamp: Date.now(),
         retryCount: 0,
         status: 'pending',
-        user_id: 1,
+        user_id: 'user-1',
       };
 
       mockOfflineQueue.getQueuedItems.mockResolvedValue([item]);
@@ -548,12 +550,12 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
         timestamp: Date.now(),
         retryCount: 0,
         status: 'pending',
-        user_id: 1,
+        user_id: 'user-1',
       };
 
       mockOfflineQueue.getQueuedItems.mockResolvedValue([item]);
       mockLocationApi.uploadLocationBatch.mockResolvedValue({
-        data: { success: true },
+        data: { inserted_count: 1 },
       });
 
       await syncManager.processQueue();
@@ -578,7 +580,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
         timestamp: Date.now(),
         retryCount: 0,
         status: 'pending',
-        user_id: 1,
+        user_id: 'user-1',
       };
 
       mockOfflineQueue.getQueuedItems.mockResolvedValue([item]);
@@ -605,7 +607,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
         timestamp: Date.now(),
         retryCount: 0,
         status: 'pending',
-        user_id: 1,
+        user_id: 'user-1',
       };
 
       mockOfflineQueue.getQueuedItems.mockResolvedValue([item]);
@@ -639,7 +641,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          user_id: 1,
+          user_id: 'user-1',
         },
         {
           id: 'item-2',
@@ -648,13 +650,13 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          user_id: 1,
+          user_id: 'user-1',
         },
       ];
 
       mockOfflineQueue.getQueuedItems.mockResolvedValue(items);
-      mockShiftsApi.clockIn.mockResolvedValue({ data: { id: 1 } });
-      mockShiftsApi.clockOut.mockResolvedValue({ data: { id: 1 } });
+      mockShiftsApi.clockIn.mockResolvedValue({ data: { shift_id: 'shift-1', clock_in_time: '2026-06-09T10:00:00Z' } });
+      mockShiftsApi.clockOut.mockResolvedValue({ data: { shift_id: 'shift-1', clock_out_time: '2026-06-09T18:00:00Z', total_hours: 8 } });
 
       const syncProgressSpy = jest.fn();
       syncManager.on('syncProgress', syncProgressSpy);

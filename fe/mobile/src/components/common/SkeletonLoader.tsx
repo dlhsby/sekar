@@ -45,7 +45,7 @@ export function SkeletonLoader({
   height = 20,
   borderRadius = theme.borderRadius.sm,
   style,
-}: SkeletonLoaderProps): React.JSX.Element {
+}: SkeletonLoaderProps): React.ReactElement {
   const shimmerAnimation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -76,12 +76,12 @@ export function SkeletonLoader({
       style={[
         styles.skeleton,
         {
-          width: typeof width === 'number' ? width : width,
+          width: typeof width === 'number' ? width : (width as any),
           height,
           borderRadius,
         },
         style,
-      ]}
+      ] as ViewStyle[]}
       accessibilityRole="progressbar"
       accessibilityLabel="Memuat konten"
     >

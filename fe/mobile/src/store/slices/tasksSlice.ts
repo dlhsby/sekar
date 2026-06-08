@@ -226,7 +226,9 @@ const tasksSlice = createSlice({
         state.error = null;
       })
       .addCase(partialCompleteTask.fulfilled, (state, action) => {
-        const { task } = action.payload;
+        const payload = action.payload;
+        if (!payload) return;
+        const { task } = payload;
         const index = state.tasks.findIndex((t) => t.id === task.id);
         if (index !== -1) {
           state.tasks[index] = task;
@@ -264,7 +266,10 @@ const tasksSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchTaskLineage.fulfilled, (state, action) => {
-        const { taskId, lineage } = action.payload;
+        const payload = action.payload;
+        if (!payload) return;
+        const { taskId, lineage } = payload;
+        if (!lineage) return;
         state.lineageById[taskId] = lineage;
         state.isLoading = false;
         state.error = null;

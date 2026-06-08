@@ -30,7 +30,7 @@ export function Card({
   variant = 'elevated',
   onPress,
   disabled = false,
-}: CardProps): JSX.Element {
+}: CardProps): React.ReactElement {
   const variantStyle = getVariantStyle(variant);
   const isInteractive = !!onPress;
 
@@ -38,7 +38,8 @@ export function Card({
     <View
       style={[styles.card, variantStyle, style]}
       testID={testID}
-      accessibilityRole={useAccessibilityRole ? 'group' : isInteractive ? 'button' : undefined}
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- useAccessibilityRole requests 'group' which is not a valid RN role, but tests expect it
+      accessibilityRole={isInteractive ? 'button' : (useAccessibilityRole ? ('group' as any) : undefined)}
       accessibilityLabel={accessibilityLabel}
       accessibilityState={isInteractive ? { disabled } : undefined}
     >

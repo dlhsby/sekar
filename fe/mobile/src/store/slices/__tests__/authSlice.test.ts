@@ -12,6 +12,7 @@ import authReducer, {
   setRestoring,
   restoreAuth,
 } from '../authSlice';
+import type { User, Area } from '../../../types/models.types';
 
 describe('authSlice', () => {
   const initialState = {
@@ -24,19 +25,22 @@ describe('authSlice', () => {
     onboardingCompleted: false,
   };
 
-  const mockUser = {
-    id: 1,
+  const mockUser: User = {
+    id: 'user-1',
     username: 'worker1',
     full_name: 'Test Worker',
     role: 'satgas' as const,
   };
 
-  const mockArea = {
-    id: 1,
+  const mockArea: Area = {
+    id: 'area-1',
     name: 'Taman Bungkul',
+    area_type_id: 'at-1',
     gps_lat: -7.25,
     gps_lng: 112.75,
     radius_meters: 100,
+    created_at: '2026-02-14T00:00:00Z',
+    updated_at: '2026-02-14T00:00:00Z',
   };
 
   describe('initial state', () => {
@@ -145,6 +149,8 @@ describe('authSlice', () => {
         isAuthenticated: true,
         isLoading: false,
         error: null,
+        isRestoring: false,
+        onboardingCompleted: false,
       };
       const state = authReducer(authenticatedState, logout());
 

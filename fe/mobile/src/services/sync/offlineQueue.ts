@@ -43,13 +43,13 @@ export interface QueueItem {
   status: QueueItemStatus;
   error?: string;
   lastAttemptAt?: number;
-  user_id?: number; // Added for user-scoped queue
+  user_id?: string; // Added for user-scoped queue
 }
 
 /**
  * Get current user ID from secure storage
  */
-async function getCurrentUserId(): Promise<number | null> {
+async function getCurrentUserId(): Promise<string | null> {
   try {
     const user = await getUser();
     return user?.id || null;
@@ -81,7 +81,7 @@ export async function getQueuedItems(): Promise<QueueItem[]> {
  * @param userId - User ID to filter by
  * @returns Array of queue items for the user
  */
-export async function getQueueForUser(userId: number): Promise<QueueItem[]> {
+export async function getQueueForUser(userId: string): Promise<QueueItem[]> {
   try {
     const items = await getQueuedItems();
     return items.filter(item => item.user_id === userId);
@@ -310,7 +310,7 @@ export async function getOrphanedItems(): Promise<QueueItem[]> {
  * Clear queue for a specific user
  * @param userId - User ID to clear queue for
  */
-export async function clearQueueForUser(userId: number): Promise<void> {
+export async function clearQueueForUser(userId: string): Promise<void> {
   try {
     const items = await getQueuedItems();
     const remainingItems = items.filter(item => item.user_id !== userId);

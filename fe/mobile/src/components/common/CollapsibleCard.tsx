@@ -37,7 +37,7 @@ export function CollapsibleCard({
   children,
   defaultExpanded = false,
   style,
-}: CollapsibleCardProps): JSX.Element {
+}: CollapsibleCardProps): React.ReactElement {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const rotateAnim = useRef(new Animated.Value(defaultExpanded ? 1 : 0)).current;
 

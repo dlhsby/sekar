@@ -97,41 +97,32 @@ export const NBSkeleton: React.FC<NBSkeletonProps> = ({
   });
 
   const getSkeletonStyle = (): ViewStyle => {
-    switch (variant) {
-      case 'text':
-        return {
-          width: width || '80%',
-          height: height || 16,
-        };
-      case 'card':
-        return {
-          width: width || '100%',
-          height: height || 120,
-        };
-      case 'avatar':
-        return {
-          width: width || 48,
-          height: height || 48,
-        };
-      case 'list':
-        return {
-          width: width || '100%',
-          height: height || 60,
-        };
-      case 'button':
-        return {
-          width: width || 100,
-          height: height || 48,
-        };
-      default:
-        return {
-          width: width || '100%',
-          height: height || 16,
-        };
-    }
+    const styles: Record<string, ViewStyle> = {
+      text: {
+        width: (width || '80%') as ViewStyle['width'],
+        height: height || 16,
+      },
+      card: {
+        width: (width || '100%') as ViewStyle['width'],
+        height: height || 120,
+      },
+      avatar: {
+        width: (width || 48) as ViewStyle['width'],
+        height: height || 48,
+      },
+      list: {
+        width: (width || '100%') as ViewStyle['width'],
+        height: height || 60,
+      },
+      button: {
+        width: (width || 100) as ViewStyle['width'],
+        height: height || 48,
+      },
+    };
+    return styles[variant] || { width: '100%', height: 16 };
   };
 
-  const skeletonStyle = getSkeletonStyle();
+  const skeletonStyle = getSkeletonStyle() as ViewStyle;
   const spacing = variant === 'text' ? nbSpacing.sm : nbSpacing.md;
 
   const items = Array.from({ length: count }, (_, index) => (

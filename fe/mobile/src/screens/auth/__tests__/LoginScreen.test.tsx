@@ -40,6 +40,7 @@ const createTestStore = (initialState?: Partial<ReturnType<typeof authReducer>>)
   configureStore({
     reducer: { auth: authReducer },
     preloadedState: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test preloadedState
       auth: {
         user: null,
         assignedArea: null,
@@ -48,8 +49,8 @@ const createTestStore = (initialState?: Partial<ReturnType<typeof authReducer>>)
         isLoading: false,
         error: null,
         ...initialState,
-      },
-    } as any,
+      } as any,
+    },
   });
 
 const renderLoginScreen = (store = createTestStore()) =>

@@ -40,9 +40,10 @@ describe('FieldHomeHeader', () => {
     assignedArea: Area | null = null
   ) => {
     return configureStore({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture type inference mismatch
       reducer: {
-        auth: authReducer,
-        offline: offlineReducer,
+        auth: authReducer as any,
+        offline: offlineReducer as any,
       },
       preloadedState: {
         auth: {
@@ -60,7 +61,7 @@ describe('FieldHomeHeader', () => {
           isAuthenticated: true,
           loading: false,
           error: null,
-        },
+        } as any,
         offline: {
           isOnline,
           isSyncing,
@@ -112,8 +113,9 @@ describe('FieldHomeHeader', () => {
     });
 
     it('should render the profile photo (not initials) when profile_picture_url is set', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture type inference mismatch
       const store = configureStore({
-        reducer: { auth: authReducer, offline: offlineReducer },
+        reducer: { auth: authReducer as any, offline: offlineReducer as any },
         preloadedState: {
           auth: {
             user: {
@@ -131,7 +133,7 @@ describe('FieldHomeHeader', () => {
             isAuthenticated: true,
             loading: false,
             error: null,
-          },
+          } as any,
           offline: {
             isOnline: true,
             isSyncing: false,
@@ -144,7 +146,7 @@ describe('FieldHomeHeader', () => {
             syncError: null,
           },
         } as any,
-      });
+      } as any);
       const { UNSAFE_getAllByType, queryByText } = render(
         <Provider store={store}>
           <FieldHomeHeader />
@@ -250,9 +252,10 @@ describe('FieldHomeHeader', () => {
 
     it('should display default User label when role is undefined', () => {
       const store = configureStore({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture type inference mismatch
         reducer: {
-          auth: authReducer,
-          offline: offlineReducer,
+          auth: authReducer as any,
+          offline: offlineReducer as any,
         },
         preloadedState: {
           auth: {
@@ -270,7 +273,7 @@ describe('FieldHomeHeader', () => {
             isAuthenticated: true,
             loading: false,
             error: null,
-          },
+          } as any,
           offline: {
             isOnline: true,
             isSyncing: false,
@@ -436,9 +439,10 @@ describe('FieldHomeHeader', () => {
   describe('Edge Cases', () => {
     it('should handle null user gracefully', () => {
       const store = configureStore({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture type inference mismatch
         reducer: {
-          auth: authReducer,
-          offline: offlineReducer,
+          auth: authReducer as any,
+          offline: offlineReducer as any,
         },
         preloadedState: {
           auth: {
@@ -448,7 +452,7 @@ describe('FieldHomeHeader', () => {
             isAuthenticated: false,
             loading: false,
             error: null,
-          },
+          } as any,
           offline: {
             isOnline: true,
             isSyncing: false,

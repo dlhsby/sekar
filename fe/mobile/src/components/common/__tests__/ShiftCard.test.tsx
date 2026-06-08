@@ -31,10 +31,19 @@ jest.mock('../../../utils/dateUtils', () => ({
 const mockArea = {
   id: 'area-1',
   name: 'Taman Bungkul',
+  area_type_id: 'type-1',
   area_type: {
     id: 'type-1',
+    code: 'park' as const,
     name: 'Taman Kota',
+    description: 'City park',
+    created_at: '2024-01-01T00:00:00Z',
   },
+  gps_lat: -7.275,
+  gps_lng: 112.75,
+  radius_meters: 500,
+  created_at: '2024-01-01T00:00:00Z',
+  updated_at: '2024-01-01T00:00:00Z',
 };
 
 const mockActiveShift: Shift = {
@@ -42,13 +51,9 @@ const mockActiveShift: Shift = {
   user_id: 'user-1',
   area_id: 'area-1',
   clock_in_time: '2024-01-01T08:00:00Z',
-  clock_out_time: null,
   clock_in_gps_lat: -7.275,
   clock_in_gps_lng: 112.75,
   clock_in_photo_url: 'https://example.com/photo.jpg',
-  clock_out_gps_lat: null,
-  clock_out_gps_lng: null,
-  clock_out_photo_url: null,
   area: mockArea,
   created_at: '2024-01-01T08:00:00Z',
   updated_at: '2024-01-01T08:00:00Z',
@@ -60,7 +65,6 @@ const mockCompletedShift: Shift = {
   clock_out_time: '2024-01-01T16:00:00Z',
   clock_out_gps_lat: -7.275,
   clock_out_gps_lng: 112.75,
-  clock_out_photo_url: 'https://example.com/photo2.jpg',
 };
 
 describe('ShiftCard', () => {
@@ -215,13 +219,13 @@ describe('ShiftCard', () => {
 
   describe('Area Information', () => {
     it('should handle missing area gracefully', () => {
-      const shiftWithoutArea = { ...mockActiveShift, area: null };
+      const shiftWithoutArea = { ...mockActiveShift, area: undefined };
       const { getByText } = render(<ShiftCard shift={shiftWithoutArea} />);
       expect(getByText('Area tidak diketahui')).toBeTruthy();
     });
 
     it('should handle missing area type gracefully', () => {
-      const areaWithoutType = { ...mockArea, area_type: null };
+      const areaWithoutType = { ...mockArea, area_type: undefined };
       const shiftWithPartialArea = { ...mockActiveShift, area: areaWithoutType };
       const { getByText, queryByText } = render(
         <ShiftCard shift={shiftWithPartialArea} />

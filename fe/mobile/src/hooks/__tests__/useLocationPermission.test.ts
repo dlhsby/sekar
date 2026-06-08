@@ -312,8 +312,9 @@ describe('useLocationPermission', () => {
       });
 
       // Now resolve the first (stale) call
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture callback resolution
       if (firstCallResolve) {
-        firstCallResolve({
+        (firstCallResolve as any)({
           coords: { latitude: 0, longitude: 0, accuracy: 10 },
         });
       }
@@ -346,8 +347,9 @@ describe('useLocationPermission', () => {
       unmount();
 
       // Now resolve the GPS check after unmount
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture callback resolution
       if (resolveGps) {
-        resolveGps({
+        (resolveGps as any)({
           coords: { latitude: 0, longitude: 0, accuracy: 10 },
         });
       }

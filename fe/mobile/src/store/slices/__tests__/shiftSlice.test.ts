@@ -13,6 +13,7 @@ import shiftReducer, {
   setError,
   clearError,
 } from '../shiftSlice';
+import type { Shift } from '../../../types/models.types';
 
 describe('shiftSlice', () => {
   const initialState = {
@@ -23,17 +24,15 @@ describe('shiftSlice', () => {
     error: null,
   };
 
-  const mockShift = {
-    id: 1,
-    user_id: 1,
-    area_id: 1,
+  const mockShift: Shift = {
+    id: 'shift-1',
+    user_id: 'user-1',
+    area_id: 'area-1',
     clock_in_time: '2026-01-19T08:00:00Z',
-    clock_in_lat: -7.25,
-    clock_in_lng: 112.75,
-    clock_out_time: null,
-    clock_out_lat: null,
-    clock_out_lng: null,
-    status: 'active' as const,
+    clock_in_gps_lat: -7.25,
+    clock_in_gps_lng: 112.75,
+    created_at: '2026-01-19T08:00:00Z',
+    updated_at: '2026-01-19T08:00:00Z',
   };
 
   describe('initial state', () => {
@@ -108,7 +107,7 @@ describe('shiftSlice', () => {
     });
 
     it('should add shift to history', () => {
-      const existingShift = { ...mockShift, id: 2 };
+      const existingShift: Shift = { ...mockShift, id: 'shift-2' };
       const stateWithHistory = {
         ...initialState,
         shiftHistory: [existingShift],
@@ -184,7 +183,7 @@ describe('shiftSlice', () => {
 
   describe('setShiftHistory', () => {
     it('should set shift history', () => {
-      const shifts = [mockShift, { ...mockShift, id: 2 }];
+      const shifts = [mockShift, { ...mockShift, id: 'shift-2' } as Shift];
       const state = shiftReducer(initialState, setShiftHistory(shifts));
 
       expect(state.shiftHistory).toEqual(shifts);
@@ -199,8 +198,8 @@ describe('shiftSlice', () => {
     });
 
     it('should replace existing history', () => {
-      const oldShifts = [{ ...mockShift, id: 99 }];
-      const newShifts = [mockShift, { ...mockShift, id: 2 }];
+      const oldShifts: Shift[] = [{ ...mockShift, id: 'shift-99' }];
+      const newShifts: Shift[] = [mockShift, { ...mockShift, id: 'shift-2' }];
       const stateWithHistory = { ...initialState, shiftHistory: oldShifts };
       const state = shiftReducer(stateWithHistory, setShiftHistory(newShifts));
 

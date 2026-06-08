@@ -32,16 +32,24 @@ describe('loadAndSyncCurrentShift', () => {
   describe('successful shift loading', () => {
     it('should fetch current shift and dispatch setCurrentShift with data', async () => {
       const mockShift = {
-        id: 1,
-        area_id: 1,
-        user_id: 1,
+        id: '1',
+        area_id: '1',
+        user_id: '1',
         clock_in_time: '2026-01-20T08:00:00Z',
         clock_in_gps_lat: -7.250445,
         clock_in_gps_lng: 112.768845,
         area: {
-          id: 1,
+          id: '1',
           name: 'Park A',
+          area_type_id: '1',
+          gps_lat: -7.250445,
+          gps_lng: 112.768845,
+          radius_meters: 100,
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-01T00:00:00Z',
         },
+        created_at: '2026-01-20T08:00:00Z',
+        updated_at: '2026-01-20T08:00:00Z',
       };
 
       const mockResponse = {
@@ -79,7 +87,7 @@ describe('loadAndSyncCurrentShift', () => {
       expect(mockDispatch).toHaveBeenCalledWith(setCurrentShift(null));
     });
 
-    it('should handle response with undefined data by dispatching undefined', async () => {
+    it('should handle response with undefined data by dispatching null', async () => {
       const mockResponse = {
         data: undefined,
         error: null,
@@ -89,9 +97,10 @@ describe('loadAndSyncCurrentShift', () => {
 
       await loadAndSyncCurrentShift(mockDispatch);
 
-      // Should dispatch setCurrentShift with undefined (passes through response.data as-is)
+      // Should dispatch setCurrentShift with null when data is undefined
       expect(mockDispatch).toHaveBeenCalledTimes(1);
-      expect(mockDispatch).toHaveBeenCalledWith(setCurrentShift(undefined));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test expectation for undefined response
+      expect(mockDispatch).toHaveBeenCalledWith(setCurrentShift(undefined as any));
     });
   });
 
@@ -237,10 +246,14 @@ describe('loadAndSyncCurrentShift', () => {
     it('should handle API returning response without error property', async () => {
       const mockResponse = {
         data: {
-          id: 1,
-          area_id: 1,
-          user_id: 1,
+          id: '1',
+          area_id: '1',
+          user_id: '1',
           clock_in_time: '2026-01-20T08:00:00Z',
+          clock_in_gps_lat: -7.250445,
+          clock_in_gps_lng: 112.768845,
+          created_at: '2026-01-20T08:00:00Z',
+          updated_at: '2026-01-20T08:00:00Z',
         },
         // No error property
       };
@@ -256,21 +269,27 @@ describe('loadAndSyncCurrentShift', () => {
 
     it('should handle shift with all optional fields populated', async () => {
       const fullShift = {
-        id: 1,
-        area_id: 1,
-        user_id: 1,
+        id: '1',
+        area_id: '1',
+        user_id: '1',
         clock_in_time: '2026-01-20T08:00:00Z',
         clock_out_time: '2026-01-20T16:00:00Z',
         clock_in_gps_lat: -7.250445,
         clock_in_gps_lng: 112.768845,
         clock_out_gps_lat: -7.250446,
         clock_out_gps_lng: 112.768846,
-        clock_in_selfie_url: 'https://example.com/selfie.jpg',
-        total_hours: 8.0,
+        clock_in_photo_url: 'https://example.com/selfie.jpg',
+        created_at: '2026-01-20T08:00:00Z',
+        updated_at: '2026-01-20T16:00:00Z',
         area: {
-          id: 1,
+          id: '1',
           name: 'Park A',
-          type: 'Park',
+          area_type_id: '1',
+          gps_lat: -7.250445,
+          gps_lng: 112.768845,
+          radius_meters: 100,
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-01T00:00:00Z',
         },
       };
 

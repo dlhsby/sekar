@@ -14,15 +14,19 @@ jest.mock('@react-navigation/native', () => ({
 const renderForRole = (role: string, userId = 'u-1', extra: Record<string, unknown> = {}) => {
   const store = configureStore({
     reducer: { auth: authReducer },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test preloadedState
     preloadedState: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test preloadedState
       auth: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         user: { id: userId, role, full_name: 'Test', ...extra } as any,
+        assignedArea: null,
         isAuthenticated: true,
         isLoading: false,
         isRestoring: false,
         error: null,
-      },
+        onboardingCompleted: false,
+        token: null,
+      } as any,
     },
   });
   return render(

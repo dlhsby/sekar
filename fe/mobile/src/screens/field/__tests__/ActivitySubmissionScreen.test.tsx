@@ -98,6 +98,7 @@ const createTestStore = (currentShift: any = null, isOnline = true) => {
       offline: offlineReducer,
     },
     preloadedState: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test preloadedState
       auth: {
         user: {
           id: '1',
@@ -116,7 +117,19 @@ const createTestStore = (currentShift: any = null, isOnline = true) => {
         isAuthenticated: true,
         loading: false,
         error: null,
-      },
+      } as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test preloadedState
+      offline: {
+        isOnline,
+        isSyncing: false,
+        queue: [],
+        pendingShiftsCount: 0,
+        pendingActivitiesCount: 0,
+        pendingMediaCount: 0,
+        pendingLocationsCount: 0,
+        lastSyncTime: null,
+        syncError: null,
+      } as any,
       shift: {
         currentShift,
         shiftHistory: [],
@@ -129,17 +142,6 @@ const createTestStore = (currentShift: any = null, isOnline = true) => {
         isLoading: false,
         isSubmitting: false,
         error: null,
-      },
-      offline: {
-        isOnline,
-        isSyncing: false,
-        queue: [],
-        pendingShiftsCount: 0,
-        pendingActivitiesCount: 0,
-        pendingMediaCount: 0,
-        pendingLocationsCount: 0,
-        lastSyncTime: null,
-        syncError: null,
       },
     },
   });
@@ -174,7 +176,7 @@ describe('ActivitySubmissionScreen', () => {
     };
     const store = createTestStore(shift);
 
-    const { getByText, getByPlaceholder } = render(
+    const { getByText, getByPlaceholderText } = render(
       <Provider store={store}>
         <NavigationContainer>
           <ActivitySubmissionScreen />

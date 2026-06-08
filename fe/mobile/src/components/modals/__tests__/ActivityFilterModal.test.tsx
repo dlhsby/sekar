@@ -141,7 +141,7 @@ describe('ActivityFilterModal', () => {
       const { getByText } = render(
         <ActivityFilterModal
           {...defaultProps}
-          filters={{ date: '2026-02-18', area_id: 'area1' }}
+          filters={{ from_date: '2026-02-18', area_id: 'area1' }}
         />
       );
       await waitFor(() => {

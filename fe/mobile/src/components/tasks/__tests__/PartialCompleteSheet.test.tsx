@@ -11,8 +11,10 @@ import { PartialCompleteSheet } from '../PartialCompleteSheet';
 import tasksReducer from '../../../store/slices/tasksSlice';
 import type { Task } from '../../../types/models.types';
 
-// Mock task for testing
-const mockTask: Task = {
+// Mock task for testing. target_plant_count/completed_plant_count aren't on the
+// Task type yet (pruning-task fields the component reads via `as any`), so the
+// fixture is cast — see PartialCompleteSheet.tsx.
+const mockTask = {
   id: 'task-1',
   title: 'Plant Trees',
   description: 'Plant 50 trees in sector A',
@@ -22,29 +24,26 @@ const mockTask: Task = {
   completed_plant_count: 0,
   created_by: 'user-1',
   assigned_to: 'user-2',
-  created_at: new Date('2026-04-01'),
-  updated_at: new Date('2026-04-27'),
-  deadline: new Date('2026-05-01'),
+  created_at: '2026-04-01T00:00:00Z',
+  updated_at: '2026-04-27T00:00:00Z',
+  deadline: '2026-05-01T00:00:00Z',
   rayon_id: 'rayon-1',
   area_id: 'area-1',
-  completed_at: null,
-  verified_at: null,
-  decline_reason: null,
-  revision_reason: null,
-  completion_notes: null,
+  completion_notes: undefined,
   completion_photo_urls: [],
-  assigned_at: new Date('2026-04-10'),
-  accepted_at: null,
-  declined_at: null,
-  started_at: new Date('2026-04-20'),
-  creator: null,
-  assignee: null,
-  verifier: null,
-  area: null,
-  rayon: null,
-  created_by_user: null,
-  assigned_to_user: null,
-};
+  assigned_at: '2026-04-10T00:00:00Z',
+  accepted_at: undefined,
+  declined_at: undefined,
+  decline_reason: undefined,
+  revision_reason: undefined,
+  started_at: '2026-04-20T00:00:00Z',
+  verifier: undefined,
+  verified_at: undefined,
+  area: undefined,
+  rayon: undefined,
+  creator: undefined,
+  assignee: undefined,
+} as unknown as Task;
 
 function createTestStore() {
   return configureStore({
@@ -85,7 +84,7 @@ describe('PartialCompleteSheet', () => {
     expect(screen.getByText('Selesai Sebagian')).toBeTruthy();
   });
 
-  it('displays target plant count', () => {
+  it('displays task title', () => {
     const store = createTestStore();
     render(
       <Provider store={store}>

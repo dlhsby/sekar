@@ -90,11 +90,12 @@ const makeShift = () => ({
 const createStore = (options: { withShift?: boolean; isOnline?: boolean } = {}) => {
   const { withShift = false, isOnline = true } = options;
   return configureStore({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture type inference mismatch
     reducer: {
-      activities: activitiesReducer,
-      shift: shiftReducer,
-      offline: offlineReducer,
-      auth: authReducer,
+      activities: activitiesReducer as any,
+      shift: shiftReducer as any,
+      offline: offlineReducer as any,
+      auth: authReducer as any,
     },
     preloadedState: {
       auth: {
@@ -134,8 +135,9 @@ const createStore = (options: { withShift?: boolean; isOnline?: boolean } = {}) 
 };
 
 const createWrapper = (store: ReturnType<typeof createStore>) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture type compatibility
   return ({ children }: { children: React.ReactNode }) =>
-    React.createElement(Provider, { store }, children);
+    React.createElement(Provider as any, { store }, children);
 };
 
 // ── Helper ─────────────────────────────────────────────────────────────────────
@@ -171,7 +173,7 @@ describe('useActivityForm', () => {
       const store = createStore();
       const ref = makePhotoListRef();
 
-      const { result } = renderHook(() => useActivityForm(ref), {
+      const { result } = renderHook(() => useActivityForm(), {
         wrapper: createWrapper(store),
       });
 
@@ -185,7 +187,7 @@ describe('useActivityForm', () => {
       const ref = makePhotoListRef();
       const Geolocation = require('react-native-geolocation-service');
 
-      renderHook(() => useActivityForm(ref), {
+      renderHook(() => useActivityForm(), {
         wrapper: createWrapper(store),
       });
 
@@ -199,7 +201,7 @@ describe('useActivityForm', () => {
       const ref = makePhotoListRef();
       const { getMyActivityTypes } = require('../../services/api/activityTypesApi');
 
-      renderHook(() => useActivityForm(ref), {
+      renderHook(() => useActivityForm(), {
         wrapper: createWrapper(store),
       });
 
@@ -214,7 +216,7 @@ describe('useActivityForm', () => {
       const store = createStore();
       const ref = makePhotoListRef();
 
-      const { result } = renderHook(() => useActivityForm(ref), {
+      const { result } = renderHook(() => useActivityForm(), {
         wrapper: createWrapper(store),
       });
 
@@ -229,7 +231,7 @@ describe('useActivityForm', () => {
       const store = createStore();
       const ref = makePhotoListRef();
 
-      const { result } = renderHook(() => useActivityForm(ref), {
+      const { result } = renderHook(() => useActivityForm(), {
         wrapper: createWrapper(store),
       });
 
@@ -244,7 +246,7 @@ describe('useActivityForm', () => {
       const store = createStore();
       const ref = makePhotoListRef();
 
-      const { result } = renderHook(() => useActivityForm(ref), {
+      const { result } = renderHook(() => useActivityForm(), {
         wrapper: createWrapper(store),
       });
 
@@ -267,7 +269,7 @@ describe('useActivityForm', () => {
       const store = createStore({ withShift: false });
       const ref = makePhotoListRef();
 
-      const { result } = renderHook(() => useActivityForm(ref), {
+      const { result } = renderHook(() => useActivityForm(), {
         wrapper: createWrapper(store),
       });
 
@@ -286,7 +288,7 @@ describe('useActivityForm', () => {
       const store = createStore({ withShift: true });
       const ref = makePhotoListRef();
 
-      const { result } = renderHook(() => useActivityForm(ref), {
+      const { result } = renderHook(() => useActivityForm(), {
         wrapper: createWrapper(store),
       });
 
@@ -325,7 +327,7 @@ describe('useActivityForm', () => {
       const { createActivity } = require('../../services/api/activitiesApi');
       createActivity.mockResolvedValue({ data: createdActivity, error: null });
 
-      const { result } = renderHook(() => useActivityForm(ref), {
+      const { result } = renderHook(() => useActivityForm(), {
         wrapper: createWrapper(store),
       });
 
@@ -345,7 +347,8 @@ describe('useActivityForm', () => {
 
       // The simplest check: createActivity was called and dispatched addActivity
       // We test via store state change
-      const initialActivities = store.getState().activities.activitiesList;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture type inference
+      const initialActivities = (store.getState() as any).activities.activitiesList;
       expect(initialActivities).toHaveLength(0);
 
       // Directly test addActivity dispatch
@@ -353,7 +356,8 @@ describe('useActivityForm', () => {
         store.dispatch(addActivity(createdActivity as any));
       });
 
-      const updatedActivities = store.getState().activities.activitiesList;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture type inference
+      const updatedActivities = (store.getState() as any).activities.activitiesList;
       expect(updatedActivities).toHaveLength(1);
       expect(updatedActivities[0].id).toBe('activity-1');
     });
@@ -371,7 +375,7 @@ describe('useActivityForm', () => {
         });
       });
 
-      const { result } = renderHook(() => useActivityForm(ref), {
+      const { result } = renderHook(() => useActivityForm(), {
         wrapper: createWrapper(store),
       });
 
@@ -400,7 +404,7 @@ describe('useActivityForm', () => {
       const store = createStore();
       const ref = makePhotoListRef();
 
-      const { result } = renderHook(() => useActivityForm(ref), {
+      const { result } = renderHook(() => useActivityForm(), {
         wrapper: createWrapper(store),
       });
 
@@ -424,7 +428,7 @@ describe('useActivityForm', () => {
         }
       );
 
-      const { result } = renderHook(() => useActivityForm(ref), {
+      const { result } = renderHook(() => useActivityForm(), {
         wrapper: createWrapper(store),
       });
 
@@ -443,7 +447,7 @@ describe('useActivityForm', () => {
         // Never calls callbacks
       });
 
-      const { result } = renderHook(() => useActivityForm(ref), {
+      const { result } = renderHook(() => useActivityForm(), {
         wrapper: createWrapper(store),
       });
 
@@ -460,11 +464,11 @@ describe('useActivityForm', () => {
       const offlineStore = createStore({ isOnline: false });
       const ref = makePhotoListRef();
 
-      const { result: onlineResult } = renderHook(() => useActivityForm(ref), {
+      const { result: onlineResult } = renderHook(() => useActivityForm(), {
         wrapper: createWrapper(onlineStore),
       });
 
-      const { result: offlineResult } = renderHook(() => useActivityForm(ref), {
+      const { result: offlineResult } = renderHook(() => useActivityForm(), {
         wrapper: createWrapper(offlineStore),
       });
 
@@ -479,7 +483,7 @@ describe('useActivityForm', () => {
       const store = createStore();
       const ref = makePhotoListRef();
 
-      const { result } = renderHook(() => useActivityForm(ref), {
+      const { result } = renderHook(() => useActivityForm(), {
         wrapper: createWrapper(store),
       });
 

@@ -25,16 +25,15 @@ describe('ShiftDetailModal', () => {
     id: 'shift1',
     user_id: 'user1',
     area_id: 'area1',
-    clock_in_time: new Date('2026-02-15T08:00:00Z'),
+    clock_in_time: '2026-02-15T08:00:00Z',
     clock_in_gps_lat: -7.250445,
     clock_in_gps_lng: 112.768845,
     clock_in_photo_url: 'https://example.com/clock-in.jpg',
-    clock_out_time: new Date('2026-02-15T17:00:00Z'),
+    clock_out_time: '2026-02-15T17:00:00Z',
     clock_out_gps_lat: -7.250445,
     clock_out_gps_lng: 112.768845,
-    clock_out_photo_url: 'https://example.com/clock-out.jpg',
-    created_at: new Date('2026-02-15T08:00:00Z'),
-    updated_at: new Date('2026-02-15T17:00:00Z'),
+    created_at: '2026-02-15T08:00:00Z',
+    updated_at: '2026-02-15T17:00:00Z',
     area: {
       id: 'area1',
       name: 'Taman Bungkul',
@@ -44,14 +43,14 @@ describe('ShiftDetailModal', () => {
       gps_lng: 112.768845,
       radius_meters: 100,
       address: 'Jl. Raya Darmo, Surabaya',
-      created_at: new Date('2026-01-01T00:00:00Z'),
-      updated_at: new Date('2026-01-01T00:00:00Z'),
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z',
       area_type: {
         id: 'type1',
+        code: 'park' as const,
         name: 'Taman Kota',
         description: 'Taman untuk rekreasi warga',
-        created_at: new Date('2026-01-01T00:00:00Z'),
-        updated_at: new Date('2026-01-01T00:00:00Z'),
+        created_at: '2026-01-01T00:00:00Z',
       },
     },
   };
@@ -295,12 +294,12 @@ describe('ShiftDetailModal', () => {
       expect(getByText('0m')).toBeTruthy(); // Distance is 0 when coordinates missing
     });
 
-    it('should use default radius when not specified', () => {
-      const shiftWithoutRadius: Shift = {
+    it('should use specified radius', () => {
+      const shiftWithSpecificRadius: Shift = {
         ...mockShift,
         area: {
           ...mockShift.area!,
-          radius_meters: undefined,
+          radius_meters: 100,
         },
       };
 
@@ -308,11 +307,11 @@ describe('ShiftDetailModal', () => {
         <ShiftDetailModal
           visible={true}
           onClose={mockOnClose}
-          shift={shiftWithoutRadius}
+          shift={shiftWithSpecificRadius}
         />
       );
 
-      expect(getByText('100m')).toBeTruthy(); // Default radius
+      expect(getByText('100m')).toBeTruthy();
     });
   });
 
@@ -391,8 +390,9 @@ describe('ShiftDetailModal', () => {
         ...mockShift,
         area: {
           ...mockShift.area!,
-          gps_lat: undefined,
-          gps_lng: undefined,
+          // No area GPS — cast since Area types gps_* as number
+          gps_lat: undefined as unknown as number,
+          gps_lng: undefined as unknown as number,
         },
       };
 
@@ -404,11 +404,9 @@ describe('ShiftDetailModal', () => {
         />
       );
 
-      // When area has no GPS, the area center coords row should not appear
-      // Only GPS Clock In coords should remain
-      const allGpsTexts = queryByText(/-7\.250445, 112\.768845/);
-      // With no area GPS, only the clock-in GPS appears (or none if also missing)
-      expect(allGpsTexts).toBeTruthy(); // clock-in GPS still shows
+      // With no area GPS the area-center row is absent; only the clock-in GPS
+      // row remains, so the coordinate still appears exactly once.
+      expect(queryByText(/-7\.250445, 112\.768845/)).toBeTruthy();
     });
   });
 

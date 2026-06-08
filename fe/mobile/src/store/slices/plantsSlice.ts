@@ -179,9 +179,11 @@ const plantsSlice = createSlice({
     });
     builder.addCase(fetchSpecies.fulfilled, (state, action) => {
       state.isLoadingCatalog = false;
-      state.speciesCatalog = action.payload.data;
+      const payload = action.payload;
+      if (!payload) return;
+      state.speciesCatalog = payload.data;
       // Populate by-key map
-      state.speciesById = { ...state.speciesById, ...Object.fromEntries(action.payload.data.map(s => [s.id, s])) };
+      state.speciesById = { ...state.speciesById, ...Object.fromEntries(payload.data.map(s => [s.id, s])) };
     });
     builder.addCase(fetchSpecies.rejected, (state, action) => {
       state.isLoadingCatalog = false;
@@ -195,10 +197,11 @@ const plantsSlice = createSlice({
     });
     builder.addCase(searchSpecies.fulfilled, (state, action) => {
       state.isLoadingSearch = false;
-      state.searchResults = action.payload;
+      const payload = action.payload ?? [];
+      state.searchResults = payload;
       // Also add to by-key map if not present
       const newEntries = Object.fromEntries(
-        action.payload
+        payload
           .filter(species => !state.speciesById[species.id])
           .map(s => [s.id, s])
       );
@@ -216,13 +219,17 @@ const plantsSlice = createSlice({
       state.error = null;
     });
     builder.addCase(fetchAreaPlants.fulfilled, (state, action) => {
-      const { areaId, plants } = action.payload;
+      const payload = action.payload;
+      if (!payload) return;
+      const { areaId, plants } = payload;
       state.isLoadingAreaPlants[areaId] = false;
-      state.areaPlantsByArea[areaId] = plants;
+      state.areaPlantsByArea[areaId] = plants ?? [];
       // Populate species by-key map
-      plants.forEach(plant => {
-        state.speciesById[plant.species.id] = plant.species;
-      });
+      if (plants) {
+        plants.forEach(plant => {
+          state.speciesById[plant.species.id] = plant.species;
+        });
+      }
     });
     builder.addCase(fetchAreaPlants.rejected, (state, action) => {
       const areaId = action.meta.arg;
@@ -237,13 +244,17 @@ const plantsSlice = createSlice({
       state.error = null;
     });
     builder.addCase(fetchNotablePlants.fulfilled, (state, action) => {
-      const { areaId, plants } = action.payload;
+      const payload = action.payload;
+      if (!payload) return;
+      const { areaId, plants } = payload;
       state.isLoadingNotables[areaId] = false;
-      state.notableByArea[areaId] = plants;
+      state.notableByArea[areaId] = plants ?? [];
       // Populate species by-key map
-      plants.forEach(plant => {
-        state.speciesById[plant.species.id] = plant.species;
-      });
+      if (plants) {
+        plants.forEach(plant => {
+          state.speciesById[plant.species.id] = plant.species;
+        });
+      }
     });
     builder.addCase(fetchNotablePlants.rejected, (state, action) => {
       const areaId = action.meta.arg;
@@ -258,7 +269,10 @@ const plantsSlice = createSlice({
     });
     builder.addCase(createNotablePlant.fulfilled, (state, action) => {
       state.isCreating = false;
-      const { areaId, plant } = action.payload;
+      const payload = action.payload;
+      if (!payload) return;
+      const { areaId, plant } = payload;
+      if (!plant) return;
       // Add to notableByArea if it exists
       if (!state.notableByArea[areaId]) {
         state.notableByArea[areaId] = [];

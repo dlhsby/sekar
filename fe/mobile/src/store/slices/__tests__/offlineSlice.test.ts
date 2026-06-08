@@ -16,8 +16,20 @@ import offlineReducer, {
   selectTotalPendingCount,
 } from '../offlineSlice';
 
+interface OfflineState {
+  isOnline: boolean;
+  isSyncing: boolean;
+  queue: Array<{ type: 'shift' | 'report' | 'location'; data: any; timestamp: number; id?: string }>;
+  pendingShiftsCount: number;
+  pendingReportsCount: number;
+  pendingMediaCount: number;
+  pendingLocationsCount: number;
+  lastSyncTime: string | null;
+  syncError: string | null;
+}
+
 describe('offlineSlice', () => {
-  const initialState = {
+  const initialState: OfflineState = {
     isOnline: true,
     isSyncing: false,
     queue: [],
@@ -70,7 +82,7 @@ describe('offlineSlice', () => {
     });
 
     it('should handle toggling online status multiple times', () => {
-      let state = initialState;
+      let state: OfflineState = initialState;
 
       state = offlineReducer(state, setOnlineStatus(false));
       expect(state.isOnline).toBe(false);
@@ -145,7 +157,7 @@ describe('offlineSlice', () => {
     });
 
     it('should add multiple items to queue', () => {
-      let state = initialState;
+      let state: OfflineState = initialState;
 
       const shiftItem = {
         type: 'shift' as const,
@@ -432,7 +444,7 @@ describe('offlineSlice', () => {
     });
 
     it('should handle sync failure scenario', () => {
-      let state = {
+      let state: OfflineState = {
         ...initialState,
         isOnline: true,
         isSyncing: true,
@@ -454,7 +466,7 @@ describe('offlineSlice', () => {
     });
 
     it('should handle rapid online/offline transitions', () => {
-      let state = initialState;
+      let state: OfflineState = initialState;
 
       for (let i = 0; i < 10; i++) {
         state = offlineReducer(state, setOnlineStatus(false));

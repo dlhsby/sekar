@@ -30,10 +30,11 @@ describe('activitiesSlice', () => {
 
   const mockActivity: Activity = {
     id: 'act-001',
+    user_id: 'user-001',
     shift_id: 'shift-001',
     activity_type_id: 'type-001',
     description: 'Menyiram tanaman',
-    photos: ['data:image/jpeg;base64,abc'],
+    photo_urls: ['data:image/jpeg;base64,abc'],
     gps_lat: -7.25,
     gps_lng: 112.75,
     created_at: '2026-02-14T08:00:00Z',

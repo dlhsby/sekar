@@ -18,6 +18,7 @@ import authReducer from '../../../store/slices/authSlice';
 import overtimeReducer from '../../../store/slices/overtimeSlice';
 import shiftReducer from '../../../store/slices/shiftSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { MainTabScreenProps } from '../../../types/navigation.types';
 
 // ─── Primitive / Icon mocks ──────────────────────────────────────────────────
 
@@ -259,7 +260,9 @@ const createTestStore = () =>
       overtime: overtimeReducer,
       shift: shiftReducer,
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test preloadedState
     preloadedState: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test preloadedState
       auth: {
         user: {
           id: 'user-1',
@@ -271,8 +274,26 @@ const createTestStore = () =>
         token: 'test-token',
         isAuthenticated: true,
         isLoading: false,
+        isRestoring: false,
         error: null,
         assignedArea: null,
+        onboardingCompleted: false,
+      } as any,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test preloadedState
+      overtime: {
+        myOvertimes: [],
+        pendingApprovals: [],
+        selectedOvertime: null,
+        isLoading: false,
+        isSubmitting: false,
+        error: null,
+      } as any,
+      shift: {
+        currentShift: null,
+        shiftHistory: [],
+        isClockingIn: false,
+        isClockingOut: false,
+        error: null,
       },
     },
   });
@@ -281,10 +302,12 @@ const createTestStore = () =>
 
 const renderScreen = async () => {
   const store = createTestStore();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test props
   const result = render(
     <Provider store={store}>
       <NavigationContainer>
-        <OvertimeSubmitScreen />
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test props */}
+        <OvertimeSubmitScreen {...({} as any)} />
       </NavigationContainer>
     </Provider>,
   );
@@ -354,10 +377,12 @@ describe('OvertimeSubmitScreen', () => {
       );
 
       const store = createTestStore();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test props
       const { getByText } = render(
         <Provider store={store}>
           <NavigationContainer>
-            <OvertimeSubmitScreen />
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test props */}
+            <OvertimeSubmitScreen {...({} as any)} />
           </NavigationContainer>
         </Provider>,
       );

@@ -89,6 +89,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
         offline: offlineReducer,
       },
       preloadedState: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test preloadedState
         auth: {
           user: {
             id: 1,
@@ -110,10 +111,12 @@ describe('ClockInOutScreen Location Watcher Management', () => {
           isAuthenticated: true,
           loading: false,
           error: null,
-        },
+        } as any,
         shift: {
           currentShift: null,
-          isSubmitting: false,
+          shiftHistory: [],
+          isClockingIn: false,
+          isClockingOut: false,
           error: null,
         },
         offline: {
@@ -410,6 +413,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
 
   it('should handle clock-out mode correctly', async () => {
     // Create store with active shift for clock-out mode
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test preloadedState
     store = configureStore({
       reducer: {
         auth: authReducer,
@@ -427,11 +431,13 @@ describe('ClockInOutScreen Location Watcher Management', () => {
             clock_in_gps_lat: -7.250445,
             clock_in_gps_lng: 112.768845,
           },
-          isSubmitting: false,
+          shiftHistory: [],
+          isClockingIn: false,
+          isClockingOut: false,
           error: null,
         },
-      },
-    });
+      } as any,
+    } as any);
 
     const { getByText, getAllByText } = render(
       <Provider store={store}>

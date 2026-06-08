@@ -458,23 +458,23 @@ class SyncManager extends EventEmitter {
    * status guards block double-application).
    */
   private async syncOvertimeStart(data: { overtime_id: string; payload?: unknown }): Promise<void> {
-    const { apiClient } = await import('../api/apiClient');
-    await apiClient.post(`/api/v1/overtime/${data.overtime_id}/start`, data.payload ?? {});
+    const apiClient = await import('../api/apiClient');
+    await apiClient.default.post(`/api/v1/overtime/${data.overtime_id}/start`, data.payload ?? {});
   }
 
   private async syncOvertimeEnd(data: { overtime_id: string; payload?: unknown }): Promise<void> {
-    const { apiClient } = await import('../api/apiClient');
-    await apiClient.post(`/api/v1/overtime/${data.overtime_id}/end`, data.payload ?? {});
+    const apiClient = await import('../api/apiClient');
+    await apiClient.default.post(`/api/v1/overtime/${data.overtime_id}/end`, data.payload ?? {});
   }
 
   private async syncTaskCompletion(data: { task_id: string; payload: unknown }): Promise<void> {
-    const { apiClient } = await import('../api/apiClient');
-    await apiClient.post(`/api/v1/tasks/${data.task_id}/complete`, data.payload);
+    const apiClient = await import('../api/apiClient');
+    await apiClient.default.post(`/api/v1/tasks/${data.task_id}/complete`, data.payload);
   }
 
   private async syncReassignment(data: { user_id: string; payload: unknown }): Promise<void> {
-    const { apiClient } = await import('../api/apiClient');
-    await apiClient.post(`/api/v1/monitoring/users/${data.user_id}/reassign`, data.payload);
+    const apiClient = await import('../api/apiClient');
+    await apiClient.default.post(`/api/v1/monitoring/users/${data.user_id}/reassign`, data.payload);
   }
 
   /**
@@ -482,7 +482,7 @@ class SyncManager extends EventEmitter {
    */
   private async syncClockIn(data: ClockInData): Promise<void> {
     const { area_id, gps_lat, gps_lng, selfie_photo } = data;
-    const result = await clockIn(area_id, gps_lat, gps_lng, selfie_photo);
+    const result = await clockIn(gps_lat, gps_lng, selfie_photo, area_id?.toString());
 
     if (!result || result.error) {
       throw new Error(result?.error || 'Clock-in sync failed');
@@ -536,7 +536,7 @@ class SyncManager extends EventEmitter {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Pruning request sync failed';
       try {
-        const { store } = await import('../../store');
+        const { store } = await import('../../store/store');
         const { setSyncError } = await import('../../store/slices/pruningRequestsSlice');
         store.dispatch(setSyncError(message));
       } catch (dispatchErr) {

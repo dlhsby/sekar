@@ -85,7 +85,9 @@ const mockOvertimeData = {
 const createTestStore = (userOverrides = {}) => {
   return configureStore({
     reducer: { auth: authReducer },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test preloadedState
     preloadedState: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test preloadedState
       auth: {
         user: {
           id: 'approver-1',
@@ -98,10 +100,12 @@ const createTestStore = (userOverrides = {}) => {
         },
         token: 'test-token',
         isAuthenticated: true,
-        loading: false,
+        isLoading: false,
+        isRestoring: false,
         error: null,
         assignedArea: null,
-      },
+        onboardingCompleted: false,
+      } as any,
     },
   });
 };

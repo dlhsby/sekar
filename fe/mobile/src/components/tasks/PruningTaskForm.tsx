@@ -13,7 +13,7 @@ import { SpeciesAutocomplete } from './SpeciesAutocomplete';
 import { NBSelect } from '../nb/NBSelect';
 import { NBButton } from '../nb/NBButton';
 import { NBAlert } from '../nb/NBAlert';
-import { nbColors, nbSpacing, nbBorders, nbType } from '../../constants/generated/tokens';
+import { nbColors, nbSpacing, nbBorders, nbType, nbRadius } from '../../constants/generated/tokens';
 
 export type CaseType = 'GT' | 'PT' | 'PS' | 'PD' | 'PK';
 export type PruningAction = 'PM' | 'PB' | 'PC';
@@ -182,11 +182,9 @@ export const PruningTaskForm: React.FC<PruningTaskFormProps> = ({
         {/* Validation Error Alert */}
         {validationError && (
           <NBAlert
-            type="error"
+            variant="danger"
             title="Validasi Gagal"
             message={validationError}
-            style={styles.alert}
-            testID={`${testID}-error`}
           />
         )}
 
@@ -201,8 +199,6 @@ export const PruningTaskForm: React.FC<PruningTaskFormProps> = ({
               setValidationError('');
             }}
             placeholder="Pilih jenis gangguan"
-            testID={`${testID}-case-type`}
-            accessibilityLabel="Jenis gangguan"
           />
         </View>
 
@@ -217,8 +213,6 @@ export const PruningTaskForm: React.FC<PruningTaskFormProps> = ({
               setValidationError('');
             }}
             placeholder="Pilih jenis pemangkasan"
-            testID={`${testID}-pruning-action`}
-            accessibilityLabel="Jenis pemangkasan"
           />
         </View>
 
@@ -233,8 +227,6 @@ export const PruningTaskForm: React.FC<PruningTaskFormProps> = ({
               setValidationError('');
             }}
             placeholder="Pilih sumber pengajuan"
-            testID={`${testID}-source`}
-            accessibilityLabel="Sumber pengajuan"
           />
         </View>
 
@@ -278,7 +270,7 @@ export const PruningTaskForm: React.FC<PruningTaskFormProps> = ({
           <TextInput
             style={styles.notesInput}
             placeholder="Tambahkan catatan..."
-            placeholderTextColor={nbColors.gray5}
+            placeholderTextColor={nbColors.gray50}
             value={notes}
             onChangeText={setNotes}
             multiline
@@ -325,7 +317,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: nbType.body.fontFamily,
     fontWeight: '600',
-    color: nbColors.text,
+    color: nbColors.black,
     marginBottom: nbSpacing.sm,
   },
   countRow: {
@@ -335,34 +327,34 @@ const styles = StyleSheet.create({
     paddingVertical: nbSpacing.sm,
     paddingHorizontal: nbSpacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: nbColors.border,
+    borderBottomColor: nbColors.gray300,
   },
   countLabel: {
     flex: 1,
     fontSize: 14,
     fontFamily: nbType.body.fontFamily,
-    color: nbColors.text,
+    color: nbColors.black,
   },
   countInput: {
     width: 60,
     height: 40,
     borderWidth: 1,
-    borderColor: nbColors.border,
-    borderRadius: parseInt(nbBorders.radiusSm as string),
+    borderColor: nbColors.gray300,
+    borderRadius: nbRadius.sm,
     paddingHorizontal: nbSpacing.sm,
     fontSize: 14,
     fontFamily: nbType.body.fontFamily,
-    color: nbColors.text,
+    color: nbColors.black,
     textAlign: 'center',
   },
   notesInput: {
     borderWidth: 1,
-    borderColor: nbColors.border,
-    borderRadius: parseInt(nbBorders.radiusSm as string),
+    borderColor: nbColors.gray300,
+    borderRadius: nbRadius.sm,
     padding: nbSpacing.sm,
     fontSize: 14,
     fontFamily: nbType.body.fontFamily,
-    color: nbColors.text,
+    color: nbColors.black,
     minHeight: 100,
     textAlignVertical: 'top',
   },

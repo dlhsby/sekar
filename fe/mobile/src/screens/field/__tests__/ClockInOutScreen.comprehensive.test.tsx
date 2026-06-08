@@ -80,6 +80,7 @@ const mockShift = {
 };
 
 const createMockStore = (preloadedState: any = {}) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test preloadedState
   return configureStore({
     reducer: {
       auth: authReducer,
@@ -87,6 +88,7 @@ const createMockStore = (preloadedState: any = {}) => {
       offline: offlineReducer,
     },
     preloadedState: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test preloadedState
       auth: {
         user: mockUser,
         assignedArea: mockAssignedArea,
@@ -94,10 +96,12 @@ const createMockStore = (preloadedState: any = {}) => {
         isAuthenticated: true,
         loading: false,
         error: null,
-      },
+      } as any,
       shift: {
         currentShift: null,
-        isSubmitting: false,
+        shiftHistory: [],
+        isClockingIn: false,
+        isClockingOut: false,
         error: null,
       },
       offline: {
@@ -112,15 +116,15 @@ const createMockStore = (preloadedState: any = {}) => {
         syncError: null,
       },
       ...preloadedState,
-    },
-  });
+    } as any,
+  } as any);
 };
 
 const renderScreen = (store: any) => {
   return render(
     <Provider store={store}>
       <NavigationContainer>
-        <ClockInOutScreen navigation={mockNavigation as any} route={{} as any} />
+        <ClockInOutScreen />
       </NavigationContainer>
     </Provider>
   );

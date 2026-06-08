@@ -6,6 +6,7 @@
 import { renderHook, waitFor } from '@testing-library/react-native';
 import { useActivityTypes } from '../useActivityTypes';
 import { getMyActivityTypes } from '../../services/api/activityTypesApi';
+import type { ActivityType } from '../../types/models.types';
 
 jest.mock('../../services/api/activityTypesApi', () => ({
   getMyActivityTypes: jest.fn(),
@@ -21,9 +22,23 @@ describe('useActivityTypes', () => {
   });
 
   it('should fetch activity types on mount', async () => {
-    const mockTypes = [
-      { id: 'type-1', name: 'Penyiraman', applicable_roles: ['satgas'] },
-      { id: 'type-2', name: 'Pemotongan Rumput', applicable_roles: ['satgas'] },
+    const mockTypes: ActivityType[] = [
+      {
+        id: 'type-1',
+        name: 'Penyiraman',
+        code: 'spray',
+        applicable_roles: ['satgas'] as const,
+        is_active: true,
+        created_at: '2026-01-01T00:00:00Z',
+      },
+      {
+        id: 'type-2',
+        name: 'Pemotongan Rumput',
+        code: 'cut_grass',
+        applicable_roles: ['satgas'] as const,
+        is_active: true,
+        created_at: '2026-01-01T00:00:00Z',
+      },
     ];
     mockGetMyActivityTypes.mockResolvedValue({
       data: { data: mockTypes },
@@ -85,7 +100,16 @@ describe('useActivityTypes', () => {
   });
 
   it('should provide refetch function', async () => {
-    const mockTypes = [{ id: 'type-1', name: 'Penyiraman' }];
+    const mockTypes: ActivityType[] = [
+      {
+        id: 'type-1',
+        name: 'Penyiraman',
+        code: 'spray',
+        applicable_roles: ['satgas'] as const,
+        is_active: true,
+        created_at: '2026-01-01T00:00:00Z',
+      },
+    ];
     mockGetMyActivityTypes.mockResolvedValue({
       data: { data: mockTypes },
     });

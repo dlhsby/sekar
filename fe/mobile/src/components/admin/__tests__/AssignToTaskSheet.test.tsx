@@ -66,16 +66,27 @@ const mockRequest = {
   referenceCode: 'PR-001',
   address: 'Jl. Test 1',
   status: 'approved' as const,
-  rayon_id: 'r1',
+  submittedBy: 'user-kec-1',
+  kecamatanName: 'Kecamatan Test',
+  rayonId: 'r1',
   rayon: { id: 'r1', name: 'Rayon 1' },
   createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
   photoUrls: ['url1'],
   gpsLat: -7.25,
   gpsLng: 112.75,
   expectedDate: new Date().toISOString(),
+  expectedYear: 2026,
+  expectedIsoWeek: 23,
+  scheduledDate: null,
   estimatedPlantCount: 5,
   notes: 'Test notes',
-};
+  reviewedBy: null,
+  reviewedAt: null,
+  reviewNotes: null,
+  assignedTaskId: null,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- fixture for testing
+} as any;
 
 const mockAreas = [
   { id: 'area1', name: 'Area 1', rayon_id: 'r1' },
@@ -88,14 +99,19 @@ const mockUsers = [
 ];
 
 const mockCapacityRow = {
+  id: 'cap-1',
+  rayon_id: 'r1',
   year: 2026,
   week: 18,
+  service_type: 'pruning' as const,
   capacity_units: 10,
   booked_units: 5,
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
 };
 
 describe('AssignToTaskSheet', () => {
-  let store: any;
+  let store: ReturnType<typeof configureStore>;
 
   // Mock reducers for areas and users
   // Stubs match the real slice shape ({ list, isLoading, error, lastFetchedAt })
@@ -105,6 +121,7 @@ describe('AssignToTaskSheet', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture with complex preloadedState
     store = configureStore({
       reducer: {
         pruningRequests: pruningRequestsReducer,
@@ -128,6 +145,7 @@ describe('AssignToTaskSheet', () => {
           adminListPagination: { page: 1, total: 1, limit: 20 },
           reviewingId: null,
           convertingId: null,
+          reschedulingId: null,
         },
         serviceCapacity: {
           calendarByRayon: {},
@@ -137,10 +155,10 @@ describe('AssignToTaskSheet', () => {
         areas: { list: mockAreas, isLoading: false, error: null, lastFetchedAt: null },
         users: { list: mockUsers, isLoading: false, error: null, lastFetchedAt: null },
       },
-    });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture
+    } as any);
 
     mockServiceCapacityApi.getCapacityCalendar.mockResolvedValue({
-      success: true,
       data: [mockCapacityRow],
     });
   });
@@ -285,7 +303,19 @@ describe('AssignToTaskSheet', () => {
           },
           serviceCapacity: {
             calendarByRayon: {
-              r1: [{ year: 2026, week: 18, capacity_units: 10, booked_units: 8 }],
+              r1: [
+                {
+                  id: 'cap-2',
+                  rayon_id: 'r1',
+                  year: 2026,
+                  week: 18,
+                  service_type: 'pruning' as const,
+                  capacity_units: 10,
+                  booked_units: 8,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                },
+              ],
             },
             loading: false,
             error: null,
@@ -293,7 +323,8 @@ describe('AssignToTaskSheet', () => {
           areas: { list: mockAreas, isLoading: false, error: null, lastFetchedAt: null },
           users: { list: mockUsers, isLoading: false, error: null, lastFetchedAt: null },
         },
-      });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture
+      } as any);
 
       const { getByTestId } = render(
         <Provider store={store}>
@@ -336,7 +367,19 @@ describe('AssignToTaskSheet', () => {
           },
           serviceCapacity: {
             calendarByRayon: {
-              r1: [{ year: 2026, week: 18, capacity_units: 5, booked_units: 3 }],
+              r1: [
+                {
+                  id: 'cap-3',
+                  rayon_id: 'r1',
+                  year: 2026,
+                  week: 18,
+                  service_type: 'pruning' as const,
+                  capacity_units: 5,
+                  booked_units: 3,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                },
+              ],
             },
             loading: false,
             error: null,
@@ -344,7 +387,8 @@ describe('AssignToTaskSheet', () => {
           areas: { list: mockAreas, isLoading: false, error: null, lastFetchedAt: null },
           users: { list: mockUsers, isLoading: false, error: null, lastFetchedAt: null },
         },
-      });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture
+      } as any);
 
       render(
         <Provider store={store}>
@@ -395,7 +439,8 @@ describe('AssignToTaskSheet', () => {
           areas: { list: mockAreas, isLoading: false, error: null, lastFetchedAt: null },
           users: { list: mockUsers, isLoading: false, error: null, lastFetchedAt: null },
         },
-      });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture
+      } as any);
 
       render(
         <Provider store={store}>
@@ -465,7 +510,8 @@ describe('AssignToTaskSheet', () => {
           areas: { list: mockAreas, isLoading: false, error: null, lastFetchedAt: null },
           users: { list: mockUsers, isLoading: false, error: null, lastFetchedAt: null },
         },
-      });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture
+      } as any);
 
       render(
         <Provider store={store}>

@@ -322,7 +322,7 @@ class PermissionManager {
     }
 
     // Only available on Android 10+ (API 29+)
-    if (Platform.Version < 29) {
+    if (typeof Platform.Version === 'number' && Platform.Version < 29) {
       return {
         granted: true,
         status: RESULTS.GRANTED,
@@ -371,7 +371,7 @@ class PermissionManager {
     }
 
     // Only available on Android 10+ (API 29+)
-    if (Platform.Version < 29) {
+    if (typeof Platform.Version === 'number' && Platform.Version < 29) {
       return {
         granted: true,
         status: RESULTS.GRANTED,

@@ -81,33 +81,37 @@ const createTestStore = (currentShift: any = null) => {
   (tasksApi.getMyTasks as jest.Mock).mockResolvedValue({ data: { data: [] } });
 
   return configureStore({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture type inference mismatch
     reducer: {
-      auth: authReducer,
-      shift: shiftReducer,
-      activities: activitiesReducer,
-      offline: offlineReducer,
-      tasks: tasksReducer,
+      auth: authReducer as any,
+      shift: shiftReducer as any,
+      activities: activitiesReducer as any,
+      offline: offlineReducer as any,
+      tasks: tasksReducer as any,
     },
     preloadedState: {
       auth: {
         user: {
-          id: 1,
+          id: '1',
           username: 'worker1',
           full_name: 'Test Worker',
           role: 'satgas',
         },
         assignedArea: {
-          id: 1,
+          id: '1',
           name: 'Park A',
           gps_lat: -7.250445,
           gps_lng: 112.768845,
           radius_meters: 100,
+          area_type_id: '1',
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-01T00:00:00Z',
         },
         token: 'test-token',
         isAuthenticated: true,
         loading: false,
         error: null,
-      },
+      } as any,
       shift: {
         currentShift,
         shiftHistory: currentShift ? [currentShift] : [],
@@ -138,16 +142,24 @@ const createTestStore = (currentShift: any = null) => {
 
 // Helper to create a shift with given clock-in time
 const createShift = (clockInTime: Date) => ({
-  id: 1,
-  area_id: 1,
-  user_id: 1,
+  id: '1',
+  area_id: '1',
+  user_id: '1',
   clock_in_time: clockInTime.toISOString(),
   clock_in_gps_lat: -7.250445,
   clock_in_gps_lng: 112.768845,
   area: {
-    id: 1,
+    id: '1',
     name: 'Park A',
+    area_type_id: '1',
+    gps_lat: -7.250445,
+    gps_lng: 112.768845,
+    radius_meters: 100,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
   },
+  created_at: clockInTime.toISOString(),
+  updated_at: clockInTime.toISOString(),
 });
 
 describe('HomeScreen Timer Management', () => {
@@ -447,17 +459,18 @@ describe('HomeScreen Clock In/Out FAB', () => {
     // top_management never reaches HomeScreen via navigation,
     // but if it did, the role guard should hide the FAB
     const store = configureStore({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture type inference mismatch
       reducer: {
-        auth: authReducer,
-        shift: shiftReducer,
-        activities: activitiesReducer,
-        offline: offlineReducer,
-        tasks: tasksReducer,
+        auth: authReducer as any,
+        shift: shiftReducer as any,
+        activities: activitiesReducer as any,
+        offline: offlineReducer as any,
+        tasks: tasksReducer as any,
       },
       preloadedState: {
         auth: {
           user: {
-            id: 1,
+            id: '1',
             username: 'mgmt1',
             full_name: 'Top Management',
             role: 'top_management',
@@ -590,22 +603,23 @@ describe('HomeScreen — Fix 7: No double-fetch on mount', () => {
 describe('HomeScreen — Fix 8: FAB role guard (all clockable roles)', () => {
   const makeSingleRoleStore = (role: string) =>
     configureStore({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture type inference mismatch
       reducer: {
-        auth: authReducer,
-        shift: shiftReducer,
-        activities: activitiesReducer,
-        offline: offlineReducer,
-        tasks: tasksReducer,
+        auth: authReducer as any,
+        shift: shiftReducer as any,
+        activities: activitiesReducer as any,
+        offline: offlineReducer as any,
+        tasks: tasksReducer as any,
       },
       preloadedState: {
         auth: {
-          user: { id: 1, username: 'user1', full_name: 'User', role },
+          user: { id: '1', username: 'user1', full_name: 'User', role },
           assignedArea: null,
           isAuthenticated: true,
           isLoading: false,
           isRestoring: false,
           error: null,
-        },
+        } as any,
         shift: { currentShift: null, shiftHistory: [], isClockingIn: false, isClockingOut: false, error: null },
         activities: { activitiesList: [], isLoading: false, isSubmitting: false, error: null },
         offline: {
@@ -615,7 +629,7 @@ describe('HomeScreen — Fix 8: FAB role guard (all clockable roles)', () => {
           lastSyncTime: null, syncError: null,
         },
       } as any,
-    });
+    } as any);
 
   beforeEach(() => {
     jest.useFakeTimers();
@@ -719,22 +733,23 @@ describe('HomeScreen — Fix 9: No offline Redux selector subscription', () => {
     // The store intentionally does NOT include the offline reducer to confirm
     // the component doesn't crash if offline state is absent.
     const minimalStore = configureStore({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture type inference mismatch
       reducer: {
-        auth: authReducer,
-        shift: shiftReducer,
-        activities: activitiesReducer,
-        offline: offlineReducer,
-        tasks: tasksReducer,
+        auth: authReducer as any,
+        shift: shiftReducer as any,
+        activities: activitiesReducer as any,
+        offline: offlineReducer as any,
+        tasks: tasksReducer as any,
       },
       preloadedState: {
         auth: {
-          user: { id: 1, username: 'worker1', full_name: 'Worker', role: 'satgas' },
+          user: { id: '1', username: 'worker1', full_name: 'Worker', role: 'satgas' },
           assignedArea: null,
           isAuthenticated: true,
           isLoading: false,
           isRestoring: false,
           error: null,
-        },
+        } as any,
         shift: { currentShift: null, shiftHistory: [], isClockingIn: false, isClockingOut: false, error: null },
         activities: { activitiesList: [], isLoading: false, isSubmitting: false, error: null },
         offline: {
@@ -744,7 +759,7 @@ describe('HomeScreen — Fix 9: No offline Redux selector subscription', () => {
           lastSyncTime: null, syncError: null,
         },
       } as any,
-    });
+    } as any);
 
     // Even with isOnline=false and isSyncing=true and pendingShiftsCount=99,
     // the HomeScreen should not render any UI driven by those values

@@ -309,7 +309,8 @@ describe('websocketService', () => {
     });
 
     it('should handle subscription failure', () => {
-      mockSocket.emit.mockImplementation((event, data, callback) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- socket.emit has flexible signature
+      mockSocket.emit.mockImplementation((event: any, data: any, callback: any) => {
         if (callback) {
           callback({ success: false, error: 'Subscription failed' });
         }
@@ -323,7 +324,8 @@ describe('websocketService', () => {
 
     it('should handle unsubscription failure', () => {
       (websocketService as any).subscribedRooms.add('area:area-123');
-      mockSocket.emit.mockImplementation((event, data, callback) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- socket.emit has flexible signature
+      mockSocket.emit.mockImplementation((event: any, data: any, callback: any) => {
         if (callback && event === 'unsubscribe:area') {
           callback({ success: false, error: 'Unsubscription failed' });
         }

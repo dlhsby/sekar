@@ -192,6 +192,12 @@ const mockStaffingItem: StaffingSummaryItem = {
       total_required: 6,
     },
   ],
+  total_active: 3,
+  total_idle: 1,
+  total_outside_area: 0,
+  total_missing: 0,
+  total_offline: 1,
+  is_fully_staffed: false,
 };
 
 // ─── Initial State ─────────────────────────────────────────────────────────────
@@ -887,7 +893,11 @@ describe('monitoringSlice', () => {
     it('should not change staffingSummary when payload is undefined on fulfilled', () => {
       const state = monitoringReducer(
         { ...initialState, isLoadingStaffing: true, staffingSummary: [mockStaffingItem] },
-        fetchStaffingSummary.fulfilled(undefined, 'req-id', undefined),
+        fetchStaffingSummary.fulfilled(
+          undefined as any, // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test for undefined payload
+          'req-id',
+          undefined,
+        ),
       );
       expect(state.isLoadingStaffing).toBe(false);
       expect(state.staffingSummary).toEqual([mockStaffingItem]);
@@ -918,7 +928,7 @@ describe('monitoringSlice', () => {
     });
 
     it('should return empty items when getStaffingSummary response has no items', async () => {
-      mockGetStaffingSummary.mockResolvedValueOnce({ data: {} });
+      mockGetStaffingSummary.mockResolvedValueOnce({ data: { items: [] } });
       const dispatch = jest.fn();
       const getState = jest.fn();
       const thunk = fetchStaffingSummary(undefined);
@@ -927,7 +937,7 @@ describe('monitoringSlice', () => {
         ([action]) => action.type === fetchStaffingSummary.fulfilled.type,
       );
       expect(fulfilledCall).toBeTruthy();
-      expect(fulfilledCall[0].payload.items).toEqual([]);
+      expect((fulfilledCall?.[0] as any).payload.items).toEqual([]); // eslint-disable-next-line @typescript-eslint/no-explicit-any -- testing dispatch calls
     });
   });
 

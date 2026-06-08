@@ -41,7 +41,7 @@ export function Button({
   accessibilityHint,
   isCritical = false,
   enableHaptic = true,
-}: ButtonProps): JSX.Element {
+}: ButtonProps): React.ReactElement {
   const [isFocused, setIsFocused] = useState(false);
   const isDisabled = disabled || loading;
 

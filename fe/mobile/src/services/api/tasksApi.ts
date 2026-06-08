@@ -6,7 +6,6 @@
 import { get, post, put, del, patch } from './apiClient';
 import type { ApiResponse } from '../../types/api.types';
 import type {
-  Task,
   TasksFilter,
   TasksListResponse,
   CreateTaskRequest,
@@ -17,6 +16,7 @@ import type {
   DeclineTaskRequest,
   RequestRevisionRequest,
 } from '../../types/api.types';
+import type { Task } from '../../types/models.types';
 
 export async function createTask(
   data: CreateTaskRequest,

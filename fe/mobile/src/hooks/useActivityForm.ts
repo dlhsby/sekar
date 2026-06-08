@@ -316,7 +316,8 @@ export function useActivityForm() {
         const response = await createActivity(activityData);
         if (response.error) { throw new Error(response.error); }
         if (response.data) {
-          dispatch(addActivity(response.data)); // Immediately update Redux so HomeScreen counter reflects the new activity
+          // Activity created successfully; the server response only includes id and created_at.
+          // The activity will be fetched on next activities list refresh.
           await AsyncStorage.removeItem('activity_draft');
           for (const photo of form.photos) { await mediaService.deletePhoto(photo.uri); }
           resetForm();
