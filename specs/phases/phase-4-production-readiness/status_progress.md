@@ -4,6 +4,21 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 9, 2026 — nbTypography → nbType migration (last token shim removed; 3-R5 fully complete)
+
+**Goal:** finish the design-system token cleanup by removing the `nbTypography` shim — the one piece deferred from the 3-R5 mechanical sweep because it needed per-call-site judgment, not a value-identical rename.
+
+**Migration (176 refs across 27 files → generated `nbType` variant scale):**
+- Value-identical maps (zero pixel drift — the `nbType` variants carry the exact same numbers): `fontSize.xs/sm/base/md/lg` → `nbType.caption/bodySm/body/body/bodyLg.fontSize` (12/14/16/16/18); `fontWeight.regular/medium/semibold/bold/extrabold` → `nbType.body/bodyLg/h2/h1/displayXl.fontWeight` (400/500/600/700/800).
+- Canonical snaps (the only visual deltas, ~5 spots — there is no 20/24px in the v2.1 scale): `fontSize.xl` (20) and `fontSize['2xl']` (24) → `nbType.h2.fontSize` (22), in error-boundary / empty-state / nav-header / status-indicator titles. Computed `lineHeight` (fontSize × multiplier) in `PermissionRequestModal`/`ErrorBoundary` → the canonical `nbType.<variant>.lineHeight`.
+- `nbTypography` export deleted from `nbTokens.ts`; `nbTheme.typography` (unused aggregate) repointed to `nbType`.
+
+**Verification:** `nbTypography` is gone from `src`. `tsc` unchanged at 539 (0 net new — caught & fixed one bracket-form `nbType.fontSize['2xl']` the sed missed in `MainNavigator`). `eslint .` unchanged (18 pre-existing). Full jest **211 suites pass** (lone `usersApi` failure pre-existing/unrelated).
+
+**🏁 Design-system token shims fully removed.** Between 3-R5 (borders/radius/gray/bg/accents/animation) and this pass (nbTypography), `nbTokens.ts` now exposes only flat generated tokens + the `nbType`/`NBText` variant scale — no Phase-2 compat aliases remain. **Manual visual QA recommended** on the ~5 canonical-snap spots (error/empty/title text now 22px instead of 20/24).
+
+---
+
 ## June 9, 2026 — Pruning module tsc debt cleared (140 → 0) + latent convert bug fixed
 
 **Goal:** clear the long-standing TypeScript debt in the pruning module (slice, api, and their tests) — ~140 pre-existing `tsc` errors that didn't fail jest (babel strips types) but blocked a clean typecheck.
