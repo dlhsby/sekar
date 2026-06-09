@@ -28,6 +28,7 @@ import { MonitoringReassignService } from './services/monitoring-reassign.servic
 import { StatusProjectorService } from './services/status-projector.service';
 import { StaffingDebouncerService } from './services/staffing-debouncer.service';
 import { StaleStatusSweeperService } from './services/stale-status-sweeper.service';
+import { OfflineSweeperService } from './services/offline-sweeper.service';
 import { Schedule } from '../schedules/entities/schedule.entity';
 import { AreaPlant } from '../plants/entities/area-plant.entity';
 import { EventsModule } from '../../gateways/events.module';
@@ -75,6 +76,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     StatusProjectorService,
     StaffingDebouncerService,
     StaleStatusSweeperService,
+    OfflineSweeperService,
   ],
   exports: [
     MonitoringService,

@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
+import { StatusCalculatorService } from './status-calculator.service';
 
 const BATCH_SIZE = 50;
 
@@ -30,6 +31,10 @@ export class StaleStatusSweeperService {
     @InjectRepository(UserTrackingStatus)
     private readonly trackingRepository: Repository<UserTrackingStatus>,
     private readonly config: ConfigService,
+    // Phase 4-3 (§C1 #8): reuse the calculator's recipient-resolution + dedup so
+    // workers the sweeper flips directly (bypassing recalculate) still alert
+    // korlap + kepala_rayon.
+    private readonly statusCalculator: StatusCalculatorService,
   ) {
     this.missingStaleSecs = config.get<number>('MISSING_THRESHOLD_SECONDS', 900);
   }
@@ -71,6 +76,18 @@ export class StaleStatusSweeperService {
 
       await this.trackingRepository.save(stale);
       total += stale.length;
+
+      // Alert korlap + kepala_rayon for each worker the sweep flips. The
+      // calculator's per-(worker,day) Redis dedup ensures the every-minute
+      // scheduler and this sweep can't double-fire. Fire-and-forget — a slow
+      // or failing dispatch must not stall the sweep.
+      for (const record of stale) {
+        void this.statusCalculator.notifyMissingWorker(
+          record.user_id,
+          record.area_id,
+          record.rayon_id,
+        );
+      }
 
       if (stale.length < BATCH_SIZE) break;
     }

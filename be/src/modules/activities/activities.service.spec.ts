@@ -22,6 +22,10 @@ import { AuditLogService } from '../audit/audit.service';
 import { ActivityPlantItem } from '../plants/entities/activity-plant-item.entity';
 import { ActivityTag } from './entities/activity-tag.entity';
 import { TaskTypeRegistry } from '../tasks/registry/task-type-registry';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/entities/notification.entity';
+
+const mockNotificationsService = { sendToUser: jest.fn().mockResolvedValue({}) };
 
 describe('ActivitiesService', () => {
   let module: TestingModule;
@@ -169,6 +173,10 @@ describe('ActivitiesService', () => {
           // a permissive stub keeps the wiring satisfied.
           provide: TaskTypeRegistry,
           useValue: { validate: jest.fn() },
+        },
+        {
+          provide: NotificationsService,
+          useValue: mockNotificationsService,
         },
       ],
     }).compile();
@@ -1102,6 +1110,7 @@ describe('ActivitiesService', () => {
       );
       mockActivityTagRepo.create.mockImplementation((row) => row as any);
       mockActivityTagRepo.save.mockImplementation((rows) => Promise.resolve(rows as any));
+      mockNotificationsService.sendToUser.mockClear();
     });
 
     it('persists tag rows when tagged_user_ids is supplied', async () => {
@@ -1132,6 +1141,22 @@ describe('ActivitiesService', () => {
       const savedRows = mockActivityTagRepo.save.mock.calls[0][0];
       expect(savedRows).toHaveLength(2);
       expect(savedRows.map((r: any) => r.user_id).sort()).toEqual(['u-1', 'u-2']);
+    });
+
+    it('pushes an ACTIVITY_TAGGED notification to each tagged user (ADR-038)', async () => {
+      await service.createActivity(mockUser.id, mockUser.role, {
+        ...baseCreateDto,
+        tagged_user_ids: ['u-1', 'u-2'],
+      });
+
+      expect(mockNotificationsService.sendToUser).toHaveBeenCalledTimes(2);
+      expect(mockNotificationsService.sendToUser).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_id: 'u-1',
+          type: NotificationType.ACTIVITY_TAGGED,
+          data: { activity_id: 'new-act' },
+        }),
+      );
     });
 
     it('skips the tag insert when tagged_user_ids is empty / absent', async () => {

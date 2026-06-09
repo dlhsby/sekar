@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
+import { NotificationPreferencesService } from './notification-preferences.service';
 import { NotificationToken, DevicePlatform } from './entities/notification-token.entity';
 import { Notification, NotificationType } from './entities/notification.entity';
 import { UsersService } from '../users/users.service';
@@ -212,6 +213,70 @@ describe('NotificationsService', () => {
 
       await expect(service.sendToUser(sendDto)).rejects.toThrow(NotFoundException);
       expect(notificationRepository.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('sendToUser push preference gate (§D3)', () => {
+    const sendDto = {
+      user_id: 'user-uuid',
+      title: 'Test',
+      body: 'Test body',
+      type: NotificationType.TASK_ASSIGNED,
+    };
+
+    // Build a fresh module that DOES provide the optional preferences service.
+    const buildWithPreferences = async (enabled: boolean) => {
+      const isEnabled = jest.fn().mockResolvedValue(enabled);
+      const localModule: TestingModule = await Test.createTestingModule({
+        providers: [
+          NotificationsService,
+          {
+            provide: getRepositoryToken(NotificationToken),
+            useValue: { find: jest.fn().mockResolvedValue([]), save: jest.fn() },
+          },
+          {
+            provide: getRepositoryToken(Notification),
+            useValue: {
+              // Echo the created row so the saved notification carries the dto's type.
+              create: jest.fn((x) => ({ ...mockNotification, ...x })),
+              save: jest.fn((x) => Promise.resolve(x)),
+            },
+          },
+          { provide: UsersService, useValue: { findOne: jest.fn().mockResolvedValue(mockUser) } },
+          { provide: NotificationPreferencesService, useValue: { isEnabled } },
+        ],
+      }).compile();
+
+      return {
+        svc: localModule.get<NotificationsService>(NotificationsService),
+        tokenRepo: localModule.get(getRepositoryToken(NotificationToken)) as jest.Mocked<
+          Repository<NotificationToken>
+        >,
+        isEnabled,
+      };
+    };
+
+    it('persists the inbox row but skips the push when the type is disabled', async () => {
+      const { svc, tokenRepo, isEnabled } = await buildWithPreferences(false);
+
+      const result = await svc.sendToUser(sendDto);
+
+      expect(result.type).toBe(NotificationType.TASK_ASSIGNED);
+      expect(isEnabled).toHaveBeenCalledWith('user-uuid', NotificationType.TASK_ASSIGNED);
+      // sendPushNotification -> getUserTokens -> tokenRepository.find; suppressed => never called
+      expect(tokenRepo.find).not.toHaveBeenCalled();
+    });
+
+    it('sends the push when the type is enabled', async () => {
+      const { svc, tokenRepo } = await buildWithPreferences(true);
+
+      await svc.sendToUser(sendDto);
+      // allow the fire-and-forget push to start
+      await new Promise((r) => setImmediate(r));
+
+      expect(tokenRepo.find).toHaveBeenCalledWith({
+        where: { user_id: 'user-uuid', is_active: true },
+      });
     });
   });
 

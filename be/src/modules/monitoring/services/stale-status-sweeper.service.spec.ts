@@ -2,10 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { StaleStatusSweeperService } from './stale-status-sweeper.service';
+import { StatusCalculatorService } from './status-calculator.service';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
 
 const mockFind = jest.fn();
 const mockSave = jest.fn();
+const mockNotifyMissingWorker = jest.fn();
 
 const mockTrackingRepository = {
   find: mockFind,
@@ -19,6 +21,7 @@ describe('StaleStatusSweeperService', () => {
     // Reset calls AND set safe defaults for each test
     mockFind.mockReset().mockResolvedValue([]);
     mockSave.mockReset().mockResolvedValue(undefined);
+    mockNotifyMissingWorker.mockReset().mockResolvedValue(undefined);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -34,6 +37,10 @@ describe('StaleStatusSweeperService', () => {
               key === 'MISSING_THRESHOLD_SECONDS' ? 900 : def,
             ),
           },
+        },
+        {
+          provide: StatusCalculatorService,
+          useValue: { notifyMissingWorker: mockNotifyMissingWorker },
         },
       ],
     }).compile();
@@ -63,6 +70,23 @@ describe('StaleStatusSweeperService', () => {
 
       expect(staleWorker.status).toBe(TrackingStatus.MISSING);
       expect(mockSave).toHaveBeenCalledWith([staleWorker]);
+    });
+
+    it('alerts korlap + kepala_rayon for each worker it flips (§C1 #8)', async () => {
+      const staleWorker = {
+        user_id: 'user-1',
+        area_id: 'area-1',
+        rayon_id: 'rayon-1',
+        status: TrackingStatus.ACTIVE,
+        last_location_at: new Date(Date.now() - 1000 * 1000),
+        updated_at: new Date(),
+      } as UserTrackingStatus;
+
+      mockFind.mockResolvedValueOnce([staleWorker]).mockResolvedValueOnce([]);
+
+      await service.sweep();
+
+      expect(mockNotifyMissingWorker).toHaveBeenCalledWith('user-1', 'area-1', 'rayon-1');
     });
 
     it('should only query for ACTIVE workers (not MISSING/OFFLINE)', async () => {

@@ -580,5 +580,63 @@ describe('StatusCalculatorService', () => {
 
       expect(sendToUser).not.toHaveBeenCalled();
     });
+
+    // ---- Phase 4-3 (§C1 #8) hardening: kepala_rayon recipients + Redis dedup ----
+
+    const buildWithNotificationsAndRedis = async (
+      sendToUser: jest.Mock,
+      setResult: 'OK' | null,
+    ) => {
+      const { NotificationsService } = await import('../../notifications/notifications.service');
+      const { RedisService } = await import('../../../common/services/redis.service');
+      const mod = await Test.createTestingModule({
+        providers: [
+          StatusCalculatorService,
+          { provide: getRepositoryToken(UserTrackingStatus), useValue: trackingRepository },
+          { provide: getRepositoryToken(User), useValue: userRepository },
+          { provide: getRepositoryToken(Area), useValue: areaRepository },
+          {
+            provide: getRepositoryToken(AreaStaffRequirement),
+            useValue: staffRequirementRepository,
+          },
+          { provide: MonitoringCacheService, useValue: cacheService },
+          { provide: EventsGateway, useValue: eventsGateway },
+          { provide: NotificationsService, useValue: { sendToUser } },
+          {
+            provide: RedisService,
+            useValue: { getClient: () => ({ set: jest.fn().mockResolvedValue(setResult) }) },
+          },
+        ],
+      }).compile();
+      return mod.get(StatusCalculatorService);
+    };
+
+    it('notifies kepala_rayon of the rayon in addition to korlap', async () => {
+      const sendToUser = jest.fn().mockResolvedValue({});
+      const svc = await buildWithNotificationsAndRedis(sendToUser, 'OK');
+
+      userRepository.findOne.mockResolvedValue({ id: 'user-1', full_name: 'Bob' });
+      userRepository.find = jest
+        .fn()
+        .mockResolvedValueOnce([{ id: 'korlap-1' }]) // korlap (area)
+        .mockResolvedValueOnce([{ id: 'kepala-1' }]); // kepala_rayon (rayon)
+
+      await svc.notifyMissingWorker('user-1', 'area-1', 'rayon-1');
+
+      const recipients = sendToUser.mock.calls.map((c) => c[0].user_id).sort();
+      expect(recipients).toEqual(['kepala-1', 'korlap-1']);
+    });
+
+    it('suppresses the alert when the per-day dedup slot is already claimed', async () => {
+      const sendToUser = jest.fn();
+      const svc = await buildWithNotificationsAndRedis(sendToUser, null); // SET NX → null
+
+      userRepository.findOne.mockResolvedValue({ id: 'user-1', full_name: 'Bob' });
+      userRepository.find = jest.fn().mockResolvedValue([{ id: 'korlap-1' }]);
+
+      await svc.notifyMissingWorker('user-1', 'area-1', 'rayon-1');
+
+      expect(sendToUser).not.toHaveBeenCalled();
+    });
   });
 });

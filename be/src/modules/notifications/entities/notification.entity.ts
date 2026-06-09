@@ -27,6 +27,8 @@ export enum NotificationType {
   OVERTIME_APPROVED = 'overtime_approved',
   OVERTIME_REJECTED = 'overtime_rejected',
   MISSING_WORKER_ALERT = 'missing_worker_alert',
+  // Phase 4-3 (ADR-038): tagged as an involved user on someone's activity.
+  ACTIVITY_TAGGED = 'activity_tagged',
 }
 
 /**

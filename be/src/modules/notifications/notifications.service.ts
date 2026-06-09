@@ -9,6 +9,7 @@ import { RegisterTokenDto } from './dto/register-token.dto';
 import { BroadcastNotificationDto } from './dto/broadcast-notification.dto';
 import { NotificationFilterDto } from './dto/notification-filter.dto';
 import { SendNotificationDto } from './dto/send-notification.dto';
+import { NotificationPreferencesService } from './notification-preferences.service';
 import { UsersService } from '../users/users.service';
 import { getMessaging, isFirebaseInitialized } from '../../config/firebase.config';
 import { FCM_RETRY_QUEUE } from '../queue/queue.constants';
@@ -35,6 +36,11 @@ export class NotificationsService {
     @Optional()
     @InjectQueue(FCM_RETRY_QUEUE)
     private readonly fcmRetryQueue?: Queue<{ notification_id: string; attempt: number }>,
+    // Phase 4-3 (§D3): per-type push preference gate. Optional so legacy specs
+    // that construct NotificationsService without it keep working — when absent,
+    // the gate fails open (always sends).
+    @Optional()
+    private readonly preferencesService?: NotificationPreferencesService,
   ) {}
 
   /**
@@ -187,10 +193,24 @@ export class NotificationsService {
 
     const savedNotification = await this.notificationRepository.save(notification);
 
-    // Send push notification asynchronously
-    this.sendPushNotification(savedNotification).catch((error) => {
-      this.logger.error(`Failed to send push notification: ${error.message}`);
-    });
+    // Phase 4-3 (§D3): respect the user's per-type push preference. A disabled
+    // type still records the in-app inbox row (so unread counts stay correct)
+    // but the FCM push is suppressed. Absent preferences service / no row →
+    // enabled (fail-open).
+    const pushEnabled = this.preferencesService
+      ? await this.preferencesService.isEnabled(savedNotification.user_id, savedNotification.type)
+      : true;
+
+    if (pushEnabled) {
+      // Send push notification asynchronously
+      this.sendPushNotification(savedNotification).catch((error) => {
+        this.logger.error(`Failed to send push notification: ${error.message}`);
+      });
+    } else {
+      this.logger.debug(
+        `Push suppressed for user ${savedNotification.user_id} type ${savedNotification.type} (preference off)`,
+      );
+    }
 
     return savedNotification;
   }

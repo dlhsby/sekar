@@ -219,8 +219,7 @@ export class ActivitiesService {
 
     // ADR-038 (May 2026): persist tag rows for involved users.
     // Dedup the input list and silently drop the owner's own id — tagging
-    // yourself is a no-op, not an error. FCM push is intentionally not
-    // emitted here yet; a follow-up commit wires it via NotificationsService.
+    // yourself is a no-op, not an error.
     if (dto.tagged_user_ids && dto.tagged_user_ids.length > 0) {
       const uniqueIds = Array.from(new Set(dto.tagged_user_ids)).filter((id) => id !== userId);
       if (uniqueIds.length > 0) {
@@ -233,6 +232,27 @@ export class ActivitiesService {
         );
         await this.activityTagRepository.save(tagEntities);
         this.logger.log(`Tagged ${tagEntities.length} users on activity ${savedActivity.id}`);
+
+        // Phase 4-3 (ADR-038): push an FCM notification to each tagged user.
+        // Fire-and-forget — a dispatch failure must never abort activity
+        // creation. Respects per-user preferences via NotificationsService.
+        if (this.notificationsService) {
+          for (const taggedUserId of uniqueIds) {
+            this.notificationsService
+              .sendToUser({
+                user_id: taggedUserId,
+                title: 'Anda ditandai di aktivitas',
+                body: 'Anda ditandai sebagai petugas yang terlibat pada sebuah aktivitas.',
+                type: NotificationType.ACTIVITY_TAGGED,
+                data: { activity_id: savedActivity.id },
+              })
+              .catch((err) =>
+                this.logger.error(
+                  `Failed to enqueue activity-tag notification for ${taggedUserId}: ${err.message}`,
+                ),
+              );
+          }
+        }
       }
     }
 

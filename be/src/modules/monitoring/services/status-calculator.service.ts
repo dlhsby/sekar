@@ -1,7 +1,12 @@
 import { Injectable, Logger, forwardRef, Inject, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { UserTrackingStatus, TrackingStatus, ActivityStatus, LocationStatus } from '../entities/user-tracking-status.entity';
+import {
+  UserTrackingStatus,
+  TrackingStatus,
+  ActivityStatus,
+  LocationStatus,
+} from '../entities/user-tracking-status.entity';
 import { MonitoringCacheService, StatusThresholds } from './monitoring-cache.service';
 import { User, UserRole } from '../../users/entities/user.entity';
 import { Area } from '../../areas/entities/area.entity';
@@ -16,6 +21,7 @@ import { AreaStaffRequirement } from '../../area-staff-requirements/entities/are
 import { StaffingDebouncerService } from './staffing-debouncer.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { NotificationType } from '../../notifications/entities/notification.entity';
+import { RedisService } from '../../../common/services/redis.service';
 
 export interface StatusInput {
   hasActiveShift: boolean;
@@ -45,35 +51,63 @@ export class StatusCalculatorService {
     // wire NotificationsService keep working.
     @Optional()
     private readonly notificationsService?: NotificationsService,
+    // Phase 4-3 (§C1 #8 hardening): cross-path dedup so the every-minute
+    // scheduler and the 5-min stale-status sweeper don't both alert for the
+    // same worker. Optional → fails open (sends) when Redis is absent.
+    @Optional()
+    private readonly redisService?: RedisService,
   ) {}
 
   /**
-   * Phase 4-3 (M2): notify korlap users responsible for an area when one of
-   * their workers transitions to MISSING.
+   * Phase 4-3 (§C1 #8): notify the korlap(s) responsible for an area AND the
+   * kepala_rayon of its rayon when one of their workers transitions to MISSING.
    *
-   * Notification scope: every korlap whose `users.area_id` matches the worker's
-   * area. (Multi-area korlap support via `user_areas` is M3 — for now we match
-   * the primary `users.area_id` column.)
+   * Public so the 5-min stale-status sweeper can reuse it for the records it
+   * flips directly (those bypass `recalculate`). De-duplicated per
+   * (worker, Jakarta-day) so the sweeper + scheduler can't double-alert and a
+   * flapping worker isn't spammed; the dedup fails OPEN — a Redis hiccup must
+   * never silence a safety alert.
+   *
+   * Korlap scope matches the worker's primary `users.area_id` (multi-area via
+   * `user_areas` is a later follow-up); kepala_rayon scope matches `rayon_id`.
    */
-  private async notifyKorlapMissingWorker(
+  async notifyMissingWorker(
     workerUserId: string,
     areaId: string | null,
+    rayonId?: string | null,
   ): Promise<void> {
     if (!this.notificationsService || !areaId) return;
+
+    // Cross-path dedup: claim once per worker per Jakarta day.
+    const claimed = await this.claimMissingAlert(workerUserId);
+    if (!claimed) return;
+
     try {
       const worker = await this.userRepository.findOne({
         where: { id: workerUserId },
         select: ['id', 'full_name'],
       });
       const workerName = worker?.full_name ?? 'pekerja';
+
       const korlaps = await this.userRepository.find({
         where: { role: UserRole.KORLAP, area_id: areaId, is_active: true },
         select: ['id'],
       });
+
+      const kepalaRayons = rayonId
+        ? await this.userRepository.find({
+            where: { role: UserRole.KEPALA_RAYON, rayon_id: rayonId, is_active: true },
+            select: ['id'],
+          })
+        : [];
+
+      // Dedup recipient ids (a user could match both queries in odd configs).
+      const recipientIds = Array.from(new Set([...korlaps, ...kepalaRayons].map((u) => u.id)));
+
       await Promise.all(
-        korlaps.map((k) =>
+        recipientIds.map((id) =>
           this.notificationsService!.sendToUser({
-            user_id: k.id,
+            user_id: id,
             title: 'Pekerja hilang',
             body: `${workerName} terdeteksi MISSING di area Anda. Mohon segera periksa.`,
             type: NotificationType.MISSING_WORKER_ALERT,
@@ -83,8 +117,31 @@ export class StatusCalculatorService {
       );
     } catch (err) {
       this.logger.warn(
-        `notifyKorlapMissingWorker failed for worker ${workerUserId}: ${(err as Error).message}`,
+        `notifyMissingWorker failed for worker ${workerUserId}: ${(err as Error).message}`,
       );
+    }
+  }
+
+  /**
+   * Claim the once-per-day missing-worker alert slot for a worker via Redis
+   * `SET key 1 NX EX 86400`. Returns true when the alert should be sent.
+   * Fails OPEN: no Redis or a Redis error returns true so the safety alert is
+   * never suppressed by infrastructure trouble.
+   */
+  private async claimMissingAlert(workerUserId: string): Promise<boolean> {
+    if (!this.redisService) return true;
+    try {
+      // Jakarta day bucket (+7, no DST) so the key rolls at local midnight.
+      const dayStr = new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      const res = await this.redisService
+        .getClient()
+        .set(`missing-alert:${workerUserId}:${dayStr}`, '1', 'EX', 86_400, 'NX');
+      return res === 'OK';
+    } catch (err) {
+      this.logger.warn(
+        `missing-alert dedup claim failed for ${workerUserId}: ${(err as Error).message}`,
+      );
+      return true;
     }
   }
 
@@ -184,10 +241,10 @@ export class StatusCalculatorService {
       await this.broadcastStatusChanged(existing, previousStatus, newStatus, now);
       await this.emitStaffingChangedIfNeeded(existing.area_id, previousStatus, newStatus, now);
 
-      // Phase 4-3 (M2): alert korlap on transition into MISSING. Fire-and-forget;
-      // do not block the status calculation if notification dispatch fails.
+      // Phase 4-3 (M2): alert korlap + kepala_rayon on transition into MISSING.
+      // Fire-and-forget; do not block the status calculation if dispatch fails.
       if (newStatus === TrackingStatus.MISSING && previousStatus !== TrackingStatus.MISSING) {
-        void this.notifyKorlapMissingWorker(userId, existing.area_id);
+        void this.notifyMissingWorker(userId, existing.area_id, existing.rayon_id);
       }
 
       this.logger.debug(`User ${userId} status: ${previousStatus} → ${newStatus}`);
