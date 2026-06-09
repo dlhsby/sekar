@@ -4,6 +4,18 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 9, 2026 — 4-R web CP4: users + rayon detail (hifi-web §04–05)
+
+Fourth checkpoint. 4-R web ~45% → **~55%**. Flipped **USR-1 ✅, RAY-1 ✅**.
+
+- **USR-1 users list** (`(dashboard)/users`): `PageHeader` ("Pengguna · N"), role-accent **filter pills** (new `RolePillButton`, replaces the role dropdown), `RoleAvatar` + username in the name cell, `RolePill` role column (role-accent tokens), `StatusPill` Aktif/Nonaktif, mono pagination. New `components/users/RolePill.tsx` (static pill + clickable filter chip). Kept search + delete modal + DataTable.
+- **RAY-1 rayon detail** (`(dashboard)/rayons/[id]`): `PageHeader` (crumb + "Rayon {name}" + petugas pill), KPI strip (reused `RayonStatsCards`), tokenized areas table (StatusPill, mono pager). **🔴 Fixed a real bug:** the access gate matched PascalCase roles (`['Admin','TopManagement']`) that never equal the lowercase `user.role`, so it redirected *every* user to a non-existent `/dashboard`. Now gates on lowercase `admin_system/superadmin/top_management/kepala_rayon` and redirects to `/`.
+- **Areas** (`areas` list/[id]/edit/new): functional; a v2.1 token/`PageHeader` pass is queued as a follow-up (not part of the §04–05 anchor).
+
+**Verification:** `tsc` 0 · `eslint` 0 on changed files · `npm run build` green · **full jest 89 suites / 1688 pass**. **Next: CP5 — tasks / schedules / activities / overtime.**
+
+---
+
 ## June 9, 2026 — 4-R web CP3: dashboard + monitoring (hifi-web §02–03)
 
 Third checkpoint. 4-R web ~35% → **~45%**. Flipped **DASH-1 ✅, MON-1 ✅**.

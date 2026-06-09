@@ -1,35 +1,37 @@
 /**
- * Rayon Detail Page
- * Display rayon information, statistics, and list of areas
- * Access: Admin + TopManagement only
+ * Rayon Detail Page — RAY-1 (Phase 4-R revamp)
+ * Access: admin_system, superadmin, top_management, kepala_rayon
  */
 
 'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Search } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth/hooks';
 import { useRayon, useRayonStats, useRayonAreas } from '@/lib/api/rayons';
 import RayonStatsCards from '@/components/rayons/RayonStatsCards';
 import {
   Card,
-  CardHeader,
   CardContent,
-  Badge,
-  FormInput,
   Button,
+  FormInput,
   DataTable,
+  PageHeader,
+  StatusPill,
 } from '@/components/ui';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Area } from '@/types/models';
 import { formatArea } from '@/lib/utils/geo';
 import type { ColumnDef } from '@/components/ui/data-table';
 
+// Lowercase roles per ADR-009 (the prior PascalCase gate matched nothing and
+// redirected every user to a non-existent /dashboard).
+const ALLOWED_ROLES = ['admin_system', 'superadmin', 'top_management', 'kepala_rayon'];
+
 interface RayonDetailPageProps {
-  params: {
-    id: string;
-  };
+  params: { id: string };
 }
 
 export default function RayonDetailPage({ params }: RayonDetailPageProps) {
@@ -47,194 +49,135 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
     limit,
   });
 
-  // Access control: Only Admin and TopManagement
+  const allowed = !!user && ALLOWED_ROLES.includes(user.role);
+
   useEffect(() => {
-    if (!authLoading && user && !['Admin', 'TopManagement'].includes(user.role)) {
-      router.push('/dashboard');
+    if (!authLoading && user && !allowed) {
+      router.push('/');
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, allowed, router]);
 
   if (authLoading || !user) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-nb-primary mx-auto mb-4"></div>
-          <p className="text-nb-gray-600">Memuat...</p>
-        </div>
+      <div className="flex min-h-[400px] items-center justify-center">
+        <p className="text-nb-gray-600">Memuat...</p>
       </div>
     );
   }
 
-  // Access denied for non-authorized roles
-  if (!['Admin', 'TopManagement'].includes(user.role)) {
-    return null;
-  }
+  if (!allowed) return null;
 
   const areas = areasData?.data || [];
   const pagination = areasData?.meta;
 
-  // Table columns
   const columns: ColumnDef<Area>[] = [
     {
       key: 'name',
       header: 'Nama Area',
       cell: (area) => (
-        <Link href={`/areas/${area.id}`} className="text-nb-primary font-semibold hover:underline">
+        <Link href={`/areas/${area.id}`} className="font-semibold text-nb-primary hover:underline">
           {area.name}
         </Link>
       ),
     },
     {
-      key: 'code',
-      header: 'Kode',
-      cell: (area) => (
-        <Badge variant="default" size="sm">
-          {area.code}
-        </Badge>
-      ),
-    },
-    {
       key: 'area_type',
       header: 'Tipe',
-      cell: (area) => area.area_type?.name || '-',
+      cell: (area) => <span className="text-nb-body-sm">{area.area_type?.name || '—'}</span>,
     },
     {
       key: 'coverage_area',
       header: 'Luas Tutupan',
-      cell: (area) => (area.coverage_area ? formatArea(area.coverage_area) : '-'),
+      cell: (area) => (
+        <span className="font-mono text-nb-body-sm">
+          {area.coverage_area ? formatArea(area.coverage_area) : '—'}
+        </span>
+      ),
     },
     {
-      key: 'description',
-      header: 'Deskripsi',
-      cell: (area) => (
-        <span className="text-sm text-nb-gray-600 line-clamp-1">{area.description || '-'}</span>
+      key: 'status',
+      header: 'Status',
+      cell: () => (
+        <StatusPill tone="ok" dot>
+          Aktif
+        </StatusPill>
       ),
     },
   ];
 
   return (
-    <div className="container mx-auto p-6">
-      {/* Breadcrumb */}
-      <nav className="mb-6 text-sm" aria-label="Navigasi breadcrumb">
-        <ol className="flex items-center space-x-2">
-          <li>
-            <Link href="/rayons" className="text-nb-primary hover:underline font-semibold">
-              Rayon
-            </Link>
-          </li>
-          <li className="text-nb-gray-400">/</li>
-          <li className="text-nb-gray-600">
-            {rayonLoading ? 'Memuat...' : rayon?.name || 'Detail'}
-          </li>
-        </ol>
-      </nav>
+    <div className="space-y-5">
+      <PageHeader
+        breadcrumb={
+          <>
+            <Link href="/rayons" className="hover:text-nb-black">
+              Data · Rayon
+            </Link>{' '}
+            · <b>{rayonLoading ? '…' : rayon?.name ?? 'Detail'}</b>
+          </>
+        }
+        title={rayonLoading ? 'Memuat…' : `Rayon ${rayon?.name ?? ''}`}
+        description={rayon?.description || undefined}
+        actions={
+          stats ? <StatusPill tone="neutral">{stats.total_users} petugas</StatusPill> : undefined
+        }
+      />
 
-      {/* Back Button */}
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push('/rayons')}
-          leftIcon={<ArrowLeft className="w-4 h-4" />}
-        >
-          Kembali ke Daftar Rayon
-        </Button>
-      </div>
+      {/* KPI strip */}
+      <RayonStatsCards stats={stats} loading={statsLoading} />
 
-      {/* Rayon Info Header */}
-      {rayonLoading ? (
-        <div className="mb-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-nb-gray-200 w-1/3 mb-2"></div>
-            <div className="h-4 bg-nb-gray-200 w-1/4 mb-4"></div>
-          </div>
-        </div>
-      ) : rayon ? (
-        <div className="mb-8">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-nb-black mb-2">{rayon.name}</h1>
-              <Badge variant="default" size="lg">
-                {rayon.code}
-              </Badge>
-            </div>
-          </div>
-          {rayon.description && <p className="text-nb-gray-600 max-w-3xl">{rayon.description}</p>}
-        </div>
-      ) : null}
-
-      {/* Statistics Cards */}
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-nb-black mb-4">Statistik</h2>
-        <RayonStatsCards stats={stats} loading={statsLoading} />
-      </div>
-
-      {/* Areas List */}
-      <div>
-        <Card variant="elevated">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-nb-black">Daftar Area di Rayon Ini</h2>
-              {stats && <Badge variant="default">{stats.total_areas} Area</Badge>}
-            </div>
-          </CardHeader>
-
-          <CardContent>
-            {/* Search */}
-            <div className="mb-4">
-              <FormInput
-                label="Cari Area"
-                type="text"
-                placeholder="Cari area berdasarkan nama atau kode..."
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1); // Reset to first page
-                }}
-                leftIcon={<Search className="w-5 h-5" />}
-              />
-            </div>
-
-            {/* Table */}
-            <DataTable<Area>
-              columns={columns}
-              data={areas}
-              loading={areasLoading}
-              emptyMessage="Tidak ada area di rayon ini"
+      {/* Areas list */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="mb-4">
+            <FormInput
+              label="Cari area"
+              type="text"
+              placeholder="Cari area berdasarkan nama atau kode…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              leftIcon={<Search className="w-5 h-5" />}
             />
+          </div>
 
-            {/* Pagination */}
-            {pagination && pagination.totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4 pt-4 border-t-3 border-nb-black">
-                <div className="text-sm text-nb-gray-600">
-                  Halaman {pagination.page} dari {pagination.totalPages} ({pagination.total} total
-                  area)
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={pagination.page === 1}
-                    leftIcon={<ChevronLeft className="w-4 h-4" />}
-                  >
-                    Sebelumnya
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
-                    disabled={pagination.page === pagination.totalPages}
-                    rightIcon={<ChevronRight className="w-4 h-4" />}
-                  >
-                    Selanjutnya
-                  </Button>
-                </div>
+          <DataTable<Area>
+            columns={columns}
+            data={areas}
+            loading={areasLoading}
+            emptyMessage="Tidak ada area di rayon ini"
+          />
+
+          {pagination && pagination.totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between font-mono text-[11px] text-nb-gray-600">
+              <span>
+                Halaman <b className="text-nb-black">{pagination.page}</b> / {pagination.totalPages} ·{' '}
+                {pagination.total} area
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={pagination.page === 1}
+                >
+                  ‹
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                  disabled={pagination.page === pagination.totalPages}
+                >
+                  ›
+                </Button>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

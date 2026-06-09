@@ -168,7 +168,7 @@ Every revamped screen lands ✅ only when the 6 gates in [`ui-ux.md § 4`](./ui-
 | DASH-1 | Dashboard home | Revamp | ✅ |
 | MON-1 | Monitoring wall | Revamp | ✅ |
 | USR-1 | Daftar pengguna | Revamp | ✅ |
-| RAY-1 | Rayon · detail | Revamp | ⏳ |
+| RAY-1 | Rayon · detail | Revamp | ✅ |
 | TSK-1 | Tugas list (kanban + table) | Revamp | ⏳ |
 | SCH-1 | Jadwal · weekly grid | Revamp | ⏳ |
 | LBR-1 | Lembur · approval queue | Revamp | ⏳ |
