@@ -27,12 +27,12 @@
 import React, { useMemo } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
   Alert,
 } from 'react-native';
+import { NBText } from '../../../components/nb/NBText';
 import {
   nbColors,
   nbSpacing,
@@ -225,10 +225,10 @@ export function AvailabilityCalendar({
           to ~80 dp while keeping both pieces of information glanceable. */}
       {preferredWeek ? (
         <View style={styles.infoStripRow}>
-          <Text style={styles.infoStripLabel}>Minggu Preferensi</Text>
-          <Text style={styles.infoStripValue} numberOfLines={1}>
+          <NBText style={styles.infoStripLabel}>Minggu Preferensi</NBText>
+          <NBText style={styles.infoStripValue} numberOfLines={1}>
             {formatIsoWeekLabel(preferredWeek.year, preferredWeek.week)}
-          </Text>
+          </NBText>
         </View>
       ) : null}
 
@@ -238,15 +238,15 @@ export function AvailabilityCalendar({
           selectedDate && styles.infoStripRowSelected,
         ]}
       >
-        <Text
+        <NBText
           style={[
             styles.infoStripLabel,
             selectedDate && styles.infoStripLabelOnDark,
           ]}
         >
           Tanggal Terpilih
-        </Text>
-        <Text
+        </NBText>
+        <NBText
           style={[
             styles.infoStripValue,
             selectedDate && styles.infoStripValueOnDark,
@@ -254,7 +254,7 @@ export function AvailabilityCalendar({
           numberOfLines={1}
         >
           {selectedDate ? formatDateLong(selectedDate) : 'Belum dipilih'}
-        </Text>
+        </NBText>
         {selectedDate ? (
           <TouchableOpacity
             onPress={() => onSelect(null)}
@@ -264,7 +264,7 @@ export function AvailabilityCalendar({
             style={styles.infoStripClear}
             testID="perantingan-calendar-clear"
           >
-            <Text style={styles.infoStripClearText}>Hapus</Text>
+            <NBText style={styles.infoStripClearText}>Hapus</NBText>
           </TouchableOpacity>
         ) : null}
       </View>
@@ -287,7 +287,7 @@ export function AvailabilityCalendar({
       <View style={styles.headerRow}>
         {DAY_LABELS.map((label, idx) => (
           <View key={`${label}-${idx}`} style={styles.col}>
-            <Text style={styles.headerCell}>{label}</Text>
+            <NBText style={styles.headerCell}>{label}</NBText>
           </View>
         ))}
       </View>
@@ -297,7 +297,7 @@ export function AvailabilityCalendar({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {loading && <Text style={styles.loading}>Memuat kapasitas…</Text>}
+        {loading && <NBText style={styles.loading}>Memuat kapasitas…</NBText>}
         {months.map((bucket) => {
           const matrix = buildMonthMatrix(bucket);
           return (
@@ -305,9 +305,9 @@ export function AvailabilityCalendar({
               key={`${bucket.year}-${bucket.month}`}
               style={styles.monthBlock}
             >
-              <Text style={styles.monthHeader}>
+              <NBText style={styles.monthHeader}>
                 {MONTH_LABELS_ID[bucket.month]} {bucket.year}
-              </Text>
+              </NBText>
               {matrix.map((row, rowIdx) => (
                 <View
                   key={`${bucket.year}-${bucket.month}-row-${rowIdx}`}
@@ -365,14 +365,14 @@ export function AvailabilityCalendar({
                             past && { opacity: 0.4 },
                           ]}
                         >
-                          <Text
+                          <NBText
                             style={[
                               styles.cellText,
                               { color: cellTextColor },
                             ]}
                           >
                             {dayNum}
-                          </Text>
+                          </NBText>
                         </TouchableOpacity>
                       </View>
                     );
@@ -397,7 +397,7 @@ function LegendDot({
   return (
     <View style={styles.legendItem}>
       <View style={[styles.legendDot, { backgroundColor: color }]} />
-      <Text style={styles.legendLabel}>{label}</Text>
+      <NBText style={styles.legendLabel}>{label}</NBText>
     </View>
   );
 }
@@ -418,7 +418,7 @@ function LegendRing({
           { backgroundColor: 'transparent', borderColor: color, borderWidth: 2 },
         ]}
       />
-      <Text style={styles.legendLabel}>{label}</Text>
+      <NBText style={styles.legendLabel}>{label}</NBText>
     </View>
   );
 }

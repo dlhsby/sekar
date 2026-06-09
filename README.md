@@ -1,4 +1,4 @@
-# SEKAR - Sistem Evaluasi Kerja Satgas RTH
+# SEKAR - Sistem Evaluasi Kinerja Satgas RTH
 
 **Worker Tracking & Task Management System for DLH Surabaya**
 

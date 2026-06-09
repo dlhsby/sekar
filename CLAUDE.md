@@ -9,7 +9,7 @@ Guidance for Claude Code in this repository. **`specs/COMPLETION_STATUS.md` is t
 
 ## Project Overview
 
-**SEKAR** (Sistem Evaluasi Kerja Satgas RTH) — worker tracking + task management for DLH Surabaya parks dept. Real-time GPS, clock-in/out with photo verification, work reports with media, supervisor dashboards, 7 Rayon structure, shift scheduling, task workflow, push notifications.
+**SEKAR** (Sistem Evaluasi Kinerja Satgas RTH; "SEKAR" is retained as the brand acronym) — worker tracking + task management for DLH Surabaya parks dept. Real-time GPS, clock-in/out with photo verification, work reports with media, supervisor dashboards, 7 Rayon structure, shift scheduling, task workflow, push notifications.
 
 **Stack:** Backend NestJS 11 / TS 5.9 / PostgreSQL / TypeORM / JWT / WebSocket / AWS S3 · Mobile React Native 0.83 / React 19 / Redux Toolkit / FCM / Neo Brutalism (WCAG 2.1 AA) · Web Next.js 16 / React 19 / Tailwind 4 / Mapbox GL / Playwright · Node >=24.13, npm >=10.
 

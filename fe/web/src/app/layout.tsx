@@ -24,7 +24,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'SEKAR - Sistem Evaluasi Kerja Satgas RTH',
+  title: 'SEKAR - Sistem Evaluasi Kinerja Satgas RTH',
   description:
     'Worker tracking and task management system for DLH Surabaya - municipal department managing parks and green spaces',
   keywords: ['SEKAR', 'DLH Surabaya', 'Worker Tracking', 'RTH', 'Park Management'],

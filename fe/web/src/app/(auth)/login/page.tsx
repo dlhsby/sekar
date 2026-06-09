@@ -98,7 +98,7 @@ function LoginForm() {
             <div className="text-center mb-8">
               <h1 className="text-4xl font-extrabold text-nb-black mb-2">SEKAR</h1>
               <p className="text-nb-gray-600 text-sm font-medium">
-                Sistem Evaluasi Kerja Satgas RTH
+                Sistem Evaluasi Kinerja Satgas RTH
               </p>
             </div>
 

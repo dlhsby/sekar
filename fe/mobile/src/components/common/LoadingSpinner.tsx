@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, ActivityIndicator, Text, StyleSheet, ViewStyle } from 'react-native';
-import { theme } from '../../constants/theme';
+import { nbColors, nbSpacing, nbType } from '../../constants/nbTokens';
 
 interface LoadingSpinnerProps {
   size?: 'small' | 'large';
@@ -15,7 +15,7 @@ interface LoadingSpinnerProps {
  */
 export function LoadingSpinner({
   size = 'large',
-  color = theme.colors.primary,
+  color = nbColors.primary,
   style,
   fullScreen = false,
   message,
@@ -47,12 +47,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.colors.white,
+    backgroundColor: nbColors.white,
   },
   message: {
-    marginTop: theme.spacing.md,
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.textSecondary,
+    marginTop: nbSpacing.md,
+    fontSize: nbType.bodySm.fontSize,
+    color: nbColors.gray600,
   },
 });
 

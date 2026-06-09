@@ -84,8 +84,6 @@ module.exports = [
       'src/components/monitoring/LocationTrail.tsx',
       // rayonCenterMarker #2563EB blue — no NB blue token
       'src/components/monitoring/BoundaryOverlay.tsx',
-      // Legacy Phase 2 theme still used by components/common/* — remove when those are migrated
-      'src/constants/theme.ts',
       // Documentation/example file — not production code
       'src/services/sync/INTEGRATION_EXAMPLE.tsx',
     ],

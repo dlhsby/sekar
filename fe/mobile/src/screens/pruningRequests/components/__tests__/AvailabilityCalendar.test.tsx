@@ -21,6 +21,19 @@ jest.mock('../../../../constants/nbTokens', () => {
     nbBorders: { thin: 1, base: 2, thick: 3, extra: 4, widthThin: 1, widthBase: 2, widthThick: 3, widthExtra: 4 },
     nbBorderRadius: new Proxy({}, handler),
     nbRadius: new Proxy({}, handler),
+    // NBText (added when AvailabilityCalendar moved off raw <Text>) reads nbType
+    // variant tokens; return a complete token object for any variant key.
+    nbType: new Proxy(
+      {},
+      {
+        get: () => ({
+          fontFamily: 'System',
+          fontSize: 12,
+          fontWeight: '400',
+          lineHeight: 16,
+        }),
+      },
+    ),
   };
 });
 

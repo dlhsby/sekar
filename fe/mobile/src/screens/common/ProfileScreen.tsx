@@ -186,7 +186,7 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
         title="Tentang SEKAR"
       >
         <NBText variant="body" style={{ marginBottom: 8 }}>
-          Sistem Evaluasi Kerja Satgas RTH
+          Sistem Evaluasi Kinerja Satgas RTH
         </NBText>
         <NBText variant="body-sm" color="gray500">Versi: 1.0.0</NBText>
         <NBText variant="body-sm" color="gray500">DLH Kota Surabaya</NBText>

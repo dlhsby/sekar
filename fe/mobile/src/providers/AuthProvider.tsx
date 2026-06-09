@@ -14,7 +14,7 @@ import { getMe } from '../services/api/authApi';
 import { getCurrentShift } from '../services/api/shiftsApi';
 import { locationTracker } from '../services/location/locationTracker';
 import { permissionManager } from '../services/permissions/PermissionManager';
-import { colors } from '../constants/theme';
+import { nbColors } from '../constants/nbTokens';
 import type { AppDispatch } from '../store/store';
 import { CLOCKABLE_ROLES } from '../constants/roles';
 import type { UserRole } from '../types/models.types';
@@ -156,7 +156,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
   if (isRestoring) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={nbColors.primary} />
       </View>
     );
   }
@@ -169,6 +169,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background,
+    backgroundColor: nbColors.bgCanvas,
   },
 });
