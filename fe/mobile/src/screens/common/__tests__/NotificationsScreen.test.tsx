@@ -188,4 +188,52 @@ describe('NotificationsScreen', () => {
     fireEvent.press(btn);
     await waitFor(() => expect(mockMarkAllAsRead).toHaveBeenCalled());
   });
+
+  it('filters the list by category chip', async () => {
+    mockGetNotifications.mockResolvedValue({
+      data: {
+        data: [
+          makeNotification({ id: 't1', type: 'task_assigned' }),
+          makeNotification({ id: 'a1', type: 'activity_approved' }),
+          makeNotification({ id: 'o1', type: 'overtime_approved' }),
+          makeNotification({ id: 's1', type: 'shift_reminder' }),
+        ],
+      },
+    });
+    const { findByTestId, queryByTestId } = render(
+      <Provider store={makeStore()}>
+        <NotificationsScreen />
+      </Provider>,
+    );
+    // Default "Semua" shows every category
+    await findByTestId('notification-row-t1');
+    expect(queryByTestId('notification-row-a1')).toBeTruthy();
+    expect(queryByTestId('notification-row-s1')).toBeTruthy();
+
+    // Tugas → only task rows
+    fireEvent.press(await findByTestId('notifications-filter-task'));
+    await waitFor(() => expect(queryByTestId('notification-row-a1')).toBeNull());
+    expect(queryByTestId('notification-row-t1')).toBeTruthy();
+    expect(queryByTestId('notification-row-o1')).toBeNull();
+
+    // Sistem → only the shift reminder (non task/activity/overtime)
+    fireEvent.press(await findByTestId('notifications-filter-system'));
+    await waitFor(() => expect(queryByTestId('notification-row-s1')).toBeTruthy());
+    expect(queryByTestId('notification-row-t1')).toBeNull();
+  });
+
+  it('shows the empty state when the active category has no notifications', async () => {
+    mockGetNotifications.mockResolvedValue({
+      data: { data: [makeNotification({ id: 't1', type: 'task_assigned' })] },
+    });
+    const { findByTestId, queryByTestId, getByText } = render(
+      <Provider store={makeStore()}>
+        <NotificationsScreen />
+      </Provider>,
+    );
+    await findByTestId('notification-row-t1');
+    fireEvent.press(await findByTestId('notifications-filter-overtime'));
+    await waitFor(() => expect(queryByTestId('notification-row-t1')).toBeNull());
+    expect(getByText('Belum ada notifikasi')).toBeTruthy();
+  });
 });

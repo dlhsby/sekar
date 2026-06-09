@@ -14,7 +14,7 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { AppState, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AppState, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NBButton, NBText, type NBTextColor } from '../../components/nb';
@@ -93,7 +93,7 @@ function PermissionRowView({
   return (
     <View style={styles.row} testID={`perm-row-${row.key}`}>
       <View style={[styles.pico, { backgroundColor: row.tint }]}>
-        <Text style={styles.picoIcon}>{row.icon}</Text>
+        <NBText variant="body" style={styles.picoIcon}>{row.icon}</NBText>
       </View>
       <View style={styles.rowBody}>
         <NBText variant="body-sm" color="black" style={styles.rowTitle}>

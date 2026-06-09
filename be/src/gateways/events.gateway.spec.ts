@@ -482,13 +482,12 @@ describe('EventsGateway', () => {
       expect(rayonCalls.length).toBe(0);
     });
 
-    it('should emit to assigned user directly', () => {
-      jwtService.verify.mockReturnValue({ sub: 'worker-1', role: UserRole.SATGAS });
-      gateway.handleConnection(mockClient);
-
+    it('should emit to assigned user via their per-user room', () => {
+      // Targets `user:{id}` (joined on connect) — not the local socket id — so
+      // delivery is correct across instances behind the Redis adapter.
       gateway.emitTaskAssigned(taskAssignedEvent);
 
-      expect(mockServer.to).toHaveBeenCalledWith(mockClient.id);
+      expect(mockServer.to).toHaveBeenCalledWith('user:worker-1');
     });
   });
 

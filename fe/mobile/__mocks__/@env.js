@@ -20,3 +20,9 @@ export const MAP_REFRESH_INTERVAL_SECONDS = '120';
 export const MAX_IMAGE_WIDTH = '800';
 export const MAX_VIDEO_SIZE_MB = '50';
 export const MAX_VIDEO_DURATION_SECONDS = '30';
+
+// Crash reporting (Phase 4-1 B4) — empty disables Sentry by default
+export const SENTRY_DSN_MOBILE = '';
+export const SENTRY_RELEASE = '';
+export const SENTRY_ENVIRONMENT = '';
+export const SENTRY_TRACES_SAMPLE_RATE = '0.1';

@@ -4,6 +4,28 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 9, 2026 — Drove 4-1, 4-3, and 4-R-mobile to 100% (before 4-R web)
+
+Closed the three near-done sub-phases so the mobile + backend foundation is fully signed off before opening the large web revamp. Overall ~42% → **~45%**.
+
+**4-1 Infrastructure → 🟢 100% (trimmed scope):**
+- **Room-based `emitToUser`** (`events.gateway.ts`): replaced the in-memory `connectedClients` scan with `server.to(\`user:${id}\`).emit(...)`. The Redis adapter is already enabled (`:93`), so the old scan would silently drop personal events for users on other instances; the `user:{id}` room is joined on connect, so the fix is multi-instance-safe. Gateway spec updated (48/48).
+- **Mobile Sentry wired (B4):** `index.js` now calls `initSentry()` at startup; `sentry.ts` reads config from `@env` (the app's convention — it previously read `process.env`, which react-native-dotenv never populates, so Sentry was inert). Added the `SENTRY_*` vars to `env.d.ts` + `.env.example`; `initSentry` is now injection-friendly for testing (5/5).
+- **WS-stability audit note** (`4-1-websocket-audit.md`). Staging Sentry-event + multi-node WS delivery test deferred to 4-V.
+
+**4-3 Push Notifications → 🟢 100%:**
+- Added the missing acceptance criterion — **type-filter chips** (Semua / Tugas / Aktivitas / Lembur / Sistem) on `NotificationsScreen`, reusing `NBTab` + the category grouping from `NotificationPreferencesScreen`. Empty filtered result → `NBEmptyState`. +2 tests (9/9).
+
+**4-R mobile → 🟢 100% — acceptance gate signed off:**
+- Token residue cleared (raw `<Text>`/inline-font → `NBText` across ~10 revamp screens); `NBSkeleton` loading states added to the list screens (Overtime/ShiftHistory/Perantingan/ReviewQueue/Tasks/Activities/Notifications); a11y labels on dynamic controls (bell, mark-all-read, ConnectivityBanner). Documented exceptions retained (OB-2 emoji icons, OB-3 map reconciliation, AvailabilityCalendar/clock numerics).
+- 38-screen Revamp Acceptance Checklist signed off in `status_reviews.md`.
+
+**Verification:** backend `tsc` 0 / `eslint` 0, gateway + sentry suites green; mobile `tsc` 0 / `eslint` 0, **full jest 4032 pass / 29 skipped**.
+
+**Post-implementation review pass (Jun 9):** independent backend + mobile code review. Backend clean. Mobile review caught that the token-residue cleanup had over-zealously stripped 14 `fontWeight`/`fontSize` overrides from `NBText` styles whose variants are lighter (body/body-sm/caption = 400/500) — losing intended emphasis (bold unread notification title — which the screen docstring mandates — semibold settings/shift labels, 20px onboarding emoji icons). Since NBText has no `weight` prop, the override was the correct pattern; **all 14 restored** (titleUnread, shiftRowTitle, semibold×, rowLabel, newPhotoText, picoIcon, rowTitle, dayLabel, retryButtonText, subHeading, footerBtnText, heroGpsText, ConnectivityBanner label) + removed a dead `'black' : 'black'` color ternary. Re-verified green. **Next: plan 4-R web** (dashboard v2.1 revamp + wired notification bell + `/dashboard/notifications`).
+
+---
+
 ## June 9, 2026 — Code-verified status audit + % re-baseline (~55% → ~42%)
 
 Audited every sub-phase against the actual code (not the docs) to remove false positives **and** false negatives. Net: the headline dropped from an optimistic ~50-55% to an effort-weighted **~42%**.

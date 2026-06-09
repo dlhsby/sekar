@@ -13,7 +13,7 @@
  * `notificationsSlice` (already populated by FCM foreground handler).
  * Header (title + back arrow) is provided by MainNavigator via FieldHomeHeader.
  */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   BackHandler,
   FlatList,
@@ -42,7 +42,26 @@ import {
 } from '../../services/api/notificationsApi';
 import type { Notification } from '../../types/models.types';
 import { nbBorders, nbColors, nbRadius, nbSpacing } from '../../constants/nbTokens';
-import { NBEmptyState, NBText } from '../../components/nb';
+import { NBEmptyState, NBSkeleton, NBTab, NBText } from '../../components/nb';
+
+// Category filter (matches the grouping in NotificationPreferencesScreen).
+type NotifCategory = 'all' | 'task' | 'activity' | 'overtime' | 'system';
+
+const CATEGORY_TABS: { key: NotifCategory; label: string }[] = [
+  { key: 'all', label: 'Semua' },
+  { key: 'task', label: 'Tugas' },
+  { key: 'activity', label: 'Aktivitas' },
+  { key: 'overtime', label: 'Lembur' },
+  { key: 'system', label: 'Sistem' },
+];
+
+/** Map a notification `type` (e.g. `task_assigned`) to its filter category. */
+function categoryOf(type: string): Exclude<NotifCategory, 'all'> {
+  if (type.startsWith('task')) return 'task';
+  if (type.startsWith('activity')) return 'activity';
+  if (type.startsWith('overtime')) return 'overtime';
+  return 'system';
+}
 
 function formatRelativeTime(iso: string): string {
   try {
@@ -85,6 +104,15 @@ export function NotificationsScreen(): React.JSX.Element {
   const unreadCount = useAppSelector(selectUnreadCount);
   const isLoading = useAppSelector(selectNotificationsLoading);
   const [refreshing, setRefreshing] = useState(false);
+  const [category, setCategory] = useState<NotifCategory>('all');
+
+  const filtered = useMemo(
+    () =>
+      category === 'all'
+        ? notifications
+        : notifications.filter((n) => categoryOf(n.type) === category),
+    [notifications, category],
+  );
 
   const fetchPage = useCallback(async () => {
     dispatch(setLoading(true));
@@ -152,6 +180,14 @@ export function NotificationsScreen(): React.JSX.Element {
 
   return (
     <SafeAreaView style={styles.root} edges={['bottom']} testID="notifications-screen">
+      <NBTab
+        tabs={CATEGORY_TABS}
+        activeTab={category}
+        onTabChange={(key) => setCategory(key as NotifCategory)}
+        scrollable
+        style={styles.filterTabs}
+        testID="notifications-filter"
+      />
       {unreadCount > 0 ? (
         <View style={styles.actionsBar}>
           <NBText variant="mono-sm" color="gray700" uppercase>
@@ -160,6 +196,7 @@ export function NotificationsScreen(): React.JSX.Element {
           <TouchableOpacity
             onPress={handleMarkAllRead}
             accessibilityRole="button"
+            accessibilityLabel="Tandai semua notifikasi sebagai dibaca"
             testID="notifications-mark-all-read"
           >
             <NBText variant="mono-sm" color="primary" uppercase style={styles.actionLink}>
@@ -169,10 +206,10 @@ export function NotificationsScreen(): React.JSX.Element {
         </View>
       ) : null}
       <FlatList
-        data={notifications}
+        data={filtered}
         keyExtractor={(item) => item.id}
         contentContainerStyle={
-          notifications.length === 0 ? styles.emptyContent : styles.listContent
+          filtered.length === 0 ? styles.emptyContent : styles.listContent
         }
         refreshControl={
           <RefreshControl
@@ -213,14 +250,18 @@ export function NotificationsScreen(): React.JSX.Element {
           </TouchableOpacity>
         )}
         ListEmptyComponent={
-          !isLoading ? (
+          isLoading ? (
+            <View style={styles.skeletonContainer}>
+              <NBSkeleton variant="list" count={5} />
+            </View>
+          ) : (
             <NBEmptyState
               variant="noData"
               title="Belum ada notifikasi"
               description="Notifikasi tugas, lembur, dan pengumuman akan muncul di sini."
               testID="notifications-empty"
             />
-          ) : null
+          )
         }
       />
     </SafeAreaView>
@@ -231,6 +272,10 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: nbColors.bgCanvas,
+  },
+  filterTabs: {
+    paddingHorizontal: nbSpacing.md,
+    paddingTop: nbSpacing.sm,
   },
   actionsBar: {
     flexDirection: 'row',
@@ -277,6 +322,9 @@ const styles = StyleSheet.create({
   bodyText: {
     marginTop: 2,
     marginBottom: 2,
+  },
+  skeletonContainer: {
+    padding: nbSpacing.md,
   },
 });
 

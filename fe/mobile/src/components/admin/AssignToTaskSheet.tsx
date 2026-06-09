@@ -31,6 +31,27 @@ import { NBToast } from '../../components/nb/NBToast';
 import type { PruningRequest } from '../../types/models.types';
 import { formatDateLong, getISOWeek } from '../../utils/dateUtils';
 
+// Assignable roles ordered top-down by org hierarchy (Kepala Rayon → Linmas).
+// Default selection is intentionally Admin Data (not the first item) — admin_data
+// is the common "Tugaskan" flow.
+const ASSIGNABLE_ROLES = [
+  'kepala_rayon',
+  'admin_data',
+  'korlap',
+  'satgas',
+  'linmas',
+] as const;
+
+type AssignableRole = typeof ASSIGNABLE_ROLES[number];
+
+const ROLE_LABELS: Record<AssignableRole, string> = {
+  kepala_rayon: 'Kepala Rayon',
+  admin_data: 'Admin Data',
+  korlap: 'Korlap',
+  satgas: 'Satgas',
+  linmas: 'Linmas',
+};
+
 interface AssignToTaskSheetProps {
   visible: boolean;
   onClose: () => void;
@@ -93,26 +114,6 @@ export function AssignToTaskSheet({
   //     admin via Atur Jadwal pre-approve). Read-only here; to change,
   //     use Atur Ulang Jadwal which cascades to task.deadline + capacity.
   //   - `units` defaults to 1 server-side (capacity = permohonan slots).
-  // Ordered top-down by org hierarchy so the dropdown reflects the
-  // chain of command (Kepala Rayon at the top, Linmas at the bottom).
-  // The default selection below is intentionally Admin Data (not the
-  // first item) — admin_data is the common Tugaskan flow.
-  const ASSIGNABLE_ROLES = [
-    'kepala_rayon',
-    'admin_data',
-    'korlap',
-    'satgas',
-    'linmas',
-  ] as const;
-  type AssignableRole = typeof ASSIGNABLE_ROLES[number];
-  const ROLE_LABELS: Record<AssignableRole, string> = {
-    kepala_rayon: 'Kepala Rayon',
-    admin_data: 'Admin Data',
-    korlap: 'Korlap',
-    satgas: 'Satgas',
-    linmas: 'Linmas',
-  };
-
   const [assignedRole, setAssignedRole] = useState<AssignableRole>('admin_data');
   const [assignedTo, setAssignedTo] = useState<string>('');
   const scheduledDate = useMemo<Date | null>(

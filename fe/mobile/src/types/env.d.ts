@@ -21,4 +21,10 @@ declare module '@env' {
   export const MAX_IMAGE_WIDTH: string;
   export const MAX_VIDEO_SIZE_MB: string;
   export const MAX_VIDEO_DURATION_SECONDS: string;
+
+  // Crash reporting (Phase 4-1 B4) — empty disables Sentry (default in dev)
+  export const SENTRY_DSN_MOBILE: string;
+  export const SENTRY_RELEASE: string;
+  export const SENTRY_ENVIRONMENT: string;
+  export const SENTRY_TRACES_SAMPLE_RATE: string;
 }

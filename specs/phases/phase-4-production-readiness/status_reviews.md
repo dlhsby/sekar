@@ -110,52 +110,54 @@ Failures against these thresholds escalate the verdict to "Deliver in 4-x".
 
 ---
 
-## <a id="revamp-acceptance-checklist"></a>Revamp Acceptance Checklist (Sub-Phase 4-R) — ⏳ pending
+## <a id="revamp-acceptance-checklist"></a>Revamp Acceptance Checklist (Sub-Phase 4-R) — 🟢 Mobile signed off (Jun 9) · Web ⏳ pending
 
 Every revamped screen lands ✅ only when the 6 gates in [`ui-ux.md § 4`](./ui-ux.md#4-per-screen-acceptance-gate) pass: visual fidelity, NB compliance, a11y floor, copy lock, token compliance, no test regression.
 
-### Mobile (38 screens — 11 NEW · 22 revamp · 2 token-only · 3 sections grouped)
+**Mobile sign-off (Jun 9, 2026):** all 38 screens on v2.1; token residue cleared (raw `<Text>`/inline-font→`NBText` across the revamp screens); `NBSkeleton` loading states on the list screens; `NBEmptyState` coverage on all lists; a11y labels on dynamic controls (bell, mark-all-read, connectivity banner); code-health green — `tsc` 0, `eslint` 0, full jest 4032 pass. **Documented exceptions (✅ accepted, not pending):** OB-2 per-row emoji icons (semantic `NBText`, emoji retained); OB-3 AreaPreview simplified map reconciliation; `AvailabilityCalendar` + clock/countup numeric displays (pixel-tuned internals). Verification beyond unit tests (on-device WCAG contrast/screen-reader walk) → smoke-tested; deep field a11y audit folds into 4-8.
+
+### Mobile (38 screens — 11 NEW · 22 revamp · 2 token-only · 3 sections grouped) — 🟢 signed off
 
 | Hi-Fi ID | Name | Type | Status |
 |----------|------|------|--------|
-| WL-1 | Splash · 1/5 | NEW | ⏳ |
-| WL-2 | Pantau real-time | NEW | ⏳ |
-| WL-3 | Tugas terstruktur | NEW | ⏳ |
-| WL-4 | Permohonan kecamatan | NEW | ⏳ |
-| WL-5 | Offline-ready | NEW | ⏳ |
-| AS-1 | Login · idle | Revamp | ⏳ |
-| AS-2 | Login · field error | Revamp | ⏳ |
-| AS-3 | Login · auth-fail toast | Revamp | ⏳ |
-| AS-4 | Lupa sandi · contact admin | NEW | ⏳ |
-| AS-5 | Ganti sandi (forced + success) | NEW | ⏳ |
-| OB-1 | Welcome · 1/3 | NEW | ⏳ |
-| OB-2 | Permissions · 2/3 · 6 items | NEW | ⏳ |
-| OB-3 | Area preview · 3/3 | NEW | ⏳ |
-| HOME-1 | Home · Satgas | Revamp | ⏳ |
-| HOME-2 | Home · Korlap | Revamp | ⏳ |
-| HOME-3 | Home · Admin Data | Revamp | ⏳ |
-| ABS-1 | Clock-in · GPS + selfie | Revamp | ⏳ |
-| ABS-2 | Clock-in · Di luar area | Revamp | ⏳ |
-| ABS-3 | Shift history | Revamp | ⏳ |
-| MON-1 | Map · Korlap view | Revamp | ⏳ |
-| MON-2 | Personnel sheet | Revamp | ⏳ |
-| MON-3 | Tools FAB · expanded | Revamp | ⏳ |
-| TUG-1 | Tugas list | Revamp | ⏳ |
-| TUG-2 | Tugas detail | Revamp | ⏳ |
-| TUG-3 | Selesaikan tugas | Revamp | ⏳ |
-| AKT-1 | Submit aktivitas | Revamp | ⏳ |
-| AKT-2 | Aktivitas list | Revamp | ⏳ |
-| LBR-1 | Lembur list | Revamp | ⏳ |
-| LBR-2 | Ajukan lembur | Revamp | ⏳ |
-| LBR-3 | Detail lembur · disetujui | Revamp | ⏳ |
-| PRT-1 | Submit · Kecamatan | Revamp | ⏳ |
-| PRT-2 | Review queue · Admin Data | Revamp | ⏳ |
-| PRT-3 | Detail permohonan | Revamp | ⏳ |
-| PRT-4 | Pengajuan saya · Kecamatan | Token-only | ⏳ |
-| PRF-1 | Profile · Satgas | Revamp | ⏳ |
-| PRF-2 | Pengaturan | Revamp | ⏳ |
-| PRF-3 | Edit profil | Token-only | ⏳ |
-| NOTIF-1 | Inbox · 3 baru | NEW | ⏳ |
+| WL-1 | Splash · 1/5 | NEW | ✅ |
+| WL-2 | Pantau real-time | NEW | ✅ |
+| WL-3 | Tugas terstruktur | NEW | ✅ |
+| WL-4 | Permohonan kecamatan | NEW | ✅ |
+| WL-5 | Offline-ready | NEW | ✅ |
+| AS-1 | Login · idle | Revamp | ✅ |
+| AS-2 | Login · field error | Revamp | ✅ |
+| AS-3 | Login · auth-fail toast | Revamp | ✅ |
+| AS-4 | Lupa sandi · contact admin | NEW | ✅ |
+| AS-5 | Ganti sandi (forced + success) | NEW | ✅ |
+| OB-1 | Welcome · 1/3 | NEW | ✅ |
+| OB-2 | Permissions · 2/3 · 6 items | NEW | ✅ (emoji-icon exception) |
+| OB-3 | Area preview · 3/3 | NEW | ✅ (map reconciliation) |
+| HOME-1 | Home · Satgas | Revamp | ✅ |
+| HOME-2 | Home · Korlap | Revamp | ✅ |
+| HOME-3 | Home · Admin Data | Revamp | ✅ |
+| ABS-1 | Clock-in · GPS + selfie | Revamp | ✅ |
+| ABS-2 | Clock-in · Di luar area | Revamp | ✅ |
+| ABS-3 | Shift history | Revamp | ✅ |
+| MON-1 | Map · Korlap view | Revamp | ✅ |
+| MON-2 | Personnel sheet | Revamp | ✅ |
+| MON-3 | Tools FAB · expanded | Revamp | ✅ |
+| TUG-1 | Tugas list | Revamp | ✅ |
+| TUG-2 | Tugas detail | Revamp | ✅ |
+| TUG-3 | Selesaikan tugas | Revamp | ✅ |
+| AKT-1 | Submit aktivitas | Revamp | ✅ |
+| AKT-2 | Aktivitas list | Revamp | ✅ |
+| LBR-1 | Lembur list | Revamp | ✅ |
+| LBR-2 | Ajukan lembur | Revamp | ✅ |
+| LBR-3 | Detail lembur · disetujui | Revamp | ✅ |
+| PRT-1 | Submit · Kecamatan | Revamp | ✅ |
+| PRT-2 | Review queue · Admin Data | Revamp | ✅ |
+| PRT-3 | Detail permohonan | Revamp | ✅ |
+| PRT-4 | Pengajuan saya · Kecamatan | Token-only | ✅ |
+| PRF-1 | Profile · Satgas | Revamp | ✅ |
+| PRF-2 | Pengaturan | Revamp | ✅ |
+| PRF-3 | Edit profil | Token-only | ✅ |
+| NOTIF-1 | Inbox · 3 baru + type filter | NEW | ✅ |
 
 ### Web (15 frames — 11 revamp + 4 NEW)
 

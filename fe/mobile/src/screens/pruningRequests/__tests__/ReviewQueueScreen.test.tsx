@@ -81,6 +81,14 @@ jest.mock('../../../components/nb', () => {
         React.createElement(Text, { testID: 'alert-message' }, message),
       ),
     NBToast: { show: jest.fn() },
+    NBSkeleton: ({ count }: any) =>
+      React.createElement(
+        View,
+        { testID: 'skeleton' },
+        Array.from({ length: count ?? 1 }).map((_, i) =>
+          React.createElement(View, { key: i, testID: `skeleton-item-${i}` }),
+        ),
+      ),
     NBText: ({ children, style }: any) =>
       React.createElement(Text, { style }, children),
     NBCard: ({ children, style }: any) =>
@@ -335,7 +343,8 @@ describe('ReviewQueueScreen', () => {
         <ReviewQueueScreen />
       </Provider>,
     );
-    expect(screen.getByTestId('loading-spinner')).toBeTruthy();
+    // Loading shows skeleton, not the loading spinner
+    expect(screen.getByTestId('skeleton')).toBeTruthy();
   });
 
   it('shows an empty state when there are no requests', async () => {

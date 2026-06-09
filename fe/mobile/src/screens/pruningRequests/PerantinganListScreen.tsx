@@ -34,7 +34,6 @@ import {
   fetchMyPruningRequests,
   selectRequest,
 } from '../../store/slices/pruningRequestsSlice';
-import { LoadingSpinner } from '../../components/common';
 import {
   NBBackgroundPattern,
   NBButton,
@@ -43,6 +42,7 @@ import {
   NBPageHeader,
   NBFabBar,
   NB_FAB_BAR_HEIGHT,
+  NBSkeleton,
   NBText,
 } from '../../components/nb';
 import {
@@ -274,7 +274,21 @@ export function PerantinganListScreen(): React.JSX.Element {
   }, [isLoading, activeFilterCount, handleSubmit]);
 
   if (isLoading && requests.length === 0) {
-    return <LoadingSpinner />;
+    return (
+      <NBBackgroundPattern
+        pattern="dots"
+        backgroundColor={nbColors.bgCanvas}
+        patternColor={nbColors.primary}
+        opacity={0.06}
+      >
+        <SafeAreaView style={styles.safeArea}>
+          <NBPageHeader title="Permohonan Perantingan" />
+          <View style={styles.skeletonContainer}>
+            <NBSkeleton variant="list" count={5} />
+          </View>
+        </SafeAreaView>
+      </NBBackgroundPattern>
+    );
   }
 
   return (
@@ -529,5 +543,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.md,
     paddingBottom: nbSpacing['2xl'],
     flexGrow: 1,
+  },
+  skeletonContainer: {
+    padding: nbSpacing.md,
   },
 });

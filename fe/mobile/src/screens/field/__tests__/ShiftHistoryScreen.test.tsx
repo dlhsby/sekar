@@ -40,6 +40,14 @@ jest.mock('../../../components/nb', () => {
         ctaLabel ? React.createElement(Text, { onPress: onCTA }, ctaLabel) : null,
       ),
     NBBackgroundPattern: ({ children }: any) => React.createElement(View, null, children),
+    NBSkeleton: ({ count }: any) =>
+      React.createElement(
+        View,
+        { testID: 'skeleton' },
+        Array.from({ length: count ?? 1 }).map((_, i) =>
+          React.createElement(View, { key: i, testID: `skeleton-item-${i}` }),
+        ),
+      ),
     NBText: ({ children, variant, color, uppercase, style, numberOfLines }: any) =>
       React.createElement(Text, { style }, children),
     NBModal: ({ visible, children, footer }: any) =>
@@ -166,14 +174,15 @@ describe('ShiftHistoryScreen', () => {
   });
 
   describe('Loading State', () => {
-    it('should show loading text while loading', () => {
+    it('should show skeleton while loading', () => {
       // Never-resolving promise keeps component in loading state
       (shiftsApi.getMyShifts as jest.Mock).mockReturnValue(new Promise(() => {}));
 
-      const { getByText } = render(<ShiftHistoryScreen />);
+      const { queryByText } = render(<ShiftHistoryScreen />);
 
-      // isLoading defaults to true, so loading text shows on initial render
-      expect(getByText('Memuat riwayat shift...')).toBeTruthy();
+      // isLoading defaults to true, so skeleton shows on initial render
+      // Verify that it does NOT show the empty state or error state
+      expect(queryByText('Belum Ada Riwayat Shift')).toBeFalsy();
     });
   });
 

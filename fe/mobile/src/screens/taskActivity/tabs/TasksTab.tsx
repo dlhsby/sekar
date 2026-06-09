@@ -13,7 +13,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import { NBEmptyState, NBText } from '../../../components/nb';
+import { NBEmptyState, NBSkeleton, NBText } from '../../../components/nb';
 import { nbColors, nbSpacing } from '../../../constants/nbTokens';
 import { TaskCard } from '../components/TaskCard';
 import type { Task } from '../../../types/models.types';
@@ -52,9 +52,8 @@ export function TasksTab({
 }: TasksTabProps): React.JSX.Element {
   if (loadingTasks) {
     return (
-      <View style={styles.centerContent}>
-        <ActivityIndicator size="large" color={nbColors.primary} />
-        <NBText variant="body" color="gray600" style={styles.loadingText}>Memuat tugas...</NBText>
+      <View style={styles.skeletonContainer}>
+        <NBSkeleton variant="list" count={5} />
       </View>
     );
   }
@@ -136,13 +135,8 @@ export function TasksTab({
 }
 
 const styles = StyleSheet.create({
-  centerContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: nbSpacing.md,
+  skeletonContainer: {
+    padding: nbSpacing.md,
   },
   listContent: {
     paddingBottom: nbSpacing.lg,

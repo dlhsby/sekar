@@ -9,8 +9,9 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { nbColors, nbBorders, nbShadows } from '../../constants/nbTokens';
+import { NBText } from '../nb/NBText';
 import {
   ConnectivityMonitor,
   type ConnectivityStatusSnapshot,
@@ -55,9 +56,15 @@ export function ConnectivityBanner({ monitor }: ConnectivityBannerProps): React.
       accessibilityLiveRegion="polite"
       testID={`connectivity-banner-${snap.status.toLowerCase()}`}
     >
-      <Text style={[styles.label, { color: palette.fg }]} numberOfLines={1}>
+      <NBText
+        variant="caption"
+        color="black"
+        uppercase
+        style={styles.label}
+        numberOfLines={1}
+      >
         {COPY[snap.status]}
-      </Text>
+      </NBText>
     </View>
   );
 }
@@ -71,10 +78,9 @@ const styles = StyleSheet.create({
     ...nbShadows.sm,
   },
   label: {
-    fontWeight: '700',
     fontSize: 13,
+    fontWeight: '700',
     letterSpacing: 0.04,
-    textTransform: 'uppercase' as const,
   },
 });
 

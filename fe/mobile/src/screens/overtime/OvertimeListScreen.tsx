@@ -20,7 +20,7 @@ import type { RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import { NBBackgroundPattern, NBButton, NBEmptyState, NBFabBar, NB_FAB_BAR_HEIGHT, NBPageHeader, NBText } from '../../components/nb';
+import { NBBackgroundPattern, NBButton, NBEmptyState, NBFabBar, NB_FAB_BAR_HEIGHT, NBPageHeader, NBSkeleton, NBText } from '../../components/nb';
 import { SortModal, OvertimeFilterModal } from '../../components/modals';
 import { OvertimeCard } from './components/OvertimeCard';
 import { getOvertimeStatusLabel } from '../../utils/statusHelpers';
@@ -342,7 +342,11 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
           onEndReachedThreshold={0.3}
           ListFooterComponent={renderFooter}
           ListEmptyComponent={
-            loading ? null : (
+            loading ? (
+              <View style={styles.skeletonContainer}>
+                <NBSkeleton variant="list" count={5} />
+              </View>
+            ) : (
               <NBEmptyState
                 variant="noData"
                 illustration={activeFilterCount > 0 ? 'illo-search' : 'illo-reports'}
@@ -544,5 +548,9 @@ const styles = StyleSheet.create({
   footerLoader: {
     paddingVertical: nbSpacing.md,
     alignItems: 'center',
+  },
+  skeletonContainer: {
+    paddingHorizontal: nbSpacing.md,
+    paddingVertical: nbSpacing.md,
   },
 });

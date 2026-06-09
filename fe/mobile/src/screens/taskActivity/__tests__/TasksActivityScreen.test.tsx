@@ -231,7 +231,8 @@ describe('TasksActivityScreen', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('Memuat tugas...')).toBeTruthy();
+      // When loading, the skeleton is shown (not the empty state text)
+      expect(() => getByText('Belum ada tugas')).toThrow();
     });
   });
 

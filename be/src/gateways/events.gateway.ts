@@ -402,14 +402,15 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   }
 
   /**
-   * Emit event to a specific user
+   * Emit an event to every socket of a specific user.
+   *
+   * Targets the per-user room (joined on connect at `user:{userId}`) rather than
+   * iterating the in-memory `connectedClients` map. This is correct across multiple
+   * server instances behind the Socket.IO Redis adapter (a local-map scan would only
+   * see sockets connected to the current instance and silently drop the rest).
    */
   private emitToUser(userId: string, event: EventType, data: any): void {
-    for (const [clientId, clientInfo] of this.connectedClients) {
-      if (clientInfo.userId === userId) {
-        this.server.to(clientId).emit(event, data);
-      }
-    }
+    this.server.to(`user:${userId}`).emit(event, data);
   }
 
   /**

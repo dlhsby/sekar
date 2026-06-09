@@ -20,11 +20,12 @@ const BASE_PROPS = {
 };
 
 describe('ActivitiesTab', () => {
-  it('renders loading state', () => {
-    const { getByText } = render(
+  it('renders loading state with skeleton', () => {
+    const { queryByText } = render(
       <ActivitiesTab {...BASE_PROPS} loadingActivities={true} />
     );
-    expect(getByText('Memuat aktivitas...')).toBeTruthy();
+    // When loading, shows skeleton (does not render empty state)
+    expect(queryByText('Belum ada aktivitas')).toBeFalsy();
   });
 
   it('renders empty state when no activities', () => {

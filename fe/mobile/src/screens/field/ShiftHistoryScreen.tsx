@@ -4,12 +4,12 @@ import {
   FlatList,
   StyleSheet,
   RefreshControl,
-  ActivityIndicator,
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { NBEmptyState, NBBackgroundPattern, NBText, NBDatePicker, NBModal } from '../../components/nb';
+import { NBEmptyState, NBBackgroundPattern, NBText, NBDatePicker, NBModal, NBSkeleton } from '../../components/nb';
 import { StatusPill } from '../../components/home/StatusPill';
 import { ShiftDetailModal } from '../../components/modals/ShiftDetailModal';
 import { getMyShifts } from '../../services/api/shiftsApi';
@@ -451,12 +451,11 @@ export function ShiftHistoryScreen(): React.JSX.Element {
         patternColor={nbColors.primary}
         opacity={0.06}
       >
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={nbColors.primary} />
-          <NBText variant="body" color="gray600" style={styles.loadingText}>
-            Memuat riwayat shift...
-          </NBText>
-        </View>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.skeletonContainer}>
+            <NBSkeleton variant="list" count={5} />
+          </View>
+        </SafeAreaView>
       </NBBackgroundPattern>
     );
   }
@@ -612,14 +611,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-  },
-  loadingText: {
-    marginTop: nbSpacing.md,
+  skeletonContainer: {
+    padding: nbSpacing.md,
   },
 
   // Filter bar (mirrors OvertimeListScreen filterBarCollapsed pattern)

@@ -83,6 +83,14 @@ jest.mock('../../../components/nb', () => {
           : null,
       ),
     NBToast: { show: jest.fn() },
+    NBSkeleton: ({ count }: any) =>
+      React.createElement(
+        View,
+        { testID: 'skeleton' },
+        Array.from({ length: count ?? 1 }).map((_, i) =>
+          React.createElement(View, { key: i, testID: `skeleton-item-${i}` }),
+        ),
+      ),
     NBButton: ({ title, onPress, testID }: any) =>
       React.createElement(
         TouchableOpacity,

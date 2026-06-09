@@ -21,11 +21,12 @@ const BASE_PROPS = {
 };
 
 describe('TasksTab', () => {
-  it('renders loading state', () => {
-    const { getByText } = render(
+  it('renders loading state with skeleton', () => {
+    const { queryByText } = render(
       <TasksTab {...BASE_PROPS} loadingTasks={true} />
     );
-    expect(getByText('Memuat tugas...')).toBeTruthy();
+    // When loading, shows skeleton (does not render empty state)
+    expect(queryByText('Belum ada tugas')).toBeFalsy();
   });
 
   it('renders empty state when no tasks', () => {

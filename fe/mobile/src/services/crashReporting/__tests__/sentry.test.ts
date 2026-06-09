@@ -1,36 +1,41 @@
-import * as Sentry from '@sentry/react-native';
-import { captureException, initSentry } from '../sentry';
-
-jest.mock('@sentry/react-native', () => ({
+// @env config is build-inlined by react-native-dotenv (SENTRY_DSN_MOBILE empty in
+// the test env), so the DSN path is exercised via initSentry overrides. Each case
+// re-requires the module so its internal `enabled` flag starts fresh.
+const mockSentry = {
   init: jest.fn(),
   captureException: jest.fn(),
   withScope: jest.fn((cb: (scope: unknown) => void) => {
     const scope = { setUser: jest.fn(), setTag: jest.fn() };
     cb(scope);
   }),
-}));
+};
+
+function fresh() {
+  jest.resetModules();
+  jest.doMock('@sentry/react-native', () => mockSentry);
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  return require('../sentry') as typeof import('../sentry');
+}
 
 describe('crashReporting/sentry (mobile)', () => {
-  afterEach(() => {
-    jest.clearAllMocks();
-    delete process.env.SENTRY_DSN_MOBILE;
-    delete process.env.SENTRY_RELEASE;
-    delete process.env.SENTRY_ENVIRONMENT;
-    delete process.env.SENTRY_TRACES_SAMPLE_RATE;
-  });
+  beforeEach(() => jest.clearAllMocks());
 
-  it('initSentry no-ops without DSN', () => {
+  it('initSentry no-ops without a DSN', () => {
+    const { initSentry } = fresh();
     expect(initSentry()).toBe(false);
-    expect(Sentry.init).not.toHaveBeenCalled();
+    expect(mockSentry.init).not.toHaveBeenCalled();
   });
 
-  it('initSentry initializes with DSN', () => {
-    process.env.SENTRY_DSN_MOBILE = 'https://abc@sentry.io/1';
-    process.env.SENTRY_RELEASE = 'sekar-mobile@1.0.0+1';
-    process.env.SENTRY_ENVIRONMENT = 'staging';
-
-    expect(initSentry()).toBe(true);
-    expect(Sentry.init).toHaveBeenCalledWith(
+  it('initSentry initializes with a DSN', () => {
+    const { initSentry } = fresh();
+    expect(
+      initSentry({
+        dsn: 'https://abc@sentry.io/1',
+        release: 'sekar-mobile@1.0.0+1',
+        environment: 'staging',
+      }),
+    ).toBe(true);
+    expect(mockSentry.init).toHaveBeenCalledWith(
       expect.objectContaining({
         dsn: 'https://abc@sentry.io/1',
         release: 'sekar-mobile@1.0.0+1',
@@ -40,25 +45,26 @@ describe('crashReporting/sentry (mobile)', () => {
     );
   });
 
-  it('initSentry falls back to 0.1 when traces rate env is non-numeric', () => {
-    process.env.SENTRY_DSN_MOBILE = 'https://abc@sentry.io/1';
-    process.env.SENTRY_TRACES_SAMPLE_RATE = 'not-a-number';
-    initSentry();
-    expect(Sentry.init).toHaveBeenCalledWith(
-      expect.objectContaining({ tracesSampleRate: 0.1 }),
+  it('initSentry defaults environment + traces rate when only a DSN is given', () => {
+    const { initSentry } = fresh();
+    initSentry({ dsn: 'https://abc@sentry.io/1' });
+    expect(mockSentry.init).toHaveBeenCalledWith(
+      expect.objectContaining({ environment: 'development', tracesSampleRate: 0.1 }),
     );
   });
 
-  it('captureException no-ops without DSN', () => {
+  it('captureException no-ops before init', () => {
+    const { captureException } = fresh();
     captureException(new Error('boom'));
-    expect(Sentry.captureException).not.toHaveBeenCalled();
+    expect(mockSentry.captureException).not.toHaveBeenCalled();
   });
 
-  it('captureException attaches context tags', () => {
-    process.env.SENTRY_DSN_MOBILE = 'https://abc@sentry.io/1';
+  it('captureException attaches context tags after init', () => {
+    const { initSentry, captureException } = fresh();
+    initSentry({ dsn: 'https://abc@sentry.io/1' });
     const err = new Error('boom');
     captureException(err, { userId: 'u-1', role: 'satgas', screen: 'Home' });
-    expect(Sentry.withScope).toHaveBeenCalled();
-    expect(Sentry.captureException).toHaveBeenCalledWith(err);
+    expect(mockSentry.withScope).toHaveBeenCalled();
+    expect(mockSentry.captureException).toHaveBeenCalledWith(err);
   });
 });
