@@ -114,11 +114,13 @@ export function ActivityFilterModal({
     } else {
       loadAllAreas();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, isAreaFixed, userRayonId, showRayon, canSelectRayon, isRayonFixed]);
 
   useEffect(() => {
     if (!visible || isFieldWorker) return;
     loadUsers(localAreaId || null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, localAreaId, isFieldWorker]);
 
   const loadRayons = useCallback(async () => {

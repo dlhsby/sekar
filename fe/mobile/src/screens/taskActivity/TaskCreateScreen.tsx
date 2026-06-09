@@ -438,6 +438,7 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
     } finally {
       setIsSubmitting(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resetForm is a stable callback defined below
   }, [form, validateForm, navigation, clearDraft]);
 
   // Handle tagged users change (multi-select)

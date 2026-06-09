@@ -1,6 +1,7 @@
 const tsParser = require('@typescript-eslint/parser');
 const tsPlugin = require('@typescript-eslint/eslint-plugin');
 const sekarDesign = require('eslint-plugin-sekar-design');
+const reactHooks = require('eslint-plugin-react-hooks');
 
 // ESLint 9+ flat config format
 module.exports = [
@@ -54,6 +55,7 @@ module.exports = [
     plugins: {
       '@typescript-eslint': tsPlugin,
       'sekar-design': sekarDesign,
+      'react-hooks': reactHooks,
     },
     rules: {
       // Basic rules for React Native
@@ -63,6 +65,11 @@ module.exports = [
       // Phase 3 M1-R 3-R1 — design-token discipline (ADR-036)
       'sekar-design/no-inline-hex-colors': 'error',
       'sekar-design/rn-no-shadow-radius': 'error',
+      // React Hooks discipline (registered 2026-06-09). rules-of-hooks is a hard
+      // error (real bugs); exhaustive-deps is a warning (advisory — some omissions
+      // are intentional and carry an inline disable).
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
     },
   },
   // Permanent allowlist — colors with no NB token equivalent or files that ARE the token source.

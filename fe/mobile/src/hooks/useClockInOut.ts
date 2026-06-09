@@ -152,6 +152,7 @@ export function useClockInOut() {
         Geolocation.clearWatch(watchId);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- getCurrentLocation is a stable callback; effect runs once on mount and when assignedArea changes
   }, [assignedArea]);
 
   // Update timer every second when clocked in
@@ -171,6 +172,7 @@ export function useClockInOut() {
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshots currentShift on mount intentionally; re-running on every shift change would reset timer unnecessarily
   }, [currentShift?.id]);
 
   const handleCaptureSelfie = useCallback(async () => {

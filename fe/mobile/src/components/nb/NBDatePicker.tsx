@@ -269,11 +269,11 @@ export function NBDatePicker({
       onChange(result);
     }
     setModalVisible(false);
-  }, [mode, tempYear, tempMonth, tempDay, tempHour, tempMinute, minimumDate, maximumDate, onChange]);
+  }, [mode, tempYear, tempMonth, tempDay, tempHour, tempMinute, minimumDate, maximumDate, onChange, setModalVisible]);
 
   const handleCancel = useCallback(() => {
     setModalVisible(false);
-  }, []);
+  }, [setModalVisible]);
 
   // Generate picker data
   const minYear = minimumDate?.getFullYear() ?? now.getFullYear() - 5;

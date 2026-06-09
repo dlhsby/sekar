@@ -98,6 +98,7 @@ export function BoundaryDetailModal({
     };
     // Key on the area ID, not the object — reopening the same area with a fresh
     // object reference still refetches, but an unrelated re-render won't.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, isRayon, areaData?.id]);
 
   const isOpen = visible && !!data;

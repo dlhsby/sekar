@@ -199,6 +199,7 @@ export function UserDetailSheet({
       });
 
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   const handleCall = useCallback(() => {

@@ -148,6 +148,7 @@ export function MapDashboardScreen(): React.JSX.Element {
   // Fetch live users on mount and when filters change
   useEffect(() => {
     void fetchLiveUsersWithFilters(filters);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchLiveUsersWithFilters is a stable callback defined below
   }, [filters]);
 
 

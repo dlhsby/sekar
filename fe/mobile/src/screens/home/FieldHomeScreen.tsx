@@ -112,6 +112,7 @@ export function FieldHomeScreen(): React.JSX.Element {
 
   useEffect(() => {
     loadInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loader is a stable callback defined below; effect runs on mount by design
   }, []);
 
   // Live timer (every second) for the active shift.
@@ -137,6 +138,7 @@ export function FieldHomeScreen(): React.JSX.Element {
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshots currentShift on mount by design
   }, [currentShift?.id]);
 
   // On re-focus (e.g. returning from ClockInOut) reload so counts stay fresh.
@@ -152,6 +154,7 @@ export function FieldHomeScreen(): React.JSX.Element {
       loadShiftHistory();
       loadTodayActivities();
       loadTasks();
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- loaders are stable callbacks defined below; effect runs on focus by design
     }, [])
   );
 
@@ -221,6 +224,7 @@ export function FieldHomeScreen(): React.JSX.Element {
     setRefreshing(true);
     await Promise.all([loadCurrentShift(), loadShiftHistory(), loadTodayActivities(), loadTasks()]);
     setRefreshing(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loaders are stable callbacks defined below; isTaskReceiver only affects loadTasks internals
   }, [isTaskReceiver]);
 
   const handleClockInOut = () => {
@@ -256,7 +260,7 @@ export function FieldHomeScreen(): React.JSX.Element {
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     return `${hours}j ${minutes}m`;
-  }, [todayShifts, timer]);
+  }, [todayShifts]);
 
   if (loading) {
     return <LoadingSpinner />;

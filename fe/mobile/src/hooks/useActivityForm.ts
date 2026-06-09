@@ -240,6 +240,7 @@ export function useActivityForm() {
     } catch (error) {
       if (__DEV__) { console.error('Failed to restore draft:', error); }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- getCurrentLocation is called within Alert callback; it's a stable callback defined in this hook
   }, []);
 
   // Initialize on mount
@@ -257,6 +258,7 @@ export function useActivityForm() {
     }, 30000);
 
     return () => clearInterval(draftInterval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loaders are stable callbacks defined in this hook; effect runs once on mount by design
   }, []);
 
   // Reset form (does NOT clear draft from storage — use clearDraft for that)

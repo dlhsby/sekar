@@ -137,6 +137,7 @@ export function TaskFilterModal({
 
   useEffect(() => {
     if (visible && (canFilterRayon || isRayonFixed)) loadRayons();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, canFilterRayon, isRayonFixed]);
 
   useEffect(() => {
@@ -148,11 +149,13 @@ export function TaskFilterModal({
     } else if (canFilterRayon) {
       loadAllAreas();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, localRayonFilter, canFilterRayon, isAreaFixed, isRayonFixed, userRayonId]);
 
   useEffect(() => {
     if (!visible || !hasSubordinates) { return; }
     loadUsers(localAreaFilter);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, localAreaFilter, hasSubordinates]);
 
   useEffect(() => {

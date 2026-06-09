@@ -79,6 +79,7 @@ export function AdminDataHomeScreen(): React.JSX.Element {
     update();
     const id = setInterval(update, 1000);
     return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshots currentShift on mount by design
   }, [currentShift?.id]);
 
   const loadShift = useCallback(async () => {

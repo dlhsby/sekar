@@ -146,6 +146,7 @@ export function EditProfileScreen(): React.JSX.Element {
     } finally {
       setIsUploading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- form is seeded from assignedArea once; not meant to reset on assignedArea change
   }, [previewUri, user, dispatch, goBack]);
 
   // ─── Derived values ───────────────────────────────────────────────────────

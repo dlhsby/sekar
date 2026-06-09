@@ -46,6 +46,7 @@ function getRelativeTime(isoString: string): string {
 export function UserListCard({ user, onPress }: UserListCardProps): React.JSX.Element {
   const statusColor = useMemo(
     () => getActivityColor(userAxes(user).activity),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [user.status, user.activity, user.location, user.is_within_area],
   );
   const roleIcon = useMemo(() => getRoleIcon(user.role), [user.role]);

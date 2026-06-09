@@ -117,12 +117,14 @@ export function OvertimeFilterModal({
     } else {
       loadAllAreas();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, isAreaFixed, userRayonId, showRayon, canSelectRayon, isRayonFixed]);
 
   // Load users when area changes (unless field worker)
   useEffect(() => {
     if (!visible || isFieldWorker) { return; }
     loadUsers(localAreaId || null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, localAreaId, isFieldWorker]);
 
   const loadRayons = useCallback(async () => {
