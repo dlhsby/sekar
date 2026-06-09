@@ -66,11 +66,19 @@ const MainStack = createNativeStackNavigator<MainStackParamList>();
 function withProfileHeader(
   Component: React.ComponentType<any>,
   title: string,
+  // Optional back override. Defaults to a plain stack pop. Screens that can be
+  // reached via a deep-link round-trip (e.g. Notifications → detail → back →
+  // Notifications) supply a deterministic target so backing out can't bounce
+  // back onto the screen the deep-link left focused underneath.
+  onBack?: (navigation: any, route: any) => void,
 ): React.ComponentType<any> {
   const Wrapped = ({ navigation, route }: any) => (
     <View style={{ flex: 1 }}>
       <View style={headerChrome}>
-        <FieldHomeHeader title={title} onBack={() => navigation.goBack()} />
+        <FieldHomeHeader
+          title={title}
+          onBack={() => (onBack ? onBack(navigation, route) : navigation.goBack())}
+        />
       </View>
       <Component navigation={navigation} route={route} />
     </View>
@@ -105,7 +113,14 @@ const NotificationPreferencesWithHeader = withProfileHeader(
 );
 const EditProfileWithHeader = withProfileHeader(EditProfileScreen, 'Edit Profil');
 const DiagnosticsWithHeader = withProfileHeader(DiagnosticsScreen, 'Diagnostik');
-const NotificationsWithHeader = withProfileHeader(NotificationsScreen, 'Notifikasi');
+// Back returns to the Home tab. The inbox is reached from the header bell and can
+// also be re-opened by a deep-linked detail's back button; routing back to a fixed
+// tab (rather than a stack pop) keeps that round-trip from looping inbox⇄detail.
+const NotificationsWithHeader = withProfileHeader(
+  NotificationsScreen,
+  'Notifikasi',
+  (navigation) => navigation.navigate('Tabs', { screen: 'Home' }),
+);
 
 interface TabConfig {
   name: keyof MainTabParamList;
@@ -352,14 +367,23 @@ function TabNavigator(): React.JSX.Element {
         name="PruningDetail"
         component={RequestDetailScreen}
         options={({ navigation, route }) => {
-          const params = (route.params ?? {}) as { adminMode?: boolean };
-          const target = params.adminMode ? 'PruningReviewQueue' : 'Perantingan';
+          const params = (route.params ?? {}) as {
+            adminMode?: boolean;
+            from?: string;
+            fromParams?: Record<string, unknown>;
+          };
+          // Honor a caller-supplied back target (e.g. Notifications inbox);
+          // otherwise fall back to the pruning queue / list per adminMode.
+          const onBack = () => {
+            if (params.from) {
+              navigation.navigate(params.from as any, params.fromParams as any);
+            } else {
+              navigation.navigate(params.adminMode ? 'PruningReviewQueue' : 'Perantingan');
+            }
+          };
           return {
             headerTitle: () => (
-              <FieldHomeHeader
-                title="Detail Permohonan"
-                onBack={() => navigation.navigate(target)}
-              />
+              <FieldHomeHeader title="Detail Permohonan" onBack={onBack} />
             ),
             tabBarButton: () => null,
           };

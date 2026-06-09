@@ -95,7 +95,7 @@ describe('NotificationsScreen', () => {
     await waitFor(() => expect(mockMarkAsRead).toHaveBeenCalledWith('x'));
     expect(mockNavigate).toHaveBeenCalledWith('Tabs', {
       screen: 'TaskDetail',
-      params: { taskId: 'task-42' },
+      params: { taskId: 'task-42', from: 'Notifications' },
     });
   });
 
@@ -116,7 +116,7 @@ describe('NotificationsScreen', () => {
     await waitFor(() =>
       expect(mockNavigate).toHaveBeenCalledWith('Tabs', {
         screen: 'PruningDetail',
-        params: { requestId: 'pr-7' },
+        params: { requestId: 'pr-7', from: 'Notifications' },
       }),
     );
   });
