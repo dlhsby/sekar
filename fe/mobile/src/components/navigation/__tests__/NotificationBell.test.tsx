@@ -12,8 +12,9 @@ import notificationsReducer, {
 import type { Notification } from '../../../types/models.types';
 
 const mockNavigate = jest.fn();
+const mockGetState = jest.fn(() => ({ index: 1, routes: [{ name: 'Home' }, { name: 'Monitoring' }] }));
 jest.mock('@react-navigation/native', () => ({
-  useNavigation: () => ({ navigate: mockNavigate }),
+  useNavigation: () => ({ navigate: mockNavigate, getState: mockGetState }),
 }));
 
 function makeStore() {
@@ -73,7 +74,7 @@ describe('NotificationBell', () => {
     expect(getByText('99+')).toBeTruthy();
   });
 
-  it('navigates to Notifications on press', () => {
+  it('navigates to Notifications on press, tagging the originating tab', () => {
     const store = makeStore();
     const { getByTestId } = render(
       <Provider store={store}>
@@ -81,6 +82,7 @@ describe('NotificationBell', () => {
       </Provider>,
     );
     fireEvent.press(getByTestId('notification-bell'));
-    expect(mockNavigate).toHaveBeenCalledWith('Notifications');
+    // index 1 of the mocked tab state → 'Monitoring' is the origin
+    expect(mockNavigate).toHaveBeenCalledWith('Notifications', { origin: 'Monitoring' });
   });
 });

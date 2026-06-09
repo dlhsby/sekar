@@ -23,9 +23,21 @@ export const NotificationBell: React.FC = () => {
 
   const display = unreadCount > 99 ? '99+' : String(unreadCount);
 
+  // Record the tab the bell is tapped from so the inbox's back button can
+  // return there instead of defaulting to Home.
+  const openInbox = () => {
+    const nav = navigation as unknown as {
+      getState?: () => { index: number; routes: Array<{ name: string }> };
+      navigate: (name: string, params?: { origin?: string }) => void;
+    };
+    const state = nav.getState?.();
+    const origin = state ? state.routes[state.index]?.name : undefined;
+    nav.navigate('Notifications', { origin });
+  };
+
   return (
     <TouchableOpacity
-      onPress={() => navigation.navigate('Notifications' as never)}
+      onPress={openInbox}
       style={styles.button}
       accessibilityRole="button"
       accessibilityLabel={

@@ -113,13 +113,16 @@ const NotificationPreferencesWithHeader = withProfileHeader(
 );
 const EditProfileWithHeader = withProfileHeader(EditProfileScreen, 'Edit Profil');
 const DiagnosticsWithHeader = withProfileHeader(DiagnosticsScreen, 'Diagnostik');
-// Back returns to the Home tab. The inbox is reached from the header bell and can
-// also be re-opened by a deep-linked detail's back button; routing back to a fixed
-// tab (rather than a stack pop) keeps that round-trip from looping inbox⇄detail.
+// Back returns to the tab the bell was tapped from (`origin`), or Home as a
+// fallback. Routing to a fixed tab (rather than a stack pop) also keeps the
+// deep-link round-trip — inbox → detail → back → inbox → back — from looping.
 const NotificationsWithHeader = withProfileHeader(
   NotificationsScreen,
   'Notifikasi',
-  (navigation) => navigation.navigate('Tabs', { screen: 'Home' }),
+  (navigation, route) => {
+    const origin = (route?.params as { origin?: string } | undefined)?.origin;
+    navigation.navigate('Tabs', { screen: origin ?? 'Home' });
+  },
 );
 
 interface TabConfig {

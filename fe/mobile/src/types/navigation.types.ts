@@ -29,8 +29,9 @@ export type MainStackParamList = {
   NotificationPreferences: undefined;
   ShiftHistory: undefined;
   Diagnostics: undefined;
-  // Phase 4 M3d (NOTIF-1) — in-app notifications inbox; slide-in like Profile
-  Notifications: undefined;
+  // Phase 4 M3d (NOTIF-1) — in-app notifications inbox; slide-in like Profile.
+  // `origin` records the tab the bell was tapped from so back returns there.
+  Notifications: { origin?: string } | undefined;
 };
 
 export type MainStackScreenProps<T extends keyof MainStackParamList> =
