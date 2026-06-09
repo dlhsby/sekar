@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { getCookie } from '@/lib/utils/cookies';
 import type { UserRole } from '@/types/models';
 
 /**
@@ -53,7 +54,10 @@ export const authApi = {
   },
 
   logout: async (): Promise<{ message: string }> => {
-    const response = await apiClient.post<{ message: string }>('/auth/logout');
+    // Phase 4-7 (M2): the backend blacklists both tokens, so the refresh token
+    // must be sent in the body (LogoutDto requires it — an empty body 400s).
+    const refresh_token = getCookie('refresh_token') ?? '';
+    const response = await apiClient.post<{ message: string }>('/auth/logout', { refresh_token });
     return response.data;
   },
 

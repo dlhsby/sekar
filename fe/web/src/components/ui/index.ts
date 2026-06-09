@@ -21,6 +21,18 @@ export { Input, inputVariants, type InputProps } from './input';
 export { Label } from './label';
 export { Textarea, textareaVariants, type TextareaProps } from './textarea';
 export { Badge, badgeVariants, type BadgeProps } from './badge';
+export { StatusPill, statusPillVariants, type StatusPillProps } from './status-pill';
+export { RoleAvatar, type RoleAvatarProps } from './role-avatar';
+export { Tabs, type TabItem, type TabsProps } from './tabs';
+export { Alert, alertVariants, type AlertProps } from './alert';
+
+// Layout / composition primitives
+export { PageHeader, type PageHeaderProps } from './page-header';
+export { SectionCard, sectionCardVariants, type SectionCardProps } from './section-card';
+export { KpiTile, KpiGrid, kpiTileVariants, type KpiTileProps, type KpiGridProps } from './kpi-tile';
+
+// Notifications
+export { NotificationBell, NotificationPanel, type NotificationPanelProps } from './notification-bell';
 
 // Form Components
 export { FormInput, type FormInputProps } from './form-input';

@@ -209,7 +209,8 @@ describe('Dialog Component', () => {
       );
 
       const title = screen.getByText('Bold Title');
-      expect(title).toHaveClass('text-lg', 'font-bold');
+      // v2.1: title uses the h3 type-scale token (Space Grotesk 600 / 18px).
+      expect(title).toHaveClass('text-nb-h3', 'text-nb-black');
     });
 
     it('should accept custom className', () => {
@@ -238,7 +239,8 @@ describe('Dialog Component', () => {
       );
 
       const description = screen.getByText('Muted description');
-      expect(description).toHaveClass('text-sm', 'text-nb-gray-600');
+      // v2.1: description uses the body-sm type-scale token.
+      expect(description).toHaveClass('text-nb-body-sm', 'text-nb-gray-600');
     });
   });
 

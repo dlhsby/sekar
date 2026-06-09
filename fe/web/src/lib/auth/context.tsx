@@ -121,25 +121,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * Logout current user
    */
   const logout = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
+    setLoading(true);
+    setError(null);
 
-      // Call logout API
-      // Backend clears httpOnly cookies
+    try {
+      // Best-effort server-side token blacklist. Never let a failure here strand
+      // the user in the app — the local session is cleared regardless below.
       await authApi.logout();
-      // Also clear from client side to ensure no stale cookies
+    } catch {
+      // Swallow: we still clear the local session and redirect.
+    } finally {
       clearAuthCookies();
       setUser(null);
-
-      // Redirect to login
-      router.push('/login');
-    } catch (err) {
-      const errorMessage = getErrorMessage(err);
-      setError(errorMessage);
-      // Error already captured in state, no need to log
-    } finally {
       setLoading(false);
+      router.push('/login');
     }
   }, [router]);
 

@@ -1,17 +1,18 @@
 'use client';
 
 import { HTMLAttributes, useState } from 'react';
-import { Bell, Menu, User, Settings, LogOut } from 'lucide-react';
+import { Menu, User, Settings, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useUIStore } from '@/stores/ui';
 import { useAuth } from '@/lib/auth/hooks';
+import { NotificationBell } from '@/components/ui/notification-bell';
 import {
   Button,
-  Badge,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
   DropdownMenu,
   DropdownMenuContent,
@@ -36,13 +37,10 @@ export interface HeaderProps extends HTMLAttributes<HTMLElement> {
  * - User dropdown menu
  */
 export function Header({ className, showBreadcrumb = true, ...props }: HeaderProps) {
-  const { toggleSidebar, toggleMobileMenu } = useUIStore();
+  const { toggleSidebar } = useUIStore();
   const { user, logout } = useAuth();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  // Notification count (TODO: fetch from backend)
-  const notificationCount = 3;
 
   const handleLogout = async () => {
     try {
@@ -67,7 +65,7 @@ export function Header({ className, showBreadcrumb = true, ...props }: HeaderPro
           <Button
             variant="outline"
             size="icon"
-            onClick={toggleMobileMenu}
+            onClick={toggleSidebar}
             className="lg:hidden"
             aria-label="Open navigation menu"
           >
@@ -95,26 +93,8 @@ export function Header({ className, showBreadcrumb = true, ...props }: HeaderPro
 
         {/* Right section: Notifications + User menu */}
         <div className="flex items-center gap-3">
-          {/* Notification bell */}
-          <div className="relative">
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label={`Notifications ${notificationCount > 0 ? `(${notificationCount} unread)` : ''}`}
-              onClick={() => {
-                console.log('Open notifications');
-              }}
-            >
-              <Bell className="h-5 w-5" />
-            </Button>
-            {notificationCount > 0 && (
-              <span className="absolute -top-2 -right-2 pointer-events-none">
-                <Badge variant="destructive" size="sm">
-                  {notificationCount > 99 ? '99+' : notificationCount}
-                </Badge>
-              </span>
-            )}
-          </div>
+          {/* Notification bell (real unread count + popover) */}
+          <NotificationBell />
 
           {/* User menu dropdown */}
           {user && (
@@ -164,11 +144,11 @@ export function Header({ className, showBreadcrumb = true, ...props }: HeaderPro
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Konfirmasi Keluar</DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin keluar dari aplikasi?
+            </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <p className="text-nb-gray-700">Apakah Anda yakin ingin keluar dari aplikasi?</p>
-          </div>
-          <DialogFooter className="flex gap-3 sm:gap-3">
+          <DialogFooter className="gap-2">
             <Button
               variant="secondary"
               onClick={() => setShowLogoutModal(false)}

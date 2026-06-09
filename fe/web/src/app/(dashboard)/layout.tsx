@@ -2,7 +2,6 @@
 
 import { useEffect, ReactNode, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils/cn';
 import { useUIStore } from '@/stores/ui';
 import { Sidebar, SidebarItem } from '@/components/ui';
 import { Header } from '@/components/layout/Header';
@@ -29,13 +28,14 @@ export interface DashboardLayoutProps {
  */
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
-  const { sidebarOpen, mobileMenuOpen, toggleSidebar, closeAllMenus } = useUIStore();
+  const { sidebarOpen, setSidebarOpen } = useUIStore();
   const { user, loading } = useAuth();
 
-  // Close mobile menu on route change
+  // On navigation, close the drawer ONLY on mobile — a single sidebar state is
+  // shared across breakpoints, so we must not collapse the desktop sidebar.
   useEffect(() => {
-    if (mobileMenuOpen) {
-      closeAllMenus();
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches) {
+      setSidebarOpen(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
@@ -91,36 +91,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <PageLoadingIndicator />
 
       <div className="min-h-screen bg-nb-gray-50 flex">
-        {/* Sidebar - Desktop (toggleable on lg+) */}
-        {sidebarOpen && (
-          <Sidebar
-            items={sidebarItems}
-            isOpen={sidebarOpen}
-            onClose={() => toggleSidebar()}
-            userRole={user?.role || ''}
-            user={{
-              name: user.full_name,
-              role: user.role,
-            }}
-            className="hidden lg:flex"
-            aria-expanded={sidebarOpen}
-          />
-        )}
-
-        {/* Sidebar - Mobile/Tablet (overlay) */}
-        {mobileMenuOpen && (
-          <Sidebar
-            items={sidebarItems}
-            isOpen={mobileMenuOpen}
-            onClose={closeAllMenus}
-            userRole={user?.role || ''}
-            user={{
-              name: user.full_name,
-              role: user.role,
-            }}
-            className="lg:hidden"
-          />
-        )}
+        {/* Single responsive sidebar: in-flow on desktop, drawer + overlay on
+            mobile. One shared open/closed state persists across breakpoints. */}
+        <Sidebar
+          items={sidebarItems}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          userRole={user?.role || ''}
+          user={{
+            name: user.full_name,
+            role: user.role,
+          }}
+          aria-expanded={sidebarOpen}
+        />
 
         {/* Main content area */}
         <div className="flex-1 flex flex-col min-w-0">

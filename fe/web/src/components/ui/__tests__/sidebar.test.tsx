@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Sidebar, SidebarProvider, SidebarTrigger, useSidebar, type SidebarItem } from '../sidebar';
 import '@testing-library/jest-dom';
@@ -51,11 +51,13 @@ const mockUser = {
 
 describe('Sidebar Component', () => {
   describe('Rendering', () => {
-    it('should render sidebar with default title and subtitle', () => {
+    it('should render the brand wordmark and no default subtitle', () => {
       render(<Sidebar items={mockItems} />);
 
       expect(screen.getByText('SEKAR')).toBeInTheDocument();
-      expect(screen.getByText('Dashboard Admin')).toBeInTheDocument();
+      // No subtitle is shown unless one is explicitly provided.
+      expect(screen.queryByText('Konsol RTH')).not.toBeInTheDocument();
+      expect(screen.queryByText('Dashboard Admin')).not.toBeInTheDocument();
     });
 
     it('should render with custom title and subtitle', () => {
@@ -92,18 +94,20 @@ describe('Sidebar Component', () => {
     });
 
     it('should render user info when user prop is provided', () => {
-      render(<Sidebar items={mockItems} user={mockUser} />);
+      const { container } = render(<Sidebar items={mockItems} user={mockUser} />);
 
       expect(screen.getByText('Admin User')).toBeInTheDocument();
       expect(screen.getByText('Administrator')).toBeInTheDocument();
-      expect(screen.getByAltText('Admin User')).toHaveAttribute('src', mockUser.avatar);
+      // RoleAvatar renders the photo decoratively (the wrapper is aria-hidden).
+      expect(container.querySelector('img')).toHaveAttribute('src', mockUser.avatar);
     });
 
     it('should render user initials when no avatar provided', () => {
       const userWithoutAvatar = { name: 'John Doe', role: 'User' };
       render(<Sidebar items={mockItems} user={userWithoutAvatar} />);
 
-      expect(screen.getByText('J')).toBeInTheDocument();
+      // RoleAvatar uses first + last initials.
+      expect(screen.getByText('JD')).toBeInTheDocument();
       expect(screen.getByText('John Doe')).toBeInTheDocument();
     });
   });
@@ -159,21 +163,21 @@ describe('Sidebar Component', () => {
       render(<Sidebar items={mockItems} userRole="admin" />);
 
       const usersLink = screen.getByText('Pengguna').closest('a');
-      expect(usersLink).toHaveClass('bg-nb-white', 'text-nb-sidebar');
+      expect(usersLink).toHaveClass('bg-nb-primary', 'text-nb-black');
     });
 
     it('should highlight active item with custom currentPath prop', () => {
       render(<Sidebar items={mockItems} currentPath="/tasks" />);
 
       const tasksLink = screen.getByText('Tugas').closest('a');
-      expect(tasksLink).toHaveClass('bg-nb-white', 'text-nb-sidebar');
+      expect(tasksLink).toHaveClass('bg-nb-primary', 'text-nb-black');
     });
 
     it('should highlight active item for nested paths', () => {
       render(<Sidebar items={mockItems} currentPath="/users/123" userRole="admin" />);
 
       const usersLink = screen.getByText('Pengguna').closest('a');
-      expect(usersLink).toHaveClass('bg-nb-white', 'text-nb-sidebar');
+      expect(usersLink).toHaveClass('bg-nb-primary', 'text-nb-black');
     });
   });
 
@@ -216,18 +220,60 @@ describe('Sidebar Component', () => {
     });
   });
 
+  describe('Nested groups', () => {
+    const groupedItems: SidebarItem[] = [
+      { id: 'dashboard', label: 'Dashboard', href: '/dashboard' },
+      {
+        id: 'data',
+        label: 'Data',
+        href: '#',
+        children: [
+          { id: 'areas', label: 'Areas', href: '/areas' },
+          { id: 'rayons', label: 'Rayons', href: '/rayons' },
+        ],
+      },
+    ];
+
+    it('renders a group as a collapsible header, collapsed by default', () => {
+      render(<Sidebar items={groupedItems} />);
+
+      const groupHeader = screen.getByRole('button', { name: /data/i });
+      expect(groupHeader).toHaveAttribute('aria-expanded', 'false');
+      // Children are hidden until the group is expanded.
+      expect(screen.queryByText('Areas')).not.toBeInTheDocument();
+    });
+
+    it('expands the group to reveal children when clicked', async () => {
+      const user = userEvent.setup();
+      render(<Sidebar items={groupedItems} />);
+
+      await user.click(screen.getByRole('button', { name: /data/i }));
+
+      expect(screen.getByText('Areas')).toBeInTheDocument();
+      expect(screen.getByText('Rayons')).toBeInTheDocument();
+    });
+
+    it('auto-expands a group whose child matches the active route', () => {
+      render(<Sidebar items={groupedItems} currentPath="/rayons" />);
+
+      // Active child is visible without a manual click.
+      const rayonsLink = screen.getByText('Rayons').closest('a');
+      expect(rayonsLink).toHaveClass('bg-nb-primary', 'text-nb-black');
+    });
+  });
+
   describe('Mobile Behavior', () => {
     it('should show close button when onClose prop provided', () => {
       const handleClose = jest.fn();
       render(<Sidebar items={mockItems} onClose={handleClose} />);
 
-      expect(screen.getByLabelText('Close sidebar')).toBeInTheDocument();
+      expect(screen.getByLabelText('Tutup menu')).toBeInTheDocument();
     });
 
     it('should not show close button when onClose not provided', () => {
       render(<Sidebar items={mockItems} />);
 
-      expect(screen.queryByLabelText('Close sidebar')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Tutup menu')).not.toBeInTheDocument();
     });
 
     it('should call onClose when close button clicked', async () => {
@@ -235,7 +281,7 @@ describe('Sidebar Component', () => {
       const handleClose = jest.fn();
       render(<Sidebar items={mockItems} onClose={handleClose} />);
 
-      await user.click(screen.getByLabelText('Close sidebar'));
+      await user.click(screen.getByLabelText('Tutup menu'));
       expect(handleClose).toHaveBeenCalledTimes(1);
     });
 
@@ -280,18 +326,17 @@ describe('Sidebar Component', () => {
     it('should have proper navigation landmark', () => {
       render(<Sidebar items={mockItems} />);
 
-      expect(screen.getByRole('navigation', { name: /main navigation/i })).toBeInTheDocument();
+      expect(screen.getByRole('navigation', { name: /navigasi utama/i })).toBeInTheDocument();
     });
 
     it('should have accessible close button', () => {
       render(<Sidebar items={mockItems} onClose={jest.fn()} />);
 
-      const closeButton = screen.getByLabelText('Close sidebar');
+      const closeButton = screen.getByLabelText('Tutup menu');
       expect(closeButton).toBeInTheDocument();
     });
 
     it('should have keyboard accessible links', async () => {
-      const user = userEvent.setup();
       render(<Sidebar items={mockItems} />);
 
       const dashboardLink = screen.getByText('Dashboard').closest('a') as HTMLElement;
@@ -319,13 +364,13 @@ describe('Sidebar Component', () => {
     it('should have proper section borders', () => {
       const { container } = render(<Sidebar items={mockItems} user={mockUser} />);
 
-      // Header border
-      const header = container.querySelector('.border-b-2.border-nb-sidebar-hover');
+      // Brand header bottom border (v2.1 white sidebar).
+      const header = container.querySelector('.border-b-2.border-nb-black');
       expect(header).toBeInTheDocument();
 
-      // User section border
-      const userSection = container.querySelector('.border-t-2.border-nb-sidebar-hover');
-      expect(userSection).toBeInTheDocument();
+      // The "me" card is a bordered box at the bottom.
+      const meCard = container.querySelector('.border-2.border-nb-black.bg-nb-paper');
+      expect(meCard).toBeInTheDocument();
     });
   });
 
@@ -433,7 +478,7 @@ describe('SidebarTrigger', () => {
         </SidebarProvider>
       );
 
-      expect(screen.getByLabelText('Close sidebar')).toBeInTheDocument();
+      expect(screen.getByLabelText('Tutup menu')).toBeInTheDocument();
     });
 
     it('should show correct label based on sidebar state', () => {
@@ -443,7 +488,7 @@ describe('SidebarTrigger', () => {
         </SidebarProvider>
       );
 
-      expect(screen.getByLabelText('Open sidebar')).toBeInTheDocument();
+      expect(screen.getByLabelText('Buka menu')).toBeInTheDocument();
     });
 
     it('should render menu icon', () => {
@@ -480,10 +525,10 @@ describe('SidebarTrigger', () => {
 
       expect(screen.getByTestId('sidebar-state')).toHaveTextContent('open');
 
-      await user.click(screen.getByLabelText('Close sidebar'));
+      await user.click(screen.getByLabelText('Tutup menu'));
       expect(screen.getByTestId('sidebar-state')).toHaveTextContent('closed');
 
-      await user.click(screen.getByLabelText('Open sidebar'));
+      await user.click(screen.getByLabelText('Buka menu'));
       expect(screen.getByTestId('sidebar-state')).toHaveTextContent('open');
     });
 
@@ -495,12 +540,12 @@ describe('SidebarTrigger', () => {
         </SidebarProvider>
       );
 
-      const button = screen.getByLabelText('Close sidebar');
+      const button = screen.getByLabelText('Tutup menu');
       button.focus();
       expect(button).toHaveFocus();
 
       await user.keyboard('{Enter}');
-      expect(screen.getByLabelText('Open sidebar')).toBeInTheDocument();
+      expect(screen.getByLabelText('Buka menu')).toBeInTheDocument();
     });
   });
 
@@ -512,7 +557,7 @@ describe('SidebarTrigger', () => {
         </SidebarProvider>
       );
 
-      const button = screen.getByLabelText('Close sidebar');
+      const button = screen.getByLabelText('Tutup menu');
       expect(button).toHaveClass('custom-trigger');
     });
 

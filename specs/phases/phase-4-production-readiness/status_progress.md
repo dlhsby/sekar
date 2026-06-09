@@ -4,6 +4,25 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 9, 2026 — 4-R web CP1: design-system v2.1 primitives + shared chrome
+
+First checkpoint of the **web** revamp (chrome + reusable primitives; no page visuals yet). 4-R web ~15% → **~25%**.
+
+**Foundation (`globals.css`):** added the v2.1 **type-scale utilities** (`text-nb-h1/h2/h3/body/body-lg/body-sm/caption/mono-sm/display/display-xl`) — they were referenced in ~60 places but never actually defined (silently no-op for sizing); exposed `--color-role-*` (9), `--color-request-*` (8), `--color-accent-*`, `--color-nb-primary-soft` as Tailwind utilities.
+- **🔴 tailwind-merge fix:** `cn()` was silently dropping `text-nb-*` type classes when combined with a text colour (both read as `text-*` → twMerge treated them as conflicting). Registered the type utilities under the `font-size` group via `extendTailwindMerge` so type + colour compose. Caught by the Dialog test during verify.
+
+**New primitives** (`src/components/ui/`, mirroring mobile `nb/`+`common/`): `status-pill` (5-status palette), `role-avatar`, `tabs`, `alert`, `page-header`, `section-card`, `kpi-tile`+`kpi-grid`. All token-only.
+
+**Notification chrome** (backend already existed): `lib/api/notifications.ts` (`useNotifications`/`useUnreadCount`/`useMarkNotificationRead`/`useMarkAllNotificationsRead`), `lib/utils/notification-deep-links.ts` (`notificationToRoute`, mirrors mobile §B7), `notification-bell.tsx` (`NotificationBell` + `NotificationPanel`, Radix popover, web.md §D3 badge), wired into `Header.tsx` (removed the hardcoded `notificationCount = 3` / `console.log` stub).
+
+**Sidebar v2.1 redesign:** tilted white-card pinwheel (`SekarLogoBox`, web mirror of mobile), collapsible nested groups (Data → users/areas/rayons/schedules; future Reports group), `.active` = primary bg + 2px border + offset shadow, count badges, bottom role-avatar "me" card. **Unified to a single responsive Sidebar instance** (was two) — fixes the ghost mobile overlay + makes open/closed state persist across breakpoints (mobile auto-closes on navigation only).
+
+**Fixes from review round:** logout 400 (now sends `refresh_token` from cookie; `context.logout` always clears the session even if the API call fails); logout modal layout → tokens (`DialogDescription`, padded header, `text-nb-h3` title).
+
+**Verification:** `tsc` 0 · `eslint` 0 on changed files · `npm run build` green · **full jest 87 suites / 1678 pass**. Updated Header/sidebar/dialog/context tests to the v2.1 contract; added deep-link + notification-panel + nested-group tests. (4 pre-existing `npm run lint` errors remain in untouched CP2/CP3/CP6 files — fixed when those areas are revamped.) **Next: CP2 — login/forgot-password/notifications inbox.**
+
+---
+
 ## June 9, 2026 — Drove 4-1, 4-3, and 4-R-mobile to 100% (before 4-R web)
 
 Closed the three near-done sub-phases so the mobile + backend foundation is fully signed off before opening the large web revamp. Overall ~42% → **~45%**.

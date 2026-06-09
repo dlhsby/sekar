@@ -26,6 +26,14 @@ jest.mock('@/stores/ui', () => ({
   })),
 }));
 
+// The notification bell now reads real query hooks; mock them so the Header
+// renders without a QueryClientProvider.
+jest.mock('@/lib/api/notifications', () => ({
+  useUnreadCount: () => ({ data: 3 }),
+  useNotifications: () => ({ data: [], isLoading: false }),
+  useMarkNotificationRead: () => ({ mutate: jest.fn() }),
+}));
+
 describe('Header', () => {
   const mockUser = {
     id: '1',
@@ -99,14 +107,14 @@ describe('Header', () => {
   it('should render notifications button', () => {
     render(<Header />);
 
-    const notifButton = screen.getByRole('button', { name: /notifications/i });
+    const notifButton = screen.getByRole('button', { name: /notifikasi/i });
     expect(notifButton).toBeInTheDocument();
   });
 
-  it('should show notification badge', () => {
+  it('should show notification badge with the unread count', () => {
     render(<Header />);
 
-    // Header hardcodes notificationCount = 3
+    // Bell badge reflects the mocked unread count (3).
     expect(screen.getByText('3')).toBeInTheDocument();
   });
 });

@@ -64,6 +64,36 @@
   --color-status-offline: var(--color-status-offline);
   --color-status-offline-bg: var(--color-status-offline-bg);
 
+  /* ===== Role accents (9 roles) ===== */
+  --color-role-satgas: var(--color-role-satgas);
+  --color-role-linmas: var(--color-role-linmas);
+  --color-role-korlap: var(--color-role-korlap);
+  --color-role-admin-data: var(--color-role-admin-data);
+  --color-role-kepala: var(--color-role-kepala);
+  --color-role-top: var(--color-role-top);
+  --color-role-admin-sys: var(--color-role-admin-sys);
+  --color-role-superadmin: var(--color-role-superadmin);
+  --color-role-kecamatan: var(--color-role-kecamatan);
+
+  /* ===== Pruning-request status ===== */
+  --color-request-submitted: var(--color-request-submitted);
+  --color-request-under-review: var(--color-request-under-review);
+  --color-request-approved: var(--color-request-approved);
+  --color-request-rejected: var(--color-request-rejected);
+  --color-request-in-progress: var(--color-request-in-progress);
+  --color-request-done: var(--color-request-done);
+  --color-request-converted: var(--color-request-converted);
+  --color-request-cancelled: var(--color-request-cancelled);
+
+  /* ===== Accent surfaces + primary-soft ===== */
+  --color-accent-yellow: var(--color-bg-accent-yellow);
+  --color-accent-mint: var(--color-bg-accent-mint);
+  --color-accent-pink: var(--color-bg-accent-pink);
+  --color-accent-lilac: var(--color-bg-accent-lilac);
+  --color-accent-green: var(--color-bg-accent-green);
+  --color-nb-primary-soft: var(--color-bg-accent-mint);
+  --color-nb-paper: var(--color-bg-canvas);
+
   /* ===== shadcn-ui compat ===== */
   --color-background: var(--color-bg-canvas);
   --color-foreground: var(--color-nb-black);
@@ -419,6 +449,79 @@ body {
 
   .animate-shimmer {
     animation: shimmer 2s infinite;
+  }
+}
+
+/* ============================================
+   TYPE SCALE UTILITIES (v2.1)
+   Bundled font-family + weight + size + line-height per token.
+   Mirrors mobile NBText variants; values from generated/tokens.css --type-*.
+   ============================================ */
+
+@layer utilities {
+  .text-nb-display-xl {
+    font-family: var(--type-display-xl-family);
+    font-weight: var(--type-display-xl-weight);
+    font-size: var(--type-display-xl-size);
+    line-height: var(--type-display-xl-line-height);
+    letter-spacing: -0.02em;
+  }
+  .text-nb-display {
+    font-family: var(--type-display-family);
+    font-weight: var(--type-display-weight);
+    font-size: var(--type-display-size);
+    line-height: var(--type-display-line-height);
+    letter-spacing: -0.02em;
+  }
+  .text-nb-h1 {
+    font-family: var(--type-h1-family);
+    font-weight: var(--type-h1-weight);
+    font-size: var(--type-h1-size);
+    line-height: var(--type-h1-line-height);
+    letter-spacing: -0.01em;
+  }
+  .text-nb-h2 {
+    font-family: var(--type-h2-family);
+    font-weight: var(--type-h2-weight);
+    font-size: var(--type-h2-size);
+    line-height: var(--type-h2-line-height);
+    letter-spacing: -0.01em;
+  }
+  .text-nb-h3 {
+    font-family: var(--type-h3-family);
+    font-weight: var(--type-h3-weight);
+    font-size: var(--type-h3-size);
+    line-height: var(--type-h3-line-height);
+  }
+  .text-nb-body-lg {
+    font-family: var(--type-body-lg-family);
+    font-weight: var(--type-body-lg-weight);
+    font-size: var(--type-body-lg-size);
+    line-height: var(--type-body-lg-line-height);
+  }
+  .text-nb-body {
+    font-family: var(--type-body-family);
+    font-weight: var(--type-body-weight);
+    font-size: var(--type-body-size);
+    line-height: var(--type-body-line-height);
+  }
+  .text-nb-body-sm {
+    font-family: var(--type-body-sm-family);
+    font-weight: var(--type-body-sm-weight);
+    font-size: var(--type-body-sm-size);
+    line-height: var(--type-body-sm-line-height);
+  }
+  .text-nb-caption {
+    font-family: var(--type-caption-family);
+    font-weight: var(--type-caption-weight);
+    font-size: var(--type-caption-size);
+    line-height: var(--type-caption-line-height);
+  }
+  .text-nb-mono-sm {
+    font-family: var(--type-mono-sm-family);
+    font-weight: var(--type-mono-sm-weight);
+    font-size: var(--type-mono-sm-size);
+    line-height: var(--type-mono-sm-line-height);
   }
 }
 

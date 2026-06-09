@@ -3,11 +3,14 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { X, ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils/cn';
 import { Button } from './button';
-import { SekarMark } from '@/components/brand/SekarMark';
+import { RoleAvatar } from './role-avatar';
+import { SekarLogoBox } from '@/components/brand/SekarLogoBox';
+import { ROLE_LABELS } from '@/lib/constants/roles';
+import type { UserRole } from '@/types/models';
 
 export interface SidebarItem {
   id: string;
@@ -17,6 +20,8 @@ export interface SidebarItem {
   onClick?: () => void;
   children?: SidebarItem[];
   roles?: string[];
+  /** Optional mono count badge shown on the right of the item. */
+  count?: number;
 }
 
 export interface SidebarProps extends React.HTMLAttributes<HTMLElement> {
@@ -32,6 +37,7 @@ export interface SidebarProps extends React.HTMLAttributes<HTMLElement> {
   };
   logo?: React.ReactNode;
   title?: string;
+  /** Optional small line under the wordmark. Omitted by default. */
   subtitle?: string;
 }
 
@@ -74,7 +80,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
       user,
       logo,
       title = 'SEKAR',
-      subtitle = 'Dashboard Admin',
+      subtitle,
       ...props
     },
     ref
@@ -83,156 +89,137 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
     const activePath = currentPath || pathname;
     const [expandedItems, setExpandedItems] = React.useState<string[]>([]);
 
-    const filteredItems = items.filter((item) => {
+    const isActive = (href?: string) =>
+      !!href && href !== '#' && (activePath === href || activePath?.startsWith(href + '/'));
+
+    const visible = (item: SidebarItem) => {
       if (!item.roles || item.roles.length === 0) return true;
       if (item.roles.includes('*')) return true;
       return item.roles.includes(userRole);
-    });
-
-    // Auto-expand parent items if their child is active
-    React.useEffect(() => {
-      const itemsToExpand: string[] = [];
-
-      // Filter items inline to avoid dependency issues
-      const visibleItems = items.filter((item) => {
-        if (!item.roles || item.roles.length === 0) return true;
-        if (item.roles.includes('*')) return true;
-        return item.roles.includes(userRole);
-      });
-
-      visibleItems.forEach((item) => {
-        if (item.children) {
-          const hasActiveChild = item.children.some(
-            (child) =>
-              child.href !== '#' &&
-              (activePath === child.href || activePath?.startsWith(child.href + '/'))
-          );
-          if (hasActiveChild) {
-            itemsToExpand.push(item.id);
-          }
-        }
-      });
-
-      // Only update if there are items to expand and they're not already expanded
-      if (itemsToExpand.length > 0) {
-        setExpandedItems((prev) => {
-          const newItems = [...new Set([...prev, ...itemsToExpand])];
-          // Only update if the array actually changed
-          if (newItems.length !== prev.length || !newItems.every((id) => prev.includes(id))) {
-            return newItems;
-          }
-          return prev;
-        });
-      }
-    }, [activePath, items, userRole]);
-
-    const toggleExpanded = (itemId: string) => {
-      setExpandedItems((prev) =>
-        prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
-      );
     };
 
-    const renderItem = (item: SidebarItem, depth = 0) => {
-      const hasChildren = item.children && item.children.length > 0;
-      const isExpanded = expandedItems.includes(item.id);
-      const isActive =
-        item.href !== '#' && (activePath === item.href || activePath?.startsWith(item.href + '/'));
-      const hasActiveChild =
-        hasChildren &&
-        item.children?.some(
-          (child) =>
-            child.href !== '#' &&
-            (activePath === child.href || activePath?.startsWith(child.href + '/'))
-        );
+    const filteredItems = items.filter(visible);
 
+    // Auto-expand any group whose child matches the active route.
+    React.useEffect(() => {
+      const toExpand: string[] = [];
+      items.filter(visible).forEach((item) => {
+        if (item.children?.some((c) => isActive(c.href))) toExpand.push(item.id);
+      });
+      if (toExpand.length > 0) {
+        setExpandedItems((prev) => {
+          const merged = [...new Set([...prev, ...toExpand])];
+          return merged.length === prev.length ? prev : merged;
+        });
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activePath, items, userRole]);
+
+    const toggleExpanded = (id: string) =>
+      setExpandedItems((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+    const itemBase = (active: boolean, depth: number) =>
+      cn(
+        'flex items-center gap-2.5 rounded-[7px] border-[1.5px] px-2.5 py-2 text-nb-body-sm font-semibold transition-colors',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-nb-black focus-visible:-outline-offset-2',
+        depth > 0 && 'pl-9',
+        active
+          ? 'border-nb-black bg-nb-primary text-nb-black shadow-[1.5px_1.5px_0_var(--color-nb-black)]'
+          : 'border-transparent text-nb-gray-700 hover:bg-nb-paper hover:border-nb-black'
+      );
+
+    const countBadge = (count: number | undefined, active: boolean) =>
+      typeof count === 'number' ? (
+        <span
+          className={cn(
+            'ml-auto rounded-full px-1.5 font-mono text-[10px] leading-tight',
+            active ? 'bg-nb-black text-nb-primary' : 'bg-nb-gray-100 text-nb-gray-500'
+          )}
+        >
+          {count}
+        </span>
+      ) : null;
+
+    const renderLink = (item: SidebarItem, depth = 0) => {
+      const active = isActive(item.href);
       const content = (
         <>
           {item.icon && (
-            <span className="w-5 h-5 flex-shrink-0 inline-flex items-center justify-center [&_svg]:size-5">
+            <span className="inline-flex size-[18px] flex-shrink-0 items-center justify-center [&_svg]:size-[18px]">
               {item.icon}
             </span>
           )}
-          <span className="flex-1">{item.label}</span>
-          {hasChildren && (
-            <span className="w-5 h-5 flex-shrink-0">
-              {isExpanded ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
-            </span>
-          )}
+          <span className="flex-1 truncate">{item.label}</span>
+          {countBadge(item.count, active)}
         </>
       );
-
-      const baseClasses = cn(
-        'flex items-center gap-3 px-4 py-3 font-medium transition-colors duration-100 w-full rounded-nb-base',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-white focus-visible:outline-offset-2',
-        depth > 0 && 'pl-12', // Indent child items
-        isActive || hasActiveChild
-          ? 'bg-nb-white text-nb-sidebar'
-          : 'text-nb-white/90 hover:bg-nb-sidebar-hover active:bg-nb-sidebar-hover/80'
-      );
-
-      if (hasChildren) {
-        return (
-          <div key={item.id}>
-            <button
-              type="button"
-              onClick={() => toggleExpanded(item.id)}
-              className={cn(baseClasses, 'text-left')}
-              aria-expanded={isExpanded}
-            >
-              {content}
-            </button>
-            {isExpanded && (
-              <div className="space-y-1">
-                {item.children?.map((child) => renderItem(child, depth + 1))}
-              </div>
-            )}
-          </div>
-        );
-      }
 
       if (item.href && item.href !== '#') {
         return (
           <Link
             key={item.id}
             href={item.href}
-            className={baseClasses}
-            aria-current={isActive ? 'page' : undefined}
+            className={itemBase(active, depth)}
+            aria-current={active ? 'page' : undefined}
           >
             {content}
           </Link>
         );
       }
-
       if (item.onClick) {
         return (
-          <button
-            key={item.id}
-            type="button"
-            onClick={item.onClick}
-            className={cn(baseClasses, 'text-left')}
-          >
+          <button key={item.id} type="button" onClick={item.onClick} className={cn(itemBase(active, depth), 'text-left')}>
             {content}
           </button>
         );
       }
-
       return (
-        <div key={item.id} className={baseClasses}>
+        <div key={item.id} className={itemBase(active, depth)}>
           {content}
         </div>
       );
     };
 
+    // A group with children renders a collapsible header + nested links.
+    const renderNode = (item: SidebarItem) => {
+      const children = item.children?.filter(visible);
+      if (!children || children.length === 0) return renderLink(item);
+
+      const expanded = expandedItems.includes(item.id);
+      const hasActiveChild = children.some((c) => isActive(c.href));
+
+      return (
+        <div key={item.id} className="space-y-0.5">
+          <button
+            type="button"
+            onClick={() => toggleExpanded(item.id)}
+            aria-expanded={expanded}
+            className={cn(itemBase(false, 0), 'text-left', hasActiveChild && !expanded && 'text-nb-black')}
+          >
+            {item.icon && (
+              <span className="inline-flex size-[18px] flex-shrink-0 items-center justify-center [&_svg]:size-[18px]">
+                {item.icon}
+              </span>
+            )}
+            <span className="flex-1 truncate font-mono text-[11px] font-bold uppercase tracking-wide">
+              {item.label}
+            </span>
+            {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+          </button>
+          {expanded && <div className="space-y-0.5">{children.map((c) => renderLink(c, 1))}</div>}
+        </div>
+      );
+    };
+
+    const roleKey = user?.role as UserRole | undefined;
+    const roleLabel = roleKey && ROLE_LABELS[roleKey] ? ROLE_LABELS[roleKey] : user?.role;
+
     return (
       <>
-        {/* Mobile Overlay */}
+        {/* Mobile overlay — only on small screens, only when open (no ghost). */}
         {isOpen && onClose && (
           <div
-            className="fixed inset-0 bg-nb-black/50 z-30 lg:hidden"
+            className="fixed inset-0 z-30 bg-nb-black/50 lg:hidden"
             onClick={onClose}
             aria-hidden="true"
           />
@@ -241,58 +228,53 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
         <aside
           ref={ref}
           className={cn(
-            'w-64 bg-nb-sidebar text-nb-sidebar flex flex-col border-r-2 border-nb-black',
-            'fixed lg:static inset-y-0 left-0 z-40',
-            'transition-transform duration-300',
-            // Desktop: translate based on isOpen state
-            'lg:translate-x-0',
-            // Mobile: translate when closed
-            !isOpen && 'max-lg:-translate-x-full',
+            'flex w-64 flex-col border-r-2 border-nb-black bg-nb-white text-nb-black',
+            'fixed inset-y-0 left-0 z-40 lg:static',
+            'transition-transform duration-300 lg:translate-x-0',
+            // Closed: slide off-canvas on mobile, remove from the desktop layout.
+            !isOpen && 'max-lg:-translate-x-full lg:hidden',
             className
           )}
           {...props}
         >
-          {/* Logo/Header */}
-          <div className="p-6 border-b-2 border-nb-sidebar-hover flex-shrink-0">
+          {/* Brand header — tilted white-card pinwheel + wordmark */}
+          <div className="flex flex-shrink-0 items-center gap-3 border-b-2 border-nb-black px-4 py-4">
             {logo || (
-              <div className="flex items-center gap-3">
-                <SekarMark size={36} className="flex-shrink-0" />
-                <div>
-                  <h1 className="text-2xl font-extrabold text-nb-white">{title}</h1>
-                  <p className="text-nb-white/70 text-sm mt-1">{subtitle}</p>
+              <>
+                <SekarLogoBox size={38} />
+                <div className="min-w-0">
+                  <p className="font-heading text-lg font-extrabold leading-none text-nb-black">
+                    {title}
+                  </p>
+                  {subtitle && (
+                    <p className="mt-0.5 font-mono text-[10px] uppercase tracking-wide text-nb-gray-500">
+                      {subtitle}
+                    </p>
+                  )}
                 </div>
-              </div>
+              </>
             )}
           </div>
 
           {/* Navigation */}
           <nav
-            className="flex-1 p-4 space-y-1 overflow-y-auto"
+            className="flex-1 space-y-0.5 overflow-y-auto p-3"
             role="navigation"
-            aria-label="Main navigation"
+            aria-label="Navigasi utama"
           >
-            {filteredItems.map((item) => renderItem(item))}
+            {filteredItems.map(renderNode)}
           </nav>
 
-          {/* User info */}
+          {/* Bottom-pinned "me" card */}
           {user && (
-            <div className="p-4 border-t-2 border-nb-sidebar-hover flex-shrink-0">
-              <div className="flex items-center gap-3">
-                {user.avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={user.avatar}
-                    alt={user.name}
-                    className="w-10 h-10 rounded-full border-2 border-sidebar-foreground"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-nb-white text-nb-sidebar font-bold flex items-center justify-center border-2 border-nb-white">
-                    {user.name.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm truncate">{user.name}</p>
-                  <p className="text-nb-white/80 text-xs truncate">{user.role}</p>
+            <div className="flex-shrink-0 p-3">
+              <div className="flex items-center gap-2.5 rounded-nb-md border-2 border-nb-black bg-nb-paper p-2.5">
+                <RoleAvatar name={user.name} role={roleKey} src={user.avatar} size="sm" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-heading text-[13px] font-bold leading-tight text-nb-black">
+                    {user.name}
+                  </p>
+                  <p className="mt-0.5 truncate font-mono text-[10px] text-nb-gray-600">{roleLabel}</p>
                 </div>
               </div>
             </div>
@@ -304,8 +286,8 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="lg:hidden absolute top-4 right-4 text-nb-white hover:bg-nb-sidebar-hover border-transparent"
-              aria-label="Close sidebar"
+              className="absolute right-3 top-3 border-transparent text-nb-black hover:bg-nb-paper lg:hidden"
+              aria-label="Tutup menu"
             >
               <X className="h-5 w-5" />
             </Button>
@@ -331,16 +313,11 @@ const SidebarTrigger = React.forwardRef<
       size="icon"
       className={cn('lg:hidden', className)}
       onClick={() => setIsOpen(!isOpen)}
-      aria-label={isOpen ? 'Close sidebar' : 'Open sidebar'}
+      aria-label={isOpen ? 'Tutup menu' : 'Buka menu'}
       {...props}
     >
       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M4 6h16M4 12h16M4 18h16"
-        />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
       </svg>
     </Button>
   );

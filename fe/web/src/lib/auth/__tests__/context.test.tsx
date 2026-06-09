@@ -250,10 +250,13 @@ describe('Auth Context', () => {
       expect(mockPush).toHaveBeenCalledWith('/login');
     });
 
-    it('should set error on logout failure', async () => {
+    it('should still clear the session and redirect when the logout API fails', async () => {
+      // Logout must never strand the user: a failed server-side call is
+      // swallowed and the local session is cleared + redirected regardless.
       mockPathname = '/dashboard';
       mockAuthApi.logout.mockRejectedValue(new Error('Logout failed'));
       mockAuthApi.getCurrentUser.mockResolvedValue(mockUser);
+      mockPush.mockClear();
 
       const { result } = renderHook(() => useAuthContext(), {
         wrapper: ({ children }) => <AuthProvider>{children}</AuthProvider>,
@@ -267,7 +270,10 @@ describe('Auth Context', () => {
         await result.current.logout();
       });
 
-      expect(result.current.error).toBe('Logout failed');
+      expect(result.current.user).toBeNull();
+      expect(mockCookieUtils.clearAuthCookies).toHaveBeenCalled();
+      expect(mockPush).toHaveBeenCalledWith('/login');
+      expect(result.current.error).toBeNull();
     });
   });
 
