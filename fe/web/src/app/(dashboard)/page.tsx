@@ -72,9 +72,10 @@ export default function DashboardPage() {
     const summaries = snapshot.data?.data.area_summaries ?? [];
     const map = new Map<string, { active: number; required: number }>();
     for (const s of summaries) {
+      if (!s.rayon_name) continue;
       const row = map.get(s.rayon_name) ?? { active: 0, required: 0 };
-      row.active += s.active_count;
-      row.required += s.required_count;
+      row.active += s.active_count ?? 0;
+      row.required += s.required_count ?? 0;
       map.set(s.rayon_name, row);
     }
     return Array.from(map.entries()).map(([name, v]) => ({ name, ...v }));
