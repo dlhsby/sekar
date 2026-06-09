@@ -81,7 +81,7 @@ Authenticate workers and supervisors with phone number and password.
 ┌────────────────────────────────────┐
 │        [SEKAR Logo/Icon]          │
 │                                    │
-│    Sistem Evaluasi Kerja          │
+│    Sistem Evaluasi Kinerja        │
 │         Satgas RTH                │
 │                                    │
 │  ┌──────────────────────────────┐ │

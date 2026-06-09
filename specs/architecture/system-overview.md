@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-SEKAR (Sistem Evaluasi Kerja Satgas RTH) is a distributed worker tracking and task management system designed for DLH Surabaya's municipal green space management operations. The system supports 500+ workers across 30+ locations with real-time GPS tracking, digital work reports, and supervisor dashboards.
+SEKAR (Sistem Evaluasi Kinerja Satgas RTH) is a distributed worker tracking and task management system designed for DLH Surabaya's municipal green space management operations. The system supports 500+ workers across 30+ locations with real-time GPS tracking, digital work reports, and supervisor dashboards.
 
 ## System Architecture
 

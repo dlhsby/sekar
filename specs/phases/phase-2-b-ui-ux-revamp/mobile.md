@@ -70,7 +70,7 @@ content:
     align: center
 
   subtitle:
-    text: "Sistem Evaluasi Kerja Satgas RTH"
+    text: "Sistem Evaluasi Kinerja Satgas RTH"
     font: body, 14, regular
     color: nbColors.gray600
     align: center

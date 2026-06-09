@@ -1,6 +1,6 @@
 # SEKAR System Design Brief
 
-**System Name:** SEKAR (Sistem Evaluasi Kerja Satgas RTH)
+**System Name:** SEKAR (Sistem Evaluasi Kinerja Satgas RTH)
 **Organization:** DLH Surabaya (Dinas Kebersihan dan Ruang Terbuka Hijau)
 **Version:** 1.0 - Phase 1 MVP Complete
 **Last Updated:** January 21, 2026

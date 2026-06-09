@@ -375,7 +375,7 @@ Web is a PWA with a service-worker offline shell shipped in Phase 3 sub-phase 3-
 ```typescript
 export default function manifest() {
   return {
-    name: 'SEKAR - Sistem Evaluasi Kerja Satgas RTH',
+    name: 'SEKAR - Sistem Evaluasi Kinerja Satgas RTH',
     short_name: 'SEKAR',
     description: 'Worker tracking and task management for DLH Surabaya',
     start_url: '/dashboard',
@@ -418,7 +418,7 @@ export default function manifest() {
 export const metadata: Metadata = {
   title: {
     template: '%s | SEKAR',
-    default: 'SEKAR - Sistem Evaluasi Kerja Satgas RTH',
+    default: 'SEKAR - Sistem Evaluasi Kinerja Satgas RTH',
   },
   description: 'Sistem monitoring dan evaluasi kerja satgas RTH DLH Kota Surabaya',
   openGraph: {

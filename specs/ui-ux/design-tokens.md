@@ -468,7 +468,7 @@ Web is installable as a PWA starting Phase 3 M1-R sub-phase 3-R4.
 
 ```json
 {
-  "name": "SEKAR — Sistem Evaluasi Kerja Satgas RTH",
+  "name": "SEKAR — Sistem Evaluasi Kinerja Satgas RTH",
   "short_name": "SEKAR",
   "start_url": "/",
   "display": "standalone",

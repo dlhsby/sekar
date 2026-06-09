@@ -250,7 +250,7 @@ Verify all Android features work on iOS:
 
 | Field | Value |
 |-------|-------|
-| App Name | SEKAR - Sistem Evaluasi Kerja |
+| App Name | SEKAR - Sistem Evaluasi Kinerja |
 | Subtitle | Manajemen Pekerja RTH Surabaya |
 | Category | Business / Productivity |
 | Age Rating | 4+ |

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document defines the comprehensive testing strategy for SEKAR (Sistem Evaluasi Kerja Satgas RTH), covering backend API, mobile applications, and overall quality assurance approach.
+This document defines the comprehensive testing strategy for SEKAR (Sistem Evaluasi Kinerja Satgas RTH), covering backend API, mobile applications, and overall quality assurance approach.
 
 ---
 

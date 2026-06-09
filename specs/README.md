@@ -1,6 +1,6 @@
 # SEKAR Technical Specifications
 
-This directory contains comprehensive technical specifications for the SEKAR (Sistem Evaluasi Kerja Satgas RTH) project, organized by specialist roles and development phases.
+This directory contains comprehensive technical specifications for the SEKAR (Sistem Evaluasi Kinerja Satgas RTH) project, organized by specialist roles and development phases.
 
 ## 📋 Overview
 

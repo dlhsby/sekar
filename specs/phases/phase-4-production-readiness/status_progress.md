@@ -4,6 +4,24 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 9, 2026 — 4-3/4-R code-review pass + repo-wide "Kinerja" sweep
+
+Independent backend + mobile review of the 4-3/4-R diff. Two real findings fixed; the rest were either pre-existing or false attributions (noted for the record).
+
+**Fixed:**
+- **Backend — `broadcast` now honors per-type preferences** (`notifications.service.ts`): mirrors the `sendToUser` gate so a broadcast of a *configurable* type respects each user's opt-out (announcements stay un-gateable since ANNOUNCEMENT/SYSTEM aren't configurable). Logs a `suppressed` count; new spec test.
+- **Mobile — preferences toggle revert hardened** (`NotificationPreferencesScreen.tsx`): the optimistic-revert no longer reads `prefs` from the closure (stale-capture risk on rapid toggles) — it reverts to `!next` and the callback is now stable (`[userId]` deps only).
+
+**Reviewed & intentionally left:**
+- Pre-existing **migration timestamp collision** `17480100000000` (`RayonColor` vs `AddUserPasswordMustChange`) — predates this work; both use `IF NOT EXISTS`. Renaming an already-applied prod migration is riskier than the collision; **flagged for a deliberate follow-up**, not silently renamed.
+- `AvailabilityCalendar` raw `fontSize`/`fontWeight` literals — pre-existing calendar internals (the 4-R sweep deliberately left them); the JSX-only `<Text>`→`NBText` swap added none, and no lint rule enforces them.
+
+**Repo-wide "Kinerja" sweep (completing R1):** replaced the project-name expansion "Sistem Evaluasi **Kerja** Satgas RTH" → "**Kinerja**" everywhere it appears as the title — PWA `manifest.webmanifest`, Swagger description (`main.ts`), Postman collection, `.claude/agents/`, `design/project/illustrations.html`, and **all `specs/**`** (19 files; 3 ASCII-art boxes re-padded to preserve alignment). Scoped to the exact phrase so the common word "kerja" (work) elsewhere is untouched. Left as-is: immutable `design/chats/` logs + generated `coverage/`.
+
+**Verification:** backend `npm test` green (notifications 40/40 incl. new broadcast-suppression test); backend + mobile `tsc` 0; mobile preferences screen tests green. No test asserted the old tagline string, so the rename needed no test changes.
+
+---
+
 ## June 9, 2026 — 4-3 notification feature completed (backend) + 4-R rebrand residue cleared
 
 **Goal:** finish the notification milestone *with the backend* (the automation/preferences that were missing) and close the last cosmetic rebrand residue.
@@ -25,7 +43,7 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 **N6 — Mobile per-type preferences screen (§E3):** `notificationsApi` gained `get/updateNotificationPreferences`; new `NotificationPreferencesScreen` with 9 grouped per-type toggles (optimistic PATCH, revert + toast on failure); registered in `MainStack`; the Settings "Push notifikasi" **cosmetic toggle is now a nav row** into the real screen.
 
-**R1 — Tagline → "Kinerja":** user-facing strings unified to "Sistem Evaluasi **Kinerja** Satgas RTH" (mobile Profile + Settings, web login + `<title>`; splash already said Kinerja) + the root canonical `CLAUDE.md`/`README.md`. **"SEKAR" retained as the brand acronym** (the expansion intentionally no longer spells it). Deeper internal spec/historical files still say "Kerja" — a separate optional sweep.
+**R1 — Tagline → "Kinerja":** user-facing strings unified to "Sistem Evaluasi **Kinerja** Satgas RTH" (mobile Profile + Settings, web login + `<title>`; splash already said Kinerja) + the root canonical `CLAUDE.md`/`README.md`. **"SEKAR" retained as the brand acronym** (the expansion intentionally no longer spells it). *(Follow-up same day: completed a **repo-wide sweep** — PWA `manifest.webmanifest`, backend Swagger description (`main.ts`), Postman collection, and all `specs/**` (incl. 3 ASCII-art mockup boxes re-padded). Only the immutable `design/chats/` historical logs and generated `coverage/` reports retain "Kerja".)*
 
 **R2 — Legacy `theme.ts` removed:** migrated the only live consumers (`LoadingSpinner`, `AuthProvider`) to `nbTokens`; deleted 6 confirmed-dead Phase-2 components (Button/Card/TextInput/EmptyState/SkeletonLoader/SyncStatusIndicator) + their tests; trimmed the `common` barrel; deleted `constants/theme.ts` and its ESLint allowlist entry. The last legacy-token island is gone.
 

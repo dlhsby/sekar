@@ -71,7 +71,7 @@ components:
     color: text-nb-black
 
   subtitle:
-    text: "Sistem Evaluasi Kerja Satgas RTH"
+    text: "Sistem Evaluasi Kinerja Satgas RTH"
     font: text-base
     color: text-nb-gray-600
 
@@ -1190,7 +1190,7 @@ html:
 head:
   title: "SEKAR - DLH Surabaya"
   meta:
-    description: "Sistem Evaluasi Kerja Satgas RTH"
+    description: "Sistem Evaluasi Kinerja Satgas RTH"
     viewport: "width=device-width, initial-scale=1"
 
 body:

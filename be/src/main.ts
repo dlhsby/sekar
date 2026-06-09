@@ -111,7 +111,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('SEKAR API')
     .setDescription(
-      'API documentation for SEKAR (Sistem Evaluasi Kerja Satgas RTH) - Worker tracking and task management system for DLH Surabaya',
+      'API documentation for SEKAR (Sistem Evaluasi Kinerja Satgas RTH) - Worker tracking and task management system for DLH Surabaya',
     )
     .setVersion('1.0')
     .addTag('auth', 'Authentication endpoints')

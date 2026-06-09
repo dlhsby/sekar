@@ -17,7 +17,7 @@
 | Platforms | Android (Google Play), iOS (App Store, Phase 5) |
 | Design System | Neo Brutalism (NB* components), WCAG 2.1 AA |
 | Offline | SyncManager with queue-based sync |
-| App Name | SEKAR - Sistem Evaluasi Kerja |
+| App Name | SEKAR - Sistem Evaluasi Kinerja |
 
 ---
 
@@ -36,7 +36,7 @@
 ### A2. iOS Installation (Phase 5)
 
 1. Open **App Store** on your iPhone
-2. Search for **"SEKAR Sistem Evaluasi Kerja"**
+2. Search for **"SEKAR Sistem Evaluasi Kinerja"**
 3. Tap **Get** → authenticate with Face ID, Touch ID, or Apple ID password
 4. Wait for download and installation
 5. Tap **Open** to launch

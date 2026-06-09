@@ -257,7 +257,7 @@ The following features are planned for Phase 2:
 │                          │
 │    [Login Button]        │
 │                          │
-│  Sistem Evaluasi Kerja   │
+│  Sistem Evaluasi Kinerja │
 │  Satgas RTH              │
 └──────────────────────────┘
 ```

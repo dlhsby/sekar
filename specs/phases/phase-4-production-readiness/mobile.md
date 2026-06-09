@@ -29,7 +29,7 @@
 
 | Hi-Fi ID | Name | Current file | Action | Notes |
 |----------|------|--------------|--------|-------|
-| WL-1 | Splash · 1/5 | `screens/auth/SplashScreen.tsx` | ✅ Done (2026-05-25, `3f390c6`) | **Dedicated screen** (not a carousel slide): `SplashSlide` + `SekarPinwheel` (Green lockup, real tagline "Sistem Evaluasi Kerja Satgas RTH") + `PulsingDots`; dependency-free native boot splash (launch-theme technique) |
+| WL-1 | Splash · 1/5 | `screens/auth/SplashScreen.tsx` | ✅ Done (2026-05-25, `3f390c6`) | **Dedicated screen** (not a carousel slide): `SplashSlide` + `SekarPinwheel` (Green lockup, real tagline "Sistem Evaluasi Kinerja Satgas RTH") + `PulsingDots`; dependency-free native boot splash (launch-theme technique) |
 | WL-2 | Pantau real-time · 2/5 | `screens/auth/WelcomeCarouselScreen.tsx` | ✅ Done (2026-05-25, `d96aeea`) | Split-swipe carousel — `CarouselScenePanel` (illustration+title+subtitle swipe together); pinned `PaginationDots` + CTAs |
 | WL-3 | Tugas terstruktur · 3/5 | WelcomeCarouselScreen | ✅ Done (2026-05-25) | Lanjut/Lewati CTAs ("Lewati" jumps to the last slide) |
 | WL-4 | Permohonan kecamatan · 4/5 | WelcomeCarouselScreen | ✅ Done (2026-05-25) | Perantingan illustration scene |

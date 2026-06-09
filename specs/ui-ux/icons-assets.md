@@ -330,7 +330,7 @@ Style guidelines:
 │                                    │
 │              SEKAR                 │
 │                                    │
-│    Sistem Evaluasi Kerja          │
+│    Sistem Evaluasi Kinerja        │
 │       Satgas RTH                  │
 │                                    │
 │                                    │

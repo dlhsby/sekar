@@ -613,7 +613,7 @@ async loginWithBiometric(
 
 ### App Store Listing
 
-**App Name:** SEKAR - Sistem Evaluasi Kerja
+**App Name:** SEKAR - Sistem Evaluasi Kinerja
 
 **Subtitle:** Tracking & Laporan Kerja Real-time
 

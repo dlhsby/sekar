@@ -258,7 +258,7 @@ defaultConfig {
 
 2. **Create App in Play Console**
    - Click **Create app**
-   - App name: **SEKAR - Sistem Evaluasi Kerja**
+   - App name: **SEKAR - Sistem Evaluasi Kinerja**
    - Default language: Indonesian
    - App type: Application
    - Free
