@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowLeft, Share, Plus, Smartphone } from 'lucide-react';
+import { SekarLogoBox } from '@/components/brand/SekarLogoBox';
 
 export const metadata: Metadata = {
   title: 'Cara Pasang SEKAR — iOS Safari',
@@ -56,12 +57,7 @@ export default function InstallHelpPage() {
       {/* Header */}
       <div className="rounded-nb-md border-2 border-nb-black p-6 shadow-nb-sm bg-nb-sidebar mb-8">
         <div className="flex items-center gap-4">
-          <div
-            className="w-16 h-16 rounded-nb-base border-2 border-nb-black flex items-center justify-center font-bold text-3xl shrink-0"
-            style={{ background: 'var(--color-nb-primary)', color: 'var(--color-nb-sidebar-bg)' }}
-          >
-            S
-          </div>
+          <SekarLogoBox size={56} className="shrink-0" />
           <div>
             <h1 className="text-nb-h2 font-bold text-white uppercase tracking-wide">
               Pasang SEKAR

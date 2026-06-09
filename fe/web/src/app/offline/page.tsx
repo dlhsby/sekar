@@ -1,6 +1,7 @@
 'use client';
 
 import { WifiOff, RefreshCw } from 'lucide-react';
+import { SekarLogoBox } from '@/components/brand/SekarLogoBox';
 
 /**
  * Offline fallback page
@@ -12,16 +13,9 @@ export default function OfflinePage() {
   return (
     <div className="min-h-screen bg-nb-background flex flex-col items-center justify-center px-4 py-16">
       <div className="max-w-sm w-full text-center">
-        {/* SEKAR logo */}
-        <div
-          className="mx-auto mb-8 w-20 h-20 rounded-nb-md border-2 border-nb-black flex items-center justify-center font-bold text-4xl shadow-nb-sm"
-          style={{
-            background: 'var(--color-nb-sidebar-bg)',
-            color: 'var(--color-nb-primary)',
-          }}
-          aria-hidden="true"
-        >
-          S
+        {/* SEKAR pinwheel logo */}
+        <div className="mb-8 flex justify-center">
+          <SekarLogoBox size={72} />
         </div>
 
         {/* Offline icon */}

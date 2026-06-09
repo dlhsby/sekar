@@ -4,6 +4,21 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 9, 2026 — 4-R web CP2: entry flow & notifications inbox (hifi-web §01)
+
+Second checkpoint. 4-R web ~25% → **~35%**. Flipped Web rows **LOG-1 ✅, Forgot-password ✅, Notifications inbox ✅** in `status_reviews.md`.
+
+- **LOG-1 login** (`(auth)/login`): rebuilt to the §01 two-column "Konsol SEKAR" composition — sage brand panel (dot-grid overlay, tilted `SekarLogoBox`, "SEKAR/DLH SURABAYA", hero + Live-monitoring/Offline-safe pills) + form panel (eyebrow, "Selamat datang kembali", identifier/sandi, "Lupa sandi?" → `/forgot-password`, "Masuk →"). Brand panel hidden <lg with a compact mobile lockup. Kept react-hook-form/zod/auth logic; dropped the unwired "Ingat saya" toggle (sessions are 7/30d by default). Password-toggle got a focus ring.
+- **Forgot-password** (`(auth)/forgot-password`, NEW): informational (no API) per mobile AS-4 — lock hero, static WhatsApp + phone hotline cards (`src/lib/constants/support.ts`, env TODO), temp-password note, "Kembali ke Login".
+- **Notifications inbox** (`(dashboard)/notifications`, NEW): category-filter `Tabs` (Semua/Tugas/Aktivitas/Lembur/Sistem via `categoryOf`), unread tint + dot + bold, mark-read on click → `notificationToRoute` deep-link, "Tandai semua dibaca", client-side "Muat lebih banyak" (API caps at 100), `EmptyState`/`SkeletonList`.
+- **Utility pages:** `offline` + `install-help` swapped the legacy "S" glyph → pinwheel `SekarLogoBox` (missed by the Jun-9 rebrand).
+- **Lint fixes (CP2 territory):** `OfflineBanner` → `useSyncExternalStore` (+ no-setState online-recording effect); `MobileInstallPush` → derive visibility from props+storage (lazy init). Cleared 2 of the 4 pre-existing `set-state-in-effect` lint errors (2 remain in CP3 `HierarchyFilterPanel` + CP6 pruning detail).
+- **Shared primitive:** `Tabs` gained arrow-key navigation (a11y) — benefits every consumer.
+
+**Verification:** `tsc` 0 · `eslint` 0 on changed files · `npm run build` green · **full jest 88 suites / 1684 pass** (+notifications page test, +Load-More test). Independent web code review run; applied focus-ring + arrow-key-nav + pagination-test findings, deferred optional suggestions. **Next: CP3 — dashboard + monitoring.**
+
+---
+
 ## June 9, 2026 — 4-R web CP1: design-system v2.1 primitives + shared chrome
 
 First checkpoint of the **web** revamp (chrome + reusable primitives; no page visuals yet). 4-R web ~15% → **~25%**.

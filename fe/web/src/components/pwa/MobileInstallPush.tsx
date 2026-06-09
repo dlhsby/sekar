@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { X, Smartphone } from 'lucide-react';
 import { useAuth } from '@/lib/auth/hooks';
 
@@ -18,19 +18,17 @@ const NATIVE_APP_ROLES = new Set(['satgas', 'linmas', 'korlap']);
  */
 export function MobileInstallPush() {
   const { user } = useAuth();
-  const [visible, setVisible] = useState(false);
+  // Derive visibility from props + storage instead of a setState-in-effect.
+  // Lazy init reads sessionStorage once on the client (false during SSR).
+  const [dismissed, setDismissed] = useState(
+    () => typeof window !== 'undefined' && !!sessionStorage.getItem(DISMISS_SESSION_KEY)
+  );
 
-  useEffect(() => {
-    if (!user) return;
-    if (!NATIVE_APP_ROLES.has(user.role)) return;
-    if (sessionStorage.getItem(DISMISS_SESSION_KEY)) return;
-
-    setVisible(true);
-  }, [user]);
+  const visible = !!user && NATIVE_APP_ROLES.has(user.role) && !dismissed;
 
   function handleDismiss() {
     sessionStorage.setItem(DISMISS_SESSION_KEY, '1');
-    setVisible(false);
+    setDismissed(true);
   }
 
   if (!visible) return null;

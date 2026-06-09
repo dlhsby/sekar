@@ -39,6 +39,15 @@ export function Tabs<K extends string = string>({
   className,
   ...props
 }: TabsProps<K>) {
+  const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
+    let next = index;
+    if (e.key === 'ArrowRight') next = (index + 1) % tabs.length;
+    else if (e.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length;
+    else return;
+    e.preventDefault();
+    onValueChange(tabs[next].key);
+  };
+
   return (
     <div
       role="tablist"
@@ -58,7 +67,9 @@ export function Tabs<K extends string = string>({
             type="button"
             role="tab"
             aria-selected={active}
+            tabIndex={active ? 0 : -1}
             onClick={() => onValueChange(tab.key)}
+            onKeyDown={(e) => handleKeyDown(e, i)}
             className={cn(
               'inline-flex items-center justify-center gap-1.5 whitespace-nowrap font-heading font-bold transition-colors',
               'focus-visible:outline focus-visible:outline-2 focus-visible:outline-nb-black focus-visible:-outline-offset-2',

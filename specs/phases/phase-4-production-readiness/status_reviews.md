@@ -163,8 +163,8 @@ Every revamped screen lands ✅ only when the 6 gates in [`ui-ux.md § 4`](./ui-
 
 | Hi-Fi ID | Name | Type | Status |
 |----------|------|------|--------|
-| LOG-1 | Login page | Revamp | ⏳ |
-| (new) | Forgot password (mirror AS-4) | NEW | ⏳ |
+| LOG-1 | Login page | Revamp | ✅ |
+| (new) | Forgot password (mirror AS-4) | NEW | ✅ |
 | DASH-1 | Dashboard home | Revamp | ⏳ |
 | MON-1 | Monitoring wall | Revamp | ⏳ |
 | USR-1 | Daftar pengguna | Revamp | ⏳ |
@@ -175,7 +175,7 @@ Every revamped screen lands ✅ only when the 6 gates in [`ui-ux.md § 4`](./ui-
 | PRT-1 | Detail permohonan | Revamp | ⏳ |
 | SET-1 | Pengaturan · sistem | Revamp | ⏳ |
 | KEC-1 | Ajukan perantingan · Kecamatan | Revamp | ⏳ |
-| (new) | Notifications inbox | NEW | ⏳ |
+| (new) | Notifications inbox | NEW | ✅ |
 | (new) | Import (KMZ + CSV) | NEW | ⏳ |
 | (new) | Export | NEW | ⏳ |
 
