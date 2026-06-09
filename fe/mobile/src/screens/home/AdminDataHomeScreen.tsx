@@ -10,7 +10,7 @@ import { HomeStatTile } from '../../components/home/HomeStatTile';
 import { HomeListRow } from '../../components/home/HomeListRow';
 import { ShiftDetailModal, TodayActivitiesModal, TodayWorkHoursModal, TodayTasksModal } from '../../components/modals';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
-import { CLOCKABLE_ROLES, TASK_RECEIVERS } from '../../constants/roles';
+import { TASK_RECEIVERS } from '../../constants/roles';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchAdminPruningRequests } from '../../store/slices/pruningRequestsSlice';
 import { setCurrentShift, setShiftHistory, setError } from '../../store/slices/shiftSlice';
@@ -57,7 +57,6 @@ export function AdminDataHomeScreen(): React.JSX.Element {
   const { tasks } = useAppSelector((state) => state.tasks);
   const viewerRole = useAppSelector((state) => state.auth.user?.role);
 
-  const isClockable = !!viewerRole && CLOCKABLE_ROLES.includes(viewerRole as any);
   const isTaskReceiver = !!viewerRole && TASK_RECEIVERS.includes(viewerRole as any);
 
   const [refreshing, setRefreshing] = useState(false);

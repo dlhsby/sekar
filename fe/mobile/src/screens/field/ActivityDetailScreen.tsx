@@ -11,7 +11,6 @@ import {
   Alert,
   Image,
   ActivityIndicator,
-  Platform,
   SafeAreaView,
   BackHandler,
 } from 'react-native';

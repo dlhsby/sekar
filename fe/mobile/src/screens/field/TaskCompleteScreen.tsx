@@ -43,7 +43,7 @@ export function TaskCompleteScreen(): React.JSX.Element {
         if (response.data) {
           setTask(response.data);
         }
-      } catch (error) {
+      } catch {
         NBToast.show({ level: 'danger', title: 'Gagal', body: 'Gagal memuat detail tugas.' });
         navigation.goBack();
       } finally {
@@ -102,8 +102,8 @@ export function TaskCompleteScreen(): React.JSX.Element {
       clearForm();
       NBToast.show({ level: 'success', title: 'Berhasil', body: 'Tugas berhasil diselesaikan.' });
       navigation.navigate('TasksActivities', { initialTab: 'tasks' });
-    } catch (error) {
-      NBToast.show({ level: 'danger', title: 'Gagal', body: error instanceof Error ? error.message : 'Gagal menyelesaikan tugas. Silakan coba lagi.' });
+    } catch {
+      NBToast.show({ level: 'danger', title: 'Gagal', body: 'Gagal menyelesaikan tugas. Silakan coba lagi.' });
     } finally {
       setIsSubmitting(false);
     }

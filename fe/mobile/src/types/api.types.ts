@@ -11,8 +11,6 @@ import type {
   Shift,
   Activity,
   LocationPing,
-  ActiveUser,
-  AttendanceRecord,
   Task,
   TaskStatus,
   TaskPriority,

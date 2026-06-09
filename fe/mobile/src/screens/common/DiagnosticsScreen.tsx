@@ -15,12 +15,11 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NBBackgroundPattern, NBText, NBButton } from '../../components/nb';
-import { nbColors, nbSpacing, nbRadius, nbBorders, nbShadows, withAlpha } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbRadius, nbBorders, nbShadows } from '../../constants/nbTokens';
 import { useAppSelector } from '../../store/hooks';
 import { selectTotalPendingCount } from '../../store/slices/offlineSlice';
 import { permissionManager } from '../../services/permissions';
 import config from '../../constants/config';
-import type { AllPermissionsStatus } from '../../services/permissions/PermissionManager';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

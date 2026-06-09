@@ -301,7 +301,7 @@ class MediaService {
         size: stats.size,
         exists: stats.isFile(),
       };
-    } catch (error) {
+    } catch {
       return {
         size: 0,
         exists: false,

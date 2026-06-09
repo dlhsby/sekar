@@ -23,7 +23,6 @@ import type {
   Activity,
   UserDaySummary,
   LocationHistory,
-  StaffingSummaryItem,
   BoundariesResponse,
   ReassignWorkerPayload,
   ReassignWorkerResponse,

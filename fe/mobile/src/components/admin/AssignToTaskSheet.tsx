@@ -56,7 +56,7 @@ export function AssignToTaskSheet({
   const { convertingId, error: pruningError } = useAppSelector(
     (state) => state.pruningRequests,
   );
-  const { calendarByRayon, loading: _capacityLoading } = useAppSelector(
+  const { calendarByRayon } = useAppSelector(
     (state) => state.serviceCapacity,
   );
 

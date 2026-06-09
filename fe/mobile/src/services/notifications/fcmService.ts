@@ -306,9 +306,9 @@ class FCMService {
   /**
    * Unregister FCM token from backend
    *
-   * @param token - FCM token to unregister
+   * @param _token - FCM token to unregister
    */
-  async unregisterToken(token?: string): Promise<boolean> {
+  async unregisterToken(_token?: string): Promise<boolean> {
     try {
       console.debug('[FCM] Unregistering token from backend');
 

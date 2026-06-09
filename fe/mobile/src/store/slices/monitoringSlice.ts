@@ -10,7 +10,6 @@ import type {
   UserDaySummary,
   LocationHistory,
   StaffingSummaryItem,
-  TrackingStatus,
   BoundariesResponse,
 } from '../../types/models.types';
 import type { MonitoringFilters } from '../../types/api.types';
@@ -119,7 +118,7 @@ export const fetchLiveUsers = createAsyncThunk(
         return rejectWithValue(response.error);
       }
       return response.data;
-    } catch (err) {
+    } catch {
       return rejectWithValue('Gagal memuat data pengguna aktif');
     }
   },
@@ -134,7 +133,7 @@ export const fetchUserDaySummary = createAsyncThunk(
         return rejectWithValue(response.error);
       }
       return response.data;
-    } catch (err) {
+    } catch {
       return rejectWithValue('Gagal memuat ringkasan harian pengguna');
     }
   },
@@ -156,7 +155,7 @@ export const fetchLocationHistory = createAsyncThunk(
         return rejectWithValue(response.error);
       }
       return response.data;
-    } catch (err) {
+    } catch {
       return rejectWithValue('Gagal memuat riwayat lokasi');
     }
   },
@@ -178,7 +177,7 @@ export const fetchStaffingSummary = createAsyncThunk(
         current_day_type: (response.data as any)?.current_day_type ?? null,
         current_day_type_label: (response.data as any)?.current_day_type_label ?? null,
       };
-    } catch (err) {
+    } catch {
       return rejectWithValue('Gagal memuat ringkasan kepegawaian');
     }
   },
@@ -216,7 +215,7 @@ export const fetchBoundaries = createAsyncThunk(
         }
       }
       return data ?? null;
-    } catch (err) {
+    } catch {
       return rejectWithValue('Gagal memuat batas wilayah');
     }
   },

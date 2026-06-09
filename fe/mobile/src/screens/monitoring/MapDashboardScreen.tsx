@@ -13,7 +13,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Platform,
   ScrollView,
   Pressable,
 } from 'react-native';
@@ -66,7 +65,6 @@ import {
   setLiveUsers,
   setSelectedUser,
   setMonitoringFilters,
-  resetMonitoringFilters,
   fetchUserDaySummary,
   fetchBoundaries,
   fetchStaffingSummary,

@@ -4,7 +4,7 @@
  * Starts location tracking if worker has an active shift
  */
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { restoreAuth, setRestoring, logout } from '../store/slices/authSlice';

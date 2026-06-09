@@ -17,8 +17,6 @@ import {
   StyleProp,
   ViewStyle,
   TextStyle,
-  NativeSyntheticEvent,
-  TextInputFocusEventData,
 } from 'react-native';
 import {
   nbColors,
@@ -81,7 +79,6 @@ export const NBTextInput = forwardRef<TextInput, NBTextInputProps>(
   ) => {
     const [isFocused, setIsFocused] = useState(false);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- event type compatibility
     const handleFocus = useCallback(
       (e: any) => {
         setIsFocused(true);
@@ -90,7 +87,6 @@ export const NBTextInput = forwardRef<TextInput, NBTextInputProps>(
       [onFocusProp],
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- event type compatibility
     const handleBlur = useCallback(
       (e: any) => {
         setIsFocused(false);

@@ -31,12 +31,6 @@ export interface PermissionMonitorState {
   refresh: () => Promise<void>;
 }
 
-const REQUIRED: readonly PermissionType[] = [
-  PermissionType.LOCATION,
-  PermissionType.CAMERA,
-  PermissionType.NOTIFICATIONS,
-] as const;
-
 export function usePermissionMonitor(enabled: boolean): PermissionMonitorState {
   const [missing, setMissing] = useState<PermissionType[]>([]);
   const [initializing, setInitializing] = useState<boolean>(true);

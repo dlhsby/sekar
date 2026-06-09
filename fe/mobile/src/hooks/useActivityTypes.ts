@@ -22,7 +22,7 @@ export function useActivityTypes() {
       } else if (response.error) {
         setError(response.error);
       }
-    } catch (err) {
+    } catch {
       setError('Gagal memuat jenis aktivitas');
     } finally {
       setIsLoading(false);

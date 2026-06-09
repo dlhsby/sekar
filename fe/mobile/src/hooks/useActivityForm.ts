@@ -12,7 +12,7 @@ import { useAppDispatch, useAppSelector } from '../store/store';
 import { createActivity } from '../services/api/activitiesApi';
 import { getMyActivityTypes } from '../services/api/activityTypesApi';
 import { getUsers } from '../services/api/usersApi';
-import { setSubmitting, setError, addActivity } from '../store/slices/activitiesSlice';
+import { setSubmitting, setError } from '../store/slices/activitiesSlice';
 import { addToQueue as addToOfflineQueue } from '../services/sync/offlineQueue';
 import { mediaService, type Photo } from '../services/media';
 import { sanitizeMultilineText } from '../utils/sanitize';

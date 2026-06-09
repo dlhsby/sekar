@@ -15,7 +15,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { NBText } from '../nb/NBText';
-import { nbColors, nbSpacing } from '../../constants/nbTokens';
+import { nbSpacing } from '../../constants/nbTokens';
 
 const SCREEN = Dimensions.get('screen');
 

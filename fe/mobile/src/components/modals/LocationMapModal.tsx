@@ -19,7 +19,6 @@ import {
   nbColors,
   nbSpacing,
   nbBorders,
-  nbShadows,
   nbRadius,
   withAlpha,
 } from '../../constants/nbTokens';

@@ -12,7 +12,7 @@ import {
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { searchSpecies } from '../../store/slices/plantsSlice';
 import { PlantSpecies } from '../../types/models.types';
-import { nbColors, nbSpacing, nbBorders, nbShadows, nbType, nbRadius } from '../../constants/generated/tokens';
+import { nbColors, nbSpacing, nbShadows, nbType, nbRadius } from '../../constants/generated/tokens';
 
 interface SpeciesAutocompleteProps {
   multi?: boolean;

@@ -14,11 +14,8 @@ import {
   Animated,
   StyleSheet,
   ViewStyle,
-  Dimensions,
 } from 'react-native';
 import { theme } from '../../constants/theme';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface SkeletonLoaderProps {
   width?: number | string;
@@ -119,7 +116,6 @@ export function SkeletonCard({ style }: SkeletonCardProps): React.JSX.Element {
  */
 export function SkeletonList({
   count = 3,
-  itemHeight = 72,
   style,
 }: SkeletonListProps): React.JSX.Element {
   return (

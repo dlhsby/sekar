@@ -12,7 +12,6 @@ import {
   Animated,
   StyleSheet,
   LayoutAnimation,
-  Platform,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {

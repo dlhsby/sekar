@@ -8,10 +8,10 @@ import {
   View,
   ScrollView,
   StyleSheet,
+  Platform,
   Alert,
   Image,
   ActivityIndicator,
-  Platform,
   SafeAreaView,
   TouchableOpacity,
   RefreshControl,
@@ -38,7 +38,6 @@ import {
   nbBorders,
   nbRadius,
   nbShadows,
-  withAlpha,
 } from '../../constants/nbTokens';
 import {
   getOvertimeStatusColor,

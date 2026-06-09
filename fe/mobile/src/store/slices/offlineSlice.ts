@@ -4,7 +4,6 @@
  */
 
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { QueueItem as OfflineQueueItem } from '../../services/sync/offlineQueue';
 
 /**
  * Queue item for Redux state (simplified version)

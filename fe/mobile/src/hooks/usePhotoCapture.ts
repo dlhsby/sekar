@@ -35,7 +35,7 @@ export function usePhotoCapture(maxPhotos: number = MAX_PHOTOS) {
 
       const base64 = `data:image/jpeg;base64,${result.assets[0].base64}`;
       setPhotos((prev) => [...prev, base64]);
-    } catch (err) {
+    } catch {
       Alert.alert('Error', 'Gagal mengambil foto');
     } finally {
       setIsCapturing(false);

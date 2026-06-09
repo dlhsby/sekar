@@ -16,7 +16,6 @@ import {
   View,
   ScrollView,
   StyleSheet,
-  SafeAreaView,
   Alert,
   TouchableOpacity,
   Image,

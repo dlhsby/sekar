@@ -4,7 +4,6 @@
  */
 
 import type { Coordinates } from '../types/models.types';
-import config from '../constants/config';
 
 /**
  * GPS tolerance as per business rules

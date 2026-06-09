@@ -38,7 +38,6 @@ export function Card({
     <View
       style={[styles.card, variantStyle, style]}
       testID={testID}
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- useAccessibilityRole requests 'group' which is not a valid RN role, but tests expect it
       accessibilityRole={isInteractive ? 'button' : (useAccessibilityRole ? ('group' as any) : undefined)}
       accessibilityLabel={accessibilityLabel}
       accessibilityState={isInteractive ? { disabled } : undefined}

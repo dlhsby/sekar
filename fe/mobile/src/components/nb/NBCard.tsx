@@ -138,11 +138,6 @@ export const NBCard: React.FC<NBCardProps> = ({
   // Disable transform animation if reduce motion is enabled
   const defaultShadow = variant === 'elevated' ? nbShadows.lg : nbShadows.sm;
   const interactiveShadow = variant === 'elevated' ? nbShadows.lg : nbShadows.md;
-  const currentShadow = isPressed ? nbShadows.active : defaultShadow;
-  const pressTransform =
-    reduceMotionEnabled || !isPressed
-      ? [{ translateX: 0 }, { translateY: 0 }]
-      : [{ translateX: 2 }, { translateY: 2 }];
 
   if (interactive && onPress) {
     return (

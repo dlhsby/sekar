@@ -4,7 +4,7 @@
  * Lists active workers from source rayon, allows selection and reassignment.
  */
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -23,9 +23,8 @@ import {
   nbType,
   nbBorders,
   nbRadius,
-  nbShadows,
 } from '../../constants/nbTokens';
-import { getStatusColor, getStatusLabel } from '../../utils/mapUtils';
+import { getStatusColor } from '../../utils/mapUtils';
 import { ROLE_LABELS } from '../../constants/roles';
 import { getLiveUsers, reassignWorker } from '../../services/api/monitoringApi';
 import type { LiveUser, AreaBoundary, UserRole, TrackingStatus } from '../../types/models.types';

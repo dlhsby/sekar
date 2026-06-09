@@ -15,13 +15,13 @@ describe('usersApi', () => {
 
   describe('changePassword', () => {
     it('should successfully change password', async () => {
-      const mockPost = jest.spyOn(apiClient, 'post').mockResolvedValue({
+      const mockPatch = jest.spyOn(apiClient, 'patch').mockResolvedValue({
         data: undefined,
       });
 
       const result = await changePassword('oldPassword123', 'newPassword123');
 
-      expect(mockPost).toHaveBeenCalledWith('/users/me/change-password', {
+      expect(mockPatch).toHaveBeenCalledWith('/users/me/change-password', {
         current_password: 'oldPassword123',
         new_password: 'newPassword123',
       });
@@ -30,7 +30,7 @@ describe('usersApi', () => {
     });
 
     it('should return error when API returns error', async () => {
-      const mockPost = jest.spyOn(apiClient, 'post').mockResolvedValue({
+      const mockPatch = jest.spyOn(apiClient, 'patch').mockResolvedValue({
         error: 'Password saat ini salah',
       });
 
@@ -40,7 +40,7 @@ describe('usersApi', () => {
     });
 
     it('should handle network errors', async () => {
-      const mockPost = jest.spyOn(apiClient, 'post').mockRejectedValue({
+      const mockPatch = jest.spyOn(apiClient, 'patch').mockRejectedValue({
         response: {
           data: {
             message: 'Network error',
@@ -54,7 +54,7 @@ describe('usersApi', () => {
     });
 
     it('should handle unknown errors with fallback message', async () => {
-      const mockPost = jest.spyOn(apiClient, 'post').mockRejectedValue(new Error('Unknown error'));
+      const mockPatch = jest.spyOn(apiClient, 'patch').mockRejectedValue(new Error('Unknown error'));
 
       const result = await changePassword('oldPassword123', 'newPassword123');
 
@@ -62,13 +62,13 @@ describe('usersApi', () => {
     });
 
     it('should send correct payload structure', async () => {
-      const mockPost = jest.spyOn(apiClient, 'post').mockResolvedValue({
+      const mockPatch = jest.spyOn(apiClient, 'patch').mockResolvedValue({
         data: undefined,
       });
 
       await changePassword('current123', 'new456');
 
-      expect(mockPost).toHaveBeenCalledWith('/users/me/change-password', {
+      expect(mockPatch).toHaveBeenCalledWith('/users/me/change-password', {
         current_password: 'current123',
         new_password: 'new456',
       });

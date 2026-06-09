@@ -4,7 +4,7 @@
  * Phase 3 sub-phase 3-10
  */
 
-import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { CapacityRow } from '../../services/api/serviceCapacityApi';
 import * as serviceCapacityApi from '../../services/api/serviceCapacityApi';
 

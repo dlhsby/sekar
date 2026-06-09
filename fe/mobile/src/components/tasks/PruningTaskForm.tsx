@@ -13,7 +13,7 @@ import { SpeciesAutocomplete } from './SpeciesAutocomplete';
 import { NBSelect } from '../nb/NBSelect';
 import { NBButton } from '../nb/NBButton';
 import { NBAlert } from '../nb/NBAlert';
-import { nbColors, nbSpacing, nbBorders, nbType, nbRadius } from '../../constants/generated/tokens';
+import { nbColors, nbSpacing, nbType, nbRadius } from '../../constants/generated/tokens';
 
 export type CaseType = 'GT' | 'PT' | 'PS' | 'PD' | 'PK';
 export type PruningAction = 'PM' | 'PB' | 'PC';

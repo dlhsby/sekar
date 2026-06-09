@@ -12,7 +12,6 @@ import {
   SafeAreaView,
   ActivityIndicator,
   Alert,
-  Platform,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';

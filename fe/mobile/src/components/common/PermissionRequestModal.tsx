@@ -12,7 +12,7 @@
  * - Fallback to settings if permission is blocked
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -123,8 +123,9 @@ export function PermissionRequestModal({
 }: PermissionRequestModalProps): React.ReactElement {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isRequesting, setIsRequesting] = useState(false);
-  const [stepResults, setStepResults] = useState<PermissionResult[]>([]);
   const [showAndroidGuidance, setShowAndroidGuidance] = useState(false);
+  // Per-step results are tracked via the setter (write-only — drives no UI).
+  const [, setStepResults] = useState<PermissionResult[]>([]);
 
   // Safely get current step with bounds checking
   const safeStepIndex = Math.min(Math.max(0, currentStepIndex), PERMISSION_STEPS.length - 1);
@@ -201,8 +202,6 @@ export function PermissionRequestModal({
           };
       }
 
-      // Store result
-      setStepResults(prev => [...prev, result]);
 
       // If permission granted or blocked, move to next step
       if (result.granted || result.status === RESULTS.BLOCKED) {

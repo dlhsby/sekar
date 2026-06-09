@@ -19,7 +19,7 @@ import {
   isValidRegion,
   SURABAYA_CITY_REGION,
 } from '../utils/mapUtils';
-import { ROLE_LABELS, CLOCKABLE_ROLES } from '../constants/roles';
+import { CLOCKABLE_ROLES } from '../constants/roles';
 import config from '../constants/config';
 import type { ActiveUserData } from '../types/api.types';
 import type { Area, UserRole } from '../types/models.types';

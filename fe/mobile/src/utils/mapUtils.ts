@@ -96,7 +96,7 @@ export const SURABAYA_CITY_REGION: Region = {
  */
 export function calculateMapRegion(
   workers: ActiveUserData[],
-  fallbackCenter: { latitude: number; longitude: number } = {
+  _fallbackCenter: { latitude: number; longitude: number } = {
     latitude: SURABAYA_CITY_REGION.latitude,
     longitude: SURABAYA_CITY_REGION.longitude,
   }

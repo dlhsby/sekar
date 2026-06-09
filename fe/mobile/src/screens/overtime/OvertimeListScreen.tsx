@@ -78,7 +78,9 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
   const [loading, setLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // setError is called on fetch failure; the value itself drives no UI (kept
+  // for the existing call sites).
+  const [, setError] = useState<string | null>(null);
 
   // Filter & sort state
   const [filters, setFilters] = useState<OvertimeFilter>({});

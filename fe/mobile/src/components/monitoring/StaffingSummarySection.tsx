@@ -45,7 +45,6 @@ function getDayTypeBadgeColor(label: string | null): string {
 }
 
 function getStaffingPercentage(item: StaffingSummaryItem): number {
-  const total = item.total_active + item.total_idle + item.total_outside_area + item.total_missing + item.total_offline;
   const required = item.roles.reduce((sum, r) => sum + r.total_required, 0);
   if (required === 0) return 100;
   return Math.round((item.total_active / required) * 100);
@@ -63,8 +62,6 @@ export function StaffingSummarySection({
   items,
   isLoading,
   currentDayTypeLabel,
-  selectedRayonId,
-  selectedAreaId,
 }: StaffingSummarySectionProps): React.JSX.Element {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
@@ -80,9 +77,7 @@ export function StaffingSummarySection({
     });
   }, []);
 
-  // Determine mode
-  const isAreaView = Boolean(selectedAreaId);
-  const isRayonView = Boolean(selectedRayonId) && !isAreaView;
+  // Determine mode (currently not used but kept for future extensibility)
 
   return (
     <View style={styles.container}>

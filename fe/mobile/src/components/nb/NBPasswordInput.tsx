@@ -18,8 +18,6 @@ import {
   StyleProp,
   ViewStyle,
   TextStyle,
-  NativeSyntheticEvent,
-  TextInputFocusEventData,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
@@ -90,7 +88,6 @@ export const NBPasswordInput = forwardRef<TextInput, NBPasswordInputProps>(
     const [isFocused, setIsFocused] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- event type compatibility
     const handleFocus = useCallback(
       (e: any) => {
         setIsFocused(true);
@@ -99,7 +96,6 @@ export const NBPasswordInput = forwardRef<TextInput, NBPasswordInputProps>(
       [onFocusProp],
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- event type compatibility
     const handleBlur = useCallback(
       (e: any) => {
         setIsFocused(false);
