@@ -4,6 +4,35 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 9, 2026 — Production-hardening batch + pinwheel rebrand + notification inbox navigation
+
+Closed the remaining well-specified "partial holes" (4-1 / 4-7 / 4-0), rebranded the web to the pinwheel mark, then polished the notification inbox's navigation.
+
+**4-1 observability (backend):**
+- `common/middleware/request-id.middleware.ts` — reuse-or-generate `X-Request-ID`, echoed on the response + Sentry correlation.
+- `common/interceptors/logging.interceptor.ts` — one PII-safe JSON line per request (no bodies/GPS), `/health/*` excluded, pretty in dev.
+- `common/interceptors/slow-query.interceptor.ts` — warn >500ms / error >2000ms (env-configurable). Registered in `main.ts` + `app.module.ts`. 13 new unit tests.
+
+**4-7 security (backend):**
+- Helmet CSP + HSTS in `main.ts` with the Swagger `api/v1/docs` CSP exclusion.
+- `common/guards/user-throttler.guard.ts` (per-user tracker) + 10/min `@Throttle` on profile-picture upload.
+- 39 free-text DTO fields bounded with `@MaxLength` (input-sanitization audit).
+- N+1 verified clean (Tasks/Activities/Overtime already `leftJoinAndSelect`); Redis caching confirmed; `auth:role` cache intentionally absent (secure §K2 end-state). CORS already env-driven.
+
+**4-0 brand assets:**
+- 3 onboarding scene SVGs ported to react-native-svg (`OnbClockIn/OnbPhoto/OnbMonitor`); `OnbClockIn` wired into the Welcome hero.
+- **Pinwheel mark rebranded across web** (mobile was already pinwheel): PWA icons (`icon.svg` + `icon-maskable.svg`), favicon + apple-touch route handlers (`@/lib/brand/pinwheel`), rasterized `favicon.ico`, and in-app `SekarMark` (sidebar + login). Fixed a pre-existing `AreaDetailDrawer` pruning-status typing bug (`converted` → `assigned`). Web build green.
+
+**Notification inbox navigation (mobile):**
+- Moved the inbox from the bottom-tab navigator into the MainStack so it **slides in from the header bell** (matching Profile).
+- Deep-links (`TaskDetail`/`PruningDetail`) pass `from: 'Notifications'` so their back returns to the inbox; `PruningDetail`'s back handler now honors `from`.
+- The bell tags the originating tab (`origin`, allow-listed) so the inbox's back returns there, else Home.
+- **Back-stack hardening (review findings):** Android-hardware + iOS-gesture back routed through the same target via a focus-scoped `BackHandler` + `gestureEnabled:false` (prevents an inbox⇄detail loop); fixed FCM cold-start `from: 'Notification'` → `'Notifications'` route-name typo; declared `from?`/`fromParams?` on `TaskDetail`/`PruningDetail` param types (dropped `as any`). 2 new BackHandler tests.
+
+**Verification:** backend 99 suites/1784 pass + `tsc` 0 + `eslint` 0 on touched files; web `tsc` 0 + `eslint` 0 + `npm run build` green; mobile `tsc` 0 + `eslint` 0, 210 tests pass across the navigation/notification surface (onboarding + brand suites green). Commits `df1acdb` (hardening + rebrand) → `520e8e8`/`798a788`/`76cd5c6`/`7c9a340` (notification navigation).
+
+---
+
 ## June 9, 2026 — 4-3/4-R code-review pass + repo-wide "Kinerja" sweep
 
 Independent backend + mobile review of the 4-3/4-R diff. Two real findings fixed; the rest were either pre-existing or false attributions (noted for the record).
