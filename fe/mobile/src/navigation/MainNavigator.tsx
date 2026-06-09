@@ -446,7 +446,10 @@ function MainNavigator(): React.JSX.Element {
       <MainStack.Screen
         name="Notifications"
         component={NotificationsWithHeader}
-        options={{ animation: 'slide_from_left' }}
+        // gestureEnabled:false — the inbox owns its back (header + hardware) so it
+        // can return to the origin tab; a raw swipe-pop could reveal a deep-linked
+        // detail left underneath and loop. slide-in animation is unaffected.
+        options={{ animation: 'slide_from_left', gestureEnabled: false }}
       />
       <MainStack.Screen
         name="Diagnostics"

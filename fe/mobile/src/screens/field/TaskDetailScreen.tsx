@@ -213,8 +213,8 @@ export function TaskDetailScreen(): React.JSX.Element {
   // Optional caller-supplied back target (e.g. PruningDetail → "Lihat
   // Tugas" passes `from: 'PruningDetail'` + `fromParams: { requestId,
   // adminMode }`). When unset, defaults to the global Tugas list.
-  const backTarget = (route.params as any)?.from as string | undefined;
-  const backTargetParams = (route.params as any)?.fromParams as Record<string, unknown> | undefined;
+  const backTarget = route.params.from;
+  const backTargetParams = route.params.fromParams;
   const handleBack = useCallback(() => {
     if (backTarget) {
       (navigation as any).navigate(backTarget, backTargetParams);

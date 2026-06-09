@@ -43,12 +43,14 @@ function deepLinkFromNotificationData(data: Record<string, unknown> | undefined)
   const pruningRequestId =
     typeof data.pruning_request_id === 'string' ? data.pruning_request_id : undefined;
 
-  // Task wins over pruning_request when both are present (the task
-  // detail screen has a `from` param to step back to the request).
+  // Task wins over pruning_request when both are present. `from: 'Notifications'`
+  // (matching the MainStack inbox route) makes the detail's back button open the
+  // notifications inbox rather than dead-ending — the only navigable origin for a
+  // notification-launched detail.
   if (taskId) {
     (navigationRef.navigate as (...a: unknown[]) => void)('MainTabs', {
       screen: 'TaskDetail',
-      params: { taskId, from: 'Notification' },
+      params: { taskId, from: 'Notifications' },
     });
     return;
   }

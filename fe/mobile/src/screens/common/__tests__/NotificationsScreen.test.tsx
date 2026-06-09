@@ -2,6 +2,7 @@
  * NotificationsScreen tests — Phase 4 M3d (NOTIF-1).
  */
 import React from 'react';
+import { BackHandler } from 'react-native';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
@@ -10,8 +11,14 @@ import notificationsReducer from '../../../store/slices/notificationsSlice';
 import type { Notification } from '../../../types/models.types';
 
 const mockNavigate = jest.fn();
+let mockRouteParams: { origin?: string } = {};
+// Run the focus effect immediately so the hardware-back handler registers.
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({ navigate: mockNavigate }),
+  useRoute: () => ({ params: mockRouteParams }),
+  useFocusEffect: (cb: () => void | (() => void)) => {
+    cb();
+  },
 }));
 
 const mockGetNotifications = jest.fn();
@@ -46,6 +53,51 @@ describe('NotificationsScreen', () => {
     mockGetNotifications.mockReset();
     mockMarkAsRead.mockClear();
     mockMarkAllAsRead.mockClear();
+    mockRouteParams = {};
+  });
+
+  // Finding #1: Android hardware back (and the iOS gesture, disabled at the
+  // navigator) must route through the same destination as the header chevron —
+  // the origin tab, else Home — so a notification→detail→back round-trip can't
+  // loop inbox⇄detail.
+  it('routes hardware back to the originating tab', async () => {
+    mockRouteParams = { origin: 'Monitoring' };
+    mockGetNotifications.mockResolvedValue({ data: { data: [] } });
+    let captured: (() => boolean) | undefined;
+    const spy = jest
+      .spyOn(BackHandler, 'addEventListener')
+      .mockImplementation((_evt, handler) => {
+        captured = handler as () => boolean;
+        return { remove: jest.fn() } as ReturnType<typeof BackHandler.addEventListener>;
+      });
+    render(
+      <Provider store={makeStore()}>
+        <NotificationsScreen />
+      </Provider>,
+    );
+    expect(captured).toBeDefined();
+    expect(captured?.()).toBe(true); // event handled — default pop suppressed
+    expect(mockNavigate).toHaveBeenCalledWith('Tabs', { screen: 'Monitoring' });
+    spy.mockRestore();
+  });
+
+  it('routes hardware back to Home when there is no origin', async () => {
+    mockGetNotifications.mockResolvedValue({ data: { data: [] } });
+    let captured: (() => boolean) | undefined;
+    const spy = jest
+      .spyOn(BackHandler, 'addEventListener')
+      .mockImplementation((_evt, handler) => {
+        captured = handler as () => boolean;
+        return { remove: jest.fn() } as ReturnType<typeof BackHandler.addEventListener>;
+      });
+    render(
+      <Provider store={makeStore()}>
+        <NotificationsScreen />
+      </Provider>,
+    );
+    captured?.();
+    expect(mockNavigate).toHaveBeenCalledWith('Tabs', { screen: 'Home' });
+    spy.mockRestore();
   });
 
   it('fetches and renders notifications list', async () => {

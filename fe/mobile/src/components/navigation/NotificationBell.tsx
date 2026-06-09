@@ -17,6 +17,18 @@ import { useAppSelector } from '../../store/hooks';
 import { selectUnreadCount } from '../../store/slices/notificationsSlice';
 import { nbBorders, nbColors } from '../../constants/nbTokens';
 
+// Visible bottom-tab roots across all roles (see TAB_CONFIGS in MainNavigator).
+// The inbox back target must be one of these; anything else falls back to Home.
+const ORIGIN_TABS = new Set([
+  'Home',
+  'TasksActivities',
+  'Overtime',
+  'Monitoring',
+  'PruningReviewQueue',
+  'Perantingan',
+  'Profile',
+]);
+
 export const NotificationBell: React.FC = () => {
   const navigation = useNavigation();
   const unreadCount = useAppSelector(selectUnreadCount);
@@ -24,14 +36,17 @@ export const NotificationBell: React.FC = () => {
   const display = unreadCount > 99 ? '99+' : String(unreadCount);
 
   // Record the tab the bell is tapped from so the inbox's back button can
-  // return there instead of defaulting to Home.
+  // return there instead of defaulting to Home. Only accept real visible-tab
+  // route names (the bell only renders on tab roots, but guard defensively so a
+  // stray focused-route name can never become an unreachable back target).
   const openInbox = () => {
     const nav = navigation as unknown as {
       getState?: () => { index: number; routes: Array<{ name: string }> };
       navigate: (name: string, params?: { origin?: string }) => void;
     };
     const state = nav.getState?.();
-    const origin = state ? state.routes[state.index]?.name : undefined;
+    const focused = state ? state.routes[state.index]?.name : undefined;
+    const origin = focused && ORIGIN_TABS.has(focused) ? focused : undefined;
     nav.navigate('Notifications', { origin });
   };
 

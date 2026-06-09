@@ -52,7 +52,7 @@ export type MainTabParamList = {
   ClockInOut: undefined;
   ActivitySubmission: undefined;
   ActivityDetail: { activityId: string; from?: string; fromParams?: Record<string, unknown> };
-  TaskDetail: { taskId: string };
+  TaskDetail: { taskId: string; from?: string; fromParams?: Record<string, unknown> };
   TaskComplete: { taskId: string };
   TaskCreate: undefined;
   OvertimeSubmit: undefined;
@@ -62,7 +62,12 @@ export type MainTabParamList = {
   EditProfile: undefined;
   // Pruning Requests (admin_data flow)
   PruningReviewQueue: undefined;
-  PruningDetail: { requestId: string; adminMode?: boolean };
+  PruningDetail: {
+    requestId: string;
+    adminMode?: boolean;
+    from?: string;
+    fromParams?: Record<string, unknown>;
+  };
   // Phase 3 Apr 27 — staff_kecamatan tab + redesigned submit form
   Perantingan: undefined;            // visible tab — staff_kecamatan list
   PerantinganSubmit: undefined;      // hidden stack — redesigned scrollable form

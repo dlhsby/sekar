@@ -15,6 +15,7 @@
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  BackHandler,
   FlatList,
   RefreshControl,
   StyleSheet,
@@ -22,7 +23,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import {
   markAllAsRead as markAllAsReadLocal,
@@ -60,6 +61,26 @@ function formatRelativeTime(iso: string): string {
 export function NotificationsScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const navigation = useNavigation();
+  const route = useRoute();
+  const origin = (route.params as { origin?: string } | undefined)?.origin;
+
+  // Android hardware back + iOS swipe-back bypass the header chevron's onBack
+  // (which is owned by MainNavigator's withProfileHeader). Route them through the
+  // same destination — the tab the bell was opened from, else Home — so the
+  // deep-link round-trip (inbox → detail → back → inbox → back) can't loop.
+  useFocusEffect(
+    useCallback(() => {
+      const goToOrigin = (): boolean => {
+        (navigation.navigate as (...a: unknown[]) => void)('Tabs', {
+          screen: origin ?? 'Home',
+        });
+        return true; // event handled — suppress the default pop
+      };
+      const sub = BackHandler.addEventListener('hardwareBackPress', goToOrigin);
+      return () => sub.remove();
+    }, [navigation, origin]),
+  );
+
   const notifications = useAppSelector(selectAllNotifications);
   const unreadCount = useAppSelector(selectUnreadCount);
   const isLoading = useAppSelector(selectNotificationsLoading);
