@@ -1,9 +1,10 @@
-import { IsString, IsUUID, IsIn, IsNumber, Min, IsOptional } from 'class-validator';
+import { IsString, IsUUID, IsIn, IsNumber, Min, IsOptional, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateSeedDto {
   @IsString()
+  @MaxLength(255)
   @ApiProperty({ description: 'Seed SKU name/identifier', example: 'Bibit Pucuk Merah A' })
   nameId: string;
 

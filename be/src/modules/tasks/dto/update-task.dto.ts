@@ -22,6 +22,7 @@ export class UpdateTaskDto {
   })
   @IsString()
   @IsOptional()
+  @MaxLength(2000)
   description?: string;
 
   @ApiPropertyOptional({

@@ -10,10 +10,13 @@ import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { ApiVersionInterceptor } from './common/interceptors/api-version.interceptor';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { SlowQueryInterceptor } from './common/interceptors/slow-query.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { initializeFirebase } from './config/firebase.config';
 import * as os from 'os';
 import * as bodyParser from 'body-parser';
+import helmet from 'helmet';
 
 /**
  * Validate critical environment variables before startup.
@@ -70,6 +73,36 @@ async function bootstrap() {
     }
   }
 
+  // Security headers (Phase 4 §G3). CSP allows self + S3 image origins; HSTS for
+  // one year. The Swagger UI (`api/v1/docs`) is excluded because its inline
+  // scripts/styles violate the CSP — security tooling, not a public surface.
+  const helmetMiddleware = helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: [
+          "'self'",
+          'data:',
+          'https://*.s3.ap-southeast-1.amazonaws.com',
+          ...(process.env.AWS_ENDPOINT_URL ? [process.env.AWS_ENDPOINT_URL] : []),
+        ],
+      },
+    },
+    hsts: { maxAge: 31536000, includeSubDomains: true },
+  });
+  app.use((req: { path?: string }, res: unknown, next: () => void) => {
+    if (req.path?.startsWith('/api/v1/docs')) {
+      return next();
+    }
+    return (helmetMiddleware as (req: unknown, res: unknown, next: () => void) => void)(
+      req,
+      res,
+      next,
+    );
+  });
+
   // Increase body size limit for base64 photo uploads (15MB max for 5 photos at ~3MB each)
   app.use(bodyParser.json({ limit: '15mb' }));
   app.use(bodyParser.urlencoded({ limit: '15mb', extended: true }));
@@ -101,6 +134,9 @@ async function bootstrap() {
   // honored on every response that returns an entity instance.
   app.useGlobalInterceptors(
     new ApiVersionInterceptor(),
+    // Phase 4 §B1/§B3: structured request logging + slow-request surfacing.
+    new LoggingInterceptor(),
+    new SlowQueryInterceptor(),
     new ClassSerializerInterceptor(app.get(Reflector)),
   );
 

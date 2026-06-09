@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, Min, Max, IsString } from 'class-validator';
+import { IsInt, IsOptional, Min, Max, IsString, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -28,6 +28,7 @@ export class QueryCapacityDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   @ApiProperty({
     description: 'Service type filter (optional)',
     example: 'pruning',

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
@@ -33,6 +33,7 @@ import { OvertimeModule } from './modules/overtime/overtime.module';
 import { UserAreasModule } from './modules/user-areas/user-areas.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { CommonModule } from './common/common.module';
+import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 // Phase 3 entity modules (stub — full controllers/services added in sub-phases 3-6+)
 import { PlantsModule } from './modules/plants/plants.module';
 import { PruningRequestsModule } from './modules/pruning-requests/pruning-requests.module';
@@ -154,4 +155,9 @@ import { QueueModule } from './modules/queue/queue.module';
       : []),
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    // Assign a correlation id to every request (Phase 4 §B2).
+    consumer.apply(RequestIdMiddleware).forRoutes('*');
+  }
+}

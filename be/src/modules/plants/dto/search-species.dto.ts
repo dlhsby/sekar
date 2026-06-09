@@ -1,4 +1,4 @@
-import { IsString, IsOptional, Min, Max, IsInt } from 'class-validator';
+import { IsString, IsOptional, Min, Max, IsInt, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -15,6 +15,7 @@ export class SearchSpeciesDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   q?: string;
 
   @ApiProperty({

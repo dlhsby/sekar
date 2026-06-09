@@ -51,16 +51,16 @@
 
 | Sub-Phase | Name | Milestone | Status |
 |-----------|------|-----------|--------|
-| **4-0** | **Design Bundle Adoption + Token Re-baseline** | M1 + (4-0 reconciled to design/ May 25) | 🟡 Token pipeline ✅ v2.1.1 (sage + hard-edge + 5-status + 9 role + lilac, matched to `design/`); brand-asset integration (icons/splash/illustrations B1-B6) ⏳ |
+| **4-0** | **Design Bundle Adoption + Token Re-baseline** | M1 + (4-0 reconciled to design/ May 25) | 🟡 Token pipeline ✅ v2.1.1 (sage + hard-edge + 5-status + 9 role + lilac, matched to `design/`); **onboarding SVGs (B5) + PWA manifest/icons (B6) ✅ (Jun 9)**; app icon/splash/empty-state assets (B1-B4) ⏳ |
 | **4-R** | **UI/UX Revamp Sweep (mobile + web)** | M3a–d | 🟡 Mobile entry-flow ✅ + Home **role-aware anchor complete for ALL 9 roles** (shared masthead + tab bar + dispatcher; HOME-1 Field, HOME-2 Coordinator, HOME-3 Admin Data, + net-new Exec city-overview [top_mgmt/admin_sys/superadmin] + Kecamatan "my requests") ✅ + critical stale-`tokens.js` fix (v2.1 renders app-wide) ✅; Absensi/Tugas/Aktivitas/Lembur/Profile ✅; **Monitoring ✅ (M3: MON-1/2/3/4 — two-axis presence, activity chips, Lokasi filter, search modal + marker callout, BoundaryDetailModal on NBModal)**; **Perantingan ✅ (PRT CP1–CP5)**; **Notif prefs screen ✅ (Jun 9)**; **mobile rebrand residue cleared (Jun 9 — tagline → Kinerja, legacy `theme.ts` removed, `AvailabilityCalendar` raw `<Text>`→NBText)**; web revamp ⏳; brand assets (onboarding SVGs + PWA manifest) ⏳ |
 | **4-V** | **Production-Readiness Gap Audit** | post-M3 | ⏳ Not started |
-| 4-1 | Infrastructure & Evaluation (trimmed) | M1 | 🟡 Health module (`/live`,`/ready`+real 503) ✅; Sentry + BullMQ scaffolding ✅; structured-logging/tracing items ⏳ |
+| 4-1 | Infrastructure & Evaluation (trimmed) | M1 | 🟢 Health module (`/live`,`/ready`+real 503) ✅; Sentry + BullMQ ✅; **structured logging + X-Request-ID tracing + slow-query interceptor ✅ (Jun 9)**; WS-stability/Docker audits ⏳ |
 | 4-2 | Offline Sync Completion | M2 | 🟢 3-state connectivity + banner + queue expansion ✅ (staging field-test = 4-V) |
 | 4-3 | Push Notification — Hardening | M2 + (completed Jun 9) | 🟢 **Feature-complete (Jun 9):** 8 FCM triggers + `fcm-retry` BullMQ + activity-tag (ADR-038); per-type **notification preferences** (table + GET/PATCH + `sendToUser` enforcement) + mobile prefs screen; **shift-reminder cron** (§C3, Redis-deduped) + **24h→offline cron** (§C4); **missing-worker hardening** (§C1 #8 — +kepala_rayon + sweeper notify + dedup). Remaining: staging e2e (4-V), web bell/panel (4-R web) |
 | 4-4 | Worker Reassignment Workflow | — | ⏳ Not started |
 | 4-5 | Export & Import Data | — | ⏳ Not started |
 | 4-6 | Real Data Seeder & Data Management | — | ⏳ Not started |
-| 4-7 | Refactor, Optimization & Security | M2 (partial) | 🟡 JWT refresh rotation + Redis blacklist + **strategy-level revocation enforcement (May 25)** ✅; remaining refactor/optimization/security items ⏳ |
+| 4-7 | Refactor, Optimization & Security | M2 (partial) | 🟡 JWT refresh rotation + Redis blacklist + strategy-level revocation (May 25) ✅; **Helmet + CORS + per-endpoint upload throttle + input-sanitization (39 DTO fields) + N+1 verified + Redis caching ✅ (Jun 9)**; service refactors (A1-A4) / timezone-date (E1-E2) / FE-opt (F1/G1) ⏳ |
 | 4-8 | Mobile & Web Production Hardening (trimmed) | — | ⏳ Not started |
 | 4-9 | E2E Testing | M3d (deferred) | ⏳ Maestro flows not started |
 | 4-10 | Documentation Sync | ongoing | 🟡 Partial (this checkpoint syncs STATUS + design-tokens + COMPLETION_STATUS) |
@@ -78,8 +78,8 @@
 | B2. Replace app icon (iOS + Android) | ⏳ | iOS AppIcon, Android adaptive icon |
 | B3. Replace splash screen (light/dark/green) | ⏳ | iOS LaunchScreen, Android splash |
 | B4. Ship 6 empty-state SVG illustrations | ⏳ | illo-reports/shifts/offline/location/search/personnel |
-| B5. Ship 3 onboarding scene SVGs | ⏳ | onb-clockin/photo/monitor |
-| B6. PWA manifest theme/icon update | ⏳ | `theme_color: #7FBC8C`, maskable pinwheel |
+| B5. Ship 3 onboarding scene SVGs | ✅ | `fe/mobile/.../illustrations/onboarding.tsx` — `OnbClockIn/OnbPhoto/OnbMonitor` ported to react-native-svg (token-mapped, no inline hex); `OnbClockIn` wired into Welcome hero. Permissions (per-row icons) + AreaPreview (documented hi-fi reconciliation) intentionally retained (Jun 9) |
+| B6. PWA manifest theme/icon update | ✅ | `manifest.webmanifest` themed (`theme_color #1A4D2E`, `background_color #F5F0EB`); **web rebranded to the pinwheel mark everywhere (Jun 9)** — `icons/icon.svg` (full-bleed) + `icon-maskable.svg` (safe-zone) + favicon/apple-touch route handlers (`@/lib/brand/pinwheel`) + `favicon.ico` + in-app `SekarMark` (sidebar + login); matches the mobile app's existing pinwheel |
 | C1. Token-compliance ESLint sweep | ⏳ | Fix repo-wide violations |
 
 ### Sub-Phase 4-R: UI/UX Revamp Sweep ⏳ NOT STARTED
@@ -100,20 +100,20 @@ See [`status_reviews.md` § Revamp Acceptance Checklist](./status_reviews.md#rev
 
 ## Implementation Progress
 
-### Sub-Phase 4-1: Infrastructure & Evaluation ⏳ NOT STARTED
+### Sub-Phase 4-1: Infrastructure & Evaluation 🟢 OBSERVABILITY COMPLETE (WS/Docker audits pending)
 
 | Task | Status | Notes |
 |------|--------|-------|
 | A1. WebSocket connection stability audit | ⏳ | |
 | A2. Redis adoption decision (ADR-016) | ⏳ | |
 | A3. Docker Compose update (redis:7-alpine) | ⏳ | |
-| B1. Structured logging setup | ⏳ | |
-| B2. Request tracing middleware (X-Request-ID) | ⏳ | |
-| B3. Sentry integration (backend) | ⏳ | |
+| B1. Structured logging setup | ✅ | `common/interceptors/logging.interceptor.ts` — one JSON line/request, PII-safe (no body/GPS), `/health/*` excluded, pretty in dev (Jun 9) |
+| B2. Request tracing middleware (X-Request-ID) | ✅ | `common/middleware/request-id.middleware.ts` — reuse-or-generate uuid v4, response header + Sentry correlation (Jun 9) |
+| B3. Sentry integration (backend) | ✅ | `initSentry()` wired in `main.ts`; 5xx captured via http-exception filter |
 | B4. Sentry integration (mobile) | ⏳ | |
-| B5. Slow query interceptor | ⏳ | |
-| C1. Health module (GET /health, GET /health/full) | ⏳ | |
-| C2. Redis service setup | ⏳ | |
+| B5. Slow query interceptor | ✅ | `common/interceptors/slow-query.interceptor.ts` — warn >500ms / error >2000ms, env-configurable thresholds (Jun 9) |
+| C1. Health module (GET /health, GET /health/full) | ✅ | `/health/live`, `/health/ready` (+real 503) |
+| C2. Redis service setup | ✅ | `common/services/redis.service.ts` |
 
 ### Sub-Phase 4-2: Offline Sync Completion ⏳ NOT STARTED
 
@@ -186,7 +186,7 @@ See [`status_reviews.md` § Revamp Acceptance Checklist](./status_reviews.md#rev
 | C1. Database index audit + migration | ⏳ | |
 | C2. Pagination standardization (all findAll) | ⏳ | |
 
-### Sub-Phase 4-7: Refactor, Optimization & Security ⏳ NOT STARTED
+### Sub-Phase 4-7: Refactor, Optimization & Security 🟡 SECURITY + N+1 + CACHING DONE (service refactors / FE-opt pending)
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -194,15 +194,15 @@ See [`status_reviews.md` § Revamp Acceptance Checklist](./status_reviews.md#rev
 | A2. Extract UserValidationService from UsersService | ⏳ | |
 | A3. Extract RoomJoinService from EventsGateway | ⏳ | |
 | A4. Five-lines-of-code audit | ⏳ | |
-| B1. N+1 query audit (Tasks, Activities, Overtime) | ⏳ | |
-| B2. QueryBuilder joins for identified patterns | ⏳ | |
-| C1. Redis caching (monitoring, staffing, role) | ⏳ | |
-| C2. JwtStrategy role cache | ⏳ | |
-| D1. Per-endpoint rate limiting | ⏳ | |
-| D2. JWT refresh token rotation | ⏳ | |
-| D3. Input sanitization audit | ⏳ | |
-| D4. CORS tightening (production domains) | ⏳ | |
-| D5. Helmet.js headers | ⏳ | |
+| B1. N+1 query audit (Tasks, Activities, Overtime) | ✅ | Verified Jun 9 — all three `findAll`/`findAllPaginated` already use `leftJoinAndSelect` for their relations; no N+1 remained |
+| B2. QueryBuilder joins for identified patterns | ✅ | Already in place (see B1) |
+| C1. Redis caching (monitoring, staffing, role) | ✅ | `RedisService` + `MonitoringCacheService` wired across monitoring/auth/location |
+| C2. JwtStrategy role cache | ✅ | Intentionally absent — strategy validates via blacklist; JWT carries role claim, so no `auth:role` cache (spec §K2 secure end-state, no stale-role escalation window) |
+| D1. Per-endpoint rate limiting | 🟡 | `common/guards/user-throttler.guard.ts` (per-user tracker) + upload 10/min `@Throttle` on profile-picture (Jun 9); export 5/min + import-commit 3/min wiring deferred to their endpoints (4-5) |
+| D2. JWT refresh token rotation | ✅ | + Redis blacklist + strategy-level revocation (May 25) |
+| D3. Input sanitization audit | ✅ | 39 free-text DTO fields bounded with `@MaxLength` (Jun 9); no raw-SQL interpolation on user input |
+| D4. CORS tightening (production domains) | ✅ | env-driven `CORS_ORIGIN` in `main.ts`, throws if unset in production |
+| D5. Helmet.js headers | ✅ | `main.ts` — CSP (self + S3 img) + HSTS 1y; Swagger `api/v1/docs` excluded from CSP (Jun 9) |
 | E1. Timezone consistency audit | ⏳ | |
 | E2. Date format standardization (DD/MM/YYYY) | ⏳ | |
 | F1. Mobile optimization (React.memo, FlatList) | ⏳ | |

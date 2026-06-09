@@ -1,4 +1,4 @@
-import { IsUUID, IsString, IsOptional, IsISO8601 } from 'class-validator';
+import { IsUUID, IsString, IsOptional, IsISO8601, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 /**
@@ -28,6 +28,7 @@ export class CreateNotablePlantDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   label?: string;
 
   @ApiProperty({
@@ -46,5 +47,6 @@ export class CreateNotablePlantDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   notes?: string;
 }

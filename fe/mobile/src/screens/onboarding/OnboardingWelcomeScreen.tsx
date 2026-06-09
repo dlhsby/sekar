@@ -7,11 +7,12 @@
  */
 
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NBButton, NBText } from '../../components/nb';
 import { PaginationDots } from '../../components/auth/PaginationDots';
+import { OnbClockIn } from '../../components/nb/illustrations/onboarding';
 import { nbColors, nbBorders, nbRadius, nbShadows, nbSpacing } from '../../constants/nbTokens';
 import { useAppSelector } from '../../store/hooks';
 
@@ -31,7 +32,7 @@ export function OnboardingWelcomeScreen(): React.JSX.Element {
               SIAP
             </NBText>
           </View>
-          <Text style={styles.wave}>👋</Text>
+          <OnbClockIn width={240} height={180} />
         </View>
 
         <NBText variant="h1">Hai,</NBText>
@@ -85,7 +86,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.sm,
     paddingVertical: nbSpacing.xs,
   },
-  wave: { fontSize: 80, transform: [{ rotate: '-3deg' }] },
   nameChip: {
     alignSelf: 'flex-start',
     backgroundColor: nbColors.primary,

@@ -26,5 +26,6 @@ export class StartOvertimeDto {
   @ApiPropertyOptional({ description: 'Reason for overtime', example: 'Additional cleanup needed' })
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   reason?: string;
 }

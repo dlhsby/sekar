@@ -218,7 +218,6 @@ export class CreatePruningRequestDto {
   })
   @IsString()
   @IsOptional()
-  @MaxLength(100)
   kecamatan_name?: string;
 
   // ── Phase 3 Apr 27 — staff_kecamatan redesign fields ───────────────────────
@@ -241,7 +240,6 @@ export class CreatePruningRequestDto {
   })
   @IsString()
   @IsOptional()
-  @MaxLength(100)
   tree_height_estimate?: string;
 
   @ApiPropertyOptional({
@@ -251,7 +249,6 @@ export class CreatePruningRequestDto {
   })
   @IsString()
   @IsOptional()
-  @MaxLength(100)
   tree_diameter_estimate?: string;
 
   // Contact person — pemohon (the requester themselves, may differ from logged-in user)
@@ -263,7 +260,6 @@ export class CreatePruningRequestDto {
   })
   @IsString()
   @IsOptional()
-  @MaxLength(100)
   requester_name?: string;
 
   @ApiPropertyOptional({
@@ -273,7 +269,6 @@ export class CreatePruningRequestDto {
   })
   @IsString()
   @IsOptional()
-  @MaxLength(30)
   requester_phone?: string;
 
   // Contact person — ketua RT (the local RT/RW leader)
@@ -285,7 +280,6 @@ export class CreatePruningRequestDto {
   })
   @IsString()
   @IsOptional()
-  @MaxLength(100)
   rt_leader_name?: string;
 
   @ApiPropertyOptional({
@@ -295,6 +289,5 @@ export class CreatePruningRequestDto {
   })
   @IsString()
   @IsOptional()
-  @MaxLength(30)
   rt_leader_phone?: string;
 }

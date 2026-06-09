@@ -53,5 +53,6 @@ export class UpdateRayonDto {
   })
   @IsString()
   @IsOptional()
+  @MaxLength(1000)
   description?: string;
 }

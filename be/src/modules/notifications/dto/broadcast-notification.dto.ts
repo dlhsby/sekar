@@ -31,6 +31,7 @@ export class BroadcastNotificationDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(500)
   body: string;
 
   @ApiPropertyOptional({

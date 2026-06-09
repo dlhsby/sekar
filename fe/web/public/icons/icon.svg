@@ -1,4 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="0" fill="#1A4D2E"/>
-  <text x="256" y="370" font-family="Arial, sans-serif" font-size="380" font-weight="800" text-anchor="middle" fill="#7FBC8C">S</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="SEKAR">
+  <rect width="512" height="512" fill="#1A4D2E"/>
+  <g transform="translate(256 256) scale(3.6)" stroke="#1C1917" stroke-width="3" stroke-linejoin="round">
+    <g transform="rotate(0)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C"/></g>
+    <g transform="rotate(45)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C"/></g>
+    <g transform="rotate(90)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C"/></g>
+    <g transform="rotate(135)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C"/></g>
+    <g transform="rotate(180)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C"/></g>
+    <g transform="rotate(225)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C"/></g>
+    <g transform="rotate(270)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C"/></g>
+    <g transform="rotate(315)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C"/></g>
+    <circle r="12" fill="#FDFD96"/>
+  </g>
 </svg>

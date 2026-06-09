@@ -16,6 +16,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
   ApiOperation,
@@ -331,6 +332,8 @@ export class UsersController {
    * @throws BadRequestException if new password is same as current
    */
   @Post(':id/profile-picture')
+  // Phase 4 §G1: file uploads capped at 10/min (per-IP via the global guard).
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')

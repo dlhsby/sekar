@@ -149,7 +149,7 @@ The web becomes an installable, offline-capable PWA in 3-R4 (planned).
 **Public assets:**
 - `public/manifest.webmanifest` — `background_color: #F5F0EB`, `theme_color: #1A4D2E`, 192/512/512-maskable + 180 apple-touch icons, 2 shortcuts (Monitoring, Pruning Requests).
 - `public/sw.js` — service worker compiled from `src/sw/sw.ts`. Pre-caches HTML shell + `generated/tokens.css` + main JS bundle + fonts + icons. Runtime caching: SWR 30 s for `/monitoring/snapshot`, network-first for `/pruning-requests/*`, cache-first for `/plant-species`. POST/PUT/DELETE = network-only (web does not queue offline writes).
-- `public/icons/` — SEKAR "S" glyph (Space Grotesk 800 on `#7FBC8C` with 2 px `#1C1917` border + 4 px shadow).
+- `public/icons/` — SEKAR pinwheel brand mark (8 sage `#7FBC8C` blades + yellow `#FDFD96` center, ink `#1C1917` stroke) on the `#1A4D2E` green canvas; `icon.svg` (full-bleed) + `icon-maskable.svg` (safe-zone padded). Favicon (`src/app/icon.tsx`) + apple-touch (`src/app/apple-icon.tsx`) render the same mark via `@/lib/brand/pinwheel`; `src/app/favicon.ico` is the rasterized pinwheel. In-app DOM mark: `src/components/brand/SekarMark.tsx` (token-var colors) — used in the sidebar header + login card. Jun 9 rebrand: replaced the prior "S" glyph repo-wide to match the mobile app.
 
 **Components (`src/components/pwa/`):**
 - `InstallBanner` — captures `beforeinstallprompt`; NB callout (yellow `#FDFD96` bg, 2 px border, 4 px shadow); 14-day localStorage suppression on dismiss.

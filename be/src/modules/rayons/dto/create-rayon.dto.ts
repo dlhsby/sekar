@@ -56,5 +56,6 @@ export class CreateRayonDto {
   })
   @IsString()
   @IsOptional()
+  @MaxLength(1000)
   description?: string;
 }

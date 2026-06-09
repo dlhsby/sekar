@@ -1,10 +1,11 @@
-import { IsOptional, IsString, IsInt, Min, Max } from 'class-validator';
+import { IsOptional, IsString, IsInt, Min, Max, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class ListSeedsQueryDto {
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   @ApiProperty({ description: 'Search by seed name', required: false })
   search?: string;
 

@@ -70,6 +70,7 @@ export class CreateActivityTypeDto {
   })
   @IsString()
   @IsOptional()
+  @MaxLength(1000)
   description?: string;
 
   /**

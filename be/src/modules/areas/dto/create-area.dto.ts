@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsInt,
   IsUUID,
+  MaxLength,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -22,6 +23,7 @@ export class CreateAreaDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(255)
   name: string;
 
   @ApiProperty({
@@ -73,5 +75,6 @@ export class CreateAreaDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   address?: string;
 }

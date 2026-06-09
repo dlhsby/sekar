@@ -9,6 +9,7 @@ import {
   Min,
   Max,
   IsIn,
+  MaxLength,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type, Transform } from 'class-transformer';
@@ -169,6 +170,7 @@ export class ListPruningRequestsQueryDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   referenceCode?: string;
 
   /**
@@ -182,5 +184,6 @@ export class ListPruningRequestsQueryDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   requesterName?: string;
 }

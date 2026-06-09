@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class RejectOvertimeDto {
@@ -8,5 +8,6 @@ export class RejectOvertimeDto {
   })
   @IsString()
   @IsNotEmpty({ message: 'Rejection reason is required' })
+  @MaxLength(1000)
   reason: string;
 }

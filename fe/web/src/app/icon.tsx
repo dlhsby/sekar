@@ -1,11 +1,12 @@
 import { ImageResponse } from 'next/og';
+import { PINWHEEL, pinwheelDataUri } from '@/lib/brand/pinwheel';
 
 export const size = { width: 32, height: 32 };
 export const contentType = 'image/png';
 
 /**
  * SEKAR favicon — auto-generates /icon.png
- * Navy background with bold "S" glyph in primary green
+ * Green canvas with the pinwheel brand mark.
  */
 export default function Icon() {
   return new ImageResponse(
@@ -17,22 +18,12 @@ export default function Icon() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#1A4D2E',
+          background: PINWHEEL.greenBg,
         }}
       >
-        <span
-          style={{
-            fontFamily: 'Arial, sans-serif',
-            fontSize: 22,
-            fontWeight: 800,
-            color: '#7FBC8C',
-            lineHeight: 1,
-          }}
-        >
-          S
-        </span>
+        <img src={pinwheelDataUri()} width={26} height={26} alt="SEKAR" />
       </div>
     ),
-    { ...size }
+    { ...size },
   );
 }

@@ -58,4 +58,13 @@ describe('OnboardingWelcomeScreen', () => {
     const { queryByTestId } = renderScreen();
     expect(queryByTestId('onboarding-welcome-skip')).toBeNull();
   });
+
+  it('renders the OnbClockIn SVG illustration without crashing', () => {
+    // Smoke test: verify the component renders with the new SVG illustration
+    const { queryByText } = renderScreen();
+    // Verify the continue button is still present (proves component rendered)
+    expect(queryByText('Lanjut')).toBeTruthy();
+    // Verify greeting is still displayed
+    expect(queryByText('Hai,')).toBeTruthy();
+  });
 });

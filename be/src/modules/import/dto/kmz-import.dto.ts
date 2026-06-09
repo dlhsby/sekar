@@ -7,6 +7,7 @@ import {
   IsOptional,
   ValidateNested,
   IsNumber,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -39,6 +40,7 @@ export class ParsedAreaDto {
   @ApiPropertyOptional({ description: 'Area description from KML' })
   @IsString()
   @IsOptional()
+  @MaxLength(1000)
   description?: string;
 
   @ApiProperty({
@@ -118,6 +120,7 @@ export class AreaSelectionDto {
   @ApiPropertyOptional({ description: 'Override area name' })
   @IsString()
   @IsOptional()
+  @MaxLength(255)
   name_override?: string;
 
   @ApiPropertyOptional({ description: 'Area type ID to assign' })

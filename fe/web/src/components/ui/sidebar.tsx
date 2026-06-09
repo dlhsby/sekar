@@ -7,6 +7,7 @@ import { X, ChevronDown, ChevronRight } from 'lucide-react';
 
 import { cn } from '@/lib/utils/cn';
 import { Button } from './button';
+import { SekarMark } from '@/components/brand/SekarMark';
 
 export interface SidebarItem {
   id: string;
@@ -254,10 +255,13 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
           {/* Logo/Header */}
           <div className="p-6 border-b-2 border-nb-sidebar-hover flex-shrink-0">
             {logo || (
-              <>
-                <h1 className="text-2xl font-extrabold text-nb-white">{title}</h1>
-                <p className="text-nb-white/70 text-sm mt-1">{subtitle}</p>
-              </>
+              <div className="flex items-center gap-3">
+                <SekarMark size={36} className="flex-shrink-0" />
+                <div>
+                  <h1 className="text-2xl font-extrabold text-nb-white">{title}</h1>
+                  <p className="text-nb-white/70 text-sm mt-1">{subtitle}</p>
+                </div>
+              </div>
             )}
           </div>
 

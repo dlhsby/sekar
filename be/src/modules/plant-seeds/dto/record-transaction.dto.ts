@@ -1,4 +1,4 @@
-import { IsUUID, IsIn, IsNumber, Min, IsOptional, IsString, IsDate } from 'class-validator';
+import { IsUUID, IsIn, IsNumber, Min, IsOptional, IsString, IsDate, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -29,11 +29,13 @@ export class RecordTransactionDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   @ApiProperty({ description: 'Supplier name', example: 'PT Kebun Maju', required: false })
   supplier?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   @ApiProperty({ description: 'Receipt/document URL', example: 'https://...', required: false })
   receiptUrl?: string;
 
@@ -49,6 +51,7 @@ export class RecordTransactionDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   @ApiProperty({
     description: 'Recipient name for distribution',
     example: 'Pak Joko',
@@ -63,6 +66,7 @@ export class RecordTransactionDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   @ApiProperty({ description: 'Additional notes', required: false })
   notes?: string;
 }

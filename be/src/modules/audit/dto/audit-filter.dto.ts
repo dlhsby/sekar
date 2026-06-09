@@ -1,16 +1,18 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsUUID, IsDateString } from 'class-validator';
+import { IsOptional, IsString, IsUUID, IsDateString, MaxLength } from 'class-validator';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
 
 export class AuditFilterDto extends PaginationDto {
   @ApiPropertyOptional({ description: 'Filter by entity type' })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   entity_type?: string;
 
   @ApiPropertyOptional({ description: 'Filter by action' })
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   action?: string;
 
   @ApiPropertyOptional({ description: 'Filter by actor ID' })

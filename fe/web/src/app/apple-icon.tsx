@@ -1,11 +1,12 @@
 import { ImageResponse } from 'next/og';
+import { PINWHEEL, pinwheelDataUri } from '@/lib/brand/pinwheel';
 
 export const size = { width: 180, height: 180 };
 export const contentType = 'image/png';
 
 /**
  * SEKAR apple touch icon — auto-generates /apple-icon.png
- * Navy background with bold "S" glyph in primary green
+ * Green canvas with the pinwheel brand mark.
  */
 export default function AppleIcon() {
   return new ImageResponse(
@@ -17,22 +18,12 @@ export default function AppleIcon() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#1A4D2E',
+          background: PINWHEEL.greenBg,
         }}
       >
-        <span
-          style={{
-            fontFamily: 'Arial, sans-serif',
-            fontSize: 130,
-            fontWeight: 800,
-            color: '#7FBC8C',
-            lineHeight: 1,
-          }}
-        >
-          S
-        </span>
+        <img src={pinwheelDataUri()} width={132} height={132} alt="SEKAR" />
       </div>
     ),
-    { ...size }
+    { ...size },
   );
 }

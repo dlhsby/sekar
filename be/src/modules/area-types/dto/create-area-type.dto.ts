@@ -56,5 +56,6 @@ export class CreateAreaTypeDto {
   })
   @IsString()
   @IsOptional()
+  @MaxLength(1000)
   description?: string;
 }

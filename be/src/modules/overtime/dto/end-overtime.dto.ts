@@ -42,6 +42,7 @@ export class EndOvertimeDto {
   @ApiProperty({ description: 'Activity description' })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(2000)
   description: string;
 
   @ApiProperty({ description: 'Photo URLs (1-3)', type: [String] })

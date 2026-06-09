@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Eye, EyeOff } from 'lucide-react';
 import { FormInput, Button, Card, CardContent } from '@/components/ui';
+import { SekarMark } from '@/components/brand/SekarMark';
 import { useAuth } from '@/lib/auth/hooks';
 import { getErrorMessage } from '@/lib/api/client';
 
@@ -96,6 +97,7 @@ function LoginForm() {
           <CardContent className="p-8">
             {/* Logo/Title */}
             <div className="text-center mb-8">
+              <SekarMark size={56} className="mx-auto mb-3" />
               <h1 className="text-4xl font-extrabold text-nb-black mb-2">SEKAR</h1>
               <p className="text-nb-gray-600 text-sm font-medium">
                 Sistem Evaluasi Kinerja Satgas RTH

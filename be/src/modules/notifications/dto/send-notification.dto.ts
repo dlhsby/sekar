@@ -38,6 +38,7 @@ export class SendNotificationDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(500)
   body: string;
 
   @ApiPropertyOptional({
