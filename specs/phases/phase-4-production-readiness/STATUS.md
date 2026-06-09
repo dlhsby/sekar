@@ -1,7 +1,7 @@
 # Phase 4: Production Readiness, Rebrand & UI/UX Revamp — Implementation Status
 
 **Status:** 🔵 In Progress — M3a+b entry flow shipped May 24; M1+M2 checkpoint May 25; M3 Home revamp Checkpoint 1 (shared chrome + role-aware dispatcher) shipped May 25, 2026
-**Last Updated:** June 6, 2026 (M3 Monitoring revamp complete: MON-1/2/3/4 on v2.1 — two-axis presence [CP6], activity peek chips + wrench Lokasi filter [CP6c], fullscreen search + marker callout [CP-SEARCH], BoundaryDetailModal on NBModal [CP7]. Prior: M3 Home revamp Checkpoint 1 + **critical stale-`tokens.js` shadowing fix** that activates v2.1 tokens app-wide — see [`status_progress.md`](./status_progress.md) for the authoritative shipped trail)
+**Last Updated:** June 9, 2026 (**4-3 Push Notification feature-complete on the backend** — per-type preferences + enforcement, shift-reminder + 24h-offline crons, missing-worker hardening [+kepala_rayon, sweeper notify, dedup], activity-tag, mobile prefs screen; **4-R mobile rebrand residue cleared** — tagline → Kinerja, legacy `theme.ts` removed, `AvailabilityCalendar` raw `<Text>`→NBText. Prior Jun 6: M3 Monitoring revamp MON-1/2/3/4. See [`status_progress.md`](./status_progress.md) for the authoritative shipped trail)
 **Overall Progress:** ~50% (M1: 4-0 + 4-1 · M2: 4-2 + 4-3 + 4-7 + Sentry + BullMQ + coverage · M3a+b: entry-flow gates + ADRs 040-042 Accepted + pre-existing lint/typecheck clear)
 **Branch:** main (M1 + M2 + M3a+b committed in-tree pending PR)
 **Related ADRs:** [ADR-016](../../architecture/decisions/ADR-016-redis-websocket-scaling.md), [ADR-017](../../architecture/decisions/ADR-017-maestro-mobile-e2e.md), [ADR-018](../../architecture/decisions/ADR-018-export-format-strategy.md), [ADR-019](../../architecture/decisions/ADR-019-offline-connectivity-model.md), **NEW** [ADR-040](../../architecture/decisions/ADR-040-design-system-v2.1.md), [ADR-041](../../architecture/decisions/ADR-041-forgot-password-contact-admin.md), [ADR-042](../../architecture/decisions/ADR-042-onboarding-flow.md), [ADR-043](../../architecture/decisions/ADR-043-production-gap-closure.md)
@@ -52,11 +52,11 @@
 | Sub-Phase | Name | Milestone | Status |
 |-----------|------|-----------|--------|
 | **4-0** | **Design Bundle Adoption + Token Re-baseline** | M1 + (4-0 reconciled to design/ May 25) | 🟡 Token pipeline ✅ v2.1.1 (sage + hard-edge + 5-status + 9 role + lilac, matched to `design/`); brand-asset integration (icons/splash/illustrations B1-B6) ⏳ |
-| **4-R** | **UI/UX Revamp Sweep (mobile + web)** | M3a–d | 🟡 Mobile entry-flow ✅ + Home **role-aware anchor complete for ALL 9 roles** (shared masthead + tab bar + dispatcher; HOME-1 Field, HOME-2 Coordinator, HOME-3 Admin Data, + net-new Exec city-overview [top_mgmt/admin_sys/superadmin] + Kecamatan "my requests") ✅ + critical stale-`tokens.js` fix (v2.1 renders app-wide) ✅; Absensi/Tugas/Aktivitas/Lembur/Profile ✅; **Monitoring ✅ (M3: MON-1/2/3/4 — two-axis presence, activity chips, Lokasi filter, search modal + marker callout, BoundaryDetailModal on NBModal)**; remaining mobile screens (Perantingan/Notif) ⏳; web revamp ⏳; brand assets ⏳ |
+| **4-R** | **UI/UX Revamp Sweep (mobile + web)** | M3a–d | 🟡 Mobile entry-flow ✅ + Home **role-aware anchor complete for ALL 9 roles** (shared masthead + tab bar + dispatcher; HOME-1 Field, HOME-2 Coordinator, HOME-3 Admin Data, + net-new Exec city-overview [top_mgmt/admin_sys/superadmin] + Kecamatan "my requests") ✅ + critical stale-`tokens.js` fix (v2.1 renders app-wide) ✅; Absensi/Tugas/Aktivitas/Lembur/Profile ✅; **Monitoring ✅ (M3: MON-1/2/3/4 — two-axis presence, activity chips, Lokasi filter, search modal + marker callout, BoundaryDetailModal on NBModal)**; **Perantingan ✅ (PRT CP1–CP5)**; **Notif prefs screen ✅ (Jun 9)**; **mobile rebrand residue cleared (Jun 9 — tagline → Kinerja, legacy `theme.ts` removed, `AvailabilityCalendar` raw `<Text>`→NBText)**; web revamp ⏳; brand assets (onboarding SVGs + PWA manifest) ⏳ |
 | **4-V** | **Production-Readiness Gap Audit** | post-M3 | ⏳ Not started |
 | 4-1 | Infrastructure & Evaluation (trimmed) | M1 | 🟡 Health module (`/live`,`/ready`+real 503) ✅; Sentry + BullMQ scaffolding ✅; structured-logging/tracing items ⏳ |
 | 4-2 | Offline Sync Completion | M2 | 🟢 3-state connectivity + banner + queue expansion ✅ (staging field-test = 4-V) |
-| 4-3 | Push Notification — Hardening | M2 | 🟢 5 FCM triggers + `fcm-retry` BullMQ queue ✅ (processor stub; staging e2e = 4-V) |
+| 4-3 | Push Notification — Hardening | M2 + (completed Jun 9) | 🟢 **Feature-complete (Jun 9):** 8 FCM triggers + `fcm-retry` BullMQ + activity-tag (ADR-038); per-type **notification preferences** (table + GET/PATCH + `sendToUser` enforcement) + mobile prefs screen; **shift-reminder cron** (§C3, Redis-deduped) + **24h→offline cron** (§C4); **missing-worker hardening** (§C1 #8 — +kepala_rayon + sweeper notify + dedup). Remaining: staging e2e (4-V), web bell/panel (4-R web) |
 | 4-4 | Worker Reassignment Workflow | — | ⏳ Not started |
 | 4-5 | Export & Import Data | — | ⏳ Not started |
 | 4-6 | Real Data Seeder & Data Management | — | ⏳ Not started |
@@ -129,7 +129,9 @@ See [`status_reviews.md` § Revamp Acceptance Checklist](./status_reviews.md#rev
 | C2. Timezone verification (Asia/Jakarta) | ⏳ | |
 | C3. Conflict resolution (server-wins) | ⏳ | |
 
-### Sub-Phase 4-3: Push Notification Activation ⏳ NOT STARTED
+### Sub-Phase 4-3: Push Notification Activation ✅ COMPLETE (Jun 9, 2026)
+
+> Reconciled Jun 9: the original per-task table below predates the M2 + Jun-9 work. Actual state: **A1 (8 triggers) ✅, B1 (shift-reminder cron) ✅, B2 (stale/24h-offline cron) ✅, C1/C2 (preferences entity + CRUD) ✅, D1/D2/D3 (mobile token reg + foreground + NotificationsScreen) ✅, E3 (mobile preferences screen) ✅**. Remaining: E1/E2 web bell + `/dashboard/notifications` (tracked under 4-R web). Authoritative trail: [`status_progress.md`](./status_progress.md) Jun 9 entry.
 
 | Task | Status | Notes |
 |------|--------|-------|

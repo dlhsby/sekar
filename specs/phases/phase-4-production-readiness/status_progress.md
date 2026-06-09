@@ -4,6 +4,39 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 9, 2026 — 4-3 notification feature completed (backend) + 4-R rebrand residue cleared
+
+**Goal:** finish the notification milestone *with the backend* (the automation/preferences that were missing) and close the last cosmetic rebrand residue.
+
+**Pre-work scope correction (verified by grep, not docs):** the prior gap analysis over-counted the holes. All **8 core FCM triggers were already wired** — task assigned/completed/updated/declined (`notifyTaskLifecycleParty`), activity approved/rejected (`notifyActivityDecision` 615/675), overtime approved/rejected (280/320). Mobile **tap-routing already works** (RootNavigator `onNotificationOpened`/`getInitialNotification` on the FCM data payload), so the `sekar://` URL scheme is genuinely absent but **not needed** — left out of scope. The missing-worker alert already fires via the every-minute scheduler → `recalculate()`; only the 5-min sweeper's direct flips were silent.
+
+**N1 — Notification preferences (table + endpoints + enforcement, §D1/D2/D3):**
+- New `notification_preferences(user_id, notification_type, enabled)` entity + migration (`17480200000000`), unique on `(user_id, notification_type)`, default-on (absent row = enabled, so the table only stores opt-outs).
+- `NotificationPreferencesService` + `GET`/`PATCH /users/:id/notification-preferences` (owner-or-`USER_MANAGERS` authz). 9 configurable types synthesized to the full set on read.
+- **Enforcement gate** in `NotificationsService.sendToUser`: still writes the in-app inbox row (unread counts stay correct) but **suppresses the FCM push** when the type is disabled. Optional injection → fails open.
+
+**N2 — Shift-reminder cron (§C3):** new `cron/shift-reminder.cron.ts`, `@Cron('*/15 * * * *', Asia/Jakarta)`. Joins `schedules` × `shift_definitions`, fires `SHIFT_REMINDER` for shifts starting within 15 min; midnight-wrapping window; Redis `SET NX EX 86400` dedup keyed on the Jakarta day (fails safe → skip on Redis error). Added `schedules(effective_date, shift_definition_id)` index migration (`17480300000000`).
+
+**N3 — Missing-worker alert hardening (§C1 #8):** exposed `StatusCalculatorService.notifyMissingWorker` (was private), **added kepala_rayon recipients** (by `rayon_id`) alongside korlap, and **wired the 5-min sweeper** to call it for each ACTIVE→MISSING flip. Per-(worker, Jakarta-day) Redis dedup prevents the scheduler + sweeper double-firing; dedup fails **open** (a Redis blip never silences a safety alert).
+
+**N4 — Activity-tag notification (ADR-038):** wired the documented TODO — tagged users now get an `ACTIVITY_TAGGED` push on activity create (new enum value + migration `17480400000000`). Fire-and-forget; respects preferences.
+
+**N5 — Stale-status 24h→offline cron (§C4):** new hourly `OfflineSweeperService` marking `user_tracking_status` OFFLINE after 24h with no open shift (never deletes; logs count). Distinct from the 5-min MISSING sweeper.
+
+**N6 — Mobile per-type preferences screen (§E3):** `notificationsApi` gained `get/updateNotificationPreferences`; new `NotificationPreferencesScreen` with 9 grouped per-type toggles (optimistic PATCH, revert + toast on failure); registered in `MainStack`; the Settings "Push notifikasi" **cosmetic toggle is now a nav row** into the real screen.
+
+**R1 — Tagline → "Kinerja":** user-facing strings unified to "Sistem Evaluasi **Kinerja** Satgas RTH" (mobile Profile + Settings, web login + `<title>`; splash already said Kinerja) + the root canonical `CLAUDE.md`/`README.md`. **"SEKAR" retained as the brand acronym** (the expansion intentionally no longer spells it). Deeper internal spec/historical files still say "Kerja" — a separate optional sweep.
+
+**R2 — Legacy `theme.ts` removed:** migrated the only live consumers (`LoadingSpinner`, `AuthProvider`) to `nbTokens`; deleted 6 confirmed-dead Phase-2 components (Button/Card/TextInput/EmptyState/SkeletonLoader/SyncStatusIndicator) + their tests; trimmed the `common` barrel; deleted `constants/theme.ts` and its ESLint allowlist entry. The last legacy-token island is gone.
+
+**R3 — Raw `<Text>` → NBText:** the 11 remaining raw `<Text>` in `AvailabilityCalendar` now use `NBText` (style-preserving, zero pixel drift; imported direct to avoid the barrel cascade). Onboarding emoji `<Text>` left as non-semantic.
+
+**Verification:** backend `npm test` **95 suites / 1770 pass, 0 fail**; mobile `npm test` **207 suites / 4027 pass, 0 fail**; backend + mobile `tsc` 0; mobile `eslint` 0 errors. New specs: prefs service/controller, `sendToUser` suppression, shift-reminder cron, sweeper missing-worker notify + kepala_rayon + dedup, activity-tag, offline cron, mobile prefs screen + Settings nav. Web unaffected (2 string edits; the pre-existing `AreaDetailDrawer` tsc errors are unrelated).
+
+**🏁 Sub-phase 4-3 (Push Notification) is now feature-complete** — triggers + preferences + shift-reminder + 24h-offline crons + missing-worker hardening, all gated by per-user preferences. Remaining notification work is **staging E2E (4-V)** and the **web bell/panel (4-R web)**.
+
+---
+
 ## June 9, 2026 — Mobile code-health hardening: lint clean + react-hooks enforced + smoke test
 
 **Goal:** finish the cleanup arc — zero ESLint problems, the last failing test fixed, the React-hooks safety net restored, and an automated smoke test of the whole refactor.
