@@ -2,7 +2,7 @@
 
 **Status:** 🔵 In Progress — M3a+b entry flow shipped May 24; M1+M2 checkpoint May 25; M3 Home revamp Checkpoint 1 (shared chrome + role-aware dispatcher) shipped May 25, 2026
 **Last Updated:** June 9, 2026 (**Production-hardening batch** — 4-1 observability [structured JSON request logging + X-Request-ID tracing + slow-query interceptor], 4-7 security [Helmet CSP/HSTS, per-user throttle guard + upload cap, 39 DTO `@MaxLength`, N+1 verified], 4-0 brand assets [onboarding SVGs + **pinwheel mark rebranded across web**]; **notification inbox navigation polish** — slide-in from the header bell, deep-links return to the inbox, origin-aware + hardware/gesture-back hardened. Prior same-day: **4-3 Push Notification feature-complete on the backend** — per-type preferences + enforcement, shift-reminder + 24h-offline crons, missing-worker hardening, activity-tag, mobile prefs screen; **4-R mobile rebrand residue cleared**. See [`status_progress.md`](./status_progress.md) for the authoritative shipped trail)
-**Overall Progress:** ~55% (M1: 4-0 + 4-1 🟢 observability done · M2: 4-2 + 4-3 + 4-7 🟡 security-hardening done + Sentry + BullMQ + coverage · M3a+b: entry-flow gates + ADRs 040-042 Accepted; **remaining ~45% is web revamp, data tooling [4-4/4-5/4-6], and verification [4-9/4-V]**)
+**Overall Progress:** **~42%** (effort-weighted by per-sub-phase dev-days; corrected Jun 9 after a code-verified audit — the prior ~50-55% was optimistic). Done/near: 4-0 🟢 ~100% (brand assets B1-B6 all shipped — docs previously mislabeled B1-B4 ⏳), 4-1 🟢 ~90%, 4-2 🟢 100%, 4-3 🟢 ~95%. Partial: 4-7 🟡 ~45% (security/N+1/caching done; service refactors A1-A4 + E1-E2 + F1/G1 pending — the bulk of the largest sub-phase), 4-R 🟡 ~50% (mobile ~85%, web ~15% — token pipeline + bell stub only), 4-4 🟡 ~55% (mobile+backend reassignment shipped; web bulk + audit pending), 4-10 ~50%. **Not started: 4-5, 4-6, 4-8, 4-9 (Maestro), 4-V.** The heavy remaining mass is the web revamp, 4-7's refactor/optimization bulk, and the data-tooling + verification sub-phases.
 **Branch:** main (M1 + M2 + M3a+b committed in-tree pending PR)
 **Related ADRs:** [ADR-016](../../architecture/decisions/ADR-016-redis-websocket-scaling.md), [ADR-017](../../architecture/decisions/ADR-017-maestro-mobile-e2e.md), [ADR-018](../../architecture/decisions/ADR-018-export-format-strategy.md), [ADR-019](../../architecture/decisions/ADR-019-offline-connectivity-model.md), **NEW** [ADR-040](../../architecture/decisions/ADR-040-design-system-v2.1.md), [ADR-041](../../architecture/decisions/ADR-041-forgot-password-contact-admin.md), [ADR-042](../../architecture/decisions/ADR-042-onboarding-flow.md), [ADR-043](../../architecture/decisions/ADR-043-production-gap-closure.md)
 
@@ -51,21 +51,21 @@
 
 | Sub-Phase | Name | Milestone | Status |
 |-----------|------|-----------|--------|
-| **4-0** | **Design Bundle Adoption + Token Re-baseline** | M1 + (4-0 reconciled to design/ May 25) | 🟡 Token pipeline ✅ v2.1.1 (sage + hard-edge + 5-status + 9 role + lilac, matched to `design/`); **onboarding SVGs (B5) + PWA manifest/icons (B6) ✅ (Jun 9)**; app icon/splash/empty-state assets (B1-B4) ⏳ |
-| **4-R** | **UI/UX Revamp Sweep (mobile + web)** | M3a–d | 🟡 Mobile entry-flow ✅ + Home **role-aware anchor complete for ALL 9 roles** (shared masthead + tab bar + dispatcher; HOME-1 Field, HOME-2 Coordinator, HOME-3 Admin Data, + net-new Exec city-overview [top_mgmt/admin_sys/superadmin] + Kecamatan "my requests") ✅ + critical stale-`tokens.js` fix (v2.1 renders app-wide) ✅; Absensi/Tugas/Aktivitas/Lembur/Profile ✅; **Monitoring ✅ (M3: MON-1/2/3/4 — two-axis presence, activity chips, Lokasi filter, search modal + marker callout, BoundaryDetailModal on NBModal)**; **Perantingan ✅ (PRT CP1–CP5)**; **Notif prefs screen ✅ (Jun 9)**; **Notif inbox navigation ✅ (Jun 9 — slide-in from header bell [moved to MainStack], deep-links return to inbox, origin-aware back, Android-hardware/iOS-gesture-back hardened, FCM route-name fix)**; **brand assets ✅ (onboarding SVGs B5 + pinwheel mark across web B6)**; **mobile rebrand residue cleared (Jun 9)**; web revamp ⏳ |
+| **4-0** | **Design Bundle Adoption + Token Re-baseline** | M1 + (4-0 reconciled to design/ May 25) | 🟢 ~100% (code-verified Jun 9) — Token pipeline ✅ v2.1.1; **all brand assets B1-B6 shipped**: B1 pinwheel components (`SekarPinwheel`/`SekarMark`/`pinwheel.ts`), B2 app icons (iOS `icon-1024` + Android `ic_launcher*` via `generate-app-icon.mjs`), B3 splash (iOS `LaunchScreen` + Android `bootsplash`/`splash_logo` via `generate-splash.mjs`), B4 6 empty-state illustrations (`illustrations/index.tsx`, in use via NBEmptyState), B5 onboarding SVGs, B6 PWA pinwheel. Only A5 visual-diff snapshot + C1 ESLint sweep remain (minor) |
+| **4-R** | **UI/UX Revamp Sweep (mobile + web)** | M3a–d | 🟡 Mobile entry-flow ✅ + Home **role-aware anchor complete for ALL 9 roles** (shared masthead + tab bar + dispatcher; HOME-1 Field, HOME-2 Coordinator, HOME-3 Admin Data, + net-new Exec city-overview [top_mgmt/admin_sys/superadmin] + Kecamatan "my requests") ✅ + critical stale-`tokens.js` fix (v2.1 renders app-wide) ✅; Absensi/Tugas/Aktivitas/Lembur/Profile ✅; **Monitoring ✅ (M3: MON-1/2/3/4 — two-axis presence, activity chips, Lokasi filter, search modal + marker callout, BoundaryDetailModal on NBModal)**; **Perantingan ✅ (PRT CP1–CP5)**; **Notif prefs screen ✅ (Jun 9)**; **Notif inbox navigation ✅ (Jun 9 — slide-in from header bell [moved to MainStack], deep-links return to inbox, origin-aware back, Android-hardware/iOS-gesture-back hardened, FCM route-name fix)**; **brand assets ✅**; mobile rebrand residue cleared (Jun 9). **Mobile ~85%.** Web ~15% ⏳ — token pipeline (`generated/tokens.css`) shipped + header bell button (stub, `notificationCount` hardcoded), but the v2.1 page revamp, wired bell, and `/dashboard/notifications` page are pending. Overall 4-R ~50% |
 | **4-V** | **Production-Readiness Gap Audit** | post-M3 | ⏳ Not started |
 | 4-1 | Infrastructure & Evaluation (trimmed) | M1 | 🟢 Health module (`/live`,`/ready`+real 503) ✅; Sentry + BullMQ ✅; **structured logging + X-Request-ID tracing + slow-query interceptor ✅ (Jun 9)**; WS-stability/Docker audits ⏳ |
 | 4-2 | Offline Sync Completion | M2 | 🟢 3-state connectivity + banner + queue expansion ✅ (staging field-test = 4-V) |
 | 4-3 | Push Notification — Hardening | M2 + (completed Jun 9) | 🟢 **Feature-complete (Jun 9):** 8 FCM triggers + `fcm-retry` BullMQ + activity-tag (ADR-038); per-type **notification preferences** (table + GET/PATCH + `sendToUser` enforcement) + mobile prefs screen; **shift-reminder cron** (§C3, Redis-deduped) + **24h→offline cron** (§C4); **missing-worker hardening** (§C1 #8 — +kepala_rayon + sweeper notify + dedup). Remaining: staging e2e (4-V), web bell/panel (4-R web) |
-| 4-4 | Worker Reassignment Workflow | — | ⏳ Not started |
+| 4-4 | Worker Reassignment Workflow | — | 🟡 ~55% PARTIAL (code-verified Jun 9) — backend `monitoring-reassign.service.ts` + `reassign-worker.dto.ts` + `@Post('reassign')` ✅; mobile `ReassignWorkerModal.tsx` (+ tests) ✅; offline-queue `reassignment` type ✅. Remaining: web bulk-reassign modal + reassignment audit trail ⏳ |
 | 4-5 | Export & Import Data | — | ⏳ Not started |
 | 4-6 | Real Data Seeder & Data Management | — | ⏳ Not started |
-| 4-7 | Refactor, Optimization & Security | M2 (partial) | 🟡 JWT refresh rotation + Redis blacklist + strategy-level revocation (May 25) ✅; **Helmet + CORS + per-endpoint upload throttle + input-sanitization (39 DTO fields) + N+1 verified + Redis caching ✅ (Jun 9)**; service refactors (A1-A4) / timezone-date (E1-E2) / FE-opt (F1/G1) ⏳ |
+| 4-7 | Refactor, Optimization & Security | M2 (partial) | 🟡 ~45% (largest sub-phase; 7/17 tasks done). ✅ Security D-tier: JWT rotation + blacklist + revocation, Helmet + CORS + per-user upload throttle, input-sanitization (40 DTO files), N+1 verified, Redis caching (Jun 9). ⏳ **The bulk remains**: service refactors A1-A4 (BoundaryCheck/UserValidation/RoomJoin — none extracted), E1-E2 timezone/date audit, F1/G1 mobile+web perf passes |
 | 4-8 | Mobile & Web Production Hardening (trimmed) | — | ⏳ Not started |
-| 4-9 | E2E Testing | M3d (deferred) | ⏳ Maestro flows not started |
+| 4-9 | E2E Testing | M3d (deferred) | ⏳ Not started — Maestro mobile flows absent (`.maestro/flows/` empty). Web Playwright specs (`fe/web/e2e/` 01-08) pre-exist from Phase 2/3 — they are baseline, not the Phase-4 expansion |
 | 4-10 | Documentation Sync | ongoing | 🟡 Partial (this checkpoint syncs STATUS + design-tokens + COMPLETION_STATUS) |
 
-### Sub-Phase 4-0: Design Bundle Adoption + Token Re-baseline 🟡 TOKEN PIPELINE COMPLETE (brand assets pending)
+### Sub-Phase 4-0: Design Bundle Adoption + Token Re-baseline 🟢 ~COMPLETE (tokens + brand assets B1-B6 shipped; A5 visreg + C1 lint sweep minor)
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -74,10 +74,10 @@
 | A3. Update `specs/ui-ux/design-tokens.md` v2.1 note | ✅ | v2.1 + §v2.1.1 reconciliation appendix |
 | A4. Run `npm run tokens:build` | ✅ | Regenerated web `tokens.css` + mobile `tokens.ts`; `tokens:verify` clean; `test:tokens` 40/40 |
 | A5. Visual diff snapshot | ⏳ | Story-driven, key NB primitives (deferred to a visual-regression sub-phase) |
-| B1. Extract pinwheel SVG to brand assets | ⏳ | Mobile + web `brand/sekar-mark.svg` |
-| B2. Replace app icon (iOS + Android) | ⏳ | iOS AppIcon, Android adaptive icon |
-| B3. Replace splash screen (light/dark/green) | ⏳ | iOS LaunchScreen, Android splash |
-| B4. Ship 6 empty-state SVG illustrations | ⏳ | illo-reports/shifts/offline/location/search/personnel |
+| B1. Extract pinwheel SVG to brand assets | ✅ | mobile `components/brand/SekarPinwheel.tsx` + `SekarLogoBox.tsx`; web `components/brand/SekarMark.tsx` + `lib/brand/pinwheel.ts` (verified Jun 9) |
+| B2. Replace app icon (iOS + Android) | ✅ | iOS `AppIcon.appiconset/icon-1024.png`; Android `mipmap-*/ic_launcher*.png` (all densities) via `scripts/generate-app-icon.mjs` |
+| B3. Replace splash screen (light/dark/green) | ✅ | iOS `LaunchScreen.storyboard` + `SekarPinwheel.imageset`; Android `drawable/bootsplash.xml` + `drawable-*/splash_logo.png` via `scripts/generate-splash.mjs` |
+| B4. Ship 6 empty-state SVG illustrations | ✅ | `components/nb/illustrations/index.tsx` — IlloReports/Shifts/Offline/Location/Search/Personnel; used via NBEmptyState |
 | B5. Ship 3 onboarding scene SVGs | ✅ | `fe/mobile/.../illustrations/onboarding.tsx` — `OnbClockIn/OnbPhoto/OnbMonitor` ported to react-native-svg (token-mapped, no inline hex); `OnbClockIn` wired into Welcome hero. Permissions (per-row icons) + AreaPreview (documented hi-fi reconciliation) intentionally retained (Jun 9) |
 | B6. PWA manifest theme/icon update | ✅ | `manifest.webmanifest` themed (`theme_color #1A4D2E`, `background_color #F5F0EB`); **web rebranded to the pinwheel mark everywhere (Jun 9)** — `icons/icon.svg` (full-bleed) + `icon-maskable.svg` (safe-zone) + favicon/apple-touch route handlers (`@/lib/brand/pinwheel`) + `favicon.ico` + in-app `SekarMark` (sidebar + login); matches the mobile app's existing pinwheel |
 | C1. Token-compliance ESLint sweep | ⏳ | Fix repo-wide violations |
@@ -147,7 +147,7 @@ See [`status_reviews.md` § Revamp Acceptance Checklist](./status_reviews.md#rev
 | E2. Web /dashboard/notifications page | ⏳ | |
 | E3. Mobile notification preferences screen | ⏳ | |
 
-### Sub-Phase 4-4: Worker Reassignment Workflow ⏳ NOT STARTED
+### Sub-Phase 4-4: Worker Reassignment Workflow 🟡 ~55% PARTIAL (mobile+backend shipped; web bulk + audit pending)
 
 | Task | Status | Notes |
 |------|--------|-------|

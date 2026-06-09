@@ -4,6 +4,24 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 9, 2026 — Code-verified status audit + % re-baseline (~55% → ~42%)
+
+Audited every sub-phase against the actual code (not the docs) to remove false positives **and** false negatives. Net: the headline dropped from an optimistic ~50-55% to an effort-weighted **~42%**.
+
+**False negatives corrected (docs understated — raised the number):**
+- **4-0 brand assets** were marked B1-B4 ⏳ but are **fully shipped**: pinwheel components (mobile `SekarPinwheel`/`SekarLogoBox`, web `SekarMark`/`pinwheel.ts`), app icons (iOS `icon-1024` + Android `ic_launcher*` via `generate-app-icon.mjs`), splash (iOS `LaunchScreen` + Android `bootsplash`/`splash_logo` via `generate-splash.mjs`), 6 empty-state illustrations (`illustrations/index.tsx`, used via NBEmptyState). 4-0 → 🟢 ~100%.
+- **4-4 reassignment** was "⏳ Not started" but is **~55% partial**: backend `monitoring-reassign.service.ts` + `reassign-worker.dto.ts` + `@Post('reassign')`, mobile `ReassignWorkerModal.tsx` (+tests), offline-queue `reassignment` type all shipped. Remaining: web bulk modal + audit trail.
+
+**False positives avoided (no over-credit):**
+- **4-7** (largest sub-phase) is ~45% (7/17 tasks): security D-tier + N+1 + caching done, but service refactors A1-A4 (BoundaryCheck/UserValidation/RoomJoin — none extracted), E1-E2, F1/G1 are the unbuilt bulk.
+- **4-R web** is ~15% (token pipeline + a hardcoded-count header bell stub), not the "40%" a naive token-grep suggests — the dashboard pages are still Phase-2/3 NB, not the v2.1 revamp; no wired bell, no `/dashboard/notifications`.
+- **4-9** Maestro flows absent (`.maestro/flows/` empty); the `fe/web/e2e/` Playwright specs are Phase-2/3 baseline, not the Phase-4 expansion.
+- **4-5 / 4-6 / 4-8 / 4-V** confirmed not started (KMZ import is Phase-2, not 4-5 CSV/Excel; dev seeders are not the 4-6 production seeder; gap-audit doc is a template).
+
+**Effort-weighted recompute** (per-sub-phase dev-day midpoints × verified completion): 4-0 ~100%, 4-1 ~90%, 4-2 100%, 4-3 ~95%, 4-4 ~55%, 4-7 ~45%, 4-R ~50%, 4-10 ~50%; 4-5/4-6/4-8/4-9/4-V ~0% → **≈42% of ~77 dev-days**. `STATUS.md` grid + `COMPLETION_STATUS.md` headline updated to match.
+
+---
+
 ## June 9, 2026 — Production-hardening batch + pinwheel rebrand + notification inbox navigation
 
 Closed the remaining well-specified "partial holes" (4-1 / 4-7 / 4-0), rebranded the web to the pinwheel mark, then polished the notification inbox's navigation.
