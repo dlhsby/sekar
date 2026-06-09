@@ -4,6 +4,17 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 9, 2026 — 4-R web CP5 (LBR-1): overtime three-tab queue (hifi-web §08)
+
+Fifth checkpoint, anchor LBR-1. 4-R web ~55% → **~60%**. Flipped **LBR-1 ✅**.
+
+- **LBR-1 overtime** (`(dashboard)/overtime`): replaced the status dropdown with the `Tabs` **three-tab queue** (Semua / Menunggu / Disetujui / Ditolak), `PageHeader`, `StatusPill` status column (warn/ok/bad), kept inline Setujui/Tolak + reject dialog + date filters + pagination. Test updated for the tab UI (status labels now appear in both a tab and a pill; "Filter Status select" → tab assertions). 43/43 overtime tests green.
+- **TSK-1 (tasks kanban+table) / SCH-1 (schedules weekly grid) / activities:** the kanban board + weekly-grid are larger net-new builds with their own complex test suites; **queued as follow-ups** to land safely without rushing. Tracked as remaining 4-R web.
+
+**Verification:** `tsc` 0 · `eslint` 0 on changed files · `npm run build` green · **full jest 89 suites / 1688 pass**. **Next: CP6 — pruning detail + settings + kecamatan submit form.**
+
+---
+
 ## June 9, 2026 — 4-R web CP4: users + rayon detail (hifi-web §04–05)
 
 Fourth checkpoint. 4-R web ~45% → **~55%**. Flipped **USR-1 ✅, RAY-1 ✅**.

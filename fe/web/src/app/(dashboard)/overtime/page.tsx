@@ -11,11 +11,13 @@ import {
   Card,
   CardHeader,
   CardContent,
-  Badge,
   DataTable,
-  FormSelect,
   FormInput,
   Button,
+  PageHeader,
+  StatusPill,
+  Tabs,
+  type TabItem,
 } from '@/components/ui';
 import type { ColumnDef } from '@/components/ui/data-table';
 import { useRouter } from 'next/navigation';
@@ -24,7 +26,7 @@ import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
 import type { Overtime, OvertimeStatus } from '@/types/models';
 import { MONITORING_ROLES, OVERTIME_APPROVER_ROLES, hasRole } from '@/lib/constants/roles';
-import { OVERTIME_STATUS_LABELS, OVERTIME_STATUS_BADGES } from '@/lib/constants/overtime';
+import { OVERTIME_STATUS_LABELS } from '@/lib/constants/overtime';
 
 /**
  * Type guard for overtime status filter values
@@ -89,12 +91,18 @@ export default function OvertimePage() {
     setRejectReason('');
   };
 
-  const statusOptions = [
-    { value: 'all', label: 'Semua Status' },
-    { value: 'pending', label: 'Menunggu' },
-    { value: 'approved', label: 'Disetujui' },
-    { value: 'rejected', label: 'Ditolak' },
+  const statusTabs: TabItem<OvertimeStatus | 'all'>[] = [
+    { key: 'all', label: 'Semua' },
+    { key: 'pending', label: 'Menunggu' },
+    { key: 'approved', label: 'Disetujui' },
+    { key: 'rejected', label: 'Ditolak' },
   ];
+
+  const statusTone: Record<OvertimeStatus, 'ok' | 'warn' | 'bad'> = {
+    pending: 'warn',
+    approved: 'ok',
+    rejected: 'bad',
+  };
 
   const formatDateTime = (iso: string) => {
     const d = new Date(iso);
@@ -143,9 +151,9 @@ export default function OvertimePage() {
       key: 'status',
       header: 'Status',
       cell: (ot) => (
-        <Badge variant={OVERTIME_STATUS_BADGES[ot.status]} size="sm">
+        <StatusPill tone={statusTone[ot.status]} dot>
           {OVERTIME_STATUS_LABELS[ot.status]}
-        </Badge>
+        </StatusPill>
       ),
     },
     {
@@ -188,26 +196,29 @@ export default function OvertimePage() {
   const hasActiveFilters = statusFilter !== 'all' || fromDate || toDate;
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-nb-black">Lembur</h1>
-        <p className="text-nb-gray-600 mt-1">Kelola permintaan lembur</p>
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        breadcrumb="Operasional · Lembur"
+        title="Lembur"
+        description="Kelola permintaan lembur"
+      />
 
-      <Card variant="elevated">
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <FormSelect
-              label="Filter Status"
-              value={statusFilter}
-              onChange={(value) => {
-                if (isValidOvertimeStatus(value)) {
-                  setStatusFilter(value);
-                  setPage(1);
-                }
-              }}
-              options={statusOptions}
-            />
+      {/* Three-tab approval queue */}
+      <Tabs
+        tabs={statusTabs}
+        value={statusFilter}
+        onValueChange={(key) => {
+          if (isValidOvertimeStatus(key)) {
+            setStatusFilter(key);
+            setPage(1);
+          }
+        }}
+        aria-label="Filter status lembur"
+      />
+
+      <Card>
+        <CardContent className="p-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <FormInput
               label="Dari Tanggal"
               type="date"
@@ -231,6 +242,7 @@ export default function OvertimePage() {
           {hasActiveFilters && (
             <Button
               variant="secondary"
+              size="sm"
               onClick={() => {
                 setStatusFilter('all');
                 setFromDate('');

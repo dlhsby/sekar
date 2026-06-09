@@ -248,7 +248,8 @@ describe('OvertimePage', () => {
     it('should display the "Menunggu" status badge for a pending record', () => {
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      expect(screen.getByText('Menunggu')).toBeInTheDocument();
+      // "Menunggu" now appears both as a filter tab and the row status pill.
+      expect(screen.getAllByText('Menunggu').length).toBeGreaterThan(0);
     });
 
     it('should display the "Disetujui" status badge for an approved record', () => {
@@ -263,7 +264,8 @@ describe('OvertimePage', () => {
 
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      expect(screen.getByText('Disetujui')).toBeInTheDocument();
+      // Appears as both a filter tab and the row status pill.
+      expect(screen.getAllByText('Disetujui').length).toBeGreaterThan(0);
     });
 
     it('should display a Detail link for each row', () => {
@@ -459,10 +461,12 @@ describe('OvertimePage', () => {
       mockUseAuth.mockReturnValue({ user: adminSystemUser, loading: false });
     });
 
-    it('should render the Filter Status select', () => {
+    it('should render the status filter tabs', () => {
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      expect(screen.getByText(/filter status/i)).toBeInTheDocument();
+      // LBR-1: status filter is a three-tab queue (Semua/Menunggu/Disetujui/Ditolak).
+      expect(screen.getByRole('tab', { name: 'Semua' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Disetujui' })).toBeInTheDocument();
     });
 
     it('should render the Dari Tanggal date input', () => {
