@@ -4,6 +4,17 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 9, 2026 — 4-R web CP3: dashboard + monitoring (hifi-web §02–03)
+
+Third checkpoint. 4-R web ~35% → **~45%**. Flipped **DASH-1 ✅, MON-1 ✅**.
+
+- **DASH-1 dashboard** (`(dashboard)/page.tsx`): full rebuild replacing the **hardcoded stat strings** with real data. KPI grid (`KpiTile`): Petugas aktif (`active/total` from monitoring snapshot), Tugas (tasks `meta.total`), Perantingan masuk (pruning `status=submitted` total), Lembur menunggu (overtime `status=pending` total). Status `SectionCard`: CSS `conic-gradient` 5-status donut + legend + per-rayon bars (aggregated from `area_summaries` by `rayon_name`, colored by active/required ratio). Quick-action link tiles (Tugas baru / User baru [admin] / Jadwal). "Notifikasi terkini" feed = real `useNotifications` (first 5, deep-linked via `notificationToRoute`). Graceful "—" + "Status tidak tersedia" when the snapshot isn't available (e.g. a role without monitoring access). **Omitted the hi-fi 14-day completed-tasks sparkline** — no analytics endpoint exists and backend is out of scope (flagged, not faked).
+- **MON-1 monitoring** (`(dashboard)/monitoring/page.tsx`): the Phase-3 monitoring v2 already implements the MON-1 layout (full-bleed Mapbox + filter rail + side panel + area drawer) on the v2.1 5-status palette; CP3 reconciled the header typography to the `text-nb-h3` token. Map/cluster/drawer machinery untouched (kept its extensive test suite green).
+
+**Verification:** `tsc` 0 · `eslint` 0 on changed files · `npm run build` green · **full jest 89 suites / 1688 pass** (+dashboard smoke test: KPIs, per-rayon, deep-link). Independent web code review run. **Known:** 2 pre-existing `npm run lint` React-Compiler "memoization could not be preserved" warnings remain (`HierarchyFilterPanel`, pruning detail) — orthogonal to 4-R, left untouched to avoid behavior changes. **Next: CP4 — users / rayons / areas.**
+
+---
+
 ## June 9, 2026 — 4-R web CP2: entry flow & notifications inbox (hifi-web §01)
 
 Second checkpoint. 4-R web ~25% → **~35%**. Flipped Web rows **LOG-1 ✅, Forgot-password ✅, Notifications inbox ✅** in `status_reviews.md`.

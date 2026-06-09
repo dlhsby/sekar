@@ -494,7 +494,7 @@ export default function MonitoringPage() {
       {/* ── Header bar ────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-4 py-2 border-b-2 border-nb-black bg-white flex-shrink-0">
         <div className="min-w-0">
-          <h1 className="text-lg font-black text-nb-black leading-tight">
+          <h1 className="text-nb-h3 text-nb-black leading-tight">
             Monitoring Real-Time
           </h1>
           <div className="flex items-center gap-1.5">
