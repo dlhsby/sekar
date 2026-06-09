@@ -4,6 +4,26 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 9, 2026 — Mobile code-health hardening: lint clean + react-hooks enforced + smoke test
+
+**Goal:** finish the cleanup arc — zero ESLint problems, the last failing test fixed, the React-hooks safety net restored, and an automated smoke test of the whole refactor.
+
+**ESLint → 0 problems** (was 18 errors + 50 warnings at session start):
+- Cleared **50 → 0 `no-unused-vars` warnings** across 41 files (unused imports/vars; positional params prefixed `_`). Reverted a few over-eager agent removals that broke compilation (`setStepResults`/`setError`/`withAlpha`/`Platform` were still in use; two prop-destructure renames).
+- Cleared the 18 pre-existing **errors**: removed 13 dead `react-hooks/exhaustive-deps` disable directives (the plugin wasn't installed, so they errored as "rule not found"); removed 7 redundant `?? '#hex'` token fallbacks in `PermissionRevocationBanner`/`NotificationBell` (the generated tokens always resolve).
+
+**Pre-existing `usersApi.test` fixed (last failing suite):** `changePassword` uses `patch()`, but the test spied on `post()`, so the real `patch` (auto-mocked → undefined) threw into the generic-error catch. Switched the spies to `patch` → 5/5 green. **Full jest is now 0 failures.**
+
+**React-hooks linting restored:** installed + registered `eslint-plugin-react-hooks` in `eslint.config.js` (`rules-of-hooks: error`, `exhaustive-deps: warn`) — it had been referenced by disable-comments but never actually installed. **0 `rules-of-hooks` violations.** Worked through the 32 `exhaustive-deps` warnings it surfaced: 3 real fixes (`NBDatePicker` stable `setModalVisible` added ×2; `FieldHomeScreen` unnecessary `timer` dep removed) + 29 documented inline-disables for intentional mount/focus-once loaders (loaders `useCallback`'d below the effect = TDZ) and effects that deliberately key on `.id`/specific fields. No effect bodies changed.
+
+**Smoke test (automated):** production Metro bundles build clean for **both Android and iOS** (15M each) — the entire module graph resolves/transforms on both platforms, confirming the session's refactors (token sweeps, nbTypography→nbType, unused-import removals, type fixes) broke no imports. *(A manual device walkthrough is still recommended before release — visual/interaction/render-loop regressions can't be caught by bundle+tests.)*
+
+**Branch cleanup:** deleted the 6 merged local branches (`f/design-system-nb`, `f/phase-2-c/d`, `f/ui-ux-revamp`, `fix-be-lint`, `t/web-review`); only `main` + the unmerged `chore/security-audit-fix` remain.
+
+**Final mobile workspace state:** `tsc` 0 · `eslint .` 0 (hooks enforced) · jest 212 suites / 4223 tests, 0 failures · both prod bundles build.
+
+---
+
 ## June 9, 2026 — Project-wide TypeScript errors eliminated (679 → 0)
 
 **Goal:** drive the mobile workspace to a clean `tsc` typecheck. At session start `tsc --noEmit` reported **679** pre-existing errors (type-only — jest passes regardless since babel-jest strips types); the pruning cleanup took it to 539, and this pass cleared the rest across **~90 files**.
