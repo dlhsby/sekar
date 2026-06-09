@@ -278,6 +278,58 @@ describe('NotificationsService', () => {
         where: { user_id: 'user-uuid', is_active: true },
       });
     });
+
+    it('broadcast suppresses the push for users who disabled the type', async () => {
+      const isEnabled = jest
+        .fn()
+        .mockResolvedValueOnce(false) // user-1 opted out
+        .mockResolvedValueOnce(true); // user-2 still on
+      const localModule: TestingModule = await Test.createTestingModule({
+        providers: [
+          NotificationsService,
+          {
+            provide: getRepositoryToken(NotificationToken),
+            useValue: { find: jest.fn().mockResolvedValue([]), save: jest.fn() },
+          },
+          {
+            provide: getRepositoryToken(Notification),
+            useValue: {
+              create: jest.fn((x) => ({ ...mockNotification, ...x })),
+              save: jest.fn((rows) => Promise.resolve(rows)),
+            },
+          },
+          {
+            provide: UsersService,
+            useValue: {
+              findByRoles: jest.fn().mockResolvedValue([
+                { id: 'user-1', is_active: true },
+                { id: 'user-2', is_active: true },
+              ]),
+            },
+          },
+          { provide: NotificationPreferencesService, useValue: { isEnabled } },
+        ],
+      }).compile();
+      const svc = localModule.get<NotificationsService>(NotificationsService);
+      const tokenRepo = localModule.get(getRepositoryToken(NotificationToken)) as jest.Mocked<
+        Repository<NotificationToken>
+      >;
+
+      const result = await svc.broadcast({
+        title: 'T',
+        body: 'B',
+        type: NotificationType.TASK_ASSIGNED, // a configurable type
+        target_roles: [UserRole.SATGAS],
+      });
+
+      expect(isEnabled).toHaveBeenCalledTimes(2);
+      // Only user-2's push proceeds to token lookup; user-1 is suppressed.
+      expect(tokenRepo.find).toHaveBeenCalledTimes(1);
+      expect(tokenRepo.find).toHaveBeenCalledWith({
+        where: { user_id: 'user-2', is_active: true },
+      });
+      expect(result.sent).toBe(1);
+    });
   });
 
   describe('broadcast', () => {

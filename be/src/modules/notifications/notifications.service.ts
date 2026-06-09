@@ -261,8 +261,20 @@ export class NotificationsService {
     // Send push notifications asynchronously
     let sent = 0;
     let failed = 0;
+    let suppressed = 0;
 
     for (const notification of savedNotifications) {
+      // Phase 4-3 (§D3): honor per-type push preferences here too. Broadcasts
+      // normally use ANNOUNCEMENT/SYSTEM (non-configurable → always enabled),
+      // but if an admin broadcasts a configurable type, respect each user's
+      // opt-out. The in-app row is still written above; only the push is gated.
+      const pushEnabled = this.preferencesService
+        ? await this.preferencesService.isEnabled(notification.user_id, notification.type)
+        : true;
+      if (!pushEnabled) {
+        suppressed++;
+        continue;
+      }
       try {
         await this.sendPushNotification(notification);
         sent++;
@@ -272,7 +284,9 @@ export class NotificationsService {
       }
     }
 
-    this.logger.log(`Broadcast complete: ${sent} sent, ${failed} failed`);
+    this.logger.log(
+      `Broadcast complete: ${sent} sent, ${failed} failed, ${suppressed} suppressed by preference`,
+    );
 
     return { sent, failed };
   }

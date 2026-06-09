@@ -121,15 +121,17 @@ export function NotificationPreferencesScreen(): React.JSX.Element {
   const handleToggle = useCallback(
     async (type: string, next: boolean) => {
       if (!userId) return;
-      const previous = prefs[type] ?? true;
-      // Optimistic update.
+      // Optimistic update. `next` is always the flipped value (NBToggle calls
+      // onValueChange(!value)), so the pre-toggle state is exactly `!next` —
+      // no need to read `prefs` from the closure (avoids a stale-capture race
+      // on rapid toggles and keeps this callback stable across renders).
       setPrefs((p) => ({ ...p, [type]: next }));
       setSavingType(type);
       const res = await updateNotificationPreferences(userId, [{ type, enabled: next }]);
       setSavingType(null);
       if (res.error) {
         // Revert on failure.
-        setPrefs((p) => ({ ...p, [type]: previous }));
+        setPrefs((p) => ({ ...p, [type]: !next }));
         NBToast.show({
           level: 'danger',
           title: 'Gagal',
@@ -137,7 +139,7 @@ export function NotificationPreferencesScreen(): React.JSX.Element {
         });
       }
     },
-    [userId, prefs],
+    [userId],
   );
 
   if (loading) {
