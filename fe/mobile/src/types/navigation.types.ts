@@ -29,6 +29,8 @@ export type MainStackParamList = {
   NotificationPreferences: undefined;
   ShiftHistory: undefined;
   Diagnostics: undefined;
+  // Phase 4 M3d (NOTIF-1) — in-app notifications inbox; slide-in like Profile
+  Notifications: undefined;
 };
 
 export type MainStackScreenProps<T extends keyof MainStackParamList> =
@@ -57,8 +59,6 @@ export type MainTabParamList = {
   ShiftHistory: undefined;
   Settings: undefined;
   EditProfile: undefined;
-  // Phase 4 M3d (NOTIF-1) — in-app notifications inbox
-  Notifications: undefined;
   // Pruning Requests (admin_data flow)
   PruningReviewQueue: undefined;
   PruningDetail: { requestId: string; adminMode?: boolean };

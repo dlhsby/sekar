@@ -93,7 +93,10 @@ describe('NotificationsScreen', () => {
     const row = await findByTestId('notification-row-x');
     fireEvent.press(row);
     await waitFor(() => expect(mockMarkAsRead).toHaveBeenCalledWith('x'));
-    expect(mockNavigate).toHaveBeenCalledWith('TaskDetail', { taskId: 'task-42' });
+    expect(mockNavigate).toHaveBeenCalledWith('Tabs', {
+      screen: 'TaskDetail',
+      params: { taskId: 'task-42' },
+    });
   });
 
   it('deep-links to PruningDetail when pruning_request_id is present', async () => {
@@ -111,7 +114,10 @@ describe('NotificationsScreen', () => {
     );
     fireEvent.press(await findByTestId('notification-row-p'));
     await waitFor(() =>
-      expect(mockNavigate).toHaveBeenCalledWith('PruningDetail', { requestId: 'pr-7' }),
+      expect(mockNavigate).toHaveBeenCalledWith('Tabs', {
+        screen: 'PruningDetail',
+        params: { requestId: 'pr-7' },
+      }),
     );
   });
 

@@ -105,6 +105,7 @@ const NotificationPreferencesWithHeader = withProfileHeader(
 );
 const EditProfileWithHeader = withProfileHeader(EditProfileScreen, 'Edit Profil');
 const DiagnosticsWithHeader = withProfileHeader(DiagnosticsScreen, 'Diagnostik');
+const NotificationsWithHeader = withProfileHeader(NotificationsScreen, 'Notifikasi');
 
 interface TabConfig {
   name: keyof MainTabParamList;
@@ -348,17 +349,6 @@ function TabNavigator(): React.JSX.Element {
         })}
       />
       <Tab.Screen
-        name="Notifications"
-        component={NotificationsScreen}
-        options={({ navigation }) => ({
-          headerTitle: () => (
-            <FieldHomeHeader title="Notifikasi" onBack={() => navigation.goBack()} />
-          ),
-          tabBarButton: () => null,
-          tabBarStyle: { display: 'none' as const },
-        })}
-      />
-      <Tab.Screen
         name="PruningDetail"
         component={RequestDetailScreen}
         options={({ navigation, route }) => {
@@ -422,6 +412,13 @@ function MainNavigator(): React.JSX.Element {
       <MainStack.Screen
         name="EditProfile"
         component={EditProfileWithHeader}
+        options={{ animation: 'slide_from_left' }}
+      />
+      {/* Notifications inbox — slide-in from the header bell, matching the
+          Profile cluster. Deep-links into tab detail screens via navigate('Tabs', …). */}
+      <MainStack.Screen
+        name="Notifications"
+        component={NotificationsWithHeader}
         options={{ animation: 'slide_from_left' }}
       />
       <MainStack.Screen

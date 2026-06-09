@@ -101,10 +101,18 @@ export function NotificationsScreen(): React.JSX.Element {
       const taskId = typeof data.task_id === 'string' ? data.task_id : undefined;
       const requestId =
         typeof data.pruning_request_id === 'string' ? data.pruning_request_id : undefined;
+      // This screen now lives in the MainStack (slide-in); the detail targets live
+      // in the nested tab navigator, so navigate through 'Tabs'.
       if (taskId) {
-        (navigation.navigate as (...a: unknown[]) => void)('TaskDetail', { taskId });
+        (navigation.navigate as (...a: unknown[]) => void)('Tabs', {
+          screen: 'TaskDetail',
+          params: { taskId },
+        });
       } else if (requestId) {
-        (navigation.navigate as (...a: unknown[]) => void)('PruningDetail', { requestId });
+        (navigation.navigate as (...a: unknown[]) => void)('Tabs', {
+          screen: 'PruningDetail',
+          params: { requestId },
+        });
       }
     },
     [dispatch, navigation],
