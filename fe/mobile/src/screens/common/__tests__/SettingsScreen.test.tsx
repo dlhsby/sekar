@@ -7,6 +7,12 @@ import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import { SettingsScreen } from '../SettingsScreen';
 
+const mockNavigate = jest.fn();
+jest.mock('@react-navigation/native', () => ({
+  ...jest.requireActual('@react-navigation/native'),
+  useNavigation: () => ({ navigate: mockNavigate }),
+}));
+
 jest.mock('react-native-device-info', () => ({
   getVersion: jest.fn(() => '3.2.1'),
   getBuildNumber: jest.fn(() => '8421'),
@@ -57,10 +63,16 @@ describe('SettingsScreen', () => {
 
   it('toggles a switch when pressed', () => {
     const { getByTestId } = renderScreen();
-    const toggle = getByTestId('toggle-push');
-    expect(toggle.props.accessibilityState.checked).toBe(true); // default on
+    const toggle = getByTestId('toggle-sound');
+    expect(toggle.props.accessibilityState.checked).toBe(false); // default off
     fireEvent.press(toggle);
-    expect(toggle.props.accessibilityState.checked).toBe(false);
+    expect(toggle.props.accessibilityState.checked).toBe(true);
+  });
+
+  it('navigates to the notification preferences screen', () => {
+    const { getByTestId } = renderScreen();
+    fireEvent.press(getByTestId('nav-notification-preferences'));
+    expect(mockNavigate).toHaveBeenCalledWith('NotificationPreferences');
   });
 
   it('shows the "tersinkron" state when there is nothing pending', async () => {

@@ -26,6 +26,7 @@ export type MainStackParamList = {
   Profile: undefined;
   EditProfile: undefined;
   Settings: undefined;
+  NotificationPreferences: undefined;
   ShiftHistory: undefined;
   Diagnostics: undefined;
 };

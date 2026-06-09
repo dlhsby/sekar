@@ -33,6 +33,7 @@ import { MapDashboardScreen } from '../screens/monitoring/MapDashboardScreen';
 // Profile cluster (all live in MainStack, not the bottom tabs)
 import { ProfileScreen } from '../screens/common/ProfileScreen';
 import { SettingsScreen } from '../screens/common/SettingsScreen';
+import { NotificationPreferencesScreen } from '../screens/common/NotificationPreferencesScreen';
 import { EditProfileScreen } from '../screens/common/EditProfileScreen';
 import { DiagnosticsScreen } from '../screens/common/DiagnosticsScreen';
 
@@ -98,6 +99,10 @@ const headerChrome = { ...NB_HEADER_STYLE, justifyContent: 'center' as const };
 const ProfileWithHeader    = withProfileHeader(ProfileScreen,    'Profil');
 const ShiftHistoryWithHeader = withProfileHeader(ShiftHistoryScreen, 'Riwayat Shift');
 const SettingsWithHeader   = withProfileHeader(SettingsScreen,   'Pengaturan');
+const NotificationPreferencesWithHeader = withProfileHeader(
+  NotificationPreferencesScreen,
+  'Preferensi Notifikasi',
+);
 const EditProfileWithHeader = withProfileHeader(EditProfileScreen, 'Edit Profil');
 const DiagnosticsWithHeader = withProfileHeader(DiagnosticsScreen, 'Diagnostik');
 
@@ -407,6 +412,11 @@ function MainNavigator(): React.JSX.Element {
       <MainStack.Screen
         name="Settings"
         component={SettingsWithHeader}
+        options={{ animation: 'slide_from_left' }}
+      />
+      <MainStack.Screen
+        name="NotificationPreferences"
+        component={NotificationPreferencesWithHeader}
         options={{ animation: 'slide_from_left' }}
       />
       <MainStack.Screen

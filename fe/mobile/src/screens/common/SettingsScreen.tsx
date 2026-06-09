@@ -18,6 +18,9 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import DeviceInfo from 'react-native-device-info';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { MainStackParamList } from '../../types/navigation.types';
 import { NBBackgroundPattern, NBButton, NBText } from '../../components/nb';
 import { useProfileSync } from '../../hooks/useProfileSync';
 import {
@@ -90,6 +93,35 @@ function ToggleRow({
   );
 }
 
+interface NavRowProps {
+  label: string;
+  description?: string;
+  onPress: () => void;
+  isLast?: boolean;
+  testID?: string;
+}
+
+function NavRow({ label, description, onPress, isLast, testID }: NavRowProps): React.JSX.Element {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      testID={testID}
+      style={[styles.row, !isLast && styles.rowDivider]}
+    >
+      <View style={styles.rowText}>
+        <NBText variant="body-sm" color="black" style={styles.rowLabel}>{label}</NBText>
+        {description ? (
+          <NBText variant="mono-sm" color="gray600" style={styles.rowDescription}>{description}</NBText>
+        ) : null}
+      </View>
+      <MaterialCommunityIcons name="chevron-right" size={24} color={nbColors.gray600} />
+    </TouchableOpacity>
+  );
+}
+
 function SectionTitle({ children }: { children: string }): React.JSX.Element {
   return (
     <NBText variant="mono-sm" color="gray600" uppercase style={styles.sectionTitle}>
@@ -101,7 +133,8 @@ function SectionTitle({ children }: { children: string }): React.JSX.Element {
 // ─── Screen ─────────────────────────────────────────────────────────────────
 
 export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
-  const [pushNotifications, setPushNotifications] = useState(true);
+  const navigation =
+    useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const [soundVibrate, setSoundVibrate] = useState(false);
   const [backgroundTracking, setBackgroundTracking] = useState(true);
   const [dataSaver, setDataSaver] = useState(false);
@@ -133,12 +166,11 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
         {/* Notifikasi */}
         <SectionTitle>Notifikasi</SectionTitle>
         <View style={styles.card}>
-          <ToggleRow
-            label="Push notifikasi"
-            description="Tugas baru, peringatan, perubahan jadwal"
-            value={pushNotifications}
-            onToggle={setPushNotifications}
-            testID="toggle-push"
+          <NavRow
+            label="Preferensi notifikasi"
+            description="Pilih jenis notifikasi yang ingin diterima"
+            onPress={() => navigation.navigate('NotificationPreferences')}
+            testID="nav-notification-preferences"
           />
           <ToggleRow
             label="Suara & getar"
@@ -223,7 +255,7 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
 
         <View style={styles.appInfo}>
           <NBText variant="caption" color="gray400" align="center">
-            SEKAR — Sistem Evaluasi Kerja Satgas RTH
+            SEKAR — Sistem Evaluasi Kinerja Satgas RTH
           </NBText>
           <NBText variant="caption" color="gray400" align="center">
             DLH Surabaya 2026

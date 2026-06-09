@@ -4,7 +4,7 @@
  * Handles push notification registration and history for Phase 2.
  */
 
-import { get, post, put, del } from './apiClient';
+import { get, post, put, patch, del } from './apiClient';
 import type { ApiResponse } from '../../types/api.types';
 import type {
   RegisterDeviceRequest,
@@ -86,6 +86,40 @@ export async function getUnreadCount(): Promise<
   return get<{ count: number }>('/notifications/unread-count');
 }
 
+/**
+ * A single per-type push preference (Phase 4-3 §D2). `type` matches the
+ * backend NotificationType enum values (e.g. 'task_assigned').
+ */
+export interface NotificationPreference {
+  type: string;
+  enabled: boolean;
+}
+
+/**
+ * Get the current user's per-type push notification preferences.
+ * Returns the full configurable set (rows absent on the server default to
+ * enabled).
+ */
+export async function getNotificationPreferences(
+  userId: string,
+): Promise<ApiResponse<NotificationPreference[]>> {
+  return get<NotificationPreference[]>(`/users/${userId}/notification-preferences`);
+}
+
+/**
+ * Bulk-update the current user's per-type push notification preferences.
+ * Returns the full effective set after the update.
+ */
+export async function updateNotificationPreferences(
+  userId: string,
+  preferences: NotificationPreference[],
+): Promise<ApiResponse<NotificationPreference[]>> {
+  return patch<NotificationPreference[]>(
+    `/users/${userId}/notification-preferences`,
+    { preferences },
+  );
+}
+
 export default {
   registerDevice,
   unregisterDevice,
@@ -95,4 +129,6 @@ export default {
   markAllAsRead,
   broadcastNotification,
   getUnreadCount,
+  getNotificationPreferences,
+  updateNotificationPreferences,
 };
