@@ -64,15 +64,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 3,
     borderRadius: 0,
     borderWidth: nbBorders?.widthThin ?? 1,
-    borderColor: nbColors.black ?? '#1C1917',
-    backgroundColor: nbColors.danger ?? '#E53935',
+    borderColor: nbColors.black,
+    backgroundColor: nbColors.danger,
     justifyContent: 'center',
     alignItems: 'center',
   },
   badgeText: {
     fontSize: 9,
     fontWeight: '800',
-    color: nbColors.white ?? '#FFFFFF',
+    color: nbColors.white,
     lineHeight: 10,
   },
 });

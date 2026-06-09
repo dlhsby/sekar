@@ -199,7 +199,7 @@ export function UserDetailSheet({
       });
 
     return () => { cancelled = true; };
-  }, [user?.id]);  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   const handleCall = useCallback(() => {
     if (!user?.phone) { return; }

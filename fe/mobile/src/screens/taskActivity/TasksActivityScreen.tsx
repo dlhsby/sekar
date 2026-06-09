@@ -316,7 +316,6 @@ export function TasksActivityScreen({ navigation, route }: Props): React.JSX.Ele
   React.useEffect(() => {
     if (isFirstTaskRender.current) { isFirstTaskRender.current = false; return; }
     fetchTasks(1, true);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [taskFilter, statusFilter, dateFrom, dateTo, createdFrom, createdTo, taskSort]);
 
   // Re-fetch activities when filter/sort changes (after initial mount)
@@ -324,7 +323,6 @@ export function TasksActivityScreen({ navigation, route }: Props): React.JSX.Ele
   React.useEffect(() => {
     if (isFirstActivityRender.current) { isFirstActivityRender.current = false; return; }
     fetchActivities(1, true);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activityFilters, activitySort]);
 
   const activeFilterCount = useMemo(() => {

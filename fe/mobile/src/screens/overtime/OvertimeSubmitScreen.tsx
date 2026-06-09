@@ -257,7 +257,6 @@ export const OvertimeSubmitScreen: React.FC<
 
     return () => { isMounted = false; };
   // Run once after active-overtime check resolves
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoadingActive]);
 
   // ─── Draft: auto-save on reason / selfie change ─────────────────────────────
@@ -284,7 +283,6 @@ export const OvertimeSubmitScreen: React.FC<
     };
     void AsyncStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
   // reason is needed here for the blur snapshot
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFocused]);
 
   // ─── Back navigation with draft prompt (State A only) ───────────────────────

@@ -49,15 +49,15 @@ export function PermissionRevocationBanner({
       testID="permission-revocation-banner"
       style={({ pressed }) => [
         styles.container,
-        { backgroundColor: nbColors.warningLight ?? '#FFE08A' },
+        { backgroundColor: nbColors.warningLight },
         pressed ? styles.pressed : null,
       ]}
     >
       <View style={styles.row}>
-        <Text style={[styles.label, { color: nbColors.black ?? '#1C1917' }]} numberOfLines={2}>
+        <Text style={[styles.label, { color: nbColors.black }]} numberOfLines={2}>
           Izin {labelList} dinonaktifkan
         </Text>
-        <Text style={[styles.cta, { color: nbColors.black ?? '#1C1917' }]}>BUKA PENGATURAN</Text>
+        <Text style={[styles.cta, { color: nbColors.black }]}>BUKA PENGATURAN</Text>
       </View>
     </Pressable>
   );
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: nbBorders?.widthThick ?? 2.5,
-    borderBottomColor: nbColors.black ?? '#1C1917',
+    borderBottomColor: nbColors.black,
     ...(nbShadows?.sm ?? {}),
   },
   pressed: { opacity: 0.85 },

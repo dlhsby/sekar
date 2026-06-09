@@ -199,7 +199,6 @@ export function TaskFilterModal({
     } finally {
       setLoadingUsers(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, userRole]);
 
   const loadAllAreas = useCallback(async () => {

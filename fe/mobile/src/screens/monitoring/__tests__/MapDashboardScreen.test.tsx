@@ -8,7 +8,6 @@ jest.mock('@react-navigation/native', () => ({
   ...jest.requireActual('@react-navigation/native'),
   useFocusEffect: (cb: () => void) => {
     const React = require('react');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     React.useEffect(cb, []);
   },
   useNavigation: () => ({ navigate: jest.fn(), goBack: jest.fn() }),

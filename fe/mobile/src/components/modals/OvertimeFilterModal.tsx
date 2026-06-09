@@ -117,7 +117,6 @@ export function OvertimeFilterModal({
     } else {
       loadAllAreas();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, isAreaFixed, userRayonId, showRayon, canSelectRayon, isRayonFixed]);
 
   // Load users when area changes (unless field worker)
@@ -173,7 +172,6 @@ export function OvertimeFilterModal({
     } catch { /* non-critical */ } finally {
       setLoadingUsers(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, userRole]);
 
   const handleApply = useCallback(() => {

@@ -114,7 +114,6 @@ export const ClusteredUserMarkers = React.memo(function ClusteredUserMarkers({
   const clusters = useMemo(
     () => (shouldClusterNow ? buildClusters(workers) : null),
     // Re-cluster only when worker list or cluster mode changes — not on every zoom tweak
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [shouldClusterNow, workers],
   );
 
