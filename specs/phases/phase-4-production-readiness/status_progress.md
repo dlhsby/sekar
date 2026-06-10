@@ -14,8 +14,9 @@ User review of CP2 (entry flow). Six fixes landed; no % change (refinement of sh
 - **Force-reset-password parity (web, ADR-041):** web had no forced-change flow (mobile did). Added: `password_must_change` on the web `User` type, `authApi.changePassword`, `AuthContext.changePassword` (rotates tokens, clears flag), a forced-gate effect (flagged user → `/change-password`), `login` routes flagged users to `/change-password`, and a new forced `(auth)/change-password` page. **Test account: `resettest` / `password123`** (seed-phase1, `password_must_change=TRUE`).
 - **Login content (LOG-1 polish):** dropped "Konsol" copy + the "Live monitoring / Offline-safe" pills; added the SEKAR tagline **"Sistem Evaluasi Kinerja Satgas RTH"**, new brand-panel heading, and a new `components/brand/LoginHero.tsx` NB illustration (pinwheel sun + park/monitoring scene, tokenized SVG) to fill the panel. Eyebrow "Masuk ke konsol" → "Masuk ke SEKAR"; footer "admin@sekar" → "Admin".
 - **Admin notification seed:** `seed-phase1.ts` now seeds **8 notifications for `admin`** (5 unread, varied types incl. type-fallback deep-links to `/monitoring` + `/schedules`) so the web `/notifications` inbox has demo data. Survives full `db:seed` (only phase-1 truncates `notifications`).
+- **Follow-up tweaks:** extracted a shared `components/brand/BrandLockup.tsx` (pinwheel + SEKAR wordmark) and used it on **forgot-password** + **change-password** (wordmark now sits beside the pinwheel, not a bare logo box) and in login. Sidebar **nested-group header** now matches leaf-item typography with a single right-flush chevron that rotates (−90° collapsed → 0° expanded) for a consistent full-width row.
 
-**Verification:** web `tsc` 0 · `lint` 0 errors · `build` green · **jest 90 suites / 1697 pass** (+Toast suite, +changePassword/gate context tests). Backend `tsc` 0.
+**Verification:** web `tsc` 0 · `lint` 0 errors · `build` green · **jest 90 suites / 1697 pass** (+Toast suite, +changePassword/gate context tests). Backend `tsc` 0. **CP2 reviewed + signed off ✅.** (CP3 demo seed data — monitoring/dashboard — tracked separately.)
 
 ---
 

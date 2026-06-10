@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Eye, EyeOff } from 'lucide-react';
 import { FormInput, Button, useToast } from '@/components/ui';
-import { SekarLogoBox } from '@/components/brand/SekarLogoBox';
+import { BrandLockup } from '@/components/brand/BrandLockup';
 import { LoginHero } from '@/components/brand/LoginHero';
 import { useAuth } from '@/lib/auth/hooks';
 import { getErrorMessage } from '@/lib/api/client';
@@ -25,21 +25,6 @@ const loginSchema = z.object({
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
-
-/** Brand lockup reused in the brand panel (desktop) + the mobile form header. */
-function BrandLockup() {
-  return (
-    <div className="flex items-center gap-3">
-      <SekarLogoBox size={48} />
-      <div className="leading-tight">
-        <p className="font-heading text-2xl font-extrabold text-nb-black">SEKAR</p>
-        <p className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-nb-gray-700">
-          DLH Surabaya
-        </p>
-      </div>
-    </div>
-  );
-}
 
 /**
  * Login Form Component (wrapped in Suspense to fix CSR bailout)

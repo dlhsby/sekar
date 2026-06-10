@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ArrowLeft, Lock, MessageCircle, Phone } from 'lucide-react';
 
-import { SekarLogoBox } from '@/components/brand/SekarLogoBox';
+import { BrandLockup } from '@/components/brand/BrandLockup';
 import { SUPPORT_PHONE, SUPPORT_PHONE_TEL, SUPPORT_WHATSAPP } from '@/lib/constants/support';
 
 export const metadata = {
@@ -18,7 +18,7 @@ export default function ForgotPasswordPage() {
     <div className="flex min-h-screen items-center justify-center bg-nb-background p-4">
       <div className="w-full max-w-md">
         <div className="mb-6 flex justify-center">
-          <SekarLogoBox size={52} />
+          <BrandLockup size={44} subtitle={null} />
         </div>
 
         <div className="rounded-nb-md border-2 border-nb-black bg-nb-white p-6 shadow-nb-sm">

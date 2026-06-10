@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChevronDown, ChevronRight, X } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils/cn';
 import { Button } from './button';
@@ -194,17 +194,18 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
             type="button"
             onClick={() => toggleExpanded(item.id)}
             aria-expanded={expanded}
-            className={cn(itemBase(false, 0), 'text-left', hasActiveChild && !expanded && 'text-nb-black')}
+            className={cn(itemBase(false, 0), 'w-full text-left', hasActiveChild && !expanded && 'text-nb-black')}
           >
             {item.icon && (
               <span className="inline-flex size-[18px] flex-shrink-0 items-center justify-center [&_svg]:size-[18px]">
                 {item.icon}
               </span>
             )}
-            <span className="flex-1 truncate font-mono text-[11px] font-bold uppercase tracking-wide">
-              {item.label}
-            </span>
-            {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+            <span className="flex-1 truncate">{item.label}</span>
+            <ChevronDown
+              className={cn('size-4 flex-shrink-0 transition-transform duration-200', !expanded && '-rotate-90')}
+              aria-hidden="true"
+            />
           </button>
           {expanded && <div className="space-y-0.5">{children.map((c) => renderLink(c, 1))}</div>}
         </div>

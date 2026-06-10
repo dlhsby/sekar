@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { Eye, EyeOff, ShieldCheck } from 'lucide-react';
 
 import { FormInput, Button, useToast } from '@/components/ui';
-import { SekarLogoBox } from '@/components/brand/SekarLogoBox';
+import { BrandLockup } from '@/components/brand/BrandLockup';
 import { useAuth } from '@/lib/auth/hooks';
 import { getErrorMessage } from '@/lib/api/client';
 
@@ -66,7 +66,7 @@ export default function ChangePasswordPage() {
     <div className="flex min-h-screen items-center justify-center bg-nb-background p-4">
       <div className="w-full max-w-md">
         <div className="mb-6 flex justify-center">
-          <SekarLogoBox size={52} />
+          <BrandLockup size={44} subtitle={null} />
         </div>
 
         <div className="rounded-nb-md border-2 border-nb-black bg-nb-white p-6 shadow-nb-sm">
