@@ -29,6 +29,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
 import { USER_MANAGERS } from '../users/constants/role-groups';
+import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
 /**
  * Controller for schedule operations
@@ -78,9 +79,20 @@ export class SchedulesController {
     description: 'Return only currently active schedules',
     type: 'boolean',
   })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (1-based). When page/limit is passed the response is paginated.',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Items per page (default 20, max 100)',
+  })
   @ApiResponse({
     status: 200,
-    description: 'Schedules retrieved successfully',
+    description:
+      'Schedules retrieved successfully. Array by default; PaginatedResponseDto when page/limit query params are present (Phase 4-6 C2).',
     type: [Schedule],
   })
   @ApiResponse({
@@ -92,7 +104,21 @@ export class SchedulesController {
     @Query('areaId') areaId?: string,
     @Query('userId') userId?: string,
     @Query('activeOnly') activeOnly?: string,
-  ): Promise<Schedule[]> {
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ): Promise<Schedule[] | PaginatedResponseDto<Schedule>> {
+    if (page !== undefined || limit !== undefined) {
+      const pageNum = Math.max(1, parseInt(page ?? '1', 10) || 1);
+      const limitNum = Math.min(100, Math.max(1, parseInt(limit ?? '20', 10) || 20));
+      return this.schedulesService.findAllPaginated(
+        areaId,
+        userId,
+        activeOnly === 'true',
+        user,
+        pageNum,
+        limitNum,
+      );
+    }
     return this.schedulesService.findAll(areaId, userId, activeOnly === 'true', user);
   }
 

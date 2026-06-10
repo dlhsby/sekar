@@ -10,6 +10,7 @@ import { ShiftDefinitionsService } from '../shift-definitions/shift-definitions.
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { UpdateScheduleDto } from './dto/update-schedule.dto';
 import { UserRole } from '../users/entities/user.entity';
+import { TimezoneUtil } from '../../common/utils/timezone.util';
 
 describe('SchedulesService', () => {
   let module: TestingModule;
@@ -183,7 +184,8 @@ describe('SchedulesService', () => {
 
     it('should filter schedules by activeOnly', async () => {
       mockQueryBuilder.getMany.mockResolvedValue([mockSchedule]);
-      const today = new Date().toISOString().split('T')[0];
+      // activeOnly boundary is computed in Asia/Jakarta (Phase 4-7 E1)
+      const today = TimezoneUtil.jakartaDateString();
 
       await service.findAll(undefined, undefined, true);
 
@@ -198,7 +200,7 @@ describe('SchedulesService', () => {
 
     it('should apply all filters together', async () => {
       mockQueryBuilder.getMany.mockResolvedValue([mockSchedule]);
-      const today = new Date().toISOString().split('T')[0];
+      const today = TimezoneUtil.jakartaDateString();
 
       await service.findAll(mockArea.id, mockUser.id, true);
 

@@ -13,6 +13,7 @@ import { User, UserRole } from '../users/entities/user.entity';
 import { MONITORING_CITY } from '../users/constants/role-groups';
 import { CreateAreaDto } from './dto/create-area.dto';
 import { UpdateAreaDto } from './dto/update-area.dto';
+import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { AreaTypesService } from '../area-types/area-types.service';
 import {
   AreaBoundaryResponseDto,
@@ -83,6 +84,36 @@ export class AreasService {
         (areaType ? ` filtered by type: ${areaType}` : ''),
     );
 
+    const query = this.buildFindAllQuery(requester, areaType);
+    if (!query) return [];
+    return query.getMany();
+  }
+
+  /**
+   * Paginated variant of findAll (Phase 4-6 C2). Same scoping rules; used
+   * when the client passes page/limit query params.
+   */
+  async findAllPaginated(
+    requester: User,
+    areaType: string | undefined,
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<PaginatedResponseDto<Area>> {
+    const query = this.buildFindAllQuery(requester, areaType);
+    if (!query) return new PaginatedResponseDto<Area>([], 0, page, limit);
+
+    const [data, total] = await query
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+    return new PaginatedResponseDto(data, total, page, limit);
+  }
+
+  /**
+   * Shared findAll query builder. Returns null for rayon-scoped users with
+   * no rayon_id — they must see nothing (defensive cross-rayon guard).
+   */
+  private buildFindAllQuery(requester: User, areaType?: string) {
     const query = this.areaRepository
       .createQueryBuilder('area')
       .leftJoinAndSelect('area.areaType', 'areaType')
@@ -96,15 +127,12 @@ export class AreasService {
     const isCityRole = MONITORING_CITY.includes(requester.role as UserRole);
     if (!isCityRole) {
       if (!requester.rayon_id) {
-        // Rayon-scoped user without a rayon — return nothing. This shouldn't
-        // happen for healthy data but guards against accidental cross-rayon
-        // leakage during partial migrations.
-        return [];
+        return null;
       }
       query.andWhere('area.rayon_id = :rayonId', { rayonId: requester.rayon_id });
     }
 
-    return query.getMany();
+    return query;
   }
 
   /**

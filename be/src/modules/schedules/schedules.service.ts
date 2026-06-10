@@ -14,6 +14,8 @@ import { ShiftDefinitionsService } from '../shift-definitions/shift-definitions.
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { UpdateScheduleDto } from './dto/update-schedule.dto';
 import { User, UserRole } from '../users/entities/user.entity';
+import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
+import { TimezoneUtil } from '../../common/utils/timezone.util';
 
 /**
  * Service for managing schedules
@@ -49,7 +51,34 @@ export class SchedulesService {
     this.logger.log(
       `Fetching schedules with filters: areaId=${areaId}, userId=${userId}, activeOnly=${activeOnly}`,
     );
+    return this.buildFindAllQuery(areaId, userId, activeOnly, requestingUser).getMany();
+  }
 
+  /**
+   * Paginated variant of findAll (Phase 4-6 C2). Same filters/scoping; used
+   * when the client passes page/limit query params.
+   */
+  async findAllPaginated(
+    areaId: string | undefined,
+    userId: string | undefined,
+    activeOnly: boolean,
+    requestingUser: User | undefined,
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<PaginatedResponseDto<Schedule>> {
+    const [data, total] = await this.buildFindAllQuery(areaId, userId, activeOnly, requestingUser)
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+    return new PaginatedResponseDto(data, total, page, limit);
+  }
+
+  private buildFindAllQuery(
+    areaId?: string,
+    userId?: string,
+    activeOnly: boolean = false,
+    requestingUser?: User,
+  ) {
     const queryBuilder = this.scheduleRepository
       .createQueryBuilder('schedule')
       .leftJoinAndSelect('schedule.user', 'user')
@@ -75,14 +104,15 @@ export class SchedulesService {
     }
 
     if (activeOnly) {
-      const today = new Date().toISOString().split('T')[0];
+      // WIB day boundary (Phase 4-7 E1) — UTC is yesterday before 07:00 WIB
+      const today = TimezoneUtil.jakartaDateString();
       queryBuilder.andWhere('schedule.effective_date <= :today', { today });
       queryBuilder.andWhere('(schedule.end_date IS NULL OR schedule.end_date >= :today)', {
         today,
       });
     }
 
-    return queryBuilder.orderBy('schedule.effective_date', 'DESC').getMany();
+    return queryBuilder.orderBy('schedule.effective_date', 'DESC');
   }
 
   /**

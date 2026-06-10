@@ -370,6 +370,25 @@ export class ShiftsService {
   }
 
   /**
+   * Paginated shift history for a user (Phase 4-6 C2). Used when the client
+   * passes page/limit query params instead of the legacy last-50 behavior.
+   */
+  async findByUserIdPaginated(
+    userId: string,
+    page: number = 1,
+    limit: number = 20,
+  ): Promise<PaginatedResponseDto<Shift>> {
+    const [data, total] = await this.shiftRepository.findAndCount({
+      where: { user_id: userId },
+      relations: ['area', 'area.areaType'],
+      order: { clock_in_time: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+    return new PaginatedResponseDto(data, total, page, limit);
+  }
+
+  /**
    * Get all shifts for an area
    *
    * @param areaId Area UUID

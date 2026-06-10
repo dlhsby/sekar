@@ -24,6 +24,7 @@
     "db:seed:monitoring-demo": "ts-node -r tsconfig-paths/register src/database/seeds/seed-monitoring-demo.ts",
     "db:seed:reference": "ts-node -r tsconfig-paths/register src/database/seeds/seed-reference.ts",
     "db:seed:staging": "ts-node -r tsconfig-paths/register src/database/seeds/seed-staging.ts",
+    "db:seed:production": "ts-node -r tsconfig-paths/register src/database/seeds/seed-production.ts",
     "db:seed:loadtest": "ts-node -r tsconfig-paths/register src/database/seeds/seed-loadtest.ts",
     "db:reset": "npm run db:seed",
     "db:fix-orphans": "ts-node -r tsconfig-paths/register src/database/seeds/db-fix-orphans.ts",

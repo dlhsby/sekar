@@ -33,6 +33,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
 import { USER_MANAGERS, MONITORING_AREA } from '../users/constants/role-groups';
+import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
 /**
  * Controller for area management
@@ -104,16 +105,37 @@ export class AreasController {
     description: 'Filter by area type code (park, pedestrian, mini_garden, street)',
     example: 'park',
   })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (1-based). When page/limit is passed the response is paginated.',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Items per page (default 20, max 100)',
+  })
   @ApiResponse({
     status: 200,
-    description: 'Areas retrieved successfully',
+    description:
+      'Areas retrieved successfully. Array by default; PaginatedResponseDto when page/limit query params are present (Phase 4-6 C2).',
     type: [Area],
   })
   @ApiResponse({
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
   })
-  findAll(@GetUser() user: User, @Query('area_type') areaType?: string): Promise<Area[]> {
+  findAll(
+    @GetUser() user: User,
+    @Query('area_type') areaType?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ): Promise<Area[] | PaginatedResponseDto<Area>> {
+    if (page !== undefined || limit !== undefined) {
+      const pageNum = Math.max(1, parseInt(page ?? '1', 10) || 1);
+      const limitNum = Math.min(100, Math.max(1, parseInt(limit ?? '20', 10) || 20));
+      return this.areasService.findAllPaginated(user, areaType, pageNum, limitNum);
+    }
     return this.areasService.findAll(user, areaType);
   }
 

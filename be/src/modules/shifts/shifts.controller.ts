@@ -130,8 +130,11 @@ export class ShiftsController {
   @ApiOperation({
     summary: 'Get my shift history',
     description:
-      'Returns the last 50 shifts for the authenticated user, ordered by most recent first.',
+      'Returns the last 50 shifts for the authenticated user, ordered by most recent first. ' +
+      'Pass page/limit for a paginated response (Phase 4-6 C2).',
   })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Shift history',
@@ -145,7 +148,16 @@ export class ShiftsController {
     status: HttpStatus.FORBIDDEN,
     description: 'Only authorized users can view their shift history',
   })
-  async getMyShifts(@GetUser() user: User): Promise<Shift[]> {
+  async getMyShifts(
+    @GetUser() user: User,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ): Promise<Shift[] | PaginatedResponseDto<Shift>> {
+    if (page !== undefined || limit !== undefined) {
+      const pageNum = Math.max(1, parseInt(page ?? '1', 10) || 1);
+      const limitNum = Math.min(100, Math.max(1, parseInt(limit ?? '20', 10) || 20));
+      return this.shiftsService.findByUserIdPaginated(user.id, pageNum, limitNum);
+    }
     return this.shiftsService.findByUserId(user.id);
   }
 
