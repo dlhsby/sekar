@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import MonitoringPage from '../page';
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -409,9 +409,12 @@ describe('MonitoringPage Component', () => {
       expect(screen.getByText(/2 petugas terdeteksi/i)).toBeInTheDocument();
     });
 
-    it('should render the staffing summary card', () => {
+    it('should render the staffing summary card when the worker-list overlay is opened', () => {
       render(<MonitoringPage />, { wrapper: createWrapper() });
 
+      // The list + staffing are now a collapsible overlay over the full-width
+      // map (collapsed by default) — open it via the toggle, then assert.
+      fireEvent.click(screen.getByRole('button', { name: /daftar petugas/i }));
       expect(screen.getByTestId('staffing-summary')).toBeInTheDocument();
     });
 

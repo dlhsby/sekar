@@ -7,6 +7,11 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
+// Import the Mapbox stylesheet here (not only via globals.css): Tailwind v4
+// expands `@import "tailwindcss"` into real rules, which invalidates any later
+// CSS `@import`, so the global mapbox import was silently dropped and the canvas
+// never got sized — leaving the map blank. A JS import is order-independent.
+import 'mapbox-gl/dist/mapbox-gl.css';
 import { surabayaCenter } from '@/lib/maps/styles';
 import { cn } from '@/lib/utils/cn';
 import { STATUS_COLORS } from '@/lib/constants/monitoring';

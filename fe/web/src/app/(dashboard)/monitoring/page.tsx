@@ -81,6 +81,8 @@ export default function MonitoringPage() {
   // Panel state
   const [panelView, setPanelView] = useState<PanelView>('list');
   const [selectedUser, setSelectedUser] = useState<LiveUser | null>(null);
+  // Worker-list overlay (collapsed by default — the map is full-width).
+  const [listOpen, setListOpen] = useState(false);
   const [historyDate, setHistoryDate] = useState(() => new Date().toISOString().split('T')[0]);
 
   // Trail sync state (Phase 2D-10)
@@ -464,84 +466,86 @@ export default function MonitoringPage() {
         activeWorkerCount={snapshotTotals ? snapshotTotals.total_active : 0}
       />
 
-      {/* ── Main split layout ──────────────────────────────────────────────── */}
-      {/* Each cell carries its OWN viewport-relative height (vh) — no percentage
-          chain through the page-root/main, which never resolves to a definite
-          height and left the map canvas 0px. vh always resolves. */}
-      <div className="flex flex-col md:flex-row overflow-hidden gap-0 border-2 border-nb-black m-4 rounded-nb-base bg-white">
-        {/* Map — left side */}
-        <div className="relative md:flex-[62%] h-[70vh] overflow-hidden border-b-2 md:border-b-0 md:border-r-2 border-nb-black">
-          <MonitoringMap
-            users={mapUsers}
-            boundaries={boundariesData}
-            filters={mapFilters}
-            selectedUserId={selectedUser?.id ?? null}
-            onUserSelect={handleUserSelect}
-            onBoundaryClick={handleBoundaryClick}
-            trailPoints={panelView === 'timeline' ? locationHistory?.points : undefined}
-            trailSelectedIndex={panelView === 'timeline' ? trailSelectedIndex : undefined}
-            onTrailPointClick={setTrailSelectedIndex}
-            showOnlyTrailUser={showOnlyTrailUser}
-            layerVisibility={{
-              workers: layerVisibility.workers,
-              rayons: layerVisibility.rayons,
-              areas: layerVisibility.areas,
-            }}
-            className="h-full"
-          />
-          <MonitoringTogglePanel
-            value={layerVisibility}
-            onChange={handleLayerVisibilityChange}
-          />
-        </div>
+      {/* ── Full-width map ──────────────────────────────────────────────────── */}
+      {/* The map fills the full body width. The worker list + selected-worker
+          detail/timeline float OVER the map as overlays instead of a side panel.
+          Explicit viewport height (valid calc — underscores around the operator,
+          else Tailwind emits invalid CSS and the height collapses to 0). */}
+      <div className="relative w-full h-[calc(100vh_-_13rem)] min-h-[28rem] overflow-hidden border-2 border-nb-black m-4 rounded-nb-base bg-white">
+        <MonitoringMap
+          users={mapUsers}
+          boundaries={boundariesData}
+          filters={mapFilters}
+          selectedUserId={selectedUser?.id ?? null}
+          onUserSelect={handleUserSelect}
+          onBoundaryClick={handleBoundaryClick}
+          trailPoints={panelView === 'timeline' ? locationHistory?.points : undefined}
+          trailSelectedIndex={panelView === 'timeline' ? trailSelectedIndex : undefined}
+          onTrailPointClick={setTrailSelectedIndex}
+          showOnlyTrailUser={showOnlyTrailUser}
+          layerVisibility={{
+            workers: layerVisibility.workers,
+            rayons: layerVisibility.rayons,
+            areas: layerVisibility.areas,
+          }}
+          className="h-full"
+        />
+        <MonitoringTogglePanel value={layerVisibility} onChange={handleLayerVisibilityChange} />
 
-        {/* Side panel — right side */}
-        <div className="md:flex-[38%] h-[60vh] md:h-[70vh] min-h-0 flex flex-col overflow-hidden bg-white">
-          {panelView === 'list' && (
-            <>
-              <StaffingSummaryCard
-                filters={{
-                  rayon_id:
-                    filterState.scope !== 'city' && filterState.rayonId
-                      ? filterState.rayonId
-                      : undefined,
-                  area_id:
-                    filterState.scope === 'area' && filterState.areaId
-                      ? filterState.areaId
-                      : undefined,
-                }}
-                boundaries={boundariesData}
-                onReassign={handleReassign}
-              />
+        {/* Worker-list toggle (top-left), only in list view */}
+        {panelView === 'list' && (
+          <button
+            type="button"
+            onClick={() => setListOpen((o) => !o)}
+            className="absolute left-2 top-2 z-20 inline-flex items-center gap-1.5 rounded-nb-base border-2 border-nb-black bg-white px-3 py-1.5 text-xs font-bold shadow-nb-sm transition-shadow hover:shadow-nb-md"
+            aria-expanded={listOpen}
+          >
+            {listOpen ? 'Tutup daftar' : `Daftar petugas (${workerListItems.length})`}
+          </button>
+        )}
 
-              {/* Worker list header */}
-              <div className="px-3 py-2 border-b-2 border-nb-black flex-shrink-0">
-                <p className="text-nb-caption font-bold text-nb-gray-600 uppercase tracking-wide">
-                  Petugas ({workerListItems.length})
-                </p>
-              </div>
+        {/* Worker-list overlay (left) */}
+        {panelView === 'list' && listOpen && (
+          <div className="absolute left-2 top-12 bottom-2 z-20 flex w-72 max-w-[calc(100%_-_1rem)] flex-col overflow-hidden rounded-nb-base border-2 border-nb-black bg-white shadow-nb-md">
+            <StaffingSummaryCard
+              filters={{
+                rayon_id:
+                  filterState.scope !== 'city' && filterState.rayonId ? filterState.rayonId : undefined,
+                area_id:
+                  filterState.scope === 'area' && filterState.areaId ? filterState.areaId : undefined,
+              }}
+              boundaries={boundariesData}
+              onReassign={handleReassign}
+            />
+            <div className="flex-shrink-0 border-b-2 border-nb-black px-3 py-2">
+              <p className="text-nb-caption font-bold uppercase tracking-wide text-nb-gray-600">
+                Petugas ({workerListItems.length})
+              </p>
+            </div>
+            <WorkerListVirtual
+              workers={workerListItems}
+              onSelect={handleWorkerListSelect}
+              selectedUserId={selectedUser?.id}
+              className="flex-1"
+              aria-label="Daftar semua petugas aktif"
+            />
+          </div>
+        )}
 
-              {/* Worker list */}
-              <WorkerListVirtual
-                workers={workerListItems}
-                onSelect={handleWorkerListSelect}
-                selectedUserId={selectedUser?.id}
-                className="flex-1"
-                aria-label="Daftar semua petugas aktif"
-              />
-            </>
-          )}
-
-          {panelView === 'detail' && (
+        {/* Selected-worker detail / timeline overlay (right) */}
+        {panelView === 'detail' && (
+          <div className="absolute right-2 top-2 bottom-2 z-20 flex w-full max-w-sm flex-col overflow-y-auto rounded-nb-base border-2 border-nb-black bg-white shadow-nb-md">
             <UserDetailPanel
               summary={userDaySummary}
               isLoading={summaryLoading}
               onBack={handleBackToList}
               onViewLocationHistory={handleViewLocationHistory}
             />
-          )}
+          </div>
+        )}
 
-          {panelView === 'timeline' && (
+        {panelView === 'timeline' && (
+          <div className="absolute right-2 top-2 bottom-2 z-20 flex w-full max-w-sm flex-col overflow-y-auto rounded-nb-base border-2 border-nb-black bg-white shadow-nb-md">
             <LocationTimeline
               history={locationHistory}
               isLoading={historyLoading}
@@ -554,8 +558,8 @@ export default function MonitoringPage() {
               showOnlyThisUser={showOnlyTrailUser}
               onToggleShowOnly={setShowOnlyTrailUser}
             />
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* ── Area Detail Drawer ──────────────────────────────────────────────── */}
