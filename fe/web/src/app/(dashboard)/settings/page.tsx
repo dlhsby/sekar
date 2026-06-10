@@ -1,21 +1,55 @@
 /**
- * Settings Page
- * User profile and preferences
- * Access: Admin only
+ * Settings Page — SET-1 (Phase 4-R revamp).
+ *
+ * Tabbed shell scoped to backed surfaces only (no fabricated panels):
+ *   • Umum      — read-only identity + appearance (dark mode) + link to /profile
+ *   • Keamanan  — change password (POST /auth/change-password, rotates tokens)
+ *   • Notifikasi — per-type push toggles (GET/PATCH /users/:id/notification-preferences)
+ *
+ * Access: admin roles (reached via the avatar dropdown). The fake language
+ * toggle and stale "Phase 2" version strings from the old page are dropped.
  */
 
 'use client';
 
-import { Card, CardContent, CardHeader, Button } from '@/components/ui';
+import { useEffect, useMemo, useState } from 'react';
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { Moon, Sun, ArrowRight } from 'lucide-react';
+import { toast } from 'sonner';
+
+import {
+  Button,
+  FormInput,
+  SectionCard,
+  StatusPill,
+  Tabs,
+  type TabItem,
+} from '@/components/ui';
 import { useAuth } from '@/lib/auth/hooks';
 import { ADMIN_ROLES, hasRole } from '@/lib/constants/roles';
-import { redirect } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { authApi } from '@/lib/api/auth';
+import { getErrorMessage } from '@/lib/api/client';
+import { setAuthCookie } from '@/lib/utils/cookies';
+import { useThemeStore } from '@/stores/theme';
+import {
+  NOTIFICATION_TYPE_LABELS,
+  useNotificationPreferences,
+  useUpdateNotificationPreferences,
+  type NotificationPreference,
+} from '@/lib/api/notification-preferences';
+
+type SettingsTab = 'umum' | 'keamanan' | 'notifikasi';
+
+const TABS: TabItem<SettingsTab>[] = [
+  { key: 'umum', label: 'Umum' },
+  { key: 'keamanan', label: 'Keamanan' },
+  { key: 'notifikasi', label: 'Notifikasi' },
+];
 
 export default function SettingsPage() {
-  const { user, loading } = useAuth();
-  const [language, setLanguage] = useState<'id' | 'en'>('id');
-  const [notifications, setNotifications] = useState(true);
+  const { user, loading, refreshUser } = useAuth();
+  const [tab, setTab] = useState<SettingsTab>('umum');
 
   useEffect(() => {
     if (!loading && (!user || !hasRole(user.role, ADMIN_ROLES))) {
@@ -23,160 +57,269 @@ export default function SettingsPage() {
     }
   }, [user, loading]);
 
-  if (loading) {
+  if (loading || !user) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-nb-primary mx-auto mb-4"></div>
-          <p className="text-nb-gray-600">Memuat...</p>
-        </div>
+      <div className="flex min-h-[400px] items-center justify-center">
+        <p className="text-nb-gray-600">Memuat…</p>
       </div>
     );
   }
 
-  if (!user || !hasRole(user.role, ADMIN_ROLES)) {
-    return null;
+  if (!hasRole(user.role, ADMIN_ROLES)) return null;
+
+  return (
+    <div className="space-y-5">
+      <Tabs<SettingsTab> tabs={TABS} value={tab} onValueChange={setTab} aria-label="Pengaturan" />
+
+      {tab === 'umum' && <GeneralTab user={user} />}
+      {tab === 'keamanan' && <SecurityTab onChanged={refreshUser} />}
+      {tab === 'notifikasi' && <NotificationsTab userId={user.id} />}
+    </div>
+  );
+}
+
+/* ── Umum ─────────────────────────────────────────────────────────────────── */
+
+function GeneralTab({ user }: { user: { full_name: string; username: string; role: string } }) {
+  const theme = useThemeStore((s) => s.theme);
+  const init = useThemeStore((s) => s.init);
+  const setTheme = useThemeStore((s) => s.setTheme);
+
+  useEffect(() => {
+    init();
+  }, [init]);
+
+  const isDark = theme === 'dark';
+
+  return (
+    <div className="space-y-5">
+      <SectionCard
+        title="Identitas"
+        action={
+          <Button asChild variant="secondary" size="sm">
+            <Link href="/profile">
+              Ubah profil <ArrowRight className="ml-1 size-4" />
+            </Link>
+          </Button>
+        }
+      >
+        <dl className="space-y-2.5 text-nb-body-sm">
+          <Row label="Nama Lengkap" value={user.full_name} />
+          <Row label="Username" value={user.username} mono />
+          <Row
+            label="Peran"
+            value={<StatusPill tone="dark">{user.role.replace(/_/g, ' ')}</StatusPill>}
+          />
+        </dl>
+        <p className="mt-3 text-nb-caption text-nb-gray-600">
+          Nama lengkap dan foto profil dapat diubah di halaman Profil. Username dan peran
+          dikelola oleh administrator sistem.
+        </p>
+      </SectionCard>
+
+      <SectionCard title="Tampilan">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="font-semibold text-nb-black">Mode Gelap</p>
+            <p className="text-nb-caption text-nb-gray-600">
+              Beralih antara tema terang dan gelap untuk konsol ini.
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={isDark}
+            aria-label="Mode gelap"
+            onClick={() => setTheme(isDark ? 'light' : 'dark')}
+            className={`relative inline-flex h-7 w-14 shrink-0 items-center rounded-full border-2 border-nb-black transition-colors ${
+              isDark ? 'bg-nb-primary' : 'bg-nb-gray-200'
+            }`}
+          >
+            <span
+              className={`inline-flex size-5 items-center justify-center rounded-full border-2 border-nb-black bg-nb-white transition-transform ${
+                isDark ? 'translate-x-7' : 'translate-x-0.5'
+              }`}
+            >
+              {isDark ? <Moon className="size-3" /> : <Sun className="size-3" />}
+            </span>
+          </button>
+        </div>
+      </SectionCard>
+    </div>
+  );
+}
+
+/* ── Keamanan ─────────────────────────────────────────────────────────────── */
+
+function SecurityTab({ onChanged }: { onChanged: () => Promise<void> }) {
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const tooShort = newPassword.length > 0 && newPassword.length < 8;
+  const mismatch = confirm.length > 0 && confirm !== newPassword;
+  const canSubmit =
+    !!oldPassword && newPassword.length >= 8 && confirm === newPassword && !submitting;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canSubmit) return;
+    setSubmitting(true);
+    try {
+      // POST /auth/change-password rotates the token pair; replace the cookies
+      // so the next request authenticates with the fresh access token.
+      const res = await authApi.changePassword({
+        old_password: oldPassword,
+        new_password: newPassword,
+      });
+      setAuthCookie('access_token', res.access_token, { maxAge: 7 * 24 * 60 * 60 });
+      setAuthCookie('refresh_token', res.refresh_token, { maxAge: 30 * 24 * 60 * 60 });
+      await onChanged();
+      setOldPassword('');
+      setNewPassword('');
+      setConfirm('');
+      toast.success('Kata sandi berhasil diubah');
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <SectionCard title="Ubah Kata Sandi" className="max-w-xl">
+      <form className="space-y-4" onSubmit={handleSubmit}>
+        <FormInput
+          label="Kata Sandi Saat Ini"
+          type="password"
+          autoComplete="current-password"
+          value={oldPassword}
+          onChange={(e) => setOldPassword(e.target.value)}
+        />
+        <FormInput
+          label="Kata Sandi Baru"
+          type="password"
+          autoComplete="new-password"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          error={tooShort ? 'Minimal 8 karakter' : undefined}
+          helperText="Minimal 8 karakter"
+        />
+        <FormInput
+          label="Konfirmasi Kata Sandi Baru"
+          type="password"
+          autoComplete="new-password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          error={mismatch ? 'Konfirmasi tidak cocok' : undefined}
+        />
+        <Button type="submit" loading={submitting} disabled={!canSubmit}>
+          Simpan Kata Sandi
+        </Button>
+      </form>
+    </SectionCard>
+  );
+}
+
+/* ── Notifikasi ───────────────────────────────────────────────────────────── */
+
+function NotificationsTab({ userId }: { userId: string }) {
+  const { data, isLoading, isError } = useNotificationPreferences(userId);
+  const updateMutation = useUpdateNotificationPreferences(userId);
+  // Local toggle overrides keyed by type — derived against the server list at
+  // render time, so there's no setState-in-effect to sync props into state.
+  const [overrides, setOverrides] = useState<Record<string, boolean>>({});
+
+  const effective: NotificationPreference[] = useMemo(
+    () => (data ?? []).map((p) => ({ ...p, enabled: overrides[p.type] ?? p.enabled })),
+    [data, overrides],
+  );
+
+  const dirty = useMemo(
+    () => (data ?? []).some((s) => overrides[s.type] !== undefined && overrides[s.type] !== s.enabled),
+    [data, overrides],
+  );
+
+  const toggle = (type: string, current: boolean) => {
+    setOverrides((prev) => ({ ...prev, [type]: !current }));
+  };
+
+  const handleSave = async () => {
+    try {
+      await updateMutation.mutateAsync(effective);
+      setOverrides({});
+      toast.success('Preferensi notifikasi disimpan');
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    }
+  };
+
+  if (isLoading || !data) {
+    return (
+      <SectionCard title="Notifikasi">
+        <p className="py-4 text-nb-body-sm text-nb-gray-600">Memuat preferensi…</p>
+      </SectionCard>
+    );
+  }
+
+  if (isError) {
+    return (
+      <SectionCard title="Notifikasi">
+        <p className="py-4 text-nb-body-sm text-nb-danger">
+          Gagal memuat preferensi notifikasi. Coba lagi nanti.
+        </p>
+      </SectionCard>
+    );
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      {/* Header */}
-      <div>
-        <p className="text-nb-gray-600">Kelola profil dan preferensi Anda</p>
-      </div>
+    <SectionCard
+      title="Preferensi Notifikasi"
+      meta="Push per jenis"
+      className="max-w-xl"
+      action={
+        <Button size="sm" onClick={handleSave} loading={updateMutation.isPending} disabled={!dirty}>
+          Simpan
+        </Button>
+      }
+    >
+      <ul className="divide-y-2 divide-nb-gray-100">
+        {effective.map((pref) => (
+          <li key={pref.type} className="flex items-center justify-between gap-4 py-3">
+            <span className="text-nb-body-sm text-nb-black">
+              {NOTIFICATION_TYPE_LABELS[pref.type] ?? pref.type}
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={pref.enabled}
+              aria-label={NOTIFICATION_TYPE_LABELS[pref.type] ?? pref.type}
+              onClick={() => toggle(pref.type, pref.enabled)}
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border-2 border-nb-black transition-colors ${
+                pref.enabled ? 'bg-nb-primary' : 'bg-nb-gray-200'
+              }`}
+            >
+              <span
+                className={`inline-block size-4 rounded-full border-2 border-nb-black bg-nb-white transition-transform ${
+                  pref.enabled ? 'translate-x-5' : 'translate-x-0.5'
+                }`}
+              />
+            </button>
+          </li>
+        ))}
+      </ul>
+    </SectionCard>
+  );
+}
 
-      {/* User Profile Card */}
-      <Card variant="elevated">
-        <CardHeader>
-          <h2 className="text-xl font-bold text-nb-black">Profil Pengguna</h2>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-nb-gray-700 mb-1">
-                Nama Lengkap
-              </label>
-              <div className="text-nb-black font-medium">{user.full_name}</div>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-nb-gray-700 mb-1">Username</label>
-              <div className="text-nb-black font-medium">{user.username}</div>
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-nb-gray-700 mb-1">Role</label>
-              <div className="text-nb-black font-medium capitalize">{user.role}</div>
-            </div>
-            <p className="text-xs text-nb-gray-600 mt-4">
-              Untuk mengubah informasi profil, hubungi administrator sistem.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+/* ── shared ───────────────────────────────────────────────────────────────── */
 
-      {/* Password Change Card */}
-      <Card variant="elevated">
-        <CardHeader>
-          <h2 className="text-xl font-bold text-nb-black">Ubah Password</h2>
-        </CardHeader>
-        <CardContent>
-          <p className="text-nb-gray-600">
-            Fitur belum tersedia. Hubungi administrator sistem untuk mengubah password.
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Preferences Card */}
-      <Card variant="elevated">
-        <CardHeader>
-          <h2 className="text-xl font-bold text-nb-black">Preferensi</h2>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {/* Language Toggle */}
-            <div>
-              <label className="block text-sm font-semibold text-nb-gray-700 mb-2">
-                Bahasa / Language
-              </label>
-              <div className="flex gap-2">
-                <Button
-                  variant={language === 'id' ? 'default' : 'outline'}
-                  onClick={() => setLanguage('id')}
-                >
-                  Bahasa Indonesia
-                </Button>
-                <Button
-                  variant={language === 'en' ? 'default' : 'outline'}
-                  onClick={() => setLanguage('en')}
-                >
-                  English
-                </Button>
-              </div>
-              <p className="text-xs text-nb-gray-600 mt-2">
-                Note: Fitur multi-bahasa akan aktif di Phase 4.
-              </p>
-            </div>
-
-            {/* Notification Toggle */}
-            <div>
-              <label className="block text-sm font-semibold text-nb-gray-700 mb-2">
-                Notifikasi
-              </label>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={notifications}
-                  onClick={() => setNotifications(!notifications)}
-                  className={`
-                    relative inline-flex h-6 w-12 items-center rounded-none
-                    border-2 border-nb-black transition-colors
-                    ${notifications ? 'bg-nb-primary' : 'bg-nb-gray-300'}
-                  `}
-                >
-                  <span
-                    className={`
-                      inline-block h-4 w-4 transform bg-white border-2 border-nb-black
-                      transition-transform
-                      ${notifications ? 'translate-x-6' : 'translate-x-1'}
-                    `}
-                  />
-                </button>
-                <span className="text-sm text-nb-gray-700">
-                  {notifications ? 'Notifikasi Aktif' : 'Notifikasi Nonaktif'}
-                </span>
-              </div>
-              <p className="text-xs text-nb-gray-600 mt-2">
-                Aktifkan untuk menerima notifikasi push tentang tugas dan laporan.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* System Info Card */}
-      <Card variant="outlined">
-        <CardHeader>
-          <h2 className="text-xl font-bold text-nb-black">Informasi Sistem</h2>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2 text-sm divide-y divide-nb-black/10">
-            <div className="flex justify-between pb-2">
-              <span className="text-nb-gray-600">Versi Aplikasi:</span>
-              <span className="font-semibold text-nb-black">2.0.0 (Phase 2)</span>
-            </div>
-            <div className="flex justify-between py-2">
-              <span className="text-nb-gray-600">Environment:</span>
-              <span className="font-semibold text-nb-black">
-                {process.env.NODE_ENV || 'development'}
-              </span>
-            </div>
-            <div className="flex justify-between pt-2">
-              <span className="text-nb-gray-600">Last Updated:</span>
-              <span className="font-semibold text-nb-black">February 5, 2026</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+function Row({ label, value, mono }: { label: string; value: React.ReactNode; mono?: boolean }) {
+  return (
+    <div className="grid grid-cols-[140px_1fr] items-center gap-2">
+      <dt className="text-nb-gray-600">{label}</dt>
+      <dd className={mono ? 'font-mono text-[13px] text-nb-black' : 'text-nb-black'}>{value}</dd>
     </div>
   );
 }
