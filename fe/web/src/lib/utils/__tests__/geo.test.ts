@@ -82,6 +82,21 @@ describe('Geo Utilities', () => {
       expect(formatArea(1234.56)).toBe('1235 m²');
       expect(formatArea(15000.75)).toBe('1.50 ha');
     });
+
+    it('should coerce numeric strings (PostgreSQL numeric serializes to string)', () => {
+      // Regression: `coverage_area` arrives as "12500.50" and previously threw
+      // `squareMeters.toFixed is not a function`, crashing the areas page.
+      expect(formatArea('5000')).toBe('5000 m²');
+      expect(formatArea('12500.50')).toBe('1.25 ha');
+      expect(formatArea('0')).toBe('0 m²');
+    });
+
+    it('should fall back to em dash for non-finite input', () => {
+      expect(formatArea(null)).toBe('—');
+      expect(formatArea(undefined)).toBe('—');
+      expect(formatArea('abc')).toBe('—');
+      expect(formatArea(NaN)).toBe('—');
+    });
   });
 
   describe('calculatePolygonCenter', () => {

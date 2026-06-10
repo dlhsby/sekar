@@ -40,14 +40,28 @@ export function calculatePolygonArea(polygon: GeoJSON.Polygon): number {
 
 /**
  * Format area for display
- * Converts to hectares if > 10,000 m²
+ * Converts to hectares if > 10,000 m².
+ *
+ * Accepts `number | string` because PostgreSQL `numeric`/`decimal` columns are
+ * serialized to JSON as strings — `coverage_area` arrives as e.g. "12500.50".
+ * We coerce defensively and fall back to an em dash for non-finite values
+ * rather than throwing (`.toFixed is not a function`).
  */
-export function formatArea(squareMeters: number): string {
-  if (squareMeters >= 10000) {
-    const hectares = squareMeters / 10000;
-    return `${hectares.toFixed(2)} ha`;
+export function formatArea(squareMeters: number | string | null | undefined): string {
+  if (squareMeters === null || squareMeters === undefined || squareMeters === '') {
+    return '—';
   }
-  return `${squareMeters.toFixed(0)} m²`;
+
+  const value = typeof squareMeters === 'number' ? squareMeters : Number(squareMeters);
+
+  if (!Number.isFinite(value)) {
+    return '—';
+  }
+
+  if (value >= 10000) {
+    return `${(value / 10000).toFixed(2)} ha`;
+  }
+  return `${value.toFixed(0)} m²`;
 }
 
 /**
