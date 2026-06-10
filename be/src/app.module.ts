@@ -28,6 +28,7 @@ import { TasksModule } from './modules/tasks/tasks.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { MonitoringModule } from './modules/monitoring/monitoring.module';
 import { ImportModule } from './modules/import/import.module';
+import { ExportModule } from './modules/export/export.module';
 import { EventsModule } from './gateways/events.module';
 import { OvertimeModule } from './modules/overtime/overtime.module';
 import { UserAreasModule } from './modules/user-areas/user-areas.module';
@@ -130,6 +131,7 @@ import { QueueModule } from './modules/queue/queue.module';
     NotificationsModule, // Push notifications and FCM token management
     MonitoringModule, // Real-time monitoring and statistics
     ImportModule, // KMZ/KML import for areas
+    ExportModule, // Phase 4-5: CSV/XLSX/KMZ data export
     EventsModule, // WebSocket real-time events
     OvertimeModule, // Overtime submission and approval
     UserAreasModule, // User-area assignment management (Phase 2E)

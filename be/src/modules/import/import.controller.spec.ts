@@ -1,13 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import type { Response } from 'express';
 import { ImportController } from './import.controller';
 import { ImportService } from './import.service';
+import { CsvImportService } from './csv/csv-import.service';
+import { UserThrottlerGuard } from '../../common/guards/user-throttler.guard';
 import { UserRole, User } from '../users/entities/user.entity';
 import { KmzUploadResponseDto, KmzConfirmResponseDto } from './dto/kmz-import.dto';
 
 describe('ImportController', () => {
   let controller: ImportController;
   let service: jest.Mocked<ImportService>;
+  let csvService: jest.Mocked<CsvImportService>;
 
   const mockUser: User = {
     id: 'user-1',
@@ -77,11 +81,23 @@ describe('ImportController', () => {
             confirmImport: jest.fn(),
           },
         },
+        {
+          provide: CsvImportService,
+          useValue: {
+            validate: jest.fn(),
+            confirm: jest.fn(),
+            getTemplate: jest.fn(),
+          },
+        },
       ],
-    }).compile();
+    })
+      .overrideGuard(UserThrottlerGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<ImportController>(ImportController);
     service = module.get(ImportService);
+    csvService = module.get(CsvImportService);
   });
 
   afterEach(() => {
@@ -276,6 +292,58 @@ describe('ImportController', () => {
       const result = await controller.confirmImport(dto, adminUser);
 
       expect(result).toEqual(mockConfirmResponse);
+    });
+  });
+
+  describe('CSV import', () => {
+    const csvFile = { ...mockFile, originalname: 'users.csv' } as Express.Multer.File;
+
+    it('validates a users CSV via the service', async () => {
+      csvService.validate.mockResolvedValue({ validCount: 2, errors: [], sessionId: 'sess-1' });
+
+      const result = await controller.validateUsersCsv(csvFile, mockUser);
+
+      expect(csvService.validate).toHaveBeenCalledWith('users', csvFile, mockUser.id);
+      expect(result.sessionId).toBe('sess-1');
+    });
+
+    it('validates an areas CSV via the service', async () => {
+      csvService.validate.mockResolvedValue({ validCount: 0, errors: [] });
+
+      await controller.validateAreasCsv(csvFile, mockUser);
+
+      expect(csvService.validate).toHaveBeenCalledWith('areas', csvFile, mockUser.id);
+    });
+
+    it('commits a validated session', async () => {
+      csvService.confirm.mockResolvedValue({ imported: 5, skipped: 1, skippedReasons: ['x: dup'] });
+
+      const result = await controller.confirmCsv('sess-1', mockUser);
+
+      expect(csvService.confirm).toHaveBeenCalledWith('sess-1', mockUser.id);
+      expect(result.imported).toBe(5);
+    });
+
+    it('streams a CSV template for a known entity', () => {
+      csvService.getTemplate.mockReturnValue({
+        filename: 'users-template.csv',
+        content: 'username,full_name\r\n',
+      });
+      const res = { set: jest.fn(), send: jest.fn() } as unknown as Response;
+
+      controller.getTemplate('users', res);
+
+      expect(res.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          'Content-Disposition': 'attachment; filename="users-template.csv"',
+        }),
+      );
+      expect(res.send).toHaveBeenCalledWith('username,full_name\r\n');
+    });
+
+    it('rejects a template request for an unknown entity', () => {
+      const res = { set: jest.fn(), send: jest.fn() } as unknown as Response;
+      expect(() => controller.getTemplate('tasks', res)).toThrow(BadRequestException);
     });
   });
 });

@@ -62,6 +62,14 @@ export const MONITORING_AREA = [UserRole.KORLAP, ...MONITORING_RAYON];
 
 export const USER_MANAGERS = [UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN];
 
+// Phase 4-5 — data export. admin_system/superadmin export anything; kepala_rayon
+// is limited (in the service) to tasks/activities/overtime scoped to their rayon.
+export const EXPORTERS = [
+  UserRole.ADMIN_SYSTEM,
+  UserRole.SUPERADMIN,
+  UserRole.KEPALA_RAYON,
+];
+
 // May 11, 2026 — extended per the user clarification:
 //  - `admin_data` can assign to themselves (centralized-recap pattern),
 //    to kepala_rayon (delegating up the chain isn't normal but legal for

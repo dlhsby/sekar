@@ -2,7 +2,7 @@
 
 **Status:** 🔵 In Progress — M3a+b entry flow shipped May 24; M1+M2 checkpoint May 25; M3 Home revamp Checkpoint 1 (shared chrome + role-aware dispatcher) shipped May 25, 2026
 **Last Updated:** June 9, 2026 (**Production-hardening batch** — 4-1 observability [structured JSON request logging + X-Request-ID tracing + slow-query interceptor], 4-7 security [Helmet CSP/HSTS, per-user throttle guard + upload cap, 39 DTO `@MaxLength`, N+1 verified], 4-0 brand assets [onboarding SVGs + **pinwheel mark rebranded across web**]; **notification inbox navigation polish** — slide-in from the header bell, deep-links return to the inbox, origin-aware + hardware/gesture-back hardened. Prior same-day: **4-3 Push Notification feature-complete on the backend** — per-type preferences + enforcement, shift-reminder + 24h-offline crons, missing-worker hardening, activity-tag, mobile prefs screen; **4-R mobile rebrand residue cleared**. See [`status_progress.md`](./status_progress.md) for the authoritative shipped trail)
-**Overall Progress:** **~45%** (effort-weighted by per-sub-phase dev-days; code-verified). Done: **4-0 🟢 ~100%**, **4-1 🟢 100% (Jun 9 — room-based WS emit + mobile Sentry wired + audit note; staging checks → 4-V)**, **4-2 🟢 100%**, **4-3 🟢 100% (Jun 9 — type-filter added)**, **4-R mobile 🟢 100% / acceptance-signed-off (Jun 9)**. Partial: 4-7 🟡 ~45% (security/N+1/caching done; service refactors A1-A4 + E1-E2 + F1/G1 pending — the bulk of the largest sub-phase), 4-R web 🟢 100% (every hifi-web revamp frame shipped Jun 9–10 + acceptance gate closed: Playwright e2e harness modernized to ADR-009 roles/current routes, 33/33 green on chromium, responsive verified at 375/768/1280; Import/Export are NEW = 4-5, out of 4-R scope), 4-4 🟡 ~55% (mobile+backend reassignment shipped; web bulk + audit pending), 4-10 ~55%. **Not started: 4-5, 4-6, 4-8, 4-9 (Maestro), 4-V.** Remaining mass: the web revamp, 4-7's refactor/optimization bulk, and the data-tooling + verification sub-phases.
+**Overall Progress:** **~45%** (effort-weighted by per-sub-phase dev-days; code-verified). Done: **4-0 🟢 ~100%**, **4-1 🟢 100% (Jun 9 — room-based WS emit + mobile Sentry wired + audit note; staging checks → 4-V)**, **4-2 🟢 100%**, **4-3 🟢 100% (Jun 9 — type-filter added)**, **4-R mobile 🟢 100% / acceptance-signed-off (Jun 9)**. **4-5 🟢 100% (Jun 10 — CSV/XLSX/KMZ export + async export_jobs + retry cron + CSV import validate→confirm + web export/import/csv pages).** Partial: 4-7 🟡 ~45% (security/N+1/caching done; service refactors A1-A4 + E1-E2 + F1/G1 pending — the bulk of the largest sub-phase), 4-R web 🟢 100% (every hifi-web revamp frame shipped Jun 9–10 + acceptance gate closed: Playwright e2e harness modernized to ADR-009 roles/current routes, 33/33 green on chromium, responsive verified at 375/768/1280; Import/Export are NEW = 4-5, out of 4-R scope), 4-4 🟡 ~55% (mobile+backend reassignment shipped; web bulk + audit pending), 4-10 ~55%. **Not started: 4-6, 4-8, 4-9 (Maestro), 4-V.** Remaining mass: the web revamp, 4-7's refactor/optimization bulk, and the data-tooling + verification sub-phases.
 **Branch:** main (M1 + M2 + M3a+b committed in-tree pending PR)
 **Related ADRs:** [ADR-016](../../architecture/decisions/ADR-016-redis-websocket-scaling.md), [ADR-017](../../architecture/decisions/ADR-017-maestro-mobile-e2e.md), [ADR-018](../../architecture/decisions/ADR-018-export-format-strategy.md), [ADR-019](../../architecture/decisions/ADR-019-offline-connectivity-model.md), **NEW** [ADR-040](../../architecture/decisions/ADR-040-design-system-v2.1.md), [ADR-041](../../architecture/decisions/ADR-041-forgot-password-contact-admin.md), [ADR-042](../../architecture/decisions/ADR-042-onboarding-flow.md), [ADR-043](../../architecture/decisions/ADR-043-production-gap-closure.md)
 
@@ -58,7 +58,7 @@
 | 4-2 | Offline Sync Completion | M2 | 🟢 3-state connectivity + banner + queue expansion ✅ (staging field-test = 4-V) |
 | 4-3 | Push Notification — Hardening | M2 + (completed Jun 9) | 🟢 **Feature-complete (Jun 9):** 8 FCM triggers + `fcm-retry` BullMQ + activity-tag (ADR-038); per-type **notification preferences** (table + GET/PATCH + `sendToUser` enforcement) + mobile prefs screen; **shift-reminder cron** (§C3, Redis-deduped) + **24h→offline cron** (§C4); **missing-worker hardening** (§C1 #8 — +kepala_rayon + sweeper notify + dedup); **inbox type-filter (Semua/Tugas/Aktivitas/Lembur/Sistem) ✅ (Jun 9)**. Remaining: staging e2e (4-V), web bell/panel (4-R web) |
 | 4-4 | Worker Reassignment Workflow | — | 🟡 ~55% PARTIAL (code-verified Jun 9) — backend `monitoring-reassign.service.ts` + `reassign-worker.dto.ts` + `@Post('reassign')` ✅; mobile `ReassignWorkerModal.tsx` (+ tests) ✅; offline-queue `reassignment` type ✅. Remaining: web bulk-reassign modal + reassignment audit trail ⏳ |
-| 4-5 | Export & Import Data | — | ⏳ Not started |
+| 4-5 | Export & Import Data | — | 🟢 Done (Jun 10) — CSV/XLSX/KMZ export + async jobs + CSV import (validate→confirm) + web export/import/csv pages |
 | 4-6 | Real Data Seeder & Data Management | — | ⏳ Not started |
 | 4-7 | Refactor, Optimization & Security | M2 (partial) | 🟡 ~45% (largest sub-phase; 7/17 tasks done). ✅ Security D-tier: JWT rotation + blacklist + revocation, Helmet + CORS + per-user upload throttle, input-sanitization (40 DTO files), N+1 verified, Redis caching (Jun 9). ⏳ **The bulk remains**: service refactors A1-A4 (BoundaryCheck/UserValidation/RoomJoin — none extracted), E1-E2 timezone/date audit, F1/G1 mobile+web perf passes |
 | 4-8 | Mobile & Web Production Hardening (trimmed) | — | ⏳ Not started |
@@ -160,19 +160,21 @@ See [`status_reviews.md` § Revamp Acceptance Checklist](./status_reviews.md#rev
 | C1. Audit trail coverage for reassignment | ⏳ | |
 | C2. Audit trail completeness check | ⏳ | |
 
-### Sub-Phase 4-5: Export & Import Data ⏳ NOT STARTED
+### Sub-Phase 4-5: Export & Import Data 🟢 DONE (Jun 10, 2026)
 
 | Task | Status | Notes |
 |------|--------|-------|
-| A1. ExportModule scaffold | ⏳ | |
-| A2. CSV/Excel export via exceljs (ADR-018) | ⏳ | |
-| A3. Export endpoint (POST /export) | ⏳ | |
-| A4. Async export_jobs table | ⏳ | |
-| A5. 7 entity type exporters | ⏳ | |
-| B1. CSV import endpoints (users, areas) | ⏳ | |
-| C1. Web KMZ import page (/dashboard/import) | ⏳ | |
-| C2. Web export page (/dashboard/export) | ⏳ | |
-| C3. Web CSV import page (/dashboard/import/csv) | ⏳ | |
+| A1. ExportModule scaffold | 🟢 | `be/src/modules/export/` (entity, dto, exporters, controller, service, module) |
+| A2. CSV/Excel export via exceljs (ADR-018) | 🟢 | `exporters/csv.exporter.ts` (RFC-4180 + BOM), `excel.exporter.ts` (exceljs, styled header) |
+| A3. Export endpoint (POST /export) | 🟢 | `POST /export` (sync ≤5000 / 202 async), `GET /export/jobs`, `GET /export/jobs/:id` (15-min presigned URL); 5/min per-user throttle |
+| A4. Async export_jobs table | 🟢 | migration `17480500000000-CreateExportJobs` (run locally); `setImmediate` worker + 5-min retry cron (max 3) |
+| A5. 7 entity type exporters | 🟢 | users/areas/rayons/tasks/activities/overtime/schedules via `entity-datasets.ts`; KMZ exporter (areas) |
+| B1. CSV import endpoints (users, areas) | 🟢 | `POST /import/{users,areas}/csv` (validate) + `POST /import/confirm/:sessionId` (Redis session, 3/min) + `GET /import/template/:entity` |
+| C1. Web KMZ import page (/import) | 🟢 | upload→preview→confirm; area-type/rayon defaults for new areas; links to CSV import |
+| C2. Web export page (/export) | 🟢 | entity/format/date/rayon/area filters + async-job polling (3s) + 30-day history table |
+| C3. Web CSV import page (/import/csv) | 🟢 | 3-step wizard (template → upload → validate preview → commit) |
+
+> **Notes:** routes mount at `/export`, `/import`, `/import/csv` (dashboard group = root, not `/dashboard/*`). Commit route is `POST /import/confirm/:sessionId` (Redis session-keyed); template route is `GET /import/template/:entity`. The areas CSV template adds `area_type_id` (required) + required lat/lng since `areas` enforces those NOT NULL. New "Operasional" sidebar group (admin_system/superadmin; export also kepala_rayon, server-scoped). Tests: backend export 91% / exporters 100% / csv-import 95% (all suites green, 1853 pass); web export/import hooks 10 tests + nav updated (1692 pass); web build green. exceljs added to `be/package.json`.
 
 ### Sub-Phase 4-6: Real Data Seeder & Data Management ⏳ NOT STARTED
 
@@ -198,7 +200,7 @@ See [`status_reviews.md` § Revamp Acceptance Checklist](./status_reviews.md#rev
 | B2. QueryBuilder joins for identified patterns | ✅ | Already in place (see B1) |
 | C1. Redis caching (monitoring, staffing, role) | ✅ | `RedisService` + `MonitoringCacheService` wired across monitoring/auth/location |
 | C2. JwtStrategy role cache | ✅ | Intentionally absent — strategy validates via blacklist; JWT carries role claim, so no `auth:role` cache (spec §K2 secure end-state, no stale-role escalation window) |
-| D1. Per-endpoint rate limiting | 🟡 | `common/guards/user-throttler.guard.ts` (per-user tracker) + upload 10/min `@Throttle` on profile-picture (Jun 9); export 5/min + import-commit 3/min wiring deferred to their endpoints (4-5) |
+| D1. Per-endpoint rate limiting | 🟢 | `common/guards/user-throttler.guard.ts` (per-user tracker) + upload 10/min `@Throttle` on profile-picture (Jun 9); export 5/min (`POST /export`) + import-commit 3/min (`POST /import/confirm/:sessionId`) wired in 4-5 (Jun 10) |
 | D2. JWT refresh token rotation | ✅ | + Redis blacklist + strategy-level revocation (May 25) |
 | D3. Input sanitization audit | ✅ | 39 free-text DTO fields bounded with `@MaxLength` (Jun 9); no raw-SQL interpolation on user input |
 | D4. CORS tightening (production domains) | ✅ | env-driven `CORS_ORIGIN` in `main.ts`, throws if unset in production |

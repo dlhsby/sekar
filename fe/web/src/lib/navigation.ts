@@ -12,9 +12,15 @@ import {
   ClockIcon,
   InboxArrowDownIcon,
   ListBulletIcon,
+  ArrowUpTrayIcon,
+  ArrowDownTrayIcon,
+  CircleStackIcon,
 } from '@heroicons/react/24/outline';
 import { ComponentType } from 'react';
 import { ADMIN_ROLES, MONITORING_ROLES, TASK_MANAGER_ROLES } from '@/lib/constants/roles';
+
+/** Roles allowed to export data (kepala_rayon is scoped server-side). */
+const EXPORT_NAV_ROLES = [...ADMIN_ROLES, 'kepala_rayon'];
 
 /**
  * Navigation Item Interface
@@ -124,6 +130,31 @@ export const navigationItems: NavItem[] = [
     ],
   },
 
+  // ── Operasional: data export / import (Phase 4-5) ──────────────────────
+  {
+    id: 'operations',
+    label: 'Operasional',
+    href: '#',
+    icon: CircleStackIcon,
+    roles: [...EXPORT_NAV_ROLES],
+    children: [
+      {
+        id: 'export',
+        label: 'Ekspor Data',
+        href: '/export',
+        icon: ArrowDownTrayIcon,
+        roles: [...EXPORT_NAV_ROLES],
+      },
+      {
+        id: 'import',
+        label: 'Impor Data',
+        href: '/import',
+        icon: ArrowUpTrayIcon,
+        roles: [...ADMIN_ROLES],
+      },
+    ],
+  },
+
   // ── Phase 3: staff_kecamatan minimal navigation (ADR-033) ──────────────
   // Monitoring is intentionally ABSENT for this role. Submit pages live at
   // /pruning-submit so they don't collide with the admin /pruning-requests
@@ -196,6 +227,9 @@ const ROUTE_TITLES: Record<string, string> = {
   '/settings': 'Pengaturan',
   '/profile': 'Profil Saya',
   '/notifications': 'Notifikasi',
+  '/export': 'Ekspor Data',
+  '/import': 'Impor Data',
+  '/import/csv': 'Impor CSV',
 };
 
 /**
@@ -233,6 +267,9 @@ const ROUTE_BREADCRUMB: Record<string, string[]> = {
   '/settings': ['Akun', 'Pengaturan'],
   '/profile': ['Akun', 'Profil'],
   '/notifications': ['Akun', 'Notifikasi'],
+  '/export': ['Operasional', 'Ekspor Data'],
+  '/import': ['Operasional', 'Impor Data'],
+  '/import/csv': ['Operasional', 'Impor CSV'],
 };
 
 const DYNAMIC_CRUMB: Record<string, string> = { new: 'Baru', edit: 'Ubah' };

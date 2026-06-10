@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Body,
+  Res,
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -11,6 +12,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
   ApiOperation,
@@ -19,18 +21,39 @@ import {
   ApiConsumes,
   ApiBody,
 } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
-import { User, UserRole } from '../users/entities/user.entity';
+import { User } from '../users/entities/user.entity';
 import { USER_MANAGERS } from '../users/constants/role-groups';
+import { UserThrottlerGuard } from '../../common/guards/user-throttler.guard';
 import { ImportService } from './import.service';
+import { CsvImportService } from './csv/csv-import.service';
+import { isCsvImportEntity } from './csv/csv-templates';
+import { CsvValidationResponseDto, CsvCommitResponseDto } from './dto/csv-import.dto';
 import {
   KmzUploadResponseDto,
   KmzConfirmRequestDto,
   KmzConfirmResponseDto,
 } from './dto/kmz-import.dto';
+
+/** Multer config shared by CSV upload endpoints (1MB, .csv only). */
+const CSV_UPLOAD = {
+  limits: { fileSize: 1 * 1024 * 1024 },
+  fileFilter: (
+    _req: unknown,
+    file: Express.Multer.File,
+    cb: (error: Error | null, accept: boolean) => void,
+  ) => {
+    if (file.originalname.toLowerCase().endsWith('.csv')) {
+      cb(null, true);
+    } else {
+      cb(new BadRequestException('Only CSV files are allowed'), false);
+    }
+  },
+};
 
 /**
  * Controller for KMZ/KML import operations
@@ -45,7 +68,79 @@ import {
 @Controller('import')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ImportController {
-  constructor(private readonly importService: ImportService) {}
+  constructor(
+    private readonly importService: ImportService,
+    private readonly csvImportService: CsvImportService,
+  ) {}
+
+  /**
+   * Download an empty CSV template (header row only) for an importable entity.
+   */
+  @Get('template/:entity')
+  @Roles(...USER_MANAGERS)
+  @ApiOperation({ summary: 'Download a CSV import template' })
+  @ApiResponse({ status: 200, description: 'CSV template file' })
+  getTemplate(@Param('entity') entity: string, @Res() res: Response): void {
+    if (!isCsvImportEntity(entity)) {
+      throw new BadRequestException('Template is only available for: users, areas');
+    }
+    const { filename, content } = this.csvImportService.getTemplate(entity);
+    res.set({
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    });
+    res.send(content);
+  }
+
+  /** Validate a users CSV and stash valid rows for confirmation. */
+  @Post('users/csv')
+  @Roles(...USER_MANAGERS)
+  @UseInterceptors(FileInterceptor('file', CSV_UPLOAD))
+  @ApiOperation({ summary: 'Validate a users CSV (preview before commit)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } },
+  })
+  @ApiResponse({ status: 201, type: CsvValidationResponseDto })
+  async validateUsersCsv(
+    @UploadedFile() file: Express.Multer.File,
+    @GetUser() user: User,
+  ): Promise<CsvValidationResponseDto> {
+    return this.csvImportService.validate('users', file, user.id);
+  }
+
+  /** Validate an areas CSV and stash valid rows for confirmation. */
+  @Post('areas/csv')
+  @Roles(...USER_MANAGERS)
+  @UseInterceptors(FileInterceptor('file', CSV_UPLOAD))
+  @ApiOperation({ summary: 'Validate an areas CSV (preview before commit)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } },
+  })
+  @ApiResponse({ status: 201, type: CsvValidationResponseDto })
+  async validateAreasCsv(
+    @UploadedFile() file: Express.Multer.File,
+    @GetUser() user: User,
+  ): Promise<CsvValidationResponseDto> {
+    return this.csvImportService.validate('areas', file, user.id);
+  }
+
+  /** Commit a previously-validated CSV import session. */
+  @Post('confirm/:sessionId')
+  @Roles(...USER_MANAGERS)
+  @UseGuards(UserThrottlerGuard)
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @ApiOperation({ summary: 'Commit a validated CSV import session' })
+  @ApiResponse({ status: 201, type: CsvCommitResponseDto })
+  @ApiResponse({ status: 403, description: 'Not the session owner' })
+  @ApiResponse({ status: 404, description: 'Session not found or expired' })
+  async confirmCsv(
+    @Param('sessionId', ParseUUIDPipe) sessionId: string,
+    @GetUser() user: User,
+  ): Promise<CsvCommitResponseDto> {
+    return this.csvImportService.confirm(sessionId, user.id);
+  }
 
   /**
    * Upload and parse KMZ/KML file

@@ -4,6 +4,16 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 10, 2026 — 🏁 4-5 Export & Import Data shipped (backend + web)
+
+Built sub-phase **4-5 end-to-end** (0% → 🟢 100%). Independent of the other open sub-phases; specs `backend.md §E/§F`, `web.md §A/B/C`, ADR-018.
+
+- **Backend export** (`be/src/modules/export/`): `ExportJob` entity + migration `17480500000000-CreateExportJobs` (CHECK constraints + `idx_export_jobs_user_status`; **run locally, verified**). `POST /export` streams ≤5000 rows inline (CSV/XLSX/KMZ) or returns **202** + a job for larger sets; `setImmediate` worker uploads to S3 and a `@Cron('*/5')` retry cron re-fires stuck jobs (max 3 → failed). `GET /export/jobs` (30-day history) + `GET /export/jobs/:id` (fresh **15-min presigned URL**, owner-guarded). Exporters: `csv` (RFC-4180 + BOM), `excel` (exceljs, styled header), `kmz` (jszip + KML); 7 entity dataset builders. kepala_rayon scoped to own-rayon tasks/activities/overtime. **5/min per-user throttle** via `UserThrottlerGuard`.
+- **Backend CSV import** (`be/src/modules/import/csv/`): `POST /import/{users,areas}/csv` validate → row-level `{row,column,value,message}` errors + a **Redis session** (`import:{id}`, 1h TTL) of valid rows; `POST /import/confirm/:sessionId` (owner-guarded, **3/min**) inserts via the existing Users/Areas services; `GET /import/template/:entity` streams a header-only CSV. Areas template adds `area_type_id` + required lat/lng (areas enforce them NOT NULL).
+- **Web** (`fe/web`): `lib/api/export.ts` + `import.ts` hooks (blob-vs-202 handling, 3s job polling, FormData uploads, template download). Pages `/export` (filters + async polling + 30-day history), `/import` (KMZ upload→preview→confirm with area-type/rayon defaults), `/import/csv` (template→upload→validate-preview→commit wizard). New **"Operasional"** sidebar group (admin_system/superadmin; export also kepala_rayon) + route titles/breadcrumbs.
+- **Decisions/notes:** commit route is `POST /import/confirm/:sessionId` (Redis session-keyed; the `/import/:type/commit` variant in §F1 was dropped); template route is singular `GET /import/template/:entity`; routes mount at root (`/export`, not `/dashboard/export`). `exceljs` added to `be/package.json`.
+- **Verified:** backend `tsc` 0 / `eslint` 0 / **103→104 suites, 1853 pass**; new-module coverage export **91%** / exporters **100%** / csv-import **95%** (all >80%). Backend **boots clean** (ExportModule/ImportModule init, both controllers mounted). Web `tsc` 0 / `eslint` 0 / **97 suites, 1692 pass** (+10 hook tests, nav test updated) / **`npm run build` green** (`/export`, `/import`, `/import/csv` prerendered). Migration applied to the local dev DB.
+
 ## June 10, 2026 — 4-R web acceptance gate closed → **web 100%** (e2e modernized + responsive)
 
 Closed the last 4-R web gap (the Playwright acceptance gate, ui-ux.md §4 #6–7). 4-R web ~95% → **100%**; **4-R overall 100%** (mobile was already signed off).

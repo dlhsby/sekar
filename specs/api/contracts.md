@@ -4740,6 +4740,35 @@ Phase 2 implementation:
 
 ---
 
+## Phase 4-5: Export & Import Data (June 2026)
+
+Data export (CSV/XLSX/KMZ) and CSV bulk import. Roles: `admin_system`, `superadmin`
+(export also `kepala_rayon`, scoped to their own rayon's tasks/activities/overtime).
+
+### Export
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/export` | Export an entity. Body `{ entityType, format?, startDate?, endDate?, areaId?, rayonId? }`. `entityType` ∈ users\|areas\|rayons\|tasks\|activities\|overtime\|schedules; `format` ∈ csv(default)\|xlsx\|kmz(areas only). **≤5000 rows → 200** file stream (`Content-Disposition: attachment`); **>5000 rows → 202** `{ jobId, status:'processing' }`. Date range capped at 366 days. Rate limit **5/min per user**. |
+| GET | `/api/v1/export/jobs` | List the caller's export jobs from the last 30 days. |
+| GET | `/api/v1/export/jobs/:jobId` | Get one job (owner only). Completed jobs include a fresh **15-min presigned `downloadUrl`**. |
+
+Async jobs are processed by a `setImmediate` worker (upload to S3); a 5-minute cron
+re-fires jobs stuck in `processing` >10 min, failing them after 3 retries.
+
+### Import (CSV)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/import/template/:entity` | Download an empty CSV template (header row only). `entity` ∈ users\|areas. |
+| POST | `/api/v1/import/users/csv` | Validate a users CSV (multipart `file`). Returns `{ validCount, errors:[{row,column,value,message}], sessionId? }` — `sessionId` present only when ≥1 row is valid. No rows inserted yet. |
+| POST | `/api/v1/import/areas/csv` | Validate an areas CSV (template adds required `area_type_id` + lat/lng). Same response shape. |
+| POST | `/api/v1/import/confirm/:sessionId` | Commit a validated session (Redis-backed, 1h TTL, owner only). Inserts valid rows → `{ imported, skipped, skippedReasons[] }`. Rate limit **3/min per user**. |
+
+KMZ area import remains at `/api/v1/import/kmz/{upload,preview/:id,confirm}` (see Phase 2/3 above).
+
+---
+
 ---
 
 ## Document Information
