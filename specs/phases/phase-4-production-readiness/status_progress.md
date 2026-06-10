@@ -4,6 +4,14 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 10, 2026 — 4-R web TSK-1 + SCH-1 (kanban + weekly grid) — last revamp frames (hifi-web §06–07)
+
+The two deferred net-new builds. 4-R web ~75% → **~95%** — every `hifi-web.html` revamp frame is now ✅ (only the NEW Import/Export frames remain, and those are 4-5, out of scope). Flipped **TSK-1 / SCH-1 ✅**. Followed an independent CP6 review pass earlier the same day.
+
+- **TSK-1 — tasks kanban/table** (`(dashboard)/tasks`): new `TaskKanban` board — 4 lanes (Belum mulai / Siap mulai / Sedang dikerjakan / Selesai) collapsing the 8-status workflow, compact cards with priority + status `StatusPill`s, click → detail. Read-only by design (status transitions stay on the detail page behind the guarded workflow actions — arbitrary drag would bypass the server-side transition rules). List page: Papan/Tabel toggle + scope tabs (Semua/Ditandai/Dibuat Saya) on the `Tabs` primitive, `PageHeader`, `StatusPill` columns; the board fetches a wider window (limit 100) and groups client-side. Detail + new: v2.1 pass (drop container/in-body breadcrumb/text-3xl, StatusPill, PageHeader). Shared `TASK_STATUS_TONES` / `TASK_PRIORITY_TONES` / `TASK_KANBAN_LANES`.
+- **SCH-1 — schedules weekly grid** (`(dashboard)/schedules`): new `ScheduleWeeklyGrid` — worker rows × 7-day columns, shift-time chips tinted by shift code, sticky petugas column + day header, weekend tint; collapses to per-worker cards <768px. A cell renders the shift when the schedule's `[effective_date, end_date]` range covers that day, else "libur". List page: Grid Mingguan / Tabel toggle + week navigation (‹ › with label; grid scopes the fetch to `date_from`/`date_to`), `PageHeader`, `StatusPill` shift column; replaced a `console.error` on delete with a toast. new + edit forms: v2.1 pass.
+- **Verified:** web `tsc` 0 · `eslint` 0 errors (51 baseline warnings) · `npm run build` green · jest **95 suites / 1682 pass** (tasks suites rewritten for the kanban-default + Tabs-role structure; +ScheduleWeeklyGrid suite).
+
 ## June 10, 2026 — 4-R web CP6 (PRT-1 + SET-1 + KEC-1) + areas-page crash fix (hifi-web §09–11)
 
 Final 4-R web checkpoint. 4-R web ~60% → **~75%** (CP1–CP6 shipped; only TSK-1 kanban + SCH-1 weekly-grid remain). Flipped **PRT-1 / SET-1 / KEC-1 ✅**.
