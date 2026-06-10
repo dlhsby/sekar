@@ -1,6 +1,6 @@
 /**
- * Unit Tests: Tasks List Page
- * Covers auth guard, three-tab system, table rendering,
+ * Unit Tests: Tasks List Page (TSK-1 kanban/table revamp)
+ * Covers auth guard, scope tabs, kanban (default) + table views,
  * filter dropdowns, empty state, and create button.
  */
 
@@ -12,33 +12,17 @@ import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as tasksApi from '@/lib/api/tasks';
 
-// ---------------------------------------------------------------------------
-// Router mock
-// ---------------------------------------------------------------------------
 const mockPush = jest.fn();
-
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
   usePathname: () => '/tasks',
 }));
 
-// ---------------------------------------------------------------------------
-// Auth mock
-// ---------------------------------------------------------------------------
 const mockUseAuth = jest.fn();
+jest.mock('@/lib/auth/hooks', () => ({ useAuth: () => mockUseAuth() }));
 
-jest.mock('@/lib/auth/hooks', () => ({
-  useAuth: () => mockUseAuth(),
-}));
-
-// ---------------------------------------------------------------------------
-// API hooks mock
-// ---------------------------------------------------------------------------
 jest.mock('@/lib/api/tasks');
 
-// ---------------------------------------------------------------------------
-// Shared test data
-// ---------------------------------------------------------------------------
 const mockKorlapUser = {
   id: 'user-1',
   username: 'korlap1',
@@ -75,38 +59,17 @@ const mockTask: tasksApi.Task = {
 
 const mockPaginatedResponse = {
   data: [mockTask],
-  meta: { total: 1, page: 1, limit: 20, totalPages: 1 },
+  meta: { total: 1, page: 1, limit: 100, totalPages: 1 },
 };
-
 const emptyPaginatedResponse = {
   data: [],
-  meta: { total: 0, page: 1, limit: 20, totalPages: 0 },
+  meta: { total: 0, page: 1, limit: 100, totalPages: 0 },
 };
 
-// ---------------------------------------------------------------------------
-// Default hook return values — overridden per describe block where needed
-// ---------------------------------------------------------------------------
-const defaultQueryResult = {
-  data: mockPaginatedResponse,
-  isLoading: false,
-  error: null,
-};
+const defaultQueryResult = { data: mockPaginatedResponse, isLoading: false, error: null };
+const emptyQueryResult = { data: emptyPaginatedResponse, isLoading: false, error: null };
+const loadingQueryResult = { data: undefined, isLoading: true, error: null };
 
-const emptyQueryResult = {
-  data: emptyPaginatedResponse,
-  isLoading: false,
-  error: null,
-};
-
-const loadingQueryResult = {
-  data: undefined,
-  isLoading: true,
-  error: null,
-};
-
-// ---------------------------------------------------------------------------
-// Wrapper
-// ---------------------------------------------------------------------------
 function createWrapper() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -118,9 +81,6 @@ function createWrapper() {
   return Wrapper;
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 function setupDefaultApiMocks() {
   (tasksApi.useTasks as jest.Mock).mockReturnValue(defaultQueryResult);
   (tasksApi.useTaggedTasks as jest.Mock).mockReturnValue({
@@ -133,123 +93,123 @@ function setupDefaultApiMocks() {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 describe('TasksPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     setupDefaultApiMocks();
   });
 
-  // -------------------------------------------------------------------------
-  // Auth & Authorization
-  // -------------------------------------------------------------------------
   describe('Authentication & Authorization', () => {
-    it('should show a loading spinner while auth is in progress', () => {
+    it('shows a loading state while auth is in progress', () => {
       mockUseAuth.mockReturnValue({ user: null, loading: true });
-
-      const { container } = render(<TasksPage />, { wrapper: createWrapper() });
-
+      render(<TasksPage />, { wrapper: createWrapper() });
       expect(screen.getByText(/memuat/i)).toBeInTheDocument();
-      expect(container.querySelector('.animate-spin')).toBeInTheDocument();
     });
 
-    it('should render the page for an authorized korlap user', () => {
+    it('renders the page for an authorized korlap user', () => {
       mockUseAuth.mockReturnValue({ user: mockKorlapUser, loading: false });
-
       render(<TasksPage />, { wrapper: createWrapper() });
-
-      expect(screen.getByRole('button', { name: /buat tugas baru/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /buat tugas/i })).toBeInTheDocument();
       expect(mockPush).not.toHaveBeenCalled();
     });
 
-    it('should redirect a satgas (unauthorized) user to the root path', () => {
+    it('redirects a satgas (unauthorized) user to the root path', () => {
       mockUseAuth.mockReturnValue({ user: mockSatgasUser, loading: false });
-
       render(<TasksPage />, { wrapper: createWrapper() });
-
       expect(mockPush).toHaveBeenCalledWith('/');
     });
 
-    it('should render nothing for an unauthorized user after redirect', () => {
+    it('renders nothing for an unauthorized user after redirect', () => {
       mockUseAuth.mockReturnValue({ user: mockSatgasUser, loading: false });
-
       const { container } = render(<TasksPage />, { wrapper: createWrapper() });
-
       expect(container.textContent).toBe('');
     });
   });
 
-  // -------------------------------------------------------------------------
-  // Tab Navigation
-  // -------------------------------------------------------------------------
-  describe('Tab Navigation', () => {
+  describe('Scope tabs', () => {
     beforeEach(() => {
       mockUseAuth.mockReturnValue({ user: mockKorlapUser, loading: false });
     });
 
-    it('should display all three tabs', () => {
+    it('displays all three scope tabs', () => {
       render(<TasksPage />, { wrapper: createWrapper() });
-
-      expect(screen.getByRole('button', { name: 'Semua Tugas' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Ditandai' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Dibuat Saya' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Semua Tugas' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Ditandai' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Dibuat Saya' })).toBeInTheDocument();
     });
 
-    it('should highlight the active tab and update it on click', async () => {
+    it('marks the active scope tab via aria-selected and updates it on click', async () => {
       const user = userEvent.setup();
       render(<TasksPage />, { wrapper: createWrapper() });
 
-      const allTab = screen.getByRole('button', { name: 'Semua Tugas' });
-      const taggedTab = screen.getByRole('button', { name: 'Ditandai' });
-
-      // "Semua Tugas" is active by default
-      expect(allTab.className).toMatch(/border-nb-primary/);
-      expect(taggedTab.className).not.toMatch(/border-nb-primary/);
+      const allTab = screen.getByRole('tab', { name: 'Semua Tugas' });
+      const taggedTab = screen.getByRole('tab', { name: 'Ditandai' });
+      expect(allTab).toHaveAttribute('aria-selected', 'true');
+      expect(taggedTab).toHaveAttribute('aria-selected', 'false');
 
       await user.click(taggedTab);
-
-      expect(taggedTab.className).toMatch(/border-nb-primary/);
-      expect(allTab.className).not.toMatch(/border-nb-primary/);
+      expect(taggedTab).toHaveAttribute('aria-selected', 'true');
+      expect(allTab).toHaveAttribute('aria-selected', 'false');
     });
 
-    it('should call useTasks with filters when "Semua Tugas" tab is active', () => {
+    it('calls useTasks with the board window when the "all" scope is active', () => {
       render(<TasksPage />, { wrapper: createWrapper() });
-
-      // On initial render the "all" tab is active; useTasks receives filters object
+      // Default view is the kanban board → wider window (limit 100).
       expect(tasksApi.useTasks as jest.Mock).toHaveBeenCalledWith(
-        expect.objectContaining({ page: 1, limit: 20 })
+        expect.objectContaining({ page: 1, limit: 100 }),
       );
-      // Other hooks called with undefined (inactive tabs)
       expect(tasksApi.useTaggedTasks as jest.Mock).toHaveBeenCalledWith(undefined);
       expect(tasksApi.useMyTasks as jest.Mock).toHaveBeenCalledWith(undefined);
     });
 
-    it('should call useTaggedTasks with filters when "Ditandai" tab is clicked', async () => {
+    it('calls useTaggedTasks when the "Ditandai" scope is clicked', async () => {
       const user = userEvent.setup();
       render(<TasksPage />, { wrapper: createWrapper() });
-
-      await user.click(screen.getByRole('button', { name: 'Ditandai' }));
-
+      await user.click(screen.getByRole('tab', { name: 'Ditandai' }));
       expect(tasksApi.useTaggedTasks as jest.Mock).toHaveBeenCalledWith(
-        expect.objectContaining({ page: 1, limit: 20 })
+        expect.objectContaining({ page: 1, limit: 100 }),
       );
       expect(tasksApi.useTasks as jest.Mock).toHaveBeenCalledWith(undefined);
     });
   });
 
-  // -------------------------------------------------------------------------
-  // Table Rendering
-  // -------------------------------------------------------------------------
-  describe('Table Rendering', () => {
+  describe('Kanban view (default)', () => {
     beforeEach(() => {
       mockUseAuth.mockReturnValue({ user: mockKorlapUser, loading: false });
     });
 
-    it('should display all required column headers', () => {
+    it('renders the four lanes and a task card with its details', () => {
       render(<TasksPage />, { wrapper: createWrapper() });
+      expect(screen.getByRole('region', { name: /belum mulai/i })).toBeInTheDocument();
+      expect(screen.getByRole('region', { name: /sedang dikerjakan/i })).toBeInTheDocument();
+      // Card content
+      expect(screen.getByText('Cleanup Taman Bungkul')).toBeInTheDocument();
+      expect(screen.getByText('Satgas One')).toBeInTheDocument();
+      expect(screen.getByText('Taman Bungkul')).toBeInTheDocument();
+      expect(screen.getByText('Ditugaskan')).toBeInTheDocument(); // status pill
+      expect(screen.getByText('Tinggi')).toBeInTheDocument(); // priority pill
+    });
 
+    it('renders each card as a link to its detail page', () => {
+      render(<TasksPage />, { wrapper: createWrapper() });
+      const card = screen.getByRole('link', { name: /cleanup taman bungkul/i });
+      expect(card).toHaveAttribute('href', '/tasks/task-1');
+    });
+  });
+
+  describe('Table view', () => {
+    beforeEach(() => {
+      mockUseAuth.mockReturnValue({ user: mockKorlapUser, loading: false });
+    });
+
+    async function switchToTable() {
+      const user = userEvent.setup();
+      await user.click(screen.getByRole('tab', { name: 'Tabel' }));
+    }
+
+    it('shows all column headers after switching to the table view', async () => {
+      render(<TasksPage />, { wrapper: createWrapper() });
+      await switchToTable();
       expect(screen.getByText('Judul Tugas')).toBeInTheDocument();
       expect(screen.getByText('Ditugaskan Ke')).toBeInTheDocument();
       expect(screen.getByText('Area / Rayon')).toBeInTheDocument();
@@ -259,137 +219,69 @@ describe('TasksPage', () => {
       expect(screen.getByText('Aksi')).toBeInTheDocument();
     });
 
-    it('should display task title, assigned user name, and area name', () => {
+    it('renders a Detail link per row in the table view', async () => {
       render(<TasksPage />, { wrapper: createWrapper() });
-
-      expect(screen.getByText('Cleanup Taman Bungkul')).toBeInTheDocument();
-      expect(screen.getByText('Satgas One')).toBeInTheDocument();
-      expect(screen.getByText('Taman Bungkul')).toBeInTheDocument();
-    });
-
-    it('should render status badge with the correct Indonesian label', () => {
-      render(<TasksPage />, { wrapper: createWrapper() });
-
-      // TASK_STATUS_LABELS.assigned = 'Ditugaskan'
-      expect(screen.getByText('Ditugaskan')).toBeInTheDocument();
-    });
-
-    it('should render priority badge with the correct Indonesian label', () => {
-      render(<TasksPage />, { wrapper: createWrapper() });
-
-      // PRIORITY_LABELS.high = 'Tinggi'
-      expect(screen.getByText('Tinggi')).toBeInTheDocument();
-    });
-
-    it('should render a Detail link for each task row', () => {
-      render(<TasksPage />, { wrapper: createWrapper() });
-
+      await switchToTable();
       const detailLink = screen.getByRole('link', { name: /detail/i });
-      expect(detailLink).toBeInTheDocument();
       expect(detailLink).toHaveAttribute('href', '/tasks/task-1');
     });
   });
 
-  // -------------------------------------------------------------------------
-  // Filters
-  // -------------------------------------------------------------------------
   describe('Filter Dropdowns', () => {
     beforeEach(() => {
       mockUseAuth.mockReturnValue({ user: mockKorlapUser, loading: false });
     });
 
-    it('should render the status filter combobox with the default "Semua Status" label', () => {
+    it('renders the status + priority filter comboboxes with their defaults', () => {
       render(<TasksPage />, { wrapper: createWrapper() });
-
-      // Radix UI Select renders options in a portal only when the dropdown is open.
-      // jsdom does not support the pointer-capture API required to open Radix Select.
-      // We verify that the filter control and its default selected label are present.
       expect(screen.getByText('Filter Status')).toBeInTheDocument();
       expect(screen.getByText('Semua Status')).toBeInTheDocument();
-      // Two comboboxes exist: status and priority
+      expect(screen.getByText('Filter Prioritas')).toBeInTheDocument();
+      expect(screen.getByText('Semua Prioritas')).toBeInTheDocument();
       expect(screen.getAllByRole('combobox')).toHaveLength(2);
     });
 
-    it('should render the priority filter combobox with the default "Semua Prioritas" label', () => {
+    it('does not show the Reset Filter button when no filter is applied', () => {
       render(<TasksPage />, { wrapper: createWrapper() });
-
-      expect(screen.getByText('Filter Prioritas')).toBeInTheDocument();
-      expect(screen.getByText('Semua Prioritas')).toBeInTheDocument();
-    });
-
-    it('should not show the Reset Filter button when no filter is applied', () => {
-      render(<TasksPage />, { wrapper: createWrapper() });
-
       expect(screen.queryByRole('button', { name: /reset filter/i })).not.toBeInTheDocument();
     });
   });
 
-  // -------------------------------------------------------------------------
-  // Create Button
-  // -------------------------------------------------------------------------
   describe('Create Task Button', () => {
     beforeEach(() => {
       mockUseAuth.mockReturnValue({ user: mockKorlapUser, loading: false });
     });
 
-    it('should display the "Buat Tugas Baru" button', () => {
-      render(<TasksPage />, { wrapper: createWrapper() });
-
-      expect(screen.getByRole('button', { name: /buat tugas baru/i })).toBeInTheDocument();
-    });
-
-    it('should navigate to /tasks/new when the create button is clicked', async () => {
+    it('navigates to /tasks/new when the create button is clicked', async () => {
       const user = userEvent.setup();
       render(<TasksPage />, { wrapper: createWrapper() });
-
-      await user.click(screen.getByRole('button', { name: /buat tugas baru/i }));
-
+      await user.click(screen.getByRole('button', { name: /buat tugas/i }));
       expect(mockPush).toHaveBeenCalledWith('/tasks/new');
     });
   });
 
-  // -------------------------------------------------------------------------
-  // Empty State
-  // -------------------------------------------------------------------------
   describe('Empty State', () => {
     beforeEach(() => {
       mockUseAuth.mockReturnValue({ user: mockKorlapUser, loading: false });
     });
 
-    it('should display the empty state message when there are no tasks', () => {
+    it('shows the empty lane message when there are no tasks (kanban)', () => {
       (tasksApi.useTasks as jest.Mock).mockReturnValue(emptyQueryResult);
-
       render(<TasksPage />, { wrapper: createWrapper() });
-
-      expect(screen.getByText(/tidak ada tugas/i)).toBeInTheDocument();
-    });
-
-    it('should show total task count as 0 when there are no tasks', () => {
-      (tasksApi.useTasks as jest.Mock).mockReturnValue(emptyQueryResult);
-
-      render(<TasksPage />, { wrapper: createWrapper() });
-
-      expect(screen.getByText(/0 total/i)).toBeInTheDocument();
+      // One "Tidak ada tugas" per empty lane.
+      expect(screen.getAllByText(/tidak ada tugas/i).length).toBeGreaterThan(0);
     });
   });
 
-  // -------------------------------------------------------------------------
-  // Loading State
-  // -------------------------------------------------------------------------
   describe('Loading State', () => {
     beforeEach(() => {
       mockUseAuth.mockReturnValue({ user: mockKorlapUser, loading: false });
     });
 
-    it('should show a loading indicator while tasks are being fetched', () => {
+    it('does not render task content while fetching', () => {
       (tasksApi.useTasks as jest.Mock).mockReturnValue(loadingQueryResult);
-
       const { container } = render(<TasksPage />, { wrapper: createWrapper() });
-
-      // DataTable renders a loading state — verify the table area is present
-      // and no task title is displayed yet
       expect(screen.queryByText('Cleanup Taman Bungkul')).not.toBeInTheDocument();
-      // Container should still have the page structure
       expect(container.firstChild).toBeTruthy();
     });
   });

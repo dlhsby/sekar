@@ -1,0 +1,132 @@
+'use client';
+
+/**
+ * TaskKanban — read-only board view for TSK-1 (hifi-web §06).
+ *
+ * Collapses the 8-status workflow into 4 lanes (see TASK_KANBAN_LANES) and
+ * renders each task as a compact card. Cards link to the detail page where the
+ * actual status transitions happen via the guarded workflow actions — the board
+ * is a visualisation, not a drag-to-mutate surface (the 8-status transitions
+ * have server-side rules; arbitrary drag would bypass them).
+ */
+
+import { useMemo } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
+import { StatusPill } from '@/components/ui';
+import { cn } from '@/lib/utils/cn';
+import type { Task } from '@/lib/api/tasks';
+import {
+  TASK_KANBAN_LANES,
+  TASK_PRIORITY_LABELS,
+  TASK_PRIORITY_TONES,
+  TASK_STATUS_LABELS,
+  TASK_STATUS_TONES,
+} from '@/lib/constants/tasks';
+
+export interface TaskKanbanProps {
+  tasks: Task[];
+  loading?: boolean;
+}
+
+export function TaskKanban({ tasks, loading }: TaskKanbanProps) {
+  const lanes = useMemo(
+    () =>
+      TASK_KANBAN_LANES.map((lane) => ({
+        ...lane,
+        items: tasks.filter((t) => lane.statuses.includes(t.status)),
+      })),
+    [tasks],
+  );
+
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {lanes.map((lane) => (
+        <section key={lane.key} aria-label={lane.label} className="flex flex-col gap-3">
+          <div className="flex items-center justify-between px-1">
+            <h3 className="flex items-center gap-2 font-heading text-[13px] font-bold text-nb-black">
+              <span
+                className="inline-block size-2.5 rounded-full border-[1.5px] border-nb-black"
+                style={statusDotStyle(lane.tone)}
+                aria-hidden="true"
+              />
+              {lane.label}
+            </h3>
+            <span className="rounded-full bg-nb-gray-100 px-2 py-0.5 font-mono text-[10px] font-bold text-nb-gray-700">
+              {lane.items.length}
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {loading ? (
+              <div className="h-24 animate-shimmer rounded-nb-base border-2 border-nb-black bg-nb-gray-300" />
+            ) : lane.items.length === 0 ? (
+              <p className="rounded-nb-base border-2 border-dashed border-nb-gray-300 px-3 py-6 text-center text-nb-caption text-nb-gray-500">
+                Tidak ada tugas
+              </p>
+            ) : (
+              lane.items.map((task) => <TaskCard key={task.id} task={task} />)
+            )}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function TaskCard({ task }: { task: Task }) {
+  const router = useRouter();
+  const place = task.area?.name ?? task.rayon?.name ?? null;
+  const due = task.due_date ? new Date(task.due_date).toLocaleDateString('id-ID') : null;
+
+  return (
+    <Link
+      href={`/tasks/${task.id}`}
+      onClick={(e) => {
+        // Allow modifier-clicks to open in a new tab; otherwise route.
+        if (e.metaKey || e.ctrlKey) return;
+        e.preventDefault();
+        router.push(`/tasks/${task.id}`);
+      }}
+      className={cn(
+        'block rounded-nb-base border-2 border-nb-black bg-nb-white p-3 shadow-nb-xs transition-shadow',
+        'hover:shadow-nb-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-nb-primary/50',
+      )}
+    >
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <StatusPill tone={TASK_PRIORITY_TONES[task.priority]}>
+          {TASK_PRIORITY_LABELS[task.priority]}
+        </StatusPill>
+        {due && <span className="font-mono text-[10px] text-nb-gray-600">{due}</span>}
+      </div>
+      <p className="mb-2 line-clamp-2 font-heading text-[13px] font-bold text-nb-black">
+        {task.title}
+      </p>
+      <div className="flex items-center justify-between gap-2">
+        {place && <span className="truncate font-mono text-[10px] text-nb-gray-600">{place}</span>}
+        <StatusPill tone={TASK_STATUS_TONES[task.status]} dot>
+          {TASK_STATUS_LABELS[task.status]}
+        </StatusPill>
+      </div>
+      {task.assigned_to && (
+        <p className="mt-1.5 truncate text-nb-caption text-nb-gray-600">
+          {task.assigned_to.full_name}
+        </p>
+      )}
+    </Link>
+  );
+}
+
+/** Map a pill tone to its dot fill colour using the status token vars. */
+function statusDotStyle(tone: string): React.CSSProperties {
+  const map: Record<string, string> = {
+    neutral: 'var(--color-nb-gray-400)',
+    info: 'var(--color-status-outside)',
+    warn: 'var(--color-status-idle)',
+    active: 'var(--color-status-active)',
+    ok: 'var(--color-nb-primary)',
+    bad: 'var(--color-status-missing)',
+  };
+  return { background: map[tone] ?? 'var(--color-nb-gray-400)' };
+}

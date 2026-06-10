@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, fireEvent } from '@testing-library/react';
 import TaskDetailPage from '../page';
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -370,15 +370,13 @@ describe('TaskDetailPage', () => {
       mockUseAuth.mockReturnValue({ user: mockKorlapUser, loading: false });
     });
 
-    it('should have breadcrumb to tasks list', async () => {
+    it('should have a back button to the tasks list', async () => {
+      // The breadcrumb now lives in the top-header masthead; the in-body
+      // affordance is a back button that routes to /tasks.
       await renderPage();
-      const link = screen.getByRole('link', { name: /tugas/i });
-      expect(link).toHaveAttribute('href', '/tasks');
-    });
-
-    it('should have back button', async () => {
-      await renderPage();
-      expect(screen.getByRole('button', { name: /kembali/i })).toBeInTheDocument();
+      const back = screen.getByRole('button', { name: /kembali ke daftar tugas/i });
+      fireEvent.click(back);
+      expect(mockPush).toHaveBeenCalledWith('/tasks');
     });
   });
 });

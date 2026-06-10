@@ -18,10 +18,10 @@ import {
   FormSelect,
   Button,
   Textarea,
+  PageHeader,
 } from '@/components/ui';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
 import {
@@ -115,39 +115,23 @@ export default function CreateTaskPage() {
   ];
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <nav className="mb-6 text-sm">
-        <ol className="flex items-center gap-2">
-          <li>
-            <Link href="/tasks" className="text-nb-primary hover:underline font-semibold">
-              Tugas
-            </Link>
-          </li>
-          <li className="text-nb-gray-400">/</li>
-          <li className="text-nb-gray-600">Buat Baru</li>
-        </ol>
-      </nav>
+    <div className="mx-auto max-w-3xl space-y-5">
+      <button
+        type="button"
+        onClick={() => router.push('/tasks')}
+        className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wide text-nb-gray-700 transition-colors hover:text-nb-black"
+      >
+        <ArrowLeft className="size-4" aria-hidden="true" /> Kembali ke daftar tugas
+      </button>
 
-      <div className="mb-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push('/tasks')}
-          leftIcon={<ArrowLeft className="w-4 h-4" />}
-        >
-          Kembali ke Daftar Tugas
-        </Button>
-      </div>
-
-      <div>
-        <h1 className="text-3xl font-bold text-nb-black">Buat Tugas Baru</h1>
-        <p className="text-nb-gray-600 mt-1">Tugaskan pekerjaan kepada petugas</p>
-        {assignableRoles.length > 0 && (
-          <p className="text-xs text-nb-gray-500 mt-1">
-            Dapat ditugaskan ke: {assignableRoles.map((r) => ROLE_LABELS[r]).join(', ')}
-          </p>
-        )}
-      </div>
+      <PageHeader
+        description="Tugaskan pekerjaan kepada petugas."
+      />
+      {assignableRoles.length > 0 && (
+        <p className="-mt-2 text-nb-caption text-nb-gray-500">
+          Dapat ditugaskan ke: {assignableRoles.map((r) => ROLE_LABELS[r]).join(', ')}
+        </p>
+      )}
 
       <form onSubmit={handleSubmit}>
         <Card variant="elevated">

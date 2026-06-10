@@ -15,13 +15,25 @@ import {
   useAssignTask,
 } from '@/lib/api/tasks';
 import { useUsers } from '@/lib/api/users';
-import { Card, CardHeader, CardContent, Badge, Button, FormInput, FormSelect } from '@/components/ui';
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  Button,
+  FormInput,
+  FormSelect,
+  StatusPill,
+} from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { use, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { ArrowLeft, Check, RotateCcw, Send, X } from 'lucide-react';
 import { TASK_MANAGER_ROLES, TASK_VERIFIER_ROLES, hasRole } from '@/lib/constants/roles';
-import { TASK_STATUS_LABELS, TASK_STATUS_BADGES } from '@/lib/constants/tasks';
+import {
+  TASK_STATUS_LABELS,
+  TASK_STATUS_TONES,
+  TASK_PRIORITY_LABELS,
+  TASK_PRIORITY_TONES,
+} from '@/lib/constants/tasks';
 import type { UserRole } from '@/types/models';
 
 // ADR-038: which roles a delegator may hand a task to. Mirrors the backend
@@ -32,20 +44,6 @@ const DELEGATION_TARGETS: Record<string, UserRole[]> = {
   korlap: ['satgas', 'linmas'],
   admin_system: ['kepala_rayon', 'korlap'],
   superadmin: ['kepala_rayon', 'korlap'],
-};
-
-const PRIORITY_LABELS: Record<string, string> = {
-  low: 'Rendah',
-  normal: 'Normal',
-  high: 'Tinggi',
-  urgent: 'Mendesak',
-};
-
-const PRIORITY_BADGES: Record<string, 'secondary' | 'success' | 'warning' | 'destructive'> = {
-  low: 'secondary',
-  normal: 'success',
-  high: 'warning',
-  urgent: 'destructive',
 };
 
 interface TaskDetailPageProps {
@@ -107,10 +105,8 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
 
   if (!task) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="text-center py-12">
-          <p className="text-nb-gray-600 font-semibold">Tugas tidak ditemukan</p>
-        </div>
+      <div className="py-12 text-center">
+        <p className="font-semibold text-nb-gray-600">Tugas tidak ditemukan</p>
       </div>
     );
   }
@@ -149,40 +145,25 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <nav className="mb-6 text-sm">
-        <ol className="flex items-center space-x-2">
-          <li>
-            <Link href="/tasks" className="text-nb-primary hover:underline font-semibold">
-              Tugas
-            </Link>
-          </li>
-          <li className="text-nb-gray-400">/</li>
-          <li className="text-nb-gray-600">Detail</li>
-        </ol>
-      </nav>
+    <div className="space-y-5">
+      <button
+        type="button"
+        onClick={() => router.push('/tasks')}
+        className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wide text-nb-gray-700 transition-colors hover:text-nb-black"
+      >
+        <ArrowLeft className="size-4" aria-hidden="true" /> Kembali ke daftar tugas
+      </button>
 
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push('/tasks')}
-          leftIcon={<ArrowLeft className="w-4 h-4" />}
-        >
-          Kembali ke Daftar Tugas
-        </Button>
-      </div>
-
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-nb-black mb-2">{task.title}</h1>
-          <div className="flex gap-2">
-            <Badge variant={TASK_STATUS_BADGES[task.status]} size="lg">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-nb-h2 text-nb-black">{task.title}</h1>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <StatusPill tone={TASK_STATUS_TONES[task.status]} dot>
               {TASK_STATUS_LABELS[task.status]}
-            </Badge>
-            <Badge variant={PRIORITY_BADGES[task.priority] || 'secondary'} size="lg">
-              {PRIORITY_LABELS[task.priority] || task.priority}
-            </Badge>
+            </StatusPill>
+            <StatusPill tone={TASK_PRIORITY_TONES[task.priority]}>
+              {TASK_PRIORITY_LABELS[task.priority]}
+            </StatusPill>
           </div>
         </div>
         {canVerify && (
