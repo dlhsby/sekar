@@ -28,6 +28,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { uploadLocationBatch, convertPingsToLocations, type TrackerLocationPing } from '../api/locationApi';
 import { addToQueue } from '../sync/offlineQueue';
 import { checkLocationPermission, requestLocationPermission } from '../permissions/permissionService';
+import {
+  startLocationForegroundService,
+  stopLocationForegroundService,
+} from './foregroundService';
 import config from '../../constants/config';
 
 /**
@@ -196,6 +200,10 @@ class LocationTracker extends EventEmitter {
     // Start location watching with randomized interval
     this.startLocationWatch();
 
+    // Keep the process at foreground priority on Android so the timer loop
+    // survives screen-off / app-minimize for the whole shift (4-V Gap 3).
+    await startLocationForegroundService();
+
     this.emit('trackingStarted', shiftId);
     console.debug(`[LocationTracker:${this.instanceId}] Tracking started for shift:`, shiftId);
   }
@@ -216,6 +224,7 @@ class LocationTracker extends EventEmitter {
 
     // Stop location watching
     this.stopLocationWatch();
+    await stopLocationForegroundService();
 
     // Upload remaining locations if any
     if (this.locationBuffer.length > 0) {
@@ -245,6 +254,9 @@ class LocationTracker extends EventEmitter {
 
     console.debug('[LocationTracker] Stopping immediately (no upload)...');
     this.stopLocationWatch();
+    stopLocationForegroundService().catch((err) =>
+      console.warn('[LocationTracker] Failed to stop foreground service:', err),
+    );
 
     // Clear buffer without uploading — shift is already ended server-side
     this.locationBuffer = [];
@@ -757,6 +769,9 @@ class LocationTracker extends EventEmitter {
     console.debug('[LocationTracker] Cleaning up...');
 
     this.stopLocationWatch();
+    stopLocationForegroundService().catch((err) =>
+      console.warn('[LocationTracker] Failed to stop foreground service:', err),
+    );
     this.locationBuffer = [];
     this.shiftId = null;
     this.tracking = false;

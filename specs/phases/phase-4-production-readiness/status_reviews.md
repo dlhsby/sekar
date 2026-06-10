@@ -77,7 +77,7 @@ Failures against these thresholds escalate the verdict to "Deliver in 4-x".
 | Throttle logic when idle (no movement) | ⏳ field | Verify reduced polling when stationary |
 | Permission denial fallback UX | ⏳ field | OB-2 explicitly handles "Tolak" path |
 
-**Verdict (desk): ESCALATE — true background tracking does not exist today.** Tracking works only while the app is foregrounded/screen-on; once Android dozes or the user switches apps, pings stop until the app resumes (the offline-sweeper then marks the worker offline). Closing this requires a **foreground service** (e.g. `react-native-background-actions` or a native module) + the two missing Android permissions + iOS `UIBackgroundModes`. This is **net-new feature work (est. 1-2 d), not a config fix** — needs an explicit go/no-go from the project owner: ship MVP with screen-on tracking (document the limitation) or block release on a foreground-service implementation.
+**Verdict: DELIVERED for Android (Jun 11, 2026 — owner approved the go).** A Notifee-hosted foreground service (`fe/mobile/src/services/location/foregroundService.ts`, no new dependency — `@notifee/react-native` was already in the tree) now starts/stops with the LocationTracker lifecycle: a persistent silent notification ("SEKAR — Pelacakan lokasi aktif") holds the process at foreground priority so the tracker's timer loop keeps firing with the screen off / app minimized. `android:foregroundServiceType="location"` is declared on Notifee's service (Android 14 requirement) and passed at `startForeground` time. While-in-use permission suffices because the service starts during clock-in (foregrounded). **Device validation still required** (screen-off ping continuity + battery drain — see the manual checklist). **iOS remains screen-on only**: proper iOS background tracking needs the `watchPosition` + `allowsBackgroundLocationUpdates` migration (UIBackgroundModes is already declared); Android is the production fleet, iOS migration deferred to Phase 5.
 
 ### Gap 4 — Message broker (do we need one?)
 
@@ -107,7 +107,7 @@ Failures against these thresholds escalate the verdict to "Deliver in 4-x".
 |-----|---------|---------------------|-----------------|
 | 1 Offline sync | 🟢 Delivered (desk) — field flows pending | 4-2 shipped (7 queue types, 3-state banner) | Deliver — done |
 | 2 Push hardening | 🟢 Delivered (desk) — latency/device probes pending | 4-3 shipped (prefs + BullMQ retry + inbox) | Deliver — done |
-| 3 Background location | 🔴 **ESCALATED — owner decision needed** | Permissions/plist fixed in 4-8; **foreground-service impl missing (1-2 d net-new work)** — ship MVP with screen-on tracking or block release | Deliver (scope TBD) |
+| 3 Background location | 🟢 Delivered for Android (Jun 11) — device validation pending | Notifee foreground service wired into the tracker lifecycle; iOS watchPosition migration deferred to Phase 5 | Deliver — done (Android) |
 | 4 Broker / job queue | 🟢 Delivered | 4-3 (BullMQ fcm-retry on existing Redis) | Adopt — done |
 
 ### Manual field-test checklist (remaining ⏳ probes — staging + physical device)

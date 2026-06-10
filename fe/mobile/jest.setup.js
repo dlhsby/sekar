@@ -264,6 +264,9 @@ jest.mock('@notifee/react-native', () => ({
     getBadgeCount: jest.fn().mockResolvedValue(0),
     setBadgeCount: jest.fn().mockResolvedValue(undefined),
     requestPermission: jest.fn().mockResolvedValue({ authorizationStatus: 1 }),
+    // Foreground service (4-V Gap 3 — shift location tracking)
+    registerForegroundService: jest.fn(),
+    stopForegroundService: jest.fn().mockResolvedValue(undefined),
   },
   AndroidImportance: {
     HIGH: 4,
@@ -271,6 +274,9 @@ jest.mock('@notifee/react-native', () => ({
     LOW: 2,
     MIN: 1,
     NONE: 0,
+  },
+  AndroidForegroundServiceType: {
+    FOREGROUND_SERVICE_TYPE_LOCATION: 8,
   },
   EventType: {
     DISMISSED: 0,

@@ -115,10 +115,20 @@ describe('LocationTracker', () => {
         success(mockLocation);
       });
 
+      // captureLocation awaits the battery level before calling
+      // getCurrentPosition — flush those microtasks before counting.
+      const flushMicrotasks = async () => {
+        for (let i = 0; i < 10; i += 1) {
+          await Promise.resolve();
+        }
+      };
+
       await locationTracker.initialize(mockShiftId);
+      await flushMicrotasks();
       const firstCall = (Geolocation.getCurrentPosition as jest.Mock).mock.calls.length;
 
       await locationTracker.initialize(mockShiftId);
+      await flushMicrotasks();
       const secondCall = (Geolocation.getCurrentPosition as jest.Mock).mock.calls.length;
 
       // Should have captured one more location but not restarted tracking
