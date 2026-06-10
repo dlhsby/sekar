@@ -22,6 +22,7 @@ import { StaffingDebouncerService } from './staffing-debouncer.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { NotificationType } from '../../notifications/entities/notification.entity';
 import { RedisService } from '../../../common/services/redis.service';
+import { BoundaryCheckService } from '../../../shared/services/boundary-check.service';
 
 export interface StatusInput {
   hasActiveShift: boolean;
@@ -56,7 +57,16 @@ export class StatusCalculatorService {
     // same worker. Optional → fails open (sends) when Redis is absent.
     @Optional()
     private readonly redisService?: RedisService,
+    // Phase 4-7 (H1): polygon/tolerance math extracted to the shared service.
+    // Optional → legacy specs without the provider fall back to a local instance.
+    @Optional()
+    private readonly boundaryCheckService?: BoundaryCheckService,
   ) {}
+
+  private get boundaryCheck(): BoundaryCheckService {
+    return (this.boundaryCheckFallback ??= this.boundaryCheckService ?? new BoundaryCheckService());
+  }
+  private boundaryCheckFallback?: BoundaryCheckService;
 
   /**
    * Phase 4-3 (§C1 #8): notify the korlap(s) responsible for an area AND the
@@ -302,12 +312,6 @@ export class StatusCalculatorService {
   }
 
   async onClockOut(userId: string): Promise<void> {
-    const existing = await this.trackingRepository.findOne({
-      where: { user_id: userId },
-    });
-
-    const previousStatus = existing?.status || TrackingStatus.ACTIVE;
-    const areaId = existing?.area_id || null;
     const now = new Date();
 
     await this.trackingRepository.upsert(
@@ -635,51 +639,11 @@ export class StatusCalculatorService {
     }
 
     const geofencing = await this.cacheService.getGeofencing();
-    return this.isPointInPolygonWithTolerance(lat, lng, boundary[0], geofencing.tolerance_meters);
-  }
-
-  private isPointInPolygonWithTolerance(
-    lat: number,
-    lng: number,
-    polygon: number[][],
-    toleranceMeters: number,
-  ): boolean {
-    if (this.isPointInPolygon(lat, lng, polygon)) {
-      return true;
-    }
-
-    const toleranceDegrees = toleranceMeters / 111_320;
-    const expandedPolygon = this.expandPolygon(polygon, toleranceDegrees);
-    return this.isPointInPolygon(lat, lng, expandedPolygon);
-  }
-
-  private isPointInPolygon(lat: number, lng: number, polygon: number[][]): boolean {
-    let inside = false;
-    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-      const xi = polygon[i][1];
-      const yi = polygon[i][0];
-      const xj = polygon[j][1];
-      const yj = polygon[j][0];
-
-      const intersect = yi > lng !== yj > lng && lat < ((xj - xi) * (lng - yi)) / (yj - yi) + xi;
-      if (intersect) inside = !inside;
-    }
-    return inside;
-  }
-
-  private expandPolygon(polygon: number[][], degrees: number): number[][] {
-    if (polygon.length < 3) return polygon;
-
-    const centroidLng = polygon.reduce((sum, p) => sum + p[0], 0) / polygon.length;
-    const centroidLat = polygon.reduce((sum, p) => sum + p[1], 0) / polygon.length;
-
-    return polygon.map((point) => {
-      const dx = point[0] - centroidLng;
-      const dy = point[1] - centroidLat;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist === 0) return point;
-      const scale = (dist + degrees) / dist;
-      return [centroidLng + dx * scale, centroidLat + dy * scale];
-    });
+    return this.boundaryCheck.isPointInPolygonWithTolerance(
+      lat,
+      lng,
+      boundary[0],
+      geofencing.tolerance_meters,
+    );
   }
 }

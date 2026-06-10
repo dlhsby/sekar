@@ -14,10 +14,7 @@ import { createAdapter } from '@socket.io/redis-adapter';
 import { RedisService } from '../common/services/redis.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User, UserRole } from '../modules/users/entities/user.entity';
-import { UserAreasService } from '../modules/user-areas/user-areas.service';
+import { RoomJoinService } from './services/room-join.service';
 import { StaffingDebouncerService } from '../modules/monitoring/services/staffing-debouncer.service';
 import {
   SubscribeAreaDto,
@@ -74,9 +71,8 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-    private readonly userAreasService: UserAreasService,
+    // Phase 4-7 (H3): room computation/joining extracted from handleConnection
+    private readonly roomJoinService: RoomJoinService,
     @Optional() private readonly redisService: RedisService | undefined,
     @Optional() private readonly staffingDebouncer: StaffingDebouncerService | undefined,
   ) {}
@@ -126,24 +122,9 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         role: payload.role,
       });
 
-      // Auto-join personal room
-      client.join(`user:${payload.sub}`);
-
-      // Auto-join rooms based on role
-      const cityRoles = [UserRole.SUPERADMIN, UserRole.ADMIN_SYSTEM, UserRole.TOP_MANAGEMENT];
-      if (cityRoles.includes(payload.role)) {
-        client.join('monitoring:city');
-        this.logger.log(`Client ${client.id} (${payload.role}) joined monitoring:city room`);
-      }
-
-      // Auto-join rayon/area rooms for scoped roles
-      if (
-        payload.role === UserRole.KEPALA_RAYON ||
-        payload.role === UserRole.ADMIN_DATA ||
-        payload.role === UserRole.KORLAP
-      ) {
-        await this.autoJoinScopedRooms(client, payload.sub, payload.role);
-      }
+      // Join personal + role-scoped rooms (Phase 4-7 H3: RoomJoinService)
+      const rooms = await this.roomJoinService.getRoomsForUser(payload.sub, payload.role);
+      this.roomJoinService.joinRooms(client, rooms);
 
       this.logger.log(
         `Client connected: ${client.id} (user: ${payload.sub}, role: ${payload.role})`,
@@ -435,42 +416,6 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     }
 
     return null;
-  }
-
-  /**
-   * Auto-join rayon/area rooms based on user's assigned scope
-   */
-  private async autoJoinScopedRooms(client: Socket, userId: string, role: string): Promise<void> {
-    try {
-      const user = await this.userRepository.findOne({
-        where: { id: userId },
-        select: ['id', 'rayon_id', 'area_id'],
-      });
-
-      if (!user) return;
-
-      if ((role === UserRole.KEPALA_RAYON || role === UserRole.ADMIN_DATA) && user.rayon_id) {
-        client.join(`monitoring:rayon:${user.rayon_id}`);
-        this.logger.log(`Client ${client.id} auto-joined monitoring:rayon:${user.rayon_id}`);
-      }
-
-      if (role === UserRole.KORLAP) {
-        // Multi-area: join all assigned area rooms
-        const areaIds = await this.userAreasService.getPermanentAreaIds(userId);
-        if (areaIds.length > 0) {
-          for (const areaId of areaIds) {
-            client.join(`monitoring:area:${areaId}`);
-          }
-          this.logger.log(`Client ${client.id} auto-joined ${areaIds.length} area rooms`);
-        } else if (user.area_id) {
-          // Fallback to legacy single area
-          client.join(`monitoring:area:${user.area_id}`);
-          this.logger.log(`Client ${client.id} auto-joined monitoring:area:${user.area_id}`);
-        }
-      }
-    } catch (error) {
-      this.logger.warn(`Failed to auto-join rooms for user ${userId}: ${error.message}`);
-    }
   }
 
   /**

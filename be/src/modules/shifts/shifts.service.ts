@@ -7,7 +7,7 @@ import { ClockOutDto } from './dto/clock-out.dto';
 import { AreasService } from '../areas/areas.service';
 import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
-import { GpsUtil } from '../../common/utils/gps.util';
+import { BoundaryCheckService } from '../../shared/services/boundary-check.service';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { getMinimumShiftDurationMinutes } from '../../common/constants/shift.constants';
 import { Schedule } from '../schedules/entities/schedule.entity';
@@ -38,7 +38,16 @@ export class ShiftsService {
     @Inject(forwardRef(() => StatusCalculatorService))
     private readonly statusCalculator: StatusCalculatorService | undefined,
     private readonly auditLogService: AuditLogService,
+    // Phase 4-7 (H1): boundary math extracted to the shared service. Optional →
+    // legacy specs without the provider fall back to a local instance.
+    @Optional()
+    private readonly boundaryCheckService?: BoundaryCheckService,
   ) {}
+
+  private get boundaryCheck(): BoundaryCheckService {
+    return (this.boundaryCheckFallback ??= this.boundaryCheckService ?? new BoundaryCheckService());
+  }
+  private boundaryCheckFallback?: BoundaryCheckService;
 
   /**
    * Get active area for a user
@@ -138,7 +147,7 @@ export class ShiftsService {
     // 4. Check boundary (soft geofencing — never blocks clock-in)
     let clockInOutsideBoundary = false;
     if (area) {
-      const isWithin = GpsUtil.isWithinAreaBoundary(dto.gps_lat, dto.gps_lng, area);
+      const isWithin = this.boundaryCheck.isWithinAreaBoundary(dto.gps_lat, dto.gps_lng, area);
       clockInOutsideBoundary = !isWithin;
       if (clockInOutsideBoundary) {
         this.logger.warn(`User ${userId} clocking in outside area boundary: ${area.name}`);
@@ -254,7 +263,11 @@ export class ShiftsService {
     // Check boundary (soft geofencing — never blocks clock-out)
     let clockOutOutsideBoundary = false;
     if (shift.area) {
-      const isWithin = GpsUtil.isWithinAreaBoundary(dto.gps_lat, dto.gps_lng, shift.area);
+      const isWithin = this.boundaryCheck.isWithinAreaBoundary(
+        dto.gps_lat,
+        dto.gps_lng,
+        shift.area,
+      );
       clockOutOutsideBoundary = !isWithin;
       if (clockOutOutsideBoundary) {
         this.logger.warn(`User ${userId} clocking out outside area boundary: ${shift.area.name}`);

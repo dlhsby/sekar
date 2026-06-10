@@ -1,7 +1,6 @@
 import {
   Injectable,
   NotFoundException,
-  ConflictException,
   Logger,
   UnauthorizedException,
   BadRequestException,
@@ -15,6 +14,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
 import { AuthService } from '../auth/auth.service';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
+import { UserValidationService } from './services/user-validation.service';
 
 @Injectable()
 export class UsersService {
@@ -24,6 +24,8 @@ export class UsersService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly authService: AuthService,
+    // Phase 4-7 (H2): uniqueness validation extracted from CRUD methods
+    private readonly userValidation: UserValidationService,
   ) {}
 
   /**
@@ -37,22 +39,9 @@ export class UsersService {
 
     this.logger.log(`Creating new user: ${username}`);
 
-    const existingUser = await this.userRepository.findOne({
-      where: { username },
-    });
-
-    if (existingUser) {
-      this.logger.warn(`User creation failed: Username already exists - ${username}`);
-      throw new ConflictException('Username already exists');
-    }
-
+    await this.userValidation.assertUsernameAvailable(username);
     if (phone_number) {
-      const phoneExists = await this.userRepository.findOne({
-        where: { phone_number },
-      });
-      if (phoneExists) {
-        throw new ConflictException('Phone number already in use');
-      }
+      await this.userValidation.assertPhoneAvailable(phone_number);
     }
 
     const password_hash = await this.authService.hashPassword(password);
@@ -233,12 +222,7 @@ export class UsersService {
     const { password, phone_number, ...updateData } = updateUserDto;
 
     if (phone_number) {
-      const phoneExists = await this.userRepository.findOne({
-        where: { phone_number },
-      });
-      if (phoneExists && phoneExists.id !== id) {
-        throw new ConflictException('Phone number already in use');
-      }
+      await this.userValidation.assertPhoneAvailable(phone_number, id);
     }
 
     if (password) {
@@ -335,12 +319,7 @@ export class UsersService {
 
     // Validate phone uniqueness if provided
     if (updateMyProfileDto.phone_number && updateMyProfileDto.phone_number !== user.phone_number) {
-      const phoneExists = await this.userRepository.findOne({
-        where: { phone_number: updateMyProfileDto.phone_number },
-      });
-      if (phoneExists) {
-        throw new ConflictException('Phone number already in use');
-      }
+      await this.userValidation.assertPhoneAvailable(updateMyProfileDto.phone_number, userId);
     }
 
     // Update only allowed fields

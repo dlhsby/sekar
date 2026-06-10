@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from './users.service';
+import { UserValidationService } from './services/user-validation.service';
 import { User, UserRole } from './entities/user.entity';
 import { AuthService } from '../auth/auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -61,6 +62,9 @@ describe('UsersService', () => {
     module = await Test.createTestingModule({
       providers: [
         UsersService,
+        // Real instance — resolves against the same mocked repository, so the
+        // pre-extraction uniqueness assertions keep exercising identical paths.
+        UserValidationService,
         {
           provide: getRepositoryToken(User),
           useValue: mockUserRepository,

@@ -20,11 +20,13 @@ import {
 import { TrackingStatus } from '../modules/monitoring/entities/user-tracking-status.entity';
 import { User, UserRole } from '../modules/users/entities/user.entity';
 import { UserAreasService } from '../modules/user-areas/user-areas.service';
+import { RoomJoinService } from './services/room-join.service';
 
 describe('EventsGateway', () => {
   let gateway: EventsGateway;
   let jwtService: jest.Mocked<JwtService>;
   let mockServer: jest.Mocked<Server>;
+  let mockUserRepository: { findOne: jest.Mock };
 
   const mockClient = {
     id: 'client-1',
@@ -50,9 +52,14 @@ describe('EventsGateway', () => {
       },
     } as unknown as jest.Mocked<Server>;
 
+    mockUserRepository = { findOne: jest.fn().mockResolvedValue(null) };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EventsGateway,
+        // Real instance (Phase 4-7 H3) — resolves against the mocks below so the
+        // pre-extraction handleConnection assertions exercise identical paths.
+        RoomJoinService,
         {
           provide: JwtService,
           useValue: {
@@ -67,9 +74,7 @@ describe('EventsGateway', () => {
         },
         {
           provide: getRepositoryToken(User),
-          useValue: {
-            findOne: jest.fn().mockResolvedValue(null),
-          },
+          useValue: mockUserRepository,
         },
         {
           provide: UserAreasService,
@@ -529,7 +534,7 @@ describe('EventsGateway', () => {
     let userRepo: any;
 
     beforeEach(() => {
-      userRepo = gateway['userRepository'];
+      userRepo = mockUserRepository;
     });
 
     it('should auto-join rayon room for kepala_rayon', async () => {
