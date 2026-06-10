@@ -115,7 +115,7 @@ function createTestStore(preloadedState?: any) {
 
 describe('RootNavigator', () => {
   describe('unauthenticated state', () => {
-    it('should render the Splash (entry) when not authenticated', () => {
+    it('should render the Splash (entry) when not authenticated', async () => {
       const store = createTestStore({
         auth: {
           user: null,
@@ -134,10 +134,10 @@ describe('RootNavigator', () => {
 
       // Splash is the initial route of the logged-out stack; it leads to the
       // carousel, then Login.
-      expect(screen.getByTestId('splash-screen')).toBeTruthy();
+      expect(await screen.findByTestId('splash-screen')).toBeTruthy();
     });
 
-    it('should render the Splash when user is null', () => {
+    it('should render the Splash when user is null', async () => {
       const store = createTestStore({
         auth: {
           user: null,
@@ -154,12 +154,12 @@ describe('RootNavigator', () => {
         </Provider>
       );
 
-      expect(screen.getByTestId('splash-screen')).toBeTruthy();
+      expect(await screen.findByTestId('splash-screen')).toBeTruthy();
     });
   });
 
   describe('authenticated state - unified MainNavigator', () => {
-    it('should render MainNavigator for satgas role', () => {
+    it('should render MainNavigator for satgas role', async () => {
       const store = createTestStore({
         auth: {
           user: {
@@ -181,10 +181,10 @@ describe('RootNavigator', () => {
         </Provider>
       );
 
-      expect(screen.getByTestId('main-navigator')).toBeTruthy();
+      expect(await screen.findByTestId('main-navigator')).toBeTruthy();
     });
 
-    it('should render MainNavigator for linmas role', () => {
+    it('should render MainNavigator for linmas role', async () => {
       const store = createTestStore({
         auth: {
           user: {
@@ -206,10 +206,10 @@ describe('RootNavigator', () => {
         </Provider>
       );
 
-      expect(screen.getByTestId('main-navigator')).toBeTruthy();
+      expect(await screen.findByTestId('main-navigator')).toBeTruthy();
     });
 
-    it('should render MainNavigator for korlap role', () => {
+    it('should render MainNavigator for korlap role', async () => {
       const store = createTestStore({
         auth: {
           user: {
@@ -231,10 +231,10 @@ describe('RootNavigator', () => {
         </Provider>
       );
 
-      expect(screen.getByTestId('main-navigator')).toBeTruthy();
+      expect(await screen.findByTestId('main-navigator')).toBeTruthy();
     });
 
-    it('should render MainNavigator for admin_data role', () => {
+    it('should render MainNavigator for admin_data role', async () => {
       const store = createTestStore({
         auth: {
           user: {
@@ -256,10 +256,10 @@ describe('RootNavigator', () => {
         </Provider>
       );
 
-      expect(screen.getByTestId('main-navigator')).toBeTruthy();
+      expect(await screen.findByTestId('main-navigator')).toBeTruthy();
     });
 
-    it('should render MainNavigator for kepala_rayon role', () => {
+    it('should render MainNavigator for kepala_rayon role', async () => {
       const store = createTestStore({
         auth: {
           user: {
@@ -281,10 +281,10 @@ describe('RootNavigator', () => {
         </Provider>
       );
 
-      expect(screen.getByTestId('main-navigator')).toBeTruthy();
+      expect(await screen.findByTestId('main-navigator')).toBeTruthy();
     });
 
-    it('should render MainNavigator for top_management role', () => {
+    it('should render MainNavigator for top_management role', async () => {
       const store = createTestStore({
         auth: {
           user: {
@@ -306,10 +306,10 @@ describe('RootNavigator', () => {
         </Provider>
       );
 
-      expect(screen.getByTestId('main-navigator')).toBeTruthy();
+      expect(await screen.findByTestId('main-navigator')).toBeTruthy();
     });
 
-    it('should render MainNavigator for admin_system role', () => {
+    it('should render MainNavigator for admin_system role', async () => {
       const store = createTestStore({
         auth: {
           user: {
@@ -331,10 +331,10 @@ describe('RootNavigator', () => {
         </Provider>
       );
 
-      expect(screen.getByTestId('main-navigator')).toBeTruthy();
+      expect(await screen.findByTestId('main-navigator')).toBeTruthy();
     });
 
-    it('should render MainNavigator for superadmin role', () => {
+    it('should render MainNavigator for superadmin role', async () => {
       const store = createTestStore({
         auth: {
           user: {
@@ -356,12 +356,12 @@ describe('RootNavigator', () => {
         </Provider>
       );
 
-      expect(screen.getByTestId('main-navigator')).toBeTruthy();
+      expect(await screen.findByTestId('main-navigator')).toBeTruthy();
     });
   });
 
   describe('forced password change precedence', () => {
-    it('renders ChangePassword before onboarding when password_must_change is set', () => {
+    it('renders ChangePassword before onboarding when password_must_change is set', async () => {
       const store = createTestStore({
         auth: {
           user: {
@@ -385,7 +385,7 @@ describe('RootNavigator', () => {
       );
 
       // Forced change wins over the onboarding gate.
-      expect(screen.getByTestId('change-password-screen')).toBeTruthy();
+      expect(await screen.findByTestId('change-password-screen')).toBeTruthy();
       expect(screen.queryByTestId('onboarding-navigator')).toBeNull();
       expect(screen.queryByTestId('main-navigator')).toBeNull();
     });
