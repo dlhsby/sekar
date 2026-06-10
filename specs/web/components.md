@@ -402,9 +402,9 @@ import { FormSelect } from '@/components/ui';
 <FormSelect
   label="Select Role"
   options={[
-    { value: 'admin', label: 'Administrator' },
-    { value: 'supervisor', label: 'Supervisor' },
-    { value: 'worker', label: 'Worker' },
+    { value: 'admin_system', label: 'Admin Sistem' },
+    { value: 'korlap', label: 'Korlap' },
+    { value: 'satgas', label: 'Satgas' },
   ]}
   value={role}
   onChange={setRole}
