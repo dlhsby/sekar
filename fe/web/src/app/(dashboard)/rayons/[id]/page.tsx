@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Search } from 'lucide-react';
@@ -31,19 +31,21 @@ import type { ColumnDef } from '@/components/ui/data-table';
 const ALLOWED_ROLES = ['admin_system', 'superadmin', 'top_management', 'kepala_rayon'];
 
 interface RayonDetailPageProps {
-  params: { id: string };
+  // Next 16: route params are a Promise and must be unwrapped with `use()`.
+  params: Promise<{ id: string }>;
 }
 
 export default function RayonDetailPage({ params }: RayonDetailPageProps) {
+  const { id } = use(params);
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const limit = 10;
 
-  const { data: rayon, isLoading: rayonLoading } = useRayon(params.id);
-  const { data: stats, isLoading: statsLoading } = useRayonStats(params.id);
-  const { data: areasData, isLoading: areasLoading } = useRayonAreas(params.id, {
+  const { data: rayon, isLoading: rayonLoading } = useRayon(id);
+  const { data: stats, isLoading: statsLoading } = useRayonStats(id);
+  const { data: areasData, isLoading: areasLoading } = useRayonAreas(id, {
     search,
     page,
     limit,

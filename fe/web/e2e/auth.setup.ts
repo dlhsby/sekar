@@ -1,138 +1,55 @@
 /**
- * Authentication Setup for E2E Tests
- * Provides reusable login helpers for different user roles
+ * Authentication helpers for E2E tests (Phase 4-R — ADR-009 roles, `/` home).
  */
 
-import { Page } from '@playwright/test';
-import { setupMockApi, setMockAuthCookies, USE_REAL_API, mockUsers } from './fixtures/mock-api';
+import { Page, expect } from '@playwright/test';
+import { setupMockApi, setMockAuthCookies, USE_REAL_API, mockUsers, type MockUserKey } from './fixtures/mock-api';
 
 export interface TestUser {
   username: string;
   password: string;
-  role: string;
+  role: MockUserKey;
   expectedName: string;
 }
 
-export const testUsers = {
-  admin: {
-    username: 'admin',
-    password: 'admin123',
-    role: 'admin',
-    expectedName: 'Admin',
-  },
-  koordinator: {
-    username: 'koordinator_bungkul',
-    password: 'password123',
-    role: 'koordinator_lapangan',
-    expectedName: 'Koordinator',
-  },
-  kepalaRayon: {
-    username: 'kepala_rayon_selatan',
-    password: 'password123',
-    role: 'kepala_rayon',
-    expectedName: 'Kepala Rayon',
-  },
-  worker: {
-    username: 'worker1',
-    password: 'worker123',
-    role: 'worker',
-    expectedName: 'Worker',
-  },
-  topManagement: {
-    username: 'top_management1',
-    password: 'password123',
-    role: 'top_management',
-    expectedName: 'Top Management',
-  },
+export const testUsers: Record<MockUserKey, TestUser> = {
+  admin: { username: 'admin', password: 'password123', role: 'admin', expectedName: 'Admin Sistem' },
+  superadmin: { username: 'superadmin', password: 'password123', role: 'superadmin', expectedName: 'Super Admin' },
+  korlap: { username: 'korlap1', password: 'password123', role: 'korlap', expectedName: 'Koordinator Lapangan' },
+  kepalaRayon: { username: 'kepala_rayon1', password: 'password123', role: 'kepalaRayon', expectedName: 'Kepala Rayon Selatan' },
+  topManagement: { username: 'topmgmt1', password: 'password123', role: 'topManagement', expectedName: 'Top Management' },
+  adminData: { username: 'admindata1', password: 'password123', role: 'adminData', expectedName: 'Admin Data' },
+  staffKecamatan: { username: 'kecamatan1', password: 'password123', role: 'staffKecamatan', expectedName: 'Staff Kecamatan Tegalsari' },
 };
 
-/**
- * Login helper function
- * Navigates to login page and performs login
- * Uses mock API unless USE_REAL_API=true is set
- */
+/** Full login through the form; lands on the dashboard home (`/`). */
 export async function login(page: Page, user: TestUser) {
-  // Map test user to mock user role
-  const roleMap: Record<string, keyof typeof mockUsers> = {
-    admin: 'admin',
-    koordinator_lapangan: 'koordinator',
-    kepala_rayon: 'kepalaRayon',
-    worker: 'worker',
-    top_management: 'topManagement',
-  };
-
-  const mockUserRole = roleMap[user.role] || 'admin';
-
-  // Setup mock API routes before navigating
-  await setupMockApi(page, mockUserRole);
-
+  await setupMockApi(page, user.role);
   await page.goto('/login');
-
-  // Wait for form to be ready
-  await page.waitForSelector('input[name="username"]', { timeout: 5000 });
-
-  // Fill login form
-  await page.fill('input[name="username"]', user.username);
+  await page.waitForSelector('input[name="identifier"]', { timeout: 10000 });
+  await page.fill('input[name="identifier"]', user.username);
   await page.fill('input[name="password"]', user.password);
-
-  // Submit form
   await page.click('button[type="submit"]');
-
-  // Wait for redirect to dashboard
-  await page.waitForURL('/dashboard', { timeout: USE_REAL_API ? 10000 : 5000 });
+  await page.waitForURL((url) => !url.pathname.startsWith('/login'), {
+    timeout: USE_REAL_API ? 10000 : 8000,
+  });
 }
 
-/**
- * Quick login using cookies (bypasses login form)
- * Faster for tests that don't need to test login flow
- */
-export async function quickLogin(page: Page, user: TestUser) {
-  // Map test user to mock user role
-  const roleMap: Record<string, keyof typeof mockUsers> = {
-    admin: 'admin',
-    koordinator_lapangan: 'koordinator',
-    kepala_rayon: 'kepalaRayon',
-    worker: 'worker',
-    top_management: 'topManagement',
-  };
-
-  const mockUserRole = roleMap[user.role] || 'admin';
-
-  // Setup mock API routes
-  await setupMockApi(page, mockUserRole);
-
-  // Set authentication cookies
-  await setMockAuthCookies(page, mockUserRole);
-
-  // Navigate directly to dashboard
-  await page.goto('/dashboard');
-
-  // Wait for page to load
-  await page.waitForLoadState('networkidle', { timeout: 5000 });
+/** Fast login via cookies; navigates straight to `path` (default `/`). */
+export async function quickLogin(page: Page, role: MockUserKey = 'admin', path = '/') {
+  await setupMockApi(page, role);
+  await setMockAuthCookies(page, role);
+  await page.goto(path);
+  await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});
 }
 
-/**
- * Logout helper function
- */
+/** Logout via the header user menu → confirm modal. */
 export async function logout(page: Page) {
-  // Click profile menu
-  await page.click('[data-testid="profile-menu"]');
-
-  // Click logout button
-  await page.click('text=Keluar');
-
-  // Wait for redirect to login page
-  await page.waitForURL('/login', { timeout: 5000 });
+  await page.getByLabel('User menu').click();
+  await page.getByRole('menuitem', { name: /keluar/i }).click();
+  // Confirm in the "Konfirmasi Keluar" dialog.
+  await page.getByRole('dialog').getByRole('button', { name: /keluar/i }).click();
+  await page.waitForURL('**/login', { timeout: 8000 });
 }
 
-/**
- * Check if user is logged in
- */
-export async function isLoggedIn(page: Page): Promise<boolean> {
-  try {
-    const currentUrl = page.url();
-    return !currentUrl.includes('/login');
-  } catch {
-    return false;
-  }
-}
+export { mockUsers, expect };

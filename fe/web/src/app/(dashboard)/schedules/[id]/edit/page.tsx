@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { use, useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth/hooks';
 import { useSchedule, useUpdateSchedule } from '@/lib/api/schedules';
 import { useUsers } from '@/lib/api/users';
@@ -20,22 +20,22 @@ import { getErrorMessage } from '@/lib/api/client';
 import { SCHEDULE_MANAGER_ROLES } from '@/lib/constants/roles';
 
 interface EditSchedulePageProps {
-  params: {
-    id: string;
-  };
+  // Next 16: route params are a Promise and must be unwrapped with `use()`.
+  params: Promise<{ id: string }>;
 }
 
 export default function EditSchedulePage({ params }: EditSchedulePageProps) {
+  const { id } = use(params);
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
   // Form state
   // Fetch data
-  const { data: schedule, isLoading: scheduleLoading } = useSchedule(params.id);
+  const { data: schedule, isLoading: scheduleLoading } = useSchedule(id);
   const { data: usersData } = useUsers({ limit: 1000 });
   const { data: areasData } = useAreas({ limit: 1000 });
   const { data: shifts } = useShiftDefinitions();
-  const updateMutation = useUpdateSchedule(params.id);
+  const updateMutation = useUpdateSchedule(id);
 
   // Initialize state from schedule data (only on first render when schedule loads)
   const [userId, setUserId] = useState('');

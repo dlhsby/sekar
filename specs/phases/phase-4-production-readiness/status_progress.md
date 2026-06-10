@@ -4,6 +4,14 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 10, 2026 — 4-R web acceptance gate closed → **web 100%** (e2e modernized + responsive)
+
+Closed the last 4-R web gap (the Playwright acceptance gate, ui-ux.md §4 #6–7). 4-R web ~95% → **100%**; **4-R overall 100%** (mobile was already signed off).
+
+- **E2E harness rebuilt** (it was stale — pre-ADR-009 roles + the old `/dashboard` redirect, so every spec 404'd). New `e2e/fixtures/mock-api.ts` (ADR-009 roles, `/api/v1` interception, correct response shapes incl. the `{success,data}` monitoring snapshot envelope, a catch-all so unmocked endpoints don't hang) + `e2e/auth.setup.ts` (real roles, `/` home, user-menu→confirm-modal logout). Replaced the 8 stale specs with a current suite: 01 auth · 02 navigation/chrome (sidebar groups, masthead, dark-mode) · 03 people-places (USR-1 + areas-no-crash + RAY-1) · 04 tasks (TSK-1 kanban/table) · 05 schedules (SCH-1 weekly grid + week-nav) · 06 overtime (LBR-1 three-tab) · 07 pruning (PRT-1 list + detail) · 08 settings (SET-1 three tabs) · 09 notifications (inbox + deep-link CTA) · 10 kecamatan (KEC-1 form + validation + my-requests) · 11 responsive (375/768/1280 — drawer, grid→cards, kanban lanes) + a smoke. **33/33 green on chromium** (`test:e2e` now defaults to `--project=chromium`; `test:e2e:all` keeps the full matrix for when firefox/webkit are installed).
+- **🔴 Two more real Next-16 bugs caught by the e2e** — `rayons/[id]` and `schedules/[id]/edit` read `params.id` synchronously (`params: { id: string }`), but Next 16 params is a Promise, so `id` was undefined → the rayon detail rendered with no name/areas and the schedule-edit form never loaded. Fixed both to `const { id } = use(params)` with `params: Promise<…>` (matching `areas/[id]`).
+- **Verified:** web `tsc` 0 · `eslint` 0 errors · `npm run build` green · jest **95 suites / 1682 pass** · **`npm run test:e2e` 33/33 (chromium)**. Manual responsive covered by the 11-responsive spec's explicit viewport runs.
+
 ## June 10, 2026 — 4-R web TSK-1 + SCH-1 (kanban + weekly grid) — last revamp frames (hifi-web §06–07)
 
 The two deferred net-new builds. 4-R web ~75% → **~95%** — every `hifi-web.html` revamp frame is now ✅ (only the NEW Import/Export frames remain, and those are 4-5, out of scope). Flipped **TSK-1 / SCH-1 ✅**. Followed an independent CP6 review pass earlier the same day.
