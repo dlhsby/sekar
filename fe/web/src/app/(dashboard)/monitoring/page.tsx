@@ -469,8 +469,10 @@ export default function MonitoringPage() {
           resolve) so the map cell — and its absolutely-positioned canvas —
           always has real height. Mobile = future drag bottom-sheet candidate. */}
       <div className="flex flex-col md:flex-row h-[calc(100vh-15rem)] min-h-[32rem] overflow-hidden gap-0 border-2 border-nb-black m-4 rounded-nb-base bg-white">
-        {/* Map — left side */}
-        <div className="relative md:flex-[62%] h-[45vh] md:h-auto overflow-hidden border-b-2 md:border-b-0 md:border-r-2 border-nb-black">
+        {/* Map — left side. h-full (not h-auto) on desktop so the inner map's
+            height:100% resolves against a definite height — % heights don't
+            resolve against an auto-height parent, which left the canvas 0px. */}
+        <div className="relative md:flex-[62%] min-h-0 h-[45vh] md:h-full overflow-hidden border-b-2 md:border-b-0 md:border-r-2 border-nb-black">
           <MonitoringMap
             users={mapUsers}
             boundaries={boundariesData}
@@ -496,7 +498,7 @@ export default function MonitoringPage() {
         </div>
 
         {/* Side panel — right side */}
-        <div className="flex-1 md:flex-[38%] flex flex-col overflow-hidden bg-white">
+        <div className="flex-1 md:flex-[38%] min-h-0 flex flex-col overflow-hidden bg-white">
           {panelView === 'list' && (
             <>
               <StaffingSummaryCard
