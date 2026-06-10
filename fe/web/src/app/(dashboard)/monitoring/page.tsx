@@ -465,9 +465,12 @@ export default function MonitoringPage() {
       />
 
       {/* ── Main split layout ──────────────────────────────────────────────── */}
-      <div className="flex flex-col md:flex-row flex-1 overflow-hidden gap-0 border-2 border-nb-black m-4 rounded-nb-base bg-white">
+      {/* Deterministic height (not flex-1 of an h-full chain that may not
+          resolve) so the map cell — and its absolutely-positioned canvas —
+          always has real height. Mobile = future drag bottom-sheet candidate. */}
+      <div className="flex flex-col md:flex-row h-[calc(100vh-15rem)] min-h-[32rem] overflow-hidden gap-0 border-2 border-nb-black m-4 rounded-nb-base bg-white">
         {/* Map — left side */}
-        <div className="relative md:flex-[62%] h-[45vh] md:h-auto min-h-[28rem] overflow-hidden border-b-2 md:border-b-0 md:border-r-2 border-nb-black">
+        <div className="relative md:flex-[62%] h-[45vh] md:h-auto overflow-hidden border-b-2 md:border-b-0 md:border-r-2 border-nb-black">
           <MonitoringMap
             users={mapUsers}
             boundaries={boundariesData}
@@ -493,7 +496,7 @@ export default function MonitoringPage() {
         </div>
 
         {/* Side panel — right side */}
-        <div className="md:flex-[38%] flex flex-col overflow-hidden bg-white">
+        <div className="flex-1 md:flex-[38%] flex flex-col overflow-hidden bg-white">
           {panelView === 'list' && (
             <>
               <StaffingSummaryCard

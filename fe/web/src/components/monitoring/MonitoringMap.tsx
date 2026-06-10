@@ -120,7 +120,19 @@ export function MonitoringMap({
 
     mapRef.current = map;
 
+    // The container can be 0×0 at init and settle afterwards (flex/absolute
+    // layout, the page fade-in, tab switches). Mapbox measures the container
+    // once, so without this the canvas stays blank. Observe + resize, and force
+    // one resize on load to cover the first paint.
+    let resizeObserver: ResizeObserver | undefined;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => map.resize());
+      resizeObserver.observe(containerRef.current);
+    }
+    map.on('load', () => map.resize());
+
     return () => {
+      resizeObserver?.disconnect();
       isLoadedRef.current = false;
       markersRef.current.forEach(({ marker, popup }) => {
         popup.remove();
@@ -134,7 +146,6 @@ export function MonitoringMap({
       map.remove();
       mapRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasToken]);
 
   // ── Update user markers ─────────────────────────────────────────────────────
