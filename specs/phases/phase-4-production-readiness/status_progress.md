@@ -4,6 +4,16 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 10, 2026 — 4-R web CP6 (PRT-1 + SET-1 + KEC-1) + areas-page crash fix (hifi-web §09–11)
+
+Final 4-R web checkpoint. 4-R web ~60% → **~75%** (CP1–CP6 shipped; only TSK-1 kanban + SCH-1 weekly-grid remain). Flipped **PRT-1 / SET-1 / KEC-1 ✅**.
+
+- **🔴 areas page crash (real bug, fixed first):** every dashboard route 500'd via the `AuthErrorBoundary` with `TypeError: squareMeters.toFixed is not a function` (`geo.ts:formatArea`, from `AreaCard`). Root cause: PostgreSQL `numeric` columns serialize to JSON as **strings**, so `coverage_area` arrived as `"12500.50"`. `formatArea` now accepts `number | string | null | undefined`, coerces, and falls back to an em dash for non-finite input. +regression tests.
+- **PRT-1 — pruning detail revamp** (`(dashboard)/pruning-requests/[id]`): rebuilt as a v2.1 `SectionCard` stack (meta · contacts · photos with click-to-zoom `Dialog` lightbox · review history · review/assign actions), `PageHeader`-driven, `StatusPill` on the canonical status palette. List page consistency pass (drop `container mx-auto`, `StatusPill` status column). New shared `PRUNING_REQUEST_STATUS_TONES`. Review + convert hooks unchanged.
+- **SET-1 — tabbed settings on real endpoints** (`(dashboard)/settings`): replaced the dummy page (fake language toggle, local-only switch, stale "Phase 2" version block) with a `Tabs` shell scoped to **backed surfaces only** — **Umum** (read-only identity + dark-mode switch + link to `/profile`), **Keamanan** (change password via `POST /auth/change-password`, rotates + replaces token cookies), **Notifikasi** (per-type push toggles via `GET/PATCH /users/:id/notification-preferences`). New `notification-preferences` API lib; notif draft uses an overrides map (no setState-in-effect). Test suite rewritten.
+- **KEC-1 — kecamatan submit flow** (`(kecamatan)/pruning-submit` + `/my`): replaced the "use the mobile app" placeholders with the real `staff_kecamatan` flow mirroring the mobile SubmitScreen/MyRequestsScreen. Submit form is zod-validated: address + GPS (`navigator.geolocation`), 1–5 **base64 photos** (matches the mobile `photo_keys` contract — the S3 pipeline is still later-phase), tree details, pemohon + ketua RT contacts, optional preferred **ISO week** (derived client-side from a date), notes; online-only; success → toast + redirect to Permintaan Saya. My-requests is a real list (`GET ?mine=true`) with per-request `StatusPill` + empty/error/skeleton. New `useSubmitPruningRequest` + `useMyPruningRequests` hooks. The `(kecamatan)` layout gained the **SekarMark** brand (dropped the stale "S" glyph the Jun 9 rebrand missed) + a real `KecamatanNav` island (active links + logout). Unit tests for both pages.
+- **Verified:** web `tsc` 0 · `eslint` 0 errors (52 baseline warnings) · `npm run build` green (both `/pruning-submit` routes prerender) · jest **94 suites / 1683 pass** (+geo regression, +settings rewrite, +2 kecamatan suites).
+
 ## June 10, 2026 — 4-R web evaluation pass 2 (dark mode + chrome + profile + monitoring + notif deep-links)
 
 Iterative user-review batch on the shipped 4-R web. No checkpoint % change (polish + two net-new features: dark mode, self-service profile).

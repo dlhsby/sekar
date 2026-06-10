@@ -172,9 +172,9 @@ Every revamped screen lands ✅ only when the 6 gates in [`ui-ux.md § 4`](./ui-
 | TSK-1 | Tugas list (kanban + table) | Revamp | ⏳ |
 | SCH-1 | Jadwal · weekly grid | Revamp | ⏳ |
 | LBR-1 | Lembur · approval queue | Revamp | ✅ |
-| PRT-1 | Detail permohonan | Revamp | ⏳ |
-| SET-1 | Pengaturan · sistem | Revamp | ⏳ |
-| KEC-1 | Ajukan perantingan · Kecamatan | Revamp | ⏳ |
+| PRT-1 | Detail permohonan | Revamp | ✅ |
+| SET-1 | Pengaturan · sistem | Revamp | ✅ |
+| KEC-1 | Ajukan perantingan · Kecamatan | Revamp | ✅ |
 | (new) | Notifications inbox | NEW | ✅ |
 | (new) | Import (KMZ + CSV) | NEW | ⏳ |
 | (new) | Export | NEW | ⏳ |
