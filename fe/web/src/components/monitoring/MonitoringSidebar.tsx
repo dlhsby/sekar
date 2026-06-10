@@ -9,7 +9,7 @@
  * All data is the unified snapshot; no legacy day-summary call.
  */
 import { useState } from 'react';
-import { ArrowLeft, Battery, MapPin, AlertTriangle, Users } from 'lucide-react';
+import { ArrowLeft, ArrowRightLeft, Battery, MapPin, AlertTriangle, Users } from 'lucide-react';
 import { Tabs, EmptyState } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
 import { formatRelativeTime } from '@/lib/utils/formatters';
@@ -26,6 +26,8 @@ export interface MonitoringSidebarProps {
   areaSummaries: SnapshotAreaSummary[];
   selectedId: string | null;
   onSelect: (id: string | null) => void;
+  /** Phase 4-4: opens the bulk-reassign modal targeting the given area (role-gated by the page) */
+  onBulkReassign?: (area: SnapshotAreaSummary) => void;
   className?: string;
 }
 
@@ -184,7 +186,13 @@ function WorkerDetail({ worker, onBack }: { worker: SnapshotWorker; onBack: () =
 // Area staffing list
 // ---------------------------------------------------------------------------
 
-function AreaSummaryList({ summaries }: { summaries: SnapshotAreaSummary[] }) {
+function AreaSummaryList({
+  summaries,
+  onBulkReassign,
+}: {
+  summaries: SnapshotAreaSummary[];
+  onBulkReassign?: (area: SnapshotAreaSummary) => void;
+}) {
   if (summaries.length === 0) {
     return (
       <div className="p-4">
@@ -231,12 +239,27 @@ function AreaSummaryList({ summaries }: { summaries: SnapshotAreaSummary[] }) {
                 style={{ width: `${pct}%` }}
               />
             </div>
-            {area.is_understaffed && shortage > 0 && (
-              <span className="mt-2 inline-flex items-center gap-1 rounded-nb-sm border border-[var(--color-status-missing)] bg-[var(--color-status-missing-bg)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--color-status-missing)]">
-                <AlertTriangle className="h-2.5 w-2.5" />
-                Kurang {shortage}
-              </span>
-            )}
+            <div className="mt-2 flex items-center justify-between gap-2">
+              {area.is_understaffed && shortage > 0 ? (
+                <span className="inline-flex items-center gap-1 rounded-nb-sm border border-[var(--color-status-missing)] bg-[var(--color-status-missing-bg)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--color-status-missing)]">
+                  <AlertTriangle className="h-2.5 w-2.5" />
+                  Kurang {shortage}
+                </span>
+              ) : (
+                <span />
+              )}
+              {onBulkReassign && (
+                <button
+                  type="button"
+                  onClick={() => onBulkReassign(area)}
+                  aria-label={`Pindah massal petugas ke ${area.area_name}`}
+                  className="inline-flex items-center gap-1 rounded-nb-sm border border-nb-black bg-nb-white px-1.5 py-0.5 text-[10px] font-bold text-nb-black shadow-nb-xs hover:bg-nb-gray-50"
+                >
+                  <ArrowRightLeft className="h-2.5 w-2.5" />
+                  Pindah Massal
+                </button>
+              )}
+            </div>
           </li>
         );
       })}
@@ -253,6 +276,7 @@ export function MonitoringSidebar({
   areaSummaries,
   selectedId,
   onSelect,
+  onBulkReassign,
   className,
 }: MonitoringSidebarProps) {
   const [tab, setTab] = useState<SidebarTab>('petugas');
@@ -307,7 +331,7 @@ export function MonitoringSidebar({
                 </ul>
               )
             ) : (
-              <AreaSummaryList summaries={areaSummaries} />
+              <AreaSummaryList summaries={areaSummaries} onBulkReassign={onBulkReassign} />
             )}
           </div>
         </>

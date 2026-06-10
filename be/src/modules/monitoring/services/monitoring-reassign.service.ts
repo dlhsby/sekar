@@ -13,6 +13,7 @@ import { UserTrackingStatus } from '../entities/user-tracking-status.entity';
 import { Schedule } from '../../schedules/entities/schedule.entity';
 import { ReassignWorkerDto, ReassignWorkerResponseDto } from '../dto/reassign-worker.dto';
 import { EventsGateway } from '../../../gateways/events.gateway';
+import { AuditLogService } from '../../audit/audit.service';
 
 const REASSIGNABLE_ROLES: string[] = [UserRole.SATGAS, UserRole.LINMAS];
 
@@ -30,6 +31,7 @@ export class MonitoringReassignService {
     @InjectRepository(Schedule)
     private readonly scheduleRepository: Repository<Schedule>,
     private readonly eventsGateway: EventsGateway,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   async reassign(dto: ReassignWorkerDto, requestingUser: User): Promise<ReassignWorkerResponseDto> {
@@ -109,6 +111,22 @@ export class MonitoringReassignService {
     this.logger.log(
       `User ${worker.id} reassigned from area ${previousAreaId} to ${dto.target_area_id}`,
     );
+
+    this.auditLogService
+      .log({
+        entity_type: 'user',
+        entity_id: worker.id,
+        action: 'reassign',
+        actor_id: requestingUser.id,
+        old_value: { area_id: previousAreaId, area_name: previousAreaName },
+        new_value: { area_id: targetArea.id, area_name: targetArea.name },
+        metadata: {
+          reason: dto.reason ?? null,
+          effective_date: effectiveDate,
+          new_schedule_id: newScheduleId,
+        },
+      })
+      .catch((err: Error) => this.logger.error(`Audit log failed: ${err.message}`));
 
     return {
       user_id: worker.id,

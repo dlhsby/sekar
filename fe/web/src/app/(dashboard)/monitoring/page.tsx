@@ -22,11 +22,13 @@ import {
   type RayonOption,
 } from '@/components/monitoring/MonitoringFilters';
 import { MonitoringSidebar } from '@/components/monitoring/MonitoringSidebar';
+import { BulkReassignModal } from '@/components/monitoring/BulkReassignModal';
 import {
   SimpleMonitoringMap,
   type SimpleWorker,
 } from '@/components/monitoring/SimpleMonitoringMap';
-import { MONITORING_ROLES, hasRole } from '@/lib/constants/roles';
+import type { SnapshotAreaSummary } from '@/lib/api/monitoring-v2';
+import { MONITORING_ROLES, REASSIGN_ROLES, hasRole } from '@/lib/constants/roles';
 import { formatTime } from '@/lib/utils/formatters';
 import { cn } from '@/lib/utils/cn';
 import type { TrackingStatus } from '@/lib/api/monitoring-types';
@@ -61,6 +63,7 @@ export default function MonitoringPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
+  const [bulkTarget, setBulkTarget] = useState<SnapshotAreaSummary | null>(null);
 
   // Role-scoped snapshot: city for city-level roles, else the user's own
   // rayon/area (the backend forbids city scope for scoped roles).
@@ -75,6 +78,7 @@ export default function MonitoringPage() {
   }, [user]);
 
   const canMonitor = !!user && hasRole(user.role as UserRole, MONITORING_ROLES);
+  const canReassign = !!user && hasRole(user.role as UserRole, REASSIGN_ROLES);
   const { data, isLoading, refetch } = useMonitoringSnapshot(scope, scopeId);
   const { data: boundaries } = useBoundaries(canMonitor);
 
@@ -284,6 +288,7 @@ export default function MonitoringPage() {
             areaSummaries={filteredAreaSummaries}
             selectedId={selectedId}
             onSelect={selectWorker}
+            onBulkReassign={canReassign ? setBulkTarget : undefined}
             className="min-h-0 flex-1 shadow-nb-lg"
           />
         </div>
@@ -299,6 +304,19 @@ export default function MonitoringPage() {
             {filteredWorkers.length}
           </span>
         </button>
+      )}
+
+      {/* Bulk reassign modal (Phase 4-4) */}
+      {canReassign && bulkTarget && (
+        <BulkReassignModal
+          open={!!bulkTarget}
+          onOpenChange={(open) => {
+            if (!open) setBulkTarget(null);
+          }}
+          targetAreaId={bulkTarget.area_id}
+          targetAreaName={bulkTarget.area_name}
+          boundaries={boundaries}
+        />
       )}
     </div>
   );

@@ -48,6 +48,9 @@ export const SCHEDULE_MANAGER_ROLES: UserRole[] = [
   'admin_data',
 ];
 
+/** Roles that can reassign workers between areas (Phase 4-4, matches POST /monitoring/reassign) */
+export const REASSIGN_ROLES: UserRole[] = ['superadmin', 'admin_system', 'kepala_rayon'];
+
 /** Roles that can clock in/out (field roles with area assignments only) */
 export const CLOCKABLE_ROLES: UserRole[] = ['satgas', 'linmas', 'korlap'];
 

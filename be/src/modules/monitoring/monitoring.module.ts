@@ -35,6 +35,8 @@ import { EventsModule } from '../../gateways/events.module';
 import { UserAreasModule } from '../user-areas/user-areas.module';
 import { PlantsModule } from '../plants/plants.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { AuditModule } from '../audit/audit.module';
+import { SharedModule } from '../../shared/shared.module';
 
 @Module({
   imports: [
@@ -59,6 +61,8 @@ import { NotificationsModule } from '../notifications/notifications.module';
     UserAreasModule,
     PlantsModule,
     NotificationsModule, // Phase 4-3 (M2): missing-worker alert FCM trigger
+    AuditModule, // Phase 4-4: reassignment audit trail
+    SharedModule, // Phase 4-7 (H1): BoundaryCheckService for status calculation
   ],
   controllers: [MonitoringController],
   providers: [

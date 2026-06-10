@@ -9,6 +9,7 @@ import { Schedule } from '../../schedules/entities/schedule.entity';
 import { ReassignWorkerDto } from '../dto/reassign-worker.dto';
 import { EventsGateway } from '../../../gateways/events.gateway';
 import { EventType } from '../../../gateways/dto/events.dto';
+import { AuditLogService } from '../../audit/audit.service';
 
 describe('MonitoringReassignService', () => {
   let service: MonitoringReassignService;
@@ -17,6 +18,7 @@ describe('MonitoringReassignService', () => {
   let trackingRepository: any;
   let scheduleRepository: any;
   let eventsGateway: any;
+  let auditLogService: any;
 
   // ── Shared fixture factories ─────────────────────────────────────────────
 
@@ -124,6 +126,10 @@ describe('MonitoringReassignService', () => {
       emitUserReassigned: jest.fn(),
     };
 
+    auditLogService = {
+      log: jest.fn().mockResolvedValue({}),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MonitoringReassignService,
@@ -132,6 +138,7 @@ describe('MonitoringReassignService', () => {
         { provide: getRepositoryToken(UserTrackingStatus), useValue: trackingRepository },
         { provide: getRepositoryToken(Schedule), useValue: scheduleRepository },
         { provide: EventsGateway, useValue: eventsGateway },
+        { provide: AuditLogService, useValue: auditLogService },
       ],
     }).compile();
 
@@ -539,6 +546,69 @@ describe('MonitoringReassignService', () => {
 
       const today = new Date().toISOString().split('T')[0];
       expect(result.effective_date).toBe(today);
+    });
+
+    // ── Audit trail (4-4) ────────────────────────────────────────────────────
+
+    it('should write an audit log entry with old/new area, actor and metadata on success', async () => {
+      const worker = makeUser({
+        area: makeArea({ id: AREA_A1_ID, name: 'Taman Bungkul', rayon_id: RAYON_A }),
+        area_id: AREA_A1_ID,
+      });
+      const targetArea = makeArea({ id: AREA_A2_ID, name: 'Taman Mundu', rayon_id: RAYON_A });
+      const superadmin = makeSuperadmin();
+      const dto = makeDto({
+        target_area_id: AREA_A2_ID,
+        reason: 'Understaffed at target area',
+        effective_date: '2026-06-10',
+      });
+
+      userRepository.findOne.mockResolvedValue(worker);
+      areaRepository.findOne.mockResolvedValue(targetArea);
+      userRepository.save.mockResolvedValue({ ...worker, area_id: AREA_A2_ID });
+      trackingRepository.update.mockResolvedValue({ affected: 1 });
+
+      await service.reassign(dto, superadmin);
+
+      expect(auditLogService.log).toHaveBeenCalledTimes(1);
+      expect(auditLogService.log).toHaveBeenCalledWith({
+        entity_type: 'user',
+        entity_id: worker.id,
+        action: 'reassign',
+        actor_id: superadmin.id,
+        old_value: { area_id: AREA_A1_ID, area_name: 'Taman Bungkul' },
+        new_value: { area_id: AREA_A2_ID, area_name: 'Taman Mundu' },
+        metadata: {
+          reason: 'Understaffed at target area',
+          effective_date: '2026-06-10',
+          new_schedule_id: null,
+        },
+      });
+    });
+
+    it('should not fail the reassignment when audit logging rejects', async () => {
+      const worker = makeUser();
+      const targetArea = makeArea({ id: AREA_A2_ID, rayon_id: RAYON_A });
+      const dto = makeDto({ target_area_id: AREA_A2_ID });
+
+      userRepository.findOne.mockResolvedValue(worker);
+      areaRepository.findOne.mockResolvedValue(targetArea);
+      userRepository.save.mockResolvedValue({ ...worker, area_id: AREA_A2_ID });
+      trackingRepository.update.mockResolvedValue({ affected: 1 });
+      auditLogService.log.mockRejectedValue(new Error('db down'));
+
+      await expect(service.reassign(dto, makeSuperadmin())).resolves.toMatchObject({
+        new_area_id: AREA_A2_ID,
+      });
+    });
+
+    it('should not write an audit log entry when reassignment fails', async () => {
+      userRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.reassign(makeDto(), makeSuperadmin())).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(auditLogService.log).not.toHaveBeenCalled();
     });
 
     // No schedule created when shift_definition_id is not provided
