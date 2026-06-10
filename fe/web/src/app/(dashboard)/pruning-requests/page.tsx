@@ -11,7 +11,16 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Badge, Button, Card, CardContent, CardHeader, DataTable, FormSelect } from '@/components/ui';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  DataTable,
+  FormSelect,
+  PageHeader,
+  StatusPill,
+} from '@/components/ui';
 import type { ColumnDef } from '@/components/ui/data-table';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/lib/auth/hooks';
@@ -19,8 +28,8 @@ import { hasRole } from '@/lib/constants/roles';
 import type { UserRole } from '@/types/models';
 import {
   PRUNING_REQUEST_ADMIN_ROLES,
-  PRUNING_REQUEST_STATUS_BADGES,
   PRUNING_REQUEST_STATUS_LABELS,
+  PRUNING_REQUEST_STATUS_TONES,
 } from '@/lib/constants/pruning-requests';
 import {
   usePruningRequests,
@@ -102,9 +111,9 @@ export default function PruningRequestsPage() {
       key: 'status',
       header: 'Status',
       cell: (row) => (
-        <Badge variant={PRUNING_REQUEST_STATUS_BADGES[row.status]} size="sm">
+        <StatusPill tone={PRUNING_REQUEST_STATUS_TONES[row.status]} dot>
           {PRUNING_REQUEST_STATUS_LABELS[row.status]}
-        </Badge>
+        </StatusPill>
       ),
     },
     {
@@ -138,12 +147,8 @@ export default function PruningRequestsPage() {
   const totalPages = data?.meta?.totalPages ?? 1;
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <p className="text-nb-gray-600 mt-1">
-          Tinjau dan kelola permohonan pemangkasan dari kecamatan.
-        </p>
-      </div>
+    <div className="space-y-5">
+      <PageHeader description="Tinjau dan kelola permohonan pemangkasan dari kecamatan." />
 
       <Card>
         <CardHeader>

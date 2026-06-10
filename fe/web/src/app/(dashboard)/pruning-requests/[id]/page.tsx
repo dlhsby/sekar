@@ -1,10 +1,11 @@
 /**
- * Pruning Request detail page (Phase 3 — admin disposition)
+ * Pruning Request detail page — PRT-1 (Phase 4-R revamp).
  *
  * Shows the full kecamatan submission and exposes the two terminal admin
  * actions: review (approve/reject) and assign-to-task. Mirrors the mobile
- * RequestDetailScreen + AssignToTaskSheet, in two stacked cards instead of
- * a sheet to suit the desktop viewport.
+ * RequestDetailScreen + AssignToTaskSheet as a v2.1 SectionCard stack:
+ * meta · location/contacts · photos (lightbox) · review history · actions.
+ * The review + convert hooks are unchanged.
  */
 
 'use client';
@@ -13,24 +14,26 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { ArrowLeft, ArrowRight, ExternalLink } from 'lucide-react';
+
 import {
-  Badge,
   Button,
-  Card,
-  CardContent,
-  CardHeader,
+  Dialog,
+  DialogContent,
   FormInput,
   FormSelect,
+  SectionCard,
+  SkeletonCard,
+  StatusPill,
   Textarea,
 } from '@/components/ui';
-import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/lib/auth/hooks';
 import { hasRole } from '@/lib/constants/roles';
 import type { UserRole } from '@/types/models';
 import {
   PRUNING_REQUEST_ADMIN_ROLES,
-  PRUNING_REQUEST_STATUS_BADGES,
   PRUNING_REQUEST_STATUS_LABELS,
+  PRUNING_REQUEST_STATUS_TONES,
 } from '@/lib/constants/pruning-requests';
 import {
   usePruningRequest,
@@ -83,8 +86,7 @@ export default function PruningRequestDetailPage() {
   // identifiers (the React Compiler can't preserve a member-expression dep).
   const requestRayonId = request?.rayonId;
   const areaOptions = useMemo(
-    () =>
-      (areasResponse?.data ?? []).map((a) => ({ label: a.name, value: a.id })),
+    () => (areasResponse?.data ?? []).map((a) => ({ label: a.name, value: a.id })),
     [areasResponse],
   );
   const assigneeOptions = useMemo(() => {
@@ -107,20 +109,29 @@ export default function PruningRequestDetailPage() {
   const [scheduledDate, setScheduledDate] = useState('');
   const convertMutation = useConvertPruningRequestToTask(id);
 
+  // Photo lightbox
+  const [lightbox, setLightbox] = useState<string | null>(null);
+
   if (isLoading) {
-    return <div className="container mx-auto p-6">Memuat permohonan…</div>;
+    return (
+      <div className="space-y-5">
+        <SkeletonCard />
+        <SkeletonCard />
+      </div>
+    );
   }
+
   if (isError || !request) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="rounded-nb-base border-2 border-nb-danger bg-white p-4 text-nb-danger">
+      <div className="space-y-5">
+        <div className="rounded-nb-base border-2 border-nb-danger bg-nb-white p-4 text-nb-danger">
           Gagal memuat permohonan. Coba kembali ke daftar.
         </div>
         <Link
           href="/pruning-requests"
-          className="text-nb-primary font-semibold hover:underline mt-3 inline-flex items-center gap-1"
+          className="inline-flex items-center gap-1 font-semibold text-nb-primary hover:underline"
         >
-          <ArrowLeft className="w-4 h-4" /> Kembali
+          <ArrowLeft className="size-4" /> Kembali
         </Link>
       </div>
     );
@@ -143,82 +154,94 @@ export default function PruningRequestDetailPage() {
         pruningAction,
         scheduledDate: scheduledDate || undefined,
       },
-      {
-        onSuccess: () => router.push('/pruning-requests'),
-      },
+      { onSuccess: () => router.push('/pruning-requests') },
     );
   };
 
-  return (
-    <div className="container mx-auto p-6 space-y-6">
-      <Link
-        href="/pruning-requests"
-        className="text-nb-primary font-semibold hover:underline inline-flex items-center gap-1"
-      >
-        <ArrowLeft className="w-4 h-4" /> Kembali ke daftar
-      </Link>
+  const expectedLabel = request.expectedDate
+    ? new Date(request.expectedDate).toLocaleDateString('id-ID')
+    : request.expectedYear && request.expectedIsoWeek
+      ? `Minggu ${request.expectedIsoWeek} / ${request.expectedYear}`
+      : '-';
 
-      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-        <div>
-          <h1 className="text-3xl font-bold text-nb-black">{request.referenceCode}</h1>
-          <p className="text-nb-gray-600 mt-1">{request.address}</p>
+  return (
+    <div className="space-y-5">
+      <button
+        type="button"
+        onClick={() => router.push('/pruning-requests')}
+        className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wide text-nb-gray-700 transition-colors hover:text-nb-black"
+      >
+        <ArrowLeft className="size-4" aria-hidden="true" /> Kembali ke daftar
+      </button>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-nb-h2 text-nb-black">{request.referenceCode}</h1>
+          <p className="mt-0.5 text-nb-body-sm text-nb-gray-600">{request.address}</p>
         </div>
-        <Badge variant={PRUNING_REQUEST_STATUS_BADGES[request.status]}>
+        <StatusPill tone={PRUNING_REQUEST_STATUS_TONES[request.status]} dot>
           {PRUNING_REQUEST_STATUS_LABELS[request.status]}
-        </Badge>
+        </StatusPill>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <h2 className="text-nb-h3 font-bold uppercase">Detail Permohonan</h2>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <Field label="Kecamatan" value={request.kecamatanName ?? '-'} />
-            <Field label="Rayon" value={request.rayon?.name ?? '-'} />
-            <Field label="Pengirim" value={request.submitter?.full_name ?? '-'} />
-            <Field label="Pengaju Lapangan" value={request.requesterName ?? '-'} />
-            <Field label="HP Pengaju" value={request.requesterPhone ?? '-'} />
-            <Field label="Ketua RT" value={request.rtLeaderName ?? '-'} />
-            <Field label="HP Ketua RT" value={request.rtLeaderPhone ?? '-'} />
-            <Field
-              label="Minggu / Tanggal Diharapkan"
-              value={
-                request.expectedDate
-                  ? new Date(request.expectedDate).toLocaleDateString('id-ID')
-                  : request.expectedYear && request.expectedIsoWeek
-                    ? `Minggu ${request.expectedIsoWeek} / ${request.expectedYear}`
-                    : '-'
-              }
-            />
-            <Field label="Jumlah Pohon" value={String(request.treeCount ?? request.estimatedPlantCount ?? '-')} />
-            <Field label="Tinggi Pohon" value={request.treeHeightEstimate ?? '-'} />
-            <Field label="Diameter Batang" value={request.treeDiameterEstimate ?? '-'} />
-            <Field label="Catatan" value={request.notes ?? '-'} />
-            <Field label="Lokasi GPS" value={`${request.gpsLat}, ${request.gpsLng}`} />
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <div className="space-y-5">
+          <SectionCard title="Detail Permohonan">
+            <dl className="space-y-2.5 text-nb-body-sm">
+              <Field label="Kecamatan" value={request.kecamatanName ?? '-'} />
+              <Field label="Rayon" value={request.rayon?.name ?? '-'} />
+              <Field label="Pengirim" value={request.submitter?.full_name ?? '-'} />
+              <Field label="Minggu Diharapkan" value={expectedLabel} />
+              <Field
+                label="Jumlah Pohon"
+                value={String(request.treeCount ?? request.estimatedPlantCount ?? '-')}
+              />
+              <Field label="Tinggi Pohon" value={request.treeHeightEstimate ?? '-'} />
+              <Field label="Diameter Batang" value={request.treeDiameterEstimate ?? '-'} />
+              <Field label="Lokasi GPS" value={`${request.gpsLat}, ${request.gpsLng}`} mono />
+              {request.notes && <Field label="Catatan" value={request.notes} />}
+            </dl>
+          </SectionCard>
 
-            {request.photoUrls.length > 0 && (
-              <div>
-                <div className="font-semibold text-nb-black mb-2">Foto</div>
-                <div className="grid grid-cols-3 gap-2">
-                  {request.photoUrls.map((url, i) => (
-                    <a key={i} href={url} target="_blank" rel="noreferrer">
-                      <Image
-                        src={url}
-                        alt={`Foto ${i + 1}`}
-                        width={120}
-                        height={120}
-                        className="w-full h-24 object-cover rounded border-2 border-nb-black"
-                        unoptimized
-                      />
-                    </a>
-                  ))}
-                </div>
+          <SectionCard title="Kontak">
+            <dl className="space-y-2.5 text-nb-body-sm">
+              <Field label="Pengaju Lapangan" value={request.requesterName ?? '-'} />
+              <Field label="HP Pengaju" value={request.requesterPhone ?? '-'} mono />
+              <Field label="Ketua RT" value={request.rtLeaderName ?? '-'} />
+              <Field label="HP Ketua RT" value={request.rtLeaderPhone ?? '-'} mono />
+            </dl>
+          </SectionCard>
+
+          {request.photoUrls.length > 0 && (
+            <SectionCard title="Foto" meta={`${request.photoUrls.length} foto`}>
+              <div className="grid grid-cols-3 gap-2">
+                {request.photoUrls.map((url, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setLightbox(url)}
+                    className="group relative overflow-hidden rounded-nb-base border-2 border-nb-black focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
+                    aria-label={`Perbesar foto ${i + 1}`}
+                  >
+                    <Image
+                      src={url}
+                      alt={`Foto ${i + 1}`}
+                      width={160}
+                      height={120}
+                      className="h-24 w-full object-cover transition-transform group-hover:scale-105"
+                      unoptimized
+                    />
+                  </button>
+                ))}
               </div>
-            )}
+            </SectionCard>
+          )}
+        </div>
 
-            {request.reviewer && (
-              <div className="pt-3 border-t-2 border-nb-gray-200">
+        <div className="space-y-5">
+          {request.reviewer && (
+            <SectionCard title="Riwayat Tinjauan">
+              <dl className="space-y-2.5 text-nb-body-sm">
                 <Field label="Ditinjau Oleh" value={request.reviewer.full_name} />
                 <Field
                   label="Tanggal Tinjauan"
@@ -227,31 +250,27 @@ export default function PruningRequestDetailPage() {
                       ? new Date(request.reviewedAt).toLocaleString('id-ID')
                       : '-'
                   }
+                  mono
                 />
                 <Field label="Catatan Tinjauan" value={request.reviewNotes ?? '-'} />
-              </div>
-            )}
+              </dl>
+            </SectionCard>
+          )}
 
-            {request.assignedTaskId && (
-              <div className="pt-3">
-                <Link
-                  href={`/tasks/${request.assignedTaskId}`}
-                  className="text-nb-primary font-semibold hover:underline"
-                >
-                  Lihat Tugas Terkait →
-                </Link>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          {request.assignedTaskId && (
+            <SectionCard title="Tugas Terkait">
+              <Link
+                href={`/tasks/${request.assignedTaskId}`}
+                className="inline-flex items-center gap-1.5 font-semibold text-nb-primary hover:underline"
+              >
+                Lihat tugas terkait <ExternalLink className="size-4" aria-hidden="true" />
+              </Link>
+            </SectionCard>
+          )}
 
-        <div className="space-y-6">
           {canReview && (
-            <Card>
-              <CardHeader>
-                <h2 className="text-nb-h3 font-bold uppercase">Tinjauan</h2>
-              </CardHeader>
-              <CardContent className="space-y-3">
+            <SectionCard title="Tinjauan">
+              <div className="space-y-3">
                 <Textarea
                   label="Catatan Tinjauan (opsional)"
                   value={reviewNotes}
@@ -260,9 +279,7 @@ export default function PruningRequestDetailPage() {
                   placeholder="Contoh: Lokasi sesuai, prioritaskan minggu ini."
                 />
                 {reviewMutation.isError && (
-                  <div className="text-sm text-nb-danger">
-                    Gagal mengirim tinjauan. Coba lagi.
-                  </div>
+                  <p className="text-nb-body-sm text-nb-danger">Gagal mengirim tinjauan. Coba lagi.</p>
                 )}
                 <div className="flex gap-2">
                   <Button
@@ -280,19 +297,16 @@ export default function PruningRequestDetailPage() {
                     Tolak
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </SectionCard>
           )}
 
           {canConvert && (
-            <Card>
-              <CardHeader>
-                <h2 className="text-nb-h3 font-bold uppercase">Tugaskan ke Petugas</h2>
-                <p className="text-sm text-nb-gray-600 mt-1">
-                  Tanggal kosong akan dipilih otomatis dalam minggu yang diminta kecamatan.
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-3">
+            <SectionCard
+              title="Tugaskan ke Petugas"
+              meta="Tanggal kosong dipilih otomatis dalam minggu diminta"
+            >
+              <div className="space-y-3">
                 <FormSelect
                   label="Area"
                   value={areaId}
@@ -324,39 +338,55 @@ export default function PruningRequestDetailPage() {
                   onChange={(e) => setScheduledDate(e.target.value)}
                 />
                 {convertMutation.isError && (
-                  <div className="text-sm text-nb-danger">
+                  <p className="text-nb-body-sm text-nb-danger">
                     Gagal mengonversi ke tugas. Periksa kapasitas minggu dan coba lagi.
-                  </div>
+                  </p>
                 )}
                 <Button
                   onClick={handleConvert}
                   loading={convertMutation.isPending}
                   disabled={!areaId || !assignedTo}
+                  rightIcon={<ArrowRight className="size-4" />}
                 >
                   Buat Tugas
                 </Button>
-              </CardContent>
-            </Card>
+              </div>
+            </SectionCard>
           )}
 
-          {!canReview && !canConvert && (
-            <Card>
-              <CardContent className="py-6 text-sm text-nb-gray-600">
+          {!canReview && !canConvert && !request.reviewer && (
+            <SectionCard>
+              <p className="py-2 text-nb-body-sm text-nb-gray-600">
                 Tidak ada aksi tersedia untuk status saat ini.
-              </CardContent>
-            </Card>
+              </p>
+            </SectionCard>
           )}
         </div>
       </div>
+
+      <Dialog open={!!lightbox} onOpenChange={(open) => !open && setLightbox(null)}>
+        <DialogContent className="max-w-2xl p-2">
+          {lightbox && (
+            <Image
+              src={lightbox}
+              alt="Pratinjau foto"
+              width={1024}
+              height={768}
+              className="h-auto w-full rounded-nb-base object-contain"
+              unoptimized
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-function Field({ label, value }: { label: string; value: string }) {
+function Field({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <div className="grid grid-cols-[140px_1fr] gap-2">
-      <span className="text-nb-gray-600">{label}</span>
-      <span className="text-nb-black">{value}</span>
+      <dt className="text-nb-gray-600">{label}</dt>
+      <dd className={mono ? 'font-mono text-[13px] text-nb-black' : 'text-nb-black'}>{value}</dd>
     </div>
   );
 }

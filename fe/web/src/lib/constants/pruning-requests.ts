@@ -31,6 +31,26 @@ export const PRUNING_REQUEST_STATUS_BADGES: Record<
   cancelled: 'secondary',
 };
 
+/**
+ * StatusPill tone per pruning status — the v2.1 status palette (mirrors the
+ * 5-status monitoring tones). Used by the detail revamp, the admin list, and
+ * the kecamatan "Permintaan Saya" list so the chip colour is identical
+ * everywhere a pruning status is shown.
+ */
+export const PRUNING_REQUEST_STATUS_TONES: Record<
+  PruningRequestStatus,
+  'neutral' | 'ok' | 'warn' | 'bad' | 'info' | 'active'
+> = {
+  submitted: 'warn',
+  under_review: 'info',
+  approved: 'ok',
+  rejected: 'bad',
+  assigned: 'info',
+  in_progress: 'active',
+  done: 'ok',
+  cancelled: 'neutral',
+};
+
 /** Roles allowed to view + disposition pruning requests on the web dashboard. */
 export const PRUNING_REQUEST_ADMIN_ROLES = [
   'admin_data',
