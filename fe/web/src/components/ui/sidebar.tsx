@@ -7,10 +7,7 @@ import { ChevronDown, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils/cn';
 import { Button } from './button';
-import { RoleAvatar } from './role-avatar';
 import { SekarLogoBox } from '@/components/brand/SekarLogoBox';
-import { ROLE_LABELS } from '@/lib/constants/roles';
-import type { UserRole } from '@/types/models';
 
 export interface SidebarItem {
   id: string;
@@ -30,11 +27,6 @@ export interface SidebarProps extends React.HTMLAttributes<HTMLElement> {
   onClose?: () => void;
   currentPath?: string;
   userRole?: string;
-  user?: {
-    name: string;
-    role: string;
-    avatar?: string;
-  };
   logo?: React.ReactNode;
   title?: string;
   /** Optional small line under the wordmark. Omitted by default. */
@@ -77,7 +69,6 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
       onClose,
       currentPath,
       userRole = '',
-      user,
       logo,
       title = 'SEKAR',
       subtitle,
@@ -212,9 +203,6 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
       );
     };
 
-    const roleKey = user?.role as UserRole | undefined;
-    const roleLabel = roleKey && ROLE_LABELS[roleKey] ? ROLE_LABELS[roleKey] : user?.role;
-
     return (
       <>
         {/* Mobile overlay — only on small screens, only when open (no ghost). */}
@@ -265,21 +253,6 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
           >
             {filteredItems.map(renderNode)}
           </nav>
-
-          {/* Bottom-pinned "me" card */}
-          {user && (
-            <div className="flex-shrink-0 p-3">
-              <div className="flex items-center gap-2.5 rounded-nb-md border-2 border-nb-black bg-nb-paper p-2.5">
-                <RoleAvatar name={user.name} role={roleKey} src={user.avatar} size="sm" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-heading text-[13px] font-bold leading-tight text-nb-black">
-                    {user.name}
-                  </p>
-                  <p className="mt-0.5 truncate font-mono text-[10px] text-nb-gray-600">{roleLabel}</p>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Mobile close button */}
           {onClose && (

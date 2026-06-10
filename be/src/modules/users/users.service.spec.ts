@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import {
   ConflictException,
   NotFoundException,
@@ -13,11 +12,11 @@ import { User, UserRole } from './entities/user.entity';
 import { AuthService } from '../auth/auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
 
 describe('UsersService', () => {
   let module: TestingModule;
   let service: UsersService;
-  let userRepository: jest.Mocked<Repository<User>>;
   let authService: AuthService;
 
   const mockUser: User = {
@@ -74,7 +73,6 @@ describe('UsersService', () => {
     }).compile();
 
     service = module.get<UsersService>(UsersService);
-    userRepository = module.get(getRepositoryToken(User)) as jest.Mocked<Repository<User>>;
     authService = module.get<AuthService>(AuthService);
   });
 
@@ -541,6 +539,120 @@ describe('UsersService', () => {
       const result = await service.update(mockUser.id, { phone_number: '081200000066' });
 
       expect(result.phone_number).toBe('081200000066');
+    });
+  });
+
+  describe('updateOwnProfile', () => {
+    it('should update user full_name only', async () => {
+      jest.clearAllMocks();
+      const dto: UpdateMyProfileDto = { full_name: 'Updated Name' };
+      mockUserRepository.findOne.mockResolvedValue(mockUser);
+      mockUserRepository.save.mockResolvedValue({ ...mockUser, full_name: 'Updated Name' });
+
+      const result = await service.updateOwnProfile(mockUser.id, dto);
+
+      expect(result.full_name).toBe('Updated Name');
+      expect(mockUserRepository.save).toHaveBeenCalled();
+    });
+
+    it('should update user phone_number only', async () => {
+      jest.clearAllMocks();
+      const dto: UpdateMyProfileDto = { phone_number: '081234567890' };
+      mockUserRepository.findOne.mockImplementation((opts: any) => {
+        if (opts?.where?.id) return Promise.resolve(mockUser);
+        if (opts?.where?.phone_number) return Promise.resolve(null);
+        return Promise.resolve(null);
+      });
+      mockUserRepository.save.mockResolvedValue({ ...mockUser, phone_number: '081234567890' });
+
+      const result = await service.updateOwnProfile(mockUser.id, dto);
+
+      expect(result.phone_number).toBe('081234567890');
+      expect(mockUserRepository.save).toHaveBeenCalled();
+    });
+
+    it('should update both full_name and phone_number', async () => {
+      jest.clearAllMocks();
+      const dto: UpdateMyProfileDto = {
+        full_name: 'New Name',
+        phone_number: '081234567890',
+      };
+      mockUserRepository.findOne.mockImplementation((opts: any) => {
+        if (opts?.where?.id) return Promise.resolve(mockUser);
+        if (opts?.where?.phone_number) return Promise.resolve(null);
+        return Promise.resolve(null);
+      });
+      mockUserRepository.save.mockResolvedValue({ ...mockUser, ...dto });
+
+      const result = await service.updateOwnProfile(mockUser.id, dto);
+
+      expect(result.full_name).toBe('New Name');
+      expect(result.phone_number).toBe('081234567890');
+    });
+
+    it('should trim full_name whitespace', async () => {
+      jest.clearAllMocks();
+      const dto: UpdateMyProfileDto = { full_name: '  Trimmed Name  ' };
+      mockUserRepository.findOne.mockResolvedValue(mockUser);
+      mockUserRepository.save.mockResolvedValue({ ...mockUser, full_name: 'Trimmed Name' });
+
+      const result = await service.updateOwnProfile(mockUser.id, dto);
+
+      expect(result.full_name).toBe('Trimmed Name');
+    });
+
+    it('should throw ConflictException if phone_number already in use by another user', async () => {
+      jest.clearAllMocks();
+      const dto: UpdateMyProfileDto = { phone_number: '081234567890' };
+      const existingUser = { ...mockUser, id: 'other-uuid', phone_number: '081234567890' };
+      const userWithoutPhone = { ...mockUser, phone_number: null }; // user being updated has no existing phone
+      mockUserRepository.findOne.mockImplementation((opts: any) => {
+        if (opts?.where?.id) return Promise.resolve(userWithoutPhone);
+        if (opts?.where?.phone_number) return Promise.resolve(existingUser);
+        return Promise.resolve(null);
+      });
+
+      await expect(service.updateOwnProfile(mockUser.id, dto)).rejects.toThrow(
+        ConflictException,
+      );
+      await expect(service.updateOwnProfile(mockUser.id, dto)).rejects.toThrow(
+        'Phone number already in use',
+      );
+    });
+
+    it('should not fail when updating phone_number to the same existing phone', async () => {
+      jest.clearAllMocks();
+      const userWithPhone = { ...mockUser, phone_number: '081234567890' };
+      const dto: UpdateMyProfileDto = { phone_number: '081234567890' };
+      mockUserRepository.findOne.mockResolvedValue(userWithPhone);
+      mockUserRepository.save.mockResolvedValue(userWithPhone);
+
+      const result = await service.updateOwnProfile(mockUser.id, dto);
+
+      expect(result.phone_number).toBe('081234567890');
+      expect(mockUserRepository.save).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException if user not found', async () => {
+      jest.clearAllMocks();
+      const dto: UpdateMyProfileDto = { full_name: 'New Name' };
+      mockUserRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.updateOwnProfile(mockUser.id, dto)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should not allow empty/empty update', async () => {
+      jest.clearAllMocks();
+      const dto: UpdateMyProfileDto = {};
+      mockUserRepository.findOne.mockResolvedValue(mockUser);
+      mockUserRepository.save.mockResolvedValue(mockUser);
+
+      const result = await service.updateOwnProfile(mockUser.id, dto);
+
+      expect(result).toEqual(mockUser);
+      expect(mockUserRepository.save).toHaveBeenCalled();
     });
   });
 

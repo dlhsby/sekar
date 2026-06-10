@@ -83,9 +83,9 @@ describe('Header', () => {
     const menuButton = screen.getByRole('button', { name: /user menu/i });
     await user.click(menuButton);
 
-    // Wait for dropdown to appear
-    await screen.findByText(/profile/i);
-    expect(screen.getByText(/profile/i)).toBeInTheDocument();
+    // Wait for dropdown to appear (label is Indonesian: "Profil")
+    await screen.findByText(/profil/i);
+    expect(screen.getByText(/profil/i)).toBeInTheDocument();
   });
 
   it('should show logout confirmation dialog when logout clicked', async () => {

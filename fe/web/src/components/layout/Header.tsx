@@ -1,12 +1,15 @@
 'use client';
 
 import { HTMLAttributes, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { Menu, User, Settings, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useUIStore } from '@/stores/ui';
 import { useAuth } from '@/lib/auth/hooks';
 import { NotificationBell } from '@/components/ui/notification-bell';
 import { RoleAvatar } from '@/components/ui/role-avatar';
+import { getPageTitle } from '@/lib/navigation';
+import { ADMIN_ROLES, hasRole } from '@/lib/constants/roles';
 import type { UserRole } from '@/types/models';
 import {
   Button,
@@ -22,11 +25,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui';
-import { Breadcrumb } from './Breadcrumb';
 
-export interface HeaderProps extends HTMLAttributes<HTMLElement> {
-  showBreadcrumb?: boolean;
-}
+export type HeaderProps = HTMLAttributes<HTMLElement>;
 
 /**
  * Dashboard Header Component
@@ -38,9 +38,13 @@ export interface HeaderProps extends HTMLAttributes<HTMLElement> {
  * - Notification bell with badge
  * - User dropdown menu
  */
-export function Header({ className, showBreadcrumb = true, ...props }: HeaderProps) {
+export function Header({ className, ...props }: HeaderProps) {
   const { toggleSidebar } = useUIStore();
   const { user, logout } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const pageTitle = getPageTitle(pathname);
+  const canOpenSettings = !!user && hasRole(user.role as UserRole, ADMIN_ROLES);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -85,12 +89,13 @@ export function Header({ className, showBreadcrumb = true, ...props }: HeaderPro
             <Menu className="h-5 w-5" />
           </Button>
 
-          {/* Breadcrumb */}
-          {showBreadcrumb && (
-            <div className="hidden md:block flex-1 min-w-0">
-              <Breadcrumb aria-label="Navigasi breadcrumb" />
-            </div>
-          )}
+          {/* Page title — lives in the header so pages don't repeat a large
+              in-body title (frees vertical space in the content area). */}
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate font-heading text-lg font-bold leading-tight text-nb-black">
+              {pageTitle}
+            </h1>
+          </div>
         </div>
 
         {/* Right section: Notifications + User menu */}
@@ -125,14 +130,16 @@ export function Header({ className, showBreadcrumb = true, ...props }: HeaderPro
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/profile')}>
                   <User className="mr-2 h-4 w-4" />
-                  Profile
+                  Profil
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Pengaturan
-                </DropdownMenuItem>
+                {canOpenSettings && (
+                  <DropdownMenuItem onClick={() => router.push('/settings')}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Pengaturan
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem destructive onClick={() => setShowLogoutModal(true)}>
                   <LogOut className="mr-2 h-4 w-4" />

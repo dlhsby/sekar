@@ -59,8 +59,17 @@ describe('notificationToRoute', () => {
     expect(notificationToRoute(make('system', {}))).toBeNull();
   });
 
-  it('ignores non-string / empty ids', () => {
-    expect(notificationToRoute(make('task_assigned', { task_id: '' }))).toBeNull();
-    expect(notificationToRoute(make('task_assigned', { task_id: 123 }))).toBeNull();
+  it('ignores non-string / empty ids but still falls back to the section list', () => {
+    // A bad id must not build a dangling detail route (/tasks/ or /tasks/123);
+    // instead the type fallback routes to the section so seeded notifications
+    // (whose data is null) still have a working link.
+    expect(notificationToRoute(make('task_assigned', { task_id: '' }))).toBe('/tasks');
+    expect(notificationToRoute(make('task_assigned', { task_id: 123 }))).toBe('/tasks');
+  });
+
+  it('falls back to the section list for tugas/aktivitas/lembur without an id', () => {
+    expect(notificationToRoute(make('task_completed', null))).toBe('/tasks');
+    expect(notificationToRoute(make('activity_approved', null))).toBe('/activities');
+    expect(notificationToRoute(make('overtime_rejected', null))).toBe('/overtime');
   });
 });

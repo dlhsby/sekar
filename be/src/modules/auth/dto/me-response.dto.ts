@@ -50,6 +50,16 @@ export class MeResponseDto {
   @ApiProperty({ example: 'Pekerja Satu' })
   full_name: string;
 
+  @ApiPropertyOptional({ example: '081234567890', nullable: true })
+  phone_number?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Profile picture as base64 data URI',
+    example: 'data:image/jpeg;base64,/9j/4AAQSkZJRg...',
+    nullable: true,
+  })
+  profile_picture_url?: string | null;
+
   @ApiProperty({ enum: UserRole, example: UserRole.SATGAS })
   role: UserRole;
 

@@ -21,7 +21,7 @@ import { AuthResponseDto } from './dto/auth-response.dto';
 import { MeResponseDto } from './dto/me-response.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
-import { User, UserRole } from '../users/entities/user.entity';
+import { User } from '../users/entities/user.entity';
 import { Schedule } from '../schedules/entities/schedule.entity';
 import { Area } from '../areas/entities/area.entity';
 
@@ -270,8 +270,11 @@ export class AuthController {
         id: '8127dc81-97cf-4c6e-a1b4-b1ace284ea78',
         username: 'satgas1',
         full_name: 'Pekerja Satu',
+        phone_number: '081234567890',
+        profile_picture_url: null,
         role: 'satgas',
         created_at: '2026-01-07T10:00:00.000Z',
+        password_must_change: false,
       },
     },
   })
@@ -290,6 +293,8 @@ export class AuthController {
       id: user.id,
       username: user.username,
       full_name: user.full_name,
+      phone_number: user.phone_number || null,
+      profile_picture_url: user.profile_picture_url || null,
       role: user.role,
       area_id: user.area_id || null,
       rayon_id: user.rayon_id || null,

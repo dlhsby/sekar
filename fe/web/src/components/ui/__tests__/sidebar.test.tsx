@@ -43,11 +43,6 @@ const mockItems: SidebarItem[] = [
   },
 ];
 
-const mockUser = {
-  name: 'Admin User',
-  role: 'Administrator',
-  avatar: 'https://example.com/avatar.jpg',
-};
 
 describe('Sidebar Component', () => {
   describe('Rendering', () => {
@@ -93,23 +88,8 @@ describe('Sidebar Component', () => {
       expect(screen.getByTestId('settings-icon')).toBeInTheDocument();
     });
 
-    it('should render user info when user prop is provided', () => {
-      const { container } = render(<Sidebar items={mockItems} user={mockUser} />);
-
-      expect(screen.getByText('Admin User')).toBeInTheDocument();
-      expect(screen.getByText('Administrator')).toBeInTheDocument();
-      // RoleAvatar renders the photo decoratively (the wrapper is aria-hidden).
-      expect(container.querySelector('img')).toHaveAttribute('src', mockUser.avatar);
-    });
-
-    it('should render user initials when no avatar provided', () => {
-      const userWithoutAvatar = { name: 'John Doe', role: 'User' };
-      render(<Sidebar items={mockItems} user={userWithoutAvatar} />);
-
-      // RoleAvatar uses first + last initials.
-      expect(screen.getByText('JD')).toBeInTheDocument();
-      expect(screen.getByText('John Doe')).toBeInTheDocument();
-    });
+    // The bottom "me" card was removed in Phase 4-R (the user identity now lives
+    // only in the top-bar avatar), so the sidebar no longer takes a `user` prop.
   });
 
   describe('Role-based Filtering', () => {
@@ -362,15 +342,11 @@ describe('Sidebar Component', () => {
     });
 
     it('should have proper section borders', () => {
-      const { container } = render(<Sidebar items={mockItems} user={mockUser} />);
+      const { container } = render(<Sidebar items={mockItems} />);
 
       // Brand header bottom border (v2.1 white sidebar).
       const header = container.querySelector('.border-b-2.border-nb-black');
       expect(header).toBeInTheDocument();
-
-      // The "me" card is a bordered box at the bottom.
-      const meCard = container.querySelector('.border-2.border-nb-black.bg-nb-paper');
-      expect(meCard).toBeInTheDocument();
     });
   });
 

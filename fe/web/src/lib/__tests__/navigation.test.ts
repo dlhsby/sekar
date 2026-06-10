@@ -13,28 +13,31 @@ import {
 describe('Navigation Utilities', () => {
   describe('navigationItems', () => {
     it('should contain all expected navigation items', () => {
-      // 7 dashboard items + 1 admin pruning-requests + 2 staff_kecamatan items
-      expect(navigationItems).toHaveLength(10);
+      // Phase 4-R grouping: dashboard, monitoring, work(group), data(group),
+      // pruning-requests + 2 staff_kecamatan items = 7 top-level entries.
+      // Settings moved to the avatar dropdown (no longer in the sidebar).
+      expect(navigationItems).toHaveLength(7);
 
       const navIds = navigationItems.map((item) => item.id);
       expect(navIds).toContain('dashboard');
       expect(navIds).toContain('monitoring');
-      expect(navIds).toContain('tasks');
-      expect(navIds).toContain('activities');
-      expect(navIds).toContain('overtime');
+      expect(navIds).toContain('work');
       expect(navIds).toContain('data');
-      expect(navIds).toContain('settings');
       expect(navIds).toContain('pruning-requests');
+      expect(navIds).not.toContain('settings');
 
-      // Check nested items under 'data'
+      // 'Pekerjaan' group holds tasks / activities / overtime / schedules.
+      const workItem = navigationItems.find((item) => item.id === 'work');
+      expect(workItem?.children?.map((c) => c.id)).toEqual([
+        'tasks',
+        'activities',
+        'overtime',
+        'schedules',
+      ]);
+
+      // 'Data Master' group holds users / areas / rayons.
       const dataItem = navigationItems.find((item) => item.id === 'data');
-      expect(dataItem?.children).toBeDefined();
-      expect(dataItem?.children?.length).toBe(4);
-      const childIds = dataItem?.children?.map((child) => child.id);
-      expect(childIds).toContain('users');
-      expect(childIds).toContain('areas');
-      expect(childIds).toContain('rayons');
-      expect(childIds).toContain('schedules');
+      expect(dataItem?.children?.map((c) => c.id)).toEqual(['users', 'areas', 'rayons']);
     });
 
     it('should have correct structure for each navigation item', () => {
@@ -53,60 +56,55 @@ describe('Navigation Utilities', () => {
       });
     });
 
-    it('should have admin-only routes', () => {
-      const adminOnlyItems = navigationItems.filter(
-        (item) =>
-          item.roles.length === 2 &&
-          item.roles.includes('admin_system') &&
-          item.roles.includes('superadmin')
-      );
-
-      expect(adminOnlyItems.length).toBeGreaterThan(0);
-      expect(adminOnlyItems.find((item) => item.id === 'settings')).toBeDefined();
-
-      // Check nested admin-only routes under 'data'
+    it('should restrict the Users route to admin roles', () => {
+      // Users management is admin/admin_data only — nested under 'Data Master'.
       const dataItem = navigationItems.find((item) => item.id === 'data');
       const usersItem = dataItem?.children?.find((child) => child.id === 'users');
       expect(usersItem?.roles).toContain('admin_system');
       expect(usersItem?.roles).toContain('superadmin');
+      expect(usersItem?.roles).toContain('admin_data');
     });
   });
 
   describe('filterNavigationByRole', () => {
-    it('should return all items for superadmin role', () => {
+    it('should return all groups for superadmin role', () => {
       const filtered = filterNavigationByRole(navigationItems, 'superadmin');
 
-      // superadmin sees 8 items — 7 base dashboard items plus the new admin
-      // pruning-requests entry; 2 staff_kecamatan-only items remain hidden.
-      expect(filtered).toHaveLength(8);
-      expect(filtered.find((item) => item.id === 'pruning-requests')).toBeDefined();
-      expect(filtered.find((item) => item.id === 'dashboard')).toBeDefined();
-      expect(filtered.find((item) => item.id === 'settings')).toBeDefined();
+      // superadmin sees: dashboard, monitoring, work, data, pruning-requests
+      // (the 2 staff_kecamatan-only items remain hidden).
+      expect(filtered.map((i) => i.id)).toEqual([
+        'dashboard',
+        'monitoring',
+        'work',
+        'data',
+        'pruning-requests',
+      ]);
 
-      // Check nested users item under 'data'
+      const workItem = filtered.find((item) => item.id === 'work');
+      expect(workItem?.children?.map((c) => c.id)).toEqual([
+        'tasks',
+        'activities',
+        'overtime',
+        'schedules',
+      ]);
       const dataItem = filtered.find((item) => item.id === 'data');
-      expect(dataItem).toBeDefined();
       expect(dataItem?.children?.find((child) => child.id === 'users')).toBeDefined();
     });
 
-    it('should filter out admin-only items for top_management', () => {
+    it('should filter out admin-only children for top_management', () => {
       const filtered = filterNavigationByRole(navigationItems, 'top_management');
 
-      expect(filtered.find((item) => item.id === 'dashboard')).toBeDefined();
-      expect(filtered.find((item) => item.id === 'monitoring')).toBeDefined();
-      expect(filtered.find((item) => item.id === 'activities')).toBeDefined();
-      expect(filtered.find((item) => item.id === 'overtime')).toBeDefined();
+      const workItem = filtered.find((item) => item.id === 'work');
+      expect(workItem).toBeDefined();
+      // top_management can see tasks/activities/overtime but NOT schedules.
+      expect(workItem?.children?.map((c) => c.id)).toEqual(['tasks', 'activities', 'overtime']);
 
-      // Check nested items under 'data'
       const dataItem = filtered.find((item) => item.id === 'data');
-      expect(dataItem).toBeDefined();
       expect(dataItem?.children?.find((child) => child.id === 'areas')).toBeDefined();
       expect(dataItem?.children?.find((child) => child.id === 'rayons')).toBeDefined();
-
-      // Should NOT include admin-only routes
+      // Users is admin/admin_data only.
       expect(dataItem?.children?.find((child) => child.id === 'users')).toBeUndefined();
       expect(filtered.find((item) => item.id === 'settings')).toBeUndefined();
-      expect(dataItem?.children?.find((child) => child.id === 'schedules')).toBeUndefined();
     });
 
     it('should return appropriate items for kepala_rayon', () => {
@@ -114,13 +112,13 @@ describe('Navigation Utilities', () => {
 
       expect(filtered.find((item) => item.id === 'dashboard')).toBeDefined();
       expect(filtered.find((item) => item.id === 'monitoring')).toBeDefined();
-      expect(filtered.find((item) => item.id === 'activities')).toBeDefined();
-      expect(filtered.find((item) => item.id === 'overtime')).toBeDefined();
-      expect(filtered.find((item) => item.id === 'tasks')).toBeDefined();
 
-      // Should NOT include 'data' submenu (no accessible children)
+      // kepala_rayon sees the work group (tasks/activities/overtime), no schedules.
+      const workItem = filtered.find((item) => item.id === 'work');
+      expect(workItem?.children?.map((c) => c.id)).toEqual(['tasks', 'activities', 'overtime']);
+
+      // No 'Data Master' access.
       expect(filtered.find((item) => item.id === 'data')).toBeUndefined();
-      // Settings is admin-only
       expect(filtered.find((item) => item.id === 'settings')).toBeUndefined();
     });
 
@@ -129,19 +127,18 @@ describe('Navigation Utilities', () => {
 
       expect(filtered.find((item) => item.id === 'dashboard')).toBeDefined();
       expect(filtered.find((item) => item.id === 'monitoring')).toBeDefined();
-      expect(filtered.find((item) => item.id === 'activities')).toBeDefined();
-      expect(filtered.find((item) => item.id === 'overtime')).toBeDefined();
-      expect(filtered.find((item) => item.id === 'tasks')).toBeDefined();
 
-      // Check nested items under 'data'
-      const dataItem = filtered.find((item) => item.id === 'data');
-      expect(dataItem).toBeDefined();
-      expect(dataItem?.children?.find((child) => child.id === 'schedules')).toBeDefined();
+      // korlap sees the full work group, including schedules.
+      const workItem = filtered.find((item) => item.id === 'work');
+      expect(workItem?.children?.map((c) => c.id)).toEqual([
+        'tasks',
+        'activities',
+        'overtime',
+        'schedules',
+      ]);
 
-      // Should NOT include
-      expect(dataItem?.children?.find((child) => child.id === 'users')).toBeUndefined();
-      expect(dataItem?.children?.find((child) => child.id === 'areas')).toBeUndefined();
-      expect(dataItem?.children?.find((child) => child.id === 'rayons')).toBeUndefined();
+      // korlap has no Data Master access.
+      expect(filtered.find((item) => item.id === 'data')).toBeUndefined();
     });
 
     it('should return empty array for satgas role', () => {
@@ -287,7 +284,9 @@ describe('Navigation Utilities', () => {
       const breadcrumbs = getBreadcrumbPath('/tasks/task-123');
 
       expect(breadcrumbs).toHaveLength(2);
-      expect(breadcrumbs[0].label).toBe('Tugas');
+      // 'tasks' is now nested under the 'Pekerjaan' group, so the top-level
+      // breadcrumb lookup falls back to the capitalised segment.
+      expect(breadcrumbs[0].label).toBe('Tasks');
       expect(breadcrumbs[1].label).toBe('Task-123');
     });
   });

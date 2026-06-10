@@ -30,6 +30,7 @@ import {
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -227,6 +228,65 @@ export class UsersController {
   })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.usersService.findOne(id);
+  }
+
+  /**
+   * Update authenticated user's own profile.
+   * Accessible by all authenticated users. Only allows updating name and phone.
+   *
+   * @route PATCH /api/users/me
+   * @param user - Authenticated user from JWT token
+   * @param updateMyProfileDto - Profile data (full_name, phone_number)
+   * @returns Updated user entity (without password)
+   * @throws NotFoundException if user not found
+   * @throws ConflictException if phone number already in use
+   */
+  @Patch('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Update own profile',
+    description:
+      'Update authenticated user profile. Only full_name and phone_number can be updated. All fields are optional.',
+  })
+  @ApiBody({ type: UpdateMyProfileDto })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'User profile updated successfully.',
+    schema: {
+      example: {
+        id: '8127dc81-97cf-4c6e-a1b4-b1ace284ea78',
+        username: 'satgas1',
+        full_name: 'Pekerja Satu Updated',
+        phone_number: '081234567890',
+        profile_picture_url: null,
+        role: 'satgas',
+        is_active: true,
+        created_at: '2026-01-07T10:00:00.000Z',
+        updated_at: '2026-01-07T11:00:00.000Z',
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'User not found.',
+  })
+  @ApiResponse({
+    status: HttpStatus.CONFLICT,
+    description: 'Phone number already in use.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Validation failed.',
+  })
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Unauthorized. Authentication required.',
+  })
+  updateOwnProfile(
+    @GetUser() user: User,
+    @Body() updateMyProfileDto: UpdateMyProfileDto,
+  ): Promise<User> {
+    return this.usersService.updateOwnProfile(user.id, updateMyProfileDto);
   }
 
   /**

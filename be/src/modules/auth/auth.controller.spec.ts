@@ -116,6 +116,33 @@ describe('AuthController', () => {
       expect(result).not.toHaveProperty('assigned_area');
     });
 
+    it('should include phone_number and profile_picture_url in response', async () => {
+      const userWithPhotoAndPhone: User = {
+        ...mockUser,
+        phone_number: '081234567890',
+        profile_picture_url: 'data:image/jpeg;base64,/9j/4AAQSkZJRg...',
+        role: UserRole.SATGAS,
+      };
+
+      const result = await controller.getMe(userWithPhotoAndPhone);
+
+      expect(result).toHaveProperty('phone_number', '081234567890');
+      expect(result).toHaveProperty('profile_picture_url', 'data:image/jpeg;base64,/9j/4AAQSkZJRg...');
+    });
+
+    it('should return null for phone_number and profile_picture_url when not set', async () => {
+      const userWithoutPhotoAndPhone: User = {
+        ...mockUser,
+        phone_number: null,
+        profile_picture_url: null,
+      };
+
+      const result = await controller.getMe(userWithoutPhotoAndPhone);
+
+      expect(result).toHaveProperty('phone_number', null);
+      expect(result).toHaveProperty('profile_picture_url', null);
+    });
+
     describe('Phase 2C: Area Assignment', () => {
       describe('Korlap with permanent area_id', () => {
         it('should return assigned_area when area_id exists and area is found', async () => {

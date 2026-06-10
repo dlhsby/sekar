@@ -37,8 +37,24 @@ export function notificationToRoute(notification: AppNotification): string | nul
   const workerId = asId(data.worker_user_id);
   if (workerId) return `/monitoring?focus=${workerId}`;
 
-  // Fall back on the type when the payload omits an explicit entity id.
+  // Fall back on the type when the payload omits an explicit entity id — this is
+  // the case for seeded/demo notifications (their `data` is null by design), so
+  // every tugas/aktivitas/lembur notification still opens its relevant section.
   switch (notification.type) {
+    case 'task_assigned':
+    case 'task_updated':
+    case 'task_completed':
+    case 'task_declined':
+      return '/tasks';
+    case 'activity_approved':
+    case 'activity_rejected':
+    case 'activity_tagged':
+      return '/activities';
+    case 'overtime_approved':
+    case 'overtime_rejected':
+      return '/overtime';
+    case 'report_submitted':
+      return '/activities';
     case 'shift_reminder':
       return '/schedules';
     case 'missing_worker_alert':

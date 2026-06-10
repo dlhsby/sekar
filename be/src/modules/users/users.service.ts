@@ -12,6 +12,7 @@ import * as bcrypt from 'bcrypt';
 import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
 import { AuthService } from '../auth/auth.service';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
@@ -299,6 +300,61 @@ export class UsersService {
   async updateProfilePicture(id: string, url: string): Promise<void> {
     await this.userRepository.update(id, { profile_picture_url: url });
     this.logger.log(`Profile picture updated for user: ID ${id}`);
+  }
+
+  /**
+   * Update current user's own profile (name and phone only)
+   * @param userId User ID (UUID)
+   * @param updateMyProfileDto Profile data (full_name, phone_number only)
+   * @returns Updated user entity (without password)
+   * @throws NotFoundException if user not found
+   * @throws ConflictException if phone number already in use
+   */
+  async updateOwnProfile(userId: string, updateMyProfileDto: UpdateMyProfileDto): Promise<User> {
+    this.logger.log(`User ${userId} updating their own profile`);
+
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      select: [
+        'id',
+        'username',
+        'full_name',
+        'phone_number',
+        'role',
+        'is_active',
+        'profile_picture_url',
+        'created_at',
+        'updated_at',
+      ],
+    });
+
+    if (!user) {
+      this.logger.warn(`Profile update failed: User not found - ID ${userId}`);
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
+    // Validate phone uniqueness if provided
+    if (updateMyProfileDto.phone_number && updateMyProfileDto.phone_number !== user.phone_number) {
+      const phoneExists = await this.userRepository.findOne({
+        where: { phone_number: updateMyProfileDto.phone_number },
+      });
+      if (phoneExists) {
+        throw new ConflictException('Phone number already in use');
+      }
+    }
+
+    // Update only allowed fields
+    if (updateMyProfileDto.full_name !== undefined) {
+      user.full_name = updateMyProfileDto.full_name.trim();
+    }
+    if (updateMyProfileDto.phone_number !== undefined) {
+      user.phone_number = updateMyProfileDto.phone_number;
+    }
+
+    const savedUser = await this.userRepository.save(user);
+    this.logger.log(`User profile updated: ID ${userId}`);
+
+    return savedUser;
   }
 
   async changePassword(

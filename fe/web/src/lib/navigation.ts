@@ -7,7 +7,7 @@ import {
   CalendarIcon,
   DocumentTextIcon,
   ClipboardDocumentListIcon,
-  Cog6ToothIcon,
+  BriefcaseIcon,
   FolderIcon,
   ClockIcon,
   InboxArrowDownIcon,
@@ -46,54 +46,34 @@ export const navigationItems: NavItem[] = [
     icon: MapIcon,
     roles: [...MONITORING_ROLES],
   },
+  // ── Pekerjaan: day-to-day work surfaces (tugas / aktivitas / lembur / jadwal)
   {
-    id: 'tasks',
-    label: 'Tugas',
-    href: '/tasks',
-    icon: ClipboardDocumentListIcon,
-    roles: [...TASK_MANAGER_ROLES],
-  },
-  {
-    id: 'activities',
-    label: 'Aktivitas',
-    href: '/activities',
-    icon: DocumentTextIcon,
-    roles: [...MONITORING_ROLES],
-  },
-  {
-    id: 'overtime',
-    label: 'Lembur',
-    href: '/overtime',
-    icon: ClockIcon,
-    roles: [...MONITORING_ROLES],
-  },
-  {
-    id: 'data',
-    label: 'Data',
+    id: 'work',
+    label: 'Pekerjaan',
     href: '#',
-    icon: FolderIcon,
-    roles: [...ADMIN_ROLES, 'top_management', 'korlap', 'admin_data'],
+    icon: BriefcaseIcon,
+    roles: [...MONITORING_ROLES],
     children: [
       {
-        id: 'users',
-        label: 'Users',
-        href: '/users',
-        icon: UsersIcon,
-        roles: [...ADMIN_ROLES, 'admin_data'],
+        id: 'tasks',
+        label: 'Tugas',
+        href: '/tasks',
+        icon: ClipboardDocumentListIcon,
+        roles: [...TASK_MANAGER_ROLES],
       },
       {
-        id: 'areas',
-        label: 'Areas',
-        href: '/areas',
-        icon: MapPinIcon,
-        roles: [...ADMIN_ROLES, 'top_management'],
+        id: 'activities',
+        label: 'Aktivitas',
+        href: '/activities',
+        icon: DocumentTextIcon,
+        roles: [...MONITORING_ROLES],
       },
       {
-        id: 'rayons',
-        label: 'Rayons',
-        href: '/rayons',
-        icon: BuildingOfficeIcon,
-        roles: [...ADMIN_ROLES, 'top_management'],
+        id: 'overtime',
+        label: 'Lembur',
+        href: '/overtime',
+        icon: ClockIcon,
+        roles: [...MONITORING_ROLES],
       },
       {
         id: 'schedules',
@@ -104,12 +84,36 @@ export const navigationItems: NavItem[] = [
       },
     ],
   },
+  // ── Data Master: organisation structure + accounts
   {
-    id: 'settings',
-    label: 'Settings',
-    href: '/settings',
-    icon: Cog6ToothIcon,
-    roles: [...ADMIN_ROLES],
+    id: 'data',
+    label: 'Data Master',
+    href: '#',
+    icon: FolderIcon,
+    roles: [...ADMIN_ROLES, 'top_management', 'admin_data'],
+    children: [
+      {
+        id: 'users',
+        label: 'Pengguna',
+        href: '/users',
+        icon: UsersIcon,
+        roles: [...ADMIN_ROLES, 'admin_data'],
+      },
+      {
+        id: 'areas',
+        label: 'Area',
+        href: '/areas',
+        icon: MapPinIcon,
+        roles: [...ADMIN_ROLES, 'top_management'],
+      },
+      {
+        id: 'rayons',
+        label: 'Rayon',
+        href: '/rayons',
+        icon: BuildingOfficeIcon,
+        roles: [...ADMIN_ROLES, 'top_management'],
+      },
+    ],
   },
 
   // ── Phase 3: pruning-requests admin disposition (ADR-038) ───────────────
@@ -167,6 +171,47 @@ export const filterNavigationByRole = (items: NavItem[], userRole: string): NavI
       }
       return true;
     });
+};
+
+/**
+ * Page titles by route — rendered in the top header so pages don't need to
+ * repeat a large in-body title. Dynamic detail/edit routes fall back to their
+ * section title (longest known prefix).
+ */
+const ROUTE_TITLES: Record<string, string> = {
+  '/': 'Dashboard',
+  '/monitoring': 'Monitoring',
+  '/tasks': 'Tugas',
+  '/tasks/new': 'Tugas Baru',
+  '/activities': 'Aktivitas',
+  '/overtime': 'Lembur',
+  '/schedules': 'Jadwal',
+  '/schedules/new': 'Jadwal Baru',
+  '/users': 'Pengguna',
+  '/users/new': 'Pengguna Baru',
+  '/areas': 'Area',
+  '/areas/new': 'Area Baru',
+  '/rayons': 'Rayon',
+  '/pruning-requests': 'Permohonan Pemangkasan',
+  '/pruning-submit': 'Kirim Permintaan',
+  '/pruning-submit/my': 'Permintaan Saya',
+  '/settings': 'Pengaturan',
+  '/profile': 'Profil Saya',
+  '/notifications': 'Notifikasi',
+};
+
+/**
+ * Resolve the page title for a pathname. Exact match first, then the longest
+ * known prefix (so `/tasks/123` → "Tugas", `/users/abc` → "Pengguna").
+ */
+export const getPageTitle = (pathname: string): string => {
+  if (ROUTE_TITLES[pathname]) return ROUTE_TITLES[pathname];
+  const segments = pathname.split('/').filter(Boolean);
+  for (let i = segments.length; i > 0; i--) {
+    const prefix = '/' + segments.slice(0, i).join('/');
+    if (ROUTE_TITLES[prefix]) return ROUTE_TITLES[prefix];
+  }
+  return 'SEKAR';
 };
 
 /**
