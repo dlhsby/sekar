@@ -50,12 +50,19 @@ let failedQueue: Array<{
 }> = [];
 
 /**
- * Check if we're currently on the login page
- * Prevents redirect loops when already on login
+ * Public auth routes that an unauthenticated visitor is allowed to sit on —
+ * the 401 interceptor must NOT bounce these to /login (that's what made
+ * /forgot-password redirect-loop back to login).
+ */
+const PUBLIC_AUTH_PATHS = ['/login', '/forgot-password'];
+
+/**
+ * Check if we're currently on a public auth page (login / forgot-password).
+ * Prevents redirect loops when already on one.
  */
 const isOnLoginPage = (): boolean => {
   if (typeof window === 'undefined') return false;
-  return window.location.pathname === '/login' || window.location.pathname.startsWith('/login');
+  return PUBLIC_AUTH_PATHS.some((path) => window.location.pathname.startsWith(path));
 };
 
 /**

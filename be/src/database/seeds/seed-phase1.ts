@@ -137,6 +137,31 @@ async function seedPhase1() {
     console.log('  Created 1 user: resettest (satgas, password_must_change) — password: password123');
 
     // ============================================================
+    // NOTIFICATIONS (8 — admin demo feed for the web inbox screen)
+    // ============================================================
+    // Seeds a varied feed (mixed types + read/unread) so the web /notifications
+    // screen has data to exercise: category tabs, unread dots, mark-read, and
+    // type-fallback deep-links (missing_worker_alert → /monitoring,
+    // shift_reminder → /schedules). Entity-id deep-links are intentionally
+    // omitted to avoid pointing at IDs that don't exist after a reseed.
+    console.log('\nSeeding admin notifications (web inbox demo)...');
+    await queryRunner.query(`
+      INSERT INTO notifications
+        (id, user_id, title, body, type, data, is_read, read_at, is_sent, sent_at, created_at)
+      VALUES
+        ('b0000000-0000-4000-8000-000000000001', '${ADMIN_USER_ID}', 'Selamat datang di SEKAR', 'Konsol web SEKAR siap digunakan. Jelajahi monitoring, tugas, dan laporan dari sini.', 'announcement', NULL, FALSE, NULL, TRUE, NOW() - INTERVAL '30 minutes', NOW() - INTERVAL '30 minutes'),
+        ('b0000000-0000-4000-8000-000000000002', '${ADMIN_USER_ID}', 'Tugas baru ditugaskan', 'Sebuah tugas perawatan baru telah dibuat dan menunggu penjadwalan.', 'task_assigned', NULL, FALSE, NULL, TRUE, NOW() - INTERVAL '2 hours', NOW() - INTERVAL '2 hours'),
+        ('b0000000-0000-4000-8000-000000000003', '${ADMIN_USER_ID}', 'Petugas tidak terpantau', 'Satu petugas tidak mengirim lokasi lebih dari 15 menit. Periksa monitoring.', 'missing_worker_alert', NULL, FALSE, NULL, TRUE, NOW() - INTERVAL '4 hours', NOW() - INTERVAL '4 hours'),
+        ('b0000000-0000-4000-8000-000000000004', '${ADMIN_USER_ID}', 'Pengingat shift besok', 'Jadwal shift pagi dimulai pukul 06.00. Pastikan penugasan sudah lengkap.', 'shift_reminder', NULL, FALSE, NULL, TRUE, NOW() - INTERVAL '6 hours', NOW() - INTERVAL '6 hours'),
+        ('b0000000-0000-4000-8000-000000000005', '${ADMIN_USER_ID}', 'Aktivitas disetujui', 'Laporan aktivitas penyiraman telah disetujui.', 'activity_approved', NULL, TRUE, NOW() - INTERVAL '20 hours', TRUE, NOW() - INTERVAL '22 hours', NOW() - INTERVAL '22 hours'),
+        ('b0000000-0000-4000-8000-000000000006', '${ADMIN_USER_ID}', 'Lembur disetujui', 'Permintaan lembur akhir pekan telah disetujui.', 'overtime_approved', NULL, TRUE, NOW() - INTERVAL '23 hours', TRUE, NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day'),
+        ('b0000000-0000-4000-8000-000000000007', '${ADMIN_USER_ID}', 'Anda ditandai pada aktivitas', 'Anda ditandai sebagai pihak terkait pada sebuah laporan aktivitas.', 'activity_tagged', NULL, FALSE, NULL, TRUE, NOW() - INTERVAL '1 hour', NOW() - INTERVAL '1 hour'),
+        ('b0000000-0000-4000-8000-000000000008', '${ADMIN_USER_ID}', 'Pemeliharaan terjadwal', 'Sistem akan menjalani pemeliharaan rutin Minggu pukul 23.00.', 'system', NULL, TRUE, NOW() - INTERVAL '2 days', TRUE, NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days')
+      ON CONFLICT (id) DO NOTHING
+    `);
+    console.log('  Created 8 notifications for admin (5 unread)');
+
+    // ============================================================
     // AREA TYPES (4)
     // ============================================================
     console.log('\nSeeding area types...');

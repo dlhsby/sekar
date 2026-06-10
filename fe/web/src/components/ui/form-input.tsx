@@ -12,9 +12,10 @@ export interface FormInputProps extends InputProps {
 }
 
 const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
-  ({ className, label, required, id, error, ...props }, ref) => {
+  ({ className, label, required, id, error, state, ...props }, ref) => {
     const generatedId = React.useId();
     const inputId = id || generatedId;
+    const errorId = `${inputId}-error`;
 
     return (
       <div className={cn('space-y-1', className)}>
@@ -22,9 +23,27 @@ const FormInput = React.forwardRef<HTMLInputElement, FormInputProps>(
           {label}
           {required && <span className="text-nb-danger ml-1">*</span>}
         </Label>
-        <Input ref={ref} id={inputId} required={required} error={error} {...props} />
+        {/*
+          Pass only the error STATE (border colour) to Input — never the error
+          string. Input renders its own message when given `error`, so passing
+          it here would duplicate the message FormInput renders below.
+        */}
+        <Input
+          ref={ref}
+          id={inputId}
+          required={required}
+          state={error ? 'error' : state}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
+          {...props}
+        />
         {error && (
-          <p className="text-sm text-nb-danger font-medium" role="alert" aria-live="polite">
+          <p
+            id={errorId}
+            className="text-nb-body-sm text-nb-danger font-medium"
+            role="alert"
+            aria-live="polite"
+          >
             {error}
           </p>
         )}

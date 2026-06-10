@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { authApi, User, LoginCredentials } from '@/lib/api/auth';
+import { authApi, User, LoginCredentials, ChangePasswordPayload } from '@/lib/api/auth';
 import { getErrorMessage } from '@/lib/api/client';
 import { clearAuthCookies, setAuthCookie } from '@/lib/utils/cookies';
 
@@ -17,6 +17,8 @@ interface AuthContextValue {
   login: (credentials: LoginCredentials) => Promise<void>;
   /** Logout current user */
   logout: () => Promise<void>;
+  /** Change password (voluntary or admin-forced); rotates tokens + clears the flag */
+  changePassword: (payload: ChangePasswordPayload) => Promise<void>;
   /** Refresh user data from backend */
   refreshUser: () => Promise<void>;
   /** Clear error message */
@@ -79,7 +81,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     // Skip auth check on login page - no need to verify tokens when user is trying to login
     // This prevents the redirect loop: login → checkAuth → 401 → redirect to login → repeat
-    if (pathname === '/login') {
+    // Public auth pages don't need a session check — running it there triggers
+    // the 401 interceptor and bounces /forgot-password back to /login.
+    if (pathname === '/login' || pathname === '/forgot-password') {
       setLoading(false);
       return;
     }
@@ -104,8 +108,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         setUser(response.user);
 
-        // Redirect to dashboard home
-        router.push('/');
+        // Admin-reset accounts must set a new password before anything else.
+        router.push(response.user.password_must_change ? '/change-password' : '/');
       } catch (err) {
         const errorMessage = getErrorMessage(err);
         setError(errorMessage);
@@ -139,6 +143,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [router]);
 
   /**
+   * Change password — used by the forced flow after an admin reset (ADR-041)
+   * and any future voluntary change. The backend rotates tokens and clears
+   * `password_must_change`, so we swap in the new tokens and the refreshed user.
+   */
+  const changePassword = useCallback(
+    async (payload: ChangePasswordPayload) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await authApi.changePassword(payload);
+        setAuthCookie('access_token', response.access_token, { maxAge: 7 * 24 * 60 * 60 });
+        setAuthCookie('refresh_token', response.refresh_token, { maxAge: 30 * 24 * 60 * 60 });
+        setUser(response.user);
+        router.push('/');
+      } catch (err) {
+        const errorMessage = getErrorMessage(err);
+        setError(errorMessage);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [router]
+  );
+
+  // Forced password change gate: an admin-reset user can't reach any other
+  // route until they set a new password (mirrors the mobile RootNavigator gate).
+  useEffect(() => {
+    if (loading) return;
+    if (user?.password_must_change && pathname !== '/change-password') {
+      router.replace('/change-password');
+    }
+  }, [user, loading, pathname, router]);
+
+  /**
    * Refresh user data from backend
    * Useful after profile updates
    */
@@ -167,6 +206,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     error,
     login,
     logout,
+    changePassword,
     refreshUser,
     clearError,
   };

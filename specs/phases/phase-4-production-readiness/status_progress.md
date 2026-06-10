@@ -4,6 +4,21 @@ Chronological changelog for Phase 4 work. Mirrors the Phase 3 STATUS.md pattern:
 
 ---
 
+## June 10, 2026 — 4-R web CP2 review pass (login polish + force-reset parity + Toast)
+
+User review of CP2 (entry flow). Six fixes landed; no % change (refinement of shipped CP2).
+
+- **🔴 forgot-password redirect loop (real bug):** `/forgot-password` bounced back to `/login`. Root cause: `AuthContext.checkAuth` ran on every non-`/login` route → `GET /auth/me` 401 → the client 401 interceptor `redirectToLogin()` (which only exempted `/login`). Fixed both sides: `client.ts` now exempts a `PUBLIC_AUTH_PATHS` list (`/login`, `/forgot-password`); `context.tsx` skips the session check on `/forgot-password` too.
+- **🔴 doubled form error (global bug):** every `FormInput` rendered its error message **twice** — `Input` renders its own `{error}` `<p>` and `FormInput` rendered a second. `FormInput` now passes only the error **state** (border) to `Input` (+ `aria-invalid`/`aria-describedby` → its single message), never the error string. Fixes all forms, not just login.
+- **Web Toast (new primitive):** `components/ui/toast.tsx` — `ToastProvider` + `useToast()`, NB chrome, 4 levels (mirrors mobile `NBToast`), auto-dismiss, a11y live-region. Mounted in `app/providers.tsx`. Login API failures now surface as a single `toast({level:'danger', title:'Gagal Masuk'})` (mobile-consistent) instead of a second inline block.
+- **Force-reset-password parity (web, ADR-041):** web had no forced-change flow (mobile did). Added: `password_must_change` on the web `User` type, `authApi.changePassword`, `AuthContext.changePassword` (rotates tokens, clears flag), a forced-gate effect (flagged user → `/change-password`), `login` routes flagged users to `/change-password`, and a new forced `(auth)/change-password` page. **Test account: `resettest` / `password123`** (seed-phase1, `password_must_change=TRUE`).
+- **Login content (LOG-1 polish):** dropped "Konsol" copy + the "Live monitoring / Offline-safe" pills; added the SEKAR tagline **"Sistem Evaluasi Kinerja Satgas RTH"**, new brand-panel heading, and a new `components/brand/LoginHero.tsx` NB illustration (pinwheel sun + park/monitoring scene, tokenized SVG) to fill the panel. Eyebrow "Masuk ke konsol" → "Masuk ke SEKAR"; footer "admin@sekar" → "Admin".
+- **Admin notification seed:** `seed-phase1.ts` now seeds **8 notifications for `admin`** (5 unread, varied types incl. type-fallback deep-links to `/monitoring` + `/schedules`) so the web `/notifications` inbox has demo data. Survives full `db:seed` (only phase-1 truncates `notifications`).
+
+**Verification:** web `tsc` 0 · `lint` 0 errors · `build` green · **jest 90 suites / 1697 pass** (+Toast suite, +changePassword/gate context tests). Backend `tsc` 0.
+
+---
+
 ## June 9, 2026 — 4-R web CP5 (LBR-1): overtime three-tab queue (hifi-web §08)
 
 Fifth checkpoint, anchor LBR-1. 4-R web ~55% → **~60%**. Flipped **LBR-1 ✅**.

@@ -7,8 +7,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Eye, EyeOff } from 'lucide-react';
-import { FormInput, Button } from '@/components/ui';
+import { FormInput, Button, useToast } from '@/components/ui';
 import { SekarLogoBox } from '@/components/brand/SekarLogoBox';
+import { LoginHero } from '@/components/brand/LoginHero';
 import { useAuth } from '@/lib/auth/hooks';
 import { getErrorMessage } from '@/lib/api/client';
 
@@ -48,7 +49,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, user, loading: authLoading } = useAuth();
-  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
 
   const redirect = searchParams.get('redirect') || '/';
@@ -70,14 +71,15 @@ function LoginForm() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      setError(null);
       await login(data);
     } catch (err) {
+      // Mirror the mobile login UX: surface API failures as a single toast
+      // ("Gagal Masuk") rather than a second inline error block.
       let errorMessage = getErrorMessage(err);
       if (errorMessage === 'Invalid credentials') {
-        errorMessage = 'Username / No. HP atau Password salah';
+        errorMessage = 'Username / No. HP atau Sandi salah';
       }
-      setError(errorMessage);
+      toast({ level: 'danger', title: 'Gagal Masuk', body: errorMessage });
     }
   };
 
@@ -104,27 +106,24 @@ function LoginForm() {
           aria-hidden="true"
         />
         <div className="relative z-10">
-          <div className="mb-8">
-            <BrandLockup />
-          </div>
-          <h2 className="text-nb-display text-nb-black">
-            Konsol
-            <br />
-            pengelolaan
-            <br />
-            RTH Surabaya.
-          </h2>
-          <p className="mt-4 max-w-[36ch] text-nb-body-sm text-nb-black">
-            Pantau satgas, kelola tugas, dan proses permohonan perantingan dari satu konsol terpusat.
-          </p>
+          <BrandLockup />
         </div>
-        <div className="relative z-10 flex gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-nb-black bg-nb-white px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-nb-black">
-            <span className="size-1.5 rounded-full bg-status-active" /> Live monitoring
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-nb-black bg-nb-white px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wide text-nb-black">
-            <span className="size-1.5 rounded-full bg-nb-info" /> Offline-safe
-          </span>
+
+        <LoginHero className="relative z-10 my-6" />
+
+        <div className="relative z-10">
+          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-nb-black/70">
+            Sistem Evaluasi Kinerja Satgas RTH
+          </p>
+          <h2 className="mt-2 text-nb-display text-nb-black">
+            Ruang terbuka hijau
+            <br />
+            Surabaya, terpantau.
+          </h2>
+          <p className="mt-3 max-w-[40ch] text-nb-body-sm text-nb-black/80">
+            Pantau satgas di lapangan, kelola tugas perawatan, dan evaluasi kinerja — dalam satu
+            tempat.
+          </p>
         </div>
       </div>
 
@@ -138,7 +137,7 @@ function LoginForm() {
 
           <div className="mb-4 inline-flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-wide text-nb-gray-600">
             <span className="size-2 rounded-full border-[1.5px] border-nb-black bg-nb-primary" />
-            Masuk ke konsol
+            Masuk ke SEKAR
           </div>
           <h1 className="text-nb-h1 text-nb-black">Selamat datang kembali</h1>
           <p className="mb-6 mt-2 text-nb-body-sm text-nb-gray-700">
@@ -146,16 +145,6 @@ function LoginForm() {
           </p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {error && (
-              <div
-                className="rounded-nb-md border-2 border-nb-danger bg-nb-danger-light p-3"
-                role="alert"
-                aria-live="polite"
-              >
-                <p className="text-nb-body-sm font-medium text-nb-black">{error}</p>
-              </div>
-            )}
-
             <FormInput
               label="Username / No. HP"
               type="text"
@@ -199,7 +188,7 @@ function LoginForm() {
           </form>
 
           <p className="mt-5 text-center text-nb-caption text-nb-gray-600">
-            Akun dibuat oleh admin. Hubungi <b className="text-nb-black">admin@sekar</b> jika ada kendala.
+            Akun dibuat oleh admin. Hubungi <b className="text-nb-black">Admin</b> jika ada kendala.
           </p>
         </div>
       </div>

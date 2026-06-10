@@ -17,6 +17,7 @@ jest.mock('@/lib/api/auth', () => ({
     logout: jest.fn(),
     getCurrentUser: jest.fn(),
     refreshToken: jest.fn(),
+    changePassword: jest.fn(),
   },
 }));
 
@@ -357,6 +358,87 @@ describe('Auth Context', () => {
       });
 
       expect(result.current.error).toBeNull();
+    });
+  });
+
+  describe('login redirects', () => {
+    it('routes an admin-reset user to /change-password instead of /', async () => {
+      mockPathname = '/login';
+      mockPush.mockClear();
+      mockAuthApi.login.mockResolvedValue({
+        ...mockAuthResponse,
+        user: { ...mockUser, password_must_change: true },
+      });
+
+      const { result } = renderHook(() => useAuthContext(), {
+        wrapper: ({ children }) => <AuthProvider>{children}</AuthProvider>,
+      });
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await result.current.login({ identifier: 'resettest', password: 'password123' });
+      });
+
+      expect(mockPush).toHaveBeenCalledWith('/change-password');
+      expect(mockPush).not.toHaveBeenCalledWith('/');
+    });
+  });
+
+  describe('changePassword', () => {
+    it('rotates tokens, sets the refreshed user, and redirects home', async () => {
+      mockPathname = '/change-password';
+      mockPush.mockClear();
+      const refreshed: User = { ...mockUser, password_must_change: false };
+      mockAuthApi.getCurrentUser.mockResolvedValue({ ...mockUser, password_must_change: true });
+      mockAuthApi.changePassword.mockResolvedValue({
+        access_token: 'new-access',
+        refresh_token: 'new-refresh',
+        user: refreshed,
+      });
+
+      const { result } = renderHook(() => useAuthContext(), {
+        wrapper: ({ children }) => <AuthProvider>{children}</AuthProvider>,
+      });
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await act(async () => {
+        await result.current.changePassword({ new_password: 'brandnewpass' });
+      });
+
+      expect(mockAuthApi.changePassword).toHaveBeenCalledWith({ new_password: 'brandnewpass' });
+      expect(mockCookieUtils.setAuthCookie).toHaveBeenCalledWith('access_token', 'new-access', {
+        maxAge: 7 * 24 * 60 * 60,
+      });
+      expect(result.current.user).toEqual(refreshed);
+      expect(mockPush).toHaveBeenCalledWith('/');
+    });
+  });
+
+  describe('forced password-change gate', () => {
+    it('redirects a flagged user off a protected route to /change-password', async () => {
+      mockPathname = '/users';
+      mockReplace.mockClear();
+      mockAuthApi.getCurrentUser.mockResolvedValue({ ...mockUser, password_must_change: true });
+
+      const { result } = renderHook(() => useAuthContext(), {
+        wrapper: ({ children }) => <AuthProvider>{children}</AuthProvider>,
+      });
+
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/change-password'));
+    });
+
+    it('does not redirect when already on /change-password', async () => {
+      mockPathname = '/change-password';
+      mockReplace.mockClear();
+      mockAuthApi.getCurrentUser.mockResolvedValue({ ...mockUser, password_must_change: true });
+
+      const { result } = renderHook(() => useAuthContext(), {
+        wrapper: ({ children }) => <AuthProvider>{children}</AuthProvider>,
+      });
+
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      expect(mockReplace).not.toHaveBeenCalled();
     });
   });
 

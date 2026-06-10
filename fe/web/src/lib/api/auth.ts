@@ -14,6 +14,12 @@ export interface User {
   profile_picture_url?: string;
   rayon_id?: string;
   area_id?: string;
+  /**
+   * Set true when an admin reset this user's password (ADR-041, Phase 4-7).
+   * Forces the user through `/change-password` before reaching the dashboard;
+   * cleared by POST /auth/change-password. Returned by /auth/login and /auth/me.
+   */
+  password_must_change?: boolean;
   assigned_area?: {
     id: string;
     name: string;
@@ -33,6 +39,16 @@ export type { UserRole };
 export interface LoginCredentials {
   identifier: string;
   password: string;
+}
+
+/**
+ * Change-password payload (ADR-041). `old_password` is optional — required for a
+ * voluntary change, omitted in the admin-forced flow (the JWT + the
+ * `password_must_change` flag already authorise the change).
+ */
+export interface ChangePasswordPayload {
+  old_password?: string;
+  new_password: string;
 }
 
 /**
@@ -68,6 +84,16 @@ export const authApi = {
 
   getCurrentUser: async (): Promise<User> => {
     const response = await apiClient.get<User>('/auth/me');
+    return response.data;
+  },
+
+  /**
+   * Change the current user's password. Returns a fresh token pair (the backend
+   * rotates tokens and clears `password_must_change`) — callers must replace the
+   * stored cookies with the new tokens.
+   */
+  changePassword: async (payload: ChangePasswordPayload): Promise<AuthResponse> => {
+    const response = await apiClient.post<AuthResponse>('/auth/change-password', payload);
     return response.data;
   },
 };
