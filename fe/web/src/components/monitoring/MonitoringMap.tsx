@@ -129,9 +129,14 @@ export function MonitoringMap({
       resizeObserver = new ResizeObserver(() => map.resize());
       resizeObserver.observe(containerRef.current);
     }
+    // The canvas can stick at its init size (e.g. measured mid fade-in). Force a
+    // resize on load and again after the layout has settled.
     map.on('load', () => map.resize());
+    map.once('idle', () => map.resize());
+    const resizeTimers = [60, 250, 600].map((ms) => setTimeout(() => map.resize(), ms));
 
     return () => {
+      resizeTimers.forEach(clearTimeout);
       resizeObserver?.disconnect();
       isLoadedRef.current = false;
       markersRef.current.forEach(({ marker, popup }) => {
