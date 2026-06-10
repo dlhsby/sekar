@@ -77,9 +77,7 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
 
   if (!schedule) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="text-center text-nb-gray-600">Jadwal tidak ditemukan</div>
-      </div>
+      <div className="py-12 text-center text-nb-gray-600">Jadwal tidak ditemukan</div>
     );
   }
 
@@ -112,35 +110,18 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-2xl">
-      {/* Breadcrumb */}
-      <nav className="mb-6 text-sm">
-        <ol className="flex items-center space-x-2">
-          <li>
-            <Link href="/schedules" className="text-nb-primary hover:underline font-semibold">
-              Jadwal
-            </Link>
-          </li>
-          <li className="text-nb-gray-400">/</li>
-          <li className="text-nb-gray-600">Edit</li>
-        </ol>
-      </nav>
-
-      {/* Back Button */}
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push('/schedules')}
-          leftIcon={<ArrowLeft className="w-4 h-4" />}
-        >
-          Kembali ke Daftar Jadwal
-        </Button>
-      </div>
+    <div className="mx-auto max-w-2xl space-y-5">
+      <button
+        type="button"
+        onClick={() => router.push('/schedules')}
+        className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wide text-nb-gray-700 transition-colors hover:text-nb-black"
+      >
+        <ArrowLeft className="size-4" aria-hidden="true" /> Kembali ke daftar jadwal
+      </button>
 
       <Card variant="elevated">
         <CardHeader>
-          <h1 className="text-2xl font-bold text-nb-black">Edit Jadwal</h1>
+          <h1 className="text-nb-h3 text-nb-black">Edit Jadwal</h1>
         </CardHeader>
 
         <CardContent>
