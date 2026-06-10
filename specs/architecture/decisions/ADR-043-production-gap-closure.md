@@ -2,11 +2,15 @@
 
 ## Status
 
-Proposed (final verdicts pending Sub-Phase 4-V execution)
+Partially Accepted (desk audit complete Jun 10, 2026 — see `status_reviews.md § Gap Audit`):
+- **Gap 1 (offline sync): Accepted/Delivered** — 4-2 shipped the full 7-type queue + 3-state connectivity; field flows remain.
+- **Gap 2 (push hardening): Accepted/Delivered** — 4-3 shipped preferences + BullMQ `fcm-retry` + inbox; staging latency probes remain.
+- **Gap 3 (background location): ESCALATED** — desk audit found **no foreground-service implementation exists** (tracking is screen-on only). Permissions/Info.plist fixed in 4-8; the service itself is 1-2 d net-new work pending an owner go/no-go (ship MVP with the documented limitation vs block release).
+- **Gap 4 (broker): Accepted/Delivered** — BullMQ on existing Redis 7 live since 4-3; 4-5 exports use `setImmediate` + retry cron (documented deviation, acceptable at current volume).
 
 ## Date
 
-2026-05-22
+2026-05-22 (desk-audit verdicts recorded 2026-06-10)
 
 ## Context
 

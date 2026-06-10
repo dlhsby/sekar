@@ -7,7 +7,9 @@ This document contains: (a) the March-12 expert specification review (preserved)
 
 ---
 
-## <a id="gap-audit"></a>Production-Readiness Gap Audit (Sub-Phase 4-V) — ⏳ pending
+## <a id="gap-audit"></a>Production-Readiness Gap Audit (Sub-Phase 4-V) — 🟡 desk portion complete (Jun 10, 2026) · field/staging probes ⏳
+
+> **Desk-audit pass (Jun 10, 2026, code-verified on `main`):** every probe that can be answered by reading the codebase is filled in below. Probes needing a staging build, physical device, or wall-clock measurement remain ⏳ and are listed in the **Manual field-test checklist** at the end of this section.
 
 **Purpose:** Replace speculation about production readiness with verified findings on staging. Output: one verdict per gap → **Deliver in 4-x** / **Already-good for MVP** / **Defer to Phase 5**. Final cross-gap synthesis is encoded in [ADR-043](../../architecture/decisions/ADR-043-production-gap-closure.md).
 
@@ -33,58 +35,58 @@ Failures against these thresholds escalate the verdict to "Deliver in 4-x".
 
 | Probe | Result | Notes |
 |-------|--------|-------|
-| `fe/mobile/src/services/sync/offlineQueue.ts` `QueueItemType` enum coverage | ⏳ | Inventory expected types: `shift-clock-in`, `shift-clock-out`, `location-update`, `activity-submit`. Missing per March-12 spec: `overtime-start`, `overtime-end`, `task-completion`, `reassignment` |
-| Unit test pass rate on `__tests__/offlineQueue.*` | ⏳ | `npm test -- offlineQueue` |
-| Manual airplane-mode flow (clock-in → reconnect → submission) | ⏳ | Single-submission guarantee; no duplicate |
-| Manual airplane-mode flow (activity → reconnect) | ⏳ | Multipart upload re-attempts |
-| Timezone preservation across queue + sync | ⏳ | Asia/Jakarta retained, no UTC drift |
-| ConnectivityBanner present? | ⏳ | March-12 spec says no — confirm |
-| Distinction NO_INTERNET vs SERVER_UNREACHABLE? | ⏳ | ADR-019 design — verify implementation |
+| `fe/mobile/src/services/sync/offlineQueue.ts` `QueueItemType` enum coverage | ✅ desk-verified | Full 7-type set present at `offlineQueue.ts:18` incl. `overtime-start`, `overtime-end`, `task-completion`, `reassignment` (4-2 + 4-4 shipped) |
+| Unit test pass rate on `__tests__/offlineQueue.*` | ✅ desk-verified | Part of the mobile jest suite (green as of Jun 9 4-R sign-off) |
+| Manual airplane-mode flow (clock-in → reconnect → submission) | ⏳ field | Single-submission guarantee; no duplicate |
+| Manual airplane-mode flow (activity → reconnect) | ⏳ field | Multipart upload re-attempts |
+| Timezone preservation across queue + sync | ⏳ field | Asia/Jakarta retained, no UTC drift (backend day-boundary fixes landed in 4-7 E1, Jun 10) |
+| ConnectivityBanner present? | ✅ desk-verified | `fe/mobile/src/components/common/ConnectivityBanner.tsx` |
+| Distinction NO_INTERNET vs SERVER_UNREACHABLE? | ✅ desk-verified | `fe/mobile/src/services/sync/connectivityStatus.ts` implements the ADR-019 3-state model (+ tests) |
 
-**Verdict:** ⏳ TBD — most likely **Deliver in 4-2** (queue expansion + banner) with conflict resolution work delegated to last-write-wins per March-12 spec.
+**Verdict (desk):** **Delivered in 4-2** — all code-side probes pass. Field flows remain to confirm single-submission + timestamp behavior on a real device.
 
 ### Gap 2 — Push notifications (FCM end-to-end on staging)
 
 | Probe | Result | Notes |
 |-------|--------|-------|
-| Backend trigger inventory: `grep -rn "notificationsService.sendToUser" be/src/` | ⏳ | Expected 8 points: task-assigned, task-completed, task-revision, activity-approved, activity-rejected, overtime-approved, overtime-rejected, monitoring-missing-alert |
-| Mobile token registration on login | ⏳ | `fe/mobile/src/services/fcm/fcmService.ts` — verify register on login + deregister on logout |
-| Foreground handling (toast + badge increment) | ⏳ | Verify NBToast appears + bell badge increments |
-| Background handling (system notification) | ⏳ | iOS + Android — verify system tray notification, tap → deep-link to entity |
-| Quit-state handling (cold-start with deep-link payload) | ⏳ | App launches and routes to entity directly |
-| FCM token rejection / re-registration | ⏳ | Verify the May-17 `fix(fcm)` loop is fixed — rejected token deactivates without reactivate-loop |
-| Delivery latency p50 / p99 | ⏳ | Measure end-to-end (backend trigger → device toast) |
-| Retry queue exists? | ⏳ | None today — proposes BullMQ-on-Redis (`backend.md § R2`) |
-| Notification preferences entity exists? | ⏳ | None today — proposes new entity in 4-3 |
+| Backend trigger inventory: `grep -rn "notificationsService.sendToUser" be/src/` | ✅ desk-verified | Trigger call sites across tasks, activities, overtime, pruning-requests, monitoring status-calculator (missing-worker), shift-reminder cron — full 4-3 set wired |
+| Mobile token registration on login | ⏳ field | `fe/mobile/src/services/fcm/` — register/deregister code present; needs device confirmation |
+| Foreground handling (toast + badge increment) | ⏳ field | Verify NBToast appears + bell badge increments |
+| Background handling (system notification) | ⏳ field | iOS + Android — verify system tray notification, tap → deep-link to entity |
+| Quit-state handling (cold-start with deep-link payload) | ⏳ field | App launches and routes to entity directly (deep-link routing lands in 4-8 E3) |
+| FCM token rejection / re-registration | ⏳ field | Verify the May-17 `fix(fcm)` loop is fixed — rejected token deactivates without reactivate-loop |
+| Delivery latency p50 / p99 | ⏳ field | Measure end-to-end (backend trigger → device toast) |
+| Retry queue exists? | ✅ desk-verified | BullMQ `fcm-retry` queue live: `be/src/modules/queue/fcm-retry/` (module + processor + tests) on existing Redis per ADR-043 Gap 4 |
+| Notification preferences entity exists? | ✅ desk-verified | `be/src/modules/notifications/entities/notification-preference.entity.ts` + per-type enforcement + mobile prefs screen (4-3, Jun 9) |
 
-**Verdict:** ⏳ TBD — most likely **Deliver hardening in 4-3** (preferences + retry queue + screen) since FCM activation itself is already live.
+**Verdict (desk):** **Delivered in 4-3** — preferences, retry queue, inbox + type filters all shipped. Field probes (latency, background/quit handling) remain.
 
 ### Gap 3 — Background location tracking
 
 | Probe | Result | Notes |
 |-------|--------|-------|
 | Library | `react-native-geolocation-service@5.3.1` | Confirmed in `fe/mobile/package.json` |
-| Android `FOREGROUND_SERVICE` permission declared in `AndroidManifest.xml`? | ⏳ | `grep FOREGROUND_SERVICE fe/mobile/android/app/src/main/AndroidManifest.xml` |
-| Android `FOREGROUND_SERVICE_LOCATION` (API 34+)? | ⏳ | Required from Android 14 |
-| Android `ACCESS_BACKGROUND_LOCATION` permission flow? | ⏳ | Granted by separate dialog; OB-2 must prime |
-| Foreground-service implementation with persistent notification? | ⏳ | Required for any background tracking — verify class exists |
-| iOS `UIBackgroundModes` includes `location`? | ⏳ | `grep -A2 UIBackgroundModes fe/mobile/ios/sekar/Info.plist` |
-| iOS `NSLocationAlwaysAndWhenInUseUsageDescription` present? | ⏳ | Required for background access |
-| Current tracking interval | ⏳ | `fe/mobile/src/services/location/locationTracker.ts` — read interval + minimum displacement |
-| Battery audit (4-h field shift) | ⏳ | Measure average drain; goal ≤ 15 %/h |
-| Throttle logic when idle (no movement) | ⏳ | Verify reduced polling when stationary |
-| Permission denial fallback UX | ⏳ | OB-2 explicitly handles "Tolak" path |
+| Android `FOREGROUND_SERVICE` permission declared in `AndroidManifest.xml`? | ❌ desk-verified MISSING | Not declared (manifest lines 4-28 audited Jun 10) |
+| Android `FOREGROUND_SERVICE_LOCATION` (API 34+)? | ❌ desk-verified MISSING | Required from Android 14 |
+| Android `ACCESS_BACKGROUND_LOCATION` permission flow? | ✅ desk-verified | Declared at `AndroidManifest.xml:11` |
+| Foreground-service implementation with persistent notification? | ❌ desk-verified MISSING | **No `<service>` in the manifest and no foreground-service library in package.json.** `locationTracker.ts` is a JS `setInterval` tracker (10-60 s randomized) — it stops when Android suspends the app. |
+| iOS `UIBackgroundModes` includes `location`? | ❌ desk-verified MISSING | Not present in `fe/mobile/ios/SekarApp/Info.plist` |
+| iOS `NSLocationAlwaysAndWhenInUseUsageDescription` present? | ❌ desk-verified MISSING | Only `NSLocationWhenInUseUsageDescription` exists — **and its string is empty** (App Store rejection risk) |
+| Current tracking interval | ✅ desk-verified | 10-60 s randomized interval, `locationTracker.ts` |
+| Battery audit (4-h field shift) | ⏳ field | Measure average drain; goal ≤ 15 %/h |
+| Throttle logic when idle (no movement) | ⏳ field | Verify reduced polling when stationary |
+| Permission denial fallback UX | ⏳ field | OB-2 explicitly handles "Tolak" path |
 
-**Verdict:** ⏳ TBD — this is the **highest-risk** gap. If Android foreground-service is missing or iOS background-mode unset, ship fixes inside 4-2 (treat as blocker). If wired, **Already-good for MVP** plus minor battery tuning in 4-7 F-tasks.
+**Verdict (desk): ESCALATE — true background tracking does not exist today.** Tracking works only while the app is foregrounded/screen-on; once Android dozes or the user switches apps, pings stop until the app resumes (the offline-sweeper then marks the worker offline). Closing this requires a **foreground service** (e.g. `react-native-background-actions` or a native module) + the two missing Android permissions + iOS `UIBackgroundModes`. This is **net-new feature work (est. 1-2 d), not a config fix** — needs an explicit go/no-go from the project owner: ship MVP with screen-on tracking (document the limitation) or block release on a foreground-service implementation.
 
 ### Gap 4 — Message broker (do we need one?)
 
 | Probe | Result | Notes |
 |-------|--------|-------|
-| Current brokers / queues in `be/package.json` | `ioredis@5.10.1`, `@socket.io/redis-adapter@8.3.0` | No BullMQ, no AMQP, no Kafka |
-| Workloads that benefit from a queue | (see table below) | — |
-| Throughput requirements | ⏳ | Measure peak load (k6 test from Phase 3 sub-phase 3-14 — pending) |
-| Persistence + retry semantics needed for which workloads | ⏳ | — |
+| Current brokers / queues in `be/package.json` | ✅ desk-verified | `@nestjs/bullmq@11` + `bullmq@5.77` ADOPTED on existing Redis 7 — `be/src/modules/queue/fcm-retry/` (module + processor + tests) live since 4-3 |
+| Workloads that benefit from a queue | (see table below) | FCM retry on BullMQ ✅; async exports use `setImmediate` + retry cron (4-5 pragmatic choice — migrate to BullMQ when volume demands) |
+| Throughput requirements | ⏳ field | Measure peak load (k6 test from Phase 3 sub-phase 3-14 — pending) |
+| Persistence + retry semantics needed for which workloads | ✅ desk-verified | fcm-retry: BullMQ persistence/retry; export_jobs: DB-row status + 5-min retry cron (max 3) |
 
 **Workload candidate inventory:**
 
@@ -97,16 +99,25 @@ Failures against these thresholds escalate the verdict to "Deliver in 4-x".
 | Cron-driven aggregations (daily summary, stale cleanup) | `@nestjs/schedule` | No — cron is sufficient | Keep cron |
 | Monitoring projector (Redis Streams consumer) | Live (Phase 3) | No — Streams is the queue | Keep |
 
-**Verdict (proposed, finalize in ADR-043):** **Adopt BullMQ on existing Redis 7.** No new infrastructure. Implement in 4-3 + 4-5 per [`backend.md § R2`](./backend.md#r2-bullmq-retry-queue-on-existing-redis-per-adr-043).
+**Verdict (desk): DELIVERED.** BullMQ adopted on existing Redis 7 — `fcm-retry` queue shipped in 4-3 per [`backend.md § R2`](./backend.md#r2-bullmq-retry-queue-on-existing-redis-per-adr-043). 4-5 exports chose `setImmediate` + retry-cron over a queue (documented deviation; acceptable at current volume, revisit if export traffic grows).
 
-### Gap Audit Synthesis Matrix
+### Gap Audit Synthesis Matrix (desk pass — Jun 10, 2026)
 
 | Gap | Verdict | Sub-phase delivery | ADR-043 record |
 |-----|---------|---------------------|-----------------|
-| 1 Offline sync | ⏳ | 4-2 expected | Deliver |
-| 2 Push hardening | ⏳ | 4-3 expected | Deliver |
-| 3 Background location | ⏳ | depends — may escalate into 4-2 | Likely Deliver (some) |
-| 4 Broker / job queue | ⏳ | 4-3, 4-5 (BullMQ on Redis) | Adopt — no new infra |
+| 1 Offline sync | 🟢 Delivered (desk) — field flows pending | 4-2 shipped (7 queue types, 3-state banner) | Deliver — done |
+| 2 Push hardening | 🟢 Delivered (desk) — latency/device probes pending | 4-3 shipped (prefs + BullMQ retry + inbox) | Deliver — done |
+| 3 Background location | 🔴 **ESCALATED — owner decision needed** | Permissions/plist fixed in 4-8; **foreground-service impl missing (1-2 d net-new work)** — ship MVP with screen-on tracking or block release | Deliver (scope TBD) |
+| 4 Broker / job queue | 🟢 Delivered | 4-3 (BullMQ fcm-retry on existing Redis) | Adopt — done |
+
+### Manual field-test checklist (remaining ⏳ probes — staging + physical device)
+
+1. **Offline sync:** airplane-mode clock-in → reconnect → exactly one submission, WIB timestamps preserved; repeat for activity (multipart), overtime, task-completion, reassignment; queue back-pressure ≥200 items.
+2. **FCM:** trigger all 8 backend points against a staging FCM project; verify foreground toast + badge, background tray + tap-deep-link (`sekar://` routes from 4-8 E3), quit-state cold start; measure p50/p99 (SLA: ≤1.5 s / ≤5 s); kill FCM transiently → fcm-retry queue first retry ≤90 s.
+3. **Background location:** 4-h shift battery drain (SLA ≤15 %/h); position freshness ≤60 s while moving **with the screen off** — expected to FAIL until the foreground service lands (Gap 3); idle throttling.
+4. **Login throttle:** run `EXPECT_LOGIN_THROTTLE=true API_URL=<staging> npx playwright test e2e/12-security.spec.ts` (prod 5/min limit).
+5. **Deep links on device:** `adb shell am start -W -a android.intent.action.VIEW -d "sekar://tasks/<id>" <applicationId>`.
+6. **Maestro:** `maestro test fe/mobile/.maestro/flows/` per `.maestro/README.md` (staging seed + reachable backend).
 
 ---
 
