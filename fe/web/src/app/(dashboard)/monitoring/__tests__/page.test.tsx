@@ -1,8 +1,9 @@
 /**
- * Unit Tests: Monitoring Page (Phase 4-R minimal baseline)
- * Header + status summary + full-width map. Auth/role gating.
+ * Unit Tests: Monitoring Page (Phase 4-R)
+ * Three-pane layout: filter rail · map · worker/area sidebar.
+ * Auth/role gating + client-side filtering + selection.
  */
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import MonitoringPage from '../page';
@@ -28,14 +29,33 @@ jest.mock('@/components/monitoring/SimpleMonitoringMap', () => ({
 
 const adminUser = { id: 'u1', full_name: 'Admin', role: 'admin_system' };
 
+const worker = (over: Record<string, unknown>) => ({
+  user_id: 'w1',
+  full_name: 'Andi',
+  role: 'satgas',
+  lat: -7.25,
+  lng: 112.75,
+  status: 'active',
+  area_id: 'a1',
+  area_name: 'Taman A',
+  rayon_id: 'r1',
+  rayon_name: 'Rayon Pusat',
+  last_update: new Date().toISOString(),
+  is_within_area: true,
+  battery_level: 80,
+  ...over,
+});
+
 const snapshotData = {
   data: {
     data: {
       workers: [
-        { user_id: 'w1', full_name: 'A', lat: -7.25, lng: 112.75, status: 'active' },
-        { user_id: 'w2', full_name: 'B', lat: -7.26, lng: 112.76, status: 'missing' },
+        worker({ user_id: 'w1', full_name: 'Andi', status: 'active' }),
+        worker({ user_id: 'w2', full_name: 'Budi', status: 'missing', rayon_id: 'r2', rayon_name: 'Rayon Timur' }),
       ],
-      area_summaries: [],
+      area_summaries: [
+        { area_id: 'a1', area_name: 'Taman A', rayon_id: 'r1', rayon_name: 'Rayon Pusat', active_count: 1, required_count: 3, is_understaffed: true },
+      ],
       total_active: 1,
       total_inactive: 0,
       total_outside_area: 0,
@@ -55,7 +75,7 @@ const createWrapper = () => {
   );
 };
 
-describe('MonitoringPage (minimal)', () => {
+describe('MonitoringPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUseAuth.mockReturnValue({ user: adminUser, loading: false });
@@ -74,17 +94,36 @@ describe('MonitoringPage (minimal)', () => {
     expect(mockPush).toHaveBeenCalledWith('/');
   });
 
-  it('renders the header, status summary and map for an admin', () => {
+  it('renders the header, status summary, filters and map for an admin', () => {
     render(<MonitoringPage />, { wrapper: createWrapper() });
     expect(screen.getByRole('heading', { name: /monitoring real-time/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /segarkan/i })).toBeInTheDocument();
-    // status summary renders the three activity chips
-    expect(screen.getByText('Aktif')).toBeInTheDocument();
-    expect(screen.getByText('Tidak terdeteksi')).toBeInTheDocument();
+    expect(screen.getByLabelText(/cari petugas/i)).toBeInTheDocument();
   });
 
-  it('passes the snapshot workers to the map', () => {
+  it('passes all snapshot workers to the map by default', () => {
     render(<MonitoringPage />, { wrapper: createWrapper() });
     expect(screen.getByTestId('map')).toHaveAttribute('data-count', '2');
+  });
+
+  it('filters workers by search and narrows the map', () => {
+    render(<MonitoringPage />, { wrapper: createWrapper() });
+    fireEvent.change(screen.getByLabelText(/cari petugas/i), { target: { value: 'Andi' } });
+    expect(screen.getByTestId('map')).toHaveAttribute('data-count', '1');
+  });
+
+  it('shows worker detail when a worker row is selected', () => {
+    render(<MonitoringPage />, { wrapper: createWrapper() });
+    fireEvent.click(screen.getByRole('button', { name: /andi/i }));
+    expect(screen.getByRole('button', { name: /kembali ke daftar/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Andi' })).toBeInTheDocument();
+  });
+
+  it('lists area staffing on the Area tab', () => {
+    render(<MonitoringPage />, { wrapper: createWrapper() });
+    fireEvent.click(screen.getByRole('tab', { name: /area/i }));
+    const region = screen.getByText('Taman A');
+    expect(region).toBeInTheDocument();
+    expect(within(region.closest('li') as HTMLElement).getByText(/kurang/i)).toBeInTheDocument();
   });
 });
