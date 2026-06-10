@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/auth/hooks';
 import { NotificationBell } from '@/components/ui/notification-bell';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { RoleAvatar } from '@/components/ui/role-avatar';
-import { getPageTitle } from '@/lib/navigation';
+import { getPageTitle, getBreadcrumbTrail } from '@/lib/navigation';
 import { ADMIN_ROLES, hasRole } from '@/lib/constants/roles';
 import type { UserRole } from '@/types/models';
 import {
@@ -45,6 +45,7 @@ export function Header({ className, ...props }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const pageTitle = getPageTitle(pathname);
+  const breadcrumbTrail = getBreadcrumbTrail(pathname);
   const canOpenSettings = !!user && hasRole(user.role as UserRole, ADMIN_ROLES);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -90,9 +91,14 @@ export function Header({ className, ...props }: HeaderProps) {
             <Menu className="h-5 w-5" />
           </Button>
 
-          {/* Page title — lives in the header so pages don't repeat a large
-              in-body title (frees vertical space in the content area). */}
+          {/* Breadcrumb + page title — the single, consistent masthead for
+              every dashboard route (pages no longer render their own). */}
           <div className="min-w-0 flex-1">
+            <nav aria-label="Breadcrumb" className="truncate">
+              <span className="font-mono text-[11px] uppercase leading-none tracking-wide text-nb-gray-500">
+                {breadcrumbTrail.join(' · ')}
+              </span>
+            </nav>
             <h1 className="truncate font-heading text-lg font-bold leading-tight text-nb-black">
               {pageTitle}
             </h1>

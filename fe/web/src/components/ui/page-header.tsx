@@ -12,7 +12,11 @@ import { cn } from '@/lib/utils/cn';
  * dashboard route for a consistent masthead.
  */
 export interface PageHeaderProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title'> {
-  title: React.ReactNode;
+  /**
+   * Page title. Optional — the dashboard top bar now renders the route title +
+   * breadcrumb, so most in-body usages pass only a description/actions row.
+   */
+  title?: React.ReactNode;
   /** Mono breadcrumb shown above the title (e.g. "Operasional · Tugas"). */
   breadcrumb?: React.ReactNode;
   description?: React.ReactNode;
@@ -39,7 +43,7 @@ export function PageHeader({
             {breadcrumb}
           </div>
         )}
-        <h1 className="text-nb-h1 text-nb-black">{title}</h1>
+        {title && <h1 className="text-nb-h1 text-nb-black">{title}</h1>}
         {description && (
           <p className="mt-1 text-nb-body-sm text-nb-gray-600">{description}</p>
         )}

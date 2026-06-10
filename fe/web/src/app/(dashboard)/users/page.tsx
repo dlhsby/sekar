@@ -133,8 +133,7 @@ export default function UsersPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        breadcrumb="Data · Pengguna"
-        title={`Pengguna${total ? ` · ${total}` : ''}`}
+        description={total ? `${total} pengguna terdaftar` : undefined}
         actions={
           <Button onClick={() => router.push('/users/new')} leftIcon={<Plus className="w-5 h-5" />}>
             Tambah pengguna

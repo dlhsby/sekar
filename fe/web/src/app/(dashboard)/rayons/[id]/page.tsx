@@ -108,14 +108,6 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
   return (
     <div className="space-y-5">
       <PageHeader
-        breadcrumb={
-          <>
-            <Link href="/rayons" className="hover:text-nb-black">
-              Data · Rayon
-            </Link>{' '}
-            · <b>{rayonLoading ? '…' : rayon?.name ?? 'Detail'}</b>
-          </>
-        }
         title={rayonLoading ? 'Memuat…' : `Rayon ${rayon?.name ?? ''}`}
         description={rayon?.description || undefined}
         actions={

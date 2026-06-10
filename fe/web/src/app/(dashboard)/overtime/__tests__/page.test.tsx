@@ -152,7 +152,7 @@ describe('OvertimePage', () => {
 
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      expect(screen.getByRole('heading', { name: /^lembur$/i })).toBeInTheDocument();
+      expect(screen.getByText(/kelola permintaan lembur/i)).toBeInTheDocument();
       expect(mockPush).not.toHaveBeenCalled();
     });
 
@@ -161,7 +161,7 @@ describe('OvertimePage', () => {
 
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      expect(screen.getByRole('heading', { name: /^lembur$/i })).toBeInTheDocument();
+      expect(screen.getByText(/kelola permintaan lembur/i)).toBeInTheDocument();
       expect(mockPush).not.toHaveBeenCalled();
     });
 
@@ -170,7 +170,7 @@ describe('OvertimePage', () => {
 
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      expect(screen.getByRole('heading', { name: /^lembur$/i })).toBeInTheDocument();
+      expect(screen.getByText(/kelola permintaan lembur/i)).toBeInTheDocument();
       expect(mockPush).not.toHaveBeenCalled();
     });
 
@@ -179,7 +179,7 @@ describe('OvertimePage', () => {
 
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      expect(screen.getByRole('heading', { name: /^lembur$/i })).toBeInTheDocument();
+      expect(screen.getByText(/kelola permintaan lembur/i)).toBeInTheDocument();
       expect(mockPush).not.toHaveBeenCalled();
     });
 
@@ -211,7 +211,7 @@ describe('OvertimePage', () => {
     it('should display the page heading and description', () => {
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      expect(screen.getByRole('heading', { name: /^lembur$/i })).toBeInTheDocument();
+      expect(screen.getByText(/kelola permintaan lembur/i)).toBeInTheDocument();
       expect(screen.getByText(/kelola permintaan lembur/i)).toBeInTheDocument();
     });
 

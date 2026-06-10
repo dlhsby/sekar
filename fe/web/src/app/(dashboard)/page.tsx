@@ -101,7 +101,6 @@ export default function DashboardPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        breadcrumb="Dashboard"
         title={`Halo, ${user?.full_name?.split(' ')[0] ?? 'Pengguna'}`}
         description={user ? ROLE_LABELS[user.role] || user.role : undefined}
       />

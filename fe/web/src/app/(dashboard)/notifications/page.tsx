@@ -69,8 +69,6 @@ export default function NotificationsPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        breadcrumb="Akun · Notifikasi"
-        title="Notifikasi"
         actions={
           unreadCount > 0 ? (
             <Button

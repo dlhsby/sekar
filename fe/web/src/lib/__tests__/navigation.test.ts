@@ -7,6 +7,7 @@ import {
   navigationItems,
   filterNavigationByRole,
   getBreadcrumbPath,
+  getBreadcrumbTrail,
   type NavItem,
 } from '../navigation';
 
@@ -197,6 +198,27 @@ describe('Navigation Utilities', () => {
       const filtered = filterNavigationByRole(testItems, 'worker');
 
       expect(filtered).toHaveLength(1);
+    });
+  });
+
+  describe('getBreadcrumbTrail', () => {
+    it('returns the group → page trail for a known route', () => {
+      expect(getBreadcrumbTrail('/tasks')).toEqual(['Pekerjaan', 'Tugas']);
+      expect(getBreadcrumbTrail('/overtime')).toEqual(['Pekerjaan', 'Lembur']);
+      expect(getBreadcrumbTrail('/users')).toEqual(['Data Master', 'Pengguna']);
+      expect(getBreadcrumbTrail('/pruning-requests')).toEqual(['Pekerjaan', 'Permohonan Pemangkasan']);
+    });
+
+    it('returns a single-segment trail for top-level routes', () => {
+      expect(getBreadcrumbTrail('/')).toEqual(['Dashboard']);
+      expect(getBreadcrumbTrail('/monitoring')).toEqual(['Monitoring']);
+    });
+
+    it('appends a dynamic leaf for new / edit / detail routes', () => {
+      expect(getBreadcrumbTrail('/tasks/new')).toEqual(['Pekerjaan', 'Tugas', 'Baru']);
+      expect(getBreadcrumbTrail('/tasks/abc-123')).toEqual(['Pekerjaan', 'Tugas', 'Detail']);
+      expect(getBreadcrumbTrail('/schedules/abc/edit')).toEqual(['Pekerjaan', 'Jadwal', 'Ubah']);
+      expect(getBreadcrumbTrail('/users/u1')).toEqual(['Data Master', 'Pengguna', 'Detail']);
     });
   });
 

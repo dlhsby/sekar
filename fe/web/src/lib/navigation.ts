@@ -213,6 +213,51 @@ export const getPageTitle = (pathname: string): string => {
 };
 
 /**
+ * Breadcrumb trail per route (group → page), mirroring the sidebar grouping.
+ * Rendered uniformly in the top header so every page gets the SAME breadcrumb
+ * styling (no per-page hand-rolled strings).
+ */
+const ROUTE_BREADCRUMB: Record<string, string[]> = {
+  '/': ['Dashboard'],
+  '/monitoring': ['Monitoring'],
+  '/tasks': ['Pekerjaan', 'Tugas'],
+  '/activities': ['Pekerjaan', 'Aktivitas'],
+  '/overtime': ['Pekerjaan', 'Lembur'],
+  '/schedules': ['Pekerjaan', 'Jadwal'],
+  '/pruning-requests': ['Pekerjaan', 'Permohonan Pemangkasan'],
+  '/users': ['Data Master', 'Pengguna'],
+  '/areas': ['Data Master', 'Area'],
+  '/rayons': ['Data Master', 'Rayon'],
+  '/pruning-submit': ['Kecamatan', 'Kirim Permintaan'],
+  '/pruning-submit/my': ['Kecamatan', 'Permintaan Saya'],
+  '/settings': ['Akun', 'Pengaturan'],
+  '/profile': ['Akun', 'Profil'],
+  '/notifications': ['Akun', 'Notifikasi'],
+};
+
+const DYNAMIC_CRUMB: Record<string, string> = { new: 'Baru', edit: 'Ubah' };
+
+/**
+ * Resolve the breadcrumb trail for a pathname. Exact match first; otherwise the
+ * longest known prefix plus a dynamic leaf (`new` → "Baru", `edit` → "Ubah",
+ * any other trailing segment → "Detail"). Falls back to the page title.
+ */
+export const getBreadcrumbTrail = (pathname: string): string[] => {
+  if (ROUTE_BREADCRUMB[pathname]) return ROUTE_BREADCRUMB[pathname];
+  const segments = pathname.split('/').filter(Boolean);
+  for (let i = segments.length; i > 0; i--) {
+    const base = ROUTE_BREADCRUMB['/' + segments.slice(0, i).join('/')];
+    if (base) {
+      const rest = segments.slice(i);
+      if (rest.length === 0) return base;
+      const last = rest[rest.length - 1];
+      return [...base, DYNAMIC_CRUMB[last] ?? 'Detail'];
+    }
+  }
+  return [getPageTitle(pathname)];
+};
+
+/**
  * Get Breadcrumb Path
  */
 export const getBreadcrumbPath = (pathname: string): { label: string; href: string }[] => {

@@ -197,11 +197,7 @@ export default function OvertimePage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        breadcrumb="Operasional · Lembur"
-        title="Lembur"
-        description="Kelola permintaan lembur"
-      />
+      <PageHeader description="Kelola permintaan lembur" />
 
       {/* Three-tab approval queue */}
       <Tabs

@@ -17,7 +17,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-import { Button, EmptyState, PageHeader, SectionCard, SkeletonCard } from '@/components/ui';
+import { Button, EmptyState, SectionCard, SkeletonCard } from '@/components/ui';
 import {
   useNotifications,
   useMarkNotificationRead,
@@ -101,7 +101,6 @@ export default function NotificationDetailPage() {
   if (isLoading && !notif) {
     return (
       <div className="space-y-5">
-        <PageHeader breadcrumb="Akun · Notifikasi" title="Notifikasi" />
         <SkeletonCard />
       </div>
     );
@@ -110,7 +109,6 @@ export default function NotificationDetailPage() {
   if (!notif) {
     return (
       <div className="space-y-5">
-        <PageHeader breadcrumb="Akun · Notifikasi" title="Notifikasi" />
         <EmptyState
           variant="noData"
           title="Notifikasi tidak ditemukan"
@@ -127,8 +125,6 @@ export default function NotificationDetailPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader breadcrumb="Akun · Notifikasi · Detail" title="Detail notifikasi" />
-
       <button
         type="button"
         onClick={() => router.push('/notifications')}
