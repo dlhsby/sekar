@@ -101,6 +101,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           user={{
             name: user.full_name,
             role: user.role,
+            avatar: user.profile_picture_url ?? undefined,
           }}
           aria-expanded={sidebarOpen}
         />

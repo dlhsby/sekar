@@ -10,7 +10,6 @@ import {
   KpiTile,
   PageHeader,
   SectionCard,
-  StatusPill,
   EmptyState,
 } from '@/components/ui';
 import { useUser } from '@/lib/auth/hooks';
@@ -20,20 +19,21 @@ import { useTasks } from '@/lib/api/tasks';
 import { usePruningRequests } from '@/lib/api/pruning-requests';
 import { useOvertimes } from '@/lib/api/overtime';
 import { useNotifications } from '@/lib/api/notifications';
-import { notificationToRoute } from '@/lib/utils/notification-deep-links';
 import { formatRelativeTime } from '@/lib/utils/time';
 import { cn } from '@/lib/utils/cn';
 
 const ADMIN_ROLES = new Set(['admin_system', 'superadmin']);
 
-type StatusKey = 'active' | 'idle' | 'outside' | 'missing' | 'offline';
+// Presence model mirrors the mobile monitoring map (StatusSummaryBar): the
+// three activity states shown on the map are Aktif / Idle / Tidak terdeteksi.
+// "Di luar area" is a location overlay (not a top-level status) and Offline
+// (not clocked-in) is excluded from the map total — both surfaced separately.
+type ActivityKey = 'aktif' | 'idle' | 'tidak_terdeteksi';
 
-const STATUS_META: { key: StatusKey; label: string; color: string }[] = [
-  { key: 'active', label: 'Aktif', color: 'var(--color-status-active)' },
-  { key: 'idle', label: 'Tidak aktif', color: 'var(--color-status-idle)' },
-  { key: 'outside', label: 'Di luar area', color: 'var(--color-status-outside)' },
-  { key: 'missing', label: 'Hilang', color: 'var(--color-status-missing)' },
-  { key: 'offline', label: 'Offline', color: 'var(--color-status-offline)' },
+const ACTIVITY_META: { key: ActivityKey; label: string; color: string }[] = [
+  { key: 'aktif', label: 'Aktif', color: 'var(--color-status-active)' },
+  { key: 'idle', label: 'Idle', color: 'var(--color-status-idle)' },
+  { key: 'tidak_terdeteksi', label: 'Tidak terdeteksi', color: 'var(--color-status-missing)' },
 ];
 
 const NUM = '—';
@@ -52,18 +52,20 @@ export default function DashboardPage() {
   const counts = useMemo(() => {
     const d = snapshot.data?.data;
     if (!d) return null;
+    // Workers clocked-in and pinging — incl. those currently outside their
+    // boundary — count as "Aktif" (mobile folds outside-area into the activity
+    // axis); the outside subset is surfaced on its own line.
+    const aktif = (d.total_active ?? 0) + (d.total_outside_area ?? 0);
+    const idle = d.total_inactive ?? 0;
+    const tidak_terdeteksi = d.total_missing ?? 0;
     return {
-      active: d.total_active,
-      idle: d.total_inactive,
-      outside: d.total_outside_area,
-      missing: d.total_missing,
-      offline: d.total_offline,
-      total:
-        d.total_active +
-        d.total_inactive +
-        d.total_outside_area +
-        d.total_missing +
-        d.total_offline,
+      aktif,
+      idle,
+      tidak_terdeteksi,
+      offline: d.total_offline ?? 0,
+      di_luar_area: d.total_outside_area ?? 0,
+      // Map total excludes offline (not clocked-in), matching mobile.
+      presensi: aktif + idle + tidak_terdeteksi,
     };
   }, [snapshot.data]);
 
@@ -83,12 +85,12 @@ export default function DashboardPage() {
 
   // Conic-gradient string for the status donut.
   const donutGradient = useMemo(() => {
-    if (!counts || counts.total === 0) return 'var(--color-nb-gray-200)';
+    if (!counts || counts.presensi === 0) return 'var(--color-nb-gray-200)';
     let acc = 0;
-    const segments = STATUS_META.map(({ key, color }) => {
-      const start = (acc / counts.total) * 100;
+    const segments = ACTIVITY_META.map(({ key, color }) => {
+      const start = (acc / counts.presensi) * 100;
       acc += counts[key];
-      const end = (acc / counts.total) * 100;
+      const end = (acc / counts.presensi) * 100;
       return `${color} ${start}% ${end}%`;
     });
     return `conic-gradient(${segments.join(', ')})`;
@@ -102,13 +104,6 @@ export default function DashboardPage() {
         breadcrumb="Dashboard"
         title={`Halo, ${user?.full_name?.split(' ')[0] ?? 'Pengguna'}`}
         description={user ? ROLE_LABELS[user.role] || user.role : undefined}
-        actions={
-          snapshot.data ? (
-            <StatusPill tone="ok" dot>
-              Live · {formatRelativeTime(snapshot.data.data.generated_at)}
-            </StatusPill>
-          ) : undefined
-        }
       />
 
       {/* KPI tiles */}
@@ -116,7 +111,7 @@ export default function DashboardPage() {
         <KpiTile
           tone="white"
           label="Petugas aktif"
-          value={counts ? `${counts.active} / ${counts.total}` : NUM}
+          value={counts ? `${counts.aktif} / ${counts.presensi}` : NUM}
         />
         <KpiTile
           tone="white"
@@ -139,7 +134,7 @@ export default function DashboardPage() {
         {/* Status breakdown */}
         <SectionCard
           title="Status petugas"
-          meta={counts ? `${counts.total} total · ${perRayon.length} rayon` : undefined}
+          meta={counts ? `${counts.presensi} hadir · ${perRayon.length} rayon` : undefined}
         >
           {!counts ? (
             <p className="py-6 text-center text-nb-body-sm text-nb-gray-600">
@@ -152,19 +147,19 @@ export default function DashboardPage() {
                   className="relative size-32 shrink-0 rounded-full border-2 border-nb-black"
                   style={{ background: donutGradient }}
                   role="img"
-                  aria-label={`${counts.active} dari ${counts.total} petugas aktif`}
+                  aria-label={`${counts.aktif} dari ${counts.presensi} petugas aktif`}
                 >
                   <div className="absolute inset-[18%] flex flex-col items-center justify-center rounded-full border-2 border-nb-black bg-nb-white">
                     <span className="font-heading text-2xl font-extrabold leading-none text-nb-black">
-                      {counts.active}
+                      {counts.aktif}
                     </span>
                     <span className="font-mono text-[10px] uppercase text-nb-gray-600">Aktif</span>
                   </div>
                 </div>
                 <ul className="flex-1 space-y-1.5">
-                  {STATUS_META.map(({ key, label, color }) => {
+                  {ACTIVITY_META.map(({ key, label, color }) => {
                     const v = counts[key];
-                    const pct = counts.total ? Math.round((v / counts.total) * 100) : 0;
+                    const pct = counts.presensi ? Math.round((v / counts.presensi) * 100) : 0;
                     return (
                       <li key={key} className="flex items-center gap-2 text-nb-body-sm">
                         <span
@@ -178,6 +173,28 @@ export default function DashboardPage() {
                       </li>
                     );
                   })}
+                  {/* Location overlay + not-clocked-in — shown apart from the
+                      three activity states, mirroring the mobile map. */}
+                  <li className="flex items-center gap-2 border-t border-nb-gray-200 pt-1.5 text-nb-body-sm">
+                    <span
+                      className="size-3 shrink-0 rounded-sm border border-nb-black"
+                      style={{ background: 'var(--color-status-outside)' }}
+                    />
+                    <span className="flex-1 text-nb-gray-700">Di luar area</span>
+                    <span className="font-mono text-[12px] font-bold text-nb-black">
+                      {counts.di_luar_area}
+                    </span>
+                  </li>
+                  <li className="flex items-center gap-2 text-nb-body-sm">
+                    <span
+                      className="size-3 shrink-0 rounded-sm border border-nb-black"
+                      style={{ background: 'var(--color-status-offline)' }}
+                    />
+                    <span className="flex-1 text-nb-gray-500">Offline (belum clock-in)</span>
+                    <span className="font-mono text-[12px] font-bold text-nb-gray-500">
+                      {counts.offline}
+                    </span>
+                  </li>
                 </ul>
               </div>
 
@@ -248,17 +265,12 @@ export default function DashboardPage() {
             ) : (
               <ul>
                 {recent.map((n) => {
-                  const route = notificationToRoute(n);
                   return (
                     <li key={n.id} className="border-b border-nb-gray-200 last:border-b-0">
                       <button
                         type="button"
-                        onClick={() => route && router.push(route)}
-                        disabled={!route}
-                        className={cn(
-                          'flex w-full items-start gap-2.5 px-4 py-2.5 text-left',
-                          route && 'transition-colors hover:bg-nb-primary-soft'
-                        )}
+                        onClick={() => router.push(`/notifications/${n.id}`)}
+                        className="flex w-full items-start gap-2.5 px-4 py-2.5 text-left transition-colors hover:bg-nb-primary-soft"
                       >
                         <span
                           className={cn(

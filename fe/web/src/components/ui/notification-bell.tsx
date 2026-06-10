@@ -10,10 +10,8 @@ import { formatRelativeTime } from '@/lib/utils/time';
 import {
   useNotifications,
   useUnreadCount,
-  useMarkNotificationRead,
   type AppNotification,
 } from '@/lib/api/notifications';
-import { notificationToRoute } from '@/lib/utils/notification-deep-links';
 
 /**
  * NotificationPanel — the popover body listing the latest unread notifications.
@@ -106,16 +104,15 @@ export function NotificationBell({ className }: { className?: string }) {
 
   const { data: unreadCount = 0 } = useUnreadCount();
   const { data: unread = [], isLoading } = useNotifications({ is_read: false });
-  const markRead = useMarkNotificationRead();
 
   const handleSelect = React.useCallback(
     (n: AppNotification) => {
+      // The panel shows only a summary — open the detail page, which marks it
+      // read and offers a CTA into the underlying entity.
       setOpen(false);
-      markRead.mutate(n.id);
-      const route = notificationToRoute(n);
-      if (route) router.push(route);
+      router.push(`/notifications/${n.id}`);
     },
-    [markRead, router]
+    [router]
   );
 
   const handleViewAll = React.useCallback(() => {

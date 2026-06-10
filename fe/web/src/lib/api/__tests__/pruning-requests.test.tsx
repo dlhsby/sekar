@@ -17,7 +17,6 @@ import {
   useReviewPruningRequest,
   useConvertPruningRequestToTask,
   type PruningRequest,
-  type PruningRequestsList,
 } from '../pruning-requests';
 
 describe('Pruning Requests API (admin web)', () => {
@@ -84,17 +83,16 @@ describe('Pruning Requests API (admin web)', () => {
 
   describe('usePruningRequests', () => {
     it('always forwards admin=true and threads filter params through', async () => {
-      const list: PruningRequestsList = {
-        data: [mockRequest()],
-        meta: { total: 1, page: 1, limit: 10, totalPages: 1 },
-      };
+      // Backend returns the raw `{ items, total, page, limit }` shape; the hook
+      // normalises it to the `{ data, meta }` envelope consumers expect.
+      const raw = { items: [mockRequest()], total: 1, page: 1, limit: 10 };
       mockAxios.onGet('/pruning-requests').reply((config) => {
         expect(config.params).toMatchObject({
           admin: true,
           status: 'submitted',
           rayon_id: 'r-1',
         });
-        return [200, list];
+        return [200, raw];
       });
 
       const { result } = renderHook(
@@ -109,8 +107,10 @@ describe('Pruning Requests API (admin web)', () => {
 
     it('still works with no filters', async () => {
       mockAxios.onGet('/pruning-requests').reply(200, {
-        data: [],
-        meta: { total: 0, page: 1, limit: 10, totalPages: 0 },
+        items: [],
+        total: 0,
+        page: 1,
+        limit: 10,
       });
 
       const { result } = renderHook(() => usePruningRequests(), {

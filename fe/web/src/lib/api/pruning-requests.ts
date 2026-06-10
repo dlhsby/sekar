@@ -89,17 +89,35 @@ const keys = {
   detail: (id: string) => [...keys.all, 'detail', id] as const,
 };
 
+/** Raw admin-list shape returned by the backend (`PruningRequestsService.findAll`). */
+interface PruningRequestsRaw {
+  items: PruningRequest[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export function usePruningRequests(filters?: PruningRequestsFilters) {
   return useQuery({
     queryKey: keys.list(filters),
-    queryFn: async () => {
-      // The list endpoint returns a wrapped envelope when admin=true; this
-      // hook always asks for the admin view (page lives under (dashboard)).
-      const response = await apiClient.get<PruningRequestsList>(
-        '/pruning-requests',
-        { params: { admin: true, ...filters } },
-      );
-      return response.data;
+    queryFn: async (): Promise<PruningRequestsList> => {
+      // Admin list (page lives under (dashboard)). The backend returns the raw
+      // `{ items, total, page, limit }` shape — normalise it to the
+      // `{ data, meta }` envelope every consumer (list page + dashboard KPI)
+      // expects, computing totalPages here.
+      const response = await apiClient.get<PruningRequestsRaw>('/pruning-requests', {
+        params: { admin: true, ...filters },
+      });
+      const { items, total, page, limit } = response.data;
+      return {
+        data: items ?? [],
+        meta: {
+          total: total ?? 0,
+          page: page ?? 1,
+          limit: limit ?? 20,
+          totalPages: limit ? Math.max(1, Math.ceil((total ?? 0) / limit)) : 1,
+        },
+      };
     },
     staleTime: 30 * 1000,
   });

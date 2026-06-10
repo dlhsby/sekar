@@ -7,11 +7,9 @@ import { CheckCheck } from 'lucide-react';
 import { Button, EmptyState, PageHeader, SkeletonList, Tabs, type TabItem } from '@/components/ui';
 import {
   useNotifications,
-  useMarkNotificationRead,
   useMarkAllNotificationsRead,
   type AppNotification,
 } from '@/lib/api/notifications';
-import { notificationToRoute } from '@/lib/utils/notification-deep-links';
 import { formatRelativeTime } from '@/lib/utils/time';
 import { cn } from '@/lib/utils/cn';
 
@@ -38,7 +36,6 @@ const PAGE_SIZE = 20;
 export default function NotificationsPage() {
   const router = useRouter();
   const { data: notifications = [], isLoading } = useNotifications();
-  const markRead = useMarkNotificationRead();
   const markAll = useMarkAllNotificationsRead();
 
   const [category, setCategory] = useState<NotifCategory>('all');
@@ -65,9 +62,8 @@ export default function NotificationsPage() {
   };
 
   const handleSelect = (n: AppNotification) => {
-    if (!n.is_read) markRead.mutate(n.id);
-    const route = notificationToRoute(n);
-    if (route) router.push(route);
+    // Open the detail page (summary → full message + CTA). Detail marks read.
+    router.push(`/notifications/${n.id}`);
   };
 
   return (

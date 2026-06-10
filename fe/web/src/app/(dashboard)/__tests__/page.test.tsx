@@ -65,7 +65,9 @@ describe('DashboardPage', () => {
 
   it('renders real KPI values from the data hooks', () => {
     render(<DashboardPage />);
-    expect(screen.getByText('8 / 12')).toBeInTheDocument(); // petugas aktif / total
+    // Aktif folds outside-area into the activity axis (active 8 + outside 1 = 9);
+    // presence excludes offline (9 + idle 2 + missing 0 = 11).
+    expect(screen.getByText('9 / 11')).toBeInTheDocument(); // petugas aktif / hadir
     expect(screen.getByText('128')).toBeInTheDocument(); // tugas
     expect(screen.getByText('14')).toBeInTheDocument(); // perantingan
     expect(screen.getByText('5')).toBeInTheDocument(); // lembur
@@ -77,10 +79,10 @@ describe('DashboardPage', () => {
     expect(screen.getByText('8/10')).toBeInTheDocument();
   });
 
-  it('deep-links a recent notification on click', async () => {
+  it('opens the notification detail page on click', async () => {
     const user = userEvent.setup();
     render(<DashboardPage />);
     await user.click(screen.getByText('Tugas ditugaskan'));
-    expect(mockPush).toHaveBeenCalledWith('/tasks/t1');
+    expect(mockPush).toHaveBeenCalledWith('/notifications/n1');
   });
 });

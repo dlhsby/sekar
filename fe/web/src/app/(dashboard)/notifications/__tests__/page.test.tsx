@@ -60,14 +60,15 @@ describe('NotificationsPage', () => {
     expect(screen.getByText('Lembur Y')).toBeInTheDocument();
   });
 
-  it('marks read + deep-links on row click', async () => {
+  it('opens the notification detail page on row click', async () => {
     const user = userEvent.setup();
     mockData = [n({ id: 'a', title: 'Tugas X', data: { task_id: 't9' } })];
     render(<NotificationsPage />);
 
+    // The inbox shows a summary; clicking routes to the detail page (which
+    // marks read + offers the deep-link CTA) rather than deep-linking directly.
     await user.click(screen.getByText('Tugas X'));
-    expect(mockMarkRead).toHaveBeenCalledWith('a');
-    expect(mockPush).toHaveBeenCalledWith('/tasks/t9');
+    expect(mockPush).toHaveBeenCalledWith('/notifications/a');
   });
 
   it('shows "mark all" only when there are unread items and fires it', async () => {

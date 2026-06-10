@@ -6,6 +6,8 @@ import { cn } from '@/lib/utils/cn';
 import { useUIStore } from '@/stores/ui';
 import { useAuth } from '@/lib/auth/hooks';
 import { NotificationBell } from '@/components/ui/notification-bell';
+import { RoleAvatar } from '@/components/ui/role-avatar';
+import type { UserRole } from '@/types/models';
 import {
   Button,
   Dialog,
@@ -111,9 +113,12 @@ export function Header({ className, showBreadcrumb = true, ...props }: HeaderPro
                   )}
                   aria-label="User menu"
                 >
-                  <div className="h-8 w-8 bg-nb-sidebar text-nb-white font-bold flex items-center justify-center text-sm border-2 border-nb-black">
-                    {user.full_name.charAt(0).toUpperCase()}
-                  </div>
+                  <RoleAvatar
+                    name={user.full_name}
+                    role={user.role as UserRole}
+                    src={user.profile_picture_url}
+                    size="md"
+                  />
                   <span className="hidden lg:block font-bold text-sm text-nb-black">
                     {user.full_name}
                   </span>

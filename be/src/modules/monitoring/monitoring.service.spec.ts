@@ -1312,4 +1312,403 @@ describe('MonitoringService', () => {
       expect(result.rayons[0].is_understaffed).toBe(false);
     });
   });
+
+  describe('getSnapshot', () => {
+    it('should return snapshot with correct contract shape', async () => {
+      const mockLiveUsersResult = {
+        total_active: 2,
+        total_inactive: 1,
+        total_outside_area: 0,
+        total_missing: 0,
+        total_offline: 1,
+        total_online: 2,
+        users: [
+          {
+            id: 'user-1',
+            full_name: 'Worker One',
+            phone: '08123456789',
+            role: 'satgas',
+            area_id: 'area-1',
+            area_name: 'Taman Bungkul',
+            rayon_id: 'rayon-1',
+            rayon_name: 'Rayon Selatan',
+            latitude: -7.2905,
+            longitude: 112.7398,
+            accuracy: 10,
+            battery_level: 85,
+            last_update: new Date(),
+            status: TrackingStatus.ACTIVE,
+            activity: 'aktif',
+            location: 'dalam_area',
+            is_within_area: true,
+            outside_boundary: false,
+            shift_id: 'shift-1',
+            shift_definition_id: 'shift-def-1',
+            shift_name: 'Shift 1',
+            clock_in_time: new Date(),
+            current_task_status: null,
+            current_task_title: null,
+          },
+          {
+            id: 'user-2',
+            full_name: 'Worker Two',
+            phone: '08129999999',
+            role: 'satgas',
+            area_id: 'area-1',
+            area_name: 'Taman Bungkul',
+            rayon_id: 'rayon-1',
+            rayon_name: 'Rayon Selatan',
+            latitude: -7.291,
+            longitude: 112.74,
+            accuracy: 15,
+            battery_level: 65,
+            last_update: new Date(),
+            status: TrackingStatus.INACTIVE,
+            activity: 'idle',
+            location: 'dalam_area',
+            is_within_area: true,
+            outside_boundary: false,
+            shift_id: 'shift-2',
+            shift_definition_id: 'shift-def-1',
+            shift_name: 'Shift 1',
+            clock_in_time: new Date(),
+            current_task_status: null,
+            current_task_title: null,
+          },
+        ],
+        generated_at: new Date(),
+      };
+
+      jest.spyOn(service['userService'], 'getLiveUsers').mockResolvedValue(mockLiveUsersResult as any);
+      jest.spyOn(service['statsService'], 'getCurrentShiftDefinition').mockResolvedValue(mockShiftDefinition);
+      staffRequirementRepository.findOne.mockResolvedValue(mockStaffRequirement);
+
+      const result = await service.getSnapshot('area', 'area-1');
+
+      // Validate overall structure
+      expect(result.success).toBe(true);
+      expect(result.data).toBeDefined();
+      expect(result.data.scope).toBe('area');
+      expect(result.data.scope_id).toBe('area-1');
+
+      // Validate aggregated counts
+      expect(result.data.total_active).toBe(2);
+      expect(result.data.total_inactive).toBe(1);
+      expect(result.data.total_outside_area).toBe(0);
+      expect(result.data.total_missing).toBe(0);
+      expect(result.data.total_offline).toBe(1);
+      expect(result.data.generated_at).toBeDefined();
+      expect(typeof result.data.generated_at).toBe('string');
+
+      // Validate workers array contract (lat/lng, user_id, last_update as ISO string)
+      expect(result.data.workers).toHaveLength(2);
+      expect(result.data.workers[0]).toMatchObject({
+        user_id: 'user-1',
+        full_name: 'Worker One',
+        role: 'satgas',
+        lat: -7.2905,
+        lng: 112.7398,
+        status: TrackingStatus.ACTIVE,
+        area_id: 'area-1',
+        area_name: 'Taman Bungkul',
+        rayon_id: 'rayon-1',
+        rayon_name: 'Rayon Selatan',
+        is_within_area: true,
+        battery_level: 85,
+      });
+      expect(typeof result.data.workers[0].last_update).toBe('string');
+
+      // Validate area_summaries: computed staffing per area
+      expect(result.data.area_summaries).toHaveLength(1);
+      expect(result.data.area_summaries[0]).toMatchObject({
+        area_id: 'area-1',
+        area_name: 'Taman Bungkul',
+        rayon_id: 'rayon-1',
+        rayon_name: 'Rayon Selatan',
+        active_count: 1, // Only user-1 has status ACTIVE
+        required_count: 5, // From mockStaffRequirement
+        is_understaffed: true, // 1 active < 5 required
+      });
+    });
+
+    it('should handle workers without area assignment in area_summaries', async () => {
+      const mockLiveUsersResult = {
+        total_active: 1,
+        total_inactive: 0,
+        total_outside_area: 0,
+        total_missing: 0,
+        total_offline: 0,
+        total_online: 1,
+        users: [
+          {
+            id: 'user-1',
+            full_name: 'Worker One',
+            phone: '08123456789',
+            role: 'satgas',
+            area_id: null,
+            area_name: 'Unknown',
+            rayon_id: null,
+            rayon_name: null,
+            latitude: -7.2905,
+            longitude: 112.7398,
+            accuracy: 10,
+            battery_level: 85,
+            last_update: new Date(),
+            status: TrackingStatus.ACTIVE,
+            activity: 'aktif',
+            location: 'dalam_area',
+            is_within_area: false,
+            outside_boundary: false,
+            shift_id: 'shift-1',
+            shift_definition_id: 'shift-def-1',
+            shift_name: 'Shift 1',
+            clock_in_time: new Date(),
+            current_task_status: null,
+            current_task_title: null,
+          },
+        ],
+        generated_at: new Date(),
+      };
+
+      jest.spyOn(service['userService'], 'getLiveUsers').mockResolvedValue(mockLiveUsersResult as any);
+      jest.spyOn(service['statsService'], 'getCurrentShiftDefinition').mockResolvedValue(mockShiftDefinition);
+
+      const result = await service.getSnapshot('city');
+
+      expect(result.data.workers).toHaveLength(1);
+      expect(result.data.area_summaries).toHaveLength(0); // No area → no summaries
+      expect(result.data.total_active).toBe(1);
+    });
+
+    it('should compute is_understaffed correctly', async () => {
+      const mockLiveUsersResult = {
+        total_active: 3,
+        total_inactive: 0,
+        total_outside_area: 0,
+        total_missing: 0,
+        total_offline: 0,
+        total_online: 3,
+        users: [
+          {
+            id: 'user-1',
+            full_name: 'Worker One',
+            phone: null,
+            role: 'satgas',
+            area_id: 'area-1',
+            area_name: 'Taman Bungkul',
+            rayon_id: 'rayon-1',
+            rayon_name: 'Rayon Selatan',
+            latitude: -7.2905,
+            longitude: 112.7398,
+            accuracy: null,
+            battery_level: 50,
+            last_update: new Date(),
+            status: TrackingStatus.ACTIVE,
+            activity: 'aktif',
+            location: 'dalam_area',
+            is_within_area: true,
+            outside_boundary: false,
+            shift_id: 'shift-1',
+            shift_definition_id: 'shift-def-1',
+            shift_name: 'Shift 1',
+            clock_in_time: new Date(),
+            current_task_status: null,
+            current_task_title: null,
+          },
+          {
+            id: 'user-2',
+            full_name: 'Worker Two',
+            phone: null,
+            role: 'satgas',
+            area_id: 'area-1',
+            area_name: 'Taman Bungkul',
+            rayon_id: 'rayon-1',
+            rayon_name: 'Rayon Selatan',
+            latitude: -7.29,
+            longitude: 112.74,
+            accuracy: null,
+            battery_level: null,
+            last_update: new Date(),
+            status: TrackingStatus.ACTIVE,
+            activity: 'aktif',
+            location: 'dalam_area',
+            is_within_area: true,
+            outside_boundary: false,
+            shift_id: 'shift-2',
+            shift_definition_id: 'shift-def-1',
+            shift_name: 'Shift 1',
+            clock_in_time: new Date(),
+            current_task_status: null,
+            current_task_title: null,
+          },
+          {
+            id: 'user-3',
+            full_name: 'Worker Three',
+            phone: null,
+            role: 'satgas',
+            area_id: 'area-1',
+            area_name: 'Taman Bungkul',
+            rayon_id: 'rayon-1',
+            rayon_name: 'Rayon Selatan',
+            latitude: -7.288,
+            longitude: 112.741,
+            accuracy: null,
+            battery_level: 100,
+            last_update: new Date(),
+            status: TrackingStatus.ACTIVE,
+            activity: 'aktif',
+            location: 'dalam_area',
+            is_within_area: true,
+            outside_boundary: false,
+            shift_id: 'shift-3',
+            shift_definition_id: 'shift-def-1',
+            shift_name: 'Shift 1',
+            clock_in_time: new Date(),
+            current_task_status: null,
+            current_task_title: null,
+          },
+        ],
+        generated_at: new Date(),
+      };
+
+      jest.spyOn(service['userService'], 'getLiveUsers').mockResolvedValue(mockLiveUsersResult as any);
+      jest.spyOn(service['statsService'], 'getCurrentShiftDefinition').mockResolvedValue(mockShiftDefinition);
+
+      // Required count = 5, active count = 3 (all have ACTIVE status) → understaffed
+      staffRequirementRepository.findOne.mockResolvedValue(mockStaffRequirement);
+
+      const result = await service.getSnapshot('area', 'area-1');
+
+      expect(result.data.area_summaries[0].active_count).toBe(3); // 3 workers with ACTIVE status
+      expect(result.data.area_summaries[0].required_count).toBe(5);
+      expect(result.data.area_summaries[0].is_understaffed).toBe(true);
+    });
+
+    it('should set is_understaffed false when fully staffed', async () => {
+      const mockLiveUsersResult = {
+        total_active: 5,
+        total_inactive: 0,
+        total_outside_area: 0,
+        total_missing: 0,
+        total_offline: 0,
+        total_online: 5,
+        users: Array.from({ length: 5 }, (_, i) => ({
+          id: `user-${i + 1}`,
+          full_name: `Worker ${i + 1}`,
+          phone: null,
+          role: 'satgas',
+          area_id: 'area-1',
+          area_name: 'Taman Bungkul',
+          rayon_id: 'rayon-1',
+          rayon_name: 'Rayon Selatan',
+          latitude: -7.2905,
+          longitude: 112.7398,
+          accuracy: null,
+          battery_level: 80,
+          last_update: new Date(),
+          status: TrackingStatus.ACTIVE,
+          activity: 'aktif',
+          location: 'dalam_area',
+          is_within_area: true,
+          outside_boundary: false,
+          shift_id: `shift-${i + 1}`,
+          shift_definition_id: 'shift-def-1',
+          shift_name: 'Shift 1',
+          clock_in_time: new Date(),
+          current_task_status: null,
+          current_task_title: null,
+        })),
+        generated_at: new Date(),
+      };
+
+      jest.spyOn(service['userService'], 'getLiveUsers').mockResolvedValue(mockLiveUsersResult as any);
+      jest.spyOn(service['statsService'], 'getCurrentShiftDefinition').mockResolvedValue(mockShiftDefinition);
+
+      // Required count = 5, active count = 5 → fully staffed
+      staffRequirementRepository.findOne.mockResolvedValue(mockStaffRequirement);
+
+      const result = await service.getSnapshot('area', 'area-1');
+
+      expect(result.data.area_summaries[0].active_count).toBe(5);
+      expect(result.data.area_summaries[0].required_count).toBe(5);
+      expect(result.data.area_summaries[0].is_understaffed).toBe(false);
+    });
+
+    it('should handle no shift definition gracefully', async () => {
+      const mockLiveUsersResult = {
+        total_active: 2,
+        total_inactive: 0,
+        total_outside_area: 0,
+        total_missing: 0,
+        total_offline: 0,
+        total_online: 2,
+        users: [
+          {
+            id: 'user-1',
+            full_name: 'Worker One',
+            phone: null,
+            role: 'satgas',
+            area_id: 'area-1',
+            area_name: 'Taman Bungkul',
+            rayon_id: 'rayon-1',
+            rayon_name: 'Rayon Selatan',
+            latitude: -7.2905,
+            longitude: 112.7398,
+            accuracy: null,
+            battery_level: 80,
+            last_update: new Date(),
+            status: TrackingStatus.ACTIVE,
+            activity: 'aktif',
+            location: 'dalam_area',
+            is_within_area: true,
+            outside_boundary: false,
+            shift_id: 'shift-1',
+            shift_definition_id: null,
+            shift_name: 'Shift 1',
+            clock_in_time: new Date(),
+            current_task_status: null,
+            current_task_title: null,
+          },
+          {
+            id: 'user-2',
+            full_name: 'Worker Two',
+            phone: null,
+            role: 'satgas',
+            area_id: 'area-1',
+            area_name: 'Taman Bungkul',
+            rayon_id: 'rayon-1',
+            rayon_name: 'Rayon Selatan',
+            latitude: -7.29,
+            longitude: 112.74,
+            accuracy: null,
+            battery_level: null,
+            last_update: new Date(),
+            status: TrackingStatus.ACTIVE,
+            activity: 'aktif',
+            location: 'dalam_area',
+            is_within_area: true,
+            outside_boundary: false,
+            shift_id: 'shift-2',
+            shift_definition_id: null,
+            shift_name: 'Shift 1',
+            clock_in_time: new Date(),
+            current_task_status: null,
+            current_task_title: null,
+          },
+        ],
+        generated_at: new Date(),
+      };
+
+      jest.spyOn(service['userService'], 'getLiveUsers').mockResolvedValue(mockLiveUsersResult as any);
+      jest.spyOn(service['statsService'], 'getCurrentShiftDefinition').mockResolvedValue(null);
+
+      const result = await service.getSnapshot('area', 'area-1');
+
+      expect(result.data.area_summaries).toHaveLength(1);
+      // With no shift, required_count defaults to 0
+      expect(result.data.area_summaries[0].required_count).toBe(0);
+      // 2 active > 0 required → not understaffed
+      expect(result.data.area_summaries[0].is_understaffed).toBe(false);
+    });
+  });
 });

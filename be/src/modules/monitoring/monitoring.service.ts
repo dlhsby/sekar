@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
@@ -23,10 +23,48 @@ import { MonitoringStatsService } from './services/monitoring-stats.service';
 import { MonitoringUserService } from './services/monitoring-user.service';
 import { DayTypeService } from './services/day-type.service';
 
+// Snapshot DTOs for web frontend contract (fe/web/src/lib/api/monitoring-v2.ts)
+export interface SnapshotWorker {
+  user_id: string;
+  full_name: string;
+  role: string;
+  lat: number;
+  lng: number;
+  status: TrackingStatus;
+  area_id: string | null;
+  area_name: string | null;
+  rayon_id: string | null;
+  rayon_name: string | null;
+  last_update: string;
+  is_within_area: boolean;
+  battery_level: number | null;
+}
+
+export interface SnapshotAreaSummary {
+  area_id: string;
+  area_name: string;
+  rayon_id: string;
+  rayon_name: string;
+  active_count: number;
+  required_count: number;
+  is_understaffed: boolean;
+}
+
+export interface SnapshotData {
+  scope: string;
+  scope_id: string | null;
+  workers: SnapshotWorker[];
+  area_summaries: SnapshotAreaSummary[];
+  total_active: number;
+  total_inactive: number;
+  total_outside_area: number;
+  total_missing: number;
+  total_offline: number;
+  generated_at: string;
+}
+
 @Injectable()
 export class MonitoringService {
-  private readonly logger = new Logger(MonitoringService.name);
-
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
@@ -78,34 +116,131 @@ export class MonitoringService {
   /**
    * Returns a combined monitoring snapshot for a given scope.
    * Suitable for initial page load and periodic full-refresh polling.
+   * Contract matches fe/web/src/lib/api/monitoring-v2.ts.
    */
   async getSnapshot(
     scope: 'city' | 'rayon' | 'area',
     id?: string,
   ): Promise<{
     success: boolean;
-    data: {
-      scope: string;
-      scope_id: string | null;
-      generated_at: string;
-      workers: unknown[];
-    };
+    data: SnapshotData;
   }> {
     const filters: LiveUsersFilterDto = {};
     if (scope === 'rayon' && id) filters.rayon_id = id;
     if (scope === 'area' && id) filters.area_id = id;
 
     const result = await this.userService.getLiveUsers(filters);
+    const currentShift = await this.statsService.getCurrentShiftDefinition();
+    const currentDayType = await this.dayTypeService.getCurrentDayType();
+
+    // Map LiveUserDto → SnapshotWorker (rename latitude/longitude → lat/lng, id → user_id)
+    const workers: SnapshotWorker[] = (result?.users ?? []).map((u) => ({
+      user_id: u.id,
+      full_name: u.full_name,
+      role: u.role,
+      lat: u.latitude,
+      lng: u.longitude,
+      status: u.status,
+      area_id: u.area_id,
+      area_name: u.area_name,
+      rayon_id: u.rayon_id,
+      rayon_name: u.rayon_name,
+      last_update: u.last_update.toISOString(),
+      is_within_area: u.is_within_area,
+      battery_level: u.battery_level,
+    }));
+
+    // Build area_summaries from distinct areas present in workers
+    const areaSummaries = await this.buildAreaSummaries(
+      workers,
+      currentShift,
+      currentDayType,
+    );
+
+    const generatedAt = new Date().toISOString();
 
     return {
       success: true,
       data: {
         scope,
         scope_id: id ?? null,
-        generated_at: new Date().toISOString(),
-        workers: result?.users ?? [],
+        workers,
+        area_summaries: areaSummaries,
+        total_active: result?.total_active ?? 0,
+        total_inactive: result?.total_inactive ?? 0,
+        total_outside_area: result?.total_outside_area ?? 0,
+        total_missing: result?.total_missing ?? 0,
+        total_offline: result?.total_offline ?? 0,
+        generated_at: generatedAt,
       },
     };
+  }
+
+  /**
+   * Build area_summaries by grouping workers by area and computing staffing.
+   * For each distinct area: count active workers, get required_count from AreaStaffRequirement
+   * for current shift + day type, compute is_understaffed.
+   */
+  private async buildAreaSummaries(
+    workers: SnapshotWorker[],
+    currentShift: ShiftDefinition | null,
+    currentDayType: DayType,
+  ): Promise<SnapshotAreaSummary[]> {
+    // Group workers by area_id; track distinct areas with (id, name, rayon_id, rayon_name)
+    const areaMap = new Map<
+      string,
+      { name: string; rayon_id: string; rayon_name: string; activeCount: number }
+    >();
+
+    for (const w of workers) {
+      if (!w.area_id) continue; // Skip workers without area assignment
+
+      const existing = areaMap.get(w.area_id);
+      const activeCount = w.status === TrackingStatus.ACTIVE ? 1 : 0;
+
+      if (existing) {
+        existing.activeCount += activeCount;
+      } else {
+        areaMap.set(w.area_id, {
+          name: w.area_name ?? 'Unknown',
+          rayon_id: w.rayon_id ?? '',
+          rayon_name: w.rayon_name ?? 'Unknown',
+          activeCount,
+        });
+      }
+    }
+
+    // For each area, fetch required_count and build summary
+    const summaries: SnapshotAreaSummary[] = [];
+
+    for (const [areaId, areaData] of areaMap.entries()) {
+      // Query required_count for this area + current shift + current day type
+      // If no current shift, required_count defaults to 0 (understaffed = activeCount < 0 = false)
+      let requiredCount = 0;
+
+      if (currentShift) {
+        const req = await this.staffRequirementRepository.findOne({
+          where: {
+            area_id: areaId,
+            shift_definition_id: currentShift.id,
+            day_type: currentDayType,
+          },
+        });
+        requiredCount = req?.required_count ?? 0;
+      }
+
+      summaries.push({
+        area_id: areaId,
+        area_name: areaData.name,
+        rayon_id: areaData.rayon_id,
+        rayon_name: areaData.rayon_name,
+        active_count: areaData.activeCount,
+        required_count: requiredCount,
+        is_understaffed: areaData.activeCount < requiredCount,
+      });
+    }
+
+    return summaries;
   }
 
   // ---- Staffing Summary (combines user & stats concerns, stays here) ----
