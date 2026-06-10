@@ -218,7 +218,11 @@ export default function PruningSubmitPage() {
                 <span className="text-nb-caption text-nb-gray-500">Lokasi belum diambil</span>
               )}
             </div>
-            {errors.gps && <p className="text-nb-body-sm text-nb-danger">{errors.gps}</p>}
+            {errors.gps && (
+              <p role="alert" className="text-nb-body-sm text-nb-danger">
+                {errors.gps}
+              </p>
+            )}
           </div>
         </SectionCard>
 
@@ -262,7 +266,11 @@ export default function PruningSubmitPage() {
                 ))}
               </div>
             )}
-            {errors.photos && <p className="text-nb-body-sm text-nb-danger">{errors.photos}</p>}
+            {errors.photos && (
+              <p role="alert" className="text-nb-body-sm text-nb-danger">
+                {errors.photos}
+              </p>
+            )}
             <p className="text-nb-caption text-nb-gray-500">Minimal 1, maksimal {MAX_PHOTOS} foto (maks. 10 MB per foto).</p>
           </div>
         </SectionCard>
@@ -311,6 +319,7 @@ export default function PruningSubmitPage() {
               label="No. HP Pengaju"
               type="tel"
               inputMode="tel"
+              placeholder="081234567890"
               value={form.requesterPhone}
               onChange={setField('requesterPhone')}
               error={errors.requesterPhone}
@@ -327,6 +336,7 @@ export default function PruningSubmitPage() {
               label="No. HP Ketua RT"
               type="tel"
               inputMode="tel"
+              placeholder="081234567890"
               value={form.rtLeaderPhone}
               onChange={setField('rtLeaderPhone')}
               error={errors.rtLeaderPhone}

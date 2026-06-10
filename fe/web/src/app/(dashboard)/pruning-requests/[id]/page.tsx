@@ -279,7 +279,9 @@ export default function PruningRequestDetailPage() {
                   placeholder="Contoh: Lokasi sesuai, prioritaskan minggu ini."
                 />
                 {reviewMutation.isError && (
-                  <p className="text-nb-body-sm text-nb-danger">Gagal mengirim tinjauan. Coba lagi.</p>
+                  <p role="alert" className="text-nb-body-sm text-nb-danger">
+                    Gagal mengirim tinjauan. Coba lagi.
+                  </p>
                 )}
                 <div className="flex gap-2">
                   <Button
@@ -306,6 +308,14 @@ export default function PruningRequestDetailPage() {
               title="Tugaskan ke Petugas"
               meta="Tanggal kosong dipilih otomatis dalam minggu diminta"
             >
+              {(areaOptions.length === 0 || assigneeOptions.length === 0) && (
+                <p
+                  role="alert"
+                  className="mb-3 rounded-nb-base border-2 border-nb-warning bg-nb-warning-light px-3 py-2 text-nb-body-sm text-nb-black"
+                >
+                  Tidak ada area atau petugas yang tersedia untuk rayon ini. Hubungi administrator.
+                </p>
+              )}
               <div className="space-y-3">
                 <FormSelect
                   label="Area"
@@ -338,7 +348,7 @@ export default function PruningRequestDetailPage() {
                   onChange={(e) => setScheduledDate(e.target.value)}
                 />
                 {convertMutation.isError && (
-                  <p className="text-nb-body-sm text-nb-danger">
+                  <p role="alert" className="text-nb-body-sm text-nb-danger">
                     Gagal mengonversi ke tugas. Periksa kapasitas minggu dan coba lagi.
                   </p>
                 )}
