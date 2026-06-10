@@ -69,7 +69,7 @@ export function HierarchyFilterPanel({
       const id = areaId === 'none' ? undefined : areaId;
       onChange({ scope: 'area', rayonId: value.rayonId, areaId: id });
     },
-    [onChange]
+    [onChange, value.rayonId]
   );
 
   const handleReset = useCallback(() => {

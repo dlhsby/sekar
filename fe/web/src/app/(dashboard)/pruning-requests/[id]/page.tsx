@@ -79,6 +79,9 @@ export default function PruningRequestDetailPage() {
   // useUsers' filter doesn't accept rayon_id; fetch a generous page and filter client-side.
   const { data: usersResponse } = useUsers({ limit: 200 });
 
+  // Hoist the optional-chain read to a stable value so the memo deps are plain
+  // identifiers (the React Compiler can't preserve a member-expression dep).
+  const requestRayonId = request?.rayonId;
   const areaOptions = useMemo(
     () =>
       (areasResponse?.data ?? []).map((a) => ({ label: a.name, value: a.id })),
@@ -88,9 +91,9 @@ export default function PruningRequestDetailPage() {
     const all = usersResponse?.data ?? [];
     return all
       .filter((u) => ASSIGNEE_ROLES.includes(u.role as UserRole))
-      .filter((u) => !request?.rayonId || u.rayon_id === request.rayonId)
+      .filter((u) => !requestRayonId || u.rayon_id === requestRayonId)
       .map((u) => ({ label: `${u.full_name} (${u.role})`, value: u.id }));
-  }, [usersResponse, request?.rayonId]);
+  }, [usersResponse, requestRayonId]);
 
   // Review state
   const [reviewNotes, setReviewNotes] = useState('');
