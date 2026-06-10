@@ -468,7 +468,7 @@ export default function MonitoringPage() {
       {/* Deterministic height (not flex-1 of an h-full chain that may not
           resolve) so the map cell — and its absolutely-positioned canvas —
           always has real height. Mobile = future drag bottom-sheet candidate. */}
-      <div className="flex flex-col md:flex-row h-[calc(100vh-15rem)] min-h-[32rem] overflow-hidden gap-0 border-2 border-nb-black m-4 rounded-nb-base bg-white">
+      <div className="flex flex-col md:flex-row h-[calc(100vh_-_15rem)] min-h-[32rem] overflow-hidden gap-0 border-2 border-nb-black m-4 rounded-nb-base bg-white">
         {/* Map — left side. h-full (not h-auto) on desktop so the inner map's
             height:100% resolves against a definite height — % heights don't
             resolve against an auto-height parent, which left the canvas 0px. */}

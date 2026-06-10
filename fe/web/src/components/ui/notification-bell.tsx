@@ -33,7 +33,7 @@ export function NotificationPanel({
   const recent = notifications.slice(0, 5);
 
   return (
-    <div className="w-80 max-w-[calc(100vw-2rem)]">
+    <div className="w-80 max-w-[calc(100vw_-_2rem)]">
       <div className="flex items-center justify-between border-b-2 border-nb-black px-4 py-3">
         <span className="text-nb-h3 text-nb-black">Notifikasi</span>
         {notifications.length > 0 && (
