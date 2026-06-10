@@ -5,8 +5,7 @@
  */
 
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen } from '@testing-library/react';
 import MonitoringPage from '../page';
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -50,19 +49,50 @@ jest.mock('socket.io-client', () => {
   return { __esModule: true, default: io };
 });
 
-// Mock monitoring-v2 API (Phase 3 M2)
+// Mock monitoring-v2 API (Phase 4-R)
 jest.mock('@/lib/api/monitoring-v2', () => ({
   useMonitoringSnapshot: jest.fn(() => ({
     data: {
       success: true,
       data: {
-        workers: [],
+        workers: [
+          {
+            user_id: 'worker-1',
+            full_name: 'Worker 1',
+            role: 'satgas',
+            lat: -7.250445,
+            lng: 112.768845,
+            status: 'active',
+            area_id: 'area-1',
+            area_name: 'Area 1',
+            rayon_id: 'rayon-1',
+            rayon_name: 'Rayon 1',
+            last_update: '2024-01-01T12:00:00Z',
+            is_within_area: true,
+            battery_level: 80,
+          },
+          {
+            user_id: 'worker-2',
+            full_name: 'Worker 2',
+            role: 'satgas',
+            lat: -7.251445,
+            lng: 112.769845,
+            status: 'outside_area',
+            area_id: 'area-1',
+            area_name: 'Area 1',
+            rayon_id: 'rayon-1',
+            rayon_name: 'Rayon 1',
+            last_update: '2024-01-01T11:55:00Z',
+            is_within_area: false,
+            battery_level: 15,
+          },
+        ],
         area_summaries: [],
         total_active: 1,
         total_inactive: 0,
-        total_outside_area: 0,
+        total_outside_area: 1,
         total_missing: 0,
-        total_offline: 1,
+        total_offline: 0,
         generated_at: '2024-01-01T12:00:00Z',
       },
     },
@@ -146,63 +176,6 @@ const mockCityStats = {
   generated_at: '2024-01-01T12:00:00Z',
 };
 
-const mockLiveUsers = {
-  total_active: 1,
-  total_inactive: 0,
-  total_outside_area: 0,
-  total_missing: 0,
-  total_offline: 1,
-  users: [
-    {
-      id: 'worker-1',
-      full_name: 'Worker 1',
-      role: 'satgas',
-      phone: '+628111',
-      status: 'active',
-      area_id: 'area-1',
-      area_name: 'Area 1',
-      rayon_id: 'rayon-1',
-      rayon_name: 'Rayon 1',
-      latitude: -7.250445,
-      longitude: 112.768845,
-      accuracy: 5,
-      battery_level: 80,
-      last_update: '2024-01-01T12:00:00Z',
-      is_within_area: true,
-      outside_boundary: false,
-      shift_id: 'shift-1',
-      shift_name: 'Shift Pagi',
-      clock_in_time: '2024-01-01T07:00:00Z',
-      current_task_status: null,
-      current_task_title: null,
-    },
-    {
-      id: 'worker-2',
-      full_name: 'Worker 2',
-      role: 'satgas',
-      phone: '+628222',
-      status: 'active',
-      area_id: 'area-1',
-      area_name: 'Area 1',
-      rayon_id: 'rayon-1',
-      rayon_name: 'Rayon 1',
-      latitude: -7.251445,
-      longitude: 112.769845,
-      accuracy: 10,
-      battery_level: 15,
-      last_update: '2024-01-01T11:55:00Z',
-      is_within_area: false,
-      outside_boundary: true,
-      shift_id: 'shift-1',
-      shift_name: 'Shift Pagi',
-      clock_in_time: '2024-01-01T07:00:00Z',
-      current_task_status: null,
-      current_task_title: null,
-    },
-  ],
-  generated_at: '2024-01-01T12:00:00Z',
-};
-
 const mockRayons = [
   { id: 'rayon-1', name: 'Rayon 1', code: 'R1' },
   { id: 'rayon-2', name: 'Rayon 2', code: 'R2' },
@@ -260,12 +233,6 @@ describe('MonitoringPage Component', () => {
       error: null,
     });
 
-    (monitoringApi.useLiveUsers as jest.Mock).mockReturnValue({
-      data: mockLiveUsers,
-      isLoading: false,
-      error: null,
-      refetch: jest.fn(),
-    });
 
     (monitoringApi.useUserDaySummary as jest.Mock).mockReturnValue({
       data: null,
@@ -378,12 +345,11 @@ describe('MonitoringPage Component', () => {
       mockUseAuth.mockReturnValue({ user: mockAdminUser, loading: false });
     });
 
-    it('should display city-wide online/total count in header', () => {
+    it('should display last update time from snapshot', () => {
       render(<MonitoringPage />, { wrapper: createWrapper() });
 
-      // Header shows "{totalActive} / {totalWorkers} aktif" from useMonitoringSnapshot
-      // mock: total_active=1, others sum to 2 total workers
-      expect(screen.getByText(/1 \/ 2 aktif/)).toBeInTheDocument();
+      // Header shows update time from snapshot.generated_at
+      expect(screen.getByText(/diperbarui/i)).toBeInTheDocument();
     });
 
     it('should render the Monitoring Real-Time heading', () => {
@@ -437,7 +403,7 @@ describe('MonitoringPage Component', () => {
       expect(screen.getByTestId('monitoring-map')).toBeInTheDocument();
     });
 
-    it('should pass users to the map component', () => {
+    it('should pass snapshot workers to the map component', () => {
       render(<MonitoringPage />, { wrapper: createWrapper() });
 
       expect(screen.getByText(/2 petugas terdeteksi/i)).toBeInTheDocument();
@@ -449,11 +415,11 @@ describe('MonitoringPage Component', () => {
       expect(screen.getByTestId('staffing-summary')).toBeInTheDocument();
     });
 
-    it('should render user names in the side panel list', () => {
+    it('should render worker list header with count', () => {
       render(<MonitoringPage />, { wrapper: createWrapper() });
 
-      expect(screen.getByText('Worker 1')).toBeInTheDocument();
-      expect(screen.getByText('Worker 2')).toBeInTheDocument();
+      // The WorkerListVirtual is mocked, so we check for the header instead
+      expect(screen.getByText(/petugas \(2\)/i)).toBeInTheDocument();
     });
   });
 
@@ -466,11 +432,17 @@ describe('MonitoringPage Component', () => {
       mockUseAuth.mockReturnValue({ user: mockAdminUser, loading: false });
     });
 
-    it('should show loading state when users are loading', () => {
-      (monitoringApi.useLiveUsers as jest.Mock).mockReturnValue({
+    it('should render worker list from snapshot', () => {
+      render(<MonitoringPage />, { wrapper: createWrapper() });
+
+      expect(screen.getByText(/petugas \(2\)/i)).toBeInTheDocument();
+    });
+
+    it('should show loading state when snapshot is loading', () => {
+      const monitoringV2Mock = jest.requireMock('@/lib/api/monitoring-v2');
+      monitoringV2Mock.useMonitoringSnapshot.mockReturnValueOnce({
         data: null,
         isLoading: true,
-        error: null,
         refetch: jest.fn(),
       });
 
@@ -478,19 +450,6 @@ describe('MonitoringPage Component', () => {
 
       const skeletons = container.querySelectorAll('.animate-pulse');
       expect(skeletons.length).toBeGreaterThan(0);
-    });
-
-    it('should show empty state when no users are available', () => {
-      (monitoringApi.useLiveUsers as jest.Mock).mockReturnValue({
-        data: { ...mockLiveUsers, users: [] },
-        isLoading: false,
-        error: null,
-        refetch: jest.fn(),
-      });
-
-      render(<MonitoringPage />, { wrapper: createWrapper() });
-
-      expect(screen.getByText(/tidak ada petugas ditemukan/i)).toBeInTheDocument();
     });
   });
 
@@ -503,46 +462,19 @@ describe('MonitoringPage Component', () => {
       mockUseAuth.mockReturnValue({ user: mockAdminUser, loading: false });
     });
 
-    it('should handle missing city stats gracefully', () => {
-      (monitoringApi.useCityStats as jest.Mock).mockReturnValue({
+    it('should handle missing snapshot data gracefully', () => {
+      const monitoringV2Mock = jest.requireMock('@/lib/api/monitoring-v2');
+      monitoringV2Mock.useMonitoringSnapshot.mockReturnValueOnce({
         data: null,
         isLoading: false,
-        error: null,
-      });
-
-      expect(() => render(<MonitoringPage />, { wrapper: createWrapper() })).not.toThrow();
-    });
-
-    it('should handle missing live users data gracefully', () => {
-      (monitoringApi.useLiveUsers as jest.Mock).mockReturnValue({
-        data: null,
-        isLoading: false,
-        error: null,
         refetch: jest.fn(),
       });
 
       expect(() => render(<MonitoringPage />, { wrapper: createWrapper() })).not.toThrow();
     });
 
-    it('should not crash when korlap has area_id and area stats load', () => {
+    it('should not crash when korlap has area_id', () => {
       mockUseAuth.mockReturnValue({ user: mockKorlapUser, loading: false });
-
-      (monitoringApi.useAreaMonitoring as jest.Mock).mockReturnValue({
-        data: {
-          id: 'area-1',
-          name: 'Area 1',
-          area_type: 'Taman',
-          rayon_id: 'rayon-1',
-          rayon_name: 'Rayon 1',
-          total_users_assigned: 5,
-          users_online: 4,
-          users_offline: 1,
-          is_fully_staffed: true,
-          generated_at: '2024-01-01T12:00:00Z',
-        },
-        isLoading: false,
-        error: null,
-      });
 
       expect(() => render(<MonitoringPage />, { wrapper: createWrapper() })).not.toThrow();
       expect(screen.getByRole('heading', { name: /monitoring real-time/i })).toBeInTheDocument();

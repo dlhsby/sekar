@@ -1,29 +1,21 @@
 /**
- * Monitoring Dashboard v2 (Phase 3 sub-phase 3-4)
- * - useMonitoringSnapshot for initial data
- * - Incremental WS status:v2 patches via queryClient.setQueryData
- * - ClusterLayer for map rendering (supercluster)
- * - WorkerListVirtual for sidebar worker list
- * - HierarchyFilterPanel for filtering
- * - AreaDetailDrawer when area polygon is clicked
+ * Monitoring Dashboard v2 (Phase 4-R rework)
+ * - Single data source: useMonitoringSnapshot (snapshot workers)
+ * - Unified WS: status:v2 patches only (legacy Phase 2D handlers removed)
+ * - Clean responsive layout: header → status bar → filters → split map/panel
+ * - MonitoringStatusBar: activity-state summary (Aktif/Idle/Tidak terdeteksi)
  * - Role gate: MONITORING_ROLES only — staff_kecamatan has NO access
- *
- * Backward-compatible: all Phase 2D panels (detail, timeline, reassign) preserved.
  */
 
 'use client';
 
 import { useAuth } from '@/lib/auth/hooks';
 import {
-  useLiveUsers,
   useUserDaySummary,
   useLocationHistory,
   useBoundaries,
   type LiveUser,
-  type UserStatusChangedEvent,
-  type UserAreaEvent,
 } from '@/lib/api/monitoring';
-import { monitoringKeys } from '@/lib/api/monitoring';
 import {
   useMonitoringSnapshot,
   snapshotKeys,
@@ -32,7 +24,6 @@ import {
 } from '@/lib/api/monitoring-v2';
 import { Button } from '@/components/ui';
 import { MonitoringMap } from '@/components/monitoring/MonitoringMap';
-import { MonitoringSidePanel } from '@/components/monitoring/MonitoringSidePanel';
 import { UserDetailPanel } from '@/components/monitoring/UserDetailPanel';
 import { LocationTimeline } from '@/components/monitoring/LocationTimeline';
 import { StaffingSummaryCard } from '@/components/monitoring/StaffingSummaryCard';
@@ -43,6 +34,7 @@ import {
 } from '@/components/monitoring/HierarchyFilterPanel';
 import { WorkerListVirtual, type WorkerListItem } from '@/components/monitoring/WorkerListVirtual';
 import { AreaDetailDrawer } from '@/components/monitoring/AreaDetailDrawer';
+import { MonitoringStatusBar } from '@/components/monitoring/MonitoringStatusBar';
 import {
   MonitoringTogglePanel,
   DEFAULT_LAYER_VISIBILITY,
@@ -62,19 +54,29 @@ import type { SnapshotAreaSummary } from '@/lib/api/monitoring-v2';
 
 type PanelView = 'list' | 'detail' | 'timeline';
 
+const LAYER_STORAGE_KEY = 'monitoring.layers.v1';
+
+/** Read persisted map-layer visibility (lazy useState init — avoids a hydrate effect). */
+function loadLayerVisibility(): MonitoringLayerVisibility {
+  if (typeof window === 'undefined') return DEFAULT_LAYER_VISIBILITY;
+  try {
+    const raw = window.localStorage.getItem(LAYER_STORAGE_KEY);
+    if (!raw) return DEFAULT_LAYER_VISIBILITY;
+    return { ...DEFAULT_LAYER_VISIBILITY, ...(JSON.parse(raw) as Partial<MonitoringLayerVisibility>) };
+  } catch {
+    return DEFAULT_LAYER_VISIBILITY;
+  }
+}
+
 export default function MonitoringPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
 
   // ---------------------------------------------------------------------------
-  // Hierarchy filter state (replaces flat rayon/area filters)
+  // Hierarchy filter state
   // ---------------------------------------------------------------------------
   const [filterState, setFilterState] = useState<HierarchyFilterState>({ scope: 'city' });
-
-  // Derived convenience values
-  const rayonFilter = filterState.scope !== 'city' ? (filterState.rayonId ?? 'all') : 'all';
-  const areaFilter = filterState.scope === 'area' ? (filterState.areaId ?? 'all') : 'all';
 
   // Panel state
   const [panelView, setPanelView] = useState<PanelView>('list');
@@ -93,22 +95,10 @@ export default function MonitoringPage() {
   // Area detail drawer state (Phase 3)
   const [selectedAreaSummary, setSelectedAreaSummary] = useState<SnapshotAreaSummary | null>(null);
 
-  // Map layer visibility (Phase 3 sub-phase 3-4 — Tampilan Peta toggles)
-  const LAYER_STORAGE_KEY = 'monitoring.layers.v1';
+  // Map layer visibility — hydrated once from localStorage via lazy init.
   const [layerVisibility, setLayerVisibility] = useState<MonitoringLayerVisibility>(
-    () => DEFAULT_LAYER_VISIBILITY
+    loadLayerVisibility
   );
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const raw = window.localStorage.getItem(LAYER_STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as Partial<MonitoringLayerVisibility>;
-      setLayerVisibility((prev) => ({ ...prev, ...parsed }));
-    } catch {
-      /* ignore corrupt persisted value */
-    }
-  }, []);
   const handleLayerVisibilityChange = useCallback(
     (next: MonitoringLayerVisibility) => {
       setLayerVisibility(next);
@@ -134,21 +124,27 @@ export default function MonitoringPage() {
     }
   }, [user, authLoading, router]);
 
-  // Auto-scope based on role
+  // Auto-scope when the (async-loaded) user resolves: korlap → their area,
+  // kepala_rayon → their rayon. A one-shot derive from an async value — there
+  // is no synchronous source to seed the initial filter state from.
   useEffect(() => {
     if (!user) return;
+    let next: HierarchyFilterState | null = null;
     if (user.role === 'korlap' && user.area_id) {
-      setFilterState({ scope: 'area', areaId: user.area_id });
+      next = { scope: 'area', areaId: user.area_id };
     } else if (user.role === 'kepala_rayon' && user.rayon_id) {
-      setFilterState({ scope: 'rayon', rayonId: user.rayon_id });
+      next = { scope: 'rayon', rayonId: user.rayon_id };
+    }
+    if (next) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFilterState(next);
     }
   }, [user]);
 
   // ---------------------------------------------------------------------------
-  // Data queries
+  // Data queries — unified snapshot source
   // ---------------------------------------------------------------------------
 
-  // v2 snapshot
   const snapshotScope = filterState.scope;
   const snapshotId =
     filterState.scope === 'rayon'
@@ -162,27 +158,6 @@ export default function MonitoringPage() {
     isLoading: snapshotLoading,
     refetch: refetchSnapshot,
   } = useMonitoringSnapshot(snapshotScope, snapshotId);
-
-  // Legacy live-users (still used for Phase 2D sidebar panels)
-  const legacyFilters = useMemo(() => {
-    const f: { rayon_id?: string; area_id?: string } = {};
-    if (rayonFilter !== 'all') f.rayon_id = rayonFilter;
-    if (areaFilter !== 'all') f.area_id = areaFilter;
-    return f;
-  }, [rayonFilter, areaFilter]);
-
-  // Ref kept current so WS handlers always read the latest filter value
-  // without needing to re-subscribe to the socket.
-  const legacyFiltersRef = useRef(legacyFilters);
-  useEffect(() => {
-    legacyFiltersRef.current = legacyFilters;
-  });
-
-  const {
-    data: liveUsersData,
-    isLoading: usersLoading,
-    refetch: refetchUsers,
-  } = useLiveUsers(legacyFilters);
 
   const { data: boundariesData } = useBoundaries();
 
@@ -198,7 +173,7 @@ export default function MonitoringPage() {
   );
 
   // ---------------------------------------------------------------------------
-  // WebSocket — both Phase 2D events and new status:v2 patches
+  // WebSocket — snapshot status:v2 patches only
   // ---------------------------------------------------------------------------
   useEffect(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
@@ -213,81 +188,8 @@ export default function MonitoringPage() {
 
     socketRef.current = socket;
 
-    // --- Phase 2D events (legacy live-users cache patches) ---
-
-    socket.on('user:location', (payload: Partial<LiveUser> & { user_id: string }) => {
-      queryClient.setQueryData(
-        monitoringKeys.liveUsers(legacyFiltersRef.current),
-        (old: typeof liveUsersData) => {
-          if (!old) return old;
-          return {
-            ...old,
-            users: old.users.map((u) => (u.id === payload.user_id ? { ...u, ...payload } : u)),
-          };
-        }
-      );
-    });
-
-    socket.on('user:status-changed', (event: UserStatusChangedEvent) => {
-      queryClient.setQueryData(
-        monitoringKeys.liveUsers(legacyFiltersRef.current),
-        (old: typeof liveUsersData) => {
-          if (!old) return old;
-          return {
-            ...old,
-            users: old.users.map((u) =>
-              u.id === event.user_id ? { ...u, status: event.new_status } : u
-            ),
-          };
-        }
-      );
-      if (event.new_status === 'missing') {
-        toast.warning(`${event.user_name} tidak terdeteksi`, {
-          description: event.area_name ? `Area: ${event.area_name}` : undefined,
-        });
-      }
-    });
-
-    socket.on('user:left-area', (event: UserAreaEvent) => {
-      queryClient.setQueryData(
-        monitoringKeys.liveUsers(legacyFiltersRef.current),
-        (old: typeof liveUsersData) => {
-          if (!old) return old;
-          return {
-            ...old,
-            users: old.users.map((u) =>
-              u.id === event.user_id
-                ? { ...u, is_within_area: false, status: 'outside_area' as const }
-                : u
-            ),
-          };
-        }
-      );
-      toast.info(`${event.user_name} keluar dari ${event.area_name}`);
-    });
-
-    socket.on('user:entered-area', (event: UserAreaEvent) => {
-      queryClient.setQueryData(
-        monitoringKeys.liveUsers(legacyFiltersRef.current),
-        (old: typeof liveUsersData) => {
-          if (!old) return old;
-          return {
-            ...old,
-            users: old.users.map((u) =>
-              u.id === event.user_id
-                ? { ...u, is_within_area: true, status: 'active' as const }
-                : u
-            ),
-          };
-        }
-      );
-      toast.success(`${event.user_name} masuk ke ${event.area_name}`);
-    });
-
-    // --- Phase 3 incremental patch: status:v2 ---
-
+    // Incremental snapshot patch via status:v2
     socket.on('status:v2', (event: StatusV2Event) => {
-      // Patch the snapshot cache for all active scope keys
       const queryKey = snapshotKeys.byScope(snapshotScope, snapshotId);
       queryClient.setQueryData(queryKey, (old: MonitoringSnapshotResponse | undefined) => {
         if (!old?.data) return old;
@@ -309,7 +211,6 @@ export default function MonitoringPage() {
         };
       });
 
-      // Show toast for missing status
       if (event.next === 'missing') {
         toast.warning('Petugas tidak terdeteksi', {
           description: `Status berubah dari ${event.prev} ke missing`,
@@ -321,28 +222,52 @@ export default function MonitoringPage() {
       socket.disconnect();
       socketRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // snapshotScope/snapshotId in deps so the patch targets the active scope key.
   }, [queryClient, snapshotScope, snapshotId]);
 
   // ---------------------------------------------------------------------------
-  // Derived data
+  // Derived data — all from snapshot
   // ---------------------------------------------------------------------------
 
-  const users = liveUsersData?.users ?? [];
-  const snapshotWorkers = snapshotData?.data?.workers ?? [];
-  const snapshotAreaSummaries = snapshotData?.data?.area_summaries ?? [];
+  const snapshotWorkers = useMemo(
+    () => snapshotData?.data?.workers ?? [],
+    [snapshotData?.data?.workers]
+  );
 
-  // Stats from snapshot (prefer v2 snapshot; fallback to legacy)
-  const totalActive =
-    snapshotData?.data?.total_active ?? liveUsersData?.total_active ?? 0;
-  const totalWorkers =
-    (snapshotData?.data?.total_active ?? 0) +
-    (snapshotData?.data?.total_inactive ?? 0) +
-    (snapshotData?.data?.total_outside_area ?? 0) +
-    (snapshotData?.data?.total_missing ?? 0) +
-    (snapshotData?.data?.total_offline ?? 0);
+  const snapshotAreaSummaries = useMemo(
+    () => snapshotData?.data?.area_summaries ?? [],
+    [snapshotData?.data?.area_summaries]
+  );
 
-  const generatedAt = snapshotData?.data?.generated_at ?? liveUsersData?.generated_at;
+  // Build LiveUser[] from snapshot workers for map rendering
+  // Map requires: id, latitude, longitude, status, full_name + optional role, area_id, rayon_id, etc.
+  const mapUsers: LiveUser[] = useMemo(
+    () =>
+      snapshotWorkers.map((w) => ({
+        id: w.user_id,
+        full_name: w.full_name,
+        role: w.role as UserRole,
+        phone: null,
+        status: w.status,
+        area_id: w.area_id,
+        area_name: w.area_name ?? '',
+        rayon_id: w.rayon_id,
+        rayon_name: w.rayon_name ?? '',
+        latitude: w.lat,
+        longitude: w.lng,
+        accuracy: null,
+        battery_level: w.battery_level,
+        last_update: w.last_update,
+        is_within_area: w.is_within_area,
+        outside_boundary: false,
+        shift_id: '',
+        shift_name: '',
+        clock_in_time: w.last_update,
+        current_task_status: null,
+        current_task_title: null,
+      })),
+    [snapshotWorkers]
+  );
 
   // Build WorkerListItem[] from snapshot workers
   const workerListItems = useMemo<WorkerListItem[]>(
@@ -359,7 +284,7 @@ export default function MonitoringPage() {
     [snapshotWorkers]
   );
 
-  // Filter workers for the selected area drawer by area_id (unique) not area_name (non-unique across rayons)
+  // Filter workers for the selected area drawer
   const areaDrawerWorkers = useMemo<WorkerListItem[]>(() => {
     if (!selectedAreaSummary) return [];
     return workerListItems.filter((w) => w.area_id === selectedAreaSummary.area_id);
@@ -368,12 +293,26 @@ export default function MonitoringPage() {
   // Map filter props for auto-focus
   const mapFilters = useMemo(
     () => ({
-      rayon_id: rayonFilter !== 'all' ? rayonFilter : undefined,
-      area_id: areaFilter !== 'all' ? areaFilter : undefined,
+      rayon_id: filterState.scope !== 'city' && filterState.rayonId ? filterState.rayonId : undefined,
+      area_id: filterState.scope === 'area' && filterState.areaId ? filterState.areaId : undefined,
       user_id: selectedUser?.id,
     }),
-    [rayonFilter, areaFilter, selectedUser]
+    [filterState, selectedUser]
   );
+
+  const snapshotTotals = useMemo(() => {
+    const d = snapshotData?.data;
+    if (!d) return null;
+    return {
+      total_active: d.total_active,
+      total_inactive: d.total_inactive,
+      total_outside_area: d.total_outside_area,
+      total_missing: d.total_missing,
+      total_offline: d.total_offline,
+    };
+  }, [snapshotData]);
+
+  const generatedAt = snapshotData?.data?.generated_at;
 
   // ---------------------------------------------------------------------------
   // Callbacks
@@ -389,12 +328,12 @@ export default function MonitoringPage() {
 
   const handleWorkerListSelect = useCallback(
     (userId: string) => {
-      const liveUser = users.find((u) => u.id === userId);
+      const liveUser = mapUsers.find((u) => u.id === userId);
       if (liveUser) {
         handleUserSelect(liveUser);
       }
     },
-    [users, handleUserSelect]
+    [mapUsers, handleUserSelect]
   );
 
   const handleBackToList = useCallback(() => {
@@ -439,12 +378,10 @@ export default function MonitoringPage() {
       if (_type === 'rayon') {
         setFilterState({ scope: 'rayon', rayonId: id });
       } else {
-        // Open area detail drawer using snapshot area summary
         const summary = snapshotAreaSummaries.find((s) => s.area_id === id);
         if (summary) {
           setSelectedAreaSummary(summary);
         }
-        // Also update filter to area scope
         setFilterState((prev) => ({ scope: 'area', rayonId: prev.rayonId, areaId: id }));
       }
     },
@@ -453,7 +390,6 @@ export default function MonitoringPage() {
 
   const handleFilterChange = useCallback((next: HierarchyFilterState) => {
     setFilterState(next);
-    // Close area drawer when filter changes away
     if (next.scope !== 'area') {
       setSelectedAreaSummary(null);
     }
@@ -465,8 +401,7 @@ export default function MonitoringPage() {
 
   const handleRefresh = useCallback(() => {
     refetchSnapshot();
-    refetchUsers();
-  }, [refetchSnapshot, refetchUsers]);
+  }, [refetchSnapshot]);
 
   // ---------------------------------------------------------------------------
   // Render guards
@@ -487,31 +422,23 @@ export default function MonitoringPage() {
     return null;
   }
 
-  const isLoading = snapshotLoading || usersLoading;
-
   return (
-    <div className="flex flex-col h-full -m-4 lg:-m-6">
-      {/* ── Header bar ────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-4 py-2 border-b-2 border-nb-black bg-white flex-shrink-0">
-        <div className="min-w-0">
-          <h1 className="text-nb-h3 text-nb-black leading-tight">
-            Monitoring Real-Time
-          </h1>
-          <div className="flex items-center gap-1.5">
+    <div className="flex flex-col gap-0 h-full">
+      {/* ── Header row ──────────────────────────────────────────────────────── */}
+      <div className="flex items-start justify-between px-4 py-3 border-b-2 border-nb-black bg-white flex-shrink-0 gap-4">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-nb-h3 text-nb-black leading-tight">Monitoring Real-Time</h1>
+          <div className="flex items-center gap-2 mt-1">
             <span
               className={cn(
-                'h-2 w-2 rounded-full',
-                isLoading ? 'bg-nb-warning' : 'bg-nb-success animate-pulse'
+                'h-2 w-2 rounded-full flex-shrink-0',
+                snapshotLoading ? 'bg-nb-warning' : 'bg-nb-success animate-pulse'
               )}
               aria-hidden="true"
             />
-            <span className="text-xs text-nb-gray-500" aria-live="polite">
-              {totalActive} / {totalWorkers} aktif
-            </span>
+            <span className="text-xs text-nb-gray-500">Diperbarui</span>
             {generatedAt && (
-              <span className="text-xs text-nb-gray-400">
-                · {formatTime(generatedAt)}
-              </span>
+              <span className="text-xs text-nb-gray-400">{formatTime(generatedAt)}</span>
             )}
           </div>
         </div>
@@ -520,25 +447,29 @@ export default function MonitoringPage() {
           variant="secondary"
           size="sm"
           onClick={handleRefresh}
+          className="flex-shrink-0"
           aria-label="Segarkan data monitoring"
         >
           Segarkan
         </Button>
       </div>
 
-      {/* ── Hierarchy filter panel ────────────────────────────────────────── */}
+      {/* ── Status bar ──────────────────────────────────────────────────────── */}
+      <MonitoringStatusBar totals={snapshotTotals} />
+
+      {/* ── Hierarchy filter panel ──────────────────────────────────────────── */}
       <HierarchyFilterPanel
         value={filterState}
         onChange={handleFilterChange}
-        activeWorkerCount={totalActive}
+        activeWorkerCount={snapshotTotals ? snapshotTotals.total_active : 0}
       />
 
-      {/* ── Main split layout ─────────────────────────────────────────────── */}
-      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
-        {/* Map — 65% on desktop, 40 vh on mobile */}
-        <div className={cn('relative h-[40vh] lg:h-auto', 'lg:flex-[65]')}>
+      {/* ── Main split layout ──────────────────────────────────────────────── */}
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden gap-0 border-2 border-nb-black m-4 rounded-nb-base bg-white">
+        {/* Map — left side */}
+        <div className="relative md:flex-[62%] h-[45vh] md:h-auto min-h-[28rem] overflow-hidden border-b-2 md:border-b-0 md:border-r-2 border-nb-black">
           <MonitoringMap
-            users={users}
+            users={mapUsers}
             boundaries={boundariesData}
             filters={mapFilters}
             selectedUserId={selectedUser?.id ?? null}
@@ -561,31 +492,33 @@ export default function MonitoringPage() {
           />
         </div>
 
-        {/* Side panel — 35% on desktop, remaining height on mobile */}
-        <div
-          className={cn(
-            'lg:flex-[35] border-t-2 lg:border-t-0 lg:border-l-2 border-nb-black',
-            'flex flex-col overflow-hidden bg-white',
-            'h-[calc(100vh-40vh-48px-40px)] lg:h-auto'
-          )}
-        >
+        {/* Side panel — right side */}
+        <div className="md:flex-[38%] flex flex-col overflow-hidden bg-white">
           {panelView === 'list' && (
             <>
               <StaffingSummaryCard
                 filters={{
-                  rayon_id: rayonFilter !== 'all' ? rayonFilter : undefined,
-                  area_id: areaFilter !== 'all' ? areaFilter : undefined,
+                  rayon_id:
+                    filterState.scope !== 'city' && filterState.rayonId
+                      ? filterState.rayonId
+                      : undefined,
+                  area_id:
+                    filterState.scope === 'area' && filterState.areaId
+                      ? filterState.areaId
+                      : undefined,
                 }}
                 boundaries={boundariesData}
                 onReassign={handleReassign}
               />
 
-              {/* v2 virtualized worker list */}
-              <div className="px-3 py-2 border-b border-nb-gray-200 flex-shrink-0">
+              {/* Worker list header */}
+              <div className="px-3 py-2 border-b-2 border-nb-black flex-shrink-0">
                 <p className="text-nb-caption font-bold text-nb-gray-600 uppercase tracking-wide">
                   Petugas ({workerListItems.length})
                 </p>
               </div>
+
+              {/* Worker list */}
               <WorkerListVirtual
                 workers={workerListItems}
                 onSelect={handleWorkerListSelect}
@@ -593,19 +526,6 @@ export default function MonitoringPage() {
                 className="flex-1"
                 aria-label="Daftar semua petugas aktif"
               />
-
-              {/* Legacy side panel for compatibility */}
-              <details className="border-t border-nb-gray-200">
-                <summary className="px-3 py-2 text-nb-caption font-bold text-nb-gray-500 cursor-pointer hover:bg-nb-gray-50 select-none">
-                  Tampilan panel lama
-                </summary>
-                <MonitoringSidePanel
-                  data={liveUsersData}
-                  isLoading={usersLoading}
-                  selectedUserId={selectedUser?.id ?? null}
-                  onUserSelect={handleUserSelect}
-                />
-              </details>
             </>
           )}
 
@@ -635,7 +555,7 @@ export default function MonitoringPage() {
         </div>
       </div>
 
-      {/* ── Area Detail Drawer ────────────────────────────────────────────── */}
+      {/* ── Area Detail Drawer ──────────────────────────────────────────────── */}
       <AreaDetailDrawer
         area={selectedAreaSummary}
         workers={areaDrawerWorkers}
@@ -644,7 +564,7 @@ export default function MonitoringPage() {
         selectedUserId={selectedUser?.id}
       />
 
-      {/* ── Reassign Worker Modal (Phase 2D-10) ──────────────────────────── */}
+      {/* ── Reassign Worker Modal ──────────────────────────────────────────── */}
       <ReassignWorkerModal
         open={reassignModalOpen}
         onOpenChange={setReassignModalOpen}
