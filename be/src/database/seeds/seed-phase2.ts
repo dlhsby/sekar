@@ -1580,46 +1580,157 @@ async function seedPhase2() {
     }
     console.log(`    ✓ ${clockableUsers.length} users backfilled as offline`);
 
-    // D.3: Monitoring status variants — DISABLED for Phase 3 plant-monitoring review.
+    // D.3: Monitoring status variants — EXTENDED for the 4-R web dashboard + monitoring demo
     //
-    // Previously this block forced 5 demo users (satgas_pusat_1, linmas_pusat_1,
-    // satgas_timur_1_2, satgas_pusat_2, satgas_timur_1_1) into open shifts (clock_out_time
-    // NULL) and varied user_tracking_status to active/inactive/outside_area/missing
-    // so the worker monitoring map had ready-made markers.
+    // Re-enabled for the Phase 4-R WEB review (was disabled under the Phase 3
+    // mobile directive). Mobile-safe this time: we write ONLY user_tracking_status
+    // (never an open shift) and leave shift_id NULL, so the stale open-shift state
+    // that previously crashed the mobile BoundaryDetailModal / blocked live
+    // clock-in (SHIFT_ALREADY_ACTIVE) cannot occur. Any latent open shift is also
+    // closed defensively below.
     //
-    // After the Phase 3 monitoring component refactor (token compliance + plant-status
-    // overlays), seeded open shifts produce stale state that crashes BoundaryDetailModal
-    // / UserDetailSheet on mobile (see CLAUDE.md Apr 27 sweep) and leaves users
-    // unable to live-clock-in via the app (SHIFT_ALREADY_ACTIVE conflict).
+    // Seed realistic user_tracking_status rows with varied statuses so the web
+    // dashboard + monitoring pages show non-zero KPI counts and worker pins
+    // across multiple rayons/areas. Each user gets an entry with:
+    // - status: one of ACTIVE/INACTIVE/OUTSIDE_AREA/MISSING/OFFLINE
+    // - last_location_at: recent timestamp (within 30 mins for active)
+    // - GPS coordinates near their assigned area
+    // - rayon_id: for aggregation by rayon in snapshot
     //
-    // Per Phase 3 review directive: do NOT seed active shifts. All clockable users
-    // remain `offline` (set by D.2 above). Worker-monitoring scenarios are exercised
-    // via real mobile clock-in during UAT; plant-monitoring data is fully populated
-    // by seed-phase3.ts (areas, area_plants, notable_plants, pruning_requests).
-    //
-    // Defensive guard: re-assert offline + clear any latent open shift left from a
-    // prior seed run (should already be a no-op when DB was wiped).
+    // Status rules:
+    // - ACTIVE: last_location_at within 15 minutes, is_within_area = true
+    // - INACTIVE: last_location_at 35+ minutes ago, is_within_area = true
+    // - OUTSIDE_AREA: GPS coordinates outside assigned area boundary, is_within_area = false
+    // - MISSING: last_location_at 3+ hours ago, is_within_area = NULL
+    // - OFFLINE: no location data or last_location_at very old
     console.log(
-      '  [D.3] Monitoring tracking — leaving all clockable users offline (Phase 3 directive)',
+      '  [D.3] Seeding monitoring status variants for web dashboard + monitoring map...',
     );
-    await queryRunner.query(`
-      UPDATE user_tracking_status SET
-        status = 'offline',
-        shift_id = NULL,
-        is_within_area = FALSE,
-        last_location_at = NULL,
-        updated_at = NOW()
-      WHERE status <> 'offline'
+
+    // Get a sample of workers from different rayons to seed varied statuses
+    const monitoringUsers = await queryRunner.query(`
+      SELECT u.id, u.username, u.rayon_id, u.area_id, a.gps_lat, a.gps_lng
+      FROM users u
+      LEFT JOIN areas a ON u.area_id = a.id
+      WHERE u.role IN ('satgas', 'linmas', 'korlap')
+      AND u.is_active = TRUE
+      AND u.deleted_at IS NULL
+      ORDER BY u.rayon_id, u.username
+      LIMIT 30
     `);
+
+    // Track rayons to distribute statuses across multiple rayons
+    const rayonWorkerMap: Record<string, typeof monitoringUsers> = {};
+    for (const user of monitoringUsers) {
+      if (user.rayon_id) {
+        if (!rayonWorkerMap[user.rayon_id]) rayonWorkerMap[user.rayon_id] = [];
+        rayonWorkerMap[user.rayon_id].push(user);
+      }
+    }
+
+    // Assign status distribution across rayons (spread statuses)
+    let statusIndex = 0;
+    const statuses = ['active', 'active', 'inactive', 'outside_area', 'missing', 'offline'];
+
+    for (const user of monitoringUsers) {
+      const status = statuses[statusIndex % statuses.length];
+      statusIndex++;
+
+      // Derive last_location_at and GPS based on status
+      let lastLocationAtExpr: string;
+      let lat: number;
+      let lng: number;
+      let isWithinArea: boolean;
+
+      switch (status) {
+        case 'active':
+          // Recent ping within 5 minutes
+          lastLocationAtExpr = `NOW() - INTERVAL '${Math.floor(Math.random() * 5)} minutes'`;
+          lat = user.gps_lat ? parseFloat(user.gps_lat) + (Math.random() - 0.5) * 0.002 : -7.25;
+          lng = user.gps_lng ? parseFloat(user.gps_lng) + (Math.random() - 0.5) * 0.002 : 112.75;
+          isWithinArea = true;
+          break;
+
+        case 'inactive':
+          // Last ping 35+ minutes ago
+          lastLocationAtExpr = `NOW() - INTERVAL '${35 + Math.floor(Math.random() * 60)} minutes'`;
+          lat = user.gps_lat ? parseFloat(user.gps_lat) + (Math.random() - 0.5) * 0.001 : -7.25;
+          lng = user.gps_lng ? parseFloat(user.gps_lng) + (Math.random() - 0.5) * 0.001 : 112.75;
+          isWithinArea = true;
+          break;
+
+        case 'outside_area':
+          // GPS outside assigned area (far away)
+          lastLocationAtExpr = `NOW() - INTERVAL '${10 + Math.floor(Math.random() * 20)} minutes'`;
+          lat = user.gps_lat ? parseFloat(user.gps_lat) + (Math.random() - 0.5) * 0.1 : -7.2;
+          lng = user.gps_lng ? parseFloat(user.gps_lng) + (Math.random() - 0.5) * 0.1 : 112.8;
+          isWithinArea = false;
+          break;
+
+        case 'missing':
+          // No ping for 3+ hours
+          lastLocationAtExpr = `NOW() - INTERVAL '${180 + Math.floor(Math.random() * 180)} minutes'`;
+          lat = user.gps_lat ? parseFloat(user.gps_lat) : -7.25;
+          lng = user.gps_lng ? parseFloat(user.gps_lng) : 112.75;
+          isWithinArea = false;
+          break;
+
+        default: // offline
+          lastLocationAtExpr = 'NULL';
+          lat = 0;
+          lng = 0;
+          isWithinArea = false;
+      }
+
+      // Build INSERT query for this user's tracking status
+      const latValue = lastLocationAtExpr === 'NULL' ? 'NULL' : lat.toString();
+      const lngValue = lastLocationAtExpr === 'NULL' ? 'NULL' : lng.toString();
+
+      await queryRunner.query(
+        `INSERT INTO user_tracking_status
+          (user_id, status, area_id, rayon_id, last_latitude, last_longitude,
+           last_location_at, is_within_area, updated_at)
+        VALUES
+          ($1, $2, $3, $4, ${latValue}::decimal, ${lngValue}::decimal,
+           (${lastLocationAtExpr})::timestamptz, $5, NOW())
+        ON CONFLICT (user_id) DO UPDATE SET
+          status = EXCLUDED.status,
+          last_latitude = EXCLUDED.last_latitude,
+          last_longitude = EXCLUDED.last_longitude,
+          last_location_at = EXCLUDED.last_location_at,
+          is_within_area = EXCLUDED.is_within_area,
+          updated_at = NOW()`,
+        [user.id, status, user.area_id, user.rayon_id, isWithinArea],
+      );
+    }
+
+    console.log(
+      `    ✓ Seeded ${monitoringUsers.length} user_tracking_status records with varied statuses (active/inactive/outside_area/missing/offline)`,
+    );
+
+    // Ensure all other clockable users remain offline (no monitoring data)
+    // Only update users that were NOT in the 30-user sample above
+    const seededUserIds = monitoringUsers.map((u: any) => `'${u.id}'`).join(',');
+    if (seededUserIds) {
+      await queryRunner.query(`
+        UPDATE user_tracking_status SET
+          status = 'offline',
+          shift_id = NULL,
+          is_within_area = FALSE,
+          last_location_at = NULL,
+          updated_at = NOW()
+        WHERE status <> 'offline' AND user_id NOT IN (${seededUserIds})
+      `);
+    }
+    console.log('    ✓ All other users remain offline (no seeded location data)');
+
+    // Close any open shifts from previous runs (defensive)
     await queryRunner.query(`
       UPDATE shifts SET
         clock_out_time = clock_in_time + INTERVAL '8 hours',
         updated_at = NOW()
       WHERE clock_out_time IS NULL
     `);
-    console.log(
-      '    ✓ All user_tracking_status reset to offline (live clock-in via mobile to test worker monitoring)',
-    );
 
     // ==========================================
     // SECTION E: Phase 2E Data (Client Feedback II)
