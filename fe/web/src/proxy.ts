@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
- * Route-protection middleware (Phase 2C, reworked in Phase 4-8).
+ * Route-protection proxy (Phase 2C middleware, reworked + renamed for the
+ * Next 16 proxy.ts convention in Phase 4-8 — middleware.ts no longer runs in dev).
  *
  * Default-deny: every route requires the access_token cookie except the
  * explicit public paths. The previous allowlist used `startsWith('/')`,
@@ -12,7 +13,7 @@ import type { NextRequest } from 'next/server';
  */
 const PUBLIC_PATHS = ['/login', '/forgot-password', '/offline', '/install-help'];
 
-export function middleware(request: NextRequest) {
+export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isPublic = PUBLIC_PATHS.some(
