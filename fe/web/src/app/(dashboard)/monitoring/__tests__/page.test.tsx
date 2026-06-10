@@ -26,7 +26,8 @@ jest.mock('@/lib/api/monitoring', () => ({
 }));
 
 // The real map needs Mapbox/WebGL — assert we hand it the worker list instead.
-jest.mock('@/components/monitoring/SimpleMonitoringMap', () => ({
+// (The page imports through the lazy next/dynamic wrapper — mock that path.)
+jest.mock('@/components/monitoring/SimpleMonitoringMapLazy', () => ({
   SimpleMonitoringMap: ({ workers }: { workers: { user_id: string }[] }) => (
     <div data-testid="map" data-count={workers.length} />
   ),

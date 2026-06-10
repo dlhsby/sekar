@@ -544,7 +544,8 @@ describe('MonitoringReassignService', () => {
 
       const result = await service.reassign(dto, makeSuperadmin());
 
-      const today = new Date().toISOString().split('T')[0];
+      // Default is computed in Asia/Jakarta (Phase 4-7 E1)
+      const today = new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().split('T')[0];
       expect(result.effective_date).toBe(today);
     });
 

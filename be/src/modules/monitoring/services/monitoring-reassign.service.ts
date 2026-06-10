@@ -14,6 +14,7 @@ import { Schedule } from '../../schedules/entities/schedule.entity';
 import { ReassignWorkerDto, ReassignWorkerResponseDto } from '../dto/reassign-worker.dto';
 import { EventsGateway } from '../../../gateways/events.gateway';
 import { AuditLogService } from '../../audit/audit.service';
+import { TimezoneUtil } from '../../../common/utils/timezone.util';
 
 const REASSIGNABLE_ROLES: string[] = [UserRole.SATGAS, UserRole.LINMAS];
 
@@ -68,7 +69,8 @@ export class MonitoringReassignService {
 
     const previousAreaId = worker.area_id ?? null;
     const previousAreaName = worker.area?.name ?? null;
-    const effectiveDate = dto.effective_date || new Date().toISOString().split('T')[0];
+    // Default in WIB — a UTC date here is yesterday between 00:00-07:00 WIB
+    const effectiveDate = dto.effective_date || TimezoneUtil.jakartaDateString();
 
     worker.area_id = dto.target_area_id;
     await this.userRepository.save(worker);

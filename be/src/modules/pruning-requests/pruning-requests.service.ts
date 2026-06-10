@@ -23,6 +23,7 @@ import { NotificationType } from '../notifications/entities/notification.entity'
 import { UsersService } from '../users/users.service';
 import { ServiceCapacityService } from '../service-capacity/service-capacity.service';
 import { getIsoWeek, isoWeekDays, isoWeekEnd } from './utils/iso-week.util';
+import { TimezoneUtil } from '../../common/utils/timezone.util';
 
 /**
  * Audit H1 (2026-05-23) — safe User-column projection for joined relations.
@@ -184,15 +185,13 @@ export class PruningRequestsService {
       expectedIsoWeek = dto.expected_iso_week;
       // Reject weeks that have already fully ended (Sun is past).
       const weekEnd = isoWeekEnd(expectedYear, expectedIsoWeek);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const today = TimezoneUtil.jakartaStartOfToday();
       if (weekEnd < today) {
         throw new BadRequestException('Preferred week has already passed');
       }
     } else if (dto.detail_date) {
       detailDate = new Date(dto.detail_date);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const today = TimezoneUtil.jakartaStartOfToday();
       if (detailDate < today) {
         throw new BadRequestException('Detail date must be today or in the future');
       }
@@ -562,8 +561,7 @@ export class PruningRequestsService {
         }
       } else {
         // Path B — auto-pick the first day in the preferred week with capacity.
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const today = TimezoneUtil.jakartaStartOfToday();
         const candidates = isoWeekDays(year, isoWeek).filter((d) => d >= today);
         if (candidates.length === 0) {
           throw new ConflictException(
@@ -730,8 +728,7 @@ export class PruningRequestsService {
     }
 
     const newDate = new Date(dto.expectedDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = TimezoneUtil.jakartaStartOfToday();
     if (newDate < today) {
       throw new BadRequestException('expectedDate must be today or in the future');
     }

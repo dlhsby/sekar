@@ -22,6 +22,7 @@ import { useLiveUsers, useReassignWorker } from '@/lib/api/monitoring';
 import type { BoundariesResponse, LiveUser } from '@/lib/api/monitoring';
 import { ROLE_LABELS } from '@/lib/constants/roles';
 import { STATUS_BADGE_CLASSES, STATUS_LABELS } from '@/lib/constants/monitoring';
+import { todayJakartaISODate } from '@/lib/utils/formatters';
 import type { UserRole } from '@/types/models';
 import { toast } from 'sonner';
 import { Users, ArrowRightLeft, Check } from 'lucide-react';
@@ -63,9 +64,7 @@ export function BulkReassignModal({
   const [sourceAreaId, setSourceAreaId] = useState<string>('');
   const [selectedUserIds, setSelectedUserIds] = useState<ReadonlySet<string>>(new Set());
   const [reason, setReason] = useState<string>('');
-  const [effectiveDate, setEffectiveDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
+  const [effectiveDate, setEffectiveDate] = useState<string>(todayJakartaISODate());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const siblingAreas = getSiblingAreas(boundaries, targetAreaId);
@@ -99,7 +98,7 @@ export function BulkReassignModal({
     setSourceAreaId('');
     setSelectedUserIds(new Set());
     setReason('');
-    setEffectiveDate(new Date().toISOString().split('T')[0]);
+    setEffectiveDate(todayJakartaISODate());
     onOpenChange(false);
   }
 

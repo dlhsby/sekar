@@ -15,6 +15,7 @@ import { useLiveUsers, useReassignWorker } from '@/lib/api/monitoring';
 import type { BoundariesResponse, LiveUser } from '@/lib/api/monitoring';
 import { ROLE_LABELS } from '@/lib/constants/roles';
 import { STATUS_BADGE_CLASSES, STATUS_LABELS } from '@/lib/constants/monitoring';
+import { todayJakartaISODate } from '@/lib/utils/formatters';
 import type { UserRole } from '@/types/models';
 import { toast } from 'sonner';
 import { Users, ArrowRightLeft } from 'lucide-react';
@@ -56,9 +57,7 @@ export function ReassignWorkerModal({
   const [sourceAreaId, setSourceAreaId] = useState<string>('');
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [reason, setReason] = useState<string>('');
-  const [effectiveDate, setEffectiveDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
+  const [effectiveDate, setEffectiveDate] = useState<string>(todayJakartaISODate());
 
   const siblingAreas = getSiblingAreas(boundaries, targetAreaId);
 
@@ -76,7 +75,7 @@ export function ReassignWorkerModal({
     setSourceAreaId('');
     setSelectedUserId('');
     setReason('');
-    setEffectiveDate(new Date().toISOString().split('T')[0]);
+    setEffectiveDate(todayJakartaISODate());
     onOpenChange(false);
   }
 

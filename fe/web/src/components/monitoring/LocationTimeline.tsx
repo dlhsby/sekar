@@ -13,6 +13,7 @@ import {
   formatDistance,
   formatTimeWithSeconds,
   formatTime,
+  todayJakartaISODate,
 } from '@/lib/utils/formatters';
 import type { LocationHistory } from '@/lib/api/monitoring';
 
@@ -41,7 +42,7 @@ export function LocationTimeline({
   showOnlyThisUser,
   onToggleShowOnly,
 }: LocationTimelineProps) {
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = todayJakartaISODate();
   const pointRefs = useRef<(HTMLLIElement | null)[]>([]);
 
   useEffect(() => {

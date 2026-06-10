@@ -23,10 +23,8 @@ import {
 } from '@/components/monitoring/MonitoringFilters';
 import { MonitoringSidebar } from '@/components/monitoring/MonitoringSidebar';
 import { BulkReassignModal } from '@/components/monitoring/BulkReassignModal';
-import {
-  SimpleMonitoringMap,
-  type SimpleWorker,
-} from '@/components/monitoring/SimpleMonitoringMap';
+import { SimpleMonitoringMap } from '@/components/monitoring/SimpleMonitoringMapLazy';
+import type { SimpleWorker } from '@/components/monitoring/SimpleMonitoringMap';
 import type { SnapshotAreaSummary } from '@/lib/api/monitoring-v2';
 import { MONITORING_ROLES, REASSIGN_ROLES, hasRole } from '@/lib/constants/roles';
 import { formatTime } from '@/lib/utils/formatters';

@@ -45,3 +45,12 @@ export function formatMinutes(minutes: number): string {
   if (h === 0) return `${m}m`;
   return `${h}j ${m}m`;
 }
+
+/**
+ * Today's date in Asia/Jakarta as `YYYY-MM-DD` (for `<input type="date">`
+ * defaults). Plain `toISOString()` is the UTC date, which is yesterday
+ * between 00:00-07:00 WIB. WIB has no DST so a fixed +7h shift is exact.
+ */
+export function todayJakartaISODate(now: Date = new Date()): string {
+  return new Date(now.getTime() + 7 * 60 * 60 * 1000).toISOString().split('T')[0];
+}
