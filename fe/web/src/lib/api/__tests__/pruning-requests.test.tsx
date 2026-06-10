@@ -82,16 +82,17 @@ describe('Pruning Requests API (admin web)', () => {
   });
 
   describe('usePruningRequests', () => {
-    it('always forwards admin=true and threads filter params through', async () => {
+    it('threads filter params through (no whitelisted-rejected extras)', async () => {
       // Backend returns the raw `{ items, total, page, limit }` shape; the hook
-      // normalises it to the `{ data, meta }` envelope consumers expect.
+      // normalises it to the `{ data, meta }` envelope consumers expect. It must
+      // NOT send `admin` (the API rejects unknown query fields with 400).
       const raw = { items: [mockRequest()], total: 1, page: 1, limit: 10 };
       mockAxios.onGet('/pruning-requests').reply((config) => {
         expect(config.params).toMatchObject({
-          admin: true,
           status: 'submitted',
           rayon_id: 'r-1',
         });
+        expect(config.params).not.toHaveProperty('admin');
         return [200, raw];
       });
 

@@ -101,12 +101,14 @@ export function usePruningRequests(filters?: PruningRequestsFilters) {
   return useQuery({
     queryKey: keys.list(filters),
     queryFn: async (): Promise<PruningRequestsList> => {
-      // Admin list (page lives under (dashboard)). The backend returns the raw
-      // `{ items, total, page, limit }` shape — normalise it to the
-      // `{ data, meta }` envelope every consumer (list page + dashboard KPI)
-      // expects, computing totalPages here.
+      // Admin list (page lives under (dashboard)). Omitting `mine` selects the
+      // admin branch server-side; we must NOT send extra params (e.g. `admin`)
+      // because the API runs with forbidNonWhitelisted and rejects unknown query
+      // fields with 400. The backend returns the raw `{ items, total, page,
+      // limit }` shape — normalise it to the `{ data, meta }` envelope every
+      // consumer (list page + dashboard KPI) expects.
       const response = await apiClient.get<PruningRequestsRaw>('/pruning-requests', {
-        params: { admin: true, ...filters },
+        params: { ...filters },
       });
       const { items, total, page, limit } = response.data;
       return {
