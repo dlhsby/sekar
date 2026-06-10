@@ -1,0 +1,109 @@
+appId: com.wahyutrip.sekar
+---
+# 09-clock-in-out.yaml
+# Clock in/out flow — satgas clocks in with GPS + selfie, then clocks out
+# Scenario: satgas1 opens FieldHomeScreen, navigates to clock-in, captures selfie,
+#          submits, then clocks out
+
+- launchApp
+- assertVisible:
+    id: username-input
+
+# Login as satgas1
+- tapOn:
+    id: username-input
+- inputText: satgas1
+
+- tapOn:
+    id: password-input
+- inputText: password123
+
+- tapOn:
+    id: login-button
+
+- wait: 2000
+
+# Should be at FieldHomeScreen (or onboarding if first login)
+# Assuming onboarding is complete or skipped
+- tryTapOn:
+    text: Clock In|Masuk Kerja
+
+- wait: 1000
+
+# If clock-in button is not directly visible, scroll
+- scroll:
+    direction: down
+    duration: 500
+
+- wait: 500
+
+# Look for clock-in button
+- tryTapOn:
+    id: absensi-clock-button
+
+- wait: 1000
+
+# Should be at ClockInOutScreen
+# MANUAL: GPS location is typically mocked/stubbed in CI. On-device, the app
+#         requests the device's actual location via permissionManager + Geolocation.
+#         For E2E, we accept the location or use a location mock service.
+
+# Verify clock-in screen is visible
+- assertVisible:
+    text: Clock In|Masuk Kerja|Lokasi Anda
+
+# MANUAL: Selfie capture (camera) requires:
+# - Device with camera, or
+# - Mocked camera response via mediaService
+
+# Try to tap selfie capture button
+- tryTapOn:
+    text: Ambil Foto|Selfie|Foto Diri
+
+- wait: 1000
+
+# Camera would open; in CI, this is stubbed or skipped.
+# For now, assume a default/mock selfie is provided.
+
+# Look for submit/clock-in button
+- tryTapOn:
+    text: Masuk|Clock In|Mulai Kerja
+
+- wait: 2000
+
+# After successful clock-in, should show success toast + return to home
+- assertVisible:
+    text: Berhasil|Sukses
+
+- wait: 1000
+
+# Should be back at home with the shift timer visible
+- assertVisible:
+    text: Beranda|Waktu Kerja
+
+# Now test clock-out: look for the clock-out button
+# Scroll down if needed to see more home content
+- scroll:
+    direction: down
+    duration: 500
+
+- wait: 500
+
+# Tap clock-out button
+- tryTapOn:
+    text: Keluar|Clock Out
+
+- wait: 1000
+
+# May see a confirmation dialog
+- tryTapOn:
+    text: Konfirmasi|Ya|Lanjut
+
+- wait: 1000
+
+# Clock-out may also show success
+- assertVisible:
+    text: Berhasil|Sukses
+
+# MANUAL: On-device, verify that the shift timer stops and the shift is recorded
+#         in the shift history. GPS location and selfie photo should be stored.

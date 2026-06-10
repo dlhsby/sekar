@@ -1,0 +1,76 @@
+appId: com.wahyutrip.sekar
+---
+# 01-welcome-carousel.yaml
+# First-launch carousel (5 slides) — swipe through, use skip and continue buttons
+# Scenario: User launches app after first install, sees welcome carousel WL-2..WL-5,
+#          swipes slides, taps "Lewati" (skip to end), then "Mulai (Masuk)" → LoginScreen
+
+- launchApp
+- assertVisible:
+    id: welcome-carousel-screen
+
+# Wait for carousel to render
+- wait: 1000
+
+# Verify first slide title is visible (testID on carousel-slide-WL-2)
+- assertVisible:
+    id: carousel-slide-WL-2
+
+# Swipe right-to-left to advance (mimics natural swiping)
+- swipe:
+    start: [800, 400]
+    end: [200, 400]
+    duration: 1000
+
+- wait: 500
+
+# Verify we've advanced (carousel-slide-WL-3 should be visible now)
+- assertVisible:
+    id: carousel-slide-WL-3
+
+# Continue swiping through remaining slides
+- swipe:
+    start: [800, 400]
+    end: [200, 400]
+    duration: 1000
+- wait: 500
+
+- assertVisible:
+    id: carousel-slide-WL-4
+
+- swipe:
+    start: [800, 400]
+    end: [200, 400]
+    duration: 1000
+- wait: 500
+
+- assertVisible:
+    id: carousel-slide-WL-5
+
+# Verify the "Lewati" button exists at an earlier slide
+# (Lewati disappears on the last slide, so let's go back first)
+- swipe:
+    start: [200, 400]
+    end: [800, 400]
+    duration: 1000
+- wait: 500
+
+# Should be back at WL-4, tap "Lewati"
+- tapOn:
+    id: carousel-skip
+
+- wait: 500
+
+# After skip, we should be at the last slide (WL-5)
+- assertVisible:
+    id: carousel-slide-WL-5
+
+# Now tap "Mulai (Masuk)" — the primary button on the last slide
+- tapOn:
+    id: carousel-primary
+
+- wait: 1000
+
+# Should navigate to LoginScreen
+- assertVisible:
+    id: username-input

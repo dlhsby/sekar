@@ -1,0 +1,85 @@
+appId: com.wahyutrip.sekar
+---
+# 11-task-complete.yaml
+# Task completion flow — open assigned task, complete it with notes
+# Scenario: satgas sees an assigned task in the Tasks tab, opens detail,
+#          marks it complete with optional notes
+
+- launchApp
+- assertVisible:
+    id: username-input
+
+# Login as satgas1
+- tapOn:
+    id: username-input
+- inputText: satgas1
+
+- tapOn:
+    id: password-input
+- inputText: password123
+
+- tapOn:
+    id: login-button
+
+- wait: 2000
+
+# Navigate to Tasks/Activities screen
+- scroll:
+    direction: down
+    duration: 500
+
+- wait: 500
+
+- tryTapOn:
+    text: Tugas|Aktivitas|Tasks|Activities
+
+- wait: 1000
+
+# Should see the Tugas (Tasks) tab
+- assertVisible:
+    text: Tugas
+
+# Verify we're on the Tasks tab (should be default)
+# Look for a task list item (testIDs may vary; we use visible text)
+- assertVisible:
+    text: Patroli|Bersih|Pemeliharaan|Penugasan
+
+- wait: 500
+
+# Tap the first task to open its detail
+# Assuming a task exists with visible text like "Patroli Harian"
+- tryTapOn:
+    text: Patroli Harian|Bersih Taman|Penugasan Hari Ini
+
+- wait: 1000
+
+# Should be at TaskDetailScreen
+- assertVisible:
+    text: Detail Tugas|Task Detail|Status
+
+# Look for a "Selesai" or "Mark Complete" button
+- tryTapOn:
+    text: Selesai|Tandai Selesai|Mark Complete
+
+- wait: 500
+
+# May see a completion form/modal with optional notes field
+- tryTapOn:
+    text: Catatan|Keterangan|Notes
+
+- wait: 300
+
+- inputText: Tugas selesai dengan baik, tidak ada kendala
+
+# Tap confirm/submit button
+- tryTapOn:
+    text: Konfirmasi|Ya|Simpan|Submit
+
+- wait: 2000
+
+# Should show success toast
+- assertVisible:
+    text: Berhasil|Sukses|Tugas selesai
+
+# MANUAL: On-device, verify that the task status changes to "Selesai" (completed)
+#         in the task list and the task detail view reflects the completion time.

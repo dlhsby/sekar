@@ -1,0 +1,153 @@
+appId: com.wahyutrip.sekar
+---
+# 14-pruning-kecamatan.yaml
+# Pruning request submission (staff_kecamatan) — external user submits perantingan
+# Scenario: staff_kecamatan_pusat_1 logs in, submits a pruning request with
+#          location, photos, tree details, and requester contact
+
+- launchApp
+- assertVisible:
+    id: username-input
+
+# Login as staff_kecamatan (external pruning request submitter)
+- tapOn:
+    id: username-input
+- inputText: staff_kecamatan_pusat_1
+
+- tapOn:
+    id: password-input
+- inputText: password123
+
+- tapOn:
+    id: login-button
+
+- wait: 2000
+
+# staff_kecamatan has a different home screen (KecamatanHomeScreen)
+- assertVisible:
+    text: Beranda|Perantingan|Pruning
+
+# Navigate to pruning request submission
+- tryTapOn:
+    text: Perantingan|Pengajuan|Buat Perantingan
+
+- wait: 1000
+
+# Should be at SubmitScreen (pruning request form)
+- assertVisible:
+    id: perantingan-pick-on-map
+
+- assertVisible:
+    id: perantingan-submit-cta
+
+# Fill in location (GPS) — try to auto-fetch or pick on map
+- tryTapOn:
+    id: perantingan-pick-on-map
+
+- wait: 1000
+
+# MANUAL: Location picker or map would open. For CI, a default location is used.
+
+# Back to form
+- tryTapOn:
+    text: Pilih|Konfirmasi|Done
+
+- wait: 500
+
+# Add photos
+- tryTapOn:
+    text: Foto|Add Photo|Ambil Foto
+
+- wait: 1000
+
+# MANUAL: Camera/gallery opens; in CI, a mock photo is provided.
+
+# Fill in tree details
+# Tree count
+- tryTapOn:
+    text: Jumlah Pohon|Tree Count
+
+- wait: 300
+
+- inputText: 3
+
+# Tree height
+- tryTapOn:
+    text: Tinggi|Height
+
+- wait: 300
+
+- inputText: 15 meter
+
+# Tree diameter
+- tryTapOn:
+    text: Diameter|Diameter Pohon
+
+- wait: 300
+
+- inputText: 50 cm
+
+# Requester (pemohon) name
+- tryTapOn:
+    text: Nama Pemohon|Requester Name
+
+- wait: 300
+
+- inputText: Budi Santoso
+
+# Requester phone
+- tryTapOn:
+    text: No. HP Pemohon|Phone
+
+- wait: 300
+
+- inputText: 081234567890
+
+# RT Leader (ketua RT) name
+- tryTapOn:
+    text: Nama Ketua RT|RT Leader
+
+- wait: 300
+
+- inputText: Andi Wijaya
+
+# RT Leader phone
+- tryTapOn:
+    text: No. HP Ketua RT|RT Phone
+
+- wait: 300
+
+- inputText: 081298765432
+
+# Expected work week (optional)
+- tryTapOn:
+    id: perantingan-pick-week
+
+- wait: 500
+
+# Select a week
+- tryTapOn:
+    text: Minggu Depan|Next Week|W50
+
+- wait: 500
+
+# Notes (optional)
+- tryTapOn:
+    text: Catatan|Notes
+
+- wait: 300
+
+- inputText: Pohon sangat besar, aman untuk pencabutan
+
+# Submit
+- tapOn:
+    id: perantingan-submit-cta
+
+- wait: 2000
+
+# Should show success
+- assertVisible:
+    text: Berhasil|Sukses|Perantingan tersimpan
+
+# MANUAL: On-device, verify that the pruning request appears in the
+#         admin_data review queue with all submitted details.

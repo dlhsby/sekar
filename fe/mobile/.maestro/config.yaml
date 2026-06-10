@@ -1,0 +1,65 @@
+appId: com.wahyutrip.sekar
+
+flows:
+  - name: "01-welcome-carousel.yaml"
+    tags: [smoke, entry]
+  - name: "02-login-success.yaml"
+    tags: [smoke, auth]
+  - name: "03-login-validation.yaml"
+    tags: [smoke, auth]
+  - name: "04-forgot-password.yaml"
+    tags: [auth, manual-intent]
+  - name: "05-change-password-forced.yaml"
+    tags: [auth, password-change]
+  - name: "06-onboarding-first-launch.yaml"
+    tags: [onboarding, permissions, manual-perms]
+  - name: "07-onboarding-skip-perms.yaml"
+    tags: [onboarding, permissions, feature-gate]
+  - name: "08-notifications-inbox.yaml"
+    tags: [notifications, ui]
+  - name: "09-clock-in-out.yaml"
+    tags: [core, field, gps-dependent]
+  - name: "10-activity-submit.yaml"
+    tags: [core, field, media-dependent]
+  - name: "11-task-complete.yaml"
+    tags: [core, field]
+  - name: "12-overtime-request.yaml"
+    tags: [core, field]
+  - name: "13-reassign-worker.yaml"
+    tags: [coordinator, advanced]
+  - name: "14-pruning-kecamatan.yaml"
+    tags: [kecamatan, pruning, media-dependent]
+  - name: "15-offline-sync.yaml"
+    tags: [offline, manual-device, advanced]
+
+# Tags explanation:
+# smoke      - Critical entry/auth flows; should pass on every build
+# auth       - Authentication flows
+# onboarding - Onboarding flows
+# permissions - Permission-related flows; require OS-level permission prompts
+# ui         - UI interaction flows
+# core       - Core field worker flows (clock, activity, task)
+# field      - Field worker specific
+# coordinator - Coordinator/supervisor flows
+# kecamatan  - External pruning request submitter flows
+# advanced   - Complex or supervisory flows
+# gps-dependent      - Requires GPS mocking or real location
+# media-dependent    - Requires camera/gallery interaction or mocking
+# manual-intent      - May open external intents (tel:, wa.me)
+# manual-perms       - Requires native permission dialog interaction
+# manual-device      - Requires device-level controls (airplane mode, camera)
+# offline    - Tests offline queueing and sync
+
+# Smoke test subset (runs first, fail-fast):
+smokeTests:
+  - "01-welcome-carousel.yaml"
+  - "02-login-success.yaml"
+  - "03-login-validation.yaml"
+
+# CI configuration notes:
+# - Run in sequence (no parallelization to avoid emulator resource contention)
+# - Timeout per flow: 15 minutes
+# - Total timeout for all flows: 45 minutes
+# - Test environment requires: postgres + redis (for notifications, offline queue)
+# - Database: `npm run db:seed:staging` before test run
+# - Backend: running on device-reachable host (set via .env API_BASE_URL)

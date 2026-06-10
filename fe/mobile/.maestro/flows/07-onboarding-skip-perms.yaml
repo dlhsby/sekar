@@ -1,0 +1,96 @@
+appId: com.wahyutrip.sekar
+---
+# 07-onboarding-skip-perms.yaml
+# Onboarding with permission denials (OB-2) — user declines some permissions
+# Scenario: OB-2 permission screen, decline notifications + gallery, verify app still works
+
+- clearAppState
+- launchApp
+
+- wait: 1000
+
+# Skip carousel if present
+- tryTapOn:
+    id: carousel-skip
+
+- wait: 500
+
+# Login with a fresh test user (or one without onboarding complete)
+- tryTapOn:
+    id: username-input
+- inputText: satgas_fresh_2
+
+- tryTapOn:
+    id: password-input
+- inputText: password123
+
+- tapOn:
+    id: login-button
+
+- wait: 2000
+
+# Should be at OB-1
+- assertVisible:
+    id: onboarding-welcome-screen
+
+# Proceed to OB-2
+- tapOn:
+    id: onboarding-welcome-continue
+
+- wait: 1000
+
+# At OB-2, we'll tap some "Izinkan" and skip others
+# Decline (don't tap) notifications — simulate user swipe-dismissing or choosing "Tidak"
+# We grant location (necessary for field work)
+# Decline gallery (optional)
+
+# Grant location
+- tapOn:
+    id: perm-grant-location
+
+- wait: 500
+
+# Grant background location
+- tapOn:
+    id: perm-grant-background_location
+
+- wait: 500
+
+# Grant camera
+- tapOn:
+    id: perm-grant-camera
+
+- wait: 500
+
+# Skip (don't tap) notifications and gallery — these show as "DITOLAK" after re-check
+
+# Scroll down to see "Lanjut" button
+- scroll:
+    direction: down
+    duration: 500
+
+- wait: 500
+
+# Proceed even without all permissions
+- tapOn:
+    text: Lanjut
+
+- wait: 1000
+
+# Should reach OB-3
+- assertVisible:
+    text: Area Anda|Assigned Area
+
+# Complete onboarding
+- tryTapOn:
+    text: Selesai
+
+- wait: 1500
+
+# Should reach home screen
+# The app should still be functional, but notifications may not trigger
+- assertVisible:
+    text: Beranda
+
+# MANUAL: On-device, verify that notification badge doesn't appear (if notification perm denied)
+# and that attempting to open gallery shows a permission error (if gallery perm denied).

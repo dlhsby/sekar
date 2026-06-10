@@ -1,0 +1,131 @@
+appId: com.wahyutrip.sekar
+---
+# 06-onboarding-first-launch.yaml
+# Full onboarding flow (OB-1 → OB-2 → OB-3) — first login with all permissions granted
+# Scenario: Fresh account (or asyncStorage.carouselSeen cleared) logs in,
+#          sees OB-1 (welcome), OB-2 (permissions), OB-3 (area preview), then home
+
+# Clear all state to simulate first install
+- clearAppState
+
+- launchApp
+
+# May see welcome carousel or login depending on app logic
+# For this test, we assume carousel is shown first (or is skipped)
+- wait: 1000
+
+# If carousel is shown, skip to login
+- tryTapOn:
+    id: carousel-skip
+
+- wait: 500
+
+# Now at login — use a fresh test user
+- tryTapOn:
+    id: username-input
+- inputText: satgas_fresh
+
+- tryTapOn:
+    id: password-input
+- inputText: password123
+
+- tapOn:
+    id: login-button
+
+- wait: 2000
+
+# Should redirect to OB-1 (OnboardingWelcomeScreen)
+- assertVisible:
+    id: onboarding-welcome-screen
+
+# Verify greeting
+- assertVisible:
+    text: Hai
+
+# Verify pagination indicator (1/3)
+- assertVisible:
+    text: SIAP
+
+# Tap "Lanjut" to go to OB-2
+- tapOn:
+    id: onboarding-welcome-continue
+
+- wait: 1000
+
+# Now at OB-2 (OnboardingPermissionsScreen)
+- assertVisible:
+    id: perm-row-notifications
+
+- assertVisible:
+    id: perm-row-location
+
+- assertVisible:
+    id: perm-row-background_location
+
+- assertVisible:
+    id: perm-row-camera
+
+- assertVisible:
+    id: perm-row-gallery
+
+# Simulate granting all permissions by tapping each "Izinkan" button
+# (In a real device, native dialogs would pop; in Maestro CI with stubbed perms,
+#  we need a permissions config in launchApp. For now, we document and tap.)
+
+# MANUAL: Native permission dialogs are stubbed in CI. On-device requires:
+# - Emulator with permissions pre-granted, or
+# - Custom Maestro permissions config in .maestro/config.yaml
+
+# Tap "Izinkan" for each permission
+- tapOn:
+    id: perm-grant-notifications
+
+- wait: 500
+
+- tapOn:
+    id: perm-grant-location
+
+- wait: 500
+
+- tapOn:
+    id: perm-grant-background_location
+
+- wait: 500
+
+- tapOn:
+    id: perm-grant-camera
+
+- wait: 500
+
+- tapOn:
+    id: perm-grant-gallery
+
+- wait: 500
+
+# After all permissions are granted (or denied), "Lanjut" should be enabled
+# Scroll down to see the "Lanjut" button if needed
+- scroll:
+    direction: down
+    duration: 500
+
+- wait: 500
+
+# Tap "Lanjut" to proceed to OB-3
+- tapOn:
+    text: Lanjut
+
+- wait: 1000
+
+# Should now be at OB-3 (OnboardingAreaPreviewScreen)
+- assertVisible:
+    text: Area Anda|Assigned Area|Lokasi Anda
+
+# Tap the final "Selesai" or "Mulai" button to complete onboarding
+- tryTapOn:
+    text: Selesai
+
+- wait: 1500
+
+# After onboarding, should reach home screen (FieldHomeScreen for satgas)
+- assertVisible:
+    text: Beranda

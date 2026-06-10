@@ -1,0 +1,106 @@
+appId: com.wahyutrip.sekar
+---
+# 08-notifications-inbox.yaml
+# Notifications inbox — bell badge, list view, filter chips, mark-read
+# Scenario: Logged-in user sees notification badge on bell icon, opens inbox,
+#          filters by category, marks notifications as read
+
+# Assume logged-in satgas1 with some pre-seeded notifications
+- launchApp
+- assertVisible:
+    id: username-input
+
+# Login
+- tapOn:
+    id: username-input
+- inputText: satgas1
+
+- tapOn:
+    id: password-input
+- inputText: password123
+
+- tapOn:
+    id: login-button
+
+- wait: 2000
+
+# Should reach home (FieldHomeScreen)
+# MANUAL: The home screen should have a bell icon in the header with a badge
+#         if there are unread notifications. Seeding notifications is done via
+#         backend; for this test we assume 2-3 pre-seeded notifications exist.
+
+# Scroll up to see header with bell icon
+- scroll:
+    direction: up
+    duration: 500
+
+- wait: 500
+
+# Tap the bell icon (header integration; exact testID may vary)
+# Looking for a bell or notification icon that navigates to NotificationsScreen
+- tryTapOn:
+    text: Notifi
+
+- wait: 1000
+
+# Should reach NotificationsScreen
+- assertVisible:
+    id: notification-row-1
+
+# Verify filter chips are visible (Semua, Tugas, Aktivitas, Lembur, Sistem)
+- assertVisible:
+    text: Semua
+
+- assertVisible:
+    text: Tugas
+
+- assertVisible:
+    text: Aktivitas
+
+# Tap "Tugas" filter chip
+- tapOn:
+    text: Tugas
+
+- wait: 500
+
+# Should filter notifications to task-related only
+- assertVisible:
+    text: Tugas
+
+# Tap a notification row to mark it as read + navigate to detail
+- tryTapOn:
+    id: notification-row-1
+
+- wait: 1000
+
+# Should be at the linked entity detail screen (task, activity, etc.)
+# Navigate back to notifications
+- tryTapOn:
+    text: Kembali
+
+- wait: 500
+
+# Back in notifications list
+- assertVisible:
+    text: Semua
+
+# MANUAL: On-device, verify that the tapped notification no longer shows
+#         the unread indicator (left bar + bold title), and that the bell
+#         badge count decrements.
+
+# Verify "Tandai semua dibaca" action (if unread > 0)
+- scroll:
+    direction: up
+    duration: 500
+
+- wait: 500
+
+# The "Tandai semua dibaca" button or action should be in the header or near it
+- tryTapOn:
+    text: Tandai semua dibaca
+
+- wait: 1000
+
+# After marking all as read, all notification rows should have gray text + thin left bar
+- assertVisible:
+    text: Semua

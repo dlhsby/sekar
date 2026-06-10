@@ -1,0 +1,82 @@
+appId: com.wahyutrip.sekar
+---
+# 03-login-validation.yaml
+# Login validation — empty fields, bad password, per-field errors + auth-fail toast
+# Scenario: Attempt invalid logins, verify error messages + toast
+
+- launchApp
+- assertVisible:
+    id: username-input
+
+# Test 1: Empty fields → try to submit
+# Tap login button without entering anything
+- tapOn:
+    id: login-button
+
+- wait: 500
+
+# Should see inline error under username field
+# The error text is "No. HP / Username wajib diisi" based on LoginScreen code
+- assertVisible:
+    text: No. HP / Username wajib diisi
+
+# Test 2: Valid username, empty password → try to submit
+- tapOn:
+    id: username-input
+- inputText: satgas1
+
+# Tap password field but leave blank
+- tapOn:
+    id: password-input
+
+# Tap login button
+- tapOn:
+    id: login-button
+
+- wait: 500
+
+# Should see inline error under password field
+# The error text is "Kata Sandi wajib diisi"
+- assertVisible:
+    text: Kata Sandi wajib diisi
+
+# Test 3: Too-short username (< 3 chars)
+- tapOn:
+    id: username-input
+- selectAll
+- inputText: ab
+
+# Enter valid password
+- tapOn:
+    id: password-input
+- inputText: password123
+
+- tapOn:
+    id: login-button
+
+- wait: 500
+
+# Should see "Minimal 3 karakter" error
+- assertVisible:
+    text: Minimal 3 karakter
+
+# Test 4: Valid format but wrong credentials
+- tapOn:
+    id: username-input
+- selectAll
+- inputText: testuser
+
+- tapOn:
+    id: password-input
+- selectAll
+- inputText: wrongpass
+
+- tapOn:
+    id: login-button
+
+- wait: 2000
+
+# Should see auth failure toast (generic to prevent enumeration)
+# Toast text: "Gagal Masuk" + "No. HP atau Kata Sandi salah. Coba lagi."
+- assertVisible:
+    text: Gagal Masuk

@@ -1,0 +1,84 @@
+appId: com.wahyutrip.sekar
+---
+# 13-reassign-worker.yaml
+# Worker reassignment (korlap/kepala_rayon) — coordinator reassigns a worker to a new area
+# Scenario: Log in as korlap_pusat_1, open monitoring/worker list, tap a worker,
+#          open reassignment modal, select new area, confirm
+
+- launchApp
+- assertVisible:
+    id: username-input
+
+# Login as korlap (field coordinator) who can reassign workers
+- tapOn:
+    id: username-input
+- inputText: korlap_pusat_1
+
+- tapOn:
+    id: password-input
+- inputText: password123
+
+- tapOn:
+    id: login-button
+
+- wait: 2000
+
+# Should reach coordinator home (different from satgas)
+- assertVisible:
+    text: Beranda|Monitoring|Koordinator
+
+# Navigate to monitoring/worker list where reassignment is available
+- tryTapOn:
+    text: Monitoring|Workers|Pekerja|Tim
+
+- wait: 1000
+
+# Should show a list of workers
+- assertVisible:
+    text: Satgas|Pekerja|Worker
+
+# Tap on a worker to see their detail
+- tryTapOn:
+    text: satgas1|Satgas 1|Worker Detail
+
+- wait: 1000
+
+# Should see worker detail screen
+- assertVisible:
+    text: Detail|Profil|Informasi
+
+# Look for reassignment button or modal trigger
+- tryTapOn:
+    text: Penugasan Ulang|Reassign|Ubah Area
+
+- wait: 500
+
+# Should see reassignment modal/sheet
+- assertVisible:
+    text: Penugasan|Area|Rayon
+
+# Select a new area (if there's a dropdown)
+- tryTapOn:
+    text: Pilih Area|Select Area|Area Baru
+
+- wait: 500
+
+# Pick an area from the list
+- tryTapOn:
+    text: Area 1|Area Pusat|Area Barat
+
+- wait: 500
+
+# Confirm reassignment
+- tryTapOn:
+    text: Konfirmasi|Ya|Simpan|Terapkan
+
+- wait: 2000
+
+# Should show success
+- assertVisible:
+    text: Berhasil|Sukses|Penugasan berhasil
+
+# MANUAL: On-device, verify that the worker's assigned area has changed in the
+#         worker list and in the worker's profile. Location-based features (geofence,
+#         task assignment) should respect the new area.

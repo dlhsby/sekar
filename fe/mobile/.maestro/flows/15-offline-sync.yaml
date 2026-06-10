@@ -1,0 +1,83 @@
+appId: com.wahyutrip.sekar
+---
+# 15-offline-sync.yaml
+# Offline sync flow — user queues actions offline, reconnects, data syncs
+# Scenario: Clock in while offline (airplane mode on), verify action is queued,
+#          then turn off airplane mode and verify sync completes
+
+# MANUAL: This flow requires device airplane mode control. Maestro 1.x does not
+# have a built-in setAirplaneMode action. The following is a template; on a real
+# device, use adb or native UI to toggle airplane mode.
+
+# Launch and login
+- launchApp
+- assertVisible:
+    id: username-input
+
+- tapOn:
+    id: username-input
+- inputText: satgas1
+
+- tapOn:
+    id: password-input
+- inputText: password123
+
+- tapOn:
+    id: login-button
+
+- wait: 2000
+
+# Navigate to clock-in screen
+- scroll:
+    direction: down
+    duration: 500
+
+- wait: 500
+
+- tryTapOn:
+    text: Clock In|Masuk Kerja
+
+- wait: 1000
+
+# MANUAL: Enable airplane mode via adb or device UI
+# adb command: adb shell settings put global airplane_mode_on 1 && adb shell am broadcast -a android.intent.action.AIRPLANE_MODE --ez state true
+# Or manually toggle in device settings.
+
+# For this template, we document the steps:
+# 1. Device is in airplane mode (WiFi + cellular off)
+# 2. App should show an offline banner or message
+
+# Verify offline state is visible
+- assertVisible:
+    text: Offline|Tidak Terhubung|Tidak Ada Koneksi
+
+# Attempt clock-in while offline
+# Try to tap the clock-in button
+- tryTapOn:
+    text: Clock In|Masuk Kerja|Mulai
+
+- wait: 1000
+
+# Should queue the action and show a queued message
+- assertVisible:
+    text: Antri|Offline|Tersimpan|Pending
+
+# MANUAL: Turn off airplane mode to reconnect
+# adb command: adb shell settings put global airplane_mode_on 0 && adb shell am broadcast -a android.intent.action.AIRPLANE_MODE --ez state false
+# Or manually toggle in device settings.
+
+# In a CI environment, airplane mode control via Maestro is not available.
+# This test must be run on a physical device with manual airplane mode toggle,
+# or via a custom Maestro extension with native adb integration.
+
+# After reconnecting (manual step), wait for sync
+- wait: 5000
+
+# Verify that the queued clock-in has been synced (banner disappears, shift timer appears)
+- assertVisible:
+    text: Berhasil|Waktu Kerja|Sukses Masuk
+
+# MANUAL: On-device, verify that:
+# 1. The offline queue is flushed after reconnection.
+# 2. The shift is recorded with the original clock-in time (not the sync time).
+# 3. The activity appears in the server with the correct timestamp.

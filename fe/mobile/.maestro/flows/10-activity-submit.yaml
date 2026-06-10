@@ -1,0 +1,104 @@
+appId: com.wahyutrip.sekar
+---
+# 10-activity-submit.yaml
+# Activity submission — satgas submits an activity with photo and description
+# Scenario: User opens Tasks/Activities tab, taps add activity (FAB), fills form,
+#          captures/selects photo, submits
+
+- launchApp
+- assertVisible:
+    id: username-input
+
+# Login as satgas1
+- tapOn:
+    id: username-input
+- inputText: satgas1
+
+- tapOn:
+    id: password-input
+- inputText: password123
+
+- tapOn:
+    id: login-button
+
+- wait: 2000
+
+# Should reach home; find and tap Tasks/Activities tab or nav item
+# Home typically has a bottom tab or drawer nav to reach activities
+- scroll:
+    direction: down
+    duration: 500
+
+- wait: 500
+
+# Look for "Tugas & Aktivitas" or similar navigation
+- tryTapOn:
+    text: Tugas|Aktivitas|Tasks|Activities
+
+- wait: 1000
+
+# Should reach TasksActivityScreen with tabs (Tugas / Aktivitas)
+# Verify we can see the tabs
+- assertVisible:
+    text: Tugas
+
+- assertVisible:
+    text: Aktivitas
+
+# Tap the Aktivitas tab
+- tapOn:
+    text: Aktivitas
+
+- wait: 500
+
+# Should show the Activities tab content
+# Look for a FAB (floating action button) to add activity
+- tryTapOn:
+    text: Tambah|Buat|Add|FAB
+
+- wait: 1000
+
+# Should navigate to ActivitySubmissionScreen
+- assertVisible:
+    text: Aktivitas Baru|Submit Activity|Buat Aktivitas
+
+# Select activity type (if there's a dropdown)
+- tryTapOn:
+    text: Pilih Jenis|Jenis Aktivitas|Activity Type
+
+- wait: 500
+
+# Pick the first available option
+- tryTapOn:
+    text: Patroli|Bersih|Pemeliharaan
+
+- wait: 500
+
+# Add description
+- tryTapOn:
+    text: Deskripsi|Catatan|Keterangan
+
+- wait: 300
+
+- inputText: Patroli pagi di area taman, tidak ada masalah
+
+# Add photo
+- tryTapOn:
+    text: Ambil Foto|Pilih Foto|Add Photo
+
+- wait: 1000
+
+# MANUAL: Camera or gallery would open. In CI, a mock/default photo is used.
+
+# Submit activity
+- tryTapOn:
+    text: Kirim|Submit|Simpan
+
+- wait: 2000
+
+# Should show success toast
+- assertVisible:
+    text: Berhasil|Sukses|Aktivitas tersimpan
+
+# MANUAL: On-device, verify that the new activity appears in the Activities list
+#         with the correct type, description, and photo attachment.
