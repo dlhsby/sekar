@@ -20,6 +20,7 @@
     "db:seed:phase1": "ts-node -r tsconfig-paths/register src/database/seeds/seed-phase1.ts",
     "db:seed:phase2": "ts-node -r tsconfig-paths/register src/database/seeds/seed-phase2.ts",
     "db:seed:phase3": "ts-node -r tsconfig-paths/register src/database/seeds/seed-phase3.ts",
+    "db:seed:monitoring-demo": "ts-node -r tsconfig-paths/register src/database/seeds/seed-monitoring-demo.ts",
     "db:seed:reference": "ts-node -r tsconfig-paths/register src/database/seeds/seed-reference.ts",
     "db:seed:staging": "ts-node -r tsconfig-paths/register src/database/seeds/seed-staging.ts",
     "db:seed:loadtest": "ts-node -r tsconfig-paths/register src/database/seeds/seed-loadtest.ts",

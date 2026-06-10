@@ -1,7 +1,7 @@
 /**
  * Unit Tests: Monitoring Page (Phase 4-R)
- * Three-pane layout: filter rail · map · worker/area sidebar.
- * Auth/role gating + client-side filtering + selection.
+ * Full-bleed map with floating overlays: top search, dismissible filter panel,
+ * dismissible worker/area sheet. Auth/role gating + client-side filtering.
  */
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -18,6 +18,11 @@ jest.mock('@/lib/auth/hooks', () => ({ useAuth: () => mockUseAuth() }));
 const mockSnapshot = jest.fn();
 jest.mock('@/lib/api/monitoring-v2', () => ({
   useMonitoringSnapshot: () => mockSnapshot(),
+}));
+
+const mockBoundaries = jest.fn();
+jest.mock('@/lib/api/monitoring', () => ({
+  useBoundaries: () => mockBoundaries(),
 }));
 
 // The real map needs Mapbox/WebGL — assert we hand it the worker list instead.
@@ -80,6 +85,7 @@ describe('MonitoringPage', () => {
     jest.clearAllMocks();
     mockUseAuth.mockReturnValue({ user: adminUser, loading: false });
     mockSnapshot.mockReturnValue(snapshotData);
+    mockBoundaries.mockReturnValue({ data: undefined });
   });
 
   it('shows a loading state until auth resolves', () => {
@@ -94,11 +100,12 @@ describe('MonitoringPage', () => {
     expect(mockPush).toHaveBeenCalledWith('/');
   });
 
-  it('renders the header, status summary, filters and map for an admin', () => {
+  it('renders the floating search, refresh and status pills for an admin', () => {
     render(<MonitoringPage />, { wrapper: createWrapper() });
-    expect(screen.getByRole('heading', { name: /monitoring real-time/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /segarkan/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/cari petugas/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /segarkan/i })).toBeInTheDocument();
+    expect(screen.getByText('Aktif')).toBeInTheDocument();
+    expect(screen.getByText('Hilang')).toBeInTheDocument();
   });
 
   it('passes all snapshot workers to the map by default', () => {
@@ -112,8 +119,9 @@ describe('MonitoringPage', () => {
     expect(screen.getByTestId('map')).toHaveAttribute('data-count', '1');
   });
 
-  it('shows worker detail when a worker row is selected', () => {
+  it('opens the worker sheet and shows detail when a worker is selected', () => {
     render(<MonitoringPage />, { wrapper: createWrapper() });
+    fireEvent.click(screen.getByRole('button', { name: /daftar petugas/i }));
     fireEvent.click(screen.getByRole('button', { name: /andi/i }));
     expect(screen.getByRole('button', { name: /kembali ke daftar/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Andi' })).toBeInTheDocument();
@@ -121,9 +129,15 @@ describe('MonitoringPage', () => {
 
   it('lists area staffing on the Area tab', () => {
     render(<MonitoringPage />, { wrapper: createWrapper() });
+    fireEvent.click(screen.getByRole('button', { name: /daftar petugas/i }));
     fireEvent.click(screen.getByRole('tab', { name: /area/i }));
     const region = screen.getByText('Taman A');
-    expect(region).toBeInTheDocument();
     expect(within(region.closest('li') as HTMLElement).getByText(/kurang/i)).toBeInTheDocument();
+  });
+
+  it('opens the filter panel from the top bar', () => {
+    render(<MonitoringPage />, { wrapper: createWrapper() });
+    fireEvent.click(screen.getByRole('button', { name: /^filter$/i }));
+    expect(screen.getByRole('heading', { name: /filter petugas/i })).toBeInTheDocument();
   });
 });

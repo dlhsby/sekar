@@ -49,6 +49,8 @@ export interface MonitoringFiltersProps {
   roleOptions: UserRole[];
   total: number;
   matched: number;
+  /** Hide the built-in search field (when search lives elsewhere, e.g. a top overlay). */
+  showSearch?: boolean;
   className?: string;
 }
 
@@ -60,6 +62,7 @@ export function MonitoringFilters({
   roleOptions,
   total,
   matched,
+  showSearch = true,
   className,
 }: MonitoringFiltersProps) {
   const toggleStatus = (status: TrackingStatus) => {
@@ -81,24 +84,26 @@ export function MonitoringFilters({
   return (
     <div className={cn('flex flex-col gap-4', className)}>
       {/* Search */}
-      <div>
-        <label className="mb-1 block text-xs font-bold uppercase text-nb-gray-500" htmlFor="mon-search">
-          Cari Petugas
-        </label>
-        <div className="relative">
-          <Search
-            className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-nb-gray-400"
-            aria-hidden="true"
-          />
-          <Input
-            id="mon-search"
-            value={filters.search}
-            onChange={(e) => onChange({ ...filters, search: e.target.value })}
-            placeholder="Nama petugas…"
-            className="pl-8"
-          />
+      {showSearch && (
+        <div>
+          <label className="mb-1 block text-xs font-bold uppercase text-nb-gray-500" htmlFor="mon-search">
+            Cari Petugas
+          </label>
+          <div className="relative">
+            <Search
+              className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-nb-gray-400"
+              aria-hidden="true"
+            />
+            <Input
+              id="mon-search"
+              value={filters.search}
+              onChange={(e) => onChange({ ...filters, search: e.target.value })}
+              placeholder="Nama petugas…"
+              className="pl-8"
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Status chips */}
       <fieldset>
