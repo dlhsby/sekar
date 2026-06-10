@@ -47,6 +47,14 @@ function ymd(d: Date): string {
   return `${d.getFullYear()}-${m}-${day}`;
 }
 
+/**
+ * Normalize a backend date to YYYY-MM-DD. The schedule columns are DATE type
+ * (so they arrive as "2026-05-18"), but strip any time component defensively
+ * so a boundary-day comparison stays correct even if the API ever sends
+ * "2026-05-18T00:00:00Z" (lexical compare would otherwise drop the start day).
+ */
+const dateKey = (s: string): string => s.slice(0, 10);
+
 function addDays(base: Date, n: number): Date {
   const d = new Date(base);
   d.setDate(d.getDate() + n);
@@ -70,9 +78,11 @@ export function ScheduleWeeklyGrid({ schedules, weekStart, loading }: ScheduleWe
         };
         byUser.set(s.user_id, row);
       }
+      const eff = dateKey(s.effective_date);
+      const end = s.end_date ? dateKey(s.end_date) : null;
       days.forEach((day, i) => {
         const key = ymd(day);
-        const covers = s.effective_date <= key && (!s.end_date || s.end_date >= key);
+        const covers = eff <= key && (!end || end >= key);
         if (covers && !row!.days[i]) row!.days[i] = s.shift_definition ?? null;
       });
     }

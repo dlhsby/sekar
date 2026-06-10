@@ -203,7 +203,10 @@ export default function TasksPage() {
         <Tabs<ViewMode>
           tabs={VIEW_TABS}
           value={view}
-          onValueChange={setView}
+          onValueChange={(v) => {
+            setView(v);
+            setPage(1); // avoid landing on an out-of-range page after the toggle
+          }}
           size="sm"
           aria-label="Tampilan"
         />

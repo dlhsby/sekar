@@ -17,6 +17,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
+import { SCHEDULE_MANAGER_ROLES } from '@/lib/constants/roles';
 
 interface EditSchedulePageProps {
   params: {
@@ -56,10 +57,11 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schedule]);
 
-  // Access control
+  // Access control (ADR-009 roles — the prior ['admin','koordinator_lapangan']
+  // gate matched no current role and redirected every user away).
   useEffect(() => {
-    if (!authLoading && user && !['admin', 'koordinator_lapangan'].includes(user.role)) {
-      router.push('/dashboard');
+    if (!authLoading && user && !SCHEDULE_MANAGER_ROLES.includes(user.role)) {
+      router.push('/');
     }
   }, [user, authLoading, router]);
 
@@ -71,7 +73,7 @@ export default function EditSchedulePage({ params }: EditSchedulePageProps) {
     );
   }
 
-  if (!['admin', 'koordinator_lapangan'].includes(user.role)) {
+  if (!SCHEDULE_MANAGER_ROLES.includes(user.role)) {
     return null;
   }
 

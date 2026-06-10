@@ -40,6 +40,14 @@ export const TASK_MANAGER_ROLES: UserRole[] = [
   'superadmin',
 ];
 
+/** Roles that can create / edit / delete worker schedules. */
+export const SCHEDULE_MANAGER_ROLES: UserRole[] = [
+  'admin_system',
+  'superadmin',
+  'korlap',
+  'admin_data',
+];
+
 /** Roles that can clock in/out (field roles with area assignments only) */
 export const CLOCKABLE_ROLES: UserRole[] = ['satgas', 'linmas', 'korlap'];
 

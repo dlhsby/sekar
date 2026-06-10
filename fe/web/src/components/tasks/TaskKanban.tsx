@@ -12,7 +12,6 @@
 
 import { useMemo } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 import { StatusPill } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
@@ -76,19 +75,14 @@ export function TaskKanban({ tasks, loading }: TaskKanbanProps) {
 }
 
 function TaskCard({ task }: { task: Task }) {
-  const router = useRouter();
   const place = task.area?.name ?? task.rayon?.name ?? null;
   const due = task.due_date ? new Date(task.due_date).toLocaleDateString('id-ID') : null;
 
   return (
+    // Next.js Link already handles modifier/middle-clicks and keyboard activation;
+    // no custom onClick needed.
     <Link
       href={`/tasks/${task.id}`}
-      onClick={(e) => {
-        // Allow modifier-clicks to open in a new tab; otherwise route.
-        if (e.metaKey || e.ctrlKey) return;
-        e.preventDefault();
-        router.push(`/tasks/${task.id}`);
-      }}
       className={cn(
         'block rounded-nb-base border-2 border-nb-black bg-nb-white p-3 shadow-nb-xs transition-shadow',
         'hover:shadow-nb-sm focus-visible:outline focus-visible:outline-4 focus-visible:outline-nb-primary/50',

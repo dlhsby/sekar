@@ -1,7 +1,7 @@
 /**
  * Create Schedule Page
  * Form to create new worker schedule
- * Access: Admin + KoordinatorLapangan
+ * Access: SCHEDULE_MANAGER_ROLES (admin_system, superadmin, korlap, admin_data)
  */
 
 'use client';
@@ -17,6 +17,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
+import { SCHEDULE_MANAGER_ROLES } from '@/lib/constants/roles';
 
 export default function CreateSchedulePage() {
   const { user, loading: authLoading } = useAuth();
@@ -36,10 +37,11 @@ export default function CreateSchedulePage() {
   const { data: shifts } = useShiftDefinitions();
   const createMutation = useCreateSchedule();
 
-  // Access control
+  // Access control (ADR-009 roles — the prior ['admin','koordinator_lapangan']
+  // gate matched no current role and redirected every user away).
   useEffect(() => {
-    if (!authLoading && user && !['admin', 'koordinator_lapangan'].includes(user.role)) {
-      router.push('/dashboard');
+    if (!authLoading && user && !SCHEDULE_MANAGER_ROLES.includes(user.role)) {
+      router.push('/');
     }
   }, [user, authLoading, router]);
 
@@ -51,7 +53,7 @@ export default function CreateSchedulePage() {
     );
   }
 
-  if (!['admin', 'koordinator_lapangan'].includes(user.role)) {
+  if (!SCHEDULE_MANAGER_ROLES.includes(user.role)) {
     return null;
   }
 
