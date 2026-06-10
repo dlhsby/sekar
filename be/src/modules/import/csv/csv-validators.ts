@@ -125,9 +125,36 @@ function validateUserRow(
 export function validateUsers(rows: Record<string, string>[]): ValidationOutcome<ValidatedUserRow> {
   const errors: ImportValidationError[] = [];
   const valid: ValidatedUserRow[] = [];
+  const seenUsernames = new Set<string>();
+  const seenPhones = new Set<string>();
+
   rows.forEach((row, index) => {
     const parsed = validateUserRow(row, index, errors);
     if (parsed) {
+      const line = toLineNumber(index);
+      // Check batch-level duplicates: keep first, mark later as errors
+      if (seenUsernames.has(parsed.username)) {
+        errors.push({
+          row: line,
+          column: 'username',
+          value: parsed.username,
+          message: 'Duplikat di dalam file CSV',
+        });
+        return;
+      }
+      if (parsed.phone_number && seenPhones.has(parsed.phone_number)) {
+        errors.push({
+          row: line,
+          column: 'phone_number',
+          value: parsed.phone_number,
+          message: 'Duplikat di dalam file CSV',
+        });
+        return;
+      }
+      seenUsernames.add(parsed.username);
+      if (parsed.phone_number) {
+        seenPhones.add(parsed.phone_number);
+      }
       valid.push(parsed);
     }
   });
@@ -206,9 +233,23 @@ function validateAreaRow(
 export function validateAreas(rows: Record<string, string>[]): ValidationOutcome<ValidatedAreaRow> {
   const errors: ImportValidationError[] = [];
   const valid: ValidatedAreaRow[] = [];
+  const seenNames = new Set<string>();
+
   rows.forEach((row, index) => {
     const parsed = validateAreaRow(row, index, errors);
     if (parsed) {
+      const line = toLineNumber(index);
+      // Check batch-level duplicates: keep first, mark later as errors
+      if (seenNames.has(parsed.name)) {
+        errors.push({
+          row: line,
+          column: 'name',
+          value: parsed.name,
+          message: 'Duplikat di dalam file CSV',
+        });
+        return;
+      }
+      seenNames.add(parsed.name);
       valid.push(parsed);
     }
   });

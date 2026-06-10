@@ -143,6 +143,25 @@ describe('ExportService', () => {
       });
     });
 
+    it('applies endDate as exclusive (next-day boundary) for inclusive date filter', async () => {
+      const qb = makeQb(1, []);
+      taskRepo.createQueryBuilder.mockReturnValue(qb);
+
+      await service.requestExport(
+        { entityType: 'tasks', startDate: '2025-01-01', endDate: '2025-01-31' },
+        admin,
+      );
+
+      // Find the andWhere call with endDate — should use next-day exclusive bound
+      const endDateCall = qb.andWhere.mock.calls.find((call) => {
+        const params = call[1] as Record<string, unknown> | undefined;
+        return String(call[0]).includes('created_at') && params?.endDate !== undefined;
+      });
+      expect(endDateCall).toBeDefined();
+      const params = endDateCall?.[1] as Record<string, unknown> | undefined;
+      expect(params?.endDate).toBe('2025-02-01');
+    });
+
     it('forbids a kepala_rayon with no rayon assignment', async () => {
       await expect(
         service.requestExport({ entityType: 'tasks' }, { ...kepala, rayon_id: undefined } as User),

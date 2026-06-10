@@ -28,6 +28,24 @@ describe('csv exporter', () => {
     const text = toCsv(dataset).buffer.toString('utf-8');
     expect(text.trim().endsWith('3,null-cell,')).toBe(true);
   });
+
+  it('escapes formula injection patterns (=, +, -, @) by prefixing with single quote', () => {
+    const formulaDataset: Dataset = {
+      headers: ['formula', 'add', 'minus', 'at', 'safe_num', 'text_with_minus'],
+      rows: [
+        ['=HYPERLINK("http://evil.com","click")', '+cmd', '@SUM(A1:A2)', '-text', '-12.5', '-abc'],
+      ],
+    };
+    const text = toCsv(formulaDataset).buffer.toString('utf-8');
+    expect(text).toContain("'=HYPERLINK");
+    expect(text).toContain("'+cmd");
+    expect(text).toContain("'@SUM");
+    expect(text).toContain("'-text");
+    expect(text).toContain("'-abc");
+    // Negative numbers should NOT be escaped
+    expect(text).toContain('-12.5');
+    expect(text).not.toContain("'-12.5");
+  });
 });
 
 describe('excel exporter', () => {

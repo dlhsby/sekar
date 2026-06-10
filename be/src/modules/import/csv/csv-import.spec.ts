@@ -72,6 +72,56 @@ describe('validateUsers', () => {
     ]);
     expect(errors).toHaveLength(0);
   });
+
+  it('detects duplicate usernames within the CSV batch', () => {
+    const { valid, errors } = validateUsers([
+      {
+        username: 'duplicate',
+        full_name: 'First',
+        phone_number: '+628123456789',
+        role: 'satgas',
+        password: 'password123',
+      },
+      {
+        username: 'duplicate',
+        full_name: 'Second',
+        phone_number: '+628123456780',
+        role: 'satgas',
+        password: 'password123',
+      },
+    ]);
+    expect(valid).toHaveLength(1); // First occurrence is valid
+    expect(valid[0].full_name).toBe('First');
+    expect(errors).toHaveLength(1);
+    expect(errors[0].column).toBe('username');
+    expect(errors[0].row).toBe(3); // Second row, but line 3 (header is line 1)
+    expect(errors[0].message).toContain('Duplikat');
+  });
+
+  it('detects duplicate phone numbers within the CSV batch', () => {
+    const { valid, errors } = validateUsers([
+      {
+        username: 'user1',
+        full_name: 'User One',
+        phone_number: '+628123456789',
+        role: 'satgas',
+        password: 'password123',
+      },
+      {
+        username: 'user2',
+        full_name: 'User Two',
+        phone_number: '+628123456789',
+        role: 'satgas',
+        password: 'password123',
+      },
+    ]);
+    expect(valid).toHaveLength(1);
+    expect(valid[0].username).toBe('user1');
+    expect(errors).toHaveLength(1);
+    expect(errors[0].column).toBe('phone_number');
+    expect(errors[0].row).toBe(3);
+    expect(errors[0].message).toContain('Duplikat');
+  });
 });
 
 describe('validateAreas', () => {
@@ -101,6 +151,31 @@ describe('validateAreas', () => {
     ]);
     expect(valid).toHaveLength(0);
     expect(errors.some((e) => e.column === 'latitude')).toBe(true);
+  });
+
+  it('detects duplicate area names within the CSV batch', () => {
+    const { valid, errors } = validateAreas([
+      {
+        name: 'Taman Baru',
+        area_type_id: VALID_UUID,
+        rayon_id: VALID_UUID,
+        latitude: '-7.29',
+        longitude: '112.73',
+      },
+      {
+        name: 'Taman Baru',
+        area_type_id: VALID_UUID,
+        rayon_id: VALID_UUID,
+        latitude: '-7.30',
+        longitude: '112.74',
+      },
+    ]);
+    expect(valid).toHaveLength(1);
+    expect(valid[0].latitude).toBeCloseTo(-7.29);
+    expect(errors).toHaveLength(1);
+    expect(errors[0].column).toBe('name');
+    expect(errors[0].row).toBe(3);
+    expect(errors[0].message).toContain('Duplikat');
   });
 });
 

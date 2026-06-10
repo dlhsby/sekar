@@ -3,17 +3,22 @@ import { CONTENT_TYPES } from './dataset';
 
 /**
  * Escape a single CSV field per RFC 4180: wrap in quotes when it contains a
- * comma, quote, or newline, doubling any embedded quotes.
+ * comma, quote, or newline, doubling any embedded quotes. Also prevent formula
+ * injection by prefixing =, +, -, @ with a single quote (only if not a pure number).
  */
 function escapeField(value: CellValue): string {
   if (value === null || value === undefined) {
     return '';
   }
   const str = String(value);
-  if (/[",\r\n]/.test(str)) {
-    return `"${str.replace(/"/g, '""')}"`;
+  // Prefix formula injection patterns with ' (but not for pure numbers like -12.5)
+  const isNumeric = /^-?\d+(\.\d+)?$/.test(str);
+  let escaped = isNumeric ? str : str.replace(/^([=+\-@])/, "'$1");
+  // Apply RFC 4180 quoting
+  if (/[",\r\n]/.test(escaped)) {
+    return `"${escaped.replace(/"/g, '""')}"`;
   }
-  return str;
+  return escaped;
 }
 
 function toLine(cells: CellValue[]): string {

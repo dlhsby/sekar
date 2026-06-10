@@ -214,7 +214,11 @@ export class ExportService {
       qb.andWhere(`${cfg.alias}.${cfg.dateColumn} >= :startDate`, { startDate: filters.startDate });
     }
     if (cfg.dateColumn && filters.endDate) {
-      qb.andWhere(`${cfg.alias}.${cfg.dateColumn} <= :endDate`, { endDate: filters.endDate });
+      // Inclusive endDate: use next-day as exclusive upper bound for timestamptz columns
+      const nextDay = new Date(filters.endDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      const endDateExclusive = nextDay.toISOString().split('T')[0];
+      qb.andWhere(`${cfg.alias}.${cfg.dateColumn} < :endDate`, { endDate: endDateExclusive });
     }
     if (filters.areaId && cfg.areaColumn) {
       qb.andWhere(`${cfg.alias}.${cfg.areaColumn} = :areaId`, { areaId: filters.areaId });
