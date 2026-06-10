@@ -163,7 +163,7 @@ export default function OvertimePage() {
         <div className="flex items-center gap-2">
           <Link
             href={`/overtime/${ot.id}`}
-            className="text-nb-primary font-semibold hover:underline"
+            className="text-nb-success-dark font-semibold hover:underline"
           >
             Detail
           </Link>

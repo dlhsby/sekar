@@ -592,7 +592,9 @@ body {
   }
 
   a {
-    @apply text-nb-primary hover:underline;
+    /* Sage (#7FBC8C) on white is 2.21:1 — success-dark keeps the green link
+       affordance at WCAG AA (5:1). */
+    @apply text-nb-success-dark hover:underline;
   }
 
   button {

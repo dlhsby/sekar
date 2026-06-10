@@ -24,7 +24,7 @@ const ROLE_STYLE: Record<UserRole, RoleStyle> = {
   kepala_rayon: { bg: 'bg-role-kepala', text: 'text-nb-black' },
   top_management: { bg: 'bg-role-top', text: 'text-nb-white' },
   admin_system: { bg: 'bg-role-admin-sys', text: 'text-nb-white' },
-  superadmin: { bg: 'bg-role-superadmin', text: 'text-nb-primary' },
+  superadmin: { bg: 'bg-role-superadmin', text: 'text-nb-white' },
   staff_kecamatan: { bg: 'bg-role-kecamatan', text: 'text-nb-black' },
 };
 

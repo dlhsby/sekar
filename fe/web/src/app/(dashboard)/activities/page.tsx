@@ -188,7 +188,7 @@ export default function ActivitiesPage() {
         <div className="flex items-center gap-2">
           <Link
             href={`/activities/${a.id}`}
-            className="text-nb-primary font-semibold hover:underline"
+            className="text-nb-success-dark font-semibold hover:underline"
           >
             Detail
           </Link>

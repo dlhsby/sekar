@@ -221,10 +221,10 @@ Used by the monitoring map and status chips. Not the same as generic success/war
 | Token | Hex | Background pair |
 |-------|-----|-----------------|
 | `status.active` | `#15803D` | `#DCFCE7` |
-| `status.idle` | `#D97706` | `#FEF3C7` |
+| `status.idle` | `#92400E` | `#FEF3C7` |
 | `status.outside` | `#9333EA` | `#F3E8FF` |
-| `status.missing` | `#DC2626` | `#FEE2E2` |
-| `status.offline` | `#6B7280` | `#F3F4F6` |
+| `status.missing` | `#B91C1C` | `#FEE2E2` |
+| `status.offline` | `#4B5563` | `#F3F4F6` |
 
 ### Colors — Plant status (Phase 3)
 

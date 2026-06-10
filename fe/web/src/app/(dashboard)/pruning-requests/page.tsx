@@ -131,7 +131,7 @@ export default function PruningRequestsPage() {
       cell: (row) => (
         <Link
           href={`/pruning-requests/${row.id}`}
-          className="text-nb-primary font-semibold hover:underline"
+          className="text-nb-success-dark font-semibold hover:underline"
         >
           Detail
         </Link>

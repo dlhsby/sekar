@@ -10,10 +10,10 @@ export const ROLE_PILL_STYLE: Record<UserRole, string> = {
   linmas: 'bg-role-linmas text-nb-white',
   korlap: 'bg-role-korlap text-nb-black',
   admin_data: 'bg-role-admin-data text-nb-white',
-  kepala_rayon: 'bg-role-kepala text-nb-white',
+  kepala_rayon: 'bg-role-kepala text-nb-black',
   top_management: 'bg-role-top text-nb-white',
   admin_system: 'bg-role-admin-sys text-nb-white',
-  superadmin: 'bg-role-superadmin text-nb-primary',
+  superadmin: 'bg-role-superadmin text-nb-white',
   staff_kecamatan: 'bg-role-kecamatan text-nb-black',
 };
 
@@ -50,7 +50,8 @@ export function RolePillButton({
         base,
         'transition-shadow focus-visible:outline focus-visible:outline-2 focus-visible:outline-nb-black focus-visible:outline-offset-1',
         role ? ROLE_PILL_STYLE[role] : 'bg-nb-black text-nb-white',
-        active ? 'shadow-nb-xs' : 'opacity-60 hover:opacity-100'
+        // Muted via desaturation, not opacity — keeps text at WCAG AA contrast
+        active ? 'shadow-nb-xs' : 'grayscale hover:grayscale-0'
       )}
     >
       {children}

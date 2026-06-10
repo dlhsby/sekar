@@ -129,7 +129,7 @@ export default function NotificationsPage() {
                       {n.title}
                     </span>
                     <span className="mt-0.5 block text-nb-body-sm text-nb-gray-600">{n.body}</span>
-                    <span className="mt-1 block font-mono text-[11px] text-nb-gray-500">
+                    <span className="mt-1 block font-mono text-[11px] text-nb-gray-600">
                       {formatRelativeTime(n.created_at)}
                     </span>
                   </span>

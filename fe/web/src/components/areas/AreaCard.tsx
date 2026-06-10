@@ -82,12 +82,22 @@ export function AreaCard({ area, onView, onEdit, onDelete, showActions = true }:
               Lihat
             </Button>
             {onEdit && (
-              <Button onClick={() => onEdit(area)} variant="secondary" size="sm">
+              <Button
+                onClick={() => onEdit(area)}
+                variant="secondary"
+                size="sm"
+                aria-label={`Ubah area ${area.name}`}
+              >
                 <Edit className="w-4 h-4" />
               </Button>
             )}
             {onDelete && (
-              <Button onClick={() => onDelete(area)} variant="destructive" size="sm">
+              <Button
+                onClick={() => onDelete(area)}
+                variant="destructive"
+                size="sm"
+                aria-label={`Hapus area ${area.name}`}
+              >
                 <Trash2 className="w-4 h-4" />
               </Button>
             )}

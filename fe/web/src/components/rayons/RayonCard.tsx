@@ -81,7 +81,7 @@ export default function RayonCard({ rayon, stats, loading }: RayonCardProps) {
         </CardContent>
 
         <CardFooter>
-          <div className="flex items-center text-nb-primary text-sm font-semibold">
+          <div className="flex items-center text-nb-success-dark text-sm font-semibold">
             Lihat Detail
             <ChevronRight className="w-4 h-4 ml-1" />
           </div>
