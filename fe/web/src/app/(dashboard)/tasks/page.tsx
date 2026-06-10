@@ -192,7 +192,6 @@ export default function TasksPage() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-nb-black">Tugas</h1>
           <p className="text-nb-gray-600 mt-1">Kelola penugasan</p>
         </div>
         <Button onClick={() => router.push('/tasks/new')} leftIcon={<Plus className="w-5 h-5" />}>

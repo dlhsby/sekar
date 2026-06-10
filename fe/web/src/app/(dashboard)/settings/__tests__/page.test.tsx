@@ -75,7 +75,7 @@ describe('SettingsPage Component', () => {
 
       render(<SettingsPage />);
 
-      expect(screen.getByText(/pengaturan/i)).toBeInTheDocument();
+      expect(screen.getByText(/kelola profil dan preferensi anda/i)).toBeInTheDocument();
       expect(mockRedirect).not.toHaveBeenCalled();
     });
 
@@ -88,7 +88,7 @@ describe('SettingsPage Component', () => {
       // Wrap in try-catch as redirect() throws in tests
       try {
         render(<SettingsPage />);
-      } catch (e) {
+      } catch {
         // Expected - redirect() throws NEXT_REDIRECT
       }
 
@@ -106,7 +106,7 @@ describe('SettingsPage Component', () => {
       // Wrap in try-catch as redirect() throws in tests
       try {
         render(<SettingsPage />);
-      } catch (e) {
+      } catch {
         // Expected - redirect() throws NEXT_REDIRECT
       }
 
@@ -552,7 +552,7 @@ describe('SettingsPage Component', () => {
     it('should render all sections in vertical layout', () => {
       render(<SettingsPage />);
 
-      const container = screen.getByText(/pengaturan/i).closest('div.space-y-6');
+      const container = screen.getByText(/kelola profil dan preferensi anda/i).closest('div.space-y-6');
       expect(container).toBeInTheDocument();
     });
 
@@ -638,7 +638,6 @@ describe('SettingsPage Component', () => {
     it('should have proper heading hierarchy', () => {
       render(<SettingsPage />);
 
-      expect(screen.getByRole('heading', { name: /^pengaturan$/i, level: 1 })).toBeInTheDocument();
       expect(
         screen.getByRole('heading', { name: /profil pengguna/i, level: 2 })
       ).toBeInTheDocument();

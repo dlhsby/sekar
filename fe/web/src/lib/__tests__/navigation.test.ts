@@ -13,26 +13,28 @@ import {
 describe('Navigation Utilities', () => {
   describe('navigationItems', () => {
     it('should contain all expected navigation items', () => {
-      // Phase 4-R grouping: dashboard, monitoring, work(group), data(group),
-      // pruning-requests + 2 staff_kecamatan items = 7 top-level entries.
-      // Settings moved to the avatar dropdown (no longer in the sidebar).
-      expect(navigationItems).toHaveLength(7);
+      // Phase 4-R grouping: dashboard, monitoring, work(group), data(group)
+      // + 2 staff_kecamatan items = 6 top-level entries. Settings moved to the
+      // avatar dropdown; pruning-requests moved under the 'Pekerjaan' group.
+      expect(navigationItems).toHaveLength(6);
 
       const navIds = navigationItems.map((item) => item.id);
       expect(navIds).toContain('dashboard');
       expect(navIds).toContain('monitoring');
       expect(navIds).toContain('work');
       expect(navIds).toContain('data');
-      expect(navIds).toContain('pruning-requests');
       expect(navIds).not.toContain('settings');
+      // pruning-requests is no longer top-level (nested under 'work').
+      expect(navIds).not.toContain('pruning-requests');
 
-      // 'Pekerjaan' group holds tasks / activities / overtime / schedules.
+      // 'Pekerjaan' group holds tasks / activities / overtime / schedules / pruning.
       const workItem = navigationItems.find((item) => item.id === 'work');
       expect(workItem?.children?.map((c) => c.id)).toEqual([
         'tasks',
         'activities',
         'overtime',
         'schedules',
+        'pruning-requests',
       ]);
 
       // 'Data Master' group holds users / areas / rayons.
@@ -70,14 +72,13 @@ describe('Navigation Utilities', () => {
     it('should return all groups for superadmin role', () => {
       const filtered = filterNavigationByRole(navigationItems, 'superadmin');
 
-      // superadmin sees: dashboard, monitoring, work, data, pruning-requests
+      // superadmin sees: dashboard, monitoring, work, data
       // (the 2 staff_kecamatan-only items remain hidden).
       expect(filtered.map((i) => i.id)).toEqual([
         'dashboard',
         'monitoring',
         'work',
         'data',
-        'pruning-requests',
       ]);
 
       const workItem = filtered.find((item) => item.id === 'work');
@@ -86,6 +87,7 @@ describe('Navigation Utilities', () => {
         'activities',
         'overtime',
         'schedules',
+        'pruning-requests',
       ]);
       const dataItem = filtered.find((item) => item.id === 'data');
       expect(dataItem?.children?.find((child) => child.id === 'users')).toBeDefined();
@@ -96,8 +98,13 @@ describe('Navigation Utilities', () => {
 
       const workItem = filtered.find((item) => item.id === 'work');
       expect(workItem).toBeDefined();
-      // top_management can see tasks/activities/overtime but NOT schedules.
-      expect(workItem?.children?.map((c) => c.id)).toEqual(['tasks', 'activities', 'overtime']);
+      // top_management sees tasks/activities/overtime + pruning, but NOT schedules.
+      expect(workItem?.children?.map((c) => c.id)).toEqual([
+        'tasks',
+        'activities',
+        'overtime',
+        'pruning-requests',
+      ]);
 
       const dataItem = filtered.find((item) => item.id === 'data');
       expect(dataItem?.children?.find((child) => child.id === 'areas')).toBeDefined();
@@ -113,9 +120,14 @@ describe('Navigation Utilities', () => {
       expect(filtered.find((item) => item.id === 'dashboard')).toBeDefined();
       expect(filtered.find((item) => item.id === 'monitoring')).toBeDefined();
 
-      // kepala_rayon sees the work group (tasks/activities/overtime), no schedules.
+      // kepala_rayon sees tasks/activities/overtime + pruning, but no schedules.
       const workItem = filtered.find((item) => item.id === 'work');
-      expect(workItem?.children?.map((c) => c.id)).toEqual(['tasks', 'activities', 'overtime']);
+      expect(workItem?.children?.map((c) => c.id)).toEqual([
+        'tasks',
+        'activities',
+        'overtime',
+        'pruning-requests',
+      ]);
 
       // No 'Data Master' access.
       expect(filtered.find((item) => item.id === 'data')).toBeUndefined();

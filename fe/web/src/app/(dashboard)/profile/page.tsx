@@ -19,7 +19,6 @@ import { getErrorMessage } from '@/lib/api/client';
 import { ROLE_LABELS } from '@/lib/constants/roles';
 import type { UserRole } from '@/types/models';
 
-const PHONE_RE = /^(\+62|0)[0-9]{8,13}$/;
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -28,8 +27,6 @@ export default function ProfilePage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [phoneError, setPhoneError] = useState<string | undefined>();
   const [hydrated, setHydrated] = useState(false);
 
   const updateProfile = useUpdateMyProfile();
@@ -38,7 +35,6 @@ export default function ProfilePage() {
   // Seed the form once the user resolves (lazy, no effect-driven setState loop).
   if (user && !hydrated) {
     setFullName(user.full_name ?? '');
-    setPhone(user.phone_number ?? '');
     setHydrated(true);
   }
 
@@ -49,20 +45,13 @@ export default function ProfilePage() {
   }
 
   const roleLabel = ROLE_LABELS[user.role as UserRole] ?? user.role;
-  const dirty = fullName.trim() !== (user.full_name ?? '') || phone.trim() !== (user.phone_number ?? '');
+  // Only the full name is self-editable; username + phone are read-only here
+  // (phone is managed by an administrator).
+  const dirty = fullName.trim() !== (user.full_name ?? '');
 
   const handleSave = async () => {
-    const trimmedPhone = phone.trim();
-    if (trimmedPhone && !PHONE_RE.test(trimmedPhone)) {
-      setPhoneError('Format nomor tidak valid (mis. 081234567890).');
-      return;
-    }
-    setPhoneError(undefined);
     try {
-      await updateProfile.mutateAsync({
-        full_name: fullName.trim(),
-        phone_number: trimmedPhone || undefined,
-      });
+      await updateProfile.mutateAsync({ full_name: fullName.trim() });
       await refreshUser();
       toast.success('Profil diperbarui');
     } catch (err) {
@@ -137,7 +126,7 @@ export default function ProfilePage() {
         </p>
       </SectionCard>
 
-      {/* Editable fields */}
+      {/* Account fields — only the name is self-editable. */}
       <SectionCard title="Informasi Akun">
         <div className="space-y-4">
           <FormInput
@@ -148,19 +137,21 @@ export default function ProfilePage() {
             maxLength={255}
           />
           <FormInput
+            label="Username"
+            value={user.username}
+            disabled
+            readOnly
+          />
+          <FormInput
             label="Nomor Telepon"
             type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="081234567890"
-            error={phoneError}
+            value={user.phone_number ?? '—'}
+            disabled
+            readOnly
           />
-          <div>
-            <label className="mb-1 block text-nb-body-sm font-semibold text-nb-gray-700">
-              Username
-            </label>
-            <p className="font-medium text-nb-gray-500">{user.username} · tidak dapat diubah</p>
-          </div>
+          <p className="text-xs text-nb-gray-500">
+            Username dan nomor telepon dikelola oleh administrator.
+          </p>
 
           <div className="flex justify-end border-t-2 border-nb-gray-200 pt-4">
             <Button

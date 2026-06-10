@@ -82,6 +82,14 @@ export const navigationItems: NavItem[] = [
         icon: CalendarIcon,
         roles: [...ADMIN_ROLES, 'korlap', 'admin_data'],
       },
+      // Pruning-request disposition is operational work (ADR-038).
+      {
+        id: 'pruning-requests',
+        label: 'Permohonan Pemangkasan',
+        href: '/pruning-requests',
+        icon: InboxArrowDownIcon,
+        roles: ['admin_data', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'],
+      },
     ],
   },
   // ── Data Master: organisation structure + accounts
@@ -114,16 +122,6 @@ export const navigationItems: NavItem[] = [
         roles: [...ADMIN_ROLES, 'top_management'],
       },
     ],
-  },
-
-  // ── Phase 3: pruning-requests admin disposition (ADR-038) ───────────────
-  // Admin / kepala_rayon / admin_data review and convert kecamatan submissions.
-  {
-    id: 'pruning-requests',
-    label: 'Permohonan Pemangkasan',
-    href: '/pruning-requests',
-    icon: InboxArrowDownIcon,
-    roles: ['admin_data', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'],
   },
 
   // ── Phase 3: staff_kecamatan minimal navigation (ADR-033) ──────────────

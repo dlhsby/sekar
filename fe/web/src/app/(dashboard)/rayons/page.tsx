@@ -48,7 +48,6 @@ export default function RayonsPage() {
     <div className="container mx-auto p-6">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-nb-black mb-2">Manajemen Rayon</h1>
         <p className="text-nb-gray-600">Kelola dan monitor 7 rayon di Kota Surabaya</p>
       </div>
 

@@ -160,7 +160,7 @@ describe('TasksPage', () => {
 
       render(<TasksPage />, { wrapper: createWrapper() });
 
-      expect(screen.getByRole('heading', { level: 1, name: 'Tugas' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /buat tugas baru/i })).toBeInTheDocument();
       expect(mockPush).not.toHaveBeenCalled();
     });
 

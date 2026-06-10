@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils/cn';
 import { useUIStore } from '@/stores/ui';
 import { useAuth } from '@/lib/auth/hooks';
 import { NotificationBell } from '@/components/ui/notification-bell';
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { RoleAvatar } from '@/components/ui/role-avatar';
 import { getPageTitle } from '@/lib/navigation';
 import { ADMIN_ROLES, hasRole } from '@/lib/constants/roles';
@@ -100,6 +101,9 @@ export function Header({ className, ...props }: HeaderProps) {
 
         {/* Right section: Notifications + User menu */}
         <div className="flex items-center gap-3">
+          {/* Light/dark toggle */}
+          <ThemeToggle />
+
           {/* Notification bell (real unread count + popover) */}
           <NotificationBell />
 

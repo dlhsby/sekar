@@ -140,7 +140,6 @@ export default function PruningRequestsPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-nb-black">Permohonan Pemangkasan</h1>
         <p className="text-nb-gray-600 mt-1">
           Tinjau dan kelola permohonan pemangkasan dari kecamatan.
         </p>

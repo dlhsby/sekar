@@ -3,6 +3,9 @@
 @import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
 @import "./generated/tokens.css";
 
+/* Class-based dark mode: `dark:` utilities apply when <html> has `.dark`. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ============================================
    @theme inline — NB tokens from generated/tokens.css
    Tailwind reads via var(); actual values live in generated/.
@@ -601,4 +604,52 @@ body {
   select {
     @apply font-sans;
   }
+}
+
+/* ============================================================
+   DARK MODE — remaps the NB source tokens (generated/tokens.css
+   defines them non-layered on :root, so these overrides are also
+   non-layered to win the cascade when <html> has `.dark`).
+   Surfaces go dark, ink/borders go light, hard shadows stay black
+   for visible depth, and the sage primary darkens so light ink
+   remains legible on it.
+   ============================================================ */
+.dark {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --color-bg-canvas: #14110E;
+  --color-bg-surface: #211D19;
+  --color-nb-white: #211D19;
+  --color-bg-overlay: rgba(0, 0, 0, 0.7);
+
+  /* Ink — text + the 2px NB borders */
+  --color-nb-black: #ECE6DE;
+
+  /* Neutral ramp, inverted so subtle light-mode greys map to subtle
+     dark-mode greys and dark text greys map to light text greys. */
+  --color-nb-gray-50: #1B1814;
+  --color-nb-gray-100: #232019;
+  --color-nb-gray-200: #322D26;
+  --color-nb-gray-300: #443E36;
+  --color-nb-gray-400: #6A625A;
+  --color-nb-gray-500: #978E84;
+  --color-nb-gray-600: #B5ACA2;
+  --color-nb-gray-700: #D2CABF;
+  --color-nb-gray-800: #E6DFD7;
+  --color-nb-gray-900: #F5F0EB;
+
+  /* Primary darkened for legible light ink on filled buttons/active items. */
+  --color-nb-primary: #3F8A59;
+  --color-nb-primary-hover: #357A4D;
+  --color-nb-primary-active: #2D6B43;
+
+  /* Hard-edge shadows stay black for depth against dark surfaces. */
+  --shadow-nb-xs: 2px 2px 0 #000000;
+  --shadow-nb-sm: 3px 3px 0 #000000;
+  --shadow-nb-md: 4px 4px 0 #000000;
+  --shadow-nb-lg: 6px 6px 0 #000000;
+  --shadow-nb-xl: 8px 8px 0 #000000;
+  --shadow-nb-hover: 6px 6px 0 #000000;
+  --shadow-nb-active: 2px 2px 0 #000000;
 }

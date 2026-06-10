@@ -201,7 +201,6 @@ export default function SchedulesPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-nb-black mb-2">Manajemen Jadwal</h1>
           <p className="text-nb-gray-600">Kelola jadwal kerja pekerja per area dan shift</p>
         </div>
         <Link href="/schedules/new">

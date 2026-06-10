@@ -42,7 +42,6 @@ export default function SettingsPage() {
     <div className="container mx-auto py-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-black text-nb-black mb-2">Pengaturan</h1>
         <p className="text-nb-gray-600">Kelola profil dan preferensi Anda</p>
       </div>
 

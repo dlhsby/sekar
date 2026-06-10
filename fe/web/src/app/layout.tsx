@@ -52,6 +52,13 @@ export default function RootLayout({
     <html lang="id" suppressHydrationWarning>
       <head>
         <link rel="apple-touch-icon" href="/apple-icon.png" />
+        {/* Apply the saved theme before first paint to avoid a flash of the
+            wrong theme. Mirrors the logic in src/lib/theme.ts. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('sekar-theme');var m=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(t!=='light'&&t!=='dark'&&m)){document.documentElement.classList.add('dark');}}catch(e){}})();`,
+          }}
+        />
       </head>
       <body className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
         <OfflineBanner />

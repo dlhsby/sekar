@@ -38,10 +38,19 @@ describe('ProfilePage', () => {
     render(<ProfilePage />);
     expect(screen.getByRole('heading', { name: 'Andi Saputra' })).toBeInTheDocument();
     expect(screen.getByLabelText(/nama lengkap/i)).toHaveValue('Andi Saputra');
-    expect(screen.getByLabelText(/nomor telepon/i)).toHaveValue('081200000001');
   });
 
-  it('disables Save until a field changes, then submits + refreshes', async () => {
+  it('shows username and phone as read-only fields', () => {
+    render(<ProfilePage />);
+    const username = screen.getByLabelText(/username/i);
+    const phone = screen.getByLabelText(/nomor telepon/i);
+    expect(username).toHaveValue('satgas1');
+    expect(username).toBeDisabled();
+    expect(phone).toHaveValue('081200000001');
+    expect(phone).toBeDisabled();
+  });
+
+  it('disables Save until the name changes, then submits + refreshes', async () => {
     render(<ProfilePage />);
     const save = screen.getByRole('button', { name: /simpan perubahan/i });
     expect(save).toBeDisabled();
@@ -50,19 +59,8 @@ describe('ProfilePage', () => {
     expect(save).toBeEnabled();
     fireEvent.click(save);
 
-    await waitFor(() => expect(mockUpdate).toHaveBeenCalledWith({
-      full_name: 'Andi S.',
-      phone_number: '081200000001',
-    }));
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledWith({ full_name: 'Andi S.' }));
     await waitFor(() => expect(mockRefreshUser).toHaveBeenCalled());
-  });
-
-  it('rejects an invalid phone number before submitting', async () => {
-    render(<ProfilePage />);
-    fireEvent.change(screen.getByLabelText(/nomor telepon/i), { target: { value: 'abc' } });
-    fireEvent.click(screen.getByRole('button', { name: /simpan perubahan/i }));
-    expect(await screen.findByText(/format nomor tidak valid/i)).toBeInTheDocument();
-    expect(mockUpdate).not.toHaveBeenCalled();
   });
 
   it('uploads a selected photo and refreshes the user', async () => {

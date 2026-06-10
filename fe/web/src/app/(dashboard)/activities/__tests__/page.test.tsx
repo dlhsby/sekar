@@ -224,8 +224,7 @@ describe('ActivitiesPage', () => {
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      // Use level: 1 to target the h1 specifically (h2 "Daftar Aktivitas" also matches /aktivitas/)
-      expect(screen.getByRole('heading', { name: /aktivitas/i, level: 1 })).toBeInTheDocument();
+      expect(screen.getByText(/kelola dan tinjau aktivitas kerja/i)).toBeInTheDocument();
       expect(mockPush).not.toHaveBeenCalled();
     });
 
@@ -234,7 +233,7 @@ describe('ActivitiesPage', () => {
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      expect(screen.getByRole('heading', { name: /aktivitas/i, level: 1 })).toBeInTheDocument();
+      expect(screen.getByText(/kelola dan tinjau aktivitas kerja/i)).toBeInTheDocument();
       expect(mockPush).not.toHaveBeenCalled();
     });
 
@@ -243,7 +242,7 @@ describe('ActivitiesPage', () => {
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      expect(screen.getByRole('heading', { name: /aktivitas/i, level: 1 })).toBeInTheDocument();
+      expect(screen.getByText(/kelola dan tinjau aktivitas kerja/i)).toBeInTheDocument();
       expect(mockPush).not.toHaveBeenCalled();
     });
 
@@ -252,7 +251,7 @@ describe('ActivitiesPage', () => {
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      expect(screen.getByRole('heading', { name: /aktivitas/i, level: 1 })).toBeInTheDocument();
+      expect(screen.getByText(/kelola dan tinjau aktivitas kerja/i)).toBeInTheDocument();
       expect(mockPush).not.toHaveBeenCalled();
     });
 
@@ -278,12 +277,6 @@ describe('ActivitiesPage', () => {
   describe('Page Structure', () => {
     beforeEach(() => {
       mockUseAuth.mockReturnValue({ user: mockAdminSystemUser, loading: false });
-    });
-
-    it('should render the h1 page heading "Aktivitas"', () => {
-      render(<ActivitiesPage />, { wrapper: createWrapper() });
-
-      expect(screen.getByRole('heading', { name: 'Aktivitas', level: 1 })).toBeInTheDocument();
     });
 
     it('should render the page subtitle', () => {
