@@ -77,6 +77,50 @@ function formatRelativeTime(iso: string): string {
   }
 }
 
+interface NotificationRowProps {
+  notification: Notification;
+  onPress: (n: Notification) => void;
+}
+
+const NotificationRow = React.memo(function NotificationRow({
+  notification,
+  onPress,
+}: NotificationRowProps): React.JSX.Element {
+  const handlePress = useCallback(() => onPress(notification), [onPress, notification]);
+
+  return (
+    <TouchableOpacity
+      onPress={handlePress}
+      style={[styles.row, !notification.read && styles.rowUnread]}
+      testID={`notification-row-${notification.id}`}
+      accessibilityRole="button"
+    >
+      <View style={[styles.unreadDot, { opacity: notification.read ? 0 : 1 }]} />
+      <View style={styles.rowBody}>
+        <NBText
+          variant="body-sm"
+          color={notification.read ? 'gray700' : 'black'}
+          style={notification.read ? undefined : styles.titleUnread}
+          numberOfLines={1}
+        >
+          {notification.title}
+        </NBText>
+        <NBText
+          variant="body-sm"
+          color="gray600"
+          style={styles.bodyText}
+          numberOfLines={2}
+        >
+          {notification.body}
+        </NBText>
+        <NBText variant="caption" color="gray500">
+          {formatRelativeTime(notification.created_at)}
+        </NBText>
+      </View>
+    </TouchableOpacity>
+  );
+});
+
 export function NotificationsScreen(): React.JSX.Element {
   const dispatch = useAppDispatch();
   const navigation = useNavigation();
@@ -218,37 +262,14 @@ export function NotificationsScreen(): React.JSX.Element {
             colors={[nbColors.primary]}
           />
         }
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() => handlePress(item)}
-            style={[styles.row, !item.read && styles.rowUnread]}
-            testID={`notification-row-${item.id}`}
-            accessibilityRole="button"
-          >
-            <View style={[styles.unreadDot, { opacity: item.read ? 0 : 1 }]} />
-            <View style={styles.rowBody}>
-              <NBText
-                variant="body-sm"
-                color={item.read ? 'gray700' : 'black'}
-                style={item.read ? undefined : styles.titleUnread}
-                numberOfLines={1}
-              >
-                {item.title}
-              </NBText>
-              <NBText
-                variant="body-sm"
-                color="gray600"
-                style={styles.bodyText}
-                numberOfLines={2}
-              >
-                {item.body}
-              </NBText>
-              <NBText variant="caption" color="gray500">
-                {formatRelativeTime(item.created_at)}
-              </NBText>
-            </View>
-          </TouchableOpacity>
+        renderItem={useCallback(
+          ({ item }: { item: Notification }) => (
+            <NotificationRow notification={item} onPress={handlePress} />
+          ),
+          [handlePress],
         )}
+        maxToRenderPerBatch={10}
+        windowSize={10}
         ListEmptyComponent={
           isLoading ? (
             <View style={styles.skeletonContainer}>

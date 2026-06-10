@@ -51,7 +51,13 @@ interface MonitoringSearchModalProps {
 
 // ─── Result row ────────────────────────────────────────────────────────────────
 
-function ResultRow({ result, onPress }: { result: SearchResult; onPress: () => void }): React.JSX.Element {
+const ResultRow = React.memo(function ResultRow({
+  result,
+  onPress,
+}: {
+  result: SearchResult;
+  onPress: () => void;
+}): React.JSX.Element {
   const meta = TYPE_META[result.type];
   return (
     <TouchableOpacity
@@ -78,7 +84,7 @@ function ResultRow({ result, onPress }: { result: SearchResult; onPress: () => v
       <MaterialCommunityIcons name="chevron-right" size={20} color={nbColors.gray400} />
     </TouchableOpacity>
   );
-}
+});
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -200,6 +206,8 @@ export function MonitoringSearchModal({
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="on-drag"
               contentContainerStyle={rows.length === 0 ? styles.listEmpty : styles.listContent}
+              maxToRenderPerBatch={10}
+              windowSize={10}
               ListEmptyComponent={
                 <NBEmptyState
                   variant="noData"
@@ -218,6 +226,8 @@ export function MonitoringSearchModal({
             renderItem={({ item }) => <ResultRow result={item} onPress={() => onSelect(item)} />}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={recents.length === 0 ? styles.listEmpty : styles.listContent}
+            maxToRenderPerBatch={10}
+            windowSize={10}
             ListHeaderComponent={
               recents.length > 0 ? (
                 <View style={styles.recentsHeader}>

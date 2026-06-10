@@ -27,7 +27,7 @@ function buildMeta(activity: Activity): ListItemMeta[] {
   return meta;
 }
 
-export function ActivityCard({ activity, onPress, currentUserId }: ActivityCardProps): React.JSX.Element {
+function ActivityCardImpl({ activity, onPress, currentUserId }: ActivityCardProps): React.JSX.Element {
   // ADR-038: when the activity is owned by someone else, the viewer is here via tag.
   const isTaggedIn = Boolean(
     currentUserId && activity.user_id && activity.user_id !== currentUserId,
@@ -51,6 +51,9 @@ export function ActivityCard({ activity, onPress, currentUserId }: ActivityCardP
     />
   );
 }
+
+export const ActivityCard = React.memo(ActivityCardImpl);
+ActivityCard.displayName = 'ActivityCard';
 
 const styles = StyleSheet.create({
   spacing: {

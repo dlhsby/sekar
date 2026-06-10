@@ -26,7 +26,7 @@ function buildMeta(task: Task): ListItemMeta[] {
   return meta;
 }
 
-export function TaskCard({ task, onPress }: TaskCardProps): React.JSX.Element {
+function TaskCardImpl({ task, onPress }: TaskCardProps): React.JSX.Element {
   const pill = taskPill(task.status);
   return (
     <ListItemCard
@@ -44,6 +44,9 @@ export function TaskCard({ task, onPress }: TaskCardProps): React.JSX.Element {
     />
   );
 }
+
+export const TaskCard = React.memo(TaskCardImpl);
+TaskCard.displayName = 'TaskCard';
 
 const styles = StyleSheet.create({
   spacing: {

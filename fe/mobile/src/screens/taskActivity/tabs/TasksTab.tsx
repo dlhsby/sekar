@@ -4,7 +4,7 @@
  * Filtering and sorting are handled server-side by TasksActivityScreen.
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -50,6 +50,16 @@ export function TasksTab({
   onLoadMore,
   onNavigateToTask,
 }: TasksTabProps): React.JSX.Element {
+  const renderItem = useCallback(
+    ({ item }: { item: Task }) => (
+      <TaskCard
+        task={item}
+        onPress={() => onNavigateToTask(item.id)}
+      />
+    ),
+    [onNavigateToTask],
+  );
+
   if (loadingTasks) {
     return (
       <View style={styles.skeletonContainer}>
@@ -108,17 +118,15 @@ export function TasksTab({
   return (
     <FlatList
       data={tasks}
-      renderItem={({ item }) => (
-        <TaskCard
-          task={item}
-          onPress={() => onNavigateToTask(item.id)}
-        />
-      )}
+      renderItem={renderItem}
       keyExtractor={(item) => item.id}
       contentContainerStyle={styles.listContent}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       onEndReached={onLoadMore}
       onEndReachedThreshold={0.3}
+      maxToRenderPerBatch={10}
+      windowSize={10}
+      removeClippedSubviews
       ListFooterComponent={
         isLoadingMore ? (
           <View style={styles.footerLoader}>

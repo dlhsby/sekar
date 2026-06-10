@@ -209,6 +209,7 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
           }
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          maxToRenderPerBatch={10}
         />
       </NBPeekSheet>
 
