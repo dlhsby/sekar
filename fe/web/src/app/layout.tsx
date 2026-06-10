@@ -24,12 +24,35 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'SEKAR - Sistem Evaluasi Kinerja Satgas RTH',
+  title: {
+    template: '%s · SEKAR',
+    default: 'SEKAR - Sistem Evaluasi Kinerja Satgas RTH',
+  },
   description:
-    'Worker tracking and task management system for DLH Surabaya - municipal department managing parks and green spaces',
-  keywords: ['SEKAR', 'DLH Surabaya', 'Worker Tracking', 'RTH', 'Park Management'],
+    'Platform monitoring dan evaluasi kinerja satgas RTH DLH Kota Surabaya. Pelacakan GPS real-time, manajemen tugas, jadwal shift, dan laporan aktivitas untuk pengelolaan taman dan ruang hijau.',
+  keywords: ['SEKAR', 'DLH Surabaya', 'Worker Tracking', 'RTH', 'Park Management', 'Satgas', 'Monitoring'],
   authors: [{ name: 'DLH Surabaya' }],
   manifest: '/manifest.webmanifest',
+  robots: {
+    index: false,
+    follow: false,
+  },
+  openGraph: {
+    title: 'SEKAR - Sistem Evaluasi Kinerja Satgas RTH',
+    description:
+      'Platform monitoring dan evaluasi kinerja satgas RTH DLH Kota Surabaya',
+    type: 'website',
+    locale: 'id_ID',
+    siteName: 'SEKAR',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'SEKAR Dashboard',
+      },
+    ],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',

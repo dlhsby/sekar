@@ -2,42 +2,38 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
- * Middleware for route protection (Phase 2C)
+ * Route-protection middleware (Phase 2C, reworked in Phase 4-8).
+ *
+ * Default-deny: every route requires the access_token cookie except the
+ * explicit public paths. The previous allowlist used `startsWith('/')`,
+ * which (a) protected the public forgot-password page (ADR-041) and the
+ * PWA offline/install pages, and (b) silently left newer sections to
+ * client-side guards only.
  */
+const PUBLIC_PATHS = ['/login', '/forgot-password', '/offline', '/install-help'];
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const token = request.cookies.get('access_token')?.value;
 
-  if (pathname.startsWith('/login')) {
+  const isPublic = PUBLIC_PATHS.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`)
+  );
+  if (isPublic) {
     return NextResponse.next();
   }
 
-  const protectedPaths = [
-    '/',
-    '/users',
-    '/areas',
-    '/rayons',
-    '/schedules',
-    '/monitoring',
-    '/activities',
-    '/overtime',
-    '/tasks',
-    '/settings',
-  ];
-  const isProtected = protectedPaths.some((path) => pathname.startsWith(path));
-
-  if (isProtected) {
-    if (!token) {
-      const redirectUrl = new URL('/login', request.url);
-      redirectUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(redirectUrl);
-    }
-    return NextResponse.next();
+  const token = request.cookies.get('access_token')?.value;
+  if (!token) {
+    const redirectUrl = new URL('/login', request.url);
+    redirectUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(redirectUrl);
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  // Skip API, Next internals, and any static file with an extension
+  // (manifest.webmanifest, sw.js, icons — the PWA must work logged-out).
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)'],
 };

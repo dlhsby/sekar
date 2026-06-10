@@ -145,6 +145,30 @@
 }
 
 # ========================================
+# React Native Reanimated (animation library)
+# ========================================
+
+-keep class com.swmansion.reanimated.** { *; }
+-keepclassmembers class com.swmansion.reanimated.** {
+    *** onAnimationFrame(...);
+}
+
+# ========================================
+# Firebase Messaging (FCM)
+# ========================================
+
+-keep class com.google.firebase.messaging.** { *; }
+-dontwarn com.google.firebase.messaging.**
+
+# ========================================
+# Sentry Crash Reporting
+# ========================================
+
+-keep class io.sentry.** { *; }
+-dontwarn io.sentry.**
+-keepattributes LineNumberTable,SourceFile
+
+# ========================================
 # Debugging Support
 # ========================================
 
@@ -154,3 +178,6 @@
     public static *** v(...);
     public static *** i(...);
 }
+
+# Rename source files to preserve crash report line numbers
+-renamesourcefileattribute SourceFile

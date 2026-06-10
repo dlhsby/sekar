@@ -14,6 +14,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/navigation.types';
 import { useAppSelector } from '../store/hooks';
 import fcmService from '../services/notifications/fcmService';
+import { linking } from './linking';
 
 import LoginScreen from '../screens/auth/LoginScreen';
 import MainNavigator from './MainNavigator';
@@ -176,7 +177,7 @@ function RootNavigator(): React.JSX.Element {
     loggedIn && !forceChange && !onboardingDone && !onboardingCompleted;
 
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer ref={navigationRef} linking={linking}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!loggedIn ? (
           <>

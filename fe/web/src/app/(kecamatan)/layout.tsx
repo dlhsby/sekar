@@ -5,7 +5,19 @@ import { KecamatanNav } from '@/components/layout/KecamatanNav';
 
 export const metadata: Metadata = {
   title: 'SEKAR — Portal Kecamatan',
-  description: 'Portal pengajuan permintaan pemotongan pohon DLH Surabaya',
+  description: 'Portal pengajuan permintaan pemotongan pohon kepada DLH Kota Surabaya',
+  robots: {
+    index: false,
+    follow: false,
+  },
+  openGraph: {
+    title: 'SEKAR — Portal Kecamatan',
+    description:
+      'Portal pengajuan permintaan pemotongan pohon kepada DLH Kota Surabaya',
+    type: 'website',
+    locale: 'id_ID',
+    siteName: 'SEKAR',
+  },
 };
 
 /**
