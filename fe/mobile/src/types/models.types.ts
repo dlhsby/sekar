@@ -705,6 +705,25 @@ export interface ReassignWorkerResponse {
   reassigned_at: string;
 }
 
+// Phase 4-4 A4: Reassignment history audit trail
+export interface ReassignmentHistoryEntry {
+  id: string;
+  previous_area_id: string | null;
+  previous_area_name: string | null;
+  new_area_id: string;
+  new_area_name: string;
+  reason: string | null;
+  effective_date: string | null;
+  actor_id: string;
+  actor_name: string;
+  created_at: string;
+}
+
+export interface ReassignmentHistory {
+  user_id: string;
+  history: ReassignmentHistoryEntry[];
+}
+
 // Phase 2E: Audit log entry (ADR-015)
 export interface AuditLog {
   id: string;

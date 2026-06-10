@@ -5,6 +5,7 @@ import { MonitoringConfigService } from './services/monitoring-config.service';
 import { MonitoringStatsService } from './services/monitoring-stats.service';
 import { MonitoringReassignService } from './services/monitoring-reassign.service';
 import { AreaPlantStatusService } from './services/area-plant-status.service';
+import { AuditLogService } from '../audit/audit.service';
 import { CityStatsDto } from './dto/city-stats.dto';
 import { RayonStatsDto } from './dto/rayon-stats.dto';
 import { AreaStatsDto } from './dto/area-stats.dto';
@@ -273,6 +274,12 @@ describe('MonitoringController', () => {
           provide: AreaPlantStatusService,
           useValue: {
             getAreaPlantStatus: jest.fn(),
+          },
+        },
+        {
+          provide: AuditLogService,
+          useValue: {
+            getEntityHistory: jest.fn(),
           },
         },
       ],
@@ -915,6 +922,186 @@ describe('MonitoringController', () => {
 
       expect(reassignService.reassign).toHaveBeenCalledWith(dto, mockSuperadmin);
       expect(result).toEqual(mockResponse);
+    });
+  });
+
+  describe('getReassignmentHistory', () => {
+    let auditLogService: any;
+
+    beforeEach(() => {
+      auditLogService = controller['auditLogService'];
+    });
+
+    it('should return reassignment history for user', async () => {
+      const actor: User = {
+        ...mockSuperadmin,
+        full_name: 'Admin Supervisor',
+      };
+
+      const mockLogs = [
+        {
+          id: 'log-1',
+          entity_type: 'user',
+          entity_id: 'user-1',
+          action: 'reassign',
+          actor_id: actor.id,
+          actor,
+          old_value: { area_id: 'area-1', area_name: 'Taman Bungkul' },
+          new_value: { area_id: 'area-2', area_name: 'Taman Sapran' },
+          metadata: { reason: 'Rebalancing', effective_date: '2026-06-11', new_schedule_id: null },
+          created_at: new Date('2026-06-11T10:30:00Z'),
+        },
+        {
+          id: 'log-2',
+          entity_type: 'user',
+          entity_id: 'user-1',
+          action: 'reassign',
+          actor_id: actor.id,
+          actor,
+          old_value: { area_id: null, area_name: null },
+          new_value: { area_id: 'area-1', area_name: 'Taman Bungkul' },
+          metadata: { reason: null, effective_date: '2026-06-01', new_schedule_id: null },
+          created_at: new Date('2026-06-01T08:00:00Z'),
+        },
+      ];
+
+      auditLogService.getEntityHistory.mockResolvedValue(mockLogs);
+      service.getUserDaySummary.mockResolvedValue({ area_id: 'area-2', rayon_id: 'rayon-1' } as any);
+
+      const result = await controller.getReassignmentHistory('user-1', mockSuperadmin);
+
+      expect(auditLogService.getEntityHistory).toHaveBeenCalledWith('user', 'user-1');
+      expect(result.user_id).toBe('user-1');
+      expect(result.history).toHaveLength(2);
+      expect(result.history[0].id).toBe('log-1');
+      expect(result.history[0].previous_area_id).toBe('area-1');
+      expect(result.history[0].new_area_id).toBe('area-2');
+      expect(result.history[0].actor_name).toBe('Admin Supervisor');
+    });
+
+    it('should filter to only reassign action logs', async () => {
+      const actor: User = mockSuperadmin as any;
+      const mixedLogs = [
+        {
+          id: 'log-1',
+          entity_type: 'user',
+          entity_id: 'user-1',
+          action: 'reassign',
+          actor_id: actor.id,
+          actor,
+          old_value: { area_id: 'area-1', area_name: 'Taman Bungkul' },
+          new_value: { area_id: 'area-2', area_name: 'Taman Sapran' },
+          metadata: { reason: null, effective_date: '2026-06-11', new_schedule_id: null },
+          created_at: new Date('2026-06-11T10:30:00Z'),
+        },
+        {
+          id: 'log-2',
+          entity_type: 'user',
+          entity_id: 'user-1',
+          action: 'update',
+          actor_id: actor.id,
+          actor,
+          old_value: { phone: '081234567890' },
+          new_value: { phone: '082345678901' },
+          metadata: null,
+          created_at: new Date('2026-06-10T08:00:00Z'),
+        },
+      ];
+
+      auditLogService.getEntityHistory.mockResolvedValue(mixedLogs);
+      service.getUserDaySummary.mockResolvedValue({ area_id: 'area-2', rayon_id: 'rayon-1' } as any);
+
+      const result = await controller.getReassignmentHistory('user-1', mockSuperadmin);
+
+      expect(result.history).toHaveLength(1);
+      expect(result.history[0].id).toBe('log-1');
+      expect(result.history[0].new_area_id).toBe('area-2');
+    });
+
+    it('should cap history at 20 entries', async () => {
+      const actor: User = mockSuperadmin as any;
+      const manyLogs = Array.from({ length: 30 }, (_, i) => ({
+        id: `log-${i}`,
+        entity_type: 'user',
+        entity_id: 'user-1',
+        action: 'reassign',
+        actor_id: actor.id,
+        actor,
+        old_value: { area_id: 'area-1', area_name: 'Old' },
+        new_value: { area_id: 'area-2', area_name: 'New' },
+        metadata: { reason: null, effective_date: '2026-06-11', new_schedule_id: null },
+        created_at: new Date(),
+      }));
+
+      auditLogService.getEntityHistory.mockResolvedValue(manyLogs);
+      service.getUserDaySummary.mockResolvedValue({ area_id: 'area-2', rayon_id: 'rayon-1' } as any);
+
+      const result = await controller.getReassignmentHistory('user-1', mockSuperadmin);
+
+      expect(result.history).toHaveLength(20);
+    });
+
+    it('should handle null metadata fields gracefully', async () => {
+      const actor: User = mockSuperadmin as any;
+      const logsWithNulls = [
+        {
+          id: 'log-1',
+          entity_type: 'user',
+          entity_id: 'user-1',
+          action: 'reassign',
+          actor_id: actor.id,
+          actor,
+          old_value: { area_id: 'area-1', area_name: 'Taman Bungkul' },
+          new_value: { area_id: 'area-2', area_name: 'Taman Sapran' },
+          metadata: null,
+          created_at: new Date('2026-06-11T10:30:00Z'),
+        },
+      ];
+
+      auditLogService.getEntityHistory.mockResolvedValue(logsWithNulls);
+      service.getUserDaySummary.mockResolvedValue({ area_id: 'area-2', rayon_id: 'rayon-1' } as any);
+
+      const result = await controller.getReassignmentHistory('user-1', mockSuperadmin);
+
+      expect(result.history).toHaveLength(1);
+      expect(result.history[0].reason).toBeNull();
+      expect(result.history[0].effective_date).toBeNull();
+    });
+
+    it('should deny kepala_rayon access to user in different rayon', async () => {
+      service.getUserDaySummary.mockResolvedValue({
+        area_id: 'area-1',
+        rayon_id: 'rayon-other',
+      } as any);
+
+      await expect(
+        controller.getReassignmentHistory('user-1', mockKepalaRayon),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should handle actor with null full_name', async () => {
+      const actorWithoutName: User = { ...mockSuperadmin, full_name: null } as any;
+      const logsWithMissingActor = [
+        {
+          id: 'log-1',
+          entity_type: 'user',
+          entity_id: 'user-1',
+          action: 'reassign',
+          actor_id: actorWithoutName.id,
+          actor: null,
+          old_value: { area_id: 'area-1', area_name: 'Taman Bungkul' },
+          new_value: { area_id: 'area-2', area_name: 'Taman Sapran' },
+          metadata: { reason: null, effective_date: '2026-06-11', new_schedule_id: null },
+          created_at: new Date('2026-06-11T10:30:00Z'),
+        },
+      ];
+
+      auditLogService.getEntityHistory.mockResolvedValue(logsWithMissingActor);
+      service.getUserDaySummary.mockResolvedValue({ area_id: 'area-2', rayon_id: 'rayon-1' } as any);
+
+      const result = await controller.getReassignmentHistory('user-1', mockSuperadmin);
+
+      expect(result.history[0].actor_name).toBe('Unknown');
     });
   });
 });

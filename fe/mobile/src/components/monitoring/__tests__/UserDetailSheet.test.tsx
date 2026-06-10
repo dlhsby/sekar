@@ -30,16 +30,19 @@ jest.mock('../../../services/api/tasksApi');
 jest.mock('../../../services/api/activitiesApi');
 jest.mock('../../../services/api/overtimeApi');
 jest.mock('../../../services/api/usersApi');
+jest.mock('../../../services/api/monitoringApi');
 
 import { getTasks } from '../../../services/api/tasksApi';
 import { getActivities } from '../../../services/api/activitiesApi';
 import { getOvertimes } from '../../../services/api/overtimeApi';
 import { getUserById } from '../../../services/api/usersApi';
+import { getReassignmentHistory } from '../../../services/api/monitoringApi';
 
 const mockGetTasks = getTasks as jest.MockedFunction<typeof getTasks>;
 const mockGetActivities = getActivities as jest.MockedFunction<typeof getActivities>;
 const mockGetOvertimes = getOvertimes as jest.MockedFunction<typeof getOvertimes>;
 const mockGetUserById = getUserById as jest.MockedFunction<typeof getUserById>;
+const mockGetReassignmentHistory = getReassignmentHistory as jest.MockedFunction<typeof getReassignmentHistory>;
 
 // Suppress noisy "act(...)" warnings from promise resolves we explicitly flush.
 const linkingSpy = jest.spyOn(Linking, 'openURL').mockResolvedValue(true as never);
@@ -185,6 +188,7 @@ const setupDefaultMocks = () => {
   mockGetActivities.mockResolvedValue(okList([]) as any);
   mockGetOvertimes.mockResolvedValue(okList([]) as any);
   mockGetUserById.mockResolvedValue({ data: userFixture } as any);
+  mockGetReassignmentHistory.mockResolvedValue({ data: { user_id: 'user-123', history: [] } } as any);
 };
 
 const defaultProps = () => ({
@@ -487,6 +491,118 @@ describe('UserDetailSheet (CP1)', () => {
       await flushAll();
       expect(mockGetUserById).toHaveBeenCalledTimes(2);
       expect(mockGetUserById).toHaveBeenLastCalledWith('user-999');
+    });
+  });
+
+  describe('Riwayat Pemindahan (reassignment history)', () => {
+    it('fetches reassignment history on mount', async () => {
+      render(<UserDetailSheet {...defaultProps()} />);
+      await flushAll();
+      expect(mockGetReassignmentHistory).toHaveBeenCalledWith('user-123');
+    });
+
+    it('shows empty state when no reassignments', async () => {
+      mockGetReassignmentHistory.mockResolvedValueOnce({
+        data: { user_id: 'user-123', history: [] },
+      } as any);
+      const { getByText } = render(<UserDetailSheet {...defaultProps()} />);
+      await flushAll();
+      expect(getByText('Belum ada riwayat pemindahan')).toBeTruthy();
+    });
+
+    it('displays reassignment entries with area transition and date', async () => {
+      mockGetReassignmentHistory.mockResolvedValueOnce({
+        data: {
+          user_id: 'user-123',
+          history: [
+            {
+              id: 'log-1',
+              previous_area_id: 'area-1',
+              previous_area_name: 'Taman Bungkul',
+              new_area_id: 'area-2',
+              new_area_name: 'Taman Sapran',
+              reason: 'Rebalancing staffing',
+              effective_date: '2026-06-11',
+              actor_id: 'admin-1',
+              actor_name: 'Admin Supervisor',
+              created_at: '2026-06-11T10:30:00Z',
+            },
+          ],
+        },
+      } as any);
+      const { getByText } = render(<UserDetailSheet {...defaultProps()} />);
+      await flushAll();
+      expect(getByText(/Taman Bungkul.*Taman Sapran/)).toBeTruthy();
+      expect(getByText(/11 Juni 2026/)).toBeTruthy();
+    });
+
+    it('shows up to 5 entries and truncates rest', async () => {
+      const entries = Array.from({ length: 8 }, (_, i) => ({
+        id: `log-${i}`,
+        previous_area_id: 'area-1',
+        previous_area_name: 'Taman Bungkul',
+        new_area_id: 'area-2',
+        new_area_name: 'Taman Sapran',
+        reason: null,
+        effective_date: '2026-06-11',
+        actor_id: 'admin-1',
+        actor_name: 'Admin Supervisor',
+        created_at: `2026-06-${String(11 - i).padStart(2, '0')}T10:30:00Z`,
+      }));
+      mockGetReassignmentHistory.mockResolvedValueOnce({
+        data: { user_id: 'user-123', history: entries },
+      } as any);
+      const { getAllByText } = render(<UserDetailSheet {...defaultProps()} />);
+      await flushAll();
+      // Count how many transition rows we have (should be at most 5)
+      const transitions = getAllByText(/Taman Bungkul.*Taman Sapran/);
+      expect(transitions.length).toBeLessThanOrEqual(5);
+    });
+
+    it('handles missing actor name as fallback', async () => {
+      mockGetReassignmentHistory.mockResolvedValueOnce({
+        data: {
+          user_id: 'user-123',
+          history: [
+            {
+              id: 'log-1',
+              previous_area_id: 'area-1',
+              previous_area_name: 'Taman Bungkul',
+              new_area_id: 'area-2',
+              new_area_name: 'Taman Sapran',
+              reason: null,
+              effective_date: '2026-06-11',
+              actor_id: 'unknown-actor',
+              actor_name: 'Unknown',
+              created_at: '2026-06-11T10:30:00Z',
+            },
+          ],
+        },
+      } as any);
+      const { getByText } = render(<UserDetailSheet {...defaultProps()} />);
+      await flushAll();
+      expect(getByText(/Unknown/)).toBeTruthy();
+    });
+
+    it('handles API error gracefully', async () => {
+      mockGetReassignmentHistory.mockRejectedValueOnce(new Error('Network error'));
+      const { getByText } = render(<UserDetailSheet {...defaultProps()} />);
+      await flushAll();
+      // Should not crash, show empty state
+      expect(getByText('Belum ada riwayat pemindahan')).toBeTruthy();
+    });
+
+    it('refetches when user id changes', async () => {
+      const { rerender } = render(<UserDetailSheet {...defaultProps()} />);
+      await flushAll();
+      expect(mockGetReassignmentHistory).toHaveBeenCalledTimes(1);
+
+      rerender(
+        <UserDetailSheet {...defaultProps()} user={createUser({ id: 'user-999' })} />
+      );
+      await flushAll();
+      expect(mockGetReassignmentHistory).toHaveBeenCalledTimes(2);
+      expect(mockGetReassignmentHistory).toHaveBeenLastCalledWith('user-999');
     });
   });
 });

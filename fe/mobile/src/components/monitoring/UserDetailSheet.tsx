@@ -23,13 +23,14 @@ import { StatusPill } from '../home/StatusPill';
 import { HomeStatTile } from '../home/HomeStatTile';
 import { ListItemCard, type ListItemMeta } from '../common';
 import { LocationMapModal } from '../modals/LocationMapModal';
-import { userAxes, presenceActivityPill, overtimePill, activityPill, formatDate, formatTime as formatTimeShort } from '../../utils/statusHelpers';
+import { userAxes, presenceActivityPill, overtimePill, activityPill, formatDate, formatTime as formatTimeShort, formatDateIndonesian } from '../../utils/statusHelpers';
 import { taskPill, isTaskScopedToday } from '../../utils/taskStatus';
 import { ROLE_LABELS } from '../../constants/roles';
 import { getOvertimes } from '../../services/api/overtimeApi';
 import { getTasks } from '../../services/api/tasksApi';
 import { getActivities } from '../../services/api/activitiesApi';
 import { getUserById } from '../../services/api/usersApi';
+import { getReassignmentHistory } from '../../services/api/monitoringApi';
 import type {
   LiveUser,
   UserDaySummary,
@@ -37,6 +38,7 @@ import type {
   Overtime,
   Task,
   Activity,
+  ReassignmentHistory,
 } from '../../types/models.types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -118,6 +120,8 @@ export function UserDetailSheet({
   const [activitiesFull, setActivitiesFull] = useState<Activity[]>([]);
   const [activitiesFullLoading, setActivitiesFullLoading] = useState(false);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [reassignmentHistory, setReassignmentHistory] = useState<ReassignmentHistory | null>(null);
+  const [reassignmentLoading, setReassignmentLoading] = useState(false);
 
   // Lazy fetch today's overtime entries when the Jam kerja modal opens.
   useEffect(() => {
@@ -196,6 +200,22 @@ export function UserDetailSheet({
       .catch(() => {
         if (cancelled) { return; }
         setPhotoUrl(null);
+      });
+
+    // Fetch reassignment history for the Riwayat Pemindahan section
+    setReassignmentLoading(true);
+    getReassignmentHistory(user.id)
+      .then((res) => {
+        if (cancelled) { return; }
+        setReassignmentHistory(res.data ?? null);
+      })
+      .catch(() => {
+        if (cancelled) { return; }
+        setReassignmentHistory(null);
+      })
+      .finally(() => {
+        if (cancelled) { return; }
+        setReassignmentLoading(false);
       });
 
     return () => { cancelled = true; };
@@ -335,6 +355,47 @@ export function UserDetailSheet({
                   />
                 )}
               </View>
+            </View>
+
+            {/* Riwayat Pemindahan — collapsible section showing reassignment history */}
+            <View style={styles.statSection}>
+              <NBText variant="mono-sm" uppercase color="gray600" style={styles.sectionHeader}>
+                Riwayat Pemindahan
+              </NBText>
+              {reassignmentLoading ? (
+                <NBText variant="body-sm" color="gray500" align="center">
+                  Memuat riwayat…
+                </NBText>
+              ) : !reassignmentHistory || reassignmentHistory.history.length === 0 ? (
+                <NBText variant="body-sm" color="gray500" align="center">
+                  Belum ada riwayat pemindahan
+                </NBText>
+              ) : (
+                <View style={styles.list}>
+                  {reassignmentHistory.history.slice(0, 5).map((entry) => {
+                    const transition = `${entry.previous_area_name ?? '—'} → ${entry.new_area_name}`;
+                    const displayDate = entry.effective_date
+                      ? formatDateIndonesian(entry.effective_date)
+                      : new Date(entry.created_at).toLocaleDateString('id-ID', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        });
+                    return (
+                      <ListItemCard
+                        key={entry.id}
+                        statusTone="neutral"
+                        statusLabel={entry.actor_name}
+                        rightText={displayDate}
+                        title={transition}
+                        description={entry.reason || undefined}
+                        onPress={NOOP}
+                        testID={`reassign-history-${entry.id}`}
+                      />
+                    );
+                  })}
+                </View>
+              )}
             </View>
 
             {/* Action buttons — stacked, label + icon */}

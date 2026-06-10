@@ -27,6 +27,7 @@ import type {
   ReassignWorkerPayload,
   ReassignWorkerResponse,
   AreaPlantStatusResponse,
+  ReassignmentHistory,
 } from '../../types/models.types';
 
 export async function getCityMonitoring(
@@ -153,6 +154,13 @@ export async function getAreaPlantStatus(
   return get<AreaPlantStatusResponse>(`/monitoring/area/${areaId}/plant-status`);
 }
 
+// Phase 4-4 A4: Reassignment history audit trail
+export async function getReassignmentHistory(
+  userId: string,
+): Promise<ApiResponse<ReassignmentHistory>> {
+  return get<ReassignmentHistory>(`/monitoring/users/${userId}/reassignment-history`);
+}
+
 export default {
   getCityMonitoring,
   getRayonMonitoring,
@@ -170,4 +178,5 @@ export default {
   reassignWorker,
   getMonitoringConfig,
   getAreaPlantStatus,
+  getReassignmentHistory,
 };

@@ -107,8 +107,8 @@ export class UsersController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Bad Request. Validation failed.',
   })
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  create(@Body() createUserDto: CreateUserDto, @GetUser() actor: User) {
+    return this.usersService.create(createUserDto, actor);
   }
 
   /**
@@ -339,8 +339,12 @@ export class UsersController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Bad Request. Validation failed.',
   })
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(id, updateUserDto);
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateUserDto: UpdateUserDto,
+    @GetUser() actor: User,
+  ) {
+    return this.usersService.update(id, updateUserDto, actor);
   }
 
   /**
@@ -376,8 +380,8 @@ export class UsersController {
     status: HttpStatus.UNAUTHORIZED,
     description: 'Unauthorized. Admin role required.',
   })
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.usersService.remove(id);
+  remove(@Param('id', ParseUUIDPipe) id: string, @GetUser() actor: User) {
+    return this.usersService.remove(id, actor);
   }
 
   /**

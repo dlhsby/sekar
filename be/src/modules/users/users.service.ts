@@ -15,6 +15,7 @@ import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
 import { AuthService } from '../auth/auth.service';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { UserValidationService } from './services/user-validation.service';
+import { AuditLogService } from '../audit/audit.service';
 
 @Injectable()
 export class UsersService {
@@ -26,7 +27,16 @@ export class UsersService {
     private readonly authService: AuthService,
     // Phase 4-7 (H2): uniqueness validation extracted from CRUD methods
     private readonly userValidation: UserValidationService,
+    // Phase 4-4 (C2): account mutations are audit-logged
+    private readonly auditLogService: AuditLogService,
   ) {}
+
+  /** Fire-and-forget audit write — account changes must never fail on logging */
+  private audit(params: Parameters<AuditLogService['log']>[0]): void {
+    this.auditLogService
+      .log(params)
+      .catch((err: Error) => this.logger.error(`Audit log failed: ${err.message}`));
+  }
 
   /**
    * Create a new user
@@ -34,7 +44,7 @@ export class UsersService {
    * @returns Created user entity
    * @throws ConflictException if username already exists
    */
-  async create(createUserDto: CreateUserDto): Promise<User> {
+  async create(createUserDto: CreateUserDto, actor?: User): Promise<User> {
     const { username, password, full_name, role, phone_number } = createUserDto;
 
     this.logger.log(`Creating new user: ${username}`);
@@ -56,6 +66,14 @@ export class UsersService {
 
     const savedUser = await this.userRepository.save(user);
     this.logger.log(`User created successfully: ${username} (ID: ${savedUser.id})`);
+
+    this.audit({
+      entity_type: 'user',
+      entity_id: savedUser.id,
+      action: 'create',
+      actor_id: actor?.id ?? savedUser.id, // self-attributed for internal callers (e.g. CSV import w/o actor)
+      new_value: { username, full_name, role },
+    });
 
     return savedUser;
   }
@@ -215,9 +233,10 @@ export class UsersService {
    * @returns Updated user entity
    * @throws NotFoundException if user not found
    */
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+  async update(id: string, updateUserDto: UpdateUserDto, actor?: User): Promise<User> {
     this.logger.log(`Updating user: ID ${id}`);
     const user = await this.findOne(id);
+    const previous = { full_name: user.full_name, role: user.role, is_active: user.is_active };
 
     const { password, phone_number, ...updateData } = updateUserDto;
 
@@ -243,6 +262,19 @@ export class UsersService {
     const savedUser = await this.userRepository.save(user);
     this.logger.log(`User updated successfully: ID ${id}`);
 
+    this.audit({
+      entity_type: 'user',
+      entity_id: id,
+      action: 'update',
+      actor_id: actor?.id ?? id,
+      old_value: previous,
+      // Never log password material — record only that it changed
+      new_value: {
+        ...updateData,
+        ...(password ? { password_changed: true } : {}),
+      },
+    });
+
     return savedUser;
   }
 
@@ -251,12 +283,21 @@ export class UsersService {
    * @param id User ID (UUID)
    * @throws NotFoundException if user not found
    */
-  async remove(id: string): Promise<void> {
+  async remove(id: string, actor?: User): Promise<void> {
     this.logger.log(`Soft deleting user: ID ${id}`);
     const user = await this.findOne(id);
     user.is_active = false;
     await this.userRepository.save(user);
     this.logger.log(`User soft deleted: ID ${id}`);
+
+    this.audit({
+      entity_type: 'user',
+      entity_id: id,
+      action: 'deactivate',
+      actor_id: actor?.id ?? id,
+      old_value: { is_active: true },
+      new_value: { is_active: false },
+    });
   }
 
   /**

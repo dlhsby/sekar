@@ -23,11 +23,13 @@ import { MonitoringConfigService } from './services/monitoring-config.service';
 import { MonitoringStatsService } from './services/monitoring-stats.service';
 import { MonitoringReassignService } from './services/monitoring-reassign.service';
 import { UserAreasService } from '../user-areas/user-areas.service';
+import { AuditLogService } from '../audit/audit.service';
 import { CityStatsDto } from './dto/city-stats.dto';
 import { RayonStatsDto } from './dto/rayon-stats.dto';
 import { AreaStatsDto } from './dto/area-stats.dto';
 import { LiveUsersResponseDto, LiveUsersFilterDto } from './dto/live-users.dto';
 import { LocationHistoryQueryDto, LocationHistoryResponseDto } from './dto/location-history.dto';
+import { ReassignmentHistoryResponseDto } from './dto/reassignment-history.dto';
 import { UserDaySummaryDto } from './dto/user-day-summary.dto';
 import {
   MonitoringConfigResponseDto,
@@ -62,6 +64,7 @@ export class MonitoringController {
     private readonly reassignService: MonitoringReassignService,
     private readonly userAreasService: UserAreasService,
     private readonly areaPlantStatusService: AreaPlantStatusService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   @Get('city')
@@ -139,6 +142,39 @@ export class MonitoringController {
   ): Promise<UserDaySummaryDto> {
     await this.enforceScopeUser(user, userId);
     return this.monitoringService.getUserDaySummary(userId);
+  }
+
+  @Get('users/:userId/reassignment-history')
+  @Roles(...MONITORING_AREA)
+  @ApiOperation({ summary: 'Get user reassignment history audit log' })
+  @ApiParam({ name: 'userId', description: 'User ID (UUID)' })
+  @ApiResponse({ status: 200, type: ReassignmentHistoryResponseDto })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async getReassignmentHistory(
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @GetUser() user: User,
+  ): Promise<ReassignmentHistoryResponseDto> {
+    await this.enforceScopeUser(user, userId);
+    const logs = await this.auditLogService.getEntityHistory('user', userId);
+    const reassignmentLogs = logs
+      .filter((log) => log.action === 'reassign')
+      .slice(0, 20);
+
+    return {
+      user_id: userId,
+      history: reassignmentLogs.map((log) => ({
+        id: log.id,
+        previous_area_id: log.old_value?.area_id ?? null,
+        previous_area_name: log.old_value?.area_name ?? null,
+        new_area_id: log.new_value?.area_id ?? null,
+        new_area_name: log.new_value?.area_name ?? null,
+        reason: log.metadata?.reason ?? null,
+        effective_date: log.metadata?.effective_date ?? null,
+        actor_id: log.actor_id,
+        actor_name: log.actor?.full_name ?? 'Unknown',
+        created_at: log.created_at,
+      })),
+    };
   }
 
   @Get('boundaries')

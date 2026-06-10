@@ -11,6 +11,7 @@ import { UsersService } from './users.service';
 import { UserValidationService } from './services/user-validation.service';
 import { User, UserRole } from './entities/user.entity';
 import { AuthService } from '../auth/auth.service';
+import { AuditLogService } from '../audit/audit.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
@@ -58,6 +59,10 @@ describe('UsersService', () => {
     hashPassword: jest.fn().mockResolvedValue('$2b$10$hashedpassword'),
   };
 
+  const mockAuditLogService = {
+    log: jest.fn().mockResolvedValue({}),
+  };
+
   beforeEach(async () => {
     module = await Test.createTestingModule({
       providers: [
@@ -72,6 +77,10 @@ describe('UsersService', () => {
         {
           provide: AuthService,
           useValue: mockAuthService,
+        },
+        {
+          provide: AuditLogService,
+          useValue: mockAuditLogService,
         },
       ],
     }).compile();
@@ -115,6 +124,34 @@ describe('UsersService', () => {
 
       await expect(service.create(createUserDto)).rejects.toThrow(ConflictException);
       await expect(service.create(createUserDto)).rejects.toThrow('Username already exists');
+    });
+
+    it('should audit-log the creation with the acting admin as actor (4-4 C2)', async () => {
+      mockUserRepository.findOne.mockResolvedValue(null);
+      mockUserRepository.create.mockReturnValue(mockUser);
+      mockUserRepository.save.mockResolvedValue(mockUser);
+      const actor = { ...mockUser, id: 'admin-actor-uuid' } as User;
+
+      await service.create(createUserDto, actor);
+
+      expect(mockAuditLogService.log).toHaveBeenCalledWith({
+        entity_type: 'user',
+        entity_id: mockUser.id,
+        action: 'create',
+        actor_id: 'admin-actor-uuid',
+        new_value: {
+          username: createUserDto.username,
+          full_name: createUserDto.full_name,
+          role: createUserDto.role,
+        },
+      });
+    });
+
+    it('should not audit-log when the creation fails', async () => {
+      mockUserRepository.findOne.mockResolvedValue(mockUser);
+
+      await expect(service.create(createUserDto)).rejects.toThrow(ConflictException);
+      expect(mockAuditLogService.log).not.toHaveBeenCalled();
     });
 
     it('should create a user with phone_number when unique', async () => {
@@ -499,6 +536,26 @@ describe('UsersService', () => {
       expect(mockUserRepository.save).toHaveBeenCalled();
     });
 
+    it('should audit-log the update without leaking password material (4-4 C2)', async () => {
+      mockUserRepository.findOne.mockResolvedValue({ ...mockUser });
+      mockUserRepository.save.mockResolvedValue({ ...mockUser, full_name: 'Updated Name' });
+      const actor = { ...mockUser, id: 'admin-actor-uuid' } as User;
+
+      await service.update(mockUser.id, { full_name: 'Updated Name', password: 'secret-pass' }, actor);
+
+      expect(mockAuditLogService.log).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entity_type: 'user',
+          entity_id: mockUser.id,
+          action: 'update',
+          actor_id: 'admin-actor-uuid',
+          new_value: { full_name: 'Updated Name', password_changed: true },
+        }),
+      );
+      const logged = JSON.stringify(mockAuditLogService.log.mock.calls[0][0]);
+      expect(logged).not.toContain('secret-pass');
+    });
+
     it('should update user password if provided', async () => {
       const updateWithPassword: UpdateUserDto = {
         password: 'newpassword123',
@@ -673,6 +730,23 @@ describe('UsersService', () => {
       expect(mockUserRepository.save).toHaveBeenCalledWith({
         ...mockUser,
         is_active: false,
+      });
+    });
+
+    it('should audit-log the deactivation (4-4 C2)', async () => {
+      mockUserRepository.findOne.mockResolvedValue({ ...mockUser });
+      mockUserRepository.save.mockResolvedValue({ ...mockUser, is_active: false });
+      const actor = { ...mockUser, id: 'admin-actor-uuid' } as User;
+
+      await service.remove(mockUser.id, actor);
+
+      expect(mockAuditLogService.log).toHaveBeenCalledWith({
+        entity_type: 'user',
+        entity_id: mockUser.id,
+        action: 'deactivate',
+        actor_id: 'admin-actor-uuid',
+        old_value: { is_active: true },
+        new_value: { is_active: false },
       });
     });
   });

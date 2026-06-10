@@ -8,12 +8,15 @@ import { UsersController } from './users.controller';
 import { User } from './entities/user.entity';
 import { AuthModule } from '../auth/auth.module';
 import { SharedModule } from '../../shared/shared.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User]),
     forwardRef(() => AuthModule),
     SharedModule,
+    AuditModule, // Phase 4-4 (C2): account mutations are audit-logged
+
     MulterModule.register({ limits: { fileSize: 5 * 1024 * 1024 } }),
   ],
   controllers: [UsersController],

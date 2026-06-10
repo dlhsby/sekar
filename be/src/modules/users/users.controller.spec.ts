@@ -73,10 +73,10 @@ describe('UsersController', () => {
 
       mockUsersService.create.mockResolvedValue(mockUser);
 
-      const result = await controller.create(createUserDto);
+      const result = await controller.create(createUserDto, mockUser);
 
       expect(result).toEqual(mockUser);
-      expect(usersService.create).toHaveBeenCalledWith(createUserDto);
+      expect(usersService.create).toHaveBeenCalledWith(createUserDto, mockUser);
     });
   });
 
@@ -171,10 +171,10 @@ describe('UsersController', () => {
       const updatedUser = { ...mockUser, ...updateUserDto };
       mockUsersService.update.mockResolvedValue(updatedUser);
 
-      const result = await controller.update(mockUser.id, updateUserDto);
+      const result = await controller.update(mockUser.id, updateUserDto, mockUser);
 
       expect(result).toEqual(updatedUser);
-      expect(usersService.update).toHaveBeenCalledWith(mockUser.id, updateUserDto);
+      expect(usersService.update).toHaveBeenCalledWith(mockUser.id, updateUserDto, mockUser);
     });
   });
 
@@ -182,9 +182,9 @@ describe('UsersController', () => {
     it('should remove a user', async () => {
       mockUsersService.remove.mockResolvedValue(undefined);
 
-      await controller.remove(mockUser.id);
+      await controller.remove(mockUser.id, mockUser);
 
-      expect(usersService.remove).toHaveBeenCalledWith(mockUser.id);
+      expect(usersService.remove).toHaveBeenCalledWith(mockUser.id, mockUser);
     });
   });
 
