@@ -881,6 +881,8 @@ Content-Type: application/json
 
 Get all areas with optional filtering (authenticated users).
 
+> **Pagination (Phase 4-6 C2):** pass `?page=&limit=` (limit max 100) to receive a `PaginatedResponseDto` (`{ data, meta: { total, page, limit, totalPages } }`); without the params the legacy shape below is returned unchanged.
+
 **Request:**
 ```http
 GET /api/v1/areas?area_type=park HTTP/1.1
@@ -1331,6 +1333,8 @@ null
 ### GET /api/v1/shifts/my-shifts
 
 Get shift history (satgas/linmas/korlap only).
+
+> **Pagination (Phase 4-6 C2):** pass `?page=&limit=` (limit max 100) to receive a `PaginatedResponseDto` (`{ data, meta: { total, page, limit, totalPages } }`); without the params the legacy shape below is returned unchanged.
 
 **Request:**
 ```http
@@ -2828,6 +2832,8 @@ Content-Type: application/json
 
 #### GET /api/v1/schedules
 
+> **Pagination (Phase 4-6 C2):** pass `?page=&limit=` (limit max 100) to receive a `PaginatedResponseDto` (`{ data, meta: { total, page, limit, totalPages } }`); without the params the legacy array shape is returned unchanged.
+
 List worker schedules.
 
 **Query Parameters:**
@@ -3238,6 +3244,38 @@ Get GPS location history for a specific user on a specific date.
   "time_inside_area_minutes": 498,
   "time_outside_area_minutes": 42,
   "generated_at": "2026-03-03T15:30:00.000Z"
+}
+```
+
+---
+
+### GET /api/v1/monitoring/users/:userId/reassignment-history
+
+Get the reassignment audit history for a worker (Phase 4-4 A4 — backs the
+mobile UserDetailSheet "Riwayat Pemindahan" section). Sourced from the audit
+trail (`action='reassign'`), most recent first, capped at 20 entries.
+
+**Auth:** JwtAuthGuard + RolesGuard
+**Roles:** `korlap` (own area only), `kepala_rayon` (own rayon only), `top_management`, `admin_system`, `superadmin`
+
+**Response (200 OK):**
+```json
+{
+  "user_id": "worker-uuid",
+  "history": [
+    {
+      "id": "audit-log-uuid",
+      "previous_area_id": "area-uuid",
+      "previous_area_name": "Taman Bungkul",
+      "new_area_id": "area-uuid-2",
+      "new_area_name": "Taman Mundu",
+      "reason": "Kekurangan staf",
+      "effective_date": "2026-06-11",
+      "actor_id": "admin-uuid",
+      "actor_name": "Kepala Rayon Satu",
+      "created_at": "2026-06-11T08:30:00.000Z"
+    }
+  ]
 }
 ```
 
@@ -4842,6 +4880,7 @@ All endpoints using old role names must update:
 | # | Method | Path | Description | Roles |
 |---|--------|------|-------------|-------|
 | 1 | `GET` | `/monitoring/users/:userId/location-history` | GPS track history for a user on a date | korlap, kepala_rayon, top_management, admin_system, superadmin |
+| 1b | `GET` | `/monitoring/users/:userId/reassignment-history` | Reassignment audit history (last 20) — Phase 4-4 A4 | korlap, kepala_rayon, top_management, admin_system, superadmin |
 | 2 | `GET` | `/monitoring/users/:userId/day-summary` | Full day summary: shift, activities, tasks, WhatsApp links | korlap, kepala_rayon, top_management, admin_system, superadmin |
 | 3 | `GET` | `/monitoring/config` | List all monitoring configuration entries | admin_system, superadmin |
 | 4 | `PATCH` | `/monitoring/config/:key` | Update a monitoring configuration value | admin_system, superadmin |
