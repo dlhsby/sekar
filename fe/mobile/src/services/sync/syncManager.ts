@@ -22,6 +22,7 @@ import { locationTracker } from '../location/locationTracker';
 import config from '../../constants/config';
 import type { LocationPoint } from '../../types/api.types';
 import type { LocationPing } from '../../types/models.types';
+import { logger } from '../../utils/logger';
 
 /**
  * Type-safe data interfaces for sync operations
@@ -127,11 +128,11 @@ class SyncManager extends EventEmitter {
    */
   public initialize(): void {
     if (this.isInitialized) {
-      console.debug('[SyncManager] Already initialized');
+      logger.debug('[SyncManager] Already initialized');
       return;
     }
 
-    console.debug('[SyncManager] Initializing...');
+    logger.debug('[SyncManager] Initializing...');
 
     // Listen to network state changes
     this.netInfoUnsubscribe = NetInfo.addEventListener(
@@ -148,14 +149,14 @@ class SyncManager extends EventEmitter {
     this.startPeriodicSync();
 
     this.isInitialized = true;
-    console.debug('[SyncManager] Initialized successfully');
+    logger.debug('[SyncManager] Initialized successfully');
   }
 
   /**
    * Cleanup listeners and timers
    */
   public cleanup(): void {
-    console.debug('[SyncManager] Cleaning up...');
+    logger.debug('[SyncManager] Cleaning up...');
 
     if (this.netInfoUnsubscribe) {
       this.netInfoUnsubscribe();
@@ -175,7 +176,7 @@ class SyncManager extends EventEmitter {
     this.isSyncing = false;
     this.wasOffline = false;
 
-    console.debug('[SyncManager] Cleanup complete');
+    logger.debug('[SyncManager] Cleanup complete');
   }
 
   /**
@@ -183,7 +184,7 @@ class SyncManager extends EventEmitter {
    * Triggers location capture when coming back online with active shift
    */
   private handleNetworkChange = (state: NetInfoState): void => {
-    console.debug('[SyncManager] Network state changed:', {
+    logger.debug('[SyncManager] Network state changed:', {
       isConnected: state.isConnected,
       isInternetReachable: state.isInternetReachable,
     });
@@ -193,20 +194,20 @@ class SyncManager extends EventEmitter {
     if (isOnline) {
       // Coming back online
       if (this.wasOffline) {
-        console.debug('[SyncManager] Back online - triggering location capture and sync');
+        logger.debug('[SyncManager] Back online - triggering location capture and sync');
 
         // Trigger immediate location capture if tracking is active
         if (locationTracker.isTracking()) {
-          console.debug('[SyncManager] Triggering immediate location capture');
+          logger.debug('[SyncManager] Triggering immediate location capture');
           locationTracker.captureNow();
         }
       }
 
-      console.debug('[SyncManager] Network available - triggering sync');
+      logger.debug('[SyncManager] Network available - triggering sync');
       this.processQueue();
     } else {
       // Going offline
-      console.debug('[SyncManager] Network offline');
+      logger.debug('[SyncManager] Network offline');
     }
 
     this.wasOffline = !isOnline;
@@ -217,14 +218,14 @@ class SyncManager extends EventEmitter {
    * Triggers location capture when app comes to foreground with active shift
    */
   private handleAppStateChange = (nextAppState: AppStateStatus): void => {
-    console.debug('[SyncManager] App state changed:', nextAppState);
+    logger.debug('[SyncManager] App state changed:', nextAppState);
 
     if (nextAppState === 'active') {
-      console.debug('[SyncManager] App foregrounded - triggering sync');
+      logger.debug('[SyncManager] App foregrounded - triggering sync');
 
       // Trigger immediate location capture if tracking is active
       if (locationTracker.isTracking()) {
-        console.debug('[SyncManager] Triggering immediate location capture on foreground');
+        logger.debug('[SyncManager] Triggering immediate location capture on foreground');
         locationTracker.captureNow();
       }
 
@@ -238,7 +239,7 @@ class SyncManager extends EventEmitter {
   private startPeriodicSync(): void {
     this.stopPeriodicSync();
     this.periodicSyncTimer = setInterval(() => {
-      console.debug('[SyncManager] Periodic sync triggered');
+      logger.debug('[SyncManager] Periodic sync triggered');
       this.processQueue();
     }, PERIODIC_SYNC_INTERVAL);
   }
@@ -258,14 +259,14 @@ class SyncManager extends EventEmitter {
    */
   public async processQueue(): Promise<void> {
     if (this.isSyncing) {
-      console.debug('[SyncManager] Sync already in progress, skipping');
+      logger.debug('[SyncManager] Sync already in progress, skipping');
       return;
     }
 
     // Check network connectivity
     const netInfo = await NetInfo.fetch();
     if (!netInfo.isConnected || !netInfo.isInternetReachable) {
-      console.debug('[SyncManager] No network connection, skipping sync');
+      logger.debug('[SyncManager] No network connection, skipping sync');
       return;
     }
 
@@ -279,12 +280,12 @@ class SyncManager extends EventEmitter {
       );
 
       if (pendingItems.length === 0) {
-        console.debug('[SyncManager] No items to sync');
+        logger.debug('[SyncManager] No items to sync');
         this.emit('syncComplete', 0, 0);
         return;
       }
 
-      console.debug(`[SyncManager] Starting sync for ${pendingItems.length} items`);
+      logger.debug(`[SyncManager] Starting sync for ${pendingItems.length} items`);
 
       // Sort by priority and timestamp
       const sortedItems = this.sortByPriority(pendingItems);
@@ -305,20 +306,20 @@ class SyncManager extends EventEmitter {
           failureCount++;
           const errorMessage = error?.message || 'Unknown error';
           this.emit('itemFailed', item.id, item.type, errorMessage);
-          console.error(`[SyncManager] Failed to sync item ${item.id}:`, error);
+          logger.error(`[SyncManager] Failed to sync item ${item.id}:`, error);
         }
       }
 
       // Clean up successfully synced items
       await clearSyncedItems();
 
-      console.debug(
+      logger.debug(
         `[SyncManager] Sync complete - Success: ${successCount}, Failed: ${failureCount}`,
       );
       this.emit('syncComplete', successCount, failureCount);
     } catch (error: any) {
       const errorMessage = error?.message || 'Sync failed';
-      console.error('[SyncManager] Error processing queue:', error);
+      logger.error('[SyncManager] Error processing queue:', error);
       this.emit('syncError', errorMessage);
     } finally {
       this.isSyncing = false;
@@ -340,11 +341,11 @@ class SyncManager extends EventEmitter {
    * Process a single queue item with retry logic
    */
   private async processSingleItem(item: QueueItem): Promise<void> {
-    console.debug(`[SyncManager] Processing ${item.type} item:`, item.id);
+    logger.debug(`[SyncManager] Processing ${item.type} item:`, item.id);
 
     // Check retry limit — remove permanently instead of re-queuing
     if (item.retryCount >= MAX_RETRIES) {
-      console.warn(
+      logger.warn(
         `[SyncManager] Max retries reached for item ${item.id}, removing from queue`,
       );
       await removeFromQueue(item.id);
@@ -354,7 +355,7 @@ class SyncManager extends EventEmitter {
     // Apply exponential backoff delay
     if (item.retryCount > 0) {
       const delay = RETRY_DELAYS[Math.min(item.retryCount - 1, RETRY_DELAYS.length - 1)];
-      console.debug(`[SyncManager] Retry ${item.retryCount}, waiting ${delay}ms`);
+      logger.debug(`[SyncManager] Retry ${item.retryCount}, waiting ${delay}ms`);
       await this.delay(delay);
     }
 
@@ -374,20 +375,20 @@ class SyncManager extends EventEmitter {
       });
       await removeFromQueue(item.id);
 
-      console.debug(`[SyncManager] Successfully synced ${item.type}:`, item.id);
+      logger.debug(`[SyncManager] Successfully synced ${item.type}:`, item.id);
     } catch (error: any) {
-      console.error(`[SyncManager] Error syncing ${item.type}:`, error);
+      logger.error(`[SyncManager] Error syncing ${item.type}:`, error);
 
       // Check for conflict errors (server timestamp wins)
       if (this.isConflictError(error)) {
-        console.warn('[SyncManager] Conflict detected, removing stale item');
+        logger.warn('[SyncManager] Conflict detected, removing stale item');
         await removeFromQueue(item.id);
         return;
       }
 
       // Check for permanently stale items (e.g. location upload for a completed shift)
       if (this.isStaleError(error)) {
-        console.warn('[SyncManager] Stale item detected (shift completed), dropping:', item.id);
+        logger.warn('[SyncManager] Stale item detected (shift completed), dropping:', item.id);
         await removeFromQueue(item.id);
         return;
       }
@@ -488,7 +489,7 @@ class SyncManager extends EventEmitter {
       throw new Error(result?.error || 'Clock-in sync failed');
     }
 
-    console.debug('[SyncManager] Clock-in synced:', result.data);
+    logger.debug('[SyncManager] Clock-in synced:', result.data);
   }
 
   /**
@@ -503,7 +504,7 @@ class SyncManager extends EventEmitter {
       throw new Error(result?.error || 'Clock-out sync failed');
     }
 
-    console.debug('[SyncManager] Clock-out synced:', result.data);
+    logger.debug('[SyncManager] Clock-out synced:', result.data);
   }
 
   /**
@@ -516,7 +517,7 @@ class SyncManager extends EventEmitter {
       throw new Error(result?.error || 'Activity sync failed');
     }
 
-    console.debug('[SyncManager] Activity synced:', result.data);
+    logger.debug('[SyncManager] Activity synced:', result.data);
   }
 
   /**
@@ -532,7 +533,7 @@ class SyncManager extends EventEmitter {
         throw new Error(result?.error || 'Pruning request sync failed');
       }
 
-      console.debug('[SyncManager] Pruning request synced:', result.data);
+      logger.debug('[SyncManager] Pruning request synced:', result.data);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Pruning request sync failed';
       try {
@@ -540,7 +541,7 @@ class SyncManager extends EventEmitter {
         const { setSyncError } = await import('../../store/slices/pruningRequestsSlice');
         store.dispatch(setSyncError(message));
       } catch (dispatchErr) {
-        console.warn('[SyncManager] failed to dispatch sync error', dispatchErr);
+        logger.warn('[SyncManager] failed to dispatch sync error', dispatchErr);
       }
       throw err;
     }
@@ -556,7 +557,7 @@ class SyncManager extends EventEmitter {
       const { shift_id, locations } = data;
 
       if (!locations || locations.length === 0) {
-        console.warn('[SyncManager] No locations to sync');
+        logger.warn('[SyncManager] No locations to sync');
         return;
       }
 
@@ -570,13 +571,13 @@ class SyncManager extends EventEmitter {
         throw new Error(result?.error || 'Location batch sync failed');
       }
 
-      console.debug('[SyncManager] Location batch synced (new format):', result.data);
+      logger.debug('[SyncManager] Location batch synced (new format):', result.data);
     } else {
       // Legacy format - convert and sync
       const pings = (data as LegacyLocationBatchData).pings || [];
 
       if (pings.length === 0) {
-        console.warn('[SyncManager] No location pings to sync (legacy)');
+        logger.warn('[SyncManager] No location pings to sync (legacy)');
         return;
       }
 
@@ -604,7 +605,7 @@ class SyncManager extends EventEmitter {
         throw new Error(result?.error || 'Location batch sync failed (legacy)');
       }
 
-      console.debug('[SyncManager] Location batch synced (legacy format):', result.data);
+      logger.debug('[SyncManager] Location batch synced (legacy format):', result.data);
     }
   }
 
@@ -657,7 +658,7 @@ class SyncManager extends EventEmitter {
    * Force sync immediately
    */
   public forceSyncNow(): void {
-    console.debug('[SyncManager] Force sync triggered');
+    logger.debug('[SyncManager] Force sync triggered');
     this.processQueue();
   }
 }

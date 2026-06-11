@@ -5,6 +5,7 @@
 
 import EncryptedStorage from 'react-native-encrypted-storage';
 import type { User } from '../../types/models.types';
+import { logger } from '../../utils/logger';
 
 const KEYS = {
   TOKEN: 'auth_token',
@@ -20,7 +21,7 @@ export async function setToken(token: string): Promise<void> {
   try {
     await EncryptedStorage.setItem(KEYS.TOKEN, token);
   } catch (error) {
-    console.error('Error storing token:', error);
+    logger.error('Error storing token:', error);
     throw error;
   }
 }
@@ -33,7 +34,7 @@ export async function getToken(): Promise<string | null> {
   try {
     return await EncryptedStorage.getItem(KEYS.TOKEN);
   } catch (error) {
-    console.error('Error retrieving token:', error);
+    logger.error('Error retrieving token:', error);
     return null;
   }
 }
@@ -45,7 +46,7 @@ export async function removeToken(): Promise<void> {
   try {
     await EncryptedStorage.removeItem(KEYS.TOKEN);
   } catch (error) {
-    console.error('Error removing token:', error);
+    logger.error('Error removing token:', error);
     throw error;
   }
 }
@@ -58,7 +59,7 @@ export async function setRefreshToken(refreshToken: string): Promise<void> {
   try {
     await EncryptedStorage.setItem(KEYS.REFRESH_TOKEN, refreshToken);
   } catch (error) {
-    console.error('Error storing refresh token:', error);
+    logger.error('Error storing refresh token:', error);
     throw error;
   }
 }
@@ -71,7 +72,7 @@ export async function getRefreshToken(): Promise<string | null> {
   try {
     return await EncryptedStorage.getItem(KEYS.REFRESH_TOKEN);
   } catch (error) {
-    console.error('Error retrieving refresh token:', error);
+    logger.error('Error retrieving refresh token:', error);
     return null;
   }
 }
@@ -83,7 +84,7 @@ export async function removeRefreshToken(): Promise<void> {
   try {
     await EncryptedStorage.removeItem(KEYS.REFRESH_TOKEN);
   } catch (error) {
-    console.error('Error removing refresh token:', error);
+    logger.error('Error removing refresh token:', error);
     throw error;
   }
 }
@@ -96,7 +97,7 @@ export async function setUser(user: User): Promise<void> {
   try {
     await EncryptedStorage.setItem(KEYS.USER, JSON.stringify(user));
   } catch (error) {
-    console.error('Error storing user data:', error);
+    logger.error('Error storing user data:', error);
     throw error;
   }
 }
@@ -110,7 +111,7 @@ export async function getUser(): Promise<User | null> {
     const userData = await EncryptedStorage.getItem(KEYS.USER);
     return userData ? JSON.parse(userData) : null;
   } catch (error) {
-    console.error('Error retrieving user data:', error);
+    logger.error('Error retrieving user data:', error);
     return null;
   }
 }
@@ -122,7 +123,7 @@ export async function removeUser(): Promise<void> {
   try {
     await EncryptedStorage.removeItem(KEYS.USER);
   } catch (error) {
-    console.error('Error removing user data:', error);
+    logger.error('Error removing user data:', error);
     throw error;
   }
 }
@@ -134,7 +135,7 @@ export async function clearAll(): Promise<void> {
   try {
     await EncryptedStorage.clear();
   } catch (error) {
-    console.error('Error clearing secure storage:', error);
+    logger.error('Error clearing secure storage:', error);
     throw error;
   }
 }

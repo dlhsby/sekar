@@ -40,6 +40,7 @@ import {
   PermissionType,
 } from '../../services/permissions/PermissionManager';
 import { RESULTS } from 'react-native-permissions';
+import { logger } from '../../utils/logger';
 
 interface PermissionRequestModalProps {
   visible: boolean;
@@ -228,7 +229,7 @@ export function PermissionRequestModal({
         }
       }
     } catch (error) {
-      console.error('[PermissionRequestModal] Error requesting permission:', error);
+      logger.error('[PermissionRequestModal] Error requesting permission:', error);
     } finally {
       setIsRequesting(false);
     }
@@ -268,7 +269,7 @@ export function PermissionRequestModal({
   const renderStepCard = () => {
     /* istanbul ignore next */
     if (!currentStep || !currentStep.title || !currentStep.description) {
-      console.warn('[PermissionRequestModal] Invalid current step:', currentStepIndex, currentStep);
+      logger.warn('[PermissionRequestModal] Invalid current step:', currentStepIndex, currentStep);
       return null;
     }
 
