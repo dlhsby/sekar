@@ -62,10 +62,15 @@ env_file_value() { # FILE KEY — last uncommented KEY= value, empty if absent
 }
 
 load_ports() {
+  # Backend precedence: $BE_PORT → $PORT → be/.env PORT → 3000. PORT is
+  # re-exported to match so the Nest process (which reads PORT, and where a
+  # real env var beats be/.env) always binds the port we wait on.
   if [ -z "${BE_PORT:-}" ]; then
-    BE_PORT="$(env_file_value "$ROOT/be/.env" PORT)"
+    BE_PORT="${PORT:-$(env_file_value "$ROOT/be/.env" PORT)}"
   fi
   export BE_PORT="${BE_PORT:-3000}"
+  export PORT="$BE_PORT"
+  # Web precedence: $WEB_PORT → fe/web/.env.local WEB_PORT → 3001.
   if [ -z "${WEB_PORT:-}" ]; then
     WEB_PORT="$(env_file_value "$ROOT/fe/web/.env.local" WEB_PORT)"
   fi

@@ -41,7 +41,15 @@ One-command scripts for everyday dev work. Run from anywhere; they resolve
 the project root themselves. Ports stay per-project: backend `be/.env`
 (`PORT`, default 3000), web `fe/web/.env.local` (`WEB_PORT`, default 3001) —
 the scripts read both and export `WEB_PORT` so `next dev -p ${WEB_PORT:-3001}`
-picks it up. The same commands are exposed from the root `package.json`
+picks it up. Exported env vars override the files for one-off runs:
+
+```bash
+BE_PORT=3010 WEB_PORT=3011 ./scripts/start.sh --no-mobile
+PORT=3012 ./scripts/start-be.sh        # PORT and BE_PORT are interchangeable
+WEB_PORT=3013 ./scripts/start-web.sh
+```
+
+The same commands are exposed from the root `package.json`
 (`npm run setup|start|stop|start:be|start:web|start:mobile`).
 
 ### `setup.sh` — one-shot setup
