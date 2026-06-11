@@ -3,6 +3,10 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { TasksService } from './tasks.service';
+import { TaskFinderService } from './services/task-finder.service';
+import { TaskDelegationService } from './services/task-delegation.service';
+import { TaskStatusTransitionsService } from './services/task-status-transitions.service';
+import { TaskVerificationService } from './services/task-verification.service';
 import { Task, TaskStatus, TaskPriority } from './entities/task.entity';
 import { TaskTag } from './entities/task-tag.entity';
 import { TaskDelegation } from './entities/task-delegation.entity';
@@ -74,6 +78,12 @@ describe('TasksService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TasksService,
+        // Real sub-services — behavior is exercised through the façade
+        // against the same mocked repositories/services below.
+        TaskFinderService,
+        TaskDelegationService,
+        TaskStatusTransitionsService,
+        TaskVerificationService,
         {
           provide: getRepositoryToken(Task),
           useValue: {

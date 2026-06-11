@@ -107,9 +107,7 @@ describe('Error Codes (e2e)', () => {
           .set('Authorization', `Bearer ${adminToken}`);
 
         // Users are in the 'data' property of paginated response
-        const testUser = usersResponse.body.data?.find(
-          (u: any) => u.username === inactiveUsername,
-        );
+        const testUser = usersResponse.body.data?.find((u: any) => u.username === inactiveUsername);
 
         if (!testUser) {
           // Skip test if the seed user doesn't exist in this database

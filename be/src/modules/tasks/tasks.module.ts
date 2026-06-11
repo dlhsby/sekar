@@ -2,6 +2,10 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TasksController } from './tasks.controller';
 import { TasksService } from './tasks.service';
+import { TaskFinderService } from './services/task-finder.service';
+import { TaskDelegationService } from './services/task-delegation.service';
+import { TaskStatusTransitionsService } from './services/task-status-transitions.service';
+import { TaskVerificationService } from './services/task-verification.service';
 import { Task } from './entities/task.entity';
 import { TaskTag } from './entities/task-tag.entity';
 import { TaskDelegation } from './entities/task-delegation.entity';
@@ -26,7 +30,14 @@ import { NotificationsModule } from '../notifications/notifications.module';
     NotificationsModule,
   ],
   controllers: [TasksController],
-  providers: [TasksService, TaskTypeRegistry],
+  providers: [
+    TasksService,
+    TaskTypeRegistry,
+    TaskFinderService,
+    TaskDelegationService,
+    TaskStatusTransitionsService,
+    TaskVerificationService,
+  ],
   exports: [TasksService, TaskTypeRegistry],
 })
 export class TasksModule {}
