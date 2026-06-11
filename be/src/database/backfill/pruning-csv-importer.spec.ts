@@ -12,6 +12,25 @@ describe('Pruning CSV importer — pure helpers', () => {
       const out = parseLine('a, b , c,,d');
       expect(out).toEqual(['a', 'b', 'c', '', 'd']);
     });
+
+    it('keeps commas inside double-quoted fields (real CSV quotes Lokasi)', () => {
+      const out = parseLine(
+        '01/01/2026 16:12:08,25PR13,31/12/2025,Timur 2,"Lapangan RT 06,Jl. Gg 4, dan Taman",LAMTORO,1',
+      );
+      expect(out).toEqual([
+        '01/01/2026 16:12:08',
+        '25PR13',
+        '31/12/2025',
+        'Timur 2',
+        'Lapangan RT 06,Jl. Gg 4, dan Taman',
+        'LAMTORO',
+        '1',
+      ]);
+    });
+
+    it('unescapes doubled quotes inside a quoted field', () => {
+      expect(parseLine('a,"say ""halo"", ok",b')).toEqual(['a', 'say "halo", ok', 'b']);
+    });
   });
 
   describe('parseIndoDate', () => {

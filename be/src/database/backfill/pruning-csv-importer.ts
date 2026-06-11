@@ -89,12 +89,41 @@ function parseArgs(argv: string[]): {
 }
 
 /**
- * Tiny CSV parser. The historical pruning CSV uses plain commas and never
- * quotes fields, per the header inspection on 2026-05-23. If that changes,
- * swap this for a real parser (e.g. `csv-parse`).
+ * Tiny CSV line parser, quote-aware. The 2026-05-23 header inspection
+ * claimed the export never quotes fields, but ~360 of the 5,008 rows DO
+ * quote `Lokasi` (it contains commas) — a naive split shifts every later
+ * column and those rows were wrongly rejected as malformed. Handles
+ * RFC-4180 quoting on a single line: commas inside `"…"` are literal and
+ * doubled quotes (`""`) unescape to one quote.
  */
 function parseLine(line: string): string[] {
-  return line.split(',').map((cell) => cell.trim());
+  const cells: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        current += ch;
+      }
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ',') {
+      cells.push(current.trim());
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  cells.push(current.trim());
+  return cells;
 }
 
 /**
@@ -201,11 +230,77 @@ async function buildSpeciesNameIndex(): Promise<Map<string, string>> {
   return index;
 }
 
+/**
+ * The live schema requires `activities.user_id`, `shift_id` and
+ * `activity_type_id` to be NOT NULL (the 2026-05-23 scaffold assumed they
+ * were nullable and every `--apply` row failed). Backfilled rows are
+ * anchored to:
+ *  - a dedicated, non-loginable system user (`sistem_backfill_csv`,
+ *    `is_active = false`, invalid bcrypt sentinel as password hash), and
+ *  - a single synthetic shift owned by that user, dated at the start of
+ *    the historical period.
+ * `activity_type_id` resolves to the real `perantingan` type — the
+ * importer fails loudly when it is missing (reference data not seeded).
+ * All three lookups/creations are idempotent.
+ */
+interface BackfillAnchors {
+  userId: string;
+  shiftId: string;
+  activityTypeId: string;
+}
+
+const BACKFILL_USERNAME = 'sistem_backfill_csv';
+
+async function ensureBackfillAnchors(dryRun: boolean): Promise<BackfillAnchors | null> {
+  const typeRows = await AppDataSource.query(
+    `SELECT id FROM activity_types WHERE code = 'perantingan' LIMIT 1`,
+  );
+  if (typeRows.length === 0) {
+    throw new Error(
+      "activity_types has no 'perantingan' row — seed reference data before running the backfill",
+    );
+  }
+  const activityTypeId: string = typeRows[0].id;
+
+  if (dryRun) return null; // dry-run never writes; anchors are not needed
+
+  let userRows = await AppDataSource.query(
+    `SELECT id FROM users WHERE username = $1 LIMIT 1`,
+    [BACKFILL_USERNAME],
+  );
+  if (userRows.length === 0) {
+    userRows = await AppDataSource.query(
+      `INSERT INTO users (id, username, password_hash, full_name, role, is_active, password_must_change, created_at, updated_at)
+       VALUES (uuid_generate_v4(), $1, '!backfill-no-login', 'Sistem Backfill CSV', 'admin_system', false, false, now(), now())
+       RETURNING id`,
+      [BACKFILL_USERNAME],
+    );
+  }
+  const userId: string = userRows[0].id;
+
+  let shiftRows = await AppDataSource.query(
+    `SELECT id FROM shifts WHERE user_id = $1 AND deleted_at IS NULL LIMIT 1`,
+    [userId],
+  );
+  if (shiftRows.length === 0) {
+    shiftRows = await AppDataSource.query(
+      `INSERT INTO shifts (id, user_id, clock_in_time, clock_out_time, clock_in_outside_boundary, clock_out_outside_boundary, is_overtime, created_at, updated_at)
+       VALUES (uuid_generate_v4(), $1, '2025-12-30T00:00:00Z', '2025-12-30T00:00:01Z', false, false, false, now(), now())
+       RETURNING id`,
+      [userId],
+    );
+  }
+  const shiftId: string = shiftRows[0].id;
+
+  return { userId, shiftId, activityTypeId };
+}
+
 async function importOne(
   row: CsvRow,
   ctx: {
     rayonIndex: Map<string, string>;
     speciesIndex: Map<string, string>;
+    anchors: BackfillAnchors | null;
     dryRun: boolean;
   },
 ): Promise<'inserted' | 'skipped' | { error: string }> {
@@ -217,6 +312,7 @@ async function importOne(
   if (existing.length > 0) return 'skipped';
 
   if (ctx.dryRun) return 'inserted'; // dry-run reports what would happen
+  if (!ctx.anchors) return { error: 'backfill anchors missing in apply mode' };
 
   const ts = parseIndoDate(row.timestamp) ?? new Date();
   const workDate = parseIndoDate(row.workDate);
@@ -228,9 +324,11 @@ async function importOne(
     damage_cause: row.damageCause,
     historical_location_text: row.location,
     historical_rayon_name: row.rayonName,
+    historical_work_date: workDate ? workDate.toISOString().slice(0, 10) : null,
     backfilled_at: new Date().toISOString(),
   };
 
+  const { userId, shiftId, activityTypeId } = ctx.anchors;
   await AppDataSource.transaction(async (manager) => {
     const result = await manager.query(
       `INSERT INTO activities (
@@ -239,7 +337,7 @@ async function importOne(
          custom_fields, photo_before_url, photo_after_url,
          created_at, updated_at
        ) VALUES (
-         NULL, NULL, NULL, NULL, $1,
+         $8, $9, NULL, $10, $1,
          '{}', NULL, NULL, $2, $3,
          $4::jsonb, $5, $6,
          $7, $7
@@ -252,13 +350,16 @@ async function importOne(
         row.photoBeforeUrl,
         row.photoAfterUrl,
         ts,
+        userId,
+        shiftId,
+        activityTypeId,
       ],
     );
     const activityId = result[0]?.id;
     if (activityId && speciesId && row.count > 0) {
       await manager.query(
-        `INSERT INTO activity_plant_items (activity_id, species_id, target_count, completed_count)
-           VALUES ($1, $2, $3, $3)`,
+        `INSERT INTO activity_plant_items (activity_id, species_id, count)
+           VALUES ($1, $2, $3)`,
         [activityId, speciesId, row.count],
       );
     }
@@ -285,6 +386,7 @@ async function main(): Promise<void> {
   const rows = limit ? allRows.slice(0, limit) : allRows;
   const rayonIndex = await buildRayonNameIndex();
   const speciesIndex = await buildSpeciesNameIndex();
+  const anchors = await ensureBackfillAnchors(dryRun);
 
   console.log(
     `Loaded ${allRows.length} rows (${parseFailures.length} unparseable). ` +
@@ -307,7 +409,7 @@ async function main(): Promise<void> {
     const batch = rows.slice(i, i + BATCH_SIZE);
     for (const row of batch) {
       try {
-        const outcome = await importOne(row, { rayonIndex, speciesIndex, dryRun });
+        const outcome = await importOne(row, { rayonIndex, speciesIndex, anchors, dryRun });
         if (outcome === 'inserted') report.inserted += 1;
         else if (outcome === 'skipped') report.skippedExisting += 1;
       } catch (err) {

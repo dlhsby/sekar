@@ -1,0 +1,128 @@
+{
+  "generatedAt": "2026-06-11T07:46:51.500Z",
+  "csvPath": "/home/wahyutrip/wahyutrip/dlhsby/taman/projects/sekar/data/rekap_perantingan.csv",
+  "totalRows": 4979,
+  "parsedRows": 4979,
+  "parseFailures": [
+    {
+      "line": 207,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 824,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 843,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 897,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 898,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 1313,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 1314,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 1315,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 1316,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 1317,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 1318,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 1319,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 1320,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 1321,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 1562,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 1700,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 1878,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 2022,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 2385,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 2879,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 2880,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 2881,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 3166,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 4115,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 4156,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 4276,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 4487,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 4755,
+      "reason": "malformed or missing required fields"
+    },
+    {
+      "line": 4867,
+      "reason": "malformed or missing required fields"
+    }
+  ],
+  "inserted": 0,
+  "skippedExisting": 4979,
+  "insertFailures": [],
+  "dryRun": true
+}
