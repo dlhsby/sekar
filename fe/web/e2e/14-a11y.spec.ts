@@ -56,6 +56,13 @@ test.describe('Accessibility (WCAG 2.1 AA, axe-core)', () => {
     { name: 'settings', path: '/settings' },
     { name: 'profile', path: '/profile' },
     { name: 'monitoring', path: '/monitoring' },
+    { name: 'plants', path: '/plants' },
+    { name: 'seeds', path: '/seeds' },
+    // Mock fixture's fixed RAYON id (e2e/fixtures/mock-api.ts)
+    {
+      name: 'rayon capacity',
+      path: '/rayons/950e8400-0000-0000-0000-000000000001/capacity',
+    },
   ];
 
   for (const { name, path } of DASHBOARD_PAGES) {
