@@ -37,8 +37,9 @@ SEKAR is a comprehensive worker tracking and task management system for DLH Sura
 ./scripts/stop.sh      # stop everything (--infra to also stop Docker)
 ```
 
-Ports are per-machine via the root `.env.local` (`BE_PORT` / `WEB_PORT`,
-defaults 3000/3001) — see `.env.local.example`. The same commands are
+Ports are per-project: backend `be/.env` (`PORT`, default 3000) and web
+`fe/web/.env.local` (`WEB_PORT`, default 3001) — adjust them when the
+defaults collide with other projects on your machine. The same commands are
 available as root npm scripts: `npm run setup|start|stop|start:be|start:web|start:mobile`.
 The manual steps below remain for fine-grained control.
 

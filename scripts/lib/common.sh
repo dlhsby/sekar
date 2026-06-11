@@ -51,23 +51,25 @@ ensure_env_file() {
   print_success "$label env created from $(basename "$example") — review values before production use"
 }
 
-# Load per-machine dev ports from the root .env.local (pattern borrowed from
-# the SWAT monorepo): BE_PORT / WEB_PORT are exported so backend + web inherit
-# them. Fallbacks: BE_PORT ← be/.env PORT ← 3000; WEB_PORT ← 3001.
-load_root_env() {
-  if [ -f "$ROOT/.env.local" ]; then
-    set -a
-    # shellcheck source=/dev/null
-    . "$ROOT/.env.local"
-    set +a
-  fi
-  if [ -z "${BE_PORT:-}" ] && [ -f "$ROOT/be/.env" ]; then
-    BE_PORT="$(grep -E '^PORT=' "$ROOT/be/.env" | tail -1 | cut -d= -f2 | tr -d '[:space:]')"
+# Load per-project dev ports — each app's env file stays the source of truth:
+#   backend → be/.env            PORT      (default 3000)
+#   web     → fe/web/.env.local  WEB_PORT  (default 3001)
+# WEB_PORT is exported because `next dev -p ${WEB_PORT:-3001}` reads the
+# shell, not .env.local. Real exported vars (e.g. from CI) win over the files.
+env_file_value() { # FILE KEY — last uncommented KEY= value, empty if absent
+  [ -f "$1" ] || return 0
+  grep -E "^$2=" "$1" | tail -1 | cut -d= -f2 | tr -d '[:space:]' | tr -d '"'
+}
+
+load_ports() {
+  if [ -z "${BE_PORT:-}" ]; then
+    BE_PORT="$(env_file_value "$ROOT/be/.env" PORT)"
   fi
   export BE_PORT="${BE_PORT:-3000}"
+  if [ -z "${WEB_PORT:-}" ]; then
+    WEB_PORT="$(env_file_value "$ROOT/fe/web/.env.local" WEB_PORT)"
+  fi
   export WEB_PORT="${WEB_PORT:-3001}"
-  # The backend reads PORT; a real exported var beats be/.env at runtime.
-  export PORT="$BE_PORT"
 }
 
 # Bring up PostgreSQL/Adminer/LocalStack via infra/start.sh when not running.

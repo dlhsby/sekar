@@ -5,6 +5,6 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/common.sh"
 
-load_root_env
+load_ports
 print_info "Starting web app on :$WEB_PORT (next dev, foreground — Ctrl+C to stop)..."
 cd "$ROOT/fe/web" && npm run dev

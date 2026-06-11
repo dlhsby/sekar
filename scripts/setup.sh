@@ -34,7 +34,6 @@ print_success "node $NODE_V / npm $NPM_V / docker present"
 
 # 2 — env files (infra/.env is created by infra/start.sh itself)
 print_info "Ensuring env files..."
-ensure_env_file "$ROOT/.env.local" "$ROOT/.env.local.example" "dev ports" || true
 ensure_env_file "$ROOT/be/.env" "$ROOT/be/.env.example" "backend" || true
 ensure_env_file "$ROOT/fe/web/.env.local" "$ROOT/fe/web/.env.local.example" "web" || true
 ensure_env_file "$ROOT/fe/mobile/.env" "$ROOT/fe/mobile/.env.example" "mobile" || true
@@ -71,7 +70,7 @@ else
     # On a truly fresh DB some tables (e.g. notifications) are created by
     # TypeORM synchronize at first boot, not by migrations — boot the backend
     # once so the schema is complete before seeding.
-    load_root_env
+    load_ports
     BOOTED_FOR_SEED=false
     if ! curl -sf -o /dev/null --max-time 2 "http://localhost:$BE_PORT/api/v1/health/live"; then
       print_info "Booting backend once so synchronize completes the schema..."
@@ -103,7 +102,7 @@ else
 fi
 print_success "Mobile ready"
 
-load_root_env
+load_ports
 echo ""
 echo -e "${GREEN}══ Setup complete ══${NC}"
 echo -e "  Start everything:  ${GREEN}./scripts/start.sh${NC} (or npm run start)"
@@ -111,4 +110,4 @@ echo -e "  Backend only:      ${GREEN}./scripts/start-be.sh${NC}   → http://lo
 echo -e "  Web only:          ${GREEN}./scripts/start-web.sh${NC}  → http://localhost:$WEB_PORT"
 echo -e "  Mobile (Metro):    ${GREEN}./scripts/start-mobile.sh${NC} (--android to build+install)"
 echo -e "  Stop:              ${GREEN}./scripts/stop.sh${NC} (--infra to also stop Docker services)"
-echo -e "  Ports come from ${GREEN}.env.local${NC} (BE_PORT=$BE_PORT, WEB_PORT=$WEB_PORT)"
+echo -e "  Ports: ${GREEN}be/.env${NC} PORT=$BE_PORT · ${GREEN}fe/web/.env.local${NC} WEB_PORT=$WEB_PORT"

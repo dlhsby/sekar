@@ -21,7 +21,7 @@ Guidance for Claude Code in this repository. **`specs/COMPLETION_STATUS.md` is t
 ./scripts/start.sh          # backend + web in background, Metro foreground (--no-mobile to skip Metro)
 ./scripts/stop.sh           # stop services (--infra to also stop Docker)
 # Single services: ./scripts/start-be.sh · start-web.sh · start-mobile.sh [--android]
-# Ports: root .env.local (BE_PORT/WEB_PORT, defaults 3000/3001) — see .env.local.example
+# Ports per project: be/.env PORT (default 3000) · fe/web/.env.local WEB_PORT (default 3001)
 
 # Manual per-workspace flow
 npm install                 # root tooling (token pipeline + eslint plugin), once per checkout
