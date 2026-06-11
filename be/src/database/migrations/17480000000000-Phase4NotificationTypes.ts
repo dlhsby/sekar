@@ -18,6 +18,16 @@ export class Phase4NotificationTypes17480000000000 implements MigrationInterface
   name = 'Phase4NotificationTypes17480000000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // Fresh-database guard (June 2026, found by scripts/setup.sh): the
+    // `notifications` table + its enum are created by TypeORM synchronize on
+    // first boot (no migration creates them), and the entity already includes
+    // every value added here. On a fresh DB the type doesn't exist yet — skip
+    // and let the initial-setup sync create the complete enum.
+    const [{ exists }] = (await queryRunner.query(
+      `SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'notifications_type_enum') AS "exists"`,
+    )) as Array<{ exists: boolean }>;
+    if (!exists) return;
+
     // SAFETY: these are hardcoded literals only. Never interpolate user- or
     // config-supplied values into this DDL string — enum names cannot be
     // parameterized, so any dynamic source would be an injection vector.
