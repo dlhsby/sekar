@@ -29,6 +29,19 @@ SEKAR is a comprehensive worker tracking and task management system for DLH Sura
 - **PostgreSQL** 14+ (or Docker)
 - **npm** >=10.0.0
 
+### One-command setup & start (recommended)
+
+```bash
+./scripts/setup.sh     # env files, all installs, infra, migrations (+ optional seed)
+./scripts/start.sh     # backend + web (background) + Metro (foreground)
+./scripts/stop.sh      # stop everything (--infra to also stop Docker)
+```
+
+Ports are per-machine via the root `.env.local` (`BE_PORT` / `WEB_PORT`,
+defaults 3000/3001) — see `.env.local.example`. The same commands are
+available as root npm scripts: `npm run setup|start|stop|start:be|start:web|start:mobile`.
+The manual steps below remain for fine-grained control.
+
 ### 0. Root Setup (Token Pipeline & ESLint Plugin)
 
 **Run once per checkout from the project root:**

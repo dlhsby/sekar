@@ -37,48 +37,55 @@ Utility scripts for development and deployment.
 
 ## Local Development
 
-### `local-dev-start.sh`
+One-command scripts for everyday dev work. Run from anywhere; they resolve
+the project root themselves. Per-machine ports come from the root
+`.env.local` (`BE_PORT` / `WEB_PORT`, defaults 3000/3001 — see
+`.env.local.example`); the same commands are exposed from the root
+`package.json` (`npm run setup|start|stop|start:be|start:web|start:mobile`).
 
-**Purpose:** Start complete local development environment
+### `setup.sh` — one-shot setup
 
-**What it does:**
-- Starts PostgreSQL, Adminer, LocalStack (S3 emulator)
-- Starts backend API server
-- Starts web dashboard
-- Provides service URLs and test credentials
-
-**Usage:**
 ```bash
-./scripts/local-dev-start.sh
+./scripts/setup.sh              # prompts before the destructive db:seed
+./scripts/setup.sh --yes        # seed without prompting (CI / fresh checkout)
+./scripts/setup.sh --skip-seed  # never seed (migrations still run)
 ```
 
-**Services started:**
-- Backend API: http://localhost:3000
-- Web Dashboard: http://localhost:3001
-- PostgreSQL: localhost:5432
-- Adminer: http://localhost:8080
-- LocalStack S3: http://localhost:4566
+Checks prerequisites (node ≥24.13, npm ≥10, docker), copies missing env files
+(`.env.local`, `be/.env`, `fe/web/.env.local`, `fe/mobile/.env`), installs all
+workspaces, starts the Docker infrastructure, runs migrations and (on a fresh
+database) boots the backend once so TypeORM synchronize completes the schema
+before seeding. Idempotent — safe to re-run.
 
----
+### `start.sh` — full dev stack
 
-### `local-dev-stop.sh`
-
-**Purpose:** Stop all local development services
-
-**What it does:**
-- Stops backend API
-- Stops web dashboard
-- Stops all Docker containers (PostgreSQL, Adminer, LocalStack)
-
-**Usage:**
 ```bash
-./scripts/local-dev-stop.sh
+./scripts/start.sh              # infra + backend + web (background) + Metro (foreground)
+./scripts/start.sh --no-mobile  # skip Metro; backend + web keep running
 ```
 
-**When to use:**
-- End of development session
-- Before system shutdown
-- To free up ports/resources
+Backend + web run in the background with PID files and logs under `logs/`
+(`logs/backend.log`, `logs/web.log`); Metro runs in the foreground and Ctrl+C
+shuts down all three. Docker services stay up (`stop.sh --infra` stops them).
+
+### `start-be.sh` / `start-web.sh` / `start-mobile.sh` — single services
+
+```bash
+./scripts/start-be.sh             # infra + backend, foreground
+./scripts/start-web.sh            # web, foreground
+./scripts/start-mobile.sh         # Metro, foreground
+./scripts/start-mobile.sh --android   # build + install + launch on Android
+```
+
+### `stop.sh`
+
+```bash
+./scripts/stop.sh           # stop backend / web / Metro (PID files + pattern sweep)
+./scripts/stop.sh --infra   # also stop the Docker services
+```
+
+Services are started in their own process groups, so `stop.sh` reliably kills
+the whole tree (npm wrapper + nest/next/metro children).
 
 ---
 
@@ -111,8 +118,9 @@ Utility scripts for development and deployment.
 
 ```bash
 # Local development
-./scripts/local-dev-start.sh    # Start all services
-./scripts/local-dev-stop.sh     # Stop all services
+./scripts/setup.sh              # One-shot setup (env files, installs, infra, DB)
+./scripts/start.sh              # Start everything (Ctrl+C stops)
+./scripts/stop.sh [--infra]     # Stop services (and optionally Docker)
 
 # Production deployment
 ./scripts/deploy-production.sh  # Deploy to production

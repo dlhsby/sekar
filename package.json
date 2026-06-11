@@ -12,6 +12,12 @@
     "tools/eslint-plugin-sekar-design"
   ],
   "scripts": {
+    "setup": "./scripts/setup.sh",
+    "start": "./scripts/start.sh",
+    "start:be": "./scripts/start-be.sh",
+    "start:web": "./scripts/start-web.sh",
+    "start:mobile": "./scripts/start-mobile.sh",
+    "stop": "./scripts/stop.sh",
     "tokens:build": "tsx scripts/build-tokens.ts",
     "tokens:verify": "tsx scripts/build-tokens.ts --verify",
     "test:tokens": "jest --config scripts/jest.config.cjs"

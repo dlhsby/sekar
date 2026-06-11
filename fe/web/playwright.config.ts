@@ -51,7 +51,7 @@ export default defineConfig({
   webServer: process.env.SKIP_SERVER
     ? undefined
     : {
-        command: 'PORT=3001 npm run dev',
+        command: 'WEB_PORT=3001 npm run dev',
         url: 'http://localhost:3001',
         reuseExistingServer: !process.env.CI,
         timeout: 120000, // 2 minutes for server startup

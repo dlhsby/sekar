@@ -16,22 +16,28 @@ Guidance for Claude Code in this repository. **`specs/COMPLETION_STATUS.md` is t
 ## Quick Start
 
 ```bash
-# Root tooling (token pipeline + eslint plugin) — once per checkout, from project root
-npm install
+# One-command flow (recommended) — run from project root
+./scripts/setup.sh          # env files, all installs, infra, migrations (+ optional destructive seed)
+./scripts/start.sh          # backend + web in background, Metro foreground (--no-mobile to skip Metro)
+./scripts/stop.sh           # stop services (--infra to also stop Docker)
+# Single services: ./scripts/start-be.sh · start-web.sh · start-mobile.sh [--android]
+# Ports: root .env.local (BE_PORT/WEB_PORT, defaults 3000/3001) — see .env.local.example
 
-# Infrastructure: PostgreSQL(5432) Adminer(8080) LocalStack S3(4566)
-./infra/start.sh            # ./infra/stop.sh to stop
+# Manual per-workspace flow
+npm install                 # root tooling (token pipeline + eslint plugin), once per checkout
+
+./infra/start.sh            # PostgreSQL, Adminer(8080), LocalStack S3(4566); ./infra/stop.sh to stop
 
 # Backend (be/)
 npm install && cp .env.example .env
-npm run migration:run && npm run db:seed   # db:seed is destructive (wipes first)
-npm run start:dev          # http://localhost:3000  | API docs /api/docs
+npm run migration:run && npm run db:seed   # db:seed is destructive (wipes first; fresh DB needs one backend boot first)
+npm run start:dev          # http://localhost:${BE_PORT:-3000}  | API docs /api/v1/docs
 
-# Mobile (fe/mobile/) — set .env API_BASE_URL=http://10.0.2.2:3000 (emulator) or http://<IP>:3000 (device)
+# Mobile (fe/mobile/) — set .env API_BASE_URL=http://10.0.2.2:<BE_PORT> (emulator) or http://<IP>:<BE_PORT> (device)
 npm run android            # android:all for all devices | ios (macOS only)
 
 # Web (fe/web/) — cp .env.local.example .env.local (Mapbox token)
-npm run dev                # http://localhost:3001
+npm run dev                # http://localhost:${WEB_PORT:-3001}
 ```
 
 Each workspace (`/`, `be/`, `fe/mobile/`, `fe/web/`) is **fully independent** — `npm install` in one never touches another. Token pipeline (from root): `npm run tokens:build` / `tokens:verify` / `test:tokens` — never hand-edit generated token files.

@@ -9,3 +9,6 @@ infra/localstack/be/src/database/migrations/.backup/
 
 # Per-session scratch prompts / planning notes — not part of the repo
 prompts/
+
+# Per-machine dev ports (see .env.local.example)
+.env.local
