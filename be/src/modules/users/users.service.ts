@@ -244,22 +244,13 @@ export class UsersService {
       await this.userValidation.assertPhoneAvailable(phone_number, id);
     }
 
-    if (password) {
-      const password_hash = await this.authService.hashPassword(password);
-      Object.assign(user, {
-        ...updateData,
-        password_hash,
-        ...(phone_number !== undefined ? { phone_number } : {}),
-      });
-      this.logger.log(`Password updated for user: ID ${id}`);
-    } else {
-      Object.assign(user, {
-        ...updateData,
-        ...(phone_number !== undefined ? { phone_number } : {}),
-      });
-    }
-
-    const savedUser = await this.userRepository.save(user);
+    if (password) this.logger.log(`Password updated for user: ID ${id}`);
+    const savedUser = await this.userRepository.save({
+      ...user,
+      ...updateData,
+      ...(password ? { password_hash: await this.authService.hashPassword(password) } : {}),
+      ...(phone_number !== undefined ? { phone_number } : {}),
+    });
     this.logger.log(`User updated successfully: ID ${id}`);
 
     this.audit({

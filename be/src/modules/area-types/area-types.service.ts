@@ -140,9 +140,11 @@ export class AreaTypesService {
       }
     }
 
-    // Update only provided fields
-    Object.assign(areaType, updateAreaTypeDto);
-    const updatedAreaType = await this.areaTypeRepository.save(areaType);
+    // Update only provided fields without mutating the loaded entity
+    const updatedAreaType = await this.areaTypeRepository.save({
+      ...areaType,
+      ...updateAreaTypeDto,
+    });
 
     this.logger.log(`Area type updated with ID: ${updatedAreaType.id}`);
     return updatedAreaType;

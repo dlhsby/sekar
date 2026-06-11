@@ -171,9 +171,11 @@ export class ActivityTypesService {
       }
     }
 
-    // Update only provided fields
-    Object.assign(activityType, updateActivityTypeDto);
-    const updatedActivityType = await this.activityTypeRepository.save(activityType);
+    // Update only provided fields without mutating the loaded entity
+    const updatedActivityType = await this.activityTypeRepository.save({
+      ...activityType,
+      ...updateActivityTypeDto,
+    });
 
     this.logger.log(`Activity type updated with ID: ${updatedActivityType.id}`);
     return updatedActivityType;

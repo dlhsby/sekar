@@ -187,9 +187,11 @@ export class AreaStaffRequirementsService {
       }
     }
 
-    // Update only provided fields
-    Object.assign(requirement, updateDto);
-    const updatedRequirement = await this.requirementRepository.save(requirement);
+    // Update only provided fields without mutating the loaded entity
+    const updatedRequirement = await this.requirementRepository.save({
+      ...requirement,
+      ...updateDto,
+    });
 
     this.logger.log(`Staff requirement updated with ID: ${updatedRequirement.id}`);
     return updatedRequirement;

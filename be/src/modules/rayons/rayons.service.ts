@@ -160,9 +160,8 @@ export class RayonsService {
       }
     }
 
-    // Update only provided fields
-    Object.assign(rayon, updateRayonDto);
-    const updatedRayon = await this.rayonRepository.save(rayon);
+    // Update only provided fields without mutating the loaded entity
+    const updatedRayon = await this.rayonRepository.save({ ...rayon, ...updateRayonDto });
 
     this.logger.log(`Rayon updated with ID: ${updatedRayon.id}`);
     return updatedRayon;

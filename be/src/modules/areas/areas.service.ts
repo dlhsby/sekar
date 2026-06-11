@@ -172,10 +172,8 @@ export class AreasService {
 
     const area = await this.findOne(id);
 
-    // Update fields
-    Object.assign(area, updateAreaDto);
-
-    const updatedArea = await this.areaRepository.save(area);
+    // Update fields without mutating the loaded entity
+    const updatedArea = await this.areaRepository.save({ ...area, ...updateAreaDto });
 
     this.logger.log(`Area with ID ${id} updated successfully`);
     return updatedArea;

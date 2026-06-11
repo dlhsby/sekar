@@ -83,7 +83,7 @@ export class NotificationsService {
         existingToken.app_version = dto.app_version || null;
         existingToken.last_used_at = new Date();
         const saved = await this.tokenRepository.save(existingToken);
-        return Object.assign(saved, { requires_rotation: true });
+        return { ...saved, requires_rotation: true };
       }
 
       // If token exists for same user, update it
