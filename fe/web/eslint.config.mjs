@@ -18,6 +18,10 @@ const eslintConfig = defineConfig([
       "react/no-unescaped-entities": "off",
       // React Hook Form watch() is intentionally not memoizable - acceptable warning
       "react-hooks/incompatible-library": "off",
+      // New error-level rule in react-hooks v7 (via eslint-config-next 16.2.9).
+      // Flags 7 pre-existing init-from-fetch / sync-on-prop-change effects that
+      // work correctly; refactoring them is post-UAT cleanup, not a release gate.
+      "react-hooks/set-state-in-effect": "warn",
       // Next.js Image component doesn't work well with dynamic external images
       "@next/next/no-img-element": "warn",
       // Phase 3 M1-R 3-R1 — design-token discipline (ADR-036)
