@@ -8,6 +8,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { ActivitiesService } from './activities.service';
+import { ActivityQueryService } from './services/activity-query.service';
 import { Activity, ActivityStatus } from './entities/activity.entity';
 import { Shift } from '../shifts/entities/shift.entity';
 import { ActivityType } from '../activity-types/entities/activity-type.entity';
@@ -134,6 +135,9 @@ describe('ActivitiesService', () => {
     module = await Test.createTestingModule({
       providers: [
         ActivitiesService,
+        // Real sub-service — behavior is exercised through the façade
+        // against the same mocked repositories/services below.
+        ActivityQueryService,
         {
           provide: getRepositoryToken(Activity),
           useValue: mockActivitiesRepo,

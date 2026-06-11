@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ActivitiesController } from './activities.controller';
 import { ActivitiesService } from './activities.service';
+import { ActivityQueryService } from './services/activity-query.service';
 import { Activity } from './entities/activity.entity';
 import { ActivityTag } from './entities/activity-tag.entity';
 import { Shift } from '../shifts/entities/shift.entity';
@@ -43,7 +44,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     NotificationsModule, // Phase 4-3 (M2): activity approve/reject FCM triggers
   ],
   controllers: [ActivitiesController],
-  providers: [ActivitiesService],
+  providers: [ActivitiesService, ActivityQueryService],
   exports: [ActivitiesService],
 })
 export class ActivitiesModule {}
