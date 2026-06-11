@@ -19,10 +19,13 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { NBButton, NBText } from '../../components/nb';
 import { ContactChannelCard } from '../../components/auth/ContactChannelCard';
 import { nbColors, nbBorders, nbRadius, nbShadows, nbSpacing } from '../../constants/nbTokens';
+import { SUPPORT_HOTLINE_WHATSAPP, SUPPORT_HOTLINE_PHONE } from '@env';
 
-// Static support hotline — TODO: source from env / public config / DB per region.
-const SUPPORT_WHATSAPP = '081200000000';
-const SUPPORT_PHONE = '0317788990';
+// Support hotline — env-configurable per deployment (build-inlined by
+// react-native-dotenv), with the DLH Surabaya numbers as fallback. A future
+// iteration may source these from a public config/DB endpoint per region.
+const SUPPORT_WHATSAPP = SUPPORT_HOTLINE_WHATSAPP || '081200000000';
+const SUPPORT_PHONE = SUPPORT_HOTLINE_PHONE || '0317788990';
 
 export function ForgotPasswordScreen(): React.JSX.Element {
   const navigation = useNavigation();

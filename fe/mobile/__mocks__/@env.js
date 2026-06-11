@@ -26,3 +26,7 @@ export const SENTRY_DSN_MOBILE = '';
 export const SENTRY_RELEASE = '';
 export const SENTRY_ENVIRONMENT = '';
 export const SENTRY_TRACES_SAMPLE_RATE = '0.1';
+
+// Support hotline (ForgotPasswordScreen)
+export const SUPPORT_HOTLINE_WHATSAPP = '081200000000';
+export const SUPPORT_HOTLINE_PHONE = '0317788990';

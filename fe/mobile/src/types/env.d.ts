@@ -22,6 +22,12 @@ declare module '@env' {
   export const MAX_VIDEO_SIZE_MB: string;
   export const MAX_VIDEO_DURATION_SECONDS: string;
 
+  // Support hotline (ForgotPasswordScreen) — shown pre-login so users can
+  // request a temporary password. Optional; the screen falls back to the
+  // DLH Surabaya default numbers when unset.
+  export const SUPPORT_HOTLINE_WHATSAPP: string;
+  export const SUPPORT_HOTLINE_PHONE: string;
+
   // Crash reporting (Phase 4-1 B4) — empty disables Sentry (default in dev)
   export const SENTRY_DSN_MOBILE: string;
   export const SENTRY_RELEASE: string;
