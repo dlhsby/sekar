@@ -11,6 +11,7 @@ import {
   NBBadge,
   NBText,
 } from '../../../components/nb';
+import { DetailRow } from '../../../components/common/DetailRow';
 import {
   nbSpacing,
   nbShadows,
@@ -45,10 +46,12 @@ export const OvertimeStatusCard: React.FC<OvertimeStatusCardProps> = ({ overtime
     </NBCardHeader>
     <NBCardContent>
       {overtime.status === 'rejected' && overtime.rejection_reason && (
-        <View style={styles.infoRow}>
-          <NBText variant="body-sm" color="danger" style={[styles.label, styles.dangerLabel]}>Alasan Penolakan</NBText>
-          <NBText variant="body" color="black" style={styles.value}>{overtime.rejection_reason}</NBText>
-        </View>
+        <DetailRow
+          label="Alasan Penolakan"
+          value={overtime.rejection_reason}
+          variant="description"
+          labelColor="danger"
+        />
       )}
     </NBCardContent>
   </NBCard>
@@ -65,12 +68,4 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  infoRow: {
-    marginBottom: nbSpacing.md,
-  },
-  label: {
-    marginBottom: nbSpacing.xs,
-  },
-  dangerLabel: {},
-  value: {},
 });

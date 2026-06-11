@@ -1,6 +1,6 @@
 # Mobile Component Library
 
-**Last Updated:** 2026-04-25
+**Last Updated:** 2026-06-11
 **Version:** Neo Brutalism 2.1 (generated tokens from Phase 3 M1-R sub-phase 3-R2; new NBModal/NBToast/NBText shipping in sub-phase 3-R3)
 **Location:** `fe/mobile/src/components/nb/`
 
@@ -767,7 +767,33 @@ NBToast.show({
 
 | Component | Sub-phase | Status |
 |-----------|-----------|--------|
-| `NBModal` | 3-R3 | ⏳ Not Started |
-| `NBToast` | 3-R3 | ⏳ Not Started |
-| `NBText` | 3-R3 (then propagated by 3-R5 sweep) | ⏳ Not Started |
+| `NBModal` | 3-R3 | ✅ Shipped — 46 files import it (verified 2026-06-11) |
+| `NBToast` | 3-R3 | ✅ Shipped — 26 files import it (verified 2026-06-11) |
+| `NBText` | 3-R3 (then propagated by 3-R5 sweep) | ✅ Shipped — 164 files import it (verified 2026-06-11) |
 ```
+
+---
+
+## Reuse audit — June 11, 2026 (UAT-readiness refactor, Phase 5b)
+
+Full-codebase audit of primitive usage and cross-screen duplication. No orphaned
+NB primitives found (every primitive has ≥2 importers).
+
+### Consolidated in Phase 5b
+
+| Item | New home | Migrated call sites |
+|------|----------|---------------------|
+| Photo grid/gallery sections (3 near-identical copies) | `src/components/common/PhotoGridSection.tsx` | pruningRequests `PhotosSection`, overtime `OvertimePhotosSection` + `OvertimeSelfiePhotosSection` (kept as thin wrappers) |
+| Label-above-value detail rows (~78 hand-rolled instances) | `src/components/common/DetailRow.tsx` | pruningRequests + overtime detail cards |
+| Draft persistence (24h TTL + 30s auto-save, 2 copies) | `src/hooks/useDraftPersistence.ts` (generic, 17 unit tests) | taskActivity draft hook (thin adapter, API unchanged). pruningRequests variant kept its own impl (external formRef injection pattern) — candidate for a follow-up adapter |
+| GPS display formatting (2 divergent copies) | `src/utils/gpsFormat.ts` | pruningRequests `useGpsFormatting`, overtime `OvertimeGpsCard` |
+| Task status/priority label+variant maps (drift between `utils/statusHelpers.ts` and field `taskHelpers.ts`) | `src/utils/statusHelpers.ts` stays canonical | field hooks/components re-import (fixes pending→warning drift) |
+
+### Deferred to post-UAT (behavior- or visual-affecting; do not ship blind pre-UAT)
+
+| Item | Size | Why deferred |
+|------|------|--------------|
+| Raw `TouchableOpacity`-as-button → `NBButton` | ~188 instances | Many are intentional custom taps (photo thumbnails, map markers); needs per-site judgement + visual QA |
+| `Alert.alert` → `NBToast`/`NBAlert` | 15 files | Several are *confirmation dialogs* — replacing with toast removes the confirm step (behavior change) |
+| Inline `textTransform`/`letterSpacing` → `NBText` variants | ~78 instances | Font-family/metric changes are visible; belongs in a dedicated typography sweep with visual regression |
+| `WeekPickerModal` raw `<Modal>` → `NBModal` fullscreen | 1 file | Verify fullscreen presentation semantics with design first |

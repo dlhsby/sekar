@@ -11,6 +11,7 @@ import {
   NBCardContent,
   NBText,
 } from '../../../components/nb';
+import { DetailRow } from '../../../components/common/DetailRow';
 import {
   nbColors,
   nbSpacing,
@@ -65,18 +66,17 @@ export const OvertimeGeneralInfoCard: React.FC<OvertimeGeneralInfoCardProps> = (
       </View>
 
       {overtime.user && (
-        <View style={styles.infoRow}>
-          <NBText variant="body-sm" color="gray600" style={styles.label}>Petugas</NBText>
-          <NBText variant="body" color="black" style={styles.value}>
-            {overtime.user.role} - {overtime.user.full_name}
-          </NBText>
-        </View>
+        <DetailRow
+          label="Petugas"
+          value={`${overtime.user.role} - ${overtime.user.full_name}`}
+        />
       )}
       {overtime.area?.name && (
-        <View style={styles.infoRow}>
-          <NBText variant="body-sm" color="gray600" style={styles.label}>Area</NBText>
-          <NBText variant="body" color="black" style={styles.value}>{overtime.area.name}</NBText>
-        </View>
+        <DetailRow
+          label="Area"
+          value={overtime.area.name}
+          isLast={!overtime.area?.name}
+        />
       )}
     </NBCardContent>
   </NBCard>
@@ -108,11 +108,4 @@ const styles = StyleSheet.create({
   infoTileJam: {
     backgroundColor: nbColors.statusIdleBg,
   },
-  infoRow: {
-    marginBottom: nbSpacing.md,
-  },
-  label: {
-    marginBottom: nbSpacing.xs,
-  },
-  value: {},
 });

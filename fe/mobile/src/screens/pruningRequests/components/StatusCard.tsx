@@ -6,6 +6,7 @@ import React, { useCallback } from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBCard, NBCardHeader, NBCardContent, NBBadge, NBText } from '../../../components/nb';
+import { DetailRow } from '../../../components/common/DetailRow';
 import { NBToast } from '../../../components/nb/NBToast';
 import { nbColors, nbSpacing } from '../../../constants/nbTokens';
 import { formatDateTime } from '../../../utils/dateUtils';
@@ -27,18 +28,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  infoRow: {
-    marginBottom: nbSpacing.md,
-  },
-  label: {
-    color: nbColors.gray700,
-    marginBottom: nbSpacing.xs,
-  },
-  valueMono: {
-    color: nbColors.black,
-    fontFamily: 'monospace',
-    letterSpacing: 0.5,
   },
   refCodeRow: {
     flexDirection: 'row',
@@ -87,46 +76,45 @@ export function StatusCard({
         </View>
       </NBCardHeader>
       <NBCardContent>
-        <View style={styles.infoRow}>
-          <NBText variant="body-sm" style={styles.label}>
-            Kode Permohonan
-          </NBText>
-          <View style={styles.refCodeRow}>
-            <NBText variant="body" style={[styles.valueMono, styles.refCodeText]} selectable>
-              {request.referenceCode || '—'}
-            </NBText>
-            {request.referenceCode ? (
-              <TouchableOpacity
-                onPress={handleCopyRef}
-                accessibilityRole="button"
-                accessibilityLabel="Salin kode permohonan"
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                style={styles.copyBtn}
-                testID="perantingan-copy-ref"
-              >
-                <MaterialCommunityIcons name="content-copy" size={18} color={nbColors.black} />
-              </TouchableOpacity>
-            ) : null}
-          </View>
-        </View>
+        <DetailRow
+          label="Kode Permohonan"
+          value={
+            <View style={styles.refCodeRow}>
+              <NBText variant="body" style={styles.refCodeText} selectable>
+                {request.referenceCode || '—'}
+              </NBText>
+              {request.referenceCode ? (
+                <TouchableOpacity
+                  onPress={handleCopyRef}
+                  accessibilityRole="button"
+                  accessibilityLabel="Salin kode permohonan"
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  style={styles.copyBtn}
+                  testID="perantingan-copy-ref"
+                >
+                  <MaterialCommunityIcons name="content-copy" size={18} color={nbColors.black} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          }
+          variant="mono"
+        />
         {request.submitter?.full_name || request.submitter?.username || request.requesterName ? (
-          <View style={styles.infoRow}>
-            <NBText variant="body-sm" style={styles.label}>
-              Diajukan Oleh
-            </NBText>
-            <NBText variant="body">
-              {request.submitter?.full_name ||
-                request.submitter?.username ||
-                request.requesterName}
-            </NBText>
-          </View>
+          <DetailRow
+            label="Diajukan Oleh"
+            value={
+              request.submitter?.full_name ||
+              request.submitter?.username ||
+              request.requesterName ||
+              '—'
+            }
+          />
         ) : null}
-        <View style={[styles.infoRow, { marginBottom: 0 }]}>
-          <NBText variant="body-sm" style={styles.label}>
-            Diajukan Pada
-          </NBText>
-          <NBText variant="body">{formatDateTime(request.createdAt)}</NBText>
-        </View>
+        <DetailRow
+          label="Diajukan Pada"
+          value={formatDateTime(request.createdAt)}
+          isLast={!request.submitter?.full_name && !request.submitter?.username && !request.requesterName}
+        />
       </NBCardContent>
     </NBCard>
   );

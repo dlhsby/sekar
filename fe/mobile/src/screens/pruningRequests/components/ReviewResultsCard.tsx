@@ -4,9 +4,10 @@
  */
 
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { NBCard, NBCardHeader, NBCardContent, NBText } from '../../../components/nb';
-import { nbColors, nbSpacing } from '../../../constants/nbTokens';
+import { DetailRow } from '../../../components/common/DetailRow';
+import { nbColors } from '../../../constants/nbTokens';
 import { formatDateTime } from '../../../utils/dateUtils';
 import type { PruningRequest } from '../../../types/models.types';
 
@@ -19,20 +20,6 @@ const styles = StyleSheet.create({
     color: nbColors.black,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-  },
-  infoRow: {
-    marginBottom: nbSpacing.md,
-  },
-  label: {
-    color: nbColors.gray700,
-    marginBottom: nbSpacing.xs,
-  },
-  value: {
-    color: nbColors.black,
-  },
-  descriptionText: {
-    color: nbColors.black,
-    lineHeight: 24,
   },
 });
 
@@ -49,31 +36,21 @@ export function ReviewResultsCard({ request }: ReviewResultsCardProps): React.JS
         </NBText>
       </NBCardHeader>
       <NBCardContent>
-        <View style={styles.infoRow}>
-          <NBText variant="body-sm" style={styles.label}>
-            Direview Oleh
-          </NBText>
-          <NBText variant="body" style={styles.value}>
-            {request.reviewer?.full_name || 'Admin'}
-          </NBText>
-        </View>
-        <View style={styles.infoRow}>
-          <NBText variant="body-sm" style={styles.label}>
-            Tanggal Review
-          </NBText>
-          <NBText variant="body" style={styles.value}>
-            {formatDateTime(request.reviewedAt)}
-          </NBText>
-        </View>
+        <DetailRow
+          label="Direview Oleh"
+          value={request.reviewer?.full_name || 'Admin'}
+        />
+        <DetailRow
+          label="Tanggal Review"
+          value={formatDateTime(request.reviewedAt)}
+        />
         {request.reviewNotes ? (
-          <View style={[styles.infoRow, { marginBottom: 0 }]}>
-            <NBText variant="body-sm" style={styles.label}>
-              Catatan Review
-            </NBText>
-            <NBText variant="body" style={styles.descriptionText}>
-              {request.reviewNotes}
-            </NBText>
-          </View>
+          <DetailRow
+            label="Catatan Review"
+            value={request.reviewNotes}
+            variant="description"
+            isLast
+          />
         ) : null}
       </NBCardContent>
     </NBCard>

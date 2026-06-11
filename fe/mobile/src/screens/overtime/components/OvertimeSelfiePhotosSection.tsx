@@ -1,23 +1,11 @@
 /**
  * OvertimeSelfiePhotosSection — Clock-in/out selfie verification photos
+ * Thin wrapper over PhotoGridSection
  */
 
 import React from 'react';
-import { View, ScrollView, Image, TouchableOpacity, StyleSheet } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {
-  NBCard,
-  NBCardHeader,
-  NBCardContent,
-  NBText,
-} from '../../../components/nb';
-import {
-  nbColors,
-  nbSpacing,
-  nbBorders,
-  nbRadius,
-  nbShadows,
-} from '../../../constants/nbTokens';
+import { PhotoGridSection } from '../../../components/common/PhotoGridSection';
+
 interface OvertimeSelfiePhotosSectionProps {
   shift?: { clock_in_photo_url?: string | null; clock_out_photo_url?: string | null } | null;
   onPhotoPress: (uri: string) => void;
@@ -29,85 +17,21 @@ export const OvertimeSelfiePhotosSection: React.FC<OvertimeSelfiePhotosSectionPr
 }) => {
   if (!shift || (!shift.clock_in_photo_url && !shift.clock_out_photo_url)) return null;
 
+  const photos: Array<{ url: string; label?: string }> = [];
+  if (shift.clock_in_photo_url) {
+    photos.push({ url: shift.clock_in_photo_url, label: 'Mulai Lembur' });
+  }
+  if (shift.clock_out_photo_url) {
+    photos.push({ url: shift.clock_out_photo_url, label: 'Selesai Lembur' });
+  }
+
   return (
-    <NBCard style={styles.card}>
-      <NBCardHeader>
-        <View style={styles.sectionHeaderRow}>
-          <MaterialCommunityIcons name="account-circle-outline" size={14} color={nbColors.gray700} style={{ marginRight: nbSpacing.xs }} />
-          <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>SELFIE VERIFIKASI</NBText>
-        </View>
-      </NBCardHeader>
-      <NBCardContent>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.photosContainer}
-        >
-          {shift.clock_in_photo_url && (
-            <View style={styles.selfiePhotoContainer}>
-              <TouchableOpacity
-                onPress={() => onPhotoPress(shift.clock_in_photo_url!)}
-                accessibilityRole="button"
-                accessibilityLabel="Lihat selfie mulai lembur"
-              >
-                <Image
-                  source={{ uri: shift.clock_in_photo_url }}
-                  style={styles.photo as any}
-                  resizeMode="cover"
-                />
-              </TouchableOpacity>
-              <NBText variant="body-sm" color="black" style={styles.selfiePhotoLabel}>Mulai Lembur</NBText>
-            </View>
-          )}
-          {shift.clock_out_photo_url && (
-            <View style={styles.selfiePhotoContainer}>
-              <TouchableOpacity
-                onPress={() => onPhotoPress(shift.clock_out_photo_url!)}
-                accessibilityRole="button"
-                accessibilityLabel="Lihat selfie selesai lembur"
-              >
-                <Image
-                  source={{ uri: shift.clock_out_photo_url }}
-                  style={styles.photo as any}
-                  resizeMode="cover"
-                />
-              </TouchableOpacity>
-              <NBText variant="body-sm" color="black" style={styles.selfiePhotoLabel}>Selesai Lembur</NBText>
-            </View>
-          )}
-        </ScrollView>
-      </NBCardContent>
-    </NBCard>
+    <PhotoGridSection
+      photos={photos}
+      onPhotoPress={onPhotoPress}
+      headerType="icon"
+      title="SELFIE VERIFIKASI"
+      iconName="account-circle-outline"
+    />
   );
 };
-
-const styles = StyleSheet.create({
-  card: {
-    marginHorizontal: nbSpacing.md,
-    marginBottom: nbSpacing.md,
-    ...nbShadows.sm,
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  photosContainer: {
-    gap: nbSpacing.sm,
-    paddingVertical: nbSpacing.xs,
-  },
-  photo: {
-    width: 160,
-    height: 160,
-    borderRadius: nbRadius.base,
-    borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.black,
-    ...nbShadows.sm,
-  },
-  selfiePhotoContainer: {
-    alignItems: 'center',
-    gap: nbSpacing.xs,
-  },
-  selfiePhotoLabel: {
-    textAlign: 'center',
-  },
-});

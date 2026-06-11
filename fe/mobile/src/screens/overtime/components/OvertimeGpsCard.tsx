@@ -18,6 +18,7 @@ import {
   nbRadius,
   nbShadows,
 } from '../../../constants/nbTokens';
+import { formatGps } from '../../../utils/gpsFormat';
 
 interface OvertimeGpsCardProps {
   gpsLat?: number;
@@ -38,7 +39,7 @@ export const OvertimeGpsCard: React.FC<OvertimeGpsCardProps> = ({ gpsLat, gpsLng
       <NBCardContent>
         <View style={styles.locationContainer}>
           <NBText variant="body-sm" color="black" style={styles.locationText}>
-            {`${Number(gpsLat).toFixed(6)}, ${Number(gpsLng).toFixed(6)}`}
+            {formatGps(gpsLat, gpsLng)}
           </NBText>
         </View>
       </NBCardContent>

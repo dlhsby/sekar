@@ -16,3 +16,5 @@ export { GPSLocationSection, type GPSLocationSectionProps } from './GPSLocationS
 export { PhotoUploader, type PhotoUploaderProps } from './PhotoUploader';
 export { ImagePreviewModal, type ImagePreviewModalProps } from './ImagePreviewModal';
 export { ListItemCard, type ListItemCardProps, type ListItemMeta } from './ListItemCard';
+export { PhotoGridSection, type PhotoGridSectionProps } from './PhotoGridSection';
+export { DetailRow, type DetailRowProps, type NBTextColor } from './DetailRow';

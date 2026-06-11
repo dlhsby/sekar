@@ -3,11 +3,12 @@
  */
 
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { TouchableOpacity, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBCard, NBCardHeader, NBCardContent, NBText } from '../../../components/nb';
+import { DetailRow } from '../../../components/common/DetailRow';
 import { nbColors, nbSpacing, nbBorders, nbRadius } from '../../../constants/nbTokens';
-import { formatGps } from '../hooks/useGpsFormatting';
+import { formatGps } from '../../../utils/gpsFormat';
 import type { PruningRequest } from '../../../types/models.types';
 
 interface LocationCardProps {
@@ -21,21 +22,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  infoRow: {
-    marginBottom: nbSpacing.md,
-  },
-  label: {
-    color: nbColors.gray700,
-    marginBottom: nbSpacing.xs,
-  },
-  value: {
-    color: nbColors.black,
-  },
-  valueMono: {
-    color: nbColors.black,
-    fontFamily: 'monospace',
-    letterSpacing: 0.5,
-  },
   viewMapCta: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -46,6 +32,7 @@ const styles = StyleSheet.create({
     borderColor: nbColors.primary,
     borderRadius: nbRadius.base,
     backgroundColor: nbColors.gray100,
+    marginBottom: nbSpacing.md,
   },
   viewMapCtaText: {
     color: nbColors.primary,
@@ -69,41 +56,26 @@ export function LocationCard({ request, onMapPress }: LocationCardProps): React.
       </NBCardHeader>
       <NBCardContent>
         {request.kecamatanName ? (
-          <View style={styles.infoRow}>
-            <NBText variant="body-sm" style={styles.label}>
-              Kecamatan
-            </NBText>
-            <NBText variant="body" style={styles.value}>
-              {request.kecamatanName}
-            </NBText>
-          </View>
+          <DetailRow
+            label="Kecamatan"
+            value={request.kecamatanName}
+          />
         ) : null}
         {request.rayon?.name ? (
-          <View style={styles.infoRow}>
-            <NBText variant="body-sm" style={styles.label}>
-              Rayon
-            </NBText>
-            <NBText variant="body" style={styles.value}>
-              {request.rayon.name}
-            </NBText>
-          </View>
+          <DetailRow
+            label="Rayon"
+            value={request.rayon.name}
+          />
         ) : null}
-        <View style={styles.infoRow}>
-          <NBText variant="body-sm" style={styles.label}>
-            Alamat
-          </NBText>
-          <NBText variant="body" style={styles.value}>
-            {request.address || '—'}
-          </NBText>
-        </View>
-        <View style={[styles.infoRow, { marginBottom: nbSpacing.sm }]}>
-          <NBText variant="body-sm" style={styles.label}>
-            Koordinat GPS
-          </NBText>
-          <NBText variant="body" style={styles.valueMono}>
-            {formatGps(request.gpsLat, request.gpsLng)}
-          </NBText>
-        </View>
+        <DetailRow
+          label="Alamat"
+          value={request.address || '—'}
+        />
+        <DetailRow
+          label="Koordinat GPS"
+          value={formatGps(request.gpsLat, request.gpsLng)}
+          variant="mono"
+        />
         {hasGps ? (
           <TouchableOpacity
             onPress={onMapPress}
