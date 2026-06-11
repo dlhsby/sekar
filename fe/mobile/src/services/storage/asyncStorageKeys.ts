@@ -48,5 +48,5 @@ export async function clearEntryFlowFlags(): Promise<void> {
       k === ASYNC_STORAGE_KEYS.CAROUSEL_SEEN ||
       k.startsWith(ASYNC_STORAGE_KEYS.ONBOARDING_COMPLETED_PREFIX),
   );
-  if (ours.length > 0) await AsyncStorage.multiRemove(ours);
+  if (ours.length > 0) await AsyncStorage.removeMany(ours);
 }

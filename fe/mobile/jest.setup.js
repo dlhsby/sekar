@@ -38,10 +38,40 @@ jest.mock('react-native', () => {
   return RN;
 });
 
-// Mock AsyncStorage
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
-);
+// Mock AsyncStorage — async-storage v3 ships a memory mock at ./jest, but its
+// methods are plain functions; tests assert on them as jest.Mock, so wrap a
+// memory store with jest.fn()s (mirrors the old v2 async-storage-mock).
+jest.mock('@react-native-async-storage/async-storage', () => {
+  const store = new Map();
+  const mock = {
+    getItem: jest.fn(async key => store.get(key) ?? null),
+    setItem: jest.fn(async (key, value) => {
+      store.set(key, String(value));
+    }),
+    removeItem: jest.fn(async key => {
+      store.delete(key);
+    }),
+    getMany: jest.fn(async keys =>
+      keys.reduce((acc, key) => ({ ...acc, [key]: store.get(key) ?? null }), {})
+    ),
+    setMany: jest.fn(async entries => {
+      Object.entries(entries).forEach(([key, value]) => store.set(key, String(value)));
+    }),
+    removeMany: jest.fn(async keys => {
+      keys.forEach(key => store.delete(key));
+    }),
+    getAllKeys: jest.fn(async () => Array.from(store.keys())),
+    clear: jest.fn(async () => {
+      store.clear();
+    }),
+  };
+  return {
+    __esModule: true,
+    default: mock,
+    createAsyncStorage: jest.fn(() => mock),
+    clearAllMockStorages: jest.fn(() => store.clear()),
+  };
+});
 
 // Mock react-native-safe-area-context — useSafeAreaInsets throws without a
 // SafeAreaProvider, which unit tests rarely wrap. Return zero insets globally so

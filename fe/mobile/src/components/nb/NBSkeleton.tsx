@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   shimmer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: nbColors.gray300,
   },
 });

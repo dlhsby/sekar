@@ -50,7 +50,7 @@ describe('PermissionManager', () => {
     // Reset storage
     (AsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
     (AsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
-    (AsyncStorage.multiRemove as jest.Mock).mockResolvedValue(undefined);
+    (AsyncStorage.removeMany as jest.Mock).mockResolvedValue(undefined);
   });
 
   describe('Notification Permission', () => {
@@ -260,7 +260,7 @@ describe('PermissionManager', () => {
     it('should reset onboarding', async () => {
       await permissionManager.resetOnboarding();
 
-      expect(AsyncStorage.multiRemove).toHaveBeenCalledWith(
+      expect(AsyncStorage.removeMany).toHaveBeenCalledWith(
         expect.arrayContaining([
           '@permissions/notifications_requested',
           '@permissions/location_requested',

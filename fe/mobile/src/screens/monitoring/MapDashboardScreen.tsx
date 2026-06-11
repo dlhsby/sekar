@@ -967,7 +967,7 @@ const styles = StyleSheet.create({
   },
   // Invisible full-bleed catcher for outside-taps while the tools overlay is open.
   toolsScrim: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   // Left-anchored popover from the wrench FAB (which is now the top FAB). Sits
   // beside the column so it never covers the FABs; maxHeight + internal scroll

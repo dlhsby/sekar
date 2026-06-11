@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
 
   // Centers loading/error/empty content over the map (below the control bar).
   centerOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: nbSpacing.lg,

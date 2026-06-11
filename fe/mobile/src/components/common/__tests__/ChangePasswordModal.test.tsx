@@ -87,6 +87,25 @@ describe('ChangePasswordModal', () => {
     expect(u.getByText('Password baru harus berisi huruf dan angka')).toBeTruthy();
   });
 
+  it('rejects a new password equal to the current one', () => {
+    const u = renderModal();
+    fireEvent.changeText(u.getByTestId('change-password-current-input'), 'samepass1');
+    fireEvent.changeText(u.getByTestId('change-password-new-input'), 'samepass1');
+    fireEvent.changeText(u.getByTestId('change-password-confirm-input'), 'samepass1');
+    fireEvent.press(u.getByTestId('change-password-submit'));
+    expect(u.getByText('Password baru harus berbeda dari password lama')).toBeTruthy();
+    expect(rotate).not.toHaveBeenCalled();
+  });
+
+  it('resets the form and calls onClose when Batal is pressed', () => {
+    const u = renderModal();
+    fillValid(u);
+    fireEvent.press(u.getByLabelText('Batal'));
+    expect(u.onClose).toHaveBeenCalledTimes(1);
+    // re-renders with cleared state — the inputs are empty again
+    expect(u.getByTestId('change-password-current-input').props.value).toBe('');
+  });
+
   it('flags a confirmation mismatch', () => {
     const u = renderModal();
     fireEvent.changeText(u.getByTestId('change-password-current-input'), 'oldpass12');
@@ -133,5 +152,51 @@ describe('ChangePasswordModal', () => {
         expect.objectContaining({ level: 'danger', body: 'Server meledak' }),
       ),
     );
+  });
+
+  it('maps a must-differ backend message to the new-password field', async () => {
+    rotate.mockResolvedValue({ error: 'New password must be different from old', code: 'BAD_REQUEST' });
+    const u = renderModal();
+    fillValid(u);
+    fireEvent.press(u.getByTestId('change-password-submit'));
+    await waitFor(() =>
+      expect(u.getByText('Password baru harus berbeda dari password lama')).toBeTruthy(),
+    );
+    expect(NBToast.show).not.toHaveBeenCalled();
+  });
+
+  it('toasts when the request itself rejects', async () => {
+    rotate.mockRejectedValue(new Error('Jaringan putus'));
+    const u = renderModal();
+    fillValid(u);
+    fireEvent.press(u.getByTestId('change-password-submit'));
+    await waitFor(() =>
+      expect(NBToast.show).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'danger', body: 'Jaringan putus' }),
+      ),
+    );
+  });
+
+  it('closes the modal after the success delay (token pair without refresh)', async () => {
+    jest.useFakeTimers();
+    try {
+      rotate.mockResolvedValue({ data: { access_token: 'AT', user: { id: 'u1' } } });
+      const u = renderModal();
+      fillValid(u);
+      fireEvent.press(u.getByTestId('change-password-submit'));
+      // flush the async submit chain (validate → API → storage writes)
+      await act(async () => {
+        await Promise.resolve();
+      });
+      await act(async () => {
+        await Promise.resolve();
+      });
+      act(() => {
+        jest.advanceTimersByTime(1500);
+      });
+      expect(u.onClose).toHaveBeenCalledTimes(1);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });

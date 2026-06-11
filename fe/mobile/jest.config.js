@@ -1,5 +1,5 @@
 module.exports = {
-  preset: 'react-native',
+  preset: '@react-native/jest-preset',
   maxWorkers: '50%',
   testTimeout: 30000,
   workerIdleMemoryLimit: '512MB',
@@ -57,12 +57,8 @@ module.exports = {
       lines: 84.4,
     },
     // Higher thresholds for other critical common components (must maintain)
-    'src/components/common/Button.tsx': {
-      statements: 90,
-      branches: 80,
-      functions: 90,
-      lines: 90,
-    },
+    // (Button.tsx entry removed — component deleted in the NB migration; NBButton
+    // is covered by the global threshold + its own test suite.)
     'src/components/common/ErrorBoundary.tsx': {
       statements: 90,
       branches: 80,

@@ -152,7 +152,7 @@ class PermissionManager {
    */
   async resetOnboarding(): Promise<void> {
     try {
-      await AsyncStorage.multiRemove(Object.values(STORAGE_KEYS));
+      await AsyncStorage.removeMany(Object.values(STORAGE_KEYS));
     } catch (error) {
       console.error('[PermissionManager] Failed to reset onboarding:', error);
     }
