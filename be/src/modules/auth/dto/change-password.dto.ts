@@ -12,7 +12,10 @@ import { IsOptional, IsString, MinLength } from 'class-validator';
  * re-typing the temporary password is redundant.
  */
 export class ChangePasswordDto {
-  @ApiProperty({ description: 'Current password (omit for the admin-forced reset flow)', required: false })
+  @ApiProperty({
+    description: 'Current password (omit for the admin-forced reset flow)',
+    required: false,
+  })
   @IsOptional()
   @IsString()
   old_password?: string;

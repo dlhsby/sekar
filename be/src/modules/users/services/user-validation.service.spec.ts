@@ -48,9 +48,7 @@ describe('UserValidationService', () => {
 
     it('should throw ConflictException when another user owns the phone number', async () => {
       userRepository.findOne.mockResolvedValue({ id: 'other-user' });
-      await expect(service.assertPhoneAvailable('081200000001')).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.assertPhoneAvailable('081200000001')).rejects.toThrow(ConflictException);
       await expect(service.assertPhoneAvailable('081200000001')).rejects.toThrow(
         'Phone number already in use',
       );

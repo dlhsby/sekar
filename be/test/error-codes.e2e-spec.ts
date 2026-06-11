@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { ApiErrorCode } from '../src/common/enums/api-error-codes.enum';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
@@ -46,25 +46,25 @@ describe('Error Codes (e2e)', () => {
 
     await app.init();
 
-    // Login as different users to get tokens
+    // Login as different users to get tokens (seed users, ADR-009 roles)
     const adminLogin = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ username: 'admin', password: 'admin123' });
+      .send({ identifier: 'admin', password: 'password123' });
     adminToken = adminLogin.body.access_token;
 
     const supervisorLogin = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ username: 'supervisor1', password: 'supervisor123' });
+      .send({ identifier: 'korlap_pusat_1', password: 'password123' });
     supervisorToken = supervisorLogin.body.access_token;
 
     const workerLogin = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ username: 'worker1', password: 'worker123' });
+      .send({ identifier: 'satgas_pusat_1', password: 'password123' });
     workerToken = workerLogin.body.access_token;
 
     const worker2Login = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ username: 'worker2', password: 'worker123' });
+      .send({ identifier: 'satgas_pusat_2', password: 'password123' });
     worker2Token = worker2Login.body.access_token;
   });
 
@@ -77,7 +77,7 @@ describe('Error Codes (e2e)', () => {
       it('should return AUTH_INVALID_CREDENTIALS for wrong password', () => {
         return request(app.getHttpServer())
           .post('/api/v1/auth/login')
-          .send({ username: 'admin', password: 'wrongpassword' })
+          .send({ identifier: 'admin', password: 'wrongpassword' })
           .expect(401)
           .expect((res) => {
             expect(res.body.code).toBe(ApiErrorCode.AUTH_INVALID_CREDENTIALS);
@@ -91,7 +91,7 @@ describe('Error Codes (e2e)', () => {
       it('should return AUTH_INVALID_CREDENTIALS for non-existent user', () => {
         return request(app.getHttpServer())
           .post('/api/v1/auth/login')
-          .send({ username: 'nonexistent', password: 'password123' })
+          .send({ identifier: 'nonexistent', password: 'password123' })
           .expect(401)
           .expect((res) => {
             expect(res.body.code).toBe(ApiErrorCode.AUTH_INVALID_CREDENTIALS);
@@ -100,17 +100,20 @@ describe('Error Codes (e2e)', () => {
       });
 
       it('should return AUTH_ACCOUNT_INACTIVE for inactive user', async () => {
+        const inactiveUsername = 'satgas_timur_1_2';
         // First, get users list (returns paginated response)
         const usersResponse = await request(app.getHttpServer())
-          .get('/api/v1/users')
+          .get('/api/v1/users?limit=100')
           .set('Authorization', `Bearer ${adminToken}`);
 
         // Users are in the 'data' property of paginated response
-        const testUser = usersResponse.body.data.find((u: any) => u.username === 'worker3');
+        const testUser = usersResponse.body.data?.find(
+          (u: any) => u.username === inactiveUsername,
+        );
 
         if (!testUser) {
-          // Skip test if worker3 doesn't exist in seeds
-          console.warn('Skipping test: worker3 user not found in database');
+          // Skip test if the seed user doesn't exist in this database
+          console.warn(`Skipping test: ${inactiveUsername} user not found in database`);
           return;
         }
 
@@ -120,21 +123,29 @@ describe('Error Codes (e2e)', () => {
           .set('Authorization', `Bearer ${adminToken}`)
           .send({ is_active: false });
 
-        // Try to login as inactive user
-        return request(app.getHttpServer())
-          .post('/api/v1/auth/login')
-          .send({ username: 'worker3', password: 'worker123' })
-          .expect(401)
-          .expect((res) => {
-            expect(res.body.code).toBe(ApiErrorCode.AUTH_ACCOUNT_INACTIVE);
-            expect(res.body.message).toContain('inactive');
-          });
+        try {
+          // Try to login as inactive user
+          await request(app.getHttpServer())
+            .post('/api/v1/auth/login')
+            .send({ identifier: inactiveUsername, password: 'password123' })
+            .expect(401)
+            .expect((res) => {
+              expect(res.body.code).toBe(ApiErrorCode.AUTH_ACCOUNT_INACTIVE);
+              expect(res.body.message).toContain('inactive');
+            });
+        } finally {
+          // Restore seed state so other tests/runs are unaffected
+          await request(app.getHttpServer())
+            .patch(`/api/v1/users/${testUser.id}`)
+            .set('Authorization', `Bearer ${adminToken}`)
+            .send({ is_active: true });
+        }
       });
 
       it('should return VALIDATION_ERROR for missing credentials', () => {
         return request(app.getHttpServer())
           .post('/api/v1/auth/login')
-          .send({ username: 'admin' }) // Missing password
+          .send({ identifier: 'admin' }) // Missing password
           .expect(400)
           .expect((res) => {
             expect(res.body.code).toBe(ApiErrorCode.BAD_REQUEST);
@@ -439,7 +450,7 @@ describe('Error Codes (e2e)', () => {
     it('should include all required fields in error response', () => {
       return request(app.getHttpServer())
         .post('/api/v1/auth/login')
-        .send({ username: 'invaliduser', password: 'wrongpass123' }) // Use valid-length credentials
+        .send({ identifier: 'invaliduser', password: 'wrongpass123' }) // Use valid-length credentials
         .expect(401)
         .expect((res) => {
           expect(res.body).toHaveProperty('statusCode');

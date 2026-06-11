@@ -1379,8 +1379,12 @@ describe('MonitoringService', () => {
         generated_at: new Date(),
       };
 
-      jest.spyOn(service['userService'], 'getLiveUsers').mockResolvedValue(mockLiveUsersResult as any);
-      jest.spyOn(service['statsService'], 'getCurrentShiftDefinition').mockResolvedValue(mockShiftDefinition);
+      jest
+        .spyOn(service['userService'], 'getLiveUsers')
+        .mockResolvedValue(mockLiveUsersResult as any);
+      jest
+        .spyOn(service['statsService'], 'getCurrentShiftDefinition')
+        .mockResolvedValue(mockShiftDefinition);
       staffRequirementRepository.findOne.mockResolvedValue(mockStaffRequirement);
 
       const result = await service.getSnapshot('area', 'area-1');
@@ -1470,8 +1474,12 @@ describe('MonitoringService', () => {
         generated_at: new Date(),
       };
 
-      jest.spyOn(service['userService'], 'getLiveUsers').mockResolvedValue(mockLiveUsersResult as any);
-      jest.spyOn(service['statsService'], 'getCurrentShiftDefinition').mockResolvedValue(mockShiftDefinition);
+      jest
+        .spyOn(service['userService'], 'getLiveUsers')
+        .mockResolvedValue(mockLiveUsersResult as any);
+      jest
+        .spyOn(service['statsService'], 'getCurrentShiftDefinition')
+        .mockResolvedValue(mockShiftDefinition);
 
       const result = await service.getSnapshot('city');
 
@@ -1571,8 +1579,12 @@ describe('MonitoringService', () => {
         generated_at: new Date(),
       };
 
-      jest.spyOn(service['userService'], 'getLiveUsers').mockResolvedValue(mockLiveUsersResult as any);
-      jest.spyOn(service['statsService'], 'getCurrentShiftDefinition').mockResolvedValue(mockShiftDefinition);
+      jest
+        .spyOn(service['userService'], 'getLiveUsers')
+        .mockResolvedValue(mockLiveUsersResult as any);
+      jest
+        .spyOn(service['statsService'], 'getCurrentShiftDefinition')
+        .mockResolvedValue(mockShiftDefinition);
 
       // Required count = 5, active count = 3 (all have ACTIVE status) → understaffed
       staffRequirementRepository.findOne.mockResolvedValue(mockStaffRequirement);
@@ -1621,8 +1633,12 @@ describe('MonitoringService', () => {
         generated_at: new Date(),
       };
 
-      jest.spyOn(service['userService'], 'getLiveUsers').mockResolvedValue(mockLiveUsersResult as any);
-      jest.spyOn(service['statsService'], 'getCurrentShiftDefinition').mockResolvedValue(mockShiftDefinition);
+      jest
+        .spyOn(service['userService'], 'getLiveUsers')
+        .mockResolvedValue(mockLiveUsersResult as any);
+      jest
+        .spyOn(service['statsService'], 'getCurrentShiftDefinition')
+        .mockResolvedValue(mockShiftDefinition);
 
       // Required count = 5, active count = 5 → fully staffed
       staffRequirementRepository.findOne.mockResolvedValue(mockStaffRequirement);
@@ -1699,7 +1715,9 @@ describe('MonitoringService', () => {
         generated_at: new Date(),
       };
 
-      jest.spyOn(service['userService'], 'getLiveUsers').mockResolvedValue(mockLiveUsersResult as any);
+      jest
+        .spyOn(service['userService'], 'getLiveUsers')
+        .mockResolvedValue(mockLiveUsersResult as any);
       jest.spyOn(service['statsService'], 'getCurrentShiftDefinition').mockResolvedValue(null);
 
       const result = await service.getSnapshot('area', 'area-1');

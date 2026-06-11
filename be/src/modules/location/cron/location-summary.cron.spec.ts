@@ -10,10 +10,7 @@ describe('LocationSummaryCron', () => {
     dataSource = { query: jest.fn().mockResolvedValue([{ id: 's1' }, { id: 's2' }]) };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        LocationSummaryCron,
-        { provide: getDataSourceToken(), useValue: dataSource },
-      ],
+      providers: [LocationSummaryCron, { provide: getDataSourceToken(), useValue: dataSource }],
     }).compile();
 
     cron = module.get(LocationSummaryCron);

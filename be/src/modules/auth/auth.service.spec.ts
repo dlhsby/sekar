@@ -10,6 +10,13 @@ import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { RedisService } from '../../common/services/redis.service';
 
+// bcrypt >=6 exports are non-configurable, so jest.spyOn cannot patch the real
+// module; mock it so the spies attach to plain jest.fn()s instead.
+jest.mock('bcrypt', () => ({
+  compare: jest.fn(),
+  hash: jest.fn(),
+}));
+
 describe('AuthService', () => {
   let module: TestingModule;
   let service: AuthService;

@@ -1,6 +1,10 @@
 import { IsString, IsUUID, IsNumber, IsOptional, IsEnum, IsBoolean } from 'class-validator';
 import { UserRole } from '../../modules/users/entities/user.entity';
-import { TrackingStatus, ActivityStatus, LocationStatus } from '../../modules/monitoring/entities/user-tracking-status.entity';
+import {
+  TrackingStatus,
+  ActivityStatus,
+  LocationStatus,
+} from '../../modules/monitoring/entities/user-tracking-status.entity';
 
 /**
  * Subscribe to area events

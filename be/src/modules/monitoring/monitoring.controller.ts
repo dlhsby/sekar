@@ -156,9 +156,7 @@ export class MonitoringController {
   ): Promise<ReassignmentHistoryResponseDto> {
     await this.enforceScopeUser(user, userId);
     const logs = await this.auditLogService.getEntityHistory('user', userId);
-    const reassignmentLogs = logs
-      .filter((log) => log.action === 'reassign')
-      .slice(0, 20);
+    const reassignmentLogs = logs.filter((log) => log.action === 'reassign').slice(0, 20);
 
     return {
       user_id: userId,

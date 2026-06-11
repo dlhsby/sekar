@@ -966,7 +966,10 @@ describe('MonitoringController', () => {
       ];
 
       auditLogService.getEntityHistory.mockResolvedValue(mockLogs);
-      service.getUserDaySummary.mockResolvedValue({ area_id: 'area-2', rayon_id: 'rayon-1' } as any);
+      service.getUserDaySummary.mockResolvedValue({
+        area_id: 'area-2',
+        rayon_id: 'rayon-1',
+      } as any);
 
       const result = await controller.getReassignmentHistory('user-1', mockSuperadmin);
 
@@ -1009,7 +1012,10 @@ describe('MonitoringController', () => {
       ];
 
       auditLogService.getEntityHistory.mockResolvedValue(mixedLogs);
-      service.getUserDaySummary.mockResolvedValue({ area_id: 'area-2', rayon_id: 'rayon-1' } as any);
+      service.getUserDaySummary.mockResolvedValue({
+        area_id: 'area-2',
+        rayon_id: 'rayon-1',
+      } as any);
 
       const result = await controller.getReassignmentHistory('user-1', mockSuperadmin);
 
@@ -1034,7 +1040,10 @@ describe('MonitoringController', () => {
       }));
 
       auditLogService.getEntityHistory.mockResolvedValue(manyLogs);
-      service.getUserDaySummary.mockResolvedValue({ area_id: 'area-2', rayon_id: 'rayon-1' } as any);
+      service.getUserDaySummary.mockResolvedValue({
+        area_id: 'area-2',
+        rayon_id: 'rayon-1',
+      } as any);
 
       const result = await controller.getReassignmentHistory('user-1', mockSuperadmin);
 
@@ -1059,7 +1068,10 @@ describe('MonitoringController', () => {
       ];
 
       auditLogService.getEntityHistory.mockResolvedValue(logsWithNulls);
-      service.getUserDaySummary.mockResolvedValue({ area_id: 'area-2', rayon_id: 'rayon-1' } as any);
+      service.getUserDaySummary.mockResolvedValue({
+        area_id: 'area-2',
+        rayon_id: 'rayon-1',
+      } as any);
 
       const result = await controller.getReassignmentHistory('user-1', mockSuperadmin);
 
@@ -1074,9 +1086,9 @@ describe('MonitoringController', () => {
         rayon_id: 'rayon-other',
       } as any);
 
-      await expect(
-        controller.getReassignmentHistory('user-1', mockKepalaRayon),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(controller.getReassignmentHistory('user-1', mockKepalaRayon)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should handle actor with null full_name', async () => {
@@ -1097,7 +1109,10 @@ describe('MonitoringController', () => {
       ];
 
       auditLogService.getEntityHistory.mockResolvedValue(logsWithMissingActor);
-      service.getUserDaySummary.mockResolvedValue({ area_id: 'area-2', rayon_id: 'rayon-1' } as any);
+      service.getUserDaySummary.mockResolvedValue({
+        area_id: 'area-2',
+        rayon_id: 'rayon-1',
+      } as any);
 
       const result = await controller.getReassignmentHistory('user-1', mockSuperadmin);
 

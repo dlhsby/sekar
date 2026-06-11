@@ -867,7 +867,7 @@ describe('SupervisorService', () => {
 
       expect(result.date).toBeDefined();
       expect(result.clocked_in).toBe(false);
-      expect((mockShiftsRepository.findOne as jest.Mock)).toHaveBeenCalled();
+      expect(mockShiftsRepository.findOne as jest.Mock).toHaveBeenCalled();
     });
 
     it('should include user area when area_id is set and area is found', async () => {

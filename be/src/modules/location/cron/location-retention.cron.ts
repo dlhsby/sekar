@@ -44,10 +44,9 @@ export class LocationRetentionCron {
 
       // 2. Purge raw pings older than the cutoff instant (midnight WIB).
       const deleteResult: { affectedRows?: number }[] | [unknown[], number] =
-        await this.dataSource.query(
-          `DELETE FROM location_logs WHERE logged_at < $1`,
-          [cutoffInstant.toISOString()],
-        );
+        await this.dataSource.query(`DELETE FROM location_logs WHERE logged_at < $1`, [
+          cutoffInstant.toISOString(),
+        ]);
       const deletedCount = Array.isArray(deleteResult) ? (deleteResult[1] ?? 0) : 0;
 
       this.logger.log(

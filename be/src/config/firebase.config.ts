@@ -1,8 +1,9 @@
-import * as admin from 'firebase-admin';
+import { App, cert, deleteApp, initializeApp } from 'firebase-admin/app';
+import { getMessaging as getAdminMessaging, Messaging } from 'firebase-admin/messaging';
 import { join } from 'path';
 import { Logger } from '@nestjs/common';
 
-let firebaseApp: admin.app.App | null = null;
+let firebaseApp: App | null = null;
 const logger = new Logger('FirebaseConfig');
 
 /**
@@ -18,7 +19,7 @@ const logger = new Logger('FirebaseConfig');
  * @returns The initialized Firebase app instance
  * @throws Error if service account file is missing or invalid
  */
-export function initializeFirebase(): admin.app.App {
+export function initializeFirebase(): App {
   if (firebaseApp) {
     logger.log('Firebase Admin SDK already initialized');
     return firebaseApp;
@@ -63,8 +64,8 @@ export function initializeFirebase(): admin.app.App {
     }
 
     // Initialize Firebase Admin SDK
-    firebaseApp = admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
+    firebaseApp = initializeApp({
+      credential: cert(serviceAccount),
       projectId: serviceAccount.project_id,
     });
 
@@ -103,11 +104,9 @@ export function initializeFirebase(): admin.app.App {
  * @returns Firebase Messaging instance for sending FCM messages
  * @throws Error if Firebase is not initialized or disabled
  */
-export function getMessaging(): admin.messaging.Messaging {
-  if (!firebaseApp) {
-    initializeFirebase();
-  }
-  return admin.messaging();
+export function getMessaging(): Messaging {
+  const app = firebaseApp ?? initializeFirebase();
+  return getAdminMessaging(app);
 }
 
 /**
@@ -124,7 +123,7 @@ export function isFirebaseInitialized(): boolean {
  */
 export async function cleanupFirebase(): Promise<void> {
   if (firebaseApp) {
-    await firebaseApp.delete();
+    await deleteApp(firebaseApp);
     firebaseApp = null;
     logger.log('Firebase Admin SDK cleaned up');
   }

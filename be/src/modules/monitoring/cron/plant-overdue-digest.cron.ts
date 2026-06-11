@@ -3,7 +3,10 @@ import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, UserRole } from '../../users/entities/user.entity';
-import { AreaPlantStatusService, RayonPlantStatusSummary } from '../services/area-plant-status.service';
+import {
+  AreaPlantStatusService,
+  RayonPlantStatusSummary,
+} from '../services/area-plant-status.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { NotificationType } from '../../notifications/entities/notification.entity';
 import { RedisService } from '../../../common/services/redis.service';

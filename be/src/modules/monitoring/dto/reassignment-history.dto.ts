@@ -22,7 +22,10 @@ export class ReassignmentHistoryEntryDto {
   @ApiPropertyOptional({ example: '2026-06-11', description: 'Effective date (YYYY-MM-DD)' })
   effective_date: string | null;
 
-  @ApiProperty({ example: 'admin-uuid', description: 'Actor (person who performed reassignment) ID' })
+  @ApiProperty({
+    example: 'admin-uuid',
+    description: 'Actor (person who performed reassignment) ID',
+  })
   actor_id: string;
 
   @ApiProperty({ example: 'Admin User', description: 'Actor full name' })
@@ -36,6 +39,9 @@ export class ReassignmentHistoryResponseDto {
   @ApiProperty({ example: 'user-uuid', description: 'User ID' })
   user_id: string;
 
-  @ApiProperty({ type: [ReassignmentHistoryEntryDto], description: 'Up to 20 reassignment entries (DESC by created_at)' })
+  @ApiProperty({
+    type: [ReassignmentHistoryEntryDto],
+    description: 'Up to 20 reassignment entries (DESC by created_at)',
+  })
   history: ReassignmentHistoryEntryDto[];
 }

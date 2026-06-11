@@ -264,10 +264,9 @@ async function ensureBackfillAnchors(dryRun: boolean): Promise<BackfillAnchors |
 
   if (dryRun) return null; // dry-run never writes; anchors are not needed
 
-  let userRows = await AppDataSource.query(
-    `SELECT id FROM users WHERE username = $1 LIMIT 1`,
-    [BACKFILL_USERNAME],
-  );
+  let userRows = await AppDataSource.query(`SELECT id FROM users WHERE username = $1 LIMIT 1`, [
+    BACKFILL_USERNAME,
+  ]);
   if (userRows.length === 0) {
     userRows = await AppDataSource.query(
       `INSERT INTO users (id, username, password_hash, full_name, role, is_active, password_must_change, created_at, updated_at)

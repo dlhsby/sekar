@@ -134,7 +134,9 @@ async function seedPhase1() {
         ('a0000000-0000-4000-8000-000000000099', 'resettest', '${PASSWORD_HASH}', 'Reset Test User', '081200000099', 'satgas', TRUE, TRUE)
       ON CONFLICT (username) DO NOTHING
     `);
-    console.log('  Created 1 user: resettest (satgas, password_must_change) — password: password123');
+    console.log(
+      '  Created 1 user: resettest (satgas, password_must_change) — password: password123',
+    );
 
     // ============================================================
     // NOTIFICATIONS (seeded in seed-notifications.ts after phase2/phase3)

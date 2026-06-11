@@ -12,16 +12,13 @@ describe('SoftDeletePurgeCron', () => {
     manager = { query: jest.fn().mockResolvedValue(undefined) };
     dataSource = {
       query: jest.fn().mockResolvedValue([]),
-      transaction: jest.fn().mockImplementation(async (fn: (m: typeof manager) => Promise<void>) =>
-        fn(manager),
-      ),
+      transaction: jest
+        .fn()
+        .mockImplementation(async (fn: (m: typeof manager) => Promise<void>) => fn(manager)),
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        SoftDeletePurgeCron,
-        { provide: getDataSourceToken(), useValue: dataSource },
-      ],
+      providers: [SoftDeletePurgeCron, { provide: getDataSourceToken(), useValue: dataSource }],
     }).compile();
 
     cron = module.get(SoftDeletePurgeCron);

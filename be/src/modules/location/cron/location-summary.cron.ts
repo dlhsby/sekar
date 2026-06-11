@@ -24,9 +24,7 @@ export class LocationSummaryCron {
   @Cron('0 3 * * *', { name: 'location-daily-summary', timeZone: 'Asia/Jakarta' })
   async summarizeYesterday(): Promise<void> {
     const today = TimezoneUtil.jakartaDateString();
-    const yesterday = TimezoneUtil.jakartaDateString(
-      new Date(Date.now() - 24 * 60 * 60 * 1000),
-    );
+    const yesterday = TimezoneUtil.jakartaDateString(new Date(Date.now() - 24 * 60 * 60 * 1000));
 
     try {
       const inserted = await this.summarizeDateRange(yesterday, yesterday, false);

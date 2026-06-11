@@ -41,7 +41,11 @@ describe('PlantOverdueDigestCron', () => {
     ],
   };
 
-  const topManagement = { id: 'tm-1', role: UserRole.TOP_MANAGEMENT, rayon_id: null } as unknown as User;
+  const topManagement = {
+    id: 'tm-1',
+    role: UserRole.TOP_MANAGEMENT,
+    rayon_id: null,
+  } as unknown as User;
   const kepalaA = { id: 'kr-a', role: UserRole.KEPALA_RAYON, rayon_id: RAYON_A } as unknown as User;
   const kepalaB = { id: 'kr-b', role: UserRole.KEPALA_RAYON, rayon_id: RAYON_B } as unknown as User;
 

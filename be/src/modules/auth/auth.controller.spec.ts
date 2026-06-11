@@ -127,7 +127,10 @@ describe('AuthController', () => {
       const result = await controller.getMe(userWithPhotoAndPhone);
 
       expect(result).toHaveProperty('phone_number', '081234567890');
-      expect(result).toHaveProperty('profile_picture_url', 'data:image/jpeg;base64,/9j/4AAQSkZJRg...');
+      expect(result).toHaveProperty(
+        'profile_picture_url',
+        'data:image/jpeg;base64,/9j/4AAQSkZJRg...',
+      );
     });
 
     it('should return null for phone_number and profile_picture_url when not set', async () => {

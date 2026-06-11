@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as JSZip from 'jszip';
+import JSZip from 'jszip';
 import * as xml2js from 'xml2js';
 import { v4 as uuidv4 } from 'uuid';
 import { Area } from '../areas/entities/area.entity';

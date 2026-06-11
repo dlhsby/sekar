@@ -1,5 +1,12 @@
 import { Controller, Get, Query, Param, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiParam } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+  ApiParam,
+} from '@nestjs/swagger';
 import { SupervisorService } from './supervisor.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -180,7 +187,8 @@ export class SupervisorController {
   @Get('attendance/:userId')
   @ApiOperation({
     summary: 'Get per-user attendance detail (Admin, Korlap)',
-    description: 'Returns clock-in/out details for a specific user on a specific date (defaults to today)',
+    description:
+      'Returns clock-in/out details for a specific user on a specific date (defaults to today)',
   })
   @ApiParam({
     name: 'userId',

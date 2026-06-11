@@ -74,7 +74,8 @@ async function seedMonitoringDemo() {
     const now = new Date();
     const priorDemoCutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24h ago
 
-    await queryRunner.query(`
+    await queryRunner.query(
+      `
       UPDATE shifts
       SET clock_out_time = NOW(),
           clock_out_gps_lat = -7.2905,
@@ -83,7 +84,9 @@ async function seedMonitoringDemo() {
       WHERE clock_out_time IS NULL
         AND created_at < $1
         AND user_id IN (SELECT id FROM users WHERE role IN ('satgas', 'linmas', 'korlap'))
-    `, [priorDemoCutoff]);
+    `,
+      [priorDemoCutoff],
+    );
 
     console.log('  ✓ Closed prior demo shifts\n');
 
@@ -240,7 +243,9 @@ async function seedMonitoringDemo() {
           );
 
           statusSummary[status.name]++;
-          console.log(`  ✓ ${worker.username} (${worker.role}) → ${status.name} (${status.description})`);
+          console.log(
+            `  ✓ ${worker.username} (${worker.role}) → ${status.name} (${status.description})`,
+          );
         } else {
           // Offline status: no shift, just update tracking status
           await queryRunner.query(
@@ -264,7 +269,9 @@ async function seedMonitoringDemo() {
       '══════════════════════════════════════════════════════════════════════════════════════',
     );
     console.log('📊 Monitoring Demo Summary:');
-    console.log('══════════════════════════════════════════════════════════════════════════════════════');
+    console.log(
+      '══════════════════════════════════════════════════════════════════════════════════════',
+    );
     for (const [status, count] of Object.entries(statusSummary)) {
       console.log(`  ${status.padEnd(15)} ${count} worker(s)`);
     }

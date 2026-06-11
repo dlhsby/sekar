@@ -151,11 +151,7 @@ export class MonitoringService {
     }));
 
     // Build area_summaries from distinct areas present in workers
-    const areaSummaries = await this.buildAreaSummaries(
-      workers,
-      currentShift,
-      currentDayType,
-    );
+    const areaSummaries = await this.buildAreaSummaries(workers, currentShift, currentDayType);
 
     const generatedAt = new Date().toISOString();
 

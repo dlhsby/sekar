@@ -1,7 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsUUID, IsEnum } from 'class-validator';
 import { CLOCKABLE_ROLES } from '../../users/constants/role-groups';
-import { TrackingStatus, ActivityStatus, LocationStatus } from '../entities/user-tracking-status.entity';
+import {
+  TrackingStatus,
+  ActivityStatus,
+  LocationStatus,
+} from '../entities/user-tracking-status.entity';
 
 export class LiveUserDto {
   @ApiProperty({ example: 'user-uuid' })
@@ -49,7 +53,10 @@ export class LiveUserDto {
   @ApiProperty({ example: 'aktif', description: 'Activity axis: aktif|idle|missing|offline' })
   activity: ActivityStatus;
 
-  @ApiProperty({ example: 'dalam_area', description: 'Location axis: dalam_area|luar_area|unknown' })
+  @ApiProperty({
+    example: 'dalam_area',
+    description: 'Location axis: dalam_area|luar_area|unknown',
+  })
   location: LocationStatus;
 
   @ApiProperty({ example: true })

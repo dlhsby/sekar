@@ -24,7 +24,9 @@ export class RayonColor17480150000000 implements MigrationInterface {
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Add the color column (idempotent)
-    await queryRunner.query(`ALTER TABLE "rayons" ADD COLUMN IF NOT EXISTS "color" varchar(9) NULL`);
+    await queryRunner.query(
+      `ALTER TABLE "rayons" ADD COLUMN IF NOT EXISTS "color" varchar(9) NULL`,
+    );
 
     // Backfill the 7 geographic rayons with their canonical colors.
     // Naturally idempotent — re-running sets the same value by code.

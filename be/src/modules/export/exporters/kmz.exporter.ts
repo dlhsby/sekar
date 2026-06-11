@@ -1,4 +1,4 @@
-import * as JSZip from 'jszip';
+import JSZip from 'jszip';
 import type { ExportFile } from './dataset';
 import { CONTENT_TYPES } from './dataset';
 

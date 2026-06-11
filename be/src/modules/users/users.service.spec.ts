@@ -16,6 +16,13 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
 
+// bcrypt >=6 exports are non-configurable, so jest.spyOn cannot patch the real
+// module; mock it so the spies attach to plain jest.fn()s instead.
+jest.mock('bcrypt', () => ({
+  compare: jest.fn(),
+  hash: jest.fn(),
+}));
+
 describe('UsersService', () => {
   let module: TestingModule;
   let service: UsersService;
@@ -541,7 +548,11 @@ describe('UsersService', () => {
       mockUserRepository.save.mockResolvedValue({ ...mockUser, full_name: 'Updated Name' });
       const actor = { ...mockUser, id: 'admin-actor-uuid' } as User;
 
-      await service.update(mockUser.id, { full_name: 'Updated Name', password: 'secret-pass' }, actor);
+      await service.update(
+        mockUser.id,
+        { full_name: 'Updated Name', password: 'secret-pass' },
+        actor,
+      );
 
       expect(mockAuditLogService.log).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -673,9 +684,7 @@ describe('UsersService', () => {
         return Promise.resolve(null);
       });
 
-      await expect(service.updateOwnProfile(mockUser.id, dto)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.updateOwnProfile(mockUser.id, dto)).rejects.toThrow(ConflictException);
       await expect(service.updateOwnProfile(mockUser.id, dto)).rejects.toThrow(
         'Phone number already in use',
       );
@@ -699,9 +708,7 @@ describe('UsersService', () => {
       const dto: UpdateMyProfileDto = { full_name: 'New Name' };
       mockUserRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.updateOwnProfile(mockUser.id, dto)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.updateOwnProfile(mockUser.id, dto)).rejects.toThrow(NotFoundException);
     });
 
     it('should not allow empty/empty update', async () => {
@@ -792,15 +799,12 @@ describe('UsersService', () => {
     const newPasswordHash = '$2b$10$newhashedpassword';
 
     beforeEach(() => {
-      jest.spyOn(bcrypt, 'compare').mockImplementation((password: string, hash: string) => {
+      jest.spyOn(bcrypt, 'compare').mockImplementation(((password: string, hash: string) => {
         if (password === currentPassword && hash === mockUser.password_hash) {
-          return Promise.resolve(true as never);
+          return Promise.resolve(true);
         }
-        if (password === newPassword && hash === mockUser.password_hash) {
-          return Promise.resolve(false as never);
-        }
-        return Promise.resolve(false as never);
-      });
+        return Promise.resolve(false);
+      }) as never);
       mockAuthService.hashPassword.mockResolvedValue(newPasswordHash);
     });
 
@@ -852,9 +856,9 @@ describe('UsersService', () => {
 
     it('should throw BadRequestException if new password is same as current', async () => {
       mockUserRepository.findOne.mockResolvedValue(mockUser);
-      jest.spyOn(bcrypt, 'compare').mockImplementation((_password: string, _hash: string) => {
-        return Promise.resolve(true as never); // Both current and new password match
-      });
+      jest.spyOn(bcrypt, 'compare').mockImplementation(((_password: string, _hash: string) => {
+        return Promise.resolve(true); // Both current and new password match
+      }) as never);
 
       await expect(
         service.changePassword(mockUser.id, currentPassword, currentPassword),

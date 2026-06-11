@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe, VersioningType } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { ApiVersionInterceptor } from '../src/common/interceptors/api-version.interceptor';
@@ -47,7 +47,7 @@ describe('API Versioning (e2e)', () => {
     // Get authentication token
     const loginResponse = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ username: 'admin', password: 'admin123' });
+      .send({ identifier: 'admin', password: 'password123' });
 
     authToken = loginResponse.body.access_token;
   });
@@ -61,7 +61,7 @@ describe('API Versioning (e2e)', () => {
       it('POST /api/v1/auth/login should work', () => {
         return request(app.getHttpServer())
           .post('/api/v1/auth/login')
-          .send({ username: 'admin', password: 'admin123' })
+          .send({ identifier: 'admin', password: 'password123' })
           .expect(200) // Login returns 200, not 201
           .expect((res) => {
             expect(res.body).toHaveProperty('access_token');
@@ -180,7 +180,7 @@ describe('API Versioning (e2e)', () => {
     it('POST /api/auth/login should return 404 or redirect', () => {
       return request(app.getHttpServer())
         .post('/api/auth/login')
-        .send({ username: 'admin', password: 'admin123' })
+        .send({ identifier: 'admin', password: 'password123' })
         .expect((res) => {
           // Should either be 404 or 301/302 redirect
           expect([301, 302, 404]).toContain(res.status);
@@ -280,7 +280,7 @@ describe('API Versioning (e2e)', () => {
     it('should include X-API-Version in error responses', () => {
       return request(app.getHttpServer())
         .post('/api/v1/auth/login')
-        .send({ username: 'invaliduser', password: 'wrongpass123' }) // Use valid-length credentials
+        .send({ identifier: 'invaliduser', password: 'wrongpass123' }) // Use valid-length credentials
         .expect(401)
         .expect((res) => {
           expect(res.headers['x-api-version']).toBe('1');
@@ -375,7 +375,7 @@ describe('API Versioning (e2e)', () => {
     it('should maintain same response structure across versions', async () => {
       const v1Response = await request(app.getHttpServer())
         .post('/api/v1/auth/login')
-        .send({ username: 'admin', password: 'admin123' })
+        .send({ identifier: 'admin', password: 'password123' })
         .expect(200); // Login returns 200, not 201
 
       // Verify response structure
@@ -415,7 +415,7 @@ describe('API Versioning (e2e)', () => {
     it('should include version in validation error responses', () => {
       return request(app.getHttpServer())
         .post('/api/v1/auth/login')
-        .send({ username: 'admin' }) // Missing password
+        .send({ identifier: 'admin' }) // Missing password
         .expect(400)
         .expect((res) => {
           expect(res.headers['x-api-version']).toBe('1');

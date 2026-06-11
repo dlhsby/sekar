@@ -1,11 +1,7 @@
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { config } from 'dotenv';
-import {
-  RAYON_BOUNDARIES,
-  computeCentroidFromRings,
-  type RayonCode,
-} from './kmz-areas';
+import { RAYON_BOUNDARIES, computeCentroidFromRings, type RayonCode } from './kmz-areas';
 
 config();
 
@@ -35,14 +31,49 @@ config();
  */
 
 const RAYONS: { name: string; code: RayonCode | 'TAMAN_AKTIF'; description: string }[] = [
-  { name: 'Rayon Selatan', code: 'SELATAN', description: 'Wilayah Surabaya Selatan - Wonokromo, Wonocolo, Gayungan, Jambangan' },
-  { name: 'Rayon Utara', code: 'UTARA', description: 'Wilayah Surabaya Utara - Krembangan, Pabean Cantian, Semampir, Kenjeran, Bulak' },
-  { name: 'Rayon Pusat', code: 'PUSAT', description: 'Wilayah Surabaya Pusat - Tegalsari, Genteng, Bubutan, Simokerto' },
-  { name: 'Rayon Timur 1', code: 'TIMUR1', description: 'Wilayah Surabaya Timur bagian 1 - Tambaksari, Gubeng, Sukolilo' },
-  { name: 'Rayon Timur 2', code: 'TIMUR2', description: 'Wilayah Surabaya Timur bagian 2 - Mulyorejo, Rungkut, Tenggilis Mejoyo, Gunung Anyar' },
-  { name: 'Rayon Barat 1', code: 'BARAT1', description: 'Wilayah Surabaya Barat bagian 1 - Sukomanunggal, Tandes, Asemrowo, Benowo' },
-  { name: 'Rayon Barat 2', code: 'BARAT2', description: 'Wilayah Surabaya Barat bagian 2 - Sawahan, Dukuh Pakis, Wiyung, Karang Pilang, Lakarsantri, Sambikerep' },
-  { name: 'Rayon Taman Aktif', code: 'TAMAN_AKTIF', description: 'Bucket logis untuk taman aktif (active parks) lintas-rayon — tidak punya batas geografis' },
+  {
+    name: 'Rayon Selatan',
+    code: 'SELATAN',
+    description: 'Wilayah Surabaya Selatan - Wonokromo, Wonocolo, Gayungan, Jambangan',
+  },
+  {
+    name: 'Rayon Utara',
+    code: 'UTARA',
+    description: 'Wilayah Surabaya Utara - Krembangan, Pabean Cantian, Semampir, Kenjeran, Bulak',
+  },
+  {
+    name: 'Rayon Pusat',
+    code: 'PUSAT',
+    description: 'Wilayah Surabaya Pusat - Tegalsari, Genteng, Bubutan, Simokerto',
+  },
+  {
+    name: 'Rayon Timur 1',
+    code: 'TIMUR1',
+    description: 'Wilayah Surabaya Timur bagian 1 - Tambaksari, Gubeng, Sukolilo',
+  },
+  {
+    name: 'Rayon Timur 2',
+    code: 'TIMUR2',
+    description:
+      'Wilayah Surabaya Timur bagian 2 - Mulyorejo, Rungkut, Tenggilis Mejoyo, Gunung Anyar',
+  },
+  {
+    name: 'Rayon Barat 1',
+    code: 'BARAT1',
+    description: 'Wilayah Surabaya Barat bagian 1 - Sukomanunggal, Tandes, Asemrowo, Benowo',
+  },
+  {
+    name: 'Rayon Barat 2',
+    code: 'BARAT2',
+    description:
+      'Wilayah Surabaya Barat bagian 2 - Sawahan, Dukuh Pakis, Wiyung, Karang Pilang, Lakarsantri, Sambikerep',
+  },
+  {
+    name: 'Rayon Taman Aktif',
+    code: 'TAMAN_AKTIF',
+    description:
+      'Bucket logis untuk taman aktif (active parks) lintas-rayon — tidak punya batas geografis',
+  },
 ];
 
 const SHIFT_DEFINITIONS = [
@@ -174,8 +205,18 @@ async function seedProduction(): Promise<void> {
 
     // 4. Admin accounts (passwords from env, never logged)
     const admins = [
-      { username: 'superadmin', fullName: 'Super Administrator', role: 'superadmin', password: superadminPassword },
-      { username: 'admin_system', fullName: 'Administrator Sistem', role: 'admin_system', password: adminSystemPassword },
+      {
+        username: 'superadmin',
+        fullName: 'Super Administrator',
+        role: 'superadmin',
+        password: superadminPassword,
+      },
+      {
+        username: 'admin_system',
+        fullName: 'Administrator Sistem',
+        role: 'admin_system',
+        password: adminSystemPassword,
+      },
     ];
     for (const admin of admins) {
       const hash = await bcrypt.hash(admin.password, 10);

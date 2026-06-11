@@ -362,9 +362,24 @@ describe('AreaPlantStatusService', () => {
   describe('getSummary (Phase 3-8 close-out)', () => {
     const RAYON_A = 'rayon-a';
     const RAYON_B = 'rayon-b';
-    const areaA1 = { id: 'area-a1', name: 'Taman Bungkul', rayon_id: RAYON_A, areaType: {} } as unknown as Area;
-    const areaA2 = { id: 'area-a2', name: 'Taman Flora', rayon_id: RAYON_A, areaType: {} } as unknown as Area;
-    const areaB1 = { id: 'area-b1', name: 'Taman Apsari', rayon_id: RAYON_B, areaType: {} } as unknown as Area;
+    const areaA1 = {
+      id: 'area-a1',
+      name: 'Taman Bungkul',
+      rayon_id: RAYON_A,
+      areaType: {},
+    } as unknown as Area;
+    const areaA2 = {
+      id: 'area-a2',
+      name: 'Taman Flora',
+      rayon_id: RAYON_A,
+      areaType: {},
+    } as unknown as Area;
+    const areaB1 = {
+      id: 'area-b1',
+      name: 'Taman Apsari',
+      rayon_id: RAYON_B,
+      areaType: {},
+    } as unknown as Area;
 
     function plantRow(areaId: string, speciesId: string): AreaPlant {
       return { areaId, speciesId, count: 2, species: mockSpecies1 } as unknown as AreaPlant;
@@ -374,10 +389,12 @@ describe('AreaPlantStatusService', () => {
       (areaRepository as unknown as { find: jest.Mock }).find = jest
         .fn()
         .mockResolvedValue([areaA1, areaA2, areaB1]);
-      const rayonRepo = { find: jest.fn().mockResolvedValue([
-        { id: RAYON_A, name: 'Rayon Selatan' },
-        { id: RAYON_B, name: 'Rayon Utara' },
-      ]) };
+      const rayonRepo = {
+        find: jest.fn().mockResolvedValue([
+          { id: RAYON_A, name: 'Rayon Selatan' },
+          { id: RAYON_B, name: 'Rayon Utara' },
+        ]),
+      };
       // Re-wire the injected mock's behavior
       (service as unknown as { rayonRepository: typeof rayonRepo }).rayonRepository = rayonRepo;
     });

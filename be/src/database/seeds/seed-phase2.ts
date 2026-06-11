@@ -1105,7 +1105,9 @@ async function seedPhase2() {
         ) AS t(cin, cout)
         WHERE u.username = 'satgas_pusat_1'
       `);
-      console.log('  ✓ Created 19 shifts for satgas_pusat_1 (spread across 2+ months for filter/scroll testing)');
+      console.log(
+        '  ✓ Created 19 shifts for satgas_pusat_1 (spread across 2+ months for filter/scroll testing)',
+      );
     } else {
       console.log('  ⚠ No areas found, skipping Phase 2C shifts');
     }
@@ -1498,7 +1500,9 @@ async function seedPhase2() {
           FROM generate_series(1, 10) AS gs(n)
           ON CONFLICT (id) DO NOTHING;
         `);
-        console.log('  ✓ Created 10 today-dated activities for satgas_pusat_1 (ringkasan hari ini)');
+        console.log(
+          '  ✓ Created 10 today-dated activities for satgas_pusat_1 (ringkasan hari ini)',
+        );
       } else {
         console.log('  ⚠ Activity types not found, skipping activities');
       }
@@ -1603,9 +1607,7 @@ async function seedPhase2() {
     // - OUTSIDE_AREA: GPS coordinates outside assigned area boundary, is_within_area = false
     // - MISSING: last_location_at 3+ hours ago, is_within_area = NULL
     // - OFFLINE: no location data or last_location_at very old
-    console.log(
-      '  [D.3] Seeding monitoring status variants for web dashboard + monitoring map...',
-    );
+    console.log('  [D.3] Seeding monitoring status variants for web dashboard + monitoring map...');
 
     // Get a sample of workers from different rayons to seed varied statuses
     const monitoringUsers = await queryRunner.query(`

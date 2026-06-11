@@ -22,16 +22,13 @@ const AUDITED_SERVICES: { file: string; domain: string }[] = [
 ];
 
 describe('Audit trail completeness (4-4 C2)', () => {
-  it.each(AUDITED_SERVICES)(
-    '$file keeps the $domain mutations audit-logged',
-    ({ file }) => {
-      const source = readFileSync(join(MODULES_DIR, file), 'utf8');
+  it.each(AUDITED_SERVICES)('$file keeps the $domain mutations audit-logged', ({ file }) => {
+    const source = readFileSync(join(MODULES_DIR, file), 'utf8');
 
-      expect(source).toContain('AuditLogService');
-      // At least one actual write — injection alone is not coverage
-      expect(source).toMatch(/auditLogService\s*\n?\s*\.log\(|auditLogService\.log\(|this\.audit\(/);
-    },
-  );
+    expect(source).toContain('AuditLogService');
+    // At least one actual write — injection alone is not coverage
+    expect(source).toMatch(/auditLogService\s*\n?\s*\.log\(|auditLogService\.log\(|this\.audit\(/);
+  });
 
   it('users.service audits all three account mutations', () => {
     const source = readFileSync(join(MODULES_DIR, 'users/users.service.ts'), 'utf8');
