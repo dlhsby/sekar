@@ -71,6 +71,10 @@ export type MainTabParamList = {
   // Phase 3 Apr 27 — staff_kecamatan tab + redesigned submit form
   Perantingan: undefined;            // visible tab — staff_kecamatan list
   PerantinganSubmit: undefined;      // hidden stack — redesigned scrollable form
+  // Phase 3 3-12 — plant seeds inventory
+  PlantSeeds: undefined;             // visible tab — seed catalog list
+  SeedDetail: { seedId: string };    // hidden stack — seed detail + transactions
+  SeedTransactionForm: { seedId: string }; // hidden stack — record transaction form
 };
 
 export type MainTabScreenProps<T extends keyof MainTabParamList> =

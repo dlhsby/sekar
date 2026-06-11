@@ -195,11 +195,12 @@ describe('MainNavigator', () => {
       expect(TAB_CONFIGS.korlap.some((tab) => tab.name === 'Profile')).toBe(false);
     });
 
-    it('admin_data has 5 tabs incl. Perantingan review (Profile moved to header avatar)', () => {
-      expect(TAB_CONFIGS.admin_data).toHaveLength(5);
+    it('admin_data has 6 tabs incl. Perantingan review + Bibit (Profile moved to header avatar)', () => {
+      expect(TAB_CONFIGS.admin_data).toHaveLength(6);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'TasksActivities')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'PruningReviewQueue')).toBe(true);
+      expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'PlantSeeds')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Monitoring')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Overtime')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Profile')).toBe(false);
@@ -213,17 +214,19 @@ describe('MainNavigator', () => {
       expect(TAB_CONFIGS.kepala_rayon.some((tab) => tab.name === 'Profile')).toBe(false);
     });
 
-    it('top_management has 3 tabs incl. Home (Profile moved to header avatar)', () => {
-      expect(TAB_CONFIGS.top_management).toHaveLength(3);
+    it('top_management has 4 tabs incl. Home + Bibit (Profile moved to header avatar)', () => {
+      expect(TAB_CONFIGS.top_management).toHaveLength(4);
       expect(TAB_CONFIGS.top_management.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.top_management.some((tab) => tab.name === 'Monitoring')).toBe(true);
+      expect(TAB_CONFIGS.top_management.some((tab) => tab.name === 'PlantSeeds')).toBe(true);
       expect(TAB_CONFIGS.top_management.some((tab) => tab.name === 'Profile')).toBe(false);
     });
 
-    it('admin_system has 3 tabs incl. Home (Profile moved to header avatar)', () => {
-      expect(TAB_CONFIGS.admin_system).toHaveLength(3);
+    it('admin_system has 4 tabs incl. Home + Bibit (Profile moved to header avatar)', () => {
+      expect(TAB_CONFIGS.admin_system).toHaveLength(4);
       expect(TAB_CONFIGS.admin_system.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.admin_system.some((tab) => tab.name === 'Monitoring')).toBe(true);
+      expect(TAB_CONFIGS.admin_system.some((tab) => tab.name === 'PlantSeeds')).toBe(true);
     });
 
     it('superadmin has 4 tabs including Home + Overtime (Profile moved to header avatar)', () => {

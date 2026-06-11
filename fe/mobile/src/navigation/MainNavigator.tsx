@@ -54,6 +54,11 @@ import { RequestDetailScreen } from '../screens/pruningRequests/RequestDetailScr
 import { PerantinganListScreen } from '../screens/pruningRequests/PerantinganListScreen';
 import { SubmitScreen } from '../screens/pruningRequests/SubmitScreen';
 
+// Plant Seeds screens (Phase 3 3-12)
+import { PlantSeedsInventoryScreen } from '../screens/seeds/PlantSeedsInventoryScreen';
+import { SeedDetailScreen } from '../screens/seeds/SeedDetailScreen';
+import { SeedTransactionFormScreen } from '../screens/seeds/SeedTransactionFormScreen';
+
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const MainStack = createNativeStackNavigator<MainStackParamList>();
 
@@ -151,6 +156,7 @@ export const TAB_CONFIGS: Record<string, TabConfig[]> = {
   admin_data: [
     { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
+    { name: 'PlantSeeds', label: 'Bibit', icon: 'leaf-outline' },
     { name: 'PruningReviewQueue', label: 'Perantingan', icon: 'tree-outline' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'chart-bar' },
     { name: 'Overtime', label: 'Lembur', icon: 'clock-outline' },
@@ -164,11 +170,13 @@ export const TAB_CONFIGS: Record<string, TabConfig[]> = {
   top_management: [
     { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
+    { name: 'PlantSeeds', label: 'Bibit', icon: 'leaf-outline' },
     { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
   ],
   admin_system: [
     { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
+    { name: 'PlantSeeds', label: 'Bibit', icon: 'leaf-outline' },
     { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
   ],
   superadmin: [
@@ -194,6 +202,7 @@ const SCREEN_MAP: Record<string, React.ComponentType<any>> = {
   Monitoring: MapDashboardScreen,
   Perantingan: PerantinganListScreen,
   PruningReviewQueue: ReviewQueueScreen,
+  PlantSeeds: PlantSeedsInventoryScreen,
 };
 
 function TabBarIcon({ focused, name }: { focused: boolean; name: string }): React.JSX.Element {
@@ -399,6 +408,34 @@ function TabNavigator(): React.JSX.Element {
           headerTitle: () => (
             <FieldHomeHeader
               title="Buat Permohonan"
+              onBack={() => navigation.goBack()}
+            />
+          ),
+          tabBarButton: () => null,
+        })}
+      />
+
+      {/* Plant Seeds hidden screens */}
+      <Tab.Screen
+        name="SeedDetail"
+        component={SeedDetailScreen}
+        options={({ navigation }) => ({
+          headerTitle: () => (
+            <FieldHomeHeader
+              title="Detail Bibit"
+              onBack={() => navigation.navigate('PlantSeeds' as any)}
+            />
+          ),
+          tabBarButton: () => null,
+        })}
+      />
+      <Tab.Screen
+        name="SeedTransactionForm"
+        component={SeedTransactionFormScreen}
+        options={({ navigation }) => ({
+          headerTitle: () => (
+            <FieldHomeHeader
+              title="Catat Transaksi"
               onBack={() => navigation.goBack()}
             />
           ),

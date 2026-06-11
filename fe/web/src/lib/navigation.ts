@@ -15,6 +15,8 @@ import {
   ArrowUpTrayIcon,
   ArrowDownTrayIcon,
   CircleStackIcon,
+  SparklesIcon,
+  ArchiveBoxIcon,
 } from '@heroicons/react/24/outline';
 import { ComponentType } from 'react';
 import { ADMIN_ROLES, MONITORING_ROLES, TASK_MANAGER_ROLES } from '@/lib/constants/roles';
@@ -126,6 +128,21 @@ export const navigationItems: NavItem[] = [
         href: '/rayons',
         icon: BuildingOfficeIcon,
         roles: [...ADMIN_ROLES, 'top_management'],
+      },
+      // Phase 3-8/3-12 web pages (shipped with the phase-3 close-out)
+      {
+        id: 'plants',
+        label: 'Tanaman',
+        href: '/plants',
+        icon: SparklesIcon,
+        roles: [...ADMIN_ROLES, 'top_management', 'admin_data', 'kepala_rayon'],
+      },
+      {
+        id: 'seeds',
+        label: 'Bibit',
+        href: '/seeds',
+        icon: ArchiveBoxIcon,
+        roles: [...ADMIN_ROLES, 'top_management', 'admin_data', 'kepala_rayon'],
       },
     ],
   },
@@ -262,6 +279,8 @@ const ROUTE_BREADCRUMB: Record<string, string[]> = {
   '/users': ['Data Master', 'Pengguna'],
   '/areas': ['Data Master', 'Area'],
   '/rayons': ['Data Master', 'Rayon'],
+  '/plants': ['Data Master', 'Tanaman'],
+  '/seeds': ['Data Master', 'Bibit'],
   '/pruning-submit': ['Kecamatan', 'Kirim Permintaan'],
   '/pruning-submit/my': ['Kecamatan', 'Permintaan Saya'],
   '/settings': ['Akun', 'Pengaturan'],

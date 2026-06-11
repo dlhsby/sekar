@@ -40,9 +40,15 @@ describe('Navigation Utilities', () => {
         'pruning-requests',
       ]);
 
-      // 'Data Master' group holds users / areas / rayons.
+      // 'Data Master' group holds users / areas / rayons + Phase-3 plants/seeds.
       const dataItem = navigationItems.find((item) => item.id === 'data');
-      expect(dataItem?.children?.map((c) => c.id)).toEqual(['users', 'areas', 'rayons']);
+      expect(dataItem?.children?.map((c) => c.id)).toEqual([
+        'users',
+        'areas',
+        'rayons',
+        'plants',
+        'seeds',
+      ]);
     });
 
     it('should have correct structure for each navigation item', () => {
