@@ -11,7 +11,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, SlidersHorizontal, RefreshCw, X, List, ChevronDown } from 'lucide-react';
+import { Search, SlidersHorizontal, RefreshCw, X, List, ChevronDown, Sprout } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth/hooks';
 import { useMonitoringSnapshot } from '@/lib/api/monitoring-v2';
@@ -23,6 +23,7 @@ import {
 } from '@/components/monitoring/MonitoringFilters';
 import { MonitoringSidebar } from '@/components/monitoring/MonitoringSidebar';
 import { BulkReassignModal } from '@/components/monitoring/BulkReassignModal';
+import { usePlantStatusSummary } from '@/lib/api/plants';
 import { SimpleMonitoringMap } from '@/components/monitoring/SimpleMonitoringMapLazy';
 import type { SimpleWorker } from '@/components/monitoring/SimpleMonitoringMap';
 import type { SnapshotAreaSummary } from '@/lib/api/monitoring-v2';
@@ -62,6 +63,8 @@ export default function MonitoringPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
   const [bulkTarget, setBulkTarget] = useState<SnapshotAreaSummary | null>(null);
+  // Phase 3-8: plant-overdue map overlay toggle
+  const [showOverdue, setShowOverdue] = useState(false);
 
   // Role-scoped snapshot: city for city-level roles, else the user's own
   // rayon/area (the backend forbids city scope for scoped roles).
@@ -79,6 +82,15 @@ export default function MonitoringPage() {
   const canReassign = !!user && hasRole(user.role as UserRole, REASSIGN_ROLES);
   const { data, isLoading, refetch } = useMonitoringSnapshot(scope, scopeId);
   const { data: boundaries } = useBoundaries(canMonitor);
+  const plantSummary = usePlantStatusSummary(canMonitor && showOverdue);
+  const overdueByArea = useMemo(() => {
+    if (!showOverdue || !plantSummary.data) return null;
+    const map: Record<string, number> = {};
+    for (const rayon of plantSummary.data.rayons) {
+      for (const a of rayon.overdue_areas) map[a.area_id] = a.overdue;
+    }
+    return map;
+  }, [showOverdue, plantSummary.data]);
 
   useEffect(() => {
     if (!authLoading && user && !canMonitor) router.push('/');
@@ -172,6 +184,7 @@ export default function MonitoringPage() {
         boundaries={boundaries ?? null}
         selectedId={selectedId}
         onSelect={selectWorker}
+        overdueByArea={overdueByArea}
       />
 
       {/* Top overlay: search + filter + refresh + status pills */}
@@ -205,6 +218,21 @@ export default function MonitoringPage() {
           >
             <SlidersHorizontal className="h-4 w-4" />
             <span className="hidden sm:inline">Filter</span>
+          </button>
+          {/* Plant-overdue overlay toggle (Phase 3-8) */}
+          <button
+            type="button"
+            onClick={() => setShowOverdue((v) => !v)}
+            aria-pressed={showOverdue}
+            aria-label="Tampilkan tanaman terlambat dipangkas"
+            title="Tanaman terlambat dipangkas"
+            className={cn(
+              'flex h-11 items-center gap-1.5 rounded-nb-base border-2 border-nb-black px-3 text-sm font-bold shadow-nb-sm transition-colors',
+              showOverdue ? 'bg-nb-warning text-nb-black' : 'bg-nb-white text-nb-black hover:bg-nb-gray-50'
+            )}
+          >
+            <Sprout className="h-4 w-4" />
+            <span className="hidden sm:inline">Tanaman</span>
           </button>
           {/* Refresh */}
           <button

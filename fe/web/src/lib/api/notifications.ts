@@ -30,7 +30,8 @@ export type NotificationType =
   | 'activity_tagged'
   | 'overtime_approved'
   | 'overtime_rejected'
-  | 'missing_worker_alert';
+  | 'missing_worker_alert'
+  | 'area_plant_overdue';
 
 export interface AppNotification extends Record<string, unknown> {
   id: string;

@@ -59,6 +59,8 @@ export function notificationToRoute(notification: AppNotification): string | nul
       return '/schedules';
     case 'missing_worker_alert':
       return '/monitoring';
+    case 'area_plant_overdue':
+      return '/plants';
     default:
       return null;
   }

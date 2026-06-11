@@ -19,6 +19,7 @@ import { useTasks } from '@/lib/api/tasks';
 import { usePruningRequests } from '@/lib/api/pruning-requests';
 import { useOvertimes } from '@/lib/api/overtime';
 import { useNotifications } from '@/lib/api/notifications';
+import { usePlantStatusSummary } from '@/lib/api/plants';
 import { formatRelativeTime } from '@/lib/utils/time';
 import { cn } from '@/lib/utils/cn';
 
@@ -48,6 +49,17 @@ export default function DashboardPage() {
   const pruning = usePruningRequests({ status: 'submitted' });
   const overtime = useOvertimes({ status: 'pending' });
   const notifications = useNotifications();
+  const plantSummary = usePlantStatusSummary();
+
+  // Rayons that currently have overdue plant maintenance (Phase 3-8 widget)
+  const overdueRayons = useMemo(
+    () => (plantSummary.data?.rayons ?? []).filter((r) => r.overdue > 0),
+    [plantSummary.data]
+  );
+  const totalOverduePlants = useMemo(
+    () => overdueRayons.reduce((sum, r) => sum + r.overdue, 0),
+    [overdueRayons]
+  );
 
   const counts = useMemo(() => {
     const d = snapshot.data?.data;
@@ -243,6 +255,52 @@ export default function DashboardPage() {
               )}
               <QuickAction href="/schedules/new" icon={<CalendarPlus className="size-5" />} label="Jadwal" />
             </div>
+          </SectionCard>
+
+          {/* Phase 3-8 close-out: plant maintenance overdue widget */}
+          <SectionCard
+            title="Tanaman Terlambat Dipangkas"
+            action={
+              <Link
+                href="/plants"
+                className="font-mono text-[11px] font-bold text-nb-black underline underline-offset-2"
+              >
+                Tanaman →
+              </Link>
+            }
+          >
+            {plantSummary.isLoading ? (
+              <p className="text-nb-body-sm text-nb-gray-500">Memuat…</p>
+            ) : overdueRayons.length === 0 ? (
+              <p className="text-nb-body-sm text-nb-gray-600">
+                Semua tanaman terpangkas sesuai jadwal. 🌿
+              </p>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-nb-body-sm text-nb-gray-700">
+                  <span className="font-bold text-nb-danger-dark">{totalOverduePlants}</span> jenis
+                  tanaman melewati jadwal di {overdueRayons.length} rayon
+                </p>
+                <ul className="space-y-1.5">
+                  {overdueRayons.map((r) => (
+                    <li
+                      key={r.rayon_id ?? 'none'}
+                      className="flex items-center justify-between gap-2 text-nb-body-sm"
+                    >
+                      <span className="min-w-0 truncate text-nb-gray-700">
+                        {r.rayon_name ?? 'Tanpa rayon'}
+                        {r.overdue_areas[0] && (
+                          <span className="text-nb-gray-500"> · {r.overdue_areas[0].area_name}</span>
+                        )}
+                      </span>
+                      <span className="shrink-0 rounded-nb-sm border border-nb-danger bg-nb-danger-light/30 px-1.5 py-0.5 font-mono text-[11px] font-bold text-nb-danger-dark">
+                        {r.overdue}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </SectionCard>
 
           <SectionCard

@@ -29,6 +29,7 @@ import { StatusProjectorService } from './services/status-projector.service';
 import { StaffingDebouncerService } from './services/staffing-debouncer.service';
 import { StaleStatusSweeperService } from './services/stale-status-sweeper.service';
 import { OfflineSweeperService } from './services/offline-sweeper.service';
+import { PlantOverdueDigestCron } from './cron/plant-overdue-digest.cron';
 import { Schedule } from '../schedules/entities/schedule.entity';
 import { AreaPlant } from '../plants/entities/area-plant.entity';
 import { EventsModule } from '../../gateways/events.module';
@@ -81,6 +82,7 @@ import { SharedModule } from '../../shared/shared.module';
     StaffingDebouncerService,
     StaleStatusSweeperService,
     OfflineSweeperService,
+    PlantOverdueDigestCron, // Phase 3-8 close-out: daily overdue digest
   ],
   exports: [
     MonitoringService,

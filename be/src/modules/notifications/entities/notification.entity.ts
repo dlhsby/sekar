@@ -29,6 +29,8 @@ export enum NotificationType {
   MISSING_WORKER_ALERT = 'missing_worker_alert',
   // Phase 4-3 (ADR-038): tagged as an involved user on someone's activity.
   ACTIVITY_TAGGED = 'activity_tagged',
+  // Phase 3-8 close-out: daily digest of areas with overdue plant maintenance.
+  AREA_PLANT_OVERDUE = 'area_plant_overdue',
 }
 
 /**

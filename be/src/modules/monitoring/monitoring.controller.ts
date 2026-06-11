@@ -226,6 +226,27 @@ export class MonitoringController {
     return this.areaPlantStatusService.getAreaPlantStatus(id);
   }
 
+  @Get('plant-status/summary')
+  @Roles(...MONITORING_RAYON)
+  @ApiOperation({
+    summary: 'Per-rayon plant status rollup (Phase 3-8 close-out)',
+    description:
+      'Aggregated ok/due_soon/overdue/unknown counts grouped by rayon, with the areas that ' +
+      'currently have overdue species. City roles see all rayons; rayon-scoped roles are ' +
+      'forced to their own rayon.',
+  })
+  @ApiQuery({ name: 'rayon_id', required: false, description: 'Limit to one rayon (UUID)' })
+  @ApiResponse({ status: 200, description: 'Summary returned' })
+  async getPlantStatusSummary(@GetUser() user: User, @Query('rayon_id') rayonId?: string) {
+    const isCityRole = MONITORING_CITY.includes(user.role as UserRole);
+    // Rayon-scoped roles always get their own rayon, whatever they ask for
+    const effectiveRayonId = isCityRole ? rayonId : (user.rayon_id ?? undefined);
+    if (!isCityRole && !effectiveRayonId) {
+      return { generated_at: new Date(), rayons: [] };
+    }
+    return this.areaPlantStatusService.getSummary(effectiveRayonId);
+  }
+
   @Get('config')
   @Roles(...USER_MANAGERS)
   @ApiOperation({ summary: 'List all monitoring configuration' })

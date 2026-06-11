@@ -51,6 +51,11 @@ const NOTIF_META: Record<NotificationType, NotifMeta> = {
   overtime_approved: { label: 'Lembur disetujui', icon: CheckCircle2, tone: 'ok' },
   overtime_rejected: { label: 'Lembur ditolak', icon: XCircle, tone: 'danger' },
   missing_worker_alert: { label: 'Peringatan petugas hilang', icon: AlertTriangle, tone: 'danger' },
+  area_plant_overdue: {
+    label: 'Tanaman terlambat dipangkas',
+    icon: AlertTriangle,
+    tone: 'danger',
+  },
 };
 
 const TONE_CHIP: Record<Tone, string> = {
@@ -70,6 +75,7 @@ function ctaLabelFor(route: string): string {
   if (route.startsWith('/overtime')) return 'Buka lembur terkait';
   if (route.startsWith('/pruning-requests')) return 'Buka permohonan terkait';
   if (route.startsWith('/monitoring')) return 'Buka monitoring';
+  if (route.startsWith('/plants')) return 'Buka data tanaman';
   if (route.startsWith('/schedules')) return 'Buka jadwal';
   return 'Buka data terkait';
 }

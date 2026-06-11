@@ -36,6 +36,7 @@ export const NOTIFICATION_TYPE_LABELS: Partial<Record<NotificationType, string>>
   overtime_rejected: 'Lembur ditolak',
   missing_worker_alert: 'Peringatan petugas hilang',
   shift_reminder: 'Pengingat jadwal',
+  area_plant_overdue: 'Tanaman terlambat dipangkas',
 };
 
 /** Fetch the current user's per-type push preferences. */

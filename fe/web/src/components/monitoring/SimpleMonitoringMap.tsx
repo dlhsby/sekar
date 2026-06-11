@@ -27,6 +27,9 @@ export interface SimpleMonitoringMapProps {
   boundaries?: BoundariesResponse | null;
   selectedId?: string | null;
   onSelect?: (userId: string) => void;
+  /** Phase 3-8: per-area overdue plant counts — when set, area markers with
+   *  overdue species turn danger-tinted and show the count. */
+  overdueByArea?: Record<string, number> | null;
 }
 
 // Token utilities only (no raw hex — ESLint no-inline-hex-colors).
@@ -61,6 +64,7 @@ export function SimpleMonitoringMap({
   boundaries,
   selectedId,
   onSelect,
+  overdueByArea,
 }: SimpleMonitoringMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -161,16 +165,25 @@ export function SimpleMonitoringMap({
             el.style.height = '18px';
             el.style.borderRadius = '4px';
             el.style.border = '2px solid var(--color-nb-black)';
-            el.style.backgroundColor = area.is_understaffed
+            const overdueCount = overdueByArea?.[area.id] ?? 0;
+            el.style.backgroundColor = overdueCount > 0
+              ? 'var(--color-status-missing-bg)'
+              : area.is_understaffed
+                ? 'var(--color-status-missing)'
+                : 'var(--color-nb-warning)';
+            el.style.color = overdueCount > 0
               ? 'var(--color-status-missing)'
-              : 'var(--color-nb-warning)';
-            el.style.color = 'var(--color-nb-black)';
+              : 'var(--color-nb-black)';
             el.style.font = '700 10px/1 var(--font-mono, monospace)';
-            el.textContent = 'A';
+            el.textContent = overdueCount > 0 ? String(overdueCount) : 'A';
+            const popupText =
+              overdueCount > 0
+                ? `${area.name} · ${overdueCount} jenis tanaman terlambat dipangkas`
+                : area.name;
             const marker = new mapboxgl.Marker(el)
               .setLngLat([area.center_lng, area.center_lat])
               .setPopup(
-                new mapboxgl.Popup({ offset: 12, closeButton: false }).setText(area.name)
+                new mapboxgl.Popup({ offset: 12, closeButton: false }).setText(popupText)
               )
               .addTo(map);
             areaMarkersRef.current.push(marker);
@@ -231,7 +244,7 @@ export function SimpleMonitoringMap({
 
     if (loadedRef.current) apply();
     else map.once('load', apply);
-  }, [boundaries]);
+  }, [boundaries, overdueByArea]);
 
   // Sync worker markers.
   useEffect(() => {

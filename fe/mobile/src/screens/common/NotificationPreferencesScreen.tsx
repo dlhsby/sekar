@@ -52,6 +52,7 @@ const SECTIONS: { title: string; items: { type: string; label: string }[] }[] = 
     items: [
       { type: 'shift_reminder', label: 'Pengingat shift' },
       { type: 'missing_worker_alert', label: 'Peringatan pekerja hilang' },
+      { type: 'area_plant_overdue', label: 'Tanaman terlambat dipangkas' },
     ],
   },
 ];

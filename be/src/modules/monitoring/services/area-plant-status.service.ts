@@ -2,8 +2,8 @@ import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AreaPlant } from '../../plants/entities/area-plant.entity';
-import { PlantSpecies } from '../../plants/entities/plant-species.entity';
 import { Area } from '../../areas/entities/area.entity';
+import { Rayon } from '../../rayons/entities/rayon.entity';
 import { PlantDueDateService, PlantStatus } from '../../plants/services/plant-due-date.service';
 
 /**
@@ -31,6 +31,24 @@ export interface AreaPlantStatusResponse {
 }
 
 /**
+ * Rayon-level rollup (Phase 3-8 close-out: dashboard widget + overdue digest).
+ */
+export interface RayonPlantStatusSummary {
+  rayon_id: string | null;
+  rayon_name: string | null;
+  ok: number;
+  due_soon: number;
+  overdue: number;
+  unknown: number;
+  overdue_areas: { area_id: string; area_name: string; overdue: number }[];
+}
+
+export interface PlantStatusSummaryResponse {
+  generated_at: Date;
+  rayons: RayonPlantStatusSummary[];
+}
+
+/**
  * AreaPlantStatusService — Computes area-level plant maintenance status.
  *
  * Given an area ID, eagerly loads all plants and their species, applies
@@ -49,6 +67,8 @@ export class AreaPlantStatusService {
     private readonly areaPlantRepository: Repository<AreaPlant>,
     @InjectRepository(Area)
     private readonly areaRepository: Repository<Area>,
+    @InjectRepository(Rayon)
+    private readonly rayonRepository: Repository<Rayon>,
     private readonly plantDueDateService: PlantDueDateService,
   ) {}
 
@@ -120,6 +140,73 @@ export class AreaPlantStatusService {
       overdue: aggregates.overdue,
       unknown: aggregates.unknown,
       plants,
+    };
+  }
+
+  /**
+   * Per-rayon plant-status rollup across all areas (optionally one rayon).
+   * Recomputes every row's status (same path as getAreaPlantStatus) and groups
+   * counts per rayon, listing the areas that currently have overdue species.
+   */
+  async getSummary(rayonId?: string): Promise<PlantStatusSummaryResponse> {
+    const areas = await this.areaRepository.find({
+      where: rayonId ? { rayon_id: rayonId } : {},
+      relations: ['areaType'],
+    });
+    const areaById = new Map(areas.map((a) => [a.id, a]));
+    const rayons = await this.rayonRepository.find({ select: ['id', 'name'] });
+    const rayonNameById = new Map(rayons.map((r) => [r.id, r.name]));
+
+    const plants = await this.areaPlantRepository.find({ relations: ['species'] });
+
+    const rayonMap = new Map<string, RayonPlantStatusSummary>();
+    const overduePerArea = new Map<string, number>();
+
+    for (const plant of plants) {
+      const area = areaById.get(plant.areaId);
+      if (!area) continue; // outside the requested rayon scope (or orphaned)
+
+      const { status } = this.plantDueDateService.recomputeAreaPlant(
+        plant,
+        plant.species,
+        area.areaType,
+      );
+
+      const key = area.rayon_id ?? 'none';
+      const entry =
+        rayonMap.get(key) ??
+        rayonMap
+          .set(key, {
+            rayon_id: area.rayon_id ?? null,
+            rayon_name: area.rayon_id ? (rayonNameById.get(area.rayon_id) ?? null) : null,
+            ok: 0,
+            due_soon: 0,
+            overdue: 0,
+            unknown: 0,
+            overdue_areas: [],
+          })
+          .get(key)!;
+      entry[status] += 1;
+
+      if (status === 'overdue') {
+        overduePerArea.set(area.id, (overduePerArea.get(area.id) ?? 0) + 1);
+      }
+    }
+
+    for (const [areaId, count] of overduePerArea) {
+      const area = areaById.get(areaId)!;
+      const entry = rayonMap.get(area.rayon_id ?? 'none');
+      entry?.overdue_areas.push({ area_id: areaId, area_name: area.name, overdue: count });
+    }
+    for (const entry of rayonMap.values()) {
+      entry.overdue_areas.sort((a, b) => b.overdue - a.overdue);
+    }
+
+    return {
+      generated_at: new Date(),
+      rayons: [...rayonMap.values()].sort((a, b) =>
+        (a.rayon_name ?? '').localeCompare(b.rayon_name ?? ''),
+      ),
     };
   }
 

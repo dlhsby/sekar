@@ -87,7 +87,51 @@ export const plantsKeys = {
   areaPlants: (areaId: string) => ['areaPlants', areaId] as const,
   notablePlants: (areaId: string) => ['notablePlants', areaId] as const,
   pruningByRayon: (rayonId: string) => ['pruningByRayon', rayonId] as const,
+  speciesCatalog: (page: number, q: string) => ['speciesCatalog', page, q] as const,
 };
+
+// ---------------------------------------------------------------------------
+// Species catalog (Phase 3-8 web pages)
+// ---------------------------------------------------------------------------
+
+export interface PlantSpeciesRow {
+  id: string;
+  nameId: string;
+  nameLatin: string | null;
+  category: 'tree' | 'shrub' | 'groundcover' | 'flower';
+  defaultPruningCycleDays: number | null;
+}
+
+export interface SpeciesCatalogResult {
+  data: PlantSpeciesRow[];
+  total: number;
+}
+
+/**
+ * Species catalog with optional search. The backend exposes two endpoints:
+ * `GET /plant-species` (paginated `{ data, total }`) and
+ * `GET /plant-species/search` (plain array, ILIKE on name_id/name_latin) —
+ * this hook unifies them behind one shape.
+ */
+export function useSpeciesCatalog(page: number = 1, q: string = '', limit: number = 20) {
+  return useQuery({
+    queryKey: plantsKeys.speciesCatalog(page, q),
+    queryFn: async (): Promise<SpeciesCatalogResult> => {
+      if (q.trim()) {
+        const { data } = await apiClient.get('/plant-species/search', {
+          params: { q: q.trim(), limit: 50 },
+        });
+        const rows: PlantSpeciesRow[] = Array.isArray(data) ? data : (data?.data ?? []);
+        return { data: rows, total: rows.length };
+      }
+      const { data } = await apiClient.get('/plant-species', {
+        params: { limit, offset: (page - 1) * limit },
+      });
+      return { data: data?.data ?? [], total: data?.total ?? 0 };
+    },
+    staleTime: 60_000,
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Plant aggregate counters derived from area_plants rows
@@ -120,6 +164,39 @@ export function summarizePlantStatuses(
     else if (r.status === 'overdue') summary.overdue += 1;
   }
   return summary;
+}
+
+// ---------------------------------------------------------------------------
+// Plant-status rollup (Phase 3-8 close-out — dashboard widget + map toggle)
+// ---------------------------------------------------------------------------
+
+export interface RayonPlantStatusSummary {
+  rayon_id: string | null;
+  rayon_name: string | null;
+  ok: number;
+  due_soon: number;
+  overdue: number;
+  unknown: number;
+  overdue_areas: { area_id: string; area_name: string; overdue: number }[];
+}
+
+export interface PlantStatusSummaryResponse {
+  generated_at: string;
+  rayons: RayonPlantStatusSummary[];
+}
+
+/** Per-rayon ok/due/overdue rollup. City roles get all rayons; rayon-scoped
+ * roles are server-side forced to their own rayon. */
+export function usePlantStatusSummary(enabled: boolean = true) {
+  return useQuery({
+    queryKey: ['plantStatusSummary'],
+    queryFn: async (): Promise<PlantStatusSummaryResponse> => {
+      const { data } = await apiClient.get('/monitoring/plant-status/summary');
+      return data;
+    },
+    enabled,
+    staleTime: 5 * 60_000, // status flips at most daily — generous cache
+  });
 }
 
 // ---------------------------------------------------------------------------

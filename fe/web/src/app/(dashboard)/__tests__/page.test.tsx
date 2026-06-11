@@ -37,6 +37,24 @@ jest.mock('@/lib/api/pruning-requests', () => ({
 jest.mock('@/lib/api/overtime', () => ({
   useOvertimes: () => ({ data: { meta: { total: 5 } } }),
 }));
+jest.mock('@/lib/api/plants', () => ({
+  usePlantStatusSummary: () => ({
+    data: {
+      generated_at: new Date().toISOString(),
+      rayons: [
+        {
+          rayon_id: 'r1',
+          rayon_name: 'Rayon Selatan',
+          ok: 4,
+          due_soon: 1,
+          overdue: 3,
+          unknown: 0,
+          overdue_areas: [{ area_id: 'a1', area_name: 'Taman Bungkul', overdue: 3 }],
+        },
+      ],
+    },
+  }),
+}));
 jest.mock('@/lib/api/notifications', () => ({
   useNotifications: () => ({
     data: [
