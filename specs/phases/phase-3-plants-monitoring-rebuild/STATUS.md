@@ -1,6 +1,6 @@
 # Phase 3: Plants Management, Monitoring Rebuild & Public Intake — Status
 
-**Status:** ✅ **Ready for sign-off** — see [status_reviews.md § "Phase 3 Sign-Off Review (2026-05-23)"](./status_reviews.md). All 17 ADR conformance items implemented; 5 CRITICAL + 12 HIGH audit findings remediated; 9 items formally deferred to Phase 4 with stated reasons.
+**Status:** ✅ **Closed (2026-06-11)** — see [status_reviews.md § "Phase 3 Sign-Off Review (2026-05-23)"](./status_reviews.md). All 17 ADR conformance items implemented; 5 CRITICAL + 12 HIGH audit findings remediated; the 9 items deferred on 2026-05-23 were shipped/closed on 2026-06-11 (close-out table below).
 **Last audit:** 2026-05-23 — see [GAP-AUDIT-2026-05-23.md](./GAP-AUDIT-2026-05-23.md). Audit reconciled headline %, corrected two stale "not started" claims (3-14 k6 harness exists; 3-10 web admin pages exist), and surfaced 5 CRITICAL + 12 HIGH findings. **All findings closed or deferred** in Waves 1–7.
 
 **Wave 1 + Wave 2 executed 2026-05-23** — all 5 CRITICAL CI blockers closed and 4 spec-drift items reconciled:
@@ -62,7 +62,7 @@ Verification: `npx jest activities.service.spec|plant-due-date.service.spec|keca
 | H7 token-compliance sweep | ✅ Closed | 8 mobile hex + 11 web hex literals replaced; brand colors (WhatsApp `#25D366`) kept with `eslint-disable-next-line` + rationale |
 | H8 mobile pruning-screens test timeouts | ✅ Closed | per-file `jest.setTimeout(60000)` |
 | H6 web monitoring/plants/pruning API tests | ✅ Closed | 3 new spec files / 30 tests (monitoring-v2, plants, pruning-requests) |
-| H11 CSV backfill (3-13) | ✅ Scaffold landed | `be/src/database/backfill/pruning-csv-importer.ts` — idempotent on `reference_code`, dry-run default, 10-test helper suite; not yet executed against production data |
+| H11 CSV backfill (3-13) | ✅ Closed | `be/src/database/backfill/pruning-csv-importer.ts` — idempotent on `reference_code`, dry-run default, 12-test helper suite; **executed locally 2026-06-11** (4,979 rows, photo-less — runbook below); production run = manual cutover step |
 | M1 GET `/pruning-requests/:id` defence-in-depth | ✅ Closed | `@Roles(...)` decorator added |
 | M4 cross-replica staffing debouncer | ✅ Closed | Redis-backed `SET NX EX` leader election in `StaffingDebouncerService`; single-replica / no-Redis path unchanged |
 | M6 single-query `onLocationPing` | ✅ Closed | `user` + `area` eager-loaded with safe column-select; broadcast helpers consume cache (3 reads → 1) |
@@ -71,19 +71,26 @@ Verification: `npx jest activities.service.spec|plant-due-date.service.spec|keca
 | Spec drift (`area_plants.status` enum, `task_delegations` role columns, plant_species seed count) | ✅ Closed | `database.md` reconciled in Wave 2 |
 | M2 / L1 / L2 / L3 / M3 / L4 | ✅ Closed as not-a-bug | re-inspection showed audit overstated; details in [GAP-AUDIT-2026-05-23.md](./GAP-AUDIT-2026-05-23.md) |
 
-**Formally deferred to Phase 4** (Production Readiness — already specced):
+**Deferral close-out (2026-06-11):** all 9 items formally deferred on 2026-05-23 are now **shipped or closed**:
 
-| Item | Sub-phase | Reason for defer | Phase 4 placeholder |
-|---|---|---|---|
-| Mobile `screens/seeds/` (inventory UI) | 3-12 | Backend + Redux slice complete; mobile UI requires dedicated design + UX sweep. `admin_data` / `top_management` are the only consumers. | Phase 4 sub-phase 4-3 (UI/UX completion) |
-| Web `(dashboard)/seeds/` (inventory UI) | 3-12 | Same as mobile — backend ready, web UI deferred. | Phase 4 sub-phase 4-3 |
-| Web `(dashboard)/rayons/[id]/capacity/` | 3-11 | Mobile state + backend live; admins currently use mobile to view capacity. Web ergonomic for desktop-bound admins. | Phase 4 sub-phase 4-3 |
-| Web `(dashboard)/plants/` (area_plants inventory + heritage) | 3-8 | Read-only views; data available via API, no production-blocking gap. | Phase 4 sub-phase 4-3 |
-| `(kecamatan)/pruning-requests` web submit form | 3-10 | Shell exists; submit form deferred. Mobile is the primary submit channel — staff_kecamatan have native app. | Phase 4 sub-phase 4-3 |
-| Overdue alerts dashboard + FCM push | 3-8 | `PlantDueDateService` + sweep cron live; alert UI + push trigger deferred. Top management see overdue plants on map overlay live; proactive alerts non-blocking. | Phase 4 sub-phase 4-4 (notifications) |
-| Visreg baselines + `web-visreg` / `mobile-snapshots` CI jobs | 3-R3 | Token pipeline + ESLint rules guard against drift in code; visreg infra (Playwright `toHaveScreenshot` baselines at 3 breakpoints + Jest renderer snapshots for NB primitives + required-green CI) needs its own dedicated PR. | Phase 4 sub-phase 4-R (UI/UX revamp) |
-| `clusterMarkersV2` flag flip | 3-5 | Code shipped + Apr 24 fixes preserved; rollout gated on k6 500-worker run + low-end Android FPS check. | Phase 4 sub-phase 4-3 polish or pre-release verification |
-| CSV backfill execution (3-13) | 3-13 | Scaffold + tests landed; running it against production data requires S3 photo rehosting + DLH ops sign-off (cannot be backfilled on dev). | Phase 4 / production cutover |
+| Item | Sub-phase | Close-out (2026-06-11) |
+|---|---|---|
+| Mobile `screens/seeds/` (inventory UI) | 3-12 | ✅ Shipped — `PlantSeedsInventoryScreen` / `SeedDetailScreen` / `SeedTransactionFormScreen` on the existing `plantSeedsSlice` thunks; `PlantSeeds` tab for admin_data / top_management / admin_system; 12 screen tests. |
+| Web `(dashboard)/seeds/` (inventory UI) | 3-12 | ✅ Shipped — list (low-stock badge), `[id]` transaction ledger, `[id]/transactions/new` form; `lib/api/seeds.ts`; "Bibit" nav entry; e2e `18-seeds.spec.ts`. |
+| Web `(dashboard)/rayons/[id]/capacity/` | 3-11 | ✅ Shipped — `CapacityWeeklyGrid` (rolling 12-ISO-week window, `<768px` cards), year selector, entry button on rayon detail; write gated kepala_rayon / top_management / superadmin per backend `PUT` roles (admin_data is read-only — the 2026-05 plan note saying admin_data writes was wrong); e2e `17-capacity.spec.ts`. |
+| Web `(dashboard)/plants/` (area_plants inventory + heritage) | 3-8 | ✅ Shipped — species catalog (search + pagination) + `[areaId]` inventory with status pills and notable-plants section; "Tanaman" nav entry; e2e `16-plants.spec.ts`. |
+| `(kecamatan)/pruning-requests` web submit form | 3-10 | ✅ Shipped earlier in Phase 4-R (web submit + my-requests live). |
+| Overdue alerts dashboard + FCM push | 3-8 | ✅ Shipped — `NotificationType.AREA_PLANT_OVERDUE` (+ enum migration `17480700000000`), `GET /monitoring/plant-status/summary`, 08:00 WIB `plant-overdue-digest` cron (Redis SET-NX dedup per user/day, top_management all rayons + kepala_rayon own), dashboard "Tanaman Terlambat Dipangkas" widget, monitoring-map "Tanaman" overlay toggle, prefs toggles + deep-link on both clients. |
+| Visreg baselines + CI | 3-R3 | ✅ Closed (minimal scope per plan) — `e2e/15-visreg.spec.ts`: login + dashboard at 375/768/1280, masked dynamic regions, 6 committed chromium-linux baselines; runs inside the existing web e2e job. Full NB-primitive snapshot infra remains out of scope. |
+| `clusterMarkersV2` flag flip | 3-5 | ✅ Closed as device-gated — flag stays `false` (`fe/mobile/src/utils/featureFlags.ts`); flip lives on the Phase-4 device field-test checklist (k6 500-worker + low-end Android FPS). Orphaned web `components/monitoring/ClusterLayer.tsx` (superseded by the Jun-10 monitoring rebuild) deleted. |
+| CSV backfill execution (3-13) | 3-13 | ✅ Executed locally, photo-less — see runbook below. Production run remains a manual cutover step. |
+
+**3-13 backfill runbook (local execution 2026-06-11, photo-less per decision):**
+1. Importer fixes landed during execution: quote-aware CSV line parser (the export DOES quote `Lokasi`; the naive split wrongly rejected ~360 rows) and NOT-NULL anchors — backfilled activities are attributed to an idempotently-created, non-loginable system user `sistem_backfill_csv` + one synthetic shift, with `activity_type = perantingan` (fails loudly if reference data unseeded). 12/12 importer tests green.
+2. Dry-run: `cd be && npx ts-node -r tsconfig-paths/register src/database/backfill/pruning-csv-importer.ts --dry-run` → 4,979/5,008 rows parse; the 29 rejects all have an empty `Pohon` (species) column — genuinely incomplete source rows, listed in `data/csv-backfill-report.json`.
+3. Apply: same command with `--apply` (optionally `--limit=N` first) → 4,979 inserted, 0 failures; 4,955 `activity_plant_items` line items; all 128 species resolved.
+4. Idempotency proof: immediate dry-run re-run → `inserted=0, skipped=4979`.
+5. Photos: Drive URLs are preserved verbatim in `photo_before_url` / `photo_after_url`; `photo_urls = '{}'`. Drive→S3 rehost is the tracked follow-up before the production run.
 
 **Phase 3 sign-off acceptance criteria (met as of 2026-05-23):**
 1. All ADR conformance verified (ADR-029…038 — see `GAP-AUDIT-2026-05-23.md`).
@@ -93,7 +100,7 @@ Verification: `npx jest activities.service.spec|plant-due-date.service.spec|keca
 5. Token pipeline + ESLint rules gate drift on both platforms in CI.
 6. Production-blocking deferrals are formally tracked in Phase 4 sub-phases with stated reasons.
 
-**Updated roll-up:** **15 clean + 5 done-with-caveats (Phase 4 polish) + 1 scaffolded (3-13).** No "blockers" remaining for Phase 3 closure; the 9 deferred items are scoped to Phase 4 above.
+**Updated roll-up (2026-06-11):** **Phase 3 fully closed.** All 21 sub-phases shipped; the 9 items deferred on 2026-05-23 are closed per the table above (3-13 production run stays a manual cutover step with the Drive→S3 rehost).
 **Branch:** main (no feature branch yet)
 **Related ADRs:** [ADR-029](../../architecture/decisions/ADR-029-monitoring-v2-redis.md), [ADR-030](../../architecture/decisions/ADR-030-area-aggregate-plant-inventory.md), [ADR-031](../../architecture/decisions/ADR-031-task-typing-custom-fields.md), [ADR-032](../../architecture/decisions/ADR-032-admin-data-pruning-disposition.md), [ADR-033](../../architecture/decisions/ADR-033-staff-kecamatan-role.md), [ADR-034](../../architecture/decisions/ADR-034-pruning-cycle-prediction.md), [ADR-035](../../architecture/decisions/ADR-035-service-capacity-model.md), [ADR-036](../../architecture/decisions/ADR-036-design-tokens-single-source.md), [ADR-037](../../architecture/decisions/ADR-037-web-pwa.md)
 

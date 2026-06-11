@@ -5072,6 +5072,7 @@ socket.on('AREA_STAFFING_CHANGED', (payload) => {
 |--------|----------|-------|-------------|
 | GET | `/monitoring/snapshot` | Role-scoped (city/rayon/area) | Single aggregated payload replacing today's multiple round-trips. Query: `?scope=city\|rayon\|area`, `?id=`, `?includes=workers,plants,overdue,rayons,areas`. |
 | GET | `/monitoring/area/:id/plant-status` | Area scope | Green / yellow / red breakdown + due-date distribution of `area_plants`. |
+| GET | `/monitoring/plant-status/summary` | City roles (all rayons, `?rayonId=` optional); kepala_rayon/korlap/admin_data forced to own rayon | Per-rayon `ok / due_soon / overdue / unknown` rollup of `area_plants` with `overdue_areas[{ area_id, area_name, overdue }]` per rayon, sorted by overdue desc. Returns `{ generated_at, rayons[] }`. Feeds the web dashboard "Tanaman Terlambat Dipangkas" widget, the monitoring map "Tanaman" overlay toggle, and the 08:00 WIB `area_plant_overdue` digest cron (Phase 3-8 close-out, Jun 2026). |
 
 **WebSocket events (Redis-backed via Socket.IO Redis adapter; room prefix `monitoring:`):**
 
