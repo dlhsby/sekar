@@ -8,6 +8,9 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PruningRequestsService } from './pruning-requests.service';
+import { PruningRequestFinderService } from './services/pruning-request-finder.service';
+import { PruningRequestNotificationsService } from './services/pruning-request-notifications.service';
+import { PruningRequestWorkflowService } from './services/pruning-request-workflow.service';
 import { PruningRequest } from './entities/pruning-request.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { CreatePruningRequestDto } from './dto/create-pruning-request.dto';
@@ -175,6 +178,11 @@ describe('PruningRequestsService', () => {
     module = await Test.createTestingModule({
       providers: [
         PruningRequestsService,
+        // Real sub-services — behavior is exercised through the façade
+        // against the same mocked repositories/services below.
+        PruningRequestFinderService,
+        PruningRequestNotificationsService,
+        PruningRequestWorkflowService,
         {
           provide: getRepositoryToken(PruningRequest),
           useValue: mockPruningRequestRepository,
