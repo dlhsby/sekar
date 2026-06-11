@@ -117,6 +117,13 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
         }
       />
 
+      {/* Action buttons */}
+      <div className="flex gap-2">
+        <Link href={`/rayons/${id}/capacity`}>
+          <Button variant="secondary">Kapasitas Layanan</Button>
+        </Link>
+      </div>
+
       {/* KPI strip */}
       <RayonStatsCards stats={stats} loading={statsLoading} />
 
