@@ -309,3 +309,39 @@ export function pruningPill(status: PruningRequestStatus): { tone: StatusTone; l
     default:             return { tone: 'neutral', label: getPruningRequestStatusLabel(status) };
   }
 }
+
+// ─── Task status helpers (adapter for screen hooks compatibility) ────────────
+
+/**
+ * Get color variant for task status (compatible with TaskHeader / field screens)
+ * Fixes bug where taskHelpers.getStatusVariant missed 'pending' case
+ */
+export function getStatusVariant(status: TaskStatus): 'success' | 'primary' | 'warning' | 'gray' | 'danger' {
+  return getTaskStatusColor(status) as 'success' | 'primary' | 'warning' | 'gray' | 'danger';
+}
+
+/**
+ * Get label for task status (compatible with TaskHeader / field screens)
+ */
+export function getStatusLabel(status: TaskStatus): string {
+  return getTaskStatusLabel(status);
+}
+
+/**
+ * Get color variant for task priority (compatible with TaskHeader / field screens)
+ */
+export function getPriorityVariant(priority: string): 'danger' | 'warning' | 'primary' | 'gray' {
+  switch (priority) {
+    case 'urgent': return 'danger';
+    case 'high': return 'warning';
+    case 'medium': return 'primary';
+    default: return 'gray';
+  }
+}
+
+/**
+ * Get label for task priority (compatible with TaskHeader / field screens)
+ */
+export function getPriorityLabel(priority: string): string {
+  return TASK_PRIORITY_LABEL[priority] || priority;
+}

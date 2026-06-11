@@ -10,7 +10,7 @@ import {
   NBText,
 } from '../../../components/nb';
 import { nbSpacing } from '../../../constants/nbTokens';
-import { getStatusLabel, getStatusVariant, getPriorityLabel, getPriorityVariant } from '../hooks/taskHelpers';
+import { getStatusLabel, getStatusVariant, getPriorityLabel, getPriorityVariant } from '../../../utils/statusHelpers';
 import type { Task } from '../../../types/models.types';
 
 interface TaskHeaderProps {

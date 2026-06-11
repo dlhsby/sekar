@@ -1,11 +1,12 @@
 /**
  * Task Helper Functions
- * Pure utility functions for status/priority formatting and audit event building
+ * Pure utility functions for audit event building
+ * Status/priority formatting is centralized in src/utils/statusHelpers.ts
  */
 
 import { nbColors } from '../../../constants/nbTokens';
 import { toTitleCase } from '../../../utils/filterHelpers';
-import type { Task, TaskStatus, TaskPriority } from '../../../types/models.types';
+import type { Task } from '../../../types/models.types';
 import type { User } from '../../../types/models.types';
 
 export type AuditEvent = {
@@ -17,52 +18,6 @@ export type AuditEvent = {
   actor?: string;
   note?: string;
 };
-
-export function getPriorityVariant(priority: TaskPriority): 'danger' | 'warning' | 'primary' | 'gray' {
-  switch (priority) {
-    case 'urgent': return 'danger';
-    case 'high': return 'warning';
-    case 'medium': return 'primary';
-    default: return 'gray';
-  }
-}
-
-export function getStatusVariant(status: TaskStatus): 'success' | 'primary' | 'warning' | 'gray' | 'danger' {
-  switch (status) {
-    case 'verified': return 'success';
-    case 'completed':
-    case 'in_progress': return 'primary';
-    case 'assigned':
-    case 'revision_needed': return 'warning';
-    case 'declined': return 'danger';
-    case 'accepted': return 'success';
-    default: return 'gray';
-  }
-}
-
-export function getStatusLabel(status: TaskStatus): string {
-  const labels: Record<TaskStatus, string> = {
-    pending: 'Menunggu',
-    assigned: 'Ditugaskan',
-    accepted: 'Diterima',
-    declined: 'Ditolak',
-    in_progress: 'Dikerjakan',
-    completed: 'Menunggu Verifikasi',
-    verified: 'Terverifikasi',
-    revision_needed: 'Perlu Revisi',
-  };
-  return labels[status] || status;
-}
-
-export function getPriorityLabel(priority: TaskPriority): string {
-  const labels: Record<TaskPriority, string> = {
-    low: 'Rendah',
-    medium: 'Biasa',
-    high: 'Tinggi',
-    urgent: 'Mendesak',
-  };
-  return labels[priority] || priority;
-}
 
 /** Format user display as "Role - Nama" */
 export function formatUser(user: User | null | undefined): string {
