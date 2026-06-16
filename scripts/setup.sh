@@ -39,8 +39,8 @@ ensure_env_file "$ROOT/fe/web/.env.local" "$ROOT/fe/web/.env.local.example" "web
 ensure_env_file "$ROOT/fe/mobile/.env.local" "$ROOT/fe/mobile/.env.local.example" "mobile" || true
 
 # 3 — root tooling (token pipeline + eslint plugin used by the workspaces)
-print_info "Installing root tooling (npm install)..."
-( cd "$ROOT" && npm install --no-audit --no-fund )
+print_info "Installing root tooling (npm ci)..."
+( cd "$ROOT" && npm ci --no-audit --no-fund )
 print_success "Root tooling installed"
 
 # 4 — infrastructure
@@ -50,7 +50,7 @@ sync_backend_infra_ports
 
 # 5 — backend: install + migrate (+ seed on confirmation)
 print_info "Installing backend dependencies..."
-( cd "$ROOT/be" && npm install --no-audit --no-fund )
+( cd "$ROOT/be" && npm ci --no-audit --no-fund )
 print_info "Running database migrations..."
 if ! ( cd "$ROOT/be" && npm run migration:run ); then
   print_error "Database migrations failed — check DB connectivity (be/.env.local DATABASE_* vs infra/.env POSTGRES_PORT). Aborting setup."
@@ -94,12 +94,12 @@ fi
 
 # 6 — web
 print_info "Installing web dependencies..."
-( cd "$ROOT/fe/web" && npm install --no-audit --no-fund )
+( cd "$ROOT/fe/web" && npm ci --no-audit --no-fund )
 print_success "Web ready"
 
 # 7 — mobile (Android SDK optional — Metro/tests work without it)
 print_info "Installing mobile dependencies..."
-( cd "$ROOT/fe/mobile" && npm install --no-audit --no-fund )
+( cd "$ROOT/fe/mobile" && npm ci --no-audit --no-fund )
 if [ -z "${ANDROID_HOME:-}${ANDROID_SDK_ROOT:-}" ] && [ ! -d "$HOME/Android/Sdk" ]; then
   print_warning "No Android SDK detected — Metro and tests still work; 'npm run android' needs the SDK"
 else
