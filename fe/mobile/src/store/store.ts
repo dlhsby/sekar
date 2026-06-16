@@ -20,6 +20,9 @@ import serviceCapacityReducer from './slices/serviceCapacitySlice';
 import plantSeedsReducer from './slices/plantSeedsSlice';
 import areasReducer from './slices/areasSlice';
 import usersReducer from './slices/usersSlice';
+import reportsReducer from './slices/reportsSlice';
+import analyticsReducer from './slices/analyticsSlice';
+import assetsReducer from './slices/assetsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -38,6 +41,9 @@ export const store = configureStore({
     plantSeeds: plantSeedsReducer,
     areas: areasReducer,
     users: usersReducer,
+    reports: reportsReducer,
+    analytics: analyticsReducer,
+    assets: assetsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

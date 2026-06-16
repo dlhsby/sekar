@@ -48,6 +48,13 @@ export type MainTabParamList = {
   Overtime: undefined;
   Monitoring: undefined;
   Profile: undefined;
+  // Phase 5-1 Reporting
+  Reports: undefined;                // visible tab — reports list
+  // Phase 5-2 Analytics
+  WorkerAnalytics: { workerId?: string } | undefined; // visible tab — own/worker KPIs
+  TeamAnalytics: { areaId?: string } | undefined;     // visible tab — team/area KPIs
+  // Phase 5-3 Assets
+  Assets: undefined;                 // visible tab — assets list
   // Hidden stack screens
   ClockInOut: undefined;
   ActivitySubmission: undefined;
@@ -60,6 +67,13 @@ export type MainTabParamList = {
   ShiftHistory: undefined;
   Settings: undefined;
   EditProfile: undefined;
+  // Phase 5-1 Reporting
+  ReportDetail: { reportId: string };
+  // Phase 5-3 Assets (hidden stack)
+  AssetDetail: { assetId: string };
+  QRScanner: undefined;
+  AssetCheckout: { assetId: string };
+  AssetReturn: { assetId: string };
   // Pruning Requests (admin_data flow)
   PruningReviewQueue: undefined;
   PruningDetail: {

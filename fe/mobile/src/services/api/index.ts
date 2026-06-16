@@ -19,6 +19,8 @@ export * from './shiftDefinitionsApi';
 export * from './overtimeApi';
 export * from './rayonsApi';
 export * from './areasApi';
+// Phase 5-2 APIs
+export * from './analyticsApi';
 export { default as apiClient } from './apiClient';
 
 // Namespace exports
@@ -35,6 +37,7 @@ import * as shiftDefinitionsApiModule from './shiftDefinitionsApi';
 import * as overtimeApiModule from './overtimeApi';
 import * as rayonsApiModule from './rayonsApi';
 import * as areasApiModule from './areasApi';
+import * as analyticsApiModule from './analyticsApi';
 
 export const shiftsApi = shiftsApiModule;
 export const activitiesApi = activitiesApiModule;
@@ -49,3 +52,4 @@ export const shiftDefinitionsApi = shiftDefinitionsApiModule;
 export const overtimeApi = overtimeApiModule;
 export const rayonsApi = rayonsApiModule;
 export const areasApi = areasApiModule;
+export const analyticsApi = analyticsApiModule;

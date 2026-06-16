@@ -173,67 +173,79 @@ describe('MainNavigator', () => {
       expect(TAB_CONFIGS).toHaveProperty('superadmin');
     });
 
-    it('satgas has 3 tabs (Profile moved to header avatar)', () => {
-      expect(TAB_CONFIGS.satgas).toHaveLength(3);
+    it('satgas has 5 tabs incl. Phase 5 Aset + Kinerja (Profile moved to header avatar)', () => {
+      expect(TAB_CONFIGS.satgas).toHaveLength(5);
       expect(TAB_CONFIGS.satgas.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.satgas.some((tab) => tab.name === 'TasksActivities')).toBe(true);
+      expect(TAB_CONFIGS.satgas.some((tab) => tab.name === 'Assets')).toBe(true);
+      expect(TAB_CONFIGS.satgas.some((tab) => tab.name === 'WorkerAnalytics')).toBe(true);
       expect(TAB_CONFIGS.satgas.some((tab) => tab.name === 'Profile')).toBe(false);
     });
 
-    it('linmas has 3 tabs (Profile moved to header avatar)', () => {
-      expect(TAB_CONFIGS.linmas).toHaveLength(3);
+    it('linmas has 5 tabs incl. Phase 5 Aset + Kinerja (Profile moved to header avatar)', () => {
+      expect(TAB_CONFIGS.linmas).toHaveLength(5);
       expect(TAB_CONFIGS.linmas.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.linmas.some((tab) => tab.name === 'TasksActivities')).toBe(true);
+      expect(TAB_CONFIGS.linmas.some((tab) => tab.name === 'Assets')).toBe(true);
+      expect(TAB_CONFIGS.linmas.some((tab) => tab.name === 'WorkerAnalytics')).toBe(true);
       expect(TAB_CONFIGS.linmas.some((tab) => tab.name === 'Profile')).toBe(false);
     });
 
-    it('korlap has 4 tabs (Profile moved to header avatar)', () => {
-      expect(TAB_CONFIGS.korlap).toHaveLength(4);
+    it('korlap has 6 tabs incl. Phase 5 Aset + Tim (Profile moved to header avatar)', () => {
+      expect(TAB_CONFIGS.korlap).toHaveLength(6);
       expect(TAB_CONFIGS.korlap.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.korlap.some((tab) => tab.name === 'Monitoring')).toBe(true);
       expect(TAB_CONFIGS.korlap.some((tab) => tab.name === 'TasksActivities')).toBe(true);
+      expect(TAB_CONFIGS.korlap.some((tab) => tab.name === 'Assets')).toBe(true);
+      expect(TAB_CONFIGS.korlap.some((tab) => tab.name === 'TeamAnalytics')).toBe(true);
       expect(TAB_CONFIGS.korlap.some((tab) => tab.name === 'Profile')).toBe(false);
     });
 
-    it('admin_data has 6 tabs incl. Perantingan review + Bibit (Profile moved to header avatar)', () => {
+    it('admin_data has 6 tabs incl. Perantingan review + Bibit + Laporan (Profile moved to header avatar)', () => {
       expect(TAB_CONFIGS.admin_data).toHaveLength(6);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'TasksActivities')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'PruningReviewQueue')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'PlantSeeds')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Monitoring')).toBe(true);
-      expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Overtime')).toBe(true);
+      expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Reports')).toBe(true);
       expect(TAB_CONFIGS.admin_data.some((tab) => tab.name === 'Profile')).toBe(false);
     });
 
-    it('kepala_rayon has 4 tabs with Home (Profile moved to header avatar)', () => {
-      expect(TAB_CONFIGS.kepala_rayon).toHaveLength(4);
+    it('kepala_rayon has 6 tabs incl. Phase 5 Aset + Laporan + Tim (Profile moved to header avatar)', () => {
+      expect(TAB_CONFIGS.kepala_rayon).toHaveLength(6);
       expect(TAB_CONFIGS.kepala_rayon.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.kepala_rayon.some((tab) => tab.name === 'Monitoring')).toBe(true);
       expect(TAB_CONFIGS.kepala_rayon.some((tab) => tab.name === 'Overtime')).toBe(true);
+      expect(TAB_CONFIGS.kepala_rayon.some((tab) => tab.name === 'Reports')).toBe(true);
       expect(TAB_CONFIGS.kepala_rayon.some((tab) => tab.name === 'Profile')).toBe(false);
     });
 
-    it('top_management has 4 tabs incl. Home + Bibit (Profile moved to header avatar)', () => {
-      expect(TAB_CONFIGS.top_management).toHaveLength(4);
+    it('top_management has 5 tabs incl. Home + Bibit + Laporan + Analitik (Profile moved to header avatar)', () => {
+      expect(TAB_CONFIGS.top_management).toHaveLength(5);
       expect(TAB_CONFIGS.top_management.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.top_management.some((tab) => tab.name === 'Monitoring')).toBe(true);
       expect(TAB_CONFIGS.top_management.some((tab) => tab.name === 'PlantSeeds')).toBe(true);
+      expect(TAB_CONFIGS.top_management.some((tab) => tab.name === 'Reports')).toBe(true);
+      expect(TAB_CONFIGS.top_management.some((tab) => tab.name === 'TeamAnalytics')).toBe(true);
       expect(TAB_CONFIGS.top_management.some((tab) => tab.name === 'Profile')).toBe(false);
     });
 
-    it('admin_system has 4 tabs incl. Home + Bibit (Profile moved to header avatar)', () => {
-      expect(TAB_CONFIGS.admin_system).toHaveLength(4);
+    it('admin_system has 5 tabs incl. Home + Aset + Laporan + Analitik (Profile moved to header avatar)', () => {
+      expect(TAB_CONFIGS.admin_system).toHaveLength(5);
       expect(TAB_CONFIGS.admin_system.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.admin_system.some((tab) => tab.name === 'Monitoring')).toBe(true);
-      expect(TAB_CONFIGS.admin_system.some((tab) => tab.name === 'PlantSeeds')).toBe(true);
+      expect(TAB_CONFIGS.admin_system.some((tab) => tab.name === 'Assets')).toBe(true);
+      expect(TAB_CONFIGS.admin_system.some((tab) => tab.name === 'Reports')).toBe(true);
+      expect(TAB_CONFIGS.admin_system.some((tab) => tab.name === 'TeamAnalytics')).toBe(true);
     });
 
-    it('superadmin has 4 tabs including Home + Overtime (Profile moved to header avatar)', () => {
-      expect(TAB_CONFIGS.superadmin).toHaveLength(4);
+    it('superadmin has 6 tabs including Home + Overtime + Phase 5 (Profile moved to header avatar)', () => {
+      expect(TAB_CONFIGS.superadmin).toHaveLength(6);
       expect(TAB_CONFIGS.superadmin.some((tab) => tab.name === 'Home')).toBe(true);
       expect(TAB_CONFIGS.superadmin.some((tab) => tab.name === 'Monitoring')).toBe(true);
       expect(TAB_CONFIGS.superadmin.some((tab) => tab.name === 'Overtime')).toBe(true);
+      expect(TAB_CONFIGS.superadmin.some((tab) => tab.name === 'Reports')).toBe(true);
     });
 
     it('staff_kecamatan has 2 tabs incl. Home (Profile moved to header avatar)', () => {
@@ -328,7 +340,7 @@ describe('MainNavigator', () => {
     it('should render for top_management role (no Profil tab)', () => {
       const { getByText, queryByText } = renderNavigator('top_management');
       expect(getByText('Monitoring')).toBeTruthy();
-      expect(getByText('Tugas & Aktivitas')).toBeTruthy();
+      expect(getByText('Laporan')).toBeTruthy();
       expect(queryByText('Profil')).toBeNull();
     });
 
@@ -337,14 +349,14 @@ describe('MainNavigator', () => {
       expect(getByText('Beranda')).toBeTruthy();
       expect(getByText('Tugas & Aktivitas')).toBeTruthy();
       expect(getByText('Monitoring')).toBeTruthy();
-      expect(getByText('Lembur')).toBeTruthy();
+      expect(getByText('Laporan')).toBeTruthy();
       expect(queryByText('Profil')).toBeNull();
     });
 
     it('should render for kepala_rayon role with Home tab (no Profil tab)', () => {
       const { getByText, queryByText } = renderNavigator('kepala_rayon');
       expect(getByText('Beranda')).toBeTruthy();
-      expect(getByText('Tugas & Aktivitas')).toBeTruthy();
+      expect(getByText('Aset')).toBeTruthy();
       expect(getByText('Monitoring')).toBeTruthy();
       expect(queryByText('Profil')).toBeNull();
     });
@@ -352,7 +364,7 @@ describe('MainNavigator', () => {
     it('should render for superadmin role (no Profil tab)', () => {
       const { getByText, queryByText } = renderNavigator('superadmin');
       expect(getByText('Monitoring')).toBeTruthy();
-      expect(getByText('Tugas & Aktivitas')).toBeTruthy();
+      expect(getByText('Laporan')).toBeTruthy();
       expect(queryByText('Profil')).toBeNull();
     });
 

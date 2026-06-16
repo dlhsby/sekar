@@ -59,6 +59,20 @@ import { PlantSeedsInventoryScreen } from '../screens/seeds/PlantSeedsInventoryS
 import { SeedDetailScreen } from '../screens/seeds/SeedDetailScreen';
 import { SeedTransactionFormScreen } from '../screens/seeds/SeedTransactionFormScreen';
 
+// Phase 5-1 Reporting screens
+import { ReportsScreen } from '../screens/reports/ReportsScreen';
+import { ReportDetailScreen } from '../screens/reports/ReportDetailScreen';
+
+// Phase 5-2 Analytics screens
+import { WorkerAnalyticsScreen, TeamAnalyticsScreen } from '../screens/analytics';
+
+// Phase 5-3 Assets screens
+import { AssetListScreen } from '../screens/assets/AssetListScreen';
+import { AssetDetailScreen } from '../screens/assets/AssetDetailScreen';
+import { QRScannerScreen } from '../screens/assets/QRScannerScreen';
+import { AssetCheckoutScreen } from '../screens/assets/AssetCheckoutScreen';
+import { AssetReturnScreen } from '../screens/assets/AssetReturnScreen';
+
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const MainStack = createNativeStackNavigator<MainStackParamList>();
 
@@ -140,50 +154,62 @@ export const TAB_CONFIGS: Record<string, TabConfig[]> = {
   satgas: [
     { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
+    { name: 'Assets', label: 'Aset', icon: 'toolbox-outline' },
     { name: 'Overtime', label: 'Lembur', icon: 'clock-plus-outline' },
+    { name: 'WorkerAnalytics', label: 'Kinerja', icon: 'chart-line' },
   ],
   linmas: [
     { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
+    { name: 'Assets', label: 'Aset', icon: 'toolbox-outline' },
     { name: 'Overtime', label: 'Lembur', icon: 'clock-plus-outline' },
+    { name: 'WorkerAnalytics', label: 'Kinerja', icon: 'chart-line' },
   ],
   korlap: [
     { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
     { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
     { name: 'Overtime', label: 'Lembur', icon: 'clock-plus-outline' },
+    { name: 'Assets', label: 'Aset', icon: 'toolbox-outline' },
+    { name: 'TeamAnalytics', label: 'Tim', icon: 'chart-bar' },
   ],
   admin_data: [
     { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
-    { name: 'PlantSeeds', label: 'Bibit', icon: 'leaf-outline' },
     { name: 'PruningReviewQueue', label: 'Perantingan', icon: 'tree-outline' },
+    { name: 'PlantSeeds', label: 'Bibit', icon: 'leaf-outline' },
+    { name: 'Reports', label: 'Laporan', icon: 'file-chart-outline' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'chart-bar' },
-    { name: 'Overtime', label: 'Lembur', icon: 'clock-outline' },
   ],
   kepala_rayon: [
     { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
-    { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
     { name: 'Overtime', label: 'Lembur', icon: 'clock-check-outline' },
+    { name: 'Assets', label: 'Aset', icon: 'toolbox-outline' },
+    { name: 'Reports', label: 'Laporan', icon: 'file-chart-outline' },
+    { name: 'TeamAnalytics', label: 'Tim', icon: 'chart-bar' },
   ],
   top_management: [
     { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
+    { name: 'Reports', label: 'Laporan', icon: 'file-chart-outline' },
+    { name: 'TeamAnalytics', label: 'Analitik', icon: 'chart-bar' },
     { name: 'PlantSeeds', label: 'Bibit', icon: 'leaf-outline' },
-    { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
   ],
   admin_system: [
     { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
-    { name: 'PlantSeeds', label: 'Bibit', icon: 'leaf-outline' },
-    { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
+    { name: 'Assets', label: 'Aset', icon: 'toolbox-outline' },
+    { name: 'Reports', label: 'Laporan', icon: 'file-chart-outline' },
+    { name: 'TeamAnalytics', label: 'Analitik', icon: 'chart-bar' },
   ],
   superadmin: [
     { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
-    { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
     { name: 'Overtime', label: 'Lembur', icon: 'clock-check-outline' },
+    { name: 'Assets', label: 'Aset', icon: 'toolbox-outline' },
+    { name: 'Reports', label: 'Laporan', icon: 'file-chart-outline' },
+    { name: 'TeamAnalytics', label: 'Analitik', icon: 'chart-bar' },
   ],
   staff_kecamatan: [
     { name: 'Home', label: 'Beranda', icon: 'home' },
@@ -203,6 +229,11 @@ const SCREEN_MAP: Record<string, React.ComponentType<any>> = {
   Perantingan: PerantinganListScreen,
   PruningReviewQueue: ReviewQueueScreen,
   PlantSeeds: PlantSeedsInventoryScreen,
+  // Phase 5 visible tabs
+  Reports: ReportsScreen,
+  Assets: AssetListScreen,
+  WorkerAnalytics: WorkerAnalyticsScreen,
+  TeamAnalytics: TeamAnalyticsScreen,
 };
 
 function TabBarIcon({ focused, name }: { focused: boolean; name: string }): React.JSX.Element {
@@ -438,6 +469,66 @@ function TabNavigator(): React.JSX.Element {
               title="Catat Transaksi"
               onBack={() => navigation.goBack()}
             />
+          ),
+          tabBarButton: () => null,
+        })}
+      />
+
+      {/* Phase 5-1 Reporting hidden screen */}
+      <Tab.Screen
+        name="ReportDetail"
+        component={ReportDetailScreen}
+        options={({ navigation }) => ({
+          headerTitle: () => (
+            <FieldHomeHeader
+              title="Detail Laporan"
+              onBack={() => navigation.navigate('Reports' as any)}
+            />
+          ),
+          tabBarButton: () => null,
+        })}
+      />
+
+      {/* Phase 5-3 Assets hidden screens */}
+      <Tab.Screen
+        name="AssetDetail"
+        component={AssetDetailScreen}
+        options={({ navigation }) => ({
+          headerTitle: () => (
+            <FieldHomeHeader
+              title="Detail Aset"
+              onBack={() => navigation.navigate('Assets' as any)}
+            />
+          ),
+          tabBarButton: () => null,
+        })}
+      />
+      <Tab.Screen
+        name="QRScanner"
+        component={QRScannerScreen}
+        options={({ navigation }) => ({
+          headerTitle: () => (
+            <FieldHomeHeader title="Pindai QR" onBack={() => navigation.goBack()} />
+          ),
+          tabBarButton: () => null,
+        })}
+      />
+      <Tab.Screen
+        name="AssetCheckout"
+        component={AssetCheckoutScreen}
+        options={({ navigation }) => ({
+          headerTitle: () => (
+            <FieldHomeHeader title="Pinjam Aset" onBack={() => navigation.goBack()} />
+          ),
+          tabBarButton: () => null,
+        })}
+      />
+      <Tab.Screen
+        name="AssetReturn"
+        component={AssetReturnScreen}
+        options={({ navigation }) => ({
+          headerTitle: () => (
+            <FieldHomeHeader title="Kembalikan Aset" onBack={() => navigation.goBack()} />
           ),
           tabBarButton: () => null,
         })}
