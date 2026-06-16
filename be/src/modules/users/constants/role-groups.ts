@@ -131,3 +131,27 @@ export const ASSET_VIEWERS = [
   UserRole.ADMIN_DATA,
   UserRole.TOP_MANAGEMENT,
 ];
+
+// Phase 5-1 Reporting — who may view/generate reports vs manage schedules.
+export const REPORTING_VIEWERS = [
+  UserRole.KORLAP,
+  UserRole.KEPALA_RAYON,
+  UserRole.ADMIN_DATA,
+  UserRole.TOP_MANAGEMENT,
+  UserRole.ADMIN_SYSTEM,
+  UserRole.SUPERADMIN,
+];
+
+export const REPORTING_ADMINS = [UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN];
+
+// Phase 5-2 Analytics — dashboard/lists viewers vs view-refresh admins.
+export const ANALYTICS_VIEWERS = [
+  UserRole.KORLAP,
+  UserRole.KEPALA_RAYON,
+  UserRole.ADMIN_DATA,
+  UserRole.TOP_MANAGEMENT,
+  UserRole.ADMIN_SYSTEM,
+  UserRole.SUPERADMIN,
+];
+
+export const ANALYTICS_ADMINS = [UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN];

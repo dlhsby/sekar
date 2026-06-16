@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #333;
+      padding: 20px;
+    }
+
+    .header {
+      background: #1a1a1a;
+      color: white;
+      padding: 30px 20px;
+      margin-bottom: 30px;
+      border-radius: 4px;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .section {
+      margin-bottom: 30px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: bold;
+      border-bottom: 2px solid #1a1a1a;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+
+    .kpi-container {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .kpi-card {
+      flex: 1;
+      min-width: 150px;
+      border: 2px solid #000;
+      padding: 15px;
+      text-align: center;
+    }
+
+    .kpi-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #1a1a1a;
+    }
+
+    .kpi-label {
+      font-size: 11px;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      font-size: 11px;
+    }
+
+    th {
+      background: #f0f0f0;
+      padding: 10px;
+      text-align: left;
+      font-weight: bold;
+      border-bottom: 2px solid #1a1a1a;
+    }
+
+    td {
+      padding: 10px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 10px;
+      color: #999;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #e0e0e0;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Laporan Utilisasi Lembur</h1>
+    <p>{{period}} | {{scope}}</p>
+    <p>Dihasilkan: {{generatedAt}}</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Ringkasan Lembur</div>
+    <div class="kpi-container">
+      <div class="kpi-card">
+        <div class="kpi-value">{{summary.totalRequests}}</div>
+        <div class="kpi-label">Total Permintaan</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">{{summary.approvedCount}}</div>
+        <div class="kpi-label">Disetujui</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">{{summary.rejectedCount}}</div>
+        <div class="kpi-label">Ditolak</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">{{summary.approvalRate}}%</div>
+        <div class="kpi-label">Tingkat Persetujuan</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Jam Lembur</div>
+    <div class="kpi-container">
+      <div class="kpi-card">
+        <div class="kpi-value">{{hours.totalApproved}}</div>
+        <div class="kpi-label">Total Jam Disetujui</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">{{hours.avgPerRequest}}</div>
+        <div class="kpi-label">Rata-rata per Permintaan</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">{{hours.maxPerWorker}}</div>
+        <div class="kpi-label">Maksimal per Pekerja</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Estimasi Biaya</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Deskripsi</th>
+          <th>Nilai</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Total Jam Disetujui</td>
+          <td>{{costEstimate.totalHours}} jam</td>
+        </tr>
+        <tr>
+          <td>Tarif Lembur Rata-rata (per jam)</td>
+          <td>Rp {{costEstimate.hourlyRate}}</td>
+        </tr>
+        <tr>
+          <td>Estimasi Biaya Total</td>
+          <td><strong>Rp {{costEstimate.totalCost}}</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Breakdown Pekerja (Top 10)</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Pekerja</th>
+          <th>Permintaan</th>
+          <th>Disetujui</th>
+          <th>Jam Total</th>
+          <th>Estimasi Biaya</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each workerBreakdown}}
+        <tr>
+          <td>{{this.workerName}}</td>
+          <td>{{this.requestCount}}</td>
+          <td>{{this.approvedCount}}</td>
+          <td>{{this.totalHours}}</td>
+          <td>Rp {{this.estimatedCost}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Tren Mingguan Jam Lembur</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Minggu</th>
+          <th>Permintaan</th>
+          <th>Disetujui</th>
+          <th>Jam</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each weeklyTrend}}
+        <tr>
+          <td>{{this.week}}</td>
+          <td>{{this.requests}}</td>
+          <td>{{this.approved}}</td>
+          <td>{{this.hours}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Perbandingan Rayon</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Rayon</th>
+          <th>Total Jam</th>
+          <th>Permintaan</th>
+          <th>Tingkat Persetujuan</th>
+          <th>Biaya Estimasi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each rayonComparison}}
+        <tr>
+          <td>{{this.rayonName}}</td>
+          <td>{{this.totalHours}}</td>
+          <td>{{this.requestCount}}</td>
+          <td>{{this.approvalRate}}%</td>
+          <td>Rp {{this.estimatedCost}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    Laporan Utilisasi Lembur SEKAR | Dihasilkan pada {{generatedAt}} | Dokumen Resmi DLH Surabaya
+  </div>
+</body>
+</html>

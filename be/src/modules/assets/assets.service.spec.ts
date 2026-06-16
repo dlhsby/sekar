@@ -12,7 +12,12 @@ import { Area } from '../areas/entities/area.entity';
 import { Rayon } from '../rayons/entities/rayon.entity';
 import { QrCodeService } from './services/qr-code.service';
 import { AuditLogService } from '../audit/audit.service';
-import { AssetStatus, AssetCondition, MaintenanceStatus, MaintenanceType } from './enums/asset.enums';
+import {
+  AssetStatus,
+  AssetCondition,
+  MaintenanceStatus,
+  MaintenanceType,
+} from './enums/asset.enums';
 import { CreateAssetDto } from './dto/create-asset.dto';
 import { CheckoutAssetDto } from './dto/checkout-asset.dto';
 import { ReturnAssetDto } from './dto/return-asset.dto';
@@ -154,7 +159,12 @@ describe('AssetsService', () => {
 
   describe('findOne', () => {
     it('should return asset with presigned URLs', async () => {
-      const assetWithRefs = { ...mockAsset, assignments: [], maintenances: [], qr_code_url: 'qr-codes/AK-UTARA-001.png' };
+      const assetWithRefs = {
+        ...mockAsset,
+        assignments: [],
+        maintenances: [],
+        qr_code_url: 'qr-codes/AK-UTARA-001.png',
+      };
       mockAssetRepo.findOne.mockResolvedValue(assetWithRefs);
 
       const result = await service.findOne('asset-1', mockUser);
@@ -200,7 +210,9 @@ describe('AssetsService', () => {
     it('should throw forbidden if not asset manager', async () => {
       const satgasUser = { ...mockUser, role: UserRole.SATGAS };
 
-      await expect(service.create({} as CreateAssetDto, satgasUser)).rejects.toThrow(ForbiddenException);
+      await expect(service.create({} as CreateAssetDto, satgasUser)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -344,9 +356,7 @@ describe('AssetsService', () => {
 
   describe('myAssets', () => {
     it('should return active assignments for user', async () => {
-      const assignments = [
-        { id: 'assign-1', assigned_to: mockUser.id, returned_at: null },
-      ];
+      const assignments = [{ id: 'assign-1', assigned_to: mockUser.id, returned_at: null }];
       mockAssignmentRepo.find.mockResolvedValue(assignments);
 
       const result = await service.myAssets(mockUser);
@@ -407,10 +417,14 @@ describe('AssetsService', () => {
       });
       mockAssetRepo.save.mockResolvedValue(mockAsset);
 
-      const result = await service.updateMaintenance('maint-1', {
-        status: MaintenanceStatus.COMPLETED,
-        condition: AssetCondition.GOOD,
-      }, mockUser);
+      const result = await service.updateMaintenance(
+        'maint-1',
+        {
+          status: MaintenanceStatus.COMPLETED,
+          condition: AssetCondition.GOOD,
+        },
+        mockUser,
+      );
 
       expect(result).toBeDefined();
       expect(mockAssetRepo.save).toHaveBeenCalled();

@@ -45,8 +45,10 @@ import { PlantSeedsModule } from './modules/plant-seeds/plant-seeds.module';
 import { HealthModule } from './modules/health/health.module';
 // Phase 4 sub-phase 4-3 (M2): BullMQ-backed FCM retry queue
 import { QueueModule } from './modules/queue/queue.module';
-// Phase 5: Asset management
+// Phase 5: Asset management, Reporting, Analytics
 import { AssetsModule } from './modules/assets/assets.module';
+import { ReportingModule } from './modules/reporting/reporting.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -147,6 +149,8 @@ import { AssetsModule } from './modules/assets/assets.module';
     HealthModule,
     // Phase 5 modules
     AssetsModule,
+    ReportingModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [

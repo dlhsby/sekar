@@ -29,11 +29,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User } from '../users/entities/user.entity';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
-import {
-  ASSET_MANAGERS,
-  ASSET_USERS,
-  ASSET_VIEWERS,
-} from '../users/constants/role-groups';
+import { ASSET_MANAGERS, ASSET_USERS, ASSET_VIEWERS } from '../users/constants/role-groups';
 
 @ApiTags('assets')
 @ApiBearerAuth()
@@ -79,7 +75,11 @@ export class AssetsController {
   @Get('maintenance/overdue')
   @Roles(...ASSET_VIEWERS)
   @ApiOperation({ summary: 'Get overdue maintenance' })
-  @ApiResponse({ status: 200, description: 'Overdue maintenance records', type: [AssetMaintenance] })
+  @ApiResponse({
+    status: 200,
+    description: 'Overdue maintenance records',
+    type: [AssetMaintenance],
+  })
   async overdueMaintenance(@GetUser() user: User): Promise<AssetMaintenance[]> {
     return this.assetsService.overdueMaintenance(user);
   }
@@ -107,10 +107,7 @@ export class AssetsController {
   @Roles(...ASSET_MANAGERS)
   @ApiOperation({ summary: 'Create asset' })
   @ApiResponse({ status: 201, description: 'Asset created', type: Asset })
-  async create(
-    @Body() dto: CreateAssetDto,
-    @GetUser() user: User,
-  ): Promise<Asset> {
+  async create(@Body() dto: CreateAssetDto, @GetUser() user: User): Promise<Asset> {
     return this.assetsService.create(dto, user);
   }
 
@@ -137,7 +134,11 @@ export class AssetsController {
   @Post(':id/qr')
   @Roles(...ASSET_MANAGERS)
   @ApiOperation({ summary: 'Generate QR code for asset' })
-  @ApiResponse({ status: 201, description: 'QR code generated', schema: { properties: { url: { type: 'string' } } } })
+  @ApiResponse({
+    status: 201,
+    description: 'QR code generated',
+    schema: { properties: { url: { type: 'string' } } },
+  })
   async generateQr(@Param('id') id: string): Promise<{ url: string }> {
     const url = await this.assetsService.generateQr(id);
     return { url };

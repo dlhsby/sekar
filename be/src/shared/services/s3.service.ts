@@ -1,6 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 /**
@@ -233,6 +238,29 @@ export class S3Service {
     } catch (_error) {
       this.logger.error(`Failed to generate presigned URL for ${url}, returning original URL`);
       return url;
+    }
+  }
+
+  /**
+   * Delete file from S3
+   *
+   * @param key S3 object key to delete
+   * @returns Promise that resolves when deletion is complete
+   */
+  async deleteFile(key: string): Promise<void> {
+    try {
+      this.logger.log(`Deleting file from S3: ${key}`);
+
+      const command = new DeleteObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+      });
+
+      await this.s3Client.send(command);
+      this.logger.log(`File deleted successfully: ${key}`);
+    } catch (error) {
+      this.logger.error(`Failed to delete file from S3: ${error.message}`, error.stack);
+      throw error;
     }
   }
 }

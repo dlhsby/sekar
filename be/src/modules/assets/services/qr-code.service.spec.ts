@@ -16,10 +16,7 @@ describe('QrCodeService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        QrCodeService,
-        { provide: S3Service, useValue: mockS3Service },
-      ],
+      providers: [QrCodeService, { provide: S3Service, useValue: mockS3Service }],
     }).compile();
 
     service = module.get<QrCodeService>(QrCodeService);

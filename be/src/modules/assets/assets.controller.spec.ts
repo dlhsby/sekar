@@ -39,9 +39,7 @@ describe('AssetsController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AssetsController],
-      providers: [
-        { provide: AssetsService, useValue: mockService },
-      ],
+      providers: [{ provide: AssetsService, useValue: mockService }],
     }).compile();
 
     controller = module.get<AssetsController>(AssetsController);
@@ -60,7 +58,10 @@ describe('AssetsController', () => {
   describe('list', () => {
     it('should call service.findAll with user and query', async () => {
       const query = { page: 1, limit: 50 };
-      mockService.findAll.mockResolvedValue({ data: [], meta: { total: 0, page: 1, limit: 50, totalPages: 0 } });
+      mockService.findAll.mockResolvedValue({
+        data: [],
+        meta: { total: 0, page: 1, limit: 50, totalPages: 0 },
+      });
 
       await controller.list(query as any, mockUser);
 
@@ -217,7 +218,10 @@ describe('AssetsController', () => {
 
       await controller.maintenanceCalendar(3, 2026, mockUser);
 
-      expect(mockService.maintenanceCalendar).toHaveBeenCalledWith({ month: 3, year: 2026 }, mockUser);
+      expect(mockService.maintenanceCalendar).toHaveBeenCalledWith(
+        { month: 3, year: 2026 },
+        mockUser,
+      );
     });
   });
 

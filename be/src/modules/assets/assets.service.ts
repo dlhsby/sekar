@@ -20,17 +20,18 @@ import { CheckoutAssetDto } from './dto/checkout-asset.dto';
 import { ReturnAssetDto } from './dto/return-asset.dto';
 import { CreateMaintenanceDto } from './dto/create-maintenance.dto';
 import { UpdateMaintenanceDto } from './dto/update-maintenance.dto';
-import { AssetStatus, AssetCondition, MaintenanceStatus, MaintenanceType } from './enums/asset.enums';
+import {
+  AssetStatus,
+  AssetCondition,
+  MaintenanceStatus,
+  MaintenanceType,
+} from './enums/asset.enums';
 import { QrCodeService } from './services/qr-code.service';
 import { AuditLogService } from '../audit/audit.service';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { Area } from '../areas/entities/area.entity';
 import { Rayon } from '../rayons/entities/rayon.entity';
-import {
-  ASSET_MANAGERS,
-  ASSET_USERS,
-  ASSET_VIEWERS,
-} from '../users/constants/role-groups';
+import { ASSET_MANAGERS, ASSET_USERS, ASSET_VIEWERS } from '../users/constants/role-groups';
 
 @Injectable()
 export class AssetsService {
@@ -62,7 +63,9 @@ export class AssetsService {
   }
 
   async findAll(user: User, query: QueryAssetDto): Promise<PaginatedResponseDto<Asset>> {
-    const qb = this.assetRepo.createQueryBuilder('asset').leftJoinAndSelect('asset.category', 'category');
+    const qb = this.assetRepo
+      .createQueryBuilder('asset')
+      .leftJoinAndSelect('asset.category', 'category');
 
     await this.applyScopeFilter(qb, user);
 
@@ -128,7 +131,7 @@ export class AssetsService {
       throw new BadRequestException('Invalid category id');
     }
 
-    const rayonId = dto.rayon_id || (dto.area_id ? (await this.getAreaRayon(dto.area_id)) : null);
+    const rayonId = dto.rayon_id || (dto.area_id ? await this.getAreaRayon(dto.area_id) : null);
     if (!rayonId) {
       throw new BadRequestException('Asset must have either area_id or rayon_id');
     }
@@ -179,7 +182,10 @@ export class AssetsService {
     const oldValue = { ...asset };
 
     if (dto.status) {
-      if (dto.status === AssetStatus.RETIRED && !['admin_system', 'superadmin'].includes(user.role)) {
+      if (
+        dto.status === AssetStatus.RETIRED &&
+        !['admin_system', 'superadmin'].includes(user.role)
+      ) {
         throw new ForbiddenException('Only admin_system/superadmin can retire assets');
       }
       if (dto.status === AssetStatus.LOST && !ASSET_MANAGERS.includes(user.role as any)) {
@@ -253,7 +259,9 @@ export class AssetsService {
     return this.qrCodeService.presignedUrl(qrKey);
   }
 
-  async generateBulkQr(ids: string[]): Promise<{ assetId: string; assetCode: string; qrCodeUrl: string }[]> {
+  async generateBulkQr(
+    ids: string[],
+  ): Promise<{ assetId: string; assetCode: string; qrCodeUrl: string }[]> {
     if (ids.length > 50) {
       throw new BadRequestException('Maximum 50 assets per bulk QR generation');
     }
@@ -429,7 +437,11 @@ export class AssetsService {
     });
   }
 
-  async createMaintenance(id: string, dto: CreateMaintenanceDto, user: User): Promise<AssetMaintenance> {
+  async createMaintenance(
+    id: string,
+    dto: CreateMaintenanceDto,
+    user: User,
+  ): Promise<AssetMaintenance> {
     if (!ASSET_MANAGERS.includes(user.role as any)) {
       throw new ForbiddenException('Only asset managers can create maintenance');
     }
@@ -487,7 +499,11 @@ export class AssetsService {
     }
   }
 
-  async updateMaintenance(id: string, dto: UpdateMaintenanceDto, user: User): Promise<AssetMaintenance> {
+  async updateMaintenance(
+    id: string,
+    dto: UpdateMaintenanceDto,
+    user: User,
+  ): Promise<AssetMaintenance> {
     if (!ASSET_MANAGERS.includes(user.role as any)) {
       throw new ForbiddenException('Only asset managers can update maintenance');
     }
@@ -541,10 +557,14 @@ export class AssetsService {
     const startDate = new Date(query.year, query.month - 1, 1);
     const endDate = new Date(query.year, query.month, 0, 23, 59, 59);
 
-    const qb = this.maintenanceRepo.createQueryBuilder('maintenance')
+    const qb = this.maintenanceRepo
+      .createQueryBuilder('maintenance')
       .leftJoinAndSelect('maintenance.asset', 'asset')
       .leftJoinAndSelect('asset.category', 'category')
-      .where('maintenance.scheduled_at BETWEEN :start AND :end', { start: startDate, end: endDate });
+      .where('maintenance.scheduled_at BETWEEN :start AND :end', {
+        start: startDate,
+        end: endDate,
+      });
 
     await this.applyScopeFilterForMaintenance(qb, user);
 
@@ -552,7 +572,8 @@ export class AssetsService {
   }
 
   async overdueMaintenance(user: User): Promise<AssetMaintenance[]> {
-    const qb = this.maintenanceRepo.createQueryBuilder('maintenance')
+    const qb = this.maintenanceRepo
+      .createQueryBuilder('maintenance')
       .leftJoinAndSelect('maintenance.asset', 'asset')
       .leftJoinAndSelect('asset.category', 'category')
       .where('maintenance.status = :status', { status: MaintenanceStatus.OVERDUE });
@@ -562,10 +583,24 @@ export class AssetsService {
     return qb.orderBy('maintenance.scheduled_at', 'DESC').getMany();
   }
 
-  private validateTransition(currentStatus: AssetStatus, newStatus: AssetStatus, userRole: string): void {
+  private validateTransition(
+    currentStatus: AssetStatus,
+    newStatus: AssetStatus,
+    userRole: string,
+  ): void {
     const validTransitions: Record<AssetStatus, AssetStatus[]> = {
-      [AssetStatus.AVAILABLE]: [AssetStatus.IN_USE, AssetStatus.MAINTENANCE, AssetStatus.RETIRED, AssetStatus.LOST],
-      [AssetStatus.IN_USE]: [AssetStatus.AVAILABLE, AssetStatus.MAINTENANCE, AssetStatus.RETIRED, AssetStatus.LOST],
+      [AssetStatus.AVAILABLE]: [
+        AssetStatus.IN_USE,
+        AssetStatus.MAINTENANCE,
+        AssetStatus.RETIRED,
+        AssetStatus.LOST,
+      ],
+      [AssetStatus.IN_USE]: [
+        AssetStatus.AVAILABLE,
+        AssetStatus.MAINTENANCE,
+        AssetStatus.RETIRED,
+        AssetStatus.LOST,
+      ],
       [AssetStatus.MAINTENANCE]: [AssetStatus.AVAILABLE, AssetStatus.RETIRED, AssetStatus.LOST],
       [AssetStatus.RETIRED]: [],
       [AssetStatus.LOST]: [],
