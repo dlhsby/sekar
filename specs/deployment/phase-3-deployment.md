@@ -270,7 +270,7 @@ ssh -i ~/.ssh/sekar-key.pem ec2-user@16.79.183.240 \
 
 ```bash
 cd /path/to/sekar
-./infra/start.sh                   # Bring up PostgreSQL, Adminer, LocalStack (docker-compose)
+./scripts/infra.sh start                   # Bring up PostgreSQL, Adminer, LocalStack (docker-compose)
 cd be
 npm install                         # If not already done
 cp .env.example .env               # Use default localhost credentials
@@ -310,7 +310,7 @@ npm run android                    # Or: npm run ios (macOS only)
 #### 5. Clean up
 
 ```bash
-./infra/stop.sh                    # Tear down Docker services (PostgreSQL, etc.)
+./scripts/infra.sh stop                    # Tear down Docker services (PostgreSQL, etc.)
 ```
 
 **Demo data will persist on next `npm run db:seed:prod` — it's idempotent. Use `docker-compose down -v` if you want a fresh start.**
@@ -847,7 +847,7 @@ Run after every Phase 3 deploy:
 
 ```bash
 cd /path/to/sekar
-./infra/start.sh                   # Bring up Docker services
+./scripts/infra.sh start                   # Bring up Docker services
 cd be && npm run migration:run && npm run db:seed:prod
 cd be && npm run start:dev
 # In separate terminals:

@@ -107,6 +107,13 @@ sync_backend_infra_ports() {
     set_env_key "$be_env" AWS_ENDPOINT_URL "http://localhost:$minio_port"
     print_success "Synced be/.env.local AWS_ENDPOINT_URL → http://localhost:$minio_port (from infra/.env)"
   fi
+  # Redis → REDIS_URL host port
+  local redis_port cur_redis; redis_port="$(env_file_value "$infra_env" REDIS_PORT)"
+  cur_redis="$(env_file_value "$be_env" REDIS_URL)"
+  if [ -n "$redis_port" ] && [ -n "$cur_redis" ] && ! printf '%s' "$cur_redis" | grep -q ":$redis_port\$"; then
+    set_env_key "$be_env" REDIS_URL "redis://localhost:$redis_port"
+    print_success "Synced be/.env.local REDIS_URL → redis://localhost:$redis_port (from infra/.env)"
+  fi
 }
 
 # wait_for_container_healthy NAME TIMEOUT_S LABEL — poll a container's Docker

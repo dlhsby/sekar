@@ -128,7 +128,7 @@ Use this as the **post-redesign acceptance gate** before tagging the slice "ship
 **Preconditions**
 
 ```bash
-./infra/start.sh
+./scripts/infra.sh start
 cd be && npm run migration:run && npm run db:seed && npm run start:dev
 # new env knob — local dev sets 1000/min so smoke tests don't 429
 grep AUTH_LOGIN_THROTTLE_LIMIT be/.env  # → 1000
@@ -177,7 +177,7 @@ Use this when you sit down to manually QA plant monitoring + the perantingan wor
 ### Preconditions
 
 ```bash
-./infra/start.sh
+./scripts/infra.sh start
 cd be && npm run migration:run && npm run db:seed
 ```
 

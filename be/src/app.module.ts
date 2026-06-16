@@ -104,7 +104,7 @@ import { QueueModule } from './modules/queue/queue.module';
       maxQueryExecutionTime: 1000,
 
       // Migrations configuration
-      migrations: ['dist/database/migrations/*.js'],
+      migrations: ['dist/src/database/migrations/*.js'],
       migrationsRun: process.env.DATABASE_MIGRATIONS_RUN === 'true',
     }),
 

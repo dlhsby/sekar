@@ -241,7 +241,7 @@ npm run android:release    # Release APK with ProGuard
 
 ```bash
 # Start infrastructure (PostgreSQL, Adminer, LocalStack, Redis)
-./infra/start.sh
+./scripts/infra.sh start
 
 # Backend
 cd be && npm run start:dev

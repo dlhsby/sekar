@@ -108,7 +108,7 @@ cd fe/mobile
 
 ```bash
 # Start infrastructure
-./infra/start.sh
+./scripts/infra.sh start
 
 # Backend
 cd be && npm run start:dev

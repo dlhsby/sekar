@@ -523,7 +523,7 @@ Expected after Round C12:
 **Purpose:** Comprehensive walkthrough of all Phase 3 sub-phases (M1-R through 3-12) to confirm integration, data seeding, and UAT readiness before next rollout.
 
 **Prerequisites:**
-- Fresh PostgreSQL + Redis 7 via `./infra/start.sh`
+- Fresh PostgreSQL + Redis 7 via `./scripts/infra.sh start`
 - Backend migrations run: `npm run migration:run`
 - All data seeded: `npm run db:seed:prod` (includes Phase 3 reference + staging sample data)
 - Backend + Web + Mobile all started without errors
@@ -938,7 +938,7 @@ If `Deactivated invalid token: …` appears, that token row is now inactive. The
 
 ### What you need to manually check (UAT walkthrough)
 
-Open these in order on a fresh checkout (`./infra/start.sh && cd be && npm run migration:run && npm run db:seed && npm run start:dev`):
+Open these in order on a fresh checkout (`./scripts/infra.sh start && cd be && npm run migration:run && npm run db:seed && npm run start:dev`):
 
 **1. Phase 3 sign-off DB invariants (Swagger / Adminer)**
 ```
