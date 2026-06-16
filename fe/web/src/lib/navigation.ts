@@ -17,6 +17,8 @@ import {
   CircleStackIcon,
   SparklesIcon,
   ArchiveBoxIcon,
+  Square2StackIcon,
+  ChartBarIcon,
 } from '@heroicons/react/24/outline';
 import { ComponentType } from 'react';
 import { ADMIN_ROLES, MONITORING_ROLES, TASK_MANAGER_ROLES } from '@/lib/constants/roles';
@@ -144,9 +146,78 @@ export const navigationItems: NavItem[] = [
         icon: ArchiveBoxIcon,
         roles: [...ADMIN_ROLES, 'top_management', 'admin_data', 'kepala_rayon'],
       },
+      {
+        id: 'assets',
+        label: 'Aset',
+        href: '/assets',
+        icon: Square2StackIcon,
+        roles: [...ADMIN_ROLES, 'top_management', 'admin_data', 'kepala_rayon'],
+      },
     ],
   },
 
+  // ── Laporan: reporting (Phase 5-1) ──────────────────────────────────────
+  {
+    id: 'reports',
+    label: 'Laporan',
+    href: '/reports',
+    icon: Square2StackIcon,
+    roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
+    children: [
+      {
+        id: 'reports-list',
+        label: 'Daftar Laporan',
+        href: '/reports',
+        icon: Square2StackIcon,
+        roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
+      },
+      {
+        id: 'reports-builder',
+        label: 'Buat Laporan',
+        href: '/reports/builder',
+        icon: Square2StackIcon,
+        roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
+      },
+      {
+        id: 'reports-schedules',
+        label: 'Jadwal Laporan',
+        href: '/reports/schedules',
+        icon: CalendarIcon,
+        roles: [...ADMIN_ROLES],
+      },
+    ],
+  },
+  // ── Analitik: analytics dashboards (Phase 5-2) ─────────────────────────
+  {
+    id: 'analytics',
+    label: 'Analitik',
+    href: '/analytics',
+    icon: ChartBarIcon,
+    roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
+    children: [
+      {
+        id: 'analytics-overview',
+        label: 'Ringkasan',
+        href: '/analytics',
+        icon: ChartBarIcon,
+        roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
+      },
+      {
+        id: 'analytics-workers',
+        label: 'Kinerja Pekerja',
+        href: '/analytics/workers',
+        icon: ChartBarIcon,
+        roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
+      },
+      {
+        id: 'analytics-areas',
+        label: 'Perbandingan Area',
+        href: '/analytics/areas',
+        icon: ChartBarIcon,
+        roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
+      },
+    ],
+  },
   // ── Operasional: data export / import (Phase 4-5) ──────────────────────
   {
     id: 'operations',
@@ -238,6 +309,13 @@ const ROUTE_TITLES: Record<string, string> = {
   '/areas': 'Area',
   '/areas/new': 'Area Baru',
   '/rayons': 'Rayon',
+  '/assets': 'Aset',
+  '/assets/new': 'Aset Baru',
+  '/assets/qr': 'Generator QR',
+  '/assets/maintenance': 'Perawatan Aset',
+  '/reports': 'Laporan',
+  '/reports/builder': 'Buat Laporan',
+  '/reports/schedules': 'Jadwal Laporan',
   '/pruning-requests': 'Permohonan Pemangkasan',
   '/pruning-submit': 'Kirim Permintaan',
   '/pruning-submit/my': 'Permintaan Saya',
@@ -281,6 +359,10 @@ const ROUTE_BREADCRUMB: Record<string, string[]> = {
   '/rayons': ['Data Master', 'Rayon'],
   '/plants': ['Data Master', 'Tanaman'],
   '/seeds': ['Data Master', 'Bibit'],
+  '/assets': ['Data Master', 'Aset'],
+  '/reports': ['Laporan'],
+  '/reports/builder': ['Laporan', 'Buat Laporan'],
+  '/reports/schedules': ['Laporan', 'Jadwal Laporan'],
   '/pruning-submit': ['Kecamatan', 'Kirim Permintaan'],
   '/pruning-submit/my': ['Kecamatan', 'Permintaan Saya'],
   '/settings': ['Akun', 'Pengaturan'],

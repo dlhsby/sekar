@@ -20,3 +20,11 @@ export function formatRelativeTime(iso: string): string {
     return '';
   }
 }
+
+/** Absolute date in Indonesian (e.g. "15 Jan 2026"). Returns '-' for empty/invalid. */
+export function formatDate(iso?: string | Date | null): string {
+  if (!iso) return '-';
+  const d = iso instanceof Date ? iso : new Date(iso);
+  if (Number.isNaN(d.getTime())) return '-';
+  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+}
