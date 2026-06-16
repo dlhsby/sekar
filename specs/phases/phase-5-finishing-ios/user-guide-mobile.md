@@ -178,44 +178,89 @@ The home screen shows your daily summary:
 
 ### B7. Viewing Your Performance (Phase 5)
 
-1. Tap **Kinerja** in the navigation
-2. View your performance dashboard:
-   - Overall score (0-100) with grade (A/B/C/D)
-   - Breakdown by category (attendance, tasks, activities, location)
-   - 7-day attendance chart
-   - Monthly task completion progress bar
-3. Use the period selector to view different time ranges
+1. Tap **Kinerja** in the bottom navigation (available for all roles)
+2. View your performance card showing:
+   - **Skor Kinerja** — Large number (0-100) with Grade (A/B/C/D)
+   - **Quick Stats Cards** — 4 columns: Hadir (%), Tpw (punctuality %), Tugas (task %), Lokasi (location %)
+   - **Tren Kehadiran** — 7-day bar chart showing daily attendance
+   - **Tugas Bulan Ini** — Progress bar showing "Selesai: 23/28 (82%)"
+3. Tap **[30 Hari]** picker at top to change period (7/30/90 days or custom range)
+4. Data updates every 5 minutes
+
+**Grades:**
+- **A** — Score 90-100 (Excellent)
+- **B** — Score 80-89 (Good)
+- **C** — Score 70-79 (Fair)
+- **D** — Score <70 (Needs Improvement)
 
 ### B8. Asset Management (Phase 5)
 
-#### Borrowing an Asset
+#### Browsing Assets
 
 1. Tap **Aset** in the bottom navigation
-2. Find the asset:
-   - Browse the list, or
-   - Tap the 📷 camera icon to **scan QR code**
-3. Tap **Pinjam**
-4. Select current condition
-5. Add notes if needed
-6. Tap **Konfirmasi**
+2. Asset list shows:
+   - **[Semua], [Tersedia], [Saya]** tabs (status filter)
+   - Asset cards: 🧹 icon, Nama, Code, Status (●), Area
+   - Search bar at top for name/code lookup
+3. Tap **[🔍]** search icon to filter
+4. Tap **[📷]** camera icon to open QR scanner
+
+#### Checking Out (Borrowing) an Asset
+
+1. **Via List:**
+   - Tap **[Semua]** or **[Tersedia]** tab
+   - Find asset by browsing or search
+   - Tap asset card → **[Pinjam]** button
+
+2. **Via QR Scan:**
+   - Tap **[📷]** camera icon
+   - Point at asset's QR code
+   - App auto-reads JSON: `{"code": "AK-RU-001", "id": "uuid", "app": "sekar"}`
+   - Asset detail loads → **[Pinjam]**
+
+3. **Checkout Confirmation Screen:**
+   - Asset code + name (read-only)
+   - **Kondisi Sekarang** — Picker: Baik, Cukup, Kurang, Rusak
+   - **Catatan** — Optional notes
+   - **Tanggal Kembali Diharapkan** — Date picker (optional)
+   - **[Konfirmasi Pinjam]** button
+
+4. On success:
+   - Assignment recorded with timestamp
+   - Asset status changes to "Digunakan"
+   - Confirmation toast shown
 
 #### Returning an Asset
 
-1. Tap **Aset** → **Saya** tab
+1. Tap **Aset** → **[Saya]** tab (shows only your checked-out assets)
 2. Find the asset to return
-3. Tap **Kembalikan**
-4. Select return condition
-5. Add notes about any issues
-6. Tap **Konfirmasi**
+3. Tap asset card → **[Kembalikan]** button
+4. Return screen appears:
+   - Asset code + name (read-only)
+   - **Kondisi Saat Kembali** — Picker: Baik, Cukup, Kurang, Rusak
+   - **Catatan** — Notes field (required if condition degraded)
+5. If condition worsened:
+   - System highlights the degradation
+   - Prompts for notes (mandatory)
+   - Asset moves to "Perawatan" status after return
+6. Tap **[Konfirmasi]** to complete return
 
-#### QR Code Scanning
+#### QR Code Scanning Details
 
-1. Tap the 📷 icon on the Asset screen
-2. Point your camera at the asset's QR code
-3. The asset details appear automatically
-4. If the QR code is damaged, tap **Ketik Kode Manual** and enter the asset code
+1. Tap the **[📷]** camera icon from asset list
+2. Camera view opens with:
+   - Full-screen camera feed
+   - Scanning frame overlay
+   - **[Torch]** button (top-right, toggles flashlight)
+   - **[Ketik Kode Manual]** button (bottom, for damaged QR codes)
+3. Point camera at QR code for 1-2 seconds
+4. Auto-detection triggers when QR is fully in frame
+5. If offline or QR unreadable:
+   - Tap **[Ketik Kode Manual]**
+   - Type asset code (e.g., "AK-RU-001")
+   - Tap **[Cari]** — looks up offline cache first, then server when online
 
-> **Offline QR Scanning:** QR codes can be scanned offline. The asset info will load from cache if previously viewed, otherwise it will display the asset code for manual lookup when online.
+> **Offline QR Scanning:** QR code parsing works fully offline. Asset info loads from cache if previously viewed. If not cached, asset code is displayed and full details fetch when connection restores.
 
 ---
 
@@ -291,33 +336,65 @@ Your home screen includes additional information:
 
 ### C6. Team Analytics (Phase 5)
 
-1. Tap **Analitik** in the navigation
-2. View team dashboard:
-   - Summary cards (attendance, tasks, average score)
-   - Top performers list
-   - Needs attention list (low scores)
-3. Tap a worker to see individual performance details
-4. Use the area filter to compare areas (if multi-area korlap)
+1. Tap **Analitik** in the bottom navigation (or **Tim** tab for supervisors)
+2. Team analytics dashboard shows:
+   - **Summary Cards** — Hadir: 8/10, Tugas: 12, Skor Rata: 85.2 (B)
+   - **Top Performers** — Ranked list showing top 3-5 workers with scores
+   - **Needs Attention** — Workers with low scores (D grade) requiring follow-up
+3. **Tap a worker card** to drill into individual performance:
+   - Same detail as personal analytics (score card, charts, metrics)
+4. **[Area ▼]** filter at top (if multi-area korlap):
+   - Switch between assigned areas
+   - Summary updates to show area-specific team metrics
 
 ### C7. Reports (Phase 5)
 
-1. Tap **Laporan** in the navigation
-2. View generated reports with tabs:
-   - **Harian** — Daily operations reports
-   - **Mingguan** — Weekly performance
-   - **Bulanan** — Monthly summary
-3. Tap a report to preview
-4. Tap **Unduh** to download PDF to device
-5. Tap **+ Buat Laporan** to generate a custom report
+1. Tap **Laporan** in the bottom navigation (korlap+ only)
+2. Reports screen shows:
+   - **[Harian], [Mingguan], [Bulanan]** filter tabs
+   - **List of generated reports** with:
+     - Title (e.g., "Laporan Operasional Harian - Rayon Utara")
+     - Date generated
+     - Format icon (📄 PDF)
+     - **[Unduh]** button
+3. **To view a report:**
+   - Tap **[Unduh]** → downloads to device
+   - Opens in default PDF viewer (or share menu)
+4. **To generate a custom report:**
+   - Tap **[+ Buat Laporan]** button
+   - Form appears with:
+     - **Tipe Laporan** — Picker: Harian, Mingguan, Bulanan, Pekerja, Area, Lembur
+     - **Periode** — Date range (defaults to last 30 days)
+     - **Format** — Radio: PDF, CSV, Excel (recommended: PDF for mobile)
+     - **Scope** — Auto-filled by role; admin can select rayon/area
+   - Tap **[Buat]** → queues generation
+   - New report appears in list with status "Memproses..."
+   - Download available once status changes to "Selesai"
+
+> **Auto-generated Reports:** System generates Daily Operations Reports automatically at 06:00 WIB for your rayon. These appear in the list automatically (no action needed).
 
 ### C8. Asset Management (Phase 5)
 
-In addition to worker asset features, korlap can:
+In addition to worker asset features (checkout/return/QR scan), korlap can:
 
-1. View all assets assigned to their area(s)
-2. Schedule maintenance: **Aset** → asset detail → **+ Perawatan**
-3. Complete maintenance records with actual work performed
-4. View asset utilization and history
+1. **View all area assets:**
+   - Tap **Aset** → **[Semua]** tab shows all assigned area assets
+   - Browse by status or search by code/name
+
+2. **Schedule maintenance:**
+   - Open asset detail → scroll to "Riwayat Perawatan"
+   - Tap **[+ Jadwalkan Perawatan]**
+   - Form: Tipe, Tanggal, Catatan
+   - Tap **[Simpan]**
+
+3. **Complete maintenance:**
+   - View pending maintenance on asset detail
+   - Tap **[Selesai]** → fill in actual work done, cost, new condition
+   - Tap **[Konfirmasi]** → asset returns to "Tersedia"
+
+4. **View asset utilization:**
+   - Asset detail → "Riwayat Peminjaman" (assignment history)
+   - See checkout/return dates, who used it, conditions recorded
 
 ---
 
@@ -537,13 +614,18 @@ The app interface is in **Bahasa Indonesia** by default. English localization is
 
 ### I2. Bottom Navigation Tabs
 
-| Role | Tab 1 | Tab 2 | Tab 3 | Tab 4 | Tab 5 |
-|------|-------|-------|-------|-------|-------|
-| satgas/linmas | Beranda | Tugas | Aktivitas | Aset | Profil |
-| korlap | Beranda | Monitoring | Tugas | Lembur | Lainnya* |
-| kepala_rayon | Beranda | Monitoring | Analitik | Laporan | Lainnya* |
+| Role | Tabs (5-tab max; overflow in "Lainnya") | Visible |
+|------|-------|-------|
+| **satgas, linmas** | Beranda • Tugas • Aktivitas • Aset • Kinerja | Yes, no Profil tab visible |
+| **korlap** | Beranda • Monitoring • Tugas • Lembur • Lainnya (Aktivitas, Aset, Tim, Laporan, Kinerja, Profil) | 6 tabs total, overflow to More |
+| **admin_data** | Beranda • Monitoring • TasksAct • Aset • Lainnya (Laporan, Tim, Kinerja, Profil, PruningReview, PlantSeeds) | 6+ tabs, overflow to More |
+| **kepala_rayon** | Beranda • Monitoring • Analitik • Laporan • Lainnya (Tugas, Lembur, Kinerja, Aset, Profil) | 5+ tabs, overflow to More |
+| **top_management** | Beranda • Monitoring • Laporan • Tim • Lainnya (Analitik, PlantSeeds, Kinerja, Profil) | 4+ tabs, overflow to More |
+| **admin_system, superadmin** | Same as top_management (read-only dashboards) | Similar overflow |
 
-*\* "Lainnya" (More) contains overflow tabs: Aktivitas, Aset, Laporan, Analitik, Profil*
+**Phase 5 additions:** "Aset" (all workers), "Kinerja" (worker performance), "Tim" (team analytics, korlap+), "Laporan" (korlap+), "Laporan" (admin+)
+
+**Note:** "Profil" and "Lainnya" (More) are always accessible but not shown in main tab bar.
 
 ### I3. Status Icons
 

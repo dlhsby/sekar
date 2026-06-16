@@ -330,51 +330,66 @@ The staffing summary panel shows:
 
 ## I. Analytics Dashboard (Phase 5)
 
-**Available to:** `korlap`, `kepala_rayon`, `top_management`, `admin_system`, `superadmin`
+**Available to:** All roles (scoped by role)
 
 ### I1. Dashboard Overview
 
 1. Click **Analitik** in the sidebar
 2. The dashboard displays:
-   - **KPI Cards** — 4 key metrics at the top
+   - **KPI Cards** — Key metrics with 7-day trend indicators (↑↓)
    - **Attendance Trend** — 30-day line chart
    - **Task Completion** — Bar chart by area
-   - **Worker Performance** — Distribution histogram
+   - **Area Coverage** — Grouped bar chart showing staffing + tasks per area
 
-### I2. KPI Cards
+### I2. KPI Cards & Role-Based Scope
 
-| KPI | Description | Target |
-|-----|-------------|--------|
-| Tingkat Kehadiran | Percentage of workers clocked in vs scheduled | >90% |
-| Penyelesaian Tugas | Tasks completed on time vs total assigned | >80% |
-| Skor Rata-rata | Average worker performance score (0-100) | >75 |
-| Kepatuhan Area | Time within assigned boundary vs total shift | >85% |
+| Role | Dashboard Scope | KPIs Visible |
+|------|----------------|--------------|
+| `satgas`, `linmas` | Own metrics only | Attendance, tasks, activities, location compliance |
+| `korlap` | Assigned area(s) | Team attendance, area tasks, average score |
+| `admin_data` | Own area (like korlap) | Team metrics, area summary |
+| `kepala_rayon` | Own rayon (all areas) | Rayon-wide attendance, task completion, KPI cards |
+| `top_management` | System-wide | All metrics, all rayons |
+| `admin_system`, `superadmin` | System-wide | All metrics, all rayons |
+
+**Note:** Analytics are NOT real-time — they reflect data from the last nightly refresh (02:00 WIB). Data may be up to 24 hours stale.
 
 ### I3. Worker Rankings
 
 1. Navigate to **Analitik** → **Pekerja**
 2. View the worker ranking table:
+   - **Ranking Kinerja** — Top performers with horizontal bar chart (score 0-100)
+   - **Tabel Detail** — Nama, Area, Hadir (%), Tugas (%), Skor, Grade (A/B/C/D)
    - Sortable by performance score, attendance, task completion
    - Filter by rayon, area, date range
-   - Color-coded grades: A (green), B (blue), C (yellow), D (red)
-3. Click a worker row to view detailed performance breakdown
+   - Color-coded grades: A (90+), B (80-89), C (70-79), D (<70)
+3. Click a worker row to view detailed performance breakdown:
+   - Attendance calendar heatmap (30-day)
+   - Punctuality (on-time arrivals %)
+   - Task completion rate and average duration
+   - Activity submission + approval rates
+   - Area compliance % (within boundary)
+   - Overtime hours (if any)
 
 ### I4. Area Comparison
 
 1. Navigate to **Analitik** → **Area**
-2. View area metrics:
-   - Staffing coverage ratio
-   - Average worker performance
-   - Task backlog count
-   - Maintenance frequency
-3. Compare areas within a rayon or across all rayons
+2. View area metrics cards showing:
+   - **Taman Bungkul** — Staff: 8/10, Tasks: 12, Score: 85 (B)
+   - **Taman Apsari** — Staff: 5/5, Tasks: 8, Score: 91 (A)
+   - (... more areas ...)
+3. Area Comparison Chart shows:
+   - Grouped bars: staffing coverage + open task count per area
+   - Compare within rayon or across rayons
+4. Click an area card to drill down into detailed area analytics
 
 ### I5. Filtering and Date Ranges
 
 - Use the **date range picker** at the top to select:
   - Today, Last 7 Days, Last 30 Days, Custom Range
-- Use the **rayon filter** to scope data
-- Data refreshes every 5 minutes (cached via Redis)
+- Use the **rayon filter** to scope data to a specific rayon
+- Data refreshes every 5 minutes from Redis cache
+- Click **Menyegarkan** to manually refresh all materialized views (admin+ only)
 
 ---
 
@@ -385,75 +400,66 @@ The staffing summary panel shows:
 ### J1. Viewing Reports
 
 1. Click **Laporan** in the sidebar
-2. View the reports list with filters:
-   - **Tipe** — Daily, Weekly, Monthly, Worker, Area, Overtime
-   - **Status** — completed, generating, failed
-   - **Tanggal** — Date range
-3. Click a report to view or download
+2. The reports dashboard shows:
+   - **Filter tabs** — Harian, Mingguan, Bulanan, Semua
+   - **Reports list** with columns: Judul, Tanggal, Format (PDF), [Unduh]
+   - **Pagination** for large report lists
+3. Click the **[Unduh]** button to download a generated report
 
 ### J2. Generating a Report
 
-1. Click **+ Buat Laporan**
-2. Select a report template:
-   - **Laporan Harian** — Daily operations (auto-generated 06:00 WIB)
-   - **Laporan Mingguan** — Weekly performance summary
-   - **Laporan Bulanan** — Monthly comprehensive report
-   - **Laporan Pekerja** — Individual worker performance
-   - **Laporan Area** — Area status and metrics
-   - **Laporan Lembur** — Overtime utilization
-3. Configure parameters:
-   - **Tanggal/Periode** — Date or period to report on
-   - **Rayon/Area** — Scope (defaults to your assignment)
-   - **Format** — PDF, CSV, or Excel
-4. Click **Buat** to generate
-5. Wait for generation (PDF may take up to 30 seconds)
-6. Download when ready
+1. Click **+ Buat Laporan** button
+2. The report builder form appears with:
+   - **Tipe Laporan** — Dropdown: Harian, Mingguan, Bulanan, Pekerja, Area, Lembur
+   - **Format** — Radio buttons: PDF, CSV, Excel
+   - **Periode** — Date range picker (e.g., 01/03/2026 — 13/03/2026)
+   - **Rayon** — Dropdown (defaults to your rayon; system-wide for admin)
+   - **Area** — Dropdown (optional, filters to area level)
+   - **Pekerja** — Dropdown (only for "Laporan Pekerja" type)
+3. Click **Buat Laporan**
+4. System returns 202 Accepted with status "processing"
+5. Report appears in the list with status "Memproses..." then "Selesai"
+6. PDF generation takes up to 30 seconds; CSV/Excel faster
+7. Download presigned URL available once complete
 
-### J3. Report Schedules (admin+ only)
+### J3. Report Types & Contents
+
+| Type | Auto-Gen | Frequency | Contents | Audience |
+|------|----------|-----------|----------|----------|
+| **Laporan Operasional Harian** | Yes | Daily 06:00 WIB | Attendance, tasks, activities, overtime, alerts | kepala_rayon, top_management, admin |
+| **Laporan Kinerja Mingguan** | Yes | Monday 07:00 WIB | Attendance trend, task completion, top/bottom performers, area comparison | kepala_rayon, top_management, admin |
+| **Laporan Ringkasan Bulanan** | Yes | 1st of month 08:00 WIB | KPI dashboard, worker rankings, area comparison, overtime, recommendations | top_management, admin |
+| **Laporan Pekerja** | No | On-demand | Worker profile, attendance calendar, punctuality, task/activity performance, compliance, overtime, composite score | korlap+, for assigned workers |
+| **Laporan Area** | No | On-demand | Area profile, staffing, task status, maintenance status, coverage quality, worker performance ranking | korlap+, for assigned areas |
+| **Laporan Utilisasi Lembur** | No | On-demand | Overtime summary, cost estimate, worker breakdown, trends, approval efficiency, rayon comparison | kepala_rayon, top_management, admin |
+
+### J4. Report Schedules (admin+ only)
 
 1. Navigate to **Laporan** → **Jadwal Laporan**
-2. View existing scheduled reports
-3. To create a new schedule:
-   - Click **+ Jadwal Baru**
-   - Select **Template** — which report to generate
-   - Set **Frekuensi** — daily, weekly (day), monthly (date)
-   - Set **Waktu** — generation time (WIB)
-   - Set **Penerima** — email recipients
-   - Set **Scope** — rayon/area filter
+2. View default schedules:
+   - Laporan Harian - Rayon Utara (06:00 WIB, Aktif)
+   - Laporan Harian - Rayon Selatan (06:00 WIB, Aktif)
+   - ... (one per rayon)
+   - Laporan Mingguan - All Rayons (Monday 07:00, Aktif)
+   - Laporan Bulanan - Sistem (1st day 08:00, Aktif)
+3. To create a custom schedule:
+   - Click **+ Buat Jadwal Baru**
+   - **Template** — Select report type
+   - **Frekuensi** — daily, weekly (select day), monthly (select date)
+   - **Waktu** — Generation time (WIB)
+   - **Scope** — Rayon, area, worker filters (optional)
 4. Click **Simpan**
+5. Schedule appears in list; use [Edit], [Hapus], or toggle On/Off
 
-> **Auto-generated Reports:** The system automatically generates Daily Operations Reports at 06:00 WIB for each rayon with active workers.
+> **Auto-generated Reports:** Default schedules generate automatically at specified times and store reports in S3. Non-admins receive reports if they have read access to the rayon/area.
 
-### J4. Understanding Report Contents
+### J5. Export Formats
 
-#### Daily Operations Report
-- Attendance summary (present/absent/late)
-- Shift coverage by area
-- Tasks completed/pending
-- Activities submitted/approved
-- Overtime hours
-- Notable events (boundary violations, missing workers)
+- **PDF** — Formatted report with charts, tables, header/footer. Suitable for printing and sharing.
+- **CSV** — Comma-separated values for spreadsheet import. Includes all detail rows.
+- **Excel** — `.xlsx` with multiple sheets, formatted headers, bold/color styling, auto-fit columns.
 
-#### Weekly Performance Report
-- Week-over-week attendance trend
-- Task completion rate
-- Top and bottom performers
-- Area coverage analysis
-
-#### Monthly Summary Report
-- Monthly KPI dashboard
-- Worker performance rankings
-- Area comparison
-- Overtime analysis
-- Recommendations
-
-### J5. Downloading and Sharing
-
-- **PDF** — Formatted report with charts and tables, suitable for printing
-- **CSV** — Raw data for spreadsheet analysis
-- **Excel** — Formatted spreadsheet with multiple sheets and charts
-
-Click the download icon next to any completed report to save it locally.
+Each generated report has a presigned S3 URL valid for 24 hours (auto-refreshes on download).
 
 ---
 
@@ -464,94 +470,131 @@ Click the download icon next to any completed report to save it locally.
 ### K1. Browsing Assets
 
 1. Click **Aset** in the sidebar
-2. View the asset list with filters:
-   - **Kategori** — Alat Kebersihan, Alat Pertamanan, Mesin & Peralatan, Perlengkapan Keselamatan, Sarana Prasarana, Material & Bahan
-   - **Status** — available, in_use, maintenance, retired, lost
+2. View the asset list with filters & status tabs:
+   - **Status tabs** — [Semua], [Tersedia], [Digunakan], [Perawatan]
+   - **Kategori** — Alat Kebersihan, Alat Pertamanan, Kendaraan Operasional, Peralatan Keamanan, Peralatan Irigasi, Perlengkapan Umum
    - **Area** — Filter by area assignment
-3. Use the search bar to find assets by name or code
+3. Use the search bar to find assets by name or code (e.g., "AK-RU-001" or "Sapu")
+4. Each asset card shows: Kode, Nama, Kategori, Status (● color-coded), Location
+
+**Status Colors:**
+- 🟢 Tersedia (Available) — Ready to checkout
+- 🟠 Digunakan (In Use) — Assigned to a worker
+- 🔴 Perawatan (Maintenance) — Not available
+- ⚫ Retired/Lost — Terminal states
 
 ### K2. Asset Detail Page
 
-Click an asset to view:
+Click an asset to open the detail view:
 
-- **Informasi Aset** — Name, code, category, condition, location
-- **QR Code** — Scannable QR code (click to enlarge or print)
-- **Riwayat Peminjaman** — Assignment history (who, when, duration)
-- **Riwayat Perawatan** — Maintenance records
+- **Informasi** — Kode, Nama, Kategori, Area, Status, Kondisi
+- **QR Code** — Large QR image (click to enlarge, [Unduh], [Cetak])
+- **Riwayat Peminjaman** — Table with dates, assignee, checkout condition, return condition, duration
+- **Riwayat Perawatan** — Table with dates, type (routine/repair/inspect), status, cost
 
 ### K3. Checking Out an Asset (satgas, linmas, korlap)
 
-1. Find the asset (search or browse)
-2. Click **Pinjam**
-3. Confirm:
-   - **Kondisi** — Current condition (good/fair/poor/damaged)
-   - **Catatan** — Optional notes
-   - **Tanggal Kembali** — Expected return date (optional)
-4. Click **Konfirmasi**
+1. Find the asset and open detail view
+2. Click **[Pinjam]** button (only visible if status = "Tersedia")
+3. Modal appears with:
+   - **Aset** — Asset code + name (read-only)
+   - **Kondisi** — Dropdown: Baik, Cukup, Kurang, Rusak
+   - **Catatan** — Optional notes field
+   - **Tanggal Kembali Diharapkan** — Date picker (optional)
+4. Click **[Konfirmasi]**
+5. Checkout recorded with timestamp, assignee, and initial condition
+6. Asset status changes to "Digunakan"
 
-> **Alternative:** Scan the asset's QR code using the mobile app for faster checkout.
+> **Mobile Alternative:** Scan the asset's QR code in the mobile app → [Pinjam] for faster checkout.
 
 ### K4. Returning an Asset
 
-1. Navigate to **Aset** → filter by **Saya** (My Assets)
-2. Find the asset to return
-3. Click **Kembalikan**
-4. Fill in:
-   - **Kondisi** — Condition at return
-   - **Catatan** — Any damage or issues noted
-5. Click **Konfirmasi**
+1. Navigate to **Aset**, filter to **Digunakan** status
+2. Find the asset to return (or search for it)
+3. Open asset detail → Click **[Kembalikan]**
+4. Modal appears with:
+   - **Aset** — Code + name (read-only)
+   - **Kondisi Saat Kembali** — Dropdown: Baik, Cukup, Kurang, Rusak
+   - **Catatan** — Damage notes (required if condition degraded)
+5. If condition worsened (e.g., was "Baik", now "Rusak"):
+   - System prompts for notes (required)
+   - Asset moves to "Perawatan" status automatically
+6. Click **[Konfirmasi]**
+7. Assignment record updated with return date, condition, notes
 
-### K5. Managing Assets (korlap+)
+### K5. Creating & Managing Assets (korlap+)
 
 #### Creating an Asset
 
-1. Click **+ Tambah Aset**
-2. Fill in:
-   - **Nama** — Asset name
-   - **Kategori** — Select category
-   - **Kode** — Auto-generated or manual (format: `{PREFIX}-{RAYON}-{SEQ}`)
-   - **Area** — Assigned area
-   - **Kondisi** — Initial condition
-   - **Deskripsi** — Description
-   - **Tanggal Pengadaan** — Acquisition date
-   - **Harga** — Purchase price (optional)
-3. Click **Simpan**
+1. Click **[+ Tambah Aset]** button
+2. Form fields:
+   - **Nama** — Asset name (e.g., "Sapu Lidi #1")
+   - **Kategori** — Dropdown: 6 categories
+   - **Kode** — Auto-filled (format: `{PREFIX}-{RAYON}-{SEQ}`, e.g., AK-RU-001), editable
+   - **Area** — Dropdown (required for area-level assets)
+   - **Kondisi** — Baik, Cukup, Kurang, Rusak
+   - **Deskripsi** — Optional description
+   - **Tanggal Pengadaan** — Date picker
+   - **Harga** — Optional purchase price
+3. Click **[Simpan]**
 
 #### Editing an Asset
 
-1. Click the asset row → **Edit**
+1. Open asset detail → Click **[Edit]**
 2. Modify fields
-3. Click **Simpan**
+3. Click **[Simpan]**
 
-#### Retiring an Asset
+#### Retiring/Retiring an Asset
 
-1. Click the asset row → **Ubah Status**
-2. Select **Retired** with reason
-3. Click **Konfirmasi**
+1. Open asset detail → Click **[Delete]** or status button
+2. Select **Status** — Retired or Lost
+3. Add reason (optional)
+4. Click **[Konfirmasi]**
 
-### K6. QR Code Management (admin+)
+### K6. QR Code Generation
 
-1. Navigate to **Aset** → **QR Code**
-2. Select assets for bulk QR generation
-3. Click **Generate QR**
-4. Preview the QR codes in print-friendly layout
-5. Click **Cetak** to print
+#### Single QR Code
+1. Open asset detail → **QR Code** section
+2. Click **[Unduh QR]** to download PNG (300x300px)
+3. Click **[Cetak]** to print with asset code label
+
+#### Bulk QR Generation
+1. Navigate to **Aset** → **[QR Batch]** button (or generator page)
+2. Select multiple assets using checkboxes
+3. Click **[Pilih Semua]** to select all visible
+4. Click **[Generate QR]**
+5. Preview shows grid layout (4x5 per A4 page) with:
+   - QR code image
+   - Asset code below (e.g., "AK-RU-001")
+   - Asset name below code
+6. Click **[Cetak Semua]** or **[Unduh PDF]** for printable layout
 
 ### K7. Maintenance Management (korlap+)
 
-1. Navigate to **Aset** → **Perawatan**
-2. View the maintenance calendar
-3. To create a maintenance record:
-   - Click **+ Jadwal Perawatan**
-   - Select **Aset** — which asset
-   - Set **Tipe** — routine, repair, inspection, emergency
-   - Set **Tanggal** — Scheduled date
-   - Set **Catatan** — Description of work needed
-4. Click **Simpan**
-5. To complete a maintenance record:
-   - Click the record → **Selesai**
-   - Fill in actual work performed, cost, new condition
-   - Click **Konfirmasi**
+1. Navigate to **Aset** → **[Perawatan]** (or Maintenance Calendar)
+2. Calendar view shows:
+   - Month/year selector (< Maret 2026 >)
+   - Dates with ● markers for scheduled maintenance
+   - **Upcoming** section below (list of next maintenances)
+   - **Overdue** section (red highlight, past-due records)
+3. To schedule maintenance:
+   - Click **[+ Jadwalkan]** or click a date on calendar
+   - **Aset** — Search + select asset
+   - **Tipe** — Routine, Repair, Inspection, Replacement
+   - **Tanggal Dijadwalkan** — Date picker
+   - **Catatan** — Work description
+   - **Estimasi Biaya** — Optional cost estimate
+   - Click **[Simpan]**
+4. To mark as completed:
+   - Click the maintenance record → **[Selesai]**
+   - **Status** — Completed (read-only)
+   - **Tanggal Selesai** — Timestamp
+   - **Biaya Aktual** — Cost incurred
+   - **Kondisi Setelah Perawatan** — Baik, Cukup, Kurang, Rusak
+   - Click **[Konfirmasi]**
+   - Asset status returns to "Tersedia" and `last_maintenance_at` is updated
+
+**Overdue Maintenance Alert:** Daily cron (08:00 WIB) marks maintenance past due date as "OVERDUE" and sends notification to asset korlap and area supervisors.
 
 ---
 

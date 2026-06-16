@@ -1,7 +1,7 @@
 # Phase 5: Cross-Phase Evaluation Framework
 
-**Date:** March 13, 2026
-**Status:** Not Started
+**Date:** June 17, 2026
+**Status:** In Progress — feature requirements 11/12/13 delivered (code-side); full perf/coverage audit pending
 **Depends On:** All Phase 5 Sub-Phases Complete
 **Related Sub-Phase:** 5-7
 **Related ADRs:** All (ADR-001 through ADR-028)
@@ -39,9 +39,9 @@
 | 8 | Supervisor monitoring dashboard | Phase 2D | ⬜ Verify | Web Mapbox + mobile MapDashboard |
 | 9 | 7 Rayon organizational structure | Phase 2A | ⬜ Verify | Rayon/area entities, KMZ import |
 | 10 | Shift scheduling | Phase 1 + 2C | ⬜ Verify | Schedule entity, shift definitions |
-| 11 | Reporting with PDF/CSV/Excel export | Phase 5-1 | ⬜ Verify | ReportingModule, Puppeteer PDF |
-| 12 | Analytics and KPI dashboards | Phase 5-2 | ⬜ Verify | AnalyticsModule, materialized views |
-| 13 | Asset management with QR codes | Phase 5-3 | ⬜ Verify | AssetsModule, QR generation |
+| 11 | Reporting with PDF/CSV/Excel export | Phase 5-1 | ✅ Delivered (code) | `be/src/modules/reporting/` 8 endpoints + puppeteer-core/handlebars PDF (ADR-024) + CSV/XLSX via ExportModule; web `/reports`+builder+schedules; mobile Reports/ReportDetail. BE verified live (generate→S3→download). |
+| 12 | Analytics and KPI dashboards | Phase 5-2 | ✅ Delivered (code) | `be/src/modules/analytics/` 7 endpoints + 3 materialized views (ADR-025) + weighted score service; web `/analytics`+workers+areas (Recharts); mobile Worker/TeamAnalytics. BE verified live (refresh + dashboard). |
+| 13 | Asset management with QR codes | Phase 5-3 | ✅ Delivered (code) | `be/src/modules/assets/` 14 endpoints + QR service (ADR-026, `SEKAR:{CODE}`, level H); web `/assets` list/detail/new/qr/maintenance; mobile list/detail/QRScanner/checkout/return. BE verified live (QR PNG → MinIO). Mobile on-device QR scan pending (no device). |
 | 14 | iOS platform support | Phase 5-4 | ⬜ Verify | Apple Sign-In, biometrics, App Store |
 | 15 | Multi-environment deployment | Phase 4 + 5-5 | ⬜ Verify | Staging + production, CI/CD |
 | 16 | User documentation | Phase 5-6 | ⬜ Verify | Web + mobile user guides |

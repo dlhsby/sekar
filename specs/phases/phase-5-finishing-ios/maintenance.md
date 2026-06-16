@@ -211,20 +211,78 @@ done
 
 ---
 
-## D. Cron Jobs
+## D. Cron Jobs (Phase 5 Updated)
 
-### D1. Application Cron Jobs (NestJS)
+### D1. Application Cron Jobs (NestJS) — Phase 5 Additions
 
-These run inside the NestJS application via `@nestjs/schedule`:
+| Job | Schedule | Description | Module |
+|-----|----------|-------------|--------|
+| Monitoring status refresh | Every 60s | Recalculate worker tracking statuses | monitoring |
+| **Maintenance overdue check** | **08:00 WIB daily** | **Mark asset maintenance past `scheduled_at` as "overdue"** | **assets (NEW)** |
+| **Report scheduler (per-minute)** | **Every minute** | **Check for due scheduled reports and enqueue generation** | **reporting (NEW)** |
+| **Report cleanup (weekly)** | **Sunday 02:00 WIB** | **Delete generated reports >90 days old from S3** | **reporting (NEW)** |
+| **Analytics view refresh (nightly)** | **02:00 WIB daily** | **`REFRESH MATERIALIZED VIEW CONCURRENTLY` on all 3 views** | **analytics (NEW)** |
+| Shift reminder notifications | 30 min before shift | Notify workers of upcoming shift | notifications |
+| User soft-delete purge | Weekly | Hard-delete soft-deleted users >1 year old | users |
+| Location retention cleanup | Weekly | Archive/delete location logs >90 days | location |
 
-| Job | Schedule | Description |
-|-----|----------|-------------|
-| Monitoring status refresh | Every 60s | Recalculate worker tracking statuses |
-| Daily report generation | 06:00 WIB | Generate daily ops reports per rayon |
-| Analytics view refresh | 02:00 WIB | `REFRESH MATERIALIZED VIEW CONCURRENTLY` |
-| Maintenance overdue check | 08:00 WIB | Flag overdue asset maintenance |
-| Generated reports cleanup | 03:00 WIB | Delete reports older than 90 days |
-| Scheduled report execution | Per config | Execute user-configured report schedules |
+### D2. Backend Cron Implementation Details
+
+All cron jobs use NestJS `@nestjs/schedule` with `@Cron()` decorator and explicit `timeZone: 'Asia/Jakarta'`.
+
+**Maintenance Overdue Check** (`assets.cron/maintenance-overdue.cron.ts`):
+```typescript
+@Cron('0 8 * * *', { timeZone: 'Asia/Jakarta' })
+async markOverdueMaintenance(): Promise<void> {
+  // UPDATE asset_maintenances
+  // SET status = 'overdue'
+  // WHERE status = 'scheduled' AND scheduled_at < NOW()
+}
+```
+- Runs daily at **08:00 WIB**
+- Updates `asset_maintenances.status` from "scheduled" to "overdue"
+- Logs count of affected records
+
+**Report Scheduler Cron** (`reporting.cron/report-scheduler.cron.ts`):
+```typescript
+@Cron('* * * * *', { timeZone: 'Asia/Jakarta' })
+async run(): Promise<void> {
+  // Find schedules with is_active=true AND next_run_at <= NOW()
+  // For each: call reportingService.generateFromSchedule()
+  // Update next_run_at based on cron expression
+}
+```
+- Runs **every minute**
+- Checks for due scheduled reports
+- Enqueues background job for PDF/CSV/Excel generation
+- Supports daily, weekly (Mon-Sun), monthly (1-28) frequencies
+
+**Report Cleanup Cron** (`reporting.cron/report-cleanup.cron.ts`):
+```typescript
+@Cron('0 2 * * 0', { timeZone: 'Asia/Jakarta' })  // Sunday 02:00 WIB
+async run(): Promise<void> {
+  // Find reports with created_at < NOW() - 90 days
+  // Delete from DB and S3 bucket
+}
+```
+- Runs **Sunday at 02:00 WIB**
+- Deletes `generated_reports` records >90 days old
+- Also removes S3 files in `reports/` prefix
+
+**Analytics View Refresh** (`analytics.cron/analytics-refresh.cron.ts`):
+```typescript
+@Cron('0 2 * * *', { timeZone: 'Asia/Jakarta' })  // Daily 02:00 WIB
+async refreshAnalyticsViews(): Promise<void> {
+  // REFRESH MATERIALIZED VIEW CONCURRENTLY worker_performance_daily;
+  // REFRESH MATERIALIZED VIEW CONCURRENTLY area_metrics_daily;
+  // REFRESH MATERIALIZED VIEW CONCURRENTLY operational_metrics_daily;
+}
+```
+- Runs **daily at 02:00 WIB**
+- Uses `CONCURRENTLY` to avoid blocking reads
+- Refreshes all 3 analytics materialized views
+- Views are 90-day rolling windows
+- Data stale until next refresh (max 24h stale by design)
 
 ### D2. System Cron Jobs
 
@@ -279,6 +337,91 @@ done
 
 echo "Backup completed: sekar_db_$DATE.sql.gz"
 ```
+
+---
+
+## D3. Puppeteer & PDF Generation (Phase 5 Reporting)
+
+Report PDF generation uses **Puppeteer Core** (headless Chrome renderer) to convert HTML → PDF.
+
+**Docker Setup (Production):**
+```dockerfile
+# Add Chromium dependency
+RUN apk add --no-cache chromium
+
+# Set environment variable
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+```
+
+**Environment Variables (Backend .env):**
+```
+PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium  # or full path
+PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true        # don't re-download
+```
+
+**Performance Note:**
+- First PDF generation after app start takes ~2-3 seconds (Chromium startup)
+- Subsequent PDFs take ~500ms-1s depending on page complexity
+- Memory: Puppeteer process uses ~150-250MB per concurrent PDF
+- Concurrent limit: keep <5 concurrent to avoid memory exhaustion
+
+**Troubleshooting:**
+```bash
+# If PDF generation times out
+# 1. Check Chromium is installed: which chromium
+# 2. Check PUPPETEER_EXECUTABLE_PATH is set correctly
+# 3. Monitor memory during report generation: pm2 show sekar-api | grep memory
+# 4. Increase request timeout if needed (currently 30s default)
+```
+
+---
+
+## D4. S3 Storage Organization (Phase 5)
+
+Generated files stored with these prefixes:
+
+| Prefix | Type | Retention | Cleanup |
+|--------|------|-----------|---------|
+| `qr-codes/` | QR code PNG (300x300px) | 1 year | Manual or manual delete |
+| `reports/` | PDF/CSV/Excel generated reports | **90 days (auto-delete Sunday 02:00)** | Cron: report-cleanup.cron.ts |
+| `activity-photos/` | Activity photo uploads | Indefinite | None (user data) |
+| `profiles/` | User profile pictures | Indefinite | None (user data) |
+
+**S3 Bucket Structure Example:**
+```
+s3://sekar-media-prod/
+├── qr-codes/
+│   ├── AK-RU-001.png
+│   ├── AP-RU-001.png
+│   └── ...
+├── reports/
+│   ├── 202603-daily-rayon-utara.pdf
+│   ├── 202603-weekly-all.pdf
+│   ├── 202603-worker-performance-satgas1.xlsx
+│   └── ...
+├── activity-photos/
+│   ├── activity-123-1.jpg
+│   ├── activity-123-2.jpg
+│   └── ...
+└── profiles/
+    ├── user-456.jpg
+    └── ...
+```
+
+**S3 Lifecycle (Optional, for cost optimization):**
+```json
+{
+  "Rules": [
+    {
+      "ID": "DeleteOldReports",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "reports/" },
+      "Expiration": { "Days": 90 }
+    }
+  ]
+}
+```
+(Recommended: let backend cron handle this instead, for audit logging)
 
 ---
 
