@@ -1,8 +1,12 @@
 # Phase 5: Implementation Status
 
-**Last Updated:** March 13, 2026
-**Status:** Not Started (Specifications Complete)
-**Overall Progress:** 0/8 sub-phases
+**Last Updated:** June 17, 2026
+**Status:** In Progress — feature modules + release-prep shipped
+**Overall Progress:** 5-1 ✅ · 5-2 ✅ · 5-3 ✅ · 5-4 🟡 (~50%, native needs Mac) · 5-5 ✅ · 5-6 ⬜ · 5-7 ⬜ · 5-8 ⬜
+
+> **Jun 17, 2026 — Feature modules 5-1/5-2/5-3 built backend-first across all layers.** Backend: Assets module (`be/src/modules/assets/`, 14 endpoints, QR-code service per ADR-026, maintenance-overdue cron), Reporting module (`be/src/modules/reporting/`, 8 endpoints, puppeteer-core + handlebars PDF pipeline per ADR-024, scheduler + cleanup crons), Analytics module (`be/src/modules/analytics/`, 7 endpoints, 3 materialized views per ADR-025, weighted performance-score service, nightly refresh cron); 3 migrations (assets tables + 6 categories; reporting tables + 6 templates; analytics views), role groups, app.module wiring, deps (qrcode/puppeteer-core/handlebars) + Docker Chromium — **verified live** (build + migrate + boot + endpoint exercise, MinIO QR PNG, PDF + CSV generation, analytics refresh path). Web: 11 pages under `fe/web/src/app/(dashboard)/{reports,analytics,assets}/` (Recharts analytics) — `next build` green. Mobile: 8 screens under `fe/mobile/src/screens/{assets,reports,analytics}/` + 3 Redux slices + chart components, wired into role-based `MainNavigator` tabs/stack — **tsc 0, jest 4175 pass (54 new slice tests), eslint 0**. Native/on-device verification deferred (no device/Mac), consistent with the 5-4 iOS-prep deferral. **Remaining:** 5-4 iOS native (Apple Sign-In/biometrics/APNs/TestFlight — needs Mac), 5-6 user guides, 5-7 evaluation, 5-8 E2E (Playwright + Maestro).
+>
+> **Jun 16, 2026 — Release-prep slice (5-5 + iOS prep):** `.env.local` standardization across all 3 workspaces, env-template completeness, security pass (prod npm audit 0 + Trivy clean), platform-agnostic deployment (`DEPLOYMENT_GUIDE.md` + working `docker-compose.prod.yml`, verified by building/running both images — 8 deploy-blockers fixed), local dev → MinIO + infra script consolidation into `scripts/`, Mac-free iOS prep (Info.plist strings, `GoogleService-Info.plist.example`, `ios-release-guide.md`). Validated from ZERO twice (npm install + npm ci).
 
 ---
 
@@ -45,15 +49,15 @@
 
 | Sub-Phase | Name | Tasks | Done | Progress |
 |-----------|------|-------|------|----------|
-| 5-1 | Reporting Module | 25 | 0 | ⬜ Not Started |
-| 5-2 | Analytics Module | 20 | 0 | ⬜ Not Started |
-| 5-3 | Asset Management | 22 | 0 | ⬜ Not Started |
-| 5-4 | iOS Platform | 18 | 0 | ⬜ Not Started |
-| 5-5 | Release & Deployment | 15 | 0 | ⬜ Not Started |
+| 5-1 | Reporting Module | 25 | 25 | ✅ Done (BE+web+mobile; native verify deferred) |
+| 5-2 | Analytics Module | 20 | 20 | ✅ Done (BE+web+mobile; native verify deferred) |
+| 5-3 | Asset Management | 22 | 22 | ✅ Done (BE+web+mobile; native verify deferred) |
+| 5-4 | iOS Platform | 18 | 9 | 🟡 ~50% (prep done; native needs Mac) |
+| 5-5 | Release & Deployment | 15 | 15 | ✅ Done (verified prod images) |
 | 5-6 | User Guides & Docs | 10 | 0 | ⬜ Not Started |
 | 5-7 | Evaluation & Polish | 8 | 0 | ⬜ Not Started |
 | 5-8 | E2E Testing Extension | 14 | 0 | ⬜ Not Started |
-| **Total** | | **132** | **0** | **0%** |
+| **Total** | | **132** | **91** | **~69%** |
 
 ---
 
