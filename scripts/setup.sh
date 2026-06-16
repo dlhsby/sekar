@@ -32,7 +32,7 @@ version_gte "$NODE_V" "24.13.0" || { print_error "Node $NODE_V < 24.13.0 (see en
 version_gte "$NPM_V" "10.0.0" || { print_error "npm $NPM_V < 10"; exit 1; }
 print_success "node $NODE_V / npm $NPM_V / docker present"
 
-# 2 — env files (infra/.env is created by infra/start.sh itself)
+# 2 — env files (infra/.env is created by scripts/infra.sh)
 print_info "Ensuring env files..."
 ensure_env_file "$ROOT/be/.env.local" "$ROOT/be/.env.local.example" "backend" || true
 ensure_env_file "$ROOT/fe/web/.env.local" "$ROOT/fe/web/.env.local.example" "web" || true
@@ -45,8 +45,8 @@ print_success "Root tooling installed"
 
 # 4 — infrastructure
 ensure_infra
-# Align backend DB port with infra (handles a non-default infra/.env POSTGRES_PORT)
-sync_backend_db_port
+# Align backend DB + MinIO ports with infra (handles non-default infra/.env ports)
+sync_backend_infra_ports
 
 # 5 — backend: install + migrate (+ seed on confirmation)
 print_info "Installing backend dependencies..."

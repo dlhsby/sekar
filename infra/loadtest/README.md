@@ -5,7 +5,7 @@ Phase 3 sub-phase 3-14 — k6 harness for the monitoring-v2 pipeline (ADR-029).
 ## Prerequisites
 
 1. [k6 installed](https://k6.io/docs/get-started/installation/) (`brew install k6` / `apt install k6`).
-2. Backend running with Redis enabled (`./infra/start.sh && cd be && npm run start:dev`).
+2. Backend running with Redis enabled (`./scripts/infra.sh start && cd be && npm run start:dev`).
 3. Seeded database with at least `WORKER_COUNT` users named `${WORKER_PREFIX}${1..N}` (e.g. `satgas1..satgas500`). The default seed only creates a handful — for a real 500-VU run, generate users via a dedicated `seed-loadtest.ts` (TODO) or lower `WORKER_COUNT` to whatever your seed contains.
 
 ## Quick run (smoke, 5 VUs / 30 s)

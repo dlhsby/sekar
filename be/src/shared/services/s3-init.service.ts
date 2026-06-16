@@ -5,9 +5,11 @@ import { S3Client, CreateBucketCommand, HeadBucketCommand } from '@aws-sdk/clien
 /**
  * S3 Initialization Service
  *
- * Automatically creates S3 bucket on application startup.
- * Only runs in development with LocalStack endpoint configured.
- * Idempotent - safe to run multiple times.
+ * Automatically creates the S3 bucket on application startup.
+ * Only runs in development with a custom S3 endpoint configured (MinIO).
+ * Idempotent - safe to run multiple times. In production the bucket is
+ * provisioned out-of-band (MinIO sidecar in docker-compose.prod.yml, or a
+ * pre-created real S3 bucket), so this is a no-op there.
  */
 @Injectable()
 export class S3InitService implements OnModuleInit {

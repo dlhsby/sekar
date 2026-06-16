@@ -77,33 +77,59 @@ load_ports() {
   export WEB_PORT="${WEB_PORT:-3001}"
 }
 
-# Keep the backend DATABASE_PORT aligned with the infra Postgres host port.
-# infra/.env may pin a non-default port (e.g. 15432 to dodge a clash with another
-# project's Postgres on 5432); without this, a fresh be/.env.local (default 5432)
-# silently targets the wrong database and migrations fail with an auth error.
-sync_backend_db_port() {
-  local infra_env="$ROOT/infra/.env" be_env="$ROOT/be/.env.local"
-  [ -f "$infra_env" ] && [ -f "$be_env" ] || return 0
-  local pg_port cur
-  pg_port="$(env_file_value "$infra_env" POSTGRES_PORT)"
-  [ -n "$pg_port" ] || return 0
-  cur="$(env_file_value "$be_env" DATABASE_PORT)"
-  [ "$cur" = "$pg_port" ] && return 0
-  if grep -qE '^DATABASE_PORT=' "$be_env"; then
-    sed -i.bak "s|^DATABASE_PORT=.*|DATABASE_PORT=$pg_port|" "$be_env" && rm -f "$be_env.bak"
+# set_env_key FILE KEY VALUE — set KEY=VALUE in an env file (replace or append).
+set_env_key() {
+  local file="$1" key="$2" val="$3"
+  if grep -qE "^$key=" "$file"; then
+    sed -i.bak "s|^$key=.*|$key=$val|" "$file" && rm -f "$file.bak"
   else
-    printf '\nDATABASE_PORT=%s\n' "$pg_port" >> "$be_env"
+    printf '\n%s=%s\n' "$key" "$val" >> "$file"
   fi
-  print_success "Synced be/.env.local DATABASE_PORT → $pg_port (from infra/.env)"
 }
 
-# Bring up PostgreSQL/Adminer/LocalStack via infra/start.sh when not running.
+# Keep backend ports aligned with the infra host ports. infra/.env may pin
+# non-default ports (e.g. Postgres 15432 / MinIO 19000 to dodge clashes with
+# other projects on 5432 / 9000); without this a fresh be/.env.local (defaults
+# 5432 / 9000) silently targets the wrong services and boot/migrations fail.
+sync_backend_infra_ports() {
+  local infra_env="$ROOT/infra/.env" be_env="$ROOT/be/.env.local"
+  [ -f "$infra_env" ] && [ -f "$be_env" ] || return 0
+  # Postgres → DATABASE_PORT
+  local pg_port; pg_port="$(env_file_value "$infra_env" POSTGRES_PORT)"
+  if [ -n "$pg_port" ] && [ "$(env_file_value "$be_env" DATABASE_PORT)" != "$pg_port" ]; then
+    set_env_key "$be_env" DATABASE_PORT "$pg_port"
+    print_success "Synced be/.env.local DATABASE_PORT → $pg_port (from infra/.env)"
+  fi
+  # MinIO → AWS_ENDPOINT_URL host port (only when a custom endpoint is configured)
+  local minio_port cur_ep; minio_port="$(env_file_value "$infra_env" MINIO_PORT)"
+  cur_ep="$(env_file_value "$be_env" AWS_ENDPOINT_URL)"
+  if [ -n "$minio_port" ] && [ -n "$cur_ep" ] && ! printf '%s' "$cur_ep" | grep -q ":$minio_port\$"; then
+    set_env_key "$be_env" AWS_ENDPOINT_URL "http://localhost:$minio_port"
+    print_success "Synced be/.env.local AWS_ENDPOINT_URL → http://localhost:$minio_port (from infra/.env)"
+  fi
+}
+
+# wait_for_container_healthy NAME TIMEOUT_S LABEL — poll a container's Docker
+# healthcheck until "healthy" or timeout.
+wait_for_container_healthy() {
+  local name="$1" timeout="${2:-60}" label="${3:-$1}" waited=0
+  until [ "$(docker inspect -f '{{.State.Health.Status}}' "$name" 2>/dev/null)" = "healthy" ]; do
+    waited=$((waited + 3))
+    if [ "$waited" -ge "$timeout" ]; then
+      print_error "$label did not become healthy within ${timeout}s"
+      return 1
+    fi
+    sleep 3
+  done
+  print_success "$label is healthy"
+}
+
+# Bring up PostgreSQL/Adminer/MinIO/Redis via scripts/infra.sh when not running.
 ensure_infra() {
   if docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^sekar-postgres$'; then
     print_success "Infrastructure already running (sekar-postgres up)"
   else
-    print_info "Starting infrastructure (PostgreSQL, Adminer, LocalStack)..."
-    "$ROOT/infra/start.sh"
+    "$ROOT/scripts/infra.sh" start
   fi
 }
 

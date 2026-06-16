@@ -36,26 +36,44 @@ services:
     networks:
       - sekar-db-network
 
-  # LocalStack - Local AWS Cloud Stack
-  localstack:
-    image: localstack/localstack:3.0
-    container_name: sekar-localstack
+  # MinIO — S3-compatible object storage (replaces LocalStack; same engine as
+  # the production stack so dev and prod behave identically). API on :9000,
+  # web console on :9001. The backend's S3InitService auto-creates the bucket
+  # on boot in development; minio-init below also guarantees it (parity w/ prod).
+  minio:
+    image: minio/minio:latest
+    container_name: sekar-minio
     restart: unless-stopped
+    command: server /data --console-address ":9001"
     environment:
-      SERVICES: s3                           # Only S3 service (fast startup: ~5s)
-      DEBUG: ${LOCALSTACK_DEBUG:-0}          # Set to 1 for verbose logs
-      DATA_DIR: /var/lib/localstack/data     # Persistent data directory
-      EAGER_SERVICE_LOADING: 1               # Load S3 immediately
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     ports:
-      - "${LOCALSTACK_PORT:-4566}:4566"      # LocalStack gateway
+      - "${MINIO_PORT:-9000}:9000"                  # S3 API
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"          # web console
     volumes:
-      - ./localstack/data:/var/lib/localstack/data
+      - sekar-minio-data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      test: ["CMD", "mc", "ready", "local"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+    networks:
+      - sekar-db-network
+
+  # One-shot: create the dev media bucket then exit (idempotent).
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 \"$${MINIO_ROOT_USER:-minioadmin}\" \"$${MINIO_ROOT_PASSWORD:-minioadmin}\" &&
+      mc mb --ignore-existing local/\"$${AWS_S3_BUCKET:-sekar-media-dev}\" &&
+      echo 'bucket ready: '\"$${AWS_S3_BUCKET:-sekar-media-dev}\"
+      "
     networks:
       - sekar-db-network
 
@@ -87,3 +105,4 @@ networks:
 
 volumes:
   sekar-redis-data:
+  sekar-minio-data:

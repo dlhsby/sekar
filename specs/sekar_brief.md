@@ -754,8 +754,8 @@ npm test                   # Run Jest tests
 ### 11.3 Infrastructure Commands
 
 ```bash
-./infra/start.sh           # Start PostgreSQL + Adminer + LocalStack
-./infra/stop.sh            # Stop all services
+./scripts/infra.sh start           # Start PostgreSQL + Adminer + MinIO + Redis
+./scripts/infra.sh stop            # Stop all services
 cd infra && docker-compose logs -f  # View logs
 ```
 

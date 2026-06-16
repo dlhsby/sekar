@@ -3,7 +3,7 @@
 # with pkill fallbacks for foreground-started leftovers).
 #
 # Usage: ./scripts/stop.sh [--infra]
-#   --infra  also stop the Docker services (PostgreSQL, Adminer, LocalStack)
+#   --infra  also stop the Docker services (PostgreSQL, Adminer, MinIO, Redis)
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/common.sh"
@@ -22,8 +22,7 @@ stop_pid web "next dev|next-server"
 stop_pid metro "react-native start|react-native/cli.js start"
 
 if [ "$STOP_INFRA" = true ]; then
-  print_info "Stopping infrastructure..."
-  "$ROOT/infra/stop.sh"
+  "$ROOT/scripts/infra.sh" stop
 else
   print_info "Docker services left running (pass --infra to stop them too)"
 fi

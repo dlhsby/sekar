@@ -13,7 +13,7 @@ infra/certs/
 
 # Infrastructure data (persistent volumes)
 infra/data/
-infra/localstack/be/src/database/migrations/.backup/
+infra/localstack/
 
 # Root-level npm workspaces (Phase 3 onward — see ADR-036)
 /node_modules/
