@@ -1,5 +1,16 @@
 logs/
 
+# Environment files — root .env.production drives docker-compose.prod.yml.
+# Keep only *.example templates committed; never commit real secrets.
+.env
+.env.local
+.env.staging
+.env.production
+!.env*.example
+
+# TLS certificates for the production Nginx (mounted into the container)
+infra/certs/
+
 # Infrastructure data (persistent volumes)
 infra/data/
 infra/localstack/be/src/database/migrations/.backup/

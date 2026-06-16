@@ -16,7 +16,10 @@ COPY package*.json ./
 RUN npm install
 
 # Copy source code
-COPY . .
+COPY --chown=node:node . .
+
+# Run as the built-in non-root `node` user (security hardening; Trivy DS-0002)
+USER node
 
 # Expose port
 EXPOSE 3000

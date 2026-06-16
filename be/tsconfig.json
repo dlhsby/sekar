@@ -9,6 +9,12 @@
     "target": "ES2021",
     "sourceMap": true,
     "outDir": "./dist",
+    // Explicit rootDir keeps the emit layout deterministic as dist/src/* in
+    // every environment. Without it, TS 6 (TS5011) errors when the compiled
+    // file set narrows to only ./src — e.g. in the Docker build where the
+    // `test` include is dropped by .dockerignore. (Local builds compile
+    // src+test, inferring root; the container compiles src-only.)
+    "rootDir": "./",
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,

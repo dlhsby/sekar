@@ -1,3 +1,10 @@
+# SEKAR — minimal Postgres + backend stack (base for the Docker dev override).
+#
+#   Docker-based local dev:  docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#   (Day-to-day dev usually uses ./scripts/start.sh + infra/docker-compose.yml instead.)
+#
+# For PRODUCTION use docker-compose.prod.yml (full stack: +redis +minio +web +nginx).
+# See specs/deployment/DEPLOYMENT_GUIDE.md.
 services:
   # PostgreSQL Database
   postgres:
@@ -26,7 +33,7 @@ services:
     build:
       context: ./be
       dockerfile: Dockerfile
-      target: production
+      target: runner            # final production stage in be/Dockerfile
     container_name: sekar-backend
     restart: unless-stopped
     environment:
@@ -53,7 +60,7 @@ services:
     networks:
       - sekar-network
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/api/v1/health/live', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
       interval: 30s
       timeout: 10s
       retries: 3

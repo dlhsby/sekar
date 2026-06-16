@@ -81,6 +81,8 @@ All three workspaces use the same scheme: **`.env.local`** = local dev (gitignor
 | Security + dependency audit | `specs/architecture/security.md` |
 | Design tokens (source of truth) | `specs/ui-ux/design-tokens.md` · `tokens.json` |
 | Web PWA | `specs/phases/phase-3-plants-monitoring-rebuild/web.md` §PWA |
+| **Deployment (authoritative, start-to-finish)** | `specs/deployment/DEPLOYMENT_GUIDE.md` (self-hosted Docker + AWS appendix) |
+| iOS / Android release runbooks | `specs/deployment/ios-release-guide.md` · `android-release-guide.md` |
 | Deployment / infra / WSL2 / S3 | `specs/deployment/` |
 | E2E testing | `specs/testing/e2e-testing.md` |
 | Full navigation | `specs/README.md` |

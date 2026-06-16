@@ -62,9 +62,9 @@ USER nestjs
 # Expose port
 EXPOSE 3000
 
-# Health check
+# Health check (liveness probe — anonymous + throttle-exempt)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/v1/health || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/v1/health/live || exit 1
 
-# Start the application
-CMD ["node", "dist/main.js"]
+# Start the application (nest build emits to dist/src/main.js)
+CMD ["node", "dist/src/main.js"]
