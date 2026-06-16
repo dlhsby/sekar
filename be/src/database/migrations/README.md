@@ -76,7 +76,7 @@ cd infra && ./start.sh
 # 2. Install + configure backend
 cd be
 npm install
-cp .env.example .env   # Edit database credentials if needed
+cp .env.local.example .env.local   # Edit database credentials if needed
 
 # 3. Run all migrations (creates all 22 tables, records in typeorm_migrations)
 npm run migration:run

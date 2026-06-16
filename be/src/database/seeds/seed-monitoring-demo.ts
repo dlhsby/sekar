@@ -1,9 +1,8 @@
 import { DataSource } from 'typeorm';
-import { config } from 'dotenv';
+import '../../config/load-env';
 import { v4 as uuidv4 } from 'uuid';
 
 // Load environment variables
-config();
 
 /**
  * Monitoring Demo Seed Script

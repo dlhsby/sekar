@@ -70,7 +70,7 @@ cd infra && ./start.sh
 ```bash
 cd be
 npm install
-cp .env.example .env        # Edit with your database credentials if needed
+cp .env.local.example .env.local        # Edit with your database credentials if needed
 npm run migration:run        # Run all migrations (creates all tables)
 npm run db:seed              # Seed all data (Phase 1 + 2 + 3)
 npm run start:dev            # http://localhost:3000

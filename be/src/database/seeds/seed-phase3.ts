@@ -1,7 +1,6 @@
 import type { DataSource, QueryRunner } from 'typeorm';
-import { config } from 'dotenv';
+import '../../config/load-env';
 
-config();
 
 /**
  * Inline ISO week helper so the seeder doesn't depend on the pruning module.

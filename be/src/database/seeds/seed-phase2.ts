@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { config } from 'dotenv';
+import '../../config/load-env';
 import {
   RAYON_BOUNDARIES,
   RAYON_PUSAT_AREAS,
@@ -17,7 +17,6 @@ import {
 } from './kmz-areas';
 
 // Load environment variables
-config();
 
 /**
  * Phase 2 Seed Script

@@ -1,5 +1,6 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { getEnvFilePaths } from './config/load-env';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -50,7 +51,7 @@ import { QueueModule } from './modules/queue/queue.module';
     // Configuration module
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      envFilePath: getEnvFilePaths(),
     }),
 
     // Rate limiting module (high limits in test environment to prevent interference)

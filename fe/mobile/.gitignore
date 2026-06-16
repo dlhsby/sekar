@@ -73,8 +73,17 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+# Environment variables (NEVER COMMIT! — keep *.example templates)
 .env
+.env.local
+.env.staging
+.env.production
+!.env*.example
 
-# Firebase
+# Firebase (real service files are secrets — keep only *.example)
 android/app/google-services.json
-ios/GoogleService-Info.plist.serena/
+ios/GoogleService-Info.plist
+!ios/GoogleService-Info.plist.example
+
+# Serena MCP cache
+.serena/

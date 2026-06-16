@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { config } from 'dotenv';
+import '../../config/load-env';
 import { seedPhase3Reference, seedPhase3ServiceCapacity } from './seed-phase3';
 import {
   RAYON_BOUNDARIES,
@@ -17,7 +17,6 @@ import {
   type RayonCode,
 } from './kmz-areas';
 
-config();
 
 /**
  * Staging / UAT Seed Script

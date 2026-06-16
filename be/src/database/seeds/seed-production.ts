@@ -1,9 +1,8 @@
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { config } from 'dotenv';
+import '../../config/load-env';
 import { RAYON_BOUNDARIES, computeCentroidFromRings, type RayonCode } from './kmz-areas';
 
-config();
 
 /**
  * Production Seed Script (Phase 4-6 J1)

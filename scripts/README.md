@@ -38,7 +38,7 @@ Utility scripts for development and deployment.
 ## Local Development
 
 One-command scripts for everyday dev work. Run from anywhere; they resolve
-the project root themselves. Ports stay per-project: backend `be/.env`
+the project root themselves. Ports stay per-project: backend `be/.env.local`
 (`PORT`, default 3000), web `fe/web/.env.local` (`WEB_PORT`, default 3001) —
 the scripts read both and export `WEB_PORT` so `next dev -p ${WEB_PORT:-3001}`
 picks it up. Exported env vars override the files for one-off runs:
@@ -61,7 +61,7 @@ The same commands are exposed from the root `package.json`
 ```
 
 Checks prerequisites (node ≥24.13, npm ≥10, docker), copies missing env files
-(`be/.env`, `fe/web/.env.local`, `fe/mobile/.env`), installs all
+(`be/.env.local`, `fe/web/.env.local`, `fe/mobile/.env.local`), installs all
 workspaces, starts the Docker infrastructure, runs migrations and (on a fresh
 database) boots the backend once so TypeORM synchronize completes the schema
 before seeding. Idempotent — safe to re-run.

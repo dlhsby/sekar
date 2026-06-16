@@ -9,7 +9,7 @@ cd be
 npm install
 
 # Setup environment
-cp .env.example .env
+cp .env.local.example .env.local
 # Edit .env with your database credentials if needed
 
 # Start infrastructure (first time)

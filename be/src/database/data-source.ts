@@ -1,9 +1,8 @@
 import { DataSource } from 'typeorm';
-import { config } from 'dotenv';
 import { join } from 'path';
 
-// Load environment variables from .env file
-config();
+// Load env (.env.local for dev, .env.<NODE_ENV> for deploys, .env fallback)
+import '../config/load-env';
 
 /**
  * TypeORM DataSource Configuration

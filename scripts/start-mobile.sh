@@ -28,6 +28,6 @@ if [ "$MODE" = "android" ]; then
   npm run android
 else
   print_info "Starting Metro bundler (Ctrl+C to stop)..."
-  print_info "Tip: emulator API base is http://10.0.2.2:3000 — see fe/mobile/.env"
+  print_info "Tip: emulator API base is http://10.0.2.2:3000 — see fe/mobile/.env.local"
   npm start
 fi

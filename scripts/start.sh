@@ -35,7 +35,7 @@ echo -e "  • Backend API:  ${GREEN}http://localhost:$BE_PORT${NC} (Swagger: ${
 echo -e "  • Web app:      ${GREEN}http://localhost:$WEB_PORT${NC}"
 echo -e "  • Adminer:      ${GREEN}http://localhost:8080${NC} (see infra/.env)"
 echo -e "  • Logs:         ${GREEN}logs/backend.log${NC} · ${GREEN}logs/web.log${NC}"
-echo -e "  • Ports:        ${GREEN}be/.env${NC} (PORT) · ${GREEN}fe/web/.env.local${NC} (WEB_PORT)"
+echo -e "  • Ports:        ${GREEN}be/.env.local${NC} (PORT) · ${GREEN}fe/web/.env.local${NC} (WEB_PORT)"
 echo ""
 
 if [ "$NO_MOBILE" = true ]; then

@@ -6,6 +6,22 @@ Comprehensive list of all environment variables used across all deployment phase
 
 This document consolidates all environment variables from Phase 1 (MVP) through Phase 6 (Web Dashboard). Variables are organized by component (Backend, Mobile, Web) and phase.
 
+## File naming convention (standardised Phase 5)
+
+All three application workspaces use the same scheme:
+
+| File | Purpose | Committed? |
+|------|---------|-----------|
+| `.env.local` | Local development (the runtime file) | No — gitignored |
+| `.env.staging` | Staging deploy | No — gitignored |
+| `.env.production` | Production deploy | No — gitignored |
+| `.env.local.example` / `.env.staging.example` / `.env.production.example` | Templates with safe defaults | **Yes** |
+
+- **Backend** (`be/`): `be/src/config/load-env.ts` selects `.env.local` for dev or `.env.<NODE_ENV>` for `staging`/`production`/`test`, always falling back to `.env`. Real (exported) env vars and the first matching file win (`override: false`).
+- **Web** (`fe/web/`): Next.js loads `.env.local` natively.
+- **Mobile** (`fe/mobile/`): `react-native-dotenv` reads the file named in `babel.config.js` (`path: '.env.local'`); per-build overrides repoint it at `.env.staging` / `.env.production`.
+- **Infra** (`infra/`): keeps a plain `.env` (Docker-Compose convention). `scripts/setup.sh` reconciles `be/.env.local`'s `DATABASE_PORT` to `infra/.env`'s `POSTGRES_PORT`, so a non-default infra port doesn't break migrations.
+
 ---
 
 ## 1. Backend Environment Variables

@@ -34,9 +34,9 @@ print_success "node $NODE_V / npm $NPM_V / docker present"
 
 # 2 — env files (infra/.env is created by infra/start.sh itself)
 print_info "Ensuring env files..."
-ensure_env_file "$ROOT/be/.env" "$ROOT/be/.env.example" "backend" || true
+ensure_env_file "$ROOT/be/.env.local" "$ROOT/be/.env.local.example" "backend" || true
 ensure_env_file "$ROOT/fe/web/.env.local" "$ROOT/fe/web/.env.local.example" "web" || true
-ensure_env_file "$ROOT/fe/mobile/.env" "$ROOT/fe/mobile/.env.example" "mobile" || true
+ensure_env_file "$ROOT/fe/mobile/.env.local" "$ROOT/fe/mobile/.env.local.example" "mobile" || true
 
 # 3 — root tooling (token pipeline + eslint plugin used by the workspaces)
 print_info "Installing root tooling (npm install)..."
@@ -45,12 +45,17 @@ print_success "Root tooling installed"
 
 # 4 — infrastructure
 ensure_infra
+# Align backend DB port with infra (handles a non-default infra/.env POSTGRES_PORT)
+sync_backend_db_port
 
 # 5 — backend: install + migrate (+ seed on confirmation)
 print_info "Installing backend dependencies..."
 ( cd "$ROOT/be" && npm install --no-audit --no-fund )
 print_info "Running database migrations..."
-( cd "$ROOT/be" && npm run migration:run )
+if ! ( cd "$ROOT/be" && npm run migration:run ); then
+  print_error "Database migrations failed — check DB connectivity (be/.env.local DATABASE_* vs infra/.env POSTGRES_PORT). Aborting setup."
+  exit 1
+fi
 print_success "Backend ready (dependencies + migrations)"
 
 if [ "$SKIP_SEED" = true ]; then
@@ -110,4 +115,4 @@ echo -e "  Backend only:      ${GREEN}./scripts/start-be.sh${NC}   → http://lo
 echo -e "  Web only:          ${GREEN}./scripts/start-web.sh${NC}  → http://localhost:$WEB_PORT"
 echo -e "  Mobile (Metro):    ${GREEN}./scripts/start-mobile.sh${NC} (--android to build+install)"
 echo -e "  Stop:              ${GREEN}./scripts/stop.sh${NC} (--infra to also stop Docker services)"
-echo -e "  Ports: ${GREEN}be/.env${NC} PORT=$BE_PORT · ${GREEN}fe/web/.env.local${NC} WEB_PORT=$WEB_PORT"
+echo -e "  Ports: ${GREEN}be/.env.local${NC} PORT=$BE_PORT · ${GREEN}fe/web/.env.local${NC} WEB_PORT=$WEB_PORT"

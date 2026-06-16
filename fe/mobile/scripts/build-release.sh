@@ -50,7 +50,7 @@ fi
 echo -e "${YELLOW}📋 Checking environment configuration...${NC}"
 if [ ! -f ".env" ]; then
     echo -e "${YELLOW}⚠️  Warning: .env file not found${NC}"
-    echo -e "${YELLOW}   Copy .env.example to .env and configure for production${NC}"
+    echo -e "${YELLOW}   Copy .env.local.example to .env.local and configure for production${NC}"
     echo ""
     read -p "Continue anyway? (y/N) " -n 1 -r
     echo ""

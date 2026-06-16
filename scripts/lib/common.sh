@@ -52,7 +52,7 @@ ensure_env_file() {
 }
 
 # Load per-project dev ports — each app's env file stays the source of truth:
-#   backend → be/.env            PORT      (default 3000)
+#   backend → be/.env.local      PORT      (default 3000)
 #   web     → fe/web/.env.local  WEB_PORT  (default 3001)
 # WEB_PORT is exported because `next dev -p ${WEB_PORT:-3001}` reads the
 # shell, not .env.local. Real exported vars (e.g. from CI) win over the files.
@@ -62,11 +62,11 @@ env_file_value() { # FILE KEY — last uncommented KEY= value, empty if absent
 }
 
 load_ports() {
-  # Backend precedence: $BE_PORT → $PORT → be/.env PORT → 3000. PORT is
+  # Backend precedence: $BE_PORT → $PORT → be/.env.local PORT → 3000. PORT is
   # re-exported to match so the Nest process (which reads PORT, and where a
-  # real env var beats be/.env) always binds the port we wait on.
+  # real env var beats be/.env.local) always binds the port we wait on.
   if [ -z "${BE_PORT:-}" ]; then
-    BE_PORT="${PORT:-$(env_file_value "$ROOT/be/.env" PORT)}"
+    BE_PORT="${PORT:-$(env_file_value "$ROOT/be/.env.local" PORT)}"
   fi
   export BE_PORT="${BE_PORT:-3000}"
   export PORT="$BE_PORT"
@@ -75,6 +75,26 @@ load_ports() {
     WEB_PORT="$(env_file_value "$ROOT/fe/web/.env.local" WEB_PORT)"
   fi
   export WEB_PORT="${WEB_PORT:-3001}"
+}
+
+# Keep the backend DATABASE_PORT aligned with the infra Postgres host port.
+# infra/.env may pin a non-default port (e.g. 15432 to dodge a clash with another
+# project's Postgres on 5432); without this, a fresh be/.env.local (default 5432)
+# silently targets the wrong database and migrations fail with an auth error.
+sync_backend_db_port() {
+  local infra_env="$ROOT/infra/.env" be_env="$ROOT/be/.env.local"
+  [ -f "$infra_env" ] && [ -f "$be_env" ] || return 0
+  local pg_port cur
+  pg_port="$(env_file_value "$infra_env" POSTGRES_PORT)"
+  [ -n "$pg_port" ] || return 0
+  cur="$(env_file_value "$be_env" DATABASE_PORT)"
+  [ "$cur" = "$pg_port" ] && return 0
+  if grep -qE '^DATABASE_PORT=' "$be_env"; then
+    sed -i.bak "s|^DATABASE_PORT=.*|DATABASE_PORT=$pg_port|" "$be_env" && rm -f "$be_env.bak"
+  else
+    printf '\nDATABASE_PORT=%s\n' "$pg_port" >> "$be_env"
+  fi
+  print_success "Synced be/.env.local DATABASE_PORT → $pg_port (from infra/.env)"
 }
 
 # Bring up PostgreSQL/Adminer/LocalStack via infra/start.sh when not running.

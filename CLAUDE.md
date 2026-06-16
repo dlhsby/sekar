@@ -21,7 +21,7 @@ Guidance for Claude Code in this repository. **`specs/COMPLETION_STATUS.md` is t
 ./scripts/start.sh          # backend + web in background, Metro foreground (--no-mobile to skip Metro)
 ./scripts/stop.sh           # stop services (--infra to also stop Docker)
 # Single services: ./scripts/start-be.sh · start-web.sh · start-mobile.sh [--android]
-# Ports per project: be/.env PORT (default 3000) · fe/web/.env.local WEB_PORT (default 3001)
+# Ports per project: be/.env.local PORT (default 3000) · fe/web/.env.local WEB_PORT (default 3001)
 
 # Manual per-workspace flow
 npm install                 # root tooling (token pipeline + eslint plugin), once per checkout
@@ -29,11 +29,11 @@ npm install                 # root tooling (token pipeline + eslint plugin), onc
 ./infra/start.sh            # PostgreSQL, Adminer(8080), LocalStack S3(4566); ./infra/stop.sh to stop
 
 # Backend (be/)
-npm install && cp .env.example .env
+npm install && cp .env.local.example .env.local
 npm run migration:run && npm run db:seed   # db:seed is destructive (wipes first; fresh DB needs one backend boot first)
 npm run start:dev          # http://localhost:${BE_PORT:-3000}  | API docs /api/v1/docs
 
-# Mobile (fe/mobile/) — set .env API_BASE_URL=http://10.0.2.2:<BE_PORT> (emulator) or http://<IP>:<BE_PORT> (device)
+# Mobile (fe/mobile/) — cp .env.local.example .env.local; set API_BASE_URL=http://10.0.2.2:<BE_PORT> (emulator) or http://<IP>:<BE_PORT> (device)
 npm run android            # android:all for all devices | ios (macOS only)
 
 # Web (fe/web/) — cp .env.local.example .env.local (Mapbox token)
@@ -64,8 +64,11 @@ Code uses English; Indonesian only for UI labels / user-facing messages. `Activi
 - Testing: >80% coverage, Arrange-Act-Assert, mock external deps.
 - DB: dev TypeORM auto-sync; prod migrations; soft delete via `deleted_at`.
 
+## Env file convention
+All three workspaces use the same scheme: **`.env.local`** = local dev (gitignored, the runtime file), **`.env.staging`** / **`.env.production`** = deploys. Committed templates are `*.example` (`.env.local.example`, `.env.staging.example`, `.env.production.example`). Loaders: backend `be/src/config/load-env.ts` picks `.env.local` (dev) or `.env.<NODE_ENV>` (deploys) with `.env` fallback; web is Next.js-native; mobile is `react-native-dotenv` (`path` in `babel.config.js`). `./scripts/setup.sh` creates the `.env.local` files and reconciles `be/.env.local` `DATABASE_PORT` to `infra/.env` `POSTGRES_PORT`. Infra keeps plain `infra/.env` (Docker-Compose convention).
+
 ## Backend .env essentials
-`DATABASE_*` (localhost:5432, postgres/postgres, sekar_db) · `JWT_SECRET`, `JWT_EXPIRATION=7d` · Dev S3 via LocalStack (`AWS_ENDPOINT_URL=http://localhost:4566`, `AWS_S3_FORCE_PATH_STYLE=true`, test creds, bucket `sekar-media-dev`); prod leaves `AWS_ENDPOINT_URL` empty with real creds · `FCM_ENABLED=false` until Firebase configured. Full config: `specs/deployment/aws-s3-setup.md`, mobile network `specs/deployment/wsl2-network-setup.md`.
+`DATABASE_*` (localhost:5432, postgres/postgres, sekar_db — note `infra/.env` may pin a non-default `POSTGRES_PORT`; `setup.sh` syncs it) · `JWT_SECRET`, `JWT_EXPIRATION=7d` · Dev S3 via LocalStack (`AWS_ENDPOINT_URL=http://localhost:4566`, `AWS_S3_FORCE_PATH_STYLE=true`, test creds, bucket `sekar-media-dev`); prod leaves `AWS_ENDPOINT_URL` empty with real creds · `FCM_ENABLED=false` until Firebase configured. Full config: `specs/deployment/aws-s3-setup.md`, mobile network `specs/deployment/wsl2-network-setup.md`.
 
 ## Key Resources
 

@@ -1,7 +1,8 @@
-// Load .env BEFORE any other imports so values consumed at decorator-evaluation
+// Load env BEFORE any other imports so values consumed at decorator-evaluation
 // time (e.g. @Throttle on auth.controller) see the env vars. ConfigModule alone
-// runs after class-decorator literals are already locked in.
-import 'dotenv/config';
+// runs after class-decorator literals are already locked in. The loader picks
+// .env.local (dev) or .env.<NODE_ENV> (deploys), with .env as fallback.
+import './config/load-env';
 import { initSentry } from './common/sentry/sentry';
 // Initialize Sentry as early as possible so app-factory errors are captured.
 initSentry();

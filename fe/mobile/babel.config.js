@@ -5,7 +5,9 @@ module.exports = {
       'module:react-native-dotenv',
       {
         moduleName: '@env',
-        path: '.env',
+        // Local dev uses .env.local (standardised across all workspaces).
+        // Per-build overrides can point this at .env.staging / .env.production.
+        path: '.env.local',
       },
     ],
     'react-native-reanimated/plugin',

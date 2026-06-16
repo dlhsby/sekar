@@ -1,8 +1,7 @@
 import { DataSource } from 'typeorm';
-import { config } from 'dotenv';
+import '../../config/load-env';
 import { seedPhase3Reference, seedPhase3ServiceCapacity } from './seed-phase3';
 
-config();
 
 /**
  * Reference Data Seeder — Production Safe

@@ -45,7 +45,7 @@ This directory contains 15 Maestro YAML flows covering Phase 4-9 scenarios for t
 2. **Mobile .env configured:**
    ```bash
    cd fe/mobile/
-   cp .env.example .env
+   cp .env.local.example .env.local
    # Set API_BASE_URL for emulator (http://10.0.2.2:3000) or device (http://<your-ip>:3000)
    npm install
    ```

@@ -23,9 +23,8 @@
  */
 
 import { DataSource } from 'typeorm';
-import { config } from 'dotenv';
+import '../../config/load-env';
 
-config();
 
 async function fixOrphans(): Promise<void> {
   const dataSource = new DataSource({

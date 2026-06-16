@@ -1,7 +1,6 @@
 import { DataSource } from 'typeorm';
-import { config } from 'dotenv';
+import '../../config/load-env';
 
-config();
 
 /**
  * Phase 1 Seed Script
