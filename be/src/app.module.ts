@@ -45,6 +45,8 @@ import { PlantSeedsModule } from './modules/plant-seeds/plant-seeds.module';
 import { HealthModule } from './modules/health/health.module';
 // Phase 4 sub-phase 4-3 (M2): BullMQ-backed FCM retry queue
 import { QueueModule } from './modules/queue/queue.module';
+// Phase 5: Asset management
+import { AssetsModule } from './modules/assets/assets.module';
 
 @Module({
   imports: [
@@ -143,6 +145,8 @@ import { QueueModule } from './modules/queue/queue.module';
     ServiceCapacityModule,
     PlantSeedsModule,
     HealthModule,
+    // Phase 5 modules
+    AssetsModule,
   ],
   controllers: [AppController],
   providers: [

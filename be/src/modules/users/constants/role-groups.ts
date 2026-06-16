@@ -116,3 +116,18 @@ export const PRUNING_REQUEST_REVIEWERS = [
   UserRole.ADMIN_SYSTEM,
   UserRole.SUPERADMIN,
 ];
+
+export const ASSET_MANAGERS = [
+  UserRole.KORLAP,
+  UserRole.KEPALA_RAYON,
+  UserRole.ADMIN_SYSTEM,
+  UserRole.SUPERADMIN,
+];
+
+export const ASSET_USERS = [UserRole.SATGAS, UserRole.LINMAS, UserRole.KORLAP];
+
+export const ASSET_VIEWERS = [
+  ...ASSET_USERS,
+  UserRole.ADMIN_DATA,
+  UserRole.TOP_MANAGEMENT,
+];
