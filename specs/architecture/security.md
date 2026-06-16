@@ -858,22 +858,34 @@ if (JailMonkey.isJailBroken()) {
 
 ## DEP-SEC: Dependency Security
 
-### Latest Audit: February 5, 2026
+### Latest Audit: June 16, 2026 (Phase 5 release-prep)
 
-| Component | Vulnerabilities | Status |
-|-----------|----------------|--------|
-| Backend | 3 high (nested deps) | ⚠️ Acceptable risk |
-| Web | 0 | ✅ Secure |
-| Mobile | 6 high (nested deps) | ⚠️ Acceptable risk |
+`npm audit` is reported two ways — **production** (`--omit=dev`, what actually ships) and **full** (incl. the test toolchain). Production is the gate; dev-only findings are tracked but not deployment blockers.
 
-### Known Issues
+| Component | Production (`--omit=dev`) | Full (incl. dev) | Status |
+|-----------|---------------------------|------------------|--------|
+| Backend | **0** | 18 moderate (dev-only) | ✅ Secure (ships clean) |
+| Web | **0** | 17 moderate (dev-only) | ✅ Secure (ships clean) |
+| Mobile | (pending — see below) | — | ⏳ |
 
-**fast-xml-parser DoS (CVE: GHSA-37qj-frw5-hhjh)**
-- **Backend:** Via firebase-admin → @google-cloud/storage (3 instances)
-- **Mobile:** Via @react-native-community/cli (6 instances, dev-only)
-- **Risk:** Low - nested dev dependencies, not exploitable in production
-- **Status:** Awaiting upstream fixes (Google, React Native teams)
-- **Decision:** Approved for production deployment
+**Fixed this pass (were HIGH, runtime):** the socket.io / Node-WS stack CVEs — `ws` memory-exhaustion DoS (GHSA, `ws` 8.x), `engine.io`/`engine.io-client` (via `ws`), `socket.io-adapter`, and `form-data` CRLF injection — resolved on backend + web via in-range `npm audit fix`. Backend `@nestjs/swagger`'s transitive `js-yaml@4.1.1` (quadratic-DoS, GHSA-h67p-54hq-rp68, `<=4.1.1`) pinned to `4.2.0` via a scoped `overrides` entry in `be/package.json`.
+
+### Known Issues (accepted)
+
+**js-yaml quadratic-complexity DoS (GHSA-h67p-54hq-rp68) — dev test toolchain only**
+- **Backend + Web:** `@istanbuljs/load-nyc-config` → `js-yaml@3.14.x` (the 3.x API is incompatible with the patched 4.2.0, and istanbul has not released a fix), pulled by the `jest` / `ts-jest` / `babel-plugin-istanbul` coverage chain.
+- **Risk:** Low — dev/test only, never bundled into the deployed artifact; the DoS requires hostile YAML, and the only YAML parsed is our own coverage config.
+- **`npm audit fix --force` is NOT applied:** its only "fix" is a breaking downgrade of `jest` 30→25 / `@nestjs/swagger` 11→5. Rejected.
+- **Decision:** Accepted for production (production audit is 0). Clears when the jest/istanbul chain ships js-yaml ≥4.2.0.
+
+### Trivy
+
+Container/filesystem scanning added in Phase 5 (`trivy fs` + `trivy image` on the built backend/web images). Run via the official image when not installed locally:
+```bash
+docker run --rm -v "$PWD:/work:ro" -v trivy-cache:/root/.cache/ \
+  aquasec/trivy:latest fs /work --scanners vuln,secret,misconfig \
+  --severity HIGH,CRITICAL --skip-dirs '**/node_modules'
+```
 
 ### Dependency Management
 

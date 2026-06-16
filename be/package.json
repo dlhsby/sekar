@@ -121,6 +121,9 @@
     "typescript": "^6.0.3"
   },
   "overrides": {
+    "@nestjs/swagger": {
+      "js-yaml": "^4.2.0"
+    },
     "uuid": "^14.0.0",
     "lodash": "^4.17.21",
     "tar": "^7.5.10",
