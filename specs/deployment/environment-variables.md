@@ -55,8 +55,8 @@ AWS_REGION=ap-southeast-1
 AWS_ACCESS_KEY_ID=<from-aws-iam>  # Use IAM role in production
 AWS_SECRET_ACCESS_KEY=<from-aws-iam>  # Use IAM role in production
 AWS_S3_BUCKET=sekar-prod-media
-AWS_ENDPOINT_URL=  # Empty for production AWS, http://localhost:4566 for LocalStack
-AWS_S3_FORCE_PATH_STYLE=  # Empty for production, true for LocalStack
+AWS_ENDPOINT_URL=  # Empty for real AWS S3 (staging); http://localhost:9000 for MinIO (dev/self-hosted prod)
+AWS_S3_FORCE_PATH_STYLE=  # Empty for real AWS S3; true for MinIO
 
 # CORS
 CORS_ORIGIN=http://localhost:3001,http://localhost:19006,https://sekar.DLH-sby.go.id
@@ -390,7 +390,7 @@ NODE_ENV=development
 DATABASE_HOST=localhost
 DATABASE_SYNCHRONIZE=true
 DATABASE_LOGGING=true
-AWS_ENDPOINT_URL=http://localhost:4566  # LocalStack
+AWS_ENDPOINT_URL=http://localhost:9000  # MinIO (dev S3)
 AWS_S3_FORCE_PATH_STYLE=true
 LOG_LEVEL=debug
 

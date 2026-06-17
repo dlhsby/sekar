@@ -37,11 +37,28 @@ SEKAR is a comprehensive worker tracking and task management system for DLH Sura
 ./scripts/stop.sh      # stop everything (--infra to also stop Docker)
 ```
 
-Ports are per-project: backend `be/.env` (`PORT`, default 3000) and web
+Ports are per-project: backend `be/.env.local` (`PORT`, default 3000) and web
 `fe/web/.env.local` (`WEB_PORT`, default 3001) — adjust them when the
 defaults collide with other projects on your machine. The same commands are
 available as root npm scripts: `npm run setup|start|stop|start:be|start:web|start:mobile`.
 The manual steps below remain for fine-grained control.
+
+### Environment files (what to fill in)
+
+`./scripts/setup.sh` copies each workspace's `.env.local.example` → `.env.local`
+(gitignored — the actual runtime file) and reconciles the DB port. The defaults
+work out-of-the-box against local infra; only two values **must** be filled by hand:
+
+| Workspace | File | Must fill | Notes |
+|-----------|------|-----------|-------|
+| `infra/` | `infra/.env` | — | Postgres / MinIO / Redis ports + creds (Docker-Compose convention). Defaults: `postgres/postgres`, MinIO `minioadmin/minioadmin`. |
+| `be/` | `be/.env.local` | — | `DATABASE_*` (localhost:5432), `JWT_SECRET`, MinIO S3 (`AWS_ENDPOINT_URL=http://localhost:9000`, bucket `sekar-media-dev`), `REDIS_URL=redis://localhost:16379`. `PORT` (default 3000). `FCM_ENABLED` needs Firebase creds. |
+| `fe/web/` | `fe/web/.env.local` | **`NEXT_PUBLIC_MAPBOX_TOKEN`** | Get a token at https://account.mapbox.com/access-tokens/. Also `NEXT_PUBLIC_API_URL=http://localhost:3000`, `WEB_PORT` (default 3001). |
+| `fe/mobile/` | `fe/mobile/.env.local` | **`API_BASE_URL`** | `http://10.0.2.2:<BE_PORT>` (Android emulator) or `http://<YOUR_IP>:<BE_PORT>` (physical device). Optional `GOOGLE_MAPS_API_KEY` for maps. |
+
+Templates are committed as `*.example` (`.env.local.example`, `.env.staging.example`,
+`.env.production.example`); **never commit** the real `.env.local` / `.env.staging` /
+`.env.production` — they hold secrets. Obtaining keys/credentials: `specs/deployment/credentials-setup.md`.
 
 ### 0. Root Setup (Token Pipeline & ESLint Plugin)
 
@@ -70,10 +87,10 @@ cd infra && ./start.sh
 ```bash
 cd be
 npm install
-cp .env.local.example .env.local        # Edit with your database credentials if needed
+cp .env.local.example .env.local        # Defaults target local infra; edit DB creds / JWT_SECRET if needed
 npm run migration:run        # Run all migrations (creates all tables)
-npm run db:seed              # Seed all data (Phase 1 + 2 + 3)
-npm run start:dev            # http://localhost:3000
+npm run db:seed              # Seed all data (DESTRUCTIVE — wipes first; fresh DB needs one backend boot first)
+npm run start:dev            # http://localhost:${PORT:-3000}
 ```
 
 ### 3. Start Mobile App
@@ -81,7 +98,7 @@ npm run start:dev            # http://localhost:3000
 ```bash
 cd fe/mobile
 npm install
-# Edit .env with API_BASE_URL
+cp .env.local.example .env.local   # Set API_BASE_URL=http://10.0.2.2:<BE_PORT> (emulator) or http://<IP>:<BE_PORT> (device)
 npm run android              # Android emulator/device
 npm run ios                  # iOS simulator (macOS only)
 ```
@@ -91,7 +108,8 @@ npm run ios                  # iOS simulator (macOS only)
 ```bash
 cd fe/web
 npm install
-npm run dev                  # http://localhost:3001
+cp .env.local.example .env.local   # Set NEXT_PUBLIC_MAPBOX_TOKEN (https://account.mapbox.com/access-tokens/)
+npm run dev                  # http://localhost:${WEB_PORT:-3001}
 ```
 
 ### 5. Access Services

@@ -3,7 +3,7 @@
 # Brings up the full application on one machine: PostgreSQL + Redis + MinIO
 # (S3-compatible object storage) + backend API + web dashboard + Nginx (TLS
 # reverse proxy). For a managed-cloud layout (RDS / ElastiCache / real S3) see
-# the AWS appendix in specs/deployment/DEPLOYMENT_GUIDE.md and use external
+# the AWS appendix in specs/deployment/deployment-guide.md and use external
 # endpoints instead of the postgres/redis/minio services here.
 #
 # Usage:

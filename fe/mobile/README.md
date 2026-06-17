@@ -9,10 +9,11 @@ cd fe/mobile
 npm install
 
 # Configure backend connection
-# Edit .env file:
+cp .env.local.example .env.local
+# Edit .env.local — set API_BASE_URL to reach the backend (match its PORT):
 API_BASE_URL=http://10.0.2.2:3000    # Android emulator
 # or
-API_BASE_URL=http://<YOUR_IP>:3000   # Physical device
+API_BASE_URL=http://<YOUR_IP>:3000   # Physical device (use your machine's LAN IP)
 API_VERSION=v1
 
 # Start Metro bundler
@@ -32,21 +33,29 @@ npm test -- --coverage      # With coverage
 npm run lint                # Lint code
 ```
 
-## Environment Configuration (Phase 3)
+## Environment Configuration
 
-Edit `.env` file for Phase 3 features:
+Copy `cp .env.local.example .env.local` (gitignored runtime file; loaded by
+`react-native-dotenv` via `babel.config.js`). Values:
+
+| Var | Default | Purpose |
+|-----|---------|---------|
+| **`API_BASE_URL`** | `http://10.0.2.2:3000` | Backend URL — `10.0.2.2:<PORT>` (Android emulator) or `<YOUR_IP>:<PORT>` (device). **Must match the backend's `PORT`.** |
+| `API_VERSION` | `v1` | API version prefix |
+| `GOOGLE_MAPS_API_KEY` | _(empty)_ | Maps rendering (optional for non-map flows) |
+| `CLUSTER_MARKERS_V2_ENABLED` | `false` | Cluster-based monitoring (M2) |
+| `FEATURE_PLANTS_ENABLED` / `FEATURE_PRUNING_REQUESTS_ENABLED` / `FEATURE_PLANT_SEEDS_ENABLED` | `false` | Phase 3 feature flags |
 
 ```env
-# Backend API
+# Minimal local config
 API_BASE_URL=http://10.0.2.2:3000    # Android emulator
-# or
-API_BASE_URL=http://<YOUR_IP>:3000   # Physical device
+# API_BASE_URL=http://<YOUR_IP>:3000 # Physical device
 API_VERSION=v1
-
-# Phase 3 Feature Flags
-NEXT_PUBLIC_FEATURE_CLUSTER_MARKERS_V2=true    # Cluster-based monitoring (M2)
-NEXT_PUBLIC_FEATURE_PWA=true                   # PWA installation (web only)
 ```
+
+Only `.env.local.example` is committed (mobile has no staging/prod env templates).
+**Never commit** the real `.env.local`. WSL2 device networking:
+[`/specs/deployment/local-development.md`](/specs/deployment/local-development.md).
 
 ## Documentation
 

@@ -43,10 +43,12 @@
       android:supportsRtl="true"
       android:usesCleartextTraffic="true">
 
-      <!-- Google Maps API Key -->
+      <!-- Google Maps API Key — injected at build time from the gitignored gradle
+           property SEKAR_MAPS_API_KEY (see app/build.gradle manifestPlaceholders).
+           Never hardcode the key here. -->
       <meta-data
         android:name="com.google.android.geo.API_KEY"
-        android:value="AIzaSyDwi4oORUhHRZi60sDRk5mDqrYqdlR2lGM"/>
+        android:value="${MAPS_API_KEY}"/>
 
       <!-- Notifee foreground service hosts shift location tracking (4-V Gap 3).
            Android 14+ rejects startForeground without an explicit type. -->

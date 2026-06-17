@@ -192,7 +192,7 @@
 | ECR Integration | ✅ Complete | AWS ECR push/pull in CI/CD |
 | EC2 Deployment | ✅ Complete | Zero-downtime deployment with health checks |
 | GitHub Secrets | ✅ Complete | AWS, ECR, EC2, Android signing keys |
-| Firebase/FCM Setup Guide | ✅ Complete | `specs/deployment/firebase-fcm-setup.md` (comprehensive guide) |
+| Firebase/FCM Setup Guide | ✅ Complete | `specs/deployment/credentials-setup.md` (comprehensive guide) |
 
 ### Optional Enhancement (Deferred to Post-Phase 2)
 

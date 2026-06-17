@@ -87,7 +87,7 @@ Firebase dependencies are now installed and ready for use with proper Firebase p
 @notifee/react-native: ^9.1.8
 ```
 
-**Production Ready:** Services are fully implemented with real Firebase SDK integration. FCM works on physical devices when Firebase project is configured (see `specs/deployment/firebase-fcm-setup.md`).
+**Production Ready:** Services are fully implemented with real Firebase SDK integration. FCM works on physical devices when Firebase project is configured (see `specs/deployment/credentials-setup.md`).
 
 ---
 

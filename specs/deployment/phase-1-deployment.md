@@ -1,5 +1,7 @@
 # Phase 1 MVP Deployment Guide
 
+> **Per-phase historical record.** The current, deduplicated deploy/operate procedures live in [`deployment-guide.md`](deployment-guide.md) (run local → staging → prod), [`operations.md`](operations.md), and [`credentials-setup.md`](credentials-setup.md). This file is retained as the Phase 1 review record (original AWS Free-Tier-from-zero walkthrough); some generic boilerplate it contains is superseded by those guides.
+
 Step-by-step guide for deploying SEKAR Phase 1 MVP to AWS using **Free Tier credits**.
 
 ## Overview
@@ -377,64 +379,9 @@ ssh -i sekar-key.pem ec2-user@<elastic-ip>
 ssh -i sekar-key.pem ec2-user@13.x.x.x
 ```
 
-### 5.2 Install Docker
+### 5.2–5.4 Install Docker, Docker Compose, and Nginx
 
-```bash
-# Update system packages
-sudo dnf update -y
-
-# Install Docker
-sudo dnf install -y docker
-
-# Start and enable Docker
-sudo systemctl start docker
-sudo systemctl enable docker
-
-# Add ec2-user to docker group
-sudo usermod -aG docker ec2-user
-
-# Verify installation
-docker --version
-
-# IMPORTANT: Log out and back in for group changes to take effect
-exit
-```
-
-```bash
-# Reconnect
-ssh -i sekar-key.pem ec2-user@<elastic-ip>
-
-# Verify docker works without sudo
-docker ps
-```
-
-### 5.3 Install Docker Compose
-
-```bash
-# Download Docker Compose
-sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-
-# Set executable permissions
-sudo chmod +x /usr/local/bin/docker-compose
-
-# Verify installation
-docker-compose --version
-```
-
-### 5.4 Install Nginx
-
-```bash
-# Install Nginx
-sudo dnf install -y nginx
-
-# Start and enable Nginx
-sudo systemctl start nginx
-sudo systemctl enable nginx
-
-# Verify Nginx is running
-sudo systemctl status nginx
-curl localhost
-```
+See [`deployment-guide.md`](deployment-guide.md) §E.1 (host prerequisites) for Docker, Docker Compose, and Nginx installation on Amazon Linux 2023.
 
 ### 5.5 Configure Nginx (HTTP Only)
 
@@ -1055,23 +1002,7 @@ docker-compose up -d
 
 ### 7.1 Health Checks
 
-```bash
-# From your local machine (or EC2)
-
-# Test health endpoint
-curl http://sekar.wahyutrip.com/api/health
-# Expected: {"status":"ok","version":"1.0.0",...}
-
-# Check Swagger docs
-curl -I http://sekar.wahyutrip.com/api/docs
-# Expected: HTTP/1.1 200 OK
-
-# Test login endpoint (should return 401 for wrong credentials)
-curl -X POST http://sekar.wahyutrip.com/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"wrong"}'
-# Expected: 401 Unauthorized (confirms auth is working)
-```
+See [`deployment-guide.md`](deployment-guide.md) §E.7 (smoke test) for standard health-check and basic authentication verification steps.
 
 ### 7.2 Test with Seeded Users
 
@@ -1194,107 +1125,7 @@ jarsigner -verify -verbose -certs \
 
 ## 10. Rollback Plan
 
-### 10.1 Backend Rollback (ECR-based)
-
-**Option 1: Rollback to Previous Image Tag**
-
-```bash
-# SSH to EC2
-ssh -i sekar-key.pem ec2-user@<elastic-ip>
-cd ~/sekar
-
-# List available images in ECR
-aws ecr list-images --repository-name sekar-backend --region ap-southeast-3
-
-# Update docker-compose.yml to use specific version
-# Change image tag from :latest to :<previous-commit-sha>
-nano docker-compose.yml
-# Change: <account-id>.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-backend:latest
-# To:     <account-id>.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-backend:<previous-sha>
-
-# Pull the previous image
-docker-compose pull
-
-# Restart with the previous version
-docker-compose up -d
-
-# Verify rollback
-docker-compose logs --tail=50 backend
-curl http://localhost:3000/api/health
-```
-
-**Option 2: Rollback to Backup Tag**
-
-```bash
-# SSH to EC2
-ssh -i sekar-key.pem ec2-user@<elastic-ip>
-cd ~/sekar
-
-# List backup tags
-aws ecr describe-images \
-  --repository-name sekar-backend \
-  --region ap-southeast-3 \
-  --query 'sort_by(imageDetails,& imagePushedAt)[*].[imageTags[0],imagePushedAt]' \
-  --output table
-
-# Update docker-compose.yml to use backup tag
-nano docker-compose.yml
-# Change to: <account-id>.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-backend:backup-20260125-143022
-
-# Pull and restart
-docker-compose pull
-docker-compose up -d
-```
-
-**Option 3: Quick Rollback Script**
-
-```bash
-# Create rollback script on EC2
-cat > ~/sekar/rollback.sh << 'EOF'
-#!/bin/bash
-if [ -z "$1" ]; then
-  echo "Usage: ./rollback.sh <image-tag>"
-  echo "Example: ./rollback.sh abc123def456"
-  exit 1
-fi
-
-cd ~/sekar
-ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-NEW_TAG="$1"
-
-# Update docker-compose.yml
-sed -i "s|:latest|:$NEW_TAG|g" docker-compose.yml
-sed -i "s|:[a-z0-9-]*|:$NEW_TAG|g" docker-compose.yml
-
-# Pull and restart
-docker-compose pull
-docker-compose up -d
-
-echo "Rolled back to version: $NEW_TAG"
-docker-compose logs --tail=20 backend
-EOF
-
-chmod +x ~/sekar/rollback.sh
-
-# Use it:
-./rollback.sh <previous-commit-sha>
-```
-
-### 10.2 Database Rollback
-
-```bash
-# Create snapshot before deployment (recommended)
-aws rds create-db-snapshot \
-  --region ap-southeast-3 \
-  --db-instance-identifier sekar-db \
-  --db-snapshot-identifier sekar-db-pre-deploy-$(date +%Y%m%d)
-
-# Restore from snapshot if needed
-aws rds restore-db-instance-from-db-snapshot \
-  --region ap-southeast-3 \
-  --db-instance-identifier sekar-db-restored \
-  --db-snapshot-identifier sekar-db-pre-deploy-20260125
-```
+See [`operations.md`](operations.md) §Releases & Rollback for comprehensive rollback procedures covering backend Docker image rollback, database snapshots, and zero-downtime recovery strategies.
 
 ---
 

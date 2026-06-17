@@ -169,9 +169,10 @@ Phase 1-2B: Three roles (Worker, Supervisor, Admin). Phase 2C: Eight roles — s
 - **Infra README:** [`/infra/README.md`](/infra/README.md) - Infrastructure setup
 
 ### Deployment & Setup Guides
-- **AWS S3 Setup:** [`deployment/aws-s3-setup.md`](./deployment/aws-s3-setup.md) - Media storage configuration
-- **WSL2 Network:** [`deployment/wsl2-network-setup.md`](./deployment/wsl2-network-setup.md) - WSL2 port forwarding for mobile testing
-- **Infrastructure:** [`deployment/infrastructure-setup.md`](./deployment/infrastructure-setup.md) - Docker Compose services (PostgreSQL, Adminer, LocalStack)
+- **Deployment Guide:** [`deployment/deployment-guide.md`](./deployment/deployment-guide.md) - Local → staging → production, all scenarios (hub)
+- **Run Locally:** [`deployment/local-development.md`](./deployment/local-development.md) - Docker infra (PostgreSQL, Adminer, MinIO, Redis), per-workspace run, WSL2 device networking
+- **Obtaining Keys:** [`deployment/credentials-setup.md`](./deployment/credentials-setup.md) - Firebase, Google Maps, Mapbox, AWS S3 credentials
+- **Operations:** [`deployment/operations.md`](./deployment/operations.md) - Migrations, backup/restore, rollback, incident runbooks
 - **E2E Testing:** [`testing/e2e-testing.md`](./testing/e2e-testing.md) - Playwright testing guide
 
 ## 🎯 Current Development Focus

@@ -8,8 +8,12 @@ Next.js web dashboard for supervisors and administrators. See [`/CLAUDE.md`](/CL
 cd fe/web
 npm install
 
+# Environment — copy template, then set your Mapbox token
+cp .env.local.example .env.local
+# Required: NEXT_PUBLIC_MAPBOX_TOKEN  (https://account.mapbox.com/access-tokens/)
+
 # Development
-npm run dev              # Start dev server (http://localhost:3001)
+npm run dev              # Start dev server (http://localhost:${WEB_PORT:-3001})
 
 # Testing
 npm test                 # Run unit tests
@@ -21,6 +25,21 @@ npm run lint             # ESLint
 npm run type-check       # TypeScript
 npm run format           # Prettier
 ```
+
+## Environment
+
+Copy `cp .env.local.example .env.local` (gitignored runtime file). Values:
+
+| Var | Default | Purpose |
+|-----|---------|---------|
+| **`NEXT_PUBLIC_MAPBOX_TOKEN`** | _(empty — **must set**)_ | Mapbox GL maps; token from https://account.mapbox.com/access-tokens/ |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:3000` | Backend base URL (match backend `PORT`) |
+| `NEXT_PUBLIC_WS_URL` | `ws://localhost:3000` | WebSocket monitoring stream |
+| `WEB_PORT` | `3001` | Dev server port (override to avoid collisions) |
+| `NEXT_PUBLIC_FEATURE_PWA` | `false` | Service-worker / install banner (on in staging/prod) |
+
+Templates: `.env.local.example` (dev) · `.env.staging.example` · `.env.production.example`.
+**Never commit** the real `.env.local` / `.env.staging` / `.env.production`.
 
 ## Design Tokens (Phase 3 M1-R Sub-Phase 3-R2)
 

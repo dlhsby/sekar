@@ -1,0 +1,875 @@
+# SEKAR Credentials Setup Guide
+
+**Purpose:** Complete reference for obtaining and installing every external API key and credential (Firebase/FCM, Google Maps, Mapbox, AWS S3, Apple Push Notifications).
+
+**Last Updated:** June 16, 2026
+
+**Status:** Comprehensive guide covering all credential types across dev / staging / production environments.
+
+---
+
+## Overview Table
+
+| Credential | Service | Where to Get | File / Env Var | Workspace | Required | Dev | Staging | Prod |
+|---|---|---|---|---|---|---|---|---|
+| **FCM Service Account** | Firebase | Firebase Console → Project Settings → Service Accounts | `be/config/firebase-service-account.json` | Backend | Opt* | MinIO (disabled) | AWS S3 + FCM | AWS S3 + FCM |
+| **FCM Inline Env Vars** | Firebase | Firebase Console → Service Account JSON (parse) | `FCM_PROJECT_ID`, `FCM_CLIENT_EMAIL`, `FCM_PRIVATE_KEY` | Backend | Opt* | MinIO | AWS S3 + FCM | AWS S3 + FCM |
+| **Android `google-services.json`** | Firebase | Firebase Console → Add Android app | `fe/mobile/android/app/google-services.json` | Mobile | Opt* | MinIO | AWS S3 + FCM | AWS S3 + FCM |
+| **iOS `GoogleService-Info.plist`** | Firebase | Firebase Console → Add iOS app | `fe/mobile/ios/GoogleService-Info.plist` | Mobile | Opt* | MinIO | AWS S3 + FCM | AWS S3 + FCM |
+| **APNs Key / Certificate** | Apple Developer | Apple Developer Portal | Firebase Console upload (production) | Mobile | Prod iOS | N/A | N/A | Required |
+| **Google Maps API Key** | Google Cloud | Google Cloud Console → Maps SDK | `fe/mobile/.env.local` `GOOGLE_MAPS_API_KEY` | Mobile | Yes | Yes | Yes | Yes |
+| **Maps Key SHA-1 Restriction** | Google Cloud | `cd fe/mobile/android && ./gradlew signingReport` | Google Cloud Console API key restrictions | Mobile | Prod | Optional | Yes | Yes |
+| **Mapbox Token** | Mapbox | https://account.mapbox.com/access-tokens/ | `fe/web/.env.local` `NEXT_PUBLIC_MAPBOX_TOKEN` | Web | Yes | Yes | Yes | Yes |
+| **AWS Access Key ID** | AWS IAM | AWS Console → IAM → Users → `sekar-s3-user` → Security credentials | `be/.env.local` `AWS_ACCESS_KEY_ID` | Backend | Staging/Prod | MinIO | Yes | MinIO* |
+| **AWS Secret Access Key** | AWS IAM | AWS Console → IAM → Users → `sekar-s3-user` → Security credentials | `be/.env.local` `AWS_SECRET_ACCESS_KEY` | Backend | Staging/Prod | MinIO | Yes | MinIO* |
+| **S3 Bucket Name** | AWS S3 | AWS Console → S3 → Bucket name | `be/.env.local` `AWS_S3_BUCKET` | Backend | Staging/Prod | `sekar-media-dev` | `sekar-media-staging` | MinIO** |
+
+\* **FCM:** Enable with `FCM_ENABLED=true` and provide service account. Optional in dev, recommended for staging/prod. Firebase services handle push notifications.
+
+\*\* **Production S3:** Uses MinIO inside `docker-compose.prod.yml` (per the project convention), NOT real AWS. The production MinIO instance is managed separately.
+
+---
+
+## 1. Firebase Cloud Messaging (FCM) — Push Notifications
+
+Firebase enables Android and iOS push notifications via Firebase Cloud Messaging.
+
+### 1.1 Create Firebase Project
+
+**In the browser:**
+
+1. Go to https://console.firebase.google.com
+2. Click **Add project** or **Create a project**
+3. Enter **Project name:** `SEKAR-Production` (or your preferred name)
+4. Optionally enable **Google Analytics** for tracking
+5. Click **Create project**
+6. Wait ~30 seconds for initialization
+
+### 1.2 Backend: Download Service Account
+
+The service account grants the backend permission to send FCM messages via the Firebase Admin SDK HTTP v1 API.
+
+**In Firebase Console:**
+
+1. Go to **Project Settings** (gear icon, top-right)
+2. Click the **Service Accounts** tab
+3. Click **Generate New Private Key**
+4. Save the downloaded JSON file
+
+**On your local machine:**
+
+```bash
+# Place the JSON file in the backend config directory
+cp ~/Downloads/SEKAR-Production-XXXXXXXX.json be/config/firebase-service-account.json
+
+# Verify the file is gitignored
+cat be/.gitignore | grep firebase-service-account.json
+# Output: config/firebase-service-account.json
+```
+
+**Set environment variable in `be/.env.local`:**
+
+```bash
+FCM_ENABLED=true
+FIREBASE_SERVICE_ACCOUNT_PATH=./config/firebase-service-account.json
+```
+
+The backend's `firebase.config.ts` automatically loads the file on boot. If the file is missing or invalid, the app will log a detailed error with next steps.
+
+**Alternative: Inline Environment Variables**
+
+If hosting in a CI/CD environment where mounting a file is awkward, extract the three credential fields from the service account JSON and set them as env vars instead:
+
+```bash
+# From the JSON file:
+# {
+#   "project_id": "sekar-production-abc123",
+#   "client_email": "firebase-adminsdk-a1b2c@sekar-production.iam.gserviceaccount.com",
+#   "private_key": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+# }
+
+FCM_ENABLED=true
+FCM_PROJECT_ID=sekar-production-abc123
+FCM_CLIENT_EMAIL=firebase-adminsdk-a1b2c@sekar-production.iam.gserviceaccount.com
+# Important: escape newlines in the private key as literal \n
+FCM_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQE...\n-----END PRIVATE KEY-----\n"
+```
+
+When all three inline vars are set, they take precedence over the JSON file. The backend detects the setup at startup and logs which method is active.
+
+### 1.3 Android: Register App and Download Configuration
+
+**In Firebase Console:**
+
+1. Click **Add app** → Select the **Android** icon
+2. Fill in the registration form:
+   - **Android package name:** `com.wahyutrip.sekar` (must match `fe/mobile/android/app/build.gradle` `applicationId`)
+   - **App nickname:** SEKAR Mobile Android
+   - **Debug signing certificate SHA-1:** (optional for development; required for production — see Section 1.3.2 below)
+3. Click **Register app**
+4. Download the `google-services.json` file
+
+**On your local machine:**
+
+```bash
+# Place the JSON in the Android app module
+cp ~/Downloads/google-services.json fe/mobile/android/app/google-services.json
+
+# Verify gitignored
+cat fe/mobile/.gitignore | grep google-services.json
+# Output: android/app/google-services.json
+```
+
+**Gradle Integration:**
+
+The repo already has Firebase Gradle plugin configured:
+
+- `fe/mobile/android/build.gradle` includes: `classpath 'com.google.gms:google-services:4.3.15'`
+- `fe/mobile/android/app/build.gradle` includes: `apply plugin: 'com.google.gms.google-services'` (uncommented when `google-services.json` is present)
+
+**No further Gradle changes needed.** The FCM SDKs (`@react-native-firebase/app` and `@react-native-firebase/messaging`) are installed via npm and auto-linked by the Metro build system.
+
+#### 1.3.2 Production: Add Signing Certificate SHA-1
+
+For production APK releases, the Maps key (Section 2) must be restricted to the app's release signing certificate. Similarly, Firebase requires the release SHA-1 for analytics and crash reporting accuracy.
+
+**Get the release SHA-1:**
+
+```bash
+cd fe/mobile/android
+./gradlew signingReport
+```
+
+Output example:
+```
+release
+--------
+ SHA1: AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34:56:78:90:AB:CD:EF:12
+```
+
+Copy the SHA-1 without colons:
+
+```
+ABCDEF1234567890ABCDEF1234567890ABCDEF12
+```
+
+**In Firebase Console:**
+
+1. Go to **Project Settings** → **Your apps** → **SEKAR Mobile Android**
+2. Click **Add fingerprint**
+3. Paste the release SHA-1
+4. Click **Save**
+
+### 1.4 iOS: Register App and Download Configuration
+
+**In Firebase Console:**
+
+1. Click **Add app** → Select the **iOS** icon
+2. Fill in the registration form:
+   - **iOS bundle ID:** `org.sekar.mobile` (must match Xcode project)
+   - **App nickname:** SEKAR Mobile iOS
+   - **App Store ID:** (optional, leave blank for now)
+3. Click **Register app**
+4. Download the `GoogleService-Info.plist` file
+
+**On your local machine (requires macOS + Xcode):**
+
+```bash
+# Place the plist in the iOS project
+cp ~/Downloads/GoogleService-Info.plist fe/mobile/ios/GoogleService-Info.plist
+
+# Or, if you prefer to keep it in version control as a template:
+cp ~/Downloads/GoogleService-Info.plist fe/mobile/ios/GoogleService-Info.plist.example
+# Then gitignore the real file and document that devs must add it manually
+```
+
+The repo's `.gitignore` already excludes the plist:
+
+```gitignore
+# Firebase
+ios/GoogleService-Info.plist
+!ios/GoogleService-Info.plist.example
+```
+
+**In Xcode (fe/mobile/ios/sekar.xcworkspace):**
+
+1. Open the workspace in Xcode
+2. In the project navigator, right-click and select **Add Files to "sekar"**
+3. Select the `GoogleService-Info.plist` file
+4. Check **Copy items if needed** and select target **sekar**
+5. Click **Add**
+
+**Enable Push Notifications Capability:**
+
+1. In Xcode, select the **sekar** target
+2. Go to the **Signing & Capabilities** tab
+3. Click **+ Capability**
+4. Add **Push Notifications**
+5. Add **Background Modes**
+6. Check **Remote notifications**
+
+#### 1.4.1 Production: Apple Push Notifications (APNs) Key
+
+For production iOS deployments, you must upload an APNs key (or certificate) to Firebase. This allows Firebase to route push notifications through Apple's APNs infrastructure.
+
+**See:** `specs/deployment/ios-release-guide.md` for the complete macOS-only APNs setup workflow (Apple Developer Portal, CSR, certificate generation, Firebase upload).
+
+### 1.5 Mobile App: Install Firebase Packages
+
+```bash
+cd fe/mobile
+
+# Install Firebase packages
+npm install @react-native-firebase/app@^18.0.0
+npm install @react-native-firebase/messaging@^18.0.0
+
+# Install Notifee for notification display (recommended)
+npm install @notifee/react-native@^7.8.0
+```
+
+**For iOS (macOS only):**
+
+```bash
+cd fe/mobile/ios
+pod install
+cd ..
+```
+
+**Verify the installation:**
+
+```bash
+grep -E "firebase|notifee" fe/mobile/package.json
+```
+
+### 1.6 Backend: Notification Service Configuration
+
+The backend already has Firebase Admin SDK integration. Verify the setup:
+
+**File:** `be/src/modules/notifications/notifications.service.ts`
+
+- Should import and use `getMessaging()` from `be/src/config/firebase.config.ts`
+- Sends FCM messages via the HTTP v1 API
+
+**Environment Variables:**
+
+`be/.env.local` (or `.env.staging`/`.env.production`):
+
+```bash
+FCM_ENABLED=true
+FIREBASE_SERVICE_ACCOUNT_PATH=./config/firebase-service-account.json
+# OR inline (if using CI/CD):
+# FCM_PROJECT_ID=...
+# FCM_CLIENT_EMAIL=...
+# FCM_PRIVATE_KEY=...
+```
+
+### 1.7 Testing FCM
+
+**Android (Physical Device):**
+
+```bash
+cd fe/mobile
+npm run android
+
+# Verify token registration in logcat
+adb logcat | grep "FCM\|Token"
+```
+
+**iOS (Physical Device, macOS only):**
+
+```bash
+cd fe/mobile/ios
+open sekar.xcworkspace
+
+# In Xcode: Select device (not simulator) → Run (⌘R)
+# Check console for FCM token output
+```
+
+**Send Test Notification:**
+
+```bash
+# Via backend API (Swagger UI or Postman)
+POST http://localhost:3000/api/v1/notifications/send
+{
+  "userId": "worker-uuid",
+  "title": "Test Notification",
+  "body": "This is a test",
+  "data": { "type": "test" }
+}
+```
+
+**Troubleshooting:**
+
+- **Token not generated:** Verify `google-services.json` / `GoogleService-Info.plist` are in the correct paths and gitignored in CI/CD.
+- **Notifications not received:** Check backend logs for FCM errors. Verify the FCM token is registered with the backend.
+- **iOS notifications not working:** Ensure APNs key/certificate is uploaded to Firebase and device has notification permissions enabled in iOS Settings.
+
+---
+
+## 2. Google Maps API Key — Native Mobile Maps
+
+Google Maps SDK for Android (and optionally iOS) enables the supervisor map view for worker location tracking.
+
+### 2.1 Create API Key
+
+**In Google Cloud Console (https://console.cloud.google.com/):**
+
+1. Create a new project or select an existing one
+2. Navigate to **APIs & Services** → **Credentials**
+3. Click **Create Credentials** → **API Key**
+4. A new API key is generated (e.g., `AIzaSy...`)
+
+### 2.2 Enable Maps SDKs
+
+1. Go to **APIs & Services** → **Library**
+2. Search for **Maps SDK for Android**
+3. Click and press **Enable**
+4. (Optional) Search for **Maps SDK for iOS** and enable if building for iOS
+
+### 2.3 Restrict API Key (Development)
+
+For development, restriction is optional. But it's recommended to prevent unauthorized use.
+
+**In Credentials → Your API Key:**
+
+1. Click the key name to edit
+2. Under **API restrictions:**
+   - Select **Restrict key** and choose **Maps SDK for Android** (and iOS if enabled)
+3. Under **Application restrictions:**
+   - Select **Android apps**
+   - Add package name: `com.wahyutrip.sekar`
+   - (Optional) Add debug certificate SHA-1 from `cd fe/mobile/android && ./gradlew signingReport`
+
+### 2.4 Production: Restrict by Release SHA-1
+
+For production, the API key must be restricted to the **release** signing certificate to prevent unauthorized apps from using your key.
+
+**Get the release SHA-1:**
+
+```bash
+cd fe/mobile/android
+./gradlew signingReport
+```
+
+Find the **release** section and copy the SHA-1 (remove colons).
+
+**In Google Cloud Console:**
+
+1. Go to **APIs & Services** → **Credentials** → Your API Key
+2. Under **Application restrictions:**
+   - Select **Android apps**
+   - Remove the debug SHA-1 (if present)
+   - Add the release SHA-1 and package name `com.wahyutrip.sekar`
+3. Click **Save**
+
+### 2.5 Configure the native Android Maps key (gradle property)
+
+The Google Maps **SDK** key is injected into `AndroidManifest.xml` at build time via a
+**manifest placeholder** — it is **never hardcoded** in the manifest. The manifest reads:
+
+```xml
+<meta-data android:name="com.google.android.geo.API_KEY" android:value="${MAPS_API_KEY}"/>
+```
+
+and `fe/mobile/android/app/build.gradle` resolves it from the gitignored gradle property
+`SEKAR_MAPS_API_KEY` (mirroring how the release keystore props are supplied):
+
+```groovy
+manifestPlaceholders = [MAPS_API_KEY: project.findProperty('SEKAR_MAPS_API_KEY') ?: '']
+```
+
+Provide the value via any gitignored channel (an empty fallback keeps the build green, maps just render blank):
+
+```properties
+# ~/.gradle/gradle.properties  (user-global, never committed) — or android/gradle.properties (gitignored)
+SEKAR_MAPS_API_KEY=AIzaSy...your-key...
+```
+…or per-invocation: `./gradlew assembleRelease -PSEKAR_MAPS_API_KEY=AIzaSy...` / env `ORG_GRADLE_PROJECT_SEKAR_MAPS_API_KEY=...`.
+
+> **Two different keys:** the native **SDK** key above (manifest, for `react-native-maps` rendering) is distinct from
+> `GOOGLE_MAPS_API_KEY` in `fe/mobile/.env.local` (loaded by `react-native-dotenv` for JS-side calls). Both can be the
+> same restricted key, but they are wired through different mechanisms.
+
+### 2.6 SECURITY FINDING: rotate the previously-committed key
+
+A Maps key was **previously hardcoded and committed** at `AndroidManifest.xml:49`
+(`AIzaSyDwi4oORUhHRZi60sDRk5mDqrYqdlR2lGM`). The hardcode has been **removed** (§2.5), but
+the value **remains in git history**, so treat it as exposed.
+
+**Risk:** keys in a released APK are publicly extractable (APKs decompile trivially); an unrestricted key can be abused for quota/cost.
+
+**Required actions:**
+
+1. **Rotate it in Google Cloud Console** — regenerate the key, delete the old one (it is in git history; assume compromised). *(Console-only — cannot be done from this repo.)*
+2. **Restrict the new key** — Application restriction → Android apps → package `com.wahyutrip.sekar` + the release SHA-1; API restriction → Maps SDKs only. Keep separate dev/release keys.
+3. **Supply it via `SEKAR_MAPS_API_KEY`** (§2.5) — never re-hardcode in the manifest.
+4. Add Maps-key rotation to the security checklist (e.g. quarterly).
+
+---
+
+## 3. Mapbox Access Token — Web Maps
+
+Mapbox enables the monitoring map view (worker cluster visualization and area boundary editing) in the web dashboard.
+
+### 3.1 Create or Find Your Token
+
+**In a browser:**
+
+1. Go to https://account.mapbox.com/access-tokens/
+2. If you don't have a Mapbox account, sign up
+3. Click **Create a token**
+4. Name it (e.g., `SEKAR Web Dev`)
+5. Check **Public scopes** (for web)
+6. Click **Create token**
+7. Copy the token (e.g., `pk.eyJ...`)
+
+### 3.2 Configure Web App
+
+**File:** `fe/web/.env.local`
+
+```bash
+NEXT_PUBLIC_MAPBOX_TOKEN=pk.eyJ...your-token...
+```
+
+**Note:** The `NEXT_PUBLIC_` prefix exposes this token to the browser (intentional for client-side maps). Restrict usage in your Mapbox account settings if needed.
+
+### 3.3 Verify
+
+```bash
+# Start the web dashboard
+cd fe/web
+npm run dev
+
+# Visit http://localhost:3001
+# Navigate to Monitoring or Tasks pages with maps
+# Verify the map renders without blank tiles
+```
+
+**Troubleshooting:**
+
+- **Map is blank:** Verify the token is set in `.env.local` and the web server has been restarted
+- **"Invalid token" error:** Copy the token again from Mapbox (ensure it includes `pk.` prefix)
+
+---
+
+## 4. AWS S3 & IAM — Production Media Storage
+
+S3 stores user-uploaded media (selfies on clock-in, work report photos/videos). This section covers **production** AWS setup. For local development, see Section 6 below.
+
+### 4.1 Create AWS Account
+
+If you don't have one, sign up at https://aws.amazon.com/
+
+### 4.2 Create S3 Bucket
+
+**In AWS Console:**
+
+1. Navigate to **S3**
+2. Click **Create bucket**
+3. **Bucket name:** `sekar-media-staging` (for staging) or `sekar-media-production` (for production)
+4. **Region:** `ap-southeast-1` (Singapore, closest to Indonesia for low latency)
+5. **Object Ownership:** ACLs disabled (recommended)
+6. **Block Public Access:** Keep all blocks enabled ✓ (use signed URLs instead of public access)
+7. **Versioning:** Disabled (optional; enable for production data protection)
+8. **Encryption:** Enable (SSE-S3 or SSE-KMS)
+9. Click **Create bucket**
+
+### 4.3 Create IAM User
+
+**In AWS Console → IAM → Users:**
+
+1. Click **Create user**
+2. **User name:** `sekar-s3-user`
+3. Click **Next**
+
+### 4.4 Attach S3 Permissions
+
+**Select one option:**
+
+**Option A: Quick Setup (AmazonS3FullAccess)**
+
+1. Check **Attach policies directly**
+2. Search for and select `AmazonS3FullAccess`
+3. Click **Create user**
+
+**Option B: Custom Policy (Recommended for Production)**
+
+1. Check **Attach policies directly**
+2. Click **Create policy**
+3. Paste this JSON:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:DeleteObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::sekar-media-production",
+        "arn:aws:s3:::sekar-media-production/*"
+      ]
+    }
+  ]
+}
+```
+
+Replace `sekar-media-production` with your bucket name.
+
+4. Click **Create policy**
+5. Attach the policy to the user and click **Create user**
+
+### 4.5 Create Access Keys
+
+**In AWS Console → IAM → Users → sekar-s3-user → Security credentials:**
+
+1. Scroll to **Access keys**
+2. Click **Create access key**
+3. Select **Application running outside AWS**
+4. Click **Next** → **Create access key**
+5. **CRITICAL:** Copy and save both immediately (shown only once):
+   - **Access Key ID** (e.g., `AKIA...`)
+   - **Secret Access Key**
+
+Do NOT close the page until saved. If you forget the secret key, delete the key and create a new one.
+
+### 4.6 Configure CORS (Browser Direct Uploads)
+
+If your frontend uploads directly to S3 (not through backend), configure CORS:
+
+**In AWS Console → S3 → Your bucket → Permissions → CORS:**
+
+```json
+[
+  {
+    "AllowedHeaders": ["*"],
+    "AllowedMethods": ["GET", "PUT", "POST", "DELETE"],
+    "AllowedOrigins": [
+      "http://localhost:3001",
+      "https://sekar.dlhsurabaya.go.id"
+    ],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3000
+  }
+]
+```
+
+**For production,** replace `AllowedOrigins` with your actual domain(s) only.
+
+### 4.7 Configure Backend
+
+**File:** `be/.env.staging` or `be/.env.production`
+
+```bash
+# AWS S3 Configuration
+AWS_REGION=ap-southeast-1
+AWS_ACCESS_KEY_ID=AKIA...your-key...
+AWS_SECRET_ACCESS_KEY=your-secret-key
+AWS_S3_BUCKET=sekar-media-staging
+
+# Do NOT set for real AWS (only for MinIO dev):
+# AWS_ENDPOINT_URL=
+# AWS_S3_FORCE_PATH_STYLE=
+```
+
+### 4.8 Enable Encryption
+
+**In AWS Console → S3 → Your bucket → Properties → Default encryption:**
+
+```bash
+aws s3api put-bucket-encryption \
+  --bucket sekar-media-staging \
+  --server-side-encryption-configuration '{
+    "Rules": [{
+      "ApplyServerSideEncryptionByDefault": {
+        "SSEAlgorithm": "AES256"
+      }
+    }]
+  }'
+```
+
+### 4.9 Key Rotation (Every 90 days)
+
+1. **In AWS Console → IAM → Users → sekar-s3-user → Security credentials:**
+   - Click **Create access key**
+   - Update your deployment config with the new key
+   - Wait for deployments to complete
+   - Delete the old access key
+
+2. **Document the rotation** in your change log for audit purposes
+
+### 4.10 Verify Configuration
+
+```bash
+# List buckets
+aws s3 ls
+
+# List objects in bucket
+aws s3 ls s3://sekar-media-staging --recursive
+
+# Test upload (backend login + clock-in with selfie)
+# Verify uploaded file appears in bucket
+```
+
+---
+
+## 5. Per-Environment Summary
+
+### Development (Local)
+
+| Credential | Service | Status | Notes |
+|---|---|---|---|
+| FCM | Firebase | Optional | Set `FCM_ENABLED=false` to skip; Firebase services disabled locally |
+| Google Maps | Google Cloud | Required | Use dev API key (unrestricted OK locally) |
+| Mapbox | Mapbox | Required | Use dev token |
+| AWS S3 | MinIO (local) | N/A | Uses `be/.env.local` with MinIO endpoint; no real AWS keys needed |
+| APNs | Apple | N/A | Not needed for dev (simulator push doesn't work) |
+
+**Sample `.env.local` files:**
+
+`be/.env.local`:
+```bash
+FCM_ENABLED=false
+AWS_ENDPOINT_URL=http://localhost:9000
+AWS_S3_FORCE_PATH_STYLE=true
+AWS_ACCESS_KEY_ID=minioadmin
+AWS_SECRET_ACCESS_KEY=minioadmin
+AWS_S3_BUCKET=sekar-media-dev
+```
+
+`fe/mobile/.env.local`:
+```bash
+GOOGLE_MAPS_API_KEY=AIzaSy...dev-key...
+API_BASE_URL=http://10.0.2.2:3000
+```
+
+`fe/web/.env.local`:
+```bash
+NEXT_PUBLIC_MAPBOX_TOKEN=pk.eyJ...dev-token...
+NEXT_PUBLIC_API_URL=http://localhost:3000
+```
+
+### Staging
+
+| Credential | Service | Status | Notes |
+|---|---|---|---|
+| FCM | Firebase | Required | Set `FCM_ENABLED=true`; service account or inline env vars |
+| Google Maps | Google Cloud | Required | Use staging key; restrict to release SHA-1 of staging APK |
+| Mapbox | Mapbox | Required | Use staging token |
+| AWS S3 | Real AWS | Required | `sekar-media-staging` bucket; restricted IAM user |
+| APNs | Apple | Recommended | Upload to Firebase for iOS push testing |
+
+**Sample `be/.env.staging`:**
+```bash
+FCM_ENABLED=true
+FCM_PROJECT_ID=...
+FCM_CLIENT_EMAIL=...
+FCM_PRIVATE_KEY=...
+AWS_REGION=ap-southeast-1
+AWS_ACCESS_KEY_ID=AKIA...staging-key...
+AWS_SECRET_ACCESS_KEY=...
+AWS_S3_BUCKET=sekar-media-staging
+```
+
+### Production
+
+| Credential | Service | Status | Notes |
+|---|---|---|---|
+| FCM | Firebase | Required | Service account or inline env vars (recommended: CI/CD secrets) |
+| Google Maps | Google Cloud | Required | **Must be restricted to release SHA-1 of production APK** |
+| Mapbox | Mapbox | Required | Production token with appropriate usage limits |
+| AWS S3 | MinIO (self-hosted) | Required | Uses MinIO in `docker-compose.prod.yml`; NOT real AWS (per project convention) |
+| APNs | Apple | Required | Uploaded to Firebase; required for iOS push in production |
+
+**Notes:**
+
+- Production backend uses **MinIO inside the Docker container**, not real AWS S3. Store MinIO root credentials in the production Docker Compose secrets.
+- All credentials should be managed via platform secrets (AWS Secrets Manager, GitHub Secrets, Kubernetes Secrets, etc.)
+- Never commit `.env.production` to version control
+
+---
+
+## 6. Local Development: MinIO as S3 Alternative
+
+For local development, the project uses **MinIO** — a self-hosted, S3-compatible storage service.
+
+**See:** `specs/deployment/local-development.md` for the MinIO setup and docker-compose configuration.
+
+**Quick reference:**
+
+```bash
+# Start MinIO (via infra docker-compose)
+./scripts/infra.sh start
+
+# MinIO runs on http://localhost:9000 (API) and http://localhost:9001 (console)
+# Default credentials: minioadmin / minioadmin
+
+# Configure backend for MinIO
+# be/.env.local:
+AWS_ENDPOINT_URL=http://localhost:9000
+AWS_S3_FORCE_PATH_STYLE=true
+AWS_ACCESS_KEY_ID=minioadmin
+AWS_SECRET_ACCESS_KEY=minioadmin
+AWS_S3_BUCKET=sekar-media-dev
+```
+
+---
+
+## 7. Security Best Practices
+
+### Never Commit Secrets
+
+```bash
+# Verify .gitignore covers all sensitive files:
+cat be/.gitignore | grep -E "^config/firebase|^\.env"
+cat fe/mobile/.gitignore | grep -E "^android/app/google|^ios/GoogleService|^\.env"
+```
+
+### Use IAM Policies with Least Privilege
+
+- Only grant necessary S3 actions (PutObject, GetObject, ListBucket)
+- Restrict to specific bucket ARNs
+- Avoid `AmazonS3FullAccess` in production
+
+### Enable S3 Encryption
+
+All S3 buckets should use SSE-S3 or SSE-KMS encryption.
+
+### Block Public Access
+
+Keep all S3 "Block Public Access" settings enabled. Use signed URLs for private content access.
+
+### API Key Restrictions
+
+- **Google Maps:** Restrict to package `com.wahyutrip.sekar` and release SHA-1
+- **Mapbox:** Enable usage limits in Mapbox account settings
+
+### Rotate Credentials Regularly
+
+- **AWS Access Keys:** Every 90 days
+- **Firebase Service Accounts:** Annually
+- **API Keys:** Annually or after any suspected compromise
+
+### Secret Storage in CI/CD
+
+Store all secrets as **platform secrets**, NOT in version control:
+
+- **GitHub:** Settings → Secrets and variables → Actions → New repository secret
+- **AWS:** AWS Secrets Manager or Parameter Store
+- **Docker/Kubernetes:** Use secrets objects, not hardcoded values
+
+### Audit Logs
+
+Enable S3 access logging (production):
+
+```bash
+aws s3api put-bucket-logging \
+  --bucket sekar-media-production \
+  --bucket-logging-status '{
+    "LoggingEnabled": {
+      "TargetBucket": "sekar-logs",
+      "TargetPrefix": "s3-access/"
+    }
+  }'
+```
+
+---
+
+## 8. Related Documentation
+
+- **Local Development:** `specs/deployment/local-development.md` (Docker infra, MinIO dev S3, WSL2 device networking)
+- **Deployment Guide:** `specs/deployment/deployment-guide.md` (local → staging → production, all scenarios)
+- **AWS infrastructure:** `specs/deployment/infrastructure.md` (VPC, RDS, S3, IAM, CloudFront)
+- **iOS Release Guide:** `specs/deployment/ios-release-guide.md` (APNs, TestFlight, App Store)
+- **Android Release Guide:** `specs/deployment/android-release-guide.md` (Google Play release process)
+- **Environment Variables:** `specs/deployment/environment-variables.md` (Full reference of all env vars)
+
+---
+
+## 9. Troubleshooting
+
+### "Cannot find service account file"
+
+**Cause:** `be/config/firebase-service-account.json` is missing.
+
+**Solution:**
+
+1. Download service account JSON from Firebase Console
+2. Place in `be/config/firebase-service-account.json`
+3. Verify it's gitignored: `cat be/.gitignore | grep firebase`
+4. Restart backend
+
+### "AWS Access Key Id ... does not exist"
+
+**Cause:** Incorrect access key ID in `.env` or key was deleted.
+
+**Solution:**
+
+1. Verify the key ID: `cat be/.env | grep AWS_ACCESS_KEY_ID`
+2. Go to AWS Console → IAM → Users → sekar-s3-user → Security credentials
+3. Create a new access key if needed
+4. Update `.env` and restart backend
+
+### "Access Denied" on S3 upload
+
+**Cause:** IAM user lacks PutObject permission.
+
+**Solution:**
+
+1. Go to AWS Console → IAM → Users → sekar-s3-user → Permissions
+2. Verify the S3 policy is attached
+3. Verify the policy allows `PutObject` on the bucket ARN
+4. Restart backend after fixing
+
+### Map is blank in web or mobile
+
+**Causes:**
+- Missing API key / token
+- Token/key is invalid or expired
+- Service is rate-limited or disabled
+
+**Solutions:**
+
+1. Verify the key/token is set in `.env.local`
+2. Verify the key/token is correct by copying from the console again
+3. Check browser console / logcat for errors
+4. Verify the Maps/Mapbox service is enabled in the respective console
+5. Restart the app
+
+### FCM token not generated
+
+**Cause:** Firebase config files not in correct path.
+
+**Solution:**
+
+1. Verify `fe/mobile/android/app/google-services.json` exists
+2. Verify `fe/mobile/ios/GoogleService-Info.plist` exists (iOS)
+3. Verify files are gitignored and NOT committed
+4. Rebuild: `npm run android` or `npm run ios`
+
+### Push notification not received
+
+**Causes:**
+- Token not registered with backend
+- FCM server key invalid
+- Device doesn't have notification permissions
+- FCM is disabled
+
+**Solutions:**
+
+1. Check backend logs for "Token registered" message
+2. Verify `FCM_ENABLED=true` in backend `.env`
+3. Verify device notification permissions in Settings
+4. Test with Firebase Console → Cloud Messaging → Send test message
+5. Check device logcat/console for FCM errors
+
+---
+
+**Last Updated:** June 16, 2026  
+**Maintained By:** SEKAR DevOps Team  
+**Next Review:** December 2026 (annual credential rotation audit)

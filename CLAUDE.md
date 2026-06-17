@@ -68,7 +68,7 @@ Code uses English; Indonesian only for UI labels / user-facing messages. `Activi
 All three workspaces use the same scheme: **`.env.local`** = local dev (gitignored, the runtime file), **`.env.staging`** / **`.env.production`** = deploys. Committed templates are `*.example` (`.env.local.example`, `.env.staging.example`, `.env.production.example`). Loaders: backend `be/src/config/load-env.ts` picks `.env.local` (dev) or `.env.<NODE_ENV>` (deploys) with `.env` fallback; web is Next.js-native; mobile is `react-native-dotenv` (`path` in `babel.config.js`). `./scripts/setup.sh` creates the `.env.local` files and reconciles `be/.env.local` `DATABASE_PORT` to `infra/.env` `POSTGRES_PORT`. Infra keeps plain `infra/.env` (Docker-Compose convention).
 
 ## Backend .env essentials
-`DATABASE_*` (localhost:5432, postgres/postgres, sekar_db — note `infra/.env` may pin a non-default `POSTGRES_PORT`; `setup.sh` syncs it) · `JWT_SECRET`, `JWT_EXPIRATION=7d` · Dev S3 via **MinIO** (`AWS_ENDPOINT_URL=http://localhost:9000`, `AWS_S3_FORCE_PATH_STYLE=true`, creds = `MINIO_ROOT_USER`/`PASSWORD` from `infra/.env` = `minioadmin`/`minioadmin`, bucket `sekar-media-dev`); **staging** = real AWS S3 (no endpoint); **production** = MinIO in `docker-compose.prod.yml` · `FCM_ENABLED=false` until Firebase configured. Full config: `specs/deployment/aws-s3-setup.md`, mobile network `specs/deployment/wsl2-network-setup.md`.
+`DATABASE_*` (localhost:5432, postgres/postgres, sekar_db — note `infra/.env` may pin a non-default `POSTGRES_PORT`; `setup.sh` syncs it) · `JWT_SECRET`, `JWT_EXPIRATION=7d` · Dev S3 via **MinIO** (`AWS_ENDPOINT_URL=http://localhost:9000`, `AWS_S3_FORCE_PATH_STYLE=true`, creds = `MINIO_ROOT_USER`/`PASSWORD` from `infra/.env` = `minioadmin`/`minioadmin`, bucket `sekar-media-dev`); **staging** = real AWS S3 (no endpoint); **production** = MinIO in `docker-compose.prod.yml` · `FCM_ENABLED=false` until Firebase configured. Full config: `specs/deployment/credentials-setup.md`, mobile network `specs/deployment/local-development.md`.
 
 ## Key Resources
 
@@ -81,13 +81,16 @@ All three workspaces use the same scheme: **`.env.local`** = local dev (gitignor
 | Security + dependency audit | `specs/architecture/security.md` |
 | Design tokens (source of truth) | `specs/ui-ux/design-tokens.md` · `tokens.json` |
 | Web PWA | `specs/phases/phase-3-plants-monitoring-rebuild/web.md` §PWA |
-| **Deployment (authoritative, start-to-finish)** | `specs/deployment/DEPLOYMENT_GUIDE.md` (self-hosted Docker + AWS appendix) |
+| **Deployment (authoritative, start-to-finish)** | `specs/deployment/deployment-guide.md` (self-hosted Docker + AWS appendix) |
 | iOS / Android release runbooks | `specs/deployment/ios-release-guide.md` · `android-release-guide.md` |
-| Deployment / infra / WSL2 / S3 | `specs/deployment/` |
+| Run locally / infra / WSL2 device net | `specs/deployment/local-development.md` |
+| Obtaining keys (Firebase/Maps/Mapbox/S3) | `specs/deployment/credentials-setup.md` |
+| Day-2 operations / rollback / incidents | `specs/deployment/operations.md` |
+| Env var catalogue | `specs/deployment/environment-variables.md` |
 | E2E testing | `specs/testing/e2e-testing.md` |
 | Full navigation | `specs/README.md` |
 
 ## Troubleshooting
 - Port 3000 in use: `lsof -ti:3000 | xargs kill -9`. Metro cache: `npm start -- --reset-cache`. Android build: `cd android && ./gradlew clean`.
 - "Cannot find eslint-plugin-sekar-design" / "tokens:build not found" / Metro "Cannot resolve @react-native/metro-config": run `npm install` from project **root** to resync tooling + workspace list.
-- Full guide: `specs/deployment/infrastructure-setup.md`.
+- Full guide: `specs/deployment/local-development.md`.

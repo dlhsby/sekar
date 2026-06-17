@@ -1,5 +1,7 @@
 # Phase 3 Deployment Guide — Plants Management, Monitoring Rebuild & Public Intake
 
+> **Per-phase historical record.** Current deduplicated deploy/operate procedures live in [`deployment-guide.md`](deployment-guide.md), [`operations.md`](operations.md), and [`credentials-setup.md`](credentials-setup.md). This file is retained as the Phase 3 review record (plant/pruning tables, Redis, monitoring v2, the Apr 27 smoke-test + SSH-rotation incident — the latter generalized into `operations.md`).
+
 **Last Updated:** April 27, 2026 (Apr 27 audit + bug-fix sweep)
 **Status:** 🟡 Backend deployed; Redis pending; Web pending CI fix
 **Target:** Incremental deploy on top of Phase 2E production
@@ -56,147 +58,9 @@ If any row flips ❌ in this table after a future change, **don't deploy** until
 
 ---
 
-## 🔐 Rotate `sekar-key.pem` Before Resuming SSH Ops
+## 🔐 SSH Key Rotation (Apr 27 Incident)
 
-The contents of `sekar-key.pem` were exposed in a chat transcript on **Apr 27, 2026**. Treat the existing key as compromised. Rotate before any further `ssh ec2-user@16.79.183.240` operations.
-
-> **Heads-up:** EC2 does not let you replace the *original* key pair attached to a launched instance from the AWS console. The supported flow is "add a new key to `authorized_keys`, verify, remove the old one." That works without instance downtime and is the safest path. The CLI commands assume the rotating user (you) currently has SSH access with the old key.
-
-### Step 1 — Generate a new keypair locally
-
-```bash
-# Pick a path; the existing key lives at ~/.ssh/sekar-key.pem (or /home/wahyutrip/wahyutrip/dlhsby/taman/creds/sekar-key.pem)
-NEW_KEY=~/.ssh/sekar-key-2026.pem
-
-ssh-keygen -t ed25519 -f $NEW_KEY -C "sekar-prod-2026-04-27" -N ""
-chmod 600 $NEW_KEY
-chmod 644 $NEW_KEY.pub
-
-# Quick sanity check
-ssh-keygen -l -f $NEW_KEY.pub
-```
-
-> Use `ed25519` (smaller, faster, modern). RSA-2048 is fine if your tooling needs it.
-
-### Step 2 — Install the new public key on the server (using the OLD key one last time)
-
-```bash
-OLD_KEY=~/.ssh/sekar-key.pem      # whatever you currently use
-NEW_PUB=$(cat $NEW_KEY.pub)
-
-ssh -i $OLD_KEY ec2-user@16.79.183.240 \
-  "echo '$NEW_PUB' >> ~/.ssh/authorized_keys && \
-   chmod 600 ~/.ssh/authorized_keys && \
-   wc -l ~/.ssh/authorized_keys"
-# Expected: line count goes up by 1
-```
-
-### Step 3 — Verify the new key works (in a NEW shell — do NOT close the old session yet)
-
-```bash
-ssh -i $NEW_KEY -o IdentitiesOnly=yes ec2-user@16.79.183.240 "whoami && uname -a && date"
-# Expected: "ec2-user", linux kernel info, current time
-```
-
-If this fails, do not proceed — keep the old session alive while you debug. Common gotchas: wrong file mode on the key (`chmod 600`), wrong path, or copy/paste mangled the public key on the server.
-
-### Step 4 — Remove the OLD public key from `authorized_keys`
-
-First, find the comment/fingerprint of the old key so you can target the right line:
-
-```bash
-ssh-keygen -l -f $OLD_KEY.pub      # if you have the .pub
-# OR derive the public key from the private key:
-ssh-keygen -y -f $OLD_KEY | awk '{print $2}'   # prints the base64 blob
-```
-
-Then remove that exact line from the server's `authorized_keys` (using the NEW key now):
-
-```bash
-OLD_PUB_BLOB=$(ssh-keygen -y -f $OLD_KEY | awk '{print $2}')
-
-ssh -i $NEW_KEY ec2-user@16.79.183.240 \
-  "grep -v \"$OLD_PUB_BLOB\" ~/.ssh/authorized_keys > ~/.ssh/authorized_keys.new && \
-   mv ~/.ssh/authorized_keys.new ~/.ssh/authorized_keys && \
-   chmod 600 ~/.ssh/authorized_keys && \
-   wc -l ~/.ssh/authorized_keys"
-# Expected: line count drops by 1
-```
-
-Re-verify the NEW key still works **and** the OLD key now fails:
-
-```bash
-ssh -i $NEW_KEY -o IdentitiesOnly=yes ec2-user@16.79.183.240 "echo NEW OK"
-ssh -i $OLD_KEY -o IdentitiesOnly=yes -o BatchMode=yes -o ConnectTimeout=5 ec2-user@16.79.183.240 "echo OLD STILL WORKS" 2>&1
-# Expected last line: "Permission denied (publickey)."
-```
-
-### Step 5 — Update GitHub Actions secret
-
-The backend CI/CD pipeline SSHs to `16.79.183.240` to deploy. Update the private key it uses:
-
-```bash
-# Find the secret name (it's likely EC2_SSH_KEY or SSH_PRIVATE_KEY)
-gh secret list --env production
-
-# Update it with the contents of the NEW private key
-gh secret set EC2_SSH_KEY --env production < $NEW_KEY
-# (Use the actual secret name found above — naming may vary.)
-```
-
-Trigger a tiny redeploy to confirm the pipeline still SSHs successfully:
-
-```bash
-git commit --allow-empty -m "chore(infra): rotate prod SSH key"
-git push origin main
-gh run watch --exit-status
-```
-
-### Step 6 — Securely destroy the OLD key
-
-```bash
-# Linux/macOS — overwrite the file before delete to defeat undelete tools
-shred -u $OLD_KEY  2>/dev/null || rm -P $OLD_KEY  # `shred` on Linux, `rm -P` on macOS
-# Also remove the cached fingerprint from any agent
-ssh-add -d $OLD_KEY 2>/dev/null
-```
-
-If the old key was committed anywhere (shouldn't be, but check):
-
-```bash
-# Search the SEKAR repo + any related repos
-git -C ~/wahyutrip/dlhsby grep -rn "BEGIN RSA PRIVATE KEY\|BEGIN OPENSSH PRIVATE KEY" 2>/dev/null
-git -C ~/wahyutrip/dlhsby log --all --diff-filter=A --name-only -- '**/*.pem' 2>/dev/null
-```
-
-If anything turns up, use BFG Repo-Cleaner (<https://rtyley.github.io/bfg-repo-cleaner/>) or `git filter-repo` to scrub it, force-push, and tell collaborators to re-clone.
-
-### Step 7 — Update local docs that reference the key path
-
-| File | What to update |
-|------|----------------|
-| `specs/deployment/DEPLOYMENT_STATUS.md` | All `~/.ssh/sekar-key.pem` references → new path |
-| `specs/deployment/phase-2-deployment.md`, `phase-3-deployment.md` | Same |
-| Personal `~/.ssh/config` | Add a `Host sekar-prod` block (see below) |
-
-Convenience entry for `~/.ssh/config`:
-```
-Host sekar-prod
-  HostName 16.79.183.240
-  User ec2-user
-  IdentityFile ~/.ssh/sekar-key-2026.pem
-  IdentitiesOnly yes
-```
-Then `ssh sekar-prod` just works.
-
-### Optional — record the old key as revoked
-
-Keep a note in `specs/deployment/DEPLOYMENT_STATUS.md`:
-```
-**SSH key rotations:**
-- 2026-04-27 — sekar-key.pem rotated (transcript exposure). Revoked fingerprint: <output of `ssh-keygen -l -f $OLD_KEY.pub`>
-```
-This is not strictly required, but helps if anyone ever finds a cached copy of the old key and wonders if it's still valid.
+The contents of `sekar-key.pem` were exposed in a chat transcript on **Apr 27, 2026**. The existing key was rotated to `sekar-key-2026.pem`. The 7-step rotation procedure (generate new keypair, add public key to `authorized_keys`, verify, remove old key, update GitHub Secrets, destroy old key, update docs) is documented in [`operations.md`](operations.md) § **SSH key rotation**. The incident context and timeline are recorded here; refer to that guide for full step-by-step execution.
 
 ---
 
@@ -270,7 +134,7 @@ ssh -i ~/.ssh/sekar-key.pem ec2-user@16.79.183.240 \
 
 ```bash
 cd /path/to/sekar
-./scripts/infra.sh start                   # Bring up PostgreSQL, Adminer, LocalStack (docker-compose)
+./scripts/infra.sh start                   # Bring up PostgreSQL, Adminer, MinIO, Redis (docker-compose)
 cd be
 npm install                         # If not already done
 cp .env.example .env               # Use default localhost credentials
@@ -583,13 +447,7 @@ When you outgrow Upstash:
 
 > **Important:** Migration 10 uses `CONCURRENTLY` and breaks out of the TypeORM transaction. This is safe and expected — it may take 30–60 seconds on a large `location_logs` table. Do not interrupt it.
 
-Run on production:
-```bash
-docker exec sekar-backend npm run migration:run:prod
-# Expected: 2 new migrations executed:
-#   17460000000000-Phase3Schema
-#   17460001000000-Phase3BackfillIndexes
-```
+Run instructions and troubleshooting: see [`operations.md`](operations.md) § **Database operations**. For Phase 3 migration-specific recovery (phantom rows in `typeorm_migrations`), see "Issues Resolved During Apr 27 Deploy" § **A. Phantom `typeorm_migrations` rows** below.
 
 ---
 
@@ -694,30 +552,7 @@ docker exec sekar-backend npm run db:seed:phase3:prod
 
 ### Step 4: Verify backend health
 
-```bash
-# Health check
-curl https://api.sekar.wahyutrip.com/api/v1/health
-# → {"status":"ok"}
-
-TOKEN=$(curl -s -X POST https://api.sekar.wahyutrip.com/api/v1/auth/login \
-  -H 'Content-Type: application/json' \
-  -d '{"identifier":"admin","password":"password123"}' | jq -r '.data.access_token')
-
-# Check new snapshot endpoint
-curl -s -H "Authorization: Bearer $TOKEN" \
-  "https://api.sekar.wahyutrip.com/api/v1/monitoring/snapshot" | jq '.success'
-# → true
-
-# Check plant species seeded
-curl -s -H "Authorization: Bearer $TOKEN" \
-  "https://api.sekar.wahyutrip.com/api/v1/plant-species" | jq '.meta.total'
-# → 124 (or higher if already existed)
-
-# Verify monitoring configs include new Phase 3 entries
-curl -s -H "Authorization: Bearer $TOKEN" \
-  "https://api.sekar.wahyutrip.com/api/v1/monitoring/config" | jq '[.[].key]'
-# Should include: "staffing_debounce_seconds", "cluster_zoom_threshold"
-```
+See [`deployment-guide.md`](deployment-guide.md) § **E.7 Health checks** for standard curl test commands. Phase 3-specific validation: confirm `/api/v1/monitoring/snapshot` returns success, plant species count ≥ 124, and monitoring configs include the new `staffing_debounce_seconds` and `cluster_zoom_threshold` keys.
 
 ### Step 5: Deploy web (auto on push to `main`)
 
@@ -758,20 +593,7 @@ No rollback needed for a Redis outage — just fix Redis.
 
 ### Full backend rollback
 
-```bash
-ssh ec2-user@<PROD_IP>
-cd ~/sekar/backend
-
-# Roll back the 2 Phase 3 migrations
-docker exec sekar-backend npm run migration:revert:prod  # reverts Phase3BackfillIndexes
-docker exec sekar-backend npm run migration:revert:prod  # reverts Phase3Schema
-
-# Deploy previous image
-docker pull <ECR_URI>/sekar-backend:<PREVIOUS_SHA>
-docker-compose -f docker-compose.prod.yml up -d
-```
-
-> **Warning:** Rolling back Phase3Schema drops all 8 Phase 3 tables and removes the `staff_kecamatan` enum value. Only do this in an emergency — any Phase 3 seed data will be lost.
+For standard rollback procedures (reverting migrations, deploying previous image, monitoring), see [`operations.md`](operations.md) § **Releases & Rollback**. Phase 3 rollback specifics: Rolling back `Phase3Schema` drops all 8 Phase 3 tables and removes the `staff_kecamatan` enum value. Only do this in an emergency — any Phase 3 seed data will be lost.
 
 ---
 
@@ -1017,4 +839,4 @@ docker logs sekar-backend --tail=200 | grep -E "ERROR|CRITICAL"
 **Document Owner:** Backend Lead  
 **Last Updated:** April 26, 2026  
 **Status:** Ready for Phase 3 M2 incremental deploy  
-**Related Docs:** [`phase-2-deployment.md`](./phase-2-deployment.md) · [`DEPLOYMENT_STATUS.md`](./DEPLOYMENT_STATUS.md) · [`infrastructure-setup.md`](./infrastructure-setup.md)
+**Related Docs:** [`phase-2-deployment.md`](./phase-2-deployment.md) · [`operations.md`](./operations.md) · [`local-development.md`](./local-development.md)

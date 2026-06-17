@@ -176,7 +176,7 @@ done   # expect: 401 401 401 401 401 429
 | **staging** | RDS `sekar-staging` | ElastiCache `sekar-staging-redis` | `sekar-media-staging` | `https://staging-api.sekar.wahyutrip.com` | `staging` | Mirrors prod schema, sanitized data |
 | **production** | RDS `sekar-prod` | ElastiCache `sekar-prod-redis` | `sekar-media-prod` | `https://api.sekar.wahyutrip.com` | `production` | Backups every 1 h, retained 30 d |
 
-Cross-reference: [`infrastructure.md`](./infrastructure.md), [`../../deployment/infrastructure-setup.md`](../../deployment/infrastructure-setup.md), [`../../deployment/aws-s3-setup.md`](../../deployment/aws-s3-setup.md).
+Cross-reference: [`infrastructure.md`](./infrastructure.md), [`../../deployment/local-development.md`](../../deployment/local-development.md), [`../../deployment/credentials-setup.md`](../../deployment/credentials-setup.md).
 
 ---
 

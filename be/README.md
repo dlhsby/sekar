@@ -8,9 +8,8 @@ NestJS backend for SEKAR worker tracking system. See [`/CLAUDE.md`](/CLAUDE.md) 
 cd be
 npm install
 
-# Setup environment
+# Setup environment (defaults target local infra; edit only if your creds differ)
 cp .env.local.example .env.local
-# Edit .env with your database credentials if needed
 
 # Start infrastructure (first time)
 cd ../infra && ./start.sh && cd ../be
@@ -24,6 +23,24 @@ npm run db:seed
 # Start server
 npm run start:dev
 ```
+
+## Environment Essentials
+
+Copy `cp .env.local.example .env.local` — gitignored, the runtime file. Defaults
+work against local infra (`infra/.env`); the values you may need to touch:
+
+| Var(s) | Default | Purpose |
+|--------|---------|---------|
+| `PORT` | `3000` | API port (override to avoid collisions) |
+| `DATABASE_*` | `localhost:5432`, `postgres/postgres`, `sekar_db` | Postgres — `setup.sh` syncs `DATABASE_PORT` to `infra/.env` `POSTGRES_PORT` |
+| `JWT_SECRET` / `JWT_REFRESH_SECRET` | dev placeholders (≥32 chars) | Token signing — change for any shared/deployed env |
+| `AWS_*` + `AWS_ENDPOINT_URL` | MinIO `http://localhost:9000`, `minioadmin`, bucket `sekar-media-dev` | S3 media (dev = MinIO; staging = real AWS S3; prod = MinIO in compose) |
+| `REDIS_URL` | `redis://localhost:16379` | Redis Streams / BullMQ (dev host port 16379, not 6379) |
+| `FCM_ENABLED` | `true` | Set `false` until Firebase creds (`FIREBASE_SERVICE_ACCOUNT_PATH`) are configured |
+
+Templates: `.env.local.example` (dev) · `.env.staging.example` · `.env.production.example`.
+**Never commit** the real `.env.local` / `.env.staging` / `.env.production`. Obtaining keys/credentials:
+[`/specs/deployment/credentials-setup.md`](/specs/deployment/credentials-setup.md).
 
 ## API Access
 
@@ -82,8 +99,8 @@ See [`src/database/seeds/README.md`](src/database/seeds/README.md) for full seed
 - **Complete Guide:** [`/CLAUDE.md`](/CLAUDE.md)
 - **API Contracts:** [`/specs/api/contracts.md`](/specs/api/contracts.md) (120 endpoints)
 - **Seed Data:** [`src/database/seeds/README.md`](src/database/seeds/README.md)
-- **AWS S3 Setup:** [`/specs/deployment/aws-s3-setup.md`](/specs/deployment/aws-s3-setup.md)
-- **WSL2 Network:** [`/specs/deployment/wsl2-network-setup.md`](/specs/deployment/wsl2-network-setup.md)
+- **Obtaining keys (S3/Firebase/Maps):** [`/specs/deployment/credentials-setup.md`](/specs/deployment/credentials-setup.md)
+- **Run locally / WSL2 device net:** [`/specs/deployment/local-development.md`](/specs/deployment/local-development.md)
 - **All Specs:** [`/specs/README.md`](/specs/README.md)
 
 ## Staging / Production Deployment

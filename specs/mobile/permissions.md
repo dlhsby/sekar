@@ -331,6 +331,6 @@ enum PermissionType {
 ## Related Documentation
 
 - **Permission Flow Guide:** `fe/mobile/PERMISSION_FLOW.md` (detailed implementation)
-- **FCM Integration:** `specs/deployment/firebase-fcm-setup.md`
+- **FCM Integration:** `specs/deployment/credentials-setup.md`
 - **Mobile Screens:** `specs/mobile/screens.md`
 - **State Management:** `specs/mobile/state-management.md`

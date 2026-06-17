@@ -1,7 +1,7 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
-// FCM: Uncomment when google-services.json is added (see specs/deployment/firebase-fcm-setup.md)
+// FCM: Uncomment when google-services.json is added (see specs/deployment/credentials-setup.md)
 apply plugin: "com.google.gms.google-services"
 apply from: file("../../node_modules/react-native-vector-icons/fonts.gradle")
 
@@ -87,6 +87,11 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0.0"
+        // Google Maps SDK key — supplied via the gitignored gradle property
+        // SEKAR_MAPS_API_KEY (~/.gradle/gradle.properties, android/gradle.properties,
+        // -PSEKAR_MAPS_API_KEY=..., or ORG_GRADLE_PROJECT_SEKAR_MAPS_API_KEY env).
+        // Empty fallback keeps the build green; maps render blank until it is set.
+        manifestPlaceholders = [MAPS_API_KEY: project.findProperty('SEKAR_MAPS_API_KEY') ?: '']
         externalNativeBuild {
             cmake {
                 arguments "-DANDROID_LD=lld"

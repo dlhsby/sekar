@@ -28,6 +28,6 @@ docker-compose down
 
 ## Documentation
 
-- **Complete Guide:** [`/specs/deployment/infrastructure-setup.md`](/specs/deployment/infrastructure-setup.md)
+- **Complete Guide:** [`/specs/deployment/local-development.md`](/specs/deployment/local-development.md)
 - **Project Guide:** [`/CLAUDE.md`](/CLAUDE.md)
 - **All Specs:** [`/specs/README.md`](/specs/README.md)

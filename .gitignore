@@ -21,3 +21,6 @@ infra/localstack/
 # Per-session scratch prompts / planning notes — not part of the repo
 prompts/
 
+
+# WSL/Windows alternate-data-stream junk (sit next to downloaded creds)
+*:Zone.Identifier

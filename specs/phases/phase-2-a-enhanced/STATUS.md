@@ -251,7 +251,7 @@ See [status_reviews.md](./status_reviews.md) for comprehensive quality assessmen
 
 **Optional Enhancements (Post-Phase 2):**
 - CloudWatch Monitoring dashboard for Phase 2 metrics
-- Firebase/FCM physical device testing (guide available at `specs/deployment/firebase-fcm-setup.md`)
+- Firebase/FCM physical device testing (guide available at `specs/deployment/credentials-setup.md`)
 
 ---
 
