@@ -2,7 +2,9 @@
 
 **Last Updated:** June 17, 2026
 **Status:** In Progress — feature modules + release-prep shipped
-**Overall Progress:** 5-1 ✅ · 5-2 ✅ · 5-3 ✅ · 5-4 🟡 (~50%, native needs Mac) · 5-5 ✅ · 5-6 ⬜ · 5-7 ⬜ · 5-8 ⬜
+**Overall Progress:** ~86% — 5-1 ✅ · 5-2 ✅ · 5-3 ✅ · 5-4 🟡 (~50%, native needs Mac) · 5-5 ✅ · 5-6 ✅ · 5-7 🟡 · 5-8 🟡 (web e2e green; Maestro device-verify pending)
+
+> **Jun 17, 2026 — Phase D close-out + web bug fixes.** 5-6 guides synced (web/mobile/maintenance, no spec↔impl gaps). 5-7 evaluation: requirements 11/12/13 traced to shipped modules. 5-8 web E2E: 3 Playwright specs (`19-assets` 10 · `20-reports` 9 · `21-analytics` 18 = **37 green**, mocked API); Maestro mobile flows 16–19 authored against real selectors (on-device run pending — no device). **The web e2e caught real runtime bugs in the Phase B pages:** empty-string `<Select.Item>` values (Radix-forbidden) crashed assets-list / assets-new / reports-builder / reports-schedules at render despite a green `next build` — fixed via the 'all' sentinel + FormSelect `placeholder` prop.
 
 > **Jun 17, 2026 — Feature modules 5-1/5-2/5-3 built backend-first across all layers.** Backend: Assets module (`be/src/modules/assets/`, 14 endpoints, QR-code service per ADR-026, maintenance-overdue cron), Reporting module (`be/src/modules/reporting/`, 8 endpoints, puppeteer-core + handlebars PDF pipeline per ADR-024, scheduler + cleanup crons), Analytics module (`be/src/modules/analytics/`, 7 endpoints, 3 materialized views per ADR-025, weighted performance-score service, nightly refresh cron); 3 migrations (assets tables + 6 categories; reporting tables + 6 templates; analytics views), role groups, app.module wiring, deps (qrcode/puppeteer-core/handlebars) + Docker Chromium — **verified live** (build + migrate + boot + endpoint exercise, MinIO QR PNG, PDF + CSV generation, analytics refresh path). Web: 11 pages under `fe/web/src/app/(dashboard)/{reports,analytics,assets}/` (Recharts analytics) — `next build` green. Mobile: 8 screens under `fe/mobile/src/screens/{assets,reports,analytics}/` + 3 Redux slices + chart components, wired into role-based `MainNavigator` tabs/stack — **tsc 0, jest 4175 pass (54 new slice tests), eslint 0**. Native/on-device verification deferred (no device/Mac), consistent with the 5-4 iOS-prep deferral. **Remaining:** 5-4 iOS native (Apple Sign-In/biometrics/APNs/TestFlight — needs Mac), 5-6 user guides, 5-7 evaluation, 5-8 E2E (Playwright + Maestro).
 >
@@ -54,10 +56,10 @@
 | 5-3 | Asset Management | 22 | 22 | ✅ Done (BE+web+mobile; native verify deferred) |
 | 5-4 | iOS Platform | 18 | 9 | 🟡 ~50% (prep done; native needs Mac) |
 | 5-5 | Release & Deployment | 15 | 15 | ✅ Done (verified prod images) |
-| 5-6 | User Guides & Docs | 10 | 0 | ⬜ Not Started |
-| 5-7 | Evaluation & Polish | 8 | 0 | ⬜ Not Started |
-| 5-8 | E2E Testing Extension | 14 | 0 | ⬜ Not Started |
-| **Total** | | **132** | **91** | **~69%** |
+| 5-6 | User Guides & Docs | 10 | 10 | ✅ Done (guides synced, no spec/impl gaps) |
+| 5-7 | Evaluation & Polish | 8 | 4 | 🟡 Partial (req 11/12/13 traced; perf/coverage audit pending) |
+| 5-8 | E2E Testing Extension | 14 | 9 | 🟡 Web Playwright 19/20/21 green (37 tests); Maestro authored, device-verify pending |
+| **Total** | | **132** | **114** | **~86%** |
 
 ---
 
