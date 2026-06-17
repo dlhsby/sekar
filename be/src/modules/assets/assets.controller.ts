@@ -54,10 +54,11 @@ export class AssetsController {
   }
 
   @Get('scan/:code')
+  @Roles(...ASSET_VIEWERS)
   @ApiOperation({ summary: 'Scan asset by code' })
   @ApiResponse({ status: 200, description: 'Asset details', type: Asset })
-  async scanByCode(@Param('code') code: string): Promise<Asset> {
-    return this.assetsService.scanByCode(code);
+  async scanByCode(@Param('code') code: string, @GetUser() user: User): Promise<Asset> {
+    return this.assetsService.scanByCode(code, user);
   }
 
   @Get('maintenance/calendar')
@@ -139,8 +140,11 @@ export class AssetsController {
     description: 'QR code generated',
     schema: { properties: { url: { type: 'string' } } },
   })
-  async generateQr(@Param('id') id: string): Promise<{ url: string }> {
-    const url = await this.assetsService.generateQr(id);
+  async generateQr(
+    @Param('id') id: string,
+    @GetUser() user: User,
+  ): Promise<{ url: string }> {
+    const url = await this.assetsService.generateQr(id, user);
     return { url };
   }
 
@@ -150,8 +154,9 @@ export class AssetsController {
   @ApiResponse({ status: 201, description: 'QR codes generated' })
   async generateBulkQr(
     @Body() dto: BulkQrDto,
+    @GetUser() user: User,
   ): Promise<{ assetId: string; assetCode: string; qrCodeUrl: string }[]> {
-    return this.assetsService.generateBulkQr(dto.asset_ids);
+    return this.assetsService.generateBulkQr(dto.asset_ids, user);
   }
 
   @Post(':id/checkout')

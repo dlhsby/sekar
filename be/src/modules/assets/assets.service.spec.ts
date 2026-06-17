@@ -157,6 +157,87 @@ describe('AssetsService', () => {
     });
   });
 
+  describe('findAll - scope filtering', () => {
+    beforeEach(() => {
+      mockAssetRepo.createQueryBuilder.mockReturnValue({
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      });
+    });
+
+    it('should apply SATGAS scope filter', async () => {
+      const satgasUser = {
+        id: 'satgas-1',
+        role: UserRole.SATGAS,
+        area_id: 'area-1',
+      } as User;
+
+      const qb = mockAssetRepo.createQueryBuilder();
+      await service.findAll(satgasUser, {});
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining('asset.area_id'),
+        expect.any(Object),
+      );
+    });
+
+    it('should apply KORLAP scope filter with multiple areas', async () => {
+      const korlapUser = {
+        id: 'korlap-1',
+        role: UserRole.KORLAP,
+        area_id: 'area-1',
+      } as User;
+
+      mockUserAreaRepo.find.mockResolvedValue([
+        { area_id: 'area-1' },
+        { area_id: 'area-2' },
+      ]);
+
+      const qb = mockAssetRepo.createQueryBuilder();
+      await service.findAll(korlapUser, {});
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining('asset.area_id'),
+        expect.any(Object),
+      );
+    });
+
+    it('should apply ADMIN_DATA scope filter', async () => {
+      const adminDataUser = {
+        id: 'admin-1',
+        role: UserRole.ADMIN_DATA,
+        area_id: 'area-1',
+      } as User;
+
+      const qb = mockAssetRepo.createQueryBuilder();
+      await service.findAll(adminDataUser, {});
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining('asset.area_id'),
+        expect.any(Object),
+      );
+    });
+
+    it('should not apply scope filter for TOP_MANAGEMENT users', async () => {
+      const topMgmtUser = {
+        id: 'tm-1',
+        role: UserRole.TOP_MANAGEMENT,
+      } as User;
+
+      const qb = mockAssetRepo.createQueryBuilder();
+      await service.findAll(topMgmtUser, {});
+
+      // TOP_MANAGEMENT is not in ASSET_VIEWERS, so no special filtering applied
+      expect(qb.andWhere).not.toHaveBeenCalledWith(
+        expect.stringContaining('asset.area_id'),
+        expect.any(Object),
+      );
+    });
+  });
+
   describe('findOne', () => {
     it('should return asset with presigned URLs', async () => {
       const assetWithRefs = {
@@ -333,7 +414,7 @@ describe('AssetsService', () => {
     it('should reject if more than 50 assets', async () => {
       const ids = Array.from({ length: 51 }, (_, i) => `asset-${i}`);
 
-      await expect(service.generateBulkQr(ids)).rejects.toThrow(BadRequestException);
+      await expect(service.generateBulkQr(ids, mockUser)).rejects.toThrow(BadRequestException);
     });
 
     it('should generate QR for multiple assets', async () => {
@@ -347,7 +428,7 @@ describe('AssetsService', () => {
       mockQrCodeService.generate.mockResolvedValue('qr-key');
       mockAssetRepo.save.mockResolvedValue({});
 
-      const result = await service.generateBulkQr(ids);
+      const result = await service.generateBulkQr(ids, mockUser);
 
       expect(result).toHaveLength(2);
       expect(mockQrCodeService.generate).toHaveBeenCalledTimes(2);
@@ -428,6 +509,324 @@ describe('AssetsService', () => {
 
       expect(result).toBeDefined();
       expect(mockAssetRepo.save).toHaveBeenCalled();
+    });
+  });
+
+  describe('authorizeViewAsset - scope enforcement', () => {
+    beforeEach(() => {
+      // Reset mocks before each test
+      mockAssetRepo.findOne.mockResolvedValue(mockAsset);
+      mockQrCodeService.presignedUrl.mockResolvedValue('https://s3.example.com/presigned');
+    });
+
+    it('should allow SATGAS user to view asset in their area', async () => {
+      const satgasUser = {
+        id: 'satgas-1',
+        role: UserRole.SATGAS,
+        area_id: 'area-1',
+      } as User;
+
+      const result = await service.findOne('asset-1', satgasUser);
+
+      expect(result).toBeDefined();
+    });
+
+    it('should deny SATGAS user viewing asset from different area', async () => {
+      const satgasUser = {
+        id: 'satgas-1',
+        role: UserRole.SATGAS,
+        area_id: 'area-2',
+      } as User;
+
+      const outOfScopeAsset = { ...mockAsset, area_id: 'area-1' };
+      mockAssetRepo.findOne.mockResolvedValueOnce(outOfScopeAsset);
+
+      await expect(service.findOne('asset-1', satgasUser)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should allow LINMAS user to view asset in their area', async () => {
+      const linmasUser = {
+        id: 'linmas-1',
+        role: UserRole.LINMAS,
+        area_id: 'area-1',
+      } as User;
+
+      const result = await service.findOne('asset-1', linmasUser);
+
+      expect(result).toBeDefined();
+    });
+
+    it('should deny LINMAS user viewing asset from different area', async () => {
+      const linmasUser = {
+        id: 'linmas-1',
+        role: UserRole.LINMAS,
+        area_id: 'area-2',
+      } as User;
+
+      const outOfScopeAsset = { ...mockAsset, area_id: 'area-1' };
+      mockAssetRepo.findOne.mockResolvedValueOnce(outOfScopeAsset);
+
+      await expect(service.findOne('asset-1', linmasUser)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should allow KORLAP user to view asset in assigned areas', async () => {
+      const result = await service.findOne('asset-1', mockUser);
+
+      expect(result).toBeDefined();
+    });
+
+    it('should deny KORLAP user viewing asset outside assigned areas', async () => {
+      const korlapNoAreas = { ...mockUser };
+      mockUserAreaRepo.find.mockResolvedValueOnce([]); // No assigned areas
+
+      const outOfScopeAsset = { ...mockAsset, area_id: 'area-1' };
+      mockAssetRepo.findOne.mockResolvedValueOnce(outOfScopeAsset);
+
+      await expect(service.findOne('asset-1', korlapNoAreas)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should allow ADMIN_DATA user to view asset in their area', async () => {
+      const adminDataUser = {
+        id: 'admin-1',
+        role: UserRole.ADMIN_DATA,
+        area_id: 'area-1',
+      } as User;
+
+      const result = await service.findOne('asset-1', adminDataUser);
+
+      expect(result).toBeDefined();
+    });
+
+    it('should deny ADMIN_DATA user viewing asset from different area', async () => {
+      const adminDataUser = {
+        id: 'admin-1',
+        role: UserRole.ADMIN_DATA,
+        area_id: 'area-2',
+      } as User;
+
+      const outOfScopeAsset = { ...mockAsset, area_id: 'area-1' };
+      mockAssetRepo.findOne.mockResolvedValueOnce(outOfScopeAsset);
+
+      await expect(service.findOne('asset-1', adminDataUser)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should allow TOP_MANAGEMENT user to view any asset', async () => {
+      const topMgmtUser = {
+        id: 'topMgmt-1',
+        role: UserRole.TOP_MANAGEMENT,
+      } as User;
+
+      const result = await service.findOne('asset-1', topMgmtUser);
+
+      expect(result).toBeDefined();
+    });
+
+    it('should deny KEPALA_RAYON user viewing (not in ASSET_VIEWERS)', async () => {
+      const kepalaRayonUser = {
+        id: 'rayon-1',
+        role: UserRole.KEPALA_RAYON,
+        rayon_id: 'rayon-1',
+      } as User;
+
+      await expect(service.findOne('asset-1', kepalaRayonUser)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should deny admin_system user viewing (not in ASSET_VIEWERS)', async () => {
+      const adminSystemUser = {
+        id: 'admin-sys-1',
+        role: 'admin_system',
+      } as User;
+
+      await expect(service.findOne('asset-1', adminSystemUser)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should deny superadmin user viewing (not in ASSET_VIEWERS)', async () => {
+      const superadminUser = {
+        id: 'superadmin-1',
+        role: UserRole.SUPERADMIN,
+      } as User;
+
+      await expect(service.findOne('asset-1', superadminUser)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should allow ADMIN_DATA user to view asset (in ASSET_VIEWERS)', async () => {
+      const adminDataUser = {
+        id: 'admin-data-1',
+        role: UserRole.ADMIN_DATA,
+        area_id: 'area-1',
+      } as User;
+
+      const result = await service.findOne('asset-1', adminDataUser);
+
+      expect(result).toBeDefined();
+    });
+  });
+
+  describe('generateQr - scope enforcement', () => {
+    it('should allow scoped user to generate QR', async () => {
+      mockAssetRepo.findOne.mockResolvedValue(mockAsset);
+      mockQrCodeService.generate.mockResolvedValue('qr-key');
+      mockQrCodeService.presignedUrl.mockResolvedValue('https://s3.example.com/url');
+      mockAssetRepo.save.mockResolvedValue(mockAsset);
+
+      const result = await service.generateQr('asset-1', mockUser);
+
+      expect(result).toBeDefined();
+      expect(mockQrCodeService.generate).toHaveBeenCalled();
+    });
+
+    it('should deny out-of-scope user from generating QR', async () => {
+      const satgasUser = {
+        id: 'satgas-1',
+        role: UserRole.SATGAS,
+        area_id: 'area-2',
+      } as User;
+
+      const outOfScopeAsset = { ...mockAsset, area_id: 'area-1' };
+      mockAssetRepo.findOne.mockResolvedValue(outOfScopeAsset);
+
+      await expect(service.generateQr('asset-1', satgasUser)).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('scanByCode - scope enforcement', () => {
+    it('should allow scoped user to scan asset code', async () => {
+      mockAssetRepo.findOne.mockResolvedValue(mockAsset);
+      mockQrCodeService.presignedUrl.mockResolvedValue('https://s3.example.com/url');
+
+      const result = await service.scanByCode('AK-UTARA-001', mockUser);
+
+      expect(result).toBeDefined();
+    });
+
+    it('should deny out-of-scope user from scanning code', async () => {
+      const satgasUser = {
+        id: 'satgas-1',
+        role: UserRole.SATGAS,
+        area_id: 'area-2',
+      } as User;
+
+      const outOfScopeAsset = { ...mockAsset, area_id: 'area-1' };
+      mockAssetRepo.findOne.mockResolvedValue(outOfScopeAsset);
+
+      await expect(service.scanByCode('AK-UTARA-001', satgasUser)).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('checkout - scope enforcement', () => {
+    it('should allow scoped user to checkout asset', async () => {
+      mockAssetRepo.findOne.mockResolvedValue(mockAsset);
+      const mockQueryRunner = {
+        connect: jest.fn(),
+        startTransaction: jest.fn(),
+        commitTransaction: jest.fn(),
+        rollbackTransaction: jest.fn(),
+        release: jest.fn(),
+        manager: {
+          save: jest.fn().mockResolvedValue({ id: 'assign-1' }),
+        },
+      };
+      mockAssetRepo.manager.connection.createQueryRunner.mockReturnValue(mockQueryRunner);
+      mockAssignmentRepo.create.mockReturnValue({ id: 'assign-1' });
+
+      const result = await service.checkout(
+        'asset-1',
+        { condition_at_checkout: AssetCondition.GOOD },
+        mockUser,
+      );
+
+      expect(result).toBeDefined();
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+    });
+
+    it('should deny out-of-scope user from checkout', async () => {
+      const satgasUser = {
+        id: 'satgas-1',
+        role: UserRole.SATGAS,
+        area_id: 'area-2',
+      } as User;
+
+      const outOfScopeAsset = { ...mockAsset, area_id: 'area-1' };
+      mockAssetRepo.findOne.mockResolvedValue(outOfScopeAsset);
+
+      await expect(
+        service.checkout('asset-1', { condition_at_checkout: AssetCondition.GOOD }, satgasUser),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('returnAsset - scope enforcement', () => {
+    it('should allow scoped user to return asset', async () => {
+      mockAssetRepo.findOne.mockResolvedValue(mockAsset);
+      mockAssignmentRepo.findOne.mockResolvedValue({
+        id: 'assign-1',
+        returned_at: null,
+      });
+
+      const mockQueryRunner = {
+        connect: jest.fn(),
+        startTransaction: jest.fn(),
+        commitTransaction: jest.fn(),
+        rollbackTransaction: jest.fn(),
+        release: jest.fn(),
+        manager: {
+          save: jest.fn().mockResolvedValue({ id: 'assign-1', returned_at: new Date() }),
+        },
+      };
+      mockAssetRepo.manager.connection.createQueryRunner.mockReturnValue(mockQueryRunner);
+
+      const result = await service.returnAsset(
+        'asset-1',
+        { condition_at_return: AssetCondition.GOOD },
+        mockUser,
+      );
+
+      expect(result).toBeDefined();
+      expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+    });
+
+    it('should deny out-of-scope user from returning asset', async () => {
+      const satgasUser = {
+        id: 'satgas-1',
+        role: UserRole.SATGAS,
+        area_id: 'area-2',
+      } as User;
+
+      const outOfScopeAsset = { ...mockAsset, area_id: 'area-1' };
+      mockAssetRepo.findOne.mockResolvedValue(outOfScopeAsset);
+
+      await expect(
+        service.returnAsset('asset-1', { condition_at_return: AssetCondition.GOOD }, satgasUser),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('listAssignments - scope enforcement', () => {
+    it('should allow scoped user to list assignments', async () => {
+      mockAssetRepo.findOne.mockResolvedValue(mockAsset);
+      mockAssignmentRepo.find.mockResolvedValue([
+        { id: 'assign-1', assigned_to: 'user-1' },
+      ]);
+
+      const result = await service.listAssignments('asset-1', mockUser);
+
+      expect(result).toBeDefined();
+      expect(mockAssignmentRepo.find).toHaveBeenCalled();
+    });
+
+    it('should deny out-of-scope user from listing assignments', async () => {
+      const satgasUser = {
+        id: 'satgas-1',
+        role: UserRole.SATGAS,
+        area_id: 'area-2',
+      } as User;
+
+      const outOfScopeAsset = { ...mockAsset, area_id: 'area-1' };
+      mockAssetRepo.findOne.mockResolvedValue(outOfScopeAsset);
+
+      await expect(service.listAssignments('asset-1', satgasUser)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 });

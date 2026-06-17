@@ -178,6 +178,7 @@ export class AssetsService {
     if (!asset) {
       throw new NotFoundException('Asset not found');
     }
+    await this.authorizeViewAsset(asset, user);
 
     const oldValue = { ...asset };
 
@@ -246,11 +247,12 @@ export class AssetsService {
     });
   }
 
-  async generateQr(id: string): Promise<string> {
+  async generateQr(id: string, user: User): Promise<string> {
     const asset = await this.assetRepo.findOne({ where: { id } });
     if (!asset) {
       throw new NotFoundException('Asset not found');
     }
+    await this.authorizeViewAsset(asset, user);
 
     const qrKey = await this.qrCodeService.generate(asset.asset_code);
     asset.qr_code_url = qrKey;
@@ -261,6 +263,7 @@ export class AssetsService {
 
   async generateBulkQr(
     ids: string[],
+    user: User,
   ): Promise<{ assetId: string; assetCode: string; qrCodeUrl: string }[]> {
     if (ids.length > 50) {
       throw new BadRequestException('Maximum 50 assets per bulk QR generation');
@@ -270,7 +273,9 @@ export class AssetsService {
     const results = [];
 
     for (const asset of assets) {
-      const qrCodeUrl = await this.generateQr(asset.id);
+      // Scope-checked per asset inside generateQr — a manager cannot bulk-print
+      // QRs for assets outside their area/rayon.
+      const qrCodeUrl = await this.generateQr(asset.id, user);
       results.push({
         assetId: asset.id,
         assetCode: asset.asset_code,
@@ -281,7 +286,7 @@ export class AssetsService {
     return results;
   }
 
-  async scanByCode(code: string): Promise<Asset> {
+  async scanByCode(code: string, user: User): Promise<Asset> {
     const asset = await this.assetRepo.findOne({
       where: { asset_code: code, deleted_at: IsNull() },
       relations: ['category'],
@@ -290,6 +295,7 @@ export class AssetsService {
     if (!asset) {
       throw new NotFoundException('Asset code not found');
     }
+    await this.authorizeViewAsset(asset, user);
 
     if (asset.qr_code_url) {
       asset.qr_code_url = await this.qrCodeService.presignedUrl(asset.qr_code_url);
@@ -310,6 +316,7 @@ export class AssetsService {
     if (!asset) {
       throw new NotFoundException('Asset not found');
     }
+    await this.authorizeViewAsset(asset, user);
 
     if (asset.status !== AssetStatus.AVAILABLE) {
       throw new BadRequestException('Asset is not available for checkout');
@@ -365,6 +372,7 @@ export class AssetsService {
     if (!asset) {
       throw new NotFoundException('Asset not found');
     }
+    await this.authorizeViewAsset(asset, user);
 
     const assignment = await this.assignmentRepo.findOne({
       where: { asset_id: id, returned_at: IsNull() },
@@ -421,6 +429,7 @@ export class AssetsService {
     if (!asset) {
       throw new NotFoundException('Asset not found');
     }
+    await this.authorizeViewAsset(asset, user);
 
     return this.assignmentRepo.find({
       where: { asset_id: id },

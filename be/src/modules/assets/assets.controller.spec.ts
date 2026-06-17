@@ -118,9 +118,9 @@ describe('AssetsController', () => {
     it('should call service.generateQr and return url', async () => {
       mockService.generateQr.mockResolvedValue('https://s3.example.com/presigned');
 
-      const result = await controller.generateQr('asset-1');
+      const result = await controller.generateQr('asset-1', mockUser);
 
-      expect(mockService.generateQr).toHaveBeenCalledWith('asset-1');
+      expect(mockService.generateQr).toHaveBeenCalledWith('asset-1', mockUser);
       expect(result).toEqual({ url: 'https://s3.example.com/presigned' });
     });
   });
@@ -130,9 +130,9 @@ describe('AssetsController', () => {
       const dto = { asset_ids: ['asset-1', 'asset-2'] };
       mockService.generateBulkQr.mockResolvedValue([]);
 
-      await controller.generateBulkQr(dto);
+      await controller.generateBulkQr(dto, mockUser);
 
-      expect(mockService.generateBulkQr).toHaveBeenCalledWith(dto.asset_ids);
+      expect(mockService.generateBulkQr).toHaveBeenCalledWith(dto.asset_ids, mockUser);
     });
   });
 
@@ -140,9 +140,9 @@ describe('AssetsController', () => {
     it('should call service.scanByCode with code', async () => {
       mockService.scanByCode.mockResolvedValue({ id: 'asset-1', asset_code: 'AK-UTARA-001' });
 
-      await controller.scanByCode('AK-UTARA-001');
+      await controller.scanByCode('AK-UTARA-001', mockUser);
 
-      expect(mockService.scanByCode).toHaveBeenCalledWith('AK-UTARA-001');
+      expect(mockService.scanByCode).toHaveBeenCalledWith('AK-UTARA-001', mockUser);
     });
   });
 

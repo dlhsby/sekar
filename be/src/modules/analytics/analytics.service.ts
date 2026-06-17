@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User, UserRole } from '../users/entities/user.entity';
 import { Area } from '../areas/entities/area.entity';
 import { Rayon } from '../rayons/entities/rayon.entity';
+import { UserArea } from '../user-areas/entities/user-area.entity';
 import { RedisService } from '../../common/services/redis.service';
 import { PerformanceScoreService } from './services/performance-score.service';
 import { WorkerAnalyticsDto } from './dto/worker-analytics.dto';
@@ -32,6 +33,7 @@ export class AnalyticsService {
     @InjectRepository(User) private userRepo: Repository<User>,
     @InjectRepository(Area) private areaRepo: Repository<Area>,
     @InjectRepository(Rayon) private rayonRepo: Repository<Rayon>,
+    @InjectRepository(UserArea) private userAreaRepo: Repository<UserArea>,
     private redis: RedisService,
     private performanceScoreService: PerformanceScoreService,
   ) {}
@@ -149,7 +151,7 @@ export class AnalyticsService {
     const area = await this.areaRepo.findOne({ where: { id } });
     if (!area) throw new NotFoundException('Area not found');
 
-    this.enforceAreaAccess(id, user, area);
+    await this.enforceAreaAccess(user, area);
 
     const dateStr = query.date_from ?? new Date().toISOString().slice(0, 10);
     return this.buildAreaAnalytics(id, dateStr, area.name);
@@ -430,13 +432,40 @@ export class AnalyticsService {
     }
   }
 
-  private enforceAreaAccess(id: string, user: User, area: Area): void {
-    if (user.role === UserRole.KORLAP && area.id !== user.area_id) {
-      throw new ForbiddenException('Cannot access area outside your jurisdiction');
+  /**
+   * Enforce per-role area scoping for area analytics:
+   * - top_management / admin_system / superadmin → all areas (global)
+   * - kepala_rayon / admin_data → their own rayon (admin_data is rayon-scoped, ADR-033)
+   * - korlap → their assigned areas (user_areas), not a single area_id
+   */
+  private async enforceAreaAccess(user: User, area: Area): Promise<void> {
+    const { role } = user;
+    if (
+      role === UserRole.TOP_MANAGEMENT ||
+      role === UserRole.ADMIN_SYSTEM ||
+      role === UserRole.SUPERADMIN
+    ) {
+      return;
     }
-    if (user.role === UserRole.KEPALA_RAYON && area.rayon_id !== user.rayon_id) {
-      throw new ForbiddenException('Cannot access areas outside your rayon');
+
+    if (role === UserRole.KEPALA_RAYON || role === UserRole.ADMIN_DATA) {
+      if (area.rayon_id !== user.rayon_id) {
+        throw new ForbiddenException('Cannot access areas outside your rayon');
+      }
+      return;
     }
+
+    if (role === UserRole.KORLAP) {
+      const assigned = await this.userAreaRepo.find({ where: { user_id: user.id } });
+      const areaIds = assigned.map((a) => a.area_id);
+      if (!areaIds.includes(area.id)) {
+        throw new ForbiddenException('Cannot access areas outside your assigned areas');
+      }
+      return;
+    }
+
+    // Any other role reaching this point is out of scope for area analytics.
+    throw new ForbiddenException('You do not have access to area analytics');
   }
 
   private emptyWorkerAnalytics(id: string, name: string, dateStr: string): WorkerAnalyticsDto {
