@@ -53,8 +53,8 @@ export default function WorkerAnalyticsPage() {
 
   // Chart data from list
   const chartData = useMemo(() => {
-    if (!listData?.data) return [];
-    return listData.data
+    const rows = listData?.data ?? [];
+    return rows
       .slice(0, 10)
       .map((w) => ({
         name: w.full_name,

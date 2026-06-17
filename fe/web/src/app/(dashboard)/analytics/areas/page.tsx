@@ -55,8 +55,8 @@ export default function AreaAnalyticsPage() {
 
   // Chart data
   const chartData = useMemo(() => {
-    if (!listData?.data) return [];
-    return listData.data.slice(0, 8).map((a) => ({
+    const rows = listData?.data ?? [];
+    return rows.slice(0, 8).map((a) => ({
       area: a.area_name,
       staffing: a.staffing_coverage,
       tasks: a.open_tasks,

@@ -21,10 +21,6 @@ export default function CreateAssetPage() {
   const { toast } = useToast();
   const user = useUser();
 
-  if (user && !ASSET_MANAGER_ROLES.includes(user.role)) {
-    return <div><p>Akses ditolak</p></div>;
-  }
-
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [areaId, setAreaId] = useState('');
@@ -71,6 +67,11 @@ export default function CreateAssetPage() {
       });
     }
   };
+
+  // Access guard — placed after all hooks so hook order stays stable (rules-of-hooks).
+  if (user && !ASSET_MANAGER_ROLES.includes(user.role)) {
+    return <div><p>Akses ditolak</p></div>;
+  }
 
   return (
     <div className="space-y-6">

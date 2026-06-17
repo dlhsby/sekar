@@ -23,10 +23,6 @@ export default function QrBatchPage() {
   const { toast } = useToast();
   const user = useUser();
 
-  if (user && !ASSET_MANAGER_ROLES.includes(user.role)) {
-    return <div><p>Akses ditolak</p></div>;
-  }
-
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [generatedQrs, setGeneratedQrs] = useState<
     { assetId: string; assetCode: string; qrCodeUrl: string }[]
@@ -83,6 +79,7 @@ export default function QrBatchPage() {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
+    // eslint-disable-next-line sekar-design/no-inline-hex-colors -- print stylesheet for a separate print window, not app DOM
     const html = `
       <!DOCTYPE html>
       <html>
@@ -147,6 +144,11 @@ export default function QrBatchPage() {
       cell: (asset) => asset.category?.name || '—',
     },
   ];
+
+  // Access guard — after all hooks so hook order stays stable (rules-of-hooks).
+  if (user && !ASSET_MANAGER_ROLES.includes(user.role)) {
+    return <div><p>Akses ditolak</p></div>;
+  }
 
   return (
     <div className="space-y-6">

@@ -41,20 +41,20 @@ export default function AnalyticsDashboardPage() {
 
   // Transform trends to chart data
   const attendanceChartData = useMemo(() => {
-    if (!data?.trends?.attendance) return [];
+    const series = data?.trends?.attendance;
     const days = getDayLabels(parseInt(period));
     return days.map((day, idx) => ({
       date: day,
-      value: data.trends.attendance[idx] || 0,
+      value: series?.[idx] ?? 0,
     }));
   }, [data?.trends?.attendance, period]);
 
   const taskChartData = useMemo(() => {
-    if (!data?.trends?.taskCompletion) return [];
+    const series = data?.trends?.taskCompletion;
     const days = getDayLabels(parseInt(period));
     return days.map((day, idx) => ({
       date: day,
-      value: data.trends.taskCompletion[idx] || 0,
+      value: series?.[idx] ?? 0,
     }));
   }, [data?.trends?.taskCompletion, period]);
 
