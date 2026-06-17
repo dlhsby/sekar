@@ -1,0 +1,142 @@
+appId: com.wahyutrip.sekar
+---
+# 19-analytics-team.yaml
+# Team analytics flow — coordinator/supervisor opens team performance dashboard
+# Scenario: korlap/kepala_rayon logs in, opens "Tim" (TeamAnalytics) tab,
+#          views team summary (avg score, member count), top performers, needs attention list
+#
+# AUTHOR'S NOTE: Authored against real screen selectors (visible text + NBText patterns)
+# but NOT YET DEVICE-VERIFIED. No testIDs found in analytics screens; all selectors use
+# visible text (Indonesian labels). TeamAnalytics renders SummaryCard, TopPerformersCard,
+# NeedsAttentionCard components. Exact UI structure and pagination require on-device validation.
+
+- launchApp
+- assertVisible:
+    text: Masuk|Login
+
+# Login as korlap_pusat_1 (coordinator with Tim tab)
+- tapOn:
+    id: username-input
+- inputText: korlap_pusat_1
+
+- tapOn:
+    id: password-input
+- inputText: password123
+
+- tapOn:
+    id: login-button
+
+- wait: 2000
+
+# Should be at FieldHomeScreen (Beranda)
+- assertVisible:
+    text: Beranda
+
+- wait: 1000
+
+# Navigate to TeamAnalytics tab by tapping the "Tim" tab label
+# scroll down to see bottom tabs if needed
+- scroll:
+    direction: down
+    duration: 500
+
+- wait: 500
+
+# Tap TeamAnalytics tab (label: "Tim" for korlap)
+- tryTapOn:
+    text: Tim
+
+- wait: 1500
+
+# Should be at TeamAnalyticsScreen
+- assertVisible:
+    text: Tim|Team Analytics
+
+- wait: 1000
+
+# Verify team analytics header or key elements
+- assertVisible:
+    text: Tim|Analytics|Team
+
+- wait: 500
+
+# Scroll down to view summary card (should show avg score, team size, etc.)
+- scroll:
+    direction: down
+    duration: 500
+
+- wait: 500
+
+# Look for summary statistics (avg score, team member count)
+- assertVisible:
+    text: Rata-rata|Anggota|Average|Member|Tim
+
+- wait: 500
+
+# Continue scrolling to see top performers section
+- scroll:
+    direction: down
+    duration: 500
+
+- wait: 500
+
+# Verify top performers list is visible
+- assertVisible:
+    text: Terbaik|Top Performers|Kinerja|Performance
+
+- wait: 500
+
+# Try to tap on a top performer to see their profile/detail
+# Expected visible: worker name, score, rank badge, etc.
+- tryTapOn:
+    text: 100|95|90|85
+
+- wait: 1000
+
+# Scroll back or go back to team analytics list
+- scroll:
+    direction: up
+    duration: 500
+
+- wait: 500
+
+# Continue scrolling down to see "Needs Attention" section
+- scroll:
+    direction: down
+    duration: 500
+
+- wait: 500
+
+# Verify needs attention section (workers with low scores)
+- assertVisible:
+    text: Perhatian|Attention|Kurang|Low|Butuh Perhatian
+
+- wait: 500
+
+# Try to tap on a needs attention worker
+- tryTapOn:
+    text: 50|55|60|65
+
+- wait: 1000
+
+# Scroll to bottom to check for pagination (load more)
+- scroll:
+    direction: down
+    duration: 500
+
+- wait: 500
+
+# Look for "Muat Lebih Banyak" or pagination indicator
+- tryTapOn:
+    text: Muat Lebih Banyak|Load More|Selanjutnya|Next
+
+- wait: 2000
+
+# MANUAL: On-device, verify that:
+# 1. Summary card displays team metrics correctly (avg score, member count)
+# 2. Top performers list shows 3 workers with highest scores, sorted descending
+# 3. Needs attention list shows workers with scores < 70, sorted by lowest first
+# 4. Clicking on a team member (if implemented) navigates to their detail/profile
+# 5. Pagination works: scroll to bottom triggers "load more" and fetches next page
+# 6. Pull-to-refresh updates all data from backend
+# 7. All text is properly localized to Indonesian

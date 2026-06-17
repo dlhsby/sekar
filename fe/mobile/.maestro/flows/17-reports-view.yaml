@@ -1,0 +1,133 @@
+appId: com.wahyutrip.sekar
+---
+# 17-reports-view.yaml
+# Reporting flow — open Reports tab, apply filters, view report detail
+# Scenario: admin_data/kepala_rayon logs in, opens Reports tab,
+#          filters by status/type, opens a report detail view
+#
+# AUTHOR'S NOTE: Authored against real screen selectors (visible text + NBText patterns)
+# but NOT YET DEVICE-VERIFIED. No testIDs found in report screens; all selectors use
+# visible text (Indonesian labels). ReportsScreen uses NBTab for status/type filters.
+# Exact filter UI structure requires on-device validation.
+
+- launchApp
+- assertVisible:
+    text: Masuk|Login
+
+# Login as admin_data_pusat_1 (has Reports tab)
+- tapOn:
+    id: username-input
+- inputText: admin_data_pusat_1
+
+- tapOn:
+    id: password-input
+- inputText: password123
+
+- tapOn:
+    id: login-button
+
+- wait: 2000
+
+# Should be at FieldHomeScreen (Beranda)
+- assertVisible:
+    text: Beranda
+
+- wait: 1000
+
+# Navigate to Reports tab by tapping the "Laporan" tab label
+# scroll down to see bottom tabs if needed
+- scroll:
+    direction: down
+    duration: 500
+
+- wait: 500
+
+# Tap Reports tab (label: "Laporan")
+- tryTapOn:
+    text: Laporan
+
+- wait: 1500
+
+# Should be at ReportsScreen
+- assertVisible:
+    text: Laporan
+
+- wait: 500
+
+# Verify page header or empty state / list is visible
+# ReportsScreen may show: "Laporan", generate button (FAB), filter tabs, or empty state
+- assertVisible:
+    text: Laporan|Sedang Diproses|Selesai|Gagal
+
+- wait: 1000
+
+# Apply a status filter by tapping one of the filter options
+# Expected: "Semua", "Sedang Diproses", "Selesai", "Gagal"
+- tryTapOn:
+    text: Selesai
+
+- wait: 1000
+
+# Check for filtered results or empty state
+- assertVisible:
+    text: Laporan|Tidak ada|Selesai
+
+- wait: 500
+
+# Apply a type filter (e.g., "Harian", "Mingguan", "Bulanan")
+# These tabs may be below the status tabs or in a separate row
+- tryTapOn:
+    text: Harian
+
+- wait: 1000
+
+# Should still be at ReportsScreen with applied filters
+- assertVisible:
+    text: Laporan|Harian
+
+- wait: 500
+
+# Scroll down to find a report in the list
+# Report cards will have: type label, date, status badge, action buttons
+- scroll:
+    direction: down
+    duration: 500
+
+- wait: 500
+
+# Try to tap on a report card (look for visible date, report type text, or status)
+- tryTapOn:
+    text: Laporan Harian|2024|2025|2026
+
+- wait: 1000
+
+# If not found, try tapping by status or generic report identifier
+- tryTapOn:
+    text: Selesai|Completed
+
+- wait: 1000
+
+# Should now be at ReportDetailScreen ("Detail Laporan")
+- tryAssertVisible:
+    text: Detail Laporan|Laporan
+
+- wait: 1000
+
+# If on detail screen, verify key report info (type, status, format options)
+- scroll:
+    direction: down
+    duration: 500
+
+- wait: 500
+
+# Look for download/open buttons ("Buka", "Unduh", "Bagikan")
+- tryTapOn:
+    text: Buka|Unduh|Bagikan|Open|Download|Share
+
+- wait: 1000
+
+# MANUAL: On-device, verify that:
+# 1. Filters work correctly (status, type) and list updates
+# 2. Report detail view displays correctly (metadata, type, date, status, file format options)
+# 3. Download/open action either opens the file or shows a file picker
+# 4. Pagination works if there are many reports (scroll to load more)

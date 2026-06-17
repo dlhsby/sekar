@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory contains 15 Maestro YAML flows covering Phase 4-9 scenarios for the SEKAR mobile app (React Native 0.83). Flows test authentication, onboarding, core field-worker features (clock-in/out, activities, tasks), coordinator functions (reassignment), and external users (pruning requests).
+This directory contains 19 Maestro YAML flows covering Phase 4-9 scenarios for the SEKAR mobile app (React Native 0.83). Flows test authentication, onboarding, core field-worker features (clock-in/out, activities, tasks), coordinator functions (reassignment), external users (pruning requests), and Phase 5 features (assets, reporting, analytics).
 
 **appId:** `com.wahyutrip.sekar`
 
@@ -27,6 +27,10 @@ This directory contains 15 Maestro YAML flows covering Phase 4-9 scenarios for t
 | 13 | `13-reassign-worker.yaml` | Korlap/kepala_rayon reassign worker to new area | coordinator | Basic |
 | 14 | `14-pruning-kecamatan.yaml` | staff_kecamatan submits pruning request (GPS, photos, tree details) | kecamatan | GPS + Camera |
 | 15 | `15-offline-sync.yaml` | Queue action offline → reconnect → verify sync | offline | Device Control |
+| 16 | `16-assets-browse-checkout.yaml` | Browse assets, filter by availability, open detail, checkout (borrow) asset | assets, phase-5, field | Basic |
+| 17 | `17-reports-view.yaml` | Open Reports tab, apply status/type filters, view report detail | reports, phase-5, admin | Basic |
+| 18 | `18-analytics-worker.yaml` | Field worker opens Kinerja tab, views own performance score, KPIs, attendance trend | analytics, phase-5, worker | Basic |
+| 19 | `19-analytics-team.yaml` | Coordinator opens Tim tab, views team summary, top performers, needs attention list | analytics, phase-5, team | Basic |
 
 ---
 
@@ -157,6 +161,15 @@ Flows prioritize **testID selectors** (`id:` in Maestro) where they exist in the
 | TasksActivityScreen | (uses text) | Uses tabs + list (Tugas, Aktivitas) |
 | SubmitScreen (pruning) | `perantingan-pick-on-map` / `perantingan-pick-week` / `perantingan-submit-cta` | Pruning form fields + submit |
 | | `perantingan-rayon-readonly` / `perantingan-kecamatan-readonly` | Read-only location fields |
+| AssetListScreen (Phase 5-3) | (no testIDs; uses text) | Uses visible text (Aset, Cari aset, Semua, Tersedia, Saya, status badges) |
+| AssetDetailScreen | (no testIDs; uses text) | Uses visible text (Detail Aset, Pinjam Aset, Kembalikan Aset, status labels) |
+| AssetCheckoutScreen | (no testIDs; uses text) | Uses visible text (Pinjam Aset, condition options: Baik/Cukup/Buruk, date picker, submit buttons) |
+| AssetReturnScreen | (no testIDs; uses text) | Uses visible text (Kembalikan Aset, condition selector, return reason, submit) |
+| QRScannerScreen | (no testIDs; uses text) | Uses visible text (Pindai QR, code input, submit button) |
+| ReportsScreen (Phase 5-1) | (no testIDs; uses text) | Uses visible text (Laporan, filter tabs: status/type, report list, generate FAB) |
+| ReportDetailScreen | (no testIDs; uses text) | Uses visible text (Detail Laporan, type labels, status badges, action buttons) |
+| WorkerAnalyticsScreen (Phase 5-2) | (no testIDs; uses text) | Uses visible text (Kinerja Saya, performance score, KPI pills, task progress, attendance trend) |
+| TeamAnalyticsScreen | (no testIDs; uses text) | Uses visible text (Tim, summary stats, top performers, needs attention, worker list) |
 
 ---
 
@@ -174,6 +187,10 @@ Flows prioritize **testID selectors** (`id:` in Maestro) where they exist in the
 | `10-activity-submit` | Camera/gallery + GPS | Maestro can mock or skip camera; GPS required for location stamp |
 | `14-pruning-kecamatan` | Camera/gallery + GPS | Same as above; plus requires staff_kecamatan_pusat_1 test account |
 | `15-offline-sync` | Device airplane mode toggle | Requires adb or manual device UI; **cannot be fully automated in CI** |
+| `16-assets-browse-checkout` | Seeded available assets | Backend seed must create asset inventory; no testIDs (text-based) |
+| `17-reports-view` | Pre-generated reports | Backend seed must have completed/generated reports; no testIDs (text-based) |
+| `18-analytics-worker` | Pre-computed analytics data | Backend must have analytics pipeline running; no testIDs (text-based) |
+| `19-analytics-team` | Team analytics data | Backend must populate team/area performance metrics; no testIDs (text-based) |
 
 ### Manual Verification Steps
 
@@ -185,6 +202,10 @@ After automated steps, on-device verification includes:
 - **Reassignment:** Worker's assigned area changes, geofence and task filters respect new area.
 - **Pruning requests:** Request appears in admin_data review queue with all fields.
 - **Offline sync:** Queue is flushed post-reconnect, shift recorded with original timestamp.
+- **Assets checkout:** Asset status changes from "Tersedia" to "Digunakan"; assignment appears in detail history.
+- **Reports:** Filters work correctly; report detail displays metadata, file formats, and download options.
+- **Worker analytics:** Performance score, KPIs, and 7-day attendance trend all load and display correctly.
+- **Team analytics:** Summary card, top performers, and needs attention lists populate and refresh correctly.
 
 ---
 

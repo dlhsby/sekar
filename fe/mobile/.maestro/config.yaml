@@ -31,6 +31,14 @@ flows:
     tags: [kecamatan, pruning, media-dependent]
   - name: "15-offline-sync.yaml"
     tags: [offline, manual-device, advanced]
+  - name: "16-assets-browse-checkout.yaml"
+    tags: [phase-5, assets, field, ui]
+  - name: "17-reports-view.yaml"
+    tags: [phase-5, reports, admin, ui]
+  - name: "18-analytics-worker.yaml"
+    tags: [phase-5, analytics, worker, ui]
+  - name: "19-analytics-team.yaml"
+    tags: [phase-5, analytics, team, ui]
 
 # Tags explanation:
 # smoke      - Critical entry/auth flows; should pass on every build
