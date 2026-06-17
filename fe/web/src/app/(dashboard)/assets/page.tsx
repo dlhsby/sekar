@@ -43,13 +43,14 @@ export default function AssetsPage() {
   const isManager = user && ASSET_MANAGER_ROLES.includes(user.role);
 
   const [statusFilter, setStatusFilter] = useState<AssetStatus | undefined>();
-  const [categoryFilter, setCategoryFilter] = useState<string>('');
+  // 'all' sentinel — Radix Select forbids an empty-string item value.
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
 
   const { data: assetsData, isLoading: assetsLoading } = useAssets({
     status: statusFilter,
-    category_id: categoryFilter || undefined,
+    category_id: categoryFilter === 'all' ? undefined : categoryFilter,
     page: currentPage,
     limit: pageSize,
   });
@@ -70,7 +71,7 @@ export default function AssetsPage() {
 
   const categoryOptions = useMemo(
     () => [
-      { value: '', label: 'Semua Kategori' },
+      { value: 'all', label: 'Semua Kategori' },
       ...(categories?.map((cat) => ({ value: cat.id, label: cat.name })) || []),
     ],
     [categories]

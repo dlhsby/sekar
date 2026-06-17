@@ -91,10 +91,8 @@ export default function CreateAssetPage() {
 
           <FormSelect
             label="Kategori"
-            options={[
-              { value: '', label: 'Pilih Kategori' },
-              ...categories.map((cat) => ({ value: cat.id, label: cat.name })),
-            ]}
+            placeholder="Pilih Kategori"
+            options={categories.map((cat) => ({ value: cat.id, label: cat.name }))}
             value={categoryId}
             onChange={(value) => setCategoryId(value)}
             required

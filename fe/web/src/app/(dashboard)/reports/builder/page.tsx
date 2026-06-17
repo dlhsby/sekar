@@ -25,7 +25,6 @@ import { useEffect, useState } from 'react';
 import { hasRole } from '@/lib/constants/roles';
 
 const REPORT_TYPE_OPTIONS: FormSelectOption[] = [
-  { value: '', label: 'Pilih tipe laporan' },
   { value: ReportType.DAILY_OPERATIONS, label: 'Laporan Operasional Harian' },
   { value: ReportType.WEEKLY_PERFORMANCE, label: 'Laporan Kinerja Mingguan' },
   { value: ReportType.MONTHLY_SUMMARY, label: 'Ringkasan Bulanan' },
@@ -35,7 +34,6 @@ const REPORT_TYPE_OPTIONS: FormSelectOption[] = [
 ];
 
 const FORMAT_OPTIONS: FormSelectOption[] = [
-  { value: '', label: 'Pilih format' },
   { value: ReportFormat.PDF, label: 'PDF' },
   { value: ReportFormat.CSV, label: 'CSV' },
   { value: ReportFormat.XLSX, label: 'Excel' },

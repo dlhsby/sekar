@@ -192,12 +192,9 @@ export default function SchedulesPage() {
     );
   }
 
-  const templateOptions: FormSelectOption[] = [
-    { value: '', label: 'Pilih template' },
-    ...(templates
-      ? templates.map((t) => ({ value: t.id, label: t.name }))
-      : []),
-  ];
+  const templateOptions: FormSelectOption[] = templates
+    ? templates.map((t) => ({ value: t.id, label: t.name }))
+    : [];
 
   const columns: DataTableColumn<ReportSchedule>[] = [
     {
@@ -320,6 +317,7 @@ export default function SchedulesPage() {
             {!editingScheduleId && (
               <FormSelect
                 label="Template"
+                placeholder="Pilih template"
                 options={templateOptions}
                 value={formState.templateId}
                 onChange={(value) => setFormState((s) => ({ ...s, templateId: value }))}
