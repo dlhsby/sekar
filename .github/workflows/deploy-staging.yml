@@ -28,6 +28,7 @@ on:
       - '**.md'
       - 'specs/**'
       - 'fe/mobile/**'
+      - '.github/workflows/mobile-*.yml'
       - '.env.production'
       - 'docker-compose.prod.yml'
   workflow_dispatch:

@@ -12,6 +12,7 @@
     "build:android:staging": "node scripts/decrypt-env.js .env.staging && (cd android && ENVFILE=.env.runtime ./gradlew clean assembleRelease); rm -f .env.runtime",
     "build:android:production": "node scripts/decrypt-env.js .env.production && (cd android && ENVFILE=.env.runtime ./gradlew clean assembleRelease); rm -f .env.runtime",
     "build:aab:production": "node scripts/decrypt-env.js .env.production && (cd android && ENVFILE=.env.runtime ./gradlew clean bundleRelease); rm -f .env.runtime",
+    "build:release:staging": "node scripts/decrypt-env.js .env.staging && (cd android && ENVFILE=.env.runtime ./gradlew clean assembleRelease bundleRelease); rm -f .env.runtime",
     "start:staging": "node scripts/decrypt-env.js .env.staging && ENVFILE=.env.runtime react-native start --reset-cache",
     "start:production": "node scripts/decrypt-env.js .env.production && ENVFILE=.env.runtime react-native start --reset-cache",
     "lint": "eslint .",

@@ -1,29 +1,34 @@
-name: Mobile Release (Android)
+name: Mobile Release (Android · staging)
 
-# Manual trigger only — engineer dispatches per release.
-# iOS deferred to Phase 5 (requires Xcodeproj + Podfile changes).
+# Manual trigger only. Builds a SIGNED release APK + AAB for the staging environment
+# and uploads them as downloadable artifacts. iOS is deferred (needs a macOS runner +
+# APNs). Production is added later (same shape, production env + google-services).
+#
+# Required GitHub Environment secrets (staging):
+#   MOBILE_DOTENV_PRIVATE_KEY     decrypts fe/mobile/.env.staging (API URL, Maps key, …)
+#   GOOGLE_SERVICES_JSON_STAGING  base64 of the staging google-services.json
+# Required repo secrets (signing):
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+# See specs/deployment/encrypted-secrets.md and android-release-guide.md.
+
 on:
   workflow_dispatch:
     inputs:
-      release_track:
-        description: Internal / closed beta / production
+      environment:
+        description: Target environment
         type: choice
-        options:
-          - internal
-          - closed-beta
-          - production
-        default: internal
+        options: [staging]
+        default: staging
 
 jobs:
   build-android:
-    name: Build Android AAB + upload source maps
+    name: Build signed APK + AAB (staging)
     runs-on: ubuntu-latest
     timeout-minutes: 45
-
+    environment: staging
     defaults:
       run:
         working-directory: fe/mobile
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -52,81 +57,63 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           SHORT_SHA=$(git rev-parse --short HEAD)
           BUILD_CODE=$(date -u +%Y%m%d%H%M)
-          RELEASE="sekar-mobile@${VERSION}+${BUILD_CODE}"
           {
             echo "version=${VERSION}"
             echo "build_code=${BUILD_CODE}"
             echo "short_sha=${SHORT_SHA}"
-            echo "release=${RELEASE}"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Decode Android keystore
-        if: env.ANDROID_KEYSTORE_BASE64 != ''
+      # google-services plugin is applied, so a matching google-services.json must exist.
+      - name: Place staging google-services.json
+        env:
+          GSJSON: ${{ secrets.GOOGLE_SERVICES_JSON_STAGING }}
+        run: printf '%s' "$GSJSON" | base64 -d > android/app/google-services.json
+
+      - name: Decode release keystore
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-        run: |
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+        run: printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
 
-      - name: Build AAB
+      # Builds signed APK + AAB in one Gradle run. The script decrypts .env.staging to
+      # .env.runtime (via MOBILE_DOTENV_PRIVATE_KEY) and points ENVFILE at it, so the JS
+      # env + the env-specific Google Maps key are baked in. Signing config (build.gradle)
+      # reads the SEKAR_RELEASE_* gradle properties supplied below as ORG_GRADLE_PROJECT_*.
+      - name: Build signed APK + AAB (staging)
         env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        working-directory: fe/mobile/android
-        run: |
-          ./gradlew bundleRelease --no-daemon --stacktrace
+          DOTENV_PRIVATE_KEY_STAGING: ${{ secrets.MOBILE_DOTENV_PRIVATE_KEY }}
+          ORG_GRADLE_PROJECT_SEKAR_RELEASE_STORE_FILE: release.keystore
+          ORG_GRADLE_PROJECT_SEKAR_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_SEKAR_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_SEKAR_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: npm run build:release:staging
 
-      - name: Install sentry-cli
-        if: env.SENTRY_AUTH_TOKEN != ''
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      - name: Verify the APK is signed with the release key (not debug)
         run: |
-          curl -sL https://sentry.io/get-cli/ | bash
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          test -f "$APK"
+          $ANDROID_HOME/build-tools/*/apksigner verify --print-certs "$APK" | grep -i "Signer #1 certificate DN" || true
+          echo "Signed APK present: $APK"
 
-      - name: Sentry — create release + upload source maps
-        if: env.SENTRY_AUTH_TOKEN != ''
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT_MOBILE }}
-          RELEASE: ${{ steps.version.outputs.release }}
-        run: |
-          sentry-cli releases new "$RELEASE"
-          sentry-cli releases set-commits "$RELEASE" --auto || true
-          # Hermes source maps emitted by RN bundle step
-          if [ -d "android/app/build/generated/sourcemaps/react/release" ]; then
-            sentry-cli sourcemaps upload \
-              --release="$RELEASE" \
-              android/app/build/generated/sourcemaps/react/release
-          else
-            echo "sourcemaps dir not found — skipping (Hermes off?)"
-          fi
-          sentry-cli releases finalize "$RELEASE"
-
-      - name: Upload AAB artifact
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-          BUILD_CODE: ${{ steps.version.outputs.build_code }}
+      - name: Upload signed APK + AAB
         uses: actions/upload-artifact@v4
         with:
-          name: sekar-android-${{ steps.version.outputs.version }}-${{ steps.version.outputs.build_code }}
-          path: fe/mobile/android/app/build/outputs/bundle/release/app-release.aab
+          name: sekar-staging-${{ steps.version.outputs.version }}-${{ steps.version.outputs.build_code }}
+          path: |
+            fe/mobile/android/app/build/outputs/apk/release/app-release.apk
+            fe/mobile/android/app/build/outputs/bundle/release/app-release.aab
           retention-days: 30
+          if-no-files-found: error
 
       - name: Summary
         env:
-          RELEASE: ${{ steps.version.outputs.release }}
-          TRACK: ${{ inputs.release_track }}
-          SHORT_SHA: ${{ steps.version.outputs.short_sha }}
+          VERSION: ${{ steps.version.outputs.version }}
           BUILD_CODE: ${{ steps.version.outputs.build_code }}
+          SHORT_SHA: ${{ steps.version.outputs.short_sha }}
         run: |
           {
-            echo "## Release $RELEASE"
+            echo "## SEKAR Android — staging release"
             echo ""
-            echo "- Track: \`$TRACK\`"
-            echo "- Commit: \`$SHORT_SHA\`"
-            echo "- Build code: \`$BUILD_CODE\`"
-            echo "- AAB artifact uploaded above."
-            echo ""
-            echo "Promote to Play Console manually per the deployment runbook §3."
+            echo "- Version: \`$VERSION\` · build \`$BUILD_CODE\` · commit \`$SHORT_SHA\`"
+            echo "- Signed **APK** (sideload) + **AAB** (Play) uploaded as the artifact above."
+            echo "- API: staging (\`http://api.sekar.wahyutrip.com\`) · FCM project \`dlhsby-sekar-staging\`."
           } >> "$GITHUB_STEP_SUMMARY"
