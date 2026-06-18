@@ -34,13 +34,20 @@ lerna-debug.log*
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# Environment variables (NEVER COMMIT!)
+# Environment variables. `.env.*` is ignored by default; deploy files are then
+# re-allowed below because they are committed as dotenvx-ENCRYPTED ciphertext.
 .env
 .env.*
-.env.production
-.env.development
-.env.staging
-.env.local
+
+# dotenvx-encrypted deploy files ARE committed (secrets are `encrypted:…` ciphertext).
+!.env.staging
+!.env.production
+
+# dotenvx private decryption keys — NEVER commit (matched by .env.* above; never negate).
+# .env.keys stays ignored.
+# Decrypted scratch files produced at build time — never commit.
+.env.*.decrypted
+.env.runtime
 
 # Keep templates for documentation (committed; safe defaults only)
 !.env.template

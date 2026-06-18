@@ -1,11 +1,16 @@
 logs/
 
-# Environment files — root .env.production drives docker-compose.prod.yml.
-# Keep only *.example templates committed; never commit real secrets.
+# Environment files. Plaintext dev files stay private; deploy files (.env.staging,
+# .env.production) are committed as dotenvx-ENCRYPTED ciphertext (secrets are
+# `encrypted:…`, safe in git). See specs/deployment/encrypted-secrets.md.
 .env
 .env.local
-.env.staging
-.env.production
+.env.development
+# dotenvx private decryption keys — NEVER commit (this is the one real secret).
+.env.keys
+# Decrypted scratch files produced at build time — never commit.
+.env.*.decrypted
+.env.runtime
 !.env*.example
 
 # TLS certificates for the production Nginx (mounted into the container)

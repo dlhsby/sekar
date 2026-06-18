@@ -30,14 +30,18 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (ignore local environment variables with secrets)
+# env files. Plaintext dev files stay private; deploy files (.env.staging,
+# .env.production) are committed as dotenvx-ENCRYPTED ciphertext.
 .env
 .env.local
-.env.staging
-.env.production
 .env.development.local
 .env.test.local
 .env.production.local
+# dotenvx private decryption keys — NEVER commit.
+.env.keys
+# Decrypted scratch files produced at build time — never commit.
+.env.*.decrypted
+.env.runtime
 
 # Keep example files (templates without secrets)
 !.env*.example

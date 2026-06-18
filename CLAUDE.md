@@ -87,6 +87,7 @@ All three workspaces use the same scheme: **`.env.local`** = local dev (gitignor
 | Obtaining keys (Firebase/Maps/Mapbox/S3) | `specs/deployment/credentials-setup.md` |
 | Day-2 operations / rollback / incidents | `specs/deployment/operations.md` |
 | Env var catalogue | `specs/deployment/environment-variables.md` |
+| **Encrypted secrets (dotenvx) — commit encrypted .env, decrypt at runtime** | `specs/deployment/encrypted-secrets.md` |
 | E2E testing | `specs/testing/e2e-testing.md` |
 | Full navigation | `specs/README.md` |
 

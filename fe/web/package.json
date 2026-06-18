@@ -6,6 +6,11 @@
     "dev": "next dev -p ${WEB_PORT:-3001}",
     "build": "next build",
     "start": "next start -p ${WEB_PORT:-3001}",
+    "env:encrypt": "dotenvx encrypt -f .env.staging -f .env.production",
+    "build:staging": "dotenvx run -f .env.staging -- next build",
+    "build:production": "dotenvx run -f .env.production -- next build",
+    "start:staging": "dotenvx run -f .env.staging -- next start -p ${WEB_PORT:-3001}",
+    "start:production": "dotenvx run -f .env.production -- next start -p ${WEB_PORT:-3001}",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
@@ -22,6 +27,7 @@
     "sw:build": "npx esbuild src/sw/sw.ts --bundle --outfile=public/sw.js --platform=browser --target=chrome90"
   },
   "dependencies": {
+    "@dotenvx/dotenvx": "^1.73.1",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.4.0",
     "@mapbox/mapbox-gl-draw": "^1.5.1",

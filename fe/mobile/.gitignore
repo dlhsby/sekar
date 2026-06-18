@@ -73,11 +73,17 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
-# Environment variables (NEVER COMMIT! — keep *.example templates)
+# Environment variables. Plaintext dev files stay private; deploy files
+# (.env.staging, .env.production) are committed as dotenvx-ENCRYPTED ciphertext.
+# Client keys (Mapbox pk.*, Google Maps) are inlined into the bundle anyway, but
+# encrypting them keeps them out of plaintext git history. ENCRYPT BEFORE COMMIT.
 .env
 .env.local
-.env.staging
-.env.production
+# dotenvx private decryption keys — NEVER commit.
+.env.keys
+# Decrypted scratch file produced at build time (decrypt-env.js) — never commit.
+.env.runtime
+.env.*.decrypted
 !.env*.example
 
 # Firebase (real service files are secrets — keep only *.example)

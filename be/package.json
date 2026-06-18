@@ -11,6 +11,7 @@
   },
   "scripts": {
     "build": "nest build",
+    "env:encrypt": "dotenvx encrypt -f .env.staging -f .env.production",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -34,7 +35,6 @@
     "db:seed:phase1:prod": "node dist/src/database/seeds/seed-phase1.js",
     "db:seed:phase2:prod": "node dist/src/database/seeds/seed-phase2.js",
     "db:seed:phase3:prod": "node dist/src/database/seeds/seed-phase3.js",
-    "db:seed:staging:prod": "node dist/src/database/seeds/seed-staging.js",
     "migration:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d src/database/data-source.ts",
     "migration:run:prod": "node ./node_modules/typeorm/cli.js migration:run -d dist/src/database/data-source.js",
     "migration:revert": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d src/database/data-source.ts",
@@ -53,6 +53,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1066.0",
     "@aws-sdk/s3-request-presigner": "^3.1066.0",
+    "@dotenvx/dotenvx": "^1.73.1",
     "@eslint/eslintrc": "^3.3.5",
     "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.1.26",
