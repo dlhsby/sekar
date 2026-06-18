@@ -24,7 +24,7 @@ jobs:
   build-android:
     name: Build signed APK + AAB (staging)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     environment: staging
     defaults:
       run:
@@ -82,6 +82,9 @@ jobs:
       - name: Build signed APK + AAB (staging)
         env:
           DOTENV_PRIVATE_KEY_STAGING: ${{ secrets.MOBILE_DOTENV_PRIVATE_KEY }}
+          # Real-device ABIs only (drop emulator x86/x86_64) — ~halves native compile
+          # time. To run the release APK on an x86_64 emulator, add x86_64 here.
+          ORG_GRADLE_PROJECT_reactNativeArchitectures: arm64-v8a,armeabi-v7a
           ORG_GRADLE_PROJECT_SEKAR_RELEASE_STORE_FILE: release.keystore
           ORG_GRADLE_PROJECT_SEKAR_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ORG_GRADLE_PROJECT_SEKAR_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
