@@ -44,14 +44,18 @@ therefore cannot decrypt backend secrets. Six private keys total:
 > `be/.env.production`; the encrypted **root `./.env.production`** is the backend's production
 > source. `be/.env.staging` (baked into the staging image) remains the staging source.
 
-The env-var **name** repeats across workspaces but the **value differs**. Each build job only
-ever has the one key it needs, so there is no collision. In GitHub Secrets, store them under
-workspace-scoped names and map to the canonical name in the job (see §6):
+The env-var **name** repeats across workspaces but the **value differs**. These are stored as
+**GitHub Environment secrets** (not repo-level), so the same secret name carries a different
+value per environment and a job selects which by declaring `environment:`:
 
-```
-BE_DOTENV_PRIVATE_KEY_STAGING        WEB_DOTENV_PRIVATE_KEY_STAGING        MOBILE_DOTENV_PRIVATE_KEY_STAGING
-BE_DOTENV_PRIVATE_KEY_PRODUCTION     WEB_DOTENV_PRIVATE_KEY_PRODUCTION     MOBILE_DOTENV_PRIVATE_KEY_PRODUCTION
-```
+| GitHub Environment | Secrets (each = that env's private key) |
+|--------------------|------------------------------------------|
+| `staging` | `WEB_DOTENV_PRIVATE_KEY`, `MOBILE_DOTENV_PRIVATE_KEY` |
+| `production` | `WEB_DOTENV_PRIVATE_KEY`, `MOBILE_DOTENV_PRIVATE_KEY`, `DOTENV_PRIVATE_KEY` (backend/root) |
+
+The backend's *staging* key is not in GitHub — it lives in SSM (`/sekar/staging/DOTENV_PRIVATE_KEY`)
+because the staging backend runs on AWS, not in Actions. Android signing + Sentry secrets stay
+**repo-level** (used by `mobile-release.yml`, which is not environment-scoped).
 
 ## 3. How each workspace consumes the encrypted file
 
@@ -116,19 +120,24 @@ git commit -m "chore(secrets): commit dotenvx-encrypted staging + production env
 follows the same shapes once `.env.production` exists.
 
 ### Web build (GitHub Actions) — DONE for staging
-The web image build decrypts `fe/web/.env.staging` during `next build`. The private key is the
-GitHub Secret **`WEB_DOTENV_PRIVATE_KEY_STAGING`**, passed as a **BuildKit secret** (not a
-build-arg, so it never lands in an image layer). `fe/web/Dockerfile`:
+The web image build decrypts `fe/web/.env.staging` during `next build`. The job is scoped to the
+`staging` **GitHub Environment** and reads its env secret **`WEB_DOTENV_PRIVATE_KEY`**, passed as
+a **BuildKit secret** `dotenv_private_key` (not a build-arg, so it never lands in an image layer).
+`fe/web/Dockerfile` is env-agnostic (`ARG DOTENV_ENV=staging`):
 
 ```dockerfile
-RUN --mount=type=secret,id=DOTENV_PRIVATE_KEY_STAGING \
-    DOTENV_PRIVATE_KEY_STAGING="$(cat /run/secrets/DOTENV_PRIVATE_KEY_STAGING)" \
-    npm run build:staging
+ARG DOTENV_ENV=staging
+RUN --mount=type=secret,id=dotenv_private_key \
+    DOTENV_PRIVATE_KEY_STAGING="$(cat /run/secrets/dotenv_private_key)" \
+    DOTENV_PRIVATE_KEY_PRODUCTION="$(cat /run/secrets/dotenv_private_key)" \
+    npx dotenvx run -f ".env.${DOTENV_ENV}" -- next build
 ```
-and the workflow's `docker/build-push-action` step:
+and the workflow's `docker/build-push-action` step (job has `environment: staging`):
 ```yaml
+build-args: |
+  DOTENV_ENV=staging
 secrets: |
-  DOTENV_PRIVATE_KEY_STAGING=${{ secrets.WEB_DOTENV_PRIVATE_KEY_STAGING }}
+  dotenv_private_key=${{ secrets.WEB_DOTENV_PRIVATE_KEY }}
 ```
 This **replaced** the `NEXT_PUBLIC_*` build-args + the `NEXT_PUBLIC_MAPBOX_TOKEN` GitHub Secret —
 the Mapbox token now lives inside the encrypted `fe/web/.env.staging`.

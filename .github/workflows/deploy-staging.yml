@@ -11,9 +11,9 @@ name: Deploy staging (AWS)
 #   ECR_WEB           659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-web
 #   EC2_INSTANCE_ID   i-08edccdc966c0985e
 #   RDS_INSTANCE_ID   kobin-kpi-db
-# Required repo Secret:
-#   WEB_DOTENV_PRIVATE_KEY_STAGING   dotenvx private key that decrypts fe/web/.env.staging
-#                                    at build time (NEXT_PUBLIC_* incl. the Mapbox token).
+# Required Environment Secret (staging environment):
+#   WEB_DOTENV_PRIVATE_KEY   dotenvx private key that decrypts fe/web/.env.staging at build
+#                            time (NEXT_PUBLIC_* incl. the Mapbox token).
 # Backend staging config lives in the encrypted be/.env.staging baked into the image; the
 # box decrypts it at runtime with DOTENV_PRIVATE_KEY_STAGING fetched from SSM
 # (/sekar/staging/DOTENV_PRIVATE_KEY). See specs/deployment/encrypted-secrets.md.
@@ -30,6 +30,9 @@ concurrency:
 jobs:
   build-push:
     runs-on: ubuntu-latest
+    # Scoped to the staging environment so it can read env-level secrets
+    # (WEB_DOTENV_PRIVATE_KEY). The deploy job below is also staging-scoped.
+    environment: staging
     permissions:
       id-token: write
       contents: read
@@ -79,7 +82,7 @@ jobs:
           build-args: |
             DOTENV_ENV=staging
           secrets: |
-            dotenv_private_key=${{ secrets.WEB_DOTENV_PRIVATE_KEY_STAGING }}
+            dotenv_private_key=${{ secrets.WEB_DOTENV_PRIVATE_KEY }}
           tags: |
             ${{ vars.ECR_WEB }}:staging
             ${{ vars.ECR_WEB }}:${{ steps.vars.outputs.sha }}
