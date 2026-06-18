@@ -360,50 +360,44 @@ To set: Release → Production → Create release → Set rollout percentage
 
 ---
 
-## F. CI/CD Pipeline
+## F. CI/CD — release workflow
 
-### F1. Current Pipeline
+**File:** `.github/workflows/mobile-release.yml` — manual `workflow_dispatch` (input
+`environment=staging`), `environment: staging`. Builds a **signed release APK + AAB** for staging
+and uploads them as a 30-day artifact (`sekar-staging-<version>-<buildcode>`). iOS + production
+release are deferred.
 
-**File:** `.github/workflows/mobile-ci-cd.yml.disabled`
-
-The pipeline is currently disabled. To enable:
-
+### F1. Run it / get the artifact
 ```bash
-mv .github/workflows/mobile-ci-cd.yml.disabled .github/workflows/mobile-ci-cd.yml
+# UI: Actions → "Mobile Release (Android · staging)" → Run workflow → staging
+gh workflow run "Mobile Release (Android · staging)" --ref main -f environment=staging
+gh run download <run-id> -D ~/sekar-release   # → app-release.apk + app-release.aab
+adb install -r ~/sekar-release/*/apk/release/app-release.apk
 ```
 
-### F2. Required GitHub Secrets
+### F2. Required secrets (already configured — see `encrypted-secrets.md`)
+| Scope | Secret | Purpose |
+|-------|--------|---------|
+| `staging` env | `MOBILE_DOTENV_PRIVATE_KEY` | decrypts `fe/mobile/.env.staging` (API URL, Maps key, …) |
+| `staging` env | `GOOGLE_SERVICES_JSON_STAGING` | base64 of the staging `google-services.json` |
+| repo | `ANDROID_KEYSTORE_BASE64` | base64 of the release keystore (`base64 -w0 sekar-release.keystore`) |
+| repo | `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` | signing credentials |
 
-Set these in **GitHub → Repository → Settings → Secrets**:
+### F3. How the build works
+`npm run build:release:staging:ci` (the workflow's build step):
+1. `scripts/decrypt-env.js` decrypts `.env.staging` → temp `.env.runtime` (via
+   `MOBILE_DOTENV_PRIVATE_KEY`); `ENVFILE` points Babel + the Maps-key resolver at it.
+2. Gradle builds a **signed** `assembleRelease` + `bundleRelease` in one run. Signing config reads
+   `SEKAR_RELEASE_*` from `ORG_GRADLE_PROJECT_*` env (the keystore secrets).
+3. ABIs limited to **`arm64-v8a,armeabi-v7a`** (real devices; drops emulator x86 → ~halves native
+   compile). The `:ci` variant omits `clean` and the workflow caches `~/.gradle` + the native
+   `app/.cxx` (keyed on `package-lock.json`).
 
-| Secret | Description | How to Generate |
-|--------|-------------|-----------------|
-| `GOOGLE_MAPS_API_KEY` | Google Maps API key | Google Cloud Console |
-| `ANDROID_SIGNING_KEY` | Base64-encoded keystore | See F3 |
-| `ANDROID_KEY_ALIAS` | Key alias | `sekar-key` |
-| `ANDROID_KEYSTORE_PASSWORD` | Keystore password | From keytool generation |
-| `ANDROID_KEY_PASSWORD` | Key password | From keytool generation |
+**Build time:** ~30 min cold; **~10–15 min** on a `.cxx` cache hit.
 
-### F3. Encode Keystore for GitHub Secrets
-
-```bash
-# Convert keystore to base64
-base64 -w 0 fe/mobile/android/app/sekar-release.keystore > keystore-base64.txt
-
-# Copy the content of keystore-base64.txt and paste as ANDROID_SIGNING_KEY secret
-cat keystore-base64.txt
-
-# Delete the file after copying
-rm keystore-base64.txt
-```
-
-### F4. Pipeline Behavior
-
-| Branch | Trigger | Build Type | Output |
-|--------|---------|-----------|--------|
-| `develop` | Push | Debug APK | GitHub Artifact (14 days) |
-| `staging` | Push | Signed Release APK | GitHub Artifact (30 days) |
-| `main` | Push | Signed Release APK + GitHub Release | Artifact (90 days) + Release |
+### F4. Versioning
+Bump `fe/mobile/package.json` `version` and Android `versionCode` (`android/app/build.gradle`)
+before cutting a release. The workflow stamps the artifact name with the version + a build code.
 
 ### F5. Adding Google Play Upload to CI/CD
 
@@ -555,4 +549,4 @@ adb logcat *:S ReactNative:V ReactNativeJS:V
 
 ---
 
-**Last Updated:** 2026-06-18
+**Last Updated:** 2026-06-19

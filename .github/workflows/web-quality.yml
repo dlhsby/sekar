@@ -1,0 +1,43 @@
+name: Web Quality Gate
+
+# Lint + type-check + unit (Jest) tests for the Next.js web dashboard. Runs on PRs
+# touching fe/web/**. Direct pushes to main are gated by the `quality-web` job in
+# deploy-staging.yml. (Playwright E2E is a separate workflow: web-e2e.yml.)
+
+on:
+  pull_request:
+    branches: [main, staging, develop]
+    paths:
+      - 'fe/web/**'
+      - 'specs/ui-ux/tokens.json'
+      - 'tools/eslint-plugin-sekar-design/**'
+      - '.github/workflows/web-quality.yml'
+
+jobs:
+  lint-typecheck-test:
+    name: Lint + Type Check + Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            fe/web/package-lock.json
+      - name: Install root tooling (eslint-plugin-sekar-design)
+        run: npm ci
+      - name: Install web deps
+        run: npm ci
+        working-directory: fe/web
+      - name: ESLint (incl. sekar-design rules)
+        run: npm run lint
+        working-directory: fe/web
+      - name: TypeScript check
+        run: npx tsc --noEmit
+        working-directory: fe/web
+      - name: Unit tests (Jest)
+        run: npm test -- --ci
+        working-directory: fe/web

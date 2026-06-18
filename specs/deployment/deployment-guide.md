@@ -283,10 +283,12 @@ Full detail: [`credentials-setup.md`](credentials-setup.md) §Firebase. iOS APNs
 
 **Staging (AWS)** is automated by [`.github/workflows/deploy-staging.yml`](../../.github/workflows/deploy-staging.yml):
 on push to `main` (or `workflow_dispatch`) it uses GitHub **OIDC** (no stored AWS keys) →
-builds + pushes backend/web images to ECR (`:staging` + `:<sha>`) → pre-deploy RDS snapshot →
-migrate + `up -d --wait` on the box via **SSM** → smoke test. Gated by the GitHub `staging`
-environment (add required reviewers to make it a manual gate). The older Elastic-Beanstalk /
-SSH workflows are retired (`*.disabled`). See §D for the runbook and rollback. → **[`ci-cd.md`](ci-cd.md)**.
+first runs the **`quality-be` + `quality-web`** test gates (lint/tsc/test), then uses GitHub
+**OIDC** (no stored AWS keys) → builds + pushes backend/web images to ECR (`:staging` + `:<sha>`)
+→ pre-deploy RDS snapshot → migrate + `up -d --wait` on the box via **SSM** → smoke test. Gated by
+the GitHub `staging` environment (add required reviewers to make it a manual gate). PRs are gated by
+`backend-quality` / `web-quality` / `mobile-quality`. The old Elastic-Beanstalk / SSH workflows have
+been **deleted**. Full inventory + monorepo release strategy → **[`ci-cd.md`](ci-cd.md)**.
 
 ---
 
@@ -317,7 +319,7 @@ Dashboards (system / application / business KPIs), CloudWatch alarms, structured
 
 ## I. Mobile releases
 
-- **Android:** [`android-release-guide.md`](android-release-guide.md). Set `API_BASE_URL` to `https://sekar.example.com` for the production build; `fe/mobile/scripts/build-release.sh` drives the signed build.
+- **Android:** [`android-release-guide.md`](android-release-guide.md). Preferred: the **`mobile-release.yml`** CI workflow (manual dispatch → signed APK + AAB artifact) — `gh workflow run "Mobile Release (Android · staging)" --ref main -f environment=staging`. Per-env config (API URL, Maps key, `google-services.json`) is resolved automatically via dotenvx. Local equivalents: `npm run build:release:staging` / `build:android:production`.
 - **iOS (needs a Mac):** [`ios-release-guide.md`](ios-release-guide.md) — full Xcode / capabilities / APNs / TestFlight / App Store runbook (and what's already prepared in the repo vs. deferred to a Mac).
 
 ---

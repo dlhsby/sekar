@@ -26,7 +26,7 @@ Environment model: **production → on-prem (pemkot) Docker Compose, platform-ag
 | **Edge / TLS** | 🟡 HTTP only | reuse KPI's Caddy (`http://` blocks); auto-HTTPS one edit away |
 | **FCM** | ⏸️ Off | `FCM_ENABLED=false` until a Firebase service account is set |
 | **Secrets** | ✅ SSM | Parameter Store `/sekar/staging/*` → `/opt/sekar/.env` at deploy |
-| **CI/CD** | ✅ Wired | `.github/workflows/deploy-staging.yml` (OIDC → ECR → SSM, SHA-pinned, RDS snapshot) |
+| **CI/CD** | ✅ Wired | 8 active workflows (`deploy-staging` test-gated OIDC→ECR→SSM + RDS snapshot · `backend-quality`/`web-quality`/`mobile-quality` lint+tsc+test · `mobile-release` signed APK/AAB · `tokens-verify` · `web-e2e`*/`mobile-e2e`). dotenvx-encrypted env per environment; manual mobile release dispatch. *web-e2e red (mock fixture). See `specs/deployment/ci-cd.md` |
 
 **AWS account:** 659828096624 · **region:** ap-southeast-3 · **EC2:** i-08edccdc966c0985e (EIP 16.79.124.63).
 **Rebuild date:** June 18, 2026 (prior account's free tier expired; re-provisioned from scratch).

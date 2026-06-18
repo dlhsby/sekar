@@ -38,7 +38,52 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Test gates — build/deploy only runs if backend + web pass. Catches broken code on
+  # direct pushes to main (PRs are gated by backend-quality.yml / web-quality.yml).
+  quality-be:
+    name: Backend lint + tsc + tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: be
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: be/package-lock.json
+      - run: npm ci
+      - run: npx eslint "{src,apps,libs,test}/**/*.ts"
+      - run: npx tsc --noEmit -p tsconfig.json
+      - run: npm test
+
+  quality-web:
+    name: Web lint + tsc + tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            fe/web/package-lock.json
+      - run: npm ci
+      - run: npm ci
+        working-directory: fe/web
+      - run: npm run lint
+        working-directory: fe/web
+      - run: npx tsc --noEmit
+        working-directory: fe/web
+      - run: npm test -- --ci
+        working-directory: fe/web
+
   build-push:
+    needs: [quality-be, quality-web]
     runs-on: ubuntu-latest
     # Scoped to the staging environment so it can read env-level secrets
     # (WEB_DOTENV_PRIVATE_KEY). The deploy job below is also staging-scoped.

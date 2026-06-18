@@ -62,6 +62,26 @@ plaintext git history. The only real secret is `.env.keys` (**never committed**)
 `*.example` are committed. Guide: [`/specs/deployment/encrypted-secrets.md`](/specs/deployment/encrypted-secrets.md);
 WSL2 device networking: [`/specs/deployment/local-development.md`](/specs/deployment/local-development.md).
 
+## Release
+
+**CI (recommended):** the `mobile-release.yml` workflow (manual dispatch, `environment: staging`)
+builds a **signed APK + AAB** and uploads them as a 30-day artifact.
+```bash
+gh workflow run "Mobile Release (Android · staging)" --ref main -f environment=staging
+gh run download <run-id> -D ~/sekar-release   # → app-release.apk + app-release.aab
+```
+
+**Local scripts** (decrypt the chosen env via dotenvx; see `/specs/deployment/encrypted-secrets.md`):
+| Script | Purpose |
+|--------|---------|
+| `npm run start:staging` | Metro for an emulator **debug** run against the staging API |
+| `npm run build:release:staging` | signed release APK+AAB (with `clean` — hand-cut releases) |
+| `npm run build:release:staging:ci` | same, no `clean` (CI uses this with the `.cxx` cache) |
+| `npm run build:android:staging` / `build:android:production` | release APK for one env |
+| `npm run build:aab:production` | production AAB |
+
+Full runbook: [`/specs/deployment/android-release-guide.md`](/specs/deployment/android-release-guide.md).
+
 ## Documentation
 
 - **Complete Guide:** [`/CLAUDE.md`](/CLAUDE.md)

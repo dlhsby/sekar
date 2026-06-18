@@ -1,0 +1,36 @@
+name: Backend Quality Gate
+
+# Lint + type-check + unit tests for the NestJS backend. Runs on PRs touching be/**.
+# Direct pushes to main are gated by the `quality-be` job in deploy-staging.yml (so the
+# deploy never ships untested backend code).
+
+on:
+  pull_request:
+    branches: [main, staging, develop]
+    paths:
+      - 'be/**'
+      - '.github/workflows/backend-quality.yml'
+
+jobs:
+  lint-typecheck-test:
+    name: Lint + Type Check + Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: be
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: be/package-lock.json
+      - name: Install deps
+        run: npm ci
+      - name: ESLint
+        run: npx eslint "{src,apps,libs,test}/**/*.ts"
+      - name: TypeScript check
+        run: npx tsc --noEmit -p tsconfig.json
+      - name: Unit tests
+        run: npm test
