@@ -129,8 +129,10 @@ jobs:
           bash ~/sekar/infra/seed-env-from-ssm.sh
           cd ~/sekar/infra
           export IMAGE_TAG=$SHA
-          docker compose -f compose.staging.yml pull
-          docker compose -f compose.staging.yml run --rm --no-deps backend npm run migration:run:prod
+          # --quiet keeps SSM stdout under its 24KB cap (huge layer logs were truncating
+          # the tail, hiding the post-deploy assertion).
+          docker compose -f compose.staging.yml pull --quiet
+          docker compose -f compose.staging.yml run --rm --no-deps --quiet-pull backend npm run migration:run:prod
           # --force-recreate guarantees containers are rebuilt from the freshly pulled,
           # SHA-pinned image (a plain up can no-op against a stale local tag).
           docker compose -f compose.staging.yml up -d --force-recreate --wait
