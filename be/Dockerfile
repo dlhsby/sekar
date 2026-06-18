@@ -68,6 +68,11 @@ COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nestjs:nodejs /app/package.json ./package.json
 
+# Bake the dotenvx-ENCRYPTED staging env (ciphertext). load-env.ts decrypts it at
+# boot using DOTENV_PRIVATE_KEY_STAGING supplied at runtime (NODE_ENV=staging).
+# Safe: without the private key this file reveals nothing.
+COPY --chown=nestjs:nodejs .env.staging ./.env.staging
+
 # Switch to non-root user
 USER nestjs
 

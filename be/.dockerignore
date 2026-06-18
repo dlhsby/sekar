@@ -12,6 +12,9 @@ coverage
 .env
 .env.*
 !.env.example
+# dotenvx-ENCRYPTED staging env is baked into the image (ciphertext; decrypted at
+# runtime via DOTENV_PRIVATE_KEY_STAGING). Keep .env.keys / plaintext OUT.
+!.env.staging
 
 # Git
 .git

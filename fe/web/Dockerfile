@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 # SEKAR Web Dashboard - Production Dockerfile
 # Multi-stage build for optimized Next.js deployment
 
@@ -21,20 +22,15 @@ COPY . .
 # Install all dependencies (including devDependencies for build)
 RUN npm ci
 
-# Accept build arguments for Next.js environment variables
-ARG NEXT_PUBLIC_API_URL
-ARG NEXT_PUBLIC_WS_URL
-ARG NEXT_PUBLIC_MAPBOX_TOKEN
-
-# Set environment variables for build
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
-ENV NEXT_PUBLIC_MAPBOX_TOKEN=$NEXT_PUBLIC_MAPBOX_TOKEN
 
-# Build Next.js application
-RUN npm run build
+# NEXT_PUBLIC_* are decrypted from the committed (encrypted) .env.staging by dotenvx
+# at build time and inlined into the bundle. The private key is passed as a BuildKit
+# secret — it is mounted only for this RUN and never persisted in an image layer.
+RUN --mount=type=secret,id=DOTENV_PRIVATE_KEY_STAGING \
+    DOTENV_PRIVATE_KEY_STAGING="$(cat /run/secrets/DOTENV_PRIVATE_KEY_STAGING)" \
+    npm run build:staging
 
 # Stage 3: Production Runtime
 FROM node:24-slim AS runner

@@ -1,6 +1,7 @@
 # Encrypted Secrets (dotenvx)
 
-**Status:** Foundation landed 2026-06-18. Deploy/CI cutover pending key generation (see §6).
+**Status:** Live for **staging** as of 2026-06-18 — backend + web build and run from encrypted
+env (see §6). Mobile staging encrypted; production (`.env.production`) still to be generated.
 
 SEKAR commits its `.env.staging` / `.env.production` files to git **encrypted** with
 [dotenvx](https://dotenvx.com), and decrypts them at runtime/build. This replaces the old
@@ -100,41 +101,44 @@ git status   # confirm NO .env.keys / .env.local is staged
 git commit -m "chore(secrets): commit dotenvx-encrypted staging + production env"
 ```
 
-## 6. Where the private keys go (deploy/CI cutover — pending)
+## 6. Where the private keys go (deploy/CI cutover)
 
-The cutover from the current secret mechanisms (backend = AWS SSM full-env seed; web = GitHub
-Secret build-args) is **deferred until the keys above exist**, so the live staging deploy is not
-broken in the meantime. Steps once you have the keys:
+**Staging is implemented** (`.github/workflows/deploy-staging.yml`). Details below; production
+follows the same shapes once `.env.production` exists.
 
-### GitHub Secrets (web + mobile builds in Actions)
-Add under Settings → Secrets and variables → Actions:
-`WEB_DOTENV_PRIVATE_KEY_STAGING`, `WEB_DOTENV_PRIVATE_KEY_PRODUCTION`,
-`MOBILE_DOTENV_PRIVATE_KEY_*` (and `BE_*` if the backend image build ever needs decryption).
-In each job map to the canonical name, e.g.:
+### Web build (GitHub Actions) — DONE for staging
+The web image build decrypts `fe/web/.env.staging` during `next build`. The private key is the
+GitHub Secret **`WEB_DOTENV_PRIVATE_KEY_STAGING`**, passed as a **BuildKit secret** (not a
+build-arg, so it never lands in an image layer). `fe/web/Dockerfile`:
 
-```yaml
-env:
-  DOTENV_PRIVATE_KEY_STAGING: ${{ secrets.WEB_DOTENV_PRIVATE_KEY_STAGING }}
-run: npm run build:staging        # dotenvx decrypts NEXT_PUBLIC_* during next build
+```dockerfile
+RUN --mount=type=secret,id=DOTENV_PRIVATE_KEY_STAGING \
+    DOTENV_PRIVATE_KEY_STAGING="$(cat /run/secrets/DOTENV_PRIVATE_KEY_STAGING)" \
+    npm run build:staging
 ```
+and the workflow's `docker/build-push-action` step:
+```yaml
+secrets: |
+  DOTENV_PRIVATE_KEY_STAGING=${{ secrets.WEB_DOTENV_PRIVATE_KEY_STAGING }}
+```
+This **replaced** the `NEXT_PUBLIC_*` build-args + the `NEXT_PUBLIC_MAPBOX_TOKEN` GitHub Secret —
+the Mapbox token now lives inside the encrypted `fe/web/.env.staging`.
 
-This **removes** the `NEXT_PUBLIC_*` build-args + `NEXT_PUBLIC_MAPBOX_TOKEN` GitHub Secret — the
-Mapbox token now lives inside the encrypted `fe/web/.env.staging`.
-
-### AWS box (backend staging runtime)
-Store the backend's private key as a single SSM SecureString and inject it into the container,
-replacing the per-secret `infra/seed-env-from-ssm.sh` materialization:
+### AWS box (backend staging runtime) — DONE for staging
+The encrypted `be/.env.staging` is **baked into the backend image** (`be/Dockerfile` COPYs it;
+`be/.dockerignore` allows it). The box fetches only the decryption key from a single SSM
+SecureString and writes it to `/opt/sekar/.env` (`infra/seed-env-from-ssm.sh`); compose injects
+it + `NODE_ENV=staging`, and `load-env.ts` decrypts the baked file at boot:
 
 ```bash
 aws ssm put-parameter --profile sekar --region ap-southeast-3 \
-  --name /sekar/staging/DOTENV_PRIVATE_KEY --type SecureString \
-  --value "<be DOTENV_PRIVATE_KEY_STAGING>"
+  --name /sekar/staging/DOTENV_PRIVATE_KEY --type SecureString --overwrite \
+  --value "<be DOTENV_PRIVATE_KEY_STAGING>"     # already done
 ```
 
-At deploy the box fetches that one param (via the EC2 instance role) and the backend container
-runs with `NODE_ENV=staging` + `DOTENV_PRIVATE_KEY_STAGING`; `load-env.ts` reads the committed
-encrypted `be/.env.staging` (mounted or baked) and decrypts. The bulk SSM parameters
-(`/sekar/staging/DATABASE_PASSWORD`, `JWT_SECRET`, …) can then be retired.
+The per-secret SSM params (`/sekar/staging/DATABASE_PASSWORD`, `JWT_SECRET`,
+`JWT_REFRESH_SECRET`) are now superseded by the encrypted file and can be retired once a deploy
+is confirmed healthy.
 
 ### On-prem production box
 No SSM. Provide the private keys via the host's environment / a root-only `.env.keys`, e.g. a
