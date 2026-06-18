@@ -138,6 +138,9 @@ jobs:
           # --force-recreate guarantees containers are rebuilt from the freshly pulled,
           # SHA-pinned image (a plain up can no-op against a stale local tag).
           docker compose -f compose.staging.yml up -d --force-recreate --wait
+          # Recreated containers get new IPs on the edge network; KPI's long-running Caddy
+          # caches the old upstream IP and would 502 until it re-resolves. Reload it.
+          docker exec kobin-kpi-caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
           docker image prune -f
           # Fail loudly if the running image is not the SHA we just built — otherwise a
           # stale container would pass the smoke test (false positive).
