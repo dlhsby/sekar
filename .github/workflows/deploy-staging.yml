@@ -132,7 +132,9 @@ jobs:
           # --quiet keeps SSM stdout under its 24KB cap (huge layer logs were truncating
           # the tail, hiding the post-deploy assertion).
           docker compose -f compose.staging.yml pull --quiet
-          docker compose -f compose.staging.yml run --rm --no-deps --quiet-pull backend npm run migration:run:prod
+          # -T: do NOT attach a TTY/stdin — otherwise `compose run` consumes the rest of
+          # this script (it's fed to bash via a file, but -T is correct regardless).
+          docker compose -f compose.staging.yml run --rm --no-deps -T --quiet-pull backend npm run migration:run:prod
           # --force-recreate guarantees containers are rebuilt from the freshly pulled,
           # SHA-pinned image (a plain up can no-op against a stale local tag).
           docker compose -f compose.staging.yml up -d --force-recreate --wait
@@ -147,7 +149,9 @@ jobs:
           EOF
           )
           RUN_B64=$(printf '%s' "$BOX" | base64 -w0)
-          printf '{"commands":["runuser -l ec2-user -c \\"echo %s | base64 -d | bash\\""]}' "$RUN_B64" > params.json
+          # Run from a FILE, not piped stdin — a piped script is on bash's stdin, which
+          # `docker compose run` would consume, silently skipping everything after it.
+          printf '{"commands":["runuser -l ec2-user -c \\"echo %s | base64 -d > /tmp/sekar-deploy.sh && bash /tmp/sekar-deploy.sh\\""]}' "$RUN_B64" > params.json
 
           CMD_ID=$(aws ssm send-command \
             --instance-ids "${{ vars.EC2_INSTANCE_ID }}" \
