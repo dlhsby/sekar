@@ -34,8 +34,15 @@ export class PdfGeneratorService implements OnModuleInit, OnModuleDestroy {
       });
       this.logger.log(`PDF generator initialized with browser at ${executablePath}`);
     } catch (error) {
-      this.logger.error(`Failed to initialize PDF generator: ${(error as Error).message}`);
-      throw error;
+      // Do NOT crash the whole API if the headless browser is unavailable (e.g. the
+      // Chromium binary is missing). PDF generation degrades gracefully — generatePdf()
+      // throws "PDF generator not initialized" per-request — while the rest of the API
+      // stays up. The browser is re-attempted lazily on the next recycle.
+      this.browser = null;
+      this.logger.error(
+        `PDF generator unavailable (browser failed to launch): ${(error as Error).message}. ` +
+          'Report PDF generation will be disabled until a Chromium binary is present.',
+      );
     }
   }
 

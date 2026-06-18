@@ -29,13 +29,26 @@ export class S3Service {
     this.endpoint = this.configService.get<string>('AWS_ENDPOINT_URL');
     this.forcePathStyle = this.configService.get<string>('AWS_S3_FORCE_PATH_STYLE') === 'true';
 
-    const s3Config: any = {
-      region: this.region,
-      credentials: {
-        accessKeyId: this.configService.get<string>('AWS_ACCESS_KEY_ID') || 'test',
-        secretAccessKey: this.configService.get<string>('AWS_SECRET_ACCESS_KEY') || 'test',
-      },
-    };
+    const s3Config: any = { region: this.region };
+
+    // Credential resolution:
+    //  - Explicit keys present (dev/MinIO or any deploy that supplies them) → use them.
+    //  - No keys but a custom endpoint (LocalStack/MinIO) → keep the dummy creds so the
+    //    SDK has something to sign with against the local stack.
+    //  - No keys and no endpoint (real AWS) → omit `credentials` entirely so the SDK
+    //    default provider chain resolves the EC2/ECS instance role (IMDSv2). No long-lived
+    //    access keys live on the host.
+    const accessKeyId = this.configService.get<string>('AWS_ACCESS_KEY_ID');
+    const secretAccessKey = this.configService.get<string>('AWS_SECRET_ACCESS_KEY');
+    if (accessKeyId && secretAccessKey) {
+      s3Config.credentials = { accessKeyId, secretAccessKey };
+    } else if (this.endpoint) {
+      s3Config.credentials = { accessKeyId: 'test', secretAccessKey: 'test' };
+    } else {
+      this.logger.log(
+        'S3 Service using the default AWS credential provider chain (instance role)',
+      );
+    }
 
     // Add endpoint URL for LocalStack (development)
     if (this.endpoint) {

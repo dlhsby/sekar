@@ -102,6 +102,70 @@ describe('S3Service', () => {
 
       await testModule.close();
     });
+
+    it('should omit credentials (instance-role chain) when no keys and no endpoint', async () => {
+      const mockConfigNoCreds = {
+        get: jest.fn((key: string) => {
+          const config: { [key: string]: string } = {
+            AWS_REGION: 'ap-southeast-3',
+            AWS_S3_BUCKET: 'sekar-media-staging',
+          };
+          return config[key];
+        }),
+      };
+
+      const testModule = await Test.createTestingModule({
+        providers: [
+          S3Service,
+          { provide: ConfigService, useValue: mockConfigNoCreds },
+        ],
+      }).compile();
+
+      testModule.get<S3Service>(S3Service);
+
+      // The last S3Client invocation must carry NO credentials key so the AWS SDK
+      // default provider chain (EC2 instance role) resolves them at call time.
+      const calls = (S3Client as jest.Mock).mock.calls;
+      const lastCall = calls[calls.length - 1][0];
+      expect(lastCall).toEqual({ region: 'ap-southeast-3' });
+      expect(lastCall).not.toHaveProperty('credentials');
+
+      await testModule.close();
+    });
+
+    it('should use dummy credentials when an endpoint is set without keys (LocalStack/MinIO)', async () => {
+      const mockConfigEndpointOnly = {
+        get: jest.fn((key: string) => {
+          const config: { [key: string]: string } = {
+            AWS_REGION: 'ap-southeast-1',
+            AWS_S3_BUCKET: 'sekar-media',
+            AWS_ENDPOINT_URL: 'http://localhost:9000',
+            AWS_S3_FORCE_PATH_STYLE: 'true',
+          };
+          return config[key];
+        }),
+      };
+
+      const testModule = await Test.createTestingModule({
+        providers: [
+          S3Service,
+          { provide: ConfigService, useValue: mockConfigEndpointOnly },
+        ],
+      }).compile();
+
+      testModule.get<S3Service>(S3Service);
+
+      const calls = (S3Client as jest.Mock).mock.calls;
+      const lastCall = calls[calls.length - 1][0];
+      expect(lastCall).toMatchObject({
+        region: 'ap-southeast-1',
+        endpoint: 'http://localhost:9000',
+        forcePathStyle: true,
+        credentials: { accessKeyId: 'test', secretAccessKey: 'test' },
+      });
+
+      await testModule.close();
+    });
   });
 
   describe('uploadFile', () => {

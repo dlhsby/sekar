@@ -83,4 +83,36 @@ Run staging entirely in Docker on the same server. Rejected because Docker adds 
 
 ---
 
-**Last Updated:** 2026-03-13
+## Addendum (2026-06-18) — Implemented topology supersedes the original plan
+
+The staging environment was (re)built on AWS with a **different topology** than planned
+above, and production was re-scoped. The deltas below are now authoritative; the original
+table/flow are retained for history.
+
+### Environment split
+- **Production → on-prem (pemkot) server**, Docker Compose, **platform-agnostic** (Windows
+  Server *or* Linux). Self-hosted full stack (Postgres + Redis + MinIO + reverse proxy). Not on AWS.
+- **Staging / UAT → AWS**, co-tenant with the KPI project on a single shared `t3.micro`.
+
+### Staging implementation (as built)
+| Aspect | Original plan | As implemented |
+|--------|---------------|----------------|
+| Compute | EC2 t3.small, native | Shared EC2 **t3.micro** (Docker Compose); EBS grown to 30 GB + 4 GB swap |
+| **Docker Compose staging** | *Rejected* | **Adopted** — `infra/compose.staging.yml` (backend + web + Redis) |
+| Web hosting | Vercel Preview | **Container on the box**, fronted by KPI's Caddy |
+| Edge / TLS | — | Reuse KPI's **Caddy** via shared external `edge` network; **plain HTTP for now** (`http://` blocks in `infra/Caddyfile.staging`) |
+| Domains | `api-staging` / `staging` | **`api.sekar.wahyutrip.com`** / **`sekar.wahyutrip.com`** (canonical names; staging holds them until a dedicated prod takes over) |
+| Database | `sekar_staging_db` | **`sekar_staging`** db + `sekar` role on the **shared** RDS (`kobin-kpi-db`), SSL required |
+| Redis | Same instance, DB 1 | **In-stack `redis:7-alpine` container** (ElastiCache avoided — new-account Free Tier is credit-based) |
+| S3 | `sekar-media-staging` | `sekar-media-staging` — via the **EC2 instance role**, no static keys |
+| Secrets | — | **SSM Parameter Store** (SecureString `/sekar/staging/*`) → `/opt/sekar/.env` at deploy |
+| Deploy | — | GitHub Actions **OIDC → ECR → SSM** (`.github/workflows/deploy-staging.yml`); no SSH |
+
+Rationale: keep UAT near-$0 on the new-account Free Tier by sharing the existing box/RDS,
+while raising the bar over KPI (instance-role S3, Parameter-Store secrets, SHA-pinned
+rollback, per-container memory limits, pre-deploy RDS snapshot, gated migration).
+Full runbook: `specs/deployment/deployment-guide.md` §"AWS staging".
+
+---
+
+**Last Updated:** 2026-06-18

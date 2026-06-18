@@ -1,0 +1,97 @@
+# SEKAR — AWS staging stack (co-tenant with KPI on the shared EC2 host)
+#
+# This is NOT the self-hosted on-prem stack (see docker-compose.prod.yml for that).
+# Staging reuses the box's existing Caddy as the TLS edge and AWS RDS as the database;
+# only the two app containers + a small Redis run here.
+#
+#   - Postgres        -> AWS RDS (managed; not in this file)
+#   - Object storage  -> AWS S3   (via the EC2 instance role; no keys on the host)
+#   - TLS / 80,443    -> KPI's Caddy on the shared external `edge` network
+#   - Redis           -> small in-stack container (Socket.IO adapter / BullMQ / streams)
+#
+# Runtime env is materialized to /opt/sekar/.env by infra/seed-env-from-ssm.sh
+# (secrets pulled from SSM Parameter Store at deploy time).
+#
+# Usage on the box:
+#   IMAGE_TAG=<git-sha> docker compose -f compose.staging.yml pull
+#   IMAGE_TAG=<git-sha> docker compose -f compose.staging.yml up -d --wait
+
+name: sekar-staging
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  backend:
+    image: 659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-backend:${IMAGE_TAG:-staging}
+    container_name: sekar-backend
+    env_file:
+      - /opt/sekar/.env
+    # Service-name overrides win over the file so the in-stack Redis resolves.
+    environment:
+      NODE_ENV: staging
+      REDIS_URL: redis://redis:6379
+    expose:
+      - "3000" # internal only; reached via Caddy on the edge network
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/v1/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    mem_limit: 448m
+    mem_reservation: 320m
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [edge, internal]
+
+  web:
+    image: 659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-web:${IMAGE_TAG:-staging}
+    container_name: sekar-web
+    environment:
+      NODE_ENV: production
+      HOSTNAME: "0.0.0.0"
+    expose:
+      - "3000" # internal only; reached via Caddy on the edge network
+    depends_on:
+      backend:
+        condition: service_healthy
+    mem_limit: 224m
+    mem_reservation: 128m
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [edge]
+
+  redis:
+    image: redis:7-alpine
+    container_name: sekar-redis
+    command: redis-server --appendonly yes --maxmemory 80mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    mem_limit: 96m
+    mem_reservation: 48m
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [internal]
+
+networks:
+  # Shared with KPI's Caddy so the edge proxy can reach backend/web by container name.
+  edge:
+    external: true
+  # Private to SEKAR; isolates Redis from the edge.
+  internal:
+    driver: bridge
+
+volumes:
+  redis-data:

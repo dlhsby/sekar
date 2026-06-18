@@ -7,22 +7,29 @@
 
 ---
 
-## 🚀 Production Deployment Status (NEW)
+## 🚀 Staging / UAT Deployment Status (AWS — rebuilt 2026-06-18)
+
+Environment model: **production → on-prem (pemkot) Docker Compose, platform-agnostic**;
+**staging/UAT → AWS**, co-tenant with KPI on a shared `t3.micro`. See
+[ADR-028 addendum](architecture/decisions/ADR-028-staging-environment.md) +
+`specs/deployment/deployment-guide.md` §D.
 
 | Aspect | Status | Details |
 |--------|--------|---------|
-| **Backend API** | ✅ Live | http://api.sekar.wahyutrip.com |
-| **Database** | ✅ Seeded | Phase 2E schema, 22 tables, ~30 users, 8 areas |
-| **Migrations** | ✅ Executed | 6 migrations through Phase2EClientFeedback |
-| **Auth** | ✅ Working | JWT tokens, admin/password123 verified |
-| **FCM** | ✅ Enabled | Push notifications configured |
-| **CI/CD** | ✅ Green | All 3 pipelines passing (Backend + Web fixed Mar 2) |
-| **Deployments** | 4 iterations | Final: run 21856584343 (schema perfect) |
+| **Backend API** | ✅ Live | `http://api.sekar.wahyutrip.com` (plain HTTP — TLS pending) |
+| **Web dashboard** | ✅ Live | `http://sekar.wahyutrip.com` (Mapbox baked, monitoring map OK) |
+| **Database** | ✅ Seeded | `sekar_staging` on shared RDS `kobin-kpi-db` (SSL); staging seed = **85 users** |
+| **Migrations** | ✅ Executed | full TypeORM migration set (`migration:run:prod`) |
+| **Auth** | ✅ Working | `superadmin/password123` verified (JWT) |
+| **Object storage** | ✅ S3 | `sekar-media-staging` via **EC2 instance role** (no static keys) |
+| **Redis** | ✅ In-stack | `redis:7-alpine` container (DB+Redis health `/ready` ok) |
+| **Edge / TLS** | 🟡 HTTP only | reuse KPI's Caddy (`http://` blocks); auto-HTTPS one edit away |
+| **FCM** | ⏸️ Off | `FCM_ENABLED=false` until a Firebase service account is set |
+| **Secrets** | ✅ SSM | Parameter Store `/sekar/staging/*` → `/opt/sekar/.env` at deploy |
+| **CI/CD** | ✅ Wired | `.github/workflows/deploy-staging.yml` (OIDC → ECR → SSM, SHA-pinned, RDS snapshot) |
 
-**Fresh Start Date:** February 10, 2026
-**Schema Corrections:** 4 deployments to fix column name mismatches
-**Migration System:** TypeORM tracking active, both migrations executed
-**Reproducibility:** ✅ Ready for Phase 3 (see specs/deployment/phase-2-deployment.md)
+**AWS account:** 659828096624 · **region:** ap-southeast-3 · **EC2:** i-08edccdc966c0985e (EIP 16.79.124.63).
+**Rebuild date:** June 18, 2026 (prior account's free tier expired; re-provisioned from scratch).
 
 ---
 

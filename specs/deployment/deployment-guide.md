@@ -18,21 +18,30 @@ It walks the four scenarios end-to-end — **run locally → obtain keys → dep
 | Release the mobile apps | **§I Mobile releases** → [`android-release-guide.md`](android-release-guide.md) · [`ios-release-guide.md`](ios-release-guide.md) |
 | Run it on managed AWS | **Appendix A** → [`infrastructure.md`](infrastructure.md) |
 
-## Two supported topologies (same application images)
+## Deployment targets (same application images)
 
-1. **Self-hosted (default, cheapest)** — one Linux host runs everything via Docker Compose: PostgreSQL + Redis + MinIO (S3-compatible) + backend + web + Nginx (TLS). No cloud bill beyond the VM. → §E.
-2. **Managed cloud (AWS)** — EC2/ECS for the app, RDS for Postgres, ElastiCache for Redis, real S3 + CloudFront for media. → §E with the substitutions in **Appendix A**.
+1. **Production → on-prem (pemkot) server** — Docker Compose, **platform-agnostic** (Windows
+   Server *or* Linux). One host runs everything: PostgreSQL + Redis + MinIO + backend + web +
+   reverse proxy. No cloud bill. → **§E** (`docker-compose.prod.yml`).
+2. **Staging / UAT → AWS** — co-tenant with KPI on a shared `t3.micro`: backend + web + Redis
+   containers behind the existing Caddy, AWS RDS (`sekar_staging`), AWS S3 (instance role),
+   secrets in SSM Parameter Store. → **§D** (`infra/compose.staging.yml`).
+3. *(Reference)* fuller managed-cloud layout (ECS/ElastiCache/CloudFront) → **Appendix A**.
 
 ## Environment model at a glance
 
-| | **Local dev** | **Staging** | **Production** |
+| | **Local dev** | **Staging (AWS)** | **Production (on-prem)** |
 |--|--------------|-------------|----------------|
-| Env file | `.env.local` (per workspace) | `.env.staging` | `.env.production` (root, for compose) |
-| Object storage | **MinIO** (in `infra/`) | **real AWS S3** | **MinIO** (in `docker-compose.prod.yml`) — or AWS S3 (Appendix A) |
-| Database | local Docker Postgres | RDS (or Postgres) | compose Postgres — or RDS (Appendix A) |
+| Where | laptop | shared AWS EC2 (co-tenant) | pemkot server (Win/Linux) |
+| Compose file | `infra/` dev | `infra/compose.staging.yml` | `docker-compose.prod.yml` |
+| Env file | `.env.local` (per workspace) | `/opt/sekar/.env` (from SSM) | `.env.production` (root) |
+| Object storage | **MinIO** (in `infra/`) | **AWS S3** (instance role) | **MinIO** (in `docker-compose.prod.yml`) |
+| Database | local Docker Postgres | **shared RDS** → `sekar_staging` | compose Postgres |
+| Redis | Docker | **in-stack container** | in-stack container |
 | Seeder | `db:seed` (destructive) | `db:seed:staging:prod` | `db:seed:production:prod` (non-destructive) |
-| TLS | none (http) | staging cert / self-signed | Let's Encrypt |
-| FCM | usually off | on (test project) | on (prod project) |
+| TLS | none (http) | **none yet (http)** — Caddy ready | Let's Encrypt / internal cert |
+| FCM | usually off | off (until configured) | on (prod project) |
+| Secrets | `.env.local` | **SSM Parameter Store** | `.env.production` (chmod 600) |
 
 ---
 
@@ -95,52 +104,72 @@ All three workspaces share one scheme: **`.env.local`** = local dev (the runtime
 
 ---
 
-## D. Deploy to staging
+## D. Deploy to staging (AWS — co-tenant)
 
-Staging mirrors production with three deltas: it uses **`.env.staging`**, **real AWS S3** (not MinIO), and the **staging seeder**. Use it to validate a release against production-like config before promoting.
+Staging/UAT runs on **AWS**, co-tenant with the KPI project on one shared `t3.micro`
+(account `659828096624`, region `ap-southeast-3`, CLI profile `sekar`). It does **not** use
+the self-hosted `docker-compose.prod.yml` — that's the on-prem **production** stack (§E).
+Authoritative deltas live in [ADR-028 addendum](../architecture/decisions/ADR-028-staging-environment.md).
 
-**1. Prerequisites** — same host requirements as §E.1, plus an AWS S3 bucket + IAM user for media (see [`credentials-setup.md`](credentials-setup.md) §AWS S3).
+**Live URLs (plain HTTP — no TLS yet):** API `http://api.sekar.wahyutrip.com` · web `http://sekar.wahyutrip.com`.
 
-**2. Configure** — copy and fill the staging env:
+### Topology
+- **Edge/TLS:** reuse KPI's **Caddy** on 80/443 via a shared external Docker network `edge`;
+  SEKAR's two site blocks live in [`infra/Caddyfile.staging`](../../infra/Caddyfile.staging)
+  (merged into the box Caddyfile). `http://` prefix disables auto-HTTPS for now.
+- **Apps:** `backend` + `web` (ECR images) + a small `redis` container —
+  [`infra/compose.staging.yml`](../../infra/compose.staging.yml), per-container memory limits.
+- **DB:** `sekar_staging` database + `sekar` role on the **shared** RDS `kobin-kpi-db` (`DATABASE_SSL=true`).
+- **Media:** S3 `sekar-media-staging` via the **EC2 instance role** — no static AWS keys on the host.
+- **Secrets:** SSM Parameter Store SecureString `/sekar/staging/*` → materialized to
+  `/opt/sekar/.env` by [`infra/seed-env-from-ssm.sh`](../../infra/seed-env-from-ssm.sh).
+- **No SSH:** all box operations go through **SSM Run Command**.
+
+### Routine deploys — GitHub Actions (preferred)
+Push to `main` (or run the workflow manually) triggers
+[`.github/workflows/deploy-staging.yml`](../../.github/workflows/deploy-staging.yml):
+OIDC → build+push both images (`:staging` + `:<sha>`) → pre-deploy RDS snapshot → migrate
+(SSM `migration:run:prod`) → `docker compose up -d --wait` pinned to the SHA → smoke test.
+**Rollback:** re-run the workflow (`workflow_dispatch`) — or re-deploy a prior `:<sha>` tag.
+
+Required GitHub **Variables**: `AWS_REGION`, `AWS_ROLE_ARN`, `ECR_BACKEND`, `ECR_WEB`,
+`EC2_INSTANCE_ID`, `RDS_INSTANCE_ID`. Required **Secret**: `NEXT_PUBLIC_MAPBOX_TOKEN` (baked
+into the web bundle at build).
+
+### First-time / manual deploy (mirrors what CI does)
 ```bash
-cp be/.env.staging.example  be/.env.staging
-cp fe/web/.env.staging.example fe/web/.env.staging
+# 1. Build + push images (web bakes NEXT_PUBLIC_* at build time)
+aws ecr get-login-password --profile sekar --region ap-southeast-3 \
+  | docker login --username AWS --password-stdin 659828096624.dkr.ecr.ap-southeast-3.amazonaws.com
+docker buildx build --platform linux/amd64 -f be/Dockerfile \
+  -t .../sekar-backend:staging --push be
+docker buildx build --platform linux/amd64 -f fe/web/Dockerfile \
+  --build-arg NEXT_PUBLIC_API_URL=http://api.sekar.wahyutrip.com \
+  --build-arg NEXT_PUBLIC_WS_URL=ws://api.sekar.wahyutrip.com \
+  --build-arg NEXT_PUBLIC_MAPBOX_TOKEN=pk.* \
+  -t .../sekar-web:staging --push fe/web
+
+# 2. On the box (via SSM, as ec2-user): seed env, ensure edge net, pull, up
+bash ~/sekar/infra/seed-env-from-ssm.sh
+docker network create edge 2>/dev/null; docker network connect edge kobin-kpi-caddy 2>/dev/null
+cd ~/sekar/infra && IMAGE_TAG=staging docker compose -f compose.staging.yml up -d --wait
+
+# 3. First boot only: migrate + seed (compiled scripts; prod image has no ts-node)
+docker compose -f compose.staging.yml run --rm --no-deps backend npm run migration:run:prod
+docker compose -f compose.staging.yml run --rm --no-deps backend npm run db:seed:staging:prod
 ```
-Staging-specific values:
+> `db:seed:staging:prod` is the staging dataset (idempotent, all passwords `password123`).
+> **Never** run it on production. Migrations run every deploy; the seed is first-boot only.
 
-| Variable | Staging value |
-|----------|---------------|
-| `NODE_ENV` | `staging` |
-| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_S3_BUCKET` / `AWS_REGION` | **real AWS S3** IAM creds + bucket |
-| `AWS_ENDPOINT_URL`, `AWS_S3_FORCE_PATH_STYLE` | **omit** (these are MinIO-only) |
-| `DATABASE_*` | staging DB (RDS → `DATABASE_SSL=true`) |
-| `CORS_ORIGIN`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_WS_URL` | staging hostname (e.g. `https://staging.sekar.example.com`) |
-| `FCM_ENABLED` | `true` with a **staging** Firebase project |
-
-**3. TLS** — a staging certificate (Let's Encrypt for the staging hostname), or self-signed for an internal-only box:
+### Smoke test
 ```bash
-mkdir -p infra/certs
-openssl req -x509 -newkey rsa:2048 -nodes -days 365 \
-  -keyout infra/certs/privkey.pem -out infra/certs/fullchain.pem \
-  -subj "/CN=staging.sekar.example.com"
+curl -sf http://api.sekar.wahyutrip.com/api/v1/health/ready   # {db,redis} ok
+curl -sI http://sekar.wahyutrip.com/login                      # 200
 ```
-
-**4. Build & start** (same images, staging env file):
-```bash
-docker compose --env-file .env.staging -f docker-compose.prod.yml up -d --build
-docker compose --env-file .env.staging -f docker-compose.prod.yml ps
-```
-
-**5. Migrate & seed** — note the **staging** seeder:
-```bash
-docker compose --env-file .env.staging -f docker-compose.prod.yml exec backend npm run migration:run:prod
-docker compose --env-file .env.staging -f docker-compose.prod.yml exec backend npm run db:seed:staging:prod
-```
-> `db:seed:staging:prod` is the staging dataset (compiled-JS variant). **Never** run `npm run db:seed` on a shared environment — it wipes the database.
-
-**6. Smoke test** — `curl -sf https://staging.sekar.example.com/api/v1/health/ready`, then log in and confirm the monitoring map renders (validates Mapbox + WebSocket + the real-S3 media path).
-
-When staging is green, promote the same images/release to production (§E).
+Then log in (`superadmin/password123`) and confirm the monitoring map renders (Mapbox +
+WebSocket + S3 media path). **Enabling TLS later:** drop the `http://` prefix in
+`infra/Caddyfile.staging`, switch the web build args + `CORS_ORIGIN` to `https`/`wss`, and
+flip `NEXT_PUBLIC_SECURE_COOKIES`/`NEXT_PUBLIC_FEATURE_PWA` back on.
 
 ---
 
@@ -252,7 +281,12 @@ Full detail: [`credentials-setup.md`](credentials-setup.md) §Firebase. iOS APNs
 
 ## F. CI/CD
 
-GitHub Actions drive lint → test → build → deploy per branch (`main` = production, `staging`, `develop`), with environment secrets and approval gates. → **[`ci-cd.md`](ci-cd.md)**.
+**Staging (AWS)** is automated by [`.github/workflows/deploy-staging.yml`](../../.github/workflows/deploy-staging.yml):
+on push to `main` (or `workflow_dispatch`) it uses GitHub **OIDC** (no stored AWS keys) →
+builds + pushes backend/web images to ECR (`:staging` + `:<sha>`) → pre-deploy RDS snapshot →
+migrate + `up -d --wait` on the box via **SSM** → smoke test. Gated by the GitHub `staging`
+environment (add required reviewers to make it a manual gate). The older Elastic-Beanstalk /
+SSH workflows are retired (`*.disabled`). See §D for the runbook and rollback. → **[`ci-cd.md`](ci-cd.md)**.
 
 ---
 

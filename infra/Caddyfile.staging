@@ -1,0 +1,26 @@
+# SEKAR staging — Caddy site blocks (source of truth).
+#
+# These two blocks are appended to the SHARED Caddyfile that KPI's caddy container
+# serves on the box (/home/ec2-user/kobin-kpi-procurement/infra/Caddyfile) AND kept
+# in the KPI repo so a KPI redeploy does not drop SEKAR's routes.
+#
+# UAT runs over plain HTTP (no TLS yet) — the explicit `http://` scheme tells Caddy
+# NOT to auto-provision Let's Encrypt or redirect to HTTPS; it serves on port 80 only.
+# To enable free auto-HTTPS later, drop the `http://` prefix (DNS already points at
+# the Elastic IP and 80/443 are open — same as KPI's kobin.wahyutrip.com).
+#
+# Backend and web join the shared external `edge` network (see compose.staging.yml),
+# so Caddy reaches them by container name.
+
+# API + WebSocket (Caddy streams the socket.io upgrade automatically).
+http://api.sekar.wahyutrip.com {
+	encode gzip
+	# Work-report photo/video uploads stream through without an explicit size cap.
+	reverse_proxy sekar-backend:3000
+}
+
+# Web dashboard.
+http://sekar.wahyutrip.com {
+	encode gzip
+	reverse_proxy sekar-web:3000
+}

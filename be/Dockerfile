@@ -47,6 +47,18 @@ ENV NODE_ENV=production
 
 WORKDIR /app
 
+# Chromium for headless PDF report generation (puppeteer-core). Use the system
+# Chromium from Alpine repos — puppeteer-core ships no bundled browser.
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser \
+    PUPPETEER_SKIP_DOWNLOAD=true
+
 # Create non-root user for security
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs
