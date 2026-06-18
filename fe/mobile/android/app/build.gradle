@@ -77,18 +77,27 @@ def jscFlavor = 'org.webkit:android-jsc:+'
 
 // Resolve the Google Maps SDK key without committing it to source. Order:
 //   1. SEKAR_MAPS_API_KEY gradle property (~/.gradle, -P…, ORG_GRADLE_PROJECT_… env)
-//   2. GOOGLE_MAPS_API_KEY in fe/mobile/.env.local (the same gitignored file the
-//      JS layer reads via react-native-dotenv), so a single source feeds both.
+//   2. GOOGLE_MAPS_API_KEY from the env file this build targets — the same file Babel
+//      reads via ENVFILE (so release builds use .env.runtime, which the build:android:*
+//      scripts decrypt from .env.staging/.env.production → the env-specific key).
+//   3. Falls back to .env.local (debug/dev). All are gitignored; one source feeds both
+//      the JS layer and the native manifest. NB: debug builds use the debug keystore's
+//      SHA-1, so .env.local's key must be authorized for that SHA-1 (or unrestricted).
 def resolveMapsApiKey = {
     def fromProp = project.findProperty('SEKAR_MAPS_API_KEY')
     if (fromProp) {
         return fromProp
     }
-    def envFile = file("${rootProject.projectDir}/../.env.local")
-    if (envFile.exists()) {
-        def line = envFile.readLines().find { it.trim().startsWith('GOOGLE_MAPS_API_KEY=') }
-        if (line) {
-            return line.substring(line.indexOf('=') + 1).trim().replaceAll('^["\']|["\']$', '')
+    def envName = System.getenv('ENVFILE') ?: '.env.local'
+    def candidates = [envName, '.env.local'].unique()
+    for (name in candidates) {
+        def envFile = file("${rootProject.projectDir}/../${name}")
+        if (envFile.exists()) {
+            def line = envFile.readLines().find { it.trim().startsWith('GOOGLE_MAPS_API_KEY=') }
+            if (line) {
+                def val = line.substring(line.indexOf('=') + 1).trim().replaceAll('^["\']|["\']$', '')
+                if (val) { return val }
+            }
         }
     }
     return ''
