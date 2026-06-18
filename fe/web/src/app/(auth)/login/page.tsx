@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Eye, EyeOff } from 'lucide-react';
 import { FormInput, Button, useToast } from '@/components/ui';
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { BrandLockup } from '@/components/brand/BrandLockup';
 import { LoginHero } from '@/components/brand/LoginHero';
 import { useAuth } from '@/lib/auth/hooks';
@@ -113,7 +114,9 @@ function LoginForm() {
       </div>
 
       {/* Form panel */}
-      <div className="flex min-h-screen flex-col justify-center bg-nb-background px-6 py-12 sm:px-14">
+      <div className="relative flex min-h-screen flex-col justify-center bg-nb-background px-6 py-12 sm:px-14">
+        {/* Light/dark switcher — top-right of the form panel, above both columns. */}
+        <ThemeToggle className="absolute right-6 top-6 z-20 sm:right-8 sm:top-8" />
         <div className="mx-auto w-full max-w-[340px]">
           {/* Mobile brand header (brand panel is desktop-only) */}
           <div className="mb-8 lg:hidden">

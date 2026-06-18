@@ -5,8 +5,10 @@ export const size = { width: 180, height: 180 };
 export const contentType = 'image/png';
 
 /**
- * SEKAR apple touch icon — auto-generates /apple-icon.png
- * Green canvas with the pinwheel brand mark.
+ * SEKAR apple touch icon — auto-generates /apple-icon.png.
+ * Mirrors the canonical brand lockup (`SekarLogoBox`): the pinwheel inside a
+ * tilted white Neo-Brutalist box (thick ink border + hard-edge offset shadow)
+ * on the green canvas.
  */
 export default function AppleIcon() {
   return new ImageResponse(
@@ -21,7 +23,22 @@ export default function AppleIcon() {
           background: PINWHEEL.greenBg,
         }}
       >
-        <img src={pinwheelDataUri()} width={132} height={132} alt="SEKAR" />
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 124,
+            height: 124,
+            borderRadius: 24,
+            border: `6px solid ${PINWHEEL.ink}`,
+            background: '#FFFFFF',
+            boxShadow: `8px 8px 0 ${PINWHEEL.ink}`,
+            transform: 'rotate(-6deg)',
+          }}
+        >
+          <img src={pinwheelDataUri()} width={80} height={80} alt="SEKAR" />
+        </div>
       </div>
     ),
     { ...size },
