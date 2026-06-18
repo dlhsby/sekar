@@ -98,11 +98,19 @@ cat .env.keys           # the 2 private keys for THIS workspace — SECRET, giti
 # 4. Repeat steps 1–3 in fe/web and fe/mobile.
 ```
 
-Editing a secret later (never writes plaintext to disk):
+> **Running the CLI.** `dotenvx` is a *workspace* dependency, not a global command — bare
+> `dotenvx …` will say "command not found". Use `npx dotenvx …` from inside a workspace, the npm
+> scripts below, or `npm i -g @dotenvx/dotenvx` to install it globally.
+
+Editing / inspecting a secret (never writes plaintext to disk). Per-workspace npm scripts wrap
+the staging file (`be`, `fe/web` have `env:get` / `env:decrypt`; `fe/web` also `env:decrypt:prod`):
 
 ```bash
-dotenvx set GOOGLE_MAPS_API_KEY "AIza…" -f .env.staging   # sets + encrypts one value
-dotenvx get GOOGLE_MAPS_API_KEY -f .env.staging           # read one decrypted value
+npm run env:get -- DATABASE_PASSWORD      # one decrypted value (or all as JSON if no key)
+npm run env:decrypt                       # whole staging file decrypted to stdout
+# or directly:
+npx dotenvx set GOOGLE_MAPS_API_KEY "AIza…" -f .env.staging   # set + encrypt one value
+npx dotenvx get GOOGLE_MAPS_API_KEY --env-file=.env.staging   # read one value (note: --env-file= form)
 ```
 
 Safety net — a **pre-commit hook** blocks committing a plaintext `.env.*` or any `.env.keys`.
