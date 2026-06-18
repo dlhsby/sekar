@@ -6,8 +6,10 @@ module.exports = {
       {
         moduleName: '@env',
         // Local dev uses .env.local (standardised across all workspaces).
-        // Per-build overrides can point this at .env.staging / .env.production.
-        path: '.env.local',
+        // Per-build overrides point this at .env.staging / .env.production via the
+        // ENVFILE var, e.g. `ENVFILE=.env.staging npm run android`. Values are
+        // inlined at bundle time, so always pair a switch with `--reset-cache`.
+        path: process.env.ENVFILE || '.env.local',
       },
     ],
     // Reanimated 4 moved its Babel plugin into react-native-worklets. It MUST be

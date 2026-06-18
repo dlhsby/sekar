@@ -101,19 +101,28 @@ SEKAR_RELEASE_KEY_PASSWORD=your_actual_password
 
 ## C. Building Locally
 
+> **How the API URL gets into a build (read this first).**
+> Mobile uses `react-native-dotenv`, which **inlines `@env` values at bundle time** from a
+> single file chosen in `babel.config.js`: `process.env.ENVFILE || '.env.local'`. So you select
+> the target environment with the **`ENVFILE`** variable, **not** by writing to `.env`
+> (writing `.env` does nothing). The committed templates are `.env.local.example`,
+> `.env.staging.example`, `.env.production.example` — copy the one you need to its bare name
+> (e.g. `cp .env.staging.example .env.staging`) and fill in any keys.
+>
+> **Gradle does not track `ENVFILE` as a task input.** A previously-built JS bundle is reused
+> even if you change `ENVFILE`, baking in the *old* URL. **Always run `clean` when you switch
+> environments** — it is the release-build equivalent of Metro's `--reset-cache`.
+
 ### C1. Debug APK (Development)
 
 ```bash
 cd fe/mobile
 
-# Ensure .env points to local or staging API
-echo "API_BASE_URL=http://10.0.2.2:3000" > .env
-echo "API_VERSION=v1" >> .env
-
-# Build and install on connected device
+# Uses .env.local by default (Android emulator → http://10.0.2.2:3000).
+# Build + install + start Metro on a connected device:
 npm run android
 
-# Or build APK without installing
+# Or build the APK without installing:
 cd android && ./gradlew assembleDebug
 # Output: android/app/build/outputs/apk/debug/app-debug.apk
 ```
@@ -121,16 +130,11 @@ cd android && ./gradlew assembleDebug
 ### C2. Release APK (for Direct Distribution)
 
 ```bash
-cd fe/mobile
+# Production target is on-prem (.env.production); point ENVFILE at the file you want.
+# Ensure gradle.properties has signing config (Section B2) — else it falls back to debug signing.
+cd fe/mobile/android
 
-# Set production API URL
-echo "API_BASE_URL=https://api.sekar.wahyutrip.com" > .env
-echo "API_VERSION=v1" >> .env
-
-# Ensure gradle.properties has signing config (Section B2)
-
-# Build release APK
-cd android && ./gradlew assembleRelease
+ENVFILE=.env.production ./gradlew clean assembleRelease
 
 # Output: android/app/build/outputs/apk/release/app-release.apk
 ```
@@ -138,32 +142,39 @@ cd android && ./gradlew assembleRelease
 ### C3. Release AAB (for Google Play Store)
 
 ```bash
-cd fe/mobile
+cd fe/mobile/android
 
-# Set production API URL
-echo "API_BASE_URL=https://api.sekar.wahyutrip.com" > .env
-echo "API_VERSION=v1" >> .env
-
-# Build Android App Bundle
-cd android && ./gradlew bundleRelease
+ENVFILE=.env.production ./gradlew clean bundleRelease
 
 # Output: android/app/build/outputs/bundle/release/app-release.aab
 ```
 
 > **AAB vs APK:** Google Play requires AAB format. AAB produces optimized APKs per device, resulting in smaller download sizes (~20-30% smaller). For direct distribution (WhatsApp/email), use APK.
 
-### C4. Staging APK
+### C4. Staging / UAT APK
+
+Builds the app against the deployed AWS staging API (`http://api.sekar.wahyutrip.com`, plain
+HTTP — Android cleartext is allowed via `usesCleartextTraffic="true"`). This is the build to
+hand to UAT testers.
 
 ```bash
 cd fe/mobile
 
-# Set staging API URL
-echo "API_BASE_URL=https://api-staging.sekar.wahyutrip.com" > .env
-echo "API_VERSION=v1" >> .env
+# One-time: create the runtime file from the committed template, then add any keys
+# (e.g. GOOGLE_MAPS_API_KEY for the supervisor map — leave blank to skip the map).
+cp .env.staging.example .env.staging
 
-# Build release APK (signed, optimized)
-cd android && ./gradlew assembleRelease
+# Build a signed, optimized release APK against staging. `clean` is mandatory when
+# switching ENVFILE (see the note at the top of section C).
+cd android && ENVFILE=.env.staging ./gradlew clean assembleRelease
+
+# Output: android/app/build/outputs/apk/release/app-release.apk
+# Install on a device (no `adb reverse` needed — the bundle is self-contained):
+#   adb install -r app/build/outputs/apk/release/app-release.apk
 ```
+
+> Debug signing is acceptable for sideloaded UAT APKs. For a Play-track or "real" signed
+> build, configure the release keystore first (Section B).
 
 ### C5. Verify Signed APK
 
@@ -421,18 +432,20 @@ To auto-upload to Google Play, add this step to the production job:
 
 ### G1. Environment-Specific .env Files
 
+One file per environment, selected at build time via `ENVFILE` (default `.env.local`). Commit
+only the `*.example` templates; the bare files are gitignored and hold any real keys.
+
+| Environment | File (gitignored) | Template (committed) | `API_BASE_URL` |
+|-------------|-------------------|----------------------|----------------|
+| Development | `.env.local` | `.env.local.example` | `http://10.0.2.2:3000` (emulator) |
+| Staging / UAT | `.env.staging` | `.env.staging.example` | `http://api.sekar.wahyutrip.com` (plain HTTP, no TLS yet) |
+| Production | `.env.production` | `.env.production.example` | on-prem (pemkot) host |
+
 ```bash
-# Development (local)
-API_BASE_URL=http://10.0.2.2:3000
-API_VERSION=v1
-
-# Staging
-API_BASE_URL=https://api-staging.sekar.wahyutrip.com
-API_VERSION=v1
-
-# Production
-API_BASE_URL=https://api.sekar.wahyutrip.com
-API_VERSION=v1
+# Select at build time (clean is required when switching — see section C):
+ENVFILE=.env.staging    ./gradlew clean assembleRelease   # UAT
+ENVFILE=.env.production ./gradlew clean assembleRelease   # production
+# (omit ENVFILE → .env.local, used by `npm run android` for local dev)
 ```
 
 ### G2. Google Maps API Key
@@ -517,11 +530,12 @@ keytool -list -v -keystore sekar-release.keystore -alias sekar-key | grep SHA1
 # Build debug APK
 cd fe/mobile/android && ./gradlew assembleDebug
 
-# Build release APK (signed)
-cd fe/mobile/android && ./gradlew assembleRelease
+# Build release APK (signed) — pick the target env; clean is required when switching
+cd fe/mobile/android && ENVFILE=.env.staging    ./gradlew clean assembleRelease   # UAT
+cd fe/mobile/android && ENVFILE=.env.production  ./gradlew clean assembleRelease   # prod
 
 # Build AAB for Play Store
-cd fe/mobile/android && ./gradlew bundleRelease
+cd fe/mobile/android && ENVFILE=.env.production ./gradlew clean bundleRelease
 
 # Clean build
 cd fe/mobile/android && ./gradlew clean
@@ -541,4 +555,4 @@ adb logcat *:S ReactNative:V ReactNativeJS:V
 
 ---
 
-**Last Updated:** 2026-03-13
+**Last Updated:** 2026-06-18
