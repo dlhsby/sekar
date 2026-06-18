@@ -49,6 +49,18 @@ jobs:
           java-version: 17
           cache: gradle   # caches ~/.gradle (deps + wrapper) across runs — survives `clean`
 
+      # Cache the React Native native C++ build (CMake/ninja). On a hit, the CI build
+      # (which does NOT `clean`) lets ninja see the per-ABI objects as up-to-date and
+      # skips recompilation — the bulk of the time. Keyed on package-lock.json so it
+      # invalidates whenever any dependency (incl. a native module) changes; JS-only
+      # changes reuse it. Valid because GitHub-hosted runners use a stable workspace path
+      # (CMake embeds absolute paths in .cxx).
+      - name: Cache RN native build (.cxx)
+        uses: actions/cache@v4
+        with:
+          path: fe/mobile/android/app/.cxx
+          key: rn-cxx-${{ runner.os }}-${{ hashFiles('fe/mobile/package-lock.json') }}
+
       - name: Install dependencies
         run: npm ci
 
@@ -89,7 +101,8 @@ jobs:
           ORG_GRADLE_PROJECT_SEKAR_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ORG_GRADLE_PROJECT_SEKAR_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ORG_GRADLE_PROJECT_SEKAR_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: npm run build:release:staging
+        # :ci variant omits `clean` so the cached .cxx is reused (fast native build).
+        run: npm run build:release:staging:ci
 
       - name: Verify the APK is signed with the release key (not debug)
         run: |
