@@ -131,8 +131,17 @@ jobs:
           export IMAGE_TAG=$SHA
           docker compose -f compose.staging.yml pull
           docker compose -f compose.staging.yml run --rm --no-deps backend npm run migration:run:prod
-          docker compose -f compose.staging.yml up -d --wait
+          # --force-recreate guarantees containers are rebuilt from the freshly pulled,
+          # SHA-pinned image (a plain up can no-op against a stale local tag).
+          docker compose -f compose.staging.yml up -d --force-recreate --wait
           docker image prune -f
+          # Fail loudly if the running image is not the SHA we just built — otherwise a
+          # stale container would pass the smoke test (false positive).
+          RUNNING_BE=\$(docker inspect sekar-backend --format '{{.Config.Image}}')
+          EXPECT_BE="659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-backend:\$IMAGE_TAG"
+          echo "running backend image: \$RUNNING_BE (expected \$EXPECT_BE)"
+          test "\$RUNNING_BE" = "\$EXPECT_BE"
+          echo "DEPLOY-VERIFIED \$IMAGE_TAG"
           EOF
           )
           RUN_B64=$(printf '%s' "$BOX" | base64 -w0)
