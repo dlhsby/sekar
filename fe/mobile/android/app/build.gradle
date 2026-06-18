@@ -75,6 +75,25 @@ def enableProguardInReleaseBuilds = true
  */
 def jscFlavor = 'org.webkit:android-jsc:+'
 
+// Resolve the Google Maps SDK key without committing it to source. Order:
+//   1. SEKAR_MAPS_API_KEY gradle property (~/.gradle, -P…, ORG_GRADLE_PROJECT_… env)
+//   2. GOOGLE_MAPS_API_KEY in fe/mobile/.env.local (the same gitignored file the
+//      JS layer reads via react-native-dotenv), so a single source feeds both.
+def resolveMapsApiKey = {
+    def fromProp = project.findProperty('SEKAR_MAPS_API_KEY')
+    if (fromProp) {
+        return fromProp
+    }
+    def envFile = file("${rootProject.projectDir}/../.env.local")
+    if (envFile.exists()) {
+        def line = envFile.readLines().find { it.trim().startsWith('GOOGLE_MAPS_API_KEY=') }
+        if (line) {
+            return line.substring(line.indexOf('=') + 1).trim().replaceAll('^["\']|["\']$', '')
+        }
+    }
+    return ''
+}
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -87,11 +106,10 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0.0"
-        // Google Maps SDK key — supplied via the gitignored gradle property
-        // SEKAR_MAPS_API_KEY (~/.gradle/gradle.properties, android/gradle.properties,
-        // -PSEKAR_MAPS_API_KEY=..., or ORG_GRADLE_PROJECT_SEKAR_MAPS_API_KEY env).
+        // Google Maps SDK key — resolved from the SEKAR_MAPS_API_KEY gradle
+        // property or GOOGLE_MAPS_API_KEY in .env.local (see resolveMapsApiKey).
         // Empty fallback keeps the build green; maps render blank until it is set.
-        manifestPlaceholders = [MAPS_API_KEY: project.findProperty('SEKAR_MAPS_API_KEY') ?: '']
+        manifestPlaceholders = [MAPS_API_KEY: resolveMapsApiKey()]
         externalNativeBuild {
             cmake {
                 arguments "-DANDROID_LD=lld"

@@ -7,9 +7,10 @@
  */
 
 import React, { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { StyleSheet, View, TouchableOpacity } from 'react-native';
+import { createBottomTabNavigator, type BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import type { MainTabParamList, MainStackParamList } from '../types/navigation.types';
 import type { UserRole } from '../types/models.types';
@@ -148,30 +149,37 @@ interface TabConfig {
   name: keyof MainTabParamList;
   label: string;
   icon: string;
+  /**
+   * Registered as a screen (reachable via navigate) but NOT shown in the bottom
+   * tab bar. Used to park not-yet-reviewed Phase 5 features (Aset/Kinerja/Tim)
+   * off the field-role tab bars without breaking their detail-screen navigation.
+   */
+  hidden?: boolean;
 }
 
 export const TAB_CONFIGS: Record<string, TabConfig[]> = {
   satgas: [
     { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
-    { name: 'Assets', label: 'Aset', icon: 'toolbox-outline' },
     { name: 'Overtime', label: 'Lembur', icon: 'clock-plus-outline' },
-    { name: 'WorkerAnalytics', label: 'Kinerja', icon: 'chart-line' },
+    // Parked off the tab bar pending review (still reachable via navigate).
+    { name: 'Assets', label: 'Aset', icon: 'toolbox-outline', hidden: true },
+    { name: 'WorkerAnalytics', label: 'Kinerja', icon: 'chart-line', hidden: true },
   ],
   linmas: [
     { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
-    { name: 'Assets', label: 'Aset', icon: 'toolbox-outline' },
     { name: 'Overtime', label: 'Lembur', icon: 'clock-plus-outline' },
-    { name: 'WorkerAnalytics', label: 'Kinerja', icon: 'chart-line' },
+    { name: 'Assets', label: 'Aset', icon: 'toolbox-outline', hidden: true },
+    { name: 'WorkerAnalytics', label: 'Kinerja', icon: 'chart-line', hidden: true },
   ],
   korlap: [
     { name: 'Home', label: 'Beranda', icon: 'home' },
     { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
     { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
     { name: 'Overtime', label: 'Lembur', icon: 'clock-plus-outline' },
-    { name: 'Assets', label: 'Aset', icon: 'toolbox-outline' },
-    { name: 'TeamAnalytics', label: 'Tim', icon: 'chart-bar' },
+    { name: 'Assets', label: 'Aset', icon: 'toolbox-outline', hidden: true },
+    { name: 'TeamAnalytics', label: 'Tim', icon: 'chart-bar', hidden: true },
   ],
   admin_data: [
     { name: 'Home', label: 'Beranda', icon: 'home' },
@@ -248,6 +256,71 @@ function TabBarIcon({ focused, name }: { focused: boolean; name: string }): Reac
   );
 }
 
+/**
+ * Custom bottom tab bar — a plain flexbox row we fully control.
+ *
+ * The default @react-navigation/bottom-tabs v7 tab bar collapses all items into
+ * the start of the bar on the New Architecture (Android), no matter what
+ * `tabBarItemStyle`/`tabBarLabelPosition` we pass. Rendering our own row of
+ * equal-width (`flex: 1`) items sidesteps the library's internal measurement and
+ * guarantees even distribution + reliable touch targets.
+ */
+function MainTabBar({ state, navigation }: BottomTabBarProps): React.JSX.Element {
+  const user = useAppSelector((s) => s.auth.user);
+  const role = user?.role ?? 'satgas';
+  const visibleTabs = useMemo(
+    () => getTabsForRole(role).filter((t) => !t.hidden),
+    [role],
+  );
+  const insets = useSafeAreaInsets();
+
+  const focusedName = state.routes[state.index]?.name;
+
+  return (
+    <View style={[styles.tabBar, { paddingBottom: 6 + insets.bottom }]}>
+      {visibleTabs.map((tab) => {
+        const route = state.routes.find((r) => r.name === tab.name);
+        if (!route) {
+          return null;
+        }
+        const focused = focusedName === tab.name;
+
+        const onPress = () => {
+          const event = navigation.emit({
+            type: 'tabPress',
+            target: route.key,
+            canPreventDefault: true,
+          });
+          if (!focused && !event.defaultPrevented) {
+            navigation.navigate(route.name as never);
+          }
+        };
+
+        return (
+          <TouchableOpacity
+            key={tab.name}
+            style={styles.tabBarItem}
+            onPress={onPress}
+            accessibilityRole="button"
+            accessibilityState={focused ? { selected: true } : {}}
+            accessibilityLabel={tab.label}
+          >
+            <TabBarIcon focused={focused} name={tab.icon} />
+            <NBText
+              variant="mono-sm"
+              color={focused ? 'black' : 'gray600'}
+              numberOfLines={1}
+              style={styles.tabLabel}
+            >
+              {tab.label}
+            </NBText>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
 function TabNavigator(): React.JSX.Element {
   const user = useAppSelector((state) => state.auth.user);
   const role = user?.role ?? 'satgas';
@@ -255,9 +328,8 @@ function TabNavigator(): React.JSX.Element {
 
   return (
     <Tab.Navigator
+      tabBar={(props) => <MainTabBar {...props} />}
       screenOptions={{
-        tabBarActiveTintColor: nbColors.primary,
-        tabBarInactiveTintColor: nbColors.gray600,
         headerShown: true,
         headerStyle: NB_HEADER_STYLE,
         headerTitleStyle: {
@@ -276,8 +348,6 @@ function TabNavigator(): React.JSX.Element {
           flexBasis: 0,
           width: 0,
         },
-        tabBarStyle: styles.tabBar,
-        tabBarItemStyle: styles.tabBarItem,
       }}>
       {visibleTabs.map((tab) => (
         <Tab.Screen
@@ -285,20 +355,8 @@ function TabNavigator(): React.JSX.Element {
           name={tab.name}
           component={SCREEN_MAP[tab.name]}
           options={{
+            // Icon + label are rendered by the custom MainTabBar.
             headerTitle: () => <FieldHomeHeader />,
-            tabBarLabel: ({ focused }) => (
-              <NBText
-                variant="mono-sm"
-                color={focused ? 'black' : 'gray600'}
-                numberOfLines={1}
-                style={styles.tabLabel}
-              >
-                {tab.label}
-              </NBText>
-            ),
-            tabBarIcon: ({ focused }) => (
-              <TabBarIcon focused={focused} name={tab.icon} />
-            ),
           }}
         />
       ))}
@@ -590,15 +648,20 @@ function MainNavigator(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   tabBar: {
-    height: 68,
+    flexDirection: 'row',
+    minHeight: 68,
     backgroundColor: nbColors.white,
     borderTopWidth: nbBorders.widthThick,
     borderTopColor: nbColors.black,
     ...nbShadows.md,
-    paddingBottom: 6,
     paddingTop: 6,
+    // paddingBottom is applied dynamically (6 + safe-area inset) in MainTabBar.
   },
   tabBarItem: {
+    // Equal-width distribution across the row + reliable touch target.
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 2,
   },
   tabIconActive: {

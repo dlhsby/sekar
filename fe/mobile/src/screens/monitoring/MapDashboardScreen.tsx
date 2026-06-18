@@ -10,7 +10,6 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { View, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import BottomSheet from '@gorhom/bottom-sheet';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import { useSelector, useDispatch } from 'react-redux';
 import { nbColors, nbSpacing, nbShadows, nbBorders, nbRadius } from '../../constants/nbTokens';
@@ -18,6 +17,7 @@ import { NBBackgroundPattern } from '../../components/nb';
 import { NBText } from '../../components/nb/NBText';
 import { MapErrorBoundary } from '../../components/monitoring/MapErrorBoundary';
 import { MonitoringSearchBar } from '../../components/monitoring/MonitoringSearchBar';
+import { MarkerPreview } from '../../components/monitoring/MarkerPreview';
 import type { SearchResult } from '../../hooks/useMonitoringSearch';
 import { addRecentSearch } from '../../services/storage/recentSearches';
 import { ROLE_LABELS } from '../../constants/roles';
@@ -55,7 +55,7 @@ import {
 
 export function MapDashboardScreen(): React.JSX.Element {
   const mapRef = useRef<MapView | null>(null);
-  const statusSheetRef = useRef<BottomSheet | null>(null);
+  const [statusSheetVisible, setStatusSheetVisible] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
 
   // Redux state
@@ -285,7 +285,6 @@ export function MapDashboardScreen(): React.JSX.Element {
                 labelMode={labelMode}
                 useClustering={useClustering}
                 currentRegion={currentRegion}
-                markerPreview={markerPreview}
                 boundaryKey={boundaryKey}
                 onRayonPress={handleRayonPress}
                 onAreaPress={handleAreaPress}
@@ -312,6 +311,7 @@ export function MapDashboardScreen(): React.JSX.Element {
           <FABColumn
             toolsExpanded={toolsExpanded}
             setToolsExpanded={setToolsExpanded}
+            onOpenStatus={() => setStatusSheetVisible(true)}
             handleMyLocation={handleMyLocation}
             handleRefresh={() => handleRefresh(setBoundaryKey)}
             resetHeading={resetHeading}
@@ -320,11 +320,18 @@ export function MapDashboardScreen(): React.JSX.Element {
             filterModalVisible={filterModalVisible}
             setFilterModalVisible={setFilterModalVisible}
           />
+
+          {/* Marker preview card — a viewport-centered overlay OVER the map (not a
+              MapView child). Rendered here as a sibling so react-native-maps does
+              not treat this plain View as a native map feature (which crashes the
+              Fabric renderer with "child already has a parent" on tap). */}
+          {markerPreview && <MarkerPreview data={markerPreview} />}
         </View>
 
         {/* Monitoring status peek sheet, user detail sheet, trail viewer */}
         <StatusAndDetailSheets
-          statusSheetRef={statusSheetRef}
+          statusSheetVisible={statusSheetVisible}
+          onCloseStatusSheet={() => setStatusSheetVisible(false)}
           activityFilter={activityFilter}
           onActivityChange={setActivityFilter}
           liveUsers={liveUsers ?? []}

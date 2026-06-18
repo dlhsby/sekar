@@ -70,10 +70,10 @@ const attendance = {
 } as any;
 
 function renderSheet(overrides?: { onUserPress?: jest.Mock; attendance?: any }) {
-  const sheetRef = React.createRef<any>();
   return render(
     <MonitoringStatusSheet
-      sheetRef={sheetRef}
+      visible
+      onClose={jest.fn()}
       activeActivity={null}
       onActivityChange={jest.fn()}
       liveUsers={liveUsers}
@@ -135,10 +135,10 @@ describe('MonitoringStatusSheet', () => {
   });
 
   it('renders the empty state when no petugas are tracked', () => {
-    const sheetRef = React.createRef<any>();
     const { getByText } = render(
       <MonitoringStatusSheet
-        sheetRef={sheetRef}
+        visible
+        onClose={jest.fn()}
         activeActivity={null}
         onActivityChange={jest.fn()}
         liveUsers={[]}

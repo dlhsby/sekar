@@ -10,7 +10,6 @@ import { ClusteredUserMarkers } from '../../../components/monitoring/ClusteredUs
 import { AreaStatusOverlay } from '../../../components/monitoring/AreaStatusOverlay';
 import { PlantOverlayLayer } from '../../../components/monitoring/PlantOverlayLayer';
 import { BoundaryOverlay } from '../../../components/monitoring/BoundaryOverlay';
-import { MarkerPreview, type MarkerPreviewData } from '../../../components/monitoring/MarkerPreview';
 import { UserMarker, type LabelMode } from '../../../components/monitoring/UserMarker';
 import type { LiveUser } from '../../../types/models.types';
 import type { MonitoringV2VisibleLayers } from '../../../store/slices/monitoringV2Slice';
@@ -25,7 +24,6 @@ interface MapLayerContentProps {
   labelMode: LabelMode;
   useClustering: boolean;
   currentRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
-  markerPreview: MarkerPreviewData | null;
   boundaryKey: number;
   onRayonPress: (rayon: any) => void;
   onAreaPress: (area: any) => void;
@@ -43,7 +41,6 @@ export function MapLayerContent({
   labelMode,
   useClustering,
   currentRegion,
-  markerPreview,
   boundaryKey,
   onRayonPress,
   onAreaPress,
@@ -127,9 +124,6 @@ export function MapLayerContent({
           })}
         </>
       )}
-
-      {/* Marker preview card — pinned over the tapped marker (custom callout). */}
-      {markerPreview && <MarkerPreview data={markerPreview} />}
     </>
   );
 }

@@ -10,11 +10,11 @@ import { MapFab } from '../../../components/monitoring/MapFab';
 import { ToolsOverlay } from './ToolsOverlay';
 import { nbSpacing } from '../../../constants/nbTokens';
 
-const PEEK_HEIGHT = 88;
-
 interface FABColumnProps {
   toolsExpanded: boolean;
   setToolsExpanded: (expanded: boolean) => void;
+  /** Opens the monitoring status-summary sheet. */
+  onOpenStatus: () => void;
   handleMyLocation: () => void;
   handleRefresh: () => void;
   resetHeading: () => void;
@@ -27,6 +27,7 @@ interface FABColumnProps {
 export function FABColumn({
   toolsExpanded,
   setToolsExpanded,
+  onOpenStatus,
   handleMyLocation,
   handleRefresh,
   resetHeading,
@@ -48,6 +49,12 @@ export function FABColumn({
 
       {/* FAB column — MON-3 refactored with tools overlay */}
       <View style={styles.fabColumn}>
+        {/* Status summary FAB — opens the petugas status-summary sheet */}
+        <MapFab
+          icon="account-group"
+          onPress={onOpenStatus}
+          accessibilityLabel="Ringkasan status"
+        />
         {/* Tools FAB — opens the map-tools overlay (compass, zoom, filter, layers) */}
         <MapFab
           icon="wrench"
@@ -86,7 +93,7 @@ const styles = StyleSheet.create({
   fabColumn: {
     position: 'absolute',
     right: nbSpacing.md,
-    bottom: PEEK_HEIGHT + nbSpacing.md,
+    bottom: nbSpacing.md,
     gap: nbSpacing.sm,
     pointerEvents: 'box-none',
   },

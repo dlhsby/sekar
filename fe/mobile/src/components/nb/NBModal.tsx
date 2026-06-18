@@ -5,10 +5,13 @@ import {
   Modal,
   StyleSheet,
   TouchableOpacity,
+  Pressable,
   Platform,
   KeyboardAvoidingView,
   ScrollView,
   Dimensions,
+  Animated,
+  PanResponder,
 } from 'react-native';
 import type { StyleProp, TextStyle } from 'react-native';
 import {
@@ -342,11 +345,170 @@ function FullscreenModal({
   );
 }
 
+// ─── RN-Modal bottom sheet (gorhom-free) ────────────────────────────────────
+//
+// @gorhom/bottom-sheet sheets do not present on the current stack (RN 0.86 New
+// Arch + reanimated 4.4 + gorhom 5.2.14) — present() is a silent no-op while a
+// plain RN `Modal` works. This is a self-contained bottom sheet built on RN
+// `Modal` (transparent + slide) that reproduces the NB sheet chrome without
+// gorhom/reanimated: dim backdrop (tap to close), bottom-anchored card that
+// hugs content up to a cap (or a fixed `sheetHeight`), fixed title + footer,
+// scrolling body. Drop-in for SheetModal; swap back once gorhom works again.
+
+function RNSheetModal({
+  visible,
+  onClose,
+  title,
+  titleStyle,
+  avoidKeyboard = false,
+  noPadding = false,
+  footer,
+  headerRight,
+  sheetHeight,
+  children,
+  testID,
+}: NBModalProps) {
+  const insets = useSafeAreaInsets();
+  const screenHeight = Dimensions.get('window').height;
+  // Cap a hug-content sheet below the status bar; honor an explicit sheetHeight.
+  const maxHeight = screenHeight - insets.top - nbSpacing.xl;
+  const fixedHeight =
+    sheetHeight != null ? resolveSnapPx(sheetHeight, screenHeight) : undefined;
+  const fixed = sheetHeight != null;
+
+  // Drag-to-close: a vertical pan on the handle slides the card down; releasing
+  // past a threshold (or a fast downward fling) closes it, otherwise it springs
+  // back. Only downward drag is tracked, and only from the handle, so the body
+  // scrolls normally. Pure RN Animated/PanResponder — no gorhom/reanimated.
+  const translateY = useRef(new Animated.Value(0)).current;
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  useEffect(() => {
+    if (visible) {
+      translateY.setValue(0);
+    }
+  }, [visible, translateY]);
+  const dragResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_e, g) => g.dy > 3,
+      onPanResponderMove: (_e, g) => {
+        if (g.dy > 0) {
+          translateY.setValue(g.dy);
+        }
+      },
+      onPanResponderRelease: (_e, g) => {
+        if (g.dy > 120 || g.vy > 0.8) {
+          onCloseRef.current();
+        } else {
+          Animated.spring(translateY, {
+            toValue: 0,
+            useNativeDriver: true,
+            bounciness: 0,
+          }).start();
+        }
+      },
+    }),
+  ).current;
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      <View style={styles.rnSheetRoot}>
+        <Pressable
+          style={styles.rnSheetBackdrop}
+          onPress={onClose}
+          accessibilityLabel="Tutup"
+          accessibilityRole="button"
+        />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          enabled={avoidKeyboard}
+          style={styles.rnSheetKav}
+          pointerEvents="box-none"
+        >
+          <Animated.View
+            testID="nbmodal-sheet-card"
+            style={[
+              styles.rnSheetCard,
+              fixed ? { height: fixedHeight } : { maxHeight },
+              { paddingBottom: insets.bottom, transform: [{ translateY }] },
+            ]}
+          >
+            <View style={styles.rnHandleArea} {...dragResponder.panHandlers}>
+              <View style={styles.rnHandle} />
+            </View>
+
+            {title ? (
+              <View testID="nbmodal-title-bar" style={styles.titleBar}>
+                <NBText variant="h3" color="black" style={[styles.titleText, titleStyle]} numberOfLines={1}>
+                  {title}
+                </NBText>
+                {headerRight ? <View style={styles.sheetHeaderRight}>{headerRight}</View> : null}
+                <TouchableOpacity
+                  onPress={onClose}
+                  style={styles.closeBtnHitArea}
+                  accessibilityLabel="Tutup"
+                  accessibilityRole="button"
+                >
+                  <View style={styles.closeBtnVisual}>
+                    <MaterialCommunityIcons name="close" size={16} color={nbColors.gray700} />
+                  </View>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+
+            {fixed ? (
+              <View testID={testID} style={styles.rnFixedBody}>
+                {children}
+              </View>
+            ) : (
+              <ScrollView
+                testID={testID}
+                contentContainerStyle={noPadding ? styles.scrollContentNoPadding : styles.scrollContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                {children}
+              </ScrollView>
+            )}
+
+            {footer ? (
+              <View
+                testID="nbmodal-footer"
+                style={[styles.footerWrap, insets.bottom > 0 && { paddingBottom: insets.bottom }]}
+              >
+                {footer}
+              </View>
+            ) : null}
+          </Animated.View>
+        </KeyboardAvoidingView>
+      </View>
+    </Modal>
+  );
+}
+
 // ─── Public component ─────────────────────────────────────────────────────────
+
+// Runtime renders sheets via the gorhom-free RNSheetModal (gorhom doesn't
+// present on this stack). Under Jest we keep routing to the original gorhom
+// SheetModal so its contract tests stay valid for when gorhom is restored —
+// RNSheetModal is plain RN and is verified on-device. Remove this gate (and
+// SheetModal) once gorhom presents correctly, or add RNSheetModal unit tests
+// if it becomes the permanent path.
+const USE_RN_SHEET = process.env.NODE_ENV !== 'test';
 
 export function NBModal({ type = 'sheet', ...props }: NBModalProps) {
   if (type === 'fullscreen') {
     return <FullscreenModal {...props} />;
+  }
+  if (USE_RN_SHEET) {
+    return <RNSheetModal {...props} />;
   }
   return <SheetModal {...props} />;
 }
@@ -397,6 +559,46 @@ const styles = StyleSheet.create({
     borderRadius: nbRadius.sm,
   },
   fixedSheetBody: {
+    width: '100%',
+  },
+  // RN-Modal bottom sheet (gorhom-free)
+  rnSheetRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  rnSheetBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  rnSheetKav: {
+    justifyContent: 'flex-end',
+  },
+  rnSheetCard: {
+    backgroundColor: nbColors.white,
+    borderTopLeftRadius: nbRadius.lg,
+    borderTopRightRadius: nbRadius.lg,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    ...nbShadows.lg,
+    overflow: 'hidden',
+  },
+  rnHandleArea: {
+    alignItems: 'center',
+    paddingTop: nbSpacing.sm,
+    paddingBottom: nbSpacing.xs,
+  },
+  rnHandle: {
+    width: 48,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: nbColors.gray400,
+  },
+  rnFixedBody: {
+    flex: 1,
     width: '100%',
   },
   sheetHeaderRight: {

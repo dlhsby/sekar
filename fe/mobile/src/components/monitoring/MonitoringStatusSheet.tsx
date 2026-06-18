@@ -1,10 +1,8 @@
 import React, { useMemo, useCallback, useState } from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet';
+import { View, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBText } from '../nb/NBText';
 import { NBModal } from '../nb/NBModal';
-import { NBPeekSheet } from '../nb/NBPeekSheet';
 import { StatusSummaryBar } from './StatusSummaryBar';
 import { WorkerTile } from './WorkerTile';
 import { PersonnelGroupCard, type PersonnelGroup } from './PersonnelGroupCard';
@@ -23,7 +21,9 @@ import type { AttendanceResponse } from '../../types/api.types';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface MonitoringStatusSheetProps {
-  sheetRef: React.RefObject<BottomSheet | null>;
+  /** Opens the status summary as a tall sheet (triggered by the map FAB). */
+  visible: boolean;
+  onClose: () => void;
   /** Active ACTIVITY filter (CP6) — the chips filter by activity; location → wrench. */
   activeActivity: PresenceActivity | null;
   onActivityChange: (activity: PresenceActivity | null) => void;
@@ -37,8 +37,6 @@ interface MonitoringStatusSheetProps {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const PEEK_HEIGHT = 88;
 
 // Field roles first (the ones a supervisor actively handles on the map), then
 // the rest. Roles not listed sort last, alphabetically by label.
@@ -63,7 +61,8 @@ const STALE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
-  sheetRef,
+  visible,
+  onClose,
   activeActivity,
   onActivityChange,
   liveUsers,
@@ -73,8 +72,6 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
   onUserPress,
   attendance,
 }: MonitoringStatusSheetProps): React.JSX.Element {
-  const snapPoints = useMemo(() => [PEEK_HEIGHT, '50%', '90%'], []);
-
   const [selectedGroup, setSelectedGroup] = useState<PersonnelGroup | null>(null);
   const [attendanceOpen, setAttendanceOpen] = useState(false);
 
@@ -193,8 +190,17 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
 
   return (
     <>
-      <NBPeekSheet ref={sheetRef} snapPoints={snapPoints}>
-        <BottomSheetFlatList
+      <NBModal
+        visible={visible}
+        onClose={onClose}
+        type="sheet"
+        sheetHeight="88%"
+        title="Status Pemantauan"
+        noPadding
+        testID="monitoring-status-sheet"
+      >
+        <FlatList
+          style={styles.list}
           data={groups}
           keyExtractor={keyExtractor}
           renderItem={renderGroupCard}
@@ -211,7 +217,7 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
           showsVerticalScrollIndicator={false}
           maxToRenderPerBatch={10}
         />
-      </NBPeekSheet>
+      </NBModal>
 
       {/* Group drill-down — list of petugas in the tapped role group */}
       <NBModal
@@ -365,6 +371,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.md,
     paddingTop: nbSpacing.lg,
     paddingBottom: nbSpacing.sm,
+  },
+  list: {
+    flex: 1,
   },
   listContent: {
     paddingBottom: nbSpacing.xl,

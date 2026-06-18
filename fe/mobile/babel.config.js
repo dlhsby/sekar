@@ -10,7 +10,10 @@ module.exports = {
         path: '.env.local',
       },
     ],
-    'react-native-reanimated/plugin',
+    // Reanimated 4 moved its Babel plugin into react-native-worklets. It MUST be
+    // the last plugin in the list. (The old 'react-native-reanimated/plugin'
+    // path is deprecated under reanimated 4.)
+    'react-native-worklets/plugin',
   ],
   env: {
     production: {

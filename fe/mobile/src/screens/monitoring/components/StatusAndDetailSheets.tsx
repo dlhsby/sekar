@@ -5,7 +5,6 @@
  */
 
 import React from 'react';
-import BottomSheet from '@gorhom/bottom-sheet';
 import { MonitoringStatusSheet } from '../../../components/monitoring/MonitoringStatusSheet';
 import { UserDetailSheet } from '../../../components/monitoring/UserDetailSheet';
 import { LocationTrailModal } from '../../../components/monitoring/LocationTrailModal';
@@ -13,7 +12,8 @@ import type { LiveUser, PresenceActivity } from '../../../types/models.types';
 import type { AttendanceResponse } from '../../../types/api.types';
 
 interface StatusAndDetailSheetsProps {
-  statusSheetRef: React.RefObject<BottomSheet | null>;
+  statusSheetVisible: boolean;
+  onCloseStatusSheet: () => void;
   activityFilter: PresenceActivity | null;
   onActivityChange: (activity: PresenceActivity | null) => void;
   liveUsers: LiveUser[];
@@ -32,7 +32,8 @@ interface StatusAndDetailSheetsProps {
 }
 
 export function StatusAndDetailSheets({
-  statusSheetRef,
+  statusSheetVisible,
+  onCloseStatusSheet,
   activityFilter,
   onActivityChange,
   liveUsers,
@@ -53,7 +54,8 @@ export function StatusAndDetailSheets({
     <>
       {/* Monitoring status peek sheet */}
       <MonitoringStatusSheet
-        sheetRef={statusSheetRef}
+        visible={statusSheetVisible}
+        onClose={onCloseStatusSheet}
         activeActivity={activityFilter}
         onActivityChange={onActivityChange}
         liveUsers={liveUsers}
