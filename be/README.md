@@ -38,9 +38,13 @@ work against local infra (`infra/.env`); the values you may need to touch:
 | `REDIS_URL` | `redis://localhost:16379` | Redis Streams / BullMQ (dev host port 16379, not 6379) |
 | `FCM_ENABLED` | `true` | Set `false` until Firebase creds (`FIREBASE_SERVICE_ACCOUNT_PATH`) are configured |
 
-Templates: `.env.local.example` (dev) · `.env.staging.example` · `.env.production.example`.
-**Never commit** the real `.env.local` / `.env.staging` / `.env.production`. Obtaining keys/credentials:
-[`/specs/deployment/credentials-setup.md`](/specs/deployment/credentials-setup.md).
+**Env files use [dotenvx](https://dotenvx.com).** `.env.local` (dev) is plaintext + gitignored.
+`be/.env.staging` is committed **encrypted** (`encrypted:…` ciphertext) and baked into the
+staging image; `load-env.ts` decrypts it at boot with `DOTENV_PRIVATE_KEY_STAGING`. The only
+real secret is `.env.keys` (**never committed**). **Backend _production_ env is the repo-root
+`./.env.production`** (drives `docker-compose.prod.yml`), not a `be/` file. Templates `*.example`
+are committed. Guide: [`/specs/deployment/encrypted-secrets.md`](/specs/deployment/encrypted-secrets.md);
+keys/credentials: [`/specs/deployment/credentials-setup.md`](/specs/deployment/credentials-setup.md).
 
 ## API Access
 

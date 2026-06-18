@@ -56,9 +56,12 @@ work out-of-the-box against local infra; only two values **must** be filled by h
 | `fe/web/` | `fe/web/.env.local` | **`NEXT_PUBLIC_MAPBOX_TOKEN`** | Get a token at https://account.mapbox.com/access-tokens/. Also `NEXT_PUBLIC_API_URL=http://localhost:3000`, `WEB_PORT` (default 3001). |
 | `fe/mobile/` | `fe/mobile/.env.local` | **`API_BASE_URL`** | `http://10.0.2.2:<BE_PORT>` (Android emulator) or `http://<YOUR_IP>:<BE_PORT>` (physical device). Optional `GOOGLE_MAPS_API_KEY` for maps. |
 
-Templates are committed as `*.example` (`.env.local.example`, `.env.staging.example`,
-`.env.production.example`); **never commit** the real `.env.local` / `.env.staging` /
-`.env.production` — they hold secrets. Obtaining keys/credentials: `specs/deployment/credentials-setup.md`.
+**Env files use [dotenvx](https://dotenvx.com).** `.env.local` is your plaintext dev file
+(gitignored, no key needed — the table above). The deploy files `.env.staging` /
+`.env.production` are committed **encrypted** (every secret is `encrypted:…` ciphertext); the
+only real secret is the per-file private key in `.env.keys`, which is **never committed**.
+Templates `*.example` are committed. Full guide: `specs/deployment/encrypted-secrets.md`;
+obtaining keys/credentials: `specs/deployment/credentials-setup.md`.
 
 ### 0. Root Setup (Token Pipeline & ESLint Plugin)
 

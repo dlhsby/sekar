@@ -38,8 +38,12 @@ Copy `cp .env.local.example .env.local` (gitignored runtime file). Values:
 | `WEB_PORT` | `3001` | Dev server port (override to avoid collisions) |
 | `NEXT_PUBLIC_FEATURE_PWA` | `false` | Service-worker / install banner (on in staging/prod) |
 
-Templates: `.env.local.example` (dev) · `.env.staging.example` · `.env.production.example`.
-**Never commit** the real `.env.local` / `.env.staging` / `.env.production`.
+**Env files use [dotenvx](https://dotenvx.com).** `.env.local` (dev) is plaintext + gitignored.
+`.env.staging` / `.env.production` are committed **encrypted**; `NEXT_PUBLIC_*` (incl. the Mapbox
+token) are decrypted and inlined at build via `npm run build:staging` / `build:production`
+(= `dotenvx run -f .env.<env> -- next build`). The only real secret is `.env.keys` (**never
+committed**). Templates `*.example` are committed. Guide:
+[`/specs/deployment/encrypted-secrets.md`](/specs/deployment/encrypted-secrets.md).
 
 ## Design Tokens (Phase 3 M1-R Sub-Phase 3-R2)
 

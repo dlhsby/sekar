@@ -48,14 +48,25 @@ The env-var **name** repeats across workspaces but the **value differs**. These 
 **GitHub Environment secrets** (not repo-level), so the same secret name carries a different
 value per environment and a job selects which by declaring `environment:`:
 
-| GitHub Environment | Secrets (each = that env's private key) |
-|--------------------|------------------------------------------|
-| `staging` | `WEB_DOTENV_PRIVATE_KEY`, `MOBILE_DOTENV_PRIVATE_KEY` |
-| `production` | `WEB_DOTENV_PRIVATE_KEY`, `MOBILE_DOTENV_PRIVATE_KEY`, `DOTENV_PRIVATE_KEY` (backend/root) |
+| GitHub Environment | Secrets (storage names — each is that env's private key) |
+|--------------------|----------------------------------------------------------|
+| `staging` | `BE_DOTENV_PRIVATE_KEY`, `WEB_DOTENV_PRIVATE_KEY` |
+| `production` | `BE_DOTENV_PRIVATE_KEY`, `WEB_DOTENV_PRIVATE_KEY` |
 
-The backend's *staging* key is not in GitHub — it lives in SSM (`/sekar/staging/DOTENV_PRIVATE_KEY`)
-because the staging backend runs on AWS, not in Actions. Android signing + Sentry secrets stay
-**repo-level** (used by `mobile-release.yml`, which is not environment-scoped).
+**Storage name vs runtime name.** The GitHub/SSM *storage* names are prefixed by workspace
+(`BE_`/`WEB_`/`MOBILE_`) for clarity. The *runtime* variable dotenvx actually needs is derived
+from the filename — `DOTENV_PRIVATE_KEY_STAGING` for `.env.staging`,
+`DOTENV_PRIVATE_KEY_PRODUCTION` for `.env.production` — so each consumer maps storage→runtime
+(e.g. the web build feeds `BE_/WEB_DOTENV_PRIVATE_KEY` into the BuildKit secret; the box writes
+the SSM value out as `DOTENV_PRIVATE_KEY_STAGING`).
+
+Notes:
+- The **backend staging** key also lives in SSM (`/sekar/staging/BE_DOTENV_PRIVATE_KEY`) — that
+  is the *live* source the AWS staging box reads via its instance role; the GitHub `staging` copy
+  is parity/backup. The web key is in GitHub because the web *image is built in Actions*.
+- **Mobile** keys are intentionally **not** in GitHub yet (no release workflow consumes them);
+  they stay in the local `fe/mobile/.env.keys` and will be added when the release workflow is set up.
+- Android signing + Sentry secrets stay **repo-level** (used by `mobile-release.yml`, not env-scoped).
 
 ## 3. How each workspace consumes the encrypted file
 
@@ -150,13 +161,13 @@ it + `NODE_ENV=staging`, and `load-env.ts` decrypts the baked file at boot:
 
 ```bash
 aws ssm put-parameter --profile sekar --region ap-southeast-3 \
-  --name /sekar/staging/DOTENV_PRIVATE_KEY --type SecureString --overwrite \
+  --name /sekar/staging/BE_DOTENV_PRIVATE_KEY --type SecureString --overwrite \
   --value "<be DOTENV_PRIVATE_KEY_STAGING>"     # already done
 ```
 
 The per-secret SSM params (`/sekar/staging/DATABASE_PASSWORD`, `JWT_SECRET`,
 `JWT_REFRESH_SECRET`) and the old `NEXT_PUBLIC_MAPBOX_TOKEN` GitHub Secret were **retired**
-2026-06-18 (superseded by the encrypted files). Only `/sekar/staging/DOTENV_PRIVATE_KEY` remains.
+2026-06-18 (superseded by the encrypted files). Only `/sekar/staging/BE_DOTENV_PRIVATE_KEY` remains.
 
 ### On-prem production box (prepared, not yet deployed)
 No SSM. The single secret the operator supplies is `DOTENV_PRIVATE_KEY_PRODUCTION` (keep it in a

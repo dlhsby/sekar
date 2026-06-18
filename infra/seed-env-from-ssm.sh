@@ -18,7 +18,9 @@ get() {
     --query Parameter.Value --output text
 }
 
-DOTENV_PRIVATE_KEY_STAGING="$(get /sekar/staging/DOTENV_PRIVATE_KEY)"
+# Storage name is BE_DOTENV_PRIVATE_KEY (consistent with WEB_/MOBILE_); the runtime
+# var dotenvx needs is DOTENV_PRIVATE_KEY_STAGING (derived from the .env.staging filename).
+DOTENV_PRIVATE_KEY_STAGING="$(get /sekar/staging/BE_DOTENV_PRIVATE_KEY)"
 
 # /opt/sekar must be owned by the user that runs `docker compose` (ec2-user) so the
 # compose `env_file:` can be read — the Docker CLI reads it as the invoking user.

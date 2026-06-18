@@ -53,9 +53,14 @@ API_BASE_URL=http://10.0.2.2:3000    # Android emulator
 API_VERSION=v1
 ```
 
-Only `.env.local.example` is committed (mobile has no staging/prod env templates).
-**Never commit** the real `.env.local`. WSL2 device networking:
-[`/specs/deployment/local-development.md`](/specs/deployment/local-development.md).
+**Env files use [dotenvx](https://dotenvx.com)** (selected via `ENVFILE` in `babel.config.js`,
+default `.env.local`). `.env.local` (dev) is plaintext + gitignored. `.env.staging` /
+`.env.production` are committed **encrypted**; release builds decrypt them to a temp file via
+`npm run build:android:staging` / `build:android:production` (see `scripts/decrypt-env.js`).
+Client keys (Mapbox/Maps) ship in the bundle regardless, so encryption just keeps them out of
+plaintext git history. The only real secret is `.env.keys` (**never committed**). Templates
+`*.example` are committed. Guide: [`/specs/deployment/encrypted-secrets.md`](/specs/deployment/encrypted-secrets.md);
+WSL2 device networking: [`/specs/deployment/local-development.md`](/specs/deployment/local-development.md).
 
 ## Documentation
 
