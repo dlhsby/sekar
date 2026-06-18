@@ -1,7 +1,6 @@
 import { DataSource } from 'typeorm';
 import '../../config/load-env';
 
-
 /**
  * Phase 1 Seed Script
  *

@@ -45,9 +45,7 @@ export class S3Service {
     } else if (this.endpoint) {
       s3Config.credentials = { accessKeyId: 'test', secretAccessKey: 'test' };
     } else {
-      this.logger.log(
-        'S3 Service using the default AWS credential provider chain (instance role)',
-      );
+      this.logger.log('S3 Service using the default AWS credential provider chain (instance role)');
     }
 
     // Add endpoint URL for LocalStack (development)

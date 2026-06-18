@@ -191,10 +191,7 @@ describe('AssetsService', () => {
         area_id: 'area-1',
       } as User;
 
-      mockUserAreaRepo.find.mockResolvedValue([
-        { area_id: 'area-1' },
-        { area_id: 'area-2' },
-      ]);
+      mockUserAreaRepo.find.mockResolvedValue([{ area_id: 'area-1' }, { area_id: 'area-2' }]);
 
       const qb = mockAssetRepo.createQueryBuilder();
       await service.findAll(korlapUser, {});
@@ -709,7 +706,9 @@ describe('AssetsService', () => {
       const outOfScopeAsset = { ...mockAsset, area_id: 'area-1' };
       mockAssetRepo.findOne.mockResolvedValue(outOfScopeAsset);
 
-      await expect(service.scanByCode('AK-UTARA-001', satgasUser)).rejects.toThrow(ForbiddenException);
+      await expect(service.scanByCode('AK-UTARA-001', satgasUser)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -804,9 +803,7 @@ describe('AssetsService', () => {
   describe('listAssignments - scope enforcement', () => {
     it('should allow scoped user to list assignments', async () => {
       mockAssetRepo.findOne.mockResolvedValue(mockAsset);
-      mockAssignmentRepo.find.mockResolvedValue([
-        { id: 'assign-1', assigned_to: 'user-1' },
-      ]);
+      mockAssignmentRepo.find.mockResolvedValue([{ id: 'assign-1', assigned_to: 'user-1' }]);
 
       const result = await service.listAssignments('asset-1', mockUser);
 

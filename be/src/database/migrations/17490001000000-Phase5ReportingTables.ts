@@ -20,8 +20,12 @@ export class Phase5ReportingTables17490001000000 implements MigrationInterface {
       )
     `);
 
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS "idx_report_templates_slug" ON "report_templates"("slug")`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS "idx_report_templates_report_type" ON "report_templates"("report_type")`);
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "idx_report_templates_slug" ON "report_templates"("slug")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "idx_report_templates_report_type" ON "report_templates"("report_type")`,
+    );
 
     // Create generated_reports table
     await queryRunner.query(`
@@ -46,12 +50,14 @@ export class Phase5ReportingTables17490001000000 implements MigrationInterface {
     `);
 
     await queryRunner.query(
-      `CREATE INDEX IF NOT EXISTS "idx_generated_reports_generated_by_created_at" ON "generated_reports"("generated_by", "created_at" DESC)`
+      `CREATE INDEX IF NOT EXISTS "idx_generated_reports_generated_by_created_at" ON "generated_reports"("generated_by", "created_at" DESC)`,
     );
     await queryRunner.query(
-      `CREATE INDEX IF NOT EXISTS "idx_generated_reports_template_id_created_at" ON "generated_reports"("template_id", "created_at" DESC)`
+      `CREATE INDEX IF NOT EXISTS "idx_generated_reports_template_id_created_at" ON "generated_reports"("template_id", "created_at" DESC)`,
     );
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS "idx_generated_reports_status" ON "generated_reports"("status")`);
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "idx_generated_reports_status" ON "generated_reports"("status")`,
+    );
 
     // Create report_schedules table
     await queryRunner.query(`
@@ -72,8 +78,12 @@ export class Phase5ReportingTables17490001000000 implements MigrationInterface {
       )
     `);
 
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS "idx_report_schedules_is_active_next_run_at" ON "report_schedules"("is_active", "next_run_at")`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS "idx_report_schedules_template_id" ON "report_schedules"("template_id")`);
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "idx_report_schedules_is_active_next_run_at" ON "report_schedules"("is_active", "next_run_at")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "idx_report_schedules_template_id" ON "report_schedules"("template_id")`,
+    );
 
     // Seed system report templates
     await queryRunner.query(`

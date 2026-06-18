@@ -33,6 +33,7 @@ export default function Icon() {
             borderRadius: 6,
             border: `2px solid ${PINWHEEL.ink}`,
             background: '#FFFFFF',
+            // eslint-disable-next-line sekar-design/prefer-nb-shadow-utility -- ImageResponse renders to PNG; Tailwind shadow utilities don't apply here.
             boxShadow: `2px 2px 0 ${PINWHEEL.ink}`,
             transform: 'rotate(-6deg)',
           }}

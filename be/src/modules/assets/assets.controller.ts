@@ -140,10 +140,7 @@ export class AssetsController {
     description: 'QR code generated',
     schema: { properties: { url: { type: 'string' } } },
   })
-  async generateQr(
-    @Param('id') id: string,
-    @GetUser() user: User,
-  ): Promise<{ url: string }> {
+  async generateQr(@Param('id') id: string, @GetUser() user: User): Promise<{ url: string }> {
     const url = await this.assetsService.generateQr(id, user);
     return { url };
   }

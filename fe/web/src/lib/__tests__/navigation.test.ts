@@ -14,17 +14,19 @@ import {
 describe('Navigation Utilities', () => {
   describe('navigationItems', () => {
     it('should contain all expected navigation items', () => {
-      // Phase 4-R grouping: dashboard, monitoring, work(group), data(group)
-      // dashboard, monitoring, work, data, operations (Phase 4-5 export/import)
-      // + 2 staff_kecamatan items = 7 top-level entries. Settings moved to the
-      // avatar dropdown; pruning-requests moved under the 'Pekerjaan' group.
-      expect(navigationItems).toHaveLength(7);
+      // Top-level entries: dashboard, monitoring, work(group), data(group),
+      // reports(group), analytics(group), operations(group) + 2 staff_kecamatan
+      // items = 9. Settings moved to the avatar dropdown; pruning-requests moved
+      // under the 'Pekerjaan' group.
+      expect(navigationItems).toHaveLength(9);
 
       const navIds = navigationItems.map((item) => item.id);
       expect(navIds).toContain('dashboard');
       expect(navIds).toContain('monitoring');
       expect(navIds).toContain('work');
       expect(navIds).toContain('data');
+      expect(navIds).toContain('reports');
+      expect(navIds).toContain('analytics');
       expect(navIds).toContain('operations');
       expect(navIds).not.toContain('settings');
       // pruning-requests is no longer top-level (nested under 'work').
@@ -40,7 +42,8 @@ describe('Navigation Utilities', () => {
         'pruning-requests',
       ]);
 
-      // 'Data Master' group holds users / areas / rayons + Phase-3 plants/seeds.
+      // 'Data Master' group holds users / areas / rayons + Phase-3 plants/seeds
+      // + Phase-5 assets.
       const dataItem = navigationItems.find((item) => item.id === 'data');
       expect(dataItem?.children?.map((c) => c.id)).toEqual([
         'users',
@@ -48,6 +51,7 @@ describe('Navigation Utilities', () => {
         'rayons',
         'plants',
         'seeds',
+        'assets',
       ]);
     });
 
@@ -81,13 +85,14 @@ describe('Navigation Utilities', () => {
     it('should return all groups for superadmin role', () => {
       const filtered = filterNavigationByRole(navigationItems, 'superadmin');
 
-      // superadmin sees: dashboard, monitoring, work, data, operations
-      // (the 2 staff_kecamatan-only items remain hidden).
+      // superadmin sees all admin groups; the 2 staff_kecamatan-only items stay hidden.
       expect(filtered.map((i) => i.id)).toEqual([
         'dashboard',
         'monitoring',
         'work',
         'data',
+        'reports',
+        'analytics',
         'operations',
       ]);
 
@@ -318,7 +323,7 @@ describe('Navigation Utilities', () => {
 
       expect(breadcrumbs).toHaveLength(1);
       expect(breadcrumbs[0]).toEqual({
-        label: 'Reports',
+        label: 'Laporan',
         href: '/reports',
       });
     });

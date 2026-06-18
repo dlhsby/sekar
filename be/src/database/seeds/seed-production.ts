@@ -3,7 +3,6 @@ import * as bcrypt from 'bcrypt';
 import '../../config/load-env';
 import { RAYON_BOUNDARIES, computeCentroidFromRings, type RayonCode } from './kmz-areas';
 
-
 /**
  * Production Seed Script (Phase 4-6 J1)
  *

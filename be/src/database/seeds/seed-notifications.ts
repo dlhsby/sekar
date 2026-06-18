@@ -1,7 +1,6 @@
 import { DataSource } from 'typeorm';
 import '../../config/load-env';
 
-
 /**
  * Notifications Seed Script (runs AFTER phase1, phase2, phase3)
  *

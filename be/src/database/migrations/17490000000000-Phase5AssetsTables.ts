@@ -45,8 +45,12 @@ export class Phase5AssetsTables17490000000000 implements MigrationInterface {
 
     // Create indexes on assets
     await queryRunner.query(`CREATE INDEX IF NOT EXISTS "idx_assets_status" ON "assets"("status")`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS "idx_assets_area_id" ON "assets"("area_id")`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS "idx_assets_rayon_id" ON "assets"("rayon_id")`);
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "idx_assets_area_id" ON "assets"("area_id")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "idx_assets_rayon_id" ON "assets"("rayon_id")`,
+    );
 
     // Create asset_assignments table
     await queryRunner.query(`
@@ -68,8 +72,12 @@ export class Phase5AssetsTables17490000000000 implements MigrationInterface {
     `);
 
     // Create indexes on asset_assignments
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS "idx_asset_assignments_asset_id" ON "asset_assignments"("asset_id")`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS "idx_asset_assignments_assigned_to" ON "asset_assignments"("assigned_to")`);
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "idx_asset_assignments_asset_id" ON "asset_assignments"("asset_id")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "idx_asset_assignments_assigned_to" ON "asset_assignments"("assigned_to")`,
+    );
     // Partial unique index: at most one active assignment per asset
     await queryRunner.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS "idx_asset_assignments_unique_active"
@@ -96,8 +104,12 @@ export class Phase5AssetsTables17490000000000 implements MigrationInterface {
     `);
 
     // Create indexes on asset_maintenances
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS "idx_asset_maintenances_asset_id" ON "asset_maintenances"("asset_id")`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS "idx_asset_maintenances_status_scheduled" ON "asset_maintenances"("status", "scheduled_at")`);
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "idx_asset_maintenances_asset_id" ON "asset_maintenances"("asset_id")`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "idx_asset_maintenances_status_scheduled" ON "asset_maintenances"("status", "scheduled_at")`,
+    );
 
     // Seed 6 categories
     await queryRunner.query(`

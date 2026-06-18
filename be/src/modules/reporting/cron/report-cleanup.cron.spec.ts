@@ -17,10 +17,7 @@ describe('ReportCleanupCron', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        ReportCleanupCron,
-        { provide: ReportingService, useValue: mockReportingService },
-      ],
+      providers: [ReportCleanupCron, { provide: ReportingService, useValue: mockReportingService }],
     }).compile();
 
     cron = module.get<ReportCleanupCron>(ReportCleanupCron);

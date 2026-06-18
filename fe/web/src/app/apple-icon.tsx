@@ -33,6 +33,7 @@ export default function AppleIcon() {
             borderRadius: 24,
             border: `6px solid ${PINWHEEL.ink}`,
             background: '#FFFFFF',
+            // eslint-disable-next-line sekar-design/prefer-nb-shadow-utility -- ImageResponse renders to PNG; Tailwind shadow utilities don't apply here.
             boxShadow: `8px 8px 0 ${PINWHEEL.ink}`,
             transform: 'rotate(-6deg)',
           }}

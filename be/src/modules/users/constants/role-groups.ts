@@ -126,11 +126,7 @@ export const ASSET_MANAGERS = [
 
 export const ASSET_USERS = [UserRole.SATGAS, UserRole.LINMAS, UserRole.KORLAP];
 
-export const ASSET_VIEWERS = [
-  ...ASSET_USERS,
-  UserRole.ADMIN_DATA,
-  UserRole.TOP_MANAGEMENT,
-];
+export const ASSET_VIEWERS = [...ASSET_USERS, UserRole.ADMIN_DATA, UserRole.TOP_MANAGEMENT];
 
 // Phase 5-1 Reporting — who may view/generate reports vs manage schedules.
 export const REPORTING_VIEWERS = [

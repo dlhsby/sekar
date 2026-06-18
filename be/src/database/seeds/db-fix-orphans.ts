@@ -25,7 +25,6 @@
 import { DataSource } from 'typeorm';
 import '../../config/load-env';
 
-
 async function fixOrphans(): Promise<void> {
   const dataSource = new DataSource({
     type: 'postgres',

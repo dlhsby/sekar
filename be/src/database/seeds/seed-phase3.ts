@@ -1,7 +1,6 @@
 import type { DataSource, QueryRunner } from 'typeorm';
 import '../../config/load-env';
 
-
 /**
  * Inline ISO week helper so the seeder doesn't depend on the pruning module.
  * Returns the ISO calendar year + week (1..53) for a given date.

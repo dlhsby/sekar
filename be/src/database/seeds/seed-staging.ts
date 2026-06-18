@@ -17,7 +17,6 @@ import {
   type RayonCode,
 } from './kmz-areas';
 
-
 /**
  * Staging / UAT Seed Script
  *

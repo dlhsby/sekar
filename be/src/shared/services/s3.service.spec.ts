@@ -115,10 +115,7 @@ describe('S3Service', () => {
       };
 
       const testModule = await Test.createTestingModule({
-        providers: [
-          S3Service,
-          { provide: ConfigService, useValue: mockConfigNoCreds },
-        ],
+        providers: [S3Service, { provide: ConfigService, useValue: mockConfigNoCreds }],
       }).compile();
 
       testModule.get<S3Service>(S3Service);
@@ -147,10 +144,7 @@ describe('S3Service', () => {
       };
 
       const testModule = await Test.createTestingModule({
-        providers: [
-          S3Service,
-          { provide: ConfigService, useValue: mockConfigEndpointOnly },
-        ],
+        providers: [S3Service, { provide: ConfigService, useValue: mockConfigEndpointOnly }],
       }).compile();
 
       testModule.get<S3Service>(S3Service);

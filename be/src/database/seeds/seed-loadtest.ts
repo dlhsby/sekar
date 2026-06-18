@@ -1,7 +1,6 @@
 import type { DataSource, QueryRunner } from 'typeorm';
 import '../../config/load-env';
 
-
 /**
  * Load-test seed (Phase 3 sub-phase 3-14, support for `infra/loadtest/monitoring-500w.js`).
  *
