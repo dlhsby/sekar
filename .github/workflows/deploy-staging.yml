@@ -21,6 +21,15 @@ name: Deploy staging (AWS)
 on:
   push:
     branches: [main]
+    # Staging builds only the backend + web. Skip deploys for changes that can't
+    # affect the staging stack (docs, mobile, prod-only files). workflow_dispatch
+    # always runs regardless of these. A commit touching ANY non-ignored path deploys.
+    paths-ignore:
+      - '**.md'
+      - 'specs/**'
+      - 'fe/mobile/**'
+      - '.env.production'
+      - 'docker-compose.prod.yml'
   workflow_dispatch:
 
 concurrency:
