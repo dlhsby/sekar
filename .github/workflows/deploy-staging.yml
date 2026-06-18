@@ -76,8 +76,10 @@ jobs:
           # NEXT_PUBLIC_* (incl. Mapbox) are decrypted from the committed encrypted
           # fe/web/.env.staging by dotenvx during `next build`. The private key is passed
           # as a BuildKit secret — mounted only for the build RUN, never in an image layer.
+          build-args: |
+            DOTENV_ENV=staging
           secrets: |
-            DOTENV_PRIVATE_KEY_STAGING=${{ secrets.WEB_DOTENV_PRIVATE_KEY_STAGING }}
+            dotenv_private_key=${{ secrets.WEB_DOTENV_PRIVATE_KEY_STAGING }}
           tags: |
             ${{ vars.ECR_WEB }}:staging
             ${{ vars.ECR_WEB }}:${{ steps.vars.outputs.sha }}

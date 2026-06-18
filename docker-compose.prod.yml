@@ -101,6 +101,9 @@ services:
       REDIS_URL: redis://redis:6379
       AWS_ENDPOINT_URL: http://minio:9000
       AWS_S3_FORCE_PATH_STYLE: "true"
+      # env_file injects the ENCRYPTED .env.production values; load-env.ts decrypts
+      # them at boot using this key (passed through from the deploy environment).
+      DOTENV_PRIVATE_KEY_PRODUCTION: ${DOTENV_PRIVATE_KEY_PRODUCTION:?set DOTENV_PRIVATE_KEY_PRODUCTION}
     depends_on:
       postgres:
         condition: service_healthy
@@ -120,12 +123,12 @@ services:
     build:
       context: ./fe/web
       dockerfile: Dockerfile
+      # NEXT_PUBLIC_* (incl. Mapbox) are decrypted from the committed encrypted
+      # fe/web/.env.production by dotenvx during the build (no plaintext build args).
       args:
-        # NEXT_PUBLIC_* are baked at build time — set them to the PUBLIC URLs
-        # the browser will use (through Nginx), not the internal service names.
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set public API URL}
-        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:?set public WS URL}
-        NEXT_PUBLIC_MAPBOX_TOKEN: ${NEXT_PUBLIC_MAPBOX_TOKEN:-}
+        DOTENV_ENV: production
+      secrets:
+        - dotenv_private_key
     image: sekar-web:prod
     container_name: sekar-web-prod
     restart: unless-stopped
@@ -153,6 +156,12 @@ services:
 networks:
   sekar-prod:
     driver: bridge
+
+# BuildKit secret for the web image build — dotenvx reads the private key from the
+# deploy environment (set by `dotenvx run` / the operator) to decrypt .env.production.
+secrets:
+  dotenv_private_key:
+    environment: DOTENV_PRIVATE_KEY_PRODUCTION
 
 volumes:
   postgres-data:

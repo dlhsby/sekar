@@ -25,12 +25,17 @@ RUN npm ci
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-# NEXT_PUBLIC_* are decrypted from the committed (encrypted) .env.staging by dotenvx
-# at build time and inlined into the bundle. The private key is passed as a BuildKit
-# secret — it is mounted only for this RUN and never persisted in an image layer.
-RUN --mount=type=secret,id=DOTENV_PRIVATE_KEY_STAGING \
-    DOTENV_PRIVATE_KEY_STAGING="$(cat /run/secrets/DOTENV_PRIVATE_KEY_STAGING)" \
-    npm run build:staging
+# Which encrypted env to build from: `staging` (CI default) or `production` (on-prem).
+ARG DOTENV_ENV=staging
+
+# NEXT_PUBLIC_* are decrypted from the committed (encrypted) .env.${DOTENV_ENV} by
+# dotenvx at build time and inlined into the bundle. The private key is passed as a
+# BuildKit secret — mounted only for this RUN, never persisted in an image layer.
+# It's exposed under both env names so dotenvx picks the one matching the file.
+RUN --mount=type=secret,id=dotenv_private_key \
+    DOTENV_PRIVATE_KEY_STAGING="$(cat /run/secrets/dotenv_private_key)" \
+    DOTENV_PRIVATE_KEY_PRODUCTION="$(cat /run/secrets/dotenv_private_key)" \
+    npx dotenvx run -f ".env.${DOTENV_ENV}" -- next build
 
 # Stage 3: Production Runtime
 FROM node:24-slim AS runner

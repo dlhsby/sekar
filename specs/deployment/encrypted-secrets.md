@@ -1,7 +1,9 @@
 # Encrypted Secrets (dotenvx)
 
 **Status:** Live for **staging** as of 2026-06-18 — backend + web build and run from encrypted
-env (see §6). Mobile staging encrypted; production (`.env.production`) still to be generated.
+env (see §6). Mobile staging encrypted. **Production** env files (root `.env.production` + web +
+mobile, all encrypted) prepared with generated starter secrets — finalize real on-prem values
+(domain, etc.) with `dotenvx set` before go-live. Production is not yet deployed.
 
 SEKAR commits its `.env.staging` / `.env.production` files to git **encrypted** with
 [dotenvx](https://dotenvx.com), and decrypts them at runtime/build. This replaces the old
@@ -31,9 +33,16 @@ therefore cannot decrypt backend secrets. Six private keys total:
 
 | Workspace | `.env.staging` key | `.env.production` key |
 |-----------|--------------------|------------------------|
-| `be` | `DOTENV_PRIVATE_KEY_STAGING` | `DOTENV_PRIVATE_KEY_PRODUCTION` |
+| `be` | `DOTENV_PRIVATE_KEY_STAGING` (`be/.env.staging`) | — *(see note)* |
+| **root** | — | `DOTENV_PRIVATE_KEY_PRODUCTION` (`./.env.production`) |
 | `fe/web` | `DOTENV_PRIVATE_KEY_STAGING` | `DOTENV_PRIVATE_KEY_PRODUCTION` |
 | `fe/mobile` | `DOTENV_PRIVATE_KEY_STAGING` | `DOTENV_PRIVATE_KEY_PRODUCTION` |
+
+> **Note — backend production env lives at the repo root, not `be/`.** The on-prem stack
+> (`docker-compose.prod.yml`) feeds the backend via `env_file: .env.production` (root) and also
+> uses that file's values for Postgres/MinIO `${...}` substitution. So there is no
+> `be/.env.production`; the encrypted **root `./.env.production`** is the backend's production
+> source. `be/.env.staging` (baked into the staging image) remains the staging source.
 
 The env-var **name** repeats across workspaces but the **value differs**. Each build job only
 ever has the one key it needs, so there is no collision. In GitHub Secrets, store them under
@@ -81,12 +90,12 @@ dotenvx set GOOGLE_MAPS_API_KEY "AIza…" -f .env.staging   # sets + encrypts on
 dotenvx get GOOGLE_MAPS_API_KEY -f .env.staging           # read one decrypted value
 ```
 
-Safety net — install the dotenvx pre-commit hook so a *plaintext* `.env.*` can never be
-committed by accident:
-
-```bash
-dotenvx ext precommit --install     # writes .git/hooks/pre-commit (per clone, not committed)
-```
+Safety net — a **pre-commit hook** blocks committing a plaintext `.env.*` or any `.env.keys`.
+It is installed at `.git/hooks/pre-commit` (per clone, not committed). This repo's hook blocks
+staged `.env.keys` and runs `dotenvx ext precommit` via a workspace-local dotenvx binary (no
+global install needed). To (re)install in a fresh clone, recreate that file — or run
+`dotenvx ext precommit` manually before committing to check (`dotenvx ext precommit --install`
+only works if a `pre-commit` hook already exists to append to).
 
 ## 5. Committing
 
@@ -137,12 +146,34 @@ aws ssm put-parameter --profile sekar --region ap-southeast-3 \
 ```
 
 The per-secret SSM params (`/sekar/staging/DATABASE_PASSWORD`, `JWT_SECRET`,
-`JWT_REFRESH_SECRET`) are now superseded by the encrypted file and can be retired once a deploy
-is confirmed healthy.
+`JWT_REFRESH_SECRET`) and the old `NEXT_PUBLIC_MAPBOX_TOKEN` GitHub Secret were **retired**
+2026-06-18 (superseded by the encrypted files). Only `/sekar/staging/DOTENV_PRIVATE_KEY` remains.
 
-### On-prem production box
-No SSM. Provide the private keys via the host's environment / a root-only `.env.keys`, e.g. a
-systemd `EnvironmentFile` or a Docker secret containing `DOTENV_PRIVATE_KEY_PRODUCTION`.
+### On-prem production box (prepared, not yet deployed)
+No SSM. The single secret the operator supplies is `DOTENV_PRIVATE_KEY_PRODUCTION` (keep it in a
+password manager / a root-only `.env.keys` / a host env var — it's in your local `.env.keys`
+from when the files were encrypted). `docker-compose.prod.yml` is already wired:
+
+- **Postgres/MinIO** read `${DATABASE_PASSWORD}` / `${AWS_ACCESS_KEY_ID}` etc. — these need
+  *plaintext* at compose-parse time, so deploy through `dotenvx run` (it decrypts the root
+  `.env.production` into the deploy shell's environment).
+- **Backend** gets the encrypted values via `env_file: .env.production` and decrypts them
+  in-process (`load-env.ts`) using `DOTENV_PRIVATE_KEY_PRODUCTION`, passed through in its
+  `environment:`.
+- **Web** image build decrypts `fe/web/.env.production` via the BuildKit secret
+  `dotenv_private_key` (sourced from `DOTENV_PRIVATE_KEY_PRODUCTION`) with build arg
+  `DOTENV_ENV=production`.
+
+One command does all three:
+
+```bash
+export DOTENV_PRIVATE_KEY_PRODUCTION=<from your .env.keys>
+dotenvx run -f .env.production -- docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Before go-live, finalize real values (the generated starters cover DB/JWT/MinIO secrets; set the
+real domain): `dotenvx set CORS_ORIGIN "https://<prod-domain>" -f .env.production`, and the
+matching `NEXT_PUBLIC_*` in `fe/web/.env.production` + `API_BASE_URL` in `fe/mobile/.env.production`.
 
 ## 7. Rotation
 

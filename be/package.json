@@ -11,7 +11,7 @@
   },
   "scripts": {
     "build": "nest build",
-    "env:encrypt": "dotenvx encrypt -f .env.staging -f .env.production",
+    "env:encrypt": "dotenvx encrypt -f .env.staging",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
