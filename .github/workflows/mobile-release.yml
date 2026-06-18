@@ -47,6 +47,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+          cache: gradle   # caches ~/.gradle (deps + wrapper) across runs — survives `clean`
 
       - name: Install dependencies
         run: npm ci
