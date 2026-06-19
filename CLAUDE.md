@@ -71,6 +71,12 @@ Code uses English; Indonesian only for UI labels / user-facing messages. `Activi
 - **Private keys at deploy:** GitHub **Environment** secrets `BE_/WEB_DOTENV_PRIVATE_KEY` (staging + production envs); the AWS staging box reads `BE_` from SSM `/sekar/staging/BE_DOTENV_PRIVATE_KEY` via instance role. Storage names are `*_DOTENV_PRIVATE_KEY`; the runtime var dotenvx needs is `DOTENV_PRIVATE_KEY_<ENV>`.
 - `./scripts/setup.sh` creates the `.env.local` files and reconciles `be/.env.local` `DATABASE_PORT` to `infra/.env` `POSTGRES_PORT`. Infra keeps plain `infra/.env` (Docker-Compose convention).
 
+## Releasing & versioning (see `specs/deployment/ci-cd.md` §5)
+- **Staging is continuous** — every green push to `main` auto-deploys (SHA-pinned). No tag needed.
+- **Versioned releases via `scripts/release.sh`** (bump → tag → workflow): `release.sh server X.Y.Z` (be+web coupled, one shared semver → `server-v*` → ECR `:X.Y.Z` images + GitHub Release, no auto-deploy) · `release.sh mobile X.Y.Z <versionCode>` (→ `mobile-v*` → signed APK/AAB + auto-publish to the download registry).
+- **Build identity** is surfaced for verification: backend `GET /health/live` → `{version,gitSha,builtAt}` (baked from `GIT_SHA`/`BUILD_TIME` Docker args); web sidebar footer `v… · <sha>`; mobile in-app checker (Profil → Diagnostik) compares its `versionCode` to `GET /app-releases/latest`. Bump `versionCode` per mobile release or the checker won't detect it.
+- **Mobile download** for field workers: public `sekar.wahyutrip.com/android` (backed by the `app-releases` registry).
+
 ## Backend .env essentials
 `DATABASE_*` (localhost:5432, postgres/postgres, sekar_db — note `infra/.env` may pin a non-default `POSTGRES_PORT`; `setup.sh` syncs it) · `JWT_SECRET`, `JWT_EXPIRATION=7d` · Dev S3 via **MinIO** (`AWS_ENDPOINT_URL=http://localhost:9000`, `AWS_S3_FORCE_PATH_STYLE=true`, creds = `MINIO_ROOT_USER`/`PASSWORD` from `infra/.env` = `minioadmin`/`minioadmin`, bucket `sekar-media-dev`); **staging** = real AWS S3 (no endpoint); **production** = MinIO in `docker-compose.prod.yml` · `FCM_ENABLED=false` until Firebase configured. Full config: `specs/deployment/credentials-setup.md`, mobile network `specs/deployment/local-development.md`.
 

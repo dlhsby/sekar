@@ -12,7 +12,7 @@ It walks the four scenarios end-to-end — **run locally → obtain keys → dep
 | Understand every env var | **§C Environment variables** → [`environment-variables.md`](environment-variables.md) |
 | Ship to a staging server | **§D Deploy to staging** |
 | Ship to production | **§E Deploy to production** |
-| Automate it | **§F CI/CD** → [`ci-cd.md`](ci-cd.md) |
+| Automate it / cut a versioned release | **§F CI/CD & releases** → [`ci-cd.md`](ci-cd.md) |
 | Operate it (migrate, back up, roll back, debug) | **§G Operations** → [`operations.md`](operations.md) |
 | Watch it (dashboards, alarms) | **§H Monitoring** → [`monitoring.md`](monitoring.md) |
 | Release the mobile apps | **§I Mobile releases** → [`android-release-guide.md`](android-release-guide.md) · [`ios-release-guide.md`](ios-release-guide.md) |
@@ -292,22 +292,30 @@ Full detail: [`credentials-setup.md`](credentials-setup.md) §Firebase. iOS APNs
 
 ---
 
-## F. CI/CD
+## F. CI/CD & releases
 
-**Staging (AWS)** is automated by [`.github/workflows/deploy-staging.yml`](../../.github/workflows/deploy-staging.yml):
-on push to `main` (or `workflow_dispatch`) it first runs the **`quality-be` + `quality-web`** test
-gates (lint/tsc/test), then — via GitHub **OIDC** (no stored AWS keys) — builds + pushes
-backend/web images to ECR (`:staging` + `:<sha>`) → pre-deploy RDS snapshot → migrate +
-`up -d --wait` on the box via **SSM** → smoke test. Gated by the GitHub `staging` environment
-(add required reviewers to make it a manual gate). PRs are gated by `backend-quality` /
-`web-quality` / `mobile-quality`. The old Elastic-Beanstalk / SSH workflows have been **deleted**.
-Full inventory + monorepo release strategy → **[`ci-cd.md`](ci-cd.md)**.
+**Continuous staging.** [`deploy-staging.yml`](../../.github/workflows/deploy-staging.yml) runs on every
+push to `main`: **`quality-be` + `quality-web`** gates (lint/tsc/test) → GitHub **OIDC** (no stored AWS
+keys) → build + push backend/web images to ECR (`:staging` + `:<sha>`, with `GIT_SHA`/`BUILD_TIME`
+baked in) → pre-deploy RDS snapshot → migrate + `up -d --wait` via **SSM** → smoke test. PRs are gated
+by `backend-quality` / `web-quality` / `mobile-quality`.
+
+**Versioned releases** (named, promotable — separate from the continuous staging stream). Bump → tag →
+workflow, via `scripts/release.sh`:
+- `scripts/release.sh server X.Y.Z` → `server-v*` tag → [`release-server.yml`](../../.github/workflows/release-server.yml)
+  builds + ECR-tags `:X.Y.Z` images (be+web coupled, one shared version) and cuts a GitHub Release. **No
+  auto-deploy** — promote to on-prem prod manually (§E, from `git checkout server-vX.Y.Z`).
+- `scripts/release.sh mobile X.Y.Z <versionCode>` → `mobile-v*` tag → signed APK/AAB + auto-publish (§I).
+
+**Build identity** is surfaced for deploy verification: backend `GET /health/live` →
+`{version, gitSha, builtAt}`; web sidebar footer `v… · <sha>`. Full inventory + step-by-step release
+runbook + rollback → **[`ci-cd.md`](ci-cd.md)**.
 
 ---
 
 ## G. Operations (day-2)
 
-Migrations, seeding variants, **backup & restore**, **rollback**, health checks, connection-pool tuning, and incident runbooks (SSH key rotation, phantom-migration recovery, Firebase env loading, pool exhaustion). → **[`operations.md`](operations.md)**.
+Migrations, seeding variants, **backup & restore**, **rollback**, health checks, connection-pool tuning, and incident runbooks (deploy-credential / dotenvx-key rotation, phantom-migration recovery, Firebase env loading, pool exhaustion). → **[`operations.md`](operations.md)**.
 
 Quick reference:
 ```bash
@@ -332,8 +340,15 @@ Dashboards (system / application / business KPIs), CloudWatch alarms, structured
 
 ## I. Mobile releases
 
-- **Android:** [`android-release-guide.md`](android-release-guide.md). Preferred: the **`mobile-release.yml`** CI workflow (manual dispatch → signed APK + AAB artifact) — `gh workflow run "Mobile Release (Android · staging)" --ref main -f environment=staging`. Per-env config (API URL, Maps key, `google-services.json`) is resolved automatically via dotenvx. Local equivalents: `npm run build:release:staging` / `build:android:production`.
-- **iOS (needs a Mac):** [`ios-release-guide.md`](ios-release-guide.md) — full Xcode / capabilities / APNs / TestFlight / App Store runbook (and what's already prepared in the repo vs. deferred to a Mac).
+- **Android:** [`android-release-guide.md`](android-release-guide.md). Cut a release with
+  `scripts/release.sh mobile X.Y.Z <versionCode>` (→ `mobile-v*` tag → [`mobile-release.yml`](../../.github/workflows/mobile-release.yml));
+  manual `workflow_dispatch` stays as a fallback. The workflow builds a **signed APK + AAB** and
+  **auto-publishes** to the `app-releases` registry (S3 + `POST /app-releases`), so the web download
+  links and the in-app update checker update themselves. Field workers install from
+  **`sekar.wahyutrip.com/android`**. Per-env config (API URL, Maps key, `google-services.json`) is
+  resolved via dotenvx. **Bump `versionCode` each release** — the in-app checker compares it.
+- **iOS (needs a Mac):** [`ios-release-guide.md`](ios-release-guide.md) — Xcode / capabilities / APNs /
+  TestFlight / App Store runbook (and what's prepared in the repo vs. deferred to a Mac).
 
 ---
 

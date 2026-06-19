@@ -19,7 +19,7 @@ links the focused guides below.
 | Every environment variable, per workspace & environment | [`environment-variables.md`](environment-variables.md) |
 | Day-2 operations — migrations, backup/restore, rollback, incident runbooks | [`operations.md`](operations.md) |
 | Monitoring — dashboards, CloudWatch alarms, log queries | [`monitoring.md`](monitoring.md) |
-| CI/CD — GitHub Actions pipelines, branch strategy, secrets | [`ci-cd.md`](ci-cd.md) |
+| CI/CD + **releases** — GitHub Actions pipelines, secrets, versioned `server-v*` / `mobile-v*` releases, `scripts/release.sh` | [`ci-cd.md`](ci-cd.md) |
 | AWS managed-services deep-dive — VPC, RDS, S3, IAM, CloudFront, cost, DR | [`infrastructure.md`](infrastructure.md) |
 | Android release — keystore, build, Play Store | [`android-release-guide.md`](android-release-guide.md) |
 | iOS release (needs a Mac) — Xcode, capabilities, APNs, TestFlight | [`ios-release-guide.md`](ios-release-guide.md) |

@@ -1,109 +1,82 @@
-# SEKAR Mobile App
+# Mobile App (React Native 0.83)
 
-React Native mobile application for field workers and supervisors. See [`/CLAUDE.md`](/CLAUDE.md) for complete documentation.
+**Purpose:** Field worker + supervisor mobile app — GPS clock-in/out, photo verification, offline work reports, task assignment, geofence monitoring, FCM notifications.
 
 ## Quick Start
+
+For the full one-command setup, see [`/README.md`](/README.md) (`./scripts/setup.sh` + `./scripts/start.sh`). To work on the mobile app alone:
 
 ```bash
 cd fe/mobile
 npm install
-
-# Configure backend connection
 cp .env.local.example .env.local
-# Edit .env.local — set API_BASE_URL to reach the backend (match its PORT):
-API_BASE_URL=http://10.0.2.2:3000    # Android emulator
-# or
-API_BASE_URL=http://<YOUR_IP>:3000   # Physical device (use your machine's LAN IP)
-API_VERSION=v1
+# Edit .env.local — set API_BASE_URL:
+#   Android emulator: API_BASE_URL=http://10.0.2.2:3000
+#   Physical device: API_BASE_URL=http://<YOUR_LAN_IP>:3000 (match backend PORT)
 
-# Start Metro bundler
-npm start
-
-# Run on device
-npm run android
-npm run ios        # macOS only
+npm start                # Metro bundler
+npm run android          # Run on Android (emulator or device)
+npm run ios              # Run on iOS (macOS only)
 ```
+
+## Environment
+
+Copy `cp .env.local.example .env.local` (plaintext, gitignored; loaded by `babel.config.js` `ENVFILE`). Key vars:
+
+| Var | Default | Purpose |
+|-----|---------|---------|
+| **`API_BASE_URL`** | `http://10.0.2.2:3000` | Backend URL (Android emulator: `10.0.2.2:<PORT>`; device: `<YOUR_IP>:<PORT>`) |
+| `API_VERSION` | `v1` | API version |
+| `GOOGLE_MAPS_API_KEY` | _(empty)_ | Maps rendering (optional) |
+| `CLUSTER_MARKERS_V2_ENABLED` | `false` | Cluster-based monitoring feature (M2) |
+| `FEATURE_PLANTS_ENABLED`, etc. | `false` | Phase 3 feature flags |
+
+**Env files use [dotenvx](https://dotenvx.com):** `.env.local` is plaintext + gitignored. `.env.staging` / `.env.production` are committed encrypted; release builds decrypt them via `scripts/decrypt-env.js`. `.env.keys` is never committed. See [`/specs/deployment/encrypted-secrets.md`](/specs/deployment/encrypted-secrets.md).
 
 ## Testing
 
 ```bash
-npm test                    # Run all tests
-npm test -- --watch         # Watch mode
-npm test -- --coverage      # With coverage
-npm run lint                # Lint code
+npm test                 # Jest unit tests
+npm test -- --watch      # Watch mode
+npm test -- --coverage   # With coverage
+npm run lint             # Lint code
 ```
 
-## Environment Configuration
+## Release & Version Checking
 
-Copy `cp .env.local.example .env.local` (gitignored runtime file; loaded by
-`react-native-dotenv` via `babel.config.js`). Values:
-
-| Var | Default | Purpose |
-|-----|---------|---------|
-| **`API_BASE_URL`** | `http://10.0.2.2:3000` | Backend URL — `10.0.2.2:<PORT>` (Android emulator) or `<YOUR_IP>:<PORT>` (device). **Must match the backend's `PORT`.** |
-| `API_VERSION` | `v1` | API version prefix |
-| `GOOGLE_MAPS_API_KEY` | _(empty)_ | Maps rendering (optional for non-map flows) |
-| `CLUSTER_MARKERS_V2_ENABLED` | `false` | Cluster-based monitoring (M2) |
-| `FEATURE_PLANTS_ENABLED` / `FEATURE_PRUNING_REQUESTS_ENABLED` / `FEATURE_PLANT_SEEDS_ENABLED` | `false` | Phase 3 feature flags |
-
-```env
-# Minimal local config
-API_BASE_URL=http://10.0.2.2:3000    # Android emulator
-# API_BASE_URL=http://<YOUR_IP>:3000 # Physical device
-API_VERSION=v1
-```
-
-**Env files use [dotenvx](https://dotenvx.com)** (selected via `ENVFILE` in `babel.config.js`,
-default `.env.local`). `.env.local` (dev) is plaintext + gitignored. `.env.staging` /
-`.env.production` are committed **encrypted**; release builds decrypt them to a temp file via
-`npm run build:android:staging` / `build:android:production` (see `scripts/decrypt-env.js`).
-Client keys (Mapbox/Maps) ship in the bundle regardless, so encryption just keeps them out of
-plaintext git history. The only real secret is `.env.keys` (**never committed**). Templates
-`*.example` are committed. Guide: [`/specs/deployment/encrypted-secrets.md`](/specs/deployment/encrypted-secrets.md);
-WSL2 device networking: [`/specs/deployment/local-development.md`](/specs/deployment/local-development.md).
-
-## Release
-
-**CI (recommended):** the `mobile-release.yml` workflow (manual dispatch, `environment: staging`)
-builds a **signed APK + AAB** and uploads them as a 30-day artifact.
+**Cut a release** (recommended — bump + tag + build):
 ```bash
-gh workflow run "Mobile Release (Android · staging)" --ref main -f environment=staging
-gh run download <run-id> -D ~/sekar-release   # → app-release.apk + app-release.aab
+scripts/release.sh mobile 0.1.0 2    # bumps version + versionCode(2), tags mobile-v0.1.0, pushes
+```
+The `mobile-v*` tag triggers `mobile-release.yml`: signed **APK + AAB**, **auto-published** to the
+download registry so the web links (`sekar.wahyutrip.com/android`) + in-app checker update themselves.
+Manual fallback: `gh workflow run "Mobile Release (Android · staging)" --ref main -f environment=staging`
+then `gh run download <run-id>`.
+
+**Local build scripts:**
+```bash
+npm run build:release:staging     # Hand-cut release (signed APK+AAB, with clean)
+npm run build:android:staging     # Staging APK
+npm run build:aab:production      # Production AAB
 ```
 
-**Local scripts** (decrypt the chosen env via dotenvx; see `/specs/deployment/encrypted-secrets.md`):
-| Script | Purpose |
-|--------|---------|
-| `npm run start:staging` | Metro for an emulator **debug** run against the staging API |
-| `npm run build:release:staging` | signed release APK+AAB (with `clean` — hand-cut releases) |
-| `npm run build:release:staging:ci` | same, no `clean` (CI uses this with the `.cxx` cache) |
-| `npm run build:android:staging` / `build:android:production` | release APK for one env |
-| `npm run build:aab:production` | production AAB |
+**In-app version checker:** `useAppUpdate` hook reads `versionCode` (from `react-native-device-info`) and compares to `GET /app-releases/latest`. Shows update banner on field home + Diagnostics (Profil → Diagnostik & Izin). **Bump `android/app/build.gradle versionCode` per release** — checker compares it. Dev/staging → APK download; production → Play Store (not yet wired).
 
 Full runbook: [`/specs/deployment/android-release-guide.md`](/specs/deployment/android-release-guide.md).
 
-### In-app version checker
-`useAppUpdate` (`src/hooks/useAppUpdate.ts`) reads the running build's `versionCode`
-(`react-native-device-info`) and compares it to the backend registry (`GET /app-releases/latest`).
-When a newer build exists it shows an **update banner** on the field home and a **"VERSI APLIKASI"**
-section in the Diagnostics screen (Profil → Diagnostik & Izin). Action is environment-aware:
-dev/staging → direct **APK download**; production → **Play Store** (wired later). **Bump
-`android/app/build.gradle versionCode` per release** — the checker compares versionCode, so it
-won't flag an update otherwise.
+## Design & Docs
 
-## Documentation
+**Design tokens** (generated, source of truth at `/specs/ui-ux/tokens.json`):
+```bash
+npm run tokens:build     # From project root
+```
+Never edit `generated/tokens.ts` or use inline hex literals (ESLint blocks them). Neo Brutalism 2.0 primitives: `NBButton`, `NBCard`, `NBTextInput`, `NBModal`, `NBToast`, `NBText`. See [`CLAUDE.md`](CLAUDE.md) for full reference + token migration details.
 
-- **Complete Guide:** [`/CLAUDE.md`](/CLAUDE.md)
-- **Mobile Specs:** [`/specs/mobile/`](/specs/mobile/)
-- **Design Tokens:** [`/specs/ui-ux/design-tokens.md`](/specs/ui-ux/design-tokens.md)
-- **Neo Brutalism:** [`fe/mobile/CLAUDE.md`](CLAUDE.md)
-- **All Specs:** [`/specs/README.md`](/specs/README.md)
-
-## Current Status
-
-- **Version:** React Native 0.83.4
-- **Screens:** 22 screens (8 worker + 14 supervisor/coordinator/kecamatan)
-- **Tests:** 3,836 passing, 80.31%+ coverage
-- **Design:** Neo Brutalism 2.0, WCAG 2.1 AA, unified tokens via Phase 3 M1-R
-- **Features:** Offline-first, FCM notifications, geofence monitoring, cluster markers (M2), token migration complete
-- **Phase 3 M1-R:** Token migration ✅, brand fonts bundled, NB primitive (`NBModal`/`NBToast`/`NBText`) migration complete
+- **Root guide (conventions, all services, deploy):** [`/README.md`](/README.md)
+- **Full contributor guide:** [`/CLAUDE.md`](/CLAUDE.md)
+- **Mobile development & components:** [`CLAUDE.md`](CLAUDE.md)
+- **Design tokens & Neo Brutalism:** [`/specs/ui-ux/design-tokens.md`](/specs/ui-ux/design-tokens.md)
+- **Component library reference:** [`/specs/mobile/component-library.md`](/specs/mobile/component-library.md)
+- **Mobile specs:** [`/specs/mobile/`](/specs/mobile/)
+- **Deploy (CI/CD, releases, Play Store):** [`/specs/deployment/deployment-guide.md`](/specs/deployment/deployment-guide.md)
+- **All specs:** [`/specs/README.md`](/specs/README.md)

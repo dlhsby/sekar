@@ -1,106 +1,59 @@
-# SEKAR Web Dashboard
+# Web Dashboard (Next.js 16)
 
-Next.js web dashboard for supervisors and administrators. See [`/CLAUDE.md`](/CLAUDE.md) for complete documentation.
+**Purpose:** Web dashboard for supervisors & admins — real-time worker monitoring, task assignment, reporting, Mapbox GL maps, installable PWA.
 
 ## Quick Start
+
+For the full one-command setup, see [`/README.md`](/README.md) (`./scripts/setup.sh` + `./scripts/start.sh`). To work on the web alone:
 
 ```bash
 cd fe/web
 npm install
-
-# Environment — copy template, then set your Mapbox token
 cp .env.local.example .env.local
-# Required: NEXT_PUBLIC_MAPBOX_TOKEN  (https://account.mapbox.com/access-tokens/)
+# Set NEXT_PUBLIC_MAPBOX_TOKEN from https://account.mapbox.com/access-tokens/ (blank = blank map)
 
-# Development
-npm run dev              # Start dev server (http://localhost:${WEB_PORT:-3001})
-
-# Testing
-npm test                 # Run unit tests
-npm run test:e2e         # Run E2E tests with Playwright
-npm run test:e2e:ui      # E2E tests with UI
-
-# Code Quality
-npm run lint             # ESLint
-npm run type-check       # TypeScript
-npm run format           # Prettier
+npm run dev              # http://localhost:3001
 ```
 
 ## Environment
 
-Copy `cp .env.local.example .env.local` (gitignored runtime file). Values:
+Copy `cp .env.local.example .env.local` (plaintext, gitignored). Key vars:
 
 | Var | Default | Purpose |
 |-----|---------|---------|
-| **`NEXT_PUBLIC_MAPBOX_TOKEN`** | _(empty — **must set**)_ | Mapbox GL maps; token from https://account.mapbox.com/access-tokens/ |
-| `NEXT_PUBLIC_API_URL` | `http://localhost:3000` | Backend base URL (match backend `PORT`) |
+| **`NEXT_PUBLIC_MAPBOX_TOKEN`** | _(empty)_ | Mapbox GL maps (get from https://account.mapbox.com/access-tokens/) |
+| `NEXT_PUBLIC_API_URL` | `http://localhost:3000` | Backend base URL |
 | `NEXT_PUBLIC_WS_URL` | `ws://localhost:3000` | WebSocket monitoring stream |
-| `WEB_PORT` | `3001` | Dev server port (override to avoid collisions) |
-| `NEXT_PUBLIC_FEATURE_PWA` | `false` | Service-worker / install banner (on in staging/prod) |
+| `WEB_PORT` | `3001` | Dev server port |
+| `NEXT_PUBLIC_FEATURE_PWA` | `false` | PWA service worker (enabled staging/prod) |
 
-**Env files use [dotenvx](https://dotenvx.com).** `.env.local` (dev) is plaintext + gitignored.
-`.env.staging` / `.env.production` are committed **encrypted**; `NEXT_PUBLIC_*` (incl. the Mapbox
-token) are decrypted and inlined at build via `npm run build:staging` / `build:production`
-(= `dotenvx run -f .env.<env> -- next build`). The only real secret is `.env.keys` (**never
-committed**). Templates `*.example` are committed. Guide:
-[`/specs/deployment/encrypted-secrets.md`](/specs/deployment/encrypted-secrets.md).
+**Env files use [dotenvx](https://dotenvx.com):** `.env.local` is plaintext + gitignored. `.env.staging` / `.env.production` are committed encrypted; `NEXT_PUBLIC_*` are decrypted at build. `.env.keys` is never committed. See [`/specs/deployment/encrypted-secrets.md`](/specs/deployment/encrypted-secrets.md).
 
-## Design Tokens (Phase 3 M1-R Sub-Phase 3-R2)
+## Testing
 
-Tokens are **generated from a single source of truth** to ensure parity across web and mobile.
-
-**Source of Truth:**
-- [`specs/ui-ux/tokens.json`](../../specs/ui-ux/tokens.json) — All design values
-
-**Generated:**
-- `src/app/generated/tokens.css` — Tailwind v4 CSS variables (DO NOT EDIT)
-
-**Workflow:**
 ```bash
-npm run tokens:build   # From project root, regenerates CSS
-npm run tokens:verify  # CI validates no drift
+npm test                 # Jest unit tests
+npm run test:e2e         # Playwright E2E (headless)
+npm run test:e2e:ui      # E2E with UI
 ```
 
-**Key Rules:**
-- ✅ Edit `tokens.json` → run `npm run tokens:build` → commit
-- ❌ Never edit `generated/tokens.css` directly
-- ❌ Never use inline hex literals — ESLint blocks them
+## Design Tokens & PWA
 
-This ensures identical colors, shadows, and typography across mobile and web.
+**Tokens** (generated, source of truth at `/specs/ui-ux/tokens.json`):
+```bash
+npm run tokens:build     # From project root
+```
+Never edit `generated/tokens.css` or use inline hex literals (ESLint blocks them). See [`/CLAUDE.md`](/CLAUDE.md) for Neo Brutalism 2.0 design system + token migration details.
 
-## Progressive Web App (Phase 3 M1-R Sub-Phase 3-R4)
+**PWA** (Next.js 16 installable, offline shell): service worker pre-caches HTML shell + tokens CSS + main JS; monitoring snapshots cached 30s. Feature flag `NEXT_PUBLIC_FEATURE_PWA` (on staging/prod). Components: `InstallBanner`, `OfflineBanner`, `UpdateToast`, `MobileInstallPush`. See [`/CLAUDE.md`](CLAUDE.md) for full reference.
 
-The web dashboard is now an installable, offline-capable PWA.
+## Docs & Specs
 
-**Features:**
-- **Installable:** Add-to-home-screen on desktop, tablet, and mobile browsers via install banner
-- **Offline Shell:** Minimal HTML + tokens CSS + main JS pre-cached; no offline writes (network-first for mutations)
-- **Service Worker:** Pre-caches static assets; runtime SWR 30s for monitoring snapshots
-- **Feature Flag:** `NEXT_PUBLIC_FEATURE_PWA` controls SW registration (enabled in staging/prod, disabled in dev)
-
-**Components:**
-- `InstallBanner` — Install prompt with 14-day localStorage suppression
-- `OfflineBanner` — Status indicator when offline
-- `UpdateToast` — New version available notification
-- `MobileInstallPush` — Role-gated login banner directing satgas/linmas/korlap to native app
-
-See [`/specs/ui-ux/design-tokens.md`](../../specs/ui-ux/design-tokens.md) for complete design system reference.
-
-## Documentation
-
-- **Complete Guide:** [`/CLAUDE.md`](/CLAUDE.md)
-- **Web Development:** [`CLAUDE.md`](CLAUDE.md)
-- **Testing Guide:** [`/specs/testing/web-testing.md`](/specs/testing/web-testing.md)
-- **Design Tokens:** [`/specs/ui-ux/design-tokens.md`](/specs/ui-ux/design-tokens.md)
-- **Web Specs:** [`/specs/web/`](/specs/web/)
-- **All Specs:** [`/specs/README.md`](/specs/README.md)
-
-## Current Status
-
-- **Version:** Next.js 16.1.6 (App Router)
-- **Pages:** 21 pages (+monitoring v2, plants, pruning-requests stubs in Phase 3 M2)
-- **Components:** 20+ UI components (Neo Brutalism 2.0 design system)
-- **Unit Tests:** 975+ passing, 83.99%+ coverage
-- **E2E Tests:** 172+ tests across 8+ spec files
-- **Features:** Real-time monitoring (supercluster + virtualized list), map visualization, role-based access, installable PWA, offline-capable shell
-- **Phase 3 M1-R:** Token migration ✅, brand fonts loaded, Neo Brutalism hard-edge shadows, responsive 3-column layout (mobile/<768 / tablet/768-1279 / desktop/≥1280)
+- **Root guide (conventions, all services, deploy):** [`/README.md`](/README.md)
+- **Full contributor guide:** [`/CLAUDE.md`](/CLAUDE.md)
+- **Web development & components:** [`CLAUDE.md`](CLAUDE.md)
+- **Design tokens & Neo Brutalism:** [`/specs/ui-ux/design-tokens.md`](/specs/ui-ux/design-tokens.md)
+- **E2E testing guide:** [`/specs/testing/web-testing.md`](/specs/testing/web-testing.md)
+- **Web specs:** [`/specs/web/`](/specs/web/)
+- **Deploy (CI/CD, staging, production):** [`/specs/deployment/deployment-guide.md`](/specs/deployment/deployment-guide.md)
+- **All specs:** [`/specs/README.md`](/specs/README.md)
