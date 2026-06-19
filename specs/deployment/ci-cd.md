@@ -91,11 +91,35 @@ Principles:
 5. Heavier automation (release-please / changesets for per-component version bumps + changelogs) is
    optional; adopt only when release cadence justifies it.
 
+### Step-by-step
+
+**Backend + Web → staging (continuous; no manual release step):**
+1. Merge / push your change to `main`.
+2. CI runs `quality-be` + `quality-web`; if green, `deploy-staging` builds + deploys automatically.
+3. Verify the in-CI smoke test (or `curl http://api.sekar.wahyutrip.com/api/v1/health/live` + the web).
+   Rollback: re-run `deploy-staging` from an earlier SHA, or restore the pre-deploy RDS snapshot.
+
+**Mobile app → signed build (versioned, on demand):**
+1. Bump the version — `fe/mobile/package.json` `version` (semver) **and**
+   `fe/mobile/android/app/build.gradle` `versionCode` (integer +1) + `versionName` (match semver).
+2. Commit + push: `git commit -am "chore(mobile): release v1.1.0" && git push`.
+3. (Optional, recommended) tag for traceability: `git tag mobile-v1.1.0 && git push --tags`.
+4. Run the build: Actions → **"Mobile Release (Android · staging)"** → Run workflow → `staging`
+   (or `gh workflow run "Mobile Release (Android · staging)" --ref main -f environment=staging`).
+5. Download the signed APK/AAB artifact (`gh run download <id>`); sideload the APK to UAT testers
+   (or upload the AAB to Play later).
+
+**Production (on-prem) — deferred** until the pemkot box is ready. Then: finalize `.env.production`
+values (`dotenvx set`), and on the box run
+`dotenvx run -f .env.production -- docker compose -f docker-compose.prod.yml up -d --build`.
+
 ## 6. Known gaps
 
-- **`web-e2e.yml` is red** (pre-existing) — the Playwright mock fixture doesn't stub
-  `notifications/unread-count`, so React Query throws. Web-app test fix, tracked separately.
 - **Production CI** is not wired (on-prem deploy is currently manual via
   `dotenvx run -f .env.production -- docker compose -f docker-compose.prod.yml up`).
+- (Resolved 2026-06-19) `web-e2e` was red because `17-capacity.spec.ts` asserted hardcoded ISO
+  weeks (`W24`/`W25`) that fell out of the rolling 12-week window as the date advanced; the mock
+  data + assertions now derive from `getRolling12WeekWindow()`, and the edit test was hardened
+  against a render race.
 - Backend/web unit tests now gate the staging deploy (`quality-be`/`quality-web` in
   `deploy-staging.yml`) and PRs (`backend-quality`/`web-quality`) — previously ungated.
