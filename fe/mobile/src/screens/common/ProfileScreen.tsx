@@ -20,7 +20,12 @@ import { useProfileData } from '../../hooks/useProfileData';
 import { useProfileSync } from '../../hooks/useProfileSync';
 import { useProfileLogout } from '../../hooks/useProfileLogout';
 import { locationTracker } from '../../services/location/locationTracker';
+import { getVersion } from 'react-native-device-info';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
+
+// Read once from the native package metadata so the "About" version never drifts
+// from the actual build (versionName).
+const APP_VERSION = getVersion();
 
 export function ProfileScreen({ navigation }: any): React.JSX.Element {
   const { bottom: bottomInset } = useSafeAreaInsets();
@@ -188,7 +193,7 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
         <NBText variant="body" style={{ marginBottom: 8 }}>
           Sistem Evaluasi Kinerja Satgas RTH
         </NBText>
-        <NBText variant="body-sm" color="gray500">Versi: 1.0.0</NBText>
+        <NBText variant="body-sm" color="gray500">Versi: {APP_VERSION}</NBText>
         <NBText variant="body-sm" color="gray500">DLH Kota Surabaya</NBText>
       </NBModal>
     </NBBackgroundPattern>
