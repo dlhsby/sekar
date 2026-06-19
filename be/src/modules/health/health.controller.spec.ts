@@ -37,6 +37,14 @@ describe('HealthController', () => {
       const res = controller.live();
       expect(res.status).toBe('ok');
       expect(res.uptimeSec).toBeGreaterThanOrEqual(0);
+      // Build info surfaced for deploy verification (version + git sha + build time).
+      expect(res.build).toEqual(
+        expect.objectContaining({
+          version: expect.any(String),
+          gitSha: expect.any(String),
+          builtAt: expect.any(String),
+        }),
+      );
     });
   });
 

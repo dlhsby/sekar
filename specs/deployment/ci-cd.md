@@ -11,11 +11,12 @@ production is on-prem Docker Compose (not yet deployed).
 
 | Workflow (`.github/workflows/`) | Trigger | What it does |
 |--------------------------------|---------|--------------|
-| **`deploy-staging.yml`** | push `main` (see paths-ignore) + `workflow_dispatch` | **Gated on `quality-be` + `quality-web`** (lint/tsc/test) → build backend + web images → ECR (OIDC) → deploy to EC2 via **SSM Run Command**. Web built with `dotenvx run` + BuildKit secret; backend bakes encrypted `be/.env.staging`. Pre-deploy RDS snapshot, SHA-pinned image assertion, smoke test. |
+| **`deploy-staging.yml`** | push `main` (see paths-ignore) + `workflow_dispatch` | **Gated on `quality-be` + `quality-web`** (lint/tsc/test) → build backend + web images (with `GIT_SHA`/`BUILD_TIME` build args) → ECR (OIDC) → deploy to EC2 via **SSM Run Command**. Web built with `dotenvx run` + BuildKit secret; backend bakes encrypted `be/.env.staging`. Pre-deploy RDS snapshot, SHA-pinned image assertion, smoke test. |
+| **`release-server.yml`** | push tag `server-v*` | Versioned **be+web** release (coupled). Validates the tag matches both `package.json`, builds + pushes `:X.Y.Z` ECR images (web production-configured), creates a GitHub Release with notes. Does **not** deploy (on-prem promotion is manual). |
 | **`backend-quality.yml`** | PR on `be/**` | ESLint + `tsc --noEmit` + Jest. |
 | **`web-quality.yml`** | PR on `fe/web/**` | ESLint (incl. design-system rules) + `tsc --noEmit` + Jest. |
 | **`mobile-quality.yml`** | push/PR `main`/`staging`/`develop` on `fe/mobile/**` (+ token files) | ESLint (incl. design-system rules) + `tsc --noEmit` + Jest. Provisions `.env.local` from the example. |
-| **`mobile-release.yml`** | `workflow_dispatch` (env=staging) | Build a **signed** release **APK + AAB** for staging, upload as a 30-day artifact. See [`android-release-guide.md` §F](./android-release-guide.md). |
+| **`mobile-release.yml`** | tag `mobile-v*` + `workflow_dispatch` (env=staging) | Build a **signed** release **APK + AAB** for staging, upload a 30-day artifact, and auto-publish to the download registry (S3 + `POST /app-releases`). Tag pushes validate the tag matches `package.json`. See [`android-release-guide.md` §F](./android-release-guide.md). |
 | **`mobile-e2e.yml`** | `workflow_dispatch` | Maestro device flows. |
 | **`web-e2e.yml`** | push `main` on `fe/web/**` + dispatch | Playwright E2E. ✅ green (capacity spec made date-independent 2026-06-19). |
 | **`tokens-verify.yml`** | PR + push `main` on token files | Verifies generated design tokens are in sync with `tokens.json` (drift gate). |
@@ -70,10 +71,12 @@ user-menu item, all showing the live version. The step skips gracefully (build s
 `APP_RELEASE_PUBLISH_TOKEN` / `AWS_ROLE_ARN` aren't set. See the backend `app-releases` module:
 `GET /app-releases/latest` (metadata) + `GET /app-releases/latest/download` (302 → presigned S3).
 
-**Automation options (none implemented):**
-- **Keep manual dispatch** — recommended for UAT; you control timing.
-- **Git tag** — `on: push: tags: ['v*']`; cut a release with `git tag v1.0.0 && git push --tags`.
-- **GitHub Release** — `on: release: types: [published]`; create a Release in the UI and attach the APK.
+**Tag-driven (implemented).** `mobile-release.yml` also triggers on a **`mobile-v*`** tag and
+validates the tag matches `fe/mobile/package.json`. Cut one with the helper:
+```bash
+scripts/release.sh mobile 0.1.0 2     # bumps package.json + versionName + versionCode(2), tags, pushes
+```
+Manual `workflow_dispatch` stays as a fallback.
 
 ## 4. Rollback
 
@@ -86,45 +89,48 @@ user-menu item, all showing the live version. The step skips gracefully (build s
 `be/`, `fe/web/`, `fe/mobile/` ship to **different targets at different cadences** — so they are
 released **independently**, not lock-stepped into one version:
 
-| Component | Target | Cadence | Versioning |
-|-----------|--------|---------|------------|
-| **Backend + Web** (coupled — web calls the API) | staging EC2 (auto), on-prem prod (manual) | **continuous** to staging on every green merge to `main` | git SHA (no semver needed server-side) |
-| **Mobile** | signed APK/AAB (sideload / store) | **on demand**, slower | semver in `fe/mobile/package.json` + Android `versionCode` |
+Two cadences, two tag lines (no single repo-wide version — the components don't move together):
+
+| Component | Continuous (staging) | Versioned release | Versioning |
+|-----------|----------------------|-------------------|------------|
+| **Backend + Web** (coupled — web calls the API) | every green merge to `main` → `deploy-staging` (SHA-pinned) | **`server-vX.Y.Z`** tag → `release-server.yml` | one shared semver (`be/package.json` == `fe/web/package.json`) |
+| **Mobile** | — (built on demand) | **`mobile-vX.Y.Z`** tag → `mobile-release.yml` (dispatch = fallback) | semver in `fe/mobile/package.json` + Android `versionCode` |
 
 Principles:
-1. **Path-filtered, independent CI** — `backend-quality` / `web-quality` / `mobile-quality` each gate
-   only their component; `deploy-staging`'s `paths-ignore` skips mobile/docs/prod-only commits.
-2. **Server = continuous + together.** Backend and web deploy as a pair (API contract coupling).
-   Staging needs no tags. Production (on-prem) is a deliberate cutover (manual today; a `prod-v*`
-   tag could trigger it later).
-3. **App = independent versioned release.** Bump `fe/mobile/package.json` + `versionCode`, then run
-   the mobile release. Don't tie the app version to backend deploys.
-4. **Component-scoped tags** when you want traceable releases: `mobile-v1.2.0` (app), `prod-v1.2.0`
-   (future on-prem be+web). Avoid a single repo-wide version — the three don't move together.
-5. Heavier automation (release-please / changesets for per-component version bumps + changelogs) is
-   optional; adopt only when release cadence justifies it.
+1. **Path-filtered, independent CI** — `backend-quality` / `web-quality` / `mobile-quality` gate only
+   their component; `deploy-staging`'s `paths-ignore` skips mobile/docs/prod-only commits.
+2. **Staging stays continuous + SHA-pinned** — no tags needed; it's always the latest `main`.
+3. **A semver tag = a named, promotable, documented release** (built from the tagged commit, with a
+   GitHub Release + notes), separate from the continuous staging stream.
+4. **Server be+web share one version** (they deploy as a pair). `server-vX.Y.Z` builds + ECR-tags
+   **`:X.Y.Z`** images (web built **production-configured**) and cuts a GitHub Release. It does **not**
+   auto-deploy — production (on-prem) is a deliberate promotion.
+5. **Which build is live** is observable: backend `GET /health/live` returns `{version,gitSha,builtAt}`;
+   web shows `v… · <sha>` in the sidebar footer (baked from `GIT_SHA`/`BUILD_TIME` build args).
+6. Heavier automation (release-please / changesets) stays optional — adopt at higher cadence.
 
 ### Step-by-step
 
-**Backend + Web → staging (continuous; no manual release step):**
-1. Merge / push your change to `main`.
-2. CI runs `quality-be` + `quality-web`; if green, `deploy-staging` builds + deploys automatically.
-3. Verify the in-CI smoke test (or `curl http://api.sekar.wahyutrip.com/api/v1/health/live` + the web).
-   Rollback: re-run `deploy-staging` from an earlier SHA, or restore the pre-deploy RDS snapshot.
+**Backend + Web → staging (continuous; no release step):** merge to `main` → `quality-be`+`quality-web`
+gate → `deploy-staging` builds + deploys. Verify `curl .../health/live` (shows the SHA). Rollback:
+re-run `deploy-staging` from an earlier SHA, or restore the pre-deploy RDS snapshot.
 
-**Mobile app → signed build (versioned, on demand):**
-1. Bump the version — `fe/mobile/package.json` `version` (semver) **and**
-   `fe/mobile/android/app/build.gradle` `versionCode` (integer +1) + `versionName` (match semver).
-2. Commit + push: `git commit -am "chore(mobile): release v1.1.0" && git push`.
-3. (Optional, recommended) tag for traceability: `git tag mobile-v1.1.0 && git push --tags`.
-4. Run the build: Actions → **"Mobile Release (Android · staging)"** → Run workflow → `staging`
-   (or `gh workflow run "Mobile Release (Android · staging)" --ref main -f environment=staging`).
-5. Download the signed APK/AAB artifact (`gh run download <id>`); sideload the APK to UAT testers
-   (or upload the AAB to Play later).
+**Backend + Web → versioned release:**
+```bash
+scripts/release.sh server 0.1.0    # bumps be + fe/web package.json, commits, tags server-v0.1.0, pushes
+```
+`release-server.yml` then validates the versions match, builds + pushes `:0.1.0` images to ECR
+(web = production-configured), and creates the GitHub Release. **Promote to on-prem prod** (when the
+box is ready): `git checkout server-v0.1.0` → `dotenvx run -f .env.production -- docker compose -f
+docker-compose.prod.yml up -d --build` → `migration:run:prod` (or pull the `:0.1.0` images if the box
+has ECR access).
 
-**Production (on-prem) — deferred** until the pemkot box is ready. Then: finalize `.env.production`
-values (`dotenvx set`), and on the box run
-`dotenvx run -f .env.production -- docker compose -f docker-compose.prod.yml up -d --build`.
+**Mobile app → versioned release:**
+```bash
+scripts/release.sh mobile 0.1.0 2  # bumps package.json + versionName + versionCode(2), tags mobile-v0.1.0, pushes
+```
+`mobile-release.yml` builds the signed APK/AAB and auto-publishes to the download registry (§3) —
+the web download links + the in-app checker pick it up automatically.
 
 ## 6. Known gaps
 

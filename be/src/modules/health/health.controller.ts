@@ -4,6 +4,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { RedisService } from '../../common/services/redis.service';
+import { getBuildInfo, type BuildInfo } from '../../common/build-info';
 
 type CheckResult = { status: 'ok' | 'down'; latencyMs?: number; error?: string };
 type ReadyResponse = {
@@ -28,10 +29,11 @@ export class HealthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Liveness probe — process is up' })
   @ApiResponse({ status: 200, description: 'Process is alive' })
-  live(): { status: 'ok'; uptimeSec: number } {
+  live(): { status: 'ok'; uptimeSec: number; build: BuildInfo } {
     return {
       status: 'ok',
       uptimeSec: Math.floor((Date.now() - this.startedAt) / 1000),
+      build: getBuildInfo(),
     };
   }
 

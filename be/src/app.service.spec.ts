@@ -24,10 +24,13 @@ describe('AppService', () => {
   });
 
   describe('getHello', () => {
-    it('should return application info', () => {
+    it('should return application info with build identity', () => {
       const result = service.getHello();
       expect(result).toHaveProperty('message', 'SEKAR Backend API');
-      expect(result).toHaveProperty('version', '1.0.0');
+      // version now comes from package.json via build-info (not a hardcoded literal).
+      expect(result).toHaveProperty('version', expect.any(String));
+      expect(result).toHaveProperty('gitSha', expect.any(String));
+      expect(result).toHaveProperty('builtAt', expect.any(String));
       expect(result).toHaveProperty('status', 'running');
     });
   });

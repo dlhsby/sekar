@@ -1,11 +1,15 @@
 import { Injectable } from '@nestjs/common';
+import { getBuildInfo } from './common/build-info';
 
 @Injectable()
 export class AppService {
   getHello(): object {
+    const build = getBuildInfo();
     return {
       message: 'SEKAR Backend API',
-      version: '1.0.0',
+      version: build.version,
+      gitSha: build.gitSha,
+      builtAt: build.builtAt,
       status: 'running',
     };
   }

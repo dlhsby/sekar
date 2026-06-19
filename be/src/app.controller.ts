@@ -29,7 +29,9 @@ export class AppController {
     schema: {
       example: {
         message: 'SEKAR Backend API',
-        version: '1.0.0',
+        version: '0.0.1',
+        gitSha: 'abc1234',
+        builtAt: '2026-06-19T13:00:00Z',
         status: 'running',
       },
     },

@@ -73,6 +73,13 @@ COPY --from=builder --chown=nestjs:nodejs /app/package.json ./package.json
 # Safe: without the private key this file reveals nothing.
 COPY --chown=nestjs:nodejs .env.staging ./.env.staging
 
+# Build identity — surfaced on /health/live + the root info endpoint for deploy
+# verification. CI passes these; default to 'dev' for local builds.
+ARG GIT_SHA=dev
+ARG BUILD_TIME=dev
+ENV GIT_SHA=$GIT_SHA
+ENV BUILD_TIME=$BUILD_TIME
+
 # Switch to non-root user
 USER nestjs
 

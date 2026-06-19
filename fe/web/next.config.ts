@@ -1,8 +1,26 @@
 import type { NextConfig } from "next";
+import { readFileSync } from "fs";
+
+// Build identity inlined into the bundle (surfaced in the sidebar footer for deploy
+// verification). Version comes from package.json; SHA/time from CI build args
+// (GIT_SHA / BUILD_TIME — same names the backend image uses), 'dev' locally.
+const pkgVersion = (() => {
+  try {
+    return (JSON.parse(readFileSync('./package.json', 'utf8')) as { version?: string }).version ?? '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+})();
 
 const nextConfig: NextConfig = {
   // Standalone output for Docker deployment
   output: 'standalone',
+
+  env: {
+    NEXT_PUBLIC_APP_VERSION: pkgVersion,
+    NEXT_PUBLIC_BUILD_SHA: process.env.GIT_SHA || 'dev',
+    NEXT_PUBLIC_BUILD_TIME: process.env.BUILD_TIME || 'dev',
+  },
 
   // Compress static files
   compress: true,

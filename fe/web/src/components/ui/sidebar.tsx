@@ -8,6 +8,7 @@ import { ChevronDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { Button } from './button';
 import { SekarLogoBox } from '@/components/brand/SekarLogoBox';
+import { BUILD_INFO, BUILD_LABEL } from '@/lib/build-info';
 
 export interface SidebarItem {
   id: string;
@@ -253,6 +254,16 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
           >
             {filteredItems.map(renderNode)}
           </nav>
+
+          {/* Build identity — confirms which build is deployed. */}
+          <div className="flex-shrink-0 border-t-2 border-nb-black/10 px-4 py-2">
+            <span
+              className="font-mono text-[10px] text-nb-gray-500"
+              title={`Dibangun: ${BUILD_INFO.builtAt}`}
+            >
+              {BUILD_LABEL}
+            </span>
+          </div>
 
           {/* Mobile close button */}
           {onClose && (

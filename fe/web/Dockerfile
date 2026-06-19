@@ -28,6 +28,13 @@ ENV NODE_ENV=production
 # Which encrypted env to build from: `staging` (CI default) or `production` (on-prem).
 ARG DOTENV_ENV=staging
 
+# Build identity — read by next.config and inlined into the bundle (sidebar footer).
+# CI passes these; default to 'dev' for local builds.
+ARG GIT_SHA=dev
+ARG BUILD_TIME=dev
+ENV GIT_SHA=$GIT_SHA
+ENV BUILD_TIME=$BUILD_TIME
+
 # NEXT_PUBLIC_* are decrypted from the committed (encrypted) .env.${DOTENV_ENV} by
 # dotenvx at build time and inlined into the bundle. The private key is passed as a
 # BuildKit secret — mounted only for this RUN, never persisted in an image layer.

@@ -97,7 +97,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - id: vars
-        run: echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+        run: |
+          echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -118,6 +120,9 @@ jobs:
           file: ./be/Dockerfile
           platforms: linux/amd64
           push: true
+          build-args: |
+            GIT_SHA=${{ steps.vars.outputs.sha }}
+            BUILD_TIME=${{ steps.vars.outputs.built_at }}
           tags: |
             ${{ vars.ECR_BACKEND }}:staging
             ${{ vars.ECR_BACKEND }}:${{ steps.vars.outputs.sha }}
@@ -136,6 +141,8 @@ jobs:
           # as a BuildKit secret — mounted only for the build RUN, never in an image layer.
           build-args: |
             DOTENV_ENV=staging
+            GIT_SHA=${{ steps.vars.outputs.sha }}
+            BUILD_TIME=${{ steps.vars.outputs.built_at }}
           secrets: |
             dotenv_private_key=${{ secrets.WEB_DOTENV_PRIVATE_KEY }}
           tags: |
