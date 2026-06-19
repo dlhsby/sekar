@@ -26,6 +26,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: staging
+    permissions:
+      id-token: write # OIDC → AWS for the S3 artifact upload
+      contents: read
     defaults:
       run:
         working-directory: fe/mobile
@@ -120,6 +123,58 @@ jobs:
             fe/mobile/android/app/build/outputs/bundle/release/app-release.aab
           retention-days: 30
           if-no-files-found: error
+
+      # ---- Auto-publish to the release registry (drives the web download links) ----
+      # Uploads the signed APK to S3 and registers the build via the backend so
+      # sekar.wahyutrip.com/android always serves the latest version. Skips
+      # gracefully (build still succeeds) until the publish config is in place.
+      - name: Check release-publish config
+        id: cfg
+        env:
+          ROLE: ${{ vars.AWS_ROLE_ARN }}
+          TOKEN: ${{ secrets.APP_RELEASE_PUBLISH_TOKEN }}
+        run: |
+          if [ -n "$ROLE" ] && [ -n "$TOKEN" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Skipping release-registry publish — set vars.AWS_ROLE_ARN + secrets.APP_RELEASE_PUBLISH_TOKEN (staging env) to enable."
+          fi
+
+      - name: Configure AWS credentials (OIDC)
+        if: steps.cfg.outputs.enabled == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'ap-southeast-3' }}
+
+      - name: Upload APK to S3 + register release
+        if: steps.cfg.outputs.enabled == 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          BUILD_CODE: ${{ steps.version.outputs.build_code }}
+          BUCKET: ${{ vars.MEDIA_BUCKET_STAGING || 'sekar-media-staging' }}
+          API_BASE: ${{ vars.STAGING_API_URL || 'http://api.sekar.wahyutrip.com' }}
+          PUBLISH_TOKEN: ${{ secrets.APP_RELEASE_PUBLISH_TOKEN }}
+        run: |
+          set -euo pipefail
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          test -f "$APK"
+          KEY="app-releases/android/sekar-${VERSION}-${BUILD_CODE}.apk"
+          SIZE=$(stat -c%s "$APK")
+          VERSION_CODE=$(grep -m1 'versionCode' android/app/build.gradle | grep -oE '[0-9]+' | head -1)
+          export KEY SIZE VERSION_CODE
+
+          aws s3 cp "$APK" "s3://${BUCKET}/${KEY}" \
+            --content-type application/vnd.android.package-archive \
+            --content-disposition "attachment; filename=sekar-${VERSION}.apk"
+
+          PAYLOAD=$(node -e "process.stdout.write(JSON.stringify({platform:'android',channel:'staging',version:process.env.VERSION,buildNumber:process.env.BUILD_CODE,versionCode:Number(process.env.VERSION_CODE)||undefined,storageKey:process.env.KEY,fileSize:Number(process.env.SIZE),notes:'Android staging build '+process.env.VERSION+' ('+process.env.BUILD_CODE+')'}))")
+          curl -fsS -X POST "${API_BASE}/api/v1/app-releases" \
+            -H 'Content-Type: application/json' \
+            -H "X-Publish-Token: ${PUBLISH_TOKEN}" \
+            -d "$PAYLOAD"
+          echo "Registered release ${VERSION} (build ${BUILD_CODE}) → ${KEY}"
 
       - name: Summary
         env:

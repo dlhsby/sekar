@@ -666,6 +666,7 @@ validateEnv();
 | `AWS_ENDPOINT_URL` | http://localhost:9000 (MinIO) | (empty; real AWS) | http://localhost:9000 (MinIO) |
 | `AWS_S3_BUCKET` | sekar-media-dev | sekar-media-staging | sekar-media-prod |
 | `FCM_ENABLED` | false | true | true |
+| `APP_RELEASE_PUBLISH_TOKEN` | unset (publish off) | encrypted (= GitHub staging secret) | encrypted |
 | `LOG_LEVEL` | debug | info | warn |
 | `RATE_LIMIT_STRICT` | false | true | true |
 

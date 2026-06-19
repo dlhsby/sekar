@@ -11,6 +11,7 @@ import { FormInput, Button, useToast } from '@/components/ui';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { BrandLockup } from '@/components/brand/BrandLockup';
 import { LoginHero } from '@/components/brand/LoginHero';
+import { AppDownloadLoginLink } from '@/components/app-download/AppDownloadLoginLink';
 import { useAuth } from '@/lib/auth/hooks';
 import { getErrorMessage } from '@/lib/api/client';
 
@@ -178,6 +179,9 @@ function LoginForm() {
           <p className="mt-5 text-center text-nb-caption text-nb-gray-600">
             Akun dibuat oleh admin. Hubungi <b className="text-nb-black">Admin</b> jika ada kendala.
           </p>
+
+          {/* Field workers install the native app from here (live version). */}
+          <AppDownloadLoginLink />
         </div>
       </div>
     </div>

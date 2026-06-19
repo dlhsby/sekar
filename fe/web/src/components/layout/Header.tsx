@@ -2,7 +2,7 @@
 
 import { HTMLAttributes, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, User, Settings, LogOut } from 'lucide-react';
+import { Menu, User, Settings, LogOut, Smartphone } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useUIStore } from '@/stores/ui';
 import { useAuth } from '@/lib/auth/hooks';
@@ -10,6 +10,7 @@ import { NotificationBell } from '@/components/ui/notification-bell';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { RoleAvatar } from '@/components/ui/role-avatar';
 import { getPageTitle, getBreadcrumbTrail } from '@/lib/navigation';
+import { useLatestAppRelease } from '@/lib/hooks/useLatestAppRelease';
 import { ADMIN_ROLES, hasRole } from '@/lib/constants/roles';
 import type { UserRole } from '@/types/models';
 import {
@@ -47,6 +48,9 @@ export function Header({ className, ...props }: HeaderProps) {
   const pageTitle = getPageTitle(pathname);
   const breadcrumbTrail = getBreadcrumbTrail(pathname);
   const canOpenSettings = !!user && hasRole(user.role as UserRole, ADMIN_ROLES);
+  const { data: appRelease, status: appReleaseStatus } = useLatestAppRelease('android');
+  const appVersionLabel =
+    appReleaseStatus === 'success' && appRelease ? ` (v${appRelease.version})` : '';
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -143,6 +147,10 @@ export function Header({ className, ...props }: HeaderProps) {
                 <DropdownMenuItem onClick={() => router.push('/profile')}>
                   <User className="mr-2 h-4 w-4" />
                   Profil
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/android')}>
+                  <Smartphone className="mr-2 h-4 w-4" />
+                  Unduh Aplikasi{appVersionLabel}
                 </DropdownMenuItem>
                 {canOpenSettings && (
                   <DropdownMenuItem onClick={() => router.push('/settings')}>

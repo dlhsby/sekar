@@ -49,6 +49,8 @@ import { QueueModule } from './modules/queue/queue.module';
 import { AssetsModule } from './modules/assets/assets.module';
 import { ReportingModule } from './modules/reporting/reporting.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+// Mobile app release registry (dynamic download links on web)
+import { AppReleasesModule } from './modules/app-releases/app-releases.module';
 
 @Module({
   imports: [
@@ -151,6 +153,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     AssetsModule,
     ReportingModule,
     AnalyticsModule,
+    AppReleasesModule, // Mobile app release registry (public download links)
   ],
   controllers: [AppController],
   providers: [

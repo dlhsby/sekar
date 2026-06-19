@@ -11,7 +11,15 @@ import type { NextRequest } from 'next/server';
  * PWA offline/install pages, and (b) silently left newer sections to
  * client-side guards only.
  */
-const PUBLIC_PATHS = ['/login', '/forgot-password', '/offline', '/install-help'];
+const PUBLIC_PATHS = [
+  '/login',
+  '/forgot-password',
+  '/offline',
+  '/install-help',
+  // Public mobile-app download landing pages (field workers reach these logged-out / via QR).
+  '/android',
+  '/ios',
+];
 
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

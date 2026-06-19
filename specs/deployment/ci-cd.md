@@ -34,8 +34,13 @@ Replaced by the OIDC + SSM + dotenvx model above. Safe to delete.
 Full detail + rationale in [`encrypted-secrets.md`](./encrypted-secrets.md). Summary:
 
 **GitHub Environment secrets** (a job selects the set via `environment:`):
-- `staging`: `BE_DOTENV_PRIVATE_KEY`, `WEB_DOTENV_PRIVATE_KEY`, `MOBILE_DOTENV_PRIVATE_KEY`, `GOOGLE_SERVICES_JSON_STAGING`
+- `staging`: `BE_DOTENV_PRIVATE_KEY`, `WEB_DOTENV_PRIVATE_KEY`, `MOBILE_DOTENV_PRIVATE_KEY`, `GOOGLE_SERVICES_JSON_STAGING`, `APP_RELEASE_PUBLISH_TOKEN`
 - `production`: `BE_DOTENV_PRIVATE_KEY`, `WEB_DOTENV_PRIVATE_KEY`
+
+`APP_RELEASE_PUBLISH_TOKEN` authorizes `mobile-release.yml` to register a build in the backend
+release registry (`POST /app-releases`, `X-Publish-Token`); it must equal the encrypted
+`APP_RELEASE_PUBLISH_TOKEN` in `be/.env.staging`. The `sekar-gha-deploy` OIDC role also has
+`s3:PutObject` on `sekar-media-staging/app-releases/*` so the workflow can upload the APK.
 
 **Repo-level secrets:** `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`,
 `ANDROID_KEY_PASSWORD` (+ legacy `ANDROID_SIGNING_KEY`).
@@ -56,6 +61,14 @@ gh run download <run-id> -D ~/sekar-release   # signed app-release.apk + app-rel
 ```
 Build time: ~30 min cold, ~10–15 min on a `.cxx` cache hit (the build caches Gradle deps + the
 native CMake build and skips `clean` in CI).
+
+**Auto-publish to the download registry.** After the signed build, `mobile-release.yml` uploads
+the APK to `s3://sekar-media-staging/app-releases/android/…` and registers it via
+`POST /app-releases` (publish token). That powers the dynamic, always-current download links on
+web — the public **`sekar.wahyutrip.com/android`** page, the login-page button, and the dashboard
+user-menu item, all showing the live version. The step skips gracefully (build still succeeds) if
+`APP_RELEASE_PUBLISH_TOKEN` / `AWS_ROLE_ARN` aren't set. See the backend `app-releases` module:
+`GET /app-releases/latest` (metadata) + `GET /app-releases/latest/download` (302 → presigned S3).
 
 **Automation options (none implemented):**
 - **Keep manual dispatch** — recommended for UAT; you control timing.

@@ -380,6 +380,7 @@ adb install -r ~/sekar-release/*/apk/release/app-release.apk
 |-------|--------|---------|
 | `staging` env | `MOBILE_DOTENV_PRIVATE_KEY` | decrypts `fe/mobile/.env.staging` (API URL, Maps key, …) |
 | `staging` env | `GOOGLE_SERVICES_JSON_STAGING` | base64 of the staging `google-services.json` |
+| `staging` env | `APP_RELEASE_PUBLISH_TOKEN` | authorizes the auto-publish `POST /app-releases` (F6); = encrypted value in `be/.env.staging` |
 | repo | `ANDROID_KEYSTORE_BASE64` | base64 of the release keystore (`base64 -w0 sekar-release.keystore`) |
 | repo | `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` | signing credentials |
 
@@ -398,6 +399,19 @@ adb install -r ~/sekar-release/*/apk/release/app-release.apk
 ### F4. Versioning
 Bump `fe/mobile/package.json` `version` and Android `versionCode` (`android/app/build.gradle`)
 before cutting a release. The workflow stamps the artifact name with the version + a build code.
+
+### F6. Auto-publish to the in-app download links
+After the signed build, the workflow uploads the APK to
+`s3://sekar-media-staging/app-releases/android/sekar-<version>-<buildcode>.apk` and registers it via
+`POST /app-releases` (header `X-Publish-Token: $APP_RELEASE_PUBLISH_TOKEN`). This is what makes the
+web download links **dynamic + versioned** — no redeploy needed:
+- Public install page **`https://sekar.wahyutrip.com/android`** (and `/ios`) — version, notes, one-tap download.
+- Login-page "Unduh Aplikasi Android (vX.Y.Z)" button + dashboard user-menu "Unduh Aplikasi" item.
+
+The download link is stable (`GET /api/v1/app-releases/latest/download?platform=android` →
+302 to a fresh presigned S3 URL), so it never goes stale. The step needs the `sekar-gha-deploy`
+OIDC role to have `s3:PutObject` on `sekar-media-staging/app-releases/*` (already granted) and skips
+gracefully if `APP_RELEASE_PUBLISH_TOKEN` isn't configured. Backend module: `be/src/modules/app-releases`.
 
 ### F5. Adding Google Play Upload to CI/CD
 
