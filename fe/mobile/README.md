@@ -82,6 +82,15 @@ gh run download <run-id> -D ~/sekar-release   # → app-release.apk + app-releas
 
 Full runbook: [`/specs/deployment/android-release-guide.md`](/specs/deployment/android-release-guide.md).
 
+### In-app version checker
+`useAppUpdate` (`src/hooks/useAppUpdate.ts`) reads the running build's `versionCode`
+(`react-native-device-info`) and compares it to the backend registry (`GET /app-releases/latest`).
+When a newer build exists it shows an **update banner** on the field home and a **"VERSI APLIKASI"**
+section in the Diagnostics screen (Profil → Diagnostik & Izin). Action is environment-aware:
+dev/staging → direct **APK download**; production → **Play Store** (wired later). **Bump
+`android/app/build.gradle versionCode` per release** — the checker compares versionCode, so it
+won't flag an update otherwise.
+
 ## Documentation
 
 - **Complete Guide:** [`/CLAUDE.md`](/CLAUDE.md)

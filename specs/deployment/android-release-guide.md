@@ -400,6 +400,12 @@ adb install -r ~/sekar-release/*/apk/release/app-release.apk
 Bump `fe/mobile/package.json` `version` and Android `versionCode` (`android/app/build.gradle`)
 before cutting a release. The workflow stamps the artifact name with the version + a build code.
 
+> **The in-app update checker compares `versionCode`** (the monotonic Android integer), so it
+> only detects a new build when `versionCode` is incremented. Keep `versionName` / package.json
+> `version` aligned for a sensible display string. The checker (`useAppUpdate`) shows a banner on
+> the field home + a "VERSI APLIKASI" section on Diagnostics; dev/staging offer the APK download,
+> production points to the Play Store (later).
+
 ### F6. Auto-publish to the in-app download links
 After the signed build, the workflow uploads the APK to
 `s3://sekar-media-staging/app-releases/android/sekar-<version>-<buildcode>.apk` and registers it via

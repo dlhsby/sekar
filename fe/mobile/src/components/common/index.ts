@@ -1,3 +1,4 @@
+export { AppUpdateBanner } from './AppUpdateBanner';
 export { LoadingSpinner } from './LoadingSpinner';
 export { ErrorBanner } from './ErrorBanner';
 export { ChangePasswordModal } from './ChangePasswordModal';

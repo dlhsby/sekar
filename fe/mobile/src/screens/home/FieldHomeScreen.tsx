@@ -11,7 +11,7 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { CLOCKABLE_ROLES, TASK_RECEIVERS } from '../../constants/roles';
-import { LoadingSpinner } from '../../components/common';
+import { LoadingSpinner, AppUpdateBanner } from '../../components/common';
 import { NBAlert, NBBackgroundPattern, NBButton, NBText } from '../../components/nb';
 import { ShiftDetailModal, TodayActivitiesModal, TodayWorkHoursModal, TodayTasksModal, LocationMapModal } from '../../components/modals';
 import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
@@ -288,6 +288,9 @@ export function FieldHomeScreen(): React.JSX.Element {
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[nbColors.primary]} />
           }
         >
+          {/* App update prompt (newer build available in the registry) */}
+          <AppUpdateBanner style={styles.updateBanner} />
+
           {/* Location warning banner (active shift + GPS/permission problem) */}
           {currentShift && !isLocationAvailable && (
             <NBAlert
@@ -511,6 +514,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   scrollView: { flex: 1 },
   content: { paddingHorizontal: nbSpacing.md, paddingTop: nbSpacing.sm, paddingBottom: nbSpacing.md, flexGrow: 1 },
+  updateBanner: { marginBottom: nbSpacing.sm },
   banner: { marginBottom: nbSpacing.md },
 
   /* Absensi hero */

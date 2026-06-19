@@ -2,6 +2,8 @@
  * Hooks barrel export
  */
 
+export { useAppUpdate } from './useAppUpdate';
+export type { AppUpdateState, AppUpdateStatus } from './useAppUpdate';
 export { useLocationPermission } from './useLocationPermission';
 export type {
   LocationPermissionState,

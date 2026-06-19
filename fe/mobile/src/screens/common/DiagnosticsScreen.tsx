@@ -19,6 +19,7 @@ import { nbColors, nbSpacing, nbRadius, nbBorders, nbShadows } from '../../const
 import { useAppSelector } from '../../store/hooks';
 import { selectTotalPendingCount } from '../../store/slices/offlineSlice';
 import { permissionManager } from '../../services/permissions';
+import { useAppUpdate } from '../../hooks';
 import config from '../../constants/config';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -273,6 +274,9 @@ export function DiagnosticsScreen(): React.JSX.Element {
     'checking' | 'reachable' | 'timeout' | 'unreachable'
   >('checking');
 
+  // App version checker ("doctor")
+  const appUpdate = useAppUpdate();
+
   // ─── Load permission statuses on mount ─────────────────────────────────────
 
   const refreshPermissions = useCallback(async () => {
@@ -443,6 +447,68 @@ export function DiagnosticsScreen(): React.JSX.Element {
             size="sm"
             onPress={checkServer}
             loading={serverStatus === 'checking'}
+            style={styles.recheckButton}
+          />
+        </DiagSection>
+
+        {/* Section: App version ("doctor") */}
+        <DiagSection title="VERSI APLIKASI">
+          <SyncStatusRow
+            label="Versi terpasang"
+            value={`v${appUpdate.installed.version} (build ${appUpdate.installed.versionCode})`}
+          />
+          <View style={styles.divider} />
+          <View style={styles.syncRow}>
+            <NBText variant="body-sm" color="black">
+              Status
+            </NBText>
+            {appUpdate.status === 'checking' ? (
+              <NBText variant="mono-sm" color="gray600">
+                MEMERIKSA...
+              </NBText>
+            ) : appUpdate.status === 'unknown' ? (
+              <NBText variant="mono-sm" color="gray600">
+                TIDAK DIKETAHUI
+              </NBText>
+            ) : appUpdate.status === 'upToDate' ? (
+              <View style={[styles.pill, { backgroundColor: nbColors.statusActiveBg }]}>
+                <NBText variant="mono-sm" color="statusActive">
+                  TERBARU
+                </NBText>
+              </View>
+            ) : (
+              <View style={[styles.pill, { backgroundColor: nbColors.bgAccentYellow }]}>
+                <NBText variant="mono-sm" color="black">
+                  PERBARUI
+                </NBText>
+              </View>
+            )}
+          </View>
+          {appUpdate.latest &&
+            (appUpdate.status === 'upToDate' || appUpdate.status === 'updateAvailable') && (
+              <>
+                <View style={styles.divider} />
+                <SyncStatusRow
+                  label="Versi tersedia"
+                  value={`v${appUpdate.latest.version} (build ${appUpdate.latest.versionCode ?? '—'})`}
+                />
+              </>
+            )}
+          {appUpdate.status === 'updateAvailable' && (
+            <NBButton
+              title={appUpdate.updateActionLabel}
+              variant="primary"
+              size="sm"
+              onPress={appUpdate.openUpdate}
+              style={styles.recheckButton}
+            />
+          )}
+          <NBButton
+            title="Periksa Ulang"
+            variant="outline"
+            size="sm"
+            onPress={appUpdate.check}
+            loading={appUpdate.status === 'checking'}
             style={styles.recheckButton}
           />
         </DiagSection>
