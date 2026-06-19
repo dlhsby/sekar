@@ -109,65 +109,28 @@ See [`src/database/seeds/README.md`](src/database/seeds/README.md) for full seed
 
 ## Staging / Production Deployment
 
-See [`/specs/deployment/phase-2-deployment.md`](/specs/deployment/phase-2-deployment.md) for the complete guide.
+The complete, from-scratch deploy procedure (local → staging → production, CI/CD, operations)
+lives in **[`/specs/deployment/deployment-guide.md`](/specs/deployment/deployment-guide.md)** —
+this README does not duplicate it. Backend-specific notes:
 
-### Fresh Deploy
+- **Staging (AWS)** auto-deploys on every green push to `main` (GitHub OIDC → ECR → SSM). The
+  encrypted `be/.env.staging` is baked into the image and decrypted at boot by `load-env.ts`.
+- **Production (on-prem)** is driven by the **repo-root `./.env.production`** (encrypted), not a
+  `be/` file — it feeds `docker-compose.prod.yml`.
+- Migrations run every deploy; seeders run **first boot only**. Use the **`:prod`** scripts
+  (`migration:run:prod`, `db:seed:staging:prod` / `db:seed:production:prod`) — the production
+  image is `npm prune`d, so plain `migration:run` (needs `ts-node`) fails. **Never** run
+  `db:seed` / `db:seed:phase1` in staging/prod — they wipe all data.
+- `DATABASE_SYNCHRONIZE` must be `false` in staging/prod (`main.ts` blocks startup otherwise).
+- Env model (dotenvx, encrypted): [`/specs/deployment/encrypted-secrets.md`](/specs/deployment/encrypted-secrets.md).
 
-```bash
-# On the server, after pulling the Docker image:
+## Monitoring v2 / Redis Streams (live)
 
-# 1. Run all migrations
-docker exec sekar-backend npm run migration:run:prod
-
-# 2. Create tables not covered by migrations (one-time)
-#    Temporarily start with DATABASE_SYNCHRONIZE=true, then disable
-
-# 3. Seed reference data + 1 superadmin (idempotent)
-docker exec sekar-backend npm run db:seed:prod
-
-# 4. Change default admin password immediately!
-```
-
-### Incremental Deploy
-
-```bash
-# 1. Pull new image and restart container
-docker pull <ECR_URI>/sekar-backend:latest
-docker-compose -f docker-compose.prod.yml up -d
-
-# 2. Run pending migrations (only new ones execute)
-docker exec sekar-backend npm run migration:run:prod
-
-# 3. (Optional) Re-run reference seeder if new config data was added
-docker exec sekar-backend npm run db:seed:prod
-
-# Do NOT run db:seed or db:seed:phase1 — these wipe all data!
-```
-
-### Environment
-
-- **Staging template:** `be/.env.staging.example`
-- **Production template:** `be/.env.production.example`
-- `DATABASE_SYNCHRONIZE` must be `false` in staging/prod (`main.ts` blocks startup otherwise)
-
-## Environment Configuration
-
-### Phase 3 Infrastructure
-
-Add to `.env` for Phase 3 M2 Monitoring v2 features (Redis Streams, status projector):
-
-```env
-# Redis (Phase 3 M2+) — dev host port is 16379 (set in infra/docker-compose.yml)
-# to avoid colliding with a system-wide Redis. Override here if you changed
-# REDIS_PORT in infra/.env. Production uses standard 6379.
-REDIS_URL=redis://localhost:16379
-REDIS_STREAM_MAX_LEN=10000
-STAFFING_DEBOUNCE_SECONDS=30
-MONITORING_SWEEP_CRON=*/30 * * * *    # Every 30 minutes
-CLUSTER_ZOOM_THRESHOLD=14              # Zoom level for cluster visibility
-```
-
-For development, Redis is not required until Phase 3 M2 implementation starts. Existing Phase 2E deployments continue to work without these variables.
+Real-time monitoring v2 (Redis Streams + status projector) is live and requires Redis. Local
+infra exposes Redis on host port **16379** (set in `infra/.env` to avoid colliding with a
+system-wide Redis); production uses standard 6379. Tunables: `REDIS_STREAM_MAX_LEN`,
+`STAFFING_DEBOUNCE_SECONDS`, `MONITORING_SWEEP_CRON`, `CLUSTER_ZOOM_THRESHOLD`. Full catalogue:
+[`/specs/deployment/environment-variables.md`](/specs/deployment/environment-variables.md).
 
 ## Current Status
 
@@ -176,4 +139,4 @@ For development, Redis is not required until Phase 3 M2 implementation starts. E
 - **Tests:** 1,264 passing, 94.51% coverage
 - **Features:** JWT auth, 9-role RBAC (incl. `staff_kecamatan`), WebSocket, FCM notifications, S3 uploads, Redis Streams, real-time monitoring v2
 
-**Production:** https://api.sekar.wahyutrip.com
+**Staging (AWS, UAT):** http://api.sekar.wahyutrip.com · Production (on-prem) not yet deployed.

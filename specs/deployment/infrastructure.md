@@ -1,34 +1,47 @@
 # Infrastructure Specifications
 
-Comprehensive AWS infrastructure setup for SEKAR production deployment.
+Deep-dive reference for AWS managed services and on-prem deployments. **For deployment procedures, see [`deployment-guide.md`](./deployment-guide.md) (authoritative).**
 
-## Overview
+## Current Topology (2026-06)
 
-This document details the AWS infrastructure architecture, configuration, and provisioning specifications for the SEKAR system. The infrastructure is designed to support 500 workers across 30 locations with high availability, security, and cost optimization.
+SEKAR runs on two targets: **(1) Staging/UAT** on AWS account **659828096624** (region **ap-southeast-3** Jakarta), co-tenant with project KPI on shared **t3.micro** EC2, served plain HTTP via KPI's Caddy; **SHARED RDS `kobin-kpi-db` (database `sekar_staging`)** and S3 `sekar-media-staging` (via instance role, no static keys); Redis in-stack container. Deploy via **GitHub OIDC + SSM Run Command** (no SSH). **(2) Production** on **on-prem (pemkot) server**, Docker Compose (`docker-compose.prod.yml`), self-hosted Postgres, Redis, MinIO — not yet deployed. **Env/secrets use dotenvx** (`.env.staging` / `.env.production` committed encrypted; private keys are GitHub Environment secrets; AWS staging box reads key from SSM `/sekar/staging/BE_DOTENV_PRIVATE_KEY`).
 
 ---
 
-## 1. AWS Account Structure
+## Reference: Larger Managed-Cloud Layout (Not Currently Provisioned)
 
-### Account Organization
+The following VPC, RDS, CloudFront, and ElastiCache sections describe a fuller managed-cloud scale-up pattern (matching [`deployment-guide.md` Appendix A](./deployment-guide.md)). This is **NOT** the current deployment but serves as reference for future evolution.
+
+---
+
+## 1. AWS Account Structure (Reference Layout)
+
+**Current reality:** Staging co-tenants on account **659828096624** (shared with KPI project). Production is on-prem (no AWS). This section describes the *reference* architecture for a dedicated multi-account, multi-region managed setup.
+
+### Reference Account Organization
 
 ```
+Single AWS Account (659828096624)
+└── Staging Environment (current)
+    ├── EC2 t3.micro (shared KPI Caddy gateway)
+    ├── RDS: kobin-kpi-db, database sekar_staging (shared)
+    ├── S3: sekar-media-staging
+    └── Redis: in-stack container
+
+Reference (not provisioned):
 Root Account
 ├── Production Account (sekar-prod)
 │   ├── VPC: sekar-prod-vpc
 │   ├── RDS: sekar-prod-db
 │   ├── S3: sekar-prod-media
-│   └── Elastic Beanstalk: sekar-prod-api
-├── Staging Account (sekar-staging)
-│   └── [Mirror of production at smaller scale]
-└── Development Account (sekar-dev)
-    └── [Development resources]
+│   └── Container registries for ECR
+└── Backup Region (ap-southeast-3)
+    └── [Standby for disaster recovery]
 ```
 
-### AWS Regions
-- **Primary Region:** ap-southeast-1 (Singapore)
-- **Backup Region:** ap-southeast-3 (Jakarta) - Phase 3+
-- **Reason:** Closest to Surabaya, lowest latency
+### AWS Regions (Reference)
+- **Staging:** ap-southeast-3 (Jakarta) — closest to Surabaya, lowest latency
+- **Production reference:** ap-southeast-3 primary; ap-southeast-1 (Singapore) backup — Phase 3+
 
 ---
 
@@ -170,22 +183,21 @@ CIDR: 10.0.0.0/16
 
 ---
 
-## 4. RDS PostgreSQL Configuration
+## 4. RDS PostgreSQL Configuration (Reference Layout)
 
-### Database Instance Specifications
+**Current reality:** Staging uses **shared `kobin-kpi-db` RDS instance** (database `sekar_staging`); production is on-prem (self-hosted Postgres). This section is the *reference* architecture for dedicated managed RDS.
 
-#### Development Environment
+### Reference Database Instance Specifications
+
+#### Staging (Current)
 | Parameter | Value |
 |-----------|-------|
-| Instance Type | db.t3.micro |
-| vCPU | 2 |
-| Memory | 1 GB |
-| Storage | 20 GB GP2 |
-| IOPS | Baseline |
-| Multi-AZ | No |
-| Backup Retention | 3 days |
+| Instance Type | db.t3.micro (shared) |
+| Database | sekar_staging (on kobin-kpi-db) |
+| Backup Retention | 7 days |
+| Notes | Co-tenant with KPI project; no dedicated RDS |
 
-#### Production Environment
+#### Production Reference (Not Provisioned)
 | Parameter | Value |
 |-----------|-------|
 | Instance Type | db.t3.small |
@@ -193,14 +205,14 @@ CIDR: 10.0.0.0/16
 | Memory | 2 GB |
 | Storage | 100 GB GP3 |
 | IOPS | 3000 |
-| Multi-AZ | Yes (Phase 2+) |
+| Multi-AZ | Yes |
 | Backup Retention | 7 days |
 
-### Database Configuration
+### Reference Database Configuration (Production)
 
 **Database Name:** sekar_db
 **Master Username:** sekar_admin
-**Master Password:** (stored in AWS Secrets Manager)
+**Master Password:** (in GitHub Environment secrets, injected at deploy; see [`encrypted-secrets.md`](./encrypted-secrets.md))
 
 **PostgreSQL Version:** 14.10 (or latest 14.x)
 
@@ -375,132 +387,43 @@ sekar-prod-media (Primary bucket)
 
 ---
 
-## 6. Application Hosting (Elastic Beanstalk)
+## 6. Application Hosting (Reference: ECS/Fargate Layout)
 
-### Elastic Beanstalk Application
+**Current reality:** Staging = EC2 t3.micro (shared), production = Docker Compose on-prem. **Elastic Beanstalk is discontinued** (workflows deleted Apr 2026). This section describes the *reference* architecture for a managed container service (ECS/Fargate or similar).
 
-**Application Name:** sekar-backend
-**Platform:** Node.js 18 running on 64bit Amazon Linux 2023
+### Reference Production Layout (Not Provisioned)
 
-### Environment Configuration
+**Deployment method:** GitHub Actions + AWS Systems Manager Session Manager (no SSH); ECR for images.
 
-#### Development Environment
+**Application:**
+- **Task Definition:** sekar-backend
+- **Platform:** Node.js 24+ on ECS Fargate
+- **CPU:** 512 vCPU (dev), 1024 vCPU (prod)
+- **Memory:** 1GB (dev), 2GB (prod)
 
-**Environment Name:** sekar-dev
-**Instance Type:** t3.micro
-**Min Instances:** 1
-**Max Instances:** 1
-**Load Balancer:** None (direct access)
+**Load Balancer:**
+- **Type:** Application Load Balancer (ALB)
+- **Target Group:** sekar-prod-tg, health check `/api/health` every 30s
+- **SSL/TLS:** ACM certificate for api.sekar.wahyutrip.com, TLS 1.2+
 
-#### Production Environment
+**Scaling (reference):**
+- Min tasks: 2, Max: 4
+- Scale up if CPU > 70% for 5 min
+- Scale down if CPU < 30% for 10 min
 
-**Environment Name:** sekar-prod
-**Instance Type:** t3.small
-**Min Instances:** 2
-**Max Instances:** 4
-**Load Balancer:** Application Load Balancer
-
-### Auto Scaling Configuration
-
-**Scaling Metrics:**
-| Metric | Scale Up | Scale Down |
-|--------|----------|------------|
-| CPU Utilization | > 70% for 5 min | < 30% for 10 min |
-| Network Out | > 6 MB for 5 min | < 2 MB for 10 min |
-| Latency | > 2s for 3 min | - |
-
-**Scaling Policy:**
-- Scale up: Add 1 instance
-- Scale down: Remove 1 instance
-- Cooldown: 300 seconds
-
-### Load Balancer Configuration
-
-**Type:** Application Load Balancer (ALB)
-**Scheme:** Internet-facing
-**Subnets:** sekar-public-subnet-1a, sekar-public-subnet-1b
-
-**Listeners:**
-| Protocol | Port | Default Action |
-|----------|------|----------------|
-| HTTPS | 443 | Forward to sekar-prod-tg |
-| HTTP | 80 | Redirect to HTTPS |
-
-**Target Group (sekar-prod-tg):**
-- Protocol: HTTP
-- Port: 3000
-- Health check path: /api/health
-- Health check interval: 30 seconds
-- Healthy threshold: 2
-- Unhealthy threshold: 5
-- Timeout: 5 seconds
-- Deregistration delay: 30 seconds
-
-**Stickiness:**
-- Type: None (stateless API)
-
-### SSL/TLS Configuration
-
-**Certificate Source:** AWS Certificate Manager (ACM)
-**Domain:** api.sekar.DLH-sby.go.id
-**Certificate Type:** RSA-2048
-**Validation:** DNS validation
-
-**SSL Policy:** ELBSecurityPolicy-TLS-1-2-2017-01
-- TLS 1.2 minimum
-- Strong cipher suites only
-
-### Environment Properties
-
+**Env vars (reference, from SSM Parameter Store or GitHub Environment secrets):**
 ```bash
 NODE_ENV=production
 PORT=3000
-DATABASE_HOST=sekar-prod-db.xxxxx.ap-southeast-1.rds.amazonaws.com
-DATABASE_PORT=5432
-DATABASE_USER=sekar_admin
-DATABASE_PASSWORD={{resolve:secretsmanager:sekar/db/password}}
-DATABASE_NAME=sekar_db
-JWT_SECRET={{resolve:secretsmanager:sekar/jwt/secret}}
+DATABASE_HOST=<RDS endpoint>
+JWT_SECRET=<from GitHub secrets>
 JWT_EXPIRATION=7d
-AWS_REGION=ap-southeast-1
-AWS_S3_BUCKET=sekar-prod-media
-CORS_ORIGIN=https://sekar.DLH-sby.go.id
+AWS_REGION=ap-southeast-3
+AWS_S3_BUCKET=sekar-media-staging
+REDIS_URL=redis://<endpoint>:6379
 ```
 
-### EC2 Instance Configuration
-
-**AMI:** Amazon Linux 2023
-**Security Group:** sekar-app-sg
-**IAM Instance Profile:** sekar-app-role
-**User Data:**
-```bash
-#!/bin/bash
-# Install CloudWatch agent
-wget https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm
-rpm -U ./amazon-cloudwatch-agent.rpm
-
-# Configure Node.js environment
-export NODE_ENV=production
-export NODE_OPTIONS="--max-old-space-size=1536"
-```
-
-**Root Volume:**
-- Type: GP3
-- Size: 20 GB
-- IOPS: 3000
-
-### Health Monitoring
-
-**Application Health Check:**
-- Path: /api/health
-- Interval: 30 seconds
-- Timeout: 5 seconds
-- Unhealthy threshold: 5
-
-**Enhanced Health Reporting:**
-- System: OK
-- Application: OK
-- Health check URL: /api/health
+See [`deployment-guide.md`](./deployment-guide.md) for current staging/production deploy procedures (GitHub OIDC + SSM Run Command).
 
 ---
 
@@ -534,18 +457,86 @@ export NODE_OPTIONS="--max-old-space-size=1536"
 
 ---
 
-## 8. IAM Roles and Policies
+## 8. IAM Roles and Policies (Current + Reference)
 
-### IAM Role: sekar-app-role
+### Current: GitHub OIDC Role (AWS Staging)
 
-**Trusted Entity:** EC2, Elastic Beanstalk
+**Role Name:** sekar-gha-deploy (in account 659828096624)
 
-**Managed Policies:**
-- AWSElasticBeanstalkWebTier
-- AWSElasticBeanstalkWorkerTier
-- AWSElasticBeanstalkMulticontainerDocker
+**Trust Relationship:**
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::659828096624:oidc-provider/token.actions.githubusercontent.com"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
+        },
+        "StringLike": {
+          "token.actions.githubusercontent.com:sub": "repo:KobiDev/sekar:*"
+        }
+      }
+    }
+  ]
+}
+```
 
-**Inline Policy: sekar-app-policy**
+**Inline Policy:**
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "SSMRunCommand",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:SendCommand",
+        "ssm:GetCommandInvocation"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "S3StagingMedia",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::sekar-media-staging",
+        "arn:aws:s3:::sekar-media-staging/*"
+      ]
+    },
+    {
+      "Sid": "SSMSecrets",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:GetParameter",
+        "ssm:GetParameters"
+      ],
+      "Resource": "arn:aws:ssm:ap-southeast-3:659828096624:parameter/sekar/*"
+    }
+  ]
+}
+```
+
+See [`ci-cd.md`](./ci-cd.md) for the full GitHub Actions workflow.
+
+### Reference: EC2 Instance Role (Production Reference)
+
+**Role Name:** sekar-app-role (if using managed services)
+
+**Trusted Entity:** EC2, ECS
+
+**Inline Policy:**
 ```json
 {
   "Version": "2012-10-17",
@@ -570,89 +561,37 @@ export NODE_OPTIONS="--max-old-space-size=1536"
       "Action": [
         "logs:CreateLogGroup",
         "logs:CreateLogStream",
-        "logs:PutLogEvents",
-        "logs:DescribeLogStreams"
+        "logs:PutLogEvents"
       ],
-      "Resource": "arn:aws:logs:ap-southeast-1:ACCOUNT_ID:log-group:/aws/elasticbeanstalk/sekar-prod/*"
-    },
-    {
-      "Sid": "SecretsManagerAccess",
-      "Effect": "Allow",
-      "Action": [
-        "secretsmanager:GetSecretValue"
-      ],
-      "Resource": [
-        "arn:aws:secretsmanager:ap-southeast-1:ACCOUNT_ID:secret:sekar/*"
-      ]
+      "Resource": "arn:aws:logs:ap-southeast-3:ACCOUNT_ID:log-group:/aws/ecs/sekar-backend/*"
     }
   ]
 }
 ```
 
-### IAM Role: sekar-rds-monitoring-role
+### Reference: RDS Monitoring Role
+
+**Role Name:** sekar-rds-monitoring-role
 
 **Trusted Entity:** monitoring.rds.amazonaws.com
 
 **Managed Policies:**
 - AmazonRDSEnhancedMonitoringRole
 
-### IAM User: sekar-ci-deploy
-
-**Purpose:** CI/CD deployments from GitHub Actions
-
-**Policies:**
-- sekar-ci-deploy-policy (inline)
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "ElasticBeanstalkDeploy",
-      "Effect": "Allow",
-      "Action": [
-        "elasticbeanstalk:*",
-        "s3:*",
-        "ec2:*",
-        "cloudformation:*",
-        "autoscaling:*",
-        "elasticloadbalancing:*"
-      ],
-      "Resource": "*"
-    }
-  ]
-}
-```
-
 ---
 
-## 9. AWS Secrets Manager
+## 9. Secrets Management (Current + Reference)
 
-### Secrets Structure
+**Current:** Secrets use **dotenvx** encryption (see [`encrypted-secrets.md`](./encrypted-secrets.md)). `.env.staging` and `.env.production` are committed encrypted; private keys stored as **GitHub Environment secrets** (`BE_DOTENV_PRIVATE_KEY`, `WEB_DOTENV_PRIVATE_KEY`). AWS staging box reads its key from **SSM Parameter Store** `/sekar/staging/BE_DOTENV_PRIVATE_KEY` via instance IAM role.
 
-**Secret 1: sekar/db/password**
-- Description: RDS master password
-- Value: `{SecureRandomPassword}`
+**Reference (for managed services):** AWS Secrets Manager or SSM Parameter Store can hold:
+- `sekar/db/password` — RDS master password
+- `sekar/jwt/secret` — JWT signing secret
+- `sekar/firebase/service-account` — FCM credentials (if using Secrets Manager)
 
-**Secret 2: sekar/jwt/secret**
-- Description: JWT signing secret
-- Value: `{SecureRandomString-256bit}`
-
-**Secret 3: sekar/aws/credentials**
-- Description: AWS access keys for S3 (if not using IAM roles)
-- Value:
-  ```json
-  {
-    "access_key_id": "AKIAXXXXX",
-    "secret_access_key": "xxxxxx"
-  }
-  ```
-
-### Rotation Policy
-
-- Database password: Rotate every 90 days (Phase 2+)
-- JWT secret: Rotate every 180 days (Phase 2+)
-- AWS credentials: Rotate on-demand
+**Rotation policy (reference):**
+- Database password: every 90 days
+- JWT secret: every 180 days (or on compromise)
 
 ---
 
@@ -721,67 +660,44 @@ See [monitoring.md](./monitoring.md) for detailed alarm configurations.
 
 ---
 
-## 12. Cost Estimation
+## 12. Cost Estimation (Reference)
 
-### Monthly AWS Costs
+### Current Staging (AWS Co-tenant)
 
-#### Development Environment
+Staging runs on a **shared t3.micro** (KPI cost covers ~$7/mo) and **shared RDS instance** — minimal isolated cost.
+
+### Reference Production Cost Models (Not Provisioned)
+
+#### MVP (30 workers, managed ECS/RDS)
 | Service | Configuration | Monthly Cost (USD) |
 |---------|--------------|-------------------|
-| RDS (db.t3.micro) | 1 instance, 20GB | $15 |
-| S3 (storage) | 10GB, 1000 requests | $1 |
-| Elastic Beanstalk (t3.micro) | 1 instance | $7 |
-| Data Transfer | 10GB out | $1 |
-| **Total** | | **$24** |
-
-#### Production Environment (MVP - 30 workers)
-| Service | Configuration | Monthly Cost (USD) |
-|---------|--------------|-------------------|
+| ECS Fargate | 512 vCPU, 2 tasks | $25 |
 | RDS (db.t3.small) | 1 instance, 100GB | $40 |
 | S3 (storage) | 100GB, 10K requests | $3 |
-| Elastic Beanstalk (t3.small) | 2 instances | $30 |
 | ALB | 1 load balancer | $20 |
-| NAT Gateway | 2 gateways, 50GB transfer | $70 |
-| Route 53 | 1 hosted zone, 1M queries | $2 |
 | CloudWatch | Logs, metrics | $5 |
 | Data Transfer | 100GB out | $9 |
-| **Total** | | **$179** |
+| **Total** | | **$102** |
 
-#### Production Environment (Full Scale - 500 workers)
+#### Full Scale (500 workers, multi-AZ)
 | Service | Configuration | Monthly Cost (USD) |
 |---------|--------------|-------------------|
+| ECS Fargate | 1024 vCPU, 4 tasks | $50 |
 | RDS (db.t3.medium, Multi-AZ) | 2 instances, 200GB | $150 |
 | S3 (storage) | 500GB, 50K requests | $15 |
-| Elastic Beanstalk (t3.small) | 4 instances | $60 |
-| ALB | 1 load balancer, higher traffic | $30 |
-| NAT Gateway | 2 gateways, 200GB transfer | $140 |
-| Route 53 | 1 hosted zone, 5M queries | $2 |
+| ALB | 1 load balancer | $30 |
+| ElastiCache (cache.t3.small) | Redis 7, 3-AZ | $40 |
 | CloudWatch | Logs, metrics, alarms | $15 |
-| CloudFront (Phase 3+) | 1TB transfer | $85 |
+| CloudFront | 1TB transfer | $85 |
 | Data Transfer | 500GB out | $45 |
-| **Total** | | **$542** |
+| **Total** | | **$430** |
 
-### Cost Optimization Strategies
+### Cost Optimization (Reference)
 
-1. **Use Reserved Instances (Phase 2+)**
-   - Save 30-40% on EC2/RDS costs
-   - Commit to 1-year term
-
-2. **S3 Intelligent-Tiering**
-   - Automatically move old files to cheaper storage
-   - Save 40-60% on storage costs
-
-3. **CloudFront for Media Delivery (Phase 3+)**
-   - Reduce S3 requests and data transfer costs
-   - Faster delivery for users
-
-4. **Right-Size Instances**
-   - Monitor actual usage
-   - Scale down during low-traffic periods
-
-5. **Delete Unused Snapshots**
-   - Automated cleanup after 90 days
-   - Keep only necessary backups
+1. **Reserved Instances / Savings Plans** — save 30-40% on ECS/RDS
+2. **S3 Intelligent-Tiering** — auto-transition old media to cheaper storage (40-60% savings)
+3. **Right-sizing** — monitor actual usage; scale down off-peak
+4. **Snapshot cleanup** — delete snapshots >90 days old
 
 ---
 
@@ -896,19 +812,15 @@ terraform/
 ---
 
 **Document Owner:** DevOps Engineer
-**Last Updated:** 2026-04-24
+**Last Updated:** 2026-06-19
 **Status:** Active
-**Related Docs:** [`ci-cd.md`](./ci-cd.md), [`monitoring.md`](./monitoring.md)
+**Related Docs:** [`deployment-guide.md`](./deployment-guide.md) (procedures), [`ci-cd.md`](./ci-cd.md), [`encrypted-secrets.md`](./encrypted-secrets.md), [`monitoring.md`](./monitoring.md)
 
 ---
 
-## Phase 3 Infrastructure Additions
+## Redis 7 (Live as of Phase 3)
 
-**Status:** Planning (aligned with `specs/phases/phase-3-plants-monitoring-rebuild/infrastructure.md`, [ADR-016](../architecture/decisions/ADR-016-redis-websocket-scaling.md), [ADR-029](../architecture/decisions/ADR-029-monitoring-v2-event-sourced-redis.md)).
-
-### Redis 7
-
-Redis is promoted from Phase 4 to Phase 3 to support the monitoring v2 rebuild.
+**Status:** Live — supports monitoring v2 rebuild, location-ping streams, caching (aligned with [ADR-016](../architecture/decisions/ADR-016-redis-websocket-scaling.md), [ADR-029](../architecture/decisions/ADR-029-monitoring-v2-event-sourced-redis.md)).
 
 **Purposes (all on a single Redis 7 instance):**
 
@@ -941,7 +853,7 @@ MONITORING_SWEEP_CRON=*/5 * * * *
 STAFFING_DEBOUNCE_SECONDS=30
 ```
 
-**Production:** Managed Redis (AWS ElastiCache, cache.t3.small to start) in the same VPC as the backend; same security group as RDS access. Persistence (AOF) ON; daily snapshot to S3.
+**Staging:** In-stack Redis container (docker-compose). **Production (on-prem):** Self-hosted Redis in docker-compose.prod.yml. **Reference (managed):** AWS ElastiCache (cache.t3.small) in same VPC; persistence (AOF) ON; daily snapshot to S3.
 
 ### Health-check fallback
 

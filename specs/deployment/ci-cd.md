@@ -17,7 +17,7 @@ production is on-prem Docker Compose (not yet deployed).
 | **`mobile-quality.yml`** | push/PR `main`/`staging`/`develop` on `fe/mobile/**` (+ token files) | ESLint (incl. design-system rules) + `tsc --noEmit` + Jest. Provisions `.env.local` from the example. |
 | **`mobile-release.yml`** | `workflow_dispatch` (env=staging) | Build a **signed** release **APK + AAB** for staging, upload as a 30-day artifact. See [`android-release-guide.md` §F](./android-release-guide.md). |
 | **`mobile-e2e.yml`** | `workflow_dispatch` | Maestro device flows. |
-| **`web-e2e.yml`** | push `main` on `fe/web/**` + dispatch | Playwright E2E. ⚠️ **currently red** (pre-existing). |
+| **`web-e2e.yml`** | push `main` on `fe/web/**` + dispatch | Playwright E2E. ✅ green (capacity spec made date-independent 2026-06-19). |
 | **`tokens-verify.yml`** | PR + push `main` on token files | Verifies generated design tokens are in sync with `tokens.json` (drift gate). |
 
 `deploy-staging.yml` **`paths-ignore`** (so unrelated commits don't redeploy staging):

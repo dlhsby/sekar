@@ -1,8 +1,10 @@
 # SEKAR Operations & Troubleshooting Runbook
 
-**Last Updated:** June 17, 2026  
+**Last Updated:** June 19, 2026  
 **Audience:** DevOps engineers, on-call operators  
 **Scope:** Day-2 operations, incident response, monitoring, and recovery procedures
+
+**Current Reality (2026-06):** Staging = AWS (shared RDS + S3, instance role); Production = on-prem Docker Compose (local Postgres + MinIO, encrypted env via dotenvx). For full deployment guide, see `specs/deployment/deployment-guide.md`.
 
 ---
 
@@ -23,19 +25,33 @@
 
 ### Understanding the Database Layer
 
-**Production (AWS):** AWS RDS PostgreSQL — managed service with automated backups and failover. No local PostgreSQL container.
+**Production (On-Prem):** Local Docker PostgreSQL via `docker-compose.prod.yml`. Manual backups + point-in-time restore via pg_dump.
 
-**Development/Staging:** Local Docker PostgreSQL via `infra/docker-compose.yml`.
+**Staging (AWS):** Shared AWS RDS instance (`kobin-kpi-db`, database `sekar_staging`) in ap-southeast-3. Automated daily snapshots with 7-day retention.
 
-> CRITICAL: Production uses RDS, NOT a local Docker container. If you see "postgres service not running" in production logs, this is **expected** and normal.
+**Development:** Local Docker PostgreSQL via `infra/docker-compose.yml`.
+
+> **INVERTED from old docs:** Production is on-prem (local Docker Postgres), Staging is AWS RDS. Production uses local MinIO for S3; Staging uses real AWS S3.
 
 ### Running Migrations
 
-**Production** uses compiled JavaScript migrations (ts-node not available in production image):
+**Production** (on-prem Docker Compose) uses compiled JavaScript migrations (ts-node not available in production image):
 
 ```bash
 docker compose --env-file .env.production -f docker-compose.prod.yml exec backend \
   npm run migration:run:prod
+```
+
+**Staging** (AWS EC2, via SSM) runs migrations using the deployed image:
+
+```bash
+# Deploy a migration via GitHub Actions (standard flow):
+git push origin main  # CI/CD automatically runs migration:run:prod on deploy
+
+# Or, manually via SSM (if needed):
+aws ssm send-command --document-name "AWS-RunShellScript" \
+  --parameters 'commands=["cd ~/sekar/backend && docker-compose -f docker-compose.prod.yml exec backend npm run migration:run:prod"]' \
+  --instance-ids "i-xxxxx"
 ```
 
 **Development** uses TypeScript source via ts-node:
@@ -48,9 +64,13 @@ npm run migration:run
 **Verify migration status:**
 
 ```bash
-# Show applied migrations (production)
+# Show applied migrations (production on-prem)
 docker compose --env-file .env.production -f docker-compose.prod.yml exec backend \
   npm run migration:show:prod
+
+# Staging (AWS EC2 — no SSH; port 22 is firewalled. Open a shell via SSM Session Manager)
+aws ssm start-session --target <EC2_INSTANCE_ID> --region ap-southeast-3
+docker exec sekar-backend npm run migration:show:prod
 
 # Development
 npm run migration:show
@@ -84,6 +104,19 @@ docker compose --env-file .env.production -f docker-compose.prod.yml exec \
 ```
 
 All passwords must be ≥12 characters and set. The seeder fails loudly if any are missing.
+
+**Staging (AWS EC2 — SSM only, no SSH):**
+
+```bash
+# Via CI/CD (standard): seeding runs automatically on first deployment.
+# Manual: open a shell on the box via SSM Session Manager, then run in-container.
+aws ssm start-session --target <EC2_INSTANCE_ID> --region ap-southeast-3
+docker exec \
+  -e PROD_ADMIN_PASSWORD=<password> \
+  -e PROD_SUPERADMIN_PASSWORD=<password> \
+  -e PROD_ADMIN_SYSTEM_PASSWORD=<password> \
+  sekar-backend npm run db:seed:staging:prod
+```
 
 **Development (destructive):**
 
@@ -193,7 +226,9 @@ psql -h $DATABASE_HOST -U sekar_admin -d sekar_db -c "
 
 ### Backup Strategy
 
-**RDS (Production):** AWS RDS automatically creates daily snapshots with 7-day retention (configurable). No manual action needed for day-to-day.
+**Production (On-Prem):** Local Docker Postgres — manual backups via pg_dump. No automated backups yet; scheduled dump jobs recommended.
+
+**Staging (AWS RDS):** AWS RDS automatically creates daily snapshots with 7-day retention (configurable). No manual action needed for day-to-day.
 
 **Manual backup (all environments):**
 
@@ -221,40 +256,46 @@ For MinIO (development/self-hosted):
 
 ### Restore Procedure
 
-**RDS point-in-time restore:**
+**Production (On-Prem, from pg_dump):**
+
+```bash
+# Stop backend
+docker compose -f docker-compose.prod.yml stop backend
+
+# Restore from dump file
+gunzip < backup.sql.gz | \
+  docker exec -i sekar-postgres psql -U postgres -d sekar_db
+
+# Restart backend
+docker compose -f docker-compose.prod.yml up -d backend
+```
+
+**Staging (AWS RDS) point-in-time restore:**
 
 ```bash
 # Via AWS CLI
 aws rds restore-db-instance-to-point-in-time \
-  --source-db-instance-identifier sekar-db \
-  --target-db-instance-identifier sekar-db-restored \
+  --source-db-instance-identifier kobin-kpi-db \
+  --target-db-instance-identifier sekar-staging-recovered \
   --restore-time $(date -u +"%Y-%m-%dT%H:%M:%SZ") \
   --region ap-southeast-3
 
-# Then update DATABASE_HOST in .env.production to the restored instance
-# Restart backend: docker-compose -f docker-compose.prod.yml restart backend
-```
-
-**Restore from dump file:**
-
-```bash
-gunzip < backup.sql.gz | \
-  docker run -i --rm \
-  -e PGPASSWORD=$DATABASE_PASSWORD \
-  postgres:14-alpine \
-  psql -h $DATABASE_HOST -U sekar_admin -d sekar_db
+# Then update DATABASE_HOST in GitHub Secrets (prod environment) to the recovered instance
+# Redeploy: git push origin main (CI/CD picks it up)
 ```
 
 **Test restore before making it the primary:**
-- Always restore to a separate DB instance first
+- Always restore to a separate DB instance first (AWS: new RDS; on-prem: test container)
 - Verify data integrity
 - Test application connectivity
 - Promote only when confident
 
 ### RTO/RPO Targets
 
-- **RTO (Recovery Time Objective):** <15 minutes (RDS restore + failover)
-- **RPO (Recovery Point Objective):** <24 hours (daily RDS snapshots; more frequent for critical operations)
+- **Production RTO (Recovery Time Objective):** <10 minutes (pg_dump restore + container restart)
+- **Production RPO (Recovery Point Objective):** depends on backup frequency (manual pg_dump schedule)
+- **Staging RTO:** <15 minutes (RDS restore + redeploy)
+- **Staging RPO:** <24 hours (daily RDS snapshots)
 
 ---
 
@@ -284,43 +325,70 @@ Expected CI/CD timeline:
 
 ### Rolling Back to a Previous Release
 
-**Option 1: Quick rollback (use previous image tag)**
+**Production (On-Prem):**
+
+**Option 1: Quick rollback (retag local Docker image)**
 
 ```bash
-# SSH to production host
-ssh -i ~/.ssh/sekar-key.pem ec2-user@<PROD_IP>
-cd ~/sekar/backend
+# List available images
+docker images sekar-backend --format "table {{.ID}}\t{{.CreatedAt}}"
 
-# Find previous image
-aws ecr list-images --repository-name sekar-backend --region ap-southeast-3 \
-  --query 'imageIds | sort_by(@, &imagePushedAt) | [-2]'
+# Retag previous image as latest (assume <PREVIOUS_SHA> is known)
+docker tag sekar-backend:<PREVIOUS_SHA> sekar-backend:latest
 
-# Retag and deploy
-docker tag <ECR_REGISTRY>/sekar-backend:<PREVIOUS_SHA> \
-           <ECR_REGISTRY>/sekar-backend:latest
-
-docker-compose -f docker-compose.prod.yml restart backend
+# Restart backend
+docker compose -f docker-compose.prod.yml restart backend
 
 # Verify
 docker logs sekar-backend --tail=50
-curl http://localhost:3000/api/v1/health
+curl http://localhost:3000/api/v1/health/live
 ```
 
 **Option 2: Rollback migration (if schema change caused the problem)**
 
 ```bash
-docker-compose -f docker-compose.prod.yml exec backend \
+docker compose -f docker-compose.prod.yml exec backend \
   npm run migration:revert:prod
 ```
 
-Then redeploy the previous image.
+Then retag/restart the backend with the previous image.
 
-**Option 3: Revert the git commit and push**
+**Option 3: Revert the git commit and redeploy**
 
 ```bash
 git revert <bad-commit-hash>
 git push origin main
-# CI/CD picks up the revert and redeploys automatically
+# Rebuild & push image, then retag and restart locally
+```
+
+**Staging (AWS EC2):**
+
+**Option 1: Redeploy previous ECR image via GitHub Actions**
+
+```bash
+# Find previous image in ECR
+aws ecr list-images --repository-name sekar-backend --region ap-southeast-3 \
+  --query 'imageIds | sort_by(@, &imagePushedAt) | [-2]'
+
+# Retag in ECR and redeploy (via GitHub Actions workflow or manual script)
+aws ecr batch-get-image --repository-name sekar-backend \
+  --image-ids imageTag=<PREVIOUS_SHA> --region ap-southeast-3 | \
+  jq -r '.images[0].imageManifest' | \
+  aws ecr put-image --repository-name sekar-backend \
+    --image-manifest file:///dev/stdin --image-tag latest --region ap-southeast-3
+
+# Then redeploy on the box (no SSH — via SSM Session Manager)
+aws ssm start-session --target <EC2_INSTANCE_ID> --region ap-southeast-3
+cd ~/sekar/infra && IMAGE_TAG=<PREVIOUS_SHA> docker compose -f compose.staging.yml up -d --force-recreate --wait
+```
+> Simpler: re-run `deploy-staging` via `workflow_dispatch` from the previous commit — it pins the SHA and reuses the pre-deploy RDS snapshot.
+
+**Option 2: Revert the git commit (automatic redeploy)**
+
+```bash
+git revert <bad-commit-hash>
+git push origin main
+# CI/CD automatically builds, pushes, and deploys the revert
 ```
 
 ### Gradual Rollout (Blue-Green Deployment)
@@ -332,7 +400,7 @@ For large changes, consider running two backend instances:
 3. Flip traffic once confident
 4. Scale down the old instance
 
-Requires updating `docker-compose.prod.yml` to support multiple backend services and Nginx upstream configuration.
+Requires updating `docker-compose.prod.yml` or `docker-compose.staging.yml` to support multiple backend services and Nginx/HAProxy upstream configuration.
 
 ---
 
@@ -363,9 +431,25 @@ curl http://sekar.wahyutrip.com/api/health
 
 ### Container Status
 
+**Production (On-Prem):**
+
 ```bash
-# SSH to production host
-ssh ec2-user@<PROD_IP>
+# Check all services
+docker ps --filter "name=sekar"
+
+# Expected statuses:
+# sekar-backend      - Up (healthy)
+# sekar-web          - Up (healthy)
+# sekar-postgres     - Up (local Docker, always running)
+# sekar-redis        - Up (healthy)
+# sekar-minio        - Up (healthy)
+```
+
+**Staging (AWS EC2):**
+
+```bash
+# Open a shell on the staging host (no SSH — SSM Session Manager)
+aws ssm start-session --target <EC2_INSTANCE_ID> --region ap-southeast-3
 
 # Check all services
 docker ps --filter "name=sekar"
@@ -373,8 +457,9 @@ docker ps --filter "name=sekar"
 # Expected statuses:
 # sekar-backend      - Up (healthy)
 # sekar-web          - Up (healthy)
-# sekar-postgres     - Up (or not present if using RDS)
 # sekar-redis        - Up (healthy)
+# sekar-postgres     - Down (uses AWS RDS, not local)
+# sekar-minio        - Down (uses AWS S3, not MinIO)
 ```
 
 ### View Logs
@@ -456,6 +541,8 @@ docker ps --filter "name=sekar-backend"
 **Step 2: If container is down, restart it**
 
 ```bash
+docker compose -f docker-compose.prod.yml up -d backend  # Production on-prem
+# OR (staging)
 docker-compose -f docker-compose.prod.yml up -d backend
 docker logs sekar-backend --follow
 ```
@@ -467,10 +554,13 @@ docker logs sekar-backend --tail=200
 ```
 
 Common causes:
-- Database connection failed → verify `DATABASE_HOST`, `DATABASE_PASSWORD`, RDS security group
-- Missing environment variables → check `.env.production` has all required vars
-- Port already in use → `lsof -i:3000` and kill if needed
-- Out of memory → check `docker stats` and increase limit in `docker-compose.prod.yml`
+- **Database connection failed** → 
+  - Production: verify `DATABASE_HOST=localhost`, `DATABASE_PASSWORD` in `.env.production`
+  - Staging: verify `DATABASE_HOST`, `DATABASE_PASSWORD` (AWS RDS endpoint), security group allows EC2
+- **Missing environment variables** → check `.env.production` has all required vars (decrypt if using dotenvx)
+- **Port already in use** → `lsof -i:3000` and kill if needed
+- **Out of memory** → check `docker stats` and increase limit in `docker-compose.prod.yml`
+- **Redis unavailable** (production) → check `sekar-redis` is running
 
 **Step 4: If still failing, rollback to previous image**
 
@@ -542,22 +632,21 @@ Rebuild and redeploy.
 
 ---
 
-### Issue: SSH Key Compromised or Lost
+### Issue: Deploy credential compromised
 
-**Scenario:** The EC2 SSH key (`sekar-key.pem`) is exposed or lost.
+**Staging (AWS) has no SSH key** — the box is reached only via SSM (port 22 firewalled) and CI
+authenticates with **GitHub OIDC** (no long-lived AWS keys). The secrets that *can* leak are:
 
-**Recovery procedure:**
+- **dotenvx private key** (`BE_/WEB_/MOBILE_DOTENV_PRIVATE_KEY`) — rotate with
+  `npx dotenvx rotate -f <file>`, re-commit the re-encrypted `.env.*`, update the GitHub
+  Environment secret(s) and SSM `/sekar/staging/BE_DOTENV_PRIVATE_KEY`, then redeploy. Full
+  procedure: [`encrypted-secrets.md`](encrypted-secrets.md) §Rotation.
+- **OIDC deploy role** (`sekar-gha-deploy`) — if its trust policy is too broad or suspected
+  abused, tighten/replace the role in IAM; no stored key to revoke.
 
-See **Phase 3 Deployment Guide §2** for the 7-step key rotation procedure:
-- Generate new key locally
-- Install public key on server
-- Test new key works
-- Remove old key from `authorized_keys`
-- Update GitHub Actions secret (`EC2_SSH_KEY`)
-- Securely destroy old key
-- Update local docs
-
-Critical: Do not delay this — treat an exposed SSH key as compromised immediately.
+**On-prem production:** if you administer the pemkot host over SSH, treat an exposed host SSH key
+as compromised immediately — generate a new keypair, replace it in `~/.ssh/authorized_keys`, and
+destroy the old one. There is no `EC2_SSH_KEY` GitHub secret in the current pipeline.
 
 ---
 
@@ -801,8 +890,9 @@ Common issues:
 ### Pre-Flight Checks
 
 ```bash
-# SSH to production
-ssh -i ~/.ssh/sekar-key.pem ec2-user@<PROD_IP>
+# Get a shell on the host:
+#   production (on-prem): ssh <user>@<PROD_HOST>   (or use the server console directly)
+#   staging (AWS):        aws ssm start-session --target <EC2_INSTANCE_ID> --region ap-southeast-3
 
 # Check all containers
 docker ps --filter "name=sekar"
@@ -950,5 +1040,5 @@ docker-compose -f docker-compose.prod.yml restart backend
 ---
 
 **Maintainers:** DevOps team  
-**Last Review:** June 17, 2026  
+**Last Updated:** June 19, 2026  
 **Next Review:** Monthly or after major incidents

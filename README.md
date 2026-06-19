@@ -176,7 +176,7 @@ This ensures both platforms always ship identical color, shadow, and typography 
 | **Web** | M2 complete | 21 pages, supercluster monitoring, virtualized worker list, responsive 3-column layout, installable PWA (feature-flagged) |
 | **Database** | M2 complete | 30 tables, 9-role system (incl. `staff_kecamatan`), 11 migrations, 128 plant species seeded |
 
-**Deployed:** api.sekar.wahyutrip.com + sekar.wahyutrip.com — **Phase 2E (Apr 25, 2026)** live in production.
+**Deployed (staging/UAT, AWS):** api.sekar.wahyutrip.com + sekar.wahyutrip.com (plain HTTP). Production (on-prem) not yet deployed. See [`specs/deployment/deployment-guide.md`](specs/deployment/deployment-guide.md).
 
 **Phase 3 progress: ~70 % weighted (13 fully complete + 4 partial + 4 not-started/in-progress).** M1-R ✅ + 3-1 ✅ + 3-2 ✅ + M2 ✅ + 3-6 ✅ + 3-7 mobile ✅ + 3-8 🟡 60 % + 3-9 ✅ + 3-10 mobile ✅ web ⏳ + 3-11 backend+mobile-state ✅ web ⏳ + 3-12 backend+slice ✅ UI ⏳. Earlier "17/21 ~81 %" headline counted partials as wholes; corrected on Apr 27 audit. Web work + 3-13 backfill + 3-14 k6 + 3-8 cron/FCM/map overlay all deferred. **Next: 3-12 mobile screens + 3-13 backfill + 3-14 load test + web finish-out + Phase 4.** See `specs/phases/phase-3-plants-monitoring-rebuild/STATUS.md` → "Open Items by Bucket" + `status_reviews.md` for the from-scratch verification checklist.
 
@@ -189,7 +189,7 @@ This ensures both platforms always ship identical color, shadow, and typography 
 | **Backend** | NestJS 11, TypeScript 5.9, PostgreSQL 14+, TypeORM, JWT, WebSocket |
 | **Mobile** | React Native 0.83, React 19, Redux Toolkit, FCM, Neo Brutalism UI |
 | **Web** | Next.js 16, React 19, TailwindCSS 4, Mapbox GL, Socket.io |
-| **Infra** | Docker, AWS S3, LocalStack (dev), GitHub Actions CI/CD |
+| **Infra** | Docker, AWS S3 (staging) / MinIO (dev + on-prem prod), GitHub Actions CI/CD (OIDC) |
 
 ---
 
@@ -210,34 +210,12 @@ cd fe/web && npm run test:e2e   # Playwright E2E tests
 
 ## Deployment
 
-### Fresh Deploy (Staging / Production)
+Two targets, same application images:
 
-```bash
-# 1. Run all database migrations (creates all 22 tables)
-docker exec sekar-backend npm run migration:run:prod
+- **Staging / UAT → AWS** — backend + web + Redis containers co-tenant with the KPI project on a shared `t3.micro`, behind Caddy. Live (plain HTTP) at **api.sekar.wahyutrip.com** + **sekar.wahyutrip.com**. Deployed automatically on every green push to `main` via [`.github/workflows/deploy-staging.yml`](.github/workflows/deploy-staging.yml) (GitHub OIDC → ECR → SSM).
+- **Production → on-prem (pemkot) server** — Docker Compose (`docker-compose.prod.yml`), platform-agnostic, self-hosted Postgres + Redis + MinIO. Not yet deployed.
 
-# 2. Seed reference data + 1 superadmin (idempotent, safe to re-run)
-docker exec sekar-backend npm run db:seed:prod
-
-# 3. Change default admin password immediately
-```
-
-### Incremental Deploy (Subsequent Releases)
-
-```bash
-# 1. Pull new image and restart
-docker pull <ECR_URI>/sekar-backend:latest && docker-compose up -d
-
-# 2. Run only new migrations
-docker exec sekar-backend npm run migration:run:prod
-
-# 3. (Optional) Re-run reference seeder if new config data was added
-docker exec sekar-backend npm run db:seed:prod
-
-# NEVER run db:seed or db:seed:phase1 in staging/prod — these wipe all data!
-```
-
-See [`specs/deployment/phase-2-deployment.md`](specs/deployment/phase-2-deployment.md) for the complete deployment guide.
+Deploy files (`.env.staging` / `.env.production`) are committed **encrypted** ([dotenvx](https://dotenvx.com)). The full from-scratch guide — local → staging → production, plus CI/CD, operations, and mobile releases — is **[`specs/deployment/deployment-guide.md`](specs/deployment/deployment-guide.md)**.
 
 ---
 
@@ -247,7 +225,7 @@ See [`specs/deployment/phase-2-deployment.md`](specs/deployment/phase-2-deployme
 - **[specs/COMPLETION_STATUS.md](/specs/COMPLETION_STATUS.md)** - Project status
 - **[specs/api/contracts.md](/specs/api/contracts.md)** - All ~130 API endpoints (Phase 3 plans add ~35 more)
 - **[be/src/database/seeds/README.md](be/src/database/seeds/README.md)** - Database seeding guide
-- **[specs/deployment/phase-2-deployment.md](specs/deployment/phase-2-deployment.md)** - Deployment guide
+- **[specs/deployment/deployment-guide.md](specs/deployment/deployment-guide.md)** - Deploy from scratch (local → staging → prod)
 - **[specs/README.md](/specs/README.md)** - All specifications
 
 ---
@@ -256,4 +234,4 @@ See [`specs/deployment/phase-2-deployment.md`](specs/deployment/phase-2-deployme
 
 UNLICENSED - Proprietary project for DLH Surabaya
 
-**Last Updated:** April 27, 2026
+**Last Updated:** June 19, 2026

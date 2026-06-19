@@ -1,5 +1,7 @@
 # Encrypted Secrets (dotenvx)
 
+**Last Updated:** June 19, 2026
+
 **Status:** Live for **staging** as of 2026-06-18 — backend + web build and run from encrypted
 env (see §6). Mobile staging encrypted. **Production** env files (root `.env.production` + web +
 mobile, all encrypted) prepared with generated starter secrets — finalize real on-prem values
@@ -38,11 +40,13 @@ therefore cannot decrypt backend secrets. Six private keys total:
 | `fe/web` | `DOTENV_PRIVATE_KEY_STAGING` | `DOTENV_PRIVATE_KEY_PRODUCTION` |
 | `fe/mobile` | `DOTENV_PRIVATE_KEY_STAGING` | `DOTENV_PRIVATE_KEY_PRODUCTION` |
 
-> **Note — backend production env lives at the repo root, not `be/`.** The on-prem stack
-> (`docker-compose.prod.yml`) feeds the backend via `env_file: .env.production` (root) and also
-> uses that file's values for Postgres/MinIO `${...}` substitution. So there is no
-> `be/.env.production`; the encrypted **root `./.env.production`** is the backend's production
-> source. `be/.env.staging` (baked into the staging image) remains the staging source.
+> **Note — backend production env lives at repo root (`./.env.production`), not `be/`.** In
+> staging, `be/.env.staging` is encrypted and baked into the backend image; decryption happens
+> at runtime via `DOTENV_PRIVATE_KEY_STAGING` (fetched from SSM). In production, the encrypted
+> **root `./.env.production`** is the backend's source; `docker-compose.prod.yml` uses it to:
+> (1) populate Postgres/MinIO via `${...}` substitution at compose-parse time (requires
+> plaintext in the deploy environment), and (2) pass encrypted values to the backend container
+> via `env_file`, which decrypts them at runtime. There is no `be/.env.production`.
 
 The env-var **name** repeats across workspaces but the **value differs**. These are stored as
 **GitHub Environment secrets** (not repo-level), so the same secret name carries a different
@@ -64,8 +68,8 @@ Notes:
 - The **backend staging** key also lives in SSM (`/sekar/staging/BE_DOTENV_PRIVATE_KEY`) — that
   is the *live* source the AWS staging box reads via its instance role; the GitHub `staging` copy
   is parity/backup. The web key is in GitHub because the web *image is built in Actions*.
-- **Mobile** keys are intentionally **not** in GitHub yet (no release workflow consumes them);
-  they stay in the local `fe/mobile/.env.keys` and will be added when the release workflow is set up.
+- **Mobile** keys are consumed by `mobile-release.yml`; store `MOBILE_DOTENV_PRIVATE_KEY` as a
+  GitHub Environment secret in `staging` (and `production` once that workflow deploys there).
 - Android signing + Sentry secrets stay **repo-level** (used by `mobile-release.yml`, not env-scoped).
 
 ## 3. How each workspace consumes the encrypted file

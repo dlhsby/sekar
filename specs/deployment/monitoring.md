@@ -2,9 +2,15 @@
 
 Comprehensive monitoring, logging, and observability specifications for SEKAR production operations.
 
+**What's live vs planned (2026-06):**
+- **LIVE:** Health endpoints (`/api/v1/health/live`, `/api/v1/health/ready` with DB + Redis checks), Docker container logs, Redis monitoring
+- **STAGING-ONLY:** CloudWatch metrics/dashboards (AWS co-tenant with KPI on shared t3.micro, shared RDS `kobin-kpi-db` — SEKAR cannot own RDS-level alarms)
+- **PLANNED/NOT LIVE:** Sentry error tracking, dedicated dashboards, production monitoring specification (on-prem Docker logs only for now)
+- **Authoritative hub:** [`deployment-guide.md`](./deployment-guide.md) for infra layout; [`ci-cd.md`](./ci-cd.md) for pipeline.
+
 ## Overview
 
-This document defines the monitoring strategy, alerting rules, log aggregation, performance tracking, and incident response procedures for the SEKAR system. The goal is to ensure 99.9% uptime, rapid issue detection, and fast resolution.
+This document defines the monitoring strategy, alerting rules, log aggregation, performance tracking, and incident response procedures for the SEKAR system. Covers staging (AWS shared) and production (on-prem Docker) environments. Goal: rapid issue detection and fast resolution.
 
 ---
 
@@ -54,22 +60,25 @@ This document defines the monitoring strategy, alerting rules, log aggregation, 
 
 ### Monitoring Layers
 
-| Layer | Tools | Purpose |
-|-------|-------|---------|
-| **Infrastructure** | CloudWatch, AWS Health Dashboard | Server health, network, storage |
-| **Application** | CloudWatch Logs, Custom Metrics | API performance, business metrics |
-| **Database** | RDS Performance Insights, CloudWatch | Query performance, connections |
-| **Errors** | Sentry (Phase 2+) | Error tracking, stack traces |
-| **User Experience** | Mobile analytics (Phase 2+) | App crashes, user sessions |
-| **Business** | Custom dashboards | KPIs (shifts, reports, workers) |
+| Layer | Tools | Scope |
+|-------|-------|-------|
+| **Infrastructure (Staging)** | CloudWatch, AWS Health Dashboard | Shared t3.micro box + co-tenant metrics |
+| **Infrastructure (Production)** | Docker logs, basic host monitoring | On-prem VM (not yet fully specified) |
+| **Application** | CloudWatch Logs (staging), Docker logs (prod) | API performance, business metrics |
+| **Database (Staging)** | RDS Performance Insights, CloudWatch (limited — shared RDS) | Query perf, connections (partial visibility) |
+| **Database (Production)** | Docker-Compose logs, PostgreSQL logs | Query perf (manual inspection) |
+| **Errors** | Sentry (Phase 2+, not yet live) | Error tracking, stack traces — planned |
+| **Health Endpoints** | `/api/v1/health/live`, `/api/v1/health/ready` | DB + Redis connectivity checks (LIVE) |
 
 ---
 
-## 2. CloudWatch Dashboards
+## 2. CloudWatch Dashboards (Staging Only)
 
-### Dashboard 1: System Overview
+**Note:** These dashboards apply to staging (AWS shared box with KPI). SEKAR cannot own alarms on shared RDS or EC2. Production (on-prem) monitoring is not yet specified.
 
-**Name:** `SEKAR-Production-Overview`
+### Dashboard 1: System Overview (Staging)
+
+**Name:** `SEKAR-Staging-Overview`
 **Refresh:** Auto (1 minute)
 
 **Widgets:**
@@ -108,9 +117,9 @@ This document defines the monitoring strategy, alerting rules, log aggregation, 
 
 ---
 
-### Dashboard 2: Application Performance
+### Dashboard 2: Application Performance (Staging)
 
-**Name:** `SEKAR-Application-Metrics`
+**Name:** `SEKAR-Application-Metrics` (staging)
 **Refresh:** Auto (1 minute)
 
 **Custom Metrics (logged by backend):**
@@ -154,10 +163,11 @@ await logMetric('ClockInDuration', 523, 'Milliseconds');
 
 ---
 
-### Dashboard 3: Business Metrics
+### Dashboard 3: Business Metrics (Staging)
 
 **Name:** `SEKAR-Business-KPIs`
 **Refresh:** Manual (5 minutes)
+**Scope:** Staging only; production business metrics TBD
 
 **Widgets:**
 
@@ -215,9 +225,11 @@ fields @timestamp, duration_minutes
 
 ---
 
-## 3. CloudWatch Alarms
+## 3. CloudWatch Alarms (Staging Only)
 
-### Critical Alarms (Immediate Response Required)
+**Important:** These alarms are for the staging environment (AWS shared box with KPI). SEKAR does not own shared RDS or EC2 alarms. Production (on-prem) alerting is not yet specified.
+
+### Critical Alarms (Immediate Response Required, Staging)
 
 #### Alarm 1: API Health Check Failed
 
@@ -237,7 +249,7 @@ Threshold: 0
 ComparisonOperator: GreaterThanThreshold
 TreatMissingData: notBreaching
 Actions:
-  - arn:aws:sns:ap-southeast-1:ACCOUNT_ID:sekar-critical-alerts
+  - arn:aws:sns:ap-southeast-3:ACCOUNT_ID:sekar-critical-alerts
 ```
 
 #### Alarm 2: API 5xx Error Rate High
@@ -258,56 +270,58 @@ Threshold: 10
 ComparisonOperator: GreaterThanThreshold
 TreatMissingData: notBreaching
 Actions:
-  - arn:aws:sns:ap-southeast-1:ACCOUNT_ID:sekar-critical-alerts
+  - arn:aws:sns:ap-southeast-3:ACCOUNT_ID:sekar-critical-alerts
 ```
 
-#### Alarm 3: Database CPU High
+#### Alarm 3: Database CPU High (Shared RDS)
 
-**Metric:** `AWS/RDS/CPUUtilization`
+**Metric:** `AWS/RDS/CPUUtilization` (kobin-kpi-db — shared with KPI)
 **Threshold:** > 80% for 5 consecutive periods (5 minutes)
-**Action:** SNS → Email + Slack
+**Action:** SNS → Email + Slack (informational; SEKAR cannot act on shared resource)
 **Priority:** P1 - High
+**Note:** RDS alarms are limited — this is a shared resource; coordinate with KPI team.
 
 ```yaml
-AlarmName: SEKAR-Prod-DB-CPUHigh
+AlarmName: SEKAR-Staging-DB-CPUHigh
 MetricName: CPUUtilization
 Namespace: AWS/RDS
 Dimensions:
   - Name: DBInstanceIdentifier
-    Value: sekar-prod-db
+    Value: kobin-kpi-db
 Statistic: Average
 Period: 60
 EvaluationPeriods: 5
 Threshold: 80
 ComparisonOperator: GreaterThanThreshold
 Actions:
-  - arn:aws:sns:ap-southeast-1:ACCOUNT_ID:sekar-high-alerts
+  - arn:aws:sns:ap-southeast-3:659828096624:sekar-high-alerts
 ```
 
-#### Alarm 4: Database Storage Low
+#### Alarm 4: Database Storage Low (Shared RDS)
 
-**Metric:** `AWS/RDS/FreeStorageSpace`
+**Metric:** `AWS/RDS/FreeStorageSpace` (kobin-kpi-db — shared with KPI)
 **Threshold:** < 10 GB
-**Action:** SNS → Email + Slack
+**Action:** SNS → Email + Slack (informational; SEKAR cannot act on shared resource)
 **Priority:** P1 - High
+**Note:** RDS alarms are limited — this is a shared resource; coordinate with KPI team.
 
 ```yaml
-AlarmName: SEKAR-Prod-DB-StorageLow
+AlarmName: SEKAR-Staging-DB-StorageLow
 MetricName: FreeStorageSpace
 Namespace: AWS/RDS
 Dimensions:
   - Name: DBInstanceIdentifier
-    Value: sekar-prod-db
+    Value: kobin-kpi-db
 Statistic: Average
 Period: 300
 EvaluationPeriods: 1
 Threshold: 10737418240  # 10 GB in bytes
 ComparisonOperator: LessThanThreshold
 Actions:
-  - arn:aws:sns:ap-southeast-1:ACCOUNT_ID:sekar-high-alerts
+  - arn:aws:sns:ap-southeast-3:659828096624:sekar-high-alerts
 ```
 
-### Warning Alarms (Monitor, No Immediate Action)
+### Warning Alarms (Staging Only)
 
 #### Alarm 5: API Latency High
 
@@ -315,9 +329,10 @@ Actions:
 **Threshold:** > 2 seconds for 3 consecutive periods (3 minutes)
 **Action:** SNS → Slack only
 **Priority:** P2 - Medium
+**Scope:** Staging only
 
 ```yaml
-AlarmName: SEKAR-Prod-LatencyHigh
+AlarmName: SEKAR-Staging-LatencyHigh
 MetricName: TargetResponseTime
 Namespace: AWS/ApplicationELB
 Statistic: Average
@@ -326,41 +341,42 @@ EvaluationPeriods: 3
 Threshold: 2.0
 ComparisonOperator: GreaterThanThreshold
 Actions:
-  - arn:aws:sns:ap-southeast-1:ACCOUNT_ID:sekar-warning-alerts
+  - arn:aws:sns:ap-southeast-3:659828096624:sekar-warning-alerts
 ```
 
-#### Alarm 6: Database Connections High
+#### Alarm 6: Database Connections High (Shared RDS)
 
-**Metric:** `AWS/RDS/DatabaseConnections`
+**Metric:** `AWS/RDS/DatabaseConnections` (kobin-kpi-db)
 **Threshold:** > 80 connections
-**Action:** SNS → Slack only
+**Action:** SNS → Slack only (informational; shared resource)
 **Priority:** P2 - Medium
 
 ```yaml
-AlarmName: SEKAR-Prod-DB-ConnectionsHigh
+AlarmName: SEKAR-Staging-DB-ConnectionsHigh
 MetricName: DatabaseConnections
 Namespace: AWS/RDS
 Dimensions:
   - Name: DBInstanceIdentifier
-    Value: sekar-prod-db
+    Value: kobin-kpi-db
 Statistic: Average
 Period: 300
 EvaluationPeriods: 2
 Threshold: 80
 ComparisonOperator: GreaterThanThreshold
 Actions:
-  - arn:aws:sns:ap-southeast-1:ACCOUNT_ID:sekar-warning-alerts
+  - arn:aws:sns:ap-southeast-3:659828096624:sekar-warning-alerts
 ```
 
-#### Alarm 7: S3 Upload Failures
+#### Alarm 7: S3 Upload Failures (Staging)
 
 **Metric:** Custom metric `SEKAR/API/S3UploadFailure`
 **Threshold:** > 5 failures in 5 minutes
 **Action:** SNS → Slack only
 **Priority:** P2 - Medium
+**Scope:** Staging only
 
 ```yaml
-AlarmName: SEKAR-Prod-S3UploadFailures
+AlarmName: SEKAR-Staging-S3UploadFailures
 MetricName: S3UploadFailure
 Namespace: SEKAR/API
 Statistic: Sum
@@ -370,7 +386,7 @@ Threshold: 5
 ComparisonOperator: GreaterThanThreshold
 TreatMissingData: notBreaching
 Actions:
-  - arn:aws:sns:ap-southeast-1:ACCOUNT_ID:sekar-warning-alerts
+  - arn:aws:sns:ap-southeast-3:659828096624:sekar-warning-alerts
 ```
 
 ### Alarm Summary Table
@@ -389,11 +405,11 @@ Actions:
 
 ## 4. Log Aggregation
 
-### CloudWatch Log Groups
+### Staging (CloudWatch Log Groups)
 
-#### Application Logs
+#### Application Logs (Staging)
 
-**Log Group:** `/aws/elasticbeanstalk/sekar-prod/var/log/nodejs/nodejs.log`
+**Log Group:** `/aws/sekar-staging/backend` (Docker container logs forwarded to CloudWatch)
 **Retention:** 30 days
 **Format:** JSON structured logs
 
@@ -419,24 +435,9 @@ Actions:
 }
 ```
 
-#### Access Logs
+#### Error Logs (Staging)
 
-**Log Group:** `/aws/elasticbeanstalk/sekar-prod/var/log/nginx/access.log`
-**Retention:** 7 days
-**Format:** Combined log format
-
-**Fields:**
-- Client IP
-- Timestamp
-- HTTP method and path
-- Status code
-- Response size
-- User agent
-- Response time
-
-#### Error Logs
-
-**Log Group:** `/aws/elasticbeanstalk/sekar-prod/var/log/nodejs/error.log`
+**Log Group:** `/aws/sekar-staging/backend-errors`
 **Retention:** 90 days
 **Format:** JSON with stack traces
 
@@ -460,17 +461,34 @@ Actions:
 }
 ```
 
-#### Database Logs
+#### Database Logs (Staging, Shared RDS)
 
-**Log Group:** `/aws/rds/instance/sekar-prod-db/postgresql`
+**Log Group:** `/aws/rds/instance/kobin-kpi-db/postgresql` (shared, limited visibility)
 **Retention:** 7 days
 **Format:** PostgreSQL standard log format
+**Note:** SEKAR sees logs for its queries only; KPI also writes to this RDS.
 
 **Logged Events:**
 - Slow queries (> 1 second)
 - Connection errors
 - Deadlocks
 - Constraint violations
+
+### Production (On-Prem Docker Logs)
+
+**Log Source:** Docker Compose container logs (no centralized aggregation yet)
+
+**Commands:**
+```bash
+docker compose -f docker-compose.prod.yml logs backend      # Backend logs
+docker compose -f docker-compose.prod.yml logs postgres     # PostgreSQL logs
+docker compose -f docker-compose.prod.yml logs redis        # Redis logs
+```
+
+**Retention:** Docker default (configurable per container in docker-compose.prod.yml)
+**Format:** Container stdout/stderr (structured JSON preferred for backend)
+
+**Archival (TBD):** Manual backup to on-prem storage or optional syslog forwarding
 
 ### Log Filtering and Parsing
 
@@ -523,28 +541,24 @@ fields @timestamp, context.gps.accuracy
 
 ---
 
-## 5. Error Tracking with Sentry (Phase 2+)
+## 5. Error Tracking with Sentry (Phase 2+, NOT YET LIVE)
 
-### Sentry Configuration
+**Status:** Planned for Phase 2+. Not yet configured or deployed.
 
-#### Backend Integration
+### Planned Sentry Configuration
+
+#### Backend Integration (Planned)
 
 ```typescript
-// src/main.ts
+// src/main.ts — planned, not implemented
 import * as Sentry from '@sentry/node';
-import { ProfilingIntegration } from '@sentry/profiling-node';
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN,
   environment: process.env.NODE_ENV,
   release: `sekar-backend@${process.env.APP_VERSION}`,
   tracesSampleRate: 0.1, // 10% of transactions
-  profilesSampleRate: 0.1,
-  integrations: [
-    new ProfilingIntegration(),
-  ],
   beforeSend(event, hint) {
-    // Filter sensitive data
     if (event.request?.headers) {
       delete event.request.headers.authorization;
     }
@@ -553,10 +567,10 @@ Sentry.init({
 });
 ```
 
-#### Mobile Integration (React Native)
+#### Mobile Integration (Planned)
 
 ```typescript
-// App.tsx
+// App.tsx — planned, not implemented
 import * as Sentry from '@sentry/react-native';
 
 Sentry.init({
@@ -564,48 +578,16 @@ Sentry.init({
   environment: Config.ENV,
   release: `sekar-mobile@${Config.VERSION}`,
   tracesSampleRate: 0.2, // 20% of transactions
-  enableAutoSessionTracking: true,
-  sessionTrackingIntervalMillis: 30000,
-  beforeSend(event, hint) {
-    // Filter sensitive data
-    if (event.user) {
-      delete event.user.phone;
-    }
-    return event;
-  },
 });
 ```
 
-### Sentry Dashboards
+### Planned Sentry Dashboards & Alerts
 
-#### Backend Errors
-- Error frequency by endpoint
-- Error rate trends
-- Most affected users
-- Stack trace grouping
+- Backend error frequency, rate trends, stack trace grouping
+- Mobile crash-free rate, top crash reasons
+- Alerts: High error rate (>10/min), new error types, performance degradation
 
-#### Mobile Crashes
-- Crash-free rate per version
-- Top crash reasons
-- Affected devices
-- OS version distribution
-
-### Sentry Alerts
-
-**Alert 1: High Error Rate**
-- Condition: > 10 errors/minute
-- Notification: Slack + Email
-- Action: Create incident
-
-**Alert 2: New Error Type**
-- Condition: New error not seen before
-- Notification: Slack
-- Action: Investigate
-
-**Alert 3: Performance Degradation**
-- Condition: P95 latency > 3 seconds
-- Notification: Slack
-- Action: Monitor
+**Current alternative:** Docker logs and ad-hoc inspection (staging) / `docker compose logs` (production).
 
 ---
 
@@ -666,100 +648,50 @@ Sentry.init({
 
 ---
 
-## 7. Health Checks
+## 7. Health Checks (LIVE)
 
-### API Health Check Endpoint
+### Live Health Endpoints
 
-**Endpoint:** `GET /api/health`
+**Endpoints:** `GET /api/v1/health/live` and `GET /api/v1/health/ready`
 
-**Implementation:**
-```typescript
-// src/health/health.controller.ts
-import { Controller, Get } from '@nestjs/common';
-import { DataSource } from 'typeorm';
-import { S3Client, HeadBucketCommand } from '@aws-sdk/client-s3';
+**Status:** LIVE in both staging and production.
 
-@Controller('health')
-export class HealthController {
-  constructor(
-    private dataSource: DataSource,
-    private s3Client: S3Client,
-  ) {}
-
-  @Get()
-  async check() {
-    const checks = {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      checks: {
-        database: 'unknown',
-        s3: 'unknown',
-      },
-    };
-
-    // Check database
-    try {
-      await this.dataSource.query('SELECT 1');
-      checks.checks.database = 'ok';
-    } catch (error) {
-      checks.checks.database = 'error';
-      checks.status = 'degraded';
-    }
-
-    // Check S3
-    try {
-      await this.s3Client.send(new HeadBucketCommand({
-        Bucket: process.env.AWS_S3_BUCKET,
-      }));
-      checks.checks.s3 = 'ok';
-    } catch (error) {
-      checks.checks.s3 = 'error';
-      checks.status = 'degraded';
-    }
-
-    return checks;
-  }
-}
-```
+**Checks Included:**
+- Database connectivity (SELECT 1)
+- Redis connectivity
 
 **Response:**
 ```json
 {
   "status": "ok",
-  "timestamp": "2026-01-16T10:30:45.123Z",
-  "uptime": 12345,
+  "timestamp": "2026-06-19T10:30:45.123Z",
   "checks": {
     "database": "ok",
-    "s3": "ok"
+    "redis": "ok"
   }
 }
 ```
 
-### Deep Health Check (Phase 2+)
+**Usage:**
+- Staging: CloudWatch health checks (via ELB) — can trigger alarms if endpoints return non-200
+- Production (on-prem): Manual monitoring, health check integration (e.g., systemd watchdog, supervisor)
+- External: Periodic pings from monitoring tools (e.g., UptimeRobot, Pingdom)
 
-**Endpoint:** `GET /api/health/deep`
-
-**Additional Checks:**
-- Database connection pool stats
-- Memory usage
-- CPU usage
-- Recent error rate
-- Queue depth (if using Bull)
+**Deep Health Check (Planned):**
+- Database connection pool stats, memory, CPU, error rate — not yet implemented
 
 ---
 
-## 8. Alerting Rules
+## 8. Alerting Rules (Staging Only)
 
-### Notification Channels
+### Notification Channels (Staging)
 
-#### SNS Topics
+#### SNS Topics (AWS ap-southeast-3, Account 659828096624)
 
 **Topic 1: Critical Alerts**
 - **Name:** `sekar-critical-alerts`
 - **Subscribers:**
   - Email: devops@DLH-sby.go.id, lead@DLH-sby.go.id
-  - SMS: +6281234567890 (on-call engineer)
   - Slack: #sekar-critical channel
 
 **Topic 2: High Priority Alerts**
@@ -772,6 +704,15 @@ export class HealthController {
 - **Name:** `sekar-warning-alerts`
 - **Subscribers:**
   - Slack: #sekar-monitoring channel
+
+### Notification Channels (Production, On-Prem)
+
+**Status:** Not yet specified. Currently manual monitoring.
+
+**Future options (TBD):**
+- Slack webhooks (direct container → Slack)
+- Email (optional)
+- On-prem monitoring system (Prometheus, Grafana, etc.)
 
 #### Slack Integration
 
@@ -881,36 +822,47 @@ Status: Investigating
 
 #### Step 4: Mitigate
 
-**Common Mitigation Actions:**
-
-**For API issues:**
+**For API issues (Staging):**
 ```bash
-# Restart application
-aws elasticbeanstalk restart-app-server \
-  --environment-name sekar-prod
+# Restart backend via SSM Run Command (on AWS box)
+aws ssm send-command \
+  --document-name "AWS-RunShellScript" \
+  --parameters 'commands=["cd /opt/sekar && docker compose restart backend"]' \
+  --targets "Key=tag:Name,Values=sekar-staging"
 
-# Or rollback to previous version
-aws elasticbeanstalk update-environment \
-  --environment-name sekar-prod \
-  --version-label prod-<previous-sha>
+# Or rollback: re-deploy previous commit via GitHub Actions
 ```
 
-**For database issues:**
+**For API issues (Production, On-Prem):**
 ```bash
-# Promote read replica (if Multi-AZ)
-aws rds failover-db-cluster \
-  --db-cluster-identifier sekar-prod-cluster
+# SSH to on-prem box and restart
+docker compose -f docker-compose.prod.yml restart backend
 
-# Or restore from snapshot
-aws rds restore-db-instance-from-db-snapshot \
-  --db-instance-identifier sekar-prod-db-restored \
-  --db-snapshot-identifier <snapshot-id>
+# Or rollback
+git checkout <previous-sha>
+docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-**For S3 issues:**
-- Check IAM permissions
-- Verify bucket policy
-- Check S3 service status
+**For database issues (Staging, Shared RDS):**
+- **Cannot act independently** — coordinate with KPI team on RDS restart/failover
+- If SEKAR-specific connections exhausted: kill idle connections from backend
+
+**For database issues (Production, On-Prem):**
+```bash
+docker compose -f docker-compose.prod.yml restart postgres
+# Or restore from backup (manual, TBD)
+```
+
+**For S3/MinIO issues (Staging):**
+- Check AWS S3 service status
+- Verify IAM role permissions
+
+**For MinIO issues (Production):**
+```bash
+docker compose -f docker-compose.prod.yml logs minio
+# or restart
+docker compose -f docker-compose.prod.yml restart minio
+```
 
 #### Step 5: Resolve
 
@@ -992,104 +944,49 @@ Deep dive into why this happened.
 
 ## 10. Cost Monitoring
 
-### CloudWatch Cost Dashboard
+### Staging (AWS Shared Box)
 
-**Widgets:**
-1. Total AWS Spend (MTD)
-2. Cost by Service (pie chart)
-3. EC2 Costs (line chart)
-4. RDS Costs (line chart)
-5. S3 Costs (line chart)
-6. Data Transfer Costs (line chart)
+**Cost Responsibility:** SEKAR shares t3.micro (EC2) + `kobin-kpi-db` (RDS) with KPI project. Cannot split costs per application without additional tagging/monitoring.
 
-### Budget Alerts
+**Budget Tracking (Shared):**
+- AWS Cost Explorer: Filter by tags or project (if available)
+- Monthly review with KPI team
 
-**Budget 1: Total AWS Spend**
-- Amount: $600/month
-- Alert at: 80% ($480), 100% ($600)
-- Notification: Email to finance@DLH-sby.go.id
+### Production (On-Prem)
 
-**Budget 2: RDS Spend**
-- Amount: $200/month
-- Alert at: 90% ($180)
-- Notification: Email to devops@DLH-sby.go.id
+**Cost:** Hardware + electricity — not AWS. No automated cost dashboards.
 
-**Budget 3: S3 Spend**
-- Amount: $50/month
-- Alert at: 90% ($45)
-- Notification: Email to devops@DLH-sby.go.id
+### Future Cost Monitoring
 
-### Cost Optimization Recommendations
-
-**Monthly Review Checklist:**
-- [ ] Delete unused snapshots (> 90 days)
-- [ ] Review S3 storage classes (move old files to IA/Glacier)
-- [ ] Check for idle EC2 instances
-- [ ] Review CloudWatch logs retention (reduce if needed)
-- [ ] Optimize RDS instance size (right-sizing)
-- [ ] Check for unused Elastic IPs
+If SEKAR gets dedicated infrastructure or moves off-prem to AWS, implement:
+- CloudWatch cost dashboards
+- Budget alerts per service
+- S3 lifecycle policies (move old media to cheaper storage classes)
+- RDS right-sizing reviews
 
 ---
 
 ## 11. Reporting
 
-### Weekly Operations Report
+### Staging-Based Reports
 
-**Recipients:** Tech Lead, Product Manager
-**Delivery:** Every Monday 9:00 AM WIB via email
+**Weekly Operations Report (Staging Only)**
+- Uptime %, average response time, error rate
+- CloudWatch dashboard review
+- Notable incidents
 
-**Contents:**
-1. **System Health Summary**
-   - Uptime percentage
-   - Average response time
-   - Error rate
+**Automated via CloudWatch Logs Insights or manual dashboard review.**
 
-2. **Usage Statistics**
-   - Total active workers
-   - Shifts completed
-   - Reports submitted
-   - Photos uploaded
+### Production Reporting
 
-3. **Incidents**
-   - Count by severity
-   - Average resolution time
-   - Notable incidents
+**Status:** Manual monitoring only. Reports TBD post-deployment.
 
-4. **Performance**
-   - API response times (P50, P95, P99)
-   - Database performance
-   - S3 upload success rate
+### Future Reporting
 
-5. **Costs**
-   - Total spend
-   - Variance from budget
-   - Trending
-
-**Automated Generation:**
-```python
-# scripts/weekly-report.py
-import boto3
-from datetime import datetime, timedelta
-
-cloudwatch = boto3.client('cloudwatch')
-
-# Fetch metrics
-# Generate report
-# Send via email (SES)
-```
-
-### Monthly Business Report
-
-**Recipients:** Management, Stakeholders
-**Delivery:** First Monday of month
-
-**Contents:**
-1. System reliability (uptime, incidents)
-2. User adoption metrics
-3. Feature usage statistics
-4. Performance trends
-5. Cost analysis
-6. Roadmap progress
+Once production is live, establish:
+- Weekly health checks (health endpoint, Docker logs)
+- Monthly performance & availability summary
+- Incident post-mortems as needed
 
 ---
 
@@ -1097,14 +994,15 @@ cloudwatch = boto3.client('cloudwatch')
 
 ### Required Tools
 
-| Tool | Purpose | Access Level |
-|------|---------|--------------|
-| **AWS Console** | Infrastructure management | Admin (DevOps), Read-only (Developers) |
-| **CloudWatch** | Monitoring, logs, alarms | All team |
-| **Sentry** | Error tracking | All team |
-| **Slack** | Alerting, communication | All team |
-| **GitHub** | Code, issues, CI/CD | All team |
-| **Datadog** (Phase 3+) | APM, advanced monitoring | DevOps, Backend |
+| Tool | Purpose | Scope |
+|------|---------|-------|
+| **AWS Console** | Staging infrastructure (EC2, RDS, S3) | DevOps (Admin), Team (Read-only) |
+| **CloudWatch** | Staging monitoring, logs, alarms | Team (staging only) |
+| **Sentry** | Error tracking (Phase 2+) | Not yet live |
+| **Slack** | Staging alerting, communication | Team |
+| **GitHub** | Code, CI/CD, production deployments | Team |
+| **Docker / docker compose** | Production container management (on-prem) | DevOps |
+| **PostgreSQL CLI tools** | Production DB management | DevOps |
 
 ### Access Management
 
@@ -1122,32 +1020,44 @@ cloudwatch = boto3.client('cloudwatch')
 
 ## 13. Monitoring Checklist
 
-### Daily Checks (Automated)
-- [ ] Health check passes
-- [ ] No critical alarms
-- [ ] Error rate < 1%
+### Staging (AWS Shared)
+
+**Daily Checks (Automated)**
+- [ ] Health endpoints responding (`/api/v1/health/live`, `/api/v1/health/ready`)
+- [ ] No critical CloudWatch alarms
+- [ ] Error logs absent or < 1%
 - [ ] Average latency < 500ms
-- [ ] All services running
+- [ ] Docker containers running
 
-### Weekly Checks (Manual)
+**Weekly Checks (Manual)**
 - [ ] Review CloudWatch dashboard
-- [ ] Check for new Sentry errors
-- [ ] Review slow query log
-- [ ] Check AWS costs
+- [ ] Check slow query logs (RDS)
 - [ ] Review incident tickets
-- [ ] Test backup restoration
+- [ ] Coordinate with KPI team if shared resource issues
 
-### Monthly Checks (Manual)
-- [ ] Review and update alarms
-- [ ] Test disaster recovery procedure
-- [ ] Review and optimize costs
+### Production (On-Prem)
+
+**Daily Checks (Manual)**
+- [ ] Health endpoints responding
+- [ ] `docker compose ps` shows all containers up
+- [ ] `docker compose logs backend` shows no errors
+- [ ] SSH ping to on-prem box succeeds
+
+**Weekly Checks (Manual)**
+- [ ] Review Docker logs (last 7 days)
+- [ ] Check PostgreSQL disk usage
+- [ ] Check Redis memory usage
+- [ ] Verify backup completion
+
+**Monthly Checks (Manual)**
+- [ ] Full system health review
 - [ ] Update runbooks
-- [ ] Security audit (logs, access)
-- [ ] Performance review and optimization
+- [ ] Security log audit
+- [ ] Performance review
 
 ---
 
 **Document Owner:** DevOps Engineer
-**Last Updated:** 2026-01-16
-**Status:** Active
-**Related Docs:** [`infrastructure.md`](./infrastructure.md), [`ci-cd.md`](./ci-cd.md)
+**Last Updated:** 2026-06-19
+**Status:** Active (staging monitoring), TBD (production)
+**Related Docs:** [`deployment-guide.md`](./deployment-guide.md), [`ci-cd.md`](./ci-cd.md), [`infrastructure.md`](./infrastructure.md)

@@ -49,7 +49,7 @@ SEKAR uses Docker Compose to run all local infrastructure. Services are defined 
 | **PostgreSQL 14** | Primary database | 5432 | postgres/postgres, db: sekar_db | `infra/data/` |
 | **Adminer** | Web database UI | 8080 | (use DB creds above) | — |
 | **MinIO** | S3-compatible object storage | 9000 (API), 9001 (console) | minioadmin/minioadmin | `sekar-minio-data` volume |
-| **Redis 7** | In-memory cache, streaming (Phase 3) | 16379 | — | `sekar-redis-data` volume |
+| **Redis 7** | In-memory cache, streaming | 16379 | — | `sekar-redis-data` volume |
 
 **Note:** MinIO replaces LocalStack (the production stack also uses MinIO, so dev and prod behave identically). Adminer is the lightweight database UI (alternative to pgAdmin).
 
@@ -115,7 +115,7 @@ Access at http://localhost:8080 (can use IP address or `postgres` service name w
 
 **Features:** Browse/edit tables, run SQL, import/export data, manage structure.
 
-#### Redis (Phase 3 — Monitoring v2, Staffing, BullMQ)
+#### Redis (Monitoring v2, Staffing, BullMQ)
 
 **Connection:** `redis://localhost:16379` (dev uses 16379 to avoid colliding with system Redis; see `infra/.env`).
 
@@ -243,7 +243,7 @@ AWS_S3_FORCE_PATH_STYLE=true
 AWS_ACCESS_KEY_ID=minioadmin
 AWS_SECRET_ACCESS_KEY=minioadmin
 AWS_S3_BUCKET=sekar-media-dev
-AWS_REGION=ap-southeast-1
+AWS_REGION=ap-southeast-3
 
 # JWT
 JWT_SECRET=dev-secret-key-change-in-production-min-32-chars
@@ -251,7 +251,7 @@ JWT_EXPIRATION=15m
 JWT_REFRESH_SECRET=dev-refresh-secret-change-in-production-32chars
 JWT_REFRESH_EXPIRATION=7d
 
-# Monitoring v2 / BullMQ
+# Monitoring v2 / BullMQ (live)
 REDIS_URL=redis://localhost:16379
 REDIS_STREAM_MAX_LEN=100000
 STAFFING_DEBOUNCE_SECONDS=30
@@ -1004,5 +1004,5 @@ For physical mobile device testing on WSL2, follow [WSL2 Network Setup](#wsl2-ne
 
 ---
 
-**Last Updated:** June 17, 2026  
+**Last Updated:** June 19, 2026  
 **Related:** [deployment-guide.md](./deployment-guide.md), [environment-variables.md](./environment-variables.md), [WSL2 Network Setup](#wsl2-network-setup-physical-mobile-devices)

@@ -2,9 +2,9 @@
 
 Comprehensive list of all environment variables used across all deployment phases of the SEKAR system.
 
-## Overview
+**Secrets model:** All deploy files (`.env.staging`, `.env.production`, repo-root `.env.production`) are **committed ENCRYPTED via [dotenvx](https://dotenvx.com)** — secret values are `encrypted:…` ciphertext. The only real secret is the per-file private key in gitignored `.env.keys`; decryption keys are GitHub **Environment** secrets `BE_/WEB_/MOBILE_DOTENV_PRIVATE_KEY` (staging+production), or on AWS boxes via SSM `/sekar/staging/BE_DOTENV_PRIVATE_KEY`. **For procedures:** see `deployment-guide.md` (from-scratch hub) and `encrypted-secrets.md` (dotenvx workflow). This doc is the **variable catalogue**.
 
-This document consolidates all environment variables from Phase 1 (MVP) through Phase 6 (Web Dashboard). Variables are organized by component (Backend, Mobile, Web) and phase.
+**Infrastructure:** **Dev** = local MinIO + Postgres. **Staging** = AWS (region `ap-southeast-3`, shared RDS `kobin-kpi-db` db `sekar_staging`, S3 `sekar-media-staging` via instance role). **Production** = on-prem Docker Compose with MinIO. **Backend production env = repo-root `.env.production`** (drives `docker-compose.prod.yml`), NOT `be/.env.production`. FCM is **ENABLED** in staging+production (encrypted Firebase creds). Per-environment Google Maps keys (dev/staging/production) are encrypted in mobile env files.
 
 ## File naming convention (standardised Phase 5)
 
@@ -12,15 +12,18 @@ All three application workspaces use the same scheme:
 
 | File | Purpose | Committed? |
 |------|---------|-----------|
-| `.env.local` | Local development (the runtime file) | No — gitignored |
-| `.env.staging` | Staging deploy | No — gitignored |
-| `.env.production` | Production deploy | No — gitignored |
+| `.env.local` | Local development (plaintext) | No — gitignored |
+| `.env.staging` | Staging deploy (encrypted via dotenvx) | **Yes** |
+| `.env.production` | Production deploy (encrypted via dotenvx) | **Yes** (workspace-specific) |
+| `.env.keys` | dotenvx private decryption keys | No — gitignored **CRITICAL** |
 | `.env.local.example` / `.env.staging.example` / `.env.production.example` | Templates with safe defaults | **Yes** |
 
-- **Backend** (`be/`): `be/src/config/load-env.ts` selects `.env.local` for dev or `.env.<NODE_ENV>` for `staging`/`production`/`test`, always falling back to `.env`. Real (exported) env vars and the first matching file win (`override: false`).
-- **Web** (`fe/web/`): Next.js loads `.env.local` natively.
-- **Mobile** (`fe/mobile/`): `react-native-dotenv` reads the file named in `babel.config.js` (`path: '.env.local'`); per-build overrides repoint it at `.env.staging` / `.env.production`.
-- **Infra** (`infra/`): keeps a plain `.env` (Docker-Compose convention). `scripts/setup.sh` reconciles `be/.env.local`'s `DATABASE_PORT` to `infra/.env`'s `POSTGRES_PORT`, so a non-default infra port doesn't break migrations.
+**Special:** Backend production env lives at **repo-root `./.env.production`** (not `be/.env.production`); drives `docker-compose.prod.yml`. All other workspace-specific production envs (`be/.env.production`, `fe/web/.env.production`, `fe/mobile/.env.production`) exist for workspace parity but are baked into container images (backend staging) or built at deploy time (web, mobile).
+
+- **Backend** (`be/`): `be/src/config/load-env.ts` loads `.env.local` (dev) or `.env.<NODE_ENV>` (staging/production/test) and decrypts via dotenvx.
+- **Web** (`fe/web/`): `npm run build:staging|production` runs `dotenvx run -f .env.<env> -- next …` (decrypts at build).
+- **Mobile** (`fe/mobile/`): `scripts/decrypt-env.js` decrypts to a temp `.env.runtime` at build time; `babel.config.js` points `react-native-dotenv` at it.
+- **Infra** (`infra/`): keeps plain `.env` (Docker-Compose convention, plaintext). `scripts/setup.sh` reconciles `be/.env.local`'s `DATABASE_PORT` to `infra/.env`'s `POSTGRES_PORT`.
 
 ---
 
@@ -35,27 +38,28 @@ PORT=3000
 APP_NAME=SEKAR
 
 # Database (PostgreSQL)
-DATABASE_HOST=localhost|sekar-prod-db.xxxxx.ap-southeast-1.rds.amazonaws.com
+DATABASE_HOST=localhost|kobin-kpi-db.ap-southeast-3.rds.amazonaws.com
 DATABASE_PORT=5432
 DATABASE_USER=postgres|sekar_admin
-DATABASE_PASSWORD=<secure-password>
-DATABASE_NAME=sekar_db
+DATABASE_PASSWORD=<encrypted-secret>
+DATABASE_NAME=sekar_db|sekar_staging  # dev=sekar_db, staging=sekar_staging
 DATABASE_SYNCHRONIZE=true  # Development only! Set to false in production
 DATABASE_LOGGING=false  # Set to true for debugging
-DATABASE_SSL=false  # Set to true for production RDS
+DATABASE_SSL=false  # Development + staging localhost. Set to true for production RDS/on-prem
 
 # JWT Authentication
-JWT_SECRET=<256-bit-random-string>
+JWT_SECRET=<encrypted-secret>  # 256-bit random string
 JWT_EXPIRATION=15m  # Access token
-JWT_REFRESH_SECRET=<different-256-bit-random-string>
+JWT_REFRESH_SECRET=<encrypted-secret>  # Different 256-bit random string
 JWT_REFRESH_EXPIRATION=7d  # Refresh token
 
-# AWS S3 (Media Storage)
-AWS_REGION=ap-southeast-1
-AWS_ACCESS_KEY_ID=<from-aws-iam>  # Use IAM role in production
-AWS_SECRET_ACCESS_KEY=<from-aws-iam>  # Use IAM role in production
-AWS_S3_BUCKET=sekar-prod-media
-AWS_ENDPOINT_URL=  # Empty for real AWS S3 (staging); http://localhost:9000 for MinIO (dev/self-hosted prod)
+# S3 / Media Storage
+# Dev: MinIO (localhost:9000). Staging: AWS S3 via instance role (no keys). Production: MinIO (docker-compose.prod.yml)
+AWS_REGION=ap-southeast-3  # Staging region
+AWS_ACCESS_KEY_ID=<encrypted-secret>  # Only if using explicit keys (e.g., local MinIO); use IAM instance role in staging/production
+AWS_SECRET_ACCESS_KEY=<encrypted-secret>
+AWS_S3_BUCKET=sekar-media-dev|sekar-media-staging|sekar-media-prod
+AWS_ENDPOINT_URL=  # Empty for real AWS S3 (staging); http://localhost:9000 for MinIO (dev/prod)
 AWS_S3_FORCE_PATH_STYLE=  # Empty for real AWS S3; true for MinIO
 
 # CORS
@@ -79,8 +83,17 @@ HEALTH_CHECK_ENABLED=true
 
 ```bash
 # Firebase Cloud Messaging (FCM)
-FCM_SERVER_KEY={{resolve:secretsmanager:sekar/fcm/server-key:SecretString:server_key}}
-FCM_ENABLED=true
+# Creds are encrypted in .env.staging / .env.production via dotenvx; FCM is ENABLED for staging+production
+FCM_ENABLED=false  # Dev only; true for staging+production
+FCM_PROJECT_ID=<encrypted-secret>  # Firebase project ID
+FCM_PRIVATE_KEY_ID=<encrypted-secret>
+FCM_PRIVATE_KEY=<encrypted-secret>  # Multiline (keep as single encrypted value)
+FCM_CLIENT_EMAIL=<encrypted-secret>
+FCM_CLIENT_ID=<encrypted-secret>
+FCM_AUTH_URI=<encrypted-secret>
+FCM_TOKEN_URI=<encrypted-secret>
+FCM_AUTH_PROVIDER_CERT_URL=<encrypted-secret>
+FCM_CLIENT_CERT_URL=<encrypted-secret>
 NOTIFICATION_RETRY_ATTEMPTS=3
 NOTIFICATION_RETRY_DELAY=5000  # milliseconds
 NOTIFICATION_BATCH_SIZE=100  # max devices per batch
@@ -90,11 +103,11 @@ TASK_AUTO_ASSIGN_ENABLED=true
 TASK_DEADLINE_WARNING_HOURS=24  # hours before deadline to send reminder
 
 # Redis (Bull Queue for Background Jobs)
-REDIS_HOST=localhost|sekar-redis-prod.xxxxx.ng.0001.apse1.cache.amazonaws.com
+REDIS_HOST=localhost|localhost  # Staging + prod also use local/container Redis for now
 REDIS_PORT=6379
-REDIS_PASSWORD=  # Empty for development, set for production
+REDIS_PASSWORD=  # Empty for development and compose, encrypted in .env if needed
 REDIS_DB=0
-REDIS_TLS=false  # Set to true for ElastiCache with TLS
+REDIS_TLS=false
 
 # KMZ Import
 KMZ_MAX_FILE_SIZE=10485760  # 10 MB in bytes
@@ -114,7 +127,7 @@ WEBSOCKET_MAX_CONNECTIONS=1000
 
 # Redis Adapter for WebSocket Scaling
 REDIS_ADAPTER_ENABLED=true
-REDIS_ADAPTER_HOST=sekar-redis-prod.xxxxx.ng.0001.apse1.cache.amazonaws.com
+REDIS_ADAPTER_HOST=localhost
 REDIS_ADAPTER_PORT=6379
 
 # Analytics Configuration
@@ -135,19 +148,19 @@ SCHEDULER_DAILY_REPORT_TIME=08:00  # Send daily reports at 8 AM WIB
 SCHEDULER_WEEKLY_REPORT_DAY=monday
 SCHEDULER_MONTHLY_REPORT_DATE=1
 
-# Data Warehouse (Redshift) - Optional
+# Data Warehouse (Redshift) - Not currently provisioned; for managed-cloud reference only
 REDSHIFT_ENABLED=false
-REDSHIFT_HOST=sekar-redshift.xxxxx.ap-southeast-1.redshift.amazonaws.com
+REDSHIFT_HOST=<not-provisioned>
 REDSHIFT_PORT=5439
 REDSHIFT_DATABASE=sekar_dw
 REDSHIFT_USER=sekar_etl
-REDSHIFT_PASSWORD={{resolve:secretsmanager:sekar/redshift/password}}
-REDSHIFT_SYNC_INTERVAL=daily  # daily, hourly
+REDSHIFT_PASSWORD=<encrypted-secret>
+REDSHIFT_SYNC_INTERVAL=daily
 
-# CloudFront CDN
-CLOUDFRONT_ENABLED=true
-CLOUDFRONT_DISTRIBUTION_DOMAIN=media.sekar.DLH-sby.go.id
-CLOUDFRONT_SIGNED_URLS=false  # Set to true for private content
+# CloudFront CDN - Not currently provisioned; for managed-cloud reference only
+CLOUDFRONT_ENABLED=false
+CLOUDFRONT_DISTRIBUTION_DOMAIN=<not-provisioned>
+CLOUDFRONT_SIGNED_URLS=false
 ```
 
 ### Phase 4: Asset Management
@@ -155,12 +168,12 @@ CLOUDFRONT_SIGNED_URLS=false  # Set to true for private content
 ```bash
 # QR Code Generation
 QR_CODE_ENABLED=true
-QR_CODE_S3_BUCKET=sekar-qr-codes-prod
+QR_CODE_S3_BUCKET=sekar-qr-codes-dev|sekar-qr-codes-prod
 QR_CODE_SIZE=300  # pixels (300x300)
 QR_CODE_ERROR_CORRECTION=M  # L, M, Q, H
 QR_CODE_BASE_URL=https://sekar.DLH-sby.go.id/asset
 QR_CODE_FORMAT=png
-QR_CODE_ENCRYPTION_KEY={{resolve:secretsmanager:sekar/qrcode/encryption-key:SecretString:key}}
+QR_CODE_ENCRYPTION_KEY=<encrypted-secret>  # dotenvx encrypted
 
 # Asset Management
 ASSET_CODE_PREFIX=ASSET-  # Format: ASSET-001, ASSET-002, etc.
@@ -183,9 +196,9 @@ EQUIPMENT_REORDER_POINT=20  # Suggest reorder when stock < 20 units
 ```bash
 # APNs (iOS Push Notifications)
 APNS_ENABLED=true
-APNS_KEY_ID={{resolve:secretsmanager:sekar/apns/auth-key:SecretString:key_id}}
-APNS_TEAM_ID={{resolve:secretsmanager:sekar/apns/auth-key:SecretString:team_id}}
-APNS_KEY_FILE={{resolve:secretsmanager:sekar/apns/auth-key:SecretString:key_file}}
+APNS_KEY_ID=<encrypted-secret>  # dotenvx encrypted
+APNS_TEAM_ID=<encrypted-secret>
+APNS_KEY_FILE=<encrypted-secret>  # Private key content, keep as single encrypted value
 APNS_BUNDLE_ID=com.wahyutrip.sekar
 APNS_PRODUCTION=true  # Use production APNs server
 
@@ -245,8 +258,8 @@ API_BASE_URL=http://10.0.2.2:3000  # Android emulator host
 # API_BASE_URL=https://api.sekar.dlhsurabaya.go.id  # Production host
 API_VERSION=v1  # API version
 
-# Google Maps
-GOOGLE_MAPS_API_KEY=<your-google-maps-api-key>
+# Google Maps (per-environment, encrypted in dotenvx)
+GOOGLE_MAPS_API_KEY=<encrypted-secret>  # dev/staging/production keys differ, all encrypted
 
 # Location Tracking
 LOCATION_TRACKING_ENABLED=true
@@ -385,135 +398,147 @@ SESSION_REFRESH_INTERVAL=300000  # 5 minutes
 ### Development Environment
 
 ```bash
-# Backend
+# Backend (.env.local, plaintext, gitignored)
 NODE_ENV=development
 DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_NAME=sekar_db
 DATABASE_SYNCHRONIZE=true
 DATABASE_LOGGING=true
-AWS_ENDPOINT_URL=http://localhost:9000  # MinIO (dev S3)
+DATABASE_SSL=false
+AWS_ENDPOINT_URL=http://localhost:9000  # MinIO
 AWS_S3_FORCE_PATH_STYLE=true
+AWS_S3_BUCKET=sekar-media-dev
+FCM_ENABLED=false
 LOG_LEVEL=debug
 
-# Mobile (Host + Version)
-API_BASE_URL=http://10.0.2.2:3000
+# Mobile (.env.local, plaintext, gitignored)
+API_BASE_URL=http://10.0.2.2:3000  # Android emulator; http://<IP>:3000 for device
 API_VERSION=v1
 WEBSOCKET_URL=http://10.0.2.2:3000
+GOOGLE_MAPS_API_KEY=<dev-key>
 
-# Web
+# Web (.env.local, plaintext, gitignored)
 NEXT_PUBLIC_API_URL=http://localhost:3000
+NEXT_PUBLIC_WEBSOCKET_URL=ws://localhost:3000
 ```
 
 ### Staging Environment
 
 ```bash
-# Backend
+# Backend (.env.staging, encrypted via dotenvx, committed)
 NODE_ENV=staging
-DATABASE_HOST=sekar-staging-db.xxxxx.ap-southeast-1.rds.amazonaws.com
+DATABASE_HOST=kobin-kpi-db.ap-southeast-3.rds.amazonaws.com
+DATABASE_PORT=5432
+DATABASE_NAME=sekar_staging
 DATABASE_SYNCHRONIZE=false
 DATABASE_LOGGING=false
-AWS_ENDPOINT_URL=  # Empty (use real AWS)
-AWS_S3_BUCKET=sekar-staging-media
+DATABASE_SSL=true  # RDS over SSL
+DATABASE_PASSWORD=<encrypted>
+AWS_REGION=ap-southeast-3
+AWS_S3_BUCKET=sekar-media-staging
+AWS_ENDPOINT_URL=  # Empty; uses real AWS S3
+AWS_S3_FORCE_PATH_STYLE=false
+FCM_ENABLED=true
+FCM_PROJECT_ID=<encrypted>
+FCM_PRIVATE_KEY=<encrypted>
+# ... (other FCM fields encrypted)
 LOG_LEVEL=info
+JWT_SECRET=<encrypted>
 
-# Mobile (Host + Version)
+# Mobile (.env.staging, encrypted via dotenvx, committed)
 API_BASE_URL=https://api-staging.sekar.dlhsurabaya.go.id
 API_VERSION=v1
 WEBSOCKET_URL=wss://api-staging.sekar.dlhsurabaya.go.id
+GOOGLE_MAPS_API_KEY=<encrypted-staging-key>
 
-# Web
+# Web (.env.staging, encrypted via dotenvx, committed)
 NEXT_PUBLIC_API_URL=https://api-staging.sekar.DLH-sby.go.id
+NEXT_PUBLIC_WEBSOCKET_URL=wss://api-staging.sekar.DLH-sby.go.id
 NEXTAUTH_URL=https://dashboard-staging.sekar.DLH-sby.go.id
+NEXTAUTH_SECRET=<encrypted>
 ```
 
 ### Production Environment
 
 ```bash
-# Backend
+# Backend (repo-root ./.env.production, encrypted via dotenvx, committed; drives docker-compose.prod.yml)
 NODE_ENV=production
-DATABASE_HOST=sekar-prod-db.xxxxx.ap-southeast-1.rds.amazonaws.com
-DATABASE_SYNCHRONIZE=false  # CRITICAL: Never auto-sync in production
+DATABASE_HOST=localhost  # On-prem PostgreSQL via compose
+DATABASE_PORT=5432
+DATABASE_NAME=sekar_db
+DATABASE_SYNCHRONIZE=false  # CRITICAL: Never auto-sync
 DATABASE_LOGGING=false
-DATABASE_SSL=true
-AWS_ENDPOINT_URL=  # Empty (use real AWS)
-AWS_S3_BUCKET=sekar-prod-media
+DATABASE_SSL=true  # On-prem compose with SSL
+DATABASE_PASSWORD=<encrypted>
+AWS_ENDPOINT_URL=http://localhost:9000  # MinIO (docker-compose.prod.yml)
+AWS_S3_FORCE_PATH_STYLE=true
+AWS_S3_BUCKET=sekar-media-prod
+FCM_ENABLED=true
+FCM_PROJECT_ID=<encrypted>
+FCM_PRIVATE_KEY=<encrypted>
+# ... (other FCM fields encrypted)
 LOG_LEVEL=warn
 RATE_LIMIT_STRICT=true
+JWT_SECRET=<encrypted>
 
-# Mobile (Host + Version)
+# Mobile (.env.production, encrypted via dotenvx, committed)
 API_BASE_URL=https://api.sekar.dlhsurabaya.go.id
 API_VERSION=v1
 WEBSOCKET_URL=wss://api.sekar.dlhsurabaya.go.id
+GOOGLE_MAPS_API_KEY=<encrypted-production-key>
 
-# Web
+# Web (.env.production, encrypted via dotenvx, committed)
 NEXT_PUBLIC_API_URL=https://api.sekar.DLH-sby.go.id
 NEXT_PUBLIC_WEBSOCKET_URL=wss://api.sekar.DLH-sby.go.id
 NEXTAUTH_URL=https://dashboard.sekar.DLH-sby.go.id
+NEXTAUTH_SECRET=<encrypted>
 ```
 
 ---
 
-## 5. AWS Secrets Manager Configuration
+## 5. Encrypted Secrets Model (dotenvx)
 
-Store sensitive credentials in AWS Secrets Manager:
+**All deploy env files (.env.staging, .env.production) are committed ENCRYPTED.** Sensitive values appear as `encrypted:…` ciphertext; only the decryption private key (`.env.keys`) is gitignored. For full procedures, see `encrypted-secrets.md` (the authoritative dotenvx runbook).
 
-### Backend Secrets
+### Key Storage
 
+| Key | Storage | Purpose |
+|-----|---------|---------|
+| `BE_DOTENV_PRIVATE_KEY` | GitHub **Environment** secrets (`staging`, `production`) | Decrypt backend deploy files |
+| `WEB_DOTENV_PRIVATE_KEY` | GitHub **Environment** secrets (`staging`, `production`) | Decrypt web deploy files |
+| `MOBILE_DOTENV_PRIVATE_KEY` | GitHub **Environment** secrets (`staging`, `production`) | Decrypt mobile deploy files |
+| `.env.keys` (local dev) | Gitignored file in repo root | Local decryption; run `dotenvx keys list` to view |
+
+**Staging AWS box:** Reads `BE_DOTENV_PRIVATE_KEY` from AWS SSM Parameter Store (`/sekar/staging/BE_DOTENV_PRIVATE_KEY`) at boot via instance IAM role.
+
+### Example Encrypted Entry
+
+Before encryption (plaintext in editor):
 ```bash
-# Database password
-aws secretsmanager create-secret \
-  --name sekar/db/password \
-  --secret-string '{"password":"<secure-random-password>"}'
-
-# JWT secrets
-aws secretsmanager create-secret \
-  --name sekar/jwt/secrets \
-  --secret-string '{"access_secret":"<256-bit>","refresh_secret":"<256-bit>"}'
-
-# FCM server key
-aws secretsmanager create-secret \
-  --name sekar/fcm/server-key \
-  --secret-string '{"server_key":"<fcm-key>"}'
-
-# APNs authentication key
-aws secretsmanager create-secret \
-  --name sekar/apns/auth-key \
-  --secret-string '{"key_id":"XXXX","team_id":"YYYY","key_file":"-----BEGIN PRIVATE KEY-----\n..."}'
-
-# QR code encryption key
-aws secretsmanager create-secret \
-  --name sekar/qrcode/encryption-key \
-  --secret-string '{"key":"<256-bit-hex>"}'
-
-# Redshift password (optional)
-aws secretsmanager create-secret \
-  --name sekar/redshift/password \
-  --secret-string '{"password":"<secure-password>"}'
+JWT_SECRET=your-256-bit-random-string-here
 ```
 
-### Retrieve Secrets in Code
-
-**Backend (NestJS):**
-```typescript
-import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
-
-async function getSecret(secretName: string): Promise<any> {
-  const client = new SecretsManagerClient({ region: 'ap-southeast-1' });
-  const response = await client.send(new GetSecretValueCommand({ SecretId: secretName }));
-  return JSON.parse(response.SecretString);
-}
-
-// Usage
-const dbSecret = await getSecret('sekar/db/password');
-const dbPassword = dbSecret.password;
-```
-
-**Elastic Beanstalk (via environment variables):**
+After encryption (committed):
 ```bash
-aws elasticbeanstalk update-environment \
-  --environment-name sekar-prod \
-  --option-settings \
-    Namespace=aws:elasticbeanstalk:application:environment,OptionName=DATABASE_PASSWORD,Value={{resolve:secretsmanager:sekar/db/password:SecretString:password}}
+JWT_SECRET=encrypted:BaWw9g1Io6Vm+MzP...
 ```
+
+At runtime, `load-env.ts` (backend) or `dotenvx run` (web/mobile) decrypts using the private key.
+
+### Secrets Common to Multiple Envs
+
+These appear in multiple `.env.*` files (dev/staging/production) but may differ per environment:
+
+- `JWT_SECRET`, `JWT_REFRESH_SECRET`
+- `DATABASE_PASSWORD`
+- `GOOGLE_MAPS_API_KEY`
+- `FCM_*` (Firebase creds)
+- `APNS_*` (iOS APNs creds)
+- `QR_CODE_ENCRYPTION_KEY`
+- `NEXTAUTH_SECRET` (web)
+
+**Never commit plaintext keys.** Use `npm run env:encrypt` to encrypt, `npm run env:decrypt` to view decrypted values (requires local `.env.keys`).
 
 ---
 
@@ -523,28 +548,27 @@ aws elasticbeanstalk update-environment \
 
 **Backend:**
 - [ ] All required variables set for target environment
-- [ ] Database credentials correct and tested
-- [ ] AWS credentials configured (IAM role or access keys)
-- [ ] JWT secrets are strong random strings
+- [ ] Database credentials encrypted (dotenvx) and decryption key in GitHub Environment secrets
+- [ ] JWT secrets are strong random strings, encrypted
 - [ ] CORS origins include production domains
 - [ ] Rate limits appropriate for environment
 - [ ] Redis host correct for environment
-- [ ] S3 bucket names correct
-- [ ] Secrets retrieved from Secrets Manager
-- [ ] No hardcoded secrets in code
+- [ ] S3 bucket names correct; staging uses instance IAM role (no keys in .env)
+- [ ] FCM enabled+encrypted for staging/production; disabled for dev
+- [ ] No plaintext secrets in committed files; only `encrypted:…` ciphertext
+- [ ] `.env.keys` is in `.gitignore`
 
 **Mobile:**
 - [ ] API_BASE_URL is host only (no /api path), points to correct environment
 - [ ] API_VERSION set correctly (e.g., v1)
-- [ ] Google Maps API key valid and has correct restrictions
-- [ ] FCM configuration matches Firebase project
+- [ ] GOOGLE_MAPS_API_KEY encrypted for staging/production, plaintext for dev
 - [ ] App version and build number incremented
 - [ ] Certificate pinning hashes match server certificates
 - [ ] Feature flags set correctly
 
 **Web:**
 - [ ] NEXT_PUBLIC_API_URL points to correct backend
-- [ ] NextAuth secret is unique and secure
+- [ ] NEXTAUTH_SECRET is unique, encrypted for staging/production
 - [ ] Google Analytics ID configured
 - [ ] Sentry DSN configured
 - [ ] Feature flags enabled/disabled as needed
@@ -554,17 +578,18 @@ aws elasticbeanstalk update-environment \
 
 ## 7. Security Best Practices
 
-### Never Commit to Git
+### Never Commit Plaintext Secrets
 
-Add to `.gitignore`:
+`.gitignore` enforces (via pre-commit hook):
 ```
 # Environment files
 .env
 .env.local
-.env.development
-.env.staging
-.env.production
 .env.*.local
+.env.keys  # Private decryption keys — CRITICAL never commit
+
+# Unencrypted build artifacts
+fe/mobile/.env.runtime
 
 # Secrets
 *.key
@@ -572,24 +597,22 @@ Add to `.gitignore`:
 *.p12
 google-services.json
 GoogleService-Info.plist
-
-# AWS
-.aws/
-credentials
 ```
 
-### Use Different Secrets Per Environment
+**Committed files** (`.env.staging`, `.env.production`) are **encrypted**; plaintext `.env.local` is gitignored.
 
-- Never reuse production secrets in dev/staging
-- Rotate secrets every 90 days (Phase 2+)
-- Use Secrets Manager for all sensitive data in production
-- Enable audit logging for secret access
+### Rotate Secrets Every 90 Days
+
+1. Generate new secret (e.g., new JWT_SECRET).
+2. Update in `.env.staging` / `.env.production` via `dotenvx set <KEY> <VALUE>` or edit + re-encrypt.
+3. Push GitHub Environment secret update (backend/web/mobile `*_DOTENV_PRIVATE_KEY`).
+4. Roll out the new decryption key to staging AWS box (SSM Parameter Store).
+5. Redeploy services.
 
 ### Validate Environment Variables on Startup
 
-**Backend validation:**
+**Backend validation (in `load-env.ts` / `main.ts`):**
 ```typescript
-// src/main.ts
 function validateEnv() {
   const required = [
     'DATABASE_HOST',
@@ -597,75 +620,63 @@ function validateEnv() {
     'JWT_SECRET',
     'AWS_S3_BUCKET',
   ];
-
   const missing = required.filter(key => !process.env[key]);
-
   if (missing.length > 0) {
-    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+    throw new Error(`Missing required env vars: ${missing.join(', ')}`);
   }
-
-  // Validate JWT secret strength
   if (process.env.JWT_SECRET.length < 32) {
-    throw new Error('JWT_SECRET must be at least 32 characters');
+    throw new Error('JWT_SECRET must be >= 32 chars');
   }
-
-  // Warn if production uses synchronize
   if (process.env.NODE_ENV === 'production' && process.env.DATABASE_SYNCHRONIZE === 'true') {
     throw new Error('DATABASE_SYNCHRONIZE must be false in production');
   }
 }
-
 validateEnv();
 ```
 
 ---
 
-## 8. Environment Variables by Phase Summary
-
-| Phase | Backend Vars | Mobile Vars | Web Vars | Total |
-|-------|-------------|-------------|----------|-------|
-| **Phase 1** | 25 | 11 | - | 36 |
-| **Phase 2** | +9 | +2 | - | +11 |
-| **Phase 3** | +13 | +3 | - | +16 |
-| **Phase 4** | +10 | +5 | - | +15 |
-| **Phase 5** | +11 | +6 | - | +17 |
-| **Phase 6** | +6 | - | 18 | +24 |
-| **Total** | 74 | 27 | 18 | 119 |
-
----
-
-## 9. Quick Reference
+## 8. Quick Reference
 
 ### Most Critical Variables (Must Be Set)
 
 **Backend:**
-- `DATABASE_PASSWORD`
-- `JWT_SECRET`
-- `JWT_REFRESH_SECRET`
-- `AWS_S3_BUCKET`
+- `DATABASE_HOST`, `DATABASE_PASSWORD` (encrypted for staging/production)
+- `JWT_SECRET`, `JWT_REFRESH_SECRET` (encrypted)
+- `AWS_S3_BUCKET`, `AWS_ENDPOINT_URL` (MinIO dev/prod; empty for staging AWS S3)
 
 **Mobile:**
-- `API_BASE_URL` (host only, e.g., `http://10.0.2.2:3000`)
+- `API_BASE_URL` (host only, e.g., `http://10.0.2.2:3000` or `https://api.sekar.dlhsurabaya.go.id`)
 - `API_VERSION` (e.g., `v1`)
-- `GOOGLE_MAPS_API_KEY`
+- `GOOGLE_MAPS_API_KEY` (encrypted for staging/production)
 
 **Web:**
-- `NEXT_PUBLIC_API_URL`
-- `NEXTAUTH_SECRET`
+- `NEXT_PUBLIC_API_URL` (e.g., `http://localhost:3000`, `https://api-staging.sekar.DLH-sby.go.id`)
+- `NEXTAUTH_SECRET` (encrypted for staging/production)
 
 ### Environment-Specific Overrides
 
 | Variable | Development | Staging | Production |
 |----------|------------|---------|------------|
 | `NODE_ENV` | development | staging | production |
+| `DATABASE_HOST` | localhost | kobin-kpi-db.ap-southeast-3.rds.amazonaws.com | localhost (on-prem compose) |
 | `DATABASE_SYNCHRONIZE` | true | false | false |
 | `DATABASE_LOGGING` | true | false | false |
+| `DATABASE_SSL` | false | true (RDS) | true (on-prem) |
+| `AWS_ENDPOINT_URL` | http://localhost:9000 (MinIO) | (empty; real AWS) | http://localhost:9000 (MinIO) |
+| `AWS_S3_BUCKET` | sekar-media-dev | sekar-media-staging | sekar-media-prod |
+| `FCM_ENABLED` | false | true | true |
 | `LOG_LEVEL` | debug | info | warn |
 | `RATE_LIMIT_STRICT` | false | true | true |
 
+### Deployment Reference
+
+For complete deployment procedures (from-scratch setup, encryption/decryption, CI/CD, rollback): see **`deployment-guide.md`**.  
+For dotenvx workflow details (encrypt, decrypt, set, verify): see **`encrypted-secrets.md`**.
+
 ---
 
-**Document Owner:** DevOps Engineer
-**Last Updated:** 2026-01-21
+**Document Owner:** DevOps / Platform Engineer
+**Last Updated:** 2026-06-19
 **Status:** Active - All Phases
-**Related Docs:** [`infrastructure.md`](./infrastructure.md), All phase deployment guides
+**Related Docs:** [`deployment-guide.md`](./deployment-guide.md), [`encrypted-secrets.md`](./encrypted-secrets.md), [`local-development.md`](./local-development.md)

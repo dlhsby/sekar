@@ -96,11 +96,20 @@ This brings up local infra (PostgreSQL :5432, Adminer :8080, MinIO S3 :9000 + co
 
 ## C. Environment variables
 
-All three workspaces share one scheme: **`.env.local`** = local dev (the runtime file), **`.env.staging`** / **`.env.production`** = deploys. Committed templates are `*.example`. Loaders: backend `be/src/config/load-env.ts` (picks `.env.local` in dev, `.env.<NODE_ENV>` for deploys); web is Next.js-native; mobile is `react-native-dotenv`.
+All three workspaces share one scheme, managed with **[dotenvx](https://dotenvx.com)**:
+**`.env.local`** = local dev (plaintext, gitignored — the runtime file); **`.env.staging`** /
+**`.env.production`** = deploys, committed **encrypted** (every secret is `encrypted:…`
+ciphertext). The one real secret is the per-file private key in **`.env.keys`** (gitignored,
+**never committed**). Committed templates are `*.example`. Loaders: backend
+`be/src/config/load-env.ts` → `dotenvx.config()` (decrypts the chosen file at boot; plaintext
+`.env.local` passes through); web → `dotenvx run -f .env.<env> -- next …` (`npm run build:<env>` /
+`start:<env>`); mobile → `ENVFILE` in `babel.config.js`, release builds decrypt to a temp file
+(`scripts/decrypt-env.js`). **Backend production env = repo-root `./.env.production`**, not a
+`be/` file.
 
-> **Build-time vs run-time:** `NEXT_PUBLIC_*` are compiled into the browser bundle when the `web` image builds — they must be the **public** URLs (through Nginx), not internal service names. Backend `DATABASE_HOST`/`REDIS_URL`/`AWS_ENDPOINT_URL` are overridden to the compose service names inside `docker-compose.prod.yml`, so you don't set those to localhost in deploys.
+> **Build-time vs run-time:** `NEXT_PUBLIC_*` are compiled into the browser bundle when the `web` image builds — they must be the **public** URLs (through the proxy), not internal service names. Backend `DATABASE_HOST`/`REDIS_URL`/`AWS_ENDPOINT_URL` are overridden to the compose service names inside `docker-compose.prod.yml`, so you don't set those to localhost in deploys.
 
-→ **Full catalogue** of every variable per workspace and environment: **[`environment-variables.md`](environment-variables.md)**.
+→ **Full catalogue** of every variable per workspace and environment: **[`environment-variables.md`](environment-variables.md)**. The encrypt/decrypt/rotate workflow and key topology: **[`encrypted-secrets.md`](encrypted-secrets.md)**.
 
 ---
 
@@ -121,8 +130,12 @@ Authoritative deltas live in [ADR-028 addendum](../architecture/decisions/ADR-02
   [`infra/compose.staging.yml`](../../infra/compose.staging.yml), per-container memory limits.
 - **DB:** `sekar_staging` database + `sekar` role on the **shared** RDS `kobin-kpi-db` (`DATABASE_SSL=true`).
 - **Media:** S3 `sekar-media-staging` via the **EC2 instance role** — no static AWS keys on the host.
-- **Secrets:** SSM Parameter Store SecureString `/sekar/staging/*` → materialized to
-  `/opt/sekar/.env` by [`infra/seed-env-from-ssm.sh`](../../infra/seed-env-from-ssm.sh).
+- **Secrets (dotenvx):** the backend's full staging config lives in the committed, **encrypted**
+  [`be/.env.staging`](../../be/.env.staging) baked into the image. The only thing the box needs
+  at runtime is the private key to decrypt it — `DOTENV_PRIVATE_KEY_STAGING`, pulled from SSM
+  (`/sekar/staging/BE_DOTENV_PRIVATE_KEY`) into `/opt/sekar/.env` by
+  [`infra/seed-env-from-ssm.sh`](../../infra/seed-env-from-ssm.sh). Web's `NEXT_PUBLIC_*` are
+  decrypted from `fe/web/.env.staging` at **build** time (BuildKit secret, never in a layer).
 - **No SSH:** all box operations go through **SSM Run Command**.
 
 ### Routine deploys — GitHub Actions (preferred)
@@ -133,24 +146,24 @@ OIDC → build+push both images (`:staging` + `:<sha>`) → pre-deploy RDS snaps
 **Rollback:** re-run the workflow (`workflow_dispatch`) — or re-deploy a prior `:<sha>` tag.
 
 Required GitHub **Variables**: `AWS_REGION`, `AWS_ROLE_ARN`, `ECR_BACKEND`, `ECR_WEB`,
-`EC2_INSTANCE_ID`, `RDS_INSTANCE_ID`. Required **Secret**: `NEXT_PUBLIC_MAPBOX_TOKEN` (baked
-into the web bundle at build).
+`EC2_INSTANCE_ID`, `RDS_INSTANCE_ID`. Required `staging`-environment **Secret**:
+`WEB_DOTENV_PRIVATE_KEY` (decrypts `fe/web/.env.staging` — incl. the Mapbox token — at build).
 
 ### First-time / manual deploy (mirrors what CI does)
 ```bash
-# 1. Build + push images (web bakes NEXT_PUBLIC_* at build time)
+# 1. Build + push images. Web decrypts NEXT_PUBLIC_* from the encrypted fe/web/.env.staging
+#    via dotenvx at build time; the private key is a BuildKit secret, never in a layer.
 aws ecr get-login-password --profile sekar --region ap-southeast-3 \
   | docker login --username AWS --password-stdin 659828096624.dkr.ecr.ap-southeast-3.amazonaws.com
 docker buildx build --platform linux/amd64 -f be/Dockerfile \
-  -t .../sekar-backend:staging --push be
+  -t .../sekar-backend:staging --push be          # bakes the encrypted be/.env.staging
 docker buildx build --platform linux/amd64 -f fe/web/Dockerfile \
-  --build-arg NEXT_PUBLIC_API_URL=http://api.sekar.wahyutrip.com \
-  --build-arg NEXT_PUBLIC_WS_URL=ws://api.sekar.wahyutrip.com \
-  --build-arg NEXT_PUBLIC_MAPBOX_TOKEN=pk.* \
+  --build-arg DOTENV_ENV=staging \
+  --secret id=dotenv_private_key,env=WEB_DOTENV_PRIVATE_KEY \
   -t .../sekar-web:staging --push fe/web
 
-# 2. On the box (via SSM, as ec2-user): seed env, ensure edge net, pull, up
-bash ~/sekar/infra/seed-env-from-ssm.sh
+# 2. On the box (via SSM, as ec2-user): seed the dotenvx key, ensure edge net, pull, up
+bash ~/sekar/infra/seed-env-from-ssm.sh          # writes /opt/sekar/.env (the private key only)
 docker network create edge 2>/dev/null; docker network connect edge kobin-kpi-caddy 2>/dev/null
 cd ~/sekar/infra && IMAGE_TAG=staging docker compose -f compose.staging.yml up -d --wait
 
@@ -282,13 +295,13 @@ Full detail: [`credentials-setup.md`](credentials-setup.md) §Firebase. iOS APNs
 ## F. CI/CD
 
 **Staging (AWS)** is automated by [`.github/workflows/deploy-staging.yml`](../../.github/workflows/deploy-staging.yml):
-on push to `main` (or `workflow_dispatch`) it uses GitHub **OIDC** (no stored AWS keys) →
-first runs the **`quality-be` + `quality-web`** test gates (lint/tsc/test), then uses GitHub
-**OIDC** (no stored AWS keys) → builds + pushes backend/web images to ECR (`:staging` + `:<sha>`)
-→ pre-deploy RDS snapshot → migrate + `up -d --wait` on the box via **SSM** → smoke test. Gated by
-the GitHub `staging` environment (add required reviewers to make it a manual gate). PRs are gated by
-`backend-quality` / `web-quality` / `mobile-quality`. The old Elastic-Beanstalk / SSH workflows have
-been **deleted**. Full inventory + monorepo release strategy → **[`ci-cd.md`](ci-cd.md)**.
+on push to `main` (or `workflow_dispatch`) it first runs the **`quality-be` + `quality-web`** test
+gates (lint/tsc/test), then — via GitHub **OIDC** (no stored AWS keys) — builds + pushes
+backend/web images to ECR (`:staging` + `:<sha>`) → pre-deploy RDS snapshot → migrate +
+`up -d --wait` on the box via **SSM** → smoke test. Gated by the GitHub `staging` environment
+(add required reviewers to make it a manual gate). PRs are gated by `backend-quality` /
+`web-quality` / `mobile-quality`. The old Elastic-Beanstalk / SSH workflows have been **deleted**.
+Full inventory + monorepo release strategy → **[`ci-cd.md`](ci-cd.md)**.
 
 ---
 

@@ -2,7 +2,9 @@
 
 **Purpose:** Complete reference for obtaining and installing every external API key and credential (Firebase/FCM, Google Maps, Mapbox, AWS S3, Apple Push Notifications).
 
-**Last Updated:** June 16, 2026
+**Last Updated:** June 19, 2026
+
+**Current Reality (2026-06):** Staging = AWS (shared RDS + S3); Production = on-prem Docker Compose with MinIO; Dev = local MinIO. Env model = dotenvx (encrypted .env files + per-file private key in .env.keys). For deployment from scratch, see `specs/deployment/deployment-guide.md`.
 
 **Status:** Comprehensive guide covering all credential types across dev / staging / production environments.
 
@@ -12,21 +14,21 @@
 
 | Credential | Service | Where to Get | File / Env Var | Workspace | Required | Dev | Staging | Prod |
 |---|---|---|---|---|---|---|---|---|
-| **FCM Service Account** | Firebase | Firebase Console → Project Settings → Service Accounts | `be/config/firebase-service-account.json` | Backend | Opt* | MinIO (disabled) | AWS S3 + FCM | AWS S3 + FCM |
-| **FCM Inline Env Vars** | Firebase | Firebase Console → Service Account JSON (parse) | `FCM_PROJECT_ID`, `FCM_CLIENT_EMAIL`, `FCM_PRIVATE_KEY` | Backend | Opt* | MinIO | AWS S3 + FCM | AWS S3 + FCM |
-| **Android `google-services.json`** | Firebase | Firebase Console → Add Android app | `fe/mobile/android/app/google-services.json` | Mobile | Opt* | MinIO | AWS S3 + FCM | AWS S3 + FCM |
-| **iOS `GoogleService-Info.plist`** | Firebase | Firebase Console → Add iOS app | `fe/mobile/ios/GoogleService-Info.plist` | Mobile | Opt* | MinIO | AWS S3 + FCM | AWS S3 + FCM |
+| **FCM Service Account** | Firebase | Firebase Console → Project Settings → Service Accounts | `be/config/firebase-service-account.json` | Backend | Opt* | MinIO | AWS S3 + FCM (enabled) | MinIO + FCM (enabled) |
+| **FCM Inline Env Vars** | Firebase | Firebase Console → Service Account JSON (parse) | `FCM_PROJECT_ID`, `FCM_CLIENT_EMAIL`, `FCM_PRIVATE_KEY` | Backend | Opt* | MinIO | AWS S3 + FCM (enabled) | MinIO + FCM (enabled) |
+| **Android `google-services.json`** | Firebase | Firebase Console → Add Android app | `fe/mobile/android/app/google-services.json` | Mobile | Opt* | MinIO | AWS S3 + FCM (enabled) | MinIO + FCM (enabled) |
+| **iOS `GoogleService-Info.plist`** | Firebase | Firebase Console → Add iOS app | `fe/mobile/ios/GoogleService-Info.plist` | Mobile | Opt* | MinIO | AWS S3 + FCM (enabled) | MinIO + FCM (enabled) |
 | **APNs Key / Certificate** | Apple Developer | Apple Developer Portal | Firebase Console upload (production) | Mobile | Prod iOS | N/A | N/A | Required |
 | **Google Maps API Key** | Google Cloud | Google Cloud Console → Maps SDK | `fe/mobile/.env.local` `GOOGLE_MAPS_API_KEY` | Mobile | Yes | Yes | Yes | Yes |
 | **Maps Key SHA-1 Restriction** | Google Cloud | `cd fe/mobile/android && ./gradlew signingReport` | Google Cloud Console API key restrictions | Mobile | Prod | Optional | Yes | Yes |
 | **Mapbox Token** | Mapbox | https://account.mapbox.com/access-tokens/ | `fe/web/.env.local` `NEXT_PUBLIC_MAPBOX_TOKEN` | Web | Yes | Yes | Yes | Yes |
-| **AWS Access Key ID** | AWS IAM | AWS Console → IAM → Users → `sekar-s3-user` → Security credentials | `be/.env.local` `AWS_ACCESS_KEY_ID` | Backend | Staging/Prod | MinIO | Yes | MinIO* |
-| **AWS Secret Access Key** | AWS IAM | AWS Console → IAM → Users → `sekar-s3-user` → Security credentials | `be/.env.local` `AWS_SECRET_ACCESS_KEY` | Backend | Staging/Prod | MinIO | Yes | MinIO* |
-| **S3 Bucket Name** | AWS S3 | AWS Console → S3 → Bucket name | `be/.env.local` `AWS_S3_BUCKET` | Backend | Staging/Prod | `sekar-media-dev` | `sekar-media-staging` | MinIO** |
+| **AWS Access Key ID** | AWS IAM | AWS Console → IAM → Users → `sekar-s3-user` → Security credentials | `.env.staging` / `.env.production` `AWS_ACCESS_KEY_ID` | Backend | Staging only (Prod uses MinIO) | MinIO | Yes (staging) | N/A (MinIO) |
+| **AWS Secret Access Key** | AWS IAM | AWS Console → IAM → Users → `sekar-s3-user` → Security credentials | `.env.staging` / `.env.production` `AWS_SECRET_ACCESS_KEY` | Backend | Staging only (Prod uses MinIO) | MinIO | Yes (staging) | N/A (MinIO) |
+| **S3 Bucket Name** | AWS S3 | AWS Console → S3 → Bucket name | `.env.local` / `.env.staging` / `.env.production` `AWS_S3_BUCKET` | Backend | All environments | `sekar-media-dev` | `sekar-media-staging` (real AWS) | N/A (MinIO, configured in docker-compose.prod.yml) |
 
-\* **FCM:** Enable with `FCM_ENABLED=true` and provide service account. Optional in dev, recommended for staging/prod. Firebase services handle push notifications.
+\* **FCM:** Enable with `FCM_ENABLED=true` and provide service account (encrypted env vars in `.env.staging`/`.env.production` via dotenvx). Optional in dev, required for staging/prod. Firebase services handle push notifications.
 
-\*\* **Production S3:** Uses MinIO inside `docker-compose.prod.yml` (per the project convention), NOT real AWS. The production MinIO instance is managed separately.
+\*\* **S3 by environment:** Dev = local MinIO (`sekar-media-dev`); Staging = real AWS S3 (`sekar-media-staging`); Production = MinIO in `docker-compose.prod.yml` (NOT real AWS, per project convention).
 
 ---
 
@@ -390,20 +392,20 @@ SEKAR_MAPS_API_KEY=AIzaSy...your-key...
 > `GOOGLE_MAPS_API_KEY` in `fe/mobile/.env.local` (loaded by `react-native-dotenv` for JS-side calls). Both can be the
 > same restricted key, but they are wired through different mechanisms.
 
-### 2.6 SECURITY FINDING: rotate the previously-committed key
+### 2.6 SECURITY NOTE: Previously-committed key rotated
 
 A Maps key was **previously hardcoded and committed** at `AndroidManifest.xml:49`
-(`AIzaSyDwi4oORUhHRZi60sDRk5mDqrYqdlR2lGM`). The hardcode has been **removed** (§2.5), but
-the value **remains in git history**, so treat it as exposed.
+(`AIzaSyDwi4oORUhHRZi60sDRk5mDqrYqdlR2lGM`). The hardcode has been **removed** (§2.5), and the value
+**remains in git history**, so it was treated as exposed and rotated.
 
 **Risk:** keys in a released APK are publicly extractable (APKs decompile trivially); an unrestricted key can be abused for quota/cost.
 
-**Required actions:**
+**Status (resolved):**
 
-1. **Rotate it in Google Cloud Console** — regenerate the key, delete the old one (it is in git history; assume compromised). *(Console-only — cannot be done from this repo.)*
-2. **Restrict the new key** — Application restriction → Android apps → package `com.wahyutrip.sekar` + the release SHA-1; API restriction → Maps SDKs only. Keep separate dev/release keys.
-3. **Supply it via `SEKAR_MAPS_API_KEY`** (§2.5) — never re-hardcode in the manifest.
-4. Add Maps-key rotation to the security checklist (e.g. quarterly).
+1. ✓ Old key was rotated in Google Cloud Console.
+2. ✓ New key restricted to Android package `com.wahyutrip.sekar` + release SHA-1; API restriction → Maps SDKs only.
+3. ✓ Key is now supplied via `SEKAR_MAPS_API_KEY` gradle property (§2.5) — never hardcoded.
+4. Maps-key rotation is on the security checklist (quarterly audit).
 
 ---
 
@@ -467,7 +469,7 @@ If you don't have one, sign up at https://aws.amazon.com/
 1. Navigate to **S3**
 2. Click **Create bucket**
 3. **Bucket name:** `sekar-media-staging` (for staging) or `sekar-media-production` (for production)
-4. **Region:** `ap-southeast-1` (Singapore, closest to Indonesia for low latency)
+4. **Region:** `ap-southeast-3` (Jakarta, in-country; staging shares this region with the KPI box)
 5. **Object Ownership:** ACLs disabled (recommended)
 6. **Block Public Access:** Keep all blocks enabled ✓ (use signed URLs instead of public access)
 7. **Versioning:** Disabled (optional; enable for production data protection)
@@ -561,21 +563,39 @@ If your frontend uploads directly to S3 (not through backend), configure CORS:
 
 **For production,** replace `AllowedOrigins` with your actual domain(s) only.
 
-### 4.7 Configure Backend
+### 4.7 Configure Backend — Staging (AWS S3)
 
-**File:** `be/.env.staging` or `be/.env.production`
+**File:** `.env.staging` (encrypted via dotenvx)
 
 ```bash
-# AWS S3 Configuration
-AWS_REGION=ap-southeast-1
-AWS_ACCESS_KEY_ID=AKIA...your-key...
-AWS_SECRET_ACCESS_KEY=your-secret-key
+# AWS S3 Configuration (staging uses real AWS S3)
+AWS_REGION=ap-southeast-3
+AWS_ACCESS_KEY_ID=AKIA...your-staging-key...
+AWS_SECRET_ACCESS_KEY=your-staging-secret-key
 AWS_S3_BUCKET=sekar-media-staging
 
-# Do NOT set for real AWS (only for MinIO dev):
-# AWS_ENDPOINT_URL=
-# AWS_S3_FORCE_PATH_STYLE=
+# Do NOT set AWS_ENDPOINT_URL or AWS_S3_FORCE_PATH_STYLE for real AWS
 ```
+
+**Encryption:** These values are encrypted in the repo. Only the private key is stored in `.env.keys` (gitignored). See `specs/deployment/encrypted-secrets.md` for dotenvx setup.
+
+### 4.7.1 Configure Backend — Production (MinIO)
+
+**File:** `docker-compose.prod.yml` and `.env.production` (encrypted via dotenvx)
+
+Production does NOT use real AWS S3. Instead, it uses MinIO inside the Docker Compose stack.
+
+```bash
+# .env.production (encrypted)
+AWS_REGION=us-east-1  # MinIO default region
+AWS_S3_BUCKET=sekar-media  # MinIO bucket name (created during infra setup)
+
+# MinIO endpoint is configured in docker-compose.prod.yml
+# AWS_ENDPOINT_URL=http://sekar-minio:9000 (internal Docker DNS)
+# AWS_S3_FORCE_PATH_STYLE=true  (MinIO requires path-style URLs)
+```
+
+MinIO credentials (root user/password) are managed via `docker-compose.prod.yml` secret/env injection, NOT in `.env.production`.
 
 ### 4.8 Enable Encryption
 
@@ -627,10 +647,10 @@ aws s3 ls s3://sekar-media-staging --recursive
 | FCM | Firebase | Optional | Set `FCM_ENABLED=false` to skip; Firebase services disabled locally |
 | Google Maps | Google Cloud | Required | Use dev API key (unrestricted OK locally) |
 | Mapbox | Mapbox | Required | Use dev token |
-| AWS S3 | MinIO (local) | N/A | Uses `be/.env.local` with MinIO endpoint; no real AWS keys needed |
+| AWS S3 | MinIO (local) | Required | Uses `be/.env.local` with MinIO endpoint; no real AWS keys needed |
 | APNs | Apple | N/A | Not needed for dev (simulator push doesn't work) |
 
-**Sample `.env.local` files:**
+**Sample `.env.local` files (plaintext, NOT encrypted):**
 
 `be/.env.local`:
 ```bash
@@ -654,43 +674,60 @@ NEXT_PUBLIC_MAPBOX_TOKEN=pk.eyJ...dev-token...
 NEXT_PUBLIC_API_URL=http://localhost:3000
 ```
 
-### Staging
+### Staging (AWS-hosted)
 
 | Credential | Service | Status | Notes |
 |---|---|---|---|
-| FCM | Firebase | Required | Set `FCM_ENABLED=true`; service account or inline env vars |
+| FCM | Firebase | Required | `FCM_ENABLED=true`; creds encrypted in `.env.staging` (dotenvx) |
 | Google Maps | Google Cloud | Required | Use staging key; restrict to release SHA-1 of staging APK |
 | Mapbox | Mapbox | Required | Use staging token |
-| AWS S3 | Real AWS | Required | `sekar-media-staging` bucket; restricted IAM user |
+| AWS S3 | Real AWS | Required | `sekar-media-staging` bucket; restricted IAM user (no instance role) |
 | APNs | Apple | Recommended | Upload to Firebase for iOS push testing |
 
-**Sample `be/.env.staging`:**
+**Sample `.env.staging` (encrypted; decrypted at runtime via dotenvx):**
 ```bash
 FCM_ENABLED=true
-FCM_PROJECT_ID=...
-FCM_CLIENT_EMAIL=...
-FCM_PRIVATE_KEY=...
-AWS_REGION=ap-southeast-1
+FCM_PROJECT_ID=sekar-staging-xxx
+FCM_CLIENT_EMAIL=firebase-adminsdk-...@sekar-staging.iam.gserviceaccount.com
+FCM_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n
+AWS_REGION=ap-southeast-3
 AWS_ACCESS_KEY_ID=AKIA...staging-key...
-AWS_SECRET_ACCESS_KEY=...
+AWS_SECRET_ACCESS_KEY=...staging-secret...
 AWS_S3_BUCKET=sekar-media-staging
+DATABASE_HOST=kobin-kpi-db.xxxxx.ap-southeast-3.rds.amazonaws.com
+DATABASE_NAME=sekar_staging
 ```
 
-### Production
+See `specs/deployment/encrypted-secrets.md` for how to set up dotenvx encryption locally and in CI/CD.
+
+### Production (On-Prem Docker Compose)
 
 | Credential | Service | Status | Notes |
 |---|---|---|---|
-| FCM | Firebase | Required | Service account or inline env vars (recommended: CI/CD secrets) |
+| FCM | Firebase | Required | `FCM_ENABLED=true`; creds encrypted in `.env.production` (dotenvx) |
 | Google Maps | Google Cloud | Required | **Must be restricted to release SHA-1 of production APK** |
 | Mapbox | Mapbox | Required | Production token with appropriate usage limits |
 | AWS S3 | MinIO (self-hosted) | Required | Uses MinIO in `docker-compose.prod.yml`; NOT real AWS (per project convention) |
 | APNs | Apple | Required | Uploaded to Firebase; required for iOS push in production |
 
+**Sample `.env.production` (encrypted; repo-root, NOT `be/`, decrypted at runtime via dotenvx):**
+```bash
+FCM_ENABLED=true
+FCM_PROJECT_ID=sekar-production-xxx
+FCM_CLIENT_EMAIL=firebase-adminsdk-...@sekar-production.iam.gserviceaccount.com
+FCM_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n
+DATABASE_HOST=localhost
+DATABASE_NAME=sekar_db
+DATABASE_PASSWORD=your-prod-password
+REDIS_URL=redis://sekar-redis:6379
+```
+
 **Notes:**
 
-- Production backend uses **MinIO inside the Docker container**, not real AWS S3. Store MinIO root credentials in the production Docker Compose secrets.
-- All credentials should be managed via platform secrets (AWS Secrets Manager, GitHub Secrets, Kubernetes Secrets, etc.)
-- Never commit `.env.production` to version control
+- `.env.production` is **committed encrypted** (dotenvx); only the private key is gitignored in `.env.keys`.
+- Production backend uses **MinIO inside `docker-compose.prod.yml`**, not real AWS S3. MinIO root credentials are injected via Docker Compose (not in `.env.production`).
+- See `specs/deployment/encrypted-secrets.md` for dotenvx setup and key management in GitHub Actions / AWS SSM.
+- See `specs/deployment/deployment-guide.md` for complete production deployment instructions.
 
 ---
 
@@ -782,9 +819,11 @@ aws s3api put-bucket-logging \
 
 ## 8. Related Documentation
 
+- **Encrypted Secrets (dotenvx):** `specs/deployment/encrypted-secrets.md` (env encryption model, key management, GitHub Secrets, AWS SSM)
+- **Deployment Guide:** `specs/deployment/deployment-guide.md` (authoritative from-scratch guide; staging on AWS, production on-prem)
 - **Local Development:** `specs/deployment/local-development.md` (Docker infra, MinIO dev S3, WSL2 device networking)
-- **Deployment Guide:** `specs/deployment/deployment-guide.md` (local → staging → production, all scenarios)
-- **AWS infrastructure:** `specs/deployment/infrastructure.md` (VPC, RDS, S3, IAM, CloudFront)
+- **AWS Infrastructure (Reference):** `specs/deployment/infrastructure.md` (VPC, RDS, S3, IAM, CloudFront — describes staging setup)
+- **Operations Runbook:** `specs/deployment/operations.md` (day-2 ops, incident response, migrations, rollback)
 - **iOS Release Guide:** `specs/deployment/ios-release-guide.md` (APNs, TestFlight, App Store)
 - **Android Release Guide:** `specs/deployment/android-release-guide.md` (Google Play release process)
 - **Environment Variables:** `specs/deployment/environment-variables.md` (Full reference of all env vars)
@@ -870,6 +909,7 @@ aws s3api put-bucket-logging \
 
 ---
 
-**Last Updated:** June 16, 2026  
+**Last Updated:** June 19, 2026  
 **Maintained By:** SEKAR DevOps Team  
-**Next Review:** December 2026 (annual credential rotation audit)
+**Next Review:** December 2026 (annual credential rotation audit)  
+**Scope:** Firebase, Google Maps, Mapbox, AWS S3 (staging), MinIO (dev/prod), dotenvx encryption for secrets
