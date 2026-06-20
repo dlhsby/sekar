@@ -92,7 +92,17 @@ export function SimpleMonitoringMap({
       center: SURABAYA,
       zoom: 11,
     });
-    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    // Zoom only — the compass/reset-bearing isn't useful on this top-down 2D map.
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
+    // "Focus on my location" — recenters the map on the viewer's GPS position.
+    map.addControl(
+      new mapboxgl.GeolocateControl({
+        positionOptions: { enableHighAccuracy: true },
+        trackUserLocation: true,
+        showUserHeading: true,
+      }),
+      'top-right'
+    );
     mapRef.current = map;
 
     map.on('load', () => {
