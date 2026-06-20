@@ -15,6 +15,7 @@ import {
   nbBorders,
   nbShadows,
 } from '../../constants/nbTokens';
+import { captureException } from '../../services/crashReporting/sentry';
 
 interface Props {
   children: ReactNode;
@@ -47,12 +48,9 @@ export class MapErrorBoundary extends Component<Props, State> {
     };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // Log error details for debugging
-    console.error('Map Error Boundary caught error:', error, errorInfo);
-
-    // In production, you would send this to error reporting service
-    // Example: Sentry.captureException(error, { extra: errorInfo });
+  componentDidCatch(error: Error, _errorInfo: ErrorInfo): void {
+    // Report to Sentry (no-op until Sentry is initialized with a DSN).
+    captureException(error, { screen: 'monitoring-map' });
   }
 
   handleReset = (): void => {

@@ -11,7 +11,13 @@ import { MapErrorBoundary } from '../MapErrorBoundary';
 // Mock MaterialCommunityIcons
 jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => 'Icon');
 
-// Mock console methods to reduce test output noise
+// Mock the Sentry crash-reporting service (no-op without a DSN in real use).
+const mockCaptureException = jest.fn();
+jest.mock('../../../services/crashReporting/sentry', () => ({
+  captureException: (...args: unknown[]) => mockCaptureException(...args),
+}));
+
+// Mock console methods to reduce test output noise (React logs caught errors here).
 const mockConsoleError = jest.spyOn(console, 'error').mockImplementation();
 
 // Component that throws error on demand
@@ -71,19 +77,16 @@ describe('MapErrorBoundary', () => {
       expect(getByText(/Terjadi kesalahan saat memuat peta/)).toBeTruthy();
     });
 
-    it('should log error details to console', () => {
+    it('should report the caught error to Sentry', () => {
       render(
         <MapErrorBoundary>
           <ProblemChild shouldThrow />
         </MapErrorBoundary>
       );
 
-      expect(mockConsoleError).toHaveBeenCalledWith(
-        'Map Error Boundary caught error:',
+      expect(mockCaptureException).toHaveBeenCalledWith(
         expect.any(Error),
-        expect.objectContaining({
-          componentStack: expect.any(String),
-        })
+        expect.objectContaining({ screen: 'monitoring-map' })
       );
     });
 

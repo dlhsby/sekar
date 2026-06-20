@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { readFileSync } from "fs";
+import { withSentryConfig } from "@sentry/nextjs";
 
 // Build identity inlined into the bundle (surfaced in the sidebar footer for deploy
 // verification). Version comes from package.json; SHA/time from CI build args
@@ -84,4 +85,18 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+/**
+ * Wrap with Sentry. Runtime error capture is driven by the instrumentation files
+ * (no-op without NEXT_PUBLIC_SENTRY_DSN). Source-map upload only runs when
+ * SENTRY_AUTH_TOKEN is present (CI/staging), so local/dev builds are unaffected.
+ */
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+  // Avoid bundling the Sentry build-time webpack plugin into the runtime image.
+  telemetry: false,
+});

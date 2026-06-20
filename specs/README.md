@@ -124,7 +124,7 @@ Start with [`deployment/infrastructure.md`](./deployment/infrastructure.md) for 
 - **Staging:** AWS — co-tenant EC2 + shared RDS + S3 (instance role), deploy via GitHub **OIDC → ECR → SSM** (no Elastic Beanstalk)
 - **Production:** **on-prem** Docker Compose (Postgres + Redis + MinIO), platform-agnostic — not yet deployed
 - **CI/CD:** GitHub Actions · **Secrets:** dotenvx (encrypted committed env) · **Local Dev:** Docker Compose (Postgres / MinIO / Redis / Adminer)
-- **Monitoring:** CloudWatch (staging); Sentry planned
+- **Monitoring:** CloudWatch (staging); Sentry wired across backend + web + mobile (dormant until a DSN is set)
 
 ## 🔑 Key Design Decisions
 

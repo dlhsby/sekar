@@ -5,7 +5,8 @@ Comprehensive monitoring, logging, and observability specifications for SEKAR pr
 **What's live vs planned (2026-06):**
 - **LIVE:** Health endpoints (`/api/v1/health/live`, `/api/v1/health/ready` with DB + Redis checks), Docker container logs, Redis monitoring
 - **STAGING-ONLY:** CloudWatch metrics/dashboards (AWS co-tenant with KPI on shared t3.micro, shared RDS `kobin-kpi-db` — SEKAR cannot own RDS-level alarms)
-- **PLANNED/NOT LIVE:** Sentry error tracking, dedicated dashboards, production monitoring specification (on-prem Docker logs only for now)
+- **WIRED, DORMANT:** Sentry error tracking — SDK integrated across **backend** (`be/src/common/sentry`), **web** (`fe/web/src/instrumentation*.ts` + `global-error.tsx`), and **mobile** (`fe/mobile/src/services/crashReporting`). All no-op until a DSN is configured (`SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_DSN_MOBILE`). Create a Sentry project and set those to go live.
+- **PLANNED/NOT LIVE:** dedicated dashboards, production monitoring specification (on-prem Docker logs only for now)
 - **Authoritative hub:** [`deployment-guide.md`](./deployment-guide.md) for infra layout; [`ci-cd.md`](./ci-cd.md) for pipeline.
 
 ## Overview
@@ -67,7 +68,7 @@ This document defines the monitoring strategy, alerting rules, log aggregation, 
 | **Application** | CloudWatch Logs (staging), Docker logs (prod) | API performance, business metrics |
 | **Database (Staging)** | RDS Performance Insights, CloudWatch (limited — shared RDS) | Query perf, connections (partial visibility) |
 | **Database (Production)** | Docker-Compose logs, PostgreSQL logs | Query perf (manual inspection) |
-| **Errors** | Sentry (Phase 2+, not yet live) | Error tracking, stack traces — planned |
+| **Errors** | Sentry — wired (backend + web + mobile), dormant until a DSN is set | Error tracking, stack traces |
 | **Health Endpoints** | `/api/v1/health/live`, `/api/v1/health/ready` | DB + Redis connectivity checks (LIVE) |
 
 ---
@@ -541,11 +542,27 @@ fields @timestamp, context.gps.accuracy
 
 ---
 
-## 5. Error Tracking with Sentry (Phase 2+, NOT YET LIVE)
+## 5. Error Tracking with Sentry (WIRED — dormant until a DSN is set)
 
-**Status:** Planned for Phase 2+. Not yet configured or deployed.
+**Status:** SDK integrated across all three tiers and verified to no-op when no DSN
+is configured (so dev/local and an un-provisioned staging stay quiet):
+- **Backend** — `be/src/common/sentry/sentry.ts`, init before `NestFactory.create`
+  in `main.ts`; 5xx capture in `http-exception.filter.ts`. Env: `SENTRY_DSN`,
+  `SENTRY_ENVIRONMENT`, `SENTRY_TRACES_SAMPLE_RATE`, `SENTRY_RELEASE`.
+- **Web** — `fe/web/src/instrumentation-client.ts` (browser), `instrumentation.ts`
+  (server/edge + `onRequestError`), `src/app/global-error.tsx` (React boundary →
+  `captureException`), `next.config.ts` wrapped with `withSentryConfig` (source-map
+  upload only when `SENTRY_AUTH_TOKEN` is present). Env: `NEXT_PUBLIC_SENTRY_DSN`,
+  `NEXT_PUBLIC_SENTRY_ENVIRONMENT`, `NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE`.
+- **Mobile** — `fe/mobile/src/services/crashReporting/sentry.ts`, init in `index.js`
+  + `App.tsx`; `MapErrorBoundary` reports via `captureException`. Env:
+  `SENTRY_DSN_MOBILE`, `SENTRY_ENVIRONMENT`, `SENTRY_TRACES_SAMPLE_RATE`.
 
-### Planned Sentry Configuration
+**To activate:** create a Sentry project (one per tier or a shared project filtered
+by environment), then set the DSN env(s) above. For web/CI source maps also set
+`SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`.
+
+### Sentry Configuration reference
 
 #### Backend Integration (Planned)
 
@@ -998,7 +1015,7 @@ Once production is live, establish:
 |------|---------|-------|
 | **AWS Console** | Staging infrastructure (EC2, RDS, S3) | DevOps (Admin), Team (Read-only) |
 | **CloudWatch** | Staging monitoring, logs, alarms | Team (staging only) |
-| **Sentry** | Error tracking (Phase 2+) | Not yet live |
+| **Sentry** | Error tracking (all tiers) | Wired — dormant until a DSN is set |
 | **Slack** | Staging alerting, communication | Team |
 | **GitHub** | Code, CI/CD, production deployments | Team |
 | **Docker / docker compose** | Production container management (on-prem) | DevOps |
