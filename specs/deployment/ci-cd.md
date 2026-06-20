@@ -12,7 +12,7 @@ production is on-prem Docker Compose (not yet deployed).
 | Workflow (`.github/workflows/`) | Trigger | What it does |
 |--------------------------------|---------|--------------|
 | **`deploy-staging.yml`** | push `main` (see paths-ignore) + `workflow_dispatch` | **Gated on `quality-be` + `quality-web`** (lint/tsc/test) → build backend + web images (with `GIT_SHA`/`BUILD_TIME` build args) → ECR (OIDC) → deploy to EC2 via **SSM Run Command**. Web built with `dotenvx run` + BuildKit secret; backend bakes encrypted `be/.env.staging`. Pre-deploy RDS snapshot, SHA-pinned image assertion, smoke test. |
-| **`release-server.yml`** | push tag `server-v*` | Versioned **be+web** release (coupled). Validates the tag matches both `package.json`, builds + pushes `:X.Y.Z` ECR images (web production-configured), creates a GitHub Release with notes. Does **not** deploy (on-prem promotion is manual). |
+| **`release-server.yml`** | push tag `sekar-v*` | Versioned **be+web** release (coupled). Validates the tag matches both `package.json`, builds + pushes `:X.Y.Z` ECR images (web production-configured), creates a GitHub Release with notes. Does **not** deploy (on-prem promotion is manual). |
 | **`backend-quality.yml`** | PR on `be/**` | ESLint + `tsc --noEmit` + Jest. |
 | **`web-quality.yml`** | PR on `fe/web/**` | ESLint (incl. design-system rules) + `tsc --noEmit` + Jest. |
 | **`mobile-quality.yml`** | push/PR `main`/`staging`/`develop` on `fe/mobile/**` (+ token files) | ESLint (incl. design-system rules) + `tsc --noEmit` + Jest. Provisions `.env.local` from the example. |
@@ -93,7 +93,7 @@ Two cadences, two tag lines (no single repo-wide version — the components don'
 
 | Component | Continuous (staging) | Versioned release | Versioning |
 |-----------|----------------------|-------------------|------------|
-| **Backend + Web** (coupled — web calls the API) | every green merge to `main` → `deploy-staging` (SHA-pinned) | **`server-vX.Y.Z`** tag → `release-server.yml` | one shared semver (`be/package.json` == `fe/web/package.json`) |
+| **Backend + Web** (coupled — web calls the API) | every green merge to `main` → `deploy-staging` (SHA-pinned) | **`sekar-vX.Y.Z`** tag → `release-server.yml` | one shared semver (`be/package.json` == `fe/web/package.json`) |
 | **Mobile** | — (built on demand) | **`mobile-vX.Y.Z`** tag → `mobile-release.yml` (dispatch = fallback) | semver in `fe/mobile/package.json` + Android `versionCode` |
 
 Principles:
@@ -102,7 +102,7 @@ Principles:
 2. **Staging stays continuous + SHA-pinned** — no tags needed; it's always the latest `main`.
 3. **A semver tag = a named, promotable, documented release** (built from the tagged commit, with a
    GitHub Release + notes), separate from the continuous staging stream.
-4. **Server be+web share one version** (they deploy as a pair). `server-vX.Y.Z` builds + ECR-tags
+4. **Server be+web share one version** (they deploy as a pair). `sekar-vX.Y.Z` builds + ECR-tags
    **`:X.Y.Z`** images (web built **production-configured**) and cuts a GitHub Release. It does **not**
    auto-deploy — production (on-prem) is a deliberate promotion.
 5. **Which build is live** is observable: backend `GET /health/live` returns `{version,gitSha,builtAt}`;
@@ -117,11 +117,11 @@ re-run `deploy-staging` from an earlier SHA, or restore the pre-deploy RDS snaps
 
 **Backend + Web → versioned release:**
 ```bash
-scripts/release.sh server 0.1.0    # bumps be + fe/web package.json, commits, tags server-v0.1.0, pushes
+scripts/release.sh server 0.1.0    # bumps be + fe/web package.json, commits, tags sekar-v0.1.0, pushes
 ```
 `release-server.yml` then validates the versions match, builds + pushes `:0.1.0` images to ECR
 (web = production-configured), and creates the GitHub Release. **Promote to on-prem prod** (when the
-box is ready): `git checkout server-v0.1.0` → `dotenvx run -f .env.production -- docker compose -f
+box is ready): `git checkout sekar-v0.1.0` → `dotenvx run -f .env.production -- docker compose -f
 docker-compose.prod.yml up -d --build` → `migration:run:prod` (or pull the `:0.1.0` images if the box
 has ECR access).
 

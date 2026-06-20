@@ -125,13 +125,13 @@ Staging is **continuous** (every green merge to `main` ships, pinned by git SHA)
 versioned releases**, bump → tag → a workflow builds and publishes. Use the helper:
 
 ```bash
-scripts/release.sh server 0.1.0      # backend + web (coupled) → tag server-v0.1.0
+scripts/release.sh server 0.1.0      # backend + web (coupled) → tag sekar-v0.1.0
 scripts/release.sh mobile 0.1.0 2    # mobile app → tag mobile-v0.1.0 (2 = Android versionCode)
 ```
 
 | Release | Tag | What the workflow does |
 |---------|-----|------------------------|
-| **Server** (be + web, one shared version) | `server-v*` | Validates the tag matches both `package.json`, builds + pushes `:X.Y.Z` ECR images, cuts a GitHub Release. Does **not** auto-deploy — production is a manual promotion. |
+| **Server** (be + web, one shared version) | `sekar-v*` | Validates the tag matches both `package.json`, builds + pushes `:X.Y.Z` ECR images, cuts a GitHub Release. Does **not** auto-deploy — production is a manual promotion. |
 | **Mobile** | `mobile-v*` | Builds the signed **APK + AAB** and **auto-publishes** to the download registry (the web download links + the in-app update checker update themselves). |
 
 **Which build is live** is always visible: backend `GET /api/v1/health/live` returns

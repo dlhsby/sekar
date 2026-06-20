@@ -177,7 +177,7 @@ Phase 1-2B: Three roles (Worker, Supervisor, Admin). Phase 2C: Eight roles — s
 - **Run Locally:** [`deployment/local-development.md`](./deployment/local-development.md) - Docker infra (PostgreSQL, Adminer, MinIO, Redis), per-workspace run, WSL2 device networking
 - **Obtaining Keys:** [`deployment/credentials-setup.md`](./deployment/credentials-setup.md) - Firebase, Google Maps, Mapbox, AWS S3 credentials
 - **Operations:** [`deployment/operations.md`](./deployment/operations.md) - Migrations, backup/restore, rollback, incident runbooks
-- **CI/CD & releases:** [`deployment/ci-cd.md`](./deployment/ci-cd.md) - Pipelines, secrets, `server-v*` / `mobile-v*` releases, `scripts/release.sh`
+- **CI/CD & releases:** [`deployment/ci-cd.md`](./deployment/ci-cd.md) - Pipelines, secrets, `sekar-v*` / `mobile-v*` releases, `scripts/release.sh`
 - **Encrypted secrets (dotenvx):** [`deployment/encrypted-secrets.md`](./deployment/encrypted-secrets.md) - Commit encrypted env, decrypt at runtime
 - **E2E Testing:** [`testing/web-testing.md`](./testing/web-testing.md) - Playwright testing guide
 

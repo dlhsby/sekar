@@ -3,7 +3,7 @@
 # Cut a versioned release by bumping package.json, committing, tagging, and pushing.
 # A tag-triggered GitHub Actions workflow then builds + publishes the release.
 #
-#   scripts/release.sh server X.Y.Z            # backend + web (coupled) → server-vX.Y.Z
+#   scripts/release.sh server X.Y.Z            # backend + web (coupled) → sekar-vX.Y.Z
 #   scripts/release.sh mobile X.Y.Z [vCode]    # mobile app → mobile-vX.Y.Z (vCode = Android versionCode)
 #
 # Server releases build + push version-pinned ECR images + a GitHub Release
@@ -35,7 +35,7 @@ bump_pkg() { # $1 = workspace dir
 
 case "$COMPONENT" in
   server)
-    TAG="server-v$VERSION"
+    TAG="sekar-v$VERSION"
     echo "▸ Server release $TAG (backend + web)"
     bump_pkg be
     bump_pkg fe/web

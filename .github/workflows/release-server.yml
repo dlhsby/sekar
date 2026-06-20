@@ -1,12 +1,12 @@
 name: Release server (be + web)
 
 # Cuts a versioned, documented release of the SERVER tier (backend + web, which
-# deploy together). Triggered by pushing a `server-vX.Y.Z` tag. It validates that
+# deploy together). Triggered by pushing a `sekar-vX.Y.Z` tag. It validates that
 # the tag matches both package.json versions, builds + pushes version-pinned,
 # PRODUCTION-configured images to ECR, and creates a GitHub Release with notes.
 #
 # It does NOT deploy — production is on-prem and deliberately promoted by hand:
-#   on the box →  git checkout server-vX.Y.Z
+#   on the box →  git checkout sekar-vX.Y.Z
 #                 dotenvx run -f .env.production -- docker compose -f docker-compose.prod.yml up -d --build
 #                 (or pull the :X.Y.Z images if the box has ECR access)
 #
@@ -14,7 +14,7 @@ name: Release server (be + web)
 
 on:
   push:
-    tags: ['server-v*']
+    tags: ['sekar-v*']
 
 permissions:
   contents: write # create the GitHub Release
@@ -39,7 +39,7 @@ jobs:
         run: |
           set -euo pipefail
           TAG="${GITHUB_REF_NAME}"
-          VERSION="${TAG#server-v}"
+          VERSION="${TAG#sekar-v}"
           BE_VER=$(node -p "require('./be/package.json').version")
           WEB_VER=$(node -p "require('./fe/web/package.json').version")
           echo "Tag=$TAG version=$VERSION · be=$BE_VER · web=$WEB_VER"
@@ -100,6 +100,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "${{ steps.vars.outputs.tag }}" \
-            --title "Server ${{ steps.vars.outputs.tag }}" \
+            --title "Server release ${{ steps.vars.outputs.tag }}" \
             --generate-notes \
             --verify-tag

@@ -73,7 +73,7 @@ Code uses English; Indonesian only for UI labels / user-facing messages. `Activi
 
 ## Releasing & versioning (see `specs/deployment/ci-cd.md` §5)
 - **Staging is continuous** — every green push to `main` auto-deploys (SHA-pinned). No tag needed.
-- **Versioned releases via `scripts/release.sh`** (bump → tag → workflow): `release.sh server X.Y.Z` (be+web coupled, one shared semver → `server-v*` → ECR `:X.Y.Z` images + GitHub Release, no auto-deploy) · `release.sh mobile X.Y.Z <versionCode>` (→ `mobile-v*` → signed APK/AAB + auto-publish to the download registry).
+- **Versioned releases via `scripts/release.sh`** (bump → tag → workflow): `release.sh server X.Y.Z` (be+web coupled, one shared semver → `sekar-v*` → ECR `:X.Y.Z` images + GitHub Release, no auto-deploy) · `release.sh mobile X.Y.Z <versionCode>` (→ `mobile-v*` → signed APK/AAB + auto-publish to the download registry).
 - **Build identity** is surfaced for verification: backend `GET /health/live` → `{version,gitSha,builtAt}` (baked from `GIT_SHA`/`BUILD_TIME` Docker args); web sidebar footer `v… · <sha>`; mobile in-app checker (Profil → Diagnostik) compares its `versionCode` to `GET /app-releases/latest`. Bump `versionCode` per mobile release or the checker won't detect it.
 - **Mobile download** for field workers: public `sekar.wahyutrip.com/android` (backed by the `app-releases` registry).
 

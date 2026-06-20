@@ -39,7 +39,7 @@ It walks the four scenarios end-to-end — **run locally → obtain keys → dep
 | Database | local Docker Postgres | **shared RDS** → `sekar_staging` | compose Postgres |
 | Redis | Docker | **in-stack container** | in-stack container |
 | Seeder | `db:seed` (destructive) | `db:seed:staging:prod` | `db:seed:production:prod` (non-destructive) |
-| TLS | none (http) | **none yet (http)** — Caddy ready | Let's Encrypt / internal cert |
+| TLS | none (http) | **Caddy auto-HTTPS** (Let's Encrypt) | Let's Encrypt / internal cert |
 | FCM | usually off | off (until configured) | on (prod project) |
 | Secrets | `.env.local` | **SSM Parameter Store** | `.env.production` (chmod 600) |
 
@@ -303,9 +303,9 @@ by `backend-quality` / `web-quality` / `mobile-quality`.
 
 **Versioned releases** (named, promotable — separate from the continuous staging stream). Bump → tag →
 workflow, via `scripts/release.sh`:
-- `scripts/release.sh server X.Y.Z` → `server-v*` tag → [`release-server.yml`](../../.github/workflows/release-server.yml)
+- `scripts/release.sh server X.Y.Z` → `sekar-v*` tag → [`release-server.yml`](../../.github/workflows/release-server.yml)
   builds + ECR-tags `:X.Y.Z` images (be+web coupled, one shared version) and cuts a GitHub Release. **No
-  auto-deploy** — promote to on-prem prod manually (§E, from `git checkout server-vX.Y.Z`).
+  auto-deploy** — promote to on-prem prod manually (§E, from `git checkout sekar-vX.Y.Z`).
 - `scripts/release.sh mobile X.Y.Z <versionCode>` → `mobile-v*` tag → signed APK/AAB + auto-publish (§I).
 
 **Build identity** is surfaced for deploy verification: backend `GET /health/live` →
