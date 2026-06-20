@@ -10,6 +10,13 @@
 #
 # Backend and web join the shared external `edge` network (see compose.staging.yml),
 # so Caddy reaches them by container name.
+#
+# ⚠ Applying changes on the box: the box Caddyfile is bind-mounted into the caddy
+# container as a SINGLE FILE (read-only). Editing it in place with `sed -i`/editors
+# swaps the inode, so the container keeps serving the OLD content and `caddy reload`
+# reports "config is unchanged". After editing the box file, RESTART the caddy
+# container (`docker restart kobin-kpi-caddy`) so the bind re-resolves — a plain
+# reload is not enough. Also mirror this exact change into the KPI repo's Caddyfile.
 
 # API + WebSocket (Caddy streams the socket.io upgrade automatically).
 api.sekar.wahyutrip.com {
