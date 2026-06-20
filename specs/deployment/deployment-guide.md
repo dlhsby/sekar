@@ -125,8 +125,17 @@ Authoritative deltas live in [ADR-028 addendum](../architecture/decisions/ADR-02
 ### Topology
 - **Edge/TLS:** reuse KPI's **Caddy** on 80/443 via a shared external Docker network `edge`;
   SEKAR's two site blocks live in [`infra/Caddyfile.staging`](../../infra/Caddyfile.staging)
-  (merged into the box Caddyfile). Bare hostnames → Caddy auto-provisions Let's Encrypt certs
-  and redirects HTTP→HTTPS.
+  (the source of truth). Bare hostnames → Caddy auto-provisions Let's Encrypt certs and
+  redirects HTTP→HTTPS.
+  - **⚠ Cross-repo coupling (keep in sync):** Caddy is owned by the **KPI** repo
+    (`kobin-kpi-procurement`, `infra/Caddyfile`), which auto-deploys to the box on push. SEKAR's
+    site blocks must be **mirrored into that KPI Caddyfile** — they are *not* applied by SEKAR's
+    own deploy. If you change them here, copy the change into the KPI repo too, or a KPI redeploy
+    will drop SEKAR's routes. (SEKAR's `deploy-staging.yml` only `caddy reload`s the existing config.)
+  - **⚠ Applying a Caddyfile change on the box:** the file is bind-mounted into the caddy
+    container as a **single file (read-only)**, so editing it in place (`sed -i`/editors) swaps the
+    inode and `caddy reload` reports "config is unchanged". Push via the KPI repo (preferred), or
+    **restart** the caddy container after editing the box file — a plain reload is not enough.
 - **Apps:** `backend` + `web` (ECR images) + a small `redis` container —
   [`infra/compose.staging.yml`](../../infra/compose.staging.yml), per-container memory limits.
 - **DB:** `sekar_staging` database + `sekar` role on the **shared** RDS `kobin-kpi-db` (`DATABASE_SSL=true`).
