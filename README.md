@@ -53,7 +53,8 @@ Then open:
 **Log in** with any seeded user — all passwords are `password123` (e.g. `admin`, `satgas1`; phone
 login works too, e.g. `081200000006`). Full list: [`be/src/database/seeds/README.md`](be/src/database/seeds/README.md).
 
-**Two values you must fill** after `setup.sh` (everything else defaults to local infra):
+**Two values you must fill** — `setup.sh` creates the files; edit these **before `start.sh`** (or
+restart the affected service after). Everything else defaults to local infra:
 
 | Workspace | Variable | Where to get it |
 |-----------|----------|-----------------|

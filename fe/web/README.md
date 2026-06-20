@@ -45,7 +45,14 @@ npm run tokens:build     # From project root
 ```
 Never edit `generated/tokens.css` or use inline hex literals (ESLint blocks them). See [`/CLAUDE.md`](/CLAUDE.md) for Neo Brutalism 2.0 design system + token migration details.
 
-**PWA** (Next.js 16 installable, offline shell): service worker pre-caches HTML shell + tokens CSS + main JS; monitoring snapshots cached 30s. Feature flag `NEXT_PUBLIC_FEATURE_PWA` (on staging/prod). Components: `InstallBanner`, `OfflineBanner`, `UpdateToast`, `MobileInstallPush`. See [`/CLAUDE.md`](CLAUDE.md) for full reference.
+**PWA** (Next.js 16 installable, offline shell): service worker pre-caches HTML shell + tokens CSS + main JS; monitoring snapshots cached 30s. Feature flag `NEXT_PUBLIC_FEATURE_PWA` (on staging/prod). Components: `InstallBanner`, `OfflineBanner`, `UpdateToast`, `MobileInstallPush`. See [`CLAUDE.md`](CLAUDE.md) for full reference.
+
+## Build info & mobile download
+
+The deployed build is shown in the **sidebar footer** (`v… · <sha>`, inlined from the `GIT_SHA` /
+`BUILD_TIME` build args). The web also serves the **public mobile-app install pages** `/android` and
+`/ios` (plus a download link on the login page + user menu), backed by the backend `app-releases`
+registry — these self-update on each mobile release.
 
 ## Docs & Specs
 
