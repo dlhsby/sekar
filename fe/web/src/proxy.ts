@@ -11,14 +11,27 @@ import { isPublicPath } from '@/lib/auth/public-paths';
  * `@/lib/auth/public-paths` (also honored by the API client's 401 guard, so a
  * background 401 on a public page can't bounce the visitor to /login).
  */
+// Auth pages an *already-authenticated* visitor should be bounced away from.
+const AUTH_PAGES = ['/login', '/forgot-password'];
+
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const token = request.cookies.get('access_token')?.value;
+
+  // Already signed in → don't show the login / forgot-password pages.
+  // (A stale token self-corrects: the dashboard's session check clears it and
+  // bounces back here, where the cookie is now gone and the page renders.)
+  if (token && AUTH_PAGES.includes(pathname)) {
+    const rp = request.nextUrl.searchParams.get('redirect');
+    // Only honor safe, in-app paths (no open redirects, no auth-page loop).
+    const dest = rp && rp.startsWith('/') && !AUTH_PAGES.includes(rp) ? rp : '/';
+    return NextResponse.redirect(new URL(dest, request.url));
+  }
 
   if (isPublicPath(pathname)) {
     return NextResponse.next();
   }
 
-  const token = request.cookies.get('access_token')?.value;
   if (!token) {
     const redirectUrl = new URL('/login', request.url);
     redirectUrl.searchParams.set('redirect', pathname);
