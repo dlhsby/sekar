@@ -1,611 +1,164 @@
 # Web Authentication Specification
 
 **Last Updated:** 2026-06-20
-**Status:** Phase 4–5 Complete (AuthContext + httpOnly cookies; NextAuth.js deprecated)
+**Status:** Current (custom `AuthContext` + JWT cookies; NextAuth.js removed in Phase 3 M1-R)
+
+The SEKAR web dashboard authenticates with the backend's JWT endpoints through a **custom React
+`AuthContext`** (no NextAuth.js). This doc reflects the actual implementation — see the files it
+references for the source of truth.
 
 ---
 
-## Overview
+## At a glance
 
-Authentication for the SEKAR web dashboard using JWT tokens with **AuthContext** (custom context provider) for session management. HTTP-only cookies + route guard middleware (`src/proxy.ts`).
+| Concern | Implementation |
+|---------|----------------|
+| Session/state | Custom `AuthProvider` (React context) — `fe/web/src/lib/auth/context.tsx` |
+| Hooks | `fe/web/src/lib/auth/hooks.ts` — `useAuth`, `useUser`, `useRequireAuth`, `useHasRole`, `useIsAuthenticated` |
+| Token store | **Client-readable cookies** `access_token` (7-day max-age) + `refresh_token` (30-day) — `fe/web/src/lib/utils/cookies.ts`. `sameSite=lax`, `secure` when `NEXT_PUBLIC_SECURE_COOKIES=true`. **Not httpOnly** (the API client reads them in JS). |
+| API auth | Axios request interceptor adds `Authorization: Bearer <access_token>` — `fe/web/src/lib/api/client.ts` |
+| Token refresh | Response interceptor auto-refreshes on 401 via `POST /auth/refresh`, then retries the original request |
+| Route protection | `fe/web/src/proxy.ts` (Next.js route-guard "proxy" middleware) — default-deny, public allowlist in `fe/web/src/lib/auth/public-paths.ts` |
+| Backend tokens | JWT 15-min access + 7-day refresh **with rotation** (Passport); logout blacklists both |
+| Roles | 8 + `staff_kecamatan` (lowercase, ADR-009/032) — **not** Admin/Supervisor/Worker |
 
-> **BREAKING CHANGE (Phase 3 M1-R):** NextAuth.js was replaced by a custom `AuthContext` + middleware route guard. See [specs/deployment/deployment-guide.md](../deployment/deployment-guide.md) §Web Auth and Phase 3 changesets for migration details.
-
----
-
-## Technology Stack
-
-| Component | Technology |
-|-----------|------------|
-| Auth Library | React Context API (custom AuthContext) — NOT NextAuth.js |
-| Session Storage | JWT (stateless, decoded on client) |
-| Token Storage | **HTTP-only cookies** (httpOnly: true, Secure, SameSite: Strict) |
-| API Auth | Bearer token in `Authorization` header |
-| Route protection | Middleware `src/proxy.ts` (Next.js 16 Root Middleware) — NOT NextAuth route guards |
+> NextAuth.js was removed in Phase 3 M1-R. There is **no** `NEXTAUTH_URL`/`NEXTAUTH_SECRET`,
+> `[...nextauth]` route, `getServerSession`, `useSession`, or `next-auth/middleware`.
 
 ---
 
-## Authentication Flow
+## Auth flows
 
-### Login Flow
+**Login** — `AuthProvider.login()`:
+1. `POST /api/v1/auth/login` with `{ identifier, password }` (`identifier` = username **or** phone, ADR-012).
+2. Backend returns `{ access_token, refresh_token, user }`.
+3. Client stores both tokens via `setAuthCookie` (`access_token` 7d, `refresh_token` 30d).
+4. Redirect to `/change-password` if `user.password_must_change` (admin-reset gate, ADR-041), else `/`.
 
-```
-1. User submits credentials (username/password)
-2. Frontend calls POST /api/auth/login
-3. Backend validates credentials
-4. Backend returns access_token + refresh_token
-5. Frontend stores tokens in HTTP-only cookies
-6. Frontend redirects to dashboard
-```
+**Session bootstrap** — on mount, `AuthProvider.checkAuth()` (skipped on `/login` + `/forgot-password`)
+calls `GET /auth/me`; success populates `user`, failure clears cookies and leaves `user = null`.
 
-### Token Refresh Flow
+**Token refresh** — the response interceptor catches a `401` (other than on `/auth/login` / `/auth/refresh`),
+calls `POST /auth/refresh` with the refresh cookie, stores the rotated tokens, and retries the original
+request. If refresh fails it calls `redirectToLogin()` — which **does nothing on a public path** (so a
+background 401 on `/android` etc. never bounces the visitor; see Route protection).
 
-```
-1. Access token expires (after 15 minutes)
-2. API returns 401 Unauthorized
-3. Axios interceptor catches 401
-4. Interceptor calls POST /api/auth/refresh
-5. Backend validates refresh_token
-6. Backend returns new access_token
-7. Original request retries with new token
-```
+**Logout** — `AuthProvider.logout()` calls `POST /auth/logout` (best-effort token blacklist), clears
+cookies, and redirects to `/login`.
 
-### Logout Flow
-
-```
-1. User clicks logout
-2. Frontend calls POST /api/auth/logout
-3. Backend blacklists refresh_token
-4. Frontend clears cookies
-5. Frontend redirects to login
-```
+**Forced password change** — while `user.password_must_change` is true, an effect redirects any route
+except `/change-password` there (mirrors the mobile `RootNavigator` gate).
 
 ---
 
-## AuthContext Configuration (Phase 3 M1-R+)
+## AuthContext
 
-**Location:** `fe/web/src/context/AuthContext.tsx`
+`fe/web/src/lib/auth/context.tsx` exposes:
 
-The custom `AuthContext` provides JWT authentication without NextAuth.js. Route protection is handled by middleware `src/proxy.ts` (Next.js 16 Root Middleware).
-
-```typescript
-// fe/web/src/context/AuthContext.tsx (simplified)
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // On mount: check if httpOnly cookie has a valid session
-    // Middleware src/proxy.ts guards unauthenticated access
-    bootstrapAuth();
-  }, []);
-
-  const login = async (identifier: string, password: string) => {
-    const response = await fetch('/api/v1/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ identifier, password }),
-      credentials: 'include', // sends httpOnly cookie
-    });
-    if (!response.ok) throw new Error('Login failed');
-    const data = await response.json();
-    setUser(data.user);
-    // Cookie set automatically by server (httpOnly: true)
-  };
-
-  const logout = async () => {
-    await fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
-    setUser(null);
-  };
-
-  return <AuthContext.Provider value={{ user, isLoading, login, logout }}>{children}</AuthContext.Provider>;
-};
+```ts
+interface AuthContextValue {
+  user: User | null;
+  loading: boolean;
+  error: string | null;
+  login: (credentials: { identifier: string; password: string }) => Promise<void>;
+  logout: () => Promise<void>;
+  changePassword: (payload: ChangePasswordPayload) => Promise<void>; // rotates tokens (ADR-041)
+  refreshUser: () => Promise<void>;
+  clearError: () => void;
+}
 ```
 
-Route protection flow:
-1. User navigates to `/dashboard` (protected route)
-2. Middleware `src/proxy.ts` intercepts the request
-3. If no valid httpOnly cookie → redirect to `/login`
-4. If valid cookie → route proceeds, `AuthContext` populates `user` from `GET /auth/me`
-      },
-    }),
-  ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.role = user.role;
-        token.accessToken = user.accessToken;
-        token.refreshToken = user.refreshToken;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      session.user.id = token.id;
-      session.user.role = token.role;
-      session.accessToken = token.accessToken;
-      return session;
-    },
-  },
-  pages: {
-    signIn: '/login',
-    error: '/login',
-  },
-  session: {
-    strategy: 'jwt',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
-  },
-};
+Mounted once in the root layout via `Providers` (`fe/web/src/app/providers.tsx`). Consume it with the
+hooks below — never read cookies or call `/auth/*` directly from components.
 
-const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST };
+```ts
+const { user, loading, login, logout } = useAuth();   // full context
+const user = useUser();                                // user | null
+const canManage = useHasRole(['admin_system', 'superadmin']);
+useRequireAuth(['kepala_rayon', 'top_management']);    // client guard: redirects if absent/!role
 ```
 
 ---
 
-## Session Types
+## Route protection (`src/proxy.ts`)
 
-```typescript
-// types/next-auth.d.ts
-import 'next-auth';
+Default-deny middleware: every route requires the `access_token` cookie **except** the public
+allowlist. The allowlist is the single shared module `fe/web/src/lib/auth/public-paths.ts` — also
+honored by the API client's 401 guard, so the two can't drift:
 
-declare module 'next-auth' {
-  interface User {
-    id: string;
-    role: 'Admin' | 'Supervisor' | 'Worker';
-    accessToken: string;
-    refreshToken: string;
-  }
+```ts
+export const PUBLIC_PATHS = ['/login', '/forgot-password', '/offline', '/install-help', '/android', '/ios'];
+```
 
-  interface Session {
-    user: {
-      id: string;
-      name: string;
-      email?: string;
-      role: 'Admin' | 'Supervisor' | 'Worker';
-    };
-    accessToken: string;
-  }
-}
+A missing token on a protected route redirects to `/login?redirect=<original-path>`. The matcher skips
+`/api`, Next internals, and any file with an extension (so the PWA + static assets work logged-out).
 
-declare module 'next-auth/jwt' {
-  interface JWT {
-    id: string;
-    role: 'Admin' | 'Supervisor' | 'Worker';
-    accessToken: string;
-    refreshToken: string;
-  }
-}
+> Server middleware only checks for the cookie's presence; **authorization** (role checks) is enforced
+> by the backend on every endpoint and, for UX, by `useRequireAuth(roles)` on the client.
+
+---
+
+## API client (`src/lib/api/client.ts`)
+
+- **Request interceptor:** reads `access_token` from the cookie and sets `Authorization: Bearer …`.
+- **Response interceptor:** on `401` → single-flight refresh via `POST /auth/refresh` (queues
+  concurrent requests), stores rotated tokens, retries. On refresh failure → `redirectToLogin()`,
+  which early-returns when `isPublicPath(window.location.pathname)` is true.
+
+```ts
+import { authApi } from '@/lib/api/auth';
+authApi.login({ identifier, password });   // POST /auth/login
+authApi.getCurrentUser();                  // GET  /auth/me
+authApi.refreshToken();                    // POST /auth/refresh
+authApi.changePassword(payload);           // POST /auth/change-password (rotates tokens)
+authApi.logout();                          // POST /auth/logout (blacklists tokens)
 ```
 
 ---
 
-## Protected Routes
+## Role-based UI
 
-### Middleware
+Gate UI with the role helpers (roles are lowercase, ADR-009):
 
-```typescript
-// middleware.ts
-import { withAuth } from 'next-auth/middleware';
-import { NextResponse } from 'next/server';
-
-export default withAuth(
-  function middleware(req) {
-    const token = req.nextauth.token;
-    const path = req.nextUrl.pathname;
-
-    // Admin-only routes
-    if (path.startsWith('/admin') && token?.role !== 'Admin') {
-      return NextResponse.redirect(new URL('/unauthorized', req.url));
-    }
-
-    // Supervisor+ routes
-    if (
-      path.startsWith('/supervisor') &&
-      !['Admin', 'Supervisor'].includes(token?.role as string)
-    ) {
-      return NextResponse.redirect(new URL('/unauthorized', req.url));
-    }
-
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token }) => !!token,
-    },
-  }
-);
-
-export const config = {
-  matcher: [
-    '/dashboard/:path*',
-    '/admin/:path*',
-    '/supervisor/:path*',
-    '/workers/:path*',
-    '/areas/:path*',
-    '/assets/:path*',
-    '/reports/:path*',
-  ],
-};
+```tsx
+const isAdmin = useHasRole(['admin_system', 'superadmin']);
+{isAdmin && <DeleteUserButton userId={user.id} />}
 ```
 
-### Server Component Auth
-
-```typescript
-// lib/auth.ts
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import { redirect } from 'next/navigation';
-
-export async function requireAuth() {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    redirect('/login');
-  }
-  return session;
-}
-
-export async function requireAdmin() {
-  const session = await requireAuth();
-  if (session.user.role !== 'Admin') {
-    redirect('/unauthorized');
-  }
-  return session;
-}
-
-export async function requireSupervisor() {
-  const session = await requireAuth();
-  if (!['Admin', 'Supervisor'].includes(session.user.role)) {
-    redirect('/unauthorized');
-  }
-  return session;
-}
-```
-
-### Usage in Server Components
-
-```typescript
-// app/(dashboard)/admin/users/page.tsx
-import { requireAdmin } from '@/lib/auth';
-
-export default async function UsersPage() {
-  const session = await requireAdmin();
-
-  // Fetch data with session token
-  const users = await fetchUsers(session.accessToken);
-
-  return <UsersTable users={users} />;
-}
-```
+`useRequireAuth(requiredRoles)` redirects to `/login?redirect=…` when unauthenticated, or to
+`/dashboard?error=access_denied` when the role is insufficient. Role values:
+`satgas`, `linmas`, `korlap`, `admin_data`, `kepala_rayon`, `top_management`, `admin_system`,
+`superadmin`, `staff_kecamatan`.
 
 ---
 
-## Client-Side Auth
+## Security notes
 
-### Auth Hook
-
-```typescript
-// hooks/useAuth.ts
-import { useSession, signIn, signOut } from 'next-auth/react';
-
-export function useAuth() {
-  const { data: session, status } = useSession();
-
-  const login = async (username: string, password: string) => {
-    const result = await signIn('credentials', {
-      username,
-      password,
-      redirect: false,
-    });
-
-    if (result?.error) {
-      throw new Error('Invalid credentials');
-    }
-
-    return result;
-  };
-
-  const logout = async () => {
-    await signOut({ callbackUrl: '/login' });
-  };
-
-  return {
-    user: session?.user,
-    accessToken: session?.accessToken,
-    isAuthenticated: status === 'authenticated',
-    isLoading: status === 'loading',
-    login,
-    logout,
-  };
-}
-```
-
-### Protected Client Component
-
-```typescript
-// components/auth/ProtectedComponent.tsx
-'use client';
-
-import { useSession } from 'next-auth/react';
-import { redirect } from 'next/navigation';
-
-interface ProtectedComponentProps {
-  children: React.ReactNode;
-  allowedRoles?: ('Admin' | 'Supervisor' | 'Worker')[];
-}
-
-export function ProtectedComponent({
-  children,
-  allowedRoles,
-}: ProtectedComponentProps) {
-  const { data: session, status } = useSession();
-
-  if (status === 'loading') {
-    return <LoadingSpinner />;
-  }
-
-  if (!session) {
-    redirect('/login');
-  }
-
-  if (allowedRoles && !allowedRoles.includes(session.user.role)) {
-    redirect('/unauthorized');
-  }
-
-  return <>{children}</>;
-}
-```
+- **Why not httpOnly?** The SPA reads the access token in JS to attach the `Bearer` header and to
+  drive client-side guards, so the cookies are intentionally JS-readable. The XSS exposure is
+  mitigated by a **short access-token TTL (15 min)**, **refresh-token rotation + server blacklist on
+  logout**, the backend's Helmet **CSP/HSTS**, and `sameSite=lax`. Set
+  **`NEXT_PUBLIC_SECURE_COOKIES=true`** in any HTTPS deployment so cookies carry `Secure`.
+- The forced-password-change gate (ADR-041) blocks all routes until an admin-reset user sets a new
+  password.
+- Rate limiting: 5 login attempts/min (backend throttle).
 
 ---
 
-## API Client with Auth
-
-```typescript
-// lib/api/client.ts
-import axios from 'axios';
-import { getSession } from 'next-auth/react';
-
-const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-});
-
-// Request interceptor - add token
-apiClient.interceptors.request.use(async (config) => {
-  const session = await getSession();
-  if (session?.accessToken) {
-    config.headers.Authorization = `Bearer ${session.accessToken}`;
-  }
-  return config;
-});
-
-// Response interceptor - handle 401
-apiClient.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      // Trigger session refresh
-      const session = await getSession();
-      if (session?.accessToken) {
-        originalRequest.headers.Authorization = `Bearer ${session.accessToken}`;
-        return apiClient(originalRequest);
-      }
-    }
-
-    return Promise.reject(error);
-  }
-);
-
-export default apiClient;
-```
-
----
-
-## Login Page
-
-```typescript
-// app/login/page.tsx
-'use client';
-
-import { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
-
-export default function LoginPage() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
-  const router = useRouter();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
-
-    try {
-      await login(username, password);
-      router.push('/dashboard');
-    } catch (err) {
-      setError('Username atau password salah');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <Input
-        name="username"
-        placeholder="Username"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-      />
-      <Input
-        name="password"
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
-      {error && <Alert variant="destructive">{error}</Alert>}
-      <Button type="submit" disabled={isLoading}>
-        {isLoading ? 'Loading...' : 'Login'}
-      </Button>
-    </form>
-  );
-}
-```
-
----
-
-## Role-Based UI
-
-```typescript
-// components/auth/RoleGate.tsx
-'use client';
-
-import { useSession } from 'next-auth/react';
-
-interface RoleGateProps {
-  children: React.ReactNode;
-  allowedRoles: ('Admin' | 'Supervisor' | 'Worker')[];
-  fallback?: React.ReactNode;
-}
-
-export function RoleGate({ children, allowedRoles, fallback }: RoleGateProps) {
-  const { data: session } = useSession();
-
-  if (!session || !allowedRoles.includes(session.user.role)) {
-    return fallback || null;
-  }
-
-  return <>{children}</>;
-}
-
-// Usage
-<RoleGate allowedRoles={['Admin']}>
-  <DeleteUserButton userId={user.id} />
-</RoleGate>
-```
-
----
-
-## Security Best Practices
-
-### Cookie Configuration
-
-```typescript
-// next.config.js
-module.exports = {
-  // ... other config
-};
-
-// In NextAuth options
-cookies: {
-  sessionToken: {
-    name: `__Secure-next-auth.session-token`,
-    options: {
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/',
-      secure: process.env.NODE_ENV === 'production',
-    },
-  },
-},
-```
-
-### CSRF Protection
-
-NextAuth.js provides built-in CSRF protection. Additional measures:
-
-```typescript
-// Verify origin in API routes
-export async function POST(req: Request) {
-  const origin = req.headers.get('origin');
-  const allowedOrigins = [process.env.NEXTAUTH_URL];
-
-  if (!allowedOrigins.includes(origin)) {
-    return new Response('Forbidden', { status: 403 });
-  }
-
-  // ... handle request
-}
-```
-
----
-
-## Environment Variables
+## Environment variables
 
 ```env
-# NextAuth
-NEXTAUTH_URL=http://localhost:3001
-NEXTAUTH_SECRET=your-secret-key-min-32-chars
-
-# Backend API
-NEXT_PUBLIC_API_URL=http://localhost:3000/api
-API_URL=http://localhost:3000/api
+NEXT_PUBLIC_API_URL=http://localhost:3000        # backend origin (client appends /api/v1)
+NEXT_PUBLIC_API_VERSION=v1
+NEXT_PUBLIC_SECURE_COOKIES=false                 # true on HTTPS (adds `Secure` to auth cookies)
 ```
+
+There are **no** `NEXTAUTH_*` variables.
 
 ---
 
-## Testing Auth
+## Related
 
-```typescript
-// __tests__/auth.test.tsx
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { SessionProvider } from 'next-auth/react';
-import LoginPage from '@/app/login/page';
-
-describe('LoginPage', () => {
-  it('should show error on invalid credentials', async () => {
-    render(
-      <SessionProvider session={null}>
-        <LoginPage />
-      </SessionProvider>
-    );
-
-    fireEvent.change(screen.getByPlaceholderText('Username'), {
-      target: { value: 'invalid' },
-    });
-    fireEvent.change(screen.getByPlaceholderText('Password'), {
-      target: { value: 'wrong' },
-    });
-    fireEvent.click(screen.getByText('Login'));
-
-    await waitFor(() => {
-      expect(screen.getByText('Username atau password salah')).toBeInTheDocument();
-    });
-  });
-});
-```
-
----
-
----
-
-## Phase 2E: Planned Changes (Client Feedback II)
-
-> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/web.md`](../phases/phase-2-e-client-feedback-2/web.md)
-> **ADR:** [ADR-012: Phone Number Login](../architecture/decisions/ADR-012-phone-number-login.md)
-
-### Login Form Changes
-- Label: "Username" → "Username atau Nomor HP"
-- Field name: `username` → `identifier`
-- API call: `{ identifier, password }` (accepts phone number or username)
-- Phone format validation: `^(\+62|0)[0-9]{8,13}$` (for input hints, not blocking)
-
-### Type Changes
-```typescript
-// lib/types.ts
-export interface LoginRequest {
-  identifier: string; // was: username
-  password: string;
-}
-```
-
-**Last Updated:** 2026-03-10
+- Backend auth contract: [`../api/authentication.md`](../api/authentication.md) · live: Swagger `/api/v1/docs`
+- Phone login: [ADR-012](../architecture/decisions/ADR-012-phone-number-login.md) · Forgot password: [ADR-041](../architecture/decisions/ADR-041-forgot-password-contact-admin.md)
+- Roles: [ADR-009](../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md)
