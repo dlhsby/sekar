@@ -25,23 +25,36 @@ export function Providers({ children }: { children: ReactNode }) {
       })
   );
 
-  // Register service worker when PWA feature flag is enabled
+  // Register the service worker when the PWA flag is on; otherwise actively
+  // tear down any previously-registered SW so flipping the flag off (or a client
+  // that registered while it was on) doesn't leave a stale worker behind — a
+  // stuck "waiting" worker otherwise re-triggers the update toast on every load.
   useEffect(() => {
-    if (
-      typeof window !== 'undefined' &&
-      'serviceWorker' in navigator &&
-      process.env.NEXT_PUBLIC_FEATURE_PWA === 'true'
-    ) {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+
+    if (process.env.NEXT_PUBLIC_FEATURE_PWA === 'true') {
       navigator.serviceWorker
         .register('/sw.js', { scope: '/' })
         .then((reg) => {
-          // Trigger background update check on each page load
+          // Trigger background update check on each page load.
           reg.update();
-          // UpdateToast component listens for registration.waiting and handles the prompt
+          // UpdateToast listens for registration.waiting and handles the prompt.
         })
         .catch(() => {
-          // SW registration is non-critical — swallow errors
+          // SW registration is non-critical — swallow errors.
         });
+    } else {
+      // Kill switch: unregister existing workers and drop their caches.
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((regs) => regs.forEach((reg) => reg.unregister()))
+        .catch(() => {});
+      if ('caches' in window) {
+        caches
+          .keys()
+          .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+          .catch(() => {});
+      }
     }
   }, []);
 

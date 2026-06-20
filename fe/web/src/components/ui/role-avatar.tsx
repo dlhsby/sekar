@@ -16,16 +16,19 @@ import type { UserRole } from '@/types/models';
 type RoleStyle = { bg: string; text: string };
 
 // Maps each role to its accent background + readable text colour (hi-fi `.av`).
+// Role backgrounds are FIXED across light/dark, so the initials must use the
+// non-inverting `text-white`/`text-black` (NOT `text-nb-white`/`text-nb-black`,
+// which invert in dark mode and would make the initials match the background).
 const ROLE_STYLE: Record<UserRole, RoleStyle> = {
-  satgas: { bg: 'bg-role-satgas', text: 'text-nb-black' },
-  linmas: { bg: 'bg-role-linmas', text: 'text-nb-white' },
-  korlap: { bg: 'bg-role-korlap', text: 'text-nb-black' },
-  admin_data: { bg: 'bg-role-admin-data', text: 'text-nb-white' },
-  kepala_rayon: { bg: 'bg-role-kepala', text: 'text-nb-black' },
-  top_management: { bg: 'bg-role-top', text: 'text-nb-white' },
-  admin_system: { bg: 'bg-role-admin-sys', text: 'text-nb-white' },
-  superadmin: { bg: 'bg-role-superadmin', text: 'text-nb-white' },
-  staff_kecamatan: { bg: 'bg-role-kecamatan', text: 'text-nb-black' },
+  satgas: { bg: 'bg-role-satgas', text: 'text-black' },
+  linmas: { bg: 'bg-role-linmas', text: 'text-white' },
+  korlap: { bg: 'bg-role-korlap', text: 'text-black' },
+  admin_data: { bg: 'bg-role-admin-data', text: 'text-white' },
+  kepala_rayon: { bg: 'bg-role-kepala', text: 'text-black' },
+  top_management: { bg: 'bg-role-top', text: 'text-white' },
+  admin_system: { bg: 'bg-role-admin-sys', text: 'text-white' },
+  superadmin: { bg: 'bg-role-superadmin', text: 'text-white' },
+  staff_kecamatan: { bg: 'bg-role-kecamatan', text: 'text-black' },
 };
 
 const SIZE: Record<NonNullable<RoleAvatarProps['size']>, string> = {
@@ -49,7 +52,7 @@ export interface RoleAvatarProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export function RoleAvatar({ name, role, src, size = 'md', className, ...props }: RoleAvatarProps) {
-  const style = (role && ROLE_STYLE[role]) || { bg: 'bg-accent-mint', text: 'text-nb-black' };
+  const style = (role && ROLE_STYLE[role]) || { bg: 'bg-accent-mint', text: 'text-black' };
 
   return (
     <div
