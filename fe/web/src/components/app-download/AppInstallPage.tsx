@@ -7,6 +7,7 @@ import { BrandLockup } from '@/components/brand/BrandLockup';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { getAppDownloadUrl, type AppPlatform } from '@/lib/api/app-releases';
 import { useLatestAppRelease } from '@/lib/hooks/useLatestAppRelease';
+import { useAuth } from '@/lib/auth/hooks';
 
 function formatBytes(bytes: number | null): string | null {
   if (!bytes || bytes <= 0) return null;
@@ -24,8 +25,14 @@ const PLATFORM_LABEL: Record<AppPlatform, string> = { android: 'Android', ios: '
  */
 export function AppInstallPage({ platform }: { platform: AppPlatform }) {
   const { data, status } = useLatestAppRelease(platform);
+  const { user } = useAuth();
   const Icon = platform === 'ios' ? Apple : Smartphone;
   const size = data ? formatBytes(data.fileSize) : null;
+  // Context-aware "back" link: logged-in visitors go to the dashboard, logged-out
+  // (e.g. a field worker who scanned the QR) go to login.
+  const back = user
+    ? { href: '/', label: '← Kembali ke Dashboard' }
+    : { href: '/login', label: '← Kembali ke halaman masuk' };
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-nb-background px-6 py-12">
@@ -118,8 +125,8 @@ export function AppInstallPage({ platform }: { platform: AppPlatform }) {
         </div>
 
         <p className="mt-5 text-center text-nb-caption text-nb-gray-600">
-          <Link href="/login" className="font-bold text-nb-black underline underline-offset-2">
-            ← Kembali ke halaman masuk
+          <Link href={back.href} className="font-bold text-nb-black underline underline-offset-2">
+            {back.label}
           </Link>
         </p>
       </div>

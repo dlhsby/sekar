@@ -1,5 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { clearAuthCookies, getCookie, setAuthCookie } from '@/lib/utils/cookies';
+import { isPublicPath } from '@/lib/auth/public-paths';
 import type { User } from '@/types/models';
 
 /**
@@ -50,29 +51,17 @@ let failedQueue: Array<{
 }> = [];
 
 /**
- * Public auth routes that an unauthenticated visitor is allowed to sit on —
- * the 401 interceptor must NOT bounce these to /login (that's what made
- * /forgot-password redirect-loop back to login).
- */
-const PUBLIC_AUTH_PATHS = ['/login', '/forgot-password'];
-
-/**
- * Check if we're currently on a public auth page (login / forgot-password).
- * Prevents redirect loops when already on one.
- */
-const isOnLoginPage = (): boolean => {
-  if (typeof window === 'undefined') return false;
-  return PUBLIC_AUTH_PATHS.some((path) => window.location.pathname.startsWith(path));
-};
-
-/**
- * Safely redirect to login page
- * Prevents multiple redirects and redirect loops
+ * Safely redirect to login page on an unrecoverable 401.
+ * Prevents multiple redirects, and — critically — never bounces a visitor who is
+ * already on a PUBLIC page (login, forgot-password, /android, /ios, …). A
+ * background 401 there (e.g. the auth-provider's session check on the public app
+ * download page) must not kick the visitor to /login. Public routes are the
+ * single shared list in `@/lib/auth/public-paths` (also used by the route proxy).
  */
 const redirectToLogin = (): void => {
   if (typeof window === 'undefined') return;
   if (isRedirecting) return;
-  if (isOnLoginPage()) return;
+  if (isPublicPath(window.location.pathname)) return;
 
   isRedirecting = true;
   clearAuthCookies();

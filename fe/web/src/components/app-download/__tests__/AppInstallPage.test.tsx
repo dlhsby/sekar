@@ -12,6 +12,12 @@ jest.mock('@/lib/hooks/useLatestAppRelease', () => ({
   useLatestAppRelease: (platform: 'android' | 'ios') => mockUseLatestAppRelease(platform),
 }));
 
+// Public page reads auth state for the context-aware "back" link; default logged-out.
+const mockUseAuth = jest.fn(() => ({ user: null }));
+jest.mock('@/lib/auth/hooks', () => ({
+  useAuth: () => mockUseAuth(),
+}));
+
 const release: AppRelease = {
   platform: 'android',
   channel: 'staging',
