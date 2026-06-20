@@ -153,9 +153,8 @@ ENVFILE=.env.production ./gradlew clean bundleRelease
 
 ### C4. Staging / UAT APK
 
-Builds the app against the deployed AWS staging API (`http://api.sekar.wahyutrip.com`, plain
-HTTP — Android cleartext is allowed via `usesCleartextTraffic="true"`). This is the build to
-hand to UAT testers.
+Builds the app against the deployed AWS staging API (`https://api.sekar.wahyutrip.com`, served
+over TLS via Caddy auto-HTTPS). This is the build to hand to UAT testers.
 
 ```bash
 cd fe/mobile
@@ -452,7 +451,7 @@ only the `*.example` templates; the bare files are gitignored and hold any real 
 | Environment | File (gitignored) | Template (committed) | `API_BASE_URL` |
 |-------------|-------------------|----------------------|----------------|
 | Development | `.env.local` | `.env.local.example` | `http://10.0.2.2:3000` (emulator) |
-| Staging / UAT | `.env.staging` | `.env.staging.example` | `http://api.sekar.wahyutrip.com` (plain HTTP, no TLS yet) |
+| Staging / UAT | `.env.staging` | `.env.staging.example` | `https://api.sekar.wahyutrip.com` (TLS via Caddy) |
 | Production | `.env.production` | `.env.production.example` | on-prem (pemkot) host |
 
 ```bash

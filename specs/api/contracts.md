@@ -11,7 +11,7 @@ Endpoint specifications for the SEKAR Backend.
 
 ## Overview
 
-- **Base URL:** `http://localhost:3000/api/v1` (dev) | `http://api.sekar.wahyutrip.com/api/v1` (staging)
+- **Base URL:** `http://localhost:3000/api/v1` (dev) | `https://api.sekar.wahyutrip.com/api/v1` (staging)
 - **Swagger Documentation:** `/api/v1/docs` — **live, complete contract (source of truth)**
 - **Authentication:** JWT Bearer token (15-min access + 7-day refresh with rotation)
 - **Content Type:** `application/json` (except file uploads: `multipart/form-data`)

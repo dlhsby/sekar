@@ -411,21 +411,21 @@ Requires updating `docker-compose.prod.yml` or `docker-compose.staging.yml` to s
 **Live check** (shallow — app process running):
 
 ```bash
-curl http://api.sekar.wahyutrip.com/api/v1/health/live
+curl https://api.sekar.wahyutrip.com/api/v1/health/live
 # Expected: 200 OK, {"status":"ok"}
 ```
 
 **Readiness check** (deep — can serve requests):
 
 ```bash
-curl http://api.sekar.wahyutrip.com/api/v1/health/ready
+curl https://api.sekar.wahyutrip.com/api/v1/health/ready
 # Expected: 200 OK, {"status":"ok","database":true,"redis":true}
 ```
 
 **Web health check:**
 
 ```bash
-curl http://sekar.wahyutrip.com/api/health
+curl https://sekar.wahyutrip.com/api/health
 # Expected: 200 OK
 ```
 

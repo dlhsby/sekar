@@ -16,14 +16,14 @@ Environment model: **production → on-prem (pemkot) Docker Compose, platform-ag
 
 | Aspect | Status | Details |
 |--------|--------|---------|
-| **Backend API** | ✅ Live | `http://api.sekar.wahyutrip.com` (plain HTTP — TLS pending) |
-| **Web dashboard** | ✅ Live | `http://sekar.wahyutrip.com` (Mapbox baked, monitoring map OK) |
+| **Backend API** | ✅ Live | `https://api.sekar.wahyutrip.com` (HTTPS via Caddy auto-HTTPS) |
+| **Web dashboard** | ✅ Live | `https://sekar.wahyutrip.com` (Mapbox baked, monitoring map OK) |
 | **Database** | ✅ Seeded | `sekar_staging` on shared RDS `kobin-kpi-db` (SSL); staging seed = **85 users** |
 | **Migrations** | ✅ Executed | full TypeORM migration set (`migration:run:prod`) |
 | **Auth** | ✅ Working | `superadmin/password123` verified (JWT) |
 | **Object storage** | ✅ S3 | `sekar-media-staging` via **EC2 instance role** (no static keys) |
 | **Redis** | ✅ In-stack | `redis:7-alpine` container (DB+Redis health `/ready` ok) |
-| **Edge / TLS** | 🟡 HTTP only | reuse KPI's Caddy (`http://` blocks); auto-HTTPS one edit away |
+| **Edge / TLS** | ✅ HTTPS | reuse KPI's Caddy; bare-hostname blocks → Let's Encrypt auto-HTTPS + HTTP→HTTPS redirect |
 | **FCM** | ✅ On | `FCM_ENABLED=true` — encrypted Firebase service-account creds (project `dlhsby-sekar-staging`) |
 | **Secrets** | ✅ dotenvx | encrypted `be/.env.staging` baked into the image; only the private key (`DOTENV_PRIVATE_KEY_STAGING`) is pulled from SSM `/sekar/staging/BE_DOTENV_PRIVATE_KEY` into `/opt/sekar/.env` at deploy |
 | **CI/CD** | ✅ Wired | 8 active workflows (`deploy-staging` test-gated OIDC→ECR→SSM + RDS snapshot · `backend-quality`/`web-quality`/`mobile-quality` lint+tsc+test · `mobile-release` signed APK/AAB · `tokens-verify` · `web-e2e`/`mobile-e2e`). dotenvx-encrypted env per environment; manual mobile release dispatch. web-e2e green (capacity spec made date-independent Jun 19). See `specs/deployment/ci-cd.md` |

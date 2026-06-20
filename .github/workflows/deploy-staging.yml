@@ -249,11 +249,12 @@ jobs:
       - name: Smoke test
         run: |
           set -euo pipefail
+          # --retry covers the brief window while Caddy provisions the Let's Encrypt cert.
           for i in $(seq 1 10); do
-            if curl -fsS http://api.sekar.wahyutrip.com/api/v1/health/live >/dev/null; then
+            if curl -fsS --retry 3 https://api.sekar.wahyutrip.com/api/v1/health/live >/dev/null; then
               echo "API healthy"; break
             fi
             echo "waiting for API... ($i)"; sleep 6
           done
-          curl -fsS http://api.sekar.wahyutrip.com/api/v1/health/live
-          curl -fsSI http://sekar.wahyutrip.com/login | head -1
+          curl -fsS https://api.sekar.wahyutrip.com/api/v1/health/live
+          curl -fsSI https://sekar.wahyutrip.com/login | head -1

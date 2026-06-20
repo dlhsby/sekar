@@ -120,12 +120,13 @@ Staging/UAT runs on **AWS**, co-tenant with the KPI project on one shared `t3.mi
 the self-hosted `docker-compose.prod.yml` — that's the on-prem **production** stack (§E).
 Authoritative deltas live in [ADR-028 addendum](../architecture/decisions/ADR-028-staging-environment.md).
 
-**Live URLs (plain HTTP — no TLS yet):** API `http://api.sekar.wahyutrip.com` · web `http://sekar.wahyutrip.com`.
+**Live URLs (HTTPS via Caddy auto-HTTPS):** API `https://api.sekar.wahyutrip.com` · web `https://sekar.wahyutrip.com`.
 
 ### Topology
 - **Edge/TLS:** reuse KPI's **Caddy** on 80/443 via a shared external Docker network `edge`;
   SEKAR's two site blocks live in [`infra/Caddyfile.staging`](../../infra/Caddyfile.staging)
-  (merged into the box Caddyfile). `http://` prefix disables auto-HTTPS for now.
+  (merged into the box Caddyfile). Bare hostnames → Caddy auto-provisions Let's Encrypt certs
+  and redirects HTTP→HTTPS.
 - **Apps:** `backend` + `web` (ECR images) + a small `redis` container —
   [`infra/compose.staging.yml`](../../infra/compose.staging.yml), per-container memory limits.
 - **DB:** `sekar_staging` database + `sekar` role on the **shared** RDS `kobin-kpi-db` (`DATABASE_SSL=true`).
@@ -176,8 +177,8 @@ docker compose -f compose.staging.yml run --rm --no-deps backend npm run db:seed
 
 ### Smoke test
 ```bash
-curl -sf http://api.sekar.wahyutrip.com/api/v1/health/ready   # {db,redis} ok
-curl -sI http://sekar.wahyutrip.com/login                      # 200
+curl -sf https://api.sekar.wahyutrip.com/api/v1/health/ready   # {db,redis} ok
+curl -sI https://sekar.wahyutrip.com/login                      # 200
 ```
 Then log in (`superadmin/password123`) and confirm the monitoring map renders (Mapbox +
 WebSocket + S3 media path). **Enabling TLS later:** drop the `http://` prefix in

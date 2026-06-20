@@ -114,7 +114,7 @@ Two targets, same application images, detailed start-to-finish in the **authorit
 |--|-------------------|----------------|
 | Where | **AWS** — co-tenant with project KPI on a shared `t3.micro`, behind Caddy | **On-prem** (pemkot) server, platform-agnostic Docker Compose |
 | How | **Automatic** on every green push to `main` → [`deploy-staging.yml`](.github/workflows/deploy-staging.yml) (OIDC → ECR → SSM) | **Manual** promotion of a tagged release (`docker-compose.prod.yml`); **not yet deployed** |
-| URLs | http://api.sekar.wahyutrip.com · http://sekar.wahyutrip.com (plain HTTP) | TBD |
+| URLs | https://api.sekar.wahyutrip.com · https://sekar.wahyutrip.com (TLS via Caddy) | TBD |
 | Object storage | AWS S3 (instance role) | MinIO (in-stack) |
 
 ---
