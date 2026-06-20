@@ -189,9 +189,11 @@ export default function MonitoringPage() {
 
       {/* Top overlay: search + filter + refresh + status pills */}
       <div className="pointer-events-none absolute inset-x-3 top-3 z-20 flex flex-col gap-2">
-        <div className="pointer-events-auto flex items-center gap-2">
+        {/* Row is click-through (pointer-events-none) so it never covers the map's
+            top-right zoom control; only the real controls re-enable pointer events. */}
+        <div className="pointer-events-none flex items-center gap-2">
           {/* Search */}
-          <div className="relative max-w-md flex-1">
+          <div className="pointer-events-auto relative max-w-md flex-1">
             <Search
               className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-nb-gray-400"
               aria-hidden="true"
@@ -212,7 +214,7 @@ export default function MonitoringPage() {
             aria-expanded={filtersOpen}
             aria-label="Filter"
             className={cn(
-              'flex h-11 items-center gap-1.5 rounded-nb-base border-2 border-nb-black px-3 text-sm font-bold shadow-nb-sm transition-colors',
+              'pointer-events-auto flex h-11 items-center gap-1.5 rounded-nb-base border-2 border-nb-black px-3 text-sm font-bold shadow-nb-sm transition-colors',
               filtersOpen ? 'bg-nb-primary text-nb-black' : 'bg-nb-white text-nb-black hover:bg-nb-gray-50'
             )}
           >
@@ -227,7 +229,7 @@ export default function MonitoringPage() {
             aria-label="Tampilkan tanaman terlambat dipangkas"
             title="Tanaman terlambat dipangkas"
             className={cn(
-              'flex h-11 items-center gap-1.5 rounded-nb-base border-2 border-nb-black px-3 text-sm font-bold shadow-nb-sm transition-colors',
+              'pointer-events-auto flex h-11 items-center gap-1.5 rounded-nb-base border-2 border-nb-black px-3 text-sm font-bold shadow-nb-sm transition-colors',
               showOverdue ? 'bg-nb-warning text-nb-black' : 'bg-nb-white text-nb-black hover:bg-nb-gray-50'
             )}
           >
@@ -239,14 +241,14 @@ export default function MonitoringPage() {
             type="button"
             onClick={() => refetch()}
             aria-label="Segarkan"
-            className="flex h-11 w-11 items-center justify-center rounded-nb-base border-2 border-nb-black bg-nb-white text-nb-black shadow-nb-sm transition-colors hover:bg-nb-gray-50"
+            className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-nb-base border-2 border-nb-black bg-nb-white text-nb-black shadow-nb-sm transition-colors hover:bg-nb-gray-50"
           >
             <RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
           </button>
         </div>
 
-        {/* Status pills */}
-        <div className="pointer-events-auto flex flex-wrap items-center gap-1.5" aria-live="polite">
+        {/* Status pills — informational only, so click-through (never covers map controls). */}
+        <div className="pointer-events-none flex flex-wrap items-center gap-1.5" aria-live="polite">
           {STATUS_PILLS.map((p) => (
             <span
               key={p.key}
