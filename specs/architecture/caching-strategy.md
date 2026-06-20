@@ -1,8 +1,8 @@
 # Caching Strategy
 
-**Last Updated:** 2026-01-16
-**Status:** Phase 2+ Implementation
-**Tags:** performance, scalability, caching
+**Last Updated:** 2026-06-20
+**Status:** Phase 2+ Implemented (Redis, ADR-016, ADR-029)
+**Tags:** performance, scalability, caching, Redis
 
 ---
 
@@ -22,19 +22,19 @@ This document defines the caching strategy for SEKAR to improve performance and 
 
 ## When to Implement
 
-### Phase 1 (30 workers)
-- ❌ **Not Required** - Database can handle load without caching
-- Single RDS instance sufficient
+### Implementation Status
 
-### Phase 2+ (100-500 workers)
-- ✅ **Required** - Database load increases significantly
-- Supervisor dashboard queries become bottleneck
-- Real-time data aggregations slow down
+**Phase 1 (Shipped):** Not required (30 workers)
+**Phase 2+ (Shipped):** ✅ **Implemented** (ADR-016, ADR-029)
+- Redis Streams for event sourcing (monitoring pipeline)
+- Redis Adapter for Socket.IO (WebSocket scaling)
+- Cache layer for frequently accessed data
+- Supports 500+ concurrent users
 
-**Triggers for Implementation:**
-- Database CPU >70% sustained
-- API response times >500ms (p95)
-- More than 100 concurrent users
+**Deployment:**
+- Development: Redis at localhost:6379 (docker-compose)
+- Staging: Managed Redis on AWS
+- Production: On-prem Redis in docker-compose.prod.yml
 
 ---
 

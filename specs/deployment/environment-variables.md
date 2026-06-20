@@ -63,7 +63,7 @@ AWS_ENDPOINT_URL=  # Empty for real AWS S3 (staging); http://localhost:9000 for 
 AWS_S3_FORCE_PATH_STYLE=  # Empty for real AWS S3; true for MinIO
 
 # CORS
-CORS_ORIGIN=http://localhost:3001,http://localhost:19006,https://sekar.DLH-sby.go.id
+CORS_ORIGIN=http://localhost:3001,http://localhost:19006,https://sekar.wahyutrip.com
 CORS_CREDENTIALS=true
 
 # Rate Limiting
@@ -171,7 +171,7 @@ QR_CODE_ENABLED=true
 QR_CODE_S3_BUCKET=sekar-qr-codes-dev|sekar-qr-codes-prod
 QR_CODE_SIZE=300  # pixels (300x300)
 QR_CODE_ERROR_CORRECTION=M  # L, M, Q, H
-QR_CODE_BASE_URL=https://sekar.DLH-sby.go.id/asset
+QR_CODE_BASE_URL=https://sekar.wahyutrip.com/asset
 QR_CODE_FORMAT=png
 QR_CODE_ENCRYPTION_KEY=<encrypted-secret>  # dotenvx encrypted
 
@@ -255,7 +255,7 @@ EXPORT_TEMP_DIR=/tmp/sekar-exports
 # The app constructs: {API_BASE_URL}/api/{API_VERSION}
 API_BASE_URL=http://10.0.2.2:3000  # Android emulator host
 # API_BASE_URL=http://<your-ip>:3000  # Physical device host
-# API_BASE_URL=https://api.sekar.dlhsurabaya.go.id  # Production host
+# API_BASE_URL=https://api.sekar.wahyutrip.com  # Production host
 API_VERSION=v1  # API version
 
 # Google Maps (per-environment, encrypted in dotenvx)
@@ -298,7 +298,7 @@ NOTIFICATION_VIBRATE_ENABLED=true
 
 ```bash
 # WebSocket Configuration
-WEBSOCKET_URL=https://api.sekar.DLH-sby.go.id
+WEBSOCKET_URL=https://api.sekar.wahyutrip.com
 WEBSOCKET_PATH=/socket.io
 WEBSOCKET_RECONNECT_ATTEMPTS=5
 WEBSOCKET_RECONNECT_DELAY=3000  # milliseconds
@@ -354,15 +354,15 @@ ROOT_DETECTION_ENABLED=true  # Detect jailbreak/root
 ```bash
 # Next.js Configuration
 NODE_ENV=development|staging|production
-NEXT_PUBLIC_API_URL=https://api.sekar.DLH-sby.go.id
-NEXT_PUBLIC_WEBSOCKET_URL=wss://api.sekar.DLH-sby.go.id
+NEXT_PUBLIC_API_URL=https://api.sekar.wahyutrip.com
+NEXT_PUBLIC_WEBSOCKET_URL=wss://api.sekar.wahyutrip.com
 NEXT_PUBLIC_APP_NAME=SEKAR Dashboard
 NEXT_PUBLIC_APP_VERSION=1.0.0
 
 # Authentication
 NEXT_PUBLIC_AUTH_STORAGE_KEY=sekar_auth_token
-NEXTAUTH_URL=https://dashboard.sekar.DLH-sby.go.id
-NEXTAUTH_SECRET=<random-32-byte-string>
+# NEXTAUTH_URL — DEPRECATED: web auth is AuthContext (httpOnly JWT cookie), not NextAuth
+# NEXTAUTH_SECRET — DEPRECATED (NextAuth removed; see web/authentication.md)
 JWT_SECRET=<same-as-backend>
 
 # Mapbox (Interactive Maps)
@@ -447,16 +447,16 @@ LOG_LEVEL=info
 JWT_SECRET=<encrypted>
 
 # Mobile (.env.staging, encrypted via dotenvx, committed)
-API_BASE_URL=https://api-staging.sekar.dlhsurabaya.go.id
+API_BASE_URL=https://api.sekar.wahyutrip.com
 API_VERSION=v1
-WEBSOCKET_URL=wss://api-staging.sekar.dlhsurabaya.go.id
+WEBSOCKET_URL=wss://api.sekar.wahyutrip.com
 GOOGLE_MAPS_API_KEY=<encrypted-staging-key>
 
 # Web (.env.staging, encrypted via dotenvx, committed)
-NEXT_PUBLIC_API_URL=https://api-staging.sekar.DLH-sby.go.id
-NEXT_PUBLIC_WEBSOCKET_URL=wss://api-staging.sekar.DLH-sby.go.id
-NEXTAUTH_URL=https://dashboard-staging.sekar.DLH-sby.go.id
-NEXTAUTH_SECRET=<encrypted>
+NEXT_PUBLIC_API_URL=https://api-staging.sekar.wahyutrip.com
+NEXT_PUBLIC_WEBSOCKET_URL=wss://api-staging.sekar.wahyutrip.com
+# NEXTAUTH_URL — DEPRECATED: web auth is AuthContext (httpOnly JWT cookie), not NextAuth
+# NEXTAUTH_SECRET — DEPRECATED (NextAuth removed; see web/authentication.md)
 ```
 
 ### Production Environment
@@ -483,16 +483,16 @@ RATE_LIMIT_STRICT=true
 JWT_SECRET=<encrypted>
 
 # Mobile (.env.production, encrypted via dotenvx, committed)
-API_BASE_URL=https://api.sekar.dlhsurabaya.go.id
+API_BASE_URL=https://api.sekar.wahyutrip.com
 API_VERSION=v1
-WEBSOCKET_URL=wss://api.sekar.dlhsurabaya.go.id
+WEBSOCKET_URL=wss://api.sekar.wahyutrip.com
 GOOGLE_MAPS_API_KEY=<encrypted-production-key>
 
 # Web (.env.production, encrypted via dotenvx, committed)
-NEXT_PUBLIC_API_URL=https://api.sekar.DLH-sby.go.id
-NEXT_PUBLIC_WEBSOCKET_URL=wss://api.sekar.DLH-sby.go.id
-NEXTAUTH_URL=https://dashboard.sekar.DLH-sby.go.id
-NEXTAUTH_SECRET=<encrypted>
+NEXT_PUBLIC_API_URL=https://api.sekar.wahyutrip.com
+NEXT_PUBLIC_WEBSOCKET_URL=wss://api.sekar.wahyutrip.com
+# NEXTAUTH_URL — DEPRECATED: web auth is AuthContext (httpOnly JWT cookie), not NextAuth
+# NEXTAUTH_SECRET — DEPRECATED (NextAuth removed; see web/authentication.md)
 ```
 
 ---
@@ -536,7 +536,7 @@ These appear in multiple `.env.*` files (dev/staging/production) but may differ 
 - `FCM_*` (Firebase creds)
 - `APNS_*` (iOS APNs creds)
 - `QR_CODE_ENCRYPTION_KEY`
-- `NEXTAUTH_SECRET` (web)
+- (removed) `NEXTAUTH_SECRET` — web no longer uses NextAuth (AuthContext + httpOnly cookie)
 
 **Never commit plaintext keys.** Use `npm run env:encrypt` to encrypt, `npm run env:decrypt` to view decrypted values (requires local `.env.keys`).
 
@@ -568,7 +568,7 @@ These appear in multiple `.env.*` files (dev/staging/production) but may differ 
 
 **Web:**
 - [ ] NEXT_PUBLIC_API_URL points to correct backend
-- [ ] NEXTAUTH_SECRET is unique, encrypted for staging/production
+- [ ] (n/a) NEXTAUTH removed — web uses AuthContext
 - [ ] Google Analytics ID configured
 - [ ] Sentry DSN configured
 - [ ] Feature flags enabled/disabled as needed
@@ -646,13 +646,13 @@ validateEnv();
 - `AWS_S3_BUCKET`, `AWS_ENDPOINT_URL` (MinIO dev/prod; empty for staging AWS S3)
 
 **Mobile:**
-- `API_BASE_URL` (host only, e.g., `http://10.0.2.2:3000` or `https://api.sekar.dlhsurabaya.go.id`)
+- `API_BASE_URL` (host only, e.g., `http://10.0.2.2:3000` or `https://api.sekar.wahyutrip.com`)
 - `API_VERSION` (e.g., `v1`)
 - `GOOGLE_MAPS_API_KEY` (encrypted for staging/production)
 
 **Web:**
-- `NEXT_PUBLIC_API_URL` (e.g., `http://localhost:3000`, `https://api-staging.sekar.DLH-sby.go.id`)
-- `NEXTAUTH_SECRET` (encrypted for staging/production)
+- `NEXT_PUBLIC_API_URL` (e.g., `http://localhost:3000`, `https://api-staging.sekar.wahyutrip.com`)
+- (removed) `NEXTAUTH_SECRET` — NextAuth no longer used
 
 ### Environment-Specific Overrides
 

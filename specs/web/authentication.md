@@ -1,10 +1,15 @@
 # Web Authentication Specification
 
+**Last Updated:** 2026-06-20
+**Status:** Phase 4–5 Complete (AuthContext + httpOnly cookies; NextAuth.js deprecated)
+
 ---
 
 ## Overview
 
-Authentication for the SEKAR web dashboard using JWT tokens with NextAuth.js for session management.
+Authentication for the SEKAR web dashboard using JWT tokens with **AuthContext** (custom context provider) for session management. HTTP-only cookies + route guard middleware (`src/proxy.ts`).
+
+> **BREAKING CHANGE (Phase 3 M1-R):** NextAuth.js was replaced by a custom `AuthContext` + middleware route guard. See [specs/deployment/deployment-guide.md](../deployment/deployment-guide.md) §Web Auth and Phase 3 changesets for migration details.
 
 ---
 
@@ -12,10 +17,11 @@ Authentication for the SEKAR web dashboard using JWT tokens with NextAuth.js for
 
 | Component | Technology |
 |-----------|------------|
-| Auth Library | NextAuth.js v5 |
-| Session Storage | JWT (stateless) |
-| Token Storage | HTTP-only cookies |
-| API Auth | Bearer token |
+| Auth Library | React Context API (custom AuthContext) — NOT NextAuth.js |
+| Session Storage | JWT (stateless, decoded on client) |
+| Token Storage | **HTTP-only cookies** (httpOnly: true, Secure, SameSite: Strict) |
+| API Auth | Bearer token in `Authorization` header |
+| Route protection | Middleware `src/proxy.ts` (Next.js 16 Root Middleware) — NOT NextAuth route guards |
 
 ---
 
@@ -56,48 +62,51 @@ Authentication for the SEKAR web dashboard using JWT tokens with NextAuth.js for
 
 ---
 
-## NextAuth.js Configuration
+## AuthContext Configuration (Phase 3 M1-R+)
+
+**Location:** `fe/web/src/context/AuthContext.tsx`
+
+The custom `AuthContext` provides JWT authentication without NextAuth.js. Route protection is handled by middleware `src/proxy.ts` (Next.js 16 Root Middleware).
 
 ```typescript
-// app/api/auth/[...nextauth]/route.ts
-import NextAuth from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
+// fe/web/src/context/AuthContext.tsx (simplified)
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-export const authOptions = {
-  providers: [
-    CredentialsProvider({
-      name: 'Credentials',
-      credentials: {
-        username: { label: 'Username', type: 'text' },
-        password: { label: 'Password', type: 'password' },
-      },
-      async authorize(credentials) {
-        try {
-          const response = await fetch(`${process.env.API_URL}/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              username: credentials?.username,
-              password: credentials?.password,
-            }),
-          });
+  useEffect(() => {
+    // On mount: check if httpOnly cookie has a valid session
+    // Middleware src/proxy.ts guards unauthenticated access
+    bootstrapAuth();
+  }, []);
 
-          if (!response.ok) {
-            return null;
-          }
+  const login = async (identifier: string, password: string) => {
+    const response = await fetch('/api/v1/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier, password }),
+      credentials: 'include', // sends httpOnly cookie
+    });
+    if (!response.ok) throw new Error('Login failed');
+    const data = await response.json();
+    setUser(data.user);
+    // Cookie set automatically by server (httpOnly: true)
+  };
 
-          const data = await response.json();
-          return {
-            id: data.user.id,
-            name: data.user.fullName,
-            email: data.user.email,
-            role: data.user.role,
-            accessToken: data.access_token,
-            refreshToken: data.refresh_token,
-          };
-        } catch {
-          return null;
-        }
+  const logout = async () => {
+    await fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
+    setUser(null);
+  };
+
+  return <AuthContext.Provider value={{ user, isLoading, login, logout }}>{children}</AuthContext.Provider>;
+};
+```
+
+Route protection flow:
+1. User navigates to `/dashboard` (protected route)
+2. Middleware `src/proxy.ts` intercepts the request
+3. If no valid httpOnly cookie → redirect to `/login`
+4. If valid cookie → route proceeds, `AuthContext` populates `user` from `GET /auth/me`
       },
     }),
   ],

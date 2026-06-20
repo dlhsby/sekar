@@ -1,6 +1,10 @@
 # Web Dashboard - Pages Specification
 
-Comprehensive specification for all web dashboard pages in Phase 6.
+**Last Updated:** 2026-06-20
+**Phase Status:** Phases 1–5 complete (see `specs/COMPLETION_STATUS.md`)
+**Design System:** Neo Brutalism 2.1.1 (Phase 4 v2.1 rebrand, May 25 v2.1.1 reconciliation)
+
+This document provides specifications for dashboard pages. For shipped features and current page inventory, refer to `specs/COMPLETION_STATUS.md`.
 
 ---
 

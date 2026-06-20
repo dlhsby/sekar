@@ -553,7 +553,7 @@ If your frontend uploads directly to S3 (not through backend), configure CORS:
     "AllowedMethods": ["GET", "PUT", "POST", "DELETE"],
     "AllowedOrigins": [
       "http://localhost:3001",
-      "https://sekar.dlhsurabaya.go.id"
+      "https://sekar.wahyutrip.com"
     ],
     "ExposeHeaders": ["ETag"],
     "MaxAgeSeconds": 3000

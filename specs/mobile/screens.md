@@ -6,8 +6,9 @@ Complete screen specifications for SEKAR React Native mobile application (Androi
 
 ### Screen Summary
 
-**Total: 22 screens implemented | 16 NB reusable components**
-**Phase 2C: 22 screens (5 new, 7 modified from Phase 2B)**
+**Total: Refer to `specs/COMPLETION_STATUS.md` for latest screen count**
+**Phase 5 (Jun 17, 2026): Reporting + Analytics + Assets feature modules shipped (8 screens + 3 slices)**
+**Design system:** Neo Brutalism 2.1.1 (Phase 4 rebrand re-baseline applied May 25, 2026)
 
 | Stack | Screen | Status | Priority | Phase |
 |-------|--------|--------|----------|-------|
@@ -31,7 +32,7 @@ Complete screen specifications for SEKAR React Native mobile application (Androi
 | **Overtime** | Overtime Submit | ✅ Complete | P1 | 2C |
 | **Overtime** | Overtime Detail | ✅ Complete | P1 | 2C |
 
-**Tests:** 3,099 tests across 125 test suites (February 2026)
+**Tests:** Refer to `specs/COMPLETION_STATUS.md` for current test counts (Phase 5: 4175+ tests passing)
 
 ### Component Summary (NB 2.0)
 
@@ -43,8 +44,8 @@ Complete screen specifications for SEKAR React Native mobile application (Androi
 | **NB Modals** | ShiftDetailModal, TaskFilterModal, ActivityFilterModal, TodayActivitiesModal, TodayWorkHoursModal | 5 |
 | **Total** | | **17** |
 
-> **Design System:** Neo Brutalism 2.0 - See `specs/ui-ux/neo-brutalism.md`
-> **Phase 2B Updates:** See `specs/phases/phase-2-b-ui-ux-revamp/mobile.md`
+> **Design System:** Neo Brutalism 2.1.1 (Phase 4 v2.1 rebrand, May 25 v2.1.1 reconciliation) - See `specs/ui-ux/neo-brutalism.md` and `specs/ui-ux/design-tokens.md`
+> **Tokens:** All screens use generated tokens from `fe/mobile/src/constants/generated/tokens.ts` (never hand-edit)
 
 ### Navigation Header (Phase 2C)
 

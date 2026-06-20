@@ -1018,7 +1018,7 @@ docker-compose -f docker-compose.prod.yml restart backend
 | **Credentials & keys** | [`specs/deployment/credentials-setup.md`](./credentials-setup.md) — Firebase, Maps, Mapbox, AWS S3 |
 | **Environment variables** | [`specs/deployment/environment-variables.md`](./environment-variables.md) — all configuration options |
 | **CI/CD pipelines** | [`specs/deployment/ci-cd.md`](./ci-cd.md) — GitHub Actions workflows |
-| **API contracts** | [`specs/api/contracts.md`](../api/contracts.md) — all ~130 endpoints, request/response shapes |
+| **API contracts** | [`specs/api/contracts.md`](../api/contracts.md) — ~218 endpoints, request/response shapes |
 | **Error handling** | [`specs/api/error-handling.md`](../api/error-handling.md) — error codes and recovery strategies |
 | **Architecture & decisions** | [`specs/architecture/`](../architecture/) — ADRs, design patterns |
 | **Security checklist** | [`specs/architecture/security.md`](../architecture/security.md) — pre-commit checks, secrets management |

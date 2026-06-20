@@ -55,7 +55,7 @@ Test users (all `password123`): `admin` (superadmin), `satgas1`/`satgas2` (field
 - **API:** http://localhost:3000/api/v1
 - **Swagger Docs:** http://localhost:3000/api/v1/docs
 - **Health:** http://localhost:3000/api/v1/health/live (`{version, gitSha, builtAt}`)
-- **~130 endpoints** (120 Phase 2 + ~10 Phase 3 stubs); see [`/specs/api/contracts.md`](/specs/api/contracts.md)
+- **~218 endpoints across 33 modules**; full contract in Swagger (`/api/v1/docs`); see also [`/specs/api/contracts.md`](/specs/api/contracts.md)
 - **Real-time monitoring v2** via Redis Streams + WebSocket; tunables: `REDIS_STREAM_MAX_LEN`, `STAFFING_DEBOUNCE_SECONDS`, `MONITORING_SWEEP_CRON`, `CLUSTER_ZOOM_THRESHOLD`
 
 ## Docs & Specs

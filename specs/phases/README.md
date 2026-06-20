@@ -11,16 +11,16 @@ Comprehensive implementation guides for each development phase of the SEKAR proj
 | 1 | [MVP - Core Tracking](./phase-1-mvp/) | 2 weeks | ✅ COMPLETE | Clock-in/out, Reports, GPS |
 | 2A | [Enhanced Features](./phase-2-a-enhanced/) | 2 weeks | ✅ COMPLETE | Tasks, Notifications, KMZ, Web |
 | 2B | [UI/UX Revamp](./phase-2-b-ui-ux-revamp/) | 3-4 weeks | ✅ COMPLETE | Neo Brutalism 2.0, Design Tokens |
-| **2C** | **[Client Feedback](./phase-2-c-client-feedback/)** | **4-6 weeks** | **✅ COMPLETE** | **Role overhaul, Overtime, Aktivitas** |
+| **2C** | **[Client Feedback](./phase-2-c-client-feedback/)** | **4-6 weeks** | **✅ COMPLETE & DEPLOYED** | **Role overhaul, Overtime, Aktivitas** |
 | **2D** | **[Real-Time Monitoring](./phase-2-d-monitoring/)** | **1 week** | **✅ COMPLETE & DEPLOYED** | **Five-status tracking, Mapbox, location history** |
-| **2E** | **[Client Feedback II](./phase-2-e-client-feedback-2/)** | **1 day** | **✅ COMPLETE** | **Phone login, multi-area, overtime redesign, audit trail** |
-| **3** | **[Plants Management + Monitoring Rebuild + Public Intake](./phase-3-plants-monitoring-rebuild/)** | **5-7 weeks (73 dev-days)** | **← CURRENT (Not Started)** | **M1-R Redesign Foundation (unified tokens + brand fonts + NBModal/NBToast/NBText + Web PWA + mobile-web responsive + full sweep), Monitoring v2 (Redis), plants catalog + inventory, typed tasks, pruning intake, service capacity, seeds** |
-| 4 | [Production Readiness & Polishing](./phase-4-production-readiness/) | 6-8 weeks | Specs Complete | FCM activation, export, E2E, security, offline sync, polish (Redis inherited from Phase 3) |
-| 5 | [Finishing, Release & iOS](./phase-5-finishing-ios/) | 7-9 weeks | Specs Complete | Reporting, Analytics, Assets, iOS, Release, Docs |
+| **2E** | **[Client Feedback II](./phase-2-e-client-feedback-2/)** | **1 day** | **✅ COMPLETE & DEPLOYED** | **Phone login, multi-area, overtime redesign, audit trail** |
+| **3** | **[Plants Management + Monitoring Rebuild + Public Intake](./phase-3-plants-monitoring-rebuild/)** | **5-7 weeks (73 dev-days)** | **✅ CLOSED (Jun 11, 2026)** | **M1-R Redesign Foundation, Monitoring v2 (Redis), plants catalog, typed tasks, pruning intake, service capacity, seeds — all 21 sub-phases shipped** |
+| **4** | **[Production Readiness & Rebrand](./phase-4-production-readiness/)** | **10-12 weeks (67-87 d)** | **~98% (code-side Jun 11; on-device testing ⏳)** | **FCM full, offline sync, JWT rotation, Sentry, export/import, Maestro/Playwright E2E, WCAG-AA a11y gate, security hardened** |
+| **5** | **[Finishing, Release & iOS](./phase-5-finishing-ios/)** | **7-9 weeks** | **release-prep ✅ + features shipped (Jun 17)** | **Assets/Reporting/Analytics modules (backend + web + mobile); export/import; iOS prep; guides + evaluation pending** |
 
-**Total Duration:** ~24-31 weeks
+**Actual Duration (to date):** ~24 weeks (Jan 7 – Jun 20, 2026)
 
-> **Note:** Phase structure was reorganized on January 30, 2026. Previous phases 3-6 were consolidated into new phases 3-4. Phase 2 was split into 2A (Enhanced), 2B (UI/UX), and 2C (Client Feedback) based on February 10, 2026 client meeting.
+> **Note:** Phase structure was reorganized on January 30, 2026 (Phases 3-6 consolidated into 3-4) and again on April 24, 2026 (new Phase 3: Plants Management inserted; prior Phase 3-4 renumbered to 4-5). Phase 2 was split into 2A (Enhanced), 2B (UI/UX), 2C (Client Feedback), and 2E (Client Feedback II) based on client meetings (Feb 10, Mar 10, 2026). Phase 4 spec re-baselined May 22, 2026 (expanded from 52-68 d polish to 67-87 d rebrand+hardening).
 
 ### Quick Reference
 
@@ -69,7 +69,6 @@ Core worker tracking system with GPS-verified attendance and work reporting.
 - [Backend Guide](./phase-1-mvp/backend.md)
 - [Mobile Guide](./phase-1-mvp/mobile.md)
 - [Timeline](./phase-1-mvp/timeline.md)
-- [Testing](./phase-1-mvp/testing.md)
 
 ---
 
@@ -106,9 +105,9 @@ Task assignment system, push notifications, KMZ import, and full web dashboard.
 
 ## Phase 2B: UI/UX Revamp
 
-**Duration:** 3-4 weeks | **Status:** 🟡 IN PROGRESS (Feb 2026)
+**Duration:** 3-4 weeks | **Status:** ✅ COMPLETE
 
-Neo Brutalism 2.0 design system application across web and mobile platforms.
+Neo Brutalism 2.0 design system applied across web and mobile platforms.
 
 ### Key Deliverables
 - Design token updates (colors, borders, shadows, radius)
@@ -202,7 +201,7 @@ Breaking changes from March 10, 2026 client meeting: phone login, multi-area kor
 
 ## Phase 3: Plants Management + Monitoring Rebuild + Public Intake
 
-**Duration:** 5-7 weeks (73 dev-days) | **Status:** ← CURRENT (Not Started, specs authored 2026-04-24; M1-R Redesign Foundation milestone added 2026-04-25)
+**Duration:** 5-7 weeks (73 dev-days) | **Status:** ✅ CLOSED (June 11, 2026) — All 21 sub-phases shipped (specs authored 2026-04-24)
 
 Full rewrite of monitoring subsystem (Redis-backed event sourcing) plus new plants management, typed tasks, public pruning intake from kecamatan staff, generic service-capacity calendar, plant-seed inventory, **and M1-R Redesign Foundation that unifies the design tokens across mobile native + mobile-responsive web PWA + desktop web before any feature work begins**. 9 new ADRs (029–037), 8 new tables, 5 extended tables, ~35 new endpoints + push subscription, CSV backfill of 5,008 historical pruning records.
 
@@ -247,7 +246,7 @@ Full rewrite of monitoring subsystem (Redis-backed event sourcing) plus new plan
 
 ## Phase 4: Production Readiness, Rebrand & UI/UX Revamp
 
-**Duration:** 10-12 weeks (67-87 dev-days) | **Status:** Not Started (spec re-baselined May 22, 2026 — was 52-68 d polish-only)
+**Duration:** 10-12 weeks (67-87 dev-days) | **Status:** ~98% code-side complete (Jun 11, 2026); on-device Maestro pending (no device access); iOS background-location deferred to Phase 5
 
 Production hardening + **complete rebrand on Design System v2.1** (sage primary + warm stone canvas + pinwheel logo) + **production-readiness gap audit** (offline / push / background-location / broker). **13 sub-phases** — three new (4-0 Token Re-baseline 3-4 d, 4-R UI/UX Revamp Sweep 15-18 d, 4-V Gap Audit 4-5 d) plus the original ten 4-1…4-10 (trimmed). Trimmed 4-1 / 4-3 / 4-8 against Phase 3 deliveries (FCM live, Socket.IO Redis adapter live, web PWA shipped, generated tokens live). New ADRs 040 (Design System v2.1), 041 (Forgot-password contact-admin), 042 (Onboarding flow), 043 (Production gap-closure). Original 19 requirements + 4 new ones (#20 v2.1 adoption, #21 rebrand assets, #22 missing entry-flow screens, #23 gap audit).
 
@@ -277,7 +276,7 @@ Production hardening + **complete rebrand on Design System v2.1** (sage primary 
 
 ## Phase 5: Finishing, Release & iOS
 
-**Duration:** 7-9 weeks (49-64 dev-days) | **Status:** Not Started (Specifications Complete — renumbered from prior Phase 4)
+**Duration:** 7-9 weeks (49-64 dev-days) | **Status:** Release-prep ✅ (Jun 16); Feature modules (5-1 Reporting, 5-2 Analytics, 5-3 Assets) shipped code-side (Jun 17); 5-4 iOS prep done; remaining: export/import, guides, evaluation, E2E
 
 8 sub-phases covering reporting, analytics, asset management, iOS platform, release/deployment, user documentation, evaluation, and E2E testing extension. 5 ADRs (024-028).
 
@@ -400,4 +399,4 @@ The following folders contain original specifications before the January 30, 202
 
 ---
 
-**Last Updated:** 2026-04-24
+**Last Updated:** 2026-06-20

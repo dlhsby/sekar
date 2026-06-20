@@ -1,20 +1,26 @@
 # API Contracts - Complete Endpoint Specifications
 
-Comprehensive API endpoint specifications for all 122 endpoints in SEKAR Backend (Phase 2D Code-Complete).
+Endpoint specifications for the SEKAR Backend.
+
+> **Scope note:** the backend now exposes **~218 endpoints across 33 modules**. This document
+> fully catalogs **Phase 1–2D** (the request/response contracts below); the later modules — Phase 3
+> (plants, pruning-requests, service-capacity, plant-seeds) and Phase 5 (assets, reporting,
+> analytics) plus `app-releases` and `health` — follow the same conventions and are authoritatively
+> described by the **live Swagger docs at `/api/v1/docs`**, which is the source of truth for the
+> complete contract. See `specs/COMPLETION_STATUS.md` for status/metrics.
 
 ## Overview
 
-- **Base URL:** `http://localhost:3000/api/v1` (dev) | `https://api.sekar.dlhsurabaya.go.id/api/v1` (prod)
-- **Swagger Documentation:** `/api/v1/docs`
+- **Base URL:** `http://localhost:3000/api/v1` (dev) | `http://api.sekar.wahyutrip.com/api/v1` (staging)
+- **Swagger Documentation:** `/api/v1/docs` — **live, complete contract (source of truth)**
 - **Authentication:** JWT Bearer token (15-min access + 7-day refresh with rotation)
 - **Content Type:** `application/json` (except file uploads: `multipart/form-data`)
-- **Total Endpoints:** 122 implemented (41 Phase 1 + 43 Phase 2 + 29 Phase 2C + 9 Phase 2D); 130 planned through Phase 2E; ~165 planned through Phase 3
+- **Total Endpoints:** **~218** across 33 modules (Phase 1–2D fully documented here; Phase 3–5 modules — Swagger is source of truth)
 - **Backend:** NestJS 11.x, Node.js >=24.13.0, TypeScript 5.x
 - **Database:** PostgreSQL 14+ with TypeORM
-- **Testing:** 888 tests passing (Phase 2C complete)
-- **Error Codes:** 40+ standardized codes (see `error-handling.md`)
+- **Error Codes:** 53 standardized codes (see `error-handling.md` §Standardized Error Codes)
 - **Rate Limiting:** 100 req/min global, 5 req/min auth endpoints
-- **Last Updated:** 2026-04-24
+- **Last Updated:** 2026-06-20
 - **Phase 2C Note:** Terminology cleanup (ADR-010) has implemented route renames: `/aktivitas`→`/activities`, `/worker-schedules`→`/schedules`. Dropped `/workers/:id/assign`. Flattened overtime DTO. See Phase 2C specs for full details.
 - **Phase 2D Note:** Monitoring enhancements — 9 new endpoints (location history, day summary, config CRUD, staffing summary, area boundary GET/PUT, boundaries, reassign), 4 enhanced endpoints (live-users filters + new fields, area/:id per-role counts).
 

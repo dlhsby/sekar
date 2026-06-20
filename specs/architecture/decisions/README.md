@@ -87,7 +87,7 @@ Each ADR follows this structure:
 
 - [System Overview](../system-overview.md)
 - [Tech Stack](../tech-stack.md)
-- [Business Rules](../../business-rules.md)
+- [Project Brief](../../sekar_brief.md)
 
-**Last Updated:** 2026-05-22 (ADRs 040-043 added for Phase 4 rebrand + UI/UX revamp + production gap-closure)
+**Last Updated:** 2026-06-20 (Phases 1–5 shipped; ADRs 001–043 finalized)
 **Maintained By:** System Architect

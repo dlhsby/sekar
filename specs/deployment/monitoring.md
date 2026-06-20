@@ -691,13 +691,13 @@ Sentry.init({
 **Topic 1: Critical Alerts**
 - **Name:** `sekar-critical-alerts`
 - **Subscribers:**
-  - Email: devops@DLH-sby.go.id, lead@DLH-sby.go.id
+  - Email: devops@wahyutrip.com, lead@wahyutrip.com
   - Slack: #sekar-critical channel
 
 **Topic 2: High Priority Alerts**
 - **Name:** `sekar-high-alerts`
 - **Subscribers:**
-  - Email: devops@DLH-sby.go.id
+  - Email: devops@wahyutrip.com
   - Slack: #sekar-alerts channel
 
 **Topic 3: Warning Alerts**
@@ -931,7 +931,7 @@ Deep dive into why this happened.
 ### Incident Communication
 
 **Status Page (Phase 2+):**
-- URL: https://status.sekar.DLH-sby.go.id
+- URL: https://status.sekar.wahyutrip.com
 - Provider: Statuspage.io or custom
 - Updates: Every 30 minutes during incident
 

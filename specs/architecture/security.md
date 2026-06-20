@@ -128,26 +128,20 @@ api.interceptors.response.use(
 
 ### AUTH-2: Role-Based Access Control (RBAC)
 
-#### Role Hierarchy
-```
-Admin (Highest)
-  ├─ Full system access
-  ├─ User management
-  ├─ System configuration
-  └─ View all data
+#### Role Hierarchy — 8 Roles + 1 External (ADR-009/032/033)
 
-Supervisor
-  ├─ View assigned workers
-  ├─ Approve/reject reports
-  ├─ View analytics for their team
-  └─ Cannot modify system settings
+**8 Core Roles:**
+- `satgas` — Field worker (clock-in/out, reports)
+- `linmas` — Security/patrol (clock-in/out, reports)
+- `korlap` — Field coordinator (multi-area assignment, monitoring)
+- `admin_data` — Data manager (disposition authority over pruning requests, scoped by rayon)
+- `kepala_rayon` — Rayon head (approvals, rayon oversight)
+- `top_management` — Executive dashboard
+- `admin_system` — System administration
+- `superadmin` — Full system access
 
-Worker (Lowest)
-  ├─ Clock-in/out
-  ├─ Submit reports
-  ├─ View own data only
-  └─ Cannot access other workers' data
-```
+**External Role:**
+- `staff_kecamatan` — Kecamatan staff (pruning request submission only, non-clockable)
 
 #### Implementation
 
@@ -176,28 +170,7 @@ async getAllWorkers() {
 
 #### Permission Matrix
 
-| Resource | Worker | Supervisor | Admin |
-|----------|--------|------------|-------|
-| **Users** |
-| View own profile | ✅ | ✅ | ✅ |
-| View all users | ❌ | ✅ (assigned only) | ✅ |
-| Create user | ❌ | ❌ | ✅ |
-| Update user | ❌ (own only) | ❌ | ✅ |
-| Delete user | ❌ | ❌ | ✅ |
-| **Shifts** |
-| Clock-in/out | ✅ (own) | ❌ | ✅ |
-| View shifts | ✅ (own) | ✅ (assigned workers) | ✅ |
-| Modify shifts | ❌ | ❌ | ✅ |
-| **Reports** |
-| Submit report | ✅ | ❌ | ✅ |
-| View reports | ✅ (own) | ✅ (assigned workers) | ✅ |
-| Approve/reject | ❌ | ✅ | ✅ |
-| **Areas** |
-| View areas | ✅ (assigned) | ✅ (managed) | ✅ |
-| Create/modify | ❌ | ❌ | ✅ |
-| **Assignments** |
-| View assignments | ✅ (own) | ✅ (team) | ✅ |
-| Create/modify | ❌ | ❌ (request only) | ✅ |
+Permission matrix has expanded to 8 core roles + 1 external. See `specs/COMPLETION_STATUS.md` and `specs/architecture/decisions/ADR-009.md` (role system), `ADR-032.md` (admin_data disposition), `ADR-033.md` (staff_kecamatan) for comprehensive breakdown.
 
 ---
 
@@ -432,7 +405,7 @@ app.enableCors({
   origin: [
     'http://localhost:19006', // Expo dev
     'http://10.0.2.2:19006',  // Android emulator
-    'https://sekar.DLH-sby.go.id', // Production web
+    'https://sekar.wahyutrip.com', // Production web
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
@@ -747,7 +720,7 @@ export const clearToken = async () => {
 ```typescript
 // Pin production API certificate
 const certificatePin = {
-  'sekar-api.DLH-sby.go.id': {
+  'sekar-api.wahyutrip.com': {
     pins: [
       'sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
     ],
@@ -958,6 +931,6 @@ Redis 7 enters the production trust boundary earlier than Phase 4 planning had a
 ---
 
 **Document Owner:** Software Architect
-**Last Updated:** 2026-04-24
+**Last Updated:** 2026-06-20
 **Status:** Active
 **Related Docs:** [`system-overview.md`](./system-overview.md), [`data-flow.md`](./data-flow.md), [`../api/authentication.md`](../api/authentication.md), [`decisions/ADR-029-monitoring-v2-event-sourced-redis.md`](./decisions/ADR-029-monitoring-v2-event-sourced-redis.md), [`decisions/ADR-032-admin-data-disposition-authority-pruning-requests.md`](./decisions/ADR-032-admin-data-disposition-authority-pruning-requests.md), [`decisions/ADR-033-staff-kecamatan-role.md`](./decisions/ADR-033-staff-kecamatan-role.md)

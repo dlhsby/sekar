@@ -2,10 +2,10 @@
 
 **Document Owner:** Project Manager
 **Created:** 2026-01-21
-**Last Updated:** 2026-04-24
+**Last Updated:** 2026-06-20
 **Purpose:** Map dependencies across all development phases for effective planning and risk management
 
-> **Note (2026-04-24):** Phase numbering updated. New Phase 3 (Plants Management + Monitoring Rebuild + Public Intake) inserted. Prior Phase 3 (Polishing) renumbered to Phase 4 (Production Readiness); prior Phase 4 (Finishing / iOS) renumbered to Phase 5. The legacy "Phase 3 = Analytics" and "Phase 4 = Assets" references further down this document pre-date the January 30, 2026 reorg — they are retained for historical context only.
+> **Note (2026-06-20):** Phase structure finalized as of June 2026: Phases 1-3 shipped/closed; Phase 4 ~98% code-side; Phase 5 feature-modules shipped, release-prep + guides pending. The legacy "Phase 3 = Analytics" / "Phase 4 = Assets" / "Phase 5 = iOS" section headers pre-date the January 30 & April 24, 2026 reorganizations — they are retained for historical context only. Current authoritative status: **`specs/COMPLETION_STATUS.md`**.
 
 ---
 
@@ -25,22 +25,22 @@ This document provides a comprehensive analysis of dependencies between SEKAR de
 
 | Phase | Name | Duration | Status | Prerequisites |
 |-------|------|----------|--------|---------------|
-| 1 | MVP - Core Tracking | 2 weeks | **COMPLETE** | None |
-| 2A | Enhanced Features | 2 weeks | **COMPLETE** | Phase 1 100% |
-| 2B | UI/UX Revamp | 3-4 weeks | **COMPLETE** | Phase 2A complete |
-| 2C | Client Feedback | 4-6 weeks | **COMPLETE & DEPLOYED** | Phase 2B complete |
-| 2D | Real-Time Monitoring | 1 week | **COMPLETE & DEPLOYED** | Phase 2C complete |
-| 2E | Client Feedback II | 1 day | **COMPLETE** | Phase 2D complete |
-| 3 | Plants Management + Monitoring Rebuild + Public Intake (incl. M1-R Redesign Foundation) | 5-7 weeks (73 dev-days) | **Not Started (specs complete)** | Phase 2E complete |
-| 4 | Production Readiness, Rebrand & UI/UX Revamp (13 sub-phases incl. 4-0/4-R/4-V) | 10-12 weeks (67-87 d) | Not Started (spec re-baselined May 22, 2026) | Phase 3 complete (Redis + monitoring v2 + FCM live + PWA + generated tokens inherited) |
-| 5 | Finishing, Release & iOS (8 sub-phases) | 7-9 weeks | Not Started (specs complete) | Phase 4 complete |
+| 1 | MVP - Core Tracking | 2 weeks | **✅ COMPLETE** | None |
+| 2A | Enhanced Features | 2 weeks | **✅ COMPLETE** | Phase 1 100% |
+| 2B | UI/UX Revamp | 3-4 weeks | **✅ COMPLETE** | Phase 2A complete |
+| 2C | Client Feedback | 4-6 weeks | **✅ COMPLETE & DEPLOYED** | Phase 2B complete |
+| 2D | Real-Time Monitoring | 1 week | **✅ COMPLETE & DEPLOYED** | Phase 2C complete |
+| 2E | Client Feedback II | 1 day | **✅ COMPLETE & DEPLOYED** | Phase 2D complete |
+| 3 | Plants Management + Monitoring Rebuild + Public Intake | 5-7 weeks (73 dev-days) | **✅ CLOSED (Jun 11, 2026)** — All 21 sub-phases shipped | Phase 2E complete |
+| 4 | Production Readiness, Rebrand & UI/UX Revamp | 10-12 weeks (67-87 d) | **~98% code-side (Jun 11); on-device Maestro ⏳** | Phase 3 complete (inherits Redis + monitoring v2 + FCM + PWA + tokens) |
+| 5 | Finishing, Release & iOS | 7-9 weeks | **release-prep ✅ (Jun 16); features shipped (Jun 17); remaining: guides + eval** | Phase 4 code-side; iOS native + guides pending |
 
-**Phase 3 Dependency Notes (new phase, 2026-04-24; M1-R milestone added 2026-04-25):**
-- Depends on Phase 2E: consumes 8-role system (adds `staff_kecamatan`, extends `admin_data` via ADR-032), `user_areas` multi-area model, `activities` table (extended with `custom_fields`, `plant_items`, `reference_code`, `pruning_request_id`), `audit_logs`.
-- **Internal gating: M1-R Redesign Foundation gates M2/M3/M4.** Sub-phases 3-R1 (token pipeline + CI + ESLint) → 3-R2 (token values + brand fonts) → 3-R3 (NB primitives + NBModal/NBToast/NBText + visreg) → 3-R4 (PWA shell + ResponsiveShell) → 3-R5 (full sweep). Every UI PR after 3-R1 must import from `generated/` — CI blocks otherwise. Web feature work (3-4, 3-10, 3-11, 3-12) and mobile feature work (3-5, 3-7) explicitly depend on M1-R landing first.
-- M1-S (3-1 spec sync + 3-2 schema/roles) runs in parallel with M1-R; together they form a 14-day + 6-day foundation block.
-- Unblocks Phase 4: Redis 7 infrastructure (ADR-029) becomes available ahead of ADR-016 Phase 4 scope; Phase 4 inherits Socket.IO Redis adapter, Redis Streams, caching layer, and the unified token pipeline. Task-status simplification debt (ADR-009, 8→4 statuses) hands off to Phase 4 backlog. **Promoted into Phase 3:** the full token-migration sweep across non-Phase-3 screens (3-R5), previously deferred to Phase 4.
-- Critical path: **Phase 2E → Phase 3 (M1-R + M1-S → M2/M3/M4 in parallel → M5) → Phase 4 → Phase 5**.
+**Phase 3 Dependency Notes (closed 2026-06-11):**
+- Depended on Phase 2E: consumed 8-role system (added `staff_kecamatan`, extended `admin_data` via ADR-032), `user_areas` multi-area model, `activities` table (extended with `custom_fields`, `plant_items`, `reference_code`, `pruning_request_id`), `audit_logs`.
+- **Delivered:** M1-R Redesign Foundation (token pipeline + CI + ESLint + values + fonts + NB primitives + PWA + ResponsiveShell + full token-migration sweep), M1-S (spec sync + schema/roles), M2 (Redis Streams monitoring), M3 (plants + typed tasks), M4 (pruning intake + capacity + seeds), M5 (documentation + CSV backfill locally, prod cutover = manual step).
+- **Unblocked Phase 4:** Redis 7 infrastructure (ADR-029), Socket.IO Redis adapter, caching layer, unified token pipeline all inherited. Task-status simplification debt (ADR-009, 8→4 statuses) handed to Phase 4 backlog.
+- **Delivered to Phase 4 scope:** Load-testing baseline (k6 harness, 500-worker scenario validated May 29), security audit foundation, offline-sync groundwork.
+- Critical path executed: Phase 2E → Phase 3 (M1-R + M1-S parallel → M2/M3/M4 parallel → M5) → Phase 4 → Phase 5.
 
 ---
 
@@ -50,8 +50,8 @@ This document provides a comprehensive analysis of dependencies between SEKAR de
                     ┌─────────────────────────────────────────────────┐
                     │                                                 │
                     │              PHASE 1 (MVP)                      │
-                    │         COMPLETE - Foundation                   │
-                    │   Auth, Users, Areas, Shifts, Reports           │
+                    │         ✅ COMPLETE - Foundation                │
+                    │   Auth, Users, Areas, Shifts, Activities        │
                     │   Location, Supervisor Dashboard                │
                     │                                                 │
                     └───────────────────┬─────────────────────────────┘
@@ -60,9 +60,9 @@ This document provides a comprehensive analysis of dependencies between SEKAR de
                     ┌─────────────────────────────────────────────────┐
                     │                                                 │
                     │              PHASE 2A (Enhanced)                │
-                    │         COMPLETE - Features                     │
+                    │         ✅ COMPLETE - Features                  │
                     │   Tasks, Notifications, KMZ, Web Dashboard      │
-                    │   83 endpoints, 2,141 tests                     │
+                    │   83 endpoints                                  │
                     │                                                 │
                     └───────────────────┬─────────────────────────────┘
                                         │
@@ -70,26 +70,38 @@ This document provides a comprehensive analysis of dependencies between SEKAR de
                     ┌─────────────────────────────────────────────────┐
                     │                                                 │
                     │            PHASE 2B (UI/UX Revamp)              │
-                    │         IN PROGRESS - Design System             │
+                    │         ✅ COMPLETE - Design System             │
                     │   Neo Brutalism 2.0, Design Tokens              │
                     │   26 Components, 39 Pages/Screens               │
+                    │                                                 │
+                    └───────────────────┬─────────────────────────────┘
+            ┌───────────────┬─────────────────┬───────────────┐
+            │               │                 │               │
+            ▼               ▼                 ▼               ▼
+        PHASE 2C        PHASE 2D         PHASE 2E         PHASE 3
+      (Feedback I)   (Real-Time Mon)   (Feedback II)  (Plants/Mon v2)
+       ✅ COMPLETE   ✅ COMPLETE &    ✅ COMPLETE &    ✅ CLOSED
+                        DEPLOYED        DEPLOYED      (Jun 11, 2026)
+                                                          │
+                                                          ▼
+                    ┌─────────────────────────────────────────────────┐
+                    │                                                 │
+                    │      PHASE 4 (Production Readiness)             │
+                    │      ~98% (code-side Jun 11)                    │
+                    │   FCM full, E2E, Security, Offline              │
+                    │   Rebrand + UI/UX revamp (hifi v2.1)            │
                     │                                                 │
                     └───────────────────┬─────────────────────────────┘
                                         │
                                         ▼
                     ┌─────────────────────────────────────────────────┐
                     │                                                 │
-                    │         PHASE 3 (Polishing & E2E)               │
-                    │         NOT STARTED                             │
-                    │   Manual Testing, E2E Tests, Polish             │
+                    │      PHASE 5 (Finishing, Release & iOS)         │
+                    │      Release-prep ✅, Features ✅               │
+                    │   Reporting, Analytics, Assets (5-1/2/3 done)   │
+                    │   5-4 iOS prep done; 5-5/6/7/8 pending          │
                     │                                                 │
-                    └───────────────────┬─────────────────────────────┘
-                                        │
-                        ┌───────────────┼───────────────┐
-                        │               │               │
-                        ▼               ▼               ▼
-                    Phase 4A        Phase 4B        Phase 4C
-                  (Analytics)      (Assets)         (iOS)
+                    └─────────────────────────────────────────────────┘
 ```
 
 ---
@@ -185,99 +197,79 @@ This document provides a comprehensive analysis of dependencies between SEKAR de
 
 ---
 
-### Phase 3 (Analytics & Reporting) Dependencies
+### Phase 3 (Plants Management + Monitoring Rebuild) Dependencies — ✅ CLOSED
 
-**Requires from Phase 1:**
+**Consumed from Phase 2E:**
 
-| Dependency | Source | Type | Notes |
-|------------|--------|------|-------|
-| Shifts data | Shifts Module | Hard | Attendance metrics |
-| Reports data | Reports Module | Hard | Report analytics |
-| Location data | Location Module | Hard | Movement tracking |
-| User data | Users Module | Hard | Worker performance |
-| Area data | Areas Module | Hard | Area coverage metrics |
+| Dependency | Source | Type | Status |
+|------------|--------|------|--------|
+| 8-role system + `staff_kecamatan` | Users Module | Hard | ✅ Shipped |
+| `user_areas` multi-area model | Users Module | Hard | ✅ Shipped |
+| `activities` (extended) | Activities Module | Hard | ✅ Extended with `custom_fields`, `plant_items`, `pruning_request_id` |
+| `audit_logs` | Audit Module | Hard | ✅ Shipped |
+| Redis Streams infrastructure | Monitoring v2 | Hard | ✅ Delivered (ADR-029) |
 
-**Requires from Phase 2:**
-
-| Dependency | Source | Type | Notes |
-|------------|--------|------|-------|
-| Task data | Tasks Module | Hard | Task completion metrics |
-| Notification system | Notifications Module | Soft | Report delivery alerts |
-
-**Provides to Phase 4:**
+**Delivered to Phase 4:**
 
 | Component | Consumer | Notes |
 |-----------|----------|-------|
-| Report Builder | Asset Reports | Asset maintenance reports |
-| Scheduler Service | Maintenance Alerts | Preventive maintenance reminders |
-
-**Provides to Phase 6:**
-
-| Component | Consumer | Notes |
-|-----------|----------|-------|
-| Analytics endpoints | Web Dashboard | Charts and KPIs |
-| Report templates | Report Builder UI | Template management |
+| Redis 7 + Socket.IO Redis adapter | Monitoring, caching | Inherited by Phase 4 |
+| Token pipeline (generated/) | All UI layers | Inherited by Phase 4 + Phase 5 |
+| Load-test baseline (k6) | Phase 4+ releases | 500-worker scenario validated May 29 |
+| Monitoring v2 event sourcing | Phase 4 enhancements | Redis Streams + status calculation stable |
+| Task-status debt (8→4 simplification) | Phase 4 backlog | ADR-009 deferred |
 
 ---
 
-### Phase 4 (Asset Management) Dependencies
+### Phase 4 (Production Readiness & Rebrand) Dependencies
 
-**Requires from Phase 1:**
+**Inherits from Phase 3:**
 
-| Dependency | Source | Type | Notes |
-|------------|--------|------|-------|
-| User management | Users Module | Hard | Asset assignment to workers |
-| Area management | Areas Module | Hard | Asset location tracking |
-| S3 service | Shared Module | Hard | QR code and photo storage |
-| Authentication | Auth Module | Hard | Asset CRUD permissions |
+| Inheritance | Source | Type | Status |
+|-------------|--------|------|--------|
+| Redis 7 + Socket.IO Redis adapter | Phase 3 Monitoring v2 | Hard | ✅ In use |
+| Token pipeline (generated/) | Phase 3 M1-R | Hard | ✅ All 3 platforms |
+| Security + offline-sync groundwork | Phase 3 foundations | Hard | ✅ Leveraged |
 
-**Requires from Phase 3:**
-
-| Dependency | Source | Type | Notes |
-|------------|--------|------|-------|
-| Scheduler service | Scheduler Module | Soft | Preventive maintenance scheduling |
-| Report builder | Report Builder | Soft | Asset maintenance reports |
-
-**Provides to Phase 5:**
+**Delivers to Phase 5:**
 
 | Component | Consumer | Notes |
 |-----------|----------|-------|
-| QR Scanner infrastructure | iOS App | Camera/QR integration |
-| Asset Module | iOS Asset screens | Full feature parity |
+| Sentry + structured logging | All platforms | Observability inherited |
+| JWT rotation + refresh-token model | Auth system | Inherited by Phase 5 |
+| Maestro E2E harness | Phase 5-8 | 15 flows authored; on-device pending |
+| WCAG-AA a11y gate | Phase 5+ releases | CI gate in place |
+| Design System v2.1 (rebrand) | All screens | Pinwheel brand + sage/stone palette |
 
 ---
 
-### Phase 5 (iOS & Advanced) Dependencies
+### Phase 5 (Finishing, Release & iOS) Dependencies
 
-**Requires from Phase 1:**
+**Inherited from Phase 4:**
 
-| Dependency | Source | Type | Notes |
-|------------|--------|------|-------|
-| All mobile screens | Mobile App | Hard | Feature parity requirement |
-| Redux store | State Management | Hard | Shared state structure |
-| API services | API Client | Hard | Same endpoint consumption |
-| Navigation structure | Navigation | Soft | Platform-specific adjustments |
+| Inheritance | Source | Type | Status (code-side Jun 17) |
+|-------------|--------|------|--------|
+| Sentry + structured logging | Phase 4 observability | Hard | ✅ Integrated mobile/web |
+| JWT rotation + refresh model | Phase 4 auth | Hard | ✅ Code-side |
+| Design System v2.1 | Phase 4 rebrand | Hard | ✅ Tokens migrated; screens updated |
 
-**Requires from Phase 2:**
+**Feature Modules (5-1/5-2/5-3) — ✅ Code-side Complete (Jun 17):**
 
-| Dependency | Source | Type | Notes |
-|------------|--------|------|-------|
-| FCM setup | Notifications | Hard | APNs parallel setup |
-| Task screens | Tasks Module | Hard | Feature parity |
+| Module | Backend | Web | Mobile | Status |
+|--------|---------|-----|--------|--------|
+| **5-1 Reporting** | 8 endpoints (sync/async/export) + puppeteer-core + handlebars | 4 pages (builder/schedules/detail/history) | 1 screen (Reports list/detail) | ✅ Built |
+| **5-2 Analytics** | 7 endpoints + 3 materialized views + WeightedScoreService + nightly cron | 5 pages (dashboards + Recharts charts) | 2 screens (Worker/Team analytics) | ✅ Built |
+| **5-3 Assets** | 14 endpoints (CRUD/QR/maintenance) + QR code service (ADR-026) + overdue cron | 5 pages (list/new/detail/QR/maintenance) | 5 screens (list/detail/scanner/checkout/return) | ✅ Built |
 
-**Requires from Phase 4:**
+**Remaining Phase 5 Work:**
 
-| Dependency | Source | Type | Notes |
-|------------|--------|------|-------|
-| QR scanning | Assets Module | Hard | iOS camera integration |
-| Asset screens | Assets Module | Hard | Feature parity |
-
-**Backend additions:**
-
-| New Endpoint | Purpose | Dependencies |
-|--------------|---------|--------------|
-| POST /auth/apple | Apple Sign-In verification | Auth Module |
-| POST /auth/attestation/* | App Attest fraud detection | Auth Module |
+| Sub-phase | Task | Dependencies | Status |
+|-----------|------|--------------|--------|
+| **5-4** | iOS native (Apple Sign-In, biometrics, APNs) | Needs Mac (unavailable) | ⏳ Prep done; native execution deferred |
+| **5-5** | Release & Deployment (staging→prod) | Phase 4 code + release.sh script | ⏳ Documented; execution pending UAT |
+| **5-6** | User Guides (web + mobile) | Feature-complete code | ⏳ Content authoring pending |
+| **5-7** | Evaluation & Final Polish | All prior phases | ⏳ Cross-phase review pending |
+| **5-8** | E2E Testing Extension | Maestro + Playwright infrastructure | ⏳ 13 Maestro + 11 Playwright specs pending device/automation |
 
 ---
 

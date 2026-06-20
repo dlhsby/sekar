@@ -1,10 +1,13 @@
 # Web Real-Time Updates Specification
 
+**Last Updated:** 2026-06-20
+**Status:** Phases 4–5 Complete (Socket.IO + AuthContext; NextAuth.js deprecated; Mapbox GL map, NOT react-leaflet)
+
 ---
 
 ## Overview
 
-Real-time update strategies for the SEKAR web dashboard, including WebSocket integration and polling patterns.
+Real-time update strategies for the SEKAR web dashboard, including **Socket.IO Redis adapter** (Phase 3 M2+) integration and polling patterns. Auth via custom `AuthContext` (NOT NextAuth.js).
 
 ---
 
@@ -21,33 +24,31 @@ Real-time update strategies for the SEKAR web dashboard, including WebSocket int
 
 ## WebSocket Implementation
 
-### Socket.IO Client Setup
+### Socket.IO Client Setup (Phase 3 M2+)
+
+> **Updated for AuthContext (Phase 3 M1-R):** Token now comes from `AuthContext`, not NextAuth.
 
 ```typescript
 // lib/socket.ts
 import { io, Socket } from 'socket.io-client';
-import { getSession } from 'next-auth/react';
 
 let socket: Socket | null = null;
 
-export async function connectSocket(): Promise<Socket> {
+export function connectSocket(accessToken: string): Socket {
   if (socket?.connected) {
     return socket;
   }
 
-  const session = await getSession();
-  if (!session?.accessToken) {
-    throw new Error('Not authenticated');
-  }
-
-  socket = io(process.env.NEXT_PUBLIC_WS_URL!, {
+  // Token passed from AuthContext (middleware has already verified httpOnly cookie)
+  socket = io(process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:3000', {
     auth: {
-      token: session.accessToken,
+      token: accessToken, // from AuthContext.user.accessToken
     },
-    transports: ['websocket'],
+    transports: ['websocket'], // fallback to polling if WS unavailable
     reconnection: true,
     reconnectionAttempts: 5,
     reconnectionDelay: 1000,
+    secure: process.env.NODE_ENV === 'production',
   });
 
   socket.on('connect', () => {
@@ -101,28 +102,27 @@ const SocketContext = createContext<SocketContextValue>({
 export function SocketProvider({ children }: { children: ReactNode }) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const { data: session } = useSession();
+  const { user } = useAuth(); // from AuthContext, NOT useSession()
 
   useEffect(() => {
-    if (!session) {
+    if (!user?.accessToken) {
       disconnectSocket();
       setSocket(null);
       setIsConnected(false);
       return;
     }
 
-    connectSocket().then((s) => {
-      setSocket(s);
-      setIsConnected(s.connected);
+    const s = connectSocket(user.accessToken);
+    setSocket(s);
+    setIsConnected(s.connected);
 
-      s.on('connect', () => setIsConnected(true));
-      s.on('disconnect', () => setIsConnected(false));
-    });
+    s.on('connect', () => setIsConnected(true));
+    s.on('disconnect', () => setIsConnected(false));
 
     return () => {
       disconnectSocket();
     };
-  }, [session]);
+  }, [user?.accessToken]);
 
   return (
     <SocketContext.Provider value={{ socket, isConnected }}>
@@ -243,14 +243,16 @@ export interface TaskEvent {
 
 ## Live Location Tracking
 
-### Map with Real-Time Workers
+### Map with Real-Time Workers (Phase 2D+ — Mapbox GL, NOT react-leaflet)
+
+> **Deployed change (Phase 2D, Mar 2026):** SEKAR uses **Mapbox GL** for the monitoring map with full polygon boundaries, real-time worker markers, and search. react-leaflet was prototyped but replaced.
 
 ```typescript
-// components/dashboard/LiveMap.tsx
+// fe/web/src/components/monitoring/MonitoringMap.tsx
 'use client';
 
-import { useState, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
+import { useEffect, useRef, useState } from 'react';
+import mapboxgl, { Map, Marker } from 'mapbox-gl';
 import { useSocketEvent } from '@/hooks/useSocketEvent';
 import { useSocketRoom } from '@/hooks/useSocketRoom';
 import { LocationUpdate } from '@/types/socket-events';
@@ -260,19 +262,51 @@ interface WorkerMarker {
   name: string;
   lat: number;
   lng: number;
+  status: 'active' | 'idle' | 'outside_area' | 'missing' | 'offline';
   lastUpdate: Date;
 }
 
-export function LiveMap({ areas }: { areas: Area[] }) {
+export function MonitoringMap({ areas }: { areas: Area[] }) {
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<Map | null>(null);
+  const markers = useRef<Map<string, Marker>>(new Map());
   const [workers, setWorkers] = useState<Map<string, WorkerMarker>>(new Map());
 
-  // Subscribe to all areas
+  // Initialize Mapbox map
+  useEffect(() => {
+    if (!mapContainer.current) return;
+
+    mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center: [112.7138, -7.2756], // Surabaya
+      zoom: 13,
+    });
+
+    // Add area boundaries as GeoJSON
+    areas.forEach((area) => {
+      map.current?.addSource(`area-${area.id}`, {
+        type: 'geojson',
+        data: area.boundary, // GeoJSON polygon
+      });
+      map.current?.addLayer({
+        id: `area-fill-${area.id}`,
+        type: 'fill',
+        source: `area-${area.id}`,
+        paint: { 'fill-color': '#7FBC8C', 'fill-opacity': 0.1 },
+      });
+    });
+  }, [areas]);
+
+  // Subscribe to all areas & handle location updates
   areas.forEach((area) => {
     useSocketRoom(`area:${area.id}`);
   });
 
-  // Handle location updates
   const handleLocationUpdate = useCallback((data: LocationUpdate) => {
+    if (!map.current) return;
+
     setWorkers((prev) => {
       const next = new Map(prev);
       next.set(data.workerId, {
@@ -280,48 +314,27 @@ export function LiveMap({ areas }: { areas: Area[] }) {
         name: data.workerName,
         lat: data.latitude,
         lng: data.longitude,
+        status: data.status || 'active',
         lastUpdate: new Date(data.timestamp),
       });
       return next;
     });
+
+    // Update or create marker
+    let marker = markers.current.get(data.workerId);
+    if (!marker) {
+      marker = new Marker()
+        .setLngLat([data.longitude, data.latitude])
+        .addTo(map.current!);
+      markers.current.set(data.workerId, marker);
+    } else {
+      marker.setLngLat([data.longitude, data.latitude]);
+    }
   }, []);
 
   useSocketEvent<LocationUpdate>('worker:location_update', handleLocationUpdate);
 
-  return (
-    <MapContainer
-      center={[-7.2756, 112.7138]}
-      zoom={13}
-      className="h-[500px] rounded-lg"
-    >
-      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-
-      {/* Area boundaries */}
-      {areas.map((area) => (
-        <Circle
-          key={area.id}
-          center={[area.centerLat, area.centerLng]}
-          radius={area.radiusMeters}
-          pathOptions={{ color: 'green', fillOpacity: 0.1 }}
-        />
-      ))}
-
-      {/* Worker markers */}
-      {Array.from(workers.values()).map((worker) => (
-        <Marker key={worker.id} position={[worker.lat, worker.lng]}>
-          <Popup>
-            <div>
-              <strong>{worker.name}</strong>
-              <p className="text-sm text-muted-foreground">
-                Update: {formatRelative(worker.lastUpdate, new Date())}
-              </p>
-            </div>
-          </Popup>
-        </Marker>
-      ))}
-    </MapContainer>
-  );
-}
+  return <div ref={mapContainer} className="h-[500px] rounded-lg border-2 border-nb-black shadow-nb-md" />;
 ```
 
 ---

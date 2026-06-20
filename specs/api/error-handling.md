@@ -835,7 +835,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 ---
 
 **Document Owner:** Backend Developer
-**Last Updated:** 2026-03-10
+**Last Updated:** 2026-06-20
 **Status:** Active
-**Error Codes:** 53 + 9 planned = 62 codes (Phase 2E: +9 planned codes for phone login, profile picture, multi-area, overtime clock-in/out, audit trail)
+**Error Codes:** 53 standardized (see `error-handling.md` §Standardized Error Codes); Phase 2E adds 9 more (phone login, profile picture, multi-area, overtime, audit trail) — see `specs/phases/phase-2-e-client-feedback-2/backend.md` for full Phase 2E specification
 **Related Docs:** [`contracts.md`](./contracts.md), [`authentication.md`](./authentication.md), [`../architecture/security.md`](../architecture/security.md)

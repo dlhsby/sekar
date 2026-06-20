@@ -1,19 +1,19 @@
 # Web Component Library
 
-Component library specifications for SEKAR web dashboard using **Neo Brutalism 2.1** design system (generated tokens from Phase 3 M1-R sub-phase 3-R2; PWA shell from sub-phase 3-R4; full screen sweep in sub-phase 3-R5).
+Component library specifications for SEKAR web dashboard using **Neo Brutalism 2.1.1** design system (v2.1.1 re-baseline May 25, 2026; generated tokens from Phase 3 M1-R sub-phase 3-R2; PWA shell from sub-phase 3-R4; full screen sweep in sub-phase 3-R5; Phase 4 4-R revamp complete; Phase 5 feature modules 5-1/5-2/5-3 shipped Jun 17).
 
 ## Overview
 
 The web dashboard uses **React 19 with TypeScript** and **Tailwind CSS v4** for styling. Components are built using **shadcn/ui** primitives with custom Neo Brutalism styling to match SEKAR's design system.
 
-**Key Design Principles (NB 2.1):**
-- **Bold borders**: 2px solid `#1C1917` (stone-900 black)
-- **Hard-edge shadows** (changed in Phase 3): pure offset, zero blur, opaque `#1C1917` — the `rgba()` + blur shadows from Phase 2 are gone at the generator level.
-- **Friendly corners**: 6px border-radius (base)
-- **44 px touch targets** (pointer contexts) / **48 px** (touch contexts)
-- **High contrast**: `#1C1917` text, nature-aligned colors
-- **Parks green primary**: `#7FBC8C`
-- **Canvas background**: `#F5F0EB` (warm stone) — replaces Phase 2's `#FDFD96` yellow, which stays an accent only
+**Key Design Principles (NB 2.1.1 — Phase 4 v2.1.1 rebrand, May 25 reconciliation):**
+- **Bold borders**: 2px solid `#1C1917` (stone-900 black) — some components use 2.5px per v2.1.1
+- **Hard-edge shadows** (canonical since Phase 3-0): pure offset, zero blur, opaque `#1C1917` — generated from `tokens.json`
+- **Friendly corners**: 6–10px border-radius range (base 6px for inputs, 10px for cards per v2.1.1)
+- **Touch targets**: 44–48 px (web uses 44 px pointer, mobile 48 px touch)
+- **High contrast**: `#1C1917` text, nature-aligned colors, WCAG 2.1 AA verified
+- **Parks green primary**: `#7FBC8C` (v2.1 palette rebrand from v2.0)
+- **Canvas background**: `#F5F0EB` (warm stone, canonical since Phase 3-0); `#FDFD96` pastel yellow is accent-only (pinwheel center, tabs, masthead)
 
 > **Start here (Phase 3 onward):**
 > - [`specs/ui-ux/design-tokens.md`](../ui-ux/design-tokens.md) — single source of truth for every token.
@@ -103,19 +103,21 @@ npm install @tanstack/react-query axios
 --color-nb-gray-900: #1C1917;
 ```
 
-### Shadows (NB 2.0 - Soft-Edge)
+### Shadows (NB 2.1.1 — Hard-edge, generated from tokens.json)
 
 ```css
-/* Base shadows - Soft black with slight blur */
---shadow-nb-xs: 2px 2px 0px rgba(28, 25, 23, 0.15);   /* Badges, small elements */
---shadow-nb-sm: 4px 4px 0px rgba(28, 25, 23, 0.18);   /* Cards, inputs */
---shadow-nb-md: 6px 6px 0px rgba(28, 25, 23, 0.20);   /* Buttons (default) */
---shadow-nb-lg: 8px 8px 0px rgba(28, 25, 23, 0.22);   /* Modals, dropdowns */
+/* Base shadows - Hard-edge (zero blur), opaque black */
+--shadow-nb-xs: 2px 2px 0 #1C1917;      /* Badges, small elements */
+--shadow-nb-sm: 4px 4px 0 #1C1917;      /* Cards, inputs — v2.1.1 was 3/3 per design/ */
+--shadow-nb-md: 6px 6px 0 #1C1917;      /* Buttons (default) — v2.1.1 was 4/4 per design/ */
+--shadow-nb-lg: 8px 8px 0 #1C1917;      /* Modals, dropdowns — v2.1.1 was 6/6 per design/ */
 
 /* Interaction shadows */
---shadow-nb-hover: 8px 8px 0px rgba(28, 25, 23, 0.22);  /* Grow on hover */
---shadow-nb-active: 2px 2px 0px rgba(28, 25, 23, 0.15); /* Shrink on press */
+--shadow-nb-hover: 8px 8px 0 #1C1917;   /* Grow on hover — v2.1.1 was 6/6 per design/ */
+--shadow-nb-active: 2px 2px 0 #1C1917;  /* Shrink on press */
 ```
+
+*All values generated from `specs/ui-ux/tokens.json` by `npm run tokens:build`; v2.1.1 reconciliation (May 25) aligned with `design/project/hifi-shared.css`.*
 
 ### Borders (NB 2.0)
 
@@ -129,16 +131,18 @@ npm install @tanstack/react-query axios
 --border-nb-color: #1C1917;  /* Soft black (stone-900) */
 ```
 
-### Border Radius (NB 2.0)
+### Border Radius (NB 2.1.1 — v2.1.1 reconciled to design/)
 
 ```css
 --radius-nb-none: 0px;    /* Decorative elements */
 --radius-nb-sm: 4px;      /* Badges, tags */
---radius-nb-base: 6px;    /* DEFAULT - buttons, cards, inputs */
---radius-nb-md: 8px;      /* Modals, large cards */
---radius-nb-lg: 12px;     /* Callouts, featured */
+--radius-nb-base: 10px;   /* DEFAULT - buttons, cards, inputs (v2.1.1: was 6px) */
+--radius-nb-md: 14px;     /* Modals, large cards (v2.1.1: was 8px) */
+--radius-nb-lg: 20px;     /* Callouts, featured (v2.1.1: was 12px) */
 --radius-nb-full: 9999px; /* Avatars, pills */
 ```
+
+*v2.1.1 (May 25, 2026) reconciled to canonical [`design/project/hifi-shared.css`](../../design/project/hifi-shared.css).*
 
 ---
 

@@ -1519,6 +1519,6 @@ TasksService.requestRevision(taskId, reason, actor)
 ---
 
 **Document Owner:** Software Architect
-**Last Updated:** 2026-03-10
-**Status:** Active — Phase 2E Planned
+**Last Updated:** 2026-06-20
+**Status:** Active — Phases 1–5 shipped (Phase 2E flows incorporated)
 **Related Docs:** [`system-overview.md`](./system-overview.md), [`security.md`](./security.md), [`../api/contracts.md`](../api/contracts.md)

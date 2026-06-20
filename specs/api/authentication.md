@@ -2,7 +2,9 @@
 
 Comprehensive authentication and authorization specifications for SEKAR Backend API.
 
-> **Phase 2D (Current):** This document reflects the 8-role system: satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin. See [ADR-009](../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md) for role mapping from the original 3-role system. All code examples and permission matrices use the current 8-role system. Phase 2D adds scope-based monitoring authorization and boundary/reassign permissions.
+**Last Updated:** 2026-06-20 · **Status:** Phase 5 Complete (reflects 8-role system, JWT rotation, Phase 2E+ scope fields)
+
+> **Current System:** This document reflects the 8-role system (ADR-009: satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin). JWT tokens include scope fields (rayon_id, area_id) since Phase 2E. Phase 2D adds scope-based monitoring authorization. See [ADR-009](../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md) for role mapping.
 
 ## Table of Contents
 
@@ -98,9 +100,9 @@ HMACSHA256(
 - Signed with secret key from environment variable
 - Ensures token integrity and authenticity
 
-### Complete Token Example
+### Complete Token Example (Phase 2E+: 8-role system)
 ```
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4MTI3ZGM4MS05N2NmLTRjNmUtYTFiNC1iMWFjZTI4NGVhNzgiLCJ1c2VybmFtZSI6IndvcmtlcjEiLCJyb2xlIjoid29ya2VyIiwiaWF0IjoxNzM2NDIwNDAwLCJleHAiOjE3MzcwMjUyMDB9.Xn2kF9mP3qT8wY5vR7bL1jH4sK6mN0oP9qW3eR5tY8a
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4MTI3ZGM4MS05N2NmLTRjNmUtYTFiNC1iMWFjZTI4NGVhNzgiLCJ1c2VybmFtZSI6InNhdGdhczEiLCJyb2xlIjoic2F0Z2FzIiwicmF5b25faWQiOiJudWxsIiwiYXJlYV9pZCI6ImM0ZDVlNmY3LWE4YjktMDEyMy1kZWYwLTEyMzQ1Njc4OTAxMiIsImlhdCI6MTczNjQyMDQwMCwiZXhwIjoxNzM2NDIxMzAwfQ.abc123...
 ```
 
 ---
@@ -1066,7 +1068,7 @@ app.enableCors({
   origin: [
     'http://localhost:19006', // Expo dev
     'http://10.0.2.2:19006',  // Android emulator
-    'https://sekar.DLH-sby.go.id', // Production
+    'https://sekar.wahyutrip.com', // Production
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],

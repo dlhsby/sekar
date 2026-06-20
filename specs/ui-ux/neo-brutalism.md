@@ -1,7 +1,8 @@
 # Neo Brutalism Design System
 
-**Version:** 2.0.0 (Modern Neo Brutalism)
+**Version:** 2.1.1 (Modern Neo Brutalism, Phase 4 rebrand re-baseline)
 **Phase 2+ Design System for SEKAR Web and Mobile Applications**
+**Last Updated:** 2026-06-20
 
 > **Phase 3 update (ADR-036):** Token **values** now live in [`specs/ui-ux/tokens.json`](./tokens.json) and are reconciled there if they differ from the examples below. Shadows emit with `shadowRadius: 0` (hard-edge) and `shadowOpacity: 1` in the generated mobile file; web `box-shadow` is pure offset with no blur. The shadow samples in Sections 5 / 12 / 13 below retain their Phase-2 soft-blur form for historical reference — the generator overrides them. The canonical page background is `bg.canvas = #F5F0EB` (warm stone); `#FDFD96` pastel yellow is an accent-only token from Phase 3-0 onward. See [design-tokens.md](./design-tokens.md) for the canonical registry and [ADR-036](../architecture/decisions/ADR-036-design-tokens-single-source.md) for rationale.
 
@@ -78,12 +79,14 @@ sidebar-active: #0F3520    sidebar-border: #2D5233
 --shadow-active:  2px 2px 0px #1C1917   /* With translate(2px, 2px) */
 ```
 
-**Shadows (React Native):**
+**Shadows (React Native — Phase 3 canonical emission, ADR-036):**
 ```typescript
-sm:     { shadowOffset: { width: 3, height: 3 }, shadowOpacity: 0.18, shadowRadius: 2, elevation: 3 }
-md:     { shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.20, shadowRadius: 3, elevation: 4 }
-lg:     { shadowOffset: { width: 5, height: 5 }, shadowOpacity: 0.22, shadowRadius: 4, elevation: 5 }
-active: { shadowOffset: { width: 1, height: 1 }, shadowOpacity: 0.15, shadowRadius: 0, elevation: 1 }
+// Hard-edge (shadowRadius: 0, shadowOpacity: 1) per NB identity — generated from tokens.json
+xs:     { shadowColor: '#1C1917', shadowOffset: { width: 2,  height: 2  }, shadowOpacity: 1, shadowRadius: 0, elevation: 2  }
+sm:     { shadowColor: '#1C1917', shadowOffset: { width: 4,  height: 4  }, shadowOpacity: 1, shadowRadius: 0, elevation: 4  }
+md:     { shadowColor: '#1C1917', shadowOffset: { width: 6,  height: 6  }, shadowOpacity: 1, shadowRadius: 0, elevation: 6  }
+lg:     { shadowColor: '#1C1917', shadowOffset: { width: 8,  height: 8  }, shadowOpacity: 1, shadowRadius: 0, elevation: 8  }
+active: { shadowColor: '#1C1917', shadowOffset: { width: 2,  height: 2  }, shadowOpacity: 1, shadowRadius: 0, elevation: 2  }
 ```
 
 **Borders:**
@@ -1350,11 +1353,11 @@ const statusBadgeVariant = {
 ---
 
 **Document Owner:** UI/UX Designer
-**Last Updated:** 2026-04-25
-**Status:** Phase 2+ Design System - PRIMARY REFERENCE (v2.0.0)
+**Last Updated:** 2026-06-20
+**Status:** Phase 2+ Design System - PRIMARY REFERENCE (v2.1.1, Phase 4 rebrand re-baseline)
 **Implementation:**
-- Mobile: `fe/mobile/src/constants/nbTokens.ts` + `fe/mobile/src/components/nb/`
-- Web: `fe/web/src/app/globals.css` + `fe/web/src/components/nb/`
+- Mobile: `fe/mobile/src/constants/generated/tokens.ts` (generated) + `fe/mobile/src/constants/nbTokens.ts` (re-export) + `fe/mobile/src/components/nb/`
+- Web: `fe/web/src/app/generated/tokens.css` (generated) + `fe/web/src/app/globals.css` (@import) + `fe/web/src/components/ui/` + `fe/web/src/components/nb/`
 
 ---
 

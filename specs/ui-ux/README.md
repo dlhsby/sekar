@@ -1,7 +1,7 @@
 # UI/UX Design Specifications
 
-**Version:** 2.1.0 (Neo Brutalism 2.0 + generated tokens)
-**Last Updated:** 2026-04-25
+**Version:** 2.1.1 (Neo Brutalism 2.0 + generated tokens, Phase 4 rebrand re-baseline)
+**Last Updated:** 2026-06-20
 
 Design system and visual guidelines for SEKAR mobile and web applications.
 
@@ -348,16 +348,12 @@ background-size: 24px 24px;
 
 ## 🎯 Phase Status
 
-| Phase | Components | Status |
-|-------|-----------|--------|
-| **Phase 1 MVP** | 14 core components | ✅ Complete (Material Design - Archived) |
-| **Phase 2C Mobile** | 5 Neo Brutalism components | ✅ Complete (needs token update for v2.0) |
-| **Phase 2D Web** | 10 Neo Brutalism components | ✅ Complete (needs token update for v2.0) |
-| **Phase 2D: Real-Time Monitoring** | Five-status tracking (active/inactive/outside_area/missing/offline), Mapbox GL map with markers and polygons, filter sidebar, worker detail panel, staffing summary, monitoring config admin | ✅ Code-complete (pending merge & deploy) |
-| **Phase 3** | 5 components (Charts, Dashboard, Builder) | ✅ Specified in future-phases-patterns.md |
-| **Phase 4** | 3 components (QR, Asset, Maintenance) | ✅ Specified in future-phases-patterns.md |
-| **Phase 5** | 4 patterns (iOS-specific) | ✅ Specified in future-phases-patterns.md |
-| **Phase 6** | 4 components (Web dashboard) | ✅ Specified in future-phases-patterns.md |
+| Phase | Status | Details |
+|-------|--------|---------|
+| **Phase 1–3** | ✅ Complete | All components shipped on Neo Brutalism 2.0 design system (April 2026) |
+| **Phase 4** | ✅ Complete (Jun 11, 2026) | UI/UX revamp (4-R sub-phase) shipped; design-system v2.1 re-baseline applied (May 22–25); all 3 workspaces on v2.1 tokens + role accents |
+| **Phase 5** | ✅ Complete (Jun 17, 2026) | Reporting (5-1), Analytics (5-2), Assets (5-3) feature modules shipped; web 11 pages (Recharts), mobile 8 screens + 3 Redux slices (charts wired) |
+| **Phases 6+** | See `specs/COMPLETION_STATUS.md` | Refer to project SoT for current phase scope and status |
 
 ---
 
@@ -372,9 +368,9 @@ background-size: 24px 24px;
 ---
 
 **Document Owner:** UI/UX Designer
-**Last Updated:** 2026-04-25
-**Status:** Active - Simplified Single-Source Documentation Structure
-**Design System Version:** 2.0.0 (Modern Neo Brutalism)
+**Last Updated:** 2026-06-20
+**Status:** Active - Phase 4 v2.1 Baseline + Phase 5 Feature Modules (Reporting/Analytics/Assets)
+**Design System Version:** 2.1.1 (Modern Neo Brutalism, Phase 4 rebrand re-baseline reconciled to design/)
 
 **For the complete design system specification, see [neo-brutalism.md](./neo-brutalism.md)**
 **For version history and migration guides, see [CHANGELOG.md](./CHANGELOG.md)**

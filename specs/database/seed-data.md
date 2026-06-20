@@ -10,11 +10,14 @@ This document specifies the seed data for SEKAR database. Seed data is used for 
 - Integration testing with known data
 - Training environment for users
 
+**Authority:** Seed scripts live in `be/src/database/seeds/` (destructive `db:seed` for dev; non-destructive `db:seed:production` for staging/prod) — see [`be/src/database/seeds/README.md`](/be/src/database/seeds/README.md)
+
 **Seeding Strategy:**
 - Automated via NestJS seed service
 - Idempotent (can run multiple times safely)
 - Uses realistic Surabaya locations
-- Covers all user roles and scenarios
+- Covers all 8 user roles (ADR-009) and scenarios
+- Phase 3+ includes plants, pruning requests, service capacity reference data
 
 ---
 
@@ -23,21 +26,21 @@ This document specifies the seed data for SEKAR database. Seed data is used for 
 ### Data Categories
 
 1. **Master Data** (Reference Tables)
-   - Area Types (4 types)
+   - Area Types (4–6 types: park, pedestrian, mini_garden, street, +green_corridor, +median)
+   - Rayons (7 rayons per DLH Surabaya structure)
 
 2. **User Data** (Authentication & Authorization)
-   - Admin (1)
-   - Supervisors (2)
-   - Workers (3)
+   - 8 roles per ADR-009 (satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin)
+   - Test users for each role (`satgas1`, `linmas1`, etc. password: `password123`)
+   - Staging seed: 85 users (see `specs/COMPLETION_STATUS.md`)
 
 3. **Work Location Data**
-   - Areas (3 locations in Surabaya)
-   - Worker Assignments (3 assignments)
+   - Areas (multiple, scoped by rayon)
+   - User area assignments (user_areas table)
 
-4. **Activity Data**
-   - Shifts (4 shifts: 3 completed, 1 active)
-   - Reports (2 work reports)
-   - Location Logs (10 GPS tracking records)
+4. **Activity Data** (Phase 1–2)
+   - Shifts, Activities (renamed from work_reports), Location Logs
+   - Phase 3+: plants, pruning_requests, service_capacity, plant_seeds
 
 ---
 

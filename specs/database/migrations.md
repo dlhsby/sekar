@@ -5,9 +5,10 @@
 This document outlines the database migration strategy for SEKAR using TypeORM. It covers migration creation, execution, rollback procedures, and best practices for managing schema changes.
 
 **Migration Tool:** TypeORM CLI
-**Node Version:** 18+
+**Node Version:** >=24.13
 **TypeScript Version:** 5.x
 **Current Strategy:** Auto-synchronize in development, migrations in production
+**Authority:** Current migrations live in `be/src/database/migrations/` (see `COMPLETION_STATUS.md` for table count)
 
 ---
 

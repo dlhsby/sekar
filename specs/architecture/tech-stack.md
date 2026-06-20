@@ -7,9 +7,9 @@ Complete technology specification for all SEKAR system components.
 ### Core Framework
 | Technology | Version | Purpose | Why Chosen |
 |------------|---------|---------|------------|
-| **Node.js** | 18.x LTS | Runtime environment | Long-term support, excellent performance |
-| **NestJS** | 10.x | Backend framework | Enterprise TypeScript framework, modular architecture |
-| **TypeScript** | 5.x | Programming language | Type safety, better tooling, maintainability |
+| **Node.js** | >=24.13 LTS | Runtime environment | Long-term support, excellent performance |
+| **NestJS** | 11.x | Backend framework | Enterprise TypeScript framework, modular architecture |
+| **TypeScript** | 5.9 | Programming language | Type safety, better tooling, maintainability |
 
 ### Database & ORM
 | Technology | Version | Purpose | Why Chosen |
@@ -75,9 +75,9 @@ Complete technology specification for all SEKAR system components.
 ### Core Framework
 | Technology | Version | Purpose | Why Chosen |
 |------------|---------|---------|------------|
-| **React Native** | 0.76.x | Mobile framework | Cross-platform, native performance |
-| **React** | 18.x | UI library | Component-based architecture |
-| **TypeScript** | 5.x | Programming language | Type safety, better tooling |
+| **React Native** | 0.83.x | Mobile framework | Cross-platform, native performance |
+| **React** | 19.x | UI library | Component-based architecture |
+| **TypeScript** | 5.9 | Programming language | Type safety, better tooling |
 
 ### State Management
 | Technology | Version | Purpose | Why Chosen |
@@ -85,6 +85,7 @@ Complete technology specification for all SEKAR system components.
 | **Redux Toolkit** | 2.x | Global state management | Official recommended approach, less boilerplate |
 | **React Redux** | 9.x | React bindings for Redux | Official React integration |
 | **redux-persist** | 6.x | State persistence | Offline data persistence |
+| **@react-native-firebase/messaging** | 18.x | FCM push notifications | Phase 5+ (enabled per-environment) |
 
 ### Navigation
 | Technology | Version | Purpose | Why Chosen |
@@ -171,9 +172,9 @@ Complete technology specification for all SEKAR system components.
 ### Core Framework
 | Technology | Version | Purpose | Why Chosen |
 |------------|---------|---------|------------|
-| **Next.js** | 14+ | React framework | SSR, app router, TypeScript support |
-| **React** | 18.x | UI library | Component-based architecture |
-| **TypeScript** | 5.x | Programming language | Type safety, better tooling |
+| **Next.js** | 16.x | React framework | SSR, app router, TypeScript support |
+| **React** | 19.x | UI library | Component-based architecture |
+| **TypeScript** | 5.9 | Programming language | Type safety, better tooling |
 
 ### State Management
 | Technology | Version | Purpose | Why Chosen |
@@ -184,7 +185,7 @@ Complete technology specification for all SEKAR system components.
 ### Styling
 | Technology | Version | Purpose | Why Chosen |
 |------------|---------|---------|------------|
-| **Tailwind CSS** | 3.x | Utility-first CSS | Rapid development, consistency |
+| **Tailwind CSS** | 4.x | Utility-first CSS | Rapid development, consistency |
 | **PostCSS** | 8.x | CSS processing | Tailwind dependency |
 | **Autoprefixer** | 10.x | CSS vendor prefixes | Browser compatibility |
 
@@ -195,11 +196,11 @@ Complete technology specification for all SEKAR system components.
 | **shadcn/ui** | Latest | Component library | Built on Radix, Tailwind |
 | **Lucide React** | Latest | Icon library | Modern, consistent icons |
 
-### Data Visualization
+### Data Visualization & Maps
 | Technology | Version | Purpose | Why Chosen |
 |------------|---------|---------|------------|
 | **Recharts** | 2.x | Chart library | React-based, declarative |
-| **React Leaflet** | 4.x | Map display | OpenStreetMap integration |
+| **Mapbox GL JS** | Latest | Map display | High-performance vector tiles, mobile-friendly |
 
 ### Forms & Validation
 | Technology | Version | Purpose | Why Chosen |
@@ -210,14 +211,14 @@ Complete technology specification for all SEKAR system components.
 ### Authentication
 | Technology | Version | Purpose | Why Chosen |
 |------------|---------|---------|------------|
-| **NextAuth.js** | 5.x (Auth.js) | Authentication | JWT integration, OAuth support |
+| **AuthContext** | (custom) | Authentication | JWT via httpOnly cookies, route guards via `src/proxy.ts` |
 
 ### Testing
 | Technology | Version | Purpose | Why Chosen |
 |------------|---------|---------|------------|
-| **Vitest** | 1.x | Test framework | Fast, Vite-compatible |
+| **Jest** | 29.x | Test framework | Industry standard for Next.js |
 | **@testing-library/react** | 14.x | Component testing | Best practices testing |
-| **Playwright** | 1.x | E2E testing | Cross-browser testing |
+| **Playwright** | 1.x | E2E testing | Cross-browser testing (required >80% coverage) |
 
 ### Development Tools
 | Technology | Version | Purpose | Why Chosen |
@@ -251,23 +252,27 @@ Complete technology specification for all SEKAR system components.
 
 ## Infrastructure & DevOps
 
-### Cloud Platform
-| Technology | Purpose | Why Chosen |
-|------------|---------|------------|
-| **AWS** | Cloud infrastructure | Industry leader, comprehensive services |
-| **AWS RDS** | Managed PostgreSQL | Automated backups, scaling |
-| **AWS S3** | Object storage | Reliable, scalable media storage |
-| **AWS Elastic Beanstalk** | Application hosting | Easy deployment, auto-scaling |
-| **AWS CloudFront** | CDN (Phase 3+) | Fast media delivery |
-| **AWS Lambda** | Serverless functions | Image processing |
-| **AWS CloudWatch** | Monitoring | Logs, metrics, alarms |
+### Cloud & On-Prem Infrastructure
+| Technology | Purpose | Status |
+|------------|---------|--------|
+| **AWS (Staging)** | Cloud infrastructure | ap-southeast-3, co-tenant EC2 + RDS |
+| **AWS RDS** | Managed PostgreSQL (staging) | Automated backups, scaling |
+| **AWS S3** | Object storage (staging) | Reliable, scalable media storage |
+| **AWS Systems Manager** | Secret rotation, parameter store | Per-environment keys via GitHub OIDC |
+| **Docker Compose (Production)** | On-prem containerization | Production = docker-compose.prod.yml (no cloud) |
+| **MinIO** | S3-compatible object storage | Dev (localhost:9000) + Production (on-prem) |
+| **Redis** | Caching, Streams, WebSocket adapter | Staging + Production (ADR-029) |
+| **AWS CloudWatch** | Monitoring (staging) | Logs, metrics, alarms |
 
-### CI/CD
-| Technology | Purpose | Why Chosen |
-|------------|---------|------------|
+### CI/CD & Deployment
+| Technology | Purpose | Current Setup |
+|------------|---------|--------------|
 | **GitHub Actions** | CI/CD pipeline | Integrated with GitHub, free |
-| **Docker** | Containerization | Consistent environments |
-| **Docker Compose** | Local development | Multi-container orchestration |
+| **Docker** | Containerization | Consistent environments (staging + production) |
+| **Docker Compose** | Local development + production | Multi-container orchestration |
+| **GitHub OIDC** | Secure AWS credential exchange | Staging deploy authentication |
+| **AWS ECR** | Container registry | Staging image storage |
+| **AWS Systems Manager** | Parameter storage, secret rotation | Environment-specific secrets via SSM |
 
 ### Monitoring & Logging
 | Technology | Version | Purpose | Phase |
@@ -319,8 +324,9 @@ Complete technology specification for all SEKAR system components.
 - Always commit lock files to git
 
 ### Node.js LTS Strategy
-- Use Node.js 18.x LTS (Active LTS until April 2025)
-- Plan migration to Node.js 20.x LTS (Q2 2026)
+- Production: >=24.13 LTS (current)
+- Dev/CI: >=24.13 LTS
+- Update cadence: Minor version updates quarterly, patches as needed
 - Never use odd-numbered versions in production
 
 ---
@@ -365,6 +371,6 @@ Complete technology specification for all SEKAR system components.
 ---
 
 **Document Owner:** Software Architect
-**Last Updated:** 2026-01-16
-**Status:** Active
-**Related Docs:** [`system-overview.md`](./system-overview.md), [`data-flow.md`](./data-flow.md)
+**Last Updated:** 2026-06-20
+**Status:** Active — Phases 1–5 shipped
+**Related Docs:** [`system-overview.md`](./system-overview.md), [`data-flow.md`](./data-flow.md), [`../CLAUDE.md`](../../CLAUDE.md)

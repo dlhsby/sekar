@@ -594,4 +594,4 @@ A token value change is a **minor** version bump. A token rename or removal is a
 
 ---
 
-**Last Updated:** 2026-04-25
+**Last Updated:** 2026-06-20

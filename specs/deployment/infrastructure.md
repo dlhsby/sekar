@@ -345,8 +345,8 @@ sekar-prod-media (Primary bucket)
     "AllowedHeaders": ["*"],
     "AllowedMethods": ["GET", "PUT", "POST"],
     "AllowedOrigins": [
-      "https://sekar.DLH-sby.go.id",
-      "https://api.sekar.DLH-sby.go.id"
+      "https://sekar.wahyutrip.com",
+      "https://api.sekar.wahyutrip.com"
     ],
     "ExposeHeaders": ["ETag"]
   }
@@ -432,7 +432,7 @@ See [`deployment-guide.md`](./deployment-guide.md) for current staging/productio
 ### Distribution Configuration
 
 **Origin:** sekar-prod-media.s3.ap-southeast-1.amazonaws.com
-**Distribution Domain:** media.sekar.DLH-sby.go.id
+**Distribution Domain:** media.sekar.wahyutrip.com
 
 **Behaviors:**
 | Path Pattern | Origin | Viewer Protocol | Cache Policy |
@@ -452,7 +452,7 @@ See [`deployment-guide.md`](./deployment-guide.md) for current staging/productio
 
 **SSL Certificate:**
 - Custom SSL (ACM)
-- Domain: media.sekar.DLH-sby.go.id
+- Domain: media.sekar.wahyutrip.com
 - Minimum TLS: 1.2
 
 ---
@@ -599,22 +599,22 @@ See [`ci-cd.md`](./ci-cd.md) for the full GitHub Actions workflow.
 
 ### Hosted Zone
 
-**Domain:** sekar.DLH-sby.go.id
+**Domain:** sekar.wahyutrip.com
 **Type:** Public hosted zone
 
 ### DNS Records
 
 | Name | Type | Value | TTL |
 |------|------|-------|-----|
-| sekar.DLH-sby.go.id | A | Alias to ALB | 300 |
-| api.sekar.DLH-sby.go.id | A | Alias to ALB | 300 |
-| media.sekar.DLH-sby.go.id | CNAME | CloudFront distribution | 300 |
-| www.sekar.DLH-sby.go.id | CNAME | sekar.DLH-sby.go.id | 300 |
+| sekar.wahyutrip.com | A | Alias to ALB | 300 |
+| api.sekar.wahyutrip.com | A | Alias to ALB | 300 |
+| media.sekar.wahyutrip.com | CNAME | CloudFront distribution | 300 |
+| www.sekar.wahyutrip.com | CNAME | sekar.wahyutrip.com | 300 |
 
 ### Health Checks
 
 **Health Check 1: API Endpoint**
-- Endpoint: https://api.sekar.DLH-sby.go.id/api/health
+- Endpoint: https://api.sekar.wahyutrip.com/api/health
 - Protocol: HTTPS
 - Port: 443
 - Path: /api/health

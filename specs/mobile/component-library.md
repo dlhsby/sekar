@@ -1,8 +1,9 @@
 # Mobile Component Library
 
-**Last Updated:** 2026-06-11
-**Version:** Neo Brutalism 2.1 (generated tokens from Phase 3 M1-R sub-phase 3-R2; new NBModal/NBToast/NBText shipping in sub-phase 3-R3)
-**Location:** `fe/mobile/src/components/nb/`
+**Last Updated:** 2026-06-20
+**Version:** Neo Brutalism 2.1.1 (Phase 4 rebrand re-baseline v2.1.1 applied May 25, 2026; generated tokens from `specs/ui-ux/tokens.json` via Phase 3 M1-R sub-phase 3-R2; NBModal/NBToast/NBText via 3-R3)
+**Location:** `fe/mobile/src/components/nb/` + `fe/mobile/src/constants/generated/tokens.ts`
+**Phase 5 status:** Reporting (5-1) + Analytics (5-2) + Assets (5-3) screens complete; feature modules shipped Jun 17
 
 This document provides the complete component library reference for the SEKAR mobile application.
 
@@ -40,11 +41,12 @@ This document provides the complete component library reference for the SEKAR mo
 
 ### Design Principles
 
-1. **Neo Brutalism 2.0** - Soft-edge shadows, 2px borders, 6px radius
-2. **Accessibility First** - WCAG 2.1 AA compliant, 48px touch targets
+1. **Neo Brutalism 2.1** - Hard-edge shadows (zero blur), 2px borders, 6–10px radius (v2.1.1 reconciled to design/)
+2. **Accessibility First** - WCAG 2.1 AA compliant, 48px touch targets, status color pairs for color-blind users
 3. **Indonesian Localization** - Default labels in Indonesian
 4. **Haptic Feedback** - Tactile response on interactions
 5. **Reduce Motion** - Respects system accessibility settings
+6. **Generated tokens** - All colors/shadows/spacing from `fe/mobile/src/constants/generated/tokens.ts` (never hand-edit)
 
 ---
 

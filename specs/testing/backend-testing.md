@@ -875,5 +875,5 @@ npm run test:debug
 
 ---
 
-*Last Updated: January 2026*
-*Current Status: 256 tests, 100% coverage*
+*Last Updated: 2026-06-20*
+*Current Status (Phase 5 code-side): ~1,938 tests, 93.13% stmt / 82.32% branch coverage*

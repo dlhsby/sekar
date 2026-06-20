@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides comprehensive Entity Relationship Diagrams for the SEKAR database schema, updated to reflect **Phase 2C (Client Feedback)** changes including the 8-role system, terminology cleanup (ADR-010), flat overtime, polygon geofencing, and schema modifications.
+This document provides comprehensive Entity Relationship Diagrams for the SEKAR database schema, reflecting Phase 1–5 implementation including the 8-role system (ADR-009), terminology cleanup (ADR-010), monitoring v2 (ADR-029), plants management (ADR-030), typed tasks (ADR-031), and reporting/analytics/assets modules (ADRs 024–026).
 
 **Notation:**
 - `1` = One (exactly one)
@@ -12,9 +12,10 @@ This document provides comprehensive Entity Relationship Diagrams for the SEKAR 
 - `||` = Mandatory (NOT NULL)
 - `o|` = Optional (NULL allowed)
 
-**Related ADRs:**
-- [ADR-009: Role System Overhaul](../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md)
-- [ADR-010: Terminology Cleanup](../architecture/decisions/ADR-010-phase2c-terminology-cleanup.md)
+**Authority:**
+- **Current ERD:** below (conceptual model for Phase 2C–5)
+- **Actual schema:** see `schema.md` + migrations in `be/src/database/migrations/`
+- **Live database:** reflect `specs/COMPLETION_STATUS.md` (Phase 5 complete, tables include all Phase 3–5 additions)
 
 ---
 

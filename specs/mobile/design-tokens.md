@@ -1,9 +1,9 @@
 # Mobile Design Tokens Reference
 
-> **⚠️ Deprecated as a source of truth (since Phase 3 M1-R).** This document is now a **mobile-platform lens** on the canonical tokens. Any value in this file MUST match [`specs/ui-ux/tokens.json`](../ui-ux/tokens.json) and [`specs/ui-ux/design-tokens.md`](../ui-ux/design-tokens.md). To change a token value: edit `tokens.json`, run `npm run tokens:build`, commit the regenerated `fe/mobile/src/constants/generated/tokens.ts`. Never hand-edit `nbTokens.ts` or this document first — CI (`npm run tokens:verify`) will reject drift.
+> **Mobile-platform lens on canonical tokens (Phase 3 M1-R +).** This document shows how Layer-1 tokens from `specs/ui-ux/tokens.json` surface inside React Native. Any value MUST match the canonical source. To change a token: edit `tokens.json`, run `npm run tokens:build`, commit the regenerated `fe/mobile/src/constants/generated/tokens.ts`. Never hand-edit `nbTokens.ts` or this document — CI (`npm run tokens:verify`) will reject drift.
 
-**Last Updated:** 2026-04-25
-**Version:** Neo Brutalism 2.1 (generated tokens from Phase 3 M1-R sub-phase 3-R2)
+**Last Updated:** 2026-06-20
+**Version:** Neo Brutalism 2.1.1 (Phase 4 rebrand re-baseline v2.1.1, May 25 reconciliation to design/; generated from Phase 3 M1-R sub-phase 3-R2 pipeline)
 **Single source of truth:** [`specs/ui-ux/tokens.json`](../ui-ux/tokens.json) (validated by [`tokens.schema.json`](../ui-ux/tokens.schema.json))
 **Canonical registry:** [`specs/ui-ux/design-tokens.md`](../ui-ux/design-tokens.md)
 **Generated consumer:** `fe/mobile/src/constants/generated/tokens.ts` (emitted by `scripts/build-tokens.ts` — never hand-edit)

@@ -6,10 +6,11 @@ This directory contains comprehensive technical specifications for the SEKAR (Si
 
 SEKAR is a worker tracking and task management system for DLH Surabaya (Department of Cleanliness and Green Space). The system enables real-time GPS tracking, digital clock-in/out, work reports with multimedia evidence, and supervisor dashboards for managing 500+ workers across 30+ locations.
 
-**Current Status:**
-- **Backend:** Phase 2E Complete (1,264 tests, 94.51% coverage, ~130 endpoints, 18 modules)
-- **Mobile:** Phase 2E Complete (3,669+ tests, 80.31%+ coverage, 21 screens, WCAG 2.1 AA)
-- **Web:** Phase 2E Complete (505+ tests, 96%+ coverage, 21 pages, Next.js 16.1.6)
+**Current Status:** Phases 1–5 shipped (Reporting / Analytics / Assets complete); staging is live on
+AWS. The **single source of truth for status + metrics** (tests, coverage, endpoints, what's
+deployed) is **[`COMPLETION_STATUS.md`](./COMPLETION_STATUS.md)** — this hub does not duplicate live
+numbers. Roughly: backend ~218 endpoints / 33 modules, web (Next.js 16) + mobile (React Native 0.83),
+both on the Neo Brutalism design system.
 
 ## 🗂️ Documentation Structure
 
@@ -33,13 +34,16 @@ This specifications folder is organized by **specialist roles** to enable parall
 | Directory | Phase | Timeline | Description |
 |-----------|-------|----------|-------------|
 | [`phases/phase-1-mvp/`](./phases/phase-1-mvp/) | Phase 1 | Weeks 1-2 | MVP - Clock-in/out, Reports, GPS tracking |
-| [`phases/phase-2-enhanced/`](./phases/phase-2-enhanced/) | Phase 2 | Weeks 3-4 | Tasks, Notifications, KMZ Import |
+| [`phases/phase-2-a-enhanced/`](./phases/phase-2-a-enhanced/) | Phase 2 | Weeks 3-4 | Tasks, Notifications, KMZ Import |
 | [`phases/phase-2-c-client-feedback/`](./phases/phase-2-c-client-feedback/) | Phase 2C | 4-6 weeks | Client Feedback: 8-role system, terminology cleanup, polygon geofencing |
 | [`phases/phase-2-d-monitoring/`](./phases/phase-2-d-monitoring/) | Phase 2D | 1 week | Real-Time Monitoring: five-status tracking, Mapbox, location history |
 | [`phases/phase-2-e-client-feedback-2/`](./phases/phase-2-e-client-feedback-2/) | Phase 2E | 1 day | Client Feedback II: phone login, multi-area, overtime redesign |
-| [`phases/phase-3-plants-monitoring-rebuild/`](./phases/phase-3-plants-monitoring-rebuild/) | Phase 3 | 5-7 weeks (73 dev-days) | Plants Management + Monitoring Rebuild + Public Intake (incl. M1-R Redesign Foundation) — Not Started |
-| [`phases/phase-4-production-readiness/`](./phases/phase-4-production-readiness/) | Phase 4 | 6-8 weeks | Production Readiness: FCM, export, E2E, security, polish (Redis adopted in Phase 3) |
-| [`phases/phase-5-finishing-ios/`](./phases/phase-5-finishing-ios/) | Phase 5 | 7-9 weeks | Finishing, Release & iOS: Reporting, Analytics, Assets, iOS |
+| [`phases/phase-3-plants-monitoring-rebuild/`](./phases/phase-3-plants-monitoring-rebuild/) | Phase 3 | ✅ shipped | Plants Management + Monitoring Rebuild + Public Intake (incl. M1-R Redesign Foundation) |
+| [`phases/phase-4-production-readiness/`](./phases/phase-4-production-readiness/) | Phase 4 | ✅ shipped | Production Readiness: FCM, export, E2E, security, rebrand/UI revamp, polish |
+| [`phases/phase-5-finishing-ios/`](./phases/phase-5-finishing-ios/) | Phase 5 | ✅ shipped (iOS native = Mac-pending) | Finishing, Release & iOS: Reporting, Analytics, Assets |
+
+> The per-phase folders below are **point-in-time records** of what each phase planned/shipped — not
+> live status. For current status see [`COMPLETION_STATUS.md`](./COMPLETION_STATUS.md).
 
 **See [`phases/README.md`](./phases/README.md) for detailed navigation of phase documentation.**
 
@@ -73,7 +77,7 @@ Start with [`web/pages.md`](./web/pages.md) for web dashboard page specification
 - [`web/pages.md`](./web/pages.md) - Page structure and routes
 - [`web/components.md`](./web/components.md) - Shadcn/ui component library
 - [`web/data-fetching.md`](./web/data-fetching.md) - React Query patterns
-- [`web/authentication.md`](./web/authentication.md) - NextAuth.js setup
+- [`web/authentication.md`](./web/authentication.md) - AuthContext (JWT cookie) setup
 - [`web/forms.md`](./web/forms.md) - React Hook Form + Zod
 - [`web/data-tables.md`](./web/data-tables.md) - TanStack Table patterns
 - [`web/realtime.md`](./web/realtime.md) - WebSocket integration
@@ -93,9 +97,10 @@ Start with [`deployment/infrastructure.md`](./deployment/infrastructure.md) for 
 ### Backend
 - **Framework:** NestJS 11.x with TypeScript 5.9
 - **Database:** PostgreSQL 14+ with TypeORM
-- **Authentication:** JWT with Passport.js
-- **Storage:** AWS S3 for media files
-- **Documentation:** Swagger/OpenAPI
+- **Authentication:** JWT with Passport.js (15-min access + 7-day refresh, rotation)
+- **Storage:** S3 (staging) / MinIO (dev + on-prem prod) for media
+- **Realtime / cache:** WebSocket (Socket.IO) + Redis Streams
+- **Documentation:** Swagger/OpenAPI at `/api/v1/docs`
 
 ### Mobile
 - **Framework:** React Native 0.83.1 with TypeScript
@@ -107,21 +112,19 @@ Start with [`deployment/infrastructure.md`](./deployment/infrastructure.md) for 
 - **Offline:** Offline-first with sync queue
 
 ### Web
-- **Framework:** Next.js 16.1.6 with App Router
-- **UI Library:** Shadcn/ui + TailwindCSS
-- **State Management:** React Query (TanStack Query)
-- **Authentication:** NextAuth.js v5
-- **Forms:** React Hook Form + Zod
-- **Tables:** TanStack Table
-- **Charts:** Recharts
-- **Maps:** react-leaflet
-- **Real-time:** Socket.IO client
+- **Framework:** Next.js 16 (App Router) + React 19
+- **UI:** shadcn/ui + TailwindCSS 4 (Neo Brutalism design system)
+- **State / data:** TanStack Query + Zustand (UI state)
+- **Authentication:** JWT via `AuthContext` (httpOnly cookie; route guard in `src/proxy.ts`)
+- **Forms:** React Hook Form + Zod · **Tables:** TanStack Table · **Charts:** Recharts
+- **Maps:** **Mapbox GL JS** · **Real-time:** Socket.IO client
+- **PWA:** installable, offline shell (feature-flagged)
 
 ### Infrastructure
-- **Cloud:** AWS (RDS, S3, Elastic Beanstalk/ECS)
-- **CI/CD:** GitHub Actions
-- **Monitoring:** CloudWatch, Sentry
-- **Local Dev:** Docker Compose
+- **Staging:** AWS — co-tenant EC2 + shared RDS + S3 (instance role), deploy via GitHub **OIDC → ECR → SSM** (no Elastic Beanstalk)
+- **Production:** **on-prem** Docker Compose (Postgres + Redis + MinIO), platform-agnostic — not yet deployed
+- **CI/CD:** GitHub Actions · **Secrets:** dotenvx (encrypted committed env) · **Local Dev:** Docker Compose (Postgres / MinIO / Redis / Adminer)
+- **Monitoring:** CloudWatch (staging); Sentry planned
 
 ## 🔑 Key Design Decisions
 
@@ -142,11 +145,12 @@ Phase 1-2B: Three roles (Worker, Supervisor, Admin). Phase 2C: Eight roles — s
 
 ## 📖 Reading Path for New Developers
 
-1. **Understand the System** → [`architecture/system-overview.md`](./architecture/system-overview.md)
-2. **Review Database Design** → [`database/schema.md`](./database/schema.md)
-3. **Learn API Contracts** → [`api/contracts.md`](./api/contracts.md)
-4. **Understand Current Phase** → [`phases/phase-1-mvp/README.md`](./phases/phase-1-mvp/README.md)
-5. **Check Your Role's Specs** → Role-specific folder from table above
+1. **Start at the root** → [`/README.md`](/README.md) (project, local setup, contribute, deploy, release)
+2. **Understand the System** → [`architecture/system-overview.md`](./architecture/system-overview.md)
+3. **Review Database Design** → [`database/schema.md`](./database/schema.md)
+4. **Learn API Contracts** → [`api/contracts.md`](./api/contracts.md) (+ live Swagger `/api/v1/docs`)
+5. **Check current status** → [`COMPLETION_STATUS.md`](./COMPLETION_STATUS.md)
+6. **Check Your Role's Specs** → role-specific folder from the table above
 
 ## 🔄 Document Maintenance
 
@@ -173,32 +177,21 @@ Phase 1-2B: Three roles (Worker, Supervisor, Admin). Phase 2C: Eight roles — s
 - **Run Locally:** [`deployment/local-development.md`](./deployment/local-development.md) - Docker infra (PostgreSQL, Adminer, MinIO, Redis), per-workspace run, WSL2 device networking
 - **Obtaining Keys:** [`deployment/credentials-setup.md`](./deployment/credentials-setup.md) - Firebase, Google Maps, Mapbox, AWS S3 credentials
 - **Operations:** [`deployment/operations.md`](./deployment/operations.md) - Migrations, backup/restore, rollback, incident runbooks
-- **E2E Testing:** [`testing/e2e-testing.md`](./testing/e2e-testing.md) - Playwright testing guide
+- **CI/CD & releases:** [`deployment/ci-cd.md`](./deployment/ci-cd.md) - Pipelines, secrets, `server-v*` / `mobile-v*` releases, `scripts/release.sh`
+- **Encrypted secrets (dotenvx):** [`deployment/encrypted-secrets.md`](./deployment/encrypted-secrets.md) - Commit encrypted env, decrypt at runtime
+- **E2E Testing:** [`testing/web-testing.md`](./testing/web-testing.md) - Playwright testing guide
 
-## 🎯 Current Development Focus
+## 🎯 Current status & focus
 
-**Phase 2E Client Feedback II (✅ COMPLETE — March 11, 2026):**
-- ✅ Backend: 18 modules, ~130 endpoints, 1,264 tests (94.51% coverage)
-- ✅ Mobile: 21 screens, 3,669+ tests (80.31%+ coverage)
-- ✅ Web: 21 pages, 505+ tests (96%+ coverage), Next.js 16.1.6
-- ✅ Database: 22 tables, 6 migrations, 8-role system
-- ✅ DevOps: 3 CI/CD pipelines, Phase 2D deployed to production
-- ✅ ADRs: 15 architecture decision records (ADR-001 through ADR-015)
+Phases 1–5 have shipped (plants/monitoring-rebuild, production-hardening + rebrand, reporting /
+analytics / assets). Staging is live on AWS; production (on-prem) is pending the pemkot box. iOS
+native packaging needs a Mac.
 
-**Next Phase:** Phase 3 Plants Management + Monitoring Rebuild + Public Intake (5-7 weeks, 73 dev-days, incl. M1-R Redesign Foundation)
-- Monitoring v2 (Redis Streams event-sourced, Socket.IO Redis adapter, supercluster, staffing debouncer, stale sweep)
-- Plants management (plant_species, area_plants aggregate inventory, notable_plants, per-area pruning cycle)
-- Task typing + custom fields (task_type enum, JSONB schema registry, parent/child resume-tomorrow, partial completion)
-- Public pruning intake (staff_kecamatan role, pruning_requests, admin_data disposition authority, convert-to-task)
-- Service capacity calendar (generic rayon × ISO-week × service_type)
-- Plant-seed inventory ledger
-- CSV historical backfill (5,008 rows)
-- See [Phase 3 specs](./phases/phase-3-plants-monitoring-rebuild/README.md)
-
-**Following Phases:** Phase 4 Production Readiness (FCM, export, E2E, security — Redis inherited from Phase 3), Phase 5 Finishing, Release & iOS (Reporting, Analytics, Assets, iOS).
+For the authoritative, up-to-date status, metrics, and recent-work log, see
+**[`COMPLETION_STATUS.md`](./COMPLETION_STATUS.md)** (the single source of truth). For deploy/release
+mechanics see [`deployment/deployment-guide.md`](./deployment/deployment-guide.md) +
+[`deployment/ci-cd.md`](./deployment/ci-cd.md).
 
 ---
 
-**Last Updated:** 2026-04-24
-**Maintained By:** Development Team
-**Version:** 2.1.0
+**Last Updated:** 2026-06-20 · **Status SoT:** [`COMPLETION_STATUS.md`](./COMPLETION_STATUS.md)

@@ -2,9 +2,9 @@
 
 **System Name:** SEKAR (Sistem Evaluasi Kinerja Satgas RTH)
 **Organization:** DLH Surabaya (Dinas Kebersihan dan Ruang Terbuka Hijau)
-**Version:** 1.0 - Phase 1 MVP Complete
-**Last Updated:** January 21, 2026
-**Status:** Phase 1 MVP Complete | Phase 2-6 Planned
+**Version:** Phase 5 (Reporting/Analytics/Assets feature-complete; code-side Jun 17, 2026)
+**Last Updated:** 2026-06-20
+**Status:** Phases 1-3 Complete ✅ | Phase 4 ~98% (code-side Jun 11) | Phase 5 release-prep + features shipped | **See `specs/COMPLETION_STATUS.md` for authoritative status**
 
 ---
 
@@ -277,7 +277,7 @@ SEKAR is a worker tracking and task management system designed for municipal par
 | **Web Framework** | Next.js | 15.x | App Router, SSR, excellent DX |
 | **Web UI** | Shadcn/ui + TailwindCSS | Latest | Accessible components, consistent design |
 | **Web State** | TanStack Query | 5.x | Server state management, caching, real-time |
-| **Web Auth** | NextAuth.js | 5.x | JWT integration, role-based routes |
+| **Web Auth** | AuthContext (custom) | — | JWT in httpOnly cookie, route guard in src/proxy.ts |
 | **Infrastructure** | AWS (RDS, S3, ECS) | - | Scalable, managed services, regional availability |
 | **CI/CD** | GitHub Actions | - | Free tier, integrated with repository |
 | **Containerization** | Docker + Docker Compose | 24.x | Consistent environments, easy local setup |

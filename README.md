@@ -152,7 +152,7 @@ Current status, metrics, and history live in **[`specs/COMPLETION_STATUS.md`](sp
 | Project guide for contributors + Claude Code | [`CLAUDE.md`](CLAUDE.md) |
 | All specs (navigation hub) | [`specs/README.md`](specs/README.md) |
 | Architecture + ADRs | [`specs/architecture/`](specs/architecture/) · [`decisions/`](specs/architecture/decisions/) |
-| API contracts (~130 endpoints) | [`specs/api/contracts.md`](specs/api/contracts.md) |
+| API contracts (~218 endpoints, 33 modules) | [`specs/api/contracts.md`](specs/api/contracts.md) · live: Swagger `/api/v1/docs` |
 | **Deploy from scratch** (local → staging → prod) | [`specs/deployment/deployment-guide.md`](specs/deployment/deployment-guide.md) |
 | CI/CD + release strategy | [`specs/deployment/ci-cd.md`](specs/deployment/ci-cd.md) |
 | Obtaining keys (Firebase/Maps/Mapbox/S3) | [`specs/deployment/credentials-setup.md`](specs/deployment/credentials-setup.md) |

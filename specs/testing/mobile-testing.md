@@ -1121,5 +1121,5 @@ npm test -- --verbose
 
 ---
 
-*Last Updated: January 26, 2026*
-*Current Status: 1,933 tests passing, 78.79% line coverage*
+*Last Updated: 2026-06-20*
+*Current Status (Phase 5 code-side): 4,103+ tests passing, 73.65% stmt / 64.06% branch coverage*

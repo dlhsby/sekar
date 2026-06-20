@@ -87,7 +87,7 @@ Mobile architecture prioritizes offline operation:
 - File upload coordination
 - API rate limiting (Phase 2+)
 
-**Current Status:** Phase 1 MVP Complete (10 modules, 256 tests, 34 endpoints)
+**Current Status:** Phases 1–5 shipped (33 modules, ~218 endpoints). See `specs/COMPLETION_STATUS.md` for current metrics.
 
 ### 2. Mobile Application (React Native)
 
@@ -109,28 +109,30 @@ Mobile architecture prioritizes offline operation:
 - AsyncStorage for offline data persistence
 - Encrypted Storage for sensitive data (tokens, credentials)
 
-**Current Status:** Phase 1 ~50% Complete (3/12 screens, 62 tests)
+**Current Status:** Phases 1–5 shipped. See `specs/COMPLETION_STATUS.md` for current metrics.
 
-### 3. Web Dashboard (Next.js) - Phase 6
+### 3. Web Dashboard (Next.js)
 
 **Purpose:** Supervisor and admin interface for oversight
 
 **Key Features:**
-- Real-time worker location map
+- Real-time worker location map (Mapbox GL)
 - Shift status monitoring
 - Work report review and approval
 - Analytics and reporting
 - User management
 - Area configuration
+- Installable PWA (offline shell, Web Push)
 
 **Architecture Patterns:**
 - Server-side rendering for initial load performance
-- React Query for server state management
+- TanStack Query for server state management
 - Zustand for client state
-- Tailwind CSS for styling
+- Tailwind CSS 4 + shadcn/ui styling
 - Recharts for data visualization
+- AuthContext + httpOnly cookies for authentication
 
-**Current Status:** Not started (Phase 6)
+**Current Status:** Shipped (Phases 1–5). See `specs/COMPLETION_STATUS.md` for current metrics.
 
 ### 4. Database (PostgreSQL)
 
@@ -170,7 +172,7 @@ Mobile architecture prioritizes offline operation:
 - ~500MB daily media uploads
 
 **Design for Scale:**
-- Horizontal scaling via AWS Elastic Beanstalk / ECS
+- Horizontal scaling via container orchestration (staging: shared EC2; managed ECS/Fargate = reference only)
 - Database read replicas (Phase 3+)
 - Redis caching layer (Phase 2+)
 - S3 + CloudFront for media delivery
@@ -328,29 +330,46 @@ Local Machine
 └── React Native Metro (port 8081)
 ```
 
-### Production Environment (AWS)
+### Production Environment (Hybrid)
+
+**Staging (AWS EC2 + RDS):**
 ```
-Route 53 (DNS)
+Route 53 (DNS: sekar.wahyutrip.com)
   ↓
-CloudFront (CDN - Phase 3+)
+ALB
   ↓
-Application Load Balancer
-  ↓
-┌─────────────────────────┐
-│  Elastic Beanstalk/ECS  │
-│  ┌──────┐  ┌──────┐     │
-│  │ API  │  │ API  │     │
-│  │ Node │  │ Node │     │
-│  └──────┘  └──────┘     │
-└────────┬────────────────┘
+┌────────────────────┐
+│ EC2 (co-tenant)    │
+│ ┌──────┐ ┌──────┐  │
+│ │ API  │ │ API  │  │
+│ │Node  │ │Node  │  │
+│ └──────┘ └──────┘  │
+└────────┬───────────┘
          │
     ┌────┴────┐
     ↓         ↓
 ┌────────┐  ┌──────┐
-│  RDS   │  │  S3  │
-│ Postgres│ │ Media │
+│ RDS    │  │  S3  │
+│Postgres│ │Media  │
 └────────┘  └──────┘
 ```
+
+**Production (On-Prem Docker Compose):**
+```
+┌─────────────────────────────┐
+│  docker-compose.prod.yml    │
+│  ┌─────────┐  ┌────────┐    │
+│  │ NestJS  │  │Postgres│    │
+│  └────┬────┘  └────────┘    │
+│  ┌────┴──────┐               │
+│  │  MinIO    │  ┌────────┐   │
+│  │  S3 equiv │  │ Redis  │   │
+│  └───────────┘  └────────┘   │
+└─────────────────────────────┘
+```
+
+Region (Staging): **ap-southeast-3** (AWS)
+Deploy Method: GitHub OIDC → ECR → SSM (no Elastic Beanstalk)
 
 ## Technology Decisions
 
@@ -442,6 +461,6 @@ Application Load Balancer
 ---
 
 **Document Owner:** Software Architect
-**Last Updated:** 2026-03-10
-**Status:** Active — Phase 2E Planned
+**Last Updated:** 2026-06-20
+**Status:** Active — Phases 1–5 shipped
 **Related Docs:** [`tech-stack.md`](./tech-stack.md), [`data-flow.md`](./data-flow.md), [`security.md`](./security.md)

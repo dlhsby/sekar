@@ -3,8 +3,8 @@
 Complete PostgreSQL database schema for SEKAR system with production-ready optimizations.
 
 **Document Owner:** Database Engineer
-**Last Updated:** 2026-04-24
-**Status:** Phase 2E Implemented (22 tables); Phase 3 Planned (+8 tables → 30 total)
+**Last Updated:** 2026-06-20
+**Status:** Phase 5 Complete — see `specs/COMPLETION_STATUS.md` for live table/module count; migrations in `be/src/database/migrations/`
 
 ---
 
@@ -23,7 +23,7 @@ Complete PostgreSQL database schema for SEKAR system with production-ready optim
 
 ### 1. users
 
-Stores all system users (workers, supervisors, admins).
+Stores all system users with 8 roles (ADR-009: satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin).
 
 ```sql
 CREATE TABLE users (
@@ -32,19 +32,21 @@ CREATE TABLE users (
   password_hash VARCHAR(255) NOT NULL,
   full_name VARCHAR(100) NOT NULL,
   phone VARCHAR(20),
-  role VARCHAR(20) NOT NULL, -- 'worker', 'supervisor', 'admin'
+  role VARCHAR(20) NOT NULL, -- 8 roles: satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin
+  rayon_id UUID REFERENCES rayons(id) ON DELETE SET NULL,
   is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   deleted_at TIMESTAMPTZ,
 
   CONSTRAINT uq_users_username UNIQUE (username),
-  CONSTRAINT chk_users_role CHECK (role IN ('worker', 'supervisor', 'admin'))
+  CONSTRAINT chk_users_role CHECK (role IN ('satgas', 'linmas', 'korlap', 'admin_data', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'))
 );
 
 -- Indexes
 CREATE UNIQUE INDEX idx_users_username ON users(username) WHERE deleted_at IS NULL;
 CREATE INDEX idx_users_role ON users(role) WHERE deleted_at IS NULL;
+CREATE INDEX idx_users_rayon ON users(rayon_id) WHERE deleted_at IS NULL;
 CREATE INDEX idx_users_active ON users(is_active) WHERE deleted_at IS NULL;
 ```
 
@@ -68,7 +70,10 @@ export class User {
   phone?: string;
 
   @Column({ type: 'varchar', length: 20 })
-  role: 'worker' | 'supervisor' | 'admin';
+  role: 'satgas' | 'linmas' | 'korlap' | 'admin_data' | 'kepala_rayon' | 'top_management' | 'admin_system' | 'superadmin';
+
+  @Column({ type: 'uuid', nullable: true })
+  rayon_id?: string;
 
   @Column({ default: true })
   is_active: boolean;
@@ -81,6 +86,10 @@ export class User {
 
   @DeleteDateColumn()
   deleted_at?: Date;
+
+  @ManyToOne(() => Rayon)
+  @JoinColumn({ name: 'rayon_id' })
+  rayon?: Rayon;
 }
 ```
 
@@ -1886,7 +1895,7 @@ extra: {
 ```yaml
 # artillery-load-test.yml
 config:
-  target: 'https://api.sekar.dlhsurabaya.go.id'
+  target: 'https://api.sekar.wahyutrip.com'
   phases:
     - duration: 60
       arrivalRate: 10    # 10 requests/sec

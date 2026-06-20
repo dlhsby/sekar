@@ -1,9 +1,8 @@
 # Database Hardening
 
 **Document Version:** 1.0
-**Last Updated:** 2026-01-16
-**Status:** ✅ IMPLEMENTED
-**Migration File:** `be/src/database/migrations/1737006000000-AddProductionIndexesAndConstraints.ts`
+**Last Updated:** 2026-06-20
+**Status:** ✅ IMPLEMENTED — indexes and constraints from Phase 1–2E applied; later phases added additional tables and indexes (see migrations/)
 
 ---
 

@@ -86,7 +86,7 @@ Code uses English; Indonesian only for UI labels / user-facing messages. `Activi
 |-------|------|
 | Project status (source of truth) | `specs/COMPLETION_STATUS.md` |
 | Phase tracking | `specs/phases/phase-*/STATUS.md` |
-| API contracts (~130 endpoints) / errors | `specs/api/contracts.md` · `specs/api/error-handling.md` |
+| API contracts (~218 endpoints, 33 modules) / errors | `specs/api/contracts.md` (live: Swagger `/api/v1/docs`) · `specs/api/error-handling.md` |
 | Architecture + ADRs | `specs/architecture/` · `specs/architecture/decisions/` |
 | Security + dependency audit | `specs/architecture/security.md` |
 | Design tokens (source of truth) | `specs/ui-ux/design-tokens.md` · `tokens.json` |
@@ -98,7 +98,7 @@ Code uses English; Indonesian only for UI labels / user-facing messages. `Activi
 | Day-2 operations / rollback / incidents | `specs/deployment/operations.md` |
 | Env var catalogue | `specs/deployment/environment-variables.md` |
 | **Encrypted secrets (dotenvx) — commit encrypted .env, decrypt at runtime** | `specs/deployment/encrypted-secrets.md` |
-| E2E testing | `specs/testing/e2e-testing.md` |
+| E2E testing | `specs/testing/web-testing.md` |
 | Full navigation | `specs/README.md` |
 
 ## Troubleshooting

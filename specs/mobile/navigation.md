@@ -217,7 +217,7 @@ import { LinkingOptions } from '@react-navigation/native';
 import type { RootStackParamList } from '../types/navigation.types';
 
 const linking: LinkingOptions<RootStackParamList> = {
-  prefixes: ['sekar://', 'https://sekar.DLH-sby.go.id'],
+  prefixes: ['sekar://', 'https://sekar.wahyutrip.com'],
   config: {
     screens: {
       Login: 'login',
