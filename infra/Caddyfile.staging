@@ -30,3 +30,15 @@ sekar.wahyutrip.com {
 	encode gzip
 	reverse_proxy sekar-web:3000
 }
+
+# Adminer (DB admin UI) — staging/UAT only. Gated by HTTP basic-auth BEFORE the
+# UI loads (the bcrypt hash is `caddy hash-password` output; safe to commit — the
+# plaintext is not). Adminer's own login still requires the sekar_staging DB creds
+# on top. Requires DNS: adminer.sekar.wahyutrip.com A 16.79.124.63 (not wildcard).
+adminer.sekar.wahyutrip.com {
+	encode gzip
+	basic_auth {
+		sekar $2b$10$W8T9Fg1UxV/XS5hI/0072ur3gpDp26cbj/Q5R5MvriqaaAVG9pw7W
+	}
+	reverse_proxy sekar-adminer:8080
+}
