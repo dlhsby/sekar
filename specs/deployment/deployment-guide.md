@@ -125,12 +125,12 @@ Authoritative deltas live in [ADR-028 addendum](../architecture/decisions/ADR-02
 **Tooling URLs (staging only):**
 - **Swagger / OpenAPI** — `https://api.sekar.wahyutrip.com/api/v1/docs` (UI; not env-gated) ·
   `…/api/v1/docs-json` (spec). Authorize with a JWT from `POST /auth/login`.
-- **Adminer (DB UI)** — `https://adminer.sekar.wahyutrip.com`, behind Caddy **HTTP basic-auth**
+- **Adminer (DB UI)** — `https://adminer.wahyutrip.com`, behind Caddy **HTTP basic-auth**
   (user `sekar`; bcrypt hash in `infra/Caddyfile.staging`). Adminer login: System *PostgreSQL*,
   Server pre-filled to the RDS endpoint, User `sekar`, Password = SSM
   `/sekar/staging/DATABASE_PASSWORD`, Database `sekar_staging`. The `adminer` service lives in
   `infra/compose.staging.yml` (internal-only `expose`, reached via Caddy on the `edge` network).
-  Requires a DNS A record `adminer.sekar.wahyutrip.com → 16.79.124.63` (zone is not wildcard).
+  DNS A record `adminer.wahyutrip.com → 16.79.124.63`.
 
 ### Topology
 - **Edge/TLS:** reuse KPI's **Caddy** on 80/443 via a shared external Docker network `edge`;
