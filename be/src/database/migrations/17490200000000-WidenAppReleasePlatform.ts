@@ -9,15 +9,11 @@ export class WidenAppReleasePlatform17490200000000 implements MigrationInterface
   name = 'WidenAppReleasePlatform17490200000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `ALTER TABLE "app_releases" ALTER COLUMN "platform" TYPE varchar(20)`,
-    );
+    await queryRunner.query(`ALTER TABLE "app_releases" ALTER COLUMN "platform" TYPE varchar(20)`);
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Safe only if no value exceeds 10 chars (e.g. no android_x86 rows remain).
-    await queryRunner.query(
-      `ALTER TABLE "app_releases" ALTER COLUMN "platform" TYPE varchar(10)`,
-    );
+    await queryRunner.query(`ALTER TABLE "app_releases" ALTER COLUMN "platform" TYPE varchar(10)`);
   }
 }
