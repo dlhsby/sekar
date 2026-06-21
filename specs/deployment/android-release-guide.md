@@ -392,8 +392,14 @@ adb install -r ~/sekar-release/*/apk/release/app-release.apk
 3. ABIs limited to **`arm64-v8a,armeabi-v7a`** (real devices; drops emulator x86 → ~halves native
    compile). The `:ci` variant omits `clean` and the workflow caches `~/.gradle` + the native
    `app/.cxx` (keyed on `package-lock.json`).
+4. **x86_64 variant:** after the ARM publish, the workflow rebuilds with `reactNativeArchitectures=x86_64`
+   and registers it as **`platform=android_x86`** (S3 `app-releases/android-x86/…`). It surfaces at the
+   separate **`sekar.wahyutrip.com/android_x86`** page — for emulators / WSA / Play-Games-on-PC only
+   (real phones are ARM and SoLoader crashes on a mismatched ABI). `/android` stays ARM-only + lean.
+   Gated on the same publish config; adds ~the native compile time the ARM build saved.
 
-**Build time:** ~30 min cold; **~10–15 min** on a `.cxx` cache hit.
+**Build time:** ~30 min cold; **~10–15 min** on a `.cxx` cache hit (the x86_64 variant adds another
+native compile on top).
 
 ### F4. Versioning
 Bump `fe/mobile/package.json` `version` and Android `versionCode` (`android/app/build.gradle`)
