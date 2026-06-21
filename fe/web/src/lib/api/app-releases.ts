@@ -1,6 +1,8 @@
 import { apiClient } from './client';
 
-export type AppPlatform = 'android' | 'ios';
+// `android_x86` = the x86/x86_64 variant (emulators, WSA, PC). Real phones use
+// `android` (ARM). Served at the separate /android_x86 page.
+export type AppPlatform = 'android' | 'ios' | 'android_x86';
 
 export interface AppRelease {
   platform: AppPlatform;

@@ -7,8 +7,8 @@ import type { AppPlatform, ReleaseChannel } from '../entities/app-release.entity
  * S3. Guarded by the publish token (see PublishTokenGuard).
  */
 export class CreateAppReleaseDto {
-  @ApiProperty({ enum: ['android', 'ios'] })
-  @IsIn(['android', 'ios'])
+  @ApiProperty({ enum: ['android', 'ios', 'android_x86'] })
+  @IsIn(['android', 'ios', 'android_x86'])
   platform: AppPlatform;
 
   @ApiPropertyOptional({

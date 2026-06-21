@@ -194,6 +194,54 @@ jobs:
             -d "$PAYLOAD"
           echo "Registered release ${VERSION} (build ${BUILD_CODE}) → ${KEY}"
 
+      # ---- x86/x86_64 variant (emulators · WSA · Play Games on PC) ----
+      # Published as platform `android_x86` and served at the separate
+      # sekar.wahyutrip.com/android_x86 page, so the main /android download stays
+      # lean ARM-only. Gated on the same publish config as the ARM publish above;
+      # the OIDC AWS creds from that step are still valid here. Rebuilds the APK
+      # with the x86_64 ABI (overwrites the local ARM apk, already in S3 by now).
+      - name: Build x86_64 APK (emulator variant)
+        if: steps.cfg.outputs.enabled == 'true'
+        env:
+          DOTENV_PRIVATE_KEY_STAGING: ${{ secrets.MOBILE_DOTENV_PRIVATE_KEY }}
+          ORG_GRADLE_PROJECT_reactNativeArchitectures: x86_64
+          ORG_GRADLE_PROJECT_SEKAR_RELEASE_STORE_FILE: release.keystore
+          ORG_GRADLE_PROJECT_SEKAR_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_SEKAR_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_SEKAR_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          node scripts/decrypt-env.js .env.staging
+          (cd android && ENVFILE=.env.runtime ./gradlew assembleRelease)
+          rm -f .env.runtime
+
+      - name: Upload x86_64 APK to S3 + register (platform android_x86)
+        if: steps.cfg.outputs.enabled == 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          BUILD_CODE: ${{ steps.version.outputs.build_code }}
+          BUCKET: ${{ vars.MEDIA_BUCKET_STAGING || 'sekar-media-staging' }}
+          API_BASE: ${{ vars.STAGING_API_URL || 'https://api.sekar.wahyutrip.com' }}
+          PUBLISH_TOKEN: ${{ secrets.APP_RELEASE_PUBLISH_TOKEN }}
+        run: |
+          set -euo pipefail
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          test -f "$APK"
+          KEY="app-releases/android-x86/sekar-${VERSION}-${BUILD_CODE}-x86_64.apk"
+          SIZE=$(stat -c%s "$APK")
+          VERSION_CODE=$(grep -m1 'versionCode' android/app/build.gradle | grep -oE '[0-9]+' | head -1)
+          export KEY SIZE VERSION_CODE
+
+          aws s3 cp "$APK" "s3://${BUCKET}/${KEY}" \
+            --content-type application/vnd.android.package-archive \
+            --content-disposition "attachment; filename=sekar-${VERSION}-x86_64.apk"
+
+          PAYLOAD=$(node -e "process.stdout.write(JSON.stringify({platform:'android_x86',channel:'staging',version:process.env.VERSION,buildNumber:process.env.BUILD_CODE,versionCode:Number(process.env.VERSION_CODE)||undefined,storageKey:process.env.KEY,fileSize:Number(process.env.SIZE),notes:'Android x86_64 (emulator/PC) build '+process.env.VERSION+' ('+process.env.BUILD_CODE+')'}))")
+          curl -fsS -X POST "${API_BASE}/api/v1/app-releases" \
+            -H 'Content-Type: application/json' \
+            -H "X-Publish-Token: ${PUBLISH_TOKEN}" \
+            -d "$PAYLOAD"
+          echo "Registered x86_64 release ${VERSION} (build ${BUILD_CODE}) → ${KEY}"
+
       - name: Summary
         env:
           VERSION: ${{ steps.version.outputs.version }}

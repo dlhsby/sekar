@@ -4,9 +4,9 @@ import type { AppPlatform, ReleaseChannel } from '../entities/app-release.entity
 
 /** Query params for the public "latest" + "download" endpoints. */
 export class QueryAppReleaseDto {
-  @ApiPropertyOptional({ enum: ['android', 'ios'], default: 'android' })
+  @ApiPropertyOptional({ enum: ['android', 'ios', 'android_x86'], default: 'android' })
   @IsOptional()
-  @IsIn(['android', 'ios'])
+  @IsIn(['android', 'ios', 'android_x86'])
   platform?: AppPlatform;
 
   @ApiPropertyOptional({

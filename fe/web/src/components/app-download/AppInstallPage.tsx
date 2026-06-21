@@ -15,7 +15,11 @@ function formatBytes(bytes: number | null): string | null {
   return `${mb.toFixed(1)} MB`;
 }
 
-const PLATFORM_LABEL: Record<AppPlatform, string> = { android: 'Android', ios: 'iOS' };
+const PLATFORM_LABEL: Record<AppPlatform, string> = {
+  android: 'Android',
+  ios: 'iOS',
+  android_x86: 'Android (x86 / Emulator)',
+};
 
 /**
  * Public install page rendered at /android and /ios. Reads the latest published
@@ -27,6 +31,8 @@ export function AppInstallPage({ platform }: { platform: AppPlatform }) {
   const { data, status } = useLatestAppRelease(platform);
   const { user } = useAuth();
   const Icon = platform === 'ios' ? Apple : Smartphone;
+  // Both `android` and `android_x86` ship a sideloadable APK.
+  const isAndroid = platform.startsWith('android');
   const size = data ? formatBytes(data.fileSize) : null;
   // Context-aware "back" link: logged-in visitors go to the dashboard, logged-out
   // (e.g. a field worker who scanned the QR) go to login.
@@ -101,16 +107,17 @@ export function AppInstallPage({ platform }: { platform: AppPlatform }) {
                 </p>
               )}
 
-              {platform === 'android' ? (
+              {isAndroid ? (
                 <>
-                  <a href={getAppDownloadUrl('android')} download className="block">
+                  <a href={getAppDownloadUrl(platform)} download className="block">
                     <Button variant="default" fullWidth leftIcon={<Download className="size-4" />}>
                       Unduh APK (v{data.version})
                     </Button>
                   </a>
                   <p className="text-nb-caption text-nb-gray-600">
-                    Setelah terunduh, buka berkasnya dan izinkan pemasangan dari sumber ini bila
-                    diminta.
+                    {platform === 'android_x86'
+                      ? 'Versi x86/x86_64 untuk emulator & PC (WSA, Play Games). Untuk HP biasa gunakan halaman /android.'
+                      : 'Setelah terunduh, buka berkasnya dan izinkan pemasangan dari sumber ini bila diminta.'}
                   </p>
                 </>
               ) : (

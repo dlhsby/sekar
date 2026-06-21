@@ -8,7 +8,10 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-export type AppPlatform = 'android' | 'ios';
+// `android_x86` is a distinct distribution target for x86/x86_64 emulators &
+// PC runtimes (WSA, Play Games). Real phones use `android` (ARM). Served at the
+// separate /android_x86 web page; the in-app updater stays on `android`.
+export type AppPlatform = 'android' | 'ios' | 'android_x86';
 export type ReleaseChannel = 'staging' | 'production';
 
 /**
@@ -25,7 +28,7 @@ export class AppRelease {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 10 })
+  @Column({ type: 'varchar', length: 20 })
   platform: AppPlatform;
 
   @Column({ type: 'varchar', length: 20, default: 'staging' })
