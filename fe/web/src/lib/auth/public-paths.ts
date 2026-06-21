@@ -13,6 +13,7 @@ export const PUBLIC_PATHS = [
   '/offline',
   '/install-help',
   '/android',
+  '/android_x86',
   '/ios',
 ] as const;
 
