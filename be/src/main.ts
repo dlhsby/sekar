@@ -7,6 +7,7 @@ import { initSentry } from './common/sentry/sentry';
 // Initialize Sentry as early as possible so app-factory errors are captured.
 initSentry();
 import { NestFactory, Reflector } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
@@ -60,7 +61,13 @@ function getLocalIpAddress(): string {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Trust the first proxy hop (Caddy) so req.protocol / req.ip honor the
+  // X-Forwarded-Proto / X-Forwarded-For headers it sets. Without this, URLs
+  // built from req.protocol (e.g. app-releases downloadUrl) come out as http://
+  // behind TLS-terminating Caddy, and rate-limiting sees the proxy IP.
+  app.set('trust proxy', 1);
 
   // Initialize Firebase Admin SDK (for FCM push notifications)
   try {

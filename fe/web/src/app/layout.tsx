@@ -24,6 +24,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  // Resolves relative OG/Twitter image URLs (e.g. /og-image.png) against the
+  // real site origin instead of Next's localhost:3000 default.
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://sekar.wahyutrip.com'),
   title: {
     template: '%s · SEKAR',
     default: 'SEKAR - Sistem Evaluasi Kinerja Satgas RTH',
