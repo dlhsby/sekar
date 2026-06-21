@@ -127,8 +127,12 @@ Authoritative deltas live in [ADR-028 addendum](../architecture/decisions/ADR-02
   `…/api/v1/docs-json` (spec). Authorize with a JWT from `POST /auth/login`.
 - **Adminer (DB UI)** — `https://adminer.wahyutrip.com`, behind Caddy **HTTP basic-auth**
   (user `sekar`; bcrypt hash in `infra/Caddyfile.staging`). Adminer login: System *PostgreSQL*,
-  Server pre-filled to the RDS endpoint, User `sekar`, Password = SSM
-  `/sekar/staging/DATABASE_PASSWORD`, Database `sekar_staging`. The `adminer` service lives in
+  Server pre-filled to the RDS endpoint, User `sekar`, Database `sekar_staging`, Password =
+  `DATABASE_PASSWORD` from the dotenvx-encrypted `be/.env.staging` (decrypt with
+  `cd be && DOTENV_PRIVATE_KEY_STAGING=$(aws --profile sekar --region ap-southeast-3 ssm
+  get-parameter --name /sekar/staging/BE_DOTENV_PRIVATE_KEY --with-decryption --query
+  Parameter.Value --output text) npx @dotenvx/dotenvx get DATABASE_PASSWORD -f .env.staging`).
+  The `adminer` service lives in
   `infra/compose.staging.yml` (internal-only `expose`, reached via Caddy on the `edge` network).
   DNS A record `adminer.wahyutrip.com → 16.79.124.63`.
 
