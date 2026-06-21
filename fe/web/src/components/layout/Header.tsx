@@ -172,7 +172,7 @@ export function Header({ className, ...props }: HeaderProps) {
       {/* Logout Confirmation Modal */}
       <Dialog open={showLogoutModal} onOpenChange={setShowLogoutModal}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader>
+          <DialogHeader className="border-b-0">
             <DialogTitle>Konfirmasi Keluar</DialogTitle>
             <DialogDescription>
               Apakah Anda yakin ingin keluar dari aplikasi?

@@ -81,8 +81,28 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
     const activePath = currentPath || pathname;
     const [expandedItems, setExpandedItems] = React.useState<string[]>([]);
 
-    const isActive = (href?: string) =>
-      !!href && href !== '#' && (activePath === href || activePath?.startsWith(href + '/'));
+    // All navigable hrefs (parents + children), used to resolve the most
+    // specific match so an index route (e.g. `/analytics`) isn't flagged
+    // active when a deeper sibling (`/analytics/workers`) is the real match.
+    const allHrefs = React.useMemo(() => {
+      const hrefs: string[] = [];
+      items.forEach((item) => {
+        if (item.href && item.href !== '#') hrefs.push(item.href);
+        item.children?.forEach((c) => {
+          if (c.href && c.href !== '#') hrefs.push(c.href);
+        });
+      });
+      return hrefs;
+    }, [items]);
+
+    const matchesPath = (href: string) =>
+      activePath === href || !!activePath?.startsWith(href + '/');
+
+    const isActive = (href?: string) => {
+      if (!href || href === '#' || !matchesPath(href)) return false;
+      // Active only if no deeper href also matches the current path.
+      return !allHrefs.some((h) => h.startsWith(href + '/') && matchesPath(h));
+    };
 
     const visible = (item: SidebarItem) => {
       if (!item.roles || item.roles.length === 0) return true;

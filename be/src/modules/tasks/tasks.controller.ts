@@ -93,7 +93,7 @@ export class TasksController {
    * Get tasks assigned to the current user
    */
   @Get('my-tasks')
-  @Roles(...TASK_RECEIVERS)
+  @Roles(...TASK_CREATORS, ...TASK_RECEIVERS)
   @ApiOperation({ summary: 'Get tasks assigned to the current user' })
   @ApiQuery({
     name: 'activeOnly',
@@ -120,7 +120,7 @@ export class TasksController {
    * Get tasks where current user is tagged
    */
   @Get('tagged')
-  @Roles(...TASK_RECEIVERS)
+  @Roles(...TASK_CREATORS, ...TASK_RECEIVERS)
   @ApiOperation({ summary: 'Get tasks where the current user is tagged' })
   @ApiResponse({ status: 200, description: 'Paginated list of tagged tasks' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
