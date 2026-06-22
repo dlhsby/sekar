@@ -73,9 +73,8 @@ const renderScreen = (navigate = jest.fn()) => {
 describe('ActivitiesScreen', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('renders the Aktivitas title and the activities list body', () => {
+  it('renders the activities list body', () => {
     const { getByText } = renderScreen();
-    expect(getByText('Aktivitas')).toBeTruthy();
     expect(getByText('ACTIVITIES_TAB')).toBeTruthy();
   });
 

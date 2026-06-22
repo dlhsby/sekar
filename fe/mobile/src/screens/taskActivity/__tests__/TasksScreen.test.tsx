@@ -81,9 +81,8 @@ const renderScreen = (navigate = jest.fn()) => {
 describe('TasksScreen', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('renders the Tugas title and the tasks list body', () => {
+  it('renders the tasks list body', () => {
     const { getByText } = renderScreen();
-    expect(getByText('Tugas')).toBeTruthy();
     expect(getByText('TASKS_TAB')).toBeTruthy();
   });
 

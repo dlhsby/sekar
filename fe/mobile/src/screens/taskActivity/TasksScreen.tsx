@@ -7,7 +7,7 @@ import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAppSelector } from '../../store/hooks';
-import { NBBackgroundPattern, NBText } from '../../components/nb';
+import { NBBackgroundPattern } from '../../components/nb';
 import { TaskFilterModal } from '../../components/modals';
 import { SortModal } from '../../components/modals/SortModal';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
@@ -111,10 +111,7 @@ export function TasksScreen({ navigation }: Props): React.JSX.Element {
     >
       <View style={styles.container}>
         <View style={[styles.contentWrapper, { paddingBottom: canCreateTask ? 80 : nbSpacing.sm }]}>
-          <View style={styles.header}>
-            <NBText variant="h3">Tugas</NBText>
-          </View>
-
+          {/* Title lives in the navigator header (top bar) — not repeated here. */}
           <FilterBar
             type="tasks"
             filterCount={taskFilters.activeFilterCount}

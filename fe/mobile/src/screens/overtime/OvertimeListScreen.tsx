@@ -20,7 +20,7 @@ import type { RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import { NBBackgroundPattern, NBButton, NBEmptyState, NBFabBar, NB_FAB_BAR_HEIGHT, NBPageHeader, NBSkeleton, NBText } from '../../components/nb';
+import { NBBackgroundPattern, NBButton, NBEmptyState, NBFabBar, NB_FAB_BAR_HEIGHT, NBSkeleton, NBText } from '../../components/nb';
 import { SortModal, OvertimeFilterModal } from '../../components/modals';
 import { OvertimeCard } from './components/OvertimeCard';
 import { getOvertimeStatusLabel } from '../../utils/statusHelpers';
@@ -248,8 +248,7 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
     >
       <SafeAreaView style={styles.safeArea}>
 
-        {/* Page Title */}
-        <NBPageHeader title="Lembur" />
+        {/* Title lives in the navigator header (top bar) — not repeated here. */}
 
         {/* Filter Bar */}
         <View style={[styles.filterBarCollapsed, activeFilterCount > 0 && styles.filterBarActive]}>

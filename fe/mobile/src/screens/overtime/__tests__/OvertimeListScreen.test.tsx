@@ -288,13 +288,6 @@ describe('OvertimeListScreen', () => {
     });
   });
 
-  it('shows page title "Lembur"', async () => {
-    const { getByText } = renderScreen();
-    await waitFor(() => {
-      expect(getByText('Lembur')).toBeTruthy();
-    });
-  });
-
   it('shows overtime cards with description and creator+role', async () => {
     (overtimeApi.getMyOvertimes as jest.Mock).mockResolvedValue({
       data: { data: mockOvertimes, meta: { total: 2, page: 1, limit: 10, totalPages: 1 } },

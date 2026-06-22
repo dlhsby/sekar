@@ -363,7 +363,7 @@ export function FieldHomeScreen(): React.JSX.Element {
                     <View style={styles.heroTimeStat}>
                       <NBText variant="caption" color="gray600" uppercase>Keluar</NBText>
                       <NBText variant="h2" color="black">
-                        {attendance.lastClockOut ? formatTime(attendance.lastClockOut) : '—'}
+                        {attendance.lastClockOut ? formatTime(attendance.lastClockOut) : '-'}
                       </NBText>
                     </View>
                   </View>
@@ -571,8 +571,9 @@ const styles = StyleSheet.create({
   heroChevron: { marginTop: 1 },
   heroLabel: { letterSpacing: 0.6, marginBottom: 2 },
   // Collapsed hero: first clock-in (Masuk) + last clock-out (Keluar) side by side.
-  heroTimes: { flexDirection: 'row', gap: nbSpacing.lg, marginTop: nbSpacing.xs },
-  heroTimeStat: { gap: 2 },
+  // Masuk / Keluar split the clock area evenly (justified, proportional).
+  heroTimes: { flexDirection: 'row', marginTop: nbSpacing.xs },
+  heroTimeStat: { flex: 1, gap: 2 },
   heroTimeValueRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs },
   heroMeta: { marginTop: nbSpacing.sm },
   // Expanded hero: label:value table rows.
