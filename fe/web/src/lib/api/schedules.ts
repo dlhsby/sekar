@@ -26,6 +26,24 @@ export const scheduleKeys = {
 };
 
 /**
+ * The API serializes the shift relation as `shiftDefinition` (the TypeORM entity
+ * property name), but the web reads it as `shift_definition`. Normalize so every
+ * consumer (weekly grid, table, delete dialog) gets the relation under the
+ * snake_case key — otherwise every cell renders "libur".
+ */
+function normalizeSchedules(
+  body: PaginatedResponse<Schedule>,
+): PaginatedResponse<Schedule> {
+  const data = (body?.data ?? []).map((s) => ({
+    ...s,
+    shift_definition:
+      s.shift_definition ??
+      (s as { shiftDefinition?: Schedule['shift_definition'] }).shiftDefinition,
+  }));
+  return { ...body, data };
+}
+
+/**
  * Fetch schedules with filters
  */
 export function useSchedules(filters?: ScheduleFilters) {
@@ -35,7 +53,7 @@ export function useSchedules(filters?: ScheduleFilters) {
       const response = await apiClient.get<PaginatedResponse<Schedule>>('/schedules', {
         params: filters,
       });
-      return response.data;
+      return normalizeSchedules(response.data);
     },
     staleTime: 2 * 60 * 1000,
   });
@@ -67,7 +85,7 @@ export function useAreaSchedules(areaId: string, filters?: ScheduleFilters) {
         `/schedules/area/${areaId}`,
         { params: filters }
       );
-      return response.data;
+      return normalizeSchedules(response.data);
     },
     enabled: !!areaId,
     staleTime: 2 * 60 * 1000,
