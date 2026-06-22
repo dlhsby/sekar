@@ -501,6 +501,16 @@ function RNSheetModal({
 // RNSheetModal is plain RN and is verified on-device. Remove this gate (and
 // SheetModal) once gorhom presents correctly, or add RNSheetModal unit tests
 // if it becomes the permanent path.
+//
+// ── UPGRADE-RETRY NOTE (why this gate exists) ───────────────────────────────
+// On RN 0.86 + react-native-reanimated 4.4 + New Architecture (Fabric),
+// @gorhom/bottom-sheet@5.2.14 `present()` is a SILENT NO-OP — sheets never
+// appear (broke monitoring filter, shift detail, stat tiles). Downgrading
+// reanimated is blocked: RN 0.86 hard-requires reanimated >= 4.4.
+// Retry gorhom ONLY when a release > 5.2.14 ships with notes explicitly citing
+// RN 0.86 / reanimated 4.4 / New-Arch (Fabric) present() fixes. Then: flip
+// USE_RN_SHEET to false, bump @gorhom/bottom-sheet, and device-smoke-test one
+// sheet (e.g. monitoring filter). As of 2026-06-22, 5.2.14 is still latest.
 const USE_RN_SHEET = process.env.NODE_ENV !== 'test';
 
 export function NBModal({ type = 'sheet', ...props }: NBModalProps) {
