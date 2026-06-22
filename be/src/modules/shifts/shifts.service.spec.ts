@@ -612,7 +612,7 @@ describe('ShiftsService', () => {
       mockRepository.find.mockResolvedValue(dayShifts);
       const now = new Date('2026-06-22T09:00:00Z'); // 1h into the active shift
 
-      const result = await service.findMyAttendanceDays(mockUser.id, 1, 20, now);
+      const result = await service.findMyAttendanceDays(mockUser.id, { page: 1, limit: 20 }, now);
 
       // Only excludes overtime via the query filter:
       expect(mockRepository.find).toHaveBeenCalledWith(
@@ -642,7 +642,11 @@ describe('ShiftsService', () => {
 
     it('paginates by distinct day', async () => {
       mockRepository.find.mockResolvedValue(dayShifts);
-      const result = await service.findMyAttendanceDays(mockUser.id, 2, 1, new Date('2026-06-22T09:00:00Z'));
+      const result = await service.findMyAttendanceDays(
+        mockUser.id,
+        { page: 2, limit: 1 },
+        new Date('2026-06-22T09:00:00Z'),
+      );
 
       expect(result.meta.total).toBe(2);
       expect(result.meta.totalPages).toBe(2);
@@ -655,6 +659,52 @@ describe('ShiftsService', () => {
       const result = await service.findMyAttendanceDays(mockUser.id);
       expect(result.data).toEqual([]);
       expect(result.meta.total).toBe(0);
+    });
+
+    it('computes is_late in WIB (08:00 WIB clock-in vs 06:00 scheduled = late)', async () => {
+      mockRepository.find.mockResolvedValue(dayShifts);
+      const result = await service.findMyAttendanceDays(
+        mockUser.id,
+        {},
+        new Date('2026-06-22T09:00:00Z'),
+      );
+      // 2026-06-22 day: first clock-in 01:00Z = 08:00 WIB, scheduled 06:00 → late.
+      expect(result.data[0].is_late).toBe(true);
+      // 2026-06-20 night shift (sd3 21:00 crosses midnight): clock-in 22:00 WIB → late.
+      expect(result.data[1].is_late).toBe(true);
+    });
+
+    it('filters by status=late', async () => {
+      // Make the older day on-time by giving it a permissive schedule.
+      const onTimeNight = { ...dayShifts[2], shift_definition: { start_time: '23:30:00', crosses_midnight: true } };
+      mockRepository.find.mockResolvedValue([dayShifts[0], dayShifts[1], onTimeNight]);
+
+      const result = await service.findMyAttendanceDays(
+        mockUser.id,
+        { status: 'late' },
+        new Date('2026-06-22T09:00:00Z'),
+      );
+      expect(result.data.map((d) => d.date)).toEqual(['2026-06-22']);
+    });
+
+    it('filters by date range (inclusive)', async () => {
+      mockRepository.find.mockResolvedValue(dayShifts);
+      const result = await service.findMyAttendanceDays(
+        mockUser.id,
+        { from_date: '2026-06-21', to_date: '2026-06-22' },
+        new Date('2026-06-22T09:00:00Z'),
+      );
+      expect(result.data.map((d) => d.date)).toEqual(['2026-06-22']);
+    });
+
+    it('sorts ascending when sort_dir=asc', async () => {
+      mockRepository.find.mockResolvedValue(dayShifts);
+      const result = await service.findMyAttendanceDays(
+        mockUser.id,
+        { sort_dir: 'asc' },
+        new Date('2026-06-22T09:00:00Z'),
+      );
+      expect(result.data.map((d) => d.date)).toEqual(['2026-06-20', '2026-06-22']);
     });
   });
 

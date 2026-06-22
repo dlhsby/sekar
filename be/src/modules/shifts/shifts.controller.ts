@@ -26,6 +26,7 @@ import {
   AttendanceDaySummaryDto,
   AttendanceDayDetailDto,
 } from './dto/attendance-day.dto';
+import { AttendanceFilterDto } from './dto/attendance-filter.dto';
 import { Shift } from './entities/shift.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -179,6 +180,10 @@ export class ShiftsController {
   })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
+  @ApiQuery({ name: 'from_date', required: false, type: String, example: '2026-06-01' })
+  @ApiQuery({ name: 'to_date', required: false, type: String, example: '2026-06-30' })
+  @ApiQuery({ name: 'status', required: false, enum: ['late', 'on_time', 'active'] })
+  @ApiQuery({ name: 'sort_dir', required: false, enum: ['asc', 'desc'] })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Paginated day summaries',
@@ -189,9 +194,9 @@ export class ShiftsController {
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Role not allowed' })
   async getMyAttendance(
     @GetUser() user: User,
-    @Query() paginationDto: PaginationDto,
+    @Query() filter: AttendanceFilterDto,
   ): Promise<PaginatedResponseDto<AttendanceDaySummaryDto>> {
-    return this.shiftsService.findMyAttendanceDays(user.id, paginationDto.page, paginationDto.limit);
+    return this.shiftsService.findMyAttendanceDays(user.id, filter);
   }
 
   @Get('attendance/:date')

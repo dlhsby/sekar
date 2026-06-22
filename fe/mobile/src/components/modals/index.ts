@@ -12,6 +12,8 @@ export { ActivityFilterModal } from './ActivityFilterModal';
 export { SortModal } from './SortModal';
 export type { SortOption } from './SortModal';
 export { OvertimeFilterModal } from './OvertimeFilterModal';
+export { AttendanceFilterModal } from './AttendanceFilterModal';
+export type { AttendanceFilterFields } from './AttendanceFilterModal';
 export { PruningRequestFilterModal } from './PruningRequestFilterModal';
 export type { PruningRequestFilterValue } from './PruningRequestFilterModal';
 export { LocationMapModal } from './LocationMapModal';

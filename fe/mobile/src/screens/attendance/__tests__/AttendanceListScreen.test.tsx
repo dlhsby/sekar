@@ -14,15 +14,31 @@ jest.mock('../../../components/nb/NBBackgroundPattern', () => ({
 
 jest.mock('@react-navigation/native', () => ({
   ...jest.requireActual('@react-navigation/native'),
+  // Real useFocusEffect re-runs the callback when its identity changes while
+  // focused — mirror that with [cb] so filter/sort-driven refetches fire.
   useFocusEffect: (cb: any) => {
     const React = require('react');
-    React.useEffect(() => cb(), []);
+    React.useEffect(() => cb(), [cb]);
   },
 }));
 
 jest.mock('../../../hooks/useRoleAccess', () => ({
   useRoleAccess: jest.fn(() => ({ canClock: true })),
 }));
+
+// Light modal stubs that expose buttons to drive sort/filter selection.
+jest.mock('../../../components/modals', () => {
+  const React = require('react');
+  const { Text, TouchableOpacity } = require('react-native');
+  return {
+    SortModal: ({ onSelect }: any) =>
+      React.createElement(TouchableOpacity, { testID: 'pick-sort-asc', onPress: () => onSelect('date_asc') },
+        React.createElement(Text, null, 'sort-asc')),
+    AttendanceFilterModal: ({ onApplyFilters }: any) =>
+      React.createElement(TouchableOpacity, { testID: 'apply-late', onPress: () => onApplyFilters({ status: 'late' }) },
+        React.createElement(Text, null, 'apply-late')),
+  };
+});
 
 const day: AttendanceDaySummary = {
   date: '2026-06-22',
@@ -32,6 +48,7 @@ const day: AttendanceDaySummary = {
   total_worked_minutes: 480,
   scheduled_start_time: null,
   crosses_midnight: false,
+  is_late: false,
   has_active: false,
 };
 
@@ -106,5 +123,33 @@ describe('AttendanceListScreen', () => {
     const { getByText } = renderScreen(jest.fn(), { id: 's1', is_overtime: false });
     await waitFor(() => getByText('Belum ada kehadiran'));
     expect(getByText('Clock Out')).toBeTruthy();
+  });
+
+  it('refetches with the status param when a filter is applied', async () => {
+    const spy = jest.spyOn(shiftsApi, 'getAttendanceDays').mockResolvedValue({
+      data: { data: [day], meta: { total: 1, page: 1, limit: 20, totalPages: 1 } },
+    } as any);
+
+    const { getByTestId } = renderScreen();
+    await waitFor(() => getByTestId('attendance-day-2026-06-22'));
+    fireEvent.press(getByTestId('apply-late'));
+
+    await waitFor(() =>
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining({ status: 'late', sort_dir: 'desc', page: 1 })),
+    );
+  });
+
+  it('refetches with sort_dir=asc when the sort changes', async () => {
+    const spy = jest.spyOn(shiftsApi, 'getAttendanceDays').mockResolvedValue({
+      data: { data: [day], meta: { total: 1, page: 1, limit: 20, totalPages: 1 } },
+    } as any);
+
+    const { getByTestId } = renderScreen();
+    await waitFor(() => getByTestId('attendance-day-2026-06-22'));
+    fireEvent.press(getByTestId('pick-sort-asc'));
+
+    await waitFor(() =>
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining({ sort_dir: 'asc' })),
+    );
   });
 });

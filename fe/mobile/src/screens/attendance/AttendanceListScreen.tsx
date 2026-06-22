@@ -1,21 +1,26 @@
 /**
  * Attendance List Screen ("Kehadiran")
- * The user's regular attendance history, grouped by day (newest first) — mirrors
- * the Lembur list. Tapping a day opens its detail; the bottom action button opens
- * the clock-in/out screen (or the overtime form when an overtime shift is active).
+ * The user's regular attendance history, grouped by day — mirrors the Lembur
+ * list (filter bar + sort/filter modals, server-side filtering + day pagination
+ * with scroll-to-load-more). Tapping a day opens its detail; the bottom action
+ * button opens the clock screen (or the overtime form when an overtime shift is
+ * active).
  */
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   FlatList,
   StyleSheet,
   RefreshControl,
+  ScrollView,
+  TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import {
   NBBackgroundPattern,
@@ -24,16 +29,30 @@ import {
   NBFabBar,
   NB_FAB_BAR_HEIGHT,
   NBSkeleton,
+  NBText,
 } from '../../components/nb';
+import { SortModal, AttendanceFilterModal, type AttendanceFilterFields } from '../../components/modals';
 import { AttendanceDayCard } from './components/AttendanceDayCard';
 import { getAttendanceDays } from '../../services/api/shiftsApi';
 import { useRoleAccess } from '../../hooks/useRoleAccess';
 import { useAppSelector } from '../../store/hooks';
-import { nbColors, nbSpacing } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbBorders, nbRadius } from '../../constants/nbTokens';
 import type { MainTabParamList } from '../../types/navigation.types';
-import type { AttendanceDaySummary } from '../../types/api.types';
+import type { AttendanceFilter, AttendanceDaySummary } from '../../types/api.types';
 
 const PAGE_LIMIT = 20;
+
+const SORT_OPTIONS = [
+  { key: 'date_desc', label: 'Tanggal Terbaru' },
+  { key: 'date_asc', label: 'Tanggal Terlama' },
+];
+type SortKey = 'date_desc' | 'date_asc';
+
+const STATUS_CHIP_LABEL: Record<NonNullable<AttendanceFilterFields['status']>, string> = {
+  late: 'Terlambat',
+  on_time: 'Tepat Waktu',
+  active: 'Berlangsung',
+};
 
 type Props = {
   navigation: NativeStackNavigationProp<MainTabParamList, 'Attendance'>;
@@ -50,43 +69,93 @@ export function AttendanceListScreen({ navigation }: Props): React.JSX.Element {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [filters, setFilters] = useState<AttendanceFilterFields>({});
+  const [sort, setSort] = useState<SortKey>('date_desc');
+  const [isSortModalOpen, setIsSortModalOpen] = useState(false);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+
   const isFetching = useRef(false);
+  // Coalesce a refetch requested while one is in flight (e.g. a filter change
+  // during a loadMore) so the latest params win and the list resets correctly.
+  const pendingFetch = useRef<{ page: number; reset: boolean } | null>(null);
 
-  const fetchDays = useCallback(async (p: number, reset: boolean) => {
-    if (isFetching.current) {
-      return;
-    }
-    isFetching.current = true;
-    if (reset) {
-      setLoading(true);
-    } else {
-      setIsLoadingMore(true);
-    }
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.status) { count++; }
+    if (filters.from_date || filters.to_date) { count++; }
+    return count;
+  }, [filters]);
 
-    try {
-      const response = await getAttendanceDays(p, PAGE_LIMIT);
-      if (response.error || !response.data) {
+  const filterChips = useMemo(() => {
+    const chips: { text: string; chipStyle: 'status' | 'date' }[] = [];
+    if (filters.status) {
+      chips.push({ text: STATUS_CHIP_LABEL[filters.status], chipStyle: 'status' });
+    }
+    if (filters.from_date || filters.to_date) {
+      const f = filters.from_date;
+      const t = filters.to_date;
+      chips.push({ text: f && t ? `${f.slice(5)} — ${t.slice(5)}` : 'Tanggal', chipStyle: 'date' });
+    }
+    return chips;
+  }, [filters]);
+
+  const buildParams = useCallback(
+    (p: number): AttendanceFilter => ({
+      ...filters,
+      sort_dir: sort === 'date_asc' ? 'asc' : 'desc',
+      page: p,
+      limit: PAGE_LIMIT,
+    }),
+    [filters, sort],
+  );
+
+  const fetchDays = useCallback(
+    async (p: number, reset: boolean) => {
+      if (isFetching.current) {
+        // Remember the most recent request; run it once the in-flight one finishes.
+        pendingFetch.current = { page: p, reset };
         return;
       }
-      const data = response.data.data ?? [];
-      const total = response.data.meta?.total ?? 0;
+      isFetching.current = true;
+      if (reset) {
+        setLoading(true);
+      } else {
+        setIsLoadingMore(true);
+      }
 
-      setDays((prev) => {
-        if (reset) {
-          return data;
+      try {
+        const response = await getAttendanceDays(buildParams(p));
+        if (response.error || !response.data) {
+          return;
         }
-        const seen = new Set(prev.map((d) => d.date));
-        return [...prev, ...data.filter((d) => !seen.has(d.date))];
-      });
-      setPage(p);
-      setHasMore(p * PAGE_LIMIT < total);
-    } finally {
-      isFetching.current = false;
-      setLoading(false);
-      setIsLoadingMore(false);
-    }
-  }, []);
+        const data = response.data.data ?? [];
+        const total = response.data.meta?.total ?? 0;
 
+        setDays((prev) => {
+          if (reset) {
+            return data;
+          }
+          const seen = new Set(prev.map((d) => d.date));
+          return [...prev, ...data.filter((d) => !seen.has(d.date))];
+        });
+        setPage(p);
+        setHasMore(p * PAGE_LIMIT < total);
+      } finally {
+        isFetching.current = false;
+        setLoading(false);
+        setIsLoadingMore(false);
+        if (pendingFetch.current) {
+          const { page: nextPage, reset: nextReset } = pendingFetch.current;
+          pendingFetch.current = null;
+          fetchDays(nextPage, nextReset);
+        }
+      }
+    },
+    [buildParams],
+  );
+
+  // Refetches on focus AND whenever filters/sort change (fetchDays identity
+  // changes via buildParams), matching the Lembur list behaviour.
   useFocusEffect(
     useCallback(() => {
       fetchDays(1, true);
@@ -143,6 +212,11 @@ export function AttendanceListScreen({ navigation }: Props): React.JSX.Element {
     );
   }, [isLoadingMore]);
 
+  const activeSortLabel = useMemo(
+    () => SORT_OPTIONS.find((o) => o.key === sort)?.label ?? 'Tanggal Terbaru',
+    [sort],
+  );
+  const isSortActive = sort !== 'date_desc';
   const isClockOut = !!currentShift && !currentShift.is_overtime;
 
   return (
@@ -153,6 +227,60 @@ export function AttendanceListScreen({ navigation }: Props): React.JSX.Element {
       opacity={0.06}
     >
       <SafeAreaView style={styles.safeArea}>
+        {/* Filter bar — mirrors the Lembur/Tugas/Aktivitas standard */}
+        <View style={[styles.filterBar, activeFilterCount > 0 && styles.filterBarActive]}>
+          <View style={styles.filterBarLeft}>
+            {filterChips.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.miniChipsContent}>
+                {filterChips.map((chip, i) => (
+                  <View
+                    key={i}
+                    style={[styles.miniChip, chip.chipStyle === 'status' ? styles.miniChipStatus : styles.miniChipDate]}
+                  >
+                    <NBText variant="caption" color="black">{chip.text}</NBText>
+                  </View>
+                ))}
+              </ScrollView>
+            ) : (
+              <NBText variant="body-sm" color="gray400" style={styles.filterBarPlaceholder}>Semua Kehadiran</NBText>
+            )}
+            {activeFilterCount > 0 && (
+              <TouchableOpacity
+                style={styles.filterClearButton}
+                onPress={() => setFilters({})}
+                accessibilityRole="button"
+                accessibilityLabel="Reset filter kehadiran"
+              >
+                <MaterialCommunityIcons name="close-circle" size={18} color={nbColors.danger} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <View style={styles.filterBarRight}>
+            <TouchableOpacity
+              style={styles.filterIconButton}
+              onPress={() => setIsSortModalOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel={`Urutan: ${activeSortLabel}`}
+            >
+              <MaterialCommunityIcons name="sort" size={22} color={isSortActive ? nbColors.primary : nbColors.black} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.filterIconButton}
+              onPress={() => setIsFilterModalOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel={`Filter kehadiran${activeFilterCount > 0 ? `, ${activeFilterCount} filter aktif` : ''}`}
+            >
+              <MaterialCommunityIcons name="filter-variant" size={22} color={activeFilterCount > 0 ? nbColors.primary : nbColors.black} />
+              {activeFilterCount > 0 && (
+                <View style={styles.filterBadge}>
+                  <NBText variant="caption" color="white">{activeFilterCount}</NBText>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+
         <View style={[styles.listWrapper, canClock && styles.listWrapperWithFab]}>
           <FlatList
             style={styles.list}
@@ -175,9 +303,13 @@ export function AttendanceListScreen({ navigation }: Props): React.JSX.Element {
               ) : (
                 <NBEmptyState
                   variant="noData"
-                  illustration="illo-reports"
-                  title="Belum ada kehadiran"
-                  description="Riwayat kehadiran Anda akan muncul di sini setelah clock in."
+                  illustration={activeFilterCount > 0 ? 'illo-search' : 'illo-reports'}
+                  title={activeFilterCount > 0 ? 'Tidak ada hasil' : 'Belum ada kehadiran'}
+                  description={
+                    activeFilterCount > 0
+                      ? 'Tidak ada kehadiran yang sesuai filter'
+                      : 'Riwayat kehadiran Anda akan muncul di sini setelah clock in.'
+                  }
                 />
               )
             }
@@ -196,6 +328,23 @@ export function AttendanceListScreen({ navigation }: Props): React.JSX.Element {
             />
           </NBFabBar>
         )}
+
+        <SortModal
+          visible={isSortModalOpen}
+          onClose={() => setIsSortModalOpen(false)}
+          title="Urutkan Kehadiran"
+          options={SORT_OPTIONS}
+          selectedOption={sort}
+          onSelect={(key) => setSort(key as SortKey)}
+        />
+
+        <AttendanceFilterModal
+          visible={isFilterModalOpen}
+          onClose={() => setIsFilterModalOpen(false)}
+          filters={filters}
+          onApplyFilters={setFilters}
+          onResetFilters={() => setFilters({})}
+        />
       </SafeAreaView>
     </NBBackgroundPattern>
   );
@@ -205,6 +354,77 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: 'transparent',
+  },
+  filterBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: nbSpacing.sm,
+    paddingVertical: nbSpacing.xs,
+    marginHorizontal: nbSpacing.md,
+    backgroundColor: nbColors.white,
+    borderTopWidth: nbBorders.widthBase,
+    borderTopColor: nbColors.gray300,
+    borderBottomWidth: nbBorders.widthBase,
+    borderBottomColor: nbColors.gray300,
+    minHeight: 48,
+  },
+  filterBarActive: {
+    borderTopColor: nbColors.primary,
+    borderBottomColor: nbColors.primary,
+  },
+  filterBarLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  filterBarRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: nbSpacing.xs,
+  },
+  filterBarPlaceholder: {
+    fontStyle: 'italic',
+  },
+  miniChipsContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+  },
+  miniChip: {
+    paddingHorizontal: nbSpacing.sm,
+    paddingVertical: nbSpacing.xs,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.sm,
+    height: 32,
+    justifyContent: 'center',
+  },
+  miniChipStatus: { backgroundColor: nbColors.info },
+  miniChipDate: { backgroundColor: nbColors.warning },
+  filterClearButton: {
+    padding: nbSpacing.xs,
+    marginLeft: nbSpacing.xs,
+  },
+  filterIconButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: nbSpacing.xs,
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: nbColors.danger,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   listWrapper: {
     flex: 1,

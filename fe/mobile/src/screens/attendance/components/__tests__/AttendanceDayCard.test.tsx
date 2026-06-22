@@ -9,22 +9,28 @@ const base: AttendanceDaySummary = {
   last_clock_out: '2026-06-22T09:00:00Z',
   shift_count: 2,
   total_worked_minutes: 125,
-  scheduled_start_time: null,
+  scheduled_start_time: '06:00:00',
   crosses_midnight: false,
+  is_late: false,
   has_active: false,
 };
 
 describe('AttendanceDayCard', () => {
-  it('shows an on-time pill when there is no schedule to be late against', () => {
+  it('shows an on-time pill when the server reports not late', () => {
     const { getByText } = render(<AttendanceDayCard summary={base} onPress={jest.fn()} />);
     expect(getByText('Tepat Waktu')).toBeTruthy();
   });
 
-  it('shows a late pill when the first clock-in is after the scheduled start', () => {
-    // scheduled 00:00 → any clock-in time is "late" regardless of the test timezone.
-    const late = { ...base, scheduled_start_time: '00:00:00' };
+  it('shows a late pill when the server reports is_late', () => {
+    const late = { ...base, is_late: true };
     const { getByText } = render(<AttendanceDayCard summary={late} onPress={jest.fn()} />);
     expect(getByText('Terlambat')).toBeTruthy();
+  });
+
+  it('shows a "Berlangsung" pill when a shift is still active (takes precedence)', () => {
+    const active = { ...base, is_late: true, has_active: true, last_clock_out: null };
+    const { getByText } = render(<AttendanceDayCard summary={active} onPress={jest.fn()} />);
+    expect(getByText('Berlangsung')).toBeTruthy();
   });
 
   it('renders Masuk/Keluar/duration/shift-count meta', () => {

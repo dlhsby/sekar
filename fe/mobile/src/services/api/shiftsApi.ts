@@ -11,6 +11,7 @@ import type {
   CurrentShiftResponse,
   AttendanceListResponse,
   AttendanceDayDetail,
+  AttendanceFilter,
   ApiResponse,
 } from '../../types/api.types';
 
@@ -71,10 +72,16 @@ export async function getMyShifts(): Promise<
  * paginated by day (newest first).
  */
 export async function getAttendanceDays(
-  page = 1,
-  limit = 20,
+  filter: AttendanceFilter = {},
 ): Promise<ApiResponse<AttendanceListResponse>> {
-  return get<AttendanceListResponse>('/shifts/attendance', { page, limit });
+  const params: Record<string, string | number> = {};
+  if (filter.page) { params.page = filter.page; }
+  if (filter.limit) { params.limit = filter.limit; }
+  if (filter.from_date) { params.from_date = filter.from_date; }
+  if (filter.to_date) { params.to_date = filter.to_date; }
+  if (filter.status) { params.status = filter.status; }
+  if (filter.sort_dir) { params.sort_dir = filter.sort_dir; }
+  return get<AttendanceListResponse>('/shifts/attendance', params);
 }
 
 /**

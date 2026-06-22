@@ -88,6 +88,7 @@ export interface AttendanceDaySummary {
   total_worked_minutes: number;
   scheduled_start_time: string | null; // HH:mm[:ss] of the earliest shift, for the late check
   crosses_midnight: boolean;
+  is_late: boolean; // computed server-side (WIB)
   has_active: boolean;
 }
 
@@ -99,6 +100,15 @@ export interface AttendanceListResponse {
     limit: number;
     totalPages: number;
   };
+}
+
+export interface AttendanceFilter {
+  page?: number;
+  limit?: number;
+  from_date?: string; // YYYY-MM-DD
+  to_date?: string; // YYYY-MM-DD
+  status?: 'late' | 'on_time' | 'active';
+  sort_dir?: 'asc' | 'desc';
 }
 
 // GET /shifts/attendance/:date — that day's shifts, newest first.

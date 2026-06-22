@@ -44,6 +44,12 @@ export class AttendanceDaySummaryDto {
   })
   crosses_midnight: boolean;
 
+  @ApiProperty({
+    description: 'Whether the first clock-in was after the scheduled start (computed in WIB)',
+    example: false,
+  })
+  is_late: boolean;
+
   @ApiProperty({ description: 'Whether any shift that day is still active', example: false })
   has_active: boolean;
 }

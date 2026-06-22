@@ -6,7 +6,7 @@
 import React from 'react';
 import { ListItemCard } from '../../../components/common';
 import type { StatusTone } from '../../../components/home/StatusPill';
-import { formatLongDate, formatTime, isClockInLate } from '../../../utils/dateUtils';
+import { formatLongDate, formatTime } from '../../../utils/dateUtils';
 import type { AttendanceDaySummary } from '../../../types/api.types';
 
 export interface AttendanceDayCardProps {
@@ -24,13 +24,19 @@ export const AttendanceDayCard = React.memo(function AttendanceDayCard({
   summary,
   onPress,
 }: AttendanceDayCardProps): React.JSX.Element {
-  const late = isClockInLate(
-    summary.first_clock_in,
-    summary.scheduled_start_time,
-    summary.crosses_midnight,
-  );
-  const tone: StatusTone = late ? 'warn' : 'ok';
-  const statusLabel = late ? 'Terlambat' : 'Tepat Waktu';
+  // is_late is computed server-side (WIB). An active day takes precedence visually.
+  let tone: StatusTone;
+  let statusLabel: string;
+  if (summary.has_active) {
+    tone = 'info';
+    statusLabel = 'Berlangsung';
+  } else if (summary.is_late) {
+    tone = 'warn';
+    statusLabel = 'Terlambat';
+  } else {
+    tone = 'ok';
+    statusLabel = 'Tepat Waktu';
+  }
 
   // Parse as local midnight so the label shows the WIB calendar date verbatim,
   // independent of the device timezone.

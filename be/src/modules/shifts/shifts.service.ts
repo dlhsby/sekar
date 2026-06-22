@@ -11,6 +11,7 @@ import { BoundaryCheckService } from '../../shared/services/boundary-check.servi
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { TimezoneUtil } from '../../common/utils/timezone.util';
 import { AttendanceDaySummaryDto } from './dto/attendance-day.dto';
+import { AttendanceFilterDto } from './dto/attendance-filter.dto';
 import { getMinimumShiftDurationMinutes } from '../../common/constants/shift.constants';
 import { Schedule } from '../schedules/entities/schedule.entity';
 import { Area } from '../areas/entities/area.entity';
@@ -400,21 +401,70 @@ export class ShiftsService {
    */
   async findMyAttendanceDays(
     userId: string,
-    page: number = 1,
-    limit: number = 20,
+    filter: AttendanceFilterDto = {},
     now: Date = new Date(),
   ): Promise<PaginatedResponseDto<AttendanceDaySummaryDto>> {
+    const page = filter.page ?? 1;
+    const limit = filter.limit ?? 20;
+
     const shifts = await this.shiftRepository.find({
       where: { user_id: userId, is_overtime: false },
       relations: ['shift_definition'],
       order: { clock_in_time: 'DESC' },
     });
 
-    const days = this.summarizeShiftsByDay(shifts, now);
+    let days = this.summarizeShiftsByDay(shifts, now);
+
+    // Filters (date range is inclusive; YYYY-MM-DD strings compare lexically).
+    if (filter.from_date) {
+      days = days.filter((d) => d.date >= filter.from_date!);
+    }
+    if (filter.to_date) {
+      days = days.filter((d) => d.date <= filter.to_date!);
+    }
+    if (filter.status === 'late') {
+      days = days.filter((d) => d.is_late);
+    } else if (filter.status === 'on_time') {
+      days = days.filter((d) => !d.is_late);
+    } else if (filter.status === 'active') {
+      days = days.filter((d) => d.has_active);
+    }
+
+    // summarizeShiftsByDay already returns newest-first; reverse for ascending.
+    if (filter.sort_dir === 'asc') {
+      days = days.reverse();
+    }
+
     const total = days.length;
     const start = (page - 1) * limit;
     const data = days.slice(start, start + limit);
     return new PaginatedResponseDto(data, total, page, limit);
+  }
+
+  /**
+   * Whether a clock-in (UTC instant) is after its scheduled start, evaluated in
+   * WIB. Mirrors the mobile `isClockInLate` rule, including the crosses-midnight
+   * noon heuristic (an early-morning clock-in for a night shift reads as late).
+   */
+  private isClockInLate(
+    clockIn: Date,
+    scheduledStart: string | null,
+    crossesMidnight: boolean,
+  ): boolean {
+    if (!scheduledStart) {
+      return false;
+    }
+    const wib = TimezoneUtil.jakartaNow(clockIn);
+    const clockInMinutes = wib.getUTCHours() * 60 + wib.getUTCMinutes();
+    const [h, m] = scheduledStart.split(':');
+    const scheduledMinutes = Number(h) * 60 + Number(m);
+    if (Number.isNaN(scheduledMinutes)) {
+      return false;
+    }
+    if (crossesMidnight) {
+      return clockInMinutes > scheduledMinutes || clockInMinutes < 12 * 60;
+    }
+    return clockInMinutes > scheduledMinutes;
   }
 
   /**
@@ -469,14 +519,17 @@ export class ShiftsService {
         return acc + Math.max(0, Math.round((end.getTime() - s.clock_in_time.getTime()) / 60000));
       }, 0);
 
+      const scheduledStart = earliest.shift_definition?.start_time ?? null;
+      const crossesMidnight = earliest.shift_definition?.crosses_midnight ?? false;
       summaries.push({
         date,
         first_clock_in: earliest.clock_in_time.toISOString(),
         last_clock_out: lastClockOut ? lastClockOut.toISOString() : null,
         shift_count: dayShifts.length,
         total_worked_minutes: totalWorkedMinutes,
-        scheduled_start_time: earliest.shift_definition?.start_time ?? null,
-        crosses_midnight: earliest.shift_definition?.crosses_midnight ?? false,
+        scheduled_start_time: scheduledStart,
+        crosses_midnight: crossesMidnight,
+        is_late: this.isClockInLate(earliest.clock_in_time, scheduledStart, crossesMidnight),
         has_active: hasActive,
       });
     }

@@ -226,15 +226,15 @@ describe('ShiftsController', () => {
   });
 
   describe('getMyAttendance', () => {
-    it('delegates to findMyAttendanceDays with the user id + pagination', async () => {
+    it('delegates to findMyAttendanceDays with the user id + filter', async () => {
       const paginated = new PaginatedResponseDto([{ date: '2026-06-22' } as any], 1, 1, 20);
       mockShiftsService.findMyAttendanceDays.mockResolvedValue(paginated);
-      const pagination: PaginationDto = { page: 1, limit: 20 };
+      const filter = { page: 1, limit: 20, status: 'late' as const, sort_dir: 'asc' as const };
 
-      const result = await controller.getMyAttendance(mockUser as any, pagination);
+      const result = await controller.getMyAttendance(mockUser as any, filter);
 
       expect(result).toBe(paginated);
-      expect(mockShiftsService.findMyAttendanceDays).toHaveBeenCalledWith(mockUser.id, 1, 20);
+      expect(mockShiftsService.findMyAttendanceDays).toHaveBeenCalledWith(mockUser.id, filter);
     });
   });
 

@@ -1385,9 +1385,11 @@ Authorization: Bearer {worker_token}
 
 Get my attendance history grouped by WIB calendar day, paginated **by day** (clockable roles only). Regular shifts only — overtime is excluded (see the Overtime module). Backs the mobile "Kehadiran" list.
 
+**Query params (all optional):** `page`, `limit` (max 100) · `from_date`/`to_date` (`YYYY-MM-DD`, inclusive, filter the WIB day) · `status` (`late` | `on_time` | `active`) · `sort_dir` (`asc` | `desc`, default `desc` by day). `total` reflects the filtered day count.
+
 **Request:**
 ```http
-GET /api/v1/shifts/attendance?page=1&limit=20 HTTP/1.1
+GET /api/v1/shifts/attendance?page=1&limit=20&status=late&from_date=2026-06-01&sort_dir=desc HTTP/1.1
 Authorization: Bearer {worker_token}
 ```
 
@@ -1403,6 +1405,7 @@ Authorization: Bearer {worker_token}
       "total_worked_minutes": 480,
       "scheduled_start_time": "06:00:00",
       "crosses_midnight": false,
+      "is_late": false,
       "has_active": false
     }
   ],
@@ -1411,9 +1414,9 @@ Authorization: Bearer {worker_token}
 ```
 
 **Notes:**
-- Day buckets use `clock_in_time AT TIME ZONE 'Asia/Jakarta'` (a midnight-crossing shift files under its clock-in day). `total` is the number of distinct days.
+- Day buckets use `clock_in_time AT TIME ZONE 'Asia/Jakarta'` (a midnight-crossing shift files under its clock-in day). `total` is the number of distinct days **after filtering**.
 - `last_clock_out` is null while a shift is still active; `total_worked_minutes` counts an active shift up to now.
-- `scheduled_start_time`/`crosses_midnight` come from the earliest shift's definition so the client computes lateness with its own rule.
+- `is_late` is computed server-side in WIB (first clock-in vs the earliest shift's `scheduled_start_time`, with a crosses-midnight noon heuristic) — mirrors the mobile `isClockInLate` rule. `scheduled_start_time`/`crosses_midnight` are still returned for reference.
 
 ---
 

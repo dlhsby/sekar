@@ -386,16 +386,28 @@ describe('shiftsApi', () => {
       const mockResponse = { data: { data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } } };
       (apiClient.get as jest.Mock).mockResolvedValue(mockResponse);
 
-      const result = await getAttendanceDays(2, 10);
+      const result = await getAttendanceDays({ page: 2, limit: 10 });
 
       expect(apiClient.get).toHaveBeenCalledWith('/shifts/attendance', { page: 2, limit: 10 });
       expect(result).toEqual(mockResponse);
     });
 
-    it('defaults to page 1, limit 20', async () => {
+    it('forwards filter + sort params, omitting undefined ones', async () => {
+      (apiClient.get as jest.Mock).mockResolvedValue({ data: { data: [], meta: {} } });
+      await getAttendanceDays({ page: 1, limit: 20, from_date: '2026-06-01', status: 'late', sort_dir: 'asc' });
+      expect(apiClient.get).toHaveBeenCalledWith('/shifts/attendance', {
+        page: 1,
+        limit: 20,
+        from_date: '2026-06-01',
+        status: 'late',
+        sort_dir: 'asc',
+      });
+    });
+
+    it('sends an empty param object when no filter is given', async () => {
       (apiClient.get as jest.Mock).mockResolvedValue({ data: { data: [], meta: {} } });
       await getAttendanceDays();
-      expect(apiClient.get).toHaveBeenCalledWith('/shifts/attendance', { page: 1, limit: 20 });
+      expect(apiClient.get).toHaveBeenCalledWith('/shifts/attendance', {});
     });
   });
 
