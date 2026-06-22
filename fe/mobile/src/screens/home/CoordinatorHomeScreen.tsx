@@ -209,12 +209,13 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
       if (!s.clock_out_time) return latest;
       return !latest || s.clock_out_time > latest ? s.clock_out_time : latest;
     }, currentShift?.clock_out_time);
-    const scheduledStart =
-      earliest?.shift_definition?.start_time ?? currentShift?.shift_definition?.start_time;
+    const scheduledDef = earliest?.shift_definition ?? currentShift?.shift_definition;
     return {
       firstClockIn,
       lastClockOut,
-      isLate: !currentShift?.is_overtime && isClockInLate(firstClockIn, scheduledStart),
+      isLate:
+        !currentShift?.is_overtime &&
+        isClockInLate(firstClockIn, scheduledDef?.start_time, scheduledDef?.crosses_midnight),
     };
   }, [todayShifts, currentShift]);
 

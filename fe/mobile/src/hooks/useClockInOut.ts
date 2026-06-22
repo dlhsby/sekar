@@ -62,7 +62,7 @@ export function useClockInOut() {
       return false;
     }
     const reference = currentShift?.clock_in_time ?? new Date().toISOString();
-    return isClockInLate(reference, scheduledShift.start_time);
+    return isClockInLate(reference, scheduledShift.start_time, scheduledShift.crosses_midnight);
   }, [scheduledShift, currentShift]);
 
   // Fetch the worker's assigned schedule so the screen can show the scheduled

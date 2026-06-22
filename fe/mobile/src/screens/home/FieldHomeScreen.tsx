@@ -112,12 +112,13 @@ export function FieldHomeScreen(): React.JSX.Element {
       if (!s.clock_out_time) return latest;
       return !latest || s.clock_out_time > latest ? s.clock_out_time : latest;
     }, currentShift?.clock_out_time);
-    const scheduledStart =
-      earliest?.shift_definition?.start_time ?? currentShift?.shift_definition?.start_time;
+    const scheduledDef = earliest?.shift_definition ?? currentShift?.shift_definition;
     return {
       firstClockIn,
       lastClockOut,
-      isLate: !currentShift?.is_overtime && isClockInLate(firstClockIn, scheduledStart),
+      isLate:
+        !currentShift?.is_overtime &&
+        isClockInLate(firstClockIn, scheduledDef?.start_time, scheduledDef?.crosses_midnight),
     };
   }, [todayShifts, currentShift]);
 
@@ -561,10 +562,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: nbSpacing.sm,
   },
-  heroClockArea: { flex: 1 },
-  heroTopRight: { alignItems: 'flex-end', gap: 2 },
   heroStatusRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs },
-  heroAreaNameText: { maxWidth: 160, textAlign: 'right' },
   heroChevron: { marginTop: 1 },
   heroLabel: { letterSpacing: 0.6, marginBottom: 2 },
   // Collapsed hero: first clock-in (Masuk) + last clock-out (Keluar) side by side.
@@ -581,31 +579,9 @@ const styles = StyleSheet.create({
   heroMeta: { marginTop: nbSpacing.sm },
   // Expanded hero: label:value table rows.
   heroDetails: { marginTop: nbSpacing.md, gap: nbSpacing.xs },
-  heroRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: nbSpacing.sm,
-  },
-  heroRowValue: { flexShrink: 1, textAlign: 'right' },
-  heroLocValue: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: nbSpacing.xs,
-    flexShrink: 1,
-  },
   heroLocText: { flexShrink: 1 },
   heroIdleTitle: { marginTop: 2 },
-  // Plain inline coords (no card) + a compact white refresh button right after.
-  heroGpsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: nbSpacing.xs,
-    marginTop: nbSpacing.xs,
-  },
-  // flexShrink (not flex:1) so the button hugs the coords instead of being
-  // pushed to the far right; text truncates only if the row is too narrow.
-  heroGpsText: { flexShrink: 1, fontSize: 11 },
+  // Compact white refresh button beside the inline coords.
   heroGpsRefresh: {
     width: 30,
     height: 30,

@@ -360,12 +360,20 @@ export function formatIsoWeekLabel(year: number, week: number): string {
  * (e.g. `ShiftDefinition.start_time`). Returns false when no schedule is
  * supplied or either input is invalid (so "no schedule" never reads as late).
  *
+ * For a night shift that crosses midnight (e.g. 21:00–05:00) a naive HH:mm
+ * compare is wrong: a 01:00 clock-in (60 min) reads as "before" a 21:00 start
+ * (1260 min). When `crossesMidnight` is set, early-morning clock-ins (after
+ * midnight, before noon) are treated as late — they're well past the evening
+ * start — while an evening clock-in before the start time stays on time.
+ *
  * @param clockInIso ISO timestamp of the (first) clock-in
  * @param scheduledStartHHmm scheduled start time in "HH:mm"
+ * @param crossesMidnight whether the scheduled shift spans midnight
  */
 export function isClockInLate(
   clockInIso?: string | null,
   scheduledStartHHmm?: string | null,
+  crossesMidnight: boolean = false,
 ): boolean {
   if (!clockInIso || !scheduledStartHHmm) {
     return false;
@@ -380,5 +388,9 @@ export function isClockInLate(
   }
   const scheduledMinutes = Number(match[1]) * 60 + Number(match[2]);
   const clockInMinutes = d.getHours() * 60 + d.getMinutes();
+  if (crossesMidnight) {
+    const NOON = 12 * 60;
+    return clockInMinutes > scheduledMinutes || clockInMinutes < NOON;
+  }
   return clockInMinutes > scheduledMinutes;
 }

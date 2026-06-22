@@ -21,13 +21,16 @@ Root
 │  └─ Login
 │
 └─ Main Stack (Authenticated — all 8 roles)
-   └─ MainTabs (dynamically configured per role via TAB_CONFIGS)
-      ├─ Home (Tab) ─── [satgas, linmas, korlap, admin_data, kepala_rayon]
-      ├─ Aktivitas (Tab) ─── [satgas, linmas, korlap, admin_data]
-      ├─ Tugas (Tab) ─── [satgas, linmas, korlap, kepala_rayon, top_mgmt, admin_sys, superadmin]
-      ├─ Lembur (Tab) ─── [satgas, linmas]
-      ├─ Monitoring (Tab) ─── [korlap, kepala_rayon, top_mgmt, admin_sys, superadmin]
-      ├─ Profil (Tab) ─── [all roles]
+   └─ MainTabs (uniform 3-tab bar for EVERY role — Phase 5 restructure)
+      ├─ Beranda / Home (Tab) ─── [all roles]
+      ├─ Menu (Tab) ─── [all roles] → role-aware launcher grid (MENU_CONFIGS)
+      ├─ Profil / Profile (Tab) ─── [all roles]
+      │
+      │  Every other feature is reached from the Menu page (registered as hidden
+      │  Tab.Screens, opened via the launcher), no longer as per-role bottom tabs:
+      │  Kehadiran (clock in/out), Lembur, Tugas, Aktivitas, Monitoring, Laporan,
+      │  Aset, Kinerja/Tim (analytics), Bibit, Perantingan — gated by MENU_CONFIGS[role].
+      │  (Phase 2C's per-role TAB_CONFIGS bar was replaced; "Absensi" wording → "Kehadiran".)
       │
       ├─ ActivitySubmission (Modal)
       ├─ ActivityDetail (Push)

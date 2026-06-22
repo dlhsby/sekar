@@ -43,6 +43,21 @@ describe('Date Utils', () => {
       expect(isClockInLate('not-a-date', '06:00')).toBe(false);
       expect(isClockInLate(at(9, 0), 'bad')).toBe(false);
     });
+
+    describe('night shift crossing midnight (e.g. 21:00–05:00)', () => {
+      const start = '21:00';
+      it('on time when clocked in before the evening start', () => {
+        expect(isClockInLate(at(20, 0), start, true)).toBe(false);
+      });
+      it('late when clocked in after the evening start', () => {
+        expect(isClockInLate(at(22, 0), start, true)).toBe(true);
+      });
+      it('late when clocked in in the early-morning hours (well past start)', () => {
+        // 01:00 — without crossesMidnight this naively reads as "before" 21:00.
+        expect(isClockInLate(at(1, 0), start, true)).toBe(true);
+        expect(isClockInLate(at(1, 0), start, false)).toBe(false);
+      });
+    });
   });
   describe('formatDate', () => {
     it('should format Date object to YYYY-MM-DD', () => {

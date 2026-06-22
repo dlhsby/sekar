@@ -1238,7 +1238,8 @@ Content-Type: application/json
 
 {
   "gps_lat": -7.2906,
-  "gps_lng": 112.7399
+  "gps_lng": 112.7399,
+  "selfie_photo": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD..."
 }
 ```
 
@@ -1247,6 +1248,7 @@ Content-Type: application/json
 |-------|------|----------|------------|
 | `gps_lat` | number | Yes | -90 to 90 |
 | `gps_lng` | number | Yes | -180 to 180 |
+| `selfie_photo` | string | No | Optional base64 data URI (JPEG/PNG); stored as `clock_out_photo_url`. The mobile app now offers a selfie on clock-out too. |
 
 **Response (200 OK):**
 ```json
@@ -1333,6 +1335,9 @@ null
 **Notes:**
 - Returns null if worker not currently clocked in
 - Active shift defined as `clock_out_time IS NULL`
+- The response (and `GET /shifts/my-shifts`) now eager-loads the `shift_definition`
+  relation (`{ id, name, code, start_time, end_time, crosses_midnight }`) so the
+  mobile attendance card can show the scheduled window + a late indicator.
 
 ---
 

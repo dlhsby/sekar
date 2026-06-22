@@ -354,43 +354,11 @@ const styles = StyleSheet.create({
     paddingTop: nbSpacing.md,
     paddingBottom: nbSpacing.xs,
   },
-  timeHeroTime: {
-    letterSpacing: 0.5,
-  },
-  centerText: {
-    textAlign: 'center',
-  },
   cardLabel: {
     marginBottom: nbSpacing.xs,
   },
-  areaAddress: {
-    marginTop: nbSpacing.xs,
-    marginBottom: nbSpacing.sm,
-  },
-  infoValue: {
-    flexShrink: 1,
-    textAlign: 'right',
-  },
-  waktuTime: {
-    fontWeight: '700',
-  },
   gpsCard: {
     backgroundColor: nbColors.statusIdleBg,
-  },
-  staticCard: {
-    backgroundColor: nbColors.white,
-    borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.black,
-    borderRadius: nbRadius.md,
-    padding: nbSpacing.md,
-    marginHorizontal: nbSpacing.md,
-    marginBottom: nbSpacing.md,
-    ...nbShadows.sm,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: nbSpacing.xs,
   },
   infoTable: {
     gap: nbSpacing.sm,
