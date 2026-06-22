@@ -156,7 +156,7 @@ describe('TaskDetailScreen', () => {
     const backButton = await findByText('Kembali');
     fireEvent.press(backButton);
 
-    expect(mockNavigate).toHaveBeenCalledWith('TasksActivities', { initialTab: 'tasks' });
+    expect(mockNavigate).toHaveBeenCalledWith('Tasks');
   });
 
   it('shows completion details for completed tasks', async () => {

@@ -110,7 +110,7 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
   useEffect(() => {
     if (!canCreateTask) {
       NBToast.show({ level: 'danger', title: 'Akses Ditolak', body: 'Anda tidak memiliki izin untuk membuat tugas.' });
-      (navigation as any).navigate('TasksActivities', { initialTab: 'tasks' });
+      (navigation as any).navigate('Tasks');
     }
   }, [canCreateTask, navigation]);
 
@@ -120,7 +120,7 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
     const hasContent = formRef.current.title.trim().length > 0 || formRef.current.description.trim().length > 0;
     if (!hasContent) {
       resetForm();
-      (navigation as any).navigate('TasksActivities', { initialTab: 'tasks' });
+      (navigation as any).navigate('Tasks');
       return;
     }
     Alert.alert(
@@ -133,7 +133,7 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
           onPress: async () => {
             await clearDraft();
             resetForm();
-            (navigation as any).navigate('TasksActivities', { initialTab: 'tasks' });
+            (navigation as any).navigate('Tasks');
           },
         },
         {
@@ -141,7 +141,7 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
           onPress: async () => {
             await saveDraftRef.current?.();
             resetForm();
-            (navigation as any).navigate('TasksActivities', { initialTab: 'tasks' });
+            (navigation as any).navigate('Tasks');
           },
         },
       ]
@@ -181,7 +181,7 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
         await clearDraft();
         resetForm();
         NBToast.show({ level: 'success', title: 'Berhasil', body: 'Tugas berhasil dibuat.' });
-        (navigation as any).navigate('TasksActivities', { initialTab: 'tasks' });
+        (navigation as any).navigate('Tasks');
       } else if (response.error) {
         NBToast.show({ level: 'danger', title: 'Gagal', body: response.error });
       }

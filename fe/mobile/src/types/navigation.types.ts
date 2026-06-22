@@ -20,10 +20,10 @@ export type RootStackParamList = {
   KecamatanTabs: undefined;
 };
 
-// Main Stack Navigator — wraps the bottom tabs and surfaces Profile as a slide-in screen
+// Main Stack Navigator — wraps the bottom tabs and surfaces the profile cluster as slide-in
+// screens. Profile itself is now a bottom tab (see MainTabParamList), not a stack screen.
 export type MainStackParamList = {
   Tabs: undefined;
-  Profile: undefined;
   EditProfile: undefined;
   Settings: undefined;
   NotificationPreferences: undefined;
@@ -42,21 +42,23 @@ export type RootStackScreenProps<T extends keyof RootStackParamList> =
 
 // Unified Main Tab Navigator (all roles)
 export type MainTabParamList = {
-  // Visible tabs (role-dependent)
+  // Visible tabs — uniform across all roles (Home · Menu · Profile)
   Home: undefined;
-  TasksActivities: { initialTab?: 'tasks' | 'activities' } | undefined;
-  Overtime: undefined;
-  Monitoring: undefined;
+  Menu: undefined;
   Profile: undefined;
+  // Feature screens — reached from the Menu launcher (registered as hidden tab screens)
+  Absensi: { initialTab?: 'absensi' | 'lembur' } | undefined; // clock in/out + overtime tabs
+  Tasks: undefined;                  // standalone tasks list (split from TasksActivities)
+  Activities: undefined;             // standalone activities list (split from TasksActivities)
+  Monitoring: undefined;
   // Phase 5-1 Reporting
-  Reports: undefined;                // visible tab — reports list
+  Reports: undefined;                // reports list
   // Phase 5-2 Analytics
-  WorkerAnalytics: { workerId?: string } | undefined; // visible tab — own/worker KPIs
-  TeamAnalytics: { areaId?: string } | undefined;     // visible tab — team/area KPIs
+  WorkerAnalytics: { workerId?: string } | undefined; // own/worker KPIs
+  TeamAnalytics: { areaId?: string } | undefined;     // team/area KPIs
   // Phase 5-3 Assets
-  Assets: undefined;                 // visible tab — assets list
+  Assets: undefined;                 // assets list
   // Hidden stack screens
-  ClockInOut: undefined;
   ActivitySubmission: undefined;
   ActivityDetail: { activityId: string; from?: string; fromParams?: Record<string, unknown> };
   TaskDetail: { taskId: string; from?: string; fromParams?: Record<string, unknown> };

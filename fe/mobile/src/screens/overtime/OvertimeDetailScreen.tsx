@@ -83,7 +83,7 @@ export function OvertimeDetailScreen(): React.JSX.Element {
       <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.bgCanvas} patternColor={nbColors.primary} opacity={0.06}>
         <View style={styles.loadingContainer}>
           <NBText variant="body" color="gray600">Lembur tidak ditemukan</NBText>
-          <NBButton title="Kembali" variant="secondary" onPress={() => navigation.navigate('Overtime' as any)} />
+          <NBButton title="Kembali" variant="secondary" onPress={() => navigation.navigate('Absensi' as any, { initialTab: 'lembur' })} />
         </View>
       </NBBackgroundPattern>
     );

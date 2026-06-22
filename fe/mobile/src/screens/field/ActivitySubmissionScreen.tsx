@@ -85,7 +85,7 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
   );
 
   const navigateBack = useCallback(() => {
-    navigation.navigate('TasksActivities', { initialTab: 'activities' });
+    navigation.navigate('Activities');
   }, [navigation]);
 
   // Prompt user to save draft or discard when leaving with unsaved data
@@ -130,8 +130,8 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
 
   const onSubmit = useCallback(() => {
     handleSubmit(
-      () => navigation.navigate('ClockInOut'),
-      () => navigation.navigate('TasksActivities', { initialTab: 'activities' }),
+      () => navigation.navigate('Absensi', { initialTab: 'absensi' }),
+      () => navigation.navigate('Activities'),
       () => scrollViewRef.current?.scrollTo({ y: 0, animated: true }),
     );
   }, [handleSubmit, navigation]);

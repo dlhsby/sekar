@@ -144,7 +144,7 @@ export function useOvertimeStartForm(
             await locationTracker.initialize(response.data.shift_id);
           }
         }
-        navigation.navigate('Overtime' as any);
+        navigation.navigate('Absensi' as any, { initialTab: 'lembur' });
       } else if (response.error) {
         dispatch(setError(response.error));
         const errMsg = response.error.includes('end normal shift')
@@ -164,7 +164,7 @@ export function useOvertimeStartForm(
   const handleLeave = useCallback(() => {
     const hasData = Boolean(reason || startSelfie);
     if (!hasData) {
-      navigation.navigate('Overtime' as any);
+      navigation.navigate('Absensi' as any, { initialTab: 'lembur' });
       return;
     }
     Alert.alert(
@@ -178,7 +178,7 @@ export function useOvertimeStartForm(
             setReason('');
             setStartSelfie(null);
             void AsyncStorage.removeItem(DRAFT_KEY);
-            navigation.navigate('Overtime' as any);
+            navigation.navigate('Absensi' as any, { initialTab: 'lembur' });
           },
         },
         {
@@ -189,7 +189,7 @@ export function useOvertimeStartForm(
               savedAt: new Date().toISOString(),
             };
             void AsyncStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-            navigation.navigate('Overtime' as any);
+            navigation.navigate('Absensi' as any, { initialTab: 'lembur' });
           },
         },
       ],

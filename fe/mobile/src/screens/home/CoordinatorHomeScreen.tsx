@@ -133,7 +133,7 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
     if (currentShift?.is_overtime) {
       navigation.navigate('OvertimeSubmit' as never);
     } else {
-      navigation.navigate('ClockInOut' as never);
+      navigation.navigate('Absensi' as never, { initialTab: 'absensi' } as never);
     }
   }, [currentShift, navigation]);
 

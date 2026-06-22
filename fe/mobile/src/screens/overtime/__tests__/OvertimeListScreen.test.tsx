@@ -200,7 +200,7 @@ const mockNavigation: any = {
 const mockRoute: any = {
   params: {},
   key: 'test-key',
-  name: 'Overtime',
+  name: 'Absensi',
 };
 
 const renderScreen = (store = createTestStore()) => {

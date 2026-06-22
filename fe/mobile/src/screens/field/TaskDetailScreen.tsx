@@ -82,7 +82,7 @@ export function TaskDetailScreen(): React.JSX.Element {
     if (backTarget) {
       (navigation as any).navigate(backTarget, backTargetParams);
     } else {
-      (navigation as any).navigate('TasksActivities', { initialTab: 'tasks' });
+      (navigation as any).navigate('Tasks');
     }
   }, [route.params.from, route.params.fromParams, navigation]);
 

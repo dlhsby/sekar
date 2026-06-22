@@ -101,7 +101,7 @@ export function TaskCompleteScreen(): React.JSX.Element {
       });
       clearForm();
       NBToast.show({ level: 'success', title: 'Berhasil', body: 'Tugas berhasil diselesaikan.' });
-      navigation.navigate('TasksActivities', { initialTab: 'tasks' });
+      navigation.navigate('Tasks');
     } catch {
       NBToast.show({ level: 'danger', title: 'Gagal', body: 'Gagal menyelesaikan tugas. Silakan coba lagi.' });
     } finally {

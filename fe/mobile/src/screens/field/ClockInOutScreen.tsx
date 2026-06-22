@@ -41,8 +41,17 @@ function formatDateHero(d: Date): string {
  * Phase 2C: Soft geofencing (warnings only), auto-detect area from schedule
  * Uses Neo Brutalism design system
  */
-export const ClockInOutScreen = (): React.JSX.Element => {
-  const navigation = useNavigation<MainTabScreenProps<'ClockInOut'>['navigation']>();
+interface ClockInOutScreenProps {
+  /**
+   * When rendered as a tab inside AbsensiScreen, suppress the navigator header
+   * override (the parent owns the "Absensi" header + tabs). Defaults to false
+   * for the standalone/legacy usage.
+   */
+  embedded?: boolean;
+}
+
+export const ClockInOutScreen = ({ embedded = false }: ClockInOutScreenProps = {}): React.JSX.Element => {
+  const navigation = useNavigation<MainTabScreenProps<'Absensi'>['navigation']>();
   const [selfiePreviewUri, setSelfiePreviewUri] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(() => new Date());
 
@@ -74,6 +83,10 @@ export const ClockInOutScreen = (): React.JSX.Element => {
   // test/Storybook contexts where setOptions exists but cannot be called. All other
   // errors (e.g. render crash inside FieldHomeHeader) are re-thrown.
   useEffect(() => {
+    // Embedded in AbsensiScreen → the parent owns the header; don't override it.
+    if (embedded) {
+      return;
+    }
     try {
       navigation.setOptions({
         headerTitle: () => (
@@ -88,7 +101,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
         throw e;
       }
     }
-  }, [navigation, goBack, isClockIn]);
+  }, [navigation, goBack, isClockIn, embedded]);
 
   // No assigned area — block only for area-scoped roles (satgas/linmas/korlap).
   // Rayon-scoped roles (admin_data/kepala_rayon) can clock in without a specific area.

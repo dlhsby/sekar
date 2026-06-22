@@ -15,6 +15,10 @@ export type { NBButtonProps, NBButtonVariant, NBButtonSize } from './NBButton';
 export { NBCard, NBCardHeader, NBCardContent, NBCardFooter } from './NBCard';
 export type { NBCardProps, NBCardSectionProps, NBCardVariant } from './NBCard';
 
+// Menu launcher tile
+export { NBMenuCard } from './NBMenuCard';
+export type { NBMenuCardProps } from './NBMenuCard';
+
 // Badge
 export { NBBadge } from './NBBadge';
 export type { NBBadgeProps, NBBadgeColor, NBBadgeSize } from './NBBadge';

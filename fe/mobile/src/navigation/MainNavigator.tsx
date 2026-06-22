@@ -6,24 +6,23 @@
  * to the previously active tab screen with its state intact.
  */
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import { createBottomTabNavigator, type BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import type { MainTabParamList, MainStackParamList } from '../types/navigation.types';
-import type { UserRole } from '../types/models.types';
 import { nbColors, nbBorders, nbShadows, nbRadius, nbType } from '../constants/nbTokens';
 import { NBText } from '../components/nb/NBText';
-import { useAppSelector } from '../store/hooks';
 import { FieldHomeHeader } from '../components/navigation/FieldHomeHeader';
 
 // Field screens (clockable roles)
 import { HomeScreen } from '../screens/home/HomeScreen';
-import { ClockInOutScreen } from '../screens/field/ClockInOutScreen';
+import { MenuScreen } from '../screens/menu/MenuScreen';
+import { AbsensiScreen } from '../screens/absensi/AbsensiScreen';
 import { ActivitySubmissionScreen } from '../screens/field/ActivitySubmissionScreen';
-import { TasksActivityScreen } from '../screens/taskActivity';
+import { TasksScreen, ActivitiesScreen } from '../screens/taskActivity';
 import { TaskDetailScreen } from '../screens/field/TaskDetailScreen';
 import { TaskCompleteScreen } from '../screens/field/TaskCompleteScreen';
 import { ShiftHistoryScreen } from '../screens/field/ShiftHistoryScreen';
@@ -38,8 +37,7 @@ import { NotificationPreferencesScreen } from '../screens/common/NotificationPre
 import { EditProfileScreen } from '../screens/common/EditProfileScreen';
 import { DiagnosticsScreen } from '../screens/common/DiagnosticsScreen';
 
-// Overtime screens
-import { OvertimeListScreen } from '../screens/overtime/OvertimeListScreen';
+// Overtime screens (OvertimeListScreen is embedded inside AbsensiScreen, not registered here)
 import { OvertimeSubmitScreen } from '../screens/overtime/OvertimeSubmitScreen';
 import { OvertimeDetailScreen } from '../screens/overtime/OvertimeDetailScreen';
 
@@ -124,7 +122,8 @@ const headerChrome = { ...NB_HEADER_STYLE, justifyContent: 'center' as const };
 
 // Singleton wrapped components — created once at module load so the component
 // reference is stable across renders (prevents remount on navigation state updates).
-const ProfileWithHeader    = withProfileHeader(ProfileScreen,    'Profil');
+// Profile is a bottom tab (rendered directly in TabNavigator), so it is NOT wrapped
+// here — the header avatar and the tab both resolve to that single ProfileScreen.
 const ShiftHistoryWithHeader = withProfileHeader(ShiftHistoryScreen, 'Riwayat Shift');
 const SettingsWithHeader   = withProfileHeader(SettingsScreen,   'Pengaturan');
 const NotificationPreferencesWithHeader = withProfileHeader(
@@ -149,100 +148,17 @@ interface TabConfig {
   name: keyof MainTabParamList;
   label: string;
   icon: string;
-  /**
-   * Registered as a screen (reachable via navigate) but NOT shown in the bottom
-   * tab bar. Used to park not-yet-reviewed Phase 5 features (Aset/Kinerja/Tim)
-   * off the field-role tab bars without breaking their detail-screen navigation.
-   */
-  hidden?: boolean;
 }
 
-export const TAB_CONFIGS: Record<string, TabConfig[]> = {
-  satgas: [
-    { name: 'Home', label: 'Beranda', icon: 'home' },
-    { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
-    { name: 'Overtime', label: 'Lembur', icon: 'clock-plus-outline' },
-    // Parked off the tab bar pending review (still reachable via navigate).
-    { name: 'Assets', label: 'Aset', icon: 'toolbox-outline', hidden: true },
-    { name: 'WorkerAnalytics', label: 'Kinerja', icon: 'chart-line', hidden: true },
-  ],
-  linmas: [
-    { name: 'Home', label: 'Beranda', icon: 'home' },
-    { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
-    { name: 'Overtime', label: 'Lembur', icon: 'clock-plus-outline' },
-    { name: 'Assets', label: 'Aset', icon: 'toolbox-outline', hidden: true },
-    { name: 'WorkerAnalytics', label: 'Kinerja', icon: 'chart-line', hidden: true },
-  ],
-  korlap: [
-    { name: 'Home', label: 'Beranda', icon: 'home' },
-    { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
-    { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
-    { name: 'Overtime', label: 'Lembur', icon: 'clock-plus-outline' },
-    { name: 'Assets', label: 'Aset', icon: 'toolbox-outline', hidden: true },
-    { name: 'TeamAnalytics', label: 'Tim', icon: 'chart-bar', hidden: true },
-  ],
-  admin_data: [
-    { name: 'Home', label: 'Beranda', icon: 'home' },
-    { name: 'TasksActivities', label: 'Tugas & Aktivitas', icon: 'clipboard-list-outline' },
-    { name: 'PruningReviewQueue', label: 'Perantingan', icon: 'tree-outline' },
-    { name: 'PlantSeeds', label: 'Bibit', icon: 'leaf-outline' },
-    { name: 'Reports', label: 'Laporan', icon: 'file-chart-outline' },
-    { name: 'Monitoring', label: 'Monitoring', icon: 'chart-bar' },
-  ],
-  kepala_rayon: [
-    { name: 'Home', label: 'Beranda', icon: 'home' },
-    { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
-    { name: 'Overtime', label: 'Lembur', icon: 'clock-check-outline' },
-    { name: 'Assets', label: 'Aset', icon: 'toolbox-outline' },
-    { name: 'Reports', label: 'Laporan', icon: 'file-chart-outline' },
-    { name: 'TeamAnalytics', label: 'Tim', icon: 'chart-bar' },
-  ],
-  top_management: [
-    { name: 'Home', label: 'Beranda', icon: 'home' },
-    { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
-    { name: 'Reports', label: 'Laporan', icon: 'file-chart-outline' },
-    { name: 'TeamAnalytics', label: 'Analitik', icon: 'chart-bar' },
-    { name: 'PlantSeeds', label: 'Bibit', icon: 'leaf-outline' },
-  ],
-  admin_system: [
-    { name: 'Home', label: 'Beranda', icon: 'home' },
-    { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
-    { name: 'Assets', label: 'Aset', icon: 'toolbox-outline' },
-    { name: 'Reports', label: 'Laporan', icon: 'file-chart-outline' },
-    { name: 'TeamAnalytics', label: 'Analitik', icon: 'chart-bar' },
-  ],
-  superadmin: [
-    { name: 'Home', label: 'Beranda', icon: 'home' },
-    { name: 'Monitoring', label: 'Monitoring', icon: 'map' },
-    { name: 'Overtime', label: 'Lembur', icon: 'clock-check-outline' },
-    { name: 'Assets', label: 'Aset', icon: 'toolbox-outline' },
-    { name: 'Reports', label: 'Laporan', icon: 'file-chart-outline' },
-    { name: 'TeamAnalytics', label: 'Analitik', icon: 'chart-bar' },
-  ],
-  staff_kecamatan: [
-    { name: 'Home', label: 'Beranda', icon: 'home' },
-    { name: 'Perantingan', label: 'Perantingan', icon: 'tree-outline' },
-  ],
-};
-
-function getTabsForRole(role: UserRole): TabConfig[] {
-  return TAB_CONFIGS[role] ?? TAB_CONFIGS.satgas;
-}
-
-const SCREEN_MAP: Record<string, React.ComponentType<any>> = {
-  Home: HomeScreen,
-  TasksActivities: TasksActivityScreen,
-  Overtime: OvertimeListScreen,
-  Monitoring: MapDashboardScreen,
-  Perantingan: PerantinganListScreen,
-  PruningReviewQueue: ReviewQueueScreen,
-  PlantSeeds: PlantSeedsInventoryScreen,
-  // Phase 5 visible tabs
-  Reports: ReportsScreen,
-  Assets: AssetListScreen,
-  WorkerAnalytics: WorkerAnalyticsScreen,
-  TeamAnalytics: TeamAnalyticsScreen,
-};
+/**
+ * Uniform bottom bar — every role sees exactly Home · Menu · Profile.
+ * All other features are reached from the Menu launcher (see MENU_CONFIGS).
+ */
+export const UNIFORM_TAB_CONFIG: TabConfig[] = [
+  { name: 'Home', label: 'Beranda', icon: 'home' },
+  { name: 'Menu', label: 'Menu', icon: 'view-grid-outline' },
+  { name: 'Profile', label: 'Profil', icon: 'account-outline' },
+];
 
 function TabBarIcon({ focused, name }: { focused: boolean; name: string }): React.JSX.Element {
   return (
@@ -266,12 +182,7 @@ function TabBarIcon({ focused, name }: { focused: boolean; name: string }): Reac
  * guarantees even distribution + reliable touch targets.
  */
 function MainTabBar({ state, navigation }: BottomTabBarProps): React.JSX.Element {
-  const user = useAppSelector((s) => s.auth.user);
-  const role = user?.role ?? 'satgas';
-  const visibleTabs = useMemo(
-    () => getTabsForRole(role).filter((t) => !t.hidden),
-    [role],
-  );
+  const visibleTabs = UNIFORM_TAB_CONFIG;
   const insets = useSafeAreaInsets();
 
   const focusedName = state.routes[state.index]?.name;
@@ -321,14 +232,23 @@ function MainTabBar({ state, navigation }: BottomTabBarProps): React.JSX.Element
   );
 }
 
-function TabNavigator(): React.JSX.Element {
-  const user = useAppSelector((state) => state.auth.user);
-  const role = user?.role ?? 'satgas';
-  const visibleTabs = useMemo(() => getTabsForRole(role), [role]);
+/**
+ * Options for a feature screen reached from the Menu launcher: a titled NB header
+ * whose back arrow returns to wherever the user came from (Menu, or Home for the
+ * few home shortcuts), thanks to the navigator's `backBehavior="history"`.
+ */
+function featureScreen(title: string) {
+  return ({ navigation }: { navigation: { goBack: () => void } }) => ({
+    headerTitle: () => <FieldHomeHeader title={title} onBack={() => navigation.goBack()} />,
+    tabBarButton: () => null,
+  });
+}
 
+function TabNavigator(): React.JSX.Element {
   return (
     <Tab.Navigator
       tabBar={(props) => <MainTabBar {...props} />}
+      backBehavior="history"
       screenOptions={{
         headerShown: true,
         headerStyle: NB_HEADER_STYLE,
@@ -349,25 +269,37 @@ function TabNavigator(): React.JSX.Element {
           width: 0,
         },
       }}>
-      {visibleTabs.map((tab) => (
-        <Tab.Screen
-          key={tab.name}
-          name={tab.name}
-          component={SCREEN_MAP[tab.name]}
-          options={{
-            // Icon + label are rendered by the custom MainTabBar.
-            headerTitle: () => <FieldHomeHeader />,
-          }}
-        />
-      ))}
+      {/* Visible tabs — uniform across all roles (Home · Menu · Profile) */}
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{ headerTitle: () => <FieldHomeHeader /> }}
+      />
+      <Tab.Screen
+        name="Menu"
+        component={MenuScreen}
+        options={{ headerTitle: () => <FieldHomeHeader title="Menu" /> }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ headerTitle: () => <FieldHomeHeader title="Profil" /> }}
+      />
+
+      {/* Feature screens — reached from the Menu launcher (hidden from the bar) */}
+      <Tab.Screen name="Absensi" component={AbsensiScreen} options={featureScreen('Absensi')} />
+      <Tab.Screen name="Tasks" component={TasksScreen} options={featureScreen('Tugas')} />
+      <Tab.Screen name="Activities" component={ActivitiesScreen} options={featureScreen('Aktivitas')} />
+      <Tab.Screen name="Monitoring" component={MapDashboardScreen} options={featureScreen('Monitoring')} />
+      <Tab.Screen name="Reports" component={ReportsScreen} options={featureScreen('Laporan')} />
+      <Tab.Screen name="Assets" component={AssetListScreen} options={featureScreen('Aset')} />
+      <Tab.Screen name="WorkerAnalytics" component={WorkerAnalyticsScreen} options={featureScreen('Kinerja')} />
+      <Tab.Screen name="TeamAnalytics" component={TeamAnalyticsScreen} options={featureScreen('Analitik')} />
+      <Tab.Screen name="PlantSeeds" component={PlantSeedsInventoryScreen} options={featureScreen('Bibit')} />
+      <Tab.Screen name="PruningReviewQueue" component={ReviewQueueScreen} options={featureScreen('Perantingan')} />
+      <Tab.Screen name="Perantingan" component={PerantinganListScreen} options={featureScreen('Perantingan')} />
 
       {/* Hidden stack screens */}
-
-      <Tab.Screen
-        name="ClockInOut"
-        component={ClockInOutScreen}
-        options={{ headerTitle: () => <FieldHomeHeader />, tabBarButton: () => null }}
-      />
 
       <Tab.Screen
         name="ActivitySubmission"
@@ -376,7 +308,7 @@ function TabNavigator(): React.JSX.Element {
           headerTitle: () => (
             <FieldHomeHeader
               title="Buat Aktivitas"
-              onBack={() => navigation.navigate('TasksActivities', { initialTab: 'activities' })}
+              onBack={() => navigation.navigate('Activities')}
             />
           ),
           tabBarButton: () => null,
@@ -395,7 +327,7 @@ function TabNavigator(): React.JSX.Element {
             if (params.from) {
               navigation.navigate(params.from as any, params.fromParams as any);
             } else {
-              navigation.navigate('TasksActivities', { initialTab: 'tasks' });
+              navigation.navigate('Tasks');
             }
           };
           return {
@@ -428,7 +360,7 @@ function TabNavigator(): React.JSX.Element {
             if (params.from) {
               navigation.navigate(params.from as any, params.fromParams as any);
             } else {
-              navigation.navigate('TasksActivities', { initialTab: 'activities' });
+              navigation.navigate('Activities');
             }
           };
           return {
@@ -460,7 +392,7 @@ function TabNavigator(): React.JSX.Element {
         name="OvertimeDetail"
         component={OvertimeDetailScreen}
         options={({ navigation }) => ({
-          headerTitle: () => <FieldHomeHeader title="Detail Lembur" onBack={() => navigation.navigate('Overtime' as any)} />,
+          headerTitle: () => <FieldHomeHeader title="Detail Lembur" onBack={() => navigation.navigate('Absensi', { initialTab: 'lembur' })} />,
           tabBarButton: () => null,
         })}
       />
@@ -601,12 +533,8 @@ function MainNavigator(): React.JSX.Element {
       <MainStack.Screen name="Tabs" component={TabNavigator} />
 
       {/* Profile cluster — JS header wrapper ensures identical chrome to tab headers.
-          NativeStack header is disabled; withProfileHeader provides the 76px header. */}
-      <MainStack.Screen
-        name="Profile"
-        component={ProfileWithHeader}
-        options={{ animation: 'slide_from_left' }}
-      />
+          NativeStack header is disabled; withProfileHeader provides the 76px header.
+          (Profile itself is a bottom tab, not a stack screen — see TabNavigator.) */}
       <MainStack.Screen
         name="ShiftHistory"
         component={ShiftHistoryWithHeader}

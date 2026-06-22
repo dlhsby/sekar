@@ -17,17 +17,10 @@ import { useAppSelector } from '../../store/hooks';
 import { selectUnreadCount } from '../../store/slices/notificationsSlice';
 import { nbBorders, nbColors } from '../../constants/nbTokens';
 
-// Visible bottom-tab roots across all roles (see TAB_CONFIGS in MainNavigator).
-// The inbox back target must be one of these; anything else falls back to Home.
-const ORIGIN_TABS = new Set([
-  'Home',
-  'TasksActivities',
-  'Overtime',
-  'Monitoring',
-  'PruningReviewQueue',
-  'Perantingan',
-  'Profile',
-]);
+// Visible bottom-tab roots (uniform across all roles — see UNIFORM_TAB_CONFIG in
+// MainNavigator). The bell only renders on these no-back headers, so the inbox back
+// target is one of them; anything else falls back to Home.
+const ORIGIN_TABS = new Set(['Home', 'Menu', 'Profile']);
 
 export const NotificationBell: React.FC = () => {
   const navigation = useNavigation();

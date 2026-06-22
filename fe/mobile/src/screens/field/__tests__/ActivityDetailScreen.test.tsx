@@ -296,7 +296,7 @@ describe('ActivityDetailScreen', () => {
     });
   });
 
-  it('handles API error - shows alert and navigates to TasksActivities', async () => {
+  it('handles API error - shows alert and navigates to Activities', async () => {
     (activitiesApi.getActivityById as jest.Mock).mockResolvedValue({
       data: null,
       error: 'Activity not found',
@@ -310,11 +310,11 @@ describe('ActivityDetailScreen', () => {
 
     await waitFor(() => {
       expect(Alert.alert).toHaveBeenCalledWith('Error', 'Activity not found');
-      expect(mockNavigate).toHaveBeenCalledWith('TasksActivities', { initialTab: 'activities' });
+      expect(mockNavigate).toHaveBeenCalledWith('Activities');
     });
   });
 
-  it('handles exception - shows alert and navigates to TasksActivities', async () => {
+  it('handles exception - shows alert and navigates to Activities', async () => {
     (activitiesApi.getActivityById as jest.Mock).mockRejectedValue(
       new Error('Network error')
     );
@@ -330,7 +330,7 @@ describe('ActivityDetailScreen', () => {
         'Error',
         'Gagal memuat detail aktivitas'
       );
-      expect(mockNavigate).toHaveBeenCalledWith('TasksActivities', { initialTab: 'activities' });
+      expect(mockNavigate).toHaveBeenCalledWith('Activities');
     });
   });
 });

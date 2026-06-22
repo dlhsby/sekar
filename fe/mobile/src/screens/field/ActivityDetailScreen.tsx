@@ -66,7 +66,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
     if (backTarget) {
       (navigation as any).navigate(backTarget, backTargetParams);
     } else {
-      (navigation as any).navigate('TasksActivities', { initialTab: 'activities' });
+      (navigation as any).navigate('Activities');
     }
   }, [backTarget, backTargetParams, navigation]);
 
@@ -101,11 +101,11 @@ export function ActivityDetailScreen(): React.JSX.Element {
           setActivity(response.data);
         } else if (response.error) {
           Alert.alert('Error', response.error);
-          navigation.navigate('TasksActivities', { initialTab: 'activities' });
+          navigation.navigate('Activities');
         }
       } catch {
         Alert.alert('Error', 'Gagal memuat detail aktivitas');
-        navigation.navigate('TasksActivities', { initialTab: 'activities' });
+        navigation.navigate('Activities');
       } finally {
         setIsLoading(false);
       }
