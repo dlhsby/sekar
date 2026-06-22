@@ -27,7 +27,7 @@ import { setTasks } from '../../store/slices/tasksSlice';
 import { calculateDuration, isToday } from '../../utils/dateUtils';
 import { summarizeAttendance } from '../../utils/attendance';
 import { isTaskScopedToday } from '../../utils/taskStatus';
-import { useLocationPermission } from '../../hooks';
+import { useLocationPermission, useCollapsible } from '../../hooks';
 import { useHomeLocation } from '../../hooks/useHomeLocation';
 import type { Activity, Task, Shift } from '../../types/models.types';
 
@@ -61,8 +61,9 @@ export function FieldHomeScreen(): React.JSX.Element {
   // Live shift timer
   const [timer, setTimer] = useState('00:00:00');
 
-  // Active-shift hero collapse (default closed). Toggled by tapping the whole card.
-  const [shiftExpanded, setShiftExpanded] = useState(false);
+  // Active-shift hero collapse (default closed). Toggled by tapping the whole card;
+  // resets to closed when the screen blurs (useCollapsible).
+  const { expanded: shiftExpanded, toggle: toggleShiftCard } = useCollapsible(false);
 
   // Modal states
   const [detailShift, setDetailShift] = useState<Shift | null>(null);
@@ -330,7 +331,7 @@ export function FieldHomeScreen(): React.JSX.Element {
               style={[styles.hero, currentShift.is_overtime ? styles.heroLembur : styles.heroActive]}
               testID="absensi-hero"
               activeOpacity={0.9}
-              onPress={() => setShiftExpanded((prev) => !prev)}
+              onPress={toggleShiftCard}
               accessibilityRole="button"
               accessibilityState={{ expanded: shiftExpanded }}
               accessibilityLabel={currentShift.is_overtime ? 'Lembur aktif' : 'Sedang bertugas'}

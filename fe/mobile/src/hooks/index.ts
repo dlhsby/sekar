@@ -27,3 +27,5 @@ export { useHomeLocation } from './useHomeLocation';
 export type { HomeLocationState } from './useHomeLocation';
 export { useUserRole } from './useUserRole';
 export { useNetworkStatus } from './useNetworkStatus';
+export { useCollapsible } from './useCollapsible';
+export type { CollapsibleState } from './useCollapsible';

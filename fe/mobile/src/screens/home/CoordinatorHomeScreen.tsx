@@ -21,6 +21,7 @@ import { activitiesApi, tasksApi, shiftsApi } from '../../services/api';
 import { formatRelativeTime, formatTime, isToday, calculateDuration } from '../../utils/dateUtils';
 import { summarizeAttendance } from '../../utils/attendance';
 import { ACTIVE_TASK_STATUSES } from '../../utils/taskStatus';
+import { useCollapsible } from '../../hooks';
 import type { Activity, Task, Shift } from '../../types/models.types';
 
 const pad = (n: number): string => String(n).padStart(2, '0');
@@ -54,7 +55,7 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
   const isTaskReceiver = !!viewerRole && TASK_RECEIVERS.includes(viewerRole as any);
 
   const [refreshing, setRefreshing] = useState(false);
-  const [absensiExpanded, setAbsensiExpanded] = useState(false);
+  const { expanded: absensiExpanded, toggle: toggleAbsensiCard } = useCollapsible(false);
   const [detailShift, setDetailShift] = useState<Shift | null>(null);
   const [activitiesModalVisible, setActivitiesModalVisible] = useState(false);
   const [workHoursModalVisible, setWorkHoursModalVisible] = useState(false);
@@ -255,7 +256,7 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
               style={[styles.absensi, currentShift.is_overtime ? styles.absensiLembur : styles.absensiActive]}
               testID="absensi-card"
               activeOpacity={0.9}
-              onPress={() => setAbsensiExpanded((prev) => !prev)}
+              onPress={toggleAbsensiCard}
               accessibilityRole="button"
               accessibilityState={{ expanded: absensiExpanded }}
               accessibilityLabel={currentShift.is_overtime ? 'Lembur aktif' : 'Sedang bertugas'}
@@ -337,7 +338,7 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
               testID="stat-activities"
             />
             <HomeStatTile
-              label="Jam kerja"
+              label="Kehadiran"
               value={totalTodayDuration}
               variant="yellow"
               onPress={() => setWorkHoursModalVisible(true)}

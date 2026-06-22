@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   TouchableOpacity,
@@ -14,6 +14,7 @@ import {
   nbRadius,
   nbShadows,
 } from '../../constants/nbTokens';
+import { useCollapsible } from '../../hooks/useCollapsible';
 
 export interface NBCollapsibleCardProps {
   /** Left side of the header row — fills flex: 1 */
@@ -36,13 +37,13 @@ export function NBCollapsibleCard({
   accessibilityLabel,
   testID,
 }: NBCollapsibleCardProps): React.JSX.Element {
-  const [expanded, setExpanded] = useState(defaultExpanded);
+  const { expanded, toggle } = useCollapsible(defaultExpanded);
 
   return (
     <View style={[styles.card, style]} testID={testID}>
       <TouchableOpacity
         style={styles.header}
-        onPress={() => setExpanded(v => !v)}
+        onPress={toggle}
         activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel ?? (expanded ? 'Sembunyikan' : 'Tampilkan')}

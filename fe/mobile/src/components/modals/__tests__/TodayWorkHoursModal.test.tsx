@@ -86,8 +86,8 @@ describe('TodayWorkHoursModal', () => {
         />
       );
 
-      // NBModal renders the title as-is, with total suffix: "Jam Kerja Hari Ini (Xj Ym)"
-      expect(getByText(/Jam Kerja Hari Ini/)).toBeTruthy();
+      // NBModal renders the title as-is, with total suffix: "Kehadiran Hari Ini (Xj Ym)"
+      expect(getByText(/Kehadiran Hari Ini/)).toBeTruthy();
     });
 
     it('should not render content when visible is false', () => {
@@ -99,7 +99,7 @@ describe('TodayWorkHoursModal', () => {
         />
       );
 
-      expect(queryByText('Jam Kerja Hari Ini')).toBeNull();
+      expect(queryByText('Kehadiran Hari Ini')).toBeNull();
     });
 
     it('should render close button', () => {
@@ -153,8 +153,8 @@ describe('TodayWorkHoursModal', () => {
         />
       );
 
-      // Total is shown inline in the title: "Jam Kerja Hari Ini (Xj Ym)"
-      expect(getByText(/Jam Kerja Hari Ini \(\d+j \d+m\)/)).toBeTruthy();
+      // Total is shown inline in the title: "Kehadiran Hari Ini (Xj Ym)"
+      expect(getByText(/Kehadiran Hari Ini \(\d+j \d+m\)/)).toBeTruthy();
     });
 
     it('should calculate total duration from completed shifts', () => {
@@ -193,7 +193,7 @@ describe('TodayWorkHoursModal', () => {
       );
 
       // Title has no suffix when there are no shifts
-      expect(getByText('Jam Kerja Hari Ini')).toBeTruthy();
+      expect(getByText('Kehadiran Hari Ini')).toBeTruthy();
     });
   });
 
@@ -296,7 +296,7 @@ describe('TodayWorkHoursModal', () => {
         />
       );
 
-      expect(getByText(/Jam Kerja Hari Ini/)).toBeTruthy();
+      expect(getByText(/Kehadiran Hari Ini/)).toBeTruthy();
     });
   });
 

@@ -4,7 +4,7 @@
  * Neo Brutalism 2.0 compliant with WCAG 2.1 AA accessibility
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,7 @@ import {
   nbRadius,
   nbShadows,
 } from '../../constants/nbTokens';
+import { useCollapsible } from '../../hooks/useCollapsible';
 
 
 interface CollapsibleCardProps {
@@ -37,8 +38,22 @@ export function CollapsibleCard({
   defaultExpanded = false,
   style,
 }: CollapsibleCardProps): React.ReactElement {
-  const [expanded, setExpanded] = useState(defaultExpanded);
+  // expanded resets to defaultExpanded when the host screen blurs (see useCollapsible).
+  const { expanded, toggle } = useCollapsible(defaultExpanded);
   const rotateAnim = useRef(new Animated.Value(defaultExpanded ? 1 : 0)).current;
+
+  // Drive the chevron rotation from `expanded` so it stays in sync whether the
+  // change came from a tap or the on-blur reset.
+  useEffect(() => {
+    rotateAnim.stopAnimation();
+    Animated.timing(rotateAnim, {
+      toValue: expanded ? 1 : 0,
+      duration: 200,
+      // See NBSelect for rationale — JS-driven sidesteps Fabric's
+      // native-node lifecycle race on quick mount/unmount.
+      useNativeDriver: false,
+    }).start();
+  }, [expanded, rotateAnim]);
 
   // Stop the rotation animation if the card unmounts mid-toggle.
   // Prevents `connectAnimatedNodeToView: Animated node ... does not exist`
@@ -56,17 +71,7 @@ export function CollapsibleCard({
         type: LayoutAnimation.Types.easeInEaseOut,
       },
     });
-
-    setExpanded(!expanded);
-
-    rotateAnim.stopAnimation();
-    Animated.timing(rotateAnim, {
-      toValue: expanded ? 0 : 1,
-      duration: 200,
-      // See NBSelect for rationale — JS-driven sidesteps Fabric's
-      // native-node lifecycle race on quick mount/unmount.
-      useNativeDriver: false,
-    }).start();
+    toggle();
   };
 
   const rotate = rotateAnim.interpolate({

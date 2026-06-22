@@ -28,20 +28,32 @@ jest.mock('../../../services/api/activitiesApi');
 jest.mock('../../../services/api/tasksApi');
 
 // Mock useLocationPermission hook
-jest.mock('../../../hooks', () => ({
-  useLocationPermission: jest.fn(() => ({
-    isLocationAvailable: true,
-    permissionGranted: true,
-    gpsEnabled: true,
-    isChecking: false,
-    error: null,
-    permissionStatus: 'granted',
-    refresh: jest.fn(),
-    requestPermission: jest.fn(),
-    showPermissionAlert: jest.fn(),
-    showGpsAlert: jest.fn(),
-  })),
-}));
+jest.mock('../../../hooks', () => {
+  const ReactActual = require('react');
+  return {
+    useLocationPermission: jest.fn(() => ({
+      isLocationAvailable: true,
+      permissionGranted: true,
+      gpsEnabled: true,
+      isChecking: false,
+      error: null,
+      permissionStatus: 'granted',
+      refresh: jest.fn(),
+      requestPermission: jest.fn(),
+      showPermissionAlert: jest.fn(),
+      showGpsAlert: jest.fn(),
+    })),
+    // Stateful stand-in so expand/collapse interactions still work in tests.
+    useCollapsible: (defaultExpanded = false) => {
+      const [expanded, setExpanded] = ReactActual.useState(defaultExpanded);
+      return {
+        expanded,
+        toggle: () => setExpanded((v: boolean) => !v),
+        setExpanded,
+      };
+    },
+  };
+});
 
 // Mock NBBackgroundPattern to avoid SVG rendering issues in tests
 jest.mock('../../../components/nb/NBBackgroundPattern', () => ({

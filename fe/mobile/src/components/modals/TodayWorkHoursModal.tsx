@@ -1,6 +1,6 @@
 /**
  * TodayWorkHoursModal — v2.1 bottom sheet listing today's shifts + total hours.
- * Opened from the Home "Jam kerja" Ringkasan tile. Rebuilt on `NBModal` +
+ * Opened from the Home "Kehadiran" Ringkasan tile. Rebuilt on `NBModal` +
  * `NBText` + design tokens (Phase 4 M3 Checkpoint 7).
  */
 
@@ -41,7 +41,7 @@ export function TodayWorkHoursModal({
     <NBModal
       visible={visible}
       onClose={onClose}
-      title={`Jam Kerja Hari Ini${titleSuffix}`}
+      title={`Kehadiran Hari Ini${titleSuffix}`}
       type="sheet"
       testID="today-workhours-modal"
     >
