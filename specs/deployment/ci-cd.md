@@ -71,6 +71,11 @@ user-menu item, all showing the live version. The step skips gracefully (build s
 `APP_RELEASE_PUBLISH_TOKEN` / `AWS_ROLE_ARN` aren't set. See the backend `app-releases` module:
 `GET /app-releases/latest` (metadata) + `GET /app-releases/latest/download` (302 → presigned S3).
 
+After the ARM publish the workflow also rebuilds the APK with `reactNativeArchitectures=x86_64`
+and registers it as **`platform=android_x86`** (`s3://…/app-releases/android-x86/…`), served at the
+separate **`sekar.wahyutrip.com/android_x86`** page — for emulators / WSA / PC only; real phones use
+the ARM `/android` build. So one release run publishes two APKs.
+
 **Tag-driven (implemented).** `mobile-release.yml` also triggers on a **`mobile-v*`** tag and
 validates the tag matches `fe/mobile/package.json`. Cut one with the helper:
 ```bash

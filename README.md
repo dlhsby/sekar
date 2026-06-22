@@ -117,6 +117,9 @@ Two targets, same application images, detailed start-to-finish in the **authorit
 | URLs | https://api.sekar.wahyutrip.com · https://sekar.wahyutrip.com (TLS via Caddy) | TBD |
 | Object storage | AWS S3 (instance role) | MinIO (in-stack) |
 
+**Staging tooling:** Swagger `…/api/v1/docs` · Adminer `https://adminer.wahyutrip.com` (HTTP basic-auth) ·
+error tracking wired (Sentry, dormant until a DSN is set).
+
 ---
 
 ## Releasing
@@ -137,7 +140,8 @@ scripts/release.sh mobile 0.1.0 2    # mobile app → tag mobile-v0.1.0 (2 = And
 **Which build is live** is always visible: backend `GET /api/v1/health/live` returns
 `{version, gitSha, builtAt}`; the web shows `v… · <sha>` in the sidebar footer; the mobile app checks
 its version against the registry (Profil → Diagnostik). Field workers install the app from
-**`sekar.wahyutrip.com/android`**. Full runbook + rollback: [`specs/deployment/ci-cd.md`](specs/deployment/ci-cd.md) §5
+**`sekar.wahyutrip.com/android`** (ARM phones); an **`/android_x86`** page serves the x86_64 build for
+emulators / WSA / PC. Full runbook + rollback: [`specs/deployment/ci-cd.md`](specs/deployment/ci-cd.md) §5
 and [`specs/deployment/android-release-guide.md`](specs/deployment/android-release-guide.md).
 
 ---
