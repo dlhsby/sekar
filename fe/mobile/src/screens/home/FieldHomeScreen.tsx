@@ -386,68 +386,58 @@ export function FieldHomeScreen(): React.JSX.Element {
                       style={styles.heroChevron}
                     />
                   </View>
-                  {/* Area name sits below the status pill. */}
-                  <NBText
-                    variant="caption"
-                    color="gray700"
-                    numberOfLines={1}
-                    style={styles.heroAreaNameText}
-                  >
-                    {heroAreaName}
-                  </NBText>
                 </View>
               </View>
               {shiftExpanded && (
-                <>
-                  <NBText variant="mono-sm" color="gray700" style={styles.heroMeta}>
-                    {`Mulai ${formatTime(currentShift.clock_in_time)} · ${heroAreaName}`}
-                  </NBText>
-                  <NBText
-                    variant="mono-sm"
-                    color="gray700"
-                    style={styles.heroMeta}
-                    accessibilityLabel={`Waktu shift berjalan: ${timer}`}
-                  >
-                    {`Berjalan ${timer}`}
-                  </NBText>
-                  {/* Current GPS + force-refresh (force-uploads the location). */}
-                  <View style={styles.heroGpsRow}>
-                    <MaterialCommunityIcons name="crosshairs-gps" size={16} color={nbColors.gray700} />
-                    <NBText variant="mono-sm" color="gray700" numberOfLines={1} style={styles.heroGpsText}>
-                      {homeLocation.latitude !== null && homeLocation.longitude !== null
-                        ? `${homeLocation.latitude.toFixed(5)}, ${homeLocation.longitude.toFixed(5)}${
-                            homeLocation.accuracy !== null ? ` · ±${Math.round(homeLocation.accuracy)}m` : ''
-                          }`
-                        : homeLocation.loading
-                        ? 'Mencari lokasi…'
-                        : 'Lokasi tidak tersedia'}
-                    </NBText>
-                    <TouchableOpacity
-                      onPress={refreshLocation}
-                      disabled={homeLocation.loading}
-                      style={styles.heroGpsRefresh}
-                      accessibilityRole="button"
-                      accessibilityLabel="Perbarui lokasi"
-                      testID="hero-refresh-location"
-                    >
-                      {homeLocation.loading ? (
-                        <ActivityIndicator size="small" color={nbColors.black} />
-                      ) : (
-                        <MaterialCommunityIcons name="refresh" size={18} color={nbColors.black} />
-                      )}
-                    </TouchableOpacity>
+                <View style={styles.heroDetails}>
+                  <View style={styles.heroRow}>
+                    <NBText variant="body-sm" color="gray600">Mulai clock in</NBText>
+                    <NBText variant="body-sm" color="black">{formatTime(currentShift.clock_in_time)}</NBText>
                   </View>
-                  {isClockable && (
-                    <View style={styles.heroButton}>
-                      <NBButton
-                        title={currentShift.is_overtime ? 'Clock Out Lembur' : 'Clock Out'}
-                        onPress={handleClockInOut}
-                        variant="danger"
-                        size="md"
-                        testID="clock-button"
-                      />
+                  <View style={styles.heroRow}>
+                    <NBText variant="body-sm" color="gray600">Area Ditugaskan</NBText>
+                    <NBText variant="body-sm" color="black" numberOfLines={1} style={styles.heroRowValue}>
+                      {heroAreaName}
+                    </NBText>
+                  </View>
+                  <View style={styles.heroRow}>
+                    <NBText variant="body-sm" color="gray600">Durasi shift berjalan</NBText>
+                    <NBText
+                      variant="body-sm"
+                      color="black"
+                      accessibilityLabel={`Durasi shift berjalan: ${timer}`}
+                    >
+                      {timer.slice(0, 5)}
+                    </NBText>
+                  </View>
+                  <View style={styles.heroRow}>
+                    <NBText variant="body-sm" color="gray600">Lokasi sekarang</NBText>
+                    <View style={styles.heroLocValue}>
+                      <NBText variant="mono-sm" color="black" numberOfLines={1} style={styles.heroLocText}>
+                        {homeLocation.latitude !== null && homeLocation.longitude !== null
+                          ? `${homeLocation.latitude.toFixed(5)}, ${homeLocation.longitude.toFixed(5)}${
+                              homeLocation.accuracy !== null ? ` ±${Math.round(homeLocation.accuracy)}m` : ''
+                            }`
+                          : homeLocation.loading
+                          ? 'Mencari lokasi…'
+                          : 'Lokasi tidak tersedia'}
+                      </NBText>
+                      <TouchableOpacity
+                        onPress={refreshLocation}
+                        disabled={homeLocation.loading}
+                        style={styles.heroGpsRefresh}
+                        accessibilityRole="button"
+                        accessibilityLabel="Perbarui lokasi"
+                        testID="hero-refresh-location"
+                      >
+                        {homeLocation.loading ? (
+                          <ActivityIndicator size="small" color={nbColors.black} />
+                        ) : (
+                          <MaterialCommunityIcons name="refresh" size={18} color={nbColors.black} />
+                        )}
+                      </TouchableOpacity>
                     </View>
-                  )}
+                  </View>
                   <TouchableOpacity
                     onPress={() => setDetailShift(currentShift)}
                     activeOpacity={0.7}
@@ -459,7 +449,18 @@ export function FieldHomeScreen(): React.JSX.Element {
                       Detail shift →
                     </NBText>
                   </TouchableOpacity>
-                </>
+                  {isClockable && (
+                    <View style={styles.heroButton}>
+                      <NBButton
+                        title={currentShift.is_overtime ? 'Clock Out Lembur' : 'Clock Out'}
+                        onPress={handleClockInOut}
+                        variant="danger"
+                        size="md"
+                        testID="clock-button"
+                      />
+                    </View>
+                  )}
+                </View>
               )}
             </TouchableOpacity>
           ) : (
@@ -589,6 +590,22 @@ const styles = StyleSheet.create({
   heroTimeStat: { gap: 2 },
   heroTimeValueRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs },
   heroMeta: { marginTop: nbSpacing.sm },
+  // Expanded hero: label:value table rows.
+  heroDetails: { marginTop: nbSpacing.md, gap: nbSpacing.xs },
+  heroRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: nbSpacing.sm,
+  },
+  heroRowValue: { flexShrink: 1, textAlign: 'right' },
+  heroLocValue: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+    flexShrink: 1,
+  },
+  heroLocText: { flexShrink: 1 },
   heroIdleTitle: { marginTop: 2 },
   // Plain inline coords (no card) + a compact white refresh button right after.
   heroGpsRow: {
