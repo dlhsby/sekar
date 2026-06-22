@@ -30,7 +30,7 @@
     "sw:build": "npx esbuild src/sw/sw.ts --bundle --outfile=public/sw.js --platform=browser --target=chrome90"
   },
   "dependencies": {
-    "@dotenvx/dotenvx": "^1.73.1",
+    "@dotenvx/dotenvx": "^1.75.1",
     "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.4.0",
     "@mapbox/mapbox-gl-draw": "^1.5.1",
