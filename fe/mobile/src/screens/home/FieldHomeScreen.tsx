@@ -332,10 +332,10 @@ export function FieldHomeScreen(): React.JSX.Element {
             />
           )}
 
-          {/* Absensi saya — clock-in hero first */}
-          <HomeSectionDivider label="Absensi saya" />
+          {/* Kehadiran saya — clock-in hero first */}
+          <HomeSectionDivider label="Kehadiran saya" />
 
-          {/* Absensi hero — collapsible; the whole card toggles open/closed. */}
+          {/* Kehadiran hero — collapsible; the whole card toggles open/closed. */}
           {currentShift ? (
             <TouchableOpacity
               style={[styles.hero, currentShift.is_overtime ? styles.heroLembur : styles.heroActive]}
@@ -472,7 +472,7 @@ export function FieldHomeScreen(): React.JSX.Element {
               </NBText>
               {assignedArea && (
                 <NBText variant="body-sm" color="gray700" style={styles.heroMeta}>
-                  {`Area: ${assignedArea.name}`}
+                  {`Area Ditugaskan: ${assignedArea.name}`}
                 </NBText>
               )}
               {isClockable && (

@@ -257,8 +257,8 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[nbColors.primary]} />}
         >
-          {/* Absensi saya — clock-in card (matches FieldHomeScreen structure) */}
-          <HomeSectionDivider label="Absensi saya" />
+          {/* Kehadiran saya — clock-in card (matches FieldHomeScreen structure) */}
+          <HomeSectionDivider label="Kehadiran saya" />
           {currentShift ? (
             <TouchableOpacity
               style={[styles.absensi, currentShift.is_overtime ? styles.absensiLembur : styles.absensiActive]}
