@@ -21,6 +21,8 @@ import { FieldHomeHeader } from '../components/navigation/FieldHomeHeader';
 import { HomeScreen } from '../screens/home/HomeScreen';
 import { MenuScreen } from '../screens/menu/MenuScreen';
 import { ClockInOutScreen } from '../screens/field/ClockInOutScreen';
+import { AttendanceListScreen } from '../screens/attendance/AttendanceListScreen';
+import { AttendanceDetailScreen } from '../screens/attendance/AttendanceDetailScreen';
 import { ActivitySubmissionScreen } from '../screens/field/ActivitySubmissionScreen';
 import { TasksScreen, ActivitiesScreen } from '../screens/taskActivity';
 import { TaskDetailScreen } from '../screens/field/TaskDetailScreen';
@@ -288,7 +290,9 @@ function TabNavigator(): React.JSX.Element {
       />
 
       {/* Feature screens — reached from the Menu launcher (hidden from the bar) */}
-      <Tab.Screen name="Absensi" component={ClockInOutScreen} options={featureScreen('Kehadiran')} />
+      <Tab.Screen name="Attendance" component={AttendanceListScreen} options={featureScreen('Kehadiran')} />
+      <Tab.Screen name="AttendanceDetail" component={AttendanceDetailScreen} options={featureScreen('Detail Kehadiran')} />
+      <Tab.Screen name="Absensi" component={ClockInOutScreen} options={featureScreen('Clock In/Out')} />
       <Tab.Screen name="Lembur" component={OvertimeListScreen} options={featureScreen('Lembur')} />
       <Tab.Screen name="Tasks" component={TasksScreen} options={featureScreen('Tugas')} />
       <Tab.Screen name="Activities" component={ActivitiesScreen} options={featureScreen('Aktivitas')} />

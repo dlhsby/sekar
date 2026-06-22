@@ -9,6 +9,8 @@ import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { BoundaryCheckService } from '../../shared/services/boundary-check.service';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
+import { TimezoneUtil } from '../../common/utils/timezone.util';
+import { AttendanceDaySummaryDto } from './dto/attendance-day.dto';
 import { getMinimumShiftDurationMinutes } from '../../common/constants/shift.constants';
 import { Schedule } from '../schedules/entities/schedule.entity';
 import { Area } from '../areas/entities/area.entity';
@@ -387,6 +389,100 @@ export class ShiftsService {
       take: limit,
     });
     return new PaginatedResponseDto(data, total, page, limit);
+  }
+
+  /**
+   * Attendance history for a user, grouped by WIB calendar day and paginated by
+   * day (newest first). Regular shifts only — overtime is excluded. Each day is
+   * summarized (first clock-in, last clock-out, count, worked minutes); the
+   * earliest shift's scheduled start is surfaced so the client can apply its own
+   * lateness rule.
+   */
+  async findMyAttendanceDays(
+    userId: string,
+    page: number = 1,
+    limit: number = 20,
+    now: Date = new Date(),
+  ): Promise<PaginatedResponseDto<AttendanceDaySummaryDto>> {
+    const shifts = await this.shiftRepository.find({
+      where: { user_id: userId, is_overtime: false },
+      relations: ['shift_definition'],
+      order: { clock_in_time: 'DESC' },
+    });
+
+    const days = this.summarizeShiftsByDay(shifts, now);
+    const total = days.length;
+    const start = (page - 1) * limit;
+    const data = days.slice(start, start + limit);
+    return new PaginatedResponseDto(data, total, page, limit);
+  }
+
+  /**
+   * All of a user's regular shifts on one WIB calendar day, newest first.
+   * Overtime is excluded. Grouping uses `AT TIME ZONE 'Asia/Jakarta'` so the
+   * day boundary matches the rest of the app.
+   */
+  async findMyAttendanceForDate(userId: string, date: string): Promise<Shift[]> {
+    return this.shiftRepository
+      .createQueryBuilder('shift')
+      .leftJoinAndSelect('shift.area', 'area')
+      .leftJoinAndSelect('area.areaType', 'areaType')
+      .leftJoinAndSelect('shift.shift_definition', 'shift_definition')
+      .where('shift.user_id = :userId', { userId })
+      .andWhere('shift.is_overtime = false')
+      .andWhere('shift.deleted_at IS NULL')
+      .andWhere("DATE(shift.clock_in_time AT TIME ZONE 'Asia/Jakarta') = :date", { date })
+      .orderBy('shift.clock_in_time', 'DESC')
+      .getMany();
+  }
+
+  /**
+   * Bucket a clock-in-DESC list of shifts into per-WIB-day summaries (also DESC
+   * by day). Pure helper — no DB access — so it is straightforward to unit test.
+   */
+  private summarizeShiftsByDay(shifts: Shift[], now: Date): AttendanceDaySummaryDto[] {
+    const byDay = new Map<string, Shift[]>();
+    for (const shift of shifts) {
+      const key = TimezoneUtil.jakartaDateOf(shift.clock_in_time);
+      const bucket = byDay.get(key);
+      if (bucket) {
+        bucket.push(shift);
+      } else {
+        byDay.set(key, [shift]);
+      }
+    }
+
+    const summaries: AttendanceDaySummaryDto[] = [];
+    for (const [date, dayShifts] of byDay) {
+      const earliest = dayShifts.reduce((a, b) =>
+        a.clock_in_time <= b.clock_in_time ? a : b,
+      );
+      const clockOuts = dayShifts
+        .map((s) => s.clock_out_time)
+        .filter((t): t is Date => !!t);
+      const lastClockOut = clockOuts.length
+        ? clockOuts.reduce((a, b) => (a >= b ? a : b))
+        : null;
+      const hasActive = dayShifts.some((s) => !s.clock_out_time);
+      const totalWorkedMinutes = dayShifts.reduce((acc, s) => {
+        const end = s.clock_out_time ?? now;
+        return acc + Math.max(0, Math.round((end.getTime() - s.clock_in_time.getTime()) / 60000));
+      }, 0);
+
+      summaries.push({
+        date,
+        first_clock_in: earliest.clock_in_time.toISOString(),
+        last_clock_out: lastClockOut ? lastClockOut.toISOString() : null,
+        shift_count: dayShifts.length,
+        total_worked_minutes: totalWorkedMinutes,
+        scheduled_start_time: earliest.shift_definition?.start_time ?? null,
+        crosses_midnight: earliest.shift_definition?.crosses_midnight ?? false,
+        has_active: hasActive,
+      });
+    }
+
+    // Map preserves the clock-in-DESC insertion order, so days are already newest-first.
+    return summaries;
   }
 
   /**

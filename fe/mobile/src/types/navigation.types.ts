@@ -47,7 +47,9 @@ export type MainTabParamList = {
   Menu: undefined;
   Profile: undefined;
   // Feature screens — reached from the Menu launcher (registered as hidden tab screens)
-  Absensi: undefined;                // clock in/out page
+  Attendance: undefined;             // attendance history list (day-grouped) — the "Kehadiran" tile
+  AttendanceDetail: { date: string }; // one day's attendance detail (date = YYYY-MM-DD, WIB)
+  Absensi: undefined;                // clock in/out page (reached from home + the attendance list action)
   Lembur: undefined;                 // overtime list page
   Tasks: undefined;                  // standalone tasks list (split from TasksActivities)
   Activities: undefined;             // standalone activities list (split from TasksActivities)

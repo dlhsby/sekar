@@ -69,6 +69,7 @@ describe('ShiftsService', () => {
     findOne: jest.fn(),
     find: jest.fn(),
     findAndCount: jest.fn(),
+    createQueryBuilder: jest.fn(),
   };
 
   const mockAreasService = {
@@ -568,6 +569,117 @@ describe('ShiftsService', () => {
       expect(result.data).toEqual([]);
       expect(result.meta.total).toBe(0);
       expect(result.meta.totalPages).toBe(0);
+    });
+  });
+
+  describe('findMyAttendanceDays', () => {
+    const sd1 = { start_time: '06:00:00', crosses_midnight: false };
+    const sd3 = { start_time: '21:00:00', crosses_midnight: true };
+
+    // Returned clock-in DESC, as the repository would. Day A = 2026-06-22 WIB
+    // (two shifts), day B = 2026-06-21 WIB (one night shift clocked in 20:00Z =
+    // 03:00 WIB next day → still files under its clock-in WIB day 2026-06-22? no:
+    // 2026-06-21T20:00Z + 7h = 2026-06-22T03:00 → WIB day 2026-06-22).
+    const dayShifts: any[] = [
+      // 2026-06-22 WIB, second shift (afternoon) — active (no clock-out)
+      {
+        id: 's3',
+        clock_in_time: new Date('2026-06-22T08:00:00Z'),
+        clock_out_time: null,
+        shift_definition: sd1,
+        is_overtime: false,
+      },
+      // 2026-06-22 WIB, first/earliest shift — completed 1h
+      {
+        id: 's2',
+        clock_in_time: new Date('2026-06-22T01:00:00Z'),
+        clock_out_time: new Date('2026-06-22T02:00:00Z'),
+        shift_definition: sd1,
+        is_overtime: false,
+      },
+      // 2026-06-21T20:00Z = 2026-06-22T03:00 WIB → also day 2026-06-22? It is.
+      // Use a clearly-earlier instant for a distinct earlier day (2026-06-20 WIB).
+      {
+        id: 's1',
+        clock_in_time: new Date('2026-06-20T15:00:00Z'),
+        clock_out_time: new Date('2026-06-20T23:00:00Z'),
+        shift_definition: sd3,
+        is_overtime: false,
+      },
+    ];
+
+    it('groups regular shifts by WIB day, newest day first, with summary fields', async () => {
+      mockRepository.find.mockResolvedValue(dayShifts);
+      const now = new Date('2026-06-22T09:00:00Z'); // 1h into the active shift
+
+      const result = await service.findMyAttendanceDays(mockUser.id, 1, 20, now);
+
+      // Only excludes overtime via the query filter:
+      expect(mockRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { user_id: mockUser.id, is_overtime: false } }),
+      );
+
+      expect(result.meta.total).toBe(2);
+      expect(result.data).toHaveLength(2);
+
+      const [today, earlier] = result.data;
+      expect(today.date).toBe('2026-06-22');
+      expect(today.shift_count).toBe(2);
+      expect(today.first_clock_in).toBe('2026-06-22T01:00:00.000Z'); // earliest
+      expect(today.last_clock_out).toBe('2026-06-22T02:00:00.000Z'); // only completed clock-out
+      expect(today.has_active).toBe(true);
+      // 60 min (completed) + 60 min (active up to `now`) = 120
+      expect(today.total_worked_minutes).toBe(120);
+      expect(today.scheduled_start_time).toBe('06:00:00');
+      expect(today.crosses_midnight).toBe(false);
+
+      expect(earlier.date).toBe('2026-06-20');
+      expect(earlier.has_active).toBe(false);
+      expect(earlier.last_clock_out).toBe('2026-06-20T23:00:00.000Z');
+      expect(earlier.total_worked_minutes).toBe(480);
+      expect(earlier.crosses_midnight).toBe(true);
+    });
+
+    it('paginates by distinct day', async () => {
+      mockRepository.find.mockResolvedValue(dayShifts);
+      const result = await service.findMyAttendanceDays(mockUser.id, 2, 1, new Date('2026-06-22T09:00:00Z'));
+
+      expect(result.meta.total).toBe(2);
+      expect(result.meta.totalPages).toBe(2);
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].date).toBe('2026-06-20'); // second page = older day
+    });
+
+    it('returns empty when the user has no regular shifts', async () => {
+      mockRepository.find.mockResolvedValue([]);
+      const result = await service.findMyAttendanceDays(mockUser.id);
+      expect(result.data).toEqual([]);
+      expect(result.meta.total).toBe(0);
+    });
+  });
+
+  describe('findMyAttendanceForDate', () => {
+    it('queries the day in WIB, excludes overtime/soft-deleted, newest first', async () => {
+      const expected = [{ id: 's2' }, { id: 's1' }];
+      const qb: any = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(expected),
+      };
+      mockRepository.createQueryBuilder.mockReturnValue(qb);
+
+      const result = await service.findMyAttendanceForDate(mockUser.id, '2026-06-22');
+
+      expect(result).toBe(expected);
+      expect(qb.where).toHaveBeenCalledWith('shift.user_id = :userId', { userId: mockUser.id });
+      expect(qb.andWhere).toHaveBeenCalledWith('shift.is_overtime = false');
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        "DATE(shift.clock_in_time AT TIME ZONE 'Asia/Jakarta') = :date",
+        { date: '2026-06-22' },
+      );
+      expect(qb.orderBy).toHaveBeenCalledWith('shift.clock_in_time', 'DESC');
     });
   });
 });

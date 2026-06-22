@@ -3,10 +3,12 @@ import {
   Post,
   Get,
   Body,
+  Param,
   Query,
   UseGuards,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -14,11 +16,16 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiBody,
+  ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
 import { ShiftsService } from './shifts.service';
 import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
+import {
+  AttendanceDaySummaryDto,
+  AttendanceDayDetailDto,
+} from './dto/attendance-day.dto';
 import { Shift } from './entities/shift.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -159,6 +166,60 @@ export class ShiftsController {
       return this.shiftsService.findByUserIdPaginated(user.id, pageNum, limitNum);
     }
     return this.shiftsService.findByUserId(user.id);
+  }
+
+  @Get('attendance')
+  @Roles(...CLOCKABLE_ROLES)
+  @ApiOperation({
+    summary: 'Get my attendance history grouped by day',
+    description:
+      'Returns the authenticated user\'s regular (non-overtime) attendance, grouped by WIB ' +
+      'calendar day and paginated by day (newest first). Each day summarizes the first clock-in, ' +
+      'last clock-out, shift count and total worked minutes.',
+  })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Paginated day summaries',
+    type: AttendanceDaySummaryDto,
+    isArray: true,
+  })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Not authenticated' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Role not allowed' })
+  async getMyAttendance(
+    @GetUser() user: User,
+    @Query() paginationDto: PaginationDto,
+  ): Promise<PaginatedResponseDto<AttendanceDaySummaryDto>> {
+    return this.shiftsService.findMyAttendanceDays(user.id, paginationDto.page, paginationDto.limit);
+  }
+
+  @Get('attendance/:date')
+  @Roles(...CLOCKABLE_ROLES)
+  @ApiOperation({
+    summary: 'Get my shifts on a given day',
+    description:
+      "Returns the authenticated user's regular (non-overtime) shifts on the given WIB calendar " +
+      'day, newest first.',
+  })
+  @ApiParam({ name: 'date', description: 'WIB calendar day (YYYY-MM-DD)', example: '2026-06-22' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "That day's shifts",
+    type: AttendanceDayDetailDto,
+  })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid date format' })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Not authenticated' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Role not allowed' })
+  async getMyAttendanceForDate(
+    @GetUser() user: User,
+    @Param('date') date: string,
+  ): Promise<AttendanceDayDetailDto> {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      throw new BadRequestException('date must be in YYYY-MM-DD format');
+    }
+    const shifts = await this.shiftsService.findMyAttendanceForDate(user.id, date);
+    return { date, shifts };
   }
 
   @Get('active')

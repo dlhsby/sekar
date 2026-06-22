@@ -79,6 +79,34 @@ export interface CurrentShiftResponse extends Shift {
   hours_worked: number;
 }
 
+// Attendance history (GET /shifts/attendance) — one WIB calendar day, regular shifts only.
+export interface AttendanceDaySummary {
+  date: string; // YYYY-MM-DD (WIB)
+  first_clock_in: string; // ISO
+  last_clock_out: string | null; // ISO, null while a shift is active
+  shift_count: number;
+  total_worked_minutes: number;
+  scheduled_start_time: string | null; // HH:mm[:ss] of the earliest shift, for the late check
+  crosses_midnight: boolean;
+  has_active: boolean;
+}
+
+export interface AttendanceListResponse {
+  data: AttendanceDaySummary[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+// GET /shifts/attendance/:date — that day's shifts, newest first.
+export interface AttendanceDayDetail {
+  date: string;
+  shifts: Shift[];
+}
+
 // Activities API (was Reports)
 export interface CreateActivityRequest {
   activity_type_id: string;

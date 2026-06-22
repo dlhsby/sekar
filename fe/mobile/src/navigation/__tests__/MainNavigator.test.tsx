@@ -30,6 +30,12 @@ jest.mock('../../screens/menu/MenuScreen', () => ({
 jest.mock('../../screens/field/ClockInOutScreen', () => ({
   ClockInOutScreen: () => MockScreen({ name: 'Absensi' }),
 }));
+jest.mock('../../screens/attendance/AttendanceListScreen', () => ({
+  AttendanceListScreen: () => MockScreen({ name: 'Attendance' }),
+}));
+jest.mock('../../screens/attendance/AttendanceDetailScreen', () => ({
+  AttendanceDetailScreen: () => MockScreen({ name: 'AttendanceDetail' }),
+}));
 jest.mock('../../screens/overtime/OvertimeListScreen', () => ({
   OvertimeListScreen: () => MockScreen({ name: 'Lembur' }),
 }));
@@ -117,7 +123,8 @@ const ALL_ROLES = [
 // Routes registered as tab screens (Menu items must point at one of these).
 const REGISTERED_ROUTES = new Set([
   'Home', 'Menu', 'Profile',
-  'Absensi', 'Lembur', 'Tasks', 'Activities', 'Monitoring', 'Reports', 'Assets',
+  'Attendance', 'AttendanceDetail', 'Absensi', 'Lembur', 'Tasks', 'Activities',
+  'Monitoring', 'Reports', 'Assets',
   'WorkerAnalytics', 'TeamAnalytics', 'PlantSeeds', 'PruningReviewQueue', 'Perantingan',
 ]);
 
@@ -222,10 +229,10 @@ describe('MainNavigator', () => {
       });
     });
 
-    it('field roles surface Absensi, Tasks and Activities', () => {
+    it('field roles surface Attendance (Kehadiran), Tasks and Activities', () => {
       (['satgas', 'linmas', 'korlap'] as const).forEach((role) => {
         const routes = MENU_CONFIGS[role].flatMap((s) => s.items.map((i) => i.route));
-        expect(routes).toContain('Absensi');
+        expect(routes).toContain('Attendance');
         expect(routes).toContain('Tasks');
         expect(routes).toContain('Activities');
       });
@@ -240,10 +247,10 @@ describe('MainNavigator', () => {
       );
     });
 
-    it('staff_kecamatan menu is Perantingan only (non-clockable → no Absensi)', () => {
+    it('staff_kecamatan menu is Perantingan only (non-clockable → no Kehadiran)', () => {
       const routes = MENU_CONFIGS.staff_kecamatan.flatMap((s) => s.items.map((i) => i.route));
       expect(routes).toContain('Perantingan');
-      expect(routes).not.toContain('Absensi');
+      expect(routes).not.toContain('Attendance');
     });
   });
 

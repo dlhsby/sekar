@@ -9,7 +9,7 @@ import { View, StyleSheet } from 'react-native';
 import { NBModal } from '../nb/NBModal';
 import { NBText } from '../nb/NBText';
 import { nbSpacing } from '../../constants/nbTokens';
-import { formatDate, calculateDuration } from '../../utils/dateUtils';
+import { formatDate, formatLongDate, calculateDuration } from '../../utils/dateUtils';
 import { ShiftCard } from '../common';
 import type { Shift } from '../../types/models.types';
 
@@ -18,6 +18,12 @@ interface TodayWorkHoursModalProps {
   onClose: () => void;
   shifts: Shift[];
   onShiftPress?: (shift: Shift) => void;
+  /**
+   * The day these shifts belong to. Omit for "today" (home Ringkasan tile);
+   * pass a WIB `YYYY-MM-DD` (or Date) when listing a past day's shifts so the
+   * title reads "Kehadiran <date>" instead of "Kehadiran Hari Ini".
+   */
+  date?: string | Date;
 }
 
 export function TodayWorkHoursModal({
@@ -25,6 +31,7 @@ export function TodayWorkHoursModal({
   onClose,
   shifts,
   onShiftPress,
+  date,
 }: TodayWorkHoursModalProps): React.JSX.Element {
   // Total duration across all shifts (active shift uses current time).
   const totalDuration = shifts.reduce((acc, shift) => {
@@ -34,19 +41,22 @@ export function TodayWorkHoursModal({
 
   const totalHours = Math.floor(totalDuration / 60);
   const totalMinutes = totalDuration % 60;
-  const todayDate = formatDate(new Date());
+  // Parse a YYYY-MM-DD string as local midnight so the date reads verbatim.
+  const headerSource = typeof date === 'string' ? `${date}T00:00:00` : date ?? new Date();
+  const dateLine = formatDate(headerSource);
+  const titlePrefix = date ? `Kehadiran ${formatLongDate(headerSource)}` : 'Kehadiran Hari Ini';
   const titleSuffix = shifts.length > 0 ? ` (${totalHours}j ${totalMinutes}m)` : '';
 
   return (
     <NBModal
       visible={visible}
       onClose={onClose}
-      title={`Kehadiran Hari Ini${titleSuffix}`}
+      title={`${titlePrefix}${titleSuffix}`}
       type="sheet"
       testID="today-workhours-modal"
     >
       <NBText variant="mono-sm" color="gray600" style={styles.dateLine}>
-        {todayDate}
+        {dateLine}
       </NBText>
 
       {shifts.length === 0 ? (

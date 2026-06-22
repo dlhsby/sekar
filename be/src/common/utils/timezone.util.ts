@@ -21,6 +21,16 @@ export class TimezoneUtil {
   }
 
   /**
+   * The WIB calendar day of an arbitrary instant, as `YYYY-MM-DD`. Use to bucket
+   * timestamps (e.g. a shift's `clock_in_time`) into local days regardless of
+   * the server timezone. An instant near UTC midnight maps to the WIB day it
+   * falls on once shifted +7h (e.g. `2026-06-21T20:00:00Z` → `2026-06-22`).
+   */
+  static jakartaDateOf(instant: Date): string {
+    return TimezoneUtil.jakartaDateString(instant);
+  }
+
+  /**
    * Midnight WIB of "today", returned as a UTC instant. Use for comparing
    * date-typed values (e.g. `effective_date >= jakartaStartOfToday()`).
    */

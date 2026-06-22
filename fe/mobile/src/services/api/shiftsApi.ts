@@ -9,6 +9,8 @@ import type {
   ClockOutRequest,
   ClockOutResponse,
   CurrentShiftResponse,
+  AttendanceListResponse,
+  AttendanceDayDetail,
   ApiResponse,
 } from '../../types/api.types';
 
@@ -62,4 +64,24 @@ export async function getMyShifts(): Promise<
   ApiResponse<CurrentShiftResponse[]>
 > {
   return get<CurrentShiftResponse[]>('/shifts/my-shifts');
+}
+
+/**
+ * Attendance history grouped by WIB calendar day (regular shifts only),
+ * paginated by day (newest first).
+ */
+export async function getAttendanceDays(
+  page = 1,
+  limit = 20,
+): Promise<ApiResponse<AttendanceListResponse>> {
+  return get<AttendanceListResponse>('/shifts/attendance', { page, limit });
+}
+
+/**
+ * All of the user's regular shifts on a single WIB calendar day (YYYY-MM-DD).
+ */
+export async function getAttendanceForDate(
+  date: string,
+): Promise<ApiResponse<AttendanceDayDetail>> {
+  return get<AttendanceDayDetail>(`/shifts/attendance/${date}`);
 }

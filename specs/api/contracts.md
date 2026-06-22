@@ -1381,6 +1381,64 @@ Authorization: Bearer {worker_token}
 
 ---
 
+### GET /api/v1/shifts/attendance
+
+Get my attendance history grouped by WIB calendar day, paginated **by day** (clockable roles only). Regular shifts only — overtime is excluded (see the Overtime module). Backs the mobile "Kehadiran" list.
+
+**Request:**
+```http
+GET /api/v1/shifts/attendance?page=1&limit=20 HTTP/1.1
+Authorization: Bearer {worker_token}
+```
+
+**Response (200 OK):** `PaginatedResponseDto` where each item is a day summary:
+```json
+{
+  "data": [
+    {
+      "date": "2026-06-22",
+      "first_clock_in": "2026-06-22T01:05:00.000Z",
+      "last_clock_out": "2026-06-22T10:02:00.000Z",
+      "shift_count": 2,
+      "total_worked_minutes": 480,
+      "scheduled_start_time": "06:00:00",
+      "crosses_midnight": false,
+      "has_active": false
+    }
+  ],
+  "meta": { "total": 31, "page": 1, "limit": 20, "totalPages": 2 }
+}
+```
+
+**Notes:**
+- Day buckets use `clock_in_time AT TIME ZONE 'Asia/Jakarta'` (a midnight-crossing shift files under its clock-in day). `total` is the number of distinct days.
+- `last_clock_out` is null while a shift is still active; `total_worked_minutes` counts an active shift up to now.
+- `scheduled_start_time`/`crosses_midnight` come from the earliest shift's definition so the client computes lateness with its own rule.
+
+---
+
+### GET /api/v1/shifts/attendance/:date
+
+Get my regular shifts on a single WIB calendar day (clockable roles only). `date` = `YYYY-MM-DD`; a malformed date returns `400`.
+
+**Request:**
+```http
+GET /api/v1/shifts/attendance/2026-06-22 HTTP/1.1
+Authorization: Bearer {worker_token}
+```
+
+**Response (200 OK):**
+```json
+{
+  "date": "2026-06-22",
+  "shifts": [ { "id": "…", "clock_in_time": "…", "clock_out_time": "…", "area": { … }, "shift_definition": { … }, "is_overtime": false } ]
+}
+```
+
+Shifts are newest-first and eager-load `area`, `area.areaType`, `shift_definition`.
+
+---
+
 ### GET /api/v1/shifts/active
 
 Get all active shifts (admin_system/superadmin/korlap/kepala_rayon).

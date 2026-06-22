@@ -14,6 +14,8 @@ export const linking: LinkingOptions<RootStackParamList> = {
         screens: {
           TaskDetail: 'tasks/:id',
           ActivityDetail: 'activities/:id',
+          Attendance: 'attendance',
+          AttendanceDetail: 'attendance/:date',
           Absensi: 'absensi',
           Lembur: 'lembur',
           OvertimeDetail: 'overtime/:id',

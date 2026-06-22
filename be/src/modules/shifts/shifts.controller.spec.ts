@@ -51,6 +51,8 @@ describe('ShiftsController', () => {
     findByUserId: jest.fn(),
     findAllActiveShifts: jest.fn(),
     findAllActiveShiftsPaginated: jest.fn(),
+    findMyAttendanceDays: jest.fn(),
+    findMyAttendanceForDate: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -220,6 +222,40 @@ describe('ShiftsController', () => {
       expect(result).toEqual(paginatedResult);
       expect(result.data).toEqual([]);
       expect(result.meta.total).toBe(0);
+    });
+  });
+
+  describe('getMyAttendance', () => {
+    it('delegates to findMyAttendanceDays with the user id + pagination', async () => {
+      const paginated = new PaginatedResponseDto([{ date: '2026-06-22' } as any], 1, 1, 20);
+      mockShiftsService.findMyAttendanceDays.mockResolvedValue(paginated);
+      const pagination: PaginationDto = { page: 1, limit: 20 };
+
+      const result = await controller.getMyAttendance(mockUser as any, pagination);
+
+      expect(result).toBe(paginated);
+      expect(mockShiftsService.findMyAttendanceDays).toHaveBeenCalledWith(mockUser.id, 1, 20);
+    });
+  });
+
+  describe('getMyAttendanceForDate', () => {
+    it('returns the day + shifts for a valid date', async () => {
+      mockShiftsService.findMyAttendanceForDate.mockResolvedValue([mockShift]);
+
+      const result = await controller.getMyAttendanceForDate(mockUser as any, '2026-06-22');
+
+      expect(result).toEqual({ date: '2026-06-22', shifts: [mockShift] });
+      expect(mockShiftsService.findMyAttendanceForDate).toHaveBeenCalledWith(
+        mockUser.id,
+        '2026-06-22',
+      );
+    });
+
+    it('rejects a malformed date without hitting the service', async () => {
+      await expect(
+        controller.getMyAttendanceForDate(mockUser as any, '22-06-2026'),
+      ).rejects.toThrow(BadRequestException);
+      expect(mockShiftsService.findMyAttendanceForDate).not.toHaveBeenCalled();
     });
   });
 });

@@ -28,9 +28,16 @@ Root
       │
       │  Every other feature is reached from the Menu page (registered as hidden
       │  Tab.Screens, opened via the launcher), no longer as per-role bottom tabs:
-      │  Kehadiran (clock in/out), Lembur, Tugas, Aktivitas, Monitoring, Laporan,
-      │  Aset, Kinerja/Tim (analytics), Bibit, Perantingan — gated by MENU_CONFIGS[role].
+      │  Kehadiran (attendance history list), Lembur, Tugas, Aktivitas, Monitoring,
+      │  Laporan, Aset, Kinerja/Tim (analytics), Bibit, Perantingan — gated by MENU_CONFIGS[role].
       │  (Phase 2C's per-role TAB_CONFIGS bar was replaced; "Absensi" wording → "Kehadiran".)
+      │
+      │  The "Kehadiran" tile → `Attendance` (AttendanceListScreen): the user's regular
+      │  attendance grouped by day (newest first, paginated by day via GET /shifts/attendance),
+      │  each row = first clock-in/last clock-out + on-time/late. A day → `AttendanceDetail`
+      │  ({ date }) with the day summary + a "Lihat Rincian Shift" button that opens the
+      │  day's shifts (TodayWorkHoursModal) → ShiftDetailModal. Clock-in/out itself (`Absensi`,
+      │  ClockInOutScreen) is reached from the list's bottom action button and the home FAB/hero.
       │
       ├─ ActivitySubmission (Modal)
       ├─ ActivityDetail (Push)

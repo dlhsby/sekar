@@ -3,7 +3,13 @@
  * Tests for clock-in/out API with type safety verification
  */
 
-import { clockIn, clockOut, getCurrentShift } from '../shiftsApi';
+import {
+  clockIn,
+  clockOut,
+  getCurrentShift,
+  getAttendanceDays,
+  getAttendanceForDate,
+} from '../shiftsApi';
 import * as apiClient from '../apiClient';
 
 // Mock apiClient
@@ -372,6 +378,36 @@ describe('shiftsApi', () => {
 
       await getCurrentShift();
       expect(apiClient.get).toHaveBeenCalledWith('/shifts/current');
+    });
+  });
+
+  describe('getAttendanceDays', () => {
+    it('requests the attendance list with page/limit params', async () => {
+      const mockResponse = { data: { data: [], meta: { total: 0, page: 1, limit: 20, totalPages: 0 } } };
+      (apiClient.get as jest.Mock).mockResolvedValue(mockResponse);
+
+      const result = await getAttendanceDays(2, 10);
+
+      expect(apiClient.get).toHaveBeenCalledWith('/shifts/attendance', { page: 2, limit: 10 });
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('defaults to page 1, limit 20', async () => {
+      (apiClient.get as jest.Mock).mockResolvedValue({ data: { data: [], meta: {} } });
+      await getAttendanceDays();
+      expect(apiClient.get).toHaveBeenCalledWith('/shifts/attendance', { page: 1, limit: 20 });
+    });
+  });
+
+  describe('getAttendanceForDate', () => {
+    it('requests the per-day detail by date path', async () => {
+      const mockResponse = { data: { date: '2026-06-22', shifts: [] } };
+      (apiClient.get as jest.Mock).mockResolvedValue(mockResponse);
+
+      const result = await getAttendanceForDate('2026-06-22');
+
+      expect(apiClient.get).toHaveBeenCalledWith('/shifts/attendance/2026-06-22');
+      expect(result).toEqual(mockResponse);
     });
   });
 });

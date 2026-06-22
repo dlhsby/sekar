@@ -195,6 +195,21 @@ describe('TodayWorkHoursModal', () => {
       // Title has no suffix when there are no shifts
       expect(getByText('Kehadiran Hari Ini')).toBeTruthy();
     });
+
+    it('uses a dated title when a `date` prop is supplied', () => {
+      const { getByText, queryByText } = render(
+        <TodayWorkHoursModal
+          visible={true}
+          onClose={mockOnClose}
+          shifts={[]}
+          date="2026-06-22"
+        />
+      );
+
+      // "Hari Ini" is replaced with the formatted day.
+      expect(queryByText('Kehadiran Hari Ini')).toBeNull();
+      expect(getByText(/^Kehadiran .*2026/)).toBeTruthy();
+    });
   });
 
   describe('Shift Cards', () => {
