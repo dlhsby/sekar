@@ -4,16 +4,19 @@
  * Extracted from ClockInOutScreen for separation of concerns
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Geolocation from 'react-native-geolocation-service';
 import { Alert } from 'react-native';
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { clockIn, clockOut, getCurrentShift } from '../services/api/shiftsApi';
+import { getCurrentShiftDefinition } from '../services/api/shiftDefinitionsApi';
 import { setCurrentShift } from '../store/slices/shiftSlice';
 import { isWithinAreaBoundary } from '../utils/gpsUtils';
+import { isClockInLate } from '../utils/dateUtils';
 import { requestClockInPermissions, requestCameraPermission } from '../services/permissions';
 import { locationTracker } from '../services/location/locationTracker';
 import { mediaService, type Photo } from '../services/media';
+import type { ShiftDefinition } from '../types/models.types';
 
 export interface LocationState {
   latitude: number | null;
@@ -42,8 +45,47 @@ export function useClockInOut() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isWithinBoundary, setIsWithinBoundary] = useState(false);
   const [timer, setTimer] = useState('00:00:00');
+  // The shift definition matched by current time-of-day — only needed before
+  // clock-in (clock-out reads it from currentShift.shift_definition instead).
+  const [matchedShiftDef, setMatchedShiftDef] = useState<ShiftDefinition | null>(null);
 
   const isClockIn = !currentShift;
+
+  // The worker's scheduled shift for this attendance: the one they clocked into
+  // (clock-out), else the time-matched current definition (clock-in).
+  const scheduledShift: ShiftDefinition | null =
+    currentShift?.shift_definition ?? matchedShiftDef;
+
+  // Late = clocked in (or, before clock-in, the current moment) after the
+  // scheduled start_time. False when no schedule or for overtime shifts.
+  const isLate = useMemo(() => {
+    if (!scheduledShift?.start_time || currentShift?.is_overtime) {
+      return false;
+    }
+    const reference = currentShift?.clock_in_time ?? new Date().toISOString();
+    return isClockInLate(reference, scheduledShift.start_time);
+  }, [scheduledShift, currentShift]);
+
+  // Before clock-in, fetch the shift definition matched to the current time so
+  // the screen can show the scheduled window + late indicator.
+  useEffect(() => {
+    if (!isClockIn) {
+      return;
+    }
+    let active = true;
+    getCurrentShiftDefinition()
+      .then((res) => {
+        if (active && res.data) {
+          setMatchedShiftDef(res.data);
+        }
+      })
+      .catch(() => {
+        /* non-blocking — schedule info is supplementary */
+      });
+    return () => {
+      active = false;
+    };
+  }, [isClockIn]);
 
   const pad = (num: number): string => String(num).padStart(2, '0');
 
@@ -257,13 +299,15 @@ export function useClockInOut() {
                 console.warn('Failed to stop location tracking:', trackingError);
               }
 
-              const response = await clockOut(location.latitude!, location.longitude!);
+              const selfieBase64 = selfie ? await mediaService.convertToBase64(selfie) : undefined;
+              const response = await clockOut(location.latitude!, location.longitude!, selfieBase64);
               if (response.error) {
                 const errMsg = response.error;
                 Alert.alert('Gagal Clock Out', errMsg);
                 return;
               }
 
+              setSelfie(null);
               dispatch(setCurrentShift(null));
               Alert.alert('Berhasil', 'Berhasil clock out!', [
                 { text: 'OK', onPress: onSuccess },
@@ -282,7 +326,7 @@ export function useClockInOut() {
       ],
       { cancelable: true },
     );
-  }, [currentShift, location, dispatch]);
+  }, [currentShift, location, selfie, dispatch]);
 
   return {
     location,
@@ -294,6 +338,8 @@ export function useClockInOut() {
     isOnline,
     assignedArea,
     currentShift,
+    scheduledShift,
+    isLate,
     getCurrentLocation,
     handleCaptureSelfie,
     handleClockIn,

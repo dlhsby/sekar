@@ -64,6 +64,7 @@ export interface ClockInResponse {
 export interface ClockOutRequest {
   gps_lat: number;
   gps_lng: number;
+  selfie_photo?: string; // base64 with data URI prefix, optional
 }
 
 export interface ClockOutResponse {

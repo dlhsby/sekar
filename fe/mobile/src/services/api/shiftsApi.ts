@@ -42,10 +42,12 @@ export async function clockIn(
 export async function clockOut(
   gpsLat: number,
   gpsLng: number,
+  selfieBase64?: string,
 ): Promise<ApiResponse<ClockOutResponse>> {
   const payload: ClockOutRequest = {
     gps_lat: gpsLat,
     gps_lng: gpsLng,
+    ...(selfieBase64 ? { selfie_photo: selfieBase64 } : {}),
   };
   return post<ClockOutResponse>('/shifts/clock-out', payload);
 }

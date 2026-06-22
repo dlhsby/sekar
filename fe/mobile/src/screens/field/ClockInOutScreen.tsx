@@ -61,6 +61,8 @@ export const ClockInOutScreen = (): React.JSX.Element => {
     isOnline,
     assignedArea,
     currentShift,
+    scheduledShift,
+    isLate,
     getCurrentLocation,
     handleCaptureSelfie,
     handleClockIn,
@@ -167,13 +169,37 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             }
             accessibilityLabel="Waktu dan area ditugaskan"
           >
+            {/* Scheduled shift + late indicator (when a schedule is known) */}
+            {scheduledShift && (
+              <>
+                <View style={styles.infoRow}>
+                  <NBText variant="body-sm" color="gray600">Jadwal Shift:</NBText>
+                  <NBText variant="body" color="black">
+                    {scheduledShift.name} · {scheduledShift.start_time.slice(0, 5)}–{scheduledShift.end_time.slice(0, 5)}
+                  </NBText>
+                </View>
+                <View style={styles.infoRow}>
+                  <NBText variant="body-sm" color="gray600">Status Kehadiran:</NBText>
+                  <NBBadge
+                    text={isLate ? 'Terlambat' : 'Tepat Waktu'}
+                    color={isLate ? 'danger' : 'success'}
+                    size="sm"
+                  />
+                </View>
+              </>
+            )}
             {assignedArea ? (
               <>
-                <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>Area Ditugaskan</NBText>
-                <NBText variant="h3" color="black">{assignedArea.name}</NBText>
-                {assignedArea.address
-                  ? <NBText variant="body-sm" color="gray600" style={styles.areaAddress}>{assignedArea.address}</NBText>
-                  : null}
+                <View style={styles.infoRow}>
+                  <NBText variant="body-sm" color="gray600">Area Ditugaskan:</NBText>
+                  <NBText variant="body" color="black">{assignedArea.name}</NBText>
+                </View>
+                {assignedArea.address ? (
+                  <View style={styles.infoRow}>
+                    <NBText variant="body-sm" color="gray600">Alamat:</NBText>
+                    <NBText variant="body" color="black" style={styles.infoValue}>{assignedArea.address}</NBText>
+                  </View>
+                ) : null}
                 <View style={styles.infoRow}>
                   <NBText variant="body-sm" color="gray600">Tipe Area:</NBText>
                   <NBText variant="body" color="black">{assignedArea.area_type?.name || 'N/A'}</NBText>
@@ -194,10 +220,10 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                 )}
               </>
             ) : isRayonScoped ? (
-              <>
-                <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>Cakupan Rayon</NBText>
-                <NBText variant="h3" color="black">Clock in tanpa area spesifik</NBText>
-              </>
+              <View style={styles.infoRow}>
+                <NBText variant="body-sm" color="gray600">Cakupan Rayon:</NBText>
+                <NBText variant="body" color="black">Tanpa area spesifik</NBText>
+              </View>
             ) : (
               <NBText variant="body-sm" color="gray600">Belum ada area ditugaskan</NBText>
             )}
@@ -243,40 +269,40 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             )}
           </NBCollapsibleCard>
 
-          {/* Selfie Card (Clock In only) */}
-          {isClockIn && (
-            <NBCollapsibleCard
-              headerLeft={
-                <View>
-                  <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>Foto Selfie</NBText>
-                  {selfie
-                    ? <NBText variant="body-sm" color="success">Sudah diambil</NBText>
-                    : <NBText variant="body-sm" color="gray600">Opsional</NBText>
-                  }
-                </View>
-              }
-              accessibilityLabel="Foto selfie"
-            >
-              {selfie ? (
-                <View>
-                  <TouchableOpacity
-                    onPress={() => setSelfiePreviewUri(selfie.uri)}
-                    accessibilityRole="button"
-                    accessibilityLabel="Lihat selfie penuh"
-                    accessibilityHint="Ketuk untuk melihat foto dalam ukuran penuh"
-                  >
-                    <Image source={{ uri: selfie.uri }} style={styles.selfieImage} />
-                  </TouchableOpacity>
-                  <NBButton title="Ambil Ulang" onPress={handleCaptureSelfie} variant="secondary" fullWidth />
-                </View>
-              ) : (
-                <View>
-                  <NBText variant="body-sm" color="gray600" style={styles.selfiePrompt}>Ambil selfie untuk verifikasi identitas</NBText>
-                  <NBButton title="Ambil Selfie" onPress={handleCaptureSelfie} variant="secondary" fullWidth />
-                </View>
-              )}
-            </NBCollapsibleCard>
-          )}
+          {/* Selfie Card — optional for both clock-in and clock-out */}
+          <NBCollapsibleCard
+            headerLeft={
+              <View>
+                <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>Foto Selfie</NBText>
+                {selfie
+                  ? <NBText variant="body-sm" color="success">Sudah diambil</NBText>
+                  : <NBText variant="body-sm" color="gray600">Opsional</NBText>
+                }
+              </View>
+            }
+            accessibilityLabel="Foto selfie"
+          >
+            {selfie ? (
+              <View>
+                <TouchableOpacity
+                  onPress={() => setSelfiePreviewUri(selfie.uri)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Lihat selfie penuh"
+                  accessibilityHint="Ketuk untuk melihat foto dalam ukuran penuh"
+                >
+                  <Image source={{ uri: selfie.uri }} style={styles.selfieImage} />
+                </TouchableOpacity>
+                <NBButton title="Ambil Ulang" onPress={handleCaptureSelfie} variant="secondary" fullWidth />
+              </View>
+            ) : (
+              <View>
+                <NBText variant="body-sm" color="gray600" style={styles.selfiePrompt}>
+                  {isClockIn ? 'Ambil selfie untuk verifikasi identitas' : 'Ambil selfie untuk verifikasi clock out'}
+                </NBText>
+                <NBButton title="Ambil Selfie" onPress={handleCaptureSelfie} variant="secondary" fullWidth />
+              </View>
+            )}
+          </NBCollapsibleCard>
         </ScrollView>
 
         {/* Offline warnings — between scroll and submit button */}
@@ -357,6 +383,10 @@ const styles = StyleSheet.create({
   areaAddress: {
     marginTop: nbSpacing.xs,
     marginBottom: nbSpacing.sm,
+  },
+  infoValue: {
+    flexShrink: 1,
+    textAlign: 'right',
   },
   gpsCard: {
     backgroundColor: nbColors.statusIdleBg,
