@@ -369,21 +369,32 @@ export function FieldHomeScreen(): React.JSX.Element {
                   </View>
                 </View>
                 <View style={styles.heroTopRight}>
-                  <TouchableOpacity
-                    onPress={() => setLocationMapVisible(true)}
-                    disabled={!hasActiveShift}
-                    activeOpacity={0.7}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Status lokasi: ${areaLabel}. Ketuk untuk peta.`}
+                  <View style={styles.heroStatusRow}>
+                    <TouchableOpacity
+                      onPress={() => setLocationMapVisible(true)}
+                      disabled={!hasActiveShift}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Status lokasi: ${areaLabel}. Ketuk untuk peta.`}
+                    >
+                      <StatusPill tone={areaTone} label={areaLabel} />
+                    </TouchableOpacity>
+                    <MaterialCommunityIcons
+                      name={shiftExpanded ? 'chevron-up' : 'chevron-down'}
+                      size={24}
+                      color={nbColors.gray700}
+                      style={styles.heroChevron}
+                    />
+                  </View>
+                  {/* Area name sits below the status pill. */}
+                  <NBText
+                    variant="caption"
+                    color="gray700"
+                    numberOfLines={1}
+                    style={styles.heroAreaNameText}
                   >
-                    <StatusPill tone={areaTone} label={areaLabel} />
-                  </TouchableOpacity>
-                  <MaterialCommunityIcons
-                    name={shiftExpanded ? 'chevron-up' : 'chevron-down'}
-                    size={24}
-                    color={nbColors.gray700}
-                    style={styles.heroChevron}
-                  />
+                    {heroAreaName}
+                  </NBText>
                 </View>
               </View>
               {shiftExpanded && (
@@ -568,7 +579,9 @@ const styles = StyleSheet.create({
     gap: nbSpacing.sm,
   },
   heroClockArea: { flex: 1 },
-  heroTopRight: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs },
+  heroTopRight: { alignItems: 'flex-end', gap: 2 },
+  heroStatusRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs },
+  heroAreaNameText: { maxWidth: 160, textAlign: 'right' },
   heroChevron: { marginTop: 1 },
   heroLabel: { letterSpacing: 0.6, marginBottom: 2 },
   // Collapsed hero: first clock-in (Masuk) + last clock-out (Keluar) side by side.

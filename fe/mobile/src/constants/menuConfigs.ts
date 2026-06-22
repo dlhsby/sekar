@@ -9,7 +9,7 @@ import type { UserRole } from '../types/user.types';
 import type { MenuSection } from '../types/menu.types';
 
 // Reusable tiles (icons match the names previously used in TAB_CONFIGS).
-const ABSENSI = { route: 'Absensi', label: 'Absensi', icon: 'clock-outline', illustration: 'illo-shifts' } as const;
+const ABSENSI = { route: 'Absensi', label: 'Kehadiran', icon: 'clock-outline', illustration: 'illo-shifts' } as const;
 const LEMBUR = { route: 'Lembur', label: 'Lembur', icon: 'clock-plus-outline', illustration: 'illo-shifts' } as const;
 const TUGAS = { route: 'Tasks', label: 'Tugas', icon: 'clipboard-list-outline' } as const;
 const AKTIVITAS = { route: 'Activities', label: 'Aktivitas', icon: 'notebook-outline' } as const;
@@ -25,15 +25,15 @@ const PERANTINGAN_SUBMIT = { route: 'Perantingan', label: 'Perantingan', icon: '
 
 const FIELD_OPS: MenuSection = {
   title: 'Operasional',
-  items: [ABSENSI, TUGAS, AKTIVITAS, ASET, KINERJA],
+  items: [ABSENSI, LEMBUR, TUGAS, AKTIVITAS, ASET, KINERJA],
 };
 
 export const MENU_CONFIGS: Record<UserRole, MenuSection[]> = {
   // satgas has no Aset / Kinerja access.
-  satgas: [{ title: 'Operasional', items: [ABSENSI, TUGAS, AKTIVITAS] }],
+  satgas: [{ title: 'Operasional', items: [ABSENSI, LEMBUR, TUGAS, AKTIVITAS] }],
   linmas: [FIELD_OPS],
   korlap: [
-    { title: 'Operasional', items: [ABSENSI, TUGAS, AKTIVITAS, ASET, KINERJA] },
+    { title: 'Operasional', items: [ABSENSI, LEMBUR, TUGAS, AKTIVITAS, ASET, KINERJA] },
     { title: 'Pengawasan', items: [MONITORING, TIM] },
   ],
   admin_data: [

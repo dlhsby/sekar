@@ -20,6 +20,9 @@ type Props = {
 export function MenuScreen({ navigation }: Props): React.JSX.Element {
   const role = useAppSelector((state) => state.auth.user?.role) ?? 'satgas';
   const sections = MENU_CONFIGS[role] ?? [];
+  // Section headers only add value when there's more than one group; a lone
+  // section (e.g. satgas "Operasional") just shows the grid.
+  const showSectionTitles = sections.length > 1;
 
   return (
     <NBBackgroundPattern
@@ -35,9 +38,11 @@ export function MenuScreen({ navigation }: Props): React.JSX.Element {
       >
         {sections.map((section) => (
           <View key={section.title} style={styles.section}>
-            <NBText variant="h3" color="black" style={styles.sectionTitle}>
-              {section.title}
-            </NBText>
+            {showSectionTitles && (
+              <NBText variant="h3" color="black" style={styles.sectionTitle}>
+                {section.title}
+              </NBText>
+            )}
             <View style={styles.grid}>
               {section.items.map((item) => (
                 <View key={`${item.route}:${item.label}`} style={styles.cell}>

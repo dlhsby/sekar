@@ -381,6 +381,12 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       const store = createMockStore();
       const { getByText } = renderScreen(store);
 
+      await waitFor(() => {
+        expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
+      });
+      // GPS card is collapsed by default — expand to see the soft warning.
+      fireEvent.press(getByText('Lokasi GPS'));
+
       // Phase 2C: Should show soft warning (yellow banner) but NOT block clock-in
       await waitFor(() => {
         expect(getByText(/Anda berada di luar area kerja/i)).toBeTruthy();
@@ -405,39 +411,34 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
     it('should render the merged time+area card on mount', async () => {
       // The back button is injected via navigation.setOptions() into the navigator
       // header (not rendered in the screen body in unit tests). Here we verify the
-      // merged time+area card renders: the time header and the assigned-area name.
+      // merged time+area card renders its time header.
       const store = createMockStore();
       const { getByText } = renderScreen(store);
 
       await waitFor(() => { expect(getByText(/\d{2}:\d{2}/)).toBeTruthy(); });
-      // Merged card is expanded by default → the "Area Ditugaskan" section is visible.
-      await waitFor(() => { expect(getByText('Area Ditugaskan')).toBeTruthy(); });
     });
 
-    it('shows the merged time+area card expanded by default', async () => {
+    it('shows the merged time+area card collapsed by default', async () => {
       const store = createMockStore();
-      const { getByText } = renderScreen(store);
+      const { getByText, queryByText } = renderScreen(store);
 
-      await waitFor(() => {
-        expect(getByText('Area Ditugaskan')).toBeTruthy();
-      });
-      // Area details are visible by default (defaultExpanded).
-      expect(getByText('Tipe Area:')).toBeTruthy();
+      // Time header is visible…
+      await waitFor(() => { expect(getByText(/\d{2}:\d{2}/)).toBeTruthy(); });
+      // …but the area details are hidden until expanded (default collapsed).
+      expect(queryByText('Tipe Area:')).toBeNull();
     });
 
-    it('collapses the merged time+area card on press', async () => {
+    it('expands the merged time+area card on press', async () => {
       const store = createMockStore();
-      const { getByText, getByLabelText, queryByText } = renderScreen(store);
+      const { getByText, getByLabelText } = renderScreen(store);
 
-      await waitFor(() => {
-        expect(getByText('Tipe Area:')).toBeTruthy();
-      });
+      await waitFor(() => { expect(getByText(/\d{2}:\d{2}/)).toBeTruthy(); });
 
-      // Tap the card header to collapse it.
+      // Tap the card header to expand it → area details become visible.
       fireEvent.press(getByLabelText('Waktu dan area ditugaskan'));
 
       await waitFor(() => {
-        expect(queryByText('Tipe Area:')).toBeNull();
+        expect(getByText('Tipe Area:')).toBeTruthy();
       });
     });
 
@@ -449,6 +450,9 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       await waitFor(() => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
       });
+
+      // GPS card is collapsed by default — expand to see the in-area banner.
+      fireEvent.press(getByText('Lokasi GPS'));
 
       await waitFor(() => {
         expect(getByText(/Anda berada di dalam area kerja/i)).toBeTruthy();
@@ -629,6 +633,12 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       const { getByText } = renderScreen(store);
 
       await waitFor(() => {
+        expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
+      });
+      // GPS card is collapsed by default — expand to see the soft warning.
+      fireEvent.press(getByText('Lokasi GPS'));
+
+      await waitFor(() => {
         // Phase 2C: Soft warning shown but clock-in NOT blocked
         expect(getByText(/Anda berada di luar area kerja/i)).toBeTruthy();
       }, { timeout: 5000 });
@@ -795,6 +805,9 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       });
 
       const { getByText } = renderScreen(store);
+
+      // The elapsed HH:MM:SS timer lives in the (collapsed-by-default) GPS card.
+      fireEvent.press(getByText('Lokasi GPS'));
 
       await waitFor(() => {
         // Timer should show elapsed time

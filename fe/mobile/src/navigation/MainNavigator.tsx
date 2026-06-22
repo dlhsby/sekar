@@ -288,7 +288,7 @@ function TabNavigator(): React.JSX.Element {
       />
 
       {/* Feature screens — reached from the Menu launcher (hidden from the bar) */}
-      <Tab.Screen name="Absensi" component={ClockInOutScreen} options={featureScreen('Absensi')} />
+      <Tab.Screen name="Absensi" component={ClockInOutScreen} options={featureScreen('Kehadiran')} />
       <Tab.Screen name="Lembur" component={OvertimeListScreen} options={featureScreen('Lembur')} />
       <Tab.Screen name="Tasks" component={TasksScreen} options={featureScreen('Tugas')} />
       <Tab.Screen name="Activities" component={ActivitiesScreen} options={featureScreen('Aktivitas')} />

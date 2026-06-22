@@ -165,7 +165,6 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             headerRight={
               <NBText variant="mono-sm" color="gray600">{formatDateHero(currentTime)}</NBText>
             }
-            defaultExpanded
             accessibilityLabel="Waktu dan area ditugaskan"
           >
             {assignedArea ? (
@@ -204,6 +203,46 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             )}
           </NBCollapsibleCard>
 
+          {/* GPS / Location Card — above selfie; collapsed by default */}
+          <NBCollapsibleCard
+            headerLeft={
+              <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>Lokasi GPS</NBText>
+            }
+            headerRight={location.latitude != null
+              ? <NBBadge
+                  text={isWithinBoundary ? 'DI AREA' : 'LUAR AREA'}
+                  color={isWithinBoundary ? 'success' : 'danger'}
+                  size="sm"
+                />
+              : undefined
+            }
+            accessibilityLabel="Lokasi GPS"
+            style={styles.gpsCard}
+          >
+            <GPSLocationSection
+              latitude={location.latitude}
+              longitude={location.longitude}
+              accuracy={location.accuracy}
+              isCapturing={location.loading}
+              onRefresh={getCurrentLocation}
+              error={location.error}
+              isWithinBoundary={isWithinBoundary}
+              areaName={assignedArea?.name}
+            />
+            {!isClockIn && currentShift && (
+              <View style={styles.clockInInfo}>
+                <View style={styles.timerContainer}>
+                  <NBText variant="body-sm" color="gray600">Waktu Shift:</NBText>
+                  <NBText variant="display" color="statusIdle" style={styles.timerValue}>{timer}</NBText>
+                </View>
+                <View style={styles.clockInTimeRow}>
+                  <NBText variant="caption" color="gray600">Clock In:</NBText>
+                  <NBText variant="body-sm">{formatDateTime(currentShift.clock_in_time)}</NBText>
+                </View>
+              </View>
+            )}
+          </NBCollapsibleCard>
+
           {/* Selfie Card (Clock In only) */}
           {isClockIn && (
             <NBCollapsibleCard
@@ -238,47 +277,6 @@ export const ClockInOutScreen = (): React.JSX.Element => {
               )}
             </NBCollapsibleCard>
           )}
-
-          {/* GPS / Location Card */}
-          <NBCollapsibleCard
-            headerLeft={
-              <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>Lokasi GPS</NBText>
-            }
-            headerRight={location.latitude != null
-              ? <NBBadge
-                  text={isWithinBoundary ? 'DI AREA' : 'LUAR AREA'}
-                  color={isWithinBoundary ? 'success' : 'danger'}
-                  size="sm"
-                />
-              : undefined
-            }
-            defaultExpanded
-            accessibilityLabel="Lokasi GPS"
-            style={styles.gpsCard}
-          >
-            <GPSLocationSection
-              latitude={location.latitude}
-              longitude={location.longitude}
-              accuracy={location.accuracy}
-              isCapturing={location.loading}
-              onRefresh={getCurrentLocation}
-              error={location.error}
-              isWithinBoundary={isWithinBoundary}
-              areaName={assignedArea?.name}
-            />
-            {!isClockIn && currentShift && (
-              <View style={styles.clockInInfo}>
-                <View style={styles.timerContainer}>
-                  <NBText variant="body-sm" color="gray600">Waktu Shift:</NBText>
-                  <NBText variant="display" color="statusIdle" style={styles.timerValue}>{timer}</NBText>
-                </View>
-                <View style={styles.clockInTimeRow}>
-                  <NBText variant="caption" color="gray600">Clock In:</NBText>
-                  <NBText variant="body-sm">{formatDateTime(currentShift.clock_in_time)}</NBText>
-                </View>
-              </View>
-            )}
-          </NBCollapsibleCard>
         </ScrollView>
 
         {/* Offline warnings — between scroll and submit button */}
