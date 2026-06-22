@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { GPSLocationSection, ImagePreviewModal, InfoTableRow } from '../../components/common';
+import { GPSLocationSection, ImagePreviewModal, InfoTableRow, DateTimeValue } from '../../components/common';
 import { useNavigation } from '@react-navigation/native';
 import { NBButton, NBBackgroundPattern, NBText, NBAlert, NBBadge, NBCollapsibleCard } from '../../components/nb';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
@@ -24,17 +24,6 @@ import { useClockInOut } from '../../hooks';
 import { useAppSelector } from '../../store/hooks';
 import { formatDateTime } from '../../utils/dateUtils';
 import type { MainTabScreenProps } from '../../types/navigation.types';
-
-const DAY_NAMES_ID = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-const MONTH_NAMES_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
-
-function formatTimeHero(d: Date): string {
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
-
-function formatDateHero(d: Date): string {
-  return `${DAY_NAMES_ID[d.getDay()]}, ${d.getDate()} ${MONTH_NAMES_ID[d.getMonth()]} ${d.getFullYear()}`;
-}
 
 /**
  * Clock In/Out Screen
@@ -177,10 +166,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             accessibilityLabel="Informasi kehadiran"
           >
             <View style={styles.infoTable}>
-              <InfoTableRow
-                label="Waktu Sekarang"
-                value={`${formatDateHero(currentTime)} ${formatTimeHero(currentTime)}`}
-              />
+              <InfoTableRow label="Waktu Sekarang" value={<DateTimeValue source={currentTime} />} />
               {scheduledShift && (
                 <InfoTableRow
                   label="Jadwal Shift"

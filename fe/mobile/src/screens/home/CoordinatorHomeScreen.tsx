@@ -3,11 +3,12 @@ import { View, ScrollView, RefreshControl, StyleSheet, TouchableOpacity } from '
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { LoadingSpinner, RoleAvatar } from '../../components/common';
-import { NBBackgroundPattern, NBBadge, NBButton, NBText } from '../../components/nb';
+import { NBBackgroundPattern, NBButton, NBText } from '../../components/nb';
 import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
 import { HomeSectionDivider } from '../../components/home/HomeSectionDivider';
 import { HomeStatTile } from '../../components/home/HomeStatTile';
 import { HomeListRow } from '../../components/home/HomeListRow';
+import { AttendanceSummaryRow } from '../../components/home/AttendanceSummaryRow';
 import { ShiftDetailModal, TodayActivitiesModal, TodayWorkHoursModal, TodayTasksModal } from '../../components/modals';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
 import { TASK_RECEIVERS } from '../../constants/roles';
@@ -17,7 +18,8 @@ import { setCurrentShift, setShiftHistory, setError } from '../../store/slices/s
 import { setActivities } from '../../store/slices/activitiesSlice';
 import { setTasks } from '../../store/slices/tasksSlice';
 import { activitiesApi, tasksApi, shiftsApi } from '../../services/api';
-import { formatRelativeTime, formatTime, isToday, calculateDuration, isClockInLate } from '../../utils/dateUtils';
+import { formatRelativeTime, formatTime, isToday, calculateDuration } from '../../utils/dateUtils';
+import { summarizeAttendance } from '../../utils/attendance';
 import { ACTIVE_TASK_STATUSES } from '../../utils/taskStatus';
 import type { Activity, Task, Shift } from '../../types/models.types';
 
@@ -202,22 +204,10 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
 
   // Today's attendance summary for the hero (first clock-in, last clock-out, late
   // flag). todayShifts is clock_in DESC, so the earliest is the last element.
-  const attendance = useMemo(() => {
-    const earliest = todayShifts.length ? todayShifts[todayShifts.length - 1] : currentShift;
-    const firstClockIn = earliest?.clock_in_time ?? currentShift?.clock_in_time;
-    const lastClockOut = todayShifts.reduce<string | undefined>((latest, s) => {
-      if (!s.clock_out_time) return latest;
-      return !latest || s.clock_out_time > latest ? s.clock_out_time : latest;
-    }, currentShift?.clock_out_time);
-    const scheduledDef = earliest?.shift_definition ?? currentShift?.shift_definition;
-    return {
-      firstClockIn,
-      lastClockOut,
-      isLate:
-        !currentShift?.is_overtime &&
-        isClockInLate(firstClockIn, scheduledDef?.start_time, scheduledDef?.crosses_midnight),
-    };
-  }, [todayShifts, currentShift]);
+  const attendance = useMemo(
+    () => summarizeAttendance(todayShifts, currentShift),
+    [todayShifts, currentShift],
+  );
 
   const totalTodayDuration = useMemo(() => {
     let totalMinutes = 0;
@@ -271,26 +261,9 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
               accessibilityLabel={currentShift.is_overtime ? 'Lembur aktif' : 'Sedang bertugas'}
             >
               <View style={styles.absensiTopRow}>
-                <View style={styles.absensiClockArea}>
-                  <NBText variant="mono-sm" color="gray700" uppercase style={styles.absensiLabel}>
-                    {currentShift.is_overtime ? 'Lembur aktif' : 'Sedang bertugas'}
-                  </NBText>
-                  <View style={styles.absensiTimes}>
-                    <View style={styles.absensiTimeStat}>
-                      <NBText variant="caption" color="gray600" uppercase>Masuk</NBText>
-                      <View style={styles.absensiTimeValueRow}>
-                        <NBText variant="h2" color="black">{formatTime(attendance.firstClockIn ?? '')}</NBText>
-                        {attendance.isLate && <NBBadge text="Terlambat" color="danger" size="sm" />}
-                      </View>
-                    </View>
-                    <View style={styles.absensiTimeStat}>
-                      <NBText variant="caption" color="gray600" uppercase>Keluar</NBText>
-                      <NBText variant="h2" color="black">
-                        {attendance.lastClockOut ? formatTime(attendance.lastClockOut) : '—'}
-                      </NBText>
-                    </View>
-                  </View>
-                </View>
+                <NBText variant="mono-sm" color="gray700" uppercase style={styles.absensiLabel}>
+                  {currentShift.is_overtime ? 'Lembur aktif' : 'Sedang bertugas'}
+                </NBText>
                 <MaterialCommunityIcons
                   name={absensiExpanded ? 'chevron-up' : 'chevron-down'}
                   size={24}
@@ -298,6 +271,11 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
                   style={styles.absensiChevron}
                 />
               </View>
+              <AttendanceSummaryRow
+                firstClockIn={attendance.firstClockIn}
+                lastClockOut={attendance.lastClockOut}
+                isLate={attendance.isLate}
+              />
               {absensiExpanded && (
                 <>
                   <NBText variant="mono-sm" color="gray700" style={styles.absensiMeta}>
@@ -529,12 +507,8 @@ const styles = StyleSheet.create({
   absensiLembur: { backgroundColor: nbColors.statusIdleBg },
   absensiIdle: { backgroundColor: nbColors.white },
   absensiTopRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: nbSpacing.sm },
-  absensiClockArea: { flex: 1 },
   absensiChevron: { marginTop: 1 },
   absensiLabel: { letterSpacing: 0.6, marginBottom: 2 },
-  absensiTimes: { flexDirection: 'row', gap: nbSpacing.lg, marginTop: nbSpacing.xs },
-  absensiTimeStat: { gap: 2 },
-  absensiTimeValueRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs },
   absensiMeta: { marginTop: nbSpacing.sm },
   absensiIdleTitle: { marginTop: 2 },
   absensiButton: { marginTop: nbSpacing.md },

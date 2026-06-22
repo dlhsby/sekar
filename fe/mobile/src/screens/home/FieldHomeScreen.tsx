@@ -11,19 +11,21 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { CLOCKABLE_ROLES, TASK_RECEIVERS } from '../../constants/roles';
-import { LoadingSpinner, AppUpdateBanner, InfoTableRow } from '../../components/common';
+import { LoadingSpinner, AppUpdateBanner, InfoTableRow, DateTimeValue } from '../../components/common';
 import { NBAlert, NBBackgroundPattern, NBBadge, NBButton, NBText } from '../../components/nb';
 import { ShiftDetailModal, TodayActivitiesModal, TodayWorkHoursModal, TodayTasksModal, LocationMapModal } from '../../components/modals';
 import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
 import { HomeSectionDivider } from '../../components/home/HomeSectionDivider';
 import { HomeStatTile } from '../../components/home/HomeStatTile';
+import { AttendanceSummaryRow } from '../../components/home/AttendanceSummaryRow';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { shiftsApi, activitiesApi, tasksApi } from '../../services/api';
 import { setCurrentShift, setShiftHistory, setError } from '../../store/slices/shiftSlice';
 import { setActivities } from '../../store/slices/activitiesSlice';
 import { setTasks } from '../../store/slices/tasksSlice';
-import { formatTime, calculateDuration, isToday, isClockInLate } from '../../utils/dateUtils';
+import { calculateDuration, isToday } from '../../utils/dateUtils';
+import { summarizeAttendance } from '../../utils/attendance';
 import { isTaskScopedToday } from '../../utils/taskStatus';
 import { useLocationPermission } from '../../hooks';
 import { useHomeLocation } from '../../hooks/useHomeLocation';
@@ -102,25 +104,11 @@ export function FieldHomeScreen(): React.JSX.Element {
     return list.filter((shift) => isToday(shift.clock_in_time));
   }, [shiftHistory]);
 
-  // Today's attendance summary for the hero: first clock-in, last clock-out, and
-  // a late flag (first clock-in after the scheduled shift start). todayShifts is
-  // sorted clock_in DESC, so the earliest is the last element.
-  const attendance = useMemo(() => {
-    const earliest = todayShifts.length ? todayShifts[todayShifts.length - 1] : currentShift;
-    const firstClockIn = earliest?.clock_in_time ?? currentShift?.clock_in_time;
-    const lastClockOut = todayShifts.reduce<string | undefined>((latest, s) => {
-      if (!s.clock_out_time) return latest;
-      return !latest || s.clock_out_time > latest ? s.clock_out_time : latest;
-    }, currentShift?.clock_out_time);
-    const scheduledDef = earliest?.shift_definition ?? currentShift?.shift_definition;
-    return {
-      firstClockIn,
-      lastClockOut,
-      isLate:
-        !currentShift?.is_overtime &&
-        isClockInLate(firstClockIn, scheduledDef?.start_time, scheduledDef?.crosses_midnight),
-    };
-  }, [todayShifts, currentShift]);
+  // Today's attendance summary for the hero (shared util — see utils/attendance).
+  const attendance = useMemo(
+    () => summarizeAttendance(todayShifts, currentShift),
+    [todayShifts, currentShift],
+  );
 
   // "Tugas hari ini" — all statuses, scoped to today (deadline, created_at,
   // or completed_at falls today). Shared with the Monitoring user detail sheet
@@ -370,25 +358,24 @@ export function FieldHomeScreen(): React.JSX.Element {
                   />
                 </View>
               </View>
-              {/* Masuk (far left) ↔ Keluar (far right), full card width. */}
-              <View style={styles.heroTimes}>
-                <View style={styles.heroTimeStat}>
-                  <NBText variant="caption" color="gray600" uppercase>Masuk</NBText>
-                  <View style={styles.heroTimeValueRow}>
-                    <NBText variant="h2" color="black">{formatTime(attendance.firstClockIn ?? '')}</NBText>
-                    {attendance.isLate && <NBBadge text="Terlambat" color="danger" size="sm" />}
-                  </View>
-                </View>
-                <View style={[styles.heroTimeStat, styles.heroTimeStatEnd]}>
-                  <NBText variant="caption" color="gray600" uppercase>Keluar</NBText>
-                  <NBText variant="h2" color="black">
-                    {attendance.lastClockOut ? formatTime(attendance.lastClockOut) : '—'}
-                  </NBText>
-                </View>
-              </View>
+              <AttendanceSummaryRow
+                firstClockIn={attendance.firstClockIn}
+                lastClockOut={attendance.lastClockOut}
+                isLate={attendance.isLate}
+              />
               {shiftExpanded && (
                 <View style={styles.heroDetails}>
-                  <InfoTableRow label="Mulai clock in" value={formatTime(currentShift.clock_in_time)} />
+                  <InfoTableRow label="Mulai clock in" value={<DateTimeValue source={currentShift.clock_in_time} />} />
+                  <InfoTableRow
+                    label="Status Kehadiran"
+                    value={
+                      <NBBadge
+                        text={attendance.isLate ? 'Terlambat' : 'Tepat Waktu'}
+                        color={attendance.isLate ? 'danger' : 'success'}
+                        size="sm"
+                      />
+                    }
+                  />
                   <InfoTableRow label="Area Ditugaskan" value={heroAreaName} numberOfLines={1} />
                   <InfoTableRow label="Durasi shift berjalan" value={timer.slice(0, 5)} />
                   <InfoTableRow
@@ -471,14 +458,7 @@ export function FieldHomeScreen(): React.JSX.Element {
           <HomeSectionDivider label="Ringkasan hari ini" />
           <View style={styles.tiles}>
             <HomeStatTile
-              label="Aktivitas"
-              value={todayActivitiesCount}
-              variant="neutral"
-              onPress={() => setActivitiesModalVisible(true)}
-              testID="stat-activities"
-            />
-            <HomeStatTile
-              label="Jam kerja"
+              label="Kehadiran"
               value={totalTodayDuration}
               variant="yellow"
               onPress={() => setWorkHoursModalVisible(true)}
@@ -493,6 +473,13 @@ export function FieldHomeScreen(): React.JSX.Element {
                 testID="stat-tasks"
               />
             )}
+            <HomeStatTile
+              label="Aktivitas"
+              value={todayActivitiesCount}
+              variant="neutral"
+              onPress={() => setActivitiesModalVisible(true)}
+              testID="stat-activities"
+            />
           </View>
 
           {/* Not-assigned hint (field roles only — rayon-scoped roles excluded) */}
@@ -565,17 +552,6 @@ const styles = StyleSheet.create({
   heroStatusRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs },
   heroChevron: { marginTop: 1 },
   heroLabel: { letterSpacing: 0.6, marginBottom: 2 },
-  // Collapsed hero: first clock-in (Masuk) + last clock-out (Keluar) side by side.
-  // Masuk hugs the left, Keluar hugs the right, full card width between them.
-  heroTimes: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginTop: nbSpacing.sm,
-  },
-  heroTimeStat: { gap: 2 },
-  heroTimeStatEnd: { alignItems: 'flex-end' },
-  heroTimeValueRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs },
   heroMeta: { marginTop: nbSpacing.sm },
   // Expanded hero: label:value table rows.
   heroDetails: { marginTop: nbSpacing.md, gap: nbSpacing.xs },
