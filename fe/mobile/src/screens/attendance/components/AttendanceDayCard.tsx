@@ -4,9 +4,11 @@
  * Shows the day, an on-time/late pill, and Masuk / Keluar / total-duration meta.
  */
 import React from 'react';
+import { StyleSheet } from 'react-native';
 import { ListItemCard } from '../../../components/common';
 import type { StatusTone } from '../../../components/home/StatusPill';
 import { formatLongDate, formatTime } from '../../../utils/dateUtils';
+import { nbSpacing } from '../../../constants/nbTokens';
 import type { AttendanceDaySummary } from '../../../types/api.types';
 
 export interface AttendanceDayCardProps {
@@ -59,10 +61,17 @@ export const AttendanceDayCard = React.memo(function AttendanceDayCard({
         { icon: 'timer-outline', label: formatWorkedMinutes(summary.total_worked_minutes) },
       ]}
       onPress={onPress}
+      style={styles.spacing}
       accessibilityLabel={`Kehadiran ${dayLabel}, ${statusLabel}`}
       testID={`attendance-day-${summary.date}`}
     />
   );
+});
+
+const styles = StyleSheet.create({
+  spacing: {
+    marginBottom: nbSpacing.sm,
+  },
 });
 
 export default AttendanceDayCard;

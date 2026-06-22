@@ -32,6 +32,7 @@ import {
   nbSpacing,
   nbBorders,
   nbRadius,
+  nbShadows,
 } from '../../constants/nbTokens';
 import type { MainTabParamList } from '../../types/navigation.types';
 import type { OvertimeFilter } from '../../types/api.types';
@@ -443,15 +444,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.sm,
     paddingVertical: nbSpacing.xs,
     marginHorizontal: nbSpacing.md,
+    marginTop: nbSpacing.md, // gap from the top (navigator) header
+    marginBottom: nbSpacing.sm,
     backgroundColor: nbColors.white,
-    borderTopWidth: nbBorders.widthBase,
-    borderTopColor: nbColors.gray300,
     borderBottomWidth: nbBorders.widthBase,
     borderBottomColor: nbColors.gray300,
+    ...nbShadows.md,
     minHeight: 48,
   },
   filterBarActive: {
-    borderTopColor: nbColors.primary,
     borderBottomColor: nbColors.primary,
   },
   filterBarLeft: {
@@ -520,7 +521,6 @@ const styles = StyleSheet.create({
   // List — wrapper shrinks the frame above FAB, mirrors TAT contentWrapper pattern
   listWrapper: {
     flex: 1,
-    paddingTop: nbSpacing.sm,
   },
   listWrapperWithFab: {
     paddingBottom: NB_FAB_BAR_HEIGHT,

@@ -36,7 +36,7 @@ import { AttendanceDayCard } from './components/AttendanceDayCard';
 import { getAttendanceDays } from '../../services/api/shiftsApi';
 import { useRoleAccess } from '../../hooks/useRoleAccess';
 import { useAppSelector } from '../../store/hooks';
-import { nbColors, nbSpacing, nbBorders, nbRadius } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
 import type { MainTabParamList } from '../../types/navigation.types';
 import type { AttendanceFilter, AttendanceDaySummary } from '../../types/api.types';
 
@@ -361,15 +361,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.sm,
     paddingVertical: nbSpacing.xs,
     marginHorizontal: nbSpacing.md,
+    marginTop: nbSpacing.md, // gap from the top (navigator) header
+    marginBottom: nbSpacing.sm,
     backgroundColor: nbColors.white,
-    borderTopWidth: nbBorders.widthBase,
-    borderTopColor: nbColors.gray300,
     borderBottomWidth: nbBorders.widthBase,
     borderBottomColor: nbColors.gray300,
+    ...nbShadows.md,
     minHeight: 48,
   },
   filterBarActive: {
-    borderTopColor: nbColors.primary,
     borderBottomColor: nbColors.primary,
   },
   filterBarLeft: {
@@ -428,7 +428,6 @@ const styles = StyleSheet.create({
   },
   listWrapper: {
     flex: 1,
-    paddingTop: nbSpacing.sm,
   },
   listWrapperWithFab: {
     paddingBottom: NB_FAB_BAR_HEIGHT,
