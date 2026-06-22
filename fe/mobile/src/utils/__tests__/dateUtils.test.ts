@@ -16,9 +16,34 @@ import {
   getStartOfDay,
   getEndOfDay,
   parseISODate,
+  isClockInLate,
 } from '../dateUtils';
 
 describe('Date Utils', () => {
+  describe('isClockInLate', () => {
+    // Build an ISO timestamp at a given local HH:mm today.
+    const at = (h: number, m: number): string => {
+      const d = new Date();
+      d.setHours(h, m, 0, 0);
+      return d.toISOString();
+    };
+
+    it('is true when clock-in is after the scheduled start', () => {
+      expect(isClockInLate(at(7, 15), '06:00')).toBe(true);
+    });
+
+    it('is false when clock-in is at or before the scheduled start', () => {
+      expect(isClockInLate(at(5, 59), '06:00')).toBe(false);
+      expect(isClockInLate(at(6, 0), '06:00')).toBe(false);
+    });
+
+    it('is false when no schedule or invalid input', () => {
+      expect(isClockInLate(at(9, 0), undefined)).toBe(false);
+      expect(isClockInLate(undefined, '06:00')).toBe(false);
+      expect(isClockInLate('not-a-date', '06:00')).toBe(false);
+      expect(isClockInLate(at(9, 0), 'bad')).toBe(false);
+    });
+  });
   describe('formatDate', () => {
     it('should format Date object to YYYY-MM-DD', () => {
       const date = new Date('2026-01-19T10:00:00Z');

@@ -62,8 +62,8 @@ function sortToParams(sort: SortKey): Pick<OvertimeFilter, 'sort_by' | 'sort_dir
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 type Props = {
-  navigation: NativeStackNavigationProp<MainTabParamList, 'Absensi'>;
-  route?: RouteProp<MainTabParamList, 'Absensi'>;
+  navigation: NativeStackNavigationProp<MainTabParamList, 'Lembur'>;
+  route?: RouteProp<MainTabParamList, 'Lembur'>;
 };
 
 export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {

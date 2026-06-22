@@ -3,7 +3,7 @@ import { View, ScrollView, RefreshControl, StyleSheet, TouchableOpacity } from '
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { LoadingSpinner, RoleAvatar } from '../../components/common';
-import { NBBackgroundPattern, NBButton, NBText } from '../../components/nb';
+import { NBBackgroundPattern, NBBadge, NBButton, NBText } from '../../components/nb';
 import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
 import { HomeSectionDivider } from '../../components/home/HomeSectionDivider';
 import { HomeStatTile } from '../../components/home/HomeStatTile';
@@ -17,7 +17,7 @@ import { setCurrentShift, setShiftHistory, setError } from '../../store/slices/s
 import { setActivities } from '../../store/slices/activitiesSlice';
 import { setTasks } from '../../store/slices/tasksSlice';
 import { activitiesApi, tasksApi, shiftsApi } from '../../services/api';
-import { formatRelativeTime, formatTime, isToday, calculateDuration } from '../../utils/dateUtils';
+import { formatRelativeTime, formatTime, isToday, calculateDuration, isClockInLate } from '../../utils/dateUtils';
 import { ACTIVE_TASK_STATUSES } from '../../utils/taskStatus';
 import type { Activity, Task, Shift } from '../../types/models.types';
 
@@ -133,7 +133,7 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
     if (currentShift?.is_overtime) {
       navigation.navigate('OvertimeSubmit' as never);
     } else {
-      navigation.navigate('Absensi' as never, { initialTab: 'absensi' } as never);
+      navigation.navigate('Absensi' as never);
     }
   }, [currentShift, navigation]);
 
@@ -200,6 +200,24 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
     return list.filter((s) => isToday(s.clock_in_time));
   }, [shiftHistory]);
 
+  // Today's attendance summary for the hero (first clock-in, last clock-out, late
+  // flag). todayShifts is clock_in DESC, so the earliest is the last element.
+  const attendance = useMemo(() => {
+    const earliest = todayShifts.length ? todayShifts[todayShifts.length - 1] : currentShift;
+    const firstClockIn = earliest?.clock_in_time ?? currentShift?.clock_in_time;
+    const lastClockOut = todayShifts.reduce<string | undefined>((latest, s) => {
+      if (!s.clock_out_time) return latest;
+      return !latest || s.clock_out_time > latest ? s.clock_out_time : latest;
+    }, currentShift?.clock_out_time);
+    const scheduledStart =
+      earliest?.shift_definition?.start_time ?? currentShift?.shift_definition?.start_time;
+    return {
+      firstClockIn,
+      lastClockOut,
+      isLate: !currentShift?.is_overtime && isClockInLate(firstClockIn, scheduledStart),
+    };
+  }, [todayShifts, currentShift]);
+
   const totalTodayDuration = useMemo(() => {
     let totalMinutes = 0;
     todayShifts.forEach((shift) => {
@@ -256,15 +274,21 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
                   <NBText variant="mono-sm" color="gray700" uppercase style={styles.absensiLabel}>
                     {currentShift.is_overtime ? 'Lembur aktif' : 'Sedang bertugas'}
                   </NBText>
-                  <NBText
-                    variant="display"
-                    color="black"
-                    style={styles.absensiClock}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                  >
-                    {timer}
-                  </NBText>
+                  <View style={styles.absensiTimes}>
+                    <View style={styles.absensiTimeStat}>
+                      <NBText variant="caption" color="gray600" uppercase>Masuk</NBText>
+                      <View style={styles.absensiTimeValueRow}>
+                        <NBText variant="h2" color="black">{formatTime(attendance.firstClockIn ?? '')}</NBText>
+                        {attendance.isLate && <NBBadge text="Terlambat" color="danger" size="sm" />}
+                      </View>
+                    </View>
+                    <View style={styles.absensiTimeStat}>
+                      <NBText variant="caption" color="gray600" uppercase>Keluar</NBText>
+                      <NBText variant="h2" color="black">
+                        {attendance.lastClockOut ? formatTime(attendance.lastClockOut) : '—'}
+                      </NBText>
+                    </View>
+                  </View>
                 </View>
                 <MaterialCommunityIcons
                   name={absensiExpanded ? 'chevron-up' : 'chevron-down'}
@@ -276,7 +300,7 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
               {absensiExpanded && (
                 <>
                   <NBText variant="mono-sm" color="gray700" style={styles.absensiMeta}>
-                    {`Mulai ${formatTime(currentShift.clock_in_time)}`}
+                    {`Mulai ${formatTime(currentShift.clock_in_time)} · Berjalan ${timer}`}
                   </NBText>
                   <View style={styles.absensiButton}>
                     <NBButton
@@ -507,7 +531,9 @@ const styles = StyleSheet.create({
   absensiClockArea: { flex: 1 },
   absensiChevron: { marginTop: 1 },
   absensiLabel: { letterSpacing: 0.6, marginBottom: 2 },
-  absensiClock: { fontSize: 34, lineHeight: 38, letterSpacing: 0.5 },
+  absensiTimes: { flexDirection: 'row', gap: nbSpacing.lg, marginTop: nbSpacing.xs },
+  absensiTimeStat: { gap: 2 },
+  absensiTimeValueRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs },
   absensiMeta: { marginTop: nbSpacing.sm },
   absensiIdleTitle: { marginTop: 2 },
   absensiButton: { marginTop: nbSpacing.md },

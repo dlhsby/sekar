@@ -9,7 +9,6 @@ import type { ApiResponse } from '../../types/api.types';
 import type {
   RegisterDeviceRequest,
   NotificationsFilter,
-  NotificationsListResponse,
   BroadcastNotificationRequest,
 } from '../../types/api.types';
 import type { Notification } from '../../types/models.types';
@@ -33,12 +32,15 @@ export async function unregisterDevice(): Promise<
 }
 
 /**
- * Get notification history
+ * Get notification history.
+ * The backend returns a plain array (most-recent 100), not a paginated envelope,
+ * and rejects unknown query props (`page`/`limit`) under the strict validation
+ * pipe — so only real filter fields are forwarded.
  */
 export async function getNotifications(
-  filters?: NotificationsFilter & { page?: number; limit?: number },
-): Promise<ApiResponse<NotificationsListResponse>> {
-  return get<NotificationsListResponse>('/notifications', filters);
+  filters?: NotificationsFilter,
+): Promise<ApiResponse<Notification[]>> {
+  return get<Notification[]>('/notifications', filters);
 }
 
 /**

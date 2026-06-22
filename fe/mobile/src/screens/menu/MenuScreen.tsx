@@ -75,9 +75,9 @@ const styles = StyleSheet.create({
     gap: nbSpacing.sm,
   },
   cell: {
-    // Two columns with a single gap between them.
-    flexBasis: '47%',
-    flexGrow: 1,
+    // Always two columns; never expand. An odd last tile keeps its column width
+    // and leaves the other column blank (no flexGrow).
+    width: '48%',
   },
 });
 

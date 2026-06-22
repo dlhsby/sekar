@@ -353,3 +353,32 @@ export function formatIsoWeekLabel(year: number, week: number): string {
   return `Minggu ${week} · ${daySun} ${daySunMonth} – ${daySat} ${daySatMonth} ${daySatYear}`;
 }
 
+
+/**
+ * True when a clock-in happened later than the scheduled shift start.
+ * Compares the clock-in's local HH:mm against the scheduled "HH:mm" start
+ * (e.g. `ShiftDefinition.start_time`). Returns false when no schedule is
+ * supplied or either input is invalid (so "no schedule" never reads as late).
+ *
+ * @param clockInIso ISO timestamp of the (first) clock-in
+ * @param scheduledStartHHmm scheduled start time in "HH:mm"
+ */
+export function isClockInLate(
+  clockInIso?: string | null,
+  scheduledStartHHmm?: string | null,
+): boolean {
+  if (!clockInIso || !scheduledStartHHmm) {
+    return false;
+  }
+  const d = typeof clockInIso === 'string' ? new Date(clockInIso) : clockInIso;
+  if (isNaN(d.getTime())) {
+    return false;
+  }
+  const match = /^(\d{1,2}):(\d{2})/.exec(scheduledStartHHmm);
+  if (!match) {
+    return false;
+  }
+  const scheduledMinutes = Number(match[1]) * 60 + Number(match[2]);
+  const clockInMinutes = d.getHours() * 60 + d.getMinutes();
+  return clockInMinutes > scheduledMinutes;
+}

@@ -39,13 +39,13 @@ export function useOvertimeDetail(overtimeId: string): UseOvertimeDetailReturn {
       } else if (response.error) {
         if (!isRefresh) {
           Alert.alert('Error', response.error);
-          navigation.navigate('Absensi' as any, { initialTab: 'lembur' });
+          navigation.navigate('Lembur' as any);
         }
       }
     } catch {
       if (!isRefresh) {
         Alert.alert('Error', 'Gagal memuat detail lembur');
-        navigation.navigate('Absensi' as any, { initialTab: 'lembur' });
+        navigation.navigate('Lembur' as any);
       }
     } finally {
       setIsLoading(false);

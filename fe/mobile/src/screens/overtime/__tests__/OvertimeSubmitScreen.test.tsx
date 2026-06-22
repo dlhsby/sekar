@@ -598,7 +598,7 @@ describe('OvertimeSubmitScreen', () => {
       });
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('Absensi', { initialTab: 'lembur' });
+        expect(mockNavigate).toHaveBeenCalledWith('Lembur');
       });
     });
 
@@ -753,7 +753,7 @@ describe('OvertimeSubmitScreen', () => {
           expect.objectContaining({ level: 'success', title: 'Berhasil' }),
         );
       });
-      expect(mockNavigate).toHaveBeenCalledWith('Absensi', { initialTab: 'lembur' });
+      expect(mockNavigate).toHaveBeenCalledWith('Lembur');
     });
 
     it('shows error alert when endOvertime returns an API error', async () => {

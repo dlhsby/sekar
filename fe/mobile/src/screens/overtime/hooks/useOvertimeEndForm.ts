@@ -83,7 +83,7 @@ export function useOvertimeEndForm(location: Coordinates | null) {
         locationTracker.stopImmediate();
         dispatch(clockOutSuccess());
         NBToast.show({ level: 'success', title: 'Berhasil', body: 'Lembur berhasil diselesaikan.' });
-        navigation.navigate('Absensi' as any, { initialTab: 'lembur' });
+        navigation.navigate('Lembur' as any);
       } else if (response.error) {
         dispatch(setError(response.error));
         NBToast.show({ level: 'danger', title: 'Gagal Selesai Lembur', body: response.error });

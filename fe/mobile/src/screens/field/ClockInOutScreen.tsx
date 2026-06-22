@@ -41,16 +41,7 @@ function formatDateHero(d: Date): string {
  * Phase 2C: Soft geofencing (warnings only), auto-detect area from schedule
  * Uses Neo Brutalism design system
  */
-interface ClockInOutScreenProps {
-  /**
-   * When rendered as a tab inside AbsensiScreen, suppress the navigator header
-   * override (the parent owns the "Absensi" header + tabs). Defaults to false
-   * for the standalone/legacy usage.
-   */
-  embedded?: boolean;
-}
-
-export const ClockInOutScreen = ({ embedded = false }: ClockInOutScreenProps = {}): React.JSX.Element => {
+export const ClockInOutScreen = (): React.JSX.Element => {
   const navigation = useNavigation<MainTabScreenProps<'Absensi'>['navigation']>();
   const [selfiePreviewUri, setSelfiePreviewUri] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(() => new Date());
@@ -83,10 +74,6 @@ export const ClockInOutScreen = ({ embedded = false }: ClockInOutScreenProps = {
   // test/Storybook contexts where setOptions exists but cannot be called. All other
   // errors (e.g. render crash inside FieldHomeHeader) are re-thrown.
   useEffect(() => {
-    // Embedded in AbsensiScreen → the parent owns the header; don't override it.
-    if (embedded) {
-      return;
-    }
     try {
       navigation.setOptions({
         headerTitle: () => (
@@ -101,7 +88,7 @@ export const ClockInOutScreen = ({ embedded = false }: ClockInOutScreenProps = {
         throw e;
       }
     }
-  }, [navigation, goBack, isClockIn, embedded]);
+  }, [navigation, goBack, isClockIn]);
 
   // No assigned area — block only for area-scoped roles (satgas/linmas/korlap).
   // Rayon-scoped roles (admin_data/kepala_rayon) can clock in without a specific area.
@@ -168,7 +155,7 @@ export const ClockInOutScreen = ({ embedded = false }: ClockInOutScreenProps = {
             </View>
           )}
 
-          {/* Time Hero */}
+          {/* Time + Area — one card: current time/date header, assigned-area body */}
           <NBCollapsibleCard
             headerLeft={
               <NBText variant="h2" color="black" style={styles.timeHeroTime}>
@@ -178,54 +165,44 @@ export const ClockInOutScreen = ({ embedded = false }: ClockInOutScreenProps = {
             headerRight={
               <NBText variant="mono-sm" color="gray600">{formatDateHero(currentTime)}</NBText>
             }
-            accessibilityLabel="Detail waktu"
+            defaultExpanded
+            accessibilityLabel="Waktu dan area ditugaskan"
           >
-            <NBText variant="body-sm" color="gray600" style={styles.centerText}>
-              {isClockIn
-                ? 'Ambil foto diri dan konfirmasi lokasi untuk memulai shift'
-                : 'Konfirmasi lokasi untuk mengakhiri shift'}
-            </NBText>
+            {assignedArea ? (
+              <>
+                <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>Area Ditugaskan</NBText>
+                <NBText variant="h3" color="black">{assignedArea.name}</NBText>
+                {assignedArea.address
+                  ? <NBText variant="body-sm" color="gray600" style={styles.areaAddress}>{assignedArea.address}</NBText>
+                  : null}
+                <View style={styles.infoRow}>
+                  <NBText variant="body-sm" color="gray600">Tipe Area:</NBText>
+                  <NBText variant="body" color="black">{assignedArea.area_type?.name || 'N/A'}</NBText>
+                </View>
+                {assignedArea.gps_lat != null && assignedArea.gps_lng != null && (
+                  <View style={styles.infoRow}>
+                    <NBText variant="body-sm" color="gray600">Koordinat GPS:</NBText>
+                    <NBText variant="body" color="black">
+                      {Number(assignedArea.gps_lat).toFixed(6)}, {Number(assignedArea.gps_lng).toFixed(6)}
+                    </NBText>
+                  </View>
+                )}
+                {assignedArea.radius_meters != null && (
+                  <View style={styles.infoRow}>
+                    <NBText variant="body-sm" color="gray600">Radius Batas:</NBText>
+                    <NBText variant="body" color="black">{assignedArea.radius_meters}m</NBText>
+                  </View>
+                )}
+              </>
+            ) : isRayonScoped ? (
+              <>
+                <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>Cakupan Rayon</NBText>
+                <NBText variant="h3" color="black">Clock in tanpa area spesifik</NBText>
+              </>
+            ) : (
+              <NBText variant="body-sm" color="gray600">Belum ada area ditugaskan</NBText>
+            )}
           </NBCollapsibleCard>
-
-          {/* Area Info Card */}
-          {assignedArea ? (
-            <NBCollapsibleCard
-              headerLeft={
-                <View>
-                  <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>Area Ditugaskan</NBText>
-                  <NBText variant="h3" color="black">{assignedArea.name}</NBText>
-                </View>
-              }
-              accessibilityLabel="Detail area"
-            >
-              {assignedArea.address
-                ? <NBText variant="body-sm" color="gray600" style={{ marginBottom: nbSpacing.sm }}>{assignedArea.address}</NBText>
-                : null}
-              <View style={styles.infoRow}>
-                <NBText variant="body-sm" color="gray600">Tipe Area:</NBText>
-                <NBText variant="body" color="black">{assignedArea.area_type?.name || 'N/A'}</NBText>
-              </View>
-              {assignedArea.gps_lat != null && assignedArea.gps_lng != null && (
-                <View style={styles.infoRow}>
-                  <NBText variant="body-sm" color="gray600">Koordinat GPS:</NBText>
-                  <NBText variant="body" color="black">
-                    {Number(assignedArea.gps_lat).toFixed(6)}, {Number(assignedArea.gps_lng).toFixed(6)}
-                  </NBText>
-                </View>
-              )}
-              {assignedArea.radius_meters != null && (
-                <View style={styles.infoRow}>
-                  <NBText variant="body-sm" color="gray600">Radius Batas:</NBText>
-                  <NBText variant="body" color="black">{assignedArea.radius_meters}m</NBText>
-                </View>
-              )}
-            </NBCollapsibleCard>
-          ) : isRayonScoped ? (
-            <View style={styles.staticCard}>
-              <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>Cakupan Rayon</NBText>
-              <NBText variant="h3" color="black">Clock in tanpa area spesifik</NBText>
-            </View>
-          ) : null}
 
           {/* Selfie Card (Clock In only) */}
           {isClockIn && (
@@ -378,6 +355,10 @@ const styles = StyleSheet.create({
   },
   cardLabel: {
     marginBottom: nbSpacing.xs,
+  },
+  areaAddress: {
+    marginTop: nbSpacing.xs,
+    marginBottom: nbSpacing.sm,
   },
   gpsCard: {
     backgroundColor: nbColors.statusIdleBg,

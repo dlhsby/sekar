@@ -161,7 +161,7 @@ export const OvertimeSubmitScreen: React.FC<
       headerTitle: () => (
         <FieldHomeHeader
           title={screenTitle}
-          onBack={activeOvertime ? () => navigation.navigate('Absensi' as any, { initialTab: 'lembur' }) : handleLeave}
+          onBack={activeOvertime ? () => navigation.navigate('Lembur' as any) : handleLeave}
         />
       ),
     });

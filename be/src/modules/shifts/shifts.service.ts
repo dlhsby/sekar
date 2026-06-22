@@ -325,7 +325,8 @@ export class ShiftsService {
         user_id: userId,
         clock_out_time: IsNull(),
       },
-      relations: ['area', 'area.areaType', 'user'],
+      // shift_definition carries the scheduled start_time used for the late check.
+      relations: ['area', 'area.areaType', 'user', 'shift_definition'],
     });
   }
 
@@ -363,7 +364,7 @@ export class ShiftsService {
   async findByUserId(userId: string, limit = 50): Promise<Shift[]> {
     return this.shiftRepository.find({
       where: { user_id: userId },
-      relations: ['area', 'area.areaType'],
+      relations: ['area', 'area.areaType', 'shift_definition'],
       order: { clock_in_time: 'DESC' },
       take: limit,
     });
@@ -380,7 +381,7 @@ export class ShiftsService {
   ): Promise<PaginatedResponseDto<Shift>> {
     const [data, total] = await this.shiftRepository.findAndCount({
       where: { user_id: userId },
-      relations: ['area', 'area.areaType'],
+      relations: ['area', 'area.areaType', 'shift_definition'],
       order: { clock_in_time: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,

@@ -161,8 +161,8 @@ export function NotificationsScreen(): React.JSX.Element {
   const fetchPage = useCallback(async () => {
     dispatch(setLoading(true));
     try {
-      const res = await getNotifications({ page: 1, limit: 50 });
-      const list = (res.data?.data ?? []) as Notification[];
+      const res = await getNotifications();
+      const list = (res.data ?? []) as Notification[];
       dispatch(setNotifications(list));
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Gagal memuat notifikasi';
@@ -224,14 +224,15 @@ export function NotificationsScreen(): React.JSX.Element {
 
   return (
     <SafeAreaView style={styles.root} edges={['bottom']} testID="notifications-screen">
-      <NBTab
-        tabs={CATEGORY_TABS}
-        activeTab={category}
-        onTabChange={(key) => setCategory(key as NotifCategory)}
-        scrollable
-        style={styles.filterTabs}
-        testID="notifications-filter"
-      />
+      <View style={styles.filterTabsWrap}>
+        <NBTab
+          tabs={CATEGORY_TABS}
+          activeTab={category}
+          onTabChange={(key) => setCategory(key as NotifCategory)}
+          scrollable
+          testID="notifications-filter"
+        />
+      </View>
       {unreadCount > 0 ? (
         <View style={styles.actionsBar}>
           <NBText variant="mono-sm" color="gray700" uppercase>
@@ -294,9 +295,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: nbColors.bgCanvas,
   },
-  filterTabs: {
-    paddingHorizontal: nbSpacing.md,
+  // Wrap the (fixed-height, scrollable) NBTab so vertical padding never clips
+  // the pill. Horizontal padding is owned by NBTab's scroll content.
+  filterTabsWrap: {
     paddingTop: nbSpacing.sm,
+    paddingBottom: nbSpacing.sm,
   },
   actionsBar: {
     flexDirection: 'row',
@@ -312,7 +315,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   listContent: { paddingVertical: nbSpacing.xs },
-  emptyContent: { flexGrow: 1, justifyContent: 'center' },
+  // Top-aligned (not vertically centred) so the empty illustration sits a
+  // standard distance below the filter tabs rather than floating mid-screen.
+  emptyContent: { flexGrow: 1, paddingTop: nbSpacing.xl },
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',

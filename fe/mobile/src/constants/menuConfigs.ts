@@ -10,7 +10,7 @@ import type { MenuSection } from '../types/menu.types';
 
 // Reusable tiles (icons match the names previously used in TAB_CONFIGS).
 const ABSENSI = { route: 'Absensi', label: 'Absensi', icon: 'clock-outline', illustration: 'illo-shifts' } as const;
-const LEMBUR = { route: 'Absensi', params: { initialTab: 'lembur' }, label: 'Lembur', icon: 'clock-plus-outline', illustration: 'illo-shifts' } as const;
+const LEMBUR = { route: 'Lembur', label: 'Lembur', icon: 'clock-plus-outline', illustration: 'illo-shifts' } as const;
 const TUGAS = { route: 'Tasks', label: 'Tugas', icon: 'clipboard-list-outline' } as const;
 const AKTIVITAS = { route: 'Activities', label: 'Aktivitas', icon: 'notebook-outline' } as const;
 const ASET = { route: 'Assets', label: 'Aset', icon: 'toolbox-outline' } as const;
@@ -29,7 +29,8 @@ const FIELD_OPS: MenuSection = {
 };
 
 export const MENU_CONFIGS: Record<UserRole, MenuSection[]> = {
-  satgas: [FIELD_OPS],
+  // satgas has no Aset / Kinerja access.
+  satgas: [{ title: 'Operasional', items: [ABSENSI, TUGAS, AKTIVITAS] }],
   linmas: [FIELD_OPS],
   korlap: [
     { title: 'Operasional', items: [ABSENSI, TUGAS, AKTIVITAS, ASET, KINERJA] },

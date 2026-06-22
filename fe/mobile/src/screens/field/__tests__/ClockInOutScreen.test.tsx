@@ -451,12 +451,6 @@ describe('ClockInOutScreen Location Watcher Management', () => {
     await waitFor(() => {
       expect(getByText('Clock Out')).toBeTruthy();
     });
-
-    // Expand time hero to see subtitle (first \d{2}:\d{2} match is the time hero)
-    fireEvent.press(getAllByText(/\d{2}:\d{2}/)[0]);
-    await waitFor(() => {
-      expect(getByText('Konfirmasi lokasi untuk mengakhiri shift')).toBeTruthy();
-    });
   });
 
   describe('GPS Accuracy Threshold (Issue #6)', () => {

@@ -23,6 +23,8 @@ export interface Shift {
   clock_out_gps_lng?: number;
   clock_out_outside_boundary?: boolean;
   is_overtime?: boolean; // Phase 2E: true when shift is an overtime shift
+  shift_definition_id?: string | null;
+  shift_definition?: ShiftDefinition; // scheduled window; start_time drives the late check
   created_at: string;
   updated_at: string;
 }

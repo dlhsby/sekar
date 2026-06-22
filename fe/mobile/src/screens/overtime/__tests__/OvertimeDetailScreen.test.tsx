@@ -174,7 +174,7 @@ describe('OvertimeDetailScreen', () => {
 
       await waitFor(() => {
         expect(alertSpy).toHaveBeenCalledWith('Error', 'Data tidak ditemukan');
-        expect(mockNavigate).toHaveBeenCalledWith('Absensi', { initialTab: 'lembur' });
+        expect(mockNavigate).toHaveBeenCalledWith('Lembur');
       });
     });
 
@@ -191,7 +191,7 @@ describe('OvertimeDetailScreen', () => {
 
       await waitFor(() => {
         expect(alertSpy).toHaveBeenCalledWith('Error', 'Gagal memuat detail lembur');
-        expect(mockNavigate).toHaveBeenCalledWith('Absensi', { initialTab: 'lembur' });
+        expect(mockNavigate).toHaveBeenCalledWith('Lembur');
       });
     });
   });

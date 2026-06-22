@@ -259,7 +259,7 @@ describe('ShiftsService', () => {
       expect(result).toEqual(mockShift);
       expect(mockRepository.findOne).toHaveBeenCalledWith({
         where: { user_id: mockUser.id, clock_out_time: IsNull() },
-        relations: ['area', 'area.areaType', 'user'],
+        relations: ['area', 'area.areaType', 'user', 'shift_definition'],
       });
       expect(mockAreasService.findOne).toHaveBeenCalledWith(mockArea.id);
     });
@@ -427,7 +427,7 @@ describe('ShiftsService', () => {
       expect(result).toEqual(mockShift);
       expect(mockRepository.findOne).toHaveBeenCalledWith({
         where: { user_id: mockUser.id, clock_out_time: IsNull() },
-        relations: ['area', 'area.areaType', 'user'],
+        relations: ['area', 'area.areaType', 'user', 'shift_definition'],
       });
     });
 
@@ -472,7 +472,7 @@ describe('ShiftsService', () => {
       expect(result).toEqual([mockShift]);
       expect(mockRepository.find).toHaveBeenCalledWith({
         where: { user_id: mockUser.id },
-        relations: ['area', 'area.areaType'],
+        relations: ['area', 'area.areaType', 'shift_definition'],
         order: { clock_in_time: 'DESC' },
         take: 50,
       });

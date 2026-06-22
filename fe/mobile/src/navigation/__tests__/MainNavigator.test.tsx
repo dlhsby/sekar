@@ -27,8 +27,11 @@ jest.mock('../../screens/home/HomeScreen', () => ({
 jest.mock('../../screens/menu/MenuScreen', () => ({
   MenuScreen: () => MockScreen({ name: 'Menu' }),
 }));
-jest.mock('../../screens/absensi/AbsensiScreen', () => ({
-  AbsensiScreen: () => MockScreen({ name: 'Absensi' }),
+jest.mock('../../screens/field/ClockInOutScreen', () => ({
+  ClockInOutScreen: () => MockScreen({ name: 'Absensi' }),
+}));
+jest.mock('../../screens/overtime/OvertimeListScreen', () => ({
+  OvertimeListScreen: () => MockScreen({ name: 'Lembur' }),
 }));
 jest.mock('../../screens/field/ActivitySubmissionScreen', () => ({
   ActivitySubmissionScreen: () => MockScreen({ name: 'ActivitySubmission' }),
@@ -114,7 +117,7 @@ const ALL_ROLES = [
 // Routes registered as tab screens (Menu items must point at one of these).
 const REGISTERED_ROUTES = new Set([
   'Home', 'Menu', 'Profile',
-  'Absensi', 'Tasks', 'Activities', 'Monitoring', 'Reports', 'Assets',
+  'Absensi', 'Lembur', 'Tasks', 'Activities', 'Monitoring', 'Reports', 'Assets',
   'WorkerAnalytics', 'TeamAnalytics', 'PlantSeeds', 'PruningReviewQueue', 'Perantingan',
 ]);
 

@@ -12,7 +12,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { CLOCKABLE_ROLES, TASK_RECEIVERS } from '../../constants/roles';
 import { LoadingSpinner, AppUpdateBanner } from '../../components/common';
-import { NBAlert, NBBackgroundPattern, NBButton, NBText } from '../../components/nb';
+import { NBAlert, NBBackgroundPattern, NBBadge, NBButton, NBText } from '../../components/nb';
 import { ShiftDetailModal, TodayActivitiesModal, TodayWorkHoursModal, TodayTasksModal, LocationMapModal } from '../../components/modals';
 import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
 import { HomeSectionDivider } from '../../components/home/HomeSectionDivider';
@@ -23,7 +23,7 @@ import { shiftsApi, activitiesApi, tasksApi } from '../../services/api';
 import { setCurrentShift, setShiftHistory, setError } from '../../store/slices/shiftSlice';
 import { setActivities } from '../../store/slices/activitiesSlice';
 import { setTasks } from '../../store/slices/tasksSlice';
-import { formatTime, calculateDuration, isToday } from '../../utils/dateUtils';
+import { formatTime, calculateDuration, isToday, isClockInLate } from '../../utils/dateUtils';
 import { isTaskScopedToday } from '../../utils/taskStatus';
 import { useLocationPermission } from '../../hooks';
 import { useHomeLocation } from '../../hooks/useHomeLocation';
@@ -101,6 +101,25 @@ export function FieldHomeScreen(): React.JSX.Element {
     const list = Array.isArray(shiftHistory) ? shiftHistory : [];
     return list.filter((shift) => isToday(shift.clock_in_time));
   }, [shiftHistory]);
+
+  // Today's attendance summary for the hero: first clock-in, last clock-out, and
+  // a late flag (first clock-in after the scheduled shift start). todayShifts is
+  // sorted clock_in DESC, so the earliest is the last element.
+  const attendance = useMemo(() => {
+    const earliest = todayShifts.length ? todayShifts[todayShifts.length - 1] : currentShift;
+    const firstClockIn = earliest?.clock_in_time ?? currentShift?.clock_in_time;
+    const lastClockOut = todayShifts.reduce<string | undefined>((latest, s) => {
+      if (!s.clock_out_time) return latest;
+      return !latest || s.clock_out_time > latest ? s.clock_out_time : latest;
+    }, currentShift?.clock_out_time);
+    const scheduledStart =
+      earliest?.shift_definition?.start_time ?? currentShift?.shift_definition?.start_time;
+    return {
+      firstClockIn,
+      lastClockOut,
+      isLate: !currentShift?.is_overtime && isClockInLate(firstClockIn, scheduledStart),
+    };
+  }, [todayShifts, currentShift]);
 
   // "Tugas hari ini" — all statuses, scoped to today (deadline, created_at,
   // or completed_at falls today). Shared with the Monitoring user detail sheet
@@ -231,7 +250,7 @@ export function FieldHomeScreen(): React.JSX.Element {
     if (currentShift?.is_overtime) {
       navigation.navigate('OvertimeSubmit' as never);
     } else {
-      navigation.navigate('Absensi' as never, { initialTab: 'absensi' } as never);
+      navigation.navigate('Absensi' as never);
     }
   };
 
@@ -333,16 +352,21 @@ export function FieldHomeScreen(): React.JSX.Element {
                   <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroLabel}>
                     {currentShift.is_overtime ? 'Lembur aktif' : 'Sedang bertugas'}
                   </NBText>
-                  <NBText
-                    variant="display"
-                    color="black"
-                    style={styles.heroClock}
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
-                    accessibilityLabel={`Waktu shift berjalan: ${timer}`}
-                  >
-                    {timer}
-                  </NBText>
+                  <View style={styles.heroTimes}>
+                    <View style={styles.heroTimeStat}>
+                      <NBText variant="caption" color="gray600" uppercase>Masuk</NBText>
+                      <View style={styles.heroTimeValueRow}>
+                        <NBText variant="h2" color="black">{formatTime(attendance.firstClockIn ?? '')}</NBText>
+                        {attendance.isLate && <NBBadge text="Terlambat" color="danger" size="sm" />}
+                      </View>
+                    </View>
+                    <View style={styles.heroTimeStat}>
+                      <NBText variant="caption" color="gray600" uppercase>Keluar</NBText>
+                      <NBText variant="h2" color="black">
+                        {attendance.lastClockOut ? formatTime(attendance.lastClockOut) : '—'}
+                      </NBText>
+                    </View>
+                  </View>
                 </View>
                 <View style={styles.heroTopRight}>
                   <TouchableOpacity
@@ -366,6 +390,14 @@ export function FieldHomeScreen(): React.JSX.Element {
                 <>
                   <NBText variant="mono-sm" color="gray700" style={styles.heroMeta}>
                     {`Mulai ${formatTime(currentShift.clock_in_time)} · ${heroAreaName}`}
+                  </NBText>
+                  <NBText
+                    variant="mono-sm"
+                    color="gray700"
+                    style={styles.heroMeta}
+                    accessibilityLabel={`Waktu shift berjalan: ${timer}`}
+                  >
+                    {`Berjalan ${timer}`}
                   </NBText>
                   {/* Current GPS + force-refresh (force-uploads the location). */}
                   <View style={styles.heroGpsRow}>
@@ -539,10 +571,10 @@ const styles = StyleSheet.create({
   heroTopRight: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs },
   heroChevron: { marginTop: 1 },
   heroLabel: { letterSpacing: 0.6, marginBottom: 2 },
-  // Smaller than the display default (40) so "HH:MM:SS" stays on one line next
-  // to the status pill + chevron on narrow phones (one-off; adjustsFontSizeToFit
-  // shrinks further if needed). Applies to both collapsed + expanded states.
-  heroClock: { fontSize: 34, lineHeight: 38, letterSpacing: 0.5 },
+  // Collapsed hero: first clock-in (Masuk) + last clock-out (Keluar) side by side.
+  heroTimes: { flexDirection: 'row', gap: nbSpacing.lg, marginTop: nbSpacing.xs },
+  heroTimeStat: { gap: 2 },
+  heroTimeValueRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs },
   heroMeta: { marginTop: nbSpacing.sm },
   heroIdleTitle: { marginTop: 2 },
   // Plain inline coords (no card) + a compact white refresh button right after.

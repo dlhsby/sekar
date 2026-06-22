@@ -402,48 +402,42 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
   });
 
   describe('Phase 2C UX Improvements', () => {
-    it('should inject back button into navigator header on mount', async () => {
-      // Back button is injected via navigation.setOptions() into the navigator header,
-      // which is managed by MainNavigator (not rendered in screen body).
-      // In unit tests the header is not mounted, so we verify the screen renders
-      // without errors and the time hero is visible (collapsed by default).
+    it('should render the merged time+area card on mount', async () => {
+      // The back button is injected via navigation.setOptions() into the navigator
+      // header (not rendered in the screen body in unit tests). Here we verify the
+      // merged time+area card renders: the time header and the assigned-area name.
       const store = createMockStore();
       const { getByText } = renderScreen(store);
 
-      // Time hero is collapsed by default — expand it to see subtitle
       await waitFor(() => { expect(getByText(/\d{2}:\d{2}/)).toBeTruthy(); });
-      fireEvent.press(getByText(/\d{2}:\d{2}/));
-      await waitFor(() => {
-        expect(getByText('Ambil foto diri dan konfirmasi lokasi untuk memulai shift')).toBeTruthy();
-      });
+      // Merged card is expanded by default → the "Area Ditugaskan" section is visible.
+      await waitFor(() => { expect(getByText('Area Ditugaskan')).toBeTruthy(); });
     });
 
-    it('should show area card collapsed by default', async () => {
+    it('shows the merged time+area card expanded by default', async () => {
       const store = createMockStore();
-      const { getByText, queryByText } = renderScreen(store);
+      const { getByText } = renderScreen(store);
 
       await waitFor(() => {
-        // Area name visible (always shown in collapsible header)
-        expect(getByText('Taman Bungkul')).toBeTruthy();
+        expect(getByText('Area Ditugaskan')).toBeTruthy();
       });
-
-      // Area details hidden by default (collapsed)
-      expect(queryByText('Tipe Area:')).toBeNull();
+      // Area details are visible by default (defaultExpanded).
+      expect(getByText('Tipe Area:')).toBeTruthy();
     });
 
-    it('should expand area card on press', async () => {
+    it('collapses the merged time+area card on press', async () => {
       const store = createMockStore();
-      const { getByText, getByLabelText } = renderScreen(store);
-
-      await waitFor(() => {
-        expect(getByText('Taman Bungkul')).toBeTruthy();
-      });
-
-      // Expand the card
-      fireEvent.press(getByLabelText('Detail area'));
+      const { getByText, getByLabelText, queryByText } = renderScreen(store);
 
       await waitFor(() => {
         expect(getByText('Tipe Area:')).toBeTruthy();
+      });
+
+      // Tap the card header to collapse it.
+      fireEvent.press(getByLabelText('Waktu dan area ditugaskan'));
+
+      await waitFor(() => {
+        expect(queryByText('Tipe Area:')).toBeNull();
       });
     });
 
@@ -725,12 +719,6 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       // Clock Out button should be present
       await waitFor(() => {
         expect(getByText('Clock Out')).toBeTruthy();
-      });
-
-      // Expand time hero to see subtitle (first \d{2}:\d{2} match is the time hero)
-      fireEvent.press(getAllByText(/\d{2}:\d{2}/)[0]);
-      await waitFor(() => {
-        expect(getByText('Konfirmasi lokasi untuk mengakhiri shift')).toBeTruthy();
       });
 
       fireEvent.press(getByText('Clock Out'));

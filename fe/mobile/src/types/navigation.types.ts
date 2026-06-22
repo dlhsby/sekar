@@ -47,7 +47,8 @@ export type MainTabParamList = {
   Menu: undefined;
   Profile: undefined;
   // Feature screens — reached from the Menu launcher (registered as hidden tab screens)
-  Absensi: { initialTab?: 'absensi' | 'lembur' } | undefined; // clock in/out + overtime tabs
+  Absensi: undefined;                // clock in/out page
+  Lembur: undefined;                 // overtime list page
   Tasks: undefined;                  // standalone tasks list (split from TasksActivities)
   Activities: undefined;             // standalone activities list (split from TasksActivities)
   Monitoring: undefined;

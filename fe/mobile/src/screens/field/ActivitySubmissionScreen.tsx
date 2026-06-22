@@ -130,7 +130,7 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
 
   const onSubmit = useCallback(() => {
     handleSubmit(
-      () => navigation.navigate('Absensi', { initialTab: 'absensi' }),
+      () => navigation.navigate('Absensi'),
       () => navigation.navigate('Activities'),
       () => scrollViewRef.current?.scrollTo({ y: 0, animated: true }),
     );

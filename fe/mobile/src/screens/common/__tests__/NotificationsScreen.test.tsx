@@ -62,7 +62,7 @@ describe('NotificationsScreen', () => {
   // loop inbox⇄detail.
   it('routes hardware back to the originating tab', async () => {
     mockRouteParams = { origin: 'Monitoring' };
-    mockGetNotifications.mockResolvedValue({ data: { data: [] } });
+    mockGetNotifications.mockResolvedValue({ data: [] });
     let captured: (() => boolean) | undefined;
     const spy = jest
       .spyOn(BackHandler, 'addEventListener')
@@ -82,7 +82,7 @@ describe('NotificationsScreen', () => {
   });
 
   it('routes hardware back to Home when there is no origin', async () => {
-    mockGetNotifications.mockResolvedValue({ data: { data: [] } });
+    mockGetNotifications.mockResolvedValue({ data: [] });
     let captured: (() => boolean) | undefined;
     const spy = jest
       .spyOn(BackHandler, 'addEventListener')
@@ -102,12 +102,10 @@ describe('NotificationsScreen', () => {
 
   it('fetches and renders notifications list', async () => {
     mockGetNotifications.mockResolvedValue({
-      data: {
-        data: [
+      data: [
           makeNotification({ id: 'a', title: 'Tugas A' }),
           makeNotification({ id: 'b', title: 'Tugas B', read: true }),
         ],
-      },
     });
     const { findByTestId, getByText } = render(
       <Provider store={makeStore()}>
@@ -120,7 +118,7 @@ describe('NotificationsScreen', () => {
   });
 
   it('shows empty state when there are no notifications', async () => {
-    mockGetNotifications.mockResolvedValue({ data: { data: [] } });
+    mockGetNotifications.mockResolvedValue({ data: [] });
     const { findByTestId } = render(
       <Provider store={makeStore()}>
         <NotificationsScreen />
@@ -131,11 +129,9 @@ describe('NotificationsScreen', () => {
 
   it('marks as read and deep-links to TaskDetail on row press', async () => {
     mockGetNotifications.mockResolvedValue({
-      data: {
-        data: [
+      data: [
           makeNotification({ id: 'x', data: { task_id: 'task-42' } }),
         ],
-      },
     });
     const { findByTestId } = render(
       <Provider store={makeStore()}>
@@ -153,11 +149,9 @@ describe('NotificationsScreen', () => {
 
   it('deep-links to PruningDetail when pruning_request_id is present', async () => {
     mockGetNotifications.mockResolvedValue({
-      data: {
-        data: [
+      data: [
           makeNotification({ id: 'p', data: { pruning_request_id: 'pr-7' } }),
         ],
-      },
     });
     const { findByTestId } = render(
       <Provider store={makeStore()}>
@@ -175,9 +169,7 @@ describe('NotificationsScreen', () => {
 
   it('shows mark-all-read action when there are unread items and triggers it', async () => {
     mockGetNotifications.mockResolvedValue({
-      data: {
-        data: [makeNotification({ id: 'u-a' }), makeNotification({ id: 'u-b' })],
-      },
+      data: [makeNotification({ id: 'u-a' }), makeNotification({ id: 'u-b' })],
     });
     const { findByTestId } = render(
       <Provider store={makeStore()}>
@@ -191,14 +183,12 @@ describe('NotificationsScreen', () => {
 
   it('filters the list by category chip', async () => {
     mockGetNotifications.mockResolvedValue({
-      data: {
-        data: [
+      data: [
           makeNotification({ id: 't1', type: 'task_assigned' }),
           makeNotification({ id: 'a1', type: 'activity_approved' }),
           makeNotification({ id: 'o1', type: 'overtime_approved' }),
           makeNotification({ id: 's1', type: 'shift_reminder' }),
         ],
-      },
     });
     const { findByTestId, queryByTestId } = render(
       <Provider store={makeStore()}>
@@ -224,7 +214,7 @@ describe('NotificationsScreen', () => {
 
   it('shows the empty state when the active category has no notifications', async () => {
     mockGetNotifications.mockResolvedValue({
-      data: { data: [makeNotification({ id: 't1', type: 'task_assigned' })] },
+      data: [makeNotification({ id: 't1', type: 'task_assigned' })],
     });
     const { findByTestId, queryByTestId, getByText } = render(
       <Provider store={makeStore()}>

@@ -50,9 +50,9 @@ describe('MenuScreen', () => {
 
   it('navigates to the item route (with params) when a tile is tapped', () => {
     const { getByTestId, navigate } = renderMenu('kepala_rayon');
-    // Lembur tile carries the { initialTab: 'lembur' } param on the Absensi route.
-    fireEvent.press(getByTestId('menu-Absensi-Lembur'));
-    expect(navigate).toHaveBeenCalledWith('Absensi', { initialTab: 'lembur' });
+    // Lembur tile navigates to its own Lembur page.
+    fireEvent.press(getByTestId('menu-Lembur-Lembur'));
+    expect(navigate).toHaveBeenCalledWith('Lembur', undefined);
   });
 
   it('navigates with undefined params for paramless items', () => {

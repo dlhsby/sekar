@@ -20,7 +20,7 @@ import { FieldHomeHeader } from '../components/navigation/FieldHomeHeader';
 // Field screens (clockable roles)
 import { HomeScreen } from '../screens/home/HomeScreen';
 import { MenuScreen } from '../screens/menu/MenuScreen';
-import { AbsensiScreen } from '../screens/absensi/AbsensiScreen';
+import { ClockInOutScreen } from '../screens/field/ClockInOutScreen';
 import { ActivitySubmissionScreen } from '../screens/field/ActivitySubmissionScreen';
 import { TasksScreen, ActivitiesScreen } from '../screens/taskActivity';
 import { TaskDetailScreen } from '../screens/field/TaskDetailScreen';
@@ -37,7 +37,8 @@ import { NotificationPreferencesScreen } from '../screens/common/NotificationPre
 import { EditProfileScreen } from '../screens/common/EditProfileScreen';
 import { DiagnosticsScreen } from '../screens/common/DiagnosticsScreen';
 
-// Overtime screens (OvertimeListScreen is embedded inside AbsensiScreen, not registered here)
+// Overtime screens
+import { OvertimeListScreen } from '../screens/overtime/OvertimeListScreen';
 import { OvertimeSubmitScreen } from '../screens/overtime/OvertimeSubmitScreen';
 import { OvertimeDetailScreen } from '../screens/overtime/OvertimeDetailScreen';
 
@@ -287,7 +288,8 @@ function TabNavigator(): React.JSX.Element {
       />
 
       {/* Feature screens — reached from the Menu launcher (hidden from the bar) */}
-      <Tab.Screen name="Absensi" component={AbsensiScreen} options={featureScreen('Absensi')} />
+      <Tab.Screen name="Absensi" component={ClockInOutScreen} options={featureScreen('Absensi')} />
+      <Tab.Screen name="Lembur" component={OvertimeListScreen} options={featureScreen('Lembur')} />
       <Tab.Screen name="Tasks" component={TasksScreen} options={featureScreen('Tugas')} />
       <Tab.Screen name="Activities" component={ActivitiesScreen} options={featureScreen('Aktivitas')} />
       <Tab.Screen name="Monitoring" component={MapDashboardScreen} options={featureScreen('Monitoring')} />
@@ -392,7 +394,7 @@ function TabNavigator(): React.JSX.Element {
         name="OvertimeDetail"
         component={OvertimeDetailScreen}
         options={({ navigation }) => ({
-          headerTitle: () => <FieldHomeHeader title="Detail Lembur" onBack={() => navigation.navigate('Absensi', { initialTab: 'lembur' })} />,
+          headerTitle: () => <FieldHomeHeader title="Detail Lembur" onBack={() => navigation.navigate('Lembur')} />,
           tabBarButton: () => null,
         })}
       />
