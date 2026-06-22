@@ -33,7 +33,7 @@ function formatTimeHero(d: Date): string {
 }
 
 function formatDateHero(d: Date): string {
-  return `${DAY_NAMES_ID[d.getDay()]}, ${d.getDate()} ${MONTH_NAMES_ID[d.getMonth()]}`;
+  return `${DAY_NAMES_ID[d.getDay()]}, ${d.getDate()} ${MONTH_NAMES_ID[d.getMonth()]} ${d.getFullYear()}`;
 }
 
 /**
@@ -176,11 +176,14 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             }
             accessibilityLabel="Informasi kehadiran"
           >
-            {/* Date + current time (time stays bold) */}
+            {/* Current date + time as one labeled row (time stays bold) */}
             <View style={styles.infoRow}>
-              <NBText variant="body-sm" color="gray600">{formatDateHero(currentTime)}</NBText>
-              <NBText variant="h2" color="black" style={styles.timeHeroTime}>
-                {formatTimeHero(currentTime)}
+              <NBText variant="body-sm" color="gray600">Waktu Sekarang:</NBText>
+              <NBText variant="body" color="black" style={styles.infoValue}>
+                {formatDateHero(currentTime)}{' '}
+                <NBText variant="body" color="black" style={styles.waktuTime}>
+                  {formatTimeHero(currentTime)}
+                </NBText>
               </NBText>
             </View>
             {/* Scheduled shift (when a schedule is known) */}
@@ -391,6 +394,9 @@ const styles = StyleSheet.create({
   infoValue: {
     flexShrink: 1,
     textAlign: 'right',
+  },
+  waktuTime: {
+    fontWeight: '700',
   },
   gpsCard: {
     backgroundColor: nbColors.statusIdleBg,
