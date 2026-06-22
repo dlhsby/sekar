@@ -425,7 +425,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       // Title is visible…
       await waitFor(() => { expect(getByText('Informasi Kehadiran')).toBeTruthy(); });
       // …but the date/time + area details are hidden until expanded.
-      expect(queryByText('Tipe Area:')).toBeNull();
+      expect(queryByText('Tipe Area')).toBeNull();
     });
 
     it('expands the Informasi Kehadiran card on press', async () => {
@@ -438,7 +438,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       fireEvent.press(getByLabelText('Informasi kehadiran'));
 
       await waitFor(() => {
-        expect(getByText('Tipe Area:')).toBeTruthy();
+        expect(getByText('Tipe Area')).toBeTruthy();
       });
     });
 

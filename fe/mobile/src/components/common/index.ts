@@ -19,3 +19,4 @@ export { ImagePreviewModal, type ImagePreviewModalProps } from './ImagePreviewMo
 export { ListItemCard, type ListItemCardProps, type ListItemMeta } from './ListItemCard';
 export { PhotoGridSection, type PhotoGridSectionProps } from './PhotoGridSection';
 export { DetailRow, type DetailRowProps, type NBTextColor } from './DetailRow';
+export { InfoTableRow, type InfoTableRowProps } from './InfoTableRow';

@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { GPSLocationSection, ImagePreviewModal } from '../../components/common';
+import { GPSLocationSection, ImagePreviewModal, InfoTableRow } from '../../components/common';
 import { useNavigation } from '@react-navigation/native';
 import { NBButton, NBBackgroundPattern, NBText, NBAlert, NBBadge, NBCollapsibleCard } from '../../components/nb';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
@@ -176,64 +176,40 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             }
             accessibilityLabel="Informasi kehadiran"
           >
-            {/* Current date + time as one labeled row (time stays bold) */}
-            <View style={styles.infoRow}>
-              <NBText variant="body-sm" color="gray600">Waktu Sekarang:</NBText>
-              <NBText variant="body" color="black" style={styles.infoValue}>
-                {formatDateHero(currentTime)}{' '}
-                <NBText variant="body" color="black" style={styles.waktuTime}>
-                  {formatTimeHero(currentTime)}
-                </NBText>
-              </NBText>
+            <View style={styles.infoTable}>
+              <InfoTableRow
+                label="Waktu Sekarang"
+                value={`${formatDateHero(currentTime)} ${formatTimeHero(currentTime)}`}
+              />
+              {scheduledShift && (
+                <InfoTableRow
+                  label="Jadwal Shift"
+                  value={`${scheduledShift.name} · ${scheduledShift.start_time.slice(0, 5)}–${scheduledShift.end_time.slice(0, 5)}`}
+                />
+              )}
+              {assignedArea ? (
+                <>
+                  <InfoTableRow label="Area Ditugaskan" value={assignedArea.name} />
+                  {assignedArea.address ? (
+                    <InfoTableRow label="Alamat" value={assignedArea.address} numberOfLines={2} />
+                  ) : null}
+                  <InfoTableRow label="Tipe Area" value={assignedArea.area_type?.name || 'N/A'} />
+                  {assignedArea.gps_lat != null && assignedArea.gps_lng != null && (
+                    <InfoTableRow
+                      label="Koordinat GPS"
+                      value={`${Number(assignedArea.gps_lat).toFixed(6)}, ${Number(assignedArea.gps_lng).toFixed(6)}`}
+                    />
+                  )}
+                  {assignedArea.radius_meters != null && (
+                    <InfoTableRow label="Radius Batas" value={`${assignedArea.radius_meters}m`} />
+                  )}
+                </>
+              ) : isRayonScoped ? (
+                <InfoTableRow label="Cakupan Rayon" value="Tanpa area spesifik" />
+              ) : (
+                <NBText variant="body-sm" color="gray600">Belum ada area ditugaskan</NBText>
+              )}
             </View>
-            {/* Scheduled shift (when a schedule is known) */}
-            {scheduledShift && (
-              <View style={styles.infoRow}>
-                <NBText variant="body-sm" color="gray600">Jadwal Shift:</NBText>
-                <NBText variant="body" color="black">
-                  {scheduledShift.name} · {scheduledShift.start_time.slice(0, 5)}–{scheduledShift.end_time.slice(0, 5)}
-                </NBText>
-              </View>
-            )}
-            {assignedArea ? (
-              <>
-                <View style={styles.infoRow}>
-                  <NBText variant="body-sm" color="gray600">Area Ditugaskan:</NBText>
-                  <NBText variant="body" color="black">{assignedArea.name}</NBText>
-                </View>
-                {assignedArea.address ? (
-                  <View style={styles.infoRow}>
-                    <NBText variant="body-sm" color="gray600">Alamat:</NBText>
-                    <NBText variant="body" color="black" style={styles.infoValue}>{assignedArea.address}</NBText>
-                  </View>
-                ) : null}
-                <View style={styles.infoRow}>
-                  <NBText variant="body-sm" color="gray600">Tipe Area:</NBText>
-                  <NBText variant="body" color="black">{assignedArea.area_type?.name || 'N/A'}</NBText>
-                </View>
-                {assignedArea.gps_lat != null && assignedArea.gps_lng != null && (
-                  <View style={styles.infoRow}>
-                    <NBText variant="body-sm" color="gray600">Koordinat GPS:</NBText>
-                    <NBText variant="body" color="black">
-                      {Number(assignedArea.gps_lat).toFixed(6)}, {Number(assignedArea.gps_lng).toFixed(6)}
-                    </NBText>
-                  </View>
-                )}
-                {assignedArea.radius_meters != null && (
-                  <View style={styles.infoRow}>
-                    <NBText variant="body-sm" color="gray600">Radius Batas:</NBText>
-                    <NBText variant="body" color="black">{assignedArea.radius_meters}m</NBText>
-                  </View>
-                )}
-              </>
-            ) : isRayonScoped ? (
-              <View style={styles.infoRow}>
-                <NBText variant="body-sm" color="gray600">Cakupan Rayon:</NBText>
-                <NBText variant="body" color="black">Tanpa area spesifik</NBText>
-              </View>
-            ) : (
-              <NBText variant="body-sm" color="gray600">Belum ada area ditugaskan</NBText>
-            )}
           </NBCollapsibleCard>
 
           {/* GPS / Location Card — above selfie; collapsed by default */}
@@ -415,6 +391,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: nbSpacing.xs,
+  },
+  infoTable: {
+    gap: nbSpacing.sm,
   },
   errorText: {
     marginBottom: nbSpacing.sm,

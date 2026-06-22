@@ -11,7 +11,7 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { CLOCKABLE_ROLES, TASK_RECEIVERS } from '../../constants/roles';
-import { LoadingSpinner, AppUpdateBanner } from '../../components/common';
+import { LoadingSpinner, AppUpdateBanner, InfoTableRow } from '../../components/common';
 import { NBAlert, NBBackgroundPattern, NBBadge, NBButton, NBText } from '../../components/nb';
 import { ShiftDetailModal, TodayActivitiesModal, TodayWorkHoursModal, TodayTasksModal, LocationMapModal } from '../../components/modals';
 import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
@@ -390,54 +390,39 @@ export function FieldHomeScreen(): React.JSX.Element {
               </View>
               {shiftExpanded && (
                 <View style={styles.heroDetails}>
-                  <View style={styles.heroRow}>
-                    <NBText variant="body-sm" color="gray600">Mulai clock in</NBText>
-                    <NBText variant="body-sm" color="black">{formatTime(currentShift.clock_in_time)}</NBText>
-                  </View>
-                  <View style={styles.heroRow}>
-                    <NBText variant="body-sm" color="gray600">Area Ditugaskan</NBText>
-                    <NBText variant="body-sm" color="black" numberOfLines={1} style={styles.heroRowValue}>
-                      {heroAreaName}
-                    </NBText>
-                  </View>
-                  <View style={styles.heroRow}>
-                    <NBText variant="body-sm" color="gray600">Durasi shift berjalan</NBText>
-                    <NBText
-                      variant="body-sm"
-                      color="black"
-                      accessibilityLabel={`Durasi shift berjalan: ${timer}`}
-                    >
-                      {timer.slice(0, 5)}
-                    </NBText>
-                  </View>
-                  <View style={styles.heroRow}>
-                    <NBText variant="body-sm" color="gray600">Lokasi sekarang</NBText>
-                    <View style={styles.heroLocValue}>
-                      <NBText variant="mono-sm" color="black" numberOfLines={1} style={styles.heroLocText}>
-                        {homeLocation.latitude !== null && homeLocation.longitude !== null
-                          ? `${homeLocation.latitude.toFixed(5)}, ${homeLocation.longitude.toFixed(5)}${
-                              homeLocation.accuracy !== null ? ` ±${Math.round(homeLocation.accuracy)}m` : ''
-                            }`
-                          : homeLocation.loading
-                          ? 'Mencari lokasi…'
-                          : 'Lokasi tidak tersedia'}
-                      </NBText>
-                      <TouchableOpacity
-                        onPress={refreshLocation}
-                        disabled={homeLocation.loading}
-                        style={styles.heroGpsRefresh}
-                        accessibilityRole="button"
-                        accessibilityLabel="Perbarui lokasi"
-                        testID="hero-refresh-location"
-                      >
-                        {homeLocation.loading ? (
-                          <ActivityIndicator size="small" color={nbColors.black} />
-                        ) : (
-                          <MaterialCommunityIcons name="refresh" size={18} color={nbColors.black} />
-                        )}
-                      </TouchableOpacity>
-                    </View>
-                  </View>
+                  <InfoTableRow label="Mulai clock in" value={formatTime(currentShift.clock_in_time)} />
+                  <InfoTableRow label="Area Ditugaskan" value={heroAreaName} numberOfLines={1} />
+                  <InfoTableRow label="Durasi shift berjalan" value={timer.slice(0, 5)} />
+                  <InfoTableRow
+                    label="Lokasi sekarang"
+                    value={
+                      <>
+                        <NBText variant="mono-sm" color="black" numberOfLines={1} style={styles.heroLocText}>
+                          {homeLocation.latitude !== null && homeLocation.longitude !== null
+                            ? `${homeLocation.latitude.toFixed(5)}, ${homeLocation.longitude.toFixed(5)}${
+                                homeLocation.accuracy !== null ? ` ±${Math.round(homeLocation.accuracy)}m` : ''
+                              }`
+                            : homeLocation.loading
+                            ? 'Mencari lokasi…'
+                            : 'Lokasi tidak tersedia'}
+                        </NBText>
+                        <TouchableOpacity
+                          onPress={refreshLocation}
+                          disabled={homeLocation.loading}
+                          style={styles.heroGpsRefresh}
+                          accessibilityRole="button"
+                          accessibilityLabel="Perbarui lokasi"
+                          testID="hero-refresh-location"
+                        >
+                          {homeLocation.loading ? (
+                            <ActivityIndicator size="small" color={nbColors.black} />
+                          ) : (
+                            <MaterialCommunityIcons name="refresh" size={18} color={nbColors.black} />
+                          )}
+                        </TouchableOpacity>
+                      </>
+                    }
+                  />
                   <TouchableOpacity
                     onPress={() => setDetailShift(currentShift)}
                     activeOpacity={0.7}
