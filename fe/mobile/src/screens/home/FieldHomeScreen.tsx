@@ -348,44 +348,41 @@ export function FieldHomeScreen(): React.JSX.Element {
               accessibilityHint={shiftExpanded ? 'Ketuk untuk tutup detail' : 'Ketuk untuk buka detail'}
             >
               <View style={styles.heroTopRow}>
-                <View style={styles.heroClockArea}>
-                  <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroLabel}>
-                    {currentShift.is_overtime ? 'Lembur aktif' : 'Sedang bertugas'}
-                  </NBText>
-                  <View style={styles.heroTimes}>
-                    <View style={styles.heroTimeStat}>
-                      <NBText variant="caption" color="gray600" uppercase>Masuk</NBText>
-                      <View style={styles.heroTimeValueRow}>
-                        <NBText variant="h2" color="black">{formatTime(attendance.firstClockIn ?? '')}</NBText>
-                        {attendance.isLate && <NBBadge text="Terlambat" color="danger" size="sm" />}
-                      </View>
-                    </View>
-                    <View style={styles.heroTimeStat}>
-                      <NBText variant="caption" color="gray600" uppercase>Keluar</NBText>
-                      <NBText variant="h2" color="black">
-                        {attendance.lastClockOut ? formatTime(attendance.lastClockOut) : '-'}
-                      </NBText>
-                    </View>
+                <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroLabel}>
+                  {currentShift.is_overtime ? 'Lembur aktif' : 'Sedang bertugas'}
+                </NBText>
+                <View style={styles.heroStatusRow}>
+                  <TouchableOpacity
+                    onPress={() => setLocationMapVisible(true)}
+                    disabled={!hasActiveShift}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Status lokasi: ${areaLabel}. Ketuk untuk peta.`}
+                  >
+                    <StatusPill tone={areaTone} label={areaLabel} />
+                  </TouchableOpacity>
+                  <MaterialCommunityIcons
+                    name={shiftExpanded ? 'chevron-up' : 'chevron-down'}
+                    size={24}
+                    color={nbColors.gray700}
+                    style={styles.heroChevron}
+                  />
+                </View>
+              </View>
+              {/* Masuk (far left) ↔ Keluar (far right), full card width. */}
+              <View style={styles.heroTimes}>
+                <View style={styles.heroTimeStat}>
+                  <NBText variant="caption" color="gray600" uppercase>Masuk</NBText>
+                  <View style={styles.heroTimeValueRow}>
+                    <NBText variant="h2" color="black">{formatTime(attendance.firstClockIn ?? '')}</NBText>
+                    {attendance.isLate && <NBBadge text="Terlambat" color="danger" size="sm" />}
                   </View>
                 </View>
-                <View style={styles.heroTopRight}>
-                  <View style={styles.heroStatusRow}>
-                    <TouchableOpacity
-                      onPress={() => setLocationMapVisible(true)}
-                      disabled={!hasActiveShift}
-                      activeOpacity={0.7}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Status lokasi: ${areaLabel}. Ketuk untuk peta.`}
-                    >
-                      <StatusPill tone={areaTone} label={areaLabel} />
-                    </TouchableOpacity>
-                    <MaterialCommunityIcons
-                      name={shiftExpanded ? 'chevron-up' : 'chevron-down'}
-                      size={24}
-                      color={nbColors.gray700}
-                      style={styles.heroChevron}
-                    />
-                  </View>
+                <View style={[styles.heroTimeStat, styles.heroTimeStatEnd]}>
+                  <NBText variant="caption" color="gray600" uppercase>Keluar</NBText>
+                  <NBText variant="h2" color="black">
+                    {attendance.lastClockOut ? formatTime(attendance.lastClockOut) : '—'}
+                  </NBText>
                 </View>
               </View>
               {shiftExpanded && (
@@ -571,9 +568,15 @@ const styles = StyleSheet.create({
   heroChevron: { marginTop: 1 },
   heroLabel: { letterSpacing: 0.6, marginBottom: 2 },
   // Collapsed hero: first clock-in (Masuk) + last clock-out (Keluar) side by side.
-  // Masuk / Keluar split the clock area evenly (justified, proportional).
-  heroTimes: { flexDirection: 'row', marginTop: nbSpacing.xs },
-  heroTimeStat: { flex: 1, gap: 2 },
+  // Masuk hugs the left, Keluar hugs the right, full card width between them.
+  heroTimes: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginTop: nbSpacing.sm,
+  },
+  heroTimeStat: { gap: 2 },
+  heroTimeStatEnd: { alignItems: 'flex-end' },
   heroTimeValueRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs },
   heroMeta: { marginTop: nbSpacing.sm },
   // Expanded hero: label:value table rows.

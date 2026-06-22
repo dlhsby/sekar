@@ -9,8 +9,9 @@ import type { UserRole } from '../types/user.types';
 import type { MenuSection } from '../types/menu.types';
 
 // Reusable tiles (icons match the names previously used in TAB_CONFIGS).
-const ABSENSI = { route: 'Absensi', label: 'Kehadiran', icon: 'clock-outline', illustration: 'illo-shifts' } as const;
-const LEMBUR = { route: 'Lembur', label: 'Lembur', icon: 'clock-plus-outline', illustration: 'illo-shifts' } as const;
+// Distinct icons (no shared illustration): attendance = clock-check, overtime = clock-plus.
+const ABSENSI = { route: 'Absensi', label: 'Kehadiran', icon: 'clock-check-outline' } as const;
+const LEMBUR = { route: 'Lembur', label: 'Lembur', icon: 'clock-plus-outline' } as const;
 const TUGAS = { route: 'Tasks', label: 'Tugas', icon: 'clipboard-list-outline' } as const;
 const AKTIVITAS = { route: 'Activities', label: 'Aktivitas', icon: 'notebook-outline' } as const;
 const ASET = { route: 'Assets', label: 'Aset', icon: 'toolbox-outline' } as const;
