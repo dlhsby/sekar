@@ -408,34 +408,34 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
   });
 
   describe('Phase 2C UX Improvements', () => {
-    it('should render the merged time+area card on mount', async () => {
+    it('should render the Informasi Kehadiran card on mount', async () => {
       // The back button is injected via navigation.setOptions() into the navigator
       // header (not rendered in the screen body in unit tests). Here we verify the
-      // merged time+area card renders its time header.
+      // attendance card renders its title.
       const store = createMockStore();
       const { getByText } = renderScreen(store);
 
-      await waitFor(() => { expect(getByText(/\d{2}:\d{2}/)).toBeTruthy(); });
+      await waitFor(() => { expect(getByText('Informasi Kehadiran')).toBeTruthy(); });
     });
 
-    it('shows the merged time+area card collapsed by default', async () => {
+    it('shows the Informasi Kehadiran card collapsed by default', async () => {
       const store = createMockStore();
       const { getByText, queryByText } = renderScreen(store);
 
-      // Time header is visible…
-      await waitFor(() => { expect(getByText(/\d{2}:\d{2}/)).toBeTruthy(); });
-      // …but the area details are hidden until expanded (default collapsed).
+      // Title is visible…
+      await waitFor(() => { expect(getByText('Informasi Kehadiran')).toBeTruthy(); });
+      // …but the date/time + area details are hidden until expanded.
       expect(queryByText('Tipe Area:')).toBeNull();
     });
 
-    it('expands the merged time+area card on press', async () => {
+    it('expands the Informasi Kehadiran card on press', async () => {
       const store = createMockStore();
       const { getByText, getByLabelText } = renderScreen(store);
 
-      await waitFor(() => { expect(getByText(/\d{2}:\d{2}/)).toBeTruthy(); });
+      await waitFor(() => { expect(getByText('Informasi Kehadiran')).toBeTruthy(); });
 
       // Tap the card header to expand it → area details become visible.
-      fireEvent.press(getByLabelText('Waktu dan area ditugaskan'));
+      fireEvent.press(getByLabelText('Informasi kehadiran'));
 
       await waitFor(() => {
         expect(getByText('Tipe Area:')).toBeTruthy();

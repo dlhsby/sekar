@@ -9,7 +9,7 @@ import Geolocation from 'react-native-geolocation-service';
 import { Alert } from 'react-native';
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { clockIn, clockOut, getCurrentShift } from '../services/api/shiftsApi';
-import { getCurrentShiftDefinition } from '../services/api/shiftDefinitionsApi';
+import { getMySchedule } from '../services/api/schedulesApi';
 import { setCurrentShift } from '../store/slices/shiftSlice';
 import { isWithinAreaBoundary } from '../utils/gpsUtils';
 import { isClockInLate } from '../utils/dateUtils';
@@ -45,16 +45,15 @@ export function useClockInOut() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isWithinBoundary, setIsWithinBoundary] = useState(false);
   const [timer, setTimer] = useState('00:00:00');
-  // The shift definition matched by current time-of-day — only needed before
-  // clock-in (clock-out reads it from currentShift.shift_definition instead).
-  const [matchedShiftDef, setMatchedShiftDef] = useState<ShiftDefinition | null>(null);
+  // The worker's ASSIGNED shift (from their roster /schedules/my) — the source of
+  // truth for "your scheduled shift", independent of what time they clock in.
+  const [assignedShiftDef, setAssignedShiftDef] = useState<ShiftDefinition | null>(null);
 
   const isClockIn = !currentShift;
 
-  // The worker's scheduled shift for this attendance: the one they clocked into
-  // (clock-out), else the time-matched current definition (clock-in).
+  // Prefer the roster assignment; fall back to the shift they clocked into.
   const scheduledShift: ShiftDefinition | null =
-    currentShift?.shift_definition ?? matchedShiftDef;
+    assignedShiftDef ?? currentShift?.shift_definition ?? null;
 
   // Late = clocked in (or, before clock-in, the current moment) after the
   // scheduled start_time. False when no schedule or for overtime shifts.
@@ -66,17 +65,14 @@ export function useClockInOut() {
     return isClockInLate(reference, scheduledShift.start_time);
   }, [scheduledShift, currentShift]);
 
-  // Before clock-in, fetch the shift definition matched to the current time so
-  // the screen can show the scheduled window + late indicator.
+  // Fetch the worker's assigned schedule so the screen can show the scheduled
+  // shift window + a late indicator (in both clock-in and clock-out modes).
   useEffect(() => {
-    if (!isClockIn) {
-      return;
-    }
     let active = true;
-    getCurrentShiftDefinition()
+    getMySchedule()
       .then((res) => {
-        if (active && res.data) {
-          setMatchedShiftDef(res.data);
+        if (active && res.data?.shift_definition) {
+          setAssignedShiftDef(res.data.shift_definition);
         }
       })
       .catch(() => {
@@ -85,7 +81,7 @@ export function useClockInOut() {
     return () => {
       active = false;
     };
-  }, [isClockIn]);
+  }, []);
 
   const pad = (num: number): string => String(num).padStart(2, '0');
 

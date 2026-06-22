@@ -98,7 +98,7 @@ export class Schedule {
   @ApiProperty({ type: () => ShiftDefinition, description: 'Shift definition' })
   @ManyToOne(() => ShiftDefinition, { eager: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'shift_definition_id' })
-  shiftDefinition: ShiftDefinition;
+  shift_definition: ShiftDefinition;
 
   @ApiProperty({ type: () => User, description: 'User who created this schedule' })
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })

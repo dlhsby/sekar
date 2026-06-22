@@ -56,7 +56,7 @@ describe('SchedulesController', () => {
     created_by: 'admin-uuid',
     user: mockUser as any,
     area: mockArea as any,
-    shiftDefinition: mockShiftDefinition as any,
+    shift_definition: mockShiftDefinition as any,
     created_at: new Date(),
     updated_at: new Date(),
   };

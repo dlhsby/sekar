@@ -83,7 +83,7 @@ export class SchedulesService {
       .createQueryBuilder('schedule')
       .leftJoinAndSelect('schedule.user', 'user')
       .leftJoinAndSelect('schedule.area', 'area')
-      .leftJoinAndSelect('schedule.shiftDefinition', 'shiftDefinition');
+      .leftJoinAndSelect('schedule.shift_definition', 'shift_definition');
 
     // Rayon-scoped roles see only schedules in their rayon
     if (
@@ -127,7 +127,7 @@ export class SchedulesService {
 
     const schedule = await this.scheduleRepository.findOne({
       where: { id },
-      relations: ['user', 'area', 'shiftDefinition', 'creator'],
+      relations: ['user', 'area', 'shift_definition', 'creator'],
     });
 
     if (!schedule) {
@@ -155,7 +155,7 @@ export class SchedulesService {
         effective_date: LessThanOrEqual(new Date(today)),
         end_date: Or(IsNull(), MoreThanOrEqual(new Date(today))),
       },
-      relations: ['area', 'shiftDefinition'],
+      relations: ['area', 'shift_definition'],
       order: { effective_date: 'DESC' },
     });
   }

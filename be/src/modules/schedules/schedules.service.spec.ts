@@ -71,7 +71,7 @@ describe('SchedulesService', () => {
     created_by: 'admin-uuid',
     user: mockUser,
     area: mockArea,
-    shiftDefinition: mockShiftDefinition,
+    shift_definition: mockShiftDefinition,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -156,8 +156,8 @@ describe('SchedulesService', () => {
       expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('schedule.user', 'user');
       expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('schedule.area', 'area');
       expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
-        'schedule.shiftDefinition',
-        'shiftDefinition',
+        'schedule.shift_definition',
+        'shift_definition',
       );
       expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('schedule.effective_date', 'DESC');
     });
@@ -325,7 +325,7 @@ describe('SchedulesService', () => {
       expect(result).toEqual(mockSchedule);
       expect(mockRepository.findOne).toHaveBeenCalledWith({
         where: { id: mockSchedule.id },
-        relations: ['user', 'area', 'shiftDefinition', 'creator'],
+        relations: ['user', 'area', 'shift_definition', 'creator'],
       });
     });
 
@@ -354,7 +354,7 @@ describe('SchedulesService', () => {
           effective_date: LessThanOrEqual(new Date(today)),
           end_date: Or(IsNull(), MoreThanOrEqual(new Date(today))),
         },
-        relations: ['area', 'shiftDefinition'],
+        relations: ['area', 'shift_definition'],
         order: { effective_date: 'DESC' },
       });
     });
@@ -632,7 +632,7 @@ describe('SchedulesService', () => {
       expect(result.area_id).toBe(updateDto.area_id);
       expect(repository.findOne).toHaveBeenCalledWith({
         where: { id: mockSchedule.id },
-        relations: ['user', 'area', 'shiftDefinition', 'creator'],
+        relations: ['user', 'area', 'shift_definition', 'creator'],
       });
       expect(areasService.findOne).toHaveBeenCalledWith(updateDto.area_id);
       expect(repository.save).toHaveBeenCalled();
@@ -755,7 +755,7 @@ describe('SchedulesService', () => {
 
       expect(repository.findOne).toHaveBeenCalledWith({
         where: { id: mockSchedule.id },
-        relations: ['user', 'area', 'shiftDefinition', 'creator'],
+        relations: ['user', 'area', 'shift_definition', 'creator'],
       });
       expect(repository.softDelete).toHaveBeenCalledWith(mockSchedule.id);
     });

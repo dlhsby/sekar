@@ -157,36 +157,40 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             </View>
           )}
 
-          {/* Time + Area — one card: current time/date header, assigned-area body */}
+          {/* Informasi Kehadiran — standard card: title left, status pill right;
+              date/time + schedule + area inside the body. */}
           <NBCollapsibleCard
             headerLeft={
-              <NBText variant="h2" color="black" style={styles.timeHeroTime}>
-                {formatTimeHero(currentTime)}
+              <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>
+                Informasi Kehadiran
               </NBText>
             }
             headerRight={
-              <NBText variant="mono-sm" color="gray600">{formatDateHero(currentTime)}</NBText>
+              scheduledShift ? (
+                <NBBadge
+                  text={isLate ? 'Terlambat' : 'Tepat Waktu'}
+                  color={isLate ? 'danger' : 'success'}
+                  size="sm"
+                />
+              ) : undefined
             }
-            accessibilityLabel="Waktu dan area ditugaskan"
+            accessibilityLabel="Informasi kehadiran"
           >
-            {/* Scheduled shift + late indicator (when a schedule is known) */}
+            {/* Date + current time (time stays bold) */}
+            <View style={styles.infoRow}>
+              <NBText variant="body-sm" color="gray600">{formatDateHero(currentTime)}</NBText>
+              <NBText variant="h2" color="black" style={styles.timeHeroTime}>
+                {formatTimeHero(currentTime)}
+              </NBText>
+            </View>
+            {/* Scheduled shift (when a schedule is known) */}
             {scheduledShift && (
-              <>
-                <View style={styles.infoRow}>
-                  <NBText variant="body-sm" color="gray600">Jadwal Shift:</NBText>
-                  <NBText variant="body" color="black">
-                    {scheduledShift.name} · {scheduledShift.start_time.slice(0, 5)}–{scheduledShift.end_time.slice(0, 5)}
-                  </NBText>
-                </View>
-                <View style={styles.infoRow}>
-                  <NBText variant="body-sm" color="gray600">Status Kehadiran:</NBText>
-                  <NBBadge
-                    text={isLate ? 'Terlambat' : 'Tepat Waktu'}
-                    color={isLate ? 'danger' : 'success'}
-                    size="sm"
-                  />
-                </View>
-              </>
+              <View style={styles.infoRow}>
+                <NBText variant="body-sm" color="gray600">Jadwal Shift:</NBText>
+                <NBText variant="body" color="black">
+                  {scheduledShift.name} · {scheduledShift.start_time.slice(0, 5)}–{scheduledShift.end_time.slice(0, 5)}
+                </NBText>
+              </View>
             )}
             {assignedArea ? (
               <>
