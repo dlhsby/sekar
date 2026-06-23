@@ -45,15 +45,18 @@ export function useClockInOut() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isWithinBoundary, setIsWithinBoundary] = useState(false);
   const [timer, setTimer] = useState('00:00:00');
-  // The worker's ASSIGNED shift (from their roster /schedules/my) — the source of
-  // truth for "your scheduled shift", independent of what time they clock in.
+  // The worker's ASSIGNED shift (from their roster /schedules/my) — used only as
+  // the "your scheduled shift" hint while still clocking in.
   const [assignedShiftDef, setAssignedShiftDef] = useState<ShiftDefinition | null>(null);
 
   const isClockIn = !currentShift;
 
-  // Prefer the roster assignment; fall back to the shift they clocked into.
+  // Once clocked in, the shift the worker ACTUALLY clocked into is authoritative
+  // — lateness + the shift window are judged against it, so the clock-out screen
+  // agrees with the home hero and the attendance history (which also read the
+  // shift record's definition). Before clock-in, fall back to the roster hint.
   const scheduledShift: ShiftDefinition | null =
-    assignedShiftDef ?? currentShift?.shift_definition ?? null;
+    currentShift?.shift_definition ?? assignedShiftDef ?? null;
 
   // Late = clocked in (or, before clock-in, the current moment) after the
   // scheduled start_time. False when no schedule or for overtime shifts.

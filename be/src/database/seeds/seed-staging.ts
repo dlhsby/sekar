@@ -9,10 +9,18 @@ import {
   computeCentroidFromRings,
   computeAreaM2FromRings,
   toGeoJsonGeometry,
+  surabayaOutlinePolygon,
   BUNGKUL_AREA_ID,
   DARMO_P1_AREA_ID,
   DARMO_P2_AREA_ID,
+  DARMO_P3_AREA_ID,
+  DARMO_P4_AREA_ID,
+  DARMO_P5_AREA_ID,
+  DARMO_BCA_AREA_ID,
   TAMAN_BUK_TONG_ID,
+  TAMAN_FLORA_AREA_ID,
+  TAMAN_FLORA_CENTER,
+  RAYON_TAMAN_AKTIF_OFFICE,
   type AreaDef,
   type RayonCode,
 } from './kmz-areas';
@@ -65,14 +73,15 @@ import {
  * | top_management  | top_management_1         | 081200000012   | —                                      |
  * | kepala_rayon    | kepala_rayon_pusat_1      | 081200000013   | Rayon Pusat                            |
  * | admin_data      | admin_data_pusat_1      | 081200000014   | Rayon Pusat                            |
- * | korlap          | korlap_pusat_1          | 081200000015   | All 13 areas (Bungkul + 12 pedestrian) |
- * | korlap          | korlap_pusat_2          | 081200000016   | All 13 areas (Bungkul + 12 pedestrian) |
- * | korlap          | korlap_pusat_3        | 081200000017   | Taman Bungkul only                     |
- * | satgas          | satgas_pusat_1          | 081200000018   | All 13 areas                           |
- * | satgas          | satgas_pusat_2          | 081200000019   | 12 pedestrian only (no Taman Bungkul)  |
- * | linmas          | linmas_pusat_1          | 081200000020   | All 13 areas                           |
- * | linmas          | linmas_pusat_2          | 081200000021   | Taman Bungkul only                     |
- * | satgas          | satgas_pusat_3        | 081200000022   | Taman Bungkul only                     |
+ * | korlap          | korlap_pusat_1          | 081200000015   | 12 Rayon Pusat pedestrian (Darmo P3 primary) |
+ * | korlap          | korlap_pusat_2          | 081200000016   | 12 Rayon Pusat pedestrian (Darmo P1 primary) |
+ * | korlap          | korlap_pusat_3        | 081200000017   | Darmo Pulau 2 only                     |
+ * | satgas          | satgas_pusat_1          | 081200000018   | 12 Rayon Pusat pedestrian (Darmo P1 primary) |
+ * | satgas          | satgas_pusat_2          | 081200000019   | 12 Rayon Pusat pedestrian (Darmo P2 primary) |
+ * | linmas          | linmas_pusat_1          | 081200000020   | 12 Rayon Pusat pedestrian (Darmo BCA primary) |
+ * | linmas          | linmas_pusat_2          | 081200000021   | Darmo Pulau 5 only                     |
+ * | satgas          | satgas_pusat_3        | 081200000022   | Darmo Pulau 4 only                     |
+ * | satgas          | satgas_taman_bungkul_1  | 081200000040   | Taman Bungkul (Rayon Taman Aktif)      |
  *
  * REAL USERS (all passwords: password123)
  *
@@ -84,10 +93,10 @@ import {
  * | admin_data      | ponco_adi_prabowo       | 081200000002   | Rayon Pusat                            |
  * | satgas          | rakhmat_novianto        | 087825841818   | Jl. Raya Darmo Pulau 1                 |
  * | satgas          | roy_junaidi             | 083854355341   | Jl. Raya Darmo Pulau 2                 |
- * | satgas          | edi_santoso             | 085855434561   | Taman Bungkul                          |
- * | satgas          | jihan_nabila_safitri    | 08970900786    | Taman Bungkul                          |
- * | linmas          | deni_purwanto           | 081554017822   | Taman Bungkul                          |
- * | linmas          | agus_ramadhan           | 083831353889   | Taman Bungkul                          |
+ * | satgas          | edi_santoso             | 085855434561   | Taman Bungkul (Rayon Taman Aktif)      |
+ * | satgas          | jihan_nabila_safitri    | 08970900786    | Taman Bungkul (Rayon Taman Aktif)      |
+ * | linmas          | deni_purwanto           | 081554017822   | Taman Bungkul (Rayon Taman Aktif)      |
+ * | linmas          | agus_ramadhan           | 083831353889   | Taman Bungkul (Rayon Taman Aktif)      |
  * =============================================================================
  */
 
@@ -186,7 +195,6 @@ const PUSAT_AREA_DEFS: AreaDef[] = RAYON_PUSAT_AREAS;
 const PEDESTRIAN_AREA_IDS = PUSAT_AREA_DEFS.filter((a) => a.typeCode === 'pedestrian').map(
   (a) => a.id,
 );
-const ALL_AREA_IDS = PUSAT_AREA_DEFS.map((a) => a.id);
 
 // Rayon ID → code lookup so the boundary-update loop can hit the right row.
 const RAYON_ID_BY_CODE: Record<RayonCode, string> = {
@@ -383,14 +391,14 @@ async function seedStaging() {
       [-7.2745614, 112.7579174],
     );
     // Rayon Taman Aktif has no geographic boundary — anchor its center marker
-    // on Taman Bungkul so the mobile/web rayon pin lands somewhere meaningful.
+    // on its office, which sits inside Taman Flora.
     await queryRunner.query(
       `UPDATE rayons SET center_lat = $1, center_lng = $2 WHERE code = 'TAMAN_AKTIF'`,
-      [-7.291347, 112.739764],
+      [RAYON_TAMAN_AKTIF_OFFICE.lat, RAYON_TAMAN_AKTIF_OFFICE.lng],
     );
     console.log('  ✓ 8 rayons (7 geographic + Rayon Taman Aktif logical bucket)');
     console.log('  ✓ Rayon Pusat: center (-7.2745614, 112.7579174) — office override');
-    console.log('  ✓ Rayon Taman Aktif: center anchored on Taman Bungkul');
+    console.log('  ✓ Rayon Taman Aktif: center on its office (Taman Flora)');
 
     // ============================================================
     // STEP 4b: KECAMATANS (31) — May 2026
@@ -591,6 +599,36 @@ async function seedStaging() {
       `  → ${ALL_AREA_DEFS.length} areas seeded: ${pusatSeeded} Rayon Pusat (1 park + 12 pedestrian) + ${timur2Seeded} Rayon Timur 2 (1 park 'Taman Buk Tong' + 24 pedestrian)`,
     );
 
+    // Taman Flora (Rayon Taman Aktif) — GPS pin on the park itself, but its
+    // boundary spans the whole-Surabaya outline (hull of all rayon polygons).
+    const floraPolygon = surabayaOutlinePolygon();
+    const floraRing = floraPolygon.coordinates[0].map(
+      ([lng, lat]) => [lng, lat] as [number, number],
+    );
+    await queryRunner.query(
+      `INSERT INTO areas (
+        id, name, area_type_id, gps_lat, gps_lng, radius_meters,
+        boundary_polygon, coverage_area, rayon_id, is_active
+      )
+      SELECT
+        $1, $2,
+        (SELECT id FROM area_types WHERE code = 'park' LIMIT 1),
+        $3, $4, 100,
+        $5::jsonb, $6,
+        $7, TRUE
+      ON CONFLICT (id) DO NOTHING`,
+      [
+        TAMAN_FLORA_AREA_ID,
+        'Taman Flora',
+        TAMAN_FLORA_CENTER.lat,
+        TAMAN_FLORA_CENTER.lng,
+        JSON.stringify(floraPolygon),
+        computeAreaM2FromRings([floraRing]),
+        RAYON_TAMAN_AKTIF_ID,
+      ],
+    );
+    console.log('  ✓ Taman Flora (Rayon Taman Aktif, city-wide boundary)');
+
     // ============================================================
     // STEP 9: USERS (13 test + 10 real = 23 total)
     // ============================================================
@@ -676,7 +714,9 @@ async function seedStaging() {
       RAYON_PUSAT_ID,
     );
 
-    // ── Rayon Pusat — korlap (primary area = Taman Bungkul; extras via user_areas) ──
+    // ── Rayon Pusat — korlap (primary area in Rayon Pusat; extras via user_areas) ──
+    // Taman Bungkul is Rayon Taman Aktif, so Pusat workers anchor on Darmo areas;
+    // satgas_taman_bungkul_1 covers the park.
     await insertUser(
       USER_KORLAP_PUSAT1_ID,
       'korlap_pusat_1',
@@ -684,7 +724,7 @@ async function seedStaging() {
       'korlap',
       '081200000015',
       RAYON_PUSAT_ID,
-      AREA_BUNGKUL_ID,
+      DARMO_P3_AREA_ID,
     );
     await insertUser(
       USER_KORLAP_PUSAT2_ID,
@@ -693,7 +733,7 @@ async function seedStaging() {
       'korlap',
       '081200000016',
       RAYON_PUSAT_ID,
-      AREA_BUNGKUL_ID,
+      DARMO_P1_AREA_ID,
     );
     await insertUser(
       USER_KORLAP_BUNGKUL_ID,
@@ -702,11 +742,11 @@ async function seedStaging() {
       'korlap',
       '081200000017',
       RAYON_PUSAT_ID,
-      AREA_BUNGKUL_ID,
+      DARMO_P2_AREA_ID,
     );
 
     // ── Rayon Pusat — satgas / linmas ──────────────────────────
-    // satgas_pusat_1: all 13 areas → primary = Taman Bungkul
+    // satgas_pusat_1: 12 Pusat pedestrian areas → primary = Darmo Pulau 1
     await insertUser(
       USER_SATGAS_PUSAT1_ID,
       'satgas_pusat_1',
@@ -714,9 +754,9 @@ async function seedStaging() {
       'satgas',
       '081200000018',
       RAYON_PUSAT_ID,
-      AREA_BUNGKUL_ID,
+      DARMO_P1_AREA_ID,
     );
-    // satgas_pusat_2: 12 pedestrian only → primary = Darmo Pulau 1
+    // satgas_pusat_2: 12 pedestrian areas → primary = Darmo Pulau 2
     await insertUser(
       USER_SATGAS_PUSAT2_ID,
       'satgas_pusat_2',
@@ -724,9 +764,9 @@ async function seedStaging() {
       'satgas',
       '081200000019',
       RAYON_PUSAT_ID,
-      AREA_DARMO_P1_ID,
+      DARMO_P2_AREA_ID,
     );
-    // linmas_pusat_1: all 13 areas → primary = Taman Bungkul
+    // linmas_pusat_1: 12 Pusat pedestrian areas → primary = Darmo (Bank BCA)
     await insertUser(
       USER_LINMAS_PUSAT1_ID,
       'linmas_pusat_1',
@@ -734,9 +774,9 @@ async function seedStaging() {
       'linmas',
       '081200000020',
       RAYON_PUSAT_ID,
-      AREA_BUNGKUL_ID,
+      DARMO_BCA_AREA_ID,
     );
-    // linmas_pusat_2: Taman Bungkul only
+    // linmas_pusat_2: Rayon Pusat → primary = Darmo Pulau 5
     await insertUser(
       USER_LINMAS_PUSAT2_ID,
       'linmas_pusat_2',
@@ -744,9 +784,9 @@ async function seedStaging() {
       'linmas',
       '081200000021',
       RAYON_PUSAT_ID,
-      AREA_BUNGKUL_ID,
+      DARMO_P5_AREA_ID,
     );
-    // satgas_pusat_3: Taman Bungkul only
+    // satgas_pusat_3: Rayon Pusat → primary = Darmo Pulau 4
     await insertUser(
       USER_SATGAS_BUNGKUL_ID,
       'satgas_pusat_3',
@@ -754,6 +794,16 @@ async function seedStaging() {
       'satgas',
       '081200000022',
       RAYON_PUSAT_ID,
+      DARMO_P4_AREA_ID,
+    );
+    // satgas_taman_bungkul_1: Rayon Taman Aktif → primary = Taman Bungkul (park worker)
+    await insertUser(
+      '5a0b0001-0000-4002-8003-000000000002',
+      'satgas_taman_bungkul_1',
+      'Satgas Taman Bungkul Satu',
+      'satgas',
+      '081200000040',
+      RAYON_TAMAN_AKTIF_ID,
       AREA_BUNGKUL_ID,
     );
 
@@ -925,7 +975,7 @@ async function seedStaging() {
       'EDI SANTOSO',
       'satgas',
       '085855434561',
-      RAYON_PUSAT_ID,
+      RAYON_TAMAN_AKTIF_ID,
       AREA_BUNGKUL_ID,
     );
     await insertUser(
@@ -934,7 +984,7 @@ async function seedStaging() {
       'JIHAN NABILA SAFITRI',
       'satgas',
       '08970900786',
-      RAYON_PUSAT_ID,
+      RAYON_TAMAN_AKTIF_ID,
       AREA_BUNGKUL_ID,
     );
     await insertUser(
@@ -943,7 +993,7 @@ async function seedStaging() {
       'DENI PURWANTO',
       'linmas',
       '081554017822',
-      RAYON_PUSAT_ID,
+      RAYON_TAMAN_AKTIF_ID,
       AREA_BUNGKUL_ID,
     );
     await insertUser(
@@ -952,7 +1002,7 @@ async function seedStaging() {
       'AGUS RAMADHAN',
       'linmas',
       '083831353889',
-      RAYON_PUSAT_ID,
+      RAYON_TAMAN_AKTIF_ID,
       AREA_BUNGKUL_ID,
     );
 
@@ -1078,37 +1128,41 @@ async function seedStaging() {
       );
     };
 
-    // korlap_pusat_1 → all 13 areas
-    for (const areaId of ALL_AREA_IDS) await assignArea(USER_KORLAP_PUSAT1_ID, areaId);
-    console.log('  ✓ korlap_pusat_1 → all 13 areas');
+    // korlap_pusat_1 → 12 Rayon Pusat pedestrian areas (Taman Bungkul is Taman Aktif)
+    for (const areaId of PEDESTRIAN_AREA_IDS) await assignArea(USER_KORLAP_PUSAT1_ID, areaId);
+    console.log('  ✓ korlap_pusat_1 → 12 Rayon Pusat pedestrian areas');
 
-    // korlap_pusat_2 → all 13 areas
-    for (const areaId of ALL_AREA_IDS) await assignArea(USER_KORLAP_PUSAT2_ID, areaId);
-    console.log('  ✓ korlap_pusat_2 → all 13 areas');
+    // korlap_pusat_2 → 12 Rayon Pusat pedestrian areas
+    for (const areaId of PEDESTRIAN_AREA_IDS) await assignArea(USER_KORLAP_PUSAT2_ID, areaId);
+    console.log('  ✓ korlap_pusat_2 → 12 Rayon Pusat pedestrian areas');
 
-    // korlap_pusat_3 → Taman Bungkul only
-    await assignArea(USER_KORLAP_BUNGKUL_ID, AREA_BUNGKUL_ID);
-    console.log('  ✓ korlap_pusat_3 → Taman Bungkul');
+    // korlap_pusat_3 → Darmo Pulau 2 only
+    await assignArea(USER_KORLAP_BUNGKUL_ID, DARMO_P2_AREA_ID);
+    console.log('  ✓ korlap_pusat_3 → Darmo Pulau 2');
 
-    // satgas_pusat_1 → all 13 areas
-    for (const areaId of ALL_AREA_IDS) await assignArea(USER_SATGAS_PUSAT1_ID, areaId);
-    console.log('  ✓ satgas_pusat_1 → all 13 areas');
+    // satgas_pusat_1 → 12 Rayon Pusat pedestrian areas
+    for (const areaId of PEDESTRIAN_AREA_IDS) await assignArea(USER_SATGAS_PUSAT1_ID, areaId);
+    console.log('  ✓ satgas_pusat_1 → 12 Rayon Pusat pedestrian areas');
 
-    // satgas_pusat_2 → 12 pedestrian only (no Taman Bungkul)
+    // satgas_pusat_2 → 12 Rayon Pusat pedestrian areas
     for (const areaId of PEDESTRIAN_AREA_IDS) await assignArea(USER_SATGAS_PUSAT2_ID, areaId);
-    console.log('  ✓ satgas_pusat_2 → 12 pedestrian areas (no Taman Bungkul)');
+    console.log('  ✓ satgas_pusat_2 → 12 Rayon Pusat pedestrian areas');
 
-    // linmas_pusat_1 → all 13 areas
-    for (const areaId of ALL_AREA_IDS) await assignArea(USER_LINMAS_PUSAT1_ID, areaId);
-    console.log('  ✓ linmas_pusat_1 → all 13 areas');
+    // linmas_pusat_1 → 12 Rayon Pusat pedestrian areas
+    for (const areaId of PEDESTRIAN_AREA_IDS) await assignArea(USER_LINMAS_PUSAT1_ID, areaId);
+    console.log('  ✓ linmas_pusat_1 → 12 Rayon Pusat pedestrian areas');
 
-    // linmas_pusat_2 → Taman Bungkul only
-    await assignArea(USER_LINMAS_PUSAT2_ID, AREA_BUNGKUL_ID);
-    console.log('  ✓ linmas_pusat_2 → Taman Bungkul');
+    // linmas_pusat_2 → Darmo Pulau 5 only
+    await assignArea(USER_LINMAS_PUSAT2_ID, DARMO_P5_AREA_ID);
+    console.log('  ✓ linmas_pusat_2 → Darmo Pulau 5');
 
-    // satgas_pusat_3 → Taman Bungkul only
-    await assignArea(USER_SATGAS_BUNGKUL_ID, AREA_BUNGKUL_ID);
-    console.log('  ✓ satgas_pusat_3 → Taman Bungkul');
+    // satgas_pusat_3 → Darmo Pulau 4 only
+    await assignArea(USER_SATGAS_BUNGKUL_ID, DARMO_P4_AREA_ID);
+    console.log('  ✓ satgas_pusat_3 → Darmo Pulau 4');
+
+    // satgas_taman_bungkul_1 → Taman Bungkul (Rayon Taman Aktif park worker)
+    await assignArea('5a0b0001-0000-4002-8003-000000000002', AREA_BUNGKUL_ID);
+    console.log('  ✓ satgas_taman_bungkul_1 → Taman Bungkul');
 
     // Real users
     await assignArea(USER_RAKHMAT_ID, AREA_DARMO_P1_ID);

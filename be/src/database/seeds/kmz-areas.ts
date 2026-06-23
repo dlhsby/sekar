@@ -2453,3 +2453,62 @@ export const PROGO_AREA_ID = '52d0e1f2-a3b4-4256-7890-132435465768';
 export const SERAYU_AREA_ID = '52e1f2a3-b4c5-4367-8901-243546576879';
 export const BENGAWAN_AREA_ID = '52f2a3b4-c5d6-4478-9012-345657687980';
 export const DARMO_KALI_AREA_ID = '53a3b4c5-d6e7-4589-0123-456768798091';
+
+// ── Taman Flora (Rayon Taman Aktif) ───────────────────────────────────────
+// A taman aktif park whose boundary is intentionally the whole-Surabaya
+// outline (see `surabayaOutlinePolygon`). Its GPS pin is the park itself, but
+// its geofence spans the city. The Rayon Taman Aktif office sits inside it.
+export const TAMAN_FLORA_AREA_ID = '5f100a00-0000-4000-8000-000000000001';
+export const TAMAN_FLORA_CENTER = { lat: -7.29547949885428, lng: 112.76222692929294 };
+export const RAYON_TAMAN_AKTIF_OFFICE = { lat: -7.294832351216366, lng: 112.76207759063556 };
+
+/**
+ * Andrew's monotone-chain convex hull over [lng,lat] points.
+ * Returns the hull vertices counter-clockwise (no closing duplicate).
+ */
+export function computeConvexHull(points: [number, number][]): [number, number][] {
+  const pts = [...points].sort((a, b) => (a[0] === b[0] ? a[1] - b[1] : a[0] - b[0]));
+  if (pts.length <= 2) return pts;
+  const cross = (o: [number, number], a: [number, number], b: [number, number]): number =>
+    (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lower: [number, number][] = [];
+  for (const p of pts) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) {
+      lower.pop();
+    }
+    lower.push(p);
+  }
+  const upper: [number, number][] = [];
+  for (let i = pts.length - 1; i >= 0; i--) {
+    const p = pts[i];
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) {
+      upper.pop();
+    }
+    upper.push(p);
+  }
+  lower.pop();
+  upper.pop();
+  return lower.concat(upper);
+}
+
+/**
+ * Whole-Surabaya outline = convex hull of every geographic rayon boundary
+ * vertex (the "outer side" of all 7 rayon polygons combined). Used as Taman
+ * Flora's `boundary_polygon` so it geofences the entire city. Returns a closed
+ * GeoJSON ring.
+ */
+export function surabayaOutlinePolygon(): GeoJsonPolygon {
+  const pts: [number, number][] = [];
+  for (const code of Object.keys(RAYON_BOUNDARIES) as RayonCode[]) {
+    const poly = RAYON_BOUNDARIES[code];
+    if (!poly) continue;
+    for (const [lng, lat] of poly.coordinates[0]) pts.push([lng, lat]);
+  }
+  const hull = computeConvexHull(pts);
+  const first = hull[0];
+  const last = hull[hull.length - 1];
+  if (first && last && (first[0] !== last[0] || first[1] !== last[1])) {
+    hull.push(first);
+  }
+  return { type: 'Polygon', coordinates: [hull.map(([lng, lat]) => [lng, lat])] };
+}

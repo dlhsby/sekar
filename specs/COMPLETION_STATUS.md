@@ -35,6 +35,8 @@ Environment model: **production → on-prem (pemkot) Docker Compose, platform-ag
 **AWS account:** 659828096624 · **region:** ap-southeast-3 · **EC2:** i-08edccdc966c0985e (EIP 16.79.124.63).
 **Rebuild date:** June 18, 2026 (prior account's free tier expired; re-provisioned from scratch).
 
+**Seed correction (June 23, 2026 — dev + staging):** Rayon Pusat field users (`satgas_pusat_*`, `korlap_pusat_*`, `linmas_pusat_*`) no longer anchor on **Taman Bungkul** (which belongs to **Rayon Taman Aktif**) — they now sit on Rayon Pusat (Darmo Pulau) areas. New `satgas_taman_bungkul_1` covers Taman Bungkul; the real Bungkul staff (`edi_santoso`/`jihan_nabila_safitri`/`deni_purwanto`/`agus_ramadhan`) moved to rayon Taman Aktif. New **Taman Flora** park (Rayon Taman Aktif) at `-7.295479, 112.762227` with a city-wide boundary (convex hull of all rayon polygons); Rayon Taman Aktif center is now its office (`-7.294832, 112.762078`, inside Taman Flora). Also fixed a mobile bug where the clock-out screen judged lateness against the roster shift instead of the shift actually clocked into (diverged from the home hero + attendance history).
+
 ---
 
 ## 🎯 Executive Summary

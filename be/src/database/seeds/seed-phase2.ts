@@ -8,10 +8,18 @@ import {
   computeCentroidFromRings,
   computeAreaM2FromRings,
   toGeoJsonGeometry,
+  surabayaOutlinePolygon,
   BUNGKUL_AREA_ID,
   DARMO_P1_AREA_ID,
   DARMO_P2_AREA_ID,
+  DARMO_P3_AREA_ID,
+  DARMO_P4_AREA_ID,
+  DARMO_P5_AREA_ID,
+  DARMO_BCA_AREA_ID,
   TAMAN_BUK_TONG_ID,
+  TAMAN_FLORA_AREA_ID,
+  TAMAN_FLORA_CENTER,
+  RAYON_TAMAN_AKTIF_OFFICE,
   type AreaDef,
   type RayonCode,
 } from './kmz-areas';
@@ -321,14 +329,14 @@ async function seedPhase2() {
         [centroid.lat, centroid.lng, JSON.stringify(polygon), code],
       );
     }
-    // Rayon Taman Aktif has no geographic boundary — anchor its center on
-    // Taman Bungkul so the mobile/web rayon pin lands somewhere meaningful.
+    // Rayon Taman Aktif has no geographic boundary — anchor its center on its
+    // office, which sits inside Taman Flora.
     await queryRunner.query(
       `UPDATE rayons SET center_lat = $1, center_lng = $2 WHERE code = 'TAMAN_AKTIF'`,
-      [-7.291347, 112.739764],
+      [RAYON_TAMAN_AKTIF_OFFICE.lat, RAYON_TAMAN_AKTIF_OFFICE.lng],
     );
     console.log(
-      '  ✓ Updated 7 Rayon boundaries (real KMZ polygons) + Taman Aktif center on Bungkul',
+      '  ✓ Updated 7 Rayon boundaries (real KMZ polygons) + Taman Aktif center on its office (Taman Flora)',
     );
 
     // ==========================================
@@ -460,6 +468,36 @@ async function seedPhase2() {
     }
     console.log(`  ✓ Seeded ${ALL_AREA_DEFS.length} areas (13 Rayon Pusat + 25 Rayon Timur 2)`);
 
+    // Taman Flora (Rayon Taman Aktif) — GPS pin on the park itself, but its
+    // boundary spans the whole-Surabaya outline (hull of all rayon polygons).
+    const floraPolygon = surabayaOutlinePolygon();
+    const floraRing = floraPolygon.coordinates[0].map(
+      ([lng, lat]) => [lng, lat] as [number, number],
+    );
+    await queryRunner.query(
+      `INSERT INTO areas (
+        id, name, area_type_id, gps_lat, gps_lng, radius_meters,
+        boundary_polygon, coverage_area, rayon_id, is_active
+      )
+      SELECT
+        $1, $2,
+        (SELECT id FROM area_types WHERE code = 'park' LIMIT 1),
+        $3, $4, 100,
+        $5::jsonb, $6,
+        $7, TRUE
+      ON CONFLICT (id) DO NOTHING`,
+      [
+        TAMAN_FLORA_AREA_ID,
+        'Taman Flora',
+        TAMAN_FLORA_CENTER.lat,
+        TAMAN_FLORA_CENTER.lng,
+        JSON.stringify(floraPolygon),
+        computeAreaM2FromRings([floraRing]),
+        RAYON_TAMAN_AKTIF_ID,
+      ],
+    );
+    console.log('  ✓ Seeded Taman Flora (Rayon Taman Aktif, city-wide boundary)');
+
     // ==========================================
     // STEP 6: Seed Special Day Overrides
     // ==========================================
@@ -530,14 +568,15 @@ async function seedPhase2() {
         ('${USER_PHASE2_1_ID}', 'top_management_1', '${passwordHash}', 'Top Management Satu', '081234567890', 'top_management', NULL, NULL, TRUE),
         ('${USER_PHASE2_2_ID}', 'kepala_rayon_selatan_1', '${passwordHash}', 'Kepala Rayon Selatan Satu', '081234567891', 'kepala_rayon', '${RAYON_1_ID}', NULL, TRUE),
         ('${USER_PHASE2_3_ID}', 'kepala_rayon_utara_1', '${passwordHash}', 'Kepala Rayon Utara Satu', '081234567892', 'kepala_rayon', '${RAYON_2_ID}', NULL, TRUE),
-        ('${USER_PHASE2_4_ID}', 'korlap_pusat_1', '${passwordHash}', 'Korlap Pusat Satu', '081234567893', 'korlap', NULL, '${tamanBungkulId}', TRUE),
+        ('${USER_PHASE2_4_ID}', 'korlap_pusat_1', '${passwordHash}', 'Korlap Pusat Satu', '081234567893', 'korlap', NULL, '${DARMO_P3_AREA_ID}', TRUE),
         ('${USER_LINMAS_BUNGKUL_1_ID}', 'linmas_pusat_1', '${passwordHash}', 'Linmas Pusat Satu', '081234567894', 'linmas', NULL, NULL, TRUE),
         ('${USER_LINMAS_DARMO_1_ID}',   'linmas_pusat_2',   '${passwordHash}', 'Linmas Pusat Dua',   '081234567895', 'linmas', NULL, NULL, TRUE),
         ('${USER_KORLAP_DARMO_ID}',     'korlap_pusat_2',     '${passwordHash}', 'Korlap Pusat Dua',  '081234567896', 'korlap', NULL, NULL, TRUE),
         ('${USER_PHASE2_8_ID}', 'admin_data_pusat_1', '${passwordHash}', 'Admin Data Pusat Satu', '081234567897', 'admin_data', '${RAYON_3_ID}', NULL, TRUE),
         ('${USER_PHASE2_9_ID}', 'admin_system_1', '${passwordHash}', 'Admin Sistem Satu', '081234567898', 'admin_system', NULL, NULL, TRUE),
-        ('${USER_SATGAS_BUNGKUL_1_ID}', 'satgas_pusat_3', '${passwordHash}', 'Satgas Pusat Tiga', '081300000016', 'satgas', '${RAYON_3_ID}', '${tamanBungkulId}', TRUE),
-        ('${USER_SATGAS_BUNGKUL_2_ID}', 'satgas_pusat_4', '${passwordHash}', 'Satgas Pusat Empat',  '081300000017', 'satgas', '${RAYON_3_ID}', '${tamanBungkulId}', TRUE)
+        ('${USER_SATGAS_BUNGKUL_1_ID}', 'satgas_pusat_3', '${passwordHash}', 'Satgas Pusat Tiga', '081300000016', 'satgas', '${RAYON_3_ID}', '${DARMO_P4_AREA_ID}', TRUE),
+        ('${USER_SATGAS_BUNGKUL_2_ID}', 'satgas_pusat_4', '${passwordHash}', 'Satgas Pusat Empat',  '081300000017', 'satgas', '${RAYON_3_ID}', '${DARMO_P5_AREA_ID}', TRUE),
+        ('5a0b0001-0000-4002-8003-000000000001', 'satgas_taman_bungkul_1', '${passwordHash}', 'Satgas Taman Bungkul Satu', '081300000040', 'satgas', '${RAYON_TAMAN_AKTIF_ID}', '${BUNGKUL_AREA_ID}', TRUE)
       ON CONFLICT (username) DO NOTHING;
     `);
     console.log(
@@ -613,10 +652,12 @@ async function seedPhase2() {
     // Pelangi / Utara / Harmoni" users onto real KMZ areas. 2026-05-18 swap.
     // ==========================================
     console.log('🌳 Remapping legacy dev users onto KMZ areas...');
-    // satgas_pusat_1 + satgas_pusat_2 used Taman Pusat → Bungkul / Darmo Pulau 2.
+    // satgas_pusat_1 + satgas_pusat_2 are Rayon Pusat workers → Darmo Pulau 1 / 2.
+    // (Taman Bungkul belongs to Rayon Taman Aktif, so Pusat workers no longer
+    // anchor there — satgas_taman_bungkul_1 covers the park.)
     // satgas_pusat_2 also drives the outside_area scenario (GPS-driven, area-agnostic).
     await queryRunner.query(
-      `UPDATE users SET area_id = '${BUNGKUL_AREA_ID}' WHERE username = 'satgas_pusat_1';`,
+      `UPDATE users SET area_id = '${DARMO_P1_AREA_ID}' WHERE username = 'satgas_pusat_1';`,
     );
     await queryRunner.query(
       `UPDATE users SET area_id = '${DARMO_P2_AREA_ID}' WHERE username = 'satgas_pusat_2';`,
@@ -693,12 +734,14 @@ async function seedPhase2() {
     // ==========================================
     console.log('📍 Assigning area_id and rayon_id to field workers...');
 
-    // Taman Bungkul workers → Rayon Pusat
+    // Rayon Pusat field workers without a default area → a Rayon Pusat area
+    // (Darmo Pulau). Taman Bungkul is Rayon Taman Aktif, so Pusat workers do
+    // not anchor there.
     await queryRunner.query(
       `UPDATE users SET area_id = $1
        WHERE username IN ('korlap_pusat_1', 'linmas_pusat_1')
          AND area_id IS NULL`,
-      [BUNGKUL_AREA_ID],
+      [DARMO_BCA_AREA_ID],
     );
     // Darmo workers → Rayon Pusat (Pulau 1 stands in for the old single "Jalan Raya Darmo" area).
     await queryRunner.query(
@@ -1788,12 +1831,12 @@ async function seedPhase2() {
     // E2: user_areas — korlap multi-area + satgas multi-area assignments
     console.log('  🗺️ Creating user_areas assignments...');
 
-    // korlap_pusat_1 → Taman Bungkul (primary permanent area)
+    // korlap_pusat_1 → Darmo Pulau 3 (primary permanent area, Rayon Pusat)
     await queryRunner.query(`
       INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
       SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
       FROM users u, areas a
-      WHERE u.username = 'korlap_pusat_1' AND a.name = 'Taman Bungkul'
+      WHERE u.username = 'korlap_pusat_1' AND a.id = '${DARMO_P3_AREA_ID}'
       ON CONFLICT DO NOTHING;
     `);
     // korlap_pusat_1 also → Jalan Raya Darmo (same Rayon Pusat — korlap must stay within one rayon)
@@ -1813,13 +1856,13 @@ async function seedPhase2() {
       ON CONFLICT DO NOTHING;
     `);
 
-    // satgas_pusat_1 → Bungkul (default area, post-remap) + Darmo Pulau 2 (extra permanent).
+    // satgas_pusat_1 → Darmo Pulau 1 (default area, post-remap) + Darmo Pulau 2 (extra permanent).
     // Tests: satgas with default area_id can also be assigned to extra areas via user_areas.
     await queryRunner.query(`
       INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
       SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
       FROM users u, areas a
-      WHERE u.username = 'satgas_pusat_1' AND a.id = '${BUNGKUL_AREA_ID}'
+      WHERE u.username = 'satgas_pusat_1' AND a.id = '${DARMO_P1_AREA_ID}'
       ON CONFLICT DO NOTHING;
     `);
     await queryRunner.query(`
@@ -1830,22 +1873,31 @@ async function seedPhase2() {
       ON CONFLICT DO NOTHING;
     `);
 
-    // satgas_pusat_3 → Taman Bungkul (default area, no extra assignments)
+    // satgas_pusat_3 → Darmo Pulau 4 (default area, no extra assignments)
     await queryRunner.query(`
       INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
       SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
       FROM users u, areas a
-      WHERE u.username = 'satgas_pusat_3' AND a.name = 'Taman Bungkul'
+      WHERE u.username = 'satgas_pusat_3' AND a.id = '${DARMO_P4_AREA_ID}'
       ON CONFLICT DO NOTHING;
     `);
 
-    // satgas_pusat_4 → Taman Bungkul (default area_id) + Jalan Raya Darmo (secondary permanent area)
+    // satgas_taman_bungkul_1 → Taman Bungkul (Rayon Taman Aktif park worker)
+    await queryRunner.query(`
+      INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      FROM users u, areas a
+      WHERE u.username = 'satgas_taman_bungkul_1' AND a.id = '${BUNGKUL_AREA_ID}'
+      ON CONFLICT DO NOTHING;
+    `);
+
+    // satgas_pusat_4 → Darmo Pulau 5 (default area_id) + Jalan Raya Darmo Pulau 1 (secondary permanent area)
     // This tests: satgas with two permanent areas in the same rayon
     await queryRunner.query(`
       INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
       SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
       FROM users u, areas a
-      WHERE u.username = 'satgas_pusat_4' AND a.name = 'Taman Bungkul'
+      WHERE u.username = 'satgas_pusat_4' AND a.id = '${DARMO_P5_AREA_ID}'
       ON CONFLICT DO NOTHING;
     `);
     await queryRunner.query(`
@@ -1867,12 +1919,14 @@ async function seedPhase2() {
     `);
 
     console.log(
-      '    ✓ user_areas: korlap_pusat_1→Bungkul+Darmo P1 (same rayon), korlap_pusat_2→Darmo P1',
+      '    ✓ user_areas: korlap_pusat_1→Darmo P3+P1 (same rayon), korlap_pusat_2→Darmo P1',
     );
     console.log(
-      '    ✓ user_areas: satgas_pusat_1→Bungkul+Darmo P2, satgas_timur_1_2→Taman Buk Tong (Rayon Timur 2 after remap)',
+      '    ✓ user_areas: satgas_pusat_1→Darmo P1+P2, satgas_timur_1_2→Taman Buk Tong (Rayon Timur 2 after remap)',
     );
-    console.log('    ✓ user_areas: satgas_pusat_3→Bungkul, satgas_pusat_4→Bungkul+Darmo P1');
+    console.log(
+      '    ✓ user_areas: satgas_pusat_3→Darmo P4, satgas_pusat_4→Darmo P5+P1, satgas_taman_bungkul_1→Taman Bungkul',
+    );
 
     // Per-rayon korlap area assignments. Only Rayon Timur 2 has a KMZ area
     // (Taman Buk Tong); the other rayons leave user_areas empty for korlap,
