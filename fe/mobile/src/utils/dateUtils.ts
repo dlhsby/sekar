@@ -395,6 +395,39 @@ export function isClockInLate(
   return clockInMinutes > scheduledMinutes;
 }
 
+/**
+ * Whether a clock-out is BEFORE its scheduled end (i.e. the worker left early),
+ * evaluated on the local clock. Mirrors `isClockInLate`. For a crosses-midnight
+ * shift the scheduled end is an early-morning time (e.g. `05:00`): an evening
+ * clock-out (>= noon, before the midnight rollover) or a morning clock-out
+ * before the end both count as leaving early. Returns false when there is no
+ * clock-out or no schedule.
+ */
+export function isClockOutEarly(
+  clockOutIso?: string | null,
+  scheduledEndHHmm?: string | null,
+  crossesMidnight: boolean = false,
+): boolean {
+  if (!clockOutIso || !scheduledEndHHmm) {
+    return false;
+  }
+  const d = typeof clockOutIso === 'string' ? new Date(clockOutIso) : clockOutIso;
+  if (isNaN(d.getTime())) {
+    return false;
+  }
+  const match = /^(\d{1,2}):(\d{2})/.exec(scheduledEndHHmm);
+  if (!match) {
+    return false;
+  }
+  const scheduledMinutes = Number(match[1]) * 60 + Number(match[2]);
+  const clockOutMinutes = d.getHours() * 60 + d.getMinutes();
+  if (crossesMidnight) {
+    const NOON = 12 * 60;
+    return clockOutMinutes >= NOON || clockOutMinutes < scheduledMinutes;
+  }
+  return clockOutMinutes < scheduledMinutes;
+}
+
 const DAY_NAMES_ID = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 const MONTH_NAMES_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
 

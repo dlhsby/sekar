@@ -2,7 +2,7 @@
  * Shared attendance summary used by the home "Kehadiran saya" hero across the
  * field / coordinator / admin_data dashboards (avoids triplicating the memo).
  */
-import { isClockInLate } from './dateUtils';
+import { isClockInLate, isClockOutEarly } from './dateUtils';
 import type { Shift } from '../types/models.types';
 
 export interface AttendanceSummary {
@@ -12,6 +12,8 @@ export interface AttendanceSummary {
   lastClockOut?: string;
   /** First clock-in is after the scheduled shift start (false for overtime / no schedule). */
   isLate: boolean;
+  /** Last clock-out is before the scheduled shift end (false while on shift / overtime / no schedule). */
+  isEarlyLeave: boolean;
 }
 
 /**
@@ -31,8 +33,12 @@ export function summarizeAttendance(
     return !latest || s.clock_out_time > latest ? s.clock_out_time : latest;
   }, currentShift?.clock_out_time);
   const scheduledDef = earliest?.shift_definition ?? currentShift?.shift_definition;
+  const isOvertime = !!currentShift?.is_overtime;
   const isLate =
-    !currentShift?.is_overtime &&
+    !isOvertime &&
     isClockInLate(firstClockIn, scheduledDef?.start_time, scheduledDef?.crosses_midnight);
-  return { firstClockIn, lastClockOut, isLate };
+  const isEarlyLeave =
+    !isOvertime &&
+    isClockOutEarly(lastClockOut, scheduledDef?.end_time, scheduledDef?.crosses_midnight);
+  return { firstClockIn, lastClockOut, isLate, isEarlyLeave };
 }

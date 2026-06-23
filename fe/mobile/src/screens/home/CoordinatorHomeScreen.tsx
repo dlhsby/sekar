@@ -276,6 +276,7 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
                 firstClockIn={attendance.firstClockIn}
                 lastClockOut={attendance.lastClockOut}
                 isLate={attendance.isLate}
+                isEarlyLeave={attendance.isEarlyLeave}
               />
               {absensiExpanded && (
                 <>

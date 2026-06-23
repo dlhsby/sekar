@@ -269,6 +269,7 @@ export function AdminDataHomeScreen(): React.JSX.Element {
                 firstClockIn={attendance.firstClockIn}
                 lastClockOut={attendance.lastClockOut}
                 isLate={attendance.isLate}
+                isEarlyLeave={attendance.isEarlyLeave}
               />
               {absensiExpanded && (
                 <>

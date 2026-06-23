@@ -363,6 +363,7 @@ export function FieldHomeScreen(): React.JSX.Element {
                 firstClockIn={attendance.firstClockIn}
                 lastClockOut={attendance.lastClockOut}
                 isLate={attendance.isLate}
+                isEarlyLeave={attendance.isEarlyLeave}
               />
               {shiftExpanded && (
                 <View style={styles.heroDetails}>

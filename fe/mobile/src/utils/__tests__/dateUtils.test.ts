@@ -17,6 +17,7 @@ import {
   getEndOfDay,
   parseISODate,
   isClockInLate,
+  isClockOutEarly,
 } from '../dateUtils';
 
 describe('Date Utils', () => {
@@ -59,6 +60,44 @@ describe('Date Utils', () => {
       });
     });
   });
+
+  describe('isClockOutEarly', () => {
+    const at = (h: number, m: number): string => {
+      const d = new Date();
+      d.setHours(h, m, 0, 0);
+      return d.toISOString();
+    };
+
+    it('is true when clock-out is before the scheduled end', () => {
+      expect(isClockOutEarly(at(14, 30), '15:00')).toBe(true);
+    });
+
+    it('is false when clock-out is at or after the scheduled end', () => {
+      expect(isClockOutEarly(at(15, 0), '15:00')).toBe(false);
+      expect(isClockOutEarly(at(16, 30), '15:00')).toBe(false);
+    });
+
+    it('is false when no schedule or invalid input', () => {
+      expect(isClockOutEarly(at(14, 0), undefined)).toBe(false);
+      expect(isClockOutEarly(undefined, '15:00')).toBe(false);
+      expect(isClockOutEarly('not-a-date', '15:00')).toBe(false);
+    });
+
+    describe('night shift crossing midnight (end 05:00)', () => {
+      const end = '05:00';
+      it('on time when clocked out at/after the early-morning end', () => {
+        expect(isClockOutEarly(at(5, 0), end, true)).toBe(false);
+        expect(isClockOutEarly(at(5, 30), end, true)).toBe(false);
+      });
+      it('early when clocked out in the early morning before the end', () => {
+        expect(isClockOutEarly(at(3, 0), end, true)).toBe(true);
+      });
+      it('early when clocked out in the evening (before the midnight rollover)', () => {
+        expect(isClockOutEarly(at(23, 0), end, true)).toBe(true);
+      });
+    });
+  });
+
   describe('formatDate', () => {
     it('should format Date object to YYYY-MM-DD', () => {
       const date = new Date('2026-01-19T10:00:00Z');
