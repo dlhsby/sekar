@@ -13,14 +13,11 @@ import {
   FlatList,
   StyleSheet,
   RefreshControl,
-  ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import {
   NBBackgroundPattern,
@@ -29,14 +26,14 @@ import {
   NBFabBar,
   NB_FAB_BAR_HEIGHT,
   NBSkeleton,
-  NBText,
 } from '../../components/nb';
+import { FilterBar, type FilterChip } from '../../components/common';
 import { SortModal, AttendanceFilterModal, type AttendanceFilterFields } from '../../components/modals';
 import { AttendanceDayCard } from './components/AttendanceDayCard';
 import { getAttendanceDays } from '../../services/api/shiftsApi';
 import { useRoleAccess } from '../../hooks/useRoleAccess';
 import { useAppSelector } from '../../store/hooks';
-import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
+import { nbColors, nbSpacing } from '../../constants/nbTokens';
 import type { MainTabParamList } from '../../types/navigation.types';
 import type { AttendanceFilter, AttendanceDaySummary } from '../../types/api.types';
 
@@ -87,14 +84,14 @@ export function AttendanceListScreen({ navigation }: Props): React.JSX.Element {
   }, [filters]);
 
   const filterChips = useMemo(() => {
-    const chips: { text: string; chipStyle: 'status' | 'date' }[] = [];
+    const chips: FilterChip[] = [];
     if (filters.status) {
-      chips.push({ text: STATUS_CHIP_LABEL[filters.status], chipStyle: 'status' });
+      chips.push({ text: STATUS_CHIP_LABEL[filters.status], tone: 'status' });
     }
     if (filters.from_date || filters.to_date) {
       const f = filters.from_date;
       const t = filters.to_date;
-      chips.push({ text: f && t ? `${f.slice(5)} — ${t.slice(5)}` : 'Tanggal', chipStyle: 'date' });
+      chips.push({ text: f && t ? `${f.slice(5)} — ${t.slice(5)}` : 'Tanggal', tone: 'date' });
     }
     return chips;
   }, [filters]);
@@ -212,10 +209,6 @@ export function AttendanceListScreen({ navigation }: Props): React.JSX.Element {
     );
   }, [isLoadingMore]);
 
-  const activeSortLabel = useMemo(
-    () => SORT_OPTIONS.find((o) => o.key === sort)?.label ?? 'Tanggal Terbaru',
-    [sort],
-  );
   const isSortActive = sort !== 'date_desc';
   const isClockOut = !!currentShift && !currentShift.is_overtime;
 
@@ -227,59 +220,16 @@ export function AttendanceListScreen({ navigation }: Props): React.JSX.Element {
       opacity={0.06}
     >
       <SafeAreaView style={styles.safeArea}>
-        {/* Filter bar — mirrors the Lembur/Tugas/Aktivitas standard */}
-        <View style={[styles.filterBar, activeFilterCount > 0 && styles.filterBarActive]}>
-          <View style={styles.filterBarLeft}>
-            {filterChips.length > 0 ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.miniChipsContent}>
-                {filterChips.map((chip, i) => (
-                  <View
-                    key={i}
-                    style={[styles.miniChip, chip.chipStyle === 'status' ? styles.miniChipStatus : styles.miniChipDate]}
-                  >
-                    <NBText variant="caption" color="black">{chip.text}</NBText>
-                  </View>
-                ))}
-              </ScrollView>
-            ) : (
-              <NBText variant="body-sm" color="gray400" style={styles.filterBarPlaceholder}>Semua Kehadiran</NBText>
-            )}
-            {activeFilterCount > 0 && (
-              <TouchableOpacity
-                style={styles.filterClearButton}
-                onPress={() => setFilters({})}
-                accessibilityRole="button"
-                accessibilityLabel="Reset filter kehadiran"
-              >
-                <MaterialCommunityIcons name="close-circle" size={18} color={nbColors.danger} />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          <View style={styles.filterBarRight}>
-            <TouchableOpacity
-              style={styles.filterIconButton}
-              onPress={() => setIsSortModalOpen(true)}
-              accessibilityRole="button"
-              accessibilityLabel={`Urutan: ${activeSortLabel}`}
-            >
-              <MaterialCommunityIcons name="sort" size={22} color={isSortActive ? nbColors.primary : nbColors.black} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.filterIconButton}
-              onPress={() => setIsFilterModalOpen(true)}
-              accessibilityRole="button"
-              accessibilityLabel={`Filter kehadiran${activeFilterCount > 0 ? `, ${activeFilterCount} filter aktif` : ''}`}
-            >
-              <MaterialCommunityIcons name="filter-variant" size={22} color={activeFilterCount > 0 ? nbColors.primary : nbColors.black} />
-              {activeFilterCount > 0 && (
-                <View style={styles.filterBadge}>
-                  <NBText variant="caption" color="white">{activeFilterCount}</NBText>
-                </View>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
+        <FilterBar
+          label="Kehadiran"
+          filterCount={activeFilterCount}
+          chips={filterChips}
+          isSortActive={isSortActive}
+          onSortPress={() => setIsSortModalOpen(true)}
+          onFilterPress={() => setIsFilterModalOpen(true)}
+          onReset={() => setFilters({})}
+          style={styles.filterBarMargin}
+        />
 
         <View style={[styles.listWrapper, canClock && styles.listWrapperWithFab]}>
           <FlatList
@@ -355,76 +305,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-  filterBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: nbSpacing.sm,
-    paddingVertical: nbSpacing.xs,
+  // Standalone screens (no padded contentWrapper) give the shared FilterBar its
+  // horizontal inset + top gap from the navigator header.
+  filterBarMargin: {
     marginHorizontal: nbSpacing.md,
-    marginTop: nbSpacing.md, // gap from the top (navigator) header
-    marginBottom: nbSpacing.sm,
-    backgroundColor: nbColors.white,
-    borderBottomWidth: nbBorders.widthBase,
-    borderBottomColor: nbColors.gray300,
-    ...nbShadows.md,
-    minHeight: 48,
-  },
-  filterBarActive: {
-    borderBottomColor: nbColors.primary,
-  },
-  filterBarLeft: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  filterBarRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: nbSpacing.xs,
-  },
-  filterBarPlaceholder: {
-    fontStyle: 'italic',
-  },
-  miniChipsContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: nbSpacing.xs,
-  },
-  miniChip: {
-    paddingHorizontal: nbSpacing.sm,
-    paddingVertical: nbSpacing.xs,
-    borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.black,
-    borderRadius: nbRadius.sm,
-    height: 32,
-    justifyContent: 'center',
-  },
-  miniChipStatus: { backgroundColor: nbColors.info },
-  miniChipDate: { backgroundColor: nbColors.warning },
-  filterClearButton: {
-    padding: nbSpacing.xs,
-    marginLeft: nbSpacing.xs,
-  },
-  filterIconButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: nbSpacing.xs,
-  },
-  filterBadge: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: nbColors.danger,
-    borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.white,
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginTop: nbSpacing.md,
   },
   listWrapper: {
     flex: 1,

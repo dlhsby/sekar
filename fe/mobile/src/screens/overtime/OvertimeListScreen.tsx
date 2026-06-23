@@ -10,17 +10,15 @@ import {
   FlatList,
   StyleSheet,
   RefreshControl,
-  TouchableOpacity,
-  ScrollView,
   ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { NBBackgroundPattern, NBButton, NBEmptyState, NBFabBar, NB_FAB_BAR_HEIGHT, NBSkeleton, NBText } from '../../components/nb';
+import { FilterBar, type FilterChip } from '../../components/common';
 import { SortModal, OvertimeFilterModal } from '../../components/modals';
 import { OvertimeCard } from './components/OvertimeCard';
 import { getOvertimeStatusLabel } from '../../utils/statusHelpers';
@@ -30,9 +28,7 @@ import { useAppSelector } from '../../store/hooks';
 import {
   nbColors,
   nbSpacing,
-  nbBorders,
   nbRadius,
-  nbShadows,
 } from '../../constants/nbTokens';
 import type { MainTabParamList } from '../../types/navigation.types';
 import type { OvertimeFilter } from '../../types/api.types';
@@ -106,18 +102,18 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
 
   // Filter chips — colored like TasksActivityScreen
   const filterChips = useMemo(() => {
-    const chips: { text: string; chipStyle: 'status' | 'date' | 'location' | 'assignment' }[] = [];
+    const chips: FilterChip[] = [];
     if (filters.status) {
-      chips.push({ text: getOvertimeStatusLabel(filters.status), chipStyle: 'status' });
+      chips.push({ text: getOvertimeStatusLabel(filters.status), tone: 'status' });
     }
     if (filters.from_date || filters.to_date) {
       const f = filters.from_date;
       const t = filters.to_date;
-      chips.push({ text: f && t ? `${f.slice(5)} — ${t.slice(5)}` : 'Tanggal', chipStyle: 'date' });
+      chips.push({ text: f && t ? `${f.slice(5)} — ${t.slice(5)}` : 'Tanggal', tone: 'date' });
     }
-    if (filters.rayon_id) { chips.push({ text: 'Rayon', chipStyle: 'location' }); }
-    if (filters.area_id) { chips.push({ text: 'Area', chipStyle: 'location' }); }
-    if (filters.user_id) { chips.push({ text: 'Petugas', chipStyle: 'assignment' }); }
+    if (filters.rayon_id) { chips.push({ text: 'Rayon', tone: 'location' }); }
+    if (filters.area_id) { chips.push({ text: 'Area', tone: 'location' }); }
+    if (filters.user_id) { chips.push({ text: 'Petugas', tone: 'assignment' }); }
     return chips;
   }, [filters]);
 
@@ -233,11 +229,6 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
     );
   }, [isLoadingMore]);
 
-  const activeSortLabel = useMemo(
-    () => SORT_OPTIONS.find((o) => o.key === sort)?.label ?? 'Tanggal Terbaru',
-    [sort],
-  );
-
   const isSortActive = sort !== 'start_desc';
 
   return (
@@ -248,80 +239,17 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
       opacity={0.06}
     >
       <SafeAreaView style={styles.safeArea}>
-
         {/* Title lives in the navigator header (top bar) — not repeated here. */}
-
-        {/* Filter Bar */}
-        <View style={[styles.filterBarCollapsed, activeFilterCount > 0 && styles.filterBarActive]}>
-          <View style={styles.filterBarLeft}>
-            {filterChips.length > 0 ? (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.miniChipsContent}
-              >
-                {filterChips.map((chip, i) => (
-                  <View
-                    key={i}
-                    style={[
-                      styles.miniChip,
-                      chip.chipStyle === 'status' && styles.miniChipStatus,
-                      chip.chipStyle === 'date' && styles.miniChipDate,
-                      chip.chipStyle === 'location' && styles.miniChipLocation,
-                      chip.chipStyle === 'assignment' && styles.miniChipAssignment,
-                    ]}
-                  >
-                    <NBText variant="caption" color="black" style={styles.miniChipText}>{chip.text}</NBText>
-                  </View>
-                ))}
-              </ScrollView>
-            ) : (
-              <NBText variant="body-sm" color="gray400" style={styles.filterBarPlaceholder}>Semua Lembur</NBText>
-            )}
-            {activeFilterCount > 0 && (
-              <TouchableOpacity
-                style={styles.filterClearButton}
-                onPress={handleResetFilters}
-                accessibilityRole="button"
-                accessibilityLabel="Reset filter lembur"
-              >
-                <MaterialCommunityIcons name="close-circle" size={18} color={nbColors.danger} />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          <View style={styles.filterBarRight}>
-            <TouchableOpacity
-              style={styles.filterIconButton}
-              onPress={() => setIsSortModalOpen(true)}
-              accessibilityRole="button"
-              accessibilityLabel={`Urutan: ${activeSortLabel}`}
-            >
-              <MaterialCommunityIcons
-                name="sort"
-                size={22}
-                color={isSortActive ? nbColors.primary : nbColors.black}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.filterIconButton}
-              onPress={() => setIsFilterModalOpen(true)}
-              accessibilityRole="button"
-              accessibilityLabel={`Filter lembur${activeFilterCount > 0 ? `, ${activeFilterCount} filter aktif` : ''}`}
-            >
-              <MaterialCommunityIcons
-                name="filter-variant"
-                size={22}
-                color={activeFilterCount > 0 ? nbColors.primary : nbColors.black}
-              />
-              {activeFilterCount > 0 && (
-                <View style={styles.filterBadge}>
-                  <NBText variant="caption" color="white" style={styles.filterBadgeText}>{activeFilterCount}</NBText>
-                </View>
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
+        <FilterBar
+          label="Lembur"
+          filterCount={activeFilterCount}
+          chips={filterChips}
+          isSortActive={isSortActive}
+          onSortPress={() => setIsSortModalOpen(true)}
+          onFilterPress={() => setIsFilterModalOpen(true)}
+          onReset={handleResetFilters}
+          style={styles.filterBarMargin}
+        />
 
         {/* List — wrapped so it ends above the FAB (mirrors TAT contentWrapper paddingBottom pattern) */}
         <View style={[styles.listWrapper, canSubmitOvertime && styles.listWrapperWithFab]}>
@@ -437,86 +365,11 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-  // Monthly summary card
-  filterBarCollapsed: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: nbSpacing.sm,
-    paddingVertical: nbSpacing.xs,
+  // Standalone screen (no padded contentWrapper) → give the shared FilterBar its
+  // horizontal inset + top gap from the navigator header.
+  filterBarMargin: {
     marginHorizontal: nbSpacing.md,
-    marginTop: nbSpacing.md, // gap from the top (navigator) header
-    marginBottom: nbSpacing.sm,
-    backgroundColor: nbColors.white,
-    borderBottomWidth: nbBorders.widthBase,
-    borderBottomColor: nbColors.gray300,
-    ...nbShadows.md,
-    minHeight: 48,
-  },
-  filterBarActive: {
-    borderBottomColor: nbColors.primary,
-  },
-  filterBarLeft: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  filterBarRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: nbSpacing.xs,
-  },
-  filterBarPlaceholder: {
-    fontStyle: 'italic',
-    // Color handled by NBText color="gray400"
-  },
-  miniChipsContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: nbSpacing.xs,
-  },
-  miniChip: {
-    paddingHorizontal: nbSpacing.sm,
-    paddingVertical: nbSpacing.xs,
-    borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.black,
-    borderRadius: nbRadius.sm,
-    height: 32,
-    justifyContent: 'center',
-  },
-  miniChipStatus: { backgroundColor: nbColors.info },
-  miniChipDate: { backgroundColor: nbColors.warning },
-  miniChipLocation: { backgroundColor: nbColors.infoLight },
-  miniChipAssignment: { backgroundColor: nbColors.primary },
-  miniChipText: {
-    // Typography handled by NBText variant="caption"
-  },
-  filterClearButton: {
-    padding: nbSpacing.xs,
-    marginLeft: nbSpacing.xs,
-  },
-  filterIconButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: nbSpacing.xs,
-  },
-  filterBadge: {
-    position: 'absolute',
-    top: -8,
-    right: -8,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: nbColors.danger,
-    borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  filterBadgeText: {
-    // Typography handled by NBText variant="caption"
+    marginTop: nbSpacing.md,
   },
   // List — wrapper shrinks the frame above FAB, mirrors TAT contentWrapper pattern
   listWrapper: {

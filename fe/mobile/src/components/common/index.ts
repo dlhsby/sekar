@@ -20,4 +20,5 @@ export { ListItemCard, type ListItemCardProps, type ListItemMeta } from './ListI
 export { PhotoGridSection, type PhotoGridSectionProps } from './PhotoGridSection';
 export { DetailRow, type DetailRowProps, type NBTextColor } from './DetailRow';
 export { InfoTableRow, type InfoTableRowProps } from './InfoTableRow';
+export { FilterBar, type FilterChip, type FilterChipTone } from './FilterBar';
 export { DateTimeValue, type DateTimeValueProps } from './DateTimeValue';

@@ -15,7 +15,7 @@ import { ACTIVITY_SUBMITTERS } from '../../constants/roles';
 import type { MainTabParamList } from '../../types/navigation.types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ActivitiesTab } from './tabs/ActivitiesTab';
-import { FilterBar } from './components/FilterBar';
+import { FilterBar } from '../../components/common';
 import { ScreenFABs } from './components/ScreenFABs';
 import { useActivitiesActivityFilters, useActivitiesFetching, type ActivitySortOption } from './hooks';
 import { buildActivityFilterChips } from './utils/filterChips';
@@ -86,7 +86,7 @@ export function ActivitiesScreen({ navigation }: Props): React.JSX.Element {
         <View style={[styles.contentWrapper, { paddingBottom: canSubmitActivity ? 80 : nbSpacing.sm }]}>
           {/* Title lives in the navigator header (top bar) — not repeated here. */}
           <FilterBar
-            type="activities"
+            label="aktivitas"
             filterCount={activityFilters.activeActivityFilterCount}
             chips={activityChips}
             isSortActive={activitySort !== 'created_at_desc'}

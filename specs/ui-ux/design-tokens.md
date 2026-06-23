@@ -345,6 +345,19 @@ Mobile emits: `{ shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadow
 
 Touch target constant: `space.touch = 48px` (mobile min), `44px` web touch contexts.
 
+**Vertical rhythm (standard — every screen/list follows this; never hard-code px):**
+
+| Context | Token |
+|---------|-------|
+| Screen content horizontal padding | `md` |
+| Top gap from the (navigator) header to first content / filter bar | `md` |
+| Between major sections / blocks | `md` |
+| Between list rows (card-to-card) | `sm` — via the card's own `marginBottom` (e.g. `ListItemCard` consumers pass `style={{ marginBottom: sm }}`) |
+| Between rows/groups inside a card | `sm` |
+| Inline / tight element gaps (icon+label, chip rows) | `xs` |
+
+Sub-token values (`1–2px`) are allowed **only** for optical nudges (chevron/label baseline alignment), never for layout spacing. List screens share `components/common/FilterBar` (white, bottom-border, `shadows.md`, `marginBottom: sm`); standalone screens add `{ marginHorizontal: md, marginTop: md }` while padded `contentWrapper` screens (Tugas/Aktivitas) get the inset+gap from the wrapper.
+
 ### Typography
 
 **Font families:**

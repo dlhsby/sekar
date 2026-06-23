@@ -15,7 +15,7 @@ import { TASK_CREATORS } from '../../constants/roles';
 import type { MainTabParamList } from '../../types/navigation.types';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { TasksTab } from './tabs/TasksTab';
-import { FilterBar } from './components/FilterBar';
+import { FilterBar } from '../../components/common';
 import { ScreenFABs } from './components/ScreenFABs';
 import { useTasksActivityFilters, useTasksFetching, type TaskSortOption } from './hooks';
 import { buildTaskFilterChips } from './utils/filterChips';
@@ -113,7 +113,7 @@ export function TasksScreen({ navigation }: Props): React.JSX.Element {
         <View style={[styles.contentWrapper, { paddingBottom: canCreateTask ? 80 : nbSpacing.sm }]}>
           {/* Title lives in the navigator header (top bar) — not repeated here. */}
           <FilterBar
-            type="tasks"
+            label="tugas"
             filterCount={taskFilters.activeFilterCount}
             chips={taskChips}
             isSortActive={taskSort !== 'created_at_desc'}

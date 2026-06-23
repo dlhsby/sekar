@@ -16,7 +16,7 @@ jest.mock('../tabs/TasksTab', () => {
   const { View, Text } = require('react-native');
   return { TasksTab: () => <View><Text>TASKS_TAB</Text></View> };
 });
-jest.mock('../components/FilterBar', () => ({ FilterBar: () => null }));
+jest.mock('../../../components/common/FilterBar', () => ({ FilterBar: () => null }));
 jest.mock('../components/ScreenFABs', () => {
   const { Text } = require('react-native');
   return {
