@@ -576,7 +576,13 @@ async function seedPhase2() {
         ('${USER_PHASE2_9_ID}', 'admin_system_1', '${passwordHash}', 'Admin Sistem Satu', '081234567898', 'admin_system', NULL, NULL, TRUE),
         ('${USER_SATGAS_BUNGKUL_1_ID}', 'satgas_pusat_3', '${passwordHash}', 'Satgas Pusat Tiga', '081300000016', 'satgas', '${RAYON_3_ID}', '${DARMO_P4_AREA_ID}', TRUE),
         ('${USER_SATGAS_BUNGKUL_2_ID}', 'satgas_pusat_4', '${passwordHash}', 'Satgas Pusat Empat',  '081300000017', 'satgas', '${RAYON_3_ID}', '${DARMO_P5_AREA_ID}', TRUE),
-        ('5a0b0001-0000-4002-8003-000000000001', 'satgas_taman_bungkul_1', '${passwordHash}', 'Satgas Taman Bungkul Satu', '081300000040', 'satgas', '${RAYON_TAMAN_AKTIF_ID}', '${BUNGKUL_AREA_ID}', TRUE)
+        ('5a0b0001-0000-4002-8003-000000000001', 'satgas_taman_bungkul_1', '${passwordHash}', 'Satgas Taman Bungkul Satu', '081300000040', 'satgas', '${RAYON_TAMAN_AKTIF_ID}', '${BUNGKUL_AREA_ID}', TRUE),
+        -- Rayon Taman Aktif — full role matrix for testing the logical-bucket rayon
+        ('5a0b0001-0000-4002-8003-000000000003', 'korlap_taman_aktif_1', '${passwordHash}', 'Korlap Taman Aktif Satu', '081300000041', 'korlap', '${RAYON_TAMAN_AKTIF_ID}', '${BUNGKUL_AREA_ID}', TRUE),
+        ('5a0b0001-0000-4002-8003-000000000004', 'linmas_taman_aktif_1', '${passwordHash}', 'Linmas Taman Aktif Satu', '081300000042', 'linmas', '${RAYON_TAMAN_AKTIF_ID}', '${BUNGKUL_AREA_ID}', TRUE),
+        ('5a0b0001-0000-4002-8003-000000000005', 'kepala_rayon_taman_aktif_1', '${passwordHash}', 'Kepala Rayon Taman Aktif Satu', '081300000043', 'kepala_rayon', '${RAYON_TAMAN_AKTIF_ID}', NULL, TRUE),
+        ('5a0b0001-0000-4002-8003-000000000006', 'admin_data_taman_aktif_1', '${passwordHash}', 'Admin Data Taman Aktif Satu', '081300000044', 'admin_data', '${RAYON_TAMAN_AKTIF_ID}', NULL, TRUE),
+        ('5a0b0001-0000-4002-8003-000000000007', 'satgas_taman_flora_1', '${passwordHash}', 'Satgas Taman Flora Satu', '081300000045', 'satgas', '${RAYON_TAMAN_AKTIF_ID}', '${TAMAN_FLORA_AREA_ID}', TRUE)
       ON CONFLICT (username) DO NOTHING;
     `);
     console.log(
@@ -1888,6 +1894,30 @@ async function seedPhase2() {
       SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
       FROM users u, areas a
       WHERE u.username = 'satgas_taman_bungkul_1' AND a.id = '${BUNGKUL_AREA_ID}'
+      ON CONFLICT DO NOTHING;
+    `);
+    // korlap_taman_aktif_1 → Taman Bungkul + Taman Flora (multi-area within Rayon Taman Aktif)
+    await queryRunner.query(`
+      INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      FROM users u, areas a
+      WHERE u.username = 'korlap_taman_aktif_1' AND a.id IN ('${BUNGKUL_AREA_ID}', '${TAMAN_FLORA_AREA_ID}')
+      ON CONFLICT DO NOTHING;
+    `);
+    // linmas_taman_aktif_1 → Taman Bungkul
+    await queryRunner.query(`
+      INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      FROM users u, areas a
+      WHERE u.username = 'linmas_taman_aktif_1' AND a.id = '${BUNGKUL_AREA_ID}'
+      ON CONFLICT DO NOTHING;
+    `);
+    // satgas_taman_flora_1 → Taman Flora
+    await queryRunner.query(`
+      INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      FROM users u, areas a
+      WHERE u.username = 'satgas_taman_flora_1' AND a.id = '${TAMAN_FLORA_AREA_ID}'
       ON CONFLICT DO NOTHING;
     `);
 

@@ -82,6 +82,11 @@ import {
  * | linmas          | linmas_pusat_2          | 081200000021   | Darmo Pulau 5 only                     |
  * | satgas          | satgas_pusat_3        | 081200000022   | Darmo Pulau 4 only                     |
  * | satgas          | satgas_taman_bungkul_1  | 081200000040   | Taman Bungkul (Rayon Taman Aktif)      |
+ * | korlap          | korlap_taman_aktif_1    | 081200000041   | Rayon Taman Aktif — Bungkul + Flora    |
+ * | linmas          | linmas_taman_aktif_1    | 081200000042   | Rayon Taman Aktif — Taman Bungkul      |
+ * | kepala_rayon    | kepala_rayon_taman_aktif_1 | 081200000043 | Rayon Taman Aktif                      |
+ * | admin_data      | admin_data_taman_aktif_1 | 081200000044  | Rayon Taman Aktif                      |
+ * | satgas          | satgas_taman_flora_1    | 081200000045   | Taman Flora (Rayon Taman Aktif)        |
  *
  * REAL USERS (all passwords: password123)
  *
@@ -796,7 +801,8 @@ async function seedStaging() {
       RAYON_PUSAT_ID,
       DARMO_P4_AREA_ID,
     );
-    // satgas_taman_bungkul_1: Rayon Taman Aktif → primary = Taman Bungkul (park worker)
+    // ── Rayon Taman Aktif — full role matrix for testing the logical-bucket rayon ──
+    // satgas_taman_bungkul_1: primary = Taman Bungkul (park worker)
     await insertUser(
       '5a0b0001-0000-4002-8003-000000000002',
       'satgas_taman_bungkul_1',
@@ -805,6 +811,49 @@ async function seedStaging() {
       '081200000040',
       RAYON_TAMAN_AKTIF_ID,
       AREA_BUNGKUL_ID,
+    );
+    await insertUser(
+      '5a0b0002-0000-4002-8003-000000000001',
+      'korlap_taman_aktif_1',
+      'Korlap Taman Aktif Satu',
+      'korlap',
+      '081200000041',
+      RAYON_TAMAN_AKTIF_ID,
+      AREA_BUNGKUL_ID,
+    );
+    await insertUser(
+      '5a0b0002-0000-4002-8003-000000000002',
+      'linmas_taman_aktif_1',
+      'Linmas Taman Aktif Satu',
+      'linmas',
+      '081200000042',
+      RAYON_TAMAN_AKTIF_ID,
+      AREA_BUNGKUL_ID,
+    );
+    await insertUser(
+      '5a0b0002-0000-4002-8003-000000000003',
+      'kepala_rayon_taman_aktif_1',
+      'Kepala Rayon Taman Aktif Satu',
+      'kepala_rayon',
+      '081200000043',
+      RAYON_TAMAN_AKTIF_ID,
+    );
+    await insertUser(
+      '5a0b0002-0000-4002-8003-000000000004',
+      'admin_data_taman_aktif_1',
+      'Admin Data Taman Aktif Satu',
+      'admin_data',
+      '081200000044',
+      RAYON_TAMAN_AKTIF_ID,
+    );
+    await insertUser(
+      '5a0b0002-0000-4002-8003-000000000005',
+      'satgas_taman_flora_1',
+      'Satgas Taman Flora Satu',
+      'satgas',
+      '081200000045',
+      RAYON_TAMAN_AKTIF_ID,
+      TAMAN_FLORA_AREA_ID,
     );
 
     // ── Phase 3 — public intake (staff_kecamatan) ──────────────
@@ -1160,9 +1209,19 @@ async function seedStaging() {
     await assignArea(USER_SATGAS_BUNGKUL_ID, DARMO_P4_AREA_ID);
     console.log('  ✓ satgas_pusat_3 → Darmo Pulau 4');
 
-    // satgas_taman_bungkul_1 → Taman Bungkul (Rayon Taman Aktif park worker)
+    // Rayon Taman Aktif role matrix
     await assignArea('5a0b0001-0000-4002-8003-000000000002', AREA_BUNGKUL_ID);
     console.log('  ✓ satgas_taman_bungkul_1 → Taman Bungkul');
+    // korlap_taman_aktif_1 → Taman Bungkul + Taman Flora (multi-area within rayon)
+    await assignArea('5a0b0002-0000-4002-8003-000000000001', AREA_BUNGKUL_ID);
+    await assignArea('5a0b0002-0000-4002-8003-000000000001', TAMAN_FLORA_AREA_ID);
+    console.log('  ✓ korlap_taman_aktif_1 → Taman Bungkul + Taman Flora');
+    // linmas_taman_aktif_1 → Taman Bungkul
+    await assignArea('5a0b0002-0000-4002-8003-000000000002', AREA_BUNGKUL_ID);
+    console.log('  ✓ linmas_taman_aktif_1 → Taman Bungkul');
+    // satgas_taman_flora_1 → Taman Flora
+    await assignArea('5a0b0002-0000-4002-8003-000000000005', TAMAN_FLORA_AREA_ID);
+    console.log('  ✓ satgas_taman_flora_1 → Taman Flora');
 
     // Real users
     await assignArea(USER_RAKHMAT_ID, AREA_DARMO_P1_ID);
