@@ -22,10 +22,7 @@ import {
 import { ShiftsService } from './shifts.service';
 import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
-import {
-  AttendanceDaySummaryDto,
-  AttendanceDayDetailDto,
-} from './dto/attendance-day.dto';
+import { AttendanceDaySummaryDto, AttendanceDayDetailDto } from './dto/attendance-day.dto';
 import { AttendanceFilterDto } from './dto/attendance-filter.dto';
 import { Shift } from './entities/shift.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -174,7 +171,7 @@ export class ShiftsController {
   @ApiOperation({
     summary: 'Get my attendance history grouped by day',
     description:
-      'Returns the authenticated user\'s regular (non-overtime) attendance, grouped by WIB ' +
+      "Returns the authenticated user's regular (non-overtime) attendance, grouped by WIB " +
       'calendar day and paginated by day (newest first). Each day summarizes the first clock-in, ' +
       'last clock-out, shift count and total worked minutes.',
   })

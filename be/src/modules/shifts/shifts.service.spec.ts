@@ -676,7 +676,10 @@ describe('ShiftsService', () => {
 
     it('filters by status=late', async () => {
       // Make the older day on-time by giving it a permissive schedule.
-      const onTimeNight = { ...dayShifts[2], shift_definition: { start_time: '23:30:00', crosses_midnight: true } };
+      const onTimeNight = {
+        ...dayShifts[2],
+        shift_definition: { start_time: '23:30:00', crosses_midnight: true },
+      };
       mockRepository.find.mockResolvedValue([dayShifts[0], dayShifts[1], onTimeNight]);
 
       const result = await service.findMyAttendanceDays(

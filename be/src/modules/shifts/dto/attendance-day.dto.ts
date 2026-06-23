@@ -10,7 +10,7 @@ export class AttendanceDaySummaryDto {
   date: string;
 
   @ApiProperty({
-    description: "Earliest clock-in of the day (ISO 8601)",
+    description: 'Earliest clock-in of the day (ISO 8601)',
     example: '2026-06-22T01:05:00.000Z',
   })
   first_clock_in: string;

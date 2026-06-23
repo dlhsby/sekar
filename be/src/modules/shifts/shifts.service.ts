@@ -504,15 +504,9 @@ export class ShiftsService {
 
     const summaries: AttendanceDaySummaryDto[] = [];
     for (const [date, dayShifts] of byDay) {
-      const earliest = dayShifts.reduce((a, b) =>
-        a.clock_in_time <= b.clock_in_time ? a : b,
-      );
-      const clockOuts = dayShifts
-        .map((s) => s.clock_out_time)
-        .filter((t): t is Date => !!t);
-      const lastClockOut = clockOuts.length
-        ? clockOuts.reduce((a, b) => (a >= b ? a : b))
-        : null;
+      const earliest = dayShifts.reduce((a, b) => (a.clock_in_time <= b.clock_in_time ? a : b));
+      const clockOuts = dayShifts.map((s) => s.clock_out_time).filter((t): t is Date => !!t);
+      const lastClockOut = clockOuts.length ? clockOuts.reduce((a, b) => (a >= b ? a : b)) : null;
       const hasActive = dayShifts.some((s) => !s.clock_out_time);
       const totalWorkedMinutes = dayShifts.reduce((acc, s) => {
         const end = s.clock_out_time ?? now;
