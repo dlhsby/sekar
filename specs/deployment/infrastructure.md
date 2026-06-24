@@ -4,7 +4,7 @@ Deep-dive reference for AWS managed services and on-prem deployments. **For depl
 
 ## Current Topology (2026-06)
 
-SEKAR runs on two targets: **(1) Staging/UAT** on AWS account **659828096624** (region **ap-southeast-3** Jakarta), co-tenant with project KPI on shared **t3.micro** EC2, served plain HTTP via KPI's Caddy; **SHARED RDS `dlhsby` (database `sekar_staging`)** and S3 `sekar-media-staging` (via instance role, no static keys); Redis in-stack container. Deploy via **GitHub OIDC + SSM Run Command** (no SSH). **(2) Production** on **on-prem (pemkot) server**, Docker Compose (`docker-compose.prod.yml`), self-hosted Postgres, Redis, MinIO — not yet deployed. **Env/secrets use dotenvx** (`.env.staging` / `.env.production` committed encrypted; private keys are GitHub Environment secrets; AWS staging box reads key from SSM `/sekar/staging/BE_DOTENV_PRIVATE_KEY`).
+SEKAR runs on two targets: **(1) Staging/UAT** on AWS account **659828096624** (region **ap-southeast-3** Jakarta), sole tenant on **t3.micro** EC2 (dlhsby box); **SHARED RDS `dlhsby` (database `sekar_staging`)** and S3 `sekar-media-staging` (via instance role, no static keys); Redis in-stack container; Caddy TLS edge (SEKAR-owned). Deploy via **GitHub OIDC + SSM Run Command** (no SSH). **(2) Production** on **on-prem (pemkot) server**, Docker Compose (`docker-compose.prod.yml`), self-hosted Postgres, Redis, MinIO — not yet deployed. **Env/secrets use dotenvx** (`.env.staging` / `.env.production` committed encrypted; private keys are GitHub Environment secrets; AWS staging box reads key from SSM `/sekar/staging/BE_DOTENV_PRIVATE_KEY`).
 
 ---
 
@@ -16,15 +16,15 @@ The following VPC, RDS, CloudFront, and ElastiCache sections describe a fuller m
 
 ## 1. AWS Account Structure (Reference Layout)
 
-**Current reality:** Staging co-tenants on account **659828096624** (shared with KPI project). Production is on-prem (no AWS). This section describes the *reference* architecture for a dedicated multi-account, multi-region managed setup.
+**Current reality:** Staging on account **659828096624** (sole tenant, SEKAR-only as of 2026-06 after KPI decommission). Production is on-prem (no AWS). This section describes the *reference* architecture for a dedicated multi-account, multi-region managed setup.
 
 ### Reference Account Organization
 
 ```
 Single AWS Account (659828096624)
 └── Staging Environment (current)
-    ├── EC2 t3.micro (shared KPI Caddy gateway)
-    ├── RDS: dlhsby, database sekar_staging (shared)
+    ├── EC2 t3.micro (SEKAR sole tenant, dlhsby box)
+    ├── RDS: dlhsby, database sekar_staging (SEKAR-only as of 2026-06)
     ├── S3: sekar-media-staging
     └── Redis: in-stack container
 
@@ -192,10 +192,10 @@ CIDR: 10.0.0.0/16
 #### Staging (Current)
 | Parameter | Value |
 |-----------|-------|
-| Instance Type | db.t3.micro (shared) |
-| Database | sekar_staging (on dlhsby) |
+| Instance Type | db.t3.micro |
+| Database | sekar_staging (on shared RDS `dlhsby`, formerly `kobin-kpi-db`) |
 | Backup Retention | 7 days |
-| Notes | Co-tenant with KPI project; no dedicated RDS |
+| Notes | SEKAR sole tenant as of 2026-06; no dedicated RDS |
 
 #### Production Reference (Not Provisioned)
 | Parameter | Value |
@@ -662,9 +662,9 @@ See [monitoring.md](./monitoring.md) for detailed alarm configurations.
 
 ## 12. Cost Estimation (Reference)
 
-### Current Staging (AWS Co-tenant)
+### Current Staging (AWS, Sole Tenant)
 
-Staging runs on a **shared t3.micro** (KPI cost covers ~$7/mo) and **shared RDS instance** — minimal isolated cost.
+Staging runs on a **t3.micro** (SEKAR-only, ~$7/mo as of 2026-06) and **shared RDS instance** — minimal isolated cost.
 
 ### Reference Production Cost Models (Not Provisioned)
 

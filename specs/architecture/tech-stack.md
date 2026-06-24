@@ -255,7 +255,7 @@ Complete technology specification for all SEKAR system components.
 ### Cloud & On-Prem Infrastructure
 | Technology | Purpose | Status |
 |------------|---------|--------|
-| **AWS (Staging)** | Cloud infrastructure | ap-southeast-3, co-tenant EC2 + RDS |
+| **AWS (Staging)** | Cloud infrastructure | ap-southeast-3, sole tenant EC2 + shared RDS |
 | **AWS RDS** | Managed PostgreSQL (staging) | Automated backups, scaling |
 | **AWS S3** | Object storage (staging) | Reliable, scalable media storage |
 | **AWS Systems Manager** | Secret rotation, parameter store | Per-environment keys via GitHub OIDC |

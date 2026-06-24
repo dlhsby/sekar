@@ -23,8 +23,8 @@ It walks the four scenarios end-to-end — **run locally → obtain keys → dep
 1. **Production → on-prem (pemkot) server** — Docker Compose, **platform-agnostic** (Windows
    Server *or* Linux). One host runs everything: PostgreSQL + Redis + MinIO + backend + web +
    reverse proxy. No cloud bill. → **§E** (`docker-compose.prod.yml`).
-2. **Staging / UAT → AWS** — co-tenant with KPI on a shared `t3.micro`: backend + web + Redis
-   containers behind the existing Caddy, AWS RDS (`sekar_staging`), AWS S3 (instance role),
+2. **Staging / UAT → AWS** — EC2 `t3.micro` (dedicated SEKAR box, sole tenant as of 2026-06): backend + web + Redis
+   containers behind the SEKAR-owned Caddy, shared RDS `dlhsby` (database `sekar_staging`), AWS S3 (instance role),
    secrets in SSM Parameter Store. → **§D** (`infra/compose.staging.yml`).
 3. *(Reference)* fuller managed-cloud layout (ECS/ElastiCache/CloudFront) → **Appendix A**.
 
@@ -32,7 +32,7 @@ It walks the four scenarios end-to-end — **run locally → obtain keys → dep
 
 | | **Local dev** | **Staging (AWS)** | **Production (on-prem)** |
 |--|--------------|-------------|----------------|
-| Where | laptop | shared AWS EC2 (co-tenant) | pemkot server (Win/Linux) |
+| Where | laptop | AWS EC2 (sole tenant, dlhsby box) | pemkot server (Win/Linux) |
 | Compose file | `infra/` dev | `infra/compose.staging.yml` | `docker-compose.prod.yml` |
 | Env file | `.env.local` (per workspace) | `/opt/sekar/.env` (from SSM) | `.env.production` (root) |
 | Object storage | **MinIO** (in `infra/`) | **AWS S3** (instance role) | **MinIO** (in `docker-compose.prod.yml`) |
@@ -113,9 +113,9 @@ ciphertext). The one real secret is the per-file private key in **`.env.keys`** 
 
 ---
 
-## D. Deploy to staging (AWS — co-tenant)
+## D. Deploy to staging (AWS — sole tenant)
 
-Staging/UAT runs on **AWS**, co-tenant with the KPI project on one shared `t3.micro`
+Staging/UAT runs on **AWS**, sole tenant (SEKAR-owned as of 2026-06) on the `t3.micro`
 (account `659828096624`, region `ap-southeast-3`, CLI profile `sekar`). It does **not** use
 the self-hosted `docker-compose.prod.yml` — that's the on-prem **production** stack (§E).
 Authoritative deltas live in [ADR-028 addendum](../architecture/decisions/ADR-028-staging-environment.md).
@@ -137,18 +137,16 @@ Authoritative deltas live in [ADR-028 addendum](../architecture/decisions/ADR-02
   DNS A record `adminer.wahyutrip.com → 16.79.124.63`.
 
 ### Topology
-- **Edge/TLS:** reuse KPI's **Caddy** on 80/443 via a shared external Docker network `edge`;
-  SEKAR's two site blocks live in [`infra/Caddyfile.staging`](../../infra/Caddyfile.staging)
-  (the source of truth). Bare hostnames → Caddy auto-provisions Let's Encrypt certs and
+- **Edge/TLS:** SEKAR's own **Caddy** service (`sekar-caddy`) on 80/443 via a shared external Docker network `edge`;
+  site blocks live in [`infra/Caddyfile.staging`](../../infra/Caddyfile.staging)
+  (the source of truth, served directly by SEKAR's deploy). Bare hostnames → Caddy auto-provisions Let's Encrypt certs and
   redirects HTTP→HTTPS.
-  - **⚠ Cross-repo coupling (keep in sync):** Caddy is owned by the **KPI** repo
-    (`kobin-kpi-procurement`, `infra/Caddyfile`), which auto-deploys to the box on push. SEKAR's
-    site blocks must be **mirrored into that KPI Caddyfile** — they are *not* applied by SEKAR's
-    own deploy. If you change them here, copy the change into the KPI repo too, or a KPI redeploy
-    will drop SEKAR's routes. (SEKAR's `deploy-staging.yml` only `caddy reload`s the existing config.)
-  - **⚠ Applying a Caddyfile change on the box:** the file is bind-mounted into the caddy
+  - **Caddyfile is SEKAR-owned:** The `sekar-caddy` service is defined in `infra/compose.staging.yml` and configured by
+    `infra/Caddyfile.staging`. When SEKAR deploys, it applies the Caddyfile directly. (As of 2026-06, the KPI project
+    was decommissioned; SEKAR is the sole tenant and owns the Caddy TLS edge.)
+  - **Applying a Caddyfile change:** the file is bind-mounted into the caddy
     container as a **single file (read-only)**, so editing it in place (`sed -i`/editors) swaps the
-    inode and `caddy reload` reports "config is unchanged". Push via the KPI repo (preferred), or
+    inode and `caddy reload` reports "config is unchanged". Push via the SEKAR repo, then redeploy, or
     **restart** the caddy container after editing the box file — a plain reload is not enough.
 - **Apps:** `backend` + `web` + `docs` (ECR images) + a small `redis` container —
   [`infra/compose.staging.yml`](../../infra/compose.staging.yml), per-container memory limits.
@@ -156,8 +154,8 @@ Authoritative deltas live in [ADR-028 addendum](../architecture/decisions/ADR-02
     built into the `sekar-docs` ECR image by CI and served as static HTML by its bundled nginx.
     One-time setup: create the `sekar-docs` ECR repo, add the `ECR_DOCS` repo Variable, and add
     DNS A record `docs.sekar.wahyutrip.com → 16.79.124.63`. Caddy block in
-    [`infra/Caddyfile.staging`](../../infra/Caddyfile.staging) (mirror into the KPI Caddyfile, per
-    the cross-repo note above). No auth — anyone can read it. Content edits (markdown under
+    [`infra/Caddyfile.staging`](../../infra/Caddyfile.staging) is part of SEKAR's config
+    and deployed with the SEKAR stack. No auth — anyone can read it. Content edits (markdown under
     `fe/docs/docs/`) auto-rebuild & redeploy on push to `main`.
 - **DB:** `sekar_staging` database + `sekar` role on the **shared** RDS `dlhsby` (`DATABASE_SSL=true`).
 - **Media:** S3 `sekar-media-staging` via the **EC2 instance role** — no static AWS keys on the host.
@@ -195,7 +193,7 @@ docker buildx build --platform linux/amd64 -f fe/web/Dockerfile \
 
 # 2. On the box (via SSM, as ec2-user): seed the dotenvx key, ensure edge net, pull, up
 bash ~/sekar/infra/seed-env-from-ssm.sh          # writes /opt/sekar/.env (the private key only)
-docker network create edge 2>/dev/null; docker network connect edge kobin-kpi-caddy 2>/dev/null
+docker network create edge 2>/dev/null; docker network connect edge sekar-caddy 2>/dev/null
 cd ~/sekar/infra && IMAGE_TAG=staging docker compose -f compose.staging.yml up -d --wait
 
 # 3. First boot only: migrate + seed (compiled scripts; prod image has no ts-node)

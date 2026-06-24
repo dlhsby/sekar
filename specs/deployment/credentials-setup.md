@@ -702,8 +702,8 @@ See `specs/deployment/encrypted-secrets.md` for how to set up dotenvx encryption
 
 #### Staging RDS — master (root) credentials
 
-The staging database lives on the shared AWS RDS instance **`dlhsby`** (formerly
-`kobin-kpi-db`, renamed when project KPI was decommissioned). SEKAR's app authenticates
+The staging database lives on the shared AWS RDS instance **`dlhsby`** (formerly `kobin-kpi-db`;
+renamed when project KPI was decommissioned in 2026-06). SEKAR's app authenticates
 as the dedicated **`sekar`** role against the **`sekar_staging`** database — it never
 uses the master account. The instance **master (root)** credentials are:
 

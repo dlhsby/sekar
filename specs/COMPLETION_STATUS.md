@@ -10,7 +10,7 @@
 ## 🚀 Staging / UAT Deployment Status (AWS — rebuilt 2026-06-18 · **UAT sign-off 2026-06-22**)
 
 Environment model: **production → on-prem (pemkot) Docker Compose, platform-agnostic**;
-**staging/UAT → AWS**, co-tenant with KPI on a shared `t3.micro`. See
+**staging/UAT → AWS**, sole tenant (SEKAR-only as of 2026-06) on a `t3.micro` EC2. See
 [ADR-028 addendum](architecture/decisions/ADR-028-staging-environment.md) +
 `specs/deployment/deployment-guide.md` §D.
 
@@ -23,12 +23,12 @@ Environment model: **production → on-prem (pemkot) Docker Compose, platform-ag
 | **Auth** | ✅ Working | `superadmin/password123` verified (JWT) |
 | **Object storage** | ✅ S3 | `sekar-media-staging` via **EC2 instance role** (no static keys) |
 | **Redis** | ✅ In-stack | `redis:7-alpine` container (DB+Redis health `/ready` ok) |
-| **Edge / TLS** | ✅ HTTPS | reuse KPI's Caddy; bare-hostname blocks → Let's Encrypt auto-HTTPS + HTTP→HTTPS redirect |
+| **Edge / TLS** | ✅ HTTPS | SEKAR-owned Caddy service (`sekar-caddy`); bare-hostname blocks → Let's Encrypt auto-HTTPS + HTTP→HTTPS redirect |
 | **FCM** | ✅ On | `FCM_ENABLED=true` — encrypted Firebase service-account creds (project `dlhsby-sekar-staging`) |
 | **Secrets** | ✅ dotenvx | encrypted `be/.env.staging` baked into the image; only the private key (`DOTENV_PRIVATE_KEY_STAGING`) is pulled from SSM `/sekar/staging/BE_DOTENV_PRIVATE_KEY` into `/opt/sekar/.env` at deploy |
 | **CI/CD** | ✅ Wired | 8 active workflows (`deploy-staging` test-gated OIDC→ECR→SSM + RDS snapshot · `backend-quality`/`web-quality`/`mobile-quality` lint+tsc+test · `mobile-release` signed APK/AAB · `tokens-verify` · `web-e2e`/`mobile-e2e`). dotenvx-encrypted env per environment; manual mobile release dispatch. web-e2e green (capacity spec made date-independent Jun 19). See `specs/deployment/ci-cd.md` |
 | **Error tracking** | ✅ Wired (dormant) | Sentry on web (`instrumentation*.ts` + `global-error.tsx`, `withSentryConfig`) + mobile (`MapErrorBoundary`→`captureException`); no-ops until `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_DSN_MOBILE` set |
-| **Tooling** | ✅ Live | **Swagger** `https://api.sekar.wahyutrip.com/api/v1/docs` (not env-gated) · **Adminer** `https://adminer.wahyutrip.com` behind Caddy HTTP basic-auth (user `sekar`; own container in `compose.staging.yml`, block mirrored into KPI's Caddyfile) |
+| **Tooling** | ✅ Live | **Swagger** `https://api.sekar.wahyutrip.com/api/v1/docs` (not env-gated) · **Adminer** `https://adminer.wahyutrip.com` behind Caddy HTTP basic-auth (user `sekar`; own container in `compose.staging.yml`, Caddy block in `infra/Caddyfile.staging`) |
 | **Mobile distribution** | ✅ Live | ARM build at `https://sekar.wahyutrip.com/android` (arm64-v8a+armeabi-v7a, real phones) · x86_64 build at `/android_x86` (`platform=android_x86`, emulators/WSA/PC). `mobile-release.yml` builds + publishes both APKs per release; `downloadUrl` is https (Express `trust proxy`) |
 | **User manual (docs)** | 🆕 Wired, pending first deploy | Public no-login Docusaurus site (`fe/docs/`) → `https://docs.sekar.wahyutrip.com`. `sekar-docs` service in `compose.staging.yml` + Caddy block + CI build/push/smoke wired. **One-time before first deploy:** create `sekar-docs` ECR repo, add `ECR_DOCS` repo var, add DNS A `docs.sekar.wahyutrip.com → 16.79.124.63`. In-app **Panduan** sidebar link (`NEXT_PUBLIC_DOCS_URL`). Content edits auto-deploy on push to `main` |
 | **Releases** | ✅ First cut | **`sekar-v0.1.0`** (coupled be+web, `:0.1.0` ECR images + GitHub Release, no auto-deploy). Staging stays continuous/SHA-pinned on `main` |

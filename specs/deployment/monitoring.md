@@ -4,7 +4,7 @@ Comprehensive monitoring, logging, and observability specifications for SEKAR pr
 
 **What's live vs planned (2026-06):**
 - **LIVE:** Health endpoints (`/api/v1/health/live`, `/api/v1/health/ready` with DB + Redis checks), Docker container logs, Redis monitoring
-- **STAGING-ONLY:** CloudWatch metrics/dashboards (AWS co-tenant with KPI on shared t3.micro, shared RDS `dlhsby` — SEKAR cannot own RDS-level alarms)
+- **STAGING-ONLY:** CloudWatch metrics/dashboards (AWS EC2 `t3.micro` sole tenant; shared RDS `dlhsby` — SEKAR cannot own RDS-level alarms)
 - **WIRED, DORMANT:** Sentry error tracking — SDK integrated across **backend** (`be/src/common/sentry`), **web** (`fe/web/src/instrumentation*.ts` + `global-error.tsx`), and **mobile** (`fe/mobile/src/services/crashReporting`). All no-op until a DSN is configured (`SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_DSN_MOBILE`). Create a Sentry project and set those to go live.
 - **PLANNED/NOT LIVE:** dedicated dashboards, production monitoring specification (on-prem Docker logs only for now)
 - **Authoritative hub:** [`deployment-guide.md`](./deployment-guide.md) for infra layout; [`ci-cd.md`](./ci-cd.md) for pipeline.
@@ -63,7 +63,7 @@ This document defines the monitoring strategy, alerting rules, log aggregation, 
 
 | Layer | Tools | Scope |
 |-------|-------|-------|
-| **Infrastructure (Staging)** | CloudWatch, AWS Health Dashboard | Shared t3.micro box + co-tenant metrics |
+| **Infrastructure (Staging)** | CloudWatch, AWS Health Dashboard | EC2 t3.micro sole tenant (dlhsby box) |
 | **Infrastructure (Production)** | Docker logs, basic host monitoring | On-prem VM (not yet fully specified) |
 | **Application** | CloudWatch Logs (staging), Docker logs (prod) | API performance, business metrics |
 | **Database (Staging)** | RDS Performance Insights, CloudWatch (limited — shared RDS) | Query perf, connections (partial visibility) |
@@ -75,7 +75,7 @@ This document defines the monitoring strategy, alerting rules, log aggregation, 
 
 ## 2. CloudWatch Dashboards (Staging Only)
 
-**Note:** These dashboards apply to staging (AWS shared box with KPI). SEKAR cannot own alarms on shared RDS or EC2. Production (on-prem) monitoring is not yet specified.
+**Note:** These dashboards apply to staging (AWS EC2 sole tenant). SEKAR cannot own alarms on shared RDS. Production (on-prem) monitoring is not yet specified.
 
 ### Dashboard 1: System Overview (Staging)
 
