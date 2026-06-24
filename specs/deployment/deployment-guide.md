@@ -159,7 +159,7 @@ Authoritative deltas live in [ADR-028 addendum](../architecture/decisions/ADR-02
     [`infra/Caddyfile.staging`](../../infra/Caddyfile.staging) (mirror into the KPI Caddyfile, per
     the cross-repo note above). No auth — anyone can read it. Content edits (markdown under
     `fe/docs/docs/`) auto-rebuild & redeploy on push to `main`.
-- **DB:** `sekar_staging` database + `sekar` role on the **shared** RDS `kobin-kpi-db` (`DATABASE_SSL=true`).
+- **DB:** `sekar_staging` database + `sekar` role on the **shared** RDS `dlhsby` (`DATABASE_SSL=true`).
 - **Media:** S3 `sekar-media-staging` via the **EC2 instance role** — no static AWS keys on the host.
 - **Secrets (dotenvx):** the backend's full staging config lives in the committed, **encrypted**
   [`be/.env.staging`](../../be/.env.staging) baked into the image. The only thing the box needs

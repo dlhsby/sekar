@@ -102,7 +102,7 @@ table/flow are retained for history.
 | Web hosting | Vercel Preview | **Container on the box**, fronted by KPI's Caddy |
 | Edge / TLS | — | Reuse KPI's **Caddy** via shared external `edge` network; **plain HTTP for now** (`http://` blocks in `infra/Caddyfile.staging`) |
 | Domains | `api-staging` / `staging` | **`api.sekar.wahyutrip.com`** / **`sekar.wahyutrip.com`** (canonical names; staging holds them until a dedicated prod takes over) |
-| Database | `sekar_staging_db` | **`sekar_staging`** db + `sekar` role on the **shared** RDS (`kobin-kpi-db`), SSL required |
+| Database | `sekar_staging_db` | **`sekar_staging`** db + `sekar` role on the **shared** RDS (`dlhsby`), SSL required |
 | Redis | Same instance, DB 1 | **In-stack `redis:7-alpine` container** (ElastiCache avoided — new-account Free Tier is credit-based) |
 | S3 | `sekar-media-staging` | `sekar-media-staging` — via the **EC2 instance role**, no static keys |
 | Secrets | — | **SSM Parameter Store** (SecureString `/sekar/staging/*`) → `/opt/sekar/.env` at deploy |

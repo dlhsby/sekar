@@ -1,22 +1,26 @@
-# SEKAR staging — Caddy site blocks (source of truth).
+# SEKAR staging — the box's Caddyfile (source of truth; this IS the served file).
 #
-# These two blocks are appended to the SHARED Caddyfile that KPI's caddy container
-# serves on the box (/home/ec2-user/kobin-kpi-procurement/infra/Caddyfile) AND kept
-# in the KPI repo so a KPI redeploy does not drop SEKAR's routes.
+# Since project KPI was decommissioned, SEKAR owns the box's Caddy (the `caddy`
+# service in compose.staging.yml). The deploy syncs this file to
+# /home/ec2-user/sekar/infra/Caddyfile and bind-mounts it into the sekar-caddy
+# container; there is no longer a separate KPI Caddyfile to keep in sync.
 #
 # UAT runs over HTTPS — bare hostnames (no scheme) tell Caddy to auto-provision a
 # free Let's Encrypt cert and redirect HTTP→HTTPS automatically (DNS already points
-# at the Elastic IP and 80/443 are open — same as KPI's kobin.wahyutrip.com).
+# at the Elastic IP and 80/443 are open).
 #
-# Backend and web join the shared external `edge` network (see compose.staging.yml),
+# App containers join the shared external `edge` network (see compose.staging.yml),
 # so Caddy reaches them by container name.
 #
-# ⚠ Applying changes on the box: the box Caddyfile is bind-mounted into the caddy
-# container as a SINGLE FILE (read-only). Editing it in place with `sed -i`/editors
-# swaps the inode, so the container keeps serving the OLD content and `caddy reload`
-# reports "config is unchanged". After editing the box file, RESTART the caddy
-# container (`docker restart kobin-kpi-caddy`) so the bind re-resolves — a plain
-# reload is not enough. Also mirror this exact change into the KPI repo's Caddyfile.
+# ⚠ The box Caddyfile is bind-mounted as a SINGLE read-only file. Editing it in place
+# swaps the inode, so a plain `caddy reload` reports "config is unchanged". The deploy
+# force-recreates the sekar-caddy service so the new file (and recreated upstream IPs)
+# are picked up; to apply a manual change, `docker restart sekar-caddy`.
+
+# Global options — Let's Encrypt account email (expiry/issuance notices).
+{
+	email admin@wahyutrip.com
+}
 
 # API + WebSocket (Caddy streams the socket.io upgrade automatically).
 api.sekar.wahyutrip.com {

@@ -11,7 +11,7 @@ name: Deploy staging (AWS)
 #   ECR_WEB           659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-web
 #   ECR_DOCS          659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-docs
 #   EC2_INSTANCE_ID   i-08edccdc966c0985e
-#   RDS_INSTANCE_ID   kobin-kpi-db
+#   RDS_INSTANCE_ID   dlhsby
 # Required Environment Secret (staging environment):
 #   WEB_DOTENV_PRIVATE_KEY   dotenvx private key that decrypts fe/web/.env.staging at build
 #                            time (NEXT_PUBLIC_* incl. the Mapbox token).
@@ -205,6 +205,7 @@ jobs:
           set -euo pipefail
           COMPOSE_B64=$(base64 -w0 infra/compose.staging.yml)
           SEED_B64=$(base64 -w0 infra/seed-env-from-ssm.sh)
+          CADDY_B64=$(base64 -w0 infra/Caddyfile.staging)
 
           # Script that runs on the box as ec2-user (ECR cred helper lives there).
           BOX=$(cat <<EOF
@@ -212,8 +213,12 @@ jobs:
           mkdir -p ~/sekar/infra
           echo $COMPOSE_B64 | base64 -d > ~/sekar/infra/compose.staging.yml
           echo $SEED_B64 | base64 -d > ~/sekar/infra/seed-env-from-ssm.sh
+          # SEKAR owns the box's Caddy since KPI was decommissioned; ship its Caddyfile.
+          echo $CADDY_B64 | base64 -d > ~/sekar/infra/Caddyfile
           docker network create edge 2>/dev/null || true
-          docker network connect edge kobin-kpi-caddy 2>/dev/null || true
+          # One-shot: drop KPI's old caddy if it is still holding 80/443 so sekar-caddy
+          # can bind them on the first migrated deploy (no-op once it is gone).
+          docker rm -f kobin-kpi-caddy 2>/dev/null || true
           bash ~/sekar/infra/seed-env-from-ssm.sh
           cd ~/sekar/infra
           export IMAGE_TAG=$SHA
@@ -224,11 +229,10 @@ jobs:
           # this script (it's fed to bash via a file, but -T is correct regardless).
           docker compose -f compose.staging.yml run --rm --no-deps -T --quiet-pull backend npm run migration:run:prod
           # --force-recreate guarantees containers are rebuilt from the freshly pulled,
-          # SHA-pinned image (a plain up can no-op against a stale local tag).
+          # SHA-pinned image (a plain up can no-op against a stale local tag). It also
+          # recreates sekar-caddy so a changed Caddyfile (new inode) and the recreated
+          # upstream container IPs are both picked up — no separate caddy reload needed.
           docker compose -f compose.staging.yml up -d --force-recreate --wait
-          # Recreated containers get new IPs on the edge network; KPI's long-running Caddy
-          # caches the old upstream IP and would 502 until it re-resolves. Reload it.
-          docker exec kobin-kpi-caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
           docker image prune -f
           # Fail loudly if the running image is not the SHA we just built — otherwise a
           # stale container would pass the smoke test (false positive).

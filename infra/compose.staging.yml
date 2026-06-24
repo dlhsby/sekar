@@ -6,7 +6,7 @@
 #
 #   - Postgres        -> AWS RDS (managed; not in this file)
 #   - Object storage  -> AWS S3   (via the EC2 instance role; no keys on the host)
-#   - TLS / 80,443    -> KPI's Caddy on the shared external `edge` network
+#   - TLS / 80,443    -> SEKAR's own Caddy (this stack) on the shared `edge` network
 #   - Redis           -> small in-stack container (Socket.IO adapter / BullMQ / streams)
 #
 # Runtime env is materialized to /opt/sekar/.env by infra/seed-env-from-ssm.sh
@@ -91,10 +91,36 @@ services:
     image: adminer:4.8.1
     container_name: sekar-adminer
     environment:
-      ADMINER_DEFAULT_SERVER: kobin-kpi-db.cvuoeguwo5dg.ap-southeast-3.rds.amazonaws.com
+      ADMINER_DEFAULT_SERVER: dlhsby.cvuoeguwo5dg.ap-southeast-3.rds.amazonaws.com
       ADMINER_DESIGN: dracula
     expose:
       - "8080" # internal only; reached via Caddy on the edge network
+    mem_limit: 96m
+    mem_reservation: 32m
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [edge]
+
+  # TLS edge for all SEKAR routes (api / sekar / docs / adminer .sekar.wahyutrip.com).
+  # Migrated into SEKAR when project KPI was decommissioned — SEKAR now owns the box's
+  # Caddy. Auto-provisions/renews Let's Encrypt certs, persisted in the reused
+  # caddy_data volume (so the migration did NOT trigger re-issuance). Reaches the app
+  # containers by name on the shared `edge` network.
+  #
+  # ⚠ The Caddyfile is bind-mounted as a single read-only file; the deploy
+  # force-recreates this service so both a changed file (new inode) and recreated
+  # upstream container IPs are picked up — a plain `caddy reload` would miss the inode.
+  caddy:
+    image: caddy:2-alpine
+    container_name: sekar-caddy
+    depends_on: [backend, web, docs, adminer]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data # issued certs — persisted across restarts
+      - caddy_config:/config
     mem_limit: 96m
     mem_reservation: 32m
     restart: unless-stopped
@@ -119,7 +145,8 @@ services:
     networks: [internal]
 
 networks:
-  # Shared with KPI's Caddy so the edge proxy can reach backend/web by container name.
+  # Shared bridge so SEKAR's Caddy reaches backend/web/docs/adminer by container name.
+  # Created by the deploy (`docker network create edge`) and declared external here.
   edge:
     external: true
   # Private to SEKAR; isolates Redis from the edge.
@@ -128,3 +155,12 @@ networks:
 
 volumes:
   redis-data:
+  # Reused from KPI's decommissioned caddy so the issued Let's Encrypt certs carry
+  # over (avoids LE rate limits on the migration). Named explicitly to bind the
+  # pre-existing volume regardless of this compose project's name prefix.
+  caddy_data:
+    external: true
+    name: kobin-kpi-prod_caddy_data
+  caddy_config:
+    external: true
+    name: kobin-kpi-prod_caddy_config

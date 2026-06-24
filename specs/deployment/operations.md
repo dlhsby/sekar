@@ -27,7 +27,7 @@
 
 **Production (On-Prem):** Local Docker PostgreSQL via `docker-compose.prod.yml`. Manual backups + point-in-time restore via pg_dump.
 
-**Staging (AWS):** Shared AWS RDS instance (`kobin-kpi-db`, database `sekar_staging`) in ap-southeast-3. Automated daily snapshots with 7-day retention.
+**Staging (AWS):** Shared AWS RDS instance (`dlhsby`, database `sekar_staging`) in ap-southeast-3. Automated daily snapshots with 7-day retention.
 
 **Development:** Local Docker PostgreSQL via `infra/docker-compose.yml`.
 
@@ -275,7 +275,7 @@ docker compose -f docker-compose.prod.yml up -d backend
 ```bash
 # Via AWS CLI
 aws rds restore-db-instance-to-point-in-time \
-  --source-db-instance-identifier kobin-kpi-db \
+  --source-db-instance-identifier dlhsby \
   --target-db-instance-identifier sekar-staging-recovered \
   --restore-time $(date -u +"%Y-%m-%dT%H:%M:%SZ") \
   --region ap-southeast-3

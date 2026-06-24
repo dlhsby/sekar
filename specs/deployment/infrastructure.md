@@ -4,7 +4,7 @@ Deep-dive reference for AWS managed services and on-prem deployments. **For depl
 
 ## Current Topology (2026-06)
 
-SEKAR runs on two targets: **(1) Staging/UAT** on AWS account **659828096624** (region **ap-southeast-3** Jakarta), co-tenant with project KPI on shared **t3.micro** EC2, served plain HTTP via KPI's Caddy; **SHARED RDS `kobin-kpi-db` (database `sekar_staging`)** and S3 `sekar-media-staging` (via instance role, no static keys); Redis in-stack container. Deploy via **GitHub OIDC + SSM Run Command** (no SSH). **(2) Production** on **on-prem (pemkot) server**, Docker Compose (`docker-compose.prod.yml`), self-hosted Postgres, Redis, MinIO — not yet deployed. **Env/secrets use dotenvx** (`.env.staging` / `.env.production` committed encrypted; private keys are GitHub Environment secrets; AWS staging box reads key from SSM `/sekar/staging/BE_DOTENV_PRIVATE_KEY`).
+SEKAR runs on two targets: **(1) Staging/UAT** on AWS account **659828096624** (region **ap-southeast-3** Jakarta), co-tenant with project KPI on shared **t3.micro** EC2, served plain HTTP via KPI's Caddy; **SHARED RDS `dlhsby` (database `sekar_staging`)** and S3 `sekar-media-staging` (via instance role, no static keys); Redis in-stack container. Deploy via **GitHub OIDC + SSM Run Command** (no SSH). **(2) Production** on **on-prem (pemkot) server**, Docker Compose (`docker-compose.prod.yml`), self-hosted Postgres, Redis, MinIO — not yet deployed. **Env/secrets use dotenvx** (`.env.staging` / `.env.production` committed encrypted; private keys are GitHub Environment secrets; AWS staging box reads key from SSM `/sekar/staging/BE_DOTENV_PRIVATE_KEY`).
 
 ---
 
@@ -24,7 +24,7 @@ The following VPC, RDS, CloudFront, and ElastiCache sections describe a fuller m
 Single AWS Account (659828096624)
 └── Staging Environment (current)
     ├── EC2 t3.micro (shared KPI Caddy gateway)
-    ├── RDS: kobin-kpi-db, database sekar_staging (shared)
+    ├── RDS: dlhsby, database sekar_staging (shared)
     ├── S3: sekar-media-staging
     └── Redis: in-stack container
 
@@ -185,7 +185,7 @@ CIDR: 10.0.0.0/16
 
 ## 4. RDS PostgreSQL Configuration (Reference Layout)
 
-**Current reality:** Staging uses **shared `kobin-kpi-db` RDS instance** (database `sekar_staging`); production is on-prem (self-hosted Postgres). This section is the *reference* architecture for dedicated managed RDS.
+**Current reality:** Staging uses **shared `dlhsby` RDS instance** (database `sekar_staging`); production is on-prem (self-hosted Postgres). This section is the *reference* architecture for dedicated managed RDS.
 
 ### Reference Database Instance Specifications
 
@@ -193,7 +193,7 @@ CIDR: 10.0.0.0/16
 | Parameter | Value |
 |-----------|-------|
 | Instance Type | db.t3.micro (shared) |
-| Database | sekar_staging (on kobin-kpi-db) |
+| Database | sekar_staging (on dlhsby) |
 | Backup Retention | 7 days |
 | Notes | Co-tenant with KPI project; no dedicated RDS |
 

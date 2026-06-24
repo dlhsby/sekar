@@ -694,7 +694,7 @@ AWS_REGION=ap-southeast-3
 AWS_ACCESS_KEY_ID=AKIA...staging-key...
 AWS_SECRET_ACCESS_KEY=...staging-secret...
 AWS_S3_BUCKET=sekar-media-staging
-DATABASE_HOST=kobin-kpi-db.xxxxx.ap-southeast-3.rds.amazonaws.com
+DATABASE_HOST=dlhsby.xxxxx.ap-southeast-3.rds.amazonaws.com
 DATABASE_NAME=sekar_staging
 ```
 

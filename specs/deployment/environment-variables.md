@@ -4,7 +4,7 @@ Comprehensive list of all environment variables used across all deployment phase
 
 **Secrets model:** All deploy files (`.env.staging`, `.env.production`, repo-root `.env.production`) are **committed ENCRYPTED via [dotenvx](https://dotenvx.com)** — secret values are `encrypted:…` ciphertext. The only real secret is the per-file private key in gitignored `.env.keys`; decryption keys are GitHub **Environment** secrets `BE_/WEB_/MOBILE_DOTENV_PRIVATE_KEY` (staging+production), or on AWS boxes via SSM `/sekar/staging/BE_DOTENV_PRIVATE_KEY`. **For procedures:** see `deployment-guide.md` (from-scratch hub) and `encrypted-secrets.md` (dotenvx workflow). This doc is the **variable catalogue**.
 
-**Infrastructure:** **Dev** = local MinIO + Postgres. **Staging** = AWS (region `ap-southeast-3`, shared RDS `kobin-kpi-db` db `sekar_staging`, S3 `sekar-media-staging` via instance role). **Production** = on-prem Docker Compose with MinIO. **Backend production env = repo-root `.env.production`** (drives `docker-compose.prod.yml`), NOT `be/.env.production`. FCM is **ENABLED** in staging+production (encrypted Firebase creds). Per-environment Google Maps keys (dev/staging/production) are encrypted in mobile env files.
+**Infrastructure:** **Dev** = local MinIO + Postgres. **Staging** = AWS (region `ap-southeast-3`, shared RDS `dlhsby` db `sekar_staging`, S3 `sekar-media-staging` via instance role). **Production** = on-prem Docker Compose with MinIO. **Backend production env = repo-root `.env.production`** (drives `docker-compose.prod.yml`), NOT `be/.env.production`. FCM is **ENABLED** in staging+production (encrypted Firebase creds). Per-environment Google Maps keys (dev/staging/production) are encrypted in mobile env files.
 
 ## File naming convention (standardised Phase 5)
 
@@ -38,7 +38,7 @@ PORT=3000
 APP_NAME=SEKAR
 
 # Database (PostgreSQL)
-DATABASE_HOST=localhost|kobin-kpi-db.ap-southeast-3.rds.amazonaws.com
+DATABASE_HOST=localhost|dlhsby.ap-southeast-3.rds.amazonaws.com
 DATABASE_PORT=5432
 DATABASE_USER=postgres|sekar_admin
 DATABASE_PASSWORD=<encrypted-secret>
@@ -428,7 +428,7 @@ NEXT_PUBLIC_WEBSOCKET_URL=ws://localhost:3000
 ```bash
 # Backend (.env.staging, encrypted via dotenvx, committed)
 NODE_ENV=staging
-DATABASE_HOST=kobin-kpi-db.ap-southeast-3.rds.amazonaws.com
+DATABASE_HOST=dlhsby.ap-southeast-3.rds.amazonaws.com
 DATABASE_PORT=5432
 DATABASE_NAME=sekar_staging
 DATABASE_SYNCHRONIZE=false
@@ -659,7 +659,7 @@ validateEnv();
 | Variable | Development | Staging | Production |
 |----------|------------|---------|------------|
 | `NODE_ENV` | development | staging | production |
-| `DATABASE_HOST` | localhost | kobin-kpi-db.ap-southeast-3.rds.amazonaws.com | localhost (on-prem compose) |
+| `DATABASE_HOST` | localhost | dlhsby.ap-southeast-3.rds.amazonaws.com | localhost (on-prem compose) |
 | `DATABASE_SYNCHRONIZE` | true | false | false |
 | `DATABASE_LOGGING` | true | false | false |
 | `DATABASE_SSL` | false | true (RDS) | true (on-prem) |

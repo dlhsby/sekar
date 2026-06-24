@@ -4,7 +4,7 @@ Comprehensive monitoring, logging, and observability specifications for SEKAR pr
 
 **What's live vs planned (2026-06):**
 - **LIVE:** Health endpoints (`/api/v1/health/live`, `/api/v1/health/ready` with DB + Redis checks), Docker container logs, Redis monitoring
-- **STAGING-ONLY:** CloudWatch metrics/dashboards (AWS co-tenant with KPI on shared t3.micro, shared RDS `kobin-kpi-db` — SEKAR cannot own RDS-level alarms)
+- **STAGING-ONLY:** CloudWatch metrics/dashboards (AWS co-tenant with KPI on shared t3.micro, shared RDS `dlhsby` — SEKAR cannot own RDS-level alarms)
 - **WIRED, DORMANT:** Sentry error tracking — SDK integrated across **backend** (`be/src/common/sentry`), **web** (`fe/web/src/instrumentation*.ts` + `global-error.tsx`), and **mobile** (`fe/mobile/src/services/crashReporting`). All no-op until a DSN is configured (`SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_DSN_MOBILE`). Create a Sentry project and set those to go live.
 - **PLANNED/NOT LIVE:** dedicated dashboards, production monitoring specification (on-prem Docker logs only for now)
 - **Authoritative hub:** [`deployment-guide.md`](./deployment-guide.md) for infra layout; [`ci-cd.md`](./ci-cd.md) for pipeline.
@@ -276,7 +276,7 @@ Actions:
 
 #### Alarm 3: Database CPU High (Shared RDS)
 
-**Metric:** `AWS/RDS/CPUUtilization` (kobin-kpi-db — shared with KPI)
+**Metric:** `AWS/RDS/CPUUtilization` (dlhsby — shared with KPI)
 **Threshold:** > 80% for 5 consecutive periods (5 minutes)
 **Action:** SNS → Email + Slack (informational; SEKAR cannot act on shared resource)
 **Priority:** P1 - High
@@ -288,7 +288,7 @@ MetricName: CPUUtilization
 Namespace: AWS/RDS
 Dimensions:
   - Name: DBInstanceIdentifier
-    Value: kobin-kpi-db
+    Value: dlhsby
 Statistic: Average
 Period: 60
 EvaluationPeriods: 5
@@ -300,7 +300,7 @@ Actions:
 
 #### Alarm 4: Database Storage Low (Shared RDS)
 
-**Metric:** `AWS/RDS/FreeStorageSpace` (kobin-kpi-db — shared with KPI)
+**Metric:** `AWS/RDS/FreeStorageSpace` (dlhsby — shared with KPI)
 **Threshold:** < 10 GB
 **Action:** SNS → Email + Slack (informational; SEKAR cannot act on shared resource)
 **Priority:** P1 - High
@@ -312,7 +312,7 @@ MetricName: FreeStorageSpace
 Namespace: AWS/RDS
 Dimensions:
   - Name: DBInstanceIdentifier
-    Value: kobin-kpi-db
+    Value: dlhsby
 Statistic: Average
 Period: 300
 EvaluationPeriods: 1
@@ -347,7 +347,7 @@ Actions:
 
 #### Alarm 6: Database Connections High (Shared RDS)
 
-**Metric:** `AWS/RDS/DatabaseConnections` (kobin-kpi-db)
+**Metric:** `AWS/RDS/DatabaseConnections` (dlhsby)
 **Threshold:** > 80 connections
 **Action:** SNS → Slack only (informational; shared resource)
 **Priority:** P2 - Medium
@@ -358,7 +358,7 @@ MetricName: DatabaseConnections
 Namespace: AWS/RDS
 Dimensions:
   - Name: DBInstanceIdentifier
-    Value: kobin-kpi-db
+    Value: dlhsby
 Statistic: Average
 Period: 300
 EvaluationPeriods: 2
@@ -464,7 +464,7 @@ Actions:
 
 #### Database Logs (Staging, Shared RDS)
 
-**Log Group:** `/aws/rds/instance/kobin-kpi-db/postgresql` (shared, limited visibility)
+**Log Group:** `/aws/rds/instance/dlhsby/postgresql` (shared, limited visibility)
 **Retention:** 7 days
 **Format:** PostgreSQL standard log format
 **Note:** SEKAR sees logs for its queries only; KPI also writes to this RDS.
@@ -963,7 +963,7 @@ Deep dive into why this happened.
 
 ### Staging (AWS Shared Box)
 
-**Cost Responsibility:** SEKAR shares t3.micro (EC2) + `kobin-kpi-db` (RDS) with KPI project. Cannot split costs per application without additional tagging/monitoring.
+**Cost Responsibility:** SEKAR shares t3.micro (EC2) + `dlhsby` (RDS) with KPI project. Cannot split costs per application without additional tagging/monitoring.
 
 **Budget Tracking (Shared):**
 - AWS Cost Explorer: Filter by tags or project (if available)

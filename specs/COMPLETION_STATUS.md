@@ -18,7 +18,7 @@ Environment model: **production → on-prem (pemkot) Docker Compose, platform-ag
 |--------|--------|---------|
 | **Backend API** | ✅ Live | `https://api.sekar.wahyutrip.com` (HTTPS via Caddy auto-HTTPS) |
 | **Web dashboard** | ✅ Live | `https://sekar.wahyutrip.com` (Mapbox baked, monitoring map OK) |
-| **Database** | ✅ Seeded | `sekar_staging` on shared RDS `kobin-kpi-db` (SSL); staging seed = **85 users** |
+| **Database** | ✅ Seeded | `sekar_staging` on shared RDS `dlhsby` (SSL); staging seed = **85 users** |
 | **Migrations** | ✅ Executed | full TypeORM migration set (`migration:run:prod`) |
 | **Auth** | ✅ Working | `superadmin/password123` verified (JWT) |
 | **Object storage** | ✅ S3 | `sekar-media-staging` via **EC2 instance role** (no static keys) |
