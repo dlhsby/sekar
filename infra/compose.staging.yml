@@ -1,4 +1,4 @@
-# SEKAR — AWS staging stack (co-tenant with KPI on the shared EC2 host)
+# SEKAR — AWS staging stack (sole tenant of the dlhsby EC2 box; KPI decommissioned)
 #
 # This is NOT the self-hosted on-prem stack (see docker-compose.prod.yml for that).
 # Staging reuses the box's existing Caddy as the TLS edge and AWS RDS as the database;
@@ -155,12 +155,12 @@ networks:
 
 volumes:
   redis-data:
-  # Reused from KPI's decommissioned caddy so the issued Let's Encrypt certs carry
-  # over (avoids LE rate limits on the migration). Named explicitly to bind the
-  # pre-existing volume regardless of this compose project's name prefix.
+  # SEKAR-owned caddy state under the dlhsby umbrella. Carries the issued Let's
+  # Encrypt certs (copied from KPI's old caddy volume on migration, so no LE
+  # re-issuance). External + explicitly named so the volume is project-prefix-agnostic.
   caddy_data:
     external: true
-    name: kobin-kpi-prod_caddy_data
+    name: dlhsby_caddy_data
   caddy_config:
     external: true
-    name: kobin-kpi-prod_caddy_config
+    name: dlhsby_caddy_config

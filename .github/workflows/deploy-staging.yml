@@ -213,12 +213,9 @@ jobs:
           mkdir -p ~/sekar/infra
           echo $COMPOSE_B64 | base64 -d > ~/sekar/infra/compose.staging.yml
           echo $SEED_B64 | base64 -d > ~/sekar/infra/seed-env-from-ssm.sh
-          # SEKAR owns the box's Caddy since KPI was decommissioned; ship its Caddyfile.
+          # SEKAR owns the box's Caddy (the sekar-caddy service); ship its Caddyfile.
           echo $CADDY_B64 | base64 -d > ~/sekar/infra/Caddyfile
           docker network create edge 2>/dev/null || true
-          # One-shot: drop KPI's old caddy if it is still holding 80/443 so sekar-caddy
-          # can bind them on the first migrated deploy (no-op once it is gone).
-          docker rm -f kobin-kpi-caddy 2>/dev/null || true
           bash ~/sekar/infra/seed-env-from-ssm.sh
           cd ~/sekar/infra
           export IMAGE_TAG=$SHA
