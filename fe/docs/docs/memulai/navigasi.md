@@ -9,6 +9,10 @@ Panduan untuk memahami tata letak dan navigasi di aplikasi mobile dan dashboard 
 
 ## Aplikasi Mobile SEKAR
 
+<p align="center"><img src="/img/mobile/menu.png" alt="Menu aplikasi" width="280" /></p>
+
+*Menu navigasi aplikasi mobile.*
+
 ### Tata Letak Utama
 
 Aplikasi mobile SEKAR memiliki tiga area utama:
@@ -101,6 +105,10 @@ Halaman profil Anda dengan:
 ---
 
 ## Dashboard Web SEKAR
+
+![Dashboard web SEKAR](/img/web/dashboard.png)
+
+*Tampilan dashboard web SEKAR.*
 
 ### Tata Letak Utama
 

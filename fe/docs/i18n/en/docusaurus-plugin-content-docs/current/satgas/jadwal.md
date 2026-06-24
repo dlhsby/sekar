@@ -22,6 +22,10 @@ This schedule is created by admin/rayon head and you cannot change it yourself.
 
 ## View Your Schedule
 
+<p align="center"><img src="/img/mobile/jadwal.png" alt="Shift schedule view" width="280" /></p>
+
+*The weekly schedule display.*
+
 ### Method 1: From Menu
 
 1. Tap **Menu** tab (☰)
@@ -205,6 +209,10 @@ Based on your schedule, prepare:
 ---
 
 ## Upcoming Shifts
+
+<p align="center"><img src="/img/mobile/kehadiran.png" alt="Attendance history view" width="280" /></p>
+
+*The attendance and history view.*
 
 ### Next Shift Information on Home
 

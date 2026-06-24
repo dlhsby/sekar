@@ -5,6 +5,8 @@ sidebar_position: 3
 
 # Validasi Laporan Kerja Dari Tim
 
+<p align="center"><img src="/img/illustrations/illo-reports.svg" alt="Ilustrasi laporan" width="240" /></p>
+
 Panduan untuk Korlap memeriksa dan memvalidasi laporan kerja dari satgas/linmas.
 
 ## Apa itu Validasi Laporan?

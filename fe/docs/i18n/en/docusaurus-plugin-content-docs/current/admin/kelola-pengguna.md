@@ -21,6 +21,10 @@ Admin Data and Admin System have access to:
 
 ## Opening User Page
 
+![SEKAR web user management](/img/web/users.png)
+
+*The user management interface showing the user list.*
+
 ### From Web Dashboard
 
 1. Log in with Admin account
@@ -123,6 +127,10 @@ CHOOSE USER ROLE *
 | **Superadmin** | Full access to everything | System owner |
 
 ### Step 4: Assign to Rayon/Area
+
+![SEKAR web rayons management](/img/web/rayons.png)
+
+*The rayon organization management page.*
 
 ```
 ASSIGN TO RAYON *

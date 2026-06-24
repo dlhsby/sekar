@@ -28,6 +28,10 @@ Sebagai Korlap, Anda bisa membuat **tugas spesifik** untuk satgas/linmas Anda de
 
 ### Cara 2: Dari Halaman Tugas
 
+![Manajemen tugas web](/img/web/tasks.png)
+
+*Halaman kelola tugas di dashboard web.*
+
 1. Buka tab **Menu** → **Tugas**
 2. Cari tombol **"+ BUAT TUGAS"** atau **"Tugas Baru"**
 3. Tap untuk buka form
@@ -118,6 +122,10 @@ Pilih kapan tugas harus selesai:
 :::
 
 ### Langkah 2: Pilih Area Kerja
+
+![Penjadwalan web](/img/web/schedules.png)
+
+*Halaman penjadwalan dan penugasan.*
 
 ```
 ┌──────────────────────────────────┐

@@ -1,16 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="SEKAR">
-  <rect width="64" height="64" rx="12" fill="#1A4D2E"/>
-  <g stroke="#1C1917" stroke-width="1.5" stroke-linejoin="round">
-    <g fill="#7FBC8C">
-      <path d="M32 32 L32 10 A22 22 0 0 1 47.6 16.4 Z"/>
-      <path d="M32 32 L47.6 16.4 A22 22 0 0 1 54 32 Z"/>
-      <path d="M32 32 L54 32 A22 22 0 0 1 47.6 47.6 Z"/>
-      <path d="M32 32 L47.6 47.6 A22 22 0 0 1 32 54 Z"/>
-      <path d="M32 32 L32 54 A22 22 0 0 1 16.4 47.6 Z"/>
-      <path d="M32 32 L16.4 47.6 A22 22 0 0 1 10 32 Z"/>
-      <path d="M32 32 L10 32 A22 22 0 0 1 16.4 16.4 Z"/>
-      <path d="M32 32 L16.4 16.4 A22 22 0 0 1 32 10 Z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="SEKAR">
+  <!-- Canonical SEKAR lockup: the pinwheel inside a white Neo-Brutalist box with a
+       hard-edge offset shadow, tilted -6° for the dynamic 3D brand look
+       (mirrors fe/web SekarLogoBox + the app favicon). -->
+  <g transform="rotate(-6 30 29)">
+    <!-- Hard-edge offset shadow (token shadow-nb-sm) -->
+    <rect x="10" y="9" width="48" height="48" rx="8" fill="#1C1917"/>
+    <!-- White box, 2px ink border -->
+    <rect x="6" y="5" width="48" height="48" rx="8" fill="#FFFFFF" stroke="#1C1917" stroke-width="2"/>
+    <!-- Pinwheel: 8 sage blades (8 rayons) + yellow DLH Surabaya center -->
+    <g transform="translate(30 29) scale(0.345)" stroke="#1C1917" stroke-width="3" stroke-linejoin="round">
+      <g transform="rotate(0)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C"/></g>
+      <g transform="rotate(45)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C"/></g>
+      <g transform="rotate(90)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C"/></g>
+      <g transform="rotate(135)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C"/></g>
+      <g transform="rotate(180)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C"/></g>
+      <g transform="rotate(225)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C"/></g>
+      <g transform="rotate(270)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C"/></g>
+      <g transform="rotate(315)"><path d="M 0 -14 Q 18 -38 0 -42 Q -14 -38 0 -14 Z" fill="#7FBC8C"/></g>
+      <circle r="12" fill="#FDFD96"/>
     </g>
-    <circle cx="32" cy="32" r="7" fill="#FDFD96"/>
   </g>
 </svg>

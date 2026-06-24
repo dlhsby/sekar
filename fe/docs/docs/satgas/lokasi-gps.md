@@ -5,6 +5,8 @@ sidebar_position: 2
 
 # Pelacakan Lokasi GPS Real-Time
 
+<p align="center"><img src="/img/illustrations/illo-location.svg" alt="Ilustrasi lokasi GPS" width="240" /></p>
+
 Informasi lengkap tentang sistem pelacakan GPS di SEKAR dan cara kerjanya.
 
 ## Apa itu Pelacakan GPS?
@@ -38,6 +40,10 @@ Saat pertama kali buka aplikasi SEKAR, akan ada pop-up meminta izin GPS:
 3. GPS akan mulai merekam posisi Anda
 
 ### Jika Sudah Aktif Sebelumnya
+
+<p align="center"><img src="/img/mobile/gps.png" alt="Indikator GPS" width="280" /></p>
+
+*Indikator status GPS di aplikasi.*
 
 Periksa apakah GPS aktif di layar Beranda:
 

@@ -21,6 +21,10 @@ Admin Data dan Admin Sistem memiliki akses untuk:
 
 ## Membuka Halaman Pengguna
 
+![Kelola pengguna web](/img/web/users.png)
+
+*Halaman manajemen pengguna di dashboard web.*
+
 ### Dari Dashboard Web
 
 1. Login dengan akun Admin
@@ -123,6 +127,10 @@ PILIH PERAN PENGGUNA *
 | **Superadmin** | Full access to everything | System owner |
 
 ### Langkah 4: Assign ke Rayon/Area
+
+![Rayon web](/img/web/rayons.png)
+
+*Halaman manajemen rayon dan area.*
 
 ```
 ASSIGN KE RAYON *
@@ -254,6 +262,10 @@ Jika ada banyak pengguna baru:
 5. Report akan ditampilkan (success, error, dll)
 
 ### Bulk Edit Peran
+
+![Area web](/img/web/areas.png)
+
+*Halaman manajemen area.*
 
 Jika ingin ubah peran banyak orang sekaligus:
 

@@ -5,6 +5,8 @@ sidebar_position: 3
 
 # Cara Membuat Laporan Pekerjaan & Aktivitas
 
+<p align="center"><img src="/img/illustrations/onb-photo.svg" alt="Ilustrasi laporan foto" width="240" /></p>
+
 Panduan lengkap untuk membuat dan mengirim laporan pekerjaan dengan foto dan video.
 
 ## Apa itu Laporan Pekerjaan?
@@ -24,6 +26,10 @@ Laporan ini akan dilihat dan divalidasi oleh supervisor/korlap untuk penilaian k
 ## Langkah-Langkah Membuat Laporan
 
 ### 1. Buka Halaman Aktivitas
+
+<p align="center"><img src="/img/mobile/lapor-kerja.png" alt="Layar buat laporan" width="280" /></p>
+
+*Layar untuk membuat laporan pekerjaan.*
 
 **Metode 1 - Dari Menu:**
 - Tap tab **Menu** (☰)

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="SEKAR illustration">
+      <!-- Shadow handle + lens -->
+      <line x1="128" y1="130" x2="172" y2="174" stroke="#1C1917" stroke-width="14" stroke-linecap="round"/>
+      <circle cx="92" cy="92" r="48" fill="#1C1917"/>
+      <!-- Lens -->
+      <circle cx="88" cy="88" r="48" fill="#FDFD96" stroke="#1C1917" stroke-width="3"/>
+      <!-- ∅ symbol -->
+      <circle cx="88" cy="88" r="22" fill="none" stroke="#1C1917" stroke-width="3"/>
+      <line x1="68" y1="108" x2="108" y2="68" stroke="#1C1917" stroke-width="3" stroke-linecap="round"/>
+      <!-- Handle -->
+      <line x1="124" y1="126" x2="166" y2="168" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round"/>
+      <line x1="124" y1="126" x2="166" y2="168" stroke="#1C1917" stroke-width="3" stroke-linecap="round"/>
+</svg>

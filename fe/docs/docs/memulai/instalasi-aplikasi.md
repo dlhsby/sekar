@@ -5,6 +5,8 @@ sidebar_position: 2
 
 # Cara Instalasi Aplikasi Mobile SEKAR
 
+<p align="center"><img src="/img/illustrations/onb-clockin.svg" alt="Ilustrasi absen masuk" width="240" /></p>
+
 Panduan langkah demi langkah untuk mengunduh dan memasang aplikasi SEKAR di perangkat Android Anda.
 
 ## Persyaratan Perangkat
@@ -88,6 +90,10 @@ Saat pertama kali login, aplikasi akan meminta beberapa izin:
 ### 5. Verifikasi Instalasi
 
 Setelah login berhasil:
+
+<p align="center"><img src="/img/mobile/home.png" alt="Layar beranda aplikasi" width="280" /></p>
+
+*Layar beranda aplikasi setelah login.*
 
 1. Anda akan melihat halaman **"Beranda"** atau **"Home"**
 2. Cek status koneksi di atas layar (harus menunjukkan **"ONLINE"** dengan tanda hijau)

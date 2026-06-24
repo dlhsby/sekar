@@ -9,6 +9,10 @@ Panduan lengkap untuk login ke aplikasi mobile SEKAR dan dashboard web.
 
 ## Login di Aplikasi Mobile
 
+<p align="center"><img src="/img/mobile/login.png" alt="Layar login aplikasi" width="280" /></p>
+
+*Layar login aplikasi SEKAR.*
+
 ### Langkah-langkah Login
 
 1. **Buka Aplikasi SEKAR**
@@ -35,6 +39,10 @@ Panduan lengkap untuk login ke aplikasi mobile SEKAR dan dashboard web.
 :::
 
 ## Login di Dashboard Web
+
+![Dashboard web SEKAR](/img/web/login.png)
+
+*Halaman login dashboard web.*
 
 ### Langkah-langkah Login Web
 

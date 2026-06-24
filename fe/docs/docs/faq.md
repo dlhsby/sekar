@@ -5,6 +5,8 @@ sidebar_position: 9
 
 # Pertanyaan Umum & Troubleshooting
 
+<p align="center"><img src="/img/illustrations/illo-search.svg" alt="Ilustrasi pencarian" width="240" /></p>
+
 Kumpulan pertanyaan yang sering diajukan dan solusi umum untuk masalah yang mungkin Anda hadapi.
 
 ## Untuk Semua Pengguna

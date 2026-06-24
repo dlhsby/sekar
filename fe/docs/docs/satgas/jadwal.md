@@ -24,6 +24,10 @@ Jadwal ini dibuat oleh admin/kepala rayon dan tidak bisa Anda ubah sendiri.
 
 ### Cara 1: Dari Menu
 
+<p align="center"><img src="/img/mobile/jadwal.png" alt="Jadwal shift" width="280" /></p>
+
+*Tampilan jadwal shift mingguan.*
+
 1. Tap tab **Menu** (☰)
 2. Tap **"Jadwal"**
 3. Jadwal Anda akan ditampilkan
@@ -207,6 +211,10 @@ Berdasarkan jadwal Anda, siapkan:
 ## Shift yang Akan Datang
 
 ### Informasi Shift Berikutnya di Beranda
+
+<p align="center"><img src="/img/mobile/kehadiran.png" alt="Riwayat kehadiran" width="280" /></p>
+
+*Layar riwayat kehadiran dan informasi shift.*
 
 Di halaman Beranda, Anda bisa lihat:
 

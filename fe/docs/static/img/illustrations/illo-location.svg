@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="SEKAR illustration">
+      <!-- Shadow pin -->
+      <path d="M100 184 Q56 130 56 92 Q56 56 100 56 Q144 56 144 92 Q144 130 100 184 Z" fill="#1C1917" transform="translate(4 4)"/>
+      <!-- Pin -->
+      <path d="M100 180 Q56 126 56 88 Q56 52 100 52 Q144 52 144 88 Q144 126 100 180 Z" fill="#7FBC8C" stroke="#1C1917" stroke-width="3" stroke-linejoin="round"/>
+      <!-- Inner circle -->
+      <circle cx="100" cy="90" r="20" fill="#FFFFFF" stroke="#1C1917" stroke-width="3"/>
+      <!-- X inside pin (location lost) -->
+      <line x1="91" y1="81" x2="109" y2="99" stroke="#1C1917" stroke-width="3.5" stroke-linecap="round"/>
+      <line x1="109" y1="81" x2="91" y2="99" stroke="#1C1917" stroke-width="3.5" stroke-linecap="round"/>
+      <!-- Ground ellipse -->
+      <ellipse cx="100" cy="186" rx="22" ry="5" fill="#1C1917" opacity="0.25"/>
+</svg>

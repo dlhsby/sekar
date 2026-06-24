@@ -5,6 +5,8 @@ sidebar_position: 2
 
 # Real-Time GPS Location Tracking
 
+<p align="center"><img src="/img/illustrations/illo-location.svg" alt="Location illustration" width="240" /></p>
+
 Complete information about SEKAR's GPS tracking system and how it works.
 
 ## What is GPS Tracking?
@@ -45,6 +47,10 @@ Check if GPS is active on Home screen:
 - **🔴 Red Status** = GPS not active
 
 ### Manual GPS Activation
+
+<p align="center"><img src="/img/mobile/gps.png" alt="GPS tracking screen" width="280" /></p>
+
+*The GPS location tracking view.*
 
 1. Open device **Settings**
 2. Find **"Location"** or **"Location Services"**

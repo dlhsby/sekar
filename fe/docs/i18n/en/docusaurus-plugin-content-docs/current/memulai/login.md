@@ -9,6 +9,10 @@ Complete guide to login to the mobile app SEKAR and web dashboard.
 
 ## Login on Mobile App
 
+<p align="center"><img src="/img/mobile/login.png" alt="Mobile login screen" width="280" /></p>
+
+*The SEKAR login screen on mobile.*
+
 ### Login Steps
 
 1. **Open SEKAR App**
@@ -35,6 +39,10 @@ Complete guide to login to the mobile app SEKAR and web dashboard.
 :::
 
 ## Login on Web Dashboard
+
+![SEKAR web login](/img/web/login.png)
+
+*The web dashboard login page.*
 
 ### Web Login Steps
 

@@ -5,6 +5,8 @@ sidebar_position: 5
 
 # Mengajukan dan Melapor Lembur (Overtime)
 
+<p align="center"><img src="/img/illustrations/illo-shifts.svg" alt="Ilustrasi shift kerja" width="240" /></p>
+
 Panduan lengkap untuk mengajukan lembur dan melapor pekerjaan lembur Anda.
 
 ## Apa itu Lembur?
@@ -33,6 +35,10 @@ Anda boleh mengajukan lembur jika:
 ### Langkah-Langkah Mengajukan Lembur
 
 #### 1. Buka Halaman Lembur
+
+<p align="center"><img src="/img/mobile/lembur.png" alt="Layar lembur" width="280" /></p>
+
+*Layar untuk mengajukan dan melihat lembur.*
 
 **Metode 1 - Dari Menu:**
 - Tap tab **Menu** (☰)

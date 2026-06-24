@@ -5,6 +5,8 @@ sidebar_position: 9
 
 # Common Questions & Troubleshooting
 
+<p align="center"><img src="/img/illustrations/illo-search.svg" alt="Search illustration" width="240" /></p>
+
 Collection of frequently asked questions and solutions for common issues you may encounter.
 
 ## For All Users

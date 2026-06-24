@@ -5,6 +5,8 @@ sidebar_position: 1
 
 # Monitoring Tim Secara Real-Time
 
+<p align="center"><img src="/img/illustrations/onb-monitor.svg" alt="Ilustrasi monitoring" width="240" /></p>
+
 Panduan lengkap untuk Korlap memantau posisi dan kehadiran tim di peta live.
 
 ## Apa itu Monitoring?
@@ -37,6 +39,10 @@ Panduan lengkap untuk Korlap memantau posisi dan kehadiran tim di peta live.
 ## Tampilan Monitoring
 
 ### Peta Live
+
+![Monitoring web SEKAR](/img/web/monitoring.png)
+
+*Tampilan peta monitoring tim real-time.*
 
 ```
 ┌─────────────────────────────────┐

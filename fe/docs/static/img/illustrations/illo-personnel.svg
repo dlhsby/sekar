@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="SEKAR illustration">
+      <!-- Two figures, back one fainter -->
+      <g transform="translate(116 70)">
+        <circle cx="0" cy="0" r="20" fill="#1C1917" transform="translate(4 4)"/>
+        <circle cx="0" cy="0" r="20" fill="#B5D2AD" stroke="#1C1917" stroke-width="3"/>
+        <path d="M-26 60 Q-26 32 0 32 Q26 32 26 60 Z" fill="#B5D2AD" stroke="#1C1917" stroke-width="3" stroke-linejoin="round"/>
+      </g>
+      <g transform="translate(78 90)">
+        <circle cx="0" cy="0" r="22" fill="#1C1917" transform="translate(4 4)"/>
+        <circle cx="0" cy="0" r="22" fill="#7FBC8C" stroke="#1C1917" stroke-width="3"/>
+        <path d="M-30 68 Q-30 36 0 36 Q30 36 30 68 Z" fill="#7FBC8C" stroke="#1C1917" stroke-width="3" stroke-linejoin="round"/>
+        <!-- Hard hat -->
+        <path d="M-18 -10 Q-18 -24 0 -24 Q18 -24 18 -10 L-18 -10 Z" fill="#FDFD96" stroke="#1C1917" stroke-width="3" stroke-linejoin="round"/>
+        <line x1="-20" y1="-10" x2="20" y2="-10" stroke="#1C1917" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      <!-- ∅ on top right -->
+      <circle cx="158" cy="46" r="20" fill="#DC2626" stroke="#1C1917" stroke-width="3"/>
+      <line x1="146" y1="58" x2="170" y2="34" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round"/>
+</svg>

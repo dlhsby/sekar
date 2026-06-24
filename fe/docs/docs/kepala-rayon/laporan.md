@@ -27,6 +27,10 @@ Dashboard Kepala Rayon menampilkan:
 
 ## Ringkasan Kinerja Rayon
 
+![Laporan web SEKAR](/img/web/reports.png)
+
+*Halaman laporan dan analitik.*
+
 ### Cards Utama
 
 ```
@@ -104,6 +108,10 @@ PEKERJA PERLU IMPROVEMENT
 ---
 
 ## Analitik Trend
+
+![Analitik web SEKAR](/img/web/analytics.png)
+
+*Halaman analitik dan dashboard kinerja.*
 
 ### Grafik & Visualization
 

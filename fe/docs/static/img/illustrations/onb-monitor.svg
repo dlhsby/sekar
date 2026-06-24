@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 220" role="img" aria-label="SEKAR illustration">
+      <line x1="20" y1="198" x2="260" y2="198" stroke="#1C1917" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="6 6"/>
+      <!-- Big map plate -->
+      <g transform="translate(30 30)">
+        <rect x="4" y="4" width="220" height="150" rx="8" fill="#1C1917"/>
+        <rect x="0" y="0" width="220" height="150" rx="8" fill="#DAF5F0" stroke="#1C1917" stroke-width="3"/>
+        <!-- Grid -->
+        <g stroke="#B5D2AD" stroke-width="1.5">
+          <line x1="0" y1="38" x2="220" y2="38"/>
+          <line x1="0" y1="76" x2="220" y2="76"/>
+          <line x1="0" y1="114" x2="220" y2="114"/>
+          <line x1="55" y1="0" x2="55" y2="150"/>
+          <line x1="110" y1="0" x2="110" y2="150"/>
+          <line x1="165" y1="0" x2="165" y2="150"/>
+        </g>
+        <!-- Streets -->
+        <path d="M0 76 L220 76" stroke="#FFFFFF" stroke-width="8"/>
+        <path d="M0 76 L220 76" stroke="#1C1917" stroke-width="1.5" stroke-dasharray="4 6"/>
+        <path d="M110 0 L110 150" stroke="#FFFFFF" stroke-width="8"/>
+        <path d="M110 0 L110 150" stroke="#1C1917" stroke-width="1.5" stroke-dasharray="4 6"/>
+        <!-- Park polygons -->
+        <path d="M22 22 L74 30 L70 64 L18 56 Z" fill="#7FBC8C" stroke="#15803D" stroke-width="2"/>
+        <path d="M138 90 L186 92 L188 132 L140 130 Z" fill="#7FBC8C" stroke="#15803D" stroke-width="2"/>
+        <!-- Markers -->
+        <g transform="translate(56 40)">
+          <circle r="14" fill="#FFFFFF" stroke="#15803D" stroke-width="4"/>
+          <text y="4" text-anchor="middle" font-family="Space Grotesk" font-weight="700" font-size="11" fill="#1C1917">RA</text>
+        </g>
+        <g transform="translate(150 110)">
+          <circle r="14" fill="#FFFFFF" stroke="#15803D" stroke-width="4"/>
+          <text y="4" text-anchor="middle" font-family="Space Grotesk" font-weight="700" font-size="11" fill="#1C1917">YS</text>
+        </g>
+        <g transform="translate(90 96)">
+          <circle r="14" fill="#FFFFFF" stroke="#D97706" stroke-width="4"/>
+          <text y="4" text-anchor="middle" font-family="Space Grotesk" font-weight="700" font-size="11" fill="#1C1917">DP</text>
+        </g>
+        <g transform="translate(186 36)">
+          <circle r="14" fill="#FFFFFF" stroke="#9333EA" stroke-width="4"/>
+          <text y="4" text-anchor="middle" font-family="Space Grotesk" font-weight="700" font-size="11" fill="#1C1917">HM</text>
+        </g>
+      </g>
+      <!-- Stat card popping out -->
+      <g transform="translate(178 130)">
+        <rect x="4" y="4" width="80" height="64" rx="6" fill="#1C1917"/>
+        <rect x="0" y="0" width="80" height="64" rx="6" fill="#FDFD96" stroke="#1C1917" stroke-width="3"/>
+        <text x="10" y="20" font-family="JetBrains Mono" font-size="8" font-weight="700" fill="#44403C" letter-spacing="0.5">AKTIF</text>
+        <text x="10" y="46" font-family="Space Grotesk" font-size="28" font-weight="700" fill="#1C1917">28</text>
+        <text x="44" y="46" font-family="JetBrains Mono" font-size="8" font-weight="700" fill="#15803D">▲ 3</text>
+      </g>
+</svg>

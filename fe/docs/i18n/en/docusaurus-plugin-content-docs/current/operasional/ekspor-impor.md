@@ -23,6 +23,10 @@ These features are useful for:
 
 ## Data Export
 
+![SEKAR web export function](/img/web/export.png)
+
+*The data export interface for generating reports.*
+
 ### Opening Export Feature
 
 1. Web Dashboard → **"Operational"** menu
@@ -91,6 +95,10 @@ Date      | Worker         | Activity              | Status    | Rating
 ---
 
 ## Data Import
+
+![SEKAR web import function](/img/web/import.png)
+
+*The data import interface for batch uploads.*
 
 ### Opening Import Feature
 

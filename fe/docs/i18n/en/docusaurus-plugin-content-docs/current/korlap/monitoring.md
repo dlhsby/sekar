@@ -5,6 +5,8 @@ sidebar_position: 1
 
 # Real-Time Team Monitoring
 
+<p align="center"><img src="/img/illustrations/onb-monitor.svg" alt="Monitoring illustration" width="240" /></p>
+
 Complete guide for Korlap (field coordinators) to monitor team positions and attendance on a live map.
 
 ## What is Monitoring?
@@ -77,6 +79,10 @@ Complete guide for Korlap (field coordinators) to monitor team positions and att
 - Connection status (ONLINE/OFFLINE)
 
 ---
+
+![SEKAR web monitoring map](/img/web/monitoring.png)
+
+*The web dashboard live monitoring map with team positions.*
 
 ## Filters & Search
 

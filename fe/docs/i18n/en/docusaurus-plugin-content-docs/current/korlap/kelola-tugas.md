@@ -36,6 +36,10 @@ As Korlap, you can create **specific tasks** for satgas/linmas with:
 
 ## Task Creation Form
 
+![SEKAR web tasks management](/img/web/tasks.png)
+
+*The web dashboard task management interface.*
+
 ### Step 1: Fill in Basic Information
 
 ```
@@ -119,6 +123,10 @@ Choose when the task must be completed:
 :::
 
 ### Step 2: Choose Work Area
+
+![SEKAR web schedule management](/img/web/schedules.png)
+
+*The schedule and area assignment view.*
 
 ```
 ┌──────────────────────────────────┐

@@ -5,6 +5,8 @@ sidebar_position: 5
 
 # Request and Report Overtime (Overtime)
 
+<p align="center"><img src="/img/illustrations/illo-shifts.svg" alt="Shifts illustration" width="240" /></p>
+
 Complete guide to requesting overtime and reporting your overtime work.
 
 ## What is Overtime?
@@ -43,6 +45,10 @@ You can request overtime if:
 - Tap **"REQUEST OVERTIME"** button (if available)
 
 #### 2. Overtime Request Form
+
+<p align="center"><img src="/img/mobile/lembur.png" alt="Overtime request form" width="280" /></p>
+
+*The overtime request submission screen.*
 
 You'll see a form:
 

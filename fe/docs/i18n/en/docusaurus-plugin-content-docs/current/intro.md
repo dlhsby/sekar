@@ -10,6 +10,8 @@ sidebar_position: 1
 
 ## What is SEKAR?
 
+<p align="center"><img src="/img/illustrations/onb-monitor.svg" alt="Monitoring illustration" width="240" /></p>
+
 SEKAR helps field teams and supervisors to:
 
 - **Digital Attendance Recording**: Clock in/out with photo verification and GPS

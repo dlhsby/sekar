@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="SEKAR illustration">
+      <!-- Shadow -->
+      <rect x="46" y="46" width="100" height="130" rx="6" fill="#1C1917"/>
+      <!-- Clipboard body -->
+      <rect x="42" y="42" width="100" height="130" rx="6" fill="#FFFFFF" stroke="#1C1917" stroke-width="3"/>
+      <!-- Clip -->
+      <rect x="74" y="28" width="36" height="22" rx="3" fill="#FDFD96" stroke="#1C1917" stroke-width="3"/>
+      <rect x="80" y="22" width="24" height="14" rx="2" fill="#FFFFFF" stroke="#1C1917" stroke-width="2.5"/>
+      <!-- Lines -->
+      <line x1="58" y1="78" x2="126" y2="78" stroke="#D6D3D1" stroke-width="3" stroke-linecap="round"/>
+      <line x1="58" y1="92" x2="110" y2="92" stroke="#D6D3D1" stroke-width="3" stroke-linecap="round"/>
+      <line x1="58" y1="106" x2="120" y2="106" stroke="#D6D3D1" stroke-width="3" stroke-linecap="round"/>
+      <!-- Big check overlay -->
+      <circle cx="148" cy="148" r="26" fill="#7FBC8C" stroke="#1C1917" stroke-width="3"/>
+      <path d="M137 148 L145 156 L160 140" stroke="#1C1917" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

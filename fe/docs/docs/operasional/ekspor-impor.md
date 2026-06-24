@@ -23,6 +23,10 @@ Fitur ini berguna untuk:
 
 ## Ekspor Data
 
+![Export web](/img/web/export.png)
+
+*Halaman ekspor data.*
+
 ### Membuka Fitur Ekspor
 
 1. Dashboard web → Menu **"Operasional"**
@@ -91,6 +95,10 @@ Tanggal     | Pekerja         | Aktivitas              | Status    | Rating
 ---
 
 ## Impor Data
+
+![Import web](/img/web/import.png)
+
+*Halaman impor data.*
 
 ### Membuka Fitur Impor
 

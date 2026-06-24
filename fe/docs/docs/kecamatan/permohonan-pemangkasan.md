@@ -5,6 +5,8 @@ sidebar_position: 1
 
 # Mengajukan Permohonan Pemangkasan Pohon
 
+<p align="center"><img src="/img/illustrations/illo-reports.svg" alt="Ilustrasi laporan" width="240" /></p>
+
 Panduan untuk Staff Kecamatan mengajukan permohonan pemangkasan pohon melalui SEKAR.
 
 ## Apa itu Permohonan Pemangkasan?
@@ -37,6 +39,10 @@ Jika diminta login, gunakan:
 ---
 
 ## Membuat Permohonan Baru
+
+![Permohonan pemangkasan web](/img/web/pruning-requests.png)
+
+*Halaman antrian permohonan pemangkasan pohon untuk validasi admin.*
 
 ### Form Permohonan
 

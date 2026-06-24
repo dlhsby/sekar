@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 220" role="img" aria-label="SEKAR illustration">
+      <!-- Dotted ground -->
+      <line x1="20" y1="198" x2="260" y2="198" stroke="#1C1917" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="6 6"/>
+      <!-- Map plate (back) -->
+      <g transform="translate(150 60) rotate(-6)">
+        <rect x="0" y="0" width="120" height="100" rx="8" fill="#1C1917"/>
+        <rect x="-4" y="-4" width="120" height="100" rx="8" fill="#DAF5F0" stroke="#1C1917" stroke-width="3"/>
+        <!-- Streets -->
+        <path d="M-4 30 L116 30" stroke="#FFFFFF" stroke-width="6"/>
+        <path d="M-4 30 L116 30" stroke="#1C1917" stroke-width="1.5" stroke-dasharray="3 5"/>
+        <path d="M60 -4 L60 96" stroke="#FFFFFF" stroke-width="6"/>
+        <path d="M60 -4 L60 96" stroke="#1C1917" stroke-width="1.5" stroke-dasharray="3 5"/>
+        <!-- Geofence -->
+        <circle cx="58" cy="58" r="26" fill="#7FBC8C" fill-opacity="0.35" stroke="#15803D" stroke-width="2" stroke-dasharray="4 3"/>
+        <!-- Marker -->
+        <path d="M58 30 Q44 30 44 44 Q44 58 58 70 Q72 58 72 44 Q72 30 58 30 Z" fill="#DC2626" stroke="#1C1917" stroke-width="2.5"/>
+        <circle cx="58" cy="44" r="5" fill="#FFFFFF" stroke="#1C1917" stroke-width="2"/>
+      </g>
+      <!-- Worker figure -->
+      <g transform="translate(48 88)">
+        <!-- Shadow -->
+        <ellipse cx="22" cy="110" rx="40" ry="5" fill="#1C1917" opacity="0.25"/>
+        <!-- Body -->
+        <rect x="-8" y="32" width="60" height="62" rx="4" fill="#7FBC8C" stroke="#1C1917" stroke-width="3"/>
+        <!-- Pocket -->
+        <rect x="6" y="56" width="14" height="14" rx="2" fill="#FDFD96" stroke="#1C1917" stroke-width="2"/>
+        <!-- Head -->
+        <circle cx="22" cy="14" r="18" fill="#F5F0EB" stroke="#1C1917" stroke-width="3"/>
+        <!-- Hard hat -->
+        <path d="M2 4 Q2 -10 22 -10 Q42 -10 42 4 L2 4 Z" fill="#FDFD96" stroke="#1C1917" stroke-width="3" stroke-linejoin="round"/>
+        <line x1="0" y1="4" x2="44" y2="4" stroke="#1C1917" stroke-width="3" stroke-linecap="round"/>
+        <!-- ID badge -->
+        <rect x="2" y="38" width="26" height="14" rx="2" fill="#FFFFFF" stroke="#1C1917" stroke-width="2"/>
+        <rect x="6" y="42" width="14" height="2" fill="#1C1917"/>
+        <rect x="6" y="46" width="10" height="2" fill="#1C1917"/>
+        <!-- Arm holding phone -->
+        <rect x="36" y="38" width="14" height="32" rx="3" fill="#7FBC8C" stroke="#1C1917" stroke-width="3"/>
+        <rect x="50" y="32" width="20" height="36" rx="3" fill="#1C1917"/>
+        <rect x="48" y="30" width="20" height="36" rx="3" fill="#FFFFFF" stroke="#1C1917" stroke-width="2.5"/>
+        <circle cx="58" cy="48" r="6" fill="#7FBC8C" stroke="#1C1917" stroke-width="2"/>
+        <path d="M55 48 L57 50 L61 46" stroke="#1C1917" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+      <!-- GPS waves -->
+      <g transform="translate(208 110)" fill="none" stroke="#1C1917" stroke-width="2.5" stroke-linecap="round">
+        <path d="M0 0 Q6 -6 12 0"/>
+        <path d="M-4 4 Q6 -10 16 4"/>
+        <path d="M-8 8 Q6 -14 20 8"/>
+      </g>
+</svg>

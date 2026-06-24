@@ -10,6 +10,8 @@ sidebar_position: 1
 
 ## Apa itu SEKAR?
 
+<p align="center"><img src="/img/illustrations/onb-monitor.svg" alt="Ilustrasi pemantauan" width="240" /></p>
+
 SEKAR membantu tim lapangan dan supervisor untuk:
 
 - **Pencatatan Kehadiran Digital**: Absen masuk/keluar dengan foto verifikasi dan GPS

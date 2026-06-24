@@ -32,6 +32,10 @@ Pastikan sebelum absen:
 
 ### 1. Buka Layar Absen
 
+<p align="center"><img src="/img/mobile/absen-masuk.png" alt="Layar absen masuk" width="280" /></p>
+
+*Layar absen masuk di aplikasi.*
+
 **Metode 1 - Dari Beranda:**
 - Buka tab **Beranda** (Home)
 - Ketuk tombol besar **"MASUK"** atau **"Absen Masuk"**
@@ -76,6 +80,10 @@ Layar akan menampilkan:
 :::
 
 ### 3. Ambil Foto Selfie
+
+<p align="center"><img src="/img/mobile/absen-foto.png" alt="Layar verifikasi foto" width="280" /></p>
+
+*Layar pengambilan dan verifikasi foto selfie.*
 
 1. Ketuk tombol **"AMBIL SELFIE"**
 2. Izinkan akses kamera jika diminta

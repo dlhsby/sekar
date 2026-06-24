@@ -5,6 +5,8 @@ sidebar_position: 3
 
 # How to Create Work Reports & Activities
 
+<p align="center"><img src="/img/illustrations/onb-photo.svg" alt="Photo verification illustration" width="240" /></p>
+
 Complete guide to creating and submitting work reports with photos and videos.
 
 ## What is a Work Report?
@@ -103,6 +105,10 @@ Location will auto-fill from **your assigned work area**:
 :::
 
 ### 6. Take Photo Evidence
+
+<p align="center"><img src="/img/mobile/lapor-kerja.png" alt="Work report screen" width="280" /></p>
+
+*The activity report creation screen.*
 
 System requires **minimum 1 photo or video** for work proof:
 

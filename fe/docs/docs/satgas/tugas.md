@@ -37,6 +37,10 @@ Jika ada tugas baru:
 
 ### Daftar Tugas
 
+<p align="center"><img src="/img/mobile/tugas-list.png" alt="Daftar tugas" width="280" /></p>
+
+*Daftar tugas yang diterima.*
+
 Halaman Tugas menampilkan:
 
 ```
@@ -77,6 +81,10 @@ Anda bisa memfilter tugas berdasarkan:
 ## Melihat Detail Tugas
 
 ### Buka Detail Tugas
+
+<p align="center"><img src="/img/mobile/tugas-detail.png" alt="Detail tugas" width="280" /></p>
+
+*Halaman detail tugas.*
 
 1. Dari daftar tugas, tap **salah satu tugas**
 2. Halaman detail tugas akan terbuka

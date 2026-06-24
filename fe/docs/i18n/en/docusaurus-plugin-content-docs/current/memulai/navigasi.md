@@ -9,6 +9,10 @@ Guide to understand the layout and navigation in SEKAR mobile app and web dashbo
 
 ## SEKAR Mobile App
 
+<p align="center"><img src="/img/mobile/menu.png" alt="Mobile app menu screen" width="280" /></p>
+
+*The mobile app menu with feature shortcuts.*
+
 ### Main Layout
 
 The mobile app has three main areas:
@@ -101,6 +105,10 @@ Your profile page with:
 ---
 
 ## SEKAR Web Dashboard
+
+![SEKAR web dashboard](/img/web/dashboard.png)
+
+*The web dashboard overview.*
 
 ### Main Layout
 

@@ -37,6 +37,10 @@ If there's new task:
 
 ### Task List
 
+<p align="center"><img src="/img/mobile/tugas-list.png" alt="Tasks list screen" width="280" /></p>
+
+*The task list view showing pending tasks.*
+
 Tasks page shows:
 
 ```
@@ -82,6 +86,10 @@ You can filter tasks by:
 2. Task detail page opens
 
 ### Task Detail Page
+
+<p align="center"><img src="/img/mobile/tugas-detail.png" alt="Task details screen" width="280" /></p>
+
+*The task detail view with description and action buttons.*
 
 ```
 ┌──────────────────────────────────┐

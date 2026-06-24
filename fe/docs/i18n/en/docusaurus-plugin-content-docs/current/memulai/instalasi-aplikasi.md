@@ -5,6 +5,8 @@ sidebar_position: 2
 
 # How to Install SEKAR Mobile App
 
+<p align="center"><img src="/img/illustrations/onb-clockin.svg" alt="Clock-in illustration" width="240" /></p>
+
 Step-by-step guide to download and install the SEKAR app on your Android device.
 
 ## Device Requirements
@@ -92,6 +94,10 @@ After successful login:
 1. You'll see the **"Home"** or **"Home"** page
 2. Check connection status at the top (should show **"ONLINE"** with green indicator)
 3. The app is ready to use!
+
+<p align="center"><img src="/img/mobile/home.png" alt="Home screen" width="280" /></p>
+
+*The app home screen after login.*
 
 ## Enabling GPS
 

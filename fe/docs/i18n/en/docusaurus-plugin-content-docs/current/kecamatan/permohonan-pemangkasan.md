@@ -5,6 +5,8 @@ sidebar_position: 1
 
 # Submitting Tree Pruning Request
 
+<p align="center"><img src="/img/illustrations/illo-reports.svg" alt="Reports illustration" width="240" /></p>
+
 Guide for District Staff to submit tree pruning requests through SEKAR.
 
 ## What is Tree Pruning Request?
@@ -178,6 +180,10 @@ If safety risk exists (broken branch, tilted tree), choose **URGENT** for quick 
 ## Tracking Request Status
 
 ### Viewing My Request Status
+
+![SEKAR web pruning requests queue](/img/web/pruning-requests.png)
+
+*The pruning request admin review and tracking interface.*
 
 1. Open **"My Requests"** or **"My Requests"** page
 2. View list of all your requests

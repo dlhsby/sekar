@@ -27,6 +27,10 @@ Rayon Head Dashboard displays:
 
 ## Rayon Performance Summary
 
+![SEKAR web reports dashboard](/img/web/reports.png)
+
+*The performance reports and metrics overview.*
+
 ### Main Cards
 
 ```
@@ -104,6 +108,10 @@ WORKERS NEEDING IMPROVEMENT
 ---
 
 ## Trend Analytics
+
+![SEKAR web analytics charts](/img/web/analytics.png)
+
+*The analytics and trend visualization dashboard.*
 
 ### Graphics & Visualization
 

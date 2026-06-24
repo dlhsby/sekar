@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="SEKAR illustration">
+      <circle cx="98" cy="106" r="60" fill="#1C1917"/>
+      <circle cx="94" cy="102" r="60" fill="#FFFFFF" stroke="#1C1917" stroke-width="3"/>
+      <!-- Tick marks at 12/3/6/9 -->
+      <line x1="94" y1="46" x2="94" y2="56" stroke="#1C1917" stroke-width="3" stroke-linecap="round"/>
+      <line x1="94" y1="148" x2="94" y2="158" stroke="#1C1917" stroke-width="3" stroke-linecap="round"/>
+      <line x1="34" y1="102" x2="44" y2="102" stroke="#1C1917" stroke-width="3" stroke-linecap="round"/>
+      <line x1="144" y1="102" x2="154" y2="102" stroke="#1C1917" stroke-width="3" stroke-linecap="round"/>
+      <!-- Hands -->
+      <line x1="94" y1="102" x2="94" y2="68" stroke="#1C1917" stroke-width="4" stroke-linecap="round"/>
+      <line x1="94" y1="102" x2="124" y2="116" stroke="#7FBC8C" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="94" cy="102" r="5" fill="#1C1917"/>
+      <!-- Plus badge -->
+      <circle cx="150" cy="56" r="20" fill="#FDFD96" stroke="#1C1917" stroke-width="3"/>
+      <line x1="150" y1="46" x2="150" y2="66" stroke="#1C1917" stroke-width="3.5" stroke-linecap="round"/>
+      <line x1="140" y1="56" x2="160" y2="56" stroke="#1C1917" stroke-width="3.5" stroke-linecap="round"/>
+</svg>

@@ -77,6 +77,10 @@ The screen will display:
 
 ### 3. Take Selfie Photo
 
+<p align="center"><img src="/img/mobile/absen-masuk.png" alt="Clock-in screen" width="280" /></p>
+
+*The clock-in screen showing shift information.*
+
 1. Tap the **"TAKE SELFIE"** button
 2. Allow camera access if prompted
 3. Take a photo of yourself (face clear and visible)
@@ -90,6 +94,10 @@ The screen will display:
 - Background can be work area or anywhere
 - Relaxed pose, not awkward
 :::
+
+<p align="center"><img src="/img/mobile/absen-foto.png" alt="Photo verification screen" width="280" /></p>
+
+*The photo verification step during clock-in.*
 
 ### 4. Confirm & Submit
 

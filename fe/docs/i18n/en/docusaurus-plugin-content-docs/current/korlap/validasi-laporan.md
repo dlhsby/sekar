@@ -5,6 +5,8 @@ sidebar_position: 3
 
 # Validating Work Reports From Team
 
+<p align="center"><img src="/img/illustrations/illo-reports.svg" alt="Reports illustration" width="240" /></p>
+
 Guide for Korlap to review and validate work reports from satgas/linmas.
 
 ## What is Report Validation?
