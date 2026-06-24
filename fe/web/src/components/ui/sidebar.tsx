@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChevronDown, X } from 'lucide-react';
+import { ChevronDown, X, ExternalLink } from 'lucide-react';
 
 import { cn } from '@/lib/utils/cn';
 import { Button } from './button';
@@ -20,6 +20,8 @@ export interface SidebarItem {
   roles?: string[];
   /** Optional mono count badge shown on the right of the item. */
   count?: number;
+  /** Renders as a plain anchor that opens in a new tab (e.g. external docs). */
+  external?: boolean;
 }
 
 export interface SidebarProps extends React.HTMLAttributes<HTMLElement> {
@@ -87,9 +89,9 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
     const allHrefs = React.useMemo(() => {
       const hrefs: string[] = [];
       items.forEach((item) => {
-        if (item.href && item.href !== '#') hrefs.push(item.href);
+        if (item.href && item.href !== '#' && !item.external) hrefs.push(item.href);
         item.children?.forEach((c) => {
-          if (c.href && c.href !== '#') hrefs.push(c.href);
+          if (c.href && c.href !== '#' && !c.external) hrefs.push(c.href);
         });
       });
       return hrefs;
@@ -162,9 +164,28 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
             </span>
           )}
           <span className="flex-1 truncate">{item.label}</span>
-          {countBadge(item.count, active)}
+          {item.external ? (
+            <ExternalLink className="size-3.5 flex-shrink-0 text-nb-gray-400" aria-hidden="true" />
+          ) : (
+            countBadge(item.count, active)
+          )}
         </>
       );
+
+      // External links (e.g. the docs site) open in a new tab — never client-routed.
+      if (item.external && item.href) {
+        return (
+          <a
+            key={item.id}
+            href={item.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={itemBase(false, depth)}
+          >
+            {content}
+          </a>
+        );
+      }
 
       if (item.href && item.href !== '#') {
         return (

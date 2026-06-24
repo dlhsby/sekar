@@ -1,0 +1,22 @@
+{
+  "title": {
+    "message": "SEKAR Guide",
+    "description": "The title in the navbar"
+  },
+  "logo.alt": {
+    "message": "SEKAR",
+    "description": "The alt text of navbar logo"
+  },
+  "item.label.Panduan": {
+    "message": "Guide",
+    "description": "Navbar item with label Panduan"
+  },
+  "item.label.Buka Aplikasi": {
+    "message": "Open App",
+    "description": "Navbar item with label Buka Aplikasi"
+  },
+  "item.label.Unduh APK": {
+    "message": "Download APK",
+    "description": "Navbar item with label Unduh APK"
+  }
+}

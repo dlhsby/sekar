@@ -19,6 +19,7 @@ import {
   ArchiveBoxIcon,
   Square2StackIcon,
   ChartBarIcon,
+  BookOpenIcon,
 } from '@heroicons/react/24/outline';
 import { ComponentType } from 'react';
 import { ADMIN_ROLES, MONITORING_ROLES, TASK_MANAGER_ROLES } from '@/lib/constants/roles';
@@ -36,7 +37,15 @@ export interface NavItem {
   icon: ComponentType<{ className?: string }>;
   roles: string[];
   children?: NavItem[];
+  /** Opens in a new tab (e.g. the external docs site) instead of client routing. */
+  external?: boolean;
 }
+
+/**
+ * Public user-manual site. Overridable per environment via NEXT_PUBLIC_DOCS_URL
+ * (inlined at build time); falls back to the production docs subdomain.
+ */
+const DOCS_URL = process.env.NEXT_PUBLIC_DOCS_URL || 'https://docs.sekar.wahyutrip.com';
 
 /**
  * Navigation Items Configuration (Phase 2C)
@@ -260,6 +269,17 @@ export const navigationItems: NavItem[] = [
     href: '/pruning-submit/my',
     icon: ListBulletIcon,
     roles: ['staff_kecamatan'],
+  },
+
+  // ── Panduan: public user manual (docs.sekar.wahyutrip.com), opens in a new
+  // tab. Visible to every role so anyone can reach the guide in-context.
+  {
+    id: 'docs',
+    label: 'Panduan',
+    href: DOCS_URL,
+    icon: BookOpenIcon,
+    roles: ['*'],
+    external: true,
   },
 ];
 

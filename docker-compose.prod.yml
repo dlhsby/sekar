@@ -137,6 +137,23 @@ services:
         condition: service_healthy
     networks: [sekar-prod]
 
+  # Public user manual (Docusaurus static site). Pure static HTML served by the
+  # image's bundled nginx — no env, no DB, no secrets. Fronted by the edge nginx
+  # below at docs.<your-domain>. Site identity is baked at build time; override
+  # the example.com placeholders to your real domain.
+  docs:
+    build:
+      context: ./fe/docs
+      dockerfile: Dockerfile
+      args:
+        DOCS_URL: https://docs.sekar.example.com
+        DOCS_BASE_URL: /
+        APP_URL: https://sekar.example.com
+    image: sekar-docs:prod
+    container_name: sekar-docs-prod
+    restart: unless-stopped
+    networks: [sekar-prod]
+
   nginx:
     image: nginx:1.27-alpine
     container_name: sekar-nginx-prod
@@ -151,6 +168,7 @@ services:
     depends_on:
       - backend
       - web
+      - docs
     networks: [sekar-prod]
 
 networks:

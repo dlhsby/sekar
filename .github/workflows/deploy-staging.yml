@@ -9,6 +9,7 @@ name: Deploy staging (AWS)
 #   AWS_ROLE_ARN      arn:aws:iam::659828096624:role/sekar-gha-deploy
 #   ECR_BACKEND       659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-backend
 #   ECR_WEB           659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-web
+#   ECR_DOCS          659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-docs
 #   EC2_INSTANCE_ID   i-08edccdc966c0985e
 #   RDS_INSTANCE_ID   kobin-kpi-db
 # Required Environment Secret (staging environment):
@@ -21,11 +22,14 @@ name: Deploy staging (AWS)
 on:
   push:
     branches: [main]
-    # Staging builds only the backend + web. Skip deploys for changes that can't
-    # affect the staging stack (docs, mobile, prod-only files). workflow_dispatch
-    # always runs regardless of these. A commit touching ANY non-ignored path deploys.
+    # Staging builds the backend + web + docs. Skip deploys for changes that can't
+    # affect the staging stack (mobile, prod-only files). workflow_dispatch always
+    # runs regardless. A commit touching ANY non-ignored path deploys.
+    #
+    # NOTE: we do NOT ignore '**.md' — the docs site's content is markdown under
+    # fe/docs/docs/, and content edits MUST rebuild & redeploy the docs image.
+    # Developer markdown that can't affect the stack is ignored by path instead.
     paths-ignore:
-      - '**.md'
       - 'specs/**'
       - 'fe/mobile/**'
       - '.github/workflows/mobile-*.yml'
@@ -151,6 +155,24 @@ jobs:
           cache-from: type=gha,scope=sekar-web
           cache-to: type=gha,mode=max,scope=sekar-web
 
+      - name: Build & push docs
+        uses: docker/build-push-action@v6
+        with:
+          context: ./fe/docs
+          file: ./fe/docs/Dockerfile
+          platforms: linux/amd64
+          push: true
+          # Static site — no secrets. Site identity is baked at build time.
+          build-args: |
+            DOCS_URL=https://docs.sekar.wahyutrip.com
+            DOCS_BASE_URL=/
+            APP_URL=https://sekar.wahyutrip.com
+          tags: |
+            ${{ vars.ECR_DOCS }}:staging
+            ${{ vars.ECR_DOCS }}:${{ steps.vars.outputs.sha }}
+          cache-from: type=gha,scope=sekar-docs
+          cache-to: type=gha,mode=max,scope=sekar-docs
+
   deploy:
     needs: build-push
     runs-on: ubuntu-latest
@@ -258,3 +280,6 @@ jobs:
           done
           curl -fsS https://api.sekar.wahyutrip.com/api/v1/health/live
           curl -fsSI https://sekar.wahyutrip.com/login | head -1
+          # Docs site — public, no auth. Retry covers first-time Let's Encrypt issuance
+          # for the new docs.sekar.wahyutrip.com host.
+          curl -fsSI --retry 5 --retry-delay 6 https://docs.sekar.wahyutrip.com | head -1

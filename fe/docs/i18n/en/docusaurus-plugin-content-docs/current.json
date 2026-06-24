@@ -1,0 +1,34 @@
+{
+  "version.label": {
+    "message": "Next",
+    "description": "The label for version current"
+  },
+  "sidebar.docsSidebar.category.Memulai": {
+    "message": "Getting Started",
+    "description": "The label for category 'Memulai' in sidebar 'docsSidebar'"
+  },
+  "sidebar.docsSidebar.category.Untuk Satgas & Linmas": {
+    "message": "For Field Workers (Satgas & Linmas)",
+    "description": "The label for category 'Untuk Satgas & Linmas' in sidebar 'docsSidebar'"
+  },
+  "sidebar.docsSidebar.category.Untuk Korlap": {
+    "message": "For Korlap",
+    "description": "The label for category 'Untuk Korlap' in sidebar 'docsSidebar'"
+  },
+  "sidebar.docsSidebar.category.Untuk Kepala Rayon": {
+    "message": "For Rayon Head",
+    "description": "The label for category 'Untuk Kepala Rayon' in sidebar 'docsSidebar'"
+  },
+  "sidebar.docsSidebar.category.Untuk Admin": {
+    "message": "For Admin",
+    "description": "The label for category 'Untuk Admin' in sidebar 'docsSidebar'"
+  },
+  "sidebar.docsSidebar.category.Operasional": {
+    "message": "Operations",
+    "description": "The label for category 'Operasional' in sidebar 'docsSidebar'"
+  },
+  "sidebar.docsSidebar.category.Untuk Staff Kecamatan": {
+    "message": "For District Staff",
+    "description": "The label for category 'Untuk Staff Kecamatan' in sidebar 'docsSidebar'"
+  }
+}

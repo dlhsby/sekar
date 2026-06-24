@@ -120,7 +120,7 @@ Staging/UAT runs on **AWS**, co-tenant with the KPI project on one shared `t3.mi
 the self-hosted `docker-compose.prod.yml` — that's the on-prem **production** stack (§E).
 Authoritative deltas live in [ADR-028 addendum](../architecture/decisions/ADR-028-staging-environment.md).
 
-**Live URLs (HTTPS via Caddy auto-HTTPS):** API `https://api.sekar.wahyutrip.com` · web `https://sekar.wahyutrip.com`.
+**Live URLs (HTTPS via Caddy auto-HTTPS):** API `https://api.sekar.wahyutrip.com` · web `https://sekar.wahyutrip.com` · docs (public user manual) `https://docs.sekar.wahyutrip.com`.
 
 **Tooling URLs (staging only):**
 - **Swagger / OpenAPI** — `https://api.sekar.wahyutrip.com/api/v1/docs` (UI; not env-gated) ·
@@ -150,8 +150,15 @@ Authoritative deltas live in [ADR-028 addendum](../architecture/decisions/ADR-02
     container as a **single file (read-only)**, so editing it in place (`sed -i`/editors) swaps the
     inode and `caddy reload` reports "config is unchanged". Push via the KPI repo (preferred), or
     **restart** the caddy container after editing the box file — a plain reload is not enough.
-- **Apps:** `backend` + `web` (ECR images) + a small `redis` container —
+- **Apps:** `backend` + `web` + `docs` (ECR images) + a small `redis` container —
   [`infra/compose.staging.yml`](../../infra/compose.staging.yml), per-container memory limits.
+  - **`docs`** is the public user manual (Docusaurus static site, [`fe/docs/`](../../fe/docs)),
+    built into the `sekar-docs` ECR image by CI and served as static HTML by its bundled nginx.
+    One-time setup: create the `sekar-docs` ECR repo, add the `ECR_DOCS` repo Variable, and add
+    DNS A record `docs.sekar.wahyutrip.com → 16.79.124.63`. Caddy block in
+    [`infra/Caddyfile.staging`](../../infra/Caddyfile.staging) (mirror into the KPI Caddyfile, per
+    the cross-repo note above). No auth — anyone can read it. Content edits (markdown under
+    `fe/docs/docs/`) auto-rebuild & redeploy on push to `main`.
 - **DB:** `sekar_staging` database + `sekar` role on the **shared** RDS `kobin-kpi-db` (`DATABASE_SSL=true`).
 - **Media:** S3 `sekar-media-staging` via the **EC2 instance role** — no static AWS keys on the host.
 - **Secrets (dotenvx):** the backend's full staging config lives in the committed, **encrypted**
@@ -262,16 +269,18 @@ Set **every** `<...>` placeholder. Minimum to change:
 
 Nginx expects `infra/certs/fullchain.pem` + `infra/certs/privkey.pem` (gitignored).
 
-**Let's Encrypt (recommended)** — get the cert with the stack down (port 80 free), then start the stack:
+**Let's Encrypt (recommended)** — get the cert with the stack down (port 80 free), then start the stack. Include the **docs** subdomain as a second `-d` so the same cert covers it:
 ```bash
 sudo apt-get install -y certbot
-sudo certbot certonly --standalone -d sekar.example.com
+sudo certbot certonly --standalone -d sekar.example.com -d docs.sekar.example.com
 mkdir -p infra/certs
 sudo cp /etc/letsencrypt/live/sekar.example.com/fullchain.pem infra/certs/
 sudo cp /etc/letsencrypt/live/sekar.example.com/privkey.pem  infra/certs/
 sudo chown "$USER" infra/certs/*.pem
 ```
-Renewal: re-copy after `certbot renew` (the `certbot-webroot` volume + the Nginx `/.well-known/acme-challenge/` location support webroot renewal without downtime). Edit `server_name` in `infra/nginx.conf` to your domain.
+Renewal: re-copy after `certbot renew` (the `certbot-webroot` volume + the Nginx `/.well-known/acme-challenge/` location support webroot renewal without downtime). Edit `server_name` in `infra/nginx.conf` to your domain (both the app and `docs.` server blocks), and add DNS A records for **both** hostnames.
+
+> **Public docs site:** the `docs` service in `docker-compose.prod.yml` serves the user manual ([`fe/docs/`](../../fe/docs)) as static HTML, fronted by Nginx at `docs.<your-domain>`. Rebuild its image with your real domain via the `DOCS_URL`/`APP_URL` build args (and set web's `NEXT_PUBLIC_DOCS_URL` to match). To avoid a second subdomain/cert SAN entirely, use the **path-routed** alternative documented inline in [`infra/nginx.conf`](../../infra/nginx.conf) (serve under `sekar.example.com/docs` with `DOCS_BASE_URL=/docs/`).
 
 ### E.5 Build & start the stack
 
@@ -303,6 +312,7 @@ docker compose --env-file .env.production -f docker-compose.prod.yml exec \
 curl -sf https://sekar.example.com/api/v1/health/live       # {"status":"ok",...}
 curl -sf https://sekar.example.com/api/v1/health/ready       # DB + Redis reachable
 curl -sI https://sekar.example.com/login                     # 200 (dashboard)
+curl -sI https://docs.sekar.example.com                      # 200 (public user manual)
 ```
 Then log in to the dashboard and confirm the monitoring map renders (validates the Mapbox token + WebSocket through Nginx).
 

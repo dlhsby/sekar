@@ -166,6 +166,12 @@ Phase 1-2B: Three roles (Worker, Supervisor, Admin). Phase 2C: Eight roles — s
 - **Project README:** [`/README.md`](/README.md) - Project setup and commands
 - **Completion Status:** [`COMPLETION_STATUS.md`](./COMPLETION_STATUS.md) - Single source of truth for project status
 
+### End-User Documentation
+- **User Manual (Panduan):** [`../fe/docs/`](../fe/docs) — public, no-login Bahasa-Indonesia
+  user manual (Docusaurus). Live at `https://docs.sekar.wahyutrip.com`. This is for **app users**
+  (field workers, admins), distinct from these developer specs. Content is plain markdown under
+  `fe/docs/docs/`; edits auto-deploy on push to `main`. See [`fe/docs/README.md`](../fe/docs/README.md).
+
 ### Component READMEs
 - **Backend README:** [`/be/README.md`](/be/README.md) - Backend-specific setup
 - **Mobile README:** [`/fe/mobile/README.md`](/fe/mobile/README.md) - Mobile-specific setup

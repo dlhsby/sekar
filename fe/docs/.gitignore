@@ -1,0 +1,12 @@
+# Docusaurus build + caches
+/.docusaurus
+/build
+/node_modules
+
+# Generated search index
+.cache-loader
+
+# Misc
+.DS_Store
+*.log
+.env.local

@@ -55,6 +55,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         href: item.href,
         icon: <item.icon className="h-5 w-5" />,
         roles: item.roles,
+        external: item.external,
         children: item.children ? convertToSidebarItems(item.children) : undefined,
       }));
     };

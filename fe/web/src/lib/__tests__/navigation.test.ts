@@ -16,9 +16,9 @@ describe('Navigation Utilities', () => {
     it('should contain all expected navigation items', () => {
       // Top-level entries: dashboard, monitoring, work(group), data(group),
       // reports(group), analytics(group), operations(group) + 2 staff_kecamatan
-      // items = 9. Settings moved to the avatar dropdown; pruning-requests moved
-      // under the 'Pekerjaan' group.
-      expect(navigationItems).toHaveLength(9);
+      // items + the external 'docs' (Panduan) link = 10. Settings moved to the
+      // avatar dropdown; pruning-requests moved under the 'Pekerjaan' group.
+      expect(navigationItems).toHaveLength(10);
 
       const navIds = navigationItems.map((item) => item.id);
       expect(navIds).toContain('dashboard');
@@ -28,6 +28,8 @@ describe('Navigation Utilities', () => {
       expect(navIds).toContain('reports');
       expect(navIds).toContain('analytics');
       expect(navIds).toContain('operations');
+      // External public docs link, visible to every role.
+      expect(navIds).toContain('docs');
       expect(navIds).not.toContain('settings');
       // pruning-requests is no longer top-level (nested under 'work').
       expect(navIds).not.toContain('pruning-requests');
@@ -85,7 +87,8 @@ describe('Navigation Utilities', () => {
     it('should return all groups for superadmin role', () => {
       const filtered = filterNavigationByRole(navigationItems, 'superadmin');
 
-      // superadmin sees all admin groups; the 2 staff_kecamatan-only items stay hidden.
+      // superadmin sees all admin groups; the 2 staff_kecamatan-only items stay
+      // hidden. The external 'docs' link (roles ['*']) is appended for everyone.
       expect(filtered.map((i) => i.id)).toEqual([
         'dashboard',
         'monitoring',
@@ -94,6 +97,7 @@ describe('Navigation Utilities', () => {
         'reports',
         'analytics',
         'operations',
+        'docs',
       ]);
 
       const workItem = filtered.find((item) => item.id === 'work');
@@ -168,10 +172,12 @@ describe('Navigation Utilities', () => {
       expect(filtered.find((item) => item.id === 'data')).toBeUndefined();
     });
 
-    it('should return empty array for satgas role', () => {
+    it('should only expose the public docs link for satgas role', () => {
       const filtered = filterNavigationByRole(navigationItems, 'satgas');
 
-      expect(filtered).toHaveLength(0);
+      // satgas has no dashboard surfaces of its own; the only visible item is the
+      // external 'docs' (Panduan) link, which is open to every role.
+      expect(filtered.map((i) => i.id)).toEqual(['docs']);
     });
 
     it('should include items with wildcard role', () => {

@@ -31,6 +31,13 @@ sekar.wahyutrip.com {
 	reverse_proxy sekar-web:3000
 }
 
+# Public user manual (Docusaurus static site). No auth — anyone can read it.
+# DNS: docs.sekar.wahyutrip.com A 16.79.124.63 (shared Elastic IP).
+docs.sekar.wahyutrip.com {
+	encode gzip
+	reverse_proxy sekar-docs:80
+}
+
 # Adminer (DB admin UI) — staging/UAT only. Gated by HTTP basic-auth BEFORE the
 # UI loads (bcrypt hash; safe to commit — the plaintext is not). Adminer's own
 # login still requires the sekar_staging DB creds on top. DNS: adminer.wahyutrip.com

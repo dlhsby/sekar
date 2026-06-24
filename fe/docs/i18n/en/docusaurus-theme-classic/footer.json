@@ -1,0 +1,30 @@
+{
+  "link.title.Panduan": {
+    "message": "Guide",
+    "description": "The title of the footer links column with title=Panduan in the footer"
+  },
+  "link.title.Aplikasi": {
+    "message": "App",
+    "description": "The title of the footer links column with title=Aplikasi in the footer"
+  },
+  "link.item.label.Memulai": {
+    "message": "Getting Started",
+    "description": "The label of footer link with label=Memulai linking to /memulai/login"
+  },
+  "link.item.label.FAQ & Bantuan": {
+    "message": "FAQ & Help",
+    "description": "The label of footer link with label=FAQ & Bantuan linking to /faq"
+  },
+  "link.item.label.Buka Dashboard": {
+    "message": "Open Dashboard",
+    "description": "The label of footer link with label=Buka Dashboard linking to https://sekar.wahyutrip.com"
+  },
+  "link.item.label.Unduh Aplikasi Android": {
+    "message": "Download Android App",
+    "description": "The label of footer link with label=Unduh Aplikasi Android linking to https://sekar.wahyutrip.com/android"
+  },
+  "copyright": {
+    "message": "© 2026 Surabaya City Environmental Agency (DLH). SEKAR.",
+    "description": "The footer copyright"
+  }
+}

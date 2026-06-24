@@ -68,6 +68,20 @@ services:
     logging: *default-logging
     networks: [edge]
 
+  # Public user manual (Docusaurus static site). Pure static HTML served by the
+  # image's bundled nginx — no env, no DB. Reached via Caddy at
+  # docs.sekar.wahyutrip.com (see infra/Caddyfile.staging).
+  docs:
+    image: 659828096624.dkr.ecr.ap-southeast-3.amazonaws.com/sekar-docs:${IMAGE_TAG:-staging}
+    container_name: sekar-docs
+    expose:
+      - "80" # internal only; reached via Caddy on the edge network
+    mem_limit: 64m
+    mem_reservation: 32m
+    restart: unless-stopped
+    logging: *default-logging
+    networks: [edge]
+
   # DB admin UI for staging/UAT. Connects to the same AWS RDS as the backend
   # (egress via the edge bridge; RDS SG already admits the box). Reached only
   # through Caddy at adminer.sekar.wahyutrip.com behind HTTP basic-auth — never

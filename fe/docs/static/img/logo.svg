@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="SEKAR">
+  <rect width="64" height="64" rx="12" fill="#1A4D2E"/>
+  <g stroke="#1C1917" stroke-width="1.5" stroke-linejoin="round">
+    <g fill="#7FBC8C">
+      <path d="M32 32 L32 10 A22 22 0 0 1 47.6 16.4 Z"/>
+      <path d="M32 32 L47.6 16.4 A22 22 0 0 1 54 32 Z"/>
+      <path d="M32 32 L54 32 A22 22 0 0 1 47.6 47.6 Z"/>
+      <path d="M32 32 L47.6 47.6 A22 22 0 0 1 32 54 Z"/>
+      <path d="M32 32 L32 54 A22 22 0 0 1 16.4 47.6 Z"/>
+      <path d="M32 32 L16.4 47.6 A22 22 0 0 1 10 32 Z"/>
+      <path d="M32 32 L10 32 A22 22 0 0 1 16.4 16.4 Z"/>
+      <path d="M32 32 L16.4 16.4 A22 22 0 0 1 32 10 Z"/>
+    </g>
+    <circle cx="32" cy="32" r="7" fill="#FDFD96"/>
+  </g>
+</svg>
