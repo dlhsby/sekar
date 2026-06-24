@@ -29,6 +29,10 @@ appId: com.wahyutrip.sekar
                 direction: LEFT
             - waitForAnimationToEnd:
                 timeout: 1200
+      - extendedWaitUntil:
+          visible:
+            text: ".*Masuk.*"
+          timeout: 10000
       - tapOn:
           text: ".*Masuk.*"
           optional: true
@@ -86,12 +90,12 @@ appId: com.wahyutrip.sekar
     timeout: 2500
 - takeScreenshot: shots/home
 
-# Selectors below are content-desc strings confirmed via uiautomator on the
-# published field-worker build (tabs: Beranda / Tugas & Aktivitas / Lembur).
+# Unified Home · Menu · Profil navigation (current build): the Menu tab launches a
+# tile grid (menu-<Route>-<Label> testIDs); deep links cover the clock-in screen.
 
 # ---------- Notifications (bell in header) ----------
 - tapOn:
-    text: "Notifikasi"
+    id: "notification-bell"
     optional: true
 - waitForAnimationToEnd:
     timeout: 2500
@@ -100,25 +104,17 @@ appId: com.wahyutrip.sekar
 - waitForAnimationToEnd:
     timeout: 1500
 
-# ---------- Absen (Clock In) from home ----------
+# ---------- Menu launcher (Menu tab) ----------
 - tapOn:
-    text: "Clock In"
+    text: "Menu"
     optional: true
 - waitForAnimationToEnd:
-    timeout: 3500
-- takeScreenshot: shots/absen-masuk
-- swipe:
-    direction: UP
-- waitForAnimationToEnd:
-    timeout: 1500
-- takeScreenshot: shots/gps
-- back
-- waitForAnimationToEnd:
-    timeout: 1500
+    timeout: 1800
+- takeScreenshot: shots/menu
 
-# ---------- Kehadiran (Jam kerja card on home) ----------
+# ---------- Kehadiran (Menu tile) ----------
 - tapOn:
-    text: "Jam kerja.*"
+    id: "menu-Attendance-Kehadiran"
     optional: true
 - waitForAnimationToEnd:
     timeout: 2500
@@ -127,9 +123,9 @@ appId: com.wahyutrip.sekar
 - waitForAnimationToEnd:
     timeout: 1500
 
-# ---------- Tugas (Tugas card on home) ----------
+# ---------- Tugas (Menu tile) ----------
 - tapOn:
-    text: "Tugas: .*"
+    id: "menu-Tasks-Tugas"
     optional: true
 - waitForAnimationToEnd:
     timeout: 2500
@@ -138,9 +134,9 @@ appId: com.wahyutrip.sekar
 - waitForAnimationToEnd:
     timeout: 1500
 
-# ---------- Aktivitas / Lapor Kerja (Aktivitas card on home) ----------
+# ---------- Aktivitas / Lapor Kerja (Menu tile) ----------
 - tapOn:
-    text: "Aktivitas: .*"
+    id: "menu-Activities-Aktivitas"
     optional: true
 - waitForAnimationToEnd:
     timeout: 2500
@@ -149,23 +145,32 @@ appId: com.wahyutrip.sekar
 - waitForAnimationToEnd:
     timeout: 1500
 
-# ---------- Lembur (bottom tab) ----------
+# ---------- Lembur (Menu tile) ----------
 - tapOn:
-    text: "Lembur"
+    id: "menu-Lembur-Lembur"
     optional: true
 - waitForAnimationToEnd:
     timeout: 2500
 - takeScreenshot: shots/lembur
-- tapOn:
-    text: "Beranda"
-    optional: true
+- back
 - waitForAnimationToEnd:
     timeout: 1500
 
-# ---------- Profil (header avatar) ----------
+# ---------- Profil (bottom tab) ----------
 - tapOn:
-    text: "Buka Profil"
+    text: "Profil"
     optional: true
 - waitForAnimationToEnd:
     timeout: 2500
 - takeScreenshot: shots/profil
+
+# ---------- Absen (clock in/out) via deep link — last, back behaviour varies ----------
+- openLink: "sekar://absensi"
+- waitForAnimationToEnd:
+    timeout: 3500
+- takeScreenshot: shots/absen-masuk
+- swipe:
+    direction: UP
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: shots/gps
