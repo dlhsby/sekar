@@ -1,0 +1,171 @@
+# Maestro flow: log in as a field worker (satgas) and screenshot each screen for
+# the docs. Screenshots are written to ./shots/<name>.png (run from a work dir, or
+# via capture-mobile-auto.sh which maps them onto fe/docs/static/img/mobile/).
+#
+#   maestro test fe/docs/scripts/maestro/capture.yaml
+#
+# Resilient by design: the welcome carousel, onboarding, and most navigation taps
+# are optional, so the run captures whatever it can reach rather than aborting.
+appId: com.wahyutrip.sekar
+---
+- launchApp:
+    clearState: true
+    permissions:
+      all: allow
+# Let the (cold) RN start + first carousel slide render on the software-GPU emulator.
+- waitForAnimationToEnd:
+    timeout: 9000
+
+# ---------- Welcome carousel (pre-login, optional) — swipe through, enter login ----------
+- runFlow:
+    when:
+      visible:
+        id: "welcome-carousel-screen"
+    commands:
+      - repeat:
+          times: 4
+          commands:
+            - swipe:
+                direction: LEFT
+            - waitForAnimationToEnd:
+                timeout: 1200
+      - tapOn:
+          text: ".*Masuk.*"
+          optional: true
+      - waitForAnimationToEnd:
+          timeout: 2500
+
+# ---------- Login screen ----------
+- extendedWaitUntil:
+    visible:
+      id: "username-input"
+    timeout: 60000
+- takeScreenshot: shots/login
+- tapOn:
+    id: "username-input"
+- inputText: "edi_santoso"
+- tapOn:
+    id: "password-input"
+- inputText: "password123"
+- hideKeyboard
+- tapOn:
+    id: "login-button"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# ---------- Onboarding (only on first launch) ----------
+- runFlow:
+    when:
+      visible:
+        text: "Lanjut"
+    commands:
+      - tapOn:
+          text: "Lanjut"
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - tapOn: { id: "perm-grant-notifications", optional: true }
+      - tapOn: { id: "perm-grant-location", optional: true }
+      - tapOn: { id: "perm-grant-background_location", optional: true }
+      - tapOn: { id: "perm-grant-camera", optional: true }
+      - tapOn: { id: "perm-grant-gallery", optional: true }
+      - waitForAnimationToEnd:
+          timeout: 1200
+      - tapOn: { text: "Lanjut", optional: true }
+      - waitForAnimationToEnd:
+          timeout: 1500
+      - tapOn: { text: "Mulai Bekerja", optional: true }
+      - waitForAnimationToEnd:
+          timeout: 3000
+
+# ---------- Home (Beranda) ----------
+- extendedWaitUntil:
+    visible:
+      text: "Beranda"
+    timeout: 25000
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: shots/home
+
+# Selectors below are content-desc strings confirmed via uiautomator on the
+# published field-worker build (tabs: Beranda / Tugas & Aktivitas / Lembur).
+
+# ---------- Notifications (bell in header) ----------
+- tapOn:
+    text: "Notifikasi"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: shots/notifikasi
+- back
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ---------- Absen (Clock In) from home ----------
+- tapOn:
+    text: "Clock In"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3500
+- takeScreenshot: shots/absen-masuk
+- swipe:
+    direction: UP
+- waitForAnimationToEnd:
+    timeout: 1500
+- takeScreenshot: shots/gps
+- back
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ---------- Kehadiran (Jam kerja card on home) ----------
+- tapOn:
+    text: "Jam kerja.*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: shots/kehadiran
+- back
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ---------- Tugas (Tugas card on home) ----------
+- tapOn:
+    text: "Tugas: .*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: shots/tugas-list
+- back
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ---------- Aktivitas / Lapor Kerja (Aktivitas card on home) ----------
+- tapOn:
+    text: "Aktivitas: .*"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: shots/lapor-kerja
+- back
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ---------- Lembur (bottom tab) ----------
+- tapOn:
+    text: "Lembur"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: shots/lembur
+- tapOn:
+    text: "Beranda"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1500
+
+# ---------- Profil (header avatar) ----------
+- tapOn:
+    text: "Buka Profil"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 2500
+- takeScreenshot: shots/profil
