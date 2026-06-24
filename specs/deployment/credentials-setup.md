@@ -700,6 +700,28 @@ DATABASE_NAME=sekar_staging
 
 See `specs/deployment/encrypted-secrets.md` for how to set up dotenvx encryption locally and in CI/CD.
 
+#### Staging RDS — master (root) credentials
+
+The staging database lives on the shared AWS RDS instance **`dlhsby`** (formerly
+`kobin-kpi-db`, renamed when project KPI was decommissioned). SEKAR's app authenticates
+as the dedicated **`sekar`** role against the **`sekar_staging`** database — it never
+uses the master account. The instance **master (root)** credentials are:
+
+| Item | Value / location |
+|---|---|
+| Master username | `kpi` (set at instance creation; not renamable) — also in SSM `/sekar/staging/RDS_MASTER_USERNAME` |
+| Master password | SSM SecureString **`/sekar/staging/RDS_MASTER_PASSWORD`** (rotated on the KPI decommission) |
+| Endpoint | `dlhsby.cvuoeguwo5dg.ap-southeast-3.rds.amazonaws.com:5432` |
+
+Retrieve the master password (e.g. for `psql`/Adminer admin tasks):
+```bash
+aws ssm get-parameter --region ap-southeast-3 \
+  --name /sekar/staging/RDS_MASTER_PASSWORD --with-decryption \
+  --query Parameter.Value --output text
+```
+The EC2 box's instance role can read `/sekar/staging/*`, so admin scripts on the box
+can fetch it without embedding a static password. Never commit the value to git.
+
 ### Production (On-Prem Docker Compose)
 
 | Credential | Service | Status | Notes |
