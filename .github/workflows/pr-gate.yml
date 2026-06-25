@@ -1,0 +1,91 @@
+name: PR Gate
+
+# The single REQUIRED status check for merging into main/staging/develop.
+#
+# Why this exists: the per-component quality workflows are path-filtered, so making any of
+# them a "required status check" directly would DEADLOCK PRs that don't touch that path
+# (GitHub waits forever for a check that never triggers). This workflow always runs on a PR
+# (no path filter), detects which components changed, runs ONLY their reusable quality
+# suites, and the `gate` job aggregates the result. A component that didn't change is
+# `skipped` and counts as a pass — so the gate is green for, e.g., a docs-only PR, yet RED
+# if any suite that did run failed. Make `gate` the required check in branch protection.
+
+on:
+  pull_request:
+    branches: [main, staging, develop]
+
+concurrency:
+  group: pr-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect:
+    name: Detect changed components
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.f.outputs.backend }}
+      web: ${{ steps.f.outputs.web }}
+      mobile: ${{ steps.f.outputs.mobile }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: f
+        with:
+          filters: |
+            backend:
+              - 'be/**'
+              - '.github/workflows/backend-quality.yml'
+              - '.github/workflows/pr-gate.yml'
+            web:
+              - 'fe/web/**'
+              - 'specs/ui-ux/tokens.json'
+              - 'tools/eslint-plugin-sekar-design/**'
+              - '.github/workflows/web-quality.yml'
+              - '.github/workflows/pr-gate.yml'
+            mobile:
+              - 'fe/mobile/**'
+              - 'specs/ui-ux/tokens.json'
+              - 'scripts/build-tokens.ts'
+              - 'tools/eslint-plugin-sekar-design/**'
+              - '.github/workflows/mobile-quality.yml'
+              - '.github/workflows/pr-gate.yml'
+
+  backend:
+    needs: detect
+    if: needs.detect.outputs.backend == 'true'
+    uses: ./.github/workflows/backend-quality.yml
+
+  web:
+    needs: detect
+    if: needs.detect.outputs.web == 'true'
+    uses: ./.github/workflows/web-quality.yml
+
+  mobile:
+    needs: detect
+    if: needs.detect.outputs.mobile == 'true'
+    uses: ./.github/workflows/mobile-quality.yml
+
+  gate:
+    name: gate
+    needs: [detect, backend, web, mobile]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Aggregate required quality gates
+        run: |
+          det='${{ needs.detect.result }}'
+          be='${{ needs.backend.result }}'
+          web='${{ needs.web.result }}'
+          mob='${{ needs.mobile.result }}'
+          echo "detect=$det backend=$be web=$web mobile=$mob"
+          if [ "$det" != "success" ]; then
+            echo "::error::change detection failed ($det) — cannot determine which suites to run"; exit 1
+          fi
+          fail=0
+          for r in "$be" "$web" "$mob"; do
+            case "$r" in
+              success|skipped|"") : ;;            # skipped = component unchanged → OK
+              *) echo "::error::a quality suite did not pass ($r)"; fail=1 ;;
+            esac
+          done
+          [ "$fail" -eq 0 ] && echo "All applicable quality gates passed." || exit 1

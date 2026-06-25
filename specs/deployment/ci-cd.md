@@ -27,12 +27,11 @@ fast-forward `staging` to it and push → approve → it builds + deploys.
 
 **Branch protection** (both enforced while the repo is public / on a paid plan; **inactive on the
 Free private plan** until restored):
-- **`main`** — **PR required** to change it (0 approvals, so you can merge your own once the
-  path-filtered quality gates show green), **linear history**, **no force-push/deletion**,
-  conversation-resolution required. Admin bypass is **on** (the owner can still direct-push in a
-  pinch). Note: the quality gates are *not* set as GitHub "required status checks" — they are
-  path-filtered, so a required check that doesn't trigger (e.g. a docs-only PR) would deadlock the
-  merge; instead they run and are visible on every relevant PR.
+- **`main`** — **PR required** (0 approvals, so you can merge your own) and the **`gate` status
+  check must pass** before merge. `gate` is the `pr-gate` aggregator (see §1): it always runs, runs
+  only the suites for changed components, and is **deadlock-proof** for path-filtered suites (unlike
+  pinning the per-component checks directly). Plus **linear history**, **no force-push/deletion**,
+  conversation-resolution required. Admin bypass is **on** (the owner can still direct-push in a pinch).
 - **`staging`** — **linear history** (merge commits rejected — so it can only fast-forward/rebase
   from `main`), **no force-push**, **no deletion**. Stays directly pushable (no PR) so the
   `git push origin staging` release flow works.
@@ -47,10 +46,11 @@ and the decrypting `.env.keys` are **never committed** (see [`encrypted-secrets.
 | Workflow (`.github/workflows/`) | Trigger | What it does |
 |--------------------------------|---------|--------------|
 | **`deploy-staging.yml`** | push `staging` branch + `workflow_dispatch` · **`staging` env approval-gated** | **Gated on `quality-be` + `quality-web`** (lint/tsc/test) → build backend + web + docs images (with `GIT_SHA`/`BUILD_TIME` build args) → ECR (OIDC) → deploy to EC2 via **SSM Run Command** (also recreates `sekar-caddy`). Web built with `dotenvx run` + BuildKit secret; backend bakes encrypted `be/.env.staging`. Pre-deploy RDS snapshot, SHA-pinned image assertion, smoke test. |
+| **`pr-gate.yml`** | **PR** to `main`/`staging`/`develop` (always runs) | **The single REQUIRED merge check (`gate`).** Detects changed components (`dorny/paths-filter`) → runs only the relevant reusable suites below → the `gate` job aggregates (unchanged components are `skipped` = pass; any failed suite = red). Deadlock-proof replacement for path-filtered required checks. |
 | **`release-server.yml`** | push tag `sekar-v*` | Versioned **be+web** release (coupled). Validates the tag matches both `package.json`, builds + pushes `:X.Y.Z` ECR images (web production-configured), creates a GitHub Release with notes. Does **not** deploy (on-prem promotion is manual). |
-| **`backend-quality.yml`** | PR on `be/**` | ESLint + `tsc --noEmit` + Jest. |
-| **`web-quality.yml`** | PR on `fe/web/**` | ESLint (incl. design-system rules) + `tsc --noEmit` + Jest. |
-| **`mobile-quality.yml`** | **PR** to `main`/`staging`/`develop` on `fe/mobile/**` (+ token files) | ESLint (incl. design-system rules) + `tsc --noEmit` + Jest. Provisions `.env.local` from the example. (PR-only — was a redundant push+PR double-run.) |
+| **`backend-quality.yml`** | **reusable** (`workflow_call`) | ESLint + `tsc --noEmit` + Jest. Called by `pr-gate` (when `be/**` changes) and by `deploy-staging` (release gate). |
+| **`web-quality.yml`** | **reusable** (`workflow_call`) | ESLint (incl. design-system rules) + `tsc --noEmit` + Jest. Called by `pr-gate` (when `fe/web/**` changes) and by `deploy-staging`. |
+| **`mobile-quality.yml`** | **reusable** (`workflow_call`) | ESLint (incl. design-system rules) + `tsc --noEmit` + Jest. Called by `pr-gate` when `fe/mobile/**` (or design tokens) change. Provisions `.env.local` from the example. |
 | **`mobile-release.yml`** | tag `mobile-v*` + `workflow_dispatch` (env=staging) | Build a **signed** release **APK + AAB** for staging, upload a 30-day artifact, and auto-publish to the download registry (S3 + `POST /app-releases`). Tag pushes validate the tag matches `package.json`. See [`android-release-guide.md` §F](./android-release-guide.md). |
 | **`mobile-e2e.yml`** | `workflow_dispatch` | Maestro device flows. |
 | **`web-e2e.yml`** | **`workflow_dispatch`** (manual-only) | Playwright E2E. Manual-only — it installs a browser and is the heaviest job; run before a release or locally (`npm run test:e2e`). |

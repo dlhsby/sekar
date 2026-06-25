@@ -1,22 +1,11 @@
 name: Web Quality Gate
 
-# Lint + type-check + unit (Jest) tests for the Next.js web dashboard. Runs on PRs
-# touching fe/web/**. A staging release (push to `staging`) re-runs these via the
-# `quality-web` job in deploy-staging.yml. (Playwright E2E is a separate workflow:
-# web-e2e.yml — manual-only.)
-
+# Lint + type-check + unit (Jest) tests for the Next.js web dashboard. **Reusable** —
+# invoked by `pr-gate.yml` (the single required merge check) when `fe/web/**` changes on a
+# PR, and re-run as the `quality-web` job inside `deploy-staging.yml` on a release.
+# (Playwright E2E is a separate, manual workflow: web-e2e.yml.)
 on:
-  pull_request:
-    branches: [main, staging, develop]
-    paths:
-      - 'fe/web/**'
-      - 'specs/ui-ux/tokens.json'
-      - 'tools/eslint-plugin-sekar-design/**'
-      - '.github/workflows/web-quality.yml'
-
-concurrency:
-  group: web-quality-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_call: {}
 
 jobs:
   lint-typecheck-test:
