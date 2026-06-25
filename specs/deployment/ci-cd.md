@@ -28,22 +28,21 @@ runs only on an actual release. This keeps GitHub Actions within the free-tier m
 open a PR `main → staging` and merge it → approve → it builds + deploys. **No direct commits to
 either branch — everything is a feature branch → PR.**
 
-**Branch protection** (both enforced while the repo is public / on a paid plan; **inactive on the
-Free private plan** until restored):
-- **`main`** — **PR required** (0 approvals, so you can merge your own) and the **`gate` status
-  check must pass** before merge. `gate` is the `pr-gate` aggregator (see §1): it always runs, runs
-  only the suites for changed components, and is **deadlock-proof** for path-filtered suites (unlike
-  pinning the per-component checks directly). Plus **linear history**, **no force-push/deletion**,
-  conversation-resolution required. **`enforce_admins: true`** — admins are **not** exempt; even the
-  owner goes through a PR + gate (no silent bypass).
-- **`staging`** — same rules as `main`: **PR required** (0 approvals) + **`gate`** check, **linear
-  history** (rebase/squash from `main`), **no force-push/deletion**, `enforce_admins: true`. A staging
-  release is a **PR `main → staging`** — **no direct commits**.
+**Branch protection** — enforced via a **repository ruleset** (`protected-branches (main + staging)`),
+not classic branch protection. The same ruleset is on `dlhsby/sekar` and `dlhsby/swat`, targeting
+`refs/heads/main` + `refs/heads/staging`, enforcement **active** (available while public / on a paid
+plan; inactive on the Free **private** plan until restored). Rules:
+- **PR required** (0 approvals — you can merge your own) + the **`gate`** status check must pass
+  (`gate` is the `pr-gate` aggregator — see §1: always runs, runs only the changed components' suites,
+  **deadlock-proof** for path-filtered checks).
+- **Linear history** (rebase/squash from `main`), **no force-push** (`non_fast_forward`),
+  **no deletion**, conversation-resolution required.
+- A `staging` release is a **PR `main → staging`** — **no direct commits** to either branch.
 
-> **Break-glass** (if the `gate` check itself becomes un-passable — flaky runner / CI down — and you
-> must merge a fix): `gh api --method DELETE repos/dlhsby/sekar/branches/<branch>/protection/enforce_admins`
-> → merge → re-enable with `--method POST`. (Later, consider migrating to a **ruleset** with yourself as
-> a named bypass actor — same enforcement, but an auditable break-glass path.)
+> **Break-glass = an auditable bypass, not a toggle.** The ruleset's **bypass actor is the Repository
+> admin role** (`bypass_mode: always`), so an admin *can* push/merge past the rules in a genuine
+> emergency — and **every bypass is recorded** under **Settings → Rules → Rule Insights** (who/when).
+> No disabling of protection needed; just bypass, and it's logged. Day-to-day still goes through PRs.
 
 **Repo visibility:** the repo is currently **public** (temporary) so Actions uses the unlimited
 free-tier minutes while a GitHub **billing** issue on the `dlhsby` org is resolved; it reverts to
