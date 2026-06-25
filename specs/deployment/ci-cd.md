@@ -16,14 +16,15 @@ runs only on an actual release. This keeps GitHub Actions within the free-tier m
 - **Push to `main` does NOT deploy.** `main` is the integration branch; PRs into it run the
   path-filtered quality gates (and superseded runs auto-cancel).
 - **Release to staging** by either:
-  - merging **`main → staging`** and pushing the `staging` branch (`git push origin staging`), or
+  - opening a PR from **`main` into `staging`** and merging it (rebase/squash — linear history), or
   - running **`deploy-staging`** manually from the Actions tab (`workflow_dispatch`).
 - Both the **`staging`** and **`production`** GitHub Environments require a **manual approval**
   (reviewer: repo owner) before their build/deploy jobs start — a second confirmation on top of
   the deliberate trigger. Approve from the run page or `gh run` / the Environments UI.
 
 **Day-to-day:** feature branch → PR → `main` (quality gates) → when `main` is UAT-ready,
-fast-forward `staging` to it and push → approve → it builds + deploys.
+open a PR `main → staging` and merge it → approve → it builds + deploys. **No direct commits to
+either branch — everything is a feature branch → PR.**
 
 **Branch protection** (both enforced while the repo is public / on a paid plan; **inactive on the
 Free private plan** until restored):
@@ -32,9 +33,9 @@ Free private plan** until restored):
   only the suites for changed components, and is **deadlock-proof** for path-filtered suites (unlike
   pinning the per-component checks directly). Plus **linear history**, **no force-push/deletion**,
   conversation-resolution required. Admin bypass is **on** (the owner can still direct-push in a pinch).
-- **`staging`** — **linear history** (merge commits rejected — so it can only fast-forward/rebase
-  from `main`), **no force-push**, **no deletion**. Stays directly pushable (no PR) so the
-  `git push origin staging` release flow works.
+- **`staging`** — same rules as `main`: **PR required** (0 approvals) + **`gate`** check, **linear
+  history** (rebase/squash from `main`), **no force-push/deletion**, admin bypass on. A staging
+  release is a **PR `main → staging`** — **no direct commits**.
 
 **Repo visibility:** the repo is currently **public** (temporary) so Actions uses the unlimited
 free-tier minutes while a GitHub **billing** issue on the `dlhsby` org is resolved; it reverts to
@@ -155,13 +156,14 @@ Principles:
 
 ### Step-by-step
 
-**Backend + Web → staging (deliberate release):** merge `main → staging` and push it (or run
+**Backend + Web → staging (deliberate release):** open a PR `main → staging` and merge it (or run
 `deploy-staging` via `workflow_dispatch`) → **approve** the `staging` environment → `quality-be`+
 `quality-web` gate → `deploy-staging` builds + deploys. Verify `curl .../health/live` (shows the SHA).
 Rollback: re-run `deploy-staging` from an earlier SHA, or restore the pre-deploy RDS snapshot.
 
 ```bash
-git checkout staging && git merge --ff-only main && git push origin staging   # then approve the run
+gh pr create --base staging --head main --title "release: staging" --fill
+gh pr merge --rebase --auto    # linear history; auto-merges when `gate` is green — then approve the run
 ```
 
 **Backend + Web → versioned release:**

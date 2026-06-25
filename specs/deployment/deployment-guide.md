@@ -171,7 +171,7 @@ Authoritative deltas live in [ADR-028 addendum](../architecture/decisions/ADR-02
 Deploys are **deliberate**, not every-push — the job builds 3 Docker images, so it runs
 only on an actual release (this keeps GitHub Actions within the free-tier minutes).
 **A push to `main` does NOT deploy.** Trigger a staging deploy by either:
-- **Release branch:** merge `main → staging` and push it — `git push origin staging`, or
+- **Release PR:** open a PR from `main` into `staging` and merge it (rebase/squash — `staging` is PR-only), or
 - **Manual:** Actions tab → *Deploy staging (AWS)* → **Run workflow** (`workflow_dispatch`).
 
 The `staging` GitHub **Environment requires a manual approval** (reviewer: repo owner) before the
@@ -184,7 +184,7 @@ pinned to the SHA (recreates `sekar-caddy` too) → smoke test.
 **Rollback:** re-run the workflow (`workflow_dispatch`) — or re-deploy a prior `:<sha>` tag.
 
 > Day-to-day: develop on feature branches → PR → `main` (PRs run the quality gates).
-> When `main` is ready for UAT, fast-forward `staging` to it and push to release.
+> When `main` is ready for UAT, open a PR `main → staging` and merge it to release.
 
 Required GitHub **Variables**: `AWS_REGION`, `AWS_ROLE_ARN`, `ECR_BACKEND`, `ECR_WEB`,
 `EC2_INSTANCE_ID`, `RDS_INSTANCE_ID`. Required `staging`-environment **Secret**:

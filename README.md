@@ -11,14 +11,16 @@ the project, local setup, contributing, deploying, and releasing, and links to t
 
 ## 🚀 Release runbook (TL;DR)
 
-> Pushing to `main` does **not** deploy. Staging deploys are **deliberate** + **approval-gated**.
+> Everything goes through a **feature branch → PR**. Both `main` and `staging` are PR-only
+> (no direct commits). Pushing to `main` does **not** deploy; staging deploys are **deliberate** + **approval-gated**.
 
-**Deploy current `main` to staging (AWS UAT):**
+**Deploy current `main` to staging (AWS UAT)** — open a PR from `main` into `staging` and merge it:
 ```bash
-git checkout staging && git merge --ff-only main && git push origin staging
+gh pr create --base staging --head main --title "release: staging" --fill
+gh pr merge --rebase --auto    # linear history → rebase/squash, not a merge commit; auto-merges when `gate` is green
 ```
 Then **approve**: Actions → the *Deploy staging (AWS)* run → **Review deployments → Approve**.
-(No-git alt: Actions → *Deploy staging (AWS)* → **Run workflow** → approve.)
+(UI alt: open the PR `base=staging ← head=main` on GitHub and merge; or Actions → *Deploy staging (AWS)* → **Run workflow** → approve.)
 CI then: quality gate → build 3 images → ECR → RDS snapshot → migrate → `up --wait` → smoke test.
 **Verify:** `curl https://api.sekar.wahyutrip.com/api/v1/health/live` shows the new `gitSha`.
 
@@ -31,7 +33,7 @@ scripts/release.sh mobile 0.1.0 2   # mobile → tag mobile-v0.1.0 → signed AP
 | | Automated (CI) | You do |
 |--|----------------|--------|
 | **PR → `main`** | quality gates (lint/tsc/tests, path-filtered) | open/merge the PR |
-| **Deploy staging** | build + ECR + snapshot + migrate + deploy + smoke | push `staging` (or dispatch) → **approve** |
+| **Deploy staging** | build + ECR + snapshot + migrate + deploy + smoke | PR `main → staging` + merge (or dispatch) → **approve** |
 | **Versioned release** | build `:X.Y.Z` images + GitHub Release / signed APK | run `release.sh`, approve `production` |
 | **Prod (on-prem)** | — | manual promotion of a `sekar-v*` tag |
 | **E2E** (`web-e2e`/`mobile-e2e`) | — | run manually when needed |
@@ -156,7 +158,7 @@ error tracking wired (Sentry, dormant until a DSN is set).
 
 ## Releasing
 
-Staging is released **deliberately** — fast-forward `staging` to `main` and push (or run
+Staging is released **deliberately** — open a PR from `main` into `staging` and merge it (or run
 `deploy-staging` manually), then **approve** the run; the deployed build is pinned by git SHA. For
 **named, versioned releases**, bump → tag → a workflow builds and publishes. Use the helper:
 
