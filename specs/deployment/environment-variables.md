@@ -2,9 +2,9 @@
 
 Comprehensive list of all environment variables used across all deployment phases of the SEKAR system.
 
-**Secrets model:** All deploy files (`.env.staging`, `.env.production`, repo-root `.env.production`) are **committed ENCRYPTED via [dotenvx](https://dotenvx.com)** — secret values are `encrypted:…` ciphertext. The only real secret is the per-file private key in gitignored `.env.keys`; decryption keys are GitHub **Environment** secrets `BE_/WEB_/MOBILE_DOTENV_PRIVATE_KEY` (staging+production), or on AWS boxes via SSM `/sekar/staging/BE_DOTENV_PRIVATE_KEY`. **For procedures:** see `deployment-guide.md` (from-scratch hub) and `encrypted-secrets.md` (dotenvx workflow). This doc is the **variable catalogue**.
+**Secrets model:** All deploy files (`.env.staging`, `.env.production` — per workspace, e.g. `be/.env.production`) are **committed ENCRYPTED via [dotenvx](https://dotenvx.com)** — secret values are `encrypted:…` ciphertext. The only real secret is the per-file private key in gitignored `.env.keys`; decryption keys are GitHub **Environment** secrets `BE_/WEB_/MOBILE_DOTENV_PRIVATE_KEY` (staging+production), or on AWS boxes via SSM `/sekar/staging/BE_DOTENV_PRIVATE_KEY`. **For procedures:** see `deployment-guide.md` (from-scratch hub) and `encrypted-secrets.md` (dotenvx workflow). This doc is the **variable catalogue**.
 
-**Infrastructure:** **Dev** = local MinIO + Postgres. **Staging** = AWS (region `ap-southeast-3`, shared RDS `dlhsby` db `sekar_staging`, S3 `sekar-media-staging` via instance role). **Production** = on-prem Docker Compose with MinIO. **Backend production env = repo-root `.env.production`** (drives `docker-compose.prod.yml`), NOT `be/.env.production`. FCM is **ENABLED** in staging+production (encrypted Firebase creds). Per-environment Google Maps keys (dev/staging/production) are encrypted in mobile env files.
+**Infrastructure:** **Dev** = local MinIO + Postgres. **Staging** = AWS (region `ap-southeast-3`, shared RDS `dlhsby` db `sekar_staging`, S3 `sekar-media-staging` via instance role). **Production** = on-prem Docker Compose with MinIO. **Backend production env = `be/.env.production`** (drives the root `docker-compose.prod.yml`). FCM is **ENABLED** in staging+production (encrypted Firebase creds). Per-environment Google Maps keys (dev/staging/production) are encrypted in mobile env files.
 
 ## File naming convention (standardised Phase 5)
 
@@ -18,7 +18,7 @@ All three application workspaces use the same scheme:
 | `.env.keys` | dotenvx private decryption keys | No — gitignored **CRITICAL** |
 | `.env.local.example` / `.env.staging.example` / `.env.production.example` | Templates with safe defaults | **Yes** |
 
-**Special:** Backend production env lives at **repo-root `./.env.production`** (not `be/.env.production`); drives `docker-compose.prod.yml`. All other workspace-specific production envs (`be/.env.production`, `fe/web/.env.production`, `fe/mobile/.env.production`) exist for workspace parity but are baked into container images (backend staging) or built at deploy time (web, mobile).
+**Consistency:** every workspace keeps its own env — backend in `be/.env.{staging,production}`, web in `fe/web/.env.{staging,production}`, mobile in `fe/mobile/.env.{staging,production}`. There is **no** root-level app env. `be/.env.production` drives the root `docker-compose.prod.yml` (the backend service references it via `env_file: be/.env.production`, and the compose reads its `DATABASE_*` / `AWS_*` for Postgres/MinIO provisioning); the frontend production envs are built into their artifacts at deploy time.
 
 - **Backend** (`be/`): `be/src/config/load-env.ts` loads `.env.local` (dev) or `.env.<NODE_ENV>` (staging/production/test) and decrypts via dotenvx.
 - **Web** (`fe/web/`): `npm run build:staging|production` runs `dotenvx run -f .env.<env> -- next …` (decrypts at build).
@@ -462,7 +462,7 @@ NEXT_PUBLIC_WEBSOCKET_URL=wss://api-staging.sekar.wahyutrip.com
 ### Production Environment
 
 ```bash
-# Backend (repo-root ./.env.production, encrypted via dotenvx, committed; drives docker-compose.prod.yml)
+# Backend (be/.env.production, encrypted via dotenvx, committed; drives the root docker-compose.prod.yml)
 NODE_ENV=production
 DATABASE_HOST=localhost  # On-prem PostgreSQL via compose
 DATABASE_PORT=5432

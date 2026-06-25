@@ -6,12 +6,14 @@
 # the AWS appendix in specs/deployment/deployment-guide.md and use external
 # endpoints instead of the postgres/redis/minio services here.
 #
-# Usage:
-#   cp .env.production.example .env.production   # fill in real secrets
-#   docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
-#   docker compose --env-file .env.production -f docker-compose.prod.yml exec backend npm run migration:run
+# Usage (backend env lives in be/, consistent with be/.env.staging and the
+# fe/*/.env.production files — every workspace keeps its own env):
+#   cp be/.env.production.example be/.env.production   # fill in real secrets
+#   docker compose --env-file be/.env.production -f docker-compose.prod.yml up -d --build
+#   docker compose --env-file be/.env.production -f docker-compose.prod.yml exec backend npm run migration:run
 #
-# All secrets come from .env.production (gitignored). Never bake them into images.
+# All secrets come from be/.env.production (committed dotenvx-encrypted; the
+# private key is supplied via the deploy environment). Never bake them into images.
 
 services:
   postgres:
@@ -92,7 +94,7 @@ services:
     container_name: sekar-backend-prod
     restart: unless-stopped
     env_file:
-      - .env.production
+      - be/.env.production
     environment:
       # Network-internal overrides win over the file so service names resolve.
       NODE_ENV: production
@@ -101,7 +103,7 @@ services:
       REDIS_URL: redis://redis:6379
       AWS_ENDPOINT_URL: http://minio:9000
       AWS_S3_FORCE_PATH_STYLE: "true"
-      # env_file injects the ENCRYPTED .env.production values; load-env.ts decrypts
+      # env_file injects the ENCRYPTED be/.env.production values; load-env.ts decrypts
       # them at boot using this key (passed through from the deploy environment).
       DOTENV_PRIVATE_KEY_PRODUCTION: ${DOTENV_PRIVATE_KEY_PRODUCTION:?set DOTENV_PRIVATE_KEY_PRODUCTION}
     depends_on:
@@ -176,7 +178,7 @@ networks:
     driver: bridge
 
 # BuildKit secret for the web image build — dotenvx reads the private key from the
-# deploy environment (set by `dotenvx run` / the operator) to decrypt .env.production.
+# deploy environment (set by `dotenvx run` / the operator) to decrypt be/.env.production.
 secrets:
   dotenv_private_key:
     environment: DOTENV_PRIVATE_KEY_PRODUCTION

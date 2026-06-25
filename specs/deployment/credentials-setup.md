@@ -45,7 +45,7 @@ Firebase enables Android and iOS push notifications via Firebase Cloud Messaging
 >   `GoogleService-Info.plist` exists per project but is **not yet CI-wired** (iOS isn't built in CI).
 > - **Backend FCM sender** authenticates with a key from each project's `firebase-adminsdk-fbsvc@…`
 >   service account (`FCM_PROJECT_ID/CLIENT_EMAIL/PRIVATE_KEY` in the encrypted `be/.env.staging` and
->   repo-root `.env.production`). The org policy **`iam.disableServiceAccountKeyCreation`** blocks
+>   `be/.env.production`). The org policy **`iam.disableServiceAccountKeyCreation`** blocks
 >   creating *new* SA keys, so reuse the existing key; relax the policy only if you must rotate.
 > - ⚠️ A pre-migration **`GoogleService-Info.plist` (old project `sekar-dev`)** was committed in
 >   git history (commit `49a7a49`) and exposes a Firebase **client** API key (`AIzaSy…fc4`). That
@@ -612,7 +612,7 @@ AWS_S3_BUCKET=sekar-media  # MinIO bucket name (created during infra setup)
 # AWS_S3_FORCE_PATH_STYLE=true  (MinIO requires path-style URLs)
 ```
 
-MinIO credentials (root user/password) are managed via `docker-compose.prod.yml` secret/env injection, NOT in `.env.production`.
+MinIO credentials (root user/password) are managed via `docker-compose.prod.yml` secret/env injection, NOT in `be/.env.production`.
 
 ### 4.8 Enable Encryption
 
@@ -764,7 +764,7 @@ REDIS_URL=redis://sekar-redis:6379
 **Notes:**
 
 - `.env.production` is **committed encrypted** (dotenvx); only the private key is gitignored in `.env.keys`.
-- Production backend uses **MinIO inside `docker-compose.prod.yml`**, not real AWS S3. MinIO root credentials are injected via Docker Compose (not in `.env.production`).
+- Production backend uses **MinIO inside `docker-compose.prod.yml`**, not real AWS S3. MinIO root credentials are injected via Docker Compose (not in `be/.env.production`).
 - See `specs/deployment/encrypted-secrets.md` for dotenvx setup and key management in GitHub Actions / AWS SSM.
 - See `specs/deployment/deployment-guide.md` for complete production deployment instructions.
 

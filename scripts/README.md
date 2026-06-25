@@ -6,32 +6,16 @@ Utility scripts for development and deployment.
 
 ## Production Deployment
 
-### `deploy-production.sh`
+Production is **on-prem**, run manually from the repo root with the encrypted
+`be/.env.production`:
 
-**Purpose:** Automated production deployment with pre-flight checks
-
-**What it does:**
-- Validates Git status and branch
-- Checks GitHub Actions workflow YAML syntax
-- Verifies critical files exist
-- Confirms GitHub Secrets are configured
-- Commits and pushes to main branch to trigger CI/CD
-- Provides deployment monitoring instructions
-
-**Usage:**
 ```bash
-./scripts/deploy-production.sh
+docker compose --env-file be/.env.production -f docker-compose.prod.yml up -d --build
 ```
 
-**When to use:**
-- Deploying Phase 2 to production
-- After configuring all 16 GitHub Secrets
-- When ready to trigger automated deployment
-
-**Prerequisites:**
-- All GitHub Secrets configured
-- On main branch
-- All tests passing locally
+See `specs/deployment/operations.md` and the `docker-compose.prod.yml` header.
+(The former AWS-EC2 `deploy-production.sh` + per-component `*/docker-compose.prod.yml`
+were removed when AWS was decommissioned.)
 
 ---
 
@@ -131,8 +115,8 @@ the whole tree (npm wrapper + nest/next/metro children).
 ./scripts/start.sh              # Start everything (Ctrl+C stops)
 ./scripts/stop.sh [--infra]     # Stop services (and optionally Docker)
 
-# Production deployment
-./scripts/deploy-production.sh  # Deploy to production
+# Production deployment (on-prem, from repo root)
+docker compose --env-file be/.env.production -f docker-compose.prod.yml up -d --build
 
 # Testing
 ./scripts/smoke-tests.sh <API_URL>  # Run smoke tests

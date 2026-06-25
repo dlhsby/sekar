@@ -34,7 +34,7 @@ Copy `cp .env.local.example .env.local` (plaintext, gitignored). Defaults point 
 | `REDIS_URL` | `redis://localhost:16379` | Redis Streams (host port 16379 dev, 6379 prod) |
 | `FCM_ENABLED` | `true` | Set `false` until Firebase configured |
 
-**Env files use [dotenvx](https://dotenvx.com):** `.env.local` is plaintext + gitignored. `.env.staging` is committed encrypted and baked into the staging image. **Backend production env = repo-root `./.env.production`** (not `be/`), which drives `docker-compose.prod.yml`. `.env.keys` (private key) is never committed. See [`/specs/deployment/encrypted-secrets.md`](/specs/deployment/encrypted-secrets.md) + [`/specs/deployment/credentials-setup.md`](/specs/deployment/credentials-setup.md).
+**Env files use [dotenvx](https://dotenvx.com):** `.env.local` is plaintext + gitignored. `.env.staging` is committed encrypted and baked into the staging image. **Backend production env = `be/.env.production`** (committed encrypted, alongside `.env.staging`), which drives the root `docker-compose.prod.yml`. `.env.keys` (private key) is never committed. See [`/specs/deployment/encrypted-secrets.md`](/specs/deployment/encrypted-secrets.md) + [`/specs/deployment/credentials-setup.md`](/specs/deployment/credentials-setup.md).
 
 ## Testing & Seeding
 

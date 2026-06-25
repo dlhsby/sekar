@@ -34,7 +34,7 @@ It walks the four scenarios end-to-end — **run locally → obtain keys → dep
 |--|--------------|-------------|----------------|
 | Where | laptop | AWS EC2 (sole tenant, dlhsby box) | pemkot server (Win/Linux) |
 | Compose file | `infra/` dev | `infra/compose.staging.yml` | `docker-compose.prod.yml` |
-| Env file | `.env.local` (per workspace) | `/opt/sekar/.env` (from SSM) | `.env.production` (root) |
+| Env file | `.env.local` (per workspace) | `/opt/sekar/.env` (from SSM) | `.env.production` (per workspace) |
 | Object storage | **MinIO** (in `infra/`) | **AWS S3** (instance role) | **MinIO** (in `docker-compose.prod.yml`) |
 | Database | local Docker Postgres | **shared RDS** → `sekar_staging` | compose Postgres |
 | Redis | Docker | **in-stack container** | in-stack container |
@@ -104,8 +104,8 @@ ciphertext). The one real secret is the per-file private key in **`.env.keys`** 
 `be/src/config/load-env.ts` → `dotenvx.config()` (decrypts the chosen file at boot; plaintext
 `.env.local` passes through); web → `dotenvx run -f .env.<env> -- next …` (`npm run build:<env>` /
 `start:<env>`); mobile → `ENVFILE` in `babel.config.js`, release builds decrypt to a temp file
-(`scripts/decrypt-env.js`). **Backend production env = repo-root `./.env.production`**, not a
-`be/` file.
+(`scripts/decrypt-env.js`). **Backend production env = `be/.env.production`** (in `be/`,
+like `be/.env.staging`); it drives the root `docker-compose.prod.yml`.
 
 > **Build-time vs run-time:** `NEXT_PUBLIC_*` are compiled into the browser bundle when the `web` image builds — they must be the **public** URLs (through the proxy), not internal service names. Backend `DATABASE_HOST`/`REDIS_URL`/`AWS_ENDPOINT_URL` are overridden to the compose service names inside `docker-compose.prod.yml`, so you don't set those to localhost in deploys.
 
@@ -258,9 +258,10 @@ No host `npm install` — the Docker images build their own dependencies.
 
 ### E.3 Configure environment
 
-Everything is driven by one root file, `.env.production` (gitignored):
+Everything is driven by one file, `be/.env.production` (committed encrypted; the
+private key in `be/.env.keys` is gitignored):
 ```bash
-cp .env.production.example .env.production
+cp be/.env.production.example be/.env.production
 ```
 Set **every** `<...>` placeholder. Minimum to change:
 
@@ -296,8 +297,8 @@ Renewal: re-copy after `certbot renew` (the `certbot-webroot` volume + the Nginx
 ### E.5 Build & start the stack
 
 ```bash
-docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
-docker compose --env-file .env.production -f docker-compose.prod.yml ps      # all services healthy?
+docker compose --env-file be/.env.production -f docker-compose.prod.yml up -d --build
+docker compose --env-file be/.env.production -f docker-compose.prod.yml ps      # all services healthy?
 ```
 First boot order is handled by healthcheck `depends_on`: postgres + redis + minio come up, `minio-init` creates the media bucket and exits, then backend, then web, then nginx.
 
@@ -305,13 +306,13 @@ First boot order is handled by healthcheck `depends_on`: postgres + redis + mini
 
 The backend never auto-syncs or auto-migrates in production (`DATABASE_SYNCHRONIZE=false`, `DATABASE_MIGRATIONS_RUN=false`). Run migrations explicitly once the backend container is up:
 ```bash
-docker compose --env-file .env.production -f docker-compose.prod.yml exec backend npm run migration:run:prod
+docker compose --env-file be/.env.production -f docker-compose.prod.yml exec backend npm run migration:run:prod
 ```
 > **Use the `:prod` script, not `migration:run`.** The production image is `npm prune --production`d, so `ts-node`/`tsconfig-paths` are absent — the plain `migration:run` will fail. The `:prod` variants run the **compiled** `dist/src/database/...` via the TypeORM CLI. On a brand-new DB the backend logs a few harmless "relation … does not exist" cron warnings until this step completes — restart the backend afterwards for a clean log.
 
 **First-run reference data** (rayons, shift definitions, kecamatans, admin users — non-destructive):
 ```bash
-docker compose --env-file .env.production -f docker-compose.prod.yml exec \
+docker compose --env-file be/.env.production -f docker-compose.prod.yml exec \
   -e PROD_ADMIN_PASSWORD=... -e PROD_SUPERADMIN_PASSWORD=... -e PROD_ADMIN_SYSTEM_PASSWORD=... \
   backend npm run db:seed:production:prod
 ```
@@ -365,13 +366,13 @@ Migrations, seeding variants, **backup & restore**, **rollback**, health checks,
 Quick reference:
 ```bash
 # Nightly DB backup
-docker compose --env-file .env.production -f docker-compose.prod.yml exec -T postgres \
+docker compose --env-file be/.env.production -f docker-compose.prod.yml exec -T postgres \
   pg_dump -U "$DATABASE_USER" "$DATABASE_NAME" | gzip > backup-$(date +%F).sql.gz
 # Update to a new release
-git pull && docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
-docker compose --env-file .env.production -f docker-compose.prod.yml exec backend npm run migration:run:prod
+git pull && docker compose --env-file be/.env.production -f docker-compose.prod.yml up -d --build
+docker compose --env-file be/.env.production -f docker-compose.prod.yml exec backend npm run migration:run:prod
 # Logs
-docker compose --env-file .env.production -f docker-compose.prod.yml logs -f backend
+docker compose --env-file be/.env.production -f docker-compose.prod.yml logs -f backend
 ```
 **RTO/RPO:** nightly `pg_dump` → RPO ≤ 24h; redeploy + restore → RTO ≈ 30 min. For tighter RPO use streaming replication or a managed DB with PITR (Appendix A).
 

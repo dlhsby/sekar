@@ -29,7 +29,7 @@ links the focused guides below.
 
 | | **Local dev** | **Staging** | **Production** |
 |--|--------------|-------------|----------------|
-| Env file | `.env.local` (per workspace) | `.env.staging` | `.env.production` (root) |
+| Env file | `.env.local` (per workspace) | `.env.staging` (per workspace) | `.env.production` (per workspace) |
 | Object storage | MinIO (in `infra/`) | real AWS S3 | MinIO (in `docker-compose.prod.yml`) or AWS S3 |
 | Seeder | `db:seed` (destructive) | `db:seed:staging:prod` | `db:seed:production:prod` |
 | Guide section | [`deployment-guide.md`](deployment-guide.md) §A | §D | §E |

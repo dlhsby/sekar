@@ -38,7 +38,7 @@
 **Production** (on-prem Docker Compose) uses compiled JavaScript migrations (ts-node not available in production image):
 
 ```bash
-docker compose --env-file .env.production -f docker-compose.prod.yml exec backend \
+docker compose --env-file be/.env.production -f docker-compose.prod.yml exec backend \
   npm run migration:run:prod
 ```
 
@@ -65,7 +65,7 @@ npm run migration:run
 
 ```bash
 # Show applied migrations (production on-prem)
-docker compose --env-file .env.production -f docker-compose.prod.yml exec backend \
+docker compose --env-file be/.env.production -f docker-compose.prod.yml exec backend \
   npm run migration:show:prod
 
 # Staging (AWS EC2 — no SSH; port 22 is firewalled. Open a shell via SSM Session Manager)
@@ -82,7 +82,7 @@ npm run migration:show
 
 ```bash
 # Production
-docker compose --env-file .env.production -f docker-compose.prod.yml exec backend \
+docker compose --env-file be/.env.production -f docker-compose.prod.yml exec backend \
   npm run migration:revert:prod
 
 # Development
@@ -96,7 +96,7 @@ npm run migration:revert
 Reference data (rayons, shift definitions, activity types, admin users) — safe to run repeatedly:
 
 ```bash
-docker compose --env-file .env.production -f docker-compose.prod.yml exec \
+docker compose --env-file be/.env.production -f docker-compose.prod.yml exec \
   -e PROD_ADMIN_PASSWORD=<password> \
   -e PROD_SUPERADMIN_PASSWORD=<password> \
   -e PROD_ADMIN_SYSTEM_PASSWORD=<password> \
@@ -131,11 +131,11 @@ npm run db:seed
 
 ```bash
 # Cold-start fresh production (all reference + seeded sample data)
-docker compose --env-file .env.production -f docker-compose.prod.yml exec backend \
+docker compose --env-file be/.env.production -f docker-compose.prod.yml exec backend \
   npm run db:seed:prod
 
 # Phase 3 reference data only (idempotent, add to existing DB)
-docker compose --env-file .env.production -f docker-compose.prod.yml exec backend \
+docker compose --env-file be/.env.production -f docker-compose.prod.yml exec backend \
   npm run db:seed:phase3:prod
 ```
 

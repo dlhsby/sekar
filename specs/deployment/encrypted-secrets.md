@@ -3,7 +3,7 @@
 **Last Updated:** June 19, 2026
 
 **Status:** Live for **staging** as of 2026-06-18 — backend + web build and run from encrypted
-env (see §6). Mobile staging encrypted. **Production** env files (root `.env.production` + web +
+env (see §6). Mobile staging encrypted. **Production** env files (`be/.env.production` + web +
 mobile, all encrypted) prepared with generated starter secrets — finalize real on-prem values
 (domain, etc.) with `dotenvx set` before go-live. Production is not yet deployed.
 
@@ -31,22 +31,23 @@ needs no key and no encryption.
 ## 2. Key topology — per workspace, per environment
 
 Each workspace encrypts its own files, producing **independent** keypairs. A leaked mobile key
-therefore cannot decrypt backend secrets. Six private keys total:
+therefore cannot decrypt backend secrets. Six private keys total, one `.env.keys`
+per workspace (each holding that workspace's staging + production keys):
 
 | Workspace | `.env.staging` key | `.env.production` key |
 |-----------|--------------------|------------------------|
-| `be` | `DOTENV_PRIVATE_KEY_STAGING` (`be/.env.staging`) | — *(see note)* |
-| **root** | — | `DOTENV_PRIVATE_KEY_PRODUCTION` (`./.env.production`) |
+| `be` | `DOTENV_PRIVATE_KEY_STAGING` (`be/.env.staging`) | `DOTENV_PRIVATE_KEY_PRODUCTION` (`be/.env.production`) |
 | `fe/web` | `DOTENV_PRIVATE_KEY_STAGING` | `DOTENV_PRIVATE_KEY_PRODUCTION` |
 | `fe/mobile` | `DOTENV_PRIVATE_KEY_STAGING` | `DOTENV_PRIVATE_KEY_PRODUCTION` |
 
-> **Note — backend production env lives at repo root (`./.env.production`), not `be/`.** In
+> **Note — backend production env lives in `be/` (`be/.env.production`), like `be/.env.staging`.** In
 > staging, `be/.env.staging` is encrypted and baked into the backend image; decryption happens
 > at runtime via `DOTENV_PRIVATE_KEY_STAGING` (fetched from SSM). In production, the encrypted
-> **root `./.env.production`** is the backend's source; `docker-compose.prod.yml` uses it to:
+> **`be/.env.production`** is the backend's source; the root `docker-compose.prod.yml` uses it to:
 > (1) populate Postgres/MinIO via `${...}` substitution at compose-parse time (requires
-> plaintext in the deploy environment), and (2) pass encrypted values to the backend container
-> via `env_file`, which decrypts them at runtime. There is no `be/.env.production`.
+> plaintext in the deploy environment, e.g. `docker compose --env-file be/.env.production …`),
+> and (2) pass encrypted values to the backend container via `env_file: be/.env.production`,
+> which decrypts them at runtime. It lives in `be/` like `be/.env.staging` — no root-level app env.
 
 The env-var **name** repeats across workspaces but the **value differs**. These are stored as
 **GitHub Environment secrets** (not repo-level), so the same secret name carries a different
