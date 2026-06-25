@@ -35,12 +35,16 @@ npm run serve      # serve the built output locally to sanity-check
 3. The sidebar updates automatically (it is auto-generated from the folder tree +
    each folder's `_category_.json`). Add screenshots to `static/img/` and reference
    them as `![alt](/img/your-screenshot.png)`.
-4. Open a PR. Merging to `main` rebuilds and redeploys the site automatically.
+4. Open a PR into `main` (the quality gate runs on it). The live site updates on the
+   next **staging release** — i.e. when `main` is merged to the `staging` branch
+   (`git push origin staging`) and the deploy is approved. A push to `main` alone does
+   not deploy. See [`specs/deployment/ci-cd.md`](../../specs/deployment/ci-cd.md).
 
 ## How it ships
 
-- **Staging (AWS):** built into the `sekar-docs` image by CI, served behind the shared
-  Caddy edge (`infra/Caddyfile.staging`, `infra/compose.staging.yml`).
+- **Staging (AWS):** on a staging release the `deploy-staging` workflow builds the
+  `sekar-docs` image (alongside backend + web), pushes it to ECR, and brings it up behind
+  the shared Caddy edge (`infra/Caddyfile.staging`, `infra/compose.staging.yml`).
 - **Production (self-hosted):** the `docs` service in `docker-compose.prod.yml`, fronted by
   the host Nginx (`infra/nginx.conf`).
 

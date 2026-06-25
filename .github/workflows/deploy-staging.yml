@@ -1,6 +1,6 @@
 name: Deploy staging (AWS)
 
-# Builds the backend + web production images, pushes them to ECR, snapshots the
+# Builds the backend + web + docs images, pushes them to ECR, snapshots the
 # RDS database, then deploys to the shared EC2 host via SSM Run Command (no SSH).
 # Auth uses GitHub OIDC — no long-lived AWS keys stored in GitHub.
 #
