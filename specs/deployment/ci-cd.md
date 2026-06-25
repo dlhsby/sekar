@@ -25,9 +25,17 @@ runs only on an actual release. This keeps GitHub Actions within the free-tier m
 **Day-to-day:** feature branch → PR → `main` (quality gates) → when `main` is UAT-ready,
 fast-forward `staging` to it and push → approve → it builds + deploys.
 
-The **`staging` branch is protected**: **linear history** (merge commits rejected — so it can only
-fast-forward/rebase from `main`), **no force-push**, **no deletion**. (Branch protection is enforced
-while the repo is public / on a paid plan; on the Free **private** plan it is inactive until restored.)
+**Branch protection** (both enforced while the repo is public / on a paid plan; **inactive on the
+Free private plan** until restored):
+- **`main`** — **PR required** to change it (0 approvals, so you can merge your own once the
+  path-filtered quality gates show green), **linear history**, **no force-push/deletion**,
+  conversation-resolution required. Admin bypass is **on** (the owner can still direct-push in a
+  pinch). Note: the quality gates are *not* set as GitHub "required status checks" — they are
+  path-filtered, so a required check that doesn't trigger (e.g. a docs-only PR) would deadlock the
+  merge; instead they run and are visible on every relevant PR.
+- **`staging`** — **linear history** (merge commits rejected — so it can only fast-forward/rebase
+  from `main`), **no force-push**, **no deletion**. Stays directly pushable (no PR) so the
+  `git push origin staging` release flow works.
 
 **Repo visibility:** the repo is currently **public** (temporary) so Actions uses the unlimited
 free-tier minutes while a GitHub **billing** issue on the `dlhsby` org is resolved; it reverts to
