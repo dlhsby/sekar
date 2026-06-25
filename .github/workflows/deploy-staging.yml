@@ -37,47 +37,13 @@ jobs:
   # Test gates — build/deploy only runs if backend + web pass. Final safety check
   # before a staging release (PRs to main are already gated by backend-quality.yml /
   # web-quality.yml; this re-runs them on the release commit).
+  # Reuse the SAME suites the PR gate uses (single source of truth) as a final check on the
+  # release commit before building/deploying.
   quality-be:
-    name: Backend lint + tsc + tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    defaults:
-      run:
-        working-directory: be
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: npm
-          cache-dependency-path: be/package-lock.json
-      - run: npm ci
-      - run: npx eslint "{src,apps,libs,test}/**/*.ts"
-      - run: npx tsc --noEmit -p tsconfig.json
-      - run: npm test
+    uses: ./.github/workflows/backend-quality.yml
 
   quality-web:
-    name: Web lint + tsc + tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            fe/web/package-lock.json
-      - run: npm ci
-      - run: npm ci
-        working-directory: fe/web
-      - run: npm run lint
-        working-directory: fe/web
-      - run: npx tsc --noEmit
-        working-directory: fe/web
-      - run: npm test -- --ci
-        working-directory: fe/web
+    uses: ./.github/workflows/web-quality.yml
 
   build-push:
     needs: [quality-be, quality-web]
