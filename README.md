@@ -9,6 +9,37 @@ the project, local setup, contributing, deploying, and releasing, and links to t
 
 ---
 
+## 🚀 Release runbook (TL;DR)
+
+> Pushing to `main` does **not** deploy. Staging deploys are **deliberate** + **approval-gated**.
+
+**Deploy current `main` to staging (AWS UAT):**
+```bash
+git checkout staging && git merge --ff-only main && git push origin staging
+```
+Then **approve**: Actions → the *Deploy staging (AWS)* run → **Review deployments → Approve**.
+(No-git alt: Actions → *Deploy staging (AWS)* → **Run workflow** → approve.)
+CI then: quality gate → build 3 images → ECR → RDS snapshot → migrate → `up --wait` → smoke test.
+**Verify:** `curl https://api.sekar.wahyutrip.com/api/v1/health/live` shows the new `gitSha`.
+
+**Cut a versioned release** (named, documented; not auto-deployed to prod):
+```bash
+scripts/release.sh server 0.1.0     # be+web → tag sekar-v0.1.0 → :0.1.0 images + GitHub Release (approve production)
+scripts/release.sh mobile 0.1.0 2   # mobile → tag mobile-v0.1.0 → signed APK/AAB, auto-published to the download page
+```
+
+| | Automated (CI) | You do |
+|--|----------------|--------|
+| **PR → `main`** | quality gates (lint/tsc/tests, path-filtered) | open/merge the PR |
+| **Deploy staging** | build + ECR + snapshot + migrate + deploy + smoke | push `staging` (or dispatch) → **approve** |
+| **Versioned release** | build `:X.Y.Z` images + GitHub Release / signed APK | run `release.sh`, approve `production` |
+| **Prod (on-prem)** | — | manual promotion of a `sekar-v*` tag |
+| **E2E** (`web-e2e`/`mobile-e2e`) | — | run manually when needed |
+
+Full details: [`specs/deployment/ci-cd.md`](specs/deployment/ci-cd.md) · [`deployment-guide.md`](specs/deployment/deployment-guide.md).
+
+---
+
 ## What's inside
 
 | Path | Component | Stack |
