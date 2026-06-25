@@ -156,7 +156,7 @@ Authoritative deltas live in [ADR-028 addendum](../architecture/decisions/ADR-02
     DNS A record `docs.sekar.wahyutrip.com → 16.79.124.63`. Caddy block in
     [`infra/Caddyfile.staging`](../../infra/Caddyfile.staging) is part of SEKAR's config
     and deployed with the SEKAR stack. No auth — anyone can read it. Content edits (markdown under
-    `fe/docs/docs/`) auto-rebuild & redeploy on push to `main`.
+    `fe/docs/docs/`) rebuild & redeploy on the next staging release (merge to `staging` / manual run).
 - **DB:** `sekar_staging` database + `sekar` role on the **shared** RDS `dlhsby` (`DATABASE_SSL=true`).
 - **Media:** S3 `sekar-media-staging` via the **EC2 instance role** — no static AWS keys on the host.
 - **Secrets (dotenvx):** the backend's full staging config lives in the committed, **encrypted**
@@ -168,11 +168,20 @@ Authoritative deltas live in [ADR-028 addendum](../architecture/decisions/ADR-02
 - **No SSH:** all box operations go through **SSM Run Command**.
 
 ### Routine deploys — GitHub Actions (preferred)
-Push to `main` (or run the workflow manually) triggers
-[`.github/workflows/deploy-staging.yml`](../../.github/workflows/deploy-staging.yml):
-OIDC → build+push both images (`:staging` + `:<sha>`) → pre-deploy RDS snapshot → migrate
-(SSM `migration:run:prod`) → `docker compose up -d --wait` pinned to the SHA → smoke test.
+Deploys are **deliberate**, not every-push — the job builds 3 Docker images, so it runs
+only on an actual release (this keeps GitHub Actions within the free-tier minutes).
+**A push to `main` does NOT deploy.** Trigger a staging deploy by either:
+- **Release branch:** merge `main → staging` and push it — `git push origin staging`, or
+- **Manual:** Actions tab → *Deploy staging (AWS)* → **Run workflow** (`workflow_dispatch`).
+
+That runs [`.github/workflows/deploy-staging.yml`](../../.github/workflows/deploy-staging.yml):
+quality gate (backend + web) → OIDC → build+push both images (`:staging` + `:<sha>`) →
+pre-deploy RDS snapshot → migrate (SSM `migration:run:prod`) → `docker compose up -d --wait`
+pinned to the SHA → smoke test.
 **Rollback:** re-run the workflow (`workflow_dispatch`) — or re-deploy a prior `:<sha>` tag.
+
+> Day-to-day: develop on feature branches → PR → `main` (PRs run the quality gates).
+> When `main` is ready for UAT, fast-forward `staging` to it and push to release.
 
 Required GitHub **Variables**: `AWS_REGION`, `AWS_ROLE_ARN`, `ECR_BACKEND`, `ECR_WEB`,
 `EC2_INSTANCE_ID`, `RDS_INSTANCE_ID`. Required `staging`-environment **Secret**:
