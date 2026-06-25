@@ -8,15 +8,9 @@
 
 name: Mobile Quality Gate
 
+# PR-only (it previously ran on BOTH push and PR — a redundant double-run). The PR
+# gate is what protects main; direct pushes don't re-run it.
 on:
-  push:
-    branches: [main, staging, develop]
-    paths:
-      - 'fe/mobile/**'
-      - 'specs/ui-ux/tokens.json'
-      - 'scripts/build-tokens.ts'
-      - 'tools/eslint-plugin-sekar-design/**'
-      - '.github/workflows/mobile-quality.yml'
   pull_request:
     branches: [main, staging, develop]
     paths:
@@ -24,6 +18,11 @@ on:
       - 'specs/ui-ux/tokens.json'
       - 'scripts/build-tokens.ts'
       - 'tools/eslint-plugin-sekar-design/**'
+      - '.github/workflows/mobile-quality.yml'
+
+concurrency:
+  group: mobile-quality-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   NODE_VERSION: '24'

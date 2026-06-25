@@ -3,11 +3,11 @@
 # when no API is reachable and runs on staging with API_URL set.
 name: Web E2E
 
+# MANUAL-only to conserve GitHub Actions minutes — Playwright installs a browser and
+# is the heaviest job in the repo. Run it from the Actions tab ("Run workflow") before
+# a staging release, or locally with `npm run test:e2e`. (Previously ran on every push
+# to main touching fe/web/**, which was a big minute drain.)
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'fe/web/**'
   workflow_dispatch:
 
 jobs:

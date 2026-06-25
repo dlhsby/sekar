@@ -20,21 +20,13 @@ name: Deploy staging (AWS)
 # (/sekar/staging/DOTENV_PRIVATE_KEY). See specs/deployment/encrypted-secrets.md.
 
 on:
+  # Deploy is DELIBERATE, not every-push. Release to staging by merging
+  #   main -> staging   (i.e. push to the `staging` branch),
+  # or trigger manually from the Actions tab ("Run workflow"). Pushing to `main`
+  # does NOT deploy — that keeps GitHub Actions usage within the free-tier minutes
+  # (this job builds 3 Docker images, so it must only run on an actual release).
   push:
-    branches: [main]
-    # Staging builds the backend + web + docs. Skip deploys for changes that can't
-    # affect the staging stack (mobile, prod-only files). workflow_dispatch always
-    # runs regardless. A commit touching ANY non-ignored path deploys.
-    #
-    # NOTE: we do NOT ignore '**.md' — the docs site's content is markdown under
-    # fe/docs/docs/, and content edits MUST rebuild & redeploy the docs image.
-    # Developer markdown that can't affect the stack is ignored by path instead.
-    paths-ignore:
-      - 'specs/**'
-      - 'fe/mobile/**'
-      - '.github/workflows/mobile-*.yml'
-      - '.env.production'
-      - 'docker-compose.prod.yml'
+    branches: [staging]
   workflow_dispatch:
 
 concurrency:
@@ -42,8 +34,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # Test gates — build/deploy only runs if backend + web pass. Catches broken code on
-  # direct pushes to main (PRs are gated by backend-quality.yml / web-quality.yml).
+  # Test gates — build/deploy only runs if backend + web pass. Final safety check
+  # before a staging release (PRs to main are already gated by backend-quality.yml /
+  # web-quality.yml; this re-runs them on the release commit).
   quality-be:
     name: Backend lint + tsc + tests
     runs-on: ubuntu-latest

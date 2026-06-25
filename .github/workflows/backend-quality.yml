@@ -1,8 +1,8 @@
 name: Backend Quality Gate
 
 # Lint + type-check + unit tests for the NestJS backend. Runs on PRs touching be/**.
-# Direct pushes to main are gated by the `quality-be` job in deploy-staging.yml (so the
-# deploy never ships untested backend code).
+# A staging release (push to `staging`) re-runs these via the `quality-be` job in
+# deploy-staging.yml, so a deploy never ships untested backend code.
 
 on:
   pull_request:
@@ -10,6 +10,10 @@ on:
     paths:
       - 'be/**'
       - '.github/workflows/backend-quality.yml'
+
+concurrency:
+  group: backend-quality-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint-typecheck-test:
