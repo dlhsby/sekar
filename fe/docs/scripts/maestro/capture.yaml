@@ -130,6 +130,21 @@ appId: com.wahyutrip.sekar
 - waitForAnimationToEnd:
     timeout: 2500
 - takeScreenshot: shots/tugas-list
+# Detail — only if at least one task card exists (avoids screenshotting an empty list).
+- runFlow:
+    when:
+      visible:
+        id: "task-card"
+    commands:
+      - tapOn:
+          id: "task-card"
+          index: 0
+      - waitForAnimationToEnd:
+          timeout: 2500
+      - takeScreenshot: shots/tugas-detail
+      - back
+      - waitForAnimationToEnd:
+          timeout: 1500
 - back
 - waitForAnimationToEnd:
     timeout: 1500
@@ -164,6 +179,21 @@ appId: com.wahyutrip.sekar
     timeout: 2500
 - takeScreenshot: shots/profil
 
+# ---------- Jadwal Shift (Profil → Riwayat Shift; field-only menu item) ----------
+- runFlow:
+    when:
+      visible:
+        id: "shift-history-button"
+    commands:
+      - tapOn:
+          id: "shift-history-button"
+      - waitForAnimationToEnd:
+          timeout: 2500
+      - takeScreenshot: shots/jadwal
+      - back
+      - waitForAnimationToEnd:
+          timeout: 1500
+
 # ---------- Absen (clock in/out) via deep link — last, back behaviour varies ----------
 - openLink: "sekar://absensi"
 - waitForAnimationToEnd:
@@ -174,3 +204,17 @@ appId: com.wahyutrip.sekar
 - waitForAnimationToEnd:
     timeout: 1500
 - takeScreenshot: shots/gps
+
+# ---------- Foto Verifikasi (expand the "Foto Selfie" card; shows the Ambil Selfie CTA) ----------
+- scrollUntilVisible:
+    element:
+      text: "Foto Selfie"
+    direction: DOWN
+    timeout: 6000
+    optional: true
+- tapOn:
+    text: "Foto Selfie"
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 1800
+- takeScreenshot: shots/absen-foto
