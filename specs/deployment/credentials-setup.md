@@ -36,6 +36,23 @@
 
 Firebase enables Android and iOS push notifications via Firebase Cloud Messaging.
 
+> **Current Firebase projects (migrated 2026-06, owner `dlhsby.sekar@gmail.com`):**
+> `dlhsby-sekar-dev` · `dlhsby-sekar-staging` · `dlhsby-sekar-production`. The app
+> (Android + iOS) is registered in each as **`com.wahyutrip.sekar`**.
+> - **App config (Android `google-services.json`)** is delivered to CI via per-environment
+>   secrets — `GOOGLE_SERVICES_JSON_STAGING` (staging env) and `GOOGLE_SERVICES_JSON_PRODUCTION`
+>   (production env), each the base64 of that project's `google-services.json`. iOS
+>   `GoogleService-Info.plist` exists per project but is **not yet CI-wired** (iOS isn't built in CI).
+> - **Backend FCM sender** authenticates with a key from each project's `firebase-adminsdk-fbsvc@…`
+>   service account (`FCM_PROJECT_ID/CLIENT_EMAIL/PRIVATE_KEY` in the encrypted `be/.env.staging` and
+>   repo-root `.env.production`). The org policy **`iam.disableServiceAccountKeyCreation`** blocks
+>   creating *new* SA keys, so reuse the existing key; relax the policy only if you must rotate.
+> - ⚠️ A pre-migration **`GoogleService-Info.plist` (old project `sekar-dev`)** was committed in
+>   git history (commit `49a7a49`) and exposes a Firebase **client** API key (`AIzaSy…fc4`). That
+>   project is defunct post-migration; the key is harmless but delete the `sekar-dev` project if you
+>   can still reach it. Firebase API keys are client identifiers, not secrets — real protection is
+>   App Check + Security Rules.
+
 ### 1.1 Create Firebase Project
 
 **In the browser:**
