@@ -11,7 +11,7 @@
     { "file": "tugas-list",   "title": "Daftar Tugas",             "illustration": "illo-reports", "reach": "Menu → Tugas" },
     { "file": "tugas-detail", "title": "Detail Tugas",             "illustration": "illo-reports", "reach": "Tugas → ketuk salah satu tugas" },
     { "file": "lembur",       "title": "Lembur",                   "illustration": "illo-shifts",  "reach": "Menu → Lembur → Ajukan Lembur" },
-    { "file": "jadwal",       "title": "Jadwal Shift",             "illustration": "illo-shifts",  "reach": "Menu → Jadwal" },
+    { "file": "jadwal",       "title": "Jadwal Shift",             "illustration": "illo-shifts",  "reach": "Profil → Riwayat Shift" },
     { "file": "kehadiran",    "title": "Riwayat Kehadiran",        "illustration": "illo-shifts",  "reach": "Menu → Kehadiran" },
     { "file": "notifikasi",   "title": "Notifikasi",               "illustration": "illo-offline", "reach": "Ikon lonceng di header" },
     { "file": "profil",       "title": "Profil",                   "illustration": "illo-personnel","reach": "Tab Profil" }
