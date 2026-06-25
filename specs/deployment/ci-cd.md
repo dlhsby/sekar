@@ -25,6 +25,10 @@ runs only on an actual release. This keeps GitHub Actions within the free-tier m
 **Day-to-day:** feature branch → PR → `main` (quality gates) → when `main` is UAT-ready,
 fast-forward `staging` to it and push → approve → it builds + deploys.
 
+The **`staging` branch is protected**: **linear history** (merge commits rejected — so it can only
+fast-forward/rebase from `main`), **no force-push**, **no deletion**. (Branch protection is enforced
+while the repo is public / on a paid plan; on the Free **private** plan it is inactive until restored.)
+
 **Repo visibility:** the repo is currently **public** (temporary) so Actions uses the unlimited
 free-tier minutes while a GitHub **billing** issue on the `dlhsby` org is resolved; it reverts to
 **private** next billing cycle. This is safe — every committed `.env.*` is dotenvx-**encrypted**
