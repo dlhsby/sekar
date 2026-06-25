@@ -113,7 +113,7 @@ updates:
           - "*"
         update-types: ["patch"]
 
-  # Docker base images - Monthly updates
+  # Docker base images - Monthly updates, PATCH ONLY (major/minor handled manually)
   - package-ecosystem: "docker"
     directory: "/be"
     schedule:
@@ -127,7 +127,13 @@ updates:
       - "docker"
     commit-message:
       prefix: "chore(deps-docker)"
+    # PATCH UPDATES ONLY — prevents major base-image bumps (e.g. node 24 -> 26, PR #74),
+    # matching the policy applied to every other ecosystem above.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
     groups:
       docker-patches:
         patterns:
           - "*"
+        update-types: ["patch"]
