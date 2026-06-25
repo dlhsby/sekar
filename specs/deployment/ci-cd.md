@@ -34,10 +34,16 @@ Free private plan** until restored):
   check must pass** before merge. `gate` is the `pr-gate` aggregator (see §1): it always runs, runs
   only the suites for changed components, and is **deadlock-proof** for path-filtered suites (unlike
   pinning the per-component checks directly). Plus **linear history**, **no force-push/deletion**,
-  conversation-resolution required. Admin bypass is **on** (the owner can still direct-push in a pinch).
+  conversation-resolution required. **`enforce_admins: true`** — admins are **not** exempt; even the
+  owner goes through a PR + gate (no silent bypass).
 - **`staging`** — same rules as `main`: **PR required** (0 approvals) + **`gate`** check, **linear
-  history** (rebase/squash from `main`), **no force-push/deletion**, admin bypass on. A staging
+  history** (rebase/squash from `main`), **no force-push/deletion**, `enforce_admins: true`. A staging
   release is a **PR `main → staging`** — **no direct commits**.
+
+> **Break-glass** (if the `gate` check itself becomes un-passable — flaky runner / CI down — and you
+> must merge a fix): `gh api --method DELETE repos/dlhsby/sekar/branches/<branch>/protection/enforce_admins`
+> → merge → re-enable with `--method POST`. (Later, consider migrating to a **ruleset** with yourself as
+> a named bypass actor — same enforcement, but an auditable break-glass path.)
 
 **Repo visibility:** the repo is currently **public** (temporary) so Actions uses the unlimited
 free-tier minutes while a GitHub **billing** issue on the `dlhsby` org is resolved; it reverts to
