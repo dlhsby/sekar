@@ -49,7 +49,9 @@ jobs:
     needs: [quality-be, quality-web]
     runs-on: ubuntu-latest
     # Scoped to the staging environment so it can read env-level secrets
-    # (WEB_DOTENV_PRIVATE_KEY). The deploy job below is also staging-scoped.
+    # (WEB_DOTENV_PRIVATE_KEY). This is the SINGLE approval gate for a release — the
+    # deploy job below is NOT environment-scoped (it only uses repo vars + OIDC), so the
+    # whole release is approved once, here, before any image is built.
     environment: staging
     permissions:
       id-token: write
@@ -135,7 +137,9 @@ jobs:
   deploy:
     needs: build-push
     runs-on: ubuntu-latest
-    environment: staging # add required reviewers in repo settings to gate prod-like deploys
+    # NOT environment-scoped on purpose: it only uses repo Variables + OIDC (no env-level
+    # secrets), and the OIDC trust is `repo:dlhsby/sekar:*`. Keeping it off the environment
+    # means a release is approved ONCE (at build-push), not twice.
     permissions:
       id-token: write
       contents: read
