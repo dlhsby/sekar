@@ -18,9 +18,11 @@ runs only on an actual release. This keeps GitHub Actions within the free-tier m
 - **Release to staging** by either:
   - opening a PR from **`main` into `staging`** and merging it (rebase/squash — linear history), or
   - running **`deploy-staging`** manually from the Actions tab (`workflow_dispatch`).
-- Both the **`staging`** and **`production`** GitHub Environments require a **manual approval**
-  (reviewer: repo owner) before their build/deploy jobs start — a second confirmation on top of
-  the deliberate trigger. Approve from the run page or `gh run` / the Environments UI.
+- Both the **`staging`** and **`production`** GitHub Environments require a **single manual
+  approval** (reviewer: repo owner) before anything is built/deployed — a confirmation on top of the
+  deliberate trigger. For staging it gates at the **`build-push`** job (the `deploy` job is
+  intentionally not environment-scoped, so a release is approved **once**, not twice). Approve from
+  the run page or `gh run` / the Environments UI.
 
 **Day-to-day:** feature branch → PR → `main` (quality gates) → when `main` is UAT-ready,
 open a PR `main → staging` and merge it → approve → it builds + deploys. **No direct commits to

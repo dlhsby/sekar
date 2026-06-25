@@ -174,8 +174,9 @@ only on an actual release (this keeps GitHub Actions within the free-tier minute
 - **Release PR:** open a PR from `main` into `staging` and merge it (rebase/squash — `staging` is PR-only), or
 - **Manual:** Actions tab → *Deploy staging (AWS)* → **Run workflow** (`workflow_dispatch`).
 
-The `staging` GitHub **Environment requires a manual approval** (reviewer: repo owner) before the
-build/deploy jobs start — approve from the run page (a second confirmation on top of the trigger).
+The `staging` GitHub **Environment requires one manual approval** (reviewer: repo owner) at the
+`build-push` job before anything is built/deployed — approve from the run page. (The `deploy` job
+isn't environment-scoped, so a release is approved **once**, not twice.)
 
 That runs [`.github/workflows/deploy-staging.yml`](../../.github/workflows/deploy-staging.yml):
 quality gate (backend + web) → **approve** → OIDC → build+push the images (`:staging` + `:<sha>`) →
