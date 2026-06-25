@@ -93,10 +93,11 @@ cd fe/mobile && npm test            # Jest unit
 npm run test:tokens                 # (root) design-token generator + lint rules
 ```
 
-**Quality gates** run in CI on every PR / push to `main`: lint + `tsc --noEmit` + tests per component
-(`backend-quality` · `web-quality` · `mobile-quality`), Playwright (`web-e2e`), and design-token drift
-(`tokens-verify`). The staging deploy is **gated on the backend + web test suites**. See
-[`specs/deployment/ci-cd.md`](specs/deployment/ci-cd.md).
+**Quality gates** run on **PRs** (path-filtered; superseded runs auto-cancel): lint + `tsc --noEmit` +
+tests per component (`backend-quality` · `web-quality` · `mobile-quality`) and design-token drift
+(`tokens-verify`); Playwright (`web-e2e`) is **manual**. **Pushing to `main` does not deploy** — staging
+deploys are deliberate (push the `staging` branch or run `deploy-staging` manually, then approve) and
+re-run the backend + web suites as a final gate. See [`specs/deployment/ci-cd.md`](specs/deployment/ci-cd.md).
 
 **Environment files** use [dotenvx](https://dotenvx.com): `.env.local` is your plaintext, gitignored
 dev file; the deploy files `.env.staging` / `.env.production` are committed **encrypted** (every secret
@@ -112,8 +113,8 @@ Two targets, same application images, detailed start-to-finish in the **authorit
 
 | | **Staging / UAT** | **Production** |
 |--|-------------------|----------------|
-| Where | **AWS** — co-tenant with project KPI on a shared `t3.micro`, behind Caddy | **On-prem** (pemkot) server, platform-agnostic Docker Compose |
-| How | **Automatic** on every green push to `main` → [`deploy-staging.yml`](.github/workflows/deploy-staging.yml) (OIDC → ECR → SSM) | **Manual** promotion of a tagged release (`docker-compose.prod.yml`); **not yet deployed** |
+| Where | **AWS** — the **dlhsby** `t3.micro` (SEKAR sole tenant since KPI was decommissioned), behind SEKAR's Caddy | **On-prem** (pemkot) server, platform-agnostic Docker Compose |
+| How | **Deliberate release:** push `main → staging` (or run [`deploy-staging.yml`](.github/workflows/deploy-staging.yml) manually) → **approve** → OIDC → ECR → SSM. A `main` push does **not** deploy. | **Manual** promotion of a tagged release (`docker-compose.prod.yml`); **not yet deployed** |
 | URLs | https://api.sekar.wahyutrip.com · https://sekar.wahyutrip.com (TLS via Caddy) | TBD |
 | Object storage | AWS S3 (instance role) | MinIO (in-stack) |
 
@@ -124,8 +125,9 @@ error tracking wired (Sentry, dormant until a DSN is set).
 
 ## Releasing
 
-Staging is **continuous** (every green merge to `main` ships, pinned by git SHA). For **named,
-versioned releases**, bump → tag → a workflow builds and publishes. Use the helper:
+Staging is released **deliberately** — fast-forward `staging` to `main` and push (or run
+`deploy-staging` manually), then **approve** the run; the deployed build is pinned by git SHA. For
+**named, versioned releases**, bump → tag → a workflow builds and publishes. Use the helper:
 
 ```bash
 scripts/release.sh server 0.1.0      # backend + web (coupled) → tag sekar-v0.1.0

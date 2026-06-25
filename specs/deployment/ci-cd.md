@@ -1,29 +1,54 @@
 # CI/CD Pipeline
 
-**Last Updated:** 2026-06-19
+**Last Updated:** 2026-06-25
 
 GitHub Actions for SEKAR. Auth is **GitHub OIDC** (no static AWS keys); secrets are
 **dotenvx-encrypted** in git with per-environment private keys (see
-[`encrypted-secrets.md`](./encrypted-secrets.md)). Staging runs on the shared AWS EC2/RDS;
-production is on-prem Docker Compose (not yet deployed).
+[`encrypted-secrets.md`](./encrypted-secrets.md)). Staging runs on the **dlhsby** AWS EC2/RDS
+box (SEKAR is the **sole tenant** since project KPI was decommissioned, 2026-06); production is
+on-prem Docker Compose (not yet deployed).
+
+## 0. Release model & Actions cost (read this first)
+
+Deploys are **deliberate, not every-push** — the staging deploy builds 3 Docker images, so it
+runs only on an actual release. This keeps GitHub Actions within the free-tier minutes:
+
+- **Push to `main` does NOT deploy.** `main` is the integration branch; PRs into it run the
+  path-filtered quality gates (and superseded runs auto-cancel).
+- **Release to staging** by either:
+  - merging **`main → staging`** and pushing the `staging` branch (`git push origin staging`), or
+  - running **`deploy-staging`** manually from the Actions tab (`workflow_dispatch`).
+- Both the **`staging`** and **`production`** GitHub Environments require a **manual approval**
+  (reviewer: repo owner) before their build/deploy jobs start — a second confirmation on top of
+  the deliberate trigger. Approve from the run page or `gh run` / the Environments UI.
+
+**Day-to-day:** feature branch → PR → `main` (quality gates) → when `main` is UAT-ready,
+fast-forward `staging` to it and push → approve → it builds + deploys.
+
+**Repo visibility:** the repo is currently **public** (temporary) so Actions uses the unlimited
+free-tier minutes while a GitHub **billing** issue on the `dlhsby` org is resolved; it reverts to
+**private** next billing cycle. This is safe — every committed `.env.*` is dotenvx-**encrypted**
+and the decrypting `.env.keys` are **never committed** (see [`encrypted-secrets.md`](./encrypted-secrets.md)).
 
 ## 1. Active workflows
 
 | Workflow (`.github/workflows/`) | Trigger | What it does |
 |--------------------------------|---------|--------------|
-| **`deploy-staging.yml`** | push `main` (see paths-ignore) + `workflow_dispatch` | **Gated on `quality-be` + `quality-web`** (lint/tsc/test) → build backend + web images (with `GIT_SHA`/`BUILD_TIME` build args) → ECR (OIDC) → deploy to EC2 via **SSM Run Command**. Web built with `dotenvx run` + BuildKit secret; backend bakes encrypted `be/.env.staging`. Pre-deploy RDS snapshot, SHA-pinned image assertion, smoke test. |
+| **`deploy-staging.yml`** | push `staging` branch + `workflow_dispatch` · **`staging` env approval-gated** | **Gated on `quality-be` + `quality-web`** (lint/tsc/test) → build backend + web + docs images (with `GIT_SHA`/`BUILD_TIME` build args) → ECR (OIDC) → deploy to EC2 via **SSM Run Command** (also recreates `sekar-caddy`). Web built with `dotenvx run` + BuildKit secret; backend bakes encrypted `be/.env.staging`. Pre-deploy RDS snapshot, SHA-pinned image assertion, smoke test. |
 | **`release-server.yml`** | push tag `sekar-v*` | Versioned **be+web** release (coupled). Validates the tag matches both `package.json`, builds + pushes `:X.Y.Z` ECR images (web production-configured), creates a GitHub Release with notes. Does **not** deploy (on-prem promotion is manual). |
 | **`backend-quality.yml`** | PR on `be/**` | ESLint + `tsc --noEmit` + Jest. |
 | **`web-quality.yml`** | PR on `fe/web/**` | ESLint (incl. design-system rules) + `tsc --noEmit` + Jest. |
-| **`mobile-quality.yml`** | push/PR `main`/`staging`/`develop` on `fe/mobile/**` (+ token files) | ESLint (incl. design-system rules) + `tsc --noEmit` + Jest. Provisions `.env.local` from the example. |
+| **`mobile-quality.yml`** | **PR** to `main`/`staging`/`develop` on `fe/mobile/**` (+ token files) | ESLint (incl. design-system rules) + `tsc --noEmit` + Jest. Provisions `.env.local` from the example. (PR-only — was a redundant push+PR double-run.) |
 | **`mobile-release.yml`** | tag `mobile-v*` + `workflow_dispatch` (env=staging) | Build a **signed** release **APK + AAB** for staging, upload a 30-day artifact, and auto-publish to the download registry (S3 + `POST /app-releases`). Tag pushes validate the tag matches `package.json`. See [`android-release-guide.md` §F](./android-release-guide.md). |
 | **`mobile-e2e.yml`** | `workflow_dispatch` | Maestro device flows. |
-| **`web-e2e.yml`** | push `main` on `fe/web/**` + dispatch | Playwright E2E. ✅ green (capacity spec made date-independent 2026-06-19). |
+| **`web-e2e.yml`** | **`workflow_dispatch`** (manual-only) | Playwright E2E. Manual-only — it installs a browser and is the heaviest job; run before a release or locally (`npm run test:e2e`). |
 | **`tokens-verify.yml`** | PR + push `main` on token files | Verifies generated design tokens are in sync with `tokens.json` (drift gate). |
 
-`deploy-staging.yml` **`paths-ignore`** (so unrelated commits don't redeploy staging):
-`**.md`, `specs/**`, `fe/mobile/**`, `.github/workflows/mobile-*.yml`, `.env.production`,
-`docker-compose.prod.yml`. `workflow_dispatch` always runs regardless.
+**Why these triggers:** the staging deploy is the only minute-heavy job (3 image builds), so it
+runs **only on an explicit release** (push to `staging` / manual), never on a `main` push — see
+[§0](#0-release-model--actions-cost-read-this-first). The quality gates run on **PRs** (path-filtered,
+`cancel-in-progress`), and the deploy re-runs `quality-be`/`quality-web` as a final gate on the
+release commit.
 
 ### Disabled (legacy — superseded, kept for reference)
 `backend-ci-cd.yml.disabled`, `mobile-ci-cd.yml.disabled`, `web-ci-cd.yml.disabled` — the old
@@ -98,13 +123,15 @@ Two cadences, two tag lines (no single repo-wide version — the components don'
 
 | Component | Continuous (staging) | Versioned release | Versioning |
 |-----------|----------------------|-------------------|------------|
-| **Backend + Web** (coupled — web calls the API) | every green merge to `main` → `deploy-staging` (SHA-pinned) | **`sekar-vX.Y.Z`** tag → `release-server.yml` | one shared semver (`be/package.json` == `fe/web/package.json`) |
+| **Backend + Web** (coupled — web calls the API) | release to `staging` branch (or manual) → `deploy-staging` (SHA-pinned, approval-gated) | **`sekar-vX.Y.Z`** tag → `release-server.yml` | one shared semver (`be/package.json` == `fe/web/package.json`) |
 | **Mobile** | — (built on demand) | **`mobile-vX.Y.Z`** tag → `mobile-release.yml` (dispatch = fallback) | semver in `fe/mobile/package.json` + Android `versionCode` |
 
 Principles:
 1. **Path-filtered, independent CI** — `backend-quality` / `web-quality` / `mobile-quality` gate only
-   their component; `deploy-staging`'s `paths-ignore` skips mobile/docs/prod-only commits.
-2. **Staging stays continuous + SHA-pinned** — no tags needed; it's always the latest `main`.
+   their component on PRs; the staging deploy runs only on a `staging`-branch release / manual dispatch.
+2. **Staging is released deliberately + SHA-pinned** — push `main → staging` (or dispatch) to deploy;
+   the deployed SHA is whatever `staging` points at. (Previously every `main` push auto-deployed; that
+   was changed to conserve Actions minutes — see [§0](#0-release-model--actions-cost-read-this-first).)
 3. **A semver tag = a named, promotable, documented release** (built from the tagged commit, with a
    GitHub Release + notes), separate from the continuous staging stream.
 4. **Server be+web share one version** (they deploy as a pair). `sekar-vX.Y.Z` builds + ECR-tags
@@ -116,9 +143,14 @@ Principles:
 
 ### Step-by-step
 
-**Backend + Web → staging (continuous; no release step):** merge to `main` → `quality-be`+`quality-web`
-gate → `deploy-staging` builds + deploys. Verify `curl .../health/live` (shows the SHA). Rollback:
-re-run `deploy-staging` from an earlier SHA, or restore the pre-deploy RDS snapshot.
+**Backend + Web → staging (deliberate release):** merge `main → staging` and push it (or run
+`deploy-staging` via `workflow_dispatch`) → **approve** the `staging` environment → `quality-be`+
+`quality-web` gate → `deploy-staging` builds + deploys. Verify `curl .../health/live` (shows the SHA).
+Rollback: re-run `deploy-staging` from an earlier SHA, or restore the pre-deploy RDS snapshot.
+
+```bash
+git checkout staging && git merge --ff-only main && git push origin staging   # then approve the run
+```
 
 **Backend + Web → versioned release:**
 ```bash

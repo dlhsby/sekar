@@ -174,10 +174,13 @@ only on an actual release (this keeps GitHub Actions within the free-tier minute
 - **Release branch:** merge `main → staging` and push it — `git push origin staging`, or
 - **Manual:** Actions tab → *Deploy staging (AWS)* → **Run workflow** (`workflow_dispatch`).
 
+The `staging` GitHub **Environment requires a manual approval** (reviewer: repo owner) before the
+build/deploy jobs start — approve from the run page (a second confirmation on top of the trigger).
+
 That runs [`.github/workflows/deploy-staging.yml`](../../.github/workflows/deploy-staging.yml):
-quality gate (backend + web) → OIDC → build+push both images (`:staging` + `:<sha>`) →
+quality gate (backend + web) → **approve** → OIDC → build+push the images (`:staging` + `:<sha>`) →
 pre-deploy RDS snapshot → migrate (SSM `migration:run:prod`) → `docker compose up -d --wait`
-pinned to the SHA → smoke test.
+pinned to the SHA (recreates `sekar-caddy` too) → smoke test.
 **Rollback:** re-run the workflow (`workflow_dispatch`) — or re-deploy a prior `:<sha>` tag.
 
 > Day-to-day: develop on feature branches → PR → `main` (PRs run the quality gates).
