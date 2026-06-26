@@ -121,54 +121,75 @@ export default function TasksPage() {
 
   const columns: ColumnDef<Task>[] = [
     {
-      key: 'title',
+      id: 'title',
       header: 'Judul Tugas',
-      cell: (task) => <div className="font-semibold text-nb-black">{task.title}</div>,
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Judul Tugas' },
+      cell: ({ row }) => <div className="font-semibold text-nb-black">{row.original.title}</div>,
     },
     {
-      key: 'assigned_to',
+      id: 'assigned_to',
       header: 'Ditugaskan Ke',
-      cell: (task) => <div className="text-nb-body-sm">{task.assigned_to?.full_name ?? '-'}</div>,
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Ditugaskan Ke' },
+      cell: ({ row }) => <div className="text-nb-body-sm">{row.original.assigned_to?.full_name ?? '-'}</div>,
     },
     {
-      key: 'area',
+      id: 'area',
       header: 'Area / Rayon',
-      cell: (task) => (
-        <div className="text-nb-body-sm">{task.area?.name ?? task.rayon?.name ?? '-'}</div>
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Area / Rayon' },
+      cell: ({ row }) => (
+        <div className="text-nb-body-sm">{row.original.area?.name ?? row.original.rayon?.name ?? '-'}</div>
       ),
     },
     {
-      key: 'priority',
+      id: 'priority',
       header: 'Prioritas',
-      cell: (task) => (
-        <StatusPill tone={TASK_PRIORITY_TONES[task.priority]}>
-          {TASK_PRIORITY_LABELS[task.priority]}
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Prioritas' },
+      cell: ({ row }) => (
+        <StatusPill tone={TASK_PRIORITY_TONES[row.original.priority]}>
+          {TASK_PRIORITY_LABELS[row.original.priority]}
         </StatusPill>
       ),
     },
     {
-      key: 'status',
+      id: 'status',
       header: 'Status',
-      cell: (task) => (
-        <StatusPill tone={TASK_STATUS_TONES[task.status]} dot>
-          {TASK_STATUS_LABELS[task.status]}
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Status' },
+      cell: ({ row }) => (
+        <StatusPill tone={TASK_STATUS_TONES[row.original.status]} dot>
+          {TASK_STATUS_LABELS[row.original.status]}
         </StatusPill>
       ),
     },
     {
-      key: 'due_date',
+      id: 'due_date',
       header: 'Tenggat',
-      cell: (task) => (
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Tenggat' },
+      cell: ({ row }) => (
         <div className="text-nb-body-sm">
-          {task.due_date ? new Date(task.due_date).toLocaleDateString('id-ID') : '-'}
+          {row.original.due_date ? new Date(row.original.due_date).toLocaleDateString('id-ID') : '-'}
         </div>
       ),
     },
     {
-      key: 'actions',
+      id: 'actions',
       header: 'Aksi',
-      cell: (task) => (
-        <Link href={`/tasks/${task.id}`} className="font-semibold text-nb-primary hover:underline">
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Aksi', pinRight: true },
+      cell: ({ row }) => (
+        <Link href={`/tasks/${row.original.id}`} className="font-semibold text-nb-primary hover:underline">
           Detail
         </Link>
       ),
@@ -254,11 +275,13 @@ export default function TasksPage() {
       ) : (
         <Card>
           <CardContent className="p-4">
-            <DataTable<Task>
+            <DataTable<Task, unknown>
               columns={columns}
               data={tasks}
               loading={isLoading}
-              emptyMessage="Tidak ada tugas"
+              enablePagination={false}
+              getRowId={(r) => r.id}
+              emptyTitle="Tidak ada tugas"
             />
             {pagination && pagination.totalPages > 1 && (
               <div className="mt-4 flex items-center justify-between border-t-2 border-nb-black pt-4">

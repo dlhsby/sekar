@@ -73,17 +73,17 @@ export function Tabs<K extends string = string>({
             className={cn(
               'inline-flex items-center justify-center gap-1.5 whitespace-nowrap font-heading font-bold transition-colors',
               'focus-visible:outline focus-visible:outline-2 focus-visible:outline-nb-black focus-visible:-outline-offset-2',
-              size === 'sm' ? 'px-3 py-1.5 text-xs' : 'px-3.5 py-2 text-[12.5px]',
+              size === 'sm' ? 'px-3 py-1.5 text-xs' : 'px-3.5 py-2 text-nb-body-sm',
               i > 0 && 'border-l-2 border-nb-black',
               fullWidth && 'flex-1',
-              active ? 'bg-nb-primary text-nb-black' : 'bg-nb-white text-nb-gray-600 hover:bg-nb-gray-50'
+              active ? 'bg-nb-primary text-nb-ink' : 'bg-nb-white text-nb-gray-600 hover:bg-nb-gray-50'
             )}
           >
             {tab.label}
             {typeof tab.count === 'number' && (
               <span
                 className={cn(
-                  'rounded-full px-1.5 font-mono text-[10px] leading-tight',
+                  'rounded-full px-1.5 font-mono text-nb-mono-sm leading-tight',
                   active ? 'bg-nb-black text-nb-primary' : 'bg-nb-gray-100 text-nb-gray-600'
                 )}
               >

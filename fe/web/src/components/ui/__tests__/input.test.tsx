@@ -260,13 +260,18 @@ describe('Input Component', () => {
     it('should link error message with aria-describedby', () => {
       render(<Input error="Error message" aria-label="Input" />);
       const input = screen.getByRole('textbox');
-      expect(input).toHaveAttribute('aria-describedby', 'input-helper');
+      // The describedby id is unique per instance and points at the message node.
+      const describedBy = input.getAttribute('aria-describedby');
+      expect(describedBy).toMatch(/^input-helper-/);
+      expect(document.getElementById(describedBy!)).toHaveTextContent('Error message');
     });
 
     it('should link helper text with aria-describedby', () => {
       render(<Input helperText="Helper text" aria-label="Input" />);
       const input = screen.getByRole('textbox');
-      expect(input).toHaveAttribute('aria-describedby', 'input-helper');
+      const describedBy = input.getAttribute('aria-describedby');
+      expect(describedBy).toMatch(/^input-helper-/);
+      expect(document.getElementById(describedBy!)).toHaveTextContent('Helper text');
     });
 
     it('should have minimum touch target height', () => {
@@ -336,7 +341,7 @@ describe('Input Component', () => {
     it('should have Neo Brutalism shadow', () => {
       render(<Input data-testid="input" aria-label="Input" />);
       const input = screen.getByTestId('input');
-      expect(input).toHaveClass('shadow-nb-sm');
+      expect(input).toHaveClass('shadow-nb-md');
     });
 
     it('should have focus visible styles', () => {

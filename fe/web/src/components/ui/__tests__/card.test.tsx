@@ -153,10 +153,10 @@ describe('Card Component', () => {
   });
 
   describe('CardTitle', () => {
-    it('should render with bold font', () => {
+    it('should render with heading size', () => {
       render(<CardTitle data-testid="title">Title</CardTitle>);
       const title = screen.getByTestId('title');
-      expect(title).toHaveClass('font-bold');
+      expect(title).toHaveClass('text-nb-h3');
     });
 
     it('should accept custom className', () => {
@@ -174,13 +174,13 @@ describe('Card Component', () => {
     it('should render with muted color', () => {
       render(<CardDescription data-testid="desc">Description</CardDescription>);
       const desc = screen.getByTestId('desc');
-      expect(desc).toHaveClass('text-muted-foreground');
+      expect(desc).toHaveClass('text-nb-gray-600');
     });
 
     it('should have smaller text size', () => {
       render(<CardDescription data-testid="desc">Small text</CardDescription>);
       const desc = screen.getByTestId('desc');
-      expect(desc).toHaveClass('text-sm');
+      expect(desc).toHaveClass('text-nb-body-sm');
     });
   });
 

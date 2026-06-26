@@ -71,35 +71,47 @@ export default function PruningRequestsPage() {
 
   const columns: ColumnDef<PruningRequest>[] = [
     {
-      key: 'referenceCode',
+      id: 'referenceCode',
       header: 'Kode Referensi',
-      cell: (row) => <span className="font-mono text-sm">{row.referenceCode}</span>,
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Kode Referensi' },
+      cell: ({ row }) => <span className="font-mono text-sm">{row.original.referenceCode}</span>,
     },
     {
-      key: 'submitter',
+      id: 'submitter',
       header: 'Kecamatan',
-      cell: (row) => (
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Kecamatan' },
+      cell: ({ row }) => (
         <div className="text-sm">
-          <div className="font-semibold">{row.kecamatanName ?? '-'}</div>
-          <div className="text-nb-gray-600">{row.submitter?.full_name ?? '-'}</div>
+          <div className="font-semibold">{row.original.kecamatanName ?? '-'}</div>
+          <div className="text-nb-gray-600">{row.original.submitter?.full_name ?? '-'}</div>
         </div>
       ),
     },
     {
-      key: 'rayon',
+      id: 'rayon',
       header: 'Rayon',
-      cell: (row) => <div className="text-sm">{row.rayon?.name ?? '-'}</div>,
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Rayon' },
+      cell: ({ row }) => <div className="text-sm">{row.original.rayon?.name ?? '-'}</div>,
     },
     {
-      key: 'expected',
+      id: 'expected',
       header: 'Minggu / Tanggal',
-      cell: (row) => (
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Minggu / Tanggal' },
+      cell: ({ row }) => (
         <div className="text-sm">
-          {row.expectedDate ? (
-            <>{new Date(row.expectedDate).toLocaleDateString('id-ID')}</>
-          ) : row.expectedYear && row.expectedIsoWeek ? (
+          {row.original.expectedDate ? (
+            <>{new Date(row.original.expectedDate).toLocaleDateString('id-ID')}</>
+          ) : row.original.expectedYear && row.original.expectedIsoWeek ? (
             <>
-              W{row.expectedIsoWeek}/{row.expectedYear}
+              W{row.original.expectedIsoWeek}/{row.original.expectedYear}
             </>
           ) : (
             '-'
@@ -108,29 +120,38 @@ export default function PruningRequestsPage() {
       ),
     },
     {
-      key: 'status',
+      id: 'status',
       header: 'Status',
-      cell: (row) => (
-        <StatusPill tone={PRUNING_REQUEST_STATUS_TONES[row.status]} dot>
-          {PRUNING_REQUEST_STATUS_LABELS[row.status]}
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Status' },
+      cell: ({ row }) => (
+        <StatusPill tone={PRUNING_REQUEST_STATUS_TONES[row.original.status]} dot>
+          {PRUNING_REQUEST_STATUS_LABELS[row.original.status]}
         </StatusPill>
       ),
     },
     {
-      key: 'createdAt',
+      id: 'createdAt',
       header: 'Tanggal Masuk',
-      cell: (row) => (
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Tanggal Masuk' },
+      cell: ({ row }) => (
         <div className="text-sm">
-          {new Date(row.createdAt).toLocaleDateString('id-ID')}
+          {new Date(row.original.createdAt).toLocaleDateString('id-ID')}
         </div>
       ),
     },
     {
-      key: 'actions',
+      id: 'actions',
       header: 'Aksi',
-      cell: (row) => (
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Aksi', pinRight: true },
+      cell: ({ row }) => (
         <Link
-          href={`/pruning-requests/${row.id}`}
+          href={`/pruning-requests/${row.original.id}`}
           className="text-nb-success-dark font-semibold hover:underline"
         >
           Detail
@@ -174,11 +195,13 @@ export default function PruningRequestsPage() {
               Gagal memuat data permohonan. Coba lagi nanti.
             </div>
           ) : (
-            <DataTable
+            <DataTable<PruningRequest, unknown>
               columns={columns}
               data={data?.data ?? []}
               loading={isLoading}
-              emptyMessage="Belum ada permohonan untuk filter ini."
+              enablePagination={false}
+              getRowId={(r) => r.id}
+              emptyTitle="Belum ada permohonan untuk filter ini."
             />
           )}
 

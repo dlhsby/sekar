@@ -9,7 +9,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui';
+import { Button, DatePicker, Field } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
 import { useLiveUsers, useReassignWorker } from '@/lib/api/monitoring';
 import type { BoundariesResponse, LiveUser } from '@/lib/api/monitoring';
@@ -232,22 +232,15 @@ export function ReassignWorkerModal({
           </div>
 
           {/* Effective date */}
-          <div className="space-y-1.5">
-            <label htmlFor="effective-date" className="text-sm font-bold text-nb-black">
-              Tanggal Berlaku
-            </label>
-            <input
-              id="effective-date"
-              type="date"
-              value={effectiveDate}
-              onChange={(e) => setEffectiveDate(e.target.value)}
-              className={cn(
-                'w-full h-12 px-3 text-sm rounded-nb-base',
-                'border-2 border-nb-black bg-nb-white text-nb-black',
-                'shadow-nb-md focus:outline-none focus:ring-2 focus:ring-nb-primary focus:ring-offset-1'
-              )}
-            />
-          </div>
+          <Field label="Tanggal Berlaku">
+            {(p) => (
+              <DatePicker
+                id={p.id}
+                value={effectiveDate || undefined}
+                onValueChange={(v) => setEffectiveDate(v ?? '')}
+              />
+            )}
+          </Field>
         </div>
 
         <DialogFooter>

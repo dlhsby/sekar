@@ -41,20 +41,20 @@ export interface KpiTileProps
   icon?: React.ReactNode;
 }
 
-export function KpiTile({
-  label,
-  value,
-  delta,
-  deltaDirection = 'neutral',
-  icon,
-  tone,
-  className,
-  ...props
-}: KpiTileProps) {
-  return (
-    <div className={cn(kpiTileVariants({ tone }), className)} {...props}>
+const KpiTile = React.forwardRef<HTMLDivElement, KpiTileProps>(
+  ({
+    label,
+    value,
+    delta,
+    deltaDirection = 'neutral',
+    icon,
+    tone,
+    className,
+    ...props
+  }, ref) => (
+    <div className={cn(kpiTileVariants({ tone }), className)} ref={ref} {...props}>
       <div className="mb-1.5 flex items-center justify-between gap-2">
-        <p className="font-mono text-[10.5px] font-bold uppercase tracking-wide text-nb-gray-600">
+        <p className="font-mono text-nb-mono-sm font-bold uppercase tracking-wide text-nb-gray-600">
           {label}
         </p>
         {icon && <span className="text-nb-gray-600 [&_svg]:size-4">{icon}</span>}
@@ -65,7 +65,7 @@ export function KpiTile({
       {delta && (
         <p
           className={cn(
-            'flex items-center gap-1 font-mono text-[11px] font-semibold',
+            'flex items-center gap-1 font-mono text-nb-mono-sm font-semibold',
             deltaDirection === 'up' && 'text-status-active',
             deltaDirection === 'down' && 'text-status-missing',
             deltaDirection === 'neutral' && 'text-nb-gray-600'
@@ -77,8 +77,10 @@ export function KpiTile({
         </p>
       )}
     </div>
-  );
-}
+  )
+);
+
+KpiTile.displayName = 'KpiTile';
 
 export interface KpiGridProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Columns at the widest breakpoint (default 4). */
@@ -91,8 +93,12 @@ const COLS: Record<NonNullable<KpiGridProps['columns']>, string> = {
   4: 'grid-cols-2 lg:grid-cols-4',
 };
 
-export function KpiGrid({ columns = 4, className, ...props }: KpiGridProps) {
-  return <div className={cn('grid gap-4', COLS[columns], className)} {...props} />;
-}
+const KpiGrid = React.forwardRef<HTMLDivElement, KpiGridProps>(
+  ({ columns = 4, className, ...props }, ref) => (
+    <div className={cn('grid gap-4', COLS[columns], className)} ref={ref} {...props} />
+  )
+);
 
-export { kpiTileVariants };
+KpiGrid.displayName = 'KpiGrid';
+
+export { KpiTile, KpiGrid, kpiTileVariants };

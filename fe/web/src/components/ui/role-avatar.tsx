@@ -32,9 +32,9 @@ const ROLE_STYLE: Record<UserRole, RoleStyle> = {
 };
 
 const SIZE: Record<NonNullable<RoleAvatarProps['size']>, string> = {
-  sm: 'size-7 text-[11px]',
-  md: 'size-9 text-[13px]',
-  lg: 'size-14 text-[18px]',
+  sm: 'size-7 text-nb-mono-sm',
+  md: 'size-9 text-nb-body-sm',
+  lg: 'size-14 text-nb-h3',
 };
 
 function initials(name: string): string {
@@ -51,31 +51,38 @@ export interface RoleAvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   size?: 'sm' | 'md' | 'lg';
 }
 
-export function RoleAvatar({ name, role, src, size = 'md', className, ...props }: RoleAvatarProps) {
-  const style = (role && ROLE_STYLE[role]) || { bg: 'bg-accent-mint', text: 'text-black' };
+const RoleAvatar = React.forwardRef<HTMLDivElement, RoleAvatarProps>(
+  ({ name, role, src, size = 'md', className, ...props }, ref) => {
+    const style = (role && ROLE_STYLE[role]) || { bg: 'bg-accent-mint', text: 'text-black' };
 
-  return (
-    <div
-      className={cn(
-        'inline-flex shrink-0 items-center justify-center rounded-full border-2 border-nb-black font-heading font-bold',
-        SIZE[size],
-        style.bg,
-        style.text,
-        className
-      )}
-      aria-hidden="true"
-      {...props}
-    >
-      {src ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={src}
-          alt=""
-          className="size-full rounded-full object-cover"
-        />
-      ) : (
-        initials(name)
-      )}
-    </div>
-  );
-}
+    return (
+      <div
+        className={cn(
+          'inline-flex shrink-0 items-center justify-center rounded-full border-2 border-nb-black font-heading font-bold',
+          SIZE[size],
+          style.bg,
+          style.text,
+          className
+        )}
+        aria-hidden="true"
+        ref={ref}
+        {...props}
+      >
+        {src ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={src}
+            alt=""
+            className="size-full rounded-full object-cover"
+          />
+        ) : (
+          initials(name)
+        )}
+      </div>
+    );
+  }
+);
+
+RoleAvatar.displayName = 'RoleAvatar';
+
+export { RoleAvatar };

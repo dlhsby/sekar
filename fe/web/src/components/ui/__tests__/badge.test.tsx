@@ -19,7 +19,7 @@ describe('Badge Component', () => {
     it('should render with default variant', () => {
       render(<Badge>Default</Badge>);
       const badge = screen.getByText('Default');
-      expect(badge).toHaveClass('bg-nb-primary', 'text-nb-black');
+      expect(badge).toHaveClass('bg-nb-primary', 'text-nb-ink');
     });
 
     it('should render with secondary variant', () => {
@@ -31,19 +31,19 @@ describe('Badge Component', () => {
     it('should render with destructive variant', () => {
       render(<Badge variant="destructive">Error</Badge>);
       const badge = screen.getByText('Error');
-      expect(badge).toHaveClass('bg-nb-danger', 'text-nb-black');
+      expect(badge).toHaveClass('bg-nb-danger', 'text-nb-ink');
     });
 
     it('should render with success variant', () => {
       render(<Badge variant="success">Success</Badge>);
       const badge = screen.getByText('Success');
-      expect(badge).toHaveClass('bg-nb-success', 'text-nb-black');
+      expect(badge).toHaveClass('bg-nb-success', 'text-nb-ink');
     });
 
     it('should render with warning variant', () => {
       render(<Badge variant="warning">Warning</Badge>);
       const badge = screen.getByText('Warning');
-      expect(badge).toHaveClass('bg-nb-warning', 'text-nb-black');
+      expect(badge).toHaveClass('bg-nb-warning', 'text-nb-ink');
     });
 
     it('should render with outline variant', () => {
@@ -96,14 +96,14 @@ describe('Badge Component', () => {
       const handleRemove = jest.fn();
       render(<Badge onRemove={handleRemove}>Removable</Badge>);
 
-      const removeButton = screen.getByRole('button', { name: /remove/i });
+      const removeButton = screen.getByRole('button', { name: /hapus/i });
       expect(removeButton).toBeInTheDocument();
     });
 
     it('should not render remove button when onRemove is not provided', () => {
       render(<Badge>Not Removable</Badge>);
 
-      const removeButton = screen.queryByRole('button', { name: /remove/i });
+      const removeButton = screen.queryByRole('button', { name: /hapus/i });
       expect(removeButton).not.toBeInTheDocument();
     });
 
@@ -112,7 +112,7 @@ describe('Badge Component', () => {
       const handleRemove = jest.fn();
       render(<Badge onRemove={handleRemove}>Removable</Badge>);
 
-      const removeButton = screen.getByRole('button', { name: /remove/i });
+      const removeButton = screen.getByRole('button', { name: /hapus/i });
       await user.click(removeButton);
 
       expect(handleRemove).toHaveBeenCalledTimes(1);
@@ -163,7 +163,17 @@ describe('Badge Component', () => {
       render(<Badge onRemove={handleRemove}>Accessible</Badge>);
 
       const removeButton = screen.getByRole('button');
-      expect(removeButton).toHaveAttribute('aria-label', 'Remove');
+      // Descriptive, localized label derived from the badge content.
+      expect(removeButton).toHaveAttribute('aria-label', 'Hapus Accessible');
+    });
+
+    it('honors a custom removeLabel', () => {
+      render(
+        <Badge onRemove={jest.fn()} removeLabel="Hapus filter status">
+          Status
+        </Badge>
+      );
+      expect(screen.getByRole('button', { name: 'Hapus filter status' })).toBeInTheDocument();
     });
 
     it('should be focusable when has remove button', async () => {

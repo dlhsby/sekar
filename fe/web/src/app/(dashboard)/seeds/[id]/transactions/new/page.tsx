@@ -20,8 +20,11 @@ import {
   FormInput,
   PageHeader,
   Textarea,
+  Field,
+  DatePicker,
 } from '@/components/ui';
 import { useToast } from '@/components/ui/toast';
+import { Controller } from 'react-hook-form';
 
 const ALLOWED_ROLES = [
   'admin_data',
@@ -65,6 +68,7 @@ export default function TransactionFormPage({ params }: TransactionFormPageProps
     handleSubmit,
     formState: { errors, isSubmitting },
     watch,
+    control,
   } = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
@@ -171,11 +175,20 @@ export default function TransactionFormPage({ params }: TransactionFormPageProps
               </>
             )}
 
-            <FormInput
-              label="Tanggal Transaksi"
-              type="date"
-              error={errors.occurredAt?.message}
-              {...register('occurredAt')}
+            <Controller
+              control={control}
+              name="occurredAt"
+              render={({ field }) => (
+                <Field label="Tanggal Transaksi" error={errors.occurredAt?.message}>
+                  {(p) => (
+                    <DatePicker
+                      id={p.id}
+                      value={field.value || undefined}
+                      onValueChange={(v) => field.onChange(v ?? '')}
+                    />
+                  )}
+                </Field>
+              )}
             />
 
             <div>

@@ -8,6 +8,7 @@
 import { useRef, useEffect } from 'react';
 import { ArrowLeft, MapPin, Clock, Navigation, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
+import { DatePicker, Checkbox } from '@/components/ui';
 import {
   formatMinutes,
   formatDistance,
@@ -74,19 +75,12 @@ export function LocationTimeline({
 
       {/* Date picker */}
       <div className="px-3 py-2 flex-shrink-0 border-b border-nb-gray-200">
-        <label htmlFor="location-date" className="text-xs font-bold text-nb-gray-600 mb-1 block">
+        <label className="text-xs font-bold text-nb-gray-600 mb-1 block">
           Pilih Tanggal
         </label>
-        <input
-          id="location-date"
-          type="date"
-          value={selectedDate}
-          max={todayStr}
-          onChange={(e) => onDateChange(e.target.value)}
-          className={cn(
-            'w-full px-3 py-2 text-sm border-2 border-nb-black rounded-nb-base',
-            'bg-white focus:outline-none focus:ring-2 focus:ring-nb-primary focus:ring-offset-1'
-          )}
+        <DatePicker
+          value={selectedDate || undefined}
+          onValueChange={(v) => onDateChange(v ?? '')}
         />
       </div>
 
@@ -146,16 +140,14 @@ export function LocationTimeline({
 
           {/* Hide-others toggle */}
           {onToggleShowOnly && (
-            <label className="mt-2 flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                className="w-4 h-4 border-2 border-nb-black rounded accent-nb-primary"
+            <div className="mt-2 flex items-center gap-2">
+              <Checkbox
                 checked={showOnlyThisUser ?? false}
-                onChange={() => onToggleShowOnly(!(showOnlyThisUser ?? false))}
+                onChange={(e) => onToggleShowOnly(e.target.checked)}
               />
               <Eye className="w-3 h-3 text-nb-gray-500" aria-hidden="true" />
               <span className="text-xs text-nb-gray-600">Tampilkan hanya petugas ini</span>
-            </label>
+            </div>
           )}
         </div>
       )}

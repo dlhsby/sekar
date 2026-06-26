@@ -6,7 +6,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn, nbFocusRing } from '@/lib/utils/cn';
 
 const inputVariants = cva(
-  `flex w-full bg-nb-white text-nb-black border-2 border-nb-black rounded-nb-base shadow-nb-sm
+  `flex w-full bg-nb-white text-nb-black border-2 border-nb-black rounded-nb-base shadow-nb-md
    placeholder:text-nb-gray-500
    disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none
    ${nbFocusRing}`,
@@ -46,6 +46,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     ref
   ) => {
     const effectiveState = error ? 'error' : state;
+    // Unique id per instance so multiple inputs don't collide on aria-describedby.
+    const reactId = React.useId();
+    const helperId = `input-helper-${reactId}`;
+    const describedBy = error || helperText ? helperId : undefined;
 
     if (leftIcon || rightIcon) {
       return (
@@ -65,7 +69,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             )}
             ref={ref}
             aria-invalid={!!error}
-            aria-describedby={error || helperText ? 'input-helper' : undefined}
+            aria-describedby={describedBy}
             {...props}
           />
           {rightIcon && (
@@ -75,8 +79,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
           {(error || helperText) && (
             <p
-              id="input-helper"
-              className={cn('mt-1 text-sm', error ? 'text-nb-danger' : 'text-nb-gray-600')}
+              id={helperId}
+              className={cn('mt-1 text-nb-body-sm', error ? 'text-nb-danger' : 'text-nb-gray-600')}
             >
               {error || helperText}
             </p>
@@ -92,13 +96,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           className={cn(inputVariants({ size, state: effectiveState }), className)}
           ref={ref}
           aria-invalid={!!error}
-          aria-describedby={error || helperText ? 'input-helper' : undefined}
+          aria-describedby={describedBy}
           {...props}
         />
         {(error || helperText) && (
           <p
-            id="input-helper"
-            className={cn('mt-1 text-sm', error ? 'text-nb-danger' : 'text-nb-gray-600')}
+            id={helperId}
+            className={cn('mt-1 text-nb-body-sm', error ? 'text-nb-danger' : 'text-nb-gray-600')}
           >
             {error || helperText}
           </p>

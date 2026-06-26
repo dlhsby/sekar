@@ -29,7 +29,7 @@ import {
   SkeletonTable,
   useToast,
   type TabItem,
-  type DataTableColumn,
+  type ColumnDef,
 } from '@/components/ui';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -177,58 +177,76 @@ export default function ReportsPage() {
   const reports = reportsData?.data || [];
   const totalPages = reportsData?.meta.totalPages || 1;
 
-  const columns: DataTableColumn<GeneratedReport>[] = [
+  const columns: ColumnDef<GeneratedReport>[] = [
     {
+      id: 'title',
+      accessorKey: 'title',
       header: 'Judul',
-      key: 'title',
-      cell: (row: GeneratedReport) => <span className="text-nb-body font-medium">{row.title}</span>,
+      enableSorting: true,
+      meta: { label: 'Judul' },
+      cell: ({ row }) => <span className="text-nb-body font-medium">{row.original.title}</span>,
     },
     {
+      id: 'report_type',
+      accessorKey: 'report_type',
       header: 'Tipe',
-      key: 'report_type',
-      cell: (row: GeneratedReport) => {
-        const type = row.report_type as ReportType;
+      enableSorting: true,
+      meta: { label: 'Tipe' },
+      cell: ({ row }) => {
+        const type = row.original.report_type as ReportType;
         return <span className="text-nb-body-sm">{REPORT_TYPE_LABELS[type]}</span>;
       },
     },
     {
+      id: 'format',
+      accessorKey: 'format',
       header: 'Format',
-      key: 'format',
-      cell: (row: GeneratedReport) => {
-        const format = row.format as string;
+      enableSorting: true,
+      meta: { label: 'Format' },
+      cell: ({ row }) => {
+        const format = row.original.format as string;
         return <span className="text-nb-body-sm">{REPORT_FORMAT_LABELS[format] || format}</span>;
       },
     },
     {
+      id: 'status',
+      accessorKey: 'status',
       header: 'Status',
-      key: 'status',
-      cell: (row: GeneratedReport) => {
-        const status = row.status as GeneratedReportStatus;
+      enableSorting: true,
+      meta: { label: 'Status' },
+      cell: ({ row }) => {
+        const status = row.original.status as GeneratedReportStatus;
         return (
           <StatusPill tone={STATUS_TONE_MAP[status]}>{STATUS_LABELS[status]}</StatusPill>
         );
       },
     },
     {
+      id: 'created_at',
+      accessorKey: 'created_at',
       header: 'Dibuat',
-      key: 'created_at',
-      cell: (row: GeneratedReport) => {
-        const date = new Date(row.created_at);
+      enableSorting: true,
+      meta: { label: 'Dibuat' },
+      cell: ({ row }) => {
+        const date = new Date(row.original.created_at);
         return <span className="text-nb-body-sm">{date.toLocaleDateString('id-ID')}</span>;
       },
     },
     {
+      id: 'actions',
       header: 'Aksi',
-      key: 'actions',
-      cell: (row: GeneratedReport) => (
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Aksi', pinRight: true },
+      cell: ({ row }) => (
         <div className="flex gap-2">
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleDownload(row)}
-            disabled={row.status !== GeneratedReportStatus.COMPLETED}
+            onClick={() => handleDownload(row.original)}
+            disabled={row.original.status !== GeneratedReportStatus.COMPLETED}
             title={
-              row.status !== GeneratedReportStatus.COMPLETED
+              row.original.status !== GeneratedReportStatus.COMPLETED
                 ? 'Laporan belum selesai'
                 : 'Unduh laporan'
             }
@@ -238,7 +256,7 @@ export default function ReportsPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleDeleteClick(row.id)}
+            onClick={() => handleDeleteClick(row.original.id)}
           >
             <Trash2 className="h-4 w-4" />
           </Button>

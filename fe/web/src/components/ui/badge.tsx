@@ -12,11 +12,11 @@ const badgeVariants = cva(
     variants: {
       variant: {
         // Ink-on-color (WCAG AA): white on sage/coral is ~2.2:1; ink is 6.8-7.6:1
-        default: 'bg-nb-primary text-nb-black',
+        default: 'bg-nb-primary text-nb-ink',
         secondary: 'bg-nb-gray-100 text-nb-black',
-        destructive: 'bg-nb-danger text-nb-black',
-        success: 'bg-nb-success text-nb-black',
-        warning: 'bg-nb-warning text-nb-black',
+        destructive: 'bg-nb-danger text-nb-ink',
+        success: 'bg-nb-success text-nb-ink',
+        warning: 'bg-nb-warning text-nb-ink',
         outline: 'bg-transparent text-nb-black',
       },
       size: {
@@ -36,11 +36,13 @@ export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {
   icon?: React.ReactNode;
   onRemove?: () => void;
+  /** Accessible label for the remove (✕) button. Defaults to "Hapus <label>". */
+  removeLabel?: string;
 }
 
-function Badge({ className, variant, size, icon, onRemove, children, ...props }: BadgeProps) {
-  return (
-    <div className={cn(badgeVariants({ variant, size }), className)} {...props}>
+const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
+  ({ className, variant, size, icon, onRemove, removeLabel, children, ...props }, ref) => (
+    <div className={cn(badgeVariants({ variant, size }), className)} ref={ref} {...props}>
       {icon && <span className="[&_svg]:size-3">{icon}</span>}
       {children}
       {onRemove && (
@@ -48,13 +50,17 @@ function Badge({ className, variant, size, icon, onRemove, children, ...props }:
           type="button"
           onClick={onRemove}
           className="ml-1 hover:opacity-70 transition-opacity"
-          aria-label="Remove"
+          aria-label={
+            removeLabel ?? (typeof children === 'string' ? `Hapus ${children}` : 'Hapus')
+          }
         >
           <X className="size-3" />
         </button>
       )}
     </div>
-  );
-}
+  )
+);
+
+Badge.displayName = 'Badge';
 
 export { Badge, badgeVariants };

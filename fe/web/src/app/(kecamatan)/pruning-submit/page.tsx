@@ -16,7 +16,7 @@ import { z } from 'zod';
 import { Camera, MapPin, X } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Button, FormInput, SectionCard, Textarea } from '@/components/ui';
+import { Button, DatePicker, FormInput, SectionCard, Textarea } from '@/components/ui';
 import { getErrorMessage } from '@/lib/api/client';
 import { useSubmitPruningRequest } from '@/lib/api/pruning-requests';
 
@@ -347,13 +347,14 @@ export default function PruningSubmitPage() {
 
         <SectionCard title="Jadwal & Catatan" meta="Opsional">
           <div className="space-y-3">
-            <FormInput
-              label="Minggu Diharapkan"
-              type="date"
-              value={expectedDate}
-              onChange={(e) => setExpectedDate(e.target.value)}
-              helperText="Petugas akan menentukan hari pasti dalam minggu yang dipilih."
-            />
+            <div className="space-y-1.5">
+              <label className="text-sm font-bold text-nb-black">Minggu Diharapkan</label>
+              <DatePicker
+                value={expectedDate || undefined}
+                onValueChange={(v) => setExpectedDate(v ?? '')}
+              />
+              <p className="text-xs text-nb-gray-500">Petugas akan menentukan hari pasti dalam minggu yang dipilih.</p>
+            </div>
             <Textarea
               label="Catatan"
               rows={3}

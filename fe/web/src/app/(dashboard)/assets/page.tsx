@@ -17,7 +17,7 @@ import {
 } from '@/components/ui';
 import { useUser } from '@/lib/auth/hooks';
 import { useAssets, useAssetCategories, type AssetStatus } from '@/lib/api/assets';
-import type { DataTableColumn } from '@/components/ui';
+import type { ColumnDef } from '@/components/ui';
 import type { Asset } from '@/lib/api/assets';
 
 const ASSET_MANAGER_ROLES = ['korlap', 'kepala_rayon', 'admin_system', 'superadmin'];
@@ -77,40 +77,58 @@ export default function AssetsPage() {
     [categories]
   );
 
-  const columns: DataTableColumn<Asset>[] = [
+  const columns: ColumnDef<Asset>[] = [
     {
-      key: 'asset_code',
+      id: 'asset_code',
+      accessorKey: 'asset_code',
       header: 'Kode',
-      cell: (asset) => <span className="font-mono text-nb-body-sm">{asset.asset_code}</span>,
+      enableSorting: false,
+      meta: { label: 'Kode' },
+      cell: ({ row }) => <span className="font-mono text-nb-body-sm">{row.original.asset_code}</span>,
     },
     {
-      key: 'name',
+      id: 'name',
+      accessorKey: 'name',
       header: 'Nama',
+      enableSorting: false,
+      meta: { label: 'Nama' },
     },
     {
-      key: 'category',
+      id: 'category',
       header: 'Kategori',
-      cell: (asset) => asset.category?.name || '—',
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Kategori' },
+      cell: ({ row }) => row.original.category?.name || '—',
     },
     {
-      key: 'status',
+      id: 'status',
+      accessorKey: 'status',
       header: 'Status',
-      cell: (asset) => (
-        <StatusPill tone={STATUS_TONE_MAP[asset.status]}>
-          {STATUS_LABELS[asset.status]}
+      enableSorting: false,
+      meta: { label: 'Status' },
+      cell: ({ row }) => (
+        <StatusPill tone={STATUS_TONE_MAP[row.original.status]}>
+          {STATUS_LABELS[row.original.status]}
         </StatusPill>
       ),
     },
     {
-      key: 'area',
+      id: 'area',
       header: 'Lokasi',
-      cell: (asset) => asset.area?.name || asset.rayon?.name || '—',
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Lokasi' },
+      cell: ({ row }) => row.original.area?.name || row.original.rayon?.name || '—',
     },
     {
-      key: 'actions',
-      header: '',
-      cell: (asset) => (
-        <Link href={`/assets/${asset.id}`}>
+      id: 'actions',
+      header: 'Aksi',
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Aksi', pinRight: true, align: 'center' },
+      cell: ({ row }) => (
+        <Link href={`/assets/${row.original.id}`}>
           <Button variant="ghost" size="sm">
             Detail
           </Button>
@@ -175,6 +193,8 @@ export default function AssetsPage() {
           <DataTable
             columns={columns}
             data={assetsData.data}
+            enablePagination={false}
+            getRowId={(asset) => asset.id}
             onRowClick={(asset) => {
               window.location.href = `/assets/${asset.id}`;
             }}

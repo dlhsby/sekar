@@ -18,6 +18,8 @@ import {
   StatusPill,
   Tabs,
   type TabItem,
+  Field,
+  DateRangePicker,
 } from '@/components/ui';
 import type { ColumnDef } from '@/components/ui/data-table';
 import { useRouter } from 'next/navigation';
@@ -114,65 +116,86 @@ export default function OvertimePage() {
 
   const columns: ColumnDef<Overtime>[] = [
     {
-      key: 'date',
+      id: 'date',
       header: 'Tanggal',
-      cell: (ot) => <div className="text-sm">{formatDateTime(ot.start_datetime).date}</div>,
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Tanggal' },
+      cell: ({ row }) => <div className="text-sm">{formatDateTime(row.original.start_datetime).date}</div>,
     },
     {
-      key: 'user',
+      id: 'user',
       header: 'Pengguna',
-      cell: (ot) => (
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Pengguna' },
+      cell: ({ row }) => (
         <div>
-          <div className="font-semibold text-nb-black">{ot.user?.full_name || '-'}</div>
-          <div className="text-xs text-nb-gray-600">{ot.user?.username || ''}</div>
+          <div className="font-semibold text-nb-black">{row.original.user?.full_name || '-'}</div>
+          <div className="text-xs text-nb-gray-600">{row.original.user?.username || ''}</div>
         </div>
       ),
     },
     {
-      key: 'area',
+      id: 'area',
       header: 'Area',
-      cell: (ot) => <div className="text-sm">{ot.area?.name || '-'}</div>,
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Area' },
+      cell: ({ row }) => <div className="text-sm">{row.original.area?.name || '-'}</div>,
     },
     {
-      key: 'time',
+      id: 'time',
       header: 'Waktu',
-      cell: (ot) => (
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Waktu' },
+      cell: ({ row }) => (
         <div className="text-sm font-mono">
-          {formatDateTime(ot.start_datetime).time} - {formatDateTime(ot.end_datetime).time}
+          {formatDateTime(row.original.start_datetime).time} - {formatDateTime(row.original.end_datetime).time}
         </div>
       ),
     },
     {
-      key: 'activity_type',
+      id: 'activity_type',
       header: 'Tipe Aktivitas',
-      cell: (ot) => <div className="text-sm">{ot.activity_type?.name || '-'}</div>,
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Tipe Aktivitas' },
+      cell: ({ row }) => <div className="text-sm">{row.original.activity_type?.name || '-'}</div>,
     },
     {
-      key: 'status',
+      id: 'status',
       header: 'Status',
-      cell: (ot) => (
-        <StatusPill tone={statusTone[ot.status]} dot>
-          {OVERTIME_STATUS_LABELS[ot.status]}
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Status' },
+      cell: ({ row }) => (
+        <StatusPill tone={statusTone[row.original.status]} dot>
+          {OVERTIME_STATUS_LABELS[row.original.status]}
         </StatusPill>
       ),
     },
     {
-      key: 'actions',
+      id: 'actions',
       header: 'Aksi',
-      cell: (ot) => (
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Aksi', pinRight: true },
+      cell: ({ row }) => (
         <div className="flex items-center gap-2">
           <Link
-            href={`/overtime/${ot.id}`}
+            href={`/overtime/${row.original.id}`}
             className="text-nb-success-dark font-semibold hover:underline"
           >
             Detail
           </Link>
-          {canApprove && ot.status === 'pending' && (
+          {canApprove && row.original.status === 'pending' && (
             <>
               <Button
                 variant="success"
                 size="sm"
-                onClick={() => handleApprove(ot.id)}
+                onClick={() => handleApprove(row.original.id)}
                 disabled={approveMutation.isPending}
                 leftIcon={<Check className="w-3 h-3" />}
               >
@@ -181,7 +204,7 @@ export default function OvertimePage() {
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={() => setRejectingId(ot.id)}
+                onClick={() => setRejectingId(row.original.id)}
                 leftIcon={<X className="w-3 h-3" />}
               >
                 Tolak
@@ -215,24 +238,22 @@ export default function OvertimePage() {
       <Card>
         <CardContent className="p-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <FormInput
-              label="Dari Tanggal"
-              type="date"
-              value={fromDate}
-              onChange={(e) => {
-                setFromDate(e.target.value);
-                setPage(1);
-              }}
-            />
-            <FormInput
-              label="Sampai Tanggal"
-              type="date"
-              value={toDate}
-              onChange={(e) => {
-                setToDate(e.target.value);
-                setPage(1);
-              }}
-            />
+            <Field label="Rentang Tanggal">
+              {() => (
+                <DateRangePicker
+                  showSteppers={false}
+                  value={{
+                    from: fromDate || new Date().toISOString().slice(0, 10),
+                    to: toDate || new Date().toISOString().slice(0, 10),
+                  }}
+                  onChange={(r) => {
+                    setFromDate(r.from);
+                    setToDate(r.to);
+                    setPage(1);
+                  }}
+                />
+              )}
+            </Field>
           </div>
 
           {hasActiveFilters && (
@@ -298,11 +319,13 @@ export default function OvertimePage() {
           </div>
         </CardHeader>
         <CardContent>
-          <DataTable<Overtime>
+          <DataTable<Overtime, unknown>
             columns={columns}
             data={overtimes}
             loading={isLoading}
-            emptyMessage="Tidak ada permintaan lembur"
+            enablePagination={false}
+            getRowId={(r) => r.id}
+            emptyTitle="Tidak ada permintaan lembur"
           />
 
           {pagination && pagination.totalPages > 1 && (

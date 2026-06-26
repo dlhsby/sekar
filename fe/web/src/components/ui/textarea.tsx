@@ -6,7 +6,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn, nbFocusRing } from '@/lib/utils/cn';
 
 const textareaVariants = cva(
-  `flex min-h-[120px] w-full bg-nb-white text-nb-black border-2 border-nb-black rounded-nb-base shadow-nb-sm p-4
+  `flex min-h-[120px] w-full bg-nb-white text-nb-black border-2 border-nb-black rounded-nb-base shadow-nb-md p-4
    placeholder:text-nb-gray-500 resize-y
    disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none
    ${nbFocusRing}`,
@@ -97,13 +97,13 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           {(error || helperText) && (
             <p
               id="textarea-helper"
-              className={cn('text-sm', error ? 'text-nb-danger' : 'text-nb-gray-600')}
+              className={cn('text-nb-body-sm', error ? 'text-nb-danger' : 'text-nb-gray-600')}
             >
               {error || helperText}
             </p>
           )}
           {showCount && maxLength && (
-            <p className="text-sm text-nb-gray-600 ml-auto">
+            <p className="text-nb-body-sm text-nb-gray-600 ml-auto">
               {currentLength}/{maxLength}
             </p>
           )}

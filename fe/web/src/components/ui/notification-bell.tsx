@@ -37,7 +37,7 @@ export function NotificationPanel({
       <div className="flex items-center justify-between border-b-2 border-nb-black px-4 py-3">
         <span className="text-nb-h3 text-nb-black">Notifikasi</span>
         {notifications.length > 0 && (
-          <span className="font-mono text-[11px] text-nb-gray-600">
+          <span className="font-mono text-nb-mono-sm text-nb-gray-600">
             {notifications.length} belum dibaca
           </span>
         )}
@@ -70,7 +70,7 @@ export function NotificationPanel({
                   <span className="mt-0.5 line-clamp-2 block text-nb-body-sm text-nb-gray-600">
                     {n.body}
                   </span>
-                  <span className="mt-0.5 block font-mono text-[11px] text-nb-gray-500">
+                  <span className="mt-0.5 block font-mono text-nb-mono-sm text-nb-gray-500">
                     {formatRelativeTime(n.created_at)}
                   </span>
                 </span>
@@ -140,7 +140,7 @@ export function NotificationBell({ className }: { className?: string }) {
           <Bell className="size-5 text-nb-black" strokeWidth={2} />
           {unreadCount > 0 && (
             <span
-              className="absolute -right-1.5 -top-1.5 inline-flex size-4 items-center justify-center rounded-full border-[1.5px] border-nb-black bg-nb-danger font-mono text-[9px] font-bold leading-none text-nb-white"
+              className="absolute -right-1.5 -top-1.5 inline-flex size-4 items-center justify-center rounded-full border-2 border-nb-black bg-nb-danger font-mono text-[9px] font-bold leading-none text-nb-white"
               aria-hidden="true"
             >
               {badgeText}

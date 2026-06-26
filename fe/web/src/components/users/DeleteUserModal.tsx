@@ -1,15 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  Button,
-} from '@/components/ui';
+import { ConfirmDialog } from '@/components/ui';
 import { User } from '@/types/models';
 import { useDeleteUser } from '@/lib/api/users';
 
@@ -41,65 +33,32 @@ export function DeleteUserModal({ user, isOpen, onClose, onSuccess }: DeleteUser
     }
   };
 
-  const handleClose = () => {
-    if (!deleteUserMutation.isPending) {
-      setError('');
-      onClose();
-    }
-  };
-
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Hapus User</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4 py-4">
-          {/* Warning Icon */}
-          <div className="flex justify-center">
-            <div className="w-12 h-12 rounded-full bg-nb-danger/10 flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-nb-danger" />
-            </div>
-          </div>
-
-          {/* Warning Message */}
-          <div className="text-center">
-            <p className="text-sm text-nb-gray-700">
-              Apakah Anda yakin ingin menghapus user{' '}
-              <span className="font-bold">{user?.full_name}</span>?
-            </p>
-            <p className="text-sm text-nb-gray-600 mt-2">Tindakan ini tidak dapat dibatalkan.</p>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="bg-nb-danger/10 border-2 border-nb-danger px-4 py-3">
-              <p className="text-sm text-nb-danger font-medium">{error}</p>
-            </div>
-          )}
+    <ConfirmDialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          setError('');
+          onClose();
+        }
+      }}
+      title="Hapus User"
+      description={
+        <>
+          Apakah Anda yakin ingin menghapus user{' '}
+          <span className="font-bold">{user?.full_name}</span>? Tindakan ini tidak dapat dibatalkan.
+        </>
+      }
+      confirmLabel="Hapus"
+      variant="destructive"
+      loading={deleteUserMutation.isPending}
+      onConfirm={handleDelete}
+    >
+      {error && (
+        <div className="bg-nb-danger/10 border-2 border-nb-danger px-4 py-3">
+          <p className="text-sm text-nb-danger font-medium">{error}</p>
         </div>
-
-        <DialogFooter className="flex gap-3 sm:gap-3">
-          <Button
-            variant="secondary"
-            onClick={handleClose}
-            disabled={deleteUserMutation.isPending}
-            className="flex-1"
-          >
-            Batal
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={handleDelete}
-            loading={deleteUserMutation.isPending}
-            disabled={deleteUserMutation.isPending}
-            className="flex-1"
-          >
-            Hapus
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      )}
+    </ConfirmDialog>
   );
 }

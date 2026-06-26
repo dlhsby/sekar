@@ -19,6 +19,8 @@ import {
   EmptyState,
   useToast,
   type FormSelectOption,
+  Field,
+  DateRangePicker,
 } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -164,20 +166,20 @@ export default function ReportBuilderPage() {
             placeholder="Pilih format"
           />
 
-          <div className="grid grid-cols-2 gap-4">
-            <FormInput
-              label="Tanggal Mulai"
-              type="date"
-              value={state.startDate}
-              onChange={(e) => setState((s) => ({ ...s, startDate: e.target.value }))}
-            />
-            <FormInput
-              label="Tanggal Akhir"
-              type="date"
-              value={state.endDate}
-              onChange={(e) => setState((s) => ({ ...s, endDate: e.target.value }))}
-            />
-          </div>
+          <Field label="Rentang Tanggal">
+            {() => (
+              <DateRangePicker
+                showSteppers={false}
+                value={{
+                  from: state.startDate || new Date().toISOString().slice(0, 10),
+                  to: state.endDate || new Date().toISOString().slice(0, 10),
+                }}
+                onChange={(r) => {
+                  setState((s) => ({ ...s, startDate: r.from, endDate: r.to }));
+                }}
+              />
+            )}
+          </Field>
 
           <FormInput
             label="Area (opsional)"

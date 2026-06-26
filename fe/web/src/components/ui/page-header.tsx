@@ -39,7 +39,7 @@ export function PageHeader({
     >
       <div className="min-w-0">
         {breadcrumb && (
-          <div className="mb-1 font-mono text-[11px] uppercase tracking-wide text-nb-gray-500">
+          <div className="mb-1 font-mono text-nb-mono-sm uppercase tracking-wide text-nb-gray-500">
             {breadcrumb}
           </div>
         )}

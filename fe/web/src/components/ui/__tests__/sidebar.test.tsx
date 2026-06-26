@@ -143,21 +143,21 @@ describe('Sidebar Component', () => {
       render(<Sidebar items={mockItems} userRole="admin" />);
 
       const usersLink = screen.getByText('Pengguna').closest('a');
-      expect(usersLink).toHaveClass('bg-nb-primary', 'text-nb-black');
+      expect(usersLink).toHaveClass('bg-nb-primary', 'text-nb-ink');
     });
 
     it('should highlight active item with custom currentPath prop', () => {
       render(<Sidebar items={mockItems} currentPath="/tasks" />);
 
       const tasksLink = screen.getByText('Tugas').closest('a');
-      expect(tasksLink).toHaveClass('bg-nb-primary', 'text-nb-black');
+      expect(tasksLink).toHaveClass('bg-nb-primary', 'text-nb-ink');
     });
 
     it('should highlight active item for nested paths', () => {
       render(<Sidebar items={mockItems} currentPath="/users/123" userRole="admin" />);
 
       const usersLink = screen.getByText('Pengguna').closest('a');
-      expect(usersLink).toHaveClass('bg-nb-primary', 'text-nb-black');
+      expect(usersLink).toHaveClass('bg-nb-primary', 'text-nb-ink');
     });
   });
 
@@ -238,7 +238,7 @@ describe('Sidebar Component', () => {
 
       // Active child is visible without a manual click.
       const rayonsLink = screen.getByText('Rayons').closest('a');
-      expect(rayonsLink).toHaveClass('bg-nb-primary', 'text-nb-black');
+      expect(rayonsLink).toHaveClass('bg-nb-primary', 'text-nb-ink');
     });
   });
 
