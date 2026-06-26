@@ -118,7 +118,7 @@ export function Combobox({
             disabled={disabled}
             onClick={() => handleOpenChange(!open)}
             className={cn(
-              'flex min-h-[48px] w-full items-center justify-between gap-2 border-2 border-nb-black rounded-nb-base bg-nb-white px-4 text-base text-nb-black shadow-nb-sm',
+              'flex min-h-[48px] w-full items-center justify-between gap-2 border-2 border-nb-black rounded-nb-base bg-nb-white px-4 text-base text-nb-black shadow-nb-md',
               'disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none',
               ariaInvalid && 'border-nb-danger',
               nbFocusRing

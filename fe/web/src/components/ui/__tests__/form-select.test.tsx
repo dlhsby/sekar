@@ -281,7 +281,7 @@ describe('FormSelect Component', () => {
       render(<FormSelect label="Role" options={mockOptions} onChange={handleChange} />);
 
       const trigger = screen.getByRole('combobox');
-      expect(trigger).toHaveClass('border-2', 'border-nb-black', 'shadow-nb-sm', 'bg-nb-white');
+      expect(trigger).toHaveClass('border-2', 'border-nb-black', 'shadow-nb-md', 'bg-nb-white');
     });
 
     it('should have proper height for touch targets', () => {

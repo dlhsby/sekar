@@ -32,9 +32,9 @@ const ROLE_STYLE: Record<UserRole, RoleStyle> = {
 };
 
 const SIZE: Record<NonNullable<RoleAvatarProps['size']>, string> = {
-  sm: 'size-7 text-[11px]',
-  md: 'size-9 text-[13px]',
-  lg: 'size-14 text-[18px]',
+  sm: 'size-7 text-nb-mono-sm',
+  md: 'size-9 text-nb-body-sm',
+  lg: 'size-14 text-nb-h3',
 };
 
 function initials(name: string): string {

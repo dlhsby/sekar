@@ -54,7 +54,7 @@ const KpiTile = React.forwardRef<HTMLDivElement, KpiTileProps>(
   }, ref) => (
     <div className={cn(kpiTileVariants({ tone }), className)} ref={ref} {...props}>
       <div className="mb-1.5 flex items-center justify-between gap-2">
-        <p className="font-mono text-[10.5px] font-bold uppercase tracking-wide text-nb-gray-600">
+        <p className="font-mono text-nb-mono-sm font-bold uppercase tracking-wide text-nb-gray-600">
           {label}
         </p>
         {icon && <span className="text-nb-gray-600 [&_svg]:size-4">{icon}</span>}
@@ -65,7 +65,7 @@ const KpiTile = React.forwardRef<HTMLDivElement, KpiTileProps>(
       {delta && (
         <p
           className={cn(
-            'flex items-center gap-1 font-mono text-[11px] font-semibold',
+            'flex items-center gap-1 font-mono text-nb-mono-sm font-semibold',
             deltaDirection === 'up' && 'text-status-active',
             deltaDirection === 'down' && 'text-status-missing',
             deltaDirection === 'neutral' && 'text-nb-gray-600'

@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils/cn';
  * and KPI chips all draw from one source.
  */
 const statusPillVariants = cva(
-  'inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-nb-black px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide leading-none',
+  'inline-flex items-center gap-1.5 rounded-full border-2 border-nb-black px-2 py-0.5 font-mono text-nb-mono-sm font-bold uppercase tracking-wide leading-none',
   {
     variants: {
       tone: {

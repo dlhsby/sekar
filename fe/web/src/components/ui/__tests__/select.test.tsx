@@ -72,7 +72,7 @@ describe('Select Component', () => {
       );
 
       const trigger = screen.getByTestId('select-trigger');
-      expect(trigger).toHaveClass('border-2', 'border-nb-black', 'shadow-nb-sm', 'bg-nb-white');
+      expect(trigger).toHaveClass('border-2', 'border-nb-black', 'shadow-nb-md', 'bg-nb-white');
     });
 
     it('should render with error styles when error prop is true', () => {

@@ -6,7 +6,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn, nbFocusRing } from '@/lib/utils/cn';
 
 const inputVariants = cva(
-  `flex w-full bg-nb-white text-nb-black border-2 border-nb-black rounded-nb-base shadow-nb-sm
+  `flex w-full bg-nb-white text-nb-black border-2 border-nb-black rounded-nb-base shadow-nb-md
    placeholder:text-nb-gray-500
    disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none
    ${nbFocusRing}`,

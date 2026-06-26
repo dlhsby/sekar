@@ -341,7 +341,7 @@ describe('Input Component', () => {
     it('should have Neo Brutalism shadow', () => {
       render(<Input data-testid="input" aria-label="Input" />);
       const input = screen.getByTestId('input');
-      expect(input).toHaveClass('shadow-nb-sm');
+      expect(input).toHaveClass('shadow-nb-md');
     });
 
     it('should have focus visible styles', () => {

@@ -140,7 +140,7 @@ export function NotificationBell({ className }: { className?: string }) {
           <Bell className="size-5 text-nb-black" strokeWidth={2} />
           {unreadCount > 0 && (
             <span
-              className="absolute -right-1.5 -top-1.5 inline-flex size-4 items-center justify-center rounded-full border-[1.5px] border-nb-black bg-nb-danger font-mono text-[9px] font-bold leading-none text-nb-white"
+              className="absolute -right-1.5 -top-1.5 inline-flex size-4 items-center justify-center rounded-full border-2 border-nb-black bg-nb-danger font-mono text-[9px] font-bold leading-none text-nb-white"
               aria-hidden="true"
             >
               {badgeText}
