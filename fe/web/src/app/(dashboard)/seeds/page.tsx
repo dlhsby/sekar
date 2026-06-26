@@ -71,34 +71,43 @@ export default function SeedsListPage() {
 
   const columns: ColumnDef<PlantSeedRow>[] = [
     {
-      key: 'nameId',
+      id: 'nameId',
       header: 'Nama Bibit',
-      cell: (seed: any) => (
-        <Link href={`/seeds/${seed.id}`} className="font-semibold text-nb-primary hover:underline">
-          {seed.nameId}
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Nama Bibit' },
+      cell: ({ row }) => (
+        <Link href={`/seeds/${row.original.id}`} className="font-semibold text-nb-primary hover:underline">
+          {row.original.nameId}
         </Link>
       ),
     },
     {
-      key: 'unit',
+      id: 'unit',
       header: 'Satuan',
-      cell: (seed: any) => {
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Satuan' },
+      cell: ({ row }) => {
         const unitLabels: Record<string, string> = {
           gram: 'gram',
           piece: 'buah',
           packet: 'paket',
         };
-        return <span className="text-nb-body-sm">{unitLabels[seed.unit] || seed.unit}</span>;
+        return <span className="text-nb-body-sm">{unitLabels[row.original.unit] || row.original.unit}</span>;
       },
     },
     {
-      key: 'stockQty',
+      id: 'stockQty',
       header: 'Stok',
-      cell: (seed: any) => {
-        const isLowStock = seed.stockQty < LOW_STOCK_THRESHOLD;
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Stok' },
+      cell: ({ row }) => {
+        const isLowStock = row.original.stockQty < LOW_STOCK_THRESHOLD;
         return (
           <div className="flex items-center gap-2">
-            <span className="font-mono text-nb-body-sm">{seed.stockQty}</span>
+            <span className="font-mono text-nb-body-sm">{row.original.stockQty}</span>
             {isLowStock && (
               <Badge variant="warning" size="sm">
                 Rendah
@@ -133,11 +142,13 @@ export default function SeedsListPage() {
             />
           </div>
 
-          <DataTable<any>
+          <DataTable
             columns={columns}
             data={seeds}
             loading={seedsLoading}
-            emptyMessage="Tidak ada bibit tersedia"
+            enablePagination={false}
+            getRowId={(s) => s.id}
+            emptyTitle="Tidak ada bibit tersedia"
           />
 
           {totalPages > 1 && (

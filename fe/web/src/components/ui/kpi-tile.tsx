@@ -41,18 +41,18 @@ export interface KpiTileProps
   icon?: React.ReactNode;
 }
 
-export function KpiTile({
-  label,
-  value,
-  delta,
-  deltaDirection = 'neutral',
-  icon,
-  tone,
-  className,
-  ...props
-}: KpiTileProps) {
-  return (
-    <div className={cn(kpiTileVariants({ tone }), className)} {...props}>
+const KpiTile = React.forwardRef<HTMLDivElement, KpiTileProps>(
+  ({
+    label,
+    value,
+    delta,
+    deltaDirection = 'neutral',
+    icon,
+    tone,
+    className,
+    ...props
+  }, ref) => (
+    <div className={cn(kpiTileVariants({ tone }), className)} ref={ref} {...props}>
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <p className="font-mono text-[10.5px] font-bold uppercase tracking-wide text-nb-gray-600">
           {label}
@@ -77,8 +77,10 @@ export function KpiTile({
         </p>
       )}
     </div>
-  );
-}
+  )
+);
+
+KpiTile.displayName = 'KpiTile';
 
 export interface KpiGridProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Columns at the widest breakpoint (default 4). */
@@ -91,8 +93,12 @@ const COLS: Record<NonNullable<KpiGridProps['columns']>, string> = {
   4: 'grid-cols-2 lg:grid-cols-4',
 };
 
-export function KpiGrid({ columns = 4, className, ...props }: KpiGridProps) {
-  return <div className={cn('grid gap-4', COLS[columns], className)} {...props} />;
-}
+const KpiGrid = React.forwardRef<HTMLDivElement, KpiGridProps>(
+  ({ columns = 4, className, ...props }, ref) => (
+    <div className={cn('grid gap-4', COLS[columns], className)} ref={ref} {...props} />
+  )
+);
 
-export { kpiTileVariants };
+KpiGrid.displayName = 'KpiGrid';
+
+export { KpiTile, KpiGrid, kpiTileVariants };

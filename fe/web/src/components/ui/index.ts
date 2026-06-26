@@ -20,9 +20,14 @@ export {
 export { Input, inputVariants, type InputProps } from './input';
 export { Label } from './label';
 export { Textarea, textareaVariants, type TextareaProps } from './textarea';
+export { Checkbox, type CheckboxProps } from './checkbox';
+export { Radio, type RadioProps } from './radio';
+export { Switch } from './switch';
+export { Field, type FieldProps, type FieldControlProps } from './field';
 export { Badge, badgeVariants, type BadgeProps } from './badge';
 export { StatusPill, statusPillVariants, type StatusPillProps } from './status-pill';
 export { RoleAvatar, type RoleAvatarProps } from './role-avatar';
+export { Avatar, AvatarGroup, avatarVariants, type AvatarProps, type AvatarGroupProps } from './avatar';
 export { Tabs, type TabItem, type TabsProps } from './tabs';
 export { Alert, alertVariants, type AlertProps } from './alert';
 
@@ -37,6 +42,46 @@ export { NotificationBell, NotificationPanel, type NotificationPanelProps } from
 // Form Components
 export { FormInput, type FormInputProps } from './form-input';
 export { FormSelect, type FormSelectOption, type FormSelectProps } from './form-select';
+
+// Date / Time Pickers
+export { Calendar, type CalendarProps } from './calendar';
+export { DatePicker, type DatePickerProps } from './date-picker';
+export {
+  DateRangePicker,
+  type DateRangePickerProps,
+  type DateRangeValue,
+} from './date-range-picker';
+export { TimePicker, TimeList, TIME_OPTIONS, type TimePickerProps } from './time-picker';
+export { DateTimePicker, type DateTimePickerProps } from './date-time-picker';
+
+// Popover
+export { Popover, PopoverTrigger, PopoverAnchor, PopoverContent } from './popover';
+
+// Tooltip
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './tooltip';
+
+// Disclosure
+export {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from './accordion';
+
+// Navigation
+export {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from './breadcrumb';
+
+// Feedback / structure primitives
+export { Separator } from './separator';
+export { Spinner, spinnerVariants, type SpinnerProps } from './spinner';
+export { Progress, type ProgressProps } from './progress';
 
 // Select
 export {
@@ -61,10 +106,12 @@ export {
   DialogClose,
   DialogContent,
   DialogHeader,
+  DialogBody,
   DialogFooter,
   DialogTitle,
   DialogDescription,
 } from './dialog';
+export { ConfirmDialog, type ConfirmDialogProps } from './confirm-dialog';
 
 // Table
 export {
@@ -77,7 +124,13 @@ export {
   TableCell,
   TableCaption,
 } from './table';
-export { DataTable, type DataTableColumn, type DataTableProps } from './data-table';
+export { DataTable, type DataTableProps, type ColumnDef } from './data-table';
+export {
+  ColumnFilter,
+  filterFnForVariant,
+  dateContainsFilterFn,
+  type FilterVariant,
+} from './column-filter';
 
 // Dropdown Menu
 export {

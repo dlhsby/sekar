@@ -45,13 +45,15 @@ export interface StatusPillProps
   dot?: boolean;
 }
 
-export function StatusPill({ className, tone, dot = false, children, ...props }: StatusPillProps) {
-  return (
-    <span className={cn(statusPillVariants({ tone }), className)} {...props}>
+const StatusPill = React.forwardRef<HTMLSpanElement, StatusPillProps>(
+  ({ className, tone, dot = false, children, ...props }, ref) => (
+    <span className={cn(statusPillVariants({ tone }), className)} ref={ref} {...props}>
       {dot && <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />}
       {children}
     </span>
-  );
-}
+  )
+);
 
-export { statusPillVariants };
+StatusPill.displayName = 'StatusPill';
+
+export { StatusPill, statusPillVariants };

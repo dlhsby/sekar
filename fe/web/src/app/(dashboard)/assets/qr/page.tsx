@@ -14,7 +14,7 @@ import {
 import { useUser } from '@/lib/auth/hooks';
 import { useAssets, useBulkQr } from '@/lib/api/assets';
 import { getErrorMessage } from '@/lib/api/client';
-import type { DataTableColumn } from '@/components/ui';
+import type { ColumnDef } from '@/components/ui';
 import type { Asset } from '@/lib/api/assets';
 
 const ASSET_MANAGER_ROLES = ['korlap', 'kepala_rayon', 'admin_system', 'superadmin'];
@@ -116,32 +116,44 @@ export default function QrBatchPage() {
     printWindow.document.close();
   };
 
-  const columns: DataTableColumn<Asset>[] = [
+  const columns: ColumnDef<Asset>[] = [
     {
-      key: 'select',
+      id: 'select',
       header: '',
-      cell: (asset) => (
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Pilih' },
+      cell: ({ row }) => (
         <input
           type="checkbox"
-          checked={selected.has(asset.id)}
-          onChange={() => handleToggleSelect(asset.id)}
-          aria-label={`Pilih ${asset.asset_code}`}
+          checked={selected.has(row.original.id)}
+          onChange={() => handleToggleSelect(row.original.id)}
+          aria-label={`Pilih ${row.original.asset_code}`}
         />
       ),
     },
     {
-      key: 'asset_code',
+      id: 'asset_code',
+      accessorKey: 'asset_code',
       header: 'Kode',
-      cell: (asset) => <span className="font-mono">{asset.asset_code}</span>,
+      enableSorting: false,
+      meta: { label: 'Kode' },
+      cell: ({ row }) => <span className="font-mono">{row.original.asset_code}</span>,
     },
     {
-      key: 'name',
+      id: 'name',
+      accessorKey: 'name',
       header: 'Nama',
+      enableSorting: false,
+      meta: { label: 'Nama' },
     },
     {
-      key: 'category',
+      id: 'category',
       header: 'Kategori',
-      cell: (asset) => asset.category?.name || '—',
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Kategori' },
+      cell: ({ row }) => row.original.category?.name || '—',
     },
   ];
 
@@ -186,7 +198,7 @@ export default function QrBatchPage() {
           ) : !assets.length ? (
             <EmptyState variant="noData" title="Tidak ada aset" />
           ) : (
-            <DataTable columns={columns} data={assets} />
+            <DataTable columns={columns} data={assets} enablePagination={false} getRowId={(a) => a.id} />
           )}
         </div>
       </Card>

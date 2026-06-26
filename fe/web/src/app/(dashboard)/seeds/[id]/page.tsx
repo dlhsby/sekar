@@ -87,25 +87,34 @@ export default function SeedDetailPage({ params }: SeedDetailPageProps) {
 
   const columns: ColumnDef<SeedTransactionRow>[] = [
     {
-      key: 'occurredAt',
+      id: 'occurredAt',
       header: 'Tanggal',
-      cell: (tx: any) => (
-        <span className="font-mono text-nb-body-sm">{formatDate(tx.occurredAt)}</span>
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Tanggal' },
+      cell: ({ row }) => (
+        <span className="font-mono text-nb-body-sm">{formatDate(row.original.occurredAt)}</span>
       ),
     },
     {
-      key: 'transactionType',
+      id: 'transactionType',
       header: 'Tipe',
-      cell: (tx: any) => (
-        <span className="text-nb-body-sm">{typeLabels[tx.transactionType] || tx.transactionType}</span>
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Tipe' },
+      cell: ({ row }) => (
+        <span className="text-nb-body-sm">{typeLabels[row.original.transactionType] || row.original.transactionType}</span>
       ),
     },
     {
-      key: 'qty',
+      id: 'qty',
       header: 'Jumlah',
-      cell: (tx: any) => {
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Jumlah' },
+      cell: ({ row }) => {
         // distribution: negative (decrements), others: positive
-        const display = tx.transactionType === 'distribution' ? -tx.qty : tx.qty;
+        const display = row.original.transactionType === 'distribution' ? -row.original.qty : row.original.qty;
         return (
           <span className="font-mono text-nb-body-sm">
             {display > 0 ? '+' : ''}{display}
@@ -114,10 +123,13 @@ export default function SeedDetailPage({ params }: SeedDetailPageProps) {
       },
     },
     {
-      key: 'notes',
+      id: 'notes',
       header: 'Catatan',
-      cell: (tx: any) => (
-        <span className="text-nb-body-sm text-nb-gray-600">{tx.notes || '—'}</span>
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Catatan' },
+      cell: ({ row }) => (
+        <span className="text-nb-body-sm text-nb-gray-600">{row.original.notes || '—'}</span>
       ),
     },
   ];
@@ -163,11 +175,13 @@ export default function SeedDetailPage({ params }: SeedDetailPageProps) {
             )}
           </div>
 
-          <DataTable<any>
+          <DataTable
             columns={columns}
             data={transactions}
             loading={transactionsLoading}
-            emptyMessage="Tidak ada transaksi untuk bibit ini"
+            enablePagination={false}
+            getRowId={(t) => t.id}
+            emptyTitle="Tidak ada transaksi untuk bibit ini"
           />
 
           {totalPages > 1 && (

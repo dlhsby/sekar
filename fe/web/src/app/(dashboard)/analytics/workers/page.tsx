@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react';
 import {
   PageHeader,
   DataTable,
-  type DataTableColumn,
+  type ColumnDef,
   Badge,
   Dialog,
   DialogContent,
@@ -64,29 +64,41 @@ export default function WorkerAnalyticsPage() {
   }, [listData?.data]);
 
   // Table columns
-  const columns: DataTableColumn<WorkerAnalytics>[] = [
+  const columns: ColumnDef<WorkerAnalytics>[] = [
     {
+      id: 'full_name',
+      accessorKey: 'full_name',
       header: 'Nama',
-      key: 'full_name',
-      cell: (row: WorkerAnalytics) => <span className="font-medium">{row.full_name}</span>,
+      enableSorting: false,
+      meta: { label: 'Nama' },
+      cell: ({ row }) => <span className="font-medium">{row.original.full_name}</span>,
     },
     {
+      id: 'attended',
+      accessorKey: 'attended',
       header: 'Hadir',
-      key: 'attended',
-      cell: (row: WorkerAnalytics) => `${row.attended} hari`,
+      enableSorting: false,
+      meta: { label: 'Hadir' },
+      cell: ({ row }) => `${row.original.attended} hari`,
     },
     {
+      id: 'task_completion_rate',
+      accessorKey: 'task_completion_rate',
       header: 'Tugas',
-      key: 'task_completion_rate',
-      cell: (row: WorkerAnalytics) => <span>{row.task_completion_rate.toFixed(1)}%</span>,
+      enableSorting: false,
+      meta: { label: 'Tugas' },
+      cell: ({ row }) => <span>{row.original.task_completion_rate.toFixed(1)}%</span>,
     },
     {
+      id: 'performance_score',
+      accessorKey: 'performance_score',
       header: 'Skor',
-      key: 'performance_score',
-      cell: (row: WorkerAnalytics) => (
+      enableSorting: false,
+      meta: { label: 'Skor' },
+      cell: ({ row }) => (
         <div className="flex items-center gap-2">
-          <span className="font-semibold">{row.performance_score.toFixed(1)}</span>
-          <Badge className={GRADE_COLORS[row.grade]}>{row.grade}</Badge>
+          <span className="font-semibold">{row.original.performance_score.toFixed(1)}</span>
+          <Badge className={GRADE_COLORS[row.original.grade]}>{row.original.grade}</Badge>
         </div>
       ),
     },
@@ -119,6 +131,8 @@ export default function WorkerAnalyticsPage() {
         <DataTable
           columns={columns}
           data={listData.data}
+          enablePagination={false}
+          getRowId={(w) => w.id}
           onRowClick={(row) => setSelectedWorkerId(row.id)}
         />
       )}

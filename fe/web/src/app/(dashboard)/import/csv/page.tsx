@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import { Download, Upload } from 'lucide-react';
 
 import { Button, FormSelect, SectionCard, DataTable, Alert } from '@/components/ui';
-import type { DataTableColumn } from '@/components/ui';
+import type { ColumnDef } from '@/components/ui';
 import { useAuth } from '@/lib/auth/hooks';
 import { ADMIN_ROLES, hasRole } from '@/lib/constants/roles';
 import { getErrorMessage } from '@/lib/api/client';
@@ -179,11 +179,35 @@ function ValidationPreview({
   onCommit: () => void;
   done: boolean;
 }) {
-  const errorColumns: DataTableColumn<ImportValidationError & Record<string, unknown>>[] = [
-    { key: 'row', title: 'Baris' },
-    { key: 'column', title: 'Kolom' },
-    { key: 'value', title: 'Nilai' },
-    { key: 'message', title: 'Pesan' },
+  const errorColumns: ColumnDef<ImportValidationError & Record<string, unknown>>[] = [
+    {
+      id: 'row',
+      accessorKey: 'row',
+      header: 'Baris',
+      enableSorting: true,
+      meta: { label: 'Baris' },
+    },
+    {
+      id: 'column',
+      accessorKey: 'column',
+      header: 'Kolom',
+      enableSorting: true,
+      meta: { label: 'Kolom' },
+    },
+    {
+      id: 'value',
+      accessorKey: 'value',
+      header: 'Nilai',
+      enableSorting: true,
+      meta: { label: 'Nilai' },
+    },
+    {
+      id: 'message',
+      accessorKey: 'message',
+      header: 'Pesan',
+      enableSorting: true,
+      meta: { label: 'Pesan' },
+    },
   ];
 
   return (
@@ -195,8 +219,8 @@ function ValidationPreview({
         <DataTable
           columns={errorColumns}
           data={validation.errors.map((e, i) => ({ ...e, _k: i }))}
-          rowKey="_k"
-          emptyMessage="Tidak ada kesalahan."
+          getRowId={(r) => String(r._k)}
+          emptyTitle="Tidak ada kesalahan."
         />
       ) : (
         <Alert tone="success">Semua baris valid dan siap diimpor.</Alert>

@@ -513,7 +513,8 @@ describe('ActivitiesPage', () => {
 
       const { container } = render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      const skeletons = container.querySelectorAll('.animate-pulse');
+      // The DataTable loading state renders NB Skeletons (animate-shimmer + role=status).
+      const skeletons = container.querySelectorAll('.animate-shimmer, [role="status"]');
       expect(skeletons.length).toBeGreaterThan(0);
     });
   });

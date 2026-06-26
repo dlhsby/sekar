@@ -146,30 +146,39 @@ export default function SchedulesPage() {
 
   const columns: ColumnDef<WorkerSchedule>[] = [
     {
-      key: 'user',
+      id: 'user',
       header: 'Pekerja',
-      cell: (s) => (
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Pekerja' },
+      cell: ({ row }) => (
         <div>
-          <div className="font-semibold text-nb-black">{s.user?.full_name || '-'}</div>
-          <div className="font-mono text-[11px] text-nb-gray-600">{s.user?.username || ''}</div>
+          <div className="font-semibold text-nb-black">{row.original.user?.full_name || '-'}</div>
+          <div className="font-mono text-[11px] text-nb-gray-600">{row.original.user?.username || ''}</div>
         </div>
       ),
     },
     {
-      key: 'area',
+      id: 'area',
       header: 'Area',
-      cell: (s) => (
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Area' },
+      cell: ({ row }) => (
         <div>
-          <div className="font-medium">{s.area?.name || '-'}</div>
-          <div className="font-mono text-[11px] text-nb-gray-600">{s.area?.code || ''}</div>
+          <div className="font-medium">{row.original.area?.name || '-'}</div>
+          <div className="font-mono text-[11px] text-nb-gray-600">{row.original.area?.code || ''}</div>
         </div>
       ),
     },
     {
-      key: 'shift',
+      id: 'shift',
       header: 'Shift',
-      cell: (s) => {
-        const shift = s.shift_definition;
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Shift' },
+      cell: ({ row }) => {
+        const shift = row.original.shift_definition;
         if (!shift) return '-';
         const tone =
           shift.code === 'SHIFT2' ? 'ok' : shift.code === 'SHIFT3' ? 'info' : 'neutral';
@@ -184,26 +193,35 @@ export default function SchedulesPage() {
       },
     },
     {
-      key: 'effective_date',
+      id: 'effective_date',
       header: 'Tanggal Mulai',
-      cell: (s) => formatDate(s.effective_date),
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Tanggal Mulai' },
+      cell: ({ row }) => formatDate(row.original.effective_date),
     },
     {
-      key: 'end_date',
+      id: 'end_date',
       header: 'Tanggal Selesai',
-      cell: (s) =>
-        s.end_date ? (
-          formatDate(s.end_date)
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Tanggal Selesai' },
+      cell: ({ row }) =>
+        row.original.end_date ? (
+          formatDate(row.original.end_date)
         ) : (
           <span className="italic text-nb-gray-500">Berlangsung</span>
         ),
     },
     {
-      key: 'actions',
+      id: 'actions',
       header: 'Aksi',
-      cell: (s) => (
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Aksi', pinRight: true, align: 'center' },
+      cell: ({ row }) => (
         <div className="flex gap-2">
-          <Link href={`/schedules/${s.id}/edit`}>
+          <Link href={`/schedules/${row.original.id}/edit`}>
             <Button variant="secondary" size="sm">
               <Edit className="size-4" />
             </Button>
@@ -212,7 +230,7 @@ export default function SchedulesPage() {
             variant="destructive"
             size="sm"
             onClick={() => {
-              setScheduleToDelete(s);
+              setScheduleToDelete(row.original);
               setDeleteModalOpen(true);
             }}
           >
@@ -318,11 +336,13 @@ export default function SchedulesPage() {
       ) : (
         <Card>
           <CardContent className="p-4">
-            <DataTable<WorkerSchedule>
+            <DataTable
               columns={columns}
               data={schedules}
               loading={isLoading}
-              emptyMessage="Belum ada jadwal terdaftar"
+              enablePagination={false}
+              getRowId={(s) => s.id}
+              emptyTitle="Belum ada jadwal terdaftar"
             />
             {pagination && pagination.totalPages > 1 && (
               <div className="mt-4 flex items-center justify-between border-t-2 border-nb-black pt-4">

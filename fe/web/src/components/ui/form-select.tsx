@@ -12,7 +12,8 @@ export interface FormSelectOption {
   disabled?: boolean;
 }
 
-export interface FormSelectProps {
+export interface FormSelectProps
+  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange'> {
   label: string;
   options: FormSelectOption[];
   value?: string;
@@ -21,54 +22,56 @@ export interface FormSelectProps {
   error?: string;
   helperText?: React.ReactNode;
   disabled?: boolean;
-  className?: string;
   required?: boolean;
 }
 
-const FormSelect: React.FC<FormSelectProps> = ({
-  label,
-  options,
-  value = '',
-  onChange,
-  placeholder = 'Select...',
-  error,
-  helperText,
-  disabled = false,
-  className,
-  required = false,
-}) => {
-  const id = React.useId();
+const FormSelect = React.forwardRef<HTMLDivElement, FormSelectProps>(
+  ({
+    label,
+    options,
+    value = '',
+    onChange,
+    placeholder = 'Select...',
+    error,
+    helperText,
+    disabled = false,
+    className,
+    required = false,
+    ...props
+  }, ref) => {
+    const id = React.useId();
 
-  return (
-    <div className={cn('space-y-1', className)}>
-      <Label htmlFor={id}>
-        {label}
-        {required && <span className="text-nb-danger ml-1">*</span>}
-      </Label>
+    return (
+      <div className={cn('space-y-1', className)} ref={ref} {...props}>
+        <Label htmlFor={id}>
+          {label}
+          {required && <span className="text-nb-danger ml-1">*</span>}
+        </Label>
 
-      <Select value={value} onValueChange={onChange} disabled={disabled}>
-        <SelectTrigger id={id} error={!!error}>
-          <SelectValue placeholder={placeholder} />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((option) => (
-            <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        <Select value={value} onValueChange={onChange} disabled={disabled}>
+          <SelectTrigger id={id} error={!!error}>
+            <SelectValue placeholder={placeholder} />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-      {error && (
-        <p className="text-sm text-nb-danger font-medium" role="alert" aria-live="polite">
-          {error}
-        </p>
-      )}
+        {error && (
+          <p className="text-sm text-nb-danger font-medium" role="alert" aria-live="polite">
+            {error}
+          </p>
+        )}
 
-      {!error && helperText && <p className="text-sm text-nb-gray-600">{helperText}</p>}
-    </div>
-  );
-};
+        {!error && helperText && <p className="text-sm text-nb-gray-600">{helperText}</p>}
+      </div>
+    );
+  }
+);
 
 FormSelect.displayName = 'FormSelect';
 

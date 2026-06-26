@@ -133,71 +133,92 @@ export default function ActivitiesPage() {
 
   const columns: ColumnDef<Activity>[] = [
     {
-      key: 'created_at',
+      id: 'created_at',
       header: 'Tanggal',
-      cell: (a) => (
-        <div className="text-sm">{new Date(a.created_at).toLocaleDateString('id-ID')}</div>
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Tanggal' },
+      cell: ({ row }) => (
+        <div className="text-sm">{new Date(row.original.created_at).toLocaleDateString('id-ID')}</div>
       ),
     },
     {
-      key: 'user',
+      id: 'user',
       header: 'Pengguna',
-      cell: (a) => (
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Pengguna' },
+      cell: ({ row }) => (
         <div>
-          <div className="font-semibold text-nb-black">{a.user?.full_name || '-'}</div>
-          <div className="text-xs text-nb-gray-600">{a.user?.username || ''}</div>
+          <div className="font-semibold text-nb-black">{row.original.user?.full_name || '-'}</div>
+          <div className="text-xs text-nb-gray-600">{row.original.user?.username || ''}</div>
         </div>
       ),
     },
     {
-      key: 'activity_type',
+      id: 'activity_type',
       header: 'Tipe Aktivitas',
-      cell: (a) => (
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Tipe Aktivitas' },
+      cell: ({ row }) => (
         <Badge variant="default" size="sm">
-          {a.activity_type?.name || '-'}
+          {row.original.activity_type?.name || '-'}
         </Badge>
       ),
     },
     {
-      key: 'area',
+      id: 'area',
       header: 'Area',
-      cell: (a) => <div className="text-sm">{a.area?.name || '-'}</div>,
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Area' },
+      cell: ({ row }) => <div className="text-sm">{row.original.area?.name || '-'}</div>,
     },
     {
-      key: 'status',
+      id: 'status',
       header: 'Status',
-      cell: (a) => (
-        <Badge variant={ACTIVITY_STATUS_BADGES[a.status]} size="sm">
-          {ACTIVITY_STATUS_LABELS[a.status]}
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Status' },
+      cell: ({ row }) => (
+        <Badge variant={ACTIVITY_STATUS_BADGES[row.original.status]} size="sm">
+          {ACTIVITY_STATUS_LABELS[row.original.status]}
         </Badge>
       ),
     },
     {
-      key: 'photo_urls',
+      id: 'photo_urls',
       header: 'Foto',
-      cell: (a) => (
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Foto' },
+      cell: ({ row }) => (
         <Badge variant="secondary" size="sm">
-          {a.photo_urls?.length || 0} foto
+          {row.original.photo_urls?.length || 0} foto
         </Badge>
       ),
     },
     {
-      key: 'actions',
+      id: 'actions',
       header: 'Aksi',
-      cell: (a) => (
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Aksi', pinRight: true },
+      cell: ({ row }) => (
         <div className="flex items-center gap-2">
           <Link
-            href={`/activities/${a.id}`}
+            href={`/activities/${row.original.id}`}
             className="text-nb-success-dark font-semibold hover:underline"
           >
             Detail
           </Link>
-          {canApprove && a.status === 'pending' && (
+          {canApprove && row.original.status === 'pending' && (
             <>
               <Button
                 variant="success"
                 size="sm"
-                onClick={() => handleApprove(a.id)}
+                onClick={() => handleApprove(row.original.id)}
                 disabled={approveMutation.isPending}
                 leftIcon={<Check className="w-3 h-3" />}
               >
@@ -206,7 +227,7 @@ export default function ActivitiesPage() {
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={() => setRejectingId(a.id)}
+                onClick={() => setRejectingId(row.original.id)}
                 leftIcon={<X className="w-3 h-3" />}
               >
                 Tolak
@@ -340,11 +361,13 @@ export default function ActivitiesPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <DataTable<Activity>
+          <DataTable<Activity, unknown>
             columns={columns}
             data={activities}
             loading={isLoading}
-            emptyMessage="Tidak ada aktivitas"
+            enablePagination={false}
+            getRowId={(r) => r.id}
+            emptyTitle="Tidak ada aktivitas"
           />
 
           {pagination && pagination.totalPages > 1 && (

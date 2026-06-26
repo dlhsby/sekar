@@ -18,7 +18,7 @@ import { toast } from 'sonner';
 import { Download } from 'lucide-react';
 
 import { Button, FormInput, FormSelect, SectionCard, DataTable, StatusPill } from '@/components/ui';
-import type { DataTableColumn } from '@/components/ui';
+import type { ColumnDef } from '@/components/ui';
 import { useAuth } from '@/lib/auth/hooks';
 import { hasRole } from '@/lib/constants/roles';
 import type { UserRole } from '@/types/models';
@@ -227,30 +227,59 @@ function ExportForm({ role }: { role: UserRole }) {
 }
 
 function ExportHistory({ jobs, loading }: { jobs: ExportJob[]; loading: boolean }) {
-  const columns: DataTableColumn<ExportJob & Record<string, unknown>>[] = [
+  const columns: ColumnDef<ExportJob & Record<string, unknown>>[] = [
     {
-      key: 'createdAt',
-      title: 'Tanggal',
-      render: (value) => new Date(value as string).toLocaleString('id-ID'),
+      id: 'createdAt',
+      accessorKey: 'createdAt',
+      header: 'Tanggal',
+      enableSorting: true,
+      meta: { label: 'Tanggal' },
+      cell: ({ row }) => new Date(row.original.createdAt as string).toLocaleString('id-ID'),
     },
-    { key: 'entityType', title: 'Jenis', render: (value) => ENTITY_LABELS[value as ExportEntityType] },
-    { key: 'format', title: 'Format', render: (value) => String(value).toUpperCase() },
-    { key: 'rowCount', title: 'Baris' },
     {
-      key: 'status',
-      title: 'Status',
-      render: (value) => {
-        const status = value as ExportJob['status'];
+      id: 'entityType',
+      accessorKey: 'entityType',
+      header: 'Jenis',
+      enableSorting: true,
+      meta: { label: 'Jenis' },
+      cell: ({ row }) => ENTITY_LABELS[row.original.entityType as ExportEntityType],
+    },
+    {
+      id: 'format',
+      accessorKey: 'format',
+      header: 'Format',
+      enableSorting: true,
+      meta: { label: 'Format' },
+      cell: ({ row }) => String(row.original.format).toUpperCase(),
+    },
+    {
+      id: 'rowCount',
+      accessorKey: 'rowCount',
+      header: 'Baris',
+      enableSorting: true,
+      meta: { label: 'Baris' },
+    },
+    {
+      id: 'status',
+      accessorKey: 'status',
+      header: 'Status',
+      enableSorting: true,
+      meta: { label: 'Status' },
+      cell: ({ row }) => {
+        const status = row.original.status as ExportJob['status'];
         return <StatusPill tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</StatusPill>;
       },
     },
     {
-      key: 'downloadUrl',
-      title: 'Unduh',
-      render: (value, row) =>
-        row.status === 'completed' && value ? (
+      id: 'downloadUrl',
+      header: 'Unduh',
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Unduh', pinRight: true },
+      cell: ({ row }) =>
+        row.original.status === 'completed' && row.original.downloadUrl ? (
           <a
-            href={value as string}
+            href={row.original.downloadUrl as string}
             className="text-nb-primary underline"
             target="_blank"
             rel="noreferrer"
@@ -269,8 +298,8 @@ function ExportHistory({ jobs, loading }: { jobs: ExportJob[]; loading: boolean 
         columns={columns}
         data={jobs as (ExportJob & Record<string, unknown>)[]}
         loading={loading}
-        rowKey="jobId"
-        emptyMessage="Belum ada ekspor."
+        getRowId={(r) => r.jobId}
+        emptyTitle="Belum ada ekspor."
       />
     </SectionCard>
   );

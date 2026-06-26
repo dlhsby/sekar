@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 import { Upload, FileSpreadsheet } from 'lucide-react';
 
 import { Button, FormSelect, SectionCard, DataTable, StatusPill, Alert } from '@/components/ui';
-import type { DataTableColumn } from '@/components/ui';
+import type { ColumnDef } from '@/components/ui';
 import { useAuth } from '@/lib/auth/hooks';
 import { ADMIN_ROLES, hasRole } from '@/lib/constants/roles';
 import { getErrorMessage } from '@/lib/api/client';
@@ -185,18 +185,30 @@ function KmzImport() {
 }
 
 function PreviewTable({ areas }: { areas: ParsedArea[] }) {
-  const columns: DataTableColumn<ParsedArea & Record<string, unknown>>[] = [
-    { key: 'name', title: 'Nama Area' },
+  const columns: ColumnDef<ParsedArea & Record<string, unknown>>[] = [
     {
-      key: 'polygon',
-      title: 'Titik',
-      render: (value) => (Array.isArray(value) ? `${value.length} titik` : '—'),
+      id: 'name',
+      accessorKey: 'name',
+      header: 'Nama Area',
+      enableSorting: true,
+      meta: { label: 'Nama Area' },
     },
     {
-      key: 'match_status',
-      title: 'Status',
-      render: (value) =>
-        value === 'update' ? (
+      id: 'polygon',
+      header: 'Titik',
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Titik' },
+      cell: ({ row }) => (Array.isArray(row.original.polygon) ? `${row.original.polygon.length} titik` : '—'),
+    },
+    {
+      id: 'match_status',
+      accessorKey: 'match_status',
+      header: 'Status',
+      enableSorting: true,
+      meta: { label: 'Status' },
+      cell: ({ row }) =>
+        row.original.match_status === 'update' ? (
           <StatusPill tone="warn">Pembaruan</StatusPill>
         ) : (
           <StatusPill tone="ok">Baru</StatusPill>
@@ -208,8 +220,8 @@ function PreviewTable({ areas }: { areas: ParsedArea[] }) {
     <DataTable
       columns={columns}
       data={areas.map((a, i) => ({ ...a, _k: i }))}
-      rowKey="_k"
-      emptyMessage="Tidak ada area."
+      getRowId={(r) => String(r._k)}
+      emptyTitle="Tidak ada area."
     />
   );
 }

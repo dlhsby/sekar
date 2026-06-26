@@ -74,31 +74,43 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
 
   const columns: ColumnDef<Area>[] = [
     {
-      key: 'name',
+      id: 'name',
       header: 'Nama Area',
-      cell: (area) => (
-        <Link href={`/areas/${area.id}`} className="font-semibold text-nb-primary hover:underline">
-          {area.name}
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Nama Area' },
+      cell: ({ row }) => (
+        <Link href={`/areas/${row.original.id}`} className="font-semibold text-nb-primary hover:underline">
+          {row.original.name}
         </Link>
       ),
     },
     {
-      key: 'area_type',
+      id: 'area_type',
       header: 'Tipe',
-      cell: (area) => <span className="text-nb-body-sm">{area.area_type?.name || '—'}</span>,
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Tipe' },
+      cell: ({ row }) => <span className="text-nb-body-sm">{row.original.area_type?.name || '—'}</span>,
     },
     {
-      key: 'coverage_area',
+      id: 'coverage_area',
       header: 'Luas Tutupan',
-      cell: (area) => (
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Luas Tutupan' },
+      cell: ({ row }) => (
         <span className="font-mono text-nb-body-sm">
-          {area.coverage_area ? formatArea(area.coverage_area) : '—'}
+          {row.original.coverage_area ? formatArea(row.original.coverage_area) : '—'}
         </span>
       ),
     },
     {
-      key: 'status',
+      id: 'status',
       header: 'Status',
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Status' },
       cell: () => (
         <StatusPill tone="ok" dot>
           Aktif
@@ -144,11 +156,13 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
             />
           </div>
 
-          <DataTable<Area>
+          <DataTable
             columns={columns}
             data={areas}
             loading={areasLoading}
-            emptyMessage="Tidak ada area di rayon ini"
+            enablePagination={false}
+            getRowId={(a) => a.id}
+            emptyTitle="Tidak ada area di rayon ini"
           />
 
           {pagination && pagination.totalPages > 1 && (

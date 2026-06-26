@@ -42,17 +42,21 @@ export interface AlertProps
   title?: React.ReactNode;
 }
 
-export function Alert({ tone, title, className, children, ...props }: AlertProps) {
-  const Icon = ICONS[tone ?? 'info'];
-  return (
-    <div role="alert" className={cn(alertVariants({ tone }), className)} {...props}>
-      <Icon className="mt-0.5 size-5 shrink-0 text-nb-black" aria-hidden="true" />
-      <div className="min-w-0 text-nb-body-sm text-nb-black">
-        {title && <p className="font-bold">{title}</p>}
-        {children && <div className={cn(title && 'mt-0.5')}>{children}</div>}
+const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
+  ({ tone, title, className, children, ...props }, ref) => {
+    const Icon = ICONS[tone ?? 'info'];
+    return (
+      <div role="alert" className={cn(alertVariants({ tone }), className)} ref={ref} {...props}>
+        <Icon className="mt-0.5 size-5 shrink-0 text-nb-black" aria-hidden="true" />
+        <div className="min-w-0 text-nb-body-sm text-nb-black">
+          {title && <p className="font-bold">{title}</p>}
+          {children && <div className={cn(title && 'mt-0.5')}>{children}</div>}
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
+);
 
-export { alertVariants };
+Alert.displayName = 'Alert';
+
+export { Alert, alertVariants };

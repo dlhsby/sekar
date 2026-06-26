@@ -38,9 +38,9 @@ export interface BadgeProps
   onRemove?: () => void;
 }
 
-function Badge({ className, variant, size, icon, onRemove, children, ...props }: BadgeProps) {
-  return (
-    <div className={cn(badgeVariants({ variant, size }), className)} {...props}>
+const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
+  ({ className, variant, size, icon, onRemove, children, ...props }, ref) => (
+    <div className={cn(badgeVariants({ variant, size }), className)} ref={ref} {...props}>
       {icon && <span className="[&_svg]:size-3">{icon}</span>}
       {children}
       {onRemove && (
@@ -54,7 +54,9 @@ function Badge({ className, variant, size, icon, onRemove, children, ...props }:
         </button>
       )}
     </div>
-  );
-}
+  )
+);
+
+Badge.displayName = 'Badge';
 
 export { Badge, badgeVariants };

@@ -46,6 +46,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     ref
   ) => {
     const effectiveState = error ? 'error' : state;
+    // Unique id per instance so multiple inputs don't collide on aria-describedby.
+    const reactId = React.useId();
+    const helperId = `input-helper-${reactId}`;
+    const describedBy = error || helperText ? helperId : undefined;
 
     if (leftIcon || rightIcon) {
       return (
@@ -65,7 +69,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             )}
             ref={ref}
             aria-invalid={!!error}
-            aria-describedby={error || helperText ? 'input-helper' : undefined}
+            aria-describedby={describedBy}
             {...props}
           />
           {rightIcon && (
@@ -75,7 +79,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
           {(error || helperText) && (
             <p
-              id="input-helper"
+              id={helperId}
               className={cn('mt-1 text-sm', error ? 'text-nb-danger' : 'text-nb-gray-600')}
             >
               {error || helperText}
@@ -92,12 +96,12 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           className={cn(inputVariants({ size, state: effectiveState }), className)}
           ref={ref}
           aria-invalid={!!error}
-          aria-describedby={error || helperText ? 'input-helper' : undefined}
+          aria-describedby={describedBy}
           {...props}
         />
         {(error || helperText) && (
           <p
-            id="input-helper"
+            id={helperId}
             className={cn('mt-1 text-sm', error ? 'text-nb-danger' : 'text-nb-gray-600')}
           >
             {error || helperText}

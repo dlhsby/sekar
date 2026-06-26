@@ -43,7 +43,7 @@ import {
 import { getErrorMessage } from '@/lib/api/client';
 import { formatDate } from '@/lib/utils/time';
 import type { Asset, AssetAssignment, AssetMaintenance } from '@/lib/api/assets';
-import type { DataTableColumn } from '@/components/ui';
+import type { ColumnDef } from '@/components/ui';
 
 const ASSET_MANAGER_ROLES = ['korlap', 'kepala_rayon', 'admin_system', 'superadmin'];
 
@@ -215,37 +215,46 @@ export default function AssetDetailPage() {
     );
   }
 
-  const assignmentColumns: DataTableColumn<AssetAssignment>[] = [
-    { key: 'checked_out_at', header: 'Tanggal', cell: (a) => formatDate(new Date(a.checked_out_at)) },
-    { key: 'assignedTo', header: 'Pekerja', cell: (a) => a.assignedTo?.full_name || '—' },
-    { key: 'type', header: 'Tipe', cell: (a) => (a.returned_at ? 'Kembali' : 'Ambil') },
+  const assignmentColumns: ColumnDef<AssetAssignment>[] = [
+    { id: 'checked_out_at', header: 'Tanggal', enableSorting: false, meta: { label: 'Tanggal' }, cell: ({ row }) => formatDate(new Date(row.original.checked_out_at)) },
+    { id: 'assignedTo', header: 'Pekerja', enableSorting: false, meta: { label: 'Pekerja' }, cell: ({ row }) => row.original.assignedTo?.full_name || '—' },
+    { id: 'type', header: 'Tipe', enableSorting: false, meta: { label: 'Tipe' }, cell: ({ row }) => (row.original.returned_at ? 'Kembali' : 'Ambil') },
     {
-      key: 'condition',
+      id: 'condition',
       header: 'Kondisi',
-      cell: (a) => (
-        <StatusPill tone={CONDITION_TONE_MAP[a.condition_at_return || a.condition_at_checkout]}>
-          {a.condition_at_return ? ASSET_CONDITION_LABELS[a.condition_at_return] : ASSET_CONDITION_LABELS[a.condition_at_checkout]}
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Kondisi' },
+      cell: ({ row }) => (
+        <StatusPill tone={CONDITION_TONE_MAP[row.original.condition_at_return || row.original.condition_at_checkout]}>
+          {row.original.condition_at_return ? ASSET_CONDITION_LABELS[row.original.condition_at_return] : ASSET_CONDITION_LABELS[row.original.condition_at_checkout]}
         </StatusPill>
       ),
     },
   ];
 
-  const maintenanceColumns: DataTableColumn<AssetMaintenance>[] = [
-    { key: 'scheduled_at', header: 'Tanggal', cell: (m) => formatDate(new Date(m.scheduled_at)) },
-    { key: 'maintenance_type', header: 'Tipe', cell: (m) => MAINTENANCE_TYPE_LABELS[m.maintenance_type] },
+  const maintenanceColumns: ColumnDef<AssetMaintenance>[] = [
+    { id: 'scheduled_at', header: 'Tanggal', enableSorting: false, meta: { label: 'Tanggal' }, cell: ({ row }) => formatDate(new Date(row.original.scheduled_at)) },
+    { id: 'maintenance_type', header: 'Tipe', enableSorting: false, meta: { label: 'Tipe' }, cell: ({ row }) => MAINTENANCE_TYPE_LABELS[row.original.maintenance_type] },
     {
-      key: 'status',
+      id: 'status',
       header: 'Status',
-      cell: (m) => (
-        <StatusPill tone={MAINTENANCE_STATUS_TONE_MAP[m.status] || 'neutral'}>
-          {m.status === 'scheduled' ? 'Terjadwal' : m.status === 'completed' ? 'Selesai' : m.status}
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Status' },
+      cell: ({ row }) => (
+        <StatusPill tone={MAINTENANCE_STATUS_TONE_MAP[row.original.status] || 'neutral'}>
+          {row.original.status === 'scheduled' ? 'Terjadwal' : row.original.status === 'completed' ? 'Selesai' : row.original.status}
         </StatusPill>
       ),
     },
     {
-      key: 'cost',
+      id: 'cost',
       header: 'Biaya',
-      cell: (m) => (m.cost ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(m.cost) : '—'),
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Biaya' },
+      cell: ({ row }) => (row.original.cost ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(row.original.cost) : '—'),
     },
   ];
 

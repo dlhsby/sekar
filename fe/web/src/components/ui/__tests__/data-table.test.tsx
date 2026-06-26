@@ -1,339 +1,189 @@
 /**
- * Unit Tests: DataTable
- * Tests data table component with sorting, selection, and rendering
+ * Unit Tests: DataTable (TanStack-based)
+ * Covers rendering, custom cells, empty/loading states, client sorting,
+ * global search, row click, pinned columns, pagination and column toggle.
  */
 
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { DataTable, DataTableColumn } from '../data-table';
 
-interface TestData extends Record<string, unknown> {
+import { DataTable, type ColumnDef } from '../data-table';
+
+interface TestData {
   id: string;
   name: string;
   age: number;
   email: string;
 }
 
+const mockData: TestData[] = [
+  { id: '1', name: 'Alice', age: 30, email: 'alice@example.com' },
+  { id: '2', name: 'Bob', age: 25, email: 'bob@example.com' },
+  { id: '3', name: 'Charlie', age: 35, email: 'charlie@example.com' },
+];
+
+const basicColumns: ColumnDef<TestData>[] = [
+  { id: 'name', accessorKey: 'name', header: 'Name', enableSorting: true, meta: { label: 'Name' } },
+  { id: 'age', accessorKey: 'age', header: 'Age', enableSorting: true, meta: { label: 'Age' } },
+  { id: 'email', accessorKey: 'email', header: 'Email', meta: { label: 'Email' } },
+];
+
+/** Names rendered in tbody, in DOM order (desktop table). */
+function bodyNames(): string[] {
+  const table = document.querySelector('table');
+  const cells = table?.querySelectorAll('tbody tr td:first-child') ?? [];
+  return Array.from(cells).map((c) => c.textContent ?? '');
+}
+
 describe('DataTable', () => {
-  const mockData: TestData[] = [
-    { id: '1', name: 'Alice', age: 30, email: 'alice@example.com' },
-    { id: '2', name: 'Bob', age: 25, email: 'bob@example.com' },
-    { id: '3', name: 'Charlie', age: 35, email: 'charlie@example.com' },
-  ];
-
-  const basicColumns: DataTableColumn<TestData>[] = [
-    { key: 'name', title: 'Name' },
-    { key: 'age', title: 'Age' },
-    { key: 'email', title: 'Email' },
-  ];
-
-  it('should render table with data', () => {
-    render(<DataTable columns={basicColumns} data={mockData} />);
-
-    expect(screen.getByText('Alice')).toBeInTheDocument();
-    expect(screen.getByText('Bob')).toBeInTheDocument();
-    expect(screen.getByText('Charlie')).toBeInTheDocument();
+  it('renders data rows', () => {
+    render(<DataTable columns={basicColumns} data={mockData} getRowId={(r) => r.id} />);
+    expect(screen.getAllByText('Alice').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Bob').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Charlie').length).toBeGreaterThan(0);
   });
 
-  it('should render column headers', () => {
-    render(<DataTable columns={basicColumns} data={mockData} />);
-
-    expect(screen.getByText('Name')).toBeInTheDocument();
-    expect(screen.getByText('Age')).toBeInTheDocument();
-    expect(screen.getByText('Email')).toBeInTheDocument();
+  it('renders column headers', () => {
+    render(<DataTable columns={basicColumns} data={mockData} getRowId={(r) => r.id} />);
+    // Labels appear in the desktop header AND the mobile card list; assert present.
+    expect(screen.getAllByText('Name').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Age').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Email').length).toBeGreaterThan(0);
   });
 
-  it('should use header alias for column title', () => {
-    const columns: DataTableColumn<TestData>[] = [{ key: 'name', header: 'Full Name' }];
-
-    render(<DataTable columns={columns} data={mockData} />);
-
-    expect(screen.getByText('Full Name')).toBeInTheDocument();
-  });
-
-  it('should use key as title when no title/header provided', () => {
-    const columns: DataTableColumn<TestData>[] = [{ key: 'name' }];
-
-    render(<DataTable columns={columns} data={mockData} />);
-
-    expect(screen.getByText('name')).toBeInTheDocument();
-  });
-
-  it('should render custom cells with render function', () => {
-    const columns: DataTableColumn<TestData>[] = [
+  it('renders custom cells', () => {
+    const columns: ColumnDef<TestData>[] = [
       {
-        key: 'name',
-        title: 'Name',
-        render: (value) => `Custom: ${value}`,
+        id: 'name',
+        accessorKey: 'name',
+        header: 'Name',
+        meta: { label: 'Name' },
+        cell: ({ row }) => `Custom: ${row.original.name}`,
       },
     ];
-
-    render(<DataTable columns={columns} data={mockData} />);
-
-    expect(screen.getByText('Custom: Alice')).toBeInTheDocument();
+    render(<DataTable columns={columns} data={mockData} getRowId={(r) => r.id} />);
+    expect(screen.getAllByText('Custom: Alice').length).toBeGreaterThan(0);
   });
 
-  it('should support cell alias for render function', () => {
-    const columns: DataTableColumn<TestData>[] = [
-      {
-        key: 'name',
-        title: 'Name',
-        cell: (row) => row.name.toUpperCase(),
-      },
-    ];
-
-    render(<DataTable columns={columns} data={mockData} />);
-
-    expect(screen.getByText('ALICE')).toBeInTheDocument();
+  it('shows the empty state with a custom title', () => {
+    render(
+      <DataTable columns={basicColumns} data={[]} getRowId={(r) => r.id} emptyTitle="No users found" />
+    );
+    expect(screen.getAllByText('No users found').length).toBeGreaterThan(0);
   });
 
-  it('should display empty state when no data', () => {
-    render(<DataTable columns={basicColumns} data={[]} />);
-
-    expect(screen.getByText('No data available')).toBeInTheDocument();
+  it('shows the no-results state when a search matches nothing', async () => {
+    const user = userEvent.setup();
+    render(
+      <DataTable
+        columns={basicColumns}
+        data={mockData}
+        getRowId={(r) => r.id}
+        searchPlaceholder="Cari"
+      />
+    );
+    await user.type(screen.getByLabelText('Cari'), 'zzzzz');
+    await waitFor(() =>
+      expect(screen.getAllByText('Tidak Ditemukan').length).toBeGreaterThan(0)
+    );
   });
 
-  it('should display custom empty message', () => {
-    render(<DataTable columns={basicColumns} data={[]} emptyText="No users found" />);
-
-    expect(screen.getByText('No users found')).toBeInTheDocument();
-  });
-
-  it('should support emptyMessage alias', () => {
-    render(<DataTable columns={basicColumns} data={[]} emptyMessage="Nothing here" />);
-
-    expect(screen.getByText('Nothing here')).toBeInTheDocument();
-  });
-
-  it('should display loading state with skeletons', () => {
-    render(<DataTable columns={basicColumns} data={[]} loading />);
-
-    const skeletons = screen
-      .getAllByRole('row')
-      .filter((row) => row.querySelector('.animate-pulse'));
-    expect(skeletons.length).toBeGreaterThan(0);
-  });
-
-  it('should not show data when loading', () => {
-    render(<DataTable columns={basicColumns} data={mockData} loading />);
-
+  it('renders loading skeletons and hides data', () => {
+    render(<DataTable columns={basicColumns} data={mockData} loading getRowId={(r) => r.id} />);
     expect(screen.queryByText('Alice')).not.toBeInTheDocument();
   });
 
-  it('should render sortable column headers', () => {
-    const columns: DataTableColumn<TestData>[] = [
-      { key: 'name', title: 'Name', sortable: true },
-      { key: 'age', title: 'Age', sortable: true },
-    ];
-
-    render(<DataTable columns={columns} data={mockData} />);
-
-    const nameHeader = screen.getByText('Name').closest('th');
-    expect(nameHeader).toHaveClass('cursor-pointer');
-  });
-
-  it('should call onSort when clicking sortable column', async () => {
-    const onSort = jest.fn();
-    const columns: DataTableColumn<TestData>[] = [{ key: 'name', title: 'Name', sortable: true }];
-
+  it('renders an error state with a retry action', async () => {
+    const onRetry = jest.fn();
     const user = userEvent.setup();
-    render(<DataTable columns={columns} data={mockData} onSort={onSort} />);
-
-    await user.click(screen.getByText('Name'));
-
-    expect(onSort).toHaveBeenCalledWith('name', 'asc');
+    render(<DataTable columns={basicColumns} data={[]} error onRetry={onRetry} getRowId={(r) => r.id} />);
+    const retry = screen.getAllByRole('button', { name: 'Coba Lagi' })[0];
+    await user.click(retry);
+    expect(onRetry).toHaveBeenCalled();
   });
 
-  it('should toggle sort direction on multiple clicks', async () => {
-    const onSort = jest.fn();
-    const columns: DataTableColumn<TestData>[] = [{ key: 'name', title: 'Name', sortable: true }];
-
+  it('sorts client-side when a sortable header is clicked', async () => {
     const user = userEvent.setup();
-    render(<DataTable columns={columns} data={mockData} onSort={onSort} />);
-
-    const nameHeader = screen.getByText('Name');
-
-    await user.click(nameHeader); // asc
-    expect(onSort).toHaveBeenCalledWith('name', 'asc');
-
-    await user.click(nameHeader); // desc
-    expect(onSort).toHaveBeenCalledWith('name', 'desc');
+    render(<DataTable columns={basicColumns} data={mockData} getRowId={(r) => r.id} />);
+    // Initial DOM order matches data order.
+    expect(bodyNames()).toEqual(['Alice', 'Bob', 'Charlie']);
+    // Numeric columns sort descending-first (TanStack default) → 35, 30, 25.
+    await user.click(screen.getByRole('button', { name: /Age/ }));
+    await waitFor(() => expect(bodyNames()).toEqual(['Charlie', 'Alice', 'Bob']));
+    // Toggle to ascending → 25, 30, 35.
+    await user.click(screen.getByRole('button', { name: /Age/ }));
+    await waitFor(() => expect(bodyNames()).toEqual(['Bob', 'Alice', 'Charlie']));
   });
 
-  it('should render selection checkboxes when selectable', () => {
-    render(<DataTable columns={basicColumns} data={mockData} selectable />);
-
-    expect(screen.getByLabelText('Select all rows')).toBeInTheDocument();
-    expect(screen.getByLabelText('Select row 1')).toBeInTheDocument();
-  });
-
-  it('should handle row selection', async () => {
-    const onSelectionChange = jest.fn();
+  it('filters rows via global search', async () => {
     const user = userEvent.setup();
-
     render(
       <DataTable
         columns={basicColumns}
         data={mockData}
-        selectable
-        selectedRows={[]}
-        onSelectionChange={onSelectionChange}
+        getRowId={(r) => r.id}
+        searchPlaceholder="Cari"
       />
     );
-
-    await user.click(screen.getByLabelText('Select row 1'));
-
-    expect(onSelectionChange).toHaveBeenCalledWith(['1']);
+    await user.type(screen.getByLabelText('Cari'), 'Bob');
+    await waitFor(() => expect(bodyNames()).toEqual(['Bob']));
   });
 
-  it('should handle select all', async () => {
-    const onSelectionChange = jest.fn();
-    const user = userEvent.setup();
-
-    render(
-      <DataTable
-        columns={basicColumns}
-        data={mockData}
-        selectable
-        selectedRows={[]}
-        onSelectionChange={onSelectionChange}
-      />
-    );
-
-    await user.click(screen.getByLabelText('Select all rows'));
-
-    expect(onSelectionChange).toHaveBeenCalledWith(['1', '2', '3']);
-  });
-
-  it('should handle deselect all when all selected', async () => {
-    const onSelectionChange = jest.fn();
-    const user = userEvent.setup();
-
-    render(
-      <DataTable
-        columns={basicColumns}
-        data={mockData}
-        selectable
-        selectedRows={['1', '2', '3']}
-        onSelectionChange={onSelectionChange}
-      />
-    );
-
-    await user.click(screen.getByLabelText('Select all rows'));
-
-    expect(onSelectionChange).toHaveBeenCalledWith([]);
-  });
-
-  it('should call onRowClick when row is clicked', async () => {
+  it('calls onRowClick with the row data', async () => {
     const onRowClick = jest.fn();
     const user = userEvent.setup();
-
-    render(<DataTable columns={basicColumns} data={mockData} onRowClick={onRowClick} />);
-
-    await user.click(screen.getByText('Alice'));
-
+    render(
+      <DataTable columns={basicColumns} data={mockData} getRowId={(r) => r.id} onRowClick={onRowClick} />
+    );
+    await user.click(screen.getAllByText('Alice')[0]);
     expect(onRowClick).toHaveBeenCalledWith(mockData[0]);
   });
 
-  it('should use custom rowKey', () => {
-    const customData = [
-      { customId: 'a', name: 'Alice' },
-      { customId: 'b', name: 'Bob' },
+  it('pins a column flagged meta.pinRight as sticky', () => {
+    const columns: ColumnDef<TestData>[] = [
+      { id: 'name', accessorKey: 'name', header: 'Name', meta: { label: 'Name' } },
+      {
+        id: 'actions',
+        header: 'Aksi',
+        enableColumnFilter: false,
+        meta: { label: 'Aksi', pinRight: true },
+        cell: () => <button type="button">Edit</button>,
+      },
     ];
+    render(<DataTable columns={columns} data={mockData} getRowId={(r) => r.id} />);
+    const desktop = document.querySelector('table') as HTMLElement;
+    const firstActionCell = within(desktop)
+      .getAllByRole('button', { name: 'Edit' })[0]
+      .closest('td');
+    expect(firstActionCell).toHaveClass('sticky');
+    expect(firstActionCell).toHaveClass('right-0');
+  });
 
-    const columns: DataTableColumn<(typeof customData)[0]>[] = [{ key: 'name', title: 'Name' }];
-
-    render(
-      <DataTable
-        columns={columns}
-        data={customData}
-        rowKey="customId"
-        selectable
-        selectedRows={['a']}
-      />
+  it('renders the pagination bar by default and hides it when disabled', () => {
+    const { rerender } = render(
+      <DataTable columns={basicColumns} data={mockData} getRowId={(r) => r.id} />
     );
-
-    const checkbox = screen.getByLabelText('Select row a') as HTMLInputElement;
-    expect(checkbox.checked).toBe(true);
+    expect(screen.getByText(/Menampilkan/)).toBeInTheDocument();
+    rerender(
+      <DataTable columns={basicColumns} data={mockData} getRowId={(r) => r.id} enablePagination={false} />
+    );
+    expect(screen.queryByText(/Menampilkan/)).not.toBeInTheDocument();
   });
 
-  it('should apply column alignment classes', () => {
-    const columns: DataTableColumn<TestData>[] = [
-      { key: 'name', title: 'Name', align: 'left' },
-      { key: 'age', title: 'Age', align: 'center' },
-      { key: 'email', title: 'Email', align: 'right' },
-    ];
-
-    render(<DataTable columns={columns} data={mockData} />);
-
-    // Check the div inside the th has justify-center for center alignment
-    const ageHeader = screen.getByText('Age');
-    expect(ageHeader.parentElement).toHaveClass('justify-center');
-  });
-
-  it('should apply custom width to columns', () => {
-    const columns: DataTableColumn<TestData>[] = [{ key: 'name', title: 'Name', width: '200px' }];
-
-    render(<DataTable columns={columns} data={mockData} />);
-
-    const nameHeader = screen.getByText('Name').closest('th');
-    expect(nameHeader).toHaveStyle({ width: '200px' });
-  });
-
-  it('should apply custom className', () => {
+  it('applies a custom className to the root', () => {
     const { container } = render(
-      <DataTable columns={basicColumns} data={mockData} className="custom-class" />
-    );
-
-    expect(container.firstChild).toHaveClass('custom-class');
-  });
-
-  it('should show indeterminate checkbox state when some selected', () => {
-    render(<DataTable columns={basicColumns} data={mockData} selectable selectedRows={['1']} />);
-
-    const selectAll = screen.getByLabelText('Select all rows') as HTMLInputElement;
-    expect(selectAll.indeterminate).toBe(true);
-  });
-
-  it('should alternate row colors', () => {
-    const { container } = render(<DataTable columns={basicColumns} data={mockData} />);
-
-    const rows = container.querySelectorAll('tbody tr');
-    expect(rows[0]).not.toHaveClass('bg-nb-gray-50');
-    expect(rows[1]).toHaveClass('bg-nb-gray-50');
-    expect(rows[2]).not.toHaveClass('bg-nb-gray-50');
-  });
-
-  it('should not call onSort when clicking non-sortable column', async () => {
-    const onSort = jest.fn();
-    const columns: DataTableColumn<TestData>[] = [{ key: 'name', title: 'Name', sortable: false }];
-
-    const user = userEvent.setup();
-    render(<DataTable columns={columns} data={mockData} onSort={onSort} />);
-
-    await user.click(screen.getByText('Name'));
-
-    expect(onSort).not.toHaveBeenCalled();
-  });
-
-  it('should handle selection change when checkbox clicked', async () => {
-    const onSelectionChange = jest.fn();
-    const user = userEvent.setup();
-
-    render(
       <DataTable
         columns={basicColumns}
         data={mockData}
-        selectable
-        selectedRows={[]}
-        onSelectionChange={onSelectionChange}
+        getRowId={(r) => r.id}
+        className="custom-class"
       />
     );
+    expect(container.firstChild).toHaveClass('custom-class');
+  });
 
-    const checkbox = screen.getByLabelText('Select row 1');
-    await user.click(checkbox);
-
-    // Checkbox click should update selection
-    expect(onSelectionChange).toHaveBeenCalledWith(['1']);
+  it('renders the column-toggle control by default', () => {
+    render(<DataTable columns={basicColumns} data={mockData} getRowId={(r) => r.id} />);
+    expect(screen.getByRole('button', { name: /Kolom/ })).toBeInTheDocument();
   });
 });

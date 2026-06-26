@@ -14,7 +14,7 @@ import {
   CardContent,
   FormInput,
   DataTable,
-  DataTableColumn,
+  type ColumnDef,
   SkeletonTable,
   EmptyState,
   PageHeader,
@@ -46,39 +46,50 @@ export default function UsersPage() {
     limit,
   });
 
-  const columns: DataTableColumn<User>[] = [
+  const columns: ColumnDef<User>[] = [
     {
-      key: 'full_name',
-      title: 'Pengguna',
-      sortable: true,
-      'aria-sort': 'none' as const,
-      render: (_, row) => (
-        <div className="flex items-center gap-2.5">
-          <RoleAvatar name={row.full_name} role={row.role} src={row.profile_picture_url} size="sm" />
-          <div className="min-w-0">
-            <p className="truncate font-bold text-nb-black">{row.full_name}</p>
-            <p className="truncate font-mono text-[11px] text-nb-gray-600">{row.username}</p>
+      id: 'full_name',
+      accessorKey: 'full_name',
+      header: 'Pengguna',
+      enableSorting: true,
+      meta: { label: 'Pengguna' },
+      cell: ({ row }) => {
+        const u = row.original;
+        return (
+          <div className="flex items-center gap-2.5">
+            <RoleAvatar name={u.full_name} role={u.role} src={u.profile_picture_url} size="sm" />
+            <div className="min-w-0">
+              <p className="truncate font-bold text-nb-black">{u.full_name}</p>
+              <p className="truncate font-mono text-[11px] text-nb-gray-600">{u.username}</p>
+            </div>
           </div>
-        </div>
+        );
+      },
+    },
+    {
+      id: 'role',
+      accessorKey: 'role',
+      header: 'Role',
+      enableSorting: false,
+      meta: { label: 'Role' },
+      cell: ({ row }) => <RolePill role={row.original.role} />,
+    },
+    {
+      id: 'rayon',
+      header: 'Rayon',
+      enableSorting: false,
+      meta: { label: 'Rayon' },
+      cell: ({ row }) => (
+        <span className="text-nb-body-sm">{row.original.rayon ? row.original.rayon.name : '—'}</span>
       ),
     },
     {
-      key: 'role',
-      title: 'Role',
-      render: (_, row) => <RolePill role={row.role} />,
-    },
-    {
-      key: 'rayon',
-      title: 'Rayon',
-      render: (_, row) => (
-        <span className="text-nb-body-sm">{row.rayon ? row.rayon.name : '—'}</span>
-      ),
-    },
-    {
-      key: 'status',
-      title: 'Status',
-      render: (_, row) =>
-        row.is_active ? (
+      id: 'status',
+      header: 'Status',
+      enableSorting: false,
+      meta: { label: 'Status' },
+      cell: ({ row }) =>
+        row.original.is_active ? (
           <StatusPill tone="ok" dot>
             Aktif
           </StatusPill>
@@ -89,19 +100,21 @@ export default function UsersPage() {
         ),
     },
     {
-      key: 'actions',
-      title: 'Aksi',
-      align: 'center',
-      render: (_, row) => (
+      id: 'actions',
+      header: 'Aksi',
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Aksi', pinRight: true, align: 'center' },
+      cell: ({ row }) => (
         <div className="flex items-center justify-center gap-2">
           <Button
             variant="secondary"
             size="sm"
             onClick={(e) => {
               e.stopPropagation();
-              router.push(`/users/${row.id}`);
+              router.push(`/users/${row.original.id}`);
             }}
-            aria-label={`Edit ${row.full_name}`}
+            aria-label={`Edit ${row.original.full_name}`}
           >
             <Pencil className="w-4 h-4" />
           </Button>
@@ -110,9 +123,9 @@ export default function UsersPage() {
             size="sm"
             onClick={(e) => {
               e.stopPropagation();
-              setUserToDelete(row);
+              setUserToDelete(row.original);
             }}
-            aria-label={`Hapus ${row.full_name}`}
+            aria-label={`Hapus ${row.original.full_name}`}
           >
             <Trash2 className="w-4 h-4" />
           </Button>
@@ -196,12 +209,16 @@ export default function UsersPage() {
           columns={columns}
           data={users}
           loading={false}
-          emptyText={
+          enablePagination={false}
+          getRowId={(u) => u.id}
+          emptyTitle={
             search || roleFilter
               ? 'Tidak ada pengguna yang sesuai dengan filter'
-              : 'Belum ada pengguna. Klik "Tambah pengguna" untuk membuat yang baru.'
+              : 'Belum ada pengguna'
           }
-          rowKey="id"
+          emptyDescription={
+            search || roleFilter ? undefined : 'Klik "Tambah pengguna" untuk membuat yang baru.'
+          }
         />
       )}
 

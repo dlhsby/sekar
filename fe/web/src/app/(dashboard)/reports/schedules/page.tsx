@@ -30,7 +30,7 @@ import {
   StatusPill,
   useToast,
   type FormSelectOption,
-  type DataTableColumn,
+  type ColumnDef,
 } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -196,59 +196,74 @@ export default function SchedulesPage() {
     ? templates.map((t) => ({ value: t.id, label: t.name }))
     : [];
 
-  const columns: DataTableColumn<ReportSchedule>[] = [
+  const columns: ColumnDef<ReportSchedule>[] = [
     {
+      id: 'name',
+      accessorKey: 'name',
       header: 'Nama',
-      key: 'name',
-      cell: (row: ReportSchedule) => <span className="text-nb-body font-medium">{row.name}</span>,
+      enableSorting: true,
+      meta: { label: 'Nama' },
+      cell: ({ row }) => <span className="text-nb-body font-medium">{row.original.name}</span>,
     },
     {
+      id: 'frequency',
+      accessorKey: 'frequency',
       header: 'Frekuensi',
-      key: 'frequency',
-      cell: (row: ReportSchedule) => {
-        const freq = row.frequency;
+      enableSorting: true,
+      meta: { label: 'Frekuensi' },
+      cell: ({ row }) => {
+        const freq = row.original.frequency;
         const freqLabel =
           freq === 'daily' ? 'Harian' : freq === 'weekly' ? 'Mingguan' : 'Bulanan';
         return <span className="text-nb-body-sm">{freqLabel}</span>;
       },
     },
     {
+      id: 'cron_expression',
+      accessorKey: 'cron_expression',
       header: 'Cron',
-      key: 'cron_expression',
-      cell: (row: ReportSchedule) => (
-        <span className="text-nb-body-sm font-mono">{row.cron_expression}</span>
+      enableSorting: true,
+      meta: { label: 'Cron' },
+      cell: ({ row }) => (
+        <span className="text-nb-body-sm font-mono">{row.original.cron_expression}</span>
       ),
     },
     {
+      id: 'is_active',
+      accessorKey: 'is_active',
       header: 'Status',
-      key: 'is_active',
-      cell: (row: ReportSchedule) => (
+      enableSorting: true,
+      meta: { label: 'Status' },
+      cell: ({ row }) => (
         <Button
-          variant={row.is_active ? 'success' : 'outline'}
+          variant={row.original.is_active ? 'success' : 'outline'}
           size="sm"
-          onClick={() => handleToggleActive(row)}
+          onClick={() => handleToggleActive(row.original)}
           className="text-nb-body-sm"
         >
-          {row.is_active ? 'Aktif' : 'Nonaktif'}
+          {row.original.is_active ? 'Aktif' : 'Nonaktif'}
         </Button>
       ),
     },
     {
+      id: 'actions',
       header: 'Aksi',
-      key: 'actions',
-      cell: (row: ReportSchedule) => (
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { label: 'Aksi', pinRight: true },
+      cell: ({ row }) => (
         <div className="flex gap-2">
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleOpenEdit(row)}
+            onClick={() => handleOpenEdit(row.original)}
           >
             <Edit2 className="h-4 w-4" />
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleDeleteClick(row.id)}
+            onClick={() => handleDeleteClick(row.original.id)}
           >
             <Trash2 className="h-4 w-4" />
           </Button>

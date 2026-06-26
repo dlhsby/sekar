@@ -36,18 +36,18 @@ export interface SectionCardProps
   flush?: boolean;
 }
 
-export function SectionCard({
-  title,
-  meta,
-  action,
-  tone,
-  flush = false,
-  className,
-  children,
-  ...props
-}: SectionCardProps) {
-  return (
-    <section className={cn(sectionCardVariants({ tone }), className)} {...props}>
+const SectionCard = React.forwardRef<HTMLElement, SectionCardProps>(
+  ({
+    title,
+    meta,
+    action,
+    tone,
+    flush = false,
+    className,
+    children,
+    ...props
+  }, ref) => (
+    <section className={cn(sectionCardVariants({ tone }), className)} ref={ref} {...props}>
       {(title || meta || action) && (
         <header className="flex items-center justify-between gap-3 border-b-2 border-nb-black px-4 py-3">
           {title ? (
@@ -63,7 +63,9 @@ export function SectionCard({
       )}
       <div className={cn(!flush && 'p-4')}>{children}</div>
     </section>
-  );
-}
+  )
+);
 
-export { sectionCardVariants };
+SectionCard.displayName = 'SectionCard';
+
+export { SectionCard, sectionCardVariants };
