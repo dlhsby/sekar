@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Pencil, Trash2, Search } from 'lucide-react';
 import {
@@ -46,7 +46,7 @@ export default function UsersPage() {
     limit,
   });
 
-  const columns: ColumnDef<User>[] = [
+  const columns = useMemo<ColumnDef<User>[]>(() => [
     {
       id: 'full_name',
       accessorKey: 'full_name',
@@ -132,7 +132,7 @@ export default function UsersPage() {
         </div>
       ),
     },
-  ];
+  ], [router]);
 
   const setRole = (role: UserRole | null) => {
     setRoleFilter(role);

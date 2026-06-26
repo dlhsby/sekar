@@ -23,7 +23,7 @@ import {
 } from '@/components/ui';
 import type { ColumnDef } from '@/components/ui/data-table';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
 import type { Activity, ActivityFilters, ActivityStatus } from '@/types/models';
@@ -116,22 +116,31 @@ export default function ActivitiesPage() {
     setRejectReason('');
   };
 
-  const activityTypeOptions = [
-    { value: 'all', label: 'Semua Tipe' },
-    ...(activityTypes || []).map((t) => ({ value: t.id, label: t.name })),
-  ];
+  const activityTypeOptions = useMemo(
+    () => [
+      { value: 'all', label: 'Semua Tipe' },
+      ...(activityTypes || []).map((t) => ({ value: t.id, label: t.name })),
+    ],
+    [activityTypes]
+  );
 
-  const statusOptions = [
-    { value: 'all', label: 'Semua Status' },
-    { value: 'pending', label: 'Menunggu' },
-    { value: 'approved', label: 'Disetujui' },
-    { value: 'rejected', label: 'Ditolak' },
-  ];
+  const statusOptions = useMemo(
+    () => [
+      { value: 'all', label: 'Semua Status' },
+      { value: 'pending', label: 'Menunggu' },
+      { value: 'approved', label: 'Disetujui' },
+      { value: 'rejected', label: 'Ditolak' },
+    ],
+    []
+  );
 
-  const areaOptions = [
-    { value: 'all', label: 'Semua Area' },
-    ...(areasData?.data || []).map((a) => ({ value: a.id, label: a.name })),
-  ];
+  const areaOptions = useMemo(
+    () => [
+      { value: 'all', label: 'Semua Area' },
+      ...(areasData?.data || []).map((a) => ({ value: a.id, label: a.name })),
+    ],
+    [areasData]
+  );
 
   const columns: ColumnDef<Activity>[] = [
     {
