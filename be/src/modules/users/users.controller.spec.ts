@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
+import { UserAreasService } from '../user-areas/user-areas.service';
 import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -33,8 +34,13 @@ describe('UsersController', () => {
     findOne: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
+    resetPassword: jest.fn(),
     changePassword: jest.fn(),
     updateProfilePicture: jest.fn(),
+  };
+
+  const mockUserAreasService = {
+    getEffectiveAreas: jest.fn().mockResolvedValue([]),
   };
 
   beforeEach(async () => {
@@ -44,6 +50,10 @@ describe('UsersController', () => {
         {
           provide: UsersService,
           useValue: mockUsersService,
+        },
+        {
+          provide: UserAreasService,
+          useValue: mockUserAreasService,
         },
       ],
     }).compile();

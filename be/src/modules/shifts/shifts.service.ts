@@ -16,8 +16,11 @@ import { getMinimumShiftDurationMinutes } from '../../common/constants/shift.con
 import { Schedule } from '../schedules/entities/schedule.entity';
 import { Area } from '../areas/entities/area.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
+import { User } from '../users/entities/user.entity';
 import { StatusCalculatorService } from '../monitoring/services/status-calculator.service';
 import { AuditLogService } from '../audit/audit.service';
+import { UserAreasService } from '../user-areas/user-areas.service';
+import { GpsUtil } from '../../common/utils/gps.util';
 
 /**
  * Service for managing user shifts
@@ -36,6 +39,9 @@ export class ShiftsService {
     private readonly scheduleRepo: Repository<Schedule>,
     @InjectRepository(ShiftDefinition)
     private readonly shiftDefinitionRepo: Repository<ShiftDefinition>,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
+    private readonly userAreasService: UserAreasService,
     private readonly areasService: AreasService,
     @Optional()
     @Inject(forwardRef(() => StatusCalculatorService))
@@ -53,29 +59,84 @@ export class ShiftsService {
   private boundaryCheckFallback?: BoundaryCheckService;
 
   /**
-   * Get active area for a user
-   * Checks Schedule using effective_date and end_date
+   * Resolve the area a worker is clocking into.
+   *
+   * A worker may have several assigned areas (permanent `user_areas` +
+   * task_based + active explicit schedules) and a single shift. With GPS we
+   * pick the assigned area whose geofence CONTAINS the point; if several/none
+   * contain it we pick the CLOSEST centre. Without GPS we prefer the primary
+   * (`users.area_id`) then the first candidate. Returns null when the worker
+   * has no assigned area (ad-hoc) — clock-in still proceeds.
    *
    * @param userId User UUID
-   * @returns Area entity or null if no assignment found
+   * @param lat optional clock-in latitude
+   * @param lng optional clock-in longitude
    */
-  async getActiveArea(userId: string): Promise<Area | null> {
+  async getActiveArea(userId: string, lat?: number, lng?: number): Promise<Area | null> {
+    const candidates = await this.getCandidateAreas(userId);
+
+    if (candidates.length === 0) {
+      // No assignment rows — fall back to the legacy primary area, else ad-hoc.
+      const user = await this.userRepo.findOne({ where: { id: userId }, relations: ['area'] });
+      return user?.area ?? null;
+    }
+
+    if (typeof lat === 'number' && typeof lng === 'number') {
+      const containing = candidates.filter((a) =>
+        this.boundaryCheck.isWithinAreaBoundary(lat, lng, a),
+      );
+      const pool = containing.length ? containing : candidates;
+      return this.closestArea(pool, lat, lng);
+    }
+
+    // No GPS: prefer the designated primary, else the first candidate.
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    return candidates.find((a) => a.id === user?.area_id) ?? candidates[0];
+  }
+
+  /** Distinct assigned areas: permanent + task_based (user_areas) ∪ active schedules. */
+  private async getCandidateAreas(userId: string): Promise<Area[]> {
+    const effective = await this.userAreasService.getEffectiveAreas(userId);
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
-    // Check Schedule (uses user_id, effective_date)
-    const schedule = await this.scheduleRepo.findOne({
+    const schedules = await this.scheduleRepo.find({
       where: {
         user_id: userId,
         effective_date: LessThanOrEqual(today),
         end_date: Or(IsNull(), MoreThanOrEqual(today)),
       },
       relations: ['area'],
-      order: { effective_date: 'DESC' },
     });
-    if (schedule?.area) return schedule.area;
 
-    return null;
+    const byId = new Map<string, Area>();
+    for (const area of effective) if (area) byId.set(area.id, area);
+    for (const s of schedules) if (s.area) byId.set(s.area.id, s.area);
+    return [...byId.values()];
+  }
+
+  /** Pick the area whose centre is nearest the point. */
+  private closestArea(areas: Area[], lat: number, lng: number): Area {
+    let best = areas[0];
+    let bestDist = Infinity;
+    for (const area of areas) {
+      const dist = GpsUtil.calculateDistance(lat, lng, area.gps_lat, area.gps_lng);
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = area;
+      }
+    }
+    return best;
+  }
+
+  /** The worker's single configured shift, falling back to the time-of-day match. */
+  private async getUserShiftOrCurrent(userId: string): Promise<ShiftDefinition | null> {
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      relations: ['shift_definition'],
+    });
+    if (user?.shift_definition) return user.shift_definition;
+    return this.findCurrentShiftDefinition();
   }
 
   /**
@@ -139,9 +200,10 @@ export class ShiftsService {
     if (dto.area_id) {
       area = await this.areasService.findOne(dto.area_id);
     } else {
-      area = await this.getActiveArea(userId);
+      // GPS-aware: closest/containing among the worker's assigned areas.
+      area = await this.getActiveArea(userId, dto.gps_lat, dto.gps_lng);
     }
-    // area can be null - allow clock-in without area (GPS still recorded)
+    // area can be null - allow clock-in without area (ad-hoc; GPS still recorded)
 
     // 3. Store selfie as base64 string directly (no S3 upload — avoids URL accessibility
     //    issues in dev/LocalStack and keeps selfie loading fast on mobile)
@@ -157,8 +219,9 @@ export class ShiftsService {
       }
     }
 
-    // 5. Match current shift definition (not applicable for overtime — null)
-    const shiftDefinition = isOvertime ? null : await this.findCurrentShiftDefinition();
+    // 5. Shift = the worker's configured shift (fallback time-of-day match);
+    //    not applicable for overtime — null.
+    const shiftDefinition = isOvertime ? null : await this.getUserShiftOrCurrent(userId);
 
     // 6. Create shift record
     const shift = this.shiftRepository.create({

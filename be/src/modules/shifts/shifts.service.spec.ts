@@ -14,7 +14,9 @@ import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { StatusCalculatorService } from '../monitoring/services/status-calculator.service';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
+import { User } from '../users/entities/user.entity';
 import { AuditLogService } from '../audit/audit.service';
+import { UserAreasService } from '../user-areas/user-areas.service';
 
 describe('ShiftsService', () => {
   let module: TestingModule;
@@ -83,6 +85,7 @@ describe('ShiftsService', () => {
 
   const mockScheduleRepo = {
     findOne: jest.fn(),
+    find: jest.fn().mockResolvedValue([]),
   };
 
   const mockShiftDefinitionRepo = {
@@ -109,6 +112,14 @@ describe('ShiftsService', () => {
         {
           provide: getRepositoryToken(ShiftDefinition),
           useValue: mockShiftDefinitionRepo,
+        },
+        {
+          provide: getRepositoryToken(User),
+          useValue: { findOne: jest.fn().mockResolvedValue(null) },
+        },
+        {
+          provide: UserAreasService,
+          useValue: { getEffectiveAreas: jest.fn().mockResolvedValue([]) },
         },
         {
           provide: AreasService,
@@ -147,7 +158,7 @@ describe('ShiftsService', () => {
   });
 
   describe('getActiveArea', () => {
-    it('should return area from Schedule when exists', async () => {
+    it('should return area from an active Schedule candidate when exists', async () => {
       const mockSchedule = {
         id: 'schedule-uuid',
         user_id: mockUser.id,
@@ -155,20 +166,34 @@ describe('ShiftsService', () => {
         area: mockArea,
         effective_date: new Date('2026-01-01'),
       };
-      mockScheduleRepo.findOne.mockResolvedValue(mockSchedule as any);
+      mockScheduleRepo.find.mockResolvedValue([mockSchedule as any]);
 
+      // No GPS → primary fallback; userRepo has no primary so first candidate wins.
       const result = await service.getActiveArea(mockUser.id);
 
       expect(result).toEqual(mockArea);
-      expect(mockScheduleRepo.findOne).toHaveBeenCalled();
+      expect(mockScheduleRepo.find).toHaveBeenCalled();
     });
 
-    it('should return null when no schedule found', async () => {
-      mockScheduleRepo.findOne.mockResolvedValue(null);
+    it('should return null when the worker has no assigned area (ad-hoc)', async () => {
+      mockScheduleRepo.find.mockResolvedValue([]);
 
       const result = await service.getActiveArea(mockUser.id);
 
       expect(result).toBeNull();
+    });
+
+    it('should pick the GPS-containing area among several candidates', async () => {
+      const near = { id: 'near', gps_lat: -7.29, gps_lng: 112.74, radius_meters: 100 };
+      const far = { id: 'far', gps_lat: -7.9, gps_lng: 112.9, radius_meters: 100 };
+      mockScheduleRepo.find.mockResolvedValue([
+        { area: near } as any,
+        { area: far } as any,
+      ]);
+
+      const result = await service.getActiveArea(mockUser.id, -7.29, 112.74);
+
+      expect(result).toEqual(near);
     });
   });
 
@@ -281,7 +306,7 @@ describe('ShiftsService', () => {
       };
 
       mockRepository.findOne.mockResolvedValue(null);
-      mockScheduleRepo.findOne.mockResolvedValue(mockSchedule as any);
+      mockScheduleRepo.find.mockResolvedValue([mockSchedule as any]);
       mockShiftDefinitionRepo.find.mockResolvedValue([]);
       mockS3Service.generateKey.mockReturnValue('sekar-media/2026/01/09/clock-in/test.jpg');
       mockS3Service.uploadFile.mockResolvedValue('https://s3.amazonaws.com/photo.jpg');
@@ -291,7 +316,7 @@ describe('ShiftsService', () => {
       const result = await service.clockIn(mockUser.id, dtoWithoutArea);
 
       expect(result).toEqual(mockShift);
-      expect(mockScheduleRepo.findOne).toHaveBeenCalled();
+      expect(mockScheduleRepo.find).toHaveBeenCalled();
       expect(mockAreasService.findOne).not.toHaveBeenCalled();
     });
 
@@ -309,7 +334,7 @@ describe('ShiftsService', () => {
       };
 
       mockRepository.findOne.mockResolvedValue(null);
-      mockScheduleRepo.findOne.mockResolvedValue(null);
+      mockScheduleRepo.find.mockResolvedValue([]);
       mockShiftDefinitionRepo.find.mockResolvedValue([]);
       mockS3Service.generateKey.mockReturnValue('sekar-media/2026/01/09/clock-in/test.jpg');
       mockS3Service.uploadFile.mockResolvedValue('https://s3.amazonaws.com/photo.jpg');

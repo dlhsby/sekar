@@ -7,6 +7,8 @@ import { TaskFinderService } from './services/task-finder.service';
 import { TaskDelegationService } from './services/task-delegation.service';
 import { TaskStatusTransitionsService } from './services/task-status-transitions.service';
 import { TaskVerificationService } from './services/task-verification.service';
+import { TaskAreaSyncService } from './services/task-area-sync.service';
+import { UserAreasService } from '../user-areas/user-areas.service';
 import { Task, TaskStatus, TaskPriority } from './entities/task.entity';
 import { TaskTag } from './entities/task-tag.entity';
 import { TaskDelegation } from './entities/task-delegation.entity';
@@ -84,13 +86,18 @@ describe('TasksService', () => {
         TaskDelegationService,
         TaskStatusTransitionsService,
         TaskVerificationService,
+        TaskAreaSyncService,
+        {
+          provide: UserAreasService,
+          useValue: { syncTaskBasedAreas: jest.fn().mockResolvedValue(undefined) },
+        },
         {
           provide: getRepositoryToken(Task),
           useValue: {
             create: jest.fn(),
             save: jest.fn(),
             findOne: jest.fn(),
-            find: jest.fn(),
+            find: jest.fn().mockResolvedValue([]),
             softDelete: jest.fn(),
             createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
             // Used by cascadePruningRequestStatus (and checkStaffKecamatanAccess).

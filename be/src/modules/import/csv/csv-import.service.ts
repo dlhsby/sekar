@@ -128,7 +128,7 @@ export class CsvImportService {
           full_name: row.full_name,
           role: row.role,
           phone_number: row.phone_number,
-          area_id: row.area_id,
+          area_ids: row.area_id ? [row.area_id] : undefined,
           rayon_id: row.rayon_id,
         });
         imported++;

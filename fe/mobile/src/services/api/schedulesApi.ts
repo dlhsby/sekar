@@ -15,4 +15,13 @@ export async function getMySchedule(): Promise<ApiResponse<Schedule | null>> {
   return get<Schedule | null>('/schedules/my');
 }
 
-export default { getMySchedule };
+/**
+ * Get every schedule assigned to the given user (past, active and upcoming),
+ * newest effective_date first. Used by the worker's "My Schedule" screen so
+ * they can see their full roster, not just the currently-active assignment.
+ */
+export async function getMySchedules(userId: string): Promise<ApiResponse<Schedule[]>> {
+  return get<Schedule[]>('/schedules', { userId });
+}
+
+export default { getMySchedule, getMySchedules };

@@ -9,6 +9,7 @@ import { User } from './entities/user.entity';
 import { AuthModule } from '../auth/auth.module';
 import { SharedModule } from '../../shared/shared.module';
 import { AuditModule } from '../audit/audit.module';
+import { UserAreasModule } from '../user-areas/user-areas.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { AuditModule } from '../audit/audit.module';
     forwardRef(() => AuthModule),
     SharedModule,
     AuditModule, // Phase 4-4 (C2): account mutations are audit-logged
+    UserAreasModule, // simplified assignment: reconcile permanent areas from user mgmt
 
     MulterModule.register({ limits: { fileSize: 5 * 1024 * 1024 } }),
   ],

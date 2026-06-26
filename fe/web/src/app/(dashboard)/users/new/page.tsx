@@ -1,11 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { UserForm } from '@/components/forms/UserForm';
+import { UserForm, type UserFormSubmit } from '@/components/forms/UserForm';
 import { useCreateUser } from '@/lib/api/users';
-import { CreateUserDto } from '@/types/models';
 import { Button, Card, CardContent } from '@/components/ui';
+import { TempPasswordDialog } from '@/components/users/TempPasswordDialog';
 
 /**
  * New User Page
@@ -19,17 +20,18 @@ import { Button, Card, CardContent } from '@/components/ui';
 export default function NewUserPage() {
   const router = useRouter();
   const createUserMutation = useCreateUser();
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
 
-  const handleSubmit = async (data: CreateUserDto) => {
+  const handleSubmit = async (data: UserFormSubmit) => {
     try {
-      await createUserMutation.mutateAsync(data);
-      // Success - redirect to users list
-      router.push('/users');
-      // Note: In a real app, you'd show a toast notification here
+      const created = await createUserMutation.mutateAsync(data);
+      if (created.temp_password) {
+        // Show the one-time password; redirect happens when the dialog closes.
+        setTempPassword(created.temp_password);
+      } else {
+        router.push('/users');
+      }
     } catch (error) {
-      // Error handling
-      console.error('Failed to create user:', error);
-      // The error will be displayed by the form or a global error handler
       throw error;
     }
   };
@@ -83,6 +85,14 @@ export default function NewUserPage() {
           </p>
         </div>
       )}
+
+      <TempPasswordDialog
+        password={tempPassword}
+        onClose={() => {
+          setTempPassword(null);
+          router.push('/users');
+        }}
+      />
     </div>
   );
 }

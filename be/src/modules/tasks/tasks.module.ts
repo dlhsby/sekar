@@ -6,6 +6,7 @@ import { TaskFinderService } from './services/task-finder.service';
 import { TaskDelegationService } from './services/task-delegation.service';
 import { TaskStatusTransitionsService } from './services/task-status-transitions.service';
 import { TaskVerificationService } from './services/task-verification.service';
+import { TaskAreaSyncService } from './services/task-area-sync.service';
 import { Task } from './entities/task.entity';
 import { TaskTag } from './entities/task-tag.entity';
 import { TaskDelegation } from './entities/task-delegation.entity';
@@ -14,6 +15,7 @@ import { UsersModule } from '../users/users.module';
 import { AreasModule } from '../areas/areas.module';
 import { AuditModule } from '../audit/audit.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { UserAreasModule } from '../user-areas/user-areas.module';
 
 /**
  * Module for task management
@@ -28,6 +30,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     AreasModule,
     AuditModule,
     NotificationsModule,
+    UserAreasModule,
   ],
   controllers: [TasksController],
   providers: [
@@ -37,6 +40,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     TaskDelegationService,
     TaskStatusTransitionsService,
     TaskVerificationService,
+    TaskAreaSyncService,
   ],
   exports: [TasksService, TaskTypeRegistry],
 })

@@ -9,7 +9,10 @@ import type { Area } from '../../types/models.types';
 
 interface AuthState {
   user: User | null;
+  /** Primary area (first assigned) — kept for backward compat. */
   assignedArea: Area | null;
+  /** All permanent + task-based areas the worker is assigned to (ADR-013). */
+  assignedAreas: Area[];
   isAuthenticated: boolean;
   isLoading: boolean;
   isRestoring: boolean;
@@ -23,6 +26,7 @@ interface AuthState {
 const initialState: AuthState = {
   user: null,
   assignedArea: null,
+  assignedAreas: [],
   isAuthenticated: false,
   isLoading: false,
   isRestoring: true, // Start as true, will be set to false after checking storage
@@ -45,6 +49,15 @@ const authSlice = createSlice({
       state.error = null;
     },
 
+    /** Set the worker's full assigned-area list (fetched after auth). */
+    setAssignedAreas: (state, action: PayloadAction<Area[]>) => {
+      state.assignedAreas = action.payload;
+      // Keep the single primary in sync (first area) when not already set.
+      if (!state.assignedArea && action.payload.length > 0) {
+        state.assignedArea = action.payload[0];
+      }
+    },
+
     setError: (state, action: PayloadAction<string>) => {
       state.error = action.payload;
       state.isLoading = false;
@@ -61,6 +74,7 @@ const authSlice = createSlice({
     logout: (state) => {
       state.user = null;
       state.assignedArea = null;
+      state.assignedAreas = [];
       state.isAuthenticated = false;
       state.isRestoring = false; // Ensure we're not stuck on loading spinner
       state.error = null;
@@ -88,6 +102,7 @@ const authSlice = createSlice({
 export const {
   setLoading,
   setUser,
+  setAssignedAreas,
   setError,
   clearError,
   completeOnboarding,

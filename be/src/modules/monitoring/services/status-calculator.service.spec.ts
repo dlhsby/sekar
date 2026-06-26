@@ -421,6 +421,61 @@ describe('StatusCalculatorService', () => {
         expect.objectContaining({ user_id: 'user-1', area_id: 'area-1' }),
       );
     });
+
+    it('stays within-area when outside primary but inside a task-based area (ADR-013 §5)', async () => {
+      // Worker assigned to area-1 (primary) + area-2 (task_based).
+      (service as unknown as { userAreasService: unknown }).userAreasService = {
+        getEffectiveAreas: jest.fn().mockResolvedValue([{ id: 'area-1' }, { id: 'area-2' }]),
+      };
+
+      trackingRepository.findOne.mockResolvedValue({
+        user_id: 'user-1',
+        shift_id: 'shift-1',
+        area_id: 'area-1',
+        status: TrackingStatus.ACTIVE,
+        is_within_area: true,
+        last_latitude: -7.29,
+        last_longitude: 112.74,
+        last_accuracy_meters: 10,
+        last_battery_level: 85,
+        last_location_at: new Date(),
+        updated_at: new Date(),
+      });
+
+      // area-1 excludes the ping; area-2 (the task area) contains it.
+      cacheService.getAreaBoundary.mockImplementation((areaId: string) =>
+        Promise.resolve(
+          areaId === 'area-2'
+            ? [
+                [
+                  [112.89, -7.49],
+                  [112.91, -7.49],
+                  [112.91, -7.51],
+                  [112.89, -7.51],
+                  [112.89, -7.49],
+                ],
+              ]
+            : [
+                [
+                  [112.73, -7.28],
+                  [112.735, -7.28],
+                  [112.735, -7.285],
+                  [112.73, -7.285],
+                  [112.73, -7.28],
+                ],
+              ],
+        ),
+      );
+      userRepository.findOne.mockResolvedValue({ id: 'user-1', full_name: 'T', role: 'satgas' });
+      areaRepository.findOne.mockResolvedValue({ id: 'area-1', name: 'A', rayon_id: 'r1' });
+
+      await service.onLocationPing('user-1', -7.5, 112.9, 10, 80, new Date());
+
+      expect(trackingRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ is_within_area: true }),
+      );
+      expect(eventsGateway.emitUserLeftArea).not.toHaveBeenCalled();
+    });
   });
 
   describe('recalculate', () => {
