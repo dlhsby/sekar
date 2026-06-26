@@ -19,6 +19,8 @@ import {
   Button,
   Textarea,
   PageHeader,
+  Field,
+  DateTimePicker,
 } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -209,12 +211,15 @@ export default function CreateTaskPage() {
                 options={priorityOptions}
               />
 
-              <FormInput
-                label="Tenggat Waktu (Opsional)"
-                type="datetime-local"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-              />
+              <Field label="Tenggat Waktu (Opsional)">
+                {(p) => (
+                  <DateTimePicker
+                    id={p.id}
+                    value={dueDate ? dueDate.replace('T', ' ') : undefined}
+                    onValueChange={(v) => setDueDate(v ? v.replace(' ', 'T') : '')}
+                  />
+                )}
+              </Field>
             </div>
 
             <div className="flex gap-3 mt-6">

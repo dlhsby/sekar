@@ -17,7 +17,7 @@ import { redirect } from 'next/navigation';
 import { toast } from 'sonner';
 import { Download } from 'lucide-react';
 
-import { Button, FormInput, FormSelect, SectionCard, DataTable, StatusPill } from '@/components/ui';
+import { Button, FormSelect, SectionCard, DataTable, StatusPill, Field, DateRangePicker } from '@/components/ui';
 import type { ColumnDef } from '@/components/ui';
 import { useAuth } from '@/lib/auth/hooks';
 import { hasRole } from '@/lib/constants/roles';
@@ -194,18 +194,21 @@ function ExportForm({ role }: { role: UserRole }) {
             value={format}
             onChange={(v) => setFormat(v as ExportFormat)}
           />
-          <FormInput
-            label="Dari Tanggal"
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-          />
-          <FormInput
-            label="Sampai Tanggal"
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-          />
+          <Field label="Rentang Tanggal">
+            {() => (
+              <DateRangePicker
+                showSteppers={false}
+                value={{
+                  from: startDate || new Date().toISOString().slice(0, 10),
+                  to: endDate || new Date().toISOString().slice(0, 10),
+                }}
+                onChange={(r) => {
+                  setStartDate(r.from);
+                  setEndDate(r.to);
+                }}
+              />
+            )}
+          </Field>
           <FormSelect label="Rayon" options={rayonOptions} value={rayonId} onChange={setRayonId} />
           <FormSelect label="Area" options={areaOptions} value={areaId} onChange={setAreaId} />
         </div>

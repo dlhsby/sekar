@@ -77,6 +77,12 @@ export interface DateRangePickerProps {
   today?: string;
   /** Disallow selecting dates after `today`. Defaults to true. */
   disableFuture?: boolean;
+  /**
+   * Show the prev/next-day stepper buttons flanking the trigger when the range
+   * is a single day. Defaults to true; set false for from/to range filters where
+   * day-stepping doesn't apply.
+   */
+  showSteppers?: boolean;
   className?: string;
 }
 
@@ -91,6 +97,7 @@ export function DateRangePicker({
   onChange,
   today: todayProp,
   disableFuture = true,
+  showSteppers = true,
   className,
 }: DateRangePickerProps): React.JSX.Element {
   const today = todayProp ?? format(new Date(), 'yyyy-MM-dd');
@@ -177,7 +184,7 @@ export function DateRangePicker({
       }}
     >
       <div className={cn('inline-flex items-center gap-1', className)}>
-        {isSingleDay ? (
+        {showSteppers && isSingleDay ? (
           <Button
             variant="outline"
             size="sm"
@@ -194,7 +201,7 @@ export function DateRangePicker({
             <span className="tabular-nums">{triggerLabel}</span>
           </Button>
         </PopoverTrigger>
-        {isSingleDay ? (
+        {showSteppers && isSingleDay ? (
           <Button
             variant="outline"
             size="sm"

@@ -25,6 +25,8 @@ import {
   StatusPill,
   Textarea,
   useToast,
+  Field,
+  DatePicker,
 } from '@/components/ui';
 import { useUser } from '@/lib/auth/hooks';
 import {
@@ -392,10 +394,15 @@ export default function AssetDetailPage() {
               value={maintenanceType}
               onChange={(value) => setMaintenanceType(value as MaintenanceType)}
             />
-            <div>
-              <Label>Tanggal</Label>
-              <input type="date" className="w-full px-3 py-2 border-2 border-nb-black rounded-nb-base" value={maintenanceDate} onChange={(e) => setMaintenanceDate(e.target.value)} />
-            </div>
+            <Field label="Tanggal">
+              {(p) => (
+                <DatePicker
+                  id={p.id}
+                  value={maintenanceDate || undefined}
+                  onValueChange={(v) => setMaintenanceDate(v ?? '')}
+                />
+              )}
+            </Field>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setMaintenanceOpen(false)}>

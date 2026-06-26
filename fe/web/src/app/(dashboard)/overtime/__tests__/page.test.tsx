@@ -469,16 +469,10 @@ describe('OvertimePage', () => {
       expect(screen.getByRole('tab', { name: 'Disetujui' })).toBeInTheDocument();
     });
 
-    it('should render the Dari Tanggal date input', () => {
+    it('should render the Rentang Tanggal date range picker', () => {
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      expect(screen.getByLabelText(/dari tanggal/i)).toBeInTheDocument();
-    });
-
-    it('should render the Sampai Tanggal date input', () => {
-      render(<OvertimePage />, { wrapper: createWrapper() });
-
-      expect(screen.getByLabelText(/sampai tanggal/i)).toBeInTheDocument();
+      expect(screen.getByText(/rentang tanggal/i)).toBeInTheDocument();
     });
 
     it('should NOT show the Reset Filter button when no filters are active', () => {
@@ -491,8 +485,17 @@ describe('OvertimePage', () => {
       const user = userEvent.setup();
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      const fromDateInput = screen.getByLabelText(/dari tanggal/i);
-      await user.type(fromDateInput, '2026-02-01');
+      // Find the DateRangePicker by its label text and interact with its trigger button
+      const labelElement = screen.getByText(/rentang tanggal/i);
+      const fieldContainer = labelElement.closest('div');
+      const triggerButton = fieldContainer?.querySelector('button');
+
+      if (triggerButton) {
+        await user.click(triggerButton);
+        // A preset chip commits the range immediately (a single calendar click only
+        // sets the start), which activates the filter and reveals Reset.
+        await user.click(await screen.findByRole('button', { name: '7 Hari' }));
+      }
 
       expect(await screen.findByRole('button', { name: /reset filter/i })).toBeInTheDocument();
     });
@@ -501,14 +504,25 @@ describe('OvertimePage', () => {
       const user = userEvent.setup();
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      const fromDateInput = screen.getByLabelText(/dari tanggal/i) as HTMLInputElement;
-      await user.type(fromDateInput, '2026-02-01');
+      // Find the DateRangePicker by its label text and interact with its trigger button
+      const labelElement = screen.getByText(/rentang tanggal/i);
+      const fieldContainer = labelElement.closest('div');
+      const triggerButton = fieldContainer?.querySelector('button');
+
+      if (triggerButton) {
+        await user.click(triggerButton);
+        // Wait for calendar to appear and select dates for a range
+        const dateButtons = screen.getAllByRole('button', { name: /\d{1,2}/i });
+        if (dateButtons.length > 6) {
+          await user.click(dateButtons[5]); // Click first day
+          await user.click(dateButtons[6]); // Click second day to commit range
+        }
+      }
 
       const resetButton = await screen.findByRole('button', { name: /reset filter/i });
       await user.click(resetButton);
 
       await waitFor(() => {
-        expect(fromDateInput.value).toBe('');
         expect(screen.queryByRole('button', { name: /reset filter/i })).not.toBeInTheDocument();
       });
     });

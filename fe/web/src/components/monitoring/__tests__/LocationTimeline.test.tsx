@@ -90,8 +90,9 @@ describe('LocationTimeline', () => {
 
     it('should render the date picker with selected date value', () => {
       render(<LocationTimeline {...defaultProps} />);
-      const datePicker = screen.getByLabelText(/pilih tanggal/i);
-      expect(datePicker).toHaveValue('2026-03-05');
+      // DatePicker renders as a textbox input with dd/MM/yyyy format
+      const dateInput = screen.getByRole('textbox');
+      expect(dateInput).toHaveValue('05/03/2026');
     });
   });
 
@@ -313,11 +314,13 @@ describe('LocationTimeline', () => {
       const handleDateChange = jest.fn();
       render(<LocationTimeline {...defaultProps} onDateChange={handleDateChange} />);
 
-      const datePicker = screen.getByLabelText(/pilih tanggal/i);
-      await user.clear(datePicker);
-      await user.type(datePicker, '2026-03-04');
+      // DatePicker renders as a textbox; type date and blur to trigger change
+      const dateInput = screen.getByRole('textbox');
+      await user.clear(dateInput);
+      await user.type(dateInput, '04032026'); // dd/MM/yyyy masked input
+      await user.tab(); // blur to trigger onValueChange
 
-      expect(handleDateChange).toHaveBeenCalled();
+      expect(handleDateChange).toHaveBeenCalledWith('2026-03-04');
     });
   });
 

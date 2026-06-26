@@ -18,6 +18,8 @@ import {
   StatusPill,
   Tabs,
   type TabItem,
+  Field,
+  DateRangePicker,
 } from '@/components/ui';
 import type { ColumnDef } from '@/components/ui/data-table';
 import { useRouter } from 'next/navigation';
@@ -236,24 +238,22 @@ export default function OvertimePage() {
       <Card>
         <CardContent className="p-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <FormInput
-              label="Dari Tanggal"
-              type="date"
-              value={fromDate}
-              onChange={(e) => {
-                setFromDate(e.target.value);
-                setPage(1);
-              }}
-            />
-            <FormInput
-              label="Sampai Tanggal"
-              type="date"
-              value={toDate}
-              onChange={(e) => {
-                setToDate(e.target.value);
-                setPage(1);
-              }}
-            />
+            <Field label="Rentang Tanggal">
+              {() => (
+                <DateRangePicker
+                  showSteppers={false}
+                  value={{
+                    from: fromDate || new Date().toISOString().slice(0, 10),
+                    to: toDate || new Date().toISOString().slice(0, 10),
+                  }}
+                  onChange={(r) => {
+                    setFromDate(r.from);
+                    setToDate(r.to);
+                    setPage(1);
+                  }}
+                />
+              )}
+            </Field>
           </div>
 
           {hasActiveFilters && (

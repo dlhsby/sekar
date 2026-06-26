@@ -18,6 +18,8 @@ import {
   FormInput,
   FormSelect,
   Button,
+  Field,
+  DateRangePicker,
 } from '@/components/ui';
 import type { ColumnDef } from '@/components/ui/data-table';
 import { useRouter } from 'next/navigation';
@@ -279,20 +281,25 @@ export default function ActivitiesPage() {
               onChange={(value) => setFilters((prev) => ({ ...prev, areaId: value, page: 1 }))}
               options={areaOptions}
             />
-            <FormInput
-              label="Dari Tanggal"
-              type="date"
-              value={filters.fromDate}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, fromDate: e.target.value, page: 1 }))
-              }
-            />
-            <FormInput
-              label="Sampai Tanggal"
-              type="date"
-              value={filters.toDate}
-              onChange={(e) => setFilters((prev) => ({ ...prev, toDate: e.target.value, page: 1 }))}
-            />
+            <Field label="Rentang Tanggal">
+              {() => (
+                <DateRangePicker
+                  showSteppers={false}
+                  value={{
+                    from: filters.fromDate || new Date().toISOString().slice(0, 10),
+                    to: filters.toDate || new Date().toISOString().slice(0, 10),
+                  }}
+                  onChange={(r) => {
+                    setFilters((prev) => ({
+                      ...prev,
+                      fromDate: r.from,
+                      toDate: r.to,
+                      page: 1,
+                    }));
+                  }}
+                />
+              )}
+            </Field>
           </div>
 
           {hasActiveFilters && (

@@ -20,7 +20,8 @@ import {
   Button,
   Dialog,
   DialogContent,
-  FormInput,
+  DatePicker,
+  Field as FormField,
   FormSelect,
   SectionCard,
   SkeletonCard,
@@ -341,12 +342,15 @@ export default function PruningRequestDetailPage() {
                   onChange={(v) => setPruningAction(v as PruningAction)}
                   options={PRUNING_ACTIONS}
                 />
-                <FormInput
-                  label="Tanggal Pasti (opsional)"
-                  type="date"
-                  value={scheduledDate}
-                  onChange={(e) => setScheduledDate(e.target.value)}
-                />
+                <FormField label="Tanggal Pasti (opsional)">
+                  {(p) => (
+                    <DatePicker
+                      id={p.id}
+                      value={scheduledDate || undefined}
+                      onValueChange={(v) => setScheduledDate(v ?? '')}
+                    />
+                  )}
+                </FormField>
                 {convertMutation.isError && (
                   <p role="alert" className="text-nb-body-sm text-nb-danger">
                     Gagal mengonversi ke tugas. Periksa kapasitas minggu dan coba lagi.

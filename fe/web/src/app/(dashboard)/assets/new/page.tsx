@@ -9,6 +9,8 @@ import {
   FormSelect,
   PageHeader,
   useToast,
+  Field,
+  DatePicker,
 } from '@/components/ui';
 import { useUser } from '@/lib/auth/hooks';
 import { useAssetCategories, useCreateAsset } from '@/lib/api/assets';
@@ -106,12 +108,15 @@ export default function CreateAssetPage() {
             onChange={(e) => setDescription(e.target.value)}
           />
 
-          <FormInput
-            label="Tanggal Pembelian"
-            type="date"
-            value={purchaseDate}
-            onChange={(e) => setPurchaseDate(e.target.value)}
-          />
+          <Field label="Tanggal Pembelian">
+            {(p) => (
+              <DatePicker
+                id={p.id}
+                value={purchaseDate || undefined}
+                onValueChange={(v) => setPurchaseDate(v ?? '')}
+              />
+            )}
+          </Field>
 
           <FormInput
             label="Harga Pembelian"
