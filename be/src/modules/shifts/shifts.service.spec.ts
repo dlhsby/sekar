@@ -186,10 +186,7 @@ describe('ShiftsService', () => {
     it('should pick the GPS-containing area among several candidates', async () => {
       const near = { id: 'near', gps_lat: -7.29, gps_lng: 112.74, radius_meters: 100 };
       const far = { id: 'far', gps_lat: -7.9, gps_lng: 112.9, radius_meters: 100 };
-      mockScheduleRepo.find.mockResolvedValue([
-        { area: near } as any,
-        { area: far } as any,
-      ]);
+      mockScheduleRepo.find.mockResolvedValue([{ area: near } as any, { area: far } as any]);
 
       const result = await service.getActiveArea(mockUser.id, -7.29, 112.74);
 

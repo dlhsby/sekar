@@ -113,7 +113,13 @@ describe('SchedulesController', () => {
       const result = await controller.findAll(mockAdminUser as any);
 
       expect(result).toEqual([mockSchedule]);
-      expect(service.findAll).toHaveBeenCalledWith(undefined, undefined, false, mockAdminUser, NO_FILTERS);
+      expect(service.findAll).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+        false,
+        mockAdminUser,
+        NO_FILTERS,
+      );
     });
 
     it('should pass admin_data user context for rayon filtering', async () => {
@@ -130,7 +136,13 @@ describe('SchedulesController', () => {
       const result = await controller.findAll(adminDataUser as any);
 
       expect(result).toEqual([mockSchedule]);
-      expect(service.findAll).toHaveBeenCalledWith(undefined, undefined, false, adminDataUser, NO_FILTERS);
+      expect(service.findAll).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+        false,
+        adminDataUser,
+        NO_FILTERS,
+      );
     });
 
     it('should pass kepala_rayon user context for rayon filtering', async () => {
@@ -147,7 +159,13 @@ describe('SchedulesController', () => {
       const result = await controller.findAll(kepalaRayonUser as any);
 
       expect(result).toEqual([mockSchedule]);
-      expect(service.findAll).toHaveBeenCalledWith(undefined, undefined, false, kepalaRayonUser, NO_FILTERS);
+      expect(service.findAll).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+        false,
+        kepalaRayonUser,
+        NO_FILTERS,
+      );
     });
 
     it('should filter schedules by areaId', async () => {
@@ -156,7 +174,13 @@ describe('SchedulesController', () => {
       const result = await controller.findAll(mockAdminUser as any, mockArea.id);
 
       expect(result).toEqual([mockSchedule]);
-      expect(service.findAll).toHaveBeenCalledWith(mockArea.id, undefined, false, mockAdminUser, NO_FILTERS);
+      expect(service.findAll).toHaveBeenCalledWith(
+        mockArea.id,
+        undefined,
+        false,
+        mockAdminUser,
+        NO_FILTERS,
+      );
     });
 
     it('should filter schedules by userId', async () => {
@@ -165,7 +189,13 @@ describe('SchedulesController', () => {
       const result = await controller.findAll(mockAdminUser as any, undefined, mockUser.id);
 
       expect(result).toEqual([mockSchedule]);
-      expect(service.findAll).toHaveBeenCalledWith(undefined, mockUser.id, false, mockAdminUser, NO_FILTERS);
+      expect(service.findAll).toHaveBeenCalledWith(
+        undefined,
+        mockUser.id,
+        false,
+        mockAdminUser,
+        NO_FILTERS,
+      );
     });
 
     it('should filter schedules by activeOnly when activeOnly is "true"', async () => {
@@ -174,17 +204,35 @@ describe('SchedulesController', () => {
       const result = await controller.findAll(mockAdminUser as any, undefined, undefined, 'true');
 
       expect(result).toEqual([mockSchedule]);
-      expect(service.findAll).toHaveBeenCalledWith(undefined, undefined, true, mockAdminUser, NO_FILTERS);
+      expect(service.findAll).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+        true,
+        mockAdminUser,
+        NO_FILTERS,
+      );
     });
 
     it('should not filter by activeOnly when activeOnly is not "true"', async () => {
       mockService.findAll.mockResolvedValue([mockSchedule]);
 
       await controller.findAll(mockAdminUser as any, undefined, undefined, 'false');
-      expect(service.findAll).toHaveBeenCalledWith(undefined, undefined, false, mockAdminUser, NO_FILTERS);
+      expect(service.findAll).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+        false,
+        mockAdminUser,
+        NO_FILTERS,
+      );
 
       await controller.findAll(mockAdminUser as any, undefined, undefined, undefined);
-      expect(service.findAll).toHaveBeenCalledWith(undefined, undefined, false, mockAdminUser, NO_FILTERS);
+      expect(service.findAll).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+        false,
+        mockAdminUser,
+        NO_FILTERS,
+      );
     });
 
     it('should apply all filters together', async () => {
@@ -198,7 +246,13 @@ describe('SchedulesController', () => {
       );
 
       expect(result).toEqual([mockSchedule]);
-      expect(service.findAll).toHaveBeenCalledWith(mockArea.id, mockUser.id, true, mockAdminUser, NO_FILTERS);
+      expect(service.findAll).toHaveBeenCalledWith(
+        mockArea.id,
+        mockUser.id,
+        true,
+        mockAdminUser,
+        NO_FILTERS,
+      );
     });
   });
 
