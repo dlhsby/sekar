@@ -73,31 +73,31 @@ export const STATUS_CARD_STYLES: Record<
   { bg: string; activeBg: string; text: string; dot: string }
 > = {
   active: {
-    bg: 'bg-[var(--color-status-active-bg)] hover:bg-[#BBF7D0]',
+    bg: 'bg-[var(--color-status-active-bg)] hover:bg-[var(--color-status-active)]/20',
     activeBg: 'bg-[var(--color-status-active)]',
     text: 'text-white',
     dot: 'bg-[var(--color-status-active)]',
   },
   inactive: {
-    bg: 'bg-[var(--color-status-idle-bg)] hover:bg-[#FDE68A]',
+    bg: 'bg-[var(--color-status-idle-bg)] hover:bg-[var(--color-status-idle)]/20',
     activeBg: 'bg-[var(--color-status-idle)]',
     text: 'text-white',
     dot: 'bg-[var(--color-status-idle)]',
   },
   outside_area: {
-    bg: 'bg-[var(--color-status-outside-bg)] hover:bg-[#E9D5FF]',
+    bg: 'bg-[var(--color-status-outside-bg)] hover:bg-[var(--color-status-outside)]/20',
     activeBg: 'bg-[var(--color-status-outside)]',
     text: 'text-white',
     dot: 'bg-[var(--color-status-outside)]',
   },
   missing: {
-    bg: 'bg-[var(--color-status-missing-bg)] hover:bg-[#FECACA]',
+    bg: 'bg-[var(--color-status-missing-bg)] hover:bg-[var(--color-status-missing)]/20',
     activeBg: 'bg-[var(--color-status-missing)]',
     text: 'text-white',
     dot: 'bg-[var(--color-status-missing)]',
   },
   offline: {
-    bg: 'bg-[var(--color-status-offline-bg)] hover:bg-[#E5E7EB]',
+    bg: 'bg-[var(--color-status-offline-bg)] hover:bg-[var(--color-status-offline)]/20',
     activeBg: 'bg-[var(--color-status-offline)]',
     text: 'text-white',
     dot: 'bg-[var(--color-status-offline)]',
@@ -113,16 +113,20 @@ export const STATUS_DOT_CLASSES: Record<TrackingStatus, string> = {
   offline: 'bg-[var(--color-status-offline)]',
 };
 
-// Tailwind classes for status badges
+// Tailwind classes for status badges.
+// Foreground uses the paired `--color-status-*` token (not a hardcoded hex) so
+// it inverts with the `-bg` token in dark mode and keeps contrast on the tint.
 export const STATUS_BADGE_CLASSES: Record<TrackingStatus, string> = {
-  active: 'bg-[var(--color-status-active-bg)] text-[#14532D] border-[var(--color-status-active)]',
-  inactive: 'bg-[var(--color-status-idle-bg)] text-[#78350F] border-[var(--color-status-idle)]',
+  active:
+    'bg-[var(--color-status-active-bg)] text-[var(--color-status-active)] border-[var(--color-status-active)]',
+  inactive:
+    'bg-[var(--color-status-idle-bg)] text-[var(--color-status-idle)] border-[var(--color-status-idle)]',
   outside_area:
-    'bg-[var(--color-status-outside-bg)] text-[#581C87] border-[var(--color-status-outside)]',
+    'bg-[var(--color-status-outside-bg)] text-[var(--color-status-outside)] border-[var(--color-status-outside)]',
   missing:
-    'bg-[var(--color-status-missing-bg)] text-[#7F1D1D] border-[var(--color-status-missing)]',
+    'bg-[var(--color-status-missing-bg)] text-[var(--color-status-missing)] border-[var(--color-status-missing)]',
   offline:
-    'bg-[var(--color-status-offline-bg)] text-[#374151] border-[var(--color-status-offline)]',
+    'bg-[var(--color-status-offline-bg)] text-[var(--color-status-offline)] border-[var(--color-status-offline)]',
 };
 
 // ---------------------------------------------------------------------------

@@ -297,7 +297,7 @@ export default function SchedulesPage() {
               description="Buat jadwal laporan otomatis untuk menjalankan laporan secara berkala"
             />
           ) : (
-            <DataTable columns={columns} data={schedulesList} />
+            <DataTable columns={columns} data={schedulesList} getRowId={(r) => String(r.id)} />
           )}
         </CardContent>
       </Card>

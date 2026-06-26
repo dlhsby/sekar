@@ -6,6 +6,7 @@ import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import { cn, nbFocusRing } from '@/lib/utils/cn';
 
 import { Input, type InputProps } from './input';
+import { usePopoverAnchor } from './picker-utils';
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from './popover';
 
 /** Time options at a fixed step (default 15 min), e.g. 00:00 … 23:45. */
@@ -103,9 +104,11 @@ function formatLive(raw: string): string {
 function normalize(raw: string): string {
   const digits = raw.replace(/\D/g, '').slice(0, 4);
   if (!digits) return '';
-  const hh = Math.min(23, Number(digits.slice(0, 2).padEnd(2, '0')));
+  // Pad partial sub-fields on the LEFT so a single typed digit reads as the
+  // ones place (e.g. "9" → 09:00, not "90" clamped to 23:00).
+  const hh = Math.min(23, Number(digits.slice(0, 2).padStart(2, '0')));
   const minutePart = digits.slice(2);
-  const mm = minutePart ? Math.min(59, Number(minutePart.padEnd(2, '0'))) : 0;
+  const mm = minutePart ? Math.min(59, Number(minutePart.padStart(2, '0'))) : 0;
   return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
 }
 
@@ -119,9 +122,7 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
   ref
 ) {
   const [open, setOpen] = useState(false);
-  const anchorRef = useRef<HTMLDivElement>(null);
-  const insideAnchor = (target: EventTarget | null): boolean =>
-    target instanceof Node && (anchorRef.current?.contains(target) ?? false);
+  const { anchorRef, insideAnchor } = usePopoverAnchor();
   const current = normalize(value ?? '');
 
   return (

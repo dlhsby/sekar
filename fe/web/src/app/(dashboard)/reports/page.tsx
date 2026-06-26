@@ -302,7 +302,12 @@ export default function ReportsPage() {
             />
           ) : (
             <>
-              <DataTable columns={columns} data={reports} />
+              <DataTable
+                columns={columns}
+                data={reports}
+                getRowId={(r) => String(r.id)}
+                enablePagination={false}
+              />
 
               {/* Pagination */}
               <div className="flex items-center justify-center gap-2 mt-4">

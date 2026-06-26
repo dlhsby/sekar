@@ -67,7 +67,7 @@ export function UserDetailPanel({
 
   const statusClass =
     STATUS_BADGE_CLASSES[summary.status] ??
-    'bg-[var(--color-status-offline-bg)] text-[#374151] border-[var(--color-status-offline)]';
+    'bg-[var(--color-status-offline-bg)] text-[var(--color-status-offline)] border-[var(--color-status-offline)]';
   const statusLabel = STATUS_LABELS[summary.status] ?? summary.status;
   const roleLabel = ROLE_LABELS[summary.role as UserRole] || summary.role;
 

@@ -32,9 +32,9 @@ export function StatusCard({ label, count, status, isActive, onClick }: StatusCa
           ? cn(
               styles.activeBg,
               styles.text,
-              'shadow-[4px_4px_0_0_#000] translate-x-0 translate-y-0'
+              'shadow-nb-sm translate-x-0 translate-y-0'
             )
-          : cn(styles.bg, 'text-nb-black', 'shadow-nb-sm hover:shadow-[4px_4px_0_0_#000]'),
+          : cn(styles.bg, 'text-nb-black', 'shadow-nb-sm hover:shadow-nb-md'),
         'p-3'
       )}
       aria-pressed={isActive}
