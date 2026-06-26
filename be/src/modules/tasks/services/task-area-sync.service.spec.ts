@@ -44,7 +44,10 @@ describe('TaskAreaSyncService', () => {
     expect(taskRepository.find).toHaveBeenCalledWith(
       expect.objectContaining({ where: expect.objectContaining({ assigned_to: 'user-1' }) }),
     );
-    expect(userAreasService.syncTaskBasedAreas).toHaveBeenCalledWith('user-1', ['area-1', 'area-2']);
+    expect(userAreasService.syncTaskBasedAreas).toHaveBeenCalledWith('user-1', [
+      'area-1',
+      'area-2',
+    ]);
   });
 
   it('clears task-based areas when the worker has no active tasks', async () => {
