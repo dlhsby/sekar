@@ -3,11 +3,11 @@ import {
   IsNotEmpty,
   IsEnum,
   IsUUID,
+  IsArray,
   MinLength,
   MaxLength,
   IsOptional,
   Matches,
-  ValidateIf,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '../entities/user.entity';
@@ -51,17 +51,22 @@ export class CreateUserDto {
    *
    * @example 'securepassword123'
    */
-  @ApiProperty({
-    description: 'Password for authentication (min 6 characters)',
-    example: 'securepassword123',
+  /**
+   * Optional. When omitted (the normal flow), the backend auto-generates a
+   * one-time temporary password and returns it once; the user is forced to
+   * change it on first login. Admins do not set passwords directly.
+   */
+  @ApiPropertyOptional({
+    description:
+      'Optional. Omit to auto-generate a one-time temp password (returned once as `temp_password`).',
     minLength: ValidationConstants.PASSWORD_MIN_LENGTH,
   })
   @IsString()
-  @IsNotEmpty({ message: 'Password is required' })
+  @IsOptional()
   @MinLength(ValidationConstants.PASSWORD_MIN_LENGTH, {
     message: `Password must be at least ${ValidationConstants.PASSWORD_MIN_LENGTH} characters`,
   })
-  password: string;
+  password?: string;
 
   /**
    * User's full name for display.
@@ -110,18 +115,25 @@ export class CreateUserDto {
   phone_number?: string;
 
   @ApiPropertyOptional({
-    description: 'Rayon ID (required for kepala_rayon role)',
+    description: 'Rayon ID (single). Optional for all roles.',
   })
   @IsUUID()
   @IsOptional()
-  @ValidateIf((o) => o.role === UserRole.KEPALA_RAYON)
   rayon_id?: string;
 
   @ApiPropertyOptional({
-    description: 'Area ID (required for korlap role)',
+    description: 'Permanent area assignments (multi). The first becomes the primary area.',
+    type: [String],
+  })
+  @IsArray()
+  @IsUUID('4', { each: true })
+  @IsOptional()
+  area_ids?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Single working shift for this worker (one timeframe across all areas).',
   })
   @IsUUID()
   @IsOptional()
-  @ValidateIf((o) => o.role === UserRole.KORLAP)
-  area_id?: string;
+  shift_definition_id?: string;
 }

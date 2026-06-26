@@ -28,6 +28,7 @@ import { TasksScreen, ActivitiesScreen } from '../screens/taskActivity';
 import { TaskDetailScreen } from '../screens/field/TaskDetailScreen';
 import { TaskCompleteScreen } from '../screens/field/TaskCompleteScreen';
 import { ShiftHistoryScreen } from '../screens/field/ShiftHistoryScreen';
+import { MyScheduleScreen } from '../screens/field/MyScheduleScreen';
 import { ActivityDetailScreen } from '../screens/field/ActivityDetailScreen';
 // Monitoring screens
 import { MapDashboardScreen } from '../screens/monitoring/MapDashboardScreen';
@@ -128,6 +129,7 @@ const headerChrome = { ...NB_HEADER_STYLE, justifyContent: 'center' as const };
 // Profile is a bottom tab (rendered directly in TabNavigator), so it is NOT wrapped
 // here — the header avatar and the tab both resolve to that single ProfileScreen.
 const ShiftHistoryWithHeader = withProfileHeader(ShiftHistoryScreen, 'Riwayat Shift');
+const MyScheduleWithHeader = withProfileHeader(MyScheduleScreen, 'Jadwal Saya');
 const SettingsWithHeader   = withProfileHeader(SettingsScreen,   'Pengaturan');
 const NotificationPreferencesWithHeader = withProfileHeader(
   NotificationPreferencesScreen,
@@ -544,6 +546,11 @@ function MainNavigator(): React.JSX.Element {
       <MainStack.Screen
         name="ShiftHistory"
         component={ShiftHistoryWithHeader}
+        options={{ animation: 'slide_from_left' }}
+      />
+      <MainStack.Screen
+        name="MySchedule"
+        component={MyScheduleWithHeader}
         options={{ animation: 'slide_from_left' }}
       />
       <MainStack.Screen

@@ -7,11 +7,12 @@
 
 import { useState, use } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Edit, Trash2, Users, Map as MapIcon } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Map as MapIcon } from 'lucide-react';
 import { Button, Badge, Card, CardContent, CardHeader } from '@/components/ui';
 import { Map } from '@/components/maps/Map';
 import { PolygonEditor } from '@/components/maps/PolygonEditor';
 import { DeleteAreaModal } from '@/components/areas/DeleteAreaModal';
+import { AreaWorkersCard } from '@/components/areas/AreaWorkersCard';
 import { useArea, useAreaBoundary, useUpdateAreaBoundary } from '@/lib/api/areas';
 import { useAuth } from '@/lib/auth/hooks';
 import { formatArea, formatCoordinates, polygonToFeature } from '@/lib/utils/geo';
@@ -29,6 +30,10 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
 
   const isAdmin =
     user?.role === 'admin_system' || user?.role === 'superadmin' || user?.role === 'top_management';
+
+  // Worker assignment matches the backend gate (USER_MANAGERS + kepala_rayon).
+  const canManageWorkers =
+    user?.role === 'admin_system' || user?.role === 'superadmin' || user?.role === 'kepala_rayon';
 
   const { data: boundaryData } = useAreaBoundary(id);
   const { mutate: updateBoundary, isPending: isSavingBoundary } = useUpdateAreaBoundary();
@@ -254,22 +259,8 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
         </Card>
       </div>
 
-      {/* Staff Requirements Section (placeholder) */}
-      <Card variant="outlined">
-        <CardHeader className="bg-nb-gray-100">
-          <h2 className="font-bold text-lg">Kebutuhan Tenaga Kerja</h2>
-        </CardHeader>
-        <CardContent className="p-8 text-center text-nb-gray-500">
-          <p className="mb-4">
-            Fitur kebutuhan tenaga kerja akan tersedia setelah staff requirements diimplementasikan.
-          </p>
-          {isAdmin && (
-            <Button variant="secondary" disabled leftIcon={<Users className="w-4 h-4" />}>
-              Atur Kebutuhan Staff
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+      {/* Assigned workers roster + assign/remove (ADR-013) */}
+      <AreaWorkersCard areaId={id} canManage={canManageWorkers} />
 
       {/* Boundary Section (Phase 2D) */}
       <Card variant="elevated">

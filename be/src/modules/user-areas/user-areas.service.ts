@@ -73,6 +73,48 @@ export class UserAreasService {
     return results;
   }
 
+  /**
+   * Make a user's PERMANENT area set exactly match `areaIds` (add missing,
+   * remove dropped). Leaves `task_based` rows untouched. Returns the
+   * {added, removed} area ids so callers can audit reassignments.
+   */
+  async reconcilePermanentAreas(
+    userId: string,
+    areaIds: string[],
+    assignedBy: string,
+  ): Promise<{ added: string[]; removed: string[] }> {
+    const desired = [...new Set(areaIds)];
+    // If a desired area currently exists only as a task_based row, drop that row
+    // so it is represented once (as permanent) — avoids duplicate memberships.
+    if (desired.length) {
+      await this.userAreaRepo.delete({
+        user_id: userId,
+        area_id: In(desired),
+        assignment_type: 'task_based',
+      });
+    }
+    const current = await this.getPermanentAreaIds(userId);
+    const added = desired.filter((id) => !current.includes(id));
+    const removed = current.filter((id) => !desired.includes(id));
+
+    if (added.length) {
+      await this.assignAreas(userId, added, assignedBy);
+    }
+    for (const areaId of removed) {
+      await this.userAreaRepo.delete({
+        user_id: userId,
+        area_id: areaId,
+        assignment_type: 'permanent',
+      });
+    }
+    if (added.length || removed.length) {
+      this.logger.log(
+        `Reconciled permanent areas for user ${userId}: +${added.length} -${removed.length}`,
+      );
+    }
+    return { added, removed };
+  }
+
   async removeAssignment(userId: string, areaId: string): Promise<void> {
     const result = await this.userAreaRepo.delete({
       user_id: userId,

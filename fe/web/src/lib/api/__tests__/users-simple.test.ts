@@ -269,11 +269,20 @@ describe('Users API', () => {
       expect(response.data.role).toBe('korlap');
     });
 
-    it('should update user password', async () => {
-      const updateData: UpdateUserDto = {
-        password: 'new-password-123',
-      };
+    it('should reset a user password (admin) returning a one-time temp password', async () => {
+      mockAxios.onPost('/users/1/reset-password').reply(201, { temp_password: 'X7k9m-Qp2rT' });
 
+      const response = await apiClient.post('/users/1/reset-password');
+
+      expect(response.status).toBe(201);
+      expect(response.data.temp_password).toBe('X7k9m-Qp2rT');
+    });
+
+    it('should assign multiple areas + shift on update', async () => {
+      const updateData: UpdateUserDto = {
+        area_ids: ['a1', 'a2'],
+        shift_definition_id: 's1',
+      };
       mockAxios.onPatch('/users/1', updateData).reply(200, {
         id: '1',
         username: 'admin',

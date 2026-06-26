@@ -12,6 +12,7 @@
     "tools/eslint-plugin-sekar-design"
   ],
   "scripts": {
+    "prepare": "husky",
     "setup": "./scripts/setup.sh",
     "start": "./scripts/start.sh",
     "start:be": "./scripts/start-be.sh",
@@ -24,6 +25,8 @@
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.0",
     "@types/node": "^22.10.5",
     "@typescript-eslint/rule-tester": "^8.20.0",
     "@typescript-eslint/parser": "^8.20.0",

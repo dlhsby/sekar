@@ -23,6 +23,7 @@ import { NotificationsService } from '../../notifications/notifications.service'
 import { NotificationType } from '../../notifications/entities/notification.entity';
 import { RedisService } from '../../../common/services/redis.service';
 import { BoundaryCheckService } from '../../../shared/services/boundary-check.service';
+import { UserAreasService } from '../../user-areas/user-areas.service';
 
 export interface StatusInput {
   hasActiveShift: boolean;
@@ -61,6 +62,11 @@ export class StatusCalculatorService {
     // Optional → legacy specs without the provider fall back to a local instance.
     @Optional()
     private readonly boundaryCheckService?: BoundaryCheckService,
+    // ADR-013 §5: a worker on an accepted cross-area task should count as
+    // within-area while inside that task's area. Optional → legacy specs
+    // without the provider fall back to primary-area-only checking.
+    @Optional()
+    private readonly userAreasService?: UserAreasService,
   ) {}
 
   private get boundaryCheck(): BoundaryCheckService {
@@ -362,7 +368,7 @@ export class StatusCalculatorService {
 
     let isWithinArea = true;
     if (existing.area_id) {
-      isWithinArea = await this.checkWithinArea(existing.area_id, lat, lng);
+      isWithinArea = await this.checkWithinAnyAssignedArea(userId, existing.area_id, lat, lng);
     }
 
     const thresholds = await this.cacheService.getThresholds();
@@ -645,5 +651,34 @@ export class StatusCalculatorService {
       boundary[0],
       geofencing.tolerance_meters,
     );
+  }
+
+  /**
+   * ADR-013 §5: a worker counts as within-area if they are inside their primary
+   * (schedule) area OR any other area assigned to them — including the
+   * `task_based` areas added when they accept a cross-area task. The extra
+   * lookup only runs when the worker is outside their primary area (the
+   * uncommon case), keeping the per-ping hot path at one boundary check.
+   */
+  private async checkWithinAnyAssignedArea(
+    userId: string,
+    primaryAreaId: string,
+    lat: number,
+    lng: number,
+  ): Promise<boolean> {
+    if (await this.checkWithinArea(primaryAreaId, lat, lng)) {
+      return true;
+    }
+    if (!this.userAreasService) {
+      return false;
+    }
+    const areas = await this.userAreasService.getEffectiveAreas(userId);
+    for (const area of areas) {
+      if (area.id === primaryAreaId) continue;
+      if (await this.checkWithinArea(area.id, lat, lng)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

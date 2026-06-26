@@ -2,11 +2,11 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
-import { UserForm } from '@/components/forms/UserForm';
-import { useUser, useUpdateUser } from '@/lib/api/users';
-import { UpdateUserDto } from '@/types/models';
+import { ArrowLeft, KeyRound } from 'lucide-react';
+import { UserForm, type UserFormSubmit } from '@/components/forms/UserForm';
+import { useUser, useUpdateUser, useResetUserPassword } from '@/lib/api/users';
 import { Button, Card, CardContent } from '@/components/ui';
+import { TempPasswordDialog } from '@/components/users/TempPasswordDialog';
 
 interface EditUserPageProps {
   params: Promise<{ id: string }>;
@@ -31,21 +31,21 @@ export default function EditUserPage({ params }: EditUserPageProps) {
   // Fetch user data
   const { data: user, isLoading, error } = useUser(userId);
   const updateUserMutation = useUpdateUser();
+  const resetPasswordMutation = useResetUserPassword();
+  const [tempPassword, setTempPassword] = React.useState<string | null>(null);
 
-  const handleSubmit = async (data: UpdateUserDto) => {
+  const handleSubmit = async (data: UserFormSubmit) => {
     try {
-      await updateUserMutation.mutateAsync({
-        id: userId,
-        data,
-      });
-      // Success - redirect to users list
+      await updateUserMutation.mutateAsync({ id: userId, data });
       router.push('/users');
-      // Note: In a real app, you'd show a toast notification here
     } catch (error) {
-      // Error handling
-      console.error('Failed to update user:', error);
       throw error;
     }
+  };
+
+  const handleResetPassword = async () => {
+    const result = await resetPasswordMutation.mutateAsync(userId);
+    setTempPassword(result.temp_password);
   };
 
   const handleCancel = () => {
@@ -142,6 +142,33 @@ export default function EditUserPage({ params }: EditUserPageProps) {
           </p>
         </div>
       )}
+
+      {/* Reset password */}
+      <Card variant="outlined">
+        <CardContent className="flex flex-wrap items-center justify-between gap-3 p-6">
+          <div>
+            <h2 className="font-bold">Reset Password</h2>
+            <p className="text-sm text-nb-gray-600">
+              Buat password sementara baru. Pengguna wajib menggantinya saat login berikutnya.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            leftIcon={<KeyRound className="size-4" />}
+            loading={resetPasswordMutation.isPending}
+            onClick={handleResetPassword}
+          >
+            Reset Password
+          </Button>
+        </CardContent>
+      </Card>
+
+      <TempPasswordDialog
+        password={tempPassword}
+        username={user.username}
+        onClose={() => setTempPassword(null)}
+      />
     </div>
   );
 }

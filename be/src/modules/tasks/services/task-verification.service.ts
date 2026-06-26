@@ -10,6 +10,7 @@ import { AuditLogService } from '../../audit/audit.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { NotificationType } from '../../notifications/entities/notification.entity';
 import { TaskFinderService } from './task-finder.service';
+import { TaskAreaSyncService } from './task-area-sync.service';
 
 type LifecycleEvent = 'accepted' | 'declined' | 'verified' | 'revision_needed';
 
@@ -30,6 +31,7 @@ export class TaskVerificationService {
     private readonly areasService: AreasService,
     private readonly auditLogService: AuditLogService,
     private readonly notificationsService: NotificationsService,
+    private readonly taskAreaSync: TaskAreaSyncService,
   ) {}
 
   /** Accept an assigned task (by assignee only). */
@@ -43,6 +45,9 @@ export class TaskVerificationService {
       status: TaskStatus.ACCEPTED,
       accepted_at: new Date(),
     });
+    // ADR-013 §5: accepting a task in another area extends the worker's
+    // monitoring boundary to that area while the task is active.
+    await this.taskAreaSync.syncForUser(userId);
     this.notifyLifecycleParty(task, userId, 'accepted');
     return this.taskFinder.getOrFail(taskId);
   }
@@ -59,6 +64,8 @@ export class TaskVerificationService {
       declined_at: new Date(),
       decline_reason: reason,
     });
+    // Declining frees the worker from that area (unless another active task keeps it).
+    await this.taskAreaSync.syncForUser(userId);
     // Decline is high-priority for the creator — they need to reassign
     // or the work won't happen.
     this.notifyLifecycleParty(task, userId, 'declined', reason);
@@ -85,6 +92,8 @@ export class TaskVerificationService {
       status: TaskStatus.VERIFIED,
       verified_by: verifierId,
     });
+    // Verified is terminal — clear the assignee's task-based area if unused.
+    await this.taskAreaSync.syncForUser(task.assigned_to);
     this.notifyLifecycleParty(task, verifierId, 'verified');
     return this.taskFinder.getOrFail(taskId);
   }
