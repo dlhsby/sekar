@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { ChevronRight } from 'lucide-react';
 
-import { cn } from '@/lib/utils/cn';
+import { cn, nbFocusRing } from '@/lib/utils/cn';
 
 /** Breadcrumb — semantic navigation trail (Neo Brutalism mono styling). */
 const Breadcrumb = React.forwardRef<HTMLElement, React.ComponentPropsWithoutRef<'nav'>>(
@@ -38,7 +38,7 @@ const BreadcrumbLink = React.forwardRef<HTMLAnchorElement, React.ComponentPropsW
   ({ className, ...props }, ref) => (
     <a
       ref={ref}
-      className={cn('transition-colors hover:text-nb-black hover:underline', className)}
+      className={cn('transition-colors hover:text-nb-black hover:underline', nbFocusRing, className)}
       {...props}
     />
   )

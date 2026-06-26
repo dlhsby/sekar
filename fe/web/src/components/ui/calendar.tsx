@@ -32,9 +32,9 @@ export function Calendar({
         caption_label: 'text-nb-body-sm font-semibold text-nb-black capitalize',
         nav: 'absolute inset-x-2 top-3 flex items-center justify-between',
         button_previous:
-          'inline-flex h-8 w-8 items-center justify-center rounded-nb-base border-2 border-nb-black bg-nb-white text-nb-black shadow-nb-xs hover:bg-nb-gray-100 disabled:opacity-40 disabled:shadow-none',
+          'inline-flex h-8 w-8 items-center justify-center rounded-nb-base border-2 border-nb-black bg-nb-white text-nb-black shadow-nb-xs hover:bg-nb-gray-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none',
         button_next:
-          'inline-flex h-8 w-8 items-center justify-center rounded-nb-base border-2 border-nb-black bg-nb-white text-nb-black shadow-nb-xs hover:bg-nb-gray-100 disabled:opacity-40 disabled:shadow-none',
+          'inline-flex h-8 w-8 items-center justify-center rounded-nb-base border-2 border-nb-black bg-nb-white text-nb-black shadow-nb-xs hover:bg-nb-gray-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none',
         month_grid: 'w-full border-collapse',
         weekdays: 'flex',
         weekday: 'w-9 text-nb-caption font-bold uppercase text-nb-gray-500',

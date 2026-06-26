@@ -80,7 +80,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           {(error || helperText) && (
             <p
               id={helperId}
-              className={cn('mt-1 text-sm', error ? 'text-nb-danger' : 'text-nb-gray-600')}
+              className={cn('mt-1 text-nb-body-sm', error ? 'text-nb-danger' : 'text-nb-gray-600')}
             >
               {error || helperText}
             </p>
@@ -102,7 +102,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {(error || helperText) && (
           <p
             id={helperId}
-            className={cn('mt-1 text-sm', error ? 'text-nb-danger' : 'text-nb-gray-600')}
+            className={cn('mt-1 text-nb-body-sm', error ? 'text-nb-danger' : 'text-nb-gray-600')}
           >
             {error || helperText}
           </p>

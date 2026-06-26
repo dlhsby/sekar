@@ -178,7 +178,7 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
         </div>
 
         {/* Title */}
-        <h3 className="text-lg font-bold text-nb-black mb-2">{title}</h3>
+        <h3 className="text-nb-h3 text-nb-black mb-2">{title}</h3>
 
         {/* Description */}
         <p className="text-nb-gray-600 max-w-md mb-6">{description}</p>

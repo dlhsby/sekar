@@ -56,7 +56,7 @@ const SectionCard = React.forwardRef<HTMLElement, SectionCardProps>(
             <span aria-hidden />
           )}
           <div className="flex items-center gap-2">
-            {meta && <span className="font-mono text-[11px] text-nb-gray-600">{meta}</span>}
+            {meta && <span className="font-mono text-nb-mono-sm text-nb-gray-600">{meta}</span>}
             {action}
           </div>
         </header>

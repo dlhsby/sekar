@@ -3,7 +3,7 @@
 import { Clock } from 'lucide-react';
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 
-import { cn } from '@/lib/utils/cn';
+import { cn, nbFocusRing } from '@/lib/utils/cn';
 
 import { Input, type InputProps } from './input';
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from './popover';
@@ -152,7 +152,7 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(function
               type="button"
               disabled={disabled}
               aria-label="Pilih jam"
-              className="absolute inset-y-0 right-0 flex items-center px-3 text-nb-gray-500 hover:text-nb-black disabled:cursor-not-allowed disabled:text-nb-gray-300"
+              className={cn('absolute inset-y-0 right-0 flex items-center px-3 text-nb-gray-500 hover:text-nb-black disabled:cursor-not-allowed disabled:text-nb-gray-300', nbFocusRing)}
             >
               <Clock className="h-4 w-4" aria-hidden />
             </button>

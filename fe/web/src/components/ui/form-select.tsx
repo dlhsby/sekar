@@ -70,7 +70,7 @@ const FormSelect = React.forwardRef<HTMLDivElement, FormSelectProps>(
         {error && (
           <p
             id={messageId}
-            className="text-sm text-nb-danger font-medium"
+            className="text-nb-body-sm text-nb-danger font-medium"
             role="alert"
             aria-live="polite"
           >
@@ -79,7 +79,7 @@ const FormSelect = React.forwardRef<HTMLDivElement, FormSelectProps>(
         )}
 
         {!error && helperText && (
-          <p id={messageId} className="text-sm text-nb-gray-600">
+          <p id={messageId} className="text-nb-body-sm text-nb-gray-600">
             {helperText}
           </p>
         )}

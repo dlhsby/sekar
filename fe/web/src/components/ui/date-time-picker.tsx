@@ -5,7 +5,7 @@ import { id } from 'date-fns/locale';
 import { CalendarClock } from 'lucide-react';
 import { forwardRef, useEffect, useRef, useState } from 'react';
 
-import { cn } from '@/lib/utils/cn';
+import { cn, nbFocusRing } from '@/lib/utils/cn';
 
 import { Calendar } from './calendar';
 import { Input } from './input';
@@ -157,7 +157,7 @@ export const DateTimePicker = forwardRef<HTMLInputElement, DateTimePickerProps>(
                 type="button"
                 disabled={disabled}
                 aria-label="Pilih tanggal & waktu"
-                className="absolute inset-y-0 right-0 flex items-center px-3 text-nb-gray-500 hover:text-nb-black disabled:cursor-not-allowed disabled:text-nb-gray-300"
+                className={cn('absolute inset-y-0 right-0 flex items-center px-3 text-nb-gray-500 hover:text-nb-black disabled:cursor-not-allowed disabled:text-nb-gray-300', nbFocusRing)}
               >
                 <CalendarClock className="h-4 w-4" aria-hidden />
               </button>

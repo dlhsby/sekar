@@ -97,13 +97,13 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           {(error || helperText) && (
             <p
               id="textarea-helper"
-              className={cn('text-sm', error ? 'text-nb-danger' : 'text-nb-gray-600')}
+              className={cn('text-nb-body-sm', error ? 'text-nb-danger' : 'text-nb-gray-600')}
             >
               {error || helperText}
             </p>
           )}
           {showCount && maxLength && (
-            <p className="text-sm text-nb-gray-600 ml-auto">
+            <p className="text-nb-body-sm text-nb-gray-600 ml-auto">
               {currentLength}/{maxLength}
             </p>
           )}
