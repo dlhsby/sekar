@@ -234,9 +234,9 @@ export function DateRangePicker({
               day_button:
                 'inline-flex h-9 w-9 items-center justify-center rounded-nb-base text-nb-black hover:bg-nb-gray-100',
               range_start:
-                '[&>button]:rounded-nb-base [&>button]:border-2 [&>button]:border-nb-black [&>button]:bg-nb-primary [&>button]:font-bold [&>button]:text-nb-black [&>button]:hover:bg-nb-primary',
+                '[&>button]:rounded-nb-base [&>button]:border-2 [&>button]:border-nb-black [&>button]:bg-nb-primary [&>button]:font-bold [&>button]:text-nb-ink [&>button]:hover:bg-nb-primary',
               range_end:
-                '[&>button]:rounded-nb-base [&>button]:border-2 [&>button]:border-nb-black [&>button]:bg-nb-primary [&>button]:font-bold [&>button]:text-nb-black [&>button]:hover:bg-nb-primary',
+                '[&>button]:rounded-nb-base [&>button]:border-2 [&>button]:border-nb-black [&>button]:bg-nb-primary [&>button]:font-bold [&>button]:text-nb-ink [&>button]:hover:bg-nb-primary',
               range_middle:
                 'aria-selected:bg-nb-primary/30 aria-selected:text-nb-black',
               today: '[&>button]:font-bold [&>button]:text-nb-success-dark',

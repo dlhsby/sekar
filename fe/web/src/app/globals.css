@@ -37,6 +37,10 @@
   --color-nb-white: var(--color-nb-white);
   --color-nb-navy: var(--color-nb-navy);
   --color-nb-background: var(--color-bg-canvas);
+  /* Always-dark ink for text/icons that sit ON a saturated colored fill
+     (e.g. text-nb-black on bg-nb-primary buttons/badges). Unlike nb-black it
+     does NOT invert in dark mode, so on-fill contrast is preserved. */
+  --color-nb-ink: var(--color-nb-ink);
 
   /* ===== Sidebar ===== */
   --color-nb-sidebar: var(--color-nb-sidebar-bg);
@@ -317,6 +321,73 @@
     --sidebar-border: 0 0% 20%;
     --sidebar-ring: 210 100% 50%;
   }
+}
+
+/* nb-ink — always-dark on-fill ink (never inverts in dark mode). */
+:root,
+.dark {
+  --color-nb-ink: #1c1917;
+}
+
+/* ============================================
+   DARK MODE — NB token overrides
+   Unlayered so they win over generated/tokens.css :root via source order.
+   Strategy: invert neutrals (surfaces/ink/grays), darken accent-tone surfaces,
+   re-pair status tints with lighter foregrounds, keep brand FILL colors vivid
+   (text on them uses the non-inverting `nb-ink`), and keep hard shadows.
+   ============================================ */
+.dark {
+  /* Surfaces + ink (inverted, warm-dark to match the NB stone palette) */
+  --color-nb-white: #211d19;
+  --color-bg-surface: #211d19;
+  --color-bg-canvas: #16130f;
+  --color-nb-black: #ece7df;
+
+  /* Gray ramp inverted (50 = subtle bg → dark; 900 = ink → light) */
+  --color-nb-gray-50: #2b2723;
+  --color-nb-gray-100: #322d28;
+  --color-nb-gray-200: #3d3832;
+  --color-nb-gray-300: #4a443d;
+  --color-nb-gray-400: #6f675e;
+  --color-nb-gray-500: #938a7f;
+  --color-nb-gray-600: #b6ada1;
+  --color-nb-gray-700: #ccc3b7;
+  --color-nb-gray-800: #e0d8cd;
+  --color-nb-gray-900: #ece7df;
+
+  /* Hard shadows stay black (the now-light 2px borders carry the NB stamp) */
+  --shadow-nb-xs: 2px 2px 0 #000000;
+  --shadow-nb-sm: 3px 3px 0 #000000;
+  --shadow-nb-md: 4px 4px 0 #000000;
+  --shadow-nb-lg: 6px 6px 0 #000000;
+  --shadow-nb-xl: 10px 10px 0 #000000;
+  --shadow-nb-hover: 6px 6px 0 #000000;
+  --shadow-nb-active: 2px 2px 0 #000000;
+
+  /* Accent-tone surfaces darkened (KpiTile / SectionCard tones); text on them
+     uses nb-black/gray which now invert light, so they stay readable */
+  --color-bg-accent-yellow: #38320f;
+  --color-bg-accent-mint: #133029;
+  --color-bg-accent-pink: #331a33;
+  --color-bg-accent-lilac: #272237;
+  --color-bg-accent-green: #1c3320;
+
+  /* Status chips: darken the tint backgrounds AND lighten the foregrounds so
+     each pair keeps contrast on dark surfaces */
+  --color-status-active: #5fcf80;
+  --color-status-active-bg: #14331f;
+  --color-status-idle: #f0c350;
+  --color-status-idle-bg: #33280f;
+  --color-status-missing: #ff8a8a;
+  --color-status-missing-bg: #331717;
+  --color-status-outside: #c79bf0;
+  --color-status-outside-bg: #271a33;
+  --color-status-offline: #b6ada1;
+  --color-status-offline-bg: #2b2723;
+
+  /* Info tint (used by StatusPill info / Badge): darken so dark ink reads */
+  --color-nb-info-light: #2a5560;
+  --color-nb-success-dark: #5fcf80;
 }
 
 /* ============================================

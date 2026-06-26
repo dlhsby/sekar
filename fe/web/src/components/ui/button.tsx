@@ -19,11 +19,11 @@ const buttonVariants = cva(
         // Ink-on-color text (WCAG AA): white on sage #7FBC8C is 2.21:1, ink is
         // 7.6:1 — same NB treatment the warning variant always had.
         default:
-          'bg-nb-primary text-nb-black hover:bg-nb-primary-hover active:bg-nb-primary-active',
+          'bg-nb-primary text-nb-ink hover:bg-nb-primary-hover active:bg-nb-primary-active',
         secondary: 'bg-nb-white text-nb-black hover:bg-nb-gray-50',
-        destructive: 'bg-nb-danger text-nb-black hover:opacity-90',
-        success: 'bg-nb-success text-nb-black hover:opacity-90',
-        warning: 'bg-nb-warning text-nb-black hover:opacity-90',
+        destructive: 'bg-nb-danger text-nb-ink hover:opacity-90',
+        success: 'bg-nb-success text-nb-ink hover:opacity-90',
+        warning: 'bg-nb-warning text-nb-ink hover:opacity-90',
         outline: 'bg-transparent text-nb-black hover:bg-nb-gray-50',
         ghost: 'bg-transparent text-nb-black border-transparent shadow-none hover:bg-nb-gray-50',
         link: 'text-nb-success-dark underline-offset-4 hover:underline border-transparent shadow-none',

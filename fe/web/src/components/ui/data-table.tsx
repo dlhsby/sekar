@@ -289,7 +289,7 @@ export function DataTable<TData, TValue>({
                   <span className="hidden sm:inline">Filter</span>
                   {columnFilters.length > 0 ? (
                     <span
-                      className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-nb-black bg-nb-warning px-1 text-xs font-bold tabular-nums text-nb-black"
+                      className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-nb-black bg-nb-warning px-1 text-xs font-bold tabular-nums text-nb-ink"
                       aria-label={`${columnFilters.length} filter aktif`}
                     >
                       {columnFilters.length}

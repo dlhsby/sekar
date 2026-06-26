@@ -41,7 +41,7 @@ export function Calendar({
         week: 'flex w-full mt-1',
         day: 'h-9 w-9 p-0 text-center text-nb-body-sm',
         day_button:
-          'inline-flex h-9 w-9 items-center justify-center rounded-nb-base text-nb-black hover:bg-nb-gray-100 aria-selected:border-2 aria-selected:border-nb-black aria-selected:bg-nb-primary aria-selected:font-bold aria-selected:text-nb-black',
+          'inline-flex h-9 w-9 items-center justify-center rounded-nb-base text-nb-black hover:bg-nb-gray-100 aria-selected:border-2 aria-selected:border-nb-black aria-selected:bg-nb-primary aria-selected:font-bold aria-selected:text-nb-ink',
         // Quiet orientation marker only — the *selected* day owns the strong fill.
         today: 'font-bold text-nb-success-dark',
         selected: 'rounded-nb-base',

@@ -12,11 +12,11 @@ const badgeVariants = cva(
     variants: {
       variant: {
         // Ink-on-color (WCAG AA): white on sage/coral is ~2.2:1; ink is 6.8-7.6:1
-        default: 'bg-nb-primary text-nb-black',
+        default: 'bg-nb-primary text-nb-ink',
         secondary: 'bg-nb-gray-100 text-nb-black',
-        destructive: 'bg-nb-danger text-nb-black',
-        success: 'bg-nb-success text-nb-black',
-        warning: 'bg-nb-warning text-nb-black',
+        destructive: 'bg-nb-danger text-nb-ink',
+        success: 'bg-nb-success text-nb-ink',
+        warning: 'bg-nb-warning text-nb-ink',
         outline: 'bg-transparent text-nb-black',
       },
       size: {

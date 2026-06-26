@@ -73,7 +73,7 @@ export function TimeList({
           className={cn(
             'block w-full px-3 py-1.5 text-left text-nb-body-sm tabular-nums hover:bg-nb-gray-100',
             t === value
-              ? 'bg-nb-primary font-bold text-nb-black hover:bg-nb-primary'
+              ? 'bg-nb-primary font-bold text-nb-ink hover:bg-nb-primary'
               : t === nowSlot
                 ? 'text-nb-success-dark font-semibold'
                 : 'text-nb-gray-700'

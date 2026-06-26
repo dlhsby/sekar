@@ -60,7 +60,7 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
           <Check
             aria-hidden
             strokeWidth={3}
-            className="pointer-events-none absolute inset-0 m-auto h-3.5 w-3.5 text-nb-black opacity-0 peer-checked:opacity-100 peer-indeterminate:opacity-0"
+            className="pointer-events-none absolute inset-0 m-auto h-3.5 w-3.5 text-nb-ink opacity-0 peer-checked:opacity-100 peer-indeterminate:opacity-0"
           />
           {/* Indeterminate dash. */}
           <span

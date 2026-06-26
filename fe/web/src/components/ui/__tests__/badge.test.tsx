@@ -19,7 +19,7 @@ describe('Badge Component', () => {
     it('should render with default variant', () => {
       render(<Badge>Default</Badge>);
       const badge = screen.getByText('Default');
-      expect(badge).toHaveClass('bg-nb-primary', 'text-nb-black');
+      expect(badge).toHaveClass('bg-nb-primary', 'text-nb-ink');
     });
 
     it('should render with secondary variant', () => {
@@ -31,19 +31,19 @@ describe('Badge Component', () => {
     it('should render with destructive variant', () => {
       render(<Badge variant="destructive">Error</Badge>);
       const badge = screen.getByText('Error');
-      expect(badge).toHaveClass('bg-nb-danger', 'text-nb-black');
+      expect(badge).toHaveClass('bg-nb-danger', 'text-nb-ink');
     });
 
     it('should render with success variant', () => {
       render(<Badge variant="success">Success</Badge>);
       const badge = screen.getByText('Success');
-      expect(badge).toHaveClass('bg-nb-success', 'text-nb-black');
+      expect(badge).toHaveClass('bg-nb-success', 'text-nb-ink');
     });
 
     it('should render with warning variant', () => {
       render(<Badge variant="warning">Warning</Badge>);
       const badge = screen.getByText('Warning');
-      expect(badge).toHaveClass('bg-nb-warning', 'text-nb-black');
+      expect(badge).toHaveClass('bg-nb-warning', 'text-nb-ink');
     });
 
     it('should render with outline variant', () => {

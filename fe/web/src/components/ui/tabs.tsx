@@ -76,7 +76,7 @@ export function Tabs<K extends string = string>({
               size === 'sm' ? 'px-3 py-1.5 text-xs' : 'px-3.5 py-2 text-nb-body-sm',
               i > 0 && 'border-l-2 border-nb-black',
               fullWidth && 'flex-1',
-              active ? 'bg-nb-primary text-nb-black' : 'bg-nb-white text-nb-gray-600 hover:bg-nb-gray-50'
+              active ? 'bg-nb-primary text-nb-ink' : 'bg-nb-white text-nb-gray-600 hover:bg-nb-gray-50'
             )}
           >
             {tab.label}
