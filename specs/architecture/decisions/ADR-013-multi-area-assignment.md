@@ -81,3 +81,13 @@ Introduce a **`user_areas` junction table** with assignment types:
 - `user_areas` table is small (users × avg areas ≈ hundreds of rows)
 - Indexed on `(user_id)` and `(area_id)` for fast lookups
 - Effective areas query: single JOIN, no N+1 risk
+
+## Implementation status
+
+- **Junction table, `getEffectiveAreas`/`getPermanentAreaIds`, korlap monitoring scope, assign/remove endpoints** — implemented (Phase 2C/2D).
+- **§5 task lifecycle sync** — wired June 25, 2026 via `TaskAreaSyncService` (`be/src/modules/tasks/services/task-area-sync.service.ts`). It recomputes the worker's `task_based` set from their currently-active tasks (statuses `assigned/accepted/in_progress/revision_needed`) and calls `syncTaskBasedAreas` on assign/accept/decline/complete/verify and on create-with-assignee. Failures are logged but never block the task transition.
+- **Geofence honours task areas** — `StatusCalculatorService` now treats a worker as within-area if they are inside any of their effective areas (primary + task_based); the extra lookup only runs when they are outside their primary area.
+
+### Simplified assignment (Jun 26, 2026)
+
+User management is the single source of truth for assignment: a worker is given a **rayon (single)**, **permanent areas (multi)** and **one shift** (`users.shift_definition_id`). On create/update, `UsersService` reconciles the permanent `user_areas` rows to match (`reconcilePermanentAreas`), sets `users.area_id` to the first area (primary), and audit-logs a `reassign` on change (history preserved). Per-day `schedules` remain an optional override/ad-hoc layer; the default roster is **derived** — `GET /schedules/my` synthesizes from the areas + shift (no per-day rows). Clock-in (`ShiftsService.getActiveArea`) is **GPS-aware**: it picks the assigned area whose geofence contains the worker, else the nearest, and supports **no-area (ad-hoc)** workers (`area_id` null). A worker reads their own areas via self endpoint **`GET /users/me/areas`** (used by the mobile multi-area geofence + "Jadwal Saya"). Passwords are never set by admins — create/reset auto-generate a one-time temp password with `password_must_change`.

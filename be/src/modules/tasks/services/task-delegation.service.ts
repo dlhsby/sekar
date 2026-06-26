@@ -10,6 +10,7 @@ import { AuditLogService } from '../../audit/audit.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { NotificationType } from '../../notifications/entities/notification.entity';
 import { TaskFinderService } from './task-finder.service';
+import { TaskAreaSyncService } from './task-area-sync.service';
 import { assertValidAssignee, assertAssignmentHierarchy } from '../task.policies';
 
 export interface DelegationHop {
@@ -39,6 +40,7 @@ export class TaskDelegationService {
     private readonly usersService: UsersService,
     private readonly auditLogService: AuditLogService,
     private readonly notificationsService: NotificationsService,
+    private readonly taskAreaSync: TaskAreaSyncService,
   ) {}
 
   /** Assign (or re-assign / delegate) a task to a user. */
@@ -71,6 +73,12 @@ export class TaskDelegationService {
       task_title: task.title,
     });
     this.auditAssign(id, assignTaskDto.assigned_to, callerId ?? task.created_by);
+    // ADR-013 §5: the new assignee gains the task's area; on reassignment the
+    // previous assignee's task-based area is recomputed (dropped if now unused).
+    await this.taskAreaSync.syncForUser(assignTaskDto.assigned_to);
+    if (task.assigned_to && task.assigned_to !== assignTaskDto.assigned_to) {
+      await this.taskAreaSync.syncForUser(task.assigned_to);
+    }
     return this.taskFinder.getOrFail(id);
   }
 

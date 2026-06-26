@@ -40,6 +40,7 @@ import { UserRole } from './entities/user.entity';
 import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { User } from './entities/user.entity';
 import { USER_MANAGERS } from './constants/role-groups';
+import { UserAreasService } from '../user-areas/user-areas.service';
 
 /**
  * User Management Controller
@@ -54,7 +55,25 @@ import { USER_MANAGERS } from './constants/role-groups';
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly userAreasService: UserAreasService,
+  ) {}
+
+  /**
+   * Get the authenticated user's own assigned areas (permanent + task_based).
+   * Self-scoped — any authenticated worker can read their own areas (used by
+   * the mobile app for multi-area geofencing + the "Jadwal Saya" screen).
+   *
+   * @route GET /api/users/me/areas
+   */
+  @Get('me/areas')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Get the authenticated user's assigned areas" })
+  @ApiResponse({ status: HttpStatus.OK, description: 'List of assigned areas.' })
+  getMyAreas(@GetUser() user: User) {
+    return this.userAreasService.getEffectiveAreas(user.id);
+  }
 
   /**
    * Create a new user.
@@ -345,6 +364,31 @@ export class UsersController {
     @GetUser() actor: User,
   ) {
     return this.usersService.update(id, updateUserDto, actor);
+  }
+
+  /**
+   * Admin password reset.
+   * Generates a one-time temp password, forces a change on next login, and
+   * returns the plaintext password once. Admins never type passwords.
+   *
+   * @route POST /api/users/:id/reset-password
+   */
+  @Post(':id/reset-password')
+  @Roles(...USER_MANAGERS)
+  @ApiOperation({
+    summary: 'Reset a user password',
+    description:
+      'Generate a one-time temporary password and force the user to change it on next login. Returns the plaintext password once.',
+  })
+  @ApiParam({ name: 'id', description: 'User UUID' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Password reset; temp password returned once.',
+    schema: { example: { temp_password: 'X7k9m-Qp2rT' } },
+  })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'User not found.' })
+  resetPassword(@Param('id', ParseUUIDPipe) id: string, @GetUser() actor: User) {
+    return this.usersService.resetPassword(id, actor);
   }
 
   /**

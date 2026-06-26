@@ -34,6 +34,8 @@ export interface User extends Record<string, unknown> {
   rayon?: Rayon;
   area_id?: string;
   area?: Area;
+  shift_definition_id?: string;
+  password_must_change?: boolean;
   is_active?: boolean;
   created_at: string;
   updated_at: string;
@@ -87,22 +89,33 @@ export interface UserFilters {
 export interface CreateUserDto {
   username: string;
   full_name: string;
+  /** Omit → backend auto-generates a one-time temp password (returned once). */
   password?: string;
   role: UserRole;
+  phone_number?: string;
   rayon_id?: string;
-  area_id?: string;
+  /** Permanent area assignments (multi); first becomes the primary area. */
+  area_ids?: string[];
+  shift_definition_id?: string;
+}
+
+/** A created user plus the one-time temp password (only present on create). */
+export interface CreatedUser extends User {
+  temp_password?: string;
 }
 
 /**
- * Update User DTO
+ * Update User DTO (no password — use reset-password)
  */
 export interface UpdateUserDto {
   username?: string;
   full_name?: string;
-  password?: string;
   role?: UserRole;
+  phone_number?: string;
   rayon_id?: string;
-  area_id?: string;
+  area_ids?: string[];
+  shift_definition_id?: string;
+  is_active?: boolean;
 }
 
 /**

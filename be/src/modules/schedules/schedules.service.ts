@@ -18,6 +18,25 @@ import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { TimezoneUtil } from '../../common/utils/timezone.util';
 
 /**
+ * Optional filters for the schedule list query. `search` matches the assigned
+ * user's name/username; `dateFrom`/`dateTo` keep schedules whose
+ * [effective_date, end_date] range overlaps the window (mirrors the weekly grid).
+ */
+export interface ScheduleListFilters {
+  search?: string;
+  shiftDefinitionId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+interface BuildFindAllQueryArgs extends ScheduleListFilters {
+  areaId?: string;
+  userId?: string;
+  activeOnly?: boolean;
+  requestingUser?: User;
+}
+
+/**
  * Service for managing schedules
  *
  * Assigns workers to areas and shifts for specific date ranges.
@@ -29,6 +48,8 @@ export class SchedulesService {
   constructor(
     @InjectRepository(Schedule)
     private readonly scheduleRepository: Repository<Schedule>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     private readonly usersService: UsersService,
     private readonly areasService: AreasService,
     private readonly shiftDefinitionsService: ShiftDefinitionsService,
@@ -47,11 +68,18 @@ export class SchedulesService {
     userId?: string,
     activeOnly: boolean = false,
     requestingUser?: User,
+    filters: ScheduleListFilters = {},
   ): Promise<Schedule[]> {
     this.logger.log(
       `Fetching schedules with filters: areaId=${areaId}, userId=${userId}, activeOnly=${activeOnly}`,
     );
-    return this.buildFindAllQuery(areaId, userId, activeOnly, requestingUser).getMany();
+    return this.buildFindAllQuery({
+      areaId,
+      userId,
+      activeOnly,
+      requestingUser,
+      ...filters,
+    }).getMany();
   }
 
   /**
@@ -65,20 +93,31 @@ export class SchedulesService {
     requestingUser: User | undefined,
     page: number = 1,
     limit: number = 20,
+    filters: ScheduleListFilters = {},
   ): Promise<PaginatedResponseDto<Schedule>> {
-    const [data, total] = await this.buildFindAllQuery(areaId, userId, activeOnly, requestingUser)
+    const [data, total] = await this.buildFindAllQuery({
+      areaId,
+      userId,
+      activeOnly,
+      requestingUser,
+      ...filters,
+    })
       .skip((page - 1) * limit)
       .take(limit)
       .getManyAndCount();
     return new PaginatedResponseDto(data, total, page, limit);
   }
 
-  private buildFindAllQuery(
-    areaId?: string,
-    userId?: string,
-    activeOnly: boolean = false,
-    requestingUser?: User,
-  ) {
+  private buildFindAllQuery({
+    areaId,
+    userId,
+    activeOnly = false,
+    requestingUser,
+    search,
+    shiftDefinitionId,
+    dateFrom,
+    dateTo,
+  }: BuildFindAllQueryArgs) {
     const queryBuilder = this.scheduleRepository
       .createQueryBuilder('schedule')
       .leftJoinAndSelect('schedule.user', 'user')
@@ -101,6 +140,29 @@ export class SchedulesService {
 
     if (userId) {
       queryBuilder.andWhere('schedule.user_id = :userId', { userId });
+    }
+
+    if (shiftDefinitionId) {
+      queryBuilder.andWhere('schedule.shift_definition_id = :shiftDefinitionId', {
+        shiftDefinitionId,
+      });
+    }
+
+    if (search) {
+      queryBuilder.andWhere('(user.full_name ILIKE :search OR user.username ILIKE :search)', {
+        search: `%${search}%`,
+      });
+    }
+
+    // Date-range overlap (used by the weekly grid). A schedule overlaps the
+    // window if it starts on/before dateTo and has not ended before dateFrom.
+    if (dateTo) {
+      queryBuilder.andWhere('schedule.effective_date <= :dateTo', { dateTo });
+    }
+    if (dateFrom) {
+      queryBuilder.andWhere('(schedule.end_date IS NULL OR schedule.end_date >= :dateFrom)', {
+        dateFrom,
+      });
     }
 
     if (activeOnly) {
@@ -149,7 +211,7 @@ export class SchedulesService {
 
     const today = new Date().toISOString().split('T')[0];
 
-    return this.scheduleRepository.findOne({
+    const explicit = await this.scheduleRepository.findOne({
       where: {
         user_id: userId,
         effective_date: LessThanOrEqual(new Date(today)),
@@ -158,6 +220,38 @@ export class SchedulesService {
       relations: ['area', 'shift_definition'],
       order: { effective_date: 'DESC' },
     });
+    if (explicit) return explicit;
+
+    // No explicit schedule row → derive the current roster from the worker's
+    // user-management assignment (primary area + configured shift). Keeps
+    // /schedules/my working in the simplified model without per-day rows.
+    return this.deriveCurrentSchedule(userId, today);
+  }
+
+  /**
+   * Synthesize a read-only "current schedule" from the user's primary area +
+   * configured shift. Returns null when the worker has neither.
+   */
+  private async deriveCurrentSchedule(userId: string, today: string): Promise<Schedule | null> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['area', 'shift_definition'],
+    });
+    if (!user || (!user.area && !user.shift_definition)) return null;
+
+    return {
+      id: `derived-${userId}`,
+      user_id: userId,
+      area_id: user.area_id ?? null,
+      area: user.area,
+      shift_definition_id: user.shift_definition_id ?? null,
+      shift_definition: user.shift_definition,
+      effective_date: new Date(today),
+      end_date: null,
+      created_by: null,
+      created_at: new Date(),
+      updated_at: new Date(),
+    } as unknown as Schedule;
   }
 
   /**

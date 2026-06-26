@@ -31,8 +31,9 @@ import {
 } from '../../components/nb';
 import { SekarLogoBox } from '../../components/brand/SekarLogoBox';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { setLoading, setUser } from '../../store/slices/authSlice';
+import { setLoading, setUser, setAssignedAreas } from '../../store/slices/authSlice';
 import { login, getMe } from '../../services/api/authApi';
+import { getMyAreas } from '../../services/api/usersApi';
 import { setToken, setRefreshToken, setUser as setUserStorage } from '../../services/storage/secureStorage';
 import { loadAndSyncCurrentShift } from '../../services/shift';
 import { isValidUsername, isValidPassword } from '../../utils/validators';
@@ -152,6 +153,22 @@ function LoginScreen(): React.JSX.Element {
             console.warn('Shift sync after login failed:', err);
           }
         });
+        // Load all assigned areas (multi-area geofence + Jadwal Saya).
+        getMyAreas()
+          .then((res) => {
+            if (res.data) {
+              const areas = res.data.map((a) => {
+                const poly = (a as any)?.boundary_polygon;
+                return { ...a, boundary_polygon: poly?.coordinates?.[0] ?? poly ?? undefined };
+              });
+              dispatch(setAssignedAreas(areas));
+            }
+          })
+          .catch((err) => {
+            if (__DEV__) {
+              console.warn('Failed to load assigned areas after login:', err);
+            }
+          });
       }
     } catch {
       NBToast.show({

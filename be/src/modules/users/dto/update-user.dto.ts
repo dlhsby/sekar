@@ -2,7 +2,7 @@ import {
   IsString,
   IsEnum,
   IsUUID,
-  MinLength,
+  IsArray,
   MaxLength,
   IsOptional,
   IsBoolean,
@@ -32,18 +32,6 @@ export class UpdateUserDto {
   full_name?: string;
 
   @ApiPropertyOptional({
-    description: 'New password (will be hashed)',
-    example: 'newsecurepassword123',
-    minLength: ValidationConstants.PASSWORD_MIN_LENGTH,
-  })
-  @IsString()
-  @IsOptional()
-  @MinLength(ValidationConstants.PASSWORD_MIN_LENGTH, {
-    message: `Password must be at least ${ValidationConstants.PASSWORD_MIN_LENGTH} characters`,
-  })
-  password?: string;
-
-  @ApiPropertyOptional({
     description: 'Indonesian phone number for login',
     example: '081234567890',
   })
@@ -65,18 +53,27 @@ export class UpdateUserDto {
   role?: UserRole;
 
   @ApiPropertyOptional({
-    description: 'Rayon ID (for kepala_rayon role)',
+    description: 'Rayon ID (single). Optional for all roles.',
   })
   @IsUUID()
   @IsOptional()
   rayon_id?: string;
 
   @ApiPropertyOptional({
-    description: 'Area ID (for korlap role)',
+    description: 'Permanent area assignments (multi). The first becomes the primary area.',
+    type: [String],
+  })
+  @IsArray()
+  @IsUUID('4', { each: true })
+  @IsOptional()
+  area_ids?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Single working shift for this worker.',
   })
   @IsUUID()
   @IsOptional()
-  area_id?: string;
+  shift_definition_id?: string;
 
   @ApiPropertyOptional({
     description: 'Whether user account is active',

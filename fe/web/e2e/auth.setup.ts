@@ -20,6 +20,8 @@ export const testUsers: Record<MockUserKey, TestUser> = {
   topManagement: { username: 'topmgmt1', password: 'password123', role: 'topManagement', expectedName: 'Top Management' },
   adminData: { username: 'admindata1', password: 'password123', role: 'adminData', expectedName: 'Admin Data' },
   staffKecamatan: { username: 'kecamatan1', password: 'password123', role: 'staffKecamatan', expectedName: 'Staff Kecamatan Tegalsari' },
+  satgas: { username: 'satgas1', password: 'password123', role: 'satgas', expectedName: 'Satgas Lapangan' },
+  linmas: { username: 'linmas1', password: 'password123', role: 'linmas', expectedName: 'Linmas Keamanan' },
 };
 
 /** Full login through the form; lands on the dashboard home (`/`). */

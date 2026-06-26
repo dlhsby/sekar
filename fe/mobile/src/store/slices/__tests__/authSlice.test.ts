@@ -18,6 +18,7 @@ describe('authSlice', () => {
   const initialState = {
     user: null,
     assignedArea: null,
+    assignedAreas: [],
     isAuthenticated: false,
     isLoading: false,
     isRestoring: true,
@@ -146,6 +147,7 @@ describe('authSlice', () => {
       const authenticatedState = {
         user: mockUser,
         assignedArea: mockArea,
+        assignedAreas: [],
         isAuthenticated: true,
         isLoading: false,
         error: null,

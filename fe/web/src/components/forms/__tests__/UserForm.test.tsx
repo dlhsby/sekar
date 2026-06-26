@@ -19,6 +19,13 @@ jest.mock('@/lib/api/rayons', () => ({
 jest.mock('@/lib/api/areas', () => ({
   useAreas: jest.fn(),
 }));
+jest.mock('@/lib/api/shift-definitions', () => ({
+  useShiftDefinitions: jest.fn(() => ({ data: [], isLoading: false })),
+}));
+jest.mock('@/lib/api/user-areas', () => ({
+  // Stable `undefined` ref so the prefill effect doesn't loop in tests.
+  useUserAreas: jest.fn(() => ({ data: undefined })),
+}));
 
 describe('UserForm', () => {
   const mockRayons = [
@@ -66,20 +73,20 @@ describe('UserForm', () => {
 
       expect(screen.getByLabelText(/nama lengkap/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/nomor hp/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/role/i)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /batal/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /simpan/i })).toBeInTheDocument();
     });
 
-    it('should show password field as required in create mode', () => {
+    it('should NOT show a password field (auto-generated) and explain the temp password', () => {
       render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
 
-      const passwordInput = screen.getByLabelText(/password/i);
-      expect(passwordInput).toHaveAttribute('required');
+      expect(screen.queryByLabelText(/password/i)).not.toBeInTheDocument();
+      expect(screen.getByText(/password sementara akan dibuat otomatis/i)).toBeInTheDocument();
     });
 
-    it('should show password field as optional in edit mode', () => {
+    it('should not show the temp-password note in edit mode', () => {
       const initialData: User = {
         id: '1',
         username: 'testuser',
@@ -93,9 +100,8 @@ describe('UserForm', () => {
         wrapper: createWrapper(),
       });
 
-      const passwordInput = screen.getByLabelText(/password/i);
-      expect(passwordInput).not.toHaveAttribute('required');
-      expect(screen.getByText(/kosongkan jika tidak ingin mengubah/i)).toBeInTheDocument();
+      expect(screen.queryByLabelText(/password/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/password sementara akan dibuat otomatis/i)).not.toBeInTheDocument();
     });
 
     it('should populate form fields with initial data', () => {
@@ -171,7 +177,6 @@ describe('UserForm', () => {
 
       await user.type(screen.getByLabelText(/username/i), 'validuser');
       await user.type(screen.getByLabelText(/nama lengkap/i), 'Valid User');
-      await user.type(screen.getByLabelText(/password/i), 'password123');
       await user.click(screen.getByRole('button', { name: /simpan/i }));
 
       await waitFor(() => {
@@ -360,7 +365,7 @@ describe('UserForm', () => {
 
       expect(screen.getByLabelText(/nama lengkap/i)).toBeDisabled();
       expect(screen.getByLabelText(/username/i)).toBeDisabled();
-      expect(screen.getByLabelText(/password/i)).toBeDisabled();
+      expect(screen.getByLabelText(/nomor hp/i)).toBeDisabled();
       expect(screen.getByLabelText(/role/i)).toBeDisabled();
       expect(screen.getByRole('button', { name: /simpan/i })).toBeDisabled();
       expect(screen.getByRole('button', { name: /batal/i })).toBeDisabled();
@@ -381,7 +386,6 @@ describe('UserForm', () => {
 
       await user.type(screen.getByLabelText(/nama lengkap/i), 'Test User');
       await user.type(screen.getByLabelText(/username/i), 'testuser');
-      await user.type(screen.getByLabelText(/password/i), 'password123');
 
       await user.click(screen.getByRole('button', { name: /simpan/i }));
 
@@ -396,26 +400,11 @@ describe('UserForm', () => {
         isLoading: true,
       });
 
-      // Render with kepala_rayon role to show rayon field
-      render(
-        <UserForm
-          {...defaultProps}
-          initialData={{
-            id: '1',
-            username: 'testuser',
-            full_name: 'Test User',
-            role: 'kepala_rayon' as const,
-            rayon_id: '',
-            created_at: '2026-01-01',
-            updated_at: '2026-01-01',
-          }}
-        />
-      );
+      // Rayon field is always shown now (all roles).
+      render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
 
-      // Rayon field should be visible and disabled while loading
       expect(screen.getByLabelText(/rayon/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/rayon/i)).toBeDisabled();
-      // The placeholder text "Memuat..." should be visible
       expect(screen.getByText(/memuat/i)).toBeInTheDocument();
     });
   });

@@ -5,10 +5,12 @@ import { ShiftsService } from './shifts.service';
 import { Shift } from './entities/shift.entity';
 import { Schedule } from '../schedules/entities/schedule.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
+import { User } from '../users/entities/user.entity';
 import { AreasModule } from '../areas/areas.module';
 import { SharedModule } from '../../shared/shared.module';
 import { MonitoringModule } from '../monitoring/monitoring.module';
 import { AuditModule } from '../audit/audit.module';
+import { UserAreasModule } from '../user-areas/user-areas.module';
 
 /**
  * Shifts Module
@@ -19,11 +21,12 @@ import { AuditModule } from '../audit/audit.module';
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Shift, Schedule, ShiftDefinition]),
+    TypeOrmModule.forFeature([Shift, Schedule, ShiftDefinition, User]),
     forwardRef(() => AreasModule),
     SharedModule,
     forwardRef(() => MonitoringModule),
     AuditModule,
+    UserAreasModule,
   ],
   controllers: [ShiftsController],
   providers: [ShiftsService],

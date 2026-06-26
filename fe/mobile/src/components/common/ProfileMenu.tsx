@@ -35,6 +35,7 @@ interface ProfileMenuProps {
   onChangePassword: () => void;
   /** Field-only — row hidden when omitted. */
   onShiftHistory?: () => void;
+  onMySchedule?: () => void;
   onSettings: () => void;
   onDiagnostics: () => void;
   onAbout: () => void;
@@ -97,6 +98,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
   onEditProfile,
   onChangePassword,
   onShiftHistory,
+  onMySchedule,
   onSettings,
   onDiagnostics,
   onAbout,
@@ -120,6 +122,18 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
       onPress: onChangePassword,
       testID: 'change-password-button',
     },
+    ...(onMySchedule
+      ? [
+          {
+            key: 'my-schedule',
+            icon: 'calendar-month-outline',
+            label: 'Jadwal Saya',
+            chipColor: nbColors.bgAccentMint,
+            onPress: onMySchedule,
+            testID: 'my-schedule-button',
+          },
+        ]
+      : []),
     ...(onShiftHistory
       ? [
           {

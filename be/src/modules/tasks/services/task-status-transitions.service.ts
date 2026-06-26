@@ -9,6 +9,7 @@ import { AuditLogService } from '../../audit/audit.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { NotificationType } from '../../notifications/entities/notification.entity';
 import { TaskFinderService } from './task-finder.service';
+import { TaskAreaSyncService } from './task-area-sync.service';
 
 /** Pick a subset of keys from an object without mutating. */
 function pick<T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
@@ -52,6 +53,7 @@ export class TaskStatusTransitionsService {
     private readonly taskFinder: TaskFinderService,
     private readonly auditLogService: AuditLogService,
     private readonly notificationsService: NotificationsService,
+    private readonly taskAreaSync: TaskAreaSyncService,
   ) {}
 
   /** Start working on a task (by assignee). */
@@ -77,6 +79,8 @@ export class TaskStatusTransitionsService {
     this.assertCanComplete(task);
     await this.taskRepository.save(this.withCompletion(task, completeTaskDto));
     this.audit(id, userId, 'complete', { status: TaskStatus.COMPLETED });
+    // Completing is terminal — drop the task-based area unless another task keeps it.
+    await this.taskAreaSync.syncForUser(userId);
     await this.cascadePruningRequestStatus(id, 'done', userId);
     return this.taskFinder.getOrFail(id);
   }
@@ -104,6 +108,7 @@ export class TaskStatusTransitionsService {
     // Cascade only when the parent task is truly done; mid-progress partials
     // leave the linked request on `in_progress` (already set by start()).
     if (becomesCompleted) {
+      await this.taskAreaSync.syncForUser(user.id);
       await this.cascadePruningRequestStatus(taskId, 'done', user.id);
     }
 

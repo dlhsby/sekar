@@ -7,10 +7,11 @@
 import React, { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { restoreAuth, setRestoring, logout } from '../store/slices/authSlice';
+import { restoreAuth, setRestoring, logout, setAssignedAreas } from '../store/slices/authSlice';
 import { setCurrentShift } from '../store/slices/shiftSlice';
 import { getToken, getUser, clearAll } from '../services/storage/secureStorage';
 import { getMe } from '../services/api/authApi';
+import { getMyAreas } from '../services/api/usersApi';
 import { getCurrentShift } from '../services/api/shiftsApi';
 import { locationTracker } from '../services/location/locationTracker';
 import { permissionManager } from '../services/permissions/PermissionManager';
@@ -29,6 +30,29 @@ interface AuthProviderProps {
  * Only clockable roles (satgas, linmas, korlap) have shifts.
  * This is called after auth restoration to sync shift state with the backend.
  */
+/**
+ * Fetch the worker's assigned areas (permanent + task_based) for multi-area
+ * geofencing + the "Jadwal Saya" screen. Boundary polygons are flattened to
+ * [lng,lat][] for the mobile gpsUtils. Best-effort — never blocks auth.
+ */
+async function loadAssignedAreas(userRole: string, dispatch: AppDispatch): Promise<void> {
+  if (!CLOCKABLE_ROLES.includes(userRole as UserRole)) {
+    return;
+  }
+  try {
+    const response = await getMyAreas();
+    if (response.data) {
+      const areas = response.data.map((a) => {
+        const poly = (a as any)?.boundary_polygon;
+        return { ...a, boundary_polygon: poly?.coordinates?.[0] ?? poly ?? undefined };
+      });
+      dispatch(setAssignedAreas(areas));
+    }
+  } catch (error) {
+    if (__DEV__) { console.warn('[AuthProvider] Failed to load assigned areas:', error); }
+  }
+}
+
 async function loadShiftForClockableRole(userRole: string, dispatch: AppDispatch): Promise<void> {
   if (!CLOCKABLE_ROLES.includes(userRole as UserRole)) {
     return;
@@ -125,6 +149,8 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
             // Load shift after auth restoration (workers only)
             // This will also start location tracking if there's an active shift
             await loadShiftForClockableRole(storedUser.role, dispatch);
+            // Load the worker's assigned areas (multi-area geofence + Jadwal Saya)
+            await loadAssignedAreas(storedUser.role, dispatch);
           } catch (networkError) {
             // Network timeout or error - use cached credentials
             if (__DEV__) { console.warn('[AuthProvider] Network timeout, using cached credentials:', networkError); }

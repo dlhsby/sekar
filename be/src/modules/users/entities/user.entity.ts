@@ -11,6 +11,7 @@ import {
 import { Exclude } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { Area } from '../../areas/entities/area.entity';
+import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 
 /**
  * User Role Enum
@@ -104,6 +105,17 @@ export class User {
   @ManyToOne(() => Area, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'area_id' })
   area?: Area;
+
+  // The worker's single working shift (one timeframe; may span several areas).
+  // Source of truth for the derived roster + clock-in lateness; nullable for
+  // management / no-shift roles.
+  @ApiProperty({ description: 'Default shift definition (one shift per worker)', required: false })
+  @Column({ name: 'shift_definition_id', type: 'uuid', nullable: true })
+  shift_definition_id?: string;
+
+  @ManyToOne(() => ShiftDefinition, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'shift_definition_id' })
+  shift_definition?: ShiftDefinition;
 
   @Column({ default: true })
   is_active: boolean;

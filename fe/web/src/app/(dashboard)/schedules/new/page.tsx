@@ -17,7 +17,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
-import { SCHEDULE_MANAGER_ROLES } from '@/lib/constants/roles';
+import { SCHEDULE_MANAGER_ROLES, SCHEDULABLE_WORKER_ROLES, ROLE_LABELS } from '@/lib/constants/roles';
 
 export default function CreateSchedulePage() {
   const { user, loading: authLoading } = useAuth();
@@ -57,7 +57,8 @@ export default function CreateSchedulePage() {
     return null;
   }
 
-  const users = usersData?.data || [];
+  // Only satgas/linmas can be scheduled (backend rejects other roles with 400).
+  const users = (usersData?.data || []).filter((u) => SCHEDULABLE_WORKER_ROLES.includes(u.role));
   const areas = areasData?.data || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -123,7 +124,7 @@ export default function CreateSchedulePage() {
                 { value: 'none', label: 'Pilih Pekerja' },
                 ...users.map((u) => ({
                   value: u.id,
-                  label: `${u.name} (${u.email})`,
+                  label: `${u.full_name} (${u.username}) · ${ROLE_LABELS[u.role]}`,
                 })),
               ]}
               helperText={

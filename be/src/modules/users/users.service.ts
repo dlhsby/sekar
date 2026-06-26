@@ -16,6 +16,11 @@ import { AuthService } from '../auth/auth.service';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { UserValidationService } from './services/user-validation.service';
 import { AuditLogService } from '../audit/audit.service';
+import { UserAreasService } from '../user-areas/user-areas.service';
+import { generateTempPassword } from '../../common/utils/password.util';
+
+/** A user plus a one-time plaintext password (only present on create/reset). */
+export type UserWithTempPassword = User & { temp_password?: string };
 
 @Injectable()
 export class UsersService {
@@ -29,6 +34,8 @@ export class UsersService {
     private readonly userValidation: UserValidationService,
     // Phase 4-4 (C2): account mutations are audit-logged
     private readonly auditLogService: AuditLogService,
+    // Simplified assignment: rayon + permanent areas + one shift set in user mgmt
+    private readonly userAreasService: UserAreasService,
   ) {}
 
   /** Fire-and-forget audit write — account changes must never fail on logging */
@@ -44,8 +51,10 @@ export class UsersService {
    * @returns Created user entity
    * @throws ConflictException if username already exists
    */
-  async create(createUserDto: CreateUserDto, actor?: User): Promise<User> {
-    const { username, password, full_name, role, phone_number } = createUserDto;
+  async create(createUserDto: CreateUserDto, actor?: User): Promise<UserWithTempPassword> {
+    const { username, password, full_name, role, phone_number, rayon_id, shift_definition_id } =
+      createUserDto;
+    const areaIds = [...new Set(createUserDto.area_ids ?? [])];
 
     this.logger.log(`Creating new user: ${username}`);
 
@@ -54,7 +63,11 @@ export class UsersService {
       await this.userValidation.assertPhoneAvailable(phone_number);
     }
 
-    const password_hash = await this.authService.hashPassword(password);
+    // Admins don't set passwords: when none is supplied we generate a one-time
+    // temp password and force a change on first login. An explicit password
+    // (e.g. CSV import) is honoured as-is.
+    const tempPassword = password ? undefined : generateTempPassword();
+    const password_hash = await this.authService.hashPassword(password ?? tempPassword!);
 
     const user = this.userRepository.create({
       username,
@@ -62,20 +75,56 @@ export class UsersService {
       full_name,
       role,
       phone_number: phone_number || null,
+      password_must_change: !password,
+      rayon_id: rayon_id ?? undefined,
+      shift_definition_id: shift_definition_id ?? undefined,
+      // Primary area = first assigned area (legacy `users.area_id` fallback).
+      area_id: areaIds[0] ?? undefined,
     });
 
     const savedUser = await this.userRepository.save(user);
     this.logger.log(`User created successfully: ${username} (ID: ${savedUser.id})`);
+
+    // Permanent area membership (multi) drives monitoring scope + geofence.
+    if (areaIds.length) {
+      await this.userAreasService.reconcilePermanentAreas(
+        savedUser.id,
+        areaIds,
+        actor?.id ?? savedUser.id,
+      );
+    }
 
     this.audit({
       entity_type: 'user',
       entity_id: savedUser.id,
       action: 'create',
       actor_id: actor?.id ?? savedUser.id, // self-attributed for internal callers (e.g. CSV import w/o actor)
-      new_value: { username, full_name, role },
+      new_value: { username, full_name, role, rayon_id, shift_definition_id, area_ids: areaIds },
     });
 
-    return savedUser;
+    return tempPassword ? Object.assign(savedUser, { temp_password: tempPassword }) : savedUser;
+  }
+
+  /**
+   * Admin password reset: generate a new one-time temp password, force a change
+   * on next login, and (best-effort) the caller's clients drop the old session.
+   * Returns the plaintext temp password once — it is never stored.
+   */
+  async resetPassword(id: string, actor?: User): Promise<{ temp_password: string }> {
+    const user = await this.findOne(id);
+    const tempPassword = generateTempPassword();
+    user.password_hash = await this.authService.hashPassword(tempPassword);
+    user.password_must_change = true;
+    await this.userRepository.save(user);
+    this.logger.log(`Password reset for user ID ${id} by ${actor?.id ?? 'system'}`);
+    this.audit({
+      entity_type: 'user',
+      entity_id: id,
+      action: 'reset_password',
+      actor_id: actor?.id ?? id,
+      new_value: { password_must_change: true },
+    });
+    return { temp_password: tempPassword };
   }
 
   /**
@@ -249,19 +298,47 @@ export class UsersService {
     const user = await this.findOne(id);
     const previous = { full_name: user.full_name, role: user.role, is_active: user.is_active };
 
-    const { password, phone_number, ...updateData } = updateUserDto;
+    // Admins cannot set passwords here — use resetPassword (generate + force change).
+    // `area_ids` is a junction-table relation (not a column) — handle separately.
+    const { phone_number, area_ids, ...updateData } = updateUserDto;
 
     if (phone_number) {
       await this.userValidation.assertPhoneAvailable(phone_number, id);
     }
 
-    if (password) this.logger.log(`Password updated for user: ID ${id}`);
-    const savedUser = await this.userRepository.save({
+    // Reassignment = editing the user's permanent areas. Past shifts/tracking
+    // history are immutable; today/future use the new set.
+    let areaChange: { added: string[]; removed: string[] } | undefined;
+    let primaryAreaId: string | undefined;
+    if (area_ids) {
+      const desired = [...new Set(area_ids)];
+      const before = await this.userAreasService.getPermanentAreaIds(id);
+      areaChange = await this.userAreasService.reconcilePermanentAreas(
+        id,
+        desired,
+        actor?.id ?? id,
+      );
+      primaryAreaId = desired[0]; // may be undefined → clears primary
+      if (areaChange.added.length || areaChange.removed.length) {
+        this.audit({
+          entity_type: 'user',
+          entity_id: id,
+          action: 'reassign',
+          actor_id: actor?.id ?? id,
+          old_value: { area_ids: before },
+          new_value: { area_ids: desired },
+        });
+      }
+    }
+
+    // area_id may be cleared to null when all areas are removed → loose payload.
+    const savePayload: Record<string, unknown> = {
       ...user,
       ...updateData,
-      ...(password ? { password_hash: await this.authService.hashPassword(password) } : {}),
       ...(phone_number !== undefined ? { phone_number } : {}),
-    });
+      ...(area_ids ? { area_id: primaryAreaId ?? null } : {}),
+    };
+    const savedUser = await this.userRepository.save(savePayload as unknown as User);
     this.logger.log(`User updated successfully: ID ${id}`);
 
     this.audit({
@@ -270,10 +347,9 @@ export class UsersService {
       action: 'update',
       actor_id: actor?.id ?? id,
       old_value: previous,
-      // Never log password material — record only that it changed
       new_value: {
         ...updateData,
-        ...(password ? { password_changed: true } : {}),
+        ...(area_ids ? { area_ids: [...new Set(area_ids)] } : {}),
       },
     });
 

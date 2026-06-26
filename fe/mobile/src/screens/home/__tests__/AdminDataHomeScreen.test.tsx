@@ -64,6 +64,7 @@ const renderScreen = () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- partial User fixture
         user: { id: 'a1', username: 'admin1', full_name: 'Pak Hadi', role: 'admin_data' } as any,
         assignedArea: null,
+        assignedAreas: [],
         isAuthenticated: true,
         isLoading: false,
         isRestoring: false,
