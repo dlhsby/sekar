@@ -36,10 +36,12 @@ export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {
   icon?: React.ReactNode;
   onRemove?: () => void;
+  /** Accessible label for the remove (✕) button. Defaults to "Hapus <label>". */
+  removeLabel?: string;
 }
 
 const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
-  ({ className, variant, size, icon, onRemove, children, ...props }, ref) => (
+  ({ className, variant, size, icon, onRemove, removeLabel, children, ...props }, ref) => (
     <div className={cn(badgeVariants({ variant, size }), className)} ref={ref} {...props}>
       {icon && <span className="[&_svg]:size-3">{icon}</span>}
       {children}
@@ -48,7 +50,9 @@ const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
           type="button"
           onClick={onRemove}
           className="ml-1 hover:opacity-70 transition-opacity"
-          aria-label="Remove"
+          aria-label={
+            removeLabel ?? (typeof children === 'string' ? `Hapus ${children}` : 'Hapus')
+          }
         >
           <X className="size-3" />
         </button>

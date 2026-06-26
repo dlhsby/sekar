@@ -53,7 +53,7 @@ const SectionCard = React.forwardRef<HTMLElement, SectionCardProps>(
           {title ? (
             <h3 className="text-nb-h3 text-nb-black">{title}</h3>
           ) : (
-            <span />
+            <span aria-hidden />
           )}
           <div className="flex items-center gap-2">
             {meta && <span className="font-mono text-[11px] text-nb-gray-600">{meta}</span>}

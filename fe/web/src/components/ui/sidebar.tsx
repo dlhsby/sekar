@@ -138,7 +138,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-nb-black focus-visible:-outline-offset-2',
         depth > 0 && 'pl-9',
         active
-          ? 'border-nb-black bg-nb-primary text-nb-black shadow-[1.5px_1.5px_0_var(--color-nb-black)]'
+          ? 'border-nb-black bg-nb-primary text-nb-black shadow-nb-xs'
           : 'border-transparent text-nb-gray-700 hover:bg-nb-paper hover:border-nb-black'
       );
 

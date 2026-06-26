@@ -83,6 +83,9 @@ export { Separator } from './separator';
 export { Spinner, spinnerVariants, type SpinnerProps } from './spinner';
 export { Progress, type ProgressProps } from './progress';
 
+// Combobox
+export { Combobox, type ComboboxProps, type ComboboxOption } from './combobox';
+
 // Select
 export {
   Select,

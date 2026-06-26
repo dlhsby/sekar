@@ -40,6 +40,7 @@ const FormSelect = React.forwardRef<HTMLDivElement, FormSelectProps>(
     ...props
   }, ref) => {
     const id = React.useId();
+    const messageId = `${id}-message`;
 
     return (
       <div className={cn('space-y-1', className)} ref={ref} {...props}>
@@ -49,7 +50,12 @@ const FormSelect = React.forwardRef<HTMLDivElement, FormSelectProps>(
         </Label>
 
         <Select value={value} onValueChange={onChange} disabled={disabled}>
-          <SelectTrigger id={id} error={!!error}>
+          <SelectTrigger
+            id={id}
+            error={!!error}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error || helperText ? messageId : undefined}
+          >
             <SelectValue placeholder={placeholder} />
           </SelectTrigger>
           <SelectContent>
@@ -62,12 +68,21 @@ const FormSelect = React.forwardRef<HTMLDivElement, FormSelectProps>(
         </Select>
 
         {error && (
-          <p className="text-sm text-nb-danger font-medium" role="alert" aria-live="polite">
+          <p
+            id={messageId}
+            className="text-sm text-nb-danger font-medium"
+            role="alert"
+            aria-live="polite"
+          >
             {error}
           </p>
         )}
 
-        {!error && helperText && <p className="text-sm text-nb-gray-600">{helperText}</p>}
+        {!error && helperText && (
+          <p id={messageId} className="text-sm text-nb-gray-600">
+            {helperText}
+          </p>
+        )}
       </div>
     );
   }
