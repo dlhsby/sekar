@@ -28,6 +28,7 @@ export interface ComboboxProps {
   disabled?: boolean;
   id?: string;
   className?: string;
+  'aria-label'?: string;
   'aria-invalid'?: boolean;
   'aria-describedby'?: string;
 }
@@ -48,6 +49,7 @@ export function Combobox({
   disabled,
   id,
   className,
+  'aria-label': ariaLabel,
   'aria-invalid': ariaInvalid,
   'aria-describedby': ariaDescribedBy,
 }: ComboboxProps): React.JSX.Element {
@@ -113,6 +115,7 @@ export function Combobox({
             aria-expanded={open}
             aria-controls={listboxId}
             aria-haspopup="listbox"
+            aria-label={ariaLabel}
             aria-invalid={ariaInvalid || undefined}
             aria-describedby={ariaDescribedBy}
             disabled={disabled}
