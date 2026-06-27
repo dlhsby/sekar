@@ -385,6 +385,38 @@ export class UsersController {
   }
 
   /**
+   * Deactivate a user (is_active=false) — distinct from delete; the account is
+   * kept and can be reactivated.
+   *
+   * @route PATCH /api/users/:id/deactivate
+   */
+  @Patch(':id/deactivate')
+  @Roles(...USER_MANAGERS)
+  @ApiOperation({
+    summary: 'Deactivate user',
+    description: 'Set is_active=false. The account is preserved and can be reactivated.',
+  })
+  @ApiParam({ name: 'id', description: 'User UUID' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'User deactivated.' })
+  deactivate(@Param('id', ParseUUIDPipe) id: string, @GetUser() actor: User) {
+    return this.usersService.deactivate(id, actor);
+  }
+
+  /**
+   * Reactivate a previously deactivated user (is_active=true).
+   *
+   * @route PATCH /api/users/:id/activate
+   */
+  @Patch(':id/activate')
+  @Roles(...USER_MANAGERS)
+  @ApiOperation({ summary: 'Reactivate user', description: 'Set is_active=true.' })
+  @ApiParam({ name: 'id', description: 'User UUID' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'User reactivated.' })
+  activate(@Param('id', ParseUUIDPipe) id: string, @GetUser() actor: User) {
+    return this.usersService.activate(id, actor);
+  }
+
+  /**
    * Change authenticated user's password.
    * Accessible by all authenticated users (Worker, Supervisor, Admin).
    *

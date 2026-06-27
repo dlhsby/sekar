@@ -49,6 +49,7 @@ describe('UsersService', () => {
     create: jest.Mock;
     save: jest.Mock;
     remove: jest.Mock;
+    softRemove: jest.Mock;
     createQueryBuilder: jest.Mock;
     update: jest.Mock;
   } = {
@@ -58,6 +59,7 @@ describe('UsersService', () => {
     create: jest.fn(),
     save: jest.fn(),
     remove: jest.fn(),
+    softRemove: jest.fn(),
     createQueryBuilder: jest.fn(),
     update: jest.fn(),
   };
@@ -725,24 +727,18 @@ describe('UsersService', () => {
   });
 
   describe('remove', () => {
-    it('should soft delete a user', async () => {
+    it('should soft delete a user (softRemove → deleted_at)', async () => {
       mockUserRepository.findOne.mockResolvedValue(mockUser);
-      mockUserRepository.save.mockResolvedValue({
-        ...mockUser,
-        is_active: false,
-      });
+      mockUserRepository.softRemove.mockResolvedValue({ ...mockUser });
 
       await service.remove(mockUser.id);
 
-      expect(mockUserRepository.save).toHaveBeenCalledWith({
-        ...mockUser,
-        is_active: false,
-      });
+      expect(mockUserRepository.softRemove).toHaveBeenCalledWith(mockUser);
     });
 
-    it('should audit-log the deactivation (4-4 C2)', async () => {
+    it('should audit-log the delete', async () => {
       mockUserRepository.findOne.mockResolvedValue({ ...mockUser });
-      mockUserRepository.save.mockResolvedValue({ ...mockUser, is_active: false });
+      mockUserRepository.softRemove.mockResolvedValue({ ...mockUser });
       const actor = { ...mockUser, id: 'admin-actor-uuid' } as User;
 
       await service.remove(mockUser.id, actor);
@@ -750,11 +746,41 @@ describe('UsersService', () => {
       expect(mockAuditLogService.log).toHaveBeenCalledWith({
         entity_type: 'user',
         entity_id: mockUser.id,
-        action: 'deactivate',
+        action: 'delete',
         actor_id: 'admin-actor-uuid',
-        old_value: { is_active: true },
-        new_value: { is_active: false },
       });
+    });
+  });
+
+  describe('deactivate / activate', () => {
+    it('deactivate sets is_active=false and audits', async () => {
+      mockUserRepository.findOne.mockResolvedValue({ ...mockUser, is_active: true });
+      mockUserRepository.save.mockResolvedValue({ ...mockUser, is_active: false });
+      const actor = { ...mockUser, id: 'admin-actor-uuid' } as User;
+
+      await service.deactivate(mockUser.id, actor);
+
+      expect(mockUserRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ is_active: false }),
+      );
+      expect(mockAuditLogService.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'deactivate', actor_id: 'admin-actor-uuid' }),
+      );
+    });
+
+    it('activate sets is_active=true and audits', async () => {
+      mockUserRepository.findOne.mockResolvedValue({ ...mockUser, is_active: false });
+      mockUserRepository.save.mockResolvedValue({ ...mockUser, is_active: true });
+      const actor = { ...mockUser, id: 'admin-actor-uuid' } as User;
+
+      await service.activate(mockUser.id, actor);
+
+      expect(mockUserRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ is_active: true }),
+      );
+      expect(mockAuditLogService.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'activate', actor_id: 'admin-actor-uuid' }),
+      );
     });
   });
 
