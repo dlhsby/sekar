@@ -16,6 +16,9 @@ const dialogContentVariants = cva(
         default: 'max-w-lg',
         lg: 'max-w-2xl',
         xl: 'max-w-4xl',
+        // Edge-to-edge surface for map/complex forms (areas boundary map, the
+        // dynamic task form) that need the whole viewport.
+        full: 'h-[100dvh] max-h-[100dvh] w-screen max-w-[100vw] rounded-none border-0',
       },
     },
     defaultVariants: { size: 'default' },
