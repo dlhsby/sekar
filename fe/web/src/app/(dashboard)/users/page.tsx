@@ -1,258 +1,210 @@
 /**
- * Users List Page — USR-1 (Phase 4-R revamp)
- * Access: ADMIN_ROLES
+ * Users List Page — account master data on the standardized DataTable
+ * (toolbar search, per-column filter, sort, column-toggle, refresh, kebab row
+ * actions). Create/edit happen in a modal; actions are permission-gated.
  */
 
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Pencil, Trash2, Search } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
 import {
   Button,
-  Card,
-  CardContent,
-  FormInput,
   DataTable,
-  type ColumnDef,
-  SkeletonTable,
-  EmptyState,
   PageHeader,
   RoleAvatar,
   StatusPill,
+  type ColumnDef,
+  type DataTableRowAction,
 } from '@/components/ui';
-import { RolePill, RolePillButton } from '@/components/users/RolePill';
+import { RolePill } from '@/components/users/RolePill';
 import { DeleteUserModal } from '@/components/users/DeleteUserModal';
+import { UserFormModal } from '@/components/users/UserFormModal';
 import { useUsers } from '@/lib/api/users';
-import { User, UserRole } from '@/types/models';
-import { ROLE_LABELS } from '@/lib/constants/roles';
-
-const ROLE_KEYS = Object.keys(ROLE_LABELS) as UserRole[];
+import { useUser } from '@/lib/auth/hooks';
+import { ADMIN_ROLES } from '@/lib/constants/roles';
+import { formatDate } from '@/lib/utils/time';
+import type { User } from '@/types/models';
 
 export default function UsersPage() {
   const router = useRouter();
+  const currentUser = useUser();
+  // Full management (create/edit/delete) is admin-only; other roles that can
+  // reach this page (admin_data) get a view-only kebab.
+  const canManage = !!currentUser && ADMIN_ROLES.includes(currentUser.role);
 
-  const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState<UserRole | null>(null);
-  const [page, setPage] = useState(1);
-  const limit = 20;
+  const { data, isLoading, error, refetch } = useUsers({ limit: 1000 });
+  const users = useMemo(() => data?.data ?? [], [data]);
+  const total = data?.meta?.total ?? users.length;
 
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
-  const { data, isLoading, error } = useUsers({
-    search: search || undefined,
-    role: roleFilter ?? undefined,
-    page,
-    limit,
-  });
-
-  const columns = useMemo<ColumnDef<User>[]>(() => [
-    {
-      id: 'full_name',
-      accessorKey: 'full_name',
-      header: 'Pengguna',
-      enableSorting: true,
-      meta: { label: 'Pengguna' },
-      cell: ({ row }) => {
-        const u = row.original;
-        return (
-          <div className="flex items-center gap-2.5">
-            <RoleAvatar name={u.full_name} role={u.role} src={u.profile_picture_url} size="sm" />
-            <div className="min-w-0">
-              <p className="truncate font-bold text-nb-black">{u.full_name}</p>
-              <p className="truncate font-mono text-[11px] text-nb-gray-600">{u.username}</p>
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      id: 'role',
-      accessorKey: 'role',
-      header: 'Role',
-      enableSorting: false,
-      meta: { label: 'Role' },
-      cell: ({ row }) => <RolePill role={row.original.role} />,
-    },
-    {
-      id: 'rayon',
-      header: 'Rayon',
-      enableSorting: false,
-      meta: { label: 'Rayon' },
-      cell: ({ row }) => (
-        <span className="text-nb-body-sm">{row.original.rayon ? row.original.rayon.name : '—'}</span>
-      ),
-    },
-    {
-      id: 'status',
-      header: 'Status',
-      enableSorting: false,
-      meta: { label: 'Status' },
-      cell: ({ row }) =>
-        row.original.is_active ? (
-          <StatusPill tone="ok" dot>
-            Aktif
-          </StatusPill>
-        ) : (
-          <StatusPill tone="neutral" dot>
-            Nonaktif
-          </StatusPill>
+  const columns = useMemo<ColumnDef<User>[]>(
+    () => [
+      {
+        id: 'id',
+        accessorKey: 'id',
+        header: 'ID',
+        enableSorting: false,
+        meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
         ),
-    },
-    {
-      id: 'actions',
-      header: 'Aksi',
-      enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Aksi', pinRight: true, align: 'center' },
-      cell: ({ row }) => (
-        <div className="flex items-center justify-center gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              router.push(`/users/${row.original.id}`);
-            }}
-            aria-label={`Edit ${row.original.full_name}`}
-          >
-            <Pencil className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              setUserToDelete(row.original);
-            }}
-            aria-label={`Hapus ${row.original.full_name}`}
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ], [router]);
+      },
+      {
+        id: 'full_name',
+        accessorKey: 'full_name',
+        header: 'Pengguna',
+        meta: { label: 'Pengguna', filterVariant: 'text' },
+        cell: ({ row }) => {
+          const u = row.original;
+          return (
+            <div className="flex items-center gap-2.5">
+              <RoleAvatar name={u.full_name} role={u.role} src={u.profile_picture_url} size="sm" />
+              <div className="min-w-0">
+                <p className="truncate font-bold text-nb-black">{u.full_name}</p>
+                <p className="truncate font-mono text-[11px] text-nb-gray-600">{u.username}</p>
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        id: 'username',
+        accessorKey: 'username',
+        header: 'Username',
+        meta: { label: 'Username', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="font-mono text-nb-body-sm">{row.original.username}</span>
+        ),
+      },
+      {
+        id: 'role',
+        accessorKey: 'role',
+        header: 'Role',
+        meta: { label: 'Role', filterVariant: 'text' },
+        cell: ({ row }) => <RolePill role={row.original.role} />,
+      },
+      {
+        id: 'rayon',
+        accessorFn: (u) => u.rayon?.name ?? '',
+        header: 'Rayon',
+        meta: { label: 'Rayon', filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm">{row.original.rayon?.name ?? '—'}</span>
+        ),
+      },
+      {
+        id: 'status',
+        accessorFn: (u) => (u.is_active ? 'Aktif' : 'Nonaktif'),
+        header: 'Status',
+        meta: { label: 'Status', filterVariant: 'text' },
+        cell: ({ row }) =>
+          row.original.is_active ? (
+            <StatusPill tone="ok" dot>
+              Aktif
+            </StatusPill>
+          ) : (
+            <StatusPill tone="neutral" dot>
+              Nonaktif
+            </StatusPill>
+          ),
+      },
+      {
+        id: 'created_at',
+        accessorKey: 'created_at',
+        header: 'Dibuat',
+        meta: { label: 'Dibuat', defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.created_at)}
+          </span>
+        ),
+      },
+      {
+        id: 'updated_at',
+        accessorKey: 'updated_at',
+        header: 'Diperbarui',
+        meta: { label: 'Diperbarui', defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.updated_at)}
+          </span>
+        ),
+      },
+    ],
+    []
+  );
 
-  const setRole = (role: UserRole | null) => {
-    setRoleFilter(role);
-    setPage(1);
-  };
-
-  const users = data?.data || [];
-  const totalPages = data?.meta.totalPages || 1;
-  const total = data?.meta.total || 0;
+  const rowActions = useCallback(
+    (u: User): DataTableRowAction<User>[] => [
+      { key: 'view', label: 'Lihat', icon: Eye, onClick: () => router.push(`/users/${u.id}`) },
+      {
+        key: 'edit',
+        label: 'Ubah',
+        icon: Pencil,
+        disabled: !canManage,
+        onClick: () => {
+          setEditingUser(u);
+          setFormOpen(true);
+        },
+      },
+      {
+        key: 'delete',
+        label: 'Hapus',
+        icon: Trash2,
+        variant: 'danger',
+        hidden: !canManage,
+        onClick: () => setUserToDelete(u),
+      },
+    ],
+    [router, canManage]
+  );
 
   return (
     <div className="space-y-5">
       <PageHeader
         description={total ? `${total} pengguna terdaftar` : undefined}
         actions={
-          <Button onClick={() => router.push('/users/new')} leftIcon={<Plus className="w-5 h-5" />}>
-            Tambah pengguna
-          </Button>
+          canManage ? (
+            <Button
+              onClick={() => {
+                setEditingUser(null);
+                setFormOpen(true);
+              }}
+              leftIcon={<Plus className="h-5 w-5" />}
+            >
+              Tambah Pengguna
+            </Button>
+          ) : undefined
         }
       />
 
-      {/* Role-accent filter pills */}
-      <div className="flex flex-wrap gap-2">
-        <RolePillButton active={roleFilter === null} onClick={() => setRole(null)}>
-          Semua
-        </RolePillButton>
-        {ROLE_KEYS.map((role) => (
-          <RolePillButton
-            key={role}
-            role={role}
-            active={roleFilter === role}
-            onClick={() => setRole(roleFilter === role ? null : role)}
-          >
-            {ROLE_LABELS[role]}
-          </RolePillButton>
-        ))}
-      </div>
+      <DataTable
+        columns={columns}
+        data={users}
+        loading={isLoading}
+        error={!!error}
+        onRetry={() => refetch()}
+        onRefresh={() => refetch()}
+        getRowId={(u) => u.id}
+        searchPlaceholder="Cari nama atau username…"
+        rowActions={rowActions}
+        emptyTitle="Belum ada pengguna"
+        emptyDescription={
+          canManage ? 'Klik "Tambah Pengguna" untuk membuat yang baru.' : undefined
+        }
+      />
 
-      {/* Search */}
-      <Card>
-        <CardContent className="p-4">
-          <FormInput
-            label="Cari pengguna"
-            placeholder="Cari berdasarkan nama atau username…"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-            leftIcon={<Search className="w-5 h-5" />}
-          />
-        </CardContent>
-      </Card>
-
-      {isLoading && (
-        <Card>
-          <CardContent className="p-6">
-            <SkeletonTable rows={5} />
-          </CardContent>
-        </Card>
-      )}
-
-      {!isLoading && error && (
-        <EmptyState
-          variant="error"
-          title="Gagal memuat data pengguna"
-          description="Terjadi kesalahan saat mengambil data. Silakan coba lagi."
-          action={{ label: 'Coba Lagi', onClick: () => window.location.reload() }}
-        />
-      )}
-
-      {!isLoading && !error && (
-        <DataTable
-          columns={columns}
-          data={users}
-          loading={false}
-          enablePagination={false}
-          getRowId={(u) => u.id}
-          emptyTitle={
-            search || roleFilter
-              ? 'Tidak ada pengguna yang sesuai dengan filter'
-              : 'Belum ada pengguna'
-          }
-          emptyDescription={
-            search || roleFilter ? undefined : 'Klik "Tambah pengguna" untuk membuat yang baru.'
-          }
-        />
-      )}
-
-      {!isLoading && users.length > 0 && (
-        <div
-          className="flex items-center justify-between font-mono text-[11px] text-nb-gray-600"
-          aria-live="polite"
-        >
-          <span>
-            Menampilkan {users.length} dari <b className="text-nb-black">{total}</b>
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-            >
-              ‹
-            </Button>
-            <span className="px-2">
-              <b className="text-nb-black">{page}</b> / {totalPages}
-            </span>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-            >
-              ›
-            </Button>
-          </div>
-        </div>
-      )}
+      <UserFormModal
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        user={editingUser}
+        onSuccess={() => refetch()}
+      />
 
       <DeleteUserModal
         user={userToDelete}
