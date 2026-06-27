@@ -20,6 +20,7 @@ import {
 } from '@/components/ui';
 import { useUser } from '@/lib/auth/hooks';
 import { useAssets, useAssetCategories, useDeleteAsset, type AssetStatus } from '@/lib/api/assets';
+import { AssetFormModal } from '@/components/assets/AssetFormModal';
 import { formatDate } from '@/lib/utils/time';
 import type { Asset } from '@/lib/api/assets';
 
@@ -51,6 +52,9 @@ export default function AssetsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
 
   const { mutate: deleteAsset } = useDeleteAsset();
 
@@ -174,7 +178,10 @@ export default function AssetsPage() {
         label: 'Ubah',
         icon: Pencil,
         disabled: !isManager,
-        onClick: () => router.push(`/assets/${asset.id}/edit`),
+        onClick: () => {
+          setEditingAsset(asset);
+          setFormOpen(true);
+        },
       },
       {
         key: 'delete',
@@ -201,11 +208,16 @@ export default function AssetsPage() {
                   QR Batch
                 </Button>
               </Link>
-              <Link href="/assets/new">
-                <Button variant="default" leftIcon={<Plus className="w-4 h-4" />}>
-                  Tambah
-                </Button>
-              </Link>
+              <Button
+                variant="default"
+                leftIcon={<Plus className="w-4 h-4" />}
+                onClick={() => {
+                  setEditingAsset(null);
+                  setFormOpen(true);
+                }}
+              >
+                Tambah
+              </Button>
             </div>
           )
         }
@@ -278,6 +290,8 @@ export default function AssetsPage() {
           )}
         </Card>
       )}
+
+      <AssetFormModal open={formOpen} onOpenChange={setFormOpen} asset={editingAsset} />
     </div>
   );
 }

@@ -91,6 +91,11 @@ function setupDefaultApiMocks() {
     ...defaultQueryResult,
     data: emptyPaginatedResponse,
   });
+  // The page mounts the (closed) TaskFormModal, which calls useCreateTask.
+  (tasksApi.useCreateTask as jest.Mock).mockReturnValue({
+    mutateAsync: jest.fn(),
+    isPending: false,
+  });
 }
 
 describe('TasksPage', () => {
@@ -260,11 +265,12 @@ describe('TasksPage', () => {
       mockUseAuth.mockReturnValue({ user: mockKorlapUser, loading: false });
     });
 
-    it('navigates to /tasks/new when the create button is clicked', async () => {
+    it('opens the create-task modal when the create button is clicked', async () => {
       const user = userEvent.setup();
       render(<TasksPage />, { wrapper: createWrapper() });
       await user.click(screen.getByRole('button', { name: /buat tugas/i }));
-      expect(mockPush).toHaveBeenCalledWith('/tasks/new');
+      // The full-screen TaskFormModal opens (its title appears) instead of navigating.
+      expect(await screen.findByText('Tambah Tugas')).toBeInTheDocument();
     });
   });
 

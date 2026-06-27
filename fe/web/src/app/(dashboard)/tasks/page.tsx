@@ -33,6 +33,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { Plus, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import { TASK_MANAGER_ROLES, hasRole } from '@/lib/constants/roles';
+import { TaskFormModal } from '@/components/tasks/TaskFormModal';
 import { formatDate } from '@/lib/utils/time';
 import {
   TASK_STATUS_LABELS,
@@ -63,6 +64,7 @@ export default function TasksPage() {
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
   const [page, setPage] = useState(1);
+  const [formOpen, setFormOpen] = useState(false);
   // The board groups client-side across all lanes, so it needs a wider window
   // than the paginated table.
   const limit = view === 'kanban' ? 100 : 20;
@@ -238,7 +240,7 @@ export default function TasksPage() {
       <PageHeader
         description="Kelola penugasan lapangan."
         actions={
-          <Button onClick={() => router.push('/tasks/new')} leftIcon={<Plus className="size-5" />}>
+          <Button onClick={() => setFormOpen(true)} leftIcon={<Plus className="size-5" />}>
             Buat Tugas
           </Button>
         }
@@ -344,6 +346,8 @@ export default function TasksPage() {
           </CardContent>
         </Card>
       )}
+
+      <TaskFormModal open={formOpen} onOpenChange={setFormOpen} />
     </div>
   );
 }
