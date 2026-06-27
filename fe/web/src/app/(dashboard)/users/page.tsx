@@ -8,7 +8,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2, Power } from 'lucide-react';
 import {
   Button,
   DataTable,
@@ -21,7 +21,7 @@ import {
 import { RolePill } from '@/components/users/RolePill';
 import { DeleteUserModal } from '@/components/users/DeleteUserModal';
 import { UserFormModal } from '@/components/users/UserFormModal';
-import { useUsers } from '@/lib/api/users';
+import { useUsers, useDeactivateUser, useActivateUser } from '@/lib/api/users';
 import { useUser } from '@/lib/auth/hooks';
 import { ADMIN_ROLES } from '@/lib/constants/roles';
 import { formatDate } from '@/lib/utils/time';
@@ -38,9 +38,23 @@ export default function UsersPage() {
   const users = useMemo(() => data?.data ?? [], [data]);
   const total = data?.meta?.total ?? users.length;
 
+  const deactivateUser = useDeactivateUser();
+  const activateUser = useActivateUser();
+
   const [formOpen, setFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+
+  // Resolve an actor id (created_by/updated_by) to a display name via the loaded
+  // user list — the backend returns ids only.
+  const userNameById = useMemo(
+    () => new Map(users.map((u) => [u.id, u.full_name])),
+    [users]
+  );
+  const actorName = useCallback(
+    (id?: string): string => (id ? (userNameById.get(id) ?? '—') : '—'),
+    [userNameById]
+  );
 
   const columns = useMemo<ColumnDef<User>[]>(
     () => [
@@ -135,8 +149,30 @@ export default function UsersPage() {
           </span>
         ),
       },
+      {
+        id: 'created_by',
+        accessorFn: (u) => actorName(u.created_by),
+        header: 'Dibuat oleh',
+        meta: { label: 'Dibuat oleh', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {actorName(row.original.created_by)}
+          </span>
+        ),
+      },
+      {
+        id: 'updated_by',
+        accessorFn: (u) => actorName(u.updated_by),
+        header: 'Diperbarui oleh',
+        meta: { label: 'Diperbarui oleh', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {actorName(row.original.updated_by)}
+          </span>
+        ),
+      },
     ],
-    []
+    [actorName]
   );
 
   const rowActions = useCallback(
@@ -153,6 +189,13 @@ export default function UsersPage() {
         },
       },
       {
+        key: 'toggle-active',
+        label: u.is_active ? 'Nonaktifkan' : 'Aktifkan',
+        icon: Power,
+        hidden: !canManage,
+        onClick: () => (u.is_active ? deactivateUser.mutate(u.id) : activateUser.mutate(u.id)),
+      },
+      {
         key: 'delete',
         label: 'Hapus',
         icon: Trash2,
@@ -161,7 +204,7 @@ export default function UsersPage() {
         onClick: () => setUserToDelete(u),
       },
     ],
-    [router, canManage]
+    [router, canManage, deactivateUser, activateUser]
   );
 
   return (

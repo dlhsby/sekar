@@ -185,3 +185,27 @@ export function useDeleteUser() {
     },
   });
 }
+
+/** Deactivate a user (is_active=false) — distinct from delete; reversible. */
+export function useDeactivateUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.patch<User>(`/users/${id}/deactivate`).then((r) => r.data),
+    onSuccess: (user) => {
+      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: userKeys.detail(user.id) });
+    },
+  });
+}
+
+/** Reactivate a deactivated user (is_active=true). */
+export function useActivateUser() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.patch<User>(`/users/${id}/activate`).then((r) => r.data),
+    onSuccess: (user) => {
+      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: userKeys.detail(user.id) });
+    },
+  });
+}

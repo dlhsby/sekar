@@ -20,6 +20,7 @@ import {
 import { DeleteAreaModal } from '@/components/areas/DeleteAreaModal';
 import { AreaFormModal } from '@/components/areas/AreaFormModal';
 import { useAreas } from '@/lib/api/areas';
+import { useUsers } from '@/lib/api/users';
 import { useAuth } from '@/lib/auth/hooks';
 import { formatArea } from '@/lib/utils/geo';
 import { formatDate } from '@/lib/utils/time';
@@ -33,6 +34,17 @@ export default function AreasPage() {
 
   const { data: areasData, isLoading, error, refetch } = useAreas({ limit: 1000 });
   const areas = useMemo(() => areasData?.data ?? [], [areasData]);
+
+  // Resolve actor ids (created_by/updated_by) to names via the user list.
+  const { data: usersData } = useUsers({ limit: 1000 });
+  const userNameById = useMemo(
+    () => new Map((usersData?.data ?? []).map((u) => [u.id, u.full_name])),
+    [usersData]
+  );
+  const actorName = useCallback(
+    (id?: string): string => (id ? (userNameById.get(id) ?? '—') : '—'),
+    [userNameById]
+  );
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingArea, setEditingArea] = useState<Area | null>(null);
@@ -126,8 +138,30 @@ export default function AreasPage() {
           </span>
         ),
       },
+      {
+        id: 'created_by',
+        accessorFn: (a) => actorName(a.created_by),
+        header: 'Dibuat oleh',
+        meta: { label: 'Dibuat oleh', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {actorName(row.original.created_by)}
+          </span>
+        ),
+      },
+      {
+        id: 'updated_by',
+        accessorFn: (a) => actorName(a.updated_by),
+        header: 'Diperbarui oleh',
+        meta: { label: 'Diperbarui oleh', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {actorName(row.original.updated_by)}
+          </span>
+        ),
+      },
     ],
-    []
+    [actorName]
   );
 
   const rowActions = useCallback(

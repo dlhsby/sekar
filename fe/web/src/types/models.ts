@@ -38,6 +38,10 @@ export interface User extends Record<string, unknown> {
   created_at: string;
   updated_at: string;
   deleted_at?: string;
+  /** Actor audit — ids of the users who created/updated/soft-deleted the row. */
+  created_by?: string;
+  updated_by?: string;
+  deleted_by?: string;
 }
 
 /**
@@ -142,6 +146,10 @@ export interface Area extends Record<string, unknown> {
   description?: string;
   created_at: string;
   updated_at: string;
+  /** Actor audit — ids of the users who created/updated/soft-deleted the row. */
+  created_by?: string;
+  updated_by?: string;
+  deleted_by?: string;
 }
 
 /**
