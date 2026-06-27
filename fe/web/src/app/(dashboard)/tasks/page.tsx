@@ -25,14 +25,15 @@ import {
   StatusPill,
   Tabs,
   type TabItem,
+  type DataTableRowAction,
 } from '@/components/ui';
 import type { ColumnDef } from '@/components/ui/data-table';
 import { TaskKanban } from '@/components/tasks/TaskKanban';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Plus, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import { TASK_MANAGER_ROLES, hasRole } from '@/lib/constants/roles';
+import { formatDate } from '@/lib/utils/time';
 import {
   TASK_STATUS_LABELS,
   TASK_STATUS_TONES,
@@ -65,6 +66,13 @@ export default function TasksPage() {
   // The board groups client-side across all lanes, so it needs a wider window
   // than the paginated table.
   const limit = view === 'kanban' ? 100 : 20;
+
+  const rowActions = useCallback(
+    (task: Task): DataTableRowAction<Task>[] => [
+      { key: 'view', label: 'Lihat', icon: Eye, onClick: () => router.push(`/tasks/${task.id}`) },
+    ],
+    [router]
+  );
 
   useEffect(() => {
     if (!authLoading && user && !hasRole(user.role, TASK_MANAGER_ROLES)) {
@@ -120,6 +128,16 @@ export default function TasksPage() {
   ];
 
   const columns: ColumnDef<Task>[] = [
+    {
+      id: 'id',
+      accessorKey: 'id',
+      header: 'ID',
+      enableSorting: false,
+      meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+      cell: ({ row }) => (
+        <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
+      ),
+    },
     {
       id: 'title',
       header: 'Judul Tugas',
@@ -183,15 +201,27 @@ export default function TasksPage() {
       ),
     },
     {
-      id: 'actions',
-      header: 'Aksi',
+      id: 'created_at',
+      accessorKey: 'created_at',
+      header: 'Dibuat',
       enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Aksi', pinRight: true },
+      meta: { label: 'Dibuat', defaultHidden: true, filterVariant: 'date' },
       cell: ({ row }) => (
-        <Link href={`/tasks/${row.original.id}`} className="font-semibold text-nb-primary hover:underline">
-          Detail
-        </Link>
+        <span className="text-nb-body-sm text-nb-gray-600">
+          {formatDate(row.original.created_at)}
+        </span>
+      ),
+    },
+    {
+      id: 'updated_at',
+      accessorKey: 'updated_at',
+      header: 'Diperbarui',
+      enableSorting: false,
+      meta: { label: 'Diperbarui', defaultHidden: true, filterVariant: 'date' },
+      cell: ({ row }) => (
+        <span className="text-nb-body-sm text-nb-gray-600">
+          {formatDate(row.original.updated_at)}
+        </span>
       ),
     },
   ];
@@ -281,6 +311,7 @@ export default function TasksPage() {
               loading={isLoading}
               enablePagination={false}
               getRowId={(r) => r.id}
+              rowActions={rowActions}
               emptyTitle="Tidak ada tugas"
             />
             {pagination && pagination.totalPages > 1 && (

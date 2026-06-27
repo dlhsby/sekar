@@ -268,12 +268,16 @@ describe('OvertimePage', () => {
       expect(screen.getAllByText('Disetujui').length).toBeGreaterThan(0);
     });
 
-    it('should display a Detail link for each row', () => {
+    it('should display a Lihat menu item for each row (via kebab)', async () => {
+      const user = userEvent.setup();
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      const detailLink = screen.getByRole('link', { name: /detail/i });
-      expect(detailLink).toBeInTheDocument();
-      expect(detailLink).toHaveAttribute('href', '/overtime/ot-1');
+      // Click the kebab trigger
+      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      await user.click(triggers[0]);
+
+      // Verify Lihat menu item exists
+      expect(await screen.findByRole('menuitem', { name: /lihat/i })).toBeInTheDocument();
     });
 
     it('should display total count in the section header', () => {
@@ -323,44 +327,65 @@ describe('OvertimePage', () => {
   // ── 4. Approve / Reject Buttons ───────────────────────────────────────────────
 
   describe('Approve / Reject Buttons', () => {
-    it('should show Setujui and Tolak buttons for korlap on a pending record', () => {
+    it('should show Setujui and Tolak menu items for korlap on a pending record', async () => {
       mockUseAuth.mockReturnValue({ user: korlapUser, loading: false });
+      const user = userEvent.setup();
 
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      expect(screen.getByRole('button', { name: /setujui/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /tolak/i })).toBeInTheDocument();
+      // Click the kebab trigger
+      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      await user.click(triggers[0]);
+
+      expect(await screen.findByRole('menuitem', { name: /setujui/i })).toBeInTheDocument();
+      expect(await screen.findByRole('menuitem', { name: /tolak/i })).toBeInTheDocument();
     });
 
-    it('should show Setujui and Tolak buttons for kepala_rayon on a pending record', () => {
+    it('should show Setujui and Tolak menu items for kepala_rayon on a pending record', async () => {
       mockUseAuth.mockReturnValue({ user: kepalaRayonUser, loading: false });
+      const user = userEvent.setup();
 
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      expect(screen.getByRole('button', { name: /setujui/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /tolak/i })).toBeInTheDocument();
+      // Click the kebab trigger
+      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      await user.click(triggers[0]);
+
+      expect(await screen.findByRole('menuitem', { name: /setujui/i })).toBeInTheDocument();
+      expect(await screen.findByRole('menuitem', { name: /tolak/i })).toBeInTheDocument();
     });
 
-    it('should NOT show Setujui / Tolak buttons for admin_data (view-only)', () => {
+    it('should NOT show Setujui / Tolak menu items for admin_data (view-only)', async () => {
       mockUseAuth.mockReturnValue({ user: adminDataUser, loading: false });
+      const user = userEvent.setup();
 
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      expect(screen.queryByRole('button', { name: /setujui/i })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /^tolak$/i })).not.toBeInTheDocument();
+      // Click the kebab trigger
+      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      await user.click(triggers[0]);
+
+      expect(screen.queryByRole('menuitem', { name: /setujui/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('menuitem', { name: /tolak/i })).not.toBeInTheDocument();
     });
 
-    it('should NOT show Setujui / Tolak buttons for admin_system (view-only)', () => {
+    it('should NOT show Setujui / Tolak menu items for admin_system (view-only)', async () => {
       mockUseAuth.mockReturnValue({ user: adminSystemUser, loading: false });
+      const user = userEvent.setup();
 
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      expect(screen.queryByRole('button', { name: /setujui/i })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /^tolak$/i })).not.toBeInTheDocument();
+      // Click the kebab trigger
+      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      await user.click(triggers[0]);
+
+      expect(screen.queryByRole('menuitem', { name: /setujui/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('menuitem', { name: /tolak/i })).not.toBeInTheDocument();
     });
 
-    it('should NOT show Setujui / Tolak buttons when the overtime is already approved', () => {
+    it('should NOT show Setujui / Tolak menu items when the overtime is already approved', async () => {
       mockUseAuth.mockReturnValue({ user: korlapUser, loading: false });
+      const user = userEvent.setup();
       (overtimeApi.useOvertimes as jest.Mock).mockReturnValue({
         data: {
           data: [mockOvertimeApproved],
@@ -372,28 +397,42 @@ describe('OvertimePage', () => {
 
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      expect(screen.queryByRole('button', { name: /setujui/i })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /^tolak$/i })).not.toBeInTheDocument();
+      // Click the kebab trigger
+      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      await user.click(triggers[0]);
+
+      expect(screen.queryByRole('menuitem', { name: /setujui/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('menuitem', { name: /tolak/i })).not.toBeInTheDocument();
     });
 
-    it('should call approveOvertime mutateAsync when Setujui is clicked', async () => {
+    it('should call approveOvertime mutateAsync when Setujui menu item is clicked', async () => {
       mockUseAuth.mockReturnValue({ user: korlapUser, loading: false });
       const user = userEvent.setup();
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      await user.click(screen.getByRole('button', { name: /setujui/i }));
+      // Click the kebab trigger
+      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      await user.click(triggers[0]);
+
+      // Click the Setujui menu item
+      await user.click(await screen.findByRole('menuitem', { name: /setujui/i }));
 
       await waitFor(() => {
         expect(mockMutateAsync).toHaveBeenCalledWith('ot-1');
       });
     });
 
-    it('should show the reject-reason dialog when Tolak is clicked', async () => {
+    it('should show the reject-reason dialog when Tolak menu item is clicked', async () => {
       mockUseAuth.mockReturnValue({ user: korlapUser, loading: false });
       const user = userEvent.setup();
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      await user.click(screen.getByRole('button', { name: /tolak/i }));
+      // Click the kebab trigger
+      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      await user.click(triggers[0]);
+
+      // Click the Tolak menu item
+      await user.click(await screen.findByRole('menuitem', { name: /tolak/i }));
 
       expect(await screen.findByText(/alasan penolakan/i)).toBeInTheDocument();
       expect(screen.getByPlaceholderText(/masukkan alasan penolakan/i)).toBeInTheDocument();
@@ -409,8 +448,12 @@ describe('OvertimePage', () => {
       const user = userEvent.setup();
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      // Open reject dialog
-      await user.click(screen.getByRole('button', { name: /tolak/i }));
+      // Click the kebab trigger
+      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      await user.click(triggers[0]);
+
+      // Open reject dialog by clicking Tolak menu item
+      await user.click(await screen.findByRole('menuitem', { name: /tolak/i }));
 
       // Fill in the reason
       const reasonInput = await screen.findByPlaceholderText(/masukkan alasan penolakan/i);
@@ -432,7 +475,12 @@ describe('OvertimePage', () => {
       const user = userEvent.setup();
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      await user.click(screen.getByRole('button', { name: /tolak/i }));
+      // Click the kebab trigger
+      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      await user.click(triggers[0]);
+
+      // Click the Tolak menu item
+      await user.click(await screen.findByRole('menuitem', { name: /tolak/i }));
 
       const confirmButton = await screen.findByRole('button', { name: /tolak lembur/i });
       expect(confirmButton).toBeDisabled();
@@ -443,7 +491,12 @@ describe('OvertimePage', () => {
       const user = userEvent.setup();
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      await user.click(screen.getByRole('button', { name: /tolak/i }));
+      // Click the kebab trigger
+      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      await user.click(triggers[0]);
+
+      // Click the Tolak menu item
+      await user.click(await screen.findByRole('menuitem', { name: /tolak/i }));
       expect(await screen.findByText(/alasan penolakan/i)).toBeInTheDocument();
 
       await user.click(screen.getByRole('button', { name: /batal/i }));

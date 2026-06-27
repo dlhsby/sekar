@@ -40,6 +40,16 @@ export default function PlantsPage() {
   const columns = useMemo<ColumnDef<PlantSpeciesRow>[]>(
     () => [
       {
+        id: 'id',
+        accessorKey: 'id',
+        header: 'ID',
+        enableSorting: false,
+        meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
+        ),
+      },
+      {
         id: 'nameId',
         accessorKey: 'nameId',
         header: 'Nama',

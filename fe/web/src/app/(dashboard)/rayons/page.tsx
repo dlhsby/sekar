@@ -5,14 +5,22 @@
 
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { Eye } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth/hooks';
 import { useRayonsWithStats } from '@/lib/api/rayons';
 import { formatArea } from '@/lib/utils/geo';
 import type { Rayon, RayonStats } from '@/types/models';
-import { Badge, DataTable, PageHeader, Spinner, type ColumnDef } from '@/components/ui';
+import {
+  Badge,
+  DataTable,
+  PageHeader,
+  Spinner,
+  type ColumnDef,
+  type DataTableRowAction,
+} from '@/components/ui';
 
 const ALLOWED_ROLES = ['admin_system', 'superadmin', 'top_management'];
 
@@ -47,6 +55,16 @@ export default function RayonsPage() {
 
   const columns = useMemo<ColumnDef<RayonRow>[]>(
     () => [
+      {
+        id: 'id',
+        accessorKey: 'id',
+        header: 'ID',
+        enableSorting: false,
+        meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
+        ),
+      },
       {
         id: 'code',
         accessorKey: 'code',
@@ -107,6 +125,13 @@ export default function RayonsPage() {
     []
   );
 
+  const rowActions = useCallback(
+    (r: RayonRow): DataTableRowAction<RayonRow>[] => [
+      { key: 'view', label: 'Lihat', icon: Eye, onClick: () => router.push(`/rayons/${r.id}`) },
+    ],
+    [router]
+  );
+
   if (authLoading || !user) {
     return (
       <div className="flex min-h-[400px] items-center justify-center" aria-busy="true">
@@ -131,6 +156,7 @@ export default function RayonsPage() {
         getRowId={(r) => r.id}
         searchPlaceholder="Cari rayon…"
         onRowClick={(r) => router.push(`/rayons/${r.id}`)}
+        rowActions={rowActions}
         emptyTitle="Tidak ada rayon"
         emptyDescription="Belum ada rayon yang terdaftar dalam sistem."
       />

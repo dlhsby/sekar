@@ -219,11 +219,19 @@ describe('TasksPage', () => {
       expect(screen.getByText('Aksi')).toBeInTheDocument();
     });
 
-    it('renders a Detail link per row in the table view', async () => {
+    it('renders a "Lihat" menu action per row in the table view via kebab menu', async () => {
+      const user = userEvent.setup();
       render(<TasksPage />, { wrapper: createWrapper() });
       await switchToTable();
-      const detailLink = screen.getByRole('link', { name: /detail/i });
-      expect(detailLink).toHaveAttribute('href', '/tasks/task-1');
+      // Open the kebab menu for the first row
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      await user.click(kebabTriggers[0]);
+      // The "Lihat" menuitem should be visible and navigable
+      const lihatMenuItem = screen.getByRole('menuitem', { name: /lihat/i });
+      expect(lihatMenuItem).toBeInTheDocument();
+      // Verify clicking it navigates to the task detail page
+      await user.click(lihatMenuItem);
+      expect(mockPush).toHaveBeenCalledWith('/tasks/task-1');
     });
   });
 

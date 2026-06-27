@@ -20,12 +20,12 @@ import {
   Button,
   Field,
   DateRangePicker,
+  type ColumnDef,
+  type DataTableRowAction,
 } from '@/components/ui';
-import type { ColumnDef } from '@/components/ui/data-table';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight, Check, X, Eye } from 'lucide-react';
 import type { Activity, ActivityFilters, ActivityStatus } from '@/types/models';
 import { MONITORING_ROLES, ACTIVITY_APPROVER_ROLES, hasRole } from '@/lib/constants/roles';
 import { ACTIVITY_STATUS_LABELS, ACTIVITY_STATUS_BADGES } from '@/lib/constants/activities';
@@ -88,6 +88,54 @@ export default function ActivitiesPage() {
 
   const { data: activitiesData, isLoading } = useActivities(apiFilters);
 
+  // Define canApprove and handlers before any early return
+  const canApprove = !!user && hasRole(user.role, ACTIVITY_APPROVER_ROLES);
+
+  const handleApprove = useCallback(
+    async (id: string) => {
+      await approveMutation.mutateAsync(id);
+    },
+    [approveMutation]
+  );
+
+  const handleReject = useCallback(
+    async (id: string) => {
+      if (!rejectReason.trim()) return;
+      await rejectMutation.mutateAsync({ id, reason: rejectReason });
+      setRejectingId(null);
+      setRejectReason('');
+    },
+    [rejectReason, rejectMutation]
+  );
+
+  const rowActions = useCallback(
+    (row: Activity): DataTableRowAction<Activity>[] => [
+      {
+        key: 'view',
+        label: 'Lihat',
+        icon: Eye,
+        onClick: () => router.push(`/activities/${row.id}`),
+      },
+      {
+        key: 'approve',
+        label: 'Setujui',
+        icon: Check,
+        onClick: () => handleApprove(row.id),
+        disabled: approveMutation.isPending,
+        hidden: row.status !== 'pending' || !canApprove,
+      },
+      {
+        key: 'reject',
+        label: 'Tolak',
+        icon: X,
+        variant: 'danger',
+        onClick: () => setRejectingId(row.id),
+        hidden: row.status !== 'pending' || !canApprove,
+      },
+    ],
+    [canApprove, approveMutation.isPending, handleApprove, router]
+  );
+
   if (authLoading || !user) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -103,18 +151,6 @@ export default function ActivitiesPage() {
 
   const activities = activitiesData?.data || [];
   const pagination = activitiesData?.meta;
-  const canApprove = hasRole(user.role, ACTIVITY_APPROVER_ROLES);
-
-  const handleApprove = async (id: string) => {
-    await approveMutation.mutateAsync(id);
-  };
-
-  const handleReject = async (id: string) => {
-    if (!rejectReason.trim()) return;
-    await rejectMutation.mutateAsync({ id, reason: rejectReason });
-    setRejectingId(null);
-    setRejectReason('');
-  };
 
   const activityTypeOptions = [
     { value: 'all', label: 'Semua Tipe' },
@@ -134,6 +170,16 @@ export default function ActivitiesPage() {
   ];
 
   const columns: ColumnDef<Activity>[] = [
+    {
+      id: 'id',
+      accessorKey: 'id',
+      header: 'ID',
+      enableSorting: false,
+      meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+      cell: ({ row }) => (
+        <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
+      ),
+    },
     {
       id: 'created_at',
       header: 'Tanggal',
@@ -199,44 +245,6 @@ export default function ActivitiesPage() {
         <Badge variant="secondary" size="sm">
           {row.original.photo_urls?.length || 0} foto
         </Badge>
-      ),
-    },
-    {
-      id: 'actions',
-      header: 'Aksi',
-      enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Aksi', pinRight: true },
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <Link
-            href={`/activities/${row.original.id}`}
-            className="text-nb-success-dark font-semibold hover:underline"
-          >
-            Detail
-          </Link>
-          {canApprove && row.original.status === 'pending' && (
-            <>
-              <Button
-                variant="success"
-                size="sm"
-                onClick={() => handleApprove(row.original.id)}
-                disabled={approveMutation.isPending}
-                leftIcon={<Check className="w-3 h-3" />}
-              >
-                Setujui
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => setRejectingId(row.original.id)}
-                leftIcon={<X className="w-3 h-3" />}
-              >
-                Tolak
-              </Button>
-            </>
-          )}
-        </div>
       ),
     },
   ];
@@ -374,6 +382,7 @@ export default function ActivitiesPage() {
             loading={isLoading}
             enablePagination={false}
             getRowId={(r) => r.id}
+            rowActions={rowActions}
             emptyTitle="Tidak ada aktivitas"
           />
 

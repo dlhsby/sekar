@@ -18,7 +18,6 @@ import {
   Button,
   PageHeader,
   StatusPill,
-  Tabs,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -28,11 +27,11 @@ import {
   EmptyState,
   SkeletonTable,
   useToast,
-  type TabItem,
   type ColumnDef,
+  type DataTableRowAction,
 } from '@/components/ui';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Plus, Trash2, Download } from 'lucide-react';
 import { hasRole } from '@/lib/constants/roles';
@@ -80,11 +79,20 @@ interface ReportsPageState {
   limit: number;
 }
 
+// Role gate - only REPORTING viewers
+const REPORTING_VIEWERS: UserRole[] = [
+  'korlap',
+  'kepala_rayon',
+  'admin_data',
+  'top_management',
+  'admin_system',
+  'superadmin',
+];
+
 export default function ReportsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const searchParams = useSearchParams();
 
   const [state, setState] = useState<ReportsPageState>({
     reportType: 'all',
@@ -94,16 +102,6 @@ export default function ReportsPage() {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [reportToDelete, setReportToDelete] = useState<string | null>(null);
-
-  // Role gate - only REPORTING viewers
-  const REPORTING_VIEWERS: UserRole[] = [
-    'korlap',
-    'kepala_rayon',
-    'admin_data',
-    'top_management',
-    'admin_system',
-    'superadmin',
-  ];
 
   useEffect(() => {
     if (!authLoading && user && !hasRole(user.role, REPORTING_VIEWERS)) {
@@ -138,7 +136,7 @@ export default function ReportsPage() {
     };
   }, [reportsData?.data, refetch]);
 
-  const handleDownload = (report: GeneratedReport) => {
+  const handleDownload = useCallback((report: GeneratedReport) => {
     if (report.status !== GeneratedReportStatus.COMPLETED || !report.file_url) {
       toast({ level: 'warning', title: 'Laporan belum siap untuk diunduh' });
       return;
@@ -146,12 +144,12 @@ export default function ReportsPage() {
 
     // Open presigned URL in new tab
     window.open(report.file_url, '_blank');
-  };
+  }, [toast]);
 
-  const handleDeleteClick = (reportId: string) => {
+  const handleDeleteClick = useCallback((reportId: string) => {
     setReportToDelete(reportId);
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
   const handleConfirmDelete = async () => {
     if (!reportToDelete) return;
@@ -161,10 +159,30 @@ export default function ReportsPage() {
       toast({ level: 'success', title: 'Laporan dihapus' });
       setDeleteDialogOpen(false);
       setReportToDelete(null);
-    } catch (err) {
+    } catch {
       toast({ level: 'danger', title: 'Gagal menghapus laporan' });
     }
   };
+
+  const rowActions = useCallback(
+    (report: GeneratedReport): DataTableRowAction<GeneratedReport>[] => [
+      {
+        key: 'download',
+        label: 'Unduh',
+        icon: Download,
+        onClick: () => handleDownload(report),
+        disabled: report.status !== GeneratedReportStatus.COMPLETED,
+      },
+      {
+        key: 'delete',
+        label: 'Hapus',
+        icon: Trash2,
+        variant: 'danger',
+        onClick: () => handleDeleteClick(report.id),
+      },
+    ],
+    [handleDownload, handleDeleteClick]
+  );
 
   if (authLoading || !user) {
     return (
@@ -178,6 +196,16 @@ export default function ReportsPage() {
   const totalPages = reportsData?.meta.totalPages || 1;
 
   const columns: ColumnDef<GeneratedReport>[] = [
+    {
+      id: 'id',
+      accessorKey: 'id',
+      header: 'ID',
+      enableSorting: false,
+      meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+      cell: ({ row }) => (
+        <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
+      ),
+    },
     {
       id: 'title',
       accessorKey: 'title',
@@ -232,37 +260,6 @@ export default function ReportsPage() {
         return <span className="text-nb-body-sm">{date.toLocaleDateString('id-ID')}</span>;
       },
     },
-    {
-      id: 'actions',
-      header: 'Aksi',
-      enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Aksi', pinRight: true },
-      cell: ({ row }) => (
-        <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleDownload(row.original)}
-            disabled={row.original.status !== GeneratedReportStatus.COMPLETED}
-            title={
-              row.original.status !== GeneratedReportStatus.COMPLETED
-                ? 'Laporan belum selesai'
-                : 'Unduh laporan'
-            }
-          >
-            <Download className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleDeleteClick(row.original.id)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
   ];
 
   return (
@@ -307,6 +304,7 @@ export default function ReportsPage() {
                 data={reports}
                 getRowId={(r) => String(r.id)}
                 enablePagination={false}
+                rowActions={rowActions}
               />
 
               {/* Pagination */}

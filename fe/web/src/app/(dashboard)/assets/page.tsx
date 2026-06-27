@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useCallback, useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Plus, QrCode } from 'lucide-react';
+import { Plus, QrCode, Eye, Pencil, Trash2 } from 'lucide-react';
 import {
   Button,
   Card,
@@ -14,10 +15,12 @@ import {
   StatusPill,
   Tabs,
   TabItem,
+  type ColumnDef,
+  type DataTableRowAction,
 } from '@/components/ui';
 import { useUser } from '@/lib/auth/hooks';
-import { useAssets, useAssetCategories, type AssetStatus } from '@/lib/api/assets';
-import type { ColumnDef } from '@/components/ui';
+import { useAssets, useAssetCategories, useDeleteAsset, type AssetStatus } from '@/lib/api/assets';
+import { formatDate } from '@/lib/utils/time';
 import type { Asset } from '@/lib/api/assets';
 
 const ASSET_MANAGER_ROLES = ['korlap', 'kepala_rayon', 'admin_system', 'superadmin'];
@@ -39,6 +42,7 @@ const STATUS_LABELS: Record<AssetStatus, string> = {
 };
 
 export default function AssetsPage() {
+  const router = useRouter();
   const user = useUser();
   const isManager = user && ASSET_MANAGER_ROLES.includes(user.role);
 
@@ -48,6 +52,8 @@ export default function AssetsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
 
+  const { mutate: deleteAsset } = useDeleteAsset();
+
   const { data: assetsData, isLoading: assetsLoading } = useAssets({
     status: statusFilter,
     category_id: categoryFilter === 'all' ? undefined : categoryFilter,
@@ -55,7 +61,7 @@ export default function AssetsPage() {
     limit: pageSize,
   });
 
-  const { data: categories, isLoading: categoriesLoading } = useAssetCategories();
+  const { data: categories } = useAssetCategories();
 
   const statusTabs: TabItem[] = [
     { key: '', label: 'Semua' },
@@ -77,65 +83,110 @@ export default function AssetsPage() {
     [categories]
   );
 
-  const columns: ColumnDef<Asset>[] = [
-    {
-      id: 'asset_code',
-      accessorKey: 'asset_code',
-      header: 'Kode',
-      enableSorting: false,
-      meta: { label: 'Kode' },
-      cell: ({ row }) => <span className="font-mono text-nb-body-sm">{row.original.asset_code}</span>,
-    },
-    {
-      id: 'name',
-      accessorKey: 'name',
-      header: 'Nama',
-      enableSorting: false,
-      meta: { label: 'Nama' },
-    },
-    {
-      id: 'category',
-      header: 'Kategori',
-      enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Kategori' },
-      cell: ({ row }) => row.original.category?.name || '—',
-    },
-    {
-      id: 'status',
-      accessorKey: 'status',
-      header: 'Status',
-      enableSorting: false,
-      meta: { label: 'Status' },
-      cell: ({ row }) => (
-        <StatusPill tone={STATUS_TONE_MAP[row.original.status]}>
-          {STATUS_LABELS[row.original.status]}
-        </StatusPill>
-      ),
-    },
-    {
-      id: 'area',
-      header: 'Lokasi',
-      enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Lokasi' },
-      cell: ({ row }) => row.original.area?.name || row.original.rayon?.name || '—',
-    },
-    {
-      id: 'actions',
-      header: 'Aksi',
-      enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Aksi', pinRight: true, align: 'center' },
-      cell: ({ row }) => (
-        <Link href={`/assets/${row.original.id}`}>
-          <Button variant="ghost" size="sm">
-            Detail
-          </Button>
-        </Link>
-      ),
-    },
-  ];
+  const columns: ColumnDef<Asset>[] = useMemo(
+    () => [
+      {
+        id: 'id',
+        accessorKey: 'id',
+        header: 'ID',
+        enableSorting: false,
+        meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
+        ),
+      },
+      {
+        id: 'asset_code',
+        accessorKey: 'asset_code',
+        header: 'Kode',
+        enableSorting: false,
+        meta: { label: 'Kode' },
+        cell: ({ row }) => <span className="font-mono text-nb-body-sm">{row.original.asset_code}</span>,
+      },
+      {
+        id: 'name',
+        accessorKey: 'name',
+        header: 'Nama',
+        enableSorting: false,
+        meta: { label: 'Nama' },
+      },
+      {
+        id: 'category',
+        header: 'Kategori',
+        enableSorting: false,
+        enableColumnFilter: false,
+        meta: { label: 'Kategori' },
+        cell: ({ row }) => row.original.category?.name || '—',
+      },
+      {
+        id: 'status',
+        accessorKey: 'status',
+        header: 'Status',
+        enableSorting: false,
+        meta: { label: 'Status' },
+        cell: ({ row }) => (
+          <StatusPill tone={STATUS_TONE_MAP[row.original.status]}>
+            {STATUS_LABELS[row.original.status]}
+          </StatusPill>
+        ),
+      },
+      {
+        id: 'area',
+        header: 'Lokasi',
+        enableSorting: false,
+        enableColumnFilter: false,
+        meta: { label: 'Lokasi' },
+        cell: ({ row }) => row.original.area?.name || row.original.rayon?.name || '—',
+      },
+      {
+        id: 'created_at',
+        accessorKey: 'created_at',
+        header: 'Dibuat',
+        enableSorting: false,
+        meta: { label: 'Dibuat', defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.created_at)}
+          </span>
+        ),
+      },
+      {
+        id: 'updated_at',
+        accessorKey: 'updated_at',
+        header: 'Diperbarui',
+        enableSorting: false,
+        meta: { label: 'Diperbarui', defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.updated_at)}
+          </span>
+        ),
+      },
+    ],
+    []
+  );
+
+  const rowActions = useCallback(
+    (asset: Asset): DataTableRowAction<Asset>[] => [
+      { key: 'view', label: 'Lihat', icon: Eye, onClick: () => router.push(`/assets/${asset.id}`) },
+      {
+        key: 'edit',
+        label: 'Ubah',
+        icon: Pencil,
+        disabled: !isManager,
+        onClick: () => router.push(`/assets/${asset.id}/edit`),
+      },
+      {
+        key: 'delete',
+        label: 'Hapus',
+        icon: Trash2,
+        variant: 'danger',
+        hidden: !isManager,
+        onClick: () => deleteAsset(asset.id),
+      },
+    ],
+    [router, isManager, deleteAsset]
+  );
 
   return (
     <div className="space-y-6">
@@ -195,9 +246,7 @@ export default function AssetsPage() {
             data={assetsData.data}
             enablePagination={false}
             getRowId={(asset) => asset.id}
-            onRowClick={(asset) => {
-              window.location.href = `/assets/${asset.id}`;
-            }}
+            rowActions={rowActions}
           />
 
           {assetsData.meta && assetsData.meta.totalPages > 1 && (
