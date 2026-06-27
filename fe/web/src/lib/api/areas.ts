@@ -127,6 +127,30 @@ export function useCreateArea() {
   });
 }
 
+/** Deactivate an area (is_active=false) — distinct from delete; reversible. */
+export function useDeactivateArea() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.patch<Area>(`/areas/${id}/deactivate`).then((r) => r.data),
+    onSuccess: (area) => {
+      queryClient.invalidateQueries({ queryKey: areaKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: areaKeys.detail(area.id) });
+    },
+  });
+}
+
+/** Reactivate a deactivated area (is_active=true). */
+export function useActivateArea() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiClient.patch<Area>(`/areas/${id}/activate`).then((r) => r.data),
+    onSuccess: (area) => {
+      queryClient.invalidateQueries({ queryKey: areaKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: areaKeys.detail(area.id) });
+    },
+  });
+}
+
 /**
  * Hook to update an existing area
  */

@@ -18,6 +18,7 @@ import {
 } from '@/components/ui';
 import { useUser } from '@/lib/auth/hooks';
 import { useAssets, useAssetCategories, useDeleteAsset, type AssetStatus } from '@/lib/api/assets';
+import { useUsers } from '@/lib/api/users';
 import { AssetFormModal } from '@/components/assets/AssetFormModal';
 import { formatDate } from '@/lib/utils/time';
 import type { Asset } from '@/lib/api/assets';
@@ -64,6 +65,17 @@ export default function AssetsPage() {
   });
 
   const { data: categories } = useAssetCategories();
+
+  // Resolve actor ids (created_by/updated_by) to names via the user list.
+  const { data: usersData } = useUsers({ limit: 1000 });
+  const userNameById = useMemo(
+    () => new Map((usersData?.data ?? []).map((u) => [u.id, u.full_name])),
+    [usersData]
+  );
+  const actorName = useCallback(
+    (id?: string): string => (id ? (userNameById.get(id) ?? '—') : '—'),
+    [userNameById]
+  );
 
   const statusTabs: TabItem[] = [
     { key: '', label: 'Semua' },
@@ -164,8 +176,32 @@ export default function AssetsPage() {
           </span>
         ),
       },
+      {
+        id: 'created_by',
+        accessorFn: (a) => actorName(a.created_by),
+        header: 'Dibuat oleh',
+        enableSorting: false,
+        meta: { label: 'Dibuat oleh', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {actorName(row.original.created_by)}
+          </span>
+        ),
+      },
+      {
+        id: 'updated_by',
+        accessorFn: (a) => actorName(a.updated_by),
+        header: 'Diperbarui oleh',
+        enableSorting: false,
+        meta: { label: 'Diperbarui oleh', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {actorName(row.original.updated_by)}
+          </span>
+        ),
+      },
     ],
-    []
+    [actorName]
   );
 
   const rowActions = useCallback(

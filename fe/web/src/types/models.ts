@@ -54,6 +54,10 @@ export interface Rayon {
   description?: string;
   created_at: string;
   updated_at: string;
+  /** Actor audit — ids of the users who created/updated/soft-deleted the row. */
+  created_by?: string;
+  updated_by?: string;
+  deleted_by?: string;
 }
 
 /**
@@ -144,6 +148,7 @@ export interface Area extends Record<string, unknown> {
   boundary_polygon?: GeoJSON.Polygon;
   coverage_area?: number;
   description?: string;
+  is_active?: boolean;
   created_at: string;
   updated_at: string;
   /** Actor audit — ids of the users who created/updated/soft-deleted the row. */

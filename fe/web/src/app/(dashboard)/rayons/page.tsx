@@ -11,6 +11,7 @@ import { Eye } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth/hooks';
 import { useRayonsWithStats } from '@/lib/api/rayons';
+import { useUsers } from '@/lib/api/users';
 import { formatArea } from '@/lib/utils/geo';
 import type { Rayon, RayonStats } from '@/types/models';
 import {
@@ -51,6 +52,17 @@ export default function RayonsPage() {
         };
       }),
     [rayons, stats]
+  );
+
+  // Resolve actor ids (created_by/updated_by) to names via the user list.
+  const { data: usersData } = useUsers({ limit: 1000 });
+  const userNameById = useMemo(
+    () => new Map((usersData?.data ?? []).map((u) => [u.id, u.full_name])),
+    [usersData]
+  );
+  const actorName = useCallback(
+    (id?: string): string => (id ? (userNameById.get(id) ?? '—') : '—'),
+    [userNameById]
   );
 
   const columns = useMemo<ColumnDef<RayonRow>[]>(
@@ -121,8 +133,30 @@ export default function RayonsPage() {
           </span>
         ),
       },
+      {
+        id: 'created_by',
+        accessorFn: (r) => actorName(r.created_by),
+        header: 'Dibuat oleh',
+        meta: { label: 'Dibuat oleh', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {actorName(row.original.created_by)}
+          </span>
+        ),
+      },
+      {
+        id: 'updated_by',
+        accessorFn: (r) => actorName(r.updated_by),
+        header: 'Diperbarui oleh',
+        meta: { label: 'Diperbarui oleh', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {actorName(row.original.updated_by)}
+          </span>
+        ),
+      },
     ],
-    []
+    [actorName]
   );
 
   const rowActions = useCallback(

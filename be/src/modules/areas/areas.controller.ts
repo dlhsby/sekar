@@ -233,7 +233,7 @@ export class AreasController {
   @ApiOperation({
     summary: 'Delete area',
     description:
-      'Soft delete an area (sets is_active to false). Admin only. Cannot delete if workers are assigned to this area.',
+      'Soft delete an area (sets deleted_at + deleted_by). Admin only. Cannot delete if workers are assigned. Distinct from deactivation.',
   })
   @ApiParam({
     name: 'id',
@@ -263,6 +263,35 @@ export class AreasController {
   })
   remove(@Param('id') id: string): Promise<void> {
     return this.areasService.remove(id);
+  }
+
+  /**
+   * Deactivate an area (is_active=false) — distinct from delete; reversible.
+   * @route PATCH /api/areas/:id/deactivate
+   */
+  @Patch(':id/deactivate')
+  @Roles(...USER_MANAGERS)
+  @ApiOperation({
+    summary: 'Deactivate area',
+    description: 'Set is_active=false. The area is preserved and can be reactivated.',
+  })
+  @ApiParam({ name: 'id', description: 'Area UUID' })
+  @ApiResponse({ status: 200, description: 'Area deactivated.' })
+  deactivate(@Param('id') id: string) {
+    return this.areasService.deactivate(id);
+  }
+
+  /**
+   * Reactivate a deactivated area (is_active=true).
+   * @route PATCH /api/areas/:id/activate
+   */
+  @Patch(':id/activate')
+  @Roles(...USER_MANAGERS)
+  @ApiOperation({ summary: 'Reactivate area', description: 'Set is_active=true.' })
+  @ApiParam({ name: 'id', description: 'Area UUID' })
+  @ApiResponse({ status: 200, description: 'Area reactivated.' })
+  activate(@Param('id') id: string) {
+    return this.areasService.activate(id);
   }
 
   @Get(':id/boundary')

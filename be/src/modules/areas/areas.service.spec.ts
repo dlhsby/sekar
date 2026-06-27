@@ -43,6 +43,7 @@ describe('AreasService', () => {
   const mockRepository = {
     create: jest.fn(),
     save: jest.fn(),
+    softRemove: jest.fn(),
     find: jest.fn(),
     findOne: jest.fn(),
     count: jest.fn(),
@@ -236,13 +237,14 @@ describe('AreasService', () => {
   });
 
   describe('remove', () => {
-    it('should soft delete an area successfully', async () => {
+    it('should soft delete an area successfully (softRemove → deleted_at)', async () => {
       mockRepository.findOne.mockResolvedValue(mockArea);
-      mockRepository.save.mockResolvedValue({ ...mockArea, is_active: false });
+      mockRepository.count.mockResolvedValue(0);
+      mockRepository.softRemove.mockResolvedValue(mockArea);
 
       await service.remove('c3d4e5f6-a7b8-9012-cdef-123456789012');
 
-      expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({ is_active: false }));
+      expect(repository.softRemove).toHaveBeenCalledWith(mockArea);
     });
 
     it('should throw NotFoundException if area not found', async () => {
@@ -250,6 +252,26 @@ describe('AreasService', () => {
       mockRepository.findOne.mockResolvedValue(null);
 
       await expect(service.remove(invalidUUID)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('deactivate / activate', () => {
+    it('deactivate sets is_active=false', async () => {
+      mockRepository.findOne.mockResolvedValue({ ...mockArea, is_active: true });
+      mockRepository.save.mockResolvedValue({ ...mockArea, is_active: false });
+
+      await service.deactivate('c3d4e5f6-a7b8-9012-cdef-123456789012');
+
+      expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({ is_active: false }));
+    });
+
+    it('activate sets is_active=true', async () => {
+      mockRepository.findOne.mockResolvedValue({ ...mockArea, is_active: false });
+      mockRepository.save.mockResolvedValue({ ...mockArea, is_active: true });
+
+      await service.activate('c3d4e5f6-a7b8-9012-cdef-123456789012');
+
+      expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({ is_active: true }));
     });
   });
 

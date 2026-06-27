@@ -15,12 +15,15 @@ test.describe('TSK-1 tasks kanban/table', () => {
     await quickLogin(page, 'admin', '/tasks');
     await page.getByRole('tab', { name: /tabel/i }).click();
     await expect(page.getByText('Judul Tugas')).toBeVisible();
-    await expect(page.getByRole('link', { name: /detail/i }).first()).toBeVisible();
+    // Row actions now live in a standardized "..." kebab menu.
+    await page.getByRole('button', { name: 'Aksi baris' }).first().click();
+    await expect(page.getByRole('menuitem', { name: /lihat/i })).toBeVisible();
   });
 
-  test('opens the create-task form', async ({ page }) => {
+  test('opens the create-task modal', async ({ page }) => {
     await quickLogin(page, 'admin', '/tasks');
     await page.getByRole('button', { name: /buat tugas/i }).click();
-    await expect(page).toHaveURL(/\/tasks\/new/);
+    // "Buat Tugas" now opens a full-size modal instead of navigating to /tasks/new.
+    await expect(page.getByRole('heading', { name: /tambah tugas/i })).toBeVisible();
   });
 });

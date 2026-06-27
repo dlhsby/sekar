@@ -8,7 +8,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2, Power } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -19,7 +19,7 @@ import {
 } from '@/components/ui';
 import { DeleteAreaModal } from '@/components/areas/DeleteAreaModal';
 import { AreaFormModal } from '@/components/areas/AreaFormModal';
-import { useAreas } from '@/lib/api/areas';
+import { useAreas, useDeactivateArea, useActivateArea } from '@/lib/api/areas';
 import { useUsers } from '@/lib/api/users';
 import { useAuth } from '@/lib/auth/hooks';
 import { formatArea } from '@/lib/utils/geo';
@@ -45,6 +45,9 @@ export default function AreasPage() {
     (id?: string): string => (id ? (userNameById.get(id) ?? '—') : '—'),
     [userNameById]
   );
+
+  const deactivateArea = useDeactivateArea();
+  const activateArea = useActivateArea();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingArea, setEditingArea] = useState<Area | null>(null);
@@ -178,6 +181,14 @@ export default function AreasPage() {
         },
       },
       {
+        key: 'toggle-active',
+        label: a.is_active === false ? 'Aktifkan' : 'Nonaktifkan',
+        icon: Power,
+        hidden: !isAdmin,
+        onClick: () =>
+          a.is_active === false ? activateArea.mutate(a.id) : deactivateArea.mutate(a.id),
+      },
+      {
         key: 'delete',
         label: 'Hapus',
         icon: Trash2,
@@ -186,7 +197,7 @@ export default function AreasPage() {
         onClick: () => setDeleteModal({ isOpen: true, area: a }),
       },
     ],
-    [router, isAdmin]
+    [router, isAdmin, deactivateArea, activateArea]
   );
 
   return (
