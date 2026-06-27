@@ -166,8 +166,18 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        description={total ? `${total} pengguna terdaftar` : undefined}
+      <PageHeader description={total ? `${total} pengguna terdaftar` : undefined} />
+
+      <DataTable
+        columns={columns}
+        data={users}
+        loading={isLoading}
+        error={!!error}
+        onRetry={() => refetch()}
+        onRefresh={() => refetch()}
+        getRowId={(u) => u.id}
+        searchPlaceholder="Cari nama atau username…"
+        rowActions={rowActions}
         actions={
           canManage ? (
             <Button
@@ -181,18 +191,6 @@ export default function UsersPage() {
             </Button>
           ) : undefined
         }
-      />
-
-      <DataTable
-        columns={columns}
-        data={users}
-        loading={isLoading}
-        error={!!error}
-        onRetry={() => refetch()}
-        onRefresh={() => refetch()}
-        getRowId={(u) => u.id}
-        searchPlaceholder="Cari nama atau username…"
-        rowActions={rowActions}
         emptyTitle="Belum ada pengguna"
         emptyDescription={
           canManage ? 'Klik "Tambah Pengguna" untuk membuat yang baru.' : undefined

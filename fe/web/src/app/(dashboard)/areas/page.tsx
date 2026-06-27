@@ -160,6 +160,18 @@ export default function AreasPage() {
       <PageHeader
         title="Area"
         description="Kelola area kerja dan batas wilayah"
+      />
+
+      <DataTable
+        columns={columns}
+        data={areas}
+        loading={isLoading}
+        error={!!error}
+        onRetry={() => refetch()}
+        onRefresh={() => refetch()}
+        getRowId={(r) => r.id}
+        searchPlaceholder="Cari nama atau kode area…"
+        rowActions={rowActions}
         actions={
           isAdmin ? (
             <Button
@@ -173,18 +185,6 @@ export default function AreasPage() {
             </Button>
           ) : undefined
         }
-      />
-
-      <DataTable
-        columns={columns}
-        data={areas}
-        loading={isLoading}
-        error={!!error}
-        onRetry={() => refetch()}
-        onRefresh={() => refetch()}
-        getRowId={(r) => r.id}
-        searchPlaceholder="Cari nama atau kode area…"
-        rowActions={rowActions}
         emptyTitle="Belum Ada Area"
         emptyDescription="Mulai dengan menambahkan area kerja pertama."
         emptyAction={

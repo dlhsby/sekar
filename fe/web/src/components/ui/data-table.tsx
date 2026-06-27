@@ -232,12 +232,12 @@ export function DataTable<TData, TValue>({
         enableSorting: false,
         enableColumnFilter: false,
         enableHiding: false,
-        meta: { label: rowActionsLabel, pinRight: true, align: 'right' },
+        meta: { label: rowActionsLabel, pinRight: true, align: 'center' },
         cell: ({ row }) => {
           const acts = rowActions(row.original).filter((a) => !a.hidden);
           if (acts.length === 0) return null;
           return (
-            <div onClick={(e) => e.stopPropagation()} className="flex justify-end">
+            <div onClick={(e) => e.stopPropagation()} className="flex justify-center">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -457,7 +457,7 @@ export function DataTable<TData, TValue>({
                     <TableHead
                       key={header.id}
                       className={cn(
-                        alignClass(meta?.align),
+                        'text-center',
                         pinClass(meta, 'bg-nb-gray-100')
                       )}
                       aria-sort={
@@ -473,7 +473,7 @@ export function DataTable<TData, TValue>({
                       {header.isPlaceholder ? null : (
                         <div
                           className={cn(
-                            'flex flex-col gap-1.5',
+                            'flex flex-col items-center gap-1.5',
                             showFilters && header.column.getCanFilter() && 'gap-2 pb-2 pt-1'
                           )}
                         >

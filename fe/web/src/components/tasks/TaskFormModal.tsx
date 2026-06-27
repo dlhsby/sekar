@@ -104,7 +104,7 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="full">
+      <DialogContent size="xl">
         <DialogHeader>
           <DialogTitle>Tambah Tugas</DialogTitle>
         </DialogHeader>

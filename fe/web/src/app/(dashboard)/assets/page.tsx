@@ -8,10 +8,8 @@ import {
   Button,
   Card,
   DataTable,
-  EmptyState,
   FormSelect,
   PageHeader,
-  SkeletonTable,
   StatusPill,
   Tabs,
   TabItem,
@@ -197,31 +195,7 @@ export default function AssetsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Aset"
-        description="Kelola aset dan perawatan"
-        actions={
-          isManager && (
-            <div className="flex gap-2">
-              <Link href="/assets/qr">
-                <Button variant="outline" leftIcon={<QrCode className="w-4 h-4" />}>
-                  QR Batch
-                </Button>
-              </Link>
-              <Button
-                variant="default"
-                leftIcon={<Plus className="w-4 h-4" />}
-                onClick={() => {
-                  setEditingAsset(null);
-                  setFormOpen(true);
-                }}
-              >
-                Tambah
-              </Button>
-            </div>
-          )
-        }
-      />
+      <PageHeader title="Aset" description="Kelola aset dan perawatan" />
 
       <Card variant="default">
         <div className="p-4 space-y-4">
@@ -247,21 +221,39 @@ export default function AssetsPage() {
         </div>
       </Card>
 
-      {assetsLoading ? (
-        <SkeletonTable rows={5} />
-      ) : !assetsData?.data?.length ? (
-        <EmptyState variant="noData" title="Tidak ada aset" />
-      ) : (
-        <Card variant="default">
+      <Card variant="default">
           <DataTable
             columns={columns}
-            data={assetsData.data}
+            data={assetsData?.data ?? []}
+            loading={assetsLoading}
             enablePagination={false}
             getRowId={(asset) => asset.id}
             rowActions={rowActions}
+            emptyTitle="Tidak ada aset"
+            actions={
+              isManager ? (
+                <div className="flex gap-2">
+                  <Link href="/assets/qr">
+                    <Button variant="outline" leftIcon={<QrCode className="w-4 h-4" />}>
+                      QR Batch
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="default"
+                    leftIcon={<Plus className="w-4 h-4" />}
+                    onClick={() => {
+                      setEditingAsset(null);
+                      setFormOpen(true);
+                    }}
+                  >
+                    Tambah
+                  </Button>
+                </div>
+              ) : undefined
+            }
           />
 
-          {assetsData.meta && assetsData.meta.totalPages > 1 && (
+          {assetsData?.meta && assetsData.meta.totalPages > 1 && (
             <div className="p-4 border-t-2 border-nb-black flex justify-between items-center">
               <span className="text-nb-body-sm text-nb-gray-600">
                 Halaman {currentPage} dari {assetsData.meta.totalPages}
@@ -288,8 +280,7 @@ export default function AssetsPage() {
               </div>
             </div>
           )}
-        </Card>
-      )}
+      </Card>
 
       <AssetFormModal open={formOpen} onOpenChange={setFormOpen} asset={editingAsset} />
     </div>

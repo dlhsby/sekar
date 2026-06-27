@@ -42,7 +42,7 @@ export function AreaFormModal({ open, onOpenChange, area, onSuccess }: AreaFormM
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="full">
+      <DialogContent size="xl">
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Ubah Area' : 'Tambah Area'}</DialogTitle>
         </DialogHeader>
