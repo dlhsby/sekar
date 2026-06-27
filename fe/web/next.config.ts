@@ -17,6 +17,15 @@ const nextConfig: NextConfig = {
   // Standalone output for Docker deployment
   output: 'standalone',
 
+  // Pin the Turbopack workspace root to this app dir. The repo has two
+  // lockfiles (root tooling + this workspace), so Turbopack would otherwise
+  // infer the repo root and resolve dev chunks from the wrong directory
+  // (ChunkLoadError). cwd is always fe/web for next dev/build (the scripts run
+  // here — the same assumption as the ./package.json read above).
+  turbopack: {
+    root: process.cwd(),
+  },
+
   env: {
     NEXT_PUBLIC_APP_VERSION: pkgVersion,
     NEXT_PUBLIC_BUILD_SHA: process.env.GIT_SHA || 'dev',
