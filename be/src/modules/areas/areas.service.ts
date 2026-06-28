@@ -201,11 +201,27 @@ export class AreasService {
       throw new BadRequestException(`Cannot delete area: ${assignmentCount} worker(s) assigned`);
     }
 
-    // Soft delete by setting is_active to false
-    area.is_active = false;
-    await this.areaRepository.save(area);
+    // True soft delete (deleted_at + deleted_by via AuditSubscriber). Distinct
+    // from deactivation, which only flips is_active.
+    await this.areaRepository.softRemove(area);
 
     this.logger.log(`Area with ID ${id} soft deleted successfully`);
+  }
+
+  /** Deactivate an area (is_active=false) — kept and reversible; distinct from delete. */
+  async deactivate(id: string): Promise<Area> {
+    const area = await this.findOne(id);
+    if (!area.is_active) return area;
+    area.is_active = false;
+    return this.areaRepository.save(area);
+  }
+
+  /** Reactivate a deactivated area (is_active=true). */
+  async activate(id: string): Promise<Area> {
+    const area = await this.findOne(id);
+    if (area.is_active) return area;
+    area.is_active = true;
+    return this.areaRepository.save(area);
   }
 
   /**

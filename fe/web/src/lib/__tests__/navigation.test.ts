@@ -18,12 +18,13 @@ describe('Navigation Utilities', () => {
       // reports(group), analytics(group), operations(group) + 2 staff_kecamatan
       // items + the external 'docs' (Panduan) link = 10. Settings moved to the
       // avatar dropdown; pruning-requests moved under the 'Pekerjaan' group.
-      expect(navigationItems).toHaveLength(10);
+      expect(navigationItems).toHaveLength(11);
 
       const navIds = navigationItems.map((item) => item.id);
       expect(navIds).toContain('dashboard');
       expect(navIds).toContain('monitoring');
       expect(navIds).toContain('work');
+      expect(navIds).toContain('access');
       expect(navIds).toContain('data');
       expect(navIds).toContain('reports');
       expect(navIds).toContain('analytics');
@@ -44,11 +45,15 @@ describe('Navigation Utilities', () => {
         'pruning-requests',
       ]);
 
-      // 'Data Master' group holds users / areas / rayons + Phase-3 plants/seeds
-      // + Phase-5 assets.
+      // 'Pengguna & Akses' group holds user accounts (Hak Akses / Akun Layanan
+      // land here later).
+      const accessItem = navigationItems.find((item) => item.id === 'access');
+      expect(accessItem?.children?.map((c) => c.id)).toEqual(['users']);
+
+      // 'Data Master' group holds areas / rayons + Phase-3 plants/seeds +
+      // Phase-5 assets (users moved out to 'Pengguna & Akses').
       const dataItem = navigationItems.find((item) => item.id === 'data');
       expect(dataItem?.children?.map((c) => c.id)).toEqual([
-        'users',
         'areas',
         'rayons',
         'plants',
@@ -74,9 +79,9 @@ describe('Navigation Utilities', () => {
     });
 
     it('should restrict the Users route to admin roles', () => {
-      // Users management is admin/admin_data only — nested under 'Data Master'.
-      const dataItem = navigationItems.find((item) => item.id === 'data');
-      const usersItem = dataItem?.children?.find((child) => child.id === 'users');
+      // Users management is admin/admin_data only — nested under 'Pengguna & Akses'.
+      const accessItem = navigationItems.find((item) => item.id === 'access');
+      const usersItem = accessItem?.children?.find((child) => child.id === 'users');
       expect(usersItem?.roles).toContain('admin_system');
       expect(usersItem?.roles).toContain('superadmin');
       expect(usersItem?.roles).toContain('admin_data');
@@ -93,6 +98,7 @@ describe('Navigation Utilities', () => {
         'dashboard',
         'monitoring',
         'work',
+        'access',
         'data',
         'reports',
         'analytics',
@@ -108,8 +114,8 @@ describe('Navigation Utilities', () => {
         'schedules',
         'pruning-requests',
       ]);
-      const dataItem = filtered.find((item) => item.id === 'data');
-      expect(dataItem?.children?.find((child) => child.id === 'users')).toBeDefined();
+      const accessItem = filtered.find((item) => item.id === 'access');
+      expect(accessItem?.children?.find((child) => child.id === 'users')).toBeDefined();
     });
 
     it('should filter out admin-only children for top_management', () => {
@@ -225,7 +231,7 @@ describe('Navigation Utilities', () => {
     it('returns the group → page trail for a known route', () => {
       expect(getBreadcrumbTrail('/tasks')).toEqual(['Pekerjaan', 'Tugas']);
       expect(getBreadcrumbTrail('/overtime')).toEqual(['Pekerjaan', 'Lembur']);
-      expect(getBreadcrumbTrail('/users')).toEqual(['Data Master', 'Pengguna']);
+      expect(getBreadcrumbTrail('/users')).toEqual(['Pengguna & Akses', 'Pengguna']);
       expect(getBreadcrumbTrail('/pruning-requests')).toEqual(['Pekerjaan', 'Permohonan Pemangkasan']);
     });
 
@@ -238,7 +244,7 @@ describe('Navigation Utilities', () => {
       expect(getBreadcrumbTrail('/tasks/new')).toEqual(['Pekerjaan', 'Tugas', 'Baru']);
       expect(getBreadcrumbTrail('/tasks/abc-123')).toEqual(['Pekerjaan', 'Tugas', 'Detail']);
       expect(getBreadcrumbTrail('/schedules/abc/edit')).toEqual(['Pekerjaan', 'Jadwal', 'Ubah']);
-      expect(getBreadcrumbTrail('/users/u1')).toEqual(['Data Master', 'Pengguna', 'Detail']);
+      expect(getBreadcrumbTrail('/users/u1')).toEqual(['Pengguna & Akses', 'Pengguna', 'Detail']);
     });
   });
 

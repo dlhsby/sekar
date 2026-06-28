@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils/cn';
 
 import { Button } from './button';
 import { Calendar } from './calendar';
+import { parseIso, toIso } from './picker-utils';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 
 /** Range value: inclusive ISO `yyyy-MM-dd` endpoints. */
@@ -23,15 +24,6 @@ interface PresetDef {
   label: string;
   range: (today: string) => DateRangeValue;
 }
-
-/** ISO `yyyy-MM-dd` → local-midnight Date (display only). */
-function parseIso(value: string): Date | undefined {
-  const [y, m, d] = value.split('-').map(Number);
-  if (!y || !m || !d) return undefined;
-  return new Date(y, m - 1, d);
-}
-
-const toIso = (date: Date): string => format(date, 'yyyy-MM-dd');
 
 /** Shift an ISO `yyyy-MM-dd` by `delta` days (UTC-anchored, month-safe). */
 function shiftIso(iso: string, delta: number): string {

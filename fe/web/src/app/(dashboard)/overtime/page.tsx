@@ -20,15 +20,16 @@ import {
   type TabItem,
   Field,
   DateRangePicker,
+  type DataTableRowAction,
 } from '@/components/ui';
 import type { ColumnDef } from '@/components/ui/data-table';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight, Check, X, Eye } from 'lucide-react';
 import type { Overtime, OvertimeStatus } from '@/types/models';
 import { MONITORING_ROLES, OVERTIME_APPROVER_ROLES, hasRole } from '@/lib/constants/roles';
 import { OVERTIME_STATUS_LABELS } from '@/lib/constants/overtime';
+import { formatDate } from '@/lib/utils/time';
 
 /**
  * Type guard for overtime status filter values
@@ -65,6 +66,46 @@ export default function OvertimePage() {
     limit,
   });
 
+  const canApprove = user ? hasRole(user.role, OVERTIME_APPROVER_ROLES) : false;
+
+  const handleApprove = useCallback(async (id: string) => {
+    await approveMutation.mutateAsync(id);
+  }, [approveMutation]);
+
+  const handleReject = useCallback(async (id: string) => {
+    if (!rejectReason.trim()) return;
+    await rejectMutation.mutateAsync({ id, reason: rejectReason });
+    setRejectingId(null);
+    setRejectReason('');
+  }, [rejectReason, rejectMutation]);
+
+  const rowActions = useCallback(
+    (row: Overtime): DataTableRowAction<Overtime>[] => [
+      {
+        key: 'view',
+        label: 'Lihat',
+        icon: Eye,
+        onClick: () => router.push(`/overtime/${row.id}`),
+      },
+      {
+        key: 'approve',
+        label: 'Setujui',
+        icon: Check,
+        disabled: approveMutation.isPending,
+        hidden: !canApprove || row.status !== 'pending',
+        onClick: () => handleApprove(row.id),
+      },
+      {
+        key: 'reject',
+        label: 'Tolak',
+        icon: X,
+        hidden: !canApprove || row.status !== 'pending',
+        onClick: () => setRejectingId(row.id),
+      },
+    ],
+    [canApprove, approveMutation.isPending, router, handleApprove]
+  );
+
   if (authLoading || !user) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -80,18 +121,6 @@ export default function OvertimePage() {
 
   const overtimes = overtimeData?.data || [];
   const pagination = overtimeData?.meta;
-  const canApprove = hasRole(user.role, OVERTIME_APPROVER_ROLES);
-
-  const handleApprove = async (id: string) => {
-    await approveMutation.mutateAsync(id);
-  };
-
-  const handleReject = async (id: string) => {
-    if (!rejectReason.trim()) return;
-    await rejectMutation.mutateAsync({ id, reason: rejectReason });
-    setRejectingId(null);
-    setRejectReason('');
-  };
 
   const statusTabs: TabItem<OvertimeStatus | 'all'>[] = [
     { key: 'all', label: 'Semua' },
@@ -115,6 +144,16 @@ export default function OvertimePage() {
   };
 
   const columns: ColumnDef<Overtime>[] = [
+    {
+      id: 'id',
+      accessorKey: 'id',
+      header: 'ID',
+      enableSorting: false,
+      meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+      cell: ({ row }) => (
+        <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
+      ),
+    },
     {
       id: 'date',
       header: 'Tanggal',
@@ -177,41 +216,15 @@ export default function OvertimePage() {
       ),
     },
     {
-      id: 'actions',
-      header: 'Aksi',
+      id: 'created_at',
+      accessorKey: 'created_at',
+      header: 'Dibuat',
       enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Aksi', pinRight: true },
+      meta: { label: 'Dibuat', defaultHidden: true, filterVariant: 'date' },
       cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <Link
-            href={`/overtime/${row.original.id}`}
-            className="text-nb-success-dark font-semibold hover:underline"
-          >
-            Detail
-          </Link>
-          {canApprove && row.original.status === 'pending' && (
-            <>
-              <Button
-                variant="success"
-                size="sm"
-                onClick={() => handleApprove(row.original.id)}
-                disabled={approveMutation.isPending}
-                leftIcon={<Check className="w-3 h-3" />}
-              >
-                Setujui
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => setRejectingId(row.original.id)}
-                leftIcon={<X className="w-3 h-3" />}
-              >
-                Tolak
-              </Button>
-            </>
-          )}
-        </div>
+        <span className="text-nb-body-sm text-nb-gray-600">
+          {formatDate(row.original.created_at)}
+        </span>
       ),
     },
   ];
@@ -325,6 +338,7 @@ export default function OvertimePage() {
             loading={isLoading}
             enablePagination={false}
             getRowId={(r) => r.id}
+            rowActions={rowActions}
             emptyTitle="Tidak ada permintaan lembur"
           />
 

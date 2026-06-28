@@ -33,6 +33,24 @@ describe('TimePicker', () => {
     expect(input).toHaveValue('23:59');
   });
 
+  it('reads a single-digit hour as the ones place on blur (9 → 09:00, not 23:00)', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    const input = screen.getByRole('textbox');
+    await user.type(input, '9');
+    await user.tab();
+    expect(input).toHaveValue('09:00');
+  });
+
+  it('reads a single-digit hour 1 as 01:00 (not 10:00)', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    const input = screen.getByRole('textbox');
+    await user.type(input, '1');
+    await user.tab();
+    expect(input).toHaveValue('01:00');
+  });
+
   it('emits the raw value through onValueChange', async () => {
     const onValueChange = jest.fn();
     const user = userEvent.setup();

@@ -127,7 +127,12 @@ export {
   TableCell,
   TableCaption,
 } from './table';
-export { DataTable, type DataTableProps, type ColumnDef } from './data-table';
+export {
+  DataTable,
+  type DataTableProps,
+  type DataTableRowAction,
+  type ColumnDef,
+} from './data-table';
 export {
   ColumnFilter,
   filterFnForVariant,

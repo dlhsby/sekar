@@ -1,99 +1,199 @@
 /**
- * Rayons List Page
- * Display all rayons with statistics
- * Access: Admin + TopManagement only
+ * Rayons List Page — 7 rayon master data on the standardized DataTable.
+ * Access: Admin System / Superadmin / TopManagement only.
  */
 
 'use client';
 
+import { useCallback, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { Eye } from 'lucide-react';
+
 import { useAuth } from '@/lib/auth/hooks';
 import { useRayonsWithStats } from '@/lib/api/rayons';
-import RayonCard from '@/components/rayons/RayonCard';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useUsers } from '@/lib/api/users';
+import { formatArea } from '@/lib/utils/geo';
+import type { Rayon, RayonStats } from '@/types/models';
+import {
+  Badge,
+  DataTable,
+  PageHeader,
+  Spinner,
+  type ColumnDef,
+  type DataTableRowAction,
+} from '@/components/ui';
+
+const ALLOWED_ROLES = ['admin_system', 'superadmin', 'top_management'];
+
+type RayonRow = Rayon & Omit<RayonStats, 'rayon_id'>;
 
 export default function RayonsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { rayons, stats, isLoading } = useRayonsWithStats();
 
-  // Access control: Only Admin and TopManagement
+  const allowed = !!user && ALLOWED_ROLES.includes(user.role);
+
+  // Access control: redirect unauthorized roles to the dashboard home.
   useEffect(() => {
-    if (
-      !authLoading &&
-      user &&
-      !['admin_system', 'superadmin', 'top_management'].includes(user.role)
-    ) {
-      router.push('/');
-    }
-  }, [user, authLoading, router]);
+    if (!authLoading && user && !allowed) router.push('/');
+  }, [user, authLoading, allowed, router]);
+
+  const rows = useMemo<RayonRow[]>(
+    () =>
+      rayons.map((rayon) => {
+        const s = stats.find((st) => st.rayon_id === rayon.id);
+        return {
+          ...rayon,
+          total_areas: s?.total_areas ?? 0,
+          total_users: s?.total_users ?? 0,
+          active_users: s?.active_users ?? 0,
+          total_coverage_area: s?.total_coverage_area ?? 0,
+        };
+      }),
+    [rayons, stats]
+  );
+
+  // Resolve actor ids (created_by/updated_by) to names via the user list.
+  const { data: usersData } = useUsers({ limit: 1000 });
+  const userNameById = useMemo(
+    () => new Map((usersData?.data ?? []).map((u) => [u.id, u.full_name])),
+    [usersData]
+  );
+  const actorName = useCallback(
+    (id?: string): string => (id ? (userNameById.get(id) ?? '—') : '—'),
+    [userNameById]
+  );
+
+  const columns = useMemo<ColumnDef<RayonRow>[]>(
+    () => [
+      {
+        id: 'id',
+        accessorKey: 'id',
+        header: 'ID',
+        enableSorting: false,
+        meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
+        ),
+      },
+      {
+        id: 'code',
+        accessorKey: 'code',
+        header: 'Kode',
+        enableSorting: true,
+        meta: { label: 'Kode', filterVariant: 'text' },
+        cell: ({ row }) => (
+          <Badge variant="outline" size="sm">
+            {row.original.code}
+          </Badge>
+        ),
+      },
+      {
+        id: 'name',
+        accessorKey: 'name',
+        header: 'Nama',
+        enableSorting: true,
+        meta: { label: 'Nama', filterVariant: 'text' },
+        cell: ({ row }) => <span className="font-semibold">{row.original.name}</span>,
+      },
+      {
+        id: 'total_areas',
+        accessorKey: 'total_areas',
+        header: 'Area',
+        enableSorting: true,
+        meta: { label: 'Area', filterVariant: 'number', align: 'right' },
+        cell: ({ row }) => <span className="tabular-nums">{row.original.total_areas}</span>,
+      },
+      {
+        id: 'total_users',
+        accessorKey: 'total_users',
+        header: 'Petugas',
+        enableSorting: true,
+        meta: { label: 'Petugas', filterVariant: 'number', align: 'right' },
+        cell: ({ row }) => <span className="tabular-nums">{row.original.total_users}</span>,
+      },
+      {
+        id: 'active_users',
+        accessorKey: 'active_users',
+        header: 'Petugas Aktif',
+        enableSorting: true,
+        meta: { label: 'Petugas Aktif', filterVariant: 'number', align: 'right' },
+        cell: ({ row }) => <span className="tabular-nums">{row.original.active_users}</span>,
+      },
+      {
+        id: 'total_coverage_area',
+        accessorKey: 'total_coverage_area',
+        header: 'Luas Cakupan',
+        enableSorting: true,
+        meta: { label: 'Luas Cakupan', filterVariant: 'number', align: 'right' },
+        cell: ({ row }) => (
+          <span className="tabular-nums text-nb-gray-600">
+            {formatArea(row.original.total_coverage_area)}
+          </span>
+        ),
+      },
+      {
+        id: 'created_by',
+        accessorFn: (r) => actorName(r.created_by),
+        header: 'Dibuat oleh',
+        meta: { label: 'Dibuat oleh', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {actorName(row.original.created_by)}
+          </span>
+        ),
+      },
+      {
+        id: 'updated_by',
+        accessorFn: (r) => actorName(r.updated_by),
+        header: 'Diperbarui oleh',
+        meta: { label: 'Diperbarui oleh', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {actorName(row.original.updated_by)}
+          </span>
+        ),
+      },
+    ],
+    [actorName]
+  );
+
+  const rowActions = useCallback(
+    (r: RayonRow): DataTableRowAction<RayonRow>[] => [
+      { key: 'view', label: 'Lihat', icon: Eye, onClick: () => router.push(`/rayons/${r.id}`) },
+    ],
+    [router]
+  );
 
   if (authLoading || !user) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]" aria-busy="true">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-nb-primary mx-auto mb-4"></div>
-          <p className="text-nb-gray-600">Memuat...</p>
-        </div>
+      <div className="flex min-h-[400px] items-center justify-center" aria-busy="true">
+        <Spinner label="Memuat..." />
       </div>
     );
   }
 
-  // Access denied for non-authorized roles
-  if (!['admin_system', 'superadmin', 'top_management'].includes(user.role)) {
-    return null;
-  }
+  if (!allowed) return null;
 
   return (
-    <div className="container mx-auto p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <p className="text-nb-gray-600">Kelola dan monitor 7 rayon di Kota Surabaya</p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Rayon"
+        description="Kelola dan monitor 7 rayon di Kota Surabaya"
+      />
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[...Array(7)].map((_, i) => (
-            <RayonCard
-              key={i}
-              rayon={{ id: '', name: '', code: '', created_at: '', updated_at: '' }}
-              loading={true}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Rayons Grid */}
-      {!isLoading && rayons.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {rayons.map((rayon) => {
-            const rayonStats = stats.find((s) => s.rayon_id === rayon.id);
-            return <RayonCard key={rayon.id} rayon={rayon} stats={rayonStats} />;
-          })}
-        </div>
-      )}
-
-      {/* Empty State */}
-      {!isLoading && rayons.length === 0 && (
-        <div className="text-center py-16">
-          <svg
-            className="mx-auto h-16 w-16 text-nb-gray-400 mb-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-            />
-          </svg>
-          <h3 className="text-lg font-semibold text-nb-black mb-2">Tidak Ada Rayon</h3>
-          <p className="text-nb-gray-600">Belum ada rayon yang terdaftar dalam sistem.</p>
-        </div>
-      )}
+      <DataTable
+        columns={columns}
+        data={rows}
+        loading={isLoading}
+        getRowId={(r) => r.id}
+        searchPlaceholder="Cari rayon…"
+        onRowClick={(r) => router.push(`/rayons/${r.id}`)}
+        rowActions={rowActions}
+        emptyTitle="Tidak ada rayon"
+        emptyDescription="Belum ada rayon yang terdaftar dalam sistem."
+      />
     </div>
   );
 }

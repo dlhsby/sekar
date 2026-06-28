@@ -99,14 +99,14 @@ export function LocationTimeline({
               <div className="text-sm font-black">{history.total_points}</div>
             </div>
             <div className="bg-[var(--color-status-active-bg)] border-2 border-nb-black rounded-nb-base p-2 text-center">
-              <div className="text-xs text-[#14532D] font-semibold">Dalam Area</div>
-              <div className="text-sm font-black text-[#14532D]">
+              <div className="text-xs text-[var(--color-status-active)] font-semibold">Dalam Area</div>
+              <div className="text-sm font-black text-[var(--color-status-active)]">
                 {formatMinutes(history.time_inside_area_minutes)}
               </div>
             </div>
             <div className="bg-[var(--color-status-outside-bg)] border-2 border-nb-black rounded-nb-base p-2 text-center">
-              <div className="text-xs text-[#581C87] font-semibold">Di Luar Area</div>
-              <div className="text-sm font-black text-[#581C87]">
+              <div className="text-xs text-[var(--color-status-outside)] font-semibold">Di Luar Area</div>
+              <div className="text-sm font-black text-[var(--color-status-outside)]">
                 {formatMinutes(history.time_outside_area_minutes)}
               </div>
             </div>
@@ -235,8 +235,8 @@ export function LocationTimeline({
                           className={cn(
                             'text-[10px] font-semibold px-1.5 py-0.5 rounded border',
                             point.is_within_area
-                              ? 'bg-[var(--color-status-active-bg)] text-[#14532D] border-[var(--color-status-active)]'
-                              : 'bg-[var(--color-status-outside-bg)] text-[#581C87] border-[var(--color-status-outside)]'
+                              ? 'bg-[var(--color-status-active-bg)] text-[var(--color-status-active)] border-[var(--color-status-active)]'
+                              : 'bg-[var(--color-status-outside-bg)] text-[var(--color-status-outside)] border-[var(--color-status-outside)]'
                           )}
                         >
                           {point.is_within_area ? 'Dalam Area' : 'Di Luar Area'}

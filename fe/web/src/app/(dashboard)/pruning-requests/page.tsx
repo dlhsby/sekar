@@ -8,9 +8,10 @@
 
 'use client';
 
-import Link from 'next/link';
+import { useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   Button,
   Card,
@@ -20,11 +21,12 @@ import {
   FormSelect,
   PageHeader,
   StatusPill,
+  type ColumnDef,
+  type DataTableRowAction,
 } from '@/components/ui';
-import type { ColumnDef } from '@/components/ui/data-table';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/lib/auth/hooks';
 import { hasRole } from '@/lib/constants/roles';
+import { formatDate } from '@/lib/utils/time';
 import type { UserRole } from '@/types/models';
 import {
   PRUNING_REQUEST_ADMIN_ROLES,
@@ -69,96 +71,118 @@ export default function PruningRequestsPage() {
   };
   const { data, isLoading, isError } = usePruningRequests(filters);
 
-  const columns: ColumnDef<PruningRequest>[] = [
-    {
-      id: 'referenceCode',
-      header: 'Kode Referensi',
-      enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Kode Referensi' },
-      cell: ({ row }) => <span className="font-mono text-sm">{row.original.referenceCode}</span>,
-    },
-    {
-      id: 'submitter',
-      header: 'Kecamatan',
-      enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Kecamatan' },
-      cell: ({ row }) => (
-        <div className="text-sm">
-          <div className="font-semibold">{row.original.kecamatanName ?? '-'}</div>
-          <div className="text-nb-gray-600">{row.original.submitter?.full_name ?? '-'}</div>
-        </div>
-      ),
-    },
-    {
-      id: 'rayon',
-      header: 'Rayon',
-      enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Rayon' },
-      cell: ({ row }) => <div className="text-sm">{row.original.rayon?.name ?? '-'}</div>,
-    },
-    {
-      id: 'expected',
-      header: 'Minggu / Tanggal',
-      enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Minggu / Tanggal' },
-      cell: ({ row }) => (
-        <div className="text-sm">
-          {row.original.expectedDate ? (
-            <>{new Date(row.original.expectedDate).toLocaleDateString('id-ID')}</>
-          ) : row.original.expectedYear && row.original.expectedIsoWeek ? (
-            <>
-              W{row.original.expectedIsoWeek}/{row.original.expectedYear}
-            </>
-          ) : (
-            '-'
-          )}
-        </div>
-      ),
-    },
-    {
-      id: 'status',
-      header: 'Status',
-      enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Status' },
-      cell: ({ row }) => (
-        <StatusPill tone={PRUNING_REQUEST_STATUS_TONES[row.original.status]} dot>
-          {PRUNING_REQUEST_STATUS_LABELS[row.original.status]}
-        </StatusPill>
-      ),
-    },
-    {
-      id: 'createdAt',
-      header: 'Tanggal Masuk',
-      enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Tanggal Masuk' },
-      cell: ({ row }) => (
-        <div className="text-sm">
-          {new Date(row.original.createdAt).toLocaleDateString('id-ID')}
-        </div>
-      ),
-    },
-    {
-      id: 'actions',
-      header: 'Aksi',
-      enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Aksi', pinRight: true },
-      cell: ({ row }) => (
-        <Link
-          href={`/pruning-requests/${row.original.id}`}
-          className="text-nb-success-dark font-semibold hover:underline"
-        >
-          Detail
-        </Link>
-      ),
-    },
-  ];
+  const columns = useMemo<ColumnDef<PruningRequest>[]>(
+    () => [
+      {
+        id: 'id',
+        accessorKey: 'id',
+        header: 'ID',
+        enableSorting: false,
+        meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
+        ),
+      },
+      {
+        id: 'referenceCode',
+        header: 'Kode Referensi',
+        enableSorting: false,
+        enableColumnFilter: false,
+        meta: { label: 'Kode Referensi' },
+        cell: ({ row }) => <span className="font-mono text-sm">{row.original.referenceCode}</span>,
+      },
+      {
+        id: 'submitter',
+        header: 'Kecamatan',
+        enableSorting: false,
+        enableColumnFilter: false,
+        meta: { label: 'Kecamatan' },
+        cell: ({ row }) => (
+          <div className="text-sm">
+            <div className="font-semibold">{row.original.kecamatanName ?? '-'}</div>
+            <div className="text-nb-gray-600">{row.original.submitter?.full_name ?? '-'}</div>
+          </div>
+        ),
+      },
+      {
+        id: 'rayon',
+        header: 'Rayon',
+        enableSorting: false,
+        enableColumnFilter: false,
+        meta: { label: 'Rayon' },
+        cell: ({ row }) => <div className="text-sm">{row.original.rayon?.name ?? '-'}</div>,
+      },
+      {
+        id: 'expected',
+        header: 'Minggu / Tanggal',
+        enableSorting: false,
+        enableColumnFilter: false,
+        meta: { label: 'Minggu / Tanggal' },
+        cell: ({ row }) => (
+          <div className="text-sm">
+            {row.original.expectedDate ? (
+              <>{new Date(row.original.expectedDate).toLocaleDateString('id-ID')}</>
+            ) : row.original.expectedYear && row.original.expectedIsoWeek ? (
+              <>
+                W{row.original.expectedIsoWeek}/{row.original.expectedYear}
+              </>
+            ) : (
+              '-'
+            )}
+          </div>
+        ),
+      },
+      {
+        id: 'status',
+        header: 'Status',
+        enableSorting: false,
+        enableColumnFilter: false,
+        meta: { label: 'Status' },
+        cell: ({ row }) => (
+          <StatusPill tone={PRUNING_REQUEST_STATUS_TONES[row.original.status]} dot>
+            {PRUNING_REQUEST_STATUS_LABELS[row.original.status]}
+          </StatusPill>
+        ),
+      },
+      {
+        id: 'created_at',
+        accessorKey: 'createdAt',
+        header: 'Dibuat',
+        enableSorting: false,
+        meta: { label: 'Dibuat', defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.createdAt)}
+          </span>
+        ),
+      },
+      {
+        id: 'updated_at',
+        accessorKey: 'updatedAt',
+        header: 'Diperbarui',
+        enableSorting: false,
+        meta: { label: 'Diperbarui', defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.updatedAt)}
+          </span>
+        ),
+      },
+    ],
+    []
+  );
+
+  const rowActions = useCallback(
+    (row: PruningRequest): DataTableRowAction<PruningRequest>[] => [
+      {
+        key: 'view',
+        label: 'Lihat',
+        icon: Eye,
+        onClick: () => router.push(`/pruning-requests/${row.id}`),
+      },
+    ],
+    [router]
+  );
 
   const handleStatusChange = (val: string) => {
     setStatusFilter(val as PruningRequestStatus | 'all');
@@ -201,6 +225,7 @@ export default function PruningRequestsPage() {
               loading={isLoading}
               enablePagination={false}
               getRowId={(r) => r.id}
+              rowActions={rowActions}
               emptyTitle="Belum ada permohonan untuk filter ini."
             />
           )}

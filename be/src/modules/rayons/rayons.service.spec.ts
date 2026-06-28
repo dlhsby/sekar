@@ -36,6 +36,7 @@ describe('RayonsService', () => {
     create: jest.fn(),
     save: jest.fn(),
     softDelete: jest.fn(),
+    softRemove: jest.fn(),
   };
 
   const mockAreaRepository = {
@@ -274,11 +275,11 @@ describe('RayonsService', () => {
     it('should soft delete a rayon', async () => {
       mockRayonRepository.findOne.mockResolvedValue(mockRayon);
       mockAreaRepository.count.mockResolvedValue(0);
-      mockRayonRepository.softDelete.mockResolvedValue({ affected: 1 });
+      mockRayonRepository.softRemove.mockResolvedValue(mockRayon);
 
       await service.remove(mockRayon.id);
 
-      expect(mockRayonRepository.softDelete).toHaveBeenCalledWith(mockRayon.id);
+      expect(mockRayonRepository.softRemove).toHaveBeenCalledWith(mockRayon);
     });
 
     it('should throw NotFoundException if rayon not found', async () => {

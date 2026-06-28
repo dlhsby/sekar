@@ -31,11 +31,13 @@ import {
   useToast,
   type FormSelectOption,
   type ColumnDef,
+  type DataTableRowAction,
 } from '@/components/ui';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { Plus, Trash2, Edit2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Plus, Trash2, Pencil, Power } from 'lucide-react';
 import { ADMIN_ROLES, hasRole } from '@/lib/constants/roles';
+import { formatDate } from '@/lib/utils/time';
 
 const FREQUENCY_OPTIONS: FormSelectOption[] = [
   { value: 'daily', label: 'Harian' },
@@ -73,18 +75,19 @@ export default function SchedulesPage() {
   const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
   const [scheduleToDelete, setScheduleToDelete] = useState<string | null>(null);
 
+  // All data fetching and mutations (before conditionals)
+  const { data: schedules, isLoading: schedulesLoading } = useSchedules();
+  const { data: templates } = useReportTemplates();
+  const createScheduleMutation = useCreateSchedule();
+  const updateScheduleMutation = useUpdateSchedule(editingScheduleId || '');
+  const deleteScheduleMutation = useDeleteSchedule();
+
   // Role gate - admin only
   useEffect(() => {
     if (!authLoading && user && !hasRole(user.role, ADMIN_ROLES)) {
       router.push('/');
     }
   }, [user, authLoading, router]);
-
-  const { data: schedules, isLoading: schedulesLoading } = useSchedules();
-  const { data: templates } = useReportTemplates();
-  const createScheduleMutation = useCreateSchedule();
-  const updateScheduleMutation = useUpdateSchedule(editingScheduleId || '');
-  const deleteScheduleMutation = useDeleteSchedule();
 
   const handleOpenCreate = () => {
     setFormState({
@@ -144,7 +147,7 @@ export default function SchedulesPage() {
         toast({ level: 'success', title: 'Jadwal dibuat' });
         setCreateDialogOpen(false);
       }
-    } catch (err) {
+    } catch {
       toast({
         level: 'danger',
         title: editingScheduleId ? 'Gagal memperbarui jadwal' : 'Gagal membuat jadwal',
@@ -165,24 +168,144 @@ export default function SchedulesPage() {
       toast({ level: 'success', title: 'Jadwal dihapus' });
       setDeleteDialogOpen(false);
       setScheduleToDelete(null);
-    } catch (err) {
+    } catch {
       toast({ level: 'danger', title: 'Gagal menghapus jadwal' });
     }
   };
 
-  const handleToggleActive = async (schedule: ReportSchedule) => {
-    try {
-      await updateScheduleMutation.mutateAsync({
-        is_active: !schedule.is_active,
-      });
-      toast({
-        level: 'success',
-        title: schedule.is_active ? 'Jadwal dinonaktifkan' : 'Jadwal diaktifkan',
-      });
-    } catch (err) {
-      toast({ level: 'danger', title: 'Gagal memperbarui jadwal' });
-    }
-  };
+  const handleToggleActive = useCallback(
+    async (schedule: ReportSchedule) => {
+      try {
+        await updateScheduleMutation.mutateAsync({
+          is_active: !schedule.is_active,
+        });
+        toast({
+          level: 'success',
+          title: schedule.is_active ? 'Jadwal dinonaktifkan' : 'Jadwal diaktifkan',
+        });
+      } catch {
+        toast({ level: 'danger', title: 'Gagal memperbarui jadwal' });
+      }
+    },
+    [updateScheduleMutation, toast]
+  );
+
+  const templateOptions: FormSelectOption[] = templates
+    ? templates.map((t) => ({ value: t.id, label: t.name }))
+    : [];
+
+  const columns = useMemo<ColumnDef<ReportSchedule>[]>(
+    () => [
+      {
+        id: 'id',
+        accessorKey: 'id',
+        header: 'ID',
+        enableSorting: false,
+        meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
+        ),
+      },
+      {
+        id: 'name',
+        accessorKey: 'name',
+        header: 'Nama',
+        enableSorting: true,
+        meta: { label: 'Nama', filterVariant: 'text' },
+        cell: ({ row }) => <span className="text-nb-body font-medium">{row.original.name}</span>,
+      },
+      {
+        id: 'frequency',
+        accessorKey: 'frequency',
+        header: 'Frekuensi',
+        enableSorting: true,
+        meta: { label: 'Frekuensi', filterVariant: 'text' },
+        cell: ({ row }) => {
+          const freq = row.original.frequency;
+          const freqLabel =
+            freq === 'daily' ? 'Harian' : freq === 'weekly' ? 'Mingguan' : 'Bulanan';
+          return <span className="text-nb-body-sm">{freqLabel}</span>;
+        },
+      },
+      {
+        id: 'cron_expression',
+        accessorKey: 'cron_expression',
+        header: 'Cron',
+        enableSorting: true,
+        meta: { label: 'Cron', filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm font-mono">{row.original.cron_expression}</span>
+        ),
+      },
+      {
+        id: 'is_active',
+        accessorKey: 'is_active',
+        header: 'Status',
+        enableSorting: true,
+        meta: { label: 'Status', filterVariant: 'text' },
+        cell: ({ row }) =>
+          row.original.is_active ? (
+            <StatusPill tone="ok" dot>
+              Aktif
+            </StatusPill>
+          ) : (
+            <StatusPill tone="neutral" dot>
+              Nonaktif
+            </StatusPill>
+          ),
+      },
+      {
+        id: 'created_at',
+        accessorKey: 'created_at',
+        header: 'Dibuat',
+        meta: { label: 'Dibuat', defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.created_at)}
+          </span>
+        ),
+      },
+      {
+        id: 'updated_at',
+        accessorKey: 'updated_at',
+        header: 'Diperbarui',
+        meta: { label: 'Diperbarui', defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.updated_at)}
+          </span>
+        ),
+      },
+    ],
+    []
+  );
+
+  const rowActions = useCallback(
+    (schedule: ReportSchedule): DataTableRowAction<ReportSchedule>[] => [
+      {
+        key: 'edit',
+        label: 'Ubah',
+        icon: Pencil,
+        onClick: () => handleOpenEdit(schedule),
+      },
+      {
+        key: 'toggle',
+        label: schedule.is_active ? 'Nonaktifkan' : 'Aktifkan',
+        icon: Power,
+        onClick: () => handleToggleActive(schedule),
+      },
+      {
+        key: 'delete',
+        label: 'Hapus',
+        icon: Trash2,
+        variant: 'danger',
+        onClick: () => handleDeleteClick(schedule.id),
+      },
+    ],
+    [handleToggleActive]
+  );
+
+  const schedulesList = schedules || [];
 
   if (authLoading || !user) {
     return (
@@ -191,88 +314,6 @@ export default function SchedulesPage() {
       </div>
     );
   }
-
-  const templateOptions: FormSelectOption[] = templates
-    ? templates.map((t) => ({ value: t.id, label: t.name }))
-    : [];
-
-  const columns: ColumnDef<ReportSchedule>[] = [
-    {
-      id: 'name',
-      accessorKey: 'name',
-      header: 'Nama',
-      enableSorting: true,
-      meta: { label: 'Nama' },
-      cell: ({ row }) => <span className="text-nb-body font-medium">{row.original.name}</span>,
-    },
-    {
-      id: 'frequency',
-      accessorKey: 'frequency',
-      header: 'Frekuensi',
-      enableSorting: true,
-      meta: { label: 'Frekuensi' },
-      cell: ({ row }) => {
-        const freq = row.original.frequency;
-        const freqLabel =
-          freq === 'daily' ? 'Harian' : freq === 'weekly' ? 'Mingguan' : 'Bulanan';
-        return <span className="text-nb-body-sm">{freqLabel}</span>;
-      },
-    },
-    {
-      id: 'cron_expression',
-      accessorKey: 'cron_expression',
-      header: 'Cron',
-      enableSorting: true,
-      meta: { label: 'Cron' },
-      cell: ({ row }) => (
-        <span className="text-nb-body-sm font-mono">{row.original.cron_expression}</span>
-      ),
-    },
-    {
-      id: 'is_active',
-      accessorKey: 'is_active',
-      header: 'Status',
-      enableSorting: true,
-      meta: { label: 'Status' },
-      cell: ({ row }) => (
-        <Button
-          variant={row.original.is_active ? 'success' : 'outline'}
-          size="sm"
-          onClick={() => handleToggleActive(row.original)}
-          className="text-nb-body-sm"
-        >
-          {row.original.is_active ? 'Aktif' : 'Nonaktif'}
-        </Button>
-      ),
-    },
-    {
-      id: 'actions',
-      header: 'Aksi',
-      enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Aksi', pinRight: true },
-      cell: ({ row }) => (
-        <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleOpenEdit(row.original)}
-          >
-            <Edit2 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleDeleteClick(row.original.id)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
-
-  const schedulesList = schedules || [];
 
   return (
     <div className="space-y-6">
@@ -297,7 +338,12 @@ export default function SchedulesPage() {
               description="Buat jadwal laporan otomatis untuk menjalankan laporan secara berkala"
             />
           ) : (
-            <DataTable columns={columns} data={schedulesList} />
+            <DataTable
+              columns={columns}
+              data={schedulesList}
+              getRowId={(r) => String(r.id)}
+              rowActions={rowActions}
+            />
           )}
         </CardContent>
       </Card>

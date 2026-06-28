@@ -3,12 +3,13 @@
 import { format, isValid, parse } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { CalendarClock } from 'lucide-react';
-import { forwardRef, useEffect, useRef, useState } from 'react';
+import { forwardRef, useEffect, useState } from 'react';
 
 import { cn, nbFocusRing } from '@/lib/utils/cn';
 
 import { Calendar } from './calendar';
 import { Input } from './input';
+import { parseIso, usePopoverAnchor } from './picker-utils';
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from './popover';
 import { TimeList } from './time-picker';
 
@@ -33,13 +34,6 @@ function splitValue(value?: string): { date: string; time: string } {
   if (!value) return { date: '', time: '' };
   const [date = '', time = ''] = value.split(' ');
   return { date, time: time.slice(0, 5) };
-}
-
-function parseIso(date: string): Date | undefined {
-  if (!date) return undefined;
-  const [y, m, d] = date.split('-').map(Number);
-  if (!y || !m || !d) return undefined;
-  return new Date(y, m - 1, d);
 }
 
 /** Mask typed digits into `dd/MM/yyyy HH:mm` (separators auto-inserted). */
@@ -113,9 +107,7 @@ export const DateTimePicker = forwardRef<HTMLInputElement, DateTimePickerProps>(
       if (!focused) setText(toDisplay(value));
     }, [value, focused]);
 
-    const anchorRef = useRef<HTMLDivElement>(null);
-    const insideAnchor = (target: EventTarget | null): boolean =>
-      target instanceof Node && (anchorRef.current?.contains(target) ?? false);
+    const { anchorRef, insideAnchor } = usePopoverAnchor();
 
     const commit = (): void => {
       const parsed = parseInput(text, date);
@@ -180,7 +172,7 @@ export const DateTimePicker = forwardRef<HTMLInputElement, DateTimePickerProps>(
               mode="single"
               defaultMonth={selectedDate}
               selected={selectedDate}
-              disabled={disableFuture ? { after: new Date() } : undefined}
+              disabled={disableFuture ? { after: parseIso(todayIso) ?? new Date() } : undefined}
               onSelect={(d) => {
                 if (!d) return;
                 onValueChange?.(`${format(d, 'yyyy-MM-dd')} ${time || '00:00'}`);

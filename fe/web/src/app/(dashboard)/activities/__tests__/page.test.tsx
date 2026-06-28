@@ -470,18 +470,32 @@ describe('ActivitiesPage', () => {
       expect(screen.getAllByText('1 foto').length).toBeGreaterThan(0);
     });
 
-    it('should render a Detail link for each activity row', () => {
+    it('should render a "Lihat" menuitem for each activity row (via kebab menu)', async () => {
+      const user = userEvent.setup();
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      const detailLinks = screen.getAllByRole('link', { name: /detail/i });
-      expect(detailLinks).toHaveLength(3);
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      expect(kebabTriggers).toHaveLength(3);
+
+      // Open first row's kebab menu
+      await user.click(kebabTriggers[0]);
+
+      // Find the "Lihat" menuitem
+      const lihatItem = screen.getByRole('menuitem', { name: /lihat/i });
+      expect(lihatItem).toBeInTheDocument();
     });
 
-    it('should render Detail links with the correct activity href', () => {
+    it('should navigate to detail page when Lihat menuitem is clicked', async () => {
+      const user = userEvent.setup();
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      const detailLinks = screen.getAllByRole('link', { name: /detail/i });
-      expect(detailLinks[0]).toHaveAttribute('href', '/activities/activity-1');
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      await user.click(kebabTriggers[0]);
+
+      const lihatItem = screen.getByRole('menuitem', { name: /lihat/i });
+      await user.click(lihatItem);
+
+      expect(mockPush).toHaveBeenCalledWith('/activities/activity-1');
     });
   });
 
@@ -568,25 +582,34 @@ describe('ActivitiesPage', () => {
   // ── Approve/Reject Actions — Approver Roles ────────────────────────────────
 
   describe('Approve/Reject Actions for Approver Roles', () => {
-    it('should show Setujui and Tolak buttons for korlap when an activity is pending', () => {
+    it('should show Setujui and Tolak menuitems for korlap when an activity is pending', async () => {
+      const user = userEvent.setup();
       mockUseAuth.mockReturnValue({ user: mockKorlapUser, loading: false });
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      expect(screen.getByRole('button', { name: /setujui/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /^tolak$/i })).toBeInTheDocument();
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      await user.click(kebabTriggers[0]); // Open kebab for first (pending) activity
+
+      expect(screen.getByRole('menuitem', { name: /setujui/i })).toBeInTheDocument();
+      expect(screen.getByRole('menuitem', { name: /^tolak$/i })).toBeInTheDocument();
     });
 
-    it('should show Setujui and Tolak buttons for kepala_rayon when an activity is pending', () => {
+    it('should show Setujui and Tolak menuitems for kepala_rayon when an activity is pending', async () => {
+      const user = userEvent.setup();
       mockUseAuth.mockReturnValue({ user: mockKepalaRayonUser, loading: false });
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      expect(screen.getByRole('button', { name: /setujui/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /^tolak$/i })).toBeInTheDocument();
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      await user.click(kebabTriggers[0]); // Open kebab for first (pending) activity
+
+      expect(screen.getByRole('menuitem', { name: /setujui/i })).toBeInTheDocument();
+      expect(screen.getByRole('menuitem', { name: /^tolak$/i })).toBeInTheDocument();
     });
 
-    it('should NOT show approve/reject buttons when no activities are pending', () => {
+    it('should NOT show approve/reject menuitems when no activities are pending', async () => {
+      const user = userEvent.setup();
       mockUseAuth.mockReturnValue({ user: mockKorlapUser, loading: false });
 
       (activitiesApi.useActivities as jest.Mock).mockReturnValue({
@@ -600,29 +623,40 @@ describe('ActivitiesPage', () => {
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      expect(screen.queryByRole('button', { name: /setujui/i })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /^tolak$/i })).not.toBeInTheDocument();
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      await user.click(kebabTriggers[0]); // Open kebab for first (approved) activity
+
+      expect(screen.queryByRole('menuitem', { name: /setujui/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('menuitem', { name: /^tolak$/i })).not.toBeInTheDocument();
     });
 
-    it('should call approve mutation with the activity id when Setujui is clicked', async () => {
+    it('should call approve mutation with the activity id when Setujui menuitem is clicked', async () => {
       const user = userEvent.setup();
       mockUseAuth.mockReturnValue({ user: mockKorlapUser, loading: false });
       mockMutate.mockResolvedValueOnce({ id: 'activity-1', status: 'approved' });
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      await user.click(screen.getByRole('button', { name: /setujui/i }));
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      await user.click(kebabTriggers[0]);
+
+      const setujuiItem = screen.getByRole('menuitem', { name: /setujui/i });
+      await user.click(setujuiItem);
 
       expect(mockMutate).toHaveBeenCalledWith('activity-1');
     });
 
-    it('should open reject reason form when Tolak button is clicked', async () => {
+    it('should open reject reason form when Tolak menuitem is clicked', async () => {
       const user = userEvent.setup();
       mockUseAuth.mockReturnValue({ user: mockKorlapUser, loading: false });
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      await user.click(screen.getByRole('button', { name: /^tolak$/i }));
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      await user.click(kebabTriggers[0]);
+
+      const tolakItem = screen.getByRole('menuitem', { name: /^tolak$/i });
+      await user.click(tolakItem);
 
       await waitFor(() => {
         expect(screen.getByText(/alasan penolakan aktivitas/i)).toBeInTheDocument();
@@ -636,7 +670,11 @@ describe('ActivitiesPage', () => {
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      await user.click(screen.getByRole('button', { name: /^tolak$/i }));
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      await user.click(kebabTriggers[0]);
+
+      const tolakItem = screen.getByRole('menuitem', { name: /^tolak$/i });
+      await user.click(tolakItem);
 
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /tolak aktivitas/i })).toBeDisabled();
@@ -649,7 +687,11 @@ describe('ActivitiesPage', () => {
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      await user.click(screen.getByRole('button', { name: /^tolak$/i }));
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      await user.click(kebabTriggers[0]);
+
+      const tolakItem = screen.getByRole('menuitem', { name: /^tolak$/i });
+      await user.click(tolakItem);
 
       await waitFor(() => {
         expect(screen.getByLabelText(/alasan/i)).toBeInTheDocument();
@@ -668,7 +710,11 @@ describe('ActivitiesPage', () => {
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      await user.click(screen.getByRole('button', { name: /^tolak$/i }));
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      await user.click(kebabTriggers[0]);
+
+      const tolakItem = screen.getByRole('menuitem', { name: /^tolak$/i });
+      await user.click(tolakItem);
 
       await waitFor(() => {
         expect(screen.getByText(/alasan penolakan aktivitas/i)).toBeInTheDocument();
@@ -688,7 +734,11 @@ describe('ActivitiesPage', () => {
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      await user.click(screen.getByRole('button', { name: /^tolak$/i }));
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      await user.click(kebabTriggers[0]);
+
+      const tolakItem = screen.getByRole('menuitem', { name: /^tolak$/i });
+      await user.click(tolakItem);
 
       await waitFor(() => {
         expect(screen.getByLabelText(/alasan/i)).toBeInTheDocument();
@@ -707,44 +757,74 @@ describe('ActivitiesPage', () => {
   // ── No Approve/Reject for Non-Approver Roles ───────────────────────────────
 
   describe('No Approve/Reject Actions for Non-Approver Roles', () => {
-    it('should NOT show Setujui button for admin_system role', () => {
+    it('should NOT show Setujui menuitem for admin_system role', async () => {
+      const user = userEvent.setup();
       mockUseAuth.mockReturnValue({ user: mockAdminSystemUser, loading: false });
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      expect(screen.queryByRole('button', { name: /setujui/i })).not.toBeInTheDocument();
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      await user.click(kebabTriggers[0]); // Open kebab for first (pending) activity
+
+      expect(screen.queryByRole('menuitem', { name: /setujui/i })).not.toBeInTheDocument();
     });
 
-    it('should NOT show Tolak button for admin_system role', () => {
+    it('should NOT show Tolak menuitem for admin_system role', async () => {
+      const user = userEvent.setup();
       mockUseAuth.mockReturnValue({ user: mockAdminSystemUser, loading: false });
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      expect(screen.queryByRole('button', { name: /^tolak$/i })).not.toBeInTheDocument();
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      await user.click(kebabTriggers[0]); // Open kebab for first (pending) activity
+
+      expect(screen.queryByRole('menuitem', { name: /^tolak$/i })).not.toBeInTheDocument();
     });
 
-    it('should NOT show Setujui button for admin_data role', () => {
+    it('should NOT show Setujui menuitem for admin_data role', async () => {
+      const user = userEvent.setup();
       mockUseAuth.mockReturnValue({ user: mockAdminDataUser, loading: false });
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      expect(screen.queryByRole('button', { name: /setujui/i })).not.toBeInTheDocument();
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      await user.click(kebabTriggers[0]); // Open kebab for first (pending) activity
+
+      expect(screen.queryByRole('menuitem', { name: /setujui/i })).not.toBeInTheDocument();
     });
 
-    it('should NOT show Tolak button for admin_data role', () => {
+    it('should NOT show Tolak menuitem for admin_data role', async () => {
+      const user = userEvent.setup();
       mockUseAuth.mockReturnValue({ user: mockAdminDataUser, loading: false });
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      expect(screen.queryByRole('button', { name: /^tolak$/i })).not.toBeInTheDocument();
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      await user.click(kebabTriggers[0]); // Open kebab for first (pending) activity
+
+      expect(screen.queryByRole('menuitem', { name: /^tolak$/i })).not.toBeInTheDocument();
     });
 
-    it('should still render Detail links for non-approver roles', () => {
+    it('should still render "Lihat" menuitems for non-approver roles', async () => {
+      const user = userEvent.setup();
       mockUseAuth.mockReturnValue({ user: mockAdminDataUser, loading: false });
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      expect(screen.getAllByRole('link', { name: /detail/i })).toHaveLength(3);
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      expect(kebabTriggers).toHaveLength(3);
+
+      // Verify all rows have kebab menus with "Lihat"
+      for (let i = 0; i < kebabTriggers.length; i++) {
+        // Close any open menu from previous iteration
+        const existingMenuitems = screen.queryAllByRole('menuitem');
+        if (existingMenuitems.length > 0) {
+          await user.keyboard('{Escape}');
+        }
+
+        await user.click(kebabTriggers[i]);
+        expect(await screen.findByRole('menuitem', { name: /lihat/i })).toBeInTheDocument();
+      }
     });
   });
 

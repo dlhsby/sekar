@@ -5,10 +5,9 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Search } from 'lucide-react';
+import { Search, Eye } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth/hooks';
 import { useSeeds } from '@/lib/api/seeds';
@@ -20,9 +19,11 @@ import {
   DataTable,
   PageHeader,
   Badge,
+  type ColumnDef,
+  type DataTableRowAction,
 } from '@/components/ui';
 import { PlantSeedRow } from '@/lib/api/seeds';
-import type { ColumnDef } from '@/components/ui/data-table';
+import { formatDate } from '@/lib/utils/time';
 
 const ALLOWED_ROLES = [
   'admin_data',
@@ -49,6 +50,13 @@ export default function SeedsListPage() {
 
   const allowed = !!user && ALLOWED_ROLES.includes(user.role);
 
+  const rowActions = useCallback(
+    (row: PlantSeedRow): DataTableRowAction<PlantSeedRow>[] => [
+      { key: 'view', label: 'Lihat', icon: Eye, onClick: () => router.push(`/seeds/${row.id}`) },
+    ],
+    [router]
+  );
+
   useEffect(() => {
     if (!authLoading && user && !allowed) {
       router.push('/');
@@ -71,15 +79,23 @@ export default function SeedsListPage() {
 
   const columns: ColumnDef<PlantSeedRow>[] = [
     {
+      id: 'id',
+      accessorKey: 'id',
+      header: 'ID',
+      enableSorting: false,
+      meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+      cell: ({ row }) => (
+        <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
+      ),
+    },
+    {
       id: 'nameId',
       header: 'Nama Bibit',
       enableSorting: false,
       enableColumnFilter: false,
       meta: { label: 'Nama Bibit' },
       cell: ({ row }) => (
-        <Link href={`/seeds/${row.original.id}`} className="font-semibold text-nb-primary hover:underline">
-          {row.original.nameId}
-        </Link>
+        <span className="font-semibold text-nb-black">{row.original.nameId}</span>
       ),
     },
     {
@@ -117,6 +133,30 @@ export default function SeedsListPage() {
         );
       },
     },
+    {
+      id: 'createdAt',
+      accessorKey: 'createdAt',
+      header: 'Dibuat',
+      enableSorting: false,
+      meta: { label: 'Dibuat', defaultHidden: true, filterVariant: 'date' },
+      cell: ({ row }) => (
+        <span className="text-nb-body-sm text-nb-gray-600">
+          {formatDate(row.original.createdAt)}
+        </span>
+      ),
+    },
+    {
+      id: 'updatedAt',
+      accessorKey: 'updatedAt',
+      header: 'Diperbarui',
+      enableSorting: false,
+      meta: { label: 'Diperbarui', defaultHidden: true, filterVariant: 'date' },
+      cell: ({ row }) => (
+        <span className="text-nb-body-sm text-nb-gray-600">
+          {formatDate(row.original.updatedAt)}
+        </span>
+      ),
+    },
   ];
 
   return (
@@ -148,6 +188,7 @@ export default function SeedsListPage() {
             loading={seedsLoading}
             enablePagination={false}
             getRowId={(s) => s.id}
+            rowActions={rowActions}
             emptyTitle="Tidak ada bibit tersedia"
           />
 

@@ -236,7 +236,8 @@ export class AssetsService {
       throw new NotFoundException('Asset not found');
     }
 
-    await this.assetRepo.softDelete(id);
+    // softRemove (not softDelete) so the AuditSubscriber can stamp deleted_by.
+    await this.assetRepo.softRemove(asset);
 
     await this.auditLogService.log({
       entity_type: 'asset',

@@ -77,6 +77,10 @@ export interface Asset extends Record<string, unknown> {
   created_at: string;
   updated_at: string;
   deleted_at?: string;
+  // Audit trail: user IDs for create/update/delete operations
+  created_by?: string;
+  updated_by?: string;
+  deleted_by?: string;
 }
 
 /**

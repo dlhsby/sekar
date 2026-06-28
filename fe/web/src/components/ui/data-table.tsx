@@ -17,6 +17,7 @@ import {
   ArrowUp,
   ChevronsUpDown,
   Filter,
+  MoreHorizontal,
   RefreshCw,
   Search,
   SlidersHorizontal,
@@ -32,6 +33,7 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -61,6 +63,21 @@ declare module '@tanstack/react-table' {
 }
 
 const PAGE_SIZES = [10, 25, 50, 100] as const;
+
+/**
+ * A single entry in a row's `...` actions menu. `hidden` drops it entirely
+ * (e.g. by permission); `disabled` greys it out (e.g. view-only edit).
+ */
+export interface DataTableRowAction<TData> {
+  key: string;
+  label: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  onClick: (row: TData) => void;
+  /** `danger` renders the item in the danger tone (e.g. Hapus). */
+  variant?: 'default' | 'danger';
+  disabled?: boolean;
+  hidden?: boolean;
+}
 
 export interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -93,6 +110,16 @@ export interface DataTableProps<TData, TValue> {
   onRowClick?: (row: TData) => void;
   /** Stable row id accessor (defaults to index). */
   getRowId?: (row: TData, index: number) => string;
+  /**
+   * Per-row actions rendered as a standardized `...` menu in a pinned-right
+   * column. Return the actions for a given row; `hidden`/`disabled` entries are
+   * dropped/greyed per permission. Omit to render no actions column.
+   */
+  rowActions?: (row: TData) => DataTableRowAction<TData>[];
+  /** Header label for the actions column (default "Aksi"). */
+  rowActionsLabel?: string;
+  /** Initial rows-per-page (default 10). Users can still change it in the bar. */
+  defaultPageSize?: number;
   className?: string;
 }
 
@@ -153,6 +180,9 @@ export function DataTable<TData, TValue>({
   actions,
   onRowClick,
   getRowId,
+  rowActions,
+  rowActionsLabel = 'Aksi',
+  defaultPageSize = PAGE_SIZES[0],
   className,
 }: DataTableProps<TData, TValue>): React.JSX.Element {
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -169,25 +199,83 @@ export function DataTable<TData, TValue>({
   });
   const [globalFilter, setGlobalFilter] = React.useState('');
   const [search, setSearch] = React.useState('');
-  const [pageSize, setPageSize] = React.useState<number>(PAGE_SIZES[0]);
+  const [pageSize, setPageSize] = React.useState<number>(defaultPageSize);
   const [pageIndex, setPageIndex] = React.useState(0);
   const [showFilters, setShowFilters] = React.useState(false);
   const [searchFocused, setSearchFocused] = React.useState(false);
   const isDesktop = useIsDesktop();
 
-  // Assign each filterable column the filterFn matching its declared variant.
-  const resolvedColumns = React.useMemo(
-    () =>
-      columns.map((c) => {
-        const variant = c.meta?.filterVariant;
-        // Assign the variant's filterFn unless the page set one explicitly. Text
-        // columns get an explicit `includesString` so the column is filterable
-        // even if TanStack's value-type inference can't pick a default.
-        if (!variant || c.filterFn) return c;
-        return { ...c, filterFn: filterFnForVariant<TData>(variant) };
-      }),
-    [columns]
-  );
+  // Resolve filter behaviour and append the standardized actions column.
+  const resolvedColumns = React.useMemo(() => {
+    const mapped = columns.map((c) => {
+      if (c.filterFn) return c; // page set an explicit filterFn — leave it.
+      const variant = c.meta?.filterVariant;
+      if (variant) return { ...c, filterFn: filterFnForVariant<TData>(variant) };
+      // No variant declared: default any value-bearing column to a text filter
+      // (unless filtering was explicitly disabled) so every data column is
+      // filterable. Pure-display columns (no accessor) are left alone.
+      const hasAccessor = 'accessorKey' in c || 'accessorFn' in c;
+      if (hasAccessor && c.enableColumnFilter !== false) {
+        return {
+          ...c,
+          meta: { ...c.meta, filterVariant: 'text' as FilterVariant },
+          filterFn: filterFnForVariant<TData>('text'),
+        };
+      }
+      return c;
+    });
+
+    if (rowActions) {
+      mapped.push({
+        id: '__actions',
+        header: rowActionsLabel,
+        enableSorting: false,
+        enableColumnFilter: false,
+        enableHiding: false,
+        meta: { label: rowActionsLabel, pinRight: true, align: 'center' },
+        cell: ({ row }) => {
+          const acts = rowActions(row.original).filter((a) => !a.hidden);
+          if (acts.length === 0) return null;
+          return (
+            <div onClick={(e) => e.stopPropagation()} className="flex justify-center">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Aksi baris"
+                    className="h-8 w-8 p-0"
+                  >
+                    <MoreHorizontal className="h-4 w-4" aria-hidden />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {acts.map((a) => {
+                    const Icon = a.icon;
+                    return (
+                      <DropdownMenuItem
+                        key={a.key}
+                        disabled={a.disabled}
+                        onSelect={() => a.onClick(row.original)}
+                        className={cn(
+                          a.variant === 'danger' && 'text-nb-danger focus:text-nb-danger'
+                        )}
+                      >
+                        {Icon ? <Icon className="mr-2 h-4 w-4" /> : null}
+                        {a.label}
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          );
+        },
+      });
+    }
+
+    return mapped;
+  }, [columns, rowActions, rowActionsLabel]);
 
   const debouncedSearch = useDebounced(search, 300);
   React.useEffect(() => {
@@ -369,7 +457,7 @@ export function DataTable<TData, TValue>({
                     <TableHead
                       key={header.id}
                       className={cn(
-                        alignClass(meta?.align),
+                        'text-center',
                         pinClass(meta, 'bg-nb-gray-100')
                       )}
                       aria-sort={
@@ -385,7 +473,7 @@ export function DataTable<TData, TValue>({
                       {header.isPlaceholder ? null : (
                         <div
                           className={cn(
-                            'flex flex-col gap-1.5',
+                            'flex flex-col items-center gap-1.5',
                             showFilters && header.column.getCanFilter() && 'gap-2 pb-2 pt-1'
                           )}
                         >

@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/lib/auth/hooks';
 import { useSchedules, useDeleteSchedule } from '@/lib/api/schedules';
@@ -27,6 +27,7 @@ import {
   StatusPill,
   Tabs,
   type TabItem,
+  type DataTableRowAction,
 } from '@/components/ui';
 import type { ColumnDef } from '@/components/ui/data-table';
 import { ScheduleWeeklyGrid } from '@/components/schedules/ScheduleWeeklyGrid';
@@ -36,6 +37,7 @@ import { Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAreas } from '@/lib/api/areas';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { getErrorMessage } from '@/lib/api/client';
+import { formatDate } from '@/lib/utils/time';
 
 type ViewMode = 'grid' | 'table';
 
@@ -96,6 +98,28 @@ export default function SchedulesPage() {
   const { data: shifts } = useShiftDefinitions();
   const deleteMutation = useDeleteSchedule();
 
+  const rowActions = useCallback(
+    (schedule: WorkerSchedule): DataTableRowAction<WorkerSchedule>[] => [
+      {
+        key: 'edit',
+        label: 'Ubah',
+        icon: Edit,
+        onClick: () => router.push(`/schedules/${schedule.id}/edit`),
+      },
+      {
+        key: 'delete',
+        label: 'Hapus',
+        icon: Trash2,
+        variant: 'danger',
+        onClick: () => {
+          setScheduleToDelete(schedule);
+          setDeleteModalOpen(true);
+        },
+      },
+    ],
+    [router]
+  );
+
   useEffect(() => {
     if (!authLoading && user && !ALLOWED.includes(user.role)) {
       router.push('/');
@@ -114,13 +138,6 @@ export default function SchedulesPage() {
 
   const schedules = schedulesData?.data || [];
   const pagination = schedulesData?.meta;
-
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString('id-ID', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
 
   const weekLabel = `${weekStart.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} – ${weekEnd.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}`;
 
@@ -145,6 +162,16 @@ export default function SchedulesPage() {
   };
 
   const columns: ColumnDef<WorkerSchedule>[] = [
+    {
+      id: 'id',
+      accessorKey: 'id',
+      header: 'ID',
+      enableSorting: false,
+      meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+      cell: ({ row }) => (
+        <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
+      ),
+    },
     {
       id: 'user',
       header: 'Pekerja',
@@ -214,29 +241,27 @@ export default function SchedulesPage() {
         ),
     },
     {
-      id: 'actions',
-      header: 'Aksi',
+      id: 'created_at',
+      accessorKey: 'created_at',
+      header: 'Dibuat',
       enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Aksi', pinRight: true, align: 'center' },
+      meta: { label: 'Dibuat', defaultHidden: true, filterVariant: 'date' },
       cell: ({ row }) => (
-        <div className="flex gap-2">
-          <Link href={`/schedules/${row.original.id}/edit`}>
-            <Button variant="secondary" size="sm">
-              <Edit className="size-4" />
-            </Button>
-          </Link>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => {
-              setScheduleToDelete(row.original);
-              setDeleteModalOpen(true);
-            }}
-          >
-            <Trash2 className="size-4" />
-          </Button>
-        </div>
+        <span className="text-nb-body-sm text-nb-gray-600">
+          {formatDate(row.original.created_at)}
+        </span>
+      ),
+    },
+    {
+      id: 'updated_at',
+      accessorKey: 'updated_at',
+      header: 'Diperbarui',
+      enableSorting: false,
+      meta: { label: 'Diperbarui', defaultHidden: true, filterVariant: 'date' },
+      cell: ({ row }) => (
+        <span className="text-nb-body-sm text-nb-gray-600">
+          {formatDate(row.original.updated_at)}
+        </span>
       ),
     },
   ];
@@ -342,6 +367,7 @@ export default function SchedulesPage() {
               loading={isLoading}
               enablePagination={false}
               getRowId={(s) => s.id}
+              rowActions={rowActions}
               emptyTitle="Belum ada jadwal terdaftar"
             />
             {pagination && pagination.totalPages > 1 && (

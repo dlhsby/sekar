@@ -111,13 +111,15 @@ export const navigationItems: NavItem[] = [
       },
     ],
   },
-  // ── Data Master: organisation structure + accounts
+  // ── Pengguna & Akses: user accounts + access control (Hak Akses / Akun
+  // Layanan land here later). Split out of Data Master so account management is
+  // its own surface.
   {
-    id: 'data',
-    label: 'Data Master',
+    id: 'access',
+    label: 'Pengguna & Akses',
     href: '#',
-    icon: FolderIcon,
-    roles: [...ADMIN_ROLES, 'top_management', 'admin_data'],
+    icon: UsersIcon,
+    roles: [...ADMIN_ROLES, 'admin_data'],
     children: [
       {
         id: 'users',
@@ -126,6 +128,16 @@ export const navigationItems: NavItem[] = [
         icon: UsersIcon,
         roles: [...ADMIN_ROLES, 'admin_data'],
       },
+    ],
+  },
+  // ── Data Master: organisation structure + catalogues
+  {
+    id: 'data',
+    label: 'Data Master',
+    href: '#',
+    icon: FolderIcon,
+    roles: [...ADMIN_ROLES, 'top_management', 'admin_data'],
+    children: [
       {
         id: 'areas',
         label: 'Area',
@@ -374,7 +386,7 @@ const ROUTE_BREADCRUMB: Record<string, string[]> = {
   '/overtime': ['Pekerjaan', 'Lembur'],
   '/schedules': ['Pekerjaan', 'Jadwal'],
   '/pruning-requests': ['Pekerjaan', 'Permohonan Pemangkasan'],
-  '/users': ['Data Master', 'Pengguna'],
+  '/users': ['Pengguna & Akses', 'Pengguna'],
   '/areas': ['Data Master', 'Area'],
   '/rayons': ['Data Master', 'Rayon'],
   '/plants': ['Data Master', 'Tanaman'],

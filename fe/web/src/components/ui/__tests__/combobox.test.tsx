@@ -71,4 +71,11 @@ describe('Combobox', () => {
     await user.click(screen.getByRole('button', { name: 'Hapus pilihan' }));
     expect(screen.getByRole('combobox')).toHaveTextContent('Pilih area');
   });
+
+  it('exposes an aria-label on the trigger when provided', () => {
+    render(
+      <Combobox options={OPTIONS} value="" onValueChange={() => {}} aria-label="Ke area" />
+    );
+    expect(screen.getByRole('combobox', { name: 'Ke area' })).toBeInTheDocument();
+  });
 });

@@ -177,8 +177,8 @@ export class RayonsService {
   async remove(id: string): Promise<void> {
     this.logger.log(`Deleting rayon with ID: ${id}`);
 
-    // First verify the rayon exists
-    await this.findOne(id);
+    // First verify the rayon exists (keep it to softRemove below)
+    const rayon = await this.findOne(id);
 
     // Check if any areas reference this rayon
     const referencingAreasCount = await this.areaRepository.count({
@@ -194,8 +194,8 @@ export class RayonsService {
       );
     }
 
-    // Perform soft delete
-    await this.rayonRepository.softDelete(id);
+    // softRemove (not softDelete) so the AuditSubscriber can stamp deleted_by.
+    await this.rayonRepository.softRemove(rayon);
     this.logger.log(`Rayon soft deleted with ID: ${id}`);
   }
 

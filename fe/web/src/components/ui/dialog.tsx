@@ -8,7 +8,7 @@ import { X } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 const dialogContentVariants = cva(
-  'fixed left-[50%] top-[50%] z-50 flex max-h-[85vh] w-full translate-x-[-50%] translate-y-[-50%] flex-col overflow-y-auto border-2 border-nb-black rounded-nb-md bg-nb-white shadow-nb-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+  'fixed left-[50%] top-[50%] z-50 flex max-h-[90dvh] w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-y-auto border-2 border-nb-black rounded-nb-md bg-nb-white shadow-nb-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
   {
     variants: {
       size: {
@@ -16,6 +16,9 @@ const dialogContentVariants = cva(
         default: 'max-w-lg',
         lg: 'max-w-2xl',
         xl: 'max-w-4xl',
+        // Edge-to-edge surface for map/complex forms (areas boundary map, the
+        // dynamic task form) that need the whole viewport.
+        full: 'h-[100dvh] max-h-[100dvh] w-screen max-w-[100vw] rounded-none border-0',
       },
     },
     defaultVariants: { size: 'default' },

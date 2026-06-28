@@ -186,4 +186,64 @@ describe('DataTable', () => {
     render(<DataTable columns={basicColumns} data={mockData} getRowId={(r) => r.id} />);
     expect(screen.getByRole('button', { name: /Kolom/ })).toBeInTheDocument();
   });
+
+  describe('rowActions (... menu)', () => {
+    it('renders a kebab trigger per row and fires the chosen action', async () => {
+      const onView = jest.fn();
+      const user = userEvent.setup();
+      render(
+        <DataTable
+          columns={basicColumns}
+          data={mockData}
+          getRowId={(r) => r.id}
+          rowActions={(row) => [
+            { key: 'view', label: 'Lihat', onClick: () => onView(row.id) },
+            { key: 'del', label: 'Hapus', variant: 'danger', onClick: () => {} },
+          ]}
+        />
+      );
+      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      expect(triggers).toHaveLength(mockData.length);
+      await user.click(triggers[0]);
+      await user.click(await screen.findByRole('menuitem', { name: 'Lihat' }));
+      expect(onView).toHaveBeenCalledWith('1');
+    });
+
+    it('omits hidden actions and disables disabled ones', async () => {
+      const user = userEvent.setup();
+      render(
+        <DataTable
+          columns={basicColumns}
+          data={mockData}
+          getRowId={(r) => r.id}
+          rowActions={() => [
+            { key: 'view', label: 'Lihat', onClick: () => {} },
+            { key: 'edit', label: 'Ubah', disabled: true, onClick: () => {} },
+            { key: 'secret', label: 'Rahasia', hidden: true, onClick: () => {} },
+          ]}
+        />
+      );
+      await user.click(screen.getAllByRole('button', { name: 'Aksi baris' })[0]);
+      expect(await screen.findByRole('menuitem', { name: 'Lihat' })).toBeInTheDocument();
+      expect(screen.queryByRole('menuitem', { name: 'Rahasia' })).not.toBeInTheDocument();
+      expect(screen.getByRole('menuitem', { name: 'Ubah' })).toHaveAttribute(
+        'aria-disabled',
+        'true'
+      );
+    });
+  });
+
+  it('honours defaultPageSize', () => {
+    const many = Array.from({ length: 12 }, (_, i) => ({
+      id: String(i),
+      name: `Person ${i}`,
+      age: 20 + i,
+      email: `p${i}@x.com`,
+    }));
+    render(
+      <DataTable columns={basicColumns} data={many} getRowId={(r) => r.id} defaultPageSize={5} />
+    );
+    // 5 of 12 on the first page → range shows 1–5.
+    expect(screen.getByText(/Menampilkan 1–5 dari 12/)).toBeInTheDocument();
+  });
 });

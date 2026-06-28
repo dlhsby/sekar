@@ -91,6 +91,11 @@ function setupDefaultApiMocks() {
     ...defaultQueryResult,
     data: emptyPaginatedResponse,
   });
+  // The page mounts the (closed) TaskFormModal, which calls useCreateTask.
+  (tasksApi.useCreateTask as jest.Mock).mockReturnValue({
+    mutateAsync: jest.fn(),
+    isPending: false,
+  });
 }
 
 describe('TasksPage', () => {
@@ -219,11 +224,19 @@ describe('TasksPage', () => {
       expect(screen.getByText('Aksi')).toBeInTheDocument();
     });
 
-    it('renders a Detail link per row in the table view', async () => {
+    it('renders a "Lihat" menu action per row in the table view via kebab menu', async () => {
+      const user = userEvent.setup();
       render(<TasksPage />, { wrapper: createWrapper() });
       await switchToTable();
-      const detailLink = screen.getByRole('link', { name: /detail/i });
-      expect(detailLink).toHaveAttribute('href', '/tasks/task-1');
+      // Open the kebab menu for the first row
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      await user.click(kebabTriggers[0]);
+      // The "Lihat" menuitem should be visible and navigable
+      const lihatMenuItem = screen.getByRole('menuitem', { name: /lihat/i });
+      expect(lihatMenuItem).toBeInTheDocument();
+      // Verify clicking it navigates to the task detail page
+      await user.click(lihatMenuItem);
+      expect(mockPush).toHaveBeenCalledWith('/tasks/task-1');
     });
   });
 
@@ -252,11 +265,12 @@ describe('TasksPage', () => {
       mockUseAuth.mockReturnValue({ user: mockKorlapUser, loading: false });
     });
 
-    it('navigates to /tasks/new when the create button is clicked', async () => {
+    it('opens the create-task modal when the create button is clicked', async () => {
       const user = userEvent.setup();
       render(<TasksPage />, { wrapper: createWrapper() });
       await user.click(screen.getByRole('button', { name: /buat tugas/i }));
-      expect(mockPush).toHaveBeenCalledWith('/tasks/new');
+      // The full-screen TaskFormModal opens (its title appears) instead of navigating.
+      expect(await screen.findByText('Tambah Tugas')).toBeInTheDocument();
     });
   });
 

@@ -77,6 +77,25 @@ load_ports() {
   export WEB_PORT="${WEB_PORT:-3001}"
 }
 
+# free_port PORT [LABEL] — kill whatever is LISTENing on a TCP port so a fresh
+# service can bind it (avoids "EADDRINUSE" from a leftover dev process). Only
+# targets listeners, never client connections. No-op when the port is free or
+# lsof/fuser are unavailable.
+free_port() {
+  local port="$1" label="${2:-port $1}" pids=""
+  [ -n "$port" ] || return 0
+  if command -v lsof >/dev/null 2>&1; then
+    pids="$(lsof -ti tcp:"$port" -sTCP:LISTEN 2>/dev/null || true)"
+  elif command -v fuser >/dev/null 2>&1; then
+    pids="$(fuser "$port"/tcp 2>/dev/null | tr -s ' ' '\n' | grep -E '^[0-9]+$' || true)"
+  fi
+  if [ -n "$pids" ]; then
+    print_warning "Freeing $label (:$port) — killing PID(s): $(echo "$pids" | tr '\n' ' ')"
+    kill -9 $pids 2>/dev/null || true
+    sleep 0.3
+  fi
+}
+
 # set_env_key FILE KEY VALUE — set KEY=VALUE in an env file (replace or append).
 set_env_key() {
   local file="$1" key="$2" val="$3"

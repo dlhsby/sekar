@@ -94,6 +94,9 @@ export class UsersService {
         'area_id',
         'rayon_id',
         'created_at',
+        'updated_at',
+        'created_by',
+        'updated_by',
       ],
     });
   }
@@ -153,6 +156,9 @@ export class UsersService {
           'user.area_id',
           'user.rayon_id',
           'user.created_at',
+          'user.updated_at',
+          'user.created_by',
+          'user.updated_by',
         ])
         .where('(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)', {
           rayonId: requestingUser.rayon_id,
@@ -175,6 +181,9 @@ export class UsersService {
         'area_id',
         'rayon_id',
         'created_at',
+        'updated_at',
+        'created_by',
+        'updated_by',
       ],
       skip: (page - 1) * limit,
       take: limit,
@@ -204,6 +213,8 @@ export class UsersService {
         'profile_picture_url',
         'created_at',
         'updated_at',
+        'created_by',
+        'updated_by',
       ],
     });
 
@@ -270,17 +281,34 @@ export class UsersService {
   }
 
   /**
-   * Soft delete user (set is_active to false)
+   * Soft delete a user — sets deleted_at (+ deleted_by via AuditSubscriber) so
+   * the row leaves the default queries. Distinct from deactivation.
    * @param id User ID (UUID)
    * @throws NotFoundException if user not found
    */
   async remove(id: string, actor?: User): Promise<void> {
     this.logger.log(`Soft deleting user: ID ${id}`);
     const user = await this.findOne(id);
-    user.is_active = false;
-    await this.userRepository.save(user);
+    await this.userRepository.softRemove(user);
     this.logger.log(`User soft deleted: ID ${id}`);
 
+    this.audit({
+      entity_type: 'user',
+      entity_id: id,
+      action: 'delete',
+      actor_id: actor?.id ?? id,
+    });
+  }
+
+  /**
+   * Deactivate a user (is_active=false) — the account is kept and can be
+   * reactivated; the user simply can't log in. Distinct from deletion.
+   */
+  async deactivate(id: string, actor?: User): Promise<User> {
+    const user = await this.findOne(id);
+    if (!user.is_active) return user;
+    user.is_active = false;
+    const saved = await this.userRepository.save(user);
     this.audit({
       entity_type: 'user',
       entity_id: id,
@@ -289,6 +317,24 @@ export class UsersService {
       old_value: { is_active: true },
       new_value: { is_active: false },
     });
+    return saved;
+  }
+
+  /** Reactivate a previously deactivated user (is_active=true). */
+  async activate(id: string, actor?: User): Promise<User> {
+    const user = await this.findOne(id);
+    if (user.is_active) return user;
+    user.is_active = true;
+    const saved = await this.userRepository.save(user);
+    this.audit({
+      entity_type: 'user',
+      entity_id: id,
+      action: 'activate',
+      actor_id: actor?.id ?? id,
+      old_value: { is_active: false },
+      new_value: { is_active: true },
+    });
+    return saved;
   }
 
   /**

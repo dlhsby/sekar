@@ -1,23 +1,26 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useCallback, useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Plus, QrCode } from 'lucide-react';
+import { Plus, QrCode, Eye, Pencil, Trash2 } from 'lucide-react';
 import {
   Button,
   Card,
   DataTable,
-  EmptyState,
   FormSelect,
   PageHeader,
-  SkeletonTable,
   StatusPill,
   Tabs,
   TabItem,
+  type ColumnDef,
+  type DataTableRowAction,
 } from '@/components/ui';
 import { useUser } from '@/lib/auth/hooks';
-import { useAssets, useAssetCategories, type AssetStatus } from '@/lib/api/assets';
-import type { ColumnDef } from '@/components/ui';
+import { useAssets, useAssetCategories, useDeleteAsset, type AssetStatus } from '@/lib/api/assets';
+import { useUsers } from '@/lib/api/users';
+import { AssetFormModal } from '@/components/assets/AssetFormModal';
+import { formatDate } from '@/lib/utils/time';
 import type { Asset } from '@/lib/api/assets';
 
 const ASSET_MANAGER_ROLES = ['korlap', 'kepala_rayon', 'admin_system', 'superadmin'];
@@ -39,6 +42,7 @@ const STATUS_LABELS: Record<AssetStatus, string> = {
 };
 
 export default function AssetsPage() {
+  const router = useRouter();
   const user = useUser();
   const isManager = user && ASSET_MANAGER_ROLES.includes(user.role);
 
@@ -48,6 +52,11 @@ export default function AssetsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
 
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
+
+  const { mutate: deleteAsset } = useDeleteAsset();
+
   const { data: assetsData, isLoading: assetsLoading } = useAssets({
     status: statusFilter,
     category_id: categoryFilter === 'all' ? undefined : categoryFilter,
@@ -55,7 +64,18 @@ export default function AssetsPage() {
     limit: pageSize,
   });
 
-  const { data: categories, isLoading: categoriesLoading } = useAssetCategories();
+  const { data: categories } = useAssetCategories();
+
+  // Resolve actor ids (created_by/updated_by) to names via the user list.
+  const { data: usersData } = useUsers({ limit: 1000 });
+  const userNameById = useMemo(
+    () => new Map((usersData?.data ?? []).map((u) => [u.id, u.full_name])),
+    [usersData]
+  );
+  const actorName = useCallback(
+    (id?: string): string => (id ? (userNameById.get(id) ?? '—') : '—'),
+    [userNameById]
+  );
 
   const statusTabs: TabItem[] = [
     { key: '', label: 'Semua' },
@@ -77,88 +97,141 @@ export default function AssetsPage() {
     [categories]
   );
 
-  const columns: ColumnDef<Asset>[] = [
-    {
-      id: 'asset_code',
-      accessorKey: 'asset_code',
-      header: 'Kode',
-      enableSorting: false,
-      meta: { label: 'Kode' },
-      cell: ({ row }) => <span className="font-mono text-nb-body-sm">{row.original.asset_code}</span>,
-    },
-    {
-      id: 'name',
-      accessorKey: 'name',
-      header: 'Nama',
-      enableSorting: false,
-      meta: { label: 'Nama' },
-    },
-    {
-      id: 'category',
-      header: 'Kategori',
-      enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Kategori' },
-      cell: ({ row }) => row.original.category?.name || '—',
-    },
-    {
-      id: 'status',
-      accessorKey: 'status',
-      header: 'Status',
-      enableSorting: false,
-      meta: { label: 'Status' },
-      cell: ({ row }) => (
-        <StatusPill tone={STATUS_TONE_MAP[row.original.status]}>
-          {STATUS_LABELS[row.original.status]}
-        </StatusPill>
-      ),
-    },
-    {
-      id: 'area',
-      header: 'Lokasi',
-      enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Lokasi' },
-      cell: ({ row }) => row.original.area?.name || row.original.rayon?.name || '—',
-    },
-    {
-      id: 'actions',
-      header: 'Aksi',
-      enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Aksi', pinRight: true, align: 'center' },
-      cell: ({ row }) => (
-        <Link href={`/assets/${row.original.id}`}>
-          <Button variant="ghost" size="sm">
-            Detail
-          </Button>
-        </Link>
-      ),
-    },
-  ];
+  const columns: ColumnDef<Asset>[] = useMemo(
+    () => [
+      {
+        id: 'id',
+        accessorKey: 'id',
+        header: 'ID',
+        enableSorting: false,
+        meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
+        ),
+      },
+      {
+        id: 'asset_code',
+        accessorKey: 'asset_code',
+        header: 'Kode',
+        enableSorting: false,
+        meta: { label: 'Kode' },
+        cell: ({ row }) => <span className="font-mono text-nb-body-sm">{row.original.asset_code}</span>,
+      },
+      {
+        id: 'name',
+        accessorKey: 'name',
+        header: 'Nama',
+        enableSorting: false,
+        meta: { label: 'Nama' },
+      },
+      {
+        id: 'category',
+        header: 'Kategori',
+        enableSorting: false,
+        enableColumnFilter: false,
+        meta: { label: 'Kategori' },
+        cell: ({ row }) => row.original.category?.name || '—',
+      },
+      {
+        id: 'status',
+        accessorKey: 'status',
+        header: 'Status',
+        enableSorting: false,
+        meta: { label: 'Status' },
+        cell: ({ row }) => (
+          <StatusPill tone={STATUS_TONE_MAP[row.original.status]}>
+            {STATUS_LABELS[row.original.status]}
+          </StatusPill>
+        ),
+      },
+      {
+        id: 'area',
+        header: 'Lokasi',
+        enableSorting: false,
+        enableColumnFilter: false,
+        meta: { label: 'Lokasi' },
+        cell: ({ row }) => row.original.area?.name || row.original.rayon?.name || '—',
+      },
+      {
+        id: 'created_at',
+        accessorKey: 'created_at',
+        header: 'Dibuat',
+        enableSorting: false,
+        meta: { label: 'Dibuat', defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.created_at)}
+          </span>
+        ),
+      },
+      {
+        id: 'updated_at',
+        accessorKey: 'updated_at',
+        header: 'Diperbarui',
+        enableSorting: false,
+        meta: { label: 'Diperbarui', defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.updated_at)}
+          </span>
+        ),
+      },
+      {
+        id: 'created_by',
+        accessorFn: (a) => actorName(a.created_by),
+        header: 'Dibuat oleh',
+        enableSorting: false,
+        meta: { label: 'Dibuat oleh', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {actorName(row.original.created_by)}
+          </span>
+        ),
+      },
+      {
+        id: 'updated_by',
+        accessorFn: (a) => actorName(a.updated_by),
+        header: 'Diperbarui oleh',
+        enableSorting: false,
+        meta: { label: 'Diperbarui oleh', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {actorName(row.original.updated_by)}
+          </span>
+        ),
+      },
+    ],
+    [actorName]
+  );
+
+  const rowActions = useCallback(
+    (asset: Asset): DataTableRowAction<Asset>[] => [
+      { key: 'view', label: 'Lihat', icon: Eye, onClick: () => router.push(`/assets/${asset.id}`) },
+      {
+        key: 'edit',
+        label: 'Ubah',
+        icon: Pencil,
+        disabled: !isManager,
+        onClick: () => {
+          setEditingAsset(asset);
+          setFormOpen(true);
+        },
+      },
+      {
+        key: 'delete',
+        label: 'Hapus',
+        icon: Trash2,
+        variant: 'danger',
+        hidden: !isManager,
+        onClick: () => deleteAsset(asset.id),
+      },
+    ],
+    [router, isManager, deleteAsset]
+  );
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Aset"
-        description="Kelola aset dan perawatan"
-        actions={
-          isManager && (
-            <div className="flex gap-2">
-              <Link href="/assets/qr">
-                <Button variant="outline" leftIcon={<QrCode className="w-4 h-4" />}>
-                  QR Batch
-                </Button>
-              </Link>
-              <Link href="/assets/new">
-                <Button variant="default" leftIcon={<Plus className="w-4 h-4" />}>
-                  Tambah
-                </Button>
-              </Link>
-            </div>
-          )
-        }
-      />
+      <PageHeader title="Aset" description="Kelola aset dan perawatan" />
 
       <Card variant="default">
         <div className="p-4 space-y-4">
@@ -184,23 +257,39 @@ export default function AssetsPage() {
         </div>
       </Card>
 
-      {assetsLoading ? (
-        <SkeletonTable rows={5} />
-      ) : !assetsData?.data?.length ? (
-        <EmptyState variant="noData" title="Tidak ada aset" />
-      ) : (
-        <Card variant="default">
+      <Card variant="default">
           <DataTable
             columns={columns}
-            data={assetsData.data}
+            data={assetsData?.data ?? []}
+            loading={assetsLoading}
             enablePagination={false}
             getRowId={(asset) => asset.id}
-            onRowClick={(asset) => {
-              window.location.href = `/assets/${asset.id}`;
-            }}
+            rowActions={rowActions}
+            emptyTitle="Tidak ada aset"
+            actions={
+              isManager ? (
+                <div className="flex gap-2">
+                  <Link href="/assets/qr">
+                    <Button variant="outline" leftIcon={<QrCode className="w-4 h-4" />}>
+                      QR Batch
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="default"
+                    leftIcon={<Plus className="w-4 h-4" />}
+                    onClick={() => {
+                      setEditingAsset(null);
+                      setFormOpen(true);
+                    }}
+                  >
+                    Tambah
+                  </Button>
+                </div>
+              ) : undefined
+            }
           />
 
-          {assetsData.meta && assetsData.meta.totalPages > 1 && (
+          {assetsData?.meta && assetsData.meta.totalPages > 1 && (
             <div className="p-4 border-t-2 border-nb-black flex justify-between items-center">
               <span className="text-nb-body-sm text-nb-gray-600">
                 Halaman {currentPage} dari {assetsData.meta.totalPages}
@@ -227,8 +316,9 @@ export default function AssetsPage() {
               </div>
             </div>
           )}
-        </Card>
-      )}
+      </Card>
+
+      <AssetFormModal open={formOpen} onOpenChange={setFormOpen} asset={editingAsset} />
     </div>
   );
 }

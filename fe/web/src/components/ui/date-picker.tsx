@@ -3,12 +3,13 @@
 import { format, isValid, parse } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
-import { forwardRef, useEffect, useRef, useState } from 'react';
+import { forwardRef, useEffect, useState } from 'react';
 
 import { cn, nbFocusRing } from '@/lib/utils/cn';
 
 import { Calendar } from './calendar';
 import { Input } from './input';
+import { parseIso, usePopoverAnchor } from './picker-utils';
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from './popover';
 
 export interface DatePickerProps {
@@ -27,14 +28,6 @@ export interface DatePickerProps {
   id?: string;
   'aria-describedby'?: string;
   'aria-invalid'?: boolean;
-}
-
-/** ISO yyyy-MM-dd ⇄ Date, anchored to local midnight (display only). */
-function parseIso(value?: string): Date | undefined {
-  if (!value) return undefined;
-  const [y, m, d] = value.split('-').map(Number);
-  if (!y || !m || !d) return undefined;
-  return new Date(y, m - 1, d);
 }
 
 /** Mask typed digits into `dd/MM/yyyy` (separators auto-inserted). */
@@ -103,9 +96,7 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(function
     if (!focused) setText(toDisplay(value));
   }, [value, focused]);
 
-  const anchorRef = useRef<HTMLDivElement>(null);
-  const insideAnchor = (target: EventTarget | null): boolean =>
-    target instanceof Node && (anchorRef.current?.contains(target) ?? false);
+  const { anchorRef, insideAnchor } = usePopoverAnchor();
 
   const commit = (): void => {
     const s = text.trim();
@@ -203,7 +194,7 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(function
           mode="single"
           defaultMonth={selected}
           selected={selected}
-          disabled={disableFuture ? { after: new Date() } : undefined}
+          disabled={disableFuture ? { after: parseIso(todayIso) ?? new Date() } : undefined}
           onSelect={(d) => {
             onValueChange?.(d ? format(d, 'yyyy-MM-dd') : undefined);
             setOpen(false);

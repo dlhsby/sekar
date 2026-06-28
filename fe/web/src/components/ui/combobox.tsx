@@ -28,6 +28,7 @@ export interface ComboboxProps {
   disabled?: boolean;
   id?: string;
   className?: string;
+  'aria-label'?: string;
   'aria-invalid'?: boolean;
   'aria-describedby'?: string;
 }
@@ -48,6 +49,7 @@ export function Combobox({
   disabled,
   id,
   className,
+  'aria-label': ariaLabel,
   'aria-invalid': ariaInvalid,
   'aria-describedby': ariaDescribedBy,
 }: ComboboxProps): React.JSX.Element {
@@ -113,6 +115,7 @@ export function Combobox({
             aria-expanded={open}
             aria-controls={listboxId}
             aria-haspopup="listbox"
+            aria-label={ariaLabel}
             aria-invalid={ariaInvalid || undefined}
             aria-describedby={ariaDescribedBy}
             disabled={disabled}
@@ -128,23 +131,28 @@ export function Combobox({
               {selected ? selected.label : placeholder}
             </span>
             <span className="flex shrink-0 items-center gap-1">
-              {clearable && selected ? (
-                <span
-                  role="button"
-                  tabIndex={-1}
-                  aria-label="Hapus pilihan"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onValueChange?.('');
-                  }}
-                  className="text-nb-gray-500 hover:text-nb-black"
-                >
-                  <X className="h-4 w-4" aria-hidden />
-                </span>
-              ) : null}
+              {/* Spacer reserving room for the clear button (a real sibling
+                  button below — it can't nest inside this trigger button). */}
+              {clearable && selected ? <span className="h-4 w-4" aria-hidden /> : null}
               <ChevronsUpDown className="h-4 w-4 text-nb-gray-500" aria-hidden />
             </span>
           </button>
+          {clearable && selected ? (
+            <button
+              type="button"
+              aria-label="Hapus pilihan"
+              onClick={(e) => {
+                e.stopPropagation();
+                onValueChange?.('');
+              }}
+              className={cn(
+                'absolute right-9 top-1/2 -translate-y-1/2 text-nb-gray-500 hover:text-nb-black',
+                nbFocusRing
+              )}
+            >
+              <X className="h-4 w-4" aria-hidden />
+            </button>
+          ) : null}
         </div>
       </PopoverAnchor>
       <PopoverContent
