@@ -17,9 +17,15 @@ for arg in "$@"; do
 done
 
 echo -e "${GREEN}══ Stopping SEKAR dev services ══${NC}"
+load_ports
 stop_pid backend "nest start --watch|be/dist/src/main"
 stop_pid web "next dev|next-server"
 stop_pid metro "react-native start|react-native/cli.js start"
+
+# Final safety net: free the configured ports in case a foreground-started
+# process slipped past the PID/pattern stop above.
+free_port "$BE_PORT" "backend"
+free_port "$WEB_PORT" "web"
 
 if [ "$STOP_INFRA" = true ]; then
   "$ROOT/scripts/infra.sh" stop

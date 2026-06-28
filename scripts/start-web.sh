@@ -6,5 +6,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/common.sh"
 
 load_ports
+free_port "$WEB_PORT" "web"
 print_info "Starting web app on :$WEB_PORT (next dev, foreground — Ctrl+C to stop)..."
 cd "$ROOT/fe/web" && npm run dev

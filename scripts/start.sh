@@ -20,6 +20,8 @@ done
 
 echo -e "${GREEN}══ SEKAR dev stack ══${NC}"
 load_ports
+free_port "$BE_PORT" "backend"
+free_port "$WEB_PORT" "web"
 ensure_infra
 
 start_bg backend "$ROOT/be" npm run start:dev
