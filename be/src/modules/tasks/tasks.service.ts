@@ -27,6 +27,7 @@ import { TaskFinderService } from './services/task-finder.service';
 import { TaskDelegationService } from './services/task-delegation.service';
 import { TaskStatusTransitionsService } from './services/task-status-transitions.service';
 import { TaskVerificationService } from './services/task-verification.service';
+import { TaskAreaSyncService } from './services/task-area-sync.service';
 import {
   assertTaskReadAccess,
   assertValidAssignee,
@@ -81,6 +82,7 @@ export class TasksService {
     private readonly delegationService: TaskDelegationService,
     private readonly transitionsService: TaskStatusTransitionsService,
     private readonly verificationService: TaskVerificationService,
+    private readonly taskAreaSync: TaskAreaSyncService,
   ) {}
 
   /**
@@ -105,6 +107,10 @@ export class TasksService {
     await this.recordInitialDelegation(savedTask, creator, assignee);
     await this.createInitialTags(savedTask.id, createTaskDto.tagged_user_ids);
     this.auditCreate(savedTask, creatorId);
+    // ADR-013 §5: a task created already assigned lights up that area for the worker.
+    if (assignee) {
+      await this.taskAreaSync.syncForUser(assignee.id);
+    }
     return this.findOne(savedTask.id);
   }
 

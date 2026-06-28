@@ -4,6 +4,7 @@ import { Repository, IsNull, Or, LessThanOrEqual, MoreThanOrEqual } from 'typeor
 import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { SchedulesService } from './schedules.service';
 import { Schedule } from './entities/schedule.entity';
+import { User } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 import { AreasService } from '../areas/areas.service';
 import { ShiftDefinitionsService } from '../shift-definitions/shift-definitions.service';
@@ -106,6 +107,10 @@ describe('SchedulesService', () => {
           useValue: mockRepository,
         },
         {
+          provide: getRepositoryToken(User),
+          useValue: { findOne: jest.fn().mockResolvedValue(null) },
+        },
+        {
           provide: UsersService,
           useValue: mockUsersService,
         },
@@ -195,6 +200,47 @@ describe('SchedulesService', () => {
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         '(schedule.end_date IS NULL OR schedule.end_date >= :today)',
         { today },
+      );
+    });
+
+    it('should filter schedules by shift definition ID', async () => {
+      mockQueryBuilder.getMany.mockResolvedValue([mockSchedule]);
+
+      await service.findAll(undefined, undefined, false, undefined, {
+        shiftDefinitionId: 'shift-1',
+      });
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'schedule.shift_definition_id = :shiftDefinitionId',
+        { shiftDefinitionId: 'shift-1' },
+      );
+    });
+
+    it('should search schedules by worker name or username', async () => {
+      mockQueryBuilder.getMany.mockResolvedValue([mockSchedule]);
+
+      await service.findAll(undefined, undefined, false, undefined, { search: 'budi' });
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        '(user.full_name ILIKE :search OR user.username ILIKE :search)',
+        { search: '%budi%' },
+      );
+    });
+
+    it('should filter schedules by date range overlap', async () => {
+      mockQueryBuilder.getMany.mockResolvedValue([mockSchedule]);
+
+      await service.findAll(undefined, undefined, false, undefined, {
+        dateFrom: '2026-06-22',
+        dateTo: '2026-06-28',
+      });
+
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('schedule.effective_date <= :dateTo', {
+        dateTo: '2026-06-28',
+      });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        '(schedule.end_date IS NULL OR schedule.end_date >= :dateFrom)',
+        { dateFrom: '2026-06-22' },
       );
     });
 
@@ -365,6 +411,24 @@ describe('SchedulesService', () => {
       const result = await service.findCurrentByUserId(mockUser.id);
 
       expect(result).toBeNull();
+    });
+
+    it('derives a current schedule from the user assignment when no explicit row exists', async () => {
+      mockRepository.findOne.mockResolvedValue(null); // no explicit schedule
+      const userRepo = module.get(getRepositoryToken(User)) as { findOne: jest.Mock };
+      userRepo.findOne.mockResolvedValue({
+        id: mockUser.id,
+        area_id: mockArea.id,
+        area: mockArea,
+        shift_definition_id: 'shift-1',
+        shift_definition: { id: 'shift-1', name: 'Shift 1' },
+      });
+
+      const result = await service.findCurrentByUserId(mockUser.id);
+
+      expect(result).not.toBeNull();
+      expect(result?.area).toEqual(mockArea);
+      expect(result?.shift_definition_id).toBe('shift-1');
     });
   });
 

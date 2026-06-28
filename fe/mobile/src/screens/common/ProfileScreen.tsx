@@ -171,6 +171,7 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
         <ProfileMenu
           onEditProfile={() => navigation.navigate('EditProfile')}
           onChangePassword={() => setIsChangePasswordModalVisible(true)}
+          onMySchedule={isField ? () => navigation.navigate('MySchedule') : undefined}
           onShiftHistory={isField ? () => navigation.navigate('ShiftHistory') : undefined}
           onSettings={() => navigation.navigate('Settings')}
           onDiagnostics={() => navigation.navigate('Diagnostics')}

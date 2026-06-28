@@ -1,6 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
-import { User, UserFilters, CreateUserDto, UpdateUserDto, PaginatedResponse } from '@/types/models';
+import {
+  User,
+  UserFilters,
+  CreateUserDto,
+  UpdateUserDto,
+  CreatedUser,
+  PaginatedResponse,
+} from '@/types/models';
 
 /**
  * Query keys for users
@@ -39,8 +46,14 @@ const fetchUser = async (id: string): Promise<User> => {
 /**
  * Create new user
  */
-const createUser = async (data: CreateUserDto): Promise<User> => {
-  const response = await apiClient.post<User>('/users', data);
+const createUser = async (data: CreateUserDto): Promise<CreatedUser> => {
+  const response = await apiClient.post<CreatedUser>('/users', data);
+  return response.data;
+};
+
+/** Admin password reset — returns a one-time temp password. */
+const resetUserPassword = async (id: string): Promise<{ temp_password: string }> => {
+  const response = await apiClient.post<{ temp_password: string }>(`/users/${id}/reset-password`);
   return response.data;
 };
 
@@ -122,6 +135,11 @@ export function useCreateUser() {
       queryClient.invalidateQueries({ queryKey: userKeys.lists() });
     },
   });
+}
+
+/** Hook to reset a user's password (admin) — returns a one-time temp password. */
+export function useResetUserPassword() {
+  return useMutation({ mutationFn: resetUserPassword });
 }
 
 /**

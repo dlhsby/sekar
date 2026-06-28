@@ -64,13 +64,43 @@ export class SchedulesController {
   @ApiQuery({
     name: 'areaId',
     required: false,
-    description: 'Filter by area ID',
+    description: 'Filter by area ID (alias: area_id)',
+    type: 'string',
+  })
+  @ApiQuery({
+    name: 'area_id',
+    required: false,
+    description: 'Filter by area ID (snake_case alias of areaId)',
     type: 'string',
   })
   @ApiQuery({
     name: 'userId',
     required: false,
     description: 'Filter by user ID',
+    type: 'string',
+  })
+  @ApiQuery({
+    name: 'shift_definition_id',
+    required: false,
+    description: 'Filter by shift definition ID',
+    type: 'string',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: "Search by assigned worker's name or username",
+    type: 'string',
+  })
+  @ApiQuery({
+    name: 'date_from',
+    required: false,
+    description: 'Keep schedules whose date range overlaps on/after this date (YYYY-MM-DD)',
+    type: 'string',
+  })
+  @ApiQuery({
+    name: 'date_to',
+    required: false,
+    description: 'Keep schedules whose date range overlaps on/before this date (YYYY-MM-DD)',
     type: 'string',
   })
   @ApiQuery({
@@ -106,20 +136,34 @@ export class SchedulesController {
     @Query('activeOnly') activeOnly?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('area_id') areaIdSnake?: string,
+    @Query('shift_definition_id') shiftDefinitionId?: string,
+    @Query('search') search?: string,
+    @Query('date_from') dateFrom?: string,
+    @Query('date_to') dateTo?: string,
   ): Promise<Schedule[] | PaginatedResponseDto<Schedule>> {
+    const resolvedAreaId = areaId ?? areaIdSnake;
+    const filters = { search, shiftDefinitionId, dateFrom, dateTo };
     if (page !== undefined || limit !== undefined) {
       const pageNum = Math.max(1, parseInt(page ?? '1', 10) || 1);
       const limitNum = Math.min(100, Math.max(1, parseInt(limit ?? '20', 10) || 20));
       return this.schedulesService.findAllPaginated(
-        areaId,
+        resolvedAreaId,
         userId,
         activeOnly === 'true',
         user,
         pageNum,
         limitNum,
+        filters,
       );
     }
-    return this.schedulesService.findAll(areaId, userId, activeOnly === 'true', user);
+    return this.schedulesService.findAll(
+      resolvedAreaId,
+      userId,
+      activeOnly === 'true',
+      user,
+      filters,
+    );
   }
 
   /**

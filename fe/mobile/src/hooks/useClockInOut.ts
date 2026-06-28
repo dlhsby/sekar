@@ -29,7 +29,14 @@ export interface LocationState {
 export function useClockInOut() {
   const dispatch = useAppDispatch();
 
-  const { assignedArea } = useAppSelector((state) => state.auth);
+  const assignedArea = useAppSelector((state) => state.auth.assignedArea);
+  const assignedAreas = useAppSelector((state) => state.auth.assignedAreas);
+  // All areas the worker may clock into (multi-area); fall back to the single
+  // primary, or empty for ad-hoc workers with no fixed area.
+  const areasForGeofence = useMemo(
+    () => ((assignedAreas?.length ?? 0) > 0 ? assignedAreas : assignedArea ? [assignedArea] : []),
+    [assignedAreas, assignedArea],
+  );
   const { currentShift } = useAppSelector((state) => state.shift);
   const { isOnline } = useAppSelector((state) => state.offline);
 
@@ -99,11 +106,17 @@ export function useClockInOut() {
       error: null,
     });
 
-    if (assignedArea) {
-      const within = isWithinAreaBoundary(latitude, longitude, assignedArea);
+    // Within-boundary if inside ANY assigned area. Ad-hoc workers (no area)
+    // are always considered within — there is no boundary to violate.
+    if (areasForGeofence.length === 0) {
+      setIsWithinBoundary(true);
+    } else {
+      const within = areasForGeofence.some((area) =>
+        isWithinAreaBoundary(latitude, longitude, area),
+      );
       setIsWithinBoundary(within);
     }
-  }, [assignedArea]);
+  }, [areasForGeofence]);
 
   const getCurrentLocation = useCallback(() => {
     setLocation((prev) => ({ ...prev, loading: true, error: null }));
@@ -164,8 +177,12 @@ export function useClockInOut() {
             loading: false, error: null,
           });
 
-          if (assignedArea) {
-            const within = isWithinAreaBoundary(latitude, longitude, assignedArea);
+          if (areasForGeofence.length === 0) {
+            setIsWithinBoundary(true);
+          } else {
+            const within = areasForGeofence.some((area) =>
+              isWithinAreaBoundary(latitude, longitude, area),
+            );
             setIsWithinBoundary(within);
           }
         },
@@ -193,8 +210,8 @@ export function useClockInOut() {
         Geolocation.clearWatch(watchId);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- getCurrentLocation is a stable callback; effect runs once on mount and when assignedArea changes
-  }, [assignedArea]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- getCurrentLocation is a stable callback; effect runs once on mount and when areas change
+  }, [areasForGeofence]);
 
   // Update timer every second when clocked in
   useEffect(() => {

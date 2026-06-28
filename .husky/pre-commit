@@ -1,0 +1,20 @@
+# SEKAR pre-commit (husky) — runs on `git commit`.
+# 1) dotenvx secrets guard  2) lint-staged (eslint --fix on changed files).
+
+# --- 1) Never commit a private-key file; verify committable .env are encrypted.
+if git diff --cached --name-only | grep -qE '(^|/)\.env\.keys$'; then
+  echo "✖ pre-commit: refusing to commit a .env.keys file (dotenvx private keys)." >&2
+  exit 1
+fi
+DOTENVX=""
+for d in be fe/web fe/mobile; do
+  if [ -x "$d/node_modules/.bin/dotenvx" ]; then DOTENVX="$d/node_modules/.bin/dotenvx"; break; fi
+done
+if [ -n "$DOTENVX" ]; then
+  "$DOTENVX" ext precommit || exit 1
+else
+  echo "⚠ pre-commit: dotenvx not found; skipping encryption check." >&2
+fi
+
+# --- 2) Lint (+ auto-fix) staged files, routed to each workspace's eslint.
+npx lint-staged

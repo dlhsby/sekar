@@ -62,6 +62,7 @@ const renderForRole = (role: UserRole | undefined) => {
             }
           : null,
         assignedArea: null,
+        assignedAreas: [],
         isAuthenticated: !!role,
         isLoading: false,
         isRestoring: false,

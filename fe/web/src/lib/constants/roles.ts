@@ -51,6 +51,12 @@ export const SCHEDULE_MANAGER_ROLES: UserRole[] = [
 /** Roles that can reassign workers between areas (Phase 4-4, matches POST /monitoring/reassign) */
 export const REASSIGN_ROLES: UserRole[] = ['superadmin', 'admin_system', 'kepala_rayon'];
 
+/**
+ * Roles that can be assigned to a schedule / area (backend rejects others with 400).
+ * Mirrors SchedulesService.create which only allows satgas/linmas.
+ */
+export const SCHEDULABLE_WORKER_ROLES: UserRole[] = ['satgas', 'linmas'];
+
 /** Roles that can clock in/out (field roles with area assignments only) */
 export const CLOCKABLE_ROLES: UserRole[] = ['satgas', 'linmas', 'korlap'];
 

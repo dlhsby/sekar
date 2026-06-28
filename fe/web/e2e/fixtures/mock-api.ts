@@ -84,6 +84,26 @@ export const mockUsers = {
     profile_picture_url: null,
     created_at: '2026-01-01T00:00:00.000Z',
   },
+  satgas: {
+    id: '550e8400-e29b-41d4-a716-446655440010',
+    username: 'satgas1',
+    full_name: 'Satgas Lapangan',
+    role: 'satgas',
+    phone_number: '081200000010',
+    rayon_id: '950e8400-0000-0000-0000-000000000001',
+    profile_picture_url: null,
+    created_at: '2026-01-01T00:00:00.000Z',
+  },
+  linmas: {
+    id: '550e8400-e29b-41d4-a716-446655440011',
+    username: 'linmas1',
+    full_name: 'Linmas Keamanan',
+    role: 'linmas',
+    phone_number: '081200000011',
+    rayon_id: '950e8400-0000-0000-0000-000000000001',
+    profile_picture_url: null,
+    created_at: '2026-01-01T00:00:00.000Z',
+  },
 } as const;
 
 export type MockUserKey = keyof typeof mockUsers;
