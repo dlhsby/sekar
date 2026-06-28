@@ -277,7 +277,7 @@ export class AreasController {
   })
   @ApiParam({ name: 'id', description: 'Area UUID' })
   @ApiResponse({ status: 200, description: 'Area deactivated.' })
-  deactivate(@Param('id') id: string) {
+  deactivate(@Param('id', ParseUUIDPipe) id: string) {
     return this.areasService.deactivate(id);
   }
 
@@ -290,7 +290,7 @@ export class AreasController {
   @ApiOperation({ summary: 'Reactivate area', description: 'Set is_active=true.' })
   @ApiParam({ name: 'id', description: 'Area UUID' })
   @ApiResponse({ status: 200, description: 'Area reactivated.' })
-  activate(@Param('id') id: string) {
+  activate(@Param('id', ParseUUIDPipe) id: string) {
     return this.areasService.activate(id);
   }
 

@@ -94,6 +94,9 @@ export class UsersService {
         'area_id',
         'rayon_id',
         'created_at',
+        'updated_at',
+        'created_by',
+        'updated_by',
       ],
     });
   }
@@ -153,6 +156,9 @@ export class UsersService {
           'user.area_id',
           'user.rayon_id',
           'user.created_at',
+          'user.updated_at',
+          'user.created_by',
+          'user.updated_by',
         ])
         .where('(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)', {
           rayonId: requestingUser.rayon_id,
@@ -175,6 +181,9 @@ export class UsersService {
         'area_id',
         'rayon_id',
         'created_at',
+        'updated_at',
+        'created_by',
+        'updated_by',
       ],
       skip: (page - 1) * limit,
       take: limit,
@@ -204,6 +213,8 @@ export class UsersService {
         'profile_picture_url',
         'created_at',
         'updated_at',
+        'created_by',
+        'updated_by',
       ],
     });
 

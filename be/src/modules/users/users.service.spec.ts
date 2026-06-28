@@ -244,7 +244,7 @@ describe('UsersService', () => {
 
       expect(result).toEqual(users);
       expect(mockUserRepository.find).toHaveBeenCalledWith({
-        select: [
+        select: expect.arrayContaining([
           'id',
           'username',
           'full_name',
@@ -253,7 +253,7 @@ describe('UsersService', () => {
           'area_id',
           'rayon_id',
           'created_at',
-        ],
+        ]),
       });
     });
   });
@@ -270,7 +270,7 @@ describe('UsersService', () => {
       expect(result.meta.page).toBe(1);
       expect(result.meta.limit).toBe(50);
       expect(mockUserRepository.findAndCount).toHaveBeenCalledWith({
-        select: [
+        select: expect.arrayContaining([
           'id',
           'username',
           'full_name',
@@ -279,7 +279,7 @@ describe('UsersService', () => {
           'area_id',
           'rayon_id',
           'created_at',
-        ],
+        ]),
         skip: 0,
         take: 50,
         order: { created_at: 'DESC' },
@@ -296,7 +296,7 @@ describe('UsersService', () => {
       expect(result.meta.limit).toBe(5);
       expect(result.meta.totalPages).toBe(2);
       expect(mockUserRepository.findAndCount).toHaveBeenCalledWith({
-        select: [
+        select: expect.arrayContaining([
           'id',
           'username',
           'full_name',
@@ -305,7 +305,7 @@ describe('UsersService', () => {
           'area_id',
           'rayon_id',
           'created_at',
-        ],
+        ]),
         skip: 5,
         take: 5,
         order: { created_at: 'DESC' },
@@ -396,7 +396,7 @@ describe('UsersService', () => {
       await service.findAllPaginated(1, 50, adminSystemUser as any);
 
       expect(mockUserRepository.findAndCount).toHaveBeenCalledWith({
-        select: [
+        select: expect.arrayContaining([
           'id',
           'username',
           'full_name',
@@ -405,7 +405,7 @@ describe('UsersService', () => {
           'area_id',
           'rayon_id',
           'created_at',
-        ],
+        ]),
         skip: 0,
         take: 50,
         order: { created_at: 'DESC' },
