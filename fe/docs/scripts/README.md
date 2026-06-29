@@ -51,7 +51,7 @@ bash fe/docs/scripts/capture-mobile-auto.sh         # boots emu, installs app, c
 cd fe/docs && npm run build                         # preview
 ```
 
-Login uses `edi_santoso` / `password123` (a staging field-worker account) — edit the
+Login uses `edi_santoso` / `Password123!` (a staging field-worker account) — edit the
 `inputText` line in `maestro/capture.yaml` to use a different user. The flow captures
 the screens the **published** build exposes (Beranda / Tugas & Aktivitas / Lembur tabs,
 Clock In, Profil, etc.); screens not in the current build keep their branded placeholder.

@@ -178,7 +178,7 @@ describe('Users API', () => {
       const newUser: CreateUserDto = {
         username: 'newuser',
         full_name: 'New User',
-        password: 'password123',
+        password: 'Password123!',
         role: 'satgas',
       };
 
@@ -224,7 +224,7 @@ describe('Users API', () => {
       const newUser: CreateUserDto = {
         username: 'newuser',
         full_name: 'New User',
-        password: 'password123',
+        password: 'Password123!',
         role: 'satgas',
       };
 

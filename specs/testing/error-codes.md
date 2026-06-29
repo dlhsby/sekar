@@ -917,7 +917,7 @@ describe('Auth Error Codes (e2e)', () => {
 
     return request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ username: 'worker1', password: 'password123' })
+      .send({ username: 'worker1', password: 'Password123!' })
       .expect(401)
       .expect((res) => {
         expect(res.body.code).toBe('AUTH_ACCOUNT_INACTIVE');
@@ -1015,7 +1015,7 @@ describe('API Versioning (e2e)', () => {
   it('should access endpoints at /api/v1', async () => {
     return request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ username: 'worker1', password: 'password123' })
+      .send({ username: 'worker1', password: 'Password123!' })
       .expect(200)
       .expect((res) => {
         expect(res.headers['x-api-version']).toBe('v1');
@@ -1025,7 +1025,7 @@ describe('API Versioning (e2e)', () => {
   it('should return 404 for old /api paths', () => {
     return request(app.getHttpServer())
       .post('/api/auth/login')
-      .send({ username: 'worker1', password: 'password123' })
+      .send({ username: 'worker1', password: 'Password123!' })
       .expect(404);
   });
 
@@ -1103,11 +1103,11 @@ npm run test:cov -- --collectCoverageFrom="src/**/*.ts"
 ```typescript
 // Seeded in database
 const users = {
-  admin: { username: 'admin', password: 'password123', role: 'Admin' },
-  supervisor: { username: 'supervisor1', password: 'password123', role: 'Supervisor' },
-  worker1: { username: 'worker1', password: 'password123', role: 'Worker' },
-  worker2: { username: 'worker2', password: 'password123', role: 'Worker' },
-  worker3: { username: 'worker3', password: 'password123', role: 'Worker' },
+  admin: { username: 'admin', password: 'Password123!', role: 'Admin' },
+  supervisor: { username: 'supervisor1', password: 'Password123!', role: 'Supervisor' },
+  worker1: { username: 'worker1', password: 'Password123!', role: 'Worker' },
+  worker2: { username: 'worker2', password: 'Password123!', role: 'Worker' },
+  worker3: { username: 'worker3', password: 'Password123!', role: 'Worker' },
 };
 ```
 

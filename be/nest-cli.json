@@ -4,6 +4,13 @@
   "sourceRoot": "src",
   "compilerOptions": {
     "deleteOutDir": true,
-    "webpack": false
+    "webpack": false,
+    "assets": [
+      {
+        "include": "database/seeds/data/**/*",
+        "outDir": "dist/src",
+        "watchAssets": false
+      }
+    ]
   }
 }

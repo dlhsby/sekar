@@ -394,7 +394,7 @@ cd fe/mobile && npx eslint src/ --max-warnings=0  # no-inline-hex-colors, rn-no-
 
 **Goal:** A reviewer can follow this top-to-bottom and confirm every behavior the user has asked for across the 13-point spec. Each scenario lists the test users, expected behavior, and what to look for if something goes wrong.
 
-All test passwords: `password123`. Run from a fresh `npm run db:seed` so display names match (`<Role> <Rayon> <Bahasa-number>`). Backend on `:3000`, mobile pointed at it.
+All test passwords: `Password123!`. Run from a fresh `npm run db:seed` so display names match (`<Role> <Rayon> <Bahasa-number>`). Backend on `:3000`, mobile pointed at it.
 
 ### Reference users for the full flow
 
@@ -536,12 +536,12 @@ If any of these fail, stop and fix before walking the full checklist:
 
 | # | Step | Expected | Apr 27 status |
 |---|------|----------|---------------|
-| 1 | Login mobile as `staff_kec_pusat / password123` → land on `SubmitScreen` (5-step wizard) | Renders without crash; "Kembali" + "Lanjut" buttons visible | ✅ fixed Apr 27 |
+| 1 | Login mobile as `staff_kec_pusat / Password123!` → land on `SubmitScreen` (5-step wizard) | Renders without crash; "Kembali" + "Lanjut" buttons visible | ✅ fixed Apr 27 |
 | 2 | Navigate `SubmitScreen` Step 1 → Step 2 → Step 5 (any direction) | Buttons render text correctly; no red error screen | ✅ fixed Apr 27 |
-| 3 | Login mobile as `admin_data_pusat / password123` → tap admin tab → `ReviewQueueScreen` | List of pending pruning requests (≥2 from seed) | ✅ |
+| 3 | Login mobile as `admin_data_pusat / Password123!` → tap admin tab → `ReviewQueueScreen` | List of pending pruning requests (≥2 from seed) | ✅ |
 | 4 | In `ReviewQueueScreen`, tap a request → `RequestDetailScreen` → tap "Setujui" | Modal opens; reason textarea visible; submit fires `POST /pruning-requests/:id/review` | ✅ |
 | 5 | In `RequestDetailScreen` for an approved request → tap "Tugaskan ke Petugas" | `AssignToTaskSheet` opens; date picker + units field visible; **note: areas/users dropdowns are empty until Phase 4 polish** | 🟡 partial |
-| 6 | Login web as `admin_pusat / password123` → click each sidebar link | All routes render (no 404). Phase 3 web pages show "Coming soon — use mobile" placeholders | ✅ Apr 27 placeholders added |
+| 6 | Login web as `admin_pusat / Password123!` → click each sidebar link | All routes render (no 404). Phase 3 web pages show "Coming soon — use mobile" placeholders | ✅ Apr 27 placeholders added |
 | 7 | Login web as `staff_kec_pusat` → sidebar has only "Kirim Permintaan" + "Permintaan Saya" | Both links resolve to placeholder pages, no 404 | ✅ Apr 27 fixed |
 | 8 | Backend: `curl -H "Authorization: Bearer <admin token>" http://localhost:3000/api/v1/pruning-requests` | 200 OK; paginated list with at least 1 request | ✅ |
 
@@ -958,10 +958,10 @@ SELECT COUNT(*) FROM activities WHERE reference_code IS NOT NULL;  -- 0 today; 5
 - `PATCH /api/v1/pruning-requests/:id/expected-date` with a date inside a full ISO week → expect `409 ConflictException` ("Capacity penuh…") (M3 verification)
 
 **3. Mobile smoke (`cd fe/mobile && npm run android`)**
-- Login `staff_kec_pusat / password123` → Perantingan tab → tap "+ Buat Permohonan" → SubmitScreen
+- Login `staff_kec_pusat / Password123!` → Perantingan tab → tap "+ Buat Permohonan" → SubmitScreen
 - Fill location pin → upload photo → tap date row → `AvailabilityModal` (8 ISO weeks visible, day labels Sunday-start, full = `plantOverdue` red, partial = `plantDue` amber, available = `plantOk` green — H7 verification)
-- Login `korlap_bungkul / password123` → Map → tap a worker → UserDetailSheet → WhatsApp button green; Reassign button = `requestUnderReview` blue (H7)
-- Login `admin / password123` → ActivitySubmissionScreen → tag a peer → submit → verify activity_tags row written; satgas's Aktivitas list shows "Diikutsertakan" badge
+- Login `korlap_bungkul / Password123!` → Map → tap a worker → UserDetailSheet → WhatsApp button green; Reassign button = `requestUnderReview` blue (H7)
+- Login `admin / Password123!` → ActivitySubmissionScreen → tag a peer → submit → verify activity_tags row written; satgas's Aktivitas list shows "Diikutsertakan" badge
 - Open a task with delegation history → TaskDetailScreen → "Riwayat Penugasan" card shows role hops
 
 **4. Web smoke (`cd fe/web && npm run dev` → http://localhost:3001)**

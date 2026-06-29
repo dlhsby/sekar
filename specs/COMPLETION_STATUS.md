@@ -20,7 +20,7 @@ Environment model: **production → on-prem (pemkot) Docker Compose, platform-ag
 | **Web dashboard** | ✅ Live | `https://sekar.wahyutrip.com` (Mapbox baked, monitoring map OK) |
 | **Database** | ✅ Seeded | `sekar_staging` on shared RDS `dlhsby` (SSL); staging seed = **85 users** |
 | **Migrations** | ✅ Executed | full TypeORM migration set (`migration:run:prod`) |
-| **Auth** | ✅ Working | `superadmin/password123` verified (JWT) |
+| **Auth** | ✅ Working | `superadmin/Password123!` verified (JWT) |
 | **Object storage** | ✅ S3 | `sekar-media-staging` via **EC2 instance role** (no static keys) |
 | **Redis** | ✅ In-stack | `redis:7-alpine` container (DB+Redis health `/ready` ok) |
 | **Edge / TLS** | ✅ HTTPS | SEKAR-owned Caddy service (`sekar-caddy`); bare-hostname blocks → Let's Encrypt auto-HTTPS + HTTP→HTTPS redirect |
@@ -215,9 +215,9 @@ Swagger Docs:         100% complete
 - 4 area types (Park, Pedestrian, Mini Garden, Street)
 - 3 test areas in Surabaya with GPS coordinates
 - 4 test users:
-  - `admin` / `password123` (Admin)
-  - `supervisor1` / `password123` (Supervisor)
-  - `worker1`, `worker2`, `worker3` / `password123` (Workers)
+  - `admin` / `Password123!` (Admin)
+  - `supervisor1` / `Password123!` (Supervisor)
+  - `worker1`, `worker2`, `worker3` / `Password123!` (Workers)
 - 3 worker assignments (Phase 2C: replaced by schedules)
 - Sample shifts, reports (Phase 2C: renamed to activities), location logs
 

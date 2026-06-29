@@ -1,27 +1,20 @@
 import { DataSource } from 'typeorm';
 import '../../config/load-env';
 import { seedPhase3Reference, seedPhase3ServiceCapacity } from './seed-phase3';
+import { DEFAULT_PASSWORD_HASH } from './constants';
+import { loadKmzAreas, loadTamanAktifAreas, loadSeedUsers } from './load-seed-data';
 import {
   RAYON_BOUNDARIES,
-  RAYON_PUSAT_AREAS,
-  TIMUR2_AREAS,
   parseCoords,
   computeCentroidFromRings,
   computeAreaM2FromRings,
   toGeoJsonGeometry,
   surabayaOutlinePolygon,
   BUNGKUL_AREA_ID,
-  DARMO_P1_AREA_ID,
-  DARMO_P2_AREA_ID,
-  DARMO_P3_AREA_ID,
-  DARMO_P4_AREA_ID,
-  DARMO_P5_AREA_ID,
-  DARMO_BCA_AREA_ID,
-  TAMAN_BUK_TONG_ID,
+  BUNGKUL_COORD_STRINGS,
   TAMAN_FLORA_AREA_ID,
   TAMAN_FLORA_CENTER,
   RAYON_TAMAN_AKTIF_OFFICE,
-  type AreaDef,
   type RayonCode,
 } from './kmz-areas';
 
@@ -62,7 +55,7 @@ import {
  * Run: npm run db:seed:staging
  *
  * =============================================================================
- * TEST USERS (all passwords: password123)
+ * TEST USERS (all passwords: Password123!)
  * Login via username OR phone number as "identifier"
  * =============================================================================
  *
@@ -88,7 +81,7 @@ import {
  * | admin_data      | admin_data_taman_aktif_1 | 081200000064  | Rayon Taman Aktif                      |
  * | satgas          | satgas_taman_flora_1    | 081200000065   | Taman Flora (Rayon Taman Aktif)        |
  *
- * REAL USERS (all passwords: password123)
+ * REAL USERS (all passwords: Password123!)
  *
  * | Role            | Username                | Phone          | Area/Rayon                             |
  * |-----------------|-------------------------|----------------|----------------------------------------|
@@ -156,8 +149,6 @@ const SPECIAL_DAY_4_ID = '8a8ff3d8-8c45-461e-b66c-8563c04cbbd5';
 // the 13 Pusat areas — Timur 2 has its own staffing.
 // ============================================================
 const AREA_BUNGKUL_ID = BUNGKUL_AREA_ID;
-const AREA_DARMO_P1_ID = DARMO_P1_AREA_ID;
-const AREA_DARMO_P2_ID = DARMO_P2_AREA_ID;
 
 // ============================================================
 // STAGING USER UUIDs
@@ -189,17 +180,8 @@ const USER_JIHAN_ID = '56d4e5f6-a7b8-4090-1234-567879809102'; // jihan_nabila_sa
 const USER_DENI_ID = '56e5f6a7-b8c9-4101-2345-678980910213'; // deni_purwanto
 const USER_AGUS_ID = '56f6a7b8-c9d0-4212-3456-789091021324'; // agus_ramadhan
 
-// Pre-computed bcrypt hash for "password123" (10 salt rounds)
-const PASSWORD_HASH = '$2b$10$gF9qXRA.0ZtNWgbrwoYHMOmdUFUbaL4AkGdxAEMDMrMZtFexnH.H.';
-
-// Rayon Pusat area IDs and helpers — the user_areas assignment matrix below
-// is scoped to these 13 areas only. Rayon Timur 2 (25 areas from KORLAP KMZ)
-// has its own staffing baseline; per-user multi-area assignment for Timur 2
-// is left for UAT testers to configure as needed.
-const PUSAT_AREA_DEFS: AreaDef[] = RAYON_PUSAT_AREAS;
-const PEDESTRIAN_AREA_IDS = PUSAT_AREA_DEFS.filter((a) => a.typeCode === 'pedestrian').map(
-  (a) => a.id,
-);
+// Default account password hash (bcrypt of "Password123!") — shared across all seeders.
+const PASSWORD_HASH = DEFAULT_PASSWORD_HASH;
 
 // Rayon ID → code lookup so the boundary-update loop can hit the right row.
 const RAYON_ID_BY_CODE: Record<RayonCode, string> = {
@@ -560,16 +542,17 @@ async function seedStaging() {
     // ============================================================
     console.log('\n📍 Seeding areas from KMZ...');
 
-    const ALL_AREA_DEFS: AreaDef[] = [...PUSAT_AREA_DEFS, ...TIMUR2_AREAS];
-    let pusatSeeded = 0;
-    let timur2Seeded = 0;
-    for (const areaDef of ALL_AREA_DEFS) {
-      const rings = areaDef.coordStrings.map((s) => parseCoords(s));
-      const { lat, lng } = computeCentroidFromRings(rings);
-      const coverageArea = computeAreaM2FromRings(rings);
-      const boundaryPolygon = JSON.stringify(toGeoJsonGeometry(areaDef.coordStrings));
-      const rayonId = RAYON_ID_BY_CODE[areaDef.rayonCode];
-
+    // Helper: insert one area row (boundary + coverage may be null).
+    const insertArea = async (
+      id: string,
+      name: string,
+      typeCode: string,
+      lat: number,
+      lng: number,
+      boundaryJson: string | null,
+      coverage: number | null,
+      rayonId: string,
+    ): Promise<void> => {
       await queryRunner.query(
         `INSERT INTO areas (
           id, name, area_type_id, gps_lat, gps_lng, radius_meters,
@@ -582,26 +565,79 @@ async function seedStaging() {
           $6::jsonb, $7,
           $8, TRUE
         ON CONFLICT (id) DO NOTHING`,
-        [
-          areaDef.id,
-          areaDef.name,
-          areaDef.typeCode,
-          lat,
-          lng,
-          boundaryPolygon,
-          coverageArea,
-          rayonId,
-        ],
+        [id, name, typeCode, lat, lng, boundaryJson, coverage, rayonId],
       );
-      if (areaDef.rayonCode === 'PUSAT') pusatSeeded += 1;
-      else if (areaDef.rayonCode === 'TIMUR2') timur2Seeded += 1;
-      console.log(
-        `  ✓ [${areaDef.rayonCode.padEnd(6)}] ${areaDef.name.substring(0, 55).padEnd(55)} | ` +
-          `lat: ${lat.toFixed(6)}  lng: ${lng.toFixed(6)}  area: ${Math.round(coverageArea)} m²`,
+    };
+
+    // (a) Geographic coverage areas — per-rayon KMZ committed under data/kmz/.
+    //     Regenerate after new KMZ with `npm run seed:extract-kmz`.
+    const kmzAreas = loadKmzAreas();
+    const kmzByRayon: Record<string, number> = {};
+    for (const a of kmzAreas) {
+      const rings = a.coordStrings.map((s) => parseCoords(s));
+      const { lat, lng } = computeCentroidFromRings(rings);
+      const coverage = computeAreaM2FromRings(rings);
+      const boundary = JSON.stringify(toGeoJsonGeometry(a.coordStrings));
+      await insertArea(
+        a.id,
+        a.name,
+        a.typeCode,
+        lat,
+        lng,
+        boundary,
+        coverage,
+        RAYON_ID_BY_CODE[a.rayonCode],
       );
+      kmzByRayon[a.rayonCode] = (kmzByRayon[a.rayonCode] ?? 0) + 1;
     }
     console.log(
-      `  → ${ALL_AREA_DEFS.length} areas seeded: ${pusatSeeded} Rayon Pusat (1 park + 12 pedestrian) + ${timur2Seeded} Rayon Timur 2 (1 park 'Taman Buk Tong' + 24 pedestrian)`,
+      `  ✓ ${kmzAreas.length} KMZ coverage areas → ` +
+        Object.entries(kmzByRayon)
+          .map(([r, n]) => `${r}:${n}`)
+          .join('  '),
+    );
+
+    // (b) Taman Aktif parks from the client sheet. Most have no geometry yet, so
+    //     they get a placeholder centroid (Rayon Taman Aktif office) and no
+    //     boundary → clock-in falls back to "allow when no boundary defined".
+    //     Taman Bungkul keeps its real geofence; Taman Flora is seeded below.
+    const tamanAktif = loadTamanAktifAreas();
+    let tamanAktifSeeded = 0;
+    let tamanAktifGeocoded = 0;
+    for (const a of tamanAktif) {
+      if (a.name === 'Taman Flora') continue; // city-wide boundary seeded below
+      if (a.name === 'Taman Bungkul') {
+        const rings = BUNGKUL_COORD_STRINGS.map((s) => parseCoords(s));
+        const { lat, lng } = computeCentroidFromRings(rings);
+        await insertArea(
+          AREA_BUNGKUL_ID,
+          a.name,
+          'park',
+          lat,
+          lng,
+          JSON.stringify(toGeoJsonGeometry(BUNGKUL_COORD_STRINGS)),
+          computeAreaM2FromRings(rings),
+          RAYON_TAMAN_AKTIF_ID,
+        );
+      } else {
+        // Geocoded park centre where available; else the Rayon Taman Aktif
+        // office as a placeholder pin. No boundary polygon → no geofence.
+        await insertArea(
+          a.id,
+          a.name,
+          'park',
+          a.gps_lat ?? RAYON_TAMAN_AKTIF_OFFICE.lat,
+          a.gps_lng ?? RAYON_TAMAN_AKTIF_OFFICE.lng,
+          null,
+          null,
+          RAYON_TAMAN_AKTIF_ID,
+        );
+        if (a.gps_lat != null) tamanAktifGeocoded += 1;
+      }
+      tamanAktifSeeded += 1;
+    }
+    console.log(
+      `  ✓ ${tamanAktifSeeded} Taman Aktif parks (Bungkul geofenced; ${tamanAktifGeocoded} geocoded pins; rest placeholder)`,
     );
 
     // Taman Flora (Rayon Taman Aktif) — GPS pin on the park itself, but its
@@ -634,8 +670,26 @@ async function seedStaging() {
     );
     console.log('  ✓ Taman Flora (Rayon Taman Aktif, city-wide boundary)');
 
+    // Resolve a few real Pusat + Timur 2 areas for the synthetic dummy
+    // assignments below — decoupled from specific KMZ ids so the assignments
+    // stay valid across re-extracts/reseeds.
+    const pusatDummyAreaIds: string[] = (
+      (await queryRunner.query(
+        `SELECT id FROM areas WHERE rayon_id = $1 AND deleted_at IS NULL ORDER BY name LIMIT 12`,
+        [RAYON_PUSAT_ID],
+      )) as Array<{ id: string }>
+    ).map((r) => r.id);
+    const pusatDummyAreaId = pusatDummyAreaIds[0] ?? null;
+    const timur2DummyAreaId =
+      (
+        (await queryRunner.query(
+          `SELECT id FROM areas WHERE rayon_id = $1 AND deleted_at IS NULL ORDER BY name LIMIT 1`,
+          [RAYON_TIMUR2_ID],
+        )) as Array<{ id: string }>
+      )[0]?.id ?? null;
+
     // ============================================================
-    // STEP 9: USERS (13 test + 10 real = 23 total)
+    // STEP 9: USERS — system + per-rayon dummies + real roster (from sheet)
     // ============================================================
     console.log('\n👥 Seeding users (verbose — every row is announced)...');
     console.log('  ─────────────────────────────────────────────────────────────────────────────');
@@ -669,12 +723,13 @@ async function seedStaging() {
       kecamatanName: string | null = null,
     ) => {
       const result = await queryRunner.query(
-        `INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, area_id, kecamatan_name, is_active)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE)
-         ON CONFLICT (username) DO NOTHING`,
+        `INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, area_id, kecamatan_name, is_active, password_must_change)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE, TRUE)
+         ON CONFLICT (username) DO NOTHING
+         RETURNING id`,
         [id, username, PASSWORD_HASH, fullName, phone, role, rayonId, areaId, kecamatanName],
       );
-      const inserted = result && (result as any).rowCount > 0;
+      const inserted = Array.isArray(result) && result.length > 0;
       if (inserted) usersInserted += 1;
       else usersExisting += 1;
       const marker = inserted ? '  ✚    ' : '  ·    ';
@@ -729,7 +784,7 @@ async function seedStaging() {
       'korlap',
       '081200000015',
       RAYON_PUSAT_ID,
-      DARMO_P3_AREA_ID,
+      pusatDummyAreaId,
     );
     await insertUser(
       USER_KORLAP_PUSAT2_ID,
@@ -738,7 +793,7 @@ async function seedStaging() {
       'korlap',
       '081200000016',
       RAYON_PUSAT_ID,
-      DARMO_P1_AREA_ID,
+      pusatDummyAreaId,
     );
     await insertUser(
       USER_KORLAP_BUNGKUL_ID,
@@ -747,7 +802,7 @@ async function seedStaging() {
       'korlap',
       '081200000017',
       RAYON_PUSAT_ID,
-      DARMO_P2_AREA_ID,
+      pusatDummyAreaId,
     );
 
     // ── Rayon Pusat — satgas / linmas ──────────────────────────
@@ -759,7 +814,7 @@ async function seedStaging() {
       'satgas',
       '081200000018',
       RAYON_PUSAT_ID,
-      DARMO_P1_AREA_ID,
+      pusatDummyAreaId,
     );
     // satgas_pusat_2: 12 pedestrian areas → primary = Darmo Pulau 2
     await insertUser(
@@ -769,7 +824,7 @@ async function seedStaging() {
       'satgas',
       '081200000019',
       RAYON_PUSAT_ID,
-      DARMO_P2_AREA_ID,
+      pusatDummyAreaId,
     );
     // linmas_pusat_1: 12 Pusat pedestrian areas → primary = Darmo (Bank BCA)
     await insertUser(
@@ -779,7 +834,7 @@ async function seedStaging() {
       'linmas',
       '081200000020',
       RAYON_PUSAT_ID,
-      DARMO_BCA_AREA_ID,
+      pusatDummyAreaId,
     );
     // linmas_pusat_2: Rayon Pusat → primary = Darmo Pulau 5
     await insertUser(
@@ -789,7 +844,7 @@ async function seedStaging() {
       'linmas',
       '081200000021',
       RAYON_PUSAT_ID,
-      DARMO_P5_AREA_ID,
+      pusatDummyAreaId,
     );
     // satgas_pusat_3: Rayon Pusat → primary = Darmo Pulau 4
     await insertUser(
@@ -799,7 +854,7 @@ async function seedStaging() {
       'satgas',
       '081200000022',
       RAYON_PUSAT_ID,
-      DARMO_P4_AREA_ID,
+      pusatDummyAreaId,
     );
     // ── Rayon Taman Aktif — full role matrix for testing the logical-bucket rayon ──
     // satgas_taman_bungkul_1: primary = Taman Bungkul (park worker)
@@ -893,7 +948,7 @@ async function seedStaging() {
         slug: 'timur_2',
         rayonId: RAYON_TIMUR2_ID,
         label: 'Timur 2',
-        defaultAreaId: TAMAN_BUK_TONG_ID,
+        defaultAreaId: timur2DummyAreaId,
       },
       { slug: 'barat_1', rayonId: RAYON_BARAT1_ID, label: 'Barat 1', defaultAreaId: null },
       { slug: 'barat_2', rayonId: RAYON_BARAT2_ID, label: 'Barat 2', defaultAreaId: null },
@@ -1007,7 +1062,7 @@ async function seedStaging() {
       'satgas',
       '087825841818',
       RAYON_PUSAT_ID,
-      AREA_DARMO_P1_ID,
+      pusatDummyAreaId,
     );
     await insertUser(
       USER_ROY_ID,
@@ -1016,7 +1071,7 @@ async function seedStaging() {
       'satgas',
       '083854355341',
       RAYON_PUSAT_ID,
-      AREA_DARMO_P2_ID,
+      pusatDummyAreaId,
     );
     await insertUser(
       USER_EDI_ID,
@@ -1057,10 +1112,78 @@ async function seedStaging() {
 
     console.log(`  ─────────────────────────────────────────────────────────────────────────────`);
     console.log(
-      `  ✓ ${usersInserted} users inserted, ${usersExisting} already existed (idempotent)`,
+      `  ✓ ${usersInserted} system/dummy users inserted, ${usersExisting} already existed (idempotent)`,
     );
+
+    // ── Real roster from the client sheet (data/users.csv) ─────────
+    // Re-export the sheet → regenerate users.csv → reseed. Login is by phone
+    // (where present) or username slug; password Password123! + forced reset.
+    console.log('\n👤 Loading real roster from data/users.csv ...');
+    const roster = loadSeedUsers();
+    if (roster.length === 0) {
+      console.warn(
+        '  ⚠️  users.csv is missing/empty (it is gitignored — contains PII). ' +
+          'Run `npm run sheet:pull` to regenerate it from the client sheet, then reseed. ' +
+          'Continuing with system + dummy users only.',
+      );
+    }
+    const existingPhones = new Set(
+      (
+        (await queryRunner.query(
+          `SELECT phone_number FROM users WHERE phone_number IS NOT NULL`,
+        )) as Array<{ phone_number: string }>
+      ).map((r) => r.phone_number),
+    );
+    // Taman Aktif park name → id, for resolving multi-area assignments.
+    const tamanAktifAreaIdByName = new Map<string, string>(
+      (
+        (await queryRunner.query(`SELECT id, name FROM areas WHERE rayon_id = $1`, [
+          RAYON_TAMAN_AKTIF_ID,
+        ])) as Array<{ id: string; name: string }>
+      ).map((r) => [r.name, r.id]),
+    );
+    let rosterInserted = 0;
+    let rosterSkipped = 0;
+    let rosterAreaLinks = 0;
+    let rosterNoPhone = 0;
+    for (const u of roster) {
+      const rayonId = RAYON_ID_BY_CODE[u.rayon_code as RayonCode] ?? null;
+      let phone: string | null = u.phone || null;
+      if (!phone) rosterNoPhone += 1;
+      if (phone && existingPhones.has(phone)) phone = null; // avoid UNIQUE collision
+      if (phone) existingPhones.add(phone);
+      const areaIds = u.area_names
+        .map((n) => tamanAktifAreaIdByName.get(n))
+        .filter((x): x is string => Boolean(x));
+      const primaryAreaId = areaIds[0] ?? null;
+      const res = await queryRunner.query(
+        `INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, area_id, is_active, password_must_change)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, TRUE)
+         ON CONFLICT (username) DO NOTHING
+         RETURNING id`,
+        [u.id, u.username, PASSWORD_HASH, u.full_name, phone, u.role, rayonId, primaryAreaId],
+      );
+      if (Array.isArray(res) && res.length > 0) rosterInserted += 1;
+      else rosterSkipped += 1;
+      // Resolve the real id (handles username-conflict dedupe vs. system rows).
+      const uidRows = (await queryRunner.query(`SELECT id FROM users WHERE username = $1`, [
+        u.username,
+      ])) as Array<{ id: string }>;
+      const uid = uidRows[0]?.id;
+      if (uid) {
+        for (const aid of areaIds) {
+          await queryRunner.query(
+            `INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
+             VALUES ($1, $2, 'permanent', $3) ON CONFLICT DO NOTHING`,
+            [uid, aid, USER_SUPERADMIN_ID],
+          );
+          rosterAreaLinks += 1;
+        }
+      }
+    }
     console.log(
-      `    54 expected = 14 test (system + Pusat trio + staff_kecamatan_pusat_1) + 30 per-rayon dummy (5 roles × 6 non-Pusat rayons) + 10 real-name pilots.`,
+      `  ✓ roster: ${rosterInserted} inserted, ${rosterSkipped} skipped (dup) · ` +
+        `${rosterAreaLinks} area links · ${rosterNoPhone} username-only logins (no phone)`,
     );
 
     // ── May 2026 — staff_kecamatan_<code>_1 per kecamatan (31) ──────
@@ -1100,9 +1223,10 @@ async function seedStaging() {
       kecPhoneSeq += 1;
       const result = await queryRunner.query(
         `INSERT INTO users (username, password_hash, full_name, phone_number,
-                            role, rayon_id, area_id, kecamatan_name, kecamatan_id, is_active)
-         VALUES ($1, $2, $3, $4, 'staff_kecamatan', $5, NULL, $6, $7, TRUE)
-         ON CONFLICT (username) DO NOTHING`,
+                            role, rayon_id, area_id, kecamatan_name, kecamatan_id, is_active, password_must_change)
+         VALUES ($1, $2, $3, $4, 'staff_kecamatan', $5, NULL, $6, $7, TRUE, TRUE)
+         ON CONFLICT (username) DO NOTHING
+         RETURNING id`,
         [
           username,
           PASSWORD_HASH,
@@ -1113,7 +1237,7 @@ async function seedStaging() {
           k.id,
         ],
       );
-      const inserted = result && (result as any).rowCount > 0;
+      const inserted = Array.isArray(result) && result.length > 0;
       if (inserted) kecInserted += 1;
       else kecExisting += 1;
 
@@ -1178,35 +1302,35 @@ async function seedStaging() {
     };
 
     // korlap_pusat_1 → 12 Rayon Pusat pedestrian areas (Taman Bungkul is Taman Aktif)
-    for (const areaId of PEDESTRIAN_AREA_IDS) await assignArea(USER_KORLAP_PUSAT1_ID, areaId);
+    for (const areaId of pusatDummyAreaIds) await assignArea(USER_KORLAP_PUSAT1_ID, areaId);
     console.log('  ✓ korlap_pusat_1 → 12 Rayon Pusat pedestrian areas');
 
     // korlap_pusat_2 → 12 Rayon Pusat pedestrian areas
-    for (const areaId of PEDESTRIAN_AREA_IDS) await assignArea(USER_KORLAP_PUSAT2_ID, areaId);
+    for (const areaId of pusatDummyAreaIds) await assignArea(USER_KORLAP_PUSAT2_ID, areaId);
     console.log('  ✓ korlap_pusat_2 → 12 Rayon Pusat pedestrian areas');
 
     // korlap_pusat_3 → Darmo Pulau 2 only
-    await assignArea(USER_KORLAP_BUNGKUL_ID, DARMO_P2_AREA_ID);
+    await assignArea(USER_KORLAP_BUNGKUL_ID, pusatDummyAreaId);
     console.log('  ✓ korlap_pusat_3 → Darmo Pulau 2');
 
     // satgas_pusat_1 → 12 Rayon Pusat pedestrian areas
-    for (const areaId of PEDESTRIAN_AREA_IDS) await assignArea(USER_SATGAS_PUSAT1_ID, areaId);
+    for (const areaId of pusatDummyAreaIds) await assignArea(USER_SATGAS_PUSAT1_ID, areaId);
     console.log('  ✓ satgas_pusat_1 → 12 Rayon Pusat pedestrian areas');
 
     // satgas_pusat_2 → 12 Rayon Pusat pedestrian areas
-    for (const areaId of PEDESTRIAN_AREA_IDS) await assignArea(USER_SATGAS_PUSAT2_ID, areaId);
+    for (const areaId of pusatDummyAreaIds) await assignArea(USER_SATGAS_PUSAT2_ID, areaId);
     console.log('  ✓ satgas_pusat_2 → 12 Rayon Pusat pedestrian areas');
 
     // linmas_pusat_1 → 12 Rayon Pusat pedestrian areas
-    for (const areaId of PEDESTRIAN_AREA_IDS) await assignArea(USER_LINMAS_PUSAT1_ID, areaId);
+    for (const areaId of pusatDummyAreaIds) await assignArea(USER_LINMAS_PUSAT1_ID, areaId);
     console.log('  ✓ linmas_pusat_1 → 12 Rayon Pusat pedestrian areas');
 
     // linmas_pusat_2 → Darmo Pulau 5 only
-    await assignArea(USER_LINMAS_PUSAT2_ID, DARMO_P5_AREA_ID);
+    await assignArea(USER_LINMAS_PUSAT2_ID, pusatDummyAreaId);
     console.log('  ✓ linmas_pusat_2 → Darmo Pulau 5');
 
     // satgas_pusat_3 → Darmo Pulau 4 only
-    await assignArea(USER_SATGAS_BUNGKUL_ID, DARMO_P4_AREA_ID);
+    await assignArea(USER_SATGAS_BUNGKUL_ID, pusatDummyAreaId);
     console.log('  ✓ satgas_pusat_3 → Darmo Pulau 4');
 
     // Rayon Taman Aktif role matrix
@@ -1224,9 +1348,9 @@ async function seedStaging() {
     console.log('  ✓ satgas_taman_flora_1 → Taman Flora');
 
     // Real users
-    await assignArea(USER_RAKHMAT_ID, AREA_DARMO_P1_ID);
+    await assignArea(USER_RAKHMAT_ID, pusatDummyAreaId);
     console.log('  ✓ rakhmat_novianto → Jl. Raya Darmo Pulau 1');
-    await assignArea(USER_ROY_ID, AREA_DARMO_P2_ID);
+    await assignArea(USER_ROY_ID, pusatDummyAreaId);
     console.log('  ✓ roy_junaidi → Jl. Raya Darmo Pulau 2');
     for (const uid of [USER_EDI_ID, USER_JIHAN_ID, USER_DENI_ID, USER_AGUS_ID]) {
       await assignArea(uid, AREA_BUNGKUL_ID);
@@ -1261,22 +1385,22 @@ async function seedStaging() {
     // ============================================================
     console.log('\n📋 Seeding area staff requirements...');
 
-    for (const areaDef of ALL_AREA_DEFS) {
-      // 1 satgas per area — Shift 1, Weekday
-      await queryRunner.query(
-        `INSERT INTO area_staff_requirements (area_id, shift_definition_id, role, required_count, day_type)
-         VALUES ($1, $2, 'satgas', 1, 'WEEKDAY')`,
-        [areaDef.id, SHIFT_1_ID],
-      );
-      // 1 linmas per area — Shift 1, Weekday (linmas primarily in parks, but include all for coverage)
-      await queryRunner.query(
-        `INSERT INTO area_staff_requirements (area_id, shift_definition_id, role, required_count, day_type)
-         VALUES ($1, $2, 'linmas', 1, 'WEEKDAY')`,
-        [areaDef.id, SHIFT_1_ID],
-      );
-    }
+    // Scoped to the rayons that actually carry field workers (Taman Aktif parks
+    // + Timur 2). The geographic coverage areas don't need per-area requirements
+    // for UAT, which keeps the staffing-gap dashboards meaningful.
+    await queryRunner.query(
+      `INSERT INTO area_staff_requirements (area_id, shift_definition_id, role, required_count, day_type)
+       SELECT a.id, $1, r.role, 1, 'WEEKDAY'
+       FROM areas a
+       CROSS JOIN (VALUES ('satgas'), ('linmas')) AS r(role)
+       WHERE a.deleted_at IS NULL AND a.rayon_id IN ($2, $3)`,
+      [SHIFT_1_ID, RAYON_TAMAN_AKTIF_ID, RAYON_TIMUR2_ID],
+    );
+    const reqCountRows = (await queryRunner.query(
+      `SELECT COUNT(*) AS c FROM area_staff_requirements`,
+    )) as Array<{ c: string }>;
     console.log(
-      `  ✓ ${ALL_AREA_DEFS.length * 2} requirements (${ALL_AREA_DEFS.length} areas × 2 roles: satgas + linmas, SHIFT1/WEEKDAY)`,
+      `  ✓ ${reqCountRows[0].c} area staff requirements (satgas + linmas per Taman Aktif / Timur 2 area, SHIFT1/WEEKDAY)`,
     );
 
     // ============================================================
@@ -1373,7 +1497,7 @@ async function seedStaging() {
     console.log(
       '══════════════════════════════════════════════════════════════════════════════════════',
     );
-    console.log('🧪  TEST USERS  (all passwords: password123 · login with username OR phone)');
+    console.log('🧪  TEST USERS  (all passwords: Password123! · login with username OR phone)');
     console.log(
       '══════════════════════════════════════════════════════════════════════════════════════',
     );
@@ -1430,7 +1554,7 @@ async function seedStaging() {
     console.log(
       '══════════════════════════════════════════════════════════════════════════════════════',
     );
-    console.log('👤  REAL USERS  (production-bound, all passwords: password123)');
+    console.log('👤  REAL USERS  (production-bound, all passwords: Password123!)');
     console.log(
       '══════════════════════════════════════════════════════════════════════════════════════',
     );

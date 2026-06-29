@@ -76,7 +76,7 @@ describe('AuthController', () => {
     it('should call authService.login and return result', async () => {
       const loginDto: LoginDto = {
         identifier: 'testuser',
-        password: 'password123',
+        password: 'Password123!',
       };
 
       const expectedResult = {

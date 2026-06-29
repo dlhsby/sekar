@@ -114,7 +114,7 @@ Content-Type: application/json
 
 {
   "username": "worker1",
-  "password": "password123"
+  "password": "Password123!"
 }
 ```
 
@@ -547,7 +547,7 @@ Authorization: Bearer {token}
 Content-Type: application/json
 
 {
-  "current_password": "password123",
+  "current_password": "Password123!",
   "new_password": "newsecurepassword456"
 }
 ```
@@ -2254,7 +2254,7 @@ https://sekar-media.s3.ap-southeast-1.amazonaws.com/shifts/2026/01/09/uuid-selfi
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"worker1","password":"password123"}' \
+  -d '{"username":"worker1","password":"Password123!"}' \
   | jq -r '.access_token')
 ```
 

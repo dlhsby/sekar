@@ -18,6 +18,8 @@ export enum ApiErrorCode {
   // Phase 4-7 (M2): refresh-token rotation + blacklist
   AUTH_REFRESH_EXPIRED = 'AUTH_010',
   AUTH_REFRESH_INVALID = 'AUTH_011',
+  // Forced password reset: account must change its password before using the API.
+  AUTH_PASSWORD_CHANGE_REQUIRED = 'AUTH_PASSWORD_CHANGE_REQUIRED',
 
   // ==================== Shift Errors ====================
   SHIFT_ALREADY_ACTIVE = 'SHIFT_ALREADY_ACTIVE',

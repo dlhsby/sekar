@@ -1,5 +1,6 @@
 import type { DataSource, QueryRunner } from 'typeorm';
 import '../../config/load-env';
+import { DEFAULT_PASSWORD_HASH } from './constants';
 
 /**
  * Inline ISO week helper so the seeder doesn't depend on the pruning module.
@@ -589,7 +590,7 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     // demo data, but lifted into the dev `db:seed` flow because the
     // pruning_requests section below depends on these users existing.
     //
-    // All passwords: `password123` (bcrypt 10 salt rounds, same hash as
+    // All passwords: `Password123!` (bcrypt 10 salt rounds, same hash as
     // seed-phase2). Idempotent via ON CONFLICT (username) DO NOTHING.
     console.log('');
     console.log('🏘️  ======== SECTION 3.4: Kecamatans (31 Surabaya) ========');
@@ -680,7 +681,7 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
 
     console.log('');
     console.log('🧑‍💼 ======== SECTION 3.5: Staff Kecamatan Users ========');
-    const STAFF_KEC_PWD_HASH = '$2b$10$gF9qXRA.0ZtNWgbrwoYHMOmdUFUbaL4AkGdxAEMDMrMZtFexnH.H.';
+    const STAFF_KEC_PWD_HASH = DEFAULT_PASSWORD_HASH;
 
     // May 2026 — one staff_kecamatan user per kecamatan (31 total) so the
     // submit form can pre-fill rayon + kecamatan from the logged-in user.
@@ -755,7 +756,7 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     `);
 
     console.log(
-      `  ✓ ${staffKecInserted} new staff_kecamatan users seeded (one per kecamatan, password: password123)`,
+      `  ✓ ${staffKecInserted} new staff_kecamatan users seeded (one per kecamatan, password: Password123!)`,
     );
     console.log(`     legacy staff_kec_* users backfilled with kecamatan_id`);
 
@@ -1320,7 +1321,7 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
       '      ─────────────────────────────────────────────────────────────────────────────',
     );
     console.log(
-      `      ${String(c.staff_kec_users).padStart(3)} staff_kecamatan users — one per kecamatan, all password: password123`,
+      `      ${String(c.staff_kec_users).padStart(3)} staff_kecamatan users — one per kecamatan, all password: Password123!`,
     );
     console.log(
       '      Username pattern: staff_kecamatan_<code>_<n>  (e.g. staff_kecamatan_wiyung_1)',
@@ -1331,7 +1332,7 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     console.log(
       '══════════════════════════════════════════════════════════════════════════════════════',
     );
-    console.log('🧪  STAFF KECAMATAN — sample logins (all passwords: password123)');
+    console.log('🧪  STAFF KECAMATAN — sample logins (all passwords: Password123!)');
     console.log(
       '══════════════════════════════════════════════════════════════════════════════════════',
     );

@@ -89,13 +89,13 @@ cd fe/mobile
 
 | Role | Username | Password | Scope |
 |------|----------|----------|-------|
-| superadmin | admin | password123 | All endpoints |
-| admin_system | admin_system1 | password123 | Config, boundary |
-| top_management | top_mgmt1 | password123 | City-wide monitoring |
-| kepala_rayon | kepalarayon1 | password123 | Rayon-scoped monitoring |
-| korlap | korlap1 | password123 | Area-scoped monitoring |
-| satgas | satgas1 | password123 | Worker (tracked) |
-| linmas | linmas1 | password123 | Worker (tracked) |
+| superadmin | admin | Password123! | All endpoints |
+| admin_system | admin_system1 | Password123! | Config, boundary |
+| top_management | top_mgmt1 | Password123! | City-wide monitoring |
+| kepala_rayon | kepalarayon1 | Password123! | Rayon-scoped monitoring |
+| korlap | korlap1 | Password123! | Area-scoped monitoring |
+| satgas | satgas1 | Password123! | Worker (tracked) |
+| linmas | linmas1 | Password123! | Worker (tracked) |
 
 ### API Testing Tools
 

@@ -184,7 +184,7 @@ describe('Users API', () => {
     it('should create new user', async () => {
       const newUser: CreateUserDto = {
         username: 'newuser',
-        password: 'password123',
+        password: 'Password123!',
         full_name: 'New User',
         role: 'satgas',
       };
@@ -230,7 +230,7 @@ describe('Users API', () => {
     it('should handle duplicate username error', async () => {
       const newUser: CreateUserDto = {
         username: 'admin',
-        password: 'password123',
+        password: 'Password123!',
         full_name: 'Another Admin',
         role: 'admin_system',
       };

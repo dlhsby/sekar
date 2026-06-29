@@ -49,22 +49,22 @@ describe('Error Codes (e2e)', () => {
     // Login as different users to get tokens (seed users, ADR-009 roles)
     const adminLogin = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ identifier: 'admin', password: 'password123' });
+      .send({ identifier: 'admin', password: 'Password123!' });
     adminToken = adminLogin.body.access_token;
 
     const supervisorLogin = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ identifier: 'korlap_pusat_1', password: 'password123' });
+      .send({ identifier: 'korlap_pusat_1', password: 'Password123!' });
     supervisorToken = supervisorLogin.body.access_token;
 
     const workerLogin = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ identifier: 'satgas_pusat_1', password: 'password123' });
+      .send({ identifier: 'satgas_pusat_1', password: 'Password123!' });
     workerToken = workerLogin.body.access_token;
 
     const worker2Login = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ identifier: 'satgas_pusat_2', password: 'password123' });
+      .send({ identifier: 'satgas_pusat_2', password: 'Password123!' });
     worker2Token = worker2Login.body.access_token;
   });
 
@@ -91,7 +91,7 @@ describe('Error Codes (e2e)', () => {
       it('should return AUTH_INVALID_CREDENTIALS for non-existent user', () => {
         return request(app.getHttpServer())
           .post('/api/v1/auth/login')
-          .send({ identifier: 'nonexistent', password: 'password123' })
+          .send({ identifier: 'nonexistent', password: 'Password123!' })
           .expect(401)
           .expect((res) => {
             expect(res.body.code).toBe(ApiErrorCode.AUTH_INVALID_CREDENTIALS);
@@ -125,7 +125,7 @@ describe('Error Codes (e2e)', () => {
           // Try to login as inactive user
           await request(app.getHttpServer())
             .post('/api/v1/auth/login')
-            .send({ identifier: inactiveUsername, password: 'password123' })
+            .send({ identifier: inactiveUsername, password: 'Password123!' })
             .expect(401)
             .expect((res) => {
               expect(res.body.code).toBe(ApiErrorCode.AUTH_ACCOUNT_INACTIVE);

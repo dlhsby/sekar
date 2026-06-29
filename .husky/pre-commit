@@ -1,19 +1,33 @@
 # SEKAR pre-commit (husky) — runs on `git commit`.
-# 1) dotenvx secrets guard  2) lint-staged (eslint --fix on changed files).
+# 1) secrets guard  2) lint-staged (eslint --fix on changed files).
 
-# --- 1) Never commit a private-key file; verify committable .env are encrypted.
+# --- 1) Never commit a private-key file.
 if git diff --cached --name-only | grep -qE '(^|/)\.env\.keys$'; then
   echo "✖ pre-commit: refusing to commit a .env.keys file (dotenvx private keys)." >&2
   exit 1
 fi
-DOTENVX=""
-for d in be fe/web fe/mobile; do
-  if [ -x "$d/node_modules/.bin/dotenvx" ]; then DOTENVX="$d/node_modules/.bin/dotenvx"; break; fi
+
+# Block STAGED plaintext .env secrets. Allowed: *.example templates (committed
+# plaintext by convention) and dotenvx-encrypted files (every value is
+# `encrypted:…`). A staged .env with any plaintext value is rejected.
+blocked=""
+for f in $(git diff --cached --name-only --diff-filter=ACM | grep -E '(^|/)\.env(\.[^/]+)*$'); do
+  case "$f" in
+    *.example) continue ;;
+  esac
+  # Look at the staged content; ignore comments/blank lines. If any assignment
+  # has a non-empty, non-`encrypted:` value, the file carries plaintext secrets.
+  if git show ":$f" 2>/dev/null \
+      | grep -vE '^[[:space:]]*(#|$)' \
+      | grep -E '^[A-Za-z_][A-Za-z0-9_]*=' \
+      | grep -qvE '=[[:space:]]*("?encrypted:|$)'; then
+    blocked="$blocked $f"
+  fi
 done
-if [ -n "$DOTENVX" ]; then
-  "$DOTENVX" ext precommit || exit 1
-else
-  echo "⚠ pre-commit: dotenvx not found; skipping encryption check." >&2
+if [ -n "$blocked" ]; then
+  echo "✖ pre-commit: refusing to commit plaintext .env secrets:$blocked" >&2
+  echo "  → encrypt with dotenvx, gitignore the file, or use a *.example template." >&2
+  exit 1
 fi
 
 # --- 2) Lint (+ auto-fix) staged files, routed to each workspace's eslint.

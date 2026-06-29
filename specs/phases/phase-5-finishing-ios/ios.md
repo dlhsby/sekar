@@ -275,7 +275,7 @@ employees for managing green space workers.
 
 Test Account:
 Username: korlap1
-Password: password123
+Password: Password123!
 
 The app requires GPS location access for worker attendance verification.
 Location is only collected during active work shifts.

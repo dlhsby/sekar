@@ -214,16 +214,16 @@ After automated steps, on-device verification includes:
 Default test users (from `db:seed:staging`):
 
 ```
-satgas1 / password123               (field worker, satgas)
-korlap_pusat_1 / password123        (coordinator)
-kepala_rayon_pusat_1 / password123  (sector head)
-admin_data_pusat_1 / password123    (admin)
-staff_kecamatan_pusat_1 / password123 (external pruning requester)
+satgas1 / Password123!               (field worker, satgas)
+korlap_pusat_1 / Password123!        (coordinator)
+kepala_rayon_pusat_1 / Password123!  (sector head)
+admin_data_pusat_1 / Password123!    (admin)
+staff_kecamatan_pusat_1 / Password123! (external pruning requester)
 temp_user / temp_password           (password_must_change=true for flow 05)
-satgas_fresh / password123          (for onboarding flows 06-07)
+satgas_fresh / Password123!          (for onboarding flows 06-07)
 ```
 
-Phone login also works (e.g., `081200000006/password123`). Check `specs/deployment/` for seeding details.
+Phone login also works (e.g., `081200000006/Password123!`). Check `specs/deployment/` for seeding details.
 
 ---
 

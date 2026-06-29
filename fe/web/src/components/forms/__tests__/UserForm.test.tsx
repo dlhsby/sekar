@@ -232,7 +232,7 @@ describe('UserForm', () => {
 
       await user.type(screen.getByLabelText(/nama lengkap/i), 'Test User');
       await user.type(screen.getByLabelText(/email/i), 'test@example.com');
-      await user.type(screen.getByLabelText(/password/i), 'password123');
+      await user.type(screen.getByLabelText(/password/i), 'Password123!');
 
       await user.click(screen.getByLabelText(/role/i));
       await user.click(screen.getByText('Kepala Rayon'));
@@ -270,7 +270,7 @@ describe('UserForm', () => {
 
       await user.type(screen.getByLabelText(/nama lengkap/i), 'New User');
       await user.type(screen.getByLabelText(/email/i), 'new@example.com');
-      await user.type(screen.getByLabelText(/password/i), 'password123');
+      await user.type(screen.getByLabelText(/password/i), 'Password123!');
       await user.click(screen.getByLabelText(/role/i));
       await user.click(screen.getByText('Worker'));
 
@@ -280,7 +280,7 @@ describe('UserForm', () => {
         expect(onSubmit).toHaveBeenCalledWith({
           name: 'New User',
           email: 'new@example.com',
-          password: 'password123',
+          password: 'Password123!',
           role: 'satgas',
         });
       });
@@ -332,7 +332,7 @@ describe('UserForm', () => {
 
       await user.type(screen.getByLabelText(/nama lengkap/i), 'Kepala User');
       await user.type(screen.getByLabelText(/email/i), 'kepala@example.com');
-      await user.type(screen.getByLabelText(/password/i), 'password123');
+      await user.type(screen.getByLabelText(/password/i), 'Password123!');
 
       await user.click(screen.getByLabelText(/role/i));
       await user.click(screen.getByText('Kepala Rayon'));
@@ -351,7 +351,7 @@ describe('UserForm', () => {
         expect(onSubmit).toHaveBeenCalledWith({
           name: 'Kepala User',
           email: 'kepala@example.com',
-          password: 'password123',
+          password: 'Password123!',
           role: 'kepala_rayon',
           rayon_id: 'rayon-1',
         });
@@ -432,7 +432,7 @@ describe('UserForm', () => {
 
       await user.type(screen.getByLabelText(/nama lengkap/i), 'Test');
       await user.type(screen.getByLabelText(/email/i), 'test@example.com');
-      await user.type(screen.getByLabelText(/password/i), 'password123');
+      await user.type(screen.getByLabelText(/password/i), 'Password123!');
 
       await user.click(screen.getByRole('button', { name: /simpan/i }));
 

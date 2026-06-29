@@ -2454,6 +2454,11 @@ export const SERAYU_AREA_ID = '52e1f2a3-b4c5-4367-8901-243546576879';
 export const BENGAWAN_AREA_ID = '52f2a3b4-c5d6-4478-9012-345657687980';
 export const DARMO_KALI_AREA_ID = '53a3b4c5-d6e7-4589-0123-456768798091';
 
+/** Taman Bungkul boundary (KML rings) — Bungkul is a Taman Aktif park; the
+ * staging seeder seeds it with its real geofence rather than a placeholder. */
+export const BUNGKUL_COORD_STRINGS: string[] =
+  RAYON_PUSAT_AREAS.find((a) => a.id === BUNGKUL_AREA_ID)?.coordStrings ?? [];
+
 // ── Taman Flora (Rayon Taman Aktif) ───────────────────────────────────────
 // A taman aktif park whose boundary is intentionally the whole-Surabaya
 // outline (see `surabayaOutlinePolygon`). Its GPS pin is the park itself, but

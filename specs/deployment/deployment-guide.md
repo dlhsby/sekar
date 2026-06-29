@@ -71,7 +71,7 @@ The fastest path, from the repo root:
 ./scripts/stop.sh           # stop services (--infra to also stop Docker)
 ```
 
-This brings up local infra (PostgreSQL :5432, Adminer :8080, MinIO S3 :9000 + console :9001, Redis :16379) and runs the backend (`http://localhost:3000`, API docs `/api/v1/docs`) and web (`http://localhost:3001`). Test users use `password123` (e.g. `admin/password123`, `satgas1/password123`).
+This brings up local infra (PostgreSQL :5432, Adminer :8080, MinIO S3 :9000 + console :9001, Redis :16379) and runs the backend (`http://localhost:3000`, API docs `/api/v1/docs`) and web (`http://localhost:3001`). Test users use `Password123!` (e.g. `admin/Password123!`, `satgas1/Password123!`).
 
 **Two values you must fill** after `setup.sh`: `NEXT_PUBLIC_MAPBOX_TOKEN` in `fe/web/.env.local` and `API_BASE_URL` in `fe/mobile/.env.local` (see §B). Everything else defaults to local infra.
 
@@ -213,7 +213,7 @@ cd ~/sekar/infra && IMAGE_TAG=staging docker compose -f compose.staging.yml up -
 docker compose -f compose.staging.yml run --rm --no-deps backend npm run migration:run:prod
 docker compose -f compose.staging.yml run --rm --no-deps backend npm run db:seed:staging:prod
 ```
-> `db:seed:staging:prod` is the staging dataset (idempotent, all passwords `password123`).
+> `db:seed:staging:prod` is the staging dataset (idempotent, all passwords `Password123!`).
 > **Never** run it on production. Migrations run every deploy; the seed is first-boot only.
 
 ### Smoke test
@@ -221,7 +221,7 @@ docker compose -f compose.staging.yml run --rm --no-deps backend npm run db:seed
 curl -sf https://api.sekar.wahyutrip.com/api/v1/health/ready   # {db,redis} ok
 curl -sI https://sekar.wahyutrip.com/login                      # 200
 ```
-Then log in (`superadmin/password123`) and confirm the monitoring map renders (Mapbox +
+Then log in (`superadmin/Password123!`) and confirm the monitoring map renders (Mapbox +
 WebSocket + S3 media path). **Enabling TLS later:** drop the `http://` prefix in
 `infra/Caddyfile.staging`, switch the web build args + `CORS_ORIGIN` to `https`/`wss`, and
 flip `NEXT_PUBLIC_SECURE_COOKIES`/`NEXT_PUBLIC_FEATURE_PWA` back on.

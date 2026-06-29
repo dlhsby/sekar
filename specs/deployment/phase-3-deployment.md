@@ -17,11 +17,11 @@ Before pushing the next mobile build, run this 5-minute smoke test against the d
 | # | Action | Expected | Apr 27 status |
 |---|--------|----------|---------------|
 | 1 | `cd be && npm run db:seed:staging` | Exits 0; output mentions `6 pruning_requests inserted (mixed statuses with review metadata)` and `5 plant_seeds + 5 seed_transactions` and `84 new service_capacity rows` | ✅ |
-| 2 | Login mobile as `staff_kec_pusat / password123` → tap "Kirim Permintaan" | `SubmitScreen` 5-step wizard renders without crash; "Kembali" + "Lanjut" buttons show text | ✅ fixed Apr 27 |
-| 3 | Login mobile as `admin_data_pusat_1 / password123` → tap admin tab | `ReviewQueueScreen` lists ≥2 pending pruning_requests | ✅ |
+| 2 | Login mobile as `staff_kec_pusat / Password123!` → tap "Kirim Permintaan" | `SubmitScreen` 5-step wizard renders without crash; "Kembali" + "Lanjut" buttons show text | ✅ fixed Apr 27 |
+| 3 | Login mobile as `admin_data_pusat_1 / Password123!` → tap admin tab | `ReviewQueueScreen` lists ≥2 pending pruning_requests | ✅ |
 | 4 | Tap a request → `RequestDetailScreen` → tap "Setujui" | Modal opens with reason textarea | ✅ |
 | 5 | For an approved request, tap "Konversi ke Tugas" | `ConvertToTaskSheet` opens (areas/users dropdowns are empty until Phase 4 — known) | 🟡 partial |
-| 6 | Login web as `admin_pusat / password123` → click each sidebar link | All resolve (no 404). Phase 3 routes show "Coming soon" placeholders | ✅ Apr 27 placeholders |
+| 6 | Login web as `admin_pusat / Password123!` → click each sidebar link | All resolve (no 404). Phase 3 routes show "Coming soon" placeholders | ✅ Apr 27 placeholders |
 | 7 | Login web as `staff_kec_pusat` | Sidebar shows "Kirim Permintaan" + "Permintaan Saya"; both routes resolve to placeholders | ✅ Apr 27 placeholders |
 | 8 | Backend `cd be && npm test -- --testPathPattern='modules/(pruning-requests\|service-capacity\|plant-seeds\|plants)'` | 179 tests, 0 failures | ✅ |
 | 9 | Mobile `cd fe/mobile && npx jest src/components/nb/__tests__/NBButton.test.tsx` | 26 tests pass (5 new regression-guard tests for `outline`, `label`, `leftIcon`, unknown-variant fallback, string children) | ✅ |
@@ -153,8 +153,8 @@ Open http://localhost:3000/api/docs and test:
 - **GET** `/api/v1/pruning-requests` (with `admin_system` token) → 4 sample requests in mixed statuses (submitted, approved, rejected)
 
 **Test user credentials:**
-- `satgas1 / password123` — field worker (can clock-in, see monitoring)
-- `admin_system / password123` — system admin (can review pruning requests, see all data)
+- `satgas1 / Password123!` — field worker (can clock-in, see monitoring)
+- `admin_system / Password123!` — system admin (can review pruning requests, see all data)
 
 #### 3. Start mobile with Phase 3 UI
 
@@ -467,7 +467,7 @@ Idempotent. Seeds, in order:
 3. **4** monitoring configs (Phase 3) — `plants_forecast`, `service_capacity_defaults`, `pruning_request_workflow`, `seed_inventory`
 4. **128** `plant_species` (Indonesian tree/shrub/flower catalog)
 5. **service_capacity grid** — 7 rayons × 12 ISO weeks × `service_type='pruning'` with `capacity_units=0` (admins set per-rayon later)
-6. **1** default superadmin (`admin` / `password123` — change immediately)
+6. **1** default superadmin (`admin` / `Password123!` — change immediately)
 
 > **Phase 3 schema guard:** if `plant_species` table doesn't exist (migrations not yet run), Phase 3 reference inserts log a warning and skip. Safe to call against a Phase 2-only DB.
 
@@ -541,7 +541,7 @@ docker exec sekar-backend npm run db:seed:prod
 #   ✓ 128 new plant_species inserted (0 already existed)
 #   ✓ 4 new Phase 3 monitoring_configs inserted (0 already existed)
 #   ✓ 84 new service_capacity rows (7 rayons × 12 weeks, capacity_units=0)
-#   ✓ Default superadmin (admin / password123) — change password after first login!
+#   ✓ Default superadmin (admin / Password123!) — change password after first login!
 ```
 
 For an **existing prod that already has Phase 1/2 data and just needs Phase 3 added on top** (this is the path taken Apr 27):
@@ -680,7 +680,7 @@ cd fe/mobile && npm run android    # Or: npm run ios
 ### UAT Flows by Role
 
 #### 1. Staff Kecamatan (staff_kecamatan) — Submit Pruning Request
-**User:** `staff_kec_pusat` / `password123` | **Phone:** 081200000023
+**User:** `staff_kec_pusat` / `Password123!` | **Phone:** 081200000023
 
 **Mobile (or web at `/mobile` responsive):**
 1. Log in with staff_kecamatan credentials
@@ -695,7 +695,7 @@ cd fe/mobile && npm run android    # Or: npm run ios
 **Expected:** Request appears in `/api/v1/pruning-requests` on backend within 2 seconds (WS sync).
 
 #### 2. Admin Data (admin_data) — Review & Disposition
-**User:** `admin_data1` / `password123` | **Rayon:** Pusat scope only (ADR-032)
+**User:** `admin_data1` / `Password123!` | **Rayon:** Pusat scope only (ADR-032)
 
 **Web Dashboard:**
 1. Log in with admin_data credentials
@@ -709,7 +709,7 @@ cd fe/mobile && npm run android    # Or: npm run ios
 **Expected:** Disposition change visible on mobile `RequestDetailScreen` via WS patch within 1 s.
 
 #### 3. Admin System (admin_system) — Convert & Capacity View
-**User:** `admin_system1` / `password123` | **Scope:** City-wide
+**User:** `admin_system1` / `Password123!` | **Scope:** City-wide
 
 **Web Dashboard:**
 1. Log in with admin_system
@@ -728,7 +728,7 @@ cd fe/mobile && npm run android    # Or: npm run ios
 **Expected:** Task appears instantly; capacity updates visible to kepala_rayon of that rayon within 1 s.
 
 #### 4. Kepala Rayon (kepala_rayon) — Capacity & Plant Seeds
-**User:** `kepala_pusat` / `password123` | **Rayon:** Pusat scope only
+**User:** `kepala_pusat` / `Password123!` | **Rayon:** Pusat scope only
 
 **Web Dashboard:**
 1. Log in with kepala_rayon
@@ -747,7 +747,7 @@ cd fe/mobile && npm run android    # Or: npm run ios
 **Expected:** All balance calculations match: `balance = initial_qty + Σ(purchase) - Σ(usage) - Σ(waste)`.
 
 #### 5. Satgas / Linmas — Monitoring + Plant Status Chip (3-8 light)
-**User:** `satgas_pusat_1` / `password123` | **Role:** satgas
+**User:** `satgas_pusat_1` / `Password123!` | **Role:** satgas
 
 **Mobile:**
 1. Log in with satgas

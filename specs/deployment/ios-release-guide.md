@@ -89,7 +89,7 @@ Backend already sends via FCM (`FCM_ENABLED=true` + service account) — no back
 2. **Archive:** Xcode → Product → Destination "Any iOS Device" → **Product → Archive**.
 3. **Validate & upload:** Organizer → Distribute App → App Store Connect → Upload.
 4. **TestFlight:** App Store Connect → TestFlight → add internal/external testers; complete the test-information + export-compliance prompts. Field-test the 17-feature parity list (§8) on a real device.
-5. **App Store submission:** create the app listing (screenshots for required device sizes, description, keywords, support URL, **privacy policy URL**), fill the **App Privacy** questionnaire (location, camera, photos, identifiers), attach a working **demo account** (e.g. `admin/password123` on a reachable backend), then submit for review. Budget ~1–3 days review; location-always usage often draws extra scrutiny — justify it with the shift-tracking description.
+5. **App Store submission:** create the app listing (screenshots for required device sizes, description, keywords, support URL, **privacy policy URL**), fill the **App Privacy** questionnaire (location, camera, photos, identifiers), attach a working **demo account** (e.g. `admin/Password123!` on a reachable backend), then submit for review. Budget ~1–3 days review; location-always usage often draws extra scrutiny — justify it with the shift-tracking description.
 
 ## 8. Android → iOS parity checklist (verify on device before submission)
 

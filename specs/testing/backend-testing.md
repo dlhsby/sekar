@@ -177,7 +177,7 @@ describe('AuthService', () => {
   describe('login', () => {
     const loginDto: LoginDto = {
       username: 'testuser',
-      password: 'password123',
+      password: 'Password123!',
     };
 
     it('should successfully login and return JWT token', async () => {
@@ -307,7 +307,7 @@ describe('UsersController', () => {
     it('should create a new user', async () => {
       const createUserDto: CreateUserDto = {
         username: 'newuser',
-        password: 'password123',
+        password: 'Password123!',
         full_name: 'New User',
         role: UserRole.WORKER,
       };
@@ -573,7 +573,7 @@ describe('AppController (e2e)', () => {
         .post('/api/auth/login')
         .send({
           username: 'worker1',
-          password: 'password123',
+          password: 'Password123!',
         })
         .expect(200)
         .expect((res) => {

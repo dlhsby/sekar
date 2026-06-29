@@ -106,7 +106,7 @@ Schema created from TypeORM entities directly
 
 **API Status:** ✅ Operational at http://api.sekar.wahyutrip.com
 **Web Status:** ✅ Operational at http://sekar.wahyutrip.com (CSR bailout issue)
-**Test Login:** ✅ `admin`/`password123` works with JWT tokens
+**Test Login:** ✅ `admin`/`Password123!` works with JWT tokens
 
 ---
 
@@ -193,7 +193,7 @@ curl http://<STAGING_IP>:3000/api/v1/health
 
 TOKEN=$(curl -s -X POST http://<STAGING_IP>:3000/api/v1/auth/login \
   -H 'Content-Type: application/json' \
-  -d '{"username":"admin","password":"password123"}' | jq -r '.access_token')
+  -d '{"username":"admin","password":"Password123!"}' | jq -r '.access_token')
 
 curl -s -H "Authorization: Bearer $TOKEN" http://<STAGING_IP>:3000/api/v1/monitoring/config | jq
 # → 5 monitoring config entries
@@ -494,7 +494,7 @@ curl http://api.sekar.wahyutrip.com/api/v1/health
 # Login test
 curl -X POST http://api.sekar.wahyutrip.com/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"password123"}'
+  -d '{"username":"admin","password":"Password123!"}'
 # → {"access_token":"eyJhbG..."}
 
 # New Phase 2C endpoints
@@ -521,12 +521,12 @@ curl http://sekar.wahyutrip.com/login
 **Seeded Users (6 total):**
 | Username | Password | Role |
 |----------|----------|------|
-| admin | password123 | superadmin |
-| korlap1 | password123 | korlap |
-| korlap2 | password123 | korlap |
-| satgas1 | password123 | satgas |
-| satgas2 | password123 | satgas |
-| satgas3 | password123 | satgas |
+| admin | Password123! | superadmin |
+| korlap1 | Password123! | korlap |
+| korlap2 | Password123! | korlap |
+| satgas1 | Password123! | satgas |
+| satgas2 | Password123! | satgas |
+| satgas3 | Password123! | satgas |
 
 ### Phase 2C Breaking Changes
 
@@ -1145,7 +1145,7 @@ All monitoring events use `monitoring:` room prefix:
 ```bash
 TOKEN=$(curl -s -X POST http://api.sekar.wahyutrip.com/api/v1/auth/login \
   -H 'Content-Type: application/json' \
-  -d '{"username":"admin","password":"password123"}' | jq -r '.access_token')
+  -d '{"username":"admin","password":"Password123!"}' | jq -r '.access_token')
 
 curl -s -H "Authorization: Bearer $TOKEN" http://api.sekar.wahyutrip.com/api/v1/monitoring/config
 # → 5 config entries (status_thresholds, geofencing, map_defaults, alerts, location_ping)
@@ -1236,7 +1236,7 @@ DROP INDEX IF EXISTS idx_areas_boundary_polygon;
 - [ ] All mobile tests passing (3,669+ tests)
 - [ ] Database migration reviewed: `1741200000000-Phase2EClientFeedback`
 - [ ] Re-seed executed for phone_number data (`npm run db:seed`)
-- [ ] Phone number login verified (e.g., `081300000002/password123`)
+- [ ] Phone number login verified (e.g., `081300000002/Password123!`)
 
 ### Database Migration
 
@@ -1265,7 +1265,7 @@ npm run db:seed
 # 3. Verify phone login works
 curl -X POST http://api.sekar.wahyutrip.com/api/v1/auth/login \
   -H 'Content-Type: application/json' \
-  -d '{"identifier":"081300000002","password":"password123"}'
+  -d '{"identifier":"081300000002","password":"Password123!"}'
 ```
 
 ### Breaking Changes (Phase 2E)

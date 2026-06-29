@@ -76,7 +76,7 @@ describe('UsersController', () => {
     it('should create a new user', async () => {
       const createUserDto: CreateUserDto = {
         username: 'newuser',
-        password: 'password123',
+        password: 'Password123!',
         full_name: 'New User',
         role: UserRole.SATGAS,
       };

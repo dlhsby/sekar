@@ -1,0 +1,5 @@
+{
+  "_comment": "Hand-provided park coordinates that always win over geocoding and are never cleared by `npm run seed:geocode`. Keyed by the park name in areas-taman-aktif.csv. [lat, lng].",
+  "Taman Tais": [-7.2672418, 112.743858],
+  "Taman Wirasurya": [-7.2600797, 112.7444797]
+}
