@@ -1,0 +1,183 @@
+name: Seed staging (DESTRUCTIVE)
+
+# One-click DESTRUCTIVE reseed of the staging database.
+#
+# `db:seed:staging` WIPES every table first, then loads the rebuilt dataset:
+#   - rayons / area types / shifts / kecamatans / activity types
+#   - ~640 KMZ coverage areas + 43 Taman Aktif parks (committed CSV/JSON, in the image)
+#   - system + per-rayon dummy users  AND  the ~300-row REAL roster
+#
+# The real roster lives in be/src/database/seeds/data/users.csv, which is gitignored
+# (PII) and therefore NOT in the Docker image. This workflow injects it at seed time:
+# its base64 is stored in the `staging` Environment secret STAGING_SEED_USERS_CSV_B64
+# and bind-mounted into the backend container's data dir for the one-off seed run.
+#
+# Runs on the EC2 box via SSM Run Command (same OIDC/SSM mechanics as deploy-staging.yml).
+# Never runs automatically — manual dispatch only, guarded by a confirmation phrase and
+# the `staging` environment approval gate. A pre-seed RDS snapshot is taken first.
+#
+# Required repo Variables: AWS_REGION, AWS_ROLE_ARN, EC2_INSTANCE_ID, RDS_INSTANCE_ID.
+# Required `staging` Environment secret: STAGING_SEED_USERS_CSV_B64
+#   = base64 -w0 be/src/database/seeds/data/users.csv
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type WIPE-STAGING to confirm a destructive reseed of the staging DB'
+        required: true
+        type: string
+
+# Share the deploy lock so a seed and a deploy can never run against the box at once.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    # Approval gate + access to the STAGING_SEED_USERS_CSV_B64 env secret.
+    environment: staging
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Confirmation guard
+        run: |
+          if [ "${{ inputs.confirm }}" != "WIPE-STAGING" ]; then
+            echo "Confirmation phrase mismatch — expected 'WIPE-STAGING'. Aborting." >&2
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Pre-seed RDS snapshot
+        run: |
+          set -euo pipefail
+          SNAP="sekar-staging-preseed-$(date +%Y%m%d%H%M%S)"
+          aws rds create-db-snapshot \
+            --db-instance-identifier "${{ vars.RDS_INSTANCE_ID }}" \
+            --db-snapshot-identifier "$SNAP" >/dev/null
+          echo "Snapshot initiated: $SNAP"
+          # Single-AZ RDS briefly freezes I/O at snapshot start; wait so the seed's
+          # connection isn't dropped mid-run (same reasoning as the deploy migrate step).
+          aws rds wait db-snapshot-available --db-snapshot-identifier "$SNAP"
+          echo "Snapshot completed: $SNAP"
+
+      - name: Ship users.csv to the box (SSM)
+        env:
+          USERS_B64: ${{ secrets.STAGING_SEED_USERS_CSV_B64 }}
+        run: |
+          set -euo pipefail
+          if [ -z "${USERS_B64:-}" ]; then
+            echo "Missing Environment secret STAGING_SEED_USERS_CSV_B64." >&2
+            echo "Set it with: gh secret set STAGING_SEED_USERS_CSV_B64 --env staging \\" >&2
+            echo "  --body \"\$(base64 -w0 be/src/database/seeds/data/users.csv)\"" >&2
+            exit 1
+          fi
+          # Box script writes the roster to a stable path, owned by ec2-user, world-readable
+          # (the container runs as a non-root user and must be able to read the bind mount).
+          BOX=$(cat <<EOF
+          set -e
+          mkdir -p ~/sekar/seed
+          printf '%s' '$USERS_B64' | base64 -d > ~/sekar/seed/users.csv
+          chmod 644 ~/sekar/seed/users.csv
+          echo "users.csv rows: \$(wc -l < ~/sekar/seed/users.csv)"
+          EOF
+          )
+          RUN_B64=$(printf '%s' "$BOX" | base64 -w0)
+          printf '{"commands":["runuser -l ec2-user -c \\"echo %s | base64 -d > /tmp/sekar-ship-users.sh && bash /tmp/sekar-ship-users.sh\\""]}' "$RUN_B64" > params.json
+          CMD_ID=$(aws ssm send-command \
+            --instance-ids "${{ vars.EC2_INSTANCE_ID }}" \
+            --document-name AWS-RunShellScript \
+            --comment "seed-staging ship users.csv" \
+            --parameters file://params.json \
+            --query Command.CommandId --output text)
+          echo "SSM command: $CMD_ID"
+          STATUS=InProgress
+          for i in $(seq 1 24); do
+            STATUS=$(aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "${{ vars.EC2_INSTANCE_ID }}" --query Status --output text 2>/dev/null || echo Pending)
+            case "$STATUS" in Success|Failed|Cancelled|TimedOut) break;; esac
+            sleep 5
+          done
+          aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "${{ vars.EC2_INSTANCE_ID }}" --query StandardOutputContent --output text | tail -10
+          aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "${{ vars.EC2_INSTANCE_ID }}" --query StandardErrorContent --output text | tail -20 >&2 || true
+          echo "Ship status: $STATUS"
+          test "$STATUS" = "Success"
+
+      - name: Run destructive seed in-container (SSM)
+        run: |
+          set -euo pipefail
+          COMPOSE_B64=$(base64 -w0 infra/compose.staging.yml)
+          SEED_B64=$(base64 -w0 infra/seed-env-from-ssm.sh)
+
+          # Refresh infra files + runtime env, pull the staging image, then run the
+          # compiled seed with users.csv bind-mounted over the (image-baked) data dir.
+          BOX=$(cat <<'EOF'
+          set -e
+          mkdir -p ~/sekar/infra
+          echo __COMPOSE__ | base64 -d > ~/sekar/infra/compose.staging.yml
+          echo __SEED__ | base64 -d > ~/sekar/infra/seed-env-from-ssm.sh
+          bash ~/sekar/infra/seed-env-from-ssm.sh
+          cd ~/sekar/infra
+          export IMAGE_TAG=staging
+          docker compose -f compose.staging.yml pull --quiet backend
+          docker compose -f compose.staging.yml run --rm --no-deps -T --quiet-pull \
+            -v /home/ec2-user/sekar/seed/users.csv:/app/dist/src/database/seeds/data/users.csv:ro \
+            backend npm run db:seed:staging:prod
+          echo "SEED-DONE"
+          EOF
+          )
+          BOX=${BOX//__COMPOSE__/$COMPOSE_B64}
+          BOX=${BOX//__SEED__/$SEED_B64}
+          RUN_B64=$(printf '%s' "$BOX" | base64 -w0)
+          printf '{"commands":["runuser -l ec2-user -c \\"echo %s | base64 -d > /tmp/sekar-seed.sh && bash /tmp/sekar-seed.sh\\""]}' "$RUN_B64" > params.json
+
+          CMD_ID=$(aws ssm send-command \
+            --instance-ids "${{ vars.EC2_INSTANCE_ID }}" \
+            --document-name AWS-RunShellScript \
+            --comment "seed-staging destructive reseed" \
+            --parameters file://params.json \
+            --query Command.CommandId --output text)
+          echo "SSM command: $CMD_ID"
+          # The seed inserts ~640 areas + ~350 users; poll generously (~10 min).
+          STATUS=InProgress
+          for i in $(seq 1 120); do
+            STATUS=$(aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "${{ vars.EC2_INSTANCE_ID }}" --query Status --output text 2>/dev/null || echo Pending)
+            case "$STATUS" in Success|Failed|Cancelled|TimedOut) break;; esac
+            sleep 5
+          done
+          echo "::group::stdout"
+          aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "${{ vars.EC2_INSTANCE_ID }}" --query StandardOutputContent --output text | tail -80
+          echo "::endgroup::"
+          echo "::group::stderr"
+          aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "${{ vars.EC2_INSTANCE_ID }}" --query StandardErrorContent --output text | tail -80
+          echo "::endgroup::"
+          echo "Seed status: $STATUS"
+          test "$STATUS" = "Success"
+
+      - name: Cleanup roster from box (SSM)
+        if: always()
+        run: |
+          set -euo pipefail
+          # Remove the PII roster file from the box once the seed is done (success or fail).
+          BOX='runuser -l ec2-user -c "rm -f ~/sekar/seed/users.csv /tmp/sekar-ship-users.sh /tmp/sekar-seed.sh && echo CLEANED"'
+          printf '{"commands":["%s"]}' "$BOX" > params.json
+          CMD_ID=$(aws ssm send-command \
+            --instance-ids "${{ vars.EC2_INSTANCE_ID }}" \
+            --document-name AWS-RunShellScript \
+            --comment "seed-staging cleanup" \
+            --parameters file://params.json \
+            --query Command.CommandId --output text)
+          for i in $(seq 1 24); do
+            STATUS=$(aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "${{ vars.EC2_INSTANCE_ID }}" --query Status --output text 2>/dev/null || echo Pending)
+            case "$STATUS" in Success|Failed|Cancelled|TimedOut) break;; esac
+            sleep 5
+          done
+          echo "Cleanup status: ${STATUS:-unknown}"
