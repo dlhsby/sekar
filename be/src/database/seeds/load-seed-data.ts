@@ -11,6 +11,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import type { RayonCode } from './kmz-areas';
+import { parseCsvRecords } from './csv-util';
 
 const DATA_DIR = path.join(__dirname, 'data');
 
@@ -44,64 +45,12 @@ export interface SeedUserRow {
   supervisor_name: string;
 }
 
-/** Minimal RFC-4180 CSV parser: handles quoted fields, embedded commas, "" escapes. */
-function parseCsv(text: string): string[][] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let field = '';
-  let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (inQuotes) {
-      if (ch === '"') {
-        if (text[i + 1] === '"') {
-          field += '"';
-          i++;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        field += ch;
-      }
-      continue;
-    }
-    if (ch === '"') {
-      inQuotes = true;
-    } else if (ch === ',') {
-      row.push(field);
-      field = '';
-    } else if (ch === '\r') {
-      // ignore
-    } else if (ch === '\n') {
-      row.push(field);
-      rows.push(row);
-      row = [];
-      field = '';
-    } else {
-      field += ch;
-    }
-  }
-  if (field.length > 0 || row.length > 0) {
-    row.push(field);
-    rows.push(row);
-  }
-  return rows;
-}
-
-/** Parse a CSV file into header-keyed records, skipping blank trailing rows.
- * Returns [] when the file is absent — some snapshots (e.g. the PII `users.csv`)
- * are gitignored and must be regenerated via `npm run sheet:pull` before seeding. */
+/** Header-keyed records from a CSV file. Returns [] when the file is absent —
+ * some snapshots (e.g. the PII `users.csv`) are gitignored and must be
+ * regenerated via `npm run sheet:pull` before seeding. */
 function readCsvRecords(file: string): Record<string, string>[] {
   if (!fs.existsSync(file)) return [];
-  const text = fs.readFileSync(file, 'utf8');
-  const rows = parseCsv(text).filter((r) => r.some((c) => c.trim() !== ''));
-  if (rows.length === 0) return [];
-  const header = rows[0];
-  return rows.slice(1).map((r) => {
-    const rec: Record<string, string> = {};
-    header.forEach((h, i) => (rec[h.trim()] = (r[i] ?? '').trim()));
-    return rec;
-  });
+  return parseCsvRecords(fs.readFileSync(file, 'utf8'));
 }
 
 export function loadKmzAreas(): KmzAreaRow[] {

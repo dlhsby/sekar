@@ -15,6 +15,7 @@
 import '../src/config/load-env';
 import * as fs from 'fs';
 import * as path from 'path';
+import { parseCsvRows, serializeCsv } from '../src/database/seeds/csv-util';
 
 const CSV = path.join(__dirname, '../src/database/seeds/data/areas-taman-aktif.csv');
 const MANUAL_FILE = path.join(__dirname, '../src/database/seeds/data/manual-park-coords.json');
@@ -93,44 +94,14 @@ async function geocodeNominatim(name: string): Promise<[number, number] | null> 
   return null;
 }
 
-// Minimal CSV round-trip (these files are controlled, simple-quoted).
-function parseCsv(text: string): string[][] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let f = '';
-  let q = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (q) {
-      if (c === '"' && text[i + 1] === '"') {
-        f += '"';
-        i++;
-      } else if (c === '"') q = false;
-      else f += c;
-    } else if (c === '"') q = true;
-    else if (c === ',') {
-      row.push(f);
-      f = '';
-    } else if (c === '\n') {
-      row.push(f);
-      rows.push(row);
-      row = [];
-      f = '';
-    } else if (c !== '\r') f += c;
-  }
-  if (f.length || row.length) {
-    row.push(f);
-    rows.push(row);
-  }
-  return rows.filter((r) => r.some((c) => c.trim() !== ''));
-}
-const cell = (v: string): string => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
 
 async function main(): Promise<void> {
   const provider = KEY ? 'Google Geocoding API' : 'Nominatim (no GOOGLE_MAPS_API_KEY set)';
   console.log(`Geocoding Taman Aktif parks via ${provider}${ALL ? ' [--all]' : ''}…`);
 
-  const rows = parseCsv(fs.readFileSync(CSV, 'utf8'));
+  const rows = parseCsvRows(fs.readFileSync(CSV, 'utf8')).filter((r) =>
+    r.some((c) => c.trim() !== ''),
+  );
   const header = rows[0];
   const col = (n: string): number => header.indexOf(n);
   const iName = col('name');
@@ -199,7 +170,7 @@ async function main(): Promise<void> {
     }
   }
 
-  fs.writeFileSync(CSV, [header, ...rows.slice(1)].map((r) => r.map(cell).join(',')).join('\n') + '\n');
+  fs.writeFileSync(CSV, serializeCsv([header, ...rows.slice(1)]));
   const withCoords = rows.slice(1).filter((r) => r[iLat]).length;
   console.log(`\nUpdated ${filled} parks (${miss} unresolved). ${withCoords}/${rows.length - 1} now have coordinates.`);
   console.log('Next: npm run db:seed:staging');

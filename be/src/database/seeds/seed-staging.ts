@@ -1050,7 +1050,7 @@ async function seedStaging() {
     await insertUser(
       USER_PONCO_ID,
       'ponco_adi_prabowo',
-      'Ponco Adi Frabowo',
+      'Ponco Adi Prabowo',
       'admin_data',
       '081200000002',
       RAYON_PUSAT_ID,

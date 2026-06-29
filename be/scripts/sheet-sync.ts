@@ -20,6 +20,11 @@ import '../src/config/load-env';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import {
+  parseCsvRecords,
+  serializeCsv,
+  uuidv5 as uuidv5Shared,
+} from '../src/database/seeds/csv-util';
 
 const DATA_DIR = path.join(__dirname, '../src/database/seeds/data');
 const KEYFILE = path.resolve(
@@ -40,16 +45,7 @@ const mode = process.argv.includes('--list')
     : 'pull';
 
 // ─── deterministic ids + value normalisers (mirror gen + extractor) ──────────
-function uuidv5(name: string): string {
-  const h = crypto.createHash('sha1');
-  h.update(Buffer.from(NS.replace(/-/g, ''), 'hex'));
-  h.update(Buffer.from(name, 'utf8'));
-  const b = h.digest().subarray(0, 16);
-  b[6] = (b[6] & 0x0f) | 0x50;
-  b[8] = (b[8] & 0x3f) | 0x80;
-  const x = Buffer.from(b).toString('hex');
-  return `${x.slice(0, 8)}-${x.slice(8, 12)}-${x.slice(12, 16)}-${x.slice(16, 20)}-${x.slice(20)}`;
-}
+const uuidv5 = (name: string): string => uuidv5Shared(name, NS);
 const JAB: Record<string, string> = {
   'kepala rayon': 'kepala_rayon',
   korlap: 'korlap',
@@ -154,13 +150,17 @@ function findTable(rows: string[][], match: (r: string[]) => boolean): { hdr: nu
 
 async function fetchGridsSA(token: string): Promise<Grid[]> {
   const meta = await api<{ sheets: { properties: { title: string } }[] }>(token, 'GET', '?fields=sheets.properties.title');
-  const grids: Grid[] = [];
-  for (const s of meta.sheets) {
-    const title = s.properties.title;
-    const v = await api<{ values?: string[][] }>(token, 'GET', `/values/${encodeURIComponent(`'${title}'`)}`);
-    grids.push({ title, rows: v.values ?? [] });
-  }
-  return grids;
+  const titles = meta.sheets.map((s) => s.properties.title);
+  if (titles.length === 0) return [];
+  // One batchGet for every tab (ordered) instead of one GET per tab.
+  const ranges = titles.map((t) => `ranges=${encodeURIComponent(`'${t}'`)}`).join('&');
+  const res = await api<{ valueRanges?: { values?: string[][] }[] }>(
+    token,
+    'GET',
+    `/values:batchGet?${ranges}`,
+  );
+  const vr = res.valueRanges ?? [];
+  return titles.map((title, i) => ({ title, rows: vr[i]?.values ?? [] }));
 }
 
 type Update = { range: string; values: string[][] };
@@ -195,29 +195,11 @@ async function writeUpdates(updates: Update[]): Promise<number> {
   return data.applied ?? 0;
 }
 
-// ─── CSV helpers ─────────────────────────────────────────────────────────────
-const cell = (v: string): string => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+// ─── CSV helpers (shared with the seeder via ../src/database/seeds/csv-util) ──
 const writeCsv = (file: string, header: string[], rows: string[][]): void =>
-  fs.writeFileSync(file, [header, ...rows].map((r) => r.map(cell).join(',')).join('\n') + '\n');
-function readCsv(file: string): Record<string, string>[] {
-  if (!fs.existsSync(file)) return [];
-  const text = fs.readFileSync(file, 'utf8');
-  const rows: string[][] = [];
-  let row: string[] = [], f = '', q = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (q) {
-      if (ch === '"' && text[i + 1] === '"') { f += '"'; i++; } else if (ch === '"') q = false; else f += ch;
-    } else if (ch === '"') q = true;
-    else if (ch === ',') { row.push(f); f = ''; }
-    else if (ch === '\n') { row.push(f); rows.push(row); row = []; f = ''; }
-    else if (ch !== '\r') f += ch;
-  }
-  if (f.length || row.length) { row.push(f); rows.push(row); }
-  const data = rows.filter((r) => r.some((c) => c.trim() !== ''));
-  const head = data[0] ?? [];
-  return data.slice(1).map((r) => Object.fromEntries(head.map((h, i) => [h.trim(), (r[i] ?? '').trim()])));
-}
+  fs.writeFileSync(file, serializeCsv([header, ...rows]));
+const readCsv = (file: string): Record<string, string>[] =>
+  fs.existsSync(file) ? parseCsvRecords(fs.readFileSync(file, 'utf8')) : [];
 
 // ─── PULL: sheet → CSVs ──────────────────────────────────────────────────────
 async function pull(): Promise<void> {

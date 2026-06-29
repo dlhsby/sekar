@@ -12,17 +12,14 @@
  * Run: npm run seed:export-ids
  */
 import { loadTamanAktifAreas, loadSeedUsers } from '../src/database/seeds/load-seed-data';
+import { serializeCsv } from '../src/database/seeds/csv-util';
 import * as fs from 'fs';
 import * as path from 'path';
 
 const DATA_DIR = path.join(__dirname, '../src/database/seeds/data');
 
-const csvCell = (v: string): string =>
-  /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
-
 function writeCsv(file: string, header: string[], rows: string[][]): void {
-  const body = [header, ...rows].map((r) => r.map(csvCell).join(',')).join('\n') + '\n';
-  fs.writeFileSync(file, body);
+  fs.writeFileSync(file, serializeCsv([header, ...rows]));
 }
 
 const areas = loadTamanAktifAreas();
