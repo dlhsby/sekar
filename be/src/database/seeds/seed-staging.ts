@@ -43,7 +43,7 @@ import {
  *
  * UAT structural data seeded (NOT transaction data):
  *   - 13 areas  (1 Taman Bungkul + 12 Kawasan Darmo pedestrian, from KMZ)
- *   - 54 users  (14 test + 30 per-rayon dummy + 10 real, incl. staff_kecamatan_pusat_1)
+ *   - users: 14 test + 30 per-rayon dummy + the full real roster (data/users.csv) + 31 staff_kecamatan
  *   - user_areas assignments (permanent)
  *   - user_tracking_status  (all offline — testing starts clean)
  *   - area_staff_requirements (1 satgas + 1 linmas per area, SHIFT1/WEEKDAY)
@@ -1482,7 +1482,7 @@ async function seedStaging() {
       '      25 Timur 2 areas — 1 Taman Buk Tong (aktif) + 24 pedestrian (Kawasan Kertajaya / Pucang / Ngagel Utara / Menur-Manyar)',
     );
     console.log(
-      `      ${54 + (sc.staff_kec_users ?? 0)} users — 14 test + 30 per-rayon dummy + 10 real + ${sc.staff_kec_users ?? 0} staff_kecamatan`,
+      `      ${44 + rosterInserted + (sc.staff_kec_users ?? 0)} users — 14 test + 30 per-rayon dummy + ${rosterInserted} real + ${sc.staff_kec_users ?? 0} staff_kecamatan`,
     );
     console.log(`      ${clockable_count} clockable users — user_tracking_status set to offline`);
     console.log('      76 area_staff_requirements (38 areas × satgas + linmas, SHIFT1/WEEKDAY)');
