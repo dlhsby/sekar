@@ -28,6 +28,11 @@ on:
         description: 'Type WIPE-STAGING to confirm a destructive reseed of the staging DB'
         required: true
         type: string
+      cleanup_only:
+        description: 'Only remove the PII roster file from the box (skip snapshot/ship/seed). No WIPE-STAGING needed.'
+        required: false
+        default: false
+        type: boolean
 
 # Share the deploy lock so a seed and a deploy can never run against the box at once.
 concurrency:
@@ -44,6 +49,7 @@ jobs:
       contents: read
     steps:
       - name: Confirmation guard
+        if: inputs.cleanup_only != true
         run: |
           if [ "${{ inputs.confirm }}" != "WIPE-STAGING" ]; then
             echo "Confirmation phrase mismatch — expected 'WIPE-STAGING'. Aborting." >&2
@@ -59,6 +65,7 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Pre-seed RDS snapshot
+        if: inputs.cleanup_only != true
         run: |
           set -euo pipefail
           SNAP="sekar-staging-preseed-$(date +%Y%m%d%H%M%S)"
@@ -72,6 +79,7 @@ jobs:
           echo "Snapshot completed: $SNAP"
 
       - name: Ship users.csv to the box (SSM)
+        if: inputs.cleanup_only != true
         env:
           USERS_B64: ${{ secrets.STAGING_SEED_USERS_CSV_B64 }}
         run: |
@@ -114,6 +122,7 @@ jobs:
           test "$STATUS" = "Success"
 
       - name: Run destructive seed in-container (SSM)
+        if: inputs.cleanup_only != true
         run: |
           set -euo pipefail
           COMPOSE_B64=$(base64 -w0 infra/compose.staging.yml)
@@ -168,18 +177,31 @@ jobs:
         if: always()
         run: |
           set -euo pipefail
-          # Remove the PII roster file from the box once the seed is done (success or fail).
-          BOX='runuser -l ec2-user -c "rm -f ~/sekar/seed/users.csv /tmp/sekar-ship-users.sh /tmp/sekar-seed.sh && echo CLEANED"'
-          printf '{"commands":["%s"]}' "$BOX" > params.json
+          # Remove the PII roster file from the box (runs on success OR failure, and is the
+          # ONLY step in cleanup_only mode). base64-wrap the box script the same way the
+          # ship/seed steps do — a raw `runuser -c "..."` breaks the command JSON (the inner
+          # double-quotes need escaping), which is why the first run's cleanup failed.
+          BOX=$(cat <<'EOF'
+          rm -f ~/sekar/seed/users.csv /tmp/sekar-ship-users.sh /tmp/sekar-seed.sh
+          rmdir ~/sekar/seed 2>/dev/null || true
+          echo CLEANED
+          EOF
+          )
+          RUN_B64=$(printf '%s' "$BOX" | base64 -w0)
+          printf '{"commands":["runuser -l ec2-user -c \\"echo %s | base64 -d > /tmp/sekar-cleanup.sh && bash /tmp/sekar-cleanup.sh && rm -f /tmp/sekar-cleanup.sh\\""]}' "$RUN_B64" > params.json
           CMD_ID=$(aws ssm send-command \
             --instance-ids "${{ vars.EC2_INSTANCE_ID }}" \
             --document-name AWS-RunShellScript \
             --comment "seed-staging cleanup" \
             --parameters file://params.json \
             --query Command.CommandId --output text)
+          echo "SSM command: $CMD_ID"
+          STATUS=InProgress
           for i in $(seq 1 24); do
             STATUS=$(aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "${{ vars.EC2_INSTANCE_ID }}" --query Status --output text 2>/dev/null || echo Pending)
             case "$STATUS" in Success|Failed|Cancelled|TimedOut) break;; esac
             sleep 5
           done
+          aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "${{ vars.EC2_INSTANCE_ID }}" --query StandardOutputContent --output text | tail -5
           echo "Cleanup status: ${STATUS:-unknown}"
+          test "$STATUS" = "Success"
