@@ -49,7 +49,7 @@ docs.sekar.wahyutrip.com {
 adminer.wahyutrip.com {
 	encode gzip
 	basic_auth {
-		sekar $2b$10$W8T9Fg1UxV/XS5hI/0072ur3gpDp26cbj/Q5R5MvriqaaAVG9pw7W
+		wahyutrip $2b$10$Kfp/zeMPKUQBUVrbbPekE.crksgO4LNg9IRlUcfCApZc45VtRuWUW
 	}
 	reverse_proxy sekar-adminer:8080
 }
