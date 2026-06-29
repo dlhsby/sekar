@@ -51,10 +51,16 @@ adminer.wahyutrip.com {
 	basic_auth {
 		wahyutrip $2b$10$Kfp/zeMPKUQBUVrbbPekE.crksgO4LNg9IRlUcfCApZc45VtRuWUW
 	}
-	# Preselect the PostgreSQL driver on the bare URL so the login form doesn't
-	# default to MySQL (port 3306) — RDS is Postgres on 5432, and the MySQL
-	# default makes the login hang/time out. ADMINER_DEFAULT_SERVER prefills the host.
-	@root path /
-	redir @root /?pgsql= 302
+	# Preselect the PostgreSQL driver on the *bare* URL only, so the login form
+	# doesn't default to MySQL (port 3306) — RDS is Postgres on 5432, and the MySQL
+	# default makes the login hang/time out. The empty-query guard is essential:
+	# Adminer keeps the path "/" and carries all state in the query string, so
+	# redirecting every "/" would loop forever. Only the first, query-less visit
+	# is redirected; "/?pgsql=…" and asset requests fall through to basic_auth.
+	@bare {
+		path /
+		expression {http.request.uri.query} == ""
+	}
+	redir @bare /?pgsql= 302
 	reverse_proxy sekar-adminer:8080
 }
