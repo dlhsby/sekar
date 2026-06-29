@@ -1,6 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { clearAuthCookies, getCookie, setAuthCookie } from '@/lib/utils/cookies';
 import { isPublicPath } from '@/lib/auth/public-paths';
+import { localizeApiError, GENERIC_ERROR_ID } from '@/lib/i18n/error-messages';
 import type { User } from '@/types/models';
 
 /**
@@ -200,30 +201,32 @@ apiClient.interceptors.response.use(
  */
 export const getErrorMessage = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
-    // Check for API error response
-    if (error.response?.data?.message) {
-      return error.response.data.message;
+    // API error response → localize by `code` (Indonesian), falling back to the
+    // backend message. `message` may be a string or a class-validator array.
+    const data = error.response?.data as
+      | { code?: string; message?: string | string[] }
+      | undefined;
+    if (data && (data.code || data.message)) {
+      const raw = Array.isArray(data.message) ? data.message[0] : data.message;
+      return localizeApiError(data.code, raw);
     }
 
-    // Check for network error
     if (error.code === 'ECONNABORTED') {
-      return 'Request timeout. Please try again.';
+      return 'Permintaan melebihi batas waktu. Silakan coba lagi.';
     }
 
     if (error.message === 'Network Error') {
-      return 'Network error. Please check your connection.';
+      return 'Gagal terhubung ke server. Periksa koneksi internet Anda.';
     }
 
-    // Generic error message
-    return error.message || 'An unexpected error occurred.';
+    return GENERIC_ERROR_ID;
   }
 
-  // Non-axios error
   if (error instanceof Error) {
     return error.message;
   }
 
-  return 'An unexpected error occurred.';
+  return GENERIC_ERROR_ID;
 };
 
 /**

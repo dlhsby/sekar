@@ -36,19 +36,19 @@ describe('PaginationDto', () => {
       expect(errors[0].constraints).toHaveProperty('min');
     });
 
-    it('should reject limit greater than 100', async () => {
-      const dto = plainToInstance(PaginationDto, { page: 1, limit: 101 });
+    it('should reject limit greater than 1000', async () => {
+      const dto = plainToInstance(PaginationDto, { page: 1, limit: 1001 });
       const errors = await validate(dto);
       expect(errors.length).toBeGreaterThan(0);
       expect(errors[0].property).toBe('limit');
       expect(errors[0].constraints).toHaveProperty('max');
     });
 
-    it('should accept limit at maximum boundary (100)', async () => {
-      const dto = plainToInstance(PaginationDto, { page: 1, limit: 100 });
+    it('should accept limit at maximum boundary (1000)', async () => {
+      const dto = plainToInstance(PaginationDto, { page: 1, limit: 1000 });
       const errors = await validate(dto);
       expect(errors.length).toBe(0);
-      expect(dto.limit).toBe(100);
+      expect(dto.limit).toBe(1000);
     });
 
     it('should transform string numbers to integers', async () => {
