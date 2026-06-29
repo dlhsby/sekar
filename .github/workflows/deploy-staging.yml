@@ -162,6 +162,13 @@ jobs:
             --db-instance-identifier "${{ vars.RDS_INSTANCE_ID }}" \
             --db-snapshot-identifier "$SNAP" >/dev/null
           echo "Snapshot initiated: $SNAP"
+          # Wait for the snapshot to finish before migrating. On single-AZ RDS the
+          # snapshot briefly freezes I/O at the start; running migrate during that
+          # window drops the DB connection ("Connection terminated due to connection
+          # timeout") and fails the deploy. Waiting also serializes against any
+          # in-flight snapshot (RDS allows only one at a time per instance).
+          aws rds wait db-snapshot-available --db-snapshot-identifier "$SNAP"
+          echo "Snapshot completed: $SNAP"
 
       - name: Deploy via SSM (seed env, pull, migrate, up --wait)
         run: |
