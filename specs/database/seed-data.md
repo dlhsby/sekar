@@ -21,6 +21,62 @@ This document specifies the seed data for SEKAR database. Seed data is used for 
 
 ---
 
+## Staging seeder data sources (client sheet + KMZ) — reload workflow
+
+The staging/UAT seeder (`db:seed:staging`) builds **rayons, areas, and users** from
+committed snapshots under `be/src/database/seeds/data/`, so the dataset can be re-loaded as
+the client keeps filling their input sheet — without code edits:
+
+| File | Source | Regenerate with |
+|------|--------|-----------------|
+| `data/kmz/*.kmz` | 6 per-rayon KMZ (Surabaya geographic rayons) | drop new files in place |
+| `data/areas-kmz.generated.json` | ~741 geographic coverage areas (Polygon/MultiGeometry only) | `npm run seed:extract-kmz` |
+| `data/areas-taman-aktif.csv` | 42 Taman Aktif parks (name, korlap) exported from the sheet | edit/export from sheet |
+| `data/users.csv` *(gitignored — PII)* | ~310-row real roster (Taman Aktif + Timur 2), merged + deduped | `npm run sheet:pull` |
+
+> **PII:** `users.csv` / `users-with-ids.csv` hold real names + phone numbers and are **gitignored** (not committed). Regenerate them from the sheet with `npm run sheet:pull` before seeding. CI/deploy that seeds staging must run `sheet:pull` first (needs the service-account key or Apps Script web-app env). The staging seeder warns and seeds system + dummy users only if the file is absent.
+
+**IDs are deterministic UUID v5** (namespace + natural key), so reloads are idempotent and a
+future Apps Script two-way sync can key on a stable id. `npm run seed:export-ids` writes
+`data/*-with-ids.csv` (name → id) for pasting back into the sheet's `id` column. Recommended
+sheet columns to add for sync: `id`, `rayon_id`/`area_id`, and `gps_lat`/`gps_lng` (the Taman
+Aktif parks have no coordinates yet — seeded with a placeholder pin + no geofence until filled).
+
+**Login & passwords:** every seeded account uses **`Password123!`** with
+`password_must_change = true` (forced reset on first login — enforced client-side **and** by
+`JwtAuthGuard`, which 403s `AUTH_PASSWORD_CHANGE_REQUIRED` on protected routes until the user
+changes it). Real roster login is by **phone** where present, else by **username slug** derived
+from the full name. To rotate the default password, edit `seeds/constants.ts`.
+
+Full reload: `npm run seed:extract-kmz` → `npm run db:seed:staging` (destructive).
+
+### Live two-way sheet sync
+
+`be/scripts/sheet-sync.ts` syncs directly with the spreadsheet. Two transports:
+
+- **Apps Script web app (preferred — no key).** Works under the
+  `iam.disableServiceAccountKeyCreation` org policy that blocks SA keys. Paste
+  `be/scripts/sheet-apps-script.gs` into the sheet (Extensions → Apps Script),
+  set a shared token, deploy as a Web App (execute as you, access "Anyone"), and
+  set `SEKAR_SHEET_WEBAPP_URL` + `SEKAR_SHEET_WEBAPP_TOKEN` in `be/.env.local`.
+- **Service account (fallback).** Only if your org allows SA keys: share the
+  sheet with the SA email (Editor), drop the JSON key at `be/secrets/sheets-sa.json`
+  (gitignored), set `GOOGLE_SHEETS_SA_KEYFILE`. Either way set `SEKAR_SHEET_ID`.
+
+- `npm run sheet:sync -- --list` — inspect tabs + which carry area/user tables.
+- `npm run sheet:pull` — sheet → regenerate `areas-taman-aktif.csv` + `users.csv`
+  (auto-detects tables by header; real-person rows are those with a blank
+  `username`; preserves existing/`manual` coords when the sheet has no gps cols).
+  Then `npm run db:seed:staging`.
+- `npm run sheet:push` — write the generated `id`, `gps_lat`/`gps_lng`, and
+  `username` back into the sheet (matched by name; adds columns if missing), so
+  the sheet carries the stable keys.
+
+Hand-provided park coordinates live in `data/manual-park-coords.json` — they
+always win over geocoding and are never cleared by `seed:geocode`/`sheet:pull`.
+
+---
+
 ## Seed Data Structure
 
 ### Data Categories
@@ -31,7 +87,7 @@ This document specifies the seed data for SEKAR database. Seed data is used for 
 
 2. **User Data** (Authentication & Authorization)
    - 8 roles per ADR-009 (satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin)
-   - Test users for each role (`satgas1`, `linmas1`, etc. password: `password123`)
+   - Test users for each role (`satgas1`, `linmas1`, etc. password: `Password123!`)
    - Staging seed: 85 users (see `specs/COMPLETION_STATUS.md`)
 
 3. **Work Location Data**
@@ -98,7 +154,7 @@ Six test users covering all roles: 1 admin, 2 supervisors, 3 workers.
 
 ```sql
 -- Passwords are all bcrypt hashed with 10 rounds
--- All users: password123
+-- All users: Password123!
 
 INSERT INTO users (id, username, password_hash, full_name, role, is_active, created_at, updated_at) VALUES
   -- Admin
@@ -121,7 +177,7 @@ ON CONFLICT (username) DO NOTHING;
 | Field | Value |
 |-------|-------|
 | Username | admin |
-| Password | password123 |
+| Password | Password123! |
 | Full Name | System Administrator |
 | Role | admin |
 | Permissions | Full system access, user management, all endpoints |
@@ -130,7 +186,7 @@ ON CONFLICT (username) DO NOTHING;
 | Field | Value |
 |-------|-------|
 | Username | supervisor1 |
-| Password | password123 |
+| Password | Password123! |
 | Full Name | Supervisor Satu |
 | Role | supervisor |
 | Permissions | View all workers, review reports, view dashboards |
@@ -139,7 +195,7 @@ ON CONFLICT (username) DO NOTHING;
 | Field | Value |
 |-------|-------|
 | Username | supervisor2 |
-| Password | password123 |
+| Password | Password123! |
 | Full Name | Supervisor Dua |
 | Role | supervisor |
 | Permissions | View all workers, review reports, view dashboards |
@@ -148,7 +204,7 @@ ON CONFLICT (username) DO NOTHING;
 | Field | Value |
 |-------|-------|
 | Username | worker1 |
-| Password | password123 |
+| Password | Password123! |
 | Full Name | Pekerja Satu |
 | Role | worker |
 | Assignment | Taman Bungkul (Park) |
@@ -158,7 +214,7 @@ ON CONFLICT (username) DO NOTHING;
 | Field | Value |
 |-------|-------|
 | Username | worker2 |
-| Password | password123 |
+| Password | Password123! |
 | Full Name | Pekerja Dua |
 | Role | worker |
 | Assignment | Jalan Raya Darmo (Pedestrian) |
@@ -168,7 +224,7 @@ ON CONFLICT (username) DO NOTHING;
 | Field | Value |
 |-------|-------|
 | Username | worker3 |
-| Password | password123 |
+| Password | Password123! |
 | Full Name | Pekerja Tiga |
 | Role | worker |
 | Assignment | Taman Harmoni (Park) |
@@ -179,7 +235,7 @@ ON CONFLICT (username) DO NOTHING;
 // All passwords hashed with bcrypt (10 rounds)
 import * as bcrypt from 'bcrypt';
 
-const hash = await bcrypt.hash('password123', 10);
+const hash = await bcrypt.hash('Password123!', 10);
 // $2b$10$ZQfzJQQ0J0YQX0JXQj0QXuJ0YQj0QXuJ0QX0JXQj0QXuJ0QX0JXQ
 ```
 
@@ -679,15 +735,15 @@ npm run seed
 # Test all user roles
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "password123"}'
+  -d '{"username": "admin", "password": "Password123!"}'
 
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username": "supervisor1", "password": "password123"}'
+  -d '{"username": "supervisor1", "password": "Password123!"}'
 
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username": "worker1", "password": "password123"}'
+  -d '{"username": "worker1", "password": "Password123!"}'
 ```
 
 #### 2. Active Shifts Query
@@ -1467,21 +1523,21 @@ Phase 2C overhauled the role system. The seed data now uses the new role names:
 
 | Username | Role | Password | Seeder | Notes |
 |----------|------|----------|--------|-------|
-| admin | `superadmin` | password123 | Phase 1 | Full system access |
-| korlap1 | `korlap` | password123 | Phase 1 | Area coordinator |
-| korlap2 | `korlap` | password123 | Phase 1 | Area coordinator |
-| satgas1 | `satgas` | password123 | Phase 1 | Field worker |
-| satgas2 | `satgas` | password123 | Phase 1 | Field worker |
-| satgas3 | `satgas` | password123 | Phase 1 | Field worker |
-| admin_system1 | `admin_system` | password123 | Phase 2 | System administration |
-| admin_data1 | `admin_data` | password123 | Phase 2 | Data management |
-| top_management1 | `top_management` | password123 | Phase 2 | City-wide view |
-| kepala_rayon_selatan | `kepala_rayon` | password123 | Phase 2 | Rayon manager |
-| kepala_rayon_utara | `kepala_rayon` | password123 | Phase 2 | Rayon manager |
-| korlap_bungkul | `korlap` | password123 | Phase 2 | Area coordinator (Taman Bungkul) |
-| linmas1 | `linmas` | password123 | Phase 2 | Security officer |
-| linmas2 | `linmas` | password123 | Phase 2 | Security officer |
-| satgas4 | `satgas` | password123 | Phase 2 | Field worker |
+| admin | `superadmin` | Password123! | Phase 1 | Full system access |
+| korlap1 | `korlap` | Password123! | Phase 1 | Area coordinator |
+| korlap2 | `korlap` | Password123! | Phase 1 | Area coordinator |
+| satgas1 | `satgas` | Password123! | Phase 1 | Field worker |
+| satgas2 | `satgas` | Password123! | Phase 1 | Field worker |
+| satgas3 | `satgas` | Password123! | Phase 1 | Field worker |
+| admin_system1 | `admin_system` | Password123! | Phase 2 | System administration |
+| admin_data1 | `admin_data` | Password123! | Phase 2 | Data management |
+| top_management1 | `top_management` | Password123! | Phase 2 | City-wide view |
+| kepala_rayon_selatan | `kepala_rayon` | Password123! | Phase 2 | Rayon manager |
+| kepala_rayon_utara | `kepala_rayon` | Password123! | Phase 2 | Rayon manager |
+| korlap_bungkul | `korlap` | Password123! | Phase 2 | Area coordinator (Taman Bungkul) |
+| linmas1 | `linmas` | Password123! | Phase 2 | Security officer |
+| linmas2 | `linmas` | Password123! | Phase 2 | Security officer |
+| satgas4 | `satgas` | Password123! | Phase 2 | Field worker |
 
 ### Activity Types (Phase 2C — 20 types for 4 roles)
 

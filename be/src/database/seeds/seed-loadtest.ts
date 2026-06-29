@@ -1,5 +1,6 @@
 import type { DataSource, QueryRunner } from 'typeorm';
 import '../../config/load-env';
+import { DEFAULT_PASSWORD_HASH } from './constants';
 
 /**
  * Load-test seed (Phase 3 sub-phase 3-14, support for `infra/loadtest/monitoring-500w.js`).
@@ -9,7 +10,7 @@ import '../../config/load-env';
  *
  * Each user gets:
  *   - role:           'satgas'
- *   - password:       password123 (shared bcrypt hash with the rest of the seeds)
+ *   - password:       Password123! (shared bcrypt hash with the rest of the seeds)
  *   - rayon_id:       first existing rayon row (queried at runtime)
  *   - area_id:        first existing area row in that rayon
  *   - phone_number:   `0812LT0NNNN` (zero-padded VU index, kept unique by UNIQUE on phone)
@@ -19,7 +20,7 @@ import '../../config/load-env';
  *   - Run AFTER `npm run db:seed` so a rayon + area exist.
  */
 
-const PASSWORD_HASH = '$2b$10$gF9qXRA.0ZtNWgbrwoYHMOmdUFUbaL4AkGdxAEMDMrMZtFexnH.H.';
+const PASSWORD_HASH = DEFAULT_PASSWORD_HASH;
 
 const LOADTEST_USER_COUNT = parseInt(process.env.LOADTEST_USERS || '50', 10);
 const USERNAME_PREFIX = process.env.LOADTEST_PREFIX || 'loadtest_satgas';

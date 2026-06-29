@@ -47,27 +47,27 @@
 **Actual Seeded Users — Phase 1 (`npm run seed`):**
 | Role | Username | Password |
 |------|----------|----------|
-| superadmin | admin | password123 |
-| korlap | korlap1 | password123 |
-| korlap | korlap2 | password123 |
-| satgas | satgas1 | password123 |
-| satgas | satgas2 | password123 |
-| satgas | satgas3 | password123 |
+| superadmin | admin | Password123! |
+| korlap | korlap1 | Password123! |
+| korlap | korlap2 | Password123! |
+| satgas | satgas1 | Password123! |
+| satgas | satgas2 | Password123! |
+| satgas | satgas3 | Password123! |
 
 **Actual Seeded Users — Phase 2 (`npm run seed:phase2`):**
 | Role | Username | Password |
 |------|----------|----------|
-| admin_system | admin_system1 | password123 |
-| admin_data | admin_data1 | password123 |
-| top_management | top_management1 | password123 |
-| kepala_rayon | kepala_rayon_selatan | password123 |
-| kepala_rayon | kepala_rayon_utara | password123 |
-| korlap | korlap_bungkul | password123 |
-| linmas | linmas1 | password123 |
-| linmas | linmas2 | password123 |
-| satgas | satgas4 | password123 |
+| admin_system | admin_system1 | Password123! |
+| admin_data | admin_data1 | Password123! |
+| top_management | top_management1 | Password123! |
+| kepala_rayon | kepala_rayon_selatan | Password123! |
+| kepala_rayon | kepala_rayon_utara | Password123! |
+| korlap | korlap_bungkul | Password123! |
+| linmas | linmas1 | Password123! |
+| linmas | linmas2 | Password123! |
+| satgas | satgas4 | Password123! |
 
-**Note:** All passwords are `password123` for consistency across all roles and seeders.
+**Note:** All passwords are `Password123!` for consistency across all roles and seeders.
 
 ---
 
@@ -88,20 +88,20 @@
 
 | Role | Username | Password | Notes |
 |------|----------|----------|-------|
-| superadmin | admin | password123 | Full system access |
-| admin_system | admin_system1 | password123 | System administration |
-| admin_data | admin_data1 | password123 | Data management |
-| korlap | korlap1 | password123 | Area coordinator (Phase 1) |
-| korlap | korlap_bungkul | password123 | Area coordinator (Phase 2) |
-| satgas | satgas1 | password123 | Field worker (Phase 1) |
-| satgas | satgas2 | password123 | Field worker (Phase 1) |
-| satgas | satgas3 | password123 | Field worker (Phase 1) |
-| satgas | satgas4 | password123 | Field worker (Phase 2) |
-| linmas | linmas1 | password123 | Security officer |
-| linmas | linmas2 | password123 | Security officer |
-| kepala_rayon | kepala_rayon_selatan | password123 | Rayon manager |
-| kepala_rayon | kepala_rayon_utara | password123 | Rayon manager |
-| top_management | top_management1 | password123 | City-wide view |
+| superadmin | admin | Password123! | Full system access |
+| admin_system | admin_system1 | Password123! | System administration |
+| admin_data | admin_data1 | Password123! | Data management |
+| korlap | korlap1 | Password123! | Area coordinator (Phase 1) |
+| korlap | korlap_bungkul | Password123! | Area coordinator (Phase 2) |
+| satgas | satgas1 | Password123! | Field worker (Phase 1) |
+| satgas | satgas2 | Password123! | Field worker (Phase 1) |
+| satgas | satgas3 | Password123! | Field worker (Phase 1) |
+| satgas | satgas4 | Password123! | Field worker (Phase 2) |
+| linmas | linmas1 | Password123! | Security officer |
+| linmas | linmas2 | Password123! | Security officer |
+| kepala_rayon | kepala_rayon_selatan | Password123! | Rayon manager |
+| kepala_rayon | kepala_rayon_utara | Password123! | Rayon manager |
+| top_management | top_management1 | Password123! | City-wide view |
 
 ### API Testing Tools
 
@@ -1043,7 +1043,7 @@ curl $API_URL/api/health
 # Get admin token
 TOKEN=$(curl -s -X POST $API_URL/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"password123"}' \
+  -d '{"username":"admin","password":"Password123!"}' \
   | jq -r '.access_token')
 
 # Test Phase 2C endpoints (new routes)

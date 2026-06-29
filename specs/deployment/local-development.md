@@ -20,10 +20,10 @@ That's it! Services run at:
 - **MinIO Console:** http://localhost:9001 (minioadmin/minioadmin)
 - **Adminer:** http://localhost:8080 (postgres/postgres)
 
-**Test users:** All use password `password123`
-- `admin/password123`
-- `satgas1/password123`
-- `081200000006/password123` (phone login)
+**Test users:** All use password `Password123!`
+- `admin/Password123!`
+- `satgas1/Password123!`
+- `081200000006/Password123!` (phone login)
 
 ---
 
@@ -301,7 +301,7 @@ cd fe/web
 npm run dev
 
 # http://localhost:3001
-# Log in with admin/password123
+# Log in with admin/Password123!
 ```
 
 **Custom Port:**
@@ -998,7 +998,7 @@ Before starting development:
 - [ ] (Optional) Backend started: `cd be && npm run start:dev` (http://localhost:3000)
 - [ ] (Optional) Web started: `cd fe/web && npm run dev` (http://localhost:3001)
 - [ ] (Optional) Mobile Metro: `cd fe/mobile && npm start`
-- [ ] Test with `admin/password123` or `satgas1/password123`
+- [ ] Test with `admin/Password123!` or `satgas1/Password123!`
 
 For physical mobile device testing on WSL2, follow [WSL2 Network Setup](#wsl2-network-setup-physical-mobile-devices).
 

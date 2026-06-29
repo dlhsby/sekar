@@ -31,7 +31,7 @@ export const TEST_USERS = {
   admin: {
     id: '11111111-1111-1111-1111-111111111111',
     username: 'admin',
-    password: 'password123', // Plain text for testing
+    password: 'Password123!', // Plain text for testing
     password_hash: '$2b$10$YourHashedPasswordHere', // bcrypt hash
     full_name: 'System Administrator',
     role: 'Admin',
@@ -43,7 +43,7 @@ export const TEST_USERS = {
   supervisor1: {
     id: '22222222-2222-2222-2222-222222222222',
     username: 'supervisor1',
-    password: 'password123',
+    password: 'Password123!',
     password_hash: '$2b$10$YourHashedPasswordHere',
     full_name: 'Supervisor Satu',
     role: 'Supervisor',
@@ -55,7 +55,7 @@ export const TEST_USERS = {
   supervisor2: {
     id: '22222222-2222-2222-2222-222222222223',
     username: 'supervisor2',
-    password: 'password123',
+    password: 'Password123!',
     password_hash: '$2b$10$YourHashedPasswordHere',
     full_name: 'Supervisor Dua',
     role: 'Supervisor',
@@ -67,7 +67,7 @@ export const TEST_USERS = {
   worker1: {
     id: '33333333-3333-3333-3333-333333333331',
     username: 'worker1',
-    password: 'password123',
+    password: 'Password123!',
     password_hash: '$2b$10$YourHashedPasswordHere',
     full_name: 'Pekerja Satu',
     role: 'Worker',
@@ -79,7 +79,7 @@ export const TEST_USERS = {
   worker2: {
     id: '33333333-3333-3333-3333-333333333332',
     username: 'worker2',
-    password: 'password123',
+    password: 'Password123!',
     password_hash: '$2b$10$YourHashedPasswordHere',
     full_name: 'Pekerja Dua',
     role: 'Worker',
@@ -91,7 +91,7 @@ export const TEST_USERS = {
   worker3: {
     id: '33333333-3333-3333-3333-333333333333',
     username: 'worker3',
-    password: 'password123',
+    password: 'Password123!',
     password_hash: '$2b$10$YourHashedPasswordHere',
     full_name: 'Pekerja Tiga',
     role: 'Worker',
@@ -103,7 +103,7 @@ export const TEST_USERS = {
   inactiveWorker: {
     id: '33333333-3333-3333-3333-333333333334',
     username: 'worker_inactive',
-    password: 'password123',
+    password: 'Password123!',
     password_hash: '$2b$10$YourHashedPasswordHere',
     full_name: 'Pekerja Nonaktif',
     role: 'Worker',

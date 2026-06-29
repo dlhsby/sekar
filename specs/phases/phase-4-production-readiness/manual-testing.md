@@ -17,22 +17,22 @@ Run each walk on a fresh-install device (AsyncStorage cleared). Compare screen-b
 3. Tap "Masuk" → **AS-1** Login screen (Selamat datang hero, Identifier + Password)
 4. Try empty fields → **AS-2** field error states
 5. Wrong password → **AS-3** NBToast auth-fail
-6. Correct credentials (`satgas_bungkul_1/password123`) → **OB-1** Welcome
+6. Correct credentials (`satgas_bungkul_1/Password123!`) → **OB-1** Welcome
 7. Tap "Lanjut" → **OB-2** Permissions (6 cards: Lokasi/Kamera/Notifikasi/Galeri/Telepon/SMS), accept each
 8. **OB-3** Area preview → "Mulai shift" → **HOME-1** Satgas home
 9. Close + relaunch → no carousel, no onboarding (verifies AsyncStorage flags)
 
 ### Walk B · First-launch korlap → HOME-2
 
-Same as A with `korlap_bungkul/password123`; lands on **HOME-2** with monitoring quick-access + team summary.
+Same as A with `korlap_bungkul/Password123!`; lands on **HOME-2** with monitoring quick-access + team summary.
 
 ### Walk C · First-launch admin_data → HOME-3
 
-`admin/password123` → **HOME-3** with KPI tiles + pending perantingan queue.
+`admin/Password123!` → **HOME-3** with KPI tiles + pending perantingan queue.
 
 ### Walk D · First-launch staff_kecamatan
 
-`staff_kecamatan_<kecamatan-code>/password123` → after onboarding, lands on **Perantingan** tab with empty state + FAB to submit; monitoring tab hidden.
+`staff_kecamatan_<kecamatan-code>/Password123!` → after onboarding, lands on **Perantingan** tab with empty state + FAB to submit; monitoring tab hidden.
 
 ### Walk E · Forgot password (informational)
 
@@ -105,7 +105,7 @@ Same as A with `korlap_bungkul/password123`; lands on **HOME-2** with monitoring
 Before starting manual testing, ensure the following environment is in place:
 
 - Backend running with fully seeded data (`npm run db:seed` from `be/`)
-- Mobile app configured with test credentials (see `CLAUDE.md` — all users use `password123`)
+- Mobile app configured with test credentials (see `CLAUDE.md` — all users use `Password123!`)
 - `.env` set to correct `API_BASE_URL` (emulator: `http://10.0.2.2:3000`; device: `http://<YOUR_IP>:3000`)
 - Web app running at `http://localhost:3001` (`npm run dev` from `fe/web/`)
 - Stable internet connection available for push notification tests

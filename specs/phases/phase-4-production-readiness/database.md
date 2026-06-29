@@ -439,7 +439,7 @@ seed-production.ts
 | Aspect | Dev Seeder (seed-phase1/2) | Production Seeder |
 |--------|--------------------------|-------------------|
 | Data wipe | Truncates all tables | Never wipes — upsert only |
-| Users | 30+ test users with `password123` | Only admin accounts from env vars |
+| Users | 30+ test users with `Password123!` | Only admin accounts from env vars |
 | Rayons | "Rayon 1" through "Rayon 7" | Real names (Rayon Utara, etc.) |
 | Areas | Generic test areas | Real park/area names from KMZ |
 | Boundaries | Sample polygons | Real GPS polygons from reference data |

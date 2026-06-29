@@ -1010,18 +1010,18 @@ See [`deployment-guide.md`](deployment-guide.md) §E.7 (smoke test) for standard
 # Login with seeded admin
 curl -X POST http://sekar.wahyutrip.com/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"password123"}'
+  -d '{"username":"admin","password":"Password123!"}'
 # Expected: JWT token response with access_token and refresh_token
 
 # Login with seeded supervisor
 curl -X POST http://sekar.wahyutrip.com/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"supervisor1","password":"password123"}'
+  -d '{"username":"supervisor1","password":"Password123!"}'
 
 # Login with seeded worker
 curl -X POST http://sekar.wahyutrip.com/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"worker1","password":"password123"}'
+  -d '{"username":"worker1","password":"Password123!"}'
 ```
 
 ---
@@ -1305,7 +1305,7 @@ nano .env.production  # Set DATABASE_SYNCHRONIZE=false
 docker-compose down && docker-compose up -d
 # 9. Test API
 curl http://sekar.wahyutrip.com/api/health
-curl -X POST http://sekar.wahyutrip.com/api/v1/auth/login -H "Content-Type: application/json" -d '{"username":"admin","password":"password123"}'
+curl -X POST http://sekar.wahyutrip.com/api/v1/auth/login -H "Content-Type: application/json" -d '{"username":"admin","password":"Password123!"}'
 ```
 
 ### Future Deployments (Code Updates Only)

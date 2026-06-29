@@ -153,16 +153,16 @@ Phase 2D kept manual testing inside this file as a section rather than a separat
 
 | Role | Username | Password | Rayon | Notes |
 |------|----------|----------|-------|-------|
-| `satgas` | `satgas1` | `password123` | Selatan | Assigned to Jalan Darmo Sec 1 R |
-| `korlap` | `korlap1` | `password123` | Selatan | Supervises Darmo area |
-| `admin_data` | `admin_data_selatan` | `password123` | Selatan | Pruning-request reviewer |
-| `admin_data` | `admin_data_taman_aktif` | `password123` | Taman Aktif | Plant-seed manager |
-| `kepala_rayon` | `kepala_selatan` | `password123` | Selatan | |
-| `top_management` | `top1` | `password123` | — | City-wide view |
-| `admin_system` | `admin_system` | `password123` | — | All access |
-| `superadmin` | `admin` | `password123` | — | All access |
-| `staff_kecamatan` | `kec_wonokromo` | `password123` | — | Kecamatan Wonokromo |
-| `staff_kecamatan` | `kec_gubeng` | `password123` | — | Kecamatan Gubeng |
+| `satgas` | `satgas1` | `Password123!` | Selatan | Assigned to Jalan Darmo Sec 1 R |
+| `korlap` | `korlap1` | `Password123!` | Selatan | Supervises Darmo area |
+| `admin_data` | `admin_data_selatan` | `Password123!` | Selatan | Pruning-request reviewer |
+| `admin_data` | `admin_data_taman_aktif` | `Password123!` | Taman Aktif | Plant-seed manager |
+| `kepala_rayon` | `kepala_selatan` | `Password123!` | Selatan | |
+| `top_management` | `top1` | `Password123!` | — | City-wide view |
+| `admin_system` | `admin_system` | `Password123!` | — | All access |
+| `superadmin` | `admin` | `Password123!` | — | All access |
+| `staff_kecamatan` | `kec_wonokromo` | `Password123!` | — | Kecamatan Wonokromo |
+| `staff_kecamatan` | `kec_gubeng` | `Password123!` | — | Kecamatan Gubeng |
 
 **Seeded data:**
 

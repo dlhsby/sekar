@@ -6,7 +6,9 @@ import { IsInt, IsOptional, Min, Max } from 'class-validator';
  * Pagination Query Parameters DTO
  *
  * Standard pagination parameters for list endpoints.
- * Default: page=1, limit=50, max limit=100
+ * Default: page=1, limit=50, max limit=1000. The web admin tables/dropdowns
+ * request `limit: 1000` to load a full set; raising the cap keeps those pages
+ * working. (Long-term, those views should paginate via `meta.totalPages`.)
  */
 export class PaginationDto {
   @ApiPropertyOptional({
@@ -26,13 +28,13 @@ export class PaginationDto {
     example: 50,
     default: 50,
     minimum: 1,
-    maximum: 100,
+    maximum: 1000,
   })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
+  @Max(1000)
   limit?: number = 50;
 }
 

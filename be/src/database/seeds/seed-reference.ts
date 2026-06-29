@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm';
 import '../../config/load-env';
 import { seedPhase3Reference, seedPhase3ServiceCapacity } from './seed-phase3';
+import { DEFAULT_PASSWORD_HASH } from './constants';
 
 /**
  * Reference Data Seeder — Production Safe
@@ -72,8 +73,8 @@ const SPECIAL_DAY_2_ID = 'd2bb4962-0d2e-46fb-b45d-c3038254f5c4';
 const SPECIAL_DAY_3_ID = '72bfe1fd-6285-4853-a4a9-d75e8edc65e6';
 const SPECIAL_DAY_4_ID = '8a8ff3d8-8c45-461e-b66c-8563c04cbbd5';
 
-// Pre-computed bcrypt hash for "password123"
-const PASSWORD_HASH = '$2b$10$gF9qXRA.0ZtNWgbrwoYHMOmdUFUbaL4AkGdxAEMDMrMZtFexnH.H.';
+// Default account password hash (bcrypt of "Password123!") — shared across all seeders.
+const PASSWORD_HASH = DEFAULT_PASSWORD_HASH;
 
 async function seedReference() {
   console.log('🔧 Reference Data Seeder (Production-Safe) Started...');
@@ -322,7 +323,7 @@ async function seedReference() {
       [PASSWORD_HASH],
     );
     console.log(
-      '  ✓ Default superadmin (admin / password123) — change password after first login!',
+      '  ✓ Default superadmin (admin / Password123!) — change password after first login!',
     );
 
     console.log('\n✅ Reference Data Seeding Completed!');

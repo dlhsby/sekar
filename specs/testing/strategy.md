@@ -195,7 +195,7 @@ All tests follow the AAA pattern for clarity:
 describe('AuthService', () => {
   it('should successfully login with valid credentials', async () => {
     // Arrange: Set up test data and mocks
-    const loginDto = { username: 'worker1', password: 'password123' };
+    const loginDto = { username: 'worker1', password: 'Password123!' };
     const mockUser = { id: '123', username: 'worker1', role: UserRole.WORKER };
     mockUserRepository.findOne.mockResolvedValue(mockUser);
 

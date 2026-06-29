@@ -1150,7 +1150,7 @@ describe('AuthService', () => {
   it('should return JWT token on valid login', async () => {
     const result = await service.login({
       username: 'satgas1',
-      password: 'password123',
+      password: 'Password123!',
     });
 
     expect(result).toHaveProperty('access_token');
@@ -1179,7 +1179,7 @@ describe('AuthService', () => {
 # Login and get token
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"satgas1","password":"password123"}' \
+  -d '{"username":"satgas1","password":"Password123!"}' \
   | jq -r '.access_token'
 
 # Use token to access protected endpoint

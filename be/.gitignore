@@ -60,3 +60,11 @@ config/firebase-service-account.json
 
 # Other
 .cache
+
+# Service-account key files for Google Sheets sync — NEVER commit.
+secrets/
+
+# Seed roster CSVs contain PII (real names + phone numbers). Not committed —
+# regenerate from the client sheet with `npm run sheet:pull` before seeding.
+src/database/seeds/data/users.csv
+src/database/seeds/data/users-with-ids.csv

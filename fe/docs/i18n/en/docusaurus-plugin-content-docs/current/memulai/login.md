@@ -71,7 +71,7 @@ Complete guide to login to the mobile app SEKAR and web dashboard.
 
 ## Test Accounts for Experimenting
 
-You can use the following test accounts (all with password `password123`):
+You can use the following test accounts (all with password `Password123!`):
 
 | Role | Username | Phone Number |
 |------|----------|---------------|

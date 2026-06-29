@@ -1,5 +1,6 @@
 import { DataSource } from 'typeorm';
 import '../../config/load-env';
+import { DEFAULT_PASSWORD_HASH } from './constants';
 import {
   RAYON_BOUNDARIES,
   RAYON_PUSAT_AREAS,
@@ -49,7 +50,7 @@ import {
  * Usage: npm run db:seed
  *
  * =============================================================================
- * TEST USERS BY ROLE  (all passwords: password123)
+ * TEST USERS BY ROLE  (all passwords: Password123!)
  * Login via username OR phone number as identifier
  * =============================================================================
  *
@@ -559,9 +560,8 @@ async function seedPhase2() {
     // ==========================================
     console.log('👤 Seeding Additional Users with Phase 2 roles...');
 
-    // Bcrypt hash for password "password123" with 10 salt rounds
-    // Generated: bcrypt.hash('password123', 10)
-    const passwordHash = '$2b$10$gF9qXRA.0ZtNWgbrwoYHMOmdUFUbaL4AkGdxAEMDMrMZtFexnH.H.';
+    // Default account password hash (bcrypt of "Password123!") — shared across all seeders.
+    const passwordHash = DEFAULT_PASSWORD_HASH;
 
     await queryRunner.query(`
       INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, area_id, is_active) VALUES
@@ -1990,7 +1990,7 @@ async function seedPhase2() {
     console.log('       7 rayons · 3 shifts · 20 activity types · 4 special day overrides');
     console.log('      10 areas · ~50 area_staff_requirements');
     console.log('');
-    console.log('  👥 Users  (40 total — all passwords: password123)');
+    console.log('  👥 Users  (40 total — all passwords: Password123!)');
     console.log('     ──────────────────────────────────────────────────────────────────────────');
     console.log(
       '       1 admin (Phase 1) ·  3 system-wide (superadmin / admin_system / top_management)',
@@ -2067,7 +2067,7 @@ async function seedPhase2() {
     console.log(
       '══════════════════════════════════════════════════════════════════════════════════════',
     );
-    console.log('🧪  TEST USERS — all passwords: password123');
+    console.log('🧪  TEST USERS — all passwords: Password123!');
     console.log('    Login with username OR phone number as "identifier"');
     console.log(
       '══════════════════════════════════════════════════════════════════════════════════════',

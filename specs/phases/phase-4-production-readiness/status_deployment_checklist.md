@@ -220,14 +220,14 @@ npm run android:release    # Release APK with ProGuard
 
 | Role | Username | Password | Scope |
 |------|----------|----------|-------|
-| superadmin | admin | password123 | All endpoints |
-| admin_system | admin_system1 | password123 | Config, export, import |
-| admin_data | admin_data1 | password123 | Data management |
-| top_management | top_mgmt1 | password123 | City-wide monitoring |
-| kepala_rayon | kepalarayon1 | password123 | Rayon-scoped |
-| korlap | korlap1 | password123 | Area-scoped |
-| satgas | satgas1 | password123 | Worker (tracked) |
-| linmas | linmas1 | password123 | Worker (tracked) |
+| superadmin | admin | Password123! | All endpoints |
+| admin_system | admin_system1 | Password123! | Config, export, import |
+| admin_data | admin_data1 | Password123! | Data management |
+| top_management | top_mgmt1 | Password123! | City-wide monitoring |
+| kepala_rayon | kepalarayon1 | Password123! | Rayon-scoped |
+| korlap | korlap1 | Password123! | Area-scoped |
+| satgas | satgas1 | Password123! | Worker (tracked) |
+| linmas | linmas1 | Password123! | Worker (tracked) |
 
 ### API Testing Tools
 

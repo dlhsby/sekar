@@ -136,15 +136,15 @@ grep AUTH_LOGIN_THROTTLE_LIMIT be/.env  # → 1000
 
 **1. Activity tagging (mobile)** 🔍
 
-- Login `korlap_bungkul/password123` → ActivitySubmissionScreen.
+- Login `korlap_bungkul/Password123!` → ActivitySubmissionScreen.
 - "🏷️ TAG REKAN KERJA" card lists same-area peers (excluding self). Multi-select is searchable.
-- Submit. Then login `satgas_bungkul_1/password123` → Aktivitas list shows the activity with a navy "Diikutsertakan" badge in the header (owner is korlap, not the viewer).
+- Submit. Then login `satgas_bungkul_1/Password123!` → Aktivitas list shows the activity with a navy "Diikutsertakan" badge in the header (owner is korlap, not the viewer).
 - Backend assertion: `SELECT COUNT(*) FROM activity_tags WHERE activity_id = '<id>'` matches the count of tagged peers.
 
 **2. Task delegation chain (mobile)** 🔍
 
-- Login `korlap_bungkul/password123` → create a task assigned to a satgas in your area.
-- Open the task on the satgas's phone (`satgas_bungkul_2/password123`) → TaskDetailScreen → **"Riwayat Penugasan"** card shows `Korlap Taman Bungkul (korlap) → Satgas Bungkul Dua (satgas) · <timestamp>`.
+- Login `korlap_bungkul/Password123!` → create a task assigned to a satgas in your area.
+- Open the task on the satgas's phone (`satgas_bungkul_2/Password123!`) → TaskDetailScreen → **"Riwayat Penugasan"** card shows `Korlap Taman Bungkul (korlap) → Satgas Bungkul Dua (satgas) · <timestamp>`.
 - Reassign the task and confirm the chain grows by one row each time.
 - Backend assertion: `SELECT from_role, to_role FROM task_delegations WHERE task_id = '<id>' ORDER BY created_at`.
 
@@ -156,7 +156,7 @@ grep AUTH_LOGIN_THROTTLE_LIMIT be/.env  # → 1000
 **4. Kecamatan week-booking — full workflow** ✅ verified end-to-end on the live stack May 3, but worth one human walkthrough before UAT
 
 - `staff_kec_pusat` → SubmitScreen → `WeekPicker` lists 8 ISO weeks with per-day capacity chips → submit. Confirm `expected_year` + `expected_iso_week` populated in DB; `expected_date` is NULL.
-- `admin/password123` → Review queue → approve → "Buat Tugas" → leave the date picker empty (auto-pick path) → confirm response: `request.status='assigned'`, `expected_date` lands on a day in the requested ISO week, `task.status='assigned'`, `task.assigned_at` set.
+- `admin/Password123!` → Review queue → approve → "Buat Tugas" → leave the date picker empty (auto-pick path) → confirm response: `request.status='assigned'`, `expected_date` lands on a day in the requested ISO week, `task.status='assigned'`, `task.assigned_at` set.
 - Login as the assigned satgas → accept → start → complete. Each transition succeeds. After complete, pruning_request walks to `done` (existing behavior, unchanged).
 
 **5. Password leak sweep** 🔍
@@ -172,7 +172,7 @@ grep AUTH_LOGIN_THROTTLE_LIMIT be/.env  # → 1000
 
 ## 🧪 Manual Review Checklist (May 1, 2026 review pass)
 
-Use this when you sit down to manually QA plant monitoring + the perantingan workflow. Items marked **✅ verified** are covered by the automated test suite; **🔍 manual** require a real device or browser. Login passwords are all `password123`.
+Use this when you sit down to manually QA plant monitoring + the perantingan workflow. Items marked **✅ verified** are covered by the automated test suite; **🔍 manual** require a real device or browser. Login passwords are all `Password123!`.
 
 ### Preconditions
 
@@ -905,7 +905,7 @@ End-to-end review checklist for the pruning workflow redesign + monitoring v2 + 
 ### A. Pruning intake (kecamatan)
 | # | Step | Expected | Auto |
 |---|------|----------|------|
-| A1 | Login `staff_kec_pusat` / `password123` on **mobile** → `SubmitScreen` | Form opens, photo picker works, can pick GPS | ✅ |
+| A1 | Login `staff_kec_pusat` / `Password123!` on **mobile** → `SubmitScreen` | Form opens, photo picker works, can pick GPS | ✅ |
 | A2 | Submit a request with `expected_year=2026, expected_iso_week=21` (no `detail_date`) | DB row carries the week pair, `expected_date` NULL, status `submitted` | ✅ |
 | A3 | Same user → `MyRequestsScreen` | New row visible, status badge `submitted` | ✅ |
 | A4 | Login `staff_kec_pusat` on **web** at `/pruning-submit` | Mirror of mobile form, can submit | 🔍 |
@@ -913,7 +913,7 @@ End-to-end review checklist for the pruning workflow redesign + monitoring v2 + 
 ### B. Disposition (admin)
 | # | Step | Expected | Auto |
 |---|------|----------|------|
-| B1 | Login `admin` / `password123` on **mobile** → `ReviewQueueScreen` | A2's row appears | ✅ |
+| B1 | Login `admin` / `Password123!` on **mobile** → `ReviewQueueScreen` | A2's row appears | ✅ |
 | B2 | Tap row → `RequestDetailScreen` → Approve | Status → `approved`, `reviewed_by` populated | ✅ |
 | B3 | Same flow on **web** at `/pruning-requests` (admin list) → click row → Approve | Mirror of mobile | ✅ |
 | B4 | `AssignToTaskSheet` (mobile) → pick area + assignee + caseType=GT + pruningAction=PM (no scheduled date) | Auto-pick path executes; `pruning_requests.expected_date` lands inside ISO 2026-W21 (May 18–24); `assigned_task_id` populated | ✅ |
@@ -931,7 +931,7 @@ End-to-end review checklist for the pruning workflow redesign + monitoring v2 + 
 ### D. Satgas execution
 | # | Step | Expected | Auto |
 |---|------|----------|------|
-| D1 | Login `satgas1` / `password123` mobile → open task → Accept | Status → `accepted` | ✅ |
+| D1 | Login `satgas1` / `Password123!` mobile → open task → Accept | Status → `accepted` | ✅ |
 | D2 | Tap "Mulai Kerjakan" | Status → `in_progress` | ✅ |
 | D3 | `PruningTaskForm` → enter plant items + photos → Selesai Sebagian | Activity created with line items; task remains `in_progress` | ✅ |
 | D4 | Final completion → photos + notes | Status → `completed`, photos in S3 | ✅ |

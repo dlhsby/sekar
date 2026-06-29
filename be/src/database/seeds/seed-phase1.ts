@@ -1,5 +1,6 @@
 import { DataSource } from 'typeorm';
 import '../../config/load-env';
+import { DEFAULT_PASSWORD_HASH } from './constants';
 
 /**
  * Phase 1 Seed Script
@@ -20,8 +21,8 @@ import '../../config/load-env';
  * Prod: npm run db:seed:phase1:prod
  */
 
-// Pre-computed bcrypt hash for "password123" with 10 salt rounds
-const PASSWORD_HASH = '$2b$10$gF9qXRA.0ZtNWgbrwoYHMOmdUFUbaL4AkGdxAEMDMrMZtFexnH.H.';
+// Default account password hash (bcrypt of "Password123!") — shared across all seeders.
+const PASSWORD_HASH = DEFAULT_PASSWORD_HASH;
 
 // Explicit UUID for admin user so Phase 2 references are stable
 const ADMIN_USER_ID = 'e8f9a0b1-c2d3-4e5f-a6b7-c8d9e0f1a2b3';
@@ -125,7 +126,7 @@ async function seedPhase1() {
     console.log('  Created 1 user: admin (superadmin)');
 
     // Dummy account to exercise the forced password-change flow (AS-5). Temp
-    // password is "password123"; password_must_change=TRUE forces the change
+    // password is "Password123!"; password_must_change=TRUE forces the change
     // screen on first login. Remove/disable before production.
     await queryRunner.query(`
       INSERT INTO users (id, username, password_hash, full_name, phone_number, role, is_active, password_must_change) VALUES
@@ -133,7 +134,7 @@ async function seedPhase1() {
       ON CONFLICT (username) DO NOTHING
     `);
     console.log(
-      '  Created 1 user: resettest (satgas, password_must_change) — password: password123',
+      '  Created 1 user: resettest (satgas, password_must_change) — password: Password123!',
     );
 
     // ============================================================
@@ -161,7 +162,7 @@ async function seedPhase1() {
 
     console.log('\nPhase 1 Seeding Completed Successfully!');
     console.log('\nSummary:');
-    console.log('  - 1 user: admin (superadmin) — password: password123');
+    console.log('  - 1 user: admin (superadmin) — password: Password123!');
     console.log('  - 4 area types (park, pedestrian, mini_garden, street)');
     console.log('  - Areas, shifts, location logs, and activities are seeded in Phase 2');
   } catch (error) {

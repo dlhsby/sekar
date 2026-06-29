@@ -393,7 +393,7 @@ describe('authSlice thunks', () => {
     (apiClient.post as jest.Mock).mockResolvedValue(mockResponse);
 
     const store = mockStore({});
-    const credentials = { username: 'worker1', password: 'password123' };
+    const credentials = { username: 'worker1', password: 'Password123!' };
 
     await store.dispatch(loginUser(credentials) as any);
 
@@ -762,12 +762,12 @@ describe('Auth Service Integration', () => {
 
     (axios.post as jest.Mock).mockResolvedValue(mockResponse);
 
-    const result = await loginUser('worker1', 'password123');
+    const result = await loginUser('worker1', 'Password123!');
 
     expect(result.access_token).toBe('jwt.token');
     expect(axios.post).toHaveBeenCalledWith(
       expect.stringContaining('/api/auth/login'),
-      { username: 'worker1', password: 'password123' },
+      { username: 'worker1', password: 'Password123!' },
     );
   });
 });
@@ -862,7 +862,7 @@ describe('Login Flow', () => {
 
   it('should login successfully', async () => {
     await element(by.id('username-input')).typeText('worker1');
-    await element(by.id('password-input')).typeText('password123');
+    await element(by.id('password-input')).typeText('Password123!');
     await element(by.id('login-button')).tap();
 
     await expect(element(by.text('Welcome, Pekerja Satu'))).toBeVisible();

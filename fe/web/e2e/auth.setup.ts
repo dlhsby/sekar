@@ -13,15 +13,15 @@ export interface TestUser {
 }
 
 export const testUsers: Record<MockUserKey, TestUser> = {
-  admin: { username: 'admin', password: 'password123', role: 'admin', expectedName: 'Admin Sistem' },
-  superadmin: { username: 'superadmin', password: 'password123', role: 'superadmin', expectedName: 'Super Admin' },
-  korlap: { username: 'korlap1', password: 'password123', role: 'korlap', expectedName: 'Koordinator Lapangan' },
-  kepalaRayon: { username: 'kepala_rayon1', password: 'password123', role: 'kepalaRayon', expectedName: 'Kepala Rayon Selatan' },
-  topManagement: { username: 'topmgmt1', password: 'password123', role: 'topManagement', expectedName: 'Top Management' },
-  adminData: { username: 'admindata1', password: 'password123', role: 'adminData', expectedName: 'Admin Data' },
-  staffKecamatan: { username: 'kecamatan1', password: 'password123', role: 'staffKecamatan', expectedName: 'Staff Kecamatan Tegalsari' },
-  satgas: { username: 'satgas1', password: 'password123', role: 'satgas', expectedName: 'Satgas Lapangan' },
-  linmas: { username: 'linmas1', password: 'password123', role: 'linmas', expectedName: 'Linmas Keamanan' },
+  admin: { username: 'admin', password: 'Password123!', role: 'admin', expectedName: 'Admin Sistem' },
+  superadmin: { username: 'superadmin', password: 'Password123!', role: 'superadmin', expectedName: 'Super Admin' },
+  korlap: { username: 'korlap1', password: 'Password123!', role: 'korlap', expectedName: 'Koordinator Lapangan' },
+  kepalaRayon: { username: 'kepala_rayon1', password: 'Password123!', role: 'kepalaRayon', expectedName: 'Kepala Rayon Selatan' },
+  topManagement: { username: 'topmgmt1', password: 'Password123!', role: 'topManagement', expectedName: 'Top Management' },
+  adminData: { username: 'admindata1', password: 'Password123!', role: 'adminData', expectedName: 'Admin Data' },
+  staffKecamatan: { username: 'kecamatan1', password: 'Password123!', role: 'staffKecamatan', expectedName: 'Staff Kecamatan Tegalsari' },
+  satgas: { username: 'satgas1', password: 'Password123!', role: 'satgas', expectedName: 'Satgas Lapangan' },
+  linmas: { username: 'linmas1', password: 'Password123!', role: 'linmas', expectedName: 'Linmas Keamanan' },
 };
 
 /** Full login through the form; lands on the dashboard home (`/`). */

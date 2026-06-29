@@ -207,9 +207,9 @@ E2E tests require consistent seed data:
 ```typescript
 // fe/web/e2e/fixtures/phase4.ts
 export const phase4Fixtures = {
-  adminUser: { username: 'admin', password: 'password123' },
-  korlapUser: { username: 'korlap1', password: 'password123' },
-  satgasUser: { username: 'satgas1', password: 'password123' },
+  adminUser: { username: 'admin', password: 'Password123!' },
+  korlapUser: { username: 'korlap1', password: 'Password123!' },
+  satgasUser: { username: 'satgas1', password: 'Password123!' },
   sampleAsset: { code: 'AK-RU-001', name: 'Sapu Lidi #1' },
 };
 ```

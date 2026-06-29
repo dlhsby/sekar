@@ -154,7 +154,7 @@ appId: com.sekar
 - tapOn: "Username / No. HP"
 - inputText: "satgas1"
 - tapOn: "Password"
-- inputText: "password123"
+- inputText: "Password123!"
 - tapOn: "Masuk"
 - assertVisible: "Beranda"
 ```
@@ -198,11 +198,11 @@ appId: com.sekar
 ```typescript
 // fe/web/e2e/helpers/test-data.ts
 export const TEST_USERS = {
-  admin: { identifier: 'admin', password: 'password123' },
-  superadmin: { identifier: 'superadmin', password: 'password123' },
-  korlap: { identifier: 'korlap1', password: 'password123' },
-  satgas: { identifier: 'satgas1', password: 'password123' },
-  kepala_rayon: { identifier: 'kepala_rayon1', password: 'password123' },
+  admin: { identifier: 'admin', password: 'Password123!' },
+  superadmin: { identifier: 'superadmin', password: 'Password123!' },
+  korlap: { identifier: 'korlap1', password: 'Password123!' },
+  satgas: { identifier: 'satgas1', password: 'Password123!' },
+  kepala_rayon: { identifier: 'kepala_rayon1', password: 'Password123!' },
 };
 ```
 

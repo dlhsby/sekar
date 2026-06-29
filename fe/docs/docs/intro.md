@@ -65,7 +65,7 @@ Klik bagian di bawah ini sesuai dengan peran Anda untuk panduan lengkap.
 
 - **Aplikasi Mobile**: Unduh dari [sekar.wahyutrip.com/android](https://sekar.wahyutrip.com/android) untuk Android
 - **Dashboard Web**: Buka [sekar.wahyutrip.com](https://sekar.wahyutrip.com) di browser
-- **Password Default**: Semua akun pengguna menggunakan password `password123`
+- **Password Default**: Semua akun pengguna menggunakan password `Password123!`
 
 ## Kontak Bantuan
 

@@ -175,7 +175,7 @@ const validateLoginForm = (phone: string, password: string): ValidationError[] =
 ```json
 {
   "phone": "081234567890",
-  "password": "password123"
+  "password": "Password123!"
 }
 ```
 

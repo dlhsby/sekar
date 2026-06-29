@@ -307,7 +307,7 @@ test.describe('Login', () => {
   test('should login with username', async ({ page }) => {
     await page.goto('/login');
     await page.fill('[name="identifier"]', 'korlap1');
-    await page.fill('[name="password"]', 'password123');
+    await page.fill('[name="password"]', 'Password123!');
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL('/dashboard');
   });
@@ -315,7 +315,7 @@ test.describe('Login', () => {
   test('should login with phone number', async ({ page }) => {
     await page.goto('/login');
     await page.fill('[name="identifier"]', '081234567001');
-    await page.fill('[name="password"]', 'password123');
+    await page.fill('[name="password"]', 'Password123!');
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL('/dashboard');
   });

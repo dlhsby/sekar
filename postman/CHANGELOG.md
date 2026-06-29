@@ -94,13 +94,13 @@
 - Updated status: "Client Feedback Complete" → "Terminology Cleanup Complete"
 
 **Credentials Updated:**
-- `password` (default): `password123` → `satgas123`
+- `password` (default): `Password123!` → `satgas123`
 - `admin_username`: `superadmin` → `admin`
 - `admin_password`: `superadmin123` → `admin123`
-- `supervisor_password`: `password123` → `korlap123`
-- `korlap_password`: `password123` → `korlap123`
-- `satgas_password`: `password123` → `satgas123`
-- `linmas_password`: `password123` → `satgas123`
+- `supervisor_password`: `Password123!` → `korlap123`
+- `korlap_password`: `Password123!` → `korlap123`
+- `satgas_password`: `Password123!` → `satgas123`
+- `linmas_password`: `Password123!` → `satgas123`
 
 **Variable Renames:**
 - `created_report_id` → `created_activity_id`
