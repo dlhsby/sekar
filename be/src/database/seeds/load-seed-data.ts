@@ -88,8 +88,11 @@ function parseCsv(text: string): string[][] {
   return rows;
 }
 
-/** Parse a CSV file into header-keyed records, skipping blank trailing rows. */
+/** Parse a CSV file into header-keyed records, skipping blank trailing rows.
+ * Returns [] when the file is absent — some snapshots (e.g. the PII `users.csv`)
+ * are gitignored and must be regenerated via `npm run sheet:pull` before seeding. */
 function readCsvRecords(file: string): Record<string, string>[] {
+  if (!fs.existsSync(file)) return [];
   const text = fs.readFileSync(file, 'utf8');
   const rows = parseCsv(text).filter((r) => r.some((c) => c.trim() !== ''));
   if (rows.length === 0) return [];

@@ -127,7 +127,7 @@ function parseCsv(text: string): string[][] {
 const cell = (v: string): string => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
 
 async function main(): Promise<void> {
-  const provider = KEY ? 'Google Geocoding API' : 'Nominatim (no GOOGLE_GEOCODING_API_KEY set)';
+  const provider = KEY ? 'Google Geocoding API' : 'Nominatim (no GOOGLE_MAPS_API_KEY set)';
   console.log(`Geocoding Taman Aktif parks via ${provider}${ALL ? ' [--all]' : ''}…`);
 
   const rows = parseCsv(fs.readFileSync(CSV, 'utf8'));
