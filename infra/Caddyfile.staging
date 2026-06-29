@@ -51,5 +51,10 @@ adminer.wahyutrip.com {
 	basic_auth {
 		wahyutrip $2b$10$Kfp/zeMPKUQBUVrbbPekE.crksgO4LNg9IRlUcfCApZc45VtRuWUW
 	}
+	# Preselect the PostgreSQL driver on the bare URL so the login form doesn't
+	# default to MySQL (port 3306) — RDS is Postgres on 5432, and the MySQL
+	# default makes the login hang/time out. ADMINER_DEFAULT_SERVER prefills the host.
+	@root path /
+	redir @root /?pgsql= 302
 	reverse_proxy sekar-adminer:8080
 }
