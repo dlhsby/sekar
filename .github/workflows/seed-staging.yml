@@ -18,7 +18,8 @@ name: Seed staging (DESTRUCTIVE)
 #
 # Required repo Variables: AWS_REGION, AWS_ROLE_ARN, EC2_INSTANCE_ID, RDS_INSTANCE_ID.
 # Required `staging` Environment secret: STAGING_SEED_USERS_CSV_B64
-#   = base64 -w0 be/src/database/seeds/data/users.csv
+#   = gzip -9 -c be/src/database/seeds/data/users.csv | base64 -w0
+#   (gzipped because GitHub caps a secret at ~48KB; the plain base64 roster exceeds it).
 
 on:
   workflow_dispatch:
@@ -78,15 +79,16 @@ jobs:
           if [ -z "${USERS_B64:-}" ]; then
             echo "Missing Environment secret STAGING_SEED_USERS_CSV_B64." >&2
             echo "Set it with: gh secret set STAGING_SEED_USERS_CSV_B64 --env staging \\" >&2
-            echo "  --body \"\$(base64 -w0 be/src/database/seeds/data/users.csv)\"" >&2
+            echo "  --body \"\$(gzip -9 -c be/src/database/seeds/data/users.csv | base64 -w0)\"" >&2
             exit 1
           fi
           # Box script writes the roster to a stable path, owned by ec2-user, world-readable
           # (the container runs as a non-root user and must be able to read the bind mount).
+          # The secret is gzip+base64 (GitHub's ~48KB secret cap); decode then gunzip.
           BOX=$(cat <<EOF
           set -e
           mkdir -p ~/sekar/seed
-          printf '%s' '$USERS_B64' | base64 -d > ~/sekar/seed/users.csv
+          printf '%s' '$USERS_B64' | base64 -d | gunzip > ~/sekar/seed/users.csv
           chmod 644 ~/sekar/seed/users.csv
           echo "users.csv rows: \$(wc -l < ~/sekar/seed/users.csv)"
           EOF
