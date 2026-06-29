@@ -1,4 +1,3 @@
-/* eslint-disable */
 /**
  * KMZ → seed-data extractor.
  *

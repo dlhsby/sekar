@@ -122,19 +122,19 @@ describe('API Client', () => {
     it('should return timeout message for ECONNABORTED', () => {
       const error = new AxiosError('timeout of 1000ms exceeded', 'ECONNABORTED');
 
-      expect(getErrorMessage(error)).toBe('Request timeout. Please try again.');
+      expect(getErrorMessage(error)).toBe('Permintaan melebihi batas waktu. Silakan coba lagi.');
     });
 
     it('should return network error message', () => {
       const error = new AxiosError('Network Error');
 
-      expect(getErrorMessage(error)).toBe('Network error. Please check your connection.');
+      expect(getErrorMessage(error)).toBe('Gagal terhubung ke server. Periksa koneksi internet Anda.');
     });
 
     it('should return generic message for axios error without response', () => {
       const error = new AxiosError('Something went wrong');
 
-      expect(getErrorMessage(error)).toBe('Something went wrong');
+      expect(getErrorMessage(error)).toBe('Terjadi kesalahan. Silakan coba lagi.');
     });
 
     it('should handle non-axios Error objects', () => {
@@ -146,7 +146,7 @@ describe('API Client', () => {
     it('should handle unknown error types', () => {
       const error = 'string error';
 
-      expect(getErrorMessage(error)).toBe('An unexpected error occurred.');
+      expect(getErrorMessage(error)).toBe('Terjadi kesalahan. Silakan coba lagi.');
     });
   });
 
