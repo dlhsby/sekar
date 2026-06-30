@@ -184,6 +184,9 @@ jobs:
           echo $COMPOSE_B64 | base64 -d > ~/sekar/infra/compose.staging.yml
           echo $SEED_B64 | base64 -d > ~/sekar/infra/seed-env-from-ssm.sh
           # SEKAR owns the box's Caddy (the sekar-caddy service); ship its Caddyfile.
+          # Ensure the co-tenant drop-in dir exists so the bind-mount source is present
+          # (Docker would otherwise create it root-owned); sekar never overwrites it.
+          mkdir -p ~/sekar/infra/conf.d
           echo $CADDY_B64 | base64 -d > ~/sekar/infra/Caddyfile
           docker network create edge 2>/dev/null || true
           bash ~/sekar/infra/seed-env-from-ssm.sh
