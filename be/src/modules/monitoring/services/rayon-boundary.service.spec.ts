@@ -17,7 +17,6 @@ describe('RayonBoundaryService', () => {
     ({
       id: RAYON_ID,
       name: 'Rayon Selatan',
-      code: 'SELATAN',
       boundary_polygon: undefined,
       center_lat: undefined,
       center_lng: undefined,

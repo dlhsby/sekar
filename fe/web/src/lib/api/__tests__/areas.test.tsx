@@ -70,7 +70,7 @@ describe('Areas API', () => {
           name: 'Taman Bungkul',
           code: 'TB',
           area_type_id: 'type-1',
-          area_type: mockAreaType,
+          areaType: mockAreaType,
           rayon_id: 'rayon-1',
           boundary_polygon: {
             type: 'Polygon',
@@ -84,8 +84,8 @@ describe('Areas API', () => {
               ],
             ],
           },
-          center_latitude: -7.2885,
-          center_longitude: 112.7395,
+          gps_lat: -7.2885,
+          gps_lng: 112.7395,
           coverage_area: 10000,
           created_at: '2026-01-01T00:00:00Z',
           updated_at: '2026-01-01T00:00:00Z',
@@ -183,7 +183,7 @@ describe('Areas API', () => {
       name: 'Taman Bungkul',
       code: 'TB',
       area_type_id: 'type-1',
-      area_type: mockAreaType,
+      areaType: mockAreaType,
       rayon_id: 'rayon-1',
       boundary_polygon: {
         type: 'Polygon',
@@ -197,8 +197,8 @@ describe('Areas API', () => {
           ],
         ],
       },
-      center_latitude: -7.2885,
-      center_longitude: 112.7395,
+      gps_lat: -7.2885,
+      gps_lng: 112.7395,
       coverage_area: 10000,
       created_at: '2026-01-01T00:00:00Z',
       updated_at: '2026-01-01T00:00:00Z',
@@ -242,11 +242,10 @@ describe('Areas API', () => {
     it('should create new area', async () => {
       const newArea: CreateAreaDto = {
         name: 'New Park',
-        code: 'NP',
         area_type_id: 'type-1',
         rayon_id: 'rayon-1',
-        center_latitude: -7.2885,
-        center_longitude: 112.7395,
+        gps_lat: -7.2885,
+        gps_lng: 112.7395,
         boundary_polygon: {
           type: 'Polygon',
           coordinates: [
@@ -264,9 +263,9 @@ describe('Areas API', () => {
       const createdArea: Area = {
         ...newArea,
         id: '10',
-        area_type: mockAreaType,
-        center_latitude: -7.2885,
-        center_longitude: 112.7395,
+        areaType: mockAreaType,
+        gps_lat: -7.2885,
+        gps_lng: 112.7395,
         coverage_area: 10000,
         created_at: '2026-02-04T00:00:00Z',
         updated_at: '2026-02-04T00:00:00Z',
@@ -306,11 +305,10 @@ describe('Areas API', () => {
     it('should invalidate queries on success', async () => {
       const newArea: CreateAreaDto = {
         name: 'New Park',
-        code: 'NP',
         area_type_id: 'type-1',
         rayon_id: 'rayon-1',
-        center_latitude: -7.2885,
-        center_longitude: 112.7395,
+        gps_lat: -7.2885,
+        gps_lng: 112.7395,
         boundary_polygon: {
           type: 'Polygon',
           coordinates: [
@@ -351,7 +349,7 @@ describe('Areas API', () => {
         name: 'Updated Park Name',
         code: 'TB',
         area_type_id: 'type-1',
-        area_type: mockAreaType,
+        areaType: mockAreaType,
         rayon_id: 'rayon-1',
         boundary_polygon: {
           type: 'Polygon',
@@ -363,8 +361,8 @@ describe('Areas API', () => {
             ],
           ],
         },
-        center_latitude: -7.2885,
-        center_longitude: 112.7395,
+        gps_lat: -7.2885,
+        gps_lng: 112.7395,
         coverage_area: 10000,
         created_at: '2026-01-01T00:00:00Z',
         updated_at: '2026-01-01T00:00:00Z',

@@ -32,13 +32,6 @@ export class Rayon {
   @Column({ length: 100, unique: true })
   name: string;
 
-  @ApiProperty({
-    description: 'Unique code for the rayon',
-    example: 'SELATAN',
-  })
-  @Column({ length: 20, unique: true })
-  code: string;
-
   @ApiPropertyOptional({
     description: 'Hex color for the rayon boundary on the monitoring map',
     example: '#7FBC8C',

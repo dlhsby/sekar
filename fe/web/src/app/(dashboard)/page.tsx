@@ -78,6 +78,11 @@ export default function DashboardPage() {
       di_luar_area: d.total_outside_area ?? 0,
       // Map total excludes offline (not clocked-in), matching mobile.
       presensi: aktif + idle + tidak_terdeteksi,
+      // Roster-derived "expected vs actual" for today (ADR-013).
+      expected: d.expected_count ?? 0,
+      hadir: d.present_count ?? 0,
+      tidak_hadir: d.absent_count ?? 0,
+      cuti: d.on_leave_count ?? 0,
     };
   }, [snapshot.data]);
 
@@ -208,6 +213,27 @@ export default function DashboardPage() {
                   </li>
                 </ul>
               </div>
+
+              {counts.expected > 0 && (
+                <div className="mt-5 rounded-nb-base border-2 border-nb-black bg-nb-gray-50 p-3">
+                  <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-wide text-nb-gray-600">
+                    Jadwal hari ini · {counts.expected} dijadwalkan
+                  </p>
+                  <div className="flex flex-wrap gap-4 text-nb-body-sm">
+                    <span className="text-nb-gray-700">
+                      Hadir{' '}
+                      <strong className="font-mono text-nb-success-dark">{counts.hadir}</strong>
+                    </span>
+                    <span className="text-nb-gray-700">
+                      Tidak hadir{' '}
+                      <strong className="font-mono text-nb-danger-dark">{counts.tidak_hadir}</strong>
+                    </span>
+                    <span className="text-nb-gray-700">
+                      Cuti <strong className="font-mono text-nb-warning">{counts.cuti}</strong>
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {perRayon.length > 0 && (
                 <>

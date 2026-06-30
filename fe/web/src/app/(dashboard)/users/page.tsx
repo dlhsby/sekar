@@ -7,10 +7,11 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Plus, Eye, Pencil, Trash2, Power } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2, Power, KeyRound } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   Button,
+  ConfirmDialog,
   DataTable,
   PageHeader,
   RoleAvatar,
@@ -21,14 +22,21 @@ import {
 import { RolePill } from '@/components/users/RolePill';
 import { DeleteUserModal } from '@/components/users/DeleteUserModal';
 import { UserFormModal } from '@/components/users/UserFormModal';
-import { useUsers, useDeactivateUser, useActivateUser } from '@/lib/api/users';
+import { TempPasswordDialog } from '@/components/users/TempPasswordDialog';
+import {
+  useUsers,
+  useDeactivateUser,
+  useActivateUser,
+  useResetUserPassword,
+} from '@/lib/api/users';
+import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useUser } from '@/lib/auth/hooks';
 import { ADMIN_ROLES } from '@/lib/constants/roles';
 import { formatDate } from '@/lib/utils/time';
+import { getErrorMessage } from '@/lib/api/client';
 import type { User } from '@/types/models';
 
 export default function UsersPage() {
-  const router = useRouter();
   const currentUser = useUser();
   // Full management (create/edit/delete) is admin-only; other roles that can
   // reach this page (admin_data) get a view-only kebab.
@@ -40,10 +48,33 @@ export default function UsersPage() {
 
   const deactivateUser = useDeactivateUser();
   const activateUser = useActivateUser();
+  const resetPassword = useResetUserPassword();
+  const { data: shifts = [] } = useShiftDefinitions();
+  const shiftNameById = useMemo(() => new Map(shifts.map((s) => [s.id, s.name])), [shifts]);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewingUser, setViewingUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  // One-time temp password returned by the reset action, shown in a dialog.
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
+  const [tempPwUsername, setTempPwUsername] = useState<string | undefined>(undefined);
+  // The user pending a force-reset confirmation (shown before generating).
+  const [resetConfirmUser, setResetConfirmUser] = useState<User | null>(null);
+
+  const handleResetPassword = useCallback(
+    async (u: User) => {
+      try {
+        const { temp_password } = await resetPassword.mutateAsync(u.id);
+        setTempPwUsername(u.username);
+        setTempPassword(temp_password);
+      } catch (err) {
+        toast.error(getErrorMessage(err));
+      }
+    },
+    [resetPassword]
+  );
 
   // Resolve an actor id (created_by/updated_by) to a display name via the loaded
   // user list — the backend returns ids only.
@@ -103,6 +134,15 @@ export default function UsersPage() {
         cell: ({ row }) => <RolePill role={row.original.role} />,
       },
       {
+        id: 'phone_number',
+        accessorFn: (u) => u.phone_number ?? '',
+        header: 'No. HP',
+        meta: { label: 'No. HP', filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="font-mono text-nb-body-sm">{row.original.phone_number ?? '—'}</span>
+        ),
+      },
+      {
         id: 'rayon',
         accessorFn: (u) => u.rayon?.name ?? '',
         header: 'Rayon',
@@ -110,6 +150,39 @@ export default function UsersPage() {
         cell: ({ row }) => (
           <span className="text-nb-body-sm">{row.original.rayon?.name ?? '—'}</span>
         ),
+      },
+      {
+        id: 'shift',
+        accessorFn: (u) => (u.shift_definition_id ? shiftNameById.get(u.shift_definition_id) ?? '' : ''),
+        header: 'Shift',
+        meta: { label: 'Shift', filterVariant: 'text' },
+        cell: ({ row }) => {
+          const id = row.original.shift_definition_id;
+          return <span className="text-nb-body-sm">{id ? shiftNameById.get(id) ?? '—' : '—'}</span>;
+        },
+      },
+      {
+        id: 'area',
+        accessorFn: (u) => u.area?.name ?? '',
+        header: 'Area Utama',
+        meta: { label: 'Area Utama', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm">{row.original.area?.name ?? '—'}</span>
+        ),
+      },
+      {
+        id: 'password_must_change',
+        accessorFn: (u) => (u.password_must_change ? 'Ya' : 'Tidak'),
+        header: 'Wajib Ganti Sandi',
+        meta: { label: 'Wajib Ganti Sandi', filterVariant: 'text' },
+        cell: ({ row }) =>
+          row.original.password_must_change ? (
+            <StatusPill tone="warn" dot>
+              Ya
+            </StatusPill>
+          ) : (
+            <span className="text-nb-body-sm text-nb-gray-600">Tidak</span>
+          ),
       },
       {
         id: 'status',
@@ -172,12 +245,20 @@ export default function UsersPage() {
         ),
       },
     ],
-    [actorName]
+    [actorName, shiftNameById]
   );
 
   const rowActions = useCallback(
     (u: User): DataTableRowAction<User>[] => [
-      { key: 'view', label: 'Lihat', icon: Eye, onClick: () => router.push(`/users/${u.id}`) },
+      {
+        key: 'view',
+        label: 'Lihat',
+        icon: Eye,
+        onClick: () => {
+          setViewingUser(u);
+          setViewOpen(true);
+        },
+      },
       {
         key: 'edit',
         label: 'Ubah',
@@ -187,6 +268,13 @@ export default function UsersPage() {
           setEditingUser(u);
           setFormOpen(true);
         },
+      },
+      {
+        key: 'reset-password',
+        label: 'Reset Password',
+        icon: KeyRound,
+        hidden: !canManage,
+        onClick: () => setResetConfirmUser(u),
       },
       {
         key: 'toggle-active',
@@ -204,7 +292,7 @@ export default function UsersPage() {
         onClick: () => setUserToDelete(u),
       },
     ],
-    [router, canManage, deactivateUser, activateUser]
+    [canManage, deactivateUser, activateUser]
   );
 
   return (
@@ -247,11 +335,43 @@ export default function UsersPage() {
         onSuccess={() => refetch()}
       />
 
+      <UserFormModal open={viewOpen} onOpenChange={setViewOpen} user={viewingUser} readOnly />
+
       <DeleteUserModal
         user={userToDelete}
         isOpen={!!userToDelete}
         onClose={() => setUserToDelete(null)}
         onSuccess={() => setUserToDelete(null)}
+      />
+
+      <ConfirmDialog
+        open={!!resetConfirmUser}
+        onOpenChange={(open) => !open && setResetConfirmUser(null)}
+        title="Paksa Reset Password?"
+        description={
+          resetConfirmUser
+            ? `Password ${resetConfirmUser.full_name} akan direset paksa — password lama tidak bisa dipakai lagi dan pengguna wajib menggantinya saat login pertama.`
+            : undefined
+        }
+        confirmLabel="Reset Password"
+        loading={resetPassword.isPending}
+        onConfirm={async () => {
+          if (!resetConfirmUser) return;
+          // Await first so the dialog shows its loading state; handleResetPassword
+          // swallows errors (toast), so we always close + (on success) show the
+          // temp-password dialog afterward.
+          await handleResetPassword(resetConfirmUser);
+          setResetConfirmUser(null);
+        }}
+      />
+
+      <TempPasswordDialog
+        password={tempPassword}
+        username={tempPwUsername}
+        onClose={() => {
+          setTempPassword(null);
+          setTempPwUsername(undefined);
+        }}
       />
     </div>
   );

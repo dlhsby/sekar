@@ -10,9 +10,6 @@ export class RayonSummaryDto {
   @ApiProperty({ example: 'Rayon Selatan' })
   name: string;
 
-  @ApiProperty({ example: 'SELATAN' })
-  code: string;
-
   @ApiProperty({ example: 15 })
   area_count: number;
 

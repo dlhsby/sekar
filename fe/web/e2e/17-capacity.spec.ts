@@ -20,7 +20,6 @@ const WEEK_B = WEEK_A + 1;
 const RAYON = {
   id: RAYON_ID,
   name: 'Rayon Selatan',
-  code: 'RYN-01',
 };
 
 const CAPACITY_DATA = [

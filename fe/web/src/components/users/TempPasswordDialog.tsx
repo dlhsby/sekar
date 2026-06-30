@@ -7,6 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
   DialogFooter,
   Button,
 } from '@/components/ui';
@@ -43,7 +44,7 @@ export function TempPasswordDialog({ password, username, onClose }: TempPassword
         <DialogHeader>
           <DialogTitle id="temp-password-title">Password Sementara</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3 py-3">
+        <DialogBody className="space-y-4">
           <p className="text-nb-body-sm text-nb-gray-700">
             {username ? (
               <>
@@ -57,7 +58,7 @@ export function TempPasswordDialog({ password, username, onClose }: TempPassword
               </>
             )}
           </p>
-          <div className="flex items-center gap-2 rounded-nb-base border-2 border-nb-black bg-nb-gray-50 p-3">
+          <div className="flex items-center gap-2 rounded-nb-base border-2 border-nb-black bg-nb-gray-50 p-4">
             <code className="flex-1 select-all font-mono text-nb-body font-bold text-nb-black">
               {password}
             </code>
@@ -71,7 +72,7 @@ export function TempPasswordDialog({ password, username, onClose }: TempPassword
               {copied ? 'Disalin' : 'Salin'}
             </Button>
           </div>
-        </div>
+        </DialogBody>
         <DialogFooter>
           <Button type="button" onClick={onClose}>
             Selesai

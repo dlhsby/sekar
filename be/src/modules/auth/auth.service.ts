@@ -13,6 +13,7 @@ import { AuthConstants } from '../../common/constants/auth.constants';
 import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { RedisService } from '../../common/services/redis.service';
+import { normalizePhone } from '../../common/utils/phone.util';
 
 @Injectable()
 export class AuthService {
@@ -80,11 +81,14 @@ export class AuthService {
 
     // Detect if identifier looks like a phone number
     const isPhone = /^[+0]/.test(identifier);
+    // Phone numbers are stored normalized to `08…`; normalize the lookup so a
+    // user typing `+62…`/`62…`/spaced input still matches the stored value.
+    const phoneIdentifier = normalizePhone(identifier);
 
     let user: User | null = null;
     if (isPhone) {
       user = await this.userRepository.findOne({
-        where: { phone_number: identifier },
+        where: { phone_number: phoneIdentifier },
       });
     } else {
       user = await this.userRepository.findOne({
@@ -95,7 +99,7 @@ export class AuthService {
     // Fallback: try the other lookup method
     if (!user) {
       user = await this.userRepository.findOne({
-        where: isPhone ? { username: identifier } : { phone_number: identifier },
+        where: isPhone ? { username: identifier } : { phone_number: phoneIdentifier },
       });
     }
 

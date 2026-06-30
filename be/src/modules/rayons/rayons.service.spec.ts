@@ -17,7 +17,6 @@ describe('RayonsService', () => {
   const mockRayon: Rayon = {
     id: '11111111-1111-1111-1111-111111111101',
     name: 'Rayon Selatan',
-    code: 'SELATAN',
     description: 'Covers southern Surabaya districts',
     created_at: new Date('2024-01-01T00:00:00Z'),
     updated_at: new Date('2024-01-01T00:00:00Z'),
@@ -117,30 +116,8 @@ describe('RayonsService', () => {
     });
   });
 
-  describe('findByCode', () => {
-    it('should return a rayon by code', async () => {
-      mockRayonRepository.findOne.mockResolvedValue(mockRayon);
-
-      const result = await service.findByCode('SELATAN');
-
-      expect(result).toEqual(mockRayon);
-      expect(mockRayonRepository.findOne).toHaveBeenCalledWith({
-        where: { code: 'SELATAN' },
-      });
-    });
-
-    it('should throw NotFoundException if rayon with code not found', async () => {
-      const code = 'NONEXISTENT';
-      mockRayonRepository.findOne.mockResolvedValue(null);
-
-      await expect(service.findByCode(code)).rejects.toThrow(NotFoundException);
-      await expect(service.findByCode(code)).rejects.toThrow(`Rayon with code "${code}" not found`);
-    });
-  });
-
   describe('create', () => {
     const createRayonDto: CreateRayonDto = {
-      code: 'UTARA',
       name: 'Rayon Utara',
       description: 'Covers northern Surabaya districts',
     };
@@ -158,31 +135,10 @@ describe('RayonsService', () => {
       expect(mockRayonRepository.save).toHaveBeenCalled();
     });
 
-    it('should throw ConflictException if code already exists', async () => {
-      const duplicateCodeDto: CreateRayonDto = {
-        code: 'SELATAN',
-        name: 'Different Name',
-      };
-
-      // First check: code already exists
-      mockRayonRepository.findOne.mockResolvedValueOnce(mockRayon);
-
-      await expect(service.create(duplicateCodeDto)).rejects.toThrow(ConflictException);
-
-      // Reset and test again for error message
-      mockRayonRepository.findOne.mockResolvedValueOnce(mockRayon);
-      await expect(service.create(duplicateCodeDto)).rejects.toThrow(
-        `Rayon with code "${duplicateCodeDto.code}" already exists`,
-      );
-    });
-
     it('should throw ConflictException if name already exists', async () => {
-      mockRayonRepository.findOne
-        .mockResolvedValueOnce(null) // code check
-        .mockResolvedValueOnce(mockRayon); // name check
+      mockRayonRepository.findOne.mockResolvedValueOnce(mockRayon); // name check
 
       const duplicateNameDto: CreateRayonDto = {
-        code: 'NEWCODE',
         name: 'Rayon Selatan',
       };
 
@@ -229,25 +185,6 @@ describe('RayonsService', () => {
       );
     });
 
-    it('should throw ConflictException if new code already exists', async () => {
-      const updateWithCode: UpdateRayonDto = { code: 'UTARA' };
-
-      mockRayonRepository.findOne
-        .mockResolvedValueOnce({ ...mockRayon }) // initial findOne by id
-        .mockResolvedValueOnce({ ...mockRayon, id: 'other-id', code: 'UTARA' }); // code uniqueness check - conflict
-
-      await expect(service.update(mockRayon.id, updateWithCode)).rejects.toThrow(ConflictException);
-
-      // Test again for message
-      mockRayonRepository.findOne
-        .mockResolvedValueOnce({ ...mockRayon })
-        .mockResolvedValueOnce({ ...mockRayon, id: 'other-id', code: 'UTARA' });
-
-      await expect(service.update(mockRayon.id, updateWithCode)).rejects.toThrow(
-        `Rayon with code "${updateWithCode.code}" already exists`,
-      );
-    });
-
     it('should throw ConflictException if new name already exists', async () => {
       const updateWithName: UpdateRayonDto = { name: 'Rayon Utara' };
 
@@ -257,17 +194,6 @@ describe('RayonsService', () => {
         .mockResolvedValueOnce({ ...mockRayon, id: 'other-id', name: 'Rayon Utara' }); // name uniqueness check - conflict
 
       await expect(service.update(mockRayon.id, updateWithName)).rejects.toThrow(ConflictException);
-    });
-
-    it('should allow updating with same code (no change)', async () => {
-      mockRayonRepository.findOne.mockResolvedValue({ ...mockRayon });
-      mockRayonRepository.save.mockResolvedValue(mockRayon);
-
-      const updateWithSameCode: UpdateRayonDto = { code: 'SELATAN' };
-
-      const result = await service.update(mockRayon.id, updateWithSameCode);
-
-      expect(result).toEqual(mockRayon);
     });
   });
 

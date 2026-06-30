@@ -128,7 +128,6 @@ function buildRayon(
   return {
     id: 'rayon-1',
     name: 'Rayon Selatan',
-    code: 'RS',
     center_lat: -7.290,
     center_lng: 112.740,
     boundary_polygon: TRIANGLE_GEOJSON,

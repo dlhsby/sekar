@@ -28,47 +28,47 @@ import { RAYON_BOUNDARIES, computeCentroidFromRings, type RayonCode } from './km
  * Run: npm run db:seed:production
  */
 
-const RAYONS: { name: string; code: RayonCode | 'TAMAN_AKTIF'; description: string }[] = [
+const RAYONS: { name: string; codeKey: RayonCode | 'TAMAN_AKTIF'; description: string }[] = [
   {
     name: 'Rayon Selatan',
-    code: 'SELATAN',
+    codeKey: 'SELATAN',
     description: 'Wilayah Surabaya Selatan - Wonokromo, Wonocolo, Gayungan, Jambangan',
   },
   {
     name: 'Rayon Utara',
-    code: 'UTARA',
+    codeKey: 'UTARA',
     description: 'Wilayah Surabaya Utara - Krembangan, Pabean Cantian, Semampir, Kenjeran, Bulak',
   },
   {
     name: 'Rayon Pusat',
-    code: 'PUSAT',
+    codeKey: 'PUSAT',
     description: 'Wilayah Surabaya Pusat - Tegalsari, Genteng, Bubutan, Simokerto',
   },
   {
     name: 'Rayon Timur 1',
-    code: 'TIMUR1',
+    codeKey: 'TIMUR1',
     description: 'Wilayah Surabaya Timur bagian 1 - Tambaksari, Gubeng, Sukolilo',
   },
   {
     name: 'Rayon Timur 2',
-    code: 'TIMUR2',
+    codeKey: 'TIMUR2',
     description:
       'Wilayah Surabaya Timur bagian 2 - Mulyorejo, Rungkut, Tenggilis Mejoyo, Gunung Anyar',
   },
   {
     name: 'Rayon Barat 1',
-    code: 'BARAT1',
+    codeKey: 'BARAT1',
     description: 'Wilayah Surabaya Barat bagian 1 - Sukomanunggal, Tandes, Asemrowo, Benowo',
   },
   {
     name: 'Rayon Barat 2',
-    code: 'BARAT2',
+    codeKey: 'BARAT2',
     description:
       'Wilayah Surabaya Barat bagian 2 - Sawahan, Dukuh Pakis, Wiyung, Karang Pilang, Lakarsantri, Sambikerep',
   },
   {
     name: 'Rayon Taman Aktif',
-    code: 'TAMAN_AKTIF',
+    codeKey: 'TAMAN_AKTIF',
     description:
       'Bucket logis untuk taman aktif (active parks) lintas-rayon — tidak punya batas geografis',
   },
@@ -148,33 +148,40 @@ async function seedProduction(): Promise<void> {
     // 1. Rayons
     for (const rayon of RAYONS) {
       await queryRunner.query(
-        `INSERT INTO rayons (name, code, description)
-         VALUES ($1, $2, $3)
-         ON CONFLICT (code) DO NOTHING`,
-        [rayon.name, rayon.code, rayon.description],
+        `INSERT INTO rayons (name, description)
+         VALUES ($1, $2)
+         ON CONFLICT (name) DO NOTHING`,
+        [rayon.name, rayon.description],
       );
     }
+    // Map codeKey to rayon name for lookups
+    const codeKeyToName: Record<string, string> = {};
+    for (const rayon of RAYONS) {
+      codeKeyToName[rayon.codeKey] = rayon.name;
+    }
+
     // Real polygon boundaries + centroids from the official KMZ
     for (const code of Object.keys(RAYON_BOUNDARIES) as RayonCode[]) {
       const polygon = RAYON_BOUNDARIES[code];
       if (!polygon) continue;
       const ring = polygon.coordinates[0].map(([lng, lat]) => [lng, lat] as [number, number]);
       const centroid = computeCentroidFromRings([ring]);
+      const rayonName = codeKeyToName[code];
       await queryRunner.query(
         `UPDATE rayons SET
            center_lat = $1, center_lng = $2,
            boundary_polygon = $3::jsonb, boundary_computed_at = NOW()
-         WHERE code = $4 AND boundary_polygon IS NULL`,
-        [centroid.lat, centroid.lng, JSON.stringify(polygon), code],
+         WHERE name = $4 AND boundary_polygon IS NULL`,
+        [centroid.lat, centroid.lng, JSON.stringify(polygon), rayonName],
       );
     }
     // Office/landmark center overrides (only when still at the default)
     await queryRunner.query(
-      `UPDATE rayons SET center_lat = $1, center_lng = $2 WHERE code = 'PUSAT' AND center_lat IS NULL`,
+      `UPDATE rayons SET center_lat = $1, center_lng = $2 WHERE name = 'Rayon Pusat' AND center_lat IS NULL`,
       [-7.2745614, 112.7579174],
     );
     await queryRunner.query(
-      `UPDATE rayons SET center_lat = $1, center_lng = $2 WHERE code = 'TAMAN_AKTIF' AND center_lat IS NULL`,
+      `UPDATE rayons SET center_lat = $1, center_lng = $2 WHERE name = 'Rayon Taman Aktif' AND center_lat IS NULL`,
       [-7.291347, 112.739764],
     );
     console.log(`  ✓ ${RAYONS.length} rayons upserted (boundaries from KMZ where unset)`);
@@ -192,11 +199,13 @@ async function seedProduction(): Promise<void> {
 
     // 3. Kecamatans (public pruning intake)
     for (const kecamatan of KECAMATANS) {
+      // Map kecamatan.rayon (codeKey) to rayon name using the lookup table
+      const rayonName = codeKeyToName[kecamatan.rayon];
       await queryRunner.query(
         `INSERT INTO kecamatans (name, code, rayon_id, region)
-         SELECT $1, $2, r.id, $4 FROM rayons r WHERE r.code = $3
+         SELECT $1, $2, r.id, $4 FROM rayons r WHERE r.name = $3
          ON CONFLICT (code) DO NOTHING`,
-        [kecamatan.name, kecamatan.code, kecamatan.rayon, kecamatan.region],
+        [kecamatan.name, kecamatan.code, rayonName, kecamatan.region],
       );
     }
     console.log(`  ✓ ${KECAMATANS.length} kecamatans upserted`);

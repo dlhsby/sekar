@@ -16,7 +16,7 @@ import authReducer from '../../store/slices/authSlice';
 import shiftReducer from '../../store/slices/shiftSlice';
 import offlineReducer from '../../store/slices/offlineSlice';
 import { useClockInOut } from '../useClockInOut';
-import { getMySchedule } from '../../services/api/schedulesApi';
+import { getMySchedule, getMyRoster } from '../../services/api/schedulesApi';
 
 jest.mock('react-native-geolocation-service', () => ({
   getCurrentPosition: jest.fn(),
@@ -28,7 +28,7 @@ jest.mock('../../services/api/shiftsApi', () => ({
   clockOut: jest.fn(),
   getCurrentShift: jest.fn(),
 }));
-jest.mock('../../services/api/schedulesApi', () => ({ getMySchedule: jest.fn() }));
+jest.mock('../../services/api/schedulesApi', () => ({ getMySchedule: jest.fn(), getMyRoster: jest.fn() }));
 jest.mock('../../services/permissions', () => ({
   requestClockInPermissions: jest.fn().mockResolvedValue({ success: false }),
   requestCameraPermission: jest.fn(),
@@ -41,6 +41,7 @@ jest.mock('../../services/media', () => ({
 }));
 
 const mockGetMySchedule = getMySchedule as jest.MockedFunction<typeof getMySchedule>;
+const mockGetMyRoster = getMyRoster as jest.MockedFunction<typeof getMyRoster>;
 
 // Shift the worker actually clocked into (daytime, non-crossing).
 const CLOCKED_SHIFT_DEF = {
@@ -94,6 +95,7 @@ describe('useClockInOut — scheduled-shift precedence', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockGetMySchedule.mockResolvedValue({ data: { shift_definition: ROSTER_SHIFT_DEF } } as never);
+    mockGetMyRoster.mockResolvedValue({ data: null } as never);
   });
 
   it('judges lateness against the clocked-in shift, not the roster hint', async () => {

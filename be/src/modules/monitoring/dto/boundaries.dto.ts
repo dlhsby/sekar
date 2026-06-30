@@ -53,9 +53,6 @@ export class RayonBoundaryDto {
   @ApiProperty({ example: 'Rayon Selatan' })
   name: string;
 
-  @ApiProperty({ example: 'SELATAN' })
-  code: string;
-
   @ApiPropertyOptional({ example: '#7FBC8C' })
   color: string | null;
 

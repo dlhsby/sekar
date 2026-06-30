@@ -11,6 +11,7 @@ import { SharedModule } from '../../shared/shared.module';
 import { MonitoringModule } from '../monitoring/monitoring.module';
 import { AuditModule } from '../audit/audit.module';
 import { UserAreasModule } from '../user-areas/user-areas.module';
+import { DailySchedulesModule } from '../daily-schedules/daily-schedules.module';
 
 /**
  * Shifts Module
@@ -27,6 +28,7 @@ import { UserAreasModule } from '../user-areas/user-areas.module';
     forwardRef(() => MonitoringModule),
     AuditModule,
     UserAreasModule,
+    DailySchedulesModule,
   ],
   controllers: [ShiftsController],
   providers: [ShiftsService],

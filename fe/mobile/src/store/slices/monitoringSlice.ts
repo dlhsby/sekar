@@ -2,6 +2,7 @@
  * Monitoring Slice
  * Phase 2D: Real-time monitoring state for map dashboard
  * Manages live users, filters, selected user, location history, staffing summary
+ * Phase 3: Daily roster monitoring (expected/present/absent/leave counts)
  */
 
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
@@ -11,6 +12,7 @@ import type {
   LocationHistory,
   StaffingSummaryItem,
   BoundariesResponse,
+  AbsentUser,
 } from '../../types/models.types';
 import type { MonitoringFilters } from '../../types/api.types';
 import {
@@ -31,6 +33,14 @@ interface StatusCounts {
   offline: number;
 }
 
+interface RosterCounts {
+  expected_count: number;
+  present_count: number;
+  absent_count: number;
+  on_leave_count: number;
+  off_schedule_count: number;
+}
+
 interface MonitoringState {
   liveUsers: LiveUser[];
   cityStats: Record<string, unknown> | null;
@@ -46,6 +56,8 @@ interface MonitoringState {
   currentDayType: string | null;
   currentDayTypeLabel: string | null;
   statusCounts: StatusCounts;
+  rosterCounts: RosterCounts;
+  absentUsers: AbsentUser[];
   isLoading: boolean;
   isLoadingDaySummary: boolean;
   isLoadingLocationHistory: boolean;
@@ -59,6 +71,14 @@ const initialStatusCounts: StatusCounts = {
   outside_area: 0,
   missing: 0,
   offline: 0,
+};
+
+const initialRosterCounts: RosterCounts = {
+  expected_count: 0,
+  present_count: 0,
+  absent_count: 0,
+  on_leave_count: 0,
+  off_schedule_count: 0,
 };
 
 const initialState: MonitoringState = {
@@ -76,6 +96,8 @@ const initialState: MonitoringState = {
   currentDayType: null,
   currentDayTypeLabel: null,
   statusCounts: initialStatusCounts,
+  rosterCounts: initialRosterCounts,
+  absentUsers: [],
   isLoading: false,
   isLoadingDaySummary: false,
   isLoadingLocationHistory: false,
@@ -323,6 +345,15 @@ const monitoringSlice = createSlice({
           missing: action.payload.total_missing ?? 0,
           offline: action.payload.total_offline ?? 0,
         };
+        // Phase 3: Extract roster counts from the response
+        state.rosterCounts = {
+          expected_count: action.payload.expected_count ?? 0,
+          present_count: action.payload.present_count ?? 0,
+          absent_count: action.payload.absent_count ?? 0,
+          on_leave_count: action.payload.on_leave_count ?? 0,
+          off_schedule_count: action.payload.off_schedule_count ?? 0,
+        };
+        state.absentUsers = action.payload.absent_users ?? [];
       }
     });
     builder.addCase(fetchLiveUsers.rejected, (state, action) => {

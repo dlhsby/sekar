@@ -117,6 +117,7 @@ export class AreasService {
     const query = this.areaRepository
       .createQueryBuilder('area')
       .leftJoinAndSelect('area.areaType', 'areaType')
+      .leftJoinAndSelect('area.rayon', 'rayon')
       .where('area.is_active = :isActive', { isActive: true })
       .orderBy('area.id', 'ASC');
 
@@ -147,6 +148,7 @@ export class AreasService {
 
     const area = await this.areaRepository.findOne({
       where: { id, is_active: true },
+      relations: ['rayon'],
     });
 
     if (!area) {
@@ -172,8 +174,12 @@ export class AreasService {
 
     const area = await this.findOne(id);
 
-    // Update fields without mutating the loaded entity
-    const updatedArea = await this.areaRepository.save({ ...area, ...updateAreaDto });
+    // Drop the loaded `rayon` relation object before merging: keeping it would
+    // let TypeORM prefer the stale relation over a changed `rayon_id` on save,
+    // silently ignoring a rayon reassignment. We save by FK column only.
+    const { rayon: _rayon, ...areaWithoutRayon } = area;
+    void _rayon;
+    const updatedArea = await this.areaRepository.save({ ...areaWithoutRayon, ...updateAreaDto });
 
     this.logger.log(`Area with ID ${id} updated successfully`);
     return updatedArea;

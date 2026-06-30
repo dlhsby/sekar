@@ -1,11 +1,12 @@
 /**
  * Rayons API Client
- * TanStack Query hooks for rayon data fetching
+ * TanStack Query hooks for rayon data fetching, creation, updating, and deletion
  */
 
 import { useQuery, useQueries } from '@tanstack/react-query';
 import { apiClient } from './client';
 import { Rayon, RayonStats, Area, AreaFilters, PaginatedResponse } from '@/types/models';
+import { makeCrudHooks } from './crud-hooks';
 
 /**
  * Query key factory for rayons
@@ -114,3 +115,54 @@ export function useRayonsWithStats() {
     isError: statsQueries.some((q) => q.isError),
   };
 }
+
+// ---------------------------------------------------------------------------
+// Create/Update/Delete Rayon DTOs
+// ---------------------------------------------------------------------------
+
+/**
+ * DTO for creating a rayon
+ */
+export interface CreateRayonDto {
+  name: string;
+  color?: string | null;
+  description?: string | null;
+  center_lat?: number | null;
+  center_lng?: number | null;
+}
+
+/**
+ * DTO for updating a rayon
+ */
+export interface UpdateRayonDto {
+  name?: string;
+  color?: string | null;
+  description?: string | null;
+  center_lat?: number | null;
+  center_lng?: number | null;
+}
+
+// ---------------------------------------------------------------------------
+// CRUD Hooks (via Factory)
+// ---------------------------------------------------------------------------
+
+const rayonCrudHooks = makeCrudHooks<Rayon, CreateRayonDto, UpdateRayonDto>({
+  resource: 'rayons',
+  listKey: rayonKeys.lists(),
+  detailKeyFn: (id) => rayonKeys.detail(id),
+});
+
+/**
+ * Hook to create a new rayon
+ */
+export const useCreateRayon = rayonCrudHooks.useCreate;
+
+/**
+ * Hook to update an existing rayon
+ */
+export const useUpdateRayon = rayonCrudHooks.useUpdate;
+
+/**
+ * Hook to delete a rayon
+ */
+export const useDeleteRayon = rayonCrudHooks.useDelete;

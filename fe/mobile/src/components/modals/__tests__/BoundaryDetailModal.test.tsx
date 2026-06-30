@@ -78,7 +78,6 @@ const adequateArea: AreaBoundary = {
 const mockRayon: RayonBoundary = {
   id: 'rayon-1',
   name: 'Rayon Selatan',
-  code: 'RS-01',
   center_lat: -7.297,
   center_lng: 112.744,
   boundary_polygon: null,

@@ -25,10 +25,16 @@ export function AreaFormModal({ open, onOpenChange, area, onSuccess }: AreaFormM
   const mutation = isEdit ? updateMutation : createMutation;
 
   const handleSubmit = async (data: CreateAreaDto | UpdateAreaDto): Promise<void> => {
-    if (isEdit && area) {
-      await updateMutation.mutateAsync({ id: area.id, data: data as UpdateAreaDto });
-    } else {
-      await createMutation.mutateAsync(data as CreateAreaDto);
+    try {
+      if (isEdit && area) {
+        await updateMutation.mutateAsync({ id: area.id, data: data as UpdateAreaDto });
+      } else {
+        await createMutation.mutateAsync(data as CreateAreaDto);
+      }
+    } catch {
+      // Surfaced via the mutation.isError banner; keep the modal open and stop
+      // the rejection from escaping react-hook-form as an unhandled rejection.
+      return;
     }
     onSuccess?.();
     onOpenChange(false);

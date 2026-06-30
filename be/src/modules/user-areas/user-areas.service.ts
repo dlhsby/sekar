@@ -41,6 +41,39 @@ export class UserAreasService {
     return areas.map((ua) => ua.area_id);
   }
 
+  /**
+   * Batch query for permanent area IDs across multiple users.
+   * Returns a Map from user_id to area_id[]. Users with no permanent areas
+   * are included in the Map with an empty array.
+   * Handles empty userIds gracefully by returning an empty Map.
+   */
+  async getPermanentAreaIdsForUsers(userIds: string[]): Promise<Map<string, string[]>> {
+    const result = new Map<string, string[]>();
+
+    if (!userIds.length) {
+      return result;
+    }
+
+    const areas = await this.userAreaRepo.find({
+      where: { user_id: In(userIds), assignment_type: 'permanent' },
+      select: ['user_id', 'area_id'],
+    });
+
+    // Initialize all users with empty arrays
+    for (const userId of userIds) {
+      result.set(userId, []);
+    }
+
+    // Group by user_id
+    for (const area of areas) {
+      const existing = result.get(area.user_id) ?? [];
+      existing.push(area.area_id);
+      result.set(area.user_id, existing);
+    }
+
+    return result;
+  }
+
   async assignAreas(userId: string, areaIds: string[], assignedBy: string): Promise<UserArea[]> {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');

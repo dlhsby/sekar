@@ -46,6 +46,14 @@ jest.mock('@/components/maps/PolygonEditor', () => ({
   ),
 }));
 
+// Mock GoogleMapPicker — Google Maps JS needs an API key + browser APIs; render
+// its manualFallback, which holds the center-coordinate display in jsdom.
+jest.mock('@/components/maps/GoogleMapPicker', () => ({
+  GoogleMapPicker: ({ manualFallback }: { manualFallback?: ReactNode }) => (
+    <div data-testid="google-map-picker">{manualFallback}</div>
+  ),
+}));
+
 // Mock geo utilities
 jest.mock('@/lib/utils/geo', () => ({
   isValidPolygon: jest.fn(() => true),
@@ -97,7 +105,6 @@ describe('AreaForm', () => {
       render(<AreaForm mode="create" onSubmit={mockOnSubmit} />, { wrapper: createWrapper() });
 
       expect(screen.getByLabelText(/nama area/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/kode area/i)).toBeInTheDocument();
       expect(screen.getByText('Rayon')).toBeInTheDocument();
       expect(screen.getByText('Tipe Area')).toBeInTheDocument();
       expect(screen.getByTestId('polygon-editor')).toBeInTheDocument();
@@ -141,10 +148,9 @@ describe('AreaForm', () => {
     const mockArea: Area = {
       id: 'area-1',
       name: 'Taman Bungkul',
-      code: 'TMNBKL',
       rayon_id: 'rayon-1',
       area_type_id: 'type-1',
-      description: 'Taman kota utama',
+      address: 'Jl. Taman Bungkul No. 1',
       boundary_polygon: {
         type: 'Polygon',
         coordinates: [
@@ -157,8 +163,8 @@ describe('AreaForm', () => {
           ],
         ],
       },
-      center_latitude: -7.28,
-      center_longitude: 112.74,
+      gps_lat: -7.28,
+      gps_lng: 112.74,
       created_at: '2026-01-01T00:00:00Z',
       updated_at: '2026-01-01T00:00:00Z',
     };
@@ -169,7 +175,6 @@ describe('AreaForm', () => {
       });
 
       expect(screen.getByDisplayValue('Taman Bungkul')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('TMNBKL')).toBeInTheDocument();
     });
 
     it('shows update button in edit mode', () => {
@@ -220,17 +225,4 @@ describe('AreaForm', () => {
     });
   });
 
-  describe('Code auto-uppercase', () => {
-    it('auto-uppercases the code field input', async () => {
-      const user = userEvent.setup();
-      render(<AreaForm mode="create" onSubmit={mockOnSubmit} />, { wrapper: createWrapper() });
-
-      const codeInput = screen.getByLabelText(/kode area/i);
-      await user.type(codeInput, 'tmnbkl');
-
-      await waitFor(() => {
-        expect((codeInput as HTMLInputElement).value).toBe('TMNBKL');
-      });
-    });
-  });
 });

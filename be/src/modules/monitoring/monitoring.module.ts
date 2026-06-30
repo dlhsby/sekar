@@ -34,6 +34,7 @@ import { Schedule } from '../schedules/entities/schedule.entity';
 import { AreaPlant } from '../plants/entities/area-plant.entity';
 import { EventsModule } from '../../gateways/events.module';
 import { UserAreasModule } from '../user-areas/user-areas.module';
+import { DailySchedulesModule } from '../daily-schedules/daily-schedules.module';
 import { PlantsModule } from '../plants/plants.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AuditModule } from '../audit/audit.module';
@@ -60,6 +61,7 @@ import { SharedModule } from '../../shared/shared.module';
     ]),
     forwardRef(() => EventsModule),
     UserAreasModule,
+    DailySchedulesModule,
     PlantsModule,
     NotificationsModule, // Phase 4-3 (M2): missing-worker alert FCM trigger
     AuditModule, // Phase 4-4: reassignment audit trail

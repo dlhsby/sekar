@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, FlatList, StyleSheet, RefreshControl } from 'react-native';
+import { View, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBEmptyState, NBBackgroundPattern, NBText, NBSkeleton } from '../../components/nb';
 import { StatusPill } from '../../components/home/StatusPill';
-import { getMySchedule, getMySchedules } from '../../services/api/schedulesApi';
+import { getMySchedule, getMySchedules, getMyRoster } from '../../services/api/schedulesApi';
 import { useAppSelector } from '../../store/hooks';
 import { formatDateLong } from '../../utils/dateUtils';
 import {
@@ -14,7 +14,7 @@ import {
   nbShadows,
   nbBorders,
 } from '../../constants/nbTokens';
-import type { Schedule } from '../../types/shift.types';
+import type { Schedule, DailySchedule, DailyScheduleStatus } from '../../types/shift.types';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -45,10 +45,62 @@ const STATE_PILL: Record<ScheduleState, { tone: 'ok' | 'info' | 'neutral'; label
   ended: { tone: 'neutral', label: 'Selesai' },
 };
 
+const ROSTER_STATUS_PILL: Record<DailyScheduleStatus, { tone: 'ok' | 'warn' | 'bad' | 'info' | 'neutral'; label: string }> = {
+  present: { tone: 'ok', label: 'Hadir' },
+  planned: { tone: 'ok', label: 'Direncanakan' },
+  absent: { tone: 'bad', label: 'Tidak Hadir' },
+  leave_sick: { tone: 'warn', label: 'Cuti Sakit' },
+  leave_annual: { tone: 'warn', label: 'Cuti Tahunan' },
+  replaced: { tone: 'neutral', label: 'Digantikan' },
+  off: { tone: 'neutral', label: 'Libur' },
+};
+
 /** Strip "HH:MM:SS" → "HH:MM". */
 const hhmm = (t?: string): string => (t ? t.slice(0, 5) : '--:--');
 
 // ─── Row ──────────────────────────────────────────────────────────────────────
+
+function RosterRow({ roster }: { roster: DailySchedule }): React.JSX.Element {
+  const pill = ROSTER_STATUS_PILL[roster.status];
+  const shift = roster.shift_definition;
+  const areasText = roster.daily_schedule_areas
+    .map((a) => a.area.name)
+    .join(', ') || 'Area belum ditetapkan';
+
+  return (
+    <View style={[styles.card, styles.rosterCard]} testID={`roster-${roster.id}`}>
+      <View style={styles.cardHeader}>
+        <NBText variant="mono-sm" color="gray700" uppercase style={styles.rosterLabel}>
+          Jadwal Hari Ini
+        </NBText>
+        <StatusPill dot tone={pill.tone} label={pill.label} />
+      </View>
+
+      <View style={styles.shiftRow}>
+        <MaterialCommunityIcons name="clock-outline" size={16} color={nbColors.gray600} />
+        <NBText variant="body-sm" color="gray700" style={styles.shiftText}>
+          {shift ? `${shift.name} · ${hhmm(shift.start_time)}–${hhmm(shift.end_time)}` : 'Shift belum ditetapkan'}
+        </NBText>
+      </View>
+
+      <View style={styles.areaRow}>
+        <MaterialCommunityIcons name="map-marker-outline" size={16} color={nbColors.gray600} />
+        <NBText variant="body-sm" color="gray700" style={styles.shiftText}>
+          {areasText}
+        </NBText>
+      </View>
+
+      {roster.rayon && (
+        <View style={styles.rayonRow}>
+          <MaterialCommunityIcons name="map-outline" size={16} color={nbColors.gray600} />
+          <NBText variant="caption" color="gray600" style={styles.shiftText}>
+            {roster.rayon.name}
+          </NBText>
+        </View>
+      )}
+    </View>
+  );
+}
 
 function ScheduleRow({ schedule, today }: { schedule: Schedule; today: string }): React.JSX.Element {
   const state = scheduleState(schedule, today);
@@ -92,6 +144,7 @@ export function MyScheduleScreen(): React.JSX.Element {
   const userId = useAppSelector((state) => state.auth.user?.id);
   const assignedAreas = useAppSelector((state) => state.auth.assignedAreas);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [roster, setRoster] = useState<DailySchedule | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,11 +159,11 @@ export function MyScheduleScreen(): React.JSX.Element {
     }
     try {
       setError(null);
-      // Default roster is derived from the worker's assignment (areas + one
-      // shift); explicit schedule rows (ad-hoc/overrides) take precedence.
-      const [mineRes, currentRes] = await Promise.all([
+      // Fetch today's roster + default roster
+      const [mineRes, currentRes, rosterRes] = await Promise.all([
         getMySchedules(userId),
         getMySchedule(),
+        getMyRoster(today),
       ]);
       if (mineRes.error) {
         setError(mineRes.error);
@@ -119,6 +172,7 @@ export function MyScheduleScreen(): React.JSX.Element {
 
       const explicit = mineRes.data ?? [];
       const shift = currentRes.data?.shift_definition;
+      setRoster(rosterRes.data ?? null);
 
       // Synthesize one entry per assigned area using the worker's single shift.
       const synthetic: Schedule[] = assignedAreas.map(
@@ -168,11 +222,6 @@ export function MyScheduleScreen(): React.JSX.Element {
     void fetchSchedules();
   }, [fetchSchedules]);
 
-  const renderItem = useCallback(
-    ({ item }: { item: Schedule }) => <ScheduleRow schedule={item} today={today} />,
-    [today],
-  );
-
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <NBBackgroundPattern />
@@ -192,7 +241,7 @@ export function MyScheduleScreen(): React.JSX.Element {
             onCTA={onRefresh}
           />
         </View>
-      ) : schedules.length === 0 ? (
+      ) : schedules.length === 0 && !roster ? (
         <View style={styles.stateWrap}>
           <NBEmptyState
             icon={<MaterialCommunityIcons name="calendar-blank-outline" size={48} color={nbColors.gray500} />}
@@ -201,15 +250,17 @@ export function MyScheduleScreen(): React.JSX.Element {
           />
         </View>
       ) : (
-        <FlatList
-          data={schedules}
-          keyExtractor={(s) => s.id}
-          renderItem={renderItem}
+        <ScrollView
           contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={nbColors.primary} />
           }
-        />
+        >
+          {roster && <RosterRow roster={roster} />}
+          {schedules.map((s) => (
+            <ScheduleRow key={s.id} schedule={s} today={today} />
+          ))}
+        </ScrollView>
       )}
     </SafeAreaView>
   );
@@ -230,11 +281,14 @@ const styles = StyleSheet.create({
     ...nbShadows.sm,
   },
   cardActive: { borderColor: nbColors.primary },
+  rosterCard: { borderColor: nbColors.primary },
   cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: nbSpacing.sm },
+  rosterLabel: { color: nbColors.gray600 },
   areaRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs, flexShrink: 1 },
   areaName: { fontWeight: '700', flexShrink: 1 },
   shiftRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs },
   shiftText: { flexShrink: 1 },
+  rayonRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs },
   dateText: { flexShrink: 1 },
 });

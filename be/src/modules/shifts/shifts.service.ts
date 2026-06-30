@@ -20,6 +20,7 @@ import { User } from '../users/entities/user.entity';
 import { StatusCalculatorService } from '../monitoring/services/status-calculator.service';
 import { AuditLogService } from '../audit/audit.service';
 import { UserAreasService } from '../user-areas/user-areas.service';
+import { DailySchedulesService } from '../daily-schedules/daily-schedules.service';
 import { GpsUtil } from '../../common/utils/gps.util';
 
 /**
@@ -47,6 +48,10 @@ export class ShiftsService {
     @Inject(forwardRef(() => StatusCalculatorService))
     private readonly statusCalculator: StatusCalculatorService | undefined,
     private readonly auditLogService: AuditLogService,
+    // Daily roster (ADR-013). Optional → legacy specs without the provider keep
+    // the pre-roster behavior (user_areas + schedules + primary area).
+    @Optional()
+    private readonly dailySchedulesService?: DailySchedulesService,
     // Phase 4-7 (H1): boundary math extracted to the shared service. Optional →
     // legacy specs without the provider fall back to a local instance.
     @Optional()
@@ -73,7 +78,16 @@ export class ShiftsService {
    * @param lng optional clock-in longitude
    */
   async getActiveArea(userId: string, lat?: number, lng?: number): Promise<Area | null> {
-    const candidates = await this.getCandidateAreas(userId);
+    // Prefer today's roster areas (ADR-013); fall back to the standing
+    // assignment (user_areas + active schedules) when there is no roster row.
+    let candidates: Area[] = [];
+    if (this.dailySchedulesService) {
+      const today = TimezoneUtil.jakartaDateString();
+      candidates = await this.dailySchedulesService.getActiveAreasForDay(userId, today);
+    }
+    if (candidates.length === 0) {
+      candidates = await this.getCandidateAreas(userId);
+    }
 
     if (candidates.length === 0) {
       // No assignment rows — fall back to the legacy primary area, else ad-hoc.
@@ -129,8 +143,16 @@ export class ShiftsService {
     return best;
   }
 
-  /** The worker's single configured shift, falling back to the time-of-day match. */
+  /**
+   * The shift baseline for lateness: today's roster shift (ADR-013), else the
+   * worker's configured shift, else the time-of-day match.
+   */
   private async getUserShiftOrCurrent(userId: string): Promise<ShiftDefinition | null> {
+    if (this.dailySchedulesService) {
+      const today = TimezoneUtil.jakartaDateString();
+      const rosterShift = await this.dailySchedulesService.getShiftForDay(userId, today);
+      if (rosterShift) return rosterShift;
+    }
     const user = await this.userRepo.findOne({
       where: { id: userId },
       relations: ['shift_definition'],

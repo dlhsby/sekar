@@ -5,28 +5,36 @@
  * Reusable form for creating and editing areas
  */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Save } from 'lucide-react';
-import { FormInput, FormSelect, Textarea, Button, Card, CardContent } from '@/components/ui';
+import { FormInput, FormSelect, Textarea, Card, CardContent } from '@/components/ui';
+import { FormActions } from '@/components/forms/FormActions';
 import { PolygonEditor } from '@/components/maps/PolygonEditor';
+import { GoogleMapPicker } from '@/components/maps/GoogleMapPicker';
 import { useRayons } from '@/lib/api/rayons';
 import { useAreaTypes } from '@/lib/api/area-types';
 import { calculatePolygonCenter, isValidPolygon, formatCoordinates } from '@/lib/utils/geo';
 import type { Area, CreateAreaDto, UpdateAreaDto } from '@/types/models';
 
+interface LatLng {
+  lat: number;
+  lng: number;
+}
+
+/** Centroid of a polygon as {lat,lng} (calculatePolygonCenter returns [lng,lat]). */
+function polygonCentroid(polygon: GeoJSON.Polygon): LatLng {
+  const [lng, lat] = calculatePolygonCenter(polygon);
+  return { lat, lng };
+}
+
 // Validation schema
 const areaSchema = z.object({
   name: z.string().min(2, 'Nama minimal 2 karakter'),
-  code: z
-    .string()
-    .min(2, 'Kode minimal 2 karakter')
-    .regex(/^[A-Z0-9_-]+$/, 'Kode harus huruf besar dan angka'),
   rayon_id: z.string().uuid('Rayon wajib dipilih'),
   area_type_id: z.string().uuid('Tipe area wajib dipilih'),
-  description: z.string().optional(),
+  address: z.string().optional().nullable(),
   boundary_polygon: z
     .custom<GeoJSON.Polygon>(
       (val) => {
@@ -47,9 +55,16 @@ export interface AreaFormProps {
 }
 
 export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: AreaFormProps) {
-  const [polygon, setPolygon] = useState<GeoJSON.Polygon | null>(
-    initialData?.boundary_polygon || null
-  );
+  // Center point: defaults to the saved gps / polygon centroid, then tracks the
+  // polygon centroid until the user manually drops/drags the pin.
+  const initialCenter: LatLng | null =
+    initialData?.gps_lat != null && initialData?.gps_lng != null
+      ? { lat: Number(initialData.gps_lat), lng: Number(initialData.gps_lng) }
+      : initialData?.boundary_polygon
+        ? polygonCentroid(initialData.boundary_polygon)
+        : null;
+  const [center, setCenter] = useState<LatLng | null>(initialCenter);
+  const [centerOverridden, setCenterOverridden] = useState(false);
 
   // Fetch rayons and area types
   const { data: rayonsData, isLoading: loadingRayons } = useRayons();
@@ -66,38 +81,36 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
     resolver: zodResolver(areaSchema),
     defaultValues: {
       name: initialData?.name || '',
-      code: initialData?.code || '',
       rayon_id: initialData?.rayon_id || '',
       area_type_id: initialData?.area_type_id || '',
-      description: initialData?.description || '',
+      address: initialData?.address || '',
       boundary_polygon: initialData?.boundary_polygon,
     },
   });
 
-  // Watch code field to auto-uppercase
-  const codeValue = watch('code');
-  useEffect(() => {
-    if (codeValue) {
-      setValue('code', codeValue.toUpperCase());
-    }
-  }, [codeValue, setValue]);
-
-  // Handle polygon change
+  // Handle polygon change — keep the center synced to the centroid unless the
+  // user has manually placed the pin.
   const handlePolygonChange = (newPolygon: GeoJSON.Polygon | null) => {
-    setPolygon(newPolygon);
     if (newPolygon && isValidPolygon(newPolygon)) {
       setValue('boundary_polygon', newPolygon, { shouldValidate: true });
+      if (!centerOverridden) {
+        setCenter(polygonCentroid(newPolygon));
+      }
     } else {
       setValue('boundary_polygon', null, { shouldValidate: true });
     }
   };
 
-  // Calculate center coordinates
-  const centerCoords = polygon
-    ? calculatePolygonCenter(polygon)
-    : initialData
-      ? [initialData.center_longitude, initialData.center_latitude]
-      : null;
+  // Manual pin placement overrides the auto-centroid.
+  const handlePinChange = ({ lat, lng }: LatLng) => {
+    setCenterOverridden(true);
+    setCenter({ lat: Number(lat.toFixed(7)), lng: Number(lng.toFixed(7)) });
+  };
+
+  // Mapbox PolygonEditor expects [lng, lat].
+  const editorCenter: [number, number] | undefined = center
+    ? [center.lng, center.lat]
+    : undefined;
 
   // Handle form submission
   const onSubmitForm = async (data: AreaFormData) => {
@@ -105,17 +118,16 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
       return;
     }
 
-    const center = calculatePolygonCenter(data.boundary_polygon);
+    const finalCenter = center ?? polygonCentroid(data.boundary_polygon);
 
     const submitData: CreateAreaDto | UpdateAreaDto = {
       name: data.name,
-      code: data.code,
       rayon_id: data.rayon_id,
       area_type_id: data.area_type_id,
-      description: data.description || undefined,
+      address: data.address || undefined,
       boundary_polygon: data.boundary_polygon,
-      center_longitude: center[0],
-      center_latitude: center[1],
+      gps_lng: finalCenter.lng,
+      gps_lat: finalCenter.lat,
     };
 
     await onSubmit(submitData);
@@ -133,15 +145,6 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
           error={errors.name?.message}
           required
           {...register('name')}
-        />
-
-        <FormInput
-          label="Kode Area"
-          placeholder="Contoh: TMNBKL01"
-          error={errors.code?.message}
-          required
-          helperText="Huruf besar dan angka saja"
-          {...register('code')}
         />
 
         <FormSelect
@@ -197,12 +200,12 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
         />
 
         <div className="space-y-1.5">
-          <label className="text-sm font-bold leading-none">Deskripsi</label>
+          <label className="text-sm font-bold leading-none">Alamat</label>
           <Textarea
-            placeholder="Deskripsi area (opsional)"
+            placeholder="Alamat area (opsional)"
             rows={3}
-            error={errors.description?.message}
-            {...register('description')}
+            error={errors.address?.message}
+            {...register('address')}
           />
         </div>
       </div>
@@ -222,39 +225,52 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
         <PolygonEditor
           initialPolygon={initialData?.boundary_polygon}
           onChange={handlePolygonChange}
-          center={(centerCoords as [number, number]) || undefined}
-          zoom={centerCoords ? 15 : undefined}
+          center={editorCenter}
+          zoom={editorCenter ? 15 : undefined}
         />
+      </div>
 
-        {/* Center Coordinates Display */}
-        {centerCoords && (
-          <div className="bg-nb-gray-100 border-2 border-nb-black p-4">
-            <div className="font-bold mb-2">Koordinat Pusat:</div>
-            <div className="font-mono text-sm">
-              {formatCoordinates(centerCoords[0], centerCoords[1])}
-            </div>
-          </div>
-        )}
+      {/* Center Point (Google Maps drop-pin) */}
+      <div className="space-y-4">
+        <h3 className="font-bold text-lg">Titik Pusat</h3>
+        <p className="text-nb-body-sm text-nb-gray-500">
+          Otomatis dari pusat batas area. Seret pin untuk menyesuaikan (mis. titik pintu masuk).
+        </p>
+
+        <GoogleMapPicker
+          lat={center?.lat ?? null}
+          lng={center?.lng ?? null}
+          onChange={handlePinChange}
+          manualFallback={
+            center ? (
+              <div className="border-2 border-nb-black bg-nb-gray-100 p-4">
+                <div className="font-bold mb-2">Koordinat Pusat:</div>
+                <div className="font-mono text-sm">{formatCoordinates(center.lng, center.lat)}</div>
+              </div>
+            ) : (
+              <div className="border-2 border-nb-black bg-nb-gray-100 p-4">
+                <p className="text-nb-body-sm text-nb-gray-700">
+                  Gambar batas area terlebih dahulu untuk menentukan titik pusat.
+                </p>
+              </div>
+            )
+          }
+        />
       </div>
 
       {/* Submit Button */}
-      <div className="flex gap-3 pt-4">
-        <Button
-          type="submit"
-          loading={isLoading}
-          disabled={isLoading}
-          className="w-full"
-          leftIcon={<Save className="w-5 h-5" />}
-        >
-          {isLoading
+      <FormActions
+        submitLabel={
+          isLoading
             ? mode === 'create'
               ? 'Menyimpan...'
               : 'Memperbarui...'
             : mode === 'create'
               ? 'Simpan Area'
-              : 'Perbarui Area'}
-        </Button>
-      </div>
+              : 'Perbarui Area'
+        }
+        loading={isLoading}
+      />
     </form>
   );
 }

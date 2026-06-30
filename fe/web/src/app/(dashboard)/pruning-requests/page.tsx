@@ -8,6 +8,7 @@
 
 'use client';
 
+import type { DetailModalRow } from '@/components/ui';
 import { useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -21,12 +22,14 @@ import {
   FormSelect,
   PageHeader,
   StatusPill,
+  DetailModal,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
 import { useAuth } from '@/lib/auth/hooks';
 import { hasRole } from '@/lib/constants/roles';
 import { formatDate } from '@/lib/utils/time';
+import { useViewModal } from '@/lib/hooks/use-view-modal';
 import type { UserRole } from '@/types/models';
 import {
   PRUNING_REQUEST_ADMIN_ROLES,
@@ -56,6 +59,7 @@ export default function PruningRequestsPage() {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<PruningRequestStatus | 'all'>('all');
   const [page, setPage] = useState(1);
+  const view = useViewModal<PruningRequest>();
   const limit = 20;
 
   useEffect(() => {
@@ -178,10 +182,12 @@ export default function PruningRequestsPage() {
         key: 'view',
         label: 'Lihat',
         icon: Eye,
-        onClick: () => router.push(`/pruning-requests/${row.id}`),
+        onClick: () => {
+          view.openWith(row);
+        },
       },
     ],
-    [router]
+    [view]
   );
 
   const handleStatusChange = (val: string) => {
@@ -257,6 +263,32 @@ export default function PruningRequestsPage() {
           )}
         </CardContent>
       </Card>
+
+      {view.item && (
+        <DetailModal
+          open={view.open}
+          onOpenChange={view.onOpenChange}
+          title="Detail Permohonan Pemangkasan"
+          rows={[
+            { label: 'Kode Referensi', value: view.item.referenceCode },
+            { label: 'Kecamatan', value: view.item.submitter },
+            {
+              label: 'Status',
+              value: (
+                <StatusPill tone={PRUNING_REQUEST_STATUS_TONES[view.item.status]}>
+                  {PRUNING_REQUEST_STATUS_LABELS[view.item.status]}
+                </StatusPill>
+              ),
+            },
+            { label: 'Tipe Tanaman', value: view.item.plantSpeciesName },
+            { label: 'Kuantitas', value: view.item.quantity },
+            { label: 'Unit', value: view.item.unit },
+            { label: 'Lokasi', value: view.item.location },
+            { label: 'Catatan', value: view.item.notes },
+            { label: 'Dibuat', value: formatDate(view.item.createdAt) },
+          ] as DetailModalRow[]}
+        />
+      )}
     </div>
   );
 }

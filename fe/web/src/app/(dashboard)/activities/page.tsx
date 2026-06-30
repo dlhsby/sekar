@@ -5,6 +5,7 @@
 
 'use client';
 
+import type { DetailModalRow } from '@/components/ui';
 import { useAuth } from '@/lib/auth/hooks';
 import { useActivities, useApproveActivity, useRejectActivity } from '@/lib/api/activities';
 import { useActivityTypes } from '@/lib/api/activity-types';
@@ -20,6 +21,7 @@ import {
   Button,
   Field,
   DateRangePicker,
+  DetailModal,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
@@ -29,6 +31,7 @@ import { ChevronLeft, ChevronRight, Check, X, Eye } from 'lucide-react';
 import type { Activity, ActivityFilters, ActivityStatus } from '@/types/models';
 import { MONITORING_ROLES, ACTIVITY_APPROVER_ROLES, hasRole } from '@/lib/constants/roles';
 import { ACTIVITY_STATUS_LABELS, ACTIVITY_STATUS_BADGES } from '@/lib/constants/activities';
+import { useViewModal } from '@/lib/hooks/use-view-modal';
 
 const isValidActivityStatus = (value: string): value is ActivityStatus | 'all' => {
   return ['all', 'pending', 'approved', 'rejected'].includes(value);
@@ -54,6 +57,7 @@ export default function ActivitiesPage() {
   });
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const view = useViewModal<Activity>();
   const limit = 20;
 
   const approveMutation = useApproveActivity();
@@ -114,7 +118,9 @@ export default function ActivitiesPage() {
         key: 'view',
         label: 'Lihat',
         icon: Eye,
-        onClick: () => router.push(`/activities/${row.id}`),
+        onClick: () => {
+          view.openWith(row);
+        },
       },
       {
         key: 'approve',
@@ -133,7 +139,7 @@ export default function ActivitiesPage() {
         hidden: row.status !== 'pending' || !canApprove,
       },
     ],
-    [canApprove, approveMutation.isPending, handleApprove, router]
+    [canApprove, approveMutation.isPending, handleApprove, view]
   );
 
   if (authLoading || !user) {
@@ -422,6 +428,30 @@ export default function ActivitiesPage() {
           )}
         </CardContent>
       </Card>
+
+      {view.item && (
+        <DetailModal
+          open={view.open}
+          onOpenChange={view.onOpenChange}
+          title="Detail Aktivitas"
+          rows={[
+            { label: 'Tanggal', value: new Date(view.item.created_at).toLocaleDateString('id-ID') },
+            { label: 'Pengguna', value: view.item.user?.full_name },
+            { label: 'Tipe Aktivitas', value: view.item.activity_type?.name },
+            { label: 'Area', value: view.item.area?.name },
+            {
+              label: 'Status',
+              value: (
+                <Badge variant={ACTIVITY_STATUS_BADGES[view.item.status]} size="sm">
+                  {ACTIVITY_STATUS_LABELS[view.item.status]}
+                </Badge>
+              ),
+            },
+            { label: 'Foto', value: `${view.item.photo_urls?.length || 0} foto` },
+            { label: 'Catatan', value: view.item.notes },
+          ] as DetailModalRow[]}
+        />
+      )}
     </div>
   );
 }

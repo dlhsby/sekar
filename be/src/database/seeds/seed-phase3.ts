@@ -596,12 +596,33 @@ async function seedPhase3(dataSource: DataSource): Promise<void> {
     console.log('🏘️  ======== SECTION 3.4: Kecamatans (31 Surabaya) ========');
     // Idempotent — seeded here (rather than seed-reference) because db:seed
     // pipeline runs phase1 → phase2 → phase3, and rayons exist after phase2.
-    const rayonIdByCode = (await queryRunner.query(`SELECT id, code FROM rayons`)) as Array<{
+    const rayonIdByName = (await queryRunner.query(
+      `SELECT id, name FROM rayons ORDER BY name`,
+    )) as Array<{
       id: string;
-      code: string;
+      name: string;
     }>;
+    // Build a map from rayon code (local key from kecBlueprint) to rayon ID.
+    // The code here is a local reference, not from the database.
+    const codeToRayonName: Record<string, string> = {
+      SELATAN: 'Rayon Selatan',
+      UTARA: 'Rayon Utara',
+      PUSAT: 'Rayon Pusat',
+      TIMUR1: 'Rayon Timur 1',
+      TIMUR2: 'Rayon Timur 2',
+      BARAT1: 'Rayon Barat 1',
+      BARAT2: 'Rayon Barat 2',
+      TAMAN_AKTIF: 'Rayon Taman Aktif',
+    };
     const rIdx: Record<string, string> = {};
-    for (const r of rayonIdByCode) rIdx[r.code] = r.id;
+    for (const r of rayonIdByName) {
+      // Build reverse lookup: code → id. Find which code maps to this rayon name.
+      for (const [code, name] of Object.entries(codeToRayonName)) {
+        if (name === r.name) {
+          rIdx[code] = r.id;
+        }
+      }
+    }
     // Kecamatan → Rayon mapping (May 9, 2026 fix). The 4 administratively
     // "Surabaya Selatan" kecamatans (Sawahan, Dukuh Pakis, Wiyung, Karang
     // Pilang) now correctly live under Rayon Selatan so `rayon_id` and

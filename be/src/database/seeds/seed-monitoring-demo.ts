@@ -49,8 +49,7 @@ async function seedMonitoringDemo() {
         u.role,
         ua.area_id,
         a.name as area_name,
-        a.boundary_polygon,
-        r.code as rayon_code
+        a.boundary_polygon
       FROM users u
       LEFT JOIN user_areas ua ON u.id = ua.user_id AND ua.assignment_type = 'permanent'
       LEFT JOIN areas a ON ua.area_id = a.id

@@ -1,11 +1,12 @@
 /**
  * Schedules API Service
  * The worker's roster assignment (which shift they're scheduled for).
+ * Phase 3: Added daily-roster endpoint for day-scoped roster rows.
  */
 
 import { get } from './apiClient';
 import type { ApiResponse } from '../../types/api.types';
-import type { Schedule } from '../../types/shift.types';
+import type { Schedule, DailySchedule } from '../../types/shift.types';
 
 /**
  * Get the authenticated user's currently active schedule (or null if none).
@@ -24,4 +25,17 @@ export async function getMySchedules(userId: string): Promise<ApiResponse<Schedu
   return get<Schedule[]>('/schedules', { userId });
 }
 
-export default { getMySchedule, getMySchedules };
+/**
+ * Get the authenticated user's daily roster for a specific date (or today, WIB).
+ * Returns a day-scoped roster row with status, shift, areas, and rayon.
+ * Phase 3: New endpoint for roster monitoring.
+ */
+export async function getMyRoster(date?: string): Promise<ApiResponse<DailySchedule | null>> {
+  const params: Record<string, string> = {};
+  if (date) {
+    params.date = date;
+  }
+  return get<DailySchedule | null>('/daily-schedules/my', params);
+}
+
+export default { getMySchedule, getMySchedules, getMyRoster };

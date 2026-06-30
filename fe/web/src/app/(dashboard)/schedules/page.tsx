@@ -194,7 +194,7 @@ export default function SchedulesPage() {
       cell: ({ row }) => (
         <div>
           <div className="font-medium">{row.original.area?.name || '-'}</div>
-          <div className="font-mono text-[11px] text-nb-gray-600">{row.original.area?.code || ''}</div>
+          <div className="text-[11px] text-nb-gray-600">{row.original.area?.areaType?.name ?? ''}</div>
         </div>
       ),
     },
@@ -333,7 +333,7 @@ export default function SchedulesPage() {
                 { value: 'all', label: 'Semua Area' },
                 ...(areas?.data || []).map((area) => ({
                   value: area.id,
-                  label: `${area.name} (${area.code})`,
+                  label: `${area.name}`,
                 })),
               ]}
             />

@@ -1,16 +1,18 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { FormInput, FormSelect, Button, Input } from '@/components/ui';
+import { FormInput, FormCombobox, Button, Input } from '@/components/ui';
 import type { UserRole, User } from '@/types/models';
 import { useRayons } from '@/lib/api/rayons';
 import { useAreas } from '@/lib/api/areas';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useUserAreas } from '@/lib/api/user-areas';
+import { checkUsername, suggestUsername } from '@/lib/api/users';
 import { ALL_ROLES, ROLE_LABELS } from '@/lib/constants/roles';
+import { normalizePhone, INDO_MOBILE_REGEX } from '@/lib/utils/phone';
 
 /**
  * User form (simplified assignment model): rayon (single) + areas (multi,
@@ -23,7 +25,7 @@ const userSchema = z.object({
   full_name: z.string().min(2, 'Nama minimal 2 karakter'),
   phone_number: z
     .string()
-    .regex(/^(\+62|0)[0-9]{8,13}$/, 'Nomor HP tidak valid')
+    .regex(INDO_MOBILE_REGEX, 'Nomor HP harus format 08xxxxxxxxxx')
     .optional()
     .or(z.literal('')),
   role: z.enum([
@@ -53,6 +55,8 @@ interface UserFormProps {
   onCancel: () => void;
   loading?: boolean;
   submitText?: string;
+  /** Read-only "Lihat" mode — all fields disabled, no submit (just Tutup). */
+  readOnly?: boolean;
 }
 
 export function UserForm({
@@ -61,6 +65,7 @@ export function UserForm({
   onCancel,
   loading = false,
   submitText = 'Simpan',
+  readOnly = false,
 }: UserFormProps) {
   const isEditMode = !!initialData;
 
@@ -96,6 +101,63 @@ export function UserForm({
   });
 
   const selectedRole = watch('role');
+  const usernameValue = watch('username');
+  const fullNameValue = watch('full_name');
+
+  // Live username availability (debounced). Skipped in edit mode while the
+  // username is unchanged from the saved value.
+  const [usernameStatus, setUsernameStatus] = useState<
+    'idle' | 'checking' | 'available' | 'taken' | 'invalid'
+  >('idle');
+  const [suggesting, setSuggesting] = useState(false);
+  // Tracks the latest username queried so a slow response for an older value
+  // can't overwrite the status of the current one.
+  const latestCheckRef = useRef('');
+
+  useEffect(() => {
+    if (readOnly) return; // no availability checks in view mode
+    const u = (usernameValue || '').trim();
+    if (isEditMode && u === initialData?.username) {
+      setUsernameStatus('idle');
+      return;
+    }
+    if (u.length < 2) {
+      setUsernameStatus('idle');
+      return;
+    }
+    if (!/^[a-zA-Z0-9_-]+$/.test(u)) {
+      setUsernameStatus('invalid');
+      return;
+    }
+    setUsernameStatus('checking');
+    latestCheckRef.current = u;
+    const t = setTimeout(async () => {
+      try {
+        const available = await checkUsername(u);
+        if (latestCheckRef.current !== u) return; // a newer value is being checked
+        setUsernameStatus(available ? 'available' : 'taken');
+      } catch {
+        if (latestCheckRef.current === u) setUsernameStatus('idle');
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [usernameValue, isEditMode, initialData?.username, readOnly]);
+
+  const handleSuggestUsername = async () => {
+    const name = (fullNameValue || '').trim();
+    if (!name) return;
+    setSuggesting(true);
+    try {
+      const suggestion = await suggestUsername(name);
+      setValue('username', suggestion, { shouldValidate: true });
+    } catch {
+      // ignore — the admin can type a username manually
+    } finally {
+      setSuggesting(false);
+    }
+  };
+
+  const phoneReg = register('phone_number');
 
   const handleFormSubmit = async (data: UserFormData) => {
     const submitData: UserFormSubmit = { ...data, area_ids: areaIds };
@@ -106,21 +168,18 @@ export function UserForm({
   };
 
   const roleOptions = ALL_ROLES.map((role) => ({ value: role, label: ROLE_LABELS[role] }));
-  const rayonOptions = [
-    { value: '', label: 'Tidak ada' },
-    ...rayons.map((r) => ({ value: r.id, label: `${r.name} (${r.code})` })),
-  ];
-  const shiftOptions = [
-    { value: '', label: 'Tidak ada' },
-    ...shifts.map((s) => ({ value: s.id, label: `${s.name} (${s.start_time}-${s.end_time})` })),
-  ];
+  const rayonOptions = rayons.map((r) => ({ value: r.id, label: r.name }));
+  const shiftOptions = shifts.map((s) => ({
+    value: s.id,
+    label: `${s.name} (${s.start_time}-${s.end_time})`,
+  }));
 
   const allAreas = useMemo(() => areasData?.data || [], [areasData]);
   const filteredAreas = useMemo(() => {
     const q = areaSearch.trim().toLowerCase();
     if (!q) return allAreas;
     return allAreas.filter(
-      (a) => a.name.toLowerCase().includes(q) || a.code.toLowerCase().includes(q),
+      (a) => a.name.toLowerCase().includes(q),
     );
   }, [allAreas, areaSearch]);
 
@@ -128,34 +187,73 @@ export function UserForm({
     setAreaIds((prev) => (prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]));
 
   const busy = isSubmitting || loading;
+  const fieldsDisabled = busy || readOnly;
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-      <FormInput
-        label="Username"
-        placeholder="Masukkan username"
-        error={errors.username?.message}
-        required
-        disabled={busy}
-        {...register('username')}
-      />
-
+      {/* Nama Lengkap first so "Sarankan" can derive a username from it. */}
       <FormInput
         label="Nama Lengkap"
         placeholder="Masukkan nama lengkap"
         error={errors.full_name?.message}
         required
-        disabled={busy}
+        disabled={fieldsDisabled}
         {...register('full_name')}
       />
+
+      <div className="space-y-1">
+        <div className="flex items-end gap-2">
+          <div className="flex-1">
+            <FormInput
+              label="Username"
+              placeholder="Masukkan username"
+              error={errors.username?.message}
+              required
+              disabled={fieldsDisabled}
+              {...register('username')}
+            />
+          </div>
+          {!readOnly && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleSuggestUsername}
+              loading={suggesting}
+              disabled={busy || !fullNameValue}
+              className="mb-[2px] whitespace-nowrap"
+            >
+              Sarankan
+            </Button>
+          )}
+        </div>
+        {usernameStatus === 'checking' && (
+          <p className="text-nb-caption text-nb-gray-600">Memeriksa ketersediaan…</p>
+        )}
+        {usernameStatus === 'available' && (
+          <p className="text-nb-caption text-nb-success-dark">✓ Username tersedia</p>
+        )}
+        {usernameStatus === 'taken' && (
+          <p className="text-nb-caption text-nb-danger-dark">✗ Username sudah dipakai</p>
+        )}
+        {usernameStatus === 'invalid' && (
+          <p className="text-nb-caption text-nb-danger-dark">
+            Hanya huruf, angka, garis bawah, dan tanda hubung
+          </p>
+        )}
+      </div>
 
       <FormInput
         label="Nomor HP (untuk login)"
         placeholder="0812xxxxxxxx"
         error={errors.phone_number?.message}
-        helperText="Bisa dipakai untuk login selain username"
-        disabled={busy}
-        {...register('phone_number')}
+        helperText="Format 08xxxxxxxxxx — bisa dipakai untuk login selain username"
+        disabled={fieldsDisabled}
+        {...phoneReg}
+        onBlur={(e) => {
+          phoneReg.onBlur(e);
+          const v = e.target.value;
+          if (v) setValue('phone_number', normalizePhone(v), { shouldValidate: true });
+        }}
       />
 
       {!isEditMode && (
@@ -165,35 +263,36 @@ export function UserForm({
         </div>
       )}
 
-      <FormSelect
+      <FormCombobox
         label="Role"
         options={roleOptions}
         value={selectedRole}
         onChange={(value) => setValue('role', value as UserRole)}
         error={errors.role?.message}
         required
-        disabled={busy}
+        clearable={false}
+        disabled={fieldsDisabled}
       />
 
-      <FormSelect
+      <FormCombobox
         label="Rayon"
         options={rayonOptions}
         value={watch('rayon_id') || ''}
-        onChange={(value) => setValue('rayon_id', value as string)}
+        onChange={(value) => setValue('rayon_id', value)}
         placeholder={rayonsLoading ? 'Memuat...' : 'Pilih rayon'}
         error={errors.rayon_id?.message}
-        disabled={busy || rayonsLoading}
+        disabled={fieldsDisabled || rayonsLoading}
       />
 
-      <FormSelect
+      <FormCombobox
         label="Shift Kerja"
         options={shiftOptions}
         value={watch('shift_definition_id') || ''}
-        onChange={(value) => setValue('shift_definition_id', value as string)}
+        onChange={(value) => setValue('shift_definition_id', value)}
         placeholder="Pilih shift"
         error={errors.shift_definition_id?.message}
         helperText="Satu shift per pekerja (berlaku untuk semua areanya)"
-        disabled={busy}
+        disabled={fieldsDisabled}
       />
 
       {/* Areas multi-select */}
@@ -208,7 +307,7 @@ export function UserForm({
           placeholder={areasLoading ? 'Memuat area...' : 'Cari area…'}
           value={areaSearch}
           onChange={(e) => setAreaSearch(e.target.value)}
-          disabled={busy || areasLoading}
+          disabled={fieldsDisabled || areasLoading}
         />
         <div className="max-h-56 space-y-1 overflow-y-auto rounded-nb-base border-2 border-nb-black p-2">
           {filteredAreas.length === 0 ? (
@@ -226,11 +325,10 @@ export function UserForm({
                     className="size-4 accent-nb-primary"
                     checked={checked}
                     onChange={() => toggleArea(area.id)}
-                    disabled={busy}
+                    disabled={fieldsDisabled}
                   />
                   <span className="text-nb-body-sm">
-                    {area.name}{' '}
-                    <span className="font-mono text-[11px] text-nb-gray-600">({area.code})</span>
+                    {area.name}
                   </span>
                 </label>
               );
@@ -243,12 +341,26 @@ export function UserForm({
       </div>
 
       <div className="flex gap-3 pt-4">
-        <Button type="button" variant="secondary" onClick={onCancel} disabled={busy} className="flex-1">
-          Batal
-        </Button>
-        <Button type="submit" loading={busy} disabled={busy} className="flex-1">
-          {submitText}
-        </Button>
+        {readOnly ? (
+          <Button type="button" variant="secondary" onClick={onCancel} className="flex-1">
+            Tutup
+          </Button>
+        ) : (
+          <>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={onCancel}
+              disabled={busy}
+              className="flex-1"
+            >
+              Batal
+            </Button>
+            <Button type="submit" loading={busy} disabled={busy} className="flex-1">
+              {submitText}
+            </Button>
+          </>
+        )}
       </div>
     </form>
   );

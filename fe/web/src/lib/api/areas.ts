@@ -12,6 +12,7 @@ import type {
   UpdateAreaDto,
   PaginatedResponse,
 } from '@/types/models';
+import { makeCrudHooks } from './crud-hooks';
 
 /**
  * Query keys factory for areas
@@ -63,28 +64,6 @@ async function fetchArea(id: string): Promise<Area> {
   return response.data;
 }
 
-/**
- * Create a new area
- */
-async function createArea(data: CreateAreaDto): Promise<Area> {
-  const response = await apiClient.post<Area>('/areas', data);
-  return response.data;
-}
-
-/**
- * Update an existing area
- */
-async function updateArea(id: string, data: UpdateAreaDto): Promise<Area> {
-  const response = await apiClient.patch<Area>(`/areas/${id}`, data);
-  return response.data;
-}
-
-/**
- * Delete an area (soft delete)
- */
-async function deleteArea(id: string): Promise<void> {
-  await apiClient.delete(`/areas/${id}`);
-}
 
 /**
  * Hook to fetch areas with filters
@@ -112,20 +91,17 @@ export function useArea(id: string, options?: Omit<UseQueryOptions<Area>, 'query
   });
 }
 
+// CRUD hooks via factory
+const areaCrudHooks = makeCrudHooks<Area, CreateAreaDto, UpdateAreaDto>({
+  resource: 'areas',
+  listKey: areaKeys.lists(),
+  detailKeyFn: (id) => areaKeys.detail(id),
+});
+
 /**
  * Hook to create a new area
  */
-export function useCreateArea() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: createArea,
-    onSuccess: () => {
-      // Invalidate all area lists
-      queryClient.invalidateQueries({ queryKey: areaKeys.lists() });
-    },
-  });
-}
+export const useCreateArea = areaCrudHooks.useCreate;
 
 /** Deactivate an area (is_active=false) — distinct from delete; reversible. */
 export function useDeactivateArea() {
@@ -154,33 +130,12 @@ export function useActivateArea() {
 /**
  * Hook to update an existing area
  */
-export function useUpdateArea() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateAreaDto }) => updateArea(id, data),
-    onSuccess: (_, variables) => {
-      // Invalidate the specific area and all lists
-      queryClient.invalidateQueries({ queryKey: areaKeys.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: areaKeys.lists() });
-    },
-  });
-}
+export const useUpdateArea = areaCrudHooks.useUpdate;
 
 /**
  * Hook to delete an area
  */
-export function useDeleteArea() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: deleteArea,
-    onSuccess: () => {
-      // Invalidate all area lists
-      queryClient.invalidateQueries({ queryKey: areaKeys.lists() });
-    },
-  });
-}
+export const useDeleteArea = areaCrudHooks.useDelete;
 
 // ---------------------------------------------------------------------------
 // Area Boundary (Phase 2D)

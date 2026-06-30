@@ -1,58 +1,39 @@
 /**
- * Rayons List Page — 7 rayon master data on the standardized DataTable.
- * Access: Admin System / Superadmin / TopManagement only.
+ * Rayons List Page — rayon master data on the standardized DataTable.
+ * Create/edit happen in a modal; delete actions are permission-gated.
+ * Access: Admin System / Superadmin only.
  */
 
 'use client';
 
-import { useCallback, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-import { Eye } from 'lucide-react';
-
-import { useAuth } from '@/lib/auth/hooks';
-import { useRayonsWithStats } from '@/lib/api/rayons';
-import { useUsers } from '@/lib/api/users';
-import { formatArea } from '@/lib/utils/geo';
-import type { Rayon, RayonStats } from '@/types/models';
+import { useCallback, useMemo, useState } from 'react';
+import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import {
-  Badge,
+  Button,
   DataTable,
   PageHeader,
-  Spinner,
+  CoordinateLink,
+  DetailModal,
+  ConfirmDialog,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
-
-const ALLOWED_ROLES = ['admin_system', 'superadmin', 'top_management'];
-
-type RayonRow = Rayon & Omit<RayonStats, 'rayon_id'>;
+import { RayonFormModal } from '@/components/rayons/RayonFormModal';
+import { useRayons, useDeleteRayon } from '@/lib/api/rayons';
+import { useUsers } from '@/lib/api/users';
+import { useAuth } from '@/lib/auth/hooks';
+import { ADMIN_ROLES } from '@/lib/constants/roles';
+import { getErrorMessage } from '@/lib/api/client';
+import { useViewModal } from '@/lib/hooks/use-view-modal';
+import type { Rayon } from '@/types/models';
 
 export default function RayonsPage() {
-  const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
-  const { rayons, stats, isLoading } = useRayonsWithStats();
+  const { user } = useAuth();
+  const isAdmin = user && ADMIN_ROLES.includes(user.role);
 
-  const allowed = !!user && ALLOWED_ROLES.includes(user.role);
-
-  // Access control: redirect unauthorized roles to the dashboard home.
-  useEffect(() => {
-    if (!authLoading && user && !allowed) router.push('/');
-  }, [user, authLoading, allowed, router]);
-
-  const rows = useMemo<RayonRow[]>(
-    () =>
-      rayons.map((rayon) => {
-        const s = stats.find((st) => st.rayon_id === rayon.id);
-        return {
-          ...rayon,
-          total_areas: s?.total_areas ?? 0,
-          total_users: s?.total_users ?? 0,
-          active_users: s?.active_users ?? 0,
-          total_coverage_area: s?.total_coverage_area ?? 0,
-        };
-      }),
-    [rayons, stats]
-  );
+  const { data: rayonsData, isLoading, error, refetch } = useRayons();
+  const rayons = useMemo(() => rayonsData || [], [rayonsData]);
 
   // Resolve actor ids (created_by/updated_by) to names via the user list.
   const { data: usersData } = useUsers({ limit: 1000 });
@@ -65,7 +46,15 @@ export default function RayonsPage() {
     [userNameById]
   );
 
-  const columns = useMemo<ColumnDef<RayonRow>[]>(
+  const deleteRayon = useDeleteRayon();
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingRayon, setEditingRayon] = useState<Rayon | null>(null);
+  const view = useViewModal<Rayon>();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletingRayon, setDeletingRayon] = useState<Rayon | null>(null);
+
+  const columns = useMemo<ColumnDef<Rayon>[]>(
     () => [
       {
         id: 'id',
@@ -78,18 +67,6 @@ export default function RayonsPage() {
         ),
       },
       {
-        id: 'code',
-        accessorKey: 'code',
-        header: 'Kode',
-        enableSorting: true,
-        meta: { label: 'Kode', filterVariant: 'text' },
-        cell: ({ row }) => (
-          <Badge variant="outline" size="sm">
-            {row.original.code}
-          </Badge>
-        ),
-      },
-      {
         id: 'name',
         accessorKey: 'name',
         header: 'Nama',
@@ -98,38 +75,50 @@ export default function RayonsPage() {
         cell: ({ row }) => <span className="font-semibold">{row.original.name}</span>,
       },
       {
-        id: 'total_areas',
-        accessorKey: 'total_areas',
-        header: 'Area',
-        enableSorting: true,
-        meta: { label: 'Area', filterVariant: 'number', align: 'right' },
-        cell: ({ row }) => <span className="tabular-nums">{row.original.total_areas}</span>,
+        id: 'color',
+        accessorKey: 'color',
+        header: 'Warna',
+        enableSorting: false,
+        meta: { label: 'Warna', filterVariant: 'text' },
+        cell: ({ row }) => {
+          const color = row.original.color;
+          return (
+            <span className="inline-flex items-center gap-2">
+              {color ? (
+                <>
+                  <div
+                    className="h-4 w-4 border-2 border-nb-black"
+                    style={{ backgroundColor: color }}
+                    title={color}
+                  />
+                  <span className="font-mono text-nb-body-sm text-nb-gray-600">{color}</span>
+                </>
+              ) : (
+                <span className="text-nb-gray-500">—</span>
+              )}
+            </span>
+          );
+        },
       },
       {
-        id: 'total_users',
-        accessorKey: 'total_users',
-        header: 'Petugas',
-        enableSorting: true,
-        meta: { label: 'Petugas', filterVariant: 'number', align: 'right' },
-        cell: ({ row }) => <span className="tabular-nums">{row.original.total_users}</span>,
-      },
-      {
-        id: 'active_users',
-        accessorKey: 'active_users',
-        header: 'Petugas Aktif',
-        enableSorting: true,
-        meta: { label: 'Petugas Aktif', filterVariant: 'number', align: 'right' },
-        cell: ({ row }) => <span className="tabular-nums">{row.original.active_users}</span>,
-      },
-      {
-        id: 'total_coverage_area',
-        accessorKey: 'total_coverage_area',
-        header: 'Luas Cakupan',
-        enableSorting: true,
-        meta: { label: 'Luas Cakupan', filterVariant: 'number', align: 'right' },
+        id: 'coordinates',
+        accessorFn: (r) => (r.center_lat && r.center_lng ? 'Ada' : '—'),
+        header: 'Koordinat',
+        enableSorting: false,
+        meta: { label: 'Koordinat', filterVariant: 'text' },
         cell: ({ row }) => (
-          <span className="tabular-nums text-nb-gray-600">
-            {formatArea(row.original.total_coverage_area)}
+          <CoordinateLink lat={row.original.center_lat} lng={row.original.center_lng} />
+        ),
+      },
+      {
+        id: 'description',
+        accessorKey: 'description',
+        header: 'Deskripsi',
+        enableSorting: true,
+        meta: { label: 'Deskripsi', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {row.original.description ?? '—'}
           </span>
         ),
       },
@@ -160,39 +149,162 @@ export default function RayonsPage() {
   );
 
   const rowActions = useCallback(
-    (r: RayonRow): DataTableRowAction<RayonRow>[] => [
-      { key: 'view', label: 'Lihat', icon: Eye, onClick: () => router.push(`/rayons/${r.id}`) },
+    (r: Rayon): DataTableRowAction<Rayon>[] => [
+      {
+        key: 'view',
+        label: 'Lihat',
+        icon: Eye,
+        onClick: () => {
+          view.openWith(r);
+        },
+      },
+      {
+        key: 'edit',
+        label: 'Ubah',
+        icon: Pencil,
+        disabled: !isAdmin,
+        onClick: () => {
+          setEditingRayon(r);
+          setFormOpen(true);
+        },
+      },
+      {
+        key: 'delete',
+        label: 'Hapus',
+        icon: Trash2,
+        variant: 'danger',
+        hidden: !isAdmin,
+        onClick: () => {
+          setDeletingRayon(r);
+          setDeleteOpen(true);
+        },
+      },
     ],
-    [router]
+    [isAdmin, view]
   );
 
-  if (authLoading || !user) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center" aria-busy="true">
-        <Spinner label="Memuat..." />
-      </div>
-    );
-  }
+  const handleDelete = async () => {
+    if (!deletingRayon) return;
 
-  if (!allowed) return null;
+    try {
+      await deleteRayon.mutateAsync(deletingRayon.id);
+      toast.success(`Rayon "${deletingRayon.name}" berhasil dihapus`);
+      setDeleteOpen(false);
+      setDeletingRayon(null);
+      refetch();
+    } catch (err: unknown) {
+      const errorMsg = getErrorMessage(err);
+      if (errorMsg.includes('masih memiliki') || errorMsg.includes('area')) {
+        toast.error(`Rayon "${deletingRayon.name}" masih memiliki area. Hapus area terlebih dahulu.`);
+      } else {
+        toast.error(errorMsg);
+      }
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Rayon"
-        description="Kelola dan monitor 7 rayon di Kota Surabaya"
-      />
+      <PageHeader title="Rayon" description="Kelola 7 rayon di Kota Surabaya" />
 
       <DataTable
         columns={columns}
-        data={rows}
+        data={rayons}
         loading={isLoading}
+        error={!!error}
+        onRetry={() => refetch()}
+        onRefresh={() => refetch()}
         getRowId={(r) => r.id}
         searchPlaceholder="Cari rayon…"
-        onRowClick={(r) => router.push(`/rayons/${r.id}`)}
         rowActions={rowActions}
-        emptyTitle="Tidak ada rayon"
-        emptyDescription="Belum ada rayon yang terdaftar dalam sistem."
+        actions={
+          isAdmin ? (
+            <Button
+              onClick={() => {
+                setEditingRayon(null);
+                setFormOpen(true);
+              }}
+              leftIcon={<Plus className="h-5 w-5" />}
+            >
+              Tambah Rayon
+            </Button>
+          ) : undefined
+        }
+        emptyTitle="Belum Ada Rayon"
+        emptyDescription="Mulai dengan menambahkan rayon pertama."
+        emptyAction={
+          isAdmin ? (
+            <Button
+              onClick={() => {
+                setEditingRayon(null);
+                setFormOpen(true);
+              }}
+              leftIcon={<Plus className="h-5 w-5" />}
+            >
+              Tambah Rayon Pertama
+            </Button>
+          ) : undefined
+        }
+      />
+
+      <RayonFormModal
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        rayon={editingRayon}
+        onSuccess={() => refetch()}
+      />
+
+      <DetailModal
+        open={view.open}
+        onOpenChange={view.onOpenChange}
+        title="Detail Rayon"
+        rows={
+          view.item
+            ? [
+                { label: 'Nama', value: view.item.name },
+                {
+                  label: 'Warna',
+                  value: view.item.color ? (
+                    <span className="inline-flex items-center gap-2">
+                      <div
+                        className="h-4 w-4 border-2 border-nb-black"
+                        style={{ backgroundColor: view.item.color }}
+                      />
+                      <span className="font-mono text-nb-body-sm">{view.item.color}</span>
+                    </span>
+                  ) : null,
+                },
+                {
+                  label: 'Koordinat',
+                  value:
+                    view.item.center_lat && view.item.center_lng ? (
+                      <CoordinateLink lat={view.item.center_lat} lng={view.item.center_lng} />
+                    ) : null,
+                },
+                { label: 'Deskripsi', value: view.item.description },
+                { label: 'Dibuat oleh', value: actorName(view.item.created_by) },
+                { label: 'Diperbarui oleh', value: actorName(view.item.updated_by) },
+              ]
+            : []
+        }
+      />
+
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Hapus Rayon"
+        description={
+          deletingRayon && (
+            <>
+              Anda akan menghapus rayon <strong>{deletingRayon.name}</strong>. Tindakan ini tidak
+              dapat dibatalkan.
+            </>
+          )
+        }
+        confirmLabel="Hapus"
+        cancelLabel="Batal"
+        variant="destructive"
+        loading={deleteRayon.isPending}
+        onConfirm={handleDelete}
       />
     </div>
   );

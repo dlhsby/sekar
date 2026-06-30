@@ -224,19 +224,21 @@ describe('TasksPage', () => {
       expect(screen.getByText('Aksi')).toBeInTheDocument();
     });
 
-    it('renders a "Lihat" menu action per row in the table view via kebab menu', async () => {
+    it('renders a "Lihat" menu action per row that opens a read-only detail modal', async () => {
       const user = userEvent.setup();
       render(<TasksPage />, { wrapper: createWrapper() });
       await switchToTable();
       // Open the kebab menu for the first row
       const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
       await user.click(kebabTriggers[0]);
-      // The "Lihat" menuitem should be visible and navigable
+      // The "Lihat" menuitem should be visible
       const lihatMenuItem = screen.getByRole('menuitem', { name: /lihat/i });
       expect(lihatMenuItem).toBeInTheDocument();
-      // Verify clicking it navigates to the task detail page
+      // Clicking it opens the detail modal (no navigation).
       await user.click(lihatMenuItem);
-      expect(mockPush).toHaveBeenCalledWith('/tasks/task-1');
+      expect(await screen.findByRole('dialog')).toBeInTheDocument();
+      expect(screen.getByText('Detail Tugas')).toBeInTheDocument();
+      expect(mockPush).not.toHaveBeenCalled();
     });
   });
 

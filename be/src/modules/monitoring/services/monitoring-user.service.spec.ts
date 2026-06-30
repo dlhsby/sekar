@@ -48,7 +48,6 @@ describe('MonitoringUserService', () => {
   const mockRayon: Rayon = {
     id: 'rayon-1',
     name: 'Rayon 1',
-    code: 'R1',
   } as Rayon;
 
   const mockShift: Shift = {
@@ -223,6 +222,65 @@ describe('MonitoringUserService', () => {
       expect(result).toBeDefined();
       expect(result.users).toHaveLength(1);
       expect(result.users[0].id).toBe('user-1');
+    });
+
+    it("derives expected/present/absent/on-leave from today's roster (ADR-013)", async () => {
+      const qb = {
+        innerJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]), // live list not relevant here
+      };
+      trackingRepository.createQueryBuilder.mockReturnValue(qb as any);
+      // user-1 expected+clocked-in, user-2 expected+absent, user-3 on leave, user-4 off
+      (service as any).dailySchedulesService = {
+        getRosterForMonitoring: jest.fn().mockResolvedValue([
+          {
+            user_id: 'u1',
+            status: 'planned',
+            rayon_id: 'r1',
+            shift_definition_id: 's1',
+            user: { full_name: 'One', role: 'satgas' },
+            shift_definition: { name: 'Shift 1' },
+          },
+          {
+            user_id: 'u2',
+            status: 'planned',
+            rayon_id: 'r1',
+            shift_definition_id: 's1',
+            user: { full_name: 'Two', role: 'satgas' },
+            shift_definition: { name: 'Shift 1' },
+          },
+          {
+            user_id: 'u3',
+            status: 'leave_sick',
+            rayon_id: 'r1',
+            shift_definition_id: 's1',
+            user: { full_name: 'Three', role: 'linmas' },
+            shift_definition: { name: 'Shift 1' },
+          },
+          {
+            user_id: 'u4',
+            status: 'off',
+            rayon_id: 'r1',
+            shift_definition_id: null,
+            user: { full_name: 'Four', role: 'kepala_rayon' },
+            shift_definition: null,
+          },
+        ]),
+      };
+      trackingRepository.find = jest.fn().mockResolvedValue([{ user_id: 'u1' }]); // only u1 clocked in
+
+      const result = await service.getLiveUsers();
+
+      expect(result.expected_count).toBe(2);
+      expect(result.present_count).toBe(1);
+      expect(result.absent_count).toBe(1);
+      expect(result.on_leave_count).toBe(1);
+      expect(result.off_schedule_count).toBe(1);
+      expect(result.absent_users.map((a) => a.user_id)).toEqual(['u2']);
     });
 
     it('should filter users by area ID', async () => {

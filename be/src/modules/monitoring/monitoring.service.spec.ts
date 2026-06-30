@@ -39,7 +39,6 @@ describe('MonitoringService', () => {
   const mockRayon: Rayon = {
     id: 'rayon-1',
     name: 'Rayon Selatan',
-    code: 'SELATAN',
     description: 'Southern sector',
     created_at: new Date(),
     updated_at: new Date(),
@@ -371,7 +370,7 @@ describe('MonitoringService', () => {
     });
 
     it('should aggregate statistics from all rayons', async () => {
-      const rayon2 = { ...mockRayon, id: 'rayon-2', name: 'Rayon Utara', code: 'UTARA' };
+      const rayon2 = { ...mockRayon, id: 'rayon-2', name: 'Rayon Utara' };
       rayonRepository.find.mockResolvedValue([mockRayon, rayon2]);
       areaRepository.find.mockResolvedValue([mockArea]);
       shiftRepository.count.mockResolvedValue(10);
@@ -409,7 +408,6 @@ describe('MonitoringService', () => {
 
       expect(result).toHaveProperty('id', 'rayon-1');
       expect(result).toHaveProperty('name', 'Rayon Selatan');
-      expect(result).toHaveProperty('code', 'SELATAN');
       expect(result).toHaveProperty('total_areas');
       expect(result).toHaveProperty('total_workers');
       expect(result).toHaveProperty('workers_online');

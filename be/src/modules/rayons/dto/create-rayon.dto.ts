@@ -1,34 +1,13 @@
-import { IsString, IsNotEmpty, MaxLength, IsOptional, Matches } from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength, IsOptional, IsNumber, Min, Max } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
  * Data Transfer Object for creating a new rayon.
  *
  * Validates incoming request data for rayon creation endpoint.
- * Code and name are required. Description is optional.
+ * Name is required. Description/color/center coords are optional.
  */
 export class CreateRayonDto {
-  /**
-   * Unique code for the rayon.
-   * Can only contain uppercase letters, numbers, and underscores.
-   *
-   * @example 'SELATAN'
-   */
-  @ApiProperty({
-    description: 'Unique code for the rayon (uppercase alphanumeric with underscores)',
-    example: 'SELATAN',
-    minLength: 1,
-    maxLength: 20,
-    pattern: '^[A-Z0-9_]+$',
-  })
-  @IsString()
-  @IsNotEmpty({ message: 'Code is required' })
-  @MaxLength(20, { message: 'Code must not exceed 20 characters' })
-  @Matches(/^[A-Z0-9_]+$/, {
-    message: 'Code can only contain uppercase letters, numbers, and underscores',
-  })
-  code: string;
-
   /**
    * Display name for the rayon.
    *
@@ -58,4 +37,27 @@ export class CreateRayonDto {
   @IsOptional()
   @MaxLength(1000)
   description?: string;
+
+  @ApiPropertyOptional({
+    description: 'Hex color for the rayon boundary on the monitoring map',
+    example: '#7FBC8C',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(9)
+  color?: string;
+
+  @ApiPropertyOptional({ description: 'Center latitude', example: -7.2575 })
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  center_lat?: number;
+
+  @ApiPropertyOptional({ description: 'Center longitude', example: 112.7521 })
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  center_lng?: number;
 }

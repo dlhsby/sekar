@@ -7,7 +7,7 @@
 
 import Link from 'next/link';
 import { Rayon, RayonStats } from '@/types/models';
-import { Card, CardHeader, CardContent, CardFooter, Badge } from '@/components/ui';
+import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui';
 import { formatArea } from '@/lib/utils/geo';
 import { ChevronRight } from 'lucide-react';
 
@@ -42,9 +42,6 @@ export default function RayonCard({ rayon, stats, loading }: RayonCardProps) {
           <div className="flex items-start justify-between">
             <div>
               <h3 className="text-xl font-bold text-nb-black mb-1">{rayon.name}</h3>
-              <Badge variant="default" size="sm">
-                {rayon.code}
-              </Badge>
             </div>
           </div>
         </CardHeader>

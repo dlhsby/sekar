@@ -121,6 +121,49 @@ describe('UserAreasService', () => {
     });
   });
 
+  describe('getPermanentAreaIdsForUsers', () => {
+    it('should batch-query and return a Map of user_id -> area_id[]', async () => {
+      mockUserAreaRepo.find.mockResolvedValue([
+        { user_id: 'user-uuid-1', area_id: 'area-uuid-1' },
+        { user_id: 'user-uuid-1', area_id: 'area-uuid-2' },
+        { user_id: 'user-uuid-2', area_id: 'area-uuid-3' },
+      ]);
+
+      const result = await service.getPermanentAreaIdsForUsers([
+        'user-uuid-1',
+        'user-uuid-2',
+        'user-uuid-3',
+      ]);
+
+      expect(result.get('user-uuid-1')).toEqual(['area-uuid-1', 'area-uuid-2']);
+      expect(result.get('user-uuid-2')).toEqual(['area-uuid-3']);
+      expect(result.get('user-uuid-3')).toEqual([]);
+      expect(mockUserAreaRepo.find).toHaveBeenCalledWith({
+        where: expect.objectContaining({
+          assignment_type: 'permanent',
+        }),
+        select: ['user_id', 'area_id'],
+      });
+    });
+
+    it('should handle empty user list and return empty Map', async () => {
+      const result = await service.getPermanentAreaIdsForUsers([]);
+
+      expect(result.size).toBe(0);
+      expect(mockUserAreaRepo.find).not.toHaveBeenCalled();
+    });
+
+    it('should initialize all users with empty arrays even if no permanent areas', async () => {
+      mockUserAreaRepo.find.mockResolvedValue([]);
+
+      const result = await service.getPermanentAreaIdsForUsers(['user-uuid-1', 'user-uuid-2']);
+
+      expect(result.get('user-uuid-1')).toEqual([]);
+      expect(result.get('user-uuid-2')).toEqual([]);
+      expect(result.size).toBe(2);
+    });
+  });
+
   describe('assignAreas', () => {
     it('should create new assignments', async () => {
       mockUserRepo.findOne.mockResolvedValue(mockUser);

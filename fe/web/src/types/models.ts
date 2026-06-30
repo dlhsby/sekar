@@ -35,6 +35,8 @@ export interface User extends Record<string, unknown> {
   area_id?: string;
   area?: Area;
   shift_definition_id?: string;
+  shift_definition?: ShiftDefinition;
+  user_areas?: Array<{ id: string; area_id: string; area: Area }>;
   password_must_change?: boolean;
   is_active?: boolean;
   created_at: string;
@@ -52,8 +54,10 @@ export interface User extends Record<string, unknown> {
 export interface Rayon {
   id: string;
   name: string;
-  code: string;
-  description?: string;
+  color?: string | null;
+  description?: string | null;
+  center_lat?: number | string | null;
+  center_lng?: number | string | null;
   created_at: string;
   updated_at: string;
   /** Actor audit — ids of the users who created/updated/soft-deleted the row. */
@@ -150,17 +154,16 @@ export interface AreaType {
 export interface Area extends Record<string, unknown> {
   id: string;
   name: string;
-  code: string;
   rayon_id: string;
   rayon?: Rayon;
   area_type_id: string;
-  area_type?: AreaType;
-  center_latitude: number;
-  center_longitude: number;
+  areaType?: AreaType;
+  gps_lat?: number | string;
+  gps_lng?: number | string;
   radius_meters?: number;
   boundary_polygon?: GeoJSON.Polygon;
   coverage_area?: number;
-  description?: string;
+  address?: string | null;
   is_active?: boolean;
   created_at: string;
   updated_at: string;
@@ -186,14 +189,13 @@ export interface AreaFilters {
  */
 export interface CreateAreaDto {
   name: string;
-  code: string;
   rayon_id: string;
   area_type_id: string;
-  center_latitude: number;
-  center_longitude: number;
+  gps_lat?: number;
+  gps_lng?: number;
   radius_meters?: number;
   boundary_polygon?: GeoJSON.Polygon;
-  description?: string;
+  address?: string | null;
 }
 
 /**
@@ -201,14 +203,13 @@ export interface CreateAreaDto {
  */
 export interface UpdateAreaDto {
   name?: string;
-  code?: string;
   rayon_id?: string;
   area_type_id?: string;
-  center_latitude?: number;
-  center_longitude?: number;
+  gps_lat?: number;
+  gps_lng?: number;
   radius_meters?: number;
   boundary_polygon?: GeoJSON.Polygon;
-  description?: string;
+  address?: string | null;
 }
 
 /**

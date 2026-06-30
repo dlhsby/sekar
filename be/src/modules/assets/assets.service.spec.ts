@@ -9,7 +9,6 @@ import { AssetMaintenance } from './entities/asset-maintenance.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { UserArea } from '../user-areas/entities/user-area.entity';
 import { Area } from '../areas/entities/area.entity';
-import { Rayon } from '../rayons/entities/rayon.entity';
 import { QrCodeService } from './services/qr-code.service';
 import { AuditLogService } from '../audit/audit.service';
 import {
@@ -31,7 +30,6 @@ describe('AssetsService', () => {
   let mockUserRepo: any;
   let mockUserAreaRepo: any;
   let mockAreaRepo: any;
-  let mockRayonRepo: any;
   let mockQrCodeService: any;
   let mockAuditService: any;
 
@@ -113,10 +111,6 @@ describe('AssetsService', () => {
       findOne: jest.fn().mockResolvedValue({ id: 'area-1', rayon_id: 'rayon-1' }),
     };
 
-    mockRayonRepo = {
-      findOne: jest.fn().mockResolvedValue({ id: 'rayon-1', code: 'UTARA' }),
-    };
-
     mockQrCodeService = {
       generate: jest.fn().mockResolvedValue('qr-codes/AK-UTARA-001.png'),
       presignedUrl: jest.fn().mockResolvedValue('https://s3.example.com/presigned'),
@@ -136,7 +130,6 @@ describe('AssetsService', () => {
         { provide: getRepositoryToken(User), useValue: mockUserRepo },
         { provide: getRepositoryToken(UserArea), useValue: mockUserAreaRepo },
         { provide: getRepositoryToken(Area), useValue: mockAreaRepo },
-        { provide: getRepositoryToken(Rayon), useValue: mockRayonRepo },
         { provide: QrCodeService, useValue: mockQrCodeService },
         { provide: AuditLogService, useValue: mockAuditService },
       ],
@@ -267,7 +260,7 @@ describe('AssetsService', () => {
       };
 
       mockCategoryRepo.findOne.mockResolvedValue(mockCategory);
-      mockAssetRepo.manager.findOne.mockResolvedValue({ id: 'rayon-1', code: 'UTARA' });
+      mockAssetRepo.manager.findOne.mockResolvedValue({ id: 'rayon-1' });
       mockAssetRepo.create.mockReturnValue(mockAsset);
       mockAssetRepo.save.mockResolvedValue(mockAsset);
       mockQrCodeService.generate.mockResolvedValue('qr-code-key');

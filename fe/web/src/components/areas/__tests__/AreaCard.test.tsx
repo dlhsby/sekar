@@ -21,10 +21,9 @@ describe('AreaCard', () => {
   const mockArea: Area = {
     id: '1',
     name: 'Taman Bungkul',
-    code: 'TBG',
     rayon_id: 'rayon-1',
     area_type_id: 'type-1',
-    area_type: {
+    areaType: {
       id: 'type-1',
       name: 'Taman',
       category: 'ACTIVE',
@@ -35,14 +34,13 @@ describe('AreaCard', () => {
     rayon: {
       id: 'rayon-1',
       name: 'Rayon Selatan',
-      code: 'RS',
       description: '',
       created_at: '2026-01-01',
       updated_at: '2026-01-01',
     },
     boundary_polygon: undefined,
-    center_latitude: -7.2885,
-    center_longitude: 112.7395,
+    gps_lat: -7.2885,
+    gps_lng: 112.7395,
     coverage_area: 15000,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
@@ -52,12 +50,6 @@ describe('AreaCard', () => {
     render(<AreaCard area={mockArea} />);
 
     expect(screen.getByText('Taman Bungkul')).toBeInTheDocument();
-  });
-
-  it('should render area code', () => {
-    render(<AreaCard area={mockArea} />);
-
-    expect(screen.getByText('TBG')).toBeInTheDocument();
   });
 
   it('should render rayon badge', () => {
@@ -141,7 +133,7 @@ describe('AreaCard', () => {
   });
 
   it('should render without area type', () => {
-    const areaWithoutType = { ...mockArea, area_type: undefined };
+    const areaWithoutType = { ...mockArea, areaType: undefined };
 
     render(<AreaCard area={areaWithoutType} />);
 

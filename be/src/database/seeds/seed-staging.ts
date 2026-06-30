@@ -45,7 +45,10 @@ import {
  *   - 13 areas  (1 Taman Bungkul + 12 Kawasan Darmo pedestrian, from KMZ)
  *   - users: 14 test + 30 per-rayon dummy + the full real roster (data/users.csv) + 31 staff_kecamatan
  *   - user_areas assignments (permanent)
+ *   - shift_definition_id assignments (field workers → SHIFT1; non-field → NULL)
  *   - user_tracking_status  (all offline — testing starts clean)
+ *   - daily_schedules (TODAY's roster, materialized from templates + 1 demo leave)
+ *   - daily_schedule_areas (TODAY's area assignments, derived from user_areas)
  *   - area_staff_requirements (1 satgas + 1 linmas per area, SHIFT1/WEEKDAY)
  *
  * Empty tables (UAT writes its own rows):
@@ -264,6 +267,9 @@ async function seedStaging() {
       'notable_plants',
       'area_plants',
       'plant_species',
+      // Daily roster tables
+      'daily_schedule_areas',
+      'daily_schedules',
       // Phase 1/2 tables
       'user_areas',
       'user_tracking_status',
@@ -338,16 +344,16 @@ async function seedStaging() {
     // ============================================================
     console.log('\n🗺️  Seeding rayons...');
     await queryRunner.query(`
-      INSERT INTO rayons (id, name, code, description) VALUES
-        ('${RAYON_SELATAN_ID}', 'Rayon Selatan', 'SELATAN', 'Wilayah Surabaya Selatan - Wonokromo, Wonocolo, Gayungan, Jambangan'),
-        ('${RAYON_UTARA_ID}',   'Rayon Utara',   'UTARA',   'Wilayah Surabaya Utara - Krembangan, Pabean Cantian, Semampir, Kenjeran, Bulak'),
-        ('${RAYON_PUSAT_ID}',   'Rayon Pusat',   'PUSAT',   'Wilayah Surabaya Pusat - Tegalsari, Genteng, Bubutan, Simokerto'),
-        ('${RAYON_TIMUR1_ID}',  'Rayon Timur 1', 'TIMUR1',  'Wilayah Surabaya Timur bagian 1 - Tambaksari, Gubeng, Sukolilo'),
-        ('${RAYON_TIMUR2_ID}',  'Rayon Timur 2', 'TIMUR2',  'Wilayah Surabaya Timur bagian 2 - Mulyorejo, Rungkut, Tenggilis Mejoyo, Gunung Anyar'),
-        ('${RAYON_BARAT1_ID}',  'Rayon Barat 1', 'BARAT1',  'Wilayah Surabaya Barat bagian 1 - Sukomanunggal, Tandes, Asemrowo, Benowo'),
-        ('${RAYON_BARAT2_ID}',  'Rayon Barat 2', 'BARAT2',  'Wilayah Surabaya Barat bagian 2 - Sawahan, Dukuh Pakis, Wiyung, Karang Pilang, Lakarsantri, Sambikerep'),
-        ('${RAYON_TAMAN_AKTIF_ID}', 'Rayon Taman Aktif', 'TAMAN_AKTIF', 'Bucket logis untuk taman aktif (active parks) lintas-rayon — tidak punya batas geografis')
-      ON CONFLICT (code) DO NOTHING
+      INSERT INTO rayons (id, name, description) VALUES
+        ('${RAYON_SELATAN_ID}', 'Rayon Selatan', 'Wilayah Surabaya Selatan - Wonokromo, Wonocolo, Gayungan, Jambangan'),
+        ('${RAYON_UTARA_ID}',   'Rayon Utara',   'Wilayah Surabaya Utara - Krembangan, Pabean Cantian, Semampir, Kenjeran, Bulak'),
+        ('${RAYON_PUSAT_ID}',   'Rayon Pusat',   'Wilayah Surabaya Pusat - Tegalsari, Genteng, Bubutan, Simokerto'),
+        ('${RAYON_TIMUR1_ID}',  'Rayon Timur 1', 'Wilayah Surabaya Timur bagian 1 - Tambaksari, Gubeng, Sukolilo'),
+        ('${RAYON_TIMUR2_ID}',  'Rayon Timur 2', 'Wilayah Surabaya Timur bagian 2 - Mulyorejo, Rungkut, Tenggilis Mejoyo, Gunung Anyar'),
+        ('${RAYON_BARAT1_ID}',  'Rayon Barat 1', 'Wilayah Surabaya Barat bagian 1 - Sukomanunggal, Tandes, Asemrowo, Benowo'),
+        ('${RAYON_BARAT2_ID}',  'Rayon Barat 2', 'Wilayah Surabaya Barat bagian 2 - Sawahan, Dukuh Pakis, Wiyung, Karang Pilang, Lakarsantri, Sambikerep'),
+        ('${RAYON_TAMAN_AKTIF_ID}', 'Rayon Taman Aktif', 'Bucket logis untuk taman aktif (active parks) lintas-rayon — tidak punya batas geografis')
+      ON CONFLICT (id) DO NOTHING
     `);
 
     // Set real polygon boundaries on every rayon from KMZ
@@ -360,29 +366,32 @@ async function seedStaging() {
       if (!polygon) continue;
       const ring = polygon.coordinates[0].map(([lng, lat]) => [lng, lat] as [number, number]);
       const centroid = computeCentroidFromRings([ring]);
+      const rayonId = RAYON_ID_BY_CODE[code];
       await queryRunner.query(
         `UPDATE rayons SET
           center_lat            = $1,
           center_lng            = $2,
           boundary_polygon      = $3::jsonb,
           boundary_computed_at  = NOW()
-         WHERE code = $4`,
-        [centroid.lat, centroid.lng, JSON.stringify(polygon), code],
+         WHERE id = $4`,
+        [centroid.lat, centroid.lng, JSON.stringify(polygon), rayonId],
       );
     }
     // Override Rayon Pusat center to the actual office (Taman Surya) so the
     // mobile/web map opens on something useful — the polygon centroid lands
     // further south.
-    await queryRunner.query(
-      `UPDATE rayons SET center_lat = $1, center_lng = $2 WHERE code = 'PUSAT'`,
-      [-7.2745614, 112.7579174],
-    );
+    await queryRunner.query(`UPDATE rayons SET center_lat = $1, center_lng = $2 WHERE id = $3`, [
+      -7.2745614,
+      112.7579174,
+      RAYON_ID_BY_CODE.PUSAT,
+    ]);
     // Rayon Taman Aktif has no geographic boundary — anchor its center marker
     // on its office, which sits inside Taman Flora.
-    await queryRunner.query(
-      `UPDATE rayons SET center_lat = $1, center_lng = $2 WHERE code = 'TAMAN_AKTIF'`,
-      [RAYON_TAMAN_AKTIF_OFFICE.lat, RAYON_TAMAN_AKTIF_OFFICE.lng],
-    );
+    await queryRunner.query(`UPDATE rayons SET center_lat = $1, center_lng = $2 WHERE id = $3`, [
+      RAYON_TAMAN_AKTIF_OFFICE.lat,
+      RAYON_TAMAN_AKTIF_OFFICE.lng,
+      RAYON_ID_BY_CODE.TAMAN_AKTIF,
+    ]);
     console.log('  ✓ 8 rayons (7 geographic + Rayon Taman Aktif logical bucket)');
     console.log('  ✓ Rayon Pusat: center (-7.2745614, 112.7579174) — office override');
     console.log('  ✓ Rayon Taman Aktif: center on its office (Taman Flora)');
@@ -1271,6 +1280,25 @@ async function seedStaging() {
     );
 
     // ============================================================
+    // STEP 9b: SET SHIFT_DEFINITION_ID (field workers → SHIFT1; others → NULL)
+    // ============================================================
+    console.log('\n⏰ Assigning shift templates to users...');
+    await queryRunner.query(
+      `UPDATE users SET shift_definition_id = $1
+       WHERE role IN ('satgas', 'linmas', 'korlap') AND deleted_at IS NULL`,
+      [SHIFT_1_ID],
+    );
+    // Non-field roles (admin_data, kepala_rayon, top_management, admin_system,
+    // superadmin, staff_kecamatan) stay NULL — they are still clockable but not shift-bound.
+    const shiftAssignedCount = (await queryRunner.query(
+      `SELECT COUNT(*) AS count FROM users WHERE shift_definition_id = $1 AND deleted_at IS NULL`,
+      [SHIFT_1_ID],
+    )) as Array<{ count: string }>;
+    console.log(
+      `  ✓ ${shiftAssignedCount[0].count} field workers (satgas/linmas/korlap) assigned to Shift 1`,
+    );
+
+    // ============================================================
     // STEP 10: DERIVE rayon_id FOR FIELD WORKERS (from area.rayon_id)
     // ============================================================
     console.log('\n📌 Deriving rayon_id for field workers...');
@@ -1404,7 +1432,49 @@ async function seedStaging() {
     );
 
     // ============================================================
-    // STEP 14: PHASE 3 DATA (plants, capacity, pruning, seeds)
+    // STEP 14: MATERIALIZE TODAY'S DAILY ROSTER (from shift templates)
+    // ============================================================
+    console.log("\n📅 Materializing TODAY's daily schedule (for immediate demo data)...");
+    await queryRunner.query(`
+      INSERT INTO daily_schedules (user_id, schedule_date, rayon_id, shift_definition_id, status, source)
+      SELECT u.id, (now() AT TIME ZONE 'Asia/Jakarta')::date, u.rayon_id, u.shift_definition_id,
+             CASE WHEN u.shift_definition_id IS NOT NULL THEN 'planned' ELSE 'off' END, 'template'
+      FROM users u
+      WHERE u.is_active = TRUE AND u.deleted_at IS NULL
+    `);
+    const dailyScheduleCount = (await queryRunner.query(
+      `SELECT COUNT(*) AS count FROM daily_schedules WHERE schedule_date = (now() AT TIME ZONE 'Asia/Jakarta')::date`,
+    )) as Array<{ count: string }>;
+    console.log(`  ✓ ${dailyScheduleCount[0].count} daily schedule rows materialized`);
+
+    // Populate daily_schedule_areas from user_areas (today's assignments)
+    await queryRunner.query(`
+      INSERT INTO daily_schedule_areas (daily_schedule_id, area_id)
+      SELECT DISTINCT ds.id, ua.area_id
+      FROM daily_schedules ds
+      JOIN user_areas ua ON ua.user_id = ds.user_id AND ua.assignment_type = 'permanent'
+      WHERE ds.schedule_date = (now() AT TIME ZONE 'Asia/Jakarta')::date
+    `);
+    const dailyAreaCount = (await queryRunner.query(
+      `SELECT COUNT(*) AS count FROM daily_schedule_areas`,
+    )) as Array<{ count: string }>;
+    console.log(`  ✓ ${dailyAreaCount[0].count} daily schedule area assignments seeded`);
+
+    // Demo exception: mark satgas_pusat_1 as sick leave (for UI variety)
+    const demoLeaveUser = (await queryRunner.query(
+      `SELECT id FROM users WHERE username = 'satgas_pusat_1' AND deleted_at IS NULL LIMIT 1`,
+    )) as Array<{ id: string }>;
+    if (demoLeaveUser.length > 0) {
+      await queryRunner.query(
+        `UPDATE daily_schedules SET status = 'leave_sick', notes = 'Demam (demo)', source = 'manual'
+         WHERE user_id = $1 AND schedule_date = (now() AT TIME ZONE 'Asia/Jakarta')::date`,
+        [demoLeaveUser[0].id],
+      );
+      console.log(`  ✓ Demo exception: satgas_pusat_1 marked as sick leave`);
+    }
+
+    // ============================================================
+    // STEP 15: PHASE 3 DATA (plants, capacity, pruning, seeds)
     // ============================================================
     const phase3Check = await queryRunner.query(
       `SELECT to_regclass('public.plant_species') AS exists`,
@@ -1487,6 +1557,14 @@ async function seedStaging() {
     console.log(`      ${clockable_count} clockable users — user_tracking_status set to offline`);
     console.log('      76 area_staff_requirements (38 areas × satgas + linmas, SHIFT1/WEEKDAY)');
     console.log('      user_areas — permanent multi-area assignments per spec (Rayon Pusat only)');
+    console.log('');
+    console.log('  📆 Daily Roster (TODAY materialized for immediate demo)');
+    console.log('     ──────────────────────────────────────────────────────────────────────────');
+    console.log(
+      "      daily_schedules — TODAY's schedule entries (field workers: planned, others: off)",
+    );
+    console.log("      daily_schedule_areas — TODAY's area assignments from user_areas");
+    console.log('      1 demo leave exception (satgas_pusat_1: sick leave)');
     console.log('');
     console.log('  📭 Empty by Design (essentials-only — UAT starts from scratch)');
     console.log('     ──────────────────────────────────────────────────────────────────────────');

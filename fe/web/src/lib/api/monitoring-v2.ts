@@ -45,6 +45,13 @@ export interface MonitoringSnapshotData {
   total_outside_area: number;
   total_missing: number;
   total_offline: number;
+  // Roster-derived "expected vs actual" for today (ADR-013) — optional; 0 until
+  // the daily roster is generated.
+  expected_count?: number;
+  present_count?: number;
+  absent_count?: number;
+  on_leave_count?: number;
+  off_schedule_count?: number;
   generated_at: string;
 }
 

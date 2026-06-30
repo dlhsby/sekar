@@ -14,7 +14,6 @@ describe('RayonsController', () => {
   const mockRayon: Rayon = {
     id: '11111111-1111-1111-1111-111111111101',
     name: 'Rayon Selatan',
-    code: 'SELATAN',
     description: 'Covers southern Surabaya districts',
     created_at: new Date('2024-01-01T00:00:00Z'),
     updated_at: new Date('2024-01-01T00:00:00Z'),
@@ -30,7 +29,6 @@ describe('RayonsController', () => {
   const mockRayonsService = {
     findAll: jest.fn(),
     findOne: jest.fn(),
-    findByCode: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
@@ -133,7 +131,6 @@ describe('RayonsController', () => {
   describe('create', () => {
     it('should create a new rayon', async () => {
       const createRayonDto: CreateRayonDto = {
-        code: 'UTARA',
         name: 'Rayon Utara',
         description: 'Covers northern Surabaya districts',
       };

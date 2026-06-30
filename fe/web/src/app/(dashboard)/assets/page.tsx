@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, QrCode, Eye, Pencil, Trash2 } from 'lucide-react';
 import {
@@ -13,6 +12,7 @@ import {
   StatusPill,
   Tabs,
   TabItem,
+  DetailModal,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
@@ -21,6 +21,7 @@ import { useAssets, useAssetCategories, useDeleteAsset, type AssetStatus } from 
 import { useUsers } from '@/lib/api/users';
 import { AssetFormModal } from '@/components/assets/AssetFormModal';
 import { formatDate } from '@/lib/utils/time';
+import { useViewModal } from '@/lib/hooks/use-view-modal';
 import type { Asset } from '@/lib/api/assets';
 
 const ASSET_MANAGER_ROLES = ['korlap', 'kepala_rayon', 'admin_system', 'superadmin'];
@@ -42,7 +43,6 @@ const STATUS_LABELS: Record<AssetStatus, string> = {
 };
 
 export default function AssetsPage() {
-  const router = useRouter();
   const user = useUser();
   const isManager = user && ASSET_MANAGER_ROLES.includes(user.role);
 
@@ -54,6 +54,7 @@ export default function AssetsPage() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
+  const view = useViewModal<Asset>();
 
   const { mutate: deleteAsset } = useDeleteAsset();
 
@@ -206,7 +207,14 @@ export default function AssetsPage() {
 
   const rowActions = useCallback(
     (asset: Asset): DataTableRowAction<Asset>[] => [
-      { key: 'view', label: 'Lihat', icon: Eye, onClick: () => router.push(`/assets/${asset.id}`) },
+      {
+        key: 'view',
+        label: 'Lihat',
+        icon: Eye,
+        onClick: () => {
+          view.openWith(asset);
+        },
+      },
       {
         key: 'edit',
         label: 'Ubah',
@@ -226,7 +234,7 @@ export default function AssetsPage() {
         onClick: () => deleteAsset(asset.id),
       },
     ],
-    [router, isManager, deleteAsset]
+    [isManager, deleteAsset, view]
   );
 
   return (
@@ -319,6 +327,30 @@ export default function AssetsPage() {
       </Card>
 
       <AssetFormModal open={formOpen} onOpenChange={setFormOpen} asset={editingAsset} />
+
+      <DetailModal
+        open={view.open}
+        onOpenChange={view.onOpenChange}
+        title="Detail Aset"
+        rows={view.item ? [
+          { label: 'Kode', value: view.item.asset_code },
+          { label: 'Nama', value: view.item.name },
+          { label: 'Kategori', value: view.item.category?.name },
+          {
+            label: 'Status',
+            value: (
+              <StatusPill tone={STATUS_TONE_MAP[view.item.status]}>
+                {STATUS_LABELS[view.item.status]}
+              </StatusPill>
+            ),
+          },
+          { label: 'Lokasi', value: view.item.area?.name || view.item.rayon?.name },
+          { label: 'Dibuat', value: formatDate(view.item.created_at) },
+          { label: 'Dibuat oleh', value: actorName(view.item.created_by) },
+          { label: 'Diperbarui', value: formatDate(view.item.updated_at) },
+          { label: 'Diperbarui oleh', value: actorName(view.item.updated_by) },
+        ] : []}
+      />
     </div>
   );
 }

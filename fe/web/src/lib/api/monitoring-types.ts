@@ -32,7 +32,6 @@ export interface CityStats {
 export interface RayonMonitoringStats {
   id: string;
   name: string;
-  code: string;
   total_areas: number;
   total_workers: number;
   workers_online: number;
@@ -93,6 +92,16 @@ export interface LiveUser {
   current_task_title: string | null;
 }
 
+/** A rostered worker expected today who has not clocked in (ADR-013). */
+export interface AbsentUser {
+  user_id: string;
+  full_name: string;
+  role: string;
+  rayon_id: string | null;
+  shift_definition_id: string | null;
+  shift_name: string | null;
+}
+
 export interface LiveUsersResponse {
   total_active: number;
   total_inactive: number;
@@ -100,6 +109,14 @@ export interface LiveUsersResponse {
   total_missing: number;
   total_offline: number;
   users: LiveUser[];
+  // Roster-derived "expected vs actual" for today (optional — present once the
+  // daily roster is generated; defaults to 0 otherwise).
+  expected_count?: number;
+  present_count?: number;
+  absent_count?: number;
+  on_leave_count?: number;
+  off_schedule_count?: number;
+  absent_users?: AbsentUser[];
   generated_at: string;
 }
 
@@ -300,7 +317,6 @@ export interface AreaBoundary {
 export interface RayonBoundary {
   id: string;
   name: string;
-  code: string;
   boundary_polygon: GeoJSON.Geometry | null;
   center_lat: number | null;
   center_lng: number | null;

@@ -67,8 +67,8 @@ export function DeleteAreaModal({ area, isOpen, onClose, onSuccess }: DeleteArea
             <span>{area?.name}</span>
           </div>
           <div className="flex justify-between">
-            <span className="font-bold">Kode:</span>
-            <span className="font-mono">{area?.code}</span>
+            <span className="font-bold">Tipe:</span>
+            <span>{area?.areaType?.name ?? '—'}</span>
           </div>
           {area?.rayon && (
             <div className="flex justify-between">

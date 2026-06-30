@@ -194,7 +194,6 @@ describe('MonitoringStatsService', () => {
       jest.spyOn(service, 'getRayonSummary').mockResolvedValue({
         id: 'rayon-1',
         name: 'Rayon 1',
-        code: 'R1',
         area_count: 1,
         worker_count: 10,
         workers_online: 5,

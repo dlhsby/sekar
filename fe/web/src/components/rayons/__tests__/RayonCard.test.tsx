@@ -4,7 +4,6 @@
  */
 
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import RayonCard from '../RayonCard';
 import type { Rayon } from '@/types/models';
 
@@ -12,7 +11,6 @@ describe('RayonCard', () => {
   const mockRayon: Rayon = {
     id: 'rayon-1',
     name: 'Rayon Utara',
-    code: 'RU',
     description: 'Wilayah Utara Surabaya',
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
@@ -22,12 +20,6 @@ describe('RayonCard', () => {
     render(<RayonCard rayon={mockRayon} />);
 
     expect(screen.getByText('Rayon Utara')).toBeInTheDocument();
-  });
-
-  it('should render rayon code', () => {
-    render(<RayonCard rayon={mockRayon} />);
-
-    expect(screen.getByText('RU')).toBeInTheDocument();
   });
 
   it('should render rayon description', () => {
