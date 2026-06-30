@@ -3,9 +3,10 @@
  * TanStack Query hooks for rayon data fetching, creation, updating, and deletion
  */
 
-import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueries } from '@tanstack/react-query';
 import { apiClient } from './client';
 import { Rayon, RayonStats, Area, AreaFilters, PaginatedResponse } from '@/types/models';
+import { makeCrudHooks } from './crud-hooks';
 
 /**
  * Query key factory for rayons
@@ -144,78 +145,26 @@ export interface UpdateRayonDto {
 }
 
 // ---------------------------------------------------------------------------
-// Mutation Functions
+// CRUD Hooks (via Factory)
 // ---------------------------------------------------------------------------
 
-/**
- * Create a new rayon
- */
-async function createRayon(data: CreateRayonDto): Promise<Rayon> {
-  const response = await apiClient.post<Rayon>('/rayons', data);
-  return response.data;
-}
-
-/**
- * Update an existing rayon
- */
-async function updateRayon(id: string, data: UpdateRayonDto): Promise<Rayon> {
-  const response = await apiClient.patch<Rayon>(`/rayons/${id}`, data);
-  return response.data;
-}
-
-/**
- * Delete a rayon
- */
-async function deleteRayon(id: string): Promise<void> {
-  await apiClient.delete(`/rayons/${id}`);
-}
-
-// ---------------------------------------------------------------------------
-// Mutation Hooks
-// ---------------------------------------------------------------------------
+const rayonCrudHooks = makeCrudHooks<Rayon, CreateRayonDto, UpdateRayonDto>({
+  resource: 'rayons',
+  listKey: rayonKeys.lists(),
+  detailKeyFn: (id) => rayonKeys.detail(id),
+});
 
 /**
  * Hook to create a new rayon
  */
-export function useCreateRayon() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: createRayon,
-    onSuccess: () => {
-      // Invalidate all rayon lists
-      queryClient.invalidateQueries({ queryKey: rayonKeys.lists() });
-    },
-  });
-}
+export const useCreateRayon = rayonCrudHooks.useCreate;
 
 /**
  * Hook to update an existing rayon
  */
-export function useUpdateRayon() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateRayonDto }) => updateRayon(id, data),
-    onSuccess: (_, variables) => {
-      // Invalidate the specific rayon and all lists
-      queryClient.invalidateQueries({ queryKey: rayonKeys.detail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: rayonKeys.lists() });
-    },
-  });
-}
+export const useUpdateRayon = rayonCrudHooks.useUpdate;
 
 /**
  * Hook to delete a rayon
  */
-export function useDeleteRayon() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: deleteRayon,
-    onSuccess: () => {
-      // Invalidate all rayon lists
-      queryClient.invalidateQueries({ queryKey: rayonKeys.lists() });
-    },
-  });
-}
+export const useDeleteRayon = rayonCrudHooks.useDelete;

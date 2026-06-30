@@ -9,8 +9,8 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Save } from 'lucide-react';
-import { FormInput, FormSelect, Textarea, Button, Card, CardContent } from '@/components/ui';
+import { FormInput, FormSelect, Textarea, Card, CardContent } from '@/components/ui';
+import { FormActions } from '@/components/forms/FormActions';
 import { PolygonEditor } from '@/components/maps/PolygonEditor';
 import { useRayons } from '@/lib/api/rayons';
 import { useAreaTypes } from '@/lib/api/area-types';
@@ -216,23 +216,18 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
       </div>
 
       {/* Submit Button */}
-      <div className="flex gap-3 pt-4">
-        <Button
-          type="submit"
-          loading={isLoading}
-          disabled={isLoading}
-          className="w-full"
-          leftIcon={<Save className="w-5 h-5" />}
-        >
-          {isLoading
+      <FormActions
+        submitLabel={
+          isLoading
             ? mode === 'create'
               ? 'Menyimpan...'
               : 'Memperbarui...'
             : mode === 'create'
               ? 'Simpan Area'
-              : 'Perbarui Area'}
-        </Button>
-      </div>
+              : 'Perbarui Area'
+        }
+        loading={isLoading}
+      />
     </form>
   );
 }

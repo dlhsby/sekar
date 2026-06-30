@@ -8,6 +8,7 @@ import {
   CreatedUser,
   PaginatedResponse,
 } from '@/types/models';
+import { makeCrudHooks } from './crud-hooks';
 
 /**
  * Query keys for users
@@ -43,14 +44,6 @@ const fetchUser = async (id: string): Promise<User> => {
   return response.data;
 };
 
-/**
- * Create new user
- */
-const createUser = async (data: CreateUserDto): Promise<CreatedUser> => {
-  const response = await apiClient.post<CreatedUser>('/users', data);
-  return response.data;
-};
-
 /** Admin password reset — returns a one-time temp password. */
 const resetUserPassword = async (id: string): Promise<{ temp_password: string }> => {
   const response = await apiClient.post<{ temp_password: string }>(`/users/${id}/reset-password`);
@@ -71,21 +64,6 @@ export const suggestUsername = async (fullName: string): Promise<string> => {
     `/users/suggest-username?full_name=${encodeURIComponent(fullName)}`,
   );
   return response.data.username;
-};
-
-/**
- * Update existing user
- */
-const updateUser = async ({ id, data }: { id: string; data: UpdateUserDto }): Promise<User> => {
-  const response = await apiClient.patch<User>(`/users/${id}`, data);
-  return response.data;
-};
-
-/**
- * Delete user (soft delete)
- */
-const deleteUser = async (id: string): Promise<void> => {
-  await apiClient.delete(`/users/${id}`);
 };
 
 /**
@@ -124,6 +102,15 @@ export function useUser(id: string) {
   });
 }
 
+// CRUD hooks via factory
+const userCrudHooks = makeCrudHooks<User & CreatedUser, CreateUserDto, UpdateUserDto>({
+  resource: 'users',
+  listKey: userKeys.lists(),
+  detailKeyFn: (id) => userKeys.detail(id),
+  // For users, extract ID from response data instead of mutation variables
+  getDetailIdFromResponse: (data) => data.id,
+});
+
 /**
  * Hook to create new user
  *
@@ -141,17 +128,7 @@ export function useUser(id: string) {
  * };
  * ```
  */
-export function useCreateUser() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: createUser,
-    onSuccess: () => {
-      // Invalidate all user lists to refetch
-      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
-    },
-  });
-}
+export const useCreateUser = userCrudHooks.useCreate;
 
 /** Hook to reset a user's password (admin) — returns a one-time temp password. */
 export function useResetUserPassword() {
@@ -175,19 +152,7 @@ export function useResetUserPassword() {
  * };
  * ```
  */
-export function useUpdateUser() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: updateUser,
-    onSuccess: (data) => {
-      // Invalidate user lists
-      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
-      // Invalidate specific user detail
-      queryClient.invalidateQueries({ queryKey: userKeys.detail(data.id) });
-    },
-  });
-}
+export const useUpdateUser = userCrudHooks.useUpdate;
 
 /**
  * Hook to delete user
@@ -208,17 +173,7 @@ export function useUpdateUser() {
  * };
  * ```
  */
-export function useDeleteUser() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: deleteUser,
-    onSuccess: () => {
-      // Invalidate user lists to refetch
-      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
-    },
-  });
-}
+export const useDeleteUser = userCrudHooks.useDelete;
 
 /** Deactivate a user (is_active=false) — distinct from delete; reversible. */
 export function useDeactivateUser() {

@@ -9,8 +9,8 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Save } from 'lucide-react';
-import { FormInput, Textarea, Button } from '@/components/ui';
+import { FormInput, Textarea } from '@/components/ui';
+import { FormActions } from '@/components/forms/FormActions';
 import type { Rayon } from '@/types/models';
 import type { CreateRayonDto, UpdateRayonDto } from '@/lib/api/rayons';
 
@@ -151,23 +151,18 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
       </div>
 
       {/* Submit Button */}
-      <div className="flex gap-3 pt-4">
-        <Button
-          type="submit"
-          loading={isLoading}
-          disabled={isLoading}
-          className="w-full"
-          leftIcon={<Save className="w-5 h-5" />}
-        >
-          {isLoading
+      <FormActions
+        submitLabel={
+          isLoading
             ? mode === 'create'
               ? 'Menyimpan...'
               : 'Memperbarui...'
             : mode === 'create'
               ? 'Simpan Rayon'
-              : 'Perbarui Rayon'}
-        </Button>
-      </div>
+              : 'Perbarui Rayon'
+        }
+        loading={isLoading}
+      />
     </form>
   );
 }
