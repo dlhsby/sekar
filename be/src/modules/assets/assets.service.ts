@@ -30,7 +30,6 @@ import { QrCodeService } from './services/qr-code.service';
 import { AuditLogService } from '../audit/audit.service';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { Area } from '../areas/entities/area.entity';
-import { Rayon } from '../rayons/entities/rayon.entity';
 import { ASSET_MANAGERS, ASSET_USERS, ASSET_VIEWERS } from '../users/constants/role-groups';
 
 @Injectable()
@@ -52,8 +51,6 @@ export class AssetsService {
     private userAreaRepo: Repository<UserArea>,
     @InjectRepository(Area)
     private areaRepo: Repository<Area>,
-    @InjectRepository(Rayon)
-    private rayonRepo: Repository<Rayon>,
     private qrCodeService: QrCodeService,
     private auditLogService: AuditLogService,
   ) {}
@@ -136,7 +133,7 @@ export class AssetsService {
       throw new BadRequestException('Asset must have either area_id or rayon_id');
     }
 
-    const assetCode = await this.generateAssetCode(category.code_prefix, rayonId);
+    const assetCode = await this.generateAssetCode(category.code_prefix);
 
     const asset = this.assetRepo.create({
       category_id: dto.category_id,
@@ -696,14 +693,14 @@ export class AssetsService {
     return area.rayon_id;
   }
 
-  private async generateAssetCode(prefix: string, rayonId: string): Promise<string> {
-    const rayon = await this.rayonRepo.findOne({ where: { id: rayonId } });
-    if (!rayon) {
-      throw new BadRequestException('Invalid rayon id');
-    }
-
+  /**
+   * Asset code = `PREFIX-SEQ` (e.g. TOOL-001). The sequence is global per
+   * category prefix so codes stay unique without embedding a rayon code (rayon
+   * is still tracked via `asset.rayon_id`).
+   */
+  private async generateAssetCode(prefix: string): Promise<string> {
     const lastAsset = await this.assetRepo.findOne({
-      where: { category: { code_prefix: prefix }, rayon_id: rayonId },
+      where: { category: { code_prefix: prefix } },
       order: { asset_code: 'DESC' },
     });
 
@@ -716,7 +713,6 @@ export class AssetsService {
     }
 
     const seqStr = seq.toString().padStart(3, '0');
-    const rayonCode = rayon.code;
-    return `${prefix}-${rayonCode}-${seqStr}`;
+    return `${prefix}-${seqStr}`;
   }
 }

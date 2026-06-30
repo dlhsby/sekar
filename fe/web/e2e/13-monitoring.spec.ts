@@ -81,7 +81,6 @@ const BOUNDARIES = {
     {
       id: RAYON_ID,
       name: 'Rayon Selatan',
-      code: 'SELATAN',
       boundary_polygon: null,
       center_lat: -7.29,
       center_lng: 112.74,

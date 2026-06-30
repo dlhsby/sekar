@@ -52,7 +52,6 @@ const MOCK_BOUNDARIES: BoundariesResponse = {
     {
       id: RAYON_1_ID,
       name: 'Rayon Selatan',
-      code: 'RS',
       boundary_polygon: null,
       center_lat: -7.3,
       center_lng: 112.7,
@@ -91,7 +90,6 @@ const MOCK_BOUNDARIES: BoundariesResponse = {
     {
       id: RAYON_2_ID,
       name: 'Rayon Utara',
-      code: 'RU',
       boundary_polygon: null,
       center_lat: -7.1,
       center_lng: 112.6,

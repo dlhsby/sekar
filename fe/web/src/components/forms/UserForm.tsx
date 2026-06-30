@@ -168,7 +168,7 @@ export function UserForm({
   };
 
   const roleOptions = ALL_ROLES.map((role) => ({ value: role, label: ROLE_LABELS[role] }));
-  const rayonOptions = rayons.map((r) => ({ value: r.id, label: `${r.name} (${r.code})` }));
+  const rayonOptions = rayons.map((r) => ({ value: r.id, label: r.name }));
   const shiftOptions = shifts.map((s) => ({
     value: s.id,
     label: `${s.name} (${s.start_time}-${s.end_time})`,

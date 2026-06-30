@@ -108,7 +108,7 @@ export const mockUsers = {
 
 export type MockUserKey = keyof typeof mockUsers;
 
-const RAYON = { id: '950e8400-0000-0000-0000-000000000001', name: 'Rayon Selatan', code: 'RYN-01' };
+const RAYON = { id: '950e8400-0000-0000-0000-000000000001', name: 'Rayon Selatan' };
 const AREA = {
   id: '850e8400-0000-0000-0000-000000000001',
   name: 'Taman Bungkul',

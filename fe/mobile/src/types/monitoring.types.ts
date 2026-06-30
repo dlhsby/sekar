@@ -302,7 +302,6 @@ export interface AreaBoundary {
 export interface RayonBoundary {
   id: string;
   name: string;
-  code: string;
   center_lat: number;
   center_lng: number;
   boundary_polygon: GeoJsonGeometry | null;

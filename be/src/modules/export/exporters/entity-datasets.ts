@@ -55,7 +55,6 @@ export function rayonsDataset(rows: Rayon[]): Dataset {
   return build(rows, [
     { header: 'id', value: (r) => r.id },
     { header: 'name', value: (r) => r.name },
-    { header: 'code', value: (r) => r.code },
     { header: 'description', value: (r) => r.description ?? '' },
     { header: 'center_lat', value: (r) => r.center_lat ?? '' },
     { header: 'center_lng', value: (r) => r.center_lng ?? '' },

@@ -54,7 +54,6 @@ export interface User extends Record<string, unknown> {
 export interface Rayon {
   id: string;
   name: string;
-  code: string;
   color?: string | null;
   description?: string | null;
   center_lat?: number | string | null;

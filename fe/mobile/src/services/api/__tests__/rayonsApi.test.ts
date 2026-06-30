@@ -27,14 +27,12 @@ describe('rayonsApi', () => {
           {
             id: 'rayon-1',
             name: 'Rayon Utara',
-            code: 'RU',
             created_at: new Date(),
             updated_at: new Date(),
           },
           {
             id: 'rayon-2',
             name: 'Rayon Selatan',
-            code: 'RS',
             created_at: new Date(),
             updated_at: new Date(),
           },
@@ -83,7 +81,6 @@ describe('rayonsApi', () => {
         data: {
           id: rayonId,
           name: 'Rayon Tengah',
-          code: 'RT',
           created_at: new Date(),
           updated_at: new Date(),
         },

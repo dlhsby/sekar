@@ -10,7 +10,6 @@ import { useCallback, useMemo, useState } from 'react';
 import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  Badge,
   Button,
   DataTable,
   PageHeader,
@@ -65,18 +64,6 @@ export default function RayonsPage() {
         meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
-        ),
-      },
-      {
-        id: 'code',
-        accessorKey: 'code',
-        header: 'Kode',
-        enableSorting: true,
-        meta: { label: 'Kode', filterVariant: 'text' },
-        cell: ({ row }) => (
-          <Badge variant="outline" size="sm">
-            {row.original.code}
-          </Badge>
         ),
       },
       {
@@ -273,7 +260,6 @@ export default function RayonsPage() {
         rows={
           view.item
             ? [
-                { label: 'Kode', value: view.item.code },
                 { label: 'Nama', value: view.item.name },
                 {
                   label: 'Warna',

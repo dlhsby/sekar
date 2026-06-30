@@ -52,10 +52,9 @@ describe('entity dataset builders', () => {
   });
 
   it('maps rayons', () => {
-    const ds = rayonsDataset([
-      { id: 'r1', name: 'Selatan', code: 'SEL', created_at: now } as Rayon,
-    ]);
-    expect(ds.rows[0][2]).toBe('SEL');
+    const ds = rayonsDataset([{ id: 'r1', name: 'Selatan', created_at: now } as Rayon]);
+    expect(ds.rows[0][0]).toBe('r1');
+    expect(ds.rows[0][1]).toBe('Selatan');
   });
 
   it('maps tasks (task_type from camelCase getter)', () => {

@@ -82,7 +82,6 @@ describe('MonitoringController', () => {
       {
         id: 'rayon-1',
         name: 'Rayon Selatan',
-        code: 'SELATAN',
         area_count: 10,
         worker_count: 30,
         workers_online: 25,
@@ -97,7 +96,6 @@ describe('MonitoringController', () => {
   const mockRayonStats: RayonStatsDto = {
     id: 'rayon-1',
     name: 'Rayon Selatan',
-    code: 'SELATAN',
     total_areas: 10,
     total_workers: 30,
     workers_online: 25,

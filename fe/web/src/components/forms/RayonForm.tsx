@@ -5,23 +5,30 @@
  * Reusable form for creating and editing rayons
  */
 
-import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { FormInput, Textarea } from '@/components/ui';
+import { FormInput, Input, Textarea } from '@/components/ui';
 import { FormActions } from '@/components/forms/FormActions';
+import { GoogleMapPicker } from '@/components/maps/GoogleMapPicker';
 import type { Rayon } from '@/types/models';
 import type { CreateRayonDto, UpdateRayonDto } from '@/lib/api/rayons';
 
-// Validation schema
+// Default value for the native color input (a data value, not a rendered style
+// token) — matches nb-primary so a new rayon starts on-brand. ADR-036 token rule
+// targets styling colors; an <input type="color"> default must be a literal hex.
+// eslint-disable-next-line sekar-design/no-inline-hex-colors -- color-input default value
+const DEFAULT_COLOR = '#7FBC8C';
+const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+
+// Validation schema — master data: only this table's own columns.
 const rayonSchema = z.object({
   name: z.string().min(2, 'Nama minimal 2 karakter'),
-  code: z
+  color: z
     .string()
-    .min(1, 'Kode wajib diisi')
-    .regex(/^[A-Z0-9_-]+$/, 'Kode harus huruf besar dan angka'),
-  color: z.string().optional().nullable(),
+    .optional()
+    .nullable()
+    .refine((v) => !v || HEX_COLOR_RE.test(v), 'Format warna harus heksadesimal, mis. #RRGGBB'),
   description: z.string().optional().nullable(),
   center_lat: z.number().optional().nullable(),
   center_lng: z.number().optional().nullable(),
@@ -37,7 +44,6 @@ export interface RayonFormProps {
 }
 
 export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: RayonFormProps) {
-  // Form setup
   const {
     register,
     handleSubmit,
@@ -48,7 +54,6 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
     resolver: zodResolver(rayonSchema),
     defaultValues: {
       name: initialData?.name || '',
-      code: initialData?.code || '',
       color: initialData?.color || '',
       description: initialData?.description || '',
       center_lat: initialData?.center_lat ? Number(initialData.center_lat) : undefined,
@@ -56,23 +61,23 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
     },
   });
 
-  // Watch code field to auto-uppercase
-  const codeValue = watch('code');
-  useEffect(() => {
-    if (codeValue) {
-      setValue('code', codeValue.toUpperCase());
-    }
-  }, [codeValue, setValue]);
+  const colorValue = watch('color') || '';
+  const swatchValue = HEX_COLOR_RE.test(colorValue) ? colorValue : DEFAULT_COLOR;
+  const centerLat = watch('center_lat');
+  const centerLng = watch('center_lng');
 
-  // Handle form submission
+  const handlePinChange = ({ lat, lng }: { lat: number; lng: number }) => {
+    setValue('center_lat', Number(lat.toFixed(7)), { shouldValidate: true });
+    setValue('center_lng', Number(lng.toFixed(7)), { shouldValidate: true });
+  };
+
   const onSubmitForm = async (data: RayonFormData) => {
     const submitData: CreateRayonDto | UpdateRayonDto = {
       name: data.name,
-      code: data.code,
-      color: data.color || null,
+      color: data.color?.trim() || null,
       description: data.description || null,
-      center_lat: data.center_lat || null,
-      center_lng: data.center_lng || null,
+      center_lat: data.center_lat ?? null,
+      center_lng: data.center_lng ?? null,
     };
 
     await onSubmit(submitData);
@@ -92,23 +97,38 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
           {...register('name')}
         />
 
-        <FormInput
-          label="Kode Rayon"
-          placeholder="Contoh: RAY01"
-          error={errors.code?.message}
-          required
-          helperText="Huruf besar dan angka saja"
-          {...register('code')}
-        />
-
-        <FormInput
-          label="Warna"
-          type="text"
-          placeholder="Format heksadesimal"
-          error={errors.color?.message}
-          helperText="Heksadesimal 6 digit (opsional)"
-          {...register('color')}
-        />
+        {/* Color picker */}
+        <div className="space-y-1.5">
+          <label className="text-sm font-bold leading-none" htmlFor="rayon-color-hex">
+            Warna
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="color"
+              aria-label="Pilih warna rayon"
+              value={swatchValue}
+              onChange={(e) => setValue('color', e.target.value, { shouldValidate: true })}
+              className="h-12 w-14 shrink-0 cursor-pointer rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm"
+            />
+            <Input
+              id="rayon-color-hex"
+              type="text"
+              placeholder={DEFAULT_COLOR}
+              value={colorValue}
+              onChange={(e) => setValue('color', e.target.value, { shouldValidate: true })}
+              error={errors.color?.message}
+              aria-label="Kode warna heksadesimal"
+            />
+          </div>
+          {errors.color?.message ? (
+            <p className="text-nb-body-sm text-nb-danger">{errors.color.message}</p>
+          ) : (
+            <p className="text-nb-body-sm text-nb-gray-500">
+              Pilih dari palet atau masukkan kode heksadesimal (opsional). Dipakai untuk batas
+              rayon di peta monitoring.
+            </p>
+          )}
+        </div>
 
         <div className="space-y-1.5">
           <label className="text-sm font-bold leading-none">Deskripsi</label>
@@ -125,6 +145,20 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
       <div className="space-y-4">
         <h3 className="font-bold text-lg">Koordinat Pusat</h3>
 
+        <GoogleMapPicker
+          lat={centerLat}
+          lng={centerLng}
+          onChange={handlePinChange}
+          manualFallback={
+            <div className="rounded-nb-base border-2 border-nb-black bg-nb-gray-100 p-3">
+              <p className="text-nb-body-sm text-nb-gray-700">
+                Peta tidak tersedia — masukkan koordinat secara manual di bawah.
+              </p>
+            </div>
+          }
+        />
+
+        {/* Manual entry / fine-tuning — stays in sync with the pin. */}
         <div className="grid grid-cols-2 gap-4">
           <FormInput
             label="Latitude"
@@ -132,9 +166,7 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
             placeholder="Contoh: -7.25"
             step="0.000001"
             error={errors.center_lat?.message}
-            {...register('center_lat', {
-              valueAsNumber: true,
-            })}
+            {...register('center_lat', { valueAsNumber: true })}
           />
 
           <FormInput
@@ -143,9 +175,7 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
             placeholder="Contoh: 112.75"
             step="0.000001"
             error={errors.center_lng?.message}
-            {...register('center_lng', {
-              valueAsNumber: true,
-            })}
+            {...register('center_lng', { valueAsNumber: true })}
           />
         </div>
       </div>

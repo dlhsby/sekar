@@ -32,7 +32,6 @@ export interface CityStats {
 export interface RayonMonitoringStats {
   id: string;
   name: string;
-  code: string;
   total_areas: number;
   total_workers: number;
   workers_online: number;
@@ -318,7 +317,6 @@ export interface AreaBoundary {
 export interface RayonBoundary {
   id: string;
   name: string;
-  code: string;
   boundary_polygon: GeoJSON.Geometry | null;
   center_lat: number | null;
   center_lng: number | null;

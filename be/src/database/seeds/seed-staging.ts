@@ -344,16 +344,16 @@ async function seedStaging() {
     // ============================================================
     console.log('\n🗺️  Seeding rayons...');
     await queryRunner.query(`
-      INSERT INTO rayons (id, name, code, description) VALUES
-        ('${RAYON_SELATAN_ID}', 'Rayon Selatan', 'SELATAN', 'Wilayah Surabaya Selatan - Wonokromo, Wonocolo, Gayungan, Jambangan'),
-        ('${RAYON_UTARA_ID}',   'Rayon Utara',   'UTARA',   'Wilayah Surabaya Utara - Krembangan, Pabean Cantian, Semampir, Kenjeran, Bulak'),
-        ('${RAYON_PUSAT_ID}',   'Rayon Pusat',   'PUSAT',   'Wilayah Surabaya Pusat - Tegalsari, Genteng, Bubutan, Simokerto'),
-        ('${RAYON_TIMUR1_ID}',  'Rayon Timur 1', 'TIMUR1',  'Wilayah Surabaya Timur bagian 1 - Tambaksari, Gubeng, Sukolilo'),
-        ('${RAYON_TIMUR2_ID}',  'Rayon Timur 2', 'TIMUR2',  'Wilayah Surabaya Timur bagian 2 - Mulyorejo, Rungkut, Tenggilis Mejoyo, Gunung Anyar'),
-        ('${RAYON_BARAT1_ID}',  'Rayon Barat 1', 'BARAT1',  'Wilayah Surabaya Barat bagian 1 - Sukomanunggal, Tandes, Asemrowo, Benowo'),
-        ('${RAYON_BARAT2_ID}',  'Rayon Barat 2', 'BARAT2',  'Wilayah Surabaya Barat bagian 2 - Sawahan, Dukuh Pakis, Wiyung, Karang Pilang, Lakarsantri, Sambikerep'),
-        ('${RAYON_TAMAN_AKTIF_ID}', 'Rayon Taman Aktif', 'TAMAN_AKTIF', 'Bucket logis untuk taman aktif (active parks) lintas-rayon — tidak punya batas geografis')
-      ON CONFLICT (code) DO NOTHING
+      INSERT INTO rayons (id, name, description) VALUES
+        ('${RAYON_SELATAN_ID}', 'Rayon Selatan', 'Wilayah Surabaya Selatan - Wonokromo, Wonocolo, Gayungan, Jambangan'),
+        ('${RAYON_UTARA_ID}',   'Rayon Utara',   'Wilayah Surabaya Utara - Krembangan, Pabean Cantian, Semampir, Kenjeran, Bulak'),
+        ('${RAYON_PUSAT_ID}',   'Rayon Pusat',   'Wilayah Surabaya Pusat - Tegalsari, Genteng, Bubutan, Simokerto'),
+        ('${RAYON_TIMUR1_ID}',  'Rayon Timur 1', 'Wilayah Surabaya Timur bagian 1 - Tambaksari, Gubeng, Sukolilo'),
+        ('${RAYON_TIMUR2_ID}',  'Rayon Timur 2', 'Wilayah Surabaya Timur bagian 2 - Mulyorejo, Rungkut, Tenggilis Mejoyo, Gunung Anyar'),
+        ('${RAYON_BARAT1_ID}',  'Rayon Barat 1', 'Wilayah Surabaya Barat bagian 1 - Sukomanunggal, Tandes, Asemrowo, Benowo'),
+        ('${RAYON_BARAT2_ID}',  'Rayon Barat 2', 'Wilayah Surabaya Barat bagian 2 - Sawahan, Dukuh Pakis, Wiyung, Karang Pilang, Lakarsantri, Sambikerep'),
+        ('${RAYON_TAMAN_AKTIF_ID}', 'Rayon Taman Aktif', 'Bucket logis untuk taman aktif (active parks) lintas-rayon — tidak punya batas geografis')
+      ON CONFLICT (id) DO NOTHING
     `);
 
     // Set real polygon boundaries on every rayon from KMZ
@@ -366,29 +366,32 @@ async function seedStaging() {
       if (!polygon) continue;
       const ring = polygon.coordinates[0].map(([lng, lat]) => [lng, lat] as [number, number]);
       const centroid = computeCentroidFromRings([ring]);
+      const rayonId = RAYON_ID_BY_CODE[code];
       await queryRunner.query(
         `UPDATE rayons SET
           center_lat            = $1,
           center_lng            = $2,
           boundary_polygon      = $3::jsonb,
           boundary_computed_at  = NOW()
-         WHERE code = $4`,
-        [centroid.lat, centroid.lng, JSON.stringify(polygon), code],
+         WHERE id = $4`,
+        [centroid.lat, centroid.lng, JSON.stringify(polygon), rayonId],
       );
     }
     // Override Rayon Pusat center to the actual office (Taman Surya) so the
     // mobile/web map opens on something useful — the polygon centroid lands
     // further south.
-    await queryRunner.query(
-      `UPDATE rayons SET center_lat = $1, center_lng = $2 WHERE code = 'PUSAT'`,
-      [-7.2745614, 112.7579174],
-    );
+    await queryRunner.query(`UPDATE rayons SET center_lat = $1, center_lng = $2 WHERE id = $3`, [
+      -7.2745614,
+      112.7579174,
+      RAYON_ID_BY_CODE.PUSAT,
+    ]);
     // Rayon Taman Aktif has no geographic boundary — anchor its center marker
     // on its office, which sits inside Taman Flora.
-    await queryRunner.query(
-      `UPDATE rayons SET center_lat = $1, center_lng = $2 WHERE code = 'TAMAN_AKTIF'`,
-      [RAYON_TAMAN_AKTIF_OFFICE.lat, RAYON_TAMAN_AKTIF_OFFICE.lng],
-    );
+    await queryRunner.query(`UPDATE rayons SET center_lat = $1, center_lng = $2 WHERE id = $3`, [
+      RAYON_TAMAN_AKTIF_OFFICE.lat,
+      RAYON_TAMAN_AKTIF_OFFICE.lng,
+      RAYON_ID_BY_CODE.TAMAN_AKTIF,
+    ]);
     console.log('  ✓ 8 rayons (7 geographic + Rayon Taman Aktif logical bucket)');
     console.log('  ✓ Rayon Pusat: center (-7.2745614, 112.7579174) — office override');
     console.log('  ✓ Rayon Taman Aktif: center on its office (Taman Flora)');

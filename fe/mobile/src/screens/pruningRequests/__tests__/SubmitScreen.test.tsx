@@ -180,7 +180,7 @@ function makeStore() {
           full_name: 'Staff Kecamatan Pusat',
           role: 'staff_kecamatan',
           rayon_id: 'r1',
-          rayon: { id: 'r1', name: 'Pusat', code: 'P', created_at: '', updated_at: '' },
+          rayon: { id: 'r1', name: 'Pusat', created_at: '', updated_at: '' },
           kecamatan_name: 'Tegalsari',
           created_at: '',
           updated_at: '',

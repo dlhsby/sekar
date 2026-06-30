@@ -71,9 +71,6 @@ export class RayonStatsDto {
   @ApiProperty({ example: 'Rayon Selatan' })
   name: string;
 
-  @ApiProperty({ example: 'SELATAN' })
-  code: string;
-
   @ApiProperty({ example: 15 })
   total_areas: number;
 

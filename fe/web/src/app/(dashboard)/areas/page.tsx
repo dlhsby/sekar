@@ -115,6 +115,7 @@ export default function AreasPage() {
             <CoordinateLink
               lat={Number(row.original.gps_lat)}
               lng={Number(row.original.gps_lng)}
+              label={row.original.name}
             />
           ) : (
             <span className="text-nb-gray-500">—</span>
@@ -356,6 +357,7 @@ export default function AreasPage() {
                 <CoordinateLink
                   lat={Number(view.item.gps_lat)}
                   lng={Number(view.item.gps_lng)}
+                  label={view.item.name}
                 />
               ) : null,
           },

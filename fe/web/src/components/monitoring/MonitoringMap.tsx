@@ -61,6 +61,14 @@ export interface MonitoringMapProps {
 
 type MarkerEntry = { marker: mapboxgl.Marker; popup: mapboxgl.Popup; user: LiveUser };
 
+/** Short 2-char label for a rayon center marker, derived from its name. */
+function rayonInitials(name: string): string {
+  const words = name.trim().split(/\s+/).filter((w) => w.toLowerCase() !== 'rayon');
+  const src = words.length ? words : [name.trim()];
+  const letters = src.length > 1 ? src.map((w) => w[0]).join('') : src[0] ?? '';
+  return (letters || 'R').slice(0, 2).toUpperCase();
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function MonitoringMap({
@@ -331,7 +339,7 @@ export function MonitoringMap({
       if (showRayons && center) {
         const tooltip = `Rayon ${rayon.name} — ${rayon.area_count} area${rayon.is_understaffed ? ' (kekurangan staf)' : ''}`;
         const el = createCenterMarkerEl(
-          rayon.code?.slice(0, 2) ?? 'R',
+          rayonInitials(rayon.name),
           CENTER_MARKER_STYLES.rayon.size,
           CENTER_MARKER_STYLES.rayon.bg,
           tooltip

@@ -154,7 +154,7 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
                 onChange={setRayonId}
                 options={[
                   { value: 'none', label: 'Pilih Rayon' },
-                  ...rayons.map((r) => ({ value: r.id, label: `${r.name} (${r.code})` })),
+                  ...rayons.map((r) => ({ value: r.id, label: r.name })),
                 ]}
               />
               <FormSelect

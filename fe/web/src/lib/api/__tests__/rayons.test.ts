@@ -21,7 +21,6 @@ describe('Rayons API', () => {
   const mockRayon: Rayon = {
     id: '1',
     name: 'Rayon Selatan',
-    code: 'RAY-SEL',
     description: 'Covers southern area of Surabaya',
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
@@ -66,7 +65,6 @@ describe('Rayons API', () => {
       const response = await apiClient.get<Rayon>('/rayons/1');
 
       expect(response.data.name).toBe('Rayon Selatan');
-      expect(response.data.code).toBe('RAY-SEL');
     });
 
     it('should handle rayon not found', async () => {
@@ -84,7 +82,6 @@ describe('Rayons API', () => {
     it('should create new rayon', async () => {
       const newRayon = {
         name: 'Rayon Barat',
-        code: 'RAY-BAR',
         description: 'Western area',
       };
 
@@ -106,7 +103,6 @@ describe('Rayons API', () => {
         message: 'Validation failed',
         errors: {
           name: 'Name is required',
-          code: 'Code must be unique',
         },
       });
 

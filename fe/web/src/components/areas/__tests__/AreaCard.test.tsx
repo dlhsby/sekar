@@ -34,7 +34,6 @@ describe('AreaCard', () => {
     rayon: {
       id: 'rayon-1',
       name: 'Rayon Selatan',
-      code: 'RS',
       description: '',
       created_at: '2026-01-01',
       updated_at: '2026-01-01',

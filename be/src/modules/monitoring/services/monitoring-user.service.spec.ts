@@ -48,7 +48,6 @@ describe('MonitoringUserService', () => {
   const mockRayon: Rayon = {
     id: 'rayon-1',
     name: 'Rayon 1',
-    code: 'R1',
   } as Rayon;
 
   const mockShift: Shift = {

@@ -46,6 +46,14 @@ jest.mock('@/components/maps/PolygonEditor', () => ({
   ),
 }));
 
+// Mock GoogleMapPicker — Google Maps JS needs an API key + browser APIs; render
+// its manualFallback, which holds the center-coordinate display in jsdom.
+jest.mock('@/components/maps/GoogleMapPicker', () => ({
+  GoogleMapPicker: ({ manualFallback }: { manualFallback?: ReactNode }) => (
+    <div data-testid="google-map-picker">{manualFallback}</div>
+  ),
+}));
+
 // Mock geo utilities
 jest.mock('@/lib/utils/geo', () => ({
   isValidPolygon: jest.fn(() => true),

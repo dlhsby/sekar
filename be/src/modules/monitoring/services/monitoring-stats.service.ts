@@ -25,7 +25,6 @@ import {
   RoleStaffingItemDto,
 } from '../dto/boundaries.dto';
 import { DayTypeService } from './day-type.service';
-import { User } from '../../users/entities/user.entity';
 
 @Injectable()
 export class MonitoringStatsService {
@@ -153,7 +152,6 @@ export class MonitoringStatsService {
     return {
       id: rayon.id,
       name: rayon.name,
-      code: rayon.code,
       total_areas: areas.length,
       total_workers: totalWorkers,
       workers_online: workersOnline,
@@ -295,7 +293,6 @@ export class MonitoringStatsService {
     return {
       id: rayon.id,
       name: rayon.name,
-      code: rayon.code,
       area_count: areas.length,
       worker_count: workerCount,
       workers_online: workersOnline,
@@ -603,7 +600,6 @@ export class MonitoringStatsService {
             return {
               id: rayon.id,
               name: rayon.name,
-              code: rayon.code,
               color: (rayon as any).color ?? null,
               boundary_polygon: (rayon as any).boundary_polygon || null,
               center_lat: (rayon as any).center_lat
@@ -665,7 +661,6 @@ export class MonitoringStatsService {
         return {
           id: rayon.id,
           name: rayon.name,
-          code: rayon.code,
           color: (rayon as any).color ?? null,
           boundary_polygon: (rayon as any).boundary_polygon || null,
           center_lat: (rayon as any).center_lat

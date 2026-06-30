@@ -186,7 +186,7 @@ export default function CreateTaskPage() {
                   { value: 'none', label: 'Pilih Rayon' },
                   ...rayons.map((r) => ({
                     value: r.id,
-                    label: `${r.name} (${r.code})`,
+                    label: r.name,
                   })),
                 ]}
               />

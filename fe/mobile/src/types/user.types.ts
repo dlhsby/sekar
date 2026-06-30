@@ -46,7 +46,6 @@ export interface User {
 export interface Rayon {
   id: string;
   name: string;
-  code: string;
   description?: string;
   created_at: string;
   updated_at: string;

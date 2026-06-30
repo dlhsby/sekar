@@ -125,7 +125,6 @@ export function useRayonsWithStats() {
  */
 export interface CreateRayonDto {
   name: string;
-  code: string;
   color?: string | null;
   description?: string | null;
   center_lat?: number | null;
@@ -137,7 +136,6 @@ export interface CreateRayonDto {
  */
 export interface UpdateRayonDto {
   name?: string;
-  code?: string;
   color?: string | null;
   description?: string | null;
   center_lat?: number | null;

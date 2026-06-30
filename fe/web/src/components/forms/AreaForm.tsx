@@ -12,10 +12,22 @@ import { z } from 'zod';
 import { FormInput, FormSelect, Textarea, Card, CardContent } from '@/components/ui';
 import { FormActions } from '@/components/forms/FormActions';
 import { PolygonEditor } from '@/components/maps/PolygonEditor';
+import { GoogleMapPicker } from '@/components/maps/GoogleMapPicker';
 import { useRayons } from '@/lib/api/rayons';
 import { useAreaTypes } from '@/lib/api/area-types';
 import { calculatePolygonCenter, isValidPolygon, formatCoordinates } from '@/lib/utils/geo';
 import type { Area, CreateAreaDto, UpdateAreaDto } from '@/types/models';
+
+interface LatLng {
+  lat: number;
+  lng: number;
+}
+
+/** Centroid of a polygon as {lat,lng} (calculatePolygonCenter returns [lng,lat]). */
+function polygonCentroid(polygon: GeoJSON.Polygon): LatLng {
+  const [lng, lat] = calculatePolygonCenter(polygon);
+  return { lat, lng };
+}
 
 // Validation schema
 const areaSchema = z.object({
@@ -43,9 +55,16 @@ export interface AreaFormProps {
 }
 
 export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: AreaFormProps) {
-  const [polygon, setPolygon] = useState<GeoJSON.Polygon | null>(
-    initialData?.boundary_polygon || null
-  );
+  // Center point: defaults to the saved gps / polygon centroid, then tracks the
+  // polygon centroid until the user manually drops/drags the pin.
+  const initialCenter: LatLng | null =
+    initialData?.gps_lat != null && initialData?.gps_lng != null
+      ? { lat: Number(initialData.gps_lat), lng: Number(initialData.gps_lng) }
+      : initialData?.boundary_polygon
+        ? polygonCentroid(initialData.boundary_polygon)
+        : null;
+  const [center, setCenter] = useState<LatLng | null>(initialCenter);
+  const [centerOverridden, setCenterOverridden] = useState(false);
 
   // Fetch rayons and area types
   const { data: rayonsData, isLoading: loadingRayons } = useRayons();
@@ -69,23 +88,29 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
     },
   });
 
-
-  // Handle polygon change
+  // Handle polygon change — keep the center synced to the centroid unless the
+  // user has manually placed the pin.
   const handlePolygonChange = (newPolygon: GeoJSON.Polygon | null) => {
-    setPolygon(newPolygon);
     if (newPolygon && isValidPolygon(newPolygon)) {
       setValue('boundary_polygon', newPolygon, { shouldValidate: true });
+      if (!centerOverridden) {
+        setCenter(polygonCentroid(newPolygon));
+      }
     } else {
       setValue('boundary_polygon', null, { shouldValidate: true });
     }
   };
 
-  // Calculate center coordinates
-  const centerCoords = polygon
-    ? calculatePolygonCenter(polygon)
-    : initialData && initialData.gps_lng && initialData.gps_lat
-      ? [Number(initialData.gps_lng), Number(initialData.gps_lat)]
-      : null;
+  // Manual pin placement overrides the auto-centroid.
+  const handlePinChange = ({ lat, lng }: LatLng) => {
+    setCenterOverridden(true);
+    setCenter({ lat: Number(lat.toFixed(7)), lng: Number(lng.toFixed(7)) });
+  };
+
+  // Mapbox PolygonEditor expects [lng, lat].
+  const editorCenter: [number, number] | undefined = center
+    ? [center.lng, center.lat]
+    : undefined;
 
   // Handle form submission
   const onSubmitForm = async (data: AreaFormData) => {
@@ -93,7 +118,7 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
       return;
     }
 
-    const center = calculatePolygonCenter(data.boundary_polygon);
+    const finalCenter = center ?? polygonCentroid(data.boundary_polygon);
 
     const submitData: CreateAreaDto | UpdateAreaDto = {
       name: data.name,
@@ -101,8 +126,8 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
       area_type_id: data.area_type_id,
       address: data.address || undefined,
       boundary_polygon: data.boundary_polygon,
-      gps_lng: center[0],
-      gps_lat: center[1],
+      gps_lng: finalCenter.lng,
+      gps_lat: finalCenter.lat,
     };
 
     await onSubmit(submitData);
@@ -200,19 +225,37 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
         <PolygonEditor
           initialPolygon={initialData?.boundary_polygon}
           onChange={handlePolygonChange}
-          center={(centerCoords as [number, number]) || undefined}
-          zoom={centerCoords ? 15 : undefined}
+          center={editorCenter}
+          zoom={editorCenter ? 15 : undefined}
         />
+      </div>
 
-        {/* Center Coordinates Display */}
-        {centerCoords && (
-          <div className="bg-nb-gray-100 border-2 border-nb-black p-4">
-            <div className="font-bold mb-2">Koordinat Pusat:</div>
-            <div className="font-mono text-sm">
-              {formatCoordinates(centerCoords[0], centerCoords[1])}
-            </div>
-          </div>
-        )}
+      {/* Center Point (Google Maps drop-pin) */}
+      <div className="space-y-4">
+        <h3 className="font-bold text-lg">Titik Pusat</h3>
+        <p className="text-nb-body-sm text-nb-gray-500">
+          Otomatis dari pusat batas area. Seret pin untuk menyesuaikan (mis. titik pintu masuk).
+        </p>
+
+        <GoogleMapPicker
+          lat={center?.lat ?? null}
+          lng={center?.lng ?? null}
+          onChange={handlePinChange}
+          manualFallback={
+            center ? (
+              <div className="border-2 border-nb-black bg-nb-gray-100 p-4">
+                <div className="font-bold mb-2">Koordinat Pusat:</div>
+                <div className="font-mono text-sm">{formatCoordinates(center.lng, center.lat)}</div>
+              </div>
+            ) : (
+              <div className="border-2 border-nb-black bg-nb-gray-100 p-4">
+                <p className="text-nb-body-sm text-nb-gray-700">
+                  Gambar batas area terlebih dahulu untuk menentukan titik pusat.
+                </p>
+              </div>
+            )
+          }
+        />
       </div>
 
       {/* Submit Button */}

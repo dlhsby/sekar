@@ -52,6 +52,7 @@ import { ReportingModule } from './modules/reporting/reporting.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 // Mobile app release registry (dynamic download links on web)
 import { AppReleasesModule } from './modules/app-releases/app-releases.module';
+import { ConfigModule as ClientConfigModule } from './modules/config/config.module';
 
 @Module({
   imports: [
@@ -156,6 +157,7 @@ import { AppReleasesModule } from './modules/app-releases/app-releases.module';
     ReportingModule,
     AnalyticsModule,
     AppReleasesModule, // Mobile app release registry (public download links)
+    ClientConfigModule, // Runtime client config — serves maps API keys (GET /config/maps)
   ],
   controllers: [AppController],
   providers: [

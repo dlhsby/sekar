@@ -64,46 +64,14 @@ export class RayonsService {
   }
 
   /**
-   * Get a rayon by code
-   *
-   * @param code - Rayon code (e.g., SELATAN, UTARA)
-   * @returns The rayon
-   * @throws NotFoundException if rayon not found
-   */
-  async findByCode(code: string): Promise<Rayon> {
-    this.logger.log(`Fetching rayon with code: ${code}`);
-
-    const rayon = await this.rayonRepository.findOne({
-      where: { code },
-    });
-
-    if (!rayon) {
-      this.logger.warn(`Rayon with code "${code}" not found`);
-      throw new NotFoundException(`Rayon with code "${code}" not found`);
-    }
-
-    return rayon;
-  }
-
-  /**
    * Create a new rayon
    *
    * @param createRayonDto - Rayon creation data
    * @returns The created rayon
-   * @throws ConflictException if code already exists
+   * @throws ConflictException if name already exists
    */
   async create(createRayonDto: CreateRayonDto): Promise<Rayon> {
-    this.logger.log(`Creating rayon with code: ${createRayonDto.code}`);
-
-    // Check if code already exists
-    const existingByCode = await this.rayonRepository.findOne({
-      where: { code: createRayonDto.code },
-    });
-
-    if (existingByCode) {
-      this.logger.warn(`Rayon with code "${createRayonDto.code}" already exists`);
-      throw new ConflictException(`Rayon with code "${createRayonDto.code}" already exists`);
-    }
+    this.logger.log(`Creating rayon: ${createRayonDto.name}`);
 
     // Check if name already exists
     const existingByName = await this.rayonRepository.findOne({
@@ -135,18 +103,6 @@ export class RayonsService {
     this.logger.log(`Updating rayon with ID: ${id}`);
 
     const rayon = await this.findOne(id);
-
-    // If updating code, check for uniqueness
-    if (updateRayonDto.code && updateRayonDto.code !== rayon.code) {
-      const existingByCode = await this.rayonRepository.findOne({
-        where: { code: updateRayonDto.code },
-      });
-
-      if (existingByCode) {
-        this.logger.warn(`Rayon with code "${updateRayonDto.code}" already exists`);
-        throw new ConflictException(`Rayon with code "${updateRayonDto.code}" already exists`);
-      }
-    }
 
     // If updating name, check for uniqueness
     if (updateRayonDto.name && updateRayonDto.name !== rayon.name) {
