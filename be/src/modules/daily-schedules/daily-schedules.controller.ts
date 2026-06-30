@@ -55,7 +55,10 @@ export class DailySchedulesController {
   }
 
   private guardRayonAccess(user: User, rayonId: string | null): void {
-    if (this.isRayonScoped(user) && user.rayon_id && rayonId && rayonId !== user.rayon_id) {
+    // Rayon-scoped roles may only act on rows in their OWN rayon. A scoped user
+    // with no rayon, or a row with no/other rayon, is denied (never falls
+    // through — that was a scoping leak for null-rayon rows).
+    if (this.isRayonScoped(user) && (!user.rayon_id || rayonId !== user.rayon_id)) {
       throw new ForbiddenException('Access denied to a different rayon');
     }
   }

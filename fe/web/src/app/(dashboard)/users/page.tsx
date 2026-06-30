@@ -357,9 +357,11 @@ export default function UsersPage() {
         loading={resetPassword.isPending}
         onConfirm={async () => {
           if (!resetConfirmUser) return;
-          const target = resetConfirmUser;
+          // Await first so the dialog shows its loading state; handleResetPassword
+          // swallows errors (toast), so we always close + (on success) show the
+          // temp-password dialog afterward.
+          await handleResetPassword(resetConfirmUser);
           setResetConfirmUser(null);
-          await handleResetPassword(target);
         }}
       />
 

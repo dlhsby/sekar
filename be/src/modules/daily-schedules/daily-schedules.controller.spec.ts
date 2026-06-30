@@ -66,4 +66,12 @@ describe('DailySchedulesController (rayon scoping)', () => {
     await controller.setLeave('d1', { leave_type: 'sick', notes: 'x' }, kepala);
     expect(service.setLeave).toHaveBeenCalledWith('d1', 'sick', 'x', 'k1');
   });
+
+  it('blocks a scoped role from editing a row with no rayon (no null-rayon bypass)', async () => {
+    service.findOne.mockResolvedValue({ id: 'd1', rayon_id: null });
+    await expect(controller.setLeave('d1', { leave_type: 'sick' }, kepala)).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+    expect(service.setLeave).not.toHaveBeenCalled();
+  });
 });

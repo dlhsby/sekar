@@ -163,7 +163,10 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
                 onChange={setAreaId}
                 options={[
                   { value: 'none', label: 'Pilih Area' },
-                  ...areas.map((a) => ({ value: a.id, label: `${a.name} (${a.code})` })),
+                  ...areas.map((a) => ({
+                    value: a.id,
+                    label: a.areaType?.name ? `${a.name} (${a.areaType.name})` : a.name,
+                  })),
                 ]}
               />
               <FormSelect

@@ -34,6 +34,14 @@ export class CreateAreaDto {
   @IsUUID()
   area_type_id: string;
 
+  @ApiPropertyOptional({
+    description: 'Rayon UUID this area belongs to',
+    example: '11111111-1111-1111-1111-111111111101',
+  })
+  @IsOptional()
+  @IsUUID()
+  rayon_id?: string;
+
   @ApiProperty({
     description: 'GPS latitude of area center (must be between -90 and 90)',
     example: -7.2905,

@@ -684,12 +684,21 @@ export class StatusCalculatorService {
     if (await this.checkWithinArea(primaryAreaId, lat, lng)) {
       return true;
     }
-    const rosterAreas = this.dailySchedulesService
-      ? await this.dailySchedulesService.getActiveAreasForDay(
-          userId,
-          TimezoneUtil.jakartaDateString(),
-        )
-      : [];
+    // Union today's + yesterday's roster areas so an overnight (Shift-3) worker
+    // whose roster row sits on the clock-in day is still recognized after WIB
+    // midnight. Only runs when the worker is outside their primary area.
+    let rosterAreas: Area[] = [];
+    if (this.dailySchedulesService) {
+      const today = TimezoneUtil.jakartaDateString();
+      const yesterday = TimezoneUtil.jakartaDateString(new Date(Date.now() - 24 * 60 * 60 * 1000));
+      const [todayAreas, yesterdayAreas] = await Promise.all([
+        this.dailySchedulesService.getActiveAreasForDay(userId, today),
+        this.dailySchedulesService.getActiveAreasForDay(userId, yesterday),
+      ]);
+      const byId = new Map<string, Area>();
+      for (const a of [...todayAreas, ...yesterdayAreas]) byId.set(a.id, a);
+      rosterAreas = [...byId.values()];
+    }
     const candidates =
       rosterAreas.length > 0
         ? rosterAreas
