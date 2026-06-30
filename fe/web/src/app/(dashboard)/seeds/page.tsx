@@ -19,6 +19,7 @@ import {
   DataTable,
   PageHeader,
   Badge,
+  DetailModal,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
@@ -40,6 +41,8 @@ export default function SeedsListPage() {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewingSeed, setViewingSeed] = useState<PlantSeedRow | null>(null);
   const limit = 20;
 
   const { data: seedsData, isLoading: seedsLoading } = useSeeds({
@@ -52,9 +55,17 @@ export default function SeedsListPage() {
 
   const rowActions = useCallback(
     (row: PlantSeedRow): DataTableRowAction<PlantSeedRow>[] => [
-      { key: 'view', label: 'Lihat', icon: Eye, onClick: () => router.push(`/seeds/${row.id}`) },
+      {
+        key: 'view',
+        label: 'Lihat',
+        icon: Eye,
+        onClick: () => {
+          setViewingSeed(row);
+          setViewOpen(true);
+        },
+      },
     ],
-    [router]
+    []
   );
 
   useEffect(() => {
@@ -219,6 +230,38 @@ export default function SeedsListPage() {
           )}
         </CardContent>
       </Card>
+
+      <DetailModal
+        open={viewOpen}
+        onOpenChange={setViewOpen}
+        title="Detail Bibit"
+        rows={viewingSeed ? [
+          { label: 'Nama Bibit', value: viewingSeed.nameId },
+          {
+            label: 'Satuan',
+            value: ({
+              gram: 'gram',
+              piece: 'buah',
+              packet: 'paket',
+            } as Record<string, string>)[viewingSeed.unit] || viewingSeed.unit,
+          },
+          {
+            label: 'Stok',
+            value: (
+              <div className="flex items-center gap-2">
+                <span>{viewingSeed.stockQty}</span>
+                {viewingSeed.stockQty < LOW_STOCK_THRESHOLD && (
+                  <Badge variant="warning" size="sm">
+                    Rendah
+                  </Badge>
+                )}
+              </div>
+            ),
+          },
+          { label: 'Dibuat', value: formatDate(viewingSeed.createdAt) },
+          { label: 'Diperbarui', value: formatDate(viewingSeed.updatedAt) },
+        ] : []}
+      />
     </div>
   );
 }

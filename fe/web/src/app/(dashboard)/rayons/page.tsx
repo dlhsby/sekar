@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye } from 'lucide-react';
 
@@ -19,6 +19,7 @@ import {
   DataTable,
   PageHeader,
   Spinner,
+  DetailModal,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
@@ -64,6 +65,9 @@ export default function RayonsPage() {
     (id?: string): string => (id ? (userNameById.get(id) ?? '—') : '—'),
     [userNameById]
   );
+
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewingRayon, setViewingRayon] = useState<RayonRow | null>(null);
 
   const columns = useMemo<ColumnDef<RayonRow>[]>(
     () => [
@@ -173,9 +177,17 @@ export default function RayonsPage() {
 
   const rowActions = useCallback(
     (r: RayonRow): DataTableRowAction<RayonRow>[] => [
-      { key: 'view', label: 'Lihat', icon: Eye, onClick: () => router.push(`/rayons/${r.id}`) },
+      {
+        key: 'view',
+        label: 'Lihat',
+        icon: Eye,
+        onClick: () => {
+          setViewingRayon(r);
+          setViewOpen(true);
+        },
+      },
     ],
-    [router]
+    []
   );
 
   if (authLoading || !user) {
@@ -205,6 +217,23 @@ export default function RayonsPage() {
         rowActions={rowActions}
         emptyTitle="Tidak ada rayon"
         emptyDescription="Belum ada rayon yang terdaftar dalam sistem."
+      />
+
+      <DetailModal
+        open={viewOpen}
+        onOpenChange={setViewOpen}
+        title="Detail Rayon"
+        rows={viewingRayon ? [
+          { label: 'Kode', value: viewingRayon.code },
+          { label: 'Nama', value: viewingRayon.name },
+          { label: 'Area', value: viewingRayon.total_areas },
+          { label: 'Petugas', value: viewingRayon.total_users },
+          { label: 'Petugas Aktif', value: viewingRayon.active_users },
+          { label: 'Luas Cakupan', value: formatArea(viewingRayon.total_coverage_area) },
+          { label: 'Deskripsi', value: viewingRayon.description },
+          { label: 'Dibuat oleh', value: actorName(viewingRayon.created_by) },
+          { label: 'Diperbarui oleh', value: actorName(viewingRayon.updated_by) },
+        ] : []}
       />
     </div>
   );

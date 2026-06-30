@@ -17,6 +17,7 @@ import {
   PageHeader,
   StatusPill,
   Tabs,
+  DetailModal,
   type TabItem,
   Field,
   DateRangePicker,
@@ -47,6 +48,8 @@ export default function OvertimePage() {
   const [page, setPage] = useState(1);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewingOvertime, setViewingOvertime] = useState<Overtime | null>(null);
   const limit = 20;
 
   const approveMutation = useApproveOvertime();
@@ -85,7 +88,10 @@ export default function OvertimePage() {
         key: 'view',
         label: 'Lihat',
         icon: Eye,
-        onClick: () => router.push(`/overtime/${row.id}`),
+        onClick: () => {
+          setViewingOvertime(row);
+          setViewOpen(true);
+        },
       },
       {
         key: 'approve',
@@ -103,7 +109,7 @@ export default function OvertimePage() {
         onClick: () => setRejectingId(row.id),
       },
     ],
-    [canApprove, approveMutation.isPending, router, handleApprove]
+    [canApprove, approveMutation.isPending, handleApprove]
   );
 
   if (authLoading || !user) {
@@ -371,6 +377,32 @@ export default function OvertimePage() {
           )}
         </CardContent>
       </Card>
+
+      <DetailModal
+        open={viewOpen}
+        onOpenChange={setViewOpen}
+        title="Detail Lembur"
+        rows={viewingOvertime ? [
+          { label: 'Tanggal', value: formatDateTime(viewingOvertime.start_datetime).date },
+          { label: 'Pengguna', value: viewingOvertime.user?.full_name },
+          { label: 'Area', value: viewingOvertime.area?.name },
+          {
+            label: 'Waktu',
+            value: `${formatDateTime(viewingOvertime.start_datetime).time} - ${formatDateTime(viewingOvertime.end_datetime).time}`,
+          },
+          { label: 'Tipe Aktivitas', value: viewingOvertime.activity_type?.name },
+          {
+            label: 'Status',
+            value: (
+              <StatusPill tone={statusTone[viewingOvertime.status]} dot>
+                {OVERTIME_STATUS_LABELS[viewingOvertime.status]}
+              </StatusPill>
+            ),
+          },
+          { label: 'Catatan', value: viewingOvertime.notes },
+          { label: 'Dibuat', value: formatDate(viewingOvertime.created_at) },
+        ] : []}
+      />
     </div>
   );
 }

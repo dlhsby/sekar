@@ -120,14 +120,14 @@ export const navigationItems: NavItem[] = [
       },
     ],
   },
-  // ── Data Master: user accounts, organisation structure, scheduling templates
-  // + catalogues. (Pengguna folded in here per the Jun-30 nav reorder.)
+  // ── Pengguna & Hak Akses: account management + access control (its own
+  // surface, separate from Data Master).
   {
-    id: 'data',
-    label: 'Data Master',
+    id: 'access',
+    label: 'Pengguna & Hak Akses',
     href: '#',
-    icon: FolderIcon,
-    roles: [...ADMIN_ROLES, 'top_management', 'admin_data'],
+    icon: UsersIcon,
+    roles: [...ADMIN_ROLES, 'admin_data'],
     children: [
       {
         id: 'users',
@@ -136,6 +136,16 @@ export const navigationItems: NavItem[] = [
         icon: UsersIcon,
         roles: [...ADMIN_ROLES, 'admin_data'],
       },
+    ],
+  },
+  // ── Data Master: organisation structure, scheduling templates + catalogues.
+  {
+    id: 'data',
+    label: 'Data Master',
+    href: '#',
+    icon: FolderIcon,
+    roles: [...ADMIN_ROLES, 'top_management', 'admin_data'],
+    children: [
       {
         id: 'areas',
         label: 'Area',
@@ -405,7 +415,7 @@ const ROUTE_BREADCRUMB: Record<string, string[]> = {
   '/daily-schedules': ['Pekerjaan', 'Jadwal Harian'],
   '/schedules': ['Pekerjaan', 'Jadwal (Lanjutan)'],
   '/pruning-requests': ['Pekerjaan', 'Permohonan Pemangkasan'],
-  '/users': ['Data Master', 'Pengguna'],
+  '/users': ['Pengguna & Hak Akses', 'Pengguna'],
   '/areas': ['Data Master', 'Area'],
   '/rayons': ['Data Master', 'Rayon'],
   '/scheduling-templates': ['Data Master', 'Template Penjadwalan'],

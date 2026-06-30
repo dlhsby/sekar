@@ -12,6 +12,8 @@ interface UserFormModalProps {
   user?: User | null;
   /** Called after a successful create/update (the list refetches via cache invalidation). */
   onSuccess?: () => void;
+  /** Read-only "Lihat" mode — shows the same form disabled, no submit. */
+  readOnly?: boolean;
 }
 
 /**
@@ -19,7 +21,13 @@ interface UserFormModalProps {
  * /users/new and /users/[id] form pages). Reuses the shared UserForm and
  * surfaces the mutation error inline.
  */
-export function UserFormModal({ open, onOpenChange, user, onSuccess }: UserFormModalProps) {
+export function UserFormModal({
+  open,
+  onOpenChange,
+  user,
+  onSuccess,
+  readOnly = false,
+}: UserFormModalProps) {
   const isEdit = !!user;
   const createMutation = useCreateUser();
   const updateMutation = useUpdateUser();
@@ -45,10 +53,12 @@ export function UserFormModal({ open, onOpenChange, user, onSuccess }: UserFormM
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="lg">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Ubah Pengguna' : 'Tambah Pengguna'}</DialogTitle>
+          <DialogTitle>
+            {readOnly ? 'Detail Pengguna' : isEdit ? 'Ubah Pengguna' : 'Tambah Pengguna'}
+          </DialogTitle>
         </DialogHeader>
         <DialogBody>
-          {errorMessage ? (
+          {errorMessage && !readOnly ? (
             <div
               className="mb-4 border-2 border-nb-danger bg-nb-danger-light px-4 py-3"
               role="alert"
@@ -59,12 +69,13 @@ export function UserFormModal({ open, onOpenChange, user, onSuccess }: UserFormM
           ) : null}
           {/* Remount the form per target so edit/create reset cleanly. */}
           <UserForm
-            key={user?.id ?? 'new'}
+            key={`${user?.id ?? 'new'}-${readOnly ? 'view' : 'edit'}`}
             initialData={user ?? undefined}
             onSubmit={handleSubmit}
             onCancel={() => onOpenChange(false)}
             loading={mutation.isPending}
             submitText={isEdit ? 'Simpan' : 'Buat Pengguna'}
+            readOnly={readOnly}
           />
         </DialogBody>
       </DialogContent>

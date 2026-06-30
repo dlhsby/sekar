@@ -115,6 +115,7 @@ export {
   DialogDescription,
 } from './dialog';
 export { ConfirmDialog, type ConfirmDialogProps } from './confirm-dialog';
+export { DetailModal, type DetailModalProps, type DetailModalRow } from './detail-modal';
 
 // Table
 export {

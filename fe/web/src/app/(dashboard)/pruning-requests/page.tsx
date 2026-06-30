@@ -8,6 +8,7 @@
 
 'use client';
 
+import type { DetailModalRow } from '@/components/ui';
 import { useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -21,6 +22,7 @@ import {
   FormSelect,
   PageHeader,
   StatusPill,
+  DetailModal,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
@@ -56,6 +58,8 @@ export default function PruningRequestsPage() {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<PruningRequestStatus | 'all'>('all');
   const [page, setPage] = useState(1);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewingRequest, setViewingRequest] = useState<PruningRequest | null>(null);
   const limit = 20;
 
   useEffect(() => {
@@ -178,10 +182,13 @@ export default function PruningRequestsPage() {
         key: 'view',
         label: 'Lihat',
         icon: Eye,
-        onClick: () => router.push(`/pruning-requests/${row.id}`),
+        onClick: () => {
+          setViewingRequest(row);
+          setViewOpen(true);
+        },
       },
     ],
-    [router]
+    []
   );
 
   const handleStatusChange = (val: string) => {
@@ -257,6 +264,32 @@ export default function PruningRequestsPage() {
           )}
         </CardContent>
       </Card>
+
+      {viewingRequest && (
+        <DetailModal
+          open={viewOpen}
+          onOpenChange={setViewOpen}
+          title="Detail Permohonan Pemangkasan"
+          rows={[
+            { label: 'Kode Referensi', value: viewingRequest.referenceCode },
+            { label: 'Kecamatan', value: viewingRequest.submitter },
+            {
+              label: 'Status',
+              value: (
+                <StatusPill tone={PRUNING_REQUEST_STATUS_TONES[viewingRequest.status]}>
+                  {PRUNING_REQUEST_STATUS_LABELS[viewingRequest.status]}
+                </StatusPill>
+              ),
+            },
+            { label: 'Tipe Tanaman', value: viewingRequest.plantSpeciesName },
+            { label: 'Kuantitas', value: viewingRequest.quantity },
+            { label: 'Unit', value: viewingRequest.unit },
+            { label: 'Lokasi', value: viewingRequest.location },
+            { label: 'Catatan', value: viewingRequest.notes },
+            { label: 'Dibuat', value: formatDate(viewingRequest.createdAt) },
+          ] as DetailModalRow[]}
+        />
+      )}
     </div>
   );
 }

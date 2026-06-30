@@ -7,7 +7,6 @@
  */
 
 import { useCallback, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Plus, Eye, Pencil, Trash2, Power } from 'lucide-react';
 import {
   Badge,
@@ -15,6 +14,7 @@ import {
   DataTable,
   PageHeader,
   StatusPill,
+  DetailModal,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
@@ -28,7 +28,6 @@ import { formatDate } from '@/lib/utils/time';
 import type { Area } from '@/types/models';
 
 export default function AreasPage() {
-  const router = useRouter();
   const { user } = useAuth();
   const isAdmin =
     user?.role === 'admin_system' || user?.role === 'superadmin' || user?.role === 'top_management';
@@ -52,6 +51,8 @@ export default function AreasPage() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingArea, setEditingArea] = useState<Area | null>(null);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewingArea, setViewingArea] = useState<Area | null>(null);
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; area: Area | null }>({
     isOpen: false,
     area: null,
@@ -224,7 +225,15 @@ export default function AreasPage() {
 
   const rowActions = useCallback(
     (a: Area): DataTableRowAction<Area>[] => [
-      { key: 'view', label: 'Lihat', icon: Eye, onClick: () => router.push(`/areas/${a.id}`) },
+      {
+        key: 'view',
+        label: 'Lihat',
+        icon: Eye,
+        onClick: () => {
+          setViewingArea(a);
+          setViewOpen(true);
+        },
+      },
       {
         key: 'edit',
         label: 'Ubah',
@@ -252,7 +261,7 @@ export default function AreasPage() {
         onClick: () => setDeleteModal({ isOpen: true, area: a }),
       },
     ],
-    [router, isAdmin, deactivateArea, activateArea]
+    [isAdmin, deactivateArea, activateArea]
   );
 
   return (
@@ -314,6 +323,50 @@ export default function AreasPage() {
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, area: null })}
         onSuccess={() => setDeleteModal({ isOpen: false, area: null })}
+      />
+
+      <DetailModal
+        open={viewOpen}
+        onOpenChange={setViewOpen}
+        title="Detail Area"
+        rows={viewingArea ? [
+          { label: 'Nama', value: viewingArea.name },
+          { label: 'Kode', value: viewingArea.code },
+          { label: 'Rayon', value: viewingArea.rayon?.name },
+          {
+            label: 'Tipe',
+            value: viewingArea.area_type ? (
+              <Badge
+                variant={viewingArea.area_type.category === 'ACTIVE' ? 'success' : 'warning'}
+                size="sm"
+              >
+                {viewingArea.area_type.name}
+              </Badge>
+            ) : null,
+          },
+          { label: 'Luas', value: viewingArea.coverage_area ? formatArea(viewingArea.coverage_area) : null },
+          { label: 'Radius (m)', value: viewingArea.radius_meters },
+          {
+            label: 'Koordinat',
+            value:
+              viewingArea.center_latitude && viewingArea.center_longitude
+                ? `${viewingArea.center_latitude.toFixed(6)}, ${viewingArea.center_longitude.toFixed(6)}`
+                : null,
+          },
+          {
+            label: 'Status',
+            value: (
+              <StatusPill tone={viewingArea.is_active ? 'ok' : 'neutral'} dot>
+                {viewingArea.is_active ? 'Aktif' : 'Nonaktif'}
+              </StatusPill>
+            ),
+          },
+          { label: 'Batas Wilayah', value: viewingArea.boundary_polygon ? 'Ada' : 'Tidak ada' },
+          { label: 'Dibuat', value: formatDate(viewingArea.created_at) },
+          { label: 'Dibuat oleh', value: actorName(viewingArea.created_by) },
+          { label: 'Diperbarui', value: formatDate(viewingArea.updated_at) },
+          { label: 'Diperbarui oleh', value: actorName(viewingArea.updated_by) },
+        ] : []}
       />
     </div>
   );

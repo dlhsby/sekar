@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, QrCode, Eye, Pencil, Trash2 } from 'lucide-react';
 import {
@@ -13,6 +12,7 @@ import {
   StatusPill,
   Tabs,
   TabItem,
+  DetailModal,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
@@ -42,7 +42,6 @@ const STATUS_LABELS: Record<AssetStatus, string> = {
 };
 
 export default function AssetsPage() {
-  const router = useRouter();
   const user = useUser();
   const isManager = user && ASSET_MANAGER_ROLES.includes(user.role);
 
@@ -54,6 +53,8 @@ export default function AssetsPage() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewingAsset, setViewingAsset] = useState<Asset | null>(null);
 
   const { mutate: deleteAsset } = useDeleteAsset();
 
@@ -206,7 +207,15 @@ export default function AssetsPage() {
 
   const rowActions = useCallback(
     (asset: Asset): DataTableRowAction<Asset>[] => [
-      { key: 'view', label: 'Lihat', icon: Eye, onClick: () => router.push(`/assets/${asset.id}`) },
+      {
+        key: 'view',
+        label: 'Lihat',
+        icon: Eye,
+        onClick: () => {
+          setViewingAsset(asset);
+          setViewOpen(true);
+        },
+      },
       {
         key: 'edit',
         label: 'Ubah',
@@ -226,7 +235,7 @@ export default function AssetsPage() {
         onClick: () => deleteAsset(asset.id),
       },
     ],
-    [router, isManager, deleteAsset]
+    [isManager, deleteAsset]
   );
 
   return (
@@ -319,6 +328,30 @@ export default function AssetsPage() {
       </Card>
 
       <AssetFormModal open={formOpen} onOpenChange={setFormOpen} asset={editingAsset} />
+
+      <DetailModal
+        open={viewOpen}
+        onOpenChange={setViewOpen}
+        title="Detail Aset"
+        rows={viewingAsset ? [
+          { label: 'Kode', value: viewingAsset.asset_code },
+          { label: 'Nama', value: viewingAsset.name },
+          { label: 'Kategori', value: viewingAsset.category?.name },
+          {
+            label: 'Status',
+            value: (
+              <StatusPill tone={STATUS_TONE_MAP[viewingAsset.status]}>
+                {STATUS_LABELS[viewingAsset.status]}
+              </StatusPill>
+            ),
+          },
+          { label: 'Lokasi', value: viewingAsset.area?.name || viewingAsset.rayon?.name },
+          { label: 'Dibuat', value: formatDate(viewingAsset.created_at) },
+          { label: 'Dibuat oleh', value: actorName(viewingAsset.created_by) },
+          { label: 'Diperbarui', value: formatDate(viewingAsset.updated_at) },
+          { label: 'Diperbarui oleh', value: actorName(viewingAsset.updated_by) },
+        ] : []}
+      />
     </div>
   );
 }

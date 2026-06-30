@@ -7,7 +7,6 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Plus, Eye, Pencil, Trash2, Power, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -37,7 +36,6 @@ import { getErrorMessage } from '@/lib/api/client';
 import type { User } from '@/types/models';
 
 export default function UsersPage() {
-  const router = useRouter();
   const currentUser = useUser();
   // Full management (create/edit/delete) is admin-only; other roles that can
   // reach this page (admin_data) get a view-only kebab.
@@ -55,6 +53,8 @@ export default function UsersPage() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewingUser, setViewingUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   // One-time temp password returned by the reset action, shown in a dialog.
   const [tempPassword, setTempPassword] = useState<string | null>(null);
@@ -247,7 +247,15 @@ export default function UsersPage() {
 
   const rowActions = useCallback(
     (u: User): DataTableRowAction<User>[] => [
-      { key: 'view', label: 'Lihat', icon: Eye, onClick: () => router.push(`/users/${u.id}`) },
+      {
+        key: 'view',
+        label: 'Lihat',
+        icon: Eye,
+        onClick: () => {
+          setViewingUser(u);
+          setViewOpen(true);
+        },
+      },
       {
         key: 'edit',
         label: 'Ubah',
@@ -281,7 +289,7 @@ export default function UsersPage() {
         onClick: () => setUserToDelete(u),
       },
     ],
-    [router, canManage, deactivateUser, activateUser, handleResetPassword]
+    [canManage, deactivateUser, activateUser, handleResetPassword]
   );
 
   return (
@@ -323,6 +331,8 @@ export default function UsersPage() {
         user={editingUser}
         onSuccess={() => refetch()}
       />
+
+      <UserFormModal open={viewOpen} onOpenChange={setViewOpen} user={viewingUser} readOnly />
 
       <DeleteUserModal
         user={userToDelete}

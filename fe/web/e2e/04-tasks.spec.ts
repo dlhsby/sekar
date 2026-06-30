@@ -14,7 +14,7 @@ test.describe('TSK-1 tasks kanban/table', () => {
   test('toggles to the table view', async ({ page }) => {
     await quickLogin(page, 'admin', '/tasks');
     await page.getByRole('tab', { name: /tabel/i }).click();
-    await expect(page.getByText('Judul Tugas')).toBeVisible();
+    await expect(page.getByText('Judul Tugas').first()).toBeVisible();
     // Row actions now live in a standardized "..." kebab menu.
     await page.getByRole('button', { name: 'Aksi baris' }).first().click();
     await expect(page.getByRole('menuitem', { name: /lihat/i })).toBeVisible();

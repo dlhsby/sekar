@@ -24,6 +24,7 @@ import {
   PageHeader,
   StatusPill,
   Tabs,
+  DetailModal,
   type TabItem,
   type DataTableRowAction,
 } from '@/components/ui';
@@ -65,15 +66,25 @@ export default function TasksPage() {
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
   const [page, setPage] = useState(1);
   const [formOpen, setFormOpen] = useState(false);
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewingTask, setViewingTask] = useState<Task | null>(null);
   // The board groups client-side across all lanes, so it needs a wider window
   // than the paginated table.
   const limit = view === 'kanban' ? 100 : 20;
 
   const rowActions = useCallback(
     (task: Task): DataTableRowAction<Task>[] => [
-      { key: 'view', label: 'Lihat', icon: Eye, onClick: () => router.push(`/tasks/${task.id}`) },
+      {
+        key: 'view',
+        label: 'Lihat',
+        icon: Eye,
+        onClick: () => {
+          setViewingTask(task);
+          setViewOpen(true);
+        },
+      },
     ],
-    [router]
+    []
   );
 
   useEffect(() => {
@@ -348,6 +359,30 @@ export default function TasksPage() {
       )}
 
       <TaskFormModal open={formOpen} onOpenChange={setFormOpen} />
+
+      <DetailModal
+        open={viewOpen}
+        onOpenChange={setViewOpen}
+        title="Detail Tugas"
+        rows={viewingTask ? [
+          { label: 'Judul', value: viewingTask.title },
+          { label: 'Status', value: (
+            <StatusPill tone={TASK_STATUS_TONES[viewingTask.status]} dot>
+              {TASK_STATUS_LABELS[viewingTask.status]}
+            </StatusPill>
+          ) },
+          { label: 'Prioritas', value: (
+            <StatusPill tone={TASK_PRIORITY_TONES[viewingTask.priority]}>
+              {TASK_PRIORITY_LABELS[viewingTask.priority]}
+            </StatusPill>
+          ) },
+          { label: 'Ditugaskan Ke', value: viewingTask.assigned_to?.full_name },
+          { label: 'Area / Rayon', value: viewingTask.area?.name ?? viewingTask.rayon?.name },
+          { label: 'Tenggat', value: viewingTask.due_date ? new Date(viewingTask.due_date).toLocaleDateString('id-ID') : null },
+          { label: 'Dibuat', value: formatDate(viewingTask.created_at) },
+          { label: 'Diperbarui', value: formatDate(viewingTask.updated_at) },
+        ] : []}
+      />
     </div>
   );
 }

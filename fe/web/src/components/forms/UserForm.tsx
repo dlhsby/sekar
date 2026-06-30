@@ -55,6 +55,8 @@ interface UserFormProps {
   onCancel: () => void;
   loading?: boolean;
   submitText?: string;
+  /** Read-only "Lihat" mode — all fields disabled, no submit (just Tutup). */
+  readOnly?: boolean;
 }
 
 export function UserForm({
@@ -63,6 +65,7 @@ export function UserForm({
   onCancel,
   loading = false,
   submitText = 'Simpan',
+  readOnly = false,
 }: UserFormProps) {
   const isEditMode = !!initialData;
 
@@ -112,6 +115,7 @@ export function UserForm({
   const latestCheckRef = useRef('');
 
   useEffect(() => {
+    if (readOnly) return; // no availability checks in view mode
     const u = (usernameValue || '').trim();
     if (isEditMode && u === initialData?.username) {
       setUsernameStatus('idle');
@@ -137,7 +141,7 @@ export function UserForm({
       }
     }, 400);
     return () => clearTimeout(t);
-  }, [usernameValue, isEditMode, initialData?.username]);
+  }, [usernameValue, isEditMode, initialData?.username, readOnly]);
 
   const handleSuggestUsername = async () => {
     const name = (fullNameValue || '').trim();
@@ -186,6 +190,7 @@ export function UserForm({
     setAreaIds((prev) => (prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]));
 
   const busy = isSubmitting || loading;
+  const fieldsDisabled = busy || readOnly;
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
@@ -197,20 +202,22 @@ export function UserForm({
               placeholder="Masukkan username"
               error={errors.username?.message}
               required
-              disabled={busy}
+              disabled={fieldsDisabled}
               {...register('username')}
             />
           </div>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={handleSuggestUsername}
-            loading={suggesting}
-            disabled={busy || !fullNameValue}
-            className="mb-[2px] whitespace-nowrap"
-          >
-            Sarankan
-          </Button>
+          {!readOnly && (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleSuggestUsername}
+              loading={suggesting}
+              disabled={busy || !fullNameValue}
+              className="mb-[2px] whitespace-nowrap"
+            >
+              Sarankan
+            </Button>
+          )}
         </div>
         {usernameStatus === 'checking' && (
           <p className="text-nb-caption text-nb-gray-600">Memeriksa ketersediaan…</p>
@@ -233,7 +240,7 @@ export function UserForm({
         placeholder="Masukkan nama lengkap"
         error={errors.full_name?.message}
         required
-        disabled={busy}
+        disabled={fieldsDisabled}
         {...register('full_name')}
       />
 
@@ -242,7 +249,7 @@ export function UserForm({
         placeholder="0812xxxxxxxx"
         error={errors.phone_number?.message}
         helperText="Format 08xxxxxxxxxx — bisa dipakai untuk login selain username"
-        disabled={busy}
+        disabled={fieldsDisabled}
         {...phoneReg}
         onBlur={(e) => {
           phoneReg.onBlur(e);
@@ -265,7 +272,7 @@ export function UserForm({
         onChange={(value) => setValue('role', value as UserRole)}
         error={errors.role?.message}
         required
-        disabled={busy}
+        disabled={fieldsDisabled}
       />
 
       <FormSelect
@@ -275,7 +282,7 @@ export function UserForm({
         onChange={(value) => setValue('rayon_id', value as string)}
         placeholder={rayonsLoading ? 'Memuat...' : 'Pilih rayon'}
         error={errors.rayon_id?.message}
-        disabled={busy || rayonsLoading}
+        disabled={fieldsDisabled || rayonsLoading}
       />
 
       <FormSelect
@@ -286,7 +293,7 @@ export function UserForm({
         placeholder="Pilih shift"
         error={errors.shift_definition_id?.message}
         helperText="Satu shift per pekerja (berlaku untuk semua areanya)"
-        disabled={busy}
+        disabled={fieldsDisabled}
       />
 
       {/* Areas multi-select */}
@@ -301,7 +308,7 @@ export function UserForm({
           placeholder={areasLoading ? 'Memuat area...' : 'Cari area…'}
           value={areaSearch}
           onChange={(e) => setAreaSearch(e.target.value)}
-          disabled={busy || areasLoading}
+          disabled={fieldsDisabled || areasLoading}
         />
         <div className="max-h-56 space-y-1 overflow-y-auto rounded-nb-base border-2 border-nb-black p-2">
           {filteredAreas.length === 0 ? (
@@ -319,7 +326,7 @@ export function UserForm({
                     className="size-4 accent-nb-primary"
                     checked={checked}
                     onChange={() => toggleArea(area.id)}
-                    disabled={busy}
+                    disabled={fieldsDisabled}
                   />
                   <span className="text-nb-body-sm">
                     {area.name}{' '}
@@ -336,12 +343,26 @@ export function UserForm({
       </div>
 
       <div className="flex gap-3 pt-4">
-        <Button type="button" variant="secondary" onClick={onCancel} disabled={busy} className="flex-1">
-          Batal
-        </Button>
-        <Button type="submit" loading={busy} disabled={busy} className="flex-1">
-          {submitText}
-        </Button>
+        {readOnly ? (
+          <Button type="button" variant="secondary" onClick={onCancel} className="flex-1">
+            Tutup
+          </Button>
+        ) : (
+          <>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={onCancel}
+              disabled={busy}
+              className="flex-1"
+            >
+              Batal
+            </Button>
+            <Button type="submit" loading={busy} disabled={busy} className="flex-1">
+              {submitText}
+            </Button>
+          </>
+        )}
       </div>
     </form>
   );

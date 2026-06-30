@@ -5,6 +5,7 @@
 
 'use client';
 
+import type { DetailModalRow } from '@/components/ui';
 import { useAuth } from '@/lib/auth/hooks';
 import { useActivities, useApproveActivity, useRejectActivity } from '@/lib/api/activities';
 import { useActivityTypes } from '@/lib/api/activity-types';
@@ -20,6 +21,7 @@ import {
   Button,
   Field,
   DateRangePicker,
+  DetailModal,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
@@ -54,6 +56,8 @@ export default function ActivitiesPage() {
   });
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewingActivity, setViewingActivity] = useState<Activity | null>(null);
   const limit = 20;
 
   const approveMutation = useApproveActivity();
@@ -114,7 +118,10 @@ export default function ActivitiesPage() {
         key: 'view',
         label: 'Lihat',
         icon: Eye,
-        onClick: () => router.push(`/activities/${row.id}`),
+        onClick: () => {
+          setViewingActivity(row);
+          setViewOpen(true);
+        },
       },
       {
         key: 'approve',
@@ -133,7 +140,7 @@ export default function ActivitiesPage() {
         hidden: row.status !== 'pending' || !canApprove,
       },
     ],
-    [canApprove, approveMutation.isPending, handleApprove, router]
+    [canApprove, approveMutation.isPending, handleApprove]
   );
 
   if (authLoading || !user) {
@@ -422,6 +429,30 @@ export default function ActivitiesPage() {
           )}
         </CardContent>
       </Card>
+
+      {viewingActivity && (
+        <DetailModal
+          open={viewOpen}
+          onOpenChange={setViewOpen}
+          title="Detail Aktivitas"
+          rows={[
+            { label: 'Tanggal', value: new Date(viewingActivity.created_at).toLocaleDateString('id-ID') },
+            { label: 'Pengguna', value: viewingActivity.user?.full_name },
+            { label: 'Tipe Aktivitas', value: viewingActivity.activity_type?.name },
+            { label: 'Area', value: viewingActivity.area?.name },
+            {
+              label: 'Status',
+              value: (
+                <Badge variant={ACTIVITY_STATUS_BADGES[viewingActivity.status]} size="sm">
+                  {ACTIVITY_STATUS_LABELS[viewingActivity.status]}
+                </Badge>
+              ),
+            },
+            { label: 'Foto', value: `${viewingActivity.photo_urls?.length || 0} foto` },
+            { label: 'Catatan', value: viewingActivity.notes },
+          ] as DetailModalRow[]}
+        />
+      )}
     </div>
   );
 }

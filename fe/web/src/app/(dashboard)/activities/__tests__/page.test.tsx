@@ -485,7 +485,7 @@ describe('ActivitiesPage', () => {
       expect(lihatItem).toBeInTheDocument();
     });
 
-    it('should navigate to detail page when Lihat menuitem is clicked', async () => {
+    it('should open a read-only detail modal when Lihat menuitem is clicked', async () => {
       const user = userEvent.setup();
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
@@ -495,7 +495,9 @@ describe('ActivitiesPage', () => {
       const lihatItem = screen.getByRole('menuitem', { name: /lihat/i });
       await user.click(lihatItem);
 
-      expect(mockPush).toHaveBeenCalledWith('/activities/activity-1');
+      expect(await screen.findByRole('dialog')).toBeInTheDocument();
+      expect(screen.getByText('Detail Aktivitas')).toBeInTheDocument();
+      expect(mockPush).not.toHaveBeenCalled();
     });
   });
 

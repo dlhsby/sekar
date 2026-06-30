@@ -14,16 +14,18 @@ import {
 describe('Navigation Utilities', () => {
   describe('navigationItems', () => {
     it('should contain all expected navigation items', () => {
-      // Top-level entries (Jun-30 reorder): dashboard, monitoring, work(group),
+      // Top-level entries: dashboard, monitoring, work(group), access(group),
       // data(group), reports(group), analytics(group), operations(group),
       // settings + 2 staff_kecamatan items + the external 'docs' (Panduan) link
-      // = 11. Pengguna folded into Data Master; Pengaturan added to the sidebar.
-      expect(navigationItems).toHaveLength(11);
+      // = 12. Pengguna lives in its own 'Pengguna & Hak Akses' group; Pengaturan
+      // is on the sidebar.
+      expect(navigationItems).toHaveLength(12);
 
       const navIds = navigationItems.map((item) => item.id);
       expect(navIds).toContain('dashboard');
       expect(navIds).toContain('monitoring');
       expect(navIds).toContain('work');
+      expect(navIds).toContain('access');
       expect(navIds).toContain('data');
       expect(navIds).toContain('reports');
       expect(navIds).toContain('analytics');
@@ -31,8 +33,6 @@ describe('Navigation Utilities', () => {
       expect(navIds).toContain('settings');
       // External public docs link, visible to every role.
       expect(navIds).toContain('docs');
-      // 'access' group removed — Pengguna now lives under Data Master.
-      expect(navIds).not.toContain('access');
       // pruning-requests is not top-level (nested under 'work').
       expect(navIds).not.toContain('pruning-requests');
 
@@ -48,11 +48,14 @@ describe('Navigation Utilities', () => {
         'pruning-requests',
       ]);
 
-      // 'Data Master' group: users + areas / rayons / scheduling-templates +
+      // 'Pengguna & Hak Akses' group holds user accounts.
+      const accessItem = navigationItems.find((item) => item.id === 'access');
+      expect(accessItem?.children?.map((c) => c.id)).toEqual(['users']);
+
+      // 'Data Master' group: areas / rayons / scheduling-templates +
       // Phase-3 plants/seeds + Phase-5 assets.
       const dataItem = navigationItems.find((item) => item.id === 'data');
       expect(dataItem?.children?.map((c) => c.id)).toEqual([
-        'users',
         'areas',
         'rayons',
         'scheduling-templates',
@@ -79,9 +82,9 @@ describe('Navigation Utilities', () => {
     });
 
     it('should restrict the Users route to admin roles', () => {
-      // Users management is admin/admin_data only — now nested under 'Data Master'.
-      const dataItem = navigationItems.find((item) => item.id === 'data');
-      const usersItem = dataItem?.children?.find((child) => child.id === 'users');
+      // Users management is admin/admin_data only — nested under 'Pengguna & Hak Akses'.
+      const accessItem = navigationItems.find((item) => item.id === 'access');
+      const usersItem = accessItem?.children?.find((child) => child.id === 'users');
       expect(usersItem?.roles).toContain('admin_system');
       expect(usersItem?.roles).toContain('superadmin');
       expect(usersItem?.roles).toContain('admin_data');
@@ -98,6 +101,7 @@ describe('Navigation Utilities', () => {
         'dashboard',
         'monitoring',
         'work',
+        'access',
         'data',
         'reports',
         'analytics',
@@ -115,8 +119,8 @@ describe('Navigation Utilities', () => {
         'schedules',
         'pruning-requests',
       ]);
-      const dataItem = filtered.find((item) => item.id === 'data');
-      expect(dataItem?.children?.find((child) => child.id === 'users')).toBeDefined();
+      const accessItem = filtered.find((item) => item.id === 'access');
+      expect(accessItem?.children?.find((child) => child.id === 'users')).toBeDefined();
     });
 
     it('should filter out admin-only children for top_management', () => {
@@ -236,7 +240,7 @@ describe('Navigation Utilities', () => {
     it('returns the group → page trail for a known route', () => {
       expect(getBreadcrumbTrail('/tasks')).toEqual(['Pekerjaan', 'Tugas']);
       expect(getBreadcrumbTrail('/overtime')).toEqual(['Pekerjaan', 'Lembur']);
-      expect(getBreadcrumbTrail('/users')).toEqual(['Data Master', 'Pengguna']);
+      expect(getBreadcrumbTrail('/users')).toEqual(['Pengguna & Hak Akses', 'Pengguna']);
       expect(getBreadcrumbTrail('/pruning-requests')).toEqual(['Pekerjaan', 'Permohonan Pemangkasan']);
     });
 
@@ -253,7 +257,7 @@ describe('Navigation Utilities', () => {
         'Jadwal (Lanjutan)',
         'Ubah',
       ]);
-      expect(getBreadcrumbTrail('/users/u1')).toEqual(['Data Master', 'Pengguna', 'Detail']);
+      expect(getBreadcrumbTrail('/users/u1')).toEqual(['Pengguna & Hak Akses', 'Pengguna', 'Detail']);
     });
   });
 
