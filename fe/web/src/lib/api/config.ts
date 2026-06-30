@@ -23,11 +23,16 @@ async function fetchMapsConfig(): Promise<MapsConfig> {
 /**
  * Hook to fetch the maps configuration once per session.
  * Keys rarely change, so cache aggressively and avoid refetch churn.
+ *
+ * `enabled: false` skips the request entirely — used when a build-time
+ * `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` is present, so we don't make an auth-gated
+ * round-trip just to learn a key we already have.
  */
-export function useMapsConfig() {
+export function useMapsConfig(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ['config', 'maps'],
     queryFn: fetchMapsConfig,
+    enabled: options?.enabled ?? true,
     staleTime: 60 * 60 * 1000, // 1 hour
     gcTime: 24 * 60 * 60 * 1000,
     retry: 1,
