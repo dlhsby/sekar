@@ -21,6 +21,13 @@ import type { CreateRayonDto, UpdateRayonDto } from '@/lib/api/rayons';
 const DEFAULT_COLOR = '#7FBC8C';
 const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 
+/** Coerce a number-input value to a number, or null when empty/invalid (coords are optional). */
+const toNullableNumber = (v: unknown): number | null => {
+  if (v === '' || v === null || v === undefined) return null;
+  const n = Number(v);
+  return Number.isNaN(n) ? null : n;
+};
+
 // Validation schema — master data: only this table's own columns.
 const rayonSchema = z.object({
   name: z.string().min(2, 'Nama minimal 2 karakter'),
@@ -30,8 +37,18 @@ const rayonSchema = z.object({
     .nullable()
     .refine((v) => !v || HEX_COLOR_RE.test(v), 'Format warna harus heksadesimal, mis. #RRGGBB'),
   description: z.string().optional().nullable(),
-  center_lat: z.number().optional().nullable(),
-  center_lng: z.number().optional().nullable(),
+  center_lat: z
+    .number()
+    .min(-90, 'Latitude harus antara -90 dan 90')
+    .max(90, 'Latitude harus antara -90 dan 90')
+    .nullable()
+    .optional(),
+  center_lng: z
+    .number()
+    .min(-180, 'Longitude harus antara -180 dan 180')
+    .max(180, 'Longitude harus antara -180 dan 180')
+    .nullable()
+    .optional(),
 });
 
 type RayonFormData = z.infer<typeof rayonSchema>;
@@ -149,6 +166,10 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
           lat={centerLat}
           lng={centerLng}
           onChange={handlePinChange}
+          onClear={() => {
+            setValue('center_lat', null, { shouldValidate: true });
+            setValue('center_lng', null, { shouldValidate: true });
+          }}
           manualFallback={
             <div className="rounded-nb-base border-2 border-nb-black bg-nb-gray-100 p-3">
               <p className="text-nb-body-sm text-nb-gray-700">
@@ -158,24 +179,24 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
           }
         />
 
-        {/* Manual entry / fine-tuning — stays in sync with the pin. */}
+        {/* Manual entry / fine-tuning — stays in sync with the pin. Optional. */}
         <div className="grid grid-cols-2 gap-4">
           <FormInput
             label="Latitude"
             type="number"
             placeholder="Contoh: -7.25"
-            step="0.000001"
+            step="any"
             error={errors.center_lat?.message}
-            {...register('center_lat', { valueAsNumber: true })}
+            {...register('center_lat', { setValueAs: toNullableNumber })}
           />
 
           <FormInput
             label="Longitude"
             type="number"
             placeholder="Contoh: 112.75"
-            step="0.000001"
+            step="any"
             error={errors.center_lng?.message}
-            {...register('center_lng', { valueAsNumber: true })}
+            {...register('center_lng', { setValueAs: toNullableNumber })}
           />
         </div>
       </div>

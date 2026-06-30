@@ -23,10 +23,17 @@ export function RayonFormModal({ open, onOpenChange, rayon, onSuccess }: RayonFo
   const mutation = isEdit ? updateMutation : createMutation;
 
   const handleSubmit = async (data: CreateRayonDto | UpdateRayonDto): Promise<void> => {
-    if (isEdit && rayon) {
-      await updateMutation.mutateAsync({ id: rayon.id, data: data as UpdateRayonDto });
-    } else {
-      await createMutation.mutateAsync(data as CreateRayonDto);
+    try {
+      if (isEdit && rayon) {
+        await updateMutation.mutateAsync({ id: rayon.id, data: data as UpdateRayonDto });
+      } else {
+        await createMutation.mutateAsync(data as CreateRayonDto);
+      }
+    } catch {
+      // Failure is surfaced via the mutation.isError banner below; keep the
+      // modal open so the user can correct and retry. Swallow here so the
+      // rejection doesn't escape react-hook-form as an unhandled rejection.
+      return;
     }
     onSuccess?.();
     onOpenChange(false);
