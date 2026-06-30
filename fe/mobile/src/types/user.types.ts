@@ -66,7 +66,7 @@ export interface Area {
   id: string;
   name: string;
   area_type_id: string;
-  area_type?: AreaType;
+  areaType?: AreaType;
   rayon_id?: string;
   rayon?: Rayon;
   gps_lat: number;

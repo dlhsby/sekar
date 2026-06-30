@@ -21,6 +21,7 @@ import {
   type DataTableRowAction,
 } from '@/components/ui';
 import { RolePill } from '@/components/users/RolePill';
+import { RosterActionModal } from '@/components/daily-schedules/RosterActionModal';
 import {
   useDailyRoster,
   useGenerateRoster,
@@ -425,189 +426,128 @@ export default function DailySchedulesPage() {
       />
 
       {/* Leave Modal */}
-      {leaveModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-sm rounded-nb-base border-2 border-nb-black bg-nb-white p-6 shadow-nb-lg">
-            <h2 className="text-nb-h2 font-bold mb-4">Cuti</h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-nb-body font-medium mb-2">Jenis Cuti</label>
-                <select
-                  value={leaveType}
-                  onChange={(e) => setLeaveType(e.target.value as 'sick' | 'annual')}
-                  className="w-full rounded-nb-base border-2 border-nb-black px-3 py-2"
-                >
-                  <option value="sick">Sakit</option>
-                  <option value="annual">Tahunan</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-nb-body font-medium mb-2">Catatan (opsional)</label>
-                <textarea
-                  value={leaveNotes}
-                  onChange={(e) => setLeaveNotes(e.target.value)}
-                  placeholder="Masukkan catatan…"
-                  className="w-full rounded-nb-base border-2 border-nb-black px-3 py-2 text-nb-body"
-                  rows={3}
-                />
-              </div>
-            </div>
-
-            <div className="mt-6 flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setLeaveModalOpen(false)}
-              >
-                Batalkan
-              </Button>
-              <Button
-                onClick={handleSetLeave}
-                loading={setLeave.isPending}
-              >
-                Simpan
-              </Button>
-            </div>
-          </div>
+      <RosterActionModal
+        open={leaveModalOpen}
+        title="Cuti"
+        onClose={() => setLeaveModalOpen(false)}
+        onSubmit={handleSetLeave}
+        submitLabel="Simpan"
+        loading={setLeave.isPending}
+      >
+        <div>
+          <label className="block text-nb-body font-medium mb-2">Jenis Cuti</label>
+          <select
+            value={leaveType}
+            onChange={(e) => setLeaveType(e.target.value as 'sick' | 'annual')}
+            className="w-full rounded-nb-base border-2 border-nb-black px-3 py-2"
+          >
+            <option value="sick">Sakit</option>
+            <option value="annual">Tahunan</option>
+          </select>
         </div>
-      )}
+
+        <div>
+          <label className="block text-nb-body font-medium mb-2">Catatan (opsional)</label>
+          <textarea
+            value={leaveNotes}
+            onChange={(e) => setLeaveNotes(e.target.value)}
+            placeholder="Masukkan catatan…"
+            className="w-full rounded-nb-base border-2 border-nb-black px-3 py-2 text-nb-body"
+            rows={3}
+          />
+        </div>
+      </RosterActionModal>
 
       {/* Replace Modal */}
-      {replaceModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-sm rounded-nb-base border-2 border-nb-black bg-nb-white p-6 shadow-nb-lg">
-            <h2 className="text-nb-h2 font-bold mb-4">Ganti Pekerja</h2>
+      <RosterActionModal
+        open={replaceModalOpen}
+        title="Ganti Pekerja"
+        onClose={() => setReplaceModalOpen(false)}
+        onSubmit={handleReplace}
+        submitLabel="Simpan"
+        loading={replaceWorker.isPending}
+        submitDisabled={!replacementUserId}
+      >
+        <FormCombobox
+          label="Pekerja Pengganti"
+          placeholder="Pilih pekerja…"
+          value={replacementUserId}
+          onChange={setReplacementUserId}
+          options={schedulableUsers.map((u) => ({
+            value: u.id,
+            label: `${u.full_name} (${u.username})`,
+          }))}
+        />
 
-            <div className="space-y-4">
-              <FormCombobox
-                label="Pekerja Pengganti"
-                placeholder="Pilih pekerja…"
-                value={replacementUserId}
-                onChange={setReplacementUserId}
-                options={schedulableUsers.map((u) => ({
-                  value: u.id,
-                  label: `${u.full_name} (${u.username})`,
-                }))}
-              />
-
-              <div>
-                <label className="block text-nb-body font-medium mb-2">Catatan (opsional)</label>
-                <textarea
-                  value={replaceNotes}
-                  onChange={(e) => setReplaceNotes(e.target.value)}
-                  placeholder="Masukkan catatan…"
-                  className="w-full rounded-nb-base border-2 border-nb-black px-3 py-2 text-nb-body"
-                  rows={3}
-                />
-              </div>
-            </div>
-
-            <div className="mt-6 flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setReplaceModalOpen(false)}
-              >
-                Batalkan
-              </Button>
-              <Button
-                onClick={handleReplace}
-                loading={replaceWorker.isPending}
-              >
-                Simpan
-              </Button>
-            </div>
-          </div>
+        <div>
+          <label className="block text-nb-body font-medium mb-2">Catatan (opsional)</label>
+          <textarea
+            value={replaceNotes}
+            onChange={(e) => setReplaceNotes(e.target.value)}
+            placeholder="Masukkan catatan…"
+            className="w-full rounded-nb-base border-2 border-nb-black px-3 py-2 text-nb-body"
+            rows={3}
+          />
         </div>
-      )}
+      </RosterActionModal>
 
       {/* Areas Modal */}
-      {areasModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-sm rounded-nb-base border-2 border-nb-black bg-nb-white p-6 shadow-nb-lg max-h-[80vh] overflow-y-auto">
-            <h2 className="text-nb-h2 font-bold mb-4">Ubah Area</h2>
-
-            <div className="space-y-2">
-              {allAreas.map((area) => (
-                <label key={area.id} className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedAreaIds.includes(area.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedAreaIds([...selectedAreaIds, area.id]);
-                      } else {
-                        setSelectedAreaIds(
-                          selectedAreaIds.filter((id) => id !== area.id)
-                        );
-                      }
-                    }}
-                    className="h-4 w-4"
-                  />
-                  <span className="text-nb-body">{area.name}</span>
-                </label>
-              ))}
-            </div>
-
-            <div className="mt-6 flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setAreasModalOpen(false)}
-              >
-                Batalkan
-              </Button>
-              <Button
-                onClick={handleUpdateAreas}
-                loading={updateAreas.isPending}
-              >
-                Simpan
-              </Button>
-            </div>
-          </div>
+      <RosterActionModal
+        open={areasModalOpen}
+        title="Ubah Area"
+        onClose={() => setAreasModalOpen(false)}
+        onSubmit={handleUpdateAreas}
+        submitLabel="Simpan"
+        loading={updateAreas.isPending}
+      >
+        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+          {allAreas.map((area) => (
+            <label key={area.id} className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={selectedAreaIds.includes(area.id)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedAreaIds([...selectedAreaIds, area.id]);
+                  } else {
+                    setSelectedAreaIds(
+                      selectedAreaIds.filter((id) => id !== area.id)
+                    );
+                  }
+                }}
+                className="h-4 w-4"
+              />
+              <span className="text-nb-body">{area.name}</span>
+            </label>
+          ))}
         </div>
-      )}
+      </RosterActionModal>
 
       {/* Shift Modal */}
-      {shiftModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-sm rounded-nb-base border-2 border-nb-black bg-nb-white p-6 shadow-nb-lg">
-            <h2 className="text-nb-h2 font-bold mb-4">Ubah Shift</h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-nb-body font-medium mb-2">Shift</label>
-                <select
-                  value={selectedShiftId ?? ''}
-                  onChange={(e) => setSelectedShiftId(e.target.value || null)}
-                  className="w-full rounded-nb-base border-2 border-nb-black px-3 py-2"
-                >
-                  <option value="">Tanpa Shift</option>
-                  {shifts.map((shift) => (
-                    <option key={shift.id} value={shift.id}>
-                      {shift.name} ({shift.start_time}-{shift.end_time})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="mt-6 flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setShiftModalOpen(false)}
-              >
-                Batalkan
-              </Button>
-              <Button
-                onClick={handleUpdateShift}
-                loading={updateShift.isPending}
-              >
-                Simpan
-              </Button>
-            </div>
-          </div>
+      <RosterActionModal
+        open={shiftModalOpen}
+        title="Ubah Shift"
+        onClose={() => setShiftModalOpen(false)}
+        onSubmit={handleUpdateShift}
+        submitLabel="Simpan"
+        loading={updateShift.isPending}
+      >
+        <div>
+          <label className="block text-nb-body font-medium mb-2">Shift</label>
+          <select
+            value={selectedShiftId ?? ''}
+            onChange={(e) => setSelectedShiftId(e.target.value || null)}
+            className="w-full rounded-nb-base border-2 border-nb-black px-3 py-2"
+          >
+            <option value="">Tanpa Shift</option>
+            {shifts.map((shift) => (
+              <option key={shift.id} value={shift.id}>
+                {shift.name} ({shift.start_time}-{shift.end_time})
+              </option>
+            ))}
+          </select>
         </div>
-      )}
+      </RosterActionModal>
     </div>
   );
 }

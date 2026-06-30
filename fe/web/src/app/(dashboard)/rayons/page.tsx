@@ -26,6 +26,7 @@ import { useUsers } from '@/lib/api/users';
 import { useAuth } from '@/lib/auth/hooks';
 import { ADMIN_ROLES } from '@/lib/constants/roles';
 import { getErrorMessage } from '@/lib/api/client';
+import { useViewModal } from '@/lib/hooks/use-view-modal';
 import type { Rayon } from '@/types/models';
 
 export default function RayonsPage() {
@@ -50,8 +51,7 @@ export default function RayonsPage() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingRayon, setEditingRayon] = useState<Rayon | null>(null);
-  const [viewOpen, setViewOpen] = useState(false);
-  const [viewingRayon, setViewingRayon] = useState<Rayon | null>(null);
+  const view = useViewModal<Rayon>();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletingRayon, setDeletingRayon] = useState<Rayon | null>(null);
 
@@ -168,8 +168,7 @@ export default function RayonsPage() {
         label: 'Lihat',
         icon: Eye,
         onClick: () => {
-          setViewingRayon(r);
-          setViewOpen(true);
+          view.openWith(r);
         },
       },
       {
@@ -194,7 +193,7 @@ export default function RayonsPage() {
         },
       },
     ],
-    [isAdmin]
+    [isAdmin, view]
   );
 
   const handleDelete = async () => {
@@ -268,36 +267,36 @@ export default function RayonsPage() {
       />
 
       <DetailModal
-        open={viewOpen}
-        onOpenChange={setViewOpen}
+        open={view.open}
+        onOpenChange={view.onOpenChange}
         title="Detail Rayon"
         rows={
-          viewingRayon
+          view.item
             ? [
-                { label: 'Kode', value: viewingRayon.code },
-                { label: 'Nama', value: viewingRayon.name },
+                { label: 'Kode', value: view.item.code },
+                { label: 'Nama', value: view.item.name },
                 {
                   label: 'Warna',
-                  value: viewingRayon.color ? (
+                  value: view.item.color ? (
                     <span className="inline-flex items-center gap-2">
                       <div
                         className="h-4 w-4 border-2 border-nb-black"
-                        style={{ backgroundColor: viewingRayon.color }}
+                        style={{ backgroundColor: view.item.color }}
                       />
-                      <span className="font-mono text-nb-body-sm">{viewingRayon.color}</span>
+                      <span className="font-mono text-nb-body-sm">{view.item.color}</span>
                     </span>
                   ) : null,
                 },
                 {
                   label: 'Koordinat',
                   value:
-                    viewingRayon.center_lat && viewingRayon.center_lng ? (
-                      <CoordinateLink lat={viewingRayon.center_lat} lng={viewingRayon.center_lng} />
+                    view.item.center_lat && view.item.center_lng ? (
+                      <CoordinateLink lat={view.item.center_lat} lng={view.item.center_lng} />
                     ) : null,
                 },
-                { label: 'Deskripsi', value: viewingRayon.description },
-                { label: 'Dibuat oleh', value: actorName(viewingRayon.created_by) },
-                { label: 'Diperbarui oleh', value: actorName(viewingRayon.updated_by) },
+                { label: 'Deskripsi', value: view.item.description },
+                { label: 'Dibuat oleh', value: actorName(view.item.created_by) },
+                { label: 'Diperbarui oleh', value: actorName(view.item.updated_by) },
               ]
             : []
         }

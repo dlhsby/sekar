@@ -25,6 +25,7 @@ import {
 } from '@/components/ui';
 import { PlantSeedRow } from '@/lib/api/seeds';
 import { formatDate } from '@/lib/utils/time';
+import { useViewModal } from '@/lib/hooks/use-view-modal';
 
 const ALLOWED_ROLES = [
   'admin_data',
@@ -41,8 +42,7 @@ export default function SeedsListPage() {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [viewOpen, setViewOpen] = useState(false);
-  const [viewingSeed, setViewingSeed] = useState<PlantSeedRow | null>(null);
+  const view = useViewModal<PlantSeedRow>();
   const limit = 20;
 
   const { data: seedsData, isLoading: seedsLoading } = useSeeds({
@@ -60,12 +60,11 @@ export default function SeedsListPage() {
         label: 'Lihat',
         icon: Eye,
         onClick: () => {
-          setViewingSeed(row);
-          setViewOpen(true);
+          view.openWith(row);
         },
       },
     ],
-    []
+    [view]
   );
 
   useEffect(() => {
@@ -232,25 +231,25 @@ export default function SeedsListPage() {
       </Card>
 
       <DetailModal
-        open={viewOpen}
-        onOpenChange={setViewOpen}
+        open={view.open}
+        onOpenChange={view.onOpenChange}
         title="Detail Bibit"
-        rows={viewingSeed ? [
-          { label: 'Nama Bibit', value: viewingSeed.nameId },
+        rows={view.item ? [
+          { label: 'Nama Bibit', value: view.item.nameId },
           {
             label: 'Satuan',
             value: ({
               gram: 'gram',
               piece: 'buah',
               packet: 'paket',
-            } as Record<string, string>)[viewingSeed.unit] || viewingSeed.unit,
+            } as Record<string, string>)[view.item.unit] || view.item.unit,
           },
           {
             label: 'Stok',
             value: (
               <div className="flex items-center gap-2">
-                <span>{viewingSeed.stockQty}</span>
-                {viewingSeed.stockQty < LOW_STOCK_THRESHOLD && (
+                <span>{view.item.stockQty}</span>
+                {view.item.stockQty < LOW_STOCK_THRESHOLD && (
                   <Badge variant="warning" size="sm">
                     Rendah
                   </Badge>
@@ -258,8 +257,8 @@ export default function SeedsListPage() {
               </div>
             ),
           },
-          { label: 'Dibuat', value: formatDate(viewingSeed.createdAt) },
-          { label: 'Diperbarui', value: formatDate(viewingSeed.updatedAt) },
+          { label: 'Dibuat', value: formatDate(view.item.createdAt) },
+          { label: 'Diperbarui', value: formatDate(view.item.updatedAt) },
         ] : []}
       />
     </div>

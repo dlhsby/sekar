@@ -36,6 +36,7 @@ import { Plus, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import { TASK_MANAGER_ROLES, hasRole } from '@/lib/constants/roles';
 import { TaskFormModal } from '@/components/tasks/TaskFormModal';
 import { formatDate } from '@/lib/utils/time';
+import { useViewModal } from '@/lib/hooks/use-view-modal';
 import {
   TASK_STATUS_LABELS,
   TASK_STATUS_TONES,
@@ -66,8 +67,7 @@ export default function TasksPage() {
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
   const [page, setPage] = useState(1);
   const [formOpen, setFormOpen] = useState(false);
-  const [viewOpen, setViewOpen] = useState(false);
-  const [viewingTask, setViewingTask] = useState<Task | null>(null);
+  const viewModal = useViewModal<Task>();
   // The board groups client-side across all lanes, so it needs a wider window
   // than the paginated table.
   const limit = view === 'kanban' ? 100 : 20;
@@ -79,12 +79,11 @@ export default function TasksPage() {
         label: 'Lihat',
         icon: Eye,
         onClick: () => {
-          setViewingTask(task);
-          setViewOpen(true);
+          viewModal.openWith(task);
         },
       },
     ],
-    []
+    [viewModal]
   );
 
   useEffect(() => {
@@ -361,26 +360,26 @@ export default function TasksPage() {
       <TaskFormModal open={formOpen} onOpenChange={setFormOpen} />
 
       <DetailModal
-        open={viewOpen}
-        onOpenChange={setViewOpen}
+        open={viewModal.open}
+        onOpenChange={viewModal.onOpenChange}
         title="Detail Tugas"
-        rows={viewingTask ? [
-          { label: 'Judul', value: viewingTask.title },
+        rows={viewModal.item ? [
+          { label: 'Judul', value: viewModal.item.title },
           { label: 'Status', value: (
-            <StatusPill tone={TASK_STATUS_TONES[viewingTask.status]} dot>
-              {TASK_STATUS_LABELS[viewingTask.status]}
+            <StatusPill tone={TASK_STATUS_TONES[viewModal.item.status]} dot>
+              {TASK_STATUS_LABELS[viewModal.item.status]}
             </StatusPill>
           ) },
           { label: 'Prioritas', value: (
-            <StatusPill tone={TASK_PRIORITY_TONES[viewingTask.priority]}>
-              {TASK_PRIORITY_LABELS[viewingTask.priority]}
+            <StatusPill tone={TASK_PRIORITY_TONES[viewModal.item.priority]}>
+              {TASK_PRIORITY_LABELS[viewModal.item.priority]}
             </StatusPill>
           ) },
-          { label: 'Ditugaskan Ke', value: viewingTask.assigned_to?.full_name },
-          { label: 'Area / Rayon', value: viewingTask.area?.name ?? viewingTask.rayon?.name },
-          { label: 'Tenggat', value: viewingTask.due_date ? new Date(viewingTask.due_date).toLocaleDateString('id-ID') : null },
-          { label: 'Dibuat', value: formatDate(viewingTask.created_at) },
-          { label: 'Diperbarui', value: formatDate(viewingTask.updated_at) },
+          { label: 'Ditugaskan Ke', value: viewModal.item.assigned_to?.full_name },
+          { label: 'Area / Rayon', value: viewModal.item.area?.name ?? viewModal.item.rayon?.name },
+          { label: 'Tenggat', value: viewModal.item.due_date ? new Date(viewModal.item.due_date).toLocaleDateString('id-ID') : null },
+          { label: 'Dibuat', value: formatDate(viewModal.item.created_at) },
+          { label: 'Diperbarui', value: formatDate(viewModal.item.updated_at) },
         ] : []}
       />
     </div>

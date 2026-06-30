@@ -43,10 +43,15 @@ export class DailySchedulesService {
     });
     const alreadyRostered = new Set(existing.map((r) => r.user_id));
 
+    // Compute users to create and batch-fetch their permanent areas
+    const usersToCreate = users.filter((u) => !alreadyRostered.has(u.id));
+    const userAreaMap = await this.userAreasService.getPermanentAreaIdsForUsers(
+      usersToCreate.map((u) => u.id),
+    );
+
     let created = 0;
-    for (const user of users) {
-      if (alreadyRostered.has(user.id)) continue;
-      const areaIds = await this.userAreasService.getPermanentAreaIds(user.id);
+    for (const user of usersToCreate) {
+      const areaIds = userAreaMap.get(user.id) ?? [];
       const hasShift = !!user.shift_definition_id;
       const row = this.rosterRepo.create({
         user_id: user.id,

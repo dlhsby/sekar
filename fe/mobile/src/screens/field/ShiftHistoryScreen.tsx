@@ -262,9 +262,9 @@ function ShiftRow({
         <NBText variant="body" color="black" style={styles.shiftRowTitle} numberOfLines={1}>
           {shift.area?.name ?? 'Area tidak diketahui'}
         </NBText>
-        {shift.area?.area_type?.name ? (
+        {shift.area?.areaType?.name ? (
           <NBText variant="body-sm" color="gray500" style={styles.shiftRowAreaType}>
-            {shift.area.area_type.name}
+            {shift.area.areaType.name}
           </NBText>
         ) : null}
 

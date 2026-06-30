@@ -31,6 +31,7 @@ import { ChevronLeft, ChevronRight, Check, X, Eye } from 'lucide-react';
 import type { Activity, ActivityFilters, ActivityStatus } from '@/types/models';
 import { MONITORING_ROLES, ACTIVITY_APPROVER_ROLES, hasRole } from '@/lib/constants/roles';
 import { ACTIVITY_STATUS_LABELS, ACTIVITY_STATUS_BADGES } from '@/lib/constants/activities';
+import { useViewModal } from '@/lib/hooks/use-view-modal';
 
 const isValidActivityStatus = (value: string): value is ActivityStatus | 'all' => {
   return ['all', 'pending', 'approved', 'rejected'].includes(value);
@@ -56,8 +57,7 @@ export default function ActivitiesPage() {
   });
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
-  const [viewOpen, setViewOpen] = useState(false);
-  const [viewingActivity, setViewingActivity] = useState<Activity | null>(null);
+  const view = useViewModal<Activity>();
   const limit = 20;
 
   const approveMutation = useApproveActivity();
@@ -119,8 +119,7 @@ export default function ActivitiesPage() {
         label: 'Lihat',
         icon: Eye,
         onClick: () => {
-          setViewingActivity(row);
-          setViewOpen(true);
+          view.openWith(row);
         },
       },
       {
@@ -140,7 +139,7 @@ export default function ActivitiesPage() {
         hidden: row.status !== 'pending' || !canApprove,
       },
     ],
-    [canApprove, approveMutation.isPending, handleApprove]
+    [canApprove, approveMutation.isPending, handleApprove, view]
   );
 
   if (authLoading || !user) {
@@ -430,26 +429,26 @@ export default function ActivitiesPage() {
         </CardContent>
       </Card>
 
-      {viewingActivity && (
+      {view.item && (
         <DetailModal
-          open={viewOpen}
-          onOpenChange={setViewOpen}
+          open={view.open}
+          onOpenChange={view.onOpenChange}
           title="Detail Aktivitas"
           rows={[
-            { label: 'Tanggal', value: new Date(viewingActivity.created_at).toLocaleDateString('id-ID') },
-            { label: 'Pengguna', value: viewingActivity.user?.full_name },
-            { label: 'Tipe Aktivitas', value: viewingActivity.activity_type?.name },
-            { label: 'Area', value: viewingActivity.area?.name },
+            { label: 'Tanggal', value: new Date(view.item.created_at).toLocaleDateString('id-ID') },
+            { label: 'Pengguna', value: view.item.user?.full_name },
+            { label: 'Tipe Aktivitas', value: view.item.activity_type?.name },
+            { label: 'Area', value: view.item.area?.name },
             {
               label: 'Status',
               value: (
-                <Badge variant={ACTIVITY_STATUS_BADGES[viewingActivity.status]} size="sm">
-                  {ACTIVITY_STATUS_LABELS[viewingActivity.status]}
+                <Badge variant={ACTIVITY_STATUS_BADGES[view.item.status]} size="sm">
+                  {ACTIVITY_STATUS_LABELS[view.item.status]}
                 </Badge>
               ),
             },
-            { label: 'Foto', value: `${viewingActivity.photo_urls?.length || 0} foto` },
-            { label: 'Catatan', value: viewingActivity.notes },
+            { label: 'Foto', value: `${view.item.photo_urls?.length || 0} foto` },
+            { label: 'Catatan', value: view.item.notes },
           ] as DetailModalRow[]}
         />
       )}

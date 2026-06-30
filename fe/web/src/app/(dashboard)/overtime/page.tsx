@@ -31,6 +31,7 @@ import type { Overtime, OvertimeStatus } from '@/types/models';
 import { MONITORING_ROLES, OVERTIME_APPROVER_ROLES, hasRole } from '@/lib/constants/roles';
 import { OVERTIME_STATUS_LABELS } from '@/lib/constants/overtime';
 import { formatDate } from '@/lib/utils/time';
+import { useViewModal } from '@/lib/hooks/use-view-modal';
 
 /**
  * Type guard for overtime status filter values
@@ -48,8 +49,7 @@ export default function OvertimePage() {
   const [page, setPage] = useState(1);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
-  const [viewOpen, setViewOpen] = useState(false);
-  const [viewingOvertime, setViewingOvertime] = useState<Overtime | null>(null);
+  const view = useViewModal<Overtime>();
   const limit = 20;
 
   const approveMutation = useApproveOvertime();
@@ -89,8 +89,7 @@ export default function OvertimePage() {
         label: 'Lihat',
         icon: Eye,
         onClick: () => {
-          setViewingOvertime(row);
-          setViewOpen(true);
+          view.openWith(row);
         },
       },
       {
@@ -109,7 +108,7 @@ export default function OvertimePage() {
         onClick: () => setRejectingId(row.id),
       },
     ],
-    [canApprove, approveMutation.isPending, handleApprove]
+    [canApprove, approveMutation.isPending, handleApprove, view]
   );
 
   if (authLoading || !user) {
@@ -379,28 +378,28 @@ export default function OvertimePage() {
       </Card>
 
       <DetailModal
-        open={viewOpen}
-        onOpenChange={setViewOpen}
+        open={view.open}
+        onOpenChange={view.onOpenChange}
         title="Detail Lembur"
-        rows={viewingOvertime ? [
-          { label: 'Tanggal', value: formatDateTime(viewingOvertime.start_datetime).date },
-          { label: 'Pengguna', value: viewingOvertime.user?.full_name },
-          { label: 'Area', value: viewingOvertime.area?.name },
+        rows={view.item ? [
+          { label: 'Tanggal', value: formatDateTime(view.item.start_datetime).date },
+          { label: 'Pengguna', value: view.item.user?.full_name },
+          { label: 'Area', value: view.item.area?.name },
           {
             label: 'Waktu',
-            value: `${formatDateTime(viewingOvertime.start_datetime).time} - ${formatDateTime(viewingOvertime.end_datetime).time}`,
+            value: `${formatDateTime(view.item.start_datetime).time} - ${formatDateTime(view.item.end_datetime).time}`,
           },
-          { label: 'Tipe Aktivitas', value: viewingOvertime.activity_type?.name },
+          { label: 'Tipe Aktivitas', value: view.item.activity_type?.name },
           {
             label: 'Status',
             value: (
-              <StatusPill tone={statusTone[viewingOvertime.status]} dot>
-                {OVERTIME_STATUS_LABELS[viewingOvertime.status]}
+              <StatusPill tone={statusTone[view.item.status]} dot>
+                {OVERTIME_STATUS_LABELS[view.item.status]}
               </StatusPill>
             ),
           },
-          { label: 'Catatan', value: viewingOvertime.notes },
-          { label: 'Dibuat', value: formatDate(viewingOvertime.created_at) },
+          { label: 'Catatan', value: view.item.notes },
+          { label: 'Dibuat', value: formatDate(view.item.created_at) },
         ] : []}
       />
     </div>

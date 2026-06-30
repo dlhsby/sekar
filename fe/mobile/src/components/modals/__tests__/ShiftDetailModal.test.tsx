@@ -45,7 +45,7 @@ describe('ShiftDetailModal', () => {
       address: 'Jl. Raya Darmo, Surabaya',
       created_at: '2026-01-01T00:00:00Z',
       updated_at: '2026-01-01T00:00:00Z',
-      area_type: {
+      areaType: {
         id: 'type1',
         code: 'park' as const,
         name: 'Taman Kota',
@@ -370,7 +370,7 @@ describe('ShiftDetailModal', () => {
         ...mockShift,
         area: {
           ...mockShift.area!,
-          area_type: undefined,
+          areaType: undefined,
         },
       };
 

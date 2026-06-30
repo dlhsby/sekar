@@ -24,6 +24,7 @@ import { AreaFormModal } from '@/components/areas/AreaFormModal';
 import { useAreas, useDeactivateArea, useActivateArea } from '@/lib/api/areas';
 import { useUsers } from '@/lib/api/users';
 import { useAuth } from '@/lib/auth/hooks';
+import { useViewModal } from '@/lib/hooks/use-view-modal';
 import { formatArea } from '@/lib/utils/geo';
 import { formatDate } from '@/lib/utils/time';
 import type { Area } from '@/types/models';
@@ -52,8 +53,7 @@ export default function AreasPage() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingArea, setEditingArea] = useState<Area | null>(null);
-  const [viewOpen, setViewOpen] = useState(false);
-  const [viewingArea, setViewingArea] = useState<Area | null>(null);
+  const view = useViewModal<Area>();
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; area: Area | null }>({
     isOpen: false,
     area: null,
@@ -235,8 +235,7 @@ export default function AreasPage() {
         label: 'Lihat',
         icon: Eye,
         onClick: () => {
-          setViewingArea(a);
-          setViewOpen(true);
+          view.openWith(a);
         },
       },
       {
@@ -266,7 +265,7 @@ export default function AreasPage() {
         onClick: () => setDeleteModal({ isOpen: true, area: a }),
       },
     ],
-    [isAdmin, deactivateArea, activateArea]
+    [isAdmin, deactivateArea, activateArea, view]
   );
 
   return (
@@ -331,20 +330,20 @@ export default function AreasPage() {
       />
 
       <DetailModal
-        open={viewOpen}
-        onOpenChange={setViewOpen}
+        open={view.open}
+        onOpenChange={view.onOpenChange}
         title="Detail Area"
-        rows={viewingArea ? [
-          { label: 'Nama', value: viewingArea.name },
-          { label: 'Rayon', value: viewingArea.rayon?.name ?? '—' },
+        rows={view.item ? [
+          { label: 'Nama', value: view.item.name },
+          { label: 'Rayon', value: view.item.rayon?.name ?? '—' },
           {
             label: 'Tipe',
-            value: viewingArea.areaType ? (
+            value: view.item.areaType ? (
               <Badge
-                variant={viewingArea.areaType.category === 'ACTIVE' ? 'success' : 'warning'}
+                variant={view.item.areaType.category === 'ACTIVE' ? 'success' : 'warning'}
                 size="sm"
               >
-                {viewingArea.areaType.name}
+                {view.item.areaType.name}
               </Badge>
             ) : (
               '—'
@@ -353,29 +352,29 @@ export default function AreasPage() {
           {
             label: 'Koordinat',
             value:
-              viewingArea.gps_lat && viewingArea.gps_lng ? (
+              view.item.gps_lat && view.item.gps_lng ? (
                 <CoordinateLink
-                  lat={Number(viewingArea.gps_lat)}
-                  lng={Number(viewingArea.gps_lng)}
+                  lat={Number(view.item.gps_lat)}
+                  lng={Number(view.item.gps_lng)}
                 />
               ) : null,
           },
-          { label: 'Alamat', value: viewingArea.address ?? null },
-          { label: 'Luas', value: viewingArea.coverage_area ? formatArea(viewingArea.coverage_area) : null },
-          { label: 'Radius (m)', value: viewingArea.radius_meters },
+          { label: 'Alamat', value: view.item.address ?? null },
+          { label: 'Luas', value: view.item.coverage_area ? formatArea(view.item.coverage_area) : null },
+          { label: 'Radius (m)', value: view.item.radius_meters },
           {
             label: 'Status',
             value: (
-              <StatusPill tone={viewingArea.is_active ? 'ok' : 'neutral'} dot>
-                {viewingArea.is_active ? 'Aktif' : 'Nonaktif'}
+              <StatusPill tone={view.item.is_active ? 'ok' : 'neutral'} dot>
+                {view.item.is_active ? 'Aktif' : 'Nonaktif'}
               </StatusPill>
             ),
           },
-          { label: 'Batas Wilayah', value: viewingArea.boundary_polygon ? 'Ada' : 'Tidak ada' },
-          { label: 'Dibuat', value: formatDate(viewingArea.created_at) },
-          { label: 'Dibuat oleh', value: actorName(viewingArea.created_by) },
-          { label: 'Diperbarui', value: formatDate(viewingArea.updated_at) },
-          { label: 'Diperbarui oleh', value: actorName(viewingArea.updated_by) },
+          { label: 'Batas Wilayah', value: view.item.boundary_polygon ? 'Ada' : 'Tidak ada' },
+          { label: 'Dibuat', value: formatDate(view.item.created_at) },
+          { label: 'Dibuat oleh', value: actorName(view.item.created_by) },
+          { label: 'Diperbarui', value: formatDate(view.item.updated_at) },
+          { label: 'Diperbarui oleh', value: actorName(view.item.updated_by) },
         ] : []}
       />
     </div>

@@ -73,9 +73,9 @@ export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalPr
             )}
           </InfoRow>
 
-          {!!shift.area?.area_type?.name && (
+          {!!shift.area?.areaType?.name && (
             <InfoRow icon="office-building" label="Tipe Area">
-              <NBText variant="body" color="black">{shift.area.area_type.name}</NBText>
+              <NBText variant="body" color="black">{shift.area.areaType.name}</NBText>
             </InfoRow>
           )}
 

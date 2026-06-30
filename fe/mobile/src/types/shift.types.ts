@@ -87,7 +87,6 @@ export interface DailyScheduleArea {
   area: {
     id: string;
     name: string;
-    code: string;
   };
 }
 

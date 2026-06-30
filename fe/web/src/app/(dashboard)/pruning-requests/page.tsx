@@ -29,6 +29,7 @@ import {
 import { useAuth } from '@/lib/auth/hooks';
 import { hasRole } from '@/lib/constants/roles';
 import { formatDate } from '@/lib/utils/time';
+import { useViewModal } from '@/lib/hooks/use-view-modal';
 import type { UserRole } from '@/types/models';
 import {
   PRUNING_REQUEST_ADMIN_ROLES,
@@ -58,8 +59,7 @@ export default function PruningRequestsPage() {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<PruningRequestStatus | 'all'>('all');
   const [page, setPage] = useState(1);
-  const [viewOpen, setViewOpen] = useState(false);
-  const [viewingRequest, setViewingRequest] = useState<PruningRequest | null>(null);
+  const view = useViewModal<PruningRequest>();
   const limit = 20;
 
   useEffect(() => {
@@ -183,12 +183,11 @@ export default function PruningRequestsPage() {
         label: 'Lihat',
         icon: Eye,
         onClick: () => {
-          setViewingRequest(row);
-          setViewOpen(true);
+          view.openWith(row);
         },
       },
     ],
-    []
+    [view]
   );
 
   const handleStatusChange = (val: string) => {
@@ -265,28 +264,28 @@ export default function PruningRequestsPage() {
         </CardContent>
       </Card>
 
-      {viewingRequest && (
+      {view.item && (
         <DetailModal
-          open={viewOpen}
-          onOpenChange={setViewOpen}
+          open={view.open}
+          onOpenChange={view.onOpenChange}
           title="Detail Permohonan Pemangkasan"
           rows={[
-            { label: 'Kode Referensi', value: viewingRequest.referenceCode },
-            { label: 'Kecamatan', value: viewingRequest.submitter },
+            { label: 'Kode Referensi', value: view.item.referenceCode },
+            { label: 'Kecamatan', value: view.item.submitter },
             {
               label: 'Status',
               value: (
-                <StatusPill tone={PRUNING_REQUEST_STATUS_TONES[viewingRequest.status]}>
-                  {PRUNING_REQUEST_STATUS_LABELS[viewingRequest.status]}
+                <StatusPill tone={PRUNING_REQUEST_STATUS_TONES[view.item.status]}>
+                  {PRUNING_REQUEST_STATUS_LABELS[view.item.status]}
                 </StatusPill>
               ),
             },
-            { label: 'Tipe Tanaman', value: viewingRequest.plantSpeciesName },
-            { label: 'Kuantitas', value: viewingRequest.quantity },
-            { label: 'Unit', value: viewingRequest.unit },
-            { label: 'Lokasi', value: viewingRequest.location },
-            { label: 'Catatan', value: viewingRequest.notes },
-            { label: 'Dibuat', value: formatDate(viewingRequest.createdAt) },
+            { label: 'Tipe Tanaman', value: view.item.plantSpeciesName },
+            { label: 'Kuantitas', value: view.item.quantity },
+            { label: 'Unit', value: view.item.unit },
+            { label: 'Lokasi', value: view.item.location },
+            { label: 'Catatan', value: view.item.notes },
+            { label: 'Dibuat', value: formatDate(view.item.createdAt) },
           ] as DetailModalRow[]}
         />
       )}

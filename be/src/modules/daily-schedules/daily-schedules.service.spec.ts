@@ -24,7 +24,7 @@ describe('DailySchedulesService', () => {
   let rosterRepo: ReturnType<typeof makeRosterRepo>;
   let areaRepo: { delete: jest.Mock; create: jest.Mock; save: jest.Mock };
   let userRepo: { find: jest.Mock; findOne: jest.Mock };
-  let userAreas: { getPermanentAreaIds: jest.Mock };
+  let userAreas: { getPermanentAreaIdsForUsers: jest.Mock };
   let audit: { log: jest.Mock };
 
   beforeEach(async () => {
@@ -35,7 +35,7 @@ describe('DailySchedulesService', () => {
       save: jest.fn(async (x) => x),
     };
     userRepo = { find: jest.fn(), findOne: jest.fn() };
-    userAreas = { getPermanentAreaIds: jest.fn().mockResolvedValue([]) };
+    userAreas = { getPermanentAreaIdsForUsers: jest.fn().mockResolvedValue(new Map()) };
     audit = { log: jest.fn().mockResolvedValue(undefined) };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -59,8 +59,11 @@ describe('DailySchedulesService', () => {
         { id: 'B', is_active: true, rayon_id: null, shift_definition_id: null },
       ]);
       rosterRepo.find.mockResolvedValue([]); // none yet
-      userAreas.getPermanentAreaIds.mockImplementation(async (uid: string) =>
-        uid === 'A' ? ['area1'] : [],
+      userAreas.getPermanentAreaIdsForUsers.mockResolvedValue(
+        new Map([
+          ['A', ['area1']],
+          ['B', []],
+        ]),
       );
 
       const created = await service.generateRoster('2026-06-30', 'admin');
@@ -79,6 +82,7 @@ describe('DailySchedulesService', () => {
         { id: 'B', is_active: true, shift_definition_id: 's1' },
       ]);
       rosterRepo.find.mockResolvedValue([{ id: 'x', user_id: 'A' }]); // A already rostered
+      userAreas.getPermanentAreaIdsForUsers.mockResolvedValue(new Map([['B', []]])); // only B
 
       const created = await service.generateRoster('2026-06-30', 'admin');
 

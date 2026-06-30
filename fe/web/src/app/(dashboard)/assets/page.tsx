@@ -21,6 +21,7 @@ import { useAssets, useAssetCategories, useDeleteAsset, type AssetStatus } from 
 import { useUsers } from '@/lib/api/users';
 import { AssetFormModal } from '@/components/assets/AssetFormModal';
 import { formatDate } from '@/lib/utils/time';
+import { useViewModal } from '@/lib/hooks/use-view-modal';
 import type { Asset } from '@/lib/api/assets';
 
 const ASSET_MANAGER_ROLES = ['korlap', 'kepala_rayon', 'admin_system', 'superadmin'];
@@ -53,8 +54,7 @@ export default function AssetsPage() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
-  const [viewOpen, setViewOpen] = useState(false);
-  const [viewingAsset, setViewingAsset] = useState<Asset | null>(null);
+  const view = useViewModal<Asset>();
 
   const { mutate: deleteAsset } = useDeleteAsset();
 
@@ -212,8 +212,7 @@ export default function AssetsPage() {
         label: 'Lihat',
         icon: Eye,
         onClick: () => {
-          setViewingAsset(asset);
-          setViewOpen(true);
+          view.openWith(asset);
         },
       },
       {
@@ -235,7 +234,7 @@ export default function AssetsPage() {
         onClick: () => deleteAsset(asset.id),
       },
     ],
-    [isManager, deleteAsset]
+    [isManager, deleteAsset, view]
   );
 
   return (
@@ -330,26 +329,26 @@ export default function AssetsPage() {
       <AssetFormModal open={formOpen} onOpenChange={setFormOpen} asset={editingAsset} />
 
       <DetailModal
-        open={viewOpen}
-        onOpenChange={setViewOpen}
+        open={view.open}
+        onOpenChange={view.onOpenChange}
         title="Detail Aset"
-        rows={viewingAsset ? [
-          { label: 'Kode', value: viewingAsset.asset_code },
-          { label: 'Nama', value: viewingAsset.name },
-          { label: 'Kategori', value: viewingAsset.category?.name },
+        rows={view.item ? [
+          { label: 'Kode', value: view.item.asset_code },
+          { label: 'Nama', value: view.item.name },
+          { label: 'Kategori', value: view.item.category?.name },
           {
             label: 'Status',
             value: (
-              <StatusPill tone={STATUS_TONE_MAP[viewingAsset.status]}>
-                {STATUS_LABELS[viewingAsset.status]}
+              <StatusPill tone={STATUS_TONE_MAP[view.item.status]}>
+                {STATUS_LABELS[view.item.status]}
               </StatusPill>
             ),
           },
-          { label: 'Lokasi', value: viewingAsset.area?.name || viewingAsset.rayon?.name },
-          { label: 'Dibuat', value: formatDate(viewingAsset.created_at) },
-          { label: 'Dibuat oleh', value: actorName(viewingAsset.created_by) },
-          { label: 'Diperbarui', value: formatDate(viewingAsset.updated_at) },
-          { label: 'Diperbarui oleh', value: actorName(viewingAsset.updated_by) },
+          { label: 'Lokasi', value: view.item.area?.name || view.item.rayon?.name },
+          { label: 'Dibuat', value: formatDate(view.item.created_at) },
+          { label: 'Dibuat oleh', value: actorName(view.item.created_by) },
+          { label: 'Diperbarui', value: formatDate(view.item.updated_at) },
+          { label: 'Diperbarui oleh', value: actorName(view.item.updated_by) },
         ] : []}
       />
     </div>
