@@ -14,6 +14,7 @@ import {
   Button,
   DataTable,
   PageHeader,
+  StatusPill,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
@@ -116,6 +117,60 @@ export default function AreasPage() {
         cell: ({ row }) => (
           <span className="tabular-nums text-nb-gray-600">
             {row.original.coverage_area ? formatArea(row.original.coverage_area) : '—'}
+          </span>
+        ),
+      },
+      {
+        id: 'radius_meters',
+        accessorKey: 'radius_meters',
+        header: 'Radius (m)',
+        meta: { label: 'Radius (m)', filterVariant: 'number', align: 'right' },
+        cell: ({ row }) => (
+          <span className="tabular-nums text-nb-gray-600">
+            {row.original.radius_meters ?? '—'}
+          </span>
+        ),
+      },
+      {
+        id: 'coordinates',
+        accessorFn: (a) =>
+          a.center_latitude && a.center_longitude
+            ? `${a.center_latitude.toFixed(6)}, ${a.center_longitude.toFixed(6)}`
+            : '',
+        header: 'Koordinat',
+        meta: { label: 'Koordinat', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="font-mono text-nb-body-sm text-nb-gray-600">
+            {row.original.center_latitude && row.original.center_longitude
+              ? `${row.original.center_latitude.toFixed(6)}, ${row.original.center_longitude.toFixed(6)}`
+              : '—'}
+          </span>
+        ),
+      },
+      {
+        id: 'is_active',
+        accessorFn: (a) => (a.is_active ? 'Aktif' : 'Nonaktif'),
+        header: 'Status',
+        meta: { label: 'Status', filterVariant: 'text' },
+        cell: ({ row }) =>
+          row.original.is_active ? (
+            <StatusPill tone="ok" dot>
+              Aktif
+            </StatusPill>
+          ) : (
+            <StatusPill tone="neutral" dot>
+              Nonaktif
+            </StatusPill>
+          ),
+      },
+      {
+        id: 'boundary_polygon',
+        accessorFn: (a) => (a.boundary_polygon ? 'Ada' : '—'),
+        header: 'Batas Wilayah',
+        meta: { label: 'Batas Wilayah', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {row.original.boundary_polygon ? 'Ada' : '—'}
           </span>
         ),
       },

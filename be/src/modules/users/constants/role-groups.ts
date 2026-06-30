@@ -62,6 +62,15 @@ export const MONITORING_AREA = [UserRole.KORLAP, ...MONITORING_RAYON];
 
 export const USER_MANAGERS = [UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN];
 
+// Daily roster managers — admin_system/superadmin act globally; kepala_rayon and
+// admin_data are scoped to their own rayon (enforced in the controller/service).
+export const ROSTER_MANAGERS = [
+  UserRole.ADMIN_SYSTEM,
+  UserRole.SUPERADMIN,
+  UserRole.KEPALA_RAYON,
+  UserRole.ADMIN_DATA,
+];
+
 // Phase 4-5 — data export. admin_system/superadmin export anything; kepala_rayon
 // is limited (in the service) to tasks/activities/overtime scoped to their rayon.
 export const EXPORTERS = [UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN, UserRole.KEPALA_RAYON];

@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { UserAreasService } from '../user-areas/user-areas.service';
+import { UserValidationService } from './services/user-validation.service';
 import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -43,6 +44,11 @@ describe('UsersController', () => {
     getEffectiveAreas: jest.fn().mockResolvedValue([]),
   };
 
+  const mockUserValidationService = {
+    isUsernameAvailable: jest.fn().mockResolvedValue(true),
+    suggestUsername: jest.fn().mockResolvedValue('suggested_user'),
+  };
+
   beforeEach(async () => {
     module = await Test.createTestingModule({
       controllers: [UsersController],
@@ -54,6 +60,10 @@ describe('UsersController', () => {
         {
           provide: UserAreasService,
           useValue: mockUserAreasService,
+        },
+        {
+          provide: UserValidationService,
+          useValue: mockUserValidationService,
         },
       ],
     }).compile();

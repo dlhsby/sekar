@@ -24,6 +24,7 @@ import { ShiftDefinitionsModule } from './modules/shift-definitions/shift-defini
 import { ActivityTypesModule } from './modules/activity-types/activity-types.module';
 import { AreaStaffRequirementsModule } from './modules/area-staff-requirements/area-staff-requirements.module';
 import { SchedulesModule } from './modules/schedules/schedules.module';
+import { DailySchedulesModule } from './modules/daily-schedules/daily-schedules.module';
 import { SpecialDayOverridesModule } from './modules/special-day-overrides/special-day-overrides.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
@@ -131,7 +132,8 @@ import { AppReleasesModule } from './modules/app-releases/app-releases.module';
     ShiftDefinitionsModule, // Fixed shift definitions
     ActivityTypesModule, // Activity types with role filtering
     AreaStaffRequirementsModule, // Staff requirements per area/shift
-    SchedulesModule, // Worker scheduling
+    SchedulesModule, // Worker scheduling (range-based override layer)
+    DailySchedulesModule, // Materialized per-day roster from templates (ADR-013)
     SpecialDayOverridesModule, // Special day overrides (holidays, etc.)
     TasksModule, // Task management for workers
     QueueModule, // Phase 4-3 (M2): BullMQ wiring — must precede NotificationsModule

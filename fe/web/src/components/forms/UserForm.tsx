@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,7 +10,9 @@ import { useRayons } from '@/lib/api/rayons';
 import { useAreas } from '@/lib/api/areas';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useUserAreas } from '@/lib/api/user-areas';
+import { checkUsername, suggestUsername } from '@/lib/api/users';
 import { ALL_ROLES, ROLE_LABELS } from '@/lib/constants/roles';
+import { normalizePhone, INDO_MOBILE_REGEX } from '@/lib/utils/phone';
 
 /**
  * User form (simplified assignment model): rayon (single) + areas (multi,
@@ -23,7 +25,7 @@ const userSchema = z.object({
   full_name: z.string().min(2, 'Nama minimal 2 karakter'),
   phone_number: z
     .string()
-    .regex(/^(\+62|0)[0-9]{8,13}$/, 'Nomor HP tidak valid')
+    .regex(INDO_MOBILE_REGEX, 'Nomor HP harus format 08xxxxxxxxxx')
     .optional()
     .or(z.literal('')),
   role: z.enum([
@@ -96,6 +98,62 @@ export function UserForm({
   });
 
   const selectedRole = watch('role');
+  const usernameValue = watch('username');
+  const fullNameValue = watch('full_name');
+
+  // Live username availability (debounced). Skipped in edit mode while the
+  // username is unchanged from the saved value.
+  const [usernameStatus, setUsernameStatus] = useState<
+    'idle' | 'checking' | 'available' | 'taken' | 'invalid'
+  >('idle');
+  const [suggesting, setSuggesting] = useState(false);
+  // Tracks the latest username queried so a slow response for an older value
+  // can't overwrite the status of the current one.
+  const latestCheckRef = useRef('');
+
+  useEffect(() => {
+    const u = (usernameValue || '').trim();
+    if (isEditMode && u === initialData?.username) {
+      setUsernameStatus('idle');
+      return;
+    }
+    if (u.length < 2) {
+      setUsernameStatus('idle');
+      return;
+    }
+    if (!/^[a-zA-Z0-9_-]+$/.test(u)) {
+      setUsernameStatus('invalid');
+      return;
+    }
+    setUsernameStatus('checking');
+    latestCheckRef.current = u;
+    const t = setTimeout(async () => {
+      try {
+        const available = await checkUsername(u);
+        if (latestCheckRef.current !== u) return; // a newer value is being checked
+        setUsernameStatus(available ? 'available' : 'taken');
+      } catch {
+        if (latestCheckRef.current === u) setUsernameStatus('idle');
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [usernameValue, isEditMode, initialData?.username]);
+
+  const handleSuggestUsername = async () => {
+    const name = (fullNameValue || '').trim();
+    if (!name) return;
+    setSuggesting(true);
+    try {
+      const suggestion = await suggestUsername(name);
+      setValue('username', suggestion, { shouldValidate: true });
+    } catch {
+      // ignore — the admin can type a username manually
+    } finally {
+      setSuggesting(false);
+    }
+  };
+
+  const phoneReg = register('phone_number');
 
   const handleFormSubmit = async (data: UserFormData) => {
     const submitData: UserFormSubmit = { ...data, area_ids: areaIds };
@@ -131,14 +189,44 @@ export function UserForm({
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-      <FormInput
-        label="Username"
-        placeholder="Masukkan username"
-        error={errors.username?.message}
-        required
-        disabled={busy}
-        {...register('username')}
-      />
+      <div className="space-y-1">
+        <div className="flex items-end gap-2">
+          <div className="flex-1">
+            <FormInput
+              label="Username"
+              placeholder="Masukkan username"
+              error={errors.username?.message}
+              required
+              disabled={busy}
+              {...register('username')}
+            />
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleSuggestUsername}
+            loading={suggesting}
+            disabled={busy || !fullNameValue}
+            className="mb-[2px] whitespace-nowrap"
+          >
+            Sarankan
+          </Button>
+        </div>
+        {usernameStatus === 'checking' && (
+          <p className="text-nb-caption text-nb-gray-600">Memeriksa ketersediaan…</p>
+        )}
+        {usernameStatus === 'available' && (
+          <p className="text-nb-caption text-nb-success-dark">✓ Username tersedia</p>
+        )}
+        {usernameStatus === 'taken' && (
+          <p className="text-nb-caption text-nb-danger-dark">✗ Username sudah dipakai</p>
+        )}
+        {usernameStatus === 'invalid' && (
+          <p className="text-nb-caption text-nb-danger-dark">
+            Hanya huruf, angka, garis bawah, dan tanda hubung
+          </p>
+        )}
+      </div>
 
       <FormInput
         label="Nama Lengkap"
@@ -153,9 +241,14 @@ export function UserForm({
         label="Nomor HP (untuk login)"
         placeholder="0812xxxxxxxx"
         error={errors.phone_number?.message}
-        helperText="Bisa dipakai untuk login selain username"
+        helperText="Format 08xxxxxxxxxx — bisa dipakai untuk login selain username"
         disabled={busy}
-        {...register('phone_number')}
+        {...phoneReg}
+        onBlur={(e) => {
+          phoneReg.onBlur(e);
+          const v = e.target.value;
+          if (v) setValue('phone_number', normalizePhone(v), { shouldValidate: true });
+        }}
       />
 
       {!isEditMode && (

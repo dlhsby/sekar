@@ -134,6 +134,18 @@ export default function RayonsPage() {
         ),
       },
       {
+        id: 'description',
+        accessorKey: 'description',
+        header: 'Deskripsi',
+        enableSorting: true,
+        meta: { label: 'Deskripsi', defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {row.original.description ?? '—'}
+          </span>
+        ),
+      },
+      {
         id: 'created_by',
         accessorFn: (r) => actorName(r.created_by),
         header: 'Dibuat oleh',

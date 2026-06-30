@@ -9,14 +9,14 @@ import Geolocation from 'react-native-geolocation-service';
 import { Alert } from 'react-native';
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { clockIn, clockOut, getCurrentShift } from '../services/api/shiftsApi';
-import { getMySchedule } from '../services/api/schedulesApi';
+import { getMySchedule, getMyRoster } from '../services/api/schedulesApi';
 import { setCurrentShift } from '../store/slices/shiftSlice';
 import { isWithinAreaBoundary } from '../utils/gpsUtils';
 import { isClockInLate } from '../utils/dateUtils';
 import { requestClockInPermissions, requestCameraPermission } from '../services/permissions';
 import { locationTracker } from '../services/location/locationTracker';
 import { mediaService, type Photo } from '../services/media';
-import type { ShiftDefinition } from '../types/models.types';
+import type { ShiftDefinition, DailySchedule } from '../types/models.types';
 
 export interface LocationState {
   latitude: number | null;
@@ -55,15 +55,25 @@ export function useClockInOut() {
   // The worker's ASSIGNED shift (from their roster /schedules/my) — used only as
   // the "your scheduled shift" hint while still clocking in.
   const [assignedShiftDef, setAssignedShiftDef] = useState<ShiftDefinition | null>(null);
+  // Today's roster (from /daily-schedules/my) — Phase 3 roster monitoring
+  const [dailyRoster, setDailyRoster] = useState<DailySchedule | null>(null);
 
   const isClockIn = !currentShift;
 
   // Once clocked in, the shift the worker ACTUALLY clocked into is authoritative
   // — lateness + the shift window are judged against it, so the clock-out screen
   // agrees with the home hero and the attendance history (which also read the
-  // shift record's definition). Before clock-in, fall back to the roster hint.
-  const scheduledShift: ShiftDefinition | null =
-    currentShift?.shift_definition ?? assignedShiftDef ?? null;
+  // shift record's definition). Before clock-in, prefer daily roster shift, then fall back to assigned shift.
+  // Phase 3: prefer today's roster shift (full definition, incl. crosses_midnight).
+  const scheduledShift: ShiftDefinition | null = useMemo(() => {
+    if (currentShift?.shift_definition) {
+      return currentShift.shift_definition;
+    }
+    if (dailyRoster?.shift_definition) {
+      return dailyRoster.shift_definition;
+    }
+    return assignedShiftDef ?? null;
+  }, [currentShift?.shift_definition, dailyRoster?.shift_definition, assignedShiftDef]);
 
   // Late = clocked in (or, before clock-in, the current moment) after the
   // scheduled start_time. False when no schedule or for overtime shifts.
@@ -75,14 +85,18 @@ export function useClockInOut() {
     return isClockInLate(reference, scheduledShift.start_time, scheduledShift.crosses_midnight);
   }, [scheduledShift, currentShift]);
 
-  // Fetch the worker's assigned schedule so the screen can show the scheduled
-  // shift window + a late indicator (in both clock-in and clock-out modes).
+  // Fetch the worker's assigned schedule + today's roster so the screen can show
+  // the scheduled shift window + a late indicator (in both clock-in and clock-out modes).
+  // Phase 3: Also fetch daily roster for the day-scoped roster hints.
   useEffect(() => {
     let active = true;
-    getMySchedule()
-      .then((res) => {
-        if (active && res.data?.shift_definition) {
-          setAssignedShiftDef(res.data.shift_definition);
+    Promise.all([getMySchedule(), getMyRoster()])
+      .then(([schedRes, rosterRes]) => {
+        if (active && schedRes.data?.shift_definition) {
+          setAssignedShiftDef(schedRes.data.shift_definition);
+        }
+        if (active && rosterRes.data) {
+          setDailyRoster(rosterRes.data);
         }
       })
       .catch(() => {
@@ -356,6 +370,7 @@ export function useClockInOut() {
     currentShift,
     scheduledShift,
     isLate,
+    dailyRoster,
     getCurrentLocation,
     handleCaptureSelfie,
     handleClockIn,

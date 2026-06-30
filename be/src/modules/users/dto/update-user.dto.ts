@@ -8,9 +8,11 @@ import {
   IsBoolean,
   Matches,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '../entities/user.entity';
 import { ValidationConstants } from '../../../common/constants/auth.constants';
+import { normalizePhone, INDO_MOBILE_REGEX } from '../../../common/utils/phone.util';
 
 /**
  * Data Transfer Object for updating an existing user.
@@ -32,12 +34,13 @@ export class UpdateUserDto {
   full_name?: string;
 
   @ApiPropertyOptional({
-    description: 'Indonesian phone number for login',
+    description: 'Indonesian mobile for login. Normalized to 08xxxxxxxxxx (accepts +62/62 input).',
     example: '081234567890',
   })
   @IsOptional()
+  @Transform(({ value }) => (value == null || value === '' ? value : normalizePhone(value)))
   @IsString()
-  @Matches(/^(\+62|0)[0-9]{8,13}$/, { message: 'Invalid Indonesian phone number' })
+  @Matches(INDO_MOBILE_REGEX, { message: 'Nomor HP harus dalam format 08xxxxxxxxxx' })
   phone_number?: string;
 
   @ApiPropertyOptional({

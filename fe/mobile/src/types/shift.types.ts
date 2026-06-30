@@ -70,3 +70,38 @@ export interface Schedule {
   created_at: string;
   updated_at: string;
 }
+
+// Daily Schedule — Phase 3 (roster monitoring, day-scoped roster row)
+export type DailyScheduleStatus =
+  | 'planned' // scheduled to work
+  | 'present' // clocked in
+  | 'absent' // scheduled but didn't show
+  | 'leave_sick' // on sick leave
+  | 'leave_annual' // on annual leave
+  | 'replaced' // replaced by another worker
+  | 'off'; // active worker but no shift today
+
+export interface DailyScheduleArea {
+  id: string;
+  area_id: string;
+  area: {
+    id: string;
+    name: string;
+    code: string;
+  };
+}
+
+export interface DailySchedule {
+  id: string;
+  user_id: string;
+  schedule_date: string; // YYYY-MM-DD
+  status: DailyScheduleStatus;
+  // Full definition (the API returns the whole relation) so crosses_midnight is
+  // available for the lateness check instead of being defaulted.
+  shift_definition: ShiftDefinition | null;
+  rayon: {
+    id: string;
+    name: string;
+  } | null;
+  daily_schedule_areas: DailyScheduleArea[];
+}

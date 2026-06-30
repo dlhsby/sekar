@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, In, Not, IsNull } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
@@ -10,7 +10,15 @@ import { LocationLog } from '../../location/entities/location-log.entity';
 import { Rayon } from '../../rayons/entities/rayon.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
-import { LiveUsersResponseDto, LiveUserDto, LiveUsersFilterDto } from '../dto/live-users.dto';
+import {
+  LiveUsersResponseDto,
+  LiveUserDto,
+  LiveUsersFilterDto,
+  AbsentUserDto,
+} from '../dto/live-users.dto';
+import { DailySchedulesService } from '../../daily-schedules/daily-schedules.service';
+import { DailyScheduleStatus } from '../../daily-schedules/entities/daily-schedule.entity';
+import { TimezoneUtil } from '../../../common/utils/timezone.util';
 import { LocationHistoryResponseDto, LocationHistoryPointDto } from '../dto/location-history.dto';
 import { UserDaySummaryDto } from '../dto/user-day-summary.dto';
 import { GpsUtil } from '../../../common/utils/gps.util';
@@ -42,6 +50,9 @@ export class MonitoringUserService {
     private readonly trackingRepository: Repository<UserTrackingStatus>,
     private readonly statusCalculator: StatusCalculatorService,
     private readonly cacheService: MonitoringCacheService,
+    // Daily roster (ADR-013). Optional → specs without it get zeroed summaries.
+    @Optional()
+    private readonly dailySchedulesService?: DailySchedulesService,
   ) {}
 
   async getLiveUsers(filters?: LiveUsersFilterDto): Promise<LiveUsersResponseDto> {
@@ -128,6 +139,7 @@ export class MonitoringUserService {
     });
 
     const statusCounts = this.countByStatus(trackingRecords);
+    const rosterSummary = await this.computeRosterSummary(filters);
 
     return {
       total_active: statusCounts.active,
@@ -137,7 +149,73 @@ export class MonitoringUserService {
       total_offline: statusCounts.offline,
       total_online: statusCounts.active,
       users,
+      ...rosterSummary,
       generated_at: new Date(),
+    };
+  }
+
+  /**
+   * Roster-derived "expected vs actual" for today (ADR-013): compares the
+   * materialized roster to who has clocked in. Rayon-scoped when a rayon_id
+   * filter is present; otherwise global. Returns zeros when the roster service
+   * isn't wired (legacy specs).
+   */
+  private async computeRosterSummary(filters?: LiveUsersFilterDto): Promise<{
+    expected_count: number;
+    present_count: number;
+    absent_count: number;
+    on_leave_count: number;
+    off_schedule_count: number;
+    absent_users: AbsentUserDto[];
+  }> {
+    const empty = {
+      expected_count: 0,
+      present_count: 0,
+      absent_count: 0,
+      on_leave_count: 0,
+      off_schedule_count: 0,
+      absent_users: [] as AbsentUserDto[],
+    };
+    if (!this.dailySchedulesService) return empty;
+
+    const today = TimezoneUtil.jakartaDateString();
+    const rayonId = filters?.rayon_id ?? null;
+    const roster = await this.dailySchedulesService.getRosterForMonitoring(today, rayonId);
+    if (roster.length === 0) return empty;
+
+    const clockedRows = await this.trackingRepository.find({
+      where: { shift_id: Not(IsNull()), ...(rayonId ? { rayon_id: rayonId } : {}) },
+      select: ['user_id'],
+    });
+    const clockedIn = new Set(clockedRows.map((r) => r.user_id));
+
+    const expected = roster.filter(
+      (r) => r.status === DailyScheduleStatus.PLANNED || r.status === DailyScheduleStatus.PRESENT,
+    );
+    const onLeave = roster.filter(
+      (r) =>
+        r.status === DailyScheduleStatus.LEAVE_SICK ||
+        r.status === DailyScheduleStatus.LEAVE_ANNUAL,
+    ).length;
+    const offSchedule = roster.filter((r) => r.status === DailyScheduleStatus.OFF).length;
+
+    const absentRows = expected.filter((r) => !clockedIn.has(r.user_id));
+    const absent_users: AbsentUserDto[] = absentRows.map((r) => ({
+      user_id: r.user_id,
+      full_name: r.user?.full_name ?? '',
+      role: r.user?.role ?? '',
+      rayon_id: r.rayon_id,
+      shift_definition_id: r.shift_definition_id,
+      shift_name: r.shift_definition?.name ?? null,
+    }));
+
+    return {
+      expected_count: expected.length,
+      present_count: expected.length - absentRows.length,
+      absent_count: absentRows.length,
+      on_leave_count: onLeave,
+      off_schedule_count: offSchedule,
+      absent_users,
     };
   }
 

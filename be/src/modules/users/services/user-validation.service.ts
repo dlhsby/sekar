@@ -26,6 +26,38 @@ export class UserValidationService {
     }
   }
 
+  /** Non-throwing availability check (for the live username field). */
+  async isUsernameAvailable(username: string): Promise<boolean> {
+    const existing = await this.userRepository.findOne({ where: { username } });
+    return !existing;
+  }
+
+  /**
+   * Suggest a unique username derived from a full name (slugified to the allowed
+   * `[a-z0-9_-]` charset), appending a numeric suffix until it is free.
+   */
+  async suggestUsername(fullName: string): Promise<string> {
+    const base = this.slugifyUsername(fullName) || 'user';
+    if (await this.isUsernameAvailable(base)) return base;
+    for (let n = 2; n < 1000; n += 1) {
+      const candidate = `${base}${n}`;
+      if (await this.isUsernameAvailable(candidate)) return candidate;
+    }
+    // Extremely unlikely fallback — keep it deterministic-ish without randomness.
+    return `${base}${Date.now().toString().slice(-5)}`;
+  }
+
+  /** Lowercase ASCII slug with only letters/digits/underscore, max 30 chars. */
+  private slugifyUsername(input: string): string {
+    return (input ?? '')
+      .normalize('NFKD')
+      .replace(/[̀-ͯ]/g, '') // strip diacritics
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_') // non-alphanumerics → underscore
+      .replace(/^_+|_+$/g, '') // trim underscores
+      .slice(0, 30);
+  }
+
   /**
    * @param excludeUserId Skip the conflict when the phone belongs to this user
    *                      (update flows where the user keeps their own number)

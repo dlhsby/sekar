@@ -41,6 +41,7 @@ import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination
 import { User } from './entities/user.entity';
 import { USER_MANAGERS } from './constants/role-groups';
 import { UserAreasService } from '../user-areas/user-areas.service';
+import { UserValidationService } from './services/user-validation.service';
 
 /**
  * User Management Controller
@@ -58,6 +59,7 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly userAreasService: UserAreasService,
+    private readonly userValidationService: UserValidationService,
   ) {}
 
   /**
@@ -73,6 +75,38 @@ export class UsersController {
   @ApiResponse({ status: HttpStatus.OK, description: 'List of assigned areas.' })
   getMyAreas(@GetUser() user: User) {
     return this.userAreasService.getEffectiveAreas(user.id);
+  }
+
+  /**
+   * Live username availability check for the create-user form.
+   * Declared before `@Get(':id')` so the literal path wins.
+   *
+   * @route GET /api/users/check-username?username=
+   */
+  @Get('check-username')
+  @Roles(...USER_MANAGERS)
+  @ApiOperation({ summary: 'Check whether a username is available' })
+  @ApiQuery({ name: 'username', required: true })
+  @ApiResponse({ status: HttpStatus.OK, description: '{ available: boolean }' })
+  async checkUsername(@Query('username') username: string): Promise<{ available: boolean }> {
+    if (!username || !/^[a-zA-Z0-9_-]+$/.test(username)) {
+      return { available: false };
+    }
+    return { available: await this.userValidationService.isUsernameAvailable(username) };
+  }
+
+  /**
+   * Suggest a unique username derived from a full name.
+   *
+   * @route GET /api/users/suggest-username?full_name=
+   */
+  @Get('suggest-username')
+  @Roles(...USER_MANAGERS)
+  @ApiOperation({ summary: 'Suggest a unique username from a full name' })
+  @ApiQuery({ name: 'full_name', required: true })
+  @ApiResponse({ status: HttpStatus.OK, description: '{ username: string }' })
+  async suggestUsername(@Query('full_name') fullName: string): Promise<{ username: string }> {
+    return { username: await this.userValidationService.suggestUsername(fullName ?? '') };
   }
 
   /**

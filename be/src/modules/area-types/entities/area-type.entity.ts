@@ -80,4 +80,14 @@ export class AreaType {
    */
   @DeleteDateColumn()
   deleted_at?: Date;
+
+  // Actor audit — stamped by AuditSubscriber from the request's acting user.
+  @Column({ name: 'created_by', type: 'uuid', nullable: true })
+  created_by?: string;
+
+  @Column({ name: 'updated_by', type: 'uuid', nullable: true })
+  updated_by?: string;
+
+  @Column({ name: 'deleted_by', type: 'uuid', nullable: true })
+  deleted_by?: string;
 }

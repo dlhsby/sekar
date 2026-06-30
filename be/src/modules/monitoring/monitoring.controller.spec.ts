@@ -227,6 +227,12 @@ describe('MonitoringController', () => {
         current_task_title: null,
       },
     ],
+    expected_count: 0,
+    present_count: 0,
+    absent_count: 0,
+    on_leave_count: 0,
+    off_schedule_count: 0,
+    absent_users: [],
     generated_at: new Date(),
   };
 

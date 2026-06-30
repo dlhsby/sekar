@@ -60,6 +60,12 @@ export interface SnapshotData {
   total_outside_area: number;
   total_missing: number;
   total_offline: number;
+  // Roster-derived "expected vs actual" for today (ADR-013).
+  expected_count: number;
+  present_count: number;
+  absent_count: number;
+  on_leave_count: number;
+  off_schedule_count: number;
   generated_at: string;
 }
 
@@ -167,6 +173,11 @@ export class MonitoringService {
         total_outside_area: result?.total_outside_area ?? 0,
         total_missing: result?.total_missing ?? 0,
         total_offline: result?.total_offline ?? 0,
+        expected_count: result?.expected_count ?? 0,
+        present_count: result?.present_count ?? 0,
+        absent_count: result?.absent_count ?? 0,
+        on_leave_count: result?.on_leave_count ?? 0,
+        off_schedule_count: result?.off_schedule_count ?? 0,
         generated_at: generatedAt,
       },
     };

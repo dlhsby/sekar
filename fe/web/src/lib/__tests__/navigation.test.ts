@@ -14,48 +14,48 @@ import {
 describe('Navigation Utilities', () => {
   describe('navigationItems', () => {
     it('should contain all expected navigation items', () => {
-      // Top-level entries: dashboard, monitoring, work(group), data(group),
-      // reports(group), analytics(group), operations(group) + 2 staff_kecamatan
-      // items + the external 'docs' (Panduan) link = 10. Settings moved to the
-      // avatar dropdown; pruning-requests moved under the 'Pekerjaan' group.
+      // Top-level entries (Jun-30 reorder): dashboard, monitoring, work(group),
+      // data(group), reports(group), analytics(group), operations(group),
+      // settings + 2 staff_kecamatan items + the external 'docs' (Panduan) link
+      // = 11. Pengguna folded into Data Master; Pengaturan added to the sidebar.
       expect(navigationItems).toHaveLength(11);
 
       const navIds = navigationItems.map((item) => item.id);
       expect(navIds).toContain('dashboard');
       expect(navIds).toContain('monitoring');
       expect(navIds).toContain('work');
-      expect(navIds).toContain('access');
       expect(navIds).toContain('data');
       expect(navIds).toContain('reports');
       expect(navIds).toContain('analytics');
       expect(navIds).toContain('operations');
+      expect(navIds).toContain('settings');
       // External public docs link, visible to every role.
       expect(navIds).toContain('docs');
-      expect(navIds).not.toContain('settings');
-      // pruning-requests is no longer top-level (nested under 'work').
+      // 'access' group removed — Pengguna now lives under Data Master.
+      expect(navIds).not.toContain('access');
+      // pruning-requests is not top-level (nested under 'work').
       expect(navIds).not.toContain('pruning-requests');
 
-      // 'Pekerjaan' group holds tasks / activities / overtime / schedules / pruning.
+      // 'Pekerjaan' group: tasks / activities / overtime / daily-schedules
+      // (Jadwal Harian) / schedules (Jadwal Lanjutan) / pruning.
       const workItem = navigationItems.find((item) => item.id === 'work');
       expect(workItem?.children?.map((c) => c.id)).toEqual([
         'tasks',
         'activities',
         'overtime',
+        'daily-schedules',
         'schedules',
         'pruning-requests',
       ]);
 
-      // 'Pengguna & Akses' group holds user accounts (Hak Akses / Akun Layanan
-      // land here later).
-      const accessItem = navigationItems.find((item) => item.id === 'access');
-      expect(accessItem?.children?.map((c) => c.id)).toEqual(['users']);
-
-      // 'Data Master' group holds areas / rayons + Phase-3 plants/seeds +
-      // Phase-5 assets (users moved out to 'Pengguna & Akses').
+      // 'Data Master' group: users + areas / rayons / scheduling-templates +
+      // Phase-3 plants/seeds + Phase-5 assets.
       const dataItem = navigationItems.find((item) => item.id === 'data');
       expect(dataItem?.children?.map((c) => c.id)).toEqual([
+        'users',
         'areas',
         'rayons',
+        'scheduling-templates',
         'plants',
         'seeds',
         'assets',
@@ -79,9 +79,9 @@ describe('Navigation Utilities', () => {
     });
 
     it('should restrict the Users route to admin roles', () => {
-      // Users management is admin/admin_data only — nested under 'Pengguna & Akses'.
-      const accessItem = navigationItems.find((item) => item.id === 'access');
-      const usersItem = accessItem?.children?.find((child) => child.id === 'users');
+      // Users management is admin/admin_data only — now nested under 'Data Master'.
+      const dataItem = navigationItems.find((item) => item.id === 'data');
+      const usersItem = dataItem?.children?.find((child) => child.id === 'users');
       expect(usersItem?.roles).toContain('admin_system');
       expect(usersItem?.roles).toContain('superadmin');
       expect(usersItem?.roles).toContain('admin_data');
@@ -98,11 +98,11 @@ describe('Navigation Utilities', () => {
         'dashboard',
         'monitoring',
         'work',
-        'access',
         'data',
         'reports',
         'analytics',
         'operations',
+        'settings',
         'docs',
       ]);
 
@@ -111,11 +111,12 @@ describe('Navigation Utilities', () => {
         'tasks',
         'activities',
         'overtime',
+        'daily-schedules',
         'schedules',
         'pruning-requests',
       ]);
-      const accessItem = filtered.find((item) => item.id === 'access');
-      expect(accessItem?.children?.find((child) => child.id === 'users')).toBeDefined();
+      const dataItem = filtered.find((item) => item.id === 'data');
+      expect(dataItem?.children?.find((child) => child.id === 'users')).toBeDefined();
     });
 
     it('should filter out admin-only children for top_management', () => {
@@ -134,9 +135,10 @@ describe('Navigation Utilities', () => {
       const dataItem = filtered.find((item) => item.id === 'data');
       expect(dataItem?.children?.find((child) => child.id === 'areas')).toBeDefined();
       expect(dataItem?.children?.find((child) => child.id === 'rayons')).toBeDefined();
-      // Users is admin/admin_data only.
+      // Users is admin/admin_data only — hidden from top_management.
       expect(dataItem?.children?.find((child) => child.id === 'users')).toBeUndefined();
-      expect(filtered.find((item) => item.id === 'settings')).toBeUndefined();
+      // Pengaturan is visible to all monitoring roles (incl. top_management).
+      expect(filtered.find((item) => item.id === 'settings')).toBeDefined();
     });
 
     it('should return appropriate items for kepala_rayon', () => {
@@ -145,18 +147,21 @@ describe('Navigation Utilities', () => {
       expect(filtered.find((item) => item.id === 'dashboard')).toBeDefined();
       expect(filtered.find((item) => item.id === 'monitoring')).toBeDefined();
 
-      // kepala_rayon sees tasks/activities/overtime + pruning, but no schedules.
+      // kepala_rayon sees tasks/activities/overtime + Jadwal Harian (daily-schedules)
+      // + pruning, but NOT the advanced 'schedules' (Jadwal Lanjutan).
       const workItem = filtered.find((item) => item.id === 'work');
       expect(workItem?.children?.map((c) => c.id)).toEqual([
         'tasks',
         'activities',
         'overtime',
+        'daily-schedules',
         'pruning-requests',
       ]);
 
       // No 'Data Master' access.
       expect(filtered.find((item) => item.id === 'data')).toBeUndefined();
-      expect(filtered.find((item) => item.id === 'settings')).toBeUndefined();
+      // Pengaturan is visible to all monitoring roles (incl. kepala_rayon).
+      expect(filtered.find((item) => item.id === 'settings')).toBeDefined();
     });
 
     it('should return appropriate items for korlap', () => {
@@ -231,7 +236,7 @@ describe('Navigation Utilities', () => {
     it('returns the group → page trail for a known route', () => {
       expect(getBreadcrumbTrail('/tasks')).toEqual(['Pekerjaan', 'Tugas']);
       expect(getBreadcrumbTrail('/overtime')).toEqual(['Pekerjaan', 'Lembur']);
-      expect(getBreadcrumbTrail('/users')).toEqual(['Pengguna & Akses', 'Pengguna']);
+      expect(getBreadcrumbTrail('/users')).toEqual(['Data Master', 'Pengguna']);
       expect(getBreadcrumbTrail('/pruning-requests')).toEqual(['Pekerjaan', 'Permohonan Pemangkasan']);
     });
 
@@ -243,8 +248,12 @@ describe('Navigation Utilities', () => {
     it('appends a dynamic leaf for new / edit / detail routes', () => {
       expect(getBreadcrumbTrail('/tasks/new')).toEqual(['Pekerjaan', 'Tugas', 'Baru']);
       expect(getBreadcrumbTrail('/tasks/abc-123')).toEqual(['Pekerjaan', 'Tugas', 'Detail']);
-      expect(getBreadcrumbTrail('/schedules/abc/edit')).toEqual(['Pekerjaan', 'Jadwal', 'Ubah']);
-      expect(getBreadcrumbTrail('/users/u1')).toEqual(['Pengguna & Akses', 'Pengguna', 'Detail']);
+      expect(getBreadcrumbTrail('/schedules/abc/edit')).toEqual([
+        'Pekerjaan',
+        'Jadwal (Lanjutan)',
+        'Ubah',
+      ]);
+      expect(getBreadcrumbTrail('/users/u1')).toEqual(['Data Master', 'Pengguna', 'Detail']);
     });
   });
 

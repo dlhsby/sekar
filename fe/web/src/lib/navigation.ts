@@ -20,6 +20,8 @@ import {
   Square2StackIcon,
   ChartBarIcon,
   BookOpenIcon,
+  Cog6ToothIcon,
+  CalendarDaysIcon,
 } from '@heroicons/react/24/outline';
 import { ComponentType } from 'react';
 import { ADMIN_ROLES, MONITORING_ROLES, TASK_MANAGER_ROLES } from '@/lib/constants/roles';
@@ -95,8 +97,15 @@ export const navigationItems: NavItem[] = [
         roles: [...MONITORING_ROLES],
       },
       {
+        id: 'daily-schedules',
+        label: 'Jadwal Harian',
+        href: '/daily-schedules',
+        icon: CalendarDaysIcon,
+        roles: [...ADMIN_ROLES, 'kepala_rayon', 'admin_data'],
+      },
+      {
         id: 'schedules',
-        label: 'Jadwal',
+        label: 'Jadwal (Lanjutan)',
         href: '/schedules',
         icon: CalendarIcon,
         roles: [...ADMIN_ROLES, 'korlap', 'admin_data'],
@@ -111,15 +120,14 @@ export const navigationItems: NavItem[] = [
       },
     ],
   },
-  // ── Pengguna & Akses: user accounts + access control (Hak Akses / Akun
-  // Layanan land here later). Split out of Data Master so account management is
-  // its own surface.
+  // ── Data Master: user accounts, organisation structure, scheduling templates
+  // + catalogues. (Pengguna folded in here per the Jun-30 nav reorder.)
   {
-    id: 'access',
-    label: 'Pengguna & Akses',
+    id: 'data',
+    label: 'Data Master',
     href: '#',
-    icon: UsersIcon,
-    roles: [...ADMIN_ROLES, 'admin_data'],
+    icon: FolderIcon,
+    roles: [...ADMIN_ROLES, 'top_management', 'admin_data'],
     children: [
       {
         id: 'users',
@@ -128,16 +136,6 @@ export const navigationItems: NavItem[] = [
         icon: UsersIcon,
         roles: [...ADMIN_ROLES, 'admin_data'],
       },
-    ],
-  },
-  // ── Data Master: organisation structure + catalogues
-  {
-    id: 'data',
-    label: 'Data Master',
-    href: '#',
-    icon: FolderIcon,
-    roles: [...ADMIN_ROLES, 'top_management', 'admin_data'],
-    children: [
       {
         id: 'areas',
         label: 'Area',
@@ -151,6 +149,13 @@ export const navigationItems: NavItem[] = [
         href: '/rayons',
         icon: BuildingOfficeIcon,
         roles: [...ADMIN_ROLES, 'top_management'],
+      },
+      {
+        id: 'scheduling-templates',
+        label: 'Template Penjadwalan',
+        href: '/scheduling-templates',
+        icon: ClipboardDocumentListIcon,
+        roles: [...ADMIN_ROLES, 'admin_data'],
       },
       // Phase 3-8/3-12 web pages (shipped with the phase-3 close-out)
       {
@@ -264,6 +269,17 @@ export const navigationItems: NavItem[] = [
     ],
   },
 
+  // ── Pengaturan: app settings (change password, notification prefs, theme).
+  // Also reachable from the avatar dropdown; surfaced in the sidebar per the
+  // Jun-30 nav reorder.
+  {
+    id: 'settings',
+    label: 'Pengaturan',
+    href: '/settings',
+    icon: Cog6ToothIcon,
+    roles: [...MONITORING_ROLES],
+  },
+
   // ── Phase 3: staff_kecamatan minimal navigation (ADR-033) ──────────────
   // Monitoring is intentionally ABSENT for this role. Submit pages live at
   // /pruning-submit so they don't collide with the admin /pruning-requests
@@ -334,8 +350,10 @@ const ROUTE_TITLES: Record<string, string> = {
   '/tasks/new': 'Tugas Baru',
   '/activities': 'Aktivitas',
   '/overtime': 'Lembur',
-  '/schedules': 'Jadwal',
+  '/schedules': 'Jadwal (Lanjutan)',
   '/schedules/new': 'Jadwal Baru',
+  '/daily-schedules': 'Jadwal Harian',
+  '/scheduling-templates': 'Template Penjadwalan',
   '/users': 'Pengguna',
   '/users/new': 'Pengguna Baru',
   '/areas': 'Area',
@@ -384,11 +402,13 @@ const ROUTE_BREADCRUMB: Record<string, string[]> = {
   '/tasks': ['Pekerjaan', 'Tugas'],
   '/activities': ['Pekerjaan', 'Aktivitas'],
   '/overtime': ['Pekerjaan', 'Lembur'],
-  '/schedules': ['Pekerjaan', 'Jadwal'],
+  '/daily-schedules': ['Pekerjaan', 'Jadwal Harian'],
+  '/schedules': ['Pekerjaan', 'Jadwal (Lanjutan)'],
   '/pruning-requests': ['Pekerjaan', 'Permohonan Pemangkasan'],
-  '/users': ['Pengguna & Akses', 'Pengguna'],
+  '/users': ['Data Master', 'Pengguna'],
   '/areas': ['Data Master', 'Area'],
   '/rayons': ['Data Master', 'Rayon'],
+  '/scheduling-templates': ['Data Master', 'Template Penjadwalan'],
   '/plants': ['Data Master', 'Tanaman'],
   '/seeds': ['Data Master', 'Bibit'],
   '/assets': ['Data Master', 'Aset'],

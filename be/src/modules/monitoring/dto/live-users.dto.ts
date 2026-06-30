@@ -106,6 +106,31 @@ export class LiveUsersFilterDto {
   status?: TrackingStatus;
 }
 
+/**
+ * A worker expected on today's roster who has not clocked in (and is not on
+ * leave). Surfaced so supervisors see "who's missing from the plan", not just
+ * live pins.
+ */
+export class AbsentUserDto {
+  @ApiProperty({ example: 'user-uuid' })
+  user_id: string;
+
+  @ApiProperty({ example: 'John Doe' })
+  full_name: string;
+
+  @ApiProperty({ example: 'satgas' })
+  role: string;
+
+  @ApiProperty({ example: 'rayon-uuid', nullable: true })
+  rayon_id: string | null;
+
+  @ApiProperty({ example: 'shift-def-uuid', nullable: true })
+  shift_definition_id: string | null;
+
+  @ApiProperty({ example: 'Shift 1', nullable: true })
+  shift_name: string | null;
+}
+
 export class LiveUsersResponseDto {
   @ApiProperty({ example: 30 })
   total_active: number;
@@ -127,6 +152,27 @@ export class LiveUsersResponseDto {
 
   @ApiProperty({ type: [LiveUserDto] })
   users: LiveUserDto[];
+
+  // ── Roster-derived "expected vs actual" (ADR-013). Counts compare today's
+  // materialized roster to who has actually clocked in. Rayon-scoped when a
+  // rayon_id filter is supplied; otherwise global.
+  @ApiProperty({ example: 40, description: 'Workers expected on the roster today (have a shift)' })
+  expected_count: number;
+
+  @ApiProperty({ example: 30, description: 'Expected workers who have clocked in' })
+  present_count: number;
+
+  @ApiProperty({ example: 8, description: 'Expected workers who have not clocked in' })
+  absent_count: number;
+
+  @ApiProperty({ example: 2, description: 'Workers on sick/annual leave today' })
+  on_leave_count: number;
+
+  @ApiProperty({ example: 5, description: 'Active workers with no shift scheduled today' })
+  off_schedule_count: number;
+
+  @ApiProperty({ type: [AbsentUserDto] })
+  absent_users: AbsentUserDto[];
 
   @ApiProperty({ example: '2024-01-24T10:30:00Z' })
   generated_at: Date;

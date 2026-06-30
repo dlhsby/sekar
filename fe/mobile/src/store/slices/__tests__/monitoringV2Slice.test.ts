@@ -96,6 +96,11 @@ describe('monitoringV2Slice', () => {
       expect(state.selectedAreaId).toBeNull();
     });
 
+    it('starts with cluster zoom threshold of 0.05', () => {
+      const state = monitoringV2Reducer(undefined, { type: '@@INIT' });
+      expect(state.clusterZoomThreshold).toBe(0.05);
+    });
+
     it('starts with loading false and no error', () => {
       const state = monitoringV2Reducer(undefined, { type: '@@INIT' });
       expect(state.loading).toBe(false);

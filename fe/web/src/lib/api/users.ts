@@ -57,6 +57,22 @@ const resetUserPassword = async (id: string): Promise<{ temp_password: string }>
   return response.data;
 };
 
+/** Live username availability check (create-user form). */
+export const checkUsername = async (username: string): Promise<boolean> => {
+  const response = await apiClient.get<{ available: boolean }>(
+    `/users/check-username?username=${encodeURIComponent(username)}`,
+  );
+  return response.data.available;
+};
+
+/** Suggest a unique username from a full name. */
+export const suggestUsername = async (fullName: string): Promise<string> => {
+  const response = await apiClient.get<{ username: string }>(
+    `/users/suggest-username?full_name=${encodeURIComponent(fullName)}`,
+  );
+  return response.data.username;
+};
+
 /**
  * Update existing user
  */

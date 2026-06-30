@@ -48,6 +48,8 @@ describe('MyScheduleScreen', () => {
     mockAuthState.assignedAreas = [];
     // Default: no derived current schedule (explicit rows drive the tests).
     jest.spyOn(schedulesApi, 'getMySchedule').mockResolvedValue({ data: null } as any);
+    // Default: no roster for today
+    jest.spyOn(schedulesApi, 'getMyRoster').mockResolvedValue({ data: null } as any);
   });
 
   it('renders the worker schedules with area, shift window and status', async () => {
@@ -101,5 +103,57 @@ describe('MyScheduleScreen', () => {
     const { getByText } = render(<MyScheduleScreen />);
 
     await waitFor(() => expect(getByText('Gagal memuat jadwal')).toBeTruthy());
+  });
+
+  it('displays the daily roster when available (Phase 3)', async () => {
+    const todayRoster: any = {
+      id: 'roster-today',
+      user_id: 'user-1',
+      schedule_date: '2020-01-01',
+      status: 'present',
+      shift_definition: {
+        id: 'shift-1',
+        name: 'Shift Pagi Roster',
+        start_time: '06:00',
+        end_time: '15:00',
+      },
+      rayon: { id: 'rayon-1', name: 'Rayon 1' },
+      daily_schedule_areas: [
+        {
+          id: 'dsa-1',
+          area_id: 'area-2',
+          area: { id: 'area-2', name: 'Taman Roster', code: 'TR' },
+        },
+      ],
+    };
+
+    jest
+      .spyOn(schedulesApi, 'getMySchedules')
+      .mockResolvedValue({ data: [activeSchedule] } as any);
+    jest
+      .spyOn(schedulesApi, 'getMyRoster')
+      .mockResolvedValue({ data: todayRoster } as any);
+
+    const { getByText, queryByTestId } = render(<MyScheduleScreen />);
+
+    await waitFor(() => expect(getByText('Jadwal Hari Ini')).toBeTruthy());
+    expect(getByText('Hadir')).toBeTruthy();
+    // Verify the roster was fetched
+    expect(schedulesApi.getMyRoster).toHaveBeenCalled();
+  });
+
+  it('falls back to explicit schedules when no roster is available', async () => {
+    jest
+      .spyOn(schedulesApi, 'getMySchedules')
+      .mockResolvedValue({ data: [activeSchedule] } as any);
+    jest
+      .spyOn(schedulesApi, 'getMyRoster')
+      .mockResolvedValue({ data: null } as any);
+
+    const { getByText, queryByText } = render(<MyScheduleScreen />);
+
+    await waitFor(() => expect(getByText('Taman Bungkul')).toBeTruthy());
+    expect(queryByText('Jadwal Hari Ini')).toBeNull();
+    expect(getByText('Aktif')).toBeTruthy();
   });
 });

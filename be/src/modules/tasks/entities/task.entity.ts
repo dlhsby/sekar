@@ -152,6 +152,13 @@ export class Task {
   @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })
   deleted_at: Date | null;
 
+  // Actor audit — stamped by AuditSubscriber from the request's acting user.
+  @Column({ name: 'updated_by', type: 'uuid', nullable: true })
+  updated_by?: string;
+
+  @Column({ name: 'deleted_by', type: 'uuid', nullable: true })
+  deleted_by?: string;
+
   // Relations
   @ManyToOne(() => Area, { onDelete: 'RESTRICT', nullable: true })
   @JoinColumn({ name: 'area_id' })

@@ -93,7 +93,17 @@ export interface LiveUser {
   current_task_title: string | null;
 }
 
-// Live Users Response — Phase 2D
+// Absent User for daily roster monitoring — Phase 3 (roster monitoring)
+export interface AbsentUser {
+  user_id: string;
+  full_name: string;
+  role: string;
+  rayon_id: string | null;
+  shift_definition_id: string | null;
+  shift_name: string | null;
+}
+
+// Live Users Response — Phase 2D + Phase 3 (roster monitoring fields)
 export interface LiveUsersResponse {
   total_active: number;
   total_inactive: number;
@@ -104,6 +114,13 @@ export interface LiveUsersResponse {
   total_online: number;
   users: LiveUser[];
   generated_at: string;
+  // Phase 3: Daily roster monitoring fields (optional during rollout)
+  expected_count?: number;
+  present_count?: number;
+  absent_count?: number;
+  on_leave_count?: number;
+  off_schedule_count?: number;
+  absent_users?: AbsentUser[];
 }
 
 // User Day Summary — Phase 2D
