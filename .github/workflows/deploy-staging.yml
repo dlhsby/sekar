@@ -192,6 +192,13 @@ jobs:
           bash ~/sekar/infra/seed-env-from-ssm.sh
           cd ~/sekar/infra
           export IMAGE_TAG=$SHA
+          # Reclaim disk BEFORE pulling new SHA-pinned images. The box accumulates
+          # one set of per-SHA images per deploy and has hit "no space left on
+          # device" mid-pull. Running containers keep their images, so this only
+          # drops unused image layers + build cache (never volumes/certs).
+          docker image prune -af || true
+          docker builder prune -af || true
+          df -h / | tail -1
           # --quiet keeps SSM stdout under its 24KB cap (huge layer logs were truncating
           # the tail, hiding the post-deploy assertion).
           docker compose -f compose.staging.yml pull --quiet
