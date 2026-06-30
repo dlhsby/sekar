@@ -5,7 +5,7 @@
  * Reusable form for creating and editing areas
  */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -20,13 +20,9 @@ import type { Area, CreateAreaDto, UpdateAreaDto } from '@/types/models';
 // Validation schema
 const areaSchema = z.object({
   name: z.string().min(2, 'Nama minimal 2 karakter'),
-  code: z
-    .string()
-    .min(2, 'Kode minimal 2 karakter')
-    .regex(/^[A-Z0-9_-]+$/, 'Kode harus huruf besar dan angka'),
   rayon_id: z.string().uuid('Rayon wajib dipilih'),
   area_type_id: z.string().uuid('Tipe area wajib dipilih'),
-  description: z.string().optional(),
+  address: z.string().optional().nullable(),
   boundary_polygon: z
     .custom<GeoJSON.Polygon>(
       (val) => {
@@ -66,21 +62,13 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
     resolver: zodResolver(areaSchema),
     defaultValues: {
       name: initialData?.name || '',
-      code: initialData?.code || '',
       rayon_id: initialData?.rayon_id || '',
       area_type_id: initialData?.area_type_id || '',
-      description: initialData?.description || '',
+      address: initialData?.address || '',
       boundary_polygon: initialData?.boundary_polygon,
     },
   });
 
-  // Watch code field to auto-uppercase
-  const codeValue = watch('code');
-  useEffect(() => {
-    if (codeValue) {
-      setValue('code', codeValue.toUpperCase());
-    }
-  }, [codeValue, setValue]);
 
   // Handle polygon change
   const handlePolygonChange = (newPolygon: GeoJSON.Polygon | null) => {
@@ -95,8 +83,8 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
   // Calculate center coordinates
   const centerCoords = polygon
     ? calculatePolygonCenter(polygon)
-    : initialData
-      ? [initialData.center_longitude, initialData.center_latitude]
+    : initialData && initialData.gps_lng && initialData.gps_lat
+      ? [Number(initialData.gps_lng), Number(initialData.gps_lat)]
       : null;
 
   // Handle form submission
@@ -109,13 +97,12 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
 
     const submitData: CreateAreaDto | UpdateAreaDto = {
       name: data.name,
-      code: data.code,
       rayon_id: data.rayon_id,
       area_type_id: data.area_type_id,
-      description: data.description || undefined,
+      address: data.address || undefined,
       boundary_polygon: data.boundary_polygon,
-      center_longitude: center[0],
-      center_latitude: center[1],
+      gps_lng: center[0],
+      gps_lat: center[1],
     };
 
     await onSubmit(submitData);
@@ -133,15 +120,6 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
           error={errors.name?.message}
           required
           {...register('name')}
-        />
-
-        <FormInput
-          label="Kode Area"
-          placeholder="Contoh: TMNBKL01"
-          error={errors.code?.message}
-          required
-          helperText="Huruf besar dan angka saja"
-          {...register('code')}
         />
 
         <FormSelect
@@ -197,12 +175,12 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
         />
 
         <div className="space-y-1.5">
-          <label className="text-sm font-bold leading-none">Deskripsi</label>
+          <label className="text-sm font-bold leading-none">Alamat</label>
           <Textarea
-            placeholder="Deskripsi area (opsional)"
+            placeholder="Alamat area (opsional)"
             rows={3}
-            error={errors.description?.message}
-            {...register('description')}
+            error={errors.address?.message}
+            {...register('address')}
           />
         </div>
       </div>

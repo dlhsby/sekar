@@ -117,6 +117,7 @@ export class AreasService {
     const query = this.areaRepository
       .createQueryBuilder('area')
       .leftJoinAndSelect('area.areaType', 'areaType')
+      .leftJoinAndSelect('area.rayon', 'rayon')
       .where('area.is_active = :isActive', { isActive: true })
       .orderBy('area.id', 'ASC');
 
@@ -147,6 +148,7 @@ export class AreasService {
 
     const area = await this.areaRepository.findOne({
       where: { id, is_active: true },
+      relations: ['rayon'],
     });
 
     if (!area) {

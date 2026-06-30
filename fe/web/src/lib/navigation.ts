@@ -160,13 +160,6 @@ export const navigationItems: NavItem[] = [
         icon: BuildingOfficeIcon,
         roles: [...ADMIN_ROLES, 'top_management'],
       },
-      {
-        id: 'scheduling-templates',
-        label: 'Template Penjadwalan',
-        href: '/scheduling-templates',
-        icon: ClipboardDocumentListIcon,
-        roles: [...ADMIN_ROLES, 'admin_data'],
-      },
       // Phase 3-8/3-12 web pages (shipped with the phase-3 close-out)
       {
         id: 'plants',
@@ -363,7 +356,6 @@ const ROUTE_TITLES: Record<string, string> = {
   '/schedules': 'Jadwal (Lanjutan)',
   '/schedules/new': 'Jadwal Baru',
   '/daily-schedules': 'Jadwal Harian',
-  '/scheduling-templates': 'Template Penjadwalan',
   '/users': 'Pengguna',
   '/users/new': 'Pengguna Baru',
   '/areas': 'Area',

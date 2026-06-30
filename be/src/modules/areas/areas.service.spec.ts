@@ -197,6 +197,7 @@ describe('AreasService', () => {
       expect(result).toEqual(mockArea);
       expect(repository.findOne).toHaveBeenCalledWith({
         where: { id: 'c3d4e5f6-a7b8-9012-cdef-123456789012', is_active: true },
+        relations: ['rayon'],
       });
     });
 

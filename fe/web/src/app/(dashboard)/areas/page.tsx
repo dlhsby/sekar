@@ -15,6 +15,7 @@ import {
   PageHeader,
   StatusPill,
   DetailModal,
+  CoordinateLink,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
@@ -78,15 +79,6 @@ export default function AreasPage() {
         cell: ({ row }) => <span className="font-semibold">{row.original.name}</span>,
       },
       {
-        id: 'code',
-        accessorKey: 'code',
-        header: 'Kode',
-        meta: { label: 'Kode', filterVariant: 'text' },
-        cell: ({ row }) => (
-          <span className="font-mono text-nb-body-sm text-nb-gray-600">{row.original.code}</span>
-        ),
-      },
-      {
         id: 'rayon',
         accessorFn: (a) => a.rayon?.name ?? '',
         header: 'Rayon',
@@ -95,26 +87,55 @@ export default function AreasPage() {
       },
       {
         id: 'area_type',
-        accessorFn: (a) => a.area_type?.name ?? '',
+        accessorFn: (a) => a.areaType?.name ?? '',
         header: 'Tipe',
         meta: { label: 'Tipe', filterVariant: 'text' },
         cell: ({ row }) =>
-          row.original.area_type ? (
+          row.original.areaType ? (
             <Badge
-              variant={row.original.area_type.category === 'ACTIVE' ? 'success' : 'warning'}
+              variant={row.original.areaType.category === 'ACTIVE' ? 'success' : 'warning'}
               size="sm"
             >
-              {row.original.area_type.name}
+              {row.original.areaType.name}
             </Badge>
           ) : (
             <span className="text-nb-gray-500">—</span>
           ),
       },
       {
+        id: 'coordinates',
+        accessorFn: (a) =>
+          a.gps_lat && a.gps_lng
+            ? `${Number(a.gps_lat).toFixed(6)}, ${Number(a.gps_lng).toFixed(6)}`
+            : '',
+        header: 'Koordinat',
+        meta: { label: 'Koordinat', filterVariant: 'text' },
+        cell: ({ row }) =>
+          row.original.gps_lat && row.original.gps_lng ? (
+            <CoordinateLink
+              lat={Number(row.original.gps_lat)}
+              lng={Number(row.original.gps_lng)}
+            />
+          ) : (
+            <span className="text-nb-gray-500">—</span>
+          ),
+      },
+      {
+        id: 'boundary_polygon',
+        accessorFn: (a) => (a.boundary_polygon ? 'Ada' : '—'),
+        header: 'Batas Wilayah',
+        meta: { label: 'Batas Wilayah', filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {row.original.boundary_polygon ? 'Ada' : '—'}
+          </span>
+        ),
+      },
+      {
         id: 'coverage_area',
         accessorKey: 'coverage_area',
         header: 'Luas',
-        meta: { label: 'Luas', filterVariant: 'number', align: 'right' },
+        meta: { label: 'Luas', defaultHidden: true, filterVariant: 'number', align: 'right' },
         cell: ({ row }) => (
           <span className="tabular-nums text-nb-gray-600">
             {row.original.coverage_area ? formatArea(row.original.coverage_area) : '—'}
@@ -125,7 +146,7 @@ export default function AreasPage() {
         id: 'radius_meters',
         accessorKey: 'radius_meters',
         header: 'Radius (m)',
-        meta: { label: 'Radius (m)', filterVariant: 'number', align: 'right' },
+        meta: { label: 'Radius (m)', defaultHidden: true, filterVariant: 'number', align: 'right' },
         cell: ({ row }) => (
           <span className="tabular-nums text-nb-gray-600">
             {row.original.radius_meters ?? '—'}
@@ -133,18 +154,13 @@ export default function AreasPage() {
         ),
       },
       {
-        id: 'coordinates',
-        accessorFn: (a) =>
-          a.center_latitude && a.center_longitude
-            ? `${a.center_latitude.toFixed(6)}, ${a.center_longitude.toFixed(6)}`
-            : '',
-        header: 'Koordinat',
-        meta: { label: 'Koordinat', defaultHidden: true, filterVariant: 'text' },
+        id: 'address',
+        accessorKey: 'address',
+        header: 'Alamat',
+        meta: { label: 'Alamat', defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
-          <span className="font-mono text-nb-body-sm text-nb-gray-600">
-            {row.original.center_latitude && row.original.center_longitude
-              ? `${row.original.center_latitude.toFixed(6)}, ${row.original.center_longitude.toFixed(6)}`
-              : '—'}
+          <span className="text-nb-body-sm text-nb-gray-600 max-w-xs truncate">
+            {row.original.address ?? '—'}
           </span>
         ),
       },
@@ -163,17 +179,6 @@ export default function AreasPage() {
               Nonaktif
             </StatusPill>
           ),
-      },
-      {
-        id: 'boundary_polygon',
-        accessorFn: (a) => (a.boundary_polygon ? 'Ada' : '—'),
-        header: 'Batas Wilayah',
-        meta: { label: 'Batas Wilayah', defaultHidden: true, filterVariant: 'text' },
-        cell: ({ row }) => (
-          <span className="text-nb-body-sm text-nb-gray-600">
-            {row.original.boundary_polygon ? 'Ada' : '—'}
-          </span>
-        ),
       },
       {
         id: 'created_at',
@@ -279,7 +284,7 @@ export default function AreasPage() {
         onRetry={() => refetch()}
         onRefresh={() => refetch()}
         getRowId={(r) => r.id}
-        searchPlaceholder="Cari nama atau kode area…"
+        searchPlaceholder="Cari nama area…"
         rowActions={rowActions}
         actions={
           isAdmin ? (
@@ -331,28 +336,33 @@ export default function AreasPage() {
         title="Detail Area"
         rows={viewingArea ? [
           { label: 'Nama', value: viewingArea.name },
-          { label: 'Kode', value: viewingArea.code },
-          { label: 'Rayon', value: viewingArea.rayon?.name },
+          { label: 'Rayon', value: viewingArea.rayon?.name ?? '—' },
           {
             label: 'Tipe',
-            value: viewingArea.area_type ? (
+            value: viewingArea.areaType ? (
               <Badge
-                variant={viewingArea.area_type.category === 'ACTIVE' ? 'success' : 'warning'}
+                variant={viewingArea.areaType.category === 'ACTIVE' ? 'success' : 'warning'}
                 size="sm"
               >
-                {viewingArea.area_type.name}
+                {viewingArea.areaType.name}
               </Badge>
-            ) : null,
+            ) : (
+              '—'
+            ),
           },
-          { label: 'Luas', value: viewingArea.coverage_area ? formatArea(viewingArea.coverage_area) : null },
-          { label: 'Radius (m)', value: viewingArea.radius_meters },
           {
             label: 'Koordinat',
             value:
-              viewingArea.center_latitude && viewingArea.center_longitude
-                ? `${viewingArea.center_latitude.toFixed(6)}, ${viewingArea.center_longitude.toFixed(6)}`
-                : null,
+              viewingArea.gps_lat && viewingArea.gps_lng ? (
+                <CoordinateLink
+                  lat={Number(viewingArea.gps_lat)}
+                  lng={Number(viewingArea.gps_lng)}
+                />
+              ) : null,
           },
+          { label: 'Alamat', value: viewingArea.address ?? null },
+          { label: 'Luas', value: viewingArea.coverage_area ? formatArea(viewingArea.coverage_area) : null },
+          { label: 'Radius (m)', value: viewingArea.radius_meters },
           {
             label: 'Status',
             value: (

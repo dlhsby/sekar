@@ -91,7 +91,7 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
       enableSorting: false,
       enableColumnFilter: false,
       meta: { label: 'Tipe' },
-      cell: ({ row }) => <span className="text-nb-body-sm">{row.original.area_type?.name || '—'}</span>,
+      cell: ({ row }) => <span className="text-nb-body-sm">{row.original.areaType?.name || '—'}</span>,
     },
     {
       id: 'coverage_area',

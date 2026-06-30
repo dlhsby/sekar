@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { AreaType } from '../../area-types/entities/area-type.entity';
+import { Rayon } from '../../rayons/entities/rayon.entity';
 
 /**
  * Area Entity
@@ -104,6 +105,12 @@ export class Area {
   })
   @Column({ type: 'uuid', nullable: true })
   rayon_id?: string;
+
+  /** Parent rayon. Nullable; SET NULL so removing a rayon doesn't block. */
+  @ApiProperty({ description: 'Rayon this area belongs to', type: () => Rayon, required: false })
+  @ManyToOne(() => Rayon, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'rayon_id' })
+  rayon?: Rayon | null;
 
   @ApiProperty({
     description: 'GeoJSON polygon defining area boundary',

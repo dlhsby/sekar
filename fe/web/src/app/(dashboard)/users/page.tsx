@@ -11,6 +11,7 @@ import { Plus, Eye, Pencil, Trash2, Power, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Button,
+  ConfirmDialog,
   DataTable,
   PageHeader,
   RoleAvatar,
@@ -59,6 +60,8 @@ export default function UsersPage() {
   // One-time temp password returned by the reset action, shown in a dialog.
   const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [tempPwUsername, setTempPwUsername] = useState<string | undefined>(undefined);
+  // The user pending a force-reset confirmation (shown before generating).
+  const [resetConfirmUser, setResetConfirmUser] = useState<User | null>(null);
 
   const handleResetPassword = useCallback(
     async (u: User) => {
@@ -171,7 +174,7 @@ export default function UsersPage() {
         id: 'password_must_change',
         accessorFn: (u) => (u.password_must_change ? 'Ya' : 'Tidak'),
         header: 'Wajib Ganti Sandi',
-        meta: { label: 'Wajib Ganti Sandi', defaultHidden: true, filterVariant: 'text' },
+        meta: { label: 'Wajib Ganti Sandi', filterVariant: 'text' },
         cell: ({ row }) =>
           row.original.password_must_change ? (
             <StatusPill tone="warn" dot>
@@ -271,7 +274,7 @@ export default function UsersPage() {
         label: 'Reset Password',
         icon: KeyRound,
         hidden: !canManage,
-        onClick: () => handleResetPassword(u),
+        onClick: () => setResetConfirmUser(u),
       },
       {
         key: 'toggle-active',
@@ -289,7 +292,7 @@ export default function UsersPage() {
         onClick: () => setUserToDelete(u),
       },
     ],
-    [canManage, deactivateUser, activateUser, handleResetPassword]
+    [canManage, deactivateUser, activateUser]
   );
 
   return (
@@ -339,6 +342,25 @@ export default function UsersPage() {
         isOpen={!!userToDelete}
         onClose={() => setUserToDelete(null)}
         onSuccess={() => setUserToDelete(null)}
+      />
+
+      <ConfirmDialog
+        open={!!resetConfirmUser}
+        onOpenChange={(open) => !open && setResetConfirmUser(null)}
+        title="Paksa Reset Password?"
+        description={
+          resetConfirmUser
+            ? `Password ${resetConfirmUser.full_name} akan direset paksa — password lama tidak bisa dipakai lagi dan pengguna wajib menggantinya saat login pertama.`
+            : undefined
+        }
+        confirmLabel="Reset Password"
+        loading={resetPassword.isPending}
+        onConfirm={async () => {
+          if (!resetConfirmUser) return;
+          const target = resetConfirmUser;
+          setResetConfirmUser(null);
+          await handleResetPassword(target);
+        }}
       />
 
       <TempPasswordDialog

@@ -141,3 +141,13 @@ export function featureToPolygon(feature: GeoJSON.Feature): GeoJSON.Polygon | nu
 export function formatCoordinates(lng: number, lat: number): string {
   return `${lat.toFixed(6)}°, ${lng.toFixed(6)}°`;
 }
+
+/** Short `lat, lng` label (5 dp) for compact table cells. */
+export function formatLatLng(lat: number, lng: number): string {
+  return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+}
+
+/** Google Maps URL that drops a pin at the given coordinates. */
+export function googleMapsUrl(lat: number, lng: number): string {
+  return `https://www.google.com/maps?q=${lat},${lng}`;
+}

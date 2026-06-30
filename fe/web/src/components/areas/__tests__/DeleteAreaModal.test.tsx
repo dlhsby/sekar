@@ -18,9 +18,8 @@ describe('DeleteAreaModal', () => {
 
   const mockArea = {
     id: 'area-1',
-    code: 'TB',
     name: 'Taman Bungkul',
-    description: 'Taman kota di Surabaya',
+    address: 'Jl. Taman Bungkul',
     area_type_id: 'type-1',
     rayon_id: 'rayon-1',
     rayon: {
@@ -30,8 +29,8 @@ describe('DeleteAreaModal', () => {
       created_at: '2026-01-01',
       updated_at: '2026-01-01',
     },
-    center_latitude: -7.255,
-    center_longitude: 112.755,
+    gps_lat: -7.255,
+    gps_lng: 112.755,
     boundary_polygon: {
       type: 'Polygon' as const,
       coordinates: [
@@ -104,7 +103,6 @@ describe('DeleteAreaModal', () => {
     });
 
     expect(screen.getAllByText('Taman Bungkul').length).toBeGreaterThan(0);
-    expect(screen.getByText('TB')).toBeInTheDocument();
     expect(screen.getByText('Rayon Utara')).toBeInTheDocument();
   });
 

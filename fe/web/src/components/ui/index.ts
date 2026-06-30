@@ -42,6 +42,8 @@ export { NotificationBell, NotificationPanel, type NotificationPanelProps } from
 // Form Components
 export { FormInput, type FormInputProps } from './form-input';
 export { FormSelect, type FormSelectOption, type FormSelectProps } from './form-select';
+export { FormCombobox, type FormComboboxProps } from './form-combobox';
+export { CoordinateLink } from './coordinate-link';
 
 // Date / Time Pickers
 export { Calendar, type CalendarProps } from './calendar';

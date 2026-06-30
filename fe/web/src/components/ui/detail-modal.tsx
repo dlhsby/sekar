@@ -1,6 +1,14 @@
 'use client';
 
-import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle, Button } from '@/components/ui';
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Button,
+} from '@/components/ui';
 
 export interface DetailModalRow {
   label: string;
@@ -35,24 +43,19 @@ export function DetailModal({
           <dl className="space-y-4">
             {rows.map((row, idx) => (
               <div key={idx}>
-                <dt className="text-nb-caption font-medium text-nb-gray-600">
-                  {row.label}
-                </dt>
+                <dt className="text-nb-caption font-medium text-nb-gray-600">{row.label}</dt>
                 <dd className="text-nb-body text-nb-black">
                   {row.value == null || row.value === '' ? '—' : row.value}
                 </dd>
               </div>
             ))}
           </dl>
-          <div className="mt-6 flex gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => onOpenChange(false)}
-            >
-              Tutup
-            </Button>
-          </div>
         </DialogBody>
+        <DialogFooter>
+          <Button variant="secondary" onClick={() => onOpenChange(false)}>
+            Tutup
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

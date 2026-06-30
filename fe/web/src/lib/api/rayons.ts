@@ -1,9 +1,9 @@
 /**
  * Rayons API Client
- * TanStack Query hooks for rayon data fetching
+ * TanStack Query hooks for rayon data fetching, creation, updating, and deletion
  */
 
-import { useQuery, useQueries } from '@tanstack/react-query';
+import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
 import { Rayon, RayonStats, Area, AreaFilters, PaginatedResponse } from '@/types/models';
 
@@ -113,4 +113,109 @@ export function useRayonsWithStats() {
     isLoading: rayonsLoading || statsQueries.some((q) => q.isLoading),
     isError: statsQueries.some((q) => q.isError),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Create/Update/Delete Rayon DTOs
+// ---------------------------------------------------------------------------
+
+/**
+ * DTO for creating a rayon
+ */
+export interface CreateRayonDto {
+  name: string;
+  code: string;
+  color?: string | null;
+  description?: string | null;
+  center_lat?: number | null;
+  center_lng?: number | null;
+}
+
+/**
+ * DTO for updating a rayon
+ */
+export interface UpdateRayonDto {
+  name?: string;
+  code?: string;
+  color?: string | null;
+  description?: string | null;
+  center_lat?: number | null;
+  center_lng?: number | null;
+}
+
+// ---------------------------------------------------------------------------
+// Mutation Functions
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a new rayon
+ */
+async function createRayon(data: CreateRayonDto): Promise<Rayon> {
+  const response = await apiClient.post<Rayon>('/rayons', data);
+  return response.data;
+}
+
+/**
+ * Update an existing rayon
+ */
+async function updateRayon(id: string, data: UpdateRayonDto): Promise<Rayon> {
+  const response = await apiClient.patch<Rayon>(`/rayons/${id}`, data);
+  return response.data;
+}
+
+/**
+ * Delete a rayon
+ */
+async function deleteRayon(id: string): Promise<void> {
+  await apiClient.delete(`/rayons/${id}`);
+}
+
+// ---------------------------------------------------------------------------
+// Mutation Hooks
+// ---------------------------------------------------------------------------
+
+/**
+ * Hook to create a new rayon
+ */
+export function useCreateRayon() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createRayon,
+    onSuccess: () => {
+      // Invalidate all rayon lists
+      queryClient.invalidateQueries({ queryKey: rayonKeys.lists() });
+    },
+  });
+}
+
+/**
+ * Hook to update an existing rayon
+ */
+export function useUpdateRayon() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateRayonDto }) => updateRayon(id, data),
+    onSuccess: (_, variables) => {
+      // Invalidate the specific rayon and all lists
+      queryClient.invalidateQueries({ queryKey: rayonKeys.detail(variables.id) });
+      queryClient.invalidateQueries({ queryKey: rayonKeys.lists() });
+    },
+  });
+}
+
+/**
+ * Hook to delete a rayon
+ */
+export function useDeleteRayon() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteRayon,
+    onSuccess: () => {
+      // Invalidate all rayon lists
+      queryClient.invalidateQueries({ queryKey: rayonKeys.lists() });
+    },
+  });
 }

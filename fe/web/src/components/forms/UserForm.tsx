@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { FormInput, FormSelect, Button, Input } from '@/components/ui';
+import { FormInput, FormCombobox, Button, Input } from '@/components/ui';
 import type { UserRole, User } from '@/types/models';
 import { useRayons } from '@/lib/api/rayons';
 import { useAreas } from '@/lib/api/areas';
@@ -168,21 +168,18 @@ export function UserForm({
   };
 
   const roleOptions = ALL_ROLES.map((role) => ({ value: role, label: ROLE_LABELS[role] }));
-  const rayonOptions = [
-    { value: '', label: 'Tidak ada' },
-    ...rayons.map((r) => ({ value: r.id, label: `${r.name} (${r.code})` })),
-  ];
-  const shiftOptions = [
-    { value: '', label: 'Tidak ada' },
-    ...shifts.map((s) => ({ value: s.id, label: `${s.name} (${s.start_time}-${s.end_time})` })),
-  ];
+  const rayonOptions = rayons.map((r) => ({ value: r.id, label: `${r.name} (${r.code})` }));
+  const shiftOptions = shifts.map((s) => ({
+    value: s.id,
+    label: `${s.name} (${s.start_time}-${s.end_time})`,
+  }));
 
   const allAreas = useMemo(() => areasData?.data || [], [areasData]);
   const filteredAreas = useMemo(() => {
     const q = areaSearch.trim().toLowerCase();
     if (!q) return allAreas;
     return allAreas.filter(
-      (a) => a.name.toLowerCase().includes(q) || a.code.toLowerCase().includes(q),
+      (a) => a.name.toLowerCase().includes(q),
     );
   }, [allAreas, areaSearch]);
 
@@ -194,6 +191,16 @@ export function UserForm({
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+      {/* Nama Lengkap first so "Sarankan" can derive a username from it. */}
+      <FormInput
+        label="Nama Lengkap"
+        placeholder="Masukkan nama lengkap"
+        error={errors.full_name?.message}
+        required
+        disabled={fieldsDisabled}
+        {...register('full_name')}
+      />
+
       <div className="space-y-1">
         <div className="flex items-end gap-2">
           <div className="flex-1">
@@ -236,15 +243,6 @@ export function UserForm({
       </div>
 
       <FormInput
-        label="Nama Lengkap"
-        placeholder="Masukkan nama lengkap"
-        error={errors.full_name?.message}
-        required
-        disabled={fieldsDisabled}
-        {...register('full_name')}
-      />
-
-      <FormInput
         label="Nomor HP (untuk login)"
         placeholder="0812xxxxxxxx"
         error={errors.phone_number?.message}
@@ -265,31 +263,32 @@ export function UserForm({
         </div>
       )}
 
-      <FormSelect
+      <FormCombobox
         label="Role"
         options={roleOptions}
         value={selectedRole}
         onChange={(value) => setValue('role', value as UserRole)}
         error={errors.role?.message}
         required
+        clearable={false}
         disabled={fieldsDisabled}
       />
 
-      <FormSelect
+      <FormCombobox
         label="Rayon"
         options={rayonOptions}
         value={watch('rayon_id') || ''}
-        onChange={(value) => setValue('rayon_id', value as string)}
+        onChange={(value) => setValue('rayon_id', value)}
         placeholder={rayonsLoading ? 'Memuat...' : 'Pilih rayon'}
         error={errors.rayon_id?.message}
         disabled={fieldsDisabled || rayonsLoading}
       />
 
-      <FormSelect
+      <FormCombobox
         label="Shift Kerja"
         options={shiftOptions}
         value={watch('shift_definition_id') || ''}
-        onChange={(value) => setValue('shift_definition_id', value as string)}
+        onChange={(value) => setValue('shift_definition_id', value)}
         placeholder="Pilih shift"
         error={errors.shift_definition_id?.message}
         helperText="Satu shift per pekerja (berlaku untuk semua areanya)"
@@ -329,8 +328,7 @@ export function UserForm({
                     disabled={fieldsDisabled}
                   />
                   <span className="text-nb-body-sm">
-                    {area.name}{' '}
-                    <span className="font-mono text-[11px] text-nb-gray-600">({area.code})</span>
+                    {area.name}
                   </span>
                 </label>
               );

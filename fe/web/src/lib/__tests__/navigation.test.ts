@@ -52,13 +52,11 @@ describe('Navigation Utilities', () => {
       const accessItem = navigationItems.find((item) => item.id === 'access');
       expect(accessItem?.children?.map((c) => c.id)).toEqual(['users']);
 
-      // 'Data Master' group: areas / rayons / scheduling-templates +
-      // Phase-3 plants/seeds + Phase-5 assets.
+      // 'Data Master' group: areas / rayons + Phase-3 plants/seeds + Phase-5 assets.
       const dataItem = navigationItems.find((item) => item.id === 'data');
       expect(dataItem?.children?.map((c) => c.id)).toEqual([
         'areas',
         'rayons',
-        'scheduling-templates',
         'plants',
         'seeds',
         'assets',

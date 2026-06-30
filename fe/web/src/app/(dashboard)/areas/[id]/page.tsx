@@ -142,14 +142,13 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
             </Button>
           </nav>
           <h1 className="text-3xl font-black">{area.name}</h1>
-          <p className="text-nb-gray-600 mt-1 font-mono">{area.code}</p>
 
           {/* Badges */}
           <div className="flex items-center gap-2 mt-3">
             {area.rayon && <Badge variant="default">📍 {area.rayon.name}</Badge>}
-            {area.area_type && (
-              <Badge variant={area.area_type.category === 'ACTIVE' ? 'success' : 'warning'}>
-                {area.area_type.name}
+            {area.areaType && (
+              <Badge variant={area.areaType.category === 'ACTIVE' ? 'success' : 'warning'}>
+                {area.areaType.name}
               </Badge>
             )}
           </div>
@@ -184,7 +183,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
         <CardContent className="p-4">
           <div aria-label="Peta area">
             <Map
-              center={[area.center_longitude, area.center_latitude]}
+              center={[Number(area.gps_lng ?? 0), Number(area.gps_lat ?? 0)]}
               zoom={15}
               className="h-full md:h-[500px] min-h-[400px]"
               onLoad={handleMapLoad}
@@ -206,21 +205,17 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
               <span>{area.name}</span>
             </div>
             <div className="flex justify-between">
-              <span className="font-bold text-nb-gray-700">Kode:</span>
-              <span className="font-mono">{area.code}</span>
-            </div>
-            <div className="flex justify-between">
               <span className="font-bold text-nb-gray-700">Rayon:</span>
               <span>{area.rayon?.name || '-'}</span>
             </div>
             <div className="flex justify-between">
               <span className="font-bold text-nb-gray-700">Tipe Area:</span>
-              <span>{area.area_type?.name || '-'}</span>
+              <span>{area.areaType?.name || '-'}</span>
             </div>
-            {area.description && (
+            {area.address && (
               <div>
-                <div className="font-bold text-nb-gray-700 mb-1">Deskripsi:</div>
-                <p className="text-sm text-nb-gray-600">{area.description}</p>
+                <div className="font-bold text-nb-gray-700 mb-1">Alamat:</div>
+                <p className="text-sm text-nb-gray-600">{area.address}</p>
               </div>
             )}
           </CardContent>
@@ -241,12 +236,14 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
             )}
 
             {/* Center Coordinates */}
-            <div>
-              <div className="font-bold text-nb-gray-700 mb-2">Koordinat Pusat:</div>
-              <div className="bg-nb-gray-100 border-2 border-nb-black p-3 font-mono text-sm">
-                {formatCoordinates(area.center_longitude, area.center_latitude)}
+            {area.gps_lat && area.gps_lng && (
+              <div>
+                <div className="font-bold text-nb-gray-700 mb-2">Koordinat Pusat:</div>
+                <div className="bg-nb-gray-100 border-2 border-nb-black p-3 font-mono text-sm">
+                  {formatCoordinates(Number(area.gps_lng), Number(area.gps_lat))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Radius (if applicable) */}
             {area.radius_meters && (
@@ -291,7 +288,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
               <PolygonEditor
                 initialPolygon={boundaryDraft ?? undefined}
                 onChange={setBoundaryDraft}
-                center={area ? [area.center_longitude, area.center_latitude] : undefined}
+                center={area && area.gps_lng && area.gps_lat ? [Number(area.gps_lng), Number(area.gps_lat)] : undefined}
                 zoom={15}
                 className="h-[480px]"
               />

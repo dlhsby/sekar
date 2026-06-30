@@ -24,6 +24,8 @@ import { NotificationType } from '../../notifications/entities/notification.enti
 import { RedisService } from '../../../common/services/redis.service';
 import { BoundaryCheckService } from '../../../shared/services/boundary-check.service';
 import { UserAreasService } from '../../user-areas/user-areas.service';
+import { DailySchedulesService } from '../../daily-schedules/daily-schedules.service';
+import { TimezoneUtil } from '../../../common/utils/timezone.util';
 
 export interface StatusInput {
   hasActiveShift: boolean;
@@ -67,6 +69,11 @@ export class StatusCalculatorService {
     // without the provider fall back to primary-area-only checking.
     @Optional()
     private readonly userAreasService?: UserAreasService,
+    // Monitoring/geofencing/tracking read the day's GENERATED roster, not the
+    // raw user assignment (the user record is only the template that feeds
+    // generation). Optional → legacy specs fall back to user_areas.
+    @Optional()
+    private readonly dailySchedulesService?: DailySchedulesService,
   ) {}
 
   private get boundaryCheck(): BoundaryCheckService {
@@ -284,20 +291,27 @@ export class StatusCalculatorService {
       isWithinArea = await this.checkWithinArea(areaId, clockInLat, clockInLng);
     }
 
-    // Resolve rayon_id: from user.rayon_id first, then from area's rayon_id
+    // Resolve rayon_id from the day's generated roster first (the operational
+    // source of truth), then the area's rayon, then the user template last.
     let rayonId: string | null = null;
-    const user = await this.userRepository.findOne({
-      where: { id: userId },
-      select: ['id', 'role', 'rayon_id'],
-    });
-    if (user?.rayon_id) {
-      rayonId = user.rayon_id;
+    const roster = this.dailySchedulesService
+      ? await this.dailySchedulesService.findByUserAndDate(userId, TimezoneUtil.jakartaDateString())
+      : null;
+    if (roster?.rayon_id) {
+      rayonId = roster.rayon_id;
     } else if (areaId) {
       const area = await this.areaRepository.findOne({
         where: { id: areaId },
         select: ['id', 'rayon_id'],
       });
       rayonId = area?.rayon_id || null;
+    }
+    if (!rayonId) {
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+        select: ['id', 'rayon_id'],
+      });
+      rayonId = user?.rayon_id ?? null;
     }
 
     await this.trackingRepository.upsert(
@@ -654,11 +668,12 @@ export class StatusCalculatorService {
   }
 
   /**
-   * ADR-013 §5: a worker counts as within-area if they are inside their primary
-   * (schedule) area OR any other area assigned to them — including the
-   * `task_based` areas added when they accept a cross-area task. The extra
-   * lookup only runs when the worker is outside their primary area (the
-   * uncommon case), keeping the per-ping hot path at one boundary check.
+   * A worker counts as within-area if they are inside their primary (clocked-in)
+   * area OR any other area on **today's generated roster** (the operational
+   * source of truth — we check the day's penjadwalan, not the raw user
+   * assignment). Falls back to `user_areas` only when no roster service/rows are
+   * available (legacy). The extra lookup only runs when the worker is outside
+   * their primary area, keeping the per-ping hot path at one boundary check.
    */
   private async checkWithinAnyAssignedArea(
     userId: string,
@@ -669,11 +684,19 @@ export class StatusCalculatorService {
     if (await this.checkWithinArea(primaryAreaId, lat, lng)) {
       return true;
     }
-    if (!this.userAreasService) {
-      return false;
-    }
-    const areas = await this.userAreasService.getEffectiveAreas(userId);
-    for (const area of areas) {
+    const rosterAreas = this.dailySchedulesService
+      ? await this.dailySchedulesService.getActiveAreasForDay(
+          userId,
+          TimezoneUtil.jakartaDateString(),
+        )
+      : [];
+    const candidates =
+      rosterAreas.length > 0
+        ? rosterAreas
+        : this.userAreasService
+          ? await this.userAreasService.getEffectiveAreas(userId)
+          : [];
+    for (const area of candidates) {
       if (area.id === primaryAreaId) continue;
       if (await this.checkWithinArea(area.id, lat, lng)) {
         return true;

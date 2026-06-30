@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import {
   Button,
   DataTable,
+  FormCombobox,
   PageHeader,
   RoleAvatar,
   StatusPill,
@@ -479,21 +480,16 @@ export default function DailySchedulesPage() {
             <h2 className="text-nb-h2 font-bold mb-4">Ganti Pekerja</h2>
 
             <div className="space-y-4">
-              <div>
-                <label className="block text-nb-body font-medium mb-2">Pekerja Pengganti</label>
-                <select
-                  value={replacementUserId}
-                  onChange={(e) => setReplacementUserId(e.target.value)}
-                  className="w-full rounded-nb-base border-2 border-nb-black px-3 py-2"
-                >
-                  <option value="">Pilih pekerja…</option>
-                  {schedulableUsers.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.full_name} ({u.username})
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <FormCombobox
+                label="Pekerja Pengganti"
+                placeholder="Pilih pekerja…"
+                value={replacementUserId}
+                onChange={setReplacementUserId}
+                options={schedulableUsers.map((u) => ({
+                  value: u.id,
+                  label: `${u.full_name} (${u.username})`,
+                }))}
+              />
 
               <div>
                 <label className="block text-nb-body font-medium mb-2">Catatan (opsional)</label>

@@ -22,7 +22,7 @@ export interface AreaCardProps {
 export function AreaCard({ area, onView, onEdit, onDelete, showActions = true }: AreaCardProps) {
   // Get map preview image
   const mapUrl = getStaticMapUrl(
-    [area.center_longitude, area.center_latitude],
+    [Number(area.gps_lng ?? 0), Number(area.gps_lat ?? 0)],
     area.boundary_polygon,
     400,
     200
@@ -39,8 +39,7 @@ export function AreaCard({ area, onView, onEdit, onDelete, showActions = true }:
       <CardContent className="space-y-3">
         {/* Title */}
         <div>
-          <h3 className="font-bold text-lg leading-tight mb-1">{area.name}</h3>
-          <p className="text-sm text-nb-gray-600 font-mono">{area.code}</p>
+          <h3 className="font-bold text-lg leading-tight">{area.name}</h3>
         </div>
 
         {/* Badges */}
@@ -50,9 +49,9 @@ export function AreaCard({ area, onView, onEdit, onDelete, showActions = true }:
               📍 {area.rayon.name}
             </Badge>
           )}
-          {area.area_type && (
-            <Badge variant={area.area_type.category === 'ACTIVE' ? 'success' : 'warning'} size="sm">
-              {area.area_type.name}
+          {area.areaType && (
+            <Badge variant={area.areaType.category === 'ACTIVE' ? 'success' : 'warning'} size="sm">
+              {area.areaType.name}
             </Badge>
           )}
         </div>
@@ -65,9 +64,9 @@ export function AreaCard({ area, onView, onEdit, onDelete, showActions = true }:
           </div>
         )}
 
-        {/* Description */}
-        {area.description && (
-          <p className="text-sm text-nb-gray-600 line-clamp-2">{area.description}</p>
+        {/* Address */}
+        {area.address && (
+          <p className="text-sm text-nb-gray-600 line-clamp-2">{area.address}</p>
         )}
 
         {/* Actions */}
