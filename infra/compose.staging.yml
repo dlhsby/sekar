@@ -119,6 +119,9 @@ services:
       - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Co-tenant drop-in dir (e.g. SWAT's swat.caddy) — imported by the Caddyfile;
+      # sekar's deploy never overwrites it, so co-tenant config survives redeploys.
+      - ./conf.d:/etc/caddy/conf.d:ro
       - caddy_data:/data # issued certs — persisted across restarts
       - caddy_config:/config
     mem_limit: 96m

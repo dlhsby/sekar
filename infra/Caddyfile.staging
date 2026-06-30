@@ -22,6 +22,11 @@
 	email admin@wahyutrip.com
 }
 
+# Co-tenant drop-in dir. Other projects sharing this box's Caddy (e.g. SWAT) drop
+# their own *.caddy site files into infra/conf.d/ — sekar's deploy regenerates THIS
+# file but never touches conf.d/, so co-tenant config survives sekar redeploys.
+import /etc/caddy/conf.d/*.caddy
+
 # API + WebSocket (Caddy streams the socket.io upgrade automatically).
 api.sekar.wahyutrip.com {
 	encode gzip
