@@ -54,7 +54,7 @@ docs.sekar.wahyutrip.com {
 adminer.wahyutrip.com {
 	encode gzip
 	basic_auth {
-		wahyutrip $2b$10$Kfp/zeMPKUQBUVrbbPekE.crksgO4LNg9IRlUcfCApZc45VtRuWUW
+		wahyutrip $2b$10$K9Bz7ZgXadKrYE6QZEXWEOOvcBgNhq6QPoDO8E..QQ4.juJfcXqgi
 	}
 	# Preselect the PostgreSQL driver on the *bare* URL only, so the login form
 	# doesn't default to MySQL (port 3306) — RDS is Postgres on 5432, and the MySQL
