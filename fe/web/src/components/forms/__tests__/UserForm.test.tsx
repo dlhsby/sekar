@@ -294,6 +294,7 @@ describe('UserForm', () => {
         id: '1',
         username: 'existinguser',
         full_name: 'Existing User',
+        phone_number: '081200000000',
         role: 'satgas',
         created_at: '2026-01-01',
         updated_at: '2026-01-01',
@@ -382,10 +383,24 @@ describe('UserForm', () => {
       const onSubmit = jest.fn(() => new Promise<void>((resolve) => setTimeout(resolve, 1000)));
       const user = userEvent.setup();
 
-      render(<UserForm {...defaultProps} onSubmit={onSubmit} />, { wrapper: createWrapper() });
+      // Edit mode with a complete fixture so validation passes (phone + role are
+      // required now) and the form actually enters the submitting state.
+      const initialData: User = {
+        id: '1',
+        username: 'testuser',
+        full_name: 'Test User',
+        phone_number: '081200000000',
+        role: 'satgas',
+        created_at: '2026-01-01',
+        updated_at: '2026-01-01',
+      };
 
-      await user.type(screen.getByLabelText(/nama lengkap/i), 'Test User');
-      await user.type(screen.getByLabelText(/username/i), 'testuser');
+      render(<UserForm {...defaultProps} initialData={initialData} onSubmit={onSubmit} />, {
+        wrapper: createWrapper(),
+      });
+
+      await user.clear(screen.getByLabelText(/nama lengkap/i));
+      await user.type(screen.getByLabelText(/nama lengkap/i), 'Test User 2');
 
       await user.click(screen.getByRole('button', { name: /simpan/i }));
 

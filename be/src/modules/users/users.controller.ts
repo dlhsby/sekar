@@ -38,6 +38,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { UserRole } from './entities/user.entity';
 import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
+import { normalizePhone, isValidIndonesianMobile } from '../../common/utils/phone.util';
 import { User } from './entities/user.entity';
 import { USER_MANAGERS } from './constants/role-groups';
 import { UserAreasService } from '../user-areas/user-areas.service';
@@ -107,6 +108,31 @@ export class UsersController {
   @ApiResponse({ status: HttpStatus.OK, description: '{ username: string }' })
   async suggestUsername(@Query('full_name') fullName: string): Promise<{ username: string }> {
     return { username: await this.userValidationService.suggestUsername(fullName ?? '') };
+  }
+
+  /**
+   * Check whether a phone number is available (it doubles as a login identifier,
+   * so it must be unique). Declared before `@Get(':id')` so the literal wins.
+   *
+   * @route GET /api/users/check-phone?phone=&excludeUserId=
+   */
+  @Get('check-phone')
+  @Roles(...USER_MANAGERS)
+  @ApiOperation({ summary: 'Check whether a phone number is available' })
+  @ApiQuery({ name: 'phone', required: true })
+  @ApiQuery({ name: 'excludeUserId', required: false })
+  @ApiResponse({ status: HttpStatus.OK, description: '{ available: boolean }' })
+  async checkPhone(
+    @Query('phone') phone: string,
+    @Query('excludeUserId') excludeUserId?: string,
+  ): Promise<{ available: boolean }> {
+    const normalized = normalizePhone(phone ?? '');
+    if (!isValidIndonesianMobile(normalized)) {
+      return { available: false };
+    }
+    return {
+      available: await this.userValidationService.isPhoneAvailable(normalized, excludeUserId),
+    };
   }
 
   /**
