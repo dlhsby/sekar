@@ -573,7 +573,7 @@ describe('MonitoringReassignService', () => {
     });
 
     // Roster override carries no shift when shift_definition_id is omitted
-    it("should override the roster with no shift when shift_definition_id is not provided", async () => {
+    it('should override the roster with no shift when shift_definition_id is not provided', async () => {
       const worker = makeUser();
       const targetArea = makeArea({ id: AREA_A2_ID, rayon_id: RAYON_A });
       const dto = makeDto({ target_area_id: AREA_A2_ID });

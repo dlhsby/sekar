@@ -98,7 +98,6 @@ describe('entity dataset builders', () => {
     ]);
     expect(ds.rows[0][4]).toBe('');
   });
-
 });
 
 describe('areasPlacemarks', () => {

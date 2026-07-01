@@ -1560,9 +1560,7 @@ async function seedStaging() {
     console.log('');
     console.log('  📆 Daily Roster (TODAY materialized for immediate demo)');
     console.log('     ──────────────────────────────────────────────────────────────────────────');
-    console.log(
-      "      schedules — TODAY's schedule entries (field workers: planned, others: off)",
-    );
+    console.log("      schedules — TODAY's schedule entries (field workers: planned, others: off)");
     console.log("      schedule_areas — TODAY's area assignments from user_areas");
     console.log('      1 demo leave exception (satgas_pusat_1: sick leave)');
     console.log('');

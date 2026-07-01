@@ -24,11 +24,7 @@ import { FCM_RETRY_QUEUE } from '../queue/queue.constants';
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      NotificationToken,
-      Notification,
-      NotificationPreference,
-    ]),
+    TypeOrmModule.forFeature([NotificationToken, Notification, NotificationPreference]),
     UsersModule,
     // Phase 4-3 (§C3): the shift-reminder cron reads today's roster (ADR-013).
     SchedulesModule,

@@ -193,9 +193,7 @@ export class MonitoringUserService {
       (r) => r.status === ScheduleStatus.PLANNED || r.status === ScheduleStatus.PRESENT,
     );
     const onLeave = roster.filter(
-      (r) =>
-        r.status === ScheduleStatus.LEAVE_SICK ||
-        r.status === ScheduleStatus.LEAVE_ANNUAL,
+      (r) => r.status === ScheduleStatus.LEAVE_SICK || r.status === ScheduleStatus.LEAVE_ANNUAL,
     ).length;
     const offSchedule = roster.filter((r) => r.status === ScheduleStatus.OFF).length;
 
