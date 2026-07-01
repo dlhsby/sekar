@@ -11,9 +11,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import type { RayonCode } from './kmz-areas';
-import { parseCsvRecords } from './csv-util';
+import { parseCsvRecords, uuidv5 } from './csv-util';
 
 const DATA_DIR = path.join(__dirname, 'data');
+
+// Same namespace sheet-sync uses to mint deterministic user ids, so an id
+// derived here from the username is byte-identical to the one the sheet holds.
+const USER_NS = 'b7e3c1a0-5d2f-4e8b-9c3a-1f2e3d4c5b6a';
 
 export interface KmzAreaRow {
   id: string;
@@ -72,7 +76,10 @@ export function loadTamanAktifAreas(): TamanAktifAreaRow[] {
 
 export function loadSeedUsers(): SeedUserRow[] {
   return readCsvRecords(path.join(DATA_DIR, 'users.csv')).map((r) => ({
-    id: r.id,
+    // `id` is optional in the CSV: it is deterministically derivable from the
+    // username, so the shipped (secret-sized) roster can omit it to stay under
+    // GitHub's env-secret size limit. Derive it when absent.
+    id: r.id?.trim() || uuidv5(`USER:${r.username}`, USER_NS),
     full_name: r.full_name,
     username: r.username,
     phone: r.phone,
