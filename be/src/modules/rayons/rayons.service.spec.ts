@@ -116,6 +116,23 @@ describe('RayonsService', () => {
     });
   });
 
+  describe('isNameAvailable', () => {
+    it('returns true when the name is unused', async () => {
+      mockRayonRepository.findOne.mockResolvedValue(null);
+      expect(await service.isNameAvailable('Rayon Baru')).toBe(true);
+    });
+
+    it('returns false when the name is taken by another rayon', async () => {
+      mockRayonRepository.findOne.mockResolvedValue({ id: 'other' });
+      expect(await service.isNameAvailable('Rayon Utara')).toBe(false);
+    });
+
+    it('returns true when the name belongs to the excluded rayon (edit)', async () => {
+      mockRayonRepository.findOne.mockResolvedValue({ id: 'self' });
+      expect(await service.isNameAvailable('Rayon Utara', 'self')).toBe(true);
+    });
+  });
+
   describe('create', () => {
     const createRayonDto: CreateRayonDto = {
       name: 'Rayon Utara',

@@ -5,12 +5,20 @@ import {
   Patch,
   Delete,
   Param,
+  Query,
   Body,
   UseGuards,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { RayonsService } from './rayons.service';
 import { Rayon } from './entities/rayon.entity';
 import { Area } from '../areas/entities/area.entity';
@@ -19,7 +27,6 @@ import { UpdateRayonDto } from './dto/update-rayon.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole } from '../users/entities/user.entity';
 import { USER_MANAGERS } from '../users/constants/role-groups';
 
 /**
@@ -60,6 +67,29 @@ export class RayonsController {
   })
   findAll(): Promise<Rayon[]> {
     return this.rayonsService.findAll();
+  }
+
+  /**
+   * Check whether a rayon name is available (names are unique). Declared before
+   * `@Get(':id')` so the literal path wins.
+   *
+   * @route GET /api/rayons/check-name?name=&excludeId=
+   */
+  @Get('check-name')
+  @Roles(...USER_MANAGERS)
+  @ApiOperation({ summary: 'Check whether a rayon name is available' })
+  @ApiQuery({ name: 'name', required: true })
+  @ApiQuery({ name: 'excludeId', required: false })
+  @ApiResponse({ status: HttpStatus.OK, description: '{ available: boolean }' })
+  async checkName(
+    @Query('name') name: string,
+    @Query('excludeId') excludeId?: string,
+  ): Promise<{ available: boolean }> {
+    const trimmed = (name ?? '').trim();
+    if (trimmed.length < 2) {
+      return { available: false };
+    }
+    return { available: await this.rayonsService.isNameAvailable(trimmed, excludeId) };
   }
 
   /**

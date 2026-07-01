@@ -142,6 +142,19 @@ export interface UpdateRayonDto {
   center_lng?: number | null;
 }
 
+/**
+ * Live rayon-name availability check (names are unique). `excludeId` skips the
+ * rayon's own name when editing.
+ */
+export const checkRayonName = async (name: string, excludeId?: string): Promise<boolean> => {
+  const params = new URLSearchParams({ name });
+  if (excludeId) params.set('excludeId', excludeId);
+  const response = await apiClient.get<{ available: boolean }>(
+    `/rayons/check-name?${params.toString()}`,
+  );
+  return response.data.available;
+};
+
 // ---------------------------------------------------------------------------
 // CRUD Hooks (via Factory)
 // ---------------------------------------------------------------------------

@@ -9,7 +9,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { FormInput, FormSelect, Textarea, Card, CardContent } from '@/components/ui';
+import { FormInput, FormCombobox, Textarea, Card, CardContent } from '@/components/ui';
 import { FormActions } from '@/components/forms/FormActions';
 import { PolygonEditor } from '@/components/maps/PolygonEditor';
 import { GoogleMapPicker } from '@/components/maps/GoogleMapPicker';
@@ -147,55 +147,32 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
           {...register('name')}
         />
 
-        <FormSelect
+        <FormCombobox
           label="Rayon"
-          options={
-            loadingRayons
-              ? []
-              : rayonsData
-                ? [
-                    { value: 'none', label: 'Pilih Rayon' },
-                    ...rayonsData.map((rayon) => ({
-                      value: rayon.id,
-                      label: rayon.name,
-                    })),
-                  ]
-                : []
-          }
-          value={watch('rayon_id') || 'none'}
-          onChange={(value) =>
-            setValue('rayon_id', value === 'none' ? '' : (value as string), {
-              shouldValidate: true,
-            })
-          }
+          options={(rayonsData ?? []).map((rayon) => ({ value: rayon.id, label: rayon.name }))}
+          value={watch('rayon_id') || ''}
+          onChange={(value) => setValue('rayon_id', value, { shouldValidate: true })}
+          placeholder={loadingRayons ? 'Memuat...' : 'Pilih rayon'}
+          searchPlaceholder="Cari rayon…"
           error={errors.rayon_id?.message}
           required
+          clearable={false}
           disabled={loadingRayons}
         />
 
-        <FormSelect
+        <FormCombobox
           label="Tipe Area"
-          options={
-            loadingAreaTypes
-              ? []
-              : areaTypes
-                ? [
-                    { value: 'none', label: 'Pilih Tipe Area' },
-                    ...areaTypes.map((type) => ({
-                      value: type.id,
-                      label: `${type.name} (${type.category})`,
-                    })),
-                  ]
-                : []
-          }
-          value={watch('area_type_id') || 'none'}
-          onChange={(value) =>
-            setValue('area_type_id', value === 'none' ? '' : (value as string), {
-              shouldValidate: true,
-            })
-          }
+          options={(areaTypes ?? []).map((type) => ({
+            value: type.id,
+            label: `${type.name} (${type.category})`,
+          }))}
+          value={watch('area_type_id') || ''}
+          onChange={(value) => setValue('area_type_id', value, { shouldValidate: true })}
+          placeholder={loadingAreaTypes ? 'Memuat...' : 'Pilih tipe area'}
+          searchPlaceholder="Cari tipe area…"
           error={errors.area_type_id?.message}
           required
+          clearable={false}
           disabled={loadingAreaTypes}
         />
 
