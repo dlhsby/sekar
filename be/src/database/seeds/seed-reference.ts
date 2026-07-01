@@ -1,7 +1,7 @@
 import { DataSource } from 'typeorm';
 import '../../config/load-env';
 import { seedPhase3Reference, seedPhase3ServiceCapacity } from './seed-phase3';
-import { DEFAULT_PASSWORD_HASH } from './constants';
+import { superadminPasswordHash } from './constants';
 
 /**
  * Reference Data Seeder — Production Safe
@@ -72,9 +72,6 @@ const SPECIAL_DAY_1_ID = 'aee11144-0a99-458f-90b2-3df456f5bdf0';
 const SPECIAL_DAY_2_ID = 'd2bb4962-0d2e-46fb-b45d-c3038254f5c4';
 const SPECIAL_DAY_3_ID = '72bfe1fd-6285-4853-a4a9-d75e8edc65e6';
 const SPECIAL_DAY_4_ID = '8a8ff3d8-8c45-461e-b66c-8563c04cbbd5';
-
-// Default account password hash (bcrypt of "12345678") — shared across all seeders.
-const PASSWORD_HASH = DEFAULT_PASSWORD_HASH;
 
 async function seedReference() {
   console.log('🔧 Reference Data Seeder (Production-Safe) Started...');
@@ -317,12 +314,12 @@ async function seedReference() {
     // ============================================================
     console.log('\n👤 Seeding default superadmin...');
     await queryRunner.query(
-      `INSERT INTO users (username, password_hash, full_name, role, is_active)
-       VALUES ('admin', $1, 'System Administrator', 'superadmin', TRUE)
+      `INSERT INTO users (username, password_hash, full_name, role, is_active, password_must_change)
+       VALUES ('superadmin', $1, 'Super Admin', 'superadmin', TRUE, FALSE)
        ON CONFLICT (username) DO NOTHING`,
-      [PASSWORD_HASH],
+      [superadminPasswordHash()],
     );
-    console.log('  ✓ Default superadmin (admin / 12345678) — change password after first login!');
+    console.log('  ✓ Default superadmin (superadmin / SEED_SUPERADMIN_PASSWORD) — no forced reset');
 
     console.log('\n✅ Reference Data Seeding Completed!');
     console.log(

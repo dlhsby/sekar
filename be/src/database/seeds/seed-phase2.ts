@@ -56,7 +56,7 @@ import {
  *
  * | Role            | Username              | Phone          | Rayon        | Area / Notes                        |
  * |-----------------|---------------------- |----------------|--------------|-------------------------------------|
- * | superadmin      | admin                 | 081200000000   | —            | Full system access (Phase 1 admin)  |
+ * | superadmin      | superadmin            | 081200000000   | —            | Full system access (Phase 1 admin)  |
  * | admin_system    | admin_system_1         | 081234567898   | —            | System administration               |
  * | top_management  | top_management_1       | 081234567890   | —            | City-wide read-only view            |
  * | admin_data      | admin_data_pusat_1           | 081234567897   | Rayon Pusat  | Data entry & reporting              |
@@ -1802,7 +1802,7 @@ async function seedPhase2() {
     // E1: Add phone_number as safety-net UPDATE (already set in INSERT above for new users)
     console.log('  📱 Ensuring phone_number set for all users...');
     await queryRunner.query(`
-      UPDATE users SET phone_number = '081200000000' WHERE username = 'admin' AND phone_number IS NULL;
+      UPDATE users SET phone_number = '081200000000' WHERE username = 'superadmin' AND phone_number IS NULL;
       UPDATE users SET phone_number = '081234567890' WHERE username = 'top_management_1' AND phone_number IS NULL;
       UPDATE users SET phone_number = '081234567891' WHERE username = 'kepala_rayon_selatan_1' AND phone_number IS NULL;
       UPDATE users SET phone_number = '081234567892' WHERE username = 'kepala_rayon_utara_1' AND phone_number IS NULL;
@@ -1852,7 +1852,7 @@ async function seedPhase2() {
     // korlap_pusat_1 → Darmo Pulau 3 (primary permanent area, Rayon Pusat)
     await queryRunner.query(`
       INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
-      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
       FROM users u, areas a
       WHERE u.username = 'korlap_pusat_1' AND a.id = '${DARMO_P3_AREA_ID}'
       ON CONFLICT DO NOTHING;
@@ -1860,7 +1860,7 @@ async function seedPhase2() {
     // korlap_pusat_1 also → Jalan Raya Darmo (same Rayon Pusat — korlap must stay within one rayon)
     await queryRunner.query(`
       INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
-      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
       FROM users u, areas a
       WHERE u.username = 'korlap_pusat_1' AND a.id = '${DARMO_P1_AREA_ID}'
       ON CONFLICT DO NOTHING;
@@ -1868,7 +1868,7 @@ async function seedPhase2() {
     // korlap_pusat_2 → Jalan Raya Darmo (primary permanent area)
     await queryRunner.query(`
       INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
-      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
       FROM users u, areas a
       WHERE u.username = 'korlap_pusat_2' AND a.id = '${DARMO_P1_AREA_ID}'
       ON CONFLICT DO NOTHING;
@@ -1878,14 +1878,14 @@ async function seedPhase2() {
     // Tests: satgas with default area_id can also be assigned to extra areas via user_areas.
     await queryRunner.query(`
       INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
-      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
       FROM users u, areas a
       WHERE u.username = 'satgas_pusat_1' AND a.id = '${DARMO_P1_AREA_ID}'
       ON CONFLICT DO NOTHING;
     `);
     await queryRunner.query(`
       INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
-      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
       FROM users u, areas a
       WHERE u.username = 'satgas_pusat_1' AND a.id = '${DARMO_P2_AREA_ID}'
       ON CONFLICT DO NOTHING;
@@ -1894,7 +1894,7 @@ async function seedPhase2() {
     // satgas_pusat_3 → Darmo Pulau 4 (default area, no extra assignments)
     await queryRunner.query(`
       INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
-      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
       FROM users u, areas a
       WHERE u.username = 'satgas_pusat_3' AND a.id = '${DARMO_P4_AREA_ID}'
       ON CONFLICT DO NOTHING;
@@ -1903,7 +1903,7 @@ async function seedPhase2() {
     // satgas_taman_bungkul_1 → Taman Bungkul (Rayon Taman Aktif park worker)
     await queryRunner.query(`
       INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
-      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
       FROM users u, areas a
       WHERE u.username = 'satgas_taman_bungkul_1' AND a.id = '${BUNGKUL_AREA_ID}'
       ON CONFLICT DO NOTHING;
@@ -1911,7 +1911,7 @@ async function seedPhase2() {
     // korlap_taman_aktif_1 → Taman Bungkul + Taman Flora (multi-area within Rayon Taman Aktif)
     await queryRunner.query(`
       INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
-      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
       FROM users u, areas a
       WHERE u.username = 'korlap_taman_aktif_1' AND a.id IN ('${BUNGKUL_AREA_ID}', '${TAMAN_FLORA_AREA_ID}')
       ON CONFLICT DO NOTHING;
@@ -1919,7 +1919,7 @@ async function seedPhase2() {
     // linmas_taman_aktif_1 → Taman Bungkul
     await queryRunner.query(`
       INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
-      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
       FROM users u, areas a
       WHERE u.username = 'linmas_taman_aktif_1' AND a.id = '${BUNGKUL_AREA_ID}'
       ON CONFLICT DO NOTHING;
@@ -1927,7 +1927,7 @@ async function seedPhase2() {
     // satgas_taman_flora_1 → Taman Flora
     await queryRunner.query(`
       INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
-      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
       FROM users u, areas a
       WHERE u.username = 'satgas_taman_flora_1' AND a.id = '${TAMAN_FLORA_AREA_ID}'
       ON CONFLICT DO NOTHING;
@@ -1937,14 +1937,14 @@ async function seedPhase2() {
     // This tests: satgas with two permanent areas in the same rayon
     await queryRunner.query(`
       INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
-      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
       FROM users u, areas a
       WHERE u.username = 'satgas_pusat_4' AND a.id = '${DARMO_P5_AREA_ID}'
       ON CONFLICT DO NOTHING;
     `);
     await queryRunner.query(`
       INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
-      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
       FROM users u, areas a
       WHERE u.username = 'satgas_pusat_4' AND a.id = '${DARMO_P1_AREA_ID}'
       ON CONFLICT DO NOTHING;
@@ -1954,7 +1954,7 @@ async function seedPhase2() {
     // The old "Taman Timur 1" dummy area is gone; user was moved in STEP 8.1.
     await queryRunner.query(`
       INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
-      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
       FROM users u, areas a
       WHERE u.username = 'satgas_timur_1_2' AND a.id = '${TAMAN_BUK_TONG_ID}'
       ON CONFLICT DO NOTHING;
@@ -1975,7 +1975,7 @@ async function seedPhase2() {
     // which exercises the "korlap with no assignments" supervisor view.
     await queryRunner.query(`
       INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
-      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'admin' LIMIT 1)
+      SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
       FROM users u, areas a
       WHERE u.username = 'korlap_timur_2_1' AND a.id = '${TAMAN_BUK_TONG_ID}'
       ON CONFLICT DO NOTHING;
@@ -2005,7 +2005,7 @@ async function seedPhase2() {
     console.log('  👥 Users  (40 total — all passwords: 12345678)');
     console.log('     ──────────────────────────────────────────────────────────────────────────');
     console.log(
-      '       1 admin (Phase 1) ·  3 system-wide (superadmin / admin_system / top_management)',
+      '       1 superadmin (Phase 1) ·  3 system-wide (superadmin / admin_system / top_management)',
     );
     console.log('       8 kepala_rayon  (1 per rayon)   ·  7 admin_data  (1 per rayon)');
     console.log('      ~7 korlap        (primary area)  · ~14 satgas/linmas (across all rayons)');

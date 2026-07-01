@@ -21,7 +21,7 @@ That's it! Services run at:
 - **Adminer:** http://localhost:8080 (postgres/postgres)
 
 **Test users:** All use password `12345678`
-- `admin/12345678`
+- `superadmin/12345678` (local)
 - `satgas1/12345678`
 - `081200000006/12345678` (phone login)
 
@@ -301,7 +301,7 @@ cd fe/web
 npm run dev
 
 # http://localhost:3001
-# Log in with admin/12345678
+# Log in with superadmin/12345678 (local; SEED_SUPERADMIN_PASSWORD elsewhere)
 ```
 
 **Custom Port:**
@@ -998,7 +998,7 @@ Before starting development:
 - [ ] (Optional) Backend started: `cd be && npm run start:dev` (http://localhost:3000)
 - [ ] (Optional) Web started: `cd fe/web && npm run dev` (http://localhost:3001)
 - [ ] (Optional) Mobile Metro: `cd fe/mobile && npm start`
-- [ ] Test with `admin/12345678` or `satgas1/12345678`
+- [ ] Test with `superadmin/12345678` (local) or `satgas1/12345678`
 
 For physical mobile device testing on WSL2, follow [WSL2 Network Setup](#wsl2-network-setup-physical-mobile-devices).
 

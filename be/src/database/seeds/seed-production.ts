@@ -22,7 +22,7 @@ import { RAYON_BOUNDARIES, computeCentroidFromRings, type RayonCode } from './km
  *   - plant species catalog   → npm run db:seed:phase3 reference portion
  *   - workers/schedules       → CSV import (4-5) by admin_system
  *
- * Required env: PROD_SUPERADMIN_PASSWORD, PROD_ADMIN_SYSTEM_PASSWORD
+ * Required env: SEED_SUPERADMIN_PASSWORD, PROD_ADMIN_SYSTEM_PASSWORD
  * (min 12 chars — the script fails loudly when missing/weak).
  *
  * Run: npm run db:seed:production
@@ -126,7 +126,7 @@ function requireStrongEnvPassword(name: string): string {
 }
 
 async function seedProduction(): Promise<void> {
-  const superadminPassword = requireStrongEnvPassword('PROD_SUPERADMIN_PASSWORD');
+  const superadminPassword = requireStrongEnvPassword('SEED_SUPERADMIN_PASSWORD');
   const adminSystemPassword = requireStrongEnvPassword('PROD_ADMIN_SYSTEM_PASSWORD');
 
   const dataSource = new DataSource({
@@ -219,7 +219,7 @@ async function seedProduction(): Promise<void> {
         password: superadminPassword,
       },
       {
-        username: 'admin_system',
+        username: 'admin_system_1',
         fullName: 'Administrator Sistem',
         role: 'admin_system',
         password: adminSystemPassword,

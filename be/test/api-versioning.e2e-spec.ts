@@ -47,7 +47,7 @@ describe('API Versioning (e2e)', () => {
     // Get authentication token
     const loginResponse = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ identifier: 'admin', password: 'Password123!' });
+      .send({ identifier: 'superadmin', password: '12345678' });
 
     authToken = loginResponse.body.access_token;
   });
@@ -61,7 +61,7 @@ describe('API Versioning (e2e)', () => {
       it('POST /api/v1/auth/login should work', () => {
         return request(app.getHttpServer())
           .post('/api/v1/auth/login')
-          .send({ identifier: 'admin', password: 'Password123!' })
+          .send({ identifier: 'superadmin', password: '12345678' })
           .expect(200) // Login returns 200, not 201
           .expect((res) => {
             expect(res.body).toHaveProperty('access_token');
@@ -180,7 +180,7 @@ describe('API Versioning (e2e)', () => {
     it('POST /api/auth/login should return 404 or redirect', () => {
       return request(app.getHttpServer())
         .post('/api/auth/login')
-        .send({ identifier: 'admin', password: 'Password123!' })
+        .send({ identifier: 'superadmin', password: '12345678' })
         .expect((res) => {
           // Should either be 404 or 301/302 redirect
           expect([301, 302, 404]).toContain(res.status);
@@ -375,7 +375,7 @@ describe('API Versioning (e2e)', () => {
     it('should maintain same response structure across versions', async () => {
       const v1Response = await request(app.getHttpServer())
         .post('/api/v1/auth/login')
-        .send({ identifier: 'admin', password: 'Password123!' })
+        .send({ identifier: 'superadmin', password: '12345678' })
         .expect(200); // Login returns 200, not 201
 
       // Verify response structure
@@ -415,7 +415,7 @@ describe('API Versioning (e2e)', () => {
     it('should include version in validation error responses', () => {
       return request(app.getHttpServer())
         .post('/api/v1/auth/login')
-        .send({ identifier: 'admin' }) // Missing password
+        .send({ identifier: 'superadmin' }) // Missing password
         .expect(400)
         .expect((res) => {
           expect(res.headers['x-api-version']).toBe('1');
