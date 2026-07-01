@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm';
 import '../../config/load-env';
-import { DEFAULT_PASSWORD_HASH } from './constants';
+import { DEFAULT_PASSWORD_HASH, superadminPasswordHash } from './constants';
 
 /**
  * Phase 1 Seed Script
@@ -118,12 +118,15 @@ async function seedPhase1() {
     // ============================================================
     console.log('\nSeeding admin user...');
 
+    // Canonical superadmin — username `superadmin`, password from
+    // SEED_SUPERADMIN_PASSWORD (12345678 locally), password_must_change=FALSE
+    // (no forced reset) so it is always a reliable break-glass login.
     await queryRunner.query(`
-      INSERT INTO users (id, username, password_hash, full_name, phone_number, role, is_active) VALUES
-        ('${ADMIN_USER_ID}', 'admin', '${PASSWORD_HASH}', 'System Administrator', '081200000000', 'superadmin', TRUE)
+      INSERT INTO users (id, username, password_hash, full_name, phone_number, role, is_active, password_must_change) VALUES
+        ('${ADMIN_USER_ID}', 'superadmin', '${superadminPasswordHash()}', 'Super Admin', '081200000000', 'superadmin', TRUE, FALSE)
       ON CONFLICT (username) DO NOTHING
     `);
-    console.log('  Created 1 user: admin (superadmin)');
+    console.log('  Created 1 user: superadmin (superadmin) — no forced reset');
 
     // Dummy account to exercise the forced password-change flow (AS-5). Temp
     // password is "12345678"; password_must_change=TRUE forces the change
@@ -160,7 +163,9 @@ async function seedPhase1() {
 
     console.log('\nPhase 1 Seeding Completed Successfully!');
     console.log('\nSummary:');
-    console.log('  - 1 user: admin (superadmin) — password: 12345678');
+    console.log(
+      '  - 1 user: superadmin (superadmin) — password: SEED_SUPERADMIN_PASSWORD (12345678 locally)',
+    );
     console.log('  - 4 area types (park, pedestrian, mini_garden, street)');
     console.log('  - Areas, shifts, location logs, and activities are seeded in Phase 2');
   } catch (error) {

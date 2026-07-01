@@ -1,7 +1,7 @@
 import { DataSource } from 'typeorm';
 import '../../config/load-env';
 import { seedPhase3Reference, seedPhase3ServiceCapacity } from './seed-phase3';
-import { DEFAULT_PASSWORD_HASH } from './constants';
+import { DEFAULT_PASSWORD_HASH, superadminPasswordHash } from './constants';
 import { loadKmzAreas, loadTamanAktifAreas, loadSeedUsers } from './load-seed-data';
 import {
   RAYON_BOUNDARIES,
@@ -730,13 +730,25 @@ async function seedStaging() {
       rayonId: string | null = null,
       areaId: string | null = null,
       kecamatanName: string | null = null,
+      opts: { passwordHash?: string; mustChange?: boolean } = {},
     ) => {
       const result = await queryRunner.query(
         `INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, area_id, kecamatan_name, is_active, password_must_change)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE, TRUE)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE, $10)
          ON CONFLICT (username) DO NOTHING
          RETURNING id`,
-        [id, username, PASSWORD_HASH, fullName, phone, role, rayonId, areaId, kecamatanName],
+        [
+          id,
+          username,
+          opts.passwordHash ?? PASSWORD_HASH,
+          fullName,
+          phone,
+          role,
+          rayonId,
+          areaId,
+          kecamatanName,
+          opts.mustChange ?? true,
+        ],
       );
       const inserted = Array.isArray(result) && result.length > 0;
       if (inserted) usersInserted += 1;
@@ -749,7 +761,18 @@ async function seedStaging() {
     };
 
     // ── System-wide (no area/rayon scope) ──────────────────────
-    await insertUser(USER_SUPERADMIN_ID, 'superadmin', 'Super Admin', 'superadmin', '081200000010');
+    // Canonical superadmin — env-sourced password, no forced reset.
+    await insertUser(
+      USER_SUPERADMIN_ID,
+      'superadmin',
+      'Super Admin',
+      'superadmin',
+      '081200000010',
+      null,
+      null,
+      null,
+      { passwordHash: superadminPasswordHash(), mustChange: false },
+    );
     await insertUser(
       USER_ADMIN_SYS_ID,
       'admin_system_1',
