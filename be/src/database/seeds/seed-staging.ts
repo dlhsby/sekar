@@ -58,7 +58,7 @@ import {
  * Run: npm run db:seed:staging
  *
  * =============================================================================
- * TEST USERS (all passwords: Password123!)
+ * TEST USERS (all passwords: 12345678)
  * Login via username OR phone number as "identifier"
  * =============================================================================
  *
@@ -84,7 +84,7 @@ import {
  * | admin_data      | admin_data_taman_aktif_1 | 081200000064  | Rayon Taman Aktif                      |
  * | satgas          | satgas_taman_flora_1    | 081200000065   | Taman Flora (Rayon Taman Aktif)        |
  *
- * REAL USERS (all passwords: Password123!)
+ * REAL USERS (all passwords: 12345678)
  *
  * | Role            | Username                | Phone          | Area/Rayon                             |
  * |-----------------|-------------------------|----------------|----------------------------------------|
@@ -183,7 +183,7 @@ const USER_JIHAN_ID = '56d4e5f6-a7b8-4090-1234-567879809102'; // jihan_nabila_sa
 const USER_DENI_ID = '56e5f6a7-b8c9-4101-2345-678980910213'; // deni_purwanto
 const USER_AGUS_ID = '56f6a7b8-c9d0-4212-3456-789091021324'; // agus_ramadhan
 
-// Default account password hash (bcrypt of "Password123!") — shared across all seeders.
+// Default account password hash (bcrypt of "12345678") — shared across all seeders.
 const PASSWORD_HASH = DEFAULT_PASSWORD_HASH;
 
 // Rayon ID → code lookup so the boundary-update loop can hit the right row.
@@ -1126,7 +1126,7 @@ async function seedStaging() {
 
     // ── Real roster from the client sheet (data/users.csv) ─────────
     // Re-export the sheet → regenerate users.csv → reseed. Login is by phone
-    // (where present) or username slug; password Password123! + forced reset.
+    // (where present) or username slug; password 12345678 + forced reset.
     console.log('\n👤 Loading real roster from data/users.csv ...');
     const roster = loadSeedUsers();
     if (roster.length === 0) {
@@ -1573,7 +1573,7 @@ async function seedStaging() {
     console.log(
       '══════════════════════════════════════════════════════════════════════════════════════',
     );
-    console.log('🧪  TEST USERS  (all passwords: Password123! · login with username OR phone)');
+    console.log('🧪  TEST USERS  (all passwords: 12345678 · login with username OR phone)');
     console.log(
       '══════════════════════════════════════════════════════════════════════════════════════',
     );
@@ -1630,7 +1630,7 @@ async function seedStaging() {
     console.log(
       '══════════════════════════════════════════════════════════════════════════════════════',
     );
-    console.log('👤  REAL USERS  (production-bound, all passwords: Password123!)');
+    console.log('👤  REAL USERS  (production-bound, all passwords: 12345678)');
     console.log(
       '══════════════════════════════════════════════════════════════════════════════════════',
     );

@@ -153,7 +153,7 @@ Seeds only idempotent reference data:
 
 > Phase 3 reference inserts run only if the `plant_species` table exists, so it's safe to call `db:seed:prod` against a database where Phase 3 migrations haven't been applied yet — those steps log a warning and skip.
 
-## Test Users (all `Password123!`)
+## Test Users (all `12345678`)
 
 Login with **username** or **phone number** as identifier.
 

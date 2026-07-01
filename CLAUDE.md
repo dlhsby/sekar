@@ -43,7 +43,7 @@ npm run dev                # http://localhost:${WEB_PORT:-3001}
 Each workspace (`/`, `be/`, `fe/mobile/`, `fe/web/`) is **fully independent** — `npm install` in one never touches another. Token pipeline (from root): `npm run tokens:build` / `tokens:verify` / `test:tokens` — never hand-edit generated token files.
 
 **Tests:** `npm test` (each workspace), `npm run test:cov` (backend, >80% required), `npm run test:e2e` (web).
-**Test users:** `Password123!` for all — e.g. `admin/Password123!`, `satgas1/Password123!`. Phone login also works (e.g. `081200000006/Password123!`).
+**Test users:** `12345678` for all — e.g. `admin/12345678`, `satgas1/12345678`. Phone login also works (e.g. `081200000006/12345678`).
 
 ## Role Values Convention
 
