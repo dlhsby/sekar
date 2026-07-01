@@ -14,7 +14,20 @@ NO_MOBILE=false
 for arg in "$@"; do
   case "$arg" in
     --no-mobile) NO_MOBILE=true ;;
-    *) print_error "Unknown flag: $arg (supported: --no-mobile)"; exit 1 ;;
+    -h|--help)
+      cat <<'USAGE'
+start.sh — start the dev stack (run this day-to-day).
+Auto-starts the Docker infra if it's down, then runs backend + web in the
+background (logs/) and Metro in the foreground. Ctrl+C stops the apps; the
+Docker services stay up (use ./scripts/stop.sh --infra to stop those too).
+
+  ./scripts/start.sh              infra + backend + web + Metro
+  ./scripts/start.sh --no-mobile  skip Metro (backend + web keep running)
+
+First-time setup is ./scripts/setup.sh. Docker-only control is ./scripts/infra.sh.
+USAGE
+      exit 0 ;;
+    *) print_error "Unknown flag: $arg (supported: --no-mobile, --help)"; exit 1 ;;
   esac
 done
 
