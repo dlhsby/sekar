@@ -43,6 +43,7 @@ export { NotificationBell, NotificationPanel, type NotificationPanelProps } from
 export { FormInput, type FormInputProps } from './form-input';
 export { FormSelect, type FormSelectOption, type FormSelectProps } from './form-select';
 export { FormCombobox, type FormComboboxProps } from './form-combobox';
+export { FormMultiCombobox, type FormMultiComboboxProps } from './form-multi-combobox';
 export { CoordinateLink } from './coordinate-link';
 
 // Date / Time Pickers

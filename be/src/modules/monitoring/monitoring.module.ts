@@ -30,11 +30,10 @@ import { StaffingDebouncerService } from './services/staffing-debouncer.service'
 import { StaleStatusSweeperService } from './services/stale-status-sweeper.service';
 import { OfflineSweeperService } from './services/offline-sweeper.service';
 import { PlantOverdueDigestCron } from './cron/plant-overdue-digest.cron';
-import { Schedule } from '../schedules/entities/schedule.entity';
 import { AreaPlant } from '../plants/entities/area-plant.entity';
 import { EventsModule } from '../../gateways/events.module';
 import { UserAreasModule } from '../user-areas/user-areas.module';
-import { DailySchedulesModule } from '../daily-schedules/daily-schedules.module';
+import { SchedulesModule } from '../schedules/schedules.module';
 import { PlantsModule } from '../plants/plants.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AuditModule } from '../audit/audit.module';
@@ -56,12 +55,11 @@ import { SharedModule } from '../../shared/shared.module';
       SpecialDayOverride,
       MonitoringConfig,
       UserTrackingStatus,
-      Schedule,
       AreaPlant,
     ]),
     forwardRef(() => EventsModule),
     UserAreasModule,
-    DailySchedulesModule,
+    SchedulesModule,
     PlantsModule,
     NotificationsModule, // Phase 4-3 (M2): missing-worker alert FCM trigger
     AuditModule, // Phase 4-4: reassignment audit trail

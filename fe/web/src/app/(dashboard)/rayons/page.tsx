@@ -53,6 +53,7 @@ export default function RayonsPage() {
   const view = useViewModal<Rayon>();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletingRayon, setDeletingRayon] = useState<Rayon | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const columns = useMemo<ColumnDef<Rayon>[]>(
     () => [
@@ -186,6 +187,7 @@ export default function RayonsPage() {
   const handleDelete = async () => {
     if (!deletingRayon) return;
 
+    setDeleteError(null);
     try {
       await deleteRayon.mutateAsync(deletingRayon.id);
       toast.success(`Rayon "${deletingRayon.name}" berhasil dihapus`);
@@ -194,11 +196,12 @@ export default function RayonsPage() {
       refetch();
     } catch (err: unknown) {
       const errorMsg = getErrorMessage(err);
-      if (errorMsg.includes('masih memiliki') || errorMsg.includes('area')) {
-        toast.error(`Rayon "${deletingRayon.name}" masih memiliki area. Hapus area terlebih dahulu.`);
-      } else {
-        toast.error(errorMsg);
-      }
+      // Surface inline (dialog stays open), matching the Area/User delete flows.
+      setDeleteError(
+        errorMsg.includes('masih memiliki') || errorMsg.includes('area')
+          ? `Rayon "${deletingRayon.name}" masih memiliki area. Hapus area terlebih dahulu.`
+          : errorMsg,
+      );
     }
   };
 
@@ -290,7 +293,10 @@ export default function RayonsPage() {
 
       <ConfirmDialog
         open={deleteOpen}
-        onOpenChange={setDeleteOpen}
+        onOpenChange={(open) => {
+          if (!open) setDeleteError(null);
+          setDeleteOpen(open);
+        }}
         title="Hapus Rayon"
         description={
           deletingRayon && (
@@ -305,7 +311,13 @@ export default function RayonsPage() {
         variant="destructive"
         loading={deleteRayon.isPending}
         onConfirm={handleDelete}
-      />
+      >
+        {deleteError && (
+          <div className="bg-nb-danger/10 border-2 border-nb-danger px-4 py-3">
+            <p className="text-sm text-nb-danger font-medium">{deleteError}</p>
+          </div>
+        )}
+      </ConfirmDialog>
     </div>
   );
 }

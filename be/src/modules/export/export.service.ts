@@ -17,7 +17,6 @@ import { Rayon } from '../rayons/entities/rayon.entity';
 import { Task } from '../tasks/entities/task.entity';
 import { Activity } from '../activities/entities/activity.entity';
 import { Overtime } from '../overtime/entities/overtime.entity';
-import { Schedule } from '../schedules/entities/schedule.entity';
 import { ExportJob, ExportEntityType, ExportFormat } from './entities/export-job.entity';
 import { ExportRequestDto } from './dto/export-request.dto';
 import type { Dataset, ExportFile } from './exporters/dataset';
@@ -31,7 +30,6 @@ import {
   tasksDataset,
   activitiesDataset,
   overtimeDataset,
-  schedulesDataset,
   areasPlacemarks,
 } from './exporters/entity-datasets';
 
@@ -74,7 +72,6 @@ export class ExportService {
     @InjectRepository(Task) private readonly taskRepo: Repository<Task>,
     @InjectRepository(Activity) private readonly activityRepo: Repository<Activity>,
     @InjectRepository(Overtime) private readonly overtimeRepo: Repository<Overtime>,
-    @InjectRepository(Schedule) private readonly scheduleRepo: Repository<Schedule>,
     private readonly s3Service: S3Service,
   ) {
     const cast = (fn: (rows: never[]) => Dataset) => fn as (rows: ObjectLiteral[]) => Dataset;
@@ -126,14 +123,6 @@ export class ExportService {
         areaColumn: 'area_id',
         rayonColumn: null,
         toDataset: cast(overtimeDataset),
-      },
-      schedules: {
-        repo: () => this.scheduleRepo as Repository<ObjectLiteral>,
-        alias: 'schedules',
-        dateColumn: 'effective_date',
-        areaColumn: 'area_id',
-        rayonColumn: null,
-        toDataset: cast(schedulesDataset),
       },
     };
   }

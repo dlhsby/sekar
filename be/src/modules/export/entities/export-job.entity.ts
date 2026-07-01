@@ -10,14 +10,7 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
-export type ExportEntityType =
-  | 'users'
-  | 'areas'
-  | 'rayons'
-  | 'tasks'
-  | 'activities'
-  | 'overtime'
-  | 'schedules';
+export type ExportEntityType = 'users' | 'areas' | 'rayons' | 'tasks' | 'activities' | 'overtime';
 
 export type ExportFormat = 'csv' | 'xlsx' | 'kmz';
 

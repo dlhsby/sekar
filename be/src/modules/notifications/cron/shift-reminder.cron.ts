@@ -1,9 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Schedule } from '../../schedules/entities/schedule.entity';
-import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
+import { SchedulesService } from '../../schedules/schedules.service';
+import { ScheduleStatus } from '../../schedules/entities/schedule.entity';
 import { NotificationsService } from '../notifications.service';
 import { NotificationType } from '../entities/notification.entity';
 import { RedisService } from '../../../common/services/redis.service';
@@ -11,10 +9,10 @@ import { RedisService } from '../../../common/services/redis.service';
 /**
  * Shift reminder cron (Phase 4-3, §C3).
  *
- * Every 15 minutes (Asia/Jakarta), finds active schedules whose shift starts
- * within the next 15 minutes and pushes a one-time `SHIFT_REMINDER` to each
- * scheduled worker. The dedup key is keyed on the Jakarta calendar date the
- * reminder fires (which IS the shift's day) so an ongoing daily schedule is
+ * Every 15 minutes (Asia/Jakarta), reads today's roster (ADR-013) for workers
+ * whose shift starts within the next 15 minutes and pushes a one-time
+ * `SHIFT_REMINDER` to each. The dedup key is keyed on the Jakarta calendar date
+ * the reminder fires (which IS the shift's day) so an ongoing daily schedule is
  * reminded once per day — a 24h Redis TTL guards against the cron's overlap.
  *
  * Time math is done in JS at the fixed Jakarta offset (+7, no DST) to avoid
@@ -29,8 +27,7 @@ export class ShiftReminderCron {
   private static readonly DEDUP_TTL_SECONDS = 86_400;
 
   constructor(
-    @InjectRepository(Schedule)
-    private readonly scheduleRepository: Repository<Schedule>,
+    private readonly dailySchedulesService: SchedulesService,
     private readonly notificationsService: NotificationsService,
     private readonly redisService: RedisService,
   ) {}
@@ -52,24 +49,17 @@ export class ShiftReminderCron {
     const dateStr = jakarta.toISOString().slice(0, 10); // YYYY-MM-DD (Jakarta day)
     const minutesNow = jakarta.getUTCHours() * 60 + jakarta.getUTCMinutes();
 
-    const rows = await this.scheduleRepository
-      .createQueryBuilder('s')
-      .innerJoin(ShiftDefinition, 'sd', 'sd.id = s.shift_definition_id')
-      .select('s.user_id', 'user_id')
-      .addSelect('s.area_id', 'area_id')
-      .addSelect('s.shift_definition_id', 'shift_definition_id')
-      .addSelect('sd.name', 'shift_name')
-      .addSelect('sd.start_time', 'start_time')
-      .where('s.deleted_at IS NULL')
-      .andWhere('s.effective_date <= :today', { today: dateStr })
-      .andWhere('(s.end_date IS NULL OR s.end_date >= :today)', { today: dateStr })
-      .getRawMany<{
-        user_id: string;
-        area_id: string;
-        shift_definition_id: string;
-        shift_name: string;
-        start_time: string;
-      }>();
+    // Today's roster — planned rows with a shift carry the start_time we remind on.
+    const roster = await this.dailySchedulesService.findByDate(dateStr);
+    const rows = roster
+      .filter((r) => r.status === ScheduleStatus.PLANNED && !!r.shift_definition)
+      .map((r) => ({
+        user_id: r.user_id,
+        area_id: r.schedule_areas?.[0]?.area_id ?? null,
+        shift_definition_id: r.shift_definition_id as string,
+        shift_name: r.shift_definition!.name,
+        start_time: r.shift_definition!.start_time,
+      }));
 
     let sent = 0;
 

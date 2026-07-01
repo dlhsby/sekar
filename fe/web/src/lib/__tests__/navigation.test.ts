@@ -36,14 +36,13 @@ describe('Navigation Utilities', () => {
       // pruning-requests is not top-level (nested under 'work').
       expect(navIds).not.toContain('pruning-requests');
 
-      // 'Pekerjaan' group: tasks / activities / overtime / daily-schedules
-      // (Jadwal Harian) / schedules (Jadwal Lanjutan) / pruning.
+      // 'Pekerjaan' group: tasks / activities / overtime / schedules
+      // (Jadwal — the daily roster, now the single schedule concept) / pruning.
       const workItem = navigationItems.find((item) => item.id === 'work');
       expect(workItem?.children?.map((c) => c.id)).toEqual([
         'tasks',
         'activities',
         'overtime',
-        'daily-schedules',
         'schedules',
         'pruning-requests',
       ]);
@@ -113,7 +112,6 @@ describe('Navigation Utilities', () => {
         'tasks',
         'activities',
         'overtime',
-        'daily-schedules',
         'schedules',
         'pruning-requests',
       ]);
@@ -126,11 +124,12 @@ describe('Navigation Utilities', () => {
 
       const workItem = filtered.find((item) => item.id === 'work');
       expect(workItem).toBeDefined();
-      // top_management sees tasks/activities/overtime + pruning, but NOT schedules.
+      // top_management sees tasks/activities/overtime + schedule (view) + pruning.
       expect(workItem?.children?.map((c) => c.id)).toEqual([
         'tasks',
         'activities',
         'overtime',
+        'schedules',
         'pruning-requests',
       ]);
 
@@ -149,14 +148,14 @@ describe('Navigation Utilities', () => {
       expect(filtered.find((item) => item.id === 'dashboard')).toBeDefined();
       expect(filtered.find((item) => item.id === 'monitoring')).toBeDefined();
 
-      // kepala_rayon sees tasks/activities/overtime + Jadwal Harian (daily-schedules)
+      // kepala_rayon sees tasks/activities/overtime + Jadwal Harian (schedules)
       // + pruning, but NOT the advanced 'schedules' (Jadwal Lanjutan).
       const workItem = filtered.find((item) => item.id === 'work');
       expect(workItem?.children?.map((c) => c.id)).toEqual([
         'tasks',
         'activities',
         'overtime',
-        'daily-schedules',
+        'schedules',
         'pruning-requests',
       ]);
 
@@ -172,7 +171,8 @@ describe('Navigation Utilities', () => {
       expect(filtered.find((item) => item.id === 'dashboard')).toBeDefined();
       expect(filtered.find((item) => item.id === 'monitoring')).toBeDefined();
 
-      // korlap sees the full work group, including schedules.
+      // korlap sees tasks/activities/overtime + the schedule (view access). No
+      // pruning-requests (that's admin_data/kepala_rayon/management only).
       const workItem = filtered.find((item) => item.id === 'work');
       expect(workItem?.children?.map((c) => c.id)).toEqual([
         'tasks',
@@ -252,7 +252,7 @@ describe('Navigation Utilities', () => {
       expect(getBreadcrumbTrail('/tasks/abc-123')).toEqual(['Pekerjaan', 'Tugas', 'Detail']);
       expect(getBreadcrumbTrail('/schedules/abc/edit')).toEqual([
         'Pekerjaan',
-        'Jadwal (Lanjutan)',
+        'Jadwal',
         'Ubah',
       ]);
       expect(getBreadcrumbTrail('/users/u1')).toEqual(['Pengguna & Hak Akses', 'Pengguna', 'Detail']);

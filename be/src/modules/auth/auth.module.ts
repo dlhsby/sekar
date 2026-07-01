@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -6,14 +6,15 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { User } from '../users/entities/user.entity';
-import { Schedule } from '../schedules/entities/schedule.entity';
 import { Area } from '../areas/entities/area.entity';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { CommonModule } from '../../common/common.module';
+import { UserAreasModule } from '../user-areas/user-areas.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Schedule, Area]),
+    TypeOrmModule.forFeature([User, Area]),
+    UserAreasModule, // ADR-013: effective-area lookup for login (replaces schedules)
     PassportModule.register({ defaultStrategy: 'jwt' }),
     CommonModule, // Phase 4-7 (M2): exposes RedisService for refresh-token blacklist
     JwtModule.registerAsync({

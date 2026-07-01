@@ -8,7 +8,6 @@ import { Rayon } from '../rayons/entities/rayon.entity';
 import { Task } from '../tasks/entities/task.entity';
 import { Activity } from '../activities/entities/activity.entity';
 import { Overtime } from '../overtime/entities/overtime.entity';
-import { Schedule } from '../schedules/entities/schedule.entity';
 import { ExportJob } from './entities/export-job.entity';
 import { ExportController } from './export.controller';
 import { ExportService } from './export.service';
@@ -19,7 +18,7 @@ import { ExportService } from './export.service';
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ExportJob, User, Area, Rayon, Task, Activity, Overtime, Schedule]),
+    TypeOrmModule.forFeature([ExportJob, User, Area, Rayon, Task, Activity, Overtime]),
     SharedModule,
   ],
   controllers: [ExportController],

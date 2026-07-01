@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
 import { ShiftReminderCron } from './shift-reminder.cron';
-import { Schedule } from '../../schedules/entities/schedule.entity';
+import { SchedulesService } from '../../schedules/schedules.service';
+import { ScheduleStatus } from '../../schedules/entities/schedule.entity';
 import { NotificationsService } from '../notifications.service';
 import { NotificationType } from '../entities/notification.entity';
 import { RedisService } from '../../../common/services/redis.service';
@@ -10,38 +10,26 @@ describe('ShiftReminderCron', () => {
   let cron: ShiftReminderCron;
   let sendToUser: jest.Mock;
   let redisSet: jest.Mock;
-  let getRawMany: jest.Mock;
+  let findByDate: jest.Mock;
 
-  // A schedule whose shift starts at 06:00 (360 min).
-  const row = {
+  // A planned roster row whose shift starts at 06:00 (360 min).
+  const rosterRow = {
     user_id: 'user-1',
-    area_id: 'area-1',
+    status: ScheduleStatus.PLANNED,
     shift_definition_id: 'shift-1',
-    shift_name: 'Pagi',
-    start_time: '06:00:00',
+    shift_definition: { name: 'Pagi', start_time: '06:00:00' },
+    schedule_areas: [{ area_id: 'area-1' }],
   };
 
   beforeEach(async () => {
-    getRawMany = jest.fn().mockResolvedValue([row]);
+    findByDate = jest.fn().mockResolvedValue([rosterRow]);
     sendToUser = jest.fn().mockResolvedValue(undefined);
     redisSet = jest.fn().mockResolvedValue('OK');
-
-    const qb = {
-      innerJoin: jest.fn().mockReturnThis(),
-      select: jest.fn().mockReturnThis(),
-      addSelect: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      andWhere: jest.fn().mockReturnThis(),
-      getRawMany,
-    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ShiftReminderCron,
-        {
-          provide: getRepositoryToken(Schedule),
-          useValue: { createQueryBuilder: jest.fn().mockReturnValue(qb) },
-        },
+        { provide: SchedulesService, useValue: { findByDate } },
         { provide: NotificationsService, useValue: { sendToUser } },
         { provide: RedisService, useValue: { getClient: () => ({ set: redisSet }) } },
       ],

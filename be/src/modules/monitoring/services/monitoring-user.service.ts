@@ -16,8 +16,8 @@ import {
   LiveUsersFilterDto,
   AbsentUserDto,
 } from '../dto/live-users.dto';
-import { DailySchedulesService } from '../../daily-schedules/daily-schedules.service';
-import { DailyScheduleStatus } from '../../daily-schedules/entities/daily-schedule.entity';
+import { SchedulesService } from '../../schedules/schedules.service';
+import { ScheduleStatus } from '../../schedules/entities/schedule.entity';
 import { TimezoneUtil } from '../../../common/utils/timezone.util';
 import { LocationHistoryResponseDto, LocationHistoryPointDto } from '../dto/location-history.dto';
 import { UserDaySummaryDto } from '../dto/user-day-summary.dto';
@@ -52,7 +52,7 @@ export class MonitoringUserService {
     private readonly cacheService: MonitoringCacheService,
     // Daily roster (ADR-013). Optional → specs without it get zeroed summaries.
     @Optional()
-    private readonly dailySchedulesService?: DailySchedulesService,
+    private readonly dailySchedulesService?: SchedulesService,
   ) {}
 
   async getLiveUsers(filters?: LiveUsersFilterDto): Promise<LiveUsersResponseDto> {
@@ -190,14 +190,12 @@ export class MonitoringUserService {
     const clockedIn = new Set(clockedRows.map((r) => r.user_id));
 
     const expected = roster.filter(
-      (r) => r.status === DailyScheduleStatus.PLANNED || r.status === DailyScheduleStatus.PRESENT,
+      (r) => r.status === ScheduleStatus.PLANNED || r.status === ScheduleStatus.PRESENT,
     );
     const onLeave = roster.filter(
-      (r) =>
-        r.status === DailyScheduleStatus.LEAVE_SICK ||
-        r.status === DailyScheduleStatus.LEAVE_ANNUAL,
+      (r) => r.status === ScheduleStatus.LEAVE_SICK || r.status === ScheduleStatus.LEAVE_ANNUAL,
     ).length;
-    const offSchedule = roster.filter((r) => r.status === DailyScheduleStatus.OFF).length;
+    const offSchedule = roster.filter((r) => r.status === ScheduleStatus.OFF).length;
 
     const absentRows = expected.filter((r) => !clockedIn.has(r.user_id));
     const absent_users: AbsentUserDto[] = absentRows.map((r) => ({

@@ -795,30 +795,28 @@ async function seedPhase2() {
     );
 
     // ==========================================
-    // STEP 9: Seed Schedules
+    // STEP 9: Assign each worker a default shift
     // ==========================================
-    console.log('📅 Seeding Schedules...');
+    // (ADR-013) A worker's shift lives on the user now (`users.shift_definition_id`);
+    // the daily roster is materialized from that + `user_areas`. There is no
+    // separate schedule-template table anymore.
+    console.log('📅 Assigning worker shifts...');
 
-    // Get ALL clockable worker IDs with their assigned area
-    // Phase 2C: korlap is CLOCKABLE but needs schedule entries too!
+    // ALL clockable workers (korlap is clockable too).
     const workerResult = await queryRunner.query(`
-      SELECT u.id, u.username, COALESCE(u.area_id, (SELECT id FROM areas LIMIT 1)) AS area_id
-      FROM users u WHERE u.role IN ('satgas', 'linmas', 'korlap');
+      SELECT id FROM users WHERE role IN ('satgas', 'linmas', 'korlap');
     `);
 
     if (workerResult.length > 0) {
-      // Create schedules for ALL workers using their own area
       for (let i = 0; i < workerResult.length; i++) {
         const shiftId = i % 3 === 0 ? SHIFT_1_ID : i % 3 === 1 ? SHIFT_2_ID : SHIFT_3_ID;
         await queryRunner.query(`
-          INSERT INTO schedules (user_id, area_id, shift_definition_id, effective_date, end_date, created_by)
-          VALUES ('${workerResult[i].id}', '${workerResult[i].area_id}', '${shiftId}', '2026-02-01', NULL, NULL)
-          ON CONFLICT DO NOTHING;
+          UPDATE users SET shift_definition_id = '${shiftId}' WHERE id = '${workerResult[i].id}';
         `);
       }
-      console.log(`  ✓ Created ${workerResult.length} Schedules (satgas, linmas, korlap)`);
+      console.log(`  ✓ Assigned shifts to ${workerResult.length} workers (satgas, linmas, korlap)`);
     } else {
-      console.log('  ⚠ No workers or areas found, skipping schedules');
+      console.log('  ⚠ No workers found, skipping shift assignment');
     }
 
     // ==========================================

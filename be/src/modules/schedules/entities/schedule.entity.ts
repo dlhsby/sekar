@@ -6,74 +6,105 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../../users/entities/user.entity';
-import { Area } from '../../areas/entities/area.entity';
+import { Rayon } from '../../rayons/entities/rayon.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
+import { ScheduleArea } from './schedule-area.entity';
 
 /**
- * Schedule Entity
- *
- * Assigns workers to areas and shifts for specific date ranges.
- * This is how Workers/Linmas are scheduled to work at specific locations.
- *
- * Example: Worker "John" is assigned to "Taman Bungkul" for "Shift 1"
- * starting from 2026-01-20 with no end date (ongoing).
+ * Per-worker, per-WIB-day roster status.
+ * - `planned`  — expected to work (has a shift); not yet clocked in
+ * - `present`  — clocked in today (set lazily / on read; informational)
+ * - `absent`   — expected but did not clock in (derived on read in monitoring)
+ * - `leave_sick` / `leave_annual` — excused absence set by an admin
+ * - `replaced` — the worker was swapped out; see `replacement_user_id`
+ * - `off`      — no shift scheduled (management / no-shift worker; still clockable)
+ */
+export enum ScheduleStatus {
+  PLANNED = 'planned',
+  PRESENT = 'present',
+  ABSENT = 'absent',
+  LEAVE_SICK = 'leave_sick',
+  LEAVE_ANNUAL = 'leave_annual',
+  REPLACED = 'replaced',
+  OFF = 'off',
+}
+
+export type ScheduleSource = 'template' | 'manual';
+
+/**
+ * Schedule — one materialized roster row per worker per WIB day,
+ * generated from the worker's standing template (rayon + permanent areas + one
+ * shift) and editable per-day by admins. See ADR-013.
  */
 @Entity('schedules')
+@Index('IDX_schedules_date', ['schedule_date'])
+@Index('IDX_schedules_rayon_date', ['rayon_id', 'schedule_date'])
+// One live roster row per worker per day (soft-deleted rows excluded so a
+// delete + regenerate is possible). Mirrors the migration's partial index.
+@Index('UQ_schedules_user_date', ['user_id', 'schedule_date'], {
+  unique: true,
+  where: '"deleted_at" IS NULL',
+})
 export class Schedule {
-  @ApiProperty({
-    description: 'Unique identifier',
-    example: '55555555-5555-5555-5555-555555555501',
-  })
+  @ApiProperty({ description: 'Unique identifier' })
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ApiProperty({
-    description: 'User (worker/linmas) ID',
-    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-  })
+  @ApiProperty({ description: 'Worker this roster row is for' })
   @Column({ type: 'uuid' })
   user_id: string;
 
-  @ApiProperty({
-    description: 'Area ID where the worker is assigned',
-    example: 'c3d4e5f6-a7b8-9012-cdef-123456789012',
-  })
-  @Column({ type: 'uuid' })
-  area_id: string;
-
-  @ApiProperty({
-    description: 'Shift definition ID',
-    example: '22222222-2222-2222-2222-222222222201',
-  })
-  @Column({ type: 'uuid' })
-  shift_definition_id: string;
-
-  @ApiProperty({
-    description: 'Date when this schedule becomes effective',
-    example: '2026-01-20',
-  })
+  @ApiProperty({ description: 'WIB calendar day (YYYY-MM-DD)', example: '2026-06-30' })
   @Column({ type: 'date' })
-  effective_date: Date;
+  schedule_date: string;
 
-  @ApiProperty({
-    description: 'Date when this schedule ends (null = ongoing)',
-    example: '2026-12-31',
-    required: false,
-  })
-  @Column({ type: 'date', nullable: true })
-  end_date?: Date;
-
-  @ApiProperty({
-    description: 'User ID who created this schedule',
-    example: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
-    required: false,
-  })
+  @ApiProperty({ description: 'Single rayon for the day (null = none)', required: false })
   @Column({ type: 'uuid', nullable: true })
-  created_by?: string;
+  rayon_id: string | null;
+
+  @ApiProperty({ description: 'Single shift for the day (null = no shift / off)', required: false })
+  @Column({ type: 'uuid', nullable: true })
+  shift_definition_id: string | null;
+
+  @ApiProperty({ enum: ScheduleStatus, default: ScheduleStatus.PLANNED })
+  @Column({ type: 'varchar', length: 20, default: ScheduleStatus.PLANNED })
+  status: ScheduleStatus;
+
+  @ApiProperty({ description: 'If replaced, the covering worker', required: false })
+  @Column({ type: 'uuid', nullable: true })
+  replacement_user_id: string | null;
+
+  @ApiProperty({ description: 'If this row is a replacement, who it covers for', required: false })
+  @Column({ type: 'uuid', nullable: true })
+  original_user_id: string | null;
+
+  @ApiProperty({ description: 'How the row was created', default: 'template' })
+  @Column({ type: 'varchar', length: 20, default: 'template' })
+  source: ScheduleSource;
+
+  @ApiProperty({ description: 'Marked as overtime/lembur for the day', default: false })
+  @Column({ type: 'boolean', default: false })
+  is_overtime: boolean;
+
+  @ApiProperty({ description: 'Reason / free note (e.g. leave reason)', required: false })
+  @Column({ type: 'text', nullable: true })
+  notes: string | null;
+
+  // Actor audit (set explicitly by the service; no FK — historical reference).
+  @Column({ type: 'uuid', nullable: true })
+  created_by: string | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  updated_by: string | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  deleted_by: string | null;
 
   @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
@@ -84,31 +115,24 @@ export class Schedule {
   @DeleteDateColumn({ type: 'timestamptz' })
   deleted_at?: Date;
 
-  // Actor audit — stamped by AuditSubscriber from the request's acting user.
-  @Column({ name: 'updated_by', type: 'uuid', nullable: true })
-  updated_by?: string;
-
-  @Column({ name: 'deleted_by', type: 'uuid', nullable: true })
-  deleted_by?: string;
-
   // Relations
-  @ApiProperty({ type: () => User, description: 'Worker/Linmas assigned' })
+  @ApiProperty({ type: () => User })
   @ManyToOne(() => User, { eager: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @ApiProperty({ type: () => Area, description: 'Assigned area' })
-  @ManyToOne(() => Area, { eager: true, onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'area_id' })
-  area: Area;
+  @ManyToOne(() => Rayon, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'rayon_id' })
+  rayon?: Rayon | null;
 
-  @ApiProperty({ type: () => ShiftDefinition, description: 'Shift definition' })
-  @ManyToOne(() => ShiftDefinition, { eager: true, onDelete: 'CASCADE' })
+  @ManyToOne(() => ShiftDefinition, { eager: true, nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'shift_definition_id' })
-  shift_definition: ShiftDefinition;
+  shift_definition?: ShiftDefinition | null;
 
-  @ApiProperty({ type: () => User, description: 'User who created this schedule' })
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'created_by' })
-  creator?: User;
+  @JoinColumn({ name: 'replacement_user_id' })
+  replacement_user?: User | null;
+
+  @OneToMany(() => ScheduleArea, (dsa) => dsa.schedule, { cascade: true })
+  schedule_areas: ScheduleArea[];
 }

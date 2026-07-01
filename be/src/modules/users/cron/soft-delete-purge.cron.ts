@@ -65,7 +65,8 @@ export class SoftDeletePurgeCron {
         await manager.query(`DELETE FROM activities WHERE user_id = $1`, [userId]);
         // shifts delete cascades any remaining location_logs via FK
         await manager.query(`DELETE FROM shifts WHERE user_id = $1`, [userId]);
-        await manager.query(`DELETE FROM schedules WHERE user_id = $1`, [userId]);
+        // schedules (the roster) cascade-delete via its user_id FK on the
+        // users delete below — no explicit purge needed.
         await manager.query(`DELETE FROM users WHERE id = $1`, [userId]);
       });
       return true;

@@ -9,7 +9,6 @@ import { Rayon } from '../rayons/entities/rayon.entity';
 import { Task } from '../tasks/entities/task.entity';
 import { Activity } from '../activities/entities/activity.entity';
 import { Overtime } from '../overtime/entities/overtime.entity';
-import { Schedule } from '../schedules/entities/schedule.entity';
 import { ExportJob } from './entities/export-job.entity';
 import { ExportService, SYNC_ROW_LIMIT } from './export.service';
 
@@ -72,7 +71,6 @@ describe('ExportService', () => {
         { provide: getRepositoryToken(Task), useValue: taskRepo },
         { provide: getRepositoryToken(Activity), useValue: stubRepo() },
         { provide: getRepositoryToken(Overtime), useValue: stubRepo() },
-        { provide: getRepositoryToken(Schedule), useValue: stubRepo() },
         { provide: S3Service, useValue: s3 },
       ],
     }).compile();

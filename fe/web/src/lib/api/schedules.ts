@@ -1,144 +1,249 @@
 /**
- * Schedules API Client (Phase 2C - renamed from WorkerSchedule)
+ * Daily Schedules API Client
+ * Operational daily roster management
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
-import type {
-  Schedule,
-  ScheduleFilters,
-  CreateScheduleDto,
-  UpdateScheduleDto,
-  PaginatedResponse,
-} from '@/types/models';
+
+import type { UserRole } from '@/types/models';
 
 /**
- * Query key factory for schedules
+ * Daily Schedule Type (mirrors backend Schedule entity)
  */
-export const scheduleKeys = {
+export interface Schedule {
+  id: string;
+  user_id: string;
+  schedule_date: string; // YYYY-MM-DD
+  rayon_id: string;
+  shift_definition_id: string | null;
+  status: 'planned' | 'present' | 'absent' | 'leave_sick' | 'leave_annual' | 'replaced' | 'off';
+  replacement_user_id: string | null;
+  original_user_id: string | null;
+  source: 'template' | 'manual';
+  is_overtime: boolean;
+  notes: string | null;
+  user: {
+    id: string;
+    full_name: string;
+    username: string;
+    role: UserRole;
+  };
+  shift_definition: {
+    id: string;
+    name: string;
+    start_time: string;
+    end_time: string;
+  } | null;
+  replacement_user?: {
+    id: string;
+    full_name: string;
+    username: string;
+  } | null;
+  schedule_areas: Array<{
+    id: string;
+    area_id: string;
+    area: {
+      id: string;
+      name: string;
+      code: string;
+    };
+  }>;
+}
+
+/**
+ * Query key factory for daily schedules
+ */
+export const dailyScheduleKeys = {
   all: ['schedules'] as const,
-  lists: () => [...scheduleKeys.all, 'list'] as const,
-  list: (filters?: ScheduleFilters) => [...scheduleKeys.lists(), filters] as const,
-  details: () => [...scheduleKeys.all, 'detail'] as const,
-  detail: (id: string) => [...scheduleKeys.details(), id] as const,
-  areaSchedules: (areaId: string, filters?: ScheduleFilters) =>
-    [...scheduleKeys.all, 'area', areaId, filters] as const,
+  lists: () => [...dailyScheduleKeys.all, 'list'] as const,
+  byDate: (date: string, rayonId?: string) =>
+    [...dailyScheduleKeys.lists(), { date, rayonId }] as const,
+  myRoster: (date?: string) => [...dailyScheduleKeys.all, 'my', date] as const,
 };
 
 /**
- * The API serializes the shift relation as `shiftDefinition` (the TypeORM entity
- * property name), but the web reads it as `shift_definition`. Normalize so every
- * consumer (weekly grid, table, delete dialog) gets the relation under the
- * snake_case key — otherwise every cell renders "libur".
+ * Fetch daily schedules for a given date (optionally filtered by rayon)
  */
-function normalizeSchedules(
-  body: PaginatedResponse<Schedule>,
-): PaginatedResponse<Schedule> {
-  const data = (body?.data ?? []).map((s) => ({
-    ...s,
-    shift_definition:
-      s.shift_definition ??
-      (s as { shiftDefinition?: Schedule['shift_definition'] }).shiftDefinition,
-  }));
-  return { ...body, data };
+async function fetchSchedules(
+  date: string,
+  rayonId?: string,
+): Promise<Schedule[]> {
+  const params = new URLSearchParams();
+  params.append('rayonId', rayonId || '');
+  const response = await apiClient.get<Schedule[]>(
+    `/schedules/date/${date}?${params.toString()}`,
+  );
+  return response.data || [];
 }
 
 /**
- * Fetch schedules with filters
+ * Fetch current user's daily roster for a given date
  */
-export function useSchedules(filters?: ScheduleFilters) {
+async function fetchMyRoster(date?: string): Promise<Schedule | null> {
+  const params = new URLSearchParams();
+  if (date) params.append('date', date);
+  const response = await apiClient.get<Schedule | null>(
+    `/schedules/my?${params.toString()}`,
+  );
+  return response.data ?? null;
+}
+
+/**
+ * Generate daily schedules from templates for a given date
+ */
+async function generateRoster(date: string): Promise<{ generated: number }> {
+  const response = await apiClient.post<{ generated: number }>('/schedules/generate', {
+    date,
+  });
+  return response.data;
+}
+
+/**
+ * Set leave status for a daily schedule
+ */
+async function setLeave(
+  id: string,
+  leave_type: 'sick' | 'annual',
+  notes?: string,
+): Promise<Schedule> {
+  const response = await apiClient.patch<Schedule>(
+    `/schedules/${id}/leave`,
+    { leave_type, notes },
+  );
+  return response.data;
+}
+
+/**
+ * Replace worker on a daily schedule
+ */
+async function replaceWorker(
+  id: string,
+  replacement_user_id: string,
+  notes?: string,
+): Promise<Schedule> {
+  const response = await apiClient.patch<Schedule>(
+    `/schedules/${id}/replace`,
+    { replacement_user_id, notes },
+  );
+  return response.data;
+}
+
+/**
+ * Update areas assigned to a daily schedule
+ */
+async function updateAreas(id: string, area_ids: string[]): Promise<Schedule> {
+  const response = await apiClient.patch<Schedule>(`/schedules/${id}/areas`, {
+    area_ids,
+  });
+  return response.data;
+}
+
+/**
+ * Update shift assigned to a daily schedule
+ */
+async function updateShift(
+  id: string,
+  shift_definition_id: string | null,
+): Promise<Schedule> {
+  const response = await apiClient.patch<Schedule>(`/schedules/${id}/shift`, {
+    shift_definition_id,
+  });
+  return response.data;
+}
+
+/**
+ * Hook to fetch daily schedules for a specific date
+ */
+export function useDailyRoster(date: string, rayonId?: string) {
   return useQuery({
-    queryKey: scheduleKeys.list(filters),
-    queryFn: async () => {
-      const response = await apiClient.get<PaginatedResponse<Schedule>>('/schedules', {
-        params: filters,
-      });
-      return normalizeSchedules(response.data);
-    },
-    staleTime: 2 * 60 * 1000,
+    queryKey: dailyScheduleKeys.byDate(date, rayonId),
+    queryFn: () => fetchSchedules(date, rayonId),
+    enabled: !!date,
   });
 }
 
 /**
- * Fetch single schedule by ID
+ * Hook to fetch current user's daily roster
  */
-export function useSchedule(id: string) {
+export function useMyRoster(date?: string) {
   return useQuery({
-    queryKey: scheduleKeys.detail(id),
-    queryFn: async () => {
-      const response = await apiClient.get<Schedule>(`/schedules/${id}`);
-      return response.data;
-    },
-    enabled: !!id,
-    staleTime: 2 * 60 * 1000,
+    queryKey: dailyScheduleKeys.myRoster(date),
+    queryFn: () => fetchMyRoster(date),
   });
 }
 
 /**
- * Fetch schedules for a specific area
+ * Hook to generate daily schedules for a date
  */
-export function useAreaSchedules(areaId: string, filters?: ScheduleFilters) {
-  return useQuery({
-    queryKey: scheduleKeys.areaSchedules(areaId, filters),
-    queryFn: async () => {
-      const response = await apiClient.get<PaginatedResponse<Schedule>>(
-        `/schedules/area/${areaId}`,
-        { params: filters }
-      );
-      return normalizeSchedules(response.data);
-    },
-    enabled: !!areaId,
-    staleTime: 2 * 60 * 1000,
-  });
-}
-
-/**
- * Create new schedule
- */
-export function useCreateSchedule() {
+export function useGenerateRoster() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: CreateScheduleDto) => {
-      const response = await apiClient.post<Schedule>('/schedules', data);
-      return response.data;
-    },
+    mutationFn: generateRoster,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: scheduleKeys.lists() });
+      // Invalidate the daily roster cache
+      queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
     },
   });
 }
 
 /**
- * Update schedule
+ * Hook to set leave on a daily schedule
  */
-export function useUpdateSchedule(id: string) {
+export function useSetLeave() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: UpdateScheduleDto) => {
-      const response = await apiClient.patch<Schedule>(`/schedules/${id}`, data);
-      return response.data;
-    },
+    mutationFn: ({ id, leave_type, notes }: { id: string; leave_type: 'sick' | 'annual'; notes?: string }) =>
+      setLeave(id, leave_type, notes),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: scheduleKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: scheduleKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
     },
   });
 }
 
 /**
- * Delete schedule
+ * Hook to replace a worker on a daily schedule
  */
-export function useDeleteSchedule() {
+export function useReplaceWorker() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      await apiClient.delete(`/schedules/${id}`);
-    },
+    mutationFn: ({ id, replacement_user_id, notes }: { id: string; replacement_user_id: string; notes?: string }) =>
+      replaceWorker(id, replacement_user_id, notes),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: scheduleKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
+    },
+  });
+}
+
+/**
+ * Hook to update areas on a daily schedule
+ */
+export function useUpdateRosterAreas() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, area_ids }: { id: string; area_ids: string[] }) =>
+      updateAreas(id, area_ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
+    },
+  });
+}
+
+/**
+ * Hook to update shift on a daily schedule
+ */
+export function useUpdateRosterShift() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, shift_definition_id }: { id: string; shift_definition_id: string | null }) =>
+      updateShift(id, shift_definition_id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
     },
   });
 }

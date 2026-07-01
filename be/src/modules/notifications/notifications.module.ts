@@ -9,8 +9,8 @@ import { NotificationToken } from './entities/notification-token.entity';
 import { Notification } from './entities/notification.entity';
 import { NotificationPreference } from './entities/notification-preference.entity';
 import { ShiftReminderCron } from './cron/shift-reminder.cron';
-import { Schedule } from '../schedules/entities/schedule.entity';
 import { UsersModule } from '../users/users.module';
+import { SchedulesModule } from '../schedules/schedules.module';
 import { FCM_RETRY_QUEUE } from '../queue/queue.constants';
 
 /**
@@ -24,14 +24,10 @@ import { FCM_RETRY_QUEUE } from '../queue/queue.constants';
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      NotificationToken,
-      Notification,
-      NotificationPreference,
-      // Phase 4-3 (§C3): read-only access for the shift-reminder cron.
-      Schedule,
-    ]),
+    TypeOrmModule.forFeature([NotificationToken, Notification, NotificationPreference]),
     UsersModule,
+    // Phase 4-3 (§C3): the shift-reminder cron reads today's roster (ADR-013).
+    SchedulesModule,
     // Phase 4-3 (M2): re-register queue by name so NotificationsService can
     // @InjectQueue('fcm-retry'). The queue's actual config lives in
     // QueueModule (already imported at app level).

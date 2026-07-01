@@ -71,6 +71,23 @@ export const ROSTER_MANAGERS = [
   UserRole.ADMIN_DATA,
 ];
 
+// Roster viewers — the managers plus korlap (field coordinator) and
+// top_management (oversight). All may READ the roster.
+export const ROSTER_VIEWERS = [...ROSTER_MANAGERS, UserRole.KORLAP, UserRole.TOP_MANAGEMENT];
+
+// Roster editors — roles that may edit SOME rows; the exact rows are decided by
+// the target-role hierarchy + scope in SchedulesService.assertCanEdit
+// (korlap→satgas/linmas in own areas; kepala_rayon/admin_data→below in own
+// rayon; top_management→kepala_rayon/admin_data; admin_system/superadmin→all).
+export const ROSTER_EDITORS = [
+  UserRole.ADMIN_SYSTEM,
+  UserRole.SUPERADMIN,
+  UserRole.TOP_MANAGEMENT,
+  UserRole.KEPALA_RAYON,
+  UserRole.ADMIN_DATA,
+  UserRole.KORLAP,
+];
+
 // Phase 4-5 — data export. admin_system/superadmin export anything; kepala_rayon
 // is limited (in the service) to tasks/activities/overtime scoped to their rayon.
 export const EXPORTERS = [UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN, UserRole.KEPALA_RAYON];

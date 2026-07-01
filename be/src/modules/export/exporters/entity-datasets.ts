@@ -6,7 +6,6 @@ import type { Rayon } from '../../rayons/entities/rayon.entity';
 import type { Task } from '../../tasks/entities/task.entity';
 import type { Activity } from '../../activities/entities/activity.entity';
 import type { Overtime } from '../../overtime/entities/overtime.entity';
-import type { Schedule } from '../../schedules/entities/schedule.entity';
 
 interface Column<T> {
   header: string;
@@ -106,18 +105,6 @@ export function overtimeDataset(rows: Overtime[]): Dataset {
     { header: 'reason', value: (o) => o.reason ?? '' },
     { header: 'approved_by', value: (o) => o.approved_by ?? '' },
     { header: 'created_at', value: (o) => iso(o.created_at) },
-  ]);
-}
-
-export function schedulesDataset(rows: Schedule[]): Dataset {
-  return build(rows, [
-    { header: 'id', value: (s) => s.id },
-    { header: 'user_id', value: (s) => s.user_id },
-    { header: 'area_id', value: (s) => s.area_id },
-    { header: 'shift_definition_id', value: (s) => s.shift_definition_id },
-    { header: 'effective_date', value: (s) => iso(s.effective_date) },
-    { header: 'end_date', value: (s) => iso(s.end_date) },
-    { header: 'created_at', value: (s) => iso(s.created_at) },
   ]);
 }
 
