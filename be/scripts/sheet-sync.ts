@@ -51,7 +51,32 @@ const JAB: Record<string, string> = {
   korlap: 'korlap',
   satgas: 'satgas',
   linmas: 'linmas',
+  'admin data': 'admin_data',
+  'top management': 'top_management',
+  top_management: 'top_management',
 };
+
+// Each client user tab is a single rayon; derive its code from the TAB TITLE
+// (the in-row "Rayon" column is inconsistently filled). Matches the codes in
+// seed-staging's RAYON_ID_BY_CODE (no underscore before the number). Patroli
+// (city-wide security) folds into the lintas-rayon TAMAN_AKTIF bucket; tabs
+// with no rayon (top management, merged) resolve to '' → null rayon.
+const RAYON_BY_TITLE: Array<[RegExp, string]> = [
+  [/taman aktif/, 'TAMAN_AKTIF'],
+  [/timur 1/, 'TIMUR1'],
+  [/timur 2/, 'TIMUR2'],
+  [/barat 1/, 'BARAT1'],
+  [/barat 2/, 'BARAT2'],
+  [/selatan/, 'SELATAN'],
+  [/utara/, 'UTARA'],
+  [/pusat/, 'PUSAT'],
+  [/patroli/, 'TAMAN_AKTIF'],
+];
+function rayonFromTitle(title: string): string {
+  const t = title.toLowerCase();
+  for (const [re, code] of RAYON_BY_TITLE) if (re.test(t)) return code;
+  return '';
+}
 function slug(name: string): string {
   return (
     name
@@ -245,11 +270,8 @@ async function pull(): Promise<void> {
       if (!name) continue;
       const role = JAB[norm(r[col['jabatan']])];
       if (!role) continue;
-      const rayonRaw = norm(col['rayon'] != null ? r[col['rayon']] : '');
       const areaRaw = (col['area'] != null ? r[col['area']] : '') || '';
-      const rayon = /timur 2|kertajaya/.test(`${rayonRaw} ${areaRaw.toLowerCase()}`)
-        ? 'TIMUR2'
-        : 'TAMAN_AKTIF';
+      const rayon = rayonFromTitle(g.title);
       const key = name.toLowerCase();
       if (users.has(key)) {
         const u = users.get(key)!;

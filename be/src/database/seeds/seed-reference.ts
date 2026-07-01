@@ -73,7 +73,7 @@ const SPECIAL_DAY_2_ID = 'd2bb4962-0d2e-46fb-b45d-c3038254f5c4';
 const SPECIAL_DAY_3_ID = '72bfe1fd-6285-4853-a4a9-d75e8edc65e6';
 const SPECIAL_DAY_4_ID = '8a8ff3d8-8c45-461e-b66c-8563c04cbbd5';
 
-// Default account password hash (bcrypt of "Password123!") — shared across all seeders.
+// Default account password hash (bcrypt of "12345678") — shared across all seeders.
 const PASSWORD_HASH = DEFAULT_PASSWORD_HASH;
 
 async function seedReference() {
@@ -322,9 +322,7 @@ async function seedReference() {
        ON CONFLICT (username) DO NOTHING`,
       [PASSWORD_HASH],
     );
-    console.log(
-      '  ✓ Default superadmin (admin / Password123!) — change password after first login!',
-    );
+    console.log('  ✓ Default superadmin (admin / 12345678) — change password after first login!');
 
     console.log('\n✅ Reference Data Seeding Completed!');
     console.log(

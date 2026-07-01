@@ -21,7 +21,7 @@ import { DEFAULT_PASSWORD_HASH } from './constants';
  * Prod: npm run db:seed:phase1:prod
  */
 
-// Default account password hash (bcrypt of "Password123!") — shared across all seeders.
+// Default account password hash (bcrypt of "12345678") — shared across all seeders.
 const PASSWORD_HASH = DEFAULT_PASSWORD_HASH;
 
 // Explicit UUID for admin user so Phase 2 references are stable
@@ -126,16 +126,14 @@ async function seedPhase1() {
     console.log('  Created 1 user: admin (superadmin)');
 
     // Dummy account to exercise the forced password-change flow (AS-5). Temp
-    // password is "Password123!"; password_must_change=TRUE forces the change
+    // password is "12345678"; password_must_change=TRUE forces the change
     // screen on first login. Remove/disable before production.
     await queryRunner.query(`
       INSERT INTO users (id, username, password_hash, full_name, phone_number, role, is_active, password_must_change) VALUES
         ('a0000000-0000-4000-8000-000000000099', 'resettest', '${PASSWORD_HASH}', 'Reset Test User', '081200000099', 'satgas', TRUE, TRUE)
       ON CONFLICT (username) DO NOTHING
     `);
-    console.log(
-      '  Created 1 user: resettest (satgas, password_must_change) — password: Password123!',
-    );
+    console.log('  Created 1 user: resettest (satgas, password_must_change) — password: 12345678');
 
     // ============================================================
     // NOTIFICATIONS (seeded in seed-notifications.ts after phase2/phase3)
@@ -162,7 +160,7 @@ async function seedPhase1() {
 
     console.log('\nPhase 1 Seeding Completed Successfully!');
     console.log('\nSummary:');
-    console.log('  - 1 user: admin (superadmin) — password: Password123!');
+    console.log('  - 1 user: admin (superadmin) — password: 12345678');
     console.log('  - 4 area types (park, pedestrian, mini_garden, street)');
     console.log('  - Areas, shifts, location logs, and activities are seeded in Phase 2');
   } catch (error) {

@@ -10,7 +10,7 @@ import { DEFAULT_PASSWORD_HASH } from './constants';
  *
  * Each user gets:
  *   - role:           'satgas'
- *   - password:       Password123! (shared bcrypt hash with the rest of the seeds)
+ *   - password:       12345678 (shared bcrypt hash with the rest of the seeds)
  *   - rayon_id:       first existing rayon row (queried at runtime)
  *   - area_id:        first existing area row in that rayon
  *   - phone_number:   `0812LT0NNNN` (zero-padded VU index, kept unique by UNIQUE on phone)

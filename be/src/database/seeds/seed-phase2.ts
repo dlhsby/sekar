@@ -50,7 +50,7 @@ import {
  * Usage: npm run db:seed
  *
  * =============================================================================
- * TEST USERS BY ROLE  (all passwords: Password123!)
+ * TEST USERS BY ROLE  (all passwords: 12345678)
  * Login via username OR phone number as identifier
  * =============================================================================
  *
@@ -574,7 +574,7 @@ async function seedPhase2() {
     // ==========================================
     console.log('👤 Seeding Additional Users with Phase 2 roles...');
 
-    // Default account password hash (bcrypt of "Password123!") — shared across all seeders.
+    // Default account password hash (bcrypt of "12345678") — shared across all seeders.
     const passwordHash = DEFAULT_PASSWORD_HASH;
 
     await queryRunner.query(`
@@ -2002,7 +2002,7 @@ async function seedPhase2() {
     console.log('       7 rayons · 3 shifts · 20 activity types · 4 special day overrides');
     console.log('      10 areas · ~50 area_staff_requirements');
     console.log('');
-    console.log('  👥 Users  (40 total — all passwords: Password123!)');
+    console.log('  👥 Users  (40 total — all passwords: 12345678)');
     console.log('     ──────────────────────────────────────────────────────────────────────────');
     console.log(
       '       1 admin (Phase 1) ·  3 system-wide (superadmin / admin_system / top_management)',
@@ -2079,7 +2079,7 @@ async function seedPhase2() {
     console.log(
       '══════════════════════════════════════════════════════════════════════════════════════',
     );
-    console.log('🧪  TEST USERS — all passwords: Password123!');
+    console.log('🧪  TEST USERS — all passwords: 12345678');
     console.log('    Login with username OR phone number as "identifier"');
     console.log(
       '══════════════════════════════════════════════════════════════════════════════════════',

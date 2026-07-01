@@ -12,7 +12,7 @@
  */
 
 /** Plaintext default password for all seeded/test accounts. */
-export const DEFAULT_PASSWORD = 'Password123!';
+export const DEFAULT_PASSWORD = '12345678';
 
 /** bcrypt(DEFAULT_PASSWORD, 10 rounds). Regenerate if DEFAULT_PASSWORD changes. */
-export const DEFAULT_PASSWORD_HASH = '$2b$10$8gE6VV8J4S95ivFYs.dEK.E2W.zKotQ3IfFohDGLbIXZnNa.NtgTi';
+export const DEFAULT_PASSWORD_HASH = '$2b$10$dPclKFdgVahMcFtXmJTzcum5UDpJNOFDubhs61zLiPt/HnvomNEuO';
