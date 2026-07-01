@@ -5,7 +5,7 @@ import { MonitoringReassignService } from './monitoring-reassign.service';
 import { User, UserRole } from '../../users/entities/user.entity';
 import { Area } from '../../areas/entities/area.entity';
 import { UserTrackingStatus } from '../entities/user-tracking-status.entity';
-import { Schedule } from '../../schedules/entities/schedule.entity';
+import { SchedulesService } from '../../schedules/schedules.service';
 import { ReassignWorkerDto } from '../dto/reassign-worker.dto';
 import { EventsGateway } from '../../../gateways/events.gateway';
 import { EventType } from '../../../gateways/dto/events.dto';
@@ -16,7 +16,7 @@ describe('MonitoringReassignService', () => {
   let userRepository: any;
   let areaRepository: any;
   let trackingRepository: any;
-  let scheduleRepository: any;
+  let dailySchedulesService: any;
   let eventsGateway: any;
   let auditLogService: any;
 
@@ -114,12 +114,8 @@ describe('MonitoringReassignService', () => {
       update: jest.fn(),
     };
 
-    scheduleRepository = {
-      find: jest.fn().mockResolvedValue([]),
-      create: jest.fn().mockImplementation((data: any) => ({ id: 'new-schedule-uuid', ...data })),
-      save: jest
-        .fn()
-        .mockImplementation((data: any) => Promise.resolve({ id: 'new-schedule-uuid', ...data })),
+    dailySchedulesService = {
+      overrideForDay: jest.fn().mockResolvedValue('roster-row-uuid'),
     };
 
     eventsGateway = {
@@ -136,7 +132,7 @@ describe('MonitoringReassignService', () => {
         { provide: getRepositoryToken(User), useValue: userRepository },
         { provide: getRepositoryToken(Area), useValue: areaRepository },
         { provide: getRepositoryToken(UserTrackingStatus), useValue: trackingRepository },
-        { provide: getRepositoryToken(Schedule), useValue: scheduleRepository },
+        { provide: SchedulesService, useValue: dailySchedulesService },
         { provide: EventsGateway, useValue: eventsGateway },
         { provide: AuditLogService, useValue: auditLogService },
       ],
@@ -371,7 +367,7 @@ describe('MonitoringReassignService', () => {
         previous_area_name: 'Taman Bungkul',
         new_area_id: AREA_A2_ID,
         new_area_name: 'Taman Mundu',
-        new_schedule_id: null,
+        new_schedule_id: 'roster-row-uuid',
       });
       expect(result.effective_date).toBeDefined();
       expect(result.reassigned_at).toBeInstanceOf(Date);
@@ -467,8 +463,8 @@ describe('MonitoringReassignService', () => {
       await expect(service.reassign(dto, kepalaRayon)).rejects.toThrow(ForbiddenException);
     });
 
-    // Create new schedule when shift_definition_id is provided
-    it('should create a new schedule when shift_definition_id is provided', async () => {
+    // Override today's roster with the target area + shift
+    it("should override today's roster with the target area and shift", async () => {
       const worker = makeUser();
       const targetArea = makeArea({ id: AREA_A2_ID, rayon_id: RAYON_A });
       const dto = makeDto({
@@ -485,50 +481,14 @@ describe('MonitoringReassignService', () => {
 
       const result = await service.reassign(dto, superadmin);
 
-      expect(scheduleRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          user_id: worker.id,
-          area_id: AREA_A2_ID,
-          shift_definition_id: 'shift-def-uuid',
-          created_by: superadmin.id,
-        }),
+      expect(dailySchedulesService.overrideForDay).toHaveBeenCalledWith(
+        worker.id,
+        '2026-03-07',
+        { areaId: AREA_A2_ID, rayonId: RAYON_A, shiftDefinitionId: 'shift-def-uuid' },
+        superadmin.id,
       );
-      expect(scheduleRepository.save).toHaveBeenCalled();
-      expect(result.new_schedule_id).toBe('new-schedule-uuid');
+      expect(result.new_schedule_id).toBe('roster-row-uuid');
       expect(result.effective_date).toBe('2026-03-07');
-    });
-
-    // End current schedules when end_current_schedule is true
-    it('should end current schedules when end_current_schedule is true', async () => {
-      const worker = makeUser({
-        area_id: AREA_A1_ID,
-        area: makeArea({ id: AREA_A1_ID, name: 'Taman Bungkul', rayon_id: RAYON_A }),
-      });
-      const targetArea = makeArea({ id: AREA_A2_ID, rayon_id: RAYON_A });
-      const dto = makeDto({
-        target_area_id: AREA_A2_ID,
-        end_current_schedule: true,
-      });
-
-      const existingSchedule = {
-        id: 'old-schedule',
-        user_id: worker.id,
-        area_id: AREA_A1_ID,
-        end_date: null,
-      };
-      scheduleRepository.find.mockResolvedValue([existingSchedule]);
-
-      userRepository.findOne.mockResolvedValue(worker);
-      areaRepository.findOne.mockResolvedValue(targetArea);
-      userRepository.save.mockResolvedValue({ ...worker, area_id: AREA_A2_ID });
-      trackingRepository.update.mockResolvedValue({ affected: 1 });
-
-      await service.reassign(dto, makeSuperadmin());
-
-      expect(scheduleRepository.find).toHaveBeenCalled();
-      expect(scheduleRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ id: 'old-schedule' }),
-      );
     });
 
     // Effective date defaults to today when not provided
@@ -582,7 +542,7 @@ describe('MonitoringReassignService', () => {
         metadata: {
           reason: 'Understaffed at target area',
           effective_date: '2026-06-10',
-          new_schedule_id: null,
+          new_schedule_id: 'roster-row-uuid',
         },
       });
     });
@@ -612,8 +572,8 @@ describe('MonitoringReassignService', () => {
       expect(auditLogService.log).not.toHaveBeenCalled();
     });
 
-    // No schedule created when shift_definition_id is not provided
-    it('should not create a schedule when shift_definition_id is not provided', async () => {
+    // Roster override carries no shift when shift_definition_id is omitted
+    it("should override the roster with no shift when shift_definition_id is not provided", async () => {
       const worker = makeUser();
       const targetArea = makeArea({ id: AREA_A2_ID, rayon_id: RAYON_A });
       const dto = makeDto({ target_area_id: AREA_A2_ID });
@@ -625,8 +585,13 @@ describe('MonitoringReassignService', () => {
 
       const result = await service.reassign(dto, makeSuperadmin());
 
-      expect(scheduleRepository.create).not.toHaveBeenCalled();
-      expect(result.new_schedule_id).toBeNull();
+      expect(dailySchedulesService.overrideForDay).toHaveBeenCalledWith(
+        worker.id,
+        expect.any(String),
+        expect.objectContaining({ areaId: AREA_A2_ID, shiftDefinitionId: undefined }),
+        expect.any(String),
+      );
+      expect(result.new_schedule_id).toBe('roster-row-uuid');
     });
   });
 });

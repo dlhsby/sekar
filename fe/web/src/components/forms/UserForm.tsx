@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { FormInput, FormCombobox, Button, Input } from '@/components/ui';
+import { FormInput, FormCombobox, FormMultiCombobox, Button } from '@/components/ui';
 import type { UserRole, User } from '@/types/models';
 import { useRayons } from '@/lib/api/rayons';
 import { useAreas } from '@/lib/api/areas';
@@ -75,7 +75,6 @@ export function UserForm({
   const { data: assignedAreas } = useUserAreas(isEditMode ? initialData?.id : undefined);
 
   const [areaIds, setAreaIds] = useState<string[]>([]);
-  const [areaSearch, setAreaSearch] = useState('');
 
   // Prefill the selected areas from the user's current assignment (edit mode).
   useEffect(() => {
@@ -175,16 +174,10 @@ export function UserForm({
   }));
 
   const allAreas = useMemo(() => areasData?.data || [], [areasData]);
-  const filteredAreas = useMemo(() => {
-    const q = areaSearch.trim().toLowerCase();
-    if (!q) return allAreas;
-    return allAreas.filter(
-      (a) => a.name.toLowerCase().includes(q),
-    );
-  }, [allAreas, areaSearch]);
-
-  const toggleArea = (id: string) =>
-    setAreaIds((prev) => (prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]));
+  const areaOptions = useMemo(
+    () => allAreas.map((a) => ({ value: a.id, label: a.name })),
+    [allAreas],
+  );
 
   const busy = isSubmitting || loading;
   const fieldsDisabled = busy || readOnly;
@@ -295,50 +288,18 @@ export function UserForm({
         disabled={fieldsDisabled}
       />
 
-      {/* Areas multi-select */}
-      <div className="space-y-2">
-        <label className="block text-nb-body-sm font-bold text-nb-black">
-          Area Penugasan (bisa lebih dari satu)
-        </label>
-        <p className="text-nb-caption text-nb-gray-600">
-          Kosongkan untuk pekerja tanpa area tetap (ad-hoc) atau peran manajemen.
-        </p>
-        <Input
-          placeholder={areasLoading ? 'Memuat area...' : 'Cari area…'}
-          value={areaSearch}
-          onChange={(e) => setAreaSearch(e.target.value)}
-          disabled={fieldsDisabled || areasLoading}
-        />
-        <div className="max-h-56 space-y-1 overflow-y-auto rounded-nb-base border-2 border-nb-black p-2">
-          {filteredAreas.length === 0 ? (
-            <p className="px-1 py-2 text-nb-body-sm text-nb-gray-500">Tidak ada area.</p>
-          ) : (
-            filteredAreas.map((area) => {
-              const checked = areaIds.includes(area.id);
-              return (
-                <label
-                  key={area.id}
-                  className="flex cursor-pointer items-center gap-2 rounded-nb-sm px-2 py-1.5 hover:bg-nb-gray-100"
-                >
-                  <input
-                    type="checkbox"
-                    className="size-4 accent-nb-primary"
-                    checked={checked}
-                    onChange={() => toggleArea(area.id)}
-                    disabled={fieldsDisabled}
-                  />
-                  <span className="text-nb-body-sm">
-                    {area.name}
-                  </span>
-                </label>
-              );
-            })
-          )}
-        </div>
-        {areaIds.length > 0 && (
-          <p className="text-nb-caption text-nb-gray-600">{areaIds.length} area dipilih</p>
-        )}
-      </div>
+      {/* Areas multi-select — the worker's permanent assigned areas; drives their roster. */}
+      <FormMultiCombobox
+        label="Area Penugasan (bisa lebih dari satu)"
+        options={areaOptions}
+        values={areaIds}
+        onChange={setAreaIds}
+        placeholder={areasLoading ? 'Memuat area...' : 'Pilih area penugasan'}
+        searchPlaceholder="Cari area…"
+        emptyText="Tidak ada area."
+        helperText="Kosongkan untuk pekerja tanpa area tetap (ad-hoc) atau peran manajemen."
+        disabled={fieldsDisabled || areasLoading}
+      />
 
       <div className="flex gap-3 pt-4">
         {readOnly ? (

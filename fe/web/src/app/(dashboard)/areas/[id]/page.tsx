@@ -12,6 +12,7 @@ import { Button, Badge, Card, CardContent, CardHeader } from '@/components/ui';
 import { Map } from '@/components/maps/Map';
 import { PolygonEditor } from '@/components/maps/PolygonEditor';
 import { DeleteAreaModal } from '@/components/areas/DeleteAreaModal';
+import { AreaFormModal } from '@/components/areas/AreaFormModal';
 import { AreaWorkersCard } from '@/components/areas/AreaWorkersCard';
 import { useArea, useAreaBoundary, useUpdateAreaBoundary } from '@/lib/api/areas';
 import { useAuth } from '@/lib/auth/hooks';
@@ -25,6 +26,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
   const { user } = useAuth();
   const { data: area, isLoading, error } = useArea(id);
   const [deleteModal, setDeleteModal] = useState(false);
+  const [editModal, setEditModal] = useState(false);
   const [editingBoundary, setEditingBoundary] = useState(false);
   const [boundaryDraft, setBoundaryDraft] = useState<GeoJSON.Polygon | null>(null);
 
@@ -158,7 +160,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
         {isAdmin && (
           <div className="flex gap-3">
             <Button
-              onClick={() => router.push(`/areas/${area.id}/edit`)}
+              onClick={() => setEditModal(true)}
               variant="secondary"
               leftIcon={<Edit className="w-4 h-4" />}
             >
@@ -377,6 +379,8 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
         onClose={() => setDeleteModal(false)}
         onSuccess={() => router.push('/areas')}
       />
+
+      <AreaFormModal open={editModal} onOpenChange={setEditModal} area={area} />
     </div>
   );
 }

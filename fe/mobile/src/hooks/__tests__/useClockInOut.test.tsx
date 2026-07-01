@@ -16,7 +16,7 @@ import authReducer from '../../store/slices/authSlice';
 import shiftReducer from '../../store/slices/shiftSlice';
 import offlineReducer from '../../store/slices/offlineSlice';
 import { useClockInOut } from '../useClockInOut';
-import { getMySchedule, getMyRoster } from '../../services/api/schedulesApi';
+import { getMyRoster } from '../../services/api/schedulesApi';
 
 jest.mock('react-native-geolocation-service', () => ({
   getCurrentPosition: jest.fn(),
@@ -28,7 +28,7 @@ jest.mock('../../services/api/shiftsApi', () => ({
   clockOut: jest.fn(),
   getCurrentShift: jest.fn(),
 }));
-jest.mock('../../services/api/schedulesApi', () => ({ getMySchedule: jest.fn(), getMyRoster: jest.fn() }));
+jest.mock('../../services/api/schedulesApi', () => ({ getMyRoster: jest.fn() }));
 jest.mock('../../services/permissions', () => ({
   requestClockInPermissions: jest.fn().mockResolvedValue({ success: false }),
   requestCameraPermission: jest.fn(),
@@ -40,7 +40,6 @@ jest.mock('../../services/media', () => ({
   mediaService: { capturePhoto: jest.fn(), convertToBase64: jest.fn() },
 }));
 
-const mockGetMySchedule = getMySchedule as jest.MockedFunction<typeof getMySchedule>;
 const mockGetMyRoster = getMyRoster as jest.MockedFunction<typeof getMyRoster>;
 
 // Shift the worker actually clocked into (daytime, non-crossing).
@@ -94,8 +93,8 @@ const wrapperFor = (currentShift: unknown) =>
 describe('useClockInOut — scheduled-shift precedence', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockGetMySchedule.mockResolvedValue({ data: { shift_definition: ROSTER_SHIFT_DEF } } as never);
-    mockGetMyRoster.mockResolvedValue({ data: null } as never);
+    // The roster row carries the day's shift_definition (the scheduled-shift hint).
+    mockGetMyRoster.mockResolvedValue({ data: { shift_definition: ROSTER_SHIFT_DEF } } as never);
   });
 
   it('judges lateness against the clocked-in shift, not the roster hint', async () => {
@@ -109,7 +108,7 @@ describe('useClockInOut — scheduled-shift precedence', () => {
 
     // Roster fetch resolves on mount; wait for it so the (rejected) precedence
     // would surface if assignedShiftDef were preferred.
-    await waitFor(() => expect(mockGetMySchedule).toHaveBeenCalled());
+    await waitFor(() => expect(mockGetMyRoster).toHaveBeenCalled());
 
     expect(result.current.scheduledShift).toEqual(CLOCKED_SHIFT_DEF);
     expect(result.current.isLate).toBe(true); // 13:11 > 06:00 → late for Shift 1
@@ -128,7 +127,7 @@ describe('useClockInOut — scheduled-shift precedence', () => {
       shift_definition: CLOCKED_SHIFT_DEF,
     };
     const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(currentShift) });
-    await waitFor(() => expect(mockGetMySchedule).toHaveBeenCalled());
+    await waitFor(() => expect(mockGetMyRoster).toHaveBeenCalled());
     expect(result.current.isLate).toBe(false);
   });
 });

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { DailySchedulesService } from './daily-schedules.service';
+import { SchedulesService } from './schedules.service';
 import { TimezoneUtil } from '../../common/utils/timezone.util';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -15,7 +15,7 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 export class DailyRosterGenerationCron {
   private readonly logger = new Logger(DailyRosterGenerationCron.name);
 
-  constructor(private readonly dailySchedulesService: DailySchedulesService) {}
+  constructor(private readonly dailySchedulesService: SchedulesService) {}
 
   @Cron('0 17 * * *', { timeZone: 'Asia/Jakarta' })
   async generateTomorrowRoster(): Promise<void> {

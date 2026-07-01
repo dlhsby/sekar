@@ -16,8 +16,7 @@ export type ExportEntityType =
   | 'rayons'
   | 'tasks'
   | 'activities'
-  | 'overtime'
-  | 'schedules';
+  | 'overtime';
 
 export type ExportFormat = 'csv' | 'xlsx' | 'kmz';
 

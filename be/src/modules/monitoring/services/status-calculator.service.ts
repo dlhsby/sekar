@@ -24,7 +24,7 @@ import { NotificationType } from '../../notifications/entities/notification.enti
 import { RedisService } from '../../../common/services/redis.service';
 import { BoundaryCheckService } from '../../../shared/services/boundary-check.service';
 import { UserAreasService } from '../../user-areas/user-areas.service';
-import { DailySchedulesService } from '../../daily-schedules/daily-schedules.service';
+import { SchedulesService } from '../../schedules/schedules.service';
 import { TimezoneUtil } from '../../../common/utils/timezone.util';
 
 export interface StatusInput {
@@ -73,7 +73,7 @@ export class StatusCalculatorService {
     // raw user assignment (the user record is only the template that feeds
     // generation). Optional → legacy specs fall back to user_areas.
     @Optional()
-    private readonly dailySchedulesService?: DailySchedulesService,
+    private readonly dailySchedulesService?: SchedulesService,
   ) {}
 
   private get boundaryCheck(): BoundaryCheckService {

@@ -44,7 +44,6 @@ const ENTITY_LABELS: Record<ExportEntityType, string> = {
   tasks: 'Tugas',
   activities: 'Aktivitas',
   overtime: 'Lembur',
-  schedules: 'Jadwal',
 };
 
 /** Entities a kepala_rayon may export (their own rayon only). */

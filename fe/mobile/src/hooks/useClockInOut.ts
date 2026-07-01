@@ -9,14 +9,14 @@ import Geolocation from 'react-native-geolocation-service';
 import { Alert } from 'react-native';
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { clockIn, clockOut, getCurrentShift } from '../services/api/shiftsApi';
-import { getMySchedule, getMyRoster } from '../services/api/schedulesApi';
+import { getMyRoster } from '../services/api/schedulesApi';
 import { setCurrentShift } from '../store/slices/shiftSlice';
 import { isWithinAreaBoundary } from '../utils/gpsUtils';
 import { isClockInLate } from '../utils/dateUtils';
 import { requestClockInPermissions, requestCameraPermission } from '../services/permissions';
 import { locationTracker } from '../services/location/locationTracker';
 import { mediaService, type Photo } from '../services/media';
-import type { ShiftDefinition, DailySchedule } from '../types/models.types';
+import type { ShiftDefinition, Schedule } from '../types/models.types';
 
 export interface LocationState {
   latitude: number | null;
@@ -55,8 +55,8 @@ export function useClockInOut() {
   // The worker's ASSIGNED shift (from their roster /schedules/my) — used only as
   // the "your scheduled shift" hint while still clocking in.
   const [assignedShiftDef, setAssignedShiftDef] = useState<ShiftDefinition | null>(null);
-  // Today's roster (from /daily-schedules/my) — Phase 3 roster monitoring
-  const [dailyRoster, setDailyRoster] = useState<DailySchedule | null>(null);
+  // Today's roster (from /schedules/my) — the single schedule concept (ADR-013)
+  const [dailyRoster, setDailyRoster] = useState<Schedule | null>(null);
 
   const isClockIn = !currentShift;
 
@@ -85,18 +85,19 @@ export function useClockInOut() {
     return isClockInLate(reference, scheduledShift.start_time, scheduledShift.crosses_midnight);
   }, [scheduledShift, currentShift]);
 
-  // Fetch the worker's assigned schedule + today's roster so the screen can show
-  // the scheduled shift window + a late indicator (in both clock-in and clock-out modes).
-  // Phase 3: Also fetch daily roster for the day-scoped roster hints.
+  // Fetch today's roster so the screen can show the scheduled shift window + a
+  // late indicator (in both clock-in and clock-out modes). The roster row
+  // carries the day's shift_definition (ADR-013 — the single schedule concept).
   useEffect(() => {
     let active = true;
-    Promise.all([getMySchedule(), getMyRoster()])
-      .then(([schedRes, rosterRes]) => {
-        if (active && schedRes.data?.shift_definition) {
-          setAssignedShiftDef(schedRes.data.shift_definition);
-        }
-        if (active && rosterRes.data) {
+    getMyRoster()
+      .then((rosterRes) => {
+        if (!active) return;
+        if (rosterRes.data) {
           setDailyRoster(rosterRes.data);
+        }
+        if (rosterRes.data?.shift_definition) {
+          setAssignedShiftDef(rosterRes.data.shift_definition);
         }
       })
       .catch(() => {

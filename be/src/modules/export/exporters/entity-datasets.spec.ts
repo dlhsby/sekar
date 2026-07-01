@@ -5,7 +5,6 @@ import {
   tasksDataset,
   activitiesDataset,
   overtimeDataset,
-  schedulesDataset,
   areasPlacemarks,
 } from './entity-datasets';
 import type { User } from '../../users/entities/user.entity';
@@ -14,7 +13,6 @@ import type { Rayon } from '../../rayons/entities/rayon.entity';
 import type { Task } from '../../tasks/entities/task.entity';
 import type { Activity } from '../../activities/entities/activity.entity';
 import type { Overtime } from '../../overtime/entities/overtime.entity';
-import type { Schedule } from '../../schedules/entities/schedule.entity';
 
 const now = new Date('2026-06-10T00:00:00.000Z');
 
@@ -101,19 +99,6 @@ describe('entity dataset builders', () => {
     expect(ds.rows[0][4]).toBe('');
   });
 
-  it('maps schedules', () => {
-    const ds = schedulesDataset([
-      {
-        id: 's1',
-        user_id: 'u1',
-        area_id: 'a1',
-        shift_definition_id: 'sd1',
-        effective_date: now,
-        created_at: now,
-      } as unknown as Schedule,
-    ]);
-    expect(ds.rows[0][2]).toBe('a1');
-  });
 });
 
 describe('areasPlacemarks', () => {

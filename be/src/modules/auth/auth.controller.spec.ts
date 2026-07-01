@@ -4,8 +4,8 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { User, UserRole } from '../users/entities/user.entity';
-import { Schedule } from '../schedules/entities/schedule.entity';
 import { Area } from '../areas/entities/area.entity';
+import { UserAreasService } from '../user-areas/user-areas.service';
 
 describe('AuthController', () => {
   let module: TestingModule;
@@ -31,8 +31,8 @@ describe('AuthController', () => {
     logout: jest.fn(),
   };
 
-  const mockScheduleRepository = {
-    findOne: jest.fn(),
+  const mockUserAreasService = {
+    getEffectiveAreas: jest.fn().mockResolvedValue([]),
   };
 
   const mockAreaRepository = {
@@ -48,12 +48,12 @@ describe('AuthController', () => {
           useValue: mockAuthService,
         },
         {
-          provide: getRepositoryToken(Schedule),
-          useValue: mockScheduleRepository,
-        },
-        {
           provide: getRepositoryToken(Area),
           useValue: mockAreaRepository,
+        },
+        {
+          provide: UserAreasService,
+          useValue: mockUserAreasService,
         },
       ],
     }).compile();
@@ -217,31 +217,23 @@ describe('AuthController', () => {
         });
       });
 
-      describe('Satgas/Linmas with schedule-based area', () => {
-        it('should return assigned_area when active schedule exists', async () => {
+      describe('Satgas/Linmas with effective-area assignment', () => {
+        it('should return assigned_area from the worker effective areas', async () => {
           const satgasUser: User = {
             ...mockUser,
             id: 'satgas-123',
             role: UserRole.SATGAS,
           };
 
-          const mockSchedule = {
-            id: 'schedule-1',
-            user_id: 'satgas-123',
-            area_id: 'area-456',
-            effective_date: new Date('2026-02-01'),
-            end_date: null,
-            area: {
-              id: 'area-456',
-              name: 'Taman Bungkul',
-              gps_lat: -7.281234,
-              gps_lng: 112.734567,
-              radius_meters: 100,
-              boundary_polygon: null,
-            },
-          };
-
-          mockScheduleRepository.findOne.mockResolvedValue(mockSchedule);
+          mockUserAreasService.getEffectiveAreas.mockResolvedValue([{ id: 'area-456' }]);
+          mockAreaRepository.findOne.mockResolvedValue({
+            id: 'area-456',
+            name: 'Taman Bungkul',
+            gps_lat: -7.281234,
+            gps_lng: 112.734567,
+            radius_meters: 100,
+            boundary_polygon: null,
+          });
 
           const result = await controller.getMe(satgasUser);
 
@@ -255,74 +247,61 @@ describe('AuthController', () => {
             boundary_polygon: null,
             area_type: null,
           });
-          expect(mockScheduleRepository.findOne).toHaveBeenCalledWith({
-            where: expect.objectContaining({
-              user_id: 'satgas-123',
-            }),
-            relations: ['area', 'area.areaType'],
+          expect(mockUserAreasService.getEffectiveAreas).toHaveBeenCalledWith('satgas-123');
+          expect(mockAreaRepository.findOne).toHaveBeenCalledWith({
+            where: { id: 'area-456' },
+            relations: ['areaType'],
           });
         });
 
-        it('should not return assigned_area when no schedule exists', async () => {
+        it('should not return assigned_area when the worker has no effective areas', async () => {
           const satgasUser: User = {
             ...mockUser,
-            id: 'satgas-no-schedule',
+            id: 'satgas-no-area',
             role: UserRole.SATGAS,
           };
 
-          mockScheduleRepository.findOne.mockResolvedValue(null);
+          mockUserAreasService.getEffectiveAreas.mockResolvedValue([]);
 
           const result = await controller.getMe(satgasUser);
 
           expect(result).not.toHaveProperty('assigned_area');
         });
 
-        it('should not return assigned_area when schedule area is null', async () => {
+        it('should not return assigned_area when the effective area no longer exists', async () => {
           const linmasUser: User = {
             ...mockUser,
             id: 'linmas-123',
             role: UserRole.LINMAS,
           };
 
-          const mockSchedule = {
-            id: 'schedule-2',
-            user_id: 'linmas-123',
-            area_id: 'area-789',
-            effective_date: new Date('2026-02-01'),
-            end_date: null,
-            area: null, // Area was deleted
-          };
-
-          mockScheduleRepository.findOne.mockResolvedValue(mockSchedule);
+          mockUserAreasService.getEffectiveAreas.mockResolvedValue([{ id: 'area-789' }]);
+          mockAreaRepository.findOne.mockResolvedValue(null); // Area was deleted
 
           const result = await controller.getMe(linmasUser);
 
           expect(result).not.toHaveProperty('assigned_area');
         });
 
-        it('should return assigned_area when end_date is null (ongoing schedule)', async () => {
+        it('should resolve the first effective area when several exist', async () => {
           const satgasUser: User = {
             ...mockUser,
-            id: 'satgas-ongoing',
+            id: 'satgas-multi',
             role: UserRole.SATGAS,
           };
 
-          const mockSchedule = {
-            id: 'schedule-3',
-            user_id: 'satgas-ongoing',
-            effective_date: new Date('2026-02-01'),
-            end_date: null, // Ongoing schedule
-            area: {
-              id: 'area-789',
-              name: 'Taman Mayangkara',
-              gps_lat: -7.285678,
-              gps_lng: 112.738901,
-              radius_meters: 150,
-              boundary_polygon: null,
-            },
-          };
-
-          mockScheduleRepository.findOne.mockResolvedValue(mockSchedule);
+          mockUserAreasService.getEffectiveAreas.mockResolvedValue([
+            { id: 'area-789' },
+            { id: 'area-other' },
+          ]);
+          mockAreaRepository.findOne.mockResolvedValue({
+            id: 'area-789',
+            name: 'Taman Mayangkara',
+            gps_lat: -7.285678,
+            gps_lng: 112.738901,
+            radius_meters: 150,
+            boundary_polygon: null,
+          });
 
           const result = await controller.getMe(satgasUser);
 
@@ -332,14 +311,14 @@ describe('AuthController', () => {
       });
 
       describe('Edge cases', () => {
-        it('should handle user with no area_id and no schedule gracefully', async () => {
+        it('should handle user with no area_id and no effective area gracefully', async () => {
           const basicUser: User = {
             ...mockUser,
             id: 'basic-user',
             role: UserRole.SATGAS,
           };
 
-          mockScheduleRepository.findOne.mockResolvedValue(null);
+          mockUserAreasService.getEffectiveAreas.mockResolvedValue([]);
 
           const result = await controller.getMe(basicUser);
 

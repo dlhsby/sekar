@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThanOrEqual, MoreThanOrEqual, Or, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -22,8 +22,8 @@ import { MeResponseDto } from './dto/me-response.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
 import { User } from '../users/entities/user.entity';
-import { Schedule } from '../schedules/entities/schedule.entity';
 import { Area } from '../areas/entities/area.entity';
+import { UserAreasService } from '../user-areas/user-areas.service';
 
 /**
  * Authentication Controller
@@ -36,10 +36,9 @@ import { Area } from '../areas/entities/area.entity';
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    @InjectRepository(Schedule)
-    private readonly scheduleRepository: Repository<Schedule>,
     @InjectRepository(Area)
     private readonly areaRepository: Repository<Area>,
+    private readonly userAreasService: UserAreasService,
   ) {}
 
   /**
@@ -329,30 +328,28 @@ export class AuthController {
         };
       }
     } else {
-      // Satgas/Linmas: Check for active schedule-based assignment
-      const today = new Date();
-      const activeSchedule = await this.scheduleRepository.findOne({
-        where: {
-          user_id: user.id,
-          effective_date: LessThanOrEqual(today),
-          end_date: Or(MoreThanOrEqual(today), IsNull()),
-        },
-        relations: ['area', 'area.areaType'],
-      });
-
-      if (activeSchedule && activeSchedule.area) {
-        userData.area_id = activeSchedule.area.id;
-        userData.assigned_area = {
-          id: activeSchedule.area.id,
-          name: activeSchedule.area.name,
-          gps_lat: activeSchedule.area.gps_lat,
-          gps_lng: activeSchedule.area.gps_lng,
-          radius_meters: activeSchedule.area.radius_meters,
-          boundary_polygon: activeSchedule.area.boundary_polygon || null,
-          area_type: activeSchedule.area.areaType
-            ? { id: activeSchedule.area.areaType.id, name: activeSchedule.area.areaType.name }
-            : null,
-        };
+      // Satgas/Linmas: resolve the assigned area from the worker's effective
+      // areas (permanent user_areas ∪ task-based). ADR-013 made the user the
+      // source of truth, replacing the legacy date-based schedules lookup.
+      const effective = await this.userAreasService.getEffectiveAreas(user.id);
+      const primary = effective[0];
+      if (primary) {
+        const area = await this.areaRepository.findOne({
+          where: { id: primary.id },
+          relations: ['areaType'],
+        });
+        if (area) {
+          userData.area_id = area.id;
+          userData.assigned_area = {
+            id: area.id,
+            name: area.name,
+            gps_lat: area.gps_lat,
+            gps_lng: area.gps_lng,
+            radius_meters: area.radius_meters,
+            boundary_polygon: area.boundary_polygon || null,
+            area_type: area.areaType ? { id: area.areaType.id, name: area.areaType.name } : null,
+          };
+        }
       }
     }
 

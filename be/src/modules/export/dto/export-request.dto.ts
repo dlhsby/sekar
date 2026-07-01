@@ -18,7 +18,6 @@ export const EXPORT_ENTITY_TYPES: ExportEntityType[] = [
   'tasks',
   'activities',
   'overtime',
-  'schedules',
 ];
 
 export const EXPORT_FORMATS: ExportFormat[] = ['csv', 'xlsx', 'kmz'];

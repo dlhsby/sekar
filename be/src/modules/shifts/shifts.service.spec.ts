@@ -4,7 +4,6 @@ import { Repository, IsNull } from 'typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { ShiftsService } from './shifts.service';
 import { Shift } from './entities/shift.entity';
-import { Schedule } from '../schedules/entities/schedule.entity';
 import { AreasService } from '../areas/areas.service';
 import { S3Service } from '../../shared/services/s3.service';
 import { ClockInDto } from './dto/clock-in.dto';
@@ -22,7 +21,6 @@ describe('ShiftsService', () => {
   let module: TestingModule;
   let service: ShiftsService;
   let repository: jest.Mocked<Repository<Shift>>;
-  let scheduleRepo: jest.Mocked<Repository<Schedule>>;
   let areasService: jest.Mocked<AreasService>;
   let s3Service: jest.Mocked<S3Service>;
   let statusCalculator: jest.Mocked<StatusCalculatorService>;
@@ -83,9 +81,8 @@ describe('ShiftsService', () => {
     generateKey: jest.fn(),
   };
 
-  const mockScheduleRepo = {
-    findOne: jest.fn(),
-    find: jest.fn().mockResolvedValue([]),
+  const mockUserAreasService = {
+    getEffectiveAreas: jest.fn().mockResolvedValue([]),
   };
 
   const mockShiftDefinitionRepo = {
@@ -106,10 +103,6 @@ describe('ShiftsService', () => {
           useValue: mockRepository,
         },
         {
-          provide: getRepositoryToken(Schedule),
-          useValue: mockScheduleRepo,
-        },
-        {
           provide: getRepositoryToken(ShiftDefinition),
           useValue: mockShiftDefinitionRepo,
         },
@@ -119,7 +112,7 @@ describe('ShiftsService', () => {
         },
         {
           provide: UserAreasService,
-          useValue: { getEffectiveAreas: jest.fn().mockResolvedValue([]) },
+          useValue: mockUserAreasService,
         },
         {
           provide: AreasService,
@@ -142,7 +135,6 @@ describe('ShiftsService', () => {
 
     service = module.get<ShiftsService>(ShiftsService);
     repository = module.get(getRepositoryToken(Shift)) as jest.Mocked<Repository<Shift>>;
-    scheduleRepo = module.get(getRepositoryToken(Schedule)) as jest.Mocked<Repository<Schedule>>;
     areasService = module.get(AreasService) as jest.Mocked<AreasService>;
     s3Service = module.get(S3Service) as jest.Mocked<S3Service>;
     statusCalculator = module.get(StatusCalculatorService) as jest.Mocked<StatusCalculatorService>;
@@ -158,25 +150,18 @@ describe('ShiftsService', () => {
   });
 
   describe('getActiveArea', () => {
-    it('should return area from an active Schedule candidate when exists', async () => {
-      const mockSchedule = {
-        id: 'schedule-uuid',
-        user_id: mockUser.id,
-        area_id: mockArea.id,
-        area: mockArea,
-        effective_date: new Date('2026-01-01'),
-      };
-      mockScheduleRepo.find.mockResolvedValue([mockSchedule as any]);
+    it('should return area from the worker effective areas when one exists', async () => {
+      mockUserAreasService.getEffectiveAreas.mockResolvedValue([mockArea as any]);
 
       // No GPS → primary fallback; userRepo has no primary so first candidate wins.
       const result = await service.getActiveArea(mockUser.id);
 
       expect(result).toEqual(mockArea);
-      expect(mockScheduleRepo.find).toHaveBeenCalled();
+      expect(mockUserAreasService.getEffectiveAreas).toHaveBeenCalled();
     });
 
     it('should return null when the worker has no assigned area (ad-hoc)', async () => {
-      mockScheduleRepo.find.mockResolvedValue([]);
+      mockUserAreasService.getEffectiveAreas.mockResolvedValue([]);
 
       const result = await service.getActiveArea(mockUser.id);
 
@@ -186,7 +171,7 @@ describe('ShiftsService', () => {
     it('should pick the GPS-containing area among several candidates', async () => {
       const near = { id: 'near', gps_lat: -7.29, gps_lng: 112.74, radius_meters: 100 };
       const far = { id: 'far', gps_lat: -7.9, gps_lng: 112.9, radius_meters: 100 };
-      mockScheduleRepo.find.mockResolvedValue([{ area: near } as any, { area: far } as any]);
+      mockUserAreasService.getEffectiveAreas.mockResolvedValue([near as any, far as any]);
 
       const result = await service.getActiveArea(mockUser.id, -7.29, 112.74);
 
@@ -294,16 +279,8 @@ describe('ShiftsService', () => {
         selfie_photo: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
       };
 
-      const mockSchedule = {
-        id: 'schedule-uuid',
-        user_id: mockUser.id,
-        area_id: mockArea.id,
-        area: mockArea,
-        effective_date: new Date('2026-01-01'),
-      };
-
       mockRepository.findOne.mockResolvedValue(null);
-      mockScheduleRepo.find.mockResolvedValue([mockSchedule as any]);
+      mockUserAreasService.getEffectiveAreas.mockResolvedValue([mockArea as any]);
       mockShiftDefinitionRepo.find.mockResolvedValue([]);
       mockS3Service.generateKey.mockReturnValue('sekar-media/2026/01/09/clock-in/test.jpg');
       mockS3Service.uploadFile.mockResolvedValue('https://s3.amazonaws.com/photo.jpg');
@@ -313,7 +290,7 @@ describe('ShiftsService', () => {
       const result = await service.clockIn(mockUser.id, dtoWithoutArea);
 
       expect(result).toEqual(mockShift);
-      expect(mockScheduleRepo.find).toHaveBeenCalled();
+      expect(mockUserAreasService.getEffectiveAreas).toHaveBeenCalled();
       expect(mockAreasService.findOne).not.toHaveBeenCalled();
     });
 
@@ -331,7 +308,7 @@ describe('ShiftsService', () => {
       };
 
       mockRepository.findOne.mockResolvedValue(null);
-      mockScheduleRepo.find.mockResolvedValue([]);
+      mockUserAreasService.getEffectiveAreas.mockResolvedValue([]);
       mockShiftDefinitionRepo.find.mockResolvedValue([]);
       mockS3Service.generateKey.mockReturnValue('sekar-media/2026/01/09/clock-in/test.jpg');
       mockS3Service.uploadFile.mockResolvedValue('https://s3.amazonaws.com/photo.jpg');

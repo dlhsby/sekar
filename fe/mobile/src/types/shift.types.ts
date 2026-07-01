@@ -55,24 +55,9 @@ export interface AreaStaffRequirement {
   updated_at: string;
 }
 
-// Schedule (was WorkerSchedule)
-export interface Schedule {
-  id: string;
-  user_id: string;
-  user?: User;
-  area_id: string;
-  area?: Area;
-  shift_definition_id: string;
-  shift_definition?: ShiftDefinition;
-  effective_date: string; // YYYY-MM-DD
-  end_date?: string; // YYYY-MM-DD
-  created_by?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-// Daily Schedule — Phase 3 (roster monitoring, day-scoped roster row)
-export type DailyScheduleStatus =
+// Schedule — the daily roster (the single schedule concept, ADR-013). A standing
+// shift+rayon+area assignment lives on the user; the roster is one row per WIB day.
+export type ScheduleStatus =
   | 'planned' // scheduled to work
   | 'present' // clocked in
   | 'absent' // scheduled but didn't show
@@ -81,7 +66,7 @@ export type DailyScheduleStatus =
   | 'replaced' // replaced by another worker
   | 'off'; // active worker but no shift today
 
-export interface DailyScheduleArea {
+export interface ScheduleArea {
   id: string;
   area_id: string;
   area: {
@@ -90,11 +75,11 @@ export interface DailyScheduleArea {
   };
 }
 
-export interface DailySchedule {
+export interface Schedule {
   id: string;
   user_id: string;
   schedule_date: string; // YYYY-MM-DD
-  status: DailyScheduleStatus;
+  status: ScheduleStatus;
   // Full definition (the API returns the whole relation) so crosses_midnight is
   // available for the lateness check instead of being defaulted.
   shift_definition: ShiftDefinition | null;
@@ -102,5 +87,5 @@ export interface DailySchedule {
     id: string;
     name: string;
   } | null;
-  daily_schedule_areas: DailyScheduleArea[];
+  schedule_areas: ScheduleArea[];
 }

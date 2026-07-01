@@ -14,389 +14,145 @@ import {
 import {
   ApiTags,
   ApiOperation,
-  ApiResponse,
   ApiBearerAuth,
+  ApiResponse,
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
 import { SchedulesService } from './schedules.service';
 import { Schedule } from './entities/schedule.entity';
-import { CreateScheduleDto } from './dto/create-schedule.dto';
-import { UpdateScheduleDto } from './dto/update-schedule.dto';
+import {
+  GenerateRosterDto,
+  ReplaceWorkerDto,
+  SetLeaveDto,
+  UpdateRosterAreasDto,
+  UpdateRosterShiftDto,
+} from './dto/schedule-actions.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
-import { USER_MANAGERS } from '../users/constants/role-groups';
-import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
+import { ROSTER_EDITORS, ROSTER_VIEWERS, USER_MANAGERS } from '../users/constants/role-groups';
+import { TimezoneUtil } from '../../common/utils/timezone.util';
 
 /**
- * Controller for schedule operations
- *
- * All endpoints require authentication.
- * - Admin and KoordinatorLapangan can create, update, and delete schedules
- * - Workers can view their own schedules
- * - Supervisors can view schedules for their areas
+ * Daily roster operations. Reads/edits are gated to ROSTER_MANAGERS; kepala_rayon
+ * and admin_data are confined to their own rayon (forced on list, checked on
+ * edit). Workers read their own day via `GET /schedules/my`.
  */
 @ApiTags('schedules')
 @ApiBearerAuth('JWT-auth')
 @Controller('schedules')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SchedulesController {
-  constructor(private readonly schedulesService: SchedulesService) {}
+  constructor(private readonly service: SchedulesService) {}
 
-  /**
-   * Get all schedules
-   *
-   * Returns schedules with optional filters.
-   *
-   * @param areaId - Optional filter by area
-   * @param userId - Optional filter by user
-   * @param activeOnly - If 'true', only return active schedules
-   * @returns Array of schedules
-   */
-  @Get()
-  @ApiOperation({
-    summary: 'Get all schedules',
-    description: 'Returns schedules with optional filters. Admin sees all, others see filtered.',
-  })
-  @ApiQuery({
-    name: 'areaId',
-    required: false,
-    description: 'Filter by area ID (alias: area_id)',
-    type: 'string',
-  })
-  @ApiQuery({
-    name: 'area_id',
-    required: false,
-    description: 'Filter by area ID (snake_case alias of areaId)',
-    type: 'string',
-  })
-  @ApiQuery({
-    name: 'userId',
-    required: false,
-    description: 'Filter by user ID',
-    type: 'string',
-  })
-  @ApiQuery({
-    name: 'shift_definition_id',
-    required: false,
-    description: 'Filter by shift definition ID',
-    type: 'string',
-  })
-  @ApiQuery({
-    name: 'search',
-    required: false,
-    description: "Search by assigned worker's name or username",
-    type: 'string',
-  })
-  @ApiQuery({
-    name: 'date_from',
-    required: false,
-    description: 'Keep schedules whose date range overlaps on/after this date (YYYY-MM-DD)',
-    type: 'string',
-  })
-  @ApiQuery({
-    name: 'date_to',
-    required: false,
-    description: 'Keep schedules whose date range overlaps on/before this date (YYYY-MM-DD)',
-    type: 'string',
-  })
-  @ApiQuery({
-    name: 'activeOnly',
-    required: false,
-    description: 'Return only currently active schedules',
-    type: 'boolean',
-  })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    description: 'Page number (1-based). When page/limit is passed the response is paginated.',
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    description: 'Items per page (default 20, max 100)',
-  })
-  @ApiResponse({
-    status: 200,
-    description:
-      'Schedules retrieved successfully. Array by default; PaginatedResponseDto when page/limit query params are present (Phase 4-6 C2).',
-    type: [Schedule],
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing JWT token',
-  })
-  findAll(
-    @GetUser() user: User,
-    @Query('areaId') areaId?: string,
-    @Query('userId') userId?: string,
-    @Query('activeOnly') activeOnly?: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-    @Query('area_id') areaIdSnake?: string,
-    @Query('shift_definition_id') shiftDefinitionId?: string,
-    @Query('search') search?: string,
-    @Query('date_from') dateFrom?: string,
-    @Query('date_to') dateTo?: string,
-  ): Promise<Schedule[] | PaginatedResponseDto<Schedule>> {
-    const resolvedAreaId = areaId ?? areaIdSnake;
-    const filters = { search, shiftDefinitionId, dateFrom, dateTo };
-    if (page !== undefined || limit !== undefined) {
-      const pageNum = Math.max(1, parseInt(page ?? '1', 10) || 1);
-      const limitNum = Math.min(100, Math.max(1, parseInt(limit ?? '20', 10) || 20));
-      return this.schedulesService.findAllPaginated(
-        resolvedAreaId,
-        userId,
-        activeOnly === 'true',
-        user,
-        pageNum,
-        limitNum,
-        filters,
-      );
-    }
-    return this.schedulesService.findAll(
-      resolvedAreaId,
-      userId,
-      activeOnly === 'true',
-      user,
-      filters,
-    );
+  /** Whether the caller is rayon-scoped (kepala_rayon / admin_data). */
+  private isRayonScoped(user: User): boolean {
+    return user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_DATA;
   }
 
-  /**
-   * Get the current user's schedule
-   *
-   * Returns the currently active schedule for the authenticated user.
-   *
-   * @param user - Current authenticated user
-   * @returns The current schedule or null
-   */
   @Get('my')
-  @ApiOperation({
-    summary: 'Get my current schedule',
-    description: "Returns the authenticated user's currently active schedule",
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Current schedule retrieved successfully (or null if none)',
-    type: Schedule,
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing JWT token',
-  })
-  getMySchedule(@GetUser() user: User): Promise<Schedule | null> {
-    return this.schedulesService.findCurrentByUserId(user.id);
-  }
-
-  /**
-   * Get all schedules for an area
-   *
-   * @param areaId - Area ID (UUID)
-   * @param activeOnly - If 'true', only return active schedules
-   * @returns Array of schedules for the area
-   */
-  @Get('area/:areaId')
-  @ApiOperation({
-    summary: 'Get schedules for an area',
-    description: 'Returns all schedules for a specific area',
-  })
-  @ApiParam({
-    name: 'areaId',
-    description: 'Area UUID',
-    example: 'c3d4e5f6-a7b8-9012-cdef-123456789012',
-    type: 'string',
-  })
+  @ApiOperation({ summary: "Get the caller's roster for a day (defaults to today, WIB)" })
   @ApiQuery({
-    name: 'activeOnly',
+    name: 'date',
     required: false,
-    description: 'Return only currently active schedules',
-    type: 'boolean',
+    description: 'WIB day (YYYY-MM-DD); defaults to today',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'Schedules retrieved successfully',
-    type: [Schedule],
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing JWT token',
-  })
-  findByArea(
-    @Param('areaId') areaId: string,
-    @Query('activeOnly') activeOnly?: string,
+  @ApiResponse({ status: 200, type: Schedule })
+  getMy(@GetUser() user: User, @Query('date') date?: string): Promise<Schedule | null> {
+    const day = date ?? TimezoneUtil.jakartaDateString();
+    return this.service.findByUserAndDate(user.id, day);
+  }
+
+  @Get('date/:date')
+  @Roles(...ROSTER_VIEWERS)
+  @ApiOperation({ summary: 'List the roster for a WIB day' })
+  @ApiParam({ name: 'date', example: '2026-06-30' })
+  @ApiQuery({ name: 'rayonId', required: false })
+  @ApiResponse({ status: 200, type: [Schedule] })
+  getByDate(
+    @Param('date') date: string,
+    @GetUser() user: User,
+    @Query('rayonId') rayonId?: string,
   ): Promise<Schedule[]> {
-    return this.schedulesService.findByAreaId(areaId, activeOnly === 'true');
+    // Rayon-scoped roles always see only their own rayon, regardless of the
+    // query. A scoped user with no rayon_id (misconfiguration) sees nothing —
+    // never fall through to the unfiltered (all-rayon) query.
+    if (this.isRayonScoped(user)) {
+      return user.rayon_id ? this.service.findByDate(date, user.rayon_id) : Promise.resolve([]);
+    }
+    return this.service.findByDate(date, rayonId);
   }
 
-  /**
-   * Get a single schedule by ID
-   *
-   * @param id - Schedule ID (UUID)
-   * @returns The schedule
-   */
-  @Get(':id')
-  @ApiOperation({
-    summary: 'Get schedule by ID',
-    description: 'Returns a single schedule by its UUID',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Schedule UUID',
-    example: '55555555-5555-5555-5555-555555555501',
-    type: 'string',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Schedule retrieved successfully',
-    type: Schedule,
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing JWT token',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Schedule not found',
-  })
-  findOne(@Param('id') id: string): Promise<Schedule> {
-    return this.schedulesService.findOne(id);
+  @Post('generate')
+  @Roles(...USER_MANAGERS)
+  @ApiOperation({ summary: 'Generate/regenerate the roster for a day (idempotent)' })
+  @ApiResponse({ status: 201, description: '{ generated: number }' })
+  async generate(
+    @Body() dto: GenerateRosterDto,
+    @GetUser() user: User,
+  ): Promise<{ generated: number }> {
+    const generated = await this.service.generateRoster(dto.date, user.id);
+    return { generated };
   }
 
-  /**
-   * Create a new schedule
-   *
-   * Admin and KoordinatorLapangan only.
-   *
-   * @param createDto - Schedule creation data
-   * @param user - Current authenticated user
-   * @returns The created schedule
-   */
-  @Post()
-  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.ADMIN_DATA)
-  @ApiOperation({
-    summary: 'Create new schedule',
-    description: 'Create a new schedule. Admin and KoordinatorLapangan only.',
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'Schedule created successfully',
-    type: Schedule,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid input data or user not a Satgas/Linmas',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing JWT token',
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Forbidden - Admin or KoordinatorLapangan role required',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'User, area, or shift definition not found',
-  })
-  @ApiResponse({
-    status: 409,
-    description: 'Conflict - Schedule overlaps with existing schedule',
-  })
-  create(@Body() createDto: CreateScheduleDto, @GetUser() user: User): Promise<Schedule> {
-    return this.schedulesService.create(createDto, user.id);
+  @Patch(':id/leave')
+  @Roles(...ROSTER_EDITORS)
+  @ApiOperation({ summary: 'Mark a roster row as sick / annual leave' })
+  @ApiResponse({ status: 200, type: Schedule })
+  async setLeave(
+    @Param('id') id: string,
+    @Body() dto: SetLeaveDto,
+    @GetUser() user: User,
+  ): Promise<Schedule> {
+    // Fine-grained edit permission (role hierarchy + rayon/area scope) is
+    // enforced in the service via assertCanEdit.
+    return this.service.setLeave(id, dto.leave_type, dto.notes, user);
   }
 
-  /**
-   * Update an existing schedule
-   *
-   * Admin and KoordinatorLapangan only.
-   *
-   * @param id - Schedule ID (UUID)
-   * @param updateDto - Schedule update data
-   * @returns The updated schedule
-   */
-  @Patch(':id')
-  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.ADMIN_DATA)
-  @ApiOperation({
-    summary: 'Update schedule',
-    description: 'Update an existing schedule. Admin and KoordinatorLapangan only.',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Schedule UUID',
-    example: '55555555-5555-5555-5555-555555555501',
-    type: 'string',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Schedule updated successfully',
-    type: Schedule,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid input data',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing JWT token',
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Forbidden - Admin or KoordinatorLapangan role required',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Schedule, area, or shift definition not found',
-  })
-  @ApiResponse({
-    status: 409,
-    description: 'Conflict - Schedule overlaps with existing schedule',
-  })
-  update(@Param('id') id: string, @Body() updateDto: UpdateScheduleDto): Promise<Schedule> {
-    return this.schedulesService.update(id, updateDto);
+  @Patch(':id/replace')
+  @Roles(...ROSTER_EDITORS)
+  @ApiOperation({ summary: 'Replace the rostered worker for the day' })
+  @ApiResponse({ status: 200, type: Schedule })
+  async replace(
+    @Param('id') id: string,
+    @Body() dto: ReplaceWorkerDto,
+    @GetUser() user: User,
+  ): Promise<Schedule> {
+    return this.service.replaceWorker(id, dto.replacement_user_id, dto.notes, user);
   }
 
-  /**
-   * Delete a schedule
-   *
-   * Admin and KoordinatorLapangan only.
-   *
-   * @param id - Schedule ID (UUID)
-   */
+  @Patch(':id/areas')
+  @Roles(...ROSTER_EDITORS)
+  @ApiOperation({ summary: 'Set the areas for the day (0..N)' })
+  @ApiResponse({ status: 200, type: Schedule })
+  async updateAreas(
+    @Param('id') id: string,
+    @Body() dto: UpdateRosterAreasDto,
+    @GetUser() user: User,
+  ): Promise<Schedule> {
+    return this.service.updateAreas(id, dto.area_ids, user);
+  }
+
+  @Patch(':id/shift')
+  @Roles(...ROSTER_EDITORS)
+  @ApiOperation({ summary: 'Set (or clear) the shift for the day' })
+  @ApiResponse({ status: 200, type: Schedule })
+  async updateShift(
+    @Param('id') id: string,
+    @Body() dto: UpdateRosterShiftDto,
+    @GetUser() user: User,
+  ): Promise<Schedule> {
+    return this.service.updateShift(id, dto.shift_definition_id ?? null, user);
+  }
+
   @Delete(':id')
-  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.ADMIN_DATA)
+  @Roles(...USER_MANAGERS)
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({
-    summary: 'Delete schedule',
-    description: 'Soft delete a schedule. Admin and KoordinatorLapangan only.',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Schedule UUID',
-    example: '55555555-5555-5555-5555-555555555501',
-    type: 'string',
-  })
-  @ApiResponse({
-    status: 204,
-    description: 'Schedule deleted successfully',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing JWT token',
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Forbidden - Admin or KoordinatorLapangan role required',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Schedule not found',
-  })
-  remove(@Param('id') id: string): Promise<void> {
-    return this.schedulesService.remove(id);
+  @ApiOperation({ summary: 'Soft-delete a roster row' })
+  async remove(@Param('id') id: string, @GetUser() user: User): Promise<void> {
+    await this.service.remove(id, user.id);
   }
 }

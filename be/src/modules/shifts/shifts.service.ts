@@ -1,6 +1,6 @@
 import { Injectable, Logger, HttpStatus, Optional, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull, LessThanOrEqual, Or, MoreThanOrEqual } from 'typeorm';
+import { Repository, IsNull } from 'typeorm';
 import { Shift } from './entities/shift.entity';
 import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
@@ -13,14 +13,13 @@ import { TimezoneUtil } from '../../common/utils/timezone.util';
 import { AttendanceDaySummaryDto } from './dto/attendance-day.dto';
 import { AttendanceFilterDto } from './dto/attendance-filter.dto';
 import { getMinimumShiftDurationMinutes } from '../../common/constants/shift.constants';
-import { Schedule } from '../schedules/entities/schedule.entity';
 import { Area } from '../areas/entities/area.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
 import { User } from '../users/entities/user.entity';
 import { StatusCalculatorService } from '../monitoring/services/status-calculator.service';
 import { AuditLogService } from '../audit/audit.service';
 import { UserAreasService } from '../user-areas/user-areas.service';
-import { DailySchedulesService } from '../daily-schedules/daily-schedules.service';
+import { SchedulesService } from '../schedules/schedules.service';
 import { GpsUtil } from '../../common/utils/gps.util';
 
 /**
@@ -36,8 +35,6 @@ export class ShiftsService {
   constructor(
     @InjectRepository(Shift)
     private readonly shiftRepository: Repository<Shift>,
-    @InjectRepository(Schedule)
-    private readonly scheduleRepo: Repository<Schedule>,
     @InjectRepository(ShiftDefinition)
     private readonly shiftDefinitionRepo: Repository<ShiftDefinition>,
     @InjectRepository(User)
@@ -51,7 +48,7 @@ export class ShiftsService {
     // Daily roster (ADR-013). Optional → legacy specs without the provider keep
     // the pre-roster behavior (user_areas + schedules + primary area).
     @Optional()
-    private readonly dailySchedulesService?: DailySchedulesService,
+    private readonly dailySchedulesService?: SchedulesService,
     // Phase 4-7 (H1): boundary math extracted to the shared service. Optional →
     // legacy specs without the provider fall back to a local instance.
     @Optional()
@@ -108,24 +105,15 @@ export class ShiftsService {
     return candidates.find((a) => a.id === user?.area_id) ?? candidates[0];
   }
 
-  /** Distinct assigned areas: permanent + task_based (user_areas) ∪ active schedules. */
+  /**
+   * Distinct assigned areas from the worker's standing assignment: permanent +
+   * task_based (`user_areas`). The roster (today's areas) is preferred upstream
+   * in `getActiveArea`; this is the fallback when there is no roster row.
+   */
   private async getCandidateAreas(userId: string): Promise<Area[]> {
     const effective = await this.userAreasService.getEffectiveAreas(userId);
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const schedules = await this.scheduleRepo.find({
-      where: {
-        user_id: userId,
-        effective_date: LessThanOrEqual(today),
-        end_date: Or(IsNull(), MoreThanOrEqual(today)),
-      },
-      relations: ['area'],
-    });
-
     const byId = new Map<string, Area>();
     for (const area of effective) if (area) byId.set(area.id, area);
-    for (const s of schedules) if (s.area) byId.set(s.area.id, s.area);
     return [...byId.values()];
   }
 

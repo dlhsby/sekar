@@ -1,906 +1,399 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, IsNull, Or, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
-import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { ForbiddenException } from '@nestjs/common';
 import { SchedulesService } from './schedules.service';
-import { Schedule } from './entities/schedule.entity';
-import { User } from '../users/entities/user.entity';
-import { UsersService } from '../users/users.service';
-import { AreasService } from '../areas/areas.service';
-import { ShiftDefinitionsService } from '../shift-definitions/shift-definitions.service';
-import { CreateScheduleDto } from './dto/create-schedule.dto';
-import { UpdateScheduleDto } from './dto/update-schedule.dto';
-import { UserRole } from '../users/entities/user.entity';
-import { TimezoneUtil } from '../../common/utils/timezone.util';
+import { Schedule, ScheduleStatus } from './entities/schedule.entity';
+import { ScheduleArea } from './entities/schedule-area.entity';
+import { Area } from '../areas/entities/area.entity';
+import { User, UserRole } from '../users/entities/user.entity';
+import { UserAreasService } from '../user-areas/user-areas.service';
+import { AuditLogService } from '../audit/audit.service';
+
+/** A global editor (superadmin) — passes the edit hierarchy for any target. */
+const ADMIN = { id: 'admin', role: UserRole.SUPERADMIN } as User;
+
+/** Minimal in-memory-ish repo mock with the methods the service uses. */
+function makeRosterRepo() {
+  let counter = 0;
+  return {
+    find: jest.fn(),
+    findOne: jest.fn(),
+    create: jest.fn((x) => ({ ...x })),
+    save: jest.fn(async (x) => ({ id: x.id ?? `gen-${++counter}`, ...x })),
+    softDelete: jest.fn(),
+  };
+}
 
 describe('SchedulesService', () => {
-  let module: TestingModule;
   let service: SchedulesService;
-  let repository: jest.Mocked<Repository<Schedule>>;
-  let usersService: jest.Mocked<UsersService>;
-  let areasService: jest.Mocked<AreasService>;
-  let shiftDefinitionsService: jest.Mocked<ShiftDefinitionsService>;
-
-  const mockUser = {
-    id: 'user-uuid-1a2b3c4d',
-    username: 'worker1',
-    role: UserRole.SATGAS,
-    full_name: 'Worker One',
-    is_active: true,
-  };
-
-  const mockLinmasUser = {
-    id: 'user-uuid-2b3c4d5e',
-    username: 'linmas1',
-    role: UserRole.LINMAS,
-    full_name: 'Linmas One',
-    is_active: true,
-  };
-
-  const mockSupervisorUser = {
-    id: 'user-uuid-3c4d5e6f',
-    username: 'supervisor1',
-    role: UserRole.KORLAP,
-    full_name: 'Supervisor One',
-    is_active: true,
-  };
-
-  const mockArea = {
-    id: 'area-uuid-a1b2c3d4',
-    name: 'Taman Bungkul',
-    gps_lat: -7.2905,
-    gps_lng: 112.7398,
-    radius_meters: 150,
-    is_active: true,
-  };
-
-  const mockShiftDefinition = {
-    id: 'shift-def-uuid-1',
-    name: 'Shift 1 (Morning)',
-    start_time: '08:00',
-    end_time: '16:00',
-    is_active: true,
-  };
-
-  const mockSchedule: any = {
-    id: 'schedule-uuid-1',
-    user_id: mockUser.id,
-    area_id: mockArea.id,
-    shift_definition_id: mockShiftDefinition.id,
-    effective_date: new Date('2026-01-20'),
-    end_date: new Date('2026-12-31'),
-    created_by: 'admin-uuid',
-    user: mockUser,
-    area: mockArea,
-    shift_definition: mockShiftDefinition,
-    created_at: new Date(),
-    updated_at: new Date(),
-  };
-
-  const mockRepository = {
-    create: jest.fn(),
-    save: jest.fn(),
-    findOne: jest.fn(),
-    find: jest.fn(),
-    softDelete: jest.fn(),
-    createQueryBuilder: jest.fn(),
-  };
-
-  const mockUsersService = {
-    findOne: jest.fn(),
-  };
-
-  const mockAreasService = {
-    findOne: jest.fn(),
-  };
-
-  const mockShiftDefinitionsService = {
-    findOne: jest.fn(),
-  };
+  let rosterRepo: ReturnType<typeof makeRosterRepo>;
+  let areaRepo: { delete: jest.Mock; create: jest.Mock; save: jest.Mock };
+  let areaEntityRepo: { find: jest.Mock };
+  let userRepo: { find: jest.Mock; findOne: jest.Mock };
+  let userAreas: { getPermanentAreaIdsForUsers: jest.Mock; getPermanentAreaIds: jest.Mock };
+  let audit: { log: jest.Mock };
 
   beforeEach(async () => {
-    module = await Test.createTestingModule({
+    rosterRepo = makeRosterRepo();
+    areaRepo = {
+      delete: jest.fn(),
+      create: jest.fn((x) => ({ ...x })),
+      save: jest.fn(async (x) => x),
+    };
+    areaEntityRepo = { find: jest.fn().mockResolvedValue([]) };
+    userRepo = { find: jest.fn(), findOne: jest.fn() };
+    userAreas = {
+      getPermanentAreaIdsForUsers: jest.fn().mockResolvedValue(new Map()),
+      getPermanentAreaIds: jest.fn().mockResolvedValue([]),
+    };
+    audit = { log: jest.fn().mockResolvedValue(undefined) };
+
+    const module: TestingModule = await Test.createTestingModule({
       providers: [
         SchedulesService,
-        {
-          provide: getRepositoryToken(Schedule),
-          useValue: mockRepository,
-        },
-        {
-          provide: getRepositoryToken(User),
-          useValue: { findOne: jest.fn().mockResolvedValue(null) },
-        },
-        {
-          provide: UsersService,
-          useValue: mockUsersService,
-        },
-        {
-          provide: AreasService,
-          useValue: mockAreasService,
-        },
-        {
-          provide: ShiftDefinitionsService,
-          useValue: mockShiftDefinitionsService,
-        },
+        { provide: getRepositoryToken(Schedule), useValue: rosterRepo },
+        { provide: getRepositoryToken(ScheduleArea), useValue: areaRepo },
+        { provide: getRepositoryToken(Area), useValue: areaEntityRepo },
+        { provide: getRepositoryToken(User), useValue: userRepo },
+        { provide: UserAreasService, useValue: userAreas },
+        { provide: AuditLogService, useValue: audit },
       ],
     }).compile();
 
-    service = module.get<SchedulesService>(SchedulesService);
-    repository = module.get(getRepositoryToken(Schedule)) as jest.Mocked<Repository<Schedule>>;
-    usersService = module.get(UsersService) as jest.Mocked<UsersService>;
-    areasService = module.get(AreasService) as jest.Mocked<AreasService>;
-    shiftDefinitionsService = module.get(
-      ShiftDefinitionsService,
-    ) as jest.Mocked<ShiftDefinitionsService>;
+    service = module.get(SchedulesService);
   });
 
-  afterEach(async () => {
-    await module.close();
-    jest.clearAllMocks();
-  });
-
-  describe('findAll', () => {
-    const mockQueryBuilder: any = {
-      leftJoinAndSelect: jest.fn().mockReturnThis(),
-      andWhere: jest.fn().mockReturnThis(),
-      orderBy: jest.fn().mockReturnThis(),
-      getMany: jest.fn(),
-    };
-
-    beforeEach(() => {
-      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
-    });
-
-    it('should return all schedules without filters', async () => {
-      mockQueryBuilder.getMany.mockResolvedValue([mockSchedule]);
-
-      const result = await service.findAll();
-
-      expect(result).toEqual([mockSchedule]);
-      expect(mockRepository.createQueryBuilder).toHaveBeenCalledWith('schedule');
-      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('schedule.user', 'user');
-      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('schedule.area', 'area');
-      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith(
-        'schedule.shift_definition',
-        'shift_definition',
+  describe('generateRoster', () => {
+    it('materializes a row per active user — PLANNED with a shift, OFF without', async () => {
+      userRepo.find.mockResolvedValue([
+        { id: 'A', is_active: true, rayon_id: 'r1', shift_definition_id: 's1' },
+        { id: 'B', is_active: true, rayon_id: null, shift_definition_id: null },
+      ]);
+      rosterRepo.find.mockResolvedValue([]); // none yet
+      userAreas.getPermanentAreaIdsForUsers.mockResolvedValue(
+        new Map([
+          ['A', ['area1']],
+          ['B', []],
+        ]),
       );
-      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('schedule.effective_date', 'DESC');
+
+      const created = await service.generateRoster('2026-06-30', 'admin');
+
+      expect(created).toBe(2);
+      const statuses = rosterRepo.save.mock.calls.map((c) => c[0].status);
+      expect(statuses).toContain(ScheduleStatus.PLANNED);
+      expect(statuses).toContain(ScheduleStatus.OFF);
+      // worker A's single area materialized into the join table
+      expect(areaRepo.save).toHaveBeenCalled();
     });
 
-    it('should filter schedules by area ID', async () => {
-      mockQueryBuilder.getMany.mockResolvedValue([mockSchedule]);
+    it('is idempotent — skips users who already have a row for the day', async () => {
+      userRepo.find.mockResolvedValue([
+        { id: 'A', is_active: true, shift_definition_id: 's1' },
+        { id: 'B', is_active: true, shift_definition_id: 's1' },
+      ]);
+      rosterRepo.find.mockResolvedValue([{ id: 'x', user_id: 'A' }]); // A already rostered
+      userAreas.getPermanentAreaIdsForUsers.mockResolvedValue(new Map([['B', []]])); // only B
 
-      await service.findAll(mockArea.id);
+      const created = await service.generateRoster('2026-06-30', 'admin');
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('schedule.area_id = :areaId', {
-        areaId: mockArea.id,
-      });
-    });
-
-    it('should filter schedules by user ID', async () => {
-      mockQueryBuilder.getMany.mockResolvedValue([mockSchedule]);
-
-      await service.findAll(undefined, mockUser.id);
-
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('schedule.user_id = :userId', {
-        userId: mockUser.id,
-      });
-    });
-
-    it('should filter schedules by activeOnly', async () => {
-      mockQueryBuilder.getMany.mockResolvedValue([mockSchedule]);
-      // activeOnly boundary is computed in Asia/Jakarta (Phase 4-7 E1)
-      const today = TimezoneUtil.jakartaDateString();
-
-      await service.findAll(undefined, undefined, true);
-
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('schedule.effective_date <= :today', {
-        today,
-      });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        '(schedule.end_date IS NULL OR schedule.end_date >= :today)',
-        { today },
-      );
-    });
-
-    it('should filter schedules by shift definition ID', async () => {
-      mockQueryBuilder.getMany.mockResolvedValue([mockSchedule]);
-
-      await service.findAll(undefined, undefined, false, undefined, {
-        shiftDefinitionId: 'shift-1',
-      });
-
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'schedule.shift_definition_id = :shiftDefinitionId',
-        { shiftDefinitionId: 'shift-1' },
-      );
-    });
-
-    it('should search schedules by worker name or username', async () => {
-      mockQueryBuilder.getMany.mockResolvedValue([mockSchedule]);
-
-      await service.findAll(undefined, undefined, false, undefined, { search: 'budi' });
-
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        '(user.full_name ILIKE :search OR user.username ILIKE :search)',
-        { search: '%budi%' },
-      );
-    });
-
-    it('should filter schedules by date range overlap', async () => {
-      mockQueryBuilder.getMany.mockResolvedValue([mockSchedule]);
-
-      await service.findAll(undefined, undefined, false, undefined, {
-        dateFrom: '2026-06-22',
-        dateTo: '2026-06-28',
-      });
-
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('schedule.effective_date <= :dateTo', {
-        dateTo: '2026-06-28',
-      });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        '(schedule.end_date IS NULL OR schedule.end_date >= :dateFrom)',
-        { dateFrom: '2026-06-22' },
-      );
-    });
-
-    it('should apply all filters together', async () => {
-      mockQueryBuilder.getMany.mockResolvedValue([mockSchedule]);
-      const today = TimezoneUtil.jakartaDateString();
-
-      await service.findAll(mockArea.id, mockUser.id, true);
-
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('schedule.area_id = :areaId', {
-        areaId: mockArea.id,
-      });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('schedule.user_id = :userId', {
-        userId: mockUser.id,
-      });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('schedule.effective_date <= :today', {
-        today,
-      });
-    });
-
-    it('should filter schedules by rayon for ADMIN_DATA user', async () => {
-      const adminDataUser = {
-        id: 'admin-data-uuid',
-        role: UserRole.ADMIN_DATA,
-        rayon_id: 'rayon-uuid-1',
-      };
-      mockQueryBuilder.getMany.mockResolvedValue([mockSchedule]);
-
-      await service.findAll(undefined, undefined, false, adminDataUser as any);
-
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('area.rayon_id = :rayonId', {
-        rayonId: 'rayon-uuid-1',
-      });
-    });
-
-    it('should filter schedules by rayon for KEPALA_RAYON user', async () => {
-      const kepalaRayonUser = {
-        id: 'kepala-rayon-uuid',
-        role: UserRole.KEPALA_RAYON,
-        rayon_id: 'rayon-uuid-2',
-      };
-      mockQueryBuilder.getMany.mockResolvedValue([mockSchedule]);
-
-      await service.findAll(undefined, undefined, false, kepalaRayonUser as any);
-
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('area.rayon_id = :rayonId', {
-        rayonId: 'rayon-uuid-2',
-      });
-    });
-
-    it('should not filter by rayon for ADMIN_SYSTEM user', async () => {
-      const adminSystemUser = {
-        id: 'admin-system-uuid',
-        role: UserRole.ADMIN_SYSTEM,
-      };
-      mockQueryBuilder.getMany.mockResolvedValue([mockSchedule]);
-
-      await service.findAll(undefined, undefined, false, adminSystemUser as any);
-
-      // Should not have rayon filter
-      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
-        'area.rayon_id = :rayonId',
-        expect.anything(),
-      );
-    });
-
-    it('should return empty array for admin_data when no schedules in their rayon', async () => {
-      const adminDataUser = {
-        id: 'admin-data-uuid-2',
-        role: UserRole.ADMIN_DATA,
-        rayon_id: 'empty-rayon-uuid',
-      };
-      mockQueryBuilder.getMany.mockResolvedValue([]);
-
-      const result = await service.findAll(undefined, undefined, false, adminDataUser as any);
-
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('area.rayon_id = :rayonId', {
-        rayonId: 'empty-rayon-uuid',
-      });
-      expect(result).toHaveLength(0);
-    });
-
-    it('should return empty array for kepala_rayon when no schedules in their rayon', async () => {
-      const kepalaRayonUser = {
-        id: 'kepala-rayon-uuid-2',
-        role: UserRole.KEPALA_RAYON,
-        rayon_id: 'empty-rayon-uuid-2',
-      };
-      mockQueryBuilder.getMany.mockResolvedValue([]);
-
-      const result = await service.findAll(undefined, undefined, false, kepalaRayonUser as any);
-
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('area.rayon_id = :rayonId', {
-        rayonId: 'empty-rayon-uuid-2',
-      });
-      expect(result).toHaveLength(0);
-    });
-
-    it('should properly scope admin_data to only their rayon schedules', async () => {
-      const adminDataUser = {
-        id: 'admin-data-uuid',
-        role: UserRole.ADMIN_DATA,
-        rayon_id: 'rayon-uuid-1',
-      };
-
-      const rayon1Schedules = [
-        { ...mockSchedule, id: 'schedule-1', area: { rayon_id: 'rayon-uuid-1' } },
-        { ...mockSchedule, id: 'schedule-2', area: { rayon_id: 'rayon-uuid-1' } },
-      ];
-      mockQueryBuilder.getMany.mockResolvedValue(rayon1Schedules);
-
-      const result = await service.findAll(undefined, undefined, false, adminDataUser as any);
-
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('area.rayon_id = :rayonId', {
-        rayonId: 'rayon-uuid-1',
-      });
-      expect(result).toHaveLength(2);
-      expect(result.every((s: any) => s.area.rayon_id === 'rayon-uuid-1')).toBe(true);
+      expect(created).toBe(1);
+      expect(rosterRepo.save.mock.calls.every((c) => c[0].user_id !== 'A')).toBe(true);
     });
   });
 
-  describe('findOne', () => {
-    it('should return schedule by ID with all relations', async () => {
-      mockRepository.findOne.mockResolvedValue(mockSchedule);
+  describe('setLeave', () => {
+    it('marks the row leave_sick, stores notes, flips source to manual, audits', async () => {
+      rosterRepo.findOne
+        .mockResolvedValueOnce({
+          id: 'd1',
+          status: ScheduleStatus.PLANNED,
+          schedule_date: '2026-06-30',
+          user_id: 'A',
+          user: { role: UserRole.SATGAS },
+          schedule_areas: [],
+        })
+        .mockResolvedValueOnce({ id: 'd1', status: ScheduleStatus.LEAVE_SICK });
 
-      const result = await service.findOne(mockSchedule.id);
+      await service.setLeave('d1', 'sick', 'demam', ADMIN);
 
-      expect(result).toEqual(mockSchedule);
-      expect(mockRepository.findOne).toHaveBeenCalledWith({
-        where: { id: mockSchedule.id },
-        relations: ['user', 'area', 'shift_definition', 'creator'],
-      });
-    });
-
-    it('should throw NotFoundException if schedule not found', async () => {
-      const nonExistentId = 'nonexistent-id';
-      mockRepository.findOne.mockResolvedValue(null);
-
-      await expect(service.findOne(nonExistentId)).rejects.toThrow(NotFoundException);
-      await expect(service.findOne(nonExistentId)).rejects.toThrow(
-        `Schedule with ID ${nonExistentId} not found`,
+      const saved = rosterRepo.save.mock.calls[0][0];
+      expect(saved.status).toBe(ScheduleStatus.LEAVE_SICK);
+      expect(saved.notes).toBe('demam');
+      expect(saved.source).toBe('manual');
+      expect(audit.log).toHaveBeenCalledWith(
+        expect.objectContaining({ entity_type: 'schedule', action: 'set_leave' }),
       );
     });
   });
 
-  describe('findCurrentByUserId', () => {
-    it('should return current active schedule for user', async () => {
-      const today = new Date().toISOString().split('T')[0];
-      mockRepository.findOne.mockResolvedValue(mockSchedule);
-
-      const result = await service.findCurrentByUserId(mockUser.id);
-
-      expect(result).toEqual(mockSchedule);
-      expect(mockRepository.findOne).toHaveBeenCalledWith({
-        where: {
-          user_id: mockUser.id,
-          effective_date: LessThanOrEqual(new Date(today)),
-          end_date: Or(IsNull(), MoreThanOrEqual(new Date(today))),
-        },
-        relations: ['area', 'shift_definition'],
-        order: { effective_date: 'DESC' },
-      });
-    });
-
-    it('should return null if no current schedule exists', async () => {
-      mockRepository.findOne.mockResolvedValue(null);
-
-      const result = await service.findCurrentByUserId(mockUser.id);
-
-      expect(result).toBeNull();
-    });
-
-    it('derives a current schedule from the user assignment when no explicit row exists', async () => {
-      mockRepository.findOne.mockResolvedValue(null); // no explicit schedule
-      const userRepo = module.get(getRepositoryToken(User)) as { findOne: jest.Mock };
-      userRepo.findOne.mockResolvedValue({
-        id: mockUser.id,
-        area_id: mockArea.id,
-        area: mockArea,
-        shift_definition_id: 'shift-1',
-        shift_definition: { id: 'shift-1', name: 'Shift 1' },
-      });
-
-      const result = await service.findCurrentByUserId(mockUser.id);
-
-      expect(result).not.toBeNull();
-      expect(result?.area).toEqual(mockArea);
-      expect(result?.shift_definition_id).toBe('shift-1');
-    });
-  });
-
-  describe('findByAreaId', () => {
-    const mockQueryBuilder: any = {
-      leftJoinAndSelect: jest.fn().mockReturnThis(),
-      andWhere: jest.fn().mockReturnThis(),
-      orderBy: jest.fn().mockReturnThis(),
-      getMany: jest.fn(),
-    };
-
-    beforeEach(() => {
-      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
-    });
-
-    it('should return all schedules for an area', async () => {
-      mockQueryBuilder.getMany.mockResolvedValue([mockSchedule]);
-
-      const result = await service.findByAreaId(mockArea.id);
-
-      expect(result).toEqual([mockSchedule]);
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('schedule.area_id = :areaId', {
-        areaId: mockArea.id,
-      });
-    });
-
-    it('should return only active schedules when activeOnly is true', async () => {
-      mockQueryBuilder.getMany.mockResolvedValue([mockSchedule]);
-
-      await service.findByAreaId(mockArea.id, true);
-
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('schedule.area_id = :areaId', {
-        areaId: mockArea.id,
-      });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        expect.stringContaining('effective_date'),
-        expect.any(Object),
-      );
-    });
-  });
-
-  describe('findByUserId', () => {
-    const mockQueryBuilder: any = {
-      leftJoinAndSelect: jest.fn().mockReturnThis(),
-      andWhere: jest.fn().mockReturnThis(),
-      orderBy: jest.fn().mockReturnThis(),
-      getMany: jest.fn(),
-    };
-
-    beforeEach(() => {
-      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
-    });
-
-    it('should return all schedules for a user', async () => {
-      mockQueryBuilder.getMany.mockResolvedValue([mockSchedule]);
-
-      const result = await service.findByUserId(mockUser.id);
-
-      expect(result).toEqual([mockSchedule]);
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('schedule.user_id = :userId', {
-        userId: mockUser.id,
-      });
-    });
-
-    it('should return only active schedules when activeOnly is true', async () => {
-      mockQueryBuilder.getMany.mockResolvedValue([mockSchedule]);
-
-      await service.findByUserId(mockUser.id, true);
-
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('schedule.user_id = :userId', {
-        userId: mockUser.id,
-      });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        expect.stringContaining('effective_date'),
-        expect.any(Object),
-      );
-    });
-  });
-
-  describe('create', () => {
-    const createDto: CreateScheduleDto = {
-      user_id: mockUser.id,
-      area_id: mockArea.id,
-      shift_definition_id: mockShiftDefinition.id,
-      effective_date: '2026-01-20',
-      end_date: '2026-12-31',
-    };
-
-    const mockQueryBuilder: any = {
-      where: jest.fn().mockReturnThis(),
-      andWhere: jest.fn().mockReturnThis(),
-      getOne: jest.fn(),
-    };
-
-    beforeEach(() => {
-      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
-    });
-
-    it('should successfully create a schedule for a Worker', async () => {
-      mockUsersService.findOne.mockResolvedValue(mockUser as any);
-      mockAreasService.findOne.mockResolvedValue(mockArea as any);
-      mockShiftDefinitionsService.findOne.mockResolvedValue(mockShiftDefinition as any);
-      mockQueryBuilder.getOne.mockResolvedValue(null); // No overlapping schedule
-      mockRepository.create.mockReturnValue(mockSchedule);
-      mockRepository.save.mockResolvedValue(mockSchedule);
-
-      const result = await service.create(createDto, 'admin-uuid');
-
-      expect(result).toEqual(mockSchedule);
-      expect(usersService.findOne).toHaveBeenCalledWith(mockUser.id);
-      expect(areasService.findOne).toHaveBeenCalledWith(mockArea.id);
-      expect(shiftDefinitionsService.findOne).toHaveBeenCalledWith(mockShiftDefinition.id);
-      expect(repository.create).toHaveBeenCalledWith({
-        user_id: createDto.user_id,
-        area_id: createDto.area_id,
-        shift_definition_id: createDto.shift_definition_id,
-        effective_date: new Date(createDto.effective_date),
-        end_date: createDto.end_date ? new Date(createDto.end_date) : undefined,
-        created_by: 'admin-uuid',
-      });
-      expect(repository.save).toHaveBeenCalled();
-    });
-
-    it('should successfully create a schedule for a Linmas user', async () => {
-      const linmasDto = { ...createDto, user_id: mockLinmasUser.id };
-      mockUsersService.findOne.mockResolvedValue(mockLinmasUser as any);
-      mockAreasService.findOne.mockResolvedValue(mockArea as any);
-      mockShiftDefinitionsService.findOne.mockResolvedValue(mockShiftDefinition as any);
-      mockQueryBuilder.getOne.mockResolvedValue(null);
-      mockRepository.create.mockReturnValue(mockSchedule);
-      mockRepository.save.mockResolvedValue(mockSchedule);
-
-      const result = await service.create(linmasDto, 'admin-uuid');
-
-      expect(result).toEqual(mockSchedule);
-      expect(usersService.findOne).toHaveBeenCalledWith(mockLinmasUser.id);
-    });
-
-    it('should create schedule with no end_date (ongoing)', async () => {
-      const ongoingDto: CreateScheduleDto = {
-        user_id: mockUser.id,
-        area_id: mockArea.id,
-        shift_definition_id: mockShiftDefinition.id,
-        effective_date: '2026-01-20',
+  describe('replaceWorker', () => {
+    it('marks the original replaced and upserts a covering row for the same day', async () => {
+      const original = {
+        id: 'd1',
+        user_id: 'A',
+        user: { role: UserRole.SATGAS },
+        schedule_date: '2026-06-30',
+        rayon_id: 'r1',
+        shift_definition_id: 's1',
+        status: ScheduleStatus.PLANNED,
+        schedule_areas: [{ area_id: 'area1' }],
       };
+      rosterRepo.findOne
+        .mockResolvedValueOnce(original) // findOne(id)
+        .mockResolvedValueOnce(null) // findByUserAndDate(replacement) → no row yet
+        .mockResolvedValueOnce({ ...original, status: ScheduleStatus.REPLACED }); // final refresh
+      userRepo.findOne.mockResolvedValue({ id: 'B', role: UserRole.SATGAS });
 
-      mockUsersService.findOne.mockResolvedValue(mockUser as any);
-      mockAreasService.findOne.mockResolvedValue(mockArea as any);
-      mockShiftDefinitionsService.findOne.mockResolvedValue(mockShiftDefinition as any);
-      mockQueryBuilder.getOne.mockResolvedValue(null);
-      mockRepository.create.mockReturnValue({ ...mockSchedule, end_date: undefined });
-      mockRepository.save.mockResolvedValue({ ...mockSchedule, end_date: undefined });
+      await service.replaceWorker('d1', 'B', undefined, ADMIN);
 
-      const result = await service.create(ongoingDto, 'admin-uuid');
+      const originalSave = rosterRepo.save.mock.calls[0][0];
+      expect(originalSave.status).toBe(ScheduleStatus.REPLACED);
+      expect(originalSave.replacement_user_id).toBe('B');
+      const coverSave = rosterRepo.save.mock.calls[1][0];
+      expect(coverSave.user_id).toBe('B');
+      expect(coverSave.original_user_id).toBe('A');
+      expect(coverSave.shift_definition_id).toBe('s1');
+    });
 
-      expect(result.end_date).toBeUndefined();
-      expect(repository.create).toHaveBeenCalledWith({
-        user_id: ongoingDto.user_id,
-        area_id: ongoingDto.area_id,
-        shift_definition_id: ongoingDto.shift_definition_id,
-        effective_date: new Date(ongoingDto.effective_date),
-        end_date: undefined,
-        created_by: 'admin-uuid',
+    it('rejects replacing a worker with themselves', async () => {
+      rosterRepo.findOne.mockResolvedValueOnce({
+        id: 'd1',
+        user_id: 'A',
+        user: { role: UserRole.SATGAS },
+        schedule_areas: [],
       });
+      await expect(service.replaceWorker('d1', 'A', undefined, ADMIN)).rejects.toThrow();
     });
 
-    it('should throw BadRequestException if user is not Worker or Linmas', async () => {
-      mockUsersService.findOne.mockResolvedValue(mockSupervisorUser as any);
+    it('rejects a replacement who is already committed (planned) that day', async () => {
+      rosterRepo.findOne
+        .mockResolvedValueOnce({
+          id: 'd1',
+          user_id: 'A',
+          user: { role: UserRole.SATGAS },
+          schedule_date: '2026-06-30',
+          rayon_id: 'r1',
+          shift_definition_id: 's1',
+          status: ScheduleStatus.PLANNED,
+          schedule_areas: [],
+        })
+        .mockResolvedValueOnce({
+          id: 'd2',
+          user_id: 'B',
+          status: ScheduleStatus.PLANNED,
+        }); // B already planned → can't cover
+      userRepo.findOne.mockResolvedValue({ id: 'B', role: UserRole.SATGAS });
 
-      await expect(service.create(createDto, 'admin-uuid')).rejects.toThrow(BadRequestException);
-      await expect(service.create(createDto, 'admin-uuid')).rejects.toThrow(
-        'User must be a Worker or Linmas to be assigned to a schedule',
+      await expect(service.replaceWorker('d1', 'B', undefined, ADMIN)).rejects.toThrow();
+    });
+  });
+
+  describe('updateShift', () => {
+    it('clearing the shift flips a PLANNED row to OFF', async () => {
+      rosterRepo.findOne
+        .mockResolvedValueOnce({
+          id: 'd1',
+          status: ScheduleStatus.PLANNED,
+          shift_definition_id: 's1',
+          schedule_date: '2026-06-30',
+          user_id: 'A',
+          user: { role: UserRole.SATGAS },
+        })
+        .mockResolvedValueOnce({ id: 'd1', status: ScheduleStatus.OFF });
+
+      await service.updateShift('d1', null, ADMIN);
+
+      const saved = rosterRepo.save.mock.calls[0][0];
+      expect(saved.shift_definition_id).toBeNull();
+      expect(saved.status).toBe(ScheduleStatus.OFF);
+    });
+  });
+
+  describe('getActiveAreasForDay', () => {
+    it("returns the day's areas", async () => {
+      rosterRepo.findOne.mockResolvedValue({
+        id: 'd1',
+        schedule_areas: [{ area: { id: 'area1' } }, { area: { id: 'area2' } }],
+      });
+      const areas = await service.getActiveAreasForDay('A', '2026-06-30');
+      expect(areas.map((a) => a.id)).toEqual(['area1', 'area2']);
+    });
+
+    it('returns empty when there is no roster row', async () => {
+      rosterRepo.findOne.mockResolvedValue(null);
+      expect(await service.getActiveAreasForDay('A', '2026-06-30')).toEqual([]);
+    });
+  });
+
+  describe('overrideForDay', () => {
+    it('creates a PLANNED row with the shift when one is provided', async () => {
+      rosterRepo.findOne
+        .mockResolvedValueOnce(null) // findByUserAndDate → no existing row
+        .mockResolvedValue({ id: 'gen-1', schedule_areas: [] }); // subsequent this.findOne()
+
+      await service.overrideForDay(
+        'u1',
+        '2026-07-01',
+        { areaId: 'a1', rayonId: 'r1', shiftDefinitionId: 's1' },
+        'admin',
+      );
+
+      const created = rosterRepo.save.mock.calls[0][0];
+      expect(created.status).toBe(ScheduleStatus.PLANNED);
+      expect(created.shift_definition_id).toBe('s1');
+      expect(created.rayon_id).toBe('r1');
+    });
+
+    it('creates an OFF row (not PLANNED) when no shift is provided', async () => {
+      rosterRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValue({ id: 'gen-1', schedule_areas: [] });
+
+      await service.overrideForDay('u1', '2026-07-01', { areaId: 'a1' }, 'admin');
+
+      const created = rosterRepo.save.mock.calls[0][0];
+      expect(created.status).toBe(ScheduleStatus.OFF);
+      expect(created.shift_definition_id).toBeNull();
+    });
+
+    it('sets the day to exactly the target area', async () => {
+      rosterRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValue({ id: 'gen-1', schedule_areas: [] });
+
+      await service.overrideForDay(
+        'u1',
+        '2026-07-01',
+        { areaId: 'a9', shiftDefinitionId: 's1' },
+        'admin',
+      );
+
+      const createdAreaIds = areaRepo.create.mock.calls.map((c) => c[0].area_id);
+      expect(createdAreaIds).toEqual(['a9']);
+    });
+  });
+
+  describe('edit hierarchy (assertCanEdit via setLeave)', () => {
+    const KORLAP = { id: 'k1', role: UserRole.KORLAP } as User;
+    const KEPALA = { id: 'kr1', role: UserRole.KEPALA_RAYON, rayon_id: 'r1' } as User;
+    const TOP = { id: 't1', role: UserRole.TOP_MANAGEMENT } as User;
+
+    /** Queue findOne(id) then the post-save refresh so an ALLOWED edit resolves. */
+    function allowRow(row: Record<string, unknown>): void {
+      rosterRepo.findOne
+        .mockResolvedValueOnce(row)
+        .mockResolvedValueOnce({ id: row.id, status: ScheduleStatus.LEAVE_SICK });
+    }
+
+    it('korlap can edit a satgas in their assigned area', async () => {
+      userAreas.getPermanentAreaIds.mockResolvedValue(['area1']);
+      allowRow({
+        id: 'd1',
+        user_id: 'A',
+        user: { role: UserRole.SATGAS },
+        schedule_areas: [{ area_id: 'area1' }],
+      });
+      await expect(service.setLeave('d1', 'sick', undefined, KORLAP)).resolves.toBeDefined();
+    });
+
+    it('korlap CANNOT edit a satgas outside their areas', async () => {
+      userAreas.getPermanentAreaIds.mockResolvedValue(['areaX']);
+      rosterRepo.findOne.mockResolvedValueOnce({
+        id: 'd1',
+        user_id: 'A',
+        user: { role: UserRole.SATGAS },
+        schedule_areas: [{ area_id: 'area1' }],
+      });
+      await expect(service.setLeave('d1', 'sick', undefined, KORLAP)).rejects.toThrow(
+        ForbiddenException,
       );
     });
 
-    it('should throw NotFoundException if user not found', async () => {
-      mockUsersService.findOne.mockRejectedValue(new NotFoundException('User not found'));
-
-      await expect(service.create(createDto, 'admin-uuid')).rejects.toThrow(NotFoundException);
-    });
-
-    it('should throw NotFoundException if area not found', async () => {
-      mockUsersService.findOne.mockResolvedValue(mockUser as any);
-      mockAreasService.findOne.mockRejectedValue(new NotFoundException('Area not found'));
-
-      await expect(service.create(createDto, 'admin-uuid')).rejects.toThrow(NotFoundException);
-    });
-
-    it('should throw NotFoundException if shift definition not found', async () => {
-      mockUsersService.findOne.mockResolvedValue(mockUser as any);
-      mockAreasService.findOne.mockResolvedValue(mockArea as any);
-      mockShiftDefinitionsService.findOne.mockRejectedValue(
-        new NotFoundException('Shift definition not found'),
-      );
-
-      await expect(service.create(createDto, 'admin-uuid')).rejects.toThrow(NotFoundException);
-    });
-
-    it('should throw BadRequestException if end_date is before effective_date', async () => {
-      const invalidDto: CreateScheduleDto = {
-        user_id: mockUser.id,
-        area_id: mockArea.id,
-        shift_definition_id: mockShiftDefinition.id,
-        effective_date: '2026-12-31',
-        end_date: '2026-01-01',
-      };
-
-      mockUsersService.findOne.mockResolvedValue(mockUser as any);
-      mockAreasService.findOne.mockResolvedValue(mockArea as any);
-      mockShiftDefinitionsService.findOne.mockResolvedValue(mockShiftDefinition as any);
-
-      await expect(service.create(invalidDto, 'admin-uuid')).rejects.toThrow(BadRequestException);
-      await expect(service.create(invalidDto, 'admin-uuid')).rejects.toThrow(
-        'End date cannot be before effective date',
+    it('korlap CANNOT edit another korlap (peer)', async () => {
+      rosterRepo.findOne.mockResolvedValueOnce({
+        id: 'd1',
+        user_id: 'A',
+        user: { role: UserRole.KORLAP },
+        schedule_areas: [{ area_id: 'area1' }],
+      });
+      await expect(service.setLeave('d1', 'sick', undefined, KORLAP)).rejects.toThrow(
+        ForbiddenException,
       );
     });
 
-    it('should throw ConflictException if schedule overlaps with existing', async () => {
-      const existingSchedule = { ...mockSchedule, id: 'existing-schedule-id' };
-      mockUsersService.findOne.mockResolvedValue(mockUser as any);
-      mockAreasService.findOne.mockResolvedValue(mockArea as any);
-      mockShiftDefinitionsService.findOne.mockResolvedValue(mockShiftDefinition as any);
-      mockQueryBuilder.getOne.mockResolvedValue(existingSchedule);
+    it('kepala_rayon can edit a korlap in their rayon', async () => {
+      allowRow({
+        id: 'd1',
+        user_id: 'A',
+        user: { role: UserRole.KORLAP },
+        rayon_id: 'r1',
+        schedule_areas: [],
+      });
+      await expect(service.setLeave('d1', 'sick', undefined, KEPALA)).resolves.toBeDefined();
+    });
 
-      await expect(service.create(createDto, 'admin-uuid')).rejects.toThrow(ConflictException);
-      await expect(service.create(createDto, 'admin-uuid')).rejects.toThrow(
-        `Schedule overlaps with existing schedule (ID: ${existingSchedule.id})`,
+    it('kepala_rayon CANNOT edit a worker in a different rayon', async () => {
+      rosterRepo.findOne.mockResolvedValueOnce({
+        id: 'd1',
+        user_id: 'A',
+        user: { role: UserRole.SATGAS },
+        rayon_id: 'r2',
+        schedule_areas: [],
+      });
+      await expect(service.setLeave('d1', 'sick', undefined, KEPALA)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('top_management can edit a kepala_rayon but NOT a satgas', async () => {
+      allowRow({
+        id: 'd1',
+        user_id: 'A',
+        user: { role: UserRole.KEPALA_RAYON },
+        rayon_id: 'r1',
+        schedule_areas: [],
+      });
+      await expect(service.setLeave('d1', 'sick', undefined, TOP)).resolves.toBeDefined();
+
+      rosterRepo.findOne.mockResolvedValueOnce({
+        id: 'd2',
+        user_id: 'B',
+        user: { role: UserRole.SATGAS },
+        rayon_id: 'r1',
+        schedule_areas: [],
+      });
+      await expect(service.setLeave('d2', 'sick', undefined, TOP)).rejects.toThrow(
+        ForbiddenException,
       );
     });
   });
 
-  describe('update', () => {
-    const updateDto: UpdateScheduleDto = {
-      area_id: 'new-area-id',
-      effective_date: '2026-02-01',
-      end_date: '2026-11-30',
-    };
+  describe('generateRoster — manager whole-rayon + top-tier skip', () => {
+    it('assigns kepala_rayon the whole rayon, field workers their areas, and skips top_management', async () => {
+      userRepo.find.mockResolvedValue([
+        { id: 'kr', role: UserRole.KEPALA_RAYON, rayon_id: 'r1' },
+        { id: 'sat', role: UserRole.SATGAS, rayon_id: null, shift_definition_id: 's1' },
+        { id: 'tm', role: UserRole.TOP_MANAGEMENT },
+      ]);
+      rosterRepo.find.mockResolvedValue([]); // nothing rostered yet
+      userAreas.getPermanentAreaIdsForUsers.mockResolvedValue(new Map([['sat', ['areaS']]]));
+      areaEntityRepo.find.mockResolvedValue([
+        { id: 'a1', rayon_id: 'r1' },
+        { id: 'a2', rayon_id: 'r1' },
+      ]);
 
-    const mockQueryBuilder: any = {
-      where: jest.fn().mockReturnThis(),
-      andWhere: jest.fn().mockReturnThis(),
-      getOne: jest.fn(),
-    };
+      const created = await service.generateRoster('2026-07-01', 'admin');
 
-    beforeEach(() => {
-      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
-    });
+      // kr + sat rostered; top_management skipped.
+      expect(created).toBe(2);
+      const rosteredUserIds = rosterRepo.save.mock.calls.map((c) => c[0].user_id);
+      expect(rosteredUserIds).toEqual(expect.arrayContaining(['kr', 'sat']));
+      expect(rosteredUserIds).not.toContain('tm');
 
-    it('should successfully update a schedule', async () => {
-      const existingSchedule = { ...mockSchedule };
-      mockRepository.findOne.mockResolvedValue(existingSchedule);
-      mockAreasService.findOne.mockResolvedValue({ id: 'new-area-id' } as any);
-      mockQueryBuilder.getOne.mockResolvedValue(null); // No overlapping schedule
-      mockRepository.save.mockResolvedValue({
-        ...existingSchedule,
-        ...updateDto,
-        effective_date: updateDto.effective_date
-          ? new Date(updateDto.effective_date)
-          : existingSchedule.effective_date,
-        end_date: updateDto.end_date ? new Date(updateDto.end_date) : existingSchedule.end_date,
-      });
-
-      const result = await service.update(mockSchedule.id, updateDto);
-
-      expect(result.area_id).toBe(updateDto.area_id);
-      expect(repository.findOne).toHaveBeenCalledWith({
-        where: { id: mockSchedule.id },
-        relations: ['user', 'area', 'shift_definition', 'creator'],
-      });
-      expect(areasService.findOne).toHaveBeenCalledWith(updateDto.area_id);
-      expect(repository.save).toHaveBeenCalled();
-    });
-
-    it('should update shift_definition_id if provided', async () => {
-      const updateWithShift: UpdateScheduleDto = {
-        shift_definition_id: 'new-shift-id',
-      };
-
-      mockRepository.findOne.mockResolvedValue({ ...mockSchedule });
-      mockShiftDefinitionsService.findOne.mockResolvedValue({ id: 'new-shift-id' } as any);
-      mockQueryBuilder.getOne.mockResolvedValue(null);
-      mockRepository.save.mockResolvedValue({
-        ...mockSchedule,
-        shift_definition_id: 'new-shift-id',
-      });
-
-      const result = await service.update(mockSchedule.id, updateWithShift);
-
-      expect(result.shift_definition_id).toBe('new-shift-id');
-      expect(shiftDefinitionsService.findOne).toHaveBeenCalledWith('new-shift-id');
-    });
-
-    it('should set end_date to null when explicitly set to null', async () => {
-      const updateToOngoing: UpdateScheduleDto = {
-        end_date: null,
-      };
-
-      mockRepository.findOne.mockResolvedValue({ ...mockSchedule });
-      mockQueryBuilder.getOne.mockResolvedValue(null);
-      mockRepository.save.mockResolvedValue({
-        ...mockSchedule,
-        end_date: undefined,
-      });
-
-      const result = await service.update(mockSchedule.id, updateToOngoing);
-
-      expect(result.end_date).toBeUndefined();
-    });
-
-    it('should throw NotFoundException if schedule not found', async () => {
-      mockRepository.findOne.mockResolvedValue(null);
-
-      await expect(service.update('nonexistent-id', updateDto)).rejects.toThrow(NotFoundException);
-    });
-
-    it('should throw NotFoundException if new area not found', async () => {
-      mockRepository.findOne.mockResolvedValue({ ...mockSchedule });
-      mockAreasService.findOne.mockRejectedValue(new NotFoundException('Area not found'));
-
-      await expect(service.update(mockSchedule.id, updateDto)).rejects.toThrow(NotFoundException);
-    });
-
-    it('should throw NotFoundException if new shift definition not found', async () => {
-      const updateWithShift: UpdateScheduleDto = {
-        shift_definition_id: 'new-shift-id',
-      };
-
-      mockRepository.findOne.mockResolvedValue({ ...mockSchedule });
-      mockShiftDefinitionsService.findOne.mockRejectedValue(
-        new NotFoundException('Shift definition not found'),
-      );
-
-      await expect(service.update(mockSchedule.id, updateWithShift)).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('should throw BadRequestException if updated end_date is before effective_date', async () => {
-      const invalidUpdate: UpdateScheduleDto = {
-        effective_date: '2026-12-31',
-        end_date: '2026-01-01',
-      };
-
-      mockRepository.findOne.mockResolvedValue({ ...mockSchedule });
-
-      await expect(service.update(mockSchedule.id, invalidUpdate)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.update(mockSchedule.id, invalidUpdate)).rejects.toThrow(
-        'End date cannot be before effective date',
-      );
-    });
-
-    it('should throw ConflictException if updated schedule overlaps with existing', async () => {
-      const conflictUpdateDto: UpdateScheduleDto = {
-        effective_date: '2026-01-25',
-      };
-      const overlappingSchedule = { ...mockSchedule, id: 'other-schedule-id' };
-      mockRepository.findOne.mockResolvedValue({ ...mockSchedule });
-      mockQueryBuilder.getOne.mockResolvedValue(overlappingSchedule);
-
-      await expect(service.update(mockSchedule.id, conflictUpdateDto)).rejects.toThrow(
-        ConflictException,
-      );
-      await expect(service.update(mockSchedule.id, conflictUpdateDto)).rejects.toThrow(
-        `Schedule overlaps with existing schedule (ID: ${overlappingSchedule.id})`,
-      );
-    });
-
-    it('should allow updating without any changes (empty DTO)', async () => {
-      const emptyUpdate: UpdateScheduleDto = {};
-      mockRepository.findOne.mockResolvedValue({ ...mockSchedule });
-      mockQueryBuilder.getOne.mockResolvedValue(null);
-      mockRepository.save.mockResolvedValue({ ...mockSchedule });
-
-      const result = await service.update(mockSchedule.id, emptyUpdate);
-
-      expect(result).toEqual(mockSchedule);
-    });
-  });
-
-  describe('remove', () => {
-    it('should successfully soft delete a schedule', async () => {
-      mockRepository.findOne.mockResolvedValue(mockSchedule);
-      mockRepository.softDelete.mockResolvedValue({ affected: 1, raw: {}, generatedMaps: [] });
-
-      await service.remove(mockSchedule.id);
-
-      expect(repository.findOne).toHaveBeenCalledWith({
-        where: { id: mockSchedule.id },
-        relations: ['user', 'area', 'shift_definition', 'creator'],
-      });
-      expect(repository.softDelete).toHaveBeenCalledWith(mockSchedule.id);
-    });
-
-    it('should throw NotFoundException if schedule not found', async () => {
-      mockRepository.findOne.mockResolvedValue(null);
-
-      await expect(service.remove('nonexistent-id')).rejects.toThrow(NotFoundException);
-    });
-  });
-
-  describe('findOverlappingSchedule (integration)', () => {
-    const mockQueryBuilder: any = {
-      where: jest.fn().mockReturnThis(),
-      andWhere: jest.fn().mockReturnThis(),
-      getOne: jest.fn(),
-    };
-
-    beforeEach(() => {
-      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
-    });
-
-    it('should detect overlap when new schedule starts during existing schedule', async () => {
-      const createDto: CreateScheduleDto = {
-        user_id: mockUser.id,
-        area_id: mockArea.id,
-        shift_definition_id: mockShiftDefinition.id,
-        effective_date: '2026-02-01',
-        end_date: '2026-03-01',
-      };
-
-      const existingSchedule = {
-        ...mockSchedule,
-        effective_date: new Date('2026-01-01'),
-        end_date: new Date('2026-02-15'),
-      };
-
-      mockUsersService.findOne.mockResolvedValue(mockUser as any);
-      mockAreasService.findOne.mockResolvedValue(mockArea as any);
-      mockShiftDefinitionsService.findOne.mockResolvedValue(mockShiftDefinition as any);
-      mockQueryBuilder.getOne.mockResolvedValue(existingSchedule);
-
-      await expect(service.create(createDto, 'admin-uuid')).rejects.toThrow(ConflictException);
-    });
-
-    it('should not detect overlap when schedules are sequential', async () => {
-      const createDto: CreateScheduleDto = {
-        user_id: mockUser.id,
-        area_id: mockArea.id,
-        shift_definition_id: mockShiftDefinition.id,
-        effective_date: '2026-02-16',
-        end_date: '2026-03-15',
-      };
-
-      mockUsersService.findOne.mockResolvedValue(mockUser as any);
-      mockAreasService.findOne.mockResolvedValue(mockArea as any);
-      mockShiftDefinitionsService.findOne.mockResolvedValue(mockShiftDefinition as any);
-      mockQueryBuilder.getOne.mockResolvedValue(null); // No overlap
-      mockRepository.create.mockReturnValue(mockSchedule);
-      mockRepository.save.mockResolvedValue(mockSchedule);
-
-      const result = await service.create(createDto, 'admin-uuid');
-
-      expect(result).toBeDefined();
-    });
-
-    it('should exclude current schedule when checking overlap during update', async () => {
-      const updateDto: UpdateScheduleDto = {
-        effective_date: '2026-01-25',
-      };
-
-      mockRepository.findOne.mockResolvedValue({ ...mockSchedule });
-      mockQueryBuilder.getOne.mockResolvedValue(null); // No overlap (excluding self)
-      mockRepository.save.mockResolvedValue({ ...mockSchedule, ...updateDto });
-
-      const result = await service.update(mockSchedule.id, updateDto);
-
-      expect(result).toBeDefined();
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('schedule.id != :excludeId', {
-        excludeId: mockSchedule.id,
-      });
+      // The kepala_rayon's row is assigned to ALL areas of rayon r1.
+      const assignedAreaIds = areaRepo.create.mock.calls.map((c) => c[0].area_id);
+      expect(assignedAreaIds).toEqual(expect.arrayContaining(['a1', 'a2', 'areaS']));
     });
   });
 });

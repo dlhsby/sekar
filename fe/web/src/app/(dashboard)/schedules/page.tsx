@@ -1,455 +1,571 @@
 /**
- * Schedules Page — SCH-1 (Phase 4-R revamp, hifi-web §07)
- * Weekly grid (default) + table toggle, week navigation, v2.1 chrome.
- * Access: admin_system, superadmin, korlap, admin_data
+ * Jadwal (Schedules) Page — the daily roster, the single schedule concept
+ * (ADR-013): date picker, status tracking, and row actions (leave, replace,
+ * areas, shift).
  */
 
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { format, parse } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
+import { Plus, Calendar, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth } from '@/lib/auth/hooks';
-import { useSchedules, useDeleteSchedule } from '@/lib/api/schedules';
-import { WorkerSchedule } from '@/types/models';
 import {
-  Card,
-  CardContent,
-  DataTable,
   Button,
-  FormInput,
+  DataTable,
+  FormCombobox,
+  FormMultiCombobox,
   FormSelect,
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
+  Textarea,
   PageHeader,
+  RoleAvatar,
   StatusPill,
-  Tabs,
-  type TabItem,
+  type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
-import type { ColumnDef } from '@/components/ui/data-table';
-import { ScheduleWeeklyGrid } from '@/components/schedules/ScheduleWeeklyGrid';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { RolePill } from '@/components/users/RolePill';
+import { RosterActionModal } from '@/components/schedules/RosterActionModal';
+import { getErrorMessage } from '@/lib/api/client';
+import {
+  useDailyRoster,
+  useGenerateRoster,
+  useSetLeave,
+  useReplaceWorker,
+  useUpdateRosterAreas,
+  useUpdateRosterShift,
+  type Schedule,
+} from '@/lib/api/schedules';
+import { useUser } from '@/lib/auth/hooks';
+import { ADMIN_ROLES } from '@/lib/constants/roles';
 import { useAreas } from '@/lib/api/areas';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
-import { getErrorMessage } from '@/lib/api/client';
-import { formatDate } from '@/lib/utils/time';
+import { useUsers } from '@/lib/api/users';
+import { useUserAreas } from '@/lib/api/user-areas';
+import { canEditTargetRole, isGlobalRosterEditor } from '@/lib/schedule-permissions';
+import { todayJakartaISODate } from '@/lib/utils/formatters';
 
-type ViewMode = 'grid' | 'table';
-
-const VIEW_TABS: TabItem<ViewMode>[] = [
-  { key: 'grid', label: 'Grid Mingguan' },
-  { key: 'table', label: 'Tabel' },
-];
-
-const ALLOWED = ['admin_system', 'superadmin', 'korlap', 'admin_data'];
-
-/** Monday (local) of the week containing `d`. */
-function mondayOf(d: Date): Date {
-  const copy = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const day = copy.getDay() || 7; // Sun → 7
-  copy.setDate(copy.getDate() - (day - 1));
-  return copy;
+/**
+ * Map status to tone for StatusPill
+ */
+function getStatusTone(status: Schedule['status']): 'ok' | 'warn' | 'bad' | 'info' | 'neutral' {
+  switch (status) {
+    case 'present':
+      return 'ok';
+    case 'planned':
+      return 'info';
+    case 'absent':
+      return 'bad';
+    case 'leave_sick':
+    case 'leave_annual':
+      return 'warn';
+    case 'replaced':
+    case 'off':
+      return 'neutral';
+    default:
+      return 'neutral';
+  }
 }
 
-function ymd(d: Date): string {
-  const m = `${d.getMonth() + 1}`.padStart(2, '0');
-  const day = `${d.getDate()}`.padStart(2, '0');
-  return `${d.getFullYear()}-${m}-${day}`;
+/**
+ * Format status display
+ */
+function formatStatus(status: Schedule['status']): string {
+  const labels: Record<Schedule['status'], string> = {
+    planned: 'Rencana',
+    present: 'Hadir',
+    absent: 'Tidak Hadir',
+    leave_sick: 'Cuti Sakit',
+    leave_annual: 'Cuti Tahunan',
+    replaced: 'Diganti',
+    off: 'Libur',
+  };
+  return labels[status] || status;
 }
+
 
 export default function SchedulesPage() {
-  const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
+  const currentUser = useUser();
+  // Only admins generate the roster (backend: USER_MANAGERS).
+  const canGenerate = !!currentUser && ADMIN_ROLES.includes(currentUser.role);
 
-  const [view, setView] = useState<ViewMode>('grid');
-  const [search, setSearch] = useState('');
-  const [areaFilter, setAreaFilter] = useState('all');
-  const [shiftFilter, setShiftFilter] = useState('all');
-  const [page, setPage] = useState(1);
-  const [weekStart, setWeekStart] = useState<Date>(() => mondayOf(new Date()));
-  const limit = view === 'grid' ? 200 : 20;
+  // Default to "today" in WIB (matches the server's roster date) so the roster
+  // isn't empty for browsers outside UTC+7.
+  const [selectedDate, setSelectedDate] = useState(todayJakartaISODate());
 
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [scheduleToDelete, setScheduleToDelete] = useState<WorkerSchedule | null>(null);
+  const { data: rosters, isLoading, error, refetch } = useDailyRoster(selectedDate);
+  const schedules = useMemo(() => rosters ?? [], [rosters]);
 
-  const weekEnd = useMemo(() => {
-    const d = new Date(weekStart);
-    d.setDate(d.getDate() + 6);
-    return d;
-  }, [weekStart]);
+  const { data: areasData } = useAreas({ limit: 1000 });
+  const allAreas = useMemo(() => areasData?.data ?? [], [areasData]);
+  // O(1) area lookup for the rayon column (avoids a per-row find over all areas).
+  const areaById = useMemo(() => new Map(allAreas.map((a) => [a.id, a])), [allAreas]);
 
-  const { data: schedulesData, isLoading } = useSchedules({
-    search,
-    area_id: areaFilter !== 'all' ? areaFilter : undefined,
-    shift_definition_id: shiftFilter !== 'all' ? shiftFilter : undefined,
-    // Scope the grid to the visible week; the table keeps the broad list.
-    date_from: view === 'grid' ? ymd(weekStart) : undefined,
-    date_to: view === 'grid' ? ymd(weekEnd) : undefined,
-    page: view === 'grid' ? 1 : page,
-    limit,
-  });
+  // A korlap edits only rows in their own assigned areas — fetch those to gate
+  // the per-row actions (mirrors the backend hierarchy; backend is the real gate).
+  const { data: myAreas } = useUserAreas(
+    currentUser?.role === 'korlap' ? currentUser.id : undefined,
+  );
+  const myAreaIds = useMemo(() => (myAreas ?? []).map((a) => a.id), [myAreas]);
 
-  const { data: areas } = useAreas({});
-  const { data: shifts } = useShiftDefinitions();
-  const deleteMutation = useDeleteSchedule();
-
-  const rowActions = useCallback(
-    (schedule: WorkerSchedule): DataTableRowAction<WorkerSchedule>[] => [
-      {
-        key: 'edit',
-        label: 'Ubah',
-        icon: Edit,
-        onClick: () => router.push(`/schedules/${schedule.id}/edit`),
-      },
-      {
-        key: 'delete',
-        label: 'Hapus',
-        icon: Trash2,
-        variant: 'danger',
-        onClick: () => {
-          setScheduleToDelete(schedule);
-          setDeleteModalOpen(true);
-        },
-      },
-    ],
-    [router]
+  /** Per-row edit permission — mirrors be `SchedulesService.assertCanEdit`. */
+  const canEditRoster = useCallback(
+    (roster: Schedule): boolean => {
+      if (!currentUser) return false;
+      const targetRole = roster.user?.role;
+      if (!targetRole || !canEditTargetRole(currentUser.role, targetRole)) return false;
+      if (isGlobalRosterEditor(currentUser.role)) return true;
+      if (currentUser.role === 'kepala_rayon' || currentUser.role === 'admin_data') {
+        if (!currentUser.rayon_id) return false;
+        if (roster.rayon_id === currentUser.rayon_id) return true;
+        return roster.schedule_areas.some(
+          (a) => areaById.get(a.area_id)?.rayon?.id === currentUser.rayon_id,
+        );
+      }
+      if (currentUser.role === 'korlap') {
+        return roster.schedule_areas.some((a) => myAreaIds.includes(a.area_id));
+      }
+      return false;
+    },
+    [currentUser, areaById, myAreaIds],
   );
 
-  useEffect(() => {
-    if (!authLoading && user && !ALLOWED.includes(user.role)) {
-      router.push('/');
-    }
-  }, [user, authLoading, router]);
+  const { data: shifts = [] } = useShiftDefinitions();
+  const { data: usersData } = useUsers({ limit: 1000 });
+  const allUsers = useMemo(() => usersData?.data ?? [], [usersData]);
 
-  if (authLoading || !user) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <p className="text-nb-gray-600">Memuat…</p>
-      </div>
-    );
-  }
+  const generateRoster = useGenerateRoster();
+  const setLeave = useSetLeave();
+  const replaceWorker = useReplaceWorker();
+  const updateAreas = useUpdateRosterAreas();
+  const updateShift = useUpdateRosterShift();
 
-  if (!ALLOWED.includes(user.role)) return null;
+  // Modal states
+  const [leaveModalOpen, setLeaveModalOpen] = useState(false);
+  const [leaveRosterId, setLeaveRosterId] = useState<string | null>(null);
+  const [leaveType, setLeaveType] = useState<'sick' | 'annual'>('sick');
+  const [leaveNotes, setLeaveNotes] = useState('');
 
-  const schedules = schedulesData?.data || [];
-  const pagination = schedulesData?.meta;
+  const [replaceModalOpen, setReplaceModalOpen] = useState(false);
+  const [replaceRosterId, setReplaceRosterId] = useState<string | null>(null);
+  const [replacementUserId, setReplacementUserId] = useState('');
+  const [replaceNotes, setReplaceNotes] = useState('');
 
-  const weekLabel = `${weekStart.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} – ${weekEnd.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  const [areasModalOpen, setAreasModalOpen] = useState(false);
+  const [areasRosterId, setAreasRosterId] = useState<string | null>(null);
+  const [selectedAreaIds, setSelectedAreaIds] = useState<string[]>([]);
 
-  const shiftWeek = (n: number) => {
-    setWeekStart((prev) => {
-      const d = new Date(prev);
-      d.setDate(d.getDate() + n * 7);
-      return d;
-    });
+  const [shiftModalOpen, setShiftModalOpen] = useState(false);
+  const [shiftRosterId, setShiftRosterId] = useState<string | null>(null);
+  const [selectedShiftId, setSelectedShiftId] = useState<string | null>(null);
+
+  // Helper to get area names from schedule_areas
+  const getAreaNames = (roster: Schedule): string[] => {
+    return roster.schedule_areas.map((a) => a.area.name);
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!scheduleToDelete) return;
+  // Handlers for modals
+
+  const handleSetLeave = async () => {
+    if (!leaveRosterId) return;
     try {
-      await deleteMutation.mutateAsync(scheduleToDelete.id);
-      setDeleteModalOpen(false);
-      setScheduleToDelete(null);
-      toast.success('Jadwal dihapus');
-    } catch (error) {
-      toast.error(getErrorMessage(error));
+      await setLeave.mutateAsync({
+        id: leaveRosterId,
+        leave_type: leaveType,
+        notes: leaveNotes,
+      });
+      toast.success('Cuti berhasil disimpan');
+      setLeaveModalOpen(false);
+      setLeaveRosterId(null);
+      setLeaveType('sick');
+      setLeaveNotes('');
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Gagal menyimpan cuti'
+      );
     }
   };
 
-  const columns: ColumnDef<WorkerSchedule>[] = [
-    {
-      id: 'id',
-      accessorKey: 'id',
-      header: 'ID',
-      enableSorting: false,
-      meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
-      cell: ({ row }) => (
-        <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
-      ),
-    },
-    {
-      id: 'user',
-      header: 'Pekerja',
-      enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Pekerja' },
-      cell: ({ row }) => (
-        <div>
-          <div className="font-semibold text-nb-black">{row.original.user?.full_name || '-'}</div>
-          <div className="font-mono text-[11px] text-nb-gray-600">{row.original.user?.username || ''}</div>
-        </div>
-      ),
-    },
-    {
-      id: 'area',
-      header: 'Area',
-      enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Area' },
-      cell: ({ row }) => (
-        <div>
-          <div className="font-medium">{row.original.area?.name || '-'}</div>
-          <div className="text-[11px] text-nb-gray-600">{row.original.area?.areaType?.name ?? ''}</div>
-        </div>
-      ),
-    },
-    {
-      id: 'shift',
-      header: 'Shift',
-      enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Shift' },
-      cell: ({ row }) => {
-        const shift = row.original.shift_definition;
-        if (!shift) return '-';
-        const tone =
-          shift.code === 'SHIFT2' ? 'ok' : shift.code === 'SHIFT3' ? 'info' : 'neutral';
-        return (
-          <div>
-            <StatusPill tone={tone}>{shift.name}</StatusPill>
-            <div className="mt-1 font-mono text-[11px] text-nb-gray-600">
-              {shift.start_time} - {shift.end_time}
+  const handleReplace = async () => {
+    if (!replaceRosterId || !replacementUserId) return;
+    try {
+      await replaceWorker.mutateAsync({
+        id: replaceRosterId,
+        replacement_user_id: replacementUserId,
+        notes: replaceNotes,
+      });
+      toast.success('Pengganti pekerja berhasil disimpan');
+      setReplaceModalOpen(false);
+      setReplaceRosterId(null);
+      setReplacementUserId('');
+      setReplaceNotes('');
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Gagal menyimpan pengganti'
+      );
+    }
+  };
+
+  const handleUpdateAreas = async () => {
+    if (!areasRosterId) return;
+    try {
+      await updateAreas.mutateAsync({
+        id: areasRosterId,
+        area_ids: selectedAreaIds,
+      });
+      toast.success('Area berhasil diperbarui');
+      setAreasModalOpen(false);
+      setAreasRosterId(null);
+      setSelectedAreaIds([]);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Gagal memperbarui area'
+      );
+    }
+  };
+
+  const handleUpdateShift = async () => {
+    if (!shiftRosterId) return;
+    try {
+      await updateShift.mutateAsync({
+        id: shiftRosterId,
+        shift_definition_id: selectedShiftId,
+      });
+      toast.success('Shift berhasil diperbarui');
+      setShiftModalOpen(false);
+      setShiftRosterId(null);
+      setSelectedShiftId(null);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Gagal memperbarui shift'
+      );
+    }
+  };
+
+  const handleGenerate = async () => {
+    try {
+      const result = await generateRoster.mutateAsync(selectedDate);
+      toast.success(`${result.generated} jadwal berhasil dibuat`);
+      refetch();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Gagal membuat jadwal'
+      );
+    }
+  };
+
+  const columns = useMemo<ColumnDef<Schedule>[]>(
+    () => [
+      {
+        id: 'full_name',
+        accessorFn: (row) => row.user.full_name,
+        header: 'Pekerja',
+        meta: { label: 'Pekerja', filterVariant: 'text' },
+        cell: ({ row }) => {
+          const roster = row.original;
+          return (
+            <div className="flex items-center gap-2.5">
+              <RoleAvatar
+                name={roster.user.full_name}
+                role={roster.user.role}
+                size="sm"
+              />
+              <div className="min-w-0">
+                <p className="truncate font-bold text-nb-black">
+                  {roster.user.full_name}
+                </p>
+                <p className="truncate font-mono text-[11px] text-nb-gray-600">
+                  {roster.user.username}
+                </p>
+              </div>
             </div>
-          </div>
-        );
+          );
+        },
       },
-    },
-    {
-      id: 'effective_date',
-      header: 'Tanggal Mulai',
-      enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Tanggal Mulai' },
-      cell: ({ row }) => formatDate(row.original.effective_date),
-    },
-    {
-      id: 'end_date',
-      header: 'Tanggal Selesai',
-      enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Tanggal Selesai' },
-      cell: ({ row }) =>
-        row.original.end_date ? (
-          formatDate(row.original.end_date)
-        ) : (
-          <span className="italic text-nb-gray-500">Berlangsung</span>
+      {
+        id: 'role',
+        accessorFn: (row) => row.user.role,
+        header: 'Role',
+        meta: { label: 'Role', filterVariant: 'text', defaultHidden: true },
+        cell: ({ row }) => <RolePill role={row.original.user.role} />,
+      },
+      {
+        id: 'status',
+        accessorKey: 'status',
+        header: 'Status',
+        meta: { label: 'Status', filterVariant: 'text' },
+        cell: ({ row }) => (
+          <StatusPill tone={getStatusTone(row.original.status)} dot>
+            {formatStatus(row.original.status)}
+          </StatusPill>
         ),
+      },
+      {
+        id: 'shift',
+        accessorFn: (row) => {
+          const shift = row.shift_definition;
+          return shift ? `${shift.name} (${shift.start_time}-${shift.end_time})` : '';
+        },
+        header: 'Shift',
+        meta: { label: 'Shift', filterVariant: 'text' },
+        cell: ({ row }) => {
+          const shift = row.original.shift_definition;
+          return (
+            <span className="text-nb-body-sm">
+              {shift ? `${shift.name} (${shift.start_time}-${shift.end_time})` : '—'}
+            </span>
+          );
+        },
+      },
+      {
+        id: 'areas',
+        accessorFn: (row) => getAreaNames(row).join(', '),
+        header: 'Area',
+        meta: { label: 'Area', filterVariant: 'text' },
+        cell: ({ row }) => {
+          const areaNames = getAreaNames(row.original);
+          return (
+            <span className="text-nb-body-sm">
+              {areaNames.length > 0 ? areaNames.join(', ') : '—'}
+            </span>
+          );
+        },
+      },
+      {
+        id: 'rayon',
+        accessorFn: (row) => {
+          const area = areaById.get(row.schedule_areas[0]?.area_id ?? '');
+          return area?.rayon?.name ?? '';
+        },
+        header: 'Rayon',
+        meta: { label: 'Rayon', filterVariant: 'text', defaultHidden: true },
+        cell: ({ row }) => {
+          const area = areaById.get(row.original.schedule_areas[0]?.area_id ?? '');
+          return (
+            <span className="text-nb-body-sm">{area?.rayon?.name ?? '—'}</span>
+          );
+        },
+      },
+      {
+        id: 'replacement',
+        accessorFn: (row) => row.replacement_user?.full_name ?? '',
+        header: 'Pengganti',
+        meta: { label: 'Pengganti', filterVariant: 'text', defaultHidden: true },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm">
+            {row.original.replacement_user?.full_name ?? '—'}
+          </span>
+        ),
+      },
+    ],
+    [areaById],
+  );
+
+  const rowActions = useCallback(
+    (roster: Schedule): DataTableRowAction<Schedule>[] => {
+      if (!canEditRoster(roster)) return [];
+
+      return [
+        {
+          key: 'leave',
+          label: 'Cuti',
+          icon: Calendar,
+          onClick: () => {
+            setLeaveRosterId(roster.id);
+            setLeaveType('sick');
+            setLeaveNotes('');
+            setLeaveModalOpen(true);
+          },
+        },
+        {
+          key: 'replace',
+          label: 'Ganti Pekerja',
+          icon: Pencil,
+          onClick: () => {
+            setReplaceRosterId(roster.id);
+            setReplacementUserId('');
+            setReplaceNotes('');
+            setReplaceModalOpen(true);
+          },
+        },
+        {
+          key: 'areas',
+          label: 'Ubah Area',
+          icon: Pencil,
+          onClick: () => {
+            setAreasRosterId(roster.id);
+            setSelectedAreaIds(roster.schedule_areas.map((a) => a.area_id));
+            setAreasModalOpen(true);
+          },
+        },
+        {
+          key: 'shift',
+          label: 'Ubah Shift',
+          icon: Pencil,
+          onClick: () => {
+            setShiftRosterId(roster.id);
+            setSelectedShiftId(roster.shift_definition_id);
+            setShiftModalOpen(true);
+          },
+        },
+      ];
     },
-    {
-      id: 'created_at',
-      accessorKey: 'created_at',
-      header: 'Dibuat',
-      enableSorting: false,
-      meta: { label: 'Dibuat', defaultHidden: true, filterVariant: 'date' },
-      cell: ({ row }) => (
-        <span className="text-nb-body-sm text-nb-gray-600">
-          {formatDate(row.original.created_at)}
-        </span>
-      ),
-    },
-    {
-      id: 'updated_at',
-      accessorKey: 'updated_at',
-      header: 'Diperbarui',
-      enableSorting: false,
-      meta: { label: 'Diperbarui', defaultHidden: true, filterVariant: 'date' },
-      cell: ({ row }) => (
-        <span className="text-nb-body-sm text-nb-gray-600">
-          {formatDate(row.original.updated_at)}
-        </span>
-      ),
-    },
-  ];
+    [canEditRoster],
+  );
+
+  // Schedulable roles for replacement
+  const schedulableUsers = useMemo(
+    () => allUsers.filter((u) => ['satgas', 'linmas'].includes(u.role)),
+    [allUsers],
+  );
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        description="Kelola jadwal kerja per area dan shift."
-        actions={
-          <Link href="/schedules/new">
-            <Button leftIcon={<Plus className="size-5" />}>Buat Jadwal</Button>
-          </Link>
-        }
-      />
+      <PageHeader description={`Jadwal untuk ${format(parse(selectedDate, 'yyyy-MM-dd', new Date()), 'EEEE, dd MMMM yyyy', { locale: idLocale })}`} />
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Tabs<ViewMode>
-          tabs={VIEW_TABS}
-          value={view}
-          onValueChange={setView}
-          aria-label="Tampilan jadwal"
-        />
-        {view === 'grid' && (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => shiftWeek(-1)}
-              aria-label="Minggu sebelumnya"
-            >
-              <ChevronLeft className="size-4" />
-            </Button>
-            <span className="rounded-nb-base border-2 border-nb-black bg-nb-warning-light px-3 py-1 font-mono text-[11px] font-bold text-nb-black">
-              {weekLabel}
-            </span>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => shiftWeek(1)}
-              aria-label="Minggu berikutnya"
-            >
-              <ChevronRight className="size-4" />
-            </Button>
-          </div>
+      {/* Date Picker and Generate Button */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <label htmlFor="date-picker" className="text-nb-body font-medium">
+            Tanggal:
+          </label>
+          <input
+            id="date-picker"
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="rounded-nb-base border-2 border-nb-black px-3 py-2 text-nb-body"
+          />
+        </div>
+
+        {canGenerate && (
+          <Button
+            onClick={handleGenerate}
+            loading={generateRoster.isPending}
+            leftIcon={<Plus className="h-5 w-5" />}
+          >
+            Generate Roster
+          </Button>
         )}
       </div>
 
-      <Card>
-        <CardContent className="p-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <FormInput
-              label="Cari Pekerja"
-              type="text"
-              placeholder="Nama pekerja…"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-            />
-            <FormSelect
-              label="Filter Area"
-              value={areaFilter}
-              onChange={(value) => {
-                setAreaFilter(value as string);
-                setPage(1);
-              }}
-              options={[
-                { value: 'all', label: 'Semua Area' },
-                ...(areas?.data || []).map((area) => ({
-                  value: area.id,
-                  label: `${area.name}`,
-                })),
-              ]}
-            />
-            <FormSelect
-              label="Filter Shift"
-              value={shiftFilter}
-              onChange={(value) => {
-                setShiftFilter(value as string);
-                setPage(1);
-              }}
-              options={[
-                { value: 'all', label: 'Semua Shift' },
-                ...(shifts || []).map((shift) => ({
-                  value: shift.id,
-                  label: `${shift.name} (${shift.start_time}-${shift.end_time})`,
-                })),
-              ]}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {/* Data Table */}
+      <DataTable
+        columns={columns}
+        data={schedules}
+        loading={isLoading}
+        error={!!error}
+        onRetry={() => refetch()}
+        onRefresh={() => refetch()}
+        getRowId={(r) => r.id}
+        searchPlaceholder="Cari nama pekerja…"
+        rowActions={rowActions}
+        emptyTitle={schedules.length === 0 ? 'Belum ada jadwal' : undefined}
+        emptyDescription={schedules.length === 0 ? 'Klik "Generate Roster" untuk membuat jadwal hari ini.' : undefined}
+      />
 
-      {view === 'grid' ? (
-        <ScheduleWeeklyGrid schedules={schedules} weekStart={weekStart} loading={isLoading} />
-      ) : (
-        <Card>
-          <CardContent className="p-4">
-            <DataTable
-              columns={columns}
-              data={schedules}
-              loading={isLoading}
-              enablePagination={false}
-              getRowId={(s) => s.id}
-              rowActions={rowActions}
-              emptyTitle="Belum ada jadwal terdaftar"
-            />
-            {pagination && pagination.totalPages > 1 && (
-              <div className="mt-4 flex items-center justify-between border-t-2 border-nb-black pt-4">
-                <div className="font-mono text-[11px] text-nb-gray-600">
-                  Halaman {pagination.page} dari {pagination.totalPages} · {pagination.total} jadwal
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={pagination.page === 1}
-                    leftIcon={<ChevronLeft className="size-4" />}
-                  >
-                    Sebelumnya
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
-                    disabled={pagination.page === pagination.totalPages}
-                    rightIcon={<ChevronRight className="size-4" />}
-                  >
-                    Selanjutnya
-                  </Button>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      <Dialog
-        open={deleteModalOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeleteModalOpen(false);
-            setScheduleToDelete(null);
-          }
-        }}
+      {/* Leave Modal */}
+      <RosterActionModal
+        open={leaveModalOpen}
+        title="Cuti"
+        onClose={() => setLeaveModalOpen(false)}
+        onSubmit={handleSetLeave}
+        submitLabel="Simpan"
+        loading={setLeave.isPending}
+        error={setLeave.isError && getErrorMessage(setLeave.error)}
       >
-        <DialogContent className="sm:max-w-md" aria-labelledby="schedule-dialog-title">
-          <DialogHeader>
-            <DialogTitle id="schedule-dialog-title">Hapus Jadwal</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <p className="text-nb-gray-700">Apakah Anda yakin ingin menghapus jadwal ini?</p>
-            {scheduleToDelete && (
-              <div className="border-2 border-nb-black bg-nb-gray-50 p-4">
-                <div className="font-semibold">{scheduleToDelete.user?.full_name}</div>
-                <div className="text-nb-body-sm text-nb-gray-600">
-                  {scheduleToDelete.area?.name} • {scheduleToDelete.shift_definition?.name}
-                </div>
-                <div className="text-nb-body-sm text-nb-gray-600">
-                  {formatDate(scheduleToDelete.effective_date)}
-                  {scheduleToDelete.end_date && ` - ${formatDate(scheduleToDelete.end_date)}`}
-                </div>
-              </div>
-            )}
-            <p className="text-nb-body-sm text-nb-gray-600">Tindakan ini tidak dapat dibatalkan.</p>
-          </div>
-          <DialogFooter className="flex gap-3 sm:gap-3">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setDeleteModalOpen(false);
-                setScheduleToDelete(null);
-              }}
-            >
-              Batal
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDeleteConfirm}
-              loading={deleteMutation.isPending}
-            >
-              Hapus Jadwal
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        <FormSelect
+          label="Jenis Cuti"
+          value={leaveType}
+          onChange={(value) => setLeaveType(value as 'sick' | 'annual')}
+          options={[
+            { value: 'sick', label: 'Sakit' },
+            { value: 'annual', label: 'Tahunan' },
+          ]}
+        />
+        <Textarea
+          label="Catatan (opsional)"
+          value={leaveNotes}
+          onChange={(e) => setLeaveNotes(e.target.value)}
+          placeholder="Masukkan catatan…"
+          rows={3}
+        />
+      </RosterActionModal>
+
+      {/* Replace Modal */}
+      <RosterActionModal
+        open={replaceModalOpen}
+        title="Ganti Pekerja"
+        onClose={() => setReplaceModalOpen(false)}
+        onSubmit={handleReplace}
+        submitLabel="Simpan"
+        loading={replaceWorker.isPending}
+        submitDisabled={!replacementUserId}
+        error={replaceWorker.isError && getErrorMessage(replaceWorker.error)}
+      >
+        <FormCombobox
+          label="Pekerja Pengganti"
+          placeholder="Pilih pekerja…"
+          value={replacementUserId}
+          onChange={setReplacementUserId}
+          required
+          options={schedulableUsers.map((u) => ({
+            value: u.id,
+            label: `${u.full_name} (${u.username})`,
+          }))}
+        />
+        <Textarea
+          label="Catatan (opsional)"
+          value={replaceNotes}
+          onChange={(e) => setReplaceNotes(e.target.value)}
+          placeholder="Masukkan catatan…"
+          rows={3}
+        />
+      </RosterActionModal>
+
+      {/* Areas Modal */}
+      <RosterActionModal
+        open={areasModalOpen}
+        title="Ubah Area"
+        onClose={() => setAreasModalOpen(false)}
+        onSubmit={handleUpdateAreas}
+        submitLabel="Simpan"
+        loading={updateAreas.isPending}
+        error={updateAreas.isError && getErrorMessage(updateAreas.error)}
+      >
+        <FormMultiCombobox
+          label="Area"
+          options={allAreas.map((a) => ({ value: a.id, label: a.name }))}
+          values={selectedAreaIds}
+          onChange={setSelectedAreaIds}
+          placeholder="Pilih area"
+          searchPlaceholder="Cari area…"
+          emptyText="Tidak ada area."
+          helperText="Kosongkan untuk menghapus semua area hari ini."
+        />
+      </RosterActionModal>
+
+      {/* Shift Modal */}
+      <RosterActionModal
+        open={shiftModalOpen}
+        title="Ubah Shift"
+        onClose={() => setShiftModalOpen(false)}
+        onSubmit={handleUpdateShift}
+        submitLabel="Simpan"
+        loading={updateShift.isPending}
+        error={updateShift.isError && getErrorMessage(updateShift.error)}
+      >
+        <FormCombobox
+          label="Shift"
+          value={selectedShiftId ?? ''}
+          onChange={(value) => setSelectedShiftId(value || null)}
+          placeholder="Tanpa Shift"
+          options={shifts.map((shift) => ({
+            value: shift.id,
+            label: `${shift.name} (${shift.start_time}-${shift.end_time})`,
+          }))}
+        />
+      </RosterActionModal>
     </div>
   );
 }

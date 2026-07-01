@@ -277,9 +277,9 @@ export default function DashboardPage() {
             <div className="grid grid-cols-3 gap-2">
               <QuickAction href="/tasks/new" icon={<ClipboardPlus className="size-5" />} label="Tugas baru" />
               {isAdmin && (
-                <QuickAction href="/users/new" icon={<UserPlus className="size-5" />} label="User baru" />
+                <QuickAction href="/users" icon={<UserPlus className="size-5" />} label="User baru" />
               )}
-              <QuickAction href="/schedules/new" icon={<CalendarPlus className="size-5" />} label="Jadwal" />
+              <QuickAction href="/schedules" icon={<CalendarPlus className="size-5" />} label="Jadwal" />
             </div>
           </SectionCard>
 

@@ -6,11 +6,11 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Repository } from 'typeorm';
 import { User, UserRole } from '../../users/entities/user.entity';
 import { Area } from '../../areas/entities/area.entity';
 import { UserTrackingStatus } from '../entities/user-tracking-status.entity';
-import { Schedule } from '../../schedules/entities/schedule.entity';
+import { SchedulesService } from '../../schedules/schedules.service';
 import { ReassignWorkerDto, ReassignWorkerResponseDto } from '../dto/reassign-worker.dto';
 import { EventsGateway } from '../../../gateways/events.gateway';
 import { AuditLogService } from '../../audit/audit.service';
@@ -29,8 +29,7 @@ export class MonitoringReassignService {
     private readonly areaRepository: Repository<Area>,
     @InjectRepository(UserTrackingStatus)
     private readonly trackingRepository: Repository<UserTrackingStatus>,
-    @InjectRepository(Schedule)
-    private readonly scheduleRepository: Repository<Schedule>,
+    private readonly dailySchedulesService: SchedulesService,
     private readonly eventsGateway: EventsGateway,
     private readonly auditLogService: AuditLogService,
   ) {}
@@ -77,24 +76,20 @@ export class MonitoringReassignService {
 
     await this.trackingRepository.update({ user_id: worker.id }, { area_id: dto.target_area_id });
 
-    // End current schedule if requested
-    if (dto.end_current_schedule && previousAreaId) {
-      await this.endCurrentSchedules(worker.id, previousAreaId, effectiveDate);
-    }
-
-    // Create new schedule if shift_definition_id provided
-    let newScheduleId: string | null = null;
-    if (dto.shift_definition_id) {
-      const schedule = this.scheduleRepository.create({
-        user_id: worker.id,
-        area_id: dto.target_area_id,
-        shift_definition_id: dto.shift_definition_id,
-        effective_date: new Date(effectiveDate),
-        created_by: requestingUser.id,
-      });
-      const saved = await this.scheduleRepository.save(schedule);
-      newScheduleId = saved.id;
-    }
+    // Reflect the reassignment on the worker's roster for the effective day so
+    // clock-in + monitoring pick up the new area (and optional shift) at once.
+    // This replaces the legacy range-based `schedules` override: overwriting the
+    // day's areas implicitly ends the previous day-assignment.
+    const newScheduleId = await this.dailySchedulesService.overrideForDay(
+      worker.id,
+      effectiveDate,
+      {
+        areaId: dto.target_area_id,
+        rayonId: targetArea.rayon_id ?? null,
+        shiftDefinitionId: dto.shift_definition_id ?? undefined,
+      },
+      requestingUser.id,
+    );
 
     const now = new Date();
 
@@ -141,30 +136,5 @@ export class MonitoringReassignService {
       effective_date: effectiveDate,
       reassigned_at: now,
     };
-  }
-
-  private async endCurrentSchedules(
-    userId: string,
-    areaId: string,
-    effectiveDate: string,
-  ): Promise<void> {
-    const activeSchedules = await this.scheduleRepository.find({
-      where: {
-        user_id: userId,
-        area_id: areaId,
-        end_date: IsNull(),
-      },
-    });
-
-    for (const schedule of activeSchedules) {
-      schedule.end_date = new Date(effectiveDate);
-      await this.scheduleRepository.save(schedule);
-    }
-
-    if (activeSchedules.length > 0) {
-      this.logger.log(
-        `Ended ${activeSchedules.length} active schedule(s) for user ${userId} at area ${areaId}`,
-      );
-    }
   }
 }

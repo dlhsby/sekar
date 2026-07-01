@@ -47,8 +47,8 @@ import {
  *   - user_areas assignments (permanent)
  *   - shift_definition_id assignments (field workers → SHIFT1; non-field → NULL)
  *   - user_tracking_status  (all offline — testing starts clean)
- *   - daily_schedules (TODAY's roster, materialized from templates + 1 demo leave)
- *   - daily_schedule_areas (TODAY's area assignments, derived from user_areas)
+ *   - schedules (TODAY's roster, materialized from templates + 1 demo leave)
+ *   - schedule_areas (TODAY's area assignments, derived from user_areas)
  *   - area_staff_requirements (1 satgas + 1 linmas per area, SHIFT1/WEEKDAY)
  *
  * Empty tables (UAT writes its own rows):
@@ -268,8 +268,8 @@ async function seedStaging() {
       'area_plants',
       'plant_species',
       // Daily roster tables
-      'daily_schedule_areas',
-      'daily_schedules',
+      'schedule_areas',
+      'schedules',
       // Phase 1/2 tables
       'user_areas',
       'user_tracking_status',
@@ -1436,27 +1436,27 @@ async function seedStaging() {
     // ============================================================
     console.log("\n📅 Materializing TODAY's daily schedule (for immediate demo data)...");
     await queryRunner.query(`
-      INSERT INTO daily_schedules (user_id, schedule_date, rayon_id, shift_definition_id, status, source)
+      INSERT INTO schedules (user_id, schedule_date, rayon_id, shift_definition_id, status, source)
       SELECT u.id, (now() AT TIME ZONE 'Asia/Jakarta')::date, u.rayon_id, u.shift_definition_id,
              CASE WHEN u.shift_definition_id IS NOT NULL THEN 'planned' ELSE 'off' END, 'template'
       FROM users u
       WHERE u.is_active = TRUE AND u.deleted_at IS NULL
     `);
     const dailyScheduleCount = (await queryRunner.query(
-      `SELECT COUNT(*) AS count FROM daily_schedules WHERE schedule_date = (now() AT TIME ZONE 'Asia/Jakarta')::date`,
+      `SELECT COUNT(*) AS count FROM schedules WHERE schedule_date = (now() AT TIME ZONE 'Asia/Jakarta')::date`,
     )) as Array<{ count: string }>;
     console.log(`  ✓ ${dailyScheduleCount[0].count} daily schedule rows materialized`);
 
-    // Populate daily_schedule_areas from user_areas (today's assignments)
+    // Populate schedule_areas from user_areas (today's assignments)
     await queryRunner.query(`
-      INSERT INTO daily_schedule_areas (daily_schedule_id, area_id)
+      INSERT INTO schedule_areas (schedule_id, area_id)
       SELECT DISTINCT ds.id, ua.area_id
-      FROM daily_schedules ds
+      FROM schedules ds
       JOIN user_areas ua ON ua.user_id = ds.user_id AND ua.assignment_type = 'permanent'
       WHERE ds.schedule_date = (now() AT TIME ZONE 'Asia/Jakarta')::date
     `);
     const dailyAreaCount = (await queryRunner.query(
-      `SELECT COUNT(*) AS count FROM daily_schedule_areas`,
+      `SELECT COUNT(*) AS count FROM schedule_areas`,
     )) as Array<{ count: string }>;
     console.log(`  ✓ ${dailyAreaCount[0].count} daily schedule area assignments seeded`);
 
@@ -1466,7 +1466,7 @@ async function seedStaging() {
     )) as Array<{ id: string }>;
     if (demoLeaveUser.length > 0) {
       await queryRunner.query(
-        `UPDATE daily_schedules SET status = 'leave_sick', notes = 'Demam (demo)', source = 'manual'
+        `UPDATE schedules SET status = 'leave_sick', notes = 'Demam (demo)', source = 'manual'
          WHERE user_id = $1 AND schedule_date = (now() AT TIME ZONE 'Asia/Jakarta')::date`,
         [demoLeaveUser[0].id],
       );
@@ -1561,9 +1561,9 @@ async function seedStaging() {
     console.log('  📆 Daily Roster (TODAY materialized for immediate demo)');
     console.log('     ──────────────────────────────────────────────────────────────────────────');
     console.log(
-      "      daily_schedules — TODAY's schedule entries (field workers: planned, others: off)",
+      "      schedules — TODAY's schedule entries (field workers: planned, others: off)",
     );
-    console.log("      daily_schedule_areas — TODAY's area assignments from user_areas");
+    console.log("      schedule_areas — TODAY's area assignments from user_areas");
     console.log('      1 demo leave exception (satgas_pusat_1: sick leave)');
     console.log('');
     console.log('  📭 Empty by Design (essentials-only — UAT starts from scratch)');
