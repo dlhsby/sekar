@@ -67,6 +67,19 @@ export const suggestUsername = async (fullName: string): Promise<string> => {
 };
 
 /**
+ * Live phone availability check (phone doubles as a login identifier, so it must
+ * be unique). `excludeUserId` skips the user's own number when editing.
+ */
+export const checkPhone = async (phone: string, excludeUserId?: string): Promise<boolean> => {
+  const params = new URLSearchParams({ phone });
+  if (excludeUserId) params.set('excludeUserId', excludeUserId);
+  const response = await apiClient.get<{ available: boolean }>(
+    `/users/check-phone?${params.toString()}`,
+  );
+  return response.data.available;
+};
+
+/**
  * Hook to fetch users with filters
  *
  * @example

@@ -111,6 +111,28 @@ export const ALL_ROLES: UserRole[] = [
   'staff_kecamatan',
 ];
 
+/**
+ * Organizational hierarchy order (top → bottom) for role pickers. Roles not
+ * listed here (system + external) are appended alphabetically by label — see
+ * {@link sortedRoleOptions}.
+ */
+export const ROLE_HIERARCHY_ORDER: UserRole[] = [
+  'top_management',
+  'kepala_rayon',
+  'admin_data',
+  'korlap',
+  'satgas',
+  'linmas',
+];
+
+/** Role dropdown options sorted by hierarchy first, then alphabetically. */
+export const sortedRoleOptions = (): { value: UserRole; label: string }[] => {
+  const rest = ALL_ROLES.filter((r) => !ROLE_HIERARCHY_ORDER.includes(r)).sort((a, b) =>
+    ROLE_LABELS[a].localeCompare(ROLE_LABELS[b]),
+  );
+  return [...ROLE_HIERARCHY_ORDER, ...rest].map((r) => ({ value: r, label: ROLE_LABELS[r] }));
+};
+
 /** Valid assignment targets per role (who can assign to whom) */
 export const VALID_TASK_ASSIGNMENTS: Partial<Record<UserRole, UserRole[]>> = {
   korlap: ['satgas', 'linmas'],

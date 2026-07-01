@@ -6,10 +6,17 @@ import { User } from '../entities/user.entity';
 
 describe('UserValidationService', () => {
   let service: UserValidationService;
-  let userRepository: { findOne: jest.Mock };
+  let userRepository: { findOne: jest.Mock; createQueryBuilder: jest.Mock };
+  let qbGetRawMany: jest.Mock;
 
   beforeEach(async () => {
-    userRepository = { findOne: jest.fn() };
+    qbGetRawMany = jest.fn().mockResolvedValue([]);
+    const qb = {
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      getRawMany: qbGetRawMany,
+    };
+    userRepository = { findOne: jest.fn(), createQueryBuilder: jest.fn(() => qb) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -48,23 +55,44 @@ describe('UserValidationService', () => {
 
   describe('suggestUsername', () => {
     it('slugifies the full name (lowercase, diacritics stripped, spaces → _)', async () => {
-      userRepository.findOne.mockResolvedValue(null); // always available
+      qbGetRawMany.mockResolvedValue([]); // nothing taken
       expect(await service.suggestUsername('Budi Santoso')).toBe('budi_santoso');
       expect(await service.suggestUsername('Áder  Rahmań')).toBe('ader_rahman');
     });
 
     it('appends a numeric suffix until a free username is found', async () => {
-      // base + base2 taken, base3 free
-      userRepository.findOne
-        .mockResolvedValueOnce({ id: 'a' }) // budi taken
-        .mockResolvedValueOnce({ id: 'b' }) // budi2 taken
-        .mockResolvedValueOnce(null); // budi3 free
+      // base + base2 taken (returned by the single prefix query), base3 free
+      qbGetRawMany.mockResolvedValue([{ username: 'budi' }, { username: 'budi2' }]);
       expect(await service.suggestUsername('Budi')).toBe('budi3');
     });
 
+    it('uses a single prefix query rather than one lookup per candidate', async () => {
+      qbGetRawMany.mockResolvedValue([{ username: 'budi' }]);
+      await service.suggestUsername('Budi');
+      expect(userRepository.createQueryBuilder).toHaveBeenCalledTimes(1);
+      expect(qbGetRawMany).toHaveBeenCalledTimes(1);
+    });
+
     it('falls back to "user" when the name has no usable characters', async () => {
-      userRepository.findOne.mockResolvedValue(null);
+      qbGetRawMany.mockResolvedValue([]);
       expect(await service.suggestUsername('!!!')).toBe('user');
+    });
+  });
+
+  describe('isPhoneAvailable', () => {
+    it('returns true when the phone is unused', async () => {
+      userRepository.findOne.mockResolvedValue(null);
+      expect(await service.isPhoneAvailable('081200000001')).toBe(true);
+    });
+
+    it('returns false when another user owns the phone', async () => {
+      userRepository.findOne.mockResolvedValue({ id: 'other-user' });
+      expect(await service.isPhoneAvailable('081200000001')).toBe(false);
+    });
+
+    it('returns true when the phone belongs to the excluded user (self-edit)', async () => {
+      userRepository.findOne.mockResolvedValue({ id: 'self' });
+      expect(await service.isPhoneAvailable('081200000001', 'self')).toBe(true);
     });
   });
 

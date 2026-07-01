@@ -10,8 +10,8 @@ import { useRayons } from '@/lib/api/rayons';
 import { useAreas } from '@/lib/api/areas';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useUserAreas } from '@/lib/api/user-areas';
-import { checkUsername, suggestUsername } from '@/lib/api/users';
-import { ALL_ROLES, ROLE_LABELS } from '@/lib/constants/roles';
+import { checkUsername, suggestUsername, checkPhone } from '@/lib/api/users';
+import { sortedRoleOptions } from '@/lib/constants/roles';
 import { normalizePhone, INDO_MOBILE_REGEX } from '@/lib/utils/phone';
 
 /**
@@ -25,20 +25,22 @@ const userSchema = z.object({
   full_name: z.string().min(2, 'Nama minimal 2 karakter'),
   phone_number: z
     .string()
-    .regex(INDO_MOBILE_REGEX, 'Nomor HP harus format 08xxxxxxxxxx')
-    .optional()
-    .or(z.literal('')),
-  role: z.enum([
-    'satgas',
-    'linmas',
-    'korlap',
-    'admin_data',
-    'kepala_rayon',
-    'top_management',
-    'admin_system',
-    'superadmin',
-    'staff_kecamatan',
-  ]),
+    .min(1, 'Nomor HP wajib diisi')
+    .regex(INDO_MOBILE_REGEX, 'Nomor HP harus format 08xxxxxxxxxx'),
+  role: z.enum(
+    [
+      'satgas',
+      'linmas',
+      'korlap',
+      'admin_data',
+      'kepala_rayon',
+      'top_management',
+      'admin_system',
+      'superadmin',
+      'staff_kecamatan',
+    ],
+    { error: () => 'Role wajib dipilih' },
+  ),
   rayon_id: z.string().uuid().optional().or(z.literal('')),
   shift_definition_id: z.string().uuid().optional().or(z.literal('')),
 });
@@ -93,7 +95,9 @@ export function UserForm({
       username: initialData?.username || '',
       full_name: initialData?.full_name || '',
       phone_number: initialData?.phone_number || '',
-      role: initialData?.role || 'satgas',
+      // Unselected by default on create; comboboxes start empty (shift is
+      // defaulted to Shift 1 once the definitions load — see effect below).
+      role: (initialData?.role ?? '') as UserRole,
       rayon_id: initialData?.rayon_id || '',
       shift_definition_id: initialData?.shift_definition_id || '',
     },
@@ -142,6 +146,44 @@ export function UserForm({
     return () => clearTimeout(t);
   }, [usernameValue, isEditMode, initialData?.username, readOnly]);
 
+  // Live phone availability (debounced) — phone doubles as a login identifier,
+  // so it must be unique (mirrors the username check).
+  const phoneValue = watch('phone_number');
+  const [phoneStatus, setPhoneStatus] = useState<
+    'idle' | 'checking' | 'available' | 'taken' | 'invalid'
+  >('idle');
+  const latestPhoneRef = useRef('');
+
+  useEffect(() => {
+    if (readOnly) return;
+    const raw = (phoneValue || '').trim();
+    if (!raw) {
+      setPhoneStatus('idle');
+      return;
+    }
+    const p = normalizePhone(raw);
+    if (isEditMode && p === initialData?.phone_number) {
+      setPhoneStatus('idle');
+      return;
+    }
+    if (!INDO_MOBILE_REGEX.test(p)) {
+      setPhoneStatus('invalid');
+      return;
+    }
+    setPhoneStatus('checking');
+    latestPhoneRef.current = p;
+    const t = setTimeout(async () => {
+      try {
+        const available = await checkPhone(p, isEditMode ? initialData?.id : undefined);
+        if (latestPhoneRef.current !== p) return; // a newer value is being checked
+        setPhoneStatus(available ? 'available' : 'taken');
+      } catch {
+        if (latestPhoneRef.current === p) setPhoneStatus('idle');
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [phoneValue, isEditMode, initialData?.phone_number, initialData?.id, readOnly]);
+
   const handleSuggestUsername = async () => {
     const name = (fullNameValue || '').trim();
     if (!name) return;
@@ -160,13 +202,12 @@ export function UserForm({
 
   const handleFormSubmit = async (data: UserFormData) => {
     const submitData: UserFormSubmit = { ...data, area_ids: areaIds };
-    if (!submitData.phone_number) delete submitData.phone_number;
     if (!submitData.rayon_id) delete submitData.rayon_id;
     if (!submitData.shift_definition_id) delete submitData.shift_definition_id;
     await onSubmit(submitData);
   };
 
-  const roleOptions = ALL_ROLES.map((role) => ({ value: role, label: ROLE_LABELS[role] }));
+  const roleOptions = sortedRoleOptions();
   const rayonOptions = rayons.map((r) => ({ value: r.id, label: r.name }));
   const shiftOptions = shifts.map((s) => ({
     value: s.id,
@@ -174,10 +215,39 @@ export function UserForm({
   }));
 
   const allAreas = useMemo(() => areasData?.data || [], [areasData]);
+
+  // Area is cascaded from the selected rayon — only that rayon's areas are
+  // offered (empty until a rayon is picked).
+  const selectedRayonId = watch('rayon_id') || '';
   const areaOptions = useMemo(
-    () => allAreas.map((a) => ({ value: a.id, label: a.name })),
-    [allAreas],
+    () =>
+      allAreas
+        .filter((a) => a.rayon_id === selectedRayonId)
+        .map((a) => ({ value: a.id, label: a.name })),
+    [allAreas, selectedRayonId],
   );
+
+  // When the rayon changes, drop any selected areas that no longer belong to it.
+  // Guard on `allAreas` being loaded — filtering against an empty list would
+  // wipe the edit-mode prefilled areas before the area list arrives.
+  useEffect(() => {
+    if (!allAreas.length) return;
+    setAreaIds((prev) =>
+      prev.filter((id) => allAreas.find((a) => a.id === id)?.rayon_id === selectedRayonId),
+    );
+  }, [selectedRayonId, allAreas]);
+
+  // Create-mode only: default the shift to "Shift 1" once definitions load.
+  // This is the single combobox with a default; the rest start unselected.
+  const shiftInitRef = useRef(false);
+  useEffect(() => {
+    if (isEditMode || readOnly || shiftInitRef.current || !shifts.length) return;
+    const shift1 = shifts.find((s) => /shift\s*0*1\b/i.test(s.name)) ?? shifts[0];
+    if (shift1) {
+      setValue('shift_definition_id', shift1.id);
+      shiftInitRef.current = true;
+    }
+  }, [shifts, isEditMode, readOnly, setValue]);
 
   const busy = isSubmitting || loading;
   const fieldsDisabled = busy || readOnly;
@@ -235,32 +305,38 @@ export function UserForm({
         )}
       </div>
 
-      <FormInput
-        label="Nomor HP (untuk login)"
-        placeholder="0812xxxxxxxx"
-        error={errors.phone_number?.message}
-        helperText="Format 08xxxxxxxxxx — bisa dipakai untuk login selain username"
-        disabled={fieldsDisabled}
-        {...phoneReg}
-        onBlur={(e) => {
-          phoneReg.onBlur(e);
-          const v = e.target.value;
-          if (v) setValue('phone_number', normalizePhone(v), { shouldValidate: true });
-        }}
-      />
-
-      {!isEditMode && (
-        <div className="rounded-nb-base border-2 border-nb-info bg-nb-info-light/40 p-3 text-nb-body-sm">
-          Password sementara akan dibuat otomatis dan ditampilkan sekali setelah user dibuat.
-          Pengguna wajib menggantinya saat login pertama.
-        </div>
-      )}
+      <div className="space-y-1">
+        <FormInput
+          label="Nomor HP (untuk login)"
+          placeholder="0812xxxxxxxx"
+          error={errors.phone_number?.message}
+          helperText="Format 08xxxxxxxxxx — bisa dipakai untuk login selain username"
+          required
+          disabled={fieldsDisabled}
+          {...phoneReg}
+          onBlur={(e) => {
+            phoneReg.onBlur(e);
+            const v = e.target.value;
+            if (v) setValue('phone_number', normalizePhone(v), { shouldValidate: true });
+          }}
+        />
+        {phoneStatus === 'checking' && (
+          <p className="text-nb-caption text-nb-gray-600">Memeriksa ketersediaan…</p>
+        )}
+        {phoneStatus === 'available' && (
+          <p className="text-nb-caption text-nb-success-dark">✓ Nomor HP tersedia</p>
+        )}
+        {phoneStatus === 'taken' && (
+          <p className="text-nb-caption text-nb-danger-dark">✗ Nomor HP sudah dipakai</p>
+        )}
+      </div>
 
       <FormCombobox
         label="Role"
         options={roleOptions}
-        value={selectedRole}
-        onChange={(value) => setValue('role', value as UserRole)}
+        value={selectedRole || ''}
+        onChange={(value) => setValue('role', value as UserRole, { shouldValidate: true })}
+        placeholder="Pilih role"
         error={errors.role?.message}
         required
         clearable={false}
@@ -277,6 +353,28 @@ export function UserForm({
         disabled={fieldsDisabled || rayonsLoading}
       />
 
+      {/* Areas multi-select — cascaded from the selected rayon; the worker's
+          permanent assigned areas that drive their roster. */}
+      <FormMultiCombobox
+        label="Area Penugasan (bisa lebih dari satu)"
+        options={areaOptions}
+        values={areaIds}
+        onChange={setAreaIds}
+        placeholder={
+          !selectedRayonId
+            ? 'Pilih rayon terlebih dahulu'
+            : areasLoading
+              ? 'Memuat area...'
+              : 'Pilih area penugasan'
+        }
+        searchPlaceholder="Cari area…"
+        emptyText={
+          selectedRayonId ? 'Tidak ada area di rayon ini.' : 'Pilih rayon terlebih dahulu.'
+        }
+        helperText="Kosongkan untuk pekerja tanpa area tetap (ad-hoc) atau peran manajemen."
+        disabled={fieldsDisabled || areasLoading || !selectedRayonId}
+      />
+
       <FormCombobox
         label="Shift Kerja"
         options={shiftOptions}
@@ -288,18 +386,12 @@ export function UserForm({
         disabled={fieldsDisabled}
       />
 
-      {/* Areas multi-select — the worker's permanent assigned areas; drives their roster. */}
-      <FormMultiCombobox
-        label="Area Penugasan (bisa lebih dari satu)"
-        options={areaOptions}
-        values={areaIds}
-        onChange={setAreaIds}
-        placeholder={areasLoading ? 'Memuat area...' : 'Pilih area penugasan'}
-        searchPlaceholder="Cari area…"
-        emptyText="Tidak ada area."
-        helperText="Kosongkan untuk pekerja tanpa area tetap (ad-hoc) atau peran manajemen."
-        disabled={fieldsDisabled || areasLoading}
-      />
+      {!isEditMode && !readOnly && (
+        <div className="rounded-nb-base border-2 border-nb-info bg-nb-info-light/40 p-3 text-nb-body-sm">
+          Password sementara akan dibuat otomatis dan ditampilkan sekali setelah user dibuat.
+          Pengguna wajib menggantinya saat login pertama.
+        </div>
+      )}
 
       <div className="flex gap-3 pt-4">
         {readOnly ? (

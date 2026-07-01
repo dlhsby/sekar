@@ -30,6 +30,7 @@ import {
   useResetUserPassword,
 } from '@/lib/api/users';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
+import { useRayons } from '@/lib/api/rayons';
 import { useUser } from '@/lib/auth/hooks';
 import { ADMIN_ROLES } from '@/lib/constants/roles';
 import { formatDate } from '@/lib/utils/time';
@@ -51,6 +52,10 @@ export default function UsersPage() {
   const resetPassword = useResetUserPassword();
   const { data: shifts = [] } = useShiftDefinitions();
   const shiftNameById = useMemo(() => new Map(shifts.map((s) => [s.id, s.name])), [shifts]);
+  // Rayon has no entity relation on User (only rayon_id) — resolve the name via
+  // a map, mirroring how shift names are resolved above.
+  const { data: rayons = [] } = useRayons();
+  const rayonNameById = useMemo(() => new Map(rayons.map((r) => [r.id, r.name])), [rayons]);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -144,12 +149,13 @@ export default function UsersPage() {
       },
       {
         id: 'rayon',
-        accessorFn: (u) => u.rayon?.name ?? '',
+        accessorFn: (u) => (u.rayon_id ? (rayonNameById.get(u.rayon_id) ?? '') : ''),
         header: 'Rayon',
         meta: { label: 'Rayon', filterVariant: 'text' },
-        cell: ({ row }) => (
-          <span className="text-nb-body-sm">{row.original.rayon?.name ?? '—'}</span>
-        ),
+        cell: ({ row }) => {
+          const id = row.original.rayon_id;
+          return <span className="text-nb-body-sm">{id ? (rayonNameById.get(id) ?? '—') : '—'}</span>;
+        },
       },
       {
         id: 'shift',
@@ -160,15 +166,6 @@ export default function UsersPage() {
           const id = row.original.shift_definition_id;
           return <span className="text-nb-body-sm">{id ? shiftNameById.get(id) ?? '—' : '—'}</span>;
         },
-      },
-      {
-        id: 'area',
-        accessorFn: (u) => u.area?.name ?? '',
-        header: 'Area Utama',
-        meta: { label: 'Area Utama', defaultHidden: true, filterVariant: 'text' },
-        cell: ({ row }) => (
-          <span className="text-nb-body-sm">{row.original.area?.name ?? '—'}</span>
-        ),
       },
       {
         id: 'password_must_change',
@@ -245,7 +242,7 @@ export default function UsersPage() {
         ),
       },
     ],
-    [actorName, shiftNameById]
+    [actorName, shiftNameById, rayonNameById]
   );
 
   const rowActions = useCallback(
