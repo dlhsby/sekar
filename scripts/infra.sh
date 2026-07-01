@@ -42,8 +42,19 @@ case "$cmd" in
   status)
     docker compose ps
     ;;
+  -h|--help|help)
+    cat <<'USAGE'
+infra.sh — control ONLY the local Docker services (Postgres/Adminer/MinIO/Redis).
+You usually don't run this directly — setup.sh and start.sh start the infra for you.
+
+  ./scripts/infra.sh [start]   start + wait for Postgres/MinIO healthy (default)
+  ./scripts/infra.sh status    show container status
+  ./scripts/infra.sh stop      stop containers, PRESERVE data
+  ./scripts/infra.sh down      stop AND remove volumes (WIPES DB + object storage)
+USAGE
+    ;;
   *)
-    print_error "Usage: ./scripts/infra.sh [start|stop|down|status]"
+    print_error "Usage: ./scripts/infra.sh [start|stop|down|status] (see --help)"
     exit 1
     ;;
 esac

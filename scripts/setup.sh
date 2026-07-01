@@ -15,7 +15,21 @@ for arg in "$@"; do
   case "$arg" in
     --yes) ASSUME_YES=true ;;
     --skip-seed) SKIP_SEED=true ;;
-    *) print_error "Unknown flag: $arg (supported: --yes, --skip-seed)"; exit 1 ;;
+    -h|--help)
+      cat <<'USAGE'
+setup.sh — one-time project bootstrap (run ONCE per checkout).
+Checks prerequisites, copies env files, starts the Docker infra, installs all
+workspaces, runs migrations, and (optionally) seeds the database.
+
+  ./scripts/setup.sh              prompt before the destructive db:seed
+  ./scripts/setup.sh --yes        seed without prompting (CI); SEEDING WIPES DATA
+  ./scripts/setup.sh --skip-seed  never seed (migrations still run)
+
+After setup, use ./scripts/start.sh day-to-day (it re-starts the infra as needed).
+For Docker-only control (status/stop/wipe) see ./scripts/infra.sh.
+USAGE
+      exit 0 ;;
+    *) print_error "Unknown flag: $arg (supported: --yes, --skip-seed, --help)"; exit 1 ;;
   esac
 done
 

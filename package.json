@@ -19,6 +19,9 @@
     "start:web": "./scripts/start-web.sh",
     "start:mobile": "./scripts/start-mobile.sh",
     "stop": "./scripts/stop.sh",
+    "infra": "./scripts/infra.sh",
+    "infra:status": "./scripts/infra.sh status",
+    "infra:down": "./scripts/infra.sh down",
     "tokens:build": "tsx scripts/build-tokens.ts",
     "tokens:verify": "tsx scripts/build-tokens.ts --verify",
     "test:tokens": "jest --config scripts/jest.config.cjs"

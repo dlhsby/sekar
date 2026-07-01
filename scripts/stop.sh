@@ -12,7 +12,14 @@ STOP_INFRA=false
 for arg in "$@"; do
   case "$arg" in
     --infra) STOP_INFRA=true ;;
-    *) print_error "Unknown flag: $arg (supported: --infra)"; exit 1 ;;
+    -h|--help)
+      cat <<'USAGE'
+stop.sh — stop the dev apps (backend / web / Metro).
+  ./scripts/stop.sh           stop the apps; leave Docker running
+  ./scripts/stop.sh --infra   also stop the Docker services (Postgres/MinIO/…)
+USAGE
+      exit 0 ;;
+    *) print_error "Unknown flag: $arg (supported: --infra, --help)"; exit 1 ;;
   esac
 done
 
