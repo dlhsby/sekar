@@ -564,12 +564,9 @@ describe('OvertimePage', () => {
 
       if (triggerButton) {
         await user.click(triggerButton);
-        // Wait for calendar to appear and select dates for a range
-        const dateButtons = screen.getAllByRole('button', { name: /\d{1,2}/i });
-        if (dateButtons.length > 6) {
-          await user.click(dateButtons[5]); // Click first day
-          await user.click(dateButtons[6]); // Click second day to commit range
-        }
+        // A preset chip commits the range immediately (a single calendar click
+        // only sets the start), which activates the filter and reveals Reset.
+        await user.click(await screen.findByRole('button', { name: '7 Hari' }));
       }
 
       const resetButton = await screen.findByRole('button', { name: /reset filter/i });
