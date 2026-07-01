@@ -111,17 +111,23 @@ describe('AreaForm', () => {
       expect(screen.getByRole('button', { name: /simpan area/i })).toBeInTheDocument();
     });
 
-    it('shows rayons in dropdown', () => {
+    it('shows rayons in dropdown', async () => {
+      const user = userEvent.setup();
       render(<AreaForm mode="create" onSubmit={mockOnSubmit} />, { wrapper: createWrapper() });
 
-      expect(screen.getByText('Rayon Utara')).toBeInTheDocument();
+      // FormCombobox renders options in a popover — open the Rayon combobox first.
+      await user.click(screen.getAllByRole('combobox')[0]);
+      expect(await screen.findByText('Rayon Utara')).toBeInTheDocument();
       expect(screen.getByText('Rayon Selatan')).toBeInTheDocument();
     });
 
-    it('shows area types in dropdown', () => {
+    it('shows area types in dropdown', async () => {
+      const user = userEvent.setup();
       render(<AreaForm mode="create" onSubmit={mockOnSubmit} />, { wrapper: createWrapper() });
 
-      expect(screen.getByText(/taman kota/i)).toBeInTheDocument();
+      // Open the Tipe Area combobox (second combobox trigger).
+      await user.click(screen.getAllByRole('combobox')[1]);
+      expect(await screen.findByText(/taman kota/i)).toBeInTheDocument();
       expect(screen.getByText(/jalur hijau/i)).toBeInTheDocument();
     });
 

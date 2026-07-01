@@ -10,7 +10,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { FormInput, Input, Textarea } from '@/components/ui';
 import { FormActions } from '@/components/forms/FormActions';
+import { AvailabilityHint } from '@/components/forms/AvailabilityHint';
 import { GoogleMapPicker } from '@/components/maps/GoogleMapPicker';
+import { useAvailabilityCheck } from '@/lib/hooks/useAvailabilityCheck';
+import { checkRayonName } from '@/lib/api/rayons';
 import type { Rayon } from '@/types/models';
 import type { CreateRayonDto, UpdateRayonDto } from '@/lib/api/rayons';
 
@@ -78,6 +81,14 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
     },
   });
 
+  const nameValue = watch('name');
+  const nameStatus = useAvailabilityCheck({
+    value: nameValue,
+    check: (v) => checkRayonName(v, initialData?.id),
+    minLength: 2,
+    isUnchanged: (v) => mode === 'edit' && v === initialData?.name,
+  });
+
   const colorValue = watch('color') || '';
   const swatchValue = HEX_COLOR_RE.test(colorValue) ? colorValue : DEFAULT_COLOR;
   const centerLat = watch('center_lat');
@@ -106,13 +117,19 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
       <div className="space-y-4">
         <h3 className="font-bold text-lg">Informasi Dasar</h3>
 
-        <FormInput
-          label="Nama Rayon"
-          placeholder="Contoh: Rayon 1"
-          error={errors.name?.message}
-          required
-          {...register('name')}
-        />
+        <div className="space-y-1">
+          <FormInput
+            label="Nama Rayon"
+            placeholder="Contoh: Rayon 1"
+            error={errors.name?.message}
+            required
+            {...register('name')}
+          />
+          <AvailabilityHint
+            status={nameStatus}
+            labels={{ available: 'Nama rayon tersedia', taken: 'Nama rayon sudah dipakai' }}
+          />
+        </div>
 
         {/* Color picker */}
         <div className="space-y-1.5">

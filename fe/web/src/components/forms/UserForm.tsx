@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { FormInput, FormCombobox, FormMultiCombobox, Button } from '@/components/ui';
+import { AvailabilityHint } from '@/components/forms/AvailabilityHint';
 import type { UserRole, User } from '@/types/models';
 import { useRayons } from '@/lib/api/rayons';
 import { useAreas } from '@/lib/api/areas';
@@ -12,6 +13,7 @@ import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useUserAreas } from '@/lib/api/user-areas';
 import { checkUsername, suggestUsername, checkPhone } from '@/lib/api/users';
 import { sortedRoleOptions } from '@/lib/constants/roles';
+import { useAvailabilityCheck } from '@/lib/hooks/useAvailabilityCheck';
 import { normalizePhone, INDO_MOBILE_REGEX } from '@/lib/utils/phone';
 
 /**
@@ -106,83 +108,26 @@ export function UserForm({
   const selectedRole = watch('role');
   const usernameValue = watch('username');
   const fullNameValue = watch('full_name');
-
-  // Live username availability (debounced). Skipped in edit mode while the
-  // username is unchanged from the saved value.
-  const [usernameStatus, setUsernameStatus] = useState<
-    'idle' | 'checking' | 'available' | 'taken' | 'invalid'
-  >('idle');
-  const [suggesting, setSuggesting] = useState(false);
-  // Tracks the latest username queried so a slow response for an older value
-  // can't overwrite the status of the current one.
-  const latestCheckRef = useRef('');
-
-  useEffect(() => {
-    if (readOnly) return; // no availability checks in view mode
-    const u = (usernameValue || '').trim();
-    if (isEditMode && u === initialData?.username) {
-      setUsernameStatus('idle');
-      return;
-    }
-    if (u.length < 2) {
-      setUsernameStatus('idle');
-      return;
-    }
-    if (!/^[a-zA-Z0-9_-]+$/.test(u)) {
-      setUsernameStatus('invalid');
-      return;
-    }
-    setUsernameStatus('checking');
-    latestCheckRef.current = u;
-    const t = setTimeout(async () => {
-      try {
-        const available = await checkUsername(u);
-        if (latestCheckRef.current !== u) return; // a newer value is being checked
-        setUsernameStatus(available ? 'available' : 'taken');
-      } catch {
-        if (latestCheckRef.current === u) setUsernameStatus('idle');
-      }
-    }, 400);
-    return () => clearTimeout(t);
-  }, [usernameValue, isEditMode, initialData?.username, readOnly]);
-
-  // Live phone availability (debounced) — phone doubles as a login identifier,
-  // so it must be unique (mirrors the username check).
   const phoneValue = watch('phone_number');
-  const [phoneStatus, setPhoneStatus] = useState<
-    'idle' | 'checking' | 'available' | 'taken' | 'invalid'
-  >('idle');
-  const latestPhoneRef = useRef('');
+  const [suggesting, setSuggesting] = useState(false);
 
-  useEffect(() => {
-    if (readOnly) return;
-    const raw = (phoneValue || '').trim();
-    if (!raw) {
-      setPhoneStatus('idle');
-      return;
-    }
-    const p = normalizePhone(raw);
-    if (isEditMode && p === initialData?.phone_number) {
-      setPhoneStatus('idle');
-      return;
-    }
-    if (!INDO_MOBILE_REGEX.test(p)) {
-      setPhoneStatus('invalid');
-      return;
-    }
-    setPhoneStatus('checking');
-    latestPhoneRef.current = p;
-    const t = setTimeout(async () => {
-      try {
-        const available = await checkPhone(p, isEditMode ? initialData?.id : undefined);
-        if (latestPhoneRef.current !== p) return; // a newer value is being checked
-        setPhoneStatus(available ? 'available' : 'taken');
-      } catch {
-        if (latestPhoneRef.current === p) setPhoneStatus('idle');
-      }
-    }, 400);
-    return () => clearTimeout(t);
-  }, [phoneValue, isEditMode, initialData?.phone_number, initialData?.id, readOnly]);
+  // Live uniqueness checks (username + phone both double as login identifiers).
+  const usernameStatus = useAvailabilityCheck({
+    value: usernameValue,
+    check: checkUsername,
+    enabled: !readOnly,
+    minLength: 2,
+    isValidFormat: (v) => /^[a-zA-Z0-9_-]+$/.test(v),
+    isUnchanged: (v) => isEditMode && v === initialData?.username,
+  });
+  const phoneStatus = useAvailabilityCheck({
+    value: phoneValue,
+    check: (v) => checkPhone(v, isEditMode ? initialData?.id : undefined),
+    enabled: !readOnly,
+    normalize: normalizePhone,
+    isValidFormat: (v) => INDO_MOBILE_REGEX.test(v),
+    isUnchanged: (v) => isEditMode && v === initialData?.phone_number,
+  });
 
   const handleSuggestUsername = async () => {
     const name = (fullNameValue || '').trim();
@@ -289,20 +234,14 @@ export function UserForm({
             </Button>
           )}
         </div>
-        {usernameStatus === 'checking' && (
-          <p className="text-nb-caption text-nb-gray-600">Memeriksa ketersediaan…</p>
-        )}
-        {usernameStatus === 'available' && (
-          <p className="text-nb-caption text-nb-success-dark">✓ Username tersedia</p>
-        )}
-        {usernameStatus === 'taken' && (
-          <p className="text-nb-caption text-nb-danger-dark">✗ Username sudah dipakai</p>
-        )}
-        {usernameStatus === 'invalid' && (
-          <p className="text-nb-caption text-nb-danger-dark">
-            Hanya huruf, angka, garis bawah, dan tanda hubung
-          </p>
-        )}
+        <AvailabilityHint
+          status={usernameStatus}
+          labels={{
+            available: 'Username tersedia',
+            taken: 'Username sudah dipakai',
+            invalid: 'Hanya huruf, angka, garis bawah, dan tanda hubung',
+          }}
+        />
       </div>
 
       <div className="space-y-1">
@@ -320,15 +259,10 @@ export function UserForm({
             if (v) setValue('phone_number', normalizePhone(v), { shouldValidate: true });
           }}
         />
-        {phoneStatus === 'checking' && (
-          <p className="text-nb-caption text-nb-gray-600">Memeriksa ketersediaan…</p>
-        )}
-        {phoneStatus === 'available' && (
-          <p className="text-nb-caption text-nb-success-dark">✓ Nomor HP tersedia</p>
-        )}
-        {phoneStatus === 'taken' && (
-          <p className="text-nb-caption text-nb-danger-dark">✗ Nomor HP sudah dipakai</p>
-        )}
+        <AvailabilityHint
+          status={phoneStatus}
+          labels={{ available: 'Nomor HP tersedia', taken: 'Nomor HP sudah dipakai' }}
+        />
       </div>
 
       <FormCombobox

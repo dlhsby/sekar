@@ -29,6 +29,7 @@ describe('RayonsController', () => {
   const mockRayonsService = {
     findAll: jest.fn(),
     findOne: jest.fn(),
+    isNameAvailable: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
@@ -59,6 +60,21 @@ describe('RayonsController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  describe('checkName', () => {
+    it('returns { available: false } for a name shorter than 2 chars without calling the service', async () => {
+      const result = await controller.checkName('a');
+      expect(result).toEqual({ available: false });
+      expect(mockRayonsService.isNameAvailable).not.toHaveBeenCalled();
+    });
+
+    it('delegates to the service (trimmed) and returns its result', async () => {
+      mockRayonsService.isNameAvailable.mockResolvedValue(true);
+      const result = await controller.checkName('  Rayon Baru  ', 'exclude-id');
+      expect(result).toEqual({ available: true });
+      expect(mockRayonsService.isNameAvailable).toHaveBeenCalledWith('Rayon Baru', 'exclude-id');
+    });
   });
 
   describe('findAll', () => {
