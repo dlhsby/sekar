@@ -31,4 +31,7 @@ if [ -n "$blocked" ]; then
 fi
 
 # --- 2) Lint (+ auto-fix) staged files, routed to each workspace's eslint.
-npx lint-staged
+# --concurrent false: run the per-workspace tasks one at a time so a large
+# cross-workspace commit doesn't spawn three eslint processes at once (and so a
+# real failure in one workspace doesn't SIGKILL the others mid-run).
+npx lint-staged --concurrent false
