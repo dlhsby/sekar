@@ -1,11 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-  Inject,
-  Optional,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Area } from './entities/area.entity';
@@ -21,7 +14,6 @@ import {
   GeoJsonPolygon,
 } from '../monitoring/dto/area-boundary.dto';
 import { GeoJsonValidator } from '../../common/utils/geojson-validator.util';
-import { RayonBoundaryService } from '../monitoring/services/rayon-boundary.service';
 
 /**
  * Service for managing work areas
@@ -39,9 +31,6 @@ export class AreasService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly areaTypesService: AreaTypesService,
-    @Optional()
-    @Inject(RayonBoundaryService)
-    private readonly rayonBoundaryService?: RayonBoundaryService,
   ) {}
 
   /**
@@ -275,9 +264,9 @@ export class AreasService {
     const saved = await this.areaRepository.save(area);
     this.logger.log(`Updated boundary for area ${id}`);
 
-    if (saved.rayon_id && this.rayonBoundaryService) {
-      await this.rayonBoundaryService.recompute(saved.rayon_id);
-    }
+    // Rayon boundaries are the official KMZ "Batas Wilayah Kerja Rayon" outlines
+    // set by the seeder — NOT derived from member-area geofences. Editing an
+    // area therefore never touches its rayon's boundary.
 
     return {
       area_id: saved.id,

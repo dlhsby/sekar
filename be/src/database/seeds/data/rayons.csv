@@ -1,0 +1,9 @@
+id,name,description,color,rayon_code
+bf040137-fce4-4016-b5e7-704ad82c1594,Rayon Barat 1,"Wilayah Surabaya Barat bagian 1 - Sukomanunggal, Tandes, Asemrowo, Benowo",,BARAT1
+7422e6ee-0693-4565-9016-d4f759bdeed2,Rayon Barat 2,"Wilayah Surabaya Barat bagian 2 - Sawahan, Dukuh Pakis, Wiyung, Karang Pilang, Lakarsantri, Sambikerep",,BARAT2
+d564809d-316f-4a2a-a1c6-671eebb49653,Rayon Pusat,"Wilayah Surabaya Pusat - Tegalsari, Genteng, Bubutan, Simokerto",,PUSAT
+085a298f-d8e9-435c-8a3b-998ffa47a26e,Rayon Selatan,"Wilayah Surabaya Selatan - Wonokromo, Wonocolo, Gayungan, Jambangan",,SELATAN
+8a8a8a8a-1111-4222-9333-444444444444,Rayon Taman Aktif,Bucket logis untuk taman aktif (active parks) lintas-rayon — tidak punya batas geografis,,TAMAN_AKTIF
+42934ad5-4ea0-4537-abb6-cf7e984e2d39,Rayon Timur 1,"Wilayah Surabaya Timur bagian 1 - Tambaksari, Gubeng, Sukolilo",,TIMUR1
+742a135b-ddeb-45ca-8d0a-88d7d08aa78a,Rayon Timur 2,"Wilayah Surabaya Timur bagian 2 - Mulyorejo, Rungkut, Tenggilis Mejoyo, Gunung Anyar",,TIMUR2
+861a7e7c-8bd5-4e73-8aa7-e92988959dca,Rayon Utara,"Wilayah Surabaya Utara - Krembangan, Pabean Cantian, Semampir, Kenjeran, Bulak",,UTARA

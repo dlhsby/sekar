@@ -71,13 +71,6 @@ export class Rayon {
   center_lng?: number;
 
   @ApiProperty({
-    description: 'Timestamp when the boundary was last computed',
-    required: false,
-  })
-  @Column({ type: 'timestamptz', nullable: true })
-  boundary_computed_at?: Date;
-
-  @ApiProperty({
     description: 'Timestamp when the rayon was created',
   })
   @CreateDateColumn({ type: 'timestamptz' })

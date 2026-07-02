@@ -23,7 +23,6 @@ import { MonitoringConfigService } from './services/monitoring-config.service';
 import { StatusCalculatorService } from './services/status-calculator.service';
 import { MonitoringSchedulerService } from './services/monitoring-scheduler.service';
 import { DayTypeService } from './services/day-type.service';
-import { RayonBoundaryService } from './services/rayon-boundary.service';
 import { MonitoringReassignService } from './services/monitoring-reassign.service';
 import { StatusProjectorService } from './services/status-projector.service';
 import { StaffingDebouncerService } from './services/staffing-debouncer.service';
@@ -76,7 +75,6 @@ import { SharedModule } from '../../shared/shared.module';
     StatusCalculatorService,
     MonitoringSchedulerService,
     DayTypeService,
-    RayonBoundaryService,
     MonitoringReassignService,
     StatusProjectorService,
     StaffingDebouncerService,
@@ -93,7 +91,6 @@ import { SharedModule } from '../../shared/shared.module';
     MonitoringConfigService,
     StatusCalculatorService,
     DayTypeService,
-    RayonBoundaryService,
     StaffingDebouncerService,
   ],
 })
