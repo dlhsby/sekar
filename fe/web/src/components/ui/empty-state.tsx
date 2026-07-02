@@ -15,6 +15,8 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
+import { useTranslation } from 'react-i18next';
+
 import { cn } from '@/lib/utils/cn';
 import { Button, type ButtonProps } from './button';
 
@@ -45,55 +47,17 @@ type EmptyStateVariant =
   | 'allDone'
   | 'search';
 
-const variantConfig: Record<
-  EmptyStateVariant,
-  { icon: LucideIcon; title: string; description: string }
-> = {
-  noData: {
-    icon: Inbox,
-    title: 'Belum Ada Data',
-    description: 'Data akan muncul di sini setelah Anda menambahkannya.',
-  },
-  noResults: {
-    icon: SearchX,
-    title: 'Tidak Ditemukan',
-    description: 'Tidak ada hasil yang cocok dengan pencarian Anda.',
-  },
-  offline: {
-    icon: WifiOff,
-    title: 'Tidak Ada Koneksi',
-    description: 'Periksa koneksi internet Anda dan coba lagi.',
-  },
-  error: {
-    icon: AlertCircle,
-    title: 'Terjadi Kesalahan',
-    description: 'Terjadi kesalahan saat memuat data. Silakan coba lagi.',
-  },
-  maintenance: {
-    icon: Wrench,
-    title: 'Dalam Perbaikan',
-    description: 'Fitur ini sedang dalam perbaikan. Silakan coba lagi nanti.',
-  },
-  noPermission: {
-    icon: Lock,
-    title: 'Tidak Memiliki Akses',
-    description: 'Anda tidak memiliki izin untuk mengakses halaman ini.',
-  },
-  emptyFolder: {
-    icon: FolderOpen,
-    title: 'Folder Kosong',
-    description: 'Folder ini belum memiliki konten.',
-  },
-  allDone: {
-    icon: CheckCircle,
-    title: 'Semua Selesai',
-    description: 'Tidak ada tugas yang perlu dikerjakan.',
-  },
-  search: {
-    icon: Search,
-    title: 'Mulai Pencarian',
-    description: 'Ketik kata kunci untuk mencari data.',
-  },
+/** Icon per variant; title/description copy is resolved from `common:empty.*`. */
+const variantIcon: Record<EmptyStateVariant, LucideIcon> = {
+  noData: Inbox,
+  noResults: SearchX,
+  offline: WifiOff,
+  error: AlertCircle,
+  maintenance: Wrench,
+  noPermission: Lock,
+  emptyFolder: FolderOpen,
+  allDone: CheckCircle,
+  search: Search,
 };
 
 export interface EmptyStateProps
@@ -146,10 +110,10 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
     },
     ref
   ) => {
-    const config = variantConfig[variant];
-    const Icon = CustomIcon || config.icon;
-    const title = customTitle || config.title;
-    const description = customDescription || config.description;
+    const { t } = useTranslation();
+    const Icon = CustomIcon || variantIcon[variant];
+    const title = customTitle || t(`common:empty.${variant}.title`);
+    const description = customDescription || t(`common:empty.${variant}.description`);
 
     const iconColorClass = React.useMemo(() => {
       switch (variant) {

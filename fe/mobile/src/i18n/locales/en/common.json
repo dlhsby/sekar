@@ -48,15 +48,42 @@
     "setting": "Setting"
   },
   "empty": {
-    "noData": "No data yet",
-    "noDataDescription": "Data will appear here once it is available.",
-    "noResults": "No results",
-    "noResultsDescription": "Try changing your search keywords or filters.",
-    "error": "Something went wrong",
-    "errorDescription": "An error occurred while loading data. Please try again.",
-    "offline": "No connection",
-    "offlineDescription": "Check your internet connection and try again.",
-    "maintenance": "This feature is under maintenance. Please try again later."
+    "noData": {
+      "title": "No Data Yet",
+      "description": "Data will appear here once you add it."
+    },
+    "noResults": {
+      "title": "Not Found",
+      "description": "No results match your search."
+    },
+    "offline": {
+      "title": "No Connection",
+      "description": "Check your internet connection and try again."
+    },
+    "error": {
+      "title": "Something Went Wrong",
+      "description": "An error occurred while loading data. Please try again."
+    },
+    "maintenance": {
+      "title": "Under Maintenance",
+      "description": "This feature is under maintenance. Please try again later."
+    },
+    "noPermission": {
+      "title": "No Access",
+      "description": "You do not have permission to access this page."
+    },
+    "emptyFolder": {
+      "title": "Empty Folder",
+      "description": "This folder has no content yet."
+    },
+    "allDone": {
+      "title": "All Done",
+      "description": "There are no tasks to work on."
+    },
+    "search": {
+      "title": "Start Searching",
+      "description": "Type a keyword to search for data."
+    }
   },
   "language": {
     "label": "Language",

@@ -9,7 +9,7 @@ import { StyleSheet } from 'react-native';
 import { ListItemCard, type ListItemMeta } from '../../../components/common';
 import { nbSpacing } from '../../../constants/nbTokens';
 import { taskPill } from '../../../utils/taskStatus';
-import { formatDate, formatTime, TASK_PRIORITY_LABEL } from '../../../utils/statusHelpers';
+import { formatDate, formatTime, getPriorityLabel } from '../../../utils/statusHelpers';
 import type { Task } from '../../../types/models.types';
 
 interface TaskCardProps {
@@ -22,7 +22,7 @@ function buildMeta(task: Task): ListItemMeta[] {
   const location = task.area?.name ?? task.rayon?.name;
   if (location) { meta.push({ icon: 'map-marker', label: location }); }
   if (task.deadline) { meta.push({ icon: 'clock-outline', label: formatDate(task.deadline) }); }
-  if (task.priority) { meta.push({ icon: 'flag-outline', label: TASK_PRIORITY_LABEL[task.priority] ?? task.priority }); }
+  if (task.priority) { meta.push({ icon: 'flag-outline', label: getPriorityLabel(task.priority) }); }
   return meta;
 }
 

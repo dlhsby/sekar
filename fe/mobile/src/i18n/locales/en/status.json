@@ -12,10 +12,43 @@
   "submitted": "Submitted",
   "verified": "Verified",
   "overdue": "Overdue",
+  "recorded": "Recorded",
   "priority": {
     "low": "Low",
     "medium": "Medium",
     "high": "High",
     "urgent": "Urgent"
+  },
+  "task": {
+    "pending": "Pending",
+    "assigned": "Assigned",
+    "accepted": "Accepted",
+    "declined": "Declined",
+    "in_progress": "In Progress",
+    "completed": "Awaiting Verification",
+    "verified": "Verified",
+    "revision_needed": "Needs Revision"
+  },
+  "presence": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "outside_area": "Outside area",
+    "missing": "Not detected",
+    "offline": "Offline"
+  },
+  "location": {
+    "dalam_area": "Inside area",
+    "luar_area": "Outside area",
+    "unknown": "—"
+  },
+  "pruning": {
+    "submitted": "Pending",
+    "under_review": "Under review",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "assigned": "Assigned",
+    "in_progress": "In progress",
+    "done": "Done",
+    "cancelled": "Cancelled"
   }
 }

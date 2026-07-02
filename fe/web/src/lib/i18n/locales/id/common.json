@@ -48,15 +48,42 @@
     "setting": "Pengaturan"
   },
   "empty": {
-    "noData": "Belum ada data",
-    "noDataDescription": "Data akan muncul di sini setelah tersedia.",
-    "noResults": "Tidak ada hasil",
-    "noResultsDescription": "Coba ubah kata kunci atau filter pencarian Anda.",
-    "error": "Terjadi kesalahan",
-    "errorDescription": "Terjadi kesalahan saat memuat data. Silakan coba lagi.",
-    "offline": "Tidak ada koneksi",
-    "offlineDescription": "Periksa koneksi internet Anda dan coba lagi.",
-    "maintenance": "Fitur ini sedang dalam perbaikan. Silakan coba lagi nanti."
+    "noData": {
+      "title": "Belum Ada Data",
+      "description": "Data akan muncul di sini setelah Anda menambahkannya."
+    },
+    "noResults": {
+      "title": "Tidak Ditemukan",
+      "description": "Tidak ada hasil yang cocok dengan pencarian Anda."
+    },
+    "offline": {
+      "title": "Tidak Ada Koneksi",
+      "description": "Periksa koneksi internet Anda dan coba lagi."
+    },
+    "error": {
+      "title": "Terjadi Kesalahan",
+      "description": "Terjadi kesalahan saat memuat data. Silakan coba lagi."
+    },
+    "maintenance": {
+      "title": "Dalam Perbaikan",
+      "description": "Fitur ini sedang dalam perbaikan. Silakan coba lagi nanti."
+    },
+    "noPermission": {
+      "title": "Tidak Memiliki Akses",
+      "description": "Anda tidak memiliki izin untuk mengakses halaman ini."
+    },
+    "emptyFolder": {
+      "title": "Folder Kosong",
+      "description": "Folder ini belum memiliki konten."
+    },
+    "allDone": {
+      "title": "Semua Selesai",
+      "description": "Tidak ada tugas yang perlu dikerjakan."
+    },
+    "search": {
+      "title": "Mulai Pencarian",
+      "description": "Ketik kata kunci untuk mencari data."
+    }
   },
   "language": {
     "label": "Bahasa",

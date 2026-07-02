@@ -5,6 +5,7 @@
 
 import type { OvertimeStatus, ActivityStatus, TaskStatus, PruningRequestStatus, TrackingStatus, PresenceActivity, PresenceLocation } from '../types/models.types';
 import type { StatusTone } from '../components/home/StatusPill';
+import i18n from '../i18n/config';
 
 // Overtime status helpers
 export function getOvertimeStatusColor(status: OvertimeStatus): 'success' | 'warning' | 'danger' {
@@ -23,11 +24,11 @@ export function getOvertimeStatusColor(status: OvertimeStatus): 'success' | 'war
 export function getOvertimeStatusLabel(status: OvertimeStatus): string {
   switch (status) {
     case 'approved':
-      return 'Disetujui';
+      return i18n.t('status:approved');
     case 'pending':
-      return 'Menunggu';
+      return i18n.t('status:pending');
     case 'rejected':
-      return 'Ditolak';
+      return i18n.t('status:rejected');
     default:
       return status;
   }
@@ -50,11 +51,11 @@ export function getActivityStatusColor(status: ActivityStatus): 'success' | 'war
 export function getActivityStatusLabel(status: ActivityStatus): string {
   switch (status) {
     case 'approved':
-      return 'Disetujui';
+      return i18n.t('status:approved');
     case 'pending':
-      return 'Menunggu Persetujuan';
+      return i18n.t('status:pending_approval');
     case 'rejected':
-      return 'Ditolak';
+      return i18n.t('status:rejected');
     default:
       return status;
   }
@@ -82,22 +83,8 @@ export function getTaskStatusColor(
   }
 }
 
-export const TASK_PRIORITY_LABEL: Record<string, string> = {
-  low: 'Rendah', medium: 'Biasa', high: 'Tinggi', urgent: 'Mendesak',
-};
-
 export function getTaskStatusLabel(status: string): string {
-  switch (status) {
-    case 'pending': return 'Menunggu';
-    case 'assigned': return 'Ditugaskan';
-    case 'accepted': return 'Diterima';
-    case 'declined': return 'Ditolak';
-    case 'in_progress': return 'Dikerjakan';
-    case 'completed': return 'Menunggu Verifikasi';
-    case 'verified': return 'Terverifikasi';
-    case 'revision_needed': return 'Perlu Revisi';
-    default: return status;
-  }
+  return i18n.exists(`status:task.${status}`) ? i18n.t(`status:task.${status}`) : status;
 }
 
 export function formatDate(isoString: string): string {
@@ -166,18 +153,18 @@ export function formatDurationHours(start: string, end: string): string {
 
 export function activityPill(status?: ActivityStatus): { tone: StatusTone; label: string } {
   switch (status) {
-    case 'approved': return { tone: 'ok', label: 'Disetujui' };
-    case 'pending': return { tone: 'warn', label: 'Menunggu' };
-    case 'rejected': return { tone: 'bad', label: 'Ditolak' };
-    default: return { tone: 'neutral', label: 'Tercatat' };
+    case 'approved': return { tone: 'ok', label: i18n.t('status:approved') };
+    case 'pending': return { tone: 'warn', label: i18n.t('status:pending') };
+    case 'rejected': return { tone: 'bad', label: i18n.t('status:rejected') };
+    default: return { tone: 'neutral', label: i18n.t('status:recorded') };
   }
 }
 
 export function overtimePill(status: OvertimeStatus): { tone: StatusTone; label: string } {
   switch (status) {
-    case 'approved': return { tone: 'ok', label: 'Disetujui' };
-    case 'rejected': return { tone: 'bad', label: 'Ditolak' };
-    default: return { tone: 'warn', label: 'Menunggu' };
+    case 'approved': return { tone: 'ok', label: i18n.t('status:approved') };
+    case 'rejected': return { tone: 'bad', label: i18n.t('status:rejected') };
+    default: return { tone: 'warn', label: i18n.t('status:pending') };
   }
 }
 
@@ -187,11 +174,11 @@ export function overtimePill(status: OvertimeStatus): { tone: StatusTone; label:
 // markers + overlays); the pill versions are just trimmed to fit the chip.
 export function presencePill(status: TrackingStatus): { tone: StatusTone; label: string } {
   switch (status) {
-    case 'active':       return { tone: 'ok', label: 'Aktif' };
-    case 'inactive':     return { tone: 'warn', label: 'Tidak aktif' };
-    case 'outside_area': return { tone: 'bad', label: 'Luar area' };
-    case 'missing':      return { tone: 'bad', label: 'Tidak terdeteksi' };
-    case 'offline':      return { tone: 'neutral', label: 'Offline' };
+    case 'active':       return { tone: 'ok', label: i18n.t('status:presence.active') };
+    case 'inactive':     return { tone: 'warn', label: i18n.t('status:presence.inactive') };
+    case 'outside_area': return { tone: 'bad', label: i18n.t('status:presence.outside_area') };
+    case 'missing':      return { tone: 'bad', label: i18n.t('status:presence.missing') };
+    case 'offline':      return { tone: 'neutral', label: i18n.t('status:presence.offline') };
   }
 }
 
@@ -241,18 +228,18 @@ export function userAxes(user: {
 // (activity-submission status) above.
 export function presenceActivityPill(activity: PresenceActivity): { tone: StatusTone; label: string } {
   switch (activity) {
-    case 'aktif':   return { tone: 'ok', label: 'Aktif' };
-    case 'idle':    return { tone: 'warn', label: 'Tidak aktif' };
-    case 'missing': return { tone: 'bad', label: 'Tidak terdeteksi' };
-    case 'offline': return { tone: 'neutral', label: 'Offline' };
+    case 'aktif':   return { tone: 'ok', label: i18n.t('status:presence.active') };
+    case 'idle':    return { tone: 'warn', label: i18n.t('status:presence.inactive') };
+    case 'missing': return { tone: 'bad', label: i18n.t('status:presence.missing') };
+    case 'offline': return { tone: 'neutral', label: i18n.t('status:presence.offline') };
   }
 }
 
 export function locationLabel(location: PresenceLocation): string {
   switch (location) {
-    case 'dalam_area': return 'Dalam area';
-    case 'luar_area':  return 'Luar area';
-    case 'unknown':    return '—';
+    case 'dalam_area': return i18n.t('status:location.dalam_area');
+    case 'luar_area':  return i18n.t('status:location.luar_area');
+    case 'unknown':    return i18n.t('status:location.unknown');
   }
 }
 
@@ -278,17 +265,7 @@ export function getPruningRequestStatusColor(
 }
 
 export function getPruningRequestStatusLabel(status: PruningRequestStatus): string {
-  switch (status) {
-    case 'submitted':    return 'Menunggu';
-    case 'under_review': return 'Direview';
-    case 'approved':     return 'Disetujui';
-    case 'rejected':     return 'Ditolak';
-    case 'assigned':     return 'Ditugaskan';
-    case 'in_progress':  return 'Diproses';
-    case 'done':         return 'Selesai';
-    case 'cancelled':    return 'Dibatalkan';
-    default:             return status;
-  }
+  return i18n.exists(`status:pruning.${status}`) ? i18n.t(`status:pruning.${status}`) : status;
 }
 
 // StatusPill tone mapper for the shared ListItemCard — same shape as taskPill /
@@ -297,16 +274,17 @@ export function getPruningRequestStatusLabel(status: PruningRequestStatus): stri
 // in_progress) map to `info` (mint) to read as "in the pipeline", distinct from
 // the warn (awaiting) / ok (resolved-good) / bad (rejected) / neutral semantics.
 export function pruningPill(status: PruningRequestStatus): { tone: StatusTone; label: string } {
+  const label = getPruningRequestStatusLabel(status);
   switch (status) {
-    case 'submitted':    return { tone: 'warn',    label: 'Menunggu' };
-    case 'under_review': return { tone: 'info',    label: 'Direview' };
-    case 'approved':     return { tone: 'ok',      label: 'Disetujui' };
-    case 'rejected':     return { tone: 'bad',     label: 'Ditolak' };
-    case 'assigned':     return { tone: 'info',    label: 'Ditugaskan' };
-    case 'in_progress':  return { tone: 'info',    label: 'Diproses' };
-    case 'done':         return { tone: 'ok',      label: 'Selesai' };
-    case 'cancelled':    return { tone: 'neutral', label: 'Dibatalkan' };
-    default:             return { tone: 'neutral', label: getPruningRequestStatusLabel(status) };
+    case 'submitted':    return { tone: 'warn',    label };
+    case 'under_review': return { tone: 'info',    label };
+    case 'approved':     return { tone: 'ok',      label };
+    case 'rejected':     return { tone: 'bad',     label };
+    case 'assigned':     return { tone: 'info',    label };
+    case 'in_progress':  return { tone: 'info',    label };
+    case 'done':         return { tone: 'ok',      label };
+    case 'cancelled':    return { tone: 'neutral', label };
+    default:             return { tone: 'neutral', label };
   }
 }
 
@@ -343,5 +321,5 @@ export function getPriorityVariant(priority: string): 'danger' | 'warning' | 'pr
  * Get label for task priority (compatible with TaskHeader / field screens)
  */
 export function getPriorityLabel(priority: string): string {
-  return TASK_PRIORITY_LABEL[priority] || priority;
+  return i18n.exists(`status:priority.${priority}`) ? i18n.t(`status:priority.${priority}`) : priority;
 }

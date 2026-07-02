@@ -12,10 +12,43 @@
   "submitted": "Terkirim",
   "verified": "Terverifikasi",
   "overdue": "Terlambat",
+  "recorded": "Tercatat",
   "priority": {
     "low": "Rendah",
     "medium": "Biasa",
     "high": "Tinggi",
     "urgent": "Mendesak"
+  },
+  "task": {
+    "pending": "Menunggu",
+    "assigned": "Ditugaskan",
+    "accepted": "Diterima",
+    "declined": "Ditolak",
+    "in_progress": "Dikerjakan",
+    "completed": "Menunggu Verifikasi",
+    "verified": "Terverifikasi",
+    "revision_needed": "Perlu Revisi"
+  },
+  "presence": {
+    "active": "Aktif",
+    "inactive": "Tidak aktif",
+    "outside_area": "Luar area",
+    "missing": "Tidak terdeteksi",
+    "offline": "Offline"
+  },
+  "location": {
+    "dalam_area": "Dalam area",
+    "luar_area": "Luar area",
+    "unknown": "—"
+  },
+  "pruning": {
+    "submitted": "Menunggu",
+    "under_review": "Direview",
+    "approved": "Disetujui",
+    "rejected": "Ditolak",
+    "assigned": "Ditugaskan",
+    "in_progress": "Diproses",
+    "done": "Selesai",
+    "cancelled": "Dibatalkan"
   }
 }
