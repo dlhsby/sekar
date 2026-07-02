@@ -517,9 +517,18 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
         .map((n) => tamanAktifAreaIdByName.get(n))
         .filter((x): x is string => Boolean(x));
       const primaryAreaId = areaIds[0] ?? null;
+      // A roster id can collide with a system/dummy row's id when the client
+      // sheet was reconciled against the live DB (a roster user may have adopted
+      // a seeded-dummy id under a different username). users.csv is gitignored
+      // and regenerated, so the seeder must be robust: if this id is already held
+      // by a DIFFERENT username, mint a fresh one instead of hitting users_pkey.
+      // Non-colliding rows keep their deterministic id.
       await ctx.qr.query(
         `INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, area_id, is_active, password_must_change)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, TRUE)
+         VALUES (
+           CASE WHEN EXISTS (SELECT 1 FROM users WHERE id = $1::uuid AND username <> $2)
+                THEN gen_random_uuid() ELSE $1::uuid END,
+           $2, $3, $4, $5, $6, $7, $8, TRUE, TRUE)
          ON CONFLICT (username) DO NOTHING`,
         [u.id, u.username, PASSWORD_HASH, u.full_name, phone, u.role, rayonId, primaryAreaId],
       );
