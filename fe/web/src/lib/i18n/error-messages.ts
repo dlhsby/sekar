@@ -1,82 +1,25 @@
 /**
- * Indonesian copy for backend API error codes.
+ * Localized copy for backend API error codes.
  *
  * The backend returns `{ code, message }` on errors; `getErrorMessage`
- * (lib/api/client.ts) looks the `code` up here so every toast/inline error is
- * Indonesian. Unmapped codes fall back to the backend message. Keep keys in sync
- * with `be/src/common/enums/api-error-codes.enum.ts`.
+ * (lib/api/client.ts) calls `localizeApiError`, which resolves the `code` against
+ * the active-language `errors` namespace (locales/<lng>/errors.json). Unmapped
+ * codes fall back to the backend message, then a generic string. Keys are kept in
+ * sync with `be/src/common/enums/api-error-codes.enum.ts`.
  */
-export const ERROR_MESSAGES_ID: Record<string, string> = {
-  // ── Auth ──
-  AUTH_INVALID_CREDENTIALS: 'Username atau kata sandi salah.',
-  AUTH_TOKEN_EXPIRED: 'Sesi Anda telah berakhir. Silakan masuk kembali.',
-  AUTH_TOKEN_INVALID: 'Sesi tidak valid. Silakan masuk kembali.',
-  AUTH_ACCOUNT_INACTIVE: 'Akun Anda tidak aktif. Hubungi administrator.',
-  AUTH_USER_NOT_FOUND: 'Pengguna tidak ditemukan.',
-  AUTH_010: 'Sesi Anda telah berakhir. Silakan masuk kembali.',
-  AUTH_011: 'Sesi tidak valid. Silakan masuk kembali.',
-  AUTH_PASSWORD_CHANGE_REQUIRED: 'Anda harus mengganti kata sandi sebelum melanjutkan.',
+import i18n from './config';
 
-  // ── Shift / clock-in ──
-  SHIFT_ALREADY_ACTIVE: 'Anda sudah memulai shift dan belum mengakhirinya.',
-  SHIFT_NOT_FOUND: 'Shift tidak ditemukan.',
-  SHIFT_NOT_ACTIVE: 'Tidak ada shift yang sedang aktif.',
-  SHIFT_GPS_OUT_OF_BOUNDS: 'Lokasi Anda di luar batas area kerja.',
-  SHIFT_NOT_ASSIGNED: 'Anda tidak ditugaskan ke area ini.',
-  SHIFT_PHOTO_UPLOAD_FAILED: 'Gagal mengunggah foto. Silakan coba lagi.',
-  SHIFT_DURATION_TOO_SHORT: 'Durasi shift terlalu singkat untuk diakhiri.',
-
-  // ── Activity ──
-  ACTIVITY_SHIFT_REQUIRED: 'Anda harus melakukan clock-in terlebih dahulu.',
-  ACTIVITY_SHIFT_NOT_FOUND: 'Shift untuk aktivitas ini tidak ditemukan.',
-  ACTIVITY_EDIT_WINDOW_CLOSED: 'Waktu untuk mengubah aktivitas ini telah berakhir.',
-  ACTIVITY_PHOTO_REQUIRED: 'Foto wajib dilampirkan.',
-  ACTIVITY_NOT_FOUND: 'Aktivitas tidak ditemukan.',
-  ACTIVITY_ACCESS_DENIED: 'Anda tidak memiliki akses ke aktivitas ini.',
-  ACTIVITY_PHOTO_UPLOAD_FAILED: 'Gagal mengunggah foto. Silakan coba lagi.',
-  ACTIVITY_MUST_CLOCK_IN: 'Anda harus melakukan clock-in terlebih dahulu.',
-  ACTIVITY_ROLE_MISMATCH: 'Jenis aktivitas tidak sesuai dengan peran Anda.',
-  ACTIVITY_MAX_PHOTOS: 'Jumlah foto melebihi batas maksimal.',
-  ACTIVITY_MIN_PHOTOS: 'Jumlah foto kurang dari batas minimal.',
-
-  // ── Overtime ──
-  OVERTIME_SUBMIT_AUTH: 'Anda tidak berhak mengajukan lembur ini.',
-  OVERTIME_ALREADY_PROCESSED: 'Pengajuan lembur ini sudah diproses.',
-  OVERTIME_AREA_SCOPE: 'Lembur di luar cakupan area Anda.',
-  OVERTIME_NOT_FOUND: 'Data lembur tidak ditemukan.',
-
-  // ── Task / monitoring scope ──
-  TASK_HIER_ROLE: 'Peran Anda tidak berhak atas tugas ini.',
-  TASK_HIER_RAYON_SCOPE: 'Tugas di luar cakupan rayon Anda.',
-  TASK_HIER_AREA_SCOPE: 'Tugas di luar cakupan area Anda.',
-  MONITOR_RAYON_SCOPE: 'Data di luar cakupan rayon Anda.',
-  MONITOR_AREA_SCOPE: 'Data di luar cakupan area Anda.',
-
-  // ── Sync ──
-  SYNC_CONFLICT: 'Terjadi konflik data. Muat ulang dan coba lagi.',
-  SYNC_STALE_DATA: 'Data sudah berubah. Muat ulang halaman.',
-  SYNC_PARTIAL_FAILURE: 'Sebagian data gagal disinkronkan.',
-
-  // ── Area ──
-  AREA_NOT_FOUND: 'Area tidak ditemukan.',
-  AREA_CODE_DUPLICATE: 'Kode area sudah digunakan.',
-
-  // ── Generic ──
-  VALIDATION_ERROR: 'Data yang dikirim tidak valid. Periksa kembali isian Anda.',
-  NOT_FOUND: 'Data tidak ditemukan.',
-  FORBIDDEN: 'Anda tidak memiliki akses untuk tindakan ini.',
-  BAD_REQUEST: 'Permintaan tidak valid. Periksa kembali isian Anda.',
-  INTERNAL_SERVER_ERROR: 'Terjadi kesalahan pada server. Silakan coba lagi nanti.',
-};
-
-/** Generic Indonesian fallback when no code/message resolves to a known string. */
-export const GENERIC_ERROR_ID = 'Terjadi kesalahan. Silakan coba lagi.';
+/** Generic fallback in the active language when no code/message resolves. */
+export const genericError = (): string => i18n.t('errors:GENERIC');
 
 /**
- * Resolve an API error `code` (and optional backend message) to Indonesian.
- * Returns the mapped copy; otherwise the backend message; otherwise a generic.
+ * Resolve an API error `code` (and optional backend message) to the active
+ * language. Returns the mapped copy; otherwise the backend message; otherwise a
+ * generic string.
  */
 export function localizeApiError(code?: string, backendMessage?: string): string {
-  if (code && ERROR_MESSAGES_ID[code]) return ERROR_MESSAGES_ID[code];
-  return backendMessage?.trim() || GENERIC_ERROR_ID;
+  if (code && i18n.exists(`errors:${code}`)) {
+    return i18n.t(`errors:${code}`);
+  }
+  return backendMessage?.trim() || genericError();
 }

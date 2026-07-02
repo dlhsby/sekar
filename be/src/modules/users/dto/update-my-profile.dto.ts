@@ -1,4 +1,4 @@
-import { IsString, MaxLength, IsOptional, Matches } from 'class-validator';
+import { IsString, MaxLength, IsOptional, Matches, IsIn } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ValidationConstants } from '../../../common/constants/auth.constants';
@@ -31,6 +31,15 @@ export class UpdateMyProfileDto {
   @IsOptional()
   @Transform(({ value }) => (value == null || value === '' ? value : normalizePhone(value)))
   @IsString()
-  @Matches(INDO_MOBILE_REGEX, { message: 'Nomor HP harus dalam format 08xxxxxxxxxx' })
+  @Matches(INDO_MOBILE_REGEX, { message: 'Phone number must be in the format 08xxxxxxxxxx' })
   phone_number?: string;
+
+  @ApiPropertyOptional({
+    description: 'Preferred UI language for web + mobile clients.',
+    enum: ['id', 'en'],
+    example: 'id',
+  })
+  @IsOptional()
+  @IsIn(['id', 'en'], { message: 'preferred_language must be one of: id, en' })
+  preferred_language?: 'id' | 'en';
 }

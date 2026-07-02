@@ -1,0 +1,21 @@
+{
+  "pending": "Menunggu",
+  "approved": "Disetujui",
+  "rejected": "Ditolak",
+  "pending_approval": "Menunggu Persetujuan",
+  "in_progress": "Sedang Berjalan",
+  "completed": "Selesai",
+  "cancelled": "Dibatalkan",
+  "active": "Aktif",
+  "inactive": "Tidak Aktif",
+  "draft": "Draf",
+  "submitted": "Terkirim",
+  "verified": "Terverifikasi",
+  "overdue": "Terlambat",
+  "priority": {
+    "low": "Rendah",
+    "medium": "Biasa",
+    "high": "Tinggi",
+    "urgent": "Mendesak"
+  }
+}

@@ -494,6 +494,9 @@ export class UsersService {
     if (updateMyProfileDto.phone_number !== undefined) {
       user.phone_number = updateMyProfileDto.phone_number;
     }
+    if (updateMyProfileDto.preferred_language !== undefined) {
+      user.preferred_language = updateMyProfileDto.preferred_language;
+    }
 
     const savedUser = await this.userRepository.save(user);
     this.logger.log(`User profile updated: ID ${userId}`);

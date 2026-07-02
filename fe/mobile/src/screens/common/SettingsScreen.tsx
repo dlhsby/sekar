@@ -21,8 +21,12 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { MainStackParamList } from '../../types/navigation.types';
+import { useTranslation } from 'react-i18next';
 import { NBBackgroundPattern, NBButton, NBText } from '../../components/nb';
 import { useProfileSync } from '../../hooks/useProfileSync';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { applyLanguage } from '../../i18n/language';
+import { SUPPORTED_LANGUAGES, type SupportedLanguage } from '../../i18n/resources';
 import {
   nbColors,
   nbSpacing,
@@ -130,9 +134,56 @@ function SectionTitle({ children }: { children: string }): React.JSX.Element {
   );
 }
 
+// ─── Language segmented control ───────────────────────────────────────────────
+
+function LanguageRow(): React.JSX.Element {
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
+  const active = useAppSelector((state) => state.preferences.language);
+
+  return (
+    <View style={styles.row}>
+      <View style={styles.rowText}>
+        <NBText variant="body-sm" color="black" style={styles.rowLabel}>
+          {t('common:language.label')}
+        </NBText>
+        <NBText variant="mono-sm" color="gray600" style={styles.rowDescription}>
+          {t('settings:screen.languageHint')}
+        </NBText>
+      </View>
+      <View style={styles.segmented}>
+        {SUPPORTED_LANGUAGES.map((lang: SupportedLanguage) => {
+          const selected = active === lang;
+          return (
+            <TouchableOpacity
+              key={lang}
+              onPress={() => void applyLanguage(lang, dispatch, { persistProfile: true })}
+              activeOpacity={0.8}
+              accessibilityRole="radio"
+              accessibilityState={{ selected }}
+              accessibilityLabel={t(`common:language.${lang}`)}
+              testID={`language-${lang}`}
+              style={[styles.segment, selected ? styles.segmentOn : styles.segmentOff]}
+            >
+              <NBText
+                variant="mono-sm"
+                color={selected ? 'black' : 'gray600'}
+                uppercase
+              >
+                {lang}
+              </NBText>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 // ─── Screen ─────────────────────────────────────────────────────────────────
 
 export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
+  const { t } = useTranslation();
   const navigation =
     useNavigation<NativeStackNavigationProp<MainStackParamList>>();
   const [soundVibrate, setSoundVibrate] = useState(false);
@@ -152,8 +203,8 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
   const hasPending = pendingTotal > 0;
 
   const handleHelp = useCallback(() => {
-    Alert.alert('Bantuan & FAQ', 'Hubungi admin sistem untuk bantuan lebih lanjut.');
-  }, []);
+    Alert.alert(t('settings:screen.helpTitle'), t('settings:screen.helpBody'));
+  }, [t]);
 
   return (
     <NBBackgroundPattern
@@ -164,16 +215,16 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
     >
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Notifikasi */}
-        <SectionTitle>Notifikasi</SectionTitle>
+        <SectionTitle>{t('settings:screen.sections.notifications')}</SectionTitle>
         <View style={styles.card}>
           <NavRow
-            label="Preferensi notifikasi"
-            description="Pilih jenis notifikasi yang ingin diterima"
+            label={t('settings:screen.notificationPreferences')}
+            description={t('settings:screen.notificationPreferencesHint')}
             onPress={() => navigation.navigate('NotificationPreferences')}
             testID="nav-notification-preferences"
           />
           <ToggleRow
-            label="Suara & getar"
+            label={t('settings:screen.soundVibrate')}
             value={soundVibrate}
             onToggle={setSoundVibrate}
             isLast
@@ -181,18 +232,24 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
           />
         </View>
 
+        {/* Bahasa / Language */}
+        <SectionTitle>{t('settings:screen.sections.language')}</SectionTitle>
+        <View style={styles.card}>
+          <LanguageRow />
+        </View>
+
         {/* Lokasi & data */}
-        <SectionTitle>Lokasi &amp; data</SectionTitle>
+        <SectionTitle>{t('settings:screen.sections.locationData')}</SectionTitle>
         <View style={styles.card}>
           <ToggleRow
-            label="Background tracking"
-            description="Saat aplikasi tertutup"
+            label={t('settings:screen.backgroundTracking')}
+            description={t('settings:screen.backgroundTrackingHint')}
             value={backgroundTracking}
             onToggle={setBackgroundTracking}
             testID="toggle-tracking"
           />
           <ToggleRow
-            label="Hemat data"
+            label={t('settings:screen.dataSaver')}
             value={dataSaver}
             onToggle={setDataSaver}
             isLast
@@ -201,26 +258,29 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
         </View>
 
         {/* Offline sync */}
-        <SectionTitle>Offline sync</SectionTitle>
+        <SectionTitle>{t('settings:screen.sections.offlineSync')}</SectionTitle>
         <View style={[styles.card, styles.syncCard, hasPending && styles.syncCardPending]}>
           <View style={styles.syncHeader}>
             <NBText variant="mono-sm" color="gray700" uppercase style={styles.syncHeaderText}>
-              Antrian Sync
+              {t('settings:screen.syncQueue')}
             </NBText>
             <View style={[styles.syncPill, hasPending ? styles.syncPillPending : styles.syncPillClear]}>
               <NBText variant="mono-sm" color="black" uppercase style={styles.syncPillText}>
-                {hasPending ? `${pendingTotal} pending` : 'tersinkron'}
+                {hasPending ? t('settings:screen.pending', { count: pendingTotal }) : t('settings:screen.synced')}
               </NBText>
             </View>
           </View>
           <NBText variant="mono-sm" color="gray700" style={styles.syncDetail}>
             {hasPending
-              ? `${syncStatus.pendingCount} tertunda · ${syncStatus.failedCount} gagal`
-              : 'Semua data sudah tersinkron.'}
+              ? t('settings:screen.syncDetail', {
+                  pending: syncStatus.pendingCount,
+                  failed: syncStatus.failedCount,
+                })
+              : t('settings:screen.allSynced')}
           </NBText>
           {hasPending ? (
             <NBButton
-              title="Sync sekarang"
+              title={t('settings:screen.syncNow')}
               onPress={handleSyncNow}
               variant="secondary"
               size="sm"
@@ -234,31 +294,33 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
         </View>
 
         {/* Tentang */}
-        <SectionTitle>Tentang</SectionTitle>
+        <SectionTitle>{t('settings:screen.sections.about')}</SectionTitle>
         <View style={styles.card}>
           <View style={[styles.row, styles.rowDivider]}>
-            <NBText variant="body-sm" color="black" style={styles.rowLabel}>Versi</NBText>
-            <NBText variant="mono-sm" color="gray600">v{appVersion} (build {buildNumber})</NBText>
+            <NBText variant="body-sm" color="black" style={styles.rowLabel}>{t('settings:screen.version')}</NBText>
+            <NBText variant="mono-sm" color="gray600">
+              {t('settings:screen.versionValue', { version: appVersion, build: buildNumber })}
+            </NBText>
           </View>
           <TouchableOpacity
             style={styles.row}
             onPress={handleHelp}
             activeOpacity={0.7}
             accessibilityRole="button"
-            accessibilityLabel="Bantuan dan FAQ"
+            accessibilityLabel={t('settings:screen.help')}
             testID="help-row"
           >
-            <NBText variant="body-sm" color="black" style={styles.rowLabel}>Bantuan &amp; FAQ</NBText>
+            <NBText variant="body-sm" color="black" style={styles.rowLabel}>{t('settings:screen.help')}</NBText>
             <MaterialCommunityIcons name="chevron-right" size={18} color={nbColors.gray400} />
           </TouchableOpacity>
         </View>
 
         <View style={styles.appInfo}>
           <NBText variant="caption" color="gray400" align="center">
-            SEKAR — Sistem Evaluasi Kinerja Satgas RTH
+            {t('settings:screen.tagline')}
           </NBText>
           <NBText variant="caption" color="gray400" align="center">
-            DLH Surabaya 2026
+            {t('settings:screen.org')}
           </NBText>
         </View>
       </ScrollView>
@@ -307,6 +369,27 @@ const styles = StyleSheet.create({
   },
   rowDescription: {
     marginTop: 2,
+  },
+  // ─── Language segmented control ───
+  segmented: {
+    flexDirection: 'row',
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.sm,
+    overflow: 'hidden',
+  },
+  segment: {
+    minWidth: 44,
+    minHeight: 32,
+    paddingHorizontal: nbSpacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentOn: {
+    backgroundColor: nbColors.primary,
+  },
+  segmentOff: {
+    backgroundColor: nbColors.white,
   },
   // ─── Toggle ───
   toggleTrack: {

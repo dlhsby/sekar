@@ -38,6 +38,7 @@ export interface User {
   kecamatan_name?: string | null; // Phase 3 Apr 27: staff_kecamatan attribution
   kecamatan_id?: string | null; // May 2026: kecamatan promoted to FK
   password_must_change?: boolean; // Phase 4-7 M3a: drives ChangePasswordScreen forced flow
+  preferred_language?: 'id' | 'en'; // i18n: synced UI language ('id' default)
   created_at?: string;
   updated_at?: string;
 }

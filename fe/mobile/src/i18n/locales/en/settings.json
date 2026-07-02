@@ -1,0 +1,69 @@
+{
+  "title": "Settings",
+  "loading": "Loading…",
+  "tabs": {
+    "general": "General",
+    "security": "Security",
+    "notifications": "Notifications"
+  },
+  "general": {
+    "identity": "Identity",
+    "editProfile": "Edit profile",
+    "fullName": "Full Name",
+    "username": "Username",
+    "role": "Role",
+    "identityHint": "Your full name and profile photo can be changed on the Profile page. Username and role are managed by the system administrator.",
+    "appearance": "Appearance",
+    "darkMode": "Dark Mode",
+    "darkModeHint": "Switch between light and dark themes for this console.",
+    "language": "Language",
+    "languageHint": "Choose the display language for this console."
+  },
+  "security": {
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "minChars": "At least 8 characters",
+    "mismatch": "Confirmation does not match",
+    "savePassword": "Save Password",
+    "passwordChanged": "Password changed successfully"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "preferences": "Notification Preferences",
+    "perTypePush": "Push per type",
+    "loadingPreferences": "Loading preferences…",
+    "loadError": "Failed to load notification preferences. Please try again later.",
+    "saved": "Notification preferences saved"
+  },
+  "screen": {
+    "sections": {
+      "notifications": "Notifications",
+      "language": "Language",
+      "locationData": "Location & data",
+      "offlineSync": "Offline sync",
+      "about": "About"
+    },
+    "notificationPreferences": "Notification preferences",
+    "notificationPreferencesHint": "Choose which notifications you want to receive",
+    "soundVibrate": "Sound & vibration",
+    "languageHint": "Choose the app display language",
+    "backgroundTracking": "Background tracking",
+    "backgroundTrackingHint": "While the app is closed",
+    "dataSaver": "Data saver",
+    "syncQueue": "Sync Queue",
+    "pending": "{{count}} pending",
+    "synced": "synced",
+    "syncDetail": "{{pending}} pending · {{failed}} failed",
+    "allSynced": "All data is synced.",
+    "syncNow": "Sync now",
+    "version": "Version",
+    "versionValue": "v{{version}} (build {{build}})",
+    "help": "Help & FAQ",
+    "helpTitle": "Help & FAQ",
+    "helpBody": "Contact the system admin for further assistance.",
+    "tagline": "SEKAR — Satgas RTH Performance Evaluation System",
+    "org": "DLH Surabaya 2026"
+  }
+}

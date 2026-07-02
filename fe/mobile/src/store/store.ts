@@ -23,6 +23,7 @@ import usersReducer from './slices/usersSlice';
 import reportsReducer from './slices/reportsSlice';
 import analyticsReducer from './slices/analyticsSlice';
 import assetsReducer from './slices/assetsSlice';
+import preferencesReducer from './slices/preferencesSlice';
 
 export const store = configureStore({
   reducer: {
@@ -44,6 +45,7 @@ export const store = configureStore({
     reports: reportsReducer,
     analytics: analyticsReducer,
     assets: assetsReducer,
+    preferences: preferencesReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -15,6 +15,16 @@ import type { User } from './auth';
 export interface UpdateMyProfilePayload {
   full_name?: string;
   phone_number?: string;
+  preferred_language?: 'id' | 'en';
+}
+
+/**
+ * Persist the current user's preferred UI language to their profile so the
+ * choice follows them across devices. Best-effort — the local i18n switch is
+ * applied regardless of whether this succeeds.
+ */
+export async function updateMyLanguage(preferred_language: 'id' | 'en'): Promise<void> {
+  await apiClient.patch('/users/me', { preferred_language });
 }
 
 /** Update the current user's own name / phone (self-service, no admin rights). */

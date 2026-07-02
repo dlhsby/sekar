@@ -1,0 +1,40 @@
+{
+  "title": "Pengaturan",
+  "loading": "Memuat…",
+  "tabs": {
+    "general": "Umum",
+    "security": "Keamanan",
+    "notifications": "Notifikasi"
+  },
+  "general": {
+    "identity": "Identitas",
+    "editProfile": "Ubah profil",
+    "fullName": "Nama Lengkap",
+    "username": "Username",
+    "role": "Peran",
+    "identityHint": "Nama lengkap dan foto profil dapat diubah di halaman Profil. Username dan peran dikelola oleh administrator sistem.",
+    "appearance": "Tampilan",
+    "darkMode": "Mode Gelap",
+    "darkModeHint": "Beralih antara tema terang dan gelap untuk konsol ini.",
+    "language": "Bahasa",
+    "languageHint": "Pilih bahasa tampilan untuk konsol ini."
+  },
+  "security": {
+    "changePassword": "Ubah Kata Sandi",
+    "currentPassword": "Kata Sandi Saat Ini",
+    "newPassword": "Kata Sandi Baru",
+    "confirmNewPassword": "Konfirmasi Kata Sandi Baru",
+    "minChars": "Minimal 8 karakter",
+    "mismatch": "Konfirmasi tidak cocok",
+    "savePassword": "Simpan Kata Sandi",
+    "passwordChanged": "Kata sandi berhasil diubah"
+  },
+  "notifications": {
+    "title": "Notifikasi",
+    "preferences": "Preferensi Notifikasi",
+    "perTypePush": "Push per jenis",
+    "loadingPreferences": "Memuat preferensi…",
+    "loadError": "Gagal memuat preferensi notifikasi. Coba lagi nanti.",
+    "saved": "Preferensi notifikasi disimpan"
+  }
+}

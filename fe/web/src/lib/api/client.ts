@@ -1,7 +1,8 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { clearAuthCookies, getCookie, setAuthCookie } from '@/lib/utils/cookies';
 import { isPublicPath } from '@/lib/auth/public-paths';
-import { localizeApiError, GENERIC_ERROR_ID } from '@/lib/i18n/error-messages';
+import { localizeApiError, genericError } from '@/lib/i18n/error-messages';
+import i18n from '@/lib/i18n/config';
 import type { User } from '@/types/models';
 
 /**
@@ -212,21 +213,21 @@ export const getErrorMessage = (error: unknown): string => {
     }
 
     if (error.code === 'ECONNABORTED') {
-      return 'Permintaan melebihi batas waktu. Silakan coba lagi.';
+      return i18n.t('errors:TIMEOUT_ERROR');
     }
 
     if (error.message === 'Network Error') {
-      return 'Gagal terhubung ke server. Periksa koneksi internet Anda.';
+      return i18n.t('errors:NETWORK_ERROR');
     }
 
-    return GENERIC_ERROR_ID;
+    return genericError();
   }
 
   if (error instanceof Error) {
     return error.message;
   }
 
-  return GENERIC_ERROR_ID;
+  return genericError();
 };
 
 /**
