@@ -1,28 +1,42 @@
 # Database Seeders
 
-Five seed scripts cover the full Phase 1–3 dataset.
+## Structure (per-entity refactor, 2026-07)
+
+The team no longer works in "phases". The local dev seed is being reorganised from
+per-phase files into **per-entity** modules:
+
+- **`lib/`** — shared plumbing: `context.ts` (`SeedContext` + `runProfile`/`runProfileCli`, owns the
+  DataSource/queryRunner lifecycle), `ids.ts` (cross-file deterministic UUIDs), `truncate.ts` (the one
+  canonical child-first truncate order).
+- **`entities/<table>.ts`** — one `seedX(ctx)` per table (rayon, area, user, task, …). Reference tables
+  and demo transaction/plant data all live here.
+- **`profiles/<name>.ts`** — orchestrators that compose the entities. `profiles/demo.ts` is the full
+  local `db:seed` (destructive: truncate + every entity in FK order).
+
+**Migration status:** the local `db:seed` (demo) is fully per-entity. The **staging / production /
+reference** profiles are still the original per-file seeders below (`seed-staging.ts` / `seed-production.ts`
+/ `seed-reference.ts`, still using `seed-phase3.ts`) — recomposing them onto the shared entities is a
+pending follow-up.
 
 ## Files
 
 | File | Purpose | Safe for prod? |
 |------|---------|----------------|
-| `seed-phase1.ts` | Wipes core tables + seeds base admin/areas | No (destructive) |
-| `seed-phase2.ts` | Seeds Phase 2 data on top of Phase 1 | No (destructive) |
-| `seed-phase3.ts` | Seeds Phase 3 data (plant_species, monitoring_configs, service_capacity, sample area_plants/pruning_requests/plant_seeds when users/areas exist). Also exports `seedPhase3Reference`, `seedPhase3ServiceCapacity`, `seedPhase3SampleData` helpers consumed by the reference + staging seeders. | Yes (idempotent) |
-| `seed-reference.ts` | Reference/config data only — fully idempotent. Includes Phase 3 reference data (128 plant_species, 4 Phase 3 monitoring_configs, service_capacity grid with capacity_units=0). | Yes |
-| `seed-staging.ts` | Staging environment data — wipes + reseeds all tables incl. Phase 3 (UAT sample data: staff_kecamatan_pusat_1 user, area_plants, pruning_requests, plant_seeds, seed_transactions, capacity grid with capacity_units=5). | No |
+| `profiles/demo.ts` + `entities/*.ts` | Local `db:seed` — truncate + full dev dataset, per-entity | No (destructive) |
+| `seed-phase3.ts` | Phase-3 data; still exports `seedPhase3Reference`, `seedPhase3ServiceCapacity`, `seedPhase3SampleData` consumed by the reference + staging seeders below | Yes (idempotent) |
+| `seed-reference.ts` | Reference/config data only — fully idempotent (128 plant_species, Phase-3 monitoring_configs, capacity grid with capacity_units=0) | Yes |
+| `seed-staging.ts` | Staging/UAT — wipes + reseeds all tables incl. real roster from `data/users.csv`, 937 KMZ areas, materialised daily roster, Phase-3 reference | No |
+| `seed-production.ts` | Production cold-start — non-destructive upsert (rayons, shifts, kecamatans, 2 admins; passwords from env) | Yes |
 
 ## Scripts
 
 ```bash
-# Development — full reset and reseed (Phase 1 + 2 + 3)
+# Development — full reset and reseed (per-entity demo profile)
 npm run db:seed
 
-# Individual phases
-npm run db:seed:phase1    # Phase 1 only (wipes and seeds base data)
-npm run db:seed:phase2    # Phase 2 only (run after Phase 1)
-npm run db:seed:phase3    # Phase 3 only (idempotent — safe to re-run)
-npm run db:seed:reference # Reference data only (idempotent)
+# Reference / staging / production
+npm run db:seed:reference  # Reference data only (idempotent)
+npm run db:seed:staging    # Staging/UAT (destructive; real roster from data/users.csv)
 
 # Production / Staging — first deploy
 npm run migration:run:prod
@@ -39,7 +53,7 @@ npm run migration:run:prod
 
 ```bash
 npm run migration:run   # Ensure schema is up to date
-npm run db:seed         # Wipes + reseeds Phase 1 → 2 → 3
+npm run db:seed         # Wipes + reseeds the full dev dataset (profiles/demo.ts)
 ```
 
 ### Full schema reset (drop + recreate)
@@ -185,6 +199,6 @@ npm run db:seed:prod        # Reference data + 1 superadmin only
 npm run migration:run:prod
 # Skip seeding unless new reference data was added
 
-# Optional: seed demo data in staging
-npm run db:seed:phase1:prod && npm run db:seed:phase2:prod && npm run db:seed:phase3:prod
+# Optional: seed staging/UAT data (destructive — real roster from data/users.csv)
+npm run db:seed:staging:prod
 ```
