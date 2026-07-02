@@ -37,10 +37,15 @@ const AREA_ID_NAMESPACE = 'b7e3c1a0-5d2f-4e8b-9c3a-1f2e3d4c5b6a';
 const FILE_TO_RAYON = {
   'Rayon Utara.kmz': { code: 'UTARA', label: 'Rayon Utara' },
   'Rayon Selatan.kmz': { code: 'SELATAN', label: 'Rayon Selatan' },
+  'Rayon Timur 1.kmz': { code: 'TIMUR1', label: 'Rayon Timur 1' },
   'Rayon Timur 2.kmz': { code: 'TIMUR2', label: 'Rayon Timur 2' },
   'Rayon Pusat.kmz': { code: 'PUSAT', label: 'Rayon Pusat' },
   'Rayon Barat 1.kmz': { code: 'BARAT1', label: 'Rayon Barat 1' },
   'Rayon Barat 2.kmz': { code: 'BARAT2', label: 'Rayon Barat 2' },
+  // Taman aktif parks city-wide (polygons paired with point markers in the KMZ;
+  // points are skipped, polygons kept). Matched to the taman-aktif park list by
+  // name at seed time to attach boundaries.
+  'Rayon TAMAN AKTIF.kmz': { code: 'TAMAN_AKTIF', label: 'Rayon Taman Aktif' },
 };
 
 /** Deterministic UUID v5 (SHA-1) — dependency-free so the script can't drift. */
