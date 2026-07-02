@@ -1,1 +1,23 @@
-{}
+{
+  "tiles": {
+    "attendance": "Kehadiran",
+    "overtime": "Lembur",
+    "tasks": "Tugas",
+    "activities": "Aktivitas",
+    "assets": "Aset",
+    "performance": "Kinerja",
+    "team": "Tim",
+    "analytics": "Analitik",
+    "monitoring": "Monitoring",
+    "reports": "Laporan",
+    "seeds": "Bibit",
+    "pruning": "Perantingan"
+  },
+  "sections": {
+    "operations": "Operasional",
+    "supervision": "Pengawasan",
+    "treeCare": "Perawatan Pohon",
+    "reportsMonitoring": "Laporan & Monitoring",
+    "other": "Lainnya"
+  }
+}

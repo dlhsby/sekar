@@ -1,1 +1,23 @@
-{}
+{
+  "tiles": {
+    "attendance": "Attendance",
+    "overtime": "Overtime",
+    "tasks": "Tasks",
+    "activities": "Activities",
+    "assets": "Assets",
+    "performance": "Performance",
+    "team": "Team",
+    "analytics": "Analytics",
+    "monitoring": "Monitoring",
+    "reports": "Reports",
+    "seeds": "Seeds",
+    "pruning": "Pruning"
+  },
+  "sections": {
+    "operations": "Operations",
+    "supervision": "Supervision",
+    "treeCare": "Tree Care",
+    "reportsMonitoring": "Reports & Monitoring",
+    "other": "Other"
+  }
+}
