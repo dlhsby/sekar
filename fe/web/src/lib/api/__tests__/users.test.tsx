@@ -74,7 +74,7 @@ describe('Users API', () => {
     };
 
     it('should fetch users without filters', async () => {
-      mockAxios.onGet('/users?').reply(200, mockResponse);
+      mockAxios.onGet('/users?page=1').reply(200, mockResponse);
 
       const { result } = renderHook(() => useUsers(), { wrapper: createWrapper() });
 
@@ -86,7 +86,7 @@ describe('Users API', () => {
     });
 
     it('should fetch users with search filter', async () => {
-      mockAxios.onGet('/users?search=admin').reply(200, mockResponse);
+      mockAxios.onGet('/users?search=admin&page=1').reply(200, mockResponse);
 
       const { result } = renderHook(() => useUsers({ search: 'admin' }), {
         wrapper: createWrapper(),
@@ -98,7 +98,7 @@ describe('Users API', () => {
     });
 
     it('should fetch users with role filter', async () => {
-      mockAxios.onGet('/users?role=admin_system').reply(200, mockResponse);
+      mockAxios.onGet('/users?role=admin_system&page=1').reply(200, mockResponse);
 
       const { result } = renderHook(() => useUsers({ role: 'admin_system' }), {
         wrapper: createWrapper(),
@@ -107,6 +107,31 @@ describe('Users API', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       expect(result.current.data?.data[0].role).toBe('admin_system');
+    });
+
+    it('walks every page when the roster exceeds one page (no explicit page)', async () => {
+      // Regression: with >limit users the API caps the first page, so a single
+      // request drops the tail. The hook must fetch all pages and concatenate.
+      const pageOne: PaginatedResponse<User> = {
+        data: [{ ...mockUser, id: '1', username: 'user1' }],
+        meta: { total: 2, page: 1, limit: 1, totalPages: 2 },
+      };
+      const pageTwo: PaginatedResponse<User> = {
+        data: [{ ...mockUser, id: '2', username: 'user2' }],
+        meta: { total: 2, page: 2, limit: 1, totalPages: 2 },
+      };
+      mockAxios.onGet('/users?page=1&limit=1').reply(200, pageOne);
+      mockAxios.onGet('/users?page=2&limit=1').reply(200, pageTwo);
+
+      const { result } = renderHook(() => useUsers({ limit: 1 }), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data?.data).toHaveLength(2);
+      expect(result.current.data?.data.map((u) => u.username)).toEqual(['user1', 'user2']);
+      expect(result.current.data?.meta.total).toBe(2);
     });
 
     it('should fetch users with pagination', async () => {
@@ -126,7 +151,7 @@ describe('Users API', () => {
     });
 
     it('should handle fetch error', async () => {
-      mockAxios.onGet('/users?').reply(500, {
+      mockAxios.onGet('/users?page=1').reply(500, {
         statusCode: 500,
         message: 'Internal server error',
       });
