@@ -14,6 +14,11 @@
  *   npm run sheet:pull               # sheet → regenerate areas-taman-aktif.csv + users.csv
  *   npm run sheet:push               # write generated ids + gps back into the sheet
  *
+ * Pull preserves the `id` and `username` already on the sheet (only minting a
+ * deterministic one when the cell is blank), so ids authored elsewhere — e.g. a
+ * user created via the API, or synced from the live DB — survive a round-trip
+ * instead of being overwritten by the username-derived v5 id.
+ *
  * After a pull: `npm run db:seed:staging`.
  */
 import '../src/config/load-env';
@@ -46,6 +51,8 @@ const mode = process.argv.includes('--list')
 
 // ─── deterministic ids + value normalisers (mirror gen + extractor) ──────────
 const uuidv5 = (name: string): string => uuidv5Shared(name, NS);
+// Guards a sheet-provided id: only trust a well-formed UUID, else regenerate.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const JAB: Record<string, string> = {
   'kepala rayon': 'kepala_rayon',
   korlap: 'korlap',
@@ -254,8 +261,23 @@ async function pull(): Promise<void> {
   // username (synthetic dummy tables have usernames filled → skipped).
   const users = new Map<
     string,
-    { full_name: string; role: string; phone: string; rayon_code: string; areas: string; supervisor: string }
+    {
+      full_name: string;
+      role: string;
+      phone: string;
+      rayon_code: string;
+      areas: string;
+      supervisor: string;
+      // `id`/`username` captured from the sheet (written back by push /
+      // --push-from-db). Preferred over regeneration so a pull never clobbers a
+      // DB-authored id (e.g. users created through the API get a v4 id that is
+      // NOT the deterministic v5 the username would mint).
+      id: string;
+      username: string;
+    }
   >();
+  const cell = (r: string[], col: Record<string, number>, name: string): string =>
+    (col[name] != null ? (r[col[name]] ?? '') : '').trim();
   const order: string[] = [];
   for (const g of grids) {
     const t = findTable(g.rows, isUserHeader);
@@ -274,8 +296,11 @@ async function pull(): Promise<void> {
       const rayon = rayonFromTitle(g.title);
       const key = name.toLowerCase();
       if (users.has(key)) {
+        // Merge additional cells found on a later row for the same person.
         const u = users.get(key)!;
         if (!u.phone) u.phone = normPhone(col['no hp'] != null ? r[col['no hp']] : '');
+        if (!u.id) u.id = cell(r, col, 'id');
+        if (!u.username) u.username = cell(r, col, 'username');
         continue;
       }
       users.set(key, {
@@ -284,7 +309,9 @@ async function pull(): Promise<void> {
         phone: normPhone(col['no hp'] != null ? r[col['no hp']] : ''),
         rayon_code: rayon,
         areas: rayon === 'TAMAN_AKTIF' ? areaRaw : '',
-        supervisor: ((col['pengawas'] != null ? r[col['pengawas']] : '') ?? '').replace(/\s+/g, ' ').trim(),
+        supervisor: cell(r, col, 'pengawas').replace(/\s+/g, ' '),
+        id: cell(r, col, 'id'),
+        username: cell(r, col, 'username'),
       });
       order.push(key);
     }
@@ -310,18 +337,32 @@ async function pull(): Promise<void> {
   const usedNames = new Set<string>();
   const seenPhone = new Set<string>();
   for (let n = 10; n < 110; n++) seenPhone.add(`0812${String(n).padStart(8, '0')}`.slice(0, 20));
+  // Reserve every username the sheet already holds up front, so a regenerated
+  // username for a blank row can never collide with a preserved one.
+  for (const key of order) {
+    const un = users.get(key)!.username;
+    if (un) usedNames.add(un);
+  }
   const userRows = order.map((key) => {
     const u = users.get(key)!;
-    let uname = slug(u.full_name), k = 1;
-    while (usedNames.has(uname)) uname = `${slug(u.full_name)}_${++k}`.slice(0, 50);
-    usedNames.add(uname);
+    // Prefer the username already on the sheet; only mint one when blank.
+    let uname = u.username;
+    if (!uname) {
+      uname = slug(u.full_name);
+      let k = 1;
+      while (usedNames.has(uname)) uname = `${slug(u.full_name)}_${++k}`.slice(0, 50);
+      usedNames.add(uname);
+    }
     let phone = u.phone;
     if (phone && seenPhone.has(phone)) phone = '';
     if (phone) seenPhone.add(phone);
     const areas = u.areas
       ? u.areas.split(',').map((s) => s.trim()).filter((s) => validArea.has(s.toLowerCase()))
       : [];
-    return [uuidv5(`USER:${uname}`), u.full_name, uname, phone, u.role, u.rayon_code, [...new Set(areas)].join('|'), u.supervisor];
+    // Prefer the id already on the sheet (kept in sync with the live DB) so a
+    // pull never clobbers a DB-authored id; fall back to the deterministic id.
+    const id = UUID_RE.test(u.id) ? u.id : uuidv5(`USER:${uname}`);
+    return [id, u.full_name, uname, phone, u.role, u.rayon_code, [...new Set(areas)].join('|'), u.supervisor];
   });
   writeCsv(
     path.join(DATA_DIR, 'users.csv'),
