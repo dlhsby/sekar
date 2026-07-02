@@ -1595,7 +1595,10 @@ async function seedStaging() {
       SELECT
         (SELECT count(*)::int FROM kecamatans)                              AS kecamatans,
         (SELECT count(*)::int FROM users WHERE role = 'staff_kecamatan')    AS staff_kec_users,
-        (SELECT count(*)::int FROM service_capacity)                        AS service_capacity
+        (SELECT count(*)::int FROM service_capacity)                        AS service_capacity,
+        (SELECT count(*)::int FROM user_areas)                              AS user_areas,
+        (SELECT count(*)::int FROM schedules)                               AS schedules,
+        (SELECT count(*)::int FROM schedule_areas)                          AS schedule_areas
     `);
     const sc = stagingCounts[0] ?? {};
     const kecSamples = (await queryRunner.query(`
@@ -1644,12 +1647,18 @@ async function seedStaging() {
     );
     console.log(`      ${clockable_count} clockable users — user_tracking_status set to offline`);
     console.log('      76 area_staff_requirements (38 areas × satgas + linmas, SHIFT1/WEEKDAY)');
-    console.log('      user_areas — permanent multi-area assignments per spec (Rayon Pusat only)');
+    console.log(
+      `      ${String(sc.user_areas ?? 0).padStart(3)} user_areas — permanent multi-area assignments`,
+    );
     console.log('');
     console.log('  📆 Daily Roster (TODAY materialized for immediate demo)');
     console.log('     ──────────────────────────────────────────────────────────────────────────');
-    console.log("      schedules — TODAY's schedule entries (field workers: planned, others: off)");
-    console.log("      schedule_areas — TODAY's area assignments from user_areas");
+    console.log(
+      `      ${String(sc.schedules ?? 0).padStart(4)} schedules — TODAY's schedule entries (field workers: planned, others: off)`,
+    );
+    console.log(
+      `      ${String(sc.schedule_areas ?? 0).padStart(3)} schedule_areas — TODAY's area assignments from user_areas`,
+    );
     console.log('      1 demo leave exception (satgas_pusat_1: sick leave)');
     console.log('');
     console.log('  📭 Empty by Design (essentials-only — UAT starts from scratch)');
