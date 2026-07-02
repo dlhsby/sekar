@@ -413,10 +413,22 @@ export default function SchedulesPage() {
     [canEditRoster],
   );
 
-  // Schedulable roles for replacement
+  // Replacement candidates: satgas/linmas in the SAME rayon as the shift being
+  // covered (a cross-rayon replacement makes no operational sense and keeps the
+  // list bounded). Falls back to all schedulable workers if the roster's rayon
+  // is unknown.
+  const replaceRoster = useMemo(
+    () => schedules.find((r) => r.id === replaceRosterId) ?? null,
+    [schedules, replaceRosterId],
+  );
   const schedulableUsers = useMemo(
-    () => allUsers.filter((u) => ['satgas', 'linmas'].includes(u.role)),
-    [allUsers],
+    () =>
+      allUsers.filter(
+        (u) =>
+          ['satgas', 'linmas'].includes(u.role) &&
+          (!replaceRoster?.rayon_id || u.rayon_id === replaceRoster.rayon_id),
+      ),
+    [allUsers, replaceRoster],
   );
 
   return (
