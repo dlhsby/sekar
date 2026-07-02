@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Eye, EyeOff } from 'lucide-react';
+import { useTranslation, Trans } from 'react-i18next';
 import { FormInput, Button, useToast } from '@/components/ui';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { BrandLockup } from '@/components/brand/BrandLockup';
@@ -15,18 +16,10 @@ import { AppDownloadLoginLink } from '@/components/app-download/AppDownloadLogin
 import { useAuth } from '@/lib/auth/hooks';
 import { getErrorMessage } from '@/lib/api/client';
 
-/**
- * Login form schema with validation
- */
-const loginSchema = z.object({
-  identifier: z
-    .string()
-    .min(1, 'Username / No. HP wajib diisi')
-    .max(50, 'Username / No. HP maksimal 50 karakter'),
-  password: z.string().min(6, 'Password minimal 6 karakter'),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
+type LoginFormData = {
+  identifier: string;
+  password: string;
+};
 
 /**
  * Login Form Component (wrapped in Suspense to fix CSR bailout)
@@ -37,9 +30,22 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const { login, user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
 
   const redirect = searchParams.get('redirect') || '/';
+
+  const loginSchema = useMemo(
+    () =>
+      z.object({
+        identifier: z
+          .string()
+          .min(1, t('auth:validation.identifierRequired'))
+          .max(50, t('auth:validation.identifierMax')),
+        password: z.string().min(6, t('auth:validation.passwordMin')),
+      }),
+    [t],
+  );
 
   const {
     register,
@@ -61,19 +67,19 @@ function LoginForm() {
       await login(data);
     } catch (err) {
       // Mirror the mobile login UX: surface API failures as a single toast
-      // ("Gagal Masuk") rather than a second inline error block.
+      // rather than a second inline error block.
       let errorMessage = getErrorMessage(err);
       if (errorMessage === 'Invalid credentials') {
-        errorMessage = 'Username / No. HP atau Sandi salah';
+        errorMessage = t('auth:login.invalidCredentials');
       }
-      toast({ level: 'danger', title: 'Gagal Masuk', body: errorMessage });
+      toast({ level: 'danger', title: t('auth:login.failedTitle'), body: errorMessage });
     }
   };
 
   if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-nb-background">
-        <div className="text-nb-gray-600">Memeriksa autentikasi...</div>
+        <div className="text-nb-gray-600">{t('auth:login.checkingAuth')}</div>
       </div>
     );
   }
@@ -100,16 +106,11 @@ function LoginForm() {
 
         <div className="relative z-10">
           <p className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-nb-black/70">
-            Sistem Evaluasi Kinerja Satgas RTH
+            {t('auth:login.hero.eyebrow')}
           </p>
-          <h2 className="mt-2 text-nb-display text-nb-black">
-            Ruang terbuka hijau
-            <br />
-            Surabaya, terpantau.
-          </h2>
+          <h2 className="mt-2 text-nb-display text-nb-black">{t('auth:login.hero.heading')}</h2>
           <p className="mt-3 max-w-[40ch] text-nb-body-sm text-nb-black/80">
-            Pantau satgas di lapangan, kelola tugas perawatan, dan evaluasi kinerja — dalam satu
-            tempat.
+            {t('auth:login.hero.body')}
           </p>
         </div>
       </div>
@@ -126,18 +127,16 @@ function LoginForm() {
 
           <div className="mb-4 inline-flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-wide text-nb-gray-600">
             <span className="size-2 rounded-full border-[1.5px] border-nb-black bg-nb-primary" />
-            Masuk ke SEKAR
+            {t('auth:login.badge')}
           </div>
-          <h1 className="text-nb-h1 text-nb-black">Selamat datang kembali</h1>
-          <p className="mb-6 mt-2 text-nb-body-sm text-nb-gray-700">
-            Gunakan akun yang dibuat oleh Admin — username atau nomor HP yang terdaftar.
-          </p>
+          <h1 className="text-nb-h1 text-nb-black">{t('auth:login.welcome')}</h1>
+          <p className="mb-6 mt-2 text-nb-body-sm text-nb-gray-700">{t('auth:login.subtitle')}</p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <FormInput
-              label="Username / No. HP"
+              label={t('auth:login.identifier')}
               type="text"
-              placeholder="Masukkan username atau nomor HP"
+              placeholder={t('auth:login.identifierPlaceholder')}
               error={errors.identifier?.message}
               disabled={isSubmitting}
               {...register('identifier')}
@@ -145,9 +144,9 @@ function LoginForm() {
 
             <div className="relative">
               <FormInput
-                label="Sandi"
+                label={t('auth:login.password')}
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Masukkan sandi"
+                placeholder={t('auth:login.passwordPlaceholder')}
                 error={errors.password?.message}
                 disabled={isSubmitting}
                 {...register('password')}
@@ -156,7 +155,7 @@ function LoginForm() {
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-[34px] rounded-nb-sm p-1 text-nb-gray-500 transition-colors hover:text-nb-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-nb-black focus-visible:-outline-offset-2"
-                aria-label={showPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
+                aria-label={showPassword ? t('auth:login.hidePassword') : t('auth:login.showPassword')}
               >
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
@@ -167,17 +166,19 @@ function LoginForm() {
                 href="/forgot-password"
                 className="font-mono text-[11px] font-bold text-nb-black underline underline-offset-2"
               >
-                Lupa sandi?
+                {t('auth:login.forgotPassword')}
               </Link>
             </div>
 
             <Button type="submit" variant="default" fullWidth loading={isSubmitting} disabled={isSubmitting}>
-              {isSubmitting ? 'Masuk...' : 'Masuk →'}
+              {isSubmitting ? t('auth:login.submitting') : t('auth:login.submit')}
             </Button>
           </form>
 
           <p className="mt-5 text-center text-nb-caption text-nb-gray-600">
-            Akun dibuat oleh admin. Hubungi <b className="text-nb-black">Admin</b> jika ada kendala.
+            <Trans i18nKey="auth:login.footerHelp">
+              Akun dibuat oleh admin. Hubungi <b className="text-nb-black">Admin</b> jika ada kendala.
+            </Trans>
           </p>
 
           {/* Field workers install the native app from here (live version). */}
