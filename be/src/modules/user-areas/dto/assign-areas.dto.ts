@@ -8,7 +8,9 @@ export class AssignAreasDto {
     example: ['uuid-1', 'uuid-2'],
   })
   @IsArray()
-  @IsUUID('4', { each: true })
+  // Area ids are deterministic UUID v5 (minted from rayon:name), so restrict to
+  // any UUID version — 'v4' wrongly rejects every seeded area id.
+  @IsUUID('all', { each: true })
   @ArrayMinSize(1)
   area_ids: string[];
 }

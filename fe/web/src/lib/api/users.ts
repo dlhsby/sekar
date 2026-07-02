@@ -24,16 +24,44 @@ export const userKeys = {
 /**
  * Fetch users with filters
  */
-const fetchUsers = async (filters: UserFilters = {}): Promise<PaginatedResponse<User>> => {
+const buildUserParams = (filters: UserFilters, page: number): string => {
   const params = new URLSearchParams();
-
   if (filters.search) params.append('search', filters.search);
   if (filters.role) params.append('role', filters.role);
-  if (filters.page) params.append('page', String(filters.page));
+  params.append('page', String(page));
   if (filters.limit) params.append('limit', String(filters.limit));
+  return params.toString();
+};
 
-  const response = await apiClient.get<PaginatedResponse<User>>(`/users?${params.toString()}`);
-  return response.data;
+const fetchUsers = async (filters: UserFilters = {}): Promise<PaginatedResponse<User>> => {
+  // Explicit page → the caller drives pagination; return that single page.
+  if (filters.page) {
+    const response = await apiClient.get<PaginatedResponse<User>>(
+      `/users?${buildUserParams(filters, filters.page)}`,
+    );
+    return response.data;
+  }
+
+  // No explicit page → the caller wants the FULL roster (every table/dropdown
+  // passes a high `limit` to "load all"). The API hard-caps `limit` at 1000, so
+  // once the roster exceeds that a single request silently drops the tail —
+  // users vanish from the list and role counts read low. Walk every page so the
+  // client always receives the complete set.
+  const first = (
+    await apiClient.get<PaginatedResponse<User>>(`/users?${buildUserParams(filters, 1)}`)
+  ).data;
+  const all = [...first.data];
+  const totalPages = first.meta?.totalPages ?? 1;
+  for (let page = 2; page <= totalPages; page++) {
+    const next = (
+      await apiClient.get<PaginatedResponse<User>>(`/users?${buildUserParams(filters, page)}`)
+    ).data;
+    all.push(...next.data);
+  }
+  return {
+    data: all,
+    meta: { total: first.meta?.total ?? all.length, page: 1, limit: all.length, totalPages: 1 },
+  };
 };
 
 /**
