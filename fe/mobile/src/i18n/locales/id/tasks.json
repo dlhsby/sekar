@@ -1,1 +1,90 @@
-{}
+{
+  "sort": {
+    "newest": "Terbaru (default)",
+    "oldest": "Terlama",
+    "deadlineNearest": "Deadline Terdekat",
+    "priorityHighest": "Prioritas Tertinggi"
+  },
+  "filter": {
+    "label": "tugas"
+  },
+  "header": {
+    "sort": "URUTKAN TUGAS"
+  },
+  "fab": {
+    "create": "+ Buat Tugas"
+  },
+  "create": {
+    "title": "Buat Tugas",
+    "accessDenied": "Akses Ditolak",
+    "accessDeniedMessage": "Anda tidak memiliki izin untuk membuat tugas.",
+    "successTitle": "Berhasil",
+    "successMessage": "Tugas berhasil dibuat.",
+    "failureTitle": "Gagal",
+    "failureMessage": "Tugas gagal dibuat. Silakan coba lagi.",
+    "cancelConfirm": "Data yang telah diisi akan hilang.",
+    "cancelNo": "Tidak",
+    "cancelYes": "Ya"
+  },
+  "detail": {
+    "loading": "Memuat tugas...",
+    "notFound": "Tugas Tidak Ditemukan",
+    "notFoundMessage": "Tugas yang Anda cari tidak ditemukan atau telah dihapus",
+    "backButtonTitle": "Kembali",
+    "taskHistory": "Riwayat Tugas",
+    "assignment": "Penugasan",
+    "completionDetails": "Detail Penyelesaian",
+    "assignmentHistory": "Riwayat Penugasan",
+    "accessibilityLabel": "Detail tugas {{title}}"
+  },
+  "card": {
+    "accessibilityLabel": "Detail tugas {{title}}"
+  },
+  "complete": {
+    "title": "Selesaikan Tugas",
+    "loading": "Memuat...",
+    "notFound": "Tugas tidak ditemukan",
+    "taskSection": "Tugas",
+    "description": "Deskripsi Penyelesaian",
+    "descriptionPlaceholder": "Jelaskan hasil pekerjaan...",
+    "photosRequired": "Belum lengkap",
+    "photosRequiredMessage": "Minimal 1 foto bukti penyelesaian wajib diambil.",
+    "descriptionRequired": "Belum lengkap",
+    "descriptionRequiredMessage": "Deskripsi penyelesaian wajib diisi.",
+    "success": "Berhasil",
+    "successMessage": "Tugas berhasil diselesaikan.",
+    "failure": "Gagal",
+    "failureMessage": "Gagal menyelesaikan tugas. Silakan coba lagi.",
+    "photosHeader": "FOTO BUKTI *",
+    "photosSubtitle": "Tambahkan 1-3 foto hasil pekerjaan",
+    "submitButton": "Selesaikan Tugas",
+    "cancelButton": "Batal"
+  },
+  "actions": {
+    "assign": "Tugaskan",
+    "reassign": "Tugaskan Ulang",
+    "delegate": "Disposisi ke Bawahan",
+    "selectDelegate": "Disposisi ke Bawahan",
+    "selectReplacement": "Pilih Petugas Pengganti",
+    "selectOfficer": "Pilih Petugas",
+    "placeholder": "— Pilih Petugas —",
+    "cancel": "Batal",
+    "submit": "Tugaskan",
+    "accept": "Terima",
+    "decline": "Tolak",
+    "start": "Mulai",
+    "verify": "Verifikasi",
+    "revision": "Perlu Revisi",
+    "selectTagging": "Pilih petugas untuk di-tag",
+    "searchTagging": "Cari & pilih petugas..."
+  },
+  "messages": {
+    "clockInRequired": "Belum Clock In",
+    "clockInRequiredMessage": "Anda harus melakukan Clock In terlebih dahulu untuk menambahkan aktivitas"
+  },
+  "errors": {
+    "fetchFailed": "Gagal memuat jadwal",
+    "scheduleMissing": "Belum ada jadwal hari ini",
+    "loadingFailed": "Gagal memuat detail tugas."
+  }
+}

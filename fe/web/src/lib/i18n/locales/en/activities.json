@@ -1,1 +1,73 @@
-{}
+{
+  "list": {
+    "description": "Manage and review work activities",
+    "filters": {
+      "activityType": "Activity Type",
+      "status": "Status",
+      "area": "Area",
+      "dateRange": "Date Range",
+      "allTypes": "All Types",
+      "allStatus": "All Status",
+      "allAreas": "All Areas"
+    },
+    "table": {
+      "title": "Activity List",
+      "columns": {
+        "id": "ID",
+        "date": "Date",
+        "user": "User",
+        "activityType": "Activity Type",
+        "area": "Area",
+        "status": "Status",
+        "photos": "Photos"
+      }
+    },
+    "pagination": {
+      "page": "Page {{page}} of {{totalPages}}",
+      "previous": "Previous",
+      "next": "Next",
+      "total": "total"
+    },
+    "empty": {
+      "noActivities": "No activities"
+    },
+    "actions": {
+      "rejectDialog": "Activity Rejection Reason",
+      "reasonLabel": "Reason",
+      "reasonPlaceholder": "Enter rejection reason...",
+      "rejectButton": "Reject Activity",
+      "viewModal": "Activity Details"
+    }
+  },
+  "detail": {
+    "title": "Activity Details",
+    "breadcrumb": "Activities",
+    "backButton": "Back to Activity List",
+    "sections": {
+      "information": "Information",
+      "approval": "Approval",
+      "rejection": "Rejection",
+      "photos": "Photos",
+      "description": "Description"
+    },
+    "fields": {
+      "user": "User",
+      "area": "Area",
+      "activityType": "Activity Type",
+      "dateTime": "Date & Time",
+      "gpsLocation": "GPS Location",
+      "photos": "Photos",
+      "notes": "Notes",
+      "processedBy": "Processed By",
+      "processDate": "Process Date",
+      "rejectionReason": "Rejection Reason"
+    },
+    "actions": {
+      "rejectDialog": "Rejection Reason",
+      "reasonLabel": "Reason",
+      "reasonPlaceholder": "Enter rejection reason...",
+      "rejectButton": "Reject Activity"
+    }
+  },
+  "notFound": "Activity not found"
+}

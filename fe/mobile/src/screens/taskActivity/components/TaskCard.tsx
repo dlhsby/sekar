@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ListItemCard, type ListItemMeta } from '../../../components/common';
 import { nbSpacing } from '../../../constants/nbTokens';
 import { taskPill } from '../../../utils/taskStatus';
@@ -27,6 +28,7 @@ function buildMeta(task: Task): ListItemMeta[] {
 }
 
 function TaskCardImpl({ task, onPress }: TaskCardProps): React.JSX.Element {
+  const { t } = useTranslation();
   const pill = taskPill(task.status);
   return (
     <ListItemCard
@@ -39,7 +41,7 @@ function TaskCardImpl({ task, onPress }: TaskCardProps): React.JSX.Element {
       creatorText={task.creator ? `${task.creator.role} · ${task.creator.full_name}` : undefined}
       onPress={onPress}
       style={styles.spacing}
-      accessibilityLabel={`Detail tugas ${task.title}`}
+      accessibilityLabel={t('tasks:card.accessibilityLabel', { title: task.title })}
       testID="task-card"
     />
   );

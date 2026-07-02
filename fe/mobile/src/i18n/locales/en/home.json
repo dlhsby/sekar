@@ -1,1 +1,98 @@
-{}
+{
+  "field": {
+    "sections": {
+      "attendance": "My Attendance",
+      "summary": "Today's Summary"
+    },
+    "alerts": {
+      "permissionRevoked": "Location permission was revoked. Location tracking is inactive.",
+      "gpsDisabled": "GPS is disabled. Location tracking is inactive.",
+      "locationUnavailable": "Location unavailable. Check your GPS settings.",
+      "fix": "Fix"
+    },
+    "hero": {
+      "onDuty": "On duty",
+      "overtimeActive": "Overtime active",
+      "location": {
+        "loading": "Location…",
+        "inArea": "In area",
+        "outArea": "Out of area",
+        "searching": "Getting location…",
+        "unavailable": "Location unavailable",
+        "unknownArea": "Unknown area"
+      },
+      "labels": {
+        "clockInStart": "Clock in start",
+        "status": "Attendance Status",
+        "assignedArea": "Assigned Area",
+        "duration": "Current shift duration",
+        "currentLocation": "Current location"
+      },
+      "status": {
+        "late": "Late",
+        "onTime": "On Time"
+      },
+      "button": {
+        "clockIn": "Clock In",
+        "clockOut": "Clock Out",
+        "clockOutOvertime": "Clock Out Overtime"
+      },
+      "link": {
+        "shiftDetail": "Shift details →"
+      },
+      "idle": {
+        "label": "Not clocked in",
+        "title": "Start shift today",
+        "assignedArea": "Area: {{area}}"
+      },
+      "a11y": {
+        "onDuty": "On duty",
+        "overtimeActive": "Overtime active",
+        "tapToOpen": "Tap to expand details",
+        "tapToClose": "Tap to collapse details",
+        "locationStatus": "Location status: {{status}}. Tap for map.",
+        "refreshLocation": "Update location"
+      }
+    },
+    "tiles": {
+      "attendance": "Attendance",
+      "tasks": "Tasks",
+      "activities": "Activities"
+    },
+    "warning": {
+      "noAssignedArea": "You have not been assigned to any area yet."
+    }
+  },
+  "coordinator": {
+    "sections": {
+      "attendance": "My Attendance"
+    },
+    "alerts": {
+      "outOfArea": "Out of area",
+      "outOfAreaTitle": "{{name}} left area",
+      "absent": "Not present",
+      "absentTitle": "{{name}} is not present"
+    },
+    "hero": {
+      "onDuty": "On duty",
+      "overtimeActive": "Overtime active",
+      "meta": "Started {{time}} · Running {{duration}}",
+      "button": {
+        "clockIn": "Clock In",
+        "clockOut": "Clock Out",
+        "clockOutOvertime": "Clock Out Overtime"
+      },
+      "link": {
+        "shiftDetail": "Shift details →"
+      },
+      "idle": {
+        "label": "Not clocked in",
+        "title": "Start shift today"
+      },
+      "a11y": {
+        "onDuty": "On duty",
+        "overtimeActive": "Overtime active"
+      }
+    }
+  }
+}

@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   BackHandler,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
@@ -55,6 +56,7 @@ type TaskDetailRouteProp = RouteProp<MainTabParamList, 'TaskDetail'>;
 type TaskDetailNavigationProp = MainTabScreenProps<'TaskDetail'>['navigation'];
 
 export function TaskDetailScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const navigation = useNavigation<TaskDetailNavigationProp>();
   const route = useRoute<TaskDetailRouteProp>();
   const { taskId } = route.params;
@@ -112,7 +114,7 @@ export function TaskDetailScreen(): React.JSX.Element {
       <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.bgCanvas} patternColor={nbColors.primary} opacity={0.06}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
-          <NBText variant="body" style={styles.loadingTextMargin}>Memuat tugas...</NBText>
+          <NBText variant="body" style={styles.loadingTextMargin}>{t('tasks:detail.loading')}</NBText>
         </View>
       </NBBackgroundPattern>
     );
@@ -124,9 +126,9 @@ export function TaskDetailScreen(): React.JSX.Element {
         <View style={styles.container}>
           <NBAlert
             variant="danger"
-            title="Tugas Tidak Ditemukan"
-            message="Tugas yang Anda cari tidak ditemukan atau telah dihapus"
-            actionLabel="Kembali"
+            title={t('tasks:detail.notFound')}
+            message={t('tasks:detail.notFoundMessage')}
+            actionLabel={t('tasks:detail.backButtonTitle')}
             onAction={handleBack}
             testID="task-detail-error"
           />
@@ -158,7 +160,7 @@ export function TaskDetailScreen(): React.JSX.Element {
         {/* ── Assignment Info Card ── */}
         <NBCard style={styles.card}>
           <NBCardHeader>
-            <NBText variant="h3" style={styles.sectionTitleStyle}>Penugasan</NBText>
+            <NBText variant="h3" style={styles.sectionTitleStyle}>{t('tasks:detail.assignment')}</NBText>
           </NBCardHeader>
           <NBCardContent>
             <TaskAssignmentInfo task={task} />
@@ -176,7 +178,7 @@ export function TaskDetailScreen(): React.JSX.Element {
         {(task.status === 'completed' || task.status === 'verified') && (
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <NBText variant="h3" style={styles.sectionTitleStyle}>Detail Penyelesaian</NBText>
+              <NBText variant="h3" style={styles.sectionTitleStyle}>{t('tasks:detail.completionDetails')}</NBText>
             </NBCardHeader>
             <NBCardContent>
               <TaskCompletionPhotos task={task} />
@@ -191,7 +193,7 @@ export function TaskDetailScreen(): React.JSX.Element {
         {delegations.length > 0 && (
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <NBText variant="h3" style={styles.sectionTitleStyle}>Riwayat Penugasan</NBText>
+              <NBText variant="h3" style={styles.sectionTitleStyle}>{t('tasks:detail.assignmentHistory')}</NBText>
             </NBCardHeader>
             <NBCardContent>
               <TaskDelegations delegations={delegations} />

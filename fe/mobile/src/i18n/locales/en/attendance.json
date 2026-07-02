@@ -1,1 +1,71 @@
-{}
+{
+  "list": {
+    "title": "Attendance",
+    "sortOptions": {
+      "newest": "Newest Date",
+      "oldest": "Oldest Date"
+    },
+    "statusChip": {
+      "late": "Late",
+      "onTime": "On Time",
+      "active": "In Progress"
+    },
+    "filterChips": {
+      "date": "Select Date"
+    },
+    "emptyState": {
+      "noAttendance": "No attendance yet",
+      "attendanceHint": "Your attendance history will appear here after you clock in.",
+      "noResults": "No results",
+      "noAttendanceMatch": "No attendance matches your filters"
+    },
+    "button": {
+      "clockIn": "Clock In",
+      "clockOut": "Clock Out"
+    },
+    "a11y": {
+      "clockIn": "Clock in to start your shift",
+      "clockOut": "Clock out from active shift"
+    },
+    "sortModal": {
+      "title": "Sort Attendance"
+    }
+  },
+  "detail": {
+    "loading": "Loading data...",
+    "noAttendance": "No attendance today",
+    "button": {
+      "back": "Back",
+      "viewShifts": "View Shift Details"
+    },
+    "labels": {
+      "date": "Date",
+      "clockIn": "Clock In",
+      "clockOut": "Clock Out",
+      "status": "Attendance Status",
+      "duration": "Duration",
+      "shiftCount": "Number of shifts"
+    },
+    "status": {
+      "late": "Late",
+      "onTime": "On Time"
+    },
+    "shiftCount": "{{count}} shift",
+    "a11y": {
+      "viewShifts": "View shift details for today"
+    }
+  },
+  "dayCard": {
+    "status": {
+      "active": "In Progress",
+      "late": "Late",
+      "onTime": "On Time"
+    },
+    "shiftCount": "{{count}} shift",
+    "clockIn": "In {{time}}",
+    "clockOut": "Out {{time}}",
+    "a11y": {
+      "label": "Attendance {{date}}, {{status}}"
+    }
+  }
+}

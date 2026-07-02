@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, ScrollView, RefreshControl, StyleSheet } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { LoadingSpinner } from '../../components/common';
 import { NBBackgroundPattern, NBButton, NBText } from '../../components/nb';
 import { StatusPill } from '../../components/home/StatusPill';
@@ -26,6 +27,7 @@ interface RayonRow {
 }
 
 export function ExecHomeScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
   const { liveUsers, statusCounts, isLoading } = useAppSelector((state) => state.monitoring);
@@ -92,48 +94,48 @@ export function ExecHomeScreen(): React.JSX.Element {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[nbColors.primary]} />}
         >
           {/* Ringkasan hari ini — city-wide overview */}
-          <HomeSectionDivider label="Ringkasan hari ini" />
+          <HomeSectionDivider label={t('home:exec.sections.summary')} />
 
           {/* City-overview hero */}
           <View style={styles.hero} testID="city-hero">
             <View style={styles.heroTopRow}>
               <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroLabel}>
-                Pantauan kota
+                {t('home:exec.hero.label')}
               </NBText>
-              <StatusPill tone={active > 0 ? 'ok' : 'neutral'} label={`${active}/${total} aktif`} />
+              <StatusPill tone={active > 0 ? 'ok' : 'neutral'} label={t('home:exec.hero.status', { active, total })} />
             </View>
             <NBText variant="display" color="black" style={styles.heroValue}>
               {String(total)}
             </NBText>
             <NBText variant="mono-sm" color="gray700" style={styles.heroMeta}>
-              petugas terpantau hari ini
+              {t('home:exec.hero.subtitle')}
             </NBText>
             <View style={styles.heroButton}>
-              <NBButton title="Lihat peta →" onPress={goToMonitoring} variant="primary" size="md" testID="city-see-map" />
+              <NBButton title={t('home:exec.hero.button.seeMap')} onPress={goToMonitoring} variant="primary" size="md" testID="city-see-map" />
             </View>
           </View>
 
           {/* City personnel breakdown */}
           <View style={styles.tilesRow}>
-            <HomeStatTile label="Petugas aktif" value={active} detail={`dari ${total}`} variant="ok" testID="city-active" />
-            <HomeStatTile label="Di luar area" value={statusCounts.outside_area} variant="bad" testID="city-outside" />
+            <HomeStatTile label={t('home:exec.kpi.active')} value={active} detail={t('home:exec.kpi.activeDetail', { total })} variant="ok" testID="city-active" />
+            <HomeStatTile label={t('home:exec.kpi.outOfArea')} value={statusCounts.outside_area} variant="bad" testID="city-outside" />
           </View>
           <View style={styles.tilesRow}>
-            <HomeStatTile label="Tidak hadir" value={statusCounts.missing} variant="warn" testID="city-missing" />
-            <HomeStatTile label="Offline" value={statusCounts.offline} variant="neutral" testID="city-offline" />
+            <HomeStatTile label={t('home:exec.kpi.absent')} value={statusCounts.missing} variant="warn" testID="city-missing" />
+            <HomeStatTile label={t('home:exec.kpi.offline')} value={statusCounts.offline} variant="neutral" testID="city-offline" />
           </View>
 
           {/* Per-rayon roll-up */}
           {rayonRows.length > 0 && (
             <>
-              <HomeSectionDivider label="Per rayon" />
+              <HomeSectionDivider label={t('home:exec.sections.perRayon')} />
               <View style={styles.list}>
                 {rayonRows.slice(0, 6).map((r) => (
                   <HomeListRow
                     key={r.key}
-                    pill={<StatusPill tone={r.active > 0 ? 'ok' : 'neutral'} label={`${r.active}/${r.total}`} />}
+                    pill={<StatusPill tone={r.active > 0 ? 'ok' : 'neutral'} label={t('home:exec.rayon.status', { active: r.active, total: r.total })} />}
                     title={r.name}
-                    subMeta={`${r.active} aktif dari ${r.total} petugas`}
+                    subMeta={t('home:exec.rayon.detail', { active: r.active, total: r.total })}
                     onPress={goToMonitoring}
                     testID={`rayon-${r.key}`}
                   />

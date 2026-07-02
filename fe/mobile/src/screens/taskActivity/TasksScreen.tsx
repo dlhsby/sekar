@@ -5,6 +5,7 @@
 
 import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAppSelector } from '../../store/hooks';
 import { NBBackgroundPattern } from '../../components/nb';
@@ -24,16 +25,17 @@ type Props = {
   navigation: NativeStackNavigationProp<MainTabParamList, 'Tasks'>;
 };
 
-const TASK_SORT_OPTIONS = [
-  { key: 'created_at_desc', label: 'Terbaru (default)' },
-  { key: 'created_at_asc', label: 'Terlama' },
-  { key: 'deadline_asc', label: 'Deadline Terdekat' },
-  { key: 'priority_desc', label: 'Prioritas Tertinggi' },
-];
-
 export function TasksScreen({ navigation }: Props): React.JSX.Element {
+  const { t } = useTranslation();
   const user = useAppSelector((state) => state.auth.user);
   const currentShift = useAppSelector((state) => state.shift.currentShift);
+
+  const TASK_SORT_OPTIONS = [
+    { key: 'created_at_desc', label: t('tasks:sort.newest') },
+    { key: 'created_at_asc', label: t('tasks:sort.oldest') },
+    { key: 'deadline_asc', label: t('tasks:sort.deadlineNearest') },
+    { key: 'priority_desc', label: t('tasks:sort.priorityHighest') },
+  ];
 
   const initialAreaId = user?.area_id ?? currentShift?.area_id ?? null;
   const initialRayonId = user?.rayon_id ?? null;
@@ -113,7 +115,7 @@ export function TasksScreen({ navigation }: Props): React.JSX.Element {
         <View style={[styles.contentWrapper, { paddingBottom: canCreateTask ? 80 : nbSpacing.sm }]}>
           {/* Title lives in the navigator header (top bar) — not repeated here. */}
           <FilterBar
-            label="tugas"
+            label={t('tasks:filter.label')}
             filterCount={taskFilters.activeFilterCount}
             chips={taskChips}
             isSortActive={taskSort !== 'created_at_desc'}
@@ -152,7 +154,7 @@ export function TasksScreen({ navigation }: Props): React.JSX.Element {
         <SortModal
           visible={isSortModalOpen}
           onClose={() => setIsSortModalOpen(false)}
-          title="URUTKAN TUGAS"
+          title={t('tasks:header.sort')}
           options={TASK_SORT_OPTIONS}
           selectedOption={taskSort}
           onSelect={(key) => {

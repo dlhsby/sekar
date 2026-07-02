@@ -1,1 +1,98 @@
-{}
+{
+  "field": {
+    "sections": {
+      "attendance": "Kehadiran saya",
+      "summary": "Ringkasan hari ini"
+    },
+    "alerts": {
+      "permissionRevoked": "Izin lokasi dicabut. Pelacakan lokasi tidak aktif.",
+      "gpsDisabled": "GPS tidak aktif. Pelacakan lokasi tidak aktif.",
+      "locationUnavailable": "Lokasi tidak tersedia. Periksa pengaturan GPS.",
+      "fix": "Perbaiki"
+    },
+    "hero": {
+      "onDuty": "Sedang bertugas",
+      "overtimeActive": "Lembur aktif",
+      "location": {
+        "loading": "Lokasi…",
+        "inArea": "Di area",
+        "outArea": "Di luar area",
+        "searching": "Mencari lokasi…",
+        "unavailable": "Lokasi tidak tersedia",
+        "unknownArea": "Area tidak diketahui"
+      },
+      "labels": {
+        "clockInStart": "Mulai clock in",
+        "status": "Status Kehadiran",
+        "assignedArea": "Area Ditugaskan",
+        "duration": "Durasi shift berjalan",
+        "currentLocation": "Lokasi sekarang"
+      },
+      "status": {
+        "late": "Terlambat",
+        "onTime": "Tepat Waktu"
+      },
+      "button": {
+        "clockIn": "Clock In",
+        "clockOut": "Clock Out",
+        "clockOutOvertime": "Clock Out Lembur"
+      },
+      "link": {
+        "shiftDetail": "Detail shift →"
+      },
+      "idle": {
+        "label": "Belum clock in",
+        "title": "Mulai shift hari ini",
+        "assignedArea": "Area: {{area}}"
+      },
+      "a11y": {
+        "onDuty": "Sedang bertugas",
+        "overtimeActive": "Lembur aktif",
+        "tapToOpen": "Ketuk untuk buka detail",
+        "tapToClose": "Ketuk untuk tutup detail",
+        "locationStatus": "Status lokasi: {{status}}. Ketuk untuk peta.",
+        "refreshLocation": "Perbarui lokasi"
+      }
+    },
+    "tiles": {
+      "attendance": "Kehadiran",
+      "tasks": "Tugas",
+      "activities": "Aktivitas"
+    },
+    "warning": {
+      "noAssignedArea": "Anda belum ditugaskan ke area manapun."
+    }
+  },
+  "coordinator": {
+    "sections": {
+      "attendance": "Kehadiran saya"
+    },
+    "alerts": {
+      "outOfArea": "Di luar area",
+      "outOfAreaTitle": "{{name}} keluar area",
+      "absent": "Tidak hadir",
+      "absentTitle": "{{name}} tidak hadir"
+    },
+    "hero": {
+      "onDuty": "Sedang bertugas",
+      "overtimeActive": "Lembur aktif",
+      "meta": "Mulai {{time}} · Berjalan {{duration}}",
+      "button": {
+        "clockIn": "Clock In",
+        "clockOut": "Clock Out",
+        "clockOutOvertime": "Clock Out Lembur"
+      },
+      "link": {
+        "shiftDetail": "Detail shift →"
+      },
+      "idle": {
+        "label": "Belum clock in",
+        "title": "Mulai shift hari ini"
+      },
+      "a11y": {
+        "onDuty": "Sedang bertugas",
+        "overtimeActive": "Lembur aktif"
+      }
+    }
+  }
+}

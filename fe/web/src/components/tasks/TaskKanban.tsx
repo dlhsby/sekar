@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
+
 /**
  * TaskKanban — read-only board view for TSK-1 (hifi-web §06).
  *
@@ -30,6 +32,7 @@ export interface TaskKanbanProps {
 }
 
 export function TaskKanban({ tasks, loading }: TaskKanbanProps) {
+  const { t } = useTranslation();
   const lanes = useMemo(
     () =>
       TASK_KANBAN_LANES.map((lane) => ({
@@ -62,7 +65,7 @@ export function TaskKanban({ tasks, loading }: TaskKanbanProps) {
               <div className="h-24 animate-shimmer rounded-nb-base border-2 border-nb-black bg-nb-gray-300" />
             ) : lane.items.length === 0 ? (
               <p className="rounded-nb-base border-2 border-dashed border-nb-gray-300 px-3 py-6 text-center text-nb-caption text-nb-gray-500">
-                Tidak ada tugas
+                {t("tasks:kanban.emptyState")}
               </p>
             ) : (
               lane.items.map((task) => <TaskCard key={task.id} task={task} />)

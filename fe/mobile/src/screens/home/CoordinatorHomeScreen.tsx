@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View, ScrollView, RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 import { LoadingSpinner, RoleAvatar } from '../../components/common';
 import { NBBackgroundPattern, NBButton, NBText } from '../../components/nb';
 import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
@@ -44,6 +45,7 @@ interface TeamAlert {
 }
 
 export function CoordinatorHomeScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
   const { liveUsers, statusCounts, isLoading } = useAppSelector((state) => state.monitoring);
@@ -165,8 +167,8 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
       .map((u) => ({
         id: `out-${u.id}`,
         tone: 'bad' as StatusTone,
-        pill: 'Di luar area',
-        title: `${u.full_name} keluar area`,
+        pill: t('home:coordinator.alerts.outOfArea'),
+        title: t('home:coordinator.alerts.outOfAreaTitle', { name: u.full_name }),
         meta: formatRelativeTime(u.last_update),
         sub: u.area_name || undefined,
       }));
@@ -175,13 +177,13 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
       .map((u) => ({
         id: `miss-${u.id}`,
         tone: 'warn' as StatusTone,
-        pill: 'Tidak hadir',
-        title: `${u.full_name} tidak hadir`,
+        pill: t('home:coordinator.alerts.absent'),
+        title: t('home:coordinator.alerts.absentTitle', { name: u.full_name }),
         meta: formatRelativeTime(u.last_update),
         sub: u.area_name || undefined,
       }));
     return [...out, ...missing];
-  }, [liveUsers]);
+  }, [liveUsers, t]);
 
   const outsideNames = useMemo(
     () =>
@@ -250,7 +252,7 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[nbColors.primary]} />}
         >
           {/* Kehadiran saya — clock-in card (matches FieldHomeScreen structure) */}
-          <HomeSectionDivider label="Kehadiran saya" />
+          <HomeSectionDivider label={t('home:coordinator.sections.attendance')} />
           {currentShift ? (
             <TouchableOpacity
               style={[styles.absensi, currentShift.is_overtime ? styles.absensiLembur : styles.absensiActive]}
@@ -259,11 +261,11 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
               onPress={toggleAbsensiCard}
               accessibilityRole="button"
               accessibilityState={{ expanded: absensiExpanded }}
-              accessibilityLabel={currentShift.is_overtime ? 'Lembur aktif' : 'Sedang bertugas'}
+              accessibilityLabel={currentShift.is_overtime ? t('home:coordinator.hero.a11y.overtimeActive') : t('home:coordinator.hero.a11y.onDuty')}
             >
               <View style={styles.absensiTopRow}>
                 <NBText variant="mono-sm" color="gray700" uppercase style={styles.absensiLabel}>
-                  {currentShift.is_overtime ? 'Lembur aktif' : 'Sedang bertugas'}
+                  {currentShift.is_overtime ? t('home:coordinator.hero.overtimeActive') : t('home:coordinator.hero.onDuty')}
                 </NBText>
                 <MaterialCommunityIcons
                   name={absensiExpanded ? 'chevron-up' : 'chevron-down'}
@@ -281,11 +283,11 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
               {absensiExpanded && (
                 <>
                   <NBText variant="mono-sm" color="gray700" style={styles.absensiMeta}>
-                    {`Mulai ${formatTime(currentShift.clock_in_time)} · Berjalan ${timer}`}
+                    {t('home:coordinator.hero.meta', { time: formatTime(currentShift.clock_in_time), duration: timer })}
                   </NBText>
                   <View style={styles.absensiButton}>
                     <NBButton
-                      title={currentShift.is_overtime ? 'Clock Out Lembur' : 'Clock Out'}
+                      title={currentShift.is_overtime ? t('home:coordinator.hero.button.clockOutOvertime') : t('home:coordinator.hero.button.clockOut')}
                       onPress={handleClockInOut}
                       variant="danger"
                       size="md"
@@ -300,7 +302,7 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
                     testID="shift-detail-link"
                   >
                     <NBText variant="mono-sm" color="gray700" uppercase style={styles.absensiDetailText}>
-                      Detail shift →
+                      {t('home:coordinator.hero.link.shiftDetail')}
                     </NBText>
                   </TouchableOpacity>
                 </>
@@ -309,14 +311,14 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
           ) : (
             <View style={[styles.absensi, styles.absensiIdle]} testID="absensi-card">
               <NBText variant="mono-sm" color="gray600" uppercase style={styles.absensiLabel}>
-                Belum clock in
+                {t('home:coordinator.hero.idle.label')}
               </NBText>
               <NBText variant="h2" color="black" style={styles.absensiIdleTitle}>
-                Mulai shift hari ini
+                {t('home:coordinator.hero.idle.title')}
               </NBText>
               <View style={styles.absensiButton}>
                 <NBButton
-                  title="Clock In"
+                  title={t('home:coordinator.hero.button.clockIn')}
                   onPress={handleClockInOut}
                   variant="primary"
                   size="md"
@@ -327,19 +329,19 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
           )}
 
           {/* Ringkasan hari ini — personal stats + team overview */}
-          <HomeSectionDivider label="Ringkasan hari ini" />
+          <HomeSectionDivider label={t('home:coordinator.sections.summary')} />
 
           {/* Personal stat tiles (activities, work hours, tasks) */}
           <View style={styles.statTiles}>
             <HomeStatTile
-              label="Aktivitas"
+              label={t('home:coordinator.tiles.activities')}
               value={todayActivitiesCount}
               variant="neutral"
               onPress={() => setActivitiesModalVisible(true)}
               testID="stat-activities"
             />
             <HomeStatTile
-              label="Kehadiran"
+              label={t('home:coordinator.tiles.attendance')}
               value={totalTodayDuration}
               variant="yellow"
               onPress={() => setWorkHoursModalVisible(true)}
@@ -347,7 +349,7 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
             />
             {isTaskReceiver && (
               <HomeStatTile
-                label="Tugas"
+                label={t('home:coordinator.tiles.tasks')}
                 value={activeTasks.length}
                 variant="ok"
                 onPress={() => setTasksModalVisible(true)}
@@ -360,9 +362,9 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
           <View style={styles.hero} testID="team-hero">
             <View style={styles.heroTopRow}>
               <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroLabel}>
-                Tim hari ini
+                {t('home:coordinator.hero.label')}
               </NBText>
-              <StatusPill tone={active > 0 ? 'ok' : 'neutral'} label={`${active}/${total} aktif`} />
+              <StatusPill tone={active > 0 ? 'ok' : 'neutral'} label={t('home:coordinator.hero.status', { active, total })} />
             </View>
             {total > 0 ? (
               <View
@@ -382,26 +384,26 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
                 {total > 6 && (
                   <View style={[styles.avatar, styles.avatarMore]}>
                     <NBText variant="mono-sm" color="gray700" style={styles.avatarText}>
-                      {`+${total - 6}`}
+                      {t('home:coordinator.hero.moreCount', { count: total - 6 })}
                     </NBText>
                   </View>
                 )}
               </View>
             ) : (
               <NBText variant="body-sm" color="gray600" style={styles.heroEmpty}>
-                Belum ada anggota tim aktif.
+                {t('home:coordinator.hero.empty')}
               </NBText>
             )}
             <View style={styles.heroButton}>
-              <NBButton title="Lihat semua →" onPress={goToMonitoring} variant="secondary" size="md" testID="team-see-all" />
+              <NBButton title={t('home:coordinator.hero.button.seeAll')} onPress={goToMonitoring} variant="secondary" size="md" testID="team-see-all" />
             </View>
           </View>
 
           {/* KPI grid (5-status breakdown — the data cleanly available to korlap) */}
           <View style={styles.tilesRow}>
-            <HomeStatTile label="Tim aktif" value={active} detail={`dari ${total}`} variant="ok" testID="kpi-active" />
+            <HomeStatTile label={t('home:coordinator.kpi.active')} value={active} detail={t('home:coordinator.kpi.activeDetail', { total })} variant="ok" testID="kpi-active" />
             <HomeStatTile
-              label="Di luar area"
+              label={t('home:coordinator.kpi.outOfArea')}
               value={statusCounts.outside_area}
               detail={outsideNames || undefined}
               variant="bad"
@@ -409,14 +411,14 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
             />
           </View>
           <View style={styles.tilesRow}>
-            <HomeStatTile label="Tidak hadir" value={statusCounts.missing} variant="warn" testID="kpi-missing" />
-            <HomeStatTile label="Offline" value={statusCounts.offline} variant="neutral" testID="kpi-offline" />
+            <HomeStatTile label={t('home:coordinator.kpi.absent')} value={statusCounts.missing} variant="warn" testID="kpi-missing" />
+            <HomeStatTile label={t('home:coordinator.kpi.offline')} value={statusCounts.offline} variant="neutral" testID="kpi-offline" />
           </View>
 
           {/* Peringatan — derived from live users (out-of-area + missing) */}
           {alerts.length > 0 && (
             <>
-              <HomeSectionDivider label={`Peringatan · ${alerts.length}`} />
+              <HomeSectionDivider label={t('home:coordinator.section.alerts', { count: alerts.length })} />
               <View style={styles.list}>
                 {alerts.slice(0, 4).map((a) => (
                   <HomeListRow

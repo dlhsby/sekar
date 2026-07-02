@@ -12,6 +12,7 @@ import {
   useNavigation,
   type RouteProp,
 } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 import { NBBackgroundPattern, NBText, NBButton, NBBadge, NBCard } from '../../components/nb';
 import { InfoTableRow } from '../../components/common';
@@ -30,6 +31,7 @@ function formatWorkedMinutes(totalMinutes: number): string {
 }
 
 export function AttendanceDetailScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const route = useRoute<RouteProp<MainTabParamList, 'AttendanceDetail'>>();
   const navigation = useNavigation<MainTabScreenProps<'AttendanceDetail'>['navigation']>();
   const { date } = route.params;
@@ -66,7 +68,7 @@ export function AttendanceDetailScreen(): React.JSX.Element {
       <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.bgCanvas} patternColor={nbColors.primary} opacity={0.06}>
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={nbColors.primary} />
-          <NBText variant="body" color="gray600">Memuat data...</NBText>
+          <NBText variant="body" color="gray600">{t('attendance:detail.loading')}</NBText>
         </View>
       </NBBackgroundPattern>
     );
@@ -76,8 +78,8 @@ export function AttendanceDetailScreen(): React.JSX.Element {
     return (
       <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.bgCanvas} patternColor={nbColors.primary} opacity={0.06}>
         <View style={styles.centered}>
-          <NBText variant="body" color="gray600">Tidak ada kehadiran pada hari ini</NBText>
-          <NBButton title="Kembali" variant="secondary" onPress={() => navigation.navigate('Attendance')} />
+          <NBText variant="body" color="gray600">{t('attendance:detail.noAttendance')}</NBText>
+          <NBButton title={t('attendance:detail.button.back')} variant="secondary" onPress={() => navigation.navigate('Attendance')} />
         </View>
       </NBBackgroundPattern>
     );
@@ -88,30 +90,30 @@ export function AttendanceDetailScreen(): React.JSX.Element {
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <NBCard style={styles.card}>
           <View style={styles.rows}>
-            <InfoTableRow label="Tanggal" value={formatLongDate(`${date}T00:00:00`)} />
-            <InfoTableRow label="Masuk" value={summary.firstClockIn ? formatTime(summary.firstClockIn) : '—'} />
-            <InfoTableRow label="Keluar" value={summary.lastClockOut ? formatTime(summary.lastClockOut) : '—'} />
+            <InfoTableRow label={t('attendance:detail.labels.date')} value={formatLongDate(`${date}T00:00:00`)} />
+            <InfoTableRow label={t('attendance:detail.labels.clockIn')} value={summary.firstClockIn ? formatTime(summary.firstClockIn) : '—'} />
+            <InfoTableRow label={t('attendance:detail.labels.clockOut')} value={summary.lastClockOut ? formatTime(summary.lastClockOut) : '—'} />
             <InfoTableRow
-              label="Status Kehadiran"
+              label={t('attendance:detail.labels.status')}
               value={
                 <NBBadge
-                  text={summary.isLate ? 'Terlambat' : 'Tepat Waktu'}
+                  text={summary.isLate ? t('attendance:detail.status.late') : t('attendance:detail.status.onTime')}
                   color={summary.isLate ? 'danger' : 'success'}
                   size="sm"
                 />
               }
             />
-            <InfoTableRow label="Durasi" value={formatWorkedMinutes(totalMinutes)} />
-            <InfoTableRow label="Jumlah shift" value={`${shifts.length} shift`} />
+            <InfoTableRow label={t('attendance:detail.labels.duration')} value={formatWorkedMinutes(totalMinutes)} />
+            <InfoTableRow label={t('attendance:detail.labels.shiftCount')} value={t('attendance:detail.shiftCount', { count: shifts.length })} />
           </View>
 
           <NBButton
-            title="Lihat Rincian Shift"
+            title={t('attendance:detail.button.viewShifts')}
             variant="secondary"
             fullWidth
             onPress={() => setShiftsModalVisible(true)}
             style={styles.detailButton}
-            accessibilityLabel="Lihat rincian shift hari ini"
+            accessibilityLabel={t('attendance:detail.a11y.viewShifts')}
           />
         </NBCard>
       </ScrollView>

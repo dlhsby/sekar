@@ -7,6 +7,7 @@
 
 import { useAuth } from '@/lib/auth/hooks';
 import { useOvertimes, useApproveOvertime, useRejectOvertime } from '@/lib/api/overtime';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   CardHeader,
@@ -41,6 +42,7 @@ const isValidOvertimeStatus = (value: string): value is OvertimeStatus | 'all' =
 };
 
 export default function OvertimePage() {
+  const { t } = useTranslation(['overtime', 'common', 'status']);
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<OvertimeStatus | 'all'>('all');
@@ -86,7 +88,7 @@ export default function OvertimePage() {
     (row: Overtime): DataTableRowAction<Overtime>[] => [
       {
         key: 'view',
-        label: 'Lihat',
+        label: t('common:actions.view'),
         icon: Eye,
         onClick: () => {
           view.openWith(row);
@@ -94,7 +96,7 @@ export default function OvertimePage() {
       },
       {
         key: 'approve',
-        label: 'Setujui',
+        label: t('common:actions.approve'),
         icon: Check,
         disabled: approveMutation.isPending,
         hidden: !canApprove || row.status !== 'pending',
@@ -102,13 +104,13 @@ export default function OvertimePage() {
       },
       {
         key: 'reject',
-        label: 'Tolak',
+        label: t('common:actions.reject'),
         icon: X,
         hidden: !canApprove || row.status !== 'pending',
         onClick: () => setRejectingId(row.id),
       },
     ],
-    [canApprove, approveMutation.isPending, handleApprove, view]
+    [canApprove, approveMutation.isPending, handleApprove, view, t]
   );
 
   if (authLoading || !user) {
@@ -116,7 +118,7 @@ export default function OvertimePage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-nb-primary mx-auto mb-4"></div>
-          <p className="text-nb-gray-600">Memuat...</p>
+          <p className="text-nb-gray-600">{t('common:actions.loading')}</p>
         </div>
       </div>
     );
@@ -128,10 +130,10 @@ export default function OvertimePage() {
   const pagination = overtimeData?.meta;
 
   const statusTabs: TabItem<OvertimeStatus | 'all'>[] = [
-    { key: 'all', label: 'Semua' },
-    { key: 'pending', label: 'Menunggu' },
-    { key: 'approved', label: 'Disetujui' },
-    { key: 'rejected', label: 'Ditolak' },
+    { key: 'all', label: t('overtime:list.tabs.all') },
+    { key: 'pending', label: t('status:pending') },
+    { key: 'approved', label: t('status:approved') },
+    { key: 'rejected', label: t('status:rejected') },
   ];
 
   const statusTone: Record<OvertimeStatus, 'ok' | 'warn' | 'bad'> = {
@@ -152,27 +154,27 @@ export default function OvertimePage() {
     {
       id: 'id',
       accessorKey: 'id',
-      header: 'ID',
+      header: t('overtime:list.table.columns.id'),
       enableSorting: false,
-      meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+      meta: { label: t('overtime:list.table.columns.id'), defaultHidden: true, filterVariant: 'text' },
       cell: ({ row }) => (
         <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
       ),
     },
     {
       id: 'date',
-      header: 'Tanggal',
+      header: t('overtime:list.table.columns.date'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Tanggal' },
+      meta: { label: t('overtime:list.table.columns.date') },
       cell: ({ row }) => <div className="text-sm">{formatDateTime(row.original.start_datetime).date}</div>,
     },
     {
       id: 'user',
-      header: 'Pengguna',
+      header: t('overtime:list.table.columns.user'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Pengguna' },
+      meta: { label: t('overtime:list.table.columns.user') },
       cell: ({ row }) => (
         <div>
           <div className="font-semibold text-nb-black">{row.original.user?.full_name || '-'}</div>
@@ -182,18 +184,18 @@ export default function OvertimePage() {
     },
     {
       id: 'area',
-      header: 'Area',
+      header: t('overtime:list.table.columns.area'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Area' },
+      meta: { label: t('overtime:list.table.columns.area') },
       cell: ({ row }) => <div className="text-sm">{row.original.area?.name || '-'}</div>,
     },
     {
       id: 'time',
-      header: 'Waktu',
+      header: t('overtime:list.table.columns.time'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Waktu' },
+      meta: { label: t('overtime:list.table.columns.time') },
       cell: ({ row }) => (
         <div className="text-sm font-mono">
           {formatDateTime(row.original.start_datetime).time} - {formatDateTime(row.original.end_datetime).time}
@@ -202,18 +204,18 @@ export default function OvertimePage() {
     },
     {
       id: 'activity_type',
-      header: 'Tipe Aktivitas',
+      header: t('overtime:list.table.columns.activityType'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Tipe Aktivitas' },
+      meta: { label: t('overtime:list.table.columns.activityType') },
       cell: ({ row }) => <div className="text-sm">{row.original.activity_type?.name || '-'}</div>,
     },
     {
       id: 'status',
-      header: 'Status',
+      header: t('overtime:list.table.columns.status'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Status' },
+      meta: { label: t('overtime:list.table.columns.status') },
       cell: ({ row }) => (
         <StatusPill tone={statusTone[row.original.status]} dot>
           {OVERTIME_STATUS_LABELS[row.original.status]}
@@ -223,9 +225,9 @@ export default function OvertimePage() {
     {
       id: 'created_at',
       accessorKey: 'created_at',
-      header: 'Dibuat',
+      header: t('overtime:list.table.columns.createdAt'),
       enableSorting: false,
-      meta: { label: 'Dibuat', defaultHidden: true, filterVariant: 'date' },
+      meta: { label: t('overtime:list.table.columns.createdAt'), defaultHidden: true, filterVariant: 'date' },
       cell: ({ row }) => (
         <span className="text-nb-body-sm text-nb-gray-600">
           {formatDate(row.original.created_at)}
@@ -238,7 +240,7 @@ export default function OvertimePage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader description="Kelola permintaan lembur" />
+      <PageHeader description={t('overtime:list.description')} />
 
       {/* Three-tab approval queue */}
       <Tabs
@@ -256,7 +258,7 @@ export default function OvertimePage() {
       <Card>
         <CardContent className="p-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <Field label="Rentang Tanggal">
+            <Field label={t('overtime:list.filters.dateRange')}>
               {() => (
                 <DateRangePicker
                   showSteppers={false}
@@ -286,7 +288,7 @@ export default function OvertimePage() {
               }}
               className="mt-4"
             >
-              Reset Filter
+              {t('common:actions.reset')} {t('common:actions.filter')}
             </Button>
           )}
         </CardContent>
@@ -297,12 +299,12 @@ export default function OvertimePage() {
         <Card variant="elevated">
           <CardContent>
             <div className="space-y-3">
-              <h3 className="font-bold text-nb-black">Alasan Penolakan</h3>
+              <h3 className="font-bold text-nb-black">{t('overtime:list.actions.rejectDialog')}</h3>
               <FormInput
-                label="Alasan"
+                label={t('overtime:list.actions.reasonLabel')}
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="Masukkan alasan penolakan..."
+                placeholder={t('overtime:list.actions.reasonPlaceholder')}
               />
               <div className="flex gap-2">
                 <Button
@@ -311,7 +313,7 @@ export default function OvertimePage() {
                   onClick={() => handleReject(rejectingId)}
                   disabled={!rejectReason.trim() || rejectMutation.isPending}
                 >
-                  Tolak Lembur
+                  {t('overtime:list.actions.rejectButton')}
                 </Button>
                 <Button
                   variant="secondary"
@@ -321,7 +323,7 @@ export default function OvertimePage() {
                     setRejectReason('');
                   }}
                 >
-                  Batal
+                  {t('common:actions.cancel')}
                 </Button>
               </div>
             </div>
@@ -332,8 +334,8 @@ export default function OvertimePage() {
       <Card variant="elevated">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-nb-black">Daftar Lembur</h2>
-            <div className="text-sm text-nb-gray-600">{pagination?.total || 0} total</div>
+            <h2 className="text-xl font-bold text-nb-black">{t('overtime:list.table.title')}</h2>
+            <div className="text-sm text-nb-gray-600">{pagination?.total || 0} {t('overtime:list.pagination.total')}</div>
           </div>
         </CardHeader>
         <CardContent>
@@ -344,13 +346,16 @@ export default function OvertimePage() {
             enablePagination={false}
             getRowId={(r) => r.id}
             rowActions={rowActions}
-            emptyTitle="Tidak ada permintaan lembur"
+            emptyTitle={t('overtime:list.empty.noRequests')}
           />
 
           {pagination && pagination.totalPages > 1 && (
             <div className="flex items-center justify-between mt-4 pt-4 border-t-3 border-nb-black">
               <div className="text-sm text-nb-gray-600">
-                Halaman {pagination.page} dari {pagination.totalPages}
+                {t('overtime:list.pagination.page', {
+                  page: pagination.page,
+                  totalPages: pagination.totalPages,
+                })}
               </div>
               <div className="flex gap-2">
                 <Button
@@ -360,7 +365,7 @@ export default function OvertimePage() {
                   disabled={pagination.page === 1}
                   leftIcon={<ChevronLeft className="w-4 h-4" />}
                 >
-                  Sebelumnya
+                  {t('overtime:list.pagination.previous')}
                 </Button>
                 <Button
                   variant="secondary"
@@ -369,7 +374,7 @@ export default function OvertimePage() {
                   disabled={pagination.page === pagination.totalPages}
                   rightIcon={<ChevronRight className="w-4 h-4" />}
                 >
-                  Selanjutnya
+                  {t('overtime:list.pagination.next')}
                 </Button>
               </div>
             </div>
@@ -380,26 +385,26 @@ export default function OvertimePage() {
       <DetailModal
         open={view.open}
         onOpenChange={view.onOpenChange}
-        title="Detail Lembur"
+        title={t('overtime:list.actions.viewModal')}
         rows={view.item ? [
-          { label: 'Tanggal', value: formatDateTime(view.item.start_datetime).date },
-          { label: 'Pengguna', value: view.item.user?.full_name },
-          { label: 'Area', value: view.item.area?.name },
+          { label: t('overtime:detail.fields.date'), value: formatDateTime(view.item.start_datetime).date },
+          { label: t('overtime:detail.fields.user'), value: view.item.user?.full_name },
+          { label: t('overtime:detail.fields.area'), value: view.item.area?.name },
           {
-            label: 'Waktu',
+            label: t('overtime:detail.fields.time'),
             value: `${formatDateTime(view.item.start_datetime).time} - ${formatDateTime(view.item.end_datetime).time}`,
           },
-          { label: 'Tipe Aktivitas', value: view.item.activity_type?.name },
+          { label: t('overtime:detail.fields.activityType'), value: view.item.activity_type?.name },
           {
-            label: 'Status',
+            label: t('overtime:detail.fields.status'),
             value: (
               <StatusPill tone={statusTone[view.item.status]} dot>
                 {OVERTIME_STATUS_LABELS[view.item.status]}
               </StatusPill>
             ),
           },
-          { label: 'Catatan', value: view.item.notes },
-          { label: 'Dibuat', value: formatDate(view.item.created_at) },
+          { label: t('overtime:detail.fields.notes'), value: view.item.notes },
+          { label: t('overtime:list.table.columns.createdAt'), value: formatDate(view.item.created_at) },
         ] : []}
       />
     </div>

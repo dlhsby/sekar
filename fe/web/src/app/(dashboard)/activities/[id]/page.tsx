@@ -7,6 +7,7 @@
 
 import { useAuth } from '@/lib/auth/hooks';
 import { useActivity, useApproveActivity, useRejectActivity } from '@/lib/api/activities';
+import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardContent, Badge, Button, FormInput } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { use, useEffect, useState } from 'react';
@@ -20,6 +21,7 @@ interface ActivityDetailPageProps {
 }
 
 export default function ActivityDetailPage({ params }: ActivityDetailPageProps) {
+  const { t } = useTranslation(['activities', 'common']);
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [rejectReason, setRejectReason] = useState('');
@@ -43,7 +45,7 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-nb-primary mx-auto mb-4"></div>
-          <p className="text-nb-gray-600">Memuat...</p>
+          <p className="text-nb-gray-600">{t('common:actions.loading')}</p>
         </div>
       </div>
     );
@@ -55,7 +57,7 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
     return (
       <div className="container mx-auto p-6">
         <div className="text-center py-12">
-          <p className="text-nb-gray-600 font-semibold">Aktivitas tidak ditemukan</p>
+          <p className="text-nb-gray-600 font-semibold">{t('activities:notFound')}</p>
         </div>
       </div>
     );
@@ -80,11 +82,11 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
         <ol className="flex items-center space-x-2">
           <li>
             <Link href="/activities" className="text-nb-primary hover:underline font-semibold">
-              Aktivitas
+              {t('activities:detail.breadcrumb')}
             </Link>
           </li>
           <li className="text-nb-gray-400">/</li>
-          <li className="text-nb-gray-600">Detail</li>
+          <li className="text-nb-gray-600">{t('common:actions.detail')}</li>
         </ol>
       </nav>
 
@@ -95,13 +97,13 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
           onClick={() => router.push('/activities')}
           leftIcon={<ArrowLeft className="w-4 h-4" />}
         >
-          Kembali ke Daftar Aktivitas
+          {t('activities:detail.backButton')}
         </Button>
       </div>
 
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-nb-black mb-2">Detail Aktivitas</h1>
+          <h1 className="text-3xl font-bold text-nb-black mb-2">{t('activities:detail.title')}</h1>
           <div className="flex gap-2">
             <Badge variant="default" size="lg">
               {activity.activity_type?.name || 'Unknown'}
@@ -119,14 +121,14 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
               loading={approveMutation.isPending}
               leftIcon={<Check className="w-4 h-4" />}
             >
-              Setujui
+              {t('common:actions.approve')}
             </Button>
             <Button
               variant="destructive"
               onClick={() => setShowRejectForm(true)}
               leftIcon={<X className="w-4 h-4" />}
             >
-              Tolak
+              {t('common:actions.reject')}
             </Button>
           </div>
         )}
@@ -137,12 +139,12 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
         <Card variant="elevated">
           <CardContent>
             <div className="space-y-3">
-              <h3 className="font-bold text-nb-black">Alasan Penolakan</h3>
+              <h3 className="font-bold text-nb-black">{t('activities:detail.actions.rejectDialog')}</h3>
               <FormInput
-                label="Alasan"
+                label={t('activities:detail.actions.reasonLabel')}
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="Masukkan alasan penolakan..."
+                placeholder={t('activities:detail.actions.reasonPlaceholder')}
               />
               <div className="flex gap-2">
                 <Button
@@ -152,7 +154,7 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
                   disabled={!rejectReason.trim() || rejectMutation.isPending}
                   loading={rejectMutation.isPending}
                 >
-                  Tolak Aktivitas
+                  {t('activities:detail.actions.rejectButton')}
                 </Button>
                 <Button
                   variant="secondary"
@@ -162,7 +164,7 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
                     setRejectReason('');
                   }}
                 >
-                  Batal
+                  {t('common:actions.cancel')}
                 </Button>
               </div>
             </div>
@@ -173,32 +175,32 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card variant="elevated">
           <CardHeader>
-            <h2 className="text-xl font-bold text-nb-black">Informasi</h2>
+            <h2 className="text-xl font-bold text-nb-black">{t('activities:detail.sections.information')}</h2>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div>
-                <div className="text-sm font-semibold text-nb-gray-600">Pengguna</div>
+                <div className="text-sm font-semibold text-nb-gray-600">{t('activities:detail.fields.user')}</div>
                 <div className="font-bold text-nb-black">{activity.user?.full_name}</div>
                 <div className="text-sm text-nb-gray-600">{activity.user?.username}</div>
               </div>
               <div>
-                <div className="text-sm font-semibold text-nb-gray-600">Area</div>
+                <div className="text-sm font-semibold text-nb-gray-600">{t('activities:detail.fields.area')}</div>
                 <div className="font-bold text-nb-black">{activity.area?.name || '-'}</div>
               </div>
               <div>
-                <div className="text-sm font-semibold text-nb-gray-600">Tipe Aktivitas</div>
+                <div className="text-sm font-semibold text-nb-gray-600">{t('activities:detail.fields.activityType')}</div>
                 <div className="font-bold text-nb-black">{activity.activity_type?.name || '-'}</div>
               </div>
               <div>
-                <div className="text-sm font-semibold text-nb-gray-600">Tanggal & Waktu</div>
+                <div className="text-sm font-semibold text-nb-gray-600">{t('activities:detail.fields.dateTime')}</div>
                 <div className="font-bold text-nb-black">
                   {new Date(activity.created_at).toLocaleString('id-ID')}
                 </div>
               </div>
               {(activity.gps_lat || activity.gps_lng) && (
                 <div>
-                  <div className="text-sm font-semibold text-nb-gray-600">Lokasi GPS</div>
+                  <div className="text-sm font-semibold text-nb-gray-600">{t('activities:detail.fields.gpsLocation')}</div>
                   <div className="font-mono text-sm">
                     {activity.gps_lat}, {activity.gps_lng}
                   </div>
@@ -213,20 +215,22 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
           <Card variant="elevated">
             <CardHeader>
               <h2 className="text-xl font-bold text-nb-black">
-                {activity.status === 'approved' ? 'Persetujuan' : 'Penolakan'}
+                {activity.status === 'approved'
+                  ? t('activities:detail.sections.approval')
+                  : t('activities:detail.sections.rejection')}
               </h2>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {activity.reviewer && (
                   <div>
-                    <div className="text-sm font-semibold text-nb-gray-600">Diproses Oleh</div>
+                    <div className="text-sm font-semibold text-nb-gray-600">{t('activities:detail.fields.processedBy')}</div>
                     <div className="font-bold text-nb-black">{activity.reviewer.full_name}</div>
                   </div>
                 )}
                 {activity.reviewed_at && (
                   <div>
-                    <div className="text-sm font-semibold text-nb-gray-600">Tanggal Proses</div>
+                    <div className="text-sm font-semibold text-nb-gray-600">{t('activities:detail.fields.processDate')}</div>
                     <div className="font-bold text-nb-black">
                       {new Date(activity.reviewed_at).toLocaleString('id-ID')}
                     </div>
@@ -234,7 +238,7 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
                 )}
                 {activity.rejection_reason && (
                   <div>
-                    <div className="text-sm font-semibold text-nb-gray-600">Alasan Penolakan</div>
+                    <div className="text-sm font-semibold text-nb-gray-600">{t('activities:detail.fields.rejectionReason')}</div>
                     <div className="text-nb-gray-700">{activity.rejection_reason}</div>
                   </div>
                 )}
@@ -247,7 +251,7 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
           <Card variant="elevated">
             <CardHeader>
               <h2 className="text-xl font-bold text-nb-black">
-                Foto ({activity.photo_urls.length})
+                {t('activities:detail.sections.photos')} ({activity.photo_urls.length})
               </h2>
             </CardHeader>
             <CardContent>
@@ -257,7 +261,7 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
                     key={index}
                     className="bg-nb-gray-100 border-2 border-nb-black overflow-hidden"
                   >
-                    <img src={url} alt={`Foto aktivitas ${index + 1}`} className="w-full h-auto" />
+                    <img src={url} alt={`${t('activities:detail.sections.photos')} ${index + 1}`} className="w-full h-auto" />
                   </div>
                 ))}
               </div>
@@ -268,7 +272,7 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
 
       <Card variant="elevated">
         <CardHeader>
-          <h2 className="text-xl font-bold text-nb-black">Deskripsi</h2>
+          <h2 className="text-xl font-bold text-nb-black">{t('activities:detail.sections.description')}</h2>
         </CardHeader>
         <CardContent>
           <p className="text-nb-gray-700">{activity.description}</p>

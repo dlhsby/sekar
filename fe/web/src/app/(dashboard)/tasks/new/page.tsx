@@ -5,6 +5,7 @@
 
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/lib/auth/hooks';
 import { useCreateTask, type TaskPriority } from '@/lib/api/tasks';
 import { useUsers } from '@/lib/api/users';
@@ -35,6 +36,7 @@ import {
 import type { UserRole } from '@/types/models';
 
 export default function CreateTaskPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
 
@@ -81,7 +83,7 @@ export default function CreateTaskPage() {
     setError('');
 
     if (!title) {
-      setError('Judul tugas wajib diisi');
+      setError(t('tasks:form.requiredError'));
       return;
     }
 
@@ -110,10 +112,10 @@ export default function CreateTaskPage() {
   const rayons = rayonsData || [];
 
   const priorityOptions = [
-    { value: 'low', label: 'Rendah' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'high', label: 'Tinggi' },
-    { value: 'urgent', label: 'Mendesak' },
+    { value: 'low', label: t('tasks:form.priorityLow') },
+    { value: 'normal', label: t('tasks:form.priorityNormal') },
+    { value: 'high', label: t('tasks:form.priorityHigh') },
+    { value: 'urgent', label: t('tasks:form.priorityUrgent') },
   ];
 
   return (
@@ -123,15 +125,15 @@ export default function CreateTaskPage() {
         onClick={() => router.push('/tasks')}
         className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wide text-nb-gray-700 transition-colors hover:text-nb-black"
       >
-        <ArrowLeft className="size-4" aria-hidden="true" /> Kembali ke daftar tugas
+        <ArrowLeft className="size-4" aria-hidden="true" /> {t("tasks:new.backButton")}
       </button>
 
       <PageHeader
-        description="Tugaskan pekerjaan kepada petugas."
+        description={t("tasks:new.pageHeader")}
       />
       {assignableRoles.length > 0 && (
         <p className="-mt-2 text-nb-caption text-nb-gray-500">
-          Dapat ditugaskan ke: {assignableRoles.map((r) => ROLE_LABELS[r]).join(', ')}
+          {t("tasks:new.assignableRoles", { roles: assignableRoles.map((r) => ROLE_LABELS[r]).join(', ') })}
         </p>
       )}
 
@@ -149,24 +151,24 @@ export default function CreateTaskPage() {
 
             <div className="space-y-6">
               <FormInput
-                label="Judul Tugas"
+                label={t("tasks:form.titleLabel")}
                 type="text"
-                placeholder="Contoh: Penyiraman Area Timur"
+                placeholder={t("tasks:form.titlePlaceholder")}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
               />
 
               <Textarea
-                label="Deskripsi"
+                label={t("tasks:form.descriptionLabel")}
                 rows={4}
-                placeholder="Detail tugas yang harus dikerjakan..."
+                placeholder={t("tasks:form.descriptionPlaceholder")}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
 
               <FormSelect
-                label="Ditugaskan Ke (Opsional)"
+                label={t("tasks:form.assignedToLabel")}
                 value={assignedTo}
                 onChange={(value) => setAssignedTo(value)}
                 options={[
@@ -179,7 +181,7 @@ export default function CreateTaskPage() {
               />
 
               <FormSelect
-                label="Rayon (Opsional)"
+                label={t("tasks:form.rayonLabel")}
                 value={rayonId}
                 onChange={(value) => setRayonId(value)}
                 options={[
@@ -192,7 +194,7 @@ export default function CreateTaskPage() {
               />
 
               <FormSelect
-                label="Area (Opsional)"
+                label={t("tasks:form.areaLabel")}
                 value={areaId}
                 onChange={(value) => setAreaId(value)}
                 options={[
@@ -205,7 +207,7 @@ export default function CreateTaskPage() {
               />
 
               <FormSelect
-                label="Prioritas"
+                label={t("tasks:form.priorityLabel")}
                 value={priority}
                 onChange={(value) => setPriority(value as TaskPriority)}
                 options={priorityOptions}

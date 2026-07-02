@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBButton } from '../../../components/nb';
 import { nbSpacing } from '../../../constants/nbTokens';
 
@@ -25,6 +26,7 @@ export function ScreenFABs({
   onCreateTask,
   onSubmitActivity,
 }: ScreenFABsProps): React.JSX.Element | null {
+  const { t } = useTranslation();
   const showActivityFAB = activeTab === 'activities' && canSubmitActivity;
   const showTaskFAB = activeTab === 'tasks' && canCreateTask;
 
@@ -35,8 +37,8 @@ export function ScreenFABs({
   const handleActivityPress = () => {
     if (!currentShift) {
       Alert.alert(
-        'Belum Clock In',
-        'Anda harus melakukan Clock In terlebih dahulu untuk menambahkan aktivitas',
+        t('tasks:messages.clockInRequired'),
+        t('tasks:messages.clockInRequiredMessage'),
         [{ text: 'OK' }]
       );
       return;
@@ -49,7 +51,7 @@ export function ScreenFABs({
       {showActivityFAB && (
         <View style={[styles.fab, !currentShift && styles.fabDisabled]}>
           <NBButton
-            title="+ Tambah Aktivitas"
+            title={t('activities:fab.submit')}
             onPress={handleActivityPress}
             variant="primary"
             size="lg"
@@ -60,7 +62,7 @@ export function ScreenFABs({
       {showTaskFAB && (
         <View style={styles.fab}>
           <NBButton
-            title="+ Buat Tugas"
+            title={t('tasks:fab.create')}
             onPress={onCreateTask}
             variant="primary"
             size="lg"

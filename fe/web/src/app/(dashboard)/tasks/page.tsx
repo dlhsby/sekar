@@ -6,6 +6,7 @@
 
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/lib/auth/hooks';
 import {
   useTasks,
@@ -60,6 +61,7 @@ const VIEW_TABS: TabItem<ViewMode>[] = [
 
 export default function TasksPage() {
   const { user, loading: authLoading } = useAuth();
+  const { t } = useTranslation();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<ActiveTab>('all');
   const [view, setView] = useState<ViewMode>('kanban');

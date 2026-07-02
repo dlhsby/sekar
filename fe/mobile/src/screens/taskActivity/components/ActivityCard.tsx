@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBBadge } from '../../../components/nb';
 import { ListItemCard, type ListItemMeta } from '../../../components/common';
 import { nbSpacing } from '../../../constants/nbTokens';
@@ -18,16 +19,17 @@ interface ActivityCardProps {
   currentUserId?: string;
 }
 
-function buildMeta(activity: Activity): ListItemMeta[] {
+function buildMeta(activity: Activity, t: ReturnType<typeof useTranslation>['t']): ListItemMeta[] {
   const meta: ListItemMeta[] = [];
   if (activity.area) { meta.push({ icon: 'map-marker', label: activity.area.name }); }
   if (activity.photo_urls && activity.photo_urls.length > 0) {
-    meta.push({ icon: 'camera', label: `${activity.photo_urls.length} foto` });
+    meta.push({ icon: 'camera', label: t('activities:card.photoCount', { count: activity.photo_urls.length }) });
   }
   return meta;
 }
 
 function ActivityCardImpl({ activity, onPress, currentUserId }: ActivityCardProps): React.JSX.Element {
+  const { t } = useTranslation();
   // ADR-038: when the activity is owned by someone else, the viewer is here via tag.
   const isTaggedIn = Boolean(
     currentUserId && activity.user_id && activity.user_id !== currentUserId,
@@ -38,15 +40,15 @@ function ActivityCardImpl({ activity, onPress, currentUserId }: ActivityCardProp
     <ListItemCard
       statusTone={pill.tone}
       statusLabel={pill.label}
-      extraTag={isTaggedIn ? <NBBadge text="Diikutsertakan" color="navy" size="sm" /> : undefined}
+      extraTag={isTaggedIn ? <NBBadge text={t('activities:card.included')} color="navy" size="sm" /> : undefined}
       rightText={`${formatDate(activity.created_at)} · ${formatTime(activity.created_at)}`}
-      title={activity.activityType?.name || 'Aktivitas'}
+      title={activity.activityType?.name || t('activities:card.activity')}
       description={activity.description || undefined}
-      meta={buildMeta(activity)}
+      meta={buildMeta(activity, t)}
       creatorText={activity.user ? `${activity.user.role} · ${activity.user.full_name}` : undefined}
       onPress={onPress}
       style={styles.spacing}
-      accessibilityLabel={`Detail aktivitas ${activity.activityType?.name ?? ''}`}
+      accessibilityLabel={t('activities:card.accessibilityLabel', { name: activity.activityType?.name ?? '' })}
       testID="activity-card"
     />
   );

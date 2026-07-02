@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth/hooks';
 import { useActivities, useApproveActivity, useRejectActivity } from '@/lib/api/activities';
 import { useActivityTypes } from '@/lib/api/activity-types';
 import { useAreas } from '@/lib/api/areas';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   CardHeader,
@@ -38,6 +39,7 @@ const isValidActivityStatus = (value: string): value is ActivityStatus | 'all' =
 };
 
 export default function ActivitiesPage() {
+  const { t } = useTranslation(['activities', 'common', 'status']);
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [filters, setFilters] = useState<{
@@ -116,7 +118,7 @@ export default function ActivitiesPage() {
     (row: Activity): DataTableRowAction<Activity>[] => [
       {
         key: 'view',
-        label: 'Lihat',
+        label: t('common:actions.view'),
         icon: Eye,
         onClick: () => {
           view.openWith(row);
@@ -124,7 +126,7 @@ export default function ActivitiesPage() {
       },
       {
         key: 'approve',
-        label: 'Setujui',
+        label: t('common:actions.approve'),
         icon: Check,
         onClick: () => handleApprove(row.id),
         disabled: approveMutation.isPending,
@@ -132,14 +134,14 @@ export default function ActivitiesPage() {
       },
       {
         key: 'reject',
-        label: 'Tolak',
+        label: t('common:actions.reject'),
         icon: X,
         variant: 'danger',
         onClick: () => setRejectingId(row.id),
         hidden: row.status !== 'pending' || !canApprove,
       },
     ],
-    [canApprove, approveMutation.isPending, handleApprove, view]
+    [canApprove, approveMutation.isPending, handleApprove, view, t]
   );
 
   if (authLoading || !user) {
@@ -147,7 +149,7 @@ export default function ActivitiesPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-nb-primary mx-auto mb-4"></div>
-          <p className="text-nb-gray-600">Memuat...</p>
+          <p className="text-nb-gray-600">{t('common:actions.loading')}</p>
         </div>
       </div>
     );
@@ -159,19 +161,19 @@ export default function ActivitiesPage() {
   const pagination = activitiesData?.meta;
 
   const activityTypeOptions = [
-    { value: 'all', label: 'Semua Tipe' },
-    ...(activityTypes || []).map((t) => ({ value: t.id, label: t.name })),
+    { value: 'all', label: t('activities:list.filters.allTypes') },
+    ...(activityTypes || []).map((type) => ({ value: type.id, label: type.name })),
   ];
 
   const statusOptions = [
-    { value: 'all', label: 'Semua Status' },
-    { value: 'pending', label: 'Menunggu' },
-    { value: 'approved', label: 'Disetujui' },
-    { value: 'rejected', label: 'Ditolak' },
+    { value: 'all', label: t('activities:list.filters.allStatus') },
+    { value: 'pending', label: t('status:pending') },
+    { value: 'approved', label: t('status:approved') },
+    { value: 'rejected', label: t('status:rejected') },
   ];
 
   const areaOptions = [
-    { value: 'all', label: 'Semua Area' },
+    { value: 'all', label: t('activities:list.filters.allAreas') },
     ...(areasData?.data || []).map((a) => ({ value: a.id, label: a.name })),
   ];
 
@@ -179,29 +181,29 @@ export default function ActivitiesPage() {
     {
       id: 'id',
       accessorKey: 'id',
-      header: 'ID',
+      header: t('activities:list.table.columns.id'),
       enableSorting: false,
-      meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+      meta: { label: t('activities:list.table.columns.id'), defaultHidden: true, filterVariant: 'text' },
       cell: ({ row }) => (
         <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
       ),
     },
     {
       id: 'created_at',
-      header: 'Tanggal',
+      header: t('activities:list.table.columns.date'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Tanggal' },
+      meta: { label: t('activities:list.table.columns.date') },
       cell: ({ row }) => (
         <div className="text-sm">{new Date(row.original.created_at).toLocaleDateString('id-ID')}</div>
       ),
     },
     {
       id: 'user',
-      header: 'Pengguna',
+      header: t('activities:list.table.columns.user'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Pengguna' },
+      meta: { label: t('activities:list.table.columns.user') },
       cell: ({ row }) => (
         <div>
           <div className="font-semibold text-nb-black">{row.original.user?.full_name || '-'}</div>
@@ -211,10 +213,10 @@ export default function ActivitiesPage() {
     },
     {
       id: 'activity_type',
-      header: 'Tipe Aktivitas',
+      header: t('activities:list.table.columns.activityType'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Tipe Aktivitas' },
+      meta: { label: t('activities:list.table.columns.activityType') },
       cell: ({ row }) => (
         <Badge variant="default" size="sm">
           {row.original.activity_type?.name || '-'}
@@ -223,18 +225,18 @@ export default function ActivitiesPage() {
     },
     {
       id: 'area',
-      header: 'Area',
+      header: t('activities:list.table.columns.area'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Area' },
+      meta: { label: t('activities:list.table.columns.area') },
       cell: ({ row }) => <div className="text-sm">{row.original.area?.name || '-'}</div>,
     },
     {
       id: 'status',
-      header: 'Status',
+      header: t('activities:list.table.columns.status'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Status' },
+      meta: { label: t('activities:list.table.columns.status') },
       cell: ({ row }) => (
         <Badge variant={ACTIVITY_STATUS_BADGES[row.original.status]} size="sm">
           {ACTIVITY_STATUS_LABELS[row.original.status]}
@@ -243,13 +245,13 @@ export default function ActivitiesPage() {
     },
     {
       id: 'photo_urls',
-      header: 'Foto',
+      header: t('activities:list.table.columns.photos'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Foto' },
+      meta: { label: t('activities:list.table.columns.photos') },
       cell: ({ row }) => (
         <Badge variant="secondary" size="sm">
-          {row.original.photo_urls?.length || 0} foto
+          {row.original.photo_urls?.length || 0} {t('activities:list.table.columns.photos').toLowerCase()}
         </Badge>
       ),
     },
@@ -265,14 +267,14 @@ export default function ActivitiesPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div>
-        <p className="text-nb-gray-600 mt-1">Kelola dan tinjau aktivitas kerja</p>
+        <p className="text-nb-gray-600 mt-1">{t('activities:list.description')}</p>
       </div>
 
       <Card variant="elevated">
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <FormSelect
-              label="Tipe Aktivitas"
+              label={t('activities:list.filters.activityType')}
               value={filters.activityTypeId}
               onChange={(value) =>
                 setFilters((prev) => ({ ...prev, activityTypeId: value, page: 1 }))
@@ -280,7 +282,7 @@ export default function ActivitiesPage() {
               options={activityTypeOptions}
             />
             <FormSelect
-              label="Status"
+              label={t('activities:list.filters.status')}
               value={filters.statusFilter}
               onChange={(value) => {
                 if (isValidActivityStatus(value)) {
@@ -290,12 +292,12 @@ export default function ActivitiesPage() {
               options={statusOptions}
             />
             <FormSelect
-              label="Area"
+              label={t('activities:list.filters.area')}
               value={filters.areaId}
               onChange={(value) => setFilters((prev) => ({ ...prev, areaId: value, page: 1 }))}
               options={areaOptions}
             />
-            <Field label="Rentang Tanggal">
+            <Field label={t('activities:list.filters.dateRange')}>
               {() => (
                 <DateRangePicker
                   showSteppers={false}
@@ -331,7 +333,7 @@ export default function ActivitiesPage() {
               }
               className="mt-4"
             >
-              Reset Filter
+              {t('common:actions.reset')} {t('common:actions.filter')}
             </Button>
           )}
         </CardContent>
@@ -342,12 +344,12 @@ export default function ActivitiesPage() {
         <Card variant="elevated">
           <CardContent>
             <div className="space-y-3">
-              <h3 className="font-bold text-nb-black">Alasan Penolakan Aktivitas</h3>
+              <h3 className="font-bold text-nb-black">{t('activities:list.actions.rejectDialog')}</h3>
               <FormInput
-                label="Alasan"
+                label={t('activities:list.actions.reasonLabel')}
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="Masukkan alasan penolakan..."
+                placeholder={t('activities:list.actions.reasonPlaceholder')}
               />
               <div className="flex gap-2">
                 <Button
@@ -356,7 +358,7 @@ export default function ActivitiesPage() {
                   onClick={() => handleReject(rejectingId)}
                   disabled={!rejectReason.trim() || rejectMutation.isPending}
                 >
-                  Tolak Aktivitas
+                  {t('activities:list.actions.rejectButton')}
                 </Button>
                 <Button
                   variant="secondary"
@@ -366,7 +368,7 @@ export default function ActivitiesPage() {
                     setRejectReason('');
                   }}
                 >
-                  Batal
+                  {t('common:actions.cancel')}
                 </Button>
               </div>
             </div>
@@ -377,8 +379,8 @@ export default function ActivitiesPage() {
       <Card variant="elevated">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-nb-black">Daftar Aktivitas</h2>
-            <div className="text-sm text-nb-gray-600">{pagination?.total || 0} total</div>
+            <h2 className="text-xl font-bold text-nb-black">{t('activities:list.table.title')}</h2>
+            <div className="text-sm text-nb-gray-600">{pagination?.total || 0} {t('activities:list.pagination.total')}</div>
           </div>
         </CardHeader>
         <CardContent>
@@ -389,13 +391,16 @@ export default function ActivitiesPage() {
             enablePagination={false}
             getRowId={(r) => r.id}
             rowActions={rowActions}
-            emptyTitle="Tidak ada aktivitas"
+            emptyTitle={t('activities:list.empty.noActivities')}
           />
 
           {pagination && pagination.totalPages > 1 && (
             <div className="flex items-center justify-between mt-4 pt-4 border-t-3 border-nb-black">
               <div className="text-sm text-nb-gray-600">
-                Halaman {pagination.page} dari {pagination.totalPages}
+                {t('activities:list.pagination.page', {
+                  page: pagination.page,
+                  totalPages: pagination.totalPages,
+                })}
               </div>
               <div className="flex gap-2">
                 <Button
@@ -407,7 +412,7 @@ export default function ActivitiesPage() {
                   disabled={pagination.page === 1}
                   leftIcon={<ChevronLeft className="w-4 h-4" />}
                 >
-                  Sebelumnya
+                  {t('activities:list.pagination.previous')}
                 </Button>
                 <Button
                   variant="secondary"
@@ -421,7 +426,7 @@ export default function ActivitiesPage() {
                   disabled={pagination.page === pagination.totalPages}
                   rightIcon={<ChevronRight className="w-4 h-4" />}
                 >
-                  Selanjutnya
+                  {t('activities:list.pagination.next')}
                 </Button>
               </div>
             </div>
@@ -433,22 +438,22 @@ export default function ActivitiesPage() {
         <DetailModal
           open={view.open}
           onOpenChange={view.onOpenChange}
-          title="Detail Aktivitas"
+          title={t('activities:list.actions.viewModal')}
           rows={[
-            { label: 'Tanggal', value: new Date(view.item.created_at).toLocaleDateString('id-ID') },
-            { label: 'Pengguna', value: view.item.user?.full_name },
-            { label: 'Tipe Aktivitas', value: view.item.activity_type?.name },
-            { label: 'Area', value: view.item.area?.name },
+            { label: t('activities:detail.fields.dateTime'), value: new Date(view.item.created_at).toLocaleDateString('id-ID') },
+            { label: t('activities:detail.fields.user'), value: view.item.user?.full_name },
+            { label: t('activities:detail.fields.activityType'), value: view.item.activity_type?.name },
+            { label: t('activities:detail.fields.area'), value: view.item.area?.name },
             {
-              label: 'Status',
+              label: t('activities:list.table.columns.status'),
               value: (
                 <Badge variant={ACTIVITY_STATUS_BADGES[view.item.status]} size="sm">
                   {ACTIVITY_STATUS_LABELS[view.item.status]}
                 </Badge>
               ),
             },
-            { label: 'Foto', value: `${view.item.photo_urls?.length || 0} foto` },
-            { label: 'Catatan', value: view.item.notes },
+            { label: t('activities:detail.fields.photos'), value: `${view.item.photo_urls?.length || 0} ${t('activities:detail.fields.photos').toLowerCase()}` },
+            { label: t('activities:detail.fields.notes'), value: view.item.notes },
           ] as DetailModalRow[]}
         />
       )}

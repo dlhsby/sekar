@@ -5,6 +5,7 @@
  */
 import React from 'react';
 import { StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ListItemCard } from '../../../components/common';
 import type { StatusTone } from '../../../components/home/StatusPill';
 import { formatLongDate, formatTime } from '../../../utils/dateUtils';
@@ -26,24 +27,25 @@ export const AttendanceDayCard = React.memo(function AttendanceDayCard({
   summary,
   onPress,
 }: AttendanceDayCardProps): React.JSX.Element {
+  const { t } = useTranslation();
   // is_late is computed server-side (WIB). An active day takes precedence visually.
   let tone: StatusTone;
   let statusLabel: string;
   if (summary.has_active) {
     tone = 'info';
-    statusLabel = 'Berlangsung';
+    statusLabel = t('attendance:dayCard.status.active');
   } else if (summary.is_late) {
     tone = 'warn';
-    statusLabel = 'Terlambat';
+    statusLabel = t('attendance:dayCard.status.late');
   } else {
     tone = 'ok';
-    statusLabel = 'Tepat Waktu';
+    statusLabel = t('attendance:dayCard.status.onTime');
   }
 
   // Parse as local midnight so the label shows the WIB calendar date verbatim,
   // independent of the device timezone.
   const dayLabel = formatLongDate(`${summary.date}T00:00:00`);
-  const shiftCountText = `${summary.shift_count} shift`;
+  const shiftCountText = t('attendance:dayCard.shiftCount', { count: summary.shift_count });
 
   return (
     <ListItemCard
@@ -53,16 +55,16 @@ export const AttendanceDayCard = React.memo(function AttendanceDayCard({
       title={dayLabel}
       titleLines={1}
       meta={[
-        { icon: 'login', label: `Masuk ${formatTime(summary.first_clock_in)}` },
+        { icon: 'login', label: t('attendance:dayCard.clockIn', { time: formatTime(summary.first_clock_in) }) },
         {
           icon: 'logout',
-          label: `Keluar ${summary.last_clock_out ? formatTime(summary.last_clock_out) : '—'}`,
+          label: t('attendance:dayCard.clockOut', { time: summary.last_clock_out ? formatTime(summary.last_clock_out) : '—' }),
         },
         { icon: 'timer-outline', label: formatWorkedMinutes(summary.total_worked_minutes) },
       ]}
       onPress={onPress}
       style={styles.spacing}
-      accessibilityLabel={`Kehadiran ${dayLabel}, ${statusLabel}`}
+      accessibilityLabel={t('attendance:dayCard.a11y.label', { date: dayLabel, status: statusLabel })}
       testID={`attendance-day-${summary.date}`}
     />
   );

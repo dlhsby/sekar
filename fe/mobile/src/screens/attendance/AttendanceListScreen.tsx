@@ -18,6 +18,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import {
   NBBackgroundPattern,
@@ -39,25 +40,27 @@ import type { AttendanceFilter, AttendanceDaySummary } from '../../types/api.typ
 
 const PAGE_LIMIT = 20;
 
-const SORT_OPTIONS = [
-  { key: 'date_desc', label: 'Tanggal Terbaru' },
-  { key: 'date_asc', label: 'Tanggal Terlama' },
-];
 type SortKey = 'date_desc' | 'date_asc';
-
-const STATUS_CHIP_LABEL: Record<NonNullable<AttendanceFilterFields['status']>, string> = {
-  late: 'Terlambat',
-  on_time: 'Tepat Waktu',
-  active: 'Berlangsung',
-};
 
 type Props = {
   navigation: NativeStackNavigationProp<MainTabParamList, 'Attendance'>;
 };
 
 export function AttendanceListScreen({ navigation }: Props): React.JSX.Element {
+  const { t } = useTranslation();
   const { canClock } = useRoleAccess();
   const currentShift = useAppSelector((state) => state.shift.currentShift);
+
+  const SORT_OPTIONS = [
+    { key: 'date_desc', label: t('attendance:list.sortOptions.newest') },
+    { key: 'date_asc', label: t('attendance:list.sortOptions.oldest') },
+  ];
+
+  const STATUS_CHIP_LABEL: Record<NonNullable<AttendanceFilterFields['status']>, string> = {
+    late: t('attendance:list.statusChip.late'),
+    on_time: t('attendance:list.statusChip.onTime'),
+    active: t('attendance:list.statusChip.active'),
+  };
 
   const [days, setDays] = useState<AttendanceDaySummary[]>([]);
   const [page, setPage] = useState(1);
@@ -90,8 +93,8 @@ export function AttendanceListScreen({ navigation }: Props): React.JSX.Element {
     }
     if (filters.from_date || filters.to_date) {
       const f = filters.from_date;
-      const t = filters.to_date;
-      chips.push({ text: f && t ? `${f.slice(5)} — ${t.slice(5)}` : 'Tanggal', tone: 'date' });
+      const tDate = filters.to_date;
+      chips.push({ text: f && tDate ? `${f.slice(5)} — ${tDate.slice(5)}` : t('attendance:list.filterChips.date'), tone: 'date' });
     }
     return chips;
   }, [filters]);
@@ -221,7 +224,7 @@ export function AttendanceListScreen({ navigation }: Props): React.JSX.Element {
     >
       <SafeAreaView style={styles.safeArea}>
         <FilterBar
-          label="Kehadiran"
+          label={t('attendance:list.title')}
           filterCount={activeFilterCount}
           chips={filterChips}
           isSortActive={isSortActive}
@@ -254,11 +257,11 @@ export function AttendanceListScreen({ navigation }: Props): React.JSX.Element {
                 <NBEmptyState
                   variant="noData"
                   illustration={activeFilterCount > 0 ? 'illo-search' : 'illo-reports'}
-                  title={activeFilterCount > 0 ? 'Tidak ada hasil' : 'Belum ada kehadiran'}
+                  title={activeFilterCount > 0 ? t('attendance:list.emptyState.noResults') : t('attendance:list.emptyState.noAttendance')}
                   description={
                     activeFilterCount > 0
-                      ? 'Tidak ada kehadiran yang sesuai filter'
-                      : 'Riwayat kehadiran Anda akan muncul di sini setelah clock in.'
+                      ? t('attendance:list.emptyState.noAttendanceMatch')
+                      : t('attendance:list.emptyState.attendanceHint')
                   }
                 />
               )
@@ -269,12 +272,12 @@ export function AttendanceListScreen({ navigation }: Props): React.JSX.Element {
         {canClock && (
           <NBFabBar>
             <NBButton
-              title={isClockOut ? 'Clock Out' : 'Clock In'}
+              title={isClockOut ? t('attendance:list.button.clockOut') : t('attendance:list.button.clockIn')}
               onPress={handleClockAction}
               variant={isClockOut ? 'danger' : 'primary'}
               size="lg"
               fullWidth
-              accessibilityLabel={isClockOut ? 'Clock out dari shift aktif' : 'Clock in untuk memulai shift'}
+              accessibilityLabel={isClockOut ? t('attendance:list.a11y.clockOut') : t('attendance:list.a11y.clockIn')}
             />
           </NBFabBar>
         )}
@@ -282,7 +285,7 @@ export function AttendanceListScreen({ navigation }: Props): React.JSX.Element {
         <SortModal
           visible={isSortModalOpen}
           onClose={() => setIsSortModalOpen(false)}
-          title="Urutkan Kehadiran"
+          title={t('attendance:list.sortModal.title')}
           options={SORT_OPTIONS}
           selectedOption={sort}
           onSelect={(key) => setSort(key as SortKey)}

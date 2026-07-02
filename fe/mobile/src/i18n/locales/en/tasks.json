@@ -1,1 +1,90 @@
-{}
+{
+  "sort": {
+    "newest": "Newest (default)",
+    "oldest": "Oldest",
+    "deadlineNearest": "Nearest Deadline",
+    "priorityHighest": "Highest Priority"
+  },
+  "filter": {
+    "label": "task"
+  },
+  "header": {
+    "sort": "SORT TASKS"
+  },
+  "fab": {
+    "create": "+ Create Task"
+  },
+  "create": {
+    "title": "Create Task",
+    "accessDenied": "Access Denied",
+    "accessDeniedMessage": "You do not have permission to create tasks.",
+    "successTitle": "Success",
+    "successMessage": "Task created successfully.",
+    "failureTitle": "Failed",
+    "failureMessage": "Failed to create task. Please try again.",
+    "cancelConfirm": "Unsaved data will be lost.",
+    "cancelNo": "No",
+    "cancelYes": "Yes"
+  },
+  "detail": {
+    "loading": "Loading task...",
+    "notFound": "Task Not Found",
+    "notFoundMessage": "The task you are looking for was not found or has been deleted",
+    "backButtonTitle": "Back",
+    "taskHistory": "Task History",
+    "assignment": "Assignment",
+    "completionDetails": "Completion Details",
+    "assignmentHistory": "Assignment History",
+    "accessibilityLabel": "Task details {{title}}"
+  },
+  "card": {
+    "accessibilityLabel": "Task details {{title}}"
+  },
+  "complete": {
+    "title": "Complete Task",
+    "loading": "Loading...",
+    "notFound": "Task not found",
+    "taskSection": "Task",
+    "description": "Completion Description",
+    "descriptionPlaceholder": "Explain the work results...",
+    "photosRequired": "Incomplete",
+    "photosRequiredMessage": "At least 1 proof photo of completion is required.",
+    "descriptionRequired": "Incomplete",
+    "descriptionRequiredMessage": "Completion description is required.",
+    "success": "Success",
+    "successMessage": "Task completed successfully.",
+    "failure": "Failed",
+    "failureMessage": "Failed to complete task. Please try again.",
+    "photosHeader": "PROOF PHOTOS *",
+    "photosSubtitle": "Add 1-3 photos of the work",
+    "submitButton": "Complete Task",
+    "cancelButton": "Cancel"
+  },
+  "actions": {
+    "assign": "Assign",
+    "reassign": "Reassign",
+    "delegate": "Delegate to Subordinate",
+    "selectDelegate": "Delegate to Subordinate",
+    "selectReplacement": "Select Replacement Officer",
+    "selectOfficer": "Select Officer",
+    "placeholder": "— Select Officer —",
+    "cancel": "Cancel",
+    "submit": "Assign",
+    "accept": "Accept",
+    "decline": "Decline",
+    "start": "Start",
+    "verify": "Verify",
+    "revision": "Needs Revision",
+    "selectTagging": "Select officer to tag",
+    "searchTagging": "Search & select officer..."
+  },
+  "messages": {
+    "clockInRequired": "Not Clocked In",
+    "clockInRequiredMessage": "You must clock in first to add an activity"
+  },
+  "errors": {
+    "fetchFailed": "Failed to load schedule",
+    "scheduleMissing": "No schedule for today",
+    "loadingFailed": "Failed to load task details."
+  }
+}

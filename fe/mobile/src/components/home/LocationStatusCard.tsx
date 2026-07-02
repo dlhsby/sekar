@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 import { NBCard } from '../nb';
 import { NBText } from '../nb/NBText';
 import {
@@ -39,29 +40,30 @@ interface LocationStatusCardProps {
   onPress?: () => void;
 }
 
-function formatUpdatedAt(date: Date | null): string | null {
+function formatUpdatedAt(date: Date | null, t: any): string | null {
   if (!date) return null;
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffSec = Math.floor(diffMs / 1000);
-  if (diffSec < 60) return 'Baru saja';
+  if (diffSec < 60) return t('home:components.locationCard.updatedAt.justNow');
   const diffMin = Math.floor(diffSec / 60);
-  if (diffMin < 60) return `${diffMin} mnt lalu`;
+  if (diffMin < 60) return t('home:components.locationCard.updatedAt.minutesAgo', { minutes: diffMin });
   const diffHr = Math.floor(diffMin / 60);
-  return `${diffHr} jam lalu`;
+  return t('home:components.locationCard.updatedAt.hoursAgo', { hours: diffHr });
 }
 
 export function LocationStatusCard({ location, onRefresh, onPress }: LocationStatusCardProps) {
+  const { t } = useTranslation();
   const hasCoords = location.latitude !== null && location.longitude !== null;
   const accuracyWarning = location.accuracy !== null && location.accuracy > GPS_ACCURACY_WARNING;
-  const updatedAtLabel = formatUpdatedAt(location.updatedAt);
+  const updatedAtLabel = formatUpdatedAt(location.updatedAt, t);
 
   const cardContent = (
     <NBCard variant="elevated" style={styles.card} testID="location-status-card">
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <NBText variant="body" color="black" style={styles.cardTitle} accessibilityRole="header">
-            Lokasi Anda
+            {t('home:components.locationCard.title')}
           </NBText>
           {updatedAtLabel && (
             <NBText variant="caption" color="gray500">{updatedAtLabel}</NBText>
@@ -71,7 +73,7 @@ export function LocationStatusCard({ location, onRefresh, onPress }: LocationSta
           onPress={onRefresh}
           disabled={location.loading}
           style={styles.refreshButton}
-          accessibilityLabel="Perbarui lokasi"
+          accessibilityLabel={t('home:components.locationCard.a11y.refresh')}
           accessibilityRole="button"
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
@@ -86,7 +88,7 @@ export function LocationStatusCard({ location, onRefresh, onPress }: LocationSta
       {location.loading && !hasCoords ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator color={nbColors.primary} size="small" />
-          <NBText variant="body-sm" color="gray600" style={styles.loadingText}>Mendapatkan lokasi...</NBText>
+          <NBText variant="body-sm" color="gray600" style={styles.loadingText}>{t('home:components.locationCard.loading')}</NBText>
         </View>
       ) : location.error ? (
         <NBText variant="body-sm" color="danger">{location.error}</NBText>
@@ -96,7 +98,7 @@ export function LocationStatusCard({ location, onRefresh, onPress }: LocationSta
             variant="mono-sm"
             color="black"
             style={styles.coordsText}
-            accessibilityLabel={`Koordinat: ${location.latitude!.toFixed(6)}, ${location.longitude!.toFixed(6)}`}
+            accessibilityLabel={t('home:components.locationCard.a11y.coordinates', { lat: location.latitude!.toFixed(6), lon: location.longitude!.toFixed(6) })}
           >
             {location.latitude!.toFixed(6)}, {location.longitude!.toFixed(6)}
           </NBText>
@@ -105,28 +107,28 @@ export function LocationStatusCard({ location, onRefresh, onPress }: LocationSta
             <NBText
               variant="body-sm"
               style={[styles.accuracyText, accuracyWarning && styles.accuracyWarning]}
-              accessibilityLabel={`Akurasi GPS: plus minus ${Math.round(location.accuracy)} meter`}
+              accessibilityLabel={t('home:components.locationCard.a11y.accuracy', { accuracy: Math.round(location.accuracy) })}
             >
-              {accuracyWarning ? '⚠️ ' : ''}Akurasi: ±{Math.round(location.accuracy)}m
+              {accuracyWarning ? '⚠️ ' : ''}{t('home:components.locationCard.accuracy', { accuracy: Math.round(location.accuracy) })}
             </NBText>
           )}
 
           {location.isWithinArea ? (
-            <View style={styles.insideAreaBanner} accessibilityLabel="Di dalam area kerja">
-              <NBText variant="body-sm" style={styles.insideAreaText}>Di dalam area kerja</NBText>
+            <View style={styles.insideAreaBanner} accessibilityLabel={t('home:components.locationCard.a11y.insideArea')}>
+              <NBText variant="body-sm" style={styles.insideAreaText}>{t('home:components.locationCard.insideArea')}</NBText>
             </View>
           ) : (
-            <View style={styles.outsideAreaBanner} accessibilityLabel="Di luar area kerja">
-              <NBText variant="body-sm" style={styles.outsideAreaText}>Di luar area kerja</NBText>
+            <View style={styles.outsideAreaBanner} accessibilityLabel={t('home:components.locationCard.a11y.outsideArea')}>
+              <NBText variant="body-sm" style={styles.outsideAreaText}>{t('home:components.locationCard.outsideArea')}</NBText>
             </View>
           )}
         </View>
       ) : (
-        <NBText variant="body-sm" color="gray500" align="center" style={styles.unavailablePad}>Lokasi tidak tersedia</NBText>
+        <NBText variant="body-sm" color="gray500" align="center" style={styles.unavailablePad}>{t('home:components.locationCard.unavailable')}</NBText>
       )}
 
       {onPress && hasCoords && (
-        <NBText variant="caption" color="gray500" align="center" style={styles.tapHintPad}>Ketuk untuk lihat di peta</NBText>
+        <NBText variant="caption" color="gray500" align="center" style={styles.tapHintPad}>{t('home:components.locationCard.tapHint')}</NBText>
       )}
     </NBCard>
   );
@@ -137,8 +139,8 @@ export function LocationStatusCard({ location, onRefresh, onPress }: LocationSta
         onPress={onPress}
         activeOpacity={0.7}
         accessibilityRole="button"
-        accessibilityLabel="Lihat lokasi di peta"
-        accessibilityHint="Ketuk untuk membuka peta lokasi"
+        accessibilityLabel={t('home:components.locationCard.a11y.viewOnMap')}
+        accessibilityHint={t('home:components.locationCard.a11y.viewOnMapHint')}
       >
         {cardContent}
       </TouchableOpacity>

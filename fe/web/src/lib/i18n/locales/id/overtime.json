@@ -1,1 +1,75 @@
-{}
+{
+  "list": {
+    "title": "Manajemen Lembur",
+    "description": "Kelola permintaan lembur",
+    "tabs": {
+      "all": "Semua",
+      "pending": "Menunggu",
+      "approved": "Disetujui",
+      "rejected": "Ditolak"
+    },
+    "filters": {
+      "dateRange": "Rentang Tanggal"
+    },
+    "table": {
+      "title": "Daftar Lembur",
+      "columns": {
+        "id": "ID",
+        "date": "Tanggal",
+        "user": "Pengguna",
+        "area": "Area",
+        "time": "Waktu",
+        "activityType": "Tipe Aktivitas",
+        "status": "Status",
+        "createdAt": "Dibuat"
+      }
+    },
+    "pagination": {
+      "page": "Halaman {{page}} dari {{totalPages}}",
+      "previous": "Sebelumnya",
+      "next": "Selanjutnya",
+      "total": "total"
+    },
+    "empty": {
+      "noRequests": "Tidak ada permintaan lembur"
+    },
+    "actions": {
+      "rejectDialog": "Alasan Penolakan",
+      "reasonLabel": "Alasan",
+      "reasonPlaceholder": "Masukkan alasan penolakan...",
+      "rejectButton": "Tolak Lembur",
+      "viewModal": "Detail Lembur"
+    }
+  },
+  "detail": {
+    "title": "Detail Lembur",
+    "breadcrumb": "Lembur",
+    "backButton": "Kembali ke Daftar Lembur",
+    "sections": {
+      "information": "Informasi",
+      "approval": "Persetujuan",
+      "rejection": "Penolakan",
+      "description": "Deskripsi",
+      "photos": "Foto"
+    },
+    "fields": {
+      "user": "Pengguna",
+      "date": "Tanggal",
+      "time": "Waktu",
+      "area": "Area",
+      "activityType": "Tipe Aktivitas",
+      "status": "Status",
+      "notes": "Catatan",
+      "processedBy": "Diproses Oleh",
+      "processDate": "Tanggal Proses",
+      "rejectionReason": "Alasan Penolakan"
+    },
+    "actions": {
+      "rejectDialog": "Alasan Penolakan",
+      "reasonLabel": "Alasan",
+      "reasonPlaceholder": "Masukkan alasan penolakan...",
+      "rejectButton": "Tolak Lembur"
+    }
+  },
+  "notFound": "Lembur tidak ditemukan"
+}

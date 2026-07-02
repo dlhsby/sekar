@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, ScrollView, RefreshControl, StyleSheet } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { LoadingSpinner } from '../../components/common';
 import { NBBackgroundPattern, NBButton, NBText } from '../../components/nb';
 import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
@@ -20,26 +21,27 @@ import type { PruningRequest, PruningRequestStatus } from '../../types/models.ty
  */
 
 /** Status → pill tone + Indonesian label for a submitter's own request. */
-function statusPill(status: PruningRequestStatus): { tone: StatusTone; label: string } {
+function statusPill(status: PruningRequestStatus, t: any): { tone: StatusTone; label: string } {
   switch (status) {
     case 'approved':
-      return { tone: 'ok', label: 'Disetujui' };
+      return { tone: 'ok', label: t('home:kecamatan.status.approved') };
     case 'rejected':
     case 'cancelled':
-      return { tone: 'bad', label: status === 'rejected' ? 'Ditolak' : 'Dibatalkan' };
+      return { tone: 'bad', label: status === 'rejected' ? t('home:kecamatan.status.rejected') : t('home:kecamatan.status.cancelled') };
     case 'assigned':
     case 'in_progress':
-      return { tone: 'ok', label: status === 'in_progress' ? 'Berjalan' : 'Dijadwalkan' };
+      return { tone: 'ok', label: status === 'in_progress' ? t('home:kecamatan.status.inProgress') : t('home:kecamatan.status.scheduled') };
     case 'done':
-      return { tone: 'ok', label: 'Selesai' };
+      return { tone: 'ok', label: t('home:kecamatan.status.done') };
     case 'under_review':
-      return { tone: 'warn', label: 'Direview' };
+      return { tone: 'warn', label: t('home:kecamatan.status.underReview') };
     default:
-      return { tone: 'neutral', label: 'Menunggu' };
+      return { tone: 'neutral', label: t('home:kecamatan.status.waiting') };
   }
 }
 
 export function KecamatanHomeScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
   const { mine, isLoading } = useAppSelector((state) => state.pruningRequests);
@@ -120,44 +122,44 @@ export function KecamatanHomeScreen(): React.JSX.Element {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[nbColors.primary]} />}
         >
           {/* Ringkasan hari ini — request overview */}
-          <HomeSectionDivider label="Ringkasan hari ini" />
+          <HomeSectionDivider label={t('home:kecamatan.sections.summary')} />
 
           {/* My-requests hero */}
           <View style={styles.hero} testID="kecamatan-hero">
             <View style={styles.heroTopRow}>
               <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroLabel}>
-                Permohonan saya
+                {t('home:kecamatan.hero.label')}
               </NBText>
-              <StatusPill tone={counts.waiting > 0 ? 'warn' : 'neutral'} label={`${counts.waiting} diproses`} />
+              <StatusPill tone={counts.waiting > 0 ? 'warn' : 'neutral'} label={t('home:kecamatan.hero.processingCount', { count: counts.waiting })} />
             </View>
             <NBText variant="display" color="black" style={styles.heroValue}>
               {String(list.length)}
             </NBText>
             <NBText variant="mono-sm" color="gray700" style={styles.heroMeta}>
-              {`total permohonan · Halo, ${firstName}`}
+              {t('home:kecamatan.hero.subtitle', { name: firstName })}
             </NBText>
             <View style={styles.heroButton}>
-              <NBButton title="Ajukan permohonan →" onPress={goToSubmit} variant="primary" size="md" testID="kecamatan-submit" />
+              <NBButton title={t('home:kecamatan.hero.button.submit')} onPress={goToSubmit} variant="primary" size="md" testID="kecamatan-submit" />
             </View>
           </View>
 
           {/* Status breakdown */}
           <View style={styles.tilesRow}>
-            <HomeStatTile label="Menunggu" value={counts.waiting} variant="warn" testID="kec-waiting" />
-            <HomeStatTile label="Disetujui" value={counts.approved} variant="ok" testID="kec-approved" />
+            <HomeStatTile label={t('home:kecamatan.kpi.waiting')} value={counts.waiting} variant="warn" testID="kec-waiting" />
+            <HomeStatTile label={t('home:kecamatan.kpi.approved')} value={counts.approved} variant="ok" testID="kec-approved" />
           </View>
           <View style={styles.tilesRow}>
-            <HomeStatTile label="Dijadwalkan" value={counts.scheduled} variant="info" testID="kec-scheduled" />
-            <HomeStatTile label="Selesai" value={counts.done} variant="neutral" testID="kec-done" />
+            <HomeStatTile label={t('home:kecamatan.kpi.scheduled')} value={counts.scheduled} variant="info" testID="kec-scheduled" />
+            <HomeStatTile label={t('home:kecamatan.kpi.done')} value={counts.done} variant="neutral" testID="kec-done" />
           </View>
 
           {/* Recent requests */}
           {recent.length > 0 ? (
             <>
-              <HomeSectionDivider label="Permohonan terbaru" />
+              <HomeSectionDivider label={t('home:kecamatan.sections.recent')} />
               <View style={styles.list}>
                 {recent.map((req) => {
-                  const p = statusPill(req.status);
+                  const p = statusPill(req.status, t);
                   return (
                     <HomeListRow
                       key={req.id}
@@ -174,9 +176,9 @@ export function KecamatanHomeScreen(): React.JSX.Element {
             </>
           ) : (
             <>
-              <HomeSectionDivider label="Permohonan terbaru" />
+              <HomeSectionDivider label={t('home:kecamatan.sections.recent')} />
               <NBText variant="body-sm" color="gray500" style={styles.emptyHint}>
-                Belum ada permohonan. Tekan "Ajukan permohonan" untuk memulai.
+                {t('home:kecamatan.empty.hint')}
               </NBText>
             </>
           )}

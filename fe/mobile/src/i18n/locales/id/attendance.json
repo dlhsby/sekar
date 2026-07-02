@@ -1,1 +1,71 @@
-{}
+{
+  "list": {
+    "title": "Kehadiran",
+    "sortOptions": {
+      "newest": "Tanggal Terbaru",
+      "oldest": "Tanggal Terlama"
+    },
+    "statusChip": {
+      "late": "Terlambat",
+      "onTime": "Tepat Waktu",
+      "active": "Berlangsung"
+    },
+    "filterChips": {
+      "date": "Pilih Tanggal"
+    },
+    "emptyState": {
+      "noAttendance": "Belum ada kehadiran",
+      "attendanceHint": "Riwayat kehadiran Anda akan muncul di sini setelah clock in.",
+      "noResults": "Tidak ada hasil",
+      "noAttendanceMatch": "Tidak ada kehadiran yang sesuai filter"
+    },
+    "button": {
+      "clockIn": "Clock In",
+      "clockOut": "Clock Out"
+    },
+    "a11y": {
+      "clockIn": "Clock in untuk memulai shift",
+      "clockOut": "Clock out dari shift aktif"
+    },
+    "sortModal": {
+      "title": "Urutkan Kehadiran"
+    }
+  },
+  "detail": {
+    "loading": "Memuat data...",
+    "noAttendance": "Tidak ada kehadiran pada hari ini",
+    "button": {
+      "back": "Kembali",
+      "viewShifts": "Lihat Rincian Shift"
+    },
+    "labels": {
+      "date": "Tanggal",
+      "clockIn": "Masuk",
+      "clockOut": "Keluar",
+      "status": "Status Kehadiran",
+      "duration": "Durasi",
+      "shiftCount": "Jumlah shift"
+    },
+    "status": {
+      "late": "Terlambat",
+      "onTime": "Tepat Waktu"
+    },
+    "shiftCount": "{{count}} shift",
+    "a11y": {
+      "viewShifts": "Lihat rincian shift hari ini"
+    }
+  },
+  "dayCard": {
+    "status": {
+      "active": "Berlangsung",
+      "late": "Terlambat",
+      "onTime": "Tepat Waktu"
+    },
+    "shiftCount": "{{count}} shift",
+    "clockIn": "Masuk {{time}}",
+    "clockOut": "Keluar {{time}}",
+    "a11y": {
+      "label": "Kehadiran {{date}}, {{status}}"
+    }
+  }
+}

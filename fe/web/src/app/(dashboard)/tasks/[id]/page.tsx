@@ -5,6 +5,7 @@
 
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/lib/auth/hooks';
 import {
   useTask,
@@ -51,6 +52,7 @@ interface TaskDetailPageProps {
 }
 
 export default function TaskDetailPage({ params }: TaskDetailPageProps) {
+  const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [revisionReason, setRevisionReason] = useState('');
@@ -95,7 +97,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-nb-primary mx-auto mb-4"></div>
-          <p className="text-nb-gray-600">Memuat...</p>
+          <p className="text-nb-gray-600">{t("tasks:detail.loading")}</p>
         </div>
       </div>
     );
@@ -151,7 +153,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
         onClick={() => router.push('/tasks')}
         className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wide text-nb-gray-700 transition-colors hover:text-nb-black"
       >
-        <ArrowLeft className="size-4" aria-hidden="true" /> Kembali ke daftar tugas
+        <ArrowLeft className="size-4" aria-hidden="true" /> {t("tasks:detail.backButton")}
       </button>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -194,10 +196,10 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
             <div className="space-y-3">
               <h3 className="font-bold text-nb-black">Alasan Revisi</h3>
               <FormInput
-                label="Alasan"
+                label={t("tasks:detail.revisionFormLabel")}
                 value={revisionReason}
                 onChange={(e) => setRevisionReason(e.target.value)}
-                placeholder="Masukkan alasan revisi..."
+                placeholder={t("tasks:detail.revisionFormPlaceholder")}
               />
               <div className="flex gap-2">
                 <Button
