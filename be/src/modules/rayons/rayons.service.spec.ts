@@ -178,6 +178,30 @@ describe('RayonsService', () => {
       expect(mockRayonRepository.save).toHaveBeenCalled();
     });
 
+    it('persists boundary_polygon (admin correction of the KMZ outline)', async () => {
+      const polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [1, 1],
+            [2, 2],
+            [3, 1],
+            [1, 1],
+          ],
+        ],
+      };
+      const updateDto: UpdateRayonDto = { boundary_polygon: polygon };
+      mockRayonRepository.findOne.mockResolvedValue({ ...mockRayon });
+      mockRayonRepository.save.mockImplementation((r) => Promise.resolve(r));
+
+      const result = await service.update(mockRayon.id, updateDto);
+
+      expect(result.boundary_polygon).toEqual(polygon);
+      expect(mockRayonRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ boundary_polygon: polygon }),
+      );
+    });
+
     it('should update a rayon with new name', async () => {
       const updateDto: UpdateRayonDto = {
         name: 'Rayon Selatan Updated',
