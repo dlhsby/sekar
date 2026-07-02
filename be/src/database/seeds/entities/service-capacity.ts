@@ -55,14 +55,16 @@ export async function seedServiceCapacity(ctx: SeedContext): Promise<void> {
     }
   }
 
-  // Dev capacity grid — capacity_units = 5 and a varied `booked_units` pattern
-  // so the WeekPicker exercises all four chip variants:
-  //   wk %4 == 0 → 0 / 5 booked  → "Tersedia" (green)
-  //   wk %4 == 1 → 2 / 5 booked  → "Tersedia" (green)
-  //   wk %4 == 2 → 4 / 5 booked  → "Hampir Penuh" (yellow)
-  //   wk %4 == 3 → 5 / 5 booked  → "Penuh" (red)
-  // The pattern is rotated by rayon index so different rayons show different load profiles.
-  const DEV_CAPACITY = 5;
+  // Capacity grid — capacity_units varies by mode:
+  // - Staging: 5 units per week (exercises all WeekPicker chip variants)
+  // - Reference: 0 units (capacity tracking disabled in production reference)
+  // - Demo: 5 units (same as staging for UI testing)
+  // Booked pattern rotates by rayon so different rayons show different load profiles:
+  //   wk %4 == 0 → 0 booked  → "Tersedia" (green)
+  //   wk %4 == 1 → 2 booked  → "Tersedia" (green)
+  //   wk %4 == 2 → 4 booked  → "Hampir Penuh" (yellow)
+  //   wk %4 == 3 → max booked → "Penuh" (red)
+  const CAPACITY_UNITS = ctx.mode === 'reference' ? 0 : 5;
   const BOOK_PATTERN = [0, 2, 4, 5];
   let capacityInserted = 0;
   let capacityUpdated = 0;
@@ -81,7 +83,7 @@ export async function seedServiceCapacity(ctx: SeedContext): Promise<void> {
             capacity_units = EXCLUDED.capacity_units,
             booked_units   = EXCLUDED.booked_units
          RETURNING (xmax = 0) AS inserted`,
-        [rayon.id, year, week, DEV_CAPACITY, booked],
+        [rayon.id, year, week, CAPACITY_UNITS, booked],
       );
       if (result[0]?.inserted) capacityInserted++;
       else capacityUpdated++;
@@ -89,7 +91,7 @@ export async function seedServiceCapacity(ctx: SeedContext): Promise<void> {
   }
   ctx.log(
     `  ✓ ${capacityInserted} new + ${capacityUpdated} refreshed service_capacity rows ` +
-      `(${rayons.length} rayons × ${weeksToSeed.length} weeks, capacity_units=${DEV_CAPACITY}, ` +
+      `(${rayons.length} rayons × ${weeksToSeed.length} weeks, capacity_units=${CAPACITY_UNITS}, ` +
       `booked rotated through [${BOOK_PATTERN.join(',')}])`,
   );
   ctx.log(
