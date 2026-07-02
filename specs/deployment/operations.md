@@ -127,16 +127,18 @@ cd be
 npm run db:seed
 ```
 
-**Phase-specific production seed (for cold-start):**
+**Production seed (for cold-start):**
 
 ```bash
-# Cold-start fresh production (all reference + seeded sample data)
+# Reference/config data only — idempotent, safe to re-run (plant species,
+# monitoring configs, capacity grid, 1 superadmin). No transaction data.
 docker compose --env-file .env.production -f docker-compose.prod.yml exec backend \
   npm run db:seed:prod
 
-# Phase 3 reference data only (idempotent, add to existing DB)
+# Production cold-start essentials (rayons, shifts, kecamatans, 2 admins;
+# passwords from env) — idempotent upsert.
 docker compose --env-file .env.production -f docker-compose.prod.yml exec backend \
-  npm run db:seed:phase3:prod
+  npm run db:seed:production:prod
 ```
 
 ### Direct Database Access
