@@ -2517,3 +2517,21 @@ export function surabayaOutlinePolygon(): GeoJsonPolygon {
   }
   return { type: 'Polygon', coordinates: [hull.map(([lng, lat]) => [lng, lat])] };
 }
+
+/**
+ * Closed convex-hull polygon over a set of rings (each `[lng,lat][]`). Used to
+ * synthesize the Rayon Taman Aktif boundary from its member park polygons (the
+ * KMZ has no single rayon outline — see `Rayon TAMAN AKTIF.kmz`). Returns null
+ * when there are too few points to form a polygon.
+ */
+export function hullPolygonFromRings(rings: [number, number][][]): GeoJsonPolygon | null {
+  const pts: [number, number][] = [];
+  for (const ring of rings) for (const [lng, lat] of ring) pts.push([lng, lat]);
+  if (pts.length < 3) return null;
+  const hull = computeConvexHull(pts);
+  if (hull.length < 3) return null;
+  const first = hull[0];
+  const last = hull[hull.length - 1];
+  if (first && last && (first[0] !== last[0] || first[1] !== last[1])) hull.push(first);
+  return { type: 'Polygon', coordinates: [hull.map(([lng, lat]) => [lng, lat])] };
+}

@@ -10,6 +10,7 @@ import {
   computeAreaM2FromRings,
   toGeoJsonGeometry,
   surabayaOutlinePolygon,
+  hullPolygonFromRings,
   BUNGKUL_AREA_ID,
   BUNGKUL_COORD_STRINGS,
   TAMAN_FLORA_AREA_ID,
@@ -580,7 +581,11 @@ async function seedStaging() {
 
     // (a) Geographic coverage areas — per-rayon KMZ committed under data/kmz/.
     //     Regenerate after new KMZ with `npm run seed:extract-kmz`.
-    const kmzAreas = loadKmzAreas();
+    //     TAMAN_AKTIF polygons are handled in (b): they are matched to the
+    //     client park list by name so the parks get boundaries (rather than
+    //     inserted as separate, korlap-less areas).
+    const allKmzAreas = loadKmzAreas();
+    const kmzAreas = allKmzAreas.filter((a) => a.rayonCode !== 'TAMAN_AKTIF');
     const kmzByRayon: Record<string, number> = {};
     for (const a of kmzAreas) {
       const rings = a.coordStrings.map((s) => parseCoords(s));
@@ -606,6 +611,34 @@ async function seedStaging() {
           .join('  '),
     );
 
+    // Taman Aktif park boundaries from `Rayon TAMAN AKTIF.kmz`, keyed by a
+    // normalized name so minor label drift ("Kunang - Kunang" vs "Kunang-kunang")
+    // still matches the client park list. Value carries the polygon rings.
+    const normParkName = (s: string): string =>
+      s
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+    const tamanBoundaryByName = new Map<string, string[]>();
+    for (const a of allKmzAreas) {
+      if (a.rayonCode !== 'TAMAN_AKTIF') continue;
+      const key = normParkName(a.name);
+      if (!tamanBoundaryByName.has(key)) tamanBoundaryByName.set(key, a.coordStrings);
+    }
+    // Bridge known label drift between the client park list (CSV) and the KMZ
+    // placemark names → CSV-normalized alias : KMZ-normalized name.
+    const TAMAN_NAME_ALIASES: Record<string, string> = {
+      'taman insenerator': 'taman incinerator',
+      'taman kb wonorejo': 'taman kebun bibit wonorejo',
+      'taman kombes': 'taman kombes pol m duryat',
+      'taman kunang2': 'taman kunang kunang',
+      'taman tais': 'taman ais nasution',
+    };
+    for (const [csvNorm, kmzNorm] of Object.entries(TAMAN_NAME_ALIASES)) {
+      const coords = tamanBoundaryByName.get(kmzNorm);
+      if (coords && !tamanBoundaryByName.has(csvNorm)) tamanBoundaryByName.set(csvNorm, coords);
+    }
+
     // (b) Taman Aktif parks from the client sheet. Most have no geometry yet, so
     //     they get a placeholder centroid (Rayon Taman Aktif office) and no
     //     boundary → clock-in falls back to "allow when no boundary defined".
@@ -613,6 +646,7 @@ async function seedStaging() {
     const tamanAktif = loadTamanAktifAreas();
     let tamanAktifSeeded = 0;
     let tamanAktifGeocoded = 0;
+    let tamanAktifWithBoundary = 0;
     for (const a of tamanAktif) {
       if (a.name === 'Taman Flora') continue; // city-wide boundary seeded below
       if (a.name === 'Taman Bungkul') {
@@ -629,25 +663,57 @@ async function seedStaging() {
           RAYON_TAMAN_AKTIF_ID,
         );
       } else {
-        // Geocoded park centre where available; else the Rayon Taman Aktif
-        // office as a placeholder pin. No boundary polygon → no geofence.
-        await insertArea(
-          a.id,
-          a.name,
-          'park',
-          a.gps_lat ?? RAYON_TAMAN_AKTIF_OFFICE.lat,
-          a.gps_lng ?? RAYON_TAMAN_AKTIF_OFFICE.lng,
-          null,
-          null,
-          RAYON_TAMAN_AKTIF_ID,
-        );
-        if (a.gps_lat != null) tamanAktifGeocoded += 1;
+        // Real geofence from the taman-aktif KMZ where the park name matches;
+        // else geocoded centre; else the office as a placeholder pin.
+        const coordStrings = tamanBoundaryByName.get(normParkName(a.name));
+        if (coordStrings && coordStrings.length > 0) {
+          const rings = coordStrings.map((s) => parseCoords(s));
+          const { lat, lng } = computeCentroidFromRings(rings);
+          await insertArea(
+            a.id,
+            a.name,
+            'park',
+            lat,
+            lng,
+            JSON.stringify(toGeoJsonGeometry(coordStrings)),
+            computeAreaM2FromRings(rings),
+            RAYON_TAMAN_AKTIF_ID,
+          );
+          tamanAktifWithBoundary += 1;
+        } else {
+          await insertArea(
+            a.id,
+            a.name,
+            'park',
+            a.gps_lat ?? RAYON_TAMAN_AKTIF_OFFICE.lat,
+            a.gps_lng ?? RAYON_TAMAN_AKTIF_OFFICE.lng,
+            null,
+            null,
+            RAYON_TAMAN_AKTIF_ID,
+          );
+          if (a.gps_lat != null) tamanAktifGeocoded += 1;
+        }
       }
       tamanAktifSeeded += 1;
     }
     console.log(
-      `  ✓ ${tamanAktifSeeded} Taman Aktif parks (Bungkul geofenced; ${tamanAktifGeocoded} geocoded pins; rest placeholder)`,
+      `  ✓ ${tamanAktifSeeded} Taman Aktif parks (Bungkul geofenced; ${tamanAktifWithBoundary} KMZ boundaries; ${tamanAktifGeocoded} geocoded pins; rest placeholder)`,
     );
+
+    // Rayon Taman Aktif has no single geographic outline in the KMZ — derive one
+    // as the convex hull of its member park polygons so the map/geofence has a
+    // sensible extent. Keep the office center override (set in STEP 4).
+    const tamanRings = [...tamanBoundaryByName.values()].flatMap((cs) =>
+      cs.map((s) => parseCoords(s)),
+    );
+    const tamanHull = hullPolygonFromRings(tamanRings);
+    if (tamanHull) {
+      await queryRunner.query(
+        `UPDATE rayons SET boundary_polygon = $1::jsonb, boundary_computed_at = NOW() WHERE id = $2`,
+        [JSON.stringify(tamanHull), RAYON_TAMAN_AKTIF_ID],
+      );
+      console.log('  ✓ Rayon Taman Aktif boundary (convex hull of park polygons)');
+    }
 
     // Taman Flora (Rayon Taman Aktif) — GPS pin on the park itself, but its
     // boundary spans the whole-Surabaya outline (hull of all rayon polygons).

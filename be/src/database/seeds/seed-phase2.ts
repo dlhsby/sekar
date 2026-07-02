@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm';
 import '../../config/load-env';
 import { DEFAULT_PASSWORD_HASH } from './constants';
+import { loadKmzAreas } from './load-seed-data';
 import {
   RAYON_BOUNDARIES,
   RAYON_PUSAT_AREAS,
@@ -10,6 +11,7 @@ import {
   computeAreaM2FromRings,
   toGeoJsonGeometry,
   surabayaOutlinePolygon,
+  hullPolygonFromRings,
   BUNGKUL_AREA_ID,
   DARMO_P1_AREA_ID,
   DARMO_P2_AREA_ID,
@@ -343,15 +345,26 @@ async function seedPhase2() {
         [centroid.lat, centroid.lng, JSON.stringify(polygon), rayonId],
       );
     }
-    // Rayon Taman Aktif has no geographic boundary — anchor its center on its
-    // office, which sits inside Taman Flora.
-    await queryRunner.query(`UPDATE rayons SET center_lat = $1, center_lng = $2 WHERE id = $3`, [
-      RAYON_TAMAN_AKTIF_OFFICE.lat,
-      RAYON_TAMAN_AKTIF_OFFICE.lng,
-      RAYON_TAMAN_AKTIF_ID,
-    ]);
+    // Rayon Taman Aktif has no single geographic outline in the KMZ — derive one
+    // as the convex hull of its member park polygons (from `Rayon TAMAN AKTIF.kmz`);
+    // keep the office center override so the map opens on Taman Flora.
+    const tamanRings = loadKmzAreas()
+      .filter((a) => a.rayonCode === 'TAMAN_AKTIF')
+      .flatMap((a) => a.coordStrings.map((s) => parseCoords(s)));
+    const tamanHull = hullPolygonFromRings(tamanRings);
+    await queryRunner.query(
+      `UPDATE rayons SET center_lat = $1, center_lng = $2, boundary_polygon = $3::jsonb,
+        boundary_computed_at = CASE WHEN $3::jsonb IS NULL THEN boundary_computed_at ELSE NOW() END
+       WHERE id = $4`,
+      [
+        RAYON_TAMAN_AKTIF_OFFICE.lat,
+        RAYON_TAMAN_AKTIF_OFFICE.lng,
+        tamanHull ? JSON.stringify(tamanHull) : null,
+        RAYON_TAMAN_AKTIF_ID,
+      ],
+    );
     console.log(
-      '  ✓ Updated 7 Rayon boundaries (real KMZ polygons) + Taman Aktif center on its office (Taman Flora)',
+      '  ✓ Updated 7 Rayon boundaries (real KMZ polygons) + Taman Aktif (hull boundary + office center)',
     );
 
     // ==========================================
@@ -452,11 +465,16 @@ async function seedPhase2() {
       TAMAN_AKTIF: RAYON_TAMAN_AKTIF_ID,
     };
     const ALL_AREA_DEFS: AreaDef[] = [...RAYON_PUSAT_AREAS, ...TIMUR2_AREAS];
+    // Refresh the curated demo areas' geometry from the latest KMZ (matched by
+    // deterministic id) so local testing reflects the newest boundaries; ids +
+    // dummy assignments stay stable. Falls back to the baked coordStrings.
+    const freshCoordsById = new Map(loadKmzAreas().map((a) => [a.id, a.coordStrings]));
     for (const areaDef of ALL_AREA_DEFS) {
-      const rings = areaDef.coordStrings.map((s) => parseCoords(s));
+      const coordStrings = freshCoordsById.get(areaDef.id) ?? areaDef.coordStrings;
+      const rings = coordStrings.map((s) => parseCoords(s));
       const { lat, lng } = computeCentroidFromRings(rings);
       const coverageArea = computeAreaM2FromRings(rings);
-      const boundaryPolygon = JSON.stringify(toGeoJsonGeometry(areaDef.coordStrings));
+      const boundaryPolygon = JSON.stringify(toGeoJsonGeometry(coordStrings));
       await queryRunner.query(
         `INSERT INTO areas (
           id, name, area_type_id, gps_lat, gps_lng, radius_meters,
