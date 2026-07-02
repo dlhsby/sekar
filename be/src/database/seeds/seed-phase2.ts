@@ -1,7 +1,7 @@
 import { DataSource } from 'typeorm';
 import '../../config/load-env';
 import { DEFAULT_PASSWORD_HASH } from './constants';
-import { loadKmzAreas } from './load-seed-data';
+import { loadKmzAreas, loadTamanAktifAreas } from './load-seed-data';
 import {
   RAYON_BOUNDARIES,
   RAYON_PUSAT_AREAS,
@@ -13,6 +13,7 @@ import {
   surabayaOutlinePolygon,
   hullPolygonFromRings,
   BUNGKUL_AREA_ID,
+  BUNGKUL_COORD_STRINGS,
   DARMO_P1_AREA_ID,
   DARMO_P2_AREA_ID,
   DARMO_P3_AREA_ID,
@@ -464,17 +465,17 @@ async function seedPhase2() {
       BARAT2: RAYON_7_ID,
       TAMAN_AKTIF: RAYON_TAMAN_AKTIF_ID,
     };
-    const ALL_AREA_DEFS: AreaDef[] = [...RAYON_PUSAT_AREAS, ...TIMUR2_AREAS];
-    // Refresh the curated demo areas' geometry from the latest KMZ (matched by
-    // deterministic id) so local testing reflects the newest boundaries; ids +
-    // dummy assignments stay stable. Falls back to the baked coordStrings.
-    const freshCoordsById = new Map(loadKmzAreas().map((a) => [a.id, a.coordStrings]));
-    for (const areaDef of ALL_AREA_DEFS) {
-      const coordStrings = freshCoordsById.get(areaDef.id) ?? areaDef.coordStrings;
-      const rings = coordStrings.map((s) => parseCoords(s));
-      const { lat, lng } = computeCentroidFromRings(rings);
-      const coverageArea = computeAreaM2FromRings(rings);
-      const boundaryPolygon = JSON.stringify(toGeoJsonGeometry(coordStrings));
+    // One area row (boundary + coverage may be null).
+    const insertArea = async (
+      id: string,
+      name: string,
+      typeCode: string,
+      lat: number,
+      lng: number,
+      boundaryJson: string | null,
+      coverage: number | null,
+      rayonId: string,
+    ): Promise<void> => {
       await queryRunner.query(
         `INSERT INTO areas (
           id, name, area_type_id, gps_lat, gps_lng, radius_meters,
@@ -487,19 +488,117 @@ async function seedPhase2() {
           $6::jsonb, $7,
           $8, TRUE
         ON CONFLICT (id) DO NOTHING`,
-        [
-          areaDef.id,
-          areaDef.name,
-          areaDef.typeCode,
-          lat,
-          lng,
-          boundaryPolygon,
-          coverageArea,
-          RAYON_ID_BY_CODE[areaDef.rayonCode],
-        ],
+        [id, name, typeCode, lat, lng, boundaryJson, coverage, rayonId],
       );
+    };
+    const insertAreaDef = async (areaDef: AreaDef, coordStrings: string[]): Promise<void> => {
+      const rings = coordStrings.map((s) => parseCoords(s));
+      const { lat, lng } = computeCentroidFromRings(rings);
+      await insertArea(
+        areaDef.id,
+        areaDef.name,
+        areaDef.typeCode,
+        lat,
+        lng,
+        JSON.stringify(toGeoJsonGeometry(coordStrings)),
+        computeAreaM2FromRings(rings),
+        RAYON_ID_BY_CODE[areaDef.rayonCode],
+      );
+    };
+
+    // Curated Pusat + Timur 2 demo areas, geometry refreshed from the latest KMZ
+    // (matched by deterministic id) so ids + dummy assignments stay stable.
+    const kmzAll = loadKmzAreas();
+    const freshCoordsById = new Map(kmzAll.map((a) => [a.id, a.coordStrings]));
+    const ALL_AREA_DEFS: AreaDef[] = [...RAYON_PUSAT_AREAS, ...TIMUR2_AREAS];
+    for (const areaDef of ALL_AREA_DEFS) {
+      await insertAreaDef(areaDef, freshCoordsById.get(areaDef.id) ?? areaDef.coordStrings);
     }
     console.log(`  ✓ Seeded ${ALL_AREA_DEFS.length} areas (13 Rayon Pusat + 25 Rayon Timur 2)`);
+
+    // Rayon Timur 1 coverage areas — full set from the KMZ so local testing has
+    // Timur 1 boundaries (staging seeds these too).
+    const timur1Areas = kmzAll.filter((a) => a.rayonCode === 'TIMUR1');
+    for (const a of timur1Areas) await insertAreaDef(a, a.coordStrings);
+    console.log(`  ✓ Seeded ${timur1Areas.length} Rayon Timur 1 coverage areas (KMZ)`);
+
+    // Taman Aktif parks with real geofences — match the client park list to the
+    // taman-aktif KMZ polygons by normalized name (+ alias bridge for label
+    // drift); unmatched parks get a center pin. Flora/Bungkul handled specially.
+    const normParkName = (s: string): string =>
+      s
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+    const tamanBoundaryByName = new Map<string, string[]>();
+    for (const a of kmzAll) {
+      if (a.rayonCode !== 'TAMAN_AKTIF') continue;
+      const key = normParkName(a.name);
+      if (!tamanBoundaryByName.has(key)) tamanBoundaryByName.set(key, a.coordStrings);
+    }
+    const TAMAN_NAME_ALIASES: Record<string, string> = {
+      'taman insenerator': 'taman incinerator',
+      'taman kb wonorejo': 'taman kebun bibit wonorejo',
+      'taman kombes': 'taman kombes pol m duryat',
+      'taman kunang2': 'taman kunang kunang',
+      'taman tais': 'taman ais nasution',
+    };
+    for (const [csvNorm, kmzNorm] of Object.entries(TAMAN_NAME_ALIASES)) {
+      const coords = tamanBoundaryByName.get(kmzNorm);
+      if (coords && !tamanBoundaryByName.has(csvNorm)) tamanBoundaryByName.set(csvNorm, coords);
+    }
+    let tamanSeeded = 0;
+    let tamanWithBoundary = 0;
+    for (const a of loadTamanAktifAreas()) {
+      if (a.name === 'Taman Flora') continue; // city-wide boundary seeded below
+      if (a.name === 'Taman Bungkul') {
+        const rings = BUNGKUL_COORD_STRINGS.map((s) => parseCoords(s));
+        const { lat, lng } = computeCentroidFromRings(rings);
+        await insertArea(
+          BUNGKUL_AREA_ID,
+          a.name,
+          'park',
+          lat,
+          lng,
+          JSON.stringify(toGeoJsonGeometry(BUNGKUL_COORD_STRINGS)),
+          computeAreaM2FromRings(rings),
+          RAYON_TAMAN_AKTIF_ID,
+        );
+        tamanWithBoundary += 1;
+      } else {
+        const coordStrings = tamanBoundaryByName.get(normParkName(a.name));
+        if (coordStrings && coordStrings.length > 0) {
+          const rings = coordStrings.map((s) => parseCoords(s));
+          const { lat, lng } = computeCentroidFromRings(rings);
+          await insertArea(
+            a.id,
+            a.name,
+            'park',
+            lat,
+            lng,
+            JSON.stringify(toGeoJsonGeometry(coordStrings)),
+            computeAreaM2FromRings(rings),
+            RAYON_TAMAN_AKTIF_ID,
+          );
+          tamanWithBoundary += 1;
+        } else {
+          await insertArea(
+            a.id,
+            a.name,
+            'park',
+            a.gps_lat ?? RAYON_TAMAN_AKTIF_OFFICE.lat,
+            a.gps_lng ?? RAYON_TAMAN_AKTIF_OFFICE.lng,
+            null,
+            null,
+            RAYON_TAMAN_AKTIF_ID,
+          );
+        }
+      }
+      tamanSeeded += 1;
+    }
+    console.log(
+      `  ✓ Seeded ${tamanSeeded} Taman Aktif parks (${tamanWithBoundary} with KMZ geofences)`,
+    );
 
     // Taman Flora (Rayon Taman Aktif) — GPS pin on the park itself, but its
     // boundary spans the whole-Surabaya outline (hull of all rayon polygons).
