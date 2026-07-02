@@ -170,7 +170,7 @@ async function seedProduction(): Promise<void> {
       await queryRunner.query(
         `UPDATE rayons SET
            center_lat = $1, center_lng = $2,
-           boundary_polygon = $3::jsonb, boundary_computed_at = NOW()
+           boundary_polygon = $3::jsonb
          WHERE name = $4 AND boundary_polygon IS NULL`,
         [centroid.lat, centroid.lng, JSON.stringify(polygon), rayonName],
       );

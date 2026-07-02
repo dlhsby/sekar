@@ -372,8 +372,7 @@ async function seedStaging() {
         `UPDATE rayons SET
           center_lat            = $1,
           center_lng            = $2,
-          boundary_polygon      = $3::jsonb,
-          boundary_computed_at  = NOW()
+          boundary_polygon      = $3::jsonb
          WHERE id = $4`,
         [centroid.lat, centroid.lng, JSON.stringify(polygon), rayonId],
       );
@@ -708,10 +707,10 @@ async function seedStaging() {
     );
     const tamanHull = hullPolygonFromRings(tamanRings);
     if (tamanHull) {
-      await queryRunner.query(
-        `UPDATE rayons SET boundary_polygon = $1::jsonb, boundary_computed_at = NOW() WHERE id = $2`,
-        [JSON.stringify(tamanHull), RAYON_TAMAN_AKTIF_ID],
-      );
+      await queryRunner.query(`UPDATE rayons SET boundary_polygon = $1::jsonb WHERE id = $2`, [
+        JSON.stringify(tamanHull),
+        RAYON_TAMAN_AKTIF_ID,
+      ]);
       console.log('  ✓ Rayon Taman Aktif boundary (convex hull of park polygons)');
     }
 

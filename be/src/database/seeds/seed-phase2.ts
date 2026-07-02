@@ -340,8 +340,7 @@ async function seedPhase2() {
         `UPDATE rayons SET
           center_lat = $1,
           center_lng = $2,
-          boundary_polygon = $3::jsonb,
-          boundary_computed_at = NOW()
+          boundary_polygon = $3::jsonb
          WHERE id = $4`,
         [centroid.lat, centroid.lng, JSON.stringify(polygon), rayonId],
       );
@@ -354,8 +353,8 @@ async function seedPhase2() {
       .flatMap((a) => a.coordStrings.map((s) => parseCoords(s)));
     const tamanHull = hullPolygonFromRings(tamanRings);
     await queryRunner.query(
-      `UPDATE rayons SET center_lat = $1, center_lng = $2, boundary_polygon = $3::jsonb,
-        boundary_computed_at = CASE WHEN $3::jsonb IS NULL THEN boundary_computed_at ELSE NOW() END
+      `UPDATE rayons SET center_lat = $1, center_lng = $2,
+        boundary_polygon = COALESCE($3::jsonb, boundary_polygon)
        WHERE id = $4`,
       [
         RAYON_TAMAN_AKTIF_OFFICE.lat,
