@@ -11,8 +11,8 @@
  *
  * Usage:
  *   npm run sheet:sync -- --list     # inspect tabs + detected tables (start here)
- *   npm run sheet:pull               # sheet → regenerate areas-taman-aktif.csv + users.csv
- *   npm run sheet:push               # write generated ids + gps back into the sheet
+ *   npm run sheet:pull               # sheet → regenerate areas-taman-aktif.csv + users.csv + rayons.csv
+ *   npm run sheet:push               # write generated ids + gps + rayon master data back into the sheet
  *
  * Pull preserves the `id` and `username` already on the sheet (only minting a
  * deterministic one when the cell is blank), so ids authored elsewhere — e.g. a
@@ -167,6 +167,18 @@ const isAreaHeader = (r: string[]): boolean => {
 const isUserHeader = (r: string[]): boolean => {
   const c = r.map(norm);
   return c.includes('nama') && c.includes('jabatan') && (c.includes('no hp') || c.includes('area'));
+};
+// Rayon master-data tab: has name + description + boundary/center columns, and
+// is neither a user tab ('nama'/'jabatan') nor an area tab ('korlap'/'jenis').
+const isRayonHeader = (r: string[]): boolean => {
+  const c = r.map(norm);
+  return (
+    c.includes('name') &&
+    c.includes('description') &&
+    (c.includes('boundary_polygon') || c.includes('center_lat')) &&
+    !c.includes('jabatan') &&
+    !c.includes('korlap')
+  );
 };
 /** Header row index + column map for the first matching table in a grid. */
 function findTable(rows: string[][], match: (r: string[]) => boolean): { hdr: number; col: Record<string, number> } | null {
@@ -370,7 +382,59 @@ async function pull(): Promise<void> {
     userRows,
   );
 
-  console.log(`Pulled ${areaRows.length} parks + ${userRows.length} users from the sheet → seed CSVs.`);
+  // Rayons — master data (id/name/description/color) from the `rayon` tab.
+  // Boundaries/center are NOT pulled (they come from the KMZ, not the sheet).
+  // The tab is a DB export, so cells can be dirty: literal "NULL", or values
+  // truncated with a trailing ellipsis. Fall back to the existing committed
+  // rayons.csv for those so a pull never degrades clean master data.
+  const rayonExisting = new Map(
+    readCsv(path.join(DATA_DIR, 'rayons.csv')).map((r) => [r.rayon_code || r.name.toLowerCase(), r]),
+  );
+  // Trim, drop literal "NULL", and reject ellipsis-truncated cells.
+  const cleanCell = (v: string | undefined): string => {
+    const s = (v ?? '').replace(/\s+/g, ' ').trim();
+    if (!s || /^null$/i.test(s)) return '';
+    if (/[…]$|\.\.\.$/.test(s)) return ''; // truncated export → treat as blank
+    return s;
+  };
+  const rayonRows: string[][] = [];
+  for (const g of grids) {
+    const t = findTable(g.rows, isRayonHeader);
+    if (!t) continue;
+    const { col } = t;
+    for (let i = t.hdr + 1; i < g.rows.length; i++) {
+      const r = g.rows[i];
+      const name = (r[col['name']] ?? '').replace(/\s+/g, ' ').trim();
+      if (!name) continue;
+      const code = rayonFromTitle(name); // regex-matches the rayon name too
+      const prev = rayonExisting.get(code || name.toLowerCase());
+      const sheetId = (col['id'] != null ? (r[col['id']] ?? '') : '').trim();
+      const desc = cleanCell(col['description'] != null ? r[col['description']] : '');
+      const color = cleanCell(col['color'] != null ? r[col['color']] : '');
+      rayonRows.push([
+        // Preserve the id already on the sheet (the stable DB id); mint a
+        // deterministic fallback only if the cell is blank/invalid.
+        UUID_RE.test(sheetId) ? sheetId : (prev?.id ?? uuidv5(`RAYON:${code || name}`)),
+        name,
+        desc || (prev?.description ?? ''),
+        color || (prev?.color ?? ''),
+        code,
+      ]);
+    }
+    break; // only the first rayon table
+  }
+  if (rayonRows.length) {
+    rayonRows.sort((a, b) => a[4].localeCompare(b[4])); // stable order by rayon_code
+    writeCsv(
+      path.join(DATA_DIR, 'rayons.csv'),
+      ['id', 'name', 'description', 'color', 'rayon_code'],
+      rayonRows,
+    );
+  }
+
+  console.log(
+    `Pulled ${areaRows.length} parks + ${userRows.length} users + ${rayonRows.length} rayons from the sheet → seed CSVs.`,
+  );
   console.log('Next: npm run db:seed:staging');
 }
 
@@ -432,12 +496,34 @@ async function push(): Promise<void> {
     }
   }
 
+  // Rayons: write the stable id back into the `rayon` tab, matched by name —
+  // the machine field only, mirroring how the user push writes id/username but
+  // never overwrites human-edited cells (name/description/color stay sheet-owned
+  // and are read on pull).
+  const rayonCsv = new Map(
+    readCsv(path.join(DATA_DIR, 'rayons.csv')).map((r) => [r.name.toLowerCase(), r]),
+  );
+  for (const g of grids) {
+    const t = findTable(g.rows, isRayonHeader);
+    if (!t) continue;
+    const cId = t.col['id'] ?? -1;
+    if (cId < 0) break; // rayon tab always ships an id column
+    for (let i = t.hdr + 1; i < g.rows.length; i++) {
+      const name = (g.rows[i][t.col['name']] ?? '').replace(/\s+/g, ' ').trim();
+      if (!name) continue;
+      const rec = rayonCsv.get(name.toLowerCase());
+      if (!rec) continue;
+      updates.push({ range: `'${g.title}'!${A1(cId)}${i + 1}`, values: [[rec.id]] });
+    }
+    break; // only the first rayon table
+  }
+
   if (!updates.length) {
     console.log('Nothing to push (no matching tables/rows found).');
     return;
   }
   const applied = await writeUpdates(updates);
-  console.log(`Pushed ${applied} cell ranges (ids + gps + usernames) into the sheet.`);
+  console.log(`Pushed ${applied} cell ranges (ids + gps + usernames + rayons) into the sheet.`);
 }
 
 // ─── --list: inspect structure ───────────────────────────────────────────────
@@ -447,7 +533,8 @@ async function list(): Promise<void> {
   for (const g of grids) {
     const a = findTable(g.rows, isAreaHeader);
     const u = findTable(g.rows, isUserHeader);
-    const kind = a ? 'AREA table' : u ? 'USER table' : '—';
+    const ry = findTable(g.rows, isRayonHeader);
+    const kind = a ? 'AREA table' : u ? 'USER table' : ry ? 'RAYON table' : '—';
     console.log(`  • ${g.title.padEnd(28)} ${g.rows.length} rows  ${kind}`);
   }
 }

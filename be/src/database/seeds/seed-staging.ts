@@ -2,7 +2,7 @@ import { DataSource } from 'typeorm';
 import '../../config/load-env';
 import { seedPhase3Reference, seedPhase3ServiceCapacity } from './seed-phase3';
 import { DEFAULT_PASSWORD_HASH, superadminPasswordHash } from './constants';
-import { loadKmzAreas, loadTamanAktifAreas, loadSeedUsers } from './load-seed-data';
+import { loadRayons, loadKmzAreas, loadTamanAktifAreas, loadSeedUsers } from './load-seed-data';
 import {
   RAYON_BOUNDARIES,
   parseCoords,
@@ -344,18 +344,18 @@ async function seedStaging() {
     // STEP 4: RAYONS (all 7 + set Pusat boundary/center)
     // ============================================================
     console.log('\n🗺️  Seeding rayons...');
-    await queryRunner.query(`
-      INSERT INTO rayons (id, name, description) VALUES
-        ('${RAYON_SELATAN_ID}', 'Rayon Selatan', 'Wilayah Surabaya Selatan - Wonokromo, Wonocolo, Gayungan, Jambangan'),
-        ('${RAYON_UTARA_ID}',   'Rayon Utara',   'Wilayah Surabaya Utara - Krembangan, Pabean Cantian, Semampir, Kenjeran, Bulak'),
-        ('${RAYON_PUSAT_ID}',   'Rayon Pusat',   'Wilayah Surabaya Pusat - Tegalsari, Genteng, Bubutan, Simokerto'),
-        ('${RAYON_TIMUR1_ID}',  'Rayon Timur 1', 'Wilayah Surabaya Timur bagian 1 - Tambaksari, Gubeng, Sukolilo'),
-        ('${RAYON_TIMUR2_ID}',  'Rayon Timur 2', 'Wilayah Surabaya Timur bagian 2 - Mulyorejo, Rungkut, Tenggilis Mejoyo, Gunung Anyar'),
-        ('${RAYON_BARAT1_ID}',  'Rayon Barat 1', 'Wilayah Surabaya Barat bagian 1 - Sukomanunggal, Tandes, Asemrowo, Benowo'),
-        ('${RAYON_BARAT2_ID}',  'Rayon Barat 2', 'Wilayah Surabaya Barat bagian 2 - Sawahan, Dukuh Pakis, Wiyung, Karang Pilang, Lakarsantri, Sambikerep'),
-        ('${RAYON_TAMAN_AKTIF_ID}', 'Rayon Taman Aktif', 'Bucket logis untuk taman aktif (active parks) lintas-rayon — tidak punya batas geografis')
-      ON CONFLICT (id) DO NOTHING
-    `);
+    // Master data (id/name/description/color) is sourced from data/rayons.csv,
+    // editable via the sheet's `rayon` tab. Boundaries are applied below from
+    // the KMZ (RAYON_BOUNDARIES), not the CSV.
+    const rayonRows = loadRayons();
+    for (const r of rayonRows) {
+      await queryRunner.query(
+        `INSERT INTO rayons (id, name, description, color) VALUES ($1, $2, $3, $4)
+         ON CONFLICT (id) DO NOTHING`,
+        [r.id, r.name, r.description, r.color || null],
+      );
+    }
+    console.log(`  ✓ ${rayonRows.length} rayons (from data/rayons.csv)`);
 
     // Set real polygon boundaries on every rayon from KMZ
     // (data/Batas Wilayah Kerja Rayon (24Juni2023).kmz.kml — see kmz-areas.ts).

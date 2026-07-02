@@ -4,6 +4,7 @@
  * These let the staging seeder be re-run from the client's exported sheet data
  * without code edits: update the CSVs (or re-run the KMZ extractor) and reseed.
  *
+ *   data/rayons.csv                — 8 rayons master data (name/description/color)
  *   data/areas-kmz.generated.json  — geographic areas (run scripts/extract-kmz-seed-data.js)
  *   data/areas-taman-aktif.csv     — Taman Aktif parks (exported from the sheet)
  *   data/users.csv                 — real roster (exported + merged from the sheet)
@@ -18,6 +19,15 @@ const DATA_DIR = path.join(__dirname, 'data');
 // Same namespace sheet-sync uses to mint deterministic user ids, so an id
 // derived here from the username is byte-identical to the one the sheet holds.
 const USER_NS = 'b7e3c1a0-5d2f-4e8b-9c3a-1f2e3d4c5b6a';
+
+export interface SeedRayonRow {
+  id: string;
+  name: string;
+  description: string;
+  /** Hex map colour, or '' when unset. */
+  color: string;
+  rayon_code: string;
+}
 
 export interface KmzAreaRow {
   id: string;
@@ -55,6 +65,19 @@ export interface SeedUserRow {
 function readCsvRecords(file: string): Record<string, string>[] {
   if (!fs.existsSync(file)) return [];
   return parseCsvRecords(fs.readFileSync(file, 'utf8'));
+}
+
+/** The 8 rayons — master data (id/name/description/color) editable via the
+ * sheet's `rayon` tab. Boundaries are sourced separately from the KMZ
+ * (RAYON_BOUNDARIES), not this CSV. */
+export function loadRayons(): SeedRayonRow[] {
+  return readCsvRecords(path.join(DATA_DIR, 'rayons.csv')).map((r) => ({
+    id: r.id?.trim() ?? '',
+    name: r.name?.trim() ?? '',
+    description: r.description?.trim() ?? '',
+    color: r.color?.trim() ?? '',
+    rayon_code: r.rayon_code?.trim() ?? '',
+  }));
 }
 
 export function loadKmzAreas(): KmzAreaRow[] {

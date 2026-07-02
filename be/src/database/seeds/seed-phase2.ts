@@ -1,7 +1,7 @@
 import { DataSource } from 'typeorm';
 import '../../config/load-env';
 import { DEFAULT_PASSWORD_HASH } from './constants';
-import { loadKmzAreas, loadTamanAktifAreas } from './load-seed-data';
+import { loadRayons, loadKmzAreas, loadTamanAktifAreas } from './load-seed-data';
 import {
   RAYON_BOUNDARIES,
   RAYON_PUSAT_AREAS,
@@ -299,19 +299,18 @@ async function seedPhase2() {
     // STEP 1: Seed Rayons
     // ==========================================
     console.log('📍 Seeding Rayons...');
-    await queryRunner.query(`
-      INSERT INTO rayons (id, name, description) VALUES
-        ('${RAYON_1_ID}', 'Rayon Selatan', 'Wilayah Surabaya Selatan - Wonokromo, Wonocolo, Gayungan, Jambangan'),
-        ('${RAYON_2_ID}', 'Rayon Utara', 'Wilayah Surabaya Utara - Krembangan, Pabean Cantian, Semampir, Kenjeran, Bulak'),
-        ('${RAYON_3_ID}', 'Rayon Pusat', 'Wilayah Surabaya Pusat - Tegalsari, Genteng, Bubutan, Simokerto'),
-        ('${RAYON_4_ID}', 'Rayon Timur 1', 'Wilayah Surabaya Timur bagian 1 - Tambaksari, Gubeng, Sukolilo'),
-        ('${RAYON_5_ID}', 'Rayon Timur 2', 'Wilayah Surabaya Timur bagian 2 - Mulyorejo, Rungkut, Tenggilis Mejoyo, Gunung Anyar'),
-        ('${RAYON_6_ID}', 'Rayon Barat 1', 'Wilayah Surabaya Barat bagian 1 - Sukomanunggal, Tandes, Asemrowo, Benowo'),
-        ('${RAYON_7_ID}', 'Rayon Barat 2', 'Wilayah Surabaya Barat bagian 2 - Sawahan, Dukuh Pakis, Wiyung, Karang Pilang, Lakarsantri, Sambikerep'),
-        ('${RAYON_TAMAN_AKTIF_ID}', 'Rayon Taman Aktif', 'Bucket logis untuk taman aktif lintas-rayon — tidak punya batas geografis')
-      ON CONFLICT (id) DO NOTHING;
-    `);
-    console.log('  ✓ Created 7 Rayons');
+    // Master data (id/name/description/color) from data/rayons.csv — the same
+    // source the staging seeder + sheet sync use. Boundaries are applied below
+    // from the KMZ (RAYON_BOUNDARIES), not the CSV.
+    const rayonRows = loadRayons();
+    for (const r of rayonRows) {
+      await queryRunner.query(
+        `INSERT INTO rayons (id, name, description, color) VALUES ($1, $2, $3, $4)
+         ON CONFLICT (id) DO NOTHING`,
+        [r.id, r.name, r.description, r.color || null],
+      );
+    }
+    console.log(`  ✓ Created ${rayonRows.length} Rayons (from data/rayons.csv)`);
 
     // Map code (internal reference) to rayon ID for boundary updates
     const codeToRayonId: Record<string, string> = {
