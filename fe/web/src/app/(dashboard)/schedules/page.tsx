@@ -258,24 +258,24 @@ export default function SchedulesPage() {
     () => [
       {
         id: 'full_name',
-        accessorFn: (row) => row.user.full_name,
+        // Defensive: a row without a joined user must not crash the whole table.
+        accessorFn: (row) => row.user?.full_name ?? '',
         header: 'Pekerja',
         meta: { label: 'Pekerja', filterVariant: 'text' },
         cell: ({ row }) => {
           const roster = row.original;
+          const fullName = roster.user?.full_name ?? '—';
           return (
             <div className="flex items-center gap-2.5">
               <RoleAvatar
-                name={roster.user.full_name}
-                role={roster.user.role}
+                name={fullName}
+                role={roster.user?.role ?? 'satgas'}
                 size="sm"
               />
               <div className="min-w-0">
-                <p className="truncate font-bold text-nb-black">
-                  {roster.user.full_name}
-                </p>
+                <p className="truncate font-bold text-nb-black">{fullName}</p>
                 <p className="truncate font-mono text-[11px] text-nb-gray-600">
-                  {roster.user.username}
+                  {roster.user?.username ?? '—'}
                 </p>
               </div>
             </div>
@@ -284,10 +284,11 @@ export default function SchedulesPage() {
       },
       {
         id: 'role',
-        accessorFn: (row) => row.user.role,
+        accessorFn: (row) => row.user?.role ?? '',
         header: 'Role',
         meta: { label: 'Role', filterVariant: 'text', defaultHidden: true },
-        cell: ({ row }) => <RolePill role={row.original.user.role} />,
+        cell: ({ row }) =>
+          row.original.user ? <RolePill role={row.original.user.role} /> : <span>—</span>,
       },
       {
         id: 'status',
