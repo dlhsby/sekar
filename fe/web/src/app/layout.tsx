@@ -23,6 +23,12 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 });
 
+// PWA install affordance is gated by the same flag as the service worker
+// (providers.tsx). Modern Chrome/Edge make a page installable from a valid
+// manifest ALONE (no SW required), so the manifest link must also respect the
+// flag — otherwise staging (FEATURE_PWA=false) still shows an install prompt.
+const pwaEnabled = process.env.NEXT_PUBLIC_FEATURE_PWA === 'true';
+
 export const metadata: Metadata = {
   // Resolves relative OG/Twitter image URLs (e.g. /og-image.png) against the
   // real site origin instead of Next's localhost:3000 default.
@@ -35,7 +41,9 @@ export const metadata: Metadata = {
     'Platform monitoring dan evaluasi kinerja satgas RTH DLH Kota Surabaya. Pelacakan GPS real-time, manajemen tugas, jadwal shift, dan laporan aktivitas untuk pengelolaan taman dan ruang hijau.',
   keywords: ['SEKAR', 'DLH Surabaya', 'Worker Tracking', 'RTH', 'Park Management', 'Satgas', 'Monitoring'],
   authors: [{ name: 'DLH Surabaya' }],
-  manifest: '/manifest.webmanifest',
+  // Only advertise the manifest when PWA is enabled — its mere presence makes
+  // the page installable in Chromium (SW not required).
+  ...(pwaEnabled ? { manifest: '/manifest.webmanifest' } : {}),
   robots: {
     index: false,
     follow: false,
@@ -56,11 +64,16 @@ export const metadata: Metadata = {
       },
     ],
   },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'black-translucent',
-    title: 'SEKAR',
-  },
+  // iOS add-to-home-screen affordance — also gated by the PWA flag.
+  ...(pwaEnabled
+    ? {
+        appleWebApp: {
+          capable: true,
+          statusBarStyle: 'black-translucent' as const,
+          title: 'SEKAR',
+        },
+      }
+    : {}),
 };
 
 export const viewport: Viewport = {
@@ -77,7 +90,7 @@ export default function RootLayout({
   return (
     <html lang="id" suppressHydrationWarning>
       <head>
-        <link rel="apple-touch-icon" href="/apple-icon.png" />
+        {pwaEnabled && <link rel="apple-touch-icon" href="/apple-icon.png" />}
         {/* Apply the saved theme before first paint to avoid a flash of the
             wrong theme. Mirrors the logic in src/lib/theme.ts. */}
         <script
