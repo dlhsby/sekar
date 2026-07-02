@@ -456,7 +456,7 @@ export default function SchedulesPage() {
             loading={generateRoster.isPending}
             leftIcon={<Plus className="h-5 w-5" />}
           >
-            Generate Roster
+            Buat Jadwal
           </Button>
         )}
       </div>
@@ -473,7 +473,7 @@ export default function SchedulesPage() {
         searchPlaceholder="Cari nama pekerja…"
         rowActions={rowActions}
         emptyTitle={schedules.length === 0 ? 'Belum ada jadwal' : undefined}
-        emptyDescription={schedules.length === 0 ? 'Klik "Generate Roster" untuk membuat jadwal hari ini.' : undefined}
+        emptyDescription={schedules.length === 0 ? 'Klik "Buat Jadwal" untuk membuat jadwal hari ini.' : undefined}
       />
 
       {/* Leave Modal */}
