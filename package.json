@@ -24,7 +24,8 @@
     "infra:down": "./scripts/infra.sh down",
     "tokens:build": "tsx scripts/build-tokens.ts",
     "tokens:verify": "tsx scripts/build-tokens.ts --verify",
-    "test:tokens": "jest --config scripts/jest.config.cjs"
+    "test:tokens": "jest --config scripts/jest.config.cjs",
+    "i18n:check": "node scripts/i18n-parity-check.mjs"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
