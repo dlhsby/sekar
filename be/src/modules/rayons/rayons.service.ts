@@ -64,6 +64,18 @@ export class RayonsService {
   }
 
   /**
+   * Non-throwing name availability check (for the live rayon-name field). Rayon
+   * `name` is unique; `excludeId` skips the rayon's own name in edit mode.
+   */
+  async isNameAvailable(name: string, excludeId?: string): Promise<boolean> {
+    const existing = await this.rayonRepository.findOne({
+      where: { name },
+      select: { id: true },
+    });
+    return !existing || existing.id === excludeId;
+  }
+
+  /**
    * Create a new rayon
    *
    * @param createRayonDto - Rayon creation data
