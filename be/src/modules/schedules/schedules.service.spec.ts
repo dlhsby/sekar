@@ -15,12 +15,21 @@ const ADMIN = { id: 'admin', role: UserRole.SUPERADMIN } as User;
 /** Minimal in-memory-ish repo mock with the methods the service uses. */
 function makeRosterRepo() {
   let counter = 0;
+  // Chainable query-builder mock: every method returns `this` so calls can be
+  // asserted; getMany resolves to whatever the test stubs on it.
+  const qb: Record<string, jest.Mock> = {};
+  for (const m of ['leftJoinAndSelect', 'where', 'andWhere', 'orderBy', 'addOrderBy']) {
+    qb[m] = jest.fn(() => qb);
+  }
+  qb.getMany = jest.fn().mockResolvedValue([]);
   return {
     find: jest.fn(),
     findOne: jest.fn(),
     create: jest.fn((x) => ({ ...x })),
     save: jest.fn(async (x) => ({ id: x.id ?? `gen-${++counter}`, ...x })),
     softDelete: jest.fn(),
+    createQueryBuilder: jest.fn(() => qb),
+    qb,
   };
 }
 
@@ -61,6 +70,22 @@ describe('SchedulesService', () => {
     }).compile();
 
     service = module.get(SchedulesService);
+  });
+
+  describe('findByDate', () => {
+    it('joins the user relation so rows carry user (web table reads user.full_name)', async () => {
+      await service.findByDate('2026-06-30');
+      // `user` is eager on the entity but createQueryBuilder ignores eager
+      // relations — the explicit join is what keeps the row's user populated.
+      expect(rosterRepo.qb.leftJoinAndSelect).toHaveBeenCalledWith('ds.user', 'u');
+    });
+
+    it('scopes to a rayon when one is given', async () => {
+      await service.findByDate('2026-06-30', 'r1');
+      expect(rosterRepo.qb.andWhere).toHaveBeenCalledWith('ds.rayon_id = :rayonId', {
+        rayonId: 'r1',
+      });
+    });
   });
 
   describe('generateRoster', () => {

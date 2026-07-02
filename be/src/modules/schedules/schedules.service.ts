@@ -162,6 +162,10 @@ export class SchedulesService {
   async findByDate(date: string, rayonId?: string | null): Promise<Schedule[]> {
     const qb = this.rosterRepo
       .createQueryBuilder('ds')
+      // `user` is eager on the entity, but createQueryBuilder ignores eager
+      // relations — join it explicitly or every row comes back with no user
+      // (the web table reads row.user.full_name and crashes).
+      .leftJoinAndSelect('ds.user', 'u')
       .leftJoinAndSelect('ds.shift_definition', 'sd')
       .leftJoinAndSelect('ds.schedule_areas', 'dsa')
       .leftJoinAndSelect('dsa.area', 'area')
