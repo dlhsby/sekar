@@ -286,9 +286,9 @@ cd fe/web
 # Copy environment template
 cp .env.local.example .env.local
 
-# (Optional) Add Mapbox token if you need maps
-# Edit .env.local: NEXT_PUBLIC_MAPBOX_TOKEN=pk_...
-# Get token from: https://account.mapbox.com/access-tokens/
+# (Optional) Add Google Maps API key if you need maps
+# Edit .env.local: NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=pk_...
+# Get token from: https://console.cloud.google.com/google/maps-apis
 
 # Install dependencies
 npm install
@@ -338,7 +338,7 @@ NEXT_PUBLIC_API_VERSION=v1
 NEXT_PUBLIC_WS_URL=ws://localhost:3000
 
 # Maps (optional)
-NEXT_PUBLIC_MAPBOX_TOKEN=pk_...or_leave_blank
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=pk_...or_leave_blank
 
 # Development
 NODE_ENV=development
@@ -875,15 +875,15 @@ cat fe/web/.env.local | grep NEXT_PUBLIC_API_URL
 # Should be: http://localhost:3000 (without /api/v1)
 ```
 
-#### Mapbox Token Missing
+#### Google Maps API Key Missing
 
 ```bash
 # Maps don't work, but dashboard still runs
 # To enable maps, add token to fe/web/.env.local
-# Get from: https://account.mapbox.com/access-tokens/
+# Get from: https://console.cloud.google.com/google/maps-apis
 
 # Set in .env.local
-NEXT_PUBLIC_MAPBOX_TOKEN=pk_...
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=pk_...
 
 # Restart: npm run dev
 ```
@@ -978,7 +978,7 @@ Run the automated setup script (`setup-wsl-network.ps1`) after WSL2 restarts, or
 
 - **[deployment-guide.md](./deployment-guide.md)** — Production deployment (self-hosted Docker + AWS)
 - **[environment-variables.md](./environment-variables.md)** — Complete env var reference for all workspaces
-- **[credentials-setup.md](./credentials-setup.md)** — Firebase, Mapbox, and other API credentials
+- **[credentials-setup.md](./credentials-setup.md)** — Firebase, Google Maps, and other API credentials
 - **[ios-release-guide.md](./ios-release-guide.md)** — iOS app release checklist
 - **[android-release-guide.md](./android-release-guide.md)** — Android app release checklist
 - **Project CLAUDE.md** — Quick start, role values, conventions, key resources

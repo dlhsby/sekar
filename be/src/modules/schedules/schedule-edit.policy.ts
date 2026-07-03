@@ -2,8 +2,8 @@ import { UserRole } from '../users/entities/user.entity';
 
 /**
  * Roster edit hierarchy (target-role based). Who may edit whose daily-schedule:
- *   - admin_system / superadmin → anyone
- *   - top_management            → kepala_rayon, admin_data (the manager tier)
+ *   - admin_system / superadmin / top_management → anyone (top_management has full
+ *     admin_system parity)
  *   - kepala_rayon / admin_data → korlap, satgas, linmas (everyone below, own rayon)
  *   - korlap                    → satgas, linmas (own assigned areas)
  * Scope (rayon / area) is enforced separately — see `isGlobalRosterEditor`.
@@ -12,9 +12,8 @@ export function canEditTargetRole(editorRole: UserRole, targetRole: UserRole): b
   switch (editorRole) {
     case UserRole.ADMIN_SYSTEM:
     case UserRole.SUPERADMIN:
-      return true;
     case UserRole.TOP_MANAGEMENT:
-      return targetRole === UserRole.KEPALA_RAYON || targetRole === UserRole.ADMIN_DATA;
+      return true;
     case UserRole.KEPALA_RAYON:
     case UserRole.ADMIN_DATA:
       return (

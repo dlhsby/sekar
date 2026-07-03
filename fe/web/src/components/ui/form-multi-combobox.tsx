@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Check, ChevronsUpDown, Search, X } from 'lucide-react';
 
 import { cn, nbFocusRing } from '@/lib/utils/cn';
+import { useWheelScrollFix } from '@/lib/hooks/useWheelScrollFix';
 import { Label } from './label';
 import { Popover, PopoverAnchor, PopoverContent } from './popover';
 import type { ComboboxOption } from './combobox';
@@ -50,6 +51,7 @@ export function FormMultiCombobox({
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState('');
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const listboxScrollRef = useWheelScrollFix<HTMLUListElement>();
 
   const selectedSet = React.useMemo(() => new Set(values), [values]);
   const selectedOptions = React.useMemo(
@@ -123,7 +125,7 @@ export function FormMultiCombobox({
               className="h-11 w-full bg-transparent text-nb-body-sm text-nb-black outline-none placeholder:text-nb-gray-500"
             />
           </div>
-          <ul id={listboxId} role="listbox" aria-multiselectable className="max-h-60 overflow-y-auto p-1">
+          <ul ref={listboxScrollRef} id={listboxId} role="listbox" aria-multiselectable className="max-h-60 overflow-y-auto p-1">
             {filtered.length === 0 ? (
               <li className="px-3 py-2 text-nb-body-sm text-nb-gray-500">{emptyText}</li>
             ) : (

@@ -471,7 +471,7 @@ Idempotent. Seeds, in order:
 
 > **Phase 3 schema guard:** if `plant_species` table doesn't exist (migrations not yet run), Phase 3 reference inserts log a warning and skip. Safe to call against a Phase 2-only DB.
 
-### Staging UAT (`db:seed:staging:prod` → `seed-staging.ts`)
+### Staging UAT (`db:seed:staging:prod` → `profiles/staging.ts`)
 
 ```bash
 docker exec sekar-backend npm run db:seed:staging:prod
@@ -486,13 +486,17 @@ docker exec sekar-backend npm run db:seed:staging:prod
   - **5** `plant_seeds` + **5** `seed_transactions` (initial purchase ledger)
   - **84** `service_capacity` rows with `capacity_units=5` so testers can actually book pruning slots
 
-### Standalone Phase 3 seed (development convenience)
+### Phase 3 reference data (development convenience)
+
+> **Note (seeder restructure, 2026-07):** the per-phase seed scripts were retired. Plant species,
+> monitoring configs and the service-capacity grid are now part of the reference/staging profiles —
+> there is no separate `db:seed:phase3` entry point. Use the reference seed (idempotent, additive):
 
 ```bash
-docker exec sekar-backend npm run db:seed:phase3:prod
+docker exec sekar-backend npm run db:seed:prod
 ```
 
-Runs only the Phase 3 sections via the original entry point. Same idempotency guarantees. Useful when you need to top up Phase 3 data without touching Phase 1/2.
+Runs the reference profile (`profiles/reference.ts`) — plant species, monitoring configs, capacity grid, 1 superadmin. Idempotent (`ON CONFLICT DO NOTHING`); safe to top up without touching existing data.
 
 ---
 
@@ -544,10 +548,9 @@ docker exec sekar-backend npm run db:seed:prod
 #   ✓ Default superadmin (admin / Password123!) — change password after first login!
 ```
 
-For an **existing prod that already has Phase 1/2 data and just needs Phase 3 added on top** (this is the path taken Apr 27):
+For an **existing prod that needs the plant/monitoring/capacity reference data added on top**:
 ```bash
-docker exec sekar-backend npm run db:seed:phase3:prod
-# Idempotent — only inserts rows that don't already exist.
+docker exec sekar-backend npm run db:seed:prod   # reference profile — idempotent, additive only
 ```
 
 ### Step 4: Verify backend health

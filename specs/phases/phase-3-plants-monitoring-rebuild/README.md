@@ -663,7 +663,7 @@ Plumbing only — zero user-visible change. After this, no PR can land inline he
 
 | Task | Scope | Key Files |
 |------|-------|-----------|
-| Supercluster layer | Mapbox GL JS + `supercluster` npm | `fe/web/src/components/monitoring/ClusterLayer.tsx` |
+| Supercluster layer | Google Maps + `supercluster` npm | `fe/web/src/components/monitoring/ClusterLayer.tsx` |
 | Incremental WS patch handling | React Query cache key `monitoring:snapshot:<scope>:<id>`; apply patches on message | `fe/web/src/app/(dashboard)/monitoring/page.tsx:100-216` |
 | Virtualized worker list | `@tanstack/react-virtual` | `WorkerListVirtual.tsx` |
 | Hierarchy filter panel | rayon / area / worker cascading toggles | `HierarchyFilterPanel.tsx` |

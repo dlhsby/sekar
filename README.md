@@ -47,7 +47,7 @@ Full details: [`specs/deployment/ci-cd.md`](specs/deployment/ci-cd.md) · [`depl
 | Path | Component | Stack |
 |------|-----------|-------|
 | **`be/`** | Backend API | NestJS 11 · TypeScript · PostgreSQL · TypeORM · JWT · WebSocket · Redis · S3 |
-| **`fe/web/`** | Web dashboard (supervisors/admins) | Next.js 16 · React 19 · Tailwind 4 · Mapbox GL · Playwright |
+| **`fe/web/`** | Web dashboard (supervisors/admins) | Next.js 16 · React 19 · Tailwind 4 · Google Maps · Playwright |
 | **`fe/mobile/`** | Mobile app (field workers) | React Native 0.83 · React 19 · Redux Toolkit · FCM · Neo Brutalism (WCAG 2.1 AA) |
 | **`infra/`** | Local Docker infra | PostgreSQL · MinIO (S3) · Redis · Adminer |
 | **`specs/`** | All documentation | Architecture, ADRs, API contracts, deployment, UI/UX |
@@ -91,7 +91,7 @@ restart the affected service after). Everything else defaults to local infra:
 
 | Workspace | Variable | Where to get it |
 |-----------|----------|-----------------|
-| `fe/web/.env.local` | `NEXT_PUBLIC_MAPBOX_TOKEN` | <https://account.mapbox.com/access-tokens/> (the map is blank without it) |
+| `fe/web/.env.local` | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | <https://console.cloud.google.com/google/maps-apis> (the map is blank without it) |
 | `fe/mobile/.env.local` | `API_BASE_URL` | `http://10.0.2.2:3000` (Android emulator) or `http://<YOUR_LAN_IP>:3000` (physical device) |
 
 Single services: `./scripts/start-be.sh` · `start-web.sh` · `start-mobile.sh [--android]`. Ports are
@@ -194,7 +194,7 @@ Current status, metrics, and history live in **[`specs/COMPLETION_STATUS.md`](sp
 | API contracts (~218 endpoints, 33 modules) | [`specs/api/contracts.md`](specs/api/contracts.md) · live: Swagger `/api/v1/docs` |
 | **Deploy from scratch** (local → staging → prod) | [`specs/deployment/deployment-guide.md`](specs/deployment/deployment-guide.md) |
 | CI/CD + release strategy | [`specs/deployment/ci-cd.md`](specs/deployment/ci-cd.md) |
-| Obtaining keys (Firebase/Maps/Mapbox/S3) | [`specs/deployment/credentials-setup.md`](specs/deployment/credentials-setup.md) |
+| Obtaining keys (Firebase/Maps/S3) | [`specs/deployment/credentials-setup.md`](specs/deployment/credentials-setup.md) |
 | Encrypted secrets (dotenvx) | [`specs/deployment/encrypted-secrets.md`](specs/deployment/encrypted-secrets.md) |
 | Design tokens (source of truth) | [`specs/ui-ux/design-tokens.md`](specs/ui-ux/design-tokens.md) · [`tokens.json`](specs/ui-ux/tokens.json) |
 | Database seeding | [`be/src/database/seeds/README.md`](be/src/database/seeds/README.md) |

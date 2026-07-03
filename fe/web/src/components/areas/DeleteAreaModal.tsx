@@ -7,8 +7,10 @@
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ui';
 import { useDeleteArea } from '@/lib/api/areas';
+import { getErrorMessage } from '@/lib/api/client';
 import type { Area } from '@/types/models';
 
 export interface DeleteAreaModalProps {
@@ -29,15 +31,15 @@ export function DeleteAreaModal({ area, isOpen, onClose, onSuccess }: DeleteArea
     setError(null);
 
     try {
+      const name = area.name;
       await deleteArea.mutateAsync(area.id);
+      toast.success(`Area "${name}" berhasil dihapus.`);
       onSuccess?.();
       onClose();
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message || t('admin:areas.deleteErrorMessage'));
-      } else {
-        setError(t('admin:areas.deleteErrorMessage'));
-      }
+      const msg = getErrorMessage(err);
+      setError(msg);
+      toast.error(msg);
     }
   };
 

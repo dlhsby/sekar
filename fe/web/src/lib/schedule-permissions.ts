@@ -5,8 +5,8 @@ import type { UserRole } from '@/types/models';
  * (be `schedule-edit.policy.ts`). Kept in sync so the UI only shows edit
  * actions on rows the user may actually edit — the backend remains the real gate.
  *
- *   - admin_system / superadmin → anyone
- *   - top_management            → kepala_rayon, admin_data
+ *   - admin_system / superadmin / top_management → anyone (top_management has
+ *     full admin_system parity)
  *   - kepala_rayon / admin_data → korlap, satgas, linmas (own rayon)
  *   - korlap                    → satgas, linmas (own assigned areas)
  */
@@ -14,9 +14,8 @@ export function canEditTargetRole(editorRole: UserRole, targetRole: UserRole): b
   switch (editorRole) {
     case 'admin_system':
     case 'superadmin':
-      return true;
     case 'top_management':
-      return targetRole === 'kepala_rayon' || targetRole === 'admin_data';
+      return true;
     case 'kepala_rayon':
     case 'admin_data':
       return targetRole === 'korlap' || targetRole === 'satgas' || targetRole === 'linmas';

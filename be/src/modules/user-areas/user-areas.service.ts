@@ -27,6 +27,9 @@ export class UserAreasService {
   }
 
   async getPermanentAreas(userId: string): Promise<UserArea[]> {
+    // `area.areaType` is eager on Area, so it loads automatically. The rayon name
+    // is resolved client-side from `area.rayon_id` (8 rayons, cached) rather than
+    // eager-joined here.
     return this.userAreaRepo.find({
       where: { user_id: userId, assignment_type: 'permanent' },
       relations: ['area'],

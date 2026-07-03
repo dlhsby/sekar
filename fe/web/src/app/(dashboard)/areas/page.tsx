@@ -15,7 +15,6 @@ import {
   DataTable,
   PageHeader,
   StatusPill,
-  DetailModal,
   CoordinateLink,
   type ColumnDef,
   type DataTableRowAction,
@@ -332,55 +331,8 @@ export default function AreasPage() {
         onSuccess={() => setDeleteModal({ isOpen: false, area: null })}
       />
 
-      <DetailModal
-        open={view.open}
-        onOpenChange={view.onOpenChange}
-        title={t('admin:areas.detailTitle')}
-        rows={view.item ? [
-          { label: t('admin:areas.detailName'), value: view.item.name },
-          { label: t('admin:areas.detailRayon'), value: view.item.rayon?.name ?? '—' },
-          {
-            label: t('admin:areas.detailType'),
-            value: view.item.areaType ? (
-              <Badge
-                variant={view.item.areaType.category === 'ACTIVE' ? 'success' : 'warning'}
-                size="sm"
-              >
-                {view.item.areaType.name}
-              </Badge>
-            ) : (
-              '—'
-            ),
-          },
-          {
-            label: t('admin:areas.detailCoordinates'),
-            value:
-              view.item.gps_lat && view.item.gps_lng ? (
-                <CoordinateLink
-                  lat={Number(view.item.gps_lat)}
-                  lng={Number(view.item.gps_lng)}
-                  label={view.item.name}
-                />
-              ) : null,
-          },
-          { label: t('admin:areas.detailAddress'), value: view.item.address ?? null },
-          { label: t('admin:areas.detailArea'), value: view.item.coverage_area ? formatArea(view.item.coverage_area) : null },
-          { label: t('admin:areas.detailRadius'), value: view.item.radius_meters },
-          {
-            label: t('admin:areas.detailStatus'),
-            value: (
-              <StatusPill tone={view.item.is_active ? 'ok' : 'neutral'} dot>
-                {view.item.is_active ? t('admin:areas.statusActive') : t('admin:areas.statusInactive')}
-              </StatusPill>
-            ),
-          },
-          { label: t('admin:areas.detailBoundary'), value: view.item.boundary_polygon ? t('admin:areas.boundaryYes') : t('admin:areas.boundaryNo') },
-          { label: t('admin:areas.detailCreated'), value: formatDate(view.item.created_at) },
-          { label: t('admin:areas.detailCreatedBy'), value: actorName(view.item.created_by) },
-          { label: t('admin:areas.detailUpdated'), value: formatDate(view.item.updated_at) },
-          { label: t('admin:areas.detailUpdatedBy'), value: actorName(view.item.updated_by) },
-        ] : []}
-      />
+      {/* Detail = the edit form, read-only (shows the map + boundary + pin). */}
+      <AreaFormModal open={view.open} onOpenChange={view.onOpenChange} area={view.item} readOnly />
     </div>
   );
 }

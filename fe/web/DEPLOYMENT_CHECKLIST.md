@@ -18,7 +18,7 @@
 - [ ] All required `NEXT_PUBLIC_*` variables set in GitHub Secrets
 - [ ] API URL configured correctly (`NEXT_PUBLIC_API_URL`)
 - [ ] WebSocket URL configured (`NEXT_PUBLIC_WS_URL`)
-- [ ] Mapbox token configured (`NEXT_PUBLIC_MAPBOX_TOKEN`)
+- [ ] Google Maps API key configured (`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`)
 
 ### Security
 - [ ] No sensitive data in client-side code

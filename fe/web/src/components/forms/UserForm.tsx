@@ -13,7 +13,7 @@ import { useAreas } from '@/lib/api/areas';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useUserAreas } from '@/lib/api/user-areas';
 import { checkUsername, suggestUsername, checkPhone } from '@/lib/api/users';
-import { sortedRoleOptions } from '@/lib/constants/roles';
+import { sortedRoleOptions, roleAssignmentScope } from '@/lib/constants/roles';
 import { useAvailabilityCheck } from '@/lib/hooks/useAvailabilityCheck';
 import { normalizePhone, INDO_MOBILE_REGEX } from '@/lib/utils/phone';
 
@@ -53,8 +53,14 @@ function createUserSchema(t: TFn) {
   });
 }
 
-export interface UserFormSubmit extends UserFormData {
+/** Any UUID version — area ids are deterministic UUID v5. */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export interface UserFormSubmit extends Omit<UserFormData, 'rayon_id' | 'shift_definition_id'> {
   area_ids: string[];
+  /** `null` = explicitly clear on the server (create treats null as unset). */
+  rayon_id: string | null;
+  shift_definition_id: string | null;
 }
 
 interface UserFormProps {
@@ -153,9 +159,20 @@ export function UserForm({
   const phoneReg = register('phone_number');
 
   const handleFormSubmit = async (data: UserFormData) => {
-    const submitData: UserFormSubmit = { ...data, area_ids: areaIds };
-    if (!submitData.rayon_id) delete submitData.rayon_id;
-    if (!submitData.shift_definition_id) delete submitData.shift_definition_id;
+    // Rayon/area/shift are optional, but only relevant to roles whose scope
+    // includes them. Fields the role doesn't use — or that were left blank —
+    // are sent as an explicit clear (null / empty array), not omitted, so
+    // changing a role on edit actually drops the now-irrelevant assignment on
+    // the server (a PATCH that omits a field would keep the old value). On
+    // create the backend maps null → unset. area_ids is filtered to valid
+    // UUIDs so a blank/stale entry can't trip `@IsUUID(..., {each:true})`.
+    const scope = roleAssignmentScope(data.role);
+    const submitData: UserFormSubmit = {
+      ...data,
+      rayon_id: scope.rayon ? data.rayon_id || null : null,
+      shift_definition_id: scope.shift ? data.shift_definition_id || null : null,
+      area_ids: scope.area ? areaIds.filter((id) => UUID_RE.test(id)) : [],
+    };
     await onSubmit(submitData);
   };
 
@@ -189,17 +206,29 @@ export function UserForm({
     );
   }, [selectedRayonId, allAreas]);
 
-  // Create-mode only: default the shift to "Shift 1" once definitions load.
-  // This is the single combobox with a default; the rest start unselected.
+  // Which assignment fields this role uses (rayon / area / shift).
+  const scope = roleAssignmentScope(selectedRole);
+
+  // When the role changes so a field no longer applies, clear its value so we
+  // never submit a stale rayon/area/shift for e.g. a management role.
+  useEffect(() => {
+    if (!scope.rayon && watch('rayon_id')) setValue('rayon_id', '');
+    if (!scope.shift && watch('shift_definition_id')) setValue('shift_definition_id', '');
+    if (!scope.area) setAreaIds((prev) => (prev.length ? [] : prev));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRole]);
+
+  // Create-mode only: default the shift to "Shift 1" once definitions load, but
+  // only for roles that actually use a shift (satgas/linmas).
   const shiftInitRef = useRef(false);
   useEffect(() => {
-    if (isEditMode || readOnly || shiftInitRef.current || !shifts.length) return;
+    if (isEditMode || readOnly || shiftInitRef.current || !shifts.length || !scope.shift) return;
     const shift1 = shifts.find((s) => /shift\s*0*1\b/i.test(s.name)) ?? shifts[0];
     if (shift1) {
       setValue('shift_definition_id', shift1.id);
       shiftInitRef.current = true;
     }
-  }, [shifts, isEditMode, readOnly, setValue]);
+  }, [shifts, isEditMode, readOnly, scope.shift, setValue]);
 
   const busy = isSubmitting || loading;
   const fieldsDisabled = busy || readOnly;
@@ -284,48 +313,54 @@ export function UserForm({
         disabled={fieldsDisabled}
       />
 
-      <FormCombobox
-        label={t('admin:users.form.rayon')}
-        options={rayonOptions}
-        value={watch('rayon_id') || ''}
-        onChange={(value) => setValue('rayon_id', value)}
-        placeholder={rayonsLoading ? t('admin:shared.loading') : t('admin:users.form.rayonPlaceholder')}
-        error={errors.rayon_id?.message}
-        disabled={fieldsDisabled || rayonsLoading}
-      />
+      {scope.rayon && (
+        <FormCombobox
+          label={t('admin:users.form.rayon')}
+          options={rayonOptions}
+          value={watch('rayon_id') || ''}
+          onChange={(value) => setValue('rayon_id', value)}
+          placeholder={rayonsLoading ? t('admin:shared.loading') : t('admin:users.form.rayonPlaceholder')}
+          error={errors.rayon_id?.message}
+          disabled={fieldsDisabled || rayonsLoading}
+        />
+      )}
 
       {/* Areas multi-select — cascaded from the selected rayon; the worker's
           permanent assigned areas that drive their roster. */}
-      <FormMultiCombobox
-        label={t('admin:users.form.areaAssignment')}
-        options={areaOptions}
-        values={areaIds}
-        onChange={setAreaIds}
-        placeholder={
-          !selectedRayonId
-            ? t('admin:users.form.areaSelectRayon')
-            : areasLoading
-              ? t('admin:users.form.areaLoading')
-              : t('admin:users.form.areaAssignmentPlaceholder')
-        }
-        searchPlaceholder={t('admin:users.form.areaSearchPlaceholder')}
-        emptyText={
-          selectedRayonId ? t('admin:users.form.areaEmpty') : t('admin:users.form.areaSelectRayon')
-        }
-        helperText={t('admin:users.form.areaAssignmentHelper')}
-        disabled={fieldsDisabled || areasLoading || !selectedRayonId}
-      />
+      {scope.area && (
+        <FormMultiCombobox
+          label={t('admin:users.form.areaAssignment')}
+          options={areaOptions}
+          values={areaIds}
+          onChange={setAreaIds}
+          placeholder={
+            !selectedRayonId
+              ? t('admin:users.form.areaSelectRayon')
+              : areasLoading
+                ? t('admin:users.form.areaLoading')
+                : t('admin:users.form.areaAssignmentPlaceholder')
+          }
+          searchPlaceholder={t('admin:users.form.areaSearchPlaceholder')}
+          emptyText={
+            selectedRayonId ? t('admin:users.form.areaEmpty') : t('admin:users.form.areaSelectRayon')
+          }
+          helperText={t('admin:users.form.areaAssignmentHelper')}
+          disabled={fieldsDisabled || areasLoading || !selectedRayonId}
+        />
+      )}
 
-      <FormCombobox
-        label={t('admin:users.form.shift')}
-        options={shiftOptions}
-        value={watch('shift_definition_id') || ''}
-        onChange={(value) => setValue('shift_definition_id', value)}
-        placeholder={t('admin:users.form.shiftPlaceholder')}
-        error={errors.shift_definition_id?.message}
-        helperText={t('admin:users.form.shiftHelper')}
-        disabled={fieldsDisabled}
-      />
+      {scope.shift && (
+        <FormCombobox
+          label={t('admin:users.form.shift')}
+          options={shiftOptions}
+          value={watch('shift_definition_id') || ''}
+          onChange={(value) => setValue('shift_definition_id', value)}
+          placeholder={t('admin:users.form.shiftPlaceholder')}
+          error={errors.shift_definition_id?.message}
+          helperText={t('admin:users.form.shiftHelper')}
+          disabled={fieldsDisabled}
+        />
+      )}
 
       {!isEditMode && !readOnly && (
         <div className="rounded-nb-base border-2 border-nb-info bg-nb-info-light/40 p-3 text-nb-body-sm">

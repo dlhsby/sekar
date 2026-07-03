@@ -2524,8 +2524,8 @@ The dashboard provides supervisors and administrators with powerful tools to mon
 **Layout:** Split view — 65% map (left) + 35% side panel (right) at xl breakpoint; stacked at md/sm
 
 #### Map Panel (65%)
-- **Engine:** Mapbox GL JS (`mapbox-gl` + `react-map-gl`)
-- **Center:** Surabaya (-7.2575, 112.7521), zoom 12, `streets-v12` style
+- **Engine:** Google Maps (`@react-google-maps/api` + `react-map-gl`)
+- **Center:** Surabaya (-7.2575, 112.7521), zoom 12, default roadmap style
 - **Features:**
   - Area polygons with fill opacity 0.1, border 2px; understaffed areas: dashed red border
   - Custom user markers: role-shaped (circle=satgas, shield=linmas, star=korlap), status-colored (active=#15803D, idle=#D97706, outside_area=#9333EA, missing=#DC2626)
@@ -2578,7 +2578,7 @@ The dashboard provides supervisors and administrators with powerful tools to mon
 
 Add a **Boundary Management** tab (admin_system, superadmin only):
 - View current area polygon on map
-- Edit polygon vertices interactively via Mapbox Draw
+- Edit polygon vertices interactively via the Google Maps boundary editor
 - Upload replacement boundary
 - API: `GET /areas/:id/boundary`, `PUT /areas/:id/boundary`
 
@@ -2629,7 +2629,7 @@ Add a **Boundary Management** tab (admin_system, superadmin only):
 
 | Route | Access | Notes |
 |-------|--------|-------|
-| `/monitoring` (v2 **redesign**) | korlap / kepala_rayon / admin_data / top_management / admin_system / superadmin | Mapbox supercluster layer, incremental WebSocket patches, virtualized worker list, role-based hierarchy toggles, plant-status overlay (ok/due/overdue), area-detail drawer with plant inventory breakdown |
+| `/monitoring` (v2 **redesign**) | korlap / kepala_rayon / admin_data / top_management / admin_system / superadmin | Google Maps supercluster layer, incremental WebSocket patches, virtualized worker list, role-based hierarchy toggles, plant-status overlay (ok/due/overdue), area-detail drawer with plant inventory breakdown |
 | `/plants` | admin_data / admin_system / superadmin / top_management | Plant species master + per-area inventory entry |
 | `/plants/[areaId]` | same | Bulk upsert of species × count rows for the area |
 | `/pruning-requests` | staff_kecamatan (own) / admin_data (rayon) / admin_system / superadmin / top_management | Queue with status filter; row actions vary by role |
@@ -2643,7 +2643,7 @@ Add a **Boundary Management** tab (admin_system, superadmin only):
 
 | Component | File | Notes |
 |-----------|------|-------|
-| ClusterLayer | `src/components/monitoring/ClusterLayer.tsx` | Mapbox cluster source with custom paint for count bubbles |
+| ClusterLayer | `src/components/monitoring/ClusterLayer.tsx` | Google Maps cluster source with custom paint for count bubbles |
 | PlantOverlayLayer | `src/components/monitoring/PlantOverlayLayer.tsx` | Area polygon fills tinted by `area_plants.status` |
 | AreaStatusOverlay | `src/components/monitoring/AreaStatusOverlay.tsx` | Legend + area highlight on hover |
 | HierarchyFilterPanel | `src/components/monitoring/HierarchyFilterPanel.tsx` | Toggle groups for rayon / area / worker-role hierarchy (role-aware) |

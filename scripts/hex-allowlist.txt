@@ -33,12 +33,9 @@ fe/web/src/components/monitoring/StatusCard.tsx          | Status badge colors f
 fe/web/src/components/monitoring/UserDetailPanel.tsx     | #374151 (Tailwind gray-700, cool-gray) not in warm-stone NB palette
 fe/web/src/components/monitoring/LocationTimeline.tsx    | #14532D (green-900), #581C87 (purple-900) — no NB token equivalents
 
-# ── Web: Mapbox GL layer paint specs (CSS vars unsupported in GL style expressions) ─
-fe/web/src/components/maps/PolygonEditor.tsx             | Mapbox GL layer paint property; CSS vars are not supported in GL style spec
-fe/web/src/components/monitoring/MonitoringMap.tsx       | Same
-fe/web/src/components/monitoring/monitoringMapHelpers.ts | Same
-fe/web/src/lib/maps/styles.ts                            | Same
-fe/web/src/lib/utils/static-map.ts                      | Static map URL builder with hex encoded in URL params
+# ── Web: Google Maps overlay options (fill/stroke/marker colors passed to the JS SDK, not CSS) ─
+# GoogleBoundaryEditor.tsx and SimpleMonitoringMap.tsx use per-line `eslint-disable`
+# comments for the few overlay color constants rather than a file-level allowlist entry.
 
 # ── Web: Test files (hex in assertions, not component code) ──────────────────
 fe/web/src/lib/api/__tests__/rayons.test.tsx | Hex in test assertions that validate rendered color values

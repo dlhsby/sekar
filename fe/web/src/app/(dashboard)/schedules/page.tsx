@@ -9,7 +9,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { format, parse } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
-import { Plus, Calendar, Pencil } from 'lucide-react';
+import { Plus, Calendar, Pencil, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Button,
@@ -26,6 +26,7 @@ import {
 } from '@/components/ui';
 import { RolePill } from '@/components/users/RolePill';
 import { RosterActionModal } from '@/components/schedules/RosterActionModal';
+import { AreaListSheet, type AreaListSheetItem } from '@/components/areas/AreaListSheet';
 import { getErrorMessage } from '@/lib/api/client';
 import {
   useDailyRoster,
@@ -152,6 +153,8 @@ export default function SchedulesPage() {
   const [replaceNotes, setReplaceNotes] = useState('');
 
   const [areasModalOpen, setAreasModalOpen] = useState(false);
+  // Roster whose areas are shown in the read-only side sheet (Area column).
+  const [areasSheetRoster, setAreasSheetRoster] = useState<Schedule | null>(null);
   const [areasRosterId, setAreasRosterId] = useState<string | null>(null);
   const [selectedAreaIds, setSelectedAreaIds] = useState<string[]>([]);
 
@@ -163,6 +166,19 @@ export default function SchedulesPage() {
   const getAreaNames = (roster: Schedule): string[] => {
     return roster.schedule_areas.map((a) => a.area.name);
   };
+
+  // Areas of the roster shown in the side sheet (name + "Rayon · Tipe").
+  const areasSheetItems: AreaListSheetItem[] = useMemo(() => {
+    if (!areasSheetRoster) return [];
+    return areasSheetRoster.schedule_areas.map((sa) => {
+      const full = areaById.get(sa.area_id);
+      return {
+        id: sa.area_id,
+        name: sa.area?.name ?? full?.name ?? '—',
+        meta: [full?.rayon?.name, full?.areaType?.name].filter(Boolean).join(' · ') || undefined,
+      };
+    });
+  }, [areasSheetRoster, areaById]);
 
   // Handlers for modals
 
@@ -324,11 +340,19 @@ export default function SchedulesPage() {
         header: 'Area',
         meta: { label: 'Area', filterVariant: 'text' },
         cell: ({ row }) => {
-          const areaNames = getAreaNames(row.original);
+          const roster = row.original;
+          const count = roster.schedule_areas.length;
+          if (count === 0) return <span className="text-nb-body-sm text-nb-gray-500">—</span>;
           return (
-            <span className="text-nb-body-sm">
-              {areaNames.length > 0 ? areaNames.join(', ') : '—'}
-            </span>
+            <button
+              type="button"
+              onClick={() => setAreasSheetRoster(roster)}
+              aria-label={`Lihat ${count} area untuk ${roster.user?.full_name ?? 'pekerja'}`}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border-2 border-nb-black rounded-nb-base bg-nb-white text-nb-body-sm font-bold shadow-nb-xs hover:shadow-nb-sm active:shadow-none transition-shadow duration-100"
+            >
+              <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
+              {count} Area
+            </button>
           );
         },
       },
@@ -579,6 +603,16 @@ export default function SchedulesPage() {
           }))}
         />
       </RosterActionModal>
+
+      {/* Read-only side sheet listing a roster's areas (Area column). */}
+      <AreaListSheet
+        open={!!areasSheetRoster}
+        title="Area Jadwal"
+        subtitle={areasSheetRoster?.user?.full_name ?? '—'}
+        items={areasSheetItems}
+        resetKey={areasSheetRoster?.id}
+        onClose={() => setAreasSheetRoster(null)}
+      />
     </div>
   );
 }

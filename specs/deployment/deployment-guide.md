@@ -8,7 +8,7 @@ It walks the four scenarios end-to-end — **run locally → obtain keys → dep
 | You want to… | Start here |
 |--------------|-----------|
 | Run the whole stack on your machine | **§A Run locally** → [`local-development.md`](local-development.md) |
-| Get Firebase / Maps / Mapbox / AWS keys | **§B Obtaining keys** → [`credentials-setup.md`](credentials-setup.md) |
+| Get Firebase / Maps / AWS keys | **§B Obtaining keys** → [`credentials-setup.md`](credentials-setup.md) |
 | Understand every env var | **§C Environment variables** → [`environment-variables.md`](environment-variables.md) |
 | Ship to a staging server | **§D Deploy to staging** |
 | Ship to production | **§E Deploy to production** |
@@ -73,7 +73,7 @@ The fastest path, from the repo root:
 
 This brings up local infra (PostgreSQL :5432, Adminer :8080, MinIO S3 :9000 + console :9001, Redis :16379) and runs the backend (`http://localhost:3000`, API docs `/api/v1/docs`) and web (`http://localhost:3001`). Test users use `Password123!` (e.g. `admin/Password123!`, `satgas1/Password123!`).
 
-**Two values you must fill** after `setup.sh`: `NEXT_PUBLIC_MAPBOX_TOKEN` in `fe/web/.env.local` and `API_BASE_URL` in `fe/mobile/.env.local` (see §B). Everything else defaults to local infra.
+**Two values you must fill** after `setup.sh`: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` in `fe/web/.env.local` and `API_BASE_URL` in `fe/mobile/.env.local` (see §B). Everything else defaults to local infra.
 
 → **Full detail** — infra services, per-workspace run, local MinIO media, WSL2 device networking, and local troubleshooting: **[`local-development.md`](local-development.md)**.
 
@@ -83,7 +83,7 @@ This brings up local infra (PostgreSQL :5432, Adminer :8080, MinIO S3 :9000 + co
 
 | Credential | Where to get it | Lands in (gitignored) | Needed for |
 |-----------|-----------------|-----------------------|-----------|
-| **Mapbox token** | account.mapbox.com/access-tokens | `fe/web/.env.local` `NEXT_PUBLIC_MAPBOX_TOKEN` | Web maps (blank without it) |
+| **Google Maps API key** | console.cloud.google.com/google/maps-apis | `fe/web/.env.local` `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Web maps (blank without it) |
 | **Google Maps key** | Google Cloud Console (Maps SDK) | `fe/mobile/.env.local` `GOOGLE_MAPS_API_KEY` | Mobile native maps |
 | **Firebase service account** | Firebase Console → Service accounts | `be/config/firebase-service-account.json` + `FCM_ENABLED=true` | Backend push sends |
 | **Android FCM** | Firebase → Add Android app `com.sekarapp` | `fe/mobile/android/app/google-services.json` | Android push |
@@ -189,7 +189,7 @@ pinned to the SHA (recreates `sekar-caddy` too) → smoke test.
 
 Required GitHub **Variables**: `AWS_REGION`, `AWS_ROLE_ARN`, `ECR_BACKEND`, `ECR_WEB`,
 `EC2_INSTANCE_ID`, `RDS_INSTANCE_ID`. Required `staging`-environment **Secret**:
-`WEB_DOTENV_PRIVATE_KEY` (decrypts `fe/web/.env.staging` — incl. the Mapbox token — at build).
+`WEB_DOTENV_PRIVATE_KEY` (decrypts `fe/web/.env.staging` — incl. the Google Maps API key — at build).
 
 ### First-time / manual deploy (mirrors what CI does)
 ```bash
@@ -221,7 +221,7 @@ docker compose -f compose.staging.yml run --rm --no-deps backend npm run db:seed
 curl -sf https://api.sekar.wahyutrip.com/api/v1/health/ready   # {db,redis} ok
 curl -sI https://sekar.wahyutrip.com/login                      # 200
 ```
-Then log in (`superadmin/Password123!`) and confirm the monitoring map renders (Mapbox +
+Then log in (`superadmin/Password123!`) and confirm the monitoring map renders (Google Maps +
 WebSocket + S3 media path). **Enabling TLS later:** drop the `http://` prefix in
 `infra/Caddyfile.staging`, switch the web build args + `CORS_ORIGIN` to `https`/`wss`, and
 flip `NEXT_PUBLIC_SECURE_COOKIES`/`NEXT_PUBLIC_FEATURE_PWA` back on.
@@ -273,7 +273,7 @@ Set **every** `<...>` placeholder. Minimum to change:
 | `CORS_ORIGIN` | `https://sekar.example.com` |
 | `NEXT_PUBLIC_API_URL` | `https://sekar.example.com` (baked into the web build) |
 | `NEXT_PUBLIC_WS_URL` | `wss://sekar.example.com` |
-| `NEXT_PUBLIC_MAPBOX_TOKEN` | Your Mapbox token (maps fail to render without it) |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Your Google Maps API key (maps fail to render without it) |
 | `FCM_ENABLED` | `false` until Firebase is set up (§B / [`credentials-setup.md`](credentials-setup.md)) |
 
 ### E.4 TLS certificates
@@ -325,7 +325,7 @@ curl -sf https://sekar.example.com/api/v1/health/ready       # DB + Redis reacha
 curl -sI https://sekar.example.com/login                     # 200 (dashboard)
 curl -sI https://docs.sekar.example.com                      # 200 (public user manual)
 ```
-Then log in to the dashboard and confirm the monitoring map renders (validates the Mapbox token + WebSocket through Nginx).
+Then log in to the dashboard and confirm the monitoring map renders (validates the Google Maps API key + WebSocket through Nginx).
 
 ### E.8 Push notifications (FCM) — optional
 
@@ -404,7 +404,7 @@ Dashboards (system / application / business KPIs), CloudWatch alarms, structured
 | `backend` container restarts / unhealthy | `docker compose ... logs backend`. Common: wrong DB creds, or migrations not yet run. Health probe is `/api/v1/health/live`. |
 | Migrations fail with auth error | `.env.*` `DATABASE_*` must match the postgres service (compose wires `DATABASE_HOST=postgres`). |
 | Web shows but API calls fail / CORS | `CORS_ORIGIN` must equal the public origin; `NEXT_PUBLIC_API_URL` must be the public URL (rebuild `web` after changing — it's a build arg). |
-| Map blank | `NEXT_PUBLIC_MAPBOX_TOKEN` missing/invalid (rebuild `web`). |
+| Map blank | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` missing/invalid (rebuild `web`). |
 | Real-time monitoring not updating | WebSocket blocked — confirm Nginx `/socket.io/` upgrade block and that `wss://` is used. |
 | Media upload 413 | Raise `client_max_body_size` in `infra/nginx.conf` (default 60M). |
 | Port 80/443 in use | Stop the conflicting service or change the Nginx port mapping. |

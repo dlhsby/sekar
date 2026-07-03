@@ -162,8 +162,8 @@ build-args: |
 secrets: |
   dotenv_private_key=${{ secrets.WEB_DOTENV_PRIVATE_KEY }}
 ```
-This **replaced** the `NEXT_PUBLIC_*` build-args + the `NEXT_PUBLIC_MAPBOX_TOKEN` GitHub Secret —
-the Mapbox token now lives inside the encrypted `fe/web/.env.staging`.
+This **replaced** the `NEXT_PUBLIC_*` build-args + the `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` GitHub Secret —
+the Google Maps API key now lives inside the encrypted `fe/web/.env.staging`.
 
 ### AWS box (backend staging runtime) — DONE for staging
 The encrypted `be/.env.staging` is **baked into the backend image** (`be/Dockerfile` COPYs it;
@@ -178,7 +178,7 @@ aws ssm put-parameter --profile sekar --region ap-southeast-3 \
 ```
 
 The per-secret SSM params (`/sekar/staging/DATABASE_PASSWORD`, `JWT_SECRET`,
-`JWT_REFRESH_SECRET`) and the old `NEXT_PUBLIC_MAPBOX_TOKEN` GitHub Secret were **retired**
+`JWT_REFRESH_SECRET`) and the old `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` GitHub Secret were **retired**
 2026-06-18 (superseded by the encrypted files). Only `/sekar/staging/BE_DOTENV_PRIVATE_KEY` remains.
 
 ### On-prem production box (prepared, not yet deployed)
@@ -212,12 +212,12 @@ matching `NEXT_PUBLIC_*` in `fe/web/.env.production` + `API_BASE_URL` in `fe/mob
 To rotate a key (e.g. after suspected exposure): `dotenvx rotate -f .env.staging`
 (regenerates the keypair and re-encrypts in place), commit the file, then update the private key
 in every place it lives (GitHub Secret / SSM / host). Rotate the underlying API keys themselves
-(Mapbox, Google Maps, DB password) at their providers as well.
+(Google Maps, DB password) at their providers as well.
 
 ## 8. Security notes
 
 - The **only** real secret is the private key. Everything in git is ciphertext or a public key.
-- Mobile client keys (Mapbox `pk.*`, Google Maps) are inlined into the app bundle and are
+- Mobile client keys (Google Maps) are inlined into the app bundle and are
   extractable from any APK — encryption keeps them out of plaintext git history but is **not**
   true secrecy. Restrict them at the provider (referrer / package + SHA-1) and rotate the
   previously-exposed Google Maps key.

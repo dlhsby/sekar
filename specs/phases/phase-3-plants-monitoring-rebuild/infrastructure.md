@@ -98,7 +98,7 @@ REDIS_STREAM_MAX_LEN=100000          # MAXLEN ~ trim threshold on XADD
 # Monitoring v2
 MONITORING_SWEEP_CRON=*/5 * * * *    # StaleStatusSweeperService
 STAFFING_DEBOUNCE_SECONDS=30         # AREA_STAFFING_CHANGED debouncer window
-CLUSTER_ZOOM_THRESHOLD=14            # Mapbox zoom above which markers replace clusters
+CLUSTER_ZOOM_THRESHOLD=14            # Google Maps zoom above which markers replace clusters
 
 # Feature flags
 PHASE3_FEATURES_ENABLED=false        # Master switch (see deployment checklist)

@@ -8,7 +8,8 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Eye, Pencil, Trash2, Power, KeyRound } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2, Power, KeyRound, MapPin } from 'lucide-react';
+import { UserAreasSheet, type UserAreasSheetTarget } from '@/components/users/UserAreasSheet';
 import { toast } from 'sonner';
 import {
   Button,
@@ -33,7 +34,7 @@ import {
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useRayons } from '@/lib/api/rayons';
 import { useUser } from '@/lib/auth/hooks';
-import { ADMIN_ROLES } from '@/lib/constants/roles';
+import { ADMIN_ROLES, ROLE_LABELS } from '@/lib/constants/roles';
 import { formatDate } from '@/lib/utils/time';
 import { getErrorMessage } from '@/lib/api/client';
 import type { User } from '@/types/models';
@@ -69,6 +70,7 @@ export default function UsersPage() {
   const [tempPwUsername, setTempPwUsername] = useState<string | undefined>(undefined);
   // The user pending a force-reset confirmation (shown before generating).
   const [resetConfirmUser, setResetConfirmUser] = useState<User | null>(null);
+  const [areasSheetUser, setAreasSheetUser] = useState<UserAreasSheetTarget | null>(null);
 
   const handleResetPassword = useCallback(
     async (u: User) => {
@@ -135,7 +137,9 @@ export default function UsersPage() {
       },
       {
         id: 'role',
-        accessorKey: 'role',
+        // Filter/sort/search against the human label ("Top Management"), not the
+        // raw enum ("top_management"), so typing the visible text matches.
+        accessorFn: (u) => ROLE_LABELS[u.role] ?? u.role,
         header: t('admin:users.columnRole'),
         meta: { label: t('admin:users.columnRole'), filterVariant: 'text' },
         cell: ({ row }) => <RolePill role={row.original.role} />,
@@ -157,6 +161,28 @@ export default function UsersPage() {
         cell: ({ row }) => {
           const id = row.original.rayon_id;
           return <span className="text-nb-body-sm">{id ? (rayonNameById.get(id) ?? '—') : '—'}</span>;
+        },
+      },
+      {
+        id: 'areas',
+        accessorFn: (u) => u.assigned_area_count ?? 0,
+        header: 'Area',
+        meta: { label: 'Area' },
+        cell: ({ row }) => {
+          const u = row.original;
+          const count = u.assigned_area_count ?? 0;
+          if (count === 0) return <span className="text-nb-body-sm text-nb-gray-500">—</span>;
+          return (
+            <button
+              type="button"
+              onClick={() => setAreasSheetUser({ id: u.id, full_name: u.full_name })}
+              aria-label={`Lihat ${count} area yang ditugaskan ke ${u.full_name}`}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border-2 border-nb-black rounded-nb-base bg-nb-white text-nb-body-sm font-bold shadow-nb-xs hover:shadow-nb-sm active:shadow-none transition-shadow duration-100"
+            >
+              <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
+              {count} Area
+            </button>
+          );
         },
       },
       {
@@ -332,6 +358,12 @@ export default function UsersPage() {
         onOpenChange={setFormOpen}
         user={editingUser}
         onSuccess={() => refetch()}
+        onCreated={(u) => {
+          if (u.temp_password) {
+            setTempPwUsername(u.username);
+            setTempPassword(u.temp_password);
+          }
+        }}
       />
 
       <UserFormModal open={viewOpen} onOpenChange={setViewOpen} user={viewingUser} readOnly />
@@ -372,6 +404,8 @@ export default function UsersPage() {
           setTempPwUsername(undefined);
         }}
       />
+
+      <UserAreasSheet user={areasSheetUser} onClose={() => setAreasSheetUser(null)} />
     </div>
   );
 }

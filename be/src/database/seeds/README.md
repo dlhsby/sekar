@@ -13,20 +13,21 @@ per-phase files into **per-entity** modules:
 - **`profiles/<name>.ts`** — orchestrators that compose the entities. `profiles/demo.ts` is the full
   local `db:seed` (destructive: truncate + every entity in FK order).
 
-**Migration status:** the local `db:seed` (demo) is fully per-entity. The **staging / production /
-reference** profiles are still the original per-file seeders below (`seed-staging.ts` / `seed-production.ts`
-/ `seed-reference.ts`, still using `seed-phase3.ts`) — recomposing them onto the shared entities is a
-pending follow-up.
+**Migration status:** COMPLETE — every profile (`demo` / `staging` / `production` / `reference`) is now a
+`profiles/*.ts` orchestrator composing the shared `entities/*.ts`, with mode-specific behaviour selected by
+`ctx.mode`. The old per-phase / per-mode seeder files are gone. Parity was verified table-by-table against
+the pre-refactor seeders (demo, staging, reference).
 
 ## Files
 
 | File | Purpose | Safe for prod? |
 |------|---------|----------------|
-| `profiles/demo.ts` + `entities/*.ts` | Local `db:seed` — truncate + full dev dataset, per-entity | No (destructive) |
-| `seed-phase3.ts` | Phase-3 data; still exports `seedPhase3Reference`, `seedPhase3ServiceCapacity`, `seedPhase3SampleData` consumed by the reference + staging seeders below | Yes (idempotent) |
-| `seed-reference.ts` | Reference/config data only — fully idempotent (128 plant_species, Phase-3 monitoring_configs, capacity grid with capacity_units=0) | Yes |
-| `seed-staging.ts` | Staging/UAT — wipes + reseeds all tables incl. real roster from `data/users.csv`, 937 KMZ areas, materialised daily roster, Phase-3 reference | No |
-| `seed-production.ts` | Production cold-start — non-destructive upsert (rayons, shifts, kecamatans, 2 admins; passwords from env) | Yes |
+| `profiles/demo.ts` | Local `db:seed` — truncate + full dev dataset (incl. demo transaction + plant data) | No (destructive) |
+| `profiles/staging.ts` | Staging/UAT — truncate + real roster from `data/users.csv`, 937 KMZ areas, all-area staffing, materialised daily roster, Phase-3 reference | No |
+| `profiles/reference.ts` | Reference/config only — idempotent upsert (128 plant_species, monitoring_configs, capacity grid) | Yes |
+| `profiles/production.ts` | Production cold-start — idempotent upsert (rayons, shifts, kecamatans, 2 admins; passwords from env) | Yes |
+| `entities/*.ts` | One `seedX(ctx)` per table; `ctx.mode` branches where demo/staging/reference diverge | — |
+| `seed-monitoring-demo.ts` · `seed-loadtest.ts` · `db-fix-orphans.ts` | Standalone dev/ops utilities (unchanged) | — |
 
 ## Scripts
 

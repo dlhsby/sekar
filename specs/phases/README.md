@@ -12,7 +12,7 @@ Comprehensive implementation guides for each development phase of the SEKAR proj
 | 2A | [Enhanced Features](./phase-2-a-enhanced/) | 2 weeks | ✅ COMPLETE | Tasks, Notifications, KMZ, Web |
 | 2B | [UI/UX Revamp](./phase-2-b-ui-ux-revamp/) | 3-4 weeks | ✅ COMPLETE | Neo Brutalism 2.0, Design Tokens |
 | **2C** | **[Client Feedback](./phase-2-c-client-feedback/)** | **4-6 weeks** | **✅ COMPLETE & DEPLOYED** | **Role overhaul, Overtime, Aktivitas** |
-| **2D** | **[Real-Time Monitoring](./phase-2-d-monitoring/)** | **1 week** | **✅ COMPLETE & DEPLOYED** | **Five-status tracking, Mapbox, location history** |
+| **2D** | **[Real-Time Monitoring](./phase-2-d-monitoring/)** | **1 week** | **✅ COMPLETE & DEPLOYED** | **Five-status tracking, Google Maps, location history** |
 | **2E** | **[Client Feedback II](./phase-2-e-client-feedback-2/)** | **1 day** | **✅ COMPLETE & DEPLOYED** | **Phone login, multi-area, overtime redesign, audit trail** |
 | **3** | **[Plants Management + Monitoring Rebuild + Public Intake](./phase-3-plants-monitoring-rebuild/)** | **5-7 weeks (73 dev-days)** | **✅ CLOSED (Jun 11, 2026)** | **M1-R Redesign Foundation, Monitoring v2 (Redis), plants catalog, typed tasks, pruning intake, service capacity, seeds — all 21 sub-phases shipped** |
 | **4** | **[Production Readiness & Rebrand](./phase-4-production-readiness/)** | **10-12 weeks (67-87 d)** | **~98% (code-side Jun 11; on-device testing ⏳)** | **FCM full, offline sync, JWT rotation, Sentry, export/import, Maestro/Playwright E2E, WCAG-AA a11y gate, security hardened** |
@@ -157,12 +157,12 @@ Breaking changes based on client feedback from February 10, 2026 meeting.
 
 **Duration:** 1 week | **Status:** ✅ COMPLETE & DEPLOYED (Mar 7, 2026)
 
-Comprehensive reimplementation of the monitoring system with five-status tracking, full Mapbox integration, and location history playback.
+Comprehensive reimplementation of the monitoring system with five-status tracking, full Google Maps integration, and location history playback.
 
 **Verified Metrics:**
 - Backend: 122 endpoints, 1,204 tests (94.55% coverage)
 - Mobile: 3,669 tests, enhanced MapDashboard
-- Web: Full Mapbox GL map, filter sidebar, worker detail panel
+- Web: Full Google Maps map, filter sidebar, worker detail panel
 - 2 migrations, 5 new WebSocket events, 3 new services
 
 ### Documents

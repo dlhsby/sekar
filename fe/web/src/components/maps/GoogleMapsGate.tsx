@@ -15,7 +15,7 @@ import { useJsApiLoader } from '@react-google-maps/api';
 import { Spinner } from '@/components/ui';
 import { useMapsConfig } from '@/lib/api/config';
 
-/** Build-time Google Maps key (inlined by Next), like NEXT_PUBLIC_MAPBOX_TOKEN. */
+/** Build-time Google Maps key (inlined by Next). */
 const BUILD_TIME_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || null;
 
 export interface GoogleMapsGateProps {
@@ -46,9 +46,9 @@ function ScriptGate({ apiKey, children, fallback, loading }: { apiKey: string } 
 }
 
 export function GoogleMapsGate({ children, fallback, loading }: GoogleMapsGateProps) {
-  // Prefer the build-time key (inlined by Next, like NEXT_PUBLIC_MAPBOX_TOKEN) so
-  // maps load without an auth-gated /config/maps round-trip. Fall back to the
-  // backend-served key (which also powers mobile + geocoding) when not baked.
+  // Prefer the build-time key (inlined by Next) so maps load without an
+  // auth-gated /config/maps round-trip. Fall back to the backend-served key
+  // (which also powers mobile + geocoding) when not baked.
   const needConfig = !BUILD_TIME_KEY;
   const { data, isLoading } = useMapsConfig({ enabled: needConfig });
   const apiKey = BUILD_TIME_KEY ?? data?.googleMapsApiKey ?? null;

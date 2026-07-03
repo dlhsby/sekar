@@ -239,8 +239,9 @@ describe('DeleteAreaModal', () => {
 
     await user.click(screen.getByRole('button', { name: /^hapus$/i }));
 
+    // Non-Error rejections surface the standardized getErrorMessage fallback.
     await waitFor(() => {
-      expect(screen.getByText(/gagal menghapus area/i)).toBeInTheDocument();
+      expect(screen.getByText(/terjadi kesalahan/i)).toBeInTheDocument();
     });
   });
 });

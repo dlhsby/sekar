@@ -18,8 +18,12 @@ export const WEB_ROLES: UserRole[] = [
 /** Phase 3 ADR-033 — staff_kecamatan minimal nav items */
 export const KECAMATAN_ROLES: UserRole[] = ['staff_kecamatan'];
 
-/** Admin roles with full system configuration access */
-export const ADMIN_ROLES: UserRole[] = ['admin_system', 'superadmin'];
+/**
+ * Admin roles with full system configuration + data-management access.
+ * top_management has full parity with admin_system (mirrors the backend
+ * RolesGuard elevation); only superadmin sits above.
+ */
+export const ADMIN_ROLES: UserRole[] = ['admin_system', 'superadmin', 'top_management'];
 
 /** Roles with monitoring access (hierarchical) */
 export const MONITORING_ROLES: UserRole[] = [
@@ -44,6 +48,7 @@ export const TASK_MANAGER_ROLES: UserRole[] = [
 export const SCHEDULE_MANAGER_ROLES: UserRole[] = [
   'admin_system',
   'superadmin',
+  'top_management',
   'korlap',
   'admin_data',
 ];
@@ -145,3 +150,33 @@ export const VALID_TASK_ASSIGNMENTS: Partial<Record<UserRole, UserRole[]>> = {
 /** Check if a role has access */
 export const hasRole = (userRole: UserRole, allowedRoles: UserRole[]): boolean =>
   allowedRoles.includes(userRole);
+
+/**
+ * Which assignment fields the user form should show for a given role:
+ *  - none: superadmin / admin_system / top_management
+ *  - rayon only: kepala_rayon / admin_data / staff_kecamatan (kecamatan belongs to a rayon)
+ *  - rayon + area: korlap
+ *  - rayon + area + shift: satgas / linmas (shift defaults to Shift 1)
+ * An unset/unknown role shows nothing (fields appear once a role is picked).
+ */
+export interface RoleAssignmentScope {
+  rayon: boolean;
+  area: boolean;
+  shift: boolean;
+}
+export const roleAssignmentScope = (role: UserRole | '' | undefined): RoleAssignmentScope => {
+  switch (role) {
+    case 'satgas':
+    case 'linmas':
+      return { rayon: true, area: true, shift: true };
+    case 'korlap':
+      return { rayon: true, area: true, shift: false };
+    case 'kepala_rayon':
+    case 'admin_data':
+    case 'staff_kecamatan':
+      return { rayon: true, area: false, shift: false };
+    default:
+      // superadmin / admin_system / top_management / unset → no scope fields
+      return { rayon: false, area: false, shift: false };
+  }
+};

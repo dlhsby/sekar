@@ -29,7 +29,7 @@
 |----------|-------|-------|-------|
 | LOG-1 | Login · konsol | `(auth)/login/page.tsx` | "Konsol SEKAR" hero left + login card right; identifier/password fields per AS-1 style; "Lupa sandi" link → new `/forgot-password` page |
 | DASH-1 | Dashboard home · Superadmin | `(dashboard)/page.tsx` | KPI tile grid (active users, areas covered, tasks today, alerts) + alert feed + quick-actions + recent-activity feed; role-aware (Superadmin sees all rayons; Kepala Rayon sees their rayon scope) |
-| MON-1 | Monitoring wall · Live map + drawer | `(dashboard)/monitoring/page.tsx` | Full-bleed Mapbox + right-hand sticky drawer (personnel list, filter composer, layer toggle); replace existing layout |
+| MON-1 | Monitoring wall · Live map + drawer | `(dashboard)/monitoring/page.tsx` | Full-bleed Google Maps + right-hand sticky drawer (personnel list, filter composer, layer toggle); replace existing layout |
 | USR-1 | Daftar pengguna | `(dashboard)/users/page.tsx` | Table revamp — role pill column uses role-accent tokens, sortable headers with indicators, row hover = primary-soft |
 | RAY-1 | Rayon · detail (Pusat) | `(dashboard)/rayons/[id]/page.tsx` | KPI strip + map of areas + areas table |
 | TSK-1 | Tugas list · kanban + table | `(dashboard)/tasks/page.tsx` | Toggle between kanban (4 columns: assigned/in_progress/completed/cancelled) + table view |
@@ -469,7 +469,7 @@ Run: `ANALYZE=true npm run build`
 
 | Chunk | Current | Target | Strategy |
 |-------|---------|--------|----------|
-| Mapbox GL | ~500KB | Lazy loaded | `dynamic(() => import('./MonitoringMap'), { ssr: false })` |
+| Google Maps | ~500KB | Lazy loaded | `dynamic(() => import('./MonitoringMap'), { ssr: false })` |
 | Date picker | ~80KB | Lazy loaded | Dynamic import on focus |
 | Chart library | ~100KB | Lazy loaded | Dynamic import on dashboard |
 | Total First Load | Unmeasured | <200KB | Code splitting + tree shaking |
@@ -588,7 +588,7 @@ All 24+ pages must pass:
 | 11 | `/dashboard/activities` | Activities | Empty state, pagination |
 | 12 | `/dashboard/activities/[id]` | Activity Detail | No change |
 | 13 | `/dashboard/overtime` | Overtime Management | Empty state, pagination |
-| 14 | `/dashboard/monitoring` | Real-Time Monitoring | Mapbox lazy load, perf |
+| 14 | `/dashboard/monitoring` | Real-Time Monitoring | Google Maps lazy load, perf |
 | 15 | `/dashboard/monitoring/config` | Monitoring Config | No change |
 | 16 | `/dashboard/schedules` | Schedules | No change |
 | 17 | `/dashboard/shift-definitions` | Shift Definitions | No change |

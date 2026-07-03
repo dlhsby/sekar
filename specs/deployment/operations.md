@@ -127,16 +127,18 @@ cd be
 npm run db:seed
 ```
 
-**Phase-specific production seed (for cold-start):**
+**Production seed (for cold-start):**
 
 ```bash
-# Cold-start fresh production (all reference + seeded sample data)
+# Reference/config data only — idempotent, safe to re-run (plant species,
+# monitoring configs, capacity grid, 1 superadmin). No transaction data.
 docker compose --env-file .env.production -f docker-compose.prod.yml exec backend \
   npm run db:seed:prod
 
-# Phase 3 reference data only (idempotent, add to existing DB)
+# Production cold-start essentials (rayons, shifts, kecamatans, 2 admins;
+# passwords from env) — idempotent upsert.
 docker compose --env-file .env.production -f docker-compose.prod.yml exec backend \
-  npm run db:seed:phase3:prod
+  npm run db:seed:production:prod
 ```
 
 ### Direct Database Access
@@ -863,7 +865,7 @@ Stage 3 (run)   → node server.js (standalone)
 Build args consumed in Stage 2:
 - `NEXT_PUBLIC_API_URL`
 - `NEXT_PUBLIC_WS_URL`
-- `NEXT_PUBLIC_MAPBOX_TOKEN`
+- `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
 
 These are baked into the bundle at build time — they cannot be overridden at runtime.
 
@@ -1015,7 +1017,7 @@ docker-compose -f docker-compose.prod.yml restart backend
 | **Monitoring & metrics** | [`specs/deployment/monitoring.md`](./monitoring.md) — CloudWatch, dashboards, alarms |
 | **Local development** | [`specs/deployment/local-development.md`](./local-development.md) — Docker infra, MinIO, WSL2 device networking |
 | **AWS infrastructure** | [`specs/deployment/infrastructure.md`](./infrastructure.md) — EC2, RDS, S3, VPC, IAM, networking |
-| **Credentials & keys** | [`specs/deployment/credentials-setup.md`](./credentials-setup.md) — Firebase, Maps, Mapbox, AWS S3 |
+| **Credentials & keys** | [`specs/deployment/credentials-setup.md`](./credentials-setup.md) — Firebase, Maps, AWS S3 |
 | **Environment variables** | [`specs/deployment/environment-variables.md`](./environment-variables.md) — all configuration options |
 | **CI/CD pipelines** | [`specs/deployment/ci-cd.md`](./ci-cd.md) — GitHub Actions workflows |
 | **API contracts** | [`specs/api/contracts.md`](../api/contracts.md) — ~218 endpoints, request/response shapes |

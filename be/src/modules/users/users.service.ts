@@ -221,7 +221,7 @@ export class UsersService {
         .take(limit);
 
       const [data, total] = await qb.getManyAndCount();
-      return new PaginatedResponseDto(data, total, page, limit);
+      return new PaginatedResponseDto(await this.withAreaCounts(data), total, page, limit);
     }
 
     const [data, total] = await this.userRepository.findAndCount({
@@ -247,7 +247,21 @@ export class UsersService {
       order: { created_at: 'DESC' },
     });
 
-    return new PaginatedResponseDto(data, total, page, limit);
+    return new PaginatedResponseDto(await this.withAreaCounts(data), total, page, limit);
+  }
+
+  /**
+   * Attach `assigned_area_count` (number of permanent area assignments) to each
+   * user for the management grid's Area column — one batched query per page, no
+   * N+1. The full area list is loaded lazily via GET /users/:id/areas.
+   */
+  private async withAreaCounts(users: User[]): Promise<User[]> {
+    if (!users.length) return users;
+    const byUser = await this.userAreasService.getPermanentAreaIdsForUsers(users.map((u) => u.id));
+    for (const user of users) {
+      user.assigned_area_count = byUser.get(user.id)?.length ?? 0;
+    }
+    return users;
   }
 
   /**

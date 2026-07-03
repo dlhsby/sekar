@@ -33,6 +33,15 @@ const OUT_FILE =
 // Fixed namespace for deterministic area IDs (do not change — IDs depend on it).
 const AREA_ID_NAMESPACE = 'b7e3c1a0-5d2f-4e8b-9c3a-1f2e3d4c5b6a';
 
+// Optional id overrides: deterministic v5 id → live-DB id. Used where areas were
+// created outside the seeder during UAT (e.g. Rayon Timur 1 imported via the app)
+// so the generated json + a fresh seed reproduce the LIVE ids instead of minting
+// duplicates. Non-destructive reconciliation; see the file's `_note`.
+const OVERRIDE_FILE = path.resolve(__dirname, '../src/database/seeds/data/area-id-overrides.json');
+const ID_OVERRIDES = fs.existsSync(OVERRIDE_FILE)
+  ? JSON.parse(fs.readFileSync(OVERRIDE_FILE, 'utf8')).map || {}
+  : {};
+
 // KMZ filename → rayon code + human label (for synthesized names).
 const FILE_TO_RAYON = {
   'Rayon Utara.kmz': { code: 'UTARA', label: 'Rayon Utara' },
@@ -154,8 +163,9 @@ async function extractFile(filePath, rayon) {
     const occ = (nameCounts.get(name) || 0) + 1;
     nameCounts.set(name, occ);
     const idKey = `${rayon.code}:${name}:${occ}`;
+    const v5Id = uuidv5(idKey, AREA_ID_NAMESPACE);
     rows.push({
-      id: uuidv5(idKey, AREA_ID_NAMESPACE),
+      id: ID_OVERRIDES[v5Id] || v5Id,
       name,
       typeCode: inferTypeCode(name),
       rayonCode: rayon.code,

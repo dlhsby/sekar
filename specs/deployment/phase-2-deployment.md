@@ -35,7 +35,7 @@
 - ✅ Five-status tracking system (active/inactive/outside_area/missing/offline)
 - ✅ Materialized `user_tracking_status` table (O(1) lookups)
 - ✅ `monitoring_configs` table (runtime-adjustable thresholds)
-- ✅ Full Mapbox GL JS integration on web monitoring page
+- ✅ Full Google Maps integration on web monitoring page
 - ✅ Mobile map: polygon rendering, status colors, location trail
 - ✅ WebSocket fixes (PascalCase role bug) + 3 new events
 
@@ -399,7 +399,7 @@ aws rds restore-db-instance-from-db-snapshot \
 **4. Web Dashboard**
 - First deployment of Next.js web application
 - Nginx proxy configuration at /etc/nginx/conf.d/sekar-web.conf
-- Mapbox maps integration
+- Google Maps integration
 - Note: Uses `npm start` with standalone mode (warning, but functional)
 
 ### Phase 2C Deployment Prerequisites
@@ -407,7 +407,7 @@ aws rds restore-db-instance-from-db-snapshot \
 **Infrastructure (Must Complete Before Deployment Day):**
 1. ✅ Web CI/CD workflow created (`.github/workflows/web-ci-cd.yml`)
 2. ⏳ AWS ECR `sekar-web` repository created
-3. ⏳ GitHub Secrets added (3 new: NEXT_PUBLIC_API_URL, NEXT_PUBLIC_WS_URL, MAPBOX_TOKEN)
+3. ⏳ GitHub Secrets added (3 new: NEXT_PUBLIC_API_URL, NEXT_PUBLIC_WS_URL, GOOGLE_MAPS_API_KEY)
 4. ⏳ Nginx configuration template reviewed (`specs/deployment/nginx-web.conf.template`)
 
 **Documentation:**
@@ -929,7 +929,7 @@ Deployment is successful when:
 - ✅ Dashboard loads at http://sekar.wahyutrip.com
 - ✅ Login page functional
 - ✅ Can authenticate and access dashboard
-- ✅ Mapbox maps display correctly
+- ✅ Google Maps display correctly
 
 **Database:**
 - ✅ All 16 tables exist
@@ -1012,7 +1012,7 @@ docker-compose -f docker-compose.prod.yml restart web
 - [ ] All mobile tests passing (~3,493 tests)
 - [ ] Database migration scripts reviewed and tested (2 migrations: `1741000000000` + `1741100000000`)
 - [ ] Backfill script for `user_tracking_status` tested on staging
-- [ ] Mapbox token configured for production domain (`NEXT_PUBLIC_MAPBOX_TOKEN`)
+- [ ] Google Maps API key configured for production domain (`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`)
 - [ ] WebSocket event handlers verified on staging (including `AREA_STAFFING_CHANGED`)
 - [ ] Monitoring config seed data reviewed (`cluster_zoom_threshold: 14`)
 - [ ] Rayon boundary recompute verified after area boundary updates
@@ -1104,9 +1104,8 @@ docker logs sekar-backend --since 5m | grep "MonitoringScheduler"
 ### Web Environment Variables (Phase 2D additions)
 
 ```env
-# Mapbox (NEW — required for Phase 2D monitoring map)
-NEXT_PUBLIC_MAPBOX_TOKEN=pk.xxxx
-NEXT_PUBLIC_MAPBOX_STYLE=mapbox://styles/mapbox/streets-v12
+# Google Maps (NEW — required for Phase 2D monitoring map)
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-key
 
 # WebSocket (existing)
 NEXT_PUBLIC_WS_URL=wss://api.sekar.wahyutrip.com
@@ -1176,7 +1175,7 @@ SELECT column_name FROM information_schema.columns WHERE table_name = 'rayons' A
 ```
 
 **Web checks:**
-- [ ] `/monitoring` loads with Mapbox map and area polygons
+- [ ] `/monitoring` loads with Google Maps map and area polygons
 - [ ] User markers show correct status colors (green/amber/purple/red/gray)
 - [ ] Side panel filters work and show staffing summary
 - [ ] `/monitoring/config` accessible for admin_system/superadmin only (403 for others)

@@ -23,7 +23,7 @@ import { AreaComparisonChart } from '@/components/analytics/AreaComparisonChart'
 import { RefreshCw } from 'lucide-react';
 
 const ANALYTICS_VIEWERS: UserRole[] = ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'];
-const ANALYTICS_ADMINS: UserRole[] = ['admin_system', 'superadmin'];
+const ANALYTICS_ADMINS: UserRole[] = ['admin_system', 'superadmin', 'top_management'];
 
 export default function AnalyticsDashboardPage() {
   useRequireAuth(ANALYTICS_VIEWERS);

@@ -1,0 +1,938 @@
+id,name,jenis,rayon_code,korlap,gps_lat,gps_lng
+95265eae-8c36-5d60-b8d9-69a3cd1e98e4,Akses Masuk Tol Satelit Jalur Tepi,street,BARAT1,,-7.28868479,112.70543699
+1875444c-37e5-5735-97a4-cd276fbb5c89,Akses Pintu Masuk Dan Parkiran TMP,street,BARAT1,,-7.28897560,112.70841459
+1b13d53c-7ccb-5b2e-b573-ad74d1dc2ac5,Akses Pintu Masuk Dan Parkiran TMP,street,BARAT1,,-7.28914213,112.70854728
+86919a01-cb8a-53e6-a618-730a77bcad35,Akses Pintu Masuk Dan Parkiran TMP,street,BARAT1,,-7.28899078,112.70815690
+def44eb5-82eb-51d3-91a6-25b9aa1121e8,Bosem Depan TVRI,street,BARAT1,,-7.29029764,112.71383028
+be3e8ca7-b27d-5603-a362-33a80c956c59,Bundaran Lotte Mart,street,BARAT1,,-7.28787500,112.67788805
+68892852-77b7-513f-9ab2-393a392a03f3,Jalur Tepi Depan TVRI,street,BARAT1,,-7.29036554,112.71427325
+38269650-c81f-5807-9dee-3a2d096b79b8,Jl. Banyu Urip Atas (TL Banyu Urip - Holland Bakery),street,BARAT1,,-7.27274471,112.72407678
+0b211704-0c3e-5cd8-a160-65f76fddcbaf,Jl. Banyu Urip Bawah (Holland Bakery - Indomaret),street,BARAT1,,-7.27029545,112.71957161
+f1abdc30-725d-57e3-9ed7-49270cf6c894,Jl. Bintang Diponggo 1,street,BARAT1,,-7.29084153,112.71895044
+8cb08cfe-720b-5bfa-bce1-690b9960e9f8,Jl. Bintang Diponggo 2,street,BARAT1,,-7.29020245,112.71902356
+0fb5ee56-b9b2-595f-adbb-dc916cd23a1f,Jl. Bintang Diponggo 3,street,BARAT1,,-7.28937907,112.71920824
+34ba01c0-1996-5ffa-899f-717b3af6a637,Jl. Bintang Diponggo 4,street,BARAT1,,-7.28854615,112.71958892
+15c204a0-a15b-5711-9773-0096037661ce,Jl. Bintang Diponggo 5,street,BARAT1,,-7.28636886,112.72012519
+3588850b-3409-508f-9035-25260632ac11,Jl. Darmo Baru Barat,street,BARAT1,,-7.28489741,112.70130953
+376bf67c-b08b-5a86-b839-b1d9a7689415,Jl. Darmo Baru Barat,street,BARAT1,,-7.28379180,112.70038524
+509e8ca1-d451-593a-9683-2ac28ad16205,Jl. Darmo Baru Barat,street,BARAT1,,-7.28146548,112.69846143
+5c84cf75-09f8-5242-89b2-1a102781b3c6,Jl. Darmo Baru Barat,street,BARAT1,,-7.28408067,112.70062816
+6606406d-a02e-5fde-bf04-d4c1a6880dd0,Jl. Darmo Baru Barat,street,BARAT1,,-7.28438892,112.70088695
+80f23662-5ac5-5db1-9d55-4fab11e6758a,Jl. Darmo Baru Barat,street,BARAT1,,-7.27950939,112.69684697
+d97793a1-e34e-5f91-af70-b23f239579b0,Jl. Darmo Baru Barat,street,BARAT1,,-7.28593805,112.70210079
+e3c88d84-ae58-5904-8b07-89e0a1c67f8e,Jl. Darmo Baru Barat,street,BARAT1,,-7.28298303,112.69971833
+788bbdd0-c8a0-57e4-9d7c-e27faf3321b8,Jl. Darmo Harapan,street,BARAT1,,-7.27294285,112.68955717
+44b93f46-bb3d-58bc-8ed1-9fde1310ee73,Jl. Darmo Permai - Bosem,street,BARAT1,,-7.27598895,112.69100945
+c2381e77-b922-5a8d-a9d0-b3488450bc3f,Jl. Darmo Permai - Pasar Modern,street,BARAT1,,-7.27787603,112.69091264
+8a5bf8d2-9351-54ab-8746-dc9dbf69f522,JL. DARMO SATELIT INDAH,street,BARAT1,,-7.26595993,112.69371470
+a0976636-b76c-5c87-ab55-558959337106,JL. DARMO SATELIT INDAH,street,BARAT1,,-7.26511055,112.69379582
+acaabb43-3c48-5c0f-877b-a58e75a440d3,JL. DARMO SATELIT INDAH,street,BARAT1,,-7.26753106,112.69356724
+bfe2f788-7ed3-51e8-bebd-03ec2caceb3d,JL. DARMO SATELIT INDAH,street,BARAT1,,-7.26373368,112.69457886
+d1520d20-0f5c-50e6-a0cf-52d880ded448,JL. DARMO SATELIT INDAH,street,BARAT1,,-7.26453637,112.69404326
+d48788d9-560a-5481-b46b-b21a13475dd1,JL. DARMO SATELIT INDAH,street,BARAT1,,-7.26297821,112.69488757
+ebedd030-f615-5780-a520-e58d3a86150f,Jl. Donowati - Boxculvert,street,BARAT1,,-7.26680647,112.70153947
+224d0051-461b-5636-a9d8-c857d8e2728c,Jl. Dukuh Kupang Barat - Kantor,street,BARAT1,,-7.28229587,112.70845953
+d59d76b3-32d3-585c-91a5-ef8320d492a4,Jl. Dukuh Kupang Barat - Pulau 1 (Depan Dharma Mulya sampai Metro House),street,BARAT1,,-7.27784010,112.70945893
+5feceab1-3d8c-5c88-b0d2-77270f8dec37,Jl. Dukuh Kupang Barat - Pulau 2 (Depan TK Dharma Mulya sampai Depan Warung Sederhana),street,BARAT1,,-7.27707640,112.70963321
+bbbcc4a6-a3a7-5b66-adf1-0d13f9738ef2,Jl. Dukuh Kupang Barat - Pulau 3 (Depan Sate Posang sampai Depan Belia),street,BARAT1,,-7.27614825,112.70984361
+99d0d33c-8e2a-555d-af60-6f9c9bcf2a94,Jl. Kh Abdul Wahab Siamin - Pulau 1,street,BARAT1,,-7.28848760,112.70693370
+a8e5f626-a882-5662-81d6-c9331bb6dfe9,Jl. Kh Abdul Wahab Siamin - Pulau 2,street,BARAT1,,-7.28934138,112.70692814
+34a2b222-71a0-5b95-83fa-2d082019fad5,Jl. Kh Abdul Wahab Siamin - Pulau 3,street,BARAT1,,-7.29120441,112.70697560
+2cf6ad8d-ee8d-550e-bbb4-8fa02a8e2fd4,Jl. Kh Abdul Wahab Siamin - Pulau 4,street,BARAT1,,-7.29261763,112.70701066
+b473dd58-a15f-5963-bfbc-2163990e38b7,Jl. Kh Abdul Wahab Siamin - putar,street,BARAT1,,-7.29290496,112.70701700
+250dae6d-8bf5-54b6-9d7d-5c79c4000b8c,Jl. Kupang Indah - Jalur Tepi,street,BARAT1,,-7.27595420,112.70797330
+7165d39d-5800-514e-bd4a-370022ccec3a,Jl. Kupang Indah - Jalur Tepi,street,BARAT1,,-7.27625085,112.70799026
+22519a63-230b-5cc8-91e7-81159a3dc297,Jl. Kupang Jaya - Jalur Tepi Kupang Jaya,street,BARAT1,,-7.27524416,112.70480904
+58606334-5ea7-58b6-8be7-9cee1b8a2328,Jl. Kupang Jaya - Jalur Tepi Kupang Jaya,street,BARAT1,,-7.27494564,112.70412728
+57699de1-45e1-511c-9cb7-b44dc8f525db,Jl. Kupang Jaya - Pulau 1 (TL sampai Kimia Farma),street,BARAT1,,-7.27584370,112.70722510
+ba72888c-3f9b-5823-ab27-9398b6e0baa1,Jl. Kupang Jaya - Pulau 2 (Depan Fuma Aquarium sampai Lawson),street,BARAT1,,-7.27577107,112.70641264
+62fa64fa-c2cf-5230-bae4-d6c2485fbd8a,Jl. Kupang Jaya - Pulau 3 (Depan ATM BNI sampai PT Lisa),street,BARAT1,,-7.27552792,112.70530615
+919122db-f6db-5fdb-be80-93a6bc5a309d,Jl. Kupang Jaya - Pulau 4 (Depan Mr D.I.Y sampai Sariwana),street,BARAT1,,-7.27500507,112.70389994
+def06e23-927a-50ce-a756-d177b7328846,Jl. Kupang Jaya - Pulau 5 (Depan JNT sampai Bakso Empat Putra),street,BARAT1,,-7.27481218,112.70229206
+5fca2399-ad6f-5561-8751-11f56f076f34,Jl. Kupang Jaya - Pulau 6 (Depan Seafood Cahaya sampai TL),street,BARAT1,,-7.27445765,112.69989412
+d79b887a-8b6c-580f-95d5-3bf9f82bf0a1,Jl. Kupang Jaya - Rotonde Sinom,street,BARAT1,,-7.27421752,112.69950795
+3b292b0b-6745-5ae6-baec-b5674c4c90c1,Jl. Lidah Wetan Sisi Selatan 1,street,BARAT1,,-7.30878847,112.67308514
+cb574160-9441-50a6-ad7b-5b9fb3ec862e,Jl. Lidah Wetan Sisi Selatan 2,street,BARAT1,,-7.30854039,112.67202929
+9d42ca43-59db-524b-ab17-24f9570a64e6,Jl. Lidah Wetan Sisi Selatan 3,street,BARAT1,,-7.30840805,112.67146832
+9ad4c429-690b-569a-bcf8-4959e89d5898,Jl. Lidah Wetan Sisi Utara 1,street,BARAT1,,-7.30873373,112.67317507
+03608d80-0465-5015-9597-d84ced873cf0,Jl. Lidah Wetan Sisi Utara 2,street,BARAT1,,-7.30845417,112.67201843
+c75ad15b-6973-56cf-b19e-9afba684be7b,Jl. Lidah Wetan Sisi Utara 3,street,BARAT1,,-7.30833083,112.67148539
+d9ed7381-0362-5647-8335-171bfe374e02,Jl. Mayjend Hr Muhammad - Jalur Tepi Utara,street,BARAT1,,-7.28391665,112.69137599
+b1ca81db-0abc-53c6-8a8b-ca50a7cabe97,Jl. Mayjend Hr Muhammad - Pulau 1,street,BARAT1,,-7.28656749,112.70152846
+8fb4bba4-c299-5491-925e-af9a76ef6547,Jl. Mayjend Hr Muhammad - Pulau 2,street,BARAT1,,-7.28561844,112.69754383
+1ca8d08c-ef47-5140-b552-195d1ef89feb,Jl. Mayjend Hr Muhammad - Pulau 3,street,BARAT1,,-7.28470450,112.69376246
+3712e89c-810f-5ed3-b84e-aacf219820cf,Jl. Mayjend Hr Muhammad - Pulau 4,street,BARAT1,,-7.28399928,112.69134280
+d2d99808-1b19-5f73-9633-bf4377113099,Jl. Mayjend Hr Muhammad - Pulau 5,street,BARAT1,,-7.28334496,112.68909033
+d6c77b0d-cfad-5272-868e-0d6f1f41028a,Jl. Mayjend Hr Muhammad - Pulau 6,street,BARAT1,,-7.28295739,112.68697934
+c854e862-29b4-55ca-82bd-7eea06594313,Jl. Mayjend Hr Muhammad - Pulau 7,street,BARAT1,,-7.28202121,112.68532399
+05729bd9-e4b9-509f-b9b5-c758115c7325,Jl. Mayjend Hr Muhammad - Pulau 8,street,BARAT1,,-7.28103970,112.68456560
+72d9e738-bc25-51aa-87cc-327da4465961,Jl. Mayjend Jonosoewoyo - Pulau 1 (Depan SMAK Petra 1 sampai Warung Pak Umar Loop),street,BARAT1,,-7.29176324,112.67612625
+262913b6-a8e1-5deb-a73e-a51407282dbf,Jl. Mayjend Jonosoewoyo - Pulau 2 (Depan House Of Valentino sampai Fave Hotel),street,BARAT1,,-7.29435522,112.67563920
+5d62e8ea-1b86-5f6f-9648-0e372f41e691,Jl. Mayjend Jonosoewoyo - Pulau 3 (Depan Bon Cafe sampai Bundaran),street,BARAT1,,-7.29697679,112.67554945
+152fcf10-ad0e-59f6-93e2-fc8af82f4c5e,Jl. Mayjend Jonosoewoyo - Pulau 4 (Depan Unesa sampai perbatasan waduk Unesa),street,BARAT1,,-7.29942160,112.67555820
+9c893088-0ec5-5f28-a588-39de0a013a16,Jl. Mayjend Jonosoewoyo - Pulau Ujung Utara TL,street,BARAT1,,-7.28155846,112.68444065
+6c044938-9c94-5304-85d6-041e26a4c2b9,Jl. Mayjend Sungkono - Sepanjang Jalur Tepi Selatan,street,BARAT1,,-7.28946019,112.71029328
+498987d1-2b2c-5ee9-bd70-7e3f2e25f36f,Jl. Mayjend Sungkono - Sepanjang Jalur Tepi Utara,street,BARAT1,,-7.28919491,112.71031858
+4a0f0e30-cf73-538b-96bc-de6478625d33,Jl. Mayjend Sungkono - Sepanjang Jalur Tepi Utara,street,BARAT1,,-7.29119366,112.71644209
+fc7507c4-6f64-5071-b643-27f16b0b700e,Jl. Mayjend Sungkono - Sepanjang Jalur Tepi Utara,street,BARAT1,,-7.29153421,112.71824293
+367604e4-24d4-5783-a475-46e50fe46c96,Jl. Patimura - Belakang Pos Polisi,street,BARAT1,,-7.27791478,112.69685564
+497aba56-2b03-5156-930a-19fee874e822,Jl. Patimura - Belakang Pos Polisi,street,BARAT1,,-7.27484845,112.69844078
+04de20e3-d682-5815-9d9b-e352cc8567ab,Jl. Pattimura - Belakang Pos Polisi S.D Depan Sctv,street,BARAT1,,-7.27588408,112.69840669
+4584b34d-320b-5bf7-b666-3d60baa0c209,Jl. Pattimura - Belakang Pos Polisi S.D Depan Sctv,street,BARAT1,,-7.27683117,112.69813517
+91ac6002-1ccd-5d1a-910f-8d33c78d7807,Jl. Pattimura - IPH S.D Plaza Segi Delapan,street,BARAT1,,-7.27529050,112.69381171
+3d7072df-7f1c-5f1e-9c4a-acc332b13fc4,Jl. Puncak Permai,street,BARAT1,,-7.27845518,112.69478337
+786364c2-ff16-5430-8390-77a486ffb1b1,Jl. Puncak Permai,street,BARAT1,,-7.27823514,112.69254362
+bc2eeaa6-c20d-536b-8218-e8adeea5a029,Jl. Puncak Permai,street,BARAT1,,-7.27817791,112.69201659
+cd5b6c65-e284-59d6-a267-0d6a79e630ad,Jl. Raya Dukuh Kupang - Pulau 1,street,BARAT1,,-7.28534745,112.71534886
+1f038763-da7e-5fe1-b31c-cbf4ae9e000e,Jl. Raya Dukuh Kupang - Pulau 2,street,BARAT1,,-7.28324110,112.71607548
+ed3c484f-e0bf-5373-b81e-5247f3adac3d,Jl. Raya Dukuh Kupang - Pulau 3,street,BARAT1,,-7.28115516,112.71676912
+5850cd4e-9a30-5e56-9e2b-dc6c8fef8bd4,Jl. Raya Dukuh Kupang - Pulau 4,street,BARAT1,,-7.27980292,112.71725739
+74032a72-9ee5-58da-84b6-6066e0c0097b,JL. RAYA SATELIT SELATAN,street,BARAT1,,-7.26900298,112.69200163
+528a695b-8590-5298-b959-a7a6bfc42e63,Jl. Simojawar,street,BARAT1,,-7.26724336,112.70314168
+bdbd08bd-b50b-528a-a9c8-23395f3dbe96,Jl. Simojawar,street,BARAT1,,-7.26656139,112.70591913
+29846198-2481-58ee-a6a2-b9e98feb3caa,Jl. Simokalangan - Jalur Hijau,street,BARAT1,,-7.26700567,112.70843278
+b92feb41-a2a1-5385-ae7b-7e93c3802549,Jl. Simomagersari - Taman Sriti,street,BARAT1,,-7.26826983,112.71314870
+16a8cb00-da99-52a3-9862-537fd8dd44ea,Jl. Simopomahan - Akses Tol Banyu Urip,street,BARAT1,,-7.26605298,112.70695903
+5c2cf580-cf3c-5d0a-b8f0-b82ffc7d2bc6,Jl. Simopomahan - Akses Tol Banyu Urip,street,BARAT1,,-7.26586290,112.70712405
+eb9554da-b256-5508-b5a7-ae733daf684d,Jl. Sukomanunggal Jaya - Jalur Tepi (Seberang Indomaret - Kejari),street,BARAT1,,-7.26953181,112.69633936
+8d720350-54e2-5116-8bee-5cb785142902,JL. SUKOMANUNGGAL JAYA PULAU 1,street,BARAT1,,-7.27303101,112.69861679
+fada44a9-2354-57dd-a7c1-7beedc8b29f9,JL. SUKOMANUNGGAL JAYA PULAU 1,street,BARAT1,,-7.27229710,112.69863123
+072f4374-689b-579b-aa9d-30500c2a7c27,JL. SUKOMANUNGGAL JAYA PULAU 2,street,BARAT1,,-7.27120948,112.69795999
+d2e87631-6458-5d7c-973a-c91a14ae01d1,JL. SUKOMANUNGGAL JAYA PULAU 3,street,BARAT1,,-7.26945889,112.69626745
+07d65fda-d46d-5231-9449-6399988f5881,JL. SUKOMANUNGGAL JAYA PULAU 4,street,BARAT1,,-7.26905094,112.69436677
+2de5f738-f5a3-5a95-8e34-f944a5589542,JL. SUKOMANUNGGAL JAYA ROTONDE,street,BARAT1,,-7.26926615,112.69646131
+24323db8-d628-5aff-8eba-2c603fa5218e,Jl. Sukomanunggal Pulau 1 (STK - TL DST),street,BARAT1,,-7.26441397,112.69721516
+7e9e14b9-823a-5b4b-b892-0aeb2feeaf48,Jl. Sukomanunggal Pulau 2 (TL DST - TL Tanjungsari),street,BARAT1,,-7.26165567,112.69361097
+9ced3f4b-7b20-5675-a70e-5d64e8d32ef7,Jl. Tandes Lor S.D Tl Darmo Indah,street,BARAT1,,-7.25954706,112.68729295
+d704c973-3d47-5b99-b2f2-8c2341cfea77,Jl. Tanjungsari - Boxculvert,street,BARAT1,,-7.26038148,112.69036821
+2e0b134e-7565-547f-881b-d4c281f857e7,Jl. Tanjungsari - Rotonde,street,BARAT1,,-7.26069035,112.69234170
+ad12255c-e963-5234-aee8-665c5decdc9d,Mayjend Sungkono Pulau 1,street,BARAT1,,-7.29227303,112.72593559
+0b1c17eb-912c-5421-9ee1-cc7108261a54,Mayjend Sungkono Pulau 2,street,BARAT1,,-7.29192137,112.72144774
+8777acc5-cc07-5e04-b95d-93474df56a15,Mayjend Sungkono Pulau 3,street,BARAT1,,-7.29103749,112.71570452
+45a82d06-807e-571d-aa8d-b6f087ff8657,Mayjend Sungkono Pulau 4,street,BARAT1,,-7.28941483,112.71057626
+608753c5-1531-5b45-89e9-194ec34679d1,Segitiga Mayjend Sungkono Jasa Marga,street,BARAT1,,-7.28844275,112.70500210
+2fc49aa5-10f8-5191-8b4f-6514b12c71b5,Segitiga Mayjend Sungkono Pos Polisi Utara,street,BARAT1,,-7.28660966,112.70563043
+e7e01899-33fb-59ab-b18a-f86acfa5db1b,Segitiga Mayjend Sungkono Pos Polisi Utara,street,BARAT1,,-7.28691837,112.70548047
+2eaf6dc1-4fb9-5d80-a1a3-eeee0f2b58a9,Taman Underpass Mayjend Sisi Selatan,park,BARAT1,,-7.28826706,112.70593960
+b5557fee-f334-5e50-bd96-cff5d9e69e7f,Taman Underpass Mayjend Sisi Selatan,park,BARAT1,,-7.28730587,112.70528088
+2b42d411-ade2-5490-815f-2478cc9d0790,Taman Underpass Mayjend Sisi Utara,park,BARAT1,,-7.28762127,112.70618399
+c63c118e-d03d-5353-9ac9-735c35786d03,Taman Underpass Mayjend Sisi Utara,park,BARAT1,,-7.28799423,112.70508617
+2e7f1cea-5ce8-55ee-b854-3e5ce753e431,Tmp Mayjend Sungkono - Pulau Barat & Timur,street,BARAT1,,-7.28859447,112.70706889
+7e8edad2-e99b-5f15-843c-185c0dc5785c,Tmp Mayjend Sungkono - Pulau Barat & Timur,street,BARAT1,,-7.28923214,112.70930390
+e5b44981-fada-5105-8c39-d7f3d05a1ce5,Tmp Mayjend Sungkono - Pulau Barat & Timur,street,BARAT1,,-7.28859043,112.70745421
+3babd851-9cc7-51f5-9ebe-06e48fc0259c,akses masuk stadion GBT,street,BARAT2,,-7.22268523,112.61851132
+a5d74f2b-927b-5253-a349-ac9188cfada3,buffer zone,street,BARAT2,,-7.21795522,112.62490637
+a62e8a25-4bee-502a-8ebc-e8004977307d,bundaran margomulyo,street,BARAT2,,-7.25804902,112.68034387
+a19f760c-3bac-5222-a7a9-7b687131c82b,depan lobby stadion GBT,street,BARAT2,,-7.22283596,112.62170725
+864541fc-1dda-57c9-ac18-bd27b7a9ddad,green belt tpa benowo,street,BARAT2,,-7.22124219,112.63210245
+a00e5458-851f-52ec-8f16-ba3c1ceeea70,Jalur masuk GBT,street,BARAT2,,-7.22356635,112.61971130
+50b34f67-fd43-5968-8e80-d45579ac9ed8,Jl. balongsari boxculvert,street,BARAT2,,-7.25847676,112.67932579
+cec36efb-1d75-511e-871d-ecb0bf24c5c3,Jl. Buntaran,street,BARAT2,,-7.25808220,112.67478247
+87334673-dc34-559c-8ca7-7ce130b36ad1,Jl. candi lontar,street,BARAT2,,-7.26907760,112.66958796
+9b1e2154-91ff-5db4-ace5-730e058be5c0,Jl. Gedangasin Tandes,street,BARAT2,,-7.25891975,112.68269059
+446dcd7b-83ea-5b34-b8d3-c00fe96a8ba8,Jl. jelidro depan kantor rayon taman Barat 2,street,BARAT2,,-7.26570208,112.65537284
+21a55f15-051a-5a78-b58d-2f8eeee4d296,Jl. manukam tama pulau 7,street,BARAT2,,-7.26674651,112.66643403
+1f36ff44-c099-5929-b6e0-e0d2d41494ea,Jl. manukan kulon Boxculvert,street,BARAT2,,-7.25751148,112.67066559
+c97b186a-b247-5970-bd82-9bbe466367ff,Jl. manukan tama pulau 1,street,BARAT2,,-7.26117474,112.66743048
+8ad914cd-ef94-5786-982c-db5ce92cb881,Jl. manukan tama pulau 2,street,BARAT2,,-7.26286661,112.66723187
+74376a8a-63db-5f0d-bad6-d5a8d883e73d,Jl. manukan tama pulau 3,street,BARAT2,,-7.26352226,112.66713931
+e6bbde06-8c36-582e-b5c1-042ba6f5c716,Jl. manukan tama pulau 4,street,BARAT2,,-7.26405497,112.66702966
+f369804f-fd08-59f3-b4f2-302fd0045511,Jl. manukan tama pulau 5,street,BARAT2,,-7.26449203,112.66693402
+26b27630-27c8-5588-a463-98f8af637985,Jl. manukan tama pulau 6,street,BARAT2,,-7.26524709,112.66675771
+46d6d0b0-c663-5463-8a5b-246700388cea,Jl. manukan tama pulau 8,street,BARAT2,,-7.26799860,112.66616491
+5b0c9f14-d8a8-5b15-8a07-fe0a5d17ae76,Jl. Raya Balongsari - Jalur Tepi Depan Spbu Balongsari S.D Kantor Kec. Tandes,street,BARAT2,,-7.25863111,112.67852773
+ef39cd60-4219-5154-8749-ab148d1a808b,Jl. Raya Balongsari - Jalur Tepi Depan Spbu Balongsari S.D Kantor Kec. Tandes,street,BARAT2,,-7.25863111,112.67852773
+7697dbd1-4c68-5b32-9823-ac842dd7442d,Jl. raya bibis,street,BARAT2,,-7.25844988,112.67779318
+5f10248f-94b7-5e4e-88a7-c0d43ff239a3,Jl. sumberejo,street,BARAT2,,-7.22605490,112.60531844
+d20af8a8-4f5f-5892-92f9-128b70e903e2,Pondok Benowo Indah,street,BARAT2,,-7.23791014,112.62997557
+fdbd3d80-a26c-5361-84bf-a4f4296da520,rotonde greges,street,BARAT2,,-7.22975985,112.68278314
+4940da14-2b0e-5051-b670-20fd3f3e033f,rotonde putar balik 1,street,BARAT2,,-7.23557550,112.68258110
+5489b42c-db37-5585-84f8-ea244c67dab1,rotonde putar balik 2,street,BARAT2,,-7.24360055,112.68233536
+7fb0d35f-a898-50cb-bc53-09a0a4c43282,rotonde putar balik 3,street,BARAT2,,-7.25201105,112.68200602
+57edcd4f-21ee-5ef6-bd98-dceec6d4785c,rotonde sisi barat,street,BARAT2,,-7.25833346,112.67963087
+21b509e8-18ac-522f-8e38-e93d9debdc9c,rotonde sisi timur,street,BARAT2,,-7.25850133,112.68091875
+f9ab1f12-6fdb-58dd-83a7-b5da1449a141,segitiga romokalisari,street,BARAT2,,-7.19685723,112.64599408
+51bd02aa-4cf7-51e8-958a-1197132b7bc9,segitiga taman gendong,street,BARAT2,,-7.19589511,112.62895350
+ef152c2c-fdd8-56b8-9267-ce965111b2df,sekitaran GBT lapangan skate bord,street,BARAT2,,-7.22477363,112.62140926
+723d4167-8767-5104-8d89-145a730e1793,Taman Fasum Darmo indah,park,BARAT2,,-7.26179170,112.68208000
+c186271e-1b04-51b2-a6d8-4bc64f68476a,Air Mancur Pemuda,street,PUSAT,,-7.26443130,112.74562839
+104f946f-d772-576d-acc0-662f9f88fb68,Depan Grand City,street,PUSAT,,-7.26207432,112.74925881
+64e83f99-1576-571e-b85d-b92495715e46,Jl. Ahmad Jaiz,street,PUSAT,,-7.25364327,112.73785415
+3c5aad5c-600a-5134-8bc5-c8ffc9e4926e,Jl. Alun Alun Contong,street,PUSAT,,-7.25172029,112.73657071
+04041d77-de84-5fcd-b84e-1efc53e8d7a2,Jl. Ambengan,street,PUSAT,,-7.25616100,112.75389552
+100ee1bf-8415-5b10-95fd-8bac5a0b9abd,Jl. Ambengan,street,PUSAT,,-7.25606631,112.75348769
+2fd1bf24-77a0-5ea1-866d-b1866d6fc198,Jl. Ambengan,street,PUSAT,,-7.25621063,112.75333728
+a626c029-6535-5a92-a379-1087623530ef,Jl. Anggrek,street,PUSAT,,-7.26231948,112.75179112
+65d32487-4464-594a-94b0-9a3b8cdb52c9,Jl. Anjasmoro,street,PUSAT,,-7.25909472,112.73187468
+a4da6231-5dfa-57c9-9903-22a734849fb8,Jl. Arjuno Dari Sisi Selatan Pulau 1 (Depan Apotek Mandiri),street,PUSAT,,-7.26791636,112.72855841
+604f6ced-1a1a-51f2-89c3-b18641a2693c,Jl. Arjuno Dari Sisi Selatan Pulau 2 (Depan Puskesmas),street,PUSAT,,-7.26414764,112.72696889
+e0e3da63-434b-5ee4-a635-397e0013d350,Jl. Arjuno Dari Sisi Selatan Pulau 3 (Depan Gereja),street,PUSAT,,-7.26066289,112.72693779
+a98337c8-badd-57c0-9941-b116c50a9e91,Jl. Arjuno Dari Sisi Selatan Pulau 4 (Depan Pengadilan),street,PUSAT,,-7.25897020,112.72717203
+42753f66-bf90-5e53-9c75-3d4cb455f427,Jl. Arjuno Dari Sisi Selatan Pulau 5 (Depan Pom Bensin),street,PUSAT,,-7.25748817,112.72738954
+8fe2fb04-c0c0-5478-8733-c4eff5e65f13,Jl. Arjuno Dari Sisi Selatan Pulau 6 (Depan Bank BRI),street,PUSAT,,-7.25653421,112.72751954
+4cf56a77-dc59-54d3-b8b7-6306c96a506b,Jl. Bagong Tambangan - Retonde,street,PUSAT,,-7.27694398,112.74516099
+06e7edeb-21fb-504b-8386-b2468a42fa7b,Jl. Basuki Rahmat Pedestrian,pedestrian,PUSAT,,-7.27090571,112.74172869
+9086f898-ce14-5637-9b01-a5bfbd1139e9,Jl. Basuki Rahmat Pedestrian,pedestrian,PUSAT,,-7.27029620,112.74148160
+5e12ca62-536f-55a2-a189-f21345ac9078,Jl. Bengawan,street,PUSAT,,-7.29062557,112.74142541
+fc08febc-1e62-57be-8934-32c109a62819,Jl. Biliton,street,PUSAT,,-7.27483646,112.74964889
+ea043482-831b-5027-a5cb-3c2114290944,Jl. Bintoro - Retonde,street,PUSAT,,-7.28593203,112.73766152
+5ff95d75-f174-53a6-adeb-f0a2d03a74fe,Jl. Bodri,street,PUSAT,,-7.28797737,112.73098175
+1d4fe03d-09b3-5875-83d9-385d56880fa9,Jl. Boulverad,street,PUSAT,,-7.26396626,112.74807576
+4d1a9f0a-c95f-52a2-958c-be9e94589e5e,Jl. Bubutan - Pulau 1 (Depan Jl. Koblen),street,PUSAT,,-7.25438070,112.73439487
+775d4a58-99dc-586f-b197-ac275af6fb07,Jl. Bubutan - Pulau 2 (Depan Pom Bensin),street,PUSAT,,-7.25319791,112.73483992
+4c267aec-15e0-53d7-8c04-ea66654897f5,Jl. Bubutan - Pulau 3 (Depan Gereja),street,PUSAT,,-7.25186614,112.73529154
+30e07978-0bc6-54da-9ae4-abb14c8ae7c4,Jl. Bubutan - Pulau 4 (Depan Polsek Raden Saleh),street,PUSAT,,-7.25087663,112.73567006
+3ae7f4c1-4836-5cc8-897a-3c9ca04bb74a,Jl. Bubutan - Pulau 5 (Depan GNI),street,PUSAT,,-7.24986537,112.73597824
+afc115a9-1c44-538c-b6d6-12e4f39e4179,Jl. Bubutan - Pulau 6 (Depan Tokoh Alat Berat),street,PUSAT,,-7.24894207,112.73625494
+09b05678-d5ab-5d1f-becd-0db49c9e28db,Jl. Bunguran,street,PUSAT,,-7.24417750,112.74732121
+50673ce1-2578-51cd-bef8-cb96aacf4b5e,Jl. Bunguran,street,PUSAT,,-7.24417900,112.74741851
+30016634-eedd-5ef6-b9b7-e788b44d9524,Jl. Darmo Kali,street,PUSAT,,-7.28884107,112.74370008
+3037514f-51cf-5aa9-a2b8-aad2eb3f4f23,Jl. Dinoyo Tenun,street,PUSAT,,-7.28566137,112.74671001
+bc737137-48dc-5afd-8f58-9e2f5ec367fa,Jl. Diponegoro - Pulau 1 (Depan musium BI),street,PUSAT,,-7.29510936,112.73869112
+134732ee-9ddf-5762-83e0-2032eac4ab73,Jl. Diponegoro - Pulau 2 (Depan Hotel Oval),street,PUSAT,,-7.29320241,112.73767257
+66830b17-782a-55f0-b90a-15e36a892f83,Jl. Diponegoro - Pulau 3 (Depan RS William Boot / RKZ),street,PUSAT,,-7.29115370,112.73667109
+759bf186-e1e2-5f18-a659-7d90fd9a5762,Jl. Diponegoro - Pulau 4 (Depan Tokoh Eiger),street,PUSAT,,-7.28909958,112.73565019
+18fc9805-8dd4-58cf-a794-e62f1c76ec13,Jl. Diponegoro - Pulau 5 (Depan Telkomsel),street,PUSAT,,-7.28720101,112.73468501
+7c7f66c8-7198-56ca-ada7-2f1c28bce2b2,Jl. Diponegoro - Pulau 6 (Depan Masjid Diponegoro),street,PUSAT,,-7.28543293,112.73380858
+80177fba-8c33-53aa-8439-797c18bbdaa2,"Jl. Diponegoro - Pulau 7 (Depan Bank BCA,DPN Taspen)",street,PUSAT,,-7.28204783,112.73205884
+9a68150f-9e60-59f5-81e4-647ade6d08ab,Jl. Diponegoro - Pulau 8 (Depan Pom Bensin / KFC),street,PUSAT,,-7.27898435,112.72992997
+f49262e5-7db7-57c0-85d2-1c0a1aeada41,Jl. Diponegoro - Pulau 9 (Depan Arum Dalu),street,PUSAT,,-7.27781447,112.72894979
+5d30813c-e7c0-543c-a83b-49f8b6f322b9,Jl. Dr. Seotomo - Pulau 2 (Depan Pam Ovit),street,PUSAT,,-7.28284604,112.73706544
+c9fac8f3-1aa4-5b2c-bce9-e2b244e98a08,Jl. Dr. Soetomo - Arah Pakis (Depan Wisma Semeru),street,PUSAT,,-7.28509007,112.73210893
+56248ef7-109d-587e-9613-461a888dd950,Jl. Dr. Soetomo - Pulau 1 (Depan Rumah Makan Kayan),street,PUSAT,,-7.28208658,112.73880807
+c495704d-0d97-58ee-b54f-50a6889409ed,Jl. Dr. Soetomo - Pulau 3 (Depan Hotel Regantris),street,PUSAT,,-7.28397949,112.73452118
+1ec534c6-a935-5b2a-8c4e-30a03ba86db8,Jl. Gemblongan,street,PUSAT,,-7.25214797,112.73685330
+8f2bdda4-ecb3-5de9-b60f-94edc6749683,Jl. Gembong Tebasan,street,PUSAT,,-7.24468079,112.74754728
+77d54c3e-ae2a-5138-8b30-357b9b76a2a9,Jl. Genteng Kali - Pulau 1 (Depan Bank Mandiri),street,PUSAT,,-7.25601075,112.73858735
+cf85ca1b-ae43-5e99-b772-6aa746be4dc9,Jl. Genteng Kali - Pulau 2 (Depan Gereja),street,PUSAT,,-7.25607377,112.74121577
+42f4e3e2-ee53-52dd-b233-3e007720b013,Jl. Genteng Kali - Retonde Perhutani,street,PUSAT,,-7.25612787,112.74260688
+7bfb7084-32f4-5a21-94f5-b1316c073355,Jl. Genteng Kali - Retonde Pos Polisi,street,PUSAT,,-7.25593907,112.73730810
+04a63cdd-377b-5d4b-a71a-3631c8396672,Jl. Genteng Kali - Stren Kali,street,PUSAT,,-7.25591432,112.74062897
+828b963b-081a-5f01-9f21-086b02a71de0,Jl. Gubeng Masjid - Jalur Hijau,street,PUSAT,,-7.26581762,112.75316730
+3172b652-6dc7-52cf-84f5-d95d1d0a2885,Jl. Gubeng Pojok - Retonde dan Viaduk,street,PUSAT,,-7.26407668,112.75127377
+9c0a5e26-3a4b-57c6-806b-2e5cb3db8d59,Jl. Gubeng Pojok - Retonde dan Viaduk,street,PUSAT,,-7.26591809,112.75095265
+6704e851-ed74-54fc-bfc0-e5f1f611b3bb,Jl. Gubeng Pojok - Retonde Hanamasa,street,PUSAT,,-7.26632291,112.75133823
+e4c86e44-b408-5838-b1c8-c984df08f0d8,Jl. Gubeng Pojok - Retonde Hanamasa,street,PUSAT,,-7.26604489,112.75114806
+c83b6801-4962-5c8d-aedc-03f6d14feae6,Jl. Gubernur Suryo,street,PUSAT,,-7.26387224,112.74435596
+0b636a33-da75-506b-9110-bbe9061b04b0,Jl. Imam Bonjol - Retonde,street,PUSAT,,-7.27891937,112.73522058
+8bd226c2-1639-5485-a55e-a7c36e40f2d4,Jl. Indragiri - Pulau 1 (Depan Lapangan Thor),street,PUSAT,,-7.28744310,112.73152981
+d13f2a3b-5fd0-54e8-9b57-1d96c59e84a6,Jl. Indragiri - Pulau 2 (Depan Rumah Makan Ibc),street,PUSAT,,-7.28780922,112.73149411
+236b648f-eb42-5150-a1e9-88ac0bab0afa,Jl. Irian Barat,street,PUSAT,,-7.27293656,112.74485140
+47e5c262-4dc6-55f8-a6f5-af1d1dbbfc84,Jl. Jagalan - Retonde,street,PUSAT,,-7.24842635,112.74656423
+61c01d48-a66b-545d-ab97-895df4389100,Jl. Jaksa Agung Suprapto - Pulau 1 (Sisi Gedung Balai Kota),street,PUSAT,,-7.25929204,112.74626249
+632c4329-adc4-5eea-8abe-20d463a22419,Jl. Jaksa Agung Suprapto - Pulau 2 (Depan Hotel Leedon),street,PUSAT,,-7.25690923,112.74670884
+19f7c617-5b46-50f5-8c57-aa856af65b15,Jl. Jaksa Agung Suprapto - Pulau 3 (Depan JNE),street,PUSAT,,-7.25498990,112.74713754
+d6ee05a3-75c3-59e5-b0cb-8afb343b764c,Jl. Jaksa Agung Suprapto - Pulau 4 (Optik),street,PUSAT,,-7.25327247,112.74758927
+aa7cba4f-9c35-544f-b659-800e220fb502,Jl. Kalianyar,street,PUSAT,,-7.24855735,112.74745895
+24ea4f8f-4ad5-5b8d-9b35-45b85d47ca75,Jl. Kapasari,street,PUSAT,,-7.24794470,112.75071963
+8a5e1be1-935a-5471-928f-9dd5f5498456,Jl. Karimun Jawa,street,PUSAT,,-7.27293085,112.74535547
+90e446cc-a239-5f44-a5fb-9f39359116d6,Jl. Karimun Jawa,street,PUSAT,,-7.27309536,112.74537228
+1badbd04-b69e-5328-b8ec-777ffbb4280e,Jl. Kartini - Pedestrian,pedestrian,PUSAT,,-7.27964992,112.74029288
+696c54e4-2ac8-52bf-99a0-f44927c63772,Jl. Kartini - Pedestrian,pedestrian,PUSAT,,-7.27974264,112.74026470
+9c5d89bd-2b57-5145-ae76-53a6ad816c82,Jl. Kartini - Retonde,street,PUSAT,,-7.27816268,112.72945063
+aea88e93-9df5-54ab-b987-b5d7854fc692,Jl. Kayoon,street,PUSAT,,-7.27220814,112.74458060
+f0f5124a-9bbb-54fa-b742-60c323f7a174,Jl. Kebon Rojo Bank BI,street,PUSAT,,-7.24356310,112.73744444
+ab1333ff-29c1-520a-b000-ad7fa4c7d590,Jl. Kebon Rojo Bank Mandiri,street,PUSAT,,-7.24333151,112.73900921
+a8ff9836-b160-58ff-ab18-7acf1b5fd5a1,Jl. Kecilung,street,PUSAT,,-7.25717119,112.74549776
+9ceb9d78-62af-5a05-b6c6-8c770368c85a,Jl. Kedungdoro - Pulau 1 (Depan A Peng),street,PUSAT,,-7.26701791,112.72974180
+4c2421eb-89cc-5b8b-8e84-8c06c489354f,Jl. Kedungdoro - Pulau 2 (Depan LPS),street,PUSAT,,-7.26500856,112.73054864
+a37cbd62-1ac5-5938-a806-c71f826da9d8,Jl. Kedungdoro - Pulau 3 (Depan Ruko Still),street,PUSAT,,-7.26243876,112.73156901
+64b5623a-ce7f-5488-b13a-a5055e90b629,Jl. Kedungdoro - Pulau 4 (Depan Bank BNI),street,PUSAT,,-7.26030302,112.73241813
+e87459cf-0cd2-5272-96dd-c54d03877245,Jl. Kedungdoro - Pulau 5 (Depan Dealer Yamaha),street,PUSAT,,-7.25906601,112.73290042
+ab43c0db-c94c-517c-882b-4d1e57b762e0,Jl. Kedungdoro - Retonde,street,PUSAT,,-7.26848794,112.72899448
+f4b8e1d7-777b-5383-845b-4b158bd79012,Jl. Kupang - Retonde,street,PUSAT,,-7.27696239,112.72802104
+2dc9cf6b-543d-5a71-aee6-31eafde1d2c9,Jl. Kusuma Bangsa - Pulau 1 (Depan Grand City),street,PUSAT,,-7.26021187,112.75121392
+99e6165e-fc1e-5d0f-8a07-630fca8b88eb,Jl. Kusuma Bangsa - Pulau 2 (Depan SMA N 5),street,PUSAT,,-7.25734982,112.75073198
+a7e9bf3e-23ef-5441-a371-b29821f8002b,Jl. Kusuma Bangsa - Pulau 3 (Depan SPBU),street,PUSAT,,-7.25333502,112.74990328
+58a5c6de-751e-585d-8c63-b4e0c38278fa,Jl. Kusuma Bangsa - Pulau 4 (Depan SDN Kapasari),street,PUSAT,,-7.25036870,112.74990761
+f4b417b9-6468-5b10-b40a-2b3bf100ba93,Jl. Mojopahit - Rotonde,street,PUSAT,,-7.28071331,112.74460493
+4d796326-e563-59f2-858e-eb4c67f3db55,Jl. Musi,street,PUSAT,,-7.28733327,112.73187176
+2ecb10f0-c5c8-5623-b13f-b482d1195e73,Jl. Ngagel BAT,street,PUSAT,,-7.28788850,112.74538066
+7bcf3858-f3ae-57d9-984f-9226297a9218,Jl. Ngaglik - Retonde,street,PUSAT,,-7.24884432,112.75051629
+ee0d78ba-8b8a-5484-a18d-9ecc1a8a93b6,Jl. Ngemplak - Retonde,street,PUSAT,,-7.25590081,112.74384138
+65ac24d7-7493-5f19-8fd4-633f3ebe8e16,Jl. Ngemplak Stren Kali,street,PUSAT,,-7.25805231,112.74382794
+61b20f08-ba20-511a-a5ec-857a39b6295a,Jl. Pacar Keling,street,PUSAT,,-7.25865701,112.75538744
+a2ac447e-6e37-5a7e-bdfd-5a9b3057f0a9,Jl. Pahlawan - Retonde,street,PUSAT,,-7.24699803,112.73846747
+5b588bf2-7aea-5eaa-b01a-fa2384e16237,Jl. Pahlawan - Retonde Bapedda,street,PUSAT,,-7.24701255,112.73873747
+70dc56d3-5b69-5b67-a950-28a55ebf8935,Jl. Pandegiling - Barat Pulau 1 (Depan Hotel Santika),street,PUSAT,,-7.27703499,112.74004734
+dd0ad312-a154-5240-bf89-4e8765d8946b,Jl. Pandegiling - Barat Pulau 2 (Depan Tokoh Bangunan),street,PUSAT,,-7.27650476,112.73767328
+26ecae52-0c91-50e8-ad4b-9b721bac56f2,Jl. Pandegiling - Timur,street,PUSAT,,-7.27701288,112.74034015
+99d8d296-9e43-568a-a09e-69a7b6d88353,Jl. Panglima Sudirman - Pedestian,street,PUSAT,,-7.26622958,112.74488490
+bb918227-27b8-5415-9c43-8603561299aa,Jl. Panglima Sudirman - Pedestian,street,PUSAT,,-7.27084515,112.74311163
+1e54acb0-9567-58f4-be2d-54de94c25338,Jl. Panglima Sudirman - Retonde,street,PUSAT,,-7.27189764,112.74297164
+e3900366-e04c-56bf-ace4-26911018d015,Jl. Pasar Besar Wetan,street,PUSAT,,-7.24745926,112.74057767
+10b29a82-c8f9-5bec-b73d-158c4f944d58,Jl. Pasar Besar Wetan - Retonde,street,PUSAT,,-7.24762081,112.74178142
+6a01704c-3297-57fd-a901-4b7210f9e1b1,Jl. Pasar Kembang,street,PUSAT,,-7.27047594,112.72842624
+fe919624-134d-5069-8f1d-d39c53335c02,Jl. Pasar Kembang - Bawah Flyover,street,PUSAT,,-7.27479634,112.72699699
+2676bc08-4fc3-5075-a145-7b8d7ee2ad48,Jl. Pawiyatan,street,PUSAT,,-7.25172205,112.73154049
+420510fb-bb99-52de-9bff-e1d86af93ac1,Jl. Pecindilan,street,PUSAT,,-7.24801958,112.74704925
+d4f08c3e-1158-551f-b6d6-d4136bcb4850,Jl. Pecindilan,street,PUSAT,,-7.24636600,112.74747378
+52c6bccb-3512-5c83-b5f6-1be0e227fb95,Jl. Pemuda - Retonde,street,PUSAT,,-7.26604087,112.74975589
+4c924403-ba00-5ed2-9a83-5116e47f96da,Jl. Pemuda - Taman Pojok,street,PUSAT,,-7.26616626,112.74993940
+311c40ba-3d53-529f-b22f-67635836c421,Jl. Peneleh,street,PUSAT,,-7.25174578,112.73774135
+4762a2a8-57b9-51e7-973c-a5d58fe19326,Jl. Pengampon - Pulau 1 (Depan Tokoh Kosmetik),street,PUSAT,,-7.24797140,112.74696442
+f08261c5-e057-520a-bfdd-cf760fc602df,Jl. Pengampon - Pulau 2 (Depan Tokoh Ban),street,PUSAT,,-7.24619613,112.74741022
+ddace36e-405b-507d-ac9d-e1a977a6047d,Jl. Petemon - Retonde Petemon Timur,street,PUSAT,,-7.26931013,112.72873501
+0229c0e5-b2cd-50f5-8690-0e7d4887a56b,Jl. Polisi Istimewa - Pedestrian,pedestrian,PUSAT,,-7.28058262,112.74246805
+e6a9b9a6-df8c-577a-a308-e0fe2fa8dfea,Jl. Polisi Istimewa Pulau 1 (Depan ST. Louis),street,PUSAT,,-7.28005409,112.74337962
+eedbb7e8-0a8b-5423-8bc5-7046732e9fc9,Jl. Polisi Istimewa Pulau 2 (Depan Hoka Bento),street,PUSAT,,-7.28078683,112.74173433
+f1c076e6-a21c-554c-9291-0dc033771eb3,Jl. Praban - Retonde,street,PUSAT,,-7.25588399,112.73449856
+791e0cb4-f5e0-59fd-bc63-c1df8d9056e4,Jl. Praban - Taman Pojok Praban,street,PUSAT,,-7.25564806,112.73672333
+ccabc327-6394-5ba8-8300-edea590ea783,Jl. Prof. Dr. Mustopo,street,PUSAT,,-7.26526415,112.75547246
+5899713d-9f12-5161-a362-53d774767ba6,Jl. Progo,street,PUSAT,,-7.29188627,112.74045900
+c67085cc-0eff-5413-8ec9-a04348a6feee,Jl. Raden Saleh - Retonde,street,PUSAT,,-7.25150749,112.73524467
+3764a85d-6465-59a3-9b2e-ce38f070cf02,Jl. Raya Darmo (Depan Bank BCA),street,PUSAT,,-7.27858885,112.74106443
+b1dbf49f-5bc2-5a87-9230-1f331314d700,Jl. Raya Darmo Pulau 1 (Depan Taman Bungkul),street,PUSAT,,-7.29339843,112.73913949
+5cff15f9-5572-5047-a927-9195b0ad6529,Jl. Raya Darmo Pulau 2 (Depan Graha Wonokoyo),street,PUSAT,,-7.29041806,112.73898505
+754adc20-ffcb-593e-aeeb-1332d39cf81a,Jl. Raya Darmo Pulau 3 (Depan RS. Darmo),street,PUSAT,,-7.28728818,112.73946000
+093dcc33-ed2b-5206-91a3-8eccb137e7ab,Jl. Raya Darmo Pulau 4 (Depan Santa Maria),street,PUSAT,,-7.28287475,112.74028593
+026c81cd-b98b-53db-bec3-5d1a1fa70d70,Jl. Raya Darmo Pulau 5 (Depan CIMB Niaga),street,PUSAT,,-7.28040895,112.74071110
+0aa125af-2cf2-58e1-b50b-43b5cf0d272e,Jl. Reciden Sudirman,street,PUSAT,,-7.25797962,112.75393333
+8a67f55c-b6a9-55fa-896c-f71572d6020c,Jl. Reciden Sudirman,street,PUSAT,,-7.25708765,112.75404297
+7617cbee-ef2d-57a5-997a-0e7e63d42606,Jl. Semarang,street,PUSAT,,-7.25493794,112.72797405
+18f071fe-f97f-5014-b33a-c4b0b83f6373,Jl. Semarang - Retonde,street,PUSAT,,-7.24635351,112.73361110
+6c5ff63d-e066-52f6-a2e8-71eb4166c301,Jl. Serayu,street,PUSAT,,-7.29115424,112.74068441
+2993b543-e67c-5f28-a2e3-82e9ade65c91,Jl. Simpang Dukuh - Retonde,street,PUSAT,,-7.26298525,112.74211513
+d63f0c55-9e42-576c-8fa4-3bdc1bf32d63,Jl. Slamet - Rotonde,street,PUSAT,,-7.26168564,112.74935595
+85c592dc-c508-57f2-a15f-3028af35eeb2,Jl. Sono Kembang,street,PUSAT,,-7.27215958,112.74372061
+ffceda71-6b79-5707-be67-b4efe3fb6a4d,Jl. Sriwijaya,street,PUSAT,,-7.27940890,112.74212394
+f59621b4-d014-5f45-bc1b-3e0a40bc1f65,Jl. Sulawesi - Retonde,street,PUSAT,,-7.27637652,112.74617453
+2c59bf64-3a93-5d35-8d7f-a254813a6fcd,Jl. Sulung Kali,street,PUSAT,,-7.24625529,112.74262752
+4c977de0-83b8-5b42-a4ee-50b3eefa39b5,Jl. Sumatra,street,PUSAT,,-7.26947617,112.74966450
+6728de01-a93c-5b48-989d-282277c3e74d,Jl. Sumatra - Retonde,street,PUSAT,,-7.27676535,112.74516771
+8b4423f3-caa5-577b-9f72-feac67e4c457,Jl. Taman Aksara,street,PUSAT,,-7.26173762,112.74527245
+19772643-4f31-58d0-a83a-7303485a8a96,Jl. Taman Apsari,street,PUSAT,,-7.26469089,112.74282004
+206d409b-8697-5792-8b93-6635279375c5,Jl. Tembaan,street,PUSAT,,-7.24711849,112.73772499
+e4ba3457-7f32-5322-8f3f-97aaaff92128,Jl. Tembaan - Retonde,street,PUSAT,,-7.24646776,112.73384773
+eb08d9e1-9b31-5048-83d6-ce3dbaf64cdf,Jl. Tembok Dukuh,street,PUSAT,,-7.25598681,112.72750013
+779d7a5a-b7f5-5146-b79d-09f782c4b044,Jl. Undaan Kulon,street,PUSAT,,-7.24866079,112.74655392
+97bc5fcc-20b3-5750-9770-23674d4990da,Jl. Undaan Kulon,street,PUSAT,,-7.25197704,112.74484878
+04ccd0ff-d9a0-5d5a-9037-5efc2a451772,Jl. Undaan Wetan,street,PUSAT,,-7.25261720,112.74470710
+858c5270-46a4-5f57-883b-6e0d39c96033,Jl. Undaan Wetan,street,PUSAT,,-7.24872721,112.74665493
+d396c41e-f861-5049-92a3-d6da159608a4,Jl. Undaan Wetan - Retonde,street,PUSAT,,-7.25565783,112.74360448
+f48dc95e-ab80-5607-947a-3bfd74b4df4d,Jl. Urip Sumoharjo - Pedestrian,pedestrian,PUSAT,,-7.27478495,112.74172561
+3469ad6b-a095-51b2-bb0e-ac03655365fc,Jl. Urip Sumoharjo Pos Polisi,street,PUSAT,,-7.27329536,112.74222183
+c8428f1e-0f1c-55b9-b104-ecea29df1fce,Jl. Walikota Mutajab - Retonde,street,PUSAT,,-7.25952489,112.74339583
+cce7da9c-9718-5fdf-8675-623e7cdc70ea,Jl. Walikota Mutajab - Retonde,street,PUSAT,,-7.26041697,112.74597781
+8d357074-b228-5ae0-b386-1c117b3a5cd1,Jl. Widodaren,street,PUSAT,,-7.25850661,112.73168033
+04a62eb2-9325-54c3-b0c2-60862ac34e31,Jl. Wijaya Kusuma,street,PUSAT,,-7.25977893,112.74887596
+c6b29412-e1bc-5062-87f2-ab4b6a71dd95,Jl. Wijaya Kusuma,street,PUSAT,,-7.25940605,112.74883141
+17026656-1b3a-597d-b937-b217650be750,Jl. Wuni - Retonde,street,PUSAT,,-7.26133064,112.74437922
+ac44fbd9-742c-54fe-b708-133889399373,Jl. Yos Sudarso,street,PUSAT,,-7.26107686,112.74659408
+ae65d897-cb69-54e1-a000-0546cdd297f1,Jl. Yos Sudarso Stren Kali,street,PUSAT,,-7.26275184,112.74529593
+104f7bfc-e4a3-5c64-92cd-531da56e46c4,Retonde Depan Taman Buah,street,PUSAT,,-7.25557003,112.74298360
+0388e6cf-f611-5240-852f-66dad8d02777,Retonde Embong Malang,street,PUSAT,,-7.26116297,112.73980457
+de7a7bb4-72a5-56d8-aba3-b4528ea23670,Retonde Simpang Lonceng,street,PUSAT,,-7.26270556,112.74094162
+a8d5c322-4465-5452-a283-82dca9d6bc10,Retonde Tegalsari,street,PUSAT,,-7.26586881,112.74012488
+96772c9b-b52f-5221-b2de-993fcb2c36fd,Stren Kali Kramat Gantung,street,PUSAT,,-7.25109942,112.73779230
+f725eba8-ecfb-58c9-8d2f-26d5c7ac3d93,Taman Asahan,park,PUSAT,,-7.28617152,112.73172991
+c286cb46-359a-5b32-9c07-15349cef2493,Taman Bintoro,park,PUSAT,,-7.28600219,112.73713594
+c79f679c-f4b9-50e8-a0a6-630722bae0c3,Taman Karapan Sapi,park,PUSAT,,-7.27300315,112.74226402
+cf061a6a-76fe-5c6e-86f6-f1b2b5470983,Taman Korea,park,PUSAT,,-7.28331467,112.73599037
+f7f1a4b6-fbc8-52c1-8cdb-f0792263361f,Taman Monumen Polisi,park,PUSAT,,-7.28087526,112.74094196
+0dbc4e6d-406a-5382-8ac5-c1aadd86458e,Taman Musium BI,park,PUSAT,,-7.29500897,112.73890831
+9155a297-c651-5150-a7d8-908fd5f57a30,Taman Pojok Soto Kenari,park,PUSAT,,-7.25933880,112.74248776
+8b7a8b1d-25d4-5c6b-a27d-92eaafcce566,Taman Surya,park,PUSAT,,-7.26007824,112.74637543
+a60426aa-06e4-5f4a-9a11-8cacf8e727f6,Taman Surya,park,PUSAT,,-7.26034291,112.74722824
+031b7511-bdb4-5d95-96ed-3f8daacf771a,Ayani fronrage timur RSAL,street,SELATAN,,-7.31108724,112.73533186
+9e9e24e2-68c2-5f6f-b5ed-3f52035cc673,Ayani frontage timur gmex giant,street,SELATAN,,-7.31486242,112.73450963
+02645f98-37f9-5079-abbe-955f35386c35,ayani lama depan cito,street,SELATAN,,-7.34527903,112.72923319
+0e0d23cd-02d8-5ae1-8266-9c4631f62635,ayani lama depan cito,street,SELATAN,,-7.34273507,112.72931270
+2ce3a9bd-1d1d-5e5e-b50d-1ccb2d0cdfa2,ayani lama depan cito,street,SELATAN,,-7.34576008,112.72924763
+a9ca2934-051e-5c66-bfab-258f670ec09e,ayani lama depan dishub,street,SELATAN,,-7.34053199,112.72931490
+16cfe702-9251-5d64-83e0-91e6f1b60ab9,ayani lama depan KFC,street,SELATAN,,-7.31862164,112.73347472
+6dde2962-87fc-5824-bde2-2b5fd0972254,ayani lama depan kimia farma,street,SELATAN,,-7.33769821,112.72942791
+24fba960-aa9e-5733-b431-08de838acf39,ayani lama dinkes,street,SELATAN,,-7.33048321,112.73094297
+3874b50d-29e1-511f-9e55-d807a2f2d88d,ayani lama dinkes,street,SELATAN,,-7.32291794,112.73257686
+b8a384c2-a853-5e24-a9ca-3a0ded42588f,ayani lama dishub,street,SELATAN,,-7.33348208,112.73023222
+665d4411-16c5-5076-b4fa-c1e9c0194123,ayani lama excelso,street,SELATAN,,-7.31719095,112.73378313
+cb87b6cd-1ca5-5123-a4c8-79cbff3dd0b4,ayani lama excelso,street,SELATAN,,-7.31314580,112.73465311
+1b1fd5f9-cb82-536b-8dff-3fb28de8d1be,"Batas kota, Jl. Dukuh Menanggal Selatan",street,SELATAN,,-7.34657040,112.72466521
+4ba19d67-d35a-54dd-81f9-2653848409b5,Bunderan waru,street,SELATAN,,-7.34676367,112.72847064
+3be0c92c-7a11-5845-9f17-c9d9c6b23da0,exit tol gunungsari,street,SELATAN,,-7.30900262,112.71136591
+4caf2a43-70a3-54ec-b152-783f5b85c75d,exit tol gunungsari,street,SELATAN,,-7.31031798,112.71051932
+1d1eeb18-5f57-5994-84ce-8a558e0b36db,exit tol masjid agung,street,SELATAN,,-7.33716395,112.71392110
+cc34581b-70fb-55a1-8280-93fcd6ab73b4,exit tol Masjid Agung,street,SELATAN,,-7.33771853,112.71401227
+0107ceea-eb59-5aa7-8706-9581381e7f63,Jembatan Sawunggaling,street,SELATAN,,-7.30027833,112.73713087
+0c49fcb8-6335-5252-bae6-e0951f95a588,Jembatan Sawunggaling,street,SELATAN,,-7.29949715,112.73650083
+6b3fa0a5-fe8d-59a9-a440-404a831868a1,Jl. A. Yani Bawah Flyover Wonokromo,street,SELATAN,,-7.30667673,112.73600657
+0562a887-66d4-5523-a873-eb8f14d62bbe,Jl. A. Yani Frontage Barat (Cito),street,SELATAN,,-7.34472121,112.72904557
+11d8d08b-d53f-5d3f-a4ba-baa3482e4782,Jl. A. Yani Frontage Barat (Dinkes),street,SELATAN,,-7.32350277,112.73224744
+638ed6c4-9b4a-5e4b-841a-d4a3479260d0,Jl. A. Yani Frontage Barat (Kejaksaan),street,SELATAN,,-7.31445863,112.73419823
+ffa40869-e3de-52c6-9cf5-1994b6139889,Jl. A. Yani Frontage Barat (Kimia Farma),street,SELATAN,,-7.33765966,112.72923402
+057949ba-d327-5212-8f07-e05d3cba53d9,Jl. A. Yani Frontage Barat (Mitra 10),street,SELATAN,,-7.34042506,112.72909119
+b48d3aa0-d3c6-5131-b786-7ac83495385b,Jl. A. Yani Frontage Barat (Mitra 10),street,SELATAN,,-7.34302390,112.72911667
+2f767085-6c49-5f86-b48f-30dd73a13a12,Jl. A. Yani Frontage Barat (Papilio),street,SELATAN,,-7.33036178,112.73075673
+37d4a34c-8d1f-5219-ab12-5e6e8d1bdfbb,Jl. A. Yani Frontage Barat (Papilio),street,SELATAN,,-7.32703280,112.73072734
+7ca3fddc-92d0-562a-b9e8-5210e8dd16a1,Jl. A. Yani Frontage Barat (Papilio),street,SELATAN,,-7.32865945,112.73124510
+bff1f414-88bc-593c-84fa-57841e7e3dae,Jl. A. Yani Frontage Barat (Primarasa),street,SELATAN,,-7.33400846,112.72991439
+71a719ba-e91e-52f2-94da-2481ee203e28,Jl. A. Yani Frontage Barat (Pusvetma),street,SELATAN,,-7.31746648,112.73353840
+7a584141-f25c-5422-a772-363f10b3c6af,Jl. A. Yani Frontage Barat (Royal),street,SELATAN,,-7.30990003,112.73512248
+aa8856a7-5b8f-5a0b-bf48-a2d17a57f8eb,Jl. A. Yani Frontage Barat (Royal),street,SELATAN,,-7.31248040,112.73458484
+13253d52-36e7-59d8-892e-92e93c3c2364,Jl. A. Yani Frontage Timur - Depan Uinsa,street,SELATAN,,-7.32073512,112.73328412
+3c1ddf9a-516f-5dc1-91b0-a4193c05d35e,Jl. Abdul Wahab,street,SELATAN,,-7.29082148,112.70695139
+fb7c6f7a-7269-5898-8abf-7f2c0d40ed55,Jl. Adityawarman Pulau 1 depan Cafe prajurit - KFC,street,SELATAN,,-7.29488900,112.73243487
+22248957-57db-5b61-bef9-1d90d0a4fb07,Jl. Adityawarman pulau 2 Palapa - Paramitha,street,SELATAN,,-7.29358987,112.73072657
+ce6e518f-b0bc-5e18-8f67-8057644b2514,Jl. Adityawarman pulau 3 depan KPU - Mayapada,street,SELATAN,,-7.29252674,112.72863761
+73f42c09-86bc-5442-8dff-5ef798238a7f,Jl. Ayani - Depan RSI,street,SELATAN,,-7.30597826,112.73553550
+e50b8469-ce2b-5eab-b205-0c3d939048a6,Jl. Ayani -Depan RSI,street,SELATAN,,-7.30608079,112.73579882
+214367c5-029c-5331-ab7c-2a9a28fb2cba,Jl. Ayani asenering mayangkara,street,SELATAN,,-7.30809811,112.73558047
+a9cac4e4-e905-5f70-af9f-6ce6122f06d0,Jl. Ayani asenering mayangkara,street,SELATAN,,-7.30764890,112.73570765
+d8314dd9-d66f-5261-8782-e626e49ed8b2,Jl. Ayani asenering mayangkara,street,SELATAN,,-7.30754087,112.73542062
+b6d280d9-b2b0-5d22-975f-209f1be6d7d9,Jl. Ayani Bawah fly over Mayangkara,street,SELATAN,,-7.30467830,112.73648698
+1e8f8f39-533f-518c-9586-9ca2e4961fe4,Jl. Ayani Bawah Fly over Mayangkara,street,SELATAN,,-7.30549559,112.73627044
+7960f0b2-aab8-5902-81af-6f044e001f81,Jl. Batang Hari,street,SELATAN,,-7.29426914,112.72885180
+34bccad6-1d32-516d-8bab-fdf412094e44,Jl. Bumiharjo,street,SELATAN,,-7.29808012,112.73789765
+8c5b0d88-d0df-5806-8003-113ca8cc1d7f,Jl. Bung Tomo,street,SELATAN,,-7.29131988,112.74763587
+bc735168-0526-5411-8104-512fe5ad6a94,Jl. Darmo - Jalur tepi depan Polsek Wonokromo,street,SELATAN,,-7.29889535,112.73743579
+c435a3d8-c3dc-5dfe-8412-7ee452def060,Jl. Darmo - Jalur tepi depan Polsek Wonokromo,street,SELATAN,,-7.29821348,112.73826530
+4a150307-1001-5442-9afa-9754e2645972,Jl. Darmo Patung KBS,street,SELATAN,,-7.29599394,112.73867999
+250bfc8c-1f59-5d7b-84de-915ca3e2181e,Jl. Darmo timur KBS - pulau 2 Depan Mandiri,street,SELATAN,,-7.29698283,112.73920477
+cb678bff-65da-5f27-8aec-348a5da2d785,Jl. Darmo timur KBS - pulau 2 depan Polsek,street,SELATAN,,-7.29845382,112.73762921
+ec015be0-7511-5688-a9d4-fd182fc06361,Jl. Darmo Timur KBS - Pulau 3 depan Air Mancur,street,SELATAN,,-7.29585711,112.73924649
+e960ccaf-90c2-537d-a8cb-2eac3618790d,Jl. Dukuh Menanggal - Depan DISNAKER,street,SELATAN,,-7.34098695,112.71937767
+1af0b392-39f5-5f9e-a6fa-b07cad1161c3,Jl. Dukuh Menanggal - depan SMA 15,street,SELATAN,,-7.34066533,112.71837073
+de615f1f-5a23-5336-b418-260fc55794bd,Jl. Dukuh Menanggal - depan SMA 15,street,SELATAN,,-7.34066533,112.71837073
+fb3e041c-d935-53e9-b869-5fea6e7cbcd8,Jl. Dukuh Menanggal Selatan,street,SELATAN,,-7.34026478,112.71701928
+e5c6ab1d-8e7c-591e-a064-5438a3e2e9df,Jl. gayung kebonsari injoko,street,SELATAN,,-7.32920165,112.72455002
+19e520dd-fd2d-5044-b190-7973c68f7059,Jl. Gayung kebonsari injoko,street,SELATAN,,-7.32944190,112.72786512
+1ca6ecce-8c9f-513b-8592-03d36c5a00c2,Jl. Gayung kebonsari injoko,street,SELATAN,,-7.32970860,112.73035636
+f49d2dc7-1357-524a-bd2b-870ef9b19e3e,Jl. Gayung kebonsari injoko,street,SELATAN,,-7.32962481,112.72981754
+863551c2-980a-5138-953c-78e33e5b53ca,Jl. Gayung kebonsari Injoko,street,SELATAN,,-7.32904306,112.72286674
+cdb6f7fc-b005-5cd8-9063-8ecc5e8c18b3,Jl. Gayung kebonsari Injoko,street,SELATAN,,-7.32887438,112.72127764
+4d1d8d69-2e73-5fb3-bf2e-634dfe858220,Jl. Gayungsari Barat,street,SELATAN,,-7.33638080,112.71924672
+66804139-c78c-53b5-997f-e0e534884807,Jl. Gayungsari Barat,street,SELATAN,,-7.33234456,112.71993882
+c2f65a6f-dd86-572e-b787-e6ea5672da15,Jl. Gayungsari Barat,street,SELATAN,,-7.33008881,112.72014059
+ea174fc5-3140-5fa1-9432-66ad4479c58c,Jl. Gayungsari Barat,street,SELATAN,,-7.33440366,112.71961422
+808242ae-98a3-5a7d-98bf-469d9f61466b,Jl. gayungsari Timur,street,SELATAN,,-7.33708289,112.72191105
+7f613913-c6d2-5e30-95f0-e4a94f2bb30a,Jl. Gayungsari Timur,street,SELATAN,,-7.33830022,112.72262461
+e4d16705-e5f6-5b07-92f7-0b5abd44938c,Jl. Gunugsari - monumen mastrip,street,SELATAN,,-7.30748037,112.71886136
+4e7291c9-9c85-50e4-8b7f-76fc5e51ce04,Jl. gunungsari - depan singgasana,street,SELATAN,,-7.30747303,112.71736533
+de75be1e-1904-5b3e-9a58-2930d4f8eef7,Jl. gunungsari - depan singgasana,street,SELATAN,,-7.30741526,112.71812402
+0ebdde66-db88-5b48-8628-d1a151aac89e,Jl. gunungsari - tl rolak,street,SELATAN,,-7.30505075,112.72472405
+4b2c8249-aa72-5976-bfa9-fad00d6befe8,Jl. gunungsari - tl rolak,street,SELATAN,,-7.30705313,112.72117950
+c98cbc9c-da21-5f2f-811a-f6ad9f7d0720,Jl. gunungsari - tl rolak,street,SELATAN,,-7.30632973,112.72319780
+7cd67eee-fe14-51a0-829b-044eacbc5a76,Jl. Gunungsari - tl rolak,street,SELATAN,,-7.30305898,112.72614669
+14b93b09-e42c-57bf-9e19-91f33bfbe798,Jl. Gunungsari - Tl rolak,street,SELATAN,,-7.30146174,112.72795817
+2895b34b-11b9-5fcb-bc06-61af87f3d0d8,Jl. Gunungsari Tl Rolak,street,SELATAN,,-7.30733345,112.71937833
+2debf07b-6dc6-5a0c-99c8-5b993e5fd1e1,Jl. Jagir - mebel sampai jagir TL arah nginden,street,SELATAN,,-7.30482770,112.75575252
+3fa14a3d-6424-5bbe-926e-4637ac31d63c,Jl. Jagir - mebel sampai jagir TL arah nginden,street,SELATAN,,-7.29977447,112.73752756
+55a0dcc6-61c3-5c57-856c-aa1ab8d63b5d,Jl. Jagir - mebel sampai jagir TL arah nginden,street,SELATAN,,-7.30054512,112.73925070
+fe7f7330-5d1a-5441-b2bd-c361092edb2e,Jl. Jagir - mebel sampai jagir TL arah nginden,street,SELATAN,,-7.30168209,112.74406055
+fb915651-46b8-5a12-86b3-9f53c786cfd1,Jl. Jambangan - SWK,street,SELATAN,,-7.32319045,112.71366738
+9da49bb5-0a00-5f82-b8cd-91c52e424238,Jl. Jambangan Kolam renang,street,SELATAN,,-7.32099946,112.71859922
+5ee5291b-c550-54d7-a025-f89fd543364d,Jl. Jarsongo tepi sungai,street,SELATAN,,-7.30820183,112.71241957
+54678b66-2069-54c9-84c8-bf0236cabb20,Jl. Jemur sari depan Mahameru,street,SELATAN,,-7.32188800,112.74404478
+30c9c436-c791-5399-9325-0c667d80f051,Jl. Jemursari - Depan Dinkes,street,SELATAN,,-7.31750405,112.75108439
+deffad26-15b3-555c-b896-98443869edd0,Jl. Jemursari - Depan Dinkes,street,SELATAN,,-7.31644655,112.75282701
+2bd7f675-e36c-5258-8ecb-2043c00ab105,Jl. Jemursari - Rotonde,street,SELATAN,,-7.32059483,112.74607656
+a0ef1ef9-ca9a-5d0f-9b78-048301bac173,Jl. Jemursari - Rotonde Margorejo - Jemursari,street,SELATAN,,-7.31763389,112.75117641
+bcb1a931-6359-5ac2-9522-bf12bd784d56,Jl. Jemursari - Rotonde Sidosermo Indah,street,SELATAN,,-7.30898643,112.75919063
+4eb7595e-febd-5073-94ca-de6032e65418,Jl. Jemursari depan Mahameru,street,SELATAN,,-7.31916388,112.74886738
+a213b029-c22f-5d2e-9411-6beb6a2a050a,Jl. Jemursari RSI,street,SELATAN,,-7.32333718,112.74145339
+a4446314-070d-5883-9597-8bb4c7a954f3,Jl. Jemursari Susu Sapi,street,SELATAN,,-7.32575072,112.73722562
+aab0a81e-1099-57e3-a328-e4b945be8031,Jl. Kalisumo,street,SELATAN,,-7.29535988,112.75662503
+e6fe3241-0622-5186-84af-47143fb9b317,Jl. Karah - depan SWK,street,SELATAN,,-7.30931306,112.71933836
+173c5e76-4265-5bc0-a23b-05ff81492265,Jl. Karah depan jasa tirta,street,SELATAN,,-7.30873403,112.71893387
+5daca6f9-7375-5f74-a4ee-eabdbc9891c2,Jl. Karah Rolak,street,SELATAN,,-7.30884775,112.71969113
+16c2d319-6c18-5f35-9bb2-8a30be79e90d,Jl. ketintang madya,street,SELATAN,,-7.31611039,112.72254967
+491ed70b-d766-56d2-b3bc-330759b9af3d,Jl. ketintang madya,street,SELATAN,,-7.31219162,112.72389500
+99b03a80-c345-59c0-bf23-85489ea9ff73,Jl. ketintang madya,street,SELATAN,,-7.32069368,112.72168891
+361773ff-a75d-5ffa-ae36-9f6378ced6fe,Jl. Ketintang Madya,street,SELATAN,,-7.31744598,112.72239323
+9e32f1c4-1e71-5bb9-846d-1b751a6bb93b,Jl. ketintang permai,street,SELATAN,,-7.32092869,112.72385817
+7c05fffb-d742-50e3-a7c2-4f4d14240565,Jl. ketintang pjb,street,SELATAN,,-7.31896200,112.73216490
+889ac73d-73bd-565e-a3ce-c700a95c1593,Jl. ketintang pjb,street,SELATAN,,-7.31869649,112.73063931
+2d870f41-e8de-5e40-bfce-593fd2b7459b,Jl. Ketintang PJB,street,SELATAN,,-7.32085680,112.72808923
+3442375b-429e-5e55-b8e6-1579f5c5e0db,Jl. Ketintang PJB,street,SELATAN,,-7.31949048,112.72880376
+0d1dea20-5cbd-5150-a020-6742b1319989,Jl. ketintang selatan,street,SELATAN,,-7.31524068,112.71985642
+35d02a96-fd60-5971-a0fe-accec6467caa,Jl. ketintang selatan,street,SELATAN,,-7.31519070,112.71975439
+3fbf8cbf-70c7-5b4c-9ce6-584c9478cdb8,Jl. ketintang selatan,street,SELATAN,,-7.31600371,112.72137402
+aba5653c-e600-5e9d-a778-4e2afce36709,Jl. Ketintang selatan,street,SELATAN,,-7.31637779,112.72221246
+097dbde5-d415-586c-85c8-cda4650fbc3f,Jl. Krukah utara,street,SELATAN,,-7.29351301,112.75307219
+4daf098f-dfa8-5d11-8be9-fe4160ac5222,Jl. Ngagel - Jembatan Ujung Galuh,street,SELATAN,,-7.29105464,112.74287710
+7ad891b2-7847-5195-958f-c3ec8114073c,Jl. Ngagel - Jembatan Ujung Galuh,street,SELATAN,,-7.29141498,112.74270316
+66a8348e-3abe-5cc5-b97d-642068ecb735,Jl. pagesangan,street,SELATAN,,-7.33797675,112.71542196
+9c71c530-f32c-5e8c-ace1-998384961465,Jl. Prapen - stren kali depan Ketok Magic,street,SELATAN,,-7.31285124,112.75634119
+9e74c0ea-3c86-5865-86a3-13f67e9f6740,Jl. Prapen - stren kali depan Ketok Magic,street,SELATAN,,-7.30907179,112.75942669
+384ee809-da61-5d70-8249-4e8d08b90ef9,Jl. Waringin - Rotonde,street,SELATAN,,-7.29876844,112.73330738
+b40e356d-18ec-585d-a399-08fa3c7605c2,Jl. Wisata Menanggal,street,SELATAN,,-7.34588537,112.73377830
+05fa0487-ad36-532f-b8a5-30a4a175d527,Jl. wisma pagesangan,street,SELATAN,,-7.33841050,112.71700914
+f9bf68d8-4a48-598e-8fb4-dd0eed205426,Jl. Wisma Pegesangan,street,SELATAN,,-7.33878867,112.71899776
+8c46f441-d9f3-5f4a-9a81-ace0d996a3c6,Jl. Wiyung - pendestrian depan Gedung Serbaguna,pedestrian,SELATAN,,-7.31398765,112.69499291
+caf9f588-6a2a-5d8d-aefa-8d4ba0823845,Jl. Wiyung - Pendestrian Depan Kelurahan,pedestrian,SELATAN,,-7.30951205,112.67599139
+41a9adca-04b4-5097-ba9c-49575f46d23b,Jl. Wiyung - Pendestrian depan Mitra 10,pedestrian,SELATAN,,-7.31050897,112.68048857
+59f5ab43-a292-5306-bf2a-f36fb26e8a8e,Jl. Wiyung - pulau 1 depan BRI,street,SELATAN,,-7.31274203,112.70784266
+dc71324b-7745-54c9-a114-b7ad09ef4a24,Jl. Wiyung - pulau 2 depan Gunungsari indah,street,SELATAN,,-7.31297378,112.70529354
+40e795cc-2dac-58b5-81dc-f59e6940ea48,Jl. wiyung - pulau 3 depan suka suka,street,SELATAN,,-7.31361050,112.70099955
+68eb8741-e750-5490-a168-013bb81decb3,Jl. Wiyung Jajar tunggal - depan balai besar,street,SELATAN,,-7.31194700,112.68839273
+246a3c84-9211-56fe-aae4-8518d3d96bde,Jl. Wiyung Jajar Tunggal - Depan Balai Besar,street,SELATAN,,-7.31253053,112.68979744
+8bcbcf3e-ea3c-5ced-9d42-d98331845db5,Jl. Wiyung jajar tunggal - depan KFC,street,SELATAN,,-7.31385929,112.69631805
+26b9992f-43fa-5cfc-8bf0-75a60eb891d1,Jl. wiyung jajar tunggal - depan Pasar wiyung,street,SELATAN,,-7.31368843,112.69307659
+a4fa56bd-69b8-53e3-932d-c36dae3bb01e,Jl. Wiyung Jajar Tunggal - Depan TPI,street,SELATAN,,-7.31375806,112.69839429
+08f01438-4550-55c2-bb36-7c61697927bb,Jl. Wiyung karangan,street,SELATAN,,-7.30932364,112.67541908
+18f0bd35-3013-5d24-8aef-986be388de67,Jl. Wiyung karangan,street,SELATAN,,-7.31059122,112.68143309
+09de7ad3-dcdc-5c9b-aa41-acb92d726a14,Jl. Wiyung Karangan,street,SELATAN,,-7.30993382,112.67839649
+f9ccfc21-74f0-5d56-b926-749563c5a135,Jl. Wiyung Karangan,street,SELATAN,,-7.31131089,112.68572788
+fd5a1f79-2618-5b53-8647-6d9c8ba9970c,Jl. wonokromo SS - pendestrian,pedestrian,SELATAN,,-7.30265657,112.73666372
+23a6d5c4-06ac-5db1-b43f-b62c920d6ef0,Jl. Wonosari Kidul,street,SELATAN,,-7.29273722,112.72829265
+e75b2c13-ec82-5160-b945-c803590c2943,Jl. Wonosari Kidul - Taman pendestrian,pedestrian,SELATAN,,-7.29260385,112.72825715
+b0a91ace-a03a-590c-8225-e2da04cc11a4,Pendestrian Dinkes,pedestrian,SELATAN,,-7.32216286,112.73234531
+bc5bcee9-6318-5304-92ba-2011de3217d4,Pendestrian polda,pedestrian,SELATAN,,-7.31471787,112.73390727
+02d98369-2f69-5ff0-b056-ab9165950ec8,Pendestrian Polda,pedestrian,SELATAN,,-7.32566625,112.73149989
+4c693c6e-a0ca-50b7-8b3e-cb4c39641af7,retonde gunung sari,street,SELATAN,,-7.31028729,112.71069842
+7f2f13bb-2dab-5e85-b941-6477e4123da7,retonde gunungsari,street,SELATAN,,-7.31043339,112.71064445
+61224fd7-120c-5ccc-9f53-e86ddc0fc728,retonde jemur ngawinan,street,SELATAN,,-7.32739855,112.73207824
+5f1a1822-4194-5f52-9ed9-e67bb87789af,Retonde JL. Ayani depan Dolog,street,SELATAN,,-7.32630344,112.73178095
+48906ed9-3ffe-5ea9-89b7-dc0402d769b7,Retonde Jl. Joyoboyo,street,SELATAN,,-7.29860821,112.73525174
+12b82c9e-3f70-5579-9100-e3edb551ee69,retonde jl. wiyung depan suka suka,street,SELATAN,,-7.31353876,112.70246584
+aa047d69-b6d6-56f9-a79f-2e64e4e0e9f8,Retonde ketintang selatan,street,SELATAN,,-7.31667658,112.72255543
+59a9dace-7f49-508e-9389-79a8b00acc8a,Retonde Marmoyo,street,SELATAN,,-7.29677938,112.73953402
+1a33f4b4-c343-56a2-ad2f-3cf91804788b,rontonde frontage timur RSAL,street,SELATAN,,-7.30733343,112.73632973
+981338bd-5531-57e9-add5-b2c1dfa89d0a,rotonde jl. gunungsari,street,SELATAN,,-7.30900719,112.71153542
+ae84ea5e-9d8d-5eb1-a15f-2794256bac7d,rotonde Jl. gunungsari,street,SELATAN,,-7.30914521,112.71137655
+5602308a-e441-5f56-a8a0-a4b4ae613afa,Rotonde Jl. wiyung depan suka suka,street,SELATAN,,-7.31341394,112.70296180
+8ee9ee7e-b300-59f5-8014-55e3bbfa0107,Rotonde wonokromo pos polisi,street,SELATAN,,-7.30423582,112.73678859
+e5750398-031b-5ae2-8cdd-88ab28777d6e,Taman Rotonde Diponegoro Darmo,park,SELATAN,,-7.29560166,112.73894004
+39434bb6-a379-5d5d-9967-4da4e4f05e6c,Taman tepi sungai Darmokali,park,SELATAN,,-7.29210480,112.74229947
+54a276f7-e3bf-5944-8c66-1a4d41372ca2,Tanah Aset Jl. Wonocolo,street,SELATAN,,-7.31889527,112.73971403
+46205686-2ec0-52b8-950e-ae3c073f7dbc,Tanah aset sidosermo,street,SELATAN,,-7.31105834,112.75587773
+1e8773b6-0859-4830-a157-7bd43771ba69,104. Rot. Rungkut Madya,street,TIMUR1,,-7.33150029,112.78125750
+34216e30-2223-4da6-85a9-5ad73abf0f41,12. Rungkut Asri,street,TIMUR1,,-7.32749301,112.77412719
+ef07da8c-5e09-404b-af50-72b4469dec70,14. Rungkut Asri Timur II,street,TIMUR1,,-7.32993539,112.78022772
+d6105876-749f-4721-988f-4dbf1cc1f9cf,19. Tenggilis Barat I,street,TIMUR1,,-7.32024181,112.74920517
+e662ab0b-20a6-407d-b1c7-8ec0b530d0fe,2. Fasum Perum Medokan Asri Barat Regency,street,TIMUR1,,-7.33182549,112.79025595
+1b01a96a-e9a8-41ad-a4e3-dbbdefc26573,20. Tm. Kedung Baruk,street,TIMUR1,,-7.31270722,112.78281679
+eeb6808d-63ad-4408-90df-eb79e1eb9d7a,22. Tmn Gunung Anyar Timur,street,TIMUR1,,-7.34228498,112.79545638
+d3ffc09e-45b0-4ba6-b147-046bc2d3f2d9,23. Taman Penjaringan Timur III,street,TIMUR1,,-7.31899852,112.78594668
+1db0680f-193f-4c2a-a3fa-9a1bc10c0172,24. Tm Medokan Asri Utara VIII,street,TIMUR1,,-7.32297554,112.79378937
+d023f0bc-9a7c-4090-be08-c43d175fec9b,25. Medokan Ayu,street,TIMUR1,,-7.32290718,112.79280356
+2a632db1-eb11-4023-9302-d3dd42068078,3. Fasum Wisma Penjaringan Sari,street,TIMUR1,,-7.31867561,112.78828781
+bb15aede-00e2-4809-9654-0d56d7fb3582,6. Kutisari Indah Barat VII,street,TIMUR1,,-7.34107373,112.74412229
+dbc99198-c59f-4845-9e43-73bd23a75894,7. Kutisari Indah Utara VI,street,TIMUR1,,-7.33907008,112.75100646
+7ca15843-5c42-48d9-b5f8-e1fa8da074e2,77. Kutisari Indah Barat TPS,street,TIMUR1,,-7.34079228,112.74715930
+94ce73d0-c6d8-40df-a17b-80f83d512812,8. Dpn Depo Rungkut Kidul,street,TIMUR1,,-7.33120796,112.77198004
+e70d7385-4155-4fe2-824a-f184b7b20392,8. Medokan Asri Barat,street,TIMUR1,,-7.32651582,112.78986679
+73c7e0ff-17cf-4d24-9f2a-86819fecab43,82. Stren Kali Jl. Tenggilis Mejoyo,street,TIMUR1,,-7.31499869,112.76517172
+6ec0c437-cf5c-4b8a-afd5-0effde13d652,9. Medokan Asri Tengah,street,TIMUR1,,-7.32787715,112.79317661
+9fc29c4a-e5cc-4fe4-ae11-bae5b7255821,baruk barat,street,TIMUR1,,-7.32171801,112.77812085
+26cb21d9-849a-405f-a7bd-28cda99512a5,Bosem Mini Tenggilis Tengah,street,TIMUR1,,-7.31857666,112.75274614
+9e609e7a-ab9b-4c9a-ba05-85ad0c8b56e0,Jl. Baruk Utara,street,TIMUR1,,-7.31239651,112.78214705
+3b0f39f8-765b-464a-a2b7-4d24a347a259,jl. boulevart jemursari,street,TIMUR1,,-7.32113688,112.74647138
+f5da93a4-3da5-47da-8baf-5664fb32faf0,Jl. Gunung Anyar Timur,street,TIMUR1,,-7.34054885,112.78375591
+aa75b989-9d97-4b39-b5b0-313c3b3cac61,jl. ir soekarno merr semampir jalur tepi sisi barat 1,street,TIMUR1,,-7.30746263,112.78037903
+c461b66f-8864-4ef5-b89c-b082612a82ad,jl. ir soekarno merr semolowaru jalur tepi sisi barat 1,street,TIMUR1,,-7.30208098,112.78145478
+6510b904-536e-4944-8ec6-b7e8163b62df,Jl. Jemurhandayani,street,TIMUR1,,-7.32866951,112.74072111
+211a31dd-494a-49bf-b248-720c4d43fdee,Jl. Jemurhandayani - Pendestrian,pedestrian,TIMUR1,,-7.32880619,112.74182451
+ed30ac15-2ae4-40b5-9a82-3633de94caf0,jl. jemursari 123,street,TIMUR1,,-7.32125992,112.74637332
+e1a777e1-15f9-4005-817b-171607b1bb5f,Jl. Kendangsari Industri,street,TIMUR1,,-7.32935825,112.74774131
+4d0115c6-e46c-46eb-8b23-f36a3fad056b,jl. medokan asri depan rsud eka chandrarini,street,TIMUR1,,-7.32646311,112.78419441
+78ea952a-97fa-4d2f-a5b4-cb4bd6494e25,Jl. Merr Delles (Jalur Tengah),street,TIMUR1,,-7.29138065,112.78073175
+91d5a188-4ae8-4be0-a2e7-4efce524669d,Jl. Merr Delles (Jalur Tepi Barat),street,TIMUR1,,-7.29137065,112.78052277
+703c7c4a-29d1-4be3-bb42-077c411c9c69,Jl. Merr Delles (Jalur Tepi Timur),street,TIMUR1,,-7.29349383,112.78139744
+b4c52fb8-9862-481e-a917-f40a37402a06,Jl. Merr Gunung Anyar (Jalur Tepi Barat),street,TIMUR1,,-7.34161751,112.78567968
+66165239-cead-4f89-ae77-284edb383ed4,Jl. Merr Gunung Anyar (Jalur Tepi Timur),street,TIMUR1,,-7.33591551,112.78254235
+b96d8f02-e2be-4fb8-958e-8336a1e81817,Jl. Merr Gunung Anyar (Pulau 1 Lampu Tl),street,TIMUR1,,-7.33255268,112.78121994
+29df2513-22ef-49ae-b811-7942179ee5cd,Jl. Merr Gunung Anyar (Pulau 2 Depan Depot Sate),street,TIMUR1,,-7.33495946,112.78183337
+bb72f630-cf44-484a-b06e-a81601c5e3a0,Jl. Merr Gunung Anyar (Pulau 3 Depan Ruko Purimas),street,TIMUR1,,-7.33727398,112.78312618
+fd503449-e836-412d-adcf-693bbd723318,Jl. Merr Gunung Anyar (Pulau 4 Depan Masjid),street,TIMUR1,,-7.34020682,112.78503871
+aa72e168-b9e9-4645-b887-ff3ec2f087d7,Jl. Merr Gunung Anyar (Pulau 5 Depan Pompa Batas Kota),street,TIMUR1,,-7.34223673,112.78616947
+b966b5fe-445d-4bd9-afc0-e387041e9e54,Jl. Merr Kedung Baruk (Jalur Tepi Barat),street,TIMUR1,,-7.31610429,112.78061460
+47b09a12-6708-4d71-9f65-93c44b805ea3,Jl. Merr Kedung Baruk (Jalur Tepi Timur),street,TIMUR1,,-7.31339142,112.78083935
+f6f3390a-07f8-4406-8f60-e63eb76efcae,Jl. Merr Kedung Baruk (Pulau 1 Depan Mie Gacoan),street,TIMUR1,,-7.31916426,112.78094473
+4dd0b679-a628-4d7f-8254-a28c282e87e9,Jl. Merr Kedung Baruk (Pulau 2 Depan Super Indo),street,TIMUR1,,-7.31508109,112.78076899
+de03a3e0-3eb3-4139-bd8d-b5304a23a385,Jl. Merr Pandugo (Jalur Tepi),street,TIMUR1,,-7.32549179,112.78095086
+9e073706-b99c-4e22-83c8-8d27f3f6b3d6,Jl. Merr Pandugo (Pulau 1 Depan Bebek Harissa),street,TIMUR1,,-7.32654136,112.78128896
+8d14026a-714c-4ea0-a0b2-b6b4138e5d43,Jl. Merr Pandugo (Pulau 2 Air Mancur),street,TIMUR1,,-7.32254835,112.78101332
+2cb0c6b8-6e08-476a-98b7-0be9a9f2312e,Jl. Merr Rungkut (Jalur Tengah),street,TIMUR1,,-7.32977739,112.78128483
+329fab8f-adb2-4b04-bdde-85b90e4f43c0,Jl. Merr Rungkut (Jalur Tepi),street,TIMUR1,,-7.32851249,112.78146815
+70c950ea-0598-4f45-859a-e15e0753a739,Jl. Merr Semampir (Jalur Tepi Barat),street,TIMUR1,,-7.30450048,112.78108019
+2aeb6f39-1cb7-4b47-9065-ed6612566550,Jl. Merr Semampir (Jalur Tepi Timur),street,TIMUR1,,-7.30349781,112.78155744
+bde9b7c4-d3ee-4941-96b4-9d73e7046a4f,Jl. Merr Semampir (Pulau 1 Depan Apartemen),street,TIMUR1,,-7.30929117,112.78050920
+f314ae79-7385-4f14-9e65-470d6561e390,Jl. Merr Semampir (Pulau 2 Depan Indomaret),street,TIMUR1,,-7.30786148,112.78050376
+f589e807-9388-4205-98b7-cdc0478cd9ed,Jl. Merr Semampir (Pulau 3 Depan Smpn 52),street,TIMUR1,,-7.30526644,112.78104053
+9950b68c-12ac-435f-868a-a518e3d36bd9,Jl. Merr Semolowaru (Jalur Tepi),street,TIMUR1,,-7.29789804,112.78178236
+b6e5489d-7b89-4e1a-a19f-2704b3d01d4b,Jl. Merr Semolowaru (Pulau 1 Depan Kopi Kenangga),street,TIMUR1,,-7.30237779,112.78156635
+eefc3c18-4931-4cfc-b9f9-fa9a983ed218,Jl. Merr Semolowaru (Pulau 2 Depan Spbu),street,TIMUR1,,-7.29953838,112.78187323
+a44f4c5d-b7f7-4886-8a6c-e37b9d41e497,Jl. Merr Semolowaru (Pulau 3 Depan Soto Cak Har),street,TIMUR1,,-7.29563224,112.78170451
+52ee67cb-c4bf-4613-9604-3a03022648a2,Jl. Nginden Semolo,street,TIMUR1,,-7.29975572,112.76729218
+7c21d703-3573-4228-8732-d6ae8bee5ff5,Jl. Panjang Jiwo - Jalur Tepi Selatan,street,TIMUR1,,-7.30752135,112.76501386
+fb0ca203-cfa6-4482-a735-b5332d11e9a8,Jl. Panjang Jiwo - Jalur Tepi Utara,street,TIMUR1,,-7.30728004,112.76495022
+b1b3fda5-8389-4637-a282-55fd32049d91,Jl. Panjang Jiwo (Pulau 1 Depan Pt. Vitapharm),street,TIMUR1,,-7.30712741,112.76383763
+1f67d79c-db06-4de1-8b68-2aa2c600b9e5,Jl. Panjang Jiwo (Pulau 2 Depan Ruko Panji Makmur),street,TIMUR1,,-7.30786704,112.76659825
+0fe353b2-4781-4dd0-9d45-f796c8d245a1,Jl. Panjang Jiwo Permai - Pulau 1 Depan Spbu,street,TIMUR1,,-7.30916998,112.76803963
+d097d51e-4115-4027-89a8-7ab806a75394,Jl. Panjang Jiwo Permai - Pulau 2 Depan Alfamart,street,TIMUR1,,-7.31067452,112.76729813
+d9d66a08-33f5-4e03-8a95-d742eb3d8b1b,Jl. Panjang Jiwo Permai - Pulau 3 Depan Apartement Kyoto,street,TIMUR1,,-7.31208727,112.76660789
+862c8883-5aa7-41bd-961d-4bbcf4c0b4bf,Jl. Panjang Jiwo Permai - Pulau 4 Depan Ruko Land Mark Delta Permai,street,TIMUR1,,-7.31308676,112.76610588
+39615dd7-7f57-4a77-83fd-2661f2114bf1,Jl. Panjang Jiwo Permai - Pulau 5 Depan Rs Ubaya,street,TIMUR1,,-7.31389374,112.76571774
+cc601a14-40ae-4b63-a0cf-46f2af2ff6aa,jl. penjaringan asri depan disnakers,street,TIMUR1,,-7.32630261,112.78475079
+b58b2ef8-c2db-41f5-ab0d-9002e3c0095c,Jl. Penjaringan Sari Ykp,street,TIMUR1,,-7.32315721,112.79173505
+04dda784-3b14-4b66-8364-83c1861e53e2,Jl. Raya Jemursari - Pulau 1 Depan Burger King,street,TIMUR1,,-7.31344857,112.75599682
+2fa567a4-7652-4615-89e4-0fa03754b764,Jl. Raya Jemursari - Pulau 2 Depan Luminor Hotel,street,TIMUR1,,-7.31636973,112.75310730
+2d1e1d48-42d8-4da2-b764-6eb515bfdd57,Jl. Raya Jemursari - Pulau 3 Depan Asco Daihatsu,street,TIMUR1,,-7.31920985,112.74908139
+00cea2b3-c04d-4efd-857a-6f61025bdd6d,Jl. Raya Jemursari - Pulau 4 Depan Ibis Hotel,street,TIMUR1,,-7.32419754,112.74022339
+1974b2f1-7144-4ca0-b767-b31c06bf4372,jl. raya kalirungkut (jalur tengah dan tepi),street,TIMUR1,,-7.31845142,112.76957530
+20b417eb-ebf5-4f7a-8a4a-784936ea5a33,Jl. Raya Kedung Baruk (Pulau 1 Depan Ruko Megah Raya),street,TIMUR1,,-7.30916148,112.77133750
+79d52ff7-bfe7-4efb-83a1-c9b150d80758,Jl. Raya Kedung Baruk (Pulau 2 Depan Samator),street,TIMUR1,,-7.31006086,112.77473083
+30ca0747-c833-41ea-89de-623206273450,Jl. Raya Kedung Baruk (Pulau 3 Depan Rich Palace),street,TIMUR1,,-7.31067295,112.77683402
+c2b4b994-53ff-4ace-b7b5-7e81f303713e,Jl. Raya Kedung Baruk (Pulau 4 Depan Nirwana),street,TIMUR1,,-7.31112516,112.77895639
+cb71f339-4317-4b1e-bb99-f49bee4dd61d,Jl. Raya Kendalsari,street,TIMUR1,,-7.31288371,112.78672792
+9a670bff-9baa-4155-845a-25d60e7906f2,Jl. Raya Kendangsari - Pulau 1 (Depan Tekom),street,TIMUR1,,-7.32830557,112.74477337
+21f89c71-aac9-4fb4-9d1a-bd6669e10783,Jl. Raya Kendangsari - Pulau 2 (Depan Rsia),street,TIMUR1,,-7.32576005,112.74503552
+8ab35223-f818-41d1-abd0-f83d8c93b104,Jl. Raya Kendangsari - Pulau 3 (Depan Klinik Pratama),street,TIMUR1,,-7.32369542,112.74522605
+75bab417-d0ea-402d-b9d0-7ee76aa971e6,Jl. Raya Kendangsari - Pulau 4 (Depan Hotel The Ibis),street,TIMUR1,,-7.32234692,112.74561871
+bc7f2b02-e8c7-407e-a6f3-7f05ad035e6b,Jl. Raya Kendangsari - Pulau 5 (Depan Kpu),street,TIMUR1,,-7.32141698,112.74777534
+9d5a69ea-945d-45f9-a485-99be752378cc,Jl. Raya Manyar - Pulau 1 Depan Terminal Bratang,street,TIMUR1,,-7.29881921,112.76208629
+1a216a33-2b73-40a5-a52f-9ef1d4519228,Jl. Raya Manyar - Pulau 2 Depan Depan Taman Flora,street,TIMUR1,,-7.29609597,112.76224156
+5893de8b-7348-4032-bf9f-e1c31e3df274,Jl. Raya Manyar - Pulau 3 Depan Eiger,street,TIMUR1,,-7.29099208,112.76278586
+97428656-cd93-47e9-91bf-728766c6a235,Jl. Raya Nginden - Pulau 1 (Depan Lalisa Hotel),street,TIMUR1,,-7.30435722,112.76213819
+f3dfd85e-cc83-4be9-9f76-ca3e0f32e37b,Jl. Raya Nginden - Pulau 2 (Depan Universitas Kartini),street,TIMUR1,,-7.30156525,112.76210930
+530f9bee-987a-4a8b-9f06-41414f4c0e4d,Jl. Raya Nginden - Pulau 3 (Depan Spbu),street,TIMUR1,,-7.29985335,112.76208824
+6ee6cc46-d1b0-40ad-b9cd-ff6bd16c3860,Jl. Raya Pandugo - Pulau 1 (Depan Alfamart),street,TIMUR1,,-7.32082479,112.79002440
+aa10bc46-0dd9-4f82-9493-0c085c25dd65,Jl. Raya Pandugo - Pulau 2 (Depan Green Leaf),street,TIMUR1,,-7.32123025,112.78782607
+596b47cd-672b-4ab6-bb90-12e77b40e728,Jl. Raya Pandugo - Pulau 3 (Depan Vila Endelwais),street,TIMUR1,,-7.32143422,112.78683736
+74c2c225-f2f0-43ee-a33e-bb5c2e1e45ed,Jl. Raya Pandugo - Pulau 4 (Depan Spbu),street,TIMUR1,,-7.32175776,112.78544429
+aaa2f144-6c4e-4587-8581-6a28edeb49b2,Jl. Raya Prapen - Pulau 1 Rumah Pompa,street,TIMUR1,,-7.30713890,112.76126357
+03070f6a-8400-477f-9476-f1139e0025bf,Jl. Raya Prapen - Pulau 2 Sman 16,street,TIMUR1,,-7.30945448,112.75924346
+584c8d96-599f-48c1-b592-5a8d4efa6714,Jl. Raya Prapen - Pulau 3 Zest Hotel,street,TIMUR1,,-7.31133515,112.75772664
+5dbd3df3-f351-4104-a557-91a17f44358e,Jl. Raya Tenggilis - Pulau 1 (Depan Sd Goodwins Scholl),street,TIMUR1,,-7.32058205,112.75118683
+e3617b6e-b392-41af-85a4-740d5e44e808,Jl. Raya Tenggilis - Pulau 2 Depan Gedung Bk3S),street,TIMUR1,,-7.32029867,112.75388413
+f82ba35e-2afe-4896-b8e0-3dbefa335839,Jl. Raya Tenggilis - Pulau 3 (Depan Spbu Shell),street,TIMUR1,,-7.32035079,112.75612841
+50dd62b8-e1b8-4599-9a32-d2683a9501e4,Jl. Raya Tenggilis - Pulau 4 (Depan Metropolis),street,TIMUR1,,-7.32035830,112.75919514
+97468e85-3231-4108-b778-ad5cd1f84d1e,Jl. Raya Tenggilis - Pulau 5 (Depan Alfamidi-Jamu Gendong),street,TIMUR1,,-7.32041537,112.76139619
+7b8a2040-0249-4738-ba5f-e6592f943de5,Jl. Rungkut Alang Alang,street,TIMUR1,,-7.32273555,112.77206742
+796d47ea-617d-4d33-9267-998a1dc8cf72,Jl. Rungkut Asri - Pulau 1 (Depan Bengkel Langkah Jaya),street,TIMUR1,,-7.32676805,112.77555192
+12dff2f2-d628-401f-9fa4-a5d3e03b4070,Jl. Rungkut Asri - Pulau 2 (Depan Alfamart Indomaret),street,TIMUR1,,-7.32539881,112.77557103
+d6cbf636-802d-48e6-8181-5e2912f150f4,jl. rungkut asri depan kantor kelurahan,street,TIMUR1,,-7.32708121,112.77646547
+eab0f0da-0c55-4eba-8164-88d2b5ddceb5,Jl. Rungkut Asri Tengah - Pulau 1 Depan Mcd,street,TIMUR1,,-7.33066134,112.77542701
+d7a35214-4022-47d1-965c-17d4fb2f81ec,Jl. Rungkut Asri Tengah - Pulau 2 Depan Sman 17,street,TIMUR1,,-7.32883847,112.77549359
+0faf5146-87fa-4299-9a86-3eff62e6fd70,Jl. Rungkut Asri Timur (Akses Masuk Polsek),street,TIMUR1,,-7.32734969,112.78116807
+3e2a36fe-b043-4930-b807-42fc87413210,Jl. Rungkut Asri Utara - Pulau 1 Depan Batik Solo,street,TIMUR1,,-7.32430395,112.77559177
+2ab91eb6-a629-46eb-91f9-41c77680682b,Jl. Rungkut Asri Utara - Pulau 2 Depan Envio Store,street,TIMUR1,,-7.32331495,112.77561331
+46c5d2fa-c612-448a-a3d2-3eb167d7a601,Jl. Rungkut Madya - Stren Kali (Mcd-Dea Bakery),street,TIMUR1,,-7.33156065,112.77864786
+7ac42ae6-d705-46e0-90da-894fe907c282,Jl. Rungkut Madya - Stren Kali (Spikoe-Tps Rungkut Kidul),street,TIMUR1,,-7.33132764,112.77368988
+0c52c3c7-8b81-4142-93c9-b5ad2819cd57,Jl. Rungkut Madya - Stren Kali (Upn-Tl Lampu Merah),street,TIMUR1,,-7.33209601,112.78665241
+0e91a81e-eac9-40b6-81fd-ef935b536d6c,Jl. Rungkut Mapan,street,TIMUR1,,-7.33356868,112.77525237
+04792f6a-d593-4cd8-ab07-d74999b19ebf,jl. rungkut mapan selatan,street,TIMUR1,,-7.33496174,112.77548440
+24e89df6-53c1-431d-94d2-83a35d1d2a14,jl. rungkut mapan utara stren kali,street,TIMUR1,,-7.33134313,112.77177766
+b4d9e89f-c4c0-41eb-9ebb-05f98b3fc798,Jl. Rungkut Mejoyo - Stren Kali,street,TIMUR1,,-7.31968298,112.76709852
+082c1f49-5e30-45a9-9079-a79c0ca3e9b8,jl. rungkut mejoyo selatan,street,TIMUR1,,-7.32153741,112.76613283
+97b4b642-b33d-46b6-9a4d-9b50963d2f4c,jl. rungkut puskesmas,street,TIMUR1,,-7.32245356,112.77022997
+6c28caa6-dabe-4034-9c28-a195481bb62e,Jl. Semolowaru Utara - Pulau 1 Depan Sdn Semolowaru,street,TIMUR1,,-7.29969591,112.77937019
+4b995f48-ff90-4e63-841f-8253eeec807b,Jl. Semolowaru Utara - Pulau 2 Depan Banyu Biru,street,TIMUR1,,-7.29736074,112.77961234
+0df435c4-855c-49f0-b6a8-d614ab8e718c,Jl. Tenggilis Mejoyo - Pulau 2 (Depan Familymarrt),street,TIMUR1,,-7.32056772,112.76467434
+b1429b1d-32ae-4b1d-b08e-042e6d7abf47,Jl. Tenggilis Mejoyo - Pulau 3 (Depan Indomaret Ubaya),street,TIMUR1,,-7.32058235,112.76618809
+dfc61723-c886-4c28-b788-80a376567f53,Jl. Tenggilis Tengah I Depan Rumah Kompos 3R,street,TIMUR1,,-7.31881897,112.75121109
+de07f481-b17d-41f0-8149-3ab14e7e0b1d,Jl. Tenggilis Utara III (Lapangan),street,TIMUR1,,-7.31624543,112.75631179
+8d5fb19a-769f-43cd-9ec0-3e089a8e3601,Jl. Zamhuri,street,TIMUR1,,-7.33125920,112.77028132
+40eeffae-1cae-4f3d-ab2c-24a9a63f1fd3,jl.Jl. Tenggilis Mejoyo - Pulau 1 (Tower),street,TIMUR1,,-7.32050984,112.76278084
+20ba1e2d-711f-43df-a506-cd8380a9cda0,Merr Pandugo Jalur Tepi sisi TimurDepan Pizza Hut,street,TIMUR1,,-7.32036621,112.78110867
+37163a4e-adc7-421e-a4e5-2a9c7996b252,Pedestrian Raya Tenggilis Depan Metropolis,pedestrian,TIMUR1,,-7.32027532,112.75904083
+927316a5-eb63-4ad1-9246-3c105245ba89,PedestrianRaya Kendangsari Depan Kantor Pos,pedestrian,TIMUR1,,-7.32891889,112.74443517
+d9ae3fc4-fd10-42e3-980e-1c366b816a72,Roronde Air Mancur Jemursari,street,TIMUR1,,-7.32714242,112.73552261
+c93f19ad-931e-4ba3-a4e7-6d57d7c6b5ac,rotonde ir soekarno merr kedungbaruk,street,TIMUR1,,-7.31732897,112.78086397
+b2a1044c-0c31-44f5-a730-bbd41e33567d,Rotonde Jemursari Depan Pom,street,TIMUR1,,-7.31775031,112.75147311
+6ad84591-7c38-41b9-b41b-c6c977805502,rotonde jemursari videotron,street,TIMUR1,,-7.32719523,112.73517389
+d1e29faf-423f-4088-b44c-0e1bd57c5cb3,rotonde jl. arif rahman hakim,street,TIMUR1,,-7.28968054,112.77992577
+2584db01-fb1f-404c-9296-4e5da89d51f8,Rotonde Jl. Merr Pandugo,street,TIMUR1,,-7.32402144,112.78098695
+318c33da-d566-4e1e-b316-05180a725c23,rotonde jl. merr semampir,street,TIMUR1,,-7.30967473,112.78030302
+962ec523-33a9-4f4e-a00b-306ee8042bdd,Rotonde Jl. Merr Semampir,street,TIMUR1,,-7.30349440,112.78141449
+a526f6c8-c632-4544-94ac-6d7dc6cee325,Rotonde Jl. Merr Semolowaru,street,TIMUR1,,-7.29816067,112.78195925
+53399376-6fd4-48bd-bc2b-9ef9e8279721,rotonde kedung asem,street,TIMUR1,,-7.32222354,112.77896595
+9070ba02-1aa7-4873-ba10-f7a4c9a3b937,Rotonde Manyar Depan Flora,street,TIMUR1,,-7.29386237,112.76232565
+5d69dc13-a3bb-4139-9638-fb6a948e2076,Rotonde Merr Rungkut,street,TIMUR1,,-7.32825397,112.78141746
+96dfd008-dd32-488b-aadc-17878d50dc40,Rotonde Panjang Jiwo Prapen,street,TIMUR1,,-7.30671299,112.76167239
+63d09869-a4c3-42de-ac4a-969f196f845e,rotonde raya pandugo,street,TIMUR1,,-7.32215068,112.78380591
+690828cd-5ead-4384-a787-283bb5e2b387,rotonde zamhuri rungkut kidul,street,TIMUR1,,-7.33119794,112.77230421
+15f66adf-b766-45af-956e-090ea9a63d53,Rungkut Asri Utara Depan Kecamatan,street,TIMUR1,,-7.32271868,112.77058698
+05158e82-d9fa-42e4-8ac0-2ab3956e8f8d,Stren Kali Jl. Arif Rahman Hakim (Sisi Depan Itats),street,TIMUR1,,-7.28975775,112.77633327
+2fb369d5-4696-4a8c-b615-36e01bd601f6,Taman Ex. Metro,park,TIMUR1,,-7.33142564,112.78154131
+8d160377-e158-4dd9-8e36-22b9bd19d5bf,Taman Jemursari Selatan,park,TIMUR1,,-7.32524184,112.74026023
+adcb3f05-99d5-4fb0-9a4c-8edb52d26d16,Taman Samping Rayon Timur 1,park,TIMUR1,,-7.32775395,112.78040439
+36d768d4-eb63-41da-aa66-d62ee3f6f262,taman sarono jiwo,park,TIMUR1,,-7.31239923,112.75726732
+79006eb0-18bc-490a-ba44-cc3e490c6e2e,Taman Swk Royal Paka,park,TIMUR1,,-7.33499333,112.79407256
+4ef98e6a-2af9-5dc1-a49f-f59d4fd852b7,ASET KALIJUDAN 104,street,TIMUR2,,-7.25823688,112.77660085
+263f313c-0171-55fd-aeda-bc45cf9b8ad4,ASET MERR KALIJUDAN,street,TIMUR2,,-7.25518240,112.78258640
+45f8d378-5c00-5f3e-ae76-b55a52820be0,DHARMAHUSADA PENDESTRIAN SISI SELATAN,pedestrian,TIMUR2,,-7.26712056,112.76883159
+9364005c-5aea-58f5-82cd-c7843e0c3d5b,DHARMAHUSADA PENDESTRIAN SISI UTARA,pedestrian,TIMUR2,,-7.26654484,112.76788899
+056c8e3d-0c08-562c-a7ba-62efc4452b3a,JL. AIRLANGGA PENDESTRIAN,pedestrian,TIMUR2,,-7.27061667,112.75922389
+0686e2de-d568-5610-baff-f7d58cd430c7,JL. BOGEN PENDESTRIAN,pedestrian,TIMUR2,,-7.25107706,112.75630974
+5e1c82c3-25bf-54b2-9b76-00b23e0503c9,JL. BRONGGALAN,street,TIMUR2,,-7.25794887,112.76338329
+f2372a15-5222-51cc-9c61-81c2b025daf7,JL. DHARMAHUSADA INDAH 1,street,TIMUR2,,-7.27222405,112.77760428
+4bfc5cc8-190d-57a1-8091-859a632981f2,JL. DHARMAHUSADA INDAH 2,street,TIMUR2,,-7.27479655,112.77714257
+7a151fde-7d45-5802-bf5b-33c889d0fc01,JL. DHARMAHUSADA INDAH 3,street,TIMUR2,,-7.27215122,112.77769822
+8974855b-4452-5bb7-b2d4-d20481afb84e,JL. DHARMAHUSADA INDAH 5,street,TIMUR2,,-7.26957782,112.77906441
+4ad6842e-23b2-5ad2-b6f9-31b31c0345c1,JL. DHARMAHUSADA INDAH PERMAI RS UNAIR JALUR TENGAH,street,TIMUR2,,-7.27054810,112.78610598
+db91b2ca-6956-58b8-9e40-904ae530db15,JL. DHARMAHUSADA INDAH PERMAI RS UNAIR JALUR TEPI,street,TIMUR2,,-7.27042781,112.78618860
+9d1bfe74-954b-5f83-ab30-1074ffa6b789,JL. DHARMAHUSADA PULAU 1 SOTO TAPAK SIRING,street,TIMUR2,,-7.26588082,112.76364168
+2552dd39-5345-54e2-a341-017028ac1fea,JL. DHARMAHUSADA PULAU 2 SWALAYAN REMAJA,street,TIMUR2,,-7.26589747,112.76490828
+d075d39b-3df5-5ba7-bf10-9a7623e3d3b0,JL. DHARMAHUSADA PULAU 3 POM BENSIN,street,TIMUR2,,-7.26647092,112.76784262
+19e2a518-0768-58d9-884c-dbd210fba9b2,JL. DHARMAHUSADA PULAU 4 DEPOT BU RUDI,street,TIMUR2,,-7.26751816,112.77083321
+c460a3e9-5298-539f-8b12-3f5973602bcc,JL. DHARMAHUSADA PULAU 5 CAFE GLASS,street,TIMUR2,,-7.26843815,112.77360008
+f14763d8-c349-5df8-979c-5d4cf8e062f9,JL. DHARMAHUSADA SEBELAH LAPANGAN MOJO JALUR TENGAH,street,TIMUR2,,-7.26857193,112.77469171
+cf2ca5ab-974b-5a78-94cb-9107008f7392,JL. DHARMAWANGSA,street,TIMUR2,,-7.27213005,112.75631665
+7d1806cf-a66f-51b6-8665-fb01d9e6b315,JL. DHARMAWANGSA SISI BARAT,street,TIMUR2,,-7.27125042,112.75635357
+449924f4-8e2a-58e9-8bdf-46834d7e6a83,JL. DR. MOESTOPO JALUR TENGAH,street,TIMUR2,,-7.26578271,112.75847768
+ba00296b-e622-5d0c-aae2-ce537618159d,JL. DR. MOESTOPO KOTAK POHON,street,TIMUR2,,-7.26584532,112.75923466
+73e19200-9c5b-552d-aa20-4e3a0a13e8f5,JL. GERSIKAN,street,TIMUR2,,-7.25568375,112.76512472
+64dfedfc-aff8-5b5f-9856-c7ab1311ce4c,JL. IR. DR. H. SOEKARNO MERR GALAXY PULAU 1 APARTEMEN,street,TIMUR2,,-7.27934281,112.78091416
+c1c6f6a3-5688-5df2-a50c-c04f7eb40d24,JL. IR. DR. H. SOEKARNO MERR GALAXY PULAU 2 MALL,street,TIMUR2,,-7.27616967,112.78130388
+d95eaf2e-773a-50b8-8105-84a1555c9b0f,JL. IR. DR. H. SOEKARNO MERR GALAXY PULAU 4 KLINIK DOKTER,street,TIMUR2,,-7.27090423,112.78201822
+4709dff7-19c2-583a-aa40-0d2b38998cc8,JL. IR. DR. H. SOEKARNO MERR KALIJUDAN JALUR TEPI SISI BARAT,street,TIMUR2,,-7.25802777,112.78252921
+919ecc48-2666-5352-a2ae-00ad401c42d0,JL. IR. DR. H. SOEKARNO MERR KALIJUDAN JALUR TEPI SISI TIMUR,street,TIMUR2,,-7.25757233,112.78292428
+78eb41dd-9553-5f8f-b106-146aec984ab3,JL. IR. DR. H. SOEKARNO MERR KALIJUDAN PUALU 4 SOTO PAK JAYUS,street,TIMUR2,,-7.25366894,112.78287197
+5112b805-1dd2-5cb8-81ef-0a392b61297e,JL. IR. DR. H. SOEKARNO MERR KALIJUDAN PULAU 1 RUKO,street,TIMUR2,,-7.26274220,112.78300881
+c3b31e95-2d9d-5372-ac23-bec4e88d9175,JL. IR. DR. H. SOEKARNO MERR KALIJUDAN PULAU 2 APARTEMEN,street,TIMUR2,,-7.26031723,112.78260132
+0d435549-1ef8-5dbe-be03-3289db6d8ec8,JL. IR. DR. H. SOEKARNO MERR KALIJUDAN PULAU 3 KOLAM PANCING,street,TIMUR2,,-7.25636481,112.78230838
+4739ccb2-b5a6-59a1-b8c2-2fa9f7086ac1,JL. IR. DR. H. SOEKARNO MERR KALIJUDAN PULAU 5 RSIA KENDANGSARI-MERR,street,TIMUR2,,-7.25114705,112.78382017
+ca78cd12-72cb-5670-9cd7-96b3e6e570fa,JL. IR. DR. H. SOEKARNO MERR KAMPUS C JALUR TENGAH,street,TIMUR2,,-7.26657353,112.78269233
+2089461b-6aa5-53fe-9264-5326c9d2e299,JL. IR. DR. H. SOEKARNO MERR KOPERTIES JALUR TEPI SISI BARAT,street,TIMUR2,,-7.28815028,112.78059541
+ab8331ef-1b36-5a77-b8f9-276eb6c9d00e,JL. IR. DR. H. SOEKARNO MERR KOPERTIES JALUR TEPI SISI TIMUR,street,TIMUR2,,-7.28786541,112.78092931
+9a289ba9-fca3-5b77-bbee-6763b093caa3,JL. IR. DR. H. SOEKARNO MERR KOPERTIES PULAU 1 SMPN 19 SURABAYA,street,TIMUR2,,-7.28794334,112.78077248
+1e919ff4-424c-5be4-bdc3-a9135bddbef4,JL. IR. DR. H. SOEKARNO MERR KOPERTIES PULAU 2 HARTONO-TELKOM,street,TIMUR2,,-7.28493633,112.78091598
+dcbb6b66-6717-50a2-944e-6c458bc23230,JL. IR. DR. H. SOEKARNO MERR KOPERTIES PULAU 3 PADANG- RUKO GALAXY,street,TIMUR2,,-7.28190579,112.78089154
+a05ba02e-69a3-551d-86d6-e29d1a78cef6,JL. IR. DR. SOEKARNO MERR GALAXY PULAU 3 HOTEL ALIMAR,street,TIMUR2,,-7.27297601,112.78180258
+00276883-32eb-5895-bcf5-5d5e9f7de863,JL. IR. DR.H SOEKARNO MERR KAMPUS C JALUR TEPI SISI BARAT,street,TIMUR2,,-7.26775604,112.78234618
+1ab19ff0-67de-5ff1-8222-9407c6e8ac93,JL. IR. DR.H SOEKARNO MERR KAMPUS C JALUR TEPI SISI TIMUR,street,TIMUR2,,-7.26523862,112.78307003
+8bee08bf-0581-5162-b597-91157daf57d8,JL. KALIBOKOR SELATAN DEPAN GEDUNG WANITA,street,TIMUR2,,-7.28746373,112.76144603
+c572bf06-5d44-5ce4-ac1a-1ee3b2c53e08,JL. KALOBOKOR SELATAN,street,TIMUR2,,-7.28721573,112.75797534
+dbf46db5-d7dc-5fcd-8e1f-ff2ddbbb0471,JL. KAPAS KRAMPUNG POT-POT,street,TIMUR2,,-7.24904482,112.75927324
+590c4999-7689-5fad-a583-50ead6a072f7,JL. KARANG MENJANGAN,street,TIMUR2,,-7.27290082,112.76170112
+a5836f09-fdb1-5b74-8bad-aac99383474a,JL. KARANG MENJANGAN POT-POT,street,TIMUR2,,-7.26862740,112.76079405
+e42f4118-ceee-5acb-ab13-42172aa9e7e8,JL. KERTAJAYA ARAH PENGENDALI PULAU 1 SEJAHTERA MOBIL,street,TIMUR2,,-7.27923630,112.76170542
+c1a9a3c5-b27b-5e27-bd84-774f250ea46d,JL. KERTAJAYA ARAH PENGENDALI PULAU 2 UFO,street,TIMUR2,,-7.27888253,112.75951786
+b0d8c5b3-3a76-53f2-9097-a4034aa562e5,JL. KERTAJAYA ARAH PENGENDALI PULAU 3 POS POLISI SURYA MOBILINDO,street,TIMUR2,,-7.27841846,112.75672610
+455c1109-809a-5798-99de-8d1a2211c382,JL. KERTAJAYA ARAH VIADUK PULAU 1 POS POLISI,street,TIMUR2,,-7.27811961,112.75484583
+a76065bc-27a6-53cb-9022-536760d3156d,JL. KERTAJAYA ARAH VIADUK PULAU 2 HOLLAND BAKERY,street,TIMUR2,,-7.27770822,112.75262649
+c3049bc2-f25e-5768-817d-bc760c305b7b,JL. KERTAJAYA INDAH TENGAH,street,TIMUR2,,-7.28107491,112.77650667
+f5f8342a-e1f2-5b82-8ae3-15abb9ec6c34,JL. KERTAJAYA INDAH TENGAH DEPAN KOLAM RENANG,street,TIMUR2,,-7.27947885,112.77653246
+34e64ba3-2b82-5c0f-b4e5-0b89d840e86b,JL. KERTAJAYA INDAH TIMUR PULAU 1 POS POLISI,street,TIMUR2,,-7.28042049,112.78217034
+02c21154-503f-57ed-af85-79af9ff5eed0,JL. KERTAJAYA INDAH TIMUR PULAU 2 POM BENSIN BP,street,TIMUR2,,-7.27997798,112.78540196
+503fe70c-00c5-532c-80a5-c83544def6c8,JL. KERTAJAYA INDAH TIMUR PULAU 3 POM BENSIN SHELL,street,TIMUR2,,-7.27959379,112.78816221
+a548e50b-59b0-5cd7-8813-470d0c70e91d,JL. KERTAJAYA INDAH TIMUR PULAU 4 ITS,street,TIMUR2,,-7.27934356,112.78986882
+d1278c37-580e-522c-9652-22a6dac4b17b,JL. KERTAJAYA PENDESTRIAN,pedestrian,TIMUR2,,-7.27828797,112.75603115
+f734f4c7-9e10-50ca-a3ea-b594a8e97308,JL. KLAMPIS JAYA-PUCUK MERAH,street,TIMUR2,,-7.28915107,112.77539240
+009c33af-9b8e-58d0-b989-d9bc1e5ad38b,JL. MANYAR KERTOARJO PENDESTRIAN,pedestrian,TIMUR2,,-7.27983211,112.76718749
+550ce639-97fe-59e3-8e82-b1d54b18e95f,JL. MANYAR KERTOARJO PULAI 1 SAMSAT,street,TIMUR2,,-7.27961108,112.76414952
+c3a3d5eb-6da9-52d2-963a-87cffb8df3f5,JL. MANYAR KERTOARJO PULAU 2 RM LAYAR,street,TIMUR2,,-7.28014922,112.76865824
+5d34d8d4-79ad-57fa-afe1-5679e7f196f0,JL. MANYAR KERTOARJO PULAU 3 POM BENSIN,street,TIMUR2,,-7.28034377,112.77067030
+7e500de5-2b20-5c3b-bfe2-0ac2b186f3d3,JL. MANYAR STREN KALI,street,TIMUR2,,-7.29130108,112.76269607
+f7ee00dc-6aff-5d8d-aa22-ec557674cb0a,JL. MENUR PASAR JALUR TENGAH,street,TIMUR2,,-7.28205338,112.76219839
+7daf0170-aeae-5d4a-99d6-8b2c5c8c3aa1,JL. MENUR RSJ JALUR TENGAH,street,TIMUR2,,-7.28530440,112.76280775
+68504f92-9991-5c61-9a1b-92460bac3d52,JL. MENUR RSJ SISI BARAT,street,TIMUR2,,-7.28573016,112.76276670
+2be951bd-50e1-51bb-b437-31d5a8ceddd5,JL. MENUR RSJ SISI TIMUR,street,TIMUR2,,-7.28552893,112.76304374
+5f8ca3c8-fe1e-5b0a-8946-7247eb262066,JL. NGAGEL JAYA,street,TIMUR2,,-7.29013676,112.75573898
+a5bca0e5-d25e-53ec-9b8f-e9da7a705c8e,JL. NGAGEL JAYA UTARA PULAU 1 GEREJA SANTA MARIA TAK BERCELA,street,TIMUR2,,-7.28935975,112.76145373
+e7728a3b-722d-57a4-ae80-6386d4b26e98,JL. NGAGEL JAYA UTARA PULAU 2 POM BENSIN,street,TIMUR2,,-7.28915212,112.75877309
+2403f821-9f48-521a-9a3c-d625b1d4fc2f,JL. NGAGEL JAYA UTARA PULAU 3 CENTRAL EDUCATION CENTER RUKO,street,TIMUR2,,-7.28905703,112.75663008
+1008cf14-9ba2-5765-97db-effed53d7a93,JL. NGAGEL JAYA UTARA PULAU 4 APOTEK POLARIS,street,TIMUR2,,-7.28903386,112.75521872
+3c639197-1947-5ee4-9553-0c1f3d56966f,JL. NGAGEL JAYA UTARA PULAU 5 KAWA LIVING,street,TIMUR2,,-7.28904537,112.75408229
+63acc23c-250d-5e01-a4bd-38a9ab281617,JL. NGAGEL JAYA UTARA PULAU 6 KLINIK KARTIKA,street,TIMUR2,,-7.28908833,112.75285507
+a734561d-28c8-5b01-a912-bd485d8039c4,JL. NGAGEL TAMA,street,TIMUR2,,-7.28989736,112.75757763
+77e24be7-289d-5e5b-bfcd-8a0b337ef281,JL. NGAGLIK PENDESTRIAN,pedestrian,TIMUR2,,-7.24924164,112.75438802
+e0137594-492d-5fcf-bb87-2103cfdfe551,JL. PUCANG ANOM TIMUR,street,TIMUR2,,-7.28318217,112.75583425
+3c6a6cc2-308e-5b8b-b682-a475734fd061,JL. PUTRO AGUNG,street,TIMUR2,,-7.24869329,112.76861655
+4701f3df-55de-5b68-8584-180391a3a066,JL. RAYA DHARMAHUSADA INDAH PULAU 1 BPJS,street,TIMUR2,,-7.26958180,112.77398931
+a4e626db-10f4-5785-a727-6d799a719bb9,JL. RAYA DHARMAHUSADA INDAH PULAU 2 DHDC HOLISTIC DENTAL CARE,street,TIMUR2,,-7.27127906,112.77363593
+d37f33ba-c46e-5141-ae4c-8cf4d33949fb,JL. RAYA DHARMAHUSADA INDAH PULAU 3 PRAKTEK DR MANGGALA PASCA W SPOG,street,TIMUR2,,-7.27338011,112.77319362
+7ef1f593-64ca-5301-b5e1-bd5fea65d35d,JL. RAYA DHARMAHUSADA INDAH PULAU 4 RUMAH POMPA,street,TIMUR2,,-7.27585708,112.77278586
+5b2c3a9b-9466-54dd-ba24-f69414cc4904,JL. RAYA DHARMAHUSADA INDAH PULAU 5 BCA,street,TIMUR2,,-7.27878864,112.77238590
+c81351d5-dc73-53dc-adb1-71283189ca57,JL. RAYA KARANG ASEM,street,TIMUR2,,-7.25268834,112.76680132
+0dfec0be-bbf6-5713-beac-61d631601fed,JL. RAYA KERTAJAYA INDAH PENDESTRIAN,pedestrian,TIMUR2,,-7.28051033,112.77638025
+b248a30d-2e61-5ddf-b45f-0249af25923d,JL. RAYA KERTAJAYA INDAH PULAU 1 KONI,street,TIMUR2,,-7.28054673,112.77968376
+ce12191d-a984-5330-82d1-56af8671eabd,JL. RAYA KERTAJAYA INDAH PULAU 2 TEXAS CHICKEN,street,TIMUR2,,-7.28051219,112.77666813
+05f7e5cb-611c-5e13-bd1f-4ca3b24fb42f,JL. RAYA KERTAJAYA INDAH PULAU 3 GRAHA EXCELLENT,street,TIMUR2,,-7.28047089,112.77274661
+bbfb189e-2e2e-563d-9817-c4ddeb7e6619,JL. RAYA MENUR DEPAN PENGENDALI,street,TIMUR2,,-7.27756593,112.76235202
+7c3089d6-59b8-514a-9e05-a58a981de6df,JL. RAYA MULYOSARI PULAU 1 GRAHA BHINNEKA TUNGGAL IKA,street,TIMUR2,,-7.27349360,112.79767541
+76fd3823-5e37-5709-958e-97d8f58ed128,JL. RAYA MULYOSARI PULAU 2 POM BENSIN,street,TIMUR2,,-7.27113028,112.79694858
+0b42fe87-2b65-5354-92d0-f8e22404d465,JL. RAYA MULYOSARI PULAU 3 SUPERINDO,street,TIMUR2,,-7.26893998,112.79648279
+5c8bfc82-6f9b-50d4-857e-21128cb467ea,JL. RAYA MULYOSARI PULAU 4 KFC,street,TIMUR2,,-7.26659456,112.79608677
+47b558b7-5e8c-5fc6-8cd6-0176994214de,JL. RAYA MULYOSARI PULAU 5 SPECTRUM,street,TIMUR2,,-7.26448246,112.79577201
+dafec64e-60ee-5141-b9dc-dc9cededdc86,JL. RAYA MULYOSARI PULAU 6 OPTIK MELAWAI,street,TIMUR2,,-7.26244867,112.79555611
+6932cfc5-f22f-5a09-af53-c00205041b04,JL. RAYA MULYOSARI PULAU 7 KLINIK PRAMITA,street,TIMUR2,,-7.26008990,112.79548562
+a4da6a1b-eb83-51dd-a29c-b670f96e8340,JL. RAYA MULYOSARI PULAU 8 MASJID BAITUL MUKMIN,street,TIMUR2,,-7.25880713,112.79558247
+dc3254e6-db20-55b8-a817-8f71a3c4c464,JL. TAMBAKSARI PENDESTRIAN,pedestrian,TIMUR2,,-7.25108222,112.75519758
+e25e9340-f32a-5f30-8023-e030f00819d9,JL. TAMBANG BOYO STREN KALI DEKAT RUMAH POMPA,street,TIMUR2,,-7.26520372,112.75671821
+4bee6b0e-b921-5056-ad61-67a9c2f51d9c,JL. TIRTOMOYO,street,TIMUR2,,-7.28662951,112.77017494
+8675fabb-5445-5e84-b41b-87cb86bd75e8,ROTONDE AIR MANCUR,street,TIMUR2,,-7.27917540,112.76250377
+c07cda47-6188-5ba1-b475-462a89bc0fda,ROTONDE DEPAN DEPOT SLAMET,street,TIMUR2,,-7.26593036,112.75652600
+ec148642-e3c0-522f-b994-1dffa84e32a4,ROTONDE DHARMAHUSADA DEPAN DHARMAHUSADA 1,street,TIMUR2,,-7.26594897,112.76113851
+692d7908-facd-51c2-bb64-c45450c087fa,ROTONDE DHARMAWANGSA DEPAN RSUD DR. SOETOMO,street,TIMUR2,,-7.26591044,112.75675267
+f347caeb-9aff-50ac-96a7-ae627494840b,ROTONDE KARANG MENJANGAN,street,TIMUR2,,-7.27141154,112.76075062
+42f9f485-8455-5620-848f-495e9411055d,ROTONDE KARANG MENJANGAN (POT POT),street,TIMUR2,,-7.26618657,112.76099256
+03a04013-0203-5b91-a9d5-dd5d8b7a613f,ROTONDE KERTAJAYA,street,TIMUR2,,-7.27911552,112.76212972
+258e3736-7074-5e94-8a7a-3f2fef97e586,ROTONDE MANYAR SAMBONGAN,street,TIMUR2,,-7.28079397,112.75594625
+c19386dc-1b62-5741-b9bc-a12b06147625,ROTONDE MANYAR-EIGER,street,TIMUR2,,-7.29353432,112.76226526
+9f2b83a0-192c-5776-9317-5bc8b35c9a35,ROTONDE MOESTOPO,street,TIMUR2,,-7.26597517,112.76071302
+4ff7e982-9183-5040-9aac-5bda1ef7c20d,ROTONDE TAMBAKSARI BOGEN,street,TIMUR2,,-7.25110274,112.75542137
+5738e172-c033-5619-8833-da73452a909a,ROTONDE TAMBAKSARI-NGAGLIK,street,TIMUR2,,-7.24931355,112.75560356
+bdcb9f40-ee97-5e64-9068-aa89c3f422ea,ROTONDE TAMBANG BOYO,street,TIMUR2,,-7.26560851,112.75685976
+c18182b2-cb08-5718-8ad0-e8e50889d286,ROTONDE WAPO,street,TIMUR2,,-7.27075928,112.76064416
+4233d9bc-4ebc-59de-823d-21208f62fdd3,STREN KALI JL. ARIF RAHMAN HAKIM (SISI DEPAN ARAYA-HANG TUAH),street,TIMUR2,,-7.29035903,112.79015724
+2dc5ff71-2c39-5840-8f17-89b39f3891d7,STREN KALI JL. ARIF RAHMAN HAKIM (SISI DEPAN NAROTAMA,street,TIMUR2,,-7.28960561,112.77771673
+e2138a30-8db7-5a04-abbd-730fd1545793,STREN KALI JL. KALIWARON BATAS BARAT,street,TIMUR2,,-7.26355343,112.77078902
+f3608a43-c85c-50f7-b862-65603aa1ea7d,STREN KALI JL. MULYOREJO SISI,street,TIMUR2,,-7.26215291,112.78604645
+6d803476-9542-5a39-ab4c-fcd9550f23dd,TAMAN BUK TONG,park,TIMUR2,,-7.28756423,112.76316377
+dbdaa24e-51d6-5119-8f41-837bce81dc2e,TAMAN MARJAN,park,TIMUR2,,-7.28102312,112.77208520
+e1fc80a6-1042-5630-9eb2-006b0d8d1c46,TAMAN MULYOREJO AYAM-AYAM,park,TIMUR2,,-7.26365829,112.78285352
+a5bd5882-dd3a-5282-aba8-ba544e813edb,10. Stren kali Jl. Indrapura,street,UTARA,,-7.23687333,112.73104643
+1f9c36c4-075b-5872-bf08-e7b110605421,11. Bapemil,street,UTARA,,-7.24369014,112.73629098
+64a4f19b-0168-5c9e-8501-debba284c86f,11. Ikan Dorang Baru,street,UTARA,,-7.22721184,112.72767417
+a562ee88-29bd-5f9b-bdf9-3d0f290bc546,12. Demak (Segmen depan Mbah Ratu),street,UTARA,,-7.23322149,112.72120015
+9478a067-6528-5ded-b1cb-ab0cd6c36f64,14. Palmboom dan Rot. Palmboom,street,UTARA,,-7.23275522,112.72805183
+27b53cc2-6b10-5c30-9191-0a6716e7a6e6,15. Parangkusumo,street,UTARA,,-7.23995514,112.72971072
+8923e6d9-e29a-5fb9-a470-1a25fa9916b5,16. Perak Barat/Timur,street,UTARA,,-7.22745237,112.73052259
+37675bb5-3db2-5ab8-9a3f-a295c8b64bb4,17. Rajawali,street,UTARA,,-7.23351282,112.72959390
+a4629de8-e0db-591d-bee7-ca12f0fd09b4,2. Jembatan Petekan,street,UTARA,,-7.22239478,112.73805601
+52fe62c9-1c53-5769-bba3-f9a84ec6d83d,20. Rot. Parangkusumo,street,UTARA,,-7.23943544,112.73128645
+5589814e-3104-5d5c-80aa-0ef4c56b51e8,23. Nyamplungan (Segmen Tengah),street,UTARA,,-7.23134077,112.74450088
+1c2f4497-a7ff-5549-b0ca-27dfa703c4a3,25. Benteng,street,UTARA,,-7.22414978,112.73854432
+6383ce26-8a37-59b8-a7b3-3e589814474e,29. Sidorame,street,UTARA,,-7.22766740,112.74876639
+8e9d9d09-20a0-5c65-86ae-fbb8cfb0bef3,3. Rot. Indrapura,street,UTARA,,-7.24350388,112.73667818
+3e69320e-ab0f-5e9b-a7ef-0e8bd1ea7fbb,3. Stren Saluran Kalitebu,street,UTARA,,-7.21509353,112.76950011
+5273ff08-9c25-5e52-9594-3bd6e379733b,3. Stren Saluran Kalitebu,street,UTARA,,-7.21509353,112.76950011
+12a6d747-7c55-5045-b8c6-7f406f6b5819,30. Sidotopo Lor,street,UTARA,,-7.23183476,112.75308976
+429f61c8-5a97-55b8-bf4e-cd70c107aad1,31. Pegirian (Segmen Utara),street,UTARA,,-7.22718310,112.74595618
+803470c5-64a2-5af7-8d0c-1a132cf00feb,34. JH. Jl. Pantai Kenjeran,street,UTARA,,-7.22711403,112.79033366
+4221f497-086b-589c-b471-058096a197f9,36. Kasuari,street,UTARA,,-7.23381115,112.73704942
+ed4bd9c8-2bc2-58a3-bb17-f728405d27a4,4. Rot. Jembatan merah,street,UTARA,,-7.23672087,112.73827810
+baede4a3-6d73-5079-9484-6d9db861c59b,41. Larangan Sukolilo,street,UTARA,,-7.24980308,112.79643186
+5fcb4730-ad0f-57a5-98f7-ecd804a76343,42. Kampung Nelayan Kenjeran,street,UTARA,,-7.23925568,112.79697675
+8ca24812-e068-5b34-989a-c7d239872221,43. Stren Kali Jl. Pantai Kenjeran,street,UTARA,,-7.23764227,112.79510303
+bfb22ee6-2a00-5967-82d5-7f9daa4d731e,44. Cumpat,street,UTARA,,-7.22479190,112.78737701
+608cc331-7d4b-5b66-89ab-bb3b62013219,45. Nambangan,street,UTARA,,-7.22085429,112.77721660
+4bde152e-2e78-5376-b67e-2b410e713f92,47. Rot. Jl. Pasar Turi - Bubutan,street,UTARA,,-7.24544821,112.73705314
+3aa16130-63a9-526e-8614-bd99e61af5c7,49. Rot. Tanjung Sadari,street,UTARA,,-7.22405086,112.72632819
+e8d206df-8075-5c3c-b887-8ae33c984d80,5. Rot. Kebonrojo,street,UTARA,,-7.24331414,112.73816541
+4a633de5-b29a-5f18-b630-364d6bcc7477,51. Rot. Jl. Stasiun Kota,street,UTARA,,-7.24199855,112.74570803
+29764752-d69b-56f5-8f4a-8bcf344047c9,53. Stren Kali Suramadu (Sisi Barat),street,UTARA,,-7.23069168,112.77353087
+c721766b-0fb9-55f1-b12c-5d796c4cb0b7,54. Stren Kali Suramadu (Sisi Timur),street,UTARA,,-7.23053895,112.77369368
+9ea9b62f-69aa-58ff-aa77-03fbc277c002,55. Stren Kalitebu (Sisi Platuk),street,UTARA,,-7.22929895,112.76707255
+56478c50-05c0-5130-9bcc-09cf9a41c74c,56. Stren Kalitebu (Sisi Dukuh Bulak Banteng),street,UTARA,,-7.22060878,112.76829993
+a133ac21-2d4b-5028-87ce-a9458754952f,58. Tenggumung Karya,street,UTARA,,-7.22883191,112.75811239
+ad0b7ddd-4550-5760-8fc7-e750ff020419,59. Dupak Rukun Segmen Exit Tol Jalur Tepi,street,UTARA,,-7.24451165,112.71367617
+bf32b7e8-e042-5594-a897-9a1125aff75b,61. Dupak Rukun Segmen Exit Tol Jalur Tengah,street,UTARA,,-7.24466094,112.71359912
+10b212fb-9fc5-5383-930d-28ba7c974e56,63. Dupak Rukun Kotak Pohon Susanti,street,UTARA,,-7.24524798,112.71489720
+d9ac02fa-ee0b-5d91-8bad-83ff36a10303,65. Rotonde Pasar Loak Timur,street,UTARA,,-7.24499871,112.71393988
+859ac930-e748-55ef-8c31-afee524dc955,68. Taman Pom Dupak Rukun,street,UTARA,,-7.24949536,112.71074695
+9502838d-3774-5600-8cd3-2c11e7305e71,69. Demak Utara Jalur Tengah,street,UTARA,,-7.24062789,112.72062920
+7c975b4f-42ca-5540-900f-9b250ad8b5e2,7. Stren Kali Karet,street,UTARA,,-7.24147406,112.73907134
+d7f91954-a58d-56ca-b442-d4cfacc47c3e,70. Demak selatan,street,UTARA,,-7.25251209,112.72048486
+ec08f05b-b7c8-538e-a723-6094f959d3df,Bunderan Perak,street,UTARA,,-7.22261515,112.73226452
+21f7d023-4556-5b1d-9779-8d99601192e2,"Jl, Dupak Jalur Tengah",street,UTARA,,-7.24518981,112.72204243
+ac01a03f-b665-54dd-974b-c48597000176,Jl. Benteng - Stren Kali,street,UTARA,,-7.22396120,112.73837102
+aacb1b53-c176-58b9-8c5a-1e59ea256985,Jl. Bunguran-Rotonde Bunguran,street,UTARA,,-7.23851160,112.74460465
+7bf18b6f-0d11-5331-926f-fd4b465791cd,Jl. Bunguran-Stren kali Bunguran,street,UTARA,,-7.24219628,112.74633034
+cdfc5c38-82aa-56e9-96ba-90c6cd2b82e7,Jl. Demak Utara- Pendestrian,pedestrian,UTARA,,-7.23689998,112.72055145
+bf007171-630e-5964-bedc-28211be0add0,Jl. Dupak Rukun Depan Pom Bensin Dupak,street,UTARA,,-7.24481680,112.71624557
+54deb5c3-0771-5b05-b7ab-2943e43873e4,jL. Dupak Rukun Pulau 2,street,UTARA,,-7.24507530,112.71670574
+e4da073d-ea55-5d00-8057-90ac4e93344c,Jl. Dupak Rukun- Pendestrian,pedestrian,UTARA,,-7.24482973,112.71499881
+0b05663b-fc8c-55ec-ba36-ec3b275fe14f,Jl. Dupak Rukun- Pulau 1 Perempatan Dupak,street,UTARA,,-7.24514806,112.71872108
+9a47fd32-7cce-5c6a-8835-76a8d19ff5ad,Jl. Dupak Rukun- Pulau 3,street,UTARA,,-7.24504714,112.71511726
+fda304df-a999-53a4-bb99-8476f1490430,Jl. Dupak Rukun- Rotonde Dupak Rukun,street,UTARA,,-7.24535687,112.71160996
+dc1d1f1e-a220-5529-b82b-aced70015fcd,Jl. Dupak Rukun- Rotonde Dupak Rukun Pasar Loak,street,UTARA,,-7.24544385,112.71139867
+1bc2bf88-2c72-5cb2-96f0-3a3be7565c99,Jl. Dupak Sisi Selatan - Pulau 1-2 Perempatan Dupak,street,UTARA,,-7.24527955,112.72692658
+10bff613-50ed-515a-a465-26bb97441664,Jl. Dupak Sisi Utara - Pulau 1-2 Perempatan Dupak,street,UTARA,,-7.24516199,112.72691042
+c11a1b65-9573-5d95-a49c-928ce35bc472,Jl. Genting- Stren Kali,street,UTARA,,-7.24479764,112.71750844
+67a977fc-c974-57fc-8187-745dcb9773da,Jl. Gresik-Rotonde Gresik,street,UTARA,,-7.23240507,112.72136774
+f8d0f0fd-a063-5484-b783-be492bd5c8b3,Jl. Hang Tuah,street,UTARA,,-7.22363250,112.74076183
+2f056c9f-9f74-57af-bab9-af5591d20257,Jl. Hangtuah-Bunderan,street,UTARA,,-7.22520435,112.74096669
+f58598e1-2425-583c-a234-1685afcc84c1,Jl. Ikan Dorang-Pendestrian,pedestrian,UTARA,,-7.23155413,112.72729044
+239d7380-b345-5966-bb50-ae742a98b6d5,Jl. Indrapura - Pendestrian,pedestrian,UTARA,,-7.24034186,112.73179910
+1731c6b9-d866-5671-a702-202189d49dc6,Jl. Iskandar muda,street,UTARA,,-7.22551994,112.74352491
+cc3a39c1-f9b1-5e6d-b7eb-352c619aa674,Jl. Jakarta-Bunderan,street,UTARA,,-7.22249149,112.73624921
+7dac3d86-f730-5421-b2e8-657e2d8b8403,Jl. Kapasan-Rot Kapasan,street,UTARA,,-7.23853722,112.74520857
+8bd7daca-4211-5d06-8124-93f7a669a47a,Jl. Kembang Jepun - Taman Pojok Kembang Jepun,street,UTARA,,-7.23702527,112.73938187
+fbc55e92-0800-5774-bf6c-61e011b34d01,Jl. Kenjeran - Pulau 1 Perempatan Suramadu,street,UTARA,,-7.24574691,112.77050662
+18a12652-d3de-5f50-bd56-d5a3c6d24268,Jl. Kenjeran - Sisi Donorejo,street,UTARA,,-7.23973427,112.75475840
+41442955-21c2-5b76-8a36-c5868ef91d09,Jl. Kenjeran - Sisi Donorejo,street,UTARA,,-7.24167688,112.75599333
+4d8f1818-af23-5b6f-84cc-b1d5385a1b33,Jl. Kenjeran - Sisi Donorejo,street,UTARA,,-7.24261538,112.75228850
+6f70cfaa-32d9-5165-bcf4-3f8b20ae3fc7,Jl. Kenjeran - Sisi Donorejo,street,UTARA,,-7.24108384,112.75411201
+28d0815e-8708-5930-afad-495dd72e293c,Jl. Kenjeran - Sisi Rangka,street,UTARA,,-7.24281470,112.75982094
+9f8d2deb-dd8f-5462-a730-854625076da0,Jl. Kenjeran - Sisi Rangkah,street,UTARA,,-7.24227649,112.75792646
+70c82039-a4e8-5b3c-9b11-36aa28eb647a,Jl. Kenjeran -pulau 2 dan 3,street,UTARA,,-7.24736309,112.77616676
+6fa233aa-13e6-5dcc-b628-26fbdecaebaa,Jl. Nyamplungan - Stren Kali Nyamplungan,street,UTARA,,-7.22689699,112.74591151
+e0e690e9-675e-5375-b567-a86d9f95dbef,Jl. Nyamplungan -Stren Kali Nyamplungan,street,UTARA,,-7.23350561,112.74302458
+6fd7581b-5bff-5be2-a2ea-33d6078ddd43,Jl. Sarwajala,street,UTARA,,-7.22234135,112.73965685
+a0961b55-29de-5dec-adcf-e65e8a7f1c25,Jl. Sedayu,street,UTARA,,-7.23462161,112.72241556
+841f49e3-4095-5388-ab61-ce108fbf200c,Jl. Simokerto - Rotonde,street,UTARA,,-7.24063713,112.75316187
+69346519-ef26-5783-92a1-9213ece4eb3c,Jl. Stasiun Kota,street,UTARA,,-7.24266023,112.74025887
+6788ece0-42cc-5e4d-a7de-58bbfbd12843,Jl. Suramadu - Pulau 4,street,UTARA,,-7.21813591,112.77736286
+9cdb2e80-ac55-5779-a267-496996a6555e,Jl. Suramadu - Pulau 4,street,UTARA,,-7.21788339,112.77730093
+03e103c7-afb6-56f9-b2b5-25b136e942b3,Jl. Suramadu Taman BBWS,street,UTARA,,-7.21453065,112.77822675
+8d2ab65a-4ed9-5a7b-8786-de2060e74ec1,Jl. Suramadu Taman BBWS,street,UTARA,,-7.21435387,112.77780846
+11635030-4401-5694-9787-d4508ad6f3e4,Jl. Tanjungsari- Taman Kantor Tanjungsari,street,UTARA,,-7.25322157,112.70589695
+be147e51-0112-5a66-b5f3-7b94c65158b8,Jl. Tanjungsari-Taman Depan Kantor Tanjungsari,street,UTARA,,-7.25328331,112.70590642
+f6a1bead-5fe9-5b96-8d3d-8b2126379247,Jl. Tembaan Barat,street,UTARA,,-7.24671270,112.73545358
+b1db790f-2c9e-5d3e-96b3-adea22d58b63,Jl.Dupak Rukun Rotonde Ps. Loak Timur,street,UTARA,,-7.24507060,112.71422264
+42a02658-c52d-51dd-9a0e-ac44f2990804,Kawasan Tm Gapura Ampel,street,UTARA,,-7.23409354,112.74281052
+b3c47e4b-07e6-5692-b605-7f67238483ad,Kenjeran Sisi Tuwowo,street,UTARA,,-7.24419660,112.76469376
+9d662333-faac-532e-a7a3-363dfe9237d8,Pasar Turi,street,UTARA,,-7.24590391,112.73280587
+5dae015a-690b-5834-bcfb-68c0aa337ee4,Pedestrian Rangkah,pedestrian,UTARA,,-7.24303545,112.76014360
+8d5c1112-f934-5dfc-8c37-c3b6d437aa0c,Rot. Jl. Siaga,street,UTARA,,-7.24240168,112.74254737
+3acf085c-94c1-5672-a125-cf6375bb8231,Rotonde Jembatan Merah Barat Timur,street,UTARA,,-7.23674810,112.73863564
+f2fc2d04-7cc9-5810-b4cb-b29095fbab2a,Rotonde Kertopaten,street,UTARA,,-7.23442979,112.74329334
+9840a0c7-20f9-5b00-bbf8-7e2e99b0afa9,Rotonde Pasar Turi,street,UTARA,,-7.24626565,112.73419011
+6f90c55a-8515-54b3-aa87-2e71ddbed93a,Rotonde Tenggumung,street,UTARA,,-7.22884970,112.75813975
+0909c630-99fe-5735-b046-4719ef00ccf7,Screen Kalitebu,street,UTARA,,-7.20860888,112.77104052
+2a985342-7b7a-5398-8ad7-e6fd8fcb22ca,Separator Pot Kaleng Wilayah Giat Taman Utara,street,UTARA,,-7.24516197,112.72737860
+95bd9af9-1d47-5989-a89b-32f5faf093f8,Stren kali Jl. Kenjeran sisi utara dan selatan,street,UTARA,,-7.25066083,112.78754041
+ab2e57e0-ffe3-5156-bff1-06cb2a4f50cd,Stren Kali Kalitebu Sisi Platok,street,UTARA,,-7.22365709,112.76816778
+d397aa3f-4647-5e20-8596-b32618b9878f,Stren Kali Tebu Sisi Tanah Merah,street,UTARA,,-7.22351770,112.76840483
+cc7bd5e1-9a8a-516b-9476-2f34d22967b8,Stren Klaitebu Tambak Wedi,street,UTARA,,-7.21782400,112.76918232
+35e34e84-b779-5564-944e-773d24e174d6,Taman Benteng,park,UTARA,,-7.22528736,112.74043806
+cae83abf-3ee5-5062-bcc3-48c866d57d24,Taman Bongkaran,park,UTARA,,-7.24164865,112.74157878
+0caca856-4cbf-5186-96e9-0d1f4d606c4c,Taman Colombo,park,UTARA,,-7.22842486,112.72852010
+086a7398-1678-563e-b808-9e6031f7c2a6,Taman Dukuh Gili,park,UTARA,,-7.23512457,112.74311364
+b3d0a232-6675-5392-a486-a683f8d3447e,Taman Jembatan Petekan,park,UTARA,,-7.22243187,112.73770920
+143d166d-a661-5c29-b6a8-047ce694edca,Taman Pertukangan Taman Hias Gantung Ampel,park,UTARA,,-7.23426958,112.74288732
+19216a3b-77e7-5fd3-898c-c283152098d7,Taman Pertukangan Taman Hias Gantung Ampel,park,UTARA,,-7.22798231,112.74569287
+40d0f13c-9f8d-5a2f-afa3-5b6a41fd11ab,Taman Pertukangan Taman Hias Gantung Ampel,park,UTARA,,-7.22967498,112.74571413
+5270f474-6642-5360-baa7-58fe04357074,Taman Pertukangan Taman Hias Gantung Ampel,park,UTARA,,-7.23240205,112.74377564
+77fca555-af3c-581f-86b2-b200dc98ddaf,Taman Pertukangan Taman Hias Gantung Ampel,park,UTARA,,-7.23230388,112.74385018
+a46d91f4-36e8-5631-ac55-894f0113bf0a,Taman Pertukangan Taman Hias Gantung Ampel,park,UTARA,,-7.22647425,112.74611311
+33241ff0-6946-5caf-809f-c9a31b4c458b,Taman Polrestabes,park,UTARA,,-7.23872187,112.73722051
+e40614e9-737a-5d8e-9cbe-0ed0acb812e1,Taman Rembang,park,UTARA,,-7.24155219,112.71942102
+050fb748-b47e-5f63-a4ce-4ab94a4331b9,Taman Tanjung Sadari,park,UTARA,,-7.22766692,112.72312733
+7ec27bd6-47f1-5c7a-9f63-171d448fbf24,Taman Waspada,park,UTARA,,-7.24151759,112.74254515
+80a29989-f5cf-55bd-9386-86338b413bfc,Taman 10 Nopember,taman aktif,TAMAN_AKTIF,MOCHAMAD MACHMUD,-7.2516880,112.7550740
+6f6dcac2-f769-5f5e-81cf-ab4bdd986200,Taman Apsari,taman aktif,TAMAN_AKTIF,JOKO RIONO,-7.2637986,112.7427858
+3cef4b40-c241-5161-84f1-2bd5f7eac84b,Taman Asreboyo,taman aktif,TAMAN_AKTIF,EKO YUPI,-7.2948970,112.7423108
+ea71ed4a-9713-5ff5-a0bd-cd44f82af189,Taman Balas Klumprik,taman aktif,TAMAN_AKTIF,HASAN BISRI,-7.3309965,112.6914048
+a9187194-685b-5e1f-9b49-b90c24fb8fac,Taman Bmx,taman aktif,TAMAN_AKTIF,MOCHAMAD MACHMUD,-7.2631358,112.7498243
+301ecafb-539b-59e8-a1e7-229173b74ca2,Taman Buah,taman aktif,TAMAN_AKTIF,JOKO RIONO,-7.2552990,112.7432214
+d766d9f3-7ea7-5929-8f23-82e8c8ec891b,Taman Bulak,taman aktif,TAMAN_AKTIF,BUDI SETYO UTOMO,-7.2333009,112.7836880
+51a1b2c3-d4e5-4f67-8901-2a3b4c5d6e7f,Taman Bungkul,taman aktif,TAMAN_AKTIF,TRI PUTRO,-7.2913468,112.7398218
+1c19ef81-4079-51f2-8ae1-0d66404a9d8c,Taman Cahaya,taman aktif,TAMAN_AKTIF,HASAN BISRI,-7.2409734,112.6250084
+022f4bde-0375-5c46-86d3-9bb8dff8e364,Taman Ekspresi,taman aktif,TAMAN_AKTIF,JOKO SLAMET,-7.2573072,112.7437199
+5f100a00-0000-4000-8000-000000000001,Taman Flora,taman aktif,TAMAN_AKTIF,EKO YUPI,-7.2956334,112.7617041
+349a5227-a0c1-5c17-86a8-be5513bf67b2,Taman Harmoni,taman aktif,TAMAN_AKTIF,BAGUS ALI ROHMAN,-7.2952211,112.8035603
+ae914f5a-eb31-58c8-b56a-4708b3efae18,Taman Insenerator,taman aktif,TAMAN_AKTIF,BAGUS ALI ROHMAN,-7.2958544,112.8054030
+74e7fb67-ba5d-58b1-9f3c-845ba7c61d91,Taman Jangkar,taman aktif,TAMAN_AKTIF,TRI PUTRO,-7.3140758,112.7132842
+7922da97-8fa3-515f-b55e-7a0e2aa06328,Taman Kali Kedinding,taman aktif,TAMAN_AKTIF,BUDI SETYO UTOMO,-7.2314306,112.7740269
+116c3173-e675-550e-a668-da82842ee8ff,Taman Kalongan,taman aktif,TAMAN_AKTIF,JOKO SLAMET,-7.2412318,112.7327648
+039f0528-ae38-50b5-a5be-238c0bdf64a0,Taman Kartika,taman aktif,TAMAN_AKTIF,SUGIONO,-7.2667913,112.7363080
+62d2b42f-c654-57e9-8aa8-c0e000876a0a,Taman KB. Wonorejo,taman aktif,TAMAN_AKTIF,MASYUDI HARIYANTO,-7.3123075,112.7891727
+5b75b98f-aab0-5f62-9430-1de696804f33,Taman Keputran,taman aktif,TAMAN_AKTIF,SUGIONO,-7.2732153,112.7441020
+87a5eda8-e996-5a50-a08f-64cf6a73f9ce,Taman Kombes,taman aktif,TAMAN_AKTIF,SUGIONO,-7.2683890,112.7386828
+9aed4b06-8cdd-5dfa-9002-6915cacb57f2,Taman Korea,taman aktif,TAMAN_AKTIF,SUGIONO,-7.2830626,112.7366007
+3a72c373-a8f6-561d-beab-4e3babb1b1cf,Taman Krembangan,taman aktif,TAMAN_AKTIF,JOKO SLAMET,-7.2371504,112.7343491
+1e37da7b-c5dd-54a3-8a5e-2b121989b980,Taman Kunang2,taman aktif,TAMAN_AKTIF,MASYUDI HARIYANTO,-7.3182543,112.7842783
+1a1d6aac-94bb-557a-ae79-9e4b0ce3dc2c,Taman Lansia,taman aktif,TAMAN_AKTIF,EKO YUPI,-7.2710150,112.7500365
+07b9975d-33ea-5a02-a970-2c95ccf3ecfc,Taman Lesti,taman aktif,TAMAN_AKTIF,TRI PUTRO,-7.2909104,112.7301198
+a9b86ddc-e068-5996-86b2-121953736497,Taman Lumumba,taman aktif,TAMAN_AKTIF,TRI PUTRO,-7.2977179,112.7423508
+4adca40e-edca-576a-842e-5d1df1ffd76b,Taman Mayangkara,taman aktif,TAMAN_AKTIF,TRI PUTRO,-7.3069994,112.7355235
+55bbb2b5-b783-52cf-ba65-b476d82a7c46,Taman Mozaik,taman aktif,TAMAN_AKTIF,HASAN BISRI,-7.3148799,112.6899537
+8150ab5c-dfe2-5e58-bc8b-46fa166a2558,Taman Nginden Intan,taman aktif,TAMAN_AKTIF,MASYUDI HARIYANTO,-7.3068810,112.7685263
+4a562668-2ea5-5f51-b8ec-0cc06f8c8875,Taman Pakal,taman aktif,TAMAN_AKTIF,HASAN BISRI,-7.2420068,112.6297684
+c80662ef-2c85-55b5-a1fd-94b69b7f5741,Taman Paliatif,taman aktif,TAMAN_AKTIF,MOCHAMAD MACHMUD,-7.2554780,112.7535054
+3b2128cd-407c-53bd-b708-1f99d2c59243,Taman Pandugo,taman aktif,TAMAN_AKTIF,MASYUDI HARIYANTO,-7.3197993,112.7939767
+7e40708a-d3be-54e7-a283-ca4ccd0bd607,Taman Pelangi,taman aktif,TAMAN_AKTIF,MURYANTO,-7.3275604,112.7312242
+76795a68-892f-5950-99a3-2e3a3c184b6e,Taman Persahabatan,taman aktif,TAMAN_AKTIF,EKO YUPI,-7.2766659,112.7463106
+bc1f3164-f11a-5588-b803-515a29991e97,Taman Prestasi,taman aktif,TAMAN_AKTIF,JOKO RIONO,-7.2614722,112.7428284
+50854ea1-3be1-54f4-94c5-40aca99f157d,Taman PUPR,taman aktif,TAMAN_AKTIF,BAGUS ALI ROHMAN,-7.3007106,112.8024759
+187cfd3f-3e78-5ada-ba5b-9e9cf1e83100,Taman Ronggolawe,taman aktif,TAMAN_AKTIF,TRI PUTRO,-7.2997060,112.7312220
+f45c2f1d-2f3d-5c27-88bf-c35653d804c4,Taman Sejarah,taman aktif,TAMAN_AKTIF,JOKO SLAMET,-7.2361058,112.7378073
+7bdc272b-1b63-5453-9158-890f1663ca1a,Taman Suroboyo,taman aktif,TAMAN_AKTIF,BUDI SETYO UTOMO,-7.2253727,112.7880641
+1b57ca1a-fdb6-5101-8e69-3880d57be92c,Taman Tais,taman aktif,TAMAN_AKTIF,SUGIONO,-7.2672418,112.743858
+7cf883b8-674d-5bd9-9baa-4fab336577d0,Taman Teratai,taman aktif,TAMAN_AKTIF,MOCHAMAD MACHMUD,-7.2550995,112.7555813
+e5f90bd9-a1f4-54e7-b10c-67fa32ca03e7,Taman Wirasurya,taman aktif,TAMAN_AKTIF,TRI PUTRO,-7.2600797,112.7444797

@@ -13,6 +13,7 @@ import type {
   PaginatedResponse,
 } from '@/types/models';
 import { makeCrudHooks } from './crud-hooks';
+import { collectAllPages } from './paginate';
 
 /**
  * Query keys factory for areas
@@ -25,35 +26,58 @@ export const areaKeys = {
   detail: (id: string) => [...areaKeys.details(), id] as const,
 };
 
-/**
- * Fetch areas with filters
- */
-async function fetchAreas(filters: AreaFilters = {}): Promise<PaginatedResponse<Area>> {
+/** Fetch one page of areas (or the full array when `page` is omitted). */
+async function fetchAreasPage(
+  filters: AreaFilters,
+  page?: number,
+): Promise<PaginatedResponse<Area>> {
   const params = new URLSearchParams();
 
   if (filters.search) params.append('search', filters.search);
   if (filters.rayon_id) params.append('rayon_id', filters.rayon_id);
   if (filters.area_type_id) params.append('area_type_id', filters.area_type_id);
-  if (filters.page) params.append('page', filters.page.toString());
-  if (filters.limit) params.append('limit', filters.limit.toString());
+  // Only send page/limit for explicit pagination — omitting them makes the
+  // backend return the FULL array (it caps `limit` at 100 when paginating).
+  if (page) {
+    params.append('page', page.toString());
+    params.append('limit', (filters.limit ?? 100).toString());
+  }
 
   const response = await apiClient.get(`/areas?${params.toString()}`);
   const responseData = response.data;
 
-  // Backend returns plain Array<Area>, wrap into PaginatedResponse
+  // Backend returns plain Array<Area> (no page/limit) — wrap into PaginatedResponse.
   if (Array.isArray(responseData)) {
     return {
       data: responseData as Area[],
       meta: {
         total: responseData.length,
-        page: filters.page || 1,
-        limit: filters.limit || responseData.length,
+        page: page ?? 1,
+        limit: responseData.length,
         totalPages: 1,
       },
     };
   }
 
   return responseData as PaginatedResponse<Area>;
+}
+
+/**
+ * Fetch areas with filters.
+ *
+ * With no explicit `page` the caller wants EVERY area (tables/dropdowns pass a
+ * high `limit` to "load all"). The backend caps `limit` at 100 and orders by
+ * `id`, so a single capped request silently drops whole rayons (e.g. Rayon
+ * Barat 2, ~35 areas that all sort past the first 100) — they then vanish from
+ * the area table and can't be picked when assigning a user. So we fetch the full
+ * array (page/limit omitted) and page through defensively if the API ever caps.
+ */
+async function fetchAreas(filters: AreaFilters = {}): Promise<PaginatedResponse<Area>> {
+  if (filters.page) return fetchAreasPage(filters, filters.page);
+
+  const first = await fetchAreasPage(filters);
+  if ((first.meta?.totalPages ?? 1) <= 1) return first;
+  return collectAllPages((page) => fetchAreasPage(filters, page));
 }
 
 /**

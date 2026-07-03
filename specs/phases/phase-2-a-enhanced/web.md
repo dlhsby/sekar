@@ -47,8 +47,8 @@ Phase 2 introduces a comprehensive web dashboard for administrators and manageme
   "tailwindcss": "^3.4.0",
   "@tanstack/react-query": "^5.0.0",
   "zustand": "^4.4.0",
-  "mapbox-gl": "^3.0.0",
-  "@mapbox/mapbox-gl-draw": "^1.4.0",
+  "Google Maps": "^3.0.0",
+  "@maps/Google Maps-draw": "^1.4.0",
   "axios": "^1.6.0",
   "zod": "^3.22.0",
   "react-hook-form": "^7.49.0",
@@ -501,12 +501,12 @@ export function Sidebar({ user }: SidebarProps) {
 'use client';
 
 import { useRef, useEffect } from 'react';
-import mapboxgl from 'mapbox-gl';
-import MapboxDraw from '@mapbox/mapbox-gl-draw';
-import 'mapbox-gl/dist/mapbox-gl.css';
-import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
+import mapsgl from 'Google Maps';
+import Google MapsDraw from '@maps/Google Maps-draw';
+import 'Google Maps/dist/Google Maps.css';
+import '@maps/Google Maps-draw/dist/Google Maps-draw.css';
 
-mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
+mapsgl.accessToken = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!;
 
 interface PolygonEditorProps {
   initialPolygon: GeoJSON.Polygon | null;
@@ -516,20 +516,20 @@ interface PolygonEditorProps {
 
 export function PolygonEditor({ initialPolygon, center, onPolygonChange }: PolygonEditorProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const draw = useRef<MapboxDraw | null>(null);
+  const map = useRef<mapsgl.Map | null>(null);
+  const draw = useRef<Google MapsDraw | null>(null);
 
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    map.current = new mapboxgl.Map({
+    map.current = new mapsgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/satellite-streets-v12',
+      mapTypeId: 'hybrid',
       center: center,
       zoom: 15,
     });
 
-    draw.current = new MapboxDraw({
+    draw.current = new Google MapsDraw({
       displayControlsDefault: false,
       controls: { polygon: true, trash: true },
       defaultMode: 'draw_polygon',
@@ -565,7 +565,7 @@ export function PolygonEditor({ initialPolygon, center, onPolygonChange }: Polyg
 
 - [ ] Create areas list page with grid/table view
 - [ ] Create area form with polygon editor
-- [ ] Implement Mapbox polygon drawing
+- [ ] Implement Google Maps polygon drawing
 - [ ] Calculate polygon area automatically
 - [ ] Add staff requirements section to form
 - [ ] Implement delete area
@@ -618,7 +618,7 @@ export function PolygonEditor({ initialPolygon, center, onPolygonChange }: Polyg
 'use client';
 
 import { useRef, useEffect } from 'react';
-import mapboxgl from 'mapbox-gl';
+import mapsgl from 'Google Maps';
 
 interface LiveMapProps {
   workers: LiveWorker[];
@@ -629,15 +629,15 @@ interface LiveMapProps {
 
 export function LiveMap({ workers, areas, selectedArea, onAreaSelect }: LiveMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const markers = useRef<{ [key: string]: mapboxgl.Marker }>({});
+  const map = useRef<mapsgl.Map | null>(null);
+  const markers = useRef<{ [key: string]: mapsgl.Marker }>({});
 
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    map.current = new mapboxgl.Map({
+    map.current = new mapsgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
+      mapTypeId: 'roadmap',
       center: [112.7378, -7.2898], // Surabaya center
       zoom: 12,
     });
@@ -707,9 +707,9 @@ export function LiveMap({ workers, areas, selectedArea, onAreaSelect }: LiveMapP
       popupContent.appendChild(document.createElement('br'));
       popupContent.appendChild(statusEl);
 
-      const popup = new mapboxgl.Popup({ offset: 25 }).setDOMContent(popupContent);
+      const popup = new mapsgl.Popup({ offset: 25 }).setDOMContent(popupContent);
 
-      markers.current[worker.id] = new mapboxgl.Marker(el)
+      markers.current[worker.id] = new mapsgl.Marker(el)
         .setLngLat([worker.lastLocation.longitude, worker.lastLocation.latitude])
         .setPopup(popup)
         .addTo(map.current!);
@@ -891,8 +891,8 @@ npm run test:a11y
     "@tanstack/react-query": "^5.0.0",
     "zustand": "^4.4.0",
     "axios": "^1.6.0",
-    "mapbox-gl": "^3.0.0",
-    "@mapbox/mapbox-gl-draw": "^1.4.0",
+    "Google Maps": "^3.0.0",
+    "@maps/Google Maps-draw": "^1.4.0",
     "zod": "^3.22.0",
     "react-hook-form": "^7.49.0",
     "@hookform/resolvers": "^3.3.0",

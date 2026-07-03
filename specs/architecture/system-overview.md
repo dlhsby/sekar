@@ -116,7 +116,7 @@ Mobile architecture prioritizes offline operation:
 **Purpose:** Supervisor and admin interface for oversight
 
 **Key Features:**
-- Real-time worker location map (Mapbox GL)
+- Real-time worker location map (Google Maps)
 - Shift status monitoring
 - Work report review and approval
 - Analytics and reporting

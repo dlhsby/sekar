@@ -17,37 +17,12 @@ const PopoverContent = React.forwardRef<
   React.ComponentRef<typeof PopoverPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
 >(function PopoverContent({ className, align = 'start', sideOffset = 6, ...props }, ref) {
-  const localRef = React.useRef<HTMLDivElement | null>(null);
-  const setRefs = React.useCallback(
-    (node: HTMLDivElement | null) => {
-      localRef.current = node;
-      if (typeof ref === 'function') ref(node);
-      else if (ref) (ref as React.RefObject<HTMLDivElement | null>).current = node;
-    },
-    [ref],
-  );
-
-  // A Radix Dialog is modal (react-remove-scroll locks the page). Because the
-  // popover is portaled to <body> — outside the dialog subtree — wheel/touch
-  // scrolling of a scrollable popover child (e.g. a combobox listbox) would be
-  // blocked by that lock. Stopping the events before they reach the
-  // document-level handler lets the popover's own overflow scrolling work.
-  React.useEffect(() => {
-    const el = localRef.current;
-    if (!el) return;
-    const stop = (e: Event) => e.stopPropagation();
-    el.addEventListener('wheel', stop, { passive: true });
-    el.addEventListener('touchmove', stop, { passive: true });
-    return () => {
-      el.removeEventListener('wheel', stop);
-      el.removeEventListener('touchmove', stop);
-    };
-  }, []);
-
+  // Scrollable popover children (e.g. a combobox listbox) handle their own
+  // wheel scrolling to work inside a modal Radix Dialog — see useWheelScrollFix.
   return (
     <PopoverPrimitive.Portal>
       <PopoverPrimitive.Content
-        ref={setRefs}
+        ref={ref}
         align={align}
         sideOffset={sideOffset}
         className={cn(

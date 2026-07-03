@@ -1,8 +1,8 @@
 /**
  * Runtime client config API.
- * Fetches maps API keys served by the backend (GET /config/maps) so keys are
- * not baked into the web build. Google Maps powers the master-data coordinate
- * picker + display modal; Mapbox stays for the monitoring map.
+ * Fetches the Google Maps API key served by the backend (GET /config/maps) so
+ * the key is not baked into the web build. Google Maps is the sole map provider
+ * — boundary/pin editors, display modal, and the live monitoring map.
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -11,8 +11,6 @@ import { apiClient } from './client';
 export interface MapsConfig {
   /** Google Maps JS API key (browser/referer-restricted) — null when unset. */
   googleMapsApiKey: string | null;
-  /** Mapbox token — null when unset (web normally uses its own build-time token). */
-  mapboxToken: string | null;
 }
 
 async function fetchMapsConfig(): Promise<MapsConfig> {

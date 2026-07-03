@@ -23,7 +23,7 @@ Three new backend-first feature verticals + release/iOS prep (see `specs/phases/
 | QR PNGs + generated PDFs | Land in the media bucket (MinIO dev/prod, S3 staging) under `qr-codes/` and `reports/`. |
 | Authz hardening | Per-role area/rayon scope enforced across all asset + analytics endpoints (Jun 17 strict pass). No env change. |
 
-Run the standard deploy flow ([`deployment-guide.md`](deployment-guide.md) §E) — the three migrations apply via `migration:run:prod`; no new external credentials beyond the existing Firebase/Maps/Mapbox/S3 set in [`credentials-setup.md`](credentials-setup.md).
+Run the standard deploy flow ([`deployment-guide.md`](deployment-guide.md) §E) — the three migrations apply via `migration:run:prod`; no new external credentials beyond the existing Firebase/Maps/S3 set in [`credentials-setup.md`](credentials-setup.md).
 
 ## Canonical Phase 5 deploy docs
 

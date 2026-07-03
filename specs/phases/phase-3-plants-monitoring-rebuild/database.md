@@ -415,7 +415,7 @@ INSERT INTO monitoring_configs (key, value, description) VALUES
   ('stale_status_sweep_cron', '"*/5 * * * *"'::jsonb,
    'Cron expression for StaleStatusSweeperService'),
   ('cluster_zoom_threshold', '14'::jsonb,
-   'Mapbox zoom level above which per-user markers replace clusters'),
+   'Google Maps zoom level above which per-user markers replace clusters'),
   ('redis_stream_max_len', '100000'::jsonb,
    'MAXLEN ~ for location→status Redis Stream trimming');
 ```
