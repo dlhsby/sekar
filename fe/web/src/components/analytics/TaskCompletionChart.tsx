@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
+import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui';
 
 export interface TaskCompletionChartProps {
@@ -20,15 +21,17 @@ export interface TaskCompletionChartProps {
 
 export function TaskCompletionChart({
   data,
-  title = 'Penyelesaian Tugas',
+  title,
   loading = false,
 }: TaskCompletionChartProps) {
+  const { t } = useTranslation();
+  const displayTitle = title ?? t('analytics:chartDefaults.taskCompletion');
   if (loading || !data || data.length === 0) {
     return (
       <Card className="p-6">
-        <h3 className="text-nb-h3 font-semibold mb-4">{title}</h3>
+        <h3 className="text-nb-h3 font-semibold mb-4">{displayTitle}</h3>
         <div className="h-64 bg-nb-gray-50 rounded-nb-base flex items-center justify-center text-nb-gray-600">
-          {loading ? 'Memuat...' : 'Tidak ada data'}
+          {loading ? t('common:actions.loading') : t('common:empty.noData.title')}
         </div>
       </Card>
     );
@@ -36,7 +39,7 @@ export function TaskCompletionChart({
 
   return (
     <Card className="p-6">
-      <h3 className="text-nb-h3 font-semibold mb-4">{title}</h3>
+      <h3 className="text-nb-h3 font-semibold mb-4">{displayTitle}</h3>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-nb-gray-200)" />
