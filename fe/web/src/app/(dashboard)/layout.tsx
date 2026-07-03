@@ -53,7 +53,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const convertToSidebarItems = (items: typeof navigationItems): SidebarItem[] => {
       return items.map((item) => ({
         id: item.id,
-        label: item.label,
+        label: t(item.label),
         href: item.href,
         icon: <item.icon className="h-5 w-5" />,
         roles: item.roles,
@@ -63,7 +63,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     };
 
     return convertToSidebarItems(filteredNavigation);
-  }, [user]); // Only recreate when user changes
+  }, [user, t]); // Recreate when user or language changes
 
   // Show loading state while checking auth
   if (loading) {
