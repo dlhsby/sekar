@@ -7,6 +7,7 @@
  */
 
 import { useState, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useDebounce } from '@/lib/hooks/useDebounce';
@@ -46,6 +47,7 @@ export function MonitoringSidePanel({
   selectedUserId,
   onUserSelect,
 }: MonitoringSidePanelProps) {
+  const { t } = useTranslation(['monitoring']);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<TrackingStatus | null>(null);
   const [roleFilters, setRoleFilters] = useState<Set<string>>(new Set());
@@ -191,7 +193,7 @@ export function MonitoringSidePanel({
           </div>
         ) : filteredUsers.length === 0 ? (
           <div className="p-6 text-center text-nb-gray-500">
-            <p className="font-semibold text-sm">Tidak ada petugas ditemukan</p>
+            <p className="font-semibold text-sm">{t('monitoring:sidePanel.noWorkers')}</p>
             {hasActiveFilters && (
               <button
                 type="button"

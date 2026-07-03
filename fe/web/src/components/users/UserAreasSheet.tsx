@@ -8,6 +8,7 @@
  */
 
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AreaListSheet, type AreaListSheetItem } from '@/components/areas/AreaListSheet';
 import { useUserAreas } from '@/lib/api/user-areas';
 import { useRayons } from '@/lib/api/rayons';
@@ -24,6 +25,7 @@ interface UserAreasSheetProps {
 }
 
 export function UserAreasSheet({ user, onClose }: UserAreasSheetProps) {
+  const { t } = useTranslation();
   const { data: areas = [], isLoading, isError } = useUserAreas(user?.id);
   const { data: rayons = [] } = useRayons();
   const rayonNameById = useMemo(() => new Map(rayons.map((r) => [r.id, r.name])), [rayons]);
@@ -47,13 +49,13 @@ export function UserAreasSheet({ user, onClose }: UserAreasSheetProps) {
   return (
     <AreaListSheet
       open={!!user}
-      title="Area Ditugaskan"
+      title={t('admin:users.areasTitle')}
       subtitle={user?.full_name ?? '—'}
       items={items}
       resetKey={user?.id}
       isLoading={isLoading}
       isError={isError}
-      emptyText="Belum ada area yang ditugaskan."
+      emptyText={t('admin:users.noAreasAssigned')}
       onClose={onClose}
     />
   );

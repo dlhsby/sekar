@@ -64,7 +64,7 @@ export function AreaWorkersCard({ areaId, canManage }: AreaWorkersCardProps) {
     if (selectedUserId === 'none') return;
     try {
       await assignMutation.mutateAsync({ userId: selectedUserId, areaIds: [areaId] });
-      toast.success('Pekerja ditugaskan ke area');
+      toast.success(t('admin:areas.assignAction'));
       setAssignOpen(false);
       setSelectedUserId('none');
     } catch (error) {
@@ -75,7 +75,7 @@ export function AreaWorkersCard({ areaId, canManage }: AreaWorkersCardProps) {
   const handleRemove = async (userId: string, name: string) => {
     try {
       await removeMutation.mutateAsync({ userId, areaId });
-      toast.success(`${name} dilepas dari area`);
+      toast.success(`${name} ${t('admin:shared.delete').toLowerCase()}`);
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
@@ -87,13 +87,13 @@ export function AreaWorkersCard({ areaId, canManage }: AreaWorkersCardProps) {
         <div className="flex items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 text-lg font-bold">
             <Users className="size-5" />
-            Pekerja di Area
+            {t('admin:areas.workersTitle')}
           </h2>
           {canManage && (
             <div className="flex gap-2">
               <Link href={`/schedules/new`}>
                 <Button variant="ghost" size="sm" leftIcon={<Plus className="size-4" />}>
-                  Buat Jadwal
+                  {t('admin:areas.createSchedule')}
                 </Button>
               </Link>
               <Button
@@ -101,7 +101,7 @@ export function AreaWorkersCard({ areaId, canManage }: AreaWorkersCardProps) {
                 leftIcon={<UserPlus className="size-4" />}
                 onClick={() => setAssignOpen(true)}
               >
-                Tugaskan Pekerja
+                {t('admin:areas.assignWorker')}
               </Button>
             </div>
           )}
@@ -113,11 +113,11 @@ export function AreaWorkersCard({ areaId, canManage }: AreaWorkersCardProps) {
         ) : !workers || workers.length === 0 ? (
           <EmptyState
             variant="noData"
-            title="Belum ada pekerja"
+            title={t('admin:areas.noWorkersTitle')}
             description={
               canManage
-                ? 'Tugaskan pekerja ke area ini, atau buat jadwal kerja.'
-                : 'Belum ada pekerja yang ditugaskan ke area ini.'
+                ? t('admin:areas.noWorkersManageDescription')
+                : t('admin:areas.noWorkersDescription')
             }
           />
         ) : (
@@ -160,7 +160,7 @@ export function AreaWorkersCard({ areaId, canManage }: AreaWorkersCardProps) {
       >
         <DialogContent className="sm:max-w-md" aria-labelledby="assign-worker-title">
           <DialogHeader>
-            <DialogTitle id="assign-worker-title">Tugaskan Pekerja ke Area</DialogTitle>
+            <DialogTitle id="assign-worker-title">{t('admin:areas.assignWorkerTitle')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <FormSelect
@@ -168,7 +168,7 @@ export function AreaWorkersCard({ areaId, canManage }: AreaWorkersCardProps) {
               value={selectedUserId}
               onChange={(value) => setSelectedUserId(value as string)}
               options={[
-                { value: 'none', label: 'Pilih Pekerja' },
+                { value: 'none', label: t('admin:areas.selectWorkerPlaceholder') },
                 ...candidates.map((u) => ({
                   value: u.id,
                   label: `${u.full_name} (${u.username}) · ${ROLE_LABELS[u.role]}`,
@@ -176,7 +176,7 @@ export function AreaWorkersCard({ areaId, canManage }: AreaWorkersCardProps) {
               ]}
               helperText={
                 <span className="text-nb-gray-600">
-                  Hanya satgas/linmas. Untuk shift kerja, gunakan menu Jadwal.
+                  {t('admin:areas.assignWorkerHelper')}
                 </span>
               }
             />
@@ -189,14 +189,14 @@ export function AreaWorkersCard({ areaId, canManage }: AreaWorkersCardProps) {
                 setSelectedUserId('none');
               }}
             >
-              Batal
+              {t('admin:shared.cancel')}
             </Button>
             <Button
               onClick={handleAssign}
               disabled={selectedUserId === 'none'}
               loading={assignMutation.isPending}
             >
-              Tugaskan
+              {t('admin:areas.assignAction')}
             </Button>
           </DialogFooter>
         </DialogContent>

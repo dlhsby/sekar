@@ -66,7 +66,9 @@
       "passwordInfo": "Password sementara akan dibuat otomatis dan ditampilkan sekali setelah user dibuat. Pengguna wajib menggantinya saat login pertama.",
       "submitEdit": "Simpan",
       "submitCreate": "Buat Pengguna"
-    }
+    },
+    "areasTitle": "Area Ditugaskan",
+    "noAreasAssigned": "Belum ada area yang ditugaskan."
   },
   "areas": {
     "pageTitle": "Area",
@@ -126,8 +128,10 @@
       "namePlaceholder": "Masukkan nama area",
       "rayon": "Rayon",
       "rayonPlaceholder": "Pilih rayon",
+      "rayonSearchPlaceholder": "Cari rayon…",
       "type": "Tipe Area",
       "typePlaceholder": "Pilih tipe area",
+      "typeSearchPlaceholder": "Cari tipe area…",
       "address": "Alamat",
       "addressPlaceholder": "Masukkan alamat area",
       "coordinates": "Koordinat Pusat",
@@ -142,8 +146,25 @@
       "boundary": "Batas Wilayah (GeoJSON)",
       "boundaryPlaceholder": "Paste GeoJSON polygon untuk batas wilayah",
       "submit": "Simpan Area",
-      "submitNew": "Buat Area"
-    }
+      "submitNew": "Buat Area",
+      "basicInfoTitle": "Informasi Dasar",
+      "boundaryTitle": "Batas & Titik Lokasi",
+      "boundaryDescription": "Dua pengaturan terpisah: gambar batas area, lalu tentukan titik lokasi — mis. lokasi kantor, pintu masuk, atau titik hasil pencarian yang dipakai untuk menggeser peta. Titik lokasi terisi otomatis dari pusat batas hanya jika belum diatur; menggambar ulang batas tidak mengubah titik yang sudah ada. Seret pin, cari alamat, atau tekan tombol lokasi untuk menyesuaikan. (Klik peta hanya menambah titik saat menggambar batas.)",
+      "coordinatesTitle": "Koordinat Pusat:",
+      "mapUnavailable": "Peta tidak tersedia — batas area tidak dapat digambar tanpa Google Maps.",
+      "geometryRequired": "Tentukan minimal salah satu: gambar batas area atau tempatkan titik lokasi."
+    },
+    "workersTitle": "Pekerja di Area",
+    "createSchedule": "Buat Jadwal",
+    "assignWorker": "Tugaskan Pekerja",
+    "assignWorkerTitle": "Tugaskan Pekerja ke Area",
+    "assignWorkerHelper": "Hanya satgas/linmas. Untuk shift kerja, gunakan menu Jadwal.",
+    "assignAction": "Tugaskan",
+    "deleteTitle": "Hapus Area",
+    "deleteConfirmation": "Anda akan menghapus area {areaName}. Tindakan ini tidak dapat dibatalkan.",
+    "successCreated": "Area \"{name}\" berhasil dibuat.",
+    "successUpdated": "Area \"{name}\" berhasil diperbarui.",
+    "successDeleted": "Area \"{name}\" berhasil dihapus."
   },
   "rayons": {
     "pageTitle": "Rayon",
@@ -189,13 +210,31 @@
     "form": {
       "name": "Nama Rayon",
       "namePlaceholder": "Masukkan nama rayon",
+      "nameAvailable": "Nama rayon tersedia",
+      "nameTaken": "Nama rayon sudah dipakai",
       "code": "Kode Rayon",
       "codePlaceholder": "Masukkan kode rayon",
       "head": "Kepala Rayon",
       "headPlaceholder": "Pilih kepala rayon",
       "submit": "Simpan Rayon",
-      "submitNew": "Buat Rayon"
-    }
+      "submitNew": "Buat Rayon",
+      "basicInfoTitle": "Informasi Dasar",
+      "color": "Warna",
+      "colorLabel": "Pilih warna rayon",
+      "colorHex": "Kode warna heksadesimal",
+      "colorHelper": "Pilih dari palet atau masukkan kode heksadesimal (opsional). Dipakai untuk batas rayon di peta monitoring.",
+      "description": "Deskripsi",
+      "descriptionPlaceholder": "Deskripsi rayon (opsional)",
+      "boundaryTitle": "Batas & Titik Lokasi",
+      "boundaryDescription": "Dua pengaturan terpisah — isi minimal salah satu: gambar batas wilayah rayon, dan/atau tentukan titik lokasi (mis. lokasi kantor rayon atau titik yang dipakai untuk menggeser peta saat pencarian). Titik lokasi tidak harus berada di tengah batas.",
+      "latitude": "Latitude",
+      "latitudePlaceholder": "Contoh: -7.25",
+      "longitude": "Longitude",
+      "longitudePlaceholder": "Contoh: 112.75",
+      "geometryRequired": "Tentukan minimal salah satu: gambar batas rayon atau tempatkan titik lokasi."
+    },
+    "successCreated": "Rayon \"{name}\" berhasil dibuat.",
+    "successUpdated": "Rayon \"{name}\" berhasil diperbarui."
   },
   "shared": {
     "loading": "Memuat…",
@@ -208,6 +247,9 @@
     "save": "Simpan",
     "delete": "Hapus",
     "edit": "Ubah",
-    "view": "Lihat"
+    "view": "Lihat",
+    "saving": "Menyimpan…",
+    "updating": "Memperbarui…",
+    "creating": "Membuat…"
   }
 }

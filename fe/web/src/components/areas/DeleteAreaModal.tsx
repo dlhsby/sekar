@@ -33,7 +33,7 @@ export function DeleteAreaModal({ area, isOpen, onClose, onSuccess }: DeleteArea
     try {
       const name = area.name;
       await deleteArea.mutateAsync(area.id);
-      toast.success(`Area "${name}" berhasil dihapus.`);
+      toast.success(t('admin:areas.successDeleted', { name }));
       onSuccess?.();
       onClose();
     } catch (err: unknown) {
@@ -52,10 +52,10 @@ export function DeleteAreaModal({ area, isOpen, onClose, onSuccess }: DeleteArea
           onClose();
         }
       }}
-      title="Hapus Area"
+      title={t('admin:areas.deleteTitle')}
       description={
         <>
-          Anda akan menghapus area <strong>{area?.name}</strong>. Tindakan ini tidak dapat dibatalkan.
+          {t('admin:areas.deleteConfirmation', { areaName: area?.name })}
         </>
       }
       confirmLabel={t('admin:shared.delete')}
@@ -67,16 +67,16 @@ export function DeleteAreaModal({ area, isOpen, onClose, onSuccess }: DeleteArea
       <div className="space-y-2">
         <div className="bg-nb-gray-100 border-2 border-nb-black p-4 space-y-2">
           <div className="flex justify-between">
-            <span className="font-bold">Nama:</span>
+            <span className="font-bold">{t('admin:areas.detailName')}:</span>
             <span>{area?.name}</span>
           </div>
           <div className="flex justify-between">
-            <span className="font-bold">Tipe:</span>
+            <span className="font-bold">{t('admin:areas.detailType')}:</span>
             <span>{area?.areaType?.name ?? '—'}</span>
           </div>
           {area?.rayon && (
             <div className="flex justify-between">
-              <span className="font-bold">Rayon:</span>
+              <span className="font-bold">{t('admin:areas.detailRayon')}:</span>
               <span>{area.rayon.name}</span>
             </div>
           )}

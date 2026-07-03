@@ -8,6 +8,7 @@
  */
 
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils/cn';
 import { Button } from '@/components/ui';
 import { FormSelect } from '@/components/ui';
@@ -43,6 +44,7 @@ export function HierarchyFilterPanel({
   activeWorkerCount,
   className,
 }: HierarchyFilterPanelProps) {
+  const { t } = useTranslation(['monitoring']);
   const { data: rayons } = useRayons();
   const { data: areasData } = useAreas({
     rayon_id: value.rayonId,
@@ -91,7 +93,7 @@ export function HierarchyFilterPanel({
       {/* Scope selector */}
       <div
         role="group"
-        aria-label="Cakupan filter"
+        aria-label={t('monitoring:hierarchy.scopeLabel')}
         className="flex items-center border-2 border-nb-black rounded-nb-base overflow-hidden shadow-nb-xs"
       >
         {(['city', 'rayon', 'area'] as FilterScope[]).map((s) => (
@@ -108,7 +110,7 @@ export function HierarchyFilterPanel({
                 : 'bg-nb-white text-nb-black hover:bg-nb-gray-100'
             )}
           >
-            {s === 'city' ? 'Kota' : s === 'rayon' ? 'Rayon' : 'Area'}
+            {s === 'city' ? t('monitoring:hierarchy.city') : s === 'rayon' ? t('monitoring:hierarchy.rayon') : t('monitoring:hierarchy.area')}
           </button>
         ))}
       </div>
@@ -121,7 +123,7 @@ export function HierarchyFilterPanel({
             value={value.rayonId ?? 'none'}
             onChange={(v) => handleRayonChange(v as string)}
             options={[
-              { value: 'none', label: 'Pilih Rayon' },
+              { value: 'none', label: t('monitoring:hierarchy.rayonLabel') },
               ...(rayons ?? []).map((r) => ({ value: r.id, label: r.name })),
             ]}
           />
@@ -137,7 +139,7 @@ export function HierarchyFilterPanel({
             onChange={(v) => handleAreaChange(v as string)}
             disabled={!value.rayonId}
             options={[
-              { value: 'none', label: value.rayonId ? 'Pilih Area' : 'Pilih rayon dulu' },
+              { value: 'none', label: value.rayonId ? t('monitoring:hierarchy.areaLabel') : t('monitoring:hierarchy.areaDisabled') },
               ...areas.map((a) => ({ value: a.id, label: a.name })),
             ]}
           />
@@ -155,7 +157,7 @@ export function HierarchyFilterPanel({
         aria-atomic="true"
       >
         <span className="w-2 h-2 rounded-full bg-nb-success animate-pulse" aria-hidden="true" />
-        {activeWorkerCount} aktif
+        {t('monitoring:hierarchy.activeCount', { count: activeWorkerCount })}
       </div>
 
       {/* Reset button */}
@@ -164,9 +166,9 @@ export function HierarchyFilterPanel({
           variant="secondary"
           size="sm"
           onClick={handleReset}
-          aria-label="Reset semua filter"
+          aria-label={t('monitoring:hierarchy.resetLabel')}
         >
-          Reset
+          {t('monitoring:filters.reset')}
         </Button>
       )}
     </div>

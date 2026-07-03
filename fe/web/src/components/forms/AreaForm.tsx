@@ -5,10 +5,11 @@
  * Reusable form for creating and editing areas
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import { FormInput, FormCombobox, Textarea, Card, CardContent, Button } from '@/components/ui';
 import { FormActions } from '@/components/forms/FormActions';
 import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
@@ -35,21 +36,13 @@ function boundaryCentroid(geom: BoundaryGeometry): LatLng {
   return { lat, lng };
 }
 
-// Validation schema
-const areaSchema = z.object({
-  name: z.string().min(2, 'Nama minimal 2 karakter'),
-  rayon_id: z.string().uuid('Rayon wajib dipilih'),
-  area_type_id: z.string().uuid('Tipe area wajib dipilih'),
-  address: z.string().optional().nullable(),
-  boundary_polygon: z
-    .custom<BoundaryGeometry>((val) => val == null || isBoundaryGeometry(val), {
-      message: 'Batas area tidak valid',
-    })
-    .nullable()
-    .optional(),
-});
-
-type AreaFormData = z.infer<typeof areaSchema>;
+type AreaFormData = {
+  name: string;
+  rayon_id: string;
+  area_type_id: string;
+  address?: string | null;
+  boundary_polygon?: BoundaryGeometry | null;
+};
 
 export interface AreaFormProps {
   initialData?: Area;
@@ -70,6 +63,26 @@ export function AreaForm({
   readOnly = false,
   onCancel,
 }: AreaFormProps) {
+  const { t } = useTranslation();
+
+  // Localized validation schema
+  const areaSchema = useMemo(
+    () =>
+      z.object({
+        name: z.string().min(2, t('validation:nameMin')),
+        rayon_id: z.string().uuid(t('validation:rayonRequired')),
+        area_type_id: z.string().uuid(t('validation:areaTypeRequired')),
+        address: z.string().optional().nullable(),
+        boundary_polygon: z
+          .custom<BoundaryGeometry>((val) => val == null || isBoundaryGeometry(val), {
+            message: t('validation:boundaryRequired'),
+          })
+          .nullable()
+          .optional(),
+      }),
+    [t],
+  );
+
   // The coordinate is an INDEPENDENT point from the boundary — it marks the
   // office / entrance / representative location and is what the app pans to when
   // an area is searched. It is NOT tied to the polygon centroid: the centroid is
@@ -162,11 +175,11 @@ export function AreaForm({
     <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
       {/* Basic Information */}
       <div className="space-y-4">
-        <h3 className="font-bold text-lg">Informasi Dasar</h3>
+        <h3 className="font-bold text-lg">{t('admin:areas.form.basicInfoTitle')}</h3>
 
         <FormInput
-          label="Nama Area"
-          placeholder="Contoh: Taman Bungkul"
+          label={t('admin:areas.form.name')}
+          placeholder={t('admin:areas.form.namePlaceholder')}
           error={errors.name?.message}
           required
           disabled={readOnly}
@@ -174,12 +187,12 @@ export function AreaForm({
         />
 
         <FormCombobox
-          label="Rayon"
+          label={t('admin:areas.form.rayon')}
           options={(rayonsData ?? []).map((rayon) => ({ value: rayon.id, label: rayon.name }))}
           value={watch('rayon_id') || ''}
           onChange={(value) => setValue('rayon_id', value, { shouldValidate: true })}
-          placeholder={loadingRayons ? 'Memuat...' : 'Pilih rayon'}
-          searchPlaceholder="Cari rayon…"
+          placeholder={loadingRayons ? t('admin:shared.loading') : t('admin:areas.form.rayonPlaceholder')}
+          searchPlaceholder={t('admin:areas.form.rayonSearchPlaceholder')}
           error={errors.rayon_id?.message}
           required
           clearable={false}
@@ -187,15 +200,15 @@ export function AreaForm({
         />
 
         <FormCombobox
-          label="Tipe Area"
+          label={t('admin:areas.form.type')}
           options={(areaTypes ?? []).map((type) => ({
             value: type.id,
             label: `${type.name} (${type.category})`,
           }))}
           value={watch('area_type_id') || ''}
           onChange={(value) => setValue('area_type_id', value, { shouldValidate: true })}
-          placeholder={loadingAreaTypes ? 'Memuat...' : 'Pilih tipe area'}
-          searchPlaceholder="Cari tipe area…"
+          placeholder={loadingAreaTypes ? t('admin:shared.loading') : t('admin:areas.form.typePlaceholder')}
+          searchPlaceholder={t('admin:areas.form.typeSearchPlaceholder')}
           error={errors.area_type_id?.message}
           required
           clearable={false}
@@ -203,9 +216,9 @@ export function AreaForm({
         />
 
         <div className="space-y-1.5">
-          <label className="text-sm font-bold leading-none">Alamat</label>
+          <label className="text-sm font-bold leading-none">{t('admin:areas.form.address')}</label>
           <Textarea
-            placeholder="Alamat area (opsional)"
+            placeholder={t('admin:areas.form.addressPlaceholder')}
             rows={3}
             error={errors.address?.message}
             disabled={readOnly}
@@ -217,16 +230,12 @@ export function AreaForm({
       {/* Boundary + location pin on a single Google map (two separate settings) */}
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-bold text-lg">Batas & Titik Lokasi</h3>
+          <h3 className="font-bold text-lg">{t('admin:areas.form.boundaryTitle')}</h3>
           {!readOnly && <ImportBoundaryButton onImport={handleImportBoundary} />}
         </div>
         {!readOnly && (
           <p className="text-nb-body-sm text-nb-gray-500">
-            Dua pengaturan terpisah: <b>gambar batas</b> area, lalu <b>tentukan titik lokasi</b> —
-            mis. lokasi kantor, pintu masuk, atau titik hasil pencarian yang dipakai untuk menggeser
-            peta. Titik lokasi terisi otomatis dari pusat batas hanya jika belum diatur; menggambar
-            ulang batas tidak mengubah titik yang sudah ada. Seret pin, cari alamat, atau tekan tombol
-            lokasi untuk menyesuaikan. (Klik peta hanya menambah titik saat menggambar batas.)
+            {t('admin:areas.form.boundaryDescription')}
           </p>
         )}
 
@@ -249,13 +258,13 @@ export function AreaForm({
           manualFallback={
             center ? (
               <div className="border-2 border-nb-black bg-nb-gray-100 p-4">
-                <div className="font-bold mb-2">Koordinat Pusat:</div>
+                <div className="font-bold mb-2">{t('admin:areas.form.coordinatesTitle')}</div>
                 <div className="font-mono text-sm">{formatCoordinates(center.lng, center.lat)}</div>
               </div>
             ) : (
               <div className="border-2 border-nb-black bg-nb-gray-100 p-4">
                 <p className="text-nb-body-sm text-nb-gray-700">
-                  Peta tidak tersedia — batas area tidak dapat digambar tanpa Google Maps.
+                  {t('admin:areas.form.mapUnavailable')}
                 </p>
               </div>
             )
@@ -267,7 +276,7 @@ export function AreaForm({
       {readOnly ? (
         <div className="flex gap-3 pt-4">
           <Button type="button" variant="secondary" onClick={onCancel} className="w-full">
-            Tutup
+            {t('admin:shared.close')}
           </Button>
         </div>
       ) : (
@@ -276,18 +285,18 @@ export function AreaForm({
             submitLabel={
               isLoading
                 ? mode === 'create'
-                  ? 'Menyimpan...'
-                  : 'Memperbarui...'
+                  ? t('admin:shared.creating')
+                  : t('admin:shared.updating')
                 : mode === 'create'
-                  ? 'Simpan Area'
-                  : 'Perbarui Area'
+                  ? t('admin:areas.form.submitNew')
+                  : t('admin:areas.form.submit')
             }
             loading={isLoading}
             disabled={!hasGeometry}
           />
           {!hasGeometry && (
             <p className="text-nb-body-sm text-nb-danger">
-              Tentukan minimal salah satu: gambar batas area atau tempatkan titik lokasi.
+              {t('admin:areas.form.geometryRequired')}
             </p>
           )}
         </>

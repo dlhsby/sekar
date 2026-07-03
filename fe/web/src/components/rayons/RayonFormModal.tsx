@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 import { RayonForm } from '@/components/forms/RayonForm';
@@ -21,6 +22,7 @@ interface RayonFormModalProps {
  * Create / edit / view a rayon in a modal.
  */
 export function RayonFormModal({ open, onOpenChange, rayon, onSuccess, readOnly = false }: RayonFormModalProps) {
+  const { t } = useTranslation();
   const isEdit = !!rayon;
   const createMutation = useCreateRayon();
   const updateMutation = useUpdateRayon();
@@ -49,7 +51,11 @@ export function RayonFormModal({ open, onOpenChange, rayon, onSuccess, readOnly 
       toast.error(getErrorMessage(err));
       return;
     }
-    toast.success(`Rayon "${data.name}" berhasil ${isEdit ? 'diperbarui' : 'dibuat'}.`);
+    toast.success(
+      isEdit
+        ? t('admin:rayons.successUpdated', { name: data.name })
+        : t('admin:rayons.successCreated', { name: data.name })
+    );
     onSuccess?.();
     onOpenChange(false);
   };
@@ -63,14 +69,22 @@ export function RayonFormModal({ open, onOpenChange, rayon, onSuccess, readOnly 
     !!failedMutation &&
     (failedMutation.error instanceof Error
       ? failedMutation.error.message
-      : `Gagal ${isEdit ? 'memperbarui' : 'membuat'} rayon. Silakan coba lagi.`);
+      : isEdit
+        ? t('admin:rayons.updateErrorMessage')
+        : t('admin:rayons.createErrorMessage'));
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="xl">
         <DialogHeader>
-          <DialogTitle>{readOnly ? 'Detail Rayon' : isEdit ? 'Ubah Rayon' : 'Tambah Rayon'}</DialogTitle>
+          <DialogTitle>
+            {readOnly
+              ? t('admin:rayons.detailTitle')
+              : isEdit
+                ? t('admin:rayons.actionEdit')
+                : t('admin:rayons.buttonAdd')}
+          </DialogTitle>
         </DialogHeader>
         <DialogBody>
           {errorMessage && !readOnly ? (

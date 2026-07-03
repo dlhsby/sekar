@@ -66,7 +66,9 @@
       "passwordInfo": "A temporary password will be generated automatically and shown once after the user is created. The user must change it on first login.",
       "submitEdit": "Save",
       "submitCreate": "Create User"
-    }
+    },
+    "areasTitle": "Assigned Areas",
+    "noAreasAssigned": "No assigned areas yet."
   },
   "areas": {
     "pageTitle": "Areas",
@@ -126,8 +128,10 @@
       "namePlaceholder": "Enter area name",
       "rayon": "Rayon",
       "rayonPlaceholder": "Select rayon",
+      "rayonSearchPlaceholder": "Search rayons…",
       "type": "Area Type",
       "typePlaceholder": "Select area type",
+      "typeSearchPlaceholder": "Search area types…",
       "address": "Address",
       "addressPlaceholder": "Enter area address",
       "coordinates": "Center Coordinates",
@@ -142,8 +146,25 @@
       "boundary": "Boundary (GeoJSON)",
       "boundaryPlaceholder": "Paste GeoJSON polygon for area boundary",
       "submit": "Save Area",
-      "submitNew": "Create Area"
-    }
+      "submitNew": "Create Area",
+      "basicInfoTitle": "Basic Information",
+      "boundaryTitle": "Boundary & Location Pin",
+      "boundaryDescription": "Two separate settings: draw the area boundary, then set a location pin — e.g., office location, entrance, or search result point used to pan the map. The location pin is auto-filled from the boundary centroid only if not yet set; redrawing the boundary does not change an existing pin. Drag the pin, search for an address, or press the locate button to adjust. (Map click only adds points when drawing the boundary.)",
+      "coordinatesTitle": "Center Coordinates:",
+      "mapUnavailable": "Map is not available — area boundary cannot be drawn without Google Maps.",
+      "geometryRequired": "Set at least one: draw the area boundary or place a location pin."
+    },
+    "workersTitle": "Workers in Area",
+    "createSchedule": "Create Schedule",
+    "assignWorker": "Assign Worker",
+    "assignWorkerTitle": "Assign Worker to Area",
+    "assignWorkerHelper": "Only field workers and security. For work schedules, use the Schedule menu.",
+    "assignAction": "Assign",
+    "deleteTitle": "Delete Area",
+    "deleteConfirmation": "You will delete the area {areaName}. This action cannot be undone.",
+    "successCreated": "Area \"{name}\" created successfully.",
+    "successUpdated": "Area \"{name}\" updated successfully.",
+    "successDeleted": "Area \"{name}\" deleted successfully."
   },
   "rayons": {
     "pageTitle": "Rayons",
@@ -189,13 +210,31 @@
     "form": {
       "name": "Rayon Name",
       "namePlaceholder": "Enter rayon name",
+      "nameAvailable": "Rayon name available",
+      "nameTaken": "Rayon name already taken",
       "code": "Rayon Code",
       "codePlaceholder": "Enter rayon code",
       "head": "Rayon Head",
       "headPlaceholder": "Select rayon head",
       "submit": "Save Rayon",
-      "submitNew": "Create Rayon"
-    }
+      "submitNew": "Create Rayon",
+      "basicInfoTitle": "Basic Information",
+      "color": "Color",
+      "colorLabel": "Select rayon color",
+      "colorHex": "Hexadecimal color code",
+      "colorHelper": "Pick from the palette or enter a hexadecimal code (optional). Used for rayon boundaries on the monitoring map.",
+      "description": "Description",
+      "descriptionPlaceholder": "Rayon description (optional)",
+      "boundaryTitle": "Boundary & Location Pin",
+      "boundaryDescription": "Two separate settings — set at least one: draw the rayon boundary, and/or set a location pin (e.g., rayon office location or point used to pan the map during search). The location pin does not need to be at the boundary center.",
+      "latitude": "Latitude",
+      "latitudePlaceholder": "Example: -7.25",
+      "longitude": "Longitude",
+      "longitudePlaceholder": "Example: 112.75",
+      "geometryRequired": "Set at least one: draw the rayon boundary or place a location pin."
+    },
+    "successCreated": "Rayon \"{name}\" created successfully.",
+    "successUpdated": "Rayon \"{name}\" updated successfully."
   },
   "shared": {
     "loading": "Loading…",
@@ -208,6 +247,9 @@
     "save": "Save",
     "delete": "Delete",
     "edit": "Edit",
-    "view": "View"
+    "view": "View",
+    "saving": "Saving…",
+    "updating": "Updating…",
+    "creating": "Creating…"
   }
 }

@@ -5,6 +5,7 @@
  * Shows shift info, location, activities, tasks, and contact links
  */
 
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Clock, MapPin, Battery, CheckSquare, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui';
 import { ROLE_LABELS } from '@/lib/constants/roles';
@@ -38,6 +39,8 @@ export function UserDetailPanel({
   onBack,
   onViewLocationHistory,
 }: UserDetailPanelProps) {
+  const { t } = useTranslation(['monitoring']);
+
   if (isLoading) {
     return (
       <div className="p-4 space-y-3">
@@ -58,9 +61,9 @@ export function UserDetailPanel({
           className="flex items-center gap-1 text-sm text-nb-gray-600 hover:text-nb-black mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
-          Kembali
+          {t('monitoring:userDetail.backButton')}
         </button>
-        <p className="text-center text-nb-gray-500 mt-8">Data tidak tersedia</p>
+        <p className="text-center text-nb-gray-500 mt-8">{t('monitoring:userDetail.noData')}</p>
       </div>
     );
   }
@@ -79,10 +82,10 @@ export function UserDetailPanel({
           type="button"
           onClick={onBack}
           className="flex items-center gap-1.5 text-sm font-semibold text-nb-gray-600 hover:text-nb-black transition-colors"
-          aria-label="Kembali ke daftar"
+          aria-label={t('monitoring:userDetail.backLabel')}
         >
           <ArrowLeft className="w-4 h-4" />
-          Kembali
+          {t('monitoring:userDetail.backButton')}
         </button>
       </div>
 

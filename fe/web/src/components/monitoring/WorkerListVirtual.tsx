@@ -9,6 +9,7 @@
  */
 
 import { useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { cn } from '@/lib/utils/cn';
 import {
@@ -57,6 +58,7 @@ export function WorkerListVirtual({
   className,
   'aria-label': ariaLabel,
 }: WorkerListVirtualProps) {
+  const { t } = useTranslation(['monitoring']);
   const parentRef = useRef<HTMLDivElement>(null);
 
   const rowVirtualizer = useVirtualizer({
@@ -86,7 +88,7 @@ export function WorkerListVirtual({
         role="status"
         aria-live="polite"
       >
-        Tidak ada petugas aktif
+        {t('monitoring:workerList.noWorkers')}
       </div>
     );
   }
@@ -97,7 +99,7 @@ export function WorkerListVirtual({
       className={cn('overflow-y-auto overflow-x-hidden overscroll-contain', className)}
       style={{ maxHeight, height: Math.min(workers.length * ROW_HEIGHT, maxHeight) }}
       role="list"
-      aria-label={ariaLabel ?? 'Daftar petugas'}
+      aria-label={ariaLabel ?? t('monitoring:workerList.list')}
     >
       {/* Spacer to give virtualizer its full scroll height */}
       <div
