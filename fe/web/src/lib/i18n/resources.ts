@@ -61,6 +61,10 @@ import enOnboarding from './locales/en/onboarding.json';
 import enImport from './locales/en/import.json';
 import enInstallHelp from './locales/en/install-help.json';
 import enNavigation from './locales/en/navigation.json';
+import idLocation from './locales/id/location.json';
+import enLocation from './locales/en/location.json';
+import idWelcome from './locales/id/welcome.json';
+import enWelcome from './locales/en/welcome.json';
 import enComponents from './locales/en/components.json';
 
 export const resources = {
@@ -93,6 +97,8 @@ export const resources = {
     import: idImport,
     'install-help': idInstallHelp,
     navigation: idNavigation,
+    location: idLocation,
+    welcome: idWelcome,
     components: idComponents,
   },
   en: {
@@ -124,6 +130,8 @@ export const resources = {
     import: enImport,
     'install-help': enInstallHelp,
     navigation: enNavigation,
+    location: enLocation,
+    welcome: enWelcome,
     components: enComponents,
   },
 } as const;
@@ -157,6 +165,8 @@ export const NAMESPACES = [
   'import',
   'install-help',
   'navigation',
+  'location',
+  'welcome',
   'components',
 ] as const;
 
