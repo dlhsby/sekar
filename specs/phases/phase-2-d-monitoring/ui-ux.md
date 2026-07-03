@@ -240,7 +240,7 @@ Display abbreviated role + name below the marker, varying by zoom level.
 
 ## D. Web Layout Specifications
 
-> **Mapbox GL Token:** The web monitoring map requires a valid Mapbox GL JS access token configured via the environment variable `NEXT_PUBLIC_MAPBOX_TOKEN`. Without this token, the map will not render.
+> **Google Maps API Key:** The web monitoring map requires a valid Google Maps access token configured via the environment variable `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`. Without this token, the map will not render.
 
 ### D1. Split Panel (Desktop xl)
 
@@ -563,7 +563,7 @@ accessibilityLabel={`${user.full_name}, ${getRoleLabel(user.role)}, ${getStatusL
 | Status chip tap | Scale 0.95 → 1.0 | 150ms |
 | Side panel open | Slide from right | 200ms ease |
 | Bottom sheet drag | Spring physics | ~300ms |
-| Map fly-to | Mapbox flyTo | 1000ms ease |
+| Map fly-to | Google Maps flyTo | 1000ms ease |
 | Trail polyline draw | Progressive reveal | 500ms |
 | User list card hover | Background fade | 150ms |
 

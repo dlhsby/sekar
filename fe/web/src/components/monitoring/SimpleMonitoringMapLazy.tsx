@@ -1,9 +1,8 @@
 'use client';
 
 /**
- * Lazy entry for SimpleMonitoringMap (Phase 4-7 G1): defers the mapbox-gl
- * bundle (~230 kB gz) out of the monitoring page's initial JS. ssr:false —
- * Mapbox GL is browser-only.
+ * Lazy entry for SimpleMonitoringMap: defers the Google Maps map component out
+ * of the monitoring page's initial JS. ssr:false — the map is browser-only.
  */
 import dynamic from 'next/dynamic';
 

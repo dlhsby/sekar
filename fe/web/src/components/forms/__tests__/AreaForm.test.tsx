@@ -21,42 +21,56 @@ jest.mock('@/lib/api/area-types', () => ({
   useAreaTypes: jest.fn(),
 }));
 
-// Mock PolygonEditor — Mapbox GL requires WebGL, cannot run in jsdom
-jest.mock('@/components/maps/PolygonEditor', () => ({
-  PolygonEditor: ({ onChange }: { onChange: (polygon: GeoJSON.Polygon | null) => void }) => (
-    <div
-      data-testid="polygon-editor"
-      onClick={() =>
-        onChange({
-          type: 'Polygon',
-          coordinates: [
-            [
-              [112.74, -7.28],
-              [112.75, -7.28],
-              [112.75, -7.29],
-              [112.74, -7.29],
-              [112.74, -7.28],
+// Mock GoogleBoundaryEditor — Google Maps JS needs an API key + WebGL, cannot
+// run in jsdom. Expose buttons to drive polygon/pin changes and render the
+// manualFallback, which holds the center-coordinate display.
+jest.mock('@/components/maps/GoogleBoundaryEditor', () => ({
+  GoogleBoundaryEditor: ({
+    onPolygonChange,
+    onPinChange,
+    manualFallback,
+  }: {
+    onPolygonChange?: (polygon: GeoJSON.Polygon | null) => void;
+    onPinChange?: (coords: { lat: number; lng: number }) => void;
+    manualFallback?: ReactNode;
+  }) => (
+    <div data-testid="google-boundary-editor">
+      <button
+        type="button"
+        data-testid="draw-polygon"
+        onClick={() =>
+          onPolygonChange?.({
+            type: 'Polygon',
+            coordinates: [
+              [
+                [112.74, -7.28],
+                [112.75, -7.28],
+                [112.75, -7.29],
+                [112.74, -7.29],
+                [112.74, -7.28],
+              ],
             ],
-          ],
-        })
-      }
-    >
-      Polygon Editor Mock
+          })
+        }
+      >
+        Draw
+      </button>
+      <button
+        type="button"
+        data-testid="place-pin"
+        onClick={() => onPinChange?.({ lat: -7.28, lng: 112.74 })}
+      >
+        Pin
+      </button>
+      {manualFallback}
     </div>
-  ),
-}));
-
-// Mock GoogleMapPicker — Google Maps JS needs an API key + browser APIs; render
-// its manualFallback, which holds the center-coordinate display in jsdom.
-jest.mock('@/components/maps/GoogleMapPicker', () => ({
-  GoogleMapPicker: ({ manualFallback }: { manualFallback?: ReactNode }) => (
-    <div data-testid="google-map-picker">{manualFallback}</div>
   ),
 }));
 
 // Mock geo utilities
 jest.mock('@/lib/utils/geo', () => ({
   isValidPolygon: jest.fn(() => true),
+  isBoundaryGeometry: jest.fn(() => true),
   calculatePolygonCenter: jest.fn(() => [112.74, -7.28] as [number, number]),
   formatCoordinates: jest.fn(() => '112.740000°E, 7.280000°S'),
 }));
@@ -107,7 +121,7 @@ describe('AreaForm', () => {
       expect(screen.getByLabelText(/nama area/i)).toBeInTheDocument();
       expect(screen.getByText('Rayon')).toBeInTheDocument();
       expect(screen.getByText('Tipe Area')).toBeInTheDocument();
-      expect(screen.getByTestId('polygon-editor')).toBeInTheDocument();
+      expect(screen.getByTestId('google-boundary-editor')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /simpan area/i })).toBeInTheDocument();
     });
 
@@ -146,7 +160,7 @@ describe('AreaForm', () => {
 
       render(<AreaForm mode="create" onSubmit={mockOnSubmit} />, { wrapper: createWrapper() });
 
-      expect(screen.getByTestId('polygon-editor')).toBeInTheDocument();
+      expect(screen.getByTestId('google-boundary-editor')).toBeInTheDocument();
     });
   });
 
@@ -200,12 +214,12 @@ describe('AreaForm', () => {
     });
   });
 
-  describe('Polygon interaction', () => {
-    it('shows coordinates after polygon is drawn', async () => {
+  describe('Pin interaction', () => {
+    it('shows coordinates after the location pin is placed', async () => {
       render(<AreaForm mode="create" onSubmit={mockOnSubmit} />, { wrapper: createWrapper() });
 
-      const polygonEditor = screen.getByTestId('polygon-editor');
-      fireEvent.click(polygonEditor);
+      // Drawing a boundary no longer sets the pin — placing it explicitly does.
+      fireEvent.click(screen.getByTestId('place-pin'));
 
       await waitFor(() => {
         expect(screen.getByText(/koordinat pusat/i)).toBeInTheDocument();

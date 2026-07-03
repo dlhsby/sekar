@@ -11,16 +11,16 @@
 
 ## Overview
 
-Phase 2D is a comprehensive reimplementation of the SEKAR real-time monitoring system. The current monitoring implementation has several critical gaps: the web map is a placeholder (no Mapbox rendering), `is_within_area` is hardcoded to `true`, `shift_name` is hardcoded to `'Active Shift'`, WebSocket role checks use legacy PascalCase values, staff requirements are not broken down by role, and there is no location history playback.
+Phase 2D is a comprehensive reimplementation of the SEKAR real-time monitoring system. The current monitoring implementation has several critical gaps: the web map is a placeholder (no Google Maps rendering), `is_within_area` is hardcoded to `true`, `shift_name` is hardcoded to `'Active Shift'`, WebSocket role checks use legacy PascalCase values, staff requirements are not broken down by role, and there is no location history playback.
 
-This phase addresses all gaps by introducing a proper five-status (four visible on map) tracking system backed by a materialized `user_tracking_status` table, replacing N+1 monitoring queries with efficient single-join queries, implementing the Mapbox map on web and polygon rendering on mobile, adding location history playback, user detail modals with WhatsApp deeplinks, configurable monitoring thresholds, and a comprehensive filter system with staffing summaries.
+This phase addresses all gaps by introducing a proper five-status (four visible on map) tracking system backed by a materialized `user_tracking_status` table, replacing N+1 monitoring queries with efficient single-join queries, implementing the Google Maps map on web and polygon rendering on mobile, adding location history playback, user detail modals with WhatsApp deeplinks, configurable monitoring thresholds, and a comprehensive filter system with staffing summaries.
 
 ### Key Changes Summary
 
 1. **Five-Status Tracking System (four visible on map)** -- Replace the binary online/offline model with Active (green), Idle (amber), Outside Area (purple), Missing (red), and Offline (gray, not shown on map) statuses
 2. **Materialized Status Table** -- New `user_tracking_status` table for O(1) lookups instead of N+1 queries per dashboard load
 3. **Configurable Thresholds** -- New `monitoring_configs` table for runtime-adjustable status thresholds without redeployment
-4. **Web Map Implementation** -- Full Mapbox GL JS integration on the monitoring page with markers, polygons, clustering, and popups
+4. **Web Map Implementation** -- Full Google Maps integration on the monitoring page with markers, polygons, clustering, and popups
 5. **Mobile Map Enhancement** -- Polygon rendering (replacing radius circles), five-status colors (four visible on map), enhanced markers with role icons and labels
 6. **Location History Playback** -- GPS trail visualization on map with timeline, clickable points, and first/last highlighting
 7. **User Detail Modal** -- Rich bottom sheet (mobile) / side panel (web) with shift info, activities, WhatsApp deeplinks
@@ -240,7 +240,7 @@ Post-implementation review identified 9 gaps between the original brief and the 
 | **2D-3: New Endpoints** | Location history, day summary, config CRUD, boundary CRUD, staffing summary | 2-3 days | 2D-1 |
 | **2D-4: WebSocket Enhancements** | Fix auto-join rooms, add `user:status-changed` / `user:left-area` / `user:entered-area` events, enhance `user:location` with status/is_within_area/shift_name, integrate emission in StatusCalculatorService | 1-2 days | 2D-2 |
 | **2D-5: Mobile Monitoring** | Polygon rendering, five-status colors (four visible on map), enhanced UserMarker, StatusSummaryBar, UserListStrip, UserDetailSheet, LocationTrail, MonitoringFilterModal, WebSocket event handlers | 3-4 days | 2D-3, 2D-4 |
-| **2D-6: Web Monitoring** | Mapbox GL JS integration, MonitoringMap, MonitoringSidePanel, UserDetailPanel, LocationTimeline, StatusCards, `/monitoring/config` page, polygon editor, TanStack Query hooks | 4-5 days | 2D-3, 2D-4 |
+| **2D-6: Web Monitoring** | Google Maps integration, MonitoringMap, MonitoringSidePanel, UserDetailPanel, LocationTimeline, StatusCards, `/monitoring/config` page, polygon editor, TanStack Query hooks | 4-5 days | 2D-3, 2D-4 |
 | **2D-7: Testing** | Unit tests (>80%), integration tests, E2E (Playwright web, manual mobile) | 3-4 days | All above |
 | **2D-10: Gap Fixes** | Day-type filtering, rayon boundaries, map auto-focus, worker reassignment, enhanced location history, marker labels, filter modal, visual system (see sub-items below) | 5-7 days | 2D-7 |
 | **2D-11: Home Screen Location Card** | LocationStatusCard on HomeScreen, useHomeLocation hook, GPS coords + accuracy display, area boundary status, force-sync button | 1-2 days | 2D-5 |
@@ -323,7 +323,7 @@ A new `LocationStatusCard` component on the worker HomeScreen that provides at-a
 - [Backend Requirements](./backend.md) -- API endpoints, DTOs, services, WebSocket events
 - [Database Schema](./database.md) -- Migration SQL, new tables, indexes
 - [Mobile Requirements](./mobile.md) -- Map screen, markers, detail sheet, filter, trail
-- [Web Requirements](./web.md) -- Mapbox integration, side panel, detail view, polygon editor
+- [Web Requirements](./web.md) -- Google Maps integration, side panel, detail view, polygon editor
 - [Testing Plan](./testing.md) -- Test stubs, coverage targets, E2E scenarios
 - [UI/UX Design](./ui-ux.md) -- Colors, icons, layouts, accessibility, micro-interactions
 

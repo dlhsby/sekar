@@ -334,7 +334,7 @@ npx playwright test --project=chromium
    - Mock data may not reflect all edge cases
 
 2. **Map Integration:** Map tests only verify placeholder
-   - Actual Mapbox GL integration not tested
+   - Actual Google Maps integration not tested
    - GPS coordinates are mock data
 
 3. **Real-Time Updates:** Auto-refresh is mocked

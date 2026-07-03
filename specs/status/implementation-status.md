@@ -295,7 +295,7 @@ See `specs/ACTION_PLAN.md` for critical fixes needed:
 ### ✅ Web Implementation (Phase 2C Complete)
 
 **Status:** ✅ Phase 2C Complete (February 16, 2026)
-**Platform:** Next.js 16.1.6 + TypeScript, TailwindCSS 4.x, Mapbox GL
+**Platform:** Next.js 16.1.6 + TypeScript, TailwindCSS 4.x, Google Maps
 **Completion Date:** February 16, 2026
 
 #### Phase 2C Completed Features

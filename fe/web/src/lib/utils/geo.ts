@@ -115,7 +115,32 @@ export function isValidPolygon(polygon: GeoJSON.Polygon): boolean {
 }
 
 /**
- * Convert GeoJSON polygon to Mapbox GL Draw feature
+ * Validate a stored boundary geometry — accepts a Polygon OR a MultiPolygon
+ * (KMZ/shapefile imports are frequently multi-part). Used by the master-data
+ * forms so an existing multi-part boundary counts as valid without forcing a
+ * redraw.
+ */
+export function isBoundaryGeometry(g: unknown): boolean {
+  if (!g || typeof g !== 'object') return false;
+  const geom = g as GeoJSON.Geometry;
+  if (geom.type === 'Polygon') {
+    return isValidPolygon(geom as GeoJSON.Polygon);
+  }
+  if (geom.type === 'MultiPolygon') {
+    const mp = geom as GeoJSON.MultiPolygon;
+    return (
+      Array.isArray(mp.coordinates) &&
+      mp.coordinates.length > 0 &&
+      mp.coordinates.every(
+        (poly) => Array.isArray(poly) && Array.isArray(poly[0]) && poly[0].length >= 4
+      )
+    );
+  }
+  return false;
+}
+
+/**
+ * Wrap a GeoJSON polygon in a GeoJSON Feature.
  */
 export function polygonToFeature(polygon: GeoJSON.Polygon): GeoJSON.Feature {
   return {
@@ -126,7 +151,7 @@ export function polygonToFeature(polygon: GeoJSON.Polygon): GeoJSON.Feature {
 }
 
 /**
- * Extract polygon from Mapbox GL Draw feature
+ * Extract a polygon geometry from a GeoJSON Feature (null if not a polygon).
  */
 export function featureToPolygon(feature: GeoJSON.Feature): GeoJSON.Polygon | null {
   if (feature.geometry.type === 'Polygon') {

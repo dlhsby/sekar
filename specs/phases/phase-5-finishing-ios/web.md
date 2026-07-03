@@ -15,7 +15,7 @@
 | Pages | 24+ (Phase 2E: 21 + Phase 4: import, export, notifications) |
 | Design System | Neo Brutalism (NB* components), WCAG 2.1 AA |
 | Charts | Recharts (installed in Phase 2D for monitoring) |
-| Maps | Mapbox GL (monitoring dashboard) |
+| Maps | Google Maps (monitoring dashboard) |
 | Testing | Playwright 1.58+, 20+ E2E specs (Phase 4), 505+ unit tests |
 | Auth | JWT with refresh token rotation (Phase 4) |
 | State | Server Components (default), Client Components for interactivity |

@@ -18,7 +18,7 @@
 | **database.md** | Migration SQL, new tables (user_tracking_status, monitoring_configs), indexes | [View](./database.md) |
 | **backend.md** | New entities, services, endpoints, WebSocket enhancements | [View](./backend.md) |
 | **mobile.md** | Map enhancement, markers, detail sheet, filter modal, location trail | [View](./mobile.md) |
-| **web.md** | Mapbox integration, split layout, detail panel, timeline, config page | [View](./web.md) |
+| **web.md** | Google Maps integration, split layout, detail panel, timeline, config page | [View](./web.md) |
 | **ui-ux.md** | Status colors, marker design, layouts, accessibility, micro-interactions | [View](./ui-ux.md) |
 | **testing.md** | Test stubs, coverage targets, E2E scenarios, seed data | [View](./testing.md) |
 
@@ -97,7 +97,7 @@
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Create `MonitoringMap` component (Mapbox GL) | ✅ Done | Custom HTML markers, polygon overlay |
+| Create `MonitoringMap` component (Google Maps) | ✅ Done | Custom HTML markers, polygon overlay |
 | Create `MonitoringSidePanel` | ✅ Done | Filters + status cards + user list |
 | Rewrite `/monitoring` page with split layout | ✅ Done | 65% map + 35% panel, responsive |
 | Create `UserDetailPanel` | ✅ Done | Shift info, activities, tasks, WA buttons |
@@ -312,7 +312,7 @@ npm run test:e2e                  # All Playwright tests
 - [ ] JWT auth required for WebSocket connection
 
 ### Web UI
-- [ ] `/monitoring` page loads with Mapbox map (65% map + 35% panel)
+- [ ] `/monitoring` page loads with Google Maps map (65% map + 35% panel)
 - [ ] Status cards show correct counts and are clickable filters
 - [ ] User list displays with status dots, battery, role
 - [ ] Click user → detail panel with shift info, activities, WhatsApp links

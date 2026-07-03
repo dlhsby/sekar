@@ -25,6 +25,7 @@ const MAP_OPTIONS: google.maps.MapOptions = {
   streetViewControl: false,
   mapTypeControl: false,
   fullscreenControl: false,
+  clickableIcons: false,
 };
 
 export interface MapDisplayModalProps {

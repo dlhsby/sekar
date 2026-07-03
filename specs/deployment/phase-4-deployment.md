@@ -13,7 +13,7 @@ Production-readiness hardening, brand refresh, and a UI/UX revamp (Design System
 - **WebSocket scaling audit (4-1 / ADR-016):** Redis adapter validation.
 - **Reassignment audit trail (4-4):** history endpoint + web bulk-reassign modal + mobile Riwayat Pemindahan + account-mutation audit logging.
 - **Export hardening (4-5):** CSV formula-injection fix, date inclusivity.
-- **Perf passes (4-7):** >800-line file splits, Asia/Jakarta day-boundary fixes, lazy mapbox-gl, list memoization.
+- **Perf passes (4-7):** >800-line file splits, Asia/Jakarta day-boundary fixes, lazy @react-google-maps/api, list memoization.
 - **E2E (4-9 / ADR-017):** 15 Maestro flows + security/monitoring Playwright + CI workflows.
 
 **Deploy-relevant deltas vs. Phase 3:** new env vars (`SUPPORT_HOTLINE_*`, retention/cron knobs), the production seeder + retention/purge crons, and the new dev scripts (`scripts/setup.sh`/`start.sh`/`stop.sh`) with per-project port overrides. No new external service. All captured in [`environment-variables.md`](environment-variables.md) and the deploy/operate flow in [`deployment-guide.md`](deployment-guide.md).

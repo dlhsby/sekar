@@ -424,7 +424,7 @@ Acceptable performance baselines to verify during testing:
 | 11 | Activities | List, approve/reject, filter, pagination | ⏳ |
 | 12 | Activity Detail | Photos, approval history | ⏳ |
 | 13 | Overtime | List, approve/reject, filter | ⏳ |
-| 14 | Monitoring | Mapbox map, markers, polygons, filters, WebSocket updates | ⏳ |
+| 14 | Monitoring | Google Maps map, markers, polygons, filters, WebSocket updates | ⏳ |
 | 15 | Monitoring Config | Threshold editing | ⏳ |
 | 16 | Schedules | Calendar, shift assignments | ⏳ |
 | 17 | Shift Definitions | CRUD for 3 shifts | ⏳ |

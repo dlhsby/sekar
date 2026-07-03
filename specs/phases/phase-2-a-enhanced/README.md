@@ -411,8 +411,8 @@ npm install @react-native-firebase/messaging
 ```bash
 npx create-next-app@latest sekar-web --typescript --tailwind --app
 npm install @tanstack/react-query  # Data fetching
-npm install mapbox-gl              # Map component
-npm install @mapbox/mapbox-gl-draw # Map drawing tools
+npm install Google Maps              # Map component
+npm install @maps/Google Maps-draw # Map drawing tools
 npm install axios                  # HTTP client
 npm install zustand                # State management
 ```

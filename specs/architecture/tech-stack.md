@@ -200,7 +200,7 @@ Complete technology specification for all SEKAR system components.
 | Technology | Version | Purpose | Why Chosen |
 |------------|---------|---------|------------|
 | **Recharts** | 2.x | Chart library | React-based, declarative |
-| **Mapbox GL JS** | Latest | Map display | High-performance vector tiles, mobile-friendly |
+| **Google Maps** | Latest | Map display | High-performance vector tiles, mobile-friendly |
 
 ### Forms & Validation
 | Technology | Version | Purpose | Why Chosen |

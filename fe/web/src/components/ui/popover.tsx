@@ -27,20 +27,43 @@ const PopoverContent = React.forwardRef<
     [ref],
   );
 
-  // A Radix Dialog is modal (react-remove-scroll locks the page). Because the
-  // popover is portaled to <body> — outside the dialog subtree — wheel/touch
-  // scrolling of a scrollable popover child (e.g. a combobox listbox) would be
-  // blocked by that lock. Stopping the events before they reach the
-  // document-level handler lets the popover's own overflow scrolling work.
+  // A Radix Dialog is modal (react-remove-scroll locks the page with a
+  // capture-phase handler). Because the popover is portaled to <body> — outside
+  // the dialog subtree — that lock blocks wheel scrolling of a scrollable popover
+  // child (e.g. a combobox listbox), and a bubble-phase stopPropagation can't
+  // beat the capture-phase preventDefault. So we scroll the list ourselves:
+  // find the scrollable element under the pointer and adjust its scrollTop
+  // directly (works regardless of the page lock), stopping the event so it
+  // neither double-scrolls nor reaches the lock.
   React.useEffect(() => {
     const el = localRef.current;
     if (!el) return;
-    const stop = (e: Event) => e.stopPropagation();
-    el.addEventListener('wheel', stop, { passive: true });
-    el.addEventListener('touchmove', stop, { passive: true });
+    const findScrollable = (start: EventTarget | null): HTMLElement | null => {
+      let node = start as HTMLElement | null;
+      while (node && node !== el.parentElement) {
+        if (
+          node.scrollHeight > node.clientHeight &&
+          /(auto|scroll)/.test(getComputedStyle(node).overflowY)
+        ) {
+          return node;
+        }
+        node = node.parentElement;
+      }
+      return null;
+    };
+    const onWheel = (e: WheelEvent) => {
+      const scroller = findScrollable(e.target);
+      if (!scroller) return;
+      scroller.scrollTop += e.deltaY;
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    const stopTouch = (e: Event) => e.stopPropagation();
+    el.addEventListener('wheel', onWheel, { passive: false });
+    el.addEventListener('touchmove', stopTouch, { passive: true });
     return () => {
-      el.removeEventListener('wheel', stop);
-      el.removeEventListener('touchmove', stop);
+      el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('touchmove', stopTouch);
     };
   }, []);
 

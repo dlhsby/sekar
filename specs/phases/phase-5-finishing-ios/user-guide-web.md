@@ -16,7 +16,7 @@
 | Pages | 35 (24 Phase 4 + 11 Phase 5) |
 | Design System | Neo Brutalism (NB* components), WCAG 2.1 AA |
 | Auth | JWT with refresh token rotation, identifier-based login |
-| Maps | Mapbox GL JS 3.x |
+| Maps | Google Maps 3.x |
 | Charts | Recharts 2.x |
 | URL | https://sekar.wahyutrip.com |
 

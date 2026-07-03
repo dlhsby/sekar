@@ -6,8 +6,6 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 export interface MapsConfigDto {
   /** Google Maps JS API key (browser/referer-restricted) — null when unset. */
   googleMapsApiKey: string | null;
-  /** Mapbox public token — null when unset. */
-  mapboxToken: string | null;
 }
 
 /**
@@ -22,12 +20,11 @@ export interface MapsConfigDto {
 @UseGuards(JwtAuthGuard)
 export class ConfigController {
   @Get('maps')
-  @ApiOperation({ summary: 'Maps API keys for the web client (Google Maps + Mapbox)' })
+  @ApiOperation({ summary: 'Maps API key for the web client (Google Maps)' })
   @ApiResponse({ status: 200, description: 'Maps config' })
   getMapsConfig(): MapsConfigDto {
     return {
       googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || null,
-      mapboxToken: process.env.MAPBOX_TOKEN || process.env.NEXT_PUBLIC_MAPBOX_TOKEN || null,
     };
   }
 }

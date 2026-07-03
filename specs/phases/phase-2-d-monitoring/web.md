@@ -2,7 +2,7 @@
 
 **Last Updated:** 2026-03-05
 **Status:** COMPLETE
-**Platform:** Next.js 16.x, React 19, TailwindCSS 4.x, Mapbox GL JS
+**Platform:** Next.js 16.x, React 19, TailwindCSS 4.x, Google Maps
 **Related ADR:** ADR-011 (new)
 **See also:** [Backend Requirements](./backend.md), [UI/UX Design](./ui-ux.md), [README](./README.md)
 
@@ -13,11 +13,11 @@
 | File/Component | Key Facts |
 |----------------|-----------|
 | `monitoring/page.tsx` | Single page with role-based auto-scoping; stats cards; live user list; placeholder map area |
-| `components/maps/MapboxMap.tsx` | Exists but minimal; Mapbox GL token in env |
+| `components/maps/Google MapsMap.tsx` | Exists but minimal; Google Maps API key in env |
 | `components/maps/PolygonEditor.tsx` | Exists for area boundary editing |
 | `lib/api/monitoring.ts` | TanStack Query hooks: `useCityStats`, `useRayonStats`, `useAreaStats`, `useLiveUsers` |
 | `lib/types.ts` | `LiveUser`, `LiveUsersResponse`, `CityStats`, `RayonMonitoringStats`, `AreaMonitoringStats` interfaces |
-| Mapbox token | `NEXT_PUBLIC_MAPBOX_TOKEN` in `.env.local` |
+| Google Maps API key | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` in `.env.local` |
 | Page route | `/monitoring` (App Router: `app/(dashboard)/monitoring/page.tsx`) |
 
 ---
@@ -26,8 +26,8 @@
 
 | Component | Change Type | Description |
 |-----------|-------------|-------------|
-| `/monitoring` page | Major rewrite | Split layout with full Mapbox map + side panel |
-| `MonitoringMap` | New component | Mapbox GL markers, polygons, clustering, popups |
+| `/monitoring` page | Major rewrite | Split layout with full Google Maps map + side panel |
+| `MonitoringMap` | New component | Google Maps markers, polygons, clustering, popups |
 | `MonitoringSidePanel` | New component | Filters, status cards, user list |
 | `UserDetailPanel` | New component | Push navigation in side panel |
 | `LocationTimeline` | New component | Vertical timeline with GPS points |
@@ -53,7 +53,7 @@
 │                                  │  [Role chips] [Status]│
 │                                  │  [Search user...]     │
 │                                  │                       │
-│        Mapbox Map                │  Status Cards (2×2)   │
+│        Google Maps Map                │  Status Cards (2×2)   │
 │        (65% width)               │  ┌─────┐ ┌─────┐    │
 │                                  │  │ Act │ │ Idle│    │
 │                                  │  │ 12  │ │  5  │    │
@@ -97,9 +97,9 @@
 
 ### Features
 
-1. **Mapbox GL JS Integration**
+1. **Google Maps Integration**
    - Center: Surabaya (-7.2575, 112.7521), zoom: 12
-   - Map style: `mapbox://styles/mapbox/streets-v12`
+   - Map style: the default Google Maps roadmap style
    - Controls: zoom, compass, fullscreen, scale bar
 
 2. **Area Polygons**
@@ -110,7 +110,7 @@
    - Understaffed areas: dashed red border + warning icon
 
 3. **User Markers**
-   - Custom marker icons using Mapbox `Marker` or `Symbol` layer
+   - Custom marker icons using Google Maps `Marker` or `Symbol` layer
    - Color: status-based (green/amber/purple/red)
    - Shape: role-based (circle/shield/star)
    - Label format by zoom level:
@@ -121,7 +121,7 @@
    - Click: select user → show in side panel detail view
 
 4. **Marker Clustering**
-   - Cluster at zoom < 13 using Mapbox `supercluster`
+   - Cluster at zoom < 13 using Google Maps `supercluster`
    - Cluster circle shows count
    - Cluster color: determined by **cluster marker severity algorithm**
      - Severity order (highest to lowest): MISSING > OUTSIDE_AREA > INACTIVE > ACTIVE
@@ -139,7 +139,7 @@
 
 6. **Rayon + Area Polygon Layers**
 
-   Render both rayon and area boundaries using Mapbox source/layer system.
+   Render both rayon and area boundaries using Google Maps source/layer system.
 
    **Data source:** `GET /monitoring/boundaries` (returns both rayon + area boundaries in one call)
 
@@ -179,7 +179,7 @@
    | Filter by status only | No map movement (markers filter only) |
    | Reset all filters | `map.flyTo()` to Surabaya city center (-7.2575, 112.7521), zoom 12 |
 
-   **Implementation:** Use `useEffect` watching filter state changes, determine which filter changed, call appropriate Mapbox method.
+   **Implementation:** Use `useEffect` watching filter state changes, determine which filter changed, call appropriate Google Maps method.
 
 ### Props
 
@@ -379,7 +379,7 @@ Simple date input (default: today). Restricted to past dates only.
 ### E1. Clickable Trail Points on Map
 
 When LocationTimeline is active, the map renders the GPS trail:
-- Each GPS point rendered as an 8px circle on the Mapbox map
+- Each GPS point rendered as an 8px circle on the Google Maps map
 - Click on map point → highlight in timeline list, show popup with time/accuracy/battery
 - Click on timeline list item → map flies to that point, highlights it
 - Bidirectional sync between timeline list and map points
@@ -721,7 +721,7 @@ Centralizes all monitoring-related constants used across web components:
 
 Add a "Boundary" tab or section to the existing area detail page:
 
-- **View mode:** Display polygon on embedded Mapbox map
+- **View mode:** Display polygon on embedded Google Maps map
 - **Edit mode:** Use existing `PolygonEditor` component for boundary drawing
 - **KMZ import:** Button to upload KMZ file (existing feature)
 - **Save:** `PUT /areas/:id/boundary` with GeoJSON polygon
@@ -842,7 +842,7 @@ fe/web/src/
       page.tsx                               NEW (admin config page)
 
   components/monitoring/                     7 monitoring components:
-    MonitoringMap.tsx                         NEW (Mapbox GL markers, polygons, clustering)
+    MonitoringMap.tsx                         NEW (Google Maps markers, polygons, clustering)
     MonitoringSidePanel.tsx                   NEW (filters, status cards, user list)
     UserDetailPanel.tsx                       NEW (user day summary detail view)
     LocationTimeline.tsx                      NEW (GPS trail timeline with map sync)
@@ -880,7 +880,7 @@ fe/web/src/
 
 ### Phase 2D-5: Web Monitoring
 
-- [x] Create `MonitoringMap` component with Mapbox GL
+- [x] Create `MonitoringMap` component with Google Maps
 - [x] Implement marker rendering with clustering
 - [x] Implement area polygon rendering
 - [x] Create `MonitoringSidePanel` with filters and user list
@@ -898,7 +898,7 @@ fe/web/src/
 - [x] Test responsive behavior on all breakpoints
 
 ### Phase 2D-10: Gap Fixes (Web) — COMPLETE
-- [x] Add rayon + area Mapbox polygon layers with center markers
+- [x] Add rayon + area Google Maps polygon layers with center markers
 - [x] Implement map auto-focus on filter change
 - [x] Update marker labels to "Role - Name" format with zoom-level behavior
 - [x] Enhance LocationTimeline with clickable points, first/last markers, hide others, shift filter

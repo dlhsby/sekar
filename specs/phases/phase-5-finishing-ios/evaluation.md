@@ -36,7 +36,7 @@
 | 5 | Activity submission with photo evidence | Phase 1 + 2B | ⬜ Verify | Activity entity, S3 photo upload |
 | 6 | Overtime management | Phase 2C + 2E | ⬜ Verify | Clock-in/out flow, approval workflow |
 | 7 | Push notifications | Phase 2B + 3 | ⬜ Verify | FCM, 8 trigger points |
-| 8 | Supervisor monitoring dashboard | Phase 2D | ⬜ Verify | Web Mapbox + mobile MapDashboard |
+| 8 | Supervisor monitoring dashboard | Phase 2D | ⬜ Verify | Web Google Maps + mobile MapDashboard |
 | 9 | 7 Rayon organizational structure | Phase 2A | ⬜ Verify | Rayon/area entities, KMZ import |
 | 10 | Shift scheduling | Phase 1 + 2C | ⬜ Verify | Schedule entity, shift definitions |
 | 11 | Reporting with PDF/CSV/Excel export | Phase 5-1 | ✅ Delivered (code) | `be/src/modules/reporting/` 8 endpoints + puppeteer-core/handlebars PDF (ADR-024) + CSV/XLSX via ExportModule; web `/reports`+builder+schedules; mobile Reports/ReportDetail. BE verified live (generate→S3→download). |

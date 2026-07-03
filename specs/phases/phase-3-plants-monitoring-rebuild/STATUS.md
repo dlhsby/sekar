@@ -238,7 +238,7 @@ After seed, expect:
 | Click any area centroid | `AreaDetailDrawer` slides in with: Staffing → **Status Tanaman** (live `useAreaPlants` + `useNotablePlants`) → **Permohonan Pangkas** (rayon-scoped `usePruningByRayon`, top-5 with status pill) → Worker list | 🔍 manual |
 | Plant section | 3-tone summary (`bg-nb-success-light` / `warning-light` / `danger-light`) + species list ordered overdue-first; heritage subsection shows on areas with notable_plants | 🔍 manual |
 | Pruning section | Each row uses `PRUNING_STATUS_TONE` map for the status pill; expected_date displayed when set | 🔍 manual |
-| Layer toggles actually hide layers | Toggling Tanaman / Petugas / Rayon / Area changes Mapbox + overlay rendering | 🔍 manual |
+| Layer toggles actually hide layers | Toggling Tanaman / Petugas / Rayon / Area changes Google Maps + overlay rendering | 🔍 manual |
 
 ### Web — staff_kecamatan submit (`/(kecamatan)/pruning-requests`)
 
@@ -617,14 +617,14 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 | Sweep web monitoring components onto NB tokens | ⏳ DEFERRED | Monitoring components retain status palette (#9333EA purple etc.) — addressed in 3-3/3-4 monitoring v2 rebuild; 8 files documented in `scripts/hex-allowlist.txt` |
 | Migrate role-aware shells (mobile WorkerTabs/KorlapTabs/etc.; web 9-role Sidebar) | ✅ | tokens-only pass done |
 | Update visual regression snapshots for every swept screen | ⏳ DEFERRED | Visual regression deferred to Phase 4 per unit-only scope |
-| Create `scripts/hex-allowlist.txt` for documented exceptions | ✅ | `scripts/hex-allowlist.txt` — 18 entries covering Mapbox layer specs, status palette, ImageResponse SVG, Next.js metadata |
+| Create `scripts/hex-allowlist.txt` for documented exceptions | ✅ | `scripts/hex-allowlist.txt` — 18 entries covering Google Maps layer specs, status palette, ImageResponse SVG, Next.js metadata |
 | Update `fe/mobile/eslint.config.js` transitional allowlist → permanent | ✅ | Reduced from ~30 entries to 7 permanent exceptions with rationale comments |
 | Update `fe/web/eslint.config.mjs` transitional allowlist → permanent | ✅ | Updated with inline comments per category |
 | Update root `CLAUDE.md` Phase 3 section to reflect full-sweep completion | ✅ | M1-R marked complete in header |
 
 **Acceptance criteria (adjusted):**
 - ✅ `grep -rE "'#[0-9a-fA-F]{3,8}'" fe/mobile/src` returns zero hits outside `generated/` + permanent allowlist (7 entries, all documented)
-- ✅ `grep -rE "#[0-9a-fA-F]{3,8}" fe/web/src` — all hits are in the permanent allowlist (monitoring palette, Mapbox specs, ImageResponse, metadata)
+- ✅ `grep -rE "#[0-9a-fA-F]{3,8}" fe/web/src` — all hits are in the permanent allowlist (monitoring palette, Google Maps specs, ImageResponse, metadata)
 - ✅ `scripts/hex-allowlist.txt` created with full rationale for every entry
 - ✅ ESLint zero violations on all swept files (both platforms)
 - ⏳ Visual regression deferred to Phase 4 per unit-only scope

@@ -14,8 +14,8 @@ const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 async function expectNoSeriousViolations(page: Page) {
   const results = await new AxeBuilder({ page })
     .withTags(WCAG_TAGS)
-    // Mapbox renders an inaccessible <canvas> we don't control
-    .exclude('.mapboxgl-map')
+    // Google Maps renders an inaccessible <canvas>/tiles we don't control
+    .exclude('.gm-style')
     .analyze();
 
   const gating = results.violations.filter(

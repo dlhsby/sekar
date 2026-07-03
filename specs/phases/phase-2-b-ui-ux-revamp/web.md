@@ -297,7 +297,7 @@ content:
     span: lg:col-span-2
     height: h-[500px]
     map:
-      provider: Mapbox GL
+      provider: Google Maps
       markers: area boundary
       controls: zoom, fullscreen
 
@@ -729,7 +729,7 @@ content:
         aria_label: "Koordinat GPS: latitude {lat}, longitude {lng}"
       map:
         height: h-48
-        provider: Mapbox GL
+        provider: Google Maps
         marker: report location
 
 issues:
@@ -800,7 +800,7 @@ content:
     component: NBCard
     height: h-full
     map:
-      provider: Mapbox GL
+      provider: Google Maps
       markers: worker locations
       clusters: enabled
       controls: zoom, fullscreen, layers

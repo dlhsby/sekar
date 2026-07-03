@@ -202,7 +202,6 @@ export function DataTable<TData, TValue>({
   const [pageSize, setPageSize] = React.useState<number>(defaultPageSize);
   const [pageIndex, setPageIndex] = React.useState(0);
   const [showFilters, setShowFilters] = React.useState(false);
-  const [searchFocused, setSearchFocused] = React.useState(false);
   const isDesktop = useIsDesktop();
 
   // Resolve filter behaviour and append the standardized actions column.
@@ -336,18 +335,11 @@ export function DataTable<TData, TValue>({
       {showToolbar ? (
         <div className="flex flex-wrap items-center gap-2">
           {hasSearch ? (
-            <div
-              className={cn(
-                'transition-[width] duration-200',
-                searchFocused || search.length > 0 ? 'w-full sm:w-80' : 'w-12'
-              )}
-            >
+            <div className="w-full sm:w-64 md:w-72 lg:w-80">
               <Input
                 size="sm"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
                 placeholder={searchPlaceholder}
                 leftIcon={<Search className="h-4 w-4" aria-hidden />}
                 aria-label="Cari"

@@ -11,7 +11,7 @@ Guidance for Claude Code in this repository. **`specs/COMPLETION_STATUS.md` is t
 
 **SEKAR** (Sistem Evaluasi Kinerja Satgas RTH; "SEKAR" is retained as the brand acronym) — worker tracking + task management for DLH Surabaya parks dept. Real-time GPS, clock-in/out with photo verification, work reports with media, supervisor dashboards, 7 Rayon structure, shift scheduling, task workflow, push notifications.
 
-**Stack:** Backend NestJS 11 / TS 5.9 / PostgreSQL / TypeORM / JWT / WebSocket / AWS S3 · Mobile React Native 0.83 / React 19 / Redux Toolkit / FCM / Neo Brutalism (WCAG 2.1 AA) · Web Next.js 16 / React 19 / Tailwind 4 / Mapbox GL / Playwright · Node >=24.13, npm >=10.
+**Stack:** Backend NestJS 11 / TS 5.9 / PostgreSQL / TypeORM / JWT / WebSocket / AWS S3 · Mobile React Native 0.83 / React 19 / Redux Toolkit / FCM / Neo Brutalism (WCAG 2.1 AA) · Web Next.js 16 / React 19 / Tailwind 4 / Google Maps / Playwright · Node >=24.13, npm >=10.
 
 ## Quick Start
 
@@ -36,7 +36,7 @@ npm run start:dev          # http://localhost:${BE_PORT:-3000}  | API docs /api/
 # Mobile (fe/mobile/) — cp .env.local.example .env.local; set API_BASE_URL=http://10.0.2.2:<BE_PORT> (emulator) or http://<IP>:<BE_PORT> (device)
 npm run android            # android:all for all devices | ios (macOS only)
 
-# Web (fe/web/) — cp .env.local.example .env.local (Mapbox token)
+# Web (fe/web/) — cp .env.local.example .env.local (Google Maps API key)
 npm run dev                # http://localhost:${WEB_PORT:-3001}
 ```
 
@@ -94,7 +94,7 @@ Code uses English; Indonesian only for UI labels / user-facing messages. `Activi
 | **Deployment (authoritative, start-to-finish)** | `specs/deployment/deployment-guide.md` (self-hosted Docker + AWS appendix) |
 | iOS / Android release runbooks | `specs/deployment/ios-release-guide.md` · `android-release-guide.md` |
 | Run locally / infra / WSL2 device net | `specs/deployment/local-development.md` |
-| Obtaining keys (Firebase/Maps/Mapbox/S3) | `specs/deployment/credentials-setup.md` |
+| Obtaining keys (Firebase/Maps/S3) | `specs/deployment/credentials-setup.md` |
 | Day-2 operations / rollback / incidents | `specs/deployment/operations.md` |
 | Env var catalogue | `specs/deployment/environment-variables.md` |
 | **Encrypted secrets (dotenvx) — commit encrypted .env, decrypt at runtime** | `specs/deployment/encrypted-secrets.md` |

@@ -11,9 +11,10 @@ import { z } from 'zod';
 import { FormInput, Input, Textarea } from '@/components/ui';
 import { FormActions } from '@/components/forms/FormActions';
 import { AvailabilityHint } from '@/components/forms/AvailabilityHint';
-import { GoogleMapPicker } from '@/components/maps/GoogleMapPicker';
+import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
 import { useAvailabilityCheck } from '@/lib/hooks/useAvailabilityCheck';
 import { checkRayonName } from '@/lib/api/rayons';
+import { isBoundaryGeometry } from '@/lib/utils/geo';
 import type { Rayon } from '@/types/models';
 import type { CreateRayonDto, UpdateRayonDto } from '@/lib/api/rayons';
 
@@ -52,6 +53,12 @@ const rayonSchema = z.object({
     .max(180, 'Longitude harus antara -180 dan 180')
     .nullable()
     .optional(),
+  boundary_polygon: z
+    .custom<GeoJSON.Polygon | GeoJSON.MultiPolygon>((v) => v == null || isBoundaryGeometry(v), {
+      message: 'Batas rayon tidak valid',
+    })
+    .nullable()
+    .optional(),
 });
 
 type RayonFormData = z.infer<typeof rayonSchema>;
@@ -78,6 +85,7 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
       description: initialData?.description || '',
       center_lat: initialData?.center_lat ? Number(initialData.center_lat) : undefined,
       center_lng: initialData?.center_lng ? Number(initialData.center_lng) : undefined,
+      boundary_polygon: initialData?.boundary_polygon ?? null,
     },
   });
 
@@ -93,19 +101,27 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
   const swatchValue = HEX_COLOR_RE.test(colorValue) ? colorValue : DEFAULT_COLOR;
   const centerLat = watch('center_lat');
   const centerLng = watch('center_lng');
+  const boundaryValue = watch('boundary_polygon');
+  // Require at least one of {boundary, location pin} to save.
+  const hasGeometry = (centerLat != null && centerLng != null) || !!boundaryValue;
 
   const handlePinChange = ({ lat, lng }: { lat: number; lng: number }) => {
     setValue('center_lat', Number(lat.toFixed(7)), { shouldValidate: true });
     setValue('center_lng', Number(lng.toFixed(7)), { shouldValidate: true });
   };
 
+  const handlePolygonChange = (polygon: GeoJSON.Polygon | null) => {
+    setValue('boundary_polygon', polygon, { shouldValidate: true });
+  };
+
   const onSubmitForm = async (data: RayonFormData) => {
-    const submitData: CreateRayonDto | UpdateRayonDto = {
+    const submitData: UpdateRayonDto = {
       name: data.name,
       color: data.color?.trim() || null,
       description: data.description || null,
       center_lat: data.center_lat ?? null,
       center_lng: data.center_lng ?? null,
+      boundary_polygon: data.boundary_polygon ?? null,
     };
 
     await onSubmit(submitData);
@@ -175,18 +191,35 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
         </div>
       </div>
 
-      {/* Coordinate Information */}
+      {/* Boundary + center pin on a single Google map */}
       <div className="space-y-4">
-        <h3 className="font-bold text-lg">Koordinat Pusat</h3>
+        <h3 className="font-bold text-lg">Batas & Titik Lokasi</h3>
+        <p className="text-nb-body-sm text-nb-gray-500">
+          Dua pengaturan terpisah — isi <b>minimal salah satu</b>: <b>gambar batas</b> wilayah rayon,
+          dan/atau <b>tentukan titik lokasi</b> (mis. lokasi kantor rayon atau titik yang dipakai
+          untuk menggeser peta saat pencarian). Titik lokasi tidak harus berada di tengah batas.
+        </p>
 
-        <GoogleMapPicker
-          lat={centerLat}
-          lng={centerLng}
-          onChange={handlePinChange}
-          onClear={() => {
+        {errors.boundary_polygon && (
+          <p className="text-nb-body-sm font-medium text-nb-danger">
+            {errors.boundary_polygon.message}
+          </p>
+        )}
+
+        <GoogleBoundaryEditor
+          initialPolygon={initialData?.boundary_polygon}
+          onPolygonChange={handlePolygonChange}
+          pin={
+            centerLat != null && centerLng != null
+              ? { lat: centerLat, lng: centerLng }
+              : null
+          }
+          onPinChange={handlePinChange}
+          onClearPin={() => {
             setValue('center_lat', null, { shouldValidate: true });
             setValue('center_lng', null, { shouldValidate: true });
           }}
+          autoLocateOnMount={mode === 'create'}
           manualFallback={
             <div className="rounded-nb-base border-2 border-nb-black bg-nb-gray-100 p-3">
               <p className="text-nb-body-sm text-nb-gray-700">
@@ -230,7 +263,13 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
               : 'Perbarui Rayon'
         }
         loading={isLoading}
+        disabled={!hasGeometry}
       />
+      {!hasGeometry && (
+        <p className="text-nb-body-sm text-nb-danger">
+          Tentukan minimal salah satu: gambar batas rayon atau tempatkan titik lokasi.
+        </p>
+      )}
     </form>
   );
 }

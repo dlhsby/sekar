@@ -26,7 +26,7 @@ Nothing is built yet. Start from `specs/phases/phase-3-plants-monitoring-rebuild
 - **Forms**: React Hook Form + Zod validation
 - **Data Fetching**: TanStack Query
 - **State**: Zustand for UI state, AuthContext for auth
-- **Maps**: Mapbox GL JS
+- **Maps**: Google Maps JS (`@react-google-maps/api`)
 
 ## Environment Setup
 
@@ -36,8 +36,8 @@ Nothing is built yet. Start from `specs/phases/phase-3-plants-monitoring-rebuild
 # 1. Copy the local development template
 cp .env.local.example .env.local
 
-# 2. Edit .env.local and add your Mapbox token
-# Get token from: https://account.mapbox.com/access-tokens/
+# 2. (Optional) Edit .env.local and add your Google Maps API key
+# Get a key from: https://console.cloud.google.com/google/maps-apis
 nano .env.local  # or use your preferred editor
 
 # 3. That's it! Ready to run
@@ -60,7 +60,7 @@ npm run dev
 
 ```bash
 npm install
-cp .env.local.example .env.local  # First time only, then add your Mapbox token
+cp .env.local.example .env.local  # First time only; optionally add a Google Maps API key
 npm run dev                       # http://localhost:3001
 npm run build                     # Production build
 npm run test:e2e                  # Playwright E2E tests

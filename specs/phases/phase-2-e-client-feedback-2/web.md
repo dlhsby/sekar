@@ -2,7 +2,7 @@
 
 **Last Updated:** 2026-03-10
 **Status:** Not Started
-**Platform:** Next.js 16.x, React 19, TailwindCSS 4.x, Mapbox GL JS
+**Platform:** Next.js 16.x, React 19, TailwindCSS 4.x, Google Maps
 **Related ADRs:** [ADR-012](../../architecture/decisions/ADR-012-phone-number-login.md), [ADR-013](../../architecture/decisions/ADR-013-multi-area-assignment.md), [ADR-014](../../architecture/decisions/ADR-014-overtime-clock-in-flow.md), [ADR-015](../../architecture/decisions/ADR-015-audit-trail.md)
 **See also:** [Backend Requirements](./backend.md), [README](./README.md)
 
@@ -13,7 +13,7 @@
 | File/Component | Key Facts |
 |----------------|-----------|
 | `login/page.tsx` | Username + password form; calls `/auth/login` with `{ username, password }` |
-| `monitoring/page.tsx` | Split layout with Mapbox map + side panel; role-scoped filters |
+| `monitoring/page.tsx` | Split layout with Google Maps map + side panel; role-scoped filters |
 | `users/` pages | User management CRUD; no profile picture support |
 | `overtime/` pages | List/detail views for overtime records; no clock-in/out flow |
 | `lib/api/auth.ts` | Login function with username/password |
@@ -133,7 +133,7 @@ This calls `POST /users/:userId/areas` to persist assignments.
 
 **File:** `fe/web/src/components/maps/MonitoringMap.tsx`
 
-Show user profile picture in Mapbox markers:
+Show user profile picture in Google Maps markers:
 
 ```typescript
 // Create marker element with profile picture

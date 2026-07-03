@@ -394,7 +394,7 @@ All Phase 2D web dashboard requirements have been fully implemented. **Post-revi
 | Login | A+ | Low | ✅ Pass | JWT auth, error handling, skip links |
 | Dashboard Home | A+ | Medium | ✅ Pass | Role-based redirects |
 | Users List/CRUD | A+ | High | ✅ Pass | Full CRUD, role assignment |
-| Areas List/CRUD | A+ | High | ✅ Pass | Polygon editor, Mapbox integration |
+| Areas List/CRUD | A+ | High | ✅ Pass | Polygon editor, Google Maps integration |
 | Rayons List/Detail | A+ | Medium | ✅ Pass | Area count aggregation |
 | Schedules List/CRUD | A+ | High | ✅ Pass | Conflict detection, calendar view |
 | Tasks List/Create | A+ | Medium | ✅ Pass | Workflow status, filtering |
@@ -544,8 +544,8 @@ All Phase 2D web dashboard requirements have been fully implemented. **Post-revi
 - Middleware for protected routes
 
 **✅ Map Integration:**
-- Mapbox GL for interactive maps
-- Mapbox GL Draw for polygon editing
+- Google Maps for interactive maps
+- Google Maps Draw for polygon editing
 - Area boundaries visualization
 - Worker position markers
 - Real-time updates via WebSocket
@@ -571,7 +571,7 @@ All Phase 2D web dashboard requirements have been fully implemented. **Post-revi
 **TypeScript:** 5.0 (strict mode)
 **Styling:** Tailwind CSS 4
 **State:** TanStack Query 5.90.20, Zustand 5.0.10
-**Maps:** Mapbox GL 3.18.1
+**Maps:** Google Maps 3.18.1
 **Forms:** React Hook Form + Zod
 **HTTP:** Axios with interceptors
 **WebSocket:** Socket.IO Client 4.8.3
@@ -624,7 +624,7 @@ All Phase 2D web dashboard requirements have been fully implemented. **Post-revi
 3. **Performance Optimizations (Phase 3/4):**
    - Implement Server Components where possible (reduce client bundle)
    - Add route prefetching for navigation
-   - Lazy load Mapbox GL only when needed
+   - Lazy load Google Maps only when needed
    - Add Core Web Vitals tracking
 
 4. **SEO Enhancements (Phase 4):**

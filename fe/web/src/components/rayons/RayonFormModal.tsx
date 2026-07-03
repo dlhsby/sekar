@@ -20,14 +20,25 @@ export function RayonFormModal({ open, onOpenChange, rayon, onSuccess }: RayonFo
   const isEdit = !!rayon;
   const createMutation = useCreateRayon();
   const updateMutation = useUpdateRayon();
-  const mutation = isEdit ? updateMutation : createMutation;
 
   const handleSubmit = async (data: CreateRayonDto | UpdateRayonDto): Promise<void> => {
+    // `boundary_polygon` is update-only on the backend (not accepted on create),
+    // so a new rayon is saved in two steps: POST scalars, then PATCH the polygon.
+    const { boundary_polygon, ...scalars } = data as UpdateRayonDto;
     try {
       if (isEdit && rayon) {
-        await updateMutation.mutateAsync({ id: rayon.id, data: data as UpdateRayonDto });
+        await updateMutation.mutateAsync({
+          id: rayon.id,
+          data: { ...scalars, boundary_polygon: boundary_polygon ?? null },
+        });
       } else {
-        await createMutation.mutateAsync(data as CreateRayonDto);
+        const created = await createMutation.mutateAsync(scalars as CreateRayonDto);
+        if (boundary_polygon) {
+          await updateMutation.mutateAsync({
+            id: created.id,
+            data: { boundary_polygon },
+          });
+        }
       }
     } catch {
       // Failure is surfaced via the mutation.isError banner below; keep the
@@ -39,11 +50,17 @@ export function RayonFormModal({ open, onOpenChange, rayon, onSuccess }: RayonFo
     onOpenChange(false);
   };
 
+  const failedMutation = createMutation.isError
+    ? createMutation
+    : updateMutation.isError
+      ? updateMutation
+      : null;
   const errorMessage =
-    mutation.isError &&
-    (mutation.error instanceof Error
-      ? mutation.error.message
+    !!failedMutation &&
+    (failedMutation.error instanceof Error
+      ? failedMutation.error.message
       : `Gagal ${isEdit ? 'memperbarui' : 'membuat'} rayon. Silakan coba lagi.`);
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -66,7 +83,7 @@ export function RayonFormModal({ open, onOpenChange, rayon, onSuccess }: RayonFo
             mode={isEdit ? 'edit' : 'create'}
             initialData={rayon ?? undefined}
             onSubmit={handleSubmit}
-            isLoading={mutation.isPending}
+            isLoading={isPending}
           />
         </DialogBody>
       </DialogContent>

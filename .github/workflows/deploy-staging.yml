@@ -14,7 +14,7 @@ name: Deploy staging (AWS)
 #   RDS_INSTANCE_ID   dlhsby
 # Required Environment Secret (staging environment):
 #   WEB_DOTENV_PRIVATE_KEY   dotenvx private key that decrypts fe/web/.env.staging at build
-#                            time (NEXT_PUBLIC_* incl. the Mapbox token).
+#                            time (NEXT_PUBLIC_* incl. the Google Maps key).
 # Backend staging config lives in the encrypted be/.env.staging baked into the image; the
 # box decrypts it at runtime with DOTENV_PRIVATE_KEY_STAGING fetched from SSM
 # (/sekar/staging/DOTENV_PRIVATE_KEY). See specs/deployment/encrypted-secrets.md.
@@ -101,8 +101,8 @@ jobs:
           file: ./fe/web/Dockerfile
           platforms: linux/amd64
           push: true
-          # NEXT_PUBLIC_* (incl. Mapbox) are decrypted from the committed encrypted
-          # fe/web/.env.staging by dotenvx during `next build`. The private key is passed
+          # NEXT_PUBLIC_* (incl. the Google Maps key) are decrypted from the committed
+          # encrypted fe/web/.env.staging by dotenvx during `next build`. The private key is passed
           # as a BuildKit secret — mounted only for the build RUN, never in an image layer.
           build-args: |
             DOTENV_ENV=staging
