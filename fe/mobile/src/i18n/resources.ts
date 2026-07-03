@@ -1,12 +1,7 @@
 /**
- * Bundled translation resources for the mobile app.
- *
- * Namespaced JSON, mirrored between `id` and `en` and kept key-compatible with
- * the web console (`fe/web/src/lib/i18n`). `errors` mirrors the backend
- * `ApiErrorCode` enum — keep them in sync.
- *
- * Adding a namespace: create `locales/{id,en}/<ns>.json` on BOTH platforms, add
- * it to the imports + `resources` + `NAMESPACES` here and in the web mirror.
+ * Bundled translation resources for the mobile app. Namespaced JSON mirrored
+ * id/en; keys portable with web. `errors` mirrors the backend ApiErrorCode enum.
+ * Add a namespace on BOTH platforms + here (parity guardrail enforces).
  */
 import idCommon from './locales/id/common.json';
 import idAuth from './locales/id/auth.json';
@@ -29,6 +24,11 @@ import idHome from './locales/id/home.json';
 import idMenu from './locales/id/menu.json';
 import idProfile from './locales/id/profile.json';
 import idNotifications from './locales/id/notifications.json';
+import idAnalytics from './locales/id/analytics.json';
+import idAssets from './locales/id/assets.json';
+import idSchedules from './locales/id/schedules.json';
+import idOnboarding from './locales/id/onboarding.json';
+import idImport from './locales/id/import.json';
 
 import enCommon from './locales/en/common.json';
 import enAuth from './locales/en/auth.json';
@@ -51,6 +51,11 @@ import enHome from './locales/en/home.json';
 import enMenu from './locales/en/menu.json';
 import enProfile from './locales/en/profile.json';
 import enNotifications from './locales/en/notifications.json';
+import enAnalytics from './locales/en/analytics.json';
+import enAssets from './locales/en/assets.json';
+import enSchedules from './locales/en/schedules.json';
+import enOnboarding from './locales/en/onboarding.json';
+import enImport from './locales/en/import.json';
 
 export const resources = {
   id: {
@@ -75,6 +80,11 @@ export const resources = {
     menu: idMenu,
     profile: idProfile,
     notifications: idNotifications,
+    analytics: idAnalytics,
+    assets: idAssets,
+    schedules: idSchedules,
+    onboarding: idOnboarding,
+    import: idImport,
   },
   en: {
     common: enCommon,
@@ -98,6 +108,11 @@ export const resources = {
     menu: enMenu,
     profile: enProfile,
     notifications: enNotifications,
+    analytics: enAnalytics,
+    assets: enAssets,
+    schedules: enSchedules,
+    onboarding: enOnboarding,
+    import: enImport,
   },
 } as const;
 
@@ -123,6 +138,11 @@ export const NAMESPACES = [
   'menu',
   'profile',
   'notifications',
+  'analytics',
+  'assets',
+  'schedules',
+  'onboarding',
+  'import',
 ] as const;
 
 export const SUPPORTED_LANGUAGES = ['id', 'en'] as const;
