@@ -269,5 +269,18 @@
     "foundMessage": "Anda memiliki draft tugas yang belum terkirim. Lanjutkan?",
     "discard": "Hapus",
     "continueLabel": "Lanjutkan"
+  },
+  "filterChips": {
+    "all": "Semua",
+    "tagged": "Tag Saya",
+    "createdByMe": "Dibuat Saya",
+    "date": "Tanggal",
+    "rayon": "Rayon",
+    "area": "Area",
+    "type": "Tipe",
+    "rayonSelected": "Rayon dipilih",
+    "activityStatusPending": "Menunggu Persetujuan",
+    "activityStatusApproved": "Disetujui",
+    "activityStatusRejected": "Ditolak"
   }
 }

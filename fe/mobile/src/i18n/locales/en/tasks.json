@@ -269,5 +269,18 @@
     "foundMessage": "You have an unsent task draft. Continue?",
     "discard": "Delete",
     "continueLabel": "Continue"
+  },
+  "filterChips": {
+    "all": "All",
+    "tagged": "Tag Me",
+    "createdByMe": "Created by Me",
+    "date": "Date",
+    "rayon": "Rayon",
+    "area": "Area",
+    "type": "Type",
+    "rayonSelected": "Rayon selected",
+    "activityStatusPending": "Pending Approval",
+    "activityStatusApproved": "Approved",
+    "activityStatusRejected": "Rejected"
   }
 }

@@ -3,6 +3,8 @@
  * Helper functions for date formatting and calculations
  */
 
+import i18n from '../i18n/config';
+
 /**
  * Format date to YYYY-MM-DD
  * @param date - Date object or string (or undefined/null)
@@ -89,11 +91,11 @@ export function formatDateTime(date: Date | string | undefined | null): string {
  */
 export function getRelativeTime(date: Date | string | undefined | null): string {
   if (!date) {
-    return '-';
+    return i18n.t('common:time.unavailable');
   }
   const d = typeof date === 'string' ? new Date(date) : date;
   if (isNaN(d.getTime())) {
-    return '-';
+    return i18n.t('common:time.unavailable');
   }
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
@@ -103,16 +105,16 @@ export function getRelativeTime(date: Date | string | undefined | null): string 
   const diffDay = Math.floor(diffHour / 24);
 
   if (diffSec < 60) {
-    return 'baru saja';
+    return i18n.t('common:time.justNow');
   }
   if (diffMin < 60) {
-    return `${diffMin} menit yang lalu`;
+    return i18n.t('common:time.minutesAgo', { count: diffMin });
   }
   if (diffHour < 24) {
-    return `${diffHour} jam yang lalu`;
+    return i18n.t('common:time.hoursAgo', { count: diffHour });
   }
   if (diffDay < 7) {
-    return `${diffDay} hari yang lalu`;
+    return i18n.t('common:time.daysAgo', { count: diffDay });
   }
   return formatDate(d);
 }

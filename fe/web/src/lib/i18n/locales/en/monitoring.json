@@ -163,7 +163,25 @@
     "workersList": "List of officers in this area",
     "pruningTitle": "Pruning Requests in Rayon {rayon}",
     "loadingPruning": "Loading requests…",
-    "noPruning": "No active pruning requests in this rayon."
+    "noPruning": "No active pruning requests in this rayon.",
+    "unknownSpecies": "Unknown species",
+    "treeUnit": "tree",
+    "overduePlantStatus": "Overdue",
+    "almostDuePlantStatus": "Due Soon",
+    "okPlantStatus": "OK",
+    "lastPrunedLabel": "Pruned",
+    "neverPruned": "Never pruned",
+    "unknownRequester": "Unknown requester"
+  },
+  "pruningStatus": {
+    "submitted": "Submitted",
+    "underReview": "Under Review",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "assigned": "Assigned",
+    "inProgress": "In Progress",
+    "done": "Done",
+    "cancelled": "Cancelled"
   },
   "workerList": {
     "noWorkers": "No active officers",
@@ -183,6 +201,20 @@
     "noWorkers": "No staff found",
     "resetFilter": "Reset filter",
     "count": "{count} staff displayed"
+  },
+  "staffing": {
+    "staffingLabel": "Staff Availability",
+    "cityViewLabel": "Entire City",
+    "presentLabel": "present",
+    "shortageLabel": "Short",
+    "reassignButton": "Reassign Officers",
+    "dataUnavailable": "Data not available.",
+    "rayonDataUnavailable": "Rayon data not available.",
+    "cityDataUnavailable": "City data not available.",
+    "activeStatus": "Active",
+    "idleStatus": "Idle",
+    "outsideStatus": "Outside",
+    "missingStatus": "Missing"
   },
   "config": {
     "pageTitle": "Monitoring Configuration",

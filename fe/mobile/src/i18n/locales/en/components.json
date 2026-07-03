@@ -26,6 +26,20 @@
     "photoButtonText": "Photo",
     "previewTitle": "Evidence Photo"
   },
+  "mediaService": {
+    "noPhotoTaken": "No photo captured",
+    "cameraError": "Camera error: {{message}}",
+    "galleryError": "Gallery error: {{message}}",
+    "photoTooLarge": "Photo too large (max {{maxSize}}MB). Please select a smaller photo.",
+    "storageFull": "Storage full. Free up at least 50MB and try again.",
+    "storageCheckFailed": "Failed to check storage space",
+    "compressionFailed": "Compression failed: {{message}}",
+    "base64ConversionFailed": "Base64 conversion failed: {{message}}",
+    "cameraUnavailable": "Camera is not available on this device",
+    "cameraPermissionDenied": "Camera/gallery permission denied. Please enable in Settings.",
+    "cameraAccessError": "An error occurred while accessing the camera/gallery",
+    "unknownCameraError": "Error: {{errorCode}}"
+  },
   "locationPicker": {
     "title": "Select Location",
     "coordsLabel": "Location: {{lat}}, {{lng}}",

@@ -22,6 +22,7 @@ import {
   Pressable,
   Platform,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBButton } from '../nb';
 import {
@@ -62,57 +63,53 @@ interface PermissionStep {
 }
 
 /**
- * Permission request steps (in order)
+ * Get permission request steps (in order) - created dynamically with i18n
  */
-const PERMISSION_STEPS: PermissionStep[] = [
-  {
-    type: PermissionType.NOTIFICATIONS,
-    title: 'Notifikasi',
-    description:
-      'Terima pemberitahuan penting tentang tugas baru, pengingat shift, dan informasi dari supervisor.',
-    icon: 'bell-outline',
-    iconColor: nbColors.warningLight,
-    required: true,
-  },
-  {
-    type: PermissionType.LOCATION,
-    title: 'Lokasi',
-    description:
-      'Diperlukan untuk absensi digital dan memverifikasi Anda berada di lokasi kerja yang benar saat clock-in.',
-    icon: 'map-marker-outline',
-    iconColor: nbColors.info,
-    required: true,
-  },
-  {
-    type: PermissionType.BACKGROUND_LOCATION,
-    title: 'Lokasi Latar Belakang',
-    description:
-      'Izinkan "Sepanjang waktu" untuk melacak rute Anda selama shift kerja. Data ini membantu supervisor memantau area yang sudah dikerjakan.',
-    icon: 'map-marker-path',
-    iconColor: nbColors.primary,
-    required: true,
-    androidNote:
-      'PENTING:\n1. Pilih "Izinkan sepanjang waktu" atau "Allow all the time"\n2. Jika opsi tidak muncul, buka Pengaturan → Aplikasi → SEKAR → Izin → Lokasi\n3. Pilih "Sepanjang waktu" atau "Allow all the time"',
-  },
-  {
-    type: PermissionType.CAMERA,
-    title: 'Kamera',
-    description:
-      'Diperlukan untuk mengambil foto laporan kerja. Foto membantu supervisor memverifikasi pekerjaan yang telah diselesaikan.',
-    icon: 'camera-outline',
-    iconColor: nbColors.secondary,
-    required: true,
-  },
-  {
-    type: PermissionType.GALLERY,
-    title: 'Galeri Foto',
-    description:
-      'Diperlukan untuk memilih foto dari galeri saat melengkapi laporan atau permohonan perantingan.',
-    icon: 'image-multiple-outline',
-    iconColor: nbColors.info,
-    required: true,
-  },
-];
+function getPermissionSteps(t: any): PermissionStep[] {
+  return [
+    {
+      type: PermissionType.NOTIFICATIONS,
+      title: t('onboarding:permissionModal.notificationsTitle'),
+      description: t('onboarding:permissionModal.notificationsDesc'),
+      icon: 'bell-outline',
+      iconColor: nbColors.warningLight,
+      required: true,
+    },
+    {
+      type: PermissionType.LOCATION,
+      title: t('onboarding:permissionModal.locationTitle'),
+      description: t('onboarding:permissionModal.locationDesc'),
+      icon: 'map-marker-outline',
+      iconColor: nbColors.info,
+      required: true,
+    },
+    {
+      type: PermissionType.BACKGROUND_LOCATION,
+      title: t('onboarding:permissionModal.backgroundLocationTitle'),
+      description: t('onboarding:permissionModal.backgroundLocationDesc'),
+      icon: 'map-marker-path',
+      iconColor: nbColors.primary,
+      required: true,
+      androidNote: t('onboarding:permissionModal.androidNote'),
+    },
+    {
+      type: PermissionType.CAMERA,
+      title: t('onboarding:permissionModal.cameraTitle'),
+      description: t('onboarding:permissionModal.cameraDesc'),
+      icon: 'camera-outline',
+      iconColor: nbColors.secondary,
+      required: true,
+    },
+    {
+      type: PermissionType.GALLERY,
+      title: t('onboarding:permissionModal.galleryTitle'),
+      description: t('onboarding:permissionModal.galleryDesc'),
+      icon: 'image-multiple-outline',
+      iconColor: nbColors.info,
+      required: true,
+    },
+  ];
+}
 
 /**
  * Permission Request Modal Component
@@ -122,6 +119,8 @@ export function PermissionRequestModal({
   onComplete,
   onSkip,
 }: PermissionRequestModalProps): React.ReactElement {
+  const { t } = useTranslation();
+  const PERMISSION_STEPS = getPermissionSteps(t);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isRequesting, setIsRequesting] = useState(false);
   const [showAndroidGuidance, setShowAndroidGuidance] = useState(false);
@@ -316,7 +315,7 @@ export function PermissionRequestModal({
         {/* Required badge */}
         {currentStep?.required && (
           <View style={styles.requiredBadge}>
-            <Text style={styles.requiredBadgeText}>Wajib</Text>
+            <Text style={styles.requiredBadgeText}>{t('onboarding:permissionModal.required')}</Text>
           </View>
         )}
       </View>
@@ -360,9 +359,9 @@ export function PermissionRequestModal({
             size={32}
             color={nbColors.primary}
           />
-          <Text style={styles.headerTitle}>Izin Aplikasi</Text>
+          <Text style={styles.headerTitle}>{t('onboarding:permissionModal.header')}</Text>
           <Text style={styles.headerSubtitle}>
-            Langkah {currentStepIndex + 1} dari {PERMISSION_STEPS.length}
+            {t('onboarding:permissionModal.step', { current: currentStepIndex + 1, total: PERMISSION_STEPS.length })}
           </Text>
         </View>
 
@@ -387,8 +386,7 @@ export function PermissionRequestModal({
               style={styles.infoIcon}
             />
             <Text style={styles.infoText}>
-              Kami memerlukan izin ini untuk memberikan pengalaman terbaik saat menggunakan
-              aplikasi SEKAR.
+              {t('onboarding:permissionModal.info')}
             </Text>
           </View>
         </ScrollView>
@@ -396,7 +394,7 @@ export function PermissionRequestModal({
         {/* Actions */}
         <View style={styles.actions}>
           <NBButton
-            title={showAndroidGuidance ? 'Mengerti, Lanjutkan' : 'Izinkan'}
+            title={showAndroidGuidance ? t('onboarding:permissionModal.understood') : t('onboarding:permissionModal.allow')}
             onPress={handleRequestPermission}
             loading={isRequesting}
             disabled={isRequesting}
@@ -406,7 +404,7 @@ export function PermissionRequestModal({
 
           {canSkip && (
             <NBButton
-              title="Lewati"
+              title={t('onboarding:permissionModal.skip')}
               onPress={handleSkip}
               disabled={isRequesting}
               fullWidth
@@ -420,7 +418,7 @@ export function PermissionRequestModal({
             disabled={isRequesting}
             style={styles.settingsLink}
           >
-            <Text style={styles.settingsLinkText}>Buka Pengaturan</Text>
+            <Text style={styles.settingsLinkText}>{t('onboarding:permissionModal.settings')}</Text>
           </Pressable>
         </View>
       </View>

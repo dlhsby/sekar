@@ -26,6 +26,20 @@
     "photoButtonText": "Foto",
     "previewTitle": "Foto Bukti"
   },
+  "mediaService": {
+    "noPhotoTaken": "Tidak ada foto yang diambil",
+    "cameraError": "Kesalahan kamera: {{message}}",
+    "galleryError": "Kesalahan galeri: {{message}}",
+    "photoTooLarge": "Foto terlalu besar (maks {{maxSize}}MB). Pilih foto yang lebih kecil.",
+    "storageFull": "Penyimpanan penuh. Bebaskan minimal 50MB dan coba lagi.",
+    "storageCheckFailed": "Gagal memeriksa ruang penyimpanan",
+    "compressionFailed": "Kompresi gagal: {{message}}",
+    "base64ConversionFailed": "Konversi Base64 gagal: {{message}}",
+    "cameraUnavailable": "Kamera tidak tersedia di perangkat ini",
+    "cameraPermissionDenied": "Izin kamera/galeri ditolak. Aktifkan di Pengaturan.",
+    "cameraAccessError": "Terjadi kesalahan saat mengakses kamera/galeri",
+    "unknownCameraError": "Kesalahan: {{errorCode}}"
+  },
   "locationPicker": {
     "title": "Pilih Titik Lokasi",
     "coordsLabel": "Titik: {{lat}}, {{lng}}",

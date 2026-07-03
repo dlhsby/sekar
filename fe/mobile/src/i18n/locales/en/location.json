@@ -38,5 +38,18 @@
     "notificationTitle": "SEKAR — Location tracking active",
     "notificationBody": "Your location is being tracked during your shift."
   },
-  "noPoints": "No GPS points recorded for this date."
+  "noPoints": "No GPS points recorded for this date.",
+  "permissionAlert": {
+    "title": "Location Permission Required",
+    "message": "Location permission has been revoked. The app requires location permission to track your position during your shift. Please enable it in settings.",
+    "later": "Later",
+    "openSettings": "Open Settings"
+  },
+  "gpsAlert": {
+    "title": "GPS Not Active",
+    "message": "GPS has been disabled. Please enable GPS to continue location tracking during your shift.",
+    "later": "Later",
+    "openSettings": "Open Settings"
+  },
+  "checkStatusFailed": "Failed to check location status"
 }

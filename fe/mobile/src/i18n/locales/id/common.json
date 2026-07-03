@@ -119,5 +119,12 @@
       "clearError": "Gagal menghapus:",
       "error": "Kesalahan"
     }
+  },
+  "time": {
+    "justNow": "baru saja",
+    "minutesAgo": "{{count}} menit yang lalu",
+    "hoursAgo": "{{count}} jam yang lalu",
+    "daysAgo": "{{count}} hari yang lalu",
+    "unavailable": "-"
   }
 }

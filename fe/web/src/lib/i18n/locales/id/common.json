@@ -1,4 +1,5 @@
 {
+  "id": "ID",
   "actions": {
     "save": "Simpan",
     "cancel": "Batal",

@@ -163,7 +163,25 @@
     "workersList": "Daftar petugas di area ini",
     "pruningTitle": "Permohonan Pangkas di Rayon {rayon}",
     "loadingPruning": "Memuat permohonan…",
-    "noPruning": "Tidak ada permohonan pangkas aktif pada rayon ini."
+    "noPruning": "Tidak ada permohonan pangkas aktif pada rayon ini.",
+    "unknownSpecies": "Jenis tidak diketahui",
+    "treeUnit": "pohon",
+    "overduePlantStatus": "Lewat tempo",
+    "almostDuePlantStatus": "Hampir tempo",
+    "okPlantStatus": "OK",
+    "lastPrunedLabel": "Pangkas",
+    "neverPruned": "Belum pernah dipangkas",
+    "unknownRequester": "Pemohon tidak diketahui"
+  },
+  "pruningStatus": {
+    "submitted": "Diajukan",
+    "underReview": "Ditinjau",
+    "approved": "Disetujui",
+    "rejected": "Ditolak",
+    "assigned": "Jadi Tugas",
+    "inProgress": "Berjalan",
+    "done": "Selesai",
+    "cancelled": "Dibatalkan"
   },
   "workerList": {
     "noWorkers": "Tidak ada petugas aktif",
@@ -183,6 +201,20 @@
     "noWorkers": "Tidak ada petugas",
     "resetFilter": "Reset filter",
     "count": "{count} petugas ditampilkan"
+  },
+  "staffing": {
+    "staffingLabel": "Ketersediaan Petugas",
+    "cityViewLabel": "Seluruh Kota",
+    "presentLabel": "hadir",
+    "shortageLabel": "Kurang",
+    "reassignButton": "Pindah Petugas",
+    "dataUnavailable": "Data tidak tersedia.",
+    "rayonDataUnavailable": "Data rayon tidak tersedia.",
+    "cityDataUnavailable": "Data wilayah tidak tersedia.",
+    "activeStatus": "Aktif",
+    "idleStatus": "Idle",
+    "outsideStatus": "Di Luar",
+    "missingStatus": "Tidak Terdeteksi"
   },
   "config": {
     "pageTitle": "Konfigurasi Monitoring",

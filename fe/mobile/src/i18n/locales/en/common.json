@@ -119,5 +119,12 @@
       "clearError": "Failed to delete:",
       "error": "Error"
     }
+  },
+  "time": {
+    "justNow": "just now",
+    "minutesAgo": "{{count}} minutes ago",
+    "hoursAgo": "{{count}} hours ago",
+    "daysAgo": "{{count}} days ago",
+    "unavailable": "-"
   }
 }

@@ -13,6 +13,7 @@ import {
 import ImageResizer from '@bam.tech/react-native-image-resizer';
 import RNFS from 'react-native-fs';
 import uuid from 'react-native-uuid';
+import i18n from '../../i18n/config';
 
 /**
  * Photo object with file info
@@ -87,13 +88,14 @@ class MediaService {
       }
 
       if (!result.assets || result.assets.length === 0) {
-        throw new Error('Tidak ada foto yang diambil');
+        throw new Error(i18n.t('components:mediaService.noPhotoTaken'));
       }
 
       const asset = result.assets[0];
       return await this.processAsset(asset);
     } catch (error) {
-      throw new Error(`Kesalahan kamera: ${error instanceof Error ? error.message : 'Kesalahan tidak diketahui'}`);
+      const message = error instanceof Error ? error.message : i18n.t('components:mediaService.unknownCameraError', { errorCode: 'unknown' });
+      throw new Error(i18n.t('components:mediaService.cameraError', { message }));
     }
   }
 
@@ -135,7 +137,8 @@ class MediaService {
 
       return photos;
     } catch (error) {
-      throw new Error(`Kesalahan galeri: ${error instanceof Error ? error.message : 'Kesalahan tidak diketahui'}`);
+      const message = error instanceof Error ? error.message : i18n.t('components:mediaService.unknownCameraError', { errorCode: 'unknown' });
+      throw new Error(i18n.t('components:mediaService.galleryError', { message }));
     }
   }
 
@@ -150,7 +153,7 @@ class MediaService {
 
     // Check original file size
     if (asset.fileSize && asset.fileSize > PHOTO_CONFIG.maxOriginalSize) {
-      throw new Error(`Foto terlalu besar (maks ${PHOTO_CONFIG.maxOriginalSize / 1024 / 1024}MB). Pilih foto yang lebih kecil.`);
+      throw new Error(i18n.t('components:mediaService.photoTooLarge', { maxSize: PHOTO_CONFIG.maxOriginalSize / 1024 / 1024 }));
     }
 
     // Compress photo
@@ -180,15 +183,15 @@ class MediaService {
       const minRequiredSpace = 50 * 1024 * 1024; // 50MB in bytes
 
       if (freeSpace.freeSpace < minRequiredSpace) {
-        throw new Error('Penyimpanan penuh. Bebaskan minimal 50MB dan coba lagi.');
+        throw new Error(i18n.t('components:mediaService.storageFull'));
       }
     } catch (error: any) {
       // If error message is already localized, rethrow it
-      if (error.message?.includes('Penyimpanan penuh')) {
+      if (error.message === i18n.t('components:mediaService.storageFull')) {
         throw error;
       }
       // Otherwise throw generic storage check error
-      throw new Error('Gagal memeriksa ruang penyimpanan');
+      throw new Error(i18n.t('components:mediaService.storageCheckFailed'));
     }
   }
 
@@ -235,7 +238,7 @@ class MediaService {
         } catch (unlinkError: any) {
           // Check for disk full error
           if (unlinkError?.code === 'ENOSPC') {
-            throw new Error('Penyimpanan penuh. Bebaskan ruang dan coba lagi.');
+            throw new Error(i18n.t('components:mediaService.storageFull'));
           }
           console.warn('Failed to delete temp file:', unlinkError);
         }
@@ -267,13 +270,14 @@ class MediaService {
     } catch (error: any) {
       // Handle disk full error specifically
       if (error?.code === 'ENOSPC' || error?.message?.includes('ENOSPC')) {
-        throw new Error('Penyimpanan penuh. Bebaskan ruang dan coba lagi.');
+        throw new Error(i18n.t('components:mediaService.storageFull'));
       }
       // Rethrow localized errors as-is
-      if (error?.message?.includes('Penyimpanan penuh')) {
+      if (error?.message === i18n.t('components:mediaService.storageFull')) {
         throw error;
       }
-      throw new Error(`Kompresi gagal: ${error instanceof Error ? error.message : 'Kesalahan tidak diketahui'}`);
+      const message = error instanceof Error ? error.message : i18n.t('components:mediaService.unknownCameraError', { errorCode: 'unknown' });
+      throw new Error(i18n.t('components:mediaService.compressionFailed', { message }));
     }
   }
 
@@ -286,7 +290,8 @@ class MediaService {
       const base64 = await RNFS.readFile(photo.uri, 'base64');
       return `data:${photo.type};base64,${base64}`;
     } catch (error) {
-      throw new Error(`Konversi Base64 gagal: ${error instanceof Error ? error.message : 'Kesalahan tidak diketahui'}`);
+      const message = error instanceof Error ? error.message : i18n.t('components:mediaService.unknownCameraError', { errorCode: 'unknown' });
+      throw new Error(i18n.t('components:mediaService.base64ConversionFailed', { message }));
     }
   }
 
@@ -373,18 +378,18 @@ class MediaService {
   }
 
   /**
-   * Get user-friendly error message in Indonesian
+   * Get user-friendly error message
    */
   private getErrorMessage(errorCode: string): string {
     switch (errorCode) {
       case 'camera_unavailable':
-        return 'Kamera tidak tersedia di perangkat ini';
+        return i18n.t('components:mediaService.cameraUnavailable');
       case 'permission':
-        return 'Izin kamera/galeri ditolak. Aktifkan di Pengaturan.';
+        return i18n.t('components:mediaService.cameraPermissionDenied');
       case 'others':
-        return 'Terjadi kesalahan saat mengakses kamera/galeri';
+        return i18n.t('components:mediaService.cameraAccessError');
       default:
-        return `Kesalahan: ${errorCode}`;
+        return i18n.t('components:mediaService.unknownCameraError', { errorCode });
     }
   }
 }

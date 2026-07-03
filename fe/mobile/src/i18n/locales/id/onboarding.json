@@ -32,6 +32,27 @@
       "why": "Lampirkan foto dari galeri."
     }
   },
+  "permissionModal": {
+    "header": "Izin Aplikasi",
+    "step": "Langkah {{current}} dari {{total}}",
+    "info": "Kami memerlukan izin ini untuk memberikan pengalaman terbaik saat menggunakan aplikasi SEKAR.",
+    "allow": "Izinkan",
+    "skip": "Lewati",
+    "settings": "Buka Pengaturan",
+    "understood": "Mengerti, Lanjutkan",
+    "required": "Wajib",
+    "notificationsTitle": "Notifikasi",
+    "notificationsDesc": "Terima pemberitahuan penting tentang tugas baru, pengingat shift, dan informasi dari supervisor.",
+    "locationTitle": "Lokasi",
+    "locationDesc": "Diperlukan untuk absensi digital dan memverifikasi Anda berada di lokasi kerja yang benar saat clock-in.",
+    "backgroundLocationTitle": "Lokasi Latar Belakang",
+    "backgroundLocationDesc": "Izinkan \"Sepanjang waktu\" untuk melacak rute Anda selama shift kerja. Data ini membantu supervisor memantau area yang sudah dikerjakan.",
+    "cameraTitle": "Kamera",
+    "cameraDesc": "Diperlukan untuk mengambil foto laporan kerja. Foto membantu supervisor memverifikasi pekerjaan yang telah diselesaikan.",
+    "galleryTitle": "Galeri Foto",
+    "galleryDesc": "Diperlukan untuk memilih foto dari galeri saat melengkapi laporan atau permohonan perantingan.",
+    "androidNote": "PENTING:\n1. Pilih \"Izinkan sepanjang waktu\" atau \"Allow all the time\"\n2. Jika opsi tidak muncul, buka Pengaturan → Aplikasi → SEKAR → Izin → Lokasi\n3. Pilih \"Sepanjang waktu\" atau \"Allow all the time\""
+  },
   "areaPreview": {
     "clockable": {
       "title": "Area tugas kamu",

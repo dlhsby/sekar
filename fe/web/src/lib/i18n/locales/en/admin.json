@@ -175,7 +175,19 @@
       "noMatch": "No matching areas."
     },
     "detailNotFound": "The area you are looking for was not found or has been deleted.",
-    "saveBoundary": "Save Boundary"
+    "saveBoundary": "Save Boundary",
+    "mapTitle": "Area Map",
+    "coverageInfoTitle": "Coverage Information",
+    "coverageLabel": "Coverage Area",
+    "radiusLabel": "Radius",
+    "meterUnit": "meter",
+    "editBoundaryBtn": "Edit Boundary",
+    "addBoundaryBtn": "Add Boundary",
+    "boundaryMapUnavailable": "Map is not available — boundary cannot be drawn without Google Maps.",
+    "polygonActive": "Active polygon with",
+    "pointsUnit": "points",
+    "addBoundaryHelper": "Click \"Add Boundary\" to draw area boundary.",
+    "boundaryNotConfigured": "Boundary polygon is not yet configured."
   },
   "rayons": {
     "pageTitle": "Rayons",

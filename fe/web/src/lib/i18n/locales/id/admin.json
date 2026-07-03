@@ -175,7 +175,19 @@
       "noMatch": "Tidak ada area yang cocok."
     },
     "detailNotFound": "Area yang Anda cari tidak ditemukan atau telah dihapus.",
-    "saveBoundary": "Simpan Boundary"
+    "saveBoundary": "Simpan Boundary",
+    "mapTitle": "Peta Area",
+    "coverageInfoTitle": "Informasi Luas",
+    "coverageLabel": "Luas Area",
+    "radiusLabel": "Radius",
+    "meterUnit": "meter",
+    "editBoundaryBtn": "Ubah Boundary",
+    "addBoundaryBtn": "Tambah Boundary",
+    "boundaryMapUnavailable": "Peta tidak tersedia — batas tidak dapat digambar tanpa Google Maps.",
+    "polygonActive": "Poligon aktif dengan",
+    "pointsUnit": "titik",
+    "addBoundaryHelper": "Klik \"Tambah Boundary\" untuk menggambar batas area.",
+    "boundaryNotConfigured": "Boundary polygon belum dikonfigurasi."
   },
   "rayons": {
     "pageTitle": "Rayon",

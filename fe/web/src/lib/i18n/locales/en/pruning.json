@@ -156,6 +156,14 @@
     "emptyDescription": "You have not submitted any pruning requests.",
     "emptyAction": "Submit first request"
   },
+  "columns": {
+    "referenceCode": "Reference Code",
+    "kecamatan": "Sub-district",
+    "dateRange": "Week / Date",
+    "status": "Status",
+    "createdAt": "Created",
+    "updatedAt": "Updated"
+  },
   "page": {
     "description": "Review and manage pruning requests from sub-districts.",
     "filterLabel": "Filter Status",

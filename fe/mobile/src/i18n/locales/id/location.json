@@ -38,5 +38,18 @@
     "notificationTitle": "SEKAR — Pelacakan lokasi aktif",
     "notificationBody": "Lokasi Anda dipantau selama shift berlangsung."
   },
-  "noPoints": "Belum ada titik GPS yang terekam untuk tanggal ini."
+  "noPoints": "Belum ada titik GPS yang terekam untuk tanggal ini.",
+  "permissionAlert": {
+    "title": "Izin Lokasi Diperlukan",
+    "message": "Izin lokasi telah dicabut. Aplikasi memerlukan izin lokasi untuk melacak posisi Anda selama shift. Silakan aktifkan di pengaturan.",
+    "later": "Nanti",
+    "openSettings": "Buka Pengaturan"
+  },
+  "gpsAlert": {
+    "title": "GPS Tidak Aktif",
+    "message": "GPS telah dinonaktifkan. Silakan aktifkan GPS untuk melanjutkan pelacakan lokasi selama shift.",
+    "later": "Nanti",
+    "openSettings": "Buka Pengaturan"
+  },
+  "checkStatusFailed": "Gagal memeriksa status lokasi"
 }

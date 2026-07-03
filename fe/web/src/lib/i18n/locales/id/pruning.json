@@ -156,6 +156,14 @@
     "emptyDescription": "Anda belum mengirim permintaan pemangkasan.",
     "emptyAction": "Kirim permintaan pertama"
   },
+  "columns": {
+    "referenceCode": "Kode Referensi",
+    "kecamatan": "Kecamatan",
+    "dateRange": "Minggu / Tanggal",
+    "status": "Status",
+    "createdAt": "Dibuat",
+    "updatedAt": "Diperbarui"
+  },
   "page": {
     "description": "Tinjau dan kelola permohonan pemangkasan dari kecamatan.",
     "filterLabel": "Filter Status",

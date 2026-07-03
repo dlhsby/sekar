@@ -83,27 +83,27 @@ export default function PruningRequestsPage() {
       {
         id: 'id',
         accessorKey: 'id',
-        header: 'ID',
+        header: t('common:id'),
         enableSorting: false,
-        meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+        meta: { label: t('common:id'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
         ),
       },
       {
         id: 'referenceCode',
-        header: 'Kode Referensi',
+        header: t('pruning:columns.referenceCode'),
         enableSorting: false,
         enableColumnFilter: false,
-        meta: { label: 'Kode Referensi' },
+        meta: { label: t('pruning:columns.referenceCode') },
         cell: ({ row }) => <span className="font-mono text-sm">{row.original.referenceCode}</span>,
       },
       {
         id: 'submitter',
-        header: 'Kecamatan',
+        header: t('pruning:columns.kecamatan'),
         enableSorting: false,
         enableColumnFilter: false,
-        meta: { label: 'Kecamatan' },
+        meta: { label: t('pruning:columns.kecamatan') },
         cell: ({ row }) => (
           <div className="text-sm">
             <div className="font-semibold">{row.original.kecamatanName ?? '-'}</div>
@@ -121,10 +121,10 @@ export default function PruningRequestsPage() {
       },
       {
         id: 'expected',
-        header: 'Minggu / Tanggal',
+        header: t('pruning:columns.dateRange'),
         enableSorting: false,
         enableColumnFilter: false,
-        meta: { label: 'Minggu / Tanggal' },
+        meta: { label: t('pruning:columns.dateRange') },
         cell: ({ row }) => (
           <div className="text-sm">
             {row.original.expectedDate ? (
@@ -141,10 +141,10 @@ export default function PruningRequestsPage() {
       },
       {
         id: 'status',
-        header: 'Status',
+        header: t('pruning:columns.status'),
         enableSorting: false,
         enableColumnFilter: false,
-        meta: { label: 'Status' },
+        meta: { label: t('pruning:columns.status') },
         cell: ({ row }) => (
           <StatusPill tone={PRUNING_REQUEST_STATUS_TONES[row.original.status]} dot>
             {PRUNING_REQUEST_STATUS_LABELS[row.original.status]}
@@ -154,9 +154,9 @@ export default function PruningRequestsPage() {
       {
         id: 'created_at',
         accessorKey: 'createdAt',
-        header: 'Dibuat',
+        header: t('pruning:columns.createdAt'),
         enableSorting: false,
-        meta: { label: 'Dibuat', defaultHidden: true, filterVariant: 'date' },
+        meta: { label: t('pruning:columns.createdAt'), defaultHidden: true, filterVariant: 'date' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {formatDate(row.original.createdAt)}
@@ -166,9 +166,9 @@ export default function PruningRequestsPage() {
       {
         id: 'updated_at',
         accessorKey: 'updatedAt',
-        header: 'Diperbarui',
+        header: t('pruning:columns.updatedAt'),
         enableSorting: false,
-        meta: { label: 'Diperbarui', defaultHidden: true, filterVariant: 'date' },
+        meta: { label: t('pruning:columns.updatedAt'), defaultHidden: true, filterVariant: 'date' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {formatDate(row.original.updatedAt)}
@@ -176,21 +176,21 @@ export default function PruningRequestsPage() {
         ),
       },
     ],
-    []
+    [t]
   );
 
   const rowActions = useCallback(
     (row: PruningRequest): DataTableRowAction<PruningRequest>[] => [
       {
         key: 'view',
-        label: 'Lihat',
+        label: t('common:actions.view'),
         icon: Eye,
         onClick: () => {
           view.openWith(row);
         },
       },
     ],
-    [view]
+    [view, t]
   );
 
   const handleStatusChange = (val: string) => {

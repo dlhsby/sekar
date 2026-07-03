@@ -159,7 +159,7 @@ export function AreaDetailDrawer({
                 <div
                   className="w-14 h-14 rounded-full border-4 flex items-center justify-center flex-shrink-0"
                   style={{ borderColor: staffingColor }}
-                  aria-label={`${area.active_count} dari ${area.required_count} petugas aktif`}
+                  aria-label={t('monitoring:areaDetail.staffingLabel')}
                 >
                   <span
                     className="text-nb-body-sm font-black leading-none"
@@ -227,16 +227,18 @@ export function AreaDetailDrawer({
 // PlantStatusSection
 // ---------------------------------------------------------------------------
 
-const PRUNING_STATUS_LABELS: Record<PruningRequestStatus, string> = {
-  submitted: 'Diajukan',
-  under_review: 'Ditinjau',
-  approved: 'Disetujui',
-  rejected: 'Ditolak',
-  assigned: 'Jadi Tugas',
-  in_progress: 'Berjalan',
-  done: 'Selesai',
-  cancelled: 'Dibatalkan',
-};
+function getPruningStatusLabels(t: any): Record<PruningRequestStatus, string> {
+  return {
+    submitted: t('monitoring:pruningStatus.submitted'),
+    under_review: t('monitoring:pruningStatus.underReview'),
+    approved: t('monitoring:pruningStatus.approved'),
+    rejected: t('monitoring:pruningStatus.rejected'),
+    assigned: t('monitoring:pruningStatus.assigned'),
+    in_progress: t('monitoring:pruningStatus.inProgress'),
+    done: t('monitoring:pruningStatus.done'),
+    cancelled: t('monitoring:pruningStatus.cancelled'),
+  };
+}
 
 const PRUNING_STATUS_TONE: Record<PruningRequestStatus, string> = {
   submitted: 'bg-nb-info-light text-nb-black',
@@ -400,33 +402,34 @@ interface PlantRowProps {
 }
 
 function PlantRow({ row }: PlantRowProps) {
+  const { t } = useTranslation(['monitoring']);
   const tone =
     row.status === 'overdue'
       ? 'text-nb-danger-dark'
       : row.status === 'due_soon'
         ? 'text-nb-warning'
         : 'text-nb-gray-700';
-  const speciesLabel = row.species?.nameId ?? 'Spesies tidak diketahui';
+  const speciesLabel = row.species?.nameId ?? t('monitoring:areaDetail.unknownSpecies');
   return (
     <li className="flex items-center justify-between text-nb-caption">
       <div className="min-w-0 flex-1">
         <span className="font-bold text-nb-black">{speciesLabel}</span>
-        <span className="text-nb-gray-500"> · {row.count} pohon</span>
+        <span className="text-nb-gray-500"> · {row.count} {t('monitoring:areaDetail.treeUnit')}</span>
       </div>
       <div className={cn('text-right ml-2 shrink-0', tone)}>
         <div className="font-bold">
           {row.status === 'overdue'
-            ? 'Lewat tempo'
+            ? t('monitoring:areaDetail.overduePlantStatus')
             : row.status === 'due_soon'
-              ? 'Hampir tempo'
+              ? t('monitoring:areaDetail.almostDuePlantStatus')
               : row.status === 'ok'
-                ? 'OK'
+                ? t('monitoring:areaDetail.okPlantStatus')
                 : '—'}
         </div>
         <div className="text-nb-gray-500">
           {row.lastPrunedAt
-            ? `Pangkas: ${formatDate(row.lastPrunedAt)}`
-            : 'Belum pernah dipangkas'}
+            ? `${t('monitoring:areaDetail.lastPrunedLabel')}: ${formatDate(row.lastPrunedAt)}`
+            : t('monitoring:areaDetail.neverPruned')}
         </div>
       </div>
     </li>
@@ -445,6 +448,7 @@ interface PruningRequestsSectionProps {
 function PruningRequestsSection({ rayonId, areaName }: PruningRequestsSectionProps) {
   const { t } = useTranslation(['monitoring']);
   const { data, isLoading, isError } = usePruningByRayon(rayonId, { limit: 8 });
+  const statusLabels = getPruningStatusLabels(t);
 
   return (
     <section
@@ -485,7 +489,7 @@ function PruningRequestsSection({ rayonId, areaName }: PruningRequestsSectionPro
       {!isLoading && !isError && data && data.length > 0 && (
         <ul className="flex flex-col gap-1.5" aria-label={t('monitoring:areaDetail.pruningTitle', { rayon: areaName })}>
           {data.slice(0, 5).map((r) => (
-            <PruningRow key={r.id} row={r} />
+            <PruningRow key={r.id} row={r} statusLabels={statusLabels} />
           ))}
         </ul>
       )}
@@ -495,9 +499,11 @@ function PruningRequestsSection({ rayonId, areaName }: PruningRequestsSectionPro
 
 interface PruningRowProps {
   row: PruningRequestRow;
+  statusLabels: Record<PruningRequestStatus, string>;
 }
 
-function PruningRow({ row }: PruningRowProps) {
+function PruningRow({ row, statusLabels }: PruningRowProps) {
+  const { t } = useTranslation(['monitoring']);
   return (
     <li className="border-2 border-nb-gray-200 rounded-nb-base px-2.5 py-2 bg-nb-white">
       <div className="flex items-start justify-between gap-2">
@@ -506,8 +512,8 @@ function PruningRow({ row }: PruningRowProps) {
             {row.kecamatan_name} · {row.address}
           </p>
           <p className="text-nb-caption text-nb-gray-500 truncate">
-            {row.requester_name ?? 'Pemohon tidak diketahui'}
-            {row.tree_count != null ? ` · ${row.tree_count} pohon` : ''}
+            {row.requester_name ?? t('monitoring:areaDetail.unknownRequester')}
+            {row.tree_count != null ? ` · ${row.tree_count} ${t('monitoring:areaDetail.treeUnit')}` : ''}
             {row.expected_date ? ` · ${formatDate(row.expected_date)}` : ''}
           </p>
         </div>
@@ -517,7 +523,7 @@ function PruningRow({ row }: PruningRowProps) {
             PRUNING_STATUS_TONE[row.status]
           )}
         >
-          {PRUNING_STATUS_LABELS[row.status]}
+          {statusLabels[row.status]}
         </span>
       </div>
     </li>
