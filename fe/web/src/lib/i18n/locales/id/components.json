@@ -25,5 +25,13 @@
     "addPhotoLabel": "Tambah foto",
     "photoButtonText": "Foto",
     "previewTitle": "Foto Bukti"
+  },
+  "dateRangePicker": {
+    "today": "Hari Ini",
+    "yesterday": "Kemarin",
+    "last7": "7 Hari",
+    "last30": "30 Hari",
+    "thisMonth": "Bulan Ini",
+    "lastMonth": "Bulan Lalu"
   }
 }

@@ -25,5 +25,13 @@
     "addPhotoLabel": "Add photo",
     "photoButtonText": "Photo",
     "previewTitle": "Evidence Photo"
+  },
+  "dateRangePicker": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "last7": "Last 7 Days",
+    "last30": "Last 30 Days",
+    "thisMonth": "This Month",
+    "lastMonth": "Last Month"
   }
 }

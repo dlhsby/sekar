@@ -44,7 +44,9 @@
     "logout": "Keluar",
     "confirmLogout": "Konfirmasi Keluar",
     "confirmLogoutMessage": "Apakah Anda yakin ingin keluar dari aplikasi?",
-    "capacity": "Kapasitas"
+    "capacity": "Kapasitas",
+    "menuLabel": "Aksi",
+    "sortTooltip": "Klik untuk mengurutkan · Shift+klik untuk beberapa kolom"
   },
   "entities": {
     "user": "Pengguna",

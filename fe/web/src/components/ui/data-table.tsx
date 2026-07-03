@@ -356,7 +356,7 @@ export function DataTable<TData, TValue>({
                 onBlur={() => setSearchFocused(false)}
                 placeholder={searchPlaceholder}
                 leftIcon={<Search className="h-4 w-4" aria-hidden />}
-                aria-label="Cari"
+                aria-label={t('common:actions.search')}
                 className="w-full"
               />
             </div>
@@ -487,7 +487,7 @@ export function DataTable<TData, TValue>({
                             <button
                               type="button"
                               onClick={header.column.getToggleSortingHandler()}
-                              title="Klik untuk mengurutkan · Shift+klik untuk beberapa kolom"
+                              title={t('common:actions.sortTooltip')}
                               className="-ml-1 inline-flex w-fit items-center gap-1 rounded-nb-sm px-1 hover:text-nb-success-dark"
                             >
                               {flexRender(header.column.columnDef.header, header.getContext())}

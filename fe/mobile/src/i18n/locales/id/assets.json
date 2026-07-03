@@ -92,5 +92,15 @@
     "hint": "Format: SEKAR:CODE atau langsung masukkan CODE",
     "scan": "Pindai",
     "cancel": "Batal"
+  },
+  "errors": {
+    "notFound": "Aset tidak ditemukan",
+    "fetchCategories": "Gagal mengambil kategori",
+    "fetchAssets": "Gagal mengambil daftar aset",
+    "fetchAsset": "Gagal mengambil detail aset",
+    "fetchMyAssets": "Gagal mengambil aset saya",
+    "checkoutAsset": "Gagal meminjam aset",
+    "returnAsset": "Gagal mengembalikan aset",
+    "fetchAssignments": "Gagal mengambil riwayat penugasan"
   }
 }

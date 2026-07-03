@@ -199,5 +199,68 @@
       "requestDenied": "Gallery denied. You cannot select photos from storage",
       "requestFailed": "Failed to request gallery permission"
     }
+  },
+  "diagnostics": {
+    "sections": {
+      "permissions": "PERMISSIONS",
+      "connectivity": "CONNECTIVITY",
+      "appVersion": "APP VERSION",
+      "dataSync": "DATA & SYNC"
+    },
+    "permissions": {
+      "notifications": {
+        "title": "Notifications",
+        "why": "Shift & task reminders."
+      },
+      "location": {
+        "title": "Location",
+        "why": "Attendance & area geofence."
+      },
+      "backgroundLocation": {
+        "title": "Background location",
+        "why": "Route tracking during shift."
+      },
+      "camera": {
+        "title": "Camera",
+        "why": "Report photos & clock-in selfie."
+      },
+      "gallery": {
+        "title": "Gallery",
+        "why": "Attach photos from gallery."
+      }
+    },
+    "permissionButtons": {
+      "check": "Check",
+      "openSettings": "Open Settings"
+    },
+    "status": {
+      "granted": "GRANTED",
+      "denied": "DENIED",
+      "online": "ONLINE",
+      "offline": "OFFLINE",
+      "checking": "CHECKING...",
+      "reachable": "CONNECTED",
+      "timeout": "TIMEOUT",
+      "unreachable": "NOT CONNECTED",
+      "unknown": "UNKNOWN",
+      "upToDate": "UP TO DATE",
+      "updateAvailable": "UPDATE"
+    },
+    "connectivity": {
+      "internet": "Internet",
+      "server": "Server",
+      "recheck": "Recheck"
+    },
+    "appVersion": {
+      "installed": "Installed version",
+      "available": "Available version",
+      "status": "Status",
+      "recheck": "Recheck"
+    },
+    "dataSync": {
+      "pendingQueue": "Pending queue",
+      "lastSync": "Last sync",
+      "syncing": "Syncing..."
+    }
   }
 }

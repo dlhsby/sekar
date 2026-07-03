@@ -92,5 +92,15 @@
     "hint": "Format: SEKAR:CODE or enter CODE directly",
     "scan": "Scan",
     "cancel": "Cancel"
+  },
+  "errors": {
+    "notFound": "Asset not found",
+    "fetchCategories": "Failed to fetch categories",
+    "fetchAssets": "Failed to fetch asset list",
+    "fetchAsset": "Failed to fetch asset details",
+    "fetchMyAssets": "Failed to fetch my assets",
+    "checkoutAsset": "Failed to borrow asset",
+    "returnAsset": "Failed to return asset",
+    "fetchAssignments": "Failed to fetch assignment history"
   }
 }

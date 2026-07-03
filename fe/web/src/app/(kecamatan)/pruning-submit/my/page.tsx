@@ -17,7 +17,8 @@ import { useTranslation } from 'react-i18next';
 import { Button, EmptyState, SectionCard, SkeletonCard, StatusPill } from '@/components/ui';
 import { useMyPruningRequests } from '@/lib/api/pruning-requests';
 import {
-  PRUNING_REQUEST_STATUS_LABELS,
+  getPruningRequestStatusLabel,
+  PRUNING_REQUEST_STATUS_BADGES,
   PRUNING_REQUEST_STATUS_TONES,
 } from '@/lib/constants/pruning-requests';
 
@@ -91,7 +92,7 @@ export default function MyPruningRequestsPage() {
                     </p>
                   </div>
                   <StatusPill tone={PRUNING_REQUEST_STATUS_TONES[req.status]} dot>
-                    {PRUNING_REQUEST_STATUS_LABELS[req.status]}
+                    {getPruningRequestStatusLabel(req.status, t)}
                   </StatusPill>
                 </div>
               </SectionCard>

@@ -24,7 +24,8 @@
     "inactive": "Idle",
     "outside_area": "Outside",
     "missing": "Missing",
-    "offline": "Offline"
+    "offline": "Offline",
+    "notDetected": "Not detected"
   },
   "filters": {
     "label": "Search Officers",
@@ -53,7 +54,8 @@
     "tabAreas": "Areas",
     "noWorkers": "No officers",
     "noWorkersMatch": "No officers match the filter.",
-    "clickToFocus": "Click officer to focus on map"
+    "clickToFocus": "Click officer to focus on map",
+    "batteryLabel": "Battery {level} percent"
   },
   "reassign": {
     "successMessage": "Worker successfully reassigned",
@@ -201,6 +203,16 @@
     "noWorkers": "No staff found",
     "resetFilter": "Reset filter",
     "count": "{count} staff displayed"
+  },
+  "statusBar": {
+    "ariaLabel": "Officer status",
+    "todaysSchedule": "Today's schedule",
+    "scheduled": "scheduled",
+    "present": "Present",
+    "absent": "Absent",
+    "leave": "Leave",
+    "notScheduled": "Not scheduled",
+    "outsideAreaLabel": "Outside area"
   },
   "staffing": {
     "staffingLabel": "Staff Availability",

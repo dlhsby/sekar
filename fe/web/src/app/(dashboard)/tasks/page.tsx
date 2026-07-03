@@ -40,9 +40,9 @@ import { TaskFormModal } from '@/components/tasks/TaskFormModal';
 import { formatDate } from '@/lib/utils/time';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
 import {
-  TASK_STATUS_LABELS,
+  getTaskStatusLabel,
+  getTaskPriorityLabel,
   TASK_STATUS_TONES,
-  TASK_PRIORITY_LABELS,
   TASK_PRIORITY_TONES,
 } from '@/lib/constants/tasks';
 
@@ -130,16 +130,16 @@ export default function TasksPage() {
 
   const statusOptions = [
     { value: 'all', label: t('tasks:list.filterStatusAll') },
-    ...(Object.keys(TASK_STATUS_LABELS) as TaskStatus[]).map((s) => ({
+    ...(Object.keys(TASK_STATUS_TONES) as TaskStatus[]).map((s) => ({
       value: s,
-      label: TASK_STATUS_LABELS[s],
+      label: getTaskStatusLabel(s, t),
     })),
   ];
   const priorityOptions = [
     { value: 'all', label: t('tasks:list.filterPriorityAll') },
-    ...(Object.keys(TASK_PRIORITY_LABELS) as TaskPriority[]).map((p) => ({
+    ...(Object.keys(TASK_PRIORITY_TONES) as TaskPriority[]).map((p) => ({
       value: p,
-      label: TASK_PRIORITY_LABELS[p],
+      label: getTaskPriorityLabel(p, t),
     })),
   ];
 
@@ -188,7 +188,7 @@ export default function TasksPage() {
       meta: { label: t('tasks:list.tableHeaderPriority') },
       cell: ({ row }) => (
         <StatusPill tone={TASK_PRIORITY_TONES[row.original.priority]}>
-          {TASK_PRIORITY_LABELS[row.original.priority]}
+          {getTaskPriorityLabel(row.original.priority, t)}
         </StatusPill>
       ),
     },
@@ -200,7 +200,7 @@ export default function TasksPage() {
       meta: { label: t('tasks:list.tableHeaderStatus') },
       cell: ({ row }) => (
         <StatusPill tone={TASK_STATUS_TONES[row.original.status]} dot>
-          {TASK_STATUS_LABELS[row.original.status]}
+          {getTaskStatusLabel(row.original.status, t)}
         </StatusPill>
       ),
     },
@@ -371,12 +371,12 @@ export default function TasksPage() {
           { label: t('tasks:fields.description'), value: viewModal.item.title },
           { label: t('tasks:list.tableHeaderStatus'), value: (
             <StatusPill tone={TASK_STATUS_TONES[viewModal.item.status]} dot>
-              {TASK_STATUS_LABELS[viewModal.item.status]}
+              {getTaskStatusLabel(viewModal.item.status, t)}
             </StatusPill>
           ) },
           { label: t('tasks:list.tableHeaderPriority'), value: (
             <StatusPill tone={TASK_PRIORITY_TONES[viewModal.item.priority]}>
-              {TASK_PRIORITY_LABELS[viewModal.item.priority]}
+              {getTaskPriorityLabel(viewModal.item.priority, t)}
             </StatusPill>
           ) },
           { label: t('tasks:list.tableHeaderAssignedTo'), value: viewModal.item.assigned_to?.full_name },

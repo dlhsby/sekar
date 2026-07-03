@@ -176,17 +176,17 @@ export function PerantinganListScreen(): React.JSX.Element {
     }
     if (filters.fromDate || filters.toDate) {
       const f = filters.fromDate;
-      const t = filters.toDate;
+      const toDate = filters.toDate;
       chips.push({
-        text: f && t ? `${f.slice(5)} — ${t.slice(5)}` : 'Tanggal',
+        text: f && toDate ? `${f.slice(5)} — ${toDate.slice(5)}` : t('filterChip.dateLabel'),
         chipStyle: 'date',
       });
     }
-    if (filters.rayonId) { chips.push({ text: 'Rayon', chipStyle: 'location' }); }
+    if (filters.rayonId) { chips.push({ text: t('filterChip.rayonLabel'), chipStyle: 'location' }); }
     if (filters.referenceCode) { chips.push({ text: `# ${filters.referenceCode}`, chipStyle: 'status' }); }
     if (filters.requesterName) { chips.push({ text: `🧑 ${filters.requesterName}`, chipStyle: 'status' }); }
     return chips;
-  }, [filters]);
+  }, [filters, t]);
 
   const filteredSorted = useMemo(() => {
     let list = requests;
@@ -235,8 +235,8 @@ export function PerantinganListScreen(): React.JSX.Element {
   }, [requests, filters, sort]);
 
   const activeSortLabel = useMemo(
-    () => SORT_OPTIONS.find((o) => o.key === sort)?.label ?? 'Dibuat Terbaru',
-    [sort],
+    () => SORT_OPTIONS.find((o) => o.key === sort)?.label ?? t('list.sortCreatedNewest'),
+    [sort, t],
   );
   const isSortActive = sort !== DEFAULT_SORT;
 
@@ -285,7 +285,7 @@ export function PerantinganListScreen(): React.JSX.Element {
         opacity={0.06}
       >
         <SafeAreaView style={styles.safeArea}>
-          <NBPageHeader title="Permohonan Perantingan" />
+          <NBPageHeader title={t('list.title')} />
           <View style={styles.skeletonContainer}>
             <NBSkeleton variant="list" count={5} />
           </View>
@@ -341,7 +341,7 @@ export function PerantinganListScreen(): React.JSX.Element {
                 style={styles.filterClearButton}
                 onPress={handleResetFilters}
                 accessibilityRole="button"
-                accessibilityLabel="Reset filter permohonan"
+                accessibilityLabel={t('review.resetFilterLabel')}
               >
                 <MaterialCommunityIcons
                   name="close-circle"
@@ -357,7 +357,7 @@ export function PerantinganListScreen(): React.JSX.Element {
               style={styles.filterIconButton}
               onPress={() => setIsSortModalOpen(true)}
               accessibilityRole="button"
-              accessibilityLabel={`Urutan: ${activeSortLabel}`}
+              accessibilityLabel={t('listScreen.sortLabel', { label: activeSortLabel })}
             >
               <MaterialCommunityIcons
                 name="sort"
@@ -369,8 +369,8 @@ export function PerantinganListScreen(): React.JSX.Element {
               style={styles.filterIconButton}
               onPress={() => setIsFilterModalOpen(true)}
               accessibilityRole="button"
-              accessibilityLabel={`Filter permohonan${
-                activeFilterCount > 0 ? `, ${activeFilterCount} filter aktif` : ''
+              accessibilityLabel={`${t('listScreen.filterLabel')}${
+                activeFilterCount > 0 ? `, ${activeFilterCount} ${t('listScreen.filterActive')}` : ''
               }`}
             >
               <MaterialCommunityIcons

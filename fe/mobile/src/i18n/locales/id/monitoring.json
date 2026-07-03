@@ -5,7 +5,12 @@
     "error": {
       "title": "Gagal memuat batas wilayah",
       "retry": "Coba Lagi",
-      "failedLoadUsers": "Gagal memuat data pengguna"
+      "failedLoadUsers": "Gagal memuat data pengguna",
+      "fetchLiveUsers": "Gagal memuat data pengguna aktif",
+      "fetchUserDaySummary": "Gagal memuat ringkasan harian pengguna",
+      "fetchLocationHistory": "Gagal memuat riwayat lokasi",
+      "fetchStaffingSummary": "Gagal memuat ringkasan kepegawaian",
+      "fetchBoundaries": "Gagal memuat batas wilayah"
     }
   },
   "mapDashboard": {

@@ -199,5 +199,68 @@
       "requestDenied": "Galeri ditolak. Anda tidak dapat memilih foto dari penyimpanan",
       "requestFailed": "Gagal meminta izin galeri"
     }
+  },
+  "diagnostics": {
+    "sections": {
+      "permissions": "IZIN AKSES",
+      "connectivity": "KONEKTIVITAS",
+      "appVersion": "VERSI APLIKASI",
+      "dataSync": "DATA & SINKRONISASI"
+    },
+    "permissions": {
+      "notifications": {
+        "title": "Notifikasi",
+        "why": "Pengingat shift & penugasan."
+      },
+      "location": {
+        "title": "Lokasi",
+        "why": "Presensi & geofence pos."
+      },
+      "backgroundLocation": {
+        "title": "Lokasi latar belakang",
+        "why": "Pelacakan rute selama shift."
+      },
+      "camera": {
+        "title": "Kamera",
+        "why": "Foto laporan & swafoto clock-in."
+      },
+      "gallery": {
+        "title": "Galeri",
+        "why": "Lampirkan foto dari galeri."
+      }
+    },
+    "permissionButtons": {
+      "check": "Periksa",
+      "openSettings": "Buka Pengaturan"
+    },
+    "status": {
+      "granted": "DIBERIKAN",
+      "denied": "DITOLAK",
+      "online": "ONLINE",
+      "offline": "OFFLINE",
+      "checking": "MEMERIKSA...",
+      "reachable": "TERHUBUNG",
+      "timeout": "TIMEOUT",
+      "unreachable": "TIDAK TERHUBUNG",
+      "unknown": "TIDAK DIKETAHUI",
+      "upToDate": "TERBARU",
+      "updateAvailable": "PERBARUI"
+    },
+    "connectivity": {
+      "internet": "Internet",
+      "server": "Server",
+      "recheck": "Periksa Ulang"
+    },
+    "appVersion": {
+      "installed": "Versi terpasang",
+      "available": "Versi tersedia",
+      "status": "Status",
+      "recheck": "Periksa Ulang"
+    },
+    "dataSync": {
+      "pendingQueue": "Antrian tertunda",
+      "lastSync": "Sinkronisasi terakhir",
+      "syncing": "Sedang sinkronisasi..."
+    }
   }
 }

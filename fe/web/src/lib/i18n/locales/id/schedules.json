@@ -84,6 +84,11 @@
     "areaCountAriaLabel": "Lihat {count} area untuk {name}"
   },
   "capacity": {
+    "pageTitle": "Kapasitas Layanan",
+    "pageDescriptionLoading": "Memuat…",
+    "pageDescription": "Kalender kapasitas mingguan Rayon {{name}}",
+    "readOnlyStatus": "Hanya lihat",
+    "yearLabel": "Tahun",
     "saveError": "Gagal menyimpan kapasitas."
   }
 }

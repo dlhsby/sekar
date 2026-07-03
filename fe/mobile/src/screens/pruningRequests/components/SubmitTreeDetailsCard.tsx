@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import {
   NBCard,
   NBCardContent,
@@ -32,6 +33,7 @@ const styles = {
 };
 
 export function SubmitTreeDetailsCard(props: SubmitTreeDetailsCardProps) {
+  const { t } = useTranslation('pruning');
   const {
     treeCount,
     setTreeCount,
@@ -44,13 +46,13 @@ export function SubmitTreeDetailsCard(props: SubmitTreeDetailsCardProps) {
   return (
     <NBCard style={styles.card}>
       <NBCardHeader>
-        <NBText variant="h3">Detail Pohon</NBText>
+        <NBText variant="h3">{t('submitTreeDetailsCard.title')}</NBText>
       </NBCardHeader>
       <NBCardContent>
         <View style={styles.fieldGroup}>
           <NBTextInput
-            label="Jumlah Pohon *"
-            placeholder="Contoh: 3"
+            label={t('submitTreeDetailsCard.treeCountLabel')}
+            placeholder={t('submitTreeDetailsCard.treeCountPlaceholder')}
             value={treeCount}
             onChangeText={(v) => setTreeCount(digitsOnly(v))}
             keyboardType="number-pad"
@@ -58,8 +60,8 @@ export function SubmitTreeDetailsCard(props: SubmitTreeDetailsCardProps) {
         </View>
         <View style={styles.fieldGroup}>
           <NBTextInput
-            label="Tinggi Pohon (tertinggi atau rata-rata, meter) *"
-            placeholder="Contoh: 5"
+            label={t('submitTreeDetailsCard.treeHeightLabel')}
+            placeholder={t('submitTreeDetailsCard.treeHeightPlaceholder')}
             value={treeHeight}
             onChangeText={(v) => setTreeHeight(digitsOnly(v))}
             keyboardType="number-pad"
@@ -67,8 +69,8 @@ export function SubmitTreeDetailsCard(props: SubmitTreeDetailsCardProps) {
         </View>
         <View style={styles.fieldGroup}>
           <NBTextInput
-            label="Diameter Pohon (tertinggi atau rata-rata, cm) *"
-            placeholder="Contoh: 30"
+            label={t('submitTreeDetailsCard.treeDiameterLabel')}
+            placeholder={t('submitTreeDetailsCard.treeDiameterPlaceholder')}
             value={treeDiameter}
             onChangeText={(v) => setTreeDiameter(digitsOnly(v))}
             keyboardType="number-pad"

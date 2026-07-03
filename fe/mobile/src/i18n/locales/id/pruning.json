@@ -108,6 +108,16 @@
     "fridayLabel": "Jum",
     "saturdayLabel": "Sab"
   },
+  "weekPicker": {
+    "statusAvailable": "Tersedia",
+    "statusPartial": "Hampir Penuh",
+    "statusFull": "Penuh",
+    "statusUnset": "Belum Diatur",
+    "loadingCapacity": "Memuat kapasitas…",
+    "footnote": "Admin akan menentukan tanggal pasti dalam minggu yang Anda pilih.",
+    "weekLabel": "Minggu ke-{{week}}, {{year}}",
+    "selectWeekLabel": "Pilih minggu {{week}} tahun {{year}}, status {{status}}"
+  },
   "detail": {
     "title": "Detail Permohonan",
     "loadingMessage": "Memuat data...",
@@ -248,5 +258,88 @@
       "inProgress": "Tugas sedang dikerjakan oleh petugas.",
       "default": "Permohonan ini telah dijadwalkan dan tugas kerja telah dibuat."
     }
+  },
+  "submitForm": {
+    "validationErrors": {
+      "addressRequired": "Alamat (jalan) wajib diisi.",
+      "addressMinLength": "Alamat minimal 5 karakter.",
+      "addressMaxLength": "Alamat maksimal 500 karakter.",
+      "treeCountRequired": "Jumlah pohon harus diisi dengan angka minimal 1.",
+      "treeHeightRequired": "Tinggi pohon (perkiraan) wajib diisi.",
+      "treeDiameterRequired": "Diameter pohon (perkiraan) wajib diisi.",
+      "requesterInfoRequired": "Nama dan nomor HP pemohon wajib diisi.",
+      "requesterPhoneInvalid": "Nomor HP pemohon harus diawali 08 dan 10–14 digit.",
+      "rtLeaderInfoRequired": "Nama dan nomor HP ketua RT/RW wajib diisi.",
+      "rtLeaderPhoneInvalid": "Nomor HP ketua RT/RW harus diawali 08 dan 10–14 digit."
+    }
+  },
+  "detailCard": {
+    "sectionTitle": "🌳 DETAIL PERANTINGAN",
+    "treeCount": "Jumlah Pohon",
+    "treeCountFormat": "{{count}} pohon",
+    "treeHeight": "Tinggi (Perkiraan)",
+    "treeDiameter": "Diameter (Perkiraan)",
+    "preferredWeek": "Minggu Preferensi",
+    "notSpecified": "Tidak ditentukan",
+    "scheduledDate": "Tanggal Dijadwalkan",
+    "notScheduled": "Belum dijadwalkan"
+  },
+  "filterChip": {
+    "dateLabel": "Tanggal",
+    "rayonLabel": "Rayon"
+  },
+  "listScreen": {
+    "sortLabel": "Urutan: {{label}}",
+    "filterLabel": "Filter permohonan",
+    "filterActive": "filter aktif"
+  },
+  "submitWeekCard": {
+    "title": "Minggu Preferensi (Opsional)",
+    "helper": "Pilih minggu yang Anda inginkan. Admin Rayon akan menentukan tanggal pasti sesuai kapasitas tim. Indikator hari pada setiap kartu hanya gambaran ketersediaan minggu tersebut.",
+    "weekLabel": "Minggu",
+    "selectedWeek": "Minggu ke-{{week}}, {{year}}",
+    "placeholder": "Pilih minggu…",
+    "selectButtonLabel": "Pilih minggu preferensi",
+    "legend": "🟢 tersedia · 🟡 hampir penuh · 🔴 penuh · ⚪ belum diatur"
+  },
+  "locationCard": {
+    "sectionTitle": "📍 LOKASI",
+    "kecamatanLabel": "Kecamatan",
+    "rayonLabel": "Rayon",
+    "addressLabel": "Alamat",
+    "gpsLabel": "Koordinat GPS",
+    "mapButtonLabel": "Lihat di Peta",
+    "mapButtonAccessibility": "Lihat lokasi di peta",
+    "gpsUnavailable": "Lokasi belum tersedia untuk dilihat di peta."
+  },
+  "submitTreeDetailsCard": {
+    "title": "Detail Pohon",
+    "treeCountLabel": "Jumlah Pohon *",
+    "treeCountPlaceholder": "Contoh: 3",
+    "treeHeightLabel": "Tinggi Pohon (tertinggi atau rata-rata, meter) *",
+    "treeHeightPlaceholder": "Contoh: 5",
+    "treeDiameterLabel": "Diameter Pohon (tertinggi atau rata-rata, cm) *",
+    "treeDiameterPlaceholder": "Contoh: 30"
+  },
+  "statusCard": {
+    "sectionTitle": "📌 STATUS",
+    "referenceCodeLabel": "Kode Permohonan",
+    "copiedToast": "Disalin",
+    "copyButtonLabel": "Salin kode permohonan",
+    "submittedByLabel": "Diajukan Oleh",
+    "submittedAtLabel": "Diajukan Pada"
+  },
+  "submitPhotoCard": {
+    "title": "Foto Pohon *",
+    "helper": "Minimal {{min}}, maksimal {{max}} foto.",
+    "emptyState": "Belum ada foto. Ambil dari kamera atau pilih dari galeri.",
+    "removeButtonLabel": "Hapus foto {{number}}",
+    "cameraButton": "Kamera",
+    "galleryButton": "Galeri"
+  },
+  "requestCard": {
+    "treeUnit": "pohon",
+    "photoUnit": "foto",
+    "cardAccessibility": "Detail permohonan {{code}}"
   }
 }

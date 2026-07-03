@@ -96,7 +96,25 @@
     "successReject": "Activity rejected",
     "failureApprove": "Failed to approve activity",
     "failureReject": "Failed to reject activity",
-    "officerNameLabel": "Officer Name"
+    "officerNameLabel": "Officer Name",
+    "sections": {
+      "generalInfo": "GENERAL INFORMATION",
+      "dateTime": "Date & Time",
+      "area": "Area",
+      "status": "STATUS",
+      "rejectionReason": "Rejection Reason",
+      "reviewedBy": "Reviewed By",
+      "reviewDate": "Review Date",
+      "photos": "ACTIVITY PHOTOS",
+      "photosAttached": "{{count}} photos attached",
+      "activityType": "ACTIVITY TYPE",
+      "description": "WORK DESCRIPTION",
+      "gpsLocation": "GPS LOCATION"
+    },
+    "rejectionInput": {
+      "title": "Rejection Reason",
+      "placeholder": "Explain the reason for rejecting this activity..."
+    }
   },
   "messages": {
     "clockInRequired": "Not Clocked In",

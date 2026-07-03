@@ -84,6 +84,11 @@
     "areaCountAriaLabel": "View {count} areas for {name}"
   },
   "capacity": {
+    "pageTitle": "Service Capacity",
+    "pageDescriptionLoading": "Loading…",
+    "pageDescription": "Weekly service capacity calendar for Rayon {{name}}",
+    "readOnlyStatus": "View only",
+    "yearLabel": "Year",
     "saveError": "Failed to save capacity."
   }
 }

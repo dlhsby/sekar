@@ -108,6 +108,16 @@
     "fridayLabel": "Fri",
     "saturdayLabel": "Sat"
   },
+  "weekPicker": {
+    "statusAvailable": "Available",
+    "statusPartial": "Nearly Full",
+    "statusFull": "Full",
+    "statusUnset": "Not Set",
+    "loadingCapacity": "Loading capacity…",
+    "footnote": "Admin will determine the exact date within the week you select.",
+    "weekLabel": "Week {{week}}, {{year}}",
+    "selectWeekLabel": "Select week {{week}} of {{year}}, status {{status}}"
+  },
   "detail": {
     "title": "Request Details",
     "loadingMessage": "Loading data...",
@@ -248,5 +258,88 @@
       "inProgress": "Task is currently being worked on by the staff.",
       "default": "This request has been scheduled and a work task has been created."
     }
+  },
+  "submitForm": {
+    "validationErrors": {
+      "addressRequired": "Address is required.",
+      "addressMinLength": "Address must be at least 5 characters.",
+      "addressMaxLength": "Address must not exceed 500 characters.",
+      "treeCountRequired": "Tree count must be a number of at least 1.",
+      "treeHeightRequired": "Tree height estimate is required.",
+      "treeDiameterRequired": "Tree diameter estimate is required.",
+      "requesterInfoRequired": "Requester name and phone number are required.",
+      "requesterPhoneInvalid": "Phone number must start with 08 and have 10–14 digits.",
+      "rtLeaderInfoRequired": "RT/RW leader name and phone number are required.",
+      "rtLeaderPhoneInvalid": "RT/RW leader phone number must start with 08 and have 10–14 digits."
+    }
+  },
+  "detailCard": {
+    "sectionTitle": "🌳 REQUEST DETAILS",
+    "treeCount": "Number of Trees",
+    "treeCountFormat": "{{count}} trees",
+    "treeHeight": "Height (Estimate)",
+    "treeDiameter": "Diameter (Estimate)",
+    "preferredWeek": "Preferred Week",
+    "notSpecified": "Not specified",
+    "scheduledDate": "Scheduled Date",
+    "notScheduled": "Not scheduled"
+  },
+  "filterChip": {
+    "dateLabel": "Date",
+    "rayonLabel": "District"
+  },
+  "listScreen": {
+    "sortLabel": "Sort: {{label}}",
+    "filterLabel": "Filter requests",
+    "filterActive": "active"
+  },
+  "submitWeekCard": {
+    "title": "Preferred Week (Optional)",
+    "helper": "Select the week you prefer. The District Admin will determine the exact date based on team capacity. Day indicators on each card show availability for that week.",
+    "weekLabel": "Week",
+    "selectedWeek": "Week {{week}}, {{year}}",
+    "placeholder": "Select week…",
+    "selectButtonLabel": "Select preferred week",
+    "legend": "🟢 available · 🟡 nearly full · 🔴 full · ⚪ not set"
+  },
+  "locationCard": {
+    "sectionTitle": "📍 LOCATION",
+    "kecamatanLabel": "Sub-district",
+    "rayonLabel": "District",
+    "addressLabel": "Address",
+    "gpsLabel": "GPS Coordinates",
+    "mapButtonLabel": "View on Map",
+    "mapButtonAccessibility": "View location on map",
+    "gpsUnavailable": "Location is not available to view on map."
+  },
+  "submitTreeDetailsCard": {
+    "title": "Tree Details",
+    "treeCountLabel": "Number of Trees *",
+    "treeCountPlaceholder": "Example: 3",
+    "treeHeightLabel": "Tree Height (highest or average, meters) *",
+    "treeHeightPlaceholder": "Example: 5",
+    "treeDiameterLabel": "Tree Diameter (highest or average, cm) *",
+    "treeDiameterPlaceholder": "Example: 30"
+  },
+  "statusCard": {
+    "sectionTitle": "📌 STATUS",
+    "referenceCodeLabel": "Request Code",
+    "copiedToast": "Copied",
+    "copyButtonLabel": "Copy request code",
+    "submittedByLabel": "Submitted By",
+    "submittedAtLabel": "Submitted At"
+  },
+  "submitPhotoCard": {
+    "title": "Tree Photos *",
+    "helper": "Minimum {{min}}, maximum {{max}} photos.",
+    "emptyState": "No photos yet. Take from camera or select from gallery.",
+    "removeButtonLabel": "Remove photo {{number}}",
+    "cameraButton": "Camera",
+    "galleryButton": "Gallery"
+  },
+  "requestCard": {
+    "treeUnit": "trees",
+    "photoUnit": "photos",
+    "cardAccessibility": "Request details {{code}}"
   }
 }

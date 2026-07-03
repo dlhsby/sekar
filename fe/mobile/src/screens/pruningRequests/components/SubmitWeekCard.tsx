@@ -7,6 +7,7 @@ import {
   View,
   TouchableOpacity,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   NBCard,
@@ -61,6 +62,7 @@ const styles = {
 };
 
 export function SubmitWeekCard(props: SubmitWeekCardProps) {
+  const { t } = useTranslation('pruning');
   const {
     expectedWeek,
     setExpectedWeek,
@@ -74,25 +76,25 @@ export function SubmitWeekCard(props: SubmitWeekCardProps) {
     <>
       <NBCard style={styles.card}>
         <NBCardHeader>
-          <NBText variant="h3">Minggu Preferensi (Opsional)</NBText>
+          <NBText variant="h3">{t('submitWeekCard.title')}</NBText>
           <NBText variant="body-sm" style={styles.helper}>
-            Pilih minggu yang Anda inginkan. Admin Rayon akan menentukan tanggal pasti sesuai kapasitas tim. Indikator hari pada setiap kartu hanya gambaran ketersediaan minggu tersebut.
+            {t('submitWeekCard.helper')}
           </NBText>
         </NBCardHeader>
         <NBCardContent>
           <TouchableOpacity
             onPress={() => setWeekPickerOpen(true)}
             accessibilityRole="button"
-            accessibilityLabel="Pilih minggu preferensi"
+            accessibilityLabel={t('submitWeekCard.selectButtonLabel')}
             style={styles.dateRow}
             testID="perantingan-pick-week"
           >
             <View style={{ flex: 1 }}>
-              <NBText variant="caption" style={styles.helper}>Minggu</NBText>
+              <NBText variant="caption" style={styles.helper}>{t('submitWeekCard.weekLabel')}</NBText>
               <NBText variant="body">
                 {expectedWeek
-                  ? `Minggu ke-${expectedWeek.isoWeek}, ${expectedWeek.year}`
-                  : 'Pilih minggu…'}
+                  ? t('submitWeekCard.selectedWeek', { week: expectedWeek.isoWeek, year: expectedWeek.year })
+                  : t('submitWeekCard.placeholder')}
               </NBText>
             </View>
             <MaterialCommunityIcons name="calendar-week" size={22} color={nbColors.black} />
@@ -101,7 +103,7 @@ export function SubmitWeekCard(props: SubmitWeekCardProps) {
             variant="body-sm"
             style={[styles.legend] as any}
           >
-            🟢 tersedia · 🟡 hampir penuh · 🔴 penuh · ⚪ belum diatur
+            {t('submitWeekCard.legend')}
           </NBText>
         </NBCardContent>
       </NBCard>

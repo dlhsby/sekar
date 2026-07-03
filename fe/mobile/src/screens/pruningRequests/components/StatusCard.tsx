@@ -4,6 +4,7 @@
 
 import React, { useCallback } from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBCard, NBCardHeader, NBCardContent, NBBadge, NBText } from '../../../components/nb';
 import { DetailRow } from '../../../components/common/DetailRow';
@@ -50,6 +51,7 @@ export function StatusCard({
   statusLabel,
   statusColor,
 }: StatusCardProps): React.JSX.Element {
+  const { t } = useTranslation('pruning');
   const handleCopyRef = useCallback(async () => {
     if (!request.referenceCode) return;
     try {
@@ -57,27 +59,27 @@ export function StatusCard({
       Clipboard.setString(request.referenceCode);
       NBToast.show({
         level: 'success',
-        title: 'Disalin',
+        title: t('statusCard.copiedToast'),
         body: request.referenceCode,
       });
     } catch {
       // native module unavailable in tests
     }
-  }, [request.referenceCode]);
+  }, [request.referenceCode, t]);
 
   return (
     <NBCard>
       <NBCardHeader>
         <View style={styles.statusRow}>
           <NBText variant="h2" style={styles.sectionTitle}>
-            📌 STATUS
+            {t('statusCard.sectionTitle')}
           </NBText>
           <NBBadge text={statusLabel} color={statusColor} />
         </View>
       </NBCardHeader>
       <NBCardContent>
         <DetailRow
-          label="Kode Permohonan"
+          label={t('statusCard.referenceCodeLabel')}
           value={
             <View style={styles.refCodeRow}>
               <NBText variant="body" style={styles.refCodeText} selectable>
@@ -87,7 +89,7 @@ export function StatusCard({
                 <TouchableOpacity
                   onPress={handleCopyRef}
                   accessibilityRole="button"
-                  accessibilityLabel="Salin kode permohonan"
+                  accessibilityLabel={t('statusCard.copyButtonLabel')}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={styles.copyBtn}
                   testID="perantingan-copy-ref"
@@ -101,7 +103,7 @@ export function StatusCard({
         />
         {request.submitter?.full_name || request.submitter?.username || request.requesterName ? (
           <DetailRow
-            label="Diajukan Oleh"
+            label={t('statusCard.submittedByLabel')}
             value={
               request.submitter?.full_name ||
               request.submitter?.username ||
@@ -111,7 +113,7 @@ export function StatusCard({
           />
         ) : null}
         <DetailRow
-          label="Diajukan Pada"
+          label={t('statusCard.submittedAtLabel')}
           value={formatDateTime(request.createdAt)}
           isLast={!request.submitter?.full_name && !request.submitter?.username && !request.requesterName}
         />

@@ -89,20 +89,20 @@ export default function RayonCapacityPage({ params }: CapacityPageProps) {
     <div className="space-y-5">
       <PageHeader
         data-testid="page-header"
-        title="Kapasitas Layanan"
+        title={t('schedules:capacity.pageTitle')}
         description={
           rayonLoading
-            ? 'Memuat…'
-            : `Kalender kapasitas mingguan Rayon ${rayon?.name ?? ''}`
+            ? t('schedules:capacity.pageDescriptionLoading')
+            : t('schedules:capacity.pageDescription', { name: rayon?.name ?? '' })
         }
         actions={
-          !canEdit ? <StatusPill tone="neutral">Hanya lihat</StatusPill> : undefined
+          !canEdit ? <StatusPill tone="neutral">{t('schedules:capacity.readOnlyStatus')}</StatusPill> : undefined
         }
       />
 
       <div className="max-w-[160px]">
         <FormSelect
-          label="Tahun"
+          label={t('schedules:capacity.yearLabel')}
           options={yearOptions}
           value={String(year)}
           onChange={(v) => {

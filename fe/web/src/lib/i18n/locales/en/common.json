@@ -44,7 +44,9 @@
     "logout": "Logout",
     "confirmLogout": "Confirm Logout",
     "confirmLogoutMessage": "Are you sure you want to exit the app?",
-    "capacity": "Capacity"
+    "capacity": "Capacity",
+    "menuLabel": "Actions",
+    "sortTooltip": "Click to sort · Shift+click for multiple columns"
   },
   "entities": {
     "user": "User",

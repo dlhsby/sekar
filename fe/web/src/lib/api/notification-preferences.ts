@@ -11,6 +11,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import i18n from '@/lib/i18n/config';
 import { apiClient } from './client';
 import type { NotificationType } from './notifications';
 
@@ -25,19 +26,11 @@ const keys = {
   detail: (userId: string) => [...keys.all, userId] as const,
 };
 
-/** Indonesian labels for the configurable notification types (settings UI). */
-export const NOTIFICATION_TYPE_LABELS: Partial<Record<NotificationType, string>> = {
-  task_assigned: 'Tugas baru ditugaskan',
-  task_completed: 'Tugas selesai',
-  task_updated: 'Tugas diperbarui',
-  activity_approved: 'Aktivitas disetujui',
-  activity_rejected: 'Aktivitas ditolak',
-  overtime_approved: 'Lembur disetujui',
-  overtime_rejected: 'Lembur ditolak',
-  missing_worker_alert: 'Peringatan petugas hilang',
-  shift_reminder: 'Pengingat jadwal',
-  area_plant_overdue: 'Tanaman terlambat dipangkas',
-};
+/** Get localized notification type label. Call at render time with useTranslation() hook. */
+export function getNotificationTypeLabel(type: NotificationType, t?: any): string {
+  if (t) return t(`settings:notificationTypes.${type}`);
+  return i18n.t(`settings:notificationTypes.${type}`);
+}
 
 /** Fetch the current user's per-type push preferences. */
 export function useNotificationPreferences(userId: string | undefined) {

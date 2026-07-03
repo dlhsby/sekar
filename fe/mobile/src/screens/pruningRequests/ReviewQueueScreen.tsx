@@ -212,17 +212,17 @@ export function ReviewQueueScreen(): React.JSX.Element {
     }
     if (filters.fromDate || filters.toDate) {
       const f = filters.fromDate;
-      const t = filters.toDate;
+      const toDate = filters.toDate;
       chips.push({
-        text: f && t ? `${f.slice(5)} — ${t.slice(5)}` : 'Tanggal',
+        text: f && toDate ? `${f.slice(5)} — ${toDate.slice(5)}` : t('filterChip.dateLabel'),
         chipStyle: 'date',
       });
     }
-    if (filters.rayonId) { chips.push({ text: 'Rayon', chipStyle: 'location' }); }
+    if (filters.rayonId) { chips.push({ text: t('filterChip.rayonLabel'), chipStyle: 'location' }); }
     if (filters.referenceCode) { chips.push({ text: `# ${filters.referenceCode}`, chipStyle: 'status' }); }
     if (filters.requesterName) { chips.push({ text: `🧑 ${filters.requesterName}`, chipStyle: 'status' }); }
     return chips;
-  }, [filters]);
+  }, [filters, t]);
 
   const filteredSorted = useMemo(() => {
     let list = requests;
@@ -395,7 +395,7 @@ export function ReviewQueueScreen(): React.JSX.Element {
                 style={styles.filterClearButton}
                 onPress={handleResetFilters}
                 accessibilityRole="button"
-                accessibilityLabel="Reset filter permohonan"
+                accessibilityLabel={t('pruning:review.resetFilterLabel')}
               >
                 <MaterialCommunityIcons
                   name="close-circle"
@@ -411,7 +411,7 @@ export function ReviewQueueScreen(): React.JSX.Element {
               style={styles.filterIconButton}
               onPress={() => setIsSortModalOpen(true)}
               accessibilityRole="button"
-              accessibilityLabel={`Urutan: ${activeSortLabel}`}
+              accessibilityLabel={t('pruning:listScreen.sortLabel', { label: activeSortLabel })}
             >
               <MaterialCommunityIcons
                 name="sort"
@@ -423,8 +423,8 @@ export function ReviewQueueScreen(): React.JSX.Element {
               style={styles.filterIconButton}
               onPress={() => setIsFilterModalOpen(true)}
               accessibilityRole="button"
-              accessibilityLabel={`Filter permohonan${
-                activeFilterCount > 0 ? `, ${activeFilterCount} filter aktif` : ''
+              accessibilityLabel={`${t('pruning:listScreen.filterLabel')}${
+                activeFilterCount > 0 ? `, ${activeFilterCount} ${t('pruning:listScreen.filterActive')}` : ''
               }`}
             >
               <MaterialCommunityIcons

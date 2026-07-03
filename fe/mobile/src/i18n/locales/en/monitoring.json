@@ -5,7 +5,12 @@
     "error": {
       "title": "Failed to load region boundaries",
       "retry": "Try Again",
-      "failedLoadUsers": "Failed to load user data"
+      "failedLoadUsers": "Failed to load user data",
+      "fetchLiveUsers": "Failed to load active user data",
+      "fetchUserDaySummary": "Failed to load user daily summary",
+      "fetchLocationHistory": "Failed to load location history",
+      "fetchStaffingSummary": "Failed to load staffing summary",
+      "fetchBoundaries": "Failed to load region boundaries"
     }
   },
   "mapDashboard": {

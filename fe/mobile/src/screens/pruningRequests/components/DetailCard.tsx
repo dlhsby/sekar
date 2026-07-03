@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBCard, NBCardHeader, NBCardContent, NBText } from '../../../components/nb';
 import { DetailRow } from '../../../components/common/DetailRow';
 import { nbColors } from '../../../constants/nbTokens';
@@ -23,38 +24,39 @@ const styles = StyleSheet.create({
 });
 
 export function DetailCard({ request }: DetailCardProps): React.JSX.Element {
+  const { t } = useTranslation('pruning');
   const treeCount = request.treeCount ?? request.estimatedPlantCount;
   const rows = [
     {
       key: 'treeCount',
-      label: 'Jumlah Pohon',
-      value: treeCount != null ? `${treeCount} pohon` : '—',
+      label: t('detailCard.treeCount'),
+      value: treeCount != null ? t('detailCard.treeCountFormat', { count: treeCount }) : '—',
     },
     ...(request.treeHeightEstimate
       ? [{
           key: 'treeHeight',
-          label: 'Tinggi (Perkiraan)',
+          label: t('detailCard.treeHeight'),
           value: request.treeHeightEstimate,
         }]
       : []),
     ...(request.treeDiameterEstimate
       ? [{
           key: 'treeDiameter',
-          label: 'Diameter (Perkiraan)',
+          label: t('detailCard.treeDiameter'),
           value: request.treeDiameterEstimate,
         }]
       : []),
     {
       key: 'preferredWeek',
-      label: 'Minggu Preferensi',
+      label: t('detailCard.preferredWeek'),
       value: request.expectedYear != null && request.expectedIsoWeek != null
         ? formatIsoWeekLabel(request.expectedYear, request.expectedIsoWeek)
-        : 'Tidak ditentukan',
+        : t('detailCard.notSpecified'),
     },
     {
       key: 'scheduledDate',
-      label: 'Tanggal Dijadwalkan',
-      value: request.scheduledDate ? formatDate(request.scheduledDate) : 'Belum dijadwalkan',
+      label: t('detailCard.scheduledDate'),
+      value: request.scheduledDate ? formatDate(request.scheduledDate) : t('detailCard.notScheduled'),
       isLast: true,
     },
   ];
@@ -63,7 +65,7 @@ export function DetailCard({ request }: DetailCardProps): React.JSX.Element {
     <NBCard>
       <NBCardHeader>
         <NBText variant="h2" style={styles.sectionTitle}>
-          🌳 DETAIL PERANTINGAN
+          {t('detailCard.sectionTitle')}
         </NBText>
       </NBCardHeader>
       <NBCardContent>

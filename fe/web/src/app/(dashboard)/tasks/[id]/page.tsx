@@ -31,9 +31,9 @@ import { use, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Check, RotateCcw, Send, X } from 'lucide-react';
 import { TASK_MANAGER_ROLES, TASK_VERIFIER_ROLES, hasRole } from '@/lib/constants/roles';
 import {
-  TASK_STATUS_LABELS,
+  getTaskStatusLabel,
+  getTaskPriorityLabel,
   TASK_STATUS_TONES,
-  TASK_PRIORITY_LABELS,
   TASK_PRIORITY_TONES,
 } from '@/lib/constants/tasks';
 import type { UserRole } from '@/types/models';
@@ -162,10 +162,10 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
           <h1 className="text-nb-h2 text-nb-black">{task.title}</h1>
           <div className="mt-2 flex flex-wrap gap-2">
             <StatusPill tone={TASK_STATUS_TONES[task.status]} dot>
-              {TASK_STATUS_LABELS[task.status]}
+              {getTaskStatusLabel(task.status, t)}
             </StatusPill>
             <StatusPill tone={TASK_PRIORITY_TONES[task.priority]}>
-              {TASK_PRIORITY_LABELS[task.priority]}
+              {getTaskPriorityLabel(task.priority, t)}
             </StatusPill>
           </div>
         </div>

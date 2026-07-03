@@ -36,5 +36,17 @@
     "loadingPreferences": "Memuat preferensi…",
     "loadError": "Gagal memuat preferensi notifikasi. Coba lagi nanti.",
     "saved": "Preferensi notifikasi disimpan"
+  },
+  "notificationTypes": {
+    "task_assigned": "Tugas baru ditugaskan",
+    "task_completed": "Tugas selesai",
+    "task_updated": "Tugas diperbarui",
+    "activity_approved": "Aktivitas disetujui",
+    "activity_rejected": "Aktivitas ditolak",
+    "overtime_approved": "Lembur disetujui",
+    "overtime_rejected": "Lembur ditolak",
+    "missing_worker_alert": "Peringatan petugas hilang",
+    "shift_reminder": "Pengingat jadwal",
+    "area_plant_overdue": "Tanaman terlambat dipangkas"
   }
 }

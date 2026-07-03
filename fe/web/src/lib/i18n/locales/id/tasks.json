@@ -160,6 +160,28 @@
     "emptyState": "Tidak ada tugas",
     "loadingState": "Memuat..."
   },
+  "status": {
+    "pending": "Pending",
+    "assigned": "Ditugaskan",
+    "accepted": "Diterima",
+    "declined": "Ditolak",
+    "in_progress": "Sedang Dikerjakan",
+    "completed": "Selesai",
+    "verified": "Terverifikasi",
+    "revision_needed": "Perlu Revisi"
+  },
+  "priority": {
+    "low": "Rendah",
+    "normal": "Normal",
+    "high": "Tinggi",
+    "urgent": "Mendesak"
+  },
+  "lanes": {
+    "todo": "Belum mulai",
+    "ready": "Siap mulai",
+    "doing": "Sedang dikerjakan",
+    "done": "Selesai"
+  },
   "sections": {
     "taskInfo": "Informasi Tugas",
     "assignment": "Penugasan",

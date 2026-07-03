@@ -19,6 +19,7 @@
 
 import React, { useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBCard } from '../../../components/nb/NBCard';
 import { NBBadge } from '../../../components/nb/NBBadge';
 import { NBText } from '../../../components/nb/NBText';
@@ -165,6 +166,7 @@ export function WeekPicker({
   onSelect,
   loading = false,
 }: WeekPickerProps): React.JSX.Element {
+  const { t } = useTranslation('pruning');
   const weeks = useMemo(() => {
     const { start, end } = buildThreeMonthRange();
     return chunkByWeek(projectWeeklyToDaily(rows, start, end));
@@ -173,10 +175,10 @@ export function WeekPicker({
   return (
     <View style={styles.root}>
       <View style={styles.legend}>
-        <LegendDot color={DAY_DOT_COLOR.available} label="Tersedia" />
-        <LegendDot color={DAY_DOT_COLOR.partial} label="Hampir Penuh" />
-        <LegendDot color={DAY_DOT_COLOR.full} label="Penuh" />
-        <LegendDot color={DAY_DOT_COLOR.unknown} label="Belum Diatur" />
+        <LegendDot color={DAY_DOT_COLOR.available} label={t('weekPicker.statusAvailable')} />
+        <LegendDot color={DAY_DOT_COLOR.partial} label={t('weekPicker.statusPartial')} />
+        <LegendDot color={DAY_DOT_COLOR.full} label={t('weekPicker.statusFull')} />
+        <LegendDot color={DAY_DOT_COLOR.unknown} label={t('weekPicker.statusUnset')} />
       </View>
 
       <ScrollView
@@ -186,7 +188,7 @@ export function WeekPicker({
       >
         {loading && (
           <NBText variant="body-sm" color="gray700" style={styles.loading}>
-            Memuat kapasitas…
+            {t('weekPicker.loadingCapacity')}
           </NBText>
         )}
         {weeks.map((week) => (
@@ -206,7 +208,7 @@ export function WeekPicker({
           />
         ))}
         <NBText variant="caption" color="gray500" style={styles.footnote}>
-          Admin akan menentukan tanggal pasti dalam minggu yang Anda pilih.
+          {t('weekPicker.footnote')}
         </NBText>
       </ScrollView>
     </View>
@@ -221,13 +223,6 @@ interface WeekCardProps {
   onPress: () => void;
 }
 
-const STATUS_LABEL: Record<DayStatus, string> = {
-  available: 'Tersedia',
-  partial: 'Hampir Penuh',
-  full: 'Penuh',
-  unknown: 'Belum Diatur',
-};
-
 const STATUS_BADGE_COLOR: Record<DayStatus, 'success' | 'warning' | 'danger' | 'gray'> = {
   available: 'success',
   partial: 'warning',
@@ -236,9 +231,16 @@ const STATUS_BADGE_COLOR: Record<DayStatus, 'success' | 'warning' | 'danger' | '
 };
 
 function WeekCard({ week, isSelected, onPress }: WeekCardProps): React.JSX.Element {
+  const { t } = useTranslation('pruning');
+  const STATUS_LABEL: Record<DayStatus, string> = {
+    available: t('weekPicker.statusAvailable'),
+    partial: t('weekPicker.statusPartial'),
+    full: t('weekPicker.statusFull'),
+    unknown: t('weekPicker.statusUnset'),
+  };
   const disabled = week.allPast || week.status === 'full' || week.status === 'unknown';
   const headline = `${formatDayMonth(week.startDate)} – ${formatDayMonth(week.endDate)}`;
-  const subline = `Minggu ke-${week.isoWeek}, ${week.isoYear}`;
+  const subline = t('weekPicker.weekLabel', { week: week.isoWeek, year: week.isoYear });
 
   return (
     <TouchableOpacity
@@ -246,7 +248,7 @@ function WeekCard({ week, isSelected, onPress }: WeekCardProps): React.JSX.Eleme
       disabled={disabled}
       activeOpacity={0.85}
       accessibilityRole="button"
-      accessibilityLabel={`Pilih minggu ${week.isoWeek} tahun ${week.isoYear}, status ${STATUS_LABEL[week.status]}`}
+      accessibilityLabel={t('weekPicker.selectWeekLabel', { week: week.isoWeek, year: week.isoYear, status: STATUS_LABEL[week.status] })}
       accessibilityState={{ disabled, selected: isSelected }}
       style={[styles.cardWrapper, disabled && styles.cardDisabled]}
     >

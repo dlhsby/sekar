@@ -96,7 +96,25 @@
     "successReject": "Aktivitas ditolak",
     "failureApprove": "Gagal menyetujui aktivitas",
     "failureReject": "Gagal menolak aktivitas",
-    "officerNameLabel": "Nama Petugas"
+    "officerNameLabel": "Nama Petugas",
+    "sections": {
+      "generalInfo": "INFORMASI UMUM",
+      "dateTime": "Tanggal & Waktu",
+      "area": "Area",
+      "status": "STATUS",
+      "rejectionReason": "Alasan Penolakan",
+      "reviewedBy": "Direview Oleh",
+      "reviewDate": "Tanggal Review",
+      "photos": "FOTO AKTIVITAS",
+      "photosAttached": "{{count}} foto dilampirkan",
+      "activityType": "JENIS AKTIVITAS",
+      "description": "DESKRIPSI PEKERJAAN",
+      "gpsLocation": "LOKASI GPS"
+    },
+    "rejectionInput": {
+      "title": "Alasan Penolakan",
+      "placeholder": "Jelaskan alasan penolakan aktivitas ini..."
+    }
   },
   "messages": {
     "clockInRequired": "Belum Clock In",

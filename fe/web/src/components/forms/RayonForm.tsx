@@ -76,19 +76,19 @@ export function RayonForm({
           .nullable()
           .refine(
             (v) => !v || HEX_COLOR_RE.test(v),
-            'Format warna harus heksadesimal, mis. #RRGGBB'
+            t('validation:colorInvalid')
           ),
         description: z.string().optional().nullable(),
         center_lat: z
           .number()
-          .min(-90, 'Latitude harus antara -90 dan 90')
-          .max(90, 'Latitude harus antara -90 dan 90')
+          .min(-90, t('validation:latitudeInvalid'))
+          .max(90, t('validation:latitudeInvalid'))
           .nullable()
           .optional(),
         center_lng: z
           .number()
-          .min(-180, 'Longitude harus antara -180 dan 180')
-          .max(180, 'Longitude harus antara -180 dan 180')
+          .min(-180, t('validation:longitudeInvalid'))
+          .max(180, t('validation:longitudeInvalid'))
           .nullable()
           .optional(),
         boundary_polygon: z

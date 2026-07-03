@@ -45,6 +45,7 @@ function WorkerRow({
   selected: boolean;
   onClick: () => void;
 }) {
+  const { t } = useTranslation();
   const dot = STATUS_DOT_CLASSES[worker.status as TrackingStatus] ?? STATUS_DOT_CLASSES.offline;
   const roleLabel = ROLE_LABELS[worker.role as UserRole] ?? worker.role;
   const lowBattery = worker.battery_level !== null && worker.battery_level < 20;
@@ -81,7 +82,7 @@ function WorkerRow({
         {lowBattery && (
           <span
             className="flex-shrink-0 rounded-nb-sm border border-nb-danger bg-nb-danger-light/30 px-1.5 py-0.5 text-xs font-semibold text-nb-danger-dark"
-            aria-label={`Baterai ${worker.battery_level} persen`}
+            aria-label={t('monitoring:sidebar.batteryLabel', { level: worker.battery_level })}
           >
             {worker.battery_level}%
           </span>

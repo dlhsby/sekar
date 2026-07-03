@@ -36,5 +36,17 @@
     "loadingPreferences": "Loading preferences…",
     "loadError": "Failed to load notification preferences. Please try again later.",
     "saved": "Notification preferences saved"
+  },
+  "notificationTypes": {
+    "task_assigned": "New task assigned",
+    "task_completed": "Task completed",
+    "task_updated": "Task updated",
+    "activity_approved": "Activity approved",
+    "activity_rejected": "Activity rejected",
+    "overtime_approved": "Overtime approved",
+    "overtime_rejected": "Overtime rejected",
+    "missing_worker_alert": "Missing worker alert",
+    "shift_reminder": "Shift reminder",
+    "area_plant_overdue": "Area plants overdue for pruning"
   }
 }

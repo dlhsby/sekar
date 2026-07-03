@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import {
   NBCard,
   NBCardContent,
@@ -52,6 +53,7 @@ const styles = {
 };
 
 export function SubmitContactCard(props: SubmitContactCardProps) {
+  const { t } = useTranslation('pruning');
   const {
     requesterName,
     setRequesterName,
@@ -66,25 +68,25 @@ export function SubmitContactCard(props: SubmitContactCardProps) {
   return (
     <NBCard style={styles.card}>
       <NBCardHeader>
-        <NBText variant="h3">Kontak</NBText>
+        <NBText variant="h3">{t('submit.contactCardTitle')}</NBText>
         <NBText variant="body-sm" style={styles.helper}>
-          Pemohon dan ketua RT setempat (untuk verifikasi lapangan).
+          {t('submit.contactHelper')}
         </NBText>
       </NBCardHeader>
       <NBCardContent>
-        <NBText variant="body-sm" style={styles.subHeading}>Pemohon</NBText>
+        <NBText variant="body-sm" style={styles.subHeading}>{t('submit.requesterLabel')}</NBText>
         <View style={styles.fieldGroup}>
           <NBTextInput
-            label="Nama Pemohon *"
-            placeholder="Nama lengkap"
+            label={t('submit.requesterNameLabel')}
+            placeholder={t('submit.requesterNamePlaceholder')}
             value={requesterName}
             onChangeText={setRequesterName}
           />
         </View>
         <View style={styles.fieldGroup}>
           <NBTextInput
-            label="Nomor HP Pemohon *"
-            placeholder="08xxxxxxxxxx"
+            label={t('submit.requesterPhoneLabel')}
+            placeholder={t('submit.requesterPhonePlaceholder')}
             value={requesterPhone}
             onChangeText={(v) => setRequesterPhone(digitsOnly(v))}
             keyboardType="phone-pad"
@@ -93,19 +95,19 @@ export function SubmitContactCard(props: SubmitContactCardProps) {
 
         <View style={styles.divider} />
 
-        <NBText variant="body-sm" style={styles.subHeading}>Ketua RT/RW</NBText>
+        <NBText variant="body-sm" style={styles.subHeading}>{t('submit.rtRwLeaderLabel')}</NBText>
         <View style={styles.fieldGroup}>
           <NBTextInput
-            label="Nama Ketua RT/RW *"
-            placeholder="Nama lengkap"
+            label={t('submit.rtRwLeaderNameLabel')}
+            placeholder={t('submit.rtRwLeaderNamePlaceholder')}
             value={rtLeaderName}
             onChangeText={setRtLeaderName}
           />
         </View>
         <View style={styles.fieldGroup}>
           <NBTextInput
-            label="Nomor HP Ketua RT/RW *"
-            placeholder="08xxxxxxxxxx"
+            label={t('submit.rtRwLeaderPhoneLabel')}
+            placeholder={t('submit.rtRwLeaderPhonePlaceholder')}
             value={rtLeaderPhone}
             onChangeText={(v) => setRtLeaderPhone(digitsOnly(v))}
             keyboardType="phone-pad"

@@ -35,7 +35,7 @@ import { getErrorMessage } from '@/lib/api/client';
 import { setAuthCookie } from '@/lib/utils/cookies';
 import { useThemeStore } from '@/stores/theme';
 import {
-  NOTIFICATION_TYPE_LABELS,
+  getNotificationTypeLabel,
   useNotificationPreferences,
   useUpdateNotificationPreferences,
   type NotificationPreference,
@@ -313,13 +313,13 @@ function NotificationsTab({ userId }: { userId: string }) {
         {effective.map((pref) => (
           <li key={pref.type} className="flex items-center justify-between gap-4 py-3">
             <span className="text-nb-body-sm text-nb-black">
-              {NOTIFICATION_TYPE_LABELS[pref.type] ?? pref.type}
+              {getNotificationTypeLabel(pref.type, t) ?? pref.type}
             </span>
             <button
               type="button"
               role="switch"
               aria-checked={pref.enabled}
-              aria-label={NOTIFICATION_TYPE_LABELS[pref.type] ?? pref.type}
+              aria-label={getNotificationTypeLabel(pref.type, t) ?? pref.type}
               onClick={() => toggle(pref.type, pref.enabled)}
               className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border-2 border-nb-black transition-colors ${
                 pref.enabled ? 'bg-nb-primary' : 'bg-nb-gray-200'

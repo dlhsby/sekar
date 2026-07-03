@@ -24,7 +24,8 @@
     "inactive": "Idle",
     "outside_area": "Luar",
     "missing": "Hilang",
-    "offline": "Offline"
+    "offline": "Offline",
+    "notDetected": "Tidak terdeteksi"
   },
   "filters": {
     "label": "Cari Petugas",
@@ -53,7 +54,8 @@
     "tabAreas": "Area",
     "noWorkers": "Tidak ada petugas",
     "noWorkersMatch": "Tidak ada petugas yang cocok dengan filter.",
-    "clickToFocus": "Klik petugas untuk fokus di peta"
+    "clickToFocus": "Klik petugas untuk fokus di peta",
+    "batteryLabel": "Baterai {level} persen"
   },
   "reassign": {
     "successMessage": "Petugas berhasil dipindahkan",
@@ -201,6 +203,16 @@
     "noWorkers": "Tidak ada petugas",
     "resetFilter": "Reset filter",
     "count": "{count} petugas ditampilkan"
+  },
+  "statusBar": {
+    "ariaLabel": "Status petugas",
+    "todaysSchedule": "Jadwal hari ini",
+    "scheduled": "dijadwalkan",
+    "present": "Hadir",
+    "absent": "Tidak hadir",
+    "leave": "Cuti",
+    "notScheduled": "Belum dijadwalkan",
+    "outsideAreaLabel": "Di luar area"
   },
   "staffing": {
     "staffingLabel": "Ketersediaan Petugas",

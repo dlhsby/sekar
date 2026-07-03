@@ -4,6 +4,7 @@
  */
 
 import { useCallback, useState } from 'react';
+import i18n from '../../../i18n/config';
 import type { PickedWeek } from '../components/WeekPicker';
 
 // ─── Validation Helpers ────────────────────────────────────────────
@@ -98,35 +99,35 @@ export function usePruningSubmitForm(
 
   const validate = useCallback((): string | null => {
     if (!address.trim()) {
-      return 'Alamat (jalan) wajib diisi.';
+      return i18n.t('pruning:submitForm.validationErrors.addressRequired');
     }
     if (address.trim().length < 5) {
-      return 'Alamat minimal 5 karakter.';
+      return i18n.t('pruning:submitForm.validationErrors.addressMinLength');
     }
     if (address.trim().length > 500) {
-      return 'Alamat maksimal 500 karakter.';
+      return i18n.t('pruning:submitForm.validationErrors.addressMaxLength');
     }
     // GPS state will be validated separately since it's not in this hook
     if (!treeCount || isNaN(parseInt(treeCount, 10)) || parseInt(treeCount, 10) < 1) {
-      return 'Jumlah pohon harus diisi dengan angka minimal 1.';
+      return i18n.t('pruning:submitForm.validationErrors.treeCountRequired');
     }
     if (!treeHeight.trim()) {
-      return 'Tinggi pohon (perkiraan) wajib diisi.';
+      return i18n.t('pruning:submitForm.validationErrors.treeHeightRequired');
     }
     if (!treeDiameter.trim()) {
-      return 'Diameter pohon (perkiraan) wajib diisi.';
+      return i18n.t('pruning:submitForm.validationErrors.treeDiameterRequired');
     }
     if (!requesterName.trim() || !requesterPhone.trim()) {
-      return 'Nama dan nomor HP pemohon wajib diisi.';
+      return i18n.t('pruning:submitForm.validationErrors.requesterInfoRequired');
     }
     if (!isValidIndoPhone(requesterPhone)) {
-      return 'Nomor HP pemohon harus diawali 08 dan 10–14 digit.';
+      return i18n.t('pruning:submitForm.validationErrors.requesterPhoneInvalid');
     }
     if (!rtLeaderName.trim() || !rtLeaderPhone.trim()) {
-      return 'Nama dan nomor HP ketua RT/RW wajib diisi.';
+      return i18n.t('pruning:submitForm.validationErrors.rtLeaderInfoRequired');
     }
     if (!isValidIndoPhone(rtLeaderPhone)) {
-      return 'Nomor HP ketua RT/RW harus diawali 08 dan 10–14 digit.';
+      return i18n.t('pruning:submitForm.validationErrors.rtLeaderPhoneInvalid');
     }
     return null;
   }, [

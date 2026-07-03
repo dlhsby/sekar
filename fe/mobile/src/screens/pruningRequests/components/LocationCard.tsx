@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { TouchableOpacity, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBCard, NBCardHeader, NBCardContent, NBText } from '../../../components/nb';
 import { DetailRow } from '../../../components/common/DetailRow';
@@ -45,34 +46,35 @@ const styles = StyleSheet.create({
 });
 
 export function LocationCard({ request, onMapPress }: LocationCardProps): React.JSX.Element {
+  const { t } = useTranslation('pruning');
   const hasGps = request.gpsLat != null && request.gpsLng != null;
 
   return (
     <NBCard>
       <NBCardHeader>
         <NBText variant="h2" style={styles.sectionTitle}>
-          📍 LOKASI
+          {t('locationCard.sectionTitle')}
         </NBText>
       </NBCardHeader>
       <NBCardContent>
         {request.kecamatanName ? (
           <DetailRow
-            label="Kecamatan"
+            label={t('locationCard.kecamatanLabel')}
             value={request.kecamatanName}
           />
         ) : null}
         {request.rayon?.name ? (
           <DetailRow
-            label="Rayon"
+            label={t('locationCard.rayonLabel')}
             value={request.rayon.name}
           />
         ) : null}
         <DetailRow
-          label="Alamat"
+          label={t('locationCard.addressLabel')}
           value={request.address || '—'}
         />
         <DetailRow
-          label="Koordinat GPS"
+          label={t('locationCard.gpsLabel')}
           value={formatGps(request.gpsLat, request.gpsLng)}
           variant="mono"
         />
@@ -80,13 +82,13 @@ export function LocationCard({ request, onMapPress }: LocationCardProps): React.
           <TouchableOpacity
             onPress={onMapPress}
             accessibilityRole="button"
-            accessibilityLabel="Lihat lokasi di peta"
+            accessibilityLabel={t('locationCard.mapButtonAccessibility')}
             style={styles.viewMapCta}
             testID="perantingan-gps-row"
           >
             <MaterialCommunityIcons name="map-search" size={20} color={nbColors.primary} />
             <NBText variant="body" style={styles.viewMapCtaText}>
-              Lihat di Peta
+              {t('locationCard.mapButtonLabel')}
             </NBText>
             <MaterialCommunityIcons
               name="chevron-right"
@@ -97,7 +99,7 @@ export function LocationCard({ request, onMapPress }: LocationCardProps): React.
           </TouchableOpacity>
         ) : (
           <NBText variant="body-sm" style={styles.gpsHint}>
-            Lokasi belum tersedia untuk dilihat di peta.
+            {t('locationCard.gpsUnavailable')}
           </NBText>
         )}
       </NBCardContent>

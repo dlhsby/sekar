@@ -34,9 +34,10 @@ import { useViewModal } from '@/lib/hooks/use-view-modal';
 import type { UserRole } from '@/types/models';
 import { useTranslation } from 'react-i18next';
 import {
-  PRUNING_REQUEST_ADMIN_ROLES,
-  PRUNING_REQUEST_STATUS_LABELS,
+  getPruningRequestStatusLabel,
+  PRUNING_REQUEST_STATUS_BADGES,
   PRUNING_REQUEST_STATUS_TONES,
+  PRUNING_REQUEST_ADMIN_ROLES,
 } from '@/lib/constants/pruning-requests';
 import {
   usePruningRequests,
@@ -147,7 +148,7 @@ export default function PruningRequestsPage() {
         meta: { label: t('pruning:columns.status') },
         cell: ({ row }) => (
           <StatusPill tone={PRUNING_REQUEST_STATUS_TONES[row.original.status]} dot>
-            {PRUNING_REQUEST_STATUS_LABELS[row.original.status]}
+            {getPruningRequestStatusLabel(row.original.status, t)}
           </StatusPill>
         ),
       },
@@ -279,7 +280,7 @@ export default function PruningRequestsPage() {
               label: t('pruning:page.status'),
               value: (
                 <StatusPill tone={PRUNING_REQUEST_STATUS_TONES[view.item.status]}>
-                  {PRUNING_REQUEST_STATUS_LABELS[view.item.status]}
+                  {getPruningRequestStatusLabel(view.item.status, t)}
                 </StatusPill>
               ),
             },

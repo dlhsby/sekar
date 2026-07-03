@@ -160,6 +160,28 @@
     "emptyState": "No tasks",
     "loadingState": "Loading..."
   },
+  "status": {
+    "pending": "Pending",
+    "assigned": "Assigned",
+    "accepted": "Accepted",
+    "declined": "Declined",
+    "in_progress": "In Progress",
+    "completed": "Completed",
+    "verified": "Verified",
+    "revision_needed": "Revision Needed"
+  },
+  "priority": {
+    "low": "Low",
+    "normal": "Normal",
+    "high": "High",
+    "urgent": "Urgent"
+  },
+  "lanes": {
+    "todo": "Not Started",
+    "ready": "Ready to Start",
+    "doing": "In Progress",
+    "done": "Done"
+  },
   "sections": {
     "taskInfo": "Task Information",
     "assignment": "Assignment",
