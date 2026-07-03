@@ -29,7 +29,7 @@ export class UserAreasService {
   async getPermanentAreas(userId: string): Promise<UserArea[]> {
     return this.userAreaRepo.find({
       where: { user_id: userId, assignment_type: 'permanent' },
-      relations: ['area'],
+      relations: ['area', 'area.areaType', 'area.rayon'],
     });
   }
 

@@ -40,6 +40,7 @@ import { UserRole } from './entities/user.entity';
 import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { normalizePhone, isValidIndonesianMobile } from '../../common/utils/phone.util';
 import { User } from './entities/user.entity';
+import { Area } from '../areas/entities/area.entity';
 import { USER_MANAGERS } from './constants/role-groups';
 import { UserAreasService } from '../user-areas/user-areas.service';
 import { UserValidationService } from './services/user-validation.service';
@@ -255,6 +256,28 @@ export class UsersController {
    * Accessible by administrators and supervisors.
    *
    * @route GET /api/users/:id
+   * Get a specific user's permanent assigned areas.
+   *
+   * Backs the user-management grid's Area column (summary count + slide-over
+   * list) and the `useUserAreas` hook. Manager/supervisor access mirrors
+   * `GET /users/:id`. Declared before `@Get(':id')` so the sub-path wins.
+   *
+   * @route GET /api/users/:id/areas
+   */
+  @Get(':id/areas')
+  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_DATA)
+  @ApiOperation({ summary: "Get a user's permanent assigned areas" })
+  @ApiParam({ name: 'id', description: 'User UUID' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'List of assigned areas.' })
+  async getUserAreas(@Param('id') id: string): Promise<Area[]> {
+    const userAreas = await this.userAreasService.getPermanentAreas(id);
+    return userAreas
+      .map((ua) => ua.area)
+      .filter((a): a is Area => Boolean(a))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  /**
    * @param id - User UUID
    * @returns User entity (without password)
    * @throws NotFoundException if user not found

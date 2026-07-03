@@ -76,6 +76,7 @@ describe('UsersService', () => {
   const mockUserAreasService = {
     reconcilePermanentAreas: jest.fn().mockResolvedValue({ added: [], removed: [] }),
     getPermanentAreaIds: jest.fn().mockResolvedValue([]),
+    getPermanentAreaIdsForUsers: jest.fn().mockResolvedValue(new Map()),
   };
 
   beforeEach(async () => {
@@ -335,6 +336,26 @@ describe('UsersService', () => {
         take: 50,
         order: { created_at: 'DESC' },
       });
+    });
+
+    it('attaches assigned_area_count (permanent areas) to each user', async () => {
+      const users = [
+        { ...mockUser, id: 'u1' },
+        { ...mockUser, id: 'u2' },
+      ];
+      mockUserRepository.findAndCount.mockResolvedValue([users, 2]);
+      mockUserAreasService.getPermanentAreaIdsForUsers.mockResolvedValue(
+        new Map([
+          ['u1', ['a1', 'a2', 'a3']],
+          ['u2', []],
+        ]),
+      );
+
+      const result = await service.findAllPaginated();
+
+      expect(mockUserAreasService.getPermanentAreaIdsForUsers).toHaveBeenCalledWith(['u1', 'u2']);
+      expect(result.data[0].assigned_area_count).toBe(3);
+      expect(result.data[1].assigned_area_count).toBe(0);
     });
 
     it('should return paginated users with custom page and limit', async () => {
