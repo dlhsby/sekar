@@ -345,6 +345,49 @@ async function pull(): Promise<void> {
   });
   writeCsv(path.join(DATA_DIR, 'areas-taman-aktif.csv'), ['id', 'name', 'korlap', 'rayon_code', 'gps_lat', 'gps_lng'], areaRows);
 
+  // Unified area master (all rayons) — id/name/jenis/rayon_code/korlap/gps
+  // mirrored from the `area` tab for the DB↔area.csv↔sheet 3-way sync. The id is
+  // preserved from the sheet (Rayon Timur 1 areas carry app-created v4 ids from
+  // UAT, not the KMZ v5 ids). Geometry stays in areas-kmz.generated.json, so this
+  // is metadata only. korlap only applies to taman aktif (client-curated).
+  const AREA_RANK: Record<string, number> = {
+    BARAT1: 1, BARAT2: 2, PUSAT: 3, SELATAN: 4, TIMUR1: 5, TIMUR2: 6, UTARA: 7, TAMAN_AKTIF: 8,
+  };
+  const areaFull: string[][] = [];
+  for (const g of grids) {
+    const t = findTable(g.rows, isAreaHeader);
+    if (!t) continue;
+    const { col } = t;
+    for (let i = t.hdr + 1; i < g.rows.length; i++) {
+      const r = g.rows[i];
+      const name = (r[col['name']] ?? '').replace(/\s+/g, ' ').trim();
+      if (!name) continue;
+      const rayonCode = rayonFromTitle(r[col['rayon']] ?? '');
+      const sheetId = (col['id'] != null ? (r[col['id']] ?? '') : '').trim();
+      const korlap = rayonCode === 'TAMAN_AKTIF' ? (r[col['korlap']] ?? '').trim() : '';
+      const la = (col['gps_lat'] != null ? (r[col['gps_lat']] ?? '').trim() : '');
+      const lo = (col['gps_lng'] != null ? (r[col['gps_lng']] ?? '').trim() : '');
+      areaFull.push([
+        UUID_RE.test(sheetId) ? sheetId : uuidv5(`AREA:${rayonCode}:${name}`),
+        name,
+        (r[col['jenis']] ?? '').trim(),
+        rayonCode,
+        korlap,
+        la,
+        lo,
+      ]);
+    }
+    break; // only the first area table
+  }
+  if (areaFull.length) {
+    areaFull.sort((a, b) => (AREA_RANK[a[3]] ?? 9) - (AREA_RANK[b[3]] ?? 9) || a[1].localeCompare(b[1]));
+    writeCsv(
+      path.join(DATA_DIR, 'area.csv'),
+      ['id', 'name', 'jenis', 'rayon_code', 'korlap', 'gps_lat', 'gps_lng'],
+      areaFull,
+    );
+  }
+
   // username allocation + phone de-dup (mirror the generator)
   const usedNames = new Set<string>();
   const seenPhone = new Set<string>();
@@ -433,7 +476,7 @@ async function pull(): Promise<void> {
   }
 
   console.log(
-    `Pulled ${areaRows.length} parks + ${userRows.length} users + ${rayonRows.length} rayons from the sheet → seed CSVs.`,
+    `Pulled ${areaFull.length} areas (${areaRows.length} parks) + ${userRows.length} users + ${rayonRows.length} rayons from the sheet → seed CSVs.`,
   );
   console.log('Next: npm run db:seed:staging');
 }
@@ -443,8 +486,14 @@ async function push(): Promise<void> {
   const grids = await readAllTabs();
   const updates: Update[] = [];
 
-  // Areas: write id + gps_lat/gps_lng (matched by name); add columns if absent.
-  const areaCsv = new Map(readCsv(path.join(DATA_DIR, 'areas-taman-aktif.csv')).map((r) => [r.name, r]));
+  // Areas: write id + gps_lat/gps_lng into the `area` tab, matched by name+rayon
+  // (names collide across rayons — e.g. "Taman Korea" in both Pusat and taman
+  // aktif — so keying on name alone would write the wrong id). Sourced from the
+  // unified area.csv (all 937 areas), the machine fields only.
+  const areaKey = (name: string, code: string): string => `${name.toLowerCase()}||${code}`;
+  const areaCsv = new Map(
+    readCsv(path.join(DATA_DIR, 'area.csv')).map((r) => [areaKey(r.name, r.rayon_code), r]),
+  );
   for (const g of grids) {
     const t = findTable(g.rows, isAreaHeader);
     if (!t) continue;
@@ -460,7 +509,9 @@ async function push(): Promise<void> {
     const cId = ensure('id'), cLat = ensure('gps_lat'), cLng = ensure('gps_lng');
     for (let i = t.hdr + 1; i < g.rows.length; i++) {
       const name = (g.rows[i][t.col['name']] ?? '').trim();
-      const rec = areaCsv.get(name);
+      if (!name) continue;
+      const code = rayonFromTitle(g.rows[i][t.col['rayon']] ?? '');
+      const rec = areaCsv.get(areaKey(name, code));
       if (!rec) continue;
       const rowNo = i + 1;
       updates.push({ range: `'${g.title}'!${A1(cId)}${rowNo}`, values: [[rec.id]] });

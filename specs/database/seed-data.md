@@ -29,8 +29,10 @@ the client keeps filling their input sheet — without code edits:
 
 | File | Source | Regenerate with |
 |------|--------|-----------------|
-| `data/kmz/*.kmz` | 6 per-rayon KMZ (Surabaya geographic rayons) | drop new files in place |
-| `data/areas-kmz.generated.json` | ~741 geographic coverage areas (Polygon/MultiGeometry only) | `npm run seed:extract-kmz` |
+| `data/kmz/*.kmz` | 8 per-rayon KMZ (7 geographic rayons + Taman Aktif) | drop new files in place |
+| `data/areas-kmz.generated.json` | 937 areas — geometry source (Polygon/MultiGeometry only): 895 geographic + 42 Taman Aktif polygons | `npm run seed:extract-kmz` |
+| `data/area-id-overrides.json` | Maps deterministic KMZ v5 ids → live-DB v4 ids for **Rayon Timur 1** (created via the app during UAT, not seeded from KMZ). Applied by the extractor so the json + a fresh seed reproduce the live ids. | maintained via sheet sync |
+| `data/area.csv` | All 937 areas (id, name, jenis, rayon_code, korlap, gps) mirroring the live DB — the **DB ↔ area.csv ↔ sheet** sync master (metadata only; geometry stays in the generated json) | `npm run sheet:pull` |
 | `data/areas-taman-aktif.csv` | 42 Taman Aktif parks (name, korlap) exported from the sheet | edit/export from sheet |
 | `data/users.csv` *(gitignored — PII)* | ~310-row real roster (Taman Aktif + Timur 2), merged + deduped | `npm run sheet:pull` |
 
@@ -64,7 +66,7 @@ Full reload: `npm run seed:extract-kmz` → `npm run db:seed:staging` (destructi
   (gitignored), set `GOOGLE_SHEETS_SA_KEYFILE`. Either way set `SEKAR_SHEET_ID`.
 
 - `npm run sheet:sync -- --list` — inspect tabs + which carry area/user tables.
-- `npm run sheet:pull` — sheet → regenerate `areas-taman-aktif.csv` + `users.csv`
+- `npm run sheet:pull` — sheet → regenerate `area.csv` + `areas-taman-aktif.csv` + `rayons.csv` + `users.csv`
   (auto-detects tables by header; real-person rows are those with a blank
   `username`; preserves existing/`manual` coords when the sheet has no gps cols).
   Then `npm run db:seed:staging`.
