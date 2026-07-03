@@ -113,11 +113,17 @@
   "search": {
     "title": "Pencarian",
     "placeholder": "Cari petugas, area, rayon…",
+    "searchLabel": "Pencarian: {{value}}",
+    "clearLabel": "Hapus pencarian",
+    "all": "Semua",
     "noResults": "Tidak Ada Hasil",
+    "noResultsMsg": "Tidak ada yang cocok dengan \"{query}\".",
     "startSearch": "Mulai Mencari",
     "startSearchDescription": "Cari petugas, area, atau rayon untuk menemukannya di peta.",
     "recents": "Terakhir dilihat",
-    "clearAll": "Hapus semua"
+    "clearAll": "Hapus semua",
+    "clearAllLabel": "Hapus semua pencarian terakhir",
+    "clear": "Bersihkan"
   },
   "attendance": {
     "title": "Kehadiran",
@@ -173,7 +179,34 @@
     "endPoint": "Titik Akhir",
     "waypoint": "Titik #{{num}}",
     "loadError": "Gagal Memuat Riwayat",
-    "noData": "Tidak Ada Riwayat"
+    "noData": "Tidak Ada Riwayat",
+    "loading": "Memuat riwayat lokasi…",
+    "wayStartLabel": "Mulai",
+    "wayEndLabel": "Akhir",
+    "battery": "Baterai:",
+    "insideArea": "Di dalam area",
+    "outsideArea": "Di luar area"
+  },
+  "userAttendance": {
+    "title": "Detail Kehadiran",
+    "clockedIn": "Sudah Clock In",
+    "notClockedIn": "Belum Clock In",
+    "loadError": "Gagal memuat detail kehadiran.",
+    "notClockedInDate": "Belum clock in pada tanggal ini.",
+    "clockIn": "Clock In",
+    "clockOut": "Clock Out",
+    "notClockedOut": "Belum clock out",
+    "duration": "Durasi",
+    "running": "Berjalan",
+    "outsideBoundary": "Di luar area",
+    "yes": "Ya",
+    "defaultName": "Petugas"
+  },
+  "mapError": {
+    "title": "Gagal Memuat Peta",
+    "message": "Terjadi kesalahan saat memuat peta. Silakan coba lagi atau hubungi administrator jika masalah berlanjut.",
+    "retry": "Coba Lagi",
+    "retryLabel": "Coba lagi memuat peta"
   },
   "boundaryDetail": {
     "understaffed": "Understaffed",

@@ -59,5 +59,9 @@
   "NETWORK_ERROR": "Gagal terhubung ke server. Periksa koneksi internet Anda.",
   "TIMEOUT_ERROR": "Permintaan melebihi batas waktu. Silakan coba lagi.",
   "UNKNOWN_ERROR": "Terjadi kesalahan. Silakan coba lagi.",
-  "GENERIC": "Terjadi kesalahan. Silakan coba lagi."
+  "GENERIC": "Terjadi kesalahan. Silakan coba lagi.",
+
+  "uploadPhotoFailed": "Gagal mengunggah foto ({{status}})",
+  "uploadProfileFailed": "Gagal mengunggah foto profil",
+  "changePasswordFailed": "Gagal mengubah password"
 }

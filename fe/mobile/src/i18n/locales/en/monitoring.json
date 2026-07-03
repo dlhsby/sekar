@@ -113,11 +113,17 @@
   "search": {
     "title": "Search",
     "placeholder": "Search officers, areas, rayons…",
+    "searchLabel": "Search: {{value}}",
+    "clearLabel": "Clear search",
+    "all": "All",
     "noResults": "No Results",
+    "noResultsMsg": "Nothing matches \"{query}\".",
     "startSearch": "Start Searching",
     "startSearchDescription": "Search for officers, areas, or rayons to find them on the map.",
     "recents": "Recently viewed",
-    "clearAll": "Clear all"
+    "clearAll": "Clear all",
+    "clearAllLabel": "Clear all recent searches",
+    "clear": "Clear"
   },
   "attendance": {
     "title": "Attendance",
@@ -173,7 +179,34 @@
     "endPoint": "End Point",
     "waypoint": "Point #{{num}}",
     "loadError": "Failed to Load History",
-    "noData": "No History"
+    "noData": "No History",
+    "loading": "Loading location history…",
+    "wayStartLabel": "Start",
+    "wayEndLabel": "End",
+    "battery": "Battery:",
+    "insideArea": "Inside area",
+    "outsideArea": "Outside area"
+  },
+  "userAttendance": {
+    "title": "Attendance Detail",
+    "clockedIn": "Clocked In",
+    "notClockedIn": "Not Clocked In",
+    "loadError": "Failed to load attendance detail.",
+    "notClockedInDate": "Not clocked in on this date.",
+    "clockIn": "Clock In",
+    "clockOut": "Clock Out",
+    "notClockedOut": "Not clocked out",
+    "duration": "Duration",
+    "running": "Running",
+    "outsideBoundary": "Outside area",
+    "yes": "Yes",
+    "defaultName": "Officer"
+  },
+  "mapError": {
+    "title": "Failed to Load Map",
+    "message": "An error occurred while loading the map. Please try again or contact your administrator if the problem persists.",
+    "retry": "Try Again",
+    "retryLabel": "Try loading the map again"
   },
   "boundaryDetail": {
     "understaffed": "Understaffed",

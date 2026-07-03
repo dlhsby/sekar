@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, StyleSheet } from 'react-native';
 import {
   NBButton,
@@ -33,15 +34,16 @@ export const OvertimeApprovalBar: React.FC<OvertimeApprovalBarProps> = ({
   onRejectSubmitPress,
   onRejectReasonChange,
 }) => {
+  const { t } = useTranslation();
   if (showRejectInput) {
     return (
       <>
         <NBCardTextInput
-          title="ALASAN PENOLAKAN"
+          title={t('overtime:forms.rejectionReasonLabel')}
           required
           value={rejectReason}
           onChangeText={onRejectReasonChange}
-          placeholder="Jelaskan alasan penolakan lembur ini..."
+          placeholder={t('overtime:forms.rejectionReasonPlaceholder')}
           maxLength={1000}
           numberOfLines={4}
           style={styles.rejectInputSection}
@@ -50,7 +52,7 @@ export const OvertimeApprovalBar: React.FC<OvertimeApprovalBarProps> = ({
           <View style={styles.approvalButtonRow}>
             <View style={styles.approvalButtonHalf}>
               <NBButton
-                title="Batal"
+                title={t('common:actions.cancel')}
                 variant="secondary"
                 onPress={onBatalPress}
                 fullWidth
@@ -59,7 +61,7 @@ export const OvertimeApprovalBar: React.FC<OvertimeApprovalBarProps> = ({
             </View>
             <View style={styles.approvalButtonHalf}>
               <NBButton
-                title="Kirim Penolakan"
+                title={t('overtime:forms.submitRejectionButtonLabel')}
                 variant="danger"
                 onPress={onRejectSubmitPress}
                 disabled={isSubmitting || !rejectReason.trim()}
@@ -79,7 +81,7 @@ export const OvertimeApprovalBar: React.FC<OvertimeApprovalBarProps> = ({
       <View style={styles.approvalButtonRow}>
         <View style={styles.approvalButtonHalf}>
           <NBButton
-            title="Tolak"
+            title={t('common:actions.reject')}
             variant="danger"
             onPress={onTolakPress}
             disabled={isSubmitting}
@@ -89,7 +91,7 @@ export const OvertimeApprovalBar: React.FC<OvertimeApprovalBarProps> = ({
         </View>
         <View style={styles.approvalButtonHalf}>
           <NBButton
-            title="Setujui"
+            title={t('common:actions.approve')}
             variant="success"
             onPress={onApprovePress}
             disabled={isSubmitting}

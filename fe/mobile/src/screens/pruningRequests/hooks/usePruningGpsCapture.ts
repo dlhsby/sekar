@@ -5,6 +5,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Geolocation from 'react-native-geolocation-service';
+import i18n from '../../../i18n/config';
 import {
   requestLocationPermission,
 } from '../../../services/permissions/permissionService';
@@ -23,7 +24,7 @@ export function usePruningGpsCapture() {
       const perm = await requestLocationPermission();
       if (perm.status !== 'granted') {
         setGpsError(
-          'Izin lokasi ditolak. Aktifkan izin lokasi di Pengaturan untuk menangkap koordinat GPS otomatis.',
+          i18n.t('location:errors.capturePermissionDenied'),
         );
         setGpsLoading(false);
         return;
@@ -36,13 +37,13 @@ export function usePruningGpsCapture() {
           setGpsLoading(false);
         },
         (err) => {
-          setGpsError(`Gagal mendapatkan lokasi: ${err.message}`);
+          setGpsError(`${i18n.t('location:errors.getFailed')} ${err.message}`);
           setGpsLoading(false);
         },
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
       );
     } catch (e) {
-      setGpsError(e instanceof Error ? e.message : 'Gagal menangkap lokasi GPS');
+      setGpsError(e instanceof Error ? e.message : i18n.t('location:errors.captureFailed'));
       setGpsLoading(false);
     }
   }, []);

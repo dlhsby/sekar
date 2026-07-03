@@ -7,6 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBModal } from '../nb/NBModal';
 import { NBText } from '../nb/NBText';
@@ -32,8 +33,8 @@ function fmtTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 }
 
-function fmtDuration(minutes: number | null): string {
-  if (minutes == null) { return 'Berjalan'; }
+function fmtDuration(minutes: number | null, t: any): string {
+  if (minutes == null) { return t('monitoring:userAttendance.running'); }
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return h === 0 ? `${m}m` : `${h}j ${m}m`;
@@ -46,6 +47,7 @@ export function UserAttendanceModal({
   date,
   onClose,
 }: UserAttendanceModalProps): React.JSX.Element {
+  const { t } = useTranslation();
   const [detail, setDetail] = useState<UserAttendanceDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -67,7 +69,7 @@ export function UserAttendanceModal({
   }, [visible, userId, date]);
 
   const clockedIn = detail?.clocked_in ?? false;
-  const headerName = detail?.user.full_name ?? userName ?? 'Petugas';
+  const headerName = detail?.user.full_name ?? userName ?? t('monitoring:userAttendance.defaultName');
   const roleArea = detail
     ? `${ROLE_LABELS[detail.user.role as UserRole] ?? detail.user.role}${detail.user.area ? ` · ${detail.user.area.name}` : ''}`
     : null;
@@ -77,7 +79,7 @@ export function UserAttendanceModal({
       visible={visible}
       onClose={onClose}
       type="sheet"
-      title="Detail Kehadiran"
+      title={t('monitoring:userAttendance.title')}
       testID="user-attendance-modal"
     >
       <View style={styles.body}>
@@ -93,7 +95,7 @@ export function UserAttendanceModal({
             <StatusPill
               dot
               tone={clockedIn ? 'ok' : 'warn'}
-              label={clockedIn ? 'Sudah Clock In' : 'Belum Clock In'}
+              label={clockedIn ? t('monitoring:userAttendance.clockedIn') : t('monitoring:userAttendance.notClockedIn')}
             />
           ) : null}
         </View>
@@ -102,26 +104,26 @@ export function UserAttendanceModal({
           <NBSkeleton variant="card" height={120} />
         ) : error ? (
           <NBText variant="body-sm" color="gray500" align="center" style={styles.msg}>
-            Gagal memuat detail kehadiran.
+            {t('monitoring:userAttendance.loadError')}
           </NBText>
         ) : detail && clockedIn && detail.shift ? (
           <View style={styles.detailCard}>
-            <DetailRow icon="login" label="Clock In" value={fmtTime(detail.shift.clock_in_time)} />
+            <DetailRow icon="login" label={t('monitoring:userAttendance.clockIn')} value={fmtTime(detail.shift.clock_in_time)} />
             <DetailRow
               icon="logout"
-              label="Clock Out"
-              value={detail.shift.clock_out_time ? fmtTime(detail.shift.clock_out_time) : 'Belum clock out'}
+              label={t('monitoring:userAttendance.clockOut')}
+              value={detail.shift.clock_out_time ? fmtTime(detail.shift.clock_out_time) : t('monitoring:userAttendance.notClockedOut')}
             />
             <DetailRow
               icon="timer-outline"
-              label="Durasi"
-              value={fmtDuration(detail.shift.duration_minutes)}
+              label={t('monitoring:userAttendance.duration')}
+              value={fmtDuration(detail.shift.duration_minutes, t)}
             />
             {(detail.shift.clock_in_outside_boundary || detail.shift.clock_out_outside_boundary) ? (
               <DetailRow
                 icon="map-marker-alert"
-                label="Di luar area"
-                value="Ya"
+                label={t('monitoring:userAttendance.outsideBoundary')}
+                value={t('monitoring:userAttendance.yes')}
                 valueColor={nbColors.statusMissing}
                 isLast
               />
@@ -129,7 +131,7 @@ export function UserAttendanceModal({
           </View>
         ) : detail ? (
           <NBText variant="body-sm" color="gray500" align="center" style={styles.msg}>
-            Belum clock in pada tanggal ini.
+            {t('monitoring:userAttendance.notClockedInDate')}
           </NBText>
         ) : null}
       </View>

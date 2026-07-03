@@ -15,7 +15,10 @@
     "gpsDisabledTitle": "GPS Tidak Aktif",
     "gpsDisabledMessage": "Aplikasi memerlukan GPS untuk melacak lokasi. Silakan aktifkan GPS di pengaturan perangkat.",
     "unavailableGeneral": "Tidak dapat mendapatkan lokasi.",
-    "unavailableClockIn": "Lokasi belum tersedia. Tunggu GPS mendapatkan lokasi."
+    "unavailableClockIn": "Lokasi belum tersedia. Tunggu GPS mendapatkan lokasi.",
+    "capturePermissionDenied": "Izin lokasi ditolak. Aktifkan izin lokasi di Pengaturan untuk menangkap koordinat GPS otomatis.",
+    "getFailed": "Gagal mendapatkan lokasi:",
+    "captureFailed": "Gagal menangkap lokasi GPS"
   },
   "clockInOut": {
     "cameraPermissionTitle": "Izin Kamera",
@@ -29,5 +32,11 @@
     "clockOutConfirmMessage": "Apakah Anda yakin ingin mengakhiri shift?",
     "clockOutButton": "Clock Out",
     "noActiveShift": "Tidak ada shift aktif"
-  }
+  },
+  "foregroundService": {
+    "channelName": "Pelacakan Lokasi",
+    "notificationTitle": "SEKAR — Pelacakan lokasi aktif",
+    "notificationBody": "Lokasi Anda dipantau selama shift berlangsung."
+  },
+  "noPoints": "Belum ada titik GPS yang terekam untuk tanggal ini."
 }

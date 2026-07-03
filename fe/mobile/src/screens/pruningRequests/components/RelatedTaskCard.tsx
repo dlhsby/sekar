@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBCard, NBCardHeader, NBCardContent, NBText, NBButton } from '../../../components/nb';
 import { nbColors, nbSpacing } from '../../../constants/nbTokens';
 import type { PruningRequest } from '../../../types/models.types';
@@ -31,22 +32,24 @@ export function RelatedTaskCard({
   request,
   onViewTask,
 }: RelatedTaskCardProps): React.JSX.Element | null {
+  const { t } = useTranslation();
+
   if (!request.assignedTaskId) {
     return null;
   }
 
   const taskMessage =
     request.status === 'done'
-      ? 'Pekerjaan telah selesai. Lihat detail tugas untuk foto bukti dan catatan penyelesaian.'
+      ? t('pruning:relatedTask.statusMessages.done')
       : request.status === 'in_progress'
-        ? 'Tugas sedang dikerjakan oleh petugas.'
-        : 'Permohonan ini telah dijadwalkan dan tugas kerja telah dibuat.';
+        ? t('pruning:relatedTask.statusMessages.inProgress')
+        : t('pruning:relatedTask.statusMessages.default');
 
   return (
     <NBCard>
       <NBCardHeader>
         <NBText variant="h2" style={styles.sectionTitle}>
-          🔗 TUGAS TERKAIT
+          {t('pruning:relatedTask.title')}
         </NBText>
       </NBCardHeader>
       <NBCardContent>
@@ -55,7 +58,7 @@ export function RelatedTaskCard({
         </NBText>
         <NBButton
           variant="primary"
-          label="Lihat Tugas"
+          label={t('pruning:relatedTask.viewButton')}
           onPress={onViewTask}
           leftIcon="link-variant"
           fullWidth

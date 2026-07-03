@@ -208,7 +208,7 @@ export function AvailabilityCalendar({
     if (day.status === 'unknown') {
       Alert.alert(
         t('calendar.legendUnset'),
-        'Kapasitas minggu ini belum diatur admin. Silakan pilih tanggal lain atau hubungi admin rayon.',
+        t('calendar.capacityUnsetError'),
       );
       return;
     }
@@ -252,18 +252,18 @@ export function AvailabilityCalendar({
           ]}
           numberOfLines={1}
         >
-          {selectedDate ? formatDateLong(selectedDate) : 'Belum dipilih'}
+          {selectedDate ? formatDateLong(selectedDate) : t('calendar.notSelectedYet')}
         </NBText>
         {selectedDate ? (
           <TouchableOpacity
             onPress={() => onSelect(null)}
             accessibilityRole="button"
-            accessibilityLabel="Hapus tanggal terpilih"
+            accessibilityLabel={t('calendar.clearDateLabel')}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             style={styles.infoStripClear}
             testID="perantingan-calendar-clear"
           >
-            <NBText style={styles.infoStripClearText}>Hapus</NBText>
+            <NBText style={styles.infoStripClearText}>{t('calendar.clearDateLabel')}</NBText>
           </TouchableOpacity>
         ) : null}
       </View>
@@ -296,7 +296,7 @@ export function AvailabilityCalendar({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {loading && <NBText style={styles.loading}>{t('calendar.loading') || 'Memuat kapasitas…'}</NBText>}
+        {loading && <NBText style={styles.loading}>{t('calendar.loading')}</NBText>}
         {months.map((bucket) => {
           const matrix = buildMonthMatrix(bucket);
           const monthDate = new Date(bucket.year, bucket.month, 1);

@@ -59,5 +59,9 @@
   "NETWORK_ERROR": "Could not connect to the server. Check your internet connection.",
   "TIMEOUT_ERROR": "The request timed out. Please try again.",
   "UNKNOWN_ERROR": "Something went wrong. Please try again.",
-  "GENERIC": "Something went wrong. Please try again."
+  "GENERIC": "Something went wrong. Please try again.",
+
+  "uploadPhotoFailed": "Failed to upload photo ({{status}})",
+  "uploadProfileFailed": "Failed to upload profile picture",
+  "changePasswordFailed": "Failed to change password"
 }

@@ -32,6 +32,7 @@
   },
   "list": {
     "label": "Overtime",
+    "dateRangeLabel": "Date",
     "sortNewest": "Newest Date",
     "sortOldest": "Oldest Date",
     "sortCreatedNewest": "Newest Created",
@@ -71,11 +72,18 @@
     "locationError": "GPS location is required",
     "activityTypeLabel": "Activity Type",
     "activityTypePlaceholder": "Select activity type...",
+    "activityTypeSearchPlaceholder": "Search activity types...",
+    "noActivityTypesWarning": "No activity types available. Contact administrator.",
+    "errorSummaryTitle": "Please complete the following data:",
     "descriptionTitle": "WORK DESCRIPTION",
     "descriptionPlaceholder": "Explain the overtime work performed...",
     "photosTitle": "PROOF PHOTOS",
     "photosSubtitle": "{{count}} photos attached",
-    "gpsLabel": "GPS Location"
+    "photosSubtitleText": "Add 1-3 photos of overtime work",
+    "gpsLabel": "GPS Location",
+    "rejectionReasonLabel": "REJECTION REASON",
+    "rejectionReasonPlaceholder": "Explain the reason for rejecting this overtime...",
+    "submitRejectionButtonLabel": "Submit Rejection"
   },
   "components": {
     "idPengajuanLabel": "Submission ID",
@@ -85,12 +93,20 @@
     "photosCount": "{{count}} photos",
     "notFilledLabel": "(Not filled)",
     "clockOutButtonLabel": "Clock Out Overtime",
+    "clockOutButtonTitle": "Clock Out Overtime",
     "selfieAlreadyCaptured": "Captured ✓",
     "selfieOptional": "Optional",
     "selfiePrompt": "Take a selfie for verification",
     "viewFullSelfieLabel": "View full selfie",
     "captureButtonLabel": "Take Selfie",
-    "retakeButtonLabel": "Retake Selfie"
+    "retakeButtonLabel": "Retake Selfie",
+    "generalInfoTitle": "GENERAL INFO",
+    "dateLabel": "DATE",
+    "timeLabel": "TIME",
+    "withinAreaBadge": "IN AREA",
+    "outsideAreaBadge": "OUTSIDE AREA",
+    "trailTitle": "LOCATION TRAIL",
+    "viewTrailButtonLabel": "View Overtime Location Trail"
   },
   "trail": {
     "title": "Overtime Trail",
@@ -141,5 +157,16 @@
     "toastEndError": "Failed to End Overtime",
     "toastError": "Failed",
     "toastGenericError": "Failed to complete overtime"
+  },
+  "alerts": {
+    "confirmTitle": "Confirm",
+    "approveOvertimeMessage": "Approve this overtime request?",
+    "agreeAction": "Agree",
+    "successTitle": "Success",
+    "overtimeApprovedMessage": "Overtime approved",
+    "failedToApproveMessage": "Failed to approve overtime",
+    "errorTitle": "Error",
+    "overtimeRejectedMessage": "Overtime rejected",
+    "failedToRejectMessage": "Failed to reject overtime"
   }
 }

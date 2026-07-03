@@ -111,14 +111,14 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
     }
     if (filters.from_date || filters.to_date) {
       const f = filters.from_date;
-      const t = filters.to_date;
-      chips.push({ text: f && t ? `${f.slice(5)} — ${t.slice(5)}` : 'Tanggal', tone: 'date' });
+      const toDate = filters.to_date;
+      chips.push({ text: f && toDate ? `${f.slice(5)} — ${toDate.slice(5)}` : t('list.dateRangeLabel'), tone: 'date' });
     }
     if (filters.rayon_id) { chips.push({ text: 'Rayon', tone: 'location' }); }
     if (filters.area_id) { chips.push({ text: 'Area', tone: 'location' }); }
     if (filters.user_id) { chips.push({ text: 'Petugas', tone: 'assignment' }); }
     return chips;
-  }, [filters]);
+  }, [filters, t]);
 
   const buildParams = useCallback((p: number): OvertimeFilter => ({
     ...filters,

@@ -127,12 +127,12 @@ export function MonitoringSearchModal({
 
   const tabs = useMemo(
     () => [
-      { key: 'semua', label: 'Semua', count: results.total },
-      { key: 'petugas', label: 'Petugas', count: results.petugas.length },
-      { key: 'area', label: 'Area', count: results.area.length },
-      { key: 'rayon', label: 'Rayon', count: results.rayon.length },
+      { key: 'semua', label: t('monitoring:search.all'), count: results.total },
+      { key: 'petugas', label: t('monitoring:layers.workers'), count: results.petugas.length },
+      { key: 'area', label: t('monitoring:layers.areas'), count: results.area.length },
+      { key: 'rayon', label: t('monitoring:layers.rayons'), count: results.rayon.length },
     ],
-    [results],
+    [results, t],
   );
 
   // Flattened rows for the active tab (Semua → type-grouped sections).
@@ -181,7 +181,7 @@ export function MonitoringSearchModal({
               onPress={() => setQuery('')}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               accessibilityRole="button"
-              accessibilityLabel={t('common:actions.reset')}
+              accessibilityLabel={t('monitoring:search.clear')}
               testID="monitoring-search-clear"
             >
               <MaterialCommunityIcons name="close-circle" size={18} color={nbColors.gray400} />

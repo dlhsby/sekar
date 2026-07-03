@@ -15,5 +15,6 @@
   "roleRequired": "Role is required",
   "rayonRequired": "Rayon is required",
   "areaTypeRequired": "Area type is required",
-  "boundaryRequired": "Area boundary must be drawn on the map"
+  "boundaryRequired": "Area boundary must be drawn on the map",
+  "rejectionReasonRequired": "Rejection reason must be filled"
 }

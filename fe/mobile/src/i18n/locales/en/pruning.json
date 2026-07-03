@@ -46,12 +46,17 @@
   "submit": {
     "pageTitle": "Create Pruning Request",
     "locationCardTitle": "Pruning Location",
+    "locationCardTitleRequired": "Location *",
     "rayonLabel": "District",
     "rayonPlaceholder": "Select District",
+    "notSetLabel": "Not set",
     "kecamatanLabel": "Sub-district",
     "kecamatanPlaceholder": "Example: Tegalsari",
     "addressLabel": "Full Address *",
     "addressPlaceholder": "Example: Jl. Raya Darmo No. 123, RT 02 / RW 05",
+    "gpsCoordinatesLabel": "GPS Coordinates",
+    "gpsDetecting": "Detecting…",
+    "gpsNotAvailable": "Not available",
     "gpsLocationLabel": "GPS Location",
     "gpsUpdateButtonLabel": "Update GPS location",
     "mapButtonTitle": "Select on Map",
@@ -89,7 +94,12 @@
     "preferenceWeekLabel": "Preferred Week",
     "selectedDateLabel": "Selected Date",
     "clearDateLabel": "Clear selected date",
+    "selectDateLabel": "Select Date",
+    "selectWeekLabel": "Select Preferred Week",
+    "notSelectedYet": "Not selected yet",
     "dateFullError": "This date is already full. Please select another date.",
+    "capacityUnsetError": "The capacity for this week has not been set by admin. Please select another date or contact your district admin.",
+    "loading": "Loading capacity…",
     "sundayLabel": "Sun",
     "mondayLabel": "Mon",
     "tuesdayLabel": "Tue",
@@ -174,7 +184,10 @@
     "validationFailedTitle": "Validation Failed"
   },
   "actionBar": {
-    "convertLabel": "Assign to Staff"
+    "convertLabel": "Assign to Staff",
+    "cancelLabel": "Cancel",
+    "submittingLabel": "Submitting…",
+    "submitLabel": "Submit"
   },
   "validation": {
     "reviewTitle": "Review",
@@ -225,6 +238,15 @@
       "successMessage": "Date scheduled: {{date}}",
       "failedTitle": "Failed to save",
       "failedMessage": "Please try again."
+    }
+  },
+  "relatedTask": {
+    "title": "🔗 RELATED TASK",
+    "viewButton": "View Task",
+    "statusMessages": {
+      "done": "Work completed. See task details for proof photos and completion notes.",
+      "inProgress": "Task is currently being worked on by the staff.",
+      "default": "This request has been scheduled and a work task has been created."
     }
   }
 }

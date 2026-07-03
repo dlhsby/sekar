@@ -46,12 +46,17 @@
   "submit": {
     "pageTitle": "Buat Permohonan Perantingan",
     "locationCardTitle": "Lokasi Pemangkasan",
+    "locationCardTitleRequired": "Lokasi *",
     "rayonLabel": "Rayon",
     "rayonPlaceholder": "Pilih Rayon",
+    "notSetLabel": "Belum diatur",
     "kecamatanLabel": "Kecamatan",
     "kecamatanPlaceholder": "Contoh: Tegalsari",
     "addressLabel": "Alamat Lengkap *",
     "addressPlaceholder": "Contoh: Jl. Raya Darmo No. 123, RT 02 / RW 05",
+    "gpsCoordinatesLabel": "Koordinat GPS",
+    "gpsDetecting": "Mendeteksi…",
+    "gpsNotAvailable": "Belum tersedia",
     "gpsLocationLabel": "Lokasi GPS",
     "gpsUpdateButtonLabel": "Perbarui lokasi GPS",
     "mapButtonTitle": "Pilih di Peta",
@@ -89,7 +94,12 @@
     "preferenceWeekLabel": "Minggu Preferensi",
     "selectedDateLabel": "Tanggal Terpilih",
     "clearDateLabel": "Hapus tanggal terpilih",
+    "selectDateLabel": "Pilih Tanggal",
+    "selectWeekLabel": "Pilih Minggu Preferensi",
+    "notSelectedYet": "Belum dipilih",
     "dateFullError": "Tanggal yang dipilih sudah penuh, silakan pilih tanggal lain.",
+    "capacityUnsetError": "Kapasitas minggu ini belum diatur admin. Silakan pilih tanggal lain atau hubungi admin rayon.",
+    "loading": "Memuat kapasitas…",
     "sundayLabel": "Min",
     "mondayLabel": "Sen",
     "tuesdayLabel": "Sel",
@@ -174,7 +184,10 @@
     "validationFailedTitle": "Validasi Gagal"
   },
   "actionBar": {
-    "convertLabel": "Tugaskan ke Petugas"
+    "convertLabel": "Tugaskan ke Petugas",
+    "cancelLabel": "Batal",
+    "submittingLabel": "Mengirim…",
+    "submitLabel": "Kirim"
   },
   "validation": {
     "reviewTitle": "Periksa kembali",
@@ -225,6 +238,15 @@
       "successMessage": "Tanggal dijadwalkan: {{date}}",
       "failedTitle": "Gagal menyimpan",
       "failedMessage": "Coba lagi."
+    }
+  },
+  "relatedTask": {
+    "title": "🔗 TUGAS TERKAIT",
+    "viewButton": "Lihat Tugas",
+    "statusMessages": {
+      "done": "Pekerjaan telah selesai. Lihat detail tugas untuk foto bukti dan catatan penyelesaian.",
+      "inProgress": "Tugas sedang dikerjakan oleh petugas.",
+      "default": "Permohonan ini telah dijadwalkan dan tugas kerja telah dibuat."
     }
   }
 }

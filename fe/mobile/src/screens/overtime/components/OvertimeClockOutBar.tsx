@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, StyleSheet } from 'react-native';
 import { NBButton } from '../../../components/nb';
 import { nbSpacing } from '../../../constants/nbTokens';
@@ -11,17 +12,20 @@ interface OvertimeClockOutBarProps {
   onPress: () => void;
 }
 
-export const OvertimeClockOutBar: React.FC<OvertimeClockOutBarProps> = ({ onPress }) => (
-  <View style={styles.fab}>
-    <NBButton
-      title="Clock Out Lembur"
-      variant="danger"
-      size="lg"
-      fullWidth
-      onPress={onPress}
-    />
-  </View>
-);
+export const OvertimeClockOutBar: React.FC<OvertimeClockOutBarProps> = ({ onPress }) => {
+  const { t } = useTranslation();
+  return (
+    <View style={styles.fab}>
+      <NBButton
+        title={t('overtime:components.clockOutButtonTitle')}
+        variant="danger"
+        size="lg"
+        fullWidth
+        onPress={onPress}
+      />
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   fab: {

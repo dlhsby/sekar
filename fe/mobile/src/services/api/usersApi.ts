@@ -8,6 +8,7 @@ import type { ApiResponse } from '../../types/api.types';
 import type { User, Area } from '../../types/models.types';
 import { getToken } from '../storage/secureStorage';
 import config from '../../constants/config';
+import i18n from '../../i18n/config';
 
 /**
  * Change password request payload
@@ -99,7 +100,7 @@ export async function uploadProfilePicture(
     if (!response.ok) {
       const errorBody = await response.json().catch(() => ({}));
       return {
-        error: errorBody?.message || `Gagal mengunggah foto (${response.status})`,
+        error: errorBody?.message || i18n.t('errors:uploadPhotoFailed', { status: response.status }),
       };
     }
 
@@ -107,7 +108,7 @@ export async function uploadProfilePicture(
     return { data };
   } catch (err) {
     return {
-      error: err instanceof Error ? err.message : 'Gagal mengunggah foto profil',
+      error: err instanceof Error ? err.message : i18n.t('errors:uploadProfileFailed'),
     };
   }
 }
@@ -135,7 +136,7 @@ export async function changePassword(
     return { data: undefined };
   } catch (error: any) {
     return {
-      error: error.response?.data?.message || 'Gagal mengubah password',
+      error: error.response?.data?.message || i18n.t('errors:changePasswordFailed'),
     };
   }
 }

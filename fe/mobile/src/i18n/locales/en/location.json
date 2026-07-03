@@ -15,7 +15,10 @@
     "gpsDisabledTitle": "GPS Not Enabled",
     "gpsDisabledMessage": "This app requires GPS to track your location. Please enable GPS in your device settings.",
     "unavailableGeneral": "Unable to get location.",
-    "unavailableClockIn": "Location not available yet. Wait for GPS to acquire location."
+    "unavailableClockIn": "Location not available yet. Wait for GPS to acquire location.",
+    "capturePermissionDenied": "Location permission denied. Enable location permission in Settings to automatically capture GPS coordinates.",
+    "getFailed": "Failed to get location:",
+    "captureFailed": "Failed to capture GPS location"
   },
   "clockInOut": {
     "cameraPermissionTitle": "Camera Permission",
@@ -29,5 +32,11 @@
     "clockOutConfirmMessage": "Are you sure you want to end this shift?",
     "clockOutButton": "Clock Out",
     "noActiveShift": "No active shift"
-  }
+  },
+  "foregroundService": {
+    "channelName": "Location Tracking",
+    "notificationTitle": "SEKAR — Location tracking active",
+    "notificationBody": "Your location is being tracked during your shift."
+  },
+  "noPoints": "No GPS points recorded for this date."
 }

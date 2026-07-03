@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import {
   NBButton,
 } from '../../../components/nb';
@@ -30,6 +31,7 @@ const styles = {
 };
 
 export function SubmitActionBar(props: SubmitActionBarProps) {
+  const { t } = useTranslation('pruning');
   const { isBusy, handleSubmit, handleLeave } = props;
 
   return (
@@ -37,7 +39,7 @@ export function SubmitActionBar(props: SubmitActionBarProps) {
       <View style={styles.fabButtonRow}>
         <View style={styles.fabButtonHalf}>
           <NBButton
-            title="Batal"
+            title={t('actionBar.cancelLabel')}
             variant="secondary"
             onPress={handleLeave}
             disabled={isBusy}
@@ -47,7 +49,7 @@ export function SubmitActionBar(props: SubmitActionBarProps) {
         </View>
         <View style={styles.fabButtonHalf}>
           <NBButton
-            title={isBusy ? 'Mengirim…' : 'Kirim'}
+            title={isBusy ? t('actionBar.submittingLabel') : t('actionBar.submitLabel')}
             onPress={handleSubmit}
             loading={isBusy}
             disabled={isBusy}
