@@ -1,5 +1,86 @@
 {
+  "page": {
+    "title": "Schedules",
+    "dateLabel": "Date:",
+    "emptyTitle": "No schedules yet",
+    "emptyDescription": "Click \"Generate Schedule\" to create today's schedule.",
+    "searchPlaceholder": "Search worker name…"
+  },
+  "table": {
+    "worker": "Worker",
+    "role": "Role",
+    "status": "Status",
+    "shift": "Shift",
+    "area": "Area",
+    "rayon": "Rayon",
+    "replacement": "Replacement"
+  },
+  "status": {
+    "planned": "Planned",
+    "present": "Present",
+    "absent": "Absent",
+    "leave_sick": "Sick Leave",
+    "leave_annual": "Annual Leave",
+    "replaced": "Replaced",
+    "off": "Off"
+  },
+  "rowActions": {
+    "leave": "Leave",
+    "replace": "Replace Worker",
+    "editAreas": "Edit Areas",
+    "editShift": "Edit Shift"
+  },
   "dialog": {
     "deleteTitle": "Delete Schedule?"
+  },
+  "modals": {
+    "leave": {
+      "title": "Leave",
+      "typeLabel": "Leave Type",
+      "typeSick": "Sick",
+      "typeAnnual": "Annual",
+      "notesLabel": "Notes (optional)",
+      "notesPlaceholder": "Enter notes…"
+    },
+    "replace": {
+      "title": "Replace Worker",
+      "workerLabel": "Replacement Worker",
+      "workerPlaceholder": "Select worker…",
+      "notesLabel": "Notes (optional)",
+      "notesPlaceholder": "Enter notes…"
+    },
+    "areas": {
+      "title": "Edit Areas",
+      "label": "Areas",
+      "placeholder": "Select areas",
+      "searchPlaceholder": "Search areas…",
+      "emptyText": "No areas.",
+      "helperText": "Leave empty to remove all areas for today."
+    },
+    "shift": {
+      "title": "Edit Shift",
+      "label": "Shift",
+      "placeholder": "No Shift"
+    },
+    "areaList": {
+      "title": "Schedule Areas"
+    }
+  },
+  "messages": {
+    "generateSuccess": "schedule(s) created successfully",
+    "generateError": "Failed to create schedule",
+    "leaveSuccess": "Leave saved successfully",
+    "leaveError": "Failed to save leave",
+    "replaceSuccess": "Replacement worker saved successfully",
+    "replaceError": "Failed to save replacement",
+    "areasSuccess": "Areas updated successfully",
+    "areasError": "Failed to update areas",
+    "shiftSuccess": "Shift updated successfully",
+    "shiftError": "Failed to update shift"
+  },
+  "buttons": {
+    "generate": "Generate Schedule",
+    "areaCount": "{count} Areas",
+    "areaCountAriaLabel": "View {count} areas for {name}"
   }
 }

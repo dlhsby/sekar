@@ -1,0 +1,88 @@
+{
+  "main": {
+    "dashboard": "Dashboard",
+    "monitoring": "Monitoring"
+  },
+  "work": {
+    "title": "Pekerjaan",
+    "tasks": "Tugas",
+    "activities": "Aktivitas",
+    "overtime": "Lembur",
+    "schedules": "Jadwal",
+    "pruningRequests": "Permohonan Pemangkasan"
+  },
+  "access": {
+    "title": "Pengguna & Hak Akses",
+    "users": "Pengguna"
+  },
+  "data": {
+    "title": "Data Master",
+    "areas": "Area",
+    "rayons": "Rayon",
+    "plants": "Tanaman",
+    "seeds": "Bibit",
+    "assets": "Aset"
+  },
+  "reports": {
+    "title": "Laporan",
+    "list": "Daftar Laporan",
+    "builder": "Buat Laporan",
+    "schedules": "Jadwal Laporan"
+  },
+  "analytics": {
+    "title": "Analitik",
+    "overview": "Ringkasan",
+    "workers": "Kinerja Pekerja",
+    "areas": "Perbandingan Area"
+  },
+  "operations": {
+    "title": "Operasional",
+    "export": "Ekspor Data",
+    "import": "Impor Data"
+  },
+  "settings": "Pengaturan",
+  "pruning": {
+    "submit": "Kirim Permintaan",
+    "my": "Permintaan Saya"
+  },
+  "docs": "Panduan",
+  "pageTitle": {
+    "dashboard": "Dashboard",
+    "monitoring": "Monitoring",
+    "tasks": "Tugas",
+    "tasksNew": "Tugas Baru",
+    "activities": "Aktivitas",
+    "overtime": "Lembur",
+    "schedules": "Jadwal",
+    "users": "Pengguna",
+    "areas": "Area",
+    "rayons": "Rayon",
+    "assets": "Aset",
+    "assetsNew": "Aset Baru",
+    "assetsQr": "Generator QR",
+    "assetsMaintenance": "Perawatan Aset",
+    "reports": "Laporan",
+    "reportsBuilder": "Buat Laporan",
+    "reportsSchedules": "Jadwal Laporan",
+    "pruningRequests": "Permohonan Pemangkasan",
+    "pruningSubmit": "Kirim Permintaan",
+    "pruningMy": "Permintaan Saya",
+    "settings": "Pengaturan",
+    "profile": "Profil Saya",
+    "notifications": "Notifikasi",
+    "export": "Ekspor Data",
+    "import": "Impor Data",
+    "importCsv": "Impor CSV"
+  },
+  "breadcrumb": {
+    "work": "Pekerjaan",
+    "access": "Pengguna & Hak Akses",
+    "data": "Data Master",
+    "account": "Akun",
+    "kecamatan": "Kecamatan",
+    "operations": "Operasional",
+    "new": "Baru",
+    "edit": "Ubah",
+    "detail": "Detail"
+  }
+}

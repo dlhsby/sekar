@@ -164,7 +164,14 @@
     "deleteConfirmation": "Anda akan menghapus area {areaName}. Tindakan ini tidak dapat dibatalkan.",
     "successCreated": "Area \"{name}\" berhasil dibuat.",
     "successUpdated": "Area \"{name}\" berhasil diperbarui.",
-    "successDeleted": "Area \"{name}\" berhasil dihapus."
+    "successDeleted": "Area \"{name}\" berhasil dihapus.",
+    "listSheet": {
+      "title": "Area",
+      "closeLabel": "Tutup panel area",
+      "searchPlaceholder": "Cari area…",
+      "searchLabel": "Cari area",
+      "emptyText": "Belum ada area."
+    }
   },
   "rayons": {
     "pageTitle": "Rayon",
@@ -236,7 +243,13 @@
     "stats": {
       "totalAreas": "Jumlah Area",
       "totalStaff": "Total Petugas",
-      "totalCoverageArea": "Luas Tutupan Total"
+      "totalCoverageArea": "Luas Tutupan Total",
+      "totalAreaLabel": "Total Area",
+      "color": "Warna"
+    },
+    "areaDetail": {
+      "areaName": "Nama Area",
+      "areaType": "Tipe"
     },
     "successCreated": "Rayon \"{name}\" berhasil dibuat.",
     "successUpdated": "Rayon \"{name}\" berhasil diperbarui."
@@ -256,5 +269,36 @@
     "saving": "Menyimpan…",
     "updating": "Memperbarui…",
     "creating": "Membuat…"
+  },
+  "dialogs": {
+    "tempPassword": {
+      "title": "Password Sementara",
+      "messageWithUsername": "Berikan password ini kepada <strong>{username}</strong>. Ditampilkan <strong>sekali saja</strong> — pengguna wajib menggantinya saat login pertama.",
+      "messageWithoutUsername": "Password ini ditampilkan <strong>sekali saja</strong> — pengguna wajib menggantinya saat login pertama.",
+      "copySuccess": "Disalin",
+      "copyButton": "Salin",
+      "done": "Selesai"
+    },
+    "deleteUser": {
+      "title": "Hapus Pengguna",
+      "descriptionPrefix": "Apakah Anda yakin ingin menghapus pengguna",
+      "descriptionSuffix": "? Tindakan ini tidak dapat dibatalkan.",
+      "confirmButton": "Hapus"
+    }
+  },
+  "messages": {
+    "userCreatedSuccess": "Pengguna \"{name}\" berhasil dibuat.",
+    "userUpdatedSuccess": "Pengguna \"{name}\" berhasil diperbarui.",
+    "userDeletedSuccess": "Pengguna \"{name}\" berhasil dihapus.",
+    "userCreateFailed": "Gagal membuat pengguna. Silakan coba lagi.",
+    "userUpdateFailed": "Gagal memperbarui pengguna. Silakan coba lagi."
+  },
+  "maps": {
+    "boundary": {
+      "locationNotFound": "Lokasi tidak ditemukan. Coba kata kunci lain.",
+      "searchError": "Pencarian lokasi gagal. Coba lagi.",
+      "fileReadError": "Gagal membaca berkas.",
+      "invalidKml": "KML/GeoJSON tidak valid — tidak ditemukan poligon batas."
+    }
   }
 }

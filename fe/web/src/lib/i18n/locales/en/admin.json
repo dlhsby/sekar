@@ -164,7 +164,14 @@
     "deleteConfirmation": "You will delete the area {areaName}. This action cannot be undone.",
     "successCreated": "Area \"{name}\" created successfully.",
     "successUpdated": "Area \"{name}\" updated successfully.",
-    "successDeleted": "Area \"{name}\" deleted successfully."
+    "successDeleted": "Area \"{name}\" deleted successfully.",
+    "listSheet": {
+      "title": "Area",
+      "closeLabel": "Close area panel",
+      "searchPlaceholder": "Search area…",
+      "searchLabel": "Search area",
+      "emptyText": "No areas yet."
+    }
   },
   "rayons": {
     "pageTitle": "Rayons",
@@ -236,7 +243,13 @@
     "stats": {
       "totalAreas": "Number of Areas",
       "totalStaff": "Number of Staff",
-      "totalCoverageArea": "Total Coverage Area"
+      "totalCoverageArea": "Total Coverage Area",
+      "totalAreaLabel": "Total Area",
+      "color": "Color"
+    },
+    "areaDetail": {
+      "areaName": "Area Name",
+      "areaType": "Type"
     },
     "successCreated": "Rayon \"{name}\" created successfully.",
     "successUpdated": "Rayon \"{name}\" updated successfully."
@@ -256,5 +269,36 @@
     "saving": "Saving…",
     "updating": "Updating…",
     "creating": "Creating…"
+  },
+  "dialogs": {
+    "tempPassword": {
+      "title": "Temporary Password",
+      "messageWithUsername": "Give this password to <strong>{username}</strong>. Displayed <strong>once only</strong> — the user must change it on first login.",
+      "messageWithoutUsername": "This password is displayed <strong>once only</strong> — the user must change it on first login.",
+      "copySuccess": "Copied",
+      "copyButton": "Copy",
+      "done": "Done"
+    },
+    "deleteUser": {
+      "title": "Delete User",
+      "descriptionPrefix": "Are you sure you want to delete user",
+      "descriptionSuffix": "? This action cannot be undone.",
+      "confirmButton": "Delete"
+    }
+  },
+  "messages": {
+    "userCreatedSuccess": "User \"{name}\" created successfully.",
+    "userUpdatedSuccess": "User \"{name}\" updated successfully.",
+    "userDeletedSuccess": "User \"{name}\" deleted successfully.",
+    "userCreateFailed": "Failed to create user. Please try again.",
+    "userUpdateFailed": "Failed to update user. Please try again."
+  },
+  "maps": {
+    "boundary": {
+      "locationNotFound": "Location not found. Try other keywords.",
+      "searchError": "Location search failed. Try again.",
+      "fileReadError": "Failed to read file.",
+      "invalidKml": "Invalid KML/GeoJSON — no boundary polygon found."
+    }
   }
 }

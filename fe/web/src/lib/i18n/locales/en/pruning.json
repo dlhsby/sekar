@@ -2,6 +2,17 @@
   "list": {
     "filterLabel": "Filter Status",
     "allStatus": "All Status",
+    "statuses": {
+      "all": "All Status",
+      "submitted": "Submitted",
+      "under_review": "Under Review",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "assigned": "Assigned",
+      "in_progress": "In Progress",
+      "done": "Done",
+      "cancelled": "Cancelled"
+    },
     "submitted": "Submitted",
     "underReview": "Under Review",
     "approved": "Approved",
@@ -66,5 +77,71 @@
     "addressMinError": "Address must be at least 5 characters.",
     "addressMaxError": "Address must not exceed 500 characters.",
     "notesMaxError": "Notes must not exceed 1000 characters."
+  },
+  "detail": {
+    "backButton": "Back to list",
+    "loadError": "Failed to load request. Try again later.",
+    "sections": {
+      "details": "Request Details",
+      "contacts": "Contacts",
+      "photos": "Photos",
+      "review": "Review",
+      "relatedTask": "Related Task"
+    },
+    "fields": {
+      "kecamatan": "Kecamatan",
+      "rayon": "Rayon",
+      "submitter": "Submitter",
+      "expectedWeek": "Expected Week",
+      "treeCount": "Number of Trees",
+      "treeHeight": "Tree Height",
+      "treeDiameter": "Tree Diameter",
+      "gpsLocation": "GPS Location",
+      "notes": "Notes",
+      "requesterName": "Requester Name",
+      "requesterPhone": "Requester Phone",
+      "rtLeaderName": "RT Leader Name",
+      "rtLeaderPhone": "RT Leader Phone",
+      "reviewedBy": "Reviewed By",
+      "reviewDate": "Review Date",
+      "reviewNotes": "Review Notes"
+    },
+    "review": {
+      "title": "Review",
+      "notes": "Review Notes (optional)",
+      "placeholder": "Example: Location matches, prioritize this week.",
+      "error": "Failed to send review. Try again.",
+      "approve": "Approve",
+      "reject": "Reject"
+    },
+    "assign": {
+      "title": "Assign to Officer",
+      "meta": "Empty date selected automatically within requested week",
+      "noOptions": "No areas or officers available for this rayon. Contact administrator.",
+      "area": "Area",
+      "assignedTo": "Assigned To",
+      "caseType": "Case Type",
+      "pruningAction": "Pruning Action",
+      "scheduledDate": "Scheduled Date (optional)",
+      "error": "Failed to convert to task. Check weekly capacity and try again.",
+      "submit": "Create Task"
+    },
+    "caseTypes": {
+      "GT": "Emergency",
+      "PT": "Regular Maintenance",
+      "PS": "Special Maintenance",
+      "PD": "Branch Cleaning",
+      "PK": "Special Pruning"
+    },
+    "pruningActions": {
+      "PM": "Moderate Pruning",
+      "PB": "Heavy Pruning",
+      "PC": "Branch Pruning"
+    },
+    "relatedTask": "View related task"
+  },
+  "myRequests": {
+    "pageTitle": "My Requests",
+    "description": "History of pruning requests you have submitted."
   }
 }

@@ -1,0 +1,31 @@
+{
+  "page": {
+    "title": "How to Install SEKAR — iOS Safari",
+    "description": "Step-by-step guide to install SEKAR app on iPhone or iPad"
+  },
+  "header": {
+    "title": "Install SEKAR",
+    "subtitle": "Guide for iOS Safari"
+  },
+  "steps": [
+    {
+      "title": "Tap the Share icon",
+      "description": "In Safari, tap the Share icon (box with arrow up) at the bottom of the screen.",
+      "note": "On iPad, this icon is at the top next to the address bar."
+    },
+    {
+      "title": "Select \"Add to Home Screen\"",
+      "description": "Scroll down in the share menu until you find the \"Add to Home Screen\" option, then tap it."
+    },
+    {
+      "title": "Confirm and Add",
+      "description": "Change the name if needed, then tap \"Add\" in the top right corner. The SEKAR app will appear on your home screen."
+    }
+  ],
+  "footer": {
+    "note": "Note: This feature requires iOS 16.4 or later and Safari. For Android, use Chrome and look for the \"Add to home screen\" option.",
+    "android": "Android user?",
+    "playStore": "Download from Google Play"
+  },
+  "backLink": "Back to Login"
+}

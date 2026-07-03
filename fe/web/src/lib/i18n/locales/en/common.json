@@ -99,5 +99,31 @@
     "label": "Language",
     "id": "Bahasa Indonesia",
     "en": "English"
+  },
+  "ui": {
+    "combobox": {
+      "placeholder": "Select…",
+      "searchPlaceholder": "Search…",
+      "noResults": "Not found",
+      "clearSelection": "Clear selection"
+    },
+    "timePicker": {
+      "selectTime": "Select time",
+      "now": "Now"
+    },
+    "multiCombobox": {
+      "selected": "{count} selected",
+      "removeItem": "Remove {label}"
+    }
+  },
+  "app": {
+    "install": {
+      "loading": "Loading latest version…",
+      "error": "Failed to load release info. Try refreshing the page."
+    }
+  },
+  "stats": {
+    "noData": "Statistics not available",
+    "totalArea": "Total Area"
   }
 }

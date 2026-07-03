@@ -132,6 +132,25 @@
     "modalTitle": "Add Task",
     "assignableRoles": "Can be assigned to: {{roles}}"
   },
+  "newPage": {
+    "backButton": "Back to task list",
+    "pageHeader": "Assign work to officers.",
+    "cardTitle": "Task Information",
+    "formTitleLabel": "Task Title",
+    "formTitlePlaceholder": "Example: Watering East Area",
+    "formDescriptionLabel": "Description",
+    "formDescriptionPlaceholder": "Details of work to be done...",
+    "formAssignedToLabel": "Assigned To (Optional)",
+    "formAssignedToPlaceholder": "Not yet assigned",
+    "formRayonLabel": "Rayon (Optional)",
+    "formRayonPlaceholder": "Select Rayon",
+    "formAreaLabel": "Area (Optional)",
+    "formAreaPlaceholder": "Select Area",
+    "formPriorityLabel": "Priority",
+    "submitButton": "Create Task",
+    "cancelButton": "Cancel",
+    "requiredError": "Task title is required"
+  },
   "modal": {
     "title": "Add Task",
     "cancelButton": "Cancel",
@@ -140,5 +159,36 @@
   "kanban": {
     "emptyState": "No tasks",
     "loadingState": "Loading..."
+  },
+  "sections": {
+    "taskInfo": "Task Information",
+    "assignment": "Assignment",
+    "tagged": "Tagged",
+    "decline": "Decline",
+    "completion": "Completion",
+    "verification": "Verification",
+    "delegationHistory": "Assignment History",
+    "disposition": "Task Delegation",
+    "revisionRequest": "Revision Request"
+  },
+  "fields": {
+    "description": "Description",
+    "dueDate": "Deadline",
+    "created": "Created",
+    "activityType": "Activity Type",
+    "creator": "Creator",
+    "assignedTo": "Assigned To",
+    "assignedBy": "Assigned By",
+    "assignedDate": "Assignment Date",
+    "area": "Area",
+    "rayon": "Rayon",
+    "photos": "Photos",
+    "photoAlt": "Completion photo",
+    "verifiedBy": "Verified By",
+    "verificationDate": "Verification Date",
+    "declineReason": "Decline Reason",
+    "declineDate": "Decline Date",
+    "completionNotes": "Completion Notes",
+    "completionDate": "Completion Date"
   }
 }

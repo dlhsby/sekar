@@ -1,5 +1,86 @@
 {
+  "page": {
+    "title": "Jadwal",
+    "dateLabel": "Tanggal:",
+    "emptyTitle": "Belum ada jadwal",
+    "emptyDescription": "Klik \"Buat Jadwal\" untuk membuat jadwal hari ini.",
+    "searchPlaceholder": "Cari nama pekerja…"
+  },
+  "table": {
+    "worker": "Pekerja",
+    "role": "Role",
+    "status": "Status",
+    "shift": "Shift",
+    "area": "Area",
+    "rayon": "Rayon",
+    "replacement": "Pengganti"
+  },
+  "status": {
+    "planned": "Rencana",
+    "present": "Hadir",
+    "absent": "Tidak Hadir",
+    "leave_sick": "Cuti Sakit",
+    "leave_annual": "Cuti Tahunan",
+    "replaced": "Diganti",
+    "off": "Libur"
+  },
+  "rowActions": {
+    "leave": "Cuti",
+    "replace": "Ganti Pekerja",
+    "editAreas": "Ubah Area",
+    "editShift": "Ubah Shift"
+  },
   "dialog": {
     "deleteTitle": "Hapus Jadwal?"
+  },
+  "modals": {
+    "leave": {
+      "title": "Cuti",
+      "typeLabel": "Jenis Cuti",
+      "typeSick": "Sakit",
+      "typeAnnual": "Tahunan",
+      "notesLabel": "Catatan (opsional)",
+      "notesPlaceholder": "Masukkan catatan…"
+    },
+    "replace": {
+      "title": "Ganti Pekerja",
+      "workerLabel": "Pekerja Pengganti",
+      "workerPlaceholder": "Pilih pekerja…",
+      "notesLabel": "Catatan (opsional)",
+      "notesPlaceholder": "Masukkan catatan…"
+    },
+    "areas": {
+      "title": "Ubah Area",
+      "label": "Area",
+      "placeholder": "Pilih area",
+      "searchPlaceholder": "Cari area…",
+      "emptyText": "Tidak ada area.",
+      "helperText": "Kosongkan untuk menghapus semua area hari ini."
+    },
+    "shift": {
+      "title": "Ubah Shift",
+      "label": "Shift",
+      "placeholder": "Tanpa Shift"
+    },
+    "areaList": {
+      "title": "Area Jadwal"
+    }
+  },
+  "messages": {
+    "generateSuccess": "jadwal berhasil dibuat",
+    "generateError": "Gagal membuat jadwal",
+    "leaveSuccess": "Cuti berhasil disimpan",
+    "leaveError": "Gagal menyimpan cuti",
+    "replaceSuccess": "Pengganti pekerja berhasil disimpan",
+    "replaceError": "Gagal menyimpan pengganti",
+    "areasSuccess": "Area berhasil diperbarui",
+    "areasError": "Gagal memperbarui area",
+    "shiftSuccess": "Shift berhasil diperbarui",
+    "shiftError": "Gagal memperbarui shift"
+  },
+  "buttons": {
+    "generate": "Buat Jadwal",
+    "areaCount": "{count} Area",
+    "areaCountAriaLabel": "Lihat {count} area untuk {name}"
   }
 }

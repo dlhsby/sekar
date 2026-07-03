@@ -99,5 +99,31 @@
     "label": "Bahasa",
     "id": "Bahasa Indonesia",
     "en": "English"
+  },
+  "ui": {
+    "combobox": {
+      "placeholder": "Pilih…",
+      "searchPlaceholder": "Cari…",
+      "noResults": "Tidak ditemukan",
+      "clearSelection": "Hapus pilihan"
+    },
+    "timePicker": {
+      "selectTime": "Pilih jam",
+      "now": "Sekarang"
+    },
+    "multiCombobox": {
+      "selected": "{count} dipilih",
+      "removeItem": "Hapus {label}"
+    }
+  },
+  "app": {
+    "install": {
+      "loading": "Memuat versi terbaru…",
+      "error": "Gagal memuat info rilis. Coba muat ulang halaman."
+    }
+  },
+  "stats": {
+    "noData": "Statistik tidak tersedia",
+    "totalArea": "Total Area"
   }
 }

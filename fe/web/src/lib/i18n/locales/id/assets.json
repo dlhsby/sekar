@@ -76,5 +76,76 @@
     "cancel": "Batal",
     "save": "Simpan",
     "create": "Buat Aset"
+  },
+  "detail": {
+    "notFound": "Aset Tidak Ditemukan",
+    "breadcrumb": "Aset · Detail",
+    "delete": "Hapus",
+    "infoTitle": "Informasi",
+    "category": "Kategori",
+    "status": "Status",
+    "checkoutButton": "Ambil Aset",
+    "returnButton": "Kembalikan",
+    "maintenanceButton": "Jadwal Perawatan",
+    "usageHistory": "Riwayat Penggunaan",
+    "noHistory": "Tidak ada riwayat",
+    "loading": "Memuat...",
+    "checkoutTitle": "Ambil Aset",
+    "checkoutDescription": "Catat kondisi aset saat diambil",
+    "conditionLabel": "Kondisi",
+    "notesLabel": "Catatan",
+    "notesPlaceholder": "Catatan tambahan...",
+    "checkoutSuccess": "Aset berhasil diambil",
+    "returnTitle": "Kembalikan Aset",
+    "returnDescription": "Catat kondisi aset saat dikembalikan",
+    "returnSuccess": "Aset berhasil dikembalikan",
+    "maintenanceTitle": "Jadwal Perawatan",
+    "maintenanceDescription": "Buat jadwal perawatan untuk aset ini",
+    "maintenanceTypeLabel": "Tipe Perawatan",
+    "dateLabel": "Tanggal",
+    "maintenanceSuccess": "Perawatan berhasil dijadwalkan",
+    "qrSuccess": "QR code berhasil dibuat",
+    "deleteSuccess": "Aset berhasil dihapus",
+    "deleteConfirm": "Hapus aset ini?",
+    "condition": {
+      "good": "Baik",
+      "fair": "Cukup",
+      "poor": "Buruk",
+      "damaged": "Rusak",
+      "unusable": "Tidak Dapat Digunakan"
+    },
+    "maintenanceType": {
+      "routine": "Rutin",
+      "repair": "Perbaikan",
+      "inspection": "Inspeksi",
+      "replacement": "Penggantian"
+    },
+    "maintenanceStatus": {
+      "scheduled": "Terjadwal",
+      "completed": "Selesai"
+    },
+    "assignmentTable": {
+      "date": "Tanggal",
+      "worker": "Pekerja",
+      "type": "Tipe",
+      "return": "Kembali",
+      "checkout": "Ambil"
+    },
+    "maintenanceTable": {
+      "date": "Tanggal",
+      "type": "Tipe",
+      "status": "Status",
+      "cost": "Biaya"
+    }
+  },
+  "qr": {
+    "pageTitle": "QR Code Aset",
+    "selectMinimum": "Pilih minimal 1 aset",
+    "generateSuccess": "{count} QR code berhasil dibuat"
+  },
+  "create": {
+    "pageTitle": "Tambah Aset",
+    "breadcrumb": "Aset · Tambah",
+    "validationError": "Nama dan kategori harus diisi"
   }
 }

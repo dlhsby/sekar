@@ -1,0 +1,88 @@
+{
+  "main": {
+    "dashboard": "Dashboard",
+    "monitoring": "Monitoring"
+  },
+  "work": {
+    "title": "Work",
+    "tasks": "Tasks",
+    "activities": "Activities",
+    "overtime": "Overtime",
+    "schedules": "Schedules",
+    "pruningRequests": "Pruning Requests"
+  },
+  "access": {
+    "title": "Users & Access",
+    "users": "Users"
+  },
+  "data": {
+    "title": "Data Master",
+    "areas": "Areas",
+    "rayons": "Rayons",
+    "plants": "Plants",
+    "seeds": "Seeds",
+    "assets": "Assets"
+  },
+  "reports": {
+    "title": "Reports",
+    "list": "Reports List",
+    "builder": "Generate Report",
+    "schedules": "Report Schedules"
+  },
+  "analytics": {
+    "title": "Analytics",
+    "overview": "Overview",
+    "workers": "Worker Performance",
+    "areas": "Area Comparison"
+  },
+  "operations": {
+    "title": "Operations",
+    "export": "Export Data",
+    "import": "Import Data"
+  },
+  "settings": "Settings",
+  "pruning": {
+    "submit": "Submit Request",
+    "my": "My Requests"
+  },
+  "docs": "Guide",
+  "pageTitle": {
+    "dashboard": "Dashboard",
+    "monitoring": "Monitoring",
+    "tasks": "Tasks",
+    "tasksNew": "New Task",
+    "activities": "Activities",
+    "overtime": "Overtime",
+    "schedules": "Schedules",
+    "users": "Users",
+    "areas": "Areas",
+    "rayons": "Rayons",
+    "assets": "Assets",
+    "assetsNew": "New Asset",
+    "assetsQr": "QR Generator",
+    "assetsMaintenance": "Asset Maintenance",
+    "reports": "Reports",
+    "reportsBuilder": "Generate Report",
+    "reportsSchedules": "Report Schedules",
+    "pruningRequests": "Pruning Requests",
+    "pruningSubmit": "Submit Request",
+    "pruningMy": "My Requests",
+    "settings": "Settings",
+    "profile": "My Profile",
+    "notifications": "Notifications",
+    "export": "Export Data",
+    "import": "Import Data",
+    "importCsv": "Import CSV"
+  },
+  "breadcrumb": {
+    "work": "Work",
+    "access": "Users & Access",
+    "data": "Data Master",
+    "account": "Account",
+    "kecamatan": "District",
+    "operations": "Operations",
+    "new": "New",
+    "edit": "Edit",
+    "detail": "Detail"
+  }
+}

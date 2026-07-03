@@ -2,6 +2,17 @@
   "list": {
     "filterLabel": "Filter Status",
     "allStatus": "Semua Status",
+    "statuses": {
+      "all": "Semua Status",
+      "submitted": "Terkirim",
+      "under_review": "Sedang Ditinjau",
+      "approved": "Disetujui",
+      "rejected": "Ditolak",
+      "assigned": "Ditugaskan",
+      "in_progress": "Sedang Dikerjakan",
+      "done": "Selesai",
+      "cancelled": "Dibatalkan"
+    },
     "submitted": "Terkirim",
     "underReview": "Sedang Ditinjau",
     "approved": "Disetujui",
@@ -66,5 +77,71 @@
     "addressMinError": "Alamat minimal 5 karakter.",
     "addressMaxError": "Alamat maksimal 500 karakter.",
     "notesMaxError": "Catatan maksimal 1000 karakter."
+  },
+  "detail": {
+    "backButton": "Kembali ke daftar",
+    "loadError": "Gagal memuat permohonan. Coba kembali ke daftar.",
+    "sections": {
+      "details": "Detail Permohonan",
+      "contacts": "Kontak",
+      "photos": "Foto",
+      "review": "Tinjauan",
+      "relatedTask": "Tugas Terkait"
+    },
+    "fields": {
+      "kecamatan": "Kecamatan",
+      "rayon": "Rayon",
+      "submitter": "Pengirim",
+      "expectedWeek": "Minggu Diharapkan",
+      "treeCount": "Jumlah Pohon",
+      "treeHeight": "Tinggi Pohon",
+      "treeDiameter": "Diameter Batang",
+      "gpsLocation": "Lokasi GPS",
+      "notes": "Catatan",
+      "requesterName": "Nama Pengaju",
+      "requesterPhone": "HP Pengaju",
+      "rtLeaderName": "Nama Ketua RT",
+      "rtLeaderPhone": "HP Ketua RT",
+      "reviewedBy": "Ditinjau Oleh",
+      "reviewDate": "Tanggal Tinjauan",
+      "reviewNotes": "Catatan Tinjauan"
+    },
+    "review": {
+      "title": "Tinjauan",
+      "notes": "Catatan Tinjauan (opsional)",
+      "placeholder": "Contoh: Lokasi sesuai, prioritaskan minggu ini.",
+      "error": "Gagal mengirim tinjauan. Coba lagi.",
+      "approve": "Setujui",
+      "reject": "Tolak"
+    },
+    "assign": {
+      "title": "Tugaskan ke Petugas",
+      "meta": "Tanggal kosong dipilih otomatis dalam minggu diminta",
+      "noOptions": "Tidak ada area atau petugas yang tersedia untuk rayon ini. Hubungi administrator.",
+      "area": "Area",
+      "assignedTo": "Ditugaskan Ke",
+      "caseType": "Tipe Kasus",
+      "pruningAction": "Aksi Pemangkasan",
+      "scheduledDate": "Tanggal Pasti (opsional)",
+      "error": "Gagal mengonversi ke tugas. Periksa kapasitas minggu dan coba lagi.",
+      "submit": "Buat Tugas"
+    },
+    "caseTypes": {
+      "GT": "Gawat Darurat",
+      "PT": "Pemeliharaan Teratur",
+      "PS": "Pemeliharaan Khusus",
+      "PD": "Pembersihan Dahan",
+      "PK": "Pemangkasan Khusus"
+    },
+    "pruningActions": {
+      "PM": "Pemangkasan Moderat",
+      "PB": "Pemangkasan Berat",
+      "PC": "Pemangkasan Cabang"
+    },
+    "relatedTask": "Lihat tugas terkait"
+  },
+  "myRequests": {
+    "pageTitle": "Permintaan Saya",
+    "description": "Riwayat permintaan pemangkasan yang Anda ajukan."
   }
 }

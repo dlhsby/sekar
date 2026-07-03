@@ -1,1 +1,102 @@
-{}
+{
+  "overview": {
+    "page": {
+      "title": "Analytics"
+    },
+    "note": "Analytics data updated up to 24 hours ago.",
+    "kpi": {
+      "attendance": "Attendance",
+      "tasksPerDay": "Tasks/Day",
+      "overtime": "Overtime"
+    },
+    "period": {
+      "7days": "7 Days",
+      "30days": "30 Days"
+    },
+    "loading": "Loading...",
+    "error": {
+      "title": "Failed to Load Data",
+      "description": "An error occurred while loading analytics data. Please try again."
+    },
+    "refresh": "Refresh",
+    "refreshing": "Refresh..."
+  },
+  "areas": {
+    "page": {
+      "title": "Area Analytics"
+    },
+    "search": {
+      "label": "Search areas",
+      "placeholder": "Search areas..."
+    },
+    "empty": {
+      "noData": "No area data"
+    },
+    "card": {
+      "staffing": "Staffing",
+      "openTasks": "Open Tasks",
+      "score": "Score",
+      "workersAttended": "workers attended"
+    },
+    "detail": {
+      "title": "Area Detail",
+      "staffingCoverage": "Staffing Coverage",
+      "workersAttended": "Workers Attended",
+      "openTasks": "Open Tasks",
+      "maintenance": "Maintenance",
+      "performanceScore": "Performance Score",
+      "error": "Failed to load details",
+      "loading": "Loading..."
+    }
+  },
+  "workers": {
+    "page": {
+      "title": "Worker Analytics"
+    },
+    "table": {
+      "name": "Name",
+      "attended": "Attended",
+      "attendedUnit": "days",
+      "taskCompletion": "Tasks",
+      "score": "Score"
+    },
+    "search": {
+      "label": "Search workers",
+      "placeholder": "Search workers..."
+    },
+    "empty": {
+      "noData": "No worker data"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "page": "Page {page} of {total}",
+      "next": "Next"
+    },
+    "detail": {
+      "title": "Worker Details",
+      "name": "Name",
+      "score": "Score",
+      "attendance": "Attendance",
+      "overtime": "Overtime",
+      "overtimeUnit": "hours",
+      "taskMetrics": {
+        "title": "Task Metrics",
+        "total": "Total Tasks",
+        "completed": "Completed",
+        "completionRate": "Completion Rate"
+      },
+      "activityMetrics": {
+        "title": "Activity Metrics",
+        "total": "Total Activities",
+        "approved": "Approved",
+        "approvalRate": "Approval Rate"
+      },
+      "locationMetrics": {
+        "title": "Location Metrics",
+        "areaCompliance": "Area Compliance",
+        "gpsInArea": "GPS In Area"
+      },
+      "error": "Failed to load details"
+    }
+  }
+}

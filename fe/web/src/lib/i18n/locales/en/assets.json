@@ -76,5 +76,76 @@
     "cancel": "Cancel",
     "save": "Save",
     "create": "Create Asset"
+  },
+  "detail": {
+    "notFound": "Asset Not Found",
+    "breadcrumb": "Assets · Details",
+    "delete": "Delete",
+    "infoTitle": "Information",
+    "category": "Category",
+    "status": "Status",
+    "checkoutButton": "Check Out Asset",
+    "returnButton": "Return",
+    "maintenanceButton": "Schedule Maintenance",
+    "usageHistory": "Usage History",
+    "noHistory": "No history",
+    "loading": "Loading...",
+    "checkoutTitle": "Check Out Asset",
+    "checkoutDescription": "Record asset condition at checkout",
+    "conditionLabel": "Condition",
+    "notesLabel": "Notes",
+    "notesPlaceholder": "Additional notes...",
+    "checkoutSuccess": "Asset checked out successfully",
+    "returnTitle": "Return Asset",
+    "returnDescription": "Record asset condition at return",
+    "returnSuccess": "Asset returned successfully",
+    "maintenanceTitle": "Schedule Maintenance",
+    "maintenanceDescription": "Create a maintenance schedule for this asset",
+    "maintenanceTypeLabel": "Maintenance Type",
+    "dateLabel": "Date",
+    "maintenanceSuccess": "Maintenance scheduled successfully",
+    "qrSuccess": "QR code generated successfully",
+    "deleteSuccess": "Asset deleted successfully",
+    "deleteConfirm": "Delete this asset?",
+    "condition": {
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor",
+      "damaged": "Damaged",
+      "unusable": "Unusable"
+    },
+    "maintenanceType": {
+      "routine": "Routine",
+      "repair": "Repair",
+      "inspection": "Inspection",
+      "replacement": "Replacement"
+    },
+    "maintenanceStatus": {
+      "scheduled": "Scheduled",
+      "completed": "Completed"
+    },
+    "assignmentTable": {
+      "date": "Date",
+      "worker": "Worker",
+      "type": "Type",
+      "return": "Return",
+      "checkout": "Checkout"
+    },
+    "maintenanceTable": {
+      "date": "Date",
+      "type": "Type",
+      "status": "Status",
+      "cost": "Cost"
+    }
+  },
+  "qr": {
+    "pageTitle": "Asset QR Codes",
+    "selectMinimum": "Select at least 1 asset",
+    "generateSuccess": "{count} QR codes generated successfully"
+  },
+  "create": {
+    "pageTitle": "Add Asset",
+    "breadcrumb": "Asset · Add",
+    "validationError": "Name and category are required"
   }
 }

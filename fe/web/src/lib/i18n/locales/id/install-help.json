@@ -1,0 +1,31 @@
+{
+  "page": {
+    "title": "Cara Pasang SEKAR — iOS Safari",
+    "description": "Panduan langkah demi langkah untuk memasang aplikasi SEKAR di iPhone atau iPad"
+  },
+  "header": {
+    "title": "Pasang SEKAR",
+    "subtitle": "Panduan untuk iOS Safari"
+  },
+  "steps": [
+    {
+      "title": "Ketuk ikon Bagikan",
+      "description": "Di Safari, ketuk ikon Bagikan (kotak dengan panah ke atas) di bagian bawah layar.",
+      "note": "Di iPad, ikon ini ada di bagian atas di sebelah bilah alamat."
+    },
+    {
+      "title": "Pilih \"Tambahkan ke Layar Utama\"",
+      "description": "Gulir ke bawah pada menu berbagi hingga menemukan opsi \"Tambahkan ke Layar Utama\" (Add to Home Screen), lalu ketuk."
+    },
+    {
+      "title": "Konfirmasi dan Tambahkan",
+      "description": "Ubah nama jika diperlukan, lalu ketuk \"Tambahkan\" di pojok kanan atas. Aplikasi SEKAR akan muncul di layar utama Anda."
+    }
+  ],
+  "footer": {
+    "note": "Catatan: Fitur ini memerlukan iOS 16.4 atau lebih baru dan Safari. Untuk Android, gunakan Chrome dan cari opsi \"Tambahkan ke layar beranda\".",
+    "android": "Pengguna Android?",
+    "playStore": "Unduh di Google Play"
+  },
+  "backLink": "Kembali ke Login"
+}
