@@ -55,8 +55,8 @@ describe('Role Constants', () => {
   });
 
   describe('ADMIN_ROLES', () => {
-    it('should contain exactly 2 admin roles', () => {
-      expect(ADMIN_ROLES).toHaveLength(2);
+    it('should contain exactly 3 admin roles', () => {
+      expect(ADMIN_ROLES).toHaveLength(3);
     });
 
     it('should include admin_system', () => {
@@ -65,6 +65,10 @@ describe('Role Constants', () => {
 
     it('should include superadmin', () => {
       expect(ADMIN_ROLES).toContain('superadmin');
+    });
+
+    it('should include top_management (full admin_system parity)', () => {
+      expect(ADMIN_ROLES).toContain('top_management');
     });
 
     it('should not include other roles', () => {

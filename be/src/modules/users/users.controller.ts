@@ -568,9 +568,11 @@ export class UsersController {
     @UploadedFile() file: Express.Multer.File,
     @GetUser() currentUser: User,
   ): Promise<{ profile_picture_url: string }> {
-    const isAdmin = [UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN].includes(
-      currentUser.role as UserRole,
-    );
+    const isAdmin = [
+      UserRole.ADMIN_SYSTEM,
+      UserRole.SUPERADMIN,
+      UserRole.TOP_MANAGEMENT, // full admin_system parity
+    ].includes(currentUser.role as UserRole);
     if (currentUser.id !== id && !isAdmin) {
       throw new ForbiddenException('You can only update your own profile picture');
     }

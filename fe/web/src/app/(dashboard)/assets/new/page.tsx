@@ -16,7 +16,7 @@ import { useUser } from '@/lib/auth/hooks';
 import { useAssetCategories, useCreateAsset } from '@/lib/api/assets';
 import { getErrorMessage } from '@/lib/api/client';
 
-const ASSET_MANAGER_ROLES = ['korlap', 'kepala_rayon', 'admin_system', 'superadmin'];
+const ASSET_MANAGER_ROLES = ['korlap', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'];
 
 export default function CreateAssetPage() {
   const router = useRouter();
