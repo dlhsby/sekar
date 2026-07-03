@@ -126,7 +126,11 @@
     "photoModalTitle": "Foto Pohon",
     "scheduleButtonLabel": "Atur Jadwal",
     "rescheduleButtonLabel": "Atur Ulang Jadwal",
-    "rejectButtonLabel": "Tolak"
+    "rejectButtonLabel": "Tolak",
+    "notFoundError": "Permohonan yang Anda cari tidak tersedia.",
+    "locationModalTitle": "Lokasi Perantingan",
+    "locationMarkerTitle": "Lokasi Perantingan",
+    "openMapsLabel": "Buka di Google Maps"
   },
   "review": {
     "title": "Antrian Review",

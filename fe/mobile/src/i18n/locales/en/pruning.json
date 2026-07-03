@@ -126,7 +126,11 @@
     "photoModalTitle": "Tree Photo",
     "scheduleButtonLabel": "Schedule",
     "rescheduleButtonLabel": "Reschedule",
-    "rejectButtonLabel": "Reject"
+    "rejectButtonLabel": "Reject",
+    "notFoundError": "The request you are looking for is not available.",
+    "locationModalTitle": "Pruning Location",
+    "locationMarkerTitle": "Pruning Location",
+    "openMapsLabel": "Open in Google Maps"
   },
   "review": {
     "title": "Review Queue",

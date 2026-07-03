@@ -136,5 +136,17 @@
     "notClockedIn": "Belum clock in",
     "workHoursSuffix": "jam kerja",
     "unknown": "Tidak diketahui"
+  },
+  "shiftDetail": {
+    "title": "Detail Shift",
+    "area": "Area",
+    "areaType": "Tipe Area",
+    "clockIn": "Clock In",
+    "gpsClockIn": "GPS Clock In",
+    "validation": "Validasi Lokasi Clock In",
+    "withinArea": "Dalam Area",
+    "outsideArea": "Luar Area",
+    "distance": "Jarak",
+    "radius": "Radius"
   }
 }

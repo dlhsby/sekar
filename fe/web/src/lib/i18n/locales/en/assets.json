@@ -143,7 +143,14 @@
     "preview": "Preview",
     "printAll": "Print All",
     "downloadPdf": "Download PDF",
-    "newBatch": "New Batch"
+    "newBatch": "New Batch",
+    "tableColumns": {
+      "code": "Code",
+      "name": "Name",
+      "category": "Category"
+    },
+    "printTitle": "Asset QR Codes",
+    "selectCheckbox": "Select {code}"
   },
   "create": {
     "pageTitle": "Add Asset",

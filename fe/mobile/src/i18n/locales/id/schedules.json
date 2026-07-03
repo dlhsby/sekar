@@ -38,6 +38,11 @@
     "clockOut": "CLOCK OUT",
     "duration": "DURASI",
     "active": "Aktif",
-    "completed": "Selesai"
+    "completed": "Selesai",
+    "detailAccessibilityHint": "Ketuk untuk melihat detail shift",
+    "unknownArea": "Area tidak diketahui",
+    "resetFilterAccessibilityLabel": "Reset filter tanggal",
+    "filterDateAccessibilityLabel": "Filter tanggal",
+    "filterActiveLabel": "filter aktif"
   }
 }

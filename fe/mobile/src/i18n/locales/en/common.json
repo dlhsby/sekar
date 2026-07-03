@@ -161,6 +161,8 @@
     "error": "Something Went Wrong",
     "errorOccurred": "An error occurred",
     "withinArea": "within",
-    "outsideArea": "outside"
+    "outsideArea": "outside",
+    "openProfile": "Open Profile",
+    "defaultUser": "User"
   }
 }

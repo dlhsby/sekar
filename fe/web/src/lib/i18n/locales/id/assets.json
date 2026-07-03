@@ -143,7 +143,14 @@
     "preview": "Preview",
     "printAll": "Cetak Semua",
     "downloadPdf": "Unduh PDF",
-    "newBatch": "Buat Batch Baru"
+    "newBatch": "Buat Batch Baru",
+    "tableColumns": {
+      "code": "Kode",
+      "name": "Nama",
+      "category": "Kategori"
+    },
+    "printTitle": "QR Code Aset",
+    "selectCheckbox": "Pilih {code}"
   },
   "create": {
     "pageTitle": "Tambah Aset",

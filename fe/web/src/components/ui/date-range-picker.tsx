@@ -185,7 +185,7 @@ export function DateRangePicker({
             variant="outline"
             size="sm"
             className="w-10 px-0"
-            aria-label="Hari sebelumnya"
+            aria-label={t('components:dateRangePicker.previousDay')}
             onClick={() => stepDay(-1)}
           >
             <ChevronLeft className="h-4 w-4" aria-hidden />
@@ -202,7 +202,7 @@ export function DateRangePicker({
             variant="outline"
             size="sm"
             className="w-10 px-0"
-            aria-label="Hari berikutnya"
+            aria-label={t('components:dateRangePicker.nextDay')}
             disabled={!canStepNext}
             onClick={() => stepDay(1)}
           >

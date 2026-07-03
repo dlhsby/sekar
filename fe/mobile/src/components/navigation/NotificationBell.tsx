@@ -13,6 +13,7 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../store/hooks';
 import { selectUnreadCount } from '../../store/slices/notificationsSlice';
 import { nbBorders, nbColors } from '../../constants/nbTokens';
@@ -23,6 +24,7 @@ import { nbBorders, nbColors } from '../../constants/nbTokens';
 const ORIGIN_TABS = new Set(['Home', 'Menu', 'Profile']);
 
 export const NotificationBell: React.FC = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const unreadCount = useAppSelector(selectUnreadCount);
 
@@ -50,8 +52,8 @@ export const NotificationBell: React.FC = () => {
       accessibilityRole="button"
       accessibilityLabel={
         unreadCount > 0
-          ? `Notifikasi (${unreadCount} belum dibaca)`
-          : 'Notifikasi'
+          ? t('notifications:bell.unreadLabel', { count: unreadCount })
+          : t('notifications:bell.label')
       }
       testID="notification-bell"
     >

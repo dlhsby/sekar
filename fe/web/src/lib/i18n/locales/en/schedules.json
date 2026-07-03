@@ -89,6 +89,10 @@
     "pageDescription": "Weekly service capacity calendar for Rayon {{name}}",
     "readOnlyStatus": "View only",
     "yearLabel": "Year",
-    "saveError": "Failed to save capacity."
+    "saveError": "Failed to save capacity.",
+    "serviceTypeHeader": "Service Type",
+    "noServiceTypes": "No service types.",
+    "noChangesToSave": "No changes to save.",
+    "saved": "Capacity saved."
   }
 }

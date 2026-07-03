@@ -48,7 +48,7 @@ import { ActionBar } from './components/ActionBar';
 type DetailScreenProps = NativeStackScreenProps<any, 'PruningDetail'>;
 
 export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element {
-  const { t: tPruning } = useTranslation('pruning');
+  const { t: tPruning } = useTranslation();
   const { t } = useTranslation('common');
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
@@ -138,7 +138,7 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
           <NBAlert
             variant="danger"
             title={t('detail.notFoundMessage')}
-            message={t('errors.notFound') || 'Permohonan yang Anda cari tidak tersedia.'}
+            message={tPruning('detail.notFoundError')}
           />
         </View>
       </SafeAreaView>
@@ -201,7 +201,7 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
           visible={photoModalVisible}
           onClose={() => setPhotoModalVisible(false)}
           type="fullscreen"
-          title="Foto Lokasi"
+          title={tPruning('detail.photoModalTitle')}
         >
           <View style={styles.photoViewerWrap}>
             {selectedPhoto ? (
@@ -235,8 +235,8 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
         <LocationMapModal
           visible={locationModalVisible}
           onClose={() => setLocationModalVisible(false)}
-          title="Lokasi Perantingan"
-          markerTitle="Lokasi Perantingan"
+          title={tPruning('detail.locationModalTitle')}
+          markerTitle={tPruning('detail.locationMarkerTitle')}
           hideAreaStatus
           hideUpdatedAt
           location={{
@@ -246,7 +246,7 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
             isWithinArea: false,
             updatedAt: request.createdAt ? new Date(request.createdAt) : null,
           }}
-          footerActionLabel="Buka di Google Maps"
+          footerActionLabel={tPruning('detail.openMapsLabel')}
           onFooterAction={() => {
             if (request.gpsLat != null && request.gpsLng != null) {
               const url = `https://www.google.com/maps/search/?api=1&query=${request.gpsLat},${request.gpsLng}`;

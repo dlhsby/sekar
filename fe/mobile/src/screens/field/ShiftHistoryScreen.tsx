@@ -255,7 +255,7 @@ function ShiftRow({
       activeOpacity={0.85}
       accessibilityRole="button"
       accessibilityLabel={`Detail shift ${shift.area?.name ?? ''}`}
-      accessibilityHint="Ketuk untuk melihat detail shift"
+      accessibilityHint={t('schedules:shiftHistory.detailAccessibilityHint')}
     >
       <View style={styles.shiftRow}>
         {/* Header: status pill (matches Tugas/Aktivitas/Lembur) + area title */}
@@ -263,7 +263,7 @@ function ShiftRow({
           <StatusPill dot tone={isActive ? 'ok' : 'neutral'} label={isActive ? t('schedules:shiftHistory.active') : t('schedules:shiftHistory.completed')} />
         </View>
         <NBText variant="body" color="black" style={styles.shiftRowTitle} numberOfLines={1}>
-          {shift.area?.name ?? 'Area tidak diketahui'}
+          {shift.area?.name ?? t('schedules:shiftHistory.unknownArea')}
         </NBText>
         {shift.area?.areaType?.name ? (
           <NBText variant="body-sm" color="gray500" style={styles.shiftRowAreaType}>
@@ -516,7 +516,7 @@ export function ShiftHistoryScreen(): React.JSX.Element {
                 style={styles.filterClearButton}
                 onPress={handleClearFilter}
                 accessibilityRole="button"
-                accessibilityLabel="Reset filter tanggal"
+                accessibilityLabel={t('schedules:shiftHistory.resetFilterAccessibilityLabel')}
               >
                 <MaterialCommunityIcons name="close-circle" size={18} color={nbColors.danger} />
               </TouchableOpacity>
@@ -528,7 +528,7 @@ export function ShiftHistoryScreen(): React.JSX.Element {
               style={styles.filterIconButton}
               onPress={() => setIsFilterOpen(true)}
               accessibilityRole="button"
-              accessibilityLabel={`Filter tanggal${isFiltered ? ', filter aktif' : ''}`}
+              accessibilityLabel={`${t('schedules:shiftHistory.filterDateAccessibilityLabel')}${isFiltered ? `, ${t('schedules:shiftHistory.filterActiveLabel')}` : ''}`}
             >
               <MaterialCommunityIcons
                 name="filter-variant"

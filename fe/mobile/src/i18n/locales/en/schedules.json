@@ -38,6 +38,11 @@
     "clockOut": "CLOCK OUT",
     "duration": "DURATION",
     "active": "Active",
-    "completed": "Completed"
+    "completed": "Completed",
+    "detailAccessibilityHint": "Tap to view shift details",
+    "unknownArea": "Unknown area",
+    "resetFilterAccessibilityLabel": "Reset date filter",
+    "filterDateAccessibilityLabel": "Filter date",
+    "filterActiveLabel": "filter active"
   }
 }

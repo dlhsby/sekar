@@ -32,7 +32,9 @@
     "last7": "7 Hari",
     "last30": "30 Hari",
     "thisMonth": "Bulan Ini",
-    "lastMonth": "Bulan Lalu"
+    "lastMonth": "Bulan Lalu",
+    "previousDay": "Hari sebelumnya",
+    "nextDay": "Hari berikutnya"
   },
   "coordinateLink": {
     "viewLocation": "Lihat lokasi di peta",

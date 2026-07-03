@@ -32,7 +32,9 @@
     "last7": "Last 7 Days",
     "last30": "Last 30 Days",
     "thisMonth": "This Month",
-    "lastMonth": "Last Month"
+    "lastMonth": "Last Month",
+    "previousDay": "Previous day",
+    "nextDay": "Next day"
   },
   "coordinateLink": {
     "viewLocation": "View location on map",

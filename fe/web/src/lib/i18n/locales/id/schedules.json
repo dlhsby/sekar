@@ -89,6 +89,10 @@
     "pageDescription": "Kalender kapasitas mingguan Rayon {{name}}",
     "readOnlyStatus": "Hanya lihat",
     "yearLabel": "Tahun",
-    "saveError": "Gagal menyimpan kapasitas."
+    "saveError": "Gagal menyimpan kapasitas.",
+    "serviceTypeHeader": "Jenis Layanan",
+    "noServiceTypes": "Tidak ada jenis layanan.",
+    "noChangesToSave": "Tidak ada perubahan untuk disimpan.",
+    "saved": "Kapasitas disimpan."
   }
 }

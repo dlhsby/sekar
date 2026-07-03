@@ -161,6 +161,8 @@
     "error": "Terjadi Kesalahan",
     "errorOccurred": "Terjadi kesalahan",
     "withinArea": "dalam",
-    "outsideArea": "luar"
+    "outsideArea": "luar",
+    "openProfile": "Buka Profil",
+    "defaultUser": "Pengguna"
   }
 }

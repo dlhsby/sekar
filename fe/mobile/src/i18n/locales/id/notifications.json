@@ -41,5 +41,9 @@
     "minutesAgo": "{{count}} menit lalu",
     "hoursAgo": "{{count}} jam lalu",
     "daysAgo": "{{count}} hari lalu"
+  },
+  "bell": {
+    "label": "Notifikasi",
+    "unreadLabel": "Notifikasi ({{count}} belum dibaca)"
   }
 }

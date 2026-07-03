@@ -136,5 +136,17 @@
     "notClockedIn": "Not clocked in",
     "workHoursSuffix": "work hours",
     "unknown": "Unknown"
+  },
+  "shiftDetail": {
+    "title": "Shift Details",
+    "area": "Area",
+    "areaType": "Area Type",
+    "clockIn": "Clock In",
+    "gpsClockIn": "GPS Clock In",
+    "validation": "Clock In Location Validation",
+    "withinArea": "Within Area",
+    "outsideArea": "Outside Area",
+    "distance": "Distance",
+    "radius": "Radius"
   }
 }

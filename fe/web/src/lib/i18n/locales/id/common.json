@@ -190,6 +190,8 @@
     "relativeJustNow": "Baru saja",
     "relativeMinutesAgo": "{{count}} menit lalu",
     "relativeHoursAgo": "{{count}} jam lalu",
-    "relativeDaysAgo": "{{count}} hari lalu"
+    "relativeDaysAgo": "{{count}} hari lalu",
+    "hoursShort": "j",
+    "minutesShort": "m"
   }
 }

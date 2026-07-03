@@ -96,7 +96,7 @@ export default function QrBatchPage() {
         </style>
       </head>
       <body>
-        <h1>QR Code Aset</h1>
+        <h1>${t('assets:qr.printTitle')}</h1>
         <div class="grid">
           ${generatedQrs
             .map(
@@ -130,31 +130,31 @@ export default function QrBatchPage() {
           type="checkbox"
           checked={selected.has(row.original.id)}
           onChange={() => handleToggleSelect(row.original.id)}
-          aria-label={`Pilih ${row.original.asset_code}`}
+          aria-label={t('assets:qr.selectCheckbox', { code: row.original.asset_code })}
         />
       ),
     },
     {
       id: 'asset_code',
       accessorKey: 'asset_code',
-      header: 'Kode',
+      header: t('assets:qr.tableColumns.code'),
       enableSorting: false,
-      meta: { label: 'Kode' },
+      meta: { label: t('assets:qr.tableColumns.code') },
       cell: ({ row }) => <span className="font-mono">{row.original.asset_code}</span>,
     },
     {
       id: 'name',
       accessorKey: 'name',
-      header: 'Nama',
+      header: t('assets:qr.tableColumns.name'),
       enableSorting: false,
-      meta: { label: 'Nama' },
+      meta: { label: t('assets:qr.tableColumns.name') },
     },
     {
       id: 'category',
-      header: 'Kategori',
+      header: t('assets:qr.tableColumns.category'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Kategori' },
+      meta: { label: t('assets:qr.tableColumns.category') },
       cell: ({ row }) => row.original.category?.name || '—',
     },
   ];

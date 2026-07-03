@@ -190,6 +190,8 @@
     "relativeJustNow": "Just now",
     "relativeMinutesAgo": "{{count}} minutes ago",
     "relativeHoursAgo": "{{count}} hours ago",
-    "relativeDaysAgo": "{{count}} days ago"
+    "relativeDaysAgo": "{{count}} days ago",
+    "hoursShort": "h",
+    "minutesShort": "m"
   }
 }

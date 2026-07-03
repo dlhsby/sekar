@@ -22,7 +22,8 @@ interface ShiftDetailModalProps {
 }
 
 export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalProps) {
-  const { t } = useTranslation('attendance');
+  const { t: tAttendance } = useTranslation('attendance');
+  const { t } = useTranslation();
 
   const locationStatus = React.useMemo(() => {
     if (
@@ -49,7 +50,7 @@ export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalPr
       type="sheet"
       visible={visible}
       onClose={onClose}
-      title="Detail Shift"
+      title={tAttendance('shiftDetail.title')}
       testID="shift-detail-modal"
     >
       {!shift ? (
@@ -62,10 +63,10 @@ export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalPr
         <View>
           <InfoRow
             icon="map-marker"
-            label="Area"
+            label={tAttendance('shiftDetail.area')}
             even
           >
-            <NBText variant="body" color="black">{shift.area?.name || t('shifts.unknown')}</NBText>
+            <NBText variant="body" color="black">{shift.area?.name || tAttendance('shifts.unknown')}</NBText>
             {!!shift.area?.address && (
               <NBText variant="caption" color="gray600">{shift.area.address}</NBText>
             )}
@@ -77,16 +78,16 @@ export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalPr
           </InfoRow>
 
           {!!shift.area?.areaType?.name && (
-            <InfoRow icon="office-building" label="Tipe Area">
+            <InfoRow icon="office-building" label={tAttendance('shiftDetail.areaType')}>
               <NBText variant="body" color="black">{shift.area.areaType.name}</NBText>
             </InfoRow>
           )}
 
-          <InfoRow icon="clock-outline" label="Clock In" even>
+          <InfoRow icon="clock-outline" label={tAttendance('shiftDetail.clockIn')} even>
             <NBText variant="body" color="black">{formatDateTime(shift.clock_in_time)}</NBText>
           </InfoRow>
 
-          <InfoRow icon="crosshairs-gps" label="GPS Clock In">
+          <InfoRow icon="crosshairs-gps" label={tAttendance('shiftDetail.gpsClockIn')}>
             <NBText variant="mono-sm" color="black">
               {shift.clock_in_gps_lat != null && shift.clock_in_gps_lng != null
                 ? `${Number(shift.clock_in_gps_lat).toFixed(6)}, ${Number(shift.clock_in_gps_lng).toFixed(6)}`
@@ -126,7 +127,7 @@ export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalPr
                   />
                 </View>
                 <NBText variant="body" color="black" style={styles.validationLabel}>
-                  Validasi Lokasi Clock In
+                  {tAttendance('shiftDetail.validation')}
                 </NBText>
                 <View
                   style={[
@@ -135,14 +136,14 @@ export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalPr
                   ]}
                 >
                   <NBText variant="caption" color="white">
-                    {isInside ? 'Dalam Area' : 'Luar Area'}
+                    {isInside ? tAttendance('shiftDetail.withinArea') : tAttendance('shiftDetail.outsideArea')}
                   </NBText>
                 </View>
               </View>
 
               <View style={styles.metricsRow}>
-                <MetricTile label="Jarak" value={`${Math.round(distance)}m`} />
-                <MetricTile label="Radius" value={`${shift.area?.radius_meters || 100}m`} />
+                <MetricTile label={tAttendance('shiftDetail.distance')} value={`${Math.round(distance)}m`} />
+                <MetricTile label={tAttendance('shiftDetail.radius')} value={`${shift.area?.radius_meters || 100}m`} />
               </View>
             </View>
           </View>

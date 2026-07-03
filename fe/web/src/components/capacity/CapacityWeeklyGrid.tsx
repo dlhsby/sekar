@@ -89,7 +89,7 @@ export function CapacityWeeklyGrid({
 
   const handleSave = async () => {
     if (edited.size === 0) {
-      toast.info('Tidak ada perubahan untuk disimpan.');
+      toast.info(t('schedules:capacity.noChangesToSave'));
       return;
     }
 
@@ -106,7 +106,7 @@ export function CapacityWeeklyGrid({
       );
 
       await Promise.all(promises);
-      toast.success('Kapasitas disimpan.');
+      toast.success(t('schedules:capacity.saved'));
       setEdited(new Map());
     } catch (err) {
       const message = err instanceof Error ? err.message : t('schedules:capacity.saveError');
@@ -125,7 +125,7 @@ export function CapacityWeeklyGrid({
   if (serviceTypes.length === 0) {
     return (
       <div className="rounded-nb-md border-2 border-dashed border-nb-gray-300 px-4 py-12 text-center text-nb-body-sm text-nb-gray-500">
-        Tidak ada jenis layanan.
+        {t('schedules:capacity.noServiceTypes')}
       </div>
     );
   }
@@ -137,7 +137,7 @@ export function CapacityWeeklyGrid({
         <div className="grid min-w-[800px]" style={{ gridTemplateColumns: `140px repeat(${weeks.length}, 1fr)` }}>
           {/* Header row */}
           <div className="sticky left-0 z-10 border-b-2 border-r-[1.5px] border-nb-black border-r-nb-gray-300 bg-nb-gray-50 px-3 py-2.5 font-mono text-[10px] font-bold uppercase tracking-wide text-nb-gray-600">
-            Jenis Layanan
+            {t('schedules:capacity.serviceTypeHeader')}
           </div>
           {weeks.map((week) => (
             <div

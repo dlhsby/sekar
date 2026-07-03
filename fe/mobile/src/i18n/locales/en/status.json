@@ -34,7 +34,9 @@
     "inactive": "Inactive",
     "outside_area": "Outside area",
     "missing": "Not detected",
-    "offline": "Offline"
+    "offline": "Offline",
+    "online": "Online",
+    "syncing": "Syncing"
   },
   "location": {
     "dalam_area": "Inside area",

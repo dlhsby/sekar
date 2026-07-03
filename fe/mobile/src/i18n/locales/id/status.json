@@ -34,7 +34,9 @@
     "inactive": "Tidak aktif",
     "outside_area": "Luar area",
     "missing": "Tidak terdeteksi",
-    "offline": "Offline"
+    "offline": "Offline",
+    "online": "Online",
+    "syncing": "Syncing"
   },
   "location": {
     "dalam_area": "Dalam area",

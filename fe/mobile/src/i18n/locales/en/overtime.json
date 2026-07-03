@@ -47,13 +47,17 @@
     "submitButtonTitle": "+ Submit Overtime",
     "submitButtonLabel": "Submit new overtime",
     "submitButtonDisabledLabel": "Submit overtime disabled, please complete active shift first",
-    "submitButtonDisabledHint": "Button is disabled because you still have an active shift"
+    "submitButtonDisabledHint": "Button is disabled because you still have an active shift",
+    "defaultTitle": "Overtime",
+    "cardAccessibilityLabelPrefix": "Overtime detail",
+    "photoUnit": "photos"
   },
   "detail": {
     "loadingMessage": "Loading data...",
     "notFoundMessage": "Overtime not found",
     "backButtonTitle": "Back",
-    "photoModalTitle": "Overtime Photo"
+    "photoModalTitle": "Overtime Photo",
+    "loadError": "Failed to load overtime details"
   },
   "submit": {
     "startTitle": "Start Overtime",

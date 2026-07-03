@@ -47,13 +47,17 @@
     "submitButtonTitle": "+ Ajukan Lembur",
     "submitButtonLabel": "Ajukan lembur baru",
     "submitButtonDisabledLabel": "Ajukan lembur dinonaktifkan, selesaikan shift aktif terlebih dahulu",
-    "submitButtonDisabledHint": "Tombol dinonaktifkan karena Anda masih memiliki shift aktif"
+    "submitButtonDisabledHint": "Tombol dinonaktifkan karena Anda masih memiliki shift aktif",
+    "defaultTitle": "Lembur",
+    "cardAccessibilityLabelPrefix": "Detail lembur",
+    "photoUnit": "foto"
   },
   "detail": {
     "loadingMessage": "Memuat data...",
     "notFoundMessage": "Lembur tidak ditemukan",
     "backButtonTitle": "Kembali",
-    "photoModalTitle": "Foto Lembur"
+    "photoModalTitle": "Foto Lembur",
+    "loadError": "Gagal memuat detail lembur"
   },
   "submit": {
     "startTitle": "Mulai Lembur",
