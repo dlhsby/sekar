@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ui';
 import { User } from '@/types/models';
 import { useDeleteUser } from '@/lib/api/users';
+import { getErrorMessage } from '@/lib/api/client';
 
 interface DeleteUserModalProps {
   user: User | null;
@@ -24,12 +26,14 @@ export function DeleteUserModal({ user, isOpen, onClose, onSuccess }: DeleteUser
 
     try {
       setError('');
+      const name = user.full_name;
       await deleteUserMutation.mutateAsync(user.id);
+      toast.success(`Pengguna "${name}" berhasil dihapus.`);
       onSuccess();
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Terjadi kesalahan saat menghapus user';
+      const errorMessage = getErrorMessage(err);
       setError(errorMessage);
+      toast.error(errorMessage);
     }
   };
 

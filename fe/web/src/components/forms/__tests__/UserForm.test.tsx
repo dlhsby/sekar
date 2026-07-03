@@ -415,8 +415,17 @@ describe('UserForm', () => {
         isLoading: true,
       });
 
-      // Rayon field is always shown now (all roles).
-      render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
+      // Rayon is now shown only for roles with a rayon scope — render a satgas
+      // user (rayon + area + shift) so the field is present.
+      const initialData: User = {
+        id: '1',
+        username: 'testuser',
+        full_name: 'Test User',
+        role: 'satgas',
+        created_at: '2026-01-01',
+        updated_at: '2026-01-01',
+      };
+      render(<UserForm {...defaultProps} initialData={initialData} />, { wrapper: createWrapper() });
 
       expect(screen.getByLabelText(/rayon/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/rayon/i)).toBeDisabled();

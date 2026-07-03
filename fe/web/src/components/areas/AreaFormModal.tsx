@@ -1,8 +1,10 @@
 'use client';
 
+import { toast } from 'sonner';
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 import { AreaForm } from '@/components/forms/AreaForm';
 import { useCreateArea, useUpdateArea, useUpdateAreaBoundary } from '@/lib/api/areas';
+import { getErrorMessage } from '@/lib/api/client';
 import type { Area, CreateAreaDto, UpdateAreaDto } from '@/types/models';
 
 interface AreaFormModalProps {
@@ -11,6 +13,8 @@ interface AreaFormModalProps {
   /** Present → edit; omitted/null → create. */
   area?: Area | null;
   onSuccess?: () => void;
+  /** Read-only "Detail" mode — reuses the form disabled, no submit. */
+  readOnly?: boolean;
 }
 
 /**
@@ -22,7 +26,7 @@ interface AreaFormModalProps {
  * update area endpoints (backend whitelist), so scalar fields go through
  * POST/PATCH `/areas` and the polygon goes through `PUT /areas/:id/boundary`.
  */
-export function AreaFormModal({ open, onOpenChange, area, onSuccess }: AreaFormModalProps) {
+export function AreaFormModal({ open, onOpenChange, area, onSuccess, readOnly = false }: AreaFormModalProps) {
   const isEdit = !!area;
   const createMutation = useCreateArea();
   const updateMutation = useUpdateArea();
@@ -62,11 +66,12 @@ export function AreaFormModal({ open, onOpenChange, area, onSuccess }: AreaFormM
           });
         }
       }
-    } catch {
-      // Surfaced via the mutation.isError banner; keep the modal open and stop
-      // the rejection from escaping react-hook-form as an unhandled rejection.
+    } catch (err) {
+      // Also surfaced via the mutation.isError banner; keep the modal open.
+      toast.error(getErrorMessage(err));
       return;
     }
+    toast.success(`Area "${data.name}" berhasil ${isEdit ? 'diperbarui' : 'dibuat'}.`);
     onSuccess?.();
     onOpenChange(false);
   };
@@ -87,10 +92,10 @@ export function AreaFormModal({ open, onOpenChange, area, onSuccess }: AreaFormM
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="xl">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Ubah Area' : 'Tambah Area'}</DialogTitle>
+          <DialogTitle>{readOnly ? 'Detail Area' : isEdit ? 'Ubah Area' : 'Tambah Area'}</DialogTitle>
         </DialogHeader>
         <DialogBody>
-          {errorMessage ? (
+          {errorMessage && !readOnly ? (
             <div
               className="mb-4 border-2 border-nb-danger bg-nb-danger-light px-4 py-3"
               role="alert"
@@ -100,11 +105,13 @@ export function AreaFormModal({ open, onOpenChange, area, onSuccess }: AreaFormM
             </div>
           ) : null}
           <AreaForm
-            key={area?.id ?? 'new'}
+            key={`${area?.id ?? 'new'}-${readOnly ? 'view' : 'edit'}`}
             mode={isEdit ? 'edit' : 'create'}
             initialData={area ?? undefined}
             onSubmit={handleSubmit}
             isLoading={isPending}
+            readOnly={readOnly}
+            onCancel={() => onOpenChange(false)}
           />
         </DialogBody>
       </DialogContent>

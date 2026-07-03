@@ -14,7 +14,6 @@ import {
   DataTable,
   PageHeader,
   CoordinateLink,
-  DetailModal,
   ConfirmDialog,
   type ColumnDef,
   type DataTableRowAction,
@@ -256,40 +255,8 @@ export default function RayonsPage() {
         onSuccess={() => refetch()}
       />
 
-      <DetailModal
-        open={view.open}
-        onOpenChange={view.onOpenChange}
-        title="Detail Rayon"
-        rows={
-          view.item
-            ? [
-                { label: 'Nama', value: view.item.name },
-                {
-                  label: 'Warna',
-                  value: view.item.color ? (
-                    <span className="inline-flex items-center gap-2">
-                      <div
-                        className="h-4 w-4 border-2 border-nb-black"
-                        style={{ backgroundColor: view.item.color }}
-                      />
-                      <span className="font-mono text-nb-body-sm">{view.item.color}</span>
-                    </span>
-                  ) : null,
-                },
-                {
-                  label: 'Koordinat',
-                  value:
-                    view.item.center_lat && view.item.center_lng ? (
-                      <CoordinateLink lat={view.item.center_lat} lng={view.item.center_lng} />
-                    ) : null,
-                },
-                { label: 'Deskripsi', value: view.item.description },
-                { label: 'Dibuat oleh', value: actorName(view.item.created_by) },
-                { label: 'Diperbarui oleh', value: actorName(view.item.updated_by) },
-              ]
-            : []
-        }
-      />
+      {/* Detail = the edit form, read-only (shows the map + boundary + pin). */}
+      <RayonFormModal open={view.open} onOpenChange={view.onOpenChange} rayon={view.item} readOnly />
 
       <ConfirmDialog
         open={deleteOpen}

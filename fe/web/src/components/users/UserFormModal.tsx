@@ -1,9 +1,11 @@
 'use client';
 
+import { toast } from 'sonner';
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 import { UserForm } from '@/components/forms/UserForm';
 import { useCreateUser, useUpdateUser } from '@/lib/api/users';
-import type { CreateUserDto, UpdateUserDto, User } from '@/types/models';
+import { getErrorMessage } from '@/lib/api/client';
+import type { CreateUserDto, UpdateUserDto, User, CreatedUser } from '@/types/models';
 
 interface UserFormModalProps {
   open: boolean;
@@ -12,6 +14,9 @@ interface UserFormModalProps {
   user?: User | null;
   /** Called after a successful create/update (the list refetches via cache invalidation). */
   onSuccess?: () => void;
+  /** Called after a successful CREATE with the new user — carries the one-time
+   *  `temp_password` so the caller can show it (TempPasswordDialog). */
+  onCreated?: (user: CreatedUser) => void;
   /** Read-only "Lihat" mode — shows the same form disabled, no submit. */
   readOnly?: boolean;
 }
@@ -26,6 +31,7 @@ export function UserFormModal({
   onOpenChange,
   user,
   onSuccess,
+  onCreated,
   readOnly = false,
 }: UserFormModalProps) {
   const isEdit = !!user;
@@ -34,10 +40,19 @@ export function UserFormModal({
   const mutation = isEdit ? updateMutation : createMutation;
 
   const handleSubmit = async (data: CreateUserDto & UpdateUserDto): Promise<void> => {
-    if (isEdit && user) {
-      await updateMutation.mutateAsync({ id: user.id, data });
-    } else {
-      await createMutation.mutateAsync(data);
+    try {
+      if (isEdit && user) {
+        await updateMutation.mutateAsync({ id: user.id, data });
+        toast.success(`Pengguna "${data.full_name}" berhasil diperbarui.`);
+      } else {
+        const created = (await createMutation.mutateAsync(data)) as CreatedUser;
+        toast.success(`Pengguna "${created.full_name}" berhasil dibuat.`);
+        onCreated?.(created);
+      }
+    } catch (err) {
+      // Also surfaced via the inline error banner; keep the modal open.
+      toast.error(getErrorMessage(err));
+      return;
     }
     onSuccess?.();
     onOpenChange(false);

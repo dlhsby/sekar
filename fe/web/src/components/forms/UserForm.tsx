@@ -12,7 +12,7 @@ import { useAreas } from '@/lib/api/areas';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useUserAreas } from '@/lib/api/user-areas';
 import { checkUsername, suggestUsername, checkPhone } from '@/lib/api/users';
-import { sortedRoleOptions } from '@/lib/constants/roles';
+import { sortedRoleOptions, roleAssignmentScope } from '@/lib/constants/roles';
 import { useAvailabilityCheck } from '@/lib/hooks/useAvailabilityCheck';
 import { normalizePhone, INDO_MOBILE_REGEX } from '@/lib/utils/phone';
 
@@ -182,17 +182,29 @@ export function UserForm({
     );
   }, [selectedRayonId, allAreas]);
 
-  // Create-mode only: default the shift to "Shift 1" once definitions load.
-  // This is the single combobox with a default; the rest start unselected.
+  // Which assignment fields this role uses (rayon / area / shift).
+  const scope = roleAssignmentScope(selectedRole);
+
+  // When the role changes so a field no longer applies, clear its value so we
+  // never submit a stale rayon/area/shift for e.g. a management role.
+  useEffect(() => {
+    if (!scope.rayon && watch('rayon_id')) setValue('rayon_id', '');
+    if (!scope.shift && watch('shift_definition_id')) setValue('shift_definition_id', '');
+    if (!scope.area) setAreaIds((prev) => (prev.length ? [] : prev));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRole]);
+
+  // Create-mode only: default the shift to "Shift 1" once definitions load, but
+  // only for roles that actually use a shift (satgas/linmas).
   const shiftInitRef = useRef(false);
   useEffect(() => {
-    if (isEditMode || readOnly || shiftInitRef.current || !shifts.length) return;
+    if (isEditMode || readOnly || shiftInitRef.current || !shifts.length || !scope.shift) return;
     const shift1 = shifts.find((s) => /shift\s*0*1\b/i.test(s.name)) ?? shifts[0];
     if (shift1) {
       setValue('shift_definition_id', shift1.id);
       shiftInitRef.current = true;
     }
-  }, [shifts, isEditMode, readOnly, setValue]);
+  }, [shifts, isEditMode, readOnly, scope.shift, setValue]);
 
   const busy = isSubmitting || loading;
   const fieldsDisabled = busy || readOnly;
@@ -277,48 +289,54 @@ export function UserForm({
         disabled={fieldsDisabled}
       />
 
-      <FormCombobox
-        label="Rayon"
-        options={rayonOptions}
-        value={watch('rayon_id') || ''}
-        onChange={(value) => setValue('rayon_id', value)}
-        placeholder={rayonsLoading ? 'Memuat...' : 'Pilih rayon'}
-        error={errors.rayon_id?.message}
-        disabled={fieldsDisabled || rayonsLoading}
-      />
+      {scope.rayon && (
+        <FormCombobox
+          label="Rayon"
+          options={rayonOptions}
+          value={watch('rayon_id') || ''}
+          onChange={(value) => setValue('rayon_id', value)}
+          placeholder={rayonsLoading ? 'Memuat...' : 'Pilih rayon'}
+          error={errors.rayon_id?.message}
+          disabled={fieldsDisabled || rayonsLoading}
+        />
+      )}
 
       {/* Areas multi-select — cascaded from the selected rayon; the worker's
           permanent assigned areas that drive their roster. */}
-      <FormMultiCombobox
-        label="Area Penugasan (bisa lebih dari satu)"
-        options={areaOptions}
-        values={areaIds}
-        onChange={setAreaIds}
-        placeholder={
-          !selectedRayonId
-            ? 'Pilih rayon terlebih dahulu'
-            : areasLoading
-              ? 'Memuat area...'
-              : 'Pilih area penugasan'
-        }
-        searchPlaceholder="Cari area…"
-        emptyText={
-          selectedRayonId ? 'Tidak ada area di rayon ini.' : 'Pilih rayon terlebih dahulu.'
-        }
-        helperText="Kosongkan untuk pekerja tanpa area tetap (ad-hoc) atau peran manajemen."
-        disabled={fieldsDisabled || areasLoading || !selectedRayonId}
-      />
+      {scope.area && (
+        <FormMultiCombobox
+          label="Area Penugasan (bisa lebih dari satu)"
+          options={areaOptions}
+          values={areaIds}
+          onChange={setAreaIds}
+          placeholder={
+            !selectedRayonId
+              ? 'Pilih rayon terlebih dahulu'
+              : areasLoading
+                ? 'Memuat area...'
+                : 'Pilih area penugasan'
+          }
+          searchPlaceholder="Cari area…"
+          emptyText={
+            selectedRayonId ? 'Tidak ada area di rayon ini.' : 'Pilih rayon terlebih dahulu.'
+          }
+          helperText="Kosongkan untuk pekerja tanpa area tetap (ad-hoc)."
+          disabled={fieldsDisabled || areasLoading || !selectedRayonId}
+        />
+      )}
 
-      <FormCombobox
-        label="Shift Kerja"
-        options={shiftOptions}
-        value={watch('shift_definition_id') || ''}
-        onChange={(value) => setValue('shift_definition_id', value)}
-        placeholder="Pilih shift"
-        error={errors.shift_definition_id?.message}
-        helperText="Satu shift per pekerja (berlaku untuk semua areanya)"
-        disabled={fieldsDisabled}
-      />
+      {scope.shift && (
+        <FormCombobox
+          label="Shift Kerja"
+          options={shiftOptions}
+          value={watch('shift_definition_id') || ''}
+          onChange={(value) => setValue('shift_definition_id', value)}
+          placeholder="Pilih shift"
+          error={errors.shift_definition_id?.message}
+          helperText="Satu shift per pekerja (berlaku untuk semua areanya)"
+          disabled={fieldsDisabled}
+        />
+      )}
 
       {!isEditMode && !readOnly && (
         <div className="rounded-nb-base border-2 border-nb-info bg-nb-info-light/40 p-3 text-nb-body-sm">
