@@ -1,0 +1,29 @@
+{
+  "carousel": {
+    "slides": [
+      {
+        "title": "Monitor your team in real-time",
+        "highlight": "real-time",
+        "body": "See the position of all field workers. Live status, straight from GPS."
+      },
+      {
+        "title": "Structured tasks every shift",
+        "highlight": "structured",
+        "body": "Coordinator gives briefing & checklist. Finish patrol, just tap."
+      },
+      {
+        "title": "District requests, fast",
+        "highlight": "fast",
+        "body": "Submit pruning requests directly from the field. Admin sees, decides."
+      },
+      {
+        "title": "Stay connected without signal",
+        "highlight": "connected",
+        "body": "Notes saved offline. Auto sync when signal returns."
+      }
+    ],
+    "nextButton": "Next",
+    "lastButton": "Start (Sign In)",
+    "skipButton": "Skip"
+  }
+}

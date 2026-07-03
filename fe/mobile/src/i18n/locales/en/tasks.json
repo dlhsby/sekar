@@ -46,6 +46,69 @@
     "reset": "Reset",
     "apply": "Apply"
   },
+  "assignee": {
+    "sectionTitle": "ASSIGNMENT",
+    "sectionSubtitle": "Select the assigned officer",
+    "label": "Officer",
+    "placeholder": "Select officer...",
+    "searchPlaceholder": "Search officer name...",
+    "selectAreaFirst": "Select location first",
+    "loading": "Loading officer list...",
+    "empty": "No officers can be assigned in this area"
+  },
+  "actions": {
+    "accept": {
+      "success": "Success",
+      "successMessage": "Task accepted",
+      "error": "Failed to accept task"
+    },
+    "decline": {
+      "reasonRequired": "Reason for declining is required",
+      "success": "Success",
+      "successMessage": "Task declined",
+      "error": "Failed to decline task"
+    },
+    "start": {
+      "success": "Success",
+      "successMessage": "Task started",
+      "error": "Failed to start task"
+    },
+    "verify": {
+      "confirm": "Confirm Verification",
+      "question": "Are you sure you want to verify this task? This action cannot be undone.",
+      "cancel": "Cancel",
+      "yes": "Yes, Verify",
+      "success": "Success",
+      "successMessage": "Task verified successfully",
+      "error": "Failed to verify task"
+    },
+    "revision": {
+      "reasonRequired": "Reason for revision is required",
+      "confirm": "Confirm Request Revision",
+      "question": "Are you sure you want to request revision? The officer will redo this task.",
+      "cancel": "Cancel",
+      "yes": "Yes, Request Revision",
+      "success": "Success",
+      "successMessage": "Revision request sent",
+      "error": "Failed to send revision request"
+    },
+    "assign": {
+      "success": "Success",
+      "successMessage": "Task assigned successfully",
+      "error": "Failed to assign task"
+    }
+  },
+  "tagged": {
+    "sectionTitle": "TAG OFFICERS",
+    "sectionSubtitle": "Optional — select multiple officers to tag",
+    "label": "Tag Officers",
+    "placeholder": "Select officers to tag...",
+    "searchPlaceholder": "Search officer name...",
+    "selectAreaFirst": "Select location first",
+    "loading": "Loading officer list...",
+    "empty": "No officers can be tagged in this area",
+    "emptyOthers": "No other officers to tag"
+  },
   "header": {
     "sort": "SORT TASKS"
   },

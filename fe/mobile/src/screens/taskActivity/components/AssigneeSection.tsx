@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { View, ActivityIndicator } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   NBCard,
@@ -36,6 +37,7 @@ export const AssigneeSection: React.FC<AssigneeSectionProps> = ({
   assignableUsers,
   taggedUserIds,
 }) => {
+  const { t } = useTranslation('tasks');
   const assigneeOptions: NBSelectOption[] = assignableUsers
     .filter((u) => !taggedUserIds.includes(u.id))
     .map((u) => ({ label: u.full_name, value: u.id }));
@@ -47,7 +49,7 @@ export const AssigneeSection: React.FC<AssigneeSectionProps> = ({
           <MaterialCommunityIcons name="account-arrow-right" size={16} color={nbColors.black} />
           <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}>
             {' '}
-            PENUGASAN
+            {t('assignee.sectionTitle')}
             <NBText variant="mono-sm" style={styles.requiredAsterisk}>
               {' '}
               *
@@ -55,38 +57,38 @@ export const AssigneeSection: React.FC<AssigneeSectionProps> = ({
           </NBText>
         </View>
         <NBText variant="body-sm" style={styles.sectionSubtitle}>
-          Pilih petugas yang ditugaskan
+          {t('assignee.sectionSubtitle')}
         </NBText>
       </NBCardHeader>
       <NBCardContent>
         {needsAreaSelection ? (
           <View style={styles.emptyContainer}>
             <NBText variant="body-sm" color="gray600" style={styles.emptyText}>
-              Pilih lokasi terlebih dahulu
+              {t('assignee.selectAreaFirst')}
             </NBText>
           </View>
         ) : isLoadingUsers ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator color={nbColors.primary} />
             <NBText variant="body-sm" color="gray600" style={styles.loadingText}>
-              Memuat daftar petugas...
+              {t('assignee.loading')}
             </NBText>
           </View>
         ) : assigneeOptions.length > 0 ? (
           <NBSelect
-            label="Petugas"
+            label={t('assignee.label')}
             value={assignedTo}
             onValueChange={(userId) => onAssigneeChange(userId)}
             options={assigneeOptions}
-            placeholder="Pilih petugas..."
+            placeholder={t('assignee.placeholder')}
             searchable
-            searchPlaceholder="Cari nama petugas..."
+            searchPlaceholder={t('assignee.searchPlaceholder')}
             clearable
           />
         ) : (
           <View style={styles.emptyContainer}>
             <NBText variant="body-sm" color="gray600" style={styles.emptyText}>
-              Tidak ada petugas yang dapat ditugaskan di area ini
+              {t('assignee.empty')}
             </NBText>
           </View>
         )}

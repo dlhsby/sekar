@@ -1,0 +1,18 @@
+{
+  "permission": {
+    "denied": "Location permission denied. Unable to start tracking.",
+    "deniedShort": "Location permission denied. Please enable in settings.",
+    "required": "Location Permission Required",
+    "requiredMessage": "This app requires location permission to track your position during your shift. Please enable it in settings."
+  },
+  "errors": {
+    "bufferAlmostFull": "Location buffer almost full ({{threshold}}/{{max}}). Waiting for network connection.",
+    "permissionDenied": "Location permission denied. Please enable in settings.",
+    "positionUnavailable": "GPS signal not available. Check if location services are enabled.",
+    "timeout": "GPS timeout. Make sure you are in an open area.",
+    "unknown": "Failed to get location. Please try again.",
+    "gpsDisabled": "GPS is not enabled. Please enable location services to continue.",
+    "gpsDisabledTitle": "GPS Not Enabled",
+    "gpsDisabledMessage": "This app requires GPS to track your location. Please enable GPS in your device settings."
+  }
+}

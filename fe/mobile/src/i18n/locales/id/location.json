@@ -1,0 +1,18 @@
+{
+  "permission": {
+    "denied": "Izin lokasi ditolak. Tidak dapat memulai pelacakan.",
+    "deniedShort": "Izin lokasi ditolak. Silakan aktifkan di pengaturan.",
+    "required": "Izin Lokasi Diperlukan",
+    "requiredMessage": "Aplikasi memerlukan izin lokasi untuk melacak posisi Anda selama shift. Silakan aktifkan di pengaturan."
+  },
+  "errors": {
+    "bufferAlmostFull": "Buffer lokasi hampir penuh ({{threshold}}/{{max}}). Menunggu koneksi jaringan.",
+    "permissionDenied": "Izin lokasi ditolak. Silakan aktifkan di pengaturan.",
+    "positionUnavailable": "Sinyal GPS tidak tersedia. Periksa apakah layanan lokasi aktif.",
+    "timeout": "GPS timeout. Pastikan Anda berada di area terbuka.",
+    "unknown": "Gagal mendapatkan lokasi. Silakan coba lagi.",
+    "gpsDisabled": "GPS tidak aktif. Silakan aktifkan layanan lokasi untuk melanjutkan.",
+    "gpsDisabledTitle": "GPS Tidak Aktif",
+    "gpsDisabledMessage": "Aplikasi memerlukan GPS untuk melacak lokasi. Silakan aktifkan GPS di pengaturan perangkat."
+  }
+}

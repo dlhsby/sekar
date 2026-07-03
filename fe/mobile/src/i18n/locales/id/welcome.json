@@ -1,0 +1,29 @@
+{
+  "carousel": {
+    "slides": [
+      {
+        "title": "Pantau tim secara real-time",
+        "highlight": "real-time",
+        "body": "Lihat posisi semua satgas di lapangan. Status hidup, langsung dari GPS."
+      },
+      {
+        "title": "Tugas terstruktur tiap shift",
+        "highlight": "terstruktur",
+        "body": "Korlap kasih briefing & checklist. Selesai patroli, tinggal tap."
+      },
+      {
+        "title": "Permohonan kecamatan, cepat",
+        "highlight": "cepat",
+        "body": "Ajukan perantingan langsung dari lapangan. Admin lihat, putuskan."
+      },
+      {
+        "title": "Tetap jalan tanpa sinyal",
+        "highlight": "jalan",
+        "body": "Catatan tersimpan offline. Sinkron otomatis saat sinyal balik."
+      }
+    ],
+    "nextButton": "Lanjut",
+    "lastButton": "Mulai (Masuk)",
+    "skipButton": "Lewati"
+  }
+}

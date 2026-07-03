@@ -33,6 +33,7 @@ import {
   stopLocationForegroundService,
 } from './foregroundService';
 import config from '../../constants/config';
+import i18n from '../../i18n/config';
 
 /**
  * Configuration from centralized config (reads from .env)
@@ -172,15 +173,15 @@ class LocationTracker extends EventEmitter {
       const result = await requestLocationPermission();
 
       if (!result.granted) {
-        const errorMsg = 'Izin lokasi ditolak. Tidak dapat memulai pelacakan.';
+        const errorMsg = i18n.t('location:permission.denied');
         console.error(`[LocationTracker:${this.instanceId}]`, errorMsg);
         this.emit('error', errorMsg);
         this.shiftId = null;
         this.tracking = false;
 
         Alert.alert(
-          'Izin Lokasi Diperlukan',
-          'Aplikasi memerlukan izin lokasi untuk melacak posisi Anda selama shift. Silakan aktifkan di pengaturan.',
+          i18n.t('location:permission.required'),
+          i18n.t('location:permission.requiredMessage'),
           [{ text: 'OK' }]
         );
         return;
@@ -520,7 +521,7 @@ class LocationTracker extends EventEmitter {
     const warningThreshold = Math.floor(MAX_BUFFER_SIZE * 0.8);
     if (this.locationBuffer.length === warningThreshold) {
       console.warn(`[LocationTracker] Buffer reaching capacity (${warningThreshold}/${MAX_BUFFER_SIZE}), consider uploading soon`);
-      this.emit('error', `Buffer lokasi hampir penuh (${warningThreshold}/${MAX_BUFFER_SIZE}). Menunggu koneksi jaringan.`);
+      this.emit('error', i18n.t('location:errors.bufferAlmostFull', { threshold: warningThreshold, max: MAX_BUFFER_SIZE }));
     }
 
     // Force upload if buffer exceeds max size to prevent OOM
@@ -689,19 +690,19 @@ class LocationTracker extends EventEmitter {
     switch (error.code) {
       case 1: // PERMISSION_DENIED
         errorType = 'permission_denied';
-        message = 'Izin lokasi ditolak. Silakan aktifkan di pengaturan.';
+        message = i18n.t('location:errors.permissionDenied');
         break;
       case 2: // POSITION_UNAVAILABLE
         errorType = 'gps_disabled';
-        message = 'Sinyal GPS tidak tersedia. Periksa apakah layanan lokasi aktif.';
+        message = i18n.t('location:errors.positionUnavailable');
         break;
       case 3: // TIMEOUT
         errorType = 'timeout';
-        message = 'GPS timeout. Pastikan Anda berada di area terbuka.';
+        message = i18n.t('location:errors.timeout');
         break;
       default:
         errorType = 'unknown';
-        message = error.message || 'Gagal mendapatkan lokasi. Silakan coba lagi.';
+        message = error.message || i18n.t('location:errors.unknown');
     }
 
     // Emit specific error event for targeted handling
@@ -719,11 +720,11 @@ class LocationTracker extends EventEmitter {
         () => resolve(),
         (error) => {
           if (error.code === 2) { // POSITION_UNAVAILABLE - GPS/location services disabled
-            const errorMsg = 'GPS tidak aktif. Silakan aktifkan layanan lokasi untuk melanjutkan.';
+            const errorMsg = i18n.t('location:errors.gpsDisabled');
 
             Alert.alert(
-              'GPS Tidak Aktif',
-              'Aplikasi memerlukan GPS untuk melacak lokasi. Silakan aktifkan GPS di pengaturan perangkat.',
+              i18n.t('location:errors.gpsDisabledTitle'),
+              i18n.t('location:errors.gpsDisabledMessage'),
               [{ text: 'OK' }]
             );
 

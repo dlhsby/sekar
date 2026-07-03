@@ -87,7 +87,9 @@
     "legendFull": "Full",
     "legendUnset": "Not Set",
     "preferenceWeekLabel": "Preferred Week",
+    "selectedDateLabel": "Selected Date",
     "clearDateLabel": "Clear selected date",
+    "dateFullError": "This date is already full. Please select another date.",
     "sundayLabel": "Sun",
     "mondayLabel": "Mon",
     "tuesdayLabel": "Tue",
@@ -170,6 +172,18 @@
       "saveFailed": "Error saving data"
     },
     "validationFailedTitle": "Validation Failed"
+  },
+  "actionBar": {
+    "convertLabel": "Assign to Staff"
+  },
+  "validation": {
+    "reviewTitle": "Review",
+    "gpsErrorMessage": "GPS coordinates not detected yet. Tap the update button on the Location card.",
+    "photoErrorMessage": "At least 1 photo is required.",
+    "submitSuccess": "Request sent",
+    "submitSuccessMessage": "You will be notified after review.",
+    "submitError": "Failed to send request",
+    "submitRetry": "Try again."
   },
   "actions": {
     "approve": {

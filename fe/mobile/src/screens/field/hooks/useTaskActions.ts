@@ -6,6 +6,7 @@
 import { useState, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import i18n from '../../../i18n/config';
 import * as tasksApi from '../../../services/api/tasksApi';
 import type { Task } from '../../../types/models.types';
 import type { MainTabScreenProps } from '../../../types/navigation.types';
@@ -56,10 +57,10 @@ export function useTaskActions(
     try {
       const response = await tasksApi.acceptTask(task.id);
       if (response.error) { Alert.alert('Error', response.error); return; }
-      Alert.alert('Berhasil', 'Tugas diterima');
+      Alert.alert(i18n.t('tasks:actions.accept.success'), i18n.t('tasks:actions.accept.successMessage'));
       await onTaskUpdated();
     } catch {
-      Alert.alert('Error', 'Gagal menerima tugas');
+      Alert.alert('Error', i18n.t('tasks:actions.accept.error'));
     } finally {
       setIsSubmitting(false);
     }
@@ -71,17 +72,17 @@ export function useTaskActions(
 
   const handleDeclineSubmit = useCallback(async () => {
     if (!task) { return; }
-    if (!declineReason.trim()) { Alert.alert('Error', 'Alasan penolakan wajib diisi'); return; }
+    if (!declineReason.trim()) { Alert.alert('Error', i18n.t('tasks:actions.decline.reasonRequired')); return; }
     setIsSubmitting(true);
     try {
       const response = await tasksApi.declineTask(task.id, { reason: declineReason.trim() });
       if (response.error) { Alert.alert('Error', response.error); return; }
-      Alert.alert('Berhasil', 'Tugas ditolak');
+      Alert.alert(i18n.t('tasks:actions.decline.success'), i18n.t('tasks:actions.decline.successMessage'));
       setShowDeclineInput(false);
       setDeclineReason('');
       await onTaskUpdated();
     } catch {
-      Alert.alert('Error', 'Gagal menolak tugas');
+      Alert.alert('Error', i18n.t('tasks:actions.decline.error'));
     } finally {
       setIsSubmitting(false);
     }
@@ -93,10 +94,10 @@ export function useTaskActions(
     try {
       const response = await tasksApi.startTask(task.id);
       if (response.error) { Alert.alert('Error', response.error); return; }
-      Alert.alert('Berhasil', 'Tugas dimulai');
+      Alert.alert(i18n.t('tasks:actions.start.success'), i18n.t('tasks:actions.start.successMessage'));
       await onTaskUpdated();
     } catch {
-      Alert.alert('Error', 'Gagal memulai tugas');
+      Alert.alert('Error', i18n.t('tasks:actions.start.error'));
     } finally {
       setIsSubmitting(false);
     }
@@ -110,22 +111,22 @@ export function useTaskActions(
   const handleVerify = useCallback(() => {
     if (!task) { return; }
     Alert.alert(
-      'Konfirmasi Verifikasi',
-      'Apakah Anda yakin ingin memverifikasi tugas ini? Tindakan ini tidak dapat dibatalkan.',
+      i18n.t('tasks:actions.verify.confirm'),
+      i18n.t('tasks:actions.verify.question'),
       [
-        { text: 'Batal', style: 'cancel' },
+        { text: i18n.t('tasks:actions.verify.cancel'), style: 'cancel' },
         {
-          text: 'Ya, Verifikasi',
+          text: i18n.t('tasks:actions.verify.yes'),
           style: 'default',
           onPress: async () => {
             setIsSubmitting(true);
             try {
               const response = await tasksApi.verifyTask(task.id);
               if (response.error) { Alert.alert('Error', response.error); return; }
-              Alert.alert('Berhasil', 'Tugas berhasil diverifikasi');
+              Alert.alert(i18n.t('tasks:actions.verify.success'), i18n.t('tasks:actions.verify.successMessage'));
               await onTaskUpdated();
             } catch {
-              Alert.alert('Error', 'Gagal memverifikasi tugas');
+              Alert.alert('Error', i18n.t('tasks:actions.verify.error'));
             } finally {
               setIsSubmitting(false);
             }
@@ -141,26 +142,26 @@ export function useTaskActions(
 
   const handleRevisionSubmit = useCallback(async () => {
     if (!task) { return; }
-    if (!revisionReason.trim()) { Alert.alert('Error', 'Alasan revisi wajib diisi'); return; }
+    if (!revisionReason.trim()) { Alert.alert('Error', i18n.t('tasks:actions.revision.reasonRequired')); return; }
     Alert.alert(
-      'Konfirmasi Minta Revisi',
-      'Apakah Anda yakin ingin meminta revisi? Petugas akan mengerjakan ulang tugas ini.',
+      i18n.t('tasks:actions.revision.confirm'),
+      i18n.t('tasks:actions.revision.question'),
       [
-        { text: 'Batal', style: 'cancel' },
+        { text: i18n.t('tasks:actions.revision.cancel'), style: 'cancel' },
         {
-          text: 'Ya, Minta Revisi',
+          text: i18n.t('tasks:actions.revision.yes'),
           style: 'destructive',
           onPress: async () => {
             setIsSubmitting(true);
             try {
               const response = await tasksApi.requestRevision(task.id, { reason: revisionReason.trim() });
               if (response.error) { Alert.alert('Error', response.error); return; }
-              Alert.alert('Berhasil', 'Permintaan revisi terkirim');
+              Alert.alert(i18n.t('tasks:actions.revision.success'), i18n.t('tasks:actions.revision.successMessage'));
               setShowRevisionInput(false);
               setRevisionReason('');
               await onTaskUpdated();
             } catch {
-              Alert.alert('Error', 'Gagal mengirim permintaan revisi');
+              Alert.alert('Error', i18n.t('tasks:actions.revision.error'));
             } finally {
               setIsSubmitting(false);
             }
@@ -181,10 +182,10 @@ export function useTaskActions(
       }
       setShowAssignInput(false);
       setAssigneeId('');
-      Alert.alert('Berhasil', 'Tugas berhasil ditugaskan');
+      Alert.alert(i18n.t('tasks:actions.assign.success'), i18n.t('tasks:actions.assign.successMessage'));
       await onTaskUpdated();
     } catch {
-      Alert.alert('Error', 'Gagal menugaskan tugas');
+      Alert.alert('Error', i18n.t('tasks:actions.assign.error'));
     } finally {
       setIsSubmitting(false);
     }

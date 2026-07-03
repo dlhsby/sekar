@@ -10,6 +10,7 @@ import {
 } from '../../../store/slices/pruningRequestsSlice';
 import { mediaService, type Photo } from '../../../services/media/mediaService';
 import { NBToast } from '../../../components/nb';
+import i18n from '../../../i18n/config';
 import type { FormState } from './usePruningSubmitForm';
 
 interface SubmitPayload {
@@ -68,7 +69,7 @@ export function usePruningSubmitMutation({
     if (errMsg) {
       NBToast.show({
         level: 'warning',
-        title: 'Periksa kembali',
+        title: i18n.t('pruning:validation.reviewTitle'),
         body: errMsg,
       });
       return;
@@ -78,8 +79,8 @@ export function usePruningSubmitMutation({
     if (gpsLat == null || gpsLng == null) {
       NBToast.show({
         level: 'warning',
-        title: 'Periksa kembali',
-        body: 'Koordinat GPS belum terdeteksi. Tekan tombol perbarui pada kartu Lokasi.',
+        title: i18n.t('pruning:validation.reviewTitle'),
+        body: i18n.t('pruning:validation.gpsErrorMessage'),
       });
       return;
     }
@@ -88,8 +89,8 @@ export function usePruningSubmitMutation({
     if (photos.length < 1) {
       NBToast.show({
         level: 'warning',
-        title: 'Periksa kembali',
-        body: 'Minimal 1 foto diperlukan.',
+        title: i18n.t('pruning:validation.reviewTitle'),
+        body: i18n.t('pruning:validation.photoErrorMessage'),
       });
       return;
     }
@@ -127,8 +128,8 @@ export function usePruningSubmitMutation({
       await clearDraft();
       NBToast.show({
         level: 'success',
-        title: 'Permohonan terkirim',
-        body: 'Anda akan diberitahu setelah ditinjau.',
+        title: i18n.t('pruning:validation.submitSuccess'),
+        body: i18n.t('pruning:validation.submitSuccessMessage'),
       });
       resetForm();
       navigation.navigate('Perantingan');
@@ -140,10 +141,10 @@ export function usePruningSubmitMutation({
             ? e
             : (e as { message?: string; error?: string })?.message ??
               (e as { error?: string })?.error ??
-              'Coba lagi.';
+              i18n.t('pruning:validation.submitRetry');
       NBToast.show({
         level: 'danger',
-        title: 'Gagal mengirim permohonan',
+        title: i18n.t('pruning:validation.submitError'),
         body,
         persistent: true,
       });

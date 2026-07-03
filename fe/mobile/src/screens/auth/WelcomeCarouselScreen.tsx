@@ -12,7 +12,7 @@
  * - Login is pushed (not replaced) so it can navigate back here.
  */
 
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState, useMemo } from 'react';
 import {
   Dimensions,
   FlatList,
@@ -24,6 +24,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
 import { NBButton, NBText } from '../../components/nb';
 import { CarouselScenePanel } from '../../components/auth/CarouselScenePanel';
@@ -45,41 +46,14 @@ interface Slide {
   scene: React.ReactNode;
 }
 
-const SLIDES: Slide[] = [
-  {
-    id: 'WL-2',
-    title: 'Pantau tim secara real-time',
-    highlight: 'real-time',
-    body: 'Lihat posisi semua satgas di lapangan. Status hidup, langsung dari GPS.',
-    scene: <SceneLiveMap />,
-  },
-  {
-    id: 'WL-3',
-    title: 'Tugas terstruktur tiap shift',
-    highlight: 'terstruktur',
-    body: 'Korlap kasih briefing & checklist. Selesai patroli, tinggal tap.',
-    scene: <SceneChecklist />,
-    illustrationBg: nbColors.bgAccentYellow,
-  },
-  {
-    id: 'WL-4',
-    title: 'Permohonan kecamatan, cepat',
-    highlight: 'cepat',
-    body: 'Ajukan perantingan langsung dari lapangan. Admin lihat, putuskan.',
-    scene: <SceneRequests />,
-    illustrationBg: nbColors.bgAccentPink,
-  },
-  {
-    id: 'WL-5',
-    title: 'Tetap jalan tanpa sinyal',
-    highlight: 'jalan',
-    body: 'Catatan tersimpan offline. Sinkron otomatis saat sinyal balik.',
-    scene: <SceneOffline />,
-    illustrationBg: nbColors.navy,
-  },
+const SLIDE_SCENES = [
+  { id: 'WL-2', scene: <SceneLiveMap />, bg: undefined },
+  { id: 'WL-3', scene: <SceneChecklist />, bg: nbColors.bgAccentYellow },
+  { id: 'WL-4', scene: <SceneRequests />, bg: nbColors.bgAccentPink },
+  { id: 'WL-5', scene: <SceneOffline />, bg: nbColors.navy },
 ];
 
-const LAST = SLIDES.length - 1;
+const LAST = SLIDE_SCENES.length - 1;
 
 function SlideTitle({ title, highlight }: { title: string; highlight: string }): React.JSX.Element {
   if (!title.includes(highlight)) {
@@ -104,9 +78,20 @@ function SlideTitle({ title, highlight }: { title: string; highlight: string }):
 type Props = NativeStackScreenProps<Record<string, undefined>, 'WelcomeCarousel'>;
 
 export function WelcomeCarouselScreen({ navigation }: Props): React.JSX.Element {
+  const { t } = useTranslation('welcome');
   const [activeIndex, setActiveIndex] = useState(0);
   const [areaHeight, setAreaHeight] = useState(0);
   const listRef = useRef<FlatList<Slide>>(null);
+
+  const slides = useMemo(() => {
+    const slideData = t('carousel.slides', { returnObjects: true }) as Array<{ title: string; highlight: string; body: string }>;
+    return slideData.map((data, idx) => ({
+      id: SLIDE_SCENES[idx].id,
+      ...data,
+      illustrationBg: SLIDE_SCENES[idx].bg,
+      scene: SLIDE_SCENES[idx].scene,
+    }));
+  }, [t]);
 
   const goToLogin = useCallback(async () => {
     await markCarouselSeen();
@@ -149,7 +134,7 @@ export function WelcomeCarouselScreen({ navigation }: Props): React.JSX.Element 
       <View style={styles.swipeArea} onLayout={onAreaLayout}>
         <FlatList
           ref={listRef}
-          data={SLIDES}
+          data={slides}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           horizontal
@@ -162,9 +147,9 @@ export function WelcomeCarouselScreen({ navigation }: Props): React.JSX.Element 
       </View>
 
       <View style={styles.footer}>
-        <PaginationDots variant="dots" total={SLIDES.length} index={activeIndex} style={styles.dots} />
+        <PaginationDots variant="dots" total={slides.length} index={activeIndex} style={styles.dots} />
         <NBButton
-          title={isLast ? 'Mulai (Masuk)' : 'Lanjut'}
+          title={isLast ? t('carousel.lastButton') : t('carousel.nextButton')}
           variant="primary"
           fullWidth
           onPress={isLast ? goToLogin : () => scrollTo(activeIndex + 1)}
@@ -172,7 +157,7 @@ export function WelcomeCarouselScreen({ navigation }: Props): React.JSX.Element 
         />
         {!isLast ? (
           <NBButton
-            title="Lewati"
+            title={t('carousel.skipButton')}
             variant="ghost"
             fullWidth
             onPress={() => scrollTo(LAST)}

@@ -87,7 +87,9 @@
     "legendFull": "Penuh",
     "legendUnset": "Belum Diatur",
     "preferenceWeekLabel": "Minggu Preferensi",
+    "selectedDateLabel": "Tanggal Terpilih",
     "clearDateLabel": "Hapus tanggal terpilih",
+    "dateFullError": "Tanggal yang dipilih sudah penuh, silakan pilih tanggal lain.",
     "sundayLabel": "Min",
     "mondayLabel": "Sen",
     "tuesdayLabel": "Sel",
@@ -170,6 +172,18 @@
       "saveFailed": "Terjadi kesalahan saat menyimpan data"
     },
     "validationFailedTitle": "Validasi Gagal"
+  },
+  "actionBar": {
+    "convertLabel": "Tugaskan ke Petugas"
+  },
+  "validation": {
+    "reviewTitle": "Periksa kembali",
+    "gpsErrorMessage": "Koordinat GPS belum terdeteksi. Tekan tombol perbarui pada kartu Lokasi.",
+    "photoErrorMessage": "Minimal 1 foto diperlukan.",
+    "submitSuccess": "Permohonan terkirim",
+    "submitSuccessMessage": "Anda akan diberitahu setelah ditinjau.",
+    "submitError": "Gagal mengirim permohonan",
+    "submitRetry": "Coba lagi."
   },
   "actions": {
     "approve": {

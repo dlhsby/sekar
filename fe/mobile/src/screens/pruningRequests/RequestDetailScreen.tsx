@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 import { useAppDispatch } from '../../store/hooks';
 import { fetchPruningRequestById } from '../../store/slices/pruningRequestsSlice';
@@ -47,6 +48,7 @@ import { ActionBar } from './components/ActionBar';
 type DetailScreenProps = NativeStackScreenProps<any, 'PruningDetail'>;
 
 export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element {
+  const { t } = useTranslation('pruning');
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
   const { requestId, adminMode = false } = (props.route.params ?? {}) as {
@@ -131,8 +133,8 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
         <View style={styles.errorWrap}>
           <NBAlert
             variant="danger"
-            title="Permohonan tidak ditemukan"
-            message="Permohonan yang Anda cari tidak tersedia."
+            title={t('detail.notFoundMessage')}
+            message={t('errors.notFound') || 'Permohonan yang Anda cari tidak tersedia.'}
           />
         </View>
       </SafeAreaView>

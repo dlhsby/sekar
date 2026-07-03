@@ -46,6 +46,69 @@
     "reset": "Reset",
     "apply": "Terapkan"
   },
+  "assignee": {
+    "sectionTitle": "PENUGASAN",
+    "sectionSubtitle": "Pilih petugas yang ditugaskan",
+    "label": "Petugas",
+    "placeholder": "Pilih petugas...",
+    "searchPlaceholder": "Cari nama petugas...",
+    "selectAreaFirst": "Pilih lokasi terlebih dahulu",
+    "loading": "Memuat daftar petugas...",
+    "empty": "Tidak ada petugas yang dapat ditugaskan di area ini"
+  },
+  "actions": {
+    "accept": {
+      "success": "Berhasil",
+      "successMessage": "Tugas diterima",
+      "error": "Gagal menerima tugas"
+    },
+    "decline": {
+      "reasonRequired": "Alasan penolakan wajib diisi",
+      "success": "Berhasil",
+      "successMessage": "Tugas ditolak",
+      "error": "Gagal menolak tugas"
+    },
+    "start": {
+      "success": "Berhasil",
+      "successMessage": "Tugas dimulai",
+      "error": "Gagal memulai tugas"
+    },
+    "verify": {
+      "confirm": "Konfirmasi Verifikasi",
+      "question": "Apakah Anda yakin ingin memverifikasi tugas ini? Tindakan ini tidak dapat dibatalkan.",
+      "cancel": "Batal",
+      "yes": "Ya, Verifikasi",
+      "success": "Berhasil",
+      "successMessage": "Tugas berhasil diverifikasi",
+      "error": "Gagal memverifikasi tugas"
+    },
+    "revision": {
+      "reasonRequired": "Alasan revisi wajib diisi",
+      "confirm": "Konfirmasi Minta Revisi",
+      "question": "Apakah Anda yakin ingin meminta revisi? Petugas akan mengerjakan ulang tugas ini.",
+      "cancel": "Batal",
+      "yes": "Ya, Minta Revisi",
+      "success": "Berhasil",
+      "successMessage": "Permintaan revisi terkirim",
+      "error": "Gagal mengirim permintaan revisi"
+    },
+    "assign": {
+      "success": "Berhasil",
+      "successMessage": "Tugas berhasil ditugaskan",
+      "error": "Gagal menugaskan tugas"
+    }
+  },
+  "tagged": {
+    "sectionTitle": "TAG PETUGAS",
+    "sectionSubtitle": "Opsional — pilih beberapa petugas untuk di-tag",
+    "label": "Tag Petugas",
+    "placeholder": "Pilih petugas untuk di-tag...",
+    "searchPlaceholder": "Cari nama petugas...",
+    "selectAreaFirst": "Pilih lokasi terlebih dahulu",
+    "loading": "Memuat daftar petugas...",
+    "empty": "Tidak ada petugas yang dapat di-tag di area ini",
+    "emptyOthers": "Tidak ada petugas lain untuk di-tag"
+  },
   "header": {
     "sort": "URUTKAN TUGAS"
   },
