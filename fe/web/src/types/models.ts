@@ -101,10 +101,12 @@ export interface CreateUserDto {
   password?: string;
   role: UserRole;
   phone_number?: string;
-  rayon_id?: string;
+  /** `null` explicitly clears the field (roles without a rayon scope). */
+  rayon_id?: string | null;
   /** Permanent area assignments (multi); first becomes the primary area. */
   area_ids?: string[];
-  shift_definition_id?: string;
+  /** `null` explicitly clears the field (roles without a shift scope). */
+  shift_definition_id?: string | null;
 }
 
 /** A created user plus the one-time temp password (only present on create). */
@@ -120,9 +122,11 @@ export interface UpdateUserDto {
   full_name?: string;
   role?: UserRole;
   phone_number?: string;
-  rayon_id?: string;
+  /** `null` explicitly clears the field (roles without a rayon scope). */
+  rayon_id?: string | null;
   area_ids?: string[];
-  shift_definition_id?: string;
+  /** `null` explicitly clears the field (roles without a shift scope). */
+  shift_definition_id?: string | null;
   is_active?: boolean;
 }
 

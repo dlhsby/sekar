@@ -52,8 +52,11 @@ type UserFormData = z.infer<typeof userSchema>;
 /** Any UUID version — area ids are deterministic UUID v5. */
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export interface UserFormSubmit extends UserFormData {
+export interface UserFormSubmit extends Omit<UserFormData, 'rayon_id' | 'shift_definition_id'> {
   area_ids: string[];
+  /** `null` = explicitly clear on the server (create treats null as unset). */
+  rayon_id: string | null;
+  shift_definition_id: string | null;
 }
 
 interface UserFormProps {
@@ -150,16 +153,19 @@ export function UserForm({
 
   const handleFormSubmit = async (data: UserFormData) => {
     // Rayon/area/shift are optional, but only relevant to roles whose scope
-    // includes them — never submit a field the role doesn't use (avoids stale
-    // values leaking through). area_ids is filtered to valid UUIDs so an empty
-    // or malformed entry can't trip the backend's `@IsUUID(..., {each:true})`.
+    // includes them. Fields the role doesn't use — or that were left blank —
+    // are sent as an explicit clear (null / empty array), not omitted, so
+    // changing a role on edit actually drops the now-irrelevant assignment on
+    // the server (a PATCH that omits a field would keep the old value). On
+    // create the backend maps null → unset. area_ids is filtered to valid
+    // UUIDs so a blank/stale entry can't trip `@IsUUID(..., {each:true})`.
     const scope = roleAssignmentScope(data.role);
     const submitData: UserFormSubmit = {
       ...data,
+      rayon_id: scope.rayon ? data.rayon_id || null : null,
+      shift_definition_id: scope.shift ? data.shift_definition_id || null : null,
       area_ids: scope.area ? areaIds.filter((id) => UUID_RE.test(id)) : [],
     };
-    if (!scope.rayon || !submitData.rayon_id) delete submitData.rayon_id;
-    if (!scope.shift || !submitData.shift_definition_id) delete submitData.shift_definition_id;
     await onSubmit(submitData);
   };
 
