@@ -99,7 +99,7 @@ describe('UserAreasService', () => {
       expect(result).toEqual([mockUserArea]);
       expect(mockUserAreaRepo.find).toHaveBeenCalledWith({
         where: { user_id: 'user-uuid-1', assignment_type: 'permanent' },
-        relations: ['area', 'area.areaType', 'area.rayon'],
+        relations: ['area'],
       });
     });
   });

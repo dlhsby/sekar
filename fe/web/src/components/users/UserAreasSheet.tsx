@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils/cn';
 import { Input } from '@/components/ui';
 import { Skeleton } from '@/components/ui';
 import { useUserAreas } from '@/lib/api/user-areas';
+import { useRayons } from '@/lib/api/rayons';
 
 export interface UserAreasSheetTarget {
   id: string;
@@ -32,6 +33,8 @@ export function UserAreasSheet({ user, onClose }: UserAreasSheetProps) {
   const [query, setQuery] = useState('');
 
   const { data: areas = [], isLoading, isError } = useUserAreas(user?.id);
+  const { data: rayons = [] } = useRayons();
+  const rayonNameById = useMemo(() => new Map(rayons.map((r) => [r.id, r.name])), [rayons]);
 
   // Reset the search box when a different user is opened — adjusted during render
   // (React-recommended) rather than in an effect, to avoid a cascading re-render.
@@ -143,7 +146,12 @@ export function UserAreasSheet({ user, onClose }: UserAreasSheetProps) {
                 <div className="min-w-0">
                   <p className="text-nb-body-sm font-bold text-nb-black break-words">{area.name}</p>
                   <p className="text-nb-caption text-nb-gray-600">
-                    {[area.rayon?.name, area.areaType?.name ?? area.areaType?.code].filter(Boolean).join(' · ') || '—'}
+                    {[
+                      area.rayon?.name ?? (area.rayon_id ? rayonNameById.get(area.rayon_id) : undefined),
+                      area.areaType?.name ?? area.areaType?.code,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ') || '—'}
                   </p>
                 </div>
               </div>
