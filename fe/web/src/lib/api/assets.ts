@@ -4,8 +4,9 @@
  */
 
 import { useQuery, useMutation, useQueryClient, type UseQueryOptions } from '@tanstack/react-query';
-import { apiClient, getErrorMessage } from './client';
+import { apiClient } from './client';
 import type { PaginatedResponse } from '@/types/models';
+import { collectAllPages } from './paginate';
 
 /**
  * Asset Status Enum
@@ -263,7 +264,11 @@ async function fetchAssetCategories(): Promise<AssetCategory[]> {
 /**
  * Fetch assets with filters
  */
-async function fetchAssets(filters: AssetFilters = {}): Promise<PaginatedResponse<Asset>> {
+/** Fetch one page of assets (or the backend default page when `page` is omitted). */
+async function fetchAssetsPage(
+  filters: AssetFilters,
+  page?: number,
+): Promise<PaginatedResponse<Asset>> {
   const params = new URLSearchParams();
 
   if (filters.category_id) params.append('category_id', filters.category_id);
@@ -271,13 +276,26 @@ async function fetchAssets(filters: AssetFilters = {}): Promise<PaginatedRespons
   if (filters.area_id) params.append('area_id', filters.area_id);
   if (filters.rayon_id) params.append('rayon_id', filters.rayon_id);
   if (filters.search) params.append('search', filters.search);
-  if (filters.page) params.append('page', filters.page.toString());
-  if (filters.limit) params.append('limit', filters.limit.toString());
+  if (page) {
+    params.append('page', page.toString());
+    params.append('limit', (filters.limit ?? 100).toString());
+  }
 
-  const response = await apiClient.get<PaginatedResponse<Asset>>(
-    `/assets?${params.toString()}`
-  );
+  const response = await apiClient.get<PaginatedResponse<Asset>>(`/assets?${params.toString()}`);
   return response.data;
+}
+
+/**
+ * Fetch assets with filters.
+ *
+ * With no explicit `page` the caller wants EVERY asset (e.g. the QR page prints a
+ * code per asset). The backend caps `limit` at 1000, so a single big-`limit`
+ * request silently drops assets once the fleet exceeds the cap — walk all pages
+ * instead so the set is always complete.
+ */
+async function fetchAssets(filters: AssetFilters = {}): Promise<PaginatedResponse<Asset>> {
+  if (filters.page) return fetchAssetsPage(filters, filters.page);
+  return collectAllPages((page) => fetchAssetsPage(filters, page));
 }
 
 /**
