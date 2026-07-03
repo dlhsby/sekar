@@ -12,6 +12,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
@@ -38,6 +39,7 @@ export function ShiftCard({
   compact = false,
   onPress,
 }: ShiftCardProps): React.JSX.Element {
+  const { t } = useTranslation();
   const isActive = !shift.clock_out_time;
 
   // Calculate duration (use current time if shift is still active)
