@@ -11,6 +11,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { Search, SlidersHorizontal, RefreshCw, X, List, ChevronDown, Sprout } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth/hooks';
@@ -41,17 +42,18 @@ const EMPTY_STATUS_COUNTS: Record<TrackingStatus, number> = {
   offline: 0,
 };
 
-const STATUS_PILLS: { key: TrackingStatus; label: string; color: string }[] = [
-  { key: 'active', label: 'Aktif', color: 'var(--color-status-active)' },
-  { key: 'inactive', label: 'Idle', color: 'var(--color-status-idle)' },
-  { key: 'outside_area', label: 'Luar', color: 'var(--color-status-outside)' },
-  { key: 'missing', label: 'Hilang', color: 'var(--color-status-missing)' },
-  { key: 'offline', label: 'Offline', color: 'var(--color-status-offline)' },
-];
-
 export default function MonitoringPage() {
+  const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+
+  const STATUS_PILLS: { key: TrackingStatus; label: string; color: string }[] = [
+    { key: 'active', label: t('monitoring:status.active'), color: 'var(--color-status-active)' },
+    { key: 'inactive', label: t('monitoring:status.inactive'), color: 'var(--color-status-idle)' },
+    { key: 'outside_area', label: t('monitoring:status.outside_area'), color: 'var(--color-status-outside)' },
+    { key: 'missing', label: t('monitoring:status.missing'), color: 'var(--color-status-missing)' },
+    { key: 'offline', label: t('monitoring:status.offline'), color: 'var(--color-status-offline)' },
+  ];
 
   const [filters, setFilters] = useState<MonitoringFilterState>({
     search: '',
@@ -164,17 +166,19 @@ export default function MonitoringPage() {
 
   if (authLoading || !user) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center text-nb-gray-600">Memuat...</div>
+      <div className="flex min-h-[400px] items-center justify-center text-nb-gray-600">
+        {t('monitoring:page.loading')}
+      </div>
     );
   }
 
   if (!canMonitor) return null;
 
   const updatedLabel = isLoading
-    ? 'Memuat…'
+    ? t('monitoring:page.loading')
     : data?.data?.generated_at
-      ? `Diperbarui ${formatTime(data.data.generated_at)}`
-      : 'Tidak ada data';
+      ? t('monitoring:page.updated', { time: formatTime(data.data.generated_at) })
+      : t('monitoring:page.noData');
 
   return (
     <div className="relative h-[calc(100dvh_-_7rem)] min-h-[28rem] w-full overflow-hidden rounded-nb-base border-2 border-nb-black bg-nb-gray-100">
@@ -202,8 +206,8 @@ export default function MonitoringPage() {
               type="search"
               value={filters.search}
               onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
-              placeholder="Cari petugas…"
-              aria-label="Cari petugas"
+              placeholder={t('monitoring:page.searchPlaceholder')}
+              aria-label={t('monitoring:page.searchLabel')}
               className="h-11 w-full rounded-nb-base border-2 border-nb-black bg-nb-white pl-9 pr-3 text-sm font-medium text-nb-black shadow-nb-sm placeholder:text-nb-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
             />
           </div>
@@ -212,35 +216,35 @@ export default function MonitoringPage() {
             type="button"
             onClick={() => setFiltersOpen((v) => !v)}
             aria-expanded={filtersOpen}
-            aria-label="Filter"
+            aria-label={t('monitoring:page.filterLabel')}
             className={cn(
               'pointer-events-auto flex h-11 items-center gap-1.5 rounded-nb-base border-2 border-nb-black px-3 text-sm font-bold shadow-nb-sm transition-colors',
               filtersOpen ? 'bg-nb-primary text-nb-black' : 'bg-nb-white text-nb-black hover:bg-nb-gray-50'
             )}
           >
             <SlidersHorizontal className="h-4 w-4" />
-            <span className="hidden sm:inline">Filter</span>
+            <span className="hidden sm:inline">{t('monitoring:page.filterLabel')}</span>
           </button>
           {/* Plant-overdue overlay toggle (Phase 3-8) */}
           <button
             type="button"
             onClick={() => setShowOverdue((v) => !v)}
             aria-pressed={showOverdue}
-            aria-label="Tampilkan tanaman terlambat dipangkas"
-            title="Tanaman terlambat dipangkas"
+            aria-label={t('monitoring:page.overdueToggleLabel')}
+            title={t('monitoring:page.overdueToggleTitle')}
             className={cn(
               'pointer-events-auto flex h-11 items-center gap-1.5 rounded-nb-base border-2 border-nb-black px-3 text-sm font-bold shadow-nb-sm transition-colors',
               showOverdue ? 'bg-nb-warning text-nb-black' : 'bg-nb-white text-nb-black hover:bg-nb-gray-50'
             )}
           >
             <Sprout className="h-4 w-4" />
-            <span className="hidden sm:inline">Tanaman</span>
+            <span className="hidden sm:inline">{t('monitoring:page.overdueButtonLabel')}</span>
           </button>
           {/* Refresh */}
           <button
             type="button"
             onClick={() => refetch()}
-            aria-label="Segarkan"
+            aria-label={t('monitoring:page.refreshLabel')}
             className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-nb-base border-2 border-nb-black bg-nb-white text-nb-black shadow-nb-sm transition-colors hover:bg-nb-gray-50"
           >
             <RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
@@ -269,11 +273,11 @@ export default function MonitoringPage() {
       {filtersOpen && (
         <div className="absolute left-3 right-3 top-28 z-30 max-h-[60%] w-auto overflow-y-auto rounded-nb-md border-2 border-nb-black bg-nb-white p-4 shadow-nb-lg sm:right-auto sm:w-80">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-nb-black">Filter Petugas</h2>
+            <h2 className="text-sm font-bold text-nb-black">{t('monitoring:page.filterPanelTitle')}</h2>
             <button
               type="button"
               onClick={() => setFiltersOpen(false)}
-              aria-label="Tutup filter"
+              aria-label={t('monitoring:page.closePanelLabel')}
               className="rounded-nb-sm p-1 text-nb-gray-500 hover:bg-nb-gray-100 hover:text-nb-black"
             >
               <X className="h-4 w-4" />
@@ -297,7 +301,7 @@ export default function MonitoringPage() {
         <div className="absolute inset-x-3 bottom-3 z-20 flex h-[45vh] max-h-[60%] flex-col sm:inset-x-auto sm:left-3 sm:w-96">
           <div className="mb-1 flex items-center justify-between">
             <span className="rounded-nb-base border-2 border-nb-black bg-nb-white px-2.5 py-1 text-xs font-bold text-nb-black shadow-nb-xs">
-              Daftar Petugas
+              {t('monitoring:page.listLabel')}
             </span>
             <button
               type="button"
@@ -305,7 +309,7 @@ export default function MonitoringPage() {
                 setListOpen(false);
                 setSelectedId(null);
               }}
-              aria-label="Tutup daftar"
+              aria-label={t('monitoring:page.closeListLabel')}
               className="flex h-8 w-8 items-center justify-center rounded-nb-base border-2 border-nb-black bg-nb-white text-nb-black shadow-nb-xs hover:bg-nb-gray-50"
             >
               <ChevronDown className="h-4 w-4" />
@@ -327,7 +331,7 @@ export default function MonitoringPage() {
           className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-nb-base border-2 border-nb-black bg-nb-primary px-4 py-2.5 text-sm font-bold text-nb-black shadow-nb-md transition-transform hover:-translate-y-0.5 active:translate-y-0"
         >
           <List className="h-4 w-4" />
-          Daftar Petugas
+          {t('monitoring:page.listLabel')}
           <span className="rounded-full bg-nb-black px-1.5 font-mono text-xs text-nb-primary">
             {filteredWorkers.length}
           </span>

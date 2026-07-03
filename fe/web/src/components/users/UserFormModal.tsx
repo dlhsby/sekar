@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 import { UserForm } from '@/components/forms/UserForm';
 import { useCreateUser, useUpdateUser } from '@/lib/api/users';
@@ -28,6 +29,7 @@ export function UserFormModal({
   onSuccess,
   readOnly = false,
 }: UserFormModalProps) {
+  const { t } = useTranslation();
   const isEdit = !!user;
   const createMutation = useCreateUser();
   const updateMutation = useUpdateUser();
@@ -54,7 +56,7 @@ export function UserFormModal({
       <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>
-            {readOnly ? 'Detail Pengguna' : isEdit ? 'Ubah Pengguna' : 'Tambah Pengguna'}
+            {readOnly ? 'Detail Pengguna' : isEdit ? t('admin:users.actionEdit') : t('admin:users.buttonAdd')}
           </DialogTitle>
         </DialogHeader>
         <DialogBody>
@@ -74,7 +76,7 @@ export function UserFormModal({
             onSubmit={handleSubmit}
             onCancel={() => onOpenChange(false)}
             loading={mutation.isPending}
-            submitText={isEdit ? 'Simpan' : 'Buat Pengguna'}
+            submitText={isEdit ? t('admin:users.form.submitEdit') : t('admin:users.form.submitCreate')}
             readOnly={readOnly}
           />
         </DialogBody>

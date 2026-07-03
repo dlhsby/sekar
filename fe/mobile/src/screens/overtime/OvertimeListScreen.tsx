@@ -16,6 +16,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { NBBackgroundPattern, NBButton, NBEmptyState, NBFabBar, NB_FAB_BAR_HEIGHT, NBSkeleton, NBText } from '../../components/nb';
 import { FilterBar, type FilterChip } from '../../components/common';
@@ -38,13 +39,6 @@ import type { Overtime } from '../../types/models.types';
 
 const OVERTIME_PAGE_LIMIT = 10;
 
-const SORT_OPTIONS = [
-  { key: 'start_desc', label: 'Tanggal Terbaru' },
-  { key: 'start_asc', label: 'Tanggal Terlama' },
-  { key: 'created_at_desc', label: 'Dibuat Terbaru' },
-  { key: 'created_at_asc', label: 'Dibuat Terlama' },
-];
-
 type SortKey = 'start_desc' | 'start_asc' | 'created_at_desc' | 'created_at_asc';
 
 function sortToParams(sort: SortKey): Pick<OvertimeFilter, 'sort_by' | 'sort_dir'> {
@@ -64,9 +58,18 @@ type Props = {
 };
 
 export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
+  const { t } = useTranslation('overtime');
   const { canSubmitOvertime, canApproveOvertime } = useRoleAccess();
   const user = useAppSelector((state) => state.auth.user);
   const currentShift = useAppSelector((state) => state.shift.currentShift);
+
+  // Build sort options with translations
+  const SORT_OPTIONS = useMemo(() => [
+    { key: 'start_desc', label: t('list.sortNewest') },
+    { key: 'start_asc', label: t('list.sortOldest') },
+    { key: 'created_at_desc', label: t('list.sortCreatedNewest') },
+    { key: 'created_at_asc', label: t('list.sortCreatedOldest') },
+  ], [t]);
 
   // List state
   const [allOvertimes, setAllOvertimes] = useState<Overtime[]>([]);
@@ -160,7 +163,7 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
       setPage(p);
       setHasMore(p * OVERTIME_PAGE_LIMIT < total);
     } catch {
-      setError('Gagal memuat data lembur');
+      setError(t('list.errorMessage'));
     } finally {
       isFetching.current = false;
       setLoading(false);
@@ -241,7 +244,7 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
       <SafeAreaView style={styles.safeArea}>
         {/* Title lives in the navigator header (top bar) — not repeated here. */}
         <FilterBar
-          label="Lembur"
+          label={t('list.label')}
           filterCount={activeFilterCount}
           chips={filterChips}
           isSortActive={isSortActive}
@@ -278,11 +281,11 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
               <NBEmptyState
                 variant="noData"
                 illustration={activeFilterCount > 0 ? 'illo-search' : 'illo-reports'}
-                title="Tidak ada data lembur"
+                title={t('list.emptyTitle')}
                 description={
                   activeFilterCount > 0
-                    ? 'Tidak ada lembur yang sesuai filter'
-                    : 'Belum ada pengajuan lembur'
+                    ? t('list.emptyDescWithFilter')
+                    : t('list.emptyDescNoFilter')
                 }
               />
             )
@@ -296,38 +299,38 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
             {activeOvertime ? (
               // Active overtime in progress — go to end-overtime form
               <NBButton
-                title="Clock Out Lembur"
+                title={t('list.clockOutButtonTitle')}
                 onPress={handleSubmit}
                 variant="danger"
                 size="lg"
                 fullWidth
-                accessibilityLabel="Clock out lembur yang sedang aktif"
+                accessibilityLabel={t('list.clockOutButtonTitle')}
               />
             ) : hasActiveRegularShift ? (
               // Regular shift still open — block new overtime
               <>
                 <NBText variant="body-sm" color="warning" style={styles.fabBlockedHint}>
-                  Selesaikan Clock Out shift biasa terlebih dahulu
+                  {t('list.blockingHint')}
                 </NBText>
                 <NBButton
-                  title="+ Ajukan Lembur"
+                  title={t('list.submitButtonTitle')}
                   onPress={() => {}}
                   variant="primary"
                   size="lg"
                   fullWidth
                   disabled
-                  accessibilityLabel="Ajukan lembur dinonaktifkan, selesaikan shift aktif terlebih dahulu"
-                  accessibilityHint="Tombol dinonaktifkan karena Anda masih memiliki shift aktif"
+                  accessibilityLabel={t('list.submitButtonDisabledLabel')}
+                  accessibilityHint={t('list.submitButtonDisabledHint')}
                 />
               </>
             ) : (
               <NBButton
-                title="+ Ajukan Lembur"
+                title={t('list.submitButtonTitle')}
                 onPress={handleSubmit}
                 variant="primary"
                 size="lg"
                 fullWidth
-                accessibilityLabel="Ajukan lembur baru"
+                accessibilityLabel={t('list.submitButtonLabel')}
               />
             )}
           </NBFabBar>
@@ -337,7 +340,7 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
         <SortModal
           visible={isSortModalOpen}
           onClose={() => setIsSortModalOpen(false)}
-          title="Urutkan Lembur"
+          title={t('list.sortModalTitle')}
           options={SORT_OPTIONS}
           selectedOption={sort}
           onSelect={handleSortSelect}

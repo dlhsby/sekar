@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { MapFab } from '../../../components/monitoring/MapFab';
 import { ToolsOverlay } from './ToolsOverlay';
 import { nbSpacing } from '../../../constants/nbTokens';
@@ -36,6 +37,8 @@ export function FABColumn({
   filterModalVisible,
   setFilterModalVisible,
 }: FABColumnProps): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <>
       {/* Transparent scrim — a tap anywhere outside the tools overlay dismisses it */}
@@ -43,7 +46,7 @@ export function FABColumn({
         <Pressable
           style={styles.toolsScrim}
           onPress={() => setToolsExpanded(false)}
-          accessibilityLabel="Tutup alat peta"
+          accessibilityLabel={t('monitoring:fab.closeTools')}
         />
       )}
 
@@ -53,25 +56,25 @@ export function FABColumn({
         <MapFab
           icon="account-group"
           onPress={onOpenStatus}
-          accessibilityLabel="Ringkasan status"
+          accessibilityLabel={t('monitoring:fab.status')}
         />
         {/* Tools FAB — opens the map-tools overlay (compass, zoom, filter, layers) */}
         <MapFab
           icon="wrench"
           onPress={() => setToolsExpanded(!toolsExpanded)}
-          accessibilityLabel="Alat peta"
+          accessibilityLabel={t('monitoring:fab.tools')}
         />
         {/* Locate me FAB — recenter on a fresh GPS fix */}
         <MapFab
           icon="crosshairs-gps"
           onPress={handleMyLocation}
-          accessibilityLabel="Lokasi saya"
+          accessibilityLabel={t('monitoring:fab.myLocation')}
         />
         {/* Refresh FAB */}
         <MapFab
           icon="refresh"
           onPress={handleRefresh}
-          accessibilityLabel="Perbarui"
+          accessibilityLabel={t('monitoring:fab.refresh')}
         />
 
         {/* Tools overlay card — a left-anchored popover from the wrench FAB */}

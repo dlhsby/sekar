@@ -5,7 +5,8 @@
  * Reusable form for creating and editing areas
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -29,23 +30,25 @@ function polygonCentroid(polygon: GeoJSON.Polygon): LatLng {
   return { lat, lng };
 }
 
-// Validation schema
-const areaSchema = z.object({
-  name: z.string().min(2, 'Nama minimal 2 karakter'),
-  rayon_id: z.string().uuid('Rayon wajib dipilih'),
-  area_type_id: z.string().uuid('Tipe area wajib dipilih'),
-  address: z.string().optional().nullable(),
-  boundary_polygon: z
-    .custom<GeoJSON.Polygon>(
-      (val) => {
-        return isValidPolygon(val as GeoJSON.Polygon);
-      },
-      { message: 'Batas area wajib digambar di peta' }
-    )
-    .nullable(),
-});
+// Validation schema factory
+function createAreaSchema(t: any) {
+  return z.object({
+    name: z.string().min(2, 'Nama minimal 2 karakter'),
+    rayon_id: z.string().uuid('Rayon wajib dipilih'),
+    area_type_id: z.string().uuid('Tipe area wajib dipilih'),
+    address: z.string().optional().nullable(),
+    boundary_polygon: z
+      .custom<GeoJSON.Polygon>(
+        (val) => {
+          return isValidPolygon(val as GeoJSON.Polygon);
+        },
+        { message: 'Batas area wajib digambar di peta' }
+      )
+      .nullable(),
+  });
+}
 
-type AreaFormData = z.infer<typeof areaSchema>;
+type AreaFormData = z.infer<ReturnType<typeof createAreaSchema>>;
 
 export interface AreaFormProps {
   initialData?: Area;
@@ -55,6 +58,9 @@ export interface AreaFormProps {
 }
 
 export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: AreaFormProps) {
+  const { t } = useTranslation();
+  const areaSchema = useMemo(() => createAreaSchema(t), [t]);
+
   // Center point: defaults to the saved gps / polygon centroid, then tracks the
   // polygon centroid until the user manually drops/drags the pin.
   const initialCenter: LatLng | null =
@@ -140,20 +146,20 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
         <h3 className="font-bold text-lg">Informasi Dasar</h3>
 
         <FormInput
-          label="Nama Area"
-          placeholder="Contoh: Taman Bungkul"
+          label={t('admin:areas.form.name')}
+          placeholder={t('admin:areas.form.namePlaceholder')}
           error={errors.name?.message}
           required
           {...register('name')}
         />
 
         <FormCombobox
-          label="Rayon"
+          label={t('admin:areas.form.rayon')}
           options={(rayonsData ?? []).map((rayon) => ({ value: rayon.id, label: rayon.name }))}
           value={watch('rayon_id') || ''}
           onChange={(value) => setValue('rayon_id', value, { shouldValidate: true })}
-          placeholder={loadingRayons ? 'Memuat...' : 'Pilih rayon'}
-          searchPlaceholder="Cari rayon…"
+          placeholder={loadingRayons ? t('admin:shared.loading') : t('admin:areas.form.rayonPlaceholder')}
+          searchPlaceholder={t('admin:areas.form.rayonPlaceholder')}
           error={errors.rayon_id?.message}
           required
           clearable={false}
@@ -161,15 +167,15 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
         />
 
         <FormCombobox
-          label="Tipe Area"
+          label={t('admin:areas.form.type')}
           options={(areaTypes ?? []).map((type) => ({
             value: type.id,
             label: `${type.name} (${type.category})`,
           }))}
           value={watch('area_type_id') || ''}
           onChange={(value) => setValue('area_type_id', value, { shouldValidate: true })}
-          placeholder={loadingAreaTypes ? 'Memuat...' : 'Pilih tipe area'}
-          searchPlaceholder="Cari tipe area…"
+          placeholder={loadingAreaTypes ? t('admin:shared.loading') : t('admin:areas.form.typePlaceholder')}
+          searchPlaceholder={t('admin:areas.form.typePlaceholder')}
           error={errors.area_type_id?.message}
           required
           clearable={false}
@@ -177,9 +183,9 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
         />
 
         <div className="space-y-1.5">
-          <label className="text-sm font-bold leading-none">Alamat</label>
+          <label className="text-sm font-bold leading-none">{t('admin:areas.form.address')}</label>
           <Textarea
-            placeholder="Alamat area (opsional)"
+            placeholder={t('admin:areas.form.addressPlaceholder')}
             rows={3}
             error={errors.address?.message}
             {...register('address')}
@@ -243,8 +249,8 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
               ? 'Menyimpan...'
               : 'Memperbarui...'
             : mode === 'create'
-              ? 'Simpan Area'
-              : 'Perbarui Area'
+              ? t('admin:areas.form.submitNew')
+              : t('admin:areas.form.submit')
         }
         loading={isLoading}
       />

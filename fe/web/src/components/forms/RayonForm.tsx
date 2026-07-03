@@ -5,6 +5,8 @@
  * Reusable form for creating and editing rayons
  */
 
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -31,30 +33,32 @@ const toNullableNumber = (v: unknown): number | null => {
   return Number.isNaN(n) ? null : n;
 };
 
-// Validation schema — master data: only this table's own columns.
-const rayonSchema = z.object({
-  name: z.string().min(2, 'Nama minimal 2 karakter'),
-  color: z
-    .string()
-    .optional()
-    .nullable()
-    .refine((v) => !v || HEX_COLOR_RE.test(v), 'Format warna harus heksadesimal, mis. #RRGGBB'),
-  description: z.string().optional().nullable(),
-  center_lat: z
-    .number()
-    .min(-90, 'Latitude harus antara -90 dan 90')
-    .max(90, 'Latitude harus antara -90 dan 90')
-    .nullable()
-    .optional(),
-  center_lng: z
-    .number()
-    .min(-180, 'Longitude harus antara -180 dan 180')
-    .max(180, 'Longitude harus antara -180 dan 180')
-    .nullable()
-    .optional(),
-});
+// Validation schema factory
+function createRayonSchema(t: any) {
+  return z.object({
+    name: z.string().min(2, 'Nama minimal 2 karakter'),
+    color: z
+      .string()
+      .optional()
+      .nullable()
+      .refine((v) => !v || HEX_COLOR_RE.test(v), 'Format warna harus heksadesimal, mis. #RRGGBB'),
+    description: z.string().optional().nullable(),
+    center_lat: z
+      .number()
+      .min(-90, 'Latitude harus antara -90 dan 90')
+      .max(90, 'Latitude harus antara -90 dan 90')
+      .nullable()
+      .optional(),
+    center_lng: z
+      .number()
+      .min(-180, 'Longitude harus antara -180 dan 180')
+      .max(180, 'Longitude harus antara -180 dan 180')
+      .nullable()
+      .optional(),
+  });
+}
 
-type RayonFormData = z.infer<typeof rayonSchema>;
+type RayonFormData = z.infer<ReturnType<typeof createRayonSchema>>;
 
 export interface RayonFormProps {
   initialData?: Rayon;
@@ -64,6 +68,9 @@ export interface RayonFormProps {
 }
 
 export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: RayonFormProps) {
+  const { t } = useTranslation();
+  const rayonSchema = useMemo(() => createRayonSchema(t), [t]);
+
   const {
     register,
     handleSubmit,
@@ -119,8 +126,8 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
 
         <div className="space-y-1">
           <FormInput
-            label="Nama Rayon"
-            placeholder="Contoh: Rayon 1"
+            label={t('admin:rayons.form.name')}
+            placeholder={t('admin:rayons.form.namePlaceholder')}
             error={errors.name?.message}
             required
             {...register('name')}
@@ -199,18 +206,18 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
         {/* Manual entry / fine-tuning — stays in sync with the pin. Optional. */}
         <div className="grid grid-cols-2 gap-4">
           <FormInput
-            label="Latitude"
+            label={t('admin:areas.form.latitude')}
             type="number"
-            placeholder="Contoh: -7.25"
+            placeholder={t('admin:areas.form.latitudePlaceholder')}
             step="any"
             error={errors.center_lat?.message}
             {...register('center_lat', { setValueAs: toNullableNumber })}
           />
 
           <FormInput
-            label="Longitude"
+            label={t('admin:areas.form.longitude')}
             type="number"
-            placeholder="Contoh: 112.75"
+            placeholder={t('admin:areas.form.longitudePlaceholder')}
             step="any"
             error={errors.center_lng?.message}
             {...register('center_lng', { setValueAs: toNullableNumber })}
@@ -226,8 +233,8 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
               ? 'Menyimpan...'
               : 'Memperbarui...'
             : mode === 'create'
-              ? 'Simpan Rayon'
-              : 'Perbarui Rayon'
+              ? t('admin:rayons.form.submitNew')
+              : t('admin:rayons.form.submit')
         }
         loading={isLoading}
       />

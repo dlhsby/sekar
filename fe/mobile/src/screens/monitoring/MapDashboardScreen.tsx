@@ -12,6 +12,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { View, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { nbColors, nbSpacing, nbShadows, nbBorders, nbRadius } from '../../constants/nbTokens';
 import { NBBackgroundPattern } from '../../components/nb';
 import { NBText } from '../../components/nb/NBText';
@@ -54,6 +55,7 @@ import {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function MapDashboardScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const mapRef = useRef<MapView | null>(null);
   const [statusSheetVisible, setStatusSheetVisible] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
@@ -113,7 +115,7 @@ export function MapDashboardScreen(): React.JSX.Element {
         { latitude: user.latitude, longitude: user.longitude },
         {
           title: user.full_name,
-          typeText: 'Petugas',
+          typeText: t('monitoring:markerPreview.typeOfficer'),
           roleText: ROLE_LABELS[user.role as UserRole] ?? user.role,
           accent: nbColors.primary,
           icon: getRoleIcon(user.role),
@@ -127,7 +129,7 @@ export function MapDashboardScreen(): React.JSX.Element {
         },
       );
     },
-    [dispatch, showMarkerPreview, setMarkerPreview],
+    [dispatch, showMarkerPreview, setMarkerPreview, t],
   );
 
   const handleCloseSheet = useCallback(() => {
@@ -222,7 +224,7 @@ export function MapDashboardScreen(): React.JSX.Element {
       >
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
-          <NBText variant="body" color="gray500" style={styles.loadingText}>Memuat peta...</NBText>
+          <NBText variant="body" color="gray500" style={styles.loadingText}>{t('monitoring:screen.loading')}</NBText>
         </View>
       </NBBackgroundPattern>
     );
@@ -239,7 +241,7 @@ export function MapDashboardScreen(): React.JSX.Element {
         <View style={styles.centerContainer}>
           <NBText variant="body" color="dangerDark" style={styles.errorText}>{error}</NBText>
           <TouchableOpacity style={styles.retryButton} onPress={() => handleRefresh(setBoundaryKey)}>
-            <NBText variant="body" style={styles.retryText}>Coba Lagi</NBText>
+            <NBText variant="body" style={styles.retryText}>{t('monitoring:screen.error.retry')}</NBText>
           </TouchableOpacity>
         </View>
       </NBBackgroundPattern>
@@ -303,7 +305,7 @@ export function MapDashboardScreen(): React.JSX.Element {
           {!isLoading && !boundaries && (
             <View style={styles.emptyAreaCallout}>
               <MaterialCommunityIcons name="map-marker-alert" size={16} color={nbColors.warning} />
-              <NBText variant="caption" color="gray700">Gagal memuat batas wilayah</NBText>
+              <NBText variant="caption" color="gray700">{t('monitoring:screen.error.title')}</NBText>
             </View>
           )}
 

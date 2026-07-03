@@ -1,1 +1,136 @@
-{}
+{
+  "layout": {
+    "title": "Real-Time Monitoring · SEKAR",
+    "description": "Monitor real-time location and status of RTH officers in the field"
+  },
+  "page": {
+    "loading": "Loading…",
+    "noData": "No data",
+    "updated": "Updated {time}",
+    "searchPlaceholder": "Search officers…",
+    "searchLabel": "Search officers",
+    "filterLabel": "Filter",
+    "refreshLabel": "Refresh",
+    "overdueToggleLabel": "Show overdue plants",
+    "overdueToggleTitle": "Overdue plants",
+    "overdueButtonLabel": "Plants",
+    "filterPanelTitle": "Filter Officers",
+    "closePanelLabel": "Close filter",
+    "listLabel": "Officer List",
+    "closeListLabel": "Close list"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Idle",
+    "outside_area": "Outside",
+    "missing": "Missing",
+    "offline": "Offline"
+  },
+  "filters": {
+    "label": "Search Officers",
+    "placeholder": "Officer name…",
+    "statusLabel": "Status",
+    "rayonLabel": "Rayon",
+    "rayonAllOption": "All Rayons",
+    "roleLabel": "Role",
+    "roleAllOption": "All Roles",
+    "matchSummary": "{matched} / {total} officers",
+    "reset": "Reset"
+  },
+  "sidebar": {
+    "backToList": "Back to list",
+    "location": "Location",
+    "rayonLabel": "Rayon:",
+    "areaLabel": "Area:",
+    "withinArea": "Within area",
+    "outsideArea": "Outside area",
+    "noAreasData": "No area data",
+    "noAreasSummary": "No area summary available for this scope.",
+    "staffingShortage": "Short {shortage}",
+    "bulkReassignLabel": "Bulk reassign officers to {area}",
+    "bulkReassignButton": "Bulk Reassign",
+    "tabWorkers": "Officers",
+    "tabAreas": "Areas",
+    "noWorkers": "No officers",
+    "noWorkersMatch": "No officers match the filter.",
+    "clickToFocus": "Click officer to focus on map"
+  },
+  "bulkReassign": {
+    "title": "Bulk Reassign to {area}",
+    "description": "Select multiple officers from another area to reassign at once",
+    "sourceAreaLabel": "Source Area",
+    "selectSourcePlaceholder": "-- Select source area --",
+    "noOtherAreas": "No other areas in the same rayon.",
+    "selectLabel": "Select Officers",
+    "selectedCount": "({count} selected)",
+    "deselectAll": "Deselect All",
+    "selectAll": "Select All",
+    "noActiveWorkers": "No active officers in this area.",
+    "reasonLabel": "Reason",
+    "optional": "(optional)",
+    "reasonPlaceholder": "Enter reassignment reason…",
+    "effectiveDateLabel": "Effective Date",
+    "cancelButton": "Cancel",
+    "reassignButton": "Reassign {count} Officers",
+    "reassignButtonDefault": "Reassign",
+    "successMessage": "{count} officers reassigned successfully",
+    "partialErrorMessage": "{successCount} officers reassigned, {failCount} failed",
+    "errorMessage": "Failed to reassign officers"
+  },
+  "config": {
+    "pageTitle": "Monitoring Configuration",
+    "pageDescription": "Manage monitoring system settings",
+    "loading": "Loading configuration…",
+    "error": "Failed to load configuration",
+    "errorHelper": "Check your connection or try again",
+    "accessDenied": "Access Denied",
+    "accessDeniedMessage": "This page can only be accessed by System Admin and Superadmin.",
+    "backButton": "Back to Monitoring",
+    "saved": "Saved",
+    "saveButton": "Save",
+    "rangeValid": "Valid range: {min} - {max}",
+    "units": {
+      "seconds": "seconds",
+      "meters": "meters",
+      "percent": "%"
+    },
+    "sections": {
+      "statusThresholds": {
+        "title": "Status Thresholds",
+        "description": "Configure time limits for automatic status changes",
+        "activeMaxAge": "Active Max Age",
+        "activeMaxAgeHelp": "Maximum time before status changes from active",
+        "inactiveThreshold": "Idle Threshold",
+        "inactiveThresholdHelp": "Time before officer is marked idle",
+        "missingThreshold": "Missing Threshold",
+        "missingThresholdHelp": "Time before officer is marked as missing"
+      },
+      "geofencing": {
+        "title": "Geofencing",
+        "description": "Configure area boundaries and tolerance",
+        "boundaryTolerance": "Boundary Tolerance",
+        "boundaryToleranceHelp": "Tolerance distance from area boundary",
+        "gracePeriod": "Outside Area Grace Period",
+        "gracePeriodHelp": "Time before status changes when outside area"
+      },
+      "mapDefaults": {
+        "title": "Map Defaults",
+        "description": "Configure default map view settings",
+        "defaultZoom": "Default Zoom",
+        "clusterZoom": "Cluster Zoom",
+        "clusterZoomHelp": "Below this level, markers are clustered",
+        "centerLat": "Default Latitude",
+        "centerLng": "Default Longitude"
+      },
+      "alertSettings": {
+        "title": "Alert Settings",
+        "description": "Configure alerts and notifications",
+        "lowBatteryThreshold": "Low Battery Threshold",
+        "boundaryAlerts": "Boundary Alerts",
+        "boundaryAlertsHelp": "Send notification when officer leaves area",
+        "missingWorkerAlerts": "Missing Officer Alerts",
+        "missingWorkerAlertsHelp": "Send notification when officer goes missing"
+      }
+    }
+  }
+}

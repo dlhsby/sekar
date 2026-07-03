@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ConfirmDialog } from '@/components/ui';
 import { User } from '@/types/models';
 import { useDeleteUser } from '@/lib/api/users';
@@ -16,6 +17,7 @@ interface DeleteUserModalProps {
  * Delete User Confirmation Modal
  */
 export function DeleteUserModal({ user, isOpen, onClose, onSuccess }: DeleteUserModalProps) {
+  const { t } = useTranslation();
   const [error, setError] = useState<string>('');
   const deleteUserMutation = useDeleteUser();
 
@@ -28,7 +30,7 @@ export function DeleteUserModal({ user, isOpen, onClose, onSuccess }: DeleteUser
       onSuccess();
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : 'Terjadi kesalahan saat menghapus user';
+        err instanceof Error ? err.message : t('admin:shared.error');
       setError(errorMessage);
     }
   };
@@ -49,7 +51,7 @@ export function DeleteUserModal({ user, isOpen, onClose, onSuccess }: DeleteUser
           <span className="font-bold">{user?.full_name}</span>? Tindakan ini tidak dapat dibatalkan.
         </>
       }
-      confirmLabel="Hapus"
+      confirmLabel={t('admin:shared.delete')}
       variant="destructive"
       loading={deleteUserMutation.isPending}
       onConfirm={handleDelete}

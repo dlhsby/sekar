@@ -8,6 +8,7 @@
  */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -61,6 +62,7 @@ export function BulkReassignModal({
   targetAreaName,
   boundaries,
 }: BulkReassignModalProps) {
+  const { t } = useTranslation();
   const [sourceAreaId, setSourceAreaId] = useState<string>('');
   const [selectedUserIds, setSelectedUserIds] = useState<ReadonlySet<string>>(new Set());
   const [reason, setReason] = useState<string>('');
@@ -125,13 +127,13 @@ export function BulkReassignModal({
       }
 
       if (failedIds.length === 0) {
-        toast.success(`${successCount} petugas berhasil dipindahkan`);
+        toast.success(t('monitoring:bulkReassign.successMessage', { count: successCount }));
         handleClose();
       } else if (successCount > 0) {
-        toast.error(`${successCount} petugas berhasil dipindahkan, ${failedIds.length} gagal`);
+        toast.error(t('monitoring:bulkReassign.partialErrorMessage', { successCount, failCount: failedIds.length }));
         setSelectedUserIds(new Set(failedIds));
       } else {
-        toast.error('Gagal memindahkan petugas');
+        toast.error(t('monitoring:bulkReassign.errorMessage'));
       }
     } finally {
       setIsSubmitting(false);
@@ -144,10 +146,10 @@ export function BulkReassignModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ArrowRightLeft className="w-5 h-5 text-nb-primary" />
-            Pindah Massal ke {targetAreaName}
+            {t('monitoring:bulkReassign.title', { area: targetAreaName })}
           </DialogTitle>
           <DialogDescription>
-            Pilih beberapa petugas dari area lain untuk dipindahkan sekaligus
+            {t('monitoring:bulkReassign.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -155,7 +157,7 @@ export function BulkReassignModal({
           {/* Source area selector */}
           <div className="space-y-1.5">
             <label htmlFor="bulk-source-area" className="text-sm font-bold text-nb-black">
-              Area Asal
+              {t('monitoring:bulkReassign.sourceAreaLabel')}
             </label>
             <select
               id="bulk-source-area"
@@ -171,7 +173,7 @@ export function BulkReassignModal({
                 'disabled:opacity-50 disabled:cursor-not-allowed'
               )}
             >
-              <option value="">-- Pilih area asal --</option>
+              <option value="">{t('monitoring:bulkReassign.selectSourcePlaceholder')}</option>
               {siblingAreas.map((area) => (
                 <option key={area.id} value={area.id}>
                   {area.name}
@@ -179,7 +181,7 @@ export function BulkReassignModal({
               ))}
             </select>
             {siblingAreas.length === 0 && (
-              <p className="text-xs text-nb-gray-500">Tidak ada area lain dalam rayon yang sama.</p>
+              <p className="text-xs text-nb-gray-500">{t('monitoring:bulkReassign.noOtherAreas')}</p>
             )}
           </div>
 
@@ -189,10 +191,10 @@ export function BulkReassignModal({
               <div className="flex items-center justify-between">
                 <p className="text-sm font-bold text-nb-black flex items-center gap-1.5">
                   <Users className="w-4 h-4" />
-                  Pilih Petugas
+                  {t('monitoring:bulkReassign.selectLabel')}
                   {selectedUserIds.size > 0 && (
                     <span className="text-xs font-semibold text-nb-gray-500">
-                      ({selectedUserIds.size} dipilih)
+                      {t('monitoring:bulkReassign.selectedCount', { count: selectedUserIds.size })}
                     </span>
                   )}
                 </p>
@@ -202,7 +204,7 @@ export function BulkReassignModal({
                     onClick={toggleAll}
                     className="text-xs font-bold text-nb-primary-active hover:underline"
                   >
-                    {allSelected ? 'Batal Pilih Semua' : 'Pilih Semua'}
+                    {allSelected ? t('monitoring:bulkReassign.deselectAll') : t('monitoring:bulkReassign.selectAll')}
                   </button>
                 )}
               </div>
@@ -214,7 +216,7 @@ export function BulkReassignModal({
                 </div>
               ) : workers.length === 0 ? (
                 <p className="text-xs text-nb-gray-500 py-2">
-                  Tidak ada petugas aktif di area ini.
+                  {t('monitoring:bulkReassign.noActiveWorkers')}
                 </p>
               ) : (
                 <ul className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
@@ -277,13 +279,13 @@ export function BulkReassignModal({
           {/* Reason */}
           <div className="space-y-1.5">
             <label htmlFor="bulk-reason" className="text-sm font-bold text-nb-black">
-              Alasan <span className="font-normal text-nb-gray-500">(opsional)</span>
+              {t('monitoring:bulkReassign.reasonLabel')} <span className="font-normal text-nb-gray-500">{t('monitoring:bulkReassign.optional')}</span>
             </label>
             <textarea
               id="bulk-reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Tuliskan alasan pemindahan..."
+              placeholder={t('monitoring:bulkReassign.reasonPlaceholder')}
               rows={2}
               className={cn(
                 'w-full px-3 py-2 text-sm rounded-nb-base resize-none',
@@ -295,7 +297,7 @@ export function BulkReassignModal({
           </div>
 
           {/* Effective date */}
-          <Field label="Tanggal Berlaku">
+          <Field label={t('monitoring:bulkReassign.effectiveDateLabel')}>
             {(p) => (
               <DatePicker
                 id={p.id}
@@ -308,7 +310,7 @@ export function BulkReassignModal({
 
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={handleClose} disabled={isSubmitting}>
-            Batal
+            {t('monitoring:bulkReassign.cancelButton')}
           </Button>
           <Button
             variant="default"
@@ -318,8 +320,8 @@ export function BulkReassignModal({
             loading={isSubmitting}
           >
             {selectedUserIds.size > 0
-              ? `Pindahkan ${selectedUserIds.size} Petugas`
-              : 'Pindahkan'}
+              ? t('monitoring:bulkReassign.reassignButton', { count: selectedUserIds.size })
+              : t('monitoring:bulkReassign.reassignButtonDefault')}
           </Button>
         </DialogFooter>
       </DialogContent>

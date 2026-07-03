@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 import { AreaForm } from '@/components/forms/AreaForm';
 import { useCreateArea, useUpdateArea } from '@/lib/api/areas';
@@ -19,6 +20,7 @@ interface AreaFormModalProps {
  * /areas/new and /areas/[id] form pages.
  */
 export function AreaFormModal({ open, onOpenChange, area, onSuccess }: AreaFormModalProps) {
+  const { t } = useTranslation();
   const isEdit = !!area;
   const createMutation = useCreateArea();
   const updateMutation = useUpdateArea();
@@ -50,7 +52,7 @@ export function AreaFormModal({ open, onOpenChange, area, onSuccess }: AreaFormM
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="xl">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Ubah Area' : 'Tambah Area'}</DialogTitle>
+          <DialogTitle>{isEdit ? t('admin:areas.actionEdit') : t('admin:areas.buttonAdd')}</DialogTitle>
         </DialogHeader>
         <DialogBody>
           {errorMessage ? (

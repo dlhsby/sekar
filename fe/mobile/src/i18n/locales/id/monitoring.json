@@ -1,1 +1,122 @@
-{}
+{
+  "screen": {
+    "title": "Pemantauan",
+    "loading": "Memuat peta...",
+    "error": {
+      "title": "Gagal memuat batas wilayah",
+      "retry": "Coba Lagi"
+    }
+  },
+  "fab": {
+    "status": "Ringkasan status",
+    "tools": "Alat peta",
+    "myLocation": "Lokasi saya",
+    "refresh": "Perbarui",
+    "closeTools": "Tutup alat peta"
+  },
+  "tools": {
+    "mapSection": "Peta",
+    "resetHeading": "Arah utara",
+    "zoomIn": "Perbesar",
+    "zoomOut": "Perkecil",
+    "filterSection": "Filter",
+    "filter": "Filter monitoring"
+  },
+  "markerPreview": {
+    "typeOfficer": "Petugas",
+    "typeRayon": "Rayon",
+    "typeArea": "Area"
+  },
+  "status": {
+    "title": "Status Pemantauan",
+    "sections": {
+      "attendance": "Kehadiran",
+      "operations": "Operasional",
+      "staffList": "Daftar Petugas"
+    },
+    "empty": "Belum ada petugas dipantau",
+    "staffCount": "petugas",
+    "totalOfficers": "Total Petugas",
+    "coveredAreas": "Area Terjaga",
+    "staleGps": "GPS tidak aktif > 10 mnt",
+    "lastUpdated": "Terakhir Diperbarui",
+    "justNow": "baru saja",
+    "minutesAgo": "mnt lalu",
+    "attendance": {
+      "clockedIn": "Sudah Clock In",
+      "notClockedIn": "Belum Clock In"
+    }
+  },
+  "userDetail": {
+    "location": "Lokasi",
+    "shiftLabel": "Jam kerja",
+    "tasksLabel": "Tugas",
+    "activitiesLabel": "Aktivitas",
+    "today": "hari ini",
+    "outsideArea": "Luar area",
+    "reassignmentHistory": "Riwayat Pemindahan",
+    "loadingHistory": "Memuat riwayat…",
+    "noHistory": "Belum ada riwayat pemindahan",
+    "call": "Hubungi",
+    "whatsapp": "Chat WhatsApp",
+    "viewTrail": "Lihat jejak",
+    "shift": {
+      "title": "Jam Kerja Hari Ini",
+      "status": {
+        "completed": "Selesai",
+        "active": "Berjalan"
+      },
+      "defaultName": "Shift",
+      "startLabel": "Mulai",
+      "finishLabel": "Selesai",
+      "notClockOut": "Belum clock out",
+      "outsideBoundary": "Di luar area",
+      "notClockedIn": "Belum clock in hari ini"
+    },
+    "overtime": {
+      "title": "Lembur Hari Ini",
+      "loading": "Memuat lembur…",
+      "empty": "Belum ada lembur hari ini",
+      "defaultName": "Lembur"
+    },
+    "tasks": {
+      "title": "Tugas Hari Ini",
+      "loading": "Memuat tugas…",
+      "empty": "Belum ada tugas hari ini"
+    },
+    "activities": {
+      "title": "Aktivitas Hari Ini",
+      "loading": "Memuat aktivitas…",
+      "empty": "Belum ada aktivitas hari ini"
+    },
+    "photos": "foto",
+    "priorities": {
+      "low": "Rendah",
+      "medium": "Sedang",
+      "high": "Tinggi",
+      "urgent": "Mendesak"
+    }
+  },
+  "search": {
+    "title": "Pencarian",
+    "placeholder": "Cari petugas, area, rayon…",
+    "noResults": "Tidak Ada Hasil",
+    "startSearch": "Mulai Mencari",
+    "startSearchDescription": "Cari petugas, area, atau rayon untuk menemukannya di peta.",
+    "recents": "Terakhir dilihat",
+    "clearAll": "Hapus semua"
+  },
+  "attendance": {
+    "title": "Kehadiran",
+    "dateLabel": "Tanggal",
+    "emptyClocked": "Belum ada yang clock in pada tanggal ini.",
+    "emptyNotClocked": "Semua petugas sudah clock in pada tanggal ini.",
+    "emptyData": "Belum ada data kehadiran pada tanggal ini.",
+    "error": "Gagal memuat data kehadiran."
+  },
+  "relativeTime": {
+    "justNow": "baru saja",
+    "minutesAgo": "mnt lalu",
+    "hoursAgo": "jam lalu"
+  }
+}

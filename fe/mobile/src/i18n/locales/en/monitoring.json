@@ -1,1 +1,122 @@
-{}
+{
+  "screen": {
+    "title": "Monitoring",
+    "loading": "Loading map...",
+    "error": {
+      "title": "Failed to load region boundaries",
+      "retry": "Try Again"
+    }
+  },
+  "fab": {
+    "status": "Status summary",
+    "tools": "Map tools",
+    "myLocation": "My location",
+    "refresh": "Refresh",
+    "closeTools": "Close map tools"
+  },
+  "tools": {
+    "mapSection": "Map",
+    "resetHeading": "Reset heading",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "filterSection": "Filter",
+    "filter": "Monitoring filter"
+  },
+  "markerPreview": {
+    "typeOfficer": "Officer",
+    "typeRayon": "Rayon",
+    "typeArea": "Area"
+  },
+  "status": {
+    "title": "Monitoring Status",
+    "sections": {
+      "attendance": "Attendance",
+      "operations": "Operations",
+      "staffList": "Staff List"
+    },
+    "empty": "No officers being monitored",
+    "staffCount": "officers",
+    "totalOfficers": "Total Officers",
+    "coveredAreas": "Covered Areas",
+    "staleGps": "GPS inactive > 10 min",
+    "lastUpdated": "Last Updated",
+    "justNow": "just now",
+    "minutesAgo": "min ago",
+    "attendance": {
+      "clockedIn": "Clocked In",
+      "notClockedIn": "Not Clocked In"
+    }
+  },
+  "userDetail": {
+    "location": "Location",
+    "shiftLabel": "Shift",
+    "tasksLabel": "Tasks",
+    "activitiesLabel": "Activities",
+    "today": "today",
+    "outsideArea": "Outside area",
+    "reassignmentHistory": "Reassignment History",
+    "loadingHistory": "Loading history…",
+    "noHistory": "No reassignment history",
+    "call": "Call",
+    "whatsapp": "Chat WhatsApp",
+    "viewTrail": "View trail",
+    "shift": {
+      "title": "Shift Today",
+      "status": {
+        "completed": "Completed",
+        "active": "Active"
+      },
+      "defaultName": "Shift",
+      "startLabel": "Started",
+      "finishLabel": "Finished",
+      "notClockOut": "Not clocked out",
+      "outsideBoundary": "Outside area",
+      "notClockedIn": "Not clocked in today"
+    },
+    "overtime": {
+      "title": "Overtime Today",
+      "loading": "Loading overtime…",
+      "empty": "No overtime today",
+      "defaultName": "Overtime"
+    },
+    "tasks": {
+      "title": "Tasks Today",
+      "loading": "Loading tasks…",
+      "empty": "No tasks today"
+    },
+    "activities": {
+      "title": "Activities Today",
+      "loading": "Loading activities…",
+      "empty": "No activities today"
+    },
+    "photos": "photos",
+    "priorities": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "urgent": "Urgent"
+    }
+  },
+  "search": {
+    "title": "Search",
+    "placeholder": "Search officers, areas, rayons…",
+    "noResults": "No Results",
+    "startSearch": "Start Searching",
+    "startSearchDescription": "Search for officers, areas, or rayons to find them on the map.",
+    "recents": "Recently viewed",
+    "clearAll": "Clear all"
+  },
+  "attendance": {
+    "title": "Attendance",
+    "dateLabel": "Date",
+    "emptyClocked": "No one has clocked in on this date.",
+    "emptyNotClocked": "All staff have clocked in on this date.",
+    "emptyData": "No attendance data available for this date.",
+    "error": "Failed to load attendance data."
+  },
+  "relativeTime": {
+    "justNow": "just now",
+    "minutesAgo": "min ago",
+    "hoursAgo": "hours ago"
+  }
+}

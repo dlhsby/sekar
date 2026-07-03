@@ -5,6 +5,7 @@
  * Shared submit button pattern for forms
  */
 
+import { useTranslation } from 'react-i18next';
 import { Save } from 'lucide-react';
 import { Button } from '@/components/ui';
 
@@ -21,6 +22,8 @@ export function FormActions({
   disabled = false,
   onCancel,
 }: FormActionsProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex gap-3 pt-4">
       {onCancel && (
@@ -31,7 +34,7 @@ export function FormActions({
           disabled={loading}
           className="w-full"
         >
-          Batal
+          {t('admin:shared.cancel')}
         </Button>
       )}
       <Button

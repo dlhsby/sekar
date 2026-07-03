@@ -1,1 +1,136 @@
-{}
+{
+  "layout": {
+    "title": "Monitoring Real-Time · SEKAR",
+    "description": "Monitor lokasi real-time dan status satgas RTH di lapangan"
+  },
+  "page": {
+    "loading": "Memuat…",
+    "noData": "Tidak ada data",
+    "updated": "Diperbarui {time}",
+    "searchPlaceholder": "Cari petugas…",
+    "searchLabel": "Cari petugas",
+    "filterLabel": "Filter",
+    "refreshLabel": "Segarkan",
+    "overdueToggleLabel": "Tampilkan tanaman terlambat dipangkas",
+    "overdueToggleTitle": "Tanaman terlambat dipangkas",
+    "overdueButtonLabel": "Tanaman",
+    "filterPanelTitle": "Filter Petugas",
+    "closePanelLabel": "Tutup filter",
+    "listLabel": "Daftar Petugas",
+    "closeListLabel": "Tutup daftar"
+  },
+  "status": {
+    "active": "Aktif",
+    "inactive": "Idle",
+    "outside_area": "Luar",
+    "missing": "Hilang",
+    "offline": "Offline"
+  },
+  "filters": {
+    "label": "Cari Petugas",
+    "placeholder": "Nama petugas…",
+    "statusLabel": "Status",
+    "rayonLabel": "Rayon",
+    "rayonAllOption": "Semua Rayon",
+    "roleLabel": "Peran",
+    "roleAllOption": "Semua Peran",
+    "matchSummary": "{matched} / {total} petugas",
+    "reset": "Reset"
+  },
+  "sidebar": {
+    "backToList": "Kembali ke daftar",
+    "location": "Lokasi",
+    "rayonLabel": "Rayon:",
+    "areaLabel": "Area:",
+    "withinArea": "Dalam area",
+    "outsideArea": "Di luar area",
+    "noAreasData": "Tidak ada data area",
+    "noAreasSummary": "Belum ada ringkasan area untuk cakupan ini.",
+    "staffingShortage": "Kurang {shortage}",
+    "bulkReassignLabel": "Pindah massal petugas ke {area}",
+    "bulkReassignButton": "Pindah Massal",
+    "tabWorkers": "Petugas",
+    "tabAreas": "Area",
+    "noWorkers": "Tidak ada petugas",
+    "noWorkersMatch": "Tidak ada petugas yang cocok dengan filter.",
+    "clickToFocus": "Klik petugas untuk fokus di peta"
+  },
+  "bulkReassign": {
+    "title": "Pindah Massal ke {area}",
+    "description": "Pilih beberapa petugas dari area lain untuk dipindahkan sekaligus",
+    "sourceAreaLabel": "Area Asal",
+    "selectSourcePlaceholder": "-- Pilih area asal --",
+    "noOtherAreas": "Tidak ada area lain dalam rayon yang sama.",
+    "selectLabel": "Pilih Petugas",
+    "selectedCount": "({count} dipilih)",
+    "deselectAll": "Batal Pilih Semua",
+    "selectAll": "Pilih Semua",
+    "noActiveWorkers": "Tidak ada petugas aktif di area ini.",
+    "reasonLabel": "Alasan",
+    "optional": "(opsional)",
+    "reasonPlaceholder": "Tuliskan alasan pemindahan…",
+    "effectiveDateLabel": "Tanggal Berlaku",
+    "cancelButton": "Batal",
+    "reassignButton": "Pindahkan {count} Petugas",
+    "reassignButtonDefault": "Pindahkan",
+    "successMessage": "{count} petugas berhasil dipindahkan",
+    "partialErrorMessage": "{successCount} petugas berhasil dipindahkan, {failCount} gagal",
+    "errorMessage": "Gagal memindahkan petugas"
+  },
+  "config": {
+    "pageTitle": "Konfigurasi Monitoring",
+    "pageDescription": "Kelola pengaturan sistem monitoring real-time",
+    "loading": "Memuat konfigurasi…",
+    "error": "Gagal memuat konfigurasi",
+    "errorHelper": "Periksa koneksi atau coba lagi",
+    "accessDenied": "Akses Ditolak",
+    "accessDeniedMessage": "Halaman ini hanya dapat diakses oleh Admin Sistem dan Superadmin.",
+    "backButton": "Kembali ke Monitoring",
+    "saved": "Disimpan",
+    "saveButton": "Simpan",
+    "rangeValid": "Rentang valid: {min} - {max}",
+    "units": {
+      "seconds": "detik",
+      "meters": "meter",
+      "percent": "%"
+    },
+    "sections": {
+      "statusThresholds": {
+        "title": "Ambang Batas Status",
+        "description": "Konfigurasi waktu untuk perubahan status otomatis",
+        "activeMaxAge": "Batas Aktif Maks",
+        "activeMaxAgeHelp": "Waktu maksimum sebelum status berubah dari aktif",
+        "inactiveThreshold": "Ambang Batas Idle",
+        "inactiveThresholdHelp": "Waktu sebelum petugas ditandai idle",
+        "missingThreshold": "Ambang Batas Tidak Terdeteksi",
+        "missingThresholdHelp": "Waktu sebelum petugas ditandai tidak terdeteksi"
+      },
+      "geofencing": {
+        "title": "Geofencing",
+        "description": "Pengaturan batas area dan toleransi",
+        "boundaryTolerance": "Toleransi Batas",
+        "boundaryToleranceHelp": "Toleransi jarak dari batas area",
+        "gracePeriod": "Masa Tenggang Luar Area",
+        "gracePeriodHelp": "Waktu sebelum status berubah saat keluar area"
+      },
+      "mapDefaults": {
+        "title": "Default Peta",
+        "description": "Pengaturan tampilan peta default",
+        "defaultZoom": "Zoom Default",
+        "clusterZoom": "Zoom Klaster",
+        "clusterZoomHelp": "Di bawah level ini, marker dikelompokkan",
+        "centerLat": "Latitude Default",
+        "centerLng": "Longitude Default"
+      },
+      "alertSettings": {
+        "title": "Pengaturan Notifikasi",
+        "description": "Konfigurasi peringatan dan notifikasi",
+        "lowBatteryThreshold": "Ambang Batas Baterai Rendah",
+        "boundaryAlerts": "Peringatan Batas Area",
+        "boundaryAlertsHelp": "Kirim notifikasi saat petugas keluar area",
+        "missingWorkerAlerts": "Peringatan Petugas Tidak Terdeteksi",
+        "missingWorkerAlertsHelp": "Kirim notifikasi saat petugas tidak terdeteksi"
+      }
+    }
+  }
+}

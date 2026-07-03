@@ -1,1 +1,64 @@
-{}
+{
+  "list": {
+    "label": "Overtime",
+    "sortNewest": "Newest Date",
+    "sortOldest": "Oldest Date",
+    "sortCreatedNewest": "Newest Created",
+    "sortCreatedOldest": "Oldest Created",
+    "emptyTitle": "No overtime data",
+    "emptyDescNoFilter": "No overtime submissions yet",
+    "emptyDescWithFilter": "No overtime matching the filter",
+    "errorMessage": "Failed to load overtime data",
+    "sortModalTitle": "Sort Overtime",
+    "clockOutButtonTitle": "Clock Out Overtime",
+    "blockingHint": "Please complete regular shift clock out first",
+    "submitButtonTitle": "+ Submit Overtime",
+    "submitButtonLabel": "Submit new overtime",
+    "submitButtonDisabledLabel": "Submit overtime disabled, please complete active shift first",
+    "submitButtonDisabledHint": "Button is disabled because you still have an active shift"
+  },
+  "detail": {
+    "loadingMessage": "Loading data...",
+    "notFoundMessage": "Overtime not found",
+    "backButtonTitle": "Back",
+    "photoModalTitle": "Overtime Photo"
+  },
+  "submit": {
+    "startTitle": "Start Overtime",
+    "activeTitle": "Active Overtime",
+    "loadingMessage": "Checking overtime status...",
+    "selfieStartLabel": "START SELFIE (OPTIONAL)",
+    "selfieEndLabel": "END SELFIE (OPTIONAL)",
+    "startButtonTitle": "Start Overtime",
+    "startButtonLoading": "Starting...",
+    "endButtonTitle": "End Overtime",
+    "endButtonLoading": "Ending...",
+    "selfieImagePreviewTitle": "Selfie"
+  },
+  "forms": {
+    "reasonLabel": "Reason",
+    "locationError": "GPS location is required",
+    "activityTypeLabel": "Activity Type",
+    "activityTypePlaceholder": "Select activity type...",
+    "descriptionTitle": "WORK DESCRIPTION",
+    "descriptionPlaceholder": "Explain the overtime work performed...",
+    "photosTitle": "PROOF PHOTOS",
+    "photosSubtitle": "{{count}} photos attached",
+    "gpsLabel": "GPS Location"
+  },
+  "components": {
+    "idPengajuanLabel": "Submission ID",
+    "rejectionReasonLabel": "Rejection Reason",
+    "staffLabel": "Officer",
+    "areaLabel": "Area",
+    "photosCount": "{{count}} photos",
+    "notFilledLabel": "(Not filled)",
+    "clockOutButtonLabel": "Clock Out Overtime",
+    "selfieAlreadyCaptured": "Captured ✓",
+    "selfieOptional": "Optional",
+    "selfiePrompt": "Take a selfie for verification",
+    "viewFullSelfieLabel": "View full selfie",
+    "captureButtonLabel": "Take Selfie",
+    "retakeButtonLabel": "Retake Selfie"
+  }
+}

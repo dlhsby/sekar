@@ -7,6 +7,7 @@
  */
 
 import { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Eye, Pencil, Trash2, Power } from 'lucide-react';
 import {
   Badge,
@@ -30,6 +31,7 @@ import { formatDate } from '@/lib/utils/time';
 import type { Area } from '@/types/models';
 
 export default function AreasPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const isAdmin =
     user?.role === 'admin_system' || user?.role === 'superadmin' || user?.role === 'top_management';
@@ -64,9 +66,9 @@ export default function AreasPage() {
       {
         id: 'id',
         accessorKey: 'id',
-        header: 'ID',
+        header: t('admin:areas.columnId'),
         enableSorting: false,
-        meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+        meta: { label: t('admin:areas.columnId'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
         ),
@@ -74,22 +76,22 @@ export default function AreasPage() {
       {
         id: 'name',
         accessorKey: 'name',
-        header: 'Nama',
-        meta: { label: 'Nama', filterVariant: 'text' },
+        header: t('admin:areas.columnName'),
+        meta: { label: t('admin:areas.columnName'), filterVariant: 'text' },
         cell: ({ row }) => <span className="font-semibold">{row.original.name}</span>,
       },
       {
         id: 'rayon',
         accessorFn: (a) => a.rayon?.name ?? '',
-        header: 'Rayon',
-        meta: { label: 'Rayon', filterVariant: 'text' },
+        header: t('admin:areas.columnRayon'),
+        meta: { label: t('admin:areas.columnRayon'), filterVariant: 'text' },
         cell: ({ row }) => <span>{row.original.rayon?.name ?? '—'}</span>,
       },
       {
         id: 'area_type',
         accessorFn: (a) => a.areaType?.name ?? '',
-        header: 'Tipe',
-        meta: { label: 'Tipe', filterVariant: 'text' },
+        header: t('admin:areas.columnType'),
+        meta: { label: t('admin:areas.columnType'), filterVariant: 'text' },
         cell: ({ row }) =>
           row.original.areaType ? (
             <Badge
@@ -108,8 +110,8 @@ export default function AreasPage() {
           a.gps_lat && a.gps_lng
             ? `${Number(a.gps_lat).toFixed(6)}, ${Number(a.gps_lng).toFixed(6)}`
             : '',
-        header: 'Koordinat',
-        meta: { label: 'Koordinat', filterVariant: 'text' },
+        header: t('admin:areas.columnCoordinates'),
+        meta: { label: t('admin:areas.columnCoordinates'), filterVariant: 'text' },
         cell: ({ row }) =>
           row.original.gps_lat && row.original.gps_lng ? (
             <CoordinateLink
@@ -123,20 +125,20 @@ export default function AreasPage() {
       },
       {
         id: 'boundary_polygon',
-        accessorFn: (a) => (a.boundary_polygon ? 'Ada' : '—'),
-        header: 'Batas Wilayah',
-        meta: { label: 'Batas Wilayah', filterVariant: 'text' },
+        accessorFn: (a) => (a.boundary_polygon ? t('admin:areas.boundaryYes') : '—'),
+        header: t('admin:areas.columnBoundary'),
+        meta: { label: t('admin:areas.columnBoundary'), filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
-            {row.original.boundary_polygon ? 'Ada' : '—'}
+            {row.original.boundary_polygon ? t('admin:areas.boundaryYes') : '—'}
           </span>
         ),
       },
       {
         id: 'coverage_area',
         accessorKey: 'coverage_area',
-        header: 'Luas',
-        meta: { label: 'Luas', defaultHidden: true, filterVariant: 'number', align: 'right' },
+        header: t('admin:areas.columnArea'),
+        meta: { label: t('admin:areas.columnArea'), defaultHidden: true, filterVariant: 'number', align: 'right' },
         cell: ({ row }) => (
           <span className="tabular-nums text-nb-gray-600">
             {row.original.coverage_area ? formatArea(row.original.coverage_area) : '—'}
@@ -146,8 +148,8 @@ export default function AreasPage() {
       {
         id: 'radius_meters',
         accessorKey: 'radius_meters',
-        header: 'Radius (m)',
-        meta: { label: 'Radius (m)', defaultHidden: true, filterVariant: 'number', align: 'right' },
+        header: t('admin:areas.columnRadius'),
+        meta: { label: t('admin:areas.columnRadius'), defaultHidden: true, filterVariant: 'number', align: 'right' },
         cell: ({ row }) => (
           <span className="tabular-nums text-nb-gray-600">
             {row.original.radius_meters ?? '—'}
@@ -157,8 +159,8 @@ export default function AreasPage() {
       {
         id: 'address',
         accessorKey: 'address',
-        header: 'Alamat',
-        meta: { label: 'Alamat', defaultHidden: true, filterVariant: 'text' },
+        header: t('admin:areas.columnAddress'),
+        meta: { label: t('admin:areas.columnAddress'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600 max-w-xs truncate">
             {row.original.address ?? '—'}
@@ -167,25 +169,25 @@ export default function AreasPage() {
       },
       {
         id: 'is_active',
-        accessorFn: (a) => (a.is_active ? 'Aktif' : 'Nonaktif'),
-        header: 'Status',
-        meta: { label: 'Status', filterVariant: 'text' },
+        accessorFn: (a) => (a.is_active ? t('admin:areas.statusActive') : t('admin:areas.statusInactive')),
+        header: t('admin:areas.columnStatus'),
+        meta: { label: t('admin:areas.columnStatus'), filterVariant: 'text' },
         cell: ({ row }) =>
           row.original.is_active ? (
             <StatusPill tone="ok" dot>
-              Aktif
+              {t('admin:areas.statusActive')}
             </StatusPill>
           ) : (
             <StatusPill tone="neutral" dot>
-              Nonaktif
+              {t('admin:areas.statusInactive')}
             </StatusPill>
           ),
       },
       {
         id: 'created_at',
         accessorKey: 'created_at',
-        header: 'Dibuat',
-        meta: { label: 'Dibuat', defaultHidden: true, filterVariant: 'date' },
+        header: t('admin:areas.columnCreated'),
+        meta: { label: t('admin:areas.columnCreated'), defaultHidden: true, filterVariant: 'date' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {formatDate(row.original.created_at)}
@@ -195,8 +197,8 @@ export default function AreasPage() {
       {
         id: 'updated_at',
         accessorKey: 'updated_at',
-        header: 'Diperbarui',
-        meta: { label: 'Diperbarui', defaultHidden: true, filterVariant: 'date' },
+        header: t('admin:areas.columnUpdated'),
+        meta: { label: t('admin:areas.columnUpdated'), defaultHidden: true, filterVariant: 'date' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {formatDate(row.original.updated_at)}
@@ -206,8 +208,8 @@ export default function AreasPage() {
       {
         id: 'created_by',
         accessorFn: (a) => actorName(a.created_by),
-        header: 'Dibuat oleh',
-        meta: { label: 'Dibuat oleh', defaultHidden: true, filterVariant: 'text' },
+        header: t('admin:areas.columnCreatedBy'),
+        meta: { label: t('admin:areas.columnCreatedBy'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {actorName(row.original.created_by)}
@@ -217,8 +219,8 @@ export default function AreasPage() {
       {
         id: 'updated_by',
         accessorFn: (a) => actorName(a.updated_by),
-        header: 'Diperbarui oleh',
-        meta: { label: 'Diperbarui oleh', defaultHidden: true, filterVariant: 'text' },
+        header: t('admin:areas.columnUpdatedBy'),
+        meta: { label: t('admin:areas.columnUpdatedBy'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {actorName(row.original.updated_by)}
@@ -233,7 +235,7 @@ export default function AreasPage() {
     (a: Area): DataTableRowAction<Area>[] => [
       {
         key: 'view',
-        label: 'Lihat',
+        label: t('admin:areas.actionView'),
         icon: Eye,
         onClick: () => {
           view.openWith(a);
@@ -241,7 +243,7 @@ export default function AreasPage() {
       },
       {
         key: 'edit',
-        label: 'Ubah',
+        label: t('admin:areas.actionEdit'),
         icon: Pencil,
         disabled: !isAdmin,
         onClick: () => {
@@ -251,7 +253,7 @@ export default function AreasPage() {
       },
       {
         key: 'toggle-active',
-        label: a.is_active === false ? 'Aktifkan' : 'Nonaktifkan',
+        label: a.is_active === false ? t('admin:areas.actionActivate') : t('admin:areas.actionDeactivate'),
         icon: Power,
         hidden: !isAdmin,
         onClick: () =>
@@ -259,21 +261,21 @@ export default function AreasPage() {
       },
       {
         key: 'delete',
-        label: 'Hapus',
+        label: t('admin:areas.actionDelete'),
         icon: Trash2,
         variant: 'danger',
         hidden: !isAdmin,
         onClick: () => setDeleteModal({ isOpen: true, area: a }),
       },
     ],
-    [isAdmin, deactivateArea, activateArea, view]
+    [isAdmin, deactivateArea, activateArea, view, t]
   );
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Area"
-        description="Kelola area kerja dan batas wilayah"
+        title={t('admin:areas.pageTitle')}
+        description={t('admin:areas.description')}
       />
 
       <DataTable
@@ -284,7 +286,7 @@ export default function AreasPage() {
         onRetry={() => refetch()}
         onRefresh={() => refetch()}
         getRowId={(r) => r.id}
-        searchPlaceholder="Cari nama area…"
+        searchPlaceholder={t('admin:areas.searchPlaceholder')}
         rowActions={rowActions}
         actions={
           isAdmin ? (
@@ -295,12 +297,12 @@ export default function AreasPage() {
               }}
               leftIcon={<Plus className="h-5 w-5" />}
             >
-              Tambah Area
+              {t('admin:areas.buttonAdd')}
             </Button>
           ) : undefined
         }
-        emptyTitle="Belum Ada Area"
-        emptyDescription="Mulai dengan menambahkan area kerja pertama."
+        emptyTitle={t('admin:areas.emptyTitle')}
+        emptyDescription={t('admin:areas.emptyDescription')}
         emptyAction={
           isAdmin ? (
             <Button
@@ -310,7 +312,7 @@ export default function AreasPage() {
               }}
               leftIcon={<Plus className="h-5 w-5" />}
             >
-              Tambah Area Pertama
+              {t('admin:areas.buttonAddFirst')}
             </Button>
           ) : undefined
         }
@@ -333,12 +335,12 @@ export default function AreasPage() {
       <DetailModal
         open={view.open}
         onOpenChange={view.onOpenChange}
-        title="Detail Area"
+        title={t('admin:areas.detailTitle')}
         rows={view.item ? [
-          { label: 'Nama', value: view.item.name },
-          { label: 'Rayon', value: view.item.rayon?.name ?? '—' },
+          { label: t('admin:areas.detailName'), value: view.item.name },
+          { label: t('admin:areas.detailRayon'), value: view.item.rayon?.name ?? '—' },
           {
-            label: 'Tipe',
+            label: t('admin:areas.detailType'),
             value: view.item.areaType ? (
               <Badge
                 variant={view.item.areaType.category === 'ACTIVE' ? 'success' : 'warning'}
@@ -351,7 +353,7 @@ export default function AreasPage() {
             ),
           },
           {
-            label: 'Koordinat',
+            label: t('admin:areas.detailCoordinates'),
             value:
               view.item.gps_lat && view.item.gps_lng ? (
                 <CoordinateLink
@@ -361,22 +363,22 @@ export default function AreasPage() {
                 />
               ) : null,
           },
-          { label: 'Alamat', value: view.item.address ?? null },
-          { label: 'Luas', value: view.item.coverage_area ? formatArea(view.item.coverage_area) : null },
-          { label: 'Radius (m)', value: view.item.radius_meters },
+          { label: t('admin:areas.detailAddress'), value: view.item.address ?? null },
+          { label: t('admin:areas.detailArea'), value: view.item.coverage_area ? formatArea(view.item.coverage_area) : null },
+          { label: t('admin:areas.detailRadius'), value: view.item.radius_meters },
           {
-            label: 'Status',
+            label: t('admin:areas.detailStatus'),
             value: (
               <StatusPill tone={view.item.is_active ? 'ok' : 'neutral'} dot>
-                {view.item.is_active ? 'Aktif' : 'Nonaktif'}
+                {view.item.is_active ? t('admin:areas.statusActive') : t('admin:areas.statusInactive')}
               </StatusPill>
             ),
           },
-          { label: 'Batas Wilayah', value: view.item.boundary_polygon ? 'Ada' : 'Tidak ada' },
-          { label: 'Dibuat', value: formatDate(view.item.created_at) },
-          { label: 'Dibuat oleh', value: actorName(view.item.created_by) },
-          { label: 'Diperbarui', value: formatDate(view.item.updated_at) },
-          { label: 'Diperbarui oleh', value: actorName(view.item.updated_by) },
+          { label: t('admin:areas.detailBoundary'), value: view.item.boundary_polygon ? t('admin:areas.boundaryYes') : t('admin:areas.boundaryNo') },
+          { label: t('admin:areas.detailCreated'), value: formatDate(view.item.created_at) },
+          { label: t('admin:areas.detailCreatedBy'), value: actorName(view.item.created_by) },
+          { label: t('admin:areas.detailUpdated'), value: formatDate(view.item.updated_at) },
+          { label: t('admin:areas.detailUpdatedBy'), value: actorName(view.item.updated_by) },
         ] : []}
       />
     </div>

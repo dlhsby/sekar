@@ -6,6 +6,7 @@
  */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ConfirmDialog } from '@/components/ui';
 import { useDeleteArea } from '@/lib/api/areas';
 import type { Area } from '@/types/models';
@@ -18,6 +19,7 @@ export interface DeleteAreaModalProps {
 }
 
 export function DeleteAreaModal({ area, isOpen, onClose, onSuccess }: DeleteAreaModalProps) {
+  const { t } = useTranslation();
   const deleteArea = useDeleteArea();
   const [error, setError] = useState<string | null>(null);
 
@@ -54,7 +56,7 @@ export function DeleteAreaModal({ area, isOpen, onClose, onSuccess }: DeleteArea
           Anda akan menghapus area <strong>{area?.name}</strong>. Tindakan ini tidak dapat dibatalkan.
         </>
       }
-      confirmLabel="Hapus"
+      confirmLabel={t('admin:shared.delete')}
       variant="destructive"
       loading={deleteArea.isPending}
       onConfirm={handleDelete}

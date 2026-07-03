@@ -7,6 +7,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -29,6 +30,7 @@ import { useViewModal } from '@/lib/hooks/use-view-modal';
 import type { Rayon } from '@/types/models';
 
 export default function RayonsPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const isAdmin = user && ADMIN_ROLES.includes(user.role);
 
@@ -60,9 +62,9 @@ export default function RayonsPage() {
       {
         id: 'id',
         accessorKey: 'id',
-        header: 'ID',
+        header: t('admin:rayons.columnId'),
         enableSorting: false,
-        meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+        meta: { label: t('admin:rayons.columnId'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
         ),
@@ -70,9 +72,9 @@ export default function RayonsPage() {
       {
         id: 'name',
         accessorKey: 'name',
-        header: 'Nama',
+        header: t('admin:rayons.columnName'),
         enableSorting: true,
-        meta: { label: 'Nama', filterVariant: 'text' },
+        meta: { label: t('admin:rayons.columnName'), filterVariant: 'text' },
         cell: ({ row }) => <span className="font-semibold">{row.original.name}</span>,
       },
       {
@@ -126,8 +128,8 @@ export default function RayonsPage() {
       {
         id: 'created_by',
         accessorFn: (r) => actorName(r.created_by),
-        header: 'Dibuat oleh',
-        meta: { label: 'Dibuat oleh', defaultHidden: true, filterVariant: 'text' },
+        header: t('admin:rayons.columnCreatedBy'),
+        meta: { label: t('admin:rayons.columnCreatedBy'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {actorName(row.original.created_by)}
@@ -137,8 +139,8 @@ export default function RayonsPage() {
       {
         id: 'updated_by',
         accessorFn: (r) => actorName(r.updated_by),
-        header: 'Diperbarui oleh',
-        meta: { label: 'Diperbarui oleh', defaultHidden: true, filterVariant: 'text' },
+        header: t('admin:rayons.columnUpdatedBy'),
+        meta: { label: t('admin:rayons.columnUpdatedBy'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {actorName(row.original.updated_by)}
@@ -153,7 +155,7 @@ export default function RayonsPage() {
     (r: Rayon): DataTableRowAction<Rayon>[] => [
       {
         key: 'view',
-        label: 'Lihat',
+        label: t('admin:rayons.actionView'),
         icon: Eye,
         onClick: () => {
           view.openWith(r);
@@ -161,7 +163,7 @@ export default function RayonsPage() {
       },
       {
         key: 'edit',
-        label: 'Ubah',
+        label: t('admin:rayons.actionEdit'),
         icon: Pencil,
         disabled: !isAdmin,
         onClick: () => {
@@ -171,7 +173,7 @@ export default function RayonsPage() {
       },
       {
         key: 'delete',
-        label: 'Hapus',
+        label: t('admin:rayons.actionDelete'),
         icon: Trash2,
         variant: 'danger',
         hidden: !isAdmin,
@@ -181,7 +183,7 @@ export default function RayonsPage() {
         },
       },
     ],
-    [isAdmin, view]
+    [isAdmin, view, t]
   );
 
   const handleDelete = async () => {
@@ -207,7 +209,7 @@ export default function RayonsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Rayon" description="Kelola 7 rayon di Kota Surabaya" />
+      <PageHeader title={t('admin:rayons.pageTitle')} description={t('admin:rayons.description')} />
 
       <DataTable
         columns={columns}
@@ -217,7 +219,7 @@ export default function RayonsPage() {
         onRetry={() => refetch()}
         onRefresh={() => refetch()}
         getRowId={(r) => r.id}
-        searchPlaceholder="Cari rayon…"
+        searchPlaceholder={t('admin:rayons.searchPlaceholder')}
         rowActions={rowActions}
         actions={
           isAdmin ? (
@@ -228,12 +230,12 @@ export default function RayonsPage() {
               }}
               leftIcon={<Plus className="h-5 w-5" />}
             >
-              Tambah Rayon
+              {t('admin:rayons.buttonAdd')}
             </Button>
           ) : undefined
         }
-        emptyTitle="Belum Ada Rayon"
-        emptyDescription="Mulai dengan menambahkan rayon pertama."
+        emptyTitle={t('admin:rayons.emptyTitle')}
+        emptyDescription={t('admin:rayons.emptyDescription')}
         emptyAction={
           isAdmin ? (
             <Button
@@ -243,7 +245,7 @@ export default function RayonsPage() {
               }}
               leftIcon={<Plus className="h-5 w-5" />}
             >
-              Tambah Rayon Pertama
+              {t('admin:rayons.buttonAddFirst')}
             </Button>
           ) : undefined
         }
@@ -259,11 +261,11 @@ export default function RayonsPage() {
       <DetailModal
         open={view.open}
         onOpenChange={view.onOpenChange}
-        title="Detail Rayon"
+        title={t('admin:rayons.detailTitle')}
         rows={
           view.item
             ? [
-                { label: 'Nama', value: view.item.name },
+                { label: t('admin:rayons.detailName'), value: view.item.name },
                 {
                   label: 'Warna',
                   value: view.item.color ? (
@@ -284,8 +286,8 @@ export default function RayonsPage() {
                     ) : null,
                 },
                 { label: 'Deskripsi', value: view.item.description },
-                { label: 'Dibuat oleh', value: actorName(view.item.created_by) },
-                { label: 'Diperbarui oleh', value: actorName(view.item.updated_by) },
+                { label: t('admin:rayons.detailCreatedBy'), value: actorName(view.item.created_by) },
+                { label: t('admin:rayons.detailUpdatedBy'), value: actorName(view.item.updated_by) },
               ]
             : []
         }
@@ -306,8 +308,8 @@ export default function RayonsPage() {
             </>
           )
         }
-        confirmLabel="Hapus"
-        cancelLabel="Batal"
+        confirmLabel={t('admin:shared.delete')}
+        cancelLabel={t('admin:shared.cancel')}
         variant="destructive"
         loading={deleteRayon.isPending}
         onConfirm={handleDelete}

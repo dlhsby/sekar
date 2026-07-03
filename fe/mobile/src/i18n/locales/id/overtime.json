@@ -1,1 +1,64 @@
-{}
+{
+  "list": {
+    "label": "Lembur",
+    "sortNewest": "Tanggal Terbaru",
+    "sortOldest": "Tanggal Terlama",
+    "sortCreatedNewest": "Dibuat Terbaru",
+    "sortCreatedOldest": "Dibuat Terlama",
+    "emptyTitle": "Tidak ada data lembur",
+    "emptyDescNoFilter": "Belum ada pengajuan lembur",
+    "emptyDescWithFilter": "Tidak ada lembur yang sesuai filter",
+    "errorMessage": "Gagal memuat data lembur",
+    "sortModalTitle": "Urutkan Lembur",
+    "clockOutButtonTitle": "Clock Out Lembur",
+    "blockingHint": "Selesaikan Clock Out shift biasa terlebih dahulu",
+    "submitButtonTitle": "+ Ajukan Lembur",
+    "submitButtonLabel": "Ajukan lembur baru",
+    "submitButtonDisabledLabel": "Ajukan lembur dinonaktifkan, selesaikan shift aktif terlebih dahulu",
+    "submitButtonDisabledHint": "Tombol dinonaktifkan karena Anda masih memiliki shift aktif"
+  },
+  "detail": {
+    "loadingMessage": "Memuat data...",
+    "notFoundMessage": "Lembur tidak ditemukan",
+    "backButtonTitle": "Kembali",
+    "photoModalTitle": "Foto Lembur"
+  },
+  "submit": {
+    "startTitle": "Mulai Lembur",
+    "activeTitle": "Lembur Aktif",
+    "loadingMessage": "Memeriksa status lembur...",
+    "selfieStartLabel": "SELFIE MULAI (OPSIONAL)",
+    "selfieEndLabel": "SELFIE SELESAI (OPSIONAL)",
+    "startButtonTitle": "Mulai Lembur",
+    "startButtonLoading": "Memulai...",
+    "endButtonTitle": "Selesai Lembur",
+    "endButtonLoading": "Menyelesaikan...",
+    "selfieImagePreviewTitle": "Selfie"
+  },
+  "forms": {
+    "reasonLabel": "Alasan",
+    "locationError": "Lokasi GPS diperlukan",
+    "activityTypeLabel": "Jenis Aktivitas",
+    "activityTypePlaceholder": "Pilih jenis aktivitas...",
+    "descriptionTitle": "DESKRIPSI PEKERJAAN",
+    "descriptionPlaceholder": "Jelaskan aktivitas lembur yang dilakukan...",
+    "photosTitle": "FOTO BUKTI",
+    "photosSubtitle": "{{count}} foto dilampirkan",
+    "gpsLabel": "Lokasi GPS"
+  },
+  "components": {
+    "idPengajuanLabel": "ID Pengajuan",
+    "rejectionReasonLabel": "Alasan Penolakan",
+    "staffLabel": "Petugas",
+    "areaLabel": "Area",
+    "photosCount": "{{count}} foto",
+    "notFilledLabel": "(Belum diisi)",
+    "clockOutButtonLabel": "Clock Out Lembur",
+    "selfieAlreadyCaptured": "Sudah diambil ✓",
+    "selfieOptional": "Opsional",
+    "selfiePrompt": "Ambil selfie untuk verifikasi",
+    "viewFullSelfieLabel": "Lihat selfie penuh",
+    "captureButtonLabel": "Ambil Selfie",
+    "retakeButtonLabel": "Ambil Ulang Selfie"
+  }
+}

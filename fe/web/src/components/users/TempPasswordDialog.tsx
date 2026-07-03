@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Copy, Check } from 'lucide-react';
 import {
   Dialog,
@@ -25,6 +26,7 @@ interface TempPasswordDialogProps {
  * the value is never retrievable again; the user must change it on first login.
  */
 export function TempPasswordDialog({ password, username, onClose }: TempPasswordDialogProps) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
@@ -75,7 +77,7 @@ export function TempPasswordDialog({ password, username, onClose }: TempPassword
         </DialogBody>
         <DialogFooter>
           <Button type="button" onClick={onClose}>
-            Selesai
+            {t('admin:shared.close')}
           </Button>
         </DialogFooter>
       </DialogContent>

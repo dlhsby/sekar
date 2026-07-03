@@ -9,11 +9,13 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, StyleSheet, Linking } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import {
   nbColors,
   nbSpacing,
   nbBorders,
 } from '../../constants/nbTokens';
+import i18n from '../../i18n/config';
 import { NBText } from '../nb/NBText';
 import { NBButton } from '../nb/NBButton';
 import { NBModal } from '../nb/NBModal';
@@ -81,9 +83,9 @@ function formatDuration(minutes: number): string {
 function formatRelativeTime(isoString: string): string {
   const diff = Date.now() - new Date(isoString).getTime();
   const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) { return 'baru saja'; }
-  if (minutes < 60) { return `${minutes} mnt lalu`; }
-  return `${Math.floor(minutes / 60)} jam lalu`;
+  if (minutes < 1) { return i18n.t('monitoring:relativeTime.justNow'); }
+  if (minutes < 60) { return `${minutes} ${i18n.t('monitoring:relativeTime.minutesAgo')}`; }
+  return `${Math.floor(minutes / 60)} ${i18n.t('monitoring:relativeTime.hoursAgo')}`;
 }
 
 function formatTime(isoString: string): string {
@@ -109,6 +111,7 @@ export function UserDetailSheet({
   onClose,
   onTrailPress,
 }: UserDetailSheetProps): React.JSX.Element {
+  const { t } = useTranslation();
   const [mapOpen, setMapOpen] = useState(false);
   const [shiftOpen, setShiftOpen] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(false);
@@ -296,7 +299,7 @@ export function UserDetailSheet({
                     <>
                       <StatusPill dot tone={pill.tone} label={pill.label} />
                       {location === 'luar_area' ? (
-                        <StatusPill dot tone="bad" label="Luar area" />
+                        <StatusPill dot tone="bad" label={t('monitoring:userDetail.outsideArea')} />
                       ) : null}
                     </>
                   );
@@ -312,7 +315,7 @@ export function UserDetailSheet({
             {/* Lokasi tile — solo row */}
             <View style={styles.statSection}>
               <HomeStatTile
-                label="Lokasi"
+                label={t('monitoring:userDetail.location')}
                 value={user.area_name || '—'}
                 detail={locationDetail}
                 onPress={() => setMapOpen(true)}
@@ -325,7 +328,7 @@ export function UserDetailSheet({
                   <NBSkeleton variant="card" height={84} style={styles.skeletonTile} />
                 ) : (
                   <HomeStatTile
-                    label="Jam kerja"
+                    label={t('monitoring:userDetail.shiftLabel')}
                     variant="yellow"
                     value={shift ? formatDuration(shift.duration_minutes) : '—'}
                     detail={user.clock_in_time ? formatTime(user.clock_in_time) : undefined}
@@ -336,10 +339,10 @@ export function UserDetailSheet({
                   <NBSkeleton variant="card" height={84} style={styles.skeletonTile} />
                 ) : (
                   <HomeStatTile
-                    label="Tugas"
+                    label={t('monitoring:userDetail.tasksLabel')}
                     variant="info"
                     value={String(tasksFull.length)}
-                    detail="hari ini"
+                    detail={t('monitoring:userDetail.today')}
                     onPress={() => setTasksOpen(true)}
                   />
                 )}
@@ -347,10 +350,10 @@ export function UserDetailSheet({
                   <NBSkeleton variant="card" height={84} style={styles.skeletonTile} />
                 ) : (
                   <HomeStatTile
-                    label="Aktivitas"
+                    label={t('monitoring:userDetail.activitiesLabel')}
                     variant="ok"
                     value={String(activitiesFull.length)}
-                    detail="hari ini"
+                    detail={t('monitoring:userDetail.today')}
                     onPress={() => setActivitiesOpen(true)}
                   />
                 )}
@@ -360,15 +363,15 @@ export function UserDetailSheet({
             {/* Riwayat Pemindahan — collapsible section showing reassignment history */}
             <View style={styles.statSection}>
               <NBText variant="mono-sm" uppercase color="gray600" style={styles.sectionHeader}>
-                Riwayat Pemindahan
+                {t('monitoring:userDetail.reassignmentHistory')}
               </NBText>
               {reassignmentLoading ? (
                 <NBText variant="body-sm" color="gray500" align="center">
-                  Memuat riwayat…
+                  {t('monitoring:userDetail.loadingHistory')}
                 </NBText>
               ) : !reassignmentHistory || reassignmentHistory.history.length === 0 ? (
                 <NBText variant="body-sm" color="gray500" align="center">
-                  Belum ada riwayat pemindahan
+                  {t('monitoring:userDetail.noHistory')}
                 </NBText>
               ) : (
                 <View style={styles.list}>
@@ -402,7 +405,7 @@ export function UserDetailSheet({
             <View style={styles.actionStack}>
               <NBButton
                 variant="secondary"
-                title="Hubungi"
+                title={t('monitoring:userDetail.call')}
                 leftIcon="phone"
                 disabled={!hasPhone}
                 onPress={handleCall}
@@ -411,7 +414,7 @@ export function UserDetailSheet({
               />
               <NBButton
                 variant="success"
-                title="Chat WhatsApp"
+                title={t('monitoring:userDetail.whatsapp')}
                 leftIcon="whatsapp"
                 disabled={!hasPhone}
                 onPress={handleWhatsApp}
@@ -420,7 +423,7 @@ export function UserDetailSheet({
               />
               <NBButton
                 variant="primary"
-                title="Lihat jejak"
+                title={t('monitoring:userDetail.viewTrail')}
                 leftIcon="map-marker-path"
                 onPress={handleTrail}
                 size="md"
@@ -437,7 +440,7 @@ export function UserDetailSheet({
           <LocationMapModal
             visible={mapOpen}
             onClose={() => setMapOpen(false)}
-            title={`Lokasi ${user.full_name}`}
+            title={`${t('monitoring:userDetail.location')} ${user.full_name}`}
             markerTitle={user.full_name}
             location={{
               latitude: user.latitude ?? null,
@@ -452,7 +455,7 @@ export function UserDetailSheet({
             visible={shiftOpen}
             onClose={() => setShiftOpen(false)}
             type="sheet"
-            title="Jam Kerja Hari Ini"
+            title={t('monitoring:userDetail.shift.title')}
             testID="user-shift-modal"
           >
             <View style={styles.list}>
@@ -460,19 +463,19 @@ export function UserDetailSheet({
               {shift ? (
                 <ListItemCard
                   statusTone={shift.clock_out_time ? 'neutral' : 'ok'}
-                  statusLabel={shift.clock_out_time ? 'Selesai' : 'Berjalan'}
+                  statusLabel={shift.clock_out_time ? t('monitoring:userDetail.shift.status.completed') : t('monitoring:userDetail.shift.status.active')}
                   rightText={formatDuration(shift.duration_minutes)}
-                  title={shift.name || 'Shift'}
+                  title={shift.name || t('monitoring:userDetail.shift.defaultName')}
                   meta={[
-                    { icon: 'login', label: `Mulai ${formatTime(shift.clock_in_time)}` },
+                    { icon: 'login', label: `${t('monitoring:userDetail.shift.startLabel')} ${formatTime(shift.clock_in_time)}` },
                     {
                       icon: 'logout',
                       label: shift.clock_out_time
-                        ? `Selesai ${formatTime(shift.clock_out_time)}`
-                        : 'Belum clock out',
+                        ? `${t('monitoring:userDetail.shift.finishLabel')} ${formatTime(shift.clock_out_time)}`
+                        : t('monitoring:userDetail.shift.notClockOut'),
                     },
                     ...(shift.outside_boundary
-                      ? [{ icon: 'map-marker-alert', label: 'Di luar area' }]
+                      ? [{ icon: 'map-marker-alert', label: t('monitoring:userDetail.shift.outsideBoundary') }]
                       : []),
                   ]}
                   onPress={NOOP}
@@ -480,21 +483,21 @@ export function UserDetailSheet({
                 />
               ) : (
                 <NBText variant="body" color="gray600" align="center">
-                  Belum clock in hari ini
+                  {t('monitoring:userDetail.shift.notClockedIn')}
                 </NBText>
               )}
 
               {/* Lembur section */}
               <NBText variant="mono-sm" uppercase color="gray600" style={styles.sectionHeader}>
-                Lembur Hari Ini ({overtimes.length})
+                {t('monitoring:userDetail.overtime.title')} ({overtimes.length})
               </NBText>
               {overtimesLoading ? (
                 <NBText variant="body-sm" color="gray500" align="center">
-                  Memuat lembur…
+                  {t('monitoring:userDetail.overtime.loading')}
                 </NBText>
               ) : overtimes.length === 0 ? (
                 <NBText variant="body-sm" color="gray500" align="center">
-                  Belum ada lembur hari ini
+                  {t('monitoring:userDetail.overtime.empty')}
                 </NBText>
               ) : (
                 overtimes.map((ot) => {
@@ -505,7 +508,7 @@ export function UserDetailSheet({
                       statusTone={p.tone}
                       statusLabel={p.label}
                       rightText={`${formatTimeShort(ot.start_datetime)}${ot.end_datetime ? `–${formatTimeShort(ot.end_datetime)}` : ''}`}
-                      title={ot.activityType?.name ?? 'Lembur'}
+                      title={ot.activityType?.name ?? t('monitoring:userDetail.overtime.defaultName')}
                       description={ot.reason || ot.description || undefined}
                       meta={ot.area?.name ? [{ icon: 'map-marker', label: ot.area.name }] : undefined}
                       onPress={NOOP}
@@ -523,38 +526,38 @@ export function UserDetailSheet({
             visible={tasksOpen}
             onClose={() => setTasksOpen(false)}
             type="sheet"
-            title={`Tugas Hari Ini (${tasksFullLoading ? '…' : tasksFull.length})`}
+            title={`${t('monitoring:userDetail.tasks.title')} (${tasksFullLoading ? '…' : tasksFull.length})`}
             testID="user-tasks-modal"
           >
             {tasksFullLoading ? (
               <NBText variant="body-sm" color="gray500" align="center">
-                Memuat tugas…
+                {t('monitoring:userDetail.tasks.loading')}
               </NBText>
             ) : tasksFull.length === 0 ? (
               <NBText variant="body" color="gray600" align="center">
-                Belum ada tugas hari ini
+                {t('monitoring:userDetail.tasks.empty')}
               </NBText>
             ) : (
               <View style={styles.list}>
-                {tasksFull.map((t) => {
-                  const p = taskPill(t.status);
+                {tasksFull.map((task) => {
+                  const p = taskPill(task.status);
                   const meta: ListItemMeta[] = [];
-                  if (t.area?.name) { meta.push({ icon: 'map-marker', label: t.area.name }); }
-                  if (t.deadline) { meta.push({ icon: 'clock-outline', label: formatDate(t.deadline) }); }
-                  if (t.priority) {
-                    meta.push({ icon: 'flag', label: PRIORITY_LABEL[t.priority] ?? t.priority });
+                  if (task.area?.name) { meta.push({ icon: 'map-marker', label: task.area.name }); }
+                  if (task.deadline) { meta.push({ icon: 'clock-outline', label: formatDate(task.deadline) }); }
+                  if (task.priority) {
+                    meta.push({ icon: 'flag', label: t(`monitoring:userDetail.priorities.${task.priority}`) ?? task.priority });
                   }
                   return (
                     <ListItemCard
-                      key={t.id}
+                      key={task.id}
                       statusTone={p.tone}
                       statusLabel={p.label}
-                      rightText={`${formatDate(t.created_at)} · ${formatTimeShort(t.created_at)}`}
-                      title={t.title}
-                      description={t.description || undefined}
+                      rightText={`${formatDate(task.created_at)} · ${formatTimeShort(task.created_at)}`}
+                      title={task.title}
+                      description={task.description || undefined}
                       meta={meta.length ? meta : undefined}
                       onPress={NOOP}
-                      testID={`user-task-${t.id}`}
+                      testID={`user-task-${task.id}`}
                     />
                   );
                 })}
@@ -568,16 +571,16 @@ export function UserDetailSheet({
             visible={activitiesOpen}
             onClose={() => setActivitiesOpen(false)}
             type="sheet"
-            title={`Aktivitas Hari Ini (${activitiesFullLoading ? '…' : activitiesFull.length})`}
+            title={`${t('monitoring:userDetail.activities.title')} (${activitiesFullLoading ? '…' : activitiesFull.length})`}
             testID="user-activities-modal"
           >
             {activitiesFullLoading ? (
               <NBText variant="body-sm" color="gray500" align="center">
-                Memuat aktivitas…
+                {t('monitoring:userDetail.activities.loading')}
               </NBText>
             ) : activitiesFull.length === 0 ? (
               <NBText variant="body" color="gray600" align="center">
-                Belum ada aktivitas hari ini
+                {t('monitoring:userDetail.activities.empty')}
               </NBText>
             ) : (
               <View style={styles.list}>
@@ -586,7 +589,7 @@ export function UserDetailSheet({
                   const meta: ListItemMeta[] = [];
                   if (a.area?.name) { meta.push({ icon: 'map-marker', label: a.area.name }); }
                   if (a.photo_urls && a.photo_urls.length > 0) {
-                    meta.push({ icon: 'camera', label: `${a.photo_urls.length} foto` });
+                    meta.push({ icon: 'camera', label: `${a.photo_urls.length} ${t('monitoring:userDetail.photos')}` });
                   }
                   return (
                     <ListItemCard
@@ -594,7 +597,7 @@ export function UserDetailSheet({
                       statusTone={p.tone}
                       statusLabel={p.label}
                       rightText={`${formatDate(a.created_at)} · ${formatTimeShort(a.created_at)}`}
-                      title={a.activityType?.name ?? 'Aktivitas'}
+                      title={a.activityType?.name ?? t('monitoring:userDetail.activitiesLabel')}
                       description={a.description || undefined}
                       meta={meta.length ? meta : undefined}
                       onPress={NOOP}

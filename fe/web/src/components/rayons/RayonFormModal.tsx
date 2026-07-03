@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 import { RayonForm } from '@/components/forms/RayonForm';
 import { useCreateRayon, useUpdateRayon, type CreateRayonDto, type UpdateRayonDto } from '@/lib/api/rayons';
@@ -17,6 +18,7 @@ interface RayonFormModalProps {
  * Create / edit a rayon in a modal.
  */
 export function RayonFormModal({ open, onOpenChange, rayon, onSuccess }: RayonFormModalProps) {
+  const { t } = useTranslation();
   const isEdit = !!rayon;
   const createMutation = useCreateRayon();
   const updateMutation = useUpdateRayon();
@@ -49,7 +51,7 @@ export function RayonFormModal({ open, onOpenChange, rayon, onSuccess }: RayonFo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="xl">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Ubah Rayon' : 'Tambah Rayon'}</DialogTitle>
+          <DialogTitle>{isEdit ? t('admin:rayons.actionEdit') : t('admin:rayons.buttonAdd')}</DialogTitle>
         </DialogHeader>
         <DialogBody>
           {errorMessage ? (
