@@ -31,6 +31,14 @@
       "title": "Sort Attendance"
     }
   },
+  "filter": {
+    "title": "Filter Attendance",
+    "dateRange": "Date Range",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "reset": "Reset",
+    "apply": "Apply"
+  },
   "detail": {
     "loading": "Loading data...",
     "noAttendance": "No attendance today",

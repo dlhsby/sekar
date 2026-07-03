@@ -31,6 +31,14 @@
       "title": "Urutkan Kehadiran"
     }
   },
+  "filter": {
+    "title": "Filter Kehadiran",
+    "dateRange": "Rentang Tanggal",
+    "dateFrom": "Dari",
+    "dateTo": "Sampai",
+    "reset": "Reset",
+    "apply": "Terapkan"
+  },
   "detail": {
     "loading": "Memuat data...",
     "noAttendance": "Tidak ada kehadiran pada hari ini",

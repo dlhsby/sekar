@@ -4,7 +4,36 @@
     "oldest": "Oldest"
   },
   "filter": {
-    "label": "activity"
+    "label": "activity",
+    "title": "Filter Activities",
+    "status": "Status",
+    "statusOptions": {
+      "all": "All Status",
+      "pending": "Pending Approval",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "dateRange": "Date Range",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "area": "Area",
+    "areaOptions": {
+      "all": "All Areas",
+      "mine": "My Area"
+    },
+    "rayon": "Rayon",
+    "rayonOptions": {
+      "all": "All Rayons",
+      "mine": "My Rayon"
+    },
+    "createdBy": "Created By",
+    "createdByOptions": {
+      "all": "All Officers (Including Me)",
+      "subordinates": "All Subordinates",
+      "mine": "Created by Me"
+    },
+    "reset": "Reset",
+    "apply": "Apply"
   },
   "header": {
     "sort": "SORT ACTIVITIES"
@@ -71,5 +100,13 @@
   "messages": {
     "clockInRequired": "Not Clocked In",
     "clockInRequiredMessage": "You must clock in first to add an activity"
+  },
+  "today": {
+    "title": "Today's Activities ({{count}})",
+    "noActivities": "No activities yet today",
+    "noActivitiesDescription": "Activities you create will appear here",
+    "photos": "{{count}} photos",
+    "defaultType": "Activity",
+    "viewDetailLabel": "View activity details {{name}}"
   }
 }

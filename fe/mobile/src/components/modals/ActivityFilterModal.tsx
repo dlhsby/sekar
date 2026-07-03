@@ -12,6 +12,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { NBSelect, NBDatePicker, NBModal } from '../nb';
 import {
@@ -53,6 +54,8 @@ export function ActivityFilterModal({
   userAreaId,
   userId,
 }: ActivityFilterModalProps): React.JSX.Element {
+  const { t } = useTranslation('activities');
+
   // satgas, linmas, korlap: area is fixed to their assigned area
   const isAreaFixed = useMemo(() =>
     (userRole === 'satgas' || userRole === 'linmas' || userRole === 'korlap') && !!userAreaId
@@ -211,7 +214,7 @@ export function ActivityFilterModal({
     <NBModal
       visible={visible}
       onClose={onClose}
-      title="Filter Aktivitas"
+      title={t('filter.title')}
       footer={
         <View style={styles.actionButtons}>
           <TouchableOpacity
@@ -219,29 +222,29 @@ export function ActivityFilterModal({
             onPress={handleReset}
             accessibilityRole="button"
           >
-            <Text style={styles.resetButtonText}>Reset</Text>
+            <Text style={styles.resetButtonText}>{t('filter.reset')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionButton, styles.applyButton]}
             onPress={handleApply}
             accessibilityRole="button"
           >
-            <Text style={styles.applyButtonText}>Terapkan</Text>
+            <Text style={styles.applyButtonText}>{t('filter.apply')}</Text>
           </TouchableOpacity>
         </View>
       }
     >
       {/* 1. Status */}
       <View style={styles.filterSection}>
-        <Text style={styles.filterLabel}>Status</Text>
+        <Text style={styles.filterLabel}>{t('filter.status')}</Text>
         <NBSelect
           value={localStatus || 'all'}
           onValueChange={(v) => setLocalStatus(v === 'all' ? '' : String(v))}
           options={[
-            { label: 'Semua Status', value: 'all' },
-            { label: 'Menunggu Persetujuan', value: 'pending' },
-            { label: 'Disetujui', value: 'approved' },
-            { label: 'Ditolak', value: 'rejected' },
+            { label: t('filter.statusOptions.all'), value: 'all' },
+            { label: t('filter.statusOptions.pending'), value: 'pending' },
+            { label: t('filter.statusOptions.approved'), value: 'approved' },
+            { label: t('filter.statusOptions.rejected'), value: 'rejected' },
           ]}
           searchable
         />
@@ -249,13 +252,13 @@ export function ActivityFilterModal({
 
       {/* 2. Rentang Tanggal */}
       <View style={styles.filterSection}>
-        <Text style={styles.filterLabel}>Rentang Tanggal</Text>
+        <Text style={styles.filterLabel}>{t('filter.dateRange')}</Text>
         <View style={styles.dateRangeRow}>
           <View style={styles.dateButtonHalf}>
             <NBDatePicker
               value={dateFromParsed}
               onChange={(date) => setLocalDateFrom(toFilterDateString(date))}
-              label="Dari"
+              label={t('filter.dateFrom')}
               maximumDate={dateToParsed ?? undefined}
             />
           </View>
@@ -266,7 +269,7 @@ export function ActivityFilterModal({
             <NBDatePicker
               value={dateToParsed}
               onChange={(date) => setLocalDateTo(toFilterDateString(date))}
-              label="Sampai"
+              label={t('filter.dateTo')}
               minimumDate={dateFromParsed ?? undefined}
             />
           </View>
@@ -276,12 +279,12 @@ export function ActivityFilterModal({
       {/* 3. Rayon — role-gated */}
       {showRayon && (
         <View style={styles.filterSection}>
-          <Text style={styles.filterLabel}>Rayon</Text>
+          <Text style={styles.filterLabel}>{t('filter.rayon')}</Text>
           {isRayonFixed ? (
             <NBSelect
               value={userRayonId ?? 'all'}
               onValueChange={() => {}}
-              options={[{ label: userRayonId ? 'Rayon Saya' : 'Semua Rayon', value: userRayonId ?? 'all' }]}
+              options={[{ label: userRayonId ? t('filter.rayonOptions.mine') : t('filter.rayonOptions.all'), value: userRayonId ?? 'all' }]}
               disabled={true}
             />
           ) : (
@@ -289,7 +292,7 @@ export function ActivityFilterModal({
               value={localRayonId || 'all'}
               onValueChange={(v) => { setLocalRayonId(v === 'all' ? '' : String(v)); setLocalAreaId(''); }}
               options={[
-                { label: 'Semua Rayon', value: 'all' },
+                { label: t('filter.rayonOptions.all'), value: 'all' },
                 ...rayons.map(r => ({ label: r.name, value: r.id })),
               ]}
               disabled={loadingRayons}
@@ -301,12 +304,12 @@ export function ActivityFilterModal({
 
       {/* 4. Area */}
       <View style={styles.filterSection}>
-        <Text style={styles.filterLabel}>Area</Text>
+        <Text style={styles.filterLabel}>{t('filter.area')}</Text>
         {isAreaFixed ? (
           <NBSelect
             value={userAreaId ?? 'all'}
             onValueChange={() => {}}
-            options={[{ label: userAreaId ? 'Area Saya' : 'Semua Area', value: userAreaId ?? 'all' }]}
+            options={[{ label: userAreaId ? t('filter.areaOptions.mine') : t('filter.areaOptions.all'), value: userAreaId ?? 'all' }]}
             disabled={true}
           />
         ) : (
@@ -314,7 +317,7 @@ export function ActivityFilterModal({
             value={localAreaId || 'all'}
             onValueChange={(v) => { setLocalAreaId(v === 'all' ? '' : String(v)); setLocalUserId(''); }}
             options={[
-              { label: 'Semua Area', value: 'all' },
+              { label: t('filter.areaOptions.all'), value: 'all' },
               ...areas.map((a) => ({ label: a.name, value: a.id })),
             ]}
             disabled={loadingAreas}
@@ -326,14 +329,14 @@ export function ActivityFilterModal({
       {/* 5. Dibuat Oleh — hidden for satgas/linmas */}
       {!isFieldWorker && (
         <View style={styles.filterSection}>
-          <Text style={styles.filterLabel}>Dibuat Oleh</Text>
+          <Text style={styles.filterLabel}>{t('filter.createdBy')}</Text>
           <NBSelect
             value={localUserId || 'all'}
             onValueChange={(v) => setLocalUserId(v === 'all' ? '' : String(v))}
             options={[
-              { label: 'Semua Petugas (Termasuk Saya)', value: 'all' },
-              ...(hasSubordinates ? [{ label: 'Semua Bawahan', value: 'all_subordinates' }] : []),
-              ...(userId ? [{ label: 'Dibuat oleh Saya', value: userId }] : []),
+              { label: t('filter.createdByOptions.all'), value: 'all' },
+              ...(hasSubordinates ? [{ label: t('filter.createdByOptions.subordinates'), value: 'all_subordinates' }] : []),
+              ...(userId ? [{ label: t('filter.createdByOptions.mine'), value: userId }] : []),
               ...users.map((u) => ({
                 label: `${toTitleCase(u.role)} - ${u.full_name}`,
                 value: u.id,

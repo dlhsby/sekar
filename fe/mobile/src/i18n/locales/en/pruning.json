@@ -15,6 +15,21 @@
     "loadErrorTitle": "Failed to load requests",
     "ctaLabel": "Create Request"
   },
+  "filter": {
+    "title": "Filter Requests",
+    "status": "Status",
+    "statusOptions": {
+      "all": "All Status",
+      "submitted": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "dateRange": "Date Range",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "reset": "Reset",
+    "apply": "Apply"
+  },
   "submit": {
     "pageTitle": "Create Pruning Request",
     "locationCardTitle": "Pruning Location",

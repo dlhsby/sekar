@@ -15,6 +15,21 @@
     "loadErrorTitle": "Gagal memuat permohonan",
     "ctaLabel": "Buat Permohonan"
   },
+  "filter": {
+    "title": "Filter Permohonan",
+    "status": "Status",
+    "statusOptions": {
+      "all": "Semua Status",
+      "submitted": "Menunggu",
+      "approved": "Disetujui",
+      "rejected": "Ditolak"
+    },
+    "dateRange": "Rentang Tanggal",
+    "dateFrom": "Dari",
+    "dateTo": "Sampai",
+    "reset": "Reset",
+    "apply": "Terapkan"
+  },
   "submit": {
     "pageTitle": "Buat Permohonan Perantingan",
     "locationCardTitle": "Lokasi Pemangkasan",

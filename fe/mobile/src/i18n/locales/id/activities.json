@@ -4,7 +4,36 @@
     "oldest": "Terlama"
   },
   "filter": {
-    "label": "aktivitas"
+    "label": "aktivitas",
+    "title": "Filter Aktivitas",
+    "status": "Status",
+    "statusOptions": {
+      "all": "Semua Status",
+      "pending": "Menunggu Persetujuan",
+      "approved": "Disetujui",
+      "rejected": "Ditolak"
+    },
+    "dateRange": "Rentang Tanggal",
+    "dateFrom": "Dari",
+    "dateTo": "Sampai",
+    "area": "Area",
+    "areaOptions": {
+      "all": "Semua Area",
+      "mine": "Area Saya"
+    },
+    "rayon": "Rayon",
+    "rayonOptions": {
+      "all": "Semua Rayon",
+      "mine": "Rayon Saya"
+    },
+    "createdBy": "Dibuat Oleh",
+    "createdByOptions": {
+      "all": "Semua Petugas (Termasuk Saya)",
+      "subordinates": "Semua Bawahan",
+      "mine": "Dibuat oleh Saya"
+    },
+    "reset": "Reset",
+    "apply": "Terapkan"
   },
   "header": {
     "sort": "URUTKAN AKTIVITAS"
@@ -71,5 +100,13 @@
   "messages": {
     "clockInRequired": "Belum Clock In",
     "clockInRequiredMessage": "Anda harus melakukan Clock In terlebih dahulu untuk menambahkan aktivitas"
+  },
+  "today": {
+    "title": "Aktivitas Hari Ini ({{count}})",
+    "noActivities": "Belum ada aktivitas hari ini",
+    "noActivitiesDescription": "Aktivitas yang Anda buat akan muncul di sini",
+    "photos": "{{count}} foto",
+    "defaultType": "Aktivitas",
+    "viewDetailLabel": "Lihat detail aktivitas {{name}}"
   }
 }

@@ -6,7 +6,30 @@
     "priorityHighest": "Highest Priority"
   },
   "filter": {
-    "label": "task"
+    "label": "task",
+    "title": "Filter Tasks",
+    "status": "Status",
+    "statusOptions": {
+      "all": "All Status",
+      "pending": "Pending",
+      "declined": "Rejected",
+      "completed": "Pending Verification"
+    },
+    "dateRange": "Date Range",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "area": "Area",
+    "areaOptions": {
+      "all": "All Areas",
+      "mine": "My Area"
+    },
+    "rayon": "Rayon",
+    "rayonOptions": {
+      "all": "All Rayons",
+      "mine": "My Rayon"
+    },
+    "reset": "Reset",
+    "apply": "Apply"
   },
   "header": {
     "sort": "SORT TASKS"

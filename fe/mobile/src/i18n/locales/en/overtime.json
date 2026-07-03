@@ -1,4 +1,35 @@
 {
+  "filter": {
+    "title": "Filter Overtime",
+    "status": "Status",
+    "statusOptions": {
+      "all": "All Status",
+      "pending": "Pending Approval",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "dateRange": "Date Range",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "area": "Area",
+    "areaOptions": {
+      "all": "All Areas",
+      "mine": "My Area"
+    },
+    "rayon": "Rayon",
+    "rayonOptions": {
+      "all": "All Rayons",
+      "mine": "My Rayon"
+    },
+    "createdBy": "Created By",
+    "createdByOptions": {
+      "all": "All Officers (Including Me)",
+      "subordinates": "All Subordinates",
+      "mine": "Created by Me"
+    },
+    "reset": "Reset",
+    "apply": "Apply"
+  },
   "list": {
     "label": "Overtime",
     "sortNewest": "Newest Date",

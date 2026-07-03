@@ -1,4 +1,35 @@
 {
+  "filter": {
+    "title": "Filter Lembur",
+    "status": "Status",
+    "statusOptions": {
+      "all": "Semua Status",
+      "pending": "Menunggu Persetujuan",
+      "approved": "Disetujui",
+      "rejected": "Ditolak"
+    },
+    "dateRange": "Rentang Tanggal",
+    "dateFrom": "Dari",
+    "dateTo": "Sampai",
+    "area": "Area",
+    "areaOptions": {
+      "all": "Semua Area",
+      "mine": "Area Saya"
+    },
+    "rayon": "Rayon",
+    "rayonOptions": {
+      "all": "Semua Rayon",
+      "mine": "Rayon Saya"
+    },
+    "createdBy": "Dibuat Oleh",
+    "createdByOptions": {
+      "all": "Semua Petugas (Termasuk Saya)",
+      "subordinates": "Semua Bawahan",
+      "mine": "Dibuat oleh Saya"
+    },
+    "reset": "Reset",
+    "apply": "Terapkan"
+  },
   "list": {
     "label": "Lembur",
     "sortNewest": "Tanggal Terbaru",

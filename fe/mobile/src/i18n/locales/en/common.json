@@ -89,5 +89,14 @@
     "label": "Language",
     "id": "Bahasa Indonesia",
     "en": "English"
+  },
+  "connectivity": {
+    "noInternet": "No internet connection",
+    "serverUnreachable": "Server unreachable, retrying…"
+  },
+  "sync": {
+    "syncing": "Syncing...",
+    "syncFailed": "Sync failed",
+    "syncSuccess": "Sync successful"
   }
 }

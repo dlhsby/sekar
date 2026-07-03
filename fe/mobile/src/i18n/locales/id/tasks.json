@@ -6,7 +6,30 @@
     "priorityHighest": "Prioritas Tertinggi"
   },
   "filter": {
-    "label": "tugas"
+    "label": "tugas",
+    "title": "Filter Tugas",
+    "status": "Status",
+    "statusOptions": {
+      "all": "Semua Status",
+      "pending": "Menunggu",
+      "declined": "Ditolak",
+      "completed": "Menunggu Verifikasi"
+    },
+    "dateRange": "Rentang Tanggal",
+    "dateFrom": "Dari",
+    "dateTo": "Sampai",
+    "area": "Area",
+    "areaOptions": {
+      "all": "Semua Area",
+      "mine": "Area Saya"
+    },
+    "rayon": "Rayon",
+    "rayonOptions": {
+      "all": "Semua Rayon",
+      "mine": "Rayon Saya"
+    },
+    "reset": "Reset",
+    "apply": "Terapkan"
   },
   "header": {
     "sort": "URUTKAN TUGAS"

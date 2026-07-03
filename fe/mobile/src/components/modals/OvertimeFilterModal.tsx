@@ -10,6 +10,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { NBSelect, NBDatePicker, NBModal, NBText } from '../nb';
 import {
@@ -50,6 +51,8 @@ export function OvertimeFilterModal({
   userAreaId,
   userId,
 }: OvertimeFilterModalProps): React.JSX.Element {
+  const { t } = useTranslation('overtime');
+
   // Role-based visibility/locking (mirrors ActivityFilterModal)
   const isFieldWorker = useMemo(
     () => userRole === 'satgas' || userRole === 'linmas',
@@ -206,7 +209,7 @@ export function OvertimeFilterModal({
     <NBModal
       visible={visible}
       onClose={onClose}
-      title="Filter Lembur"
+      title={t('filter.title')}
       footer={
         <View style={styles.actionButtons}>
           <TouchableOpacity
@@ -214,29 +217,29 @@ export function OvertimeFilterModal({
             onPress={handleReset}
             accessibilityRole="button"
           >
-            <NBText variant="body-sm" color="black" style={styles.actionButtonText}>Reset</NBText>
+            <NBText variant="body-sm" color="black" style={styles.actionButtonText}>{t('filter.reset')}</NBText>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionButton, styles.applyButton]}
             onPress={handleApply}
             accessibilityRole="button"
           >
-            <NBText variant="body-sm" color="white" style={styles.actionButtonText}>Terapkan</NBText>
+            <NBText variant="body-sm" color="white" style={styles.actionButtonText}>{t('filter.apply')}</NBText>
           </TouchableOpacity>
         </View>
       }
     >
       {/* 1. Status */}
       <View style={styles.filterSection}>
-        <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>Status</NBText>
+        <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>{t('filter.status')}</NBText>
         <NBSelect
           value={localStatus || 'all'}
           onValueChange={(v) => setLocalStatus(v === 'all' ? '' : String(v))}
           options={[
-            { label: 'Semua Status', value: 'all' },
-            { label: 'Menunggu', value: 'pending' },
-            { label: 'Disetujui', value: 'approved' },
-            { label: 'Ditolak', value: 'rejected' },
+            { label: t('filter.statusOptions.all'), value: 'all' },
+            { label: t('filter.statusOptions.pending'), value: 'pending' },
+            { label: t('filter.statusOptions.approved'), value: 'approved' },
+            { label: t('filter.statusOptions.rejected'), value: 'rejected' },
           ]}
           searchable
         />
@@ -244,13 +247,13 @@ export function OvertimeFilterModal({
 
       {/* 2. Rentang Tanggal */}
       <View style={styles.filterSection}>
-        <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>Rentang Tanggal</NBText>
+        <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>{t('filter.dateRange')}</NBText>
         <View style={styles.dateRangeRow}>
           <View style={styles.dateButtonHalf}>
             <NBDatePicker
               value={dateFromParsed}
               onChange={(date) => setLocalDateFrom(toFilterDateString(date))}
-              label="Dari"
+              label={t('filter.dateFrom')}
               maximumDate={dateToParsed ?? undefined}
             />
           </View>
@@ -259,7 +262,7 @@ export function OvertimeFilterModal({
             <NBDatePicker
               value={dateToParsed}
               onChange={(date) => setLocalDateTo(toFilterDateString(date))}
-              label="Sampai"
+              label={t('filter.dateTo')}
               minimumDate={dateFromParsed ?? undefined}
             />
           </View>
@@ -269,12 +272,12 @@ export function OvertimeFilterModal({
       {/* 3. Rayon — role-gated */}
       {showRayon && (
         <View style={styles.filterSection}>
-          <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>Rayon</NBText>
+          <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>{t('filter.rayon')}</NBText>
           {isRayonFixed ? (
             <NBSelect
               value={userRayonId ?? 'all'}
               onValueChange={() => {}}
-              options={[{ label: userRayonId ? 'Rayon Saya' : 'Semua Rayon', value: userRayonId ?? 'all' }]}
+              options={[{ label: userRayonId ? t('filter.rayonOptions.mine') : t('filter.rayonOptions.all'), value: userRayonId ?? 'all' }]}
               disabled={true}
             />
           ) : (
@@ -285,7 +288,7 @@ export function OvertimeFilterModal({
                 setLocalAreaId('');
               }}
               options={[
-                { label: 'Semua Rayon', value: 'all' },
+                { label: t('filter.rayonOptions.all'), value: 'all' },
                 ...rayons.map((r) => ({ label: r.name, value: r.id })),
               ]}
               disabled={loadingRayons}
@@ -297,12 +300,12 @@ export function OvertimeFilterModal({
 
       {/* 4. Area */}
       <View style={styles.filterSection}>
-        <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>Area</NBText>
+        <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>{t('filter.area')}</NBText>
         {isAreaFixed ? (
           <NBSelect
             value={userAreaId ?? 'all'}
             onValueChange={() => {}}
-            options={[{ label: userAreaId ? 'Area Saya' : 'Semua Area', value: userAreaId ?? 'all' }]}
+            options={[{ label: userAreaId ? t('filter.areaOptions.mine') : t('filter.areaOptions.all'), value: userAreaId ?? 'all' }]}
             disabled={true}
           />
         ) : (
@@ -313,7 +316,7 @@ export function OvertimeFilterModal({
               setLocalUserId('');
             }}
             options={[
-              { label: 'Semua Area', value: 'all' },
+              { label: t('filter.areaOptions.all'), value: 'all' },
               ...areas.map((a) => ({ label: a.name, value: a.id })),
             ]}
             disabled={loadingAreas}
@@ -325,14 +328,14 @@ export function OvertimeFilterModal({
       {/* 5. Dibuat Oleh — hidden for satgas/linmas */}
       {!isFieldWorker && (
         <View style={styles.filterSection}>
-          <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>Dibuat Oleh</NBText>
+          <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>{t('filter.createdBy')}</NBText>
           <NBSelect
             value={localUserId || 'all'}
             onValueChange={(v) => setLocalUserId(v === 'all' ? '' : String(v))}
             options={[
-              { label: 'Semua Petugas (Termasuk Saya)', value: 'all' },
-              ...(hasSubordinates ? [{ label: 'Semua Bawahan', value: 'all_subordinates' }] : []),
-              ...(userId ? [{ label: 'Dibuat oleh Saya', value: userId }] : []),
+              { label: t('filter.createdByOptions.all'), value: 'all' },
+              ...(hasSubordinates ? [{ label: t('filter.createdByOptions.subordinates'), value: 'all_subordinates' }] : []),
+              ...(userId ? [{ label: t('filter.createdByOptions.mine'), value: userId }] : []),
               ...users.map((u) => ({
                 label: `${toTitleCase(u.role)} - ${u.full_name}`,
                 value: u.id,
