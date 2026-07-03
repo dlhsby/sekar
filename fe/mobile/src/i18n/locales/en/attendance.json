@@ -75,5 +75,39 @@
     "a11y": {
       "label": "Attendance {{date}}, {{status}}"
     }
+  },
+  "clockInOut": {
+    "noAreaAssigned": "You have not been assigned to any area",
+    "contactSupervisor": "Contact your supervisor for area assignment",
+    "gettingLocation": "Getting your location...",
+    "attendanceInfo": "Attendance Information",
+    "gpsLocation": "GPS Location",
+    "currentTime": "Current Time",
+    "scheduledShift": "Scheduled Shift",
+    "assignedArea": "Assigned Area",
+    "address": "Address",
+    "areaType": "Area Type",
+    "gpsCoordinates": "GPS Coordinates",
+    "boundaryRadius": "Boundary Radius",
+    "rayonCoverage": "Rayon Coverage",
+    "noSpecificArea": "No specific area",
+    "inBoundary": "IN AREA",
+    "outOfBoundary": "OUT OF AREA",
+    "shiftTime": "Shift Time:",
+    "clockInTime": "Clock In:",
+    "selfiePhoto": "Selfie Photo",
+    "captured": "Captured",
+    "optional": "Optional",
+    "retakeSelfie": "Retake",
+    "captureSelfie": "Capture Selfie",
+    "captureForVerification": "Capture selfie for identity verification",
+    "captureForClockOutVerification": "Capture selfie to verify clock out",
+    "offlineBannerClockIn": "Offline Mode - Clock in requires internet connection",
+    "onlineRequiredForClockIn": "You must be online to clock in. Connect to the internet first.",
+    "offlineModeClockOut": "Offline mode. Clock out will sync when online.",
+    "selfiePreviewTitle": "Selfie Clock In",
+    "startShiftWithVerification": "Start shift with location verification",
+    "startShiftOutOfArea": "Start shift — You are out of area, attendance will be recorded",
+    "endShiftNow": "End current shift"
   }
 }

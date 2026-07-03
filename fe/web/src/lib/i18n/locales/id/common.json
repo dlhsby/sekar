@@ -159,5 +159,10 @@
     "myRequests": "Permintaan Saya",
     "guide": "Panduan",
     "districtNav": "Navigasi kecamatan"
+  },
+  "pagination": {
+    "previous": "Sebelumnya",
+    "next": "Berikutnya",
+    "pageOf": "Halaman {page} dari {total}"
   }
 }

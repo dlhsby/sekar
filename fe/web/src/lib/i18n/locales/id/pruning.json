@@ -143,5 +143,23 @@
   "myRequests": {
     "pageTitle": "Permintaan Saya",
     "description": "Riwayat permintaan pemangkasan yang Anda ajukan."
+  },
+  "page": {
+    "description": "Tinjau dan kelola permohonan pemangkasan dari kecamatan.",
+    "filterLabel": "Filter Status",
+    "totalLabel": "Total",
+    "requests": "permohonan",
+    "loadError": "Gagal memuat data permohonan. Coba lagi nanti.",
+    "emptyTitle": "Belum ada permohonan untuk filter ini.",
+    "detailTitle": "Detail Permohonan Pemangkasan",
+    "referenceCode": "Kode Referensi",
+    "kecamatan": "Kecamatan",
+    "status": "Status",
+    "plantSpecies": "Tipe Tanaman",
+    "quantity": "Kuantitas",
+    "unit": "Unit",
+    "location": "Lokasi",
+    "notes": "Catatan",
+    "createdAt": "Dibuat"
   }
 }

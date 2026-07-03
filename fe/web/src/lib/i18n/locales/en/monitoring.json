@@ -1,1 +1,243 @@
-{"layout":{"title":"Real-Time Monitoring · SEKAR","description":"Monitor real-time location and status of RTH officers in the field"},"page":{"loading":"Loading…","noData":"No data","updated":"Updated {time}","searchPlaceholder":"Search officers…","searchLabel":"Search officers","filterLabel":"Filter","refreshLabel":"Refresh","overdueToggleLabel":"Show overdue plants","overdueToggleTitle":"Overdue plants","overdueButtonLabel":"Plants","filterPanelTitle":"Filter Officers","closePanelLabel":"Close filter","listLabel":"Officer List","closeListLabel":"Close list"},"status":{"active":"Active","inactive":"Idle","outside_area":"Outside","missing":"Missing","offline":"Offline"},"filters":{"label":"Search Officers","placeholder":"Officer name…","statusLabel":"Status","rayonLabel":"Rayon","rayonAllOption":"All Rayons","roleLabel":"Role","roleAllOption":"All Roles","matchSummary":"{matched} / {total} officers","reset":"Reset"},"sidebar":{"backToList":"Back to list","location":"Location","rayonLabel":"Rayon:","areaLabel":"Area:","withinArea":"Within area","outsideArea":"Outside area","noAreasData":"No area data","noAreasSummary":"No area summary available for this scope.","staffingShortage":"Short {shortage}","bulkReassignLabel":"Bulk reassign officers to {area}","bulkReassignButton":"Bulk Reassign","tabWorkers":"Officers","tabAreas":"Areas","noWorkers":"No officers","noWorkersMatch":"No officers match the filter.","clickToFocus":"Click officer to focus on map"},"reassign":{"successMessage":"Worker successfully reassigned","errorMessage":"Failed to reassign worker"},"bulkReassign":{"title":"Bulk Reassign to {area}","description":"Select multiple officers from another area to reassign at once","sourceAreaLabel":"Source Area","selectSourcePlaceholder":"-- Select source area --","noOtherAreas":"No other areas in the same rayon.","selectLabel":"Select Officers","selectedCount":"({count} selected)","deselectAll":"Deselect All","selectAll":"Select All","noActiveWorkers":"No active officers in this area.","reasonLabel":"Reason","optional":"(optional)","reasonPlaceholder":"Enter reassignment reason…","effectiveDateLabel":"Effective Date","cancelButton":"Cancel","reassignButton":"Reassign {count} Officers","reassignButtonDefault":"Reassign","successMessage":"{count} officers reassigned successfully","partialErrorMessage":"{successCount} officers reassigned, {failCount} failed","errorMessage":"Failed to reassign officers"},"reassignModal":{"title":"Reassign Officer to {area}","description":"Select an officer from another area to reassign","sourceAreaLabel":"Source Area","sourceAreaPlaceholder":"-- Select source area --","noOtherAreas":"No other areas in the same rayon.","selectLabel":"Select Officer","noActiveWorkers":"No active officers in this area.","reasonLabel":"Reason","optional":"(optional)","reasonPlaceholder":"Enter reassignment reason…","effectiveDateLabel":"Effective Date","cancelButton":"Cancel","reassignButton":"Reassign"},"hierarchy":{"scopeLabel":"Filter scope","city":"City","rayon":"Rayon","area":"Area","rayonLabel":"Select Rayon","areaLabel":"Select Area","areaDisabled":"Select rayon first","activeCount":"{count} active","resetLabel":"Reset all filters"},"toggle":{"label":"Map view","title":"Map View","workers":"Officers","plants":"Plants","overdue":"Overdue","rayons":"Rayon Boundaries","areas":"Area Boundaries","showLayer":"Show {label}"},"timeline":{"backLabel":"Back to officer details","backButton":"Back","title":"Location History","datePickerLabel":"Select Date","distance":"Distance","points":"Points","withinArea":"Within Area","outsideArea":"Outside Area","shift":"Shift:","clockIn":"Clock In:","showOnlyThisUser":"Show only this officer","noHistory":"No location history","noHistoryHelper":"Select another date or check your connection","noPoints":"No location points","noPointsHelper":"No GPS data on this date","pointsLabel":"{count} location points","start":"Start","end":"End","pointsListLabel":"Location points history","inArea":"Within Area","outArea":"Outside Area"},"areaDetail":{"closeLabel":"Close area detail drawer","staffingLabel":"Staffing Availability","staffingShortage":"Understaffed","staffingFull":"Fully Staffed","activeOf":"active from","required":"required","plantStatusLabel":"Plant Status","loadingPlants":"Loading plant data…","errorPlants":"Failed to load plant data.","noPlants":"No plant data registered for this area yet.","ok":"OK","almostDue":"Due Soon","overdue":"Overdue","speciesCount":"{species} species","totalCount":"{total} plants recorded","plantsList":"Plant species list","heritage":"Heritage Trees ({count})","heritageNoLabel":"No label","workersLabel":"Officers in This Area","workersList":"List of officers in this area","pruningTitle":"Pruning Requests in Rayon {rayon}","loadingPruning":"Loading requests…","noPruning":"No active pruning requests in this rayon."},"workerList":{"noWorkers":"No active officers","list":"Officer list"},"userDetail":{"backLabel":"Back to list","backButton":"Back","noData":"Data not available"},"sidePanel":{"noWorkers":"No officers found"},"sidePanel":{"title":"Officers","searchPlaceholder":"Search officers or area...","noWorkers":"No officers found"},"config":{"pageTitle":"Monitoring Configuration","pageDescription":"Manage monitoring system settings","loading":"Loading configuration…","error":"Failed to load configuration","errorHelper":"Check your connection or try again","accessDenied":"Access Denied","accessDeniedMessage":"This page can only be accessed by System Admin and Superadmin.","backButton":"Back to Monitoring","saved":"Saved","saveButton":"Save","rangeValid":"Valid range: {min} - {max}","units":{"seconds":"seconds","meters":"meters","percent":"%"},"sections":{"statusThresholds":{"title":"Status Thresholds","description":"Configure time limits for automatic status changes","activeMaxAge":"Active Max Age","activeMaxAgeHelp":"Maximum time before status changes from active","inactiveThreshold":"Idle Threshold","inactiveThresholdHelp":"Time before officer is marked idle","missingThreshold":"Missing Threshold","missingThresholdHelp":"Time before officer is marked as missing"},"geofencing":{"title":"Geofencing","description":"Configure area boundaries and tolerance","boundaryTolerance":"Boundary Tolerance","boundaryToleranceHelp":"Tolerance distance from area boundary","gracePeriod":"Outside Area Grace Period","gracePeriodHelp":"Time before status changes when outside area"},"mapDefaults":{"title":"Map Defaults","description":"Configure default map view settings","defaultZoom":"Default Zoom","clusterZoom":"Cluster Zoom","clusterZoomHelp":"Below this level, markers are clustered","centerLat":"Default Latitude","centerLng":"Default Longitude"},"alertSettings":{"title":"Alert Settings","description":"Configure alerts and notifications","lowBatteryThreshold":"Low Battery Threshold","boundaryAlerts":"Boundary Alerts","boundaryAlertsHelp":"Send notification when officer leaves area","missingWorkerAlerts":"Missing Officer Alerts","missingWorkerAlertsHelp":"Send notification when officer goes missing"}}}}
+{
+  "layout": {
+    "title": "Real-Time Monitoring · SEKAR",
+    "description": "Monitor real-time location and status of RTH officers in the field"
+  },
+  "page": {
+    "loading": "Loading…",
+    "noData": "No data",
+    "updated": "Updated {time}",
+    "searchPlaceholder": "Search officers…",
+    "searchLabel": "Search officers",
+    "filterLabel": "Filter",
+    "refreshLabel": "Refresh",
+    "overdueToggleLabel": "Show overdue plants",
+    "overdueToggleTitle": "Overdue plants",
+    "overdueButtonLabel": "Plants",
+    "filterPanelTitle": "Filter Officers",
+    "closePanelLabel": "Close filter",
+    "listLabel": "Officer List",
+    "closeListLabel": "Close list"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Idle",
+    "outside_area": "Outside",
+    "missing": "Missing",
+    "offline": "Offline"
+  },
+  "filters": {
+    "label": "Search Officers",
+    "placeholder": "Officer name…",
+    "statusLabel": "Status",
+    "rayonLabel": "Rayon",
+    "rayonAllOption": "All Rayons",
+    "roleLabel": "Role",
+    "roleAllOption": "All Roles",
+    "matchSummary": "{matched} / {total} officers",
+    "reset": "Reset"
+  },
+  "sidebar": {
+    "backToList": "Back to list",
+    "location": "Location",
+    "rayonLabel": "Rayon:",
+    "areaLabel": "Area:",
+    "withinArea": "Within area",
+    "outsideArea": "Outside area",
+    "noAreasData": "No area data",
+    "noAreasSummary": "No area summary available for this scope.",
+    "staffingShortage": "Short {shortage}",
+    "bulkReassignLabel": "Bulk reassign officers to {area}",
+    "bulkReassignButton": "Bulk Reassign",
+    "tabWorkers": "Officers",
+    "tabAreas": "Areas",
+    "noWorkers": "No officers",
+    "noWorkersMatch": "No officers match the filter.",
+    "clickToFocus": "Click officer to focus on map"
+  },
+  "reassign": {
+    "successMessage": "Worker successfully reassigned",
+    "errorMessage": "Failed to reassign worker"
+  },
+  "bulkReassign": {
+    "title": "Bulk Reassign to {area}",
+    "description": "Select multiple officers from another area to reassign at once",
+    "sourceAreaLabel": "Source Area",
+    "selectSourcePlaceholder": "-- Select source area --",
+    "noOtherAreas": "No other areas in the same rayon.",
+    "selectLabel": "Select Officers",
+    "selectedCount": "({count} selected)",
+    "deselectAll": "Deselect All",
+    "selectAll": "Select All",
+    "noActiveWorkers": "No active officers in this area.",
+    "reasonLabel": "Reason",
+    "optional": "(optional)",
+    "reasonPlaceholder": "Enter reassignment reason…",
+    "effectiveDateLabel": "Effective Date",
+    "cancelButton": "Cancel",
+    "reassignButton": "Reassign {count} Officers",
+    "reassignButtonDefault": "Reassign",
+    "successMessage": "{count} officers reassigned successfully",
+    "partialErrorMessage": "{successCount} officers reassigned, {failCount} failed",
+    "errorMessage": "Failed to reassign officers"
+  },
+  "reassignModal": {
+    "title": "Reassign Officer to {area}",
+    "description": "Select an officer from another area to reassign",
+    "sourceAreaLabel": "Source Area",
+    "sourceAreaPlaceholder": "-- Select source area --",
+    "noOtherAreas": "No other areas in the same rayon.",
+    "selectLabel": "Select Officer",
+    "noActiveWorkers": "No active officers in this area.",
+    "reasonLabel": "Reason",
+    "optional": "(optional)",
+    "reasonPlaceholder": "Enter reassignment reason…",
+    "effectiveDateLabel": "Effective Date",
+    "cancelButton": "Cancel",
+    "reassignButton": "Reassign"
+  },
+  "hierarchy": {
+    "scopeLabel": "Filter scope",
+    "city": "City",
+    "rayon": "Rayon",
+    "area": "Area",
+    "rayonLabel": "Select Rayon",
+    "areaLabel": "Select Area",
+    "areaDisabled": "Select rayon first",
+    "activeCount": "{count} active",
+    "resetLabel": "Reset all filters"
+  },
+  "toggle": {
+    "label": "Map view",
+    "title": "Map View",
+    "workers": "Officers",
+    "plants": "Plants",
+    "overdue": "Overdue",
+    "rayons": "Rayon Boundaries",
+    "areas": "Area Boundaries",
+    "showLayer": "Show {label}"
+  },
+  "timeline": {
+    "backLabel": "Back to officer details",
+    "backButton": "Back",
+    "title": "Location History",
+    "datePickerLabel": "Select Date",
+    "distance": "Distance",
+    "points": "Points",
+    "withinArea": "Within Area",
+    "outsideArea": "Outside Area",
+    "shift": "Shift:",
+    "clockIn": "Clock In:",
+    "showOnlyThisUser": "Show only this officer",
+    "noHistory": "No location history",
+    "noHistoryHelper": "Select another date or check your connection",
+    "noPoints": "No location points",
+    "noPointsHelper": "No GPS data on this date",
+    "pointsLabel": "{count} location points",
+    "start": "Start",
+    "end": "End",
+    "pointsListLabel": "Location points history",
+    "inArea": "Within Area",
+    "outArea": "Outside Area"
+  },
+  "areaDetail": {
+    "closeLabel": "Close area detail drawer",
+    "staffingLabel": "Staffing Availability",
+    "staffingShortage": "Understaffed",
+    "staffingFull": "Fully Staffed",
+    "activeOf": "active from",
+    "required": "required",
+    "plantStatusLabel": "Plant Status",
+    "loadingPlants": "Loading plant data…",
+    "errorPlants": "Failed to load plant data.",
+    "noPlants": "No plant data registered for this area yet.",
+    "ok": "OK",
+    "almostDue": "Due Soon",
+    "overdue": "Overdue",
+    "speciesCount": "{species} species",
+    "totalCount": "{total} plants recorded",
+    "plantsList": "Plant species list",
+    "heritage": "Heritage Trees ({count})",
+    "heritageNoLabel": "No label",
+    "workersLabel": "Officers in This Area",
+    "workersList": "List of officers in this area",
+    "pruningTitle": "Pruning Requests in Rayon {rayon}",
+    "loadingPruning": "Loading requests…",
+    "noPruning": "No active pruning requests in this rayon."
+  },
+  "workerList": {
+    "noWorkers": "No active officers",
+    "list": "Officer list"
+  },
+  "userDetail": {
+    "backLabel": "Back to list",
+    "backButton": "Back",
+    "noData": "Data not available"
+  },
+  "sidePanel": {
+    "title": "Staff",
+    "summary": "{totalOnline} active / {totalAll} total",
+    "searchPlaceholder": "Search staff or area...",
+    "searchLabel": "Search staff",
+    "roleFilter": "Filter by role",
+    "noWorkers": "No staff found",
+    "resetFilter": "Reset filter",
+    "count": "{count} staff displayed"
+  },
+  "config": {
+    "pageTitle": "Monitoring Configuration",
+    "pageDescription": "Manage monitoring system settings",
+    "loading": "Loading configuration…",
+    "error": "Failed to load configuration",
+    "errorHelper": "Check your connection or try again",
+    "accessDenied": "Access Denied",
+    "accessDeniedMessage": "This page can only be accessed by System Admin and Superadmin.",
+    "backButton": "Back to Monitoring",
+    "saved": "Saved",
+    "saveButton": "Save",
+    "rangeValid": "Valid range: {min} - {max}",
+    "units": {
+      "seconds": "seconds",
+      "meters": "meters",
+      "percent": "%"
+    },
+    "sections": {
+      "statusThresholds": {
+        "title": "Status Thresholds",
+        "description": "Configure time limits for automatic status changes",
+        "activeMaxAge": "Active Max Age",
+        "activeMaxAgeHelp": "Maximum time before status changes from active",
+        "inactiveThreshold": "Idle Threshold",
+        "inactiveThresholdHelp": "Time before officer is marked idle",
+        "missingThreshold": "Missing Threshold",
+        "missingThresholdHelp": "Time before officer is marked as missing"
+      },
+      "geofencing": {
+        "title": "Geofencing",
+        "description": "Configure area boundaries and tolerance",
+        "boundaryTolerance": "Boundary Tolerance",
+        "boundaryToleranceHelp": "Tolerance distance from area boundary",
+        "gracePeriod": "Outside Area Grace Period",
+        "gracePeriodHelp": "Time before status changes when outside area"
+      },
+      "mapDefaults": {
+        "title": "Map Defaults",
+        "description": "Configure default map view settings",
+        "defaultZoom": "Default Zoom",
+        "clusterZoom": "Cluster Zoom",
+        "clusterZoomHelp": "Below this level, markers are clustered",
+        "centerLat": "Default Latitude",
+        "centerLng": "Default Longitude"
+      },
+      "alertSettings": {
+        "title": "Alert Settings",
+        "description": "Configure alerts and notifications",
+        "lowBatteryThreshold": "Low Battery Threshold",
+        "boundaryAlerts": "Boundary Alerts",
+        "boundaryAlertsHelp": "Send notification when officer leaves area",
+        "missingWorkerAlerts": "Missing Officer Alerts",
+        "missingWorkerAlertsHelp": "Send notification when officer goes missing"
+      }
+    }
+  }
+}

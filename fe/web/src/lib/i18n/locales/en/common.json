@@ -159,5 +159,10 @@
     "myRequests": "My Requests",
     "guide": "Guide",
     "districtNav": "District navigation"
+  },
+  "pagination": {
+    "previous": "Previous",
+    "next": "Next",
+    "pageOf": "Page {page} of {total}"
   }
 }

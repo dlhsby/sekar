@@ -79,9 +79,9 @@ export default function RayonsPage() {
       {
         id: 'color',
         accessorKey: 'color',
-        header: 'Warna',
+        header: t('admin:rayons.stats.color'),
         enableSorting: false,
-        meta: { label: 'Warna', filterVariant: 'text' },
+        meta: { label: t('admin:rayons.stats.color'), filterVariant: 'text' },
         cell: ({ row }) => {
           const color = row.original.color;
           return (
@@ -105,9 +105,9 @@ export default function RayonsPage() {
       {
         id: 'coordinates',
         accessorFn: (r) => (r.center_lat && r.center_lng ? 'Ada' : '—'),
-        header: 'Koordinat',
+        header: t('admin:areas.columnCoordinates'),
         enableSorting: false,
-        meta: { label: 'Koordinat', filterVariant: 'text' },
+        meta: { label: t('admin:areas.columnCoordinates'), filterVariant: 'text' },
         cell: ({ row }) => (
           <CoordinateLink lat={row.original.center_lat} lng={row.original.center_lng} />
         ),
@@ -115,9 +115,9 @@ export default function RayonsPage() {
       {
         id: 'description',
         accessorKey: 'description',
-        header: 'Deskripsi',
+        header: t('admin:shared.description'),
         enableSorting: true,
-        meta: { label: 'Deskripsi', defaultHidden: true, filterVariant: 'text' },
+        meta: { label: t('admin:shared.description'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {row.original.description ?? '—'}
@@ -191,7 +191,7 @@ export default function RayonsPage() {
     setDeleteError(null);
     try {
       await deleteRayon.mutateAsync(deletingRayon.id);
-      toast.success(`Rayon "${deletingRayon.name}" berhasil dihapus`);
+      toast.success(t('admin:rayons.successDeleted', { name: deletingRayon.name }));
       setDeleteOpen(false);
       setDeletingRayon(null);
       refetch();
@@ -200,7 +200,7 @@ export default function RayonsPage() {
       // Surface inline (dialog stays open), matching the Area/User delete flows.
       setDeleteError(
         errorMsg.includes('masih memiliki') || errorMsg.includes('area')
-          ? `Rayon "${deletingRayon.name}" masih memiliki area. Hapus area terlebih dahulu.`
+          ? t('admin:shared.rayonHasAreas', { name: deletingRayon.name })
           : errorMsg,
       );
     }
@@ -266,12 +266,11 @@ export default function RayonsPage() {
           if (!open) setDeleteError(null);
           setDeleteOpen(open);
         }}
-        title="Hapus Rayon"
+        title={t('admin:shared.deleteRayon')}
         description={
           deletingRayon && (
             <>
-              Anda akan menghapus rayon <strong>{deletingRayon.name}</strong>. Tindakan ini tidak
-              dapat dibatalkan.
+              {t('admin:shared.deleteConfirmation', { name: deletingRayon.name })}
             </>
           )
         }

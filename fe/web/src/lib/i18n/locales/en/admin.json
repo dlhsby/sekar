@@ -168,9 +168,11 @@
     "listSheet": {
       "title": "Area",
       "closeLabel": "Close area panel",
-      "searchPlaceholder": "Search area…",
-      "searchLabel": "Search area",
-      "emptyText": "No areas yet."
+      "searchPlaceholder": "Search areas…",
+      "searchLabel": "Search areas",
+      "emptyText": "No areas yet.",
+      "count": "{count} area{query, select, empty { of {total}} other { of {total}}}",
+      "noMatch": "No matching areas."
     }
   },
   "rayons": {
@@ -243,7 +245,9 @@
     "stats": {
       "totalAreas": "Number of Areas",
       "totalStaff": "Number of Staff",
-      "totalCoverageArea": "Total Coverage Area",
+      "totalUsers": "Total Staff",
+      "activeUsers": "Active Staff",
+      "totalCoverageArea": "Coverage Area",
       "totalAreaLabel": "Total Area",
       "color": "Color"
     },
@@ -268,7 +272,14 @@
     "view": "View",
     "saving": "Saving…",
     "updating": "Updating…",
-    "creating": "Creating…"
+    "creating": "Creating…",
+    "description": "Description",
+    "deleteRayon": "Delete Rayon",
+    "deleteConfirmation": "You will delete {name}. This action cannot be undone.",
+    "rayonHasAreas": "Rayon \"{name}\" still has areas. Please delete the areas first.",
+    "noAreas": "No areas in this rayon",
+    "pageOf": "Page {page} / {total} · {count} areas",
+    "actions": "Actions"
   },
   "dialogs": {
     "tempPassword": {
@@ -298,7 +309,28 @@
       "locationNotFound": "Location not found. Try other keywords.",
       "searchError": "Location search failed. Try again.",
       "fileReadError": "Failed to read file.",
-      "invalidKml": "Invalid KML/GeoJSON — no boundary polygon found."
+      "invalidKml": "Invalid KML/GeoJSON — no boundary polygon found.",
+      "searchPlaceholder": "Search address or place…",
+      "searchLabel": "Search location",
+      "searchButton": "Search",
+      "finishButton": "Finish",
+      "undoButton": "Undo point",
+      "cancelButton": "Cancel",
+      "drawBoundaryButton": "Draw boundary",
+      "redrawBoundaryButton": "Redraw boundary",
+      "deleteBoundaryButton": "Delete boundary",
+      "placePinButton": "Place location pin",
+      "changePinButton": "Change location pin",
+      "finishPlacingButton": "Finish placing",
+      "deletePinButton": "Delete pin",
+      "multiPartWarning": "Boundary consists of {count} parts — vertex edit disabled. Use \"Redraw boundary\" to replace it with a single polygon.",
+      "drawingHint": "Click on map to add points. Click \"Finish\" (min. 3 points) or double-click to end.",
+      "placingPinHint": "Click on map to place location pin (can be repeated). Press \"Finish placing\" when done.",
+      "noBoundaryHint": "Press \"Draw boundary\" to start drawing a polygon.",
+      "myLocationTitle": "My location",
+      "emptyHint": "Map view.",
+      "exploreHint": "Pan/search the map or use location control (bottom right) to explore. Press \"Place/Change location pin\" to place the pin; the pin can also be dragged.",
+      "areaLabel": "Area:"
     }
   }
 }

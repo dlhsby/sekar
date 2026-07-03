@@ -22,6 +22,8 @@ import {
 } from '../../constants/nbTokens';
 import { useClockInOut } from '../../hooks';
 import { useAppSelector } from '../../store/hooks';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n/config';
 import { formatDateTime } from '../../utils/dateUtils';
 import type { MainTabScreenProps } from '../../types/navigation.types';
 
@@ -31,6 +33,7 @@ import type { MainTabScreenProps } from '../../types/navigation.types';
  * Uses Neo Brutalism design system
  */
 export const ClockInOutScreen = (): React.JSX.Element => {
+  const { t } = useTranslation();
   const navigation = useNavigation<MainTabScreenProps<'Absensi'>['navigation']>();
   const [selfiePreviewUri, setSelfiePreviewUri] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(() => new Date());
@@ -69,7 +72,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
       navigation.setOptions({
         headerTitle: () => (
           <FieldHomeHeader
-            title={isClockIn ? 'Clock In' : 'Clock Out'}
+            title={isClockIn ? t('attendance:list.button.clockIn') : t('attendance:list.button.clockOut')}
             onBack={goBack}
           />
         ),
@@ -95,9 +98,9 @@ export const ClockInOutScreen = (): React.JSX.Element => {
       >
         <View style={styles.container}>
           <View style={styles.centerContent}>
-            <NBText variant="h2" color="black" style={styles.errorText}>Anda belum ditugaskan ke area manapun</NBText>
-            <NBText variant="body" color="gray600">Hubungi supervisor untuk penugasan area</NBText>
-            <NBButton title="Kembali" onPress={goBack} variant="primary" fullWidth />
+            <NBText variant="h2" color="black" style={styles.errorText}>{t('attendance:clockInOut.noAreaAssigned')}</NBText>
+            <NBText variant="body" color="gray600">{t('attendance:clockInOut.contactSupervisor')}</NBText>
+            <NBButton title={t('attendance:detail.button.back')} onPress={goBack} variant="primary" fullWidth />
           </View>
         </View>
       </NBBackgroundPattern>
@@ -116,7 +119,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
         <View style={styles.container}>
           <View style={styles.centerContent}>
             <ActivityIndicator size="large" color={nbColors.primary} />
-            <NBText variant="body" color="gray600" style={styles.loadingText}>Mendapatkan lokasi Anda...</NBText>
+            <NBText variant="body" color="gray600" style={styles.loadingText}>{t('attendance:clockInOut.gettingLocation')}</NBText>
           </View>
         </View>
       </NBBackgroundPattern>
@@ -142,7 +145,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                 color={nbColors.danger}
                 style={{ marginRight: nbSpacing.sm }}
               />
-              <NBText variant="body-sm" color="danger" style={styles.offlineBannerText}>Mode Offline - Clock in memerlukan koneksi</NBText>
+              <NBText variant="body-sm" color="danger" style={styles.offlineBannerText}>{t('attendance:clockInOut.offlineBannerClockIn')}</NBText>
             </View>
           )}
 
@@ -151,49 +154,49 @@ export const ClockInOutScreen = (): React.JSX.Element => {
           <NBCollapsibleCard
             headerLeft={
               <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>
-                Informasi Kehadiran
+                {t('attendance:clockInOut.attendanceInfo')}
               </NBText>
             }
             headerRight={
               scheduledShift ? (
                 <NBBadge
-                  text={isLate ? 'Terlambat' : 'Tepat Waktu'}
+                  text={isLate ? t('attendance:list.statusChip.late') : t('attendance:list.statusChip.onTime')}
                   color={isLate ? 'danger' : 'success'}
                   size="sm"
                 />
               ) : undefined
             }
-            accessibilityLabel="Informasi kehadiran"
+            accessibilityLabel={t('attendance:clockInOut.attendanceInfo')}
           >
             <View style={styles.infoTable}>
-              <InfoTableRow label="Waktu Sekarang" value={<DateTimeValue source={currentTime} />} />
+              <InfoTableRow label={t('attendance:clockInOut.currentTime')} value={<DateTimeValue source={currentTime} />} />
               {scheduledShift && (
                 <InfoTableRow
-                  label="Jadwal Shift"
+                  label={t('attendance:clockInOut.scheduledShift')}
                   value={`${scheduledShift.name} · ${scheduledShift.start_time.slice(0, 5)}–${scheduledShift.end_time.slice(0, 5)}`}
                 />
               )}
               {assignedArea ? (
                 <>
-                  <InfoTableRow label="Area Ditugaskan" value={assignedArea.name} />
+                  <InfoTableRow label={t('attendance:clockInOut.assignedArea')} value={assignedArea.name} />
                   {assignedArea.address ? (
-                    <InfoTableRow label="Alamat" value={assignedArea.address} numberOfLines={2} />
+                    <InfoTableRow label={t('attendance:clockInOut.address')} value={assignedArea.address} numberOfLines={2} />
                   ) : null}
-                  <InfoTableRow label="Tipe Area" value={assignedArea.areaType?.name || 'N/A'} />
+                  <InfoTableRow label={t('attendance:clockInOut.areaType')} value={assignedArea.areaType?.name || 'N/A'} />
                   {assignedArea.gps_lat != null && assignedArea.gps_lng != null && (
                     <InfoTableRow
-                      label="Koordinat GPS"
+                      label={t('attendance:clockInOut.gpsCoordinates')}
                       value={`${Number(assignedArea.gps_lat).toFixed(6)}, ${Number(assignedArea.gps_lng).toFixed(6)}`}
                     />
                   )}
                   {assignedArea.radius_meters != null && (
-                    <InfoTableRow label="Radius Batas" value={`${assignedArea.radius_meters}m`} />
+                    <InfoTableRow label={t('attendance:clockInOut.boundaryRadius')} value={`${assignedArea.radius_meters}m`} />
                   )}
                 </>
               ) : isRayonScoped ? (
-                <InfoTableRow label="Cakupan Rayon" value="Tanpa area spesifik" />
+                <InfoTableRow label={t('attendance:clockInOut.rayonCoverage')} value={t('attendance:clockInOut.noSpecificArea')} />
               ) : (
-                <NBText variant="body-sm" color="gray600">Belum ada area ditugaskan</NBText>
+                <NBText variant="body-sm" color="gray600">{t('attendance:clockInOut.noAreaAssigned')}</NBText>
               )}
             </View>
           </NBCollapsibleCard>
@@ -201,17 +204,17 @@ export const ClockInOutScreen = (): React.JSX.Element => {
           {/* GPS / Location Card — above selfie; collapsed by default */}
           <NBCollapsibleCard
             headerLeft={
-              <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>Lokasi GPS</NBText>
+              <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>{t('attendance:clockInOut.gpsLocation')}</NBText>
             }
             headerRight={location.latitude != null
               ? <NBBadge
-                  text={isWithinBoundary ? 'DI AREA' : 'LUAR AREA'}
+                  text={isWithinBoundary ? t('attendance:clockInOut.inBoundary') : t('attendance:clockInOut.outOfBoundary')}
                   color={isWithinBoundary ? 'success' : 'danger'}
                   size="sm"
                 />
               : undefined
             }
-            accessibilityLabel="Lokasi GPS"
+            accessibilityLabel={t('attendance:clockInOut.gpsLocation')}
             style={styles.gpsCard}
           >
             <GPSLocationSection
@@ -242,33 +245,33 @@ export const ClockInOutScreen = (): React.JSX.Element => {
           <NBCollapsibleCard
             headerLeft={
               <View>
-                <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>Foto Selfie</NBText>
+                <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>{t('attendance:clockInOut.selfiePhoto')}</NBText>
                 {selfie
-                  ? <NBText variant="body-sm" color="success">Sudah diambil</NBText>
-                  : <NBText variant="body-sm" color="gray600">Opsional</NBText>
+                  ? <NBText variant="body-sm" color="success">{t('attendance:clockInOut.captured')}</NBText>
+                  : <NBText variant="body-sm" color="gray600">{t('attendance:clockInOut.optional')}</NBText>
                 }
               </View>
             }
-            accessibilityLabel="Foto selfie"
+            accessibilityLabel={t('attendance:clockInOut.selfiePhoto')}
           >
             {selfie ? (
               <View>
                 <TouchableOpacity
                   onPress={() => setSelfiePreviewUri(selfie.uri)}
                   accessibilityRole="button"
-                  accessibilityLabel="Lihat selfie penuh"
-                  accessibilityHint="Ketuk untuk melihat foto dalam ukuran penuh"
+                  accessibilityLabel={t('attendance:clockInOut.selfiePhoto')}
+                  accessibilityHint={t('attendance:clockInOut.selfiePhoto')}
                 >
                   <Image source={{ uri: selfie.uri }} style={styles.selfieImage} />
                 </TouchableOpacity>
-                <NBButton title="Ambil Ulang" onPress={handleCaptureSelfie} variant="secondary" fullWidth />
+                <NBButton title={t('attendance:clockInOut.retakeSelfie')} onPress={handleCaptureSelfie} variant="secondary" fullWidth />
               </View>
             ) : (
               <View>
                 <NBText variant="body-sm" color="gray600" style={styles.selfiePrompt}>
-                  {isClockIn ? 'Ambil selfie untuk verifikasi identitas' : 'Ambil selfie untuk verifikasi clock out'}
+                  {isClockIn ? t('attendance:clockInOut.captureForVerification') : t('attendance:clockInOut.captureForClockOutVerification')}
                 </NBText>
-                <NBButton title="Ambil Selfie" onPress={handleCaptureSelfie} variant="secondary" fullWidth />
+                <NBButton title={t('attendance:clockInOut.captureSelfie')} onPress={handleCaptureSelfie} variant="secondary" fullWidth />
               </View>
             )}
           </NBCollapsibleCard>
@@ -277,12 +280,12 @@ export const ClockInOutScreen = (): React.JSX.Element => {
         {/* Offline warnings — between scroll and submit button */}
         {!isOnline && isClockIn && (
           <View style={styles.offlineWarning}>
-            <NBAlert variant="warning" message="Anda harus online untuk clock in. Sambungkan ke internet terlebih dahulu." />
+            <NBAlert variant="warning" message={t('attendance:clockInOut.onlineRequiredForClockIn')} />
           </View>
         )}
         {!isOnline && !isClockIn && (
           <View style={styles.offlineWarning}>
-            <NBAlert variant="warning" message="Mode offline. Clock out akan disinkronkan saat online." />
+            <NBAlert variant="warning" message={t('attendance:clockInOut.offlineModeClockOut')} />
           </View>
         )}
 
@@ -290,13 +293,13 @@ export const ClockInOutScreen = (): React.JSX.Element => {
         <ImagePreviewModal
           uri={selfiePreviewUri}
           onClose={() => setSelfiePreviewUri(null)}
-          title="Selfie Clock In"
+          title={t('attendance:clockInOut.selfiePreviewTitle')}
         />
 
         {/* Submit Button — fixed at bottom, scrollable area sits above */}
         <View style={styles.submitBar}>
           <NBButton
-            title={isClockIn ? 'Clock In' : 'Clock Out'}
+            title={isClockIn ? t('attendance:list.button.clockIn') : t('attendance:list.button.clockOut')}
             onPress={isClockIn ? () => handleClockIn(goBack) : () => handleClockOut(goBack)}
             variant="primary"
             size="lg"
@@ -306,11 +309,11 @@ export const ClockInOutScreen = (): React.JSX.Element => {
               isSubmitting || location.loading || !location.latitude || !location.longitude ||
               (isClockIn && !isOnline)
             }
-            accessibilityLabel={isClockIn ? 'Tombol Clock In' : 'Tombol Clock Out'}
+            accessibilityLabel={isClockIn ? t('attendance:list.button.clockIn') : t('attendance:list.button.clockOut')}
             accessibilityHint={
               isClockIn
-                ? (isWithinBoundary ? 'Mulai shift kerja dengan verifikasi lokasi' : 'Mulai shift kerja — Anda di luar area, absen tetap dicatat')
-                : 'Akhiri shift kerja saat ini'
+                ? (isWithinBoundary ? t('attendance:clockInOut.startShiftWithVerification') : t('attendance:clockInOut.startShiftOutOfArea'))
+                : t('attendance:clockInOut.endShiftNow')
             }
           />
         </View>

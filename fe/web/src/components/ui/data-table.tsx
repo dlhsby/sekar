@@ -173,7 +173,7 @@ export function DataTable<TData, TValue>({
   enableColumnToggle = true,
   enablePagination = true,
   emptyAction,
-  emptyTitle = 'Belum Ada Data',
+  emptyTitle,
   emptyDescription,
   toolbar,
   onRefresh,
@@ -182,7 +182,7 @@ export function DataTable<TData, TValue>({
   onRowClick,
   getRowId,
   rowActions,
-  rowActionsLabel = 'Aksi',
+  rowActionsLabel,
   defaultPageSize = PAGE_SIZES[0],
   className,
 }: DataTableProps<TData, TValue>): React.JSX.Element {
@@ -207,6 +207,10 @@ export function DataTable<TData, TValue>({
   const isDesktop = useIsDesktop();
   const { t } = useTranslation();
 
+  // Use defaults from i18n if not provided
+  const finalEmptyTitle = emptyTitle ?? t('common:empty.noData');
+  const finalRowActionsLabel = rowActionsLabel ?? t('admin:shared.actions');
+
   // Resolve filter behaviour and append the standardized actions column.
   const resolvedColumns = React.useMemo(() => {
     const mapped = columns.map((c) => {
@@ -230,11 +234,11 @@ export function DataTable<TData, TValue>({
     if (rowActions) {
       mapped.push({
         id: '__actions',
-        header: rowActionsLabel,
+        header: finalRowActionsLabel,
         enableSorting: false,
         enableColumnFilter: false,
         enableHiding: false,
-        meta: { label: rowActionsLabel, pinRight: true, align: 'center' },
+        meta: { label: finalRowActionsLabel, pinRight: true, align: 'center' },
         cell: ({ row }) => {
           const acts = rowActions(row.original).filter((a) => !a.hidden);
           if (acts.length === 0) return null;
@@ -245,7 +249,7 @@ export function DataTable<TData, TValue>({
                   <Button
                     variant="ghost"
                     size="sm"
-                    aria-label="Aksi baris"
+                    aria-label={finalRowActionsLabel}
                     className="h-8 w-8 p-0"
                   >
                     <MoreHorizontal className="h-4 w-4" aria-hidden />

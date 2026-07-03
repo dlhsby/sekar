@@ -75,5 +75,39 @@
     "a11y": {
       "label": "Kehadiran {{date}}, {{status}}"
     }
+  },
+  "clockInOut": {
+    "noAreaAssigned": "Anda belum ditugaskan ke area manapun",
+    "contactSupervisor": "Hubungi supervisor untuk penugasan area",
+    "gettingLocation": "Mendapatkan lokasi Anda...",
+    "attendanceInfo": "Informasi Kehadiran",
+    "gpsLocation": "Lokasi GPS",
+    "currentTime": "Waktu Sekarang",
+    "scheduledShift": "Jadwal Shift",
+    "assignedArea": "Area Ditugaskan",
+    "address": "Alamat",
+    "areaType": "Tipe Area",
+    "gpsCoordinates": "Koordinat GPS",
+    "boundaryRadius": "Radius Batas",
+    "rayonCoverage": "Cakupan Rayon",
+    "noSpecificArea": "Tanpa area spesifik",
+    "inBoundary": "DI AREA",
+    "outOfBoundary": "LUAR AREA",
+    "shiftTime": "Waktu Shift:",
+    "clockInTime": "Clock In:",
+    "selfiePhoto": "Foto Selfie",
+    "captured": "Sudah diambil",
+    "optional": "Opsional",
+    "retakeSelfie": "Ambil Ulang",
+    "captureSelfie": "Ambil Selfie",
+    "captureForVerification": "Ambil selfie untuk verifikasi identitas",
+    "captureForClockOutVerification": "Ambil selfie untuk verifikasi clock out",
+    "offlineBannerClockIn": "Mode Offline - Clock in memerlukan koneksi",
+    "onlineRequiredForClockIn": "Anda harus online untuk clock in. Sambungkan ke internet terlebih dahulu.",
+    "offlineModeClockOut": "Mode offline. Clock out akan disinkronkan saat online.",
+    "selfiePreviewTitle": "Selfie Clock In",
+    "startShiftWithVerification": "Mulai shift kerja dengan verifikasi lokasi",
+    "startShiftOutOfArea": "Mulai shift kerja — Anda di luar area, absen tetap dicatat",
+    "endShiftNow": "Akhiri shift kerja saat ini"
   }
 }

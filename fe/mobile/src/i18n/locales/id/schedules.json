@@ -1,1 +1,21 @@
-{}
+{
+  "mySchedule": {
+    "todayLabel": "Jadwal Hari Ini",
+    "noAreasAssigned": "Area belum ditetapkan",
+    "noShiftDefined": "Shift belum ditetapkan",
+    "invalidSession": "Sesi tidak valid. Silakan masuk kembali.",
+    "loadFailed": "Gagal memuat jadwal",
+    "retryLabel": "Coba Lagi",
+    "emptyTitle": "Belum ada jadwal hari ini",
+    "emptyDescription": "Anda belum memiliki jadwal untuk hari ini (mungkin bekerja ad-hoc sesuai penugasan). Anda tetap bisa melakukan clock-in."
+  },
+  "status": {
+    "present": "Hadir",
+    "planned": "Direncanakan",
+    "absent": "Tidak Hadir",
+    "leave_sick": "Cuti Sakit",
+    "leave_annual": "Cuti Tahunan",
+    "replaced": "Digantikan",
+    "off": "Libur"
+  }
+}

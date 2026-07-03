@@ -48,19 +48,19 @@ export default function RayonStatsCards({ stats, loading }: RayonStatsCardsProps
       icon: <Map className="w-6 h-6" />,
     },
     {
-      label: 'Total Petugas',
+      label: t('admin:rayons.stats.totalUsers'),
       value: stats.total_users,
       color: 'green',
       icon: <Users className="w-6 h-6" />,
     },
     {
-      label: 'Petugas Aktif',
+      label: t('admin:rayons.stats.activeUsers'),
       value: stats.active_users,
       color: 'purple',
       icon: <UserCheck className="w-6 h-6" />,
     },
     {
-      label: 'Luas Tutupan',
+      label: t('admin:rayons.stats.totalCoverageArea'),
       value: formatArea(stats.total_coverage_area || 0),
       color: 'orange',
       icon: <Square className="w-6 h-6" />,

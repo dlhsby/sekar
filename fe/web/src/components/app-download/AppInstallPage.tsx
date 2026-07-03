@@ -39,8 +39,8 @@ export function AppInstallPage({ platform }: { platform: AppPlatform }) {
   // Context-aware "back" link: logged-in visitors go to the dashboard, logged-out
   // (e.g. a field worker who scanned the QR) go to login.
   const back = user
-    ? { href: '/', label: '← Kembali ke Dashboard' }
-    : { href: '/login', label: '← Kembali ke halaman masuk' };
+    ? { href: '/', label: t('install-help:download.backToDashboard') }
+    : { href: '/login', label: t('install-help:download.backToLogin') };
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-nb-background px-6 py-12">
@@ -57,7 +57,7 @@ export function AppInstallPage({ platform }: { platform: AppPlatform }) {
               <Icon className="size-6" />
             </span>
             <div>
-              <h1 className="text-nb-h2 text-nb-black">Aplikasi SEKAR</h1>
+              <h1 className="text-nb-h2 text-nb-black">{t('install-help:download.title')}</h1>
               <p className="font-mono text-[11px] font-bold uppercase tracking-wide text-nb-gray-600">
                 {PLATFORM_LABEL[platform]}
               </p>
@@ -65,12 +65,12 @@ export function AppInstallPage({ platform }: { platform: AppPlatform }) {
           </div>
 
           {status === 'loading' && (
-            <p className="py-6 text-center text-nb-body-sm text-nb-gray-600">{t('common:actions.loading')}</p>
+            <p className="py-6 text-center text-nb-body-sm text-nb-gray-600">{t('install-help:download.loadingRelease')}</p>
           )}
 
           {status === 'error' && (
             <p className="py-6 text-center text-nb-body-sm text-nb-danger-dark">
-              Gagal memuat info rilis. Coba muat ulang halaman.
+              {t('install-help:download.errorLoading')}
             </p>
           )}
 
@@ -78,8 +78,8 @@ export function AppInstallPage({ platform }: { platform: AppPlatform }) {
             <div className="py-4">
               <p className="text-nb-body-sm text-nb-gray-700">
                 {platform === 'ios'
-                  ? 'Aplikasi iOS belum tersedia. Versi App Store / TestFlight akan diumumkan di sini.'
-                  : 'Belum ada rilis yang dipublikasikan. Silakan cek kembali nanti.'}
+                  ? t('install-help:download.iOSNotFound')
+                  : t('install-help:download.notFound')}
               </p>
             </div>
           )}
@@ -88,16 +88,16 @@ export function AppInstallPage({ platform }: { platform: AppPlatform }) {
             <div className="space-y-4">
               <dl className="space-y-1.5 text-nb-body-sm">
                 <div className="flex justify-between">
-                  <dt className="text-nb-gray-600">Versi</dt>
+                  <dt className="text-nb-gray-600">{t('install-help:download.version')}</dt>
                   <dd className="font-mono font-bold text-nb-black">v{data.version}</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-nb-gray-600">Build</dt>
+                  <dt className="text-nb-gray-600">{t('install-help:download.build')}</dt>
                   <dd className="font-mono text-nb-black">{data.buildNumber}</dd>
                 </div>
                 {size && (
                   <div className="flex justify-between">
-                    <dt className="text-nb-gray-600">Ukuran</dt>
+                    <dt className="text-nb-gray-600">{t('install-help:download.size')}</dt>
                     <dd className="font-mono text-nb-black">{size}</dd>
                   </div>
                 )}
@@ -113,19 +113,19 @@ export function AppInstallPage({ platform }: { platform: AppPlatform }) {
                 <>
                   <a href={getAppDownloadUrl(platform)} download className="block">
                     <Button variant="default" fullWidth leftIcon={<Download className="size-4" />}>
-                      Unduh APK (v{data.version})
+                      {t('install-help:download.downloadAPK', { version: data.version })}
                     </Button>
                   </a>
                   <p className="text-nb-caption text-nb-gray-600">
                     {platform === 'android_x86'
-                      ? 'Versi x86/x86_64 untuk emulator & PC (WSA, Play Games). Untuk HP biasa gunakan halaman /android.'
-                      : 'Setelah terunduh, buka berkasnya dan izinkan pemasangan dari sumber ini bila diminta.'}
+                      ? t('install-help:download.x86Instructions')
+                      : t('install-help:download.androidInstructions')}
                   </p>
                 </>
               ) : (
                 <a href={getAppDownloadUrl('ios')} className="block">
                   <Button variant="default" fullWidth leftIcon={<Download className="size-4" />}>
-                    Pasang (v{data.version})
+                    {t('install-help:download.install', { version: data.version })}
                   </Button>
                 </a>
               )}

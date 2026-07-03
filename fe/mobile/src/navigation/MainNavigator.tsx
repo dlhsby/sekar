@@ -312,13 +312,13 @@ function TabNavigator(): React.JSX.Element {
       />
 
       {/* Feature screens — reached from the Menu launcher (hidden from the bar) */}
-      <Tab.Screen name="Attendance" component={AttendanceListScreen} options={featureScreen('Kehadiran')} />
-      <Tab.Screen name="AttendanceDetail" component={AttendanceDetailScreen} options={featureScreen('Detail Kehadiran')} />
-      <Tab.Screen name="Absensi" component={ClockInOutScreen} options={featureScreen('Clock In/Out')} />
-      <Tab.Screen name="Lembur" component={OvertimeListScreen} options={featureScreen('Lembur')} />
-      <Tab.Screen name="Tasks" component={TasksScreen} options={featureScreen('Tugas')} />
-      <Tab.Screen name="Activities" component={ActivitiesScreen} options={featureScreen('Aktivitas')} />
-      <Tab.Screen name="Monitoring" component={MapDashboardScreen} options={featureScreen('Monitoring')} />
+      <Tab.Screen name="Attendance" component={AttendanceListScreen} options={featureScreen(i18n.t('navigation:screens.attendance'))} />
+      <Tab.Screen name="AttendanceDetail" component={AttendanceDetailScreen} options={featureScreen(i18n.t('navigation:screens.attendanceDetail'))} />
+      <Tab.Screen name="Absensi" component={ClockInOutScreen} options={featureScreen(i18n.t('navigation:screens.clockInOut'))} />
+      <Tab.Screen name="Lembur" component={OvertimeListScreen} options={featureScreen(i18n.t('menu:tiles.overtime'))} />
+      <Tab.Screen name="Tasks" component={TasksScreen} options={featureScreen(i18n.t('menu:tiles.tasks'))} />
+      <Tab.Screen name="Activities" component={ActivitiesScreen} options={featureScreen(i18n.t('menu:tiles.activities'))} />
+      <Tab.Screen name="Monitoring" component={MapDashboardScreen} options={featureScreen(i18n.t('menu:tiles.monitoring'))} />
       <Tab.Screen name="Reports" component={ReportsScreen} options={featureScreen(i18n.t('menu:tiles.reports'))} />
       <Tab.Screen name="Assets" component={AssetListScreen} options={featureScreen(i18n.t('menu:tiles.assets'))} />
       <Tab.Screen name="WorkerAnalytics" component={WorkerAnalyticsScreen} options={featureScreen(i18n.t('menu:tiles.performance'))} />
@@ -335,7 +335,7 @@ function TabNavigator(): React.JSX.Element {
         options={({ navigation }) => ({
           headerTitle: () => (
             <FieldHomeHeader
-              title="Buat Aktivitas"
+              title={i18n.t('navigation:screens.createActivity')}
               onBack={() => navigation.navigate('Activities')}
             />
           ),
@@ -360,7 +360,7 @@ function TabNavigator(): React.JSX.Element {
           };
           return {
             headerTitle: () => (
-              <FieldHomeHeader title="Detail Tugas" onBack={onBack} />
+              <FieldHomeHeader title={i18n.t('navigation:screens.taskDetail')} onBack={onBack} />
             ),
             tabBarButton: () => null,
           };
@@ -371,7 +371,7 @@ function TabNavigator(): React.JSX.Element {
         name="TaskComplete"
         component={TaskCompleteScreen}
         options={{
-          headerTitle: () => <FieldHomeHeader title="Selesaikan Tugas" />,
+          headerTitle: () => <FieldHomeHeader title={i18n.t('navigation:screens.completeTask')} />,
           tabBarButton: () => null,
         }}
       />
@@ -393,7 +393,7 @@ function TabNavigator(): React.JSX.Element {
           };
           return {
             headerTitle: () => (
-              <FieldHomeHeader title="Detail Aktivitas" onBack={onBack} />
+              <FieldHomeHeader title={i18n.t('navigation:screens.activityDetail')} onBack={onBack} />
             ),
             tabBarButton: () => null,
           };
@@ -404,7 +404,7 @@ function TabNavigator(): React.JSX.Element {
         name="TaskCreate"
         component={TaskCreateScreen}
         options={({ navigation }) => ({
-          headerTitle: () => <FieldHomeHeader title="Buat Tugas" onBack={() => navigation.goBack()} />,
+          headerTitle: () => <FieldHomeHeader title={i18n.t('navigation:screens.createTask')} onBack={() => navigation.goBack()} />,
           tabBarButton: () => null,
         })}
       />
@@ -412,7 +412,7 @@ function TabNavigator(): React.JSX.Element {
         name="OvertimeSubmit"
         component={OvertimeSubmitScreen}
         options={({ navigation }) => ({
-          headerTitle: () => <FieldHomeHeader title="Ajukan Lembur" onBack={() => navigation.goBack()} />,
+          headerTitle: () => <FieldHomeHeader title={i18n.t('navigation:screens.submitOvertime')} onBack={() => navigation.goBack()} />,
           tabBarButton: () => null,
         })}
       />
@@ -420,7 +420,7 @@ function TabNavigator(): React.JSX.Element {
         name="OvertimeDetail"
         component={OvertimeDetailScreen}
         options={({ navigation }) => ({
-          headerTitle: () => <FieldHomeHeader title="Detail Lembur" onBack={() => navigation.navigate('Lembur')} />,
+          headerTitle: () => <FieldHomeHeader title={i18n.t('navigation:screens.overtimeDetail')} onBack={() => navigation.navigate('Lembur')} />,
           tabBarButton: () => null,
         })}
       />
@@ -444,7 +444,7 @@ function TabNavigator(): React.JSX.Element {
           };
           return {
             headerTitle: () => (
-              <FieldHomeHeader title="Detail Permohonan" onBack={onBack} />
+              <FieldHomeHeader title={i18n.t('navigation:screens.pruningDetail')} onBack={onBack} />
             ),
             tabBarButton: () => null,
           };
@@ -456,7 +456,7 @@ function TabNavigator(): React.JSX.Element {
         options={({ navigation }) => ({
           headerTitle: () => (
             <FieldHomeHeader
-              title="Buat Permohonan"
+              title={i18n.t('navigation:screens.createPruning')}
               onBack={() => navigation.goBack()}
             />
           ),
@@ -471,7 +471,7 @@ function TabNavigator(): React.JSX.Element {
         options={({ navigation }) => ({
           headerTitle: () => (
             <FieldHomeHeader
-              title="Detail Bibit"
+              title={i18n.t('navigation:screens.seedDetail')}
               onBack={() => navigation.navigate('PlantSeeds' as any)}
             />
           ),
@@ -484,7 +484,7 @@ function TabNavigator(): React.JSX.Element {
         options={({ navigation }) => ({
           headerTitle: () => (
             <FieldHomeHeader
-              title="Catat Transaksi"
+              title={i18n.t('navigation:screens.recordTransaction')}
               onBack={() => navigation.goBack()}
             />
           ),
@@ -499,7 +499,7 @@ function TabNavigator(): React.JSX.Element {
         options={({ navigation }) => ({
           headerTitle: () => (
             <FieldHomeHeader
-              title="Detail Laporan"
+              title={i18n.t('navigation:screens.reportDetail')}
               onBack={() => navigation.navigate('Reports' as any)}
             />
           ),
@@ -514,7 +514,7 @@ function TabNavigator(): React.JSX.Element {
         options={({ navigation }) => ({
           headerTitle: () => (
             <FieldHomeHeader
-              title="Detail Aset"
+              title={i18n.t('navigation:screens.assetDetail')}
               onBack={() => navigation.navigate('Assets' as any)}
             />
           ),
@@ -526,7 +526,7 @@ function TabNavigator(): React.JSX.Element {
         component={QRScannerScreen}
         options={({ navigation }) => ({
           headerTitle: () => (
-            <FieldHomeHeader title="Pindai QR" onBack={() => navigation.goBack()} />
+            <FieldHomeHeader title={i18n.t('navigation:screens.scanQR')} onBack={() => navigation.goBack()} />
           ),
           tabBarButton: () => null,
         })}
@@ -536,7 +536,7 @@ function TabNavigator(): React.JSX.Element {
         component={AssetCheckoutScreen}
         options={({ navigation }) => ({
           headerTitle: () => (
-            <FieldHomeHeader title="Pinjam Aset" onBack={() => navigation.goBack()} />
+            <FieldHomeHeader title={i18n.t('navigation:screens.checkoutAsset')} onBack={() => navigation.goBack()} />
           ),
           tabBarButton: () => null,
         })}
@@ -546,7 +546,7 @@ function TabNavigator(): React.JSX.Element {
         component={AssetReturnScreen}
         options={({ navigation }) => ({
           headerTitle: () => (
-            <FieldHomeHeader title="Kembalikan Aset" onBack={() => navigation.goBack()} />
+            <FieldHomeHeader title={i18n.t('navigation:screens.returnAsset')} onBack={() => navigation.goBack()} />
           ),
           tabBarButton: () => null,
         })}

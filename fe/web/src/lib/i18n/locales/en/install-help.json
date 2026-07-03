@@ -27,5 +27,21 @@
     "android": "Android user?",
     "playStore": "Download from Google Play"
   },
-  "backLink": "Back to Login"
+  "backLink": "Back to Login",
+  "download": {
+    "title": "SEKAR Application",
+    "loadingRelease": "Loading…",
+    "errorLoading": "Failed to load release info. Please reload the page.",
+    "notFound": "No releases published yet. Please check back later.",
+    "iOSNotFound": "iOS app is not yet available. App Store / TestFlight version will be announced here.",
+    "version": "Version",
+    "build": "Build",
+    "size": "Size",
+    "downloadAPK": "Download APK (v{version})",
+    "install": "Install (v{version})",
+    "androidInstructions": "After download, open the file and allow installation from this source if prompted.",
+    "x86Instructions": "x86/x86_64 version for emulator & PC (WSA, Play Games). For regular phones use the /android page.",
+    "backToDashboard": "← Back to Dashboard",
+    "backToLogin": "← Back to login page"
+  }
 }

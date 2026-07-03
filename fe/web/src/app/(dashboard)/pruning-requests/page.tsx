@@ -31,6 +31,7 @@ import { hasRole } from '@/lib/constants/roles';
 import { formatDate } from '@/lib/utils/time';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
 import type { UserRole } from '@/types/models';
+import { useTranslation } from 'react-i18next';
 import {
   PRUNING_REQUEST_ADMIN_ROLES,
   PRUNING_REQUEST_STATUS_LABELS,
@@ -55,6 +56,7 @@ const STATUS_FILTER_OPTIONS: Array<{ label: string; value: PruningRequestStatus 
 ];
 
 export default function PruningRequestsPage() {
+  const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<PruningRequestStatus | 'all'>('all');
@@ -199,14 +201,14 @@ export default function PruningRequestsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader description="Tinjau dan kelola permohonan pemangkasan dari kecamatan." />
+      <PageHeader description={t('pruning:page.description')} />
 
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div className="md:w-64">
               <FormSelect
-                label="Filter Status"
+                label={t('pruning:page.filterLabel')}
                 value={statusFilter}
                 onChange={handleStatusChange}
                 options={STATUS_FILTER_OPTIONS}
@@ -214,7 +216,7 @@ export default function PruningRequestsPage() {
             </div>
             {data?.meta && (
               <div className="text-sm text-nb-gray-600">
-                Total: <span className="font-semibold">{data.meta.total}</span> permohonan
+                {t('pruning:page.totalLabel')}: <span className="font-semibold">{data.meta.total}</span> {t('pruning:page.requests')}
               </div>
             )}
           </div>
@@ -222,7 +224,7 @@ export default function PruningRequestsPage() {
         <CardContent>
           {isError ? (
             <div className="py-10 text-center text-nb-danger">
-              Gagal memuat data permohonan. Coba lagi nanti.
+              {t('pruning:page.loadError')}
             </div>
           ) : (
             <DataTable<PruningRequest, unknown>
@@ -232,7 +234,7 @@ export default function PruningRequestsPage() {
               enablePagination={false}
               getRowId={(r) => r.id}
               rowActions={rowActions}
-              emptyTitle="Belum ada permohonan untuk filter ini."
+              emptyTitle={t('pruning:page.emptyTitle')}
             />
           )}
 
@@ -245,10 +247,10 @@ export default function PruningRequestsPage() {
                 disabled={page <= 1 || isLoading}
                 leftIcon={<ChevronLeft className="w-4 h-4" />}
               >
-                Sebelumnya
+                {t('common:pagination.previous')}
               </Button>
               <span className="text-sm text-nb-gray-600">
-                Halaman {page} dari {totalPages}
+                {t('common:pagination.pageOf', { page, total: totalPages })}
               </span>
               <Button
                 variant="secondary"
@@ -257,7 +259,7 @@ export default function PruningRequestsPage() {
                 disabled={page >= totalPages || isLoading}
                 rightIcon={<ChevronRight className="w-4 h-4" />}
               >
-                Berikutnya
+                {t('common:pagination.next')}
               </Button>
             </div>
           )}
@@ -268,24 +270,24 @@ export default function PruningRequestsPage() {
         <DetailModal
           open={view.open}
           onOpenChange={view.onOpenChange}
-          title="Detail Permohonan Pemangkasan"
+          title={t('pruning:page.detailTitle')}
           rows={[
-            { label: 'Kode Referensi', value: view.item.referenceCode },
-            { label: 'Kecamatan', value: view.item.submitter },
+            { label: t('pruning:page.referenceCode'), value: view.item.referenceCode },
+            { label: t('pruning:page.kecamatan'), value: view.item.submitter },
             {
-              label: 'Status',
+              label: t('pruning:page.status'),
               value: (
                 <StatusPill tone={PRUNING_REQUEST_STATUS_TONES[view.item.status]}>
                   {PRUNING_REQUEST_STATUS_LABELS[view.item.status]}
                 </StatusPill>
               ),
             },
-            { label: 'Tipe Tanaman', value: view.item.plantSpeciesName },
-            { label: 'Kuantitas', value: view.item.quantity },
-            { label: 'Unit', value: view.item.unit },
-            { label: 'Lokasi', value: view.item.location },
-            { label: 'Catatan', value: view.item.notes },
-            { label: 'Dibuat', value: formatDate(view.item.createdAt) },
+            { label: t('pruning:page.plantSpecies'), value: view.item.plantSpeciesName },
+            { label: t('pruning:page.quantity'), value: view.item.quantity },
+            { label: t('pruning:page.unit'), value: view.item.unit },
+            { label: t('pruning:page.location'), value: view.item.location },
+            { label: t('pruning:page.notes'), value: view.item.notes },
+            { label: t('pruning:page.createdAt'), value: formatDate(view.item.createdAt) },
           ] as DetailModalRow[]}
         />
       )}

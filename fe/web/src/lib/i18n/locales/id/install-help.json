@@ -27,5 +27,21 @@
     "android": "Pengguna Android?",
     "playStore": "Unduh di Google Play"
   },
-  "backLink": "Kembali ke Login"
+  "backLink": "Kembali ke Login",
+  "download": {
+    "title": "Aplikasi SEKAR",
+    "loadingRelease": "Memuat…",
+    "errorLoading": "Gagal memuat info rilis. Coba muat ulang halaman.",
+    "notFound": "Belum ada rilis yang dipublikasikan. Silakan cek kembali nanti.",
+    "iOSNotFound": "Aplikasi iOS belum tersedia. Versi App Store / TestFlight akan diumumkan di sini.",
+    "version": "Versi",
+    "build": "Build",
+    "size": "Ukuran",
+    "downloadAPK": "Unduh APK (v{version})",
+    "install": "Pasang (v{version})",
+    "androidInstructions": "Setelah terunduh, buka berkasnya dan izinkan pemasangan dari sumber ini bila diminta.",
+    "x86Instructions": "Versi x86/x86_64 untuk emulator & PC (WSA, Play Games). Untuk HP biasa gunakan halaman /android.",
+    "backToDashboard": "← Kembali ke Dashboard",
+    "backToLogin": "← Kembali ke halaman masuk"
+  }
 }

@@ -170,7 +170,9 @@
       "closeLabel": "Tutup panel area",
       "searchPlaceholder": "Cari area…",
       "searchLabel": "Cari area",
-      "emptyText": "Belum ada area."
+      "emptyText": "Belum ada area.",
+      "count": "{count} area{query, select, empty { dari {total}} other { dari {total}}} ditampilkan",
+      "noMatch": "Tidak ada area yang cocok."
     }
   },
   "rayons": {
@@ -243,7 +245,9 @@
     "stats": {
       "totalAreas": "Jumlah Area",
       "totalStaff": "Total Petugas",
-      "totalCoverageArea": "Luas Tutupan Total",
+      "totalUsers": "Total Petugas",
+      "activeUsers": "Petugas Aktif",
+      "totalCoverageArea": "Luas Tutupan",
       "totalAreaLabel": "Total Area",
       "color": "Warna"
     },
@@ -268,7 +272,14 @@
     "view": "Lihat",
     "saving": "Menyimpan…",
     "updating": "Memperbarui…",
-    "creating": "Membuat…"
+    "creating": "Membuat…",
+    "description": "Deskripsi",
+    "deleteRayon": "Hapus Rayon",
+    "deleteConfirmation": "Anda akan menghapus {name}. Tindakan ini tidak dapat dibatalkan.",
+    "rayonHasAreas": "Rayon \"{name}\" masih memiliki area. Hapus area terlebih dahulu.",
+    "noAreas": "Tidak ada area di rayon ini",
+    "pageOf": "Halaman {page} / {total} · {count} area",
+    "actions": "Aksi"
   },
   "dialogs": {
     "tempPassword": {
@@ -298,7 +309,28 @@
       "locationNotFound": "Lokasi tidak ditemukan. Coba kata kunci lain.",
       "searchError": "Pencarian lokasi gagal. Coba lagi.",
       "fileReadError": "Gagal membaca berkas.",
-      "invalidKml": "KML/GeoJSON tidak valid — tidak ditemukan poligon batas."
+      "invalidKml": "KML/GeoJSON tidak valid — tidak ditemukan poligon batas.",
+      "searchPlaceholder": "Cari alamat atau tempat…",
+      "searchLabel": "Cari lokasi",
+      "searchButton": "Cari",
+      "finishButton": "Selesai",
+      "undoButton": "Batalkan titik",
+      "cancelButton": "Batal",
+      "drawBoundaryButton": "Gambar batas",
+      "redrawBoundaryButton": "Gambar ulang batas",
+      "deleteBoundaryButton": "Hapus batas",
+      "placePinButton": "Tempatkan titik lokasi",
+      "changePinButton": "Ubah titik lokasi",
+      "finishPlacingButton": "Selesai menempatkan",
+      "deletePinButton": "Hapus titik",
+      "multiPartWarning": "Batas terdiri dari {count} bagian — edit titik dinonaktifkan. Gunakan \"Gambar ulang batas\" untuk menggantinya dengan satu poligon.",
+      "drawingHint": "Klik di peta untuk menambah titik. Klik \"Selesai\" (min. 3 titik) atau klik dua kali untuk mengakhiri.",
+      "placingPinHint": "Klik di peta untuk menaruh titik lokasi (bisa diulang). Tekan \"Selesai menempatkan\" bila sudah.",
+      "noBoundaryHint": "Tekan \"Gambar batas\" untuk mulai menggambar poligon.",
+      "myLocationTitle": "Lokasi saya",
+      "emptyHint": "Tampilan peta.",
+      "exploreHint": "Geser/cari peta atau gunakan kontrol lokasi (pojok kanan bawah) untuk menjelajah. Tekan \"Tempatkan/Ubah titik lokasi\" untuk menaruh titik; pin juga bisa diseret.",
+      "areaLabel": "Luas:"
     }
   }
 }

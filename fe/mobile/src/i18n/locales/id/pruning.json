@@ -28,7 +28,10 @@
     "dateFrom": "Dari",
     "dateTo": "Sampai",
     "reset": "Reset",
-    "apply": "Terapkan"
+    "resetLabel": "Reset filter permohonan",
+    "apply": "Terapkan",
+    "requesterNamePlaceholder": "Contoh: Budi",
+    "requestCodePlaceholder": "Contoh: PR-2026-..."
   },
   "submit": {
     "pageTitle": "Buat Permohonan Perantingan",
@@ -95,11 +98,57 @@
   },
   "review": {
     "title": "Antrian Review",
-    "emptyTitle": "Tidak ada permohonan untuk ditinjau",
+    "pageTitle": "Review Permohonan Perantingan",
+    "sortModalTitle": "Urutkan Permohonan",
+    "resetFilterLabel": "Reset filter permohonan",
+    "emptyTitle": "Tidak ada permohonan",
     "emptyDesc": "Belum ada permohonan yang menunggu review.",
     "approveButtonTitle": "Setujui",
     "rejectButtonTitle": "Tolak",
-    "resultsCardTitle": "Hasil Review"
+    "resultsCardTitle": "Hasil Review",
+    "accessDeniedTitle": "Akses Ditolak",
+    "accessDeniedDesc": "Anda tidak memiliki izin untuk mengakses halaman ini."
+  },
+  "reassign": {
+    "title": "Pindah Petugas",
+    "confirmTitle": "Konfirmasi Pindah",
+    "reasonPlaceholder": "Tuliskan alasan reassign..."
+  },
+  "taskForm": {
+    "caseTypeLabel": "Jenis Gangguan *",
+    "caseTypePlaceholder": "Pilih jenis gangguan",
+    "caseTypeOptions": {
+      "GT": "Gangguan Tinggi",
+      "PT": "Pohon Tumbang",
+      "PS": "Pohon Sakit",
+      "PD": "Pohon Diameter Besar",
+      "PK": "Pohon Kering"
+    },
+    "pruningActionLabel": "Jenis Pemangkasan *",
+    "pruningActionPlaceholder": "Pilih jenis pemangkasan",
+    "pruningActionOptions": {
+      "PM": "Pemangkasan Mahkota",
+      "PB": "Pemangkasan Batang",
+      "PC": "Pemangkasan Cabang"
+    },
+    "sourceLabel": "Sumber Pengajuan *",
+    "sourcePlaceholder": "Pilih sumber pengajuan",
+    "sourceOptions": {
+      "TIW": "Tindak Lanjut Inspeksi",
+      "TS": "Temuan Satgas",
+      "CC": "Call Center",
+      "PW": "Pesan Warga",
+      "Wk": "Walikota"
+    },
+    "validationErrors": {
+      "caseTypeRequired": "Jenis gangguan harus dipilih",
+      "pruningActionRequired": "Jenis pemangkasan harus dipilih",
+      "sourceRequired": "Sumber pengajuan harus dipilih",
+      "speciesRequired": "Minimal satu spesies tanaman harus dipilih",
+      "speciesCountRequired": "Semua spesies tanaman harus memiliki jumlah minimal 1",
+      "saveFailed": "Terjadi kesalahan saat menyimpan data"
+    },
+    "validationFailedTitle": "Validasi Gagal"
   },
   "actions": {
     "approve": {

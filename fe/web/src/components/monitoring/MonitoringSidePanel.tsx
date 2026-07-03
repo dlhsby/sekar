@@ -109,10 +109,10 @@ export function MonitoringSidePanel({
       <div className="px-3 pt-3 pb-2 border-b-2 border-nb-black bg-nb-gray-50 flex-shrink-0">
         <div className="flex items-center justify-between mb-1">
           <span className="text-xs font-bold text-nb-gray-600 uppercase tracking-wide">
-            Petugas
+            {t('monitoring:sidePanel.title')}
           </span>
           <span className="text-xs text-nb-gray-500">
-            {totalOnline} aktif / {totalAll} total
+            {t('monitoring:sidePanel.summary', { totalOnline, totalAll })}
           </span>
         </div>
 
@@ -146,7 +146,7 @@ export function MonitoringSidePanel({
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-nb-gray-400 pointer-events-none" />
           <input
             type="search"
-            placeholder="Cari petugas atau area..."
+            placeholder={t('monitoring:sidePanel.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className={cn(
@@ -154,7 +154,7 @@ export function MonitoringSidePanel({
               'bg-white placeholder:text-nb-gray-400 focus:outline-none focus:ring-2',
               'focus:ring-nb-primary focus:ring-offset-1'
             )}
-            aria-label="Cari petugas"
+            aria-label={t('monitoring:sidePanel.searchLabel')}
           />
         </div>
 
@@ -162,7 +162,7 @@ export function MonitoringSidePanel({
         <div
           className="flex gap-1.5 flex-wrap"
           role="group"
-          aria-label="Filter berdasarkan jabatan"
+          aria-label={t('monitoring:sidePanel.roleFilter')}
         >
           {ROLE_CHIPS.map(({ role, label }) => (
             <button
@@ -184,7 +184,7 @@ export function MonitoringSidePanel({
       </div>
 
       {/* User list */}
-      <div className="flex-1 overflow-y-auto" role="listbox" aria-label="Daftar petugas aktif">
+      <div className="flex-1 overflow-y-auto" role="listbox">
         {isLoading ? (
           <div className="p-4 space-y-2">
             {[...Array(6)].map((_, i) => (
@@ -204,7 +204,7 @@ export function MonitoringSidePanel({
                 }}
                 className="text-xs text-nb-primary underline mt-2"
               >
-                Reset filter
+                {t('monitoring:sidePanel.resetFilter')}
               </button>
             )}
           </div>
@@ -223,7 +223,7 @@ export function MonitoringSidePanel({
       {/* Footer count */}
       {!isLoading && filteredUsers.length > 0 && (
         <div className="px-3 py-1.5 text-xs text-center text-nb-gray-400 border-t border-nb-gray-200 flex-shrink-0">
-          {filteredUsers.length} petugas ditampilkan
+          {t('monitoring:sidePanel.count', { count: filteredUsers.length })}
         </div>
       )}
     </div>

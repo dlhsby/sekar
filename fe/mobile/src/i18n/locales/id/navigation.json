@@ -1,1 +1,26 @@
-{}
+{
+  "screens": {
+    "attendance": "Kehadiran",
+    "attendanceDetail": "Detail Kehadiran",
+    "clockInOut": "Clock In/Out",
+    "tasks": "Tugas",
+    "activities": "Aktivitas",
+    "monitoring": "Monitoring",
+    "createActivity": "Buat Aktivitas",
+    "taskDetail": "Detail Tugas",
+    "completeTask": "Selesaikan Tugas",
+    "activityDetail": "Detail Aktivitas",
+    "createTask": "Buat Tugas",
+    "submitOvertime": "Ajukan Lembur",
+    "overtimeDetail": "Detail Lembur",
+    "pruningDetail": "Detail Permohonan",
+    "createPruning": "Buat Permohonan",
+    "seedDetail": "Detail Bibit",
+    "recordTransaction": "Catat Transaksi",
+    "reportDetail": "Detail Laporan",
+    "assetDetail": "Detail Aset",
+    "scanQR": "Pindai QR",
+    "checkoutAsset": "Pinjam Aset",
+    "returnAsset": "Kembalikan Aset"
+  }
+}

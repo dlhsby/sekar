@@ -143,5 +143,23 @@
   "myRequests": {
     "pageTitle": "My Requests",
     "description": "History of pruning requests you have submitted."
+  },
+  "page": {
+    "description": "Review and manage pruning requests from sub-districts.",
+    "filterLabel": "Filter Status",
+    "totalLabel": "Total",
+    "requests": "requests",
+    "loadError": "Failed to load requests. Please try again.",
+    "emptyTitle": "No requests for this filter.",
+    "detailTitle": "Pruning Request Details",
+    "referenceCode": "Reference Code",
+    "kecamatan": "Sub-district",
+    "status": "Status",
+    "plantSpecies": "Plant Type",
+    "quantity": "Quantity",
+    "unit": "Unit",
+    "location": "Location",
+    "notes": "Notes",
+    "createdAt": "Created"
   }
 }

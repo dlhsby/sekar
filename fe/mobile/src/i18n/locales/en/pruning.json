@@ -28,7 +28,10 @@
     "dateFrom": "From",
     "dateTo": "To",
     "reset": "Reset",
-    "apply": "Apply"
+    "resetLabel": "Reset request filter",
+    "apply": "Apply",
+    "requesterNamePlaceholder": "Example: John",
+    "requestCodePlaceholder": "Example: PR-2026-..."
   },
   "submit": {
     "pageTitle": "Create Pruning Request",
@@ -95,11 +98,57 @@
   },
   "review": {
     "title": "Review Queue",
-    "emptyTitle": "No requests to review",
+    "pageTitle": "Review Pruning Requests",
+    "sortModalTitle": "Sort Requests",
+    "resetFilterLabel": "Reset request filter",
+    "emptyTitle": "No requests",
     "emptyDesc": "No requests pending review yet.",
     "approveButtonTitle": "Approve",
     "rejectButtonTitle": "Reject",
-    "resultsCardTitle": "Review Results"
+    "resultsCardTitle": "Review Results",
+    "accessDeniedTitle": "Access Denied",
+    "accessDeniedDesc": "You don't have permission to access this page."
+  },
+  "reassign": {
+    "title": "Reassign Worker",
+    "confirmTitle": "Confirm Reassignment",
+    "reasonPlaceholder": "Enter reason for reassignment..."
+  },
+  "taskForm": {
+    "caseTypeLabel": "Case Type *",
+    "caseTypePlaceholder": "Select case type",
+    "caseTypeOptions": {
+      "GT": "Height Issue",
+      "PT": "Fallen Tree",
+      "PS": "Diseased Tree",
+      "PD": "Large Diameter Tree",
+      "PK": "Dead Tree"
+    },
+    "pruningActionLabel": "Pruning Action *",
+    "pruningActionPlaceholder": "Select pruning action",
+    "pruningActionOptions": {
+      "PM": "Crown Pruning",
+      "PB": "Trunk Pruning",
+      "PC": "Branch Pruning"
+    },
+    "sourceLabel": "Request Source *",
+    "sourcePlaceholder": "Select request source",
+    "sourceOptions": {
+      "TIW": "Inspection Follow-up",
+      "TS": "Worker Report",
+      "CC": "Call Center",
+      "PW": "Citizen Message",
+      "Wk": "Mayor"
+    },
+    "validationErrors": {
+      "caseTypeRequired": "Case type must be selected",
+      "pruningActionRequired": "Pruning action must be selected",
+      "sourceRequired": "Request source must be selected",
+      "speciesRequired": "At least one tree species must be selected",
+      "speciesCountRequired": "All tree species must have a count of at least 1",
+      "saveFailed": "Error saving data"
+    },
+    "validationFailedTitle": "Validation Failed"
   },
   "actions": {
     "approve": {

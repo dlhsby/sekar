@@ -125,13 +125,13 @@ export function AreaListSheet({
         <div className="px-4 pt-3 pb-2 flex-shrink-0">
           <Input
             leftIcon={<Search className="w-4 h-4" />}
-            placeholder="Cari area…"
+            placeholder={t('admin:areas.listSheet.searchPlaceholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            aria-label="Cari area"
+            aria-label={t('admin:areas.listSheet.searchLabel')}
           />
           <p className="mt-2 text-nb-caption text-nb-gray-600" aria-live="polite">
-            {isLoading ? 'Memuat…' : `${filtered.length} area${query ? ` dari ${items.length}` : ''}`}
+            {isLoading ? t('admin:shared.loading') : t('admin:areas.listSheet.count', { count: filtered.length, total: items.length, query })}
           </p>
         </div>
 
@@ -143,7 +143,7 @@ export function AreaListSheet({
             <p className="text-nb-body-sm text-nb-danger-dark py-6 text-center">{t('common:empty.loadError')}</p>
           ) : filtered.length === 0 ? (
             <p className="text-nb-body-sm text-nb-gray-600 py-6 text-center">
-              {items.length === 0 ? emptyText : 'Tidak ada area yang cocok.'}
+              {items.length === 0 ? emptyText : t('admin:areas.listSheet.noMatch')}
             </p>
           ) : (
             filtered.map((area) => (

@@ -77,10 +77,10 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
   const columns: ColumnDef<Area>[] = [
     {
       id: 'name',
-      header: 'Nama Area',
+      header: t('admin:areas.columnName'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Nama Area' },
+      meta: { label: t('admin:areas.columnName') },
       cell: ({ row }) => (
         <Link href={`/areas/${row.original.id}`} className="font-semibold text-nb-primary hover:underline">
           {row.original.name}
@@ -89,18 +89,18 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
     },
     {
       id: 'area_type',
-      header: 'Tipe',
+      header: t('admin:areas.columnType'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Tipe' },
+      meta: { label: t('admin:areas.columnType') },
       cell: ({ row }) => <span className="text-nb-body-sm">{row.original.areaType?.name || '—'}</span>,
     },
     {
       id: 'coverage_area',
-      header: 'Luas Tutupan',
+      header: t('admin:rayons.stats.totalCoverageArea'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Luas Tutupan' },
+      meta: { label: t('admin:rayons.stats.totalCoverageArea') },
       cell: ({ row }) => (
         <span className="font-mono text-nb-body-sm">
           {row.original.coverage_area ? formatArea(row.original.coverage_area) : '—'}
@@ -109,13 +109,13 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
     },
     {
       id: 'status',
-      header: 'Status',
+      header: t('admin:areas.columnStatus'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Status' },
+      meta: { label: t('admin:areas.columnStatus') },
       cell: () => (
         <StatusPill tone="ok" dot>
-          Aktif
+          {t('admin:areas.statusActive')}
         </StatusPill>
       ),
     },
@@ -134,7 +134,7 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
       {/* Action buttons */}
       <div className="flex gap-2">
         <Link href={`/rayons/${id}/capacity`}>
-          <Button variant="secondary">Kapasitas Layanan</Button>
+          <Button variant="secondary">{t('admin:rayons.actionCapacity')}</Button>
         </Link>
       </div>
 
@@ -146,9 +146,9 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
         <CardContent className="p-4">
           <div className="mb-4">
             <FormInput
-              label="Cari area"
+              label={t('admin:areas.form.name')}
               type="text"
-              placeholder="Cari area berdasarkan nama atau kode…"
+              placeholder={t('admin:areas.form.namePlaceholder')}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -164,14 +164,13 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
             loading={areasLoading}
             enablePagination={false}
             getRowId={(a) => a.id}
-            emptyTitle="Tidak ada area di rayon ini"
+            emptyTitle={t('admin:shared.noAreas')}
           />
 
           {pagination && pagination.totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between font-mono text-[11px] text-nb-gray-600">
               <span>
-                Halaman <b className="text-nb-black">{pagination.page}</b> / {pagination.totalPages} ·{' '}
-                {pagination.total} area
+                {t('admin:shared.pageOf', { page: pagination.page, total: pagination.totalPages, count: pagination.total })}
               </span>
               <div className="flex gap-2">
                 <Button

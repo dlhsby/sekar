@@ -1,1 +1,21 @@
-{}
+{
+  "mySchedule": {
+    "todayLabel": "Today's Schedule",
+    "noAreasAssigned": "No areas assigned",
+    "noShiftDefined": "No shift defined",
+    "invalidSession": "Invalid session. Please log in again.",
+    "loadFailed": "Failed to load schedule",
+    "retryLabel": "Retry",
+    "emptyTitle": "No schedule for today",
+    "emptyDescription": "You don't have a schedule for today (you may be working ad-hoc by assignment). You can still clock in."
+  },
+  "status": {
+    "present": "Present",
+    "planned": "Planned",
+    "absent": "Absent",
+    "leave_sick": "Sick Leave",
+    "leave_annual": "Annual Leave",
+    "replaced": "Replaced",
+    "off": "Off"
+  }
+}
