@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import {
   NBBackgroundPattern,
@@ -42,6 +43,7 @@ type Props = {
 };
 
 export function WorkerAnalyticsScreen({ route }: Props): React.JSX.Element {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
 
@@ -77,7 +79,7 @@ export function WorkerAnalyticsScreen({ route }: Props): React.JSX.Element {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <NBBackgroundPattern pattern="grid" />
-        <NBPageHeader title="Kinerja Saya" />
+        <NBPageHeader title={t('analytics:worker.title')} />
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           refreshControl={
@@ -86,7 +88,7 @@ export function WorkerAnalyticsScreen({ route }: Props): React.JSX.Element {
         >
           <NBEmptyState
             variant="error"
-            title="Gagal memuat data"
+            title={t('analytics:worker.error')}
             description={error}
           />
         </ScrollView>
@@ -99,7 +101,7 @@ export function WorkerAnalyticsScreen({ route }: Props): React.JSX.Element {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <NBBackgroundPattern pattern="grid" />
-        <NBPageHeader title="Kinerja Saya" />
+        <NBPageHeader title={t('analytics:worker.title')} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
         </View>
@@ -112,7 +114,7 @@ export function WorkerAnalyticsScreen({ route }: Props): React.JSX.Element {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <NBBackgroundPattern pattern="grid" />
-        <NBPageHeader title="Kinerja Saya" />
+        <NBPageHeader title={t('analytics:worker.title')} />
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           refreshControl={
@@ -121,8 +123,8 @@ export function WorkerAnalyticsScreen({ route }: Props): React.JSX.Element {
         >
           <NBEmptyState
             variant="noData"
-            title="Tidak ada data kinerja"
-            description="Data kinerja akan muncul setelah Anda menyelesaikan pekerjaan."
+            title={t('analytics:worker.noData.title')}
+            description={t('analytics:worker.noData.description')}
           />
         </ScrollView>
       </SafeAreaView>
@@ -132,7 +134,7 @@ export function WorkerAnalyticsScreen({ route }: Props): React.JSX.Element {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <NBBackgroundPattern pattern="grid" />
-      <NBPageHeader title="Kinerja Saya" />
+      <NBPageHeader title={t('analytics:worker.title')} />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={
@@ -156,7 +158,7 @@ export function WorkerAnalyticsScreen({ route }: Props): React.JSX.Element {
         {/* Attendance Trend */}
         <NBCard style={styles.trendCard}>
           <NBText variant="h3" style={styles.cardTitle}>
-            Tren Kehadiran
+            {t('analytics:worker.attendanceTrend')}
           </NBText>
           <BarChart
             data={[

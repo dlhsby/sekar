@@ -6,6 +6,7 @@
 
 import React, { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Svg, { Circle, Path, Text as SvgText } from 'react-native-svg';
 import { NBText } from '../nb';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
@@ -28,16 +29,6 @@ const GRADE_COLORS: Record<Grade, string> = {
   F: nbColors.danger,
 };
 
-// Grade descriptions
-const GRADE_LABELS: Record<Grade, string> = {
-  A: 'Sangat Baik',
-  B: 'Baik',
-  C: 'Cukup',
-  D: 'Kurang',
-  E: 'Buruk',
-  F: 'Sangat Buruk',
-};
-
 const DEFAULT_SIZE = 140;
 const CENTER_X = 70;
 const CENTER_Y = 70;
@@ -49,6 +40,17 @@ export function ScoreGauge({
   size = DEFAULT_SIZE,
   showLabel = true,
 }: ScoreGaugeProps): React.JSX.Element {
+  const { t } = useTranslation();
+
+  const GRADE_LABELS: Record<Grade, string> = {
+    A: t('analytics:grade.A'),
+    B: t('analytics:grade.B'),
+    C: t('analytics:grade.C'),
+    D: t('analytics:grade.D'),
+    E: t('analytics:grade.E'),
+    F: t('analytics:grade.F'),
+  };
+
   // Clamp score to 0-100
   const normalizedScore = Math.max(0, Math.min(100, score));
 

@@ -1,1 +1,96 @@
-{}
+{
+  "list": {
+    "title": "Assets",
+    "search": "Search assets...",
+    "tabs": {
+      "all": "All",
+      "available": "Available",
+      "myAssets": "My Assets"
+    },
+    "empty": {
+      "title": "No assets",
+      "description": "No assets found for this filter"
+    }
+  },
+  "detail": {
+    "title": "Asset Details",
+    "notFound": {
+      "title": "Asset not found",
+      "description": "Please try again"
+    },
+    "fields": {
+      "code": "Code",
+      "category": "Category",
+      "status": "Status",
+      "condition": "Condition",
+      "area": "Area",
+      "description": "Description"
+    },
+    "assignmentHistory": "Assignment History",
+    "noAssignments": "No assignment history yet",
+    "returnedLabel": "Returned",
+    "checkout": "Borrow Asset",
+    "return": "Return Asset"
+  },
+  "status": {
+    "available": "Available",
+    "inUse": "In Use",
+    "maintenance": "Maintenance",
+    "retired": "Retired",
+    "lost": "Lost"
+  },
+  "condition": {
+    "good": "Good",
+    "fair": "Fair",
+    "poor": "Poor",
+    "damaged": "Damaged",
+    "unusable": "Unusable"
+  },
+  "checkout": {
+    "title": "Borrow Asset",
+    "notFound": {
+      "title": "Asset not found",
+      "description": "Please try again"
+    },
+    "fields": {
+      "code": "Code",
+      "category": "Category",
+      "area": "Area"
+    },
+    "conditionLabel": "Condition at Checkout",
+    "notes": "Notes (Optional)",
+    "notesPlaceholder": "Enter checkout notes...",
+    "expectedReturnDate": "Expected Return Date (Optional)",
+    "datePickerPlaceholder": "Select date",
+    "confirm": "Confirm Borrow",
+    "cancel": "Cancel"
+  },
+  "return": {
+    "title": "Return Asset",
+    "notFound": {
+      "title": "Asset not found",
+      "description": "Please try again"
+    },
+    "fields": {
+      "code": "Code",
+      "category": "Category",
+      "area": "Area"
+    },
+    "conditionLabel": "Condition at Return",
+    "notes": "Notes (Optional)",
+    "notesPlaceholder": "Enter return notes...",
+    "confirm": "Confirm Return",
+    "cancel": "Cancel"
+  },
+  "qrScanner": {
+    "title": "Scan QR Code",
+    "cameraHint": "Point camera at asset QR code",
+    "deferredNote": "* Live camera scanning available in native build",
+    "errorTitle": "Scan Failed",
+    "manualEntry": "Enter Code Manually",
+    "placeholder": "SEKAR:AK-RU-001 or AK-RU-001",
+    "hint": "Format: SEKAR:CODE or enter CODE directly",
+    "scan": "Scan",
+    "cancel": "Cancel"
+  }
+}

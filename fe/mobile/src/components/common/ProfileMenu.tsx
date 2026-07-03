@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBText } from '../nb/NBText';
 import {
@@ -105,11 +106,13 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
   onLogout,
   testID = 'profile-menu',
 }) => {
+  const { t } = useTranslation();
+
   const akunItems: MenuItem[] = [
     {
       key: 'edit-profile',
       icon: 'account-edit-outline',
-      label: 'Edit Profil',
+      label: t('profile:menu.editProfile'),
       chipColor: nbColors.bgAccentMint,
       onPress: onEditProfile,
       testID: 'edit-profile-button',
@@ -117,7 +120,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
     {
       key: 'change-password',
       icon: 'lock-outline',
-      label: 'Ubah Password',
+      label: t('profile:menu.changePassword'),
       chipColor: nbColors.bgAccentYellow,
       onPress: onChangePassword,
       testID: 'change-password-button',
@@ -127,7 +130,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
           {
             key: 'my-schedule',
             icon: 'calendar-month-outline',
-            label: 'Jadwal Saya',
+            label: t('profile:menu.mySchedule'),
             chipColor: nbColors.bgAccentMint,
             onPress: onMySchedule,
             testID: 'my-schedule-button',
@@ -139,7 +142,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
           {
             key: 'shift-history',
             icon: 'clock-outline',
-            label: 'Riwayat Shift',
+            label: t('profile:menu.shiftHistory'),
             chipColor: nbColors.bgAccentPink,
             onPress: onShiftHistory,
             testID: 'shift-history-button',
@@ -152,14 +155,14 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
     {
       key: 'settings',
       icon: 'cog-outline',
-      label: 'Pengaturan',
+      label: t('profile:menu.settings'),
       onPress: onSettings,
       testID: 'settings-button',
     },
     {
       key: 'diagnostics',
       icon: 'stethoscope',
-      label: 'Diagnostik & Izin',
+      label: t('profile:menu.diagnostics'),
       chipColor: withAlpha(nbColors.info, 0.18),
       onPress: onDiagnostics,
       testID: 'diagnostics-button',
@@ -167,14 +170,14 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
     {
       key: 'about',
       icon: 'information-outline',
-      label: 'Tentang Aplikasi',
+      label: t('profile:menu.about'),
       onPress: onAbout,
       testID: 'about-button',
     },
     {
       key: 'logout',
       icon: 'logout',
-      label: 'Keluar',
+      label: t('profile:menu.logout'),
       chipColor: withAlpha(nbColors.danger, 0.18),
       danger: true,
       onPress: onLogout,
@@ -184,8 +187,8 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
 
   return (
     <View testID={testID}>
-      <MenuGroup title="Akun" items={akunItems} />
-      <MenuGroup title="Aplikasi" items={aplikasiItems} />
+      <MenuGroup title={t('profile:menu.account')} items={akunItems} />
+      <MenuGroup title={t('profile:menu.application')} items={aplikasiItems} />
     </View>
   );
 };

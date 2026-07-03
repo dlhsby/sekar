@@ -10,6 +10,7 @@
 import React, { useCallback, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { NBAlert, NBButton, NBPasswordInput, NBText, NBToast } from '../../components/nb';
 import { RequirementChecklist } from '../../components/common/RequirementChecklist';
 import { SuccessOverlay } from '../../components/common/SuccessOverlay';
@@ -27,6 +28,7 @@ import {
 const REDIRECT_MS = 1500;
 
 export function ChangePasswordScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -37,9 +39,9 @@ export function ChangePasswordScreen(): React.JSX.Element {
   // it); the server gates the forced change on the JWT + password_must_change flag
   // and rejects re-using the temp password.
   const rules = [
-    { label: 'Minimal 8 karakter', met: newPassword.length >= 8 },
-    { label: 'Berisi huruf dan angka', met: /[A-Za-z]/.test(newPassword) && /\d/.test(newPassword) },
-    { label: 'Konfirmasi cocok', met: confirmPassword.length > 0 && newPassword === confirmPassword },
+    { label: t('profile:changePassword.rules.minLength'), met: newPassword.length >= 8 },
+    { label: t('profile:changePassword.rules.alphanumeric'), met: /[A-Za-z]/.test(newPassword) && /\d/.test(newPassword) },
+    { label: t('profile:changePassword.rules.match'), met: confirmPassword.length > 0 && newPassword === confirmPassword },
   ];
   const allValid = rules.every((r) => r.met);
 
@@ -50,7 +52,7 @@ export function ChangePasswordScreen(): React.JSX.Element {
       const res = await changePasswordAndRotate(newPassword);
       const data = res.data;
       if (!data || !data.access_token) {
-        NBToast.show({ level: 'danger', title: 'Gagal', body: res.error ?? 'Tidak ada respons dari server.' });
+        NBToast.show({ level: 'danger', title: t('profile:edit.toast.error'), body: res.error ?? t('profile:changePassword.errors.noResponse') });
         return;
       }
       // Persist the rotated pair + user before flipping Redux, so a storage failure
@@ -64,20 +66,20 @@ export function ChangePasswordScreen(): React.JSX.Element {
       setSuccess(true);
       setTimeout(() => dispatch(setUser({ user: data.user })), REDIRECT_MS);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Terjadi kesalahan.';
+      const message = err instanceof Error ? err.message : t('profile:changePassword.errors.generic');
       if (/differ|invalid.credentials|AUTH_INVALID/i.test(message)) {
         NBToast.show({
           level: 'danger',
-          title: 'Gagal',
-          body: 'Sandi baru tidak boleh sama dengan sandi sementara.',
+          title: t('profile:edit.toast.error'),
+          body: t('profile:changePassword.errors.newDifferentFromOld'),
         });
       } else {
-        NBToast.show({ level: 'danger', title: 'Gagal', body: message });
+        NBToast.show({ level: 'danger', title: t('profile:edit.toast.error'), body: message });
       }
     } finally {
       setSubmitting(false);
     }
-  }, [allValid, newPassword, dispatch]);
+  }, [t, allValid, newPassword, dispatch]);
 
   const handleLogout = useCallback(async () => {
     await clearAll();
@@ -87,8 +89,8 @@ export function ChangePasswordScreen(): React.JSX.Element {
   if (success) {
     return (
       <SuccessOverlay
-        title="Sandi tersimpan"
-        subtitle="Mengarahkan ke beranda…"
+        title={t('profile:changePassword.success.title')}
+        subtitle={t('profile:changePassword.success.subtitle')}
         testID="change-password-success"
       />
     );
@@ -98,35 +100,35 @@ export function ChangePasswordScreen(): React.JSX.Element {
     <SafeAreaView style={styles.root} testID="change-password-screen">
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
         <ScrollView contentContainerStyle={styles.content}>
-          <NBText variant="h1">Buat Sandi Baru</NBText>
+          <NBText variant="h1">{t('profile:changePassword.title')}</NBText>
 
           <NBAlert
             variant="warning"
-            title="Sandi sementara harus diganti"
-            message="Demi keamanan, buat sandi baru sebelum melanjutkan."
+            title={t('profile:changePassword.alert.title')}
+            message={t('profile:changePassword.alert.message')}
           />
 
           <NBPasswordInput
-            label="Sandi Baru"
-            placeholder="Masukkan sandi baru"
+            label={t('profile:changePassword.newPassword')}
+            placeholder={t('profile:changePassword.newPasswordPlaceholder')}
             value={newPassword}
             onChangeText={setNewPassword}
             editable={!submitting}
             testID="change-password-new"
           />
           <NBPasswordInput
-            label="Konfirmasi Sandi Baru"
-            placeholder="Ulangi sandi baru"
+            label={t('profile:changePassword.confirmPassword')}
+            placeholder={t('profile:changePassword.confirmPasswordPlaceholder')}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             editable={!submitting}
             testID="change-password-confirm"
           />
 
-          <RequirementChecklist title="Syarat Sandi" rules={rules} testID="change-password-rules" />
+          <RequirementChecklist title={t('profile:changePassword.rules.title')} rules={rules} testID="change-password-rules" />
 
           <NBButton
-            title="Simpan & Masuk"
+            title={t('profile:changePassword.submit')}
             onPress={handleSubmit}
             loading={submitting}
             disabled={!allValid || submitting}
@@ -135,7 +137,7 @@ export function ChangePasswordScreen(): React.JSX.Element {
             testID="change-password-submit"
           />
           <NBButton
-            title="Keluar & login lain"
+            title={t('profile:changePassword.logout')}
             onPress={handleLogout}
             disabled={submitting}
             fullWidth

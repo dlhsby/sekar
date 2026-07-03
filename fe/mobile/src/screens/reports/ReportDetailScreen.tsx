@@ -15,6 +15,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useRoute, useFocusEffect, useNavigation, type RouteProp } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import type { MainTabParamList, MainTabScreenProps } from '../../types/navigation.types';
 import {
   NBBackgroundPattern,
@@ -40,27 +41,6 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 type RouteParams = { reportId: string };
 
-const typeLabels: Record<string, string> = {
-  daily_operations: 'Laporan Harian',
-  weekly_performance: 'Laporan Mingguan',
-  monthly_summary: 'Laporan Bulanan',
-  worker_performance: 'Kinerja Petugas',
-  area_status: 'Status Area',
-  overtime_utilization: 'Pemanfaatan Lembur',
-};
-
-const formatLabels: Record<string, string> = {
-  pdf: 'PDF',
-  csv: 'CSV',
-  xlsx: 'XLSX',
-};
-
-const statusLabels: Record<string, string> = {
-  processing: 'Sedang Diproses',
-  completed: 'Selesai',
-  failed: 'Gagal',
-};
-
 const statusColors: Record<string, any> = {
   processing: 'warning',
   completed: 'success',
@@ -68,9 +48,31 @@ const statusColors: Record<string, any> = {
 };
 
 export function ReportDetailScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const route = useRoute<RouteProp<MainTabParamList, 'ReportDetail'>>();
   const navigation = useNavigation<MainTabScreenProps<'ReportDetail'>['navigation']>();
   const dispatch = useAppDispatch();
+
+  const typeLabels: Record<string, string> = {
+    daily_operations: t('reports:typeLabels.daily'),
+    weekly_performance: t('reports:typeLabels.weekly'),
+    monthly_summary: t('reports:typeLabels.monthly'),
+    worker_performance: t('reports:typeLabels.workerPerformance'),
+    area_status: t('reports:typeLabels.areaStatus'),
+    overtime_utilization: t('reports:typeLabels.overtimeUtilization'),
+  };
+
+  const formatLabels: Record<string, string> = {
+    pdf: t('reports:formatLabels.pdf'),
+    csv: t('reports:formatLabels.csv'),
+    xlsx: t('reports:formatLabels.xlsx'),
+  };
+
+  const statusLabels: Record<string, string> = {
+    processing: t('reports:statusLabels.processing'),
+    completed: t('reports:statusLabels.completed'),
+    failed: t('reports:statusLabels.failed'),
+  };
 
   const { reportId } = route.params as RouteParams;
 
@@ -98,8 +100,8 @@ export function ReportDetailScreen(): React.JSX.Element {
     if (!report?.file_url) {
       NBToast.show({
         level: 'danger',
-        title: 'File tidak tersedia',
-        body: 'Laporan belum siap untuk dibuka.',
+        title: t('reports:toast.fileNotAvailable'),
+        body: t('reports:toast.reportNotReady'),
       });
       return;
     }
@@ -111,24 +113,24 @@ export function ReportDetailScreen(): React.JSX.Element {
       } else {
         NBToast.show({
           level: 'danger',
-          title: 'Tidak dapat membuka file',
-          body: 'Perangkat Anda tidak mendukung format file ini.',
+          title: t('reports:toast.cannotOpenFile'),
+          body: t('reports:toast.unsupportedFormat'),
         });
       }
     } catch {
       NBToast.show({
         level: 'danger',
-        title: 'Kesalahan',
-        body: 'Gagal membuka file.',
+        title: t('reports:toast.error.title'),
+        body: t('reports:toast.error.body'),
       });
     }
-  }, [report?.file_url]);
+  }, [report?.file_url, t]);
 
   const handleShare = useCallback(async () => {
     if (!report?.file_url) {
       NBToast.show({
         level: 'danger',
-        title: 'File tidak tersedia',
+        title: t('reports:toast.fileNotFound'),
       });
       return;
     }
@@ -142,10 +144,10 @@ export function ReportDetailScreen(): React.JSX.Element {
     } catch {
       NBToast.show({
         level: 'danger',
-        title: 'Kesalahan berbagi',
+        title: t('reports:toast.shareError'),
       });
     }
-  }, [report]);
+  }, [report, t]);
 
   const handleDelete = useCallback(async () => {
     if (!report) return;
@@ -154,16 +156,16 @@ export function ReportDetailScreen(): React.JSX.Element {
       await dispatch(deleteReportThunk(report.id)).unwrap();
       NBToast.show({
         level: 'success',
-        title: 'Laporan dihapus',
+        title: t('reports:toast.deleted.title'),
       });
       navigation.goBack();
     } catch {
       NBToast.show({
         level: 'danger',
-        title: 'Gagal menghapus laporan',
+        title: t('reports:toast.deleteFailed'),
       });
     }
-  }, [dispatch, report, navigation]);
+  }, [dispatch, report, navigation, t]);
 
   if (isLoading && !report) {
     return (
@@ -176,7 +178,7 @@ export function ReportDetailScreen(): React.JSX.Element {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
           <NBText variant="body-sm" color="gray600" style={styles.loadingText}>
-            Memuat laporan...
+            {t('reports:detail.loading')}
           </NBText>
         </View>
       </NBBackgroundPattern>
@@ -193,10 +195,10 @@ export function ReportDetailScreen(): React.JSX.Element {
       >
         <View style={styles.loadingContainer}>
           <NBText variant="body" color="gray600">
-            Laporan tidak ditemukan
+            {t('reports:detail.notFound')}
           </NBText>
           <NBButton
-            title="Kembali"
+            title={t('reports:detail.button.back')}
             variant="secondary"
             onPress={() => navigation.goBack()}
             style={styles.backButton}
@@ -265,7 +267,7 @@ export function ReportDetailScreen(): React.JSX.Element {
           {/* Status & Timeline Card */}
           <NBCard style={styles.card}>
             <NBText variant="h3" color="gray900" style={styles.sectionTitle}>
-              Status & Timeline
+              {t('reports:detail.section.statusTimeline')}
             </NBText>
 
             <View style={styles.infoRow}>
@@ -276,7 +278,7 @@ export function ReportDetailScreen(): React.JSX.Element {
                   color={nbColors.gray600}
                 />
                 <NBText variant="body-sm" color="gray700">
-                  Dibuat
+                  {t('reports:detail.info.created')}
                 </NBText>
               </View>
               <NBText variant="body-sm" color="gray600">
@@ -293,7 +295,7 @@ export function ReportDetailScreen(): React.JSX.Element {
                     color={nbColors.warning}
                   />
                   <NBText variant="body-sm" color="gray700">
-                    Mulai
+                    {t('reports:detail.info.started')}
                   </NBText>
                 </View>
                 <NBText variant="body-sm" color="gray600">
@@ -317,7 +319,7 @@ export function ReportDetailScreen(): React.JSX.Element {
                     color={nbColors.success}
                   />
                   <NBText variant="body-sm" color="gray700">
-                    Selesai
+                    {t('reports:detail.info.completed')}
                   </NBText>
                 </View>
                 <NBText variant="body-sm" color="gray600">
@@ -335,7 +337,7 @@ export function ReportDetailScreen(): React.JSX.Element {
                     color={nbColors.danger}
                   />
                   <NBText variant="body-sm" color="danger">
-                    Error
+                    {t('reports:detail.info.error')}
                   </NBText>
                 </View>
               </View>
@@ -350,12 +352,12 @@ export function ReportDetailScreen(): React.JSX.Element {
           {/* Metadata Card */}
           <NBCard style={styles.card}>
             <NBText variant="h3" color="gray900" style={styles.sectionTitle}>
-              Detail
+              {t('reports:detail.section.details')}
             </NBText>
 
             <View style={styles.infoRow}>
               <NBText variant="body-sm" color="gray700">
-                Format
+                {t('reports:detail.label.format')}
               </NBText>
               <NBText variant="body-sm" color="gray600">
                 {formatLabels[report.format] || report.format.toUpperCase()}
@@ -365,7 +367,7 @@ export function ReportDetailScreen(): React.JSX.Element {
             {report.file_size_bytes && (
               <View style={styles.infoRow}>
                 <NBText variant="body-sm" color="gray700">
-                  Ukuran File
+                  {t('reports:detail.label.fileSize')}
                 </NBText>
                 <NBText variant="body-sm" color="gray600">
                   {(report.file_size_bytes / 1024 / 1024).toFixed(2)} MB
@@ -377,7 +379,7 @@ export function ReportDetailScreen(): React.JSX.Element {
               <>
                 <View style={styles.parametersSeparator} />
                 <NBText variant="body-sm" color="gray700" style={styles.parametersTitle}>
-                  Parameter
+                  {t('reports:detail.label.parameters')}
                 </NBText>
                 {Object.entries(report.parameters).map(([key, value]) => (
                   <View key={key} style={styles.infoRow}>
@@ -397,7 +399,7 @@ export function ReportDetailScreen(): React.JSX.Element {
           {report.status === 'completed' && report.file_url && (
             <View style={styles.actionGroup}>
               <NBButton
-                title="Buka/Unduh"
+                title={t('reports:detail.button.openDownload')}
                 variant="primary"
                 size="lg"
                 leftIcon="download"
@@ -406,7 +408,7 @@ export function ReportDetailScreen(): React.JSX.Element {
                 style={styles.actionButton}
               />
               <NBButton
-                title="Bagikan"
+                title={t('reports:detail.button.share')}
                 variant="secondary"
                 size="lg"
                 leftIcon="share-variant"
@@ -419,7 +421,7 @@ export function ReportDetailScreen(): React.JSX.Element {
 
           {/* Delete Button */}
           <NBButton
-            title="Hapus Laporan"
+            title={t('reports:detail.button.delete')}
             variant="secondary"
             size="lg"
             onPress={handleDelete}

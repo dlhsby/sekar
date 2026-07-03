@@ -19,5 +19,10 @@
     "treeCare": "Tree Care",
     "reportsMonitoring": "Reports & Monitoring",
     "other": "Other"
+  },
+  "tabs": {
+    "home": "Home",
+    "menu": "Menu",
+    "profile": "Profile"
   }
 }

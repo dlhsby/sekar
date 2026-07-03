@@ -1,1 +1,52 @@
-{}
+{
+  "inventory": {
+    "loading": "Loading...",
+    "error": {
+      "title": "Failed to load seed data",
+      "description": "Please try again"
+    },
+    "retry": "Retry",
+    "empty": "No seeds available"
+  },
+  "units": {
+    "gram": "gram",
+    "piece": "piece",
+    "packet": "packet",
+    "lowStock": "Low"
+  },
+  "detail": {
+    "stockBadge": "Low Stock",
+    "currentStock": "Current Stock",
+    "transactionHistory": "Transaction History",
+    "record": "Record",
+    "empty": "No transactions yet"
+  },
+  "transaction": {
+    "types": {
+      "purchase": "Purchase",
+      "distribution": "Distribution",
+      "adjustment": "Adjustment"
+    }
+  },
+  "form": {
+    "title": "Record Transaction",
+    "label": {
+      "type": "Transaction Type",
+      "quantity": "Quantity",
+      "date": "Transaction Date",
+      "notes": "Notes (Optional)"
+    },
+    "placeholder": {
+      "type": "Select transaction type",
+      "quantity": "Enter quantity",
+      "notes": "Enter additional notes"
+    },
+    "validation": {
+      "quantityRequired": "Quantity must be greater than 0"
+    },
+    "button": {
+      "save": "Save Transaction",
+      "cancel": "Cancel"
+    }
+  }
+}

@@ -1,1 +1,131 @@
-{}
+{
+  "profile": {
+    "loading": "Memuat profil...",
+    "about": {
+      "title": "Tentang SEKAR",
+      "subtitle": "Sistem Evaluasi Kinerja Satgas RTH",
+      "version": "Versi:",
+      "organization": "DLH Kota Surabaya"
+    }
+  },
+  "edit": {
+    "title": "Edit Profil",
+    "changePhoto": "Ganti Foto Profil",
+    "selectSource": "Pilih sumber foto",
+    "cancel": "Batal",
+    "camera": "Kamera",
+    "gallery": "Galeri",
+    "photoSelected": "Foto baru dipilih",
+    "noPhotoSelected": "Pilih foto baru terlebih dahulu.",
+    "userDataMissing": "Data pengguna tidak tersedia. Silakan login ulang.",
+    "uploadSuccess": "Foto profil berhasil diperbarui.",
+    "uploadError": "Gagal mengunggah foto profil.",
+    "cameraError": "Gagal membuka kamera. Periksa izin akses.",
+    "cameraErrorGeneral": "Gagal membuka kamera.",
+    "galleryError": "Gagal membuka galeri. Periksa izin akses.",
+    "galleryErrorGeneral": "Gagal membuka galeri.",
+    "saving": "Menyimpan...",
+    "save": "Simpan Perubahan",
+    "lockedFields": "Tidak bisa diubah",
+    "lockedNote": "Field yang dikunci hanya bisa diubah oleh admin sistem. Hubungi admin untuk perubahan data akun.",
+    "labels": {
+      "fullName": "Nama Lengkap",
+      "username": "Username",
+      "roleRayon": "Role & Rayon",
+      "phoneNumber": "No. Handphone"
+    },
+    "hints": {
+      "changePhoto": "Ganti foto profil",
+      "tapToSelect": "Ketuk untuk memilih foto baru dari kamera atau galeri"
+    },
+    "toast": {
+      "info": "Info",
+      "success": "Berhasil",
+      "error": "Gagal"
+    }
+  },
+  "header": {
+    "user": "Pengguna",
+    "joinedSince": "sejak"
+  },
+  "menu": {
+    "editProfile": "Edit Profil",
+    "changePassword": "Ubah Password",
+    "mySchedule": "Jadwal Saya",
+    "shiftHistory": "Riwayat Shift",
+    "settings": "Pengaturan",
+    "diagnostics": "Diagnostik & Izin",
+    "about": "Tentang Aplikasi",
+    "logout": "Keluar",
+    "account": "Akun",
+    "application": "Aplikasi"
+  },
+  "stats": {
+    "field": {
+      "present": "Hadir",
+      "tasks": "Tugas",
+      "hours": "Jam",
+      "period": "bulan ini"
+    },
+    "monitoring": {
+      "team": "Tim",
+      "managed": "dikelola",
+      "areas": "Area",
+      "monitored": "dipantau",
+      "activities": "Aktivitas",
+      "period": "bulan ini"
+    }
+  },
+  "assignedArea": {
+    "title": "Area Ditugaskan",
+    "radiusSuffix": "radius",
+    "noArea": "Tidak ada area ditugaskan"
+  },
+  "assignedKecamatan": {
+    "title": "Wilayah Ditugaskan",
+    "rayon": "Rayon",
+    "kecamatan": "Kecamatan",
+    "noArea": "Belum ada wilayah ditugaskan"
+  },
+  "changePassword": {
+    "title": "Buat Sandi Baru",
+    "alert": {
+      "title": "Sandi sementara harus diganti",
+      "message": "Demi keamanan, buat sandi baru sebelum melanjutkan."
+    },
+    "currentPassword": "Password Saat Ini",
+    "currentPasswordPlaceholder": "Password saat ini",
+    "newPassword": "Sandi Baru",
+    "newPasswordPlaceholder": "Masukkan sandi baru",
+    "confirmPassword": "Konfirmasi Sandi Baru",
+    "confirmPasswordPlaceholder": "Ulangi sandi baru",
+    "rules": {
+      "title": "Syarat Sandi",
+      "minLength": "Minimal 8 karakter",
+      "alphanumeric": "Berisi huruf dan angka",
+      "match": "Konfirmasi cocok"
+    },
+    "submit": "Simpan & Masuk",
+    "submitAction": "Ubah Password",
+    "logout": "Keluar & login lain",
+    "success": {
+      "title": "Sandi tersimpan",
+      "subtitle": "Mengarahkan ke beranda…"
+    },
+    "validation": {
+      "currentPasswordRequired": "Password saat ini wajib diisi",
+      "newPasswordRequired": "Password baru wajib diisi",
+      "newPasswordMinLength": "Password baru minimal 8 karakter",
+      "newPasswordAlphanumeric": "Password baru harus berisi huruf dan angka",
+      "newPasswordDifferent": "Password baru harus berbeda dari password lama",
+      "confirmPasswordRequired": "Konfirmasi password wajib diisi",
+      "confirmPasswordMatch": "Konfirmasi password tidak cocok",
+      "currentPasswordWrong": "Password saat ini salah"
+    },
+    "errors": {
+      "noResponse": "Tidak ada respons dari server.",
+      "newDifferentFromOld": "Sandi baru tidak boleh sama dengan sandi sementara.",
+      "generic": "Terjadi kesalahan."
+    }
+  }
+}

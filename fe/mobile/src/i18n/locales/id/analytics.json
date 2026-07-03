@@ -1,1 +1,65 @@
-{}
+{
+  "worker": {
+    "title": "Kinerja Saya",
+    "error": "Gagal memuat data",
+    "noData": {
+      "title": "Tidak ada data kinerja",
+      "description": "Data kinerja akan muncul setelah Anda menyelesaikan pekerjaan."
+    },
+    "attendanceTrend": "Tren Kehadiran"
+  },
+  "team": {
+    "title": "Analitik Tim",
+    "error": "Gagal memuat data",
+    "noData": {
+      "title": "Tidak ada data tim",
+      "description": "Data akan muncul setelah anggota tim menyelesaikan pekerjaan."
+    },
+    "activeMembers": "Anggota Aktif",
+    "unit": "petugas",
+    "avgScore": "Skor Rata",
+    "allOfficers": "Semua Petugas"
+  },
+  "performance": {
+    "title": "Skor Kinerja",
+    "subtitle": "Evaluasi performa keseluruhan"
+  },
+  "tasks": {
+    "title": "Tugas Bulan Ini",
+    "completed": "Selesai",
+    "targetMet": "Target tercapai",
+    "almostMet": "Hampir tercapai",
+    "needsImprovement": "Perlu ditingkatkan"
+  },
+  "kpi": {
+    "attendance": "Kehadiran",
+    "punctuality": "Ketepatan",
+    "taskCompletion": "Penyelesaian",
+    "areaCompliance": "Lokasi"
+  },
+  "cards": {
+    "topPerformers": "Performa Terbaik",
+    "needsAttention": "Perlu Perhatian",
+    "score": "Skor"
+  },
+  "grade": {
+    "A": "Sangat Baik",
+    "B": "Baik",
+    "C": "Cukup",
+    "D": "Kurang",
+    "E": "Buruk",
+    "F": "Sangat Buruk"
+  },
+  "chart": {
+    "noData": "Tidak ada data",
+    "days": {
+      "mon": "Sen",
+      "tue": "Sel",
+      "wed": "Rab",
+      "thu": "Kam",
+      "fri": "Jum",
+      "sat": "Sab",
+      "sun": "Min"
+    }
+  }
+}

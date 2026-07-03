@@ -8,6 +8,7 @@
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBText } from '../nb/NBText';
 import { RoleAvatar } from './RoleAvatar';
 import {
@@ -25,11 +26,11 @@ interface ProfileHeaderProps {
   testID?: string;
 }
 
-function getRoleLabel(role?: string | null): string {
+function getRoleLabel(role: string | null | undefined, defaultLabel: string): string {
   if (!role) {
-    return 'Pengguna';
+    return defaultLabel;
   }
-  return ROLE_LABELS[role as UserRole] ?? 'Pengguna';
+  return ROLE_LABELS[role as UserRole] ?? defaultLabel;
 }
 
 function getJoinedYear(createdAt?: string): string | null {
@@ -44,16 +45,18 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   user,
   testID = 'profile-header',
 }) => {
+  const { t } = useTranslation();
+  const defaultUserLabel = t('profile:header.user');
   const rayonName = user?.rayon?.name ?? null;
   const joinedYear = getJoinedYear(user?.created_at);
 
   const roleLine = rayonName
-    ? `${getRoleLabel(user?.role)} · ${rayonName}`
-    : getRoleLabel(user?.role);
+    ? `${getRoleLabel(user?.role, defaultUserLabel)} · ${rayonName}`
+    : getRoleLabel(user?.role, defaultUserLabel);
 
   const metaParts = [`@${user?.username ?? 'unknown'}`];
   if (joinedYear) {
-    metaParts.push(`sejak ${joinedYear}`);
+    metaParts.push(`${t('profile:header.joinedSince')} ${joinedYear}`);
   }
 
   return (
@@ -67,7 +70,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       />
       <View style={styles.info}>
         <NBText variant="h3" color="black" numberOfLines={1}>
-          {user?.full_name || 'Pengguna'}
+          {user?.full_name || defaultUserLabel}
         </NBText>
         <NBText variant="mono-sm" color="gray700" uppercase numberOfLines={1} style={styles.roleLine}>
           {roleLine}

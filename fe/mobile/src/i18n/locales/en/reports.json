@@ -1,1 +1,106 @@
-{}
+{
+  "pageTitle": "Reports",
+  "loading": "Loading reports...",
+  "createButton": "Create Report",
+  "emptyState": {
+    "title": "No Reports Yet",
+    "description": "Create a new report to see it in the list",
+    "cta": "Create Report"
+  },
+  "filters": {
+    "status": {
+      "all": "All",
+      "processing": "Processing",
+      "completed": "Completed",
+      "failed": "Failed"
+    },
+    "type": {
+      "all": "All",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "workerPerformance": "Worker Performance",
+      "areaStatus": "Area Status",
+      "overtime": "Overtime"
+    }
+  },
+  "modal": {
+    "title": "Create New Report",
+    "label": {
+      "type": "Report Type",
+      "format": "Format"
+    },
+    "placeholder": {
+      "type": "Select report type",
+      "format": "Select format"
+    },
+    "button": {
+      "cancel": "Cancel",
+      "create": "Create Report"
+    }
+  },
+  "toast": {
+    "generating": {
+      "title": "Report is being processed",
+      "description": "The report will appear in the list when it's done."
+    },
+    "fileNotAvailable": "File not available",
+    "reportNotReady": "The report is not ready to be opened.",
+    "cannotOpenFile": "Cannot open file",
+    "unsupportedFormat": "Your device does not support this file format.",
+    "error": {
+      "title": "Error",
+      "body": "Failed to open file."
+    },
+    "shareError": "Share error",
+    "fileNotFound": "File not available",
+    "deleted": {
+      "title": "Report deleted"
+    },
+    "deleteFailed": "Failed to delete report",
+    "processing": "An error occurred while processing the report."
+  },
+  "detail": {
+    "loading": "Loading report...",
+    "notFound": "Report not found",
+    "button": {
+      "back": "Back",
+      "openDownload": "Open/Download",
+      "share": "Share",
+      "delete": "Delete Report"
+    },
+    "section": {
+      "statusTimeline": "Status & Timeline",
+      "details": "Details"
+    },
+    "info": {
+      "created": "Created",
+      "started": "Started",
+      "completed": "Completed",
+      "error": "Error"
+    },
+    "label": {
+      "format": "Format",
+      "fileSize": "File Size",
+      "parameters": "Parameters"
+    }
+  },
+  "typeLabels": {
+    "daily": "Daily Report",
+    "weekly": "Weekly Report",
+    "monthly": "Monthly Report",
+    "workerPerformance": "Worker Performance",
+    "areaStatus": "Area Status",
+    "overtimeUtilization": "Overtime Utilization"
+  },
+  "formatLabels": {
+    "pdf": "PDF",
+    "csv": "CSV",
+    "xlsx": "XLSX"
+  },
+  "statusLabels": {
+    "processing": "Processing",
+    "completed": "Completed",
+    "failed": "Failed"
+  }
+}

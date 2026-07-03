@@ -1,1 +1,106 @@
-{}
+{
+  "pageTitle": "Laporan",
+  "loading": "Memuat laporan...",
+  "createButton": "Buat Laporan",
+  "emptyState": {
+    "title": "Belum Ada Laporan",
+    "description": "Buat laporan baru untuk melihat daftarnya di sini",
+    "cta": "Buat Laporan"
+  },
+  "filters": {
+    "status": {
+      "all": "Semua",
+      "processing": "Sedang Diproses",
+      "completed": "Selesai",
+      "failed": "Gagal"
+    },
+    "type": {
+      "all": "Semua",
+      "daily": "Harian",
+      "weekly": "Mingguan",
+      "monthly": "Bulanan",
+      "workerPerformance": "Kinerja Petugas",
+      "areaStatus": "Status Area",
+      "overtime": "Lembur"
+    }
+  },
+  "modal": {
+    "title": "Buat Laporan Baru",
+    "label": {
+      "type": "Jenis Laporan",
+      "format": "Format"
+    },
+    "placeholder": {
+      "type": "Pilih jenis laporan",
+      "format": "Pilih format"
+    },
+    "button": {
+      "cancel": "Batal",
+      "create": "Buat Laporan"
+    }
+  },
+  "toast": {
+    "generating": {
+      "title": "Laporan sedang diproses",
+      "description": "Laporan akan muncul di daftar ketika selesai."
+    },
+    "fileNotAvailable": "File tidak tersedia",
+    "reportNotReady": "Laporan belum siap untuk dibuka.",
+    "cannotOpenFile": "Tidak dapat membuka file",
+    "unsupportedFormat": "Perangkat Anda tidak mendukung format file ini.",
+    "error": {
+      "title": "Kesalahan",
+      "body": "Gagal membuka file."
+    },
+    "shareError": "Kesalahan berbagi",
+    "fileNotFound": "File tidak tersedia",
+    "deleted": {
+      "title": "Laporan dihapus"
+    },
+    "deleteFailed": "Gagal menghapus laporan",
+    "processing": "Terjadi kesalahan saat memproses laporan."
+  },
+  "detail": {
+    "loading": "Memuat laporan...",
+    "notFound": "Laporan tidak ditemukan",
+    "button": {
+      "back": "Kembali",
+      "openDownload": "Buka/Unduh",
+      "share": "Bagikan",
+      "delete": "Hapus Laporan"
+    },
+    "section": {
+      "statusTimeline": "Status & Timeline",
+      "details": "Detail"
+    },
+    "info": {
+      "created": "Dibuat",
+      "started": "Mulai",
+      "completed": "Selesai",
+      "error": "Error"
+    },
+    "label": {
+      "format": "Format",
+      "fileSize": "Ukuran File",
+      "parameters": "Parameter"
+    }
+  },
+  "typeLabels": {
+    "daily": "Laporan Harian",
+    "weekly": "Laporan Mingguan",
+    "monthly": "Laporan Bulanan",
+    "workerPerformance": "Kinerja Petugas",
+    "areaStatus": "Status Area",
+    "overtimeUtilization": "Pemanfaatan Lembur"
+  },
+  "formatLabels": {
+    "pdf": "PDF",
+    "csv": "CSV",
+    "xlsx": "XLSX"
+  },
+  "statusLabels": {
+    "processing": "Sedang Diproses",
+    "completed": "Selesai",
+    "failed": "Gagal"
+  }
+}

@@ -1,1 +1,65 @@
-{}
+{
+  "worker": {
+    "title": "My Performance",
+    "error": "Failed to load data",
+    "noData": {
+      "title": "No performance data",
+      "description": "Performance data will appear after you complete work."
+    },
+    "attendanceTrend": "Attendance Trend"
+  },
+  "team": {
+    "title": "Team Analytics",
+    "error": "Failed to load data",
+    "noData": {
+      "title": "No team data",
+      "description": "Data will appear after team members complete work."
+    },
+    "activeMembers": "Active Members",
+    "unit": "officers",
+    "avgScore": "Average Score",
+    "allOfficers": "All Officers"
+  },
+  "performance": {
+    "title": "Performance Score",
+    "subtitle": "Overall performance evaluation"
+  },
+  "tasks": {
+    "title": "This Month's Tasks",
+    "completed": "Completed",
+    "targetMet": "Target met",
+    "almostMet": "Almost there",
+    "needsImprovement": "Needs improvement"
+  },
+  "kpi": {
+    "attendance": "Attendance",
+    "punctuality": "Punctuality",
+    "taskCompletion": "Task Completion",
+    "areaCompliance": "Area Compliance"
+  },
+  "cards": {
+    "topPerformers": "Top Performers",
+    "needsAttention": "Needs Attention",
+    "score": "Score"
+  },
+  "grade": {
+    "A": "Excellent",
+    "B": "Good",
+    "C": "Satisfactory",
+    "D": "Poor",
+    "E": "Very Poor",
+    "F": "Failing"
+  },
+  "chart": {
+    "noData": "No data",
+    "days": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    }
+  }
+}

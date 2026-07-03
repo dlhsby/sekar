@@ -6,6 +6,7 @@
 
 import React, { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Svg, { Rect, Line, Text as SvgText } from 'react-native-svg';
 import { NBText } from '../nb';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
@@ -19,7 +20,6 @@ interface BarChartProps {
   showLabels?: boolean;
 }
 
-const DAYS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 const DEFAULT_HEIGHT = 180;
 const PADDING = 16;
 const BOTTOM_LABEL_HEIGHT = 20;
@@ -33,6 +33,18 @@ export function BarChart({
   barColor = nbColors.primary,
   showLabels = true,
 }: BarChartProps): React.JSX.Element {
+  const { t } = useTranslation();
+
+  const DAYS = [
+    t('analytics:chart.days.mon'),
+    t('analytics:chart.days.tue'),
+    t('analytics:chart.days.wed'),
+    t('analytics:chart.days.thu'),
+    t('analytics:chart.days.fri'),
+    t('analytics:chart.days.sat'),
+    t('analytics:chart.days.sun'),
+  ];
+
   // Normalize data: ensure it's 7 items, pad with 0 if needed
   const normalizedData = useMemo(() => {
     const normalized = [...data];
@@ -64,7 +76,7 @@ export function BarChart({
         {label && <NBText variant="body-sm" style={styles.label}>{label}</NBText>}
         <View style={[styles.emptyState, { height }]}>
           <NBText variant="body-sm" color="gray500">
-            Tidak ada data
+            {t('analytics:chart.noData')}
           </NBText>
         </View>
       </View>

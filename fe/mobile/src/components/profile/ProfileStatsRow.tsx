@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { HomeStatTile } from '../home/HomeStatTile';
 import { nbSpacing } from '../../constants/nbTokens';
 import type { FieldStats, MonitoringStats } from '../../hooks/useProfileData';
@@ -19,17 +20,18 @@ function display(value: number): string {
 }
 
 export function ProfileStatsRow(props: ProfileStatsRowProps): React.JSX.Element {
+  const { t } = useTranslation();
   const tiles =
     props.mode === 'field'
       ? [
-          { label: 'Hadir', value: display(props.stats.daysWorked), detail: 'bulan ini', variant: 'info' as const },
-          { label: 'Tugas', value: display(props.stats.activitiesCount), detail: 'bulan ini', variant: 'yellow' as const },
-          { label: 'Jam', value: display(props.stats.totalHours), detail: 'bulan ini', variant: 'ok' as const },
+          { label: t('profile:stats.field.present'), value: display(props.stats.daysWorked), detail: t('profile:stats.field.period'), variant: 'info' as const },
+          { label: t('profile:stats.field.tasks'), value: display(props.stats.activitiesCount), detail: t('profile:stats.field.period'), variant: 'yellow' as const },
+          { label: t('profile:stats.field.hours'), value: display(props.stats.totalHours), detail: t('profile:stats.field.period'), variant: 'ok' as const },
         ]
       : [
-          { label: 'Tim', value: display(props.stats.totalUsersManaged), detail: 'dikelola', variant: 'info' as const },
-          { label: 'Area', value: display(props.stats.totalAreasMonitored), detail: 'dipantau', variant: 'yellow' as const },
-          { label: 'Aktivitas', value: display(props.stats.activitiesReviewedThisMonth), detail: 'bulan ini', variant: 'ok' as const },
+          { label: t('profile:stats.monitoring.team'), value: display(props.stats.totalUsersManaged), detail: t('profile:stats.monitoring.managed'), variant: 'info' as const },
+          { label: t('profile:stats.monitoring.areas'), value: display(props.stats.totalAreasMonitored), detail: t('profile:stats.monitoring.monitored'), variant: 'yellow' as const },
+          { label: t('profile:stats.monitoring.activities'), value: display(props.stats.activitiesReviewedThisMonth), detail: t('profile:stats.monitoring.period'), variant: 'ok' as const },
         ];
 
   return (

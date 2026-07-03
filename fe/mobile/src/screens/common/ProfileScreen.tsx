@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { NBBackgroundPattern, NBModal, NBText } from '../../components/nb';
 import { ProfileHeader } from '../../components/common/ProfileHeader';
 import { ProfileMenu } from '../../components/common/ProfileMenu';
@@ -28,6 +29,7 @@ import { nbColors, nbSpacing } from '../../constants/nbTokens';
 const APP_VERSION = getVersion();
 
 export function ProfileScreen({ navigation }: any): React.JSX.Element {
+  const { t } = useTranslation();
   const { bottom: bottomInset } = useSafeAreaInsets();
   const {
     user,
@@ -115,7 +117,7 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
           <NBText variant="body" color="gray600" style={styles.loadingText}>
-            Memuat profil...
+            {t('profile:profile.loading')}
           </NBText>
         </View>
       </NBBackgroundPattern>
@@ -189,13 +191,13 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
       <NBModal
         visible={isAboutModalVisible}
         onClose={() => setIsAboutModalVisible(false)}
-        title="Tentang SEKAR"
+        title={t('profile:profile.about.title')}
       >
         <NBText variant="body" style={{ marginBottom: 8 }}>
-          Sistem Evaluasi Kinerja Satgas RTH
+          {t('profile:profile.about.subtitle')}
         </NBText>
-        <NBText variant="body-sm" color="gray500">Versi: {APP_VERSION}</NBText>
-        <NBText variant="body-sm" color="gray500">DLH Kota Surabaya</NBText>
+        <NBText variant="body-sm" color="gray500">{t('profile:profile.about.version')} {APP_VERSION}</NBText>
+        <NBText variant="body-sm" color="gray500">{t('profile:profile.about.organization')}</NBText>
       </NBModal>
     </NBBackgroundPattern>
   );

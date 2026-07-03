@@ -14,6 +14,7 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBButton, NBBackgroundPattern, NBText, NBToast } from '../../components/nb';
@@ -35,6 +36,7 @@ import type { MainTabScreenProps } from '../../types/navigation.types';
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export function EditProfileScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const navigation =
     useNavigation<MainTabScreenProps<'EditProfile'>['navigation']>();
   const dispatch = useAppDispatch();
@@ -61,16 +63,16 @@ export function EditProfileScreen(): React.JSX.Element {
       });
       if (result.didCancel) { return; }
       if (result.errorCode) {
-        NBToast.show({ level: 'danger', title: 'Gagal', body: 'Gagal membuka kamera. Periksa izin akses.' });
+        NBToast.show({ level: 'danger', title: t('profile:edit.toast.error'), body: t('profile:edit.cameraError') });
         return;
       }
       if (result.assets?.[0]?.uri) {
         setPreviewUri(result.assets[0].uri);
       }
     } catch {
-      NBToast.show({ level: 'danger', title: 'Gagal', body: 'Gagal membuka kamera.' });
+      NBToast.show({ level: 'danger', title: t('profile:edit.toast.error'), body: t('profile:edit.cameraErrorGeneral') });
     }
-  }, []);
+  }, [t]);
 
   const pickFromGallery = useCallback(async () => {
     try {
@@ -84,38 +86,38 @@ export function EditProfileScreen(): React.JSX.Element {
       });
       if (result.didCancel) { return; }
       if (result.errorCode) {
-        NBToast.show({ level: 'danger', title: 'Gagal', body: 'Gagal membuka galeri. Periksa izin akses.' });
+        NBToast.show({ level: 'danger', title: t('profile:edit.toast.error'), body: t('profile:edit.galleryError') });
         return;
       }
       if (result.assets?.[0]?.uri) {
         setPreviewUri(result.assets[0].uri);
       }
     } catch {
-      NBToast.show({ level: 'danger', title: 'Gagal', body: 'Gagal membuka galeri.' });
+      NBToast.show({ level: 'danger', title: t('profile:edit.toast.error'), body: t('profile:edit.galleryErrorGeneral') });
     }
-  }, []);
+  }, [t]);
 
   const handlePickImage = useCallback(() => {
     Alert.alert(
-      'Ganti Foto Profil',
-      'Pilih sumber foto',
+      t('profile:edit.changePhoto'),
+      t('profile:edit.selectSource'),
       [
-        { text: 'Batal', style: 'cancel' },
-        { text: 'Kamera', onPress: pickFromCamera },
-        { text: 'Galeri', onPress: pickFromGallery },
+        { text: t('profile:edit.cancel'), style: 'cancel' },
+        { text: t('profile:edit.camera'), onPress: pickFromCamera },
+        { text: t('profile:edit.gallery'), onPress: pickFromGallery },
       ],
     );
-  }, [pickFromCamera, pickFromGallery]);
+  }, [t, pickFromCamera, pickFromGallery]);
 
   // ─── Save ─────────────────────────────────────────────────────────────────
 
   const handleSave = useCallback(async () => {
     if (!previewUri) {
-      NBToast.show({ level: 'info', title: 'Info', body: 'Pilih foto baru terlebih dahulu.' });
+      NBToast.show({ level: 'info', title: t('profile:edit.toast.info'), body: t('profile:edit.noPhotoSelected') });
       return;
     }
     if (!user?.id) {
-      NBToast.show({ level: 'danger', title: 'Gagal', body: 'Data pengguna tidak tersedia. Silakan login ulang.' });
+      NBToast.show({ level: 'danger', title: t('profile:edit.toast.error'), body: t('profile:edit.userDataMissing') });
       return;
     }
 
@@ -132,22 +134,22 @@ export function EditProfileScreen(): React.JSX.Element {
             area: assignedArea ?? undefined,
           }),
         );
-        NBToast.show({ level: 'success', title: 'Berhasil', body: 'Foto profil berhasil diperbarui.' });
+        NBToast.show({ level: 'success', title: t('profile:edit.toast.success'), body: t('profile:edit.uploadSuccess') });
         goBack();
       } else {
-        NBToast.show({ level: 'danger', title: 'Gagal', body: response.error || 'Gagal mengunggah foto profil.' });
+        NBToast.show({ level: 'danger', title: t('profile:edit.toast.error'), body: response.error || t('profile:edit.uploadError') });
       }
     } catch (err) {
       NBToast.show({
         level: 'danger',
-        title: 'Gagal',
-        body: err instanceof Error ? err.message : 'Gagal mengunggah foto profil.',
+        title: t('profile:edit.toast.error'),
+        body: err instanceof Error ? err.message : t('profile:edit.uploadError'),
       });
     } finally {
       setIsUploading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- form is seeded from assignedArea once; not meant to reset on assignedArea change
-  }, [previewUri, user, dispatch, goBack]);
+  }, [t, previewUri, user, dispatch, goBack]);
 
   // ─── Derived values ───────────────────────────────────────────────────────
 
@@ -157,11 +159,11 @@ export function EditProfileScreen(): React.JSX.Element {
   const roleAndRayon = rayonName ? `${roleLabel} · ${rayonName}` : roleLabel;
 
   const lockedRows: { label: string; value: string }[] = [
-    { label: 'Nama Lengkap', value: user?.full_name ?? '—' },
-    { label: 'Username', value: user?.username ?? '—' },
-    { label: 'Role & Rayon', value: roleAndRayon },
+    { label: t('profile:edit.labels.fullName'), value: user?.full_name ?? '—' },
+    { label: t('profile:edit.labels.username'), value: user?.username ?? '—' },
+    { label: t('profile:edit.labels.roleRayon'), value: roleAndRayon },
     ...(user?.phone_number
-      ? [{ label: 'No. Handphone', value: user.phone_number }]
+      ? [{ label: t('profile:edit.labels.phoneNumber'), value: user.phone_number }]
       : []),
   ];
 
@@ -183,8 +185,8 @@ export function EditProfileScreen(): React.JSX.Element {
         <View style={styles.avatarSection}>
           <TouchableOpacity
             onPress={handlePickImage}
-            accessibilityLabel="Ganti foto profil"
-            accessibilityHint="Ketuk untuk memilih foto baru dari kamera atau galeri"
+            accessibilityLabel={t('profile:edit.hints.changePhoto')}
+            accessibilityHint={t('profile:edit.hints.tapToSelect')}
             activeOpacity={0.75}
             style={styles.avatarWrapper}
           >
@@ -205,13 +207,13 @@ export function EditProfileScreen(): React.JSX.Element {
             <View style={styles.newPhotoBadge}>
               <MaterialCommunityIcons name="check-circle" size={14} color={nbColors.primary} />
               <NBText variant="caption" color="primary" style={styles.newPhotoText}>
-                Foto baru dipilih
+                {t('profile:edit.photoSelected')}
               </NBText>
             </View>
           ) : null}
 
           <NBButton
-            title="Ganti Foto Profil"
+            title={t('profile:edit.changePhoto')}
             onPress={handlePickImage}
             variant="secondary"
             size="sm"
@@ -221,7 +223,7 @@ export function EditProfileScreen(): React.JSX.Element {
 
         {/* Locked account fields */}
         <NBText variant="mono-sm" color="gray600" uppercase style={styles.sectionTitle}>
-          Tidak bisa diubah
+          {t('profile:edit.lockedFields')}
         </NBText>
         <View style={styles.lockedCard}>
           {lockedRows.map((row, index) => (
@@ -240,15 +242,14 @@ export function EditProfileScreen(): React.JSX.Element {
         </View>
 
         <NBText variant="body-sm" color="gray600" style={styles.helperNote}>
-          Field yang dikunci hanya bisa diubah oleh admin sistem. Hubungi admin
-          untuk perubahan data akun.
+          {t('profile:edit.lockedNote')}
         </NBText>
       </ScrollView>
 
       {/* Sticky save footer */}
       <View style={styles.footer}>
         <NBButton
-          title={isUploading ? 'Menyimpan...' : 'Simpan Perubahan'}
+          title={isUploading ? t('profile:edit.saving') : t('profile:edit.save')}
           onPress={handleSave}
           variant="primary"
           size="lg"

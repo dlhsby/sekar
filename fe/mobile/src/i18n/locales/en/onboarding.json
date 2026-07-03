@@ -1,1 +1,54 @@
-{}
+{
+  "welcome": {
+    "greeting": "Hi,",
+    "ready": "READY",
+    "body": "SEKAR needs a bit of setup so you can get straight to the field. Just a moment, only once.",
+    "continue": "Continue"
+  },
+  "permissions": {
+    "title": "Give access to your phone",
+    "subtitle": "All permissions below are required for tracking and reporting to work fully.",
+    "button": "Allow",
+    "granted": "GRANTED",
+    "denied": "DENIED",
+    "notifications": {
+      "title": "Notifications",
+      "why": "Shift & assignment reminders."
+    },
+    "location": {
+      "title": "Location",
+      "why": "Attendance & geofence pos."
+    },
+    "backgroundLocation": {
+      "title": "Background location",
+      "why": "Route tracking during shift."
+    },
+    "camera": {
+      "title": "Camera",
+      "why": "Report photos & clock-in selfie."
+    },
+    "gallery": {
+      "title": "Gallery",
+      "why": "Attach photos from gallery."
+    }
+  },
+  "areaPreview": {
+    "clockable": {
+      "title": "Your work area",
+      "body": "Your work area has been set. Tap Start Working to open the dashboard.",
+      "cta": "Start Working"
+    },
+    "kecamatan": {
+      "title": "Ready to submit requests?",
+      "body": "Open your rayon request list and submit new requests whenever needed.",
+      "cta": "Manage Requests"
+    },
+    "admin": {
+      "title": "Ready to start?",
+      "body": "Dashboard shows team summary and pending requests.",
+      "cta": "Open Dashboard"
+    },
+    "radiusLabel": "RADIUS",
+    "areaLabel": "AREA"
+  }
+}

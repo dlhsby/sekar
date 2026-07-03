@@ -40,7 +40,7 @@ export class UpdateUserDto {
   @IsOptional()
   @Transform(({ value }) => (value == null || value === '' ? value : normalizePhone(value)))
   @IsString()
-  @Matches(INDO_MOBILE_REGEX, { message: 'Nomor HP harus dalam format 08xxxxxxxxxx' })
+  @Matches(INDO_MOBILE_REGEX, { message: 'Phone number must be in the format 08xxxxxxxxxx' })
   phone_number?: string;
 
   @ApiPropertyOptional({

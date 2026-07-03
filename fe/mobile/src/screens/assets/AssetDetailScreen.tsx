@@ -14,6 +14,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import {
   NBBackgroundPattern,
   NBButton,
@@ -40,23 +41,8 @@ type Props = {
   route: RouteProp<MainTabParamList, 'AssetDetail'>;
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  available: 'Tersedia',
-  in_use: 'Digunakan',
-  maintenance: 'Perawatan',
-  retired: 'Pensiun',
-  lost: 'Hilang',
-};
-
-const CONDITION_LABELS: Record<string, string> = {
-  good: 'Baik',
-  fair: 'Cukup',
-  poor: 'Buruk',
-  damaged: 'Rusak',
-  unusable: 'Tidak Layak',
-};
-
 export function AssetDetailScreen({ navigation, route }: Props): React.JSX.Element {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const { assetId } = route.params;
   const asset = useAppSelector(selectSelectedAsset);
@@ -66,6 +52,22 @@ export function AssetDetailScreen({ navigation, route }: Props): React.JSX.Eleme
 
   const currentUser = useAppSelector((state) => state.auth.user);
   const { canCheckoutAsset, canReturnAsset } = useAssetRoleAccess();
+
+  const STATUS_LABELS: Record<string, string> = {
+    available: t('assets:status.available'),
+    in_use: t('assets:status.inUse'),
+    maintenance: t('assets:status.maintenance'),
+    retired: t('assets:status.retired'),
+    lost: t('assets:status.lost'),
+  };
+
+  const CONDITION_LABELS: Record<string, string> = {
+    good: t('assets:condition.good'),
+    fair: t('assets:condition.fair'),
+    poor: t('assets:condition.poor'),
+    damaged: t('assets:condition.damaged'),
+    unusable: t('assets:condition.unusable'),
+  };
 
   // Fetch asset detail on mount
   useFocusEffect(
@@ -127,10 +129,10 @@ export function AssetDetailScreen({ navigation, route }: Props): React.JSX.Eleme
     return (
       <NBBackgroundPattern>
         <SafeAreaView style={styles.safeArea}>
-          <NBPageHeader title="Detail Aset" />
+          <NBPageHeader title={t('assets:detail.title')} />
           <NBEmptyState
-            title="Aset tidak ditemukan"
-            description="Silakan coba lagi"
+            title={t('assets:detail.notFound.title')}
+            description={t('assets:detail.notFound.description')}
             variant="error"
           />
         </SafeAreaView>
@@ -141,7 +143,7 @@ export function AssetDetailScreen({ navigation, route }: Props): React.JSX.Eleme
   return (
     <NBBackgroundPattern>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <NBPageHeader title="Detail Aset" />
+        <NBPageHeader title={t('assets:detail.title')} />
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -155,7 +157,7 @@ export function AssetDetailScreen({ navigation, route }: Props): React.JSX.Eleme
             <NBCardContent>
               <View style={styles.infoRow}>
                 <NBText variant="caption" style={styles.label}>
-                  Kode
+                  {t('assets:detail.fields.code')}
                 </NBText>
                 <NBText variant="body-sm" style={styles.value}>
                   {asset.asset_code}
@@ -164,7 +166,7 @@ export function AssetDetailScreen({ navigation, route }: Props): React.JSX.Eleme
 
               <View style={styles.infoRow}>
                 <NBText variant="caption" style={styles.label}>
-                  Kategori
+                  {t('assets:detail.fields.category')}
                 </NBText>
                 <NBText variant="body-sm" style={styles.value}>
                   {asset.category?.name || '-'}
@@ -173,7 +175,7 @@ export function AssetDetailScreen({ navigation, route }: Props): React.JSX.Eleme
 
               <View style={styles.infoRow}>
                 <NBText variant="caption" style={styles.labelGray}>
-                  Status
+                  {t('assets:detail.fields.status')}
                 </NBText>
                 <NBText variant="body-sm" style={styles.value}>
                   {STATUS_LABELS[asset.status] || asset.status}
@@ -182,7 +184,7 @@ export function AssetDetailScreen({ navigation, route }: Props): React.JSX.Eleme
 
               <View style={styles.infoRow}>
                 <NBText variant="caption" style={styles.label}>
-                  Kondisi
+                  {t('assets:detail.fields.condition')}
                 </NBText>
                 <NBText variant="body-sm" style={styles.value}>
                   {CONDITION_LABELS[asset.condition] || asset.condition}
@@ -192,7 +194,7 @@ export function AssetDetailScreen({ navigation, route }: Props): React.JSX.Eleme
               {asset.area && (
                 <View style={styles.infoRow}>
                   <NBText variant="caption" style={styles.label}>
-                    Area
+                    {t('assets:detail.fields.area')}
                   </NBText>
                   <NBText variant="body-sm" style={styles.value}>
                     {asset.area.name}
@@ -203,7 +205,7 @@ export function AssetDetailScreen({ navigation, route }: Props): React.JSX.Eleme
               {asset.description && (
                 <View style={styles.infoRow}>
                   <NBText variant="caption" style={styles.label}>
-                    Deskripsi
+                    {t('assets:detail.fields.description')}
                   </NBText>
                   <NBText variant="body-sm" style={styles.value}>
                     {asset.description}
@@ -224,7 +226,7 @@ export function AssetDetailScreen({ navigation, route }: Props): React.JSX.Eleme
           {/* Assignment History */}
           <NBCard variant="default">
             <View style={styles.cardTitle}>
-              <NBText variant="body-lg">Riwayat Penugasan</NBText>
+              <NBText variant="body-lg">{t('assets:detail.assignmentHistory')}</NBText>
             </View>
             <NBCardContent>
               {assignmentsLoading ? (
@@ -241,7 +243,7 @@ export function AssetDetailScreen({ navigation, route }: Props): React.JSX.Eleme
                       </NBText>
                       {assignment.returned_at && (
                         <NBText variant="caption" style={styles.returnedDate}>
-                          Dikembalikan: {new Date(assignment.returned_at).toLocaleDateString('id-ID')}
+                          {t('assets:detail.returnedLabel')}: {new Date(assignment.returned_at).toLocaleDateString('id-ID')}
                         </NBText>
                       )}
                     </View>
@@ -249,7 +251,7 @@ export function AssetDetailScreen({ navigation, route }: Props): React.JSX.Eleme
                 </View>
               ) : (
                 <NBText variant="body-sm" style={styles.noAssignments}>
-                  Belum ada riwayat penugasan
+                  {t('assets:detail.noAssignments')}
                 </NBText>
               )}
             </NBCardContent>
@@ -259,14 +261,14 @@ export function AssetDetailScreen({ navigation, route }: Props): React.JSX.Eleme
           <View style={styles.actions}>
             {canCheckout() && (
               <NBButton
-                label="Pinjam Aset"
+                label={t('assets:detail.checkout')}
                 onPress={onCheckout}
                 variant="primary"
               />
             )}
             {canReturn() && (
               <NBButton
-                label="Kembalikan Aset"
+                label={t('assets:detail.return')}
                 onPress={onReturn}
                 variant="secondary"
               />

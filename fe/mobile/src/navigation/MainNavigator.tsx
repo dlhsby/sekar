@@ -11,6 +11,7 @@ import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import { createBottomTabNavigator, type BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import type { MainTabParamList, MainStackParamList } from '../types/navigation.types';
 import { nbColors, nbBorders, nbShadows, nbRadius, nbType } from '../constants/nbTokens';
@@ -158,6 +159,7 @@ interface TabConfig {
 /**
  * Uniform bottom bar — every role sees exactly Home · Menu · Profile.
  * All other features are reached from the Menu launcher (see MENU_CONFIGS).
+ * Labels are translated dynamically in the tab bar component.
  */
 export const UNIFORM_TAB_CONFIG: TabConfig[] = [
   { name: 'Home', label: 'Beranda', icon: 'home' },
@@ -187,10 +189,21 @@ function TabBarIcon({ focused, name }: { focused: boolean; name: string }): Reac
  * guarantees even distribution + reliable touch targets.
  */
 function MainTabBar({ state, navigation }: BottomTabBarProps): React.JSX.Element {
+  const { t } = useTranslation();
   const visibleTabs = UNIFORM_TAB_CONFIG;
   const insets = useSafeAreaInsets();
 
   const focusedName = state.routes[state.index]?.name;
+
+  // Map tab names to translation keys
+  const getTabLabel = (tabName: string): string => {
+    const labels: Record<string, string> = {
+      Home: t('menu:tabs.home'),
+      Menu: t('menu:tabs.menu'),
+      Profile: t('menu:tabs.profile'),
+    };
+    return labels[tabName] || tabName;
+  };
 
   return (
     <View style={[styles.tabBar, { paddingBottom: 6 + insets.bottom }]}>
@@ -200,6 +213,7 @@ function MainTabBar({ state, navigation }: BottomTabBarProps): React.JSX.Element
           return null;
         }
         const focused = focusedName === tab.name;
+        const label = getTabLabel(tab.name);
 
         const onPress = () => {
           const event = navigation.emit({
@@ -219,7 +233,7 @@ function MainTabBar({ state, navigation }: BottomTabBarProps): React.JSX.Element
             onPress={onPress}
             accessibilityRole="button"
             accessibilityState={focused ? { selected: true } : {}}
-            accessibilityLabel={tab.label}
+            accessibilityLabel={label}
           >
             <TabBarIcon focused={focused} name={tab.icon} />
             <NBText
@@ -228,7 +242,7 @@ function MainTabBar({ state, navigation }: BottomTabBarProps): React.JSX.Element
               numberOfLines={1}
               style={styles.tabLabel}
             >
-              {tab.label}
+              {label}
             </NBText>
           </TouchableOpacity>
         );

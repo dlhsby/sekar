@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import {
   NBBackgroundPattern,
@@ -44,6 +45,7 @@ type Props = {
 const TEAM_PAGE_SIZE = 10;
 
 export function TeamAnalyticsScreen({ route }: Props): React.JSX.Element {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
 
   const teamAnalytics = useAppSelector(selectTeamAnalytics);
@@ -103,7 +105,7 @@ export function TeamAnalyticsScreen({ route }: Props): React.JSX.Element {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <NBBackgroundPattern pattern="grid" />
-        <NBPageHeader title="Analitik Tim" />
+        <NBPageHeader title={t('analytics:team.title')} />
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           refreshControl={
@@ -112,7 +114,7 @@ export function TeamAnalyticsScreen({ route }: Props): React.JSX.Element {
         >
           <NBEmptyState
             variant="error"
-            title="Gagal memuat data"
+            title={t('analytics:team.error')}
             description={error}
           />
         </ScrollView>
@@ -125,7 +127,7 @@ export function TeamAnalyticsScreen({ route }: Props): React.JSX.Element {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <NBBackgroundPattern pattern="grid" />
-        <NBPageHeader title="Analitik Tim" />
+        <NBPageHeader title={t('analytics:team.title')} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
         </View>
@@ -138,7 +140,7 @@ export function TeamAnalyticsScreen({ route }: Props): React.JSX.Element {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <NBBackgroundPattern pattern="grid" />
-        <NBPageHeader title="Analitik Tim" />
+        <NBPageHeader title={t('analytics:team.title')} />
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           refreshControl={
@@ -147,8 +149,8 @@ export function TeamAnalyticsScreen({ route }: Props): React.JSX.Element {
         >
           <NBEmptyState
             variant="noData"
-            title="Tidak ada data tim"
-            description="Data akan muncul setelah anggota tim menyelesaikan pekerjaan."
+            title={t('analytics:team.noData.title')}
+            description={t('analytics:team.noData.description')}
           />
         </ScrollView>
       </SafeAreaView>
@@ -158,7 +160,7 @@ export function TeamAnalyticsScreen({ route }: Props): React.JSX.Element {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <NBBackgroundPattern pattern="grid" />
-      <NBPageHeader title="Analitik Tim" />
+      <NBPageHeader title={t('analytics:team.title')} />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={
@@ -168,12 +170,12 @@ export function TeamAnalyticsScreen({ route }: Props): React.JSX.Element {
         {/* Summary Cards */}
         <View style={styles.summaryGrid}>
           <SummaryCard
-            label="Anggota Aktif"
+            label={t('analytics:team.activeMembers')}
             value={teamAnalytics.length}
-            subtitle="petugas"
+            subtitle={t('analytics:team.unit')}
           />
           <SummaryCard
-            label="Skor Rata"
+            label={t('analytics:team.avgScore')}
             value={Math.round(avgScore * 10) / 10}
             subtitle={avgScore >= 80 ? 'A' : avgScore >= 70 ? 'B' : avgScore >= 60 ? 'C' : 'D'}
           />
@@ -192,7 +194,7 @@ export function TeamAnalyticsScreen({ route }: Props): React.JSX.Element {
         {/* All Team Members List */}
         <NBCard style={styles.listCard}>
           <NBText variant="h3" style={styles.listTitle}>
-            Semua Petugas ({teamAnalytics.length})
+            {t('analytics:team.allOfficers')} ({teamAnalytics.length})
           </NBText>
           {teamAnalytics.map((worker) => (
             <View key={worker.id} style={styles.workerRow}>
@@ -201,7 +203,7 @@ export function TeamAnalyticsScreen({ route }: Props): React.JSX.Element {
                   {worker.full_name}
                 </NBText>
                 <NBText variant="body-sm" color="gray600">
-                  Skor: {Math.round(worker.performance_score * 10) / 10}
+                  {t('analytics:cards.score')}: {Math.round(worker.performance_score * 10) / 10}
                 </NBText>
               </View>
               <NBBadge

@@ -1,1 +1,52 @@
-{}
+{
+  "inventory": {
+    "loading": "Memuat...",
+    "error": {
+      "title": "Gagal memuat data bibit",
+      "description": "Silakan coba lagi"
+    },
+    "retry": "Coba Lagi",
+    "empty": "Tidak ada bibit tersedia"
+  },
+  "units": {
+    "gram": "gram",
+    "piece": "buah",
+    "packet": "paket",
+    "lowStock": "Rendah"
+  },
+  "detail": {
+    "stockBadge": "Stok Rendah",
+    "currentStock": "Stok Saat Ini",
+    "transactionHistory": "Riwayat Transaksi",
+    "record": "Catat",
+    "empty": "Belum ada transaksi"
+  },
+  "transaction": {
+    "types": {
+      "purchase": "Pembelian",
+      "distribution": "Distribusi",
+      "adjustment": "Penyesuaian"
+    }
+  },
+  "form": {
+    "title": "Catat Transaksi",
+    "label": {
+      "type": "Tipe Transaksi",
+      "quantity": "Jumlah",
+      "date": "Tanggal Transaksi",
+      "notes": "Catatan (Opsional)"
+    },
+    "placeholder": {
+      "type": "Pilih tipe transaksi",
+      "quantity": "Masukkan jumlah",
+      "notes": "Masukkan catatan tambahan"
+    },
+    "validation": {
+      "quantityRequired": "Jumlah harus lebih dari 0"
+    },
+    "button": {
+      "save": "Simpan Transaksi",
+      "cancel": "Batal"
+    }
+  }
+}

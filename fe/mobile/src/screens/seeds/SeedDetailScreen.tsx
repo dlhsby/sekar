@@ -11,6 +11,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { NBBackgroundPattern, NBButton, NBText, NBCard, NBBadge, NBSkeleton } from '../../components/nb';
@@ -22,18 +23,22 @@ import type { MainTabScreenProps } from '../../types/navigation.types';
 
 const LOW_STOCK_THRESHOLD = 10;
 
-const TRANSACTION_TYPE_LABELS: Record<string, string> = {
-  purchase: 'Pembelian',
-  distribution: 'Distribusi',
-  adjustment: 'Penyesuaian',
-};
-
 type Props = MainTabScreenProps<'SeedDetail'>;
 
 export function SeedDetailScreen({ route }: Props): React.JSX.Element {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
   const { seedId } = route.params;
+
+  const TRANSACTION_TYPE_LABELS: Record<string, string> = useMemo(
+    () => ({
+      purchase: t('seeds:transaction.types.purchase'),
+      distribution: t('seeds:transaction.types.distribution'),
+      adjustment: t('seeds:transaction.types.adjustment'),
+    }),
+    [t]
+  );
 
   const { byId, transactionsBySeed } = useAppSelector((state) => state.plantSeeds);
   const seed = byId[seedId];
@@ -73,8 +78,13 @@ export function SeedDetailScreen({ route }: Props): React.JSX.Element {
   const isLowStock = seed && seed.stockQty < LOW_STOCK_THRESHOLD;
   const unitLabel = useMemo(() => {
     if (!seed) return '';
-    return { gram: 'gram', piece: 'buah', packet: 'paket' }[seed.unit] || seed.unit;
-  }, [seed]);
+    const unitMap: Record<string, string> = {
+      gram: t('seeds:units.gram'),
+      piece: t('seeds:units.piece'),
+      packet: t('seeds:units.packet'),
+    };
+    return unitMap[seed.unit] || seed.unit;
+  }, [seed, t]);
 
   return (
     <View style={styles.container}>
@@ -99,13 +109,13 @@ export function SeedDetailScreen({ route }: Props): React.JSX.Element {
                   {seed.nameId}
                 </NBText>
                 {isLowStock && (
-                  <NBBadge text="Stok Rendah" color="warning" size="sm" style={styles.lowStockBadge} />
+                  <NBBadge text={t('seeds:detail.stockBadge')} color="warning" size="sm" style={styles.lowStockBadge} />
                 )}
               </View>
 
               <View style={styles.stockDisplay}>
                 <NBText variant="caption" color="gray600" style={styles.stockLabel}>
-                  Stok Saat Ini
+                  {t('seeds:detail.currentStock')}
                 </NBText>
                 <View style={styles.stockRow}>
                   <NBText variant="display" style={styles.stockNumber}>
@@ -128,14 +138,14 @@ export function SeedDetailScreen({ route }: Props): React.JSX.Element {
         <View style={styles.transactionsSection}>
           <View style={styles.sectionHeader}>
             <NBText variant="h3" style={styles.sectionTitle}>
-              Riwayat Transaksi
+              {t('seeds:detail.transactionHistory')}
             </NBText>
             <NBButton
               variant="primary"
               size="sm"
               onPress={handleRecordTransaction}
             >
-              Catat
+              {t('seeds:detail.record')}
             </NBButton>
           </View>
 
@@ -173,7 +183,7 @@ export function SeedDetailScreen({ route }: Props): React.JSX.Element {
                 color={nbColors.gray600}
               />
               <NBText variant="body-sm" color="gray600" style={styles.emptyText}>
-                Belum ada transaksi
+                {t('seeds:detail.empty')}
               </NBText>
             </View>
           )}

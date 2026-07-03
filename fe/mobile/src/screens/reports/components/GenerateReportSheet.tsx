@@ -10,6 +10,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import {
   NBButton,
   NBSelect,
@@ -40,6 +41,7 @@ export function GenerateReportSheet({
   isSubmitting,
   templates,
 }: GenerateReportSheetProps): React.JSX.Element {
+  const { t } = useTranslation();
   const [selectedType, setSelectedType] = useState<ReportType | ''>('');
   const [selectedFormat, setSelectedFormat] = useState<ReportFormat | ''>('');
 
@@ -52,11 +54,14 @@ export function GenerateReportSheet({
     [templates],
   );
 
-  const formatOptions = [
-    { label: 'PDF', value: 'pdf' },
-    { label: 'CSV', value: 'csv' },
-    { label: 'XLSX', value: 'xlsx' },
-  ];
+  const formatOptions = useMemo(
+    () => [
+      { label: t('reports:formatLabels.pdf'), value: 'pdf' },
+      { label: t('reports:formatLabels.csv'), value: 'csv' },
+      { label: t('reports:formatLabels.xlsx'), value: 'xlsx' },
+    ],
+    [t],
+  );
 
   const canSubmit = selectedType !== '' && selectedFormat !== '';
 
@@ -76,7 +81,7 @@ export function GenerateReportSheet({
       visible={visible}
       onClose={onClose}
       type="sheet"
-      title="Buat Laporan Baru"
+      title={t('reports:modal.title')}
     >
       <ScrollView
         style={styles.container}
@@ -85,10 +90,10 @@ export function GenerateReportSheet({
       >
         <View style={styles.section}>
           <NBText variant="h3" color="gray900" style={styles.label}>
-            Jenis Laporan
+            {t('reports:modal.label.type')}
           </NBText>
           <NBSelect
-            placeholder="Pilih jenis laporan"
+            placeholder={t('reports:modal.placeholder.type')}
             options={typeOptions}
             value={selectedType}
             onValueChange={(value) => setSelectedType(value as ReportType)}
@@ -97,10 +102,10 @@ export function GenerateReportSheet({
 
         <View style={styles.section}>
           <NBText variant="h3" color="gray900" style={styles.label}>
-            Format
+            {t('reports:modal.label.format')}
           </NBText>
           <NBSelect
-            placeholder="Pilih format"
+            placeholder={t('reports:modal.placeholder.format')}
             options={formatOptions}
             value={selectedFormat}
             onValueChange={(value) => setSelectedFormat(value as ReportFormat)}
@@ -109,14 +114,14 @@ export function GenerateReportSheet({
 
         <View style={styles.buttonGroup}>
           <NBButton
-            title="Batal"
+            title={t('reports:modal.button.cancel')}
             variant="secondary"
             onPress={onClose}
             disabled={isSubmitting}
             style={styles.button}
           />
           <NBButton
-            title={isSubmitting ? '' : 'Buat Laporan'}
+            title={isSubmitting ? '' : t('reports:modal.button.create')}
             variant="primary"
             onPress={handleSubmit}
             disabled={!canSubmit || isSubmitting}

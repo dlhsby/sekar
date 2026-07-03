@@ -1,1 +1,54 @@
-{}
+{
+  "welcome": {
+    "greeting": "Hai,",
+    "ready": "SIAP",
+    "body": "SEKAR butuh sedikit setup biar kamu bisa langsung ke lapangan. Cuma sebentar, sekali saja.",
+    "continue": "Lanjut"
+  },
+  "permissions": {
+    "title": "Beri akses ke HP-mu",
+    "subtitle": "Semua izin di bawah diperlukan agar pelacakan & laporan berfungsi penuh.",
+    "button": "Izinkan",
+    "granted": "DIBERIKAN",
+    "denied": "DITOLAK",
+    "notifications": {
+      "title": "Notifikasi",
+      "why": "Pengingat shift & penugasan."
+    },
+    "location": {
+      "title": "Lokasi",
+      "why": "Presensi & geofence pos."
+    },
+    "backgroundLocation": {
+      "title": "Lokasi latar belakang",
+      "why": "Pelacakan rute selama shift berjalan."
+    },
+    "camera": {
+      "title": "Kamera",
+      "why": "Foto laporan & swafoto clock-in."
+    },
+    "gallery": {
+      "title": "Galeri",
+      "why": "Lampirkan foto dari galeri."
+    }
+  },
+  "areaPreview": {
+    "clockable": {
+      "title": "Area tugas kamu",
+      "body": "Area kerja Anda telah ditetapkan. Tekan Mulai Bekerja untuk membuka dashboard.",
+      "cta": "Mulai Bekerja"
+    },
+    "kecamatan": {
+      "title": "Siap mengajukan permohonan?",
+      "body": "Buka daftar permohonan rayon Anda dan ajukan baru kapan pun diperlukan.",
+      "cta": "Kelola Permohonan"
+    },
+    "admin": {
+      "title": "Siap memulai?",
+      "body": "Dashboard menampilkan ringkasan tim dan permohonan yang menunggu.",
+      "cta": "Buka Dashboard"
+    },
+    "radiusLabel": "RADIUS",
+    "areaLabel": "AREA"
+  }
+}

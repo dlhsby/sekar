@@ -17,6 +17,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { AppState, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { NBButton, NBText, type NBTextColor } from '../../components/nb';
 import { PaginationDots } from '../../components/auth/PaginationDots';
 import { nbColors, nbBorders, nbRadius, nbShadows, nbSpacing } from '../../constants/nbTokens';
@@ -33,62 +34,70 @@ interface PermRow {
   request: () => Promise<{ granted: boolean }>;
 }
 
-const ROWS: PermRow[] = [
-  {
-    key: 'notifications',
-    title: 'Notifikasi',
-    why: 'Pengingat shift & penugasan.',
-    icon: '🔔',
-    tint: nbColors.bgAccentPink,
-    request: () => permissionManager.requestNotificationPermission(),
-  },
-  {
-    key: 'location',
-    title: 'Lokasi',
-    why: 'Presensi & geofence pos.',
-    icon: '📍',
-    tint: nbColors.bgAccentMint,
-    request: () => permissionManager.requestLocationPermission(),
-  },
-  {
-    key: 'background_location',
-    title: 'Lokasi latar belakang',
-    why: 'Pelacakan rute selama shift berjalan.',
-    icon: '🛰️',
-    tint: nbColors.bgAccentGreen,
-    request: () => permissionManager.requestBackgroundLocationPermission(),
-  },
-  {
-    key: 'camera',
-    title: 'Kamera',
-    why: 'Foto laporan & swafoto clock-in.',
-    icon: '📷',
-    tint: nbColors.bgAccentYellow,
-    request: () => permissionManager.requestCameraPermission(),
-  },
-  {
-    key: 'gallery',
-    title: 'Galeri',
-    why: 'Lampirkan foto dari galeri.',
-    icon: '🖼️',
-    tint: nbColors.bgAccentLilac,
-    request: () => permissionManager.requestGalleryPermission(),
-  },
-];
+function getPermRows(t: ReturnType<typeof useTranslation>['t']): PermRow[] {
+  return [
+    {
+      key: 'notifications',
+      title: t('onboarding:permissions.notifications.title'),
+      why: t('onboarding:permissions.notifications.why'),
+      icon: '🔔',
+      tint: nbColors.bgAccentPink,
+      request: () => permissionManager.requestNotificationPermission(),
+    },
+    {
+      key: 'location',
+      title: t('onboarding:permissions.location.title'),
+      why: t('onboarding:permissions.location.why'),
+      icon: '📍',
+      tint: nbColors.bgAccentMint,
+      request: () => permissionManager.requestLocationPermission(),
+    },
+    {
+      key: 'background_location',
+      title: t('onboarding:permissions.backgroundLocation.title'),
+      why: t('onboarding:permissions.backgroundLocation.why'),
+      icon: '🛰️',
+      tint: nbColors.bgAccentGreen,
+      request: () => permissionManager.requestBackgroundLocationPermission(),
+    },
+    {
+      key: 'camera',
+      title: t('onboarding:permissions.camera.title'),
+      why: t('onboarding:permissions.camera.why'),
+      icon: '📷',
+      tint: nbColors.bgAccentYellow,
+      request: () => permissionManager.requestCameraPermission(),
+    },
+    {
+      key: 'gallery',
+      title: t('onboarding:permissions.gallery.title'),
+      why: t('onboarding:permissions.gallery.why'),
+      icon: '🖼️',
+      tint: nbColors.bgAccentLilac,
+      request: () => permissionManager.requestGalleryPermission(),
+    },
+  ];
+}
 
-const PILL: Record<'granted' | 'denied', { label: string; bg: string; fg: NBTextColor }> = {
-  granted: { label: 'DIBERIKAN', bg: nbColors.statusActiveBg, fg: 'statusActive' },
-  denied: { label: 'DITOLAK', bg: nbColors.statusMissingBg, fg: 'statusMissing' },
-};
+function getPill(t: ReturnType<typeof useTranslation>['t']): Record<'granted' | 'denied', { label: string; bg: string; fg: NBTextColor }> {
+  return {
+    granted: { label: t('onboarding:permissions.granted'), bg: nbColors.statusActiveBg, fg: 'statusActive' },
+    denied: { label: t('onboarding:permissions.denied'), bg: nbColors.statusMissingBg, fg: 'statusMissing' },
+  };
+}
 
 function PermissionRowView({
   row,
   status,
   onGrant,
+  pill,
+  buttonLabel,
 }: {
   row: PermRow;
   status: PermStatus;
   onGrant: () => void;
+  pill: Record<'granted' | 'denied', { label: string; bg: string; fg: NBTextColor }>;
+  buttonLabel: string;
 }): React.JSX.Element {
   return (
     <View style={styles.row} testID={`perm-row-${row.key}`}>
@@ -105,16 +114,16 @@ function PermissionRowView({
       </View>
       {status === 'pending' ? (
         <NBButton
-          title="Izinkan"
+          title={buttonLabel}
           variant="primary"
           size="sm"
           onPress={onGrant}
           testID={`perm-grant-${row.key}`}
         />
       ) : (
-        <View style={[styles.pill, { backgroundColor: PILL[status].bg }]}>
-          <NBText variant="mono-sm" color={PILL[status].fg} testID={`perm-status-${row.key}`}>
-            {PILL[status].label}
+        <View style={[styles.pill, { backgroundColor: pill[status].bg }]}>
+          <NBText variant="mono-sm" color={pill[status].fg} testID={`perm-status-${row.key}`}>
+            {pill[status].label}
           </NBText>
         </View>
       )}
@@ -123,7 +132,10 @@ function PermissionRowView({
 }
 
 export function OnboardingPermissionsScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const navigation = useNavigation();
+  const ROWS = getPermRows(t);
+  const PILL = getPill(t);
   const [statuses, setStatuses] = useState<Record<string, PermStatus>>(() => {
     const init: Record<string, PermStatus> = {};
     ROWS.forEach((r) => (init[r.key] = 'pending'));
@@ -178,9 +190,9 @@ export function OnboardingPermissionsScreen(): React.JSX.Element {
     <SafeAreaView style={styles.root} testID="onboarding-permissions-screen">
       <ScrollView contentContainerStyle={styles.content}>
         <PaginationDots variant="bars" total={3} index={1} style={styles.dots} />
-        <NBText variant="h2">Beri akses ke HP-mu</NBText>
+        <NBText variant="h2">{t('onboarding:permissions.title')}</NBText>
         <NBText variant="body-sm" color="gray600" style={styles.subtitle}>
-          Semua izin di bawah diperlukan agar pelacakan & laporan berfungsi penuh.
+          {t('onboarding:permissions.subtitle')}
         </NBText>
 
         <View style={styles.list}>
@@ -190,6 +202,8 @@ export function OnboardingPermissionsScreen(): React.JSX.Element {
               row={row}
               status={statuses[row.key]}
               onGrant={() => grant(row)}
+              pill={PILL}
+              buttonLabel={t('onboarding:permissions.button')}
             />
           ))}
         </View>
@@ -197,7 +211,7 @@ export function OnboardingPermissionsScreen(): React.JSX.Element {
 
       <View style={styles.footer}>
         <NBButton
-          title="Lanjut"
+          title={t('onboarding:welcome.continue')}
           variant="primary"
           fullWidth
           disabled={!allAddressed}

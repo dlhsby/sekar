@@ -1,1 +1,131 @@
-{}
+{
+  "profile": {
+    "loading": "Loading profile...",
+    "about": {
+      "title": "About SEKAR",
+      "subtitle": "Performance Evaluation System for RTH Workers",
+      "version": "Version:",
+      "organization": "DLH Surabaya City"
+    }
+  },
+  "edit": {
+    "title": "Edit Profile",
+    "changePhoto": "Change Profile Photo",
+    "selectSource": "Select photo source",
+    "cancel": "Cancel",
+    "camera": "Camera",
+    "gallery": "Gallery",
+    "photoSelected": "New photo selected",
+    "noPhotoSelected": "Select a new photo first.",
+    "userDataMissing": "User data not available. Please log in again.",
+    "uploadSuccess": "Profile photo updated successfully.",
+    "uploadError": "Failed to upload profile photo.",
+    "cameraError": "Failed to open camera. Check permissions.",
+    "cameraErrorGeneral": "Failed to open camera.",
+    "galleryError": "Failed to open gallery. Check permissions.",
+    "galleryErrorGeneral": "Failed to open gallery.",
+    "saving": "Saving...",
+    "save": "Save Changes",
+    "lockedFields": "Cannot be changed",
+    "lockedNote": "Locked fields can only be changed by system admin. Contact admin for account changes.",
+    "labels": {
+      "fullName": "Full Name",
+      "username": "Username",
+      "roleRayon": "Role & Rayon",
+      "phoneNumber": "Phone Number"
+    },
+    "hints": {
+      "changePhoto": "Change profile photo",
+      "tapToSelect": "Tap to select a new photo from camera or gallery"
+    },
+    "toast": {
+      "info": "Info",
+      "success": "Success",
+      "error": "Failed"
+    }
+  },
+  "header": {
+    "user": "User",
+    "joinedSince": "since"
+  },
+  "menu": {
+    "editProfile": "Edit Profile",
+    "changePassword": "Change Password",
+    "mySchedule": "My Schedule",
+    "shiftHistory": "Shift History",
+    "settings": "Settings",
+    "diagnostics": "Diagnostics & Permissions",
+    "about": "About App",
+    "logout": "Log Out",
+    "account": "Account",
+    "application": "Application"
+  },
+  "stats": {
+    "field": {
+      "present": "Present",
+      "tasks": "Tasks",
+      "hours": "Hours",
+      "period": "this month"
+    },
+    "monitoring": {
+      "team": "Team",
+      "managed": "managed",
+      "areas": "Areas",
+      "monitored": "monitored",
+      "activities": "Activities",
+      "period": "this month"
+    }
+  },
+  "assignedArea": {
+    "title": "Assigned Area",
+    "radiusSuffix": "radius",
+    "noArea": "No area assigned"
+  },
+  "assignedKecamatan": {
+    "title": "Assigned Region",
+    "rayon": "Rayon",
+    "kecamatan": "District",
+    "noArea": "No region assigned yet"
+  },
+  "changePassword": {
+    "title": "Create New Password",
+    "alert": {
+      "title": "Temporary password must be changed",
+      "message": "For security, create a new password before proceeding."
+    },
+    "currentPassword": "Current Password",
+    "currentPasswordPlaceholder": "Enter current password",
+    "newPassword": "New Password",
+    "newPasswordPlaceholder": "Enter new password",
+    "confirmPassword": "Confirm New Password",
+    "confirmPasswordPlaceholder": "Re-enter new password",
+    "rules": {
+      "title": "Password Requirements",
+      "minLength": "At least 8 characters",
+      "alphanumeric": "Contains letters and numbers",
+      "match": "Passwords match"
+    },
+    "submit": "Save & Log In",
+    "submitAction": "Change Password",
+    "logout": "Log Out & Log In As Different User",
+    "success": {
+      "title": "Password saved",
+      "subtitle": "Redirecting to home…"
+    },
+    "validation": {
+      "currentPasswordRequired": "Current password is required",
+      "newPasswordRequired": "New password is required",
+      "newPasswordMinLength": "New password must be at least 8 characters",
+      "newPasswordAlphanumeric": "New password must contain letters and numbers",
+      "newPasswordDifferent": "New password must be different from old password",
+      "confirmPasswordRequired": "Password confirmation is required",
+      "confirmPasswordMatch": "Passwords do not match",
+      "currentPasswordWrong": "Current password is incorrect"
+    },
+    "errors": {
+      "noResponse": "No response from server.",
+      "newDifferentFromOld": "New password must be different from temporary password.",
+      "generic": "An error occurred."
+    }
+  }
+}

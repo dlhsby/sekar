@@ -14,6 +14,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import {
   NBBackgroundPattern,
   NBButton,
@@ -48,6 +49,7 @@ export function AssetCheckoutScreen({
   navigation,
   route,
 }: Props): React.JSX.Element {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const { assetId } = route.params;
   const asset = useAppSelector(selectSelectedAsset);
@@ -116,10 +118,10 @@ export function AssetCheckoutScreen({
     return (
       <NBBackgroundPattern>
         <SafeAreaView style={styles.safeArea}>
-          <NBPageHeader title="Pinjam Aset" />
+          <NBPageHeader title={t('assets:checkout.title')} />
           <NBEmptyState
-            title="Aset tidak ditemukan"
-            description="Silakan coba lagi"
+            title={t('assets:checkout.notFound.title')}
+            description={t('assets:checkout.notFound.description')}
             variant="error"
           />
         </SafeAreaView>
@@ -130,7 +132,7 @@ export function AssetCheckoutScreen({
   return (
     <NBBackgroundPattern>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <NBPageHeader title="Pinjam Aset" />
+        <NBPageHeader title={t('assets:checkout.title')} />
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -144,7 +146,7 @@ export function AssetCheckoutScreen({
             <NBCardContent>
               <View style={styles.infoRow}>
                 <NBText variant="caption" style={styles.label}>
-                  Kode
+                  {t('assets:checkout.fields.code')}
                 </NBText>
                 <NBText variant="body-sm" style={styles.value}>
                   {asset.asset_code}
@@ -154,7 +156,7 @@ export function AssetCheckoutScreen({
               {asset.category && (
                 <View style={styles.infoRow}>
                   <NBText variant="caption" style={styles.label}>
-                    Kategori
+                    {t('assets:checkout.fields.category')}
                   </NBText>
                   <NBText variant="body-sm" style={styles.value}>
                     {asset.category.name}
@@ -165,7 +167,7 @@ export function AssetCheckoutScreen({
               {asset.area && (
                 <View style={styles.infoRow}>
                   <NBText variant="caption" style={styles.label}>
-                    Area
+                    {t('assets:checkout.fields.area')}
                   </NBText>
                   <NBText variant="body-sm" style={styles.value}>
                     {asset.area.name}
@@ -187,16 +189,16 @@ export function AssetCheckoutScreen({
             value={condition}
             onSelect={setCondition}
             isReturn={false}
-            label="Kondisi Saat Pinjam"
+            label={t('assets:checkout.conditionLabel')}
           />
 
           {/* Notes */}
           <View style={styles.section}>
             <NBText variant="body" style={styles.sectionLabel}>
-              Catatan (Opsional)
+              {t('assets:checkout.notes')}
             </NBText>
             <NBTextInput
-              placeholder="Catatan pinjam aset..."
+              placeholder={t('assets:checkout.notesPlaceholder')}
               value={notes}
               onChangeText={setNotes}
               multiline
@@ -208,12 +210,12 @@ export function AssetCheckoutScreen({
           {/* Expected Return Date */}
           <View style={styles.section}>
             <NBText variant="body" style={styles.sectionLabel}>
-              Tanggal Pengembalian Diharapkan (Opsional)
+              {t('assets:checkout.expectedReturnDate')}
             </NBText>
             <NBDatePicker
               value={expectedReturnDate}
               onChange={setExpectedReturnDate}
-              placeholder="Pilih tanggal"
+              placeholder={t('assets:checkout.datePickerPlaceholder')}
               disabled={submitting}
             />
           </View>
@@ -221,14 +223,14 @@ export function AssetCheckoutScreen({
           {/* Action Buttons */}
           <View style={styles.actions}>
             <NBButton
-              label="Konfirmasi Pinjam"
+              label={t('assets:checkout.confirm')}
               onPress={onCheckout}
               variant="primary"
               disabled={!canSubmit}
               loading={submitting}
             />
             <NBButton
-              label="Batal"
+              label={t('assets:checkout.cancel')}
               onPress={() => navigation.goBack()}
               variant="secondary"
               disabled={submitting}

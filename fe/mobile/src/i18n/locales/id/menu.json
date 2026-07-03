@@ -19,5 +19,10 @@
     "treeCare": "Perawatan Pohon",
     "reportsMonitoring": "Laporan & Monitoring",
     "other": "Lainnya"
+  },
+  "tabs": {
+    "home": "Beranda",
+    "menu": "Menu",
+    "profile": "Profil"
   }
 }
