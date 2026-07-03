@@ -55,6 +55,10 @@
     "noWorkersMatch": "Tidak ada petugas yang cocok dengan filter.",
     "clickToFocus": "Klik petugas untuk fokus di peta"
   },
+  "reassign": {
+    "successMessage": "Petugas berhasil dipindahkan",
+    "errorMessage": "Gagal memindahkan petugas"
+  },
   "bulkReassign": {
     "title": "Pindah Massal ke {area}",
     "description": "Pilih beberapa petugas dari area lain untuk dipindahkan sekaligus",

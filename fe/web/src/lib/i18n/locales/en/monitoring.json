@@ -55,6 +55,10 @@
     "noWorkersMatch": "No officers match the filter.",
     "clickToFocus": "Click officer to focus on map"
   },
+  "reassign": {
+    "successMessage": "Worker successfully reassigned",
+    "errorMessage": "Failed to reassign worker"
+  },
   "bulkReassign": {
     "title": "Bulk Reassign to {area}",
     "description": "Select multiple officers from another area to reassign at once",

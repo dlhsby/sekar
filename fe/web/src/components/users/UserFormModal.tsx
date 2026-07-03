@@ -49,7 +49,7 @@ export function UserFormModal({
     mutation.isError &&
     (mutation.error instanceof Error
       ? mutation.error.message
-      : `Gagal ${isEdit ? 'memperbarui' : 'membuat'} pengguna. Silakan coba lagi.`);
+      : t(`admin:users.${isEdit ? 'updateErrorMessage' : 'createErrorMessage'}`));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

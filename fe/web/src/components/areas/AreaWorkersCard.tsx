@@ -12,6 +12,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, UserPlus, Users } from 'lucide-react';
 import {
   Button,
@@ -39,6 +40,7 @@ interface AreaWorkersCardProps {
 }
 
 export function AreaWorkersCard({ areaId, canManage }: AreaWorkersCardProps) {
+  const { t } = useTranslation();
   const { data: workers, isLoading } = useAreaUsers(areaId);
   const { data: usersData } = useUsers({ limit: 1000 });
   const assignMutation = useAssignAreas();
@@ -162,7 +164,7 @@ export function AreaWorkersCard({ areaId, canManage }: AreaWorkersCardProps) {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <FormSelect
-              label="Pekerja"
+              label={t('admin:areas.workerLabel')}
               value={selectedUserId}
               onChange={(value) => setSelectedUserId(value as string)}
               options={[

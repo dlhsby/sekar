@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -54,6 +55,7 @@ export function ReassignWorkerModal({
   targetAreaName,
   boundaries,
 }: ReassignWorkerModalProps) {
+  const { t } = useTranslation(['monitoring']);
   const [sourceAreaId, setSourceAreaId] = useState<string>('');
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [reason, setReason] = useState<string>('');
@@ -89,10 +91,10 @@ export function ReassignWorkerModal({
         effective_date: effectiveDate,
         end_current_schedule: true,
       });
-      toast.success('Petugas berhasil dipindahkan');
+      toast.success(t('monitoring:reassign.successMessage'));
       handleClose();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Gagal memindahkan petugas';
+      const message = err instanceof Error ? err.message : t('monitoring:reassign.errorMessage');
       toast.error(message);
     }
   }

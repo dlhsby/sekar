@@ -45,7 +45,7 @@ export function RayonFormModal({ open, onOpenChange, rayon, onSuccess }: RayonFo
     mutation.isError &&
     (mutation.error instanceof Error
       ? mutation.error.message
-      : `Gagal ${isEdit ? 'memperbarui' : 'membuat'} rayon. Silakan coba lagi.`);
+      : t(`admin:rayons.${isEdit ? 'updateErrorMessage' : 'createErrorMessage'}`));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -34,9 +34,9 @@ export function DeleteAreaModal({ area, isOpen, onClose, onSuccess }: DeleteArea
       onClose();
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message || 'Gagal menghapus area');
+        setError(err.message || t('admin:areas.deleteErrorMessage'));
       } else {
-        setError('Gagal menghapus area');
+        setError(t('admin:areas.deleteErrorMessage'));
       }
     }
   };

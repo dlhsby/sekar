@@ -46,7 +46,7 @@ export function AreaFormModal({ open, onOpenChange, area, onSuccess }: AreaFormM
     mutation.isError &&
     (mutation.error instanceof Error
       ? mutation.error.message
-      : `Gagal ${isEdit ? 'memperbarui' : 'membuat'} area. Silakan coba lagi.`);
+      : t(`admin:areas.${isEdit ? 'updateErrorMessage' : 'createErrorMessage'}`));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
