@@ -60,6 +60,28 @@
     "account": "Akun",
     "application": "Aplikasi"
   },
+  "logout": {
+    "error": "Kesalahan",
+    "failureMessage": "Gagal keluar dari aplikasi",
+    "pendingDataTitle": "Data Belum Tersinkronisasi",
+    "pendingDataMessage": "Ada {{pendingCount}} data tertunda dan {{failedCount}} data gagal yang belum tersinkronkan:\n\n{{description}}\n\nData ini akan hilang jika Anda keluar.",
+    "cancelButton": "Batal",
+    "syncButton": "Sinkronkan Dulu",
+    "logoutButton": "Keluar Saja",
+    "noActivityTypes": "Tidak ada",
+    "clockInLabel": "clock-in",
+    "clockOutLabel": "clock-out",
+    "activityLabel": "aktivitas",
+    "locationLabel": "lokasi",
+    "syncIncompleteTitle": "Sinkronisasi Belum Selesai",
+    "syncIncompleteMessage": "Masih ada {{count}} data yang gagal tersinkronkan. Silakan coba lagi atau pilih \"Keluar Saja\".",
+    "syncTimeoutTitle": "Timeout",
+    "syncTimeoutMessage": "Sinkronisasi terlalu lama. Silakan coba lagi atau pilih \"Keluar Saja\".",
+    "syncErrorMessage": "Sinkronisasi gagal:",
+    "confirmTitle": "Keluar dari Akun?",
+    "confirmMessage": "Anda akan keluar dari aplikasi SEKAR",
+    "okButton": "OK"
+  },
   "stats": {
     "field": {
       "present": "Hadir",

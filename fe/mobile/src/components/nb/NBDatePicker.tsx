@@ -14,6 +14,7 @@ import {
   FlatList,
   Dimensions,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   nbColors,
@@ -67,10 +68,7 @@ function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
 }
 
-const MONTHS = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-  'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des',
-];
+// MONTHS array is now loaded from i18n in the component
 
 // --- ScrollColumn component ---
 
@@ -185,6 +183,7 @@ export function NBDatePicker({
   visible: controlledVisible,
   onRequestClose,
 }: NBDatePickerProps): React.JSX.Element {
+  const { t } = useTranslation();
   const [internalVisible, setInternalVisible] = useState(false);
   const modalVisible = triggerless ? !!controlledVisible : internalVisible;
   const setModalVisible = useCallback(
@@ -207,7 +206,7 @@ export function NBDatePicker({
   const [tempHour, setTempHour] = useState(current.getHours());
   const [tempMinute, setTempMinute] = useState(current.getMinutes());
 
-  const defaultPlaceholder = mode === 'date' ? 'Pilih tanggal' : 'Pilih waktu';
+  const defaultPlaceholder = mode === 'date' ? t('components:nbDatePicker.placeholderDate') : t('components:nbDatePicker.placeholderTime');
   const iconName = mode === 'date' ? 'calendar-outline' : 'clock-outline';
 
   const displayValue = value
@@ -288,8 +287,11 @@ export function NBDatePicker({
   }, [minYear, maxYear]);
 
   const monthItems = useMemo(
-    () => MONTHS.map((m, i) => ({ value: i, label: m })),
-    [],
+    () => {
+      const months = t('components:nbDatePicker.months');
+      return (Array.isArray(months) ? months : []).map((m, i) => ({ value: i, label: m }));
+    },
+    [t],
   );
 
   const dayItems = useMemo(() => {
@@ -370,7 +372,7 @@ export function NBDatePicker({
             onPress={() => {}}
           >
             <Text style={styles.modalTitle}>
-              {mode === 'date' ? 'Pilih Tanggal' : 'Pilih Waktu'}
+              {mode === 'date' ? t('components:nbDatePicker.modalTitleDate') : t('components:nbDatePicker.modalTitleTime')}
             </Text>
 
             <View style={styles.columnsRow}>
@@ -417,15 +419,15 @@ export function NBDatePicker({
             <View style={styles.buttonRow}>
               {mode === 'date' ? (
                 <TouchableOpacity style={styles.todayButton} onPress={handleToday}>
-                  <Text style={styles.todayButtonText}>Hari ini</Text>
+                  <Text style={styles.todayButtonText}>{t('schedules:mySchedule.today')}</Text>
                 </TouchableOpacity>
               ) : <View />}
               <View style={styles.buttonRowRight}>
                 <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-                  <Text style={styles.cancelButtonText}>Batal</Text>
+                  <Text style={styles.cancelButtonText}>{t('common:actions.cancel')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
-                  <Text style={styles.confirmButtonText}>OK</Text>
+                  <Text style={styles.confirmButtonText}>{t('components:nbDatePicker.buttonConfirm')}</Text>
                 </TouchableOpacity>
               </View>
             </View>

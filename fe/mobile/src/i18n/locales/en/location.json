@@ -13,6 +13,21 @@
     "unknown": "Failed to get location. Please try again.",
     "gpsDisabled": "GPS is not enabled. Please enable location services to continue.",
     "gpsDisabledTitle": "GPS Not Enabled",
-    "gpsDisabledMessage": "This app requires GPS to track your location. Please enable GPS in your device settings."
+    "gpsDisabledMessage": "This app requires GPS to track your location. Please enable GPS in your device settings.",
+    "unavailableGeneral": "Unable to get location.",
+    "unavailableClockIn": "Location not available yet. Wait for GPS to acquire location."
+  },
+  "clockInOut": {
+    "cameraPermissionTitle": "Camera Permission",
+    "cameraPermissionMessage": "Camera access is required. Enable it in app Settings.",
+    "cameraError": "Failed to open camera",
+    "clockInSuccess": "Successfully clocked in!",
+    "clockOutSuccess": "Successfully clocked out!",
+    "clockInFail": "Failed to clock in",
+    "clockOutFail": "Failed to clock out",
+    "clockOutConfirmTitle": "Confirm Clock Out",
+    "clockOutConfirmMessage": "Are you sure you want to end this shift?",
+    "clockOutButton": "Clock Out",
+    "noActiveShift": "No active shift"
   }
 }

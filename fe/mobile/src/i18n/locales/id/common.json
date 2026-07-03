@@ -105,6 +105,19 @@
       "syncButton": "Sinkronkan",
       "retryButton": "Coba Ulang",
       "clearButton": "Hapus Gagal"
+    },
+    "alerts": {
+      "syncTitle": "Sinkronisasi",
+      "syncSuccess": "Data berhasil disinkronkan",
+      "syncError": "Gagal sinkronisasi:",
+      "retryTitle": "Berhasil",
+      "retryMessage": "{{count}} item akan dicoba ulang",
+      "noRetryItems": "Tidak ada item gagal untuk dicoba ulang",
+      "clearTitle": "Hapus Item Gagal?",
+      "clearMessage": "Data yang gagal akan dihapus permanen dan tidak dapat dikembalikan.",
+      "clearSuccess": "Item gagal telah dihapus",
+      "clearError": "Gagal menghapus:",
+      "error": "Kesalahan"
     }
   }
 }

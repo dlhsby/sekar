@@ -37,5 +37,14 @@
     "justUpdated": "Diperbarui baru saja",
     "defaultTitle": "Lokasi Anda",
     "defaultMarkerTitle": "Lokasi Anda"
+  },
+  "nbDatePicker": {
+    "months": ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"],
+    "placeholderDate": "Pilih tanggal",
+    "placeholderTime": "Pilih waktu",
+    "modalTitleDate": "Pilih Tanggal",
+    "modalTitleTime": "Pilih Waktu",
+    "buttonCancel": "Batal",
+    "buttonConfirm": "OK"
   }
 }

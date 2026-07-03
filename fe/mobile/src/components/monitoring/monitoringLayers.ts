@@ -7,6 +7,7 @@
  * this constant is the surviving shared definition consumed by MonitoringFilterModal.
  */
 
+import i18n from '../../i18n/config';
 import type { MonitoringV2VisibleLayers } from '../../store/slices/monitoringV2Slice';
 
 export interface LayerRow {
@@ -16,9 +17,9 @@ export interface LayerRow {
 }
 
 export const LAYER_ROWS: LayerRow[] = [
-  { key: 'workers', label: 'Petugas', icon: 'account-hard-hat' },
-  { key: 'plants', label: 'Tanaman', icon: 'tree' },
-  { key: 'overdue', label: 'Jatuh Tempo', icon: 'alert-circle' },
-  { key: 'rayons', label: 'Batas Rayon', icon: 'map-marker-radius' },
-  { key: 'areas', label: 'Batas Area', icon: 'vector-polygon' },
+  { key: 'workers', label: i18n.t('monitoring:layers.workers'), icon: 'account-hard-hat' },
+  { key: 'plants', label: i18n.t('monitoring:layers.plants'), icon: 'tree' },
+  { key: 'overdue', label: i18n.t('monitoring:layers.overdue'), icon: 'alert-circle' },
+  { key: 'rayons', label: i18n.t('monitoring:layers.rayons'), icon: 'map-marker-radius' },
+  { key: 'areas', label: i18n.t('monitoring:layers.areas'), icon: 'vector-polygon' },
 ];

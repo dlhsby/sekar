@@ -60,6 +60,28 @@
     "account": "Account",
     "application": "Application"
   },
+  "logout": {
+    "error": "Error",
+    "failureMessage": "Failed to log out from app",
+    "pendingDataTitle": "Data Not Synced",
+    "pendingDataMessage": "There are {{pendingCount}} pending items and {{failedCount}} failed items that are not synced:\n\n{{description}}\n\nThis data will be lost if you log out.",
+    "cancelButton": "Cancel",
+    "syncButton": "Sync First",
+    "logoutButton": "Log Out Anyway",
+    "noActivityTypes": "None",
+    "clockInLabel": "clock-in",
+    "clockOutLabel": "clock-out",
+    "activityLabel": "activity",
+    "locationLabel": "location",
+    "syncIncompleteTitle": "Sync Incomplete",
+    "syncIncompleteMessage": "There are still {{count}} items that failed to sync. Please try again or choose \"Log Out Anyway\".",
+    "syncTimeoutTitle": "Timeout",
+    "syncTimeoutMessage": "Sync took too long. Please try again or choose \"Log Out Anyway\".",
+    "syncErrorMessage": "Sync failed:",
+    "confirmTitle": "Log Out from Account?",
+    "confirmMessage": "You will be logged out from the SEKAR app",
+    "okButton": "OK"
+  },
   "stats": {
     "field": {
       "present": "Present",

@@ -1,6 +1,7 @@
 {
   "mySchedule": {
     "todayLabel": "Today's Schedule",
+    "today": "Today",
     "noAreasAssigned": "No areas assigned",
     "noShiftDefined": "No shift defined",
     "invalidSession": "Invalid session. Please log in again.",
@@ -17,5 +18,26 @@
     "leave_annual": "Annual Leave",
     "replaced": "Replaced",
     "off": "Off"
+  },
+  "shiftHistory": {
+    "filterTitle": "Filter Shift History",
+    "thisWeek": "This week",
+    "apply": "Apply",
+    "dateRange": "Date Range",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "allShifts": "All Shifts",
+    "noShiftHistory": "No Shift History",
+    "noShiftHistoryDesc": "Your shift history will appear here after you complete a shift",
+    "noShiftInRange": "No Shifts",
+    "noShiftInRangeDesc": "No shifts in the selected date range",
+    "failedToLoadShifts": "Failed to load shift history",
+    "totalShifts": "TOTAL SHIFTS",
+    "totalHours": "TOTAL HOURS",
+    "clockIn": "CLOCK IN",
+    "clockOut": "CLOCK OUT",
+    "duration": "DURATION",
+    "active": "Active",
+    "completed": "Completed"
   }
 }

@@ -4,8 +4,21 @@
     "loading": "Memuat peta...",
     "error": {
       "title": "Gagal memuat batas wilayah",
-      "retry": "Coba Lagi"
+      "retry": "Coba Lagi",
+      "failedLoadUsers": "Gagal memuat data pengguna"
     }
+  },
+  "mapDashboard": {
+    "filterTitle": "Filter Area",
+    "filterPrompt": "Pilih area untuk ditampilkan",
+    "allAreas": "Semua Area"
+  },
+  "layers": {
+    "workers": "Petugas",
+    "plants": "Tanaman",
+    "overdue": "Jatuh Tempo",
+    "rayons": "Batas Rayon",
+    "areas": "Batas Area"
   },
   "fab": {
     "status": "Ringkasan status",

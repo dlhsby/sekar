@@ -105,6 +105,19 @@
       "syncButton": "Sync",
       "retryButton": "Retry",
       "clearButton": "Clear Failed"
+    },
+    "alerts": {
+      "syncTitle": "Sync",
+      "syncSuccess": "Data synced successfully",
+      "syncError": "Sync failed:",
+      "retryTitle": "Success",
+      "retryMessage": "{{count}} item will be retried",
+      "noRetryItems": "No failed items to retry",
+      "clearTitle": "Delete Failed Items?",
+      "clearMessage": "Failed data will be permanently deleted and cannot be recovered.",
+      "clearSuccess": "Failed items have been deleted",
+      "clearError": "Failed to delete:",
+      "error": "Error"
     }
   }
 }

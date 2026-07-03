@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Geolocation from 'react-native-geolocation-service';
 import { Alert } from 'react-native';
+import i18n from '../i18n/config';
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { clockIn, clockOut, getCurrentShift } from '../services/api/shiftsApi';
 import { getMyRoster } from '../services/api/schedulesApi';
@@ -141,13 +142,13 @@ export function useClockInOut() {
       (error) => {
         if (__DEV__) { console.error('Location error:', error); }
 
-        let errorMessage = 'Tidak dapat mendapatkan lokasi.';
+        let errorMessage = i18n.t('location:errors.unavailableGeneral');
         switch (error.code) {
-          case 1: errorMessage = 'Izin lokasi ditolak. Aktifkan di pengaturan.'; break;
-          case 2: errorMessage = 'GPS tidak tersedia. Pastikan GPS aktif.'; break;
-          case 3: errorMessage = 'Waktu habis. Coba di area terbuka.'; break;
-          case 4: errorMessage = 'Google Play Services tidak tersedia.'; break;
-          case 5: errorMessage = 'Pengaturan lokasi tidak memenuhi. Aktifkan GPS.'; break;
+          case 1: errorMessage = i18n.t('location:errors.permissionDenied'); break;
+          case 2: errorMessage = i18n.t('location:errors.unknown'); break;
+          case 3: errorMessage = i18n.t('location:errors.timeout'); break;
+          case 4: errorMessage = i18n.t('location:errors.unknown'); break;
+          case 5: errorMessage = i18n.t('location:errors.gpsDisabled'); break;
         }
 
         setLocation({
@@ -251,20 +252,20 @@ export function useClockInOut() {
   const handleCaptureSelfie = useCallback(async () => {
     const permResult = await requestCameraPermission();
     if (!permResult.granted) {
-      Alert.alert('Izin Kamera', 'Akses kamera diperlukan. Aktifkan di Pengaturan aplikasi.');
+      Alert.alert(i18n.t('location:clockInOut.cameraPermissionTitle'), i18n.t('location:clockInOut.cameraPermissionMessage'));
       return;
     }
     try {
       const photo = await mediaService.capturePhoto(true);
       if (photo) { setSelfie(photo); }
     } catch (err) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Gagal membuka kamera');
+      Alert.alert('Error', err instanceof Error ? err.message : i18n.t('location:clockInOut.cameraError'));
     }
   }, []);
 
   const handleClockIn = useCallback(async (onSuccess: () => void) => {
     if (!location.latitude || !location.longitude) {
-      Alert.alert('Error', 'Lokasi belum tersedia. Tunggu GPS mendapatkan lokasi.');
+      Alert.alert('Error', i18n.t('location:errors.unavailableClockIn'));
       return;
     }
 
@@ -274,7 +275,7 @@ export function useClockInOut() {
 
       const response = await clockIn(location.latitude, location.longitude, selfieBase64);
       if (response.error || !response.data) {
-        throw new Error(response.error || 'Gagal clock in');
+        throw new Error(response.error || i18n.t('location:clockInOut.clockInFail'));
       }
 
       const shiftResponse = await getCurrentShift();
@@ -288,14 +289,14 @@ export function useClockInOut() {
       }
 
       setSelfie(null);
-      Alert.alert('Berhasil', 'Berhasil clock in!', [
+      Alert.alert('OK', i18n.t('location:clockInOut.clockInSuccess'), [
         { text: 'OK', onPress: onSuccess },
       ]);
     } catch (error: any) {
       console.error('Clock-in error:', error);
       Alert.alert(
-        'Gagal Clock In',
-        error.response?.data?.message || error.message || 'Gagal clock in. Silakan coba lagi.',
+        i18n.t('location:clockInOut.clockInFail'),
+        error.response?.data?.message || error.message || i18n.t('location:clockInOut.clockInFail'),
       );
     } finally {
       setIsSubmitting(false);
@@ -304,21 +305,21 @@ export function useClockInOut() {
 
   const handleClockOut = useCallback(async (onSuccess: () => void) => {
     if (!currentShift) {
-      Alert.alert('Error', 'Tidak ada shift aktif');
+      Alert.alert('Error', i18n.t('location:clockInOut.noActiveShift'));
       return;
     }
     if (!location.latitude || !location.longitude) {
-      Alert.alert('Error', 'Lokasi belum tersedia. Tunggu GPS mendapatkan lokasi.');
+      Alert.alert('Error', i18n.t('location:errors.unavailableClockIn'));
       return;
     }
 
     Alert.alert(
-      'Konfirmasi Clock Out',
-      'Apakah Anda yakin ingin mengakhiri shift?',
+      i18n.t('location:clockInOut.clockOutConfirmTitle'),
+      i18n.t('location:clockInOut.clockOutConfirmMessage'),
       [
-        { text: 'Batal', style: 'cancel' },
+        { text: i18n.t('common:actions.cancel'), style: 'cancel' },
         {
-          text: 'Clock Out',
+          text: i18n.t('location:clockInOut.clockOutButton'),
           style: 'destructive',
           onPress: async () => {
             setIsSubmitting(true);
@@ -334,20 +335,20 @@ export function useClockInOut() {
               const response = await clockOut(location.latitude!, location.longitude!, selfieBase64);
               if (response.error) {
                 const errMsg = response.error;
-                Alert.alert('Gagal Clock Out', errMsg);
+                Alert.alert(i18n.t('location:clockInOut.clockOutFail'), errMsg);
                 return;
               }
 
               setSelfie(null);
               dispatch(setCurrentShift(null));
-              Alert.alert('Berhasil', 'Berhasil clock out!', [
+              Alert.alert('OK', i18n.t('location:clockInOut.clockOutSuccess'), [
                 { text: 'OK', onPress: onSuccess },
               ]);
             } catch (error: any) {
               console.error('Clock-out error:', error);
               Alert.alert(
-                'Gagal Clock Out',
-                error.response?.data?.message || error.message || 'Gagal clock out. Silakan coba lagi.',
+                i18n.t('location:clockInOut.clockOutFail'),
+                error.response?.data?.message || error.message || i18n.t('location:clockInOut.clockOutFail'),
               );
             } finally {
               setIsSubmitting(false);

@@ -13,6 +13,21 @@
     "unknown": "Gagal mendapatkan lokasi. Silakan coba lagi.",
     "gpsDisabled": "GPS tidak aktif. Silakan aktifkan layanan lokasi untuk melanjutkan.",
     "gpsDisabledTitle": "GPS Tidak Aktif",
-    "gpsDisabledMessage": "Aplikasi memerlukan GPS untuk melacak lokasi. Silakan aktifkan GPS di pengaturan perangkat."
+    "gpsDisabledMessage": "Aplikasi memerlukan GPS untuk melacak lokasi. Silakan aktifkan GPS di pengaturan perangkat.",
+    "unavailableGeneral": "Tidak dapat mendapatkan lokasi.",
+    "unavailableClockIn": "Lokasi belum tersedia. Tunggu GPS mendapatkan lokasi."
+  },
+  "clockInOut": {
+    "cameraPermissionTitle": "Izin Kamera",
+    "cameraPermissionMessage": "Akses kamera diperlukan. Aktifkan di Pengaturan aplikasi.",
+    "cameraError": "Gagal membuka kamera",
+    "clockInSuccess": "Berhasil clock in!",
+    "clockOutSuccess": "Berhasil clock out!",
+    "clockInFail": "Gagal clock in",
+    "clockOutFail": "Gagal clock out",
+    "clockOutConfirmTitle": "Konfirmasi Clock Out",
+    "clockOutConfirmMessage": "Apakah Anda yakin ingin mengakhiri shift?",
+    "clockOutButton": "Clock Out",
+    "noActiveShift": "Tidak ada shift aktif"
   }
 }

@@ -8,6 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBEmptyState, NBBackgroundPattern, NBText, NBDatePicker, NBModal, NBSkeleton } from '../../components/nb';
 import { StatusPill } from '../../components/home/StatusPill';
@@ -99,6 +100,7 @@ function ShiftFilterModal({
   value: DateRange;
   onApply: (range: DateRange) => void;
 }): React.JSX.Element {
+  const { t } = useTranslation();
   const [localFrom, setLocalFrom] = useState<Date | null>(value.from);
   const [localTo, setLocalTo] = useState<Date | null>(value.to);
 
@@ -124,7 +126,7 @@ function ShiftFilterModal({
     <NBModal
       visible={visible}
       onClose={onClose}
-      title="Filter Riwayat Shift"
+      title={t('schedules:shiftHistory.filterTitle')}
       footer={
         <View style={modalStyles.footer}>
           <TouchableOpacity
@@ -132,26 +134,26 @@ function ShiftFilterModal({
             onPress={handleReset}
             accessibilityRole="button"
           >
-            <NBText variant="body-sm" color="black" style={modalStyles.footerBtnText}>Minggu ini</NBText>
+            <NBText variant="body-sm" color="black" style={modalStyles.footerBtnText}>{t('schedules:shiftHistory.thisWeek')}</NBText>
           </TouchableOpacity>
           <TouchableOpacity
             style={[modalStyles.footerBtn, modalStyles.applyBtn]}
             onPress={handleApply}
             accessibilityRole="button"
           >
-            <NBText variant="body-sm" color="white" style={modalStyles.footerBtnText}>Terapkan</NBText>
+            <NBText variant="body-sm" color="white" style={modalStyles.footerBtnText}>{t('schedules:shiftHistory.apply')}</NBText>
           </TouchableOpacity>
         </View>
       }
     >
       <View style={modalStyles.section}>
-        <NBText variant="mono-sm" color="gray700" uppercase style={modalStyles.sectionLabel}>Rentang Tanggal</NBText>
+        <NBText variant="mono-sm" color="gray700" uppercase style={modalStyles.sectionLabel}>{t('schedules:shiftHistory.dateRange')}</NBText>
         <View style={modalStyles.dateRow}>
           <View style={modalStyles.datePart}>
             <NBDatePicker
               value={localFrom}
               onChange={setLocalFrom}
-              label="Dari"
+              label={t('schedules:shiftHistory.dateFrom')}
               maximumDate={localTo ?? new Date()}
             />
           </View>
@@ -160,7 +162,7 @@ function ShiftFilterModal({
             <NBDatePicker
               value={localTo}
               onChange={setLocalTo}
-              label="Sampai"
+              label={t('schedules:shiftHistory.dateTo')}
               minimumDate={localFrom ?? undefined}
               maximumDate={new Date()}
             />
@@ -239,6 +241,7 @@ function ShiftRow({
   shift: CurrentShiftResponse;
   onPress: () => void;
 }): React.JSX.Element {
+  const { t } = useTranslation();
   const isActive = !shift.clock_out_time;
   const dur = calculateDuration(shift.clock_in_time, shift.clock_out_time);
   const clockInDate = formatShortDate(new Date(shift.clock_in_time));
@@ -257,7 +260,7 @@ function ShiftRow({
       <View style={styles.shiftRow}>
         {/* Header: status pill (matches Tugas/Aktivitas/Lembur) + area title */}
         <View style={styles.shiftRowHeader}>
-          <StatusPill dot tone={isActive ? 'ok' : 'neutral'} label={isActive ? 'Aktif' : 'Selesai'} />
+          <StatusPill dot tone={isActive ? 'ok' : 'neutral'} label={isActive ? t('schedules:shiftHistory.active') : t('schedules:shiftHistory.completed')} />
         </View>
         <NBText variant="body" color="black" style={styles.shiftRowTitle} numberOfLines={1}>
           {shift.area?.name ?? 'Area tidak diketahui'}
@@ -276,7 +279,7 @@ function ShiftRow({
               color={nbColors.success}
               style={styles.shiftTimeIcon}
             />
-            <NBText variant="mono-sm" color="gray600" style={styles.shiftTimeLabel}>CLOCK IN</NBText>
+            <NBText variant="mono-sm" color="gray600" style={styles.shiftTimeLabel}>{t('schedules:shiftHistory.clockIn')}</NBText>
             <NBText variant="body-sm" color="gray500">{clockInDate}</NBText>
             <NBText variant="body-sm" color="gray700" style={styles.semibold}>
               {formatTime(shift.clock_in_time)}
@@ -292,7 +295,7 @@ function ShiftRow({
               color={isActive ? nbColors.gray500 : nbColors.danger}
               style={styles.shiftTimeIcon}
             />
-            <NBText variant="mono-sm" color="gray600" style={styles.shiftTimeLabel}>CLOCK OUT</NBText>
+            <NBText variant="mono-sm" color="gray600" style={styles.shiftTimeLabel}>{t('schedules:shiftHistory.clockOut')}</NBText>
             <NBText variant="body-sm" color={clockOutDate ? 'gray500' : 'gray400'}>
               {clockOutDate ?? '—'}
             </NBText>
@@ -314,7 +317,7 @@ function ShiftRow({
               color={nbColors.primary}
               style={styles.shiftTimeIcon}
             />
-            <NBText variant="mono-sm" color="gray600" style={styles.shiftTimeLabel}>DURASI</NBText>
+            <NBText variant="mono-sm" color="gray600" style={styles.shiftTimeLabel}>{t('schedules:shiftHistory.duration')}</NBText>
             <NBText variant="body-sm" color="gray400" style={styles.invisible}>·</NBText>
             <NBText variant="body-sm" color="successDark" style={styles.semibold}>
               {dur.formatted}
@@ -329,6 +332,7 @@ function ShiftRow({
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export function ShiftHistoryScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const { start: initStart, end: initEnd } = getThisWeekRange();
 
   const [shifts, setShifts] = useState<CurrentShiftResponse[]>([]);
@@ -374,11 +378,11 @@ export function ShiftHistoryScreen(): React.JSX.Element {
   );
 
   const filterLabel = useMemo(() => {
-    if (!dateFrom && !dateTo) { return 'Semua Shift'; }
+    if (!dateFrom && !dateTo) { return t('schedules:shiftHistory.allShifts'); }
     const fromStr = dateFrom ? formatShortDate(dateFrom) : '…';
     const toStr = dateTo ? formatShortDate(dateTo) : '…';
     return `${fromStr} → ${toStr}`;
-  }, [dateFrom, dateTo]);
+  }, [dateFrom, dateTo, t]);
 
   const isFiltered = dateFrom !== null || dateTo !== null;
 
@@ -410,7 +414,7 @@ export function ShiftHistoryScreen(): React.JSX.Element {
         setShifts(sortedShifts);
       }
     } catch (err: any) {
-      setError(err.message || 'Gagal memuat riwayat shift');
+      setError(err.message || t('schedules:shiftHistory.failedToLoadShifts'));
     } finally {
       setIsLoading(false);
     }
@@ -472,9 +476,9 @@ export function ShiftHistoryScreen(): React.JSX.Element {
           <NBEmptyState
             variant="error"
             illustration="illo-offline"
-            title="Gagal Memuat Data"
+            title={t('common:errors.failedToLoadData')}
             description={error}
-            ctaLabel="Coba Lagi"
+            ctaLabel={t('common:actions.retry')}
             onCTA={loadShifts}
             testID="shift-history-error"
           />
@@ -505,7 +509,7 @@ export function ShiftHistoryScreen(): React.JSX.Element {
                 </View>
               </ScrollView>
             ) : (
-              <NBText variant="body-sm" color="gray400" style={styles.filterBarPlaceholder}>Semua Shift</NBText>
+              <NBText variant="body-sm" color="gray400" style={styles.filterBarPlaceholder}>{t('schedules:shiftHistory.allShifts')}</NBText>
             )}
             {isFiltered && (
               <TouchableOpacity
@@ -544,12 +548,12 @@ export function ShiftHistoryScreen(): React.JSX.Element {
         <View style={styles.summaryCard}>
           <View style={styles.summaryItem}>
             <NBText variant="display" color="primary">{filteredShifts.length}</NBText>
-            <NBText variant="caption" color="gray600" style={styles.summaryLabel}>TOTAL SHIFT</NBText>
+            <NBText variant="caption" color="gray600" style={styles.summaryLabel}>{t('schedules:shiftHistory.totalShifts')}</NBText>
           </View>
           <View style={styles.summaryDivider} />
           <View style={styles.summaryItem}>
             <NBText variant="display" color="primary">{totalHours.toFixed(1)}</NBText>
-            <NBText variant="caption" color="gray600" style={styles.summaryLabel}>TOTAL JAM</NBText>
+            <NBText variant="caption" color="gray600" style={styles.summaryLabel}>{t('schedules:shiftHistory.totalHours')}</NBText>
           </View>
         </View>
 
@@ -576,11 +580,11 @@ export function ShiftHistoryScreen(): React.JSX.Element {
             <NBEmptyState
               variant="noData"
               illustration={shifts.length === 0 ? 'illo-shifts' : 'illo-search'}
-              title={shifts.length === 0 ? 'Belum Ada Riwayat Shift' : 'Tidak Ada Shift'}
+              title={shifts.length === 0 ? t('schedules:shiftHistory.noShiftHistory') : t('schedules:shiftHistory.noShiftInRange')}
               description={
                 shifts.length === 0
-                  ? 'Riwayat shift Anda akan muncul di sini setelah Anda menyelesaikan shift'
-                  : 'Tidak ada shift dalam rentang tanggal yang dipilih'
+                  ? t('schedules:shiftHistory.noShiftHistoryDesc')
+                  : t('schedules:shiftHistory.noShiftInRangeDesc')
               }
               testID="shift-history-empty"
             />

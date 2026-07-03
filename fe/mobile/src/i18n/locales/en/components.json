@@ -37,5 +37,14 @@
     "justUpdated": "Updated just now",
     "defaultTitle": "Your Location",
     "defaultMarkerTitle": "Your Location"
+  },
+  "nbDatePicker": {
+    "months": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    "placeholderDate": "Select date",
+    "placeholderTime": "Select time",
+    "modalTitleDate": "Select Date",
+    "modalTitleTime": "Select Time",
+    "buttonCancel": "Cancel",
+    "buttonConfirm": "OK"
   }
 }

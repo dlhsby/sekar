@@ -4,8 +4,21 @@
     "loading": "Loading map...",
     "error": {
       "title": "Failed to load region boundaries",
-      "retry": "Try Again"
+      "retry": "Try Again",
+      "failedLoadUsers": "Failed to load user data"
     }
+  },
+  "mapDashboard": {
+    "filterTitle": "Filter Area",
+    "filterPrompt": "Select area to display",
+    "allAreas": "All Areas"
+  },
+  "layers": {
+    "workers": "Workers",
+    "plants": "Plants",
+    "overdue": "Overdue",
+    "rayons": "Rayon Boundaries",
+    "areas": "Area Boundaries"
   },
   "fab": {
     "status": "Status summary",
