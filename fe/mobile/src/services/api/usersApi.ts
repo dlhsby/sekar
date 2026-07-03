@@ -18,17 +18,33 @@ export interface ChangePasswordRequest {
 }
 
 /**
- * Get all users (for task assignment)
- * Backend returns paginated response { data: User[], meta }, so we unwrap it.
- * @param limit - Max users to fetch (default 200 to get all)
- * @returns List of users
+ * Get all users (for task/replacement assignment pickers).
+ *
+ * The backend paginates `/users` and caps `limit`, so a single request drops the
+ * tail once the roster exceeds the cap (staging has >1000 users) — assignable-user
+ * pickers then silently miss whole rayons. Walk every page and return the full
+ * list. `limit` is the per-page size.
+ *
+ * @param limit - Page size for the walk (default 100)
+ * @returns Complete list of users
  */
 export async function getUsers(limit = 100): Promise<ApiResponse<User[]>> {
-  const response = await get<{ data: User[]; meta: any }>('/users', { limit });
-  if (response.data?.data) {
-    return { data: response.data.data };
-  }
-  return { data: [], error: response.error };
+  const all: User[] = [];
+  let page = 1;
+  let totalPages = 1;
+  do {
+    const response = await get<{ data: User[]; meta: { totalPages?: number } }>('/users', {
+      page,
+      limit,
+    });
+    if (!response.data?.data) {
+      return page === 1 ? { data: [], error: response.error } : { data: all };
+    }
+    all.push(...response.data.data);
+    totalPages = response.data.meta?.totalPages ?? 1;
+    page += 1;
+  } while (page <= totalPages && page <= 100); // page guard: never loop unbounded
+  return { data: all };
 }
 
 /**

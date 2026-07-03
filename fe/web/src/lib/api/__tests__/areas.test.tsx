@@ -163,6 +163,43 @@ describe('Areas API', () => {
       expect(result.current.data?.meta.limit).toBe(20);
     });
 
+    it('returns every area from a full-array response without a limit (no cap)', async () => {
+      // Backend returns a plain array (all areas) when page/limit are omitted.
+      const barat2Area = { ...mockResponse.data[0], id: '2', name: 'Taman Barat 2', rayon_id: 'rayon-b2' };
+      mockAxios.onGet('/areas?').reply(200, [mockResponse.data[0], barat2Area]);
+
+      const { result } = renderHook(() => useAreas({ limit: 1000 }), { wrapper: createWrapper() });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data?.data).toHaveLength(2);
+      expect(result.current.data?.data.map((a) => a.name)).toContain('Taman Barat 2');
+    });
+
+    it('walks every page when the backend caps the list (Rayon Barat 2 regression)', async () => {
+      // Regression: 937 areas ordered by id, backend caps limit at 100 → a single
+      // request drops Rayon Barat 2 (ids past the first 100). If the "all" call is
+      // ever served paginated, the hook must walk all pages and concatenate.
+      const pageOne: PaginatedResponse<Area> = {
+        data: [{ ...mockResponse.data[0], id: '1', name: 'Pusat Area' }],
+        meta: { total: 2, page: 1, limit: 1, totalPages: 2 },
+      };
+      const pageTwo: PaginatedResponse<Area> = {
+        data: [{ ...mockResponse.data[0], id: '2', name: 'Barat 2 Area', rayon_id: 'rayon-b2' }],
+        meta: { total: 2, page: 2, limit: 1, totalPages: 2 },
+      };
+      mockAxios.onGet('/areas?').reply(200, pageOne); // no-page probe → paginated
+      mockAxios.onGet('/areas?page=1&limit=1000').reply(200, pageOne);
+      mockAxios.onGet('/areas?page=2&limit=1000').reply(200, pageTwo);
+
+      const { result } = renderHook(() => useAreas({ limit: 1000 }), { wrapper: createWrapper() });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data?.data).toHaveLength(2);
+      expect(result.current.data?.data.map((a) => a.name)).toEqual(['Pusat Area', 'Barat 2 Area']);
+    });
+
     it('should handle fetch error', async () => {
       mockAxios.onGet('/areas?').reply(500, {
         statusCode: 500,
