@@ -23,6 +23,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GoogleMap, Marker, Polygon, Polyline } from '@react-google-maps/api';
 import { Search, X, Loader2, Pencil, Trash2, Check, MapPin } from 'lucide-react';
 import { Button, Input } from '@/components/ui';
@@ -156,6 +157,7 @@ function BoundaryMap({
   readonly = false,
   height = 420,
 }: Omit<GoogleBoundaryEditorProps, 'manualFallback'>) {
+  const { t } = useTranslation();
   const editablePolygon = !readonly && !!onPolygonChange;
   const editablePin = !readonly && !!onPinChange;
 
@@ -360,14 +362,14 @@ function BoundaryMap({
       const geocoder = new google.maps.Geocoder();
       const { results } = await geocoder.geocode({ address, region: 'ID' });
       if (!results || results.length === 0) {
-        setSearchError('Lokasi tidak ditemukan. Coba kata kunci lain.');
+        setSearchError(t('admin:maps.boundary.locationNotFound'));
         return;
       }
       const loc = results[0].geometry.location;
       mapRef.current?.panTo({ lat: loc.lat(), lng: loc.lng() });
       mapRef.current?.setZoom(Math.max(mapRef.current?.getZoom() ?? 15, 16));
     } catch {
-      setSearchError('Pencarian lokasi gagal. Coba lagi.');
+      setSearchError(t('admin:maps.boundary.searchError'));
     } finally {
       setSearching(false);
     }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -29,6 +30,7 @@ interface ImportBoundaryButtonProps {
  * it here. Parsing is client-side (see parseKmlToGeometry).
  */
 export function ImportBoundaryButton({ onImport, disabled }: ImportBoundaryButtonProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -38,14 +40,14 @@ export function ImportBoundaryButton({ onImport, disabled }: ImportBoundaryButto
     try {
       setText(await file.text());
     } catch {
-      toast.error('Gagal membaca berkas.');
+      toast.error(t('admin:maps.boundary.fileReadError'));
     }
   };
 
   const handleApply = () => {
     const geometry = parseKmlToGeometry(text);
     if (!geometry) {
-      toast.error('KML/GeoJSON tidak valid — tidak ditemukan poligon batas.');
+      toast.error(t('admin:maps.boundary.invalidKml'));
       return;
     }
     onImport(geometry);
