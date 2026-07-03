@@ -25,5 +25,17 @@
     "addPhotoLabel": "Tambah foto",
     "photoButtonText": "Foto",
     "previewTitle": "Foto Bukti"
+  },
+  "locationPicker": {
+    "title": "Pilih Titik Lokasi",
+    "coordsLabel": "Titik: {{lat}}, {{lng}}",
+    "cancelButton": "Batal",
+    "confirmButton": "Gunakan Titik Ini"
+  },
+  "locationMap": {
+    "notUpdated": "Belum diperbarui",
+    "justUpdated": "Diperbarui baru saja",
+    "defaultTitle": "Lokasi Anda",
+    "defaultMarkerTitle": "Lokasi Anda"
   }
 }

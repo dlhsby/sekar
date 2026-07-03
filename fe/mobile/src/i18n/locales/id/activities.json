@@ -161,5 +161,19 @@
     "submitButton": "Kirim Aktivitas",
     "submitOfflineButton": "Simpan untuk Sync",
     "cancelButton": "Batal"
+  },
+  "submitAlerts": {
+    "shiftNotActiveTitle": "Shift Belum Aktif",
+    "shiftNotActiveMessage": "Anda belum clock-in. Clock-in terlebih dahulu untuk membuat aktivitas.",
+    "clockInButton": "Clock In Sekarang",
+    "saveDraftButton": "Simpan Draft",
+    "successTitle": "Berhasil",
+    "successMessage": "Aktivitas berhasil dikirim!",
+    "okButton": "OK",
+    "offlineTitle": "Mode Offline",
+    "offlineMessage": "Aktivitas disimpan dan akan dikirim saat online.",
+    "failureTitle": "Gagal Mengirim",
+    "failureMessage": "Terjadi kesalahan. Aktivitas disimpan sebagai draft.",
+    "retryButton": "Coba Lagi"
   }
 }

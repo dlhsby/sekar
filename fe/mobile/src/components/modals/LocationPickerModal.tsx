@@ -27,6 +27,7 @@ import MapView, {
 } from 'react-native-maps';
 import Geolocation from 'react-native-geolocation-service';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 
 import { NBModal } from '../nb';
 import { NBButton } from '../nb';
@@ -68,6 +69,7 @@ export function LocationPickerModal({
   initial,
   onConfirm,
 }: LocationPickerModalProps): React.JSX.Element {
+  const { t } = useTranslation();
   const start = initial ?? SURABAYA_CENTROID;
   const [coords, setCoords] = useState<PickedCoords>(start);
   const [region, setRegion] = useState<Region>({
@@ -155,17 +157,17 @@ export function LocationPickerModal({
   const footerContent = (
     <View style={styles.footerContent}>
       <NBText variant="caption" color="gray500" style={styles.coordsText}>
-        Titik: {coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}
+        {t('components:locationPicker.coordsLabel', { lat: coords.lat.toFixed(6), lng: coords.lng.toFixed(6) })}
       </NBText>
       <View style={styles.footerActions}>
         <NBButton
-          title="Batal"
+          title={t('components:locationPicker.cancelButton')}
           variant="secondary"
           onPress={onClose}
           style={styles.footerBtn}
         />
         <NBButton
-          title="Gunakan Titik Ini"
+          title={t('components:locationPicker.confirmButton')}
           variant="primary"
           onPress={handleConfirm}
           style={styles.footerBtn}
@@ -179,7 +181,7 @@ export function LocationPickerModal({
     <NBModal
       visible={visible}
       onClose={onClose}
-      title="Pilih Titik Lokasi"
+      title={t('components:locationPicker.title')}
       type="fullscreen"
       noPadding
       footer={footerContent}

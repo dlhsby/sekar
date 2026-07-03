@@ -33,6 +33,13 @@
   },
   "filter": {
     "title": "Filter Kehadiran",
+    "statusLabel": "Status",
+    "statusOptions": {
+      "all": "Semua Status",
+      "late": "Terlambat",
+      "onTime": "Tepat Waktu",
+      "active": "Sedang Berlangsung"
+    },
     "dateRange": "Rentang Tanggal",
     "dateFrom": "Dari",
     "dateTo": "Sampai",

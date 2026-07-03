@@ -97,6 +97,14 @@
   "sync": {
     "syncing": "Menyinkronkan...",
     "syncFailed": "Sinkronisasi gagal",
-    "syncSuccess": "Sinkronisasi berhasil"
+    "syncSuccess": "Sinkronisasi berhasil",
+    "statusCard": {
+      "title": "Sinkronisasi Data",
+      "pendingLabel": "Tertunda:",
+      "failedLabel": "Gagal:",
+      "syncButton": "Sinkronkan",
+      "retryButton": "Coba Ulang",
+      "clearButton": "Hapus Gagal"
+    }
   }
 }

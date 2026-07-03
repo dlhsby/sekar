@@ -97,6 +97,14 @@
   "sync": {
     "syncing": "Syncing...",
     "syncFailed": "Sync failed",
-    "syncSuccess": "Sync successful"
+    "syncSuccess": "Sync successful",
+    "statusCard": {
+      "title": "Sync Data",
+      "pendingLabel": "Pending:",
+      "failedLabel": "Failed:",
+      "syncButton": "Sync",
+      "retryButton": "Retry",
+      "clearButton": "Clear Failed"
+    }
   }
 }

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import MapView, { Circle, Marker, Polygon, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 import { NBText } from '../nb/NBText';
 import { NBModal } from '../nb';
 import {
@@ -73,11 +74,11 @@ interface LocationMapModalProps {
   markerTitle?: string;
 }
 
-function formatUpdatedAt(date: Date | null): string {
-  if (!date) return 'Belum diperbarui';
+function formatUpdatedAt(date: Date | null, t: (key: string) => string): string {
+  if (!date) return t('components:locationMap.notUpdated');
   const now = new Date();
   const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000);
-  if (diffSec < 60) return 'Diperbarui baru saja';
+  if (diffSec < 60) return t('components:locationMap.justUpdated');
   const diffMin = Math.floor(diffSec / 60);
   if (diffMin < 60) return `Diperbarui ${diffMin} mnt lalu`;
   const diffHr = Math.floor(diffMin / 60);
@@ -126,11 +127,14 @@ export function LocationMapModal({
   area,
   footerActionLabel,
   onFooterAction,
-  title = 'Lokasi Anda',
+  title,
   hideAreaStatus = false,
   hideUpdatedAt = false,
-  markerTitle = 'Lokasi Anda',
+  markerTitle,
 }: LocationMapModalProps) {
+  const { t } = useTranslation();
+  const defaultTitle = title ?? t('components:locationMap.defaultTitle');
+  const defaultMarkerTitle = markerTitle ?? t('components:locationMap.defaultMarkerTitle');
   // Coerce — backend may emit decimal columns as strings via TypeORM, and
   // some callers pass numeric strings unintentionally. Treat NaN/null/undefined
   // uniformly as "no coords" so the renderer never calls .toFixed on a string.
@@ -217,7 +221,7 @@ export function LocationMapModal({
     <NBModal
       visible={visible}
       onClose={onClose}
-      title={title}
+      title={defaultTitle}
       type="sheet"
       noPadding
       footer={footerContent}
@@ -256,7 +260,7 @@ export function LocationMapModal({
             {hasCoords && (
               <Marker
                 coordinate={{ latitude: lat!, longitude: lng! }}
-                title={markerTitle}
+                title={defaultMarkerTitle}
                 description={
                   location.accuracy !== null
                     ? `Akurasi: ±${Math.round(location.accuracy)}m`
@@ -326,7 +330,7 @@ export function LocationMapModal({
             ) : null}
             {!hideUpdatedAt && (
               <NBText variant="caption" color="gray500" style={styles.updatedTopMargin}>
-                {formatUpdatedAt(location.updatedAt)}
+                {formatUpdatedAt(location.updatedAt, t)}
               </NBText>
             )}
           </>

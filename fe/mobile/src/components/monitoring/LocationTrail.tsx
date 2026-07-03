@@ -18,6 +18,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Marker, Polyline, Callout } from 'react-native-maps';
 import type MapView from 'react-native-maps';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   nbColors,
@@ -215,6 +216,7 @@ export function LocationTrailMapLayers({
   isLoading,
   mapRef,
 }: LocationTrailMapLayersProps): React.JSX.Element | null {
+  const { t } = useTranslation();
   // Stage-1: defer first attach by one animation frame so MapView is fully
   // settled before we add Polyline/Marker children.
   const [mounted, setMounted] = useState(false);
@@ -290,7 +292,7 @@ export function LocationTrailMapLayers({
               Mulai {formatTime(startPoint.logged_at)}
             </NBText>
           </View>
-          <TrailPointCallout title="Titik Mulai" point={startPoint} />
+          <TrailPointCallout title={t('monitoring:locationTrail.startPoint')} point={startPoint} />
         </Marker>
       )}
 
@@ -305,7 +307,7 @@ export function LocationTrailMapLayers({
               Akhir {formatTime(endPoint.logged_at)}
             </NBText>
           </View>
-          <TrailPointCallout title="Titik Akhir" point={endPoint} />
+          <TrailPointCallout title={t('monitoring:locationTrail.endPoint')} point={endPoint} />
         </Marker>
       )}
 
@@ -323,7 +325,7 @@ export function LocationTrailMapLayers({
                 {displayNum}
               </NBText>
             </View>
-            <TrailPointCallout title={`Titik #${displayNum}`} point={pt} />
+            <TrailPointCallout title={t('monitoring:locationTrail.waypoint', { num: displayNum })} point={pt} />
           </Marker>
         );
       })}
@@ -357,6 +359,7 @@ export function LocationTrailOverlay({
   onRetry,
   bottomInset = 0,
 }: LocationTrailOverlayProps): React.JSX.Element {
+  const { t } = useTranslation();
   const hasPoints = !!history && history.points.length > 0;
   // History loaded for the date but no GPS points were recorded — distinct from
   // a fetch error. Show a "no data" state instead of a misleading all-zero bar.
@@ -386,9 +389,9 @@ export function LocationTrailOverlay({
             <NBEmptyState
               variant="error"
               illustration="illo-offline"
-              title="Gagal Memuat Riwayat"
+              title={t('monitoring:locationTrail.loadError')}
               description={error}
-              ctaLabel={onRetry ? 'Coba Lagi' : undefined}
+              ctaLabel={onRetry ? t('common:retry') : undefined}
               onCTA={onRetry}
               testID="trail-error"
             />
@@ -403,7 +406,7 @@ export function LocationTrailOverlay({
             <NBEmptyState
               variant="noData"
               illustration="illo-location"
-              title="Tidak Ada Riwayat"
+              title={t('monitoring:locationTrail.noData')}
               description="Belum ada titik GPS yang terekam untuk tanggal ini."
               testID="trail-empty"
             />

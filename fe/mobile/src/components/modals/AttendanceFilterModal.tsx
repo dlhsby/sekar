@@ -3,8 +3,9 @@
  * The personal-list subset of OvertimeFilterModal (no rayon/area/user).
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { NBSelect, NBDatePicker, NBModal, NBText } from '../nb';
 import { nbColors, nbSpacing, nbBorders } from '../../constants/nbTokens';
@@ -22,13 +23,6 @@ interface AttendanceFilterModalProps {
   onResetFilters: () => void;
 }
 
-const STATUS_OPTIONS = [
-  { label: 'Semua Status', value: 'all' },
-  { label: 'Terlambat', value: 'late' },
-  { label: 'Tepat Waktu', value: 'on_time' },
-  { label: 'Sedang Berlangsung', value: 'active' },
-];
-
 export function AttendanceFilterModal({
   visible,
   onClose,
@@ -36,6 +30,14 @@ export function AttendanceFilterModal({
   onApplyFilters,
   onResetFilters,
 }: AttendanceFilterModalProps): React.JSX.Element {
+  const { t } = useTranslation();
+
+  const STATUS_OPTIONS = useMemo(() => [
+    { label: t('attendance:filter.statusOptions.all'), value: 'all' },
+    { label: t('attendance:filter.statusOptions.late'), value: 'late' },
+    { label: t('attendance:filter.statusOptions.onTime'), value: 'on_time' },
+    { label: t('attendance:filter.statusOptions.active'), value: 'active' },
+  ], [t]);
   const [localStatus, setLocalStatus] = useState<string>(filters.status ?? '');
   const [localDateFrom, setLocalDateFrom] = useState(filters.from_date ?? '');
   const [localDateTo, setLocalDateTo] = useState(filters.to_date ?? '');
@@ -72,7 +74,7 @@ export function AttendanceFilterModal({
     <NBModal
       visible={visible}
       onClose={onClose}
-      title="Filter Kehadiran"
+      title={t('attendance:filter.title')}
       footer={
         <View style={styles.actionButtons}>
           <TouchableOpacity
@@ -80,20 +82,20 @@ export function AttendanceFilterModal({
             onPress={handleReset}
             accessibilityRole="button"
           >
-            <NBText variant="body-sm" color="black" style={styles.actionButtonText}>Reset</NBText>
+            <NBText variant="body-sm" color="black" style={styles.actionButtonText}>{t('attendance:filter.reset')}</NBText>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionButton, styles.applyButton]}
             onPress={handleApply}
             accessibilityRole="button"
           >
-            <NBText variant="body-sm" color="white" style={styles.actionButtonText}>Terapkan</NBText>
+            <NBText variant="body-sm" color="white" style={styles.actionButtonText}>{t('attendance:filter.apply')}</NBText>
           </TouchableOpacity>
         </View>
       }
     >
       <View style={styles.filterSection}>
-        <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>Status</NBText>
+        <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>{t('attendance:filter.statusLabel')}</NBText>
         <NBSelect
           value={localStatus || 'all'}
           onValueChange={(v) => setLocalStatus(v === 'all' ? '' : String(v))}
@@ -102,13 +104,13 @@ export function AttendanceFilterModal({
       </View>
 
       <View style={styles.filterSection}>
-        <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>Rentang Tanggal</NBText>
+        <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>{t('attendance:filter.dateRange')}</NBText>
         <View style={styles.dateRangeRow}>
           <View style={styles.dateButtonHalf}>
             <NBDatePicker
               value={dateFromParsed}
               onChange={(date) => setLocalDateFrom(toFilterDateString(date))}
-              label="Dari"
+              label={t('attendance:filter.dateFrom')}
               maximumDate={dateToParsed ?? undefined}
             />
           </View>
@@ -117,7 +119,7 @@ export function AttendanceFilterModal({
             <NBDatePicker
               value={dateToParsed}
               onChange={(date) => setLocalDateTo(toFilterDateString(date))}
-              label="Sampai"
+              label={t('attendance:filter.dateTo')}
               minimumDate={dateFromParsed ?? undefined}
             />
           </View>

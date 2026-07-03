@@ -25,5 +25,17 @@
     "addPhotoLabel": "Add photo",
     "photoButtonText": "Photo",
     "previewTitle": "Evidence Photo"
+  },
+  "locationPicker": {
+    "title": "Select Location",
+    "coordsLabel": "Location: {{lat}}, {{lng}}",
+    "cancelButton": "Cancel",
+    "confirmButton": "Use This Location"
+  },
+  "locationMap": {
+    "notUpdated": "Not updated",
+    "justUpdated": "Updated just now",
+    "defaultTitle": "Your Location",
+    "defaultMarkerTitle": "Your Location"
   }
 }

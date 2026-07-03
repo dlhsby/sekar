@@ -161,5 +161,19 @@
     "submitButton": "Submit Activity",
     "submitOfflineButton": "Save to Sync",
     "cancelButton": "Cancel"
+  },
+  "submitAlerts": {
+    "shiftNotActiveTitle": "Shift Not Active",
+    "shiftNotActiveMessage": "You have not clocked in. Please clock in first to create an activity.",
+    "clockInButton": "Clock In Now",
+    "saveDraftButton": "Save Draft",
+    "successTitle": "Success",
+    "successMessage": "Activity submitted successfully!",
+    "okButton": "OK",
+    "offlineTitle": "Offline Mode",
+    "offlineMessage": "Activity saved and will be sent when online.",
+    "failureTitle": "Failed to Send",
+    "failureMessage": "An error occurred. Activity saved as draft.",
+    "retryButton": "Try Again"
   }
 }

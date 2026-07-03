@@ -37,6 +37,7 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import {
@@ -81,13 +82,6 @@ const ADMIN_ROLES = [
   'superadmin',
 ];
 
-const SORT_OPTIONS = [
-  { key: 'created_at_desc', label: 'Dibuat Terbaru' },
-  { key: 'created_at_asc',  label: 'Dibuat Terlama' },
-  { key: 'expected_asc',    label: 'Minggu Preferensi Terdekat' },
-  { key: 'expected_desc',   label: 'Minggu Preferensi Terjauh' },
-];
-
 type SortKey = 'created_at_desc' | 'created_at_asc' | 'expected_asc' | 'expected_desc';
 
 const DEFAULT_SORT: SortKey = 'created_at_desc';
@@ -95,9 +89,17 @@ const DEFAULT_SORT: SortKey = 'created_at_desc';
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export function ReviewQueueScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
   const userRole = useUserRole();
+
+  const SORT_OPTIONS = useMemo(() => [
+    { key: 'created_at_desc', label: t('pruning:list.sortCreatedNewest') },
+    { key: 'created_at_asc',  label: t('pruning:list.sortCreatedOldest') },
+    { key: 'expected_asc',    label: t('pruning:list.sortExpectedNearest') },
+    { key: 'expected_desc',   label: t('pruning:list.sortExpectedFarthest') },
+  ], [t]);
 
   const user = useAppSelector((state) => state.auth.user);
   const {
@@ -157,11 +159,11 @@ export function ReviewQueueScreen(): React.JSX.Element {
     if (error?.error) {
       NBToast.show({
         level: 'danger',
-        title: 'Gagal memuat permohonan',
+        title: t('pruning:list.loadErrorTitle'),
         body: error.error,
       });
     }
-  }, [error]);
+  }, [error, t]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -270,8 +272,8 @@ export function ReviewQueueScreen(): React.JSX.Element {
   }, [requests, filters, sort]);
 
   const activeSortLabel = useMemo(
-    () => SORT_OPTIONS.find((o) => o.key === sort)?.label ?? 'Dibuat Terbaru',
-    [sort],
+    () => SORT_OPTIONS.find((o) => o.key === sort)?.label ?? t('pruning:list.sortCreatedNewest'),
+    [sort, SORT_OPTIONS, t],
   );
   const isSortActive = sort !== DEFAULT_SORT;
 
@@ -305,15 +307,15 @@ export function ReviewQueueScreen(): React.JSX.Element {
     if (isLoading) { return null; }
     return (
       <NBEmptyState
-        title="Tidak ada permohonan"
+        title={t('pruning:review.emptyTitle')}
         description={
           activeFilterCount > 0
-            ? 'Tidak ada permohonan yang sesuai filter.'
-            : 'Permohonan perantingan dari kecamatan akan muncul di sini.'
+            ? t('pruning:review.emptyDescWithFilter')
+            : t('pruning:review.emptyDescNoFilter')
         }
       />
     );
-  }, [isLoading, activeFilterCount]);
+  }, [isLoading, activeFilterCount, t]);
 
   // ── Authorization gate ──────────────────────────────────────────────────
   if (!isAuthorized) {
@@ -321,8 +323,8 @@ export function ReviewQueueScreen(): React.JSX.Element {
       <View style={styles.unauthorizedContainer}>
         <NBAlert
           variant="danger"
-          title="Akses Ditolak"
-          message="Anda tidak memiliki izin untuk mengakses halaman ini."
+          title={t('pruning:review.accessDeniedTitle')}
+          message={t('pruning:review.accessDeniedDesc')}
         />
       </View>
     );
@@ -337,7 +339,7 @@ export function ReviewQueueScreen(): React.JSX.Element {
         opacity={0.06}
       >
         <SafeAreaView style={styles.safeArea}>
-          <NBPageHeader title="Review Permohonan Perantingan" />
+          <NBPageHeader title={t('pruning:review.pageTitle')} />
           <View style={styles.skeletonContainer}>
             <NBSkeleton variant="list" count={5} />
           </View>
@@ -355,7 +357,7 @@ export function ReviewQueueScreen(): React.JSX.Element {
     >
       <SafeAreaView style={styles.safeArea}>
         {/* Page Title — same style as Tugas / Aktivitas / Lembur */}
-        <NBPageHeader title="Review Permohonan Perantingan" />
+        <NBPageHeader title={t('pruning:review.pageTitle')} />
 
         {/* Filter bar — mini chips (left) + sort/filter icons (right) */}
         <View
@@ -386,7 +388,7 @@ export function ReviewQueueScreen(): React.JSX.Element {
                 ))}
               </ScrollView>
             ) : (
-              <NBText variant="body-sm" color="gray400" style={styles.filterBarPlaceholder}>Semua Permohonan</NBText>
+              <NBText variant="body-sm" color="gray400" style={styles.filterBarPlaceholder}>{t('pruning:list.allRequestsLabel')}</NBText>
             )}
             {activeFilterCount > 0 && (
               <TouchableOpacity
@@ -466,7 +468,7 @@ export function ReviewQueueScreen(): React.JSX.Element {
         <SortModal
           visible={isSortModalOpen}
           onClose={() => setIsSortModalOpen(false)}
-          title="Urutkan Permohonan"
+          title={t('pruning:review.sortModalTitle')}
           options={SORT_OPTIONS}
           selectedOption={sort}
           onSelect={handleSortSelect}

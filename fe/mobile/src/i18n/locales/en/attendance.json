@@ -33,6 +33,13 @@
   },
   "filter": {
     "title": "Filter Attendance",
+    "statusLabel": "Status",
+    "statusOptions": {
+      "all": "All Status",
+      "late": "Late",
+      "onTime": "On Time",
+      "active": "In Progress"
+    },
     "dateRange": "Date Range",
     "dateFrom": "From",
     "dateTo": "To",

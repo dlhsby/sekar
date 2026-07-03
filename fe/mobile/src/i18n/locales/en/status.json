@@ -50,5 +50,14 @@
     "in_progress": "In progress",
     "done": "Done",
     "cancelled": "Cancelled"
+  },
+  "taskPill": {
+    "in_progress": "In Progress",
+    "readyToStart": "Ready to Start",
+    "revision_needed": "Needs Revision",
+    "awaiting_verification": "Awaiting Verification",
+    "verified": "Verified",
+    "declined": "Declined",
+    "pending": "Pending"
   }
 }

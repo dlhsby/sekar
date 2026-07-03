@@ -281,11 +281,11 @@ export function useActivityForm() {
   ) => {
     if (!currentShift) {
       Alert.alert(
-        'Shift Belum Aktif',
-        'Anda belum clock-in. Clock-in terlebih dahulu untuk membuat aktivitas.',
+        i18n.t('activities:submitAlerts.shiftNotActiveTitle'),
+        i18n.t('activities:submitAlerts.shiftNotActiveMessage'),
         [
-          { text: 'Clock In Sekarang', onPress: onNavigateClockIn },
-          { text: 'Simpan Draft', onPress: () => saveDraft() },
+          { text: i18n.t('activities:submitAlerts.clockInButton'), onPress: onNavigateClockIn },
+          { text: i18n.t('activities:submitAlerts.saveDraftButton'), onPress: () => saveDraft() },
         ]
       );
       return;
@@ -324,8 +324,8 @@ export function useActivityForm() {
           await AsyncStorage.removeItem('activity_draft');
           for (const photo of form.photos) { await mediaService.deletePhoto(photo.uri); }
           resetForm();
-          Alert.alert('Berhasil', 'Aktivitas berhasil dikirim!', [
-            { text: 'OK', onPress: onNavigateActivities },
+          Alert.alert(i18n.t('activities:submitAlerts.successTitle'), i18n.t('activities:submitAlerts.successMessage'), [
+            { text: i18n.t('activities:submitAlerts.okButton'), onPress: onNavigateActivities },
           ]);
         }
       } else {
@@ -333,19 +333,19 @@ export function useActivityForm() {
         await AsyncStorage.removeItem('activity_draft');
         resetForm();
         Alert.alert(
-          'Mode Offline',
-          'Aktivitas disimpan dan akan dikirim saat online.',
-          [{ text: 'OK', onPress: onNavigateActivities }]
+          i18n.t('activities:submitAlerts.offlineTitle'),
+          i18n.t('activities:submitAlerts.offlineMessage'),
+          [{ text: i18n.t('activities:submitAlerts.okButton'), onPress: onNavigateActivities }]
         );
       }
     } catch (error) {
-      dispatch(setError(error instanceof Error ? error.message : 'Gagal mengirim aktivitas'));
+      dispatch(setError(error instanceof Error ? error.message : i18n.t('activities:submitAlerts.failureTitle')));
       Alert.alert(
-        'Gagal Mengirim',
-        'Terjadi kesalahan. Aktivitas disimpan sebagai draft.',
+        i18n.t('activities:submitAlerts.failureTitle'),
+        i18n.t('activities:submitAlerts.failureMessage'),
         [
-          { text: 'Coba Lagi', onPress: () => handleSubmit(onNavigateClockIn, onNavigateActivities) },
-          { text: 'Simpan Draft', onPress: () => saveDraft() },
+          { text: i18n.t('activities:submitAlerts.retryButton'), onPress: () => handleSubmit(onNavigateClockIn, onNavigateActivities) },
+          { text: i18n.t('activities:submitAlerts.saveDraftButton'), onPress: () => saveDraft() },
         ]
       );
     } finally {

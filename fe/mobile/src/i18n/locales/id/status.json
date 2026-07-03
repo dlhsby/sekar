@@ -50,5 +50,14 @@
     "in_progress": "Diproses",
     "done": "Selesai",
     "cancelled": "Dibatalkan"
+  },
+  "taskPill": {
+    "in_progress": "Berjalan",
+    "readyToStart": "Siap mulai",
+    "revision_needed": "Revisi",
+    "awaiting_verification": "Menunggu verifikasi",
+    "verified": "Terverifikasi",
+    "declined": "Ditolak",
+    "pending": "Menunggu"
   }
 }
