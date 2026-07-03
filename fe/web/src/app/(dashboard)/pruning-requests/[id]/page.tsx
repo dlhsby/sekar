@@ -165,7 +165,7 @@ export default function PruningRequestDetailPage() {
   const expectedLabel = request.expectedDate
     ? new Date(request.expectedDate).toLocaleDateString('id-ID')
     : request.expectedYear && request.expectedIsoWeek
-      ? `Minggu ${request.expectedIsoWeek} / ${request.expectedYear}`
+      ? t('pruning:detail.weekLabel', { week: request.expectedIsoWeek, year: request.expectedYear })
       : '-';
 
   return (
@@ -225,11 +225,11 @@ export default function PruningRequestDetailPage() {
                     type="button"
                     onClick={() => setLightbox(url)}
                     className="group relative overflow-hidden rounded-nb-base border-2 border-nb-black focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
-                    aria-label={`Perbesar foto ${i + 1}`}
+                    aria-label={t('pruning:detail.photoLabel', { index: i + 1 })}
                   >
                     <Image
                       src={url}
-                      alt={`Foto ${i + 1}`}
+                      alt={t('pruning:detail.photoAlt', { index: i + 1 })}
                       width={160}
                       height={120}
                       className="h-24 w-full object-cover transition-transform group-hover:scale-105"
@@ -325,13 +325,13 @@ export default function PruningRequestDetailPage() {
                   label={t('pruning:detail.assign.area')}
                   value={areaId}
                   onChange={setAreaId}
-                  options={[{ label: '— Pilih area —', value: '' }, ...areaOptions]}
+                  options={[{ label: t('pruning:detail.assign.areaPlaceholder'), value: '' }, ...areaOptions]}
                 />
                 <FormSelect
                   label={t('pruning:detail.assign.assignedTo')}
                   value={assignedTo}
                   onChange={setAssignedTo}
-                  options={[{ label: '— Pilih petugas —', value: '' }, ...assigneeOptions]}
+                  options={[{ label: t('pruning:detail.assign.assignedToPlaceholder'), value: '' }, ...assigneeOptions]}
                 />
                 <FormSelect
                   label={t('pruning:detail.assign.caseType')}
@@ -374,7 +374,7 @@ export default function PruningRequestDetailPage() {
           {!canReview && !canConvert && !request.reviewer && (
             <SectionCard>
               <p className="py-2 text-nb-body-sm text-nb-gray-600">
-                Tidak ada aksi tersedia untuk status saat ini.
+                {t('pruning:detail.noActionAvailable')}
               </p>
             </SectionCard>
           )}
@@ -386,7 +386,7 @@ export default function PruningRequestDetailPage() {
           {lightbox && (
             <Image
               src={lightbox}
-              alt="Pratinjau foto"
+              alt={t('pruning:detail.photoPreview')}
               width={1024}
               height={768}
               className="h-auto w-full rounded-nb-base object-contain"

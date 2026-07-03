@@ -11,6 +11,7 @@
  */
 
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { CapacityRow, useCapacityCalendar, useUpsertCapacity } from '@/lib/api/capacity';
 import { isoWeekStart } from '@/lib/utils/iso-week';
@@ -43,6 +44,7 @@ export function CapacityWeeklyGrid({
   canEdit,
   loading,
 }: CapacityWeeklyGridProps) {
+  const { t } = useTranslation();
   const { data: capacities = [] } = useCapacityCalendar(rayonId, {
     year,
     fromWeek,
@@ -159,6 +161,7 @@ export function CapacityWeeklyGrid({
               edited={edited}
               canEdit={canEdit}
               onCapacityChange={handleCapacityChange}
+              t={t}
             />
           ))}
         </div>
@@ -215,14 +218,14 @@ export function CapacityWeeklyGrid({
             disabled={isSaving}
             loading={isSaving}
           >
-            Simpan
+            {t('common:actions.save')}
           </Button>
           <Button
             variant="secondary"
             onClick={() => setEdited(new Map())}
             disabled={isSaving}
           >
-            Batal
+            {t('common:actions.cancel')}
           </Button>
         </div>
       )}
@@ -237,6 +240,7 @@ interface CapacityServiceRowProps {
   edited: Map<string, EditedCell>;
   canEdit: boolean;
   onCapacityChange: (isoWeek: number, serviceType: string, value: string) => void;
+  t: (key: string, options?: Record<string, unknown>) => string;
 }
 
 function CapacityServiceRow({
@@ -246,6 +250,7 @@ function CapacityServiceRow({
   edited,
   canEdit,
   onCapacityChange,
+  t,
 }: CapacityServiceRowProps) {
   return (
     <>
@@ -275,7 +280,7 @@ function CapacityServiceRow({
                   value={displayCapacity}
                   onChange={(e) => onCapacityChange(week.isoWeek, serviceType, e.target.value)}
                   className="h-6 w-full border-[1.5px] border-nb-gray-300 px-1 text-center font-mono text-[10px]"
-                  title="Kapasitas"
+                  title={t('common:actions.capacity')}
                 />
               ) : (
                 <div className="text-center font-mono text-[10px] font-bold text-nb-black">

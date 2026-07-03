@@ -43,18 +43,6 @@ import {
   type PruningRequestStatus,
 } from '@/lib/api/pruning-requests';
 
-const STATUS_FILTER_OPTIONS: Array<{ label: string; value: PruningRequestStatus | 'all' }> = [
-  { label: 'Semua Status', value: 'all' },
-  { label: 'Terkirim', value: 'submitted' },
-  { label: 'Sedang Ditinjau', value: 'under_review' },
-  { label: 'Disetujui', value: 'approved' },
-  { label: 'Ditolak', value: 'rejected' },
-  { label: 'Ditugaskan', value: 'assigned' },
-  { label: 'Sedang Dikerjakan', value: 'in_progress' },
-  { label: 'Selesai', value: 'done' },
-  { label: 'Dibatalkan', value: 'cancelled' },
-];
-
 export default function PruningRequestsPage() {
   const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
@@ -63,6 +51,18 @@ export default function PruningRequestsPage() {
   const [page, setPage] = useState(1);
   const view = useViewModal<PruningRequest>();
   const limit = 20;
+
+  const statusFilterOptions = useMemo<Array<{ label: string; value: PruningRequestStatus | 'all' }>>(() => [
+    { label: t('pruning:list.statuses.all'), value: 'all' },
+    { label: t('pruning:list.statuses.submitted'), value: 'submitted' },
+    { label: t('pruning:list.statuses.under_review'), value: 'under_review' },
+    { label: t('pruning:list.statuses.approved'), value: 'approved' },
+    { label: t('pruning:list.statuses.rejected'), value: 'rejected' },
+    { label: t('pruning:list.statuses.assigned'), value: 'assigned' },
+    { label: t('pruning:list.statuses.in_progress'), value: 'in_progress' },
+    { label: t('pruning:list.statuses.done'), value: 'done' },
+    { label: t('pruning:list.statuses.cancelled'), value: 'cancelled' },
+  ], [t]);
 
   useEffect(() => {
     if (!authLoading && user && !hasRole(user.role, [...PRUNING_REQUEST_ADMIN_ROLES] as UserRole[])) {
@@ -211,7 +211,7 @@ export default function PruningRequestsPage() {
                 label={t('pruning:page.filterLabel')}
                 value={statusFilter}
                 onChange={handleStatusChange}
-                options={STATUS_FILTER_OPTIONS}
+                options={statusFilterOptions}
               />
             </div>
             {data?.meta && (

@@ -4,6 +4,7 @@
 
 import { useCallback, useState } from 'react';
 import { Alert, Linking } from 'react-native';
+import i18n from '../../../i18n/config';
 import { mediaService, type Photo } from '../../../services/media/mediaService';
 import {
   requestCameraPermission,
@@ -20,19 +21,19 @@ export function usePruningPhotoManagement() {
     if (photos.length >= MAX_PHOTOS) {
       NBToast.show({
         level: 'warning',
-        title: 'Batas foto',
-        body: `Maksimal ${MAX_PHOTOS} foto.`,
+        title: i18n.t('pruning:photoManagement.photoLimitTitle'),
+        body: i18n.t('pruning:photoManagement.photoLimitMessage', { max: MAX_PHOTOS }),
       });
       return;
     }
     const perm = await requestCameraPermission();
     if (perm.status !== 'granted') {
       Alert.alert(
-        'Izin kamera ditolak',
-        'Aktifkan izin kamera di Pengaturan untuk mengambil foto.',
+        i18n.t('pruning:photoManagement.cameraPermissionDeniedTitle'),
+        i18n.t('pruning:photoManagement.cameraPermissionDeniedMessage'),
         [
-          { text: 'Batal', style: 'cancel' },
-          { text: 'Pengaturan', onPress: () => Linking.openSettings() },
+          { text: i18n.t('pruning:photoManagement.cancelButton'), style: 'cancel' },
+          { text: i18n.t('pruning:photoManagement.settingsButton'), onPress: () => Linking.openSettings() },
         ],
       );
       return;
@@ -45,7 +46,7 @@ export function usePruningPhotoManagement() {
     } catch (e) {
       NBToast.show({
         level: 'danger',
-        title: 'Gagal mengambil foto',
+        title: i18n.t('pruning:photoManagement.capturePhotoErrorTitle'),
         body: e instanceof Error ? e.message : 'Unknown error',
       });
     }
@@ -56,8 +57,8 @@ export function usePruningPhotoManagement() {
     if (remaining <= 0) {
       NBToast.show({
         level: 'warning',
-        title: 'Batas foto',
-        body: `Maksimal ${MAX_PHOTOS} foto.`,
+        title: i18n.t('pruning:photoManagement.photoLimitTitle'),
+        body: i18n.t('pruning:photoManagement.photoLimitMessage', { max: MAX_PHOTOS }),
       });
       return;
     }
@@ -69,7 +70,7 @@ export function usePruningPhotoManagement() {
     } catch (e) {
       NBToast.show({
         level: 'danger',
-        title: 'Gagal memilih foto',
+        title: i18n.t('pruning:photoManagement.pickPhotoErrorTitle'),
         body: e instanceof Error ? e.message : 'Unknown error',
       });
     }

@@ -62,7 +62,16 @@
     "failureMessage": "Failed to create task. Please try again.",
     "cancelConfirm": "Unsaved data will be lost.",
     "cancelNo": "No",
-    "cancelYes": "Yes"
+    "cancelYes": "Yes",
+    "deadline": {
+      "sectionTitle": "DEADLINE",
+      "subtitle": "Optional — set task deadline (default time 23:59)",
+      "dateLabel": "Date",
+      "datePlaceholder": "Select deadline date...",
+      "timeLabel": "Time (optional, default 23:59)",
+      "timePlaceholder": "Select time...",
+      "clearButton": "Clear Deadline"
+    }
   },
   "detail": {
     "loading": "Loading task...",

@@ -141,5 +141,18 @@
       "layers": "Pilih lapisan"
     },
     "fixedRayon": "Rayon Anda"
+  },
+  "reassignWorkerModal": {
+    "title": "Pindah Petugas",
+    "targetLabel": "Tujuan:",
+    "active": "aktif",
+    "selectWorkerLabel": "Pilih Petugas",
+    "noWorkersAvailable": "Tidak ada petugas aktif yang tersedia untuk reassign",
+    "reasonLabel": "Alasan (Opsional)",
+    "reasonPlaceholder": "Tuliskan alasan reassign...",
+    "confirmButton": "Konfirmasi Pindah",
+    "successTitle": "Berhasil",
+    "successMessage": "Berhasil reassign {{name}} ke {{area}}",
+    "errorTitle": "Gagal"
   }
 }

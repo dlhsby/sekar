@@ -21,15 +21,25 @@
     "statusOptions": {
       "all": "Semua Status",
       "submitted": "Menunggu",
+      "under_review": "Direview",
       "approved": "Disetujui",
-      "rejected": "Ditolak"
+      "rejected": "Ditolak",
+      "assigned": "Ditugaskan",
+      "in_progress": "Diproses",
+      "done": "Selesai",
+      "cancelled": "Dibatalkan"
     },
     "dateRange": "Rentang Tanggal",
     "dateFrom": "Dari",
     "dateTo": "Sampai",
+    "rayon": "Rayon",
+    "rayonAll": "Semua Rayon",
+    "rayonMine": "Rayon Saya",
+    "referenceCodeLabel": "Nomor Permohonan",
     "reset": "Reset",
     "resetLabel": "Reset filter permohonan",
     "apply": "Terapkan",
+    "requesterNameLabel": "Nama Pemohon",
     "requesterNamePlaceholder": "Contoh: Budi",
     "requestCodePlaceholder": "Contoh: PR-2026-..."
   },
@@ -113,6 +123,16 @@
     "title": "Pindah Petugas",
     "confirmTitle": "Konfirmasi Pindah",
     "reasonPlaceholder": "Tuliskan alasan reassign..."
+  },
+  "photoManagement": {
+    "photoLimitTitle": "Batas foto",
+    "photoLimitMessage": "Maksimal {{max}} foto.",
+    "cameraPermissionDeniedTitle": "Izin kamera ditolak",
+    "cameraPermissionDeniedMessage": "Aktifkan izin kamera di Pengaturan untuk mengambil foto.",
+    "settingsButton": "Pengaturan",
+    "cancelButton": "Batal",
+    "capturePhotoErrorTitle": "Gagal mengambil foto",
+    "pickPhotoErrorTitle": "Gagal memilih foto"
   },
   "taskForm": {
     "caseTypeLabel": "Jenis Gangguan *",

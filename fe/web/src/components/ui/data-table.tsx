@@ -372,8 +372,8 @@ export function DataTable<TData, TValue>({
                   aria-pressed={showFilters}
                   title={
                     columnFilters.length > 0
-                      ? `${columnFilters.length} filter aktif`
-                      : 'Filter per kolom'
+                      ? t('common:actions.activeFilters', { count: columnFilters.length })
+                      : t('common:actions.filterPerColumn')
                   }
                   className={cn(
                     (showFilters || columnFilters.length > 0) && 'bg-nb-info-light'
@@ -540,7 +540,7 @@ export function DataTable<TData, TValue>({
                 <TableCell colSpan={colCount} className="border-r-0 p-4">
                   <EmptyState
                     variant="error"
-                    action={onRetry ? { label: 'Coba Lagi', onClick: onRetry } : undefined}
+                    action={onRetry ? { label: t('common:actions.retry'), onClick: onRetry } : undefined}
                   />
                 </TableCell>
               </TableRow>
@@ -606,7 +606,7 @@ export function DataTable<TData, TValue>({
         ) : error ? (
           <EmptyState
             variant="error"
-            action={onRetry ? { label: 'Coba Lagi', onClick: onRetry } : undefined}
+            action={onRetry ? { label: t('common:actions.retry'), onClick: onRetry } : undefined}
           />
         ) : pageRows.length === 0 ? (
           isFiltered ? (

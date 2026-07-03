@@ -11,6 +11,7 @@
  */
 
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useJsApiLoader } from '@react-google-maps/api';
 import { Spinner } from '@/components/ui';
 import { useMapsConfig } from '@/lib/api/config';
@@ -27,9 +28,10 @@ export interface GoogleMapsGateProps {
 }
 
 function DefaultLoading() {
+  const { t } = useTranslation();
   return (
     <div className="flex h-[320px] items-center justify-center rounded-nb-base border-2 border-nb-black bg-nb-gray-100">
-      <Spinner label="Memuat peta…" />
+      <Spinner label={t('common:actions.loading')} />
     </div>
   );
 }

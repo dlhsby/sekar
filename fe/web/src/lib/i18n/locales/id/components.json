@@ -1,0 +1,29 @@
+{
+  "nbselect": {
+    "placeholder": "Pilih...",
+    "searchPlaceholder": "Cari...",
+    "selected": "dipilih",
+    "clearAll": "Hapus Semua",
+    "clearSelection": "Hapus Pilihan",
+    "done": "Selesai",
+    "close": "Tutup"
+  },
+  "photoUploader": {
+    "cameraPermissionTitle": "Izin Kamera",
+    "capturePhotoError": "Gagal mengambil foto",
+    "pickPhotoError": "Gagal memilih foto",
+    "maxPhotosTitle": "Maksimal Foto",
+    "maxPhotosMessage": "Anda hanya dapat menambahkan maksimal {{max}} foto.",
+    "addPhotoTitle": "Tambah Foto",
+    "addPhotoMessage": "Pilih sumber foto:",
+    "cameraOption": "Kamera",
+    "galleryOption": "Galeri",
+    "cancelOption": "Batal",
+    "viewPhotoLabel": "Lihat foto penuh",
+    "viewPhotoHint": "Ketuk untuk melihat foto dalam ukuran penuh",
+    "removePhotoLabel": "Hapus foto",
+    "addPhotoLabel": "Tambah foto",
+    "photoButtonText": "Foto",
+    "previewTitle": "Foto Bukti"
+  }
+}

@@ -109,5 +109,16 @@
     "startShiftWithVerification": "Start shift with location verification",
     "startShiftOutOfArea": "Start shift — You are out of area, attendance will be recorded",
     "endShiftNow": "End current shift"
+  },
+  "gpsSection": {
+    "capturingLocation": "Getting your location...",
+    "locationUnavailable": "Location unavailable",
+    "accuracy": "accuracy",
+    "withinBoundary": "You are within the work area",
+    "outsideBoundary": "You are outside the work area. Attendance will still be recorded.",
+    "gpsLabel": "GPS:",
+    "accuracyLabel": "Accuracy:",
+    "lowAccuracyWarning": "GPS accuracy is low. Move to an open area for better results.",
+    "updateGpsButton": "Update GPS"
   }
 }

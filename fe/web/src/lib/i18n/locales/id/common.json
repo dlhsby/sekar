@@ -34,7 +34,17 @@
     "removeSelection": "Hapus pilihan",
     "showColumns": "Tampilkan kolom",
     "columns": "Kolom",
-    "clearAllFilters": "Hapus semua filter kolom"
+    "clearAllFilters": "Hapus semua filter kolom",
+    "retry": "Coba Lagi",
+    "filterPerColumn": "Filter per kolom",
+    "activeFilters": "{{count}} filter aktif",
+    "profile": "Profil",
+    "downloadApp": "Unduh Aplikasi",
+    "settings": "Pengaturan",
+    "logout": "Keluar",
+    "confirmLogout": "Konfirmasi Keluar",
+    "confirmLogoutMessage": "Apakah Anda yakin ingin keluar dari aplikasi?",
+    "capacity": "Kapasitas"
   },
   "entities": {
     "user": "Pengguna",
@@ -77,7 +87,8 @@
     },
     "noPermission": {
       "title": "Tidak Memiliki Akses",
-      "description": "Anda tidak memiliki izin untuk mengakses halaman ini."
+      "description": "Anda tidak memiliki izin untuk mengakses halaman ini.",
+      "short": "Akses ditolak"
     },
     "emptyFolder": {
       "title": "Folder Kosong",

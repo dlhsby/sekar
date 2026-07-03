@@ -139,9 +139,20 @@
     }
   },
   "qr": {
-    "pageTitle": "Asset QR Codes",
+    "pageTitle": "QR Code Generator",
+    "breadcrumb": "Assets · QR Code",
     "selectMinimum": "Select at least 1 asset",
-    "generateSuccess": "{count} QR codes generated successfully"
+    "selectAssets": "Select Assets",
+    "selected": "selected",
+    "selectAll": "Select All",
+    "clearSelection": "Clear Selection",
+    "noAssets": "No assets",
+    "generateQr": "Generate QR",
+    "generateSuccess": "{count} QR codes generated successfully",
+    "preview": "Preview",
+    "printAll": "Print All",
+    "downloadPdf": "Download PDF",
+    "newBatch": "New Batch"
   },
   "create": {
     "pageTitle": "Add Asset",

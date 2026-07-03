@@ -34,7 +34,17 @@
     "removeSelection": "Remove Selection",
     "showColumns": "Show Columns",
     "columns": "Columns",
-    "clearAllFilters": "Clear all column filters"
+    "clearAllFilters": "Clear all column filters",
+    "retry": "Try Again",
+    "filterPerColumn": "Filter per column",
+    "activeFilters": "{{count}} active filters",
+    "profile": "Profile",
+    "downloadApp": "Download App",
+    "settings": "Settings",
+    "logout": "Logout",
+    "confirmLogout": "Confirm Logout",
+    "confirmLogoutMessage": "Are you sure you want to exit the app?",
+    "capacity": "Capacity"
   },
   "entities": {
     "user": "User",
@@ -77,7 +87,8 @@
     },
     "noPermission": {
       "title": "No Access",
-      "description": "You do not have permission to access this page."
+      "description": "You do not have permission to access this page.",
+      "short": "Access denied"
     },
     "emptyFolder": {
       "title": "Empty Folder",

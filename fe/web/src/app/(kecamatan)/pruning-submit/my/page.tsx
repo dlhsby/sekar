@@ -11,6 +11,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Plus, TreePine } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Button, EmptyState, SectionCard, SkeletonCard, StatusPill } from '@/components/ui';
 import { useMyPruningRequests } from '@/lib/api/pruning-requests';
@@ -30,6 +31,7 @@ function expectedLabel(req: {
 }
 
 export default function MyPruningRequestsPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { data, isLoading, isError } = useMyPruningRequests();
   const requests = data ?? [];
@@ -38,13 +40,13 @@ export default function MyPruningRequestsPage() {
     <div className="mx-auto max-w-2xl space-y-5 px-4 py-6">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-nb-h2 text-nb-black">Permintaan Saya</h1>
+          <h1 className="text-nb-h2 text-nb-black">{t('pruning:myRequests.pageTitle')}</h1>
           <p className="mt-0.5 text-nb-body-sm text-nb-gray-600">
-            Riwayat permintaan pemangkasan yang Anda ajukan.
+            {t('pruning:myRequests.description')}
           </p>
         </div>
         <Button asChild leftIcon={<Plus className="size-4" />}>
-          <Link href="/pruning-submit">Buat Baru</Link>
+          <Link href="/pruning-submit">{t('common:actions.create')}</Link>
         </Button>
       </div>
 
@@ -56,16 +58,16 @@ export default function MyPruningRequestsPage() {
       ) : isError ? (
         <EmptyState
           variant="error"
-          title="Gagal memuat"
-          description="Tidak dapat memuat riwayat permintaan. Coba lagi nanti."
+          title={t('pruning:myRequests.errorTitle')}
+          description={t('pruning:myRequests.errorDescription')}
         />
       ) : requests.length === 0 ? (
         <EmptyState
           variant="noData"
-          title="Belum ada permintaan"
-          description="Anda belum mengirim permintaan pemangkasan."
+          title={t('pruning:myRequests.emptyTitle')}
+          description={t('pruning:myRequests.emptyDescription')}
           action={{
-            label: 'Kirim permintaan pertama',
+            label: t('pruning:myRequests.emptyAction'),
             onClick: () => router.push('/pruning-submit'),
           }}
         />

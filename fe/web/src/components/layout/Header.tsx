@@ -2,6 +2,7 @@
 
 import { HTMLAttributes, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { Menu, User, Settings, LogOut, Smartphone } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useUIStore } from '@/stores/ui';
@@ -41,6 +42,7 @@ export type HeaderProps = HTMLAttributes<HTMLElement>;
  * - User dropdown menu
  */
 export function Header({ className, ...props }: HeaderProps) {
+  const { t } = useTranslation();
   const { toggleSidebar } = useUIStore();
   const { user, logout } = useAuth();
   const router = useRouter();
@@ -148,22 +150,22 @@ export function Header({ className, ...props }: HeaderProps) {
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={() => router.push('/profile')}>
                   <User className="mr-2 h-4 w-4" />
-                  Profil
+                  {t('common:actions.profile')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push('/android')}>
                   <Smartphone className="mr-2 h-4 w-4" />
-                  Unduh Aplikasi{appVersionLabel}
+                  {t('common:actions.downloadApp')}{appVersionLabel}
                 </DropdownMenuItem>
                 {canOpenSettings && (
                   <DropdownMenuItem onClick={() => router.push('/settings')}>
                     <Settings className="mr-2 h-4 w-4" />
-                    Pengaturan
+                    {t('common:actions.settings')}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem destructive onClick={() => setShowLogoutModal(true)}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  Keluar
+                  {t('common:actions.logout')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -175,9 +177,9 @@ export function Header({ className, ...props }: HeaderProps) {
       <Dialog open={showLogoutModal} onOpenChange={setShowLogoutModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader className="border-b-0">
-            <DialogTitle>Konfirmasi Keluar</DialogTitle>
+            <DialogTitle>{t('common:actions.confirmLogout')}</DialogTitle>
             <DialogDescription>
-              Apakah Anda yakin ingin keluar dari aplikasi?
+              {t('common:actions.confirmLogoutMessage')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
@@ -186,7 +188,7 @@ export function Header({ className, ...props }: HeaderProps) {
               onClick={() => setShowLogoutModal(false)}
               disabled={isLoggingOut}
             >
-              Batal
+              {t('common:actions.cancel')}
             </Button>
             <Button
               variant="destructive"
@@ -194,7 +196,7 @@ export function Header({ className, ...props }: HeaderProps) {
               loading={isLoggingOut}
               disabled={isLoggingOut}
             >
-              Keluar
+              {t('common:actions.logout')}
             </Button>
           </DialogFooter>
         </DialogContent>

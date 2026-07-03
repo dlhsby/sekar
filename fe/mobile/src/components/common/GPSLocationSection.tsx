@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBAlert, NBButton, NBText } from '../nb';
 import { nbColors, nbSpacing, nbBorders, nbRadius } from '../../constants/nbTokens';
@@ -26,6 +27,7 @@ export function GPSLocationSection({
   isWithinBoundary,
   areaName,
 }: GPSLocationSectionProps) {
+  const { t } = useTranslation('attendance');
   const hasLocation = latitude != null && longitude != null;
 
   const iconName = hasLocation ? 'crosshairs-gps' : 'crosshairs';
@@ -51,14 +53,14 @@ export function GPSLocationSection({
         <View style={{ flex: 1 }}>
           <NBText variant="body-sm" color={hasLocation ? 'black' : 'gray600'}>
             {isCapturing
-              ? 'Mendapatkan lokasi...'
+              ? t('gpsSection.capturingLocation')
               : hasLocation
                 ? (areaName ?? `${latitude!.toFixed(4)}, ${longitude!.toFixed(4)}`)
-                : 'Lokasi tidak tersedia'}
+                : t('gpsSection.locationUnavailable')}
           </NBText>
           {hasLocation && accuracy != null && (
             <NBText variant="caption" color="gray600">
-              ±{Math.round(accuracy)}m akurasi
+              ±{Math.round(accuracy)}m {t('gpsSection.accuracy')}
             </NBText>
           )}
         </View>
@@ -68,9 +70,9 @@ export function GPSLocationSection({
       {hasLocation && isWithinBoundary !== undefined && (
         <View>
           {isWithinBoundary ? (
-            <NBAlert variant="success" message="Anda berada di dalam area kerja" />
+            <NBAlert variant="success" message={t('gpsSection.withinBoundary')} />
           ) : (
-            <NBAlert variant="warning" message="Anda berada di luar area kerja. Absen tetap dicatat." />
+            <NBAlert variant="warning" message={t('gpsSection.outsideBoundary')} />
           )}
         </View>
       )}
@@ -79,14 +81,14 @@ export function GPSLocationSection({
       {hasLocation && (
         <View style={styles.detailRow}>
           <View style={styles.infoRow}>
-            <NBText variant="body-sm" color="gray700">GPS:</NBText>
+            <NBText variant="body-sm" color="gray700">{t('gpsSection.gpsLabel')}</NBText>
             <NBText variant="body-sm" color="black">
               {latitude!.toFixed(6)}, {longitude!.toFixed(6)}
             </NBText>
           </View>
           {accuracy != null && (
             <View style={styles.infoRow}>
-              <NBText variant="body-sm" color="gray700">Akurasi:</NBText>
+              <NBText variant="body-sm" color="gray700">{t('gpsSection.accuracyLabel')}</NBText>
               <NBText variant="body-sm" color="black">{Math.round(accuracy)}m</NBText>
             </View>
           )}
@@ -99,7 +101,7 @@ export function GPSLocationSection({
                 style={{ marginRight: nbSpacing.sm }}
               />
               <NBText variant="body-sm" color="gray700" style={{ flex: 1 }}>
-                GPS kurang akurat. Pindah ke area terbuka untuk hasil lebih baik.
+                {t('gpsSection.lowAccuracyWarning')}
               </NBText>
             </View>
           )}
@@ -113,7 +115,7 @@ export function GPSLocationSection({
 
       {/* Refresh button */}
       <NBButton
-        title="Perbarui GPS"
+        title={t('gpsSection.updateGpsButton')}
         variant="secondary"
         size="sm"
         onPress={onRefresh}

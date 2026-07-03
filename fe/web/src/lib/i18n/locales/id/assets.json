@@ -139,9 +139,20 @@
     }
   },
   "qr": {
-    "pageTitle": "QR Code Aset",
+    "pageTitle": "Generator QR Code",
+    "breadcrumb": "Aset · QR Code",
     "selectMinimum": "Pilih minimal 1 aset",
-    "generateSuccess": "{count} QR code berhasil dibuat"
+    "selectAssets": "Pilih Aset",
+    "selected": "terpilih",
+    "selectAll": "Pilih Semua",
+    "clearSelection": "Hapus Pilihan",
+    "noAssets": "Tidak ada aset",
+    "generateQr": "Generate QR",
+    "generateSuccess": "{count} QR code berhasil dibuat",
+    "preview": "Preview",
+    "printAll": "Cetak Semua",
+    "downloadPdf": "Unduh PDF",
+    "newBatch": "Buat Batch Baru"
   },
   "create": {
     "pageTitle": "Tambah Aset",

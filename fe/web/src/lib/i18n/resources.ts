@@ -31,6 +31,7 @@ import idOnboarding from './locales/id/onboarding.json';
 import idImport from './locales/id/import.json';
 import idInstallHelp from './locales/id/install-help.json';
 import idNavigation from './locales/id/navigation.json';
+import idComponents from './locales/id/components.json';
 
 import enCommon from './locales/en/common.json';
 import enAuth from './locales/en/auth.json';
@@ -60,6 +61,7 @@ import enOnboarding from './locales/en/onboarding.json';
 import enImport from './locales/en/import.json';
 import enInstallHelp from './locales/en/install-help.json';
 import enNavigation from './locales/en/navigation.json';
+import enComponents from './locales/en/components.json';
 
 export const resources = {
   id: {
@@ -91,6 +93,7 @@ export const resources = {
     import: idImport,
     'install-help': idInstallHelp,
     navigation: idNavigation,
+    components: idComponents,
   },
   en: {
     common: enCommon,
@@ -121,6 +124,7 @@ export const resources = {
     import: enImport,
     'install-help': enInstallHelp,
     navigation: enNavigation,
+    components: enComponents,
   },
 } as const;
 
@@ -153,6 +157,7 @@ export const NAMESPACES = [
   'import',
   'install-help',
   'navigation',
+  'components',
 ] as const;
 
 export const SUPPORTED_LANGUAGES = ['id', 'en'] as const;

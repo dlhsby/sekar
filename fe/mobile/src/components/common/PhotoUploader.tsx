@@ -24,6 +24,7 @@ import {
   Alert,
   type ViewStyle,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { mediaService, type Photo } from '../../services/media';
 import { requestCameraPermission } from '../../services/permissions';
 import { ImagePreviewModal } from './ImagePreviewModal';
@@ -55,13 +56,14 @@ export function PhotoUploader({
   error,
   style,
 }: PhotoUploaderProps): React.JSX.Element {
+  const { t } = useTranslation('components');
   const [previewUri, setPreviewUri] = useState<string | null>(null);
 
   const captureFromCamera = useCallback(async () => {
     const permission = await requestCameraPermission();
     if (!permission.granted) {
       if (permission.message) {
-        Alert.alert('Izin Kamera', permission.message);
+        Alert.alert(t('photoUploader.cameraPermissionTitle'), permission.message);
       }
       return;
     }
@@ -69,9 +71,9 @@ export function PhotoUploader({
       const photo = await mediaService.capturePhoto(false);
       if (photo) { onAdd(photo); }
     } catch (err) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Gagal mengambil foto');
+      Alert.alert('Error', err instanceof Error ? err.message : t('photoUploader.capturePhotoError'));
     }
-  }, [onAdd]);
+  }, [onAdd, t]);
 
   const pickFromGallery = useCallback(async () => {
     try {
@@ -79,28 +81,28 @@ export function PhotoUploader({
       const picked = await mediaService.pickFromGallery(remaining);
       picked.forEach((p) => onAdd(p));
     } catch (err) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Gagal memilih foto');
+      Alert.alert('Error', err instanceof Error ? err.message : t('photoUploader.pickPhotoError'));
     }
-  }, [photos.length, maxPhotos, onAdd]);
+  }, [photos.length, maxPhotos, onAdd, t]);
 
   const handleCapture = useCallback(() => {
     if (photos.length >= maxPhotos) {
-      Alert.alert('Maksimal Foto', `Anda hanya dapat menambahkan maksimal ${maxPhotos} foto.`);
+      Alert.alert(t('photoUploader.maxPhotosTitle'), t('photoUploader.maxPhotosMessage', { max: maxPhotos }));
       return;
     }
     // May 12 — let the user pick camera OR gallery, mirroring the
     // standard pattern in TaskCompleteScreen / ActivitySubmissionScreen.
     Alert.alert(
-      'Tambah Foto',
-      'Pilih sumber foto:',
+      t('photoUploader.addPhotoTitle'),
+      t('photoUploader.addPhotoMessage'),
       [
-        { text: 'Kamera', onPress: () => { captureFromCamera(); } },
-        { text: 'Galeri', onPress: () => { pickFromGallery(); } },
-        { text: 'Batal', style: 'cancel' },
+        { text: t('photoUploader.cameraOption'), onPress: () => { captureFromCamera(); } },
+        { text: t('photoUploader.galleryOption'), onPress: () => { pickFromGallery(); } },
+        { text: t('photoUploader.cancelOption'), style: 'cancel' },
       ],
       { cancelable: true },
     );
-  }, [photos.length, maxPhotos, captureFromCamera, pickFromGallery]);
+  }, [photos.length, maxPhotos, captureFromCamera, pickFromGallery, t]);
 
   return (
     <View style={style}>
@@ -116,8 +118,8 @@ export function PhotoUploader({
             <TouchableOpacity
               onPress={() => setPreviewUri(photo.uri)}
               accessibilityRole="button"
-              accessibilityLabel="Lihat foto penuh"
-              accessibilityHint="Ketuk untuk melihat foto dalam ukuran penuh"
+              accessibilityLabel={t('photoUploader.viewPhotoLabel')}
+              accessibilityHint={t('photoUploader.viewPhotoHint')}
             >
               <Image source={{ uri: photo.uri }} style={styles.thumbnail} />
             </TouchableOpacity>
@@ -125,7 +127,7 @@ export function PhotoUploader({
               style={styles.removeButton}
               onPress={() => onRemove(photo.id)}
               accessibilityRole="button"
-              accessibilityLabel="Hapus foto"
+              accessibilityLabel={t('photoUploader.removePhotoLabel')}
             >
               <Text style={styles.removeText}>✕</Text>
             </TouchableOpacity>
@@ -137,17 +139,17 @@ export function PhotoUploader({
             onPress={handleCapture}
             testID="add-photo-button"
             accessibilityRole="button"
-            accessibilityLabel="Tambah foto"
+            accessibilityLabel={t('photoUploader.addPhotoLabel')}
           >
             <Text style={styles.addIcon}>+</Text>
-            <Text style={styles.addText}>Foto</Text>
+            <Text style={styles.addText}>{t('photoUploader.photoButtonText')}</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
       <ImagePreviewModal
         uri={previewUri}
         onClose={() => setPreviewUri(null)}
-        title="Foto Bukti"
+        title={t('photoUploader.previewTitle')}
       />
     </View>
   );

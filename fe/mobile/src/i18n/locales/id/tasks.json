@@ -62,7 +62,16 @@
     "failureMessage": "Tugas gagal dibuat. Silakan coba lagi.",
     "cancelConfirm": "Data yang telah diisi akan hilang.",
     "cancelNo": "Tidak",
-    "cancelYes": "Ya"
+    "cancelYes": "Ya",
+    "deadline": {
+      "sectionTitle": "BATAS WAKTU",
+      "subtitle": "Opsional — tentukan tenggat tugas (waktu default 23:59)",
+      "dateLabel": "Tanggal",
+      "datePlaceholder": "Pilih tanggal batas waktu...",
+      "timeLabel": "Waktu (opsional, default 23:59)",
+      "timePlaceholder": "Pilih waktu...",
+      "clearButton": "Hapus Batas Waktu"
+    }
   },
   "detail": {
     "loading": "Memuat tugas...",

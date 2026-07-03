@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import {
   Button,
   Card,
@@ -20,6 +21,7 @@ import type { Asset } from '@/lib/api/assets';
 const ASSET_MANAGER_ROLES = ['korlap', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'];
 
 export default function QrBatchPage() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const user = useUser();
 
@@ -55,7 +57,7 @@ export default function QrBatchPage() {
     if (selected.size === 0) {
       toast({
         level: "danger",
-        title: 'Pilih minimal 1 aset',
+        title: t('assets:qr.selectMinimum'),
       });
       return;
     }
@@ -65,7 +67,7 @@ export default function QrBatchPage() {
       setGeneratedQrs(result);
       toast({
         level: 'success',
-        title: `${result.length} QR code berhasil dibuat`,
+        title: t('assets:qr.generateSuccess', { count: result.length }),
       });
     } catch (error) {
       toast({
@@ -159,18 +161,18 @@ export default function QrBatchPage() {
 
   // Access guard — after all hooks so hook order stays stable (rules-of-hooks).
   if (user && !ASSET_MANAGER_ROLES.includes(user.role)) {
-    return <div><p>Akses ditolak</p></div>;
+    return <div><p>{t('common:errors.noPermission.short')}</p></div>;
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Generator QR Code" breadcrumb="Aset · QR Code" />
+      <PageHeader title={t('assets:qr.pageTitle')} breadcrumb={t('assets:qr.breadcrumb')} />
 
       <Card variant="default">
         <div className="p-4 space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-nb-h3 font-bold">
-              Pilih Aset ({selected.size} terpilih)
+              {t('assets:qr.selectAssets')} ({selected.size} {t('assets:qr.selected')})
             </h3>
             <div className="flex gap-2">
               <Button
@@ -179,7 +181,7 @@ export default function QrBatchPage() {
                 onClick={handleSelectAll}
                 disabled={assets.length === 0}
               >
-                Pilih Semua
+                {t('assets:qr.selectAll')}
               </Button>
               <Button
                 variant="outline"
@@ -188,7 +190,7 @@ export default function QrBatchPage() {
                 disabled={selected.size === 0}
               >
                 <X className="w-4 h-4 mr-2" />
-                Hapus Pilihan
+                {t('assets:qr.clearSelection')}
               </Button>
             </div>
           </div>
@@ -196,7 +198,7 @@ export default function QrBatchPage() {
           {assetsLoading ? (
             <Skeleton variant="card" className="h-40" />
           ) : !assets.length ? (
-            <EmptyState variant="noData" title="Tidak ada aset" />
+            <EmptyState variant="noData" title={t('assets:qr.noAssets')} />
           ) : (
             <DataTable columns={columns} data={assets} enablePagination={false} getRowId={(a) => a.id} />
           )}
@@ -212,7 +214,7 @@ export default function QrBatchPage() {
             loading={bulkQrMutation.isPending}
             disabled={selected.size === 0}
           >
-            Generate QR ({selected.size} terpilih)
+            {t('assets:qr.generateQr')} ({selected.size} {t('assets:qr.selected')})
           </Button>
         </div>
       )}
@@ -220,7 +222,7 @@ export default function QrBatchPage() {
       {generatedQrs.length > 0 && (
         <Card variant="default">
           <div className="p-4 space-y-4">
-            <h3 className="text-nb-h3 font-bold">Preview ({generatedQrs.length} QR)</h3>
+            <h3 className="text-nb-h3 font-bold">{t('assets:qr.preview')} ({generatedQrs.length} QR)</h3>
             <div className="grid grid-cols-4 gap-6">
               {generatedQrs.map((qr) => (
                 <div key={qr.assetId} className="text-center">
@@ -241,10 +243,10 @@ export default function QrBatchPage() {
                 variant="default"
                 onClick={handlePrint}
               >
-                Cetak Semua
+                {t('assets:qr.printAll')}
               </Button>
               <Button variant="outline">
-                Unduh PDF
+                {t('assets:qr.downloadPdf')}
               </Button>
               <Button
                 variant="outline"
@@ -253,7 +255,7 @@ export default function QrBatchPage() {
                   setSelected(new Set());
                 }}
               >
-                Buat Batch Baru
+                {t('assets:qr.newBatch')}
               </Button>
             </div>
           </div>

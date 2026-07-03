@@ -21,15 +21,25 @@
     "statusOptions": {
       "all": "All Status",
       "submitted": "Pending",
+      "under_review": "Under Review",
       "approved": "Approved",
-      "rejected": "Rejected"
+      "rejected": "Rejected",
+      "assigned": "Assigned",
+      "in_progress": "In Progress",
+      "done": "Done",
+      "cancelled": "Cancelled"
     },
     "dateRange": "Date Range",
     "dateFrom": "From",
     "dateTo": "To",
+    "rayon": "District",
+    "rayonAll": "All Districts",
+    "rayonMine": "My District",
+    "referenceCodeLabel": "Request Number",
     "reset": "Reset",
     "resetLabel": "Reset request filter",
     "apply": "Apply",
+    "requesterNameLabel": "Requester Name",
     "requesterNamePlaceholder": "Example: John",
     "requestCodePlaceholder": "Example: PR-2026-..."
   },
@@ -113,6 +123,16 @@
     "title": "Reassign Worker",
     "confirmTitle": "Confirm Reassignment",
     "reasonPlaceholder": "Enter reason for reassignment..."
+  },
+  "photoManagement": {
+    "photoLimitTitle": "Photo Limit",
+    "photoLimitMessage": "Maximum {{max}} photos.",
+    "cameraPermissionDeniedTitle": "Camera Permission Denied",
+    "cameraPermissionDeniedMessage": "Enable camera permission in Settings to capture photos.",
+    "settingsButton": "Settings",
+    "cancelButton": "Cancel",
+    "capturePhotoErrorTitle": "Failed to capture photo",
+    "pickPhotoErrorTitle": "Failed to pick photo"
   },
   "taskForm": {
     "caseTypeLabel": "Case Type *",

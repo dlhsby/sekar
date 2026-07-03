@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBModal } from '../nb';
 import { NBButton } from '../nb';
@@ -48,6 +49,7 @@ export function ReassignWorkerModal({
   sourceRayonId,
   onSuccess,
 }: ReassignWorkerModalProps): React.JSX.Element {
+  const { t } = useTranslation('monitoring');
   const [candidates, setCandidates] = useState<LiveUser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -90,22 +92,25 @@ export function ReassignWorkerModal({
     setIsSubmitting(false);
 
     if (res.error) {
-      Alert.alert('Gagal', res.error);
+      Alert.alert(t('reassignWorkerModal.errorTitle'), res.error);
       return;
     }
 
     const user = candidates.find(u => u.id === selectedUserId);
     Alert.alert(
-      'Berhasil',
-      `Berhasil reassign ${user?.full_name ?? ''} ke ${targetArea.name}`,
+      t('reassignWorkerModal.successTitle'),
+      t('reassignWorkerModal.successMessage', {
+        name: user?.full_name ?? '',
+        area: targetArea.name,
+      }),
     );
     onSuccess?.();
     onClose();
-  }, [selectedUserId, targetArea, reason, candidates, onClose, onSuccess]);
+  }, [selectedUserId, targetArea, reason, candidates, onClose, onSuccess, t]);
 
   const footerContent = (
     <NBButton
-      title="Konfirmasi Pindah"
+      title={t('reassignWorkerModal.confirmButton')}
       variant="primary"
       onPress={handleSubmit}
       disabled={!selectedUserId || isSubmitting}
@@ -118,7 +123,7 @@ export function ReassignWorkerModal({
     <NBModal
       visible={visible}
       onClose={onClose}
-      title="Pindah Petugas"
+      title={t('reassignWorkerModal.title')}
       type="sheet"
       avoidKeyboard
       footer={footerContent}
@@ -126,10 +131,10 @@ export function ReassignWorkerModal({
       {/* Target area info */}
       {targetArea && (
         <View style={styles.targetInfo}>
-          <Text style={styles.targetLabel}>Tujuan:</Text>
+          <Text style={styles.targetLabel}>{t('reassignWorkerModal.targetLabel')}</Text>
           <Text style={styles.targetName}>{targetArea.name}</Text>
           <Text style={styles.targetStats}>
-            {targetArea.total_active}/{targetArea.total_required} aktif
+            {targetArea.total_active}/{targetArea.total_required} {t('reassignWorkerModal.active')}
           </Text>
         </View>
       )}
@@ -142,11 +147,11 @@ export function ReassignWorkerModal({
         />
       ) : candidates.length === 0 ? (
         <Text style={styles.emptyText}>
-          Tidak ada petugas aktif yang tersedia untuk reassign
+          {t('reassignWorkerModal.noWorkersAvailable')}
         </Text>
       ) : (
         <>
-          <Text style={styles.sectionLabel}>Pilih Petugas</Text>
+          <Text style={styles.sectionLabel}>{t('reassignWorkerModal.selectWorkerLabel')}</Text>
           {candidates.map(user => {
             const isSelected = selectedUserId === user.id;
             const statusColor = getStatusColor(user.status as TrackingStatus);
@@ -180,12 +185,12 @@ export function ReassignWorkerModal({
       {/* Reason input */}
       {selectedUserId && (
         <View style={styles.reasonSection}>
-          <Text style={styles.sectionLabel}>Alasan (Opsional)</Text>
+          <Text style={styles.sectionLabel}>{t('reassignWorkerModal.reasonLabel')}</Text>
           <TextInput
             style={styles.reasonInput}
             value={reason}
             onChangeText={setReason}
-            placeholder="Tuliskan alasan reassign..."
+            placeholder={t('reassignWorkerModal.reasonPlaceholder')}
             placeholderTextColor={nbColors.gray400}
             multiline
             maxLength={200}

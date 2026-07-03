@@ -1,0 +1,29 @@
+{
+  "nbselect": {
+    "placeholder": "Select...",
+    "searchPlaceholder": "Search...",
+    "selected": "selected",
+    "clearAll": "Clear All",
+    "clearSelection": "Clear Selection",
+    "done": "Done",
+    "close": "Close"
+  },
+  "photoUploader": {
+    "cameraPermissionTitle": "Camera Permission",
+    "capturePhotoError": "Failed to capture photo",
+    "pickPhotoError": "Failed to pick photo",
+    "maxPhotosTitle": "Maximum Photos",
+    "maxPhotosMessage": "You can only add a maximum of {{max}} photos.",
+    "addPhotoTitle": "Add Photo",
+    "addPhotoMessage": "Select photo source:",
+    "cameraOption": "Camera",
+    "galleryOption": "Gallery",
+    "cancelOption": "Cancel",
+    "viewPhotoLabel": "View full photo",
+    "viewPhotoHint": "Tap to view photo at full size",
+    "removePhotoLabel": "Remove photo",
+    "addPhotoLabel": "Add photo",
+    "photoButtonText": "Photo",
+    "previewTitle": "Evidence Photo"
+  }
+}

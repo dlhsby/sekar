@@ -119,7 +119,9 @@
       "meta": "Empty date selected automatically within requested week",
       "noOptions": "No areas or officers available for this rayon. Contact administrator.",
       "area": "Area",
+      "areaPlaceholder": "— Select area —",
       "assignedTo": "Assigned To",
+      "assignedToPlaceholder": "— Select officer —",
       "caseType": "Case Type",
       "pruningAction": "Pruning Action",
       "scheduledDate": "Scheduled Date (optional)",
@@ -138,11 +140,21 @@
       "PB": "Heavy Pruning",
       "PC": "Branch Pruning"
     },
-    "relatedTask": "View related task"
+    "relatedTask": "View related task",
+    "photoLabel": "Enlarge photo {{index}}",
+    "photoAlt": "Photo {{index}}",
+    "photoPreview": "Photo preview",
+    "noActionAvailable": "No actions available for current status.",
+    "weekLabel": "Week {{week}}/{{year}}"
   },
   "myRequests": {
     "pageTitle": "My Requests",
-    "description": "History of pruning requests you have submitted."
+    "description": "History of pruning requests you have submitted.",
+    "errorTitle": "Failed to load",
+    "errorDescription": "Cannot load request history. Try again later.",
+    "emptyTitle": "No requests yet",
+    "emptyDescription": "You have not submitted any pruning requests.",
+    "emptyAction": "Submit first request"
   },
   "page": {
     "description": "Review and manage pruning requests from sub-districts.",

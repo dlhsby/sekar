@@ -141,5 +141,18 @@
       "layers": "Select layers"
     },
     "fixedRayon": "Your Rayon"
+  },
+  "reassignWorkerModal": {
+    "title": "Reassign Worker",
+    "targetLabel": "Target:",
+    "active": "active",
+    "selectWorkerLabel": "Select Worker",
+    "noWorkersAvailable": "No active workers available for reassignment",
+    "reasonLabel": "Reason (Optional)",
+    "reasonPlaceholder": "Enter reason for reassignment...",
+    "confirmButton": "Confirm Reassignment",
+    "successTitle": "Success",
+    "successMessage": "Successfully reassigned {{name}} to {{area}}",
+    "errorTitle": "Failed"
   }
 }

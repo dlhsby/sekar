@@ -119,7 +119,9 @@
       "meta": "Tanggal kosong dipilih otomatis dalam minggu diminta",
       "noOptions": "Tidak ada area atau petugas yang tersedia untuk rayon ini. Hubungi administrator.",
       "area": "Area",
+      "areaPlaceholder": "— Pilih area —",
       "assignedTo": "Ditugaskan Ke",
+      "assignedToPlaceholder": "— Pilih petugas —",
       "caseType": "Tipe Kasus",
       "pruningAction": "Aksi Pemangkasan",
       "scheduledDate": "Tanggal Pasti (opsional)",
@@ -138,11 +140,21 @@
       "PB": "Pemangkasan Berat",
       "PC": "Pemangkasan Cabang"
     },
-    "relatedTask": "Lihat tugas terkait"
+    "relatedTask": "Lihat tugas terkait",
+    "photoLabel": "Perbesar foto {{index}}",
+    "photoAlt": "Foto {{index}}",
+    "photoPreview": "Pratinjau foto",
+    "noActionAvailable": "Tidak ada aksi tersedia untuk status saat ini.",
+    "weekLabel": "Minggu {{week}}/{{year}}"
   },
   "myRequests": {
     "pageTitle": "Permintaan Saya",
-    "description": "Riwayat permintaan pemangkasan yang Anda ajukan."
+    "description": "Riwayat permintaan pemangkasan yang Anda ajukan.",
+    "errorTitle": "Gagal memuat",
+    "errorDescription": "Tidak dapat memuat riwayat permintaan. Coba lagi nanti.",
+    "emptyTitle": "Belum ada permintaan",
+    "emptyDescription": "Anda belum mengirim permintaan pemangkasan.",
+    "emptyAction": "Kirim permintaan pertama"
   },
   "page": {
     "description": "Tinjau dan kelola permohonan pemangkasan dari kecamatan.",

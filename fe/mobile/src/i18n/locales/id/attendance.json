@@ -109,5 +109,16 @@
     "startShiftWithVerification": "Mulai shift kerja dengan verifikasi lokasi",
     "startShiftOutOfArea": "Mulai shift kerja — Anda di luar area, absen tetap dicatat",
     "endShiftNow": "Akhiri shift kerja saat ini"
+  },
+  "gpsSection": {
+    "capturingLocation": "Mendapatkan lokasi...",
+    "locationUnavailable": "Lokasi tidak tersedia",
+    "accuracy": "akurasi",
+    "withinBoundary": "Anda berada di dalam area kerja",
+    "outsideBoundary": "Anda berada di luar area kerja. Absen tetap dicatat.",
+    "gpsLabel": "GPS:",
+    "accuracyLabel": "Akurasi:",
+    "lowAccuracyWarning": "GPS kurang akurat. Pindah ke area terbuka untuk hasil lebih baik.",
+    "updateGpsButton": "Perbarui GPS"
   }
 }
