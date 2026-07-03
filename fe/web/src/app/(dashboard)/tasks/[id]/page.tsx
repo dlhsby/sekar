@@ -108,7 +108,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
   if (!task) {
     return (
       <div className="py-12 text-center">
-        <p className="font-semibold text-nb-gray-600">Tugas tidak ditemukan</p>
+        <p className="font-semibold text-nb-gray-600">{t('tasks:detail.taskNotFound')}</p>
       </div>
     );
   }
