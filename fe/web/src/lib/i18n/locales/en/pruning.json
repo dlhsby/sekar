@@ -1,1 +1,74 @@
-{}
+{
+  "list": {
+    "pageHeader": "Manage pruning requests from the field.",
+    "statusFilter": "Filter Status",
+    "statusAll": "All Status",
+    "statusSubmitted": "Submitted",
+    "statusUnderReview": "Under Review",
+    "statusApproved": "Approved",
+    "statusRejected": "Rejected",
+    "statusAssigned": "Assigned",
+    "statusInProgress": "In Progress",
+    "statusDone": "Done",
+    "statusCancelled": "Cancelled",
+    "loadingError": "Failed to load requests",
+    "tryAgain": "Try again later",
+    "tableHeaderId": "ID",
+    "tableHeaderLocation": "Location",
+    "tableHeaderPlantType": "Plant Type",
+    "tableHeaderRequester": "Requester",
+    "tableHeaderStatus": "Status",
+    "tableHeaderSubmitted": "Submitted",
+    "rowActionView": "View",
+    "paginationPrevious": "Previous",
+    "paginationNext": "Next"
+  },
+  "submit": {
+    "pageHeader": "Submit Pruning Request",
+    "description": "Fill in the details below to submit a pruning request.",
+    "section": {
+      "location": "Location",
+      "treeDetails": "Tree Details",
+      "contacts": "Contacts",
+      "scheduling": "Scheduling (Optional)",
+      "photos": "Photos (Optional)"
+    },
+    "form": {
+      "address": "Address",
+      "addressPlaceholder": "Enter the complete address",
+      "getLocation": "Use My Location",
+      "locationError": "Failed to get location",
+      "treeCount": "Number of Trees",
+      "treeHeight": "Tree Height (m)",
+      "treeDiameter": "Tree Diameter (cm)",
+      "requesterName": "Your Name",
+      "requesterPhone": "Your Phone Number",
+      "rtLeaderName": "RT Leader Name",
+      "rtLeaderPhone": "RT Leader Phone Number",
+      "expectedDate": "Preferred Date",
+      "expectedDateHelper": "Officer will determine exact day based on availability.",
+      "notes": "Additional Notes",
+      "addPhoto": "Add Photo",
+      "deletePhoto": "Delete photo",
+      "submitButton": "Submit Request",
+      "cancelButton": "Cancel",
+      "submitting": "Request submitted..."
+    },
+    "validation": {
+      "addressRequired": "Address is required.",
+      "addressMin": "Address must be at least 5 characters.",
+      "addressMax": "Address must not exceed 500 characters.",
+      "treeCountRequired": "Number of trees is required.",
+      "treeCountMin": "At least 1 tree is required.",
+      "treeHeightRequired": "Tree height is required.",
+      "treeDiameterRequired": "Tree diameter is required.",
+      "requesterNameRequired": "Requester name is required.",
+      "requesterPhoneRequired": "Requester phone is required.",
+      "rtLeaderNameRequired": "RT leader name is required.",
+      "rtLeaderPhoneRequired": "RT leader phone is required.",
+      "notesMax": "Notes must not exceed 1000 characters.",
+      "photosRequired": "At least one photo is required.",
+      "photoError": "Failed to read photo"
+    }
+  }
+}

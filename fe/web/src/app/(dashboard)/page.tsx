@@ -33,9 +33,9 @@ const ADMIN_ROLES = new Set(['admin_system', 'superadmin', 'top_management']);
 type ActivityKey = 'aktif' | 'idle' | 'tidak_terdeteksi';
 
 const ACTIVITY_META: { key: ActivityKey; label: string; color: string }[] = [
-  { key: 'aktif', label: 'Aktif', color: 'var(--color-status-active)' },
-  { key: 'idle', label: 'Idle', color: 'var(--color-status-idle)' },
-  { key: 'tidak_terdeteksi', label: 'Tidak terdeteksi', color: 'var(--color-status-missing)' },
+  { key: 'aktif', label: '', color: 'var(--color-status-active)' },
+  { key: 'idle', label: '', color: 'var(--color-status-idle)' },
+  { key: 'tidak_terdeteksi', label: '', color: 'var(--color-status-missing)' },
 ];
 
 const NUM = '—';
@@ -128,22 +128,22 @@ export default function DashboardPage() {
       <KpiGrid columns={4}>
         <KpiTile
           tone="white"
-          label="Petugas aktif"
+          label={t('home:kpi.activeOfficers')}
           value={counts ? `${counts.aktif} / ${counts.presensi}` : NUM}
         />
         <KpiTile
           tone="white"
-          label="Tugas"
+          label={t('home:kpi.tasks')}
           value={tasks.data?.meta.total ?? NUM}
         />
         <KpiTile
           tone="yellow"
-          label="Perantingan masuk"
+          label={t('home:kpi.incomingRequests')}
           value={pruning.data?.meta.total ?? NUM}
         />
         <KpiTile
           tone="white"
-          label="Lembur menunggu"
+          label={t('home:kpi.pendingOvertimes')}
           value={overtime.data?.meta.total ?? NUM}
         />
       </KpiGrid>
@@ -151,12 +151,12 @@ export default function DashboardPage() {
       <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
         {/* Status breakdown */}
         <SectionCard
-          title="Status petugas"
+          title={t('home:statusSection.title')}
           meta={counts ? `${counts.presensi} hadir · ${perRayon.length} rayon` : undefined}
         >
           {!counts ? (
             <p className="py-6 text-center text-nb-body-sm text-nb-gray-600">
-              {snapshot.isLoading ? 'Memuat status…' : 'Status tidak tersedia.'}
+              {snapshot.isLoading ? t('home:statusSection.loading') : t('home:statusSection.unavailable')}
             </p>
           ) : (
             <>
@@ -171,13 +171,15 @@ export default function DashboardPage() {
                     <span className="font-heading text-2xl font-extrabold leading-none text-nb-black">
                       {counts.aktif}
                     </span>
-                    <span className="font-mono text-[10px] uppercase text-nb-gray-600">Aktif</span>
+                    <span className="font-mono text-[10px] uppercase text-nb-gray-600">{t('home:statusSection.active')}</span>
                   </div>
                 </div>
                 <ul className="flex-1 space-y-1.5">
-                  {ACTIVITY_META.map(({ key, label, color }) => {
+                  {ACTIVITY_META.map(({ key, color }) => {
                     const v = counts[key];
                     const pct = counts.presensi ? Math.round((v / counts.presensi) * 100) : 0;
+                    const labelKey = key === 'aktif' ? 'active' : key === 'idle' ? 'idle' : 'missing';
+                    const label = t(`home:statusSection.${labelKey}`);
                     return (
                       <li key={key} className="flex items-center gap-2 text-nb-body-sm">
                         <span
@@ -198,7 +200,7 @@ export default function DashboardPage() {
                       className="size-3 shrink-0 rounded-sm border border-nb-black"
                       style={{ background: 'var(--color-status-outside)' }}
                     />
-                    <span className="flex-1 text-nb-gray-700">Di luar area</span>
+                    <span className="flex-1 text-nb-gray-700">{t('home:statusSection.outsideArea')}</span>
                     <span className="font-mono text-[12px] font-bold text-nb-black">
                       {counts.di_luar_area}
                     </span>
@@ -208,7 +210,7 @@ export default function DashboardPage() {
                       className="size-3 shrink-0 rounded-sm border border-nb-black"
                       style={{ background: 'var(--color-status-offline)' }}
                     />
-                    <span className="flex-1 text-nb-gray-500">Offline (belum clock-in)</span>
+                    <span className="flex-1 text-nb-gray-500">{t('home:statusSection.offline')}</span>
                     <span className="font-mono text-[12px] font-bold text-nb-gray-500">
                       {counts.offline}
                     </span>
@@ -219,19 +221,19 @@ export default function DashboardPage() {
               {counts.expected > 0 && (
                 <div className="mt-5 rounded-nb-base border-2 border-nb-black bg-nb-gray-50 p-3">
                   <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-wide text-nb-gray-600">
-                    Jadwal hari ini · {counts.expected} dijadwalkan
+                    {t('home:statusSection.todaySchedule')} · {counts.expected} {t('home:statusSection.scheduled')}
                   </p>
                   <div className="flex flex-wrap gap-4 text-nb-body-sm">
                     <span className="text-nb-gray-700">
-                      Hadir{' '}
+                      {t('home:statusSection.present')}{' '}
                       <strong className="font-mono text-nb-success-dark">{counts.hadir}</strong>
                     </span>
                     <span className="text-nb-gray-700">
-                      Tidak hadir{' '}
+                      {t('home:statusSection.absent')}{' '}
                       <strong className="font-mono text-nb-danger-dark">{counts.tidak_hadir}</strong>
                     </span>
                     <span className="text-nb-gray-700">
-                      Cuti <strong className="font-mono text-nb-warning">{counts.cuti}</strong>
+                      {t('home:statusSection.onLeave')} <strong className="font-mono text-nb-warning">{counts.cuti}</strong>
                     </span>
                   </div>
                 </div>
@@ -240,7 +242,7 @@ export default function DashboardPage() {
               {perRayon.length > 0 && (
                 <>
                   <p className="mt-5 mb-2 font-mono text-[10px] font-bold uppercase tracking-wide text-nb-gray-600">
-                    Per rayon
+                    {t('home:statusSection.perRayon')}
                   </p>
                   <div className="space-y-1.5">
                     {perRayon.map((r) => {
@@ -275,25 +277,25 @@ export default function DashboardPage() {
 
         {/* Quick actions + recent feed */}
         <div className="space-y-5">
-          <SectionCard title="Tindakan cepat" tone="yellow">
+          <SectionCard title={t('home:quickActions.title')} tone="yellow">
             <div className="grid grid-cols-3 gap-2">
-              <QuickAction href="/tasks/new" icon={<ClipboardPlus className="size-5" />} label="Tugas baru" />
+              <QuickAction href="/tasks/new" icon={<ClipboardPlus className="size-5" />} label={t('home:quickActions.newTask')} />
               {isAdmin && (
-                <QuickAction href="/users" icon={<UserPlus className="size-5" />} label="User baru" />
+                <QuickAction href="/users" icon={<UserPlus className="size-5" />} label={t('home:quickActions.newUser')} />
               )}
-              <QuickAction href="/schedules" icon={<CalendarPlus className="size-5" />} label="Jadwal" />
+              <QuickAction href="/schedules" icon={<CalendarPlus className="size-5" />} label={t('home:quickActions.schedule')} />
             </div>
           </SectionCard>
 
           {/* Phase 3-8 close-out: plant maintenance overdue widget */}
           <SectionCard
-            title="Tanaman Terlambat Dipangkas"
+            title={t('home:plants.title')}
             action={
               <Link
                 href="/plants"
                 className="font-mono text-[11px] font-bold text-nb-black underline underline-offset-2"
               >
-                Tanaman →
+                {t('home:plants.viewAll')}
               </Link>
             }
           >
@@ -301,13 +303,12 @@ export default function DashboardPage() {
               <p className="text-nb-body-sm text-nb-gray-500">{t('common:actions.loading')}</p>
             ) : overdueRayons.length === 0 ? (
               <p className="text-nb-body-sm text-nb-gray-600">
-                Semua tanaman terpangkas sesuai jadwal. 🌿
+                {t('home:plants.allOnSchedule')} 🌿
               </p>
             ) : (
               <div className="space-y-2">
                 <p className="text-nb-body-sm text-nb-gray-700">
-                  <span className="font-bold text-nb-danger-dark">{totalOverduePlants}</span> jenis
-                  tanaman melewati jadwal di {overdueRayons.length} rayon
+                  {t('home:plants.overdueCount', { count: totalOverduePlants, rayons: overdueRayons.length })}
                 </p>
                 <ul className="space-y-1.5">
                   {overdueRayons.map((r) => (
@@ -316,7 +317,7 @@ export default function DashboardPage() {
                       className="flex items-center justify-between gap-2 text-nb-body-sm"
                     >
                       <span className="min-w-0 truncate text-nb-gray-700">
-                        {r.rayon_name ?? 'Tanpa rayon'}
+                        {r.rayon_name ?? t('home:plants.noRayon')}
                         {r.overdue_areas[0] && (
                           <span className="text-nb-gray-500"> · {r.overdue_areas[0].area_name}</span>
                         )}
@@ -332,20 +333,20 @@ export default function DashboardPage() {
           </SectionCard>
 
           <SectionCard
-            title="Notifikasi terkini"
+            title={t('home:notifications.title')}
             action={
               <Link
                 href="/notifications"
                 className="font-mono text-[11px] font-bold text-nb-black underline underline-offset-2"
               >
-                Semua →
+                {t('home:notifications.viewAll')}
               </Link>
             }
             flush
           >
             {recent.length === 0 ? (
               <div className="p-4">
-                <EmptyState variant="noData" size="sm" title="Belum ada notifikasi" />
+                <EmptyState variant="noData" size="sm" title={t('home:notifications.empty')} />
               </div>
             ) : (
               <ul>

@@ -103,7 +103,11 @@
     "delegateCancelButton": "Cancel",
     "revisionRequestTitle": "Revision Request",
     "taskNotFound": "Task not found",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "taskDetails": "Task Details",
+    "cancelButton": "Cancel",
+    "delegationTitle": "Task Delegation",
+    "delegationDescription": "Delegate this task to your subordinate before it is accepted. After delegation, the next recipient will receive a notification and the chain will be recorded in Assignment History."
   },
   "form": {
     "titleLabel": "Task Title",
@@ -127,6 +131,11 @@
     "requiredError": "Task title is required",
     "modalTitle": "Add Task",
     "assignableRoles": "Can be assigned to: {{roles}}"
+  },
+  "modal": {
+    "title": "Add Task",
+    "cancelButton": "Cancel",
+    "submitButton": "Create Task"
   },
   "kanban": {
     "emptyState": "No tasks",

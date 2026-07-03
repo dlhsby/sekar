@@ -85,7 +85,7 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
     e.preventDefault();
     setError('');
     if (!title) {
-      setError('Judul tugas wajib diisi');
+      setError(t('tasks:form.requiredError'));
       return;
     }
     try {
@@ -109,7 +109,7 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="xl">
         <DialogHeader>
-          <DialogTitle>Tambah Tugas</DialogTitle>
+          <DialogTitle>{t('tasks:modal.title')}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <DialogBody>
@@ -144,7 +144,7 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
                 value={assignedTo}
                 onChange={setAssignedTo}
                 options={[
-                  { value: 'none', label: 'Belum ditugaskan' },
+                  { value: 'none', label: t('tasks:form.assignedToPlaceholder') },
                   ...assignableUsers.map((u) => ({
                     value: u.id,
                     label: `${u.full_name || u.username} (${ROLE_LABELS[u.role] || u.role})`,
@@ -156,7 +156,7 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
                 value={rayonId}
                 onChange={setRayonId}
                 options={[
-                  { value: 'none', label: 'Pilih Rayon' },
+                  { value: 'none', label: t('tasks:form.rayonPlaceholder') },
                   ...rayons.map((r) => ({ value: r.id, label: r.name })),
                 ]}
               />
@@ -165,7 +165,7 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
                 value={areaId}
                 onChange={setAreaId}
                 options={[
-                  { value: 'none', label: 'Pilih Area' },
+                  { value: 'none', label: t('tasks:form.areaPlaceholder') },
                   ...areas.map((a) => ({
                     value: a.id,
                     label: a.areaType?.name ? `${a.name} (${a.areaType.name})` : a.name,
@@ -191,10 +191,10 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
           </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Batal
+              {t('tasks:modal.cancelButton')}
             </Button>
             <Button type="submit" loading={createMutation.isPending}>
-              Buat Tugas
+              {t('tasks:modal.submitButton')}
             </Button>
           </DialogFooter>
         </form>

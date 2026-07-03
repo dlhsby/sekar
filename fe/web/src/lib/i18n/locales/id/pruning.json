@@ -1,1 +1,74 @@
-{}
+{
+  "list": {
+    "pageHeader": "Kelola permohonan pemangkasan dari lapangan.",
+    "statusFilter": "Filter Status",
+    "statusAll": "Semua Status",
+    "statusSubmitted": "Terkirim",
+    "statusUnderReview": "Sedang Ditinjau",
+    "statusApproved": "Disetujui",
+    "statusRejected": "Ditolak",
+    "statusAssigned": "Ditugaskan",
+    "statusInProgress": "Sedang Dikerjakan",
+    "statusDone": "Selesai",
+    "statusCancelled": "Dibatalkan",
+    "loadingError": "Gagal memuat data permohonan",
+    "tryAgain": "Coba lagi nanti",
+    "tableHeaderId": "ID",
+    "tableHeaderLocation": "Lokasi",
+    "tableHeaderPlantType": "Tipe Tanaman",
+    "tableHeaderRequester": "Pengaju",
+    "tableHeaderStatus": "Status",
+    "tableHeaderSubmitted": "Terkirim",
+    "rowActionView": "Lihat",
+    "paginationPrevious": "Sebelumnya",
+    "paginationNext": "Selanjutnya"
+  },
+  "submit": {
+    "pageHeader": "Ajukan Permintaan Pemangkasan Pohon",
+    "description": "Isi detail di bawah untuk mengajukan permintaan pemangkasan.",
+    "section": {
+      "location": "Lokasi",
+      "treeDetails": "Detail Pohon",
+      "contacts": "Kontak",
+      "scheduling": "Penjadwalan (Opsional)",
+      "photos": "Foto (Opsional)"
+    },
+    "form": {
+      "address": "Alamat",
+      "addressPlaceholder": "Masukkan alamat lengkap",
+      "getLocation": "Gunakan Lokasi Saya",
+      "locationError": "Gagal mengambil lokasi",
+      "treeCount": "Jumlah Pohon",
+      "treeHeight": "Tinggi Pohon (m)",
+      "treeDiameter": "Diameter Batang (cm)",
+      "requesterName": "Nama Anda",
+      "requesterPhone": "Nomor HP Anda",
+      "rtLeaderName": "Nama Ketua RT",
+      "rtLeaderPhone": "Nomor HP Ketua RT",
+      "expectedDate": "Tanggal Pilihan",
+      "expectedDateHelper": "Petugas akan menentukan hari pasti berdasarkan ketersediaan.",
+      "notes": "Catatan Tambahan",
+      "addPhoto": "Tambah Foto",
+      "deletePhoto": "Hapus foto",
+      "submitButton": "Kirim Permohonan",
+      "cancelButton": "Batal",
+      "submitting": "Permohonan terkirim..."
+    },
+    "validation": {
+      "addressRequired": "Alamat wajib diisi.",
+      "addressMin": "Alamat minimal 5 karakter.",
+      "addressMax": "Alamat maksimal 500 karakter.",
+      "treeCountRequired": "Jumlah pohon wajib diisi.",
+      "treeCountMin": "Minimal 1 pohon.",
+      "treeHeightRequired": "Tinggi pohon wajib diisi.",
+      "treeDiameterRequired": "Diameter batang wajib diisi.",
+      "requesterNameRequired": "Nama pengaju wajib diisi.",
+      "requesterPhoneRequired": "No. HP pengaju wajib diisi.",
+      "rtLeaderNameRequired": "Nama ketua RT wajib diisi.",
+      "rtLeaderPhoneRequired": "No. HP ketua RT wajib diisi.",
+      "notesMax": "Catatan maksimal 1000 karakter.",
+      "photosRequired": "Minimal 1 foto diperlukan.",
+      "photoError": "Gagal membaca foto"
+    }
+  }
+}

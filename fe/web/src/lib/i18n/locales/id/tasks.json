@@ -103,7 +103,11 @@
     "delegateCancelButton": "Batal",
     "revisionRequestTitle": "Permintaan Revisi",
     "taskNotFound": "Tugas tidak ditemukan",
-    "loading": "Memuat..."
+    "loading": "Memuat...",
+    "taskDetails": "Detail Tugas",
+    "cancelButton": "Batal",
+    "delegationTitle": "Disposisi Tugas",
+    "delegationDescription": "Limpahkan tugas ini ke bawahan Anda sebelum diterima. Setelah disposisi, penerima berikutnya akan menerima notifikasi dan rangkaian dicatat di Riwayat Penugasan."
   },
   "form": {
     "titleLabel": "Judul Tugas",
@@ -127,6 +131,11 @@
     "requiredError": "Judul tugas wajib diisi",
     "modalTitle": "Tambah Tugas",
     "assignableRoles": "Dapat ditugaskan ke: {{roles}}"
+  },
+  "modal": {
+    "title": "Tambah Tugas",
+    "cancelButton": "Batal",
+    "submitButton": "Buat Tugas"
   },
   "kanban": {
     "emptyState": "Tidak ada tugas",

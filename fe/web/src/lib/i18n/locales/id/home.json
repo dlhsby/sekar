@@ -1,1 +1,41 @@
-{}
+{
+  "kpi": {
+    "activeOfficers": "Petugas aktif",
+    "tasks": "Tugas",
+    "incomingRequests": "Perantingan masuk",
+    "pendingOvertimes": "Lembur menunggu"
+  },
+  "statusSection": {
+    "title": "Status petugas",
+    "loading": "Memuat status…",
+    "unavailable": "Status tidak tersedia.",
+    "presence": "{{count}} hadir · {{rayons}} rayon",
+    "active": "Aktif",
+    "offline": "Offline (belum clock-in)",
+    "outsideArea": "Di luar area",
+    "todaySchedule": "Jadwal hari ini",
+    "scheduled": "dijadwalkan",
+    "present": "Hadir",
+    "absent": "Tidak hadir",
+    "onLeave": "Cuti",
+    "perRayon": "Per rayon"
+  },
+  "quickActions": {
+    "title": "Tindakan cepat",
+    "newTask": "Tugas baru",
+    "newUser": "User baru",
+    "schedule": "Jadwal"
+  },
+  "plants": {
+    "title": "Tanaman Terlambat Dipangkas",
+    "viewAll": "Tanaman →",
+    "allOnSchedule": "Semua tanaman terpangkas sesuai jadwal. 🌿",
+    "overdueCount": "{{count}} jenis tanaman melewati jadwal di {{rayons}} rayon",
+    "noRayon": "Tanpa rayon"
+  },
+  "notifications": {
+    "title": "Notifikasi terkini",
+    "viewAll": "Semua →",
+    "empty": "Belum ada notifikasi"
+  }
+}

@@ -1,1 +1,41 @@
-{}
+{
+  "kpi": {
+    "activeOfficers": "Active Officers",
+    "tasks": "Tasks",
+    "incomingRequests": "Incoming Requests",
+    "pendingOvertimes": "Pending Overtimes"
+  },
+  "statusSection": {
+    "title": "Officer Status",
+    "loading": "Loading status…",
+    "unavailable": "Status unavailable.",
+    "presence": "{{count}} present · {{rayons}} rayons",
+    "active": "Active",
+    "offline": "Offline (not clocked in)",
+    "outsideArea": "Outside Area",
+    "todaySchedule": "Today's Schedule",
+    "scheduled": "scheduled",
+    "present": "Present",
+    "absent": "Absent",
+    "onLeave": "On Leave",
+    "perRayon": "Per Rayon"
+  },
+  "quickActions": {
+    "title": "Quick Actions",
+    "newTask": "New Task",
+    "newUser": "New User",
+    "schedule": "Schedule"
+  },
+  "plants": {
+    "title": "Overdue Plants",
+    "viewAll": "Plants →",
+    "allOnSchedule": "All plants pruned on schedule. 🌿",
+    "overdueCount": "{{count}} plant species overdue in {{rayons}} rayon",
+    "noRayon": "No Rayon"
+  },
+  "notifications": {
+    "title": "Latest Notifications",
+    "viewAll": "All →",
+    "empty": "No notifications yet"
+  }
+}
