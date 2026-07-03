@@ -56,6 +56,15 @@ Full prop reference: [`specs/mobile/component-library.md`](../../specs/mobile/co
 
 ---
 
+## Internationalization (i18n) — MANDATORY when touching the UI
+
+The app is bilingual: **Indonesian (`id`, default) + English (`en`)** via `react-i18next`. **Whenever you add or change a user-facing string, localize it** — never hardcode display text.
+
+- `NBText` children, `label`/`placeholder`, `NBToast.show({title,body})`, `Alert.alert(...)`, `accessibilityLabel`, inline validation, empty states → `t('<ns>:<key>')`.
+- Add the key to BOTH `src/i18n/locales/{id,en}/<ns>.json` (id = Indonesian verbatim, en = English), identical key sets. Reuse `common`/`status`/`roles`/`errors`. Status labels come from `utils/statusHelpers.ts` (don't reinvent).
+- Components: `const { t } = useTranslation()`. Hooks/services (non-component): `import i18n from '<...>/i18n/config'` then `i18n.t(...)`. Language preference lives in the `preferences` Redux slice + `AsyncStorage`, synced to the profile (`preferred_language`).
+- New namespace → register in `src/i18n/resources.ts` **and** the web mirror (parity guardrail requires the same set). Verify: `npm run i18n:check` (repo root) + `npx tsc --noEmit`. Menu/nav labels are stored as i18n keys resolved at render (see `constants/menuConfigs.ts`). See root `CLAUDE.md` §Internationalization.
+
 ## Cross-Platform Parity
 
 The native app, mobile web (<768 px), and desktop web all consume the same generated tokens. Differences are intentional Layer-3 patterns (bottom tabs vs. ☰ drawer vs. sidebar; bottom sheet vs. centered dialog; full-screen form vs. dialog). Never let token values diverge — that's drift.

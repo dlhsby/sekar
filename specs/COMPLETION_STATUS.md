@@ -28,6 +28,10 @@
 - ✅ **Mobile:** 8 roles, 30+ screens, 4,200+ green tests (WCAG 2.1 AA, offline-first)
 - ✅ **Web:** 8-role dashboard, monitoring/reporting/analytics, 1,700+ green tests (accessible, real-time)
 - ✅ **Quality:** Zero npm audit vulnerabilities across all workspaces; coverage >80% baseline
+- ✅ **i18n (Jul 2026):** web + mobile bilingual — **Indonesian default + English** (react-i18next);
+  language synced to profile (`users.preferred_language`); API English-canonical with frontends
+  localizing by error `code`; parity guardrail `npm run i18n:check`. See `specs/ui-ux/i18n.md` +
+  `specs/ui-ux/GLOSSARY.md`. Mandatory for all future UI work (CLAUDE.md §Internationalization).
 - ✅ **Deployment:** Staging auto-updates on main; versioned releases cut manually; production-ready Docker Compose
 - ✅ **Documentation:** Specs complete (47 files); architecture decisions (8 ADRs); deployment runbooks
 

@@ -108,6 +108,12 @@ they collide. More detail (infra, MinIO, WSL2 device networking, troubleshooting
   `admin_data`, `kepala_rayon`, `top_management`, `admin_system`, `superadmin`, `staff_kecamatan`
   (ADR-009/032). Never PascalCase.
 - **Code is English; Indonesian only for UI labels / user messages** (ADR-010).
+- **i18n every UI string (MANDATORY):** web + mobile are bilingual (**Indonesian default + English**)
+  via `react-i18next`. Whenever you touch the UI, localize with `t('<ns>:<key>')` and add the key to
+  BOTH `id`/`en` JSON (web `fe/web/src/lib/i18n/locales`, mobile `fe/mobile/src/i18n/locales`). The API
+  stays **English-canonical**; frontends localize by error `code`. Canonical terms:
+  [`specs/ui-ux/GLOSSARY.md`](specs/ui-ux/GLOSSARY.md). Verify with `npm run i18n:check`. Full rules in
+  [`CLAUDE.md`](CLAUDE.md) §Internationalization.
 - **Commits:** `<type>: <description>` — `feat`/`fix`/`refactor`/`docs`/`test`/`chore`/`perf`/`ci`.
 - Check the **ADRs** in [`specs/architecture/decisions/`](specs/architecture/decisions/) before major changes.
 - Backend module pattern: controller → service → repository → entity → DTOs, guarded with
