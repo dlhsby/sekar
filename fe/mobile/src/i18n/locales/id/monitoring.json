@@ -118,5 +118,28 @@
     "justNow": "baru saja",
     "minutesAgo": "mnt lalu",
     "hoursAgo": "jam lalu"
+  },
+  "filterModal": {
+    "title": "Filter Monitoring",
+    "reset": "Reset",
+    "apply": "Terapkan",
+    "sections": {
+      "location": "Lokasi",
+      "rayon": "Rayon",
+      "area": "Area",
+      "role": "Jabatan",
+      "user": "Cari Pengguna",
+      "mapLayers": "Tampilan Peta",
+      "staffing": "Kepegawaian"
+    },
+    "placeholders": {
+      "location": "Pilih Lokasi",
+      "rayon": "Pilih Rayon",
+      "area": "Pilih Area",
+      "role": "Pilih Jabatan",
+      "user": "Pilih pengguna",
+      "layers": "Pilih lapisan"
+    },
+    "fixedRayon": "Rayon Anda"
   }
 }

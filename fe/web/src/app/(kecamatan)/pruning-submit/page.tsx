@@ -12,6 +12,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
 import { Camera, MapPin, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -23,24 +24,39 @@ import { useSubmitPruningRequest } from '@/lib/api/pruning-requests';
 const MAX_PHOTOS = 5;
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024; // 10MB, matches backend limit
 
-/** Text-field schema (mirrors CreatePruningRequestDto + mobile validate()). */
-const formSchema = z.object({
-  address: z
-    .string()
-    .trim()
-    .min(5, 'Alamat minimal 5 karakter.')
-    .max(500, 'Alamat maksimal 500 karakter.'),
-  treeCount: z.coerce.number().int().min(1, 'Jumlah pohon minimal 1.'),
-  treeHeight: z.string().trim().min(1, 'Tinggi pohon wajib diisi.'),
-  treeDiameter: z.string().trim().min(1, 'Diameter batang wajib diisi.'),
-  requesterName: z.string().trim().min(1, 'Nama pengaju wajib diisi.'),
-  requesterPhone: z.string().trim().min(1, 'No. HP pengaju wajib diisi.'),
-  rtLeaderName: z.string().trim().min(1, 'Nama ketua RT wajib diisi.'),
-  rtLeaderPhone: z.string().trim().min(1, 'No. HP ketua RT wajib diisi.'),
-  notes: z.string().trim().max(1000, 'Catatan maksimal 1000 karakter.').optional(),
-});
+/** Build form schema with translations */
+function createFormSchema(t: (key: string) => string) {
+  return z.object({
+    address: z
+      .string()
+      .trim()
+      .min(5, t('pruning.submit.addressMinError'))
+      .max(500, t('pruning.submit.addressMaxError')),
+    treeCount: z.coerce.number().int().min(1, t('pruning.submit.treeCountError')),
+    treeHeight: z.string().trim().min(1, t('pruning.submit.treeHeightError')),
+    treeDiameter: z.string().trim().min(1, t('pruning.submit.treeDiameterError')),
+    requesterName: z.string().trim().min(1, t('pruning.submit.requesterNameError')),
+    requesterPhone: z.string().trim().min(1, t('pruning.submit.requesterPhoneError')),
+    rtLeaderName: z.string().trim().min(1, t('pruning.submit.rtLeaderNameError')),
+    rtLeaderPhone: z.string().trim().min(1, t('pruning.submit.rtLeaderPhoneError')),
+    notes: z.string().trim().max(1000, t('pruning.submit.notesMaxError')).optional(),
+  });
+}
 
-type FormErrors = Partial<Record<keyof z.infer<typeof formSchema> | 'photos' | 'gps', string>>;
+// Type for form validation errors
+type FormData = {
+  address: string;
+  treeCount: number;
+  treeHeight: string;
+  treeDiameter: string;
+  requesterName: string;
+  requesterPhone: string;
+  rtLeaderName: string;
+  rtLeaderPhone: string;
+  notes?: string;
+};
+
+type FormErrors = Partial<Record<keyof FormData | 'photos' | 'gps', string>>;
 
 /** ISO 8601 week + year for a given date (mirrors mobile dateUtils.getISOWeek). */
 function getIsoWeek(date: Date): { year: number; isoWeek: number } {
@@ -67,6 +83,7 @@ const INITIAL = {
 };
 
 export default function PruningSubmitPage() {
+  const { t } = useTranslation('pruning');
   const router = useRouter();
   const submitMutation = useSubmitPruningRequest();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -78,13 +95,16 @@ export default function PruningSubmitPage() {
   const [expectedDate, setExpectedDate] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
 
+  // Build form schema with translations
+  const formSchema = createFormSchema(t);
+
   const setField = (key: keyof typeof INITIAL) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
   };
 
   const useMyLocation = () => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      toast.error('Perangkat tidak mendukung lokasi GPS.');
+      toast.error(t('submit.gpsNotSupported'));
       return;
     }
     setGpsLoading(true);
@@ -95,7 +115,7 @@ export default function PruningSubmitPage() {
         setGpsLoading(false);
       },
       (err) => {
-        toast.error(`Gagal mengambil lokasi: ${err.message}`);
+        toast.error(t('submit.locationErrorMessage', { error: err.message }));
         setGpsLoading(false);
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
@@ -107,19 +127,19 @@ export default function PruningSubmitPage() {
     e.target.value = ''; // allow re-selecting the same file
     const remaining = MAX_PHOTOS - photos.length;
     if (remaining <= 0) {
-      toast.error(`Maksimal ${MAX_PHOTOS} foto.`);
+      toast.error(t('submit.photoOverLimit', { max: MAX_PHOTOS }));
       return;
     }
     const next: string[] = [];
     for (const file of files.slice(0, remaining)) {
       if (file.size > MAX_PHOTO_BYTES) {
-        toast.error(`${file.name} melebihi 10 MB dan dilewati.`);
+        toast.error(t('submit.photoTooLarge', { filename: file.name }));
         continue;
       }
       try {
         next.push(await fileToDataUrl(file));
       } catch {
-        toast.error(`Gagal membaca ${file.name}.`);
+        toast.error(t('submit.photoReadError', { filename: file.name }));
       }
     }
     if (next.length) {
@@ -143,12 +163,12 @@ export default function PruningSubmitPage() {
         if (!nextErrors[key]) nextErrors[key] = issue.message;
       }
     }
-    if (photos.length < 1) nextErrors.photos = 'Lampirkan minimal 1 foto.';
-    if (!gps) nextErrors.gps = 'Ambil lokasi GPS terlebih dahulu.';
+    if (photos.length < 1) nextErrors.photos = t('submit.photosRequired');
+    if (!gps) nextErrors.gps = t('submit.gpsRequired');
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0 || !parsed.success || !gps) {
-      toast.warning('Periksa kembali isian formulir.');
+      toast.warning(t('submit.formCheckError'));
       return;
     }
 
@@ -173,7 +193,7 @@ export default function PruningSubmitPage() {
         expected_year: week?.year,
         expected_iso_week: week?.isoWeek,
       });
-      toast.success('Permohonan terkirim. Anda akan diberitahu setelah ditinjau.');
+      toast.success(t('submit.successMessage'));
       router.push('/pruning-submit/my');
     } catch (err) {
       toast.error(getErrorMessage(err));
@@ -183,18 +203,18 @@ export default function PruningSubmitPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-5 px-4 py-6">
       <div>
-        <h1 className="text-nb-h2 text-nb-black">Kirim Permintaan</h1>
+        <h1 className="text-nb-h2 text-nb-black">{t('submit.titleMain')}</h1>
         <p className="mt-0.5 text-nb-body-sm text-nb-gray-600">
-          Ajukan permintaan pemangkasan pohon untuk wilayah Anda.
+          {t('submit.description')}
         </p>
       </div>
 
       <form className="space-y-5" onSubmit={handleSubmit} noValidate>
-        <SectionCard title="Lokasi">
+        <SectionCard title={t('submit.addressLabel').split('\n')[0]}>
           <div className="space-y-3">
             <FormInput
-              label="Alamat"
-              placeholder="Contoh: Jalan Darmo No. 123, Surabaya"
+              label={t('submit.addressLabel')}
+              placeholder={t('submit.addressPlaceholder')}
               value={form.address}
               onChange={setField('address')}
               error={errors.address}
@@ -208,14 +228,14 @@ export default function PruningSubmitPage() {
                 loading={gpsLoading}
                 leftIcon={<MapPin className="size-4" />}
               >
-                Gunakan Lokasi Saya
+                {t('submit.useMyLocationButton')}
               </Button>
               {gps ? (
                 <span className="font-mono text-[12px] text-nb-gray-700">
                   {gps.lat.toFixed(6)}, {gps.lng.toFixed(6)}
                 </span>
               ) : (
-                <span className="text-nb-caption text-nb-gray-500">Lokasi belum diambil</span>
+                <span className="text-nb-caption text-nb-gray-500">{t('submit.locationNotTaken')}</span>
               )}
             </div>
             {errors.gps && (
@@ -226,7 +246,7 @@ export default function PruningSubmitPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Foto" meta={`${photos.length}/${MAX_PHOTOS}`}>
+        <SectionCard title={t('submit.photosSection')} meta={t('submit.photosCount', { count: photos.length, max: MAX_PHOTOS })}>
           <div className="space-y-3">
             <input
               ref={fileInputRef}
@@ -243,7 +263,7 @@ export default function PruningSubmitPage() {
               disabled={photos.length >= MAX_PHOTOS}
               leftIcon={<Camera className="size-4" />}
             >
-              Tambah Foto
+              {t('submit.addPhotoButton')}
             </Button>
             {photos.length > 0 && (
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
@@ -253,11 +273,11 @@ export default function PruningSubmitPage() {
                     className="relative overflow-hidden rounded-nb-base border-2 border-nb-black"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={src} alt={`Foto ${i + 1}`} className="h-20 w-full object-cover" />
+                    <img src={src} alt={t('submit.photoDeleteLabel', { index: i + 1 })} className="h-20 w-full object-cover" />
                     <button
                       type="button"
                       onClick={() => removePhoto(i)}
-                      aria-label={`Hapus foto ${i + 1}`}
+                      aria-label={t('submit.photoDeleteLabel', { index: i + 1 })}
                       className="absolute right-1 top-1 flex size-5 items-center justify-center rounded-full border-2 border-nb-black bg-nb-white text-nb-black hover:bg-nb-danger hover:text-nb-white"
                     >
                       <X className="size-3" />
@@ -271,14 +291,14 @@ export default function PruningSubmitPage() {
                 {errors.photos}
               </p>
             )}
-            <p className="text-nb-caption text-nb-gray-500">Minimal 1, maksimal {MAX_PHOTOS} foto (maks. 10 MB per foto).</p>
+            <p className="text-nb-caption text-nb-gray-500">{t('submit.photosHelper', { max: MAX_PHOTOS })}</p>
           </div>
         </SectionCard>
 
-        <SectionCard title="Detail Pohon">
+        <SectionCard title={t('submit.treeSection')}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <FormInput
-              label="Jumlah Pohon"
+              label={t('submit.treeCountLabel')}
               type="number"
               min={1}
               inputMode="numeric"
@@ -288,16 +308,16 @@ export default function PruningSubmitPage() {
               required
             />
             <FormInput
-              label="Tinggi (estimasi)"
-              placeholder="5-7 meter"
+              label={t('submit.treeHeightLabel')}
+              placeholder={t('submit.treeHeightPlaceholder')}
               value={form.treeHeight}
               onChange={setField('treeHeight')}
               error={errors.treeHeight}
               required
             />
             <FormInput
-              label="Diameter (estimasi)"
-              placeholder="30-50 cm"
+              label={t('submit.treeDiameterLabel')}
+              placeholder={t('submit.treeDiameterPlaceholder')}
               value={form.treeDiameter}
               onChange={setField('treeDiameter')}
               error={errors.treeDiameter}
@@ -306,37 +326,37 @@ export default function PruningSubmitPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Kontak">
+        <SectionCard title={t('submit.contactSection')}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FormInput
-              label="Nama Pengaju"
+              label={t('submit.requesterNameLabel')}
               value={form.requesterName}
               onChange={setField('requesterName')}
               error={errors.requesterName}
               required
             />
             <FormInput
-              label="No. HP Pengaju"
+              label={t('submit.requesterPhoneLabel')}
               type="tel"
               inputMode="tel"
-              placeholder="081234567890"
+              placeholder={t('submit.requesterPhonePlaceholder')}
               value={form.requesterPhone}
               onChange={setField('requesterPhone')}
               error={errors.requesterPhone}
               required
             />
             <FormInput
-              label="Nama Ketua RT"
+              label={t('submit.rtLeaderNameLabel')}
               value={form.rtLeaderName}
               onChange={setField('rtLeaderName')}
               error={errors.rtLeaderName}
               required
             />
             <FormInput
-              label="No. HP Ketua RT"
+              label={t('submit.rtLeaderPhoneLabel')}
               type="tel"
               inputMode="tel"
-              placeholder="081234567890"
+              placeholder={t('submit.requesterPhonePlaceholder')}
               value={form.rtLeaderPhone}
               onChange={setField('rtLeaderPhone')}
               error={errors.rtLeaderPhone}
@@ -345,20 +365,20 @@ export default function PruningSubmitPage() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Jadwal & Catatan" meta="Opsional">
+        <SectionCard title={t('submit.scheduleSection')} meta={t('submit.scheduleMeta')}>
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <label className="text-sm font-bold text-nb-black">Minggu Diharapkan</label>
+              <label className="text-sm font-bold text-nb-black">{t('submit.expectedWeekLabel')}</label>
               <DatePicker
                 value={expectedDate || undefined}
                 onValueChange={(v) => setExpectedDate(v ?? '')}
               />
-              <p className="text-xs text-nb-gray-500">Petugas akan menentukan hari pasti dalam minggu yang dipilih.</p>
+              <p className="text-xs text-nb-gray-500">{t('submit.expectedWeekHelper')}</p>
             </div>
             <Textarea
-              label="Catatan"
+              label={t('submit.notesLabel')}
               rows={3}
-              placeholder="Contoh: Pohon menutupi jalan, mohon diprioritaskan."
+              placeholder={t('submit.notesPlaceholder')}
               value={form.notes}
               onChange={setField('notes')}
             />
@@ -367,10 +387,10 @@ export default function PruningSubmitPage() {
 
         <div className="flex justify-end gap-3">
           <Button type="button" variant="ghost" onClick={() => router.push('/pruning-submit/my')}>
-            Batal
+            {t('submit.cancelButton')}
           </Button>
           <Button type="submit" loading={submitMutation.isPending}>
-            Kirim Permohonan
+            {t('submit.submitButton')}
           </Button>
         </div>
       </form>

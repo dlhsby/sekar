@@ -12,10 +12,17 @@
     "statusOptions": {
       "all": "Semua Status",
       "pending": "Menunggu",
+      "assigned": "Ditugaskan",
+      "accepted": "Diterima",
       "declined": "Ditolak",
-      "completed": "Menunggu Verifikasi"
+      "inProgress": "Dikerjakan",
+      "completed": "Menunggu Verifikasi",
+      "verified": "Terverifikasi",
+      "revisionNeeded": "Perlu Revisi"
     },
     "dateRange": "Rentang Tanggal",
+    "createdDate": "Tanggal Dibuat",
+    "deadline": "Deadline",
     "dateFrom": "Dari",
     "dateTo": "Sampai",
     "area": "Area",
@@ -27,6 +34,14 @@
     "rayonOptions": {
       "all": "Semua Rayon",
       "mine": "Rayon Saya"
+    },
+    "assignment": "Penugasan",
+    "assignmentOptions": {
+      "all": "Semua Petugas (Termasuk Saya)",
+      "assigned": "Ditugaskan Kepada Saya",
+      "createdByMe": "Dibuat oleh Saya",
+      "allSubordinates": "Semua Bawahan",
+      "tagged": "Tag Saya"
     },
     "reset": "Reset",
     "apply": "Terapkan"
@@ -104,6 +119,51 @@
   "messages": {
     "clockInRequired": "Belum Clock In",
     "clockInRequiredMessage": "Anda harus melakukan Clock In terlebih dahulu untuk menambahkan aktivitas"
+  },
+  "detail": {
+    "loading": "Memuat tugas...",
+    "notFound": "Tugas Tidak Ditemukan",
+    "notFoundMessage": "Tugas yang Anda cari tidak ditemukan atau telah dihapus",
+    "backButtonTitle": "Kembali",
+    "taskHistory": "Riwayat Tugas",
+    "assignment": "Penugasan",
+    "completionDetails": "Detail Penyelesaian",
+    "assignmentHistory": "Riwayat Penugasan",
+    "accessibilityLabel": "Detail tugas {{title}}",
+    "taggedOfficers": "Tag Petugas Terlibat",
+    "noTaggedOfficers": "Belum ada petugas yang di-tag. Tap ikon pensil untuk menambah.",
+    "noSelectableOfficers": "Tidak ada petugas yang dapat di-tag.",
+    "selectOfficersLabel": "Pilih petugas untuk di-tag",
+    "searchOfficersPlaceholder": "Cari & pilih petugas...",
+    "searchOfficersLabel": "Cari nama petugas...",
+    "declineReason": "Alasan Penolakan",
+    "declinedAt": "Ditolak pada {{date}}",
+    "revisionReason": "Alasan Revisi",
+    "verification": "Verifikasi",
+    "verifiedBy": "Diverifikasi oleh {{name}}"
+  },
+  "actionButtons": {
+    "assign": "Tugaskan",
+    "reassign": "Tugaskan Ulang",
+    "selectReplacement": "Pilih Petugas Pengganti",
+    "selectOfficer": "Pilih Petugas",
+    "placeholder": "— Pilih Petugas —",
+    "cancel": "Batal",
+    "submit": "Tugaskan",
+    "accept": "Terima",
+    "decline": "Tolak",
+    "start": "Mulai Kerjakan",
+    "complete": "Selesaikan Tugas",
+    "verify": "Verifikasi",
+    "revision": "Minta Revisi",
+    "sendRevision": "Kirim Revisi",
+    "declineReason": "Alasan Penolakan",
+    "declineReasonPlaceholder": "Jelaskan alasan penolakan tugas ini...",
+    "sendDecline": "Kirim Penolakan",
+    "revisionReason": "Alasan Revisi",
+    "revisionReasonPlaceholder": "Jelaskan alasan mengapa tugas perlu direvisi...",
+    "delegate": "Disposisi ke Bawahan",
+    "selectDelegate": "Disposisi ke Bawahan"
   },
   "errors": {
     "fetchFailed": "Gagal memuat jadwal",

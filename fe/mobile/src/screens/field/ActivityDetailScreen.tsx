@@ -14,6 +14,7 @@ import {
   SafeAreaView,
   BackHandler,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute, useFocusEffect, type RouteProp } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import type { MainTabParamList, MainTabScreenProps } from '../../types/navigation.types';
@@ -53,6 +54,7 @@ function getActivityStatusVariant(status?: string): 'success' | 'danger' | 'gray
 }
 
 export function ActivityDetailScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const navigation = useNavigation<MainTabScreenProps<'ActivityDetail'>['navigation']>();
   const route = useRoute<RouteProp<MainTabParamList, 'ActivityDetail'>>();
   const { activityId } = route.params;
@@ -104,7 +106,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
           navigation.navigate('Activities');
         }
       } catch {
-        Alert.alert('Error', 'Gagal memuat detail aktivitas');
+        Alert.alert('Error', t('activities:detail.loadFailure'));
         navigation.navigate('Activities');
       } finally {
         setIsLoading(false);
@@ -140,10 +142,10 @@ export function ActivityDetailScreen(): React.JSX.Element {
 
   const handleApprove = useCallback(async () => {
     if (!activity || isSubmitting) {return;}
-    Alert.alert('Konfirmasi', 'Setujui aktivitas ini?', [
-      { text: 'Batal', style: 'cancel' },
+    Alert.alert(t('activities:detail.confirmApprove'), t('activities:detail.confirmApproveMessage'), [
+      { text: t('activities:detail.confirmApproveCancel'), style: 'cancel' },
       {
-        text: 'Setuju',
+        text: t('activities:detail.confirmApproveConfirm'),
         onPress: async () => {
           setIsSubmitting(true);
           try {
@@ -153,20 +155,20 @@ export function ActivityDetailScreen(): React.JSX.Element {
               return;
             }
             if (response.data) {setActivity(response.data);}
-            Alert.alert('Berhasil', 'Aktivitas disetujui');
+            Alert.alert('Berhasil', t('activities:detail.successApprove'));
           } catch {
-            Alert.alert('Error', 'Gagal menyetujui aktivitas');
+            Alert.alert('Error', t('activities:detail.failureApprove'));
           } finally {
             setIsSubmitting(false);
           }
         },
       },
     ]);
-  }, [activity, isSubmitting]);
+  }, [activity, isSubmitting, t]);
 
   const handleRejectSubmit = useCallback(async () => {
     if (!activity || !rejectReason.trim()) {
-      Alert.alert('Error', 'Alasan penolakan wajib diisi');
+      Alert.alert('Error', t('activities:detail.confirmRejectMessage'));
       return;
     }
     setIsSubmitting(true);
@@ -179,13 +181,13 @@ export function ActivityDetailScreen(): React.JSX.Element {
       if (response.data) {setActivity(response.data);}
       setShowRejectInput(false);
       setRejectReason('');
-      Alert.alert('Berhasil', 'Aktivitas ditolak');
+      Alert.alert('Berhasil', t('activities:detail.successReject'));
     } catch {
-      Alert.alert('Error', 'Gagal menolak aktivitas');
+      Alert.alert('Error', t('activities:detail.failureReject'));
     } finally {
       setIsSubmitting(false);
     }
-  }, [activity, rejectReason]);
+  }, [activity, rejectReason, t]);
 
   if (isLoading) {
     return (
@@ -197,7 +199,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
       >
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
-          <NBText variant="body" style={styles.loadingTextMargin}>Memuat data...</NBText>
+          <NBText variant="body" style={styles.loadingTextMargin}>{t('common:status.loading')}</NBText>
         </View>
       </NBBackgroundPattern>
     );
@@ -212,9 +214,9 @@ export function ActivityDetailScreen(): React.JSX.Element {
         opacity={0.06}
       >
         <View style={styles.loadingContainer}>
-          <NBText variant="body" style={styles.loadingTextMargin}>Aktivitas tidak ditemukan</NBText>
+          <NBText variant="body" style={styles.loadingTextMargin}>{t('activities:detail.error')}</NBText>
           <NBButton
-            title="Kembali"
+            title={t('common:actions.back')}
             variant="secondary"
             onPress={handleBack}
           />
@@ -406,7 +408,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
               <View style={styles.approvalButtonRow}>
                 <View style={styles.approvalButtonHalf}>
                   <NBButton
-                    title="Tolak"
+                    title={t('activities:actionButtons.decline')}
                     variant="danger"
                     onPress={handleTolakPress}
                     disabled={isSubmitting}
@@ -416,7 +418,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
                 </View>
                 <View style={styles.approvalButtonHalf}>
                   <NBButton
-                    title="Setujui"
+                    title={t('activities:actionButtons.approve')}
                     variant="success"
                     onPress={handleApprove}
                     disabled={isSubmitting}
@@ -430,7 +432,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
               <View style={styles.approvalButtonRow}>
                 <View style={styles.approvalButtonHalf}>
                   <NBButton
-                    title="Batal"
+                    title={t('activities:actionButtons.cancel')}
                     variant="secondary"
                     onPress={() => { setShowRejectInput(false); setRejectReason(''); }}
                     fullWidth
@@ -439,7 +441,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
                 </View>
                 <View style={styles.approvalButtonHalf}>
                   <NBButton
-                    title="Kirim Penolakan"
+                    title={t('activities:actionButtons.sendDecline')}
                     variant="danger"
                     onPress={handleRejectSubmit}
                     disabled={isSubmitting || !rejectReason.trim()}

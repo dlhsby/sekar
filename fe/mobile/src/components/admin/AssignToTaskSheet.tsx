@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import {
   assignPruningRequestToTask,
@@ -68,6 +69,7 @@ export function AssignToTaskSheet({
   request,
   onSuccess,
 }: AssignToTaskSheetProps): React.JSX.Element {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
 
   const allUsers = useAppSelector((state) => state.users.list);
@@ -229,8 +231,8 @@ export function AssignToTaskSheet({
 
       NBToast.show({
         level: 'success',
-        title: 'Berhasil',
-        body: 'Tugas berhasil dibuat dari permohonan',
+        title: t('common:status.success'),
+        body: t('tasks:create.successMessage'),
       });
 
       onClose();
@@ -245,10 +247,10 @@ export function AssignToTaskSheet({
           ? err
           : (err as { error?: string; message?: string })?.error ??
             (err as { message?: string })?.message ??
-            'Gagal menugaskan permohonan. Coba lagi.';
+            t('tasks:create.failureMessage');
       NBToast.show({
         level: 'danger',
-        title: 'Gagal menugaskan',
+        title: t('tasks:create.failureTitle'),
         body: message,
       });
     }
@@ -260,6 +262,7 @@ export function AssignToTaskSheet({
     dispatch,
     onClose,
     onSuccess,
+    t,
   ]);
 
   const handleClose = useCallback(() => {
@@ -271,7 +274,7 @@ export function AssignToTaskSheet({
     <NBModal
       visible={visible}
       onClose={handleClose}
-      title="Tugaskan ke Petugas"
+      title={t('tasks:actionButtons.delegate')}
       type="sheet"
       avoidKeyboard={true}
     >
@@ -385,7 +388,7 @@ export function AssignToTaskSheet({
             <View style={{ flex: 1 }}>
               <NBButton
                 variant="secondary"
-                label="Batal"
+                label={t('tasks:actionButtons.cancel')}
                 onPress={handleClose}
                 disabled={convertingId === request.id}
                 size="lg"
@@ -396,7 +399,7 @@ export function AssignToTaskSheet({
             <View style={{ flex: 1 }}>
               <NBButton
                 variant="primary"
-                label="Tugaskan"
+                label={t('tasks:actionButtons.submit')}
                 onPress={handleSubmit}
                 disabled={!isFormValid || capacityExceeded || convertingId === request.id}
                 loading={convertingId === request.id}

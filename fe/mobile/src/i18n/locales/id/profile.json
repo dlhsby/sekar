@@ -127,5 +127,55 @@
       "newDifferentFromOld": "Sandi baru tidak boleh sama dengan sandi sementara.",
       "generic": "Terjadi kesalahan."
     }
+  },
+  "permissions": {
+    "notifications": {
+      "granted": "Notifikasi diizinkan",
+      "required": "Notifikasi diperlukan untuk menerima informasi tugas dan absensi",
+      "checkFailed": "Gagal memeriksa izin notifikasi",
+      "requestSuccess": "Notifikasi berhasil diizinkan",
+      "requestBlocked": "Notifikasi diblokir. Buka Pengaturan untuk mengizinkan",
+      "requestDenied": "Notifikasi ditolak. Anda tidak akan menerima pemberitahuan penting",
+      "requestFailed": "Gagal meminta izin notifikasi"
+    },
+    "location": {
+      "granted": "Lokasi diizinkan",
+      "required": "Lokasi diperlukan untuk absensi dan pelacakan shift",
+      "checkFailed": "Gagal memeriksa izin lokasi",
+      "requestSuccess": "Lokasi berhasil diizinkan",
+      "requestBlocked": "Lokasi diblokir. Buka Pengaturan untuk mengizinkan",
+      "requestDenied": "Lokasi ditolak. Fitur absensi tidak akan berfungsi",
+      "requestFailed": "Gagal meminta izin lokasi"
+    },
+    "backgroundLocation": {
+      "iosNote": "iOS menggunakan foreground location",
+      "androidOldNote": "Background location tidak diperlukan pada Android 9 dan lebih lama",
+      "granted": "Lokasi latar belakang diizinkan",
+      "required": "Izinkan \"Sepanjang waktu\" untuk pelacakan shift yang akurat",
+      "checkFailed": "Gagal memeriksa izin lokasi latar belakang",
+      "foregroundRequired": "Lokasi foreground harus diizinkan terlebih dahulu",
+      "requestSuccess": "Lokasi latar belakang berhasil diizinkan",
+      "requestBlocked": "Lokasi latar belakang diblokir. Buka Pengaturan → Izin → Lokasi → Izinkan sepanjang waktu",
+      "requestDenied": "Lokasi latar belakang ditolak. Pelacakan shift mungkin tidak akurat",
+      "requestFailed": "Gagal meminta izin lokasi latar belakang"
+    },
+    "camera": {
+      "granted": "Kamera diizinkan",
+      "required": "Kamera diperlukan untuk foto laporan kerja",
+      "checkFailed": "Gagal memeriksa izin kamera",
+      "requestSuccess": "Kamera berhasil diizinkan",
+      "requestBlocked": "Kamera diblokir. Buka Pengaturan untuk mengizinkan",
+      "requestDenied": "Kamera ditolak. Anda tidak dapat mengambil foto laporan",
+      "requestFailed": "Gagal meminta izin kamera"
+    },
+    "gallery": {
+      "granted": "Galeri diizinkan",
+      "required": "Galeri diperlukan untuk memilih foto laporan dari penyimpanan",
+      "checkFailed": "Gagal memeriksa izin galeri",
+      "requestSuccess": "Galeri berhasil diizinkan",
+      "requestBlocked": "Galeri diblokir. Buka Pengaturan untuk mengizinkan",
+      "requestDenied": "Galeri ditolak. Anda tidak dapat memilih foto dari penyimpanan",
+      "requestFailed": "Gagal meminta izin galeri"
+    }
   }
 }

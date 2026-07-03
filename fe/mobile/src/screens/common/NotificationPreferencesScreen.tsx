@@ -14,6 +14,7 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBBackgroundPattern, NBText, NBToast } from '../../components/nb';
 import { useAppSelector } from '../../store/hooks';
 import {
@@ -22,40 +23,6 @@ import {
   type NotificationPreference,
 } from '../../services/api/notificationsApi';
 import { nbColors, nbSpacing, nbRadius, nbBorders, nbShadows } from '../../constants/nbTokens';
-
-// Per-type Indonesian labels, grouped into UI sections. Order is presentation.
-const SECTIONS: { title: string; items: { type: string; label: string }[] }[] = [
-  {
-    title: 'Tugas',
-    items: [
-      { type: 'task_assigned', label: 'Tugas baru' },
-      { type: 'task_completed', label: 'Tugas selesai' },
-      { type: 'task_updated', label: 'Pembaruan & revisi tugas' },
-    ],
-  },
-  {
-    title: 'Aktivitas',
-    items: [
-      { type: 'activity_approved', label: 'Aktivitas disetujui' },
-      { type: 'activity_rejected', label: 'Aktivitas ditolak' },
-    ],
-  },
-  {
-    title: 'Lembur',
-    items: [
-      { type: 'overtime_approved', label: 'Lembur disetujui' },
-      { type: 'overtime_rejected', label: 'Lembur ditolak' },
-    ],
-  },
-  {
-    title: 'Lainnya',
-    items: [
-      { type: 'shift_reminder', label: 'Pengingat shift' },
-      { type: 'missing_worker_alert', label: 'Peringatan pekerja hilang' },
-      { type: 'area_plant_overdue', label: 'Tanaman terlambat dipangkas' },
-    ],
-  },
-];
 
 function NBToggle({
   value,
@@ -87,10 +54,45 @@ function NBToggle({
 }
 
 export function NotificationPreferencesScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const userId = useAppSelector((state) => state.auth.user?.id);
   const [prefs, setPrefs] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [savingType, setSavingType] = useState<string | null>(null);
+
+  // Build sections dynamically using translations
+  const sections = [
+    {
+      title: t('notifications:preferences.sections.tasks'),
+      items: [
+        { type: 'task_assigned', label: t('notifications:preferences.types.task_assigned') },
+        { type: 'task_completed', label: t('notifications:preferences.types.task_completed') },
+        { type: 'task_updated', label: t('notifications:preferences.types.task_updated') },
+      ],
+    },
+    {
+      title: t('notifications:preferences.sections.activities'),
+      items: [
+        { type: 'activity_approved', label: t('notifications:preferences.types.activity_approved') },
+        { type: 'activity_rejected', label: t('notifications:preferences.types.activity_rejected') },
+      ],
+    },
+    {
+      title: t('notifications:preferences.sections.overtime'),
+      items: [
+        { type: 'overtime_approved', label: t('notifications:preferences.types.overtime_approved') },
+        { type: 'overtime_rejected', label: t('notifications:preferences.types.overtime_rejected') },
+      ],
+    },
+    {
+      title: t('notifications:preferences.sections.other'),
+      items: [
+        { type: 'shift_reminder', label: t('notifications:preferences.types.shift_reminder') },
+        { type: 'missing_worker_alert', label: t('notifications:preferences.types.missing_worker_alert') },
+        { type: 'area_plant_overdue', label: t('notifications:preferences.types.area_plant_overdue') },
+      ],
+    },
+  ];
 
   const load = useCallback(async () => {
     if (!userId) {
@@ -108,12 +110,12 @@ export function NotificationPreferencesScreen(): React.JSX.Element {
     } else {
       NBToast.show({
         level: 'danger',
-        title: 'Gagal',
-        body: 'Gagal memuat preferensi notifikasi.',
+        title: t('common:actions.loading'),
+        body: t('notifications:preferences.loadFailed'),
       });
     }
     setLoading(false);
-  }, [userId]);
+  }, [userId, t]);
 
   useEffect(() => {
     load();
@@ -135,12 +137,12 @@ export function NotificationPreferencesScreen(): React.JSX.Element {
         setPrefs((p) => ({ ...p, [type]: !next }));
         NBToast.show({
           level: 'danger',
-          title: 'Gagal',
-          body: 'Perubahan tidak tersimpan. Coba lagi.',
+          title: t('common:actions.loading'),
+          body: t('notifications:preferences.saveFailed'),
         });
       }
     },
-    [userId],
+    [userId, t],
   );
 
   if (loading) {
@@ -167,11 +169,10 @@ export function NotificationPreferencesScreen(): React.JSX.Element {
     >
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <NBText variant="body-sm" color="gray600" style={styles.intro}>
-          Pilih notifikasi yang ingin Anda terima. Menonaktifkan sebuah jenis akan menghentikan
-          push untuk jenis tersebut.
+          {t('notifications:preferences.intro')}
         </NBText>
 
-        {SECTIONS.map((section) => (
+        {sections.map((section) => (
           <View key={section.title}>
             <NBText variant="mono-sm" color="gray600" uppercase style={styles.sectionTitle}>
               {section.title}

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useParams, useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { MoreVertical } from 'lucide-react';
 import {
   Button,
@@ -50,58 +50,11 @@ import type { ColumnDef } from '@/components/ui';
 
 const ASSET_MANAGER_ROLES = ['korlap', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'];
 
-const STATUS_LABELS: Record<AssetStatus, string> = {
-  available: 'Tersedia',
-  in_use: 'Digunakan',
-  maintenance: 'Perawatan',
-  retired: 'Pensiun',
-  lost: 'Hilang',
-};
-
-const STATUS_TONE_MAP: Record<AssetStatus, 'ok' | 'info' | 'warn' | 'neutral' | 'bad'> = {
-  available: 'ok',
-  in_use: 'info',
-  maintenance: 'warn',
-  retired: 'neutral',
-  lost: 'bad',
-};
-
-const ASSET_CONDITION_LABELS: Record<AssetCondition, string> = {
-  good: 'Baik',
-  fair: 'Cukup',
-  poor: 'Buruk',
-  damaged: 'Rusak',
-  unusable: 'Tidak Dapat Digunakan',
-};
-
-const CONDITION_TONE_MAP: Record<AssetCondition, 'ok' | 'info' | 'warn' | 'bad'> = {
-  good: 'ok',
-  fair: 'info',
-  poor: 'warn',
-  damaged: 'bad',
-  unusable: 'bad',
-};
-
-const MAINTENANCE_TYPE_LABELS: Record<MaintenanceType, string> = {
-  routine: 'Rutin',
-  repair: 'Perbaikan',
-  inspection: 'Inspeksi',
-  replacement: 'Penggantian',
-};
-
-const MAINTENANCE_STATUS_TONE_MAP: Record<string, 'info' | 'warn' | 'ok' | 'neutral' | 'bad'> = {
-  scheduled: 'info',
-  in_progress: 'warn',
-  completed: 'ok',
-  cancelled: 'neutral',
-  overdue: 'bad',
-};
-
 export default function AssetDetailPage() {
-  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useTranslation('assets');
   const user = useUser();
   const assetId = params.id as string;
   const isManager = user && ASSET_MANAGER_ROLES.includes(user.role);
@@ -134,7 +87,7 @@ export default function AssetDetailPage() {
         id: assetId,
         data: { condition_at_checkout: checkoutCondition, notes: checkoutNotes || undefined },
       });
-      toast({ level: 'success', title: 'Aset berhasil diambil' });
+      toast({ level: 'success', title: t('detail.checkoutSuccess') });
       setCheckoutOpen(false);
       setCheckoutCondition('good');
       setCheckoutNotes('');
@@ -149,7 +102,7 @@ export default function AssetDetailPage() {
         id: assetId,
         data: { condition_at_return: returnCondition, notes: returnNotes || undefined },
       });
-      toast({ level: 'success', title: 'Aset berhasil dikembalikan' });
+      toast({ level: 'success', title: t('detail.returnSuccess') });
       setReturnOpen(false);
       setReturnCondition('good');
       setReturnNotes('');
@@ -169,7 +122,7 @@ export default function AssetDetailPage() {
           cost: maintenanceCost ? parseFloat(maintenanceCost) : undefined,
         },
       });
-      toast({ level: 'success', title: 'Perawatan berhasil dijadwalkan' });
+      toast({ level: 'success', title: t('detail.maintenanceSuccess') });
       setMaintenanceOpen(false);
       setMaintenanceType('routine');
       setMaintenanceDate(new Date().toISOString().split('T')[0]);
@@ -183,17 +136,17 @@ export default function AssetDetailPage() {
   const handleGenerateQr = async () => {
     try {
       await generateQr(assetId);
-      toast({ level: 'success', title: 'QR code berhasil dibuat' });
+      toast({ level: 'success', title: t('detail.qrSuccess') });
     } catch (error) {
       toast({ level: 'danger', title: getErrorMessage(error) });
     }
   };
 
   const handleDelete = async () => {
-    if (confirm('Hapus aset ini?')) {
+    if (confirm(t('detail.deleteConfirm'))) {
       try {
         await deleteMutation.mutateAsync(assetId);
-        toast({ level: 'success', title: 'Aset berhasil dihapus' });
+        toast({ level: 'success', title: t('detail.deleteSuccess') });
         router.push('/assets');
       } catch (error) {
         toast({ level: 'danger', title: getErrorMessage(error) });
@@ -213,51 +166,51 @@ export default function AssetDetailPage() {
   if (!asset) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Aset Tidak Ditemukan" />
+        <PageHeader title={t('detail.notFound')} />
         <EmptyState variant="error" />
       </div>
     );
   }
 
   const assignmentColumns: ColumnDef<AssetAssignment>[] = [
-    { id: 'checked_out_at', header: 'Tanggal', enableSorting: false, meta: { label: 'Tanggal' }, cell: ({ row }) => formatDate(new Date(row.original.checked_out_at)) },
-    { id: 'assignedTo', header: 'Pekerja', enableSorting: false, meta: { label: 'Pekerja' }, cell: ({ row }) => row.original.assignedTo?.full_name || '—' },
-    { id: 'type', header: 'Tipe', enableSorting: false, meta: { label: 'Tipe' }, cell: ({ row }) => (row.original.returned_at ? 'Kembali' : 'Ambil') },
+    { id: 'checked_out_at', header: t('detail.assignmentTable.date'), enableSorting: false, meta: { label: t('detail.assignmentTable.date') }, cell: ({ row }) => formatDate(new Date(row.original.checked_out_at)) },
+    { id: 'assignedTo', header: t('detail.assignmentTable.worker'), enableSorting: false, meta: { label: t('detail.assignmentTable.worker') }, cell: ({ row }) => row.original.assignedTo?.full_name || '—' },
+    { id: 'type', header: t('detail.assignmentTable.type'), enableSorting: false, meta: { label: t('detail.assignmentTable.type') }, cell: ({ row }) => (row.original.returned_at ? t('detail.assignmentTable.return') : t('detail.assignmentTable.checkout')) },
     {
       id: 'condition',
-      header: 'Kondisi',
+      header: t('detail.assignmentTable.type'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Kondisi' },
+      meta: { label: t('detail.conditionLabel') },
       cell: ({ row }) => (
-        <StatusPill tone={CONDITION_TONE_MAP[row.original.condition_at_return || row.original.condition_at_checkout]}>
-          {row.original.condition_at_return ? ASSET_CONDITION_LABELS[row.original.condition_at_return] : ASSET_CONDITION_LABELS[row.original.condition_at_checkout]}
+        <StatusPill tone={row.original.condition_at_return || row.original.condition_at_checkout === 'good' ? 'ok' : 'warn'}>
+          {row.original.condition_at_return ? t(`detail.condition.${row.original.condition_at_return}`) : t(`detail.condition.${row.original.condition_at_checkout}`)}
         </StatusPill>
       ),
     },
   ];
 
   const maintenanceColumns: ColumnDef<AssetMaintenance>[] = [
-    { id: 'scheduled_at', header: 'Tanggal', enableSorting: false, meta: { label: 'Tanggal' }, cell: ({ row }) => formatDate(new Date(row.original.scheduled_at)) },
-    { id: 'maintenance_type', header: 'Tipe', enableSorting: false, meta: { label: 'Tipe' }, cell: ({ row }) => MAINTENANCE_TYPE_LABELS[row.original.maintenance_type] },
+    { id: 'scheduled_at', header: t('detail.maintenanceTable.date'), enableSorting: false, meta: { label: t('detail.maintenanceTable.date') }, cell: ({ row }) => formatDate(new Date(row.original.scheduled_at)) },
+    { id: 'maintenance_type', header: t('detail.maintenanceTable.type'), enableSorting: false, meta: { label: t('detail.maintenanceTable.type') }, cell: ({ row }) => t(`detail.maintenanceType.${row.original.maintenance_type}`) },
     {
       id: 'status',
-      header: 'Status',
+      header: t('detail.maintenanceTable.status'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Status' },
+      meta: { label: t('detail.maintenanceTable.status') },
       cell: ({ row }) => (
-        <StatusPill tone={MAINTENANCE_STATUS_TONE_MAP[row.original.status] || 'neutral'}>
-          {row.original.status === 'scheduled' ? 'Terjadwal' : row.original.status === 'completed' ? 'Selesai' : row.original.status}
+        <StatusPill tone={row.original.status === 'completed' ? 'ok' : 'info'}>
+          {row.original.status === 'scheduled' ? t('detail.maintenanceStatus.scheduled') : row.original.status === 'completed' ? t('detail.maintenanceStatus.completed') : row.original.status}
         </StatusPill>
       ),
     },
     {
       id: 'cost',
-      header: 'Biaya',
+      header: t('detail.maintenanceTable.cost'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Biaya' },
+      meta: { label: t('detail.maintenanceTable.cost') },
       cell: ({ row }) => (row.original.cost ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(row.original.cost) : '—'),
     },
   ];
@@ -267,7 +220,7 @@ export default function AssetDetailPage() {
       <PageHeader
         title={asset.asset_code}
         description={asset.name}
-        breadcrumb="Aset · Detail"
+        breadcrumb={t('detail.breadcrumb')}
         actions={
           isManager && (
             <DropdownMenu>
@@ -277,7 +230,7 @@ export default function AssetDetailPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem onClick={handleDelete}>{t('common:actions.delete')}</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDelete}>{t('detail.delete')}</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )
@@ -287,27 +240,27 @@ export default function AssetDetailPage() {
       <div className="grid grid-cols-3 gap-6">
         <Card variant="default">
           <div className="p-4 space-y-4">
-            <h3 className="text-nb-h3 font-bold">Informasi</h3>
+            <h3 className="text-nb-h3 font-bold">{t('detail.infoTitle')}</h3>
             <div className="space-y-3">
               <div>
-                <p className="text-nb-body-sm text-nb-gray-600">Kategori</p>
+                <p className="text-nb-body-sm text-nb-gray-600">{t('detail.category')}</p>
                 <p className="text-nb-body font-semibold">{asset.category?.name}</p>
               </div>
               <div>
-                <p className="text-nb-body-sm text-nb-gray-600">Status</p>
-                <StatusPill tone={STATUS_TONE_MAP[asset.status]}>{STATUS_LABELS[asset.status]}</StatusPill>
+                <p className="text-nb-body-sm text-nb-gray-600">{t('detail.status')}</p>
+                <StatusPill tone={asset.status === 'available' ? 'ok' : asset.status === 'in_use' ? 'info' : asset.status === 'maintenance' ? 'warn' : asset.status === 'lost' ? 'bad' : 'neutral'}>{t(`status.${asset.status}`)}</StatusPill>
               </div>
             </div>
             {isManager && (
               <div className="pt-4 space-y-2 border-t-2 border-nb-black">
                 <Button variant="default" size="sm" className="w-full" onClick={() => setCheckoutOpen(true)} disabled={asset.status === 'in_use'}>
-                  Ambil Aset
+                  {t('detail.checkoutButton')}
                 </Button>
                 <Button variant="outline" size="sm" className="w-full" onClick={() => setReturnOpen(true)} disabled={asset.status !== 'in_use'}>
-                  Kembalikan
+                  {t('detail.returnButton')}
                 </Button>
                 <Button variant="outline" size="sm" className="w-full" onClick={() => setMaintenanceOpen(true)}>
-                  Jadwal Perawatan
+                  {t('detail.maintenanceButton')}
                 </Button>
               </div>
             )}
@@ -315,37 +268,37 @@ export default function AssetDetailPage() {
         </Card>
       </div>
 
-      <SectionCard title="Riwayat Penggunaan">
-        {assignmentsLoading ? <div className="p-4">{t('common:actions.loading')}</div> : !assignments?.length ? <EmptyState variant="noData" title={t('common:empty.noHistory')} /> : null}
+      <SectionCard title={t('detail.usageHistory')}>
+        {assignmentsLoading ? <div className="p-4">{t('detail.loading')}</div> : !assignments?.length ? <EmptyState variant="noData" title={t('detail.noHistory')} /> : null}
       </SectionCard>
 
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Ambil Aset</DialogTitle>
-            <DialogDescription>Catat kondisi aset saat diambil</DialogDescription>
+            <DialogTitle>{t('detail.checkoutTitle')}</DialogTitle>
+            <DialogDescription>{t('detail.checkoutDescription')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Kondisi</Label>
+              <Label>{t('detail.conditionLabel')}</Label>
               <FormSelect
-                label="Kondisi"
-                options={CHECKOUT_CONDITIONS.map((c) => ({ value: c, label: ASSET_CONDITION_LABELS[c] }))}
+                label={t('detail.conditionLabel')}
+                options={CHECKOUT_CONDITIONS.map((c) => ({ value: c, label: t(`detail.condition.${c}`) }))}
                 value={checkoutCondition}
                 onChange={(value) => setCheckoutCondition(value as AssetCondition)}
               />
             </div>
             <div>
-              <Label>Catatan</Label>
-              <Textarea placeholder="Catatan tambahan..." value={checkoutNotes} onChange={(e) => setCheckoutNotes(e.target.value)} />
+              <Label>{t('detail.notesLabel')}</Label>
+              <Textarea placeholder={t('detail.notesPlaceholder')} value={checkoutNotes} onChange={(e) => setCheckoutNotes(e.target.value)} />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCheckoutOpen(false)}>
-              Batal
+              {t('form.cancel')}
             </Button>
             <Button variant="default" loading={checkoutMutation.isPending} onClick={handleCheckout}>
-              Ambil
+              {t('detail.checkoutButton')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -354,30 +307,30 @@ export default function AssetDetailPage() {
       <Dialog open={returnOpen} onOpenChange={setReturnOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Kembalikan Aset</DialogTitle>
-            <DialogDescription>Catat kondisi aset saat dikembalikan</DialogDescription>
+            <DialogTitle>{t('detail.returnTitle')}</DialogTitle>
+            <DialogDescription>{t('detail.returnDescription')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Kondisi</Label>
+              <Label>{t('detail.conditionLabel')}</Label>
               <FormSelect
-                label="Kondisi"
-                options={Object.entries(ASSET_CONDITION_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+                label={t('detail.conditionLabel')}
+                options={Object.entries({ good: t('detail.condition.good'), fair: t('detail.condition.fair'), poor: t('detail.condition.poor'), damaged: t('detail.condition.damaged'), unusable: t('detail.condition.unusable') }).map(([k, v]) => ({ value: k, label: v }))}
                 value={returnCondition}
                 onChange={(value) => setReturnCondition(value as AssetCondition)}
               />
             </div>
             <div>
-              <Label>Catatan</Label>
-              <Textarea placeholder="Catatan tambahan..." value={returnNotes} onChange={(e) => setReturnNotes(e.target.value)} />
+              <Label>{t('detail.notesLabel')}</Label>
+              <Textarea placeholder={t('detail.notesPlaceholder')} value={returnNotes} onChange={(e) => setReturnNotes(e.target.value)} />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setReturnOpen(false)}>
-              Batal
+              {t('form.cancel')}
             </Button>
             <Button variant="default" loading={returnMutation.isPending} onClick={handleReturn}>
-              Kembalikan
+              {t('detail.returnButton')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -386,17 +339,17 @@ export default function AssetDetailPage() {
       <Dialog open={maintenanceOpen} onOpenChange={setMaintenanceOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Jadwal Perawatan</DialogTitle>
-            <DialogDescription>Buat jadwal perawatan untuk aset ini</DialogDescription>
+            <DialogTitle>{t('detail.maintenanceTitle')}</DialogTitle>
+            <DialogDescription>{t('detail.maintenanceDescription')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <FormSelect
-              label="Tipe Perawatan"
-              options={Object.entries(MAINTENANCE_TYPE_LABELS).map(([k, v]) => ({ value: k, label: v }))}
+              label={t('detail.maintenanceTypeLabel')}
+              options={Object.entries({ routine: t('detail.maintenanceType.routine'), repair: t('detail.maintenanceType.repair'), inspection: t('detail.maintenanceType.inspection'), replacement: t('detail.maintenanceType.replacement') }).map(([k, v]) => ({ value: k, label: v }))}
               value={maintenanceType}
               onChange={(value) => setMaintenanceType(value as MaintenanceType)}
             />
-            <Field label="Tanggal">
+            <Field label={t('detail.dateLabel')}>
               {(p) => (
                 <DatePicker
                   id={p.id}
@@ -408,10 +361,10 @@ export default function AssetDetailPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setMaintenanceOpen(false)}>
-              Batal
+              {t('form.cancel')}
             </Button>
             <Button variant="default" loading={maintenanceMutation.isPending} onClick={handleCreateMaintenance}>
-              Jadwalkan
+              {t('detail.maintenanceButton')}
             </Button>
           </DialogFooter>
         </DialogContent>

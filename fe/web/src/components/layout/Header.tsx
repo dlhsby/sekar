@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/auth/hooks';
 import { NotificationBell } from '@/components/ui/notification-bell';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { RoleAvatar } from '@/components/ui/role-avatar';
-import { getPageTitle, getBreadcrumbTrail } from '@/lib/navigation';
+import { usePageTitle, useBreadcrumbTrail } from '@/hooks/usePageNavigation';
 import { useLatestAppRelease } from '@/lib/hooks/useLatestAppRelease';
 import { ADMIN_ROLES, hasRole } from '@/lib/constants/roles';
 import type { UserRole } from '@/types/models';
@@ -45,6 +45,8 @@ export function Header({ className, ...props }: HeaderProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const getPageTitle = usePageTitle();
+  const getBreadcrumbTrail = useBreadcrumbTrail();
   const pageTitle = getPageTitle(pathname);
   const breadcrumbTrail = getBreadcrumbTrail(pathname);
   const canOpenSettings = !!user && hasRole(user.role as UserRole, ADMIN_ROLES);

@@ -212,13 +212,13 @@ export function TaskDetailScreen(): React.JSX.Element {
 
         <View style={styles.actionContainer}>
           <NBButton
-            title="Riwayat Tugas"
+            title={t('tasks:detail.taskHistory')}
             variant="secondary"
             onPress={() => setShowAuditTrail(true)}
           />
 
           <NBButton
-            title="Kembali"
+            title={t('tasks:detail.backButtonTitle')}
             variant="secondary"
             onPress={handleBack}
           />
@@ -244,7 +244,7 @@ export function TaskDetailScreen(): React.JSX.Element {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
-              <NBText variant="h2" style={styles.modalTitle}>Riwayat Tugas</NBText>
+              <NBText variant="h2" style={styles.modalTitle}>{t('tasks:detail.taskHistory')}</NBText>
               <TouchableOpacity onPress={() => setShowAuditTrail(false)} style={styles.modalClose}>
                 <Icon name="close" size={22} color={nbColors.black} />
               </TouchableOpacity>
@@ -275,7 +275,7 @@ export function TaskDetailScreen(): React.JSX.Element {
       <NBCard style={styles.card}>
         <NBCardHeader>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <NBText variant="h3" style={styles.sectionTitleStyle}>Tag Petugas Terlibat</NBText>
+            <NBText variant="h3" style={styles.sectionTitleStyle}>{t('tasks:detail.taggedOfficers')}</NBText>
             {canEditTags && !tags.isEditingTags && (
               <TouchableOpacity onPress={tags.handleStartEditTags} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Icon name="pencil-outline" size={18} color={nbColors.primary} />
@@ -296,7 +296,7 @@ export function TaskDetailScreen(): React.JSX.Element {
               </View>
             ) : (
               <NBText variant="body-sm" style={styles.subTextStyle}>
-                Belum ada petugas yang di-tag. Tap ikon pensil untuk menambah.
+                {t('tasks:detail.noTaggedOfficers')}
               </NBText>
             )
           ) : (
@@ -305,23 +305,23 @@ export function TaskDetailScreen(): React.JSX.Element {
                 <ActivityIndicator color={nbColors.primary} />
               ) : tagOptions.length === 0 ? (
                 <NBText variant="body-sm" style={styles.subTextStyle}>
-                  Tidak ada petugas yang dapat di-tag.
+                  {t('tasks:detail.noSelectableOfficers')}
                 </NBText>
               ) : (
                 <NBSelect
-                  label="Pilih petugas untuk di-tag"
+                  label={t('tasks:detail.selectOfficersLabel')}
                   selectedValues={tags.tagPickerSelection}
                   onValuesChange={tags.setTagPickerSelection}
                   options={tagOptions}
-                  placeholder="Cari & pilih petugas..."
+                  placeholder={t('tasks:detail.searchOfficersPlaceholder')}
                   searchable
-                  searchPlaceholder="Cari nama petugas..."
+                  searchPlaceholder={t('tasks:detail.searchOfficersLabel')}
                 />
               )}
               <View style={{ flexDirection: 'row', gap: nbSpacing.sm, marginTop: nbSpacing.md }}>
                 <View style={{ flex: 1 }}>
                   <NBButton
-                    title="Batal"
+                    title={t('tasks:actionButtons.cancel')}
                     variant="ghost"
                     size="lg"
                     onPress={tags.handleCancelEditTags}
@@ -330,7 +330,7 @@ export function TaskDetailScreen(): React.JSX.Element {
                 </View>
                 <View style={{ flex: 1 }}>
                   <NBButton
-                    title="Simpan"
+                    title={t('common:actions.save')}
                     variant="primary"
                     size="lg"
                     onPress={tags.handleSaveTags}
@@ -351,12 +351,12 @@ export function TaskDetailScreen(): React.JSX.Element {
     return (
       <NBCard style={styles.card}>
         <NBCardHeader>
-          <NBText variant="h3" style={[styles.sectionTitleStyle, styles.dangerTitleStyle]} color="danger">Alasan Penolakan</NBText>
+          <NBText variant="h3" style={[styles.sectionTitleStyle, styles.dangerTitleStyle]} color="danger">{t('tasks:detail.declineReason')}</NBText>
         </NBCardHeader>
         <NBCardContent>
           <NBText variant="body" style={styles.descriptionStyle}>{task.decline_reason}</NBText>
           {task.declined_at && (
-            <NBText variant="body-sm" style={styles.subTextStyle}>Ditolak pada {(new Date(task.declined_at)).toLocaleString()}</NBText>
+            <NBText variant="body-sm" style={styles.subTextStyle}>{t('tasks:detail.declinedAt', { date: (new Date(task.declined_at)).toLocaleString() })}</NBText>
           )}
         </NBCardContent>
       </NBCard>
@@ -368,7 +368,7 @@ export function TaskDetailScreen(): React.JSX.Element {
     return (
       <NBCard style={styles.card}>
         <NBCardHeader>
-          <NBText variant="h3" style={[styles.sectionTitleStyle, styles.warningTitleStyle]} color="warning">Alasan Revisi</NBText>
+          <NBText variant="h3" style={[styles.sectionTitleStyle, styles.warningTitleStyle]} color="warning">{t('tasks:detail.revisionReason')}</NBText>
         </NBCardHeader>
         <NBCardContent>
           <NBText variant="body" style={styles.descriptionStyle}>{task.revision_reason}</NBText>
@@ -382,13 +382,13 @@ export function TaskDetailScreen(): React.JSX.Element {
     return (
       <NBCard style={styles.card}>
         <NBCardHeader>
-          <NBText variant="h3" style={[styles.sectionTitleStyle, styles.successTitleStyle]} color="success">Verifikasi</NBText>
+          <NBText variant="h3" style={[styles.sectionTitleStyle, styles.successTitleStyle]} color="success">{t('tasks:detail.verification')}</NBText>
         </NBCardHeader>
         <NBCardContent>
           {task.verifier && (
             <View style={styles.detailRow}>
               <Icon name="shield-check" size={14} color={nbColors.success} />
-              <NBText variant="body-sm" style={styles.detailRowTextStyle}>Diverifikasi oleh {task.verifier.full_name}</NBText>
+              <NBText variant="body-sm" style={styles.detailRowTextStyle}>{t('tasks:detail.verifiedBy', { name: task.verifier.full_name })}</NBText>
             </View>
           )}
           {task.verified_at && (

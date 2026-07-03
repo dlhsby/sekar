@@ -2,6 +2,7 @@
 
 import type { UserRole } from '@/types/models';
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   KpiGrid,
   KpiTile,
@@ -26,6 +27,7 @@ const ANALYTICS_VIEWERS: UserRole[] = ['korlap', 'kepala_rayon', 'admin_data', '
 const ANALYTICS_ADMINS: UserRole[] = ['admin_system', 'superadmin', 'top_management'];
 
 export default function AnalyticsDashboardPage() {
+  const { t } = useTranslation('analytics');
   useRequireAuth(ANALYTICS_VIEWERS);
   const user = useUser();
   const canRefresh = useHasRole(ANALYTICS_ADMINS);
@@ -71,7 +73,7 @@ export default function AnalyticsDashboardPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Analitik" />
+        <PageHeader title={t('overview.page.title')} />
         <KpiGrid columns={3}>
           <SkeletonCard />
           <SkeletonCard />
@@ -88,11 +90,11 @@ export default function AnalyticsDashboardPage() {
   if (error || !data) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Analitik" />
+        <PageHeader title={t('overview.page.title')} />
         <EmptyState
           variant="error"
-          title="Gagal Memuat Data"
-          description="Terjadi kesalahan saat memuat data analitik. Silakan coba lagi."
+          title={t('overview.error.title')}
+          description={t('overview.error.description')}
         />
       </div>
     );
@@ -103,15 +105,15 @@ export default function AnalyticsDashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <PageHeader title="Analitik" />
+        <PageHeader title={t('overview.page.title')} />
         <div className="flex items-center gap-3">
           <Select value={period} onValueChange={(value) => setPeriod(value as '7' | '30')}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="7">7 Hari</SelectItem>
-              <SelectItem value="30">30 Hari</SelectItem>
+              <SelectItem value="7">{t('overview.period.7days')}</SelectItem>
+              <SelectItem value="30">{t('overview.period.30days')}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -123,7 +125,7 @@ export default function AnalyticsDashboardPage() {
               size="sm"
               leftIcon={<RefreshCw className="size-4" />}
             >
-              {isRefreshing ? 'Refresh...' : 'Refresh'}
+              {isRefreshing ? t('overview.refreshing') : t('overview.refresh')}
             </Button>
           )}
         </div>
@@ -131,25 +133,25 @@ export default function AnalyticsDashboardPage() {
 
       {/* Note about stale data */}
       <div className="bg-nb-warning-light/20 border-2 border-nb-warning px-4 py-2 rounded-nb-base text-sm text-nb-black">
-        Data analitik diperbarui hingga 24 jam yang lalu.
+        {t('overview.note')}
       </div>
 
       {/* KPI Cards */}
       <KpiGrid columns={3}>
         <KpiTile
-          label="Kehadiran"
+          label={t('overview.kpi.attendance')}
           value={`${todayMetrics.attendanceRate.toFixed(1)}%`}
           delta={`${todayMetrics.attendanceRate > 80 ? '+' : ''}${(todayMetrics.attendanceRate - 80).toFixed(1)}%`}
           deltaDirection={todayMetrics.attendanceRate > 80 ? 'up' : 'down'}
         />
         <KpiTile
-          label="Tugas/Hari"
+          label={t('overview.kpi.tasksPerDay')}
           value={todayMetrics.tasksCompleted}
           delta={`${todayMetrics.tasksCompleted > 15 ? '+' : ''}${(todayMetrics.tasksCompleted - 15).toFixed(0)}`}
           deltaDirection={todayMetrics.tasksCompleted > 15 ? 'up' : 'down'}
         />
         <KpiTile
-          label="Lembur"
+          label={t('overview.kpi.overtime')}
           value={`${todayMetrics.overtimeHours.toFixed(1)} jam`}
           delta={`${todayMetrics.overtimeHours < 20 ? '−' : '+'}${Math.abs(todayMetrics.overtimeHours - 20).toFixed(1)}`}
           deltaDirection={todayMetrics.overtimeHours < 20 ? 'down' : 'up'}

@@ -100,5 +100,47 @@
     "approveButtonTitle": "Setujui",
     "rejectButtonTitle": "Tolak",
     "resultsCardTitle": "Hasil Review"
+  },
+  "actions": {
+    "approve": {
+      "confirm": "Konfirmasi",
+      "question": "Setujui permohonan perantingan ini?",
+      "cancel": "Batal",
+      "yes": "Setuju",
+      "success": "Berhasil",
+      "successMessage": "Permohonan telah disetujui.",
+      "failed": "Gagal",
+      "failedMessage": "Tidak dapat menyetujui permohonan."
+    },
+    "reject": {
+      "reasonRequired": "Alasan diperlukan",
+      "reasonPrompt": "Mohon isi alasan penolakan permohonan ini.",
+      "success": "Berhasil",
+      "successMessage": "Permohonan telah ditolak.",
+      "failed": "Gagal",
+      "failedMessage": "Tidak dapat menolak permohonan."
+    },
+    "cancel": {
+      "confirm": "Batalkan Permohonan",
+      "question": "Apakah Anda yakin ingin membatalkan permohonan ini? Tindakan ini tidak dapat dibatalkan.",
+      "no": "Tidak",
+      "yes": "Ya, Batalkan",
+      "success": "Permohonan dibatalkan",
+      "failed": "Gagal membatalkan",
+      "failedRetry": "Coba lagi."
+    },
+    "reschedule": {
+      "title": "Atur Jadwal",
+      "selectDate": "Pilih tanggal",
+      "selectDateHint": "Tap salah satu tanggal yang tersedia di kalender.",
+      "helper": "Pilih tanggal kerja untuk permohonan {{code}}.",
+      "cancel": "Batal",
+      "saving": "Menyimpan…",
+      "save": "Simpan",
+      "successTitle": "Jadwal diperbarui",
+      "successMessage": "Tanggal dijadwalkan: {{date}}",
+      "failedTitle": "Gagal menyimpan",
+      "failedMessage": "Coba lagi."
+    }
   }
 }

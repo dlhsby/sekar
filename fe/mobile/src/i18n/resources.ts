@@ -29,6 +29,7 @@ import idAssets from './locales/id/assets.json';
 import idSchedules from './locales/id/schedules.json';
 import idOnboarding from './locales/id/onboarding.json';
 import idImport from './locales/id/import.json';
+import idInstallHelp from './locales/id/install-help.json';
 
 import enCommon from './locales/en/common.json';
 import enAuth from './locales/en/auth.json';
@@ -56,6 +57,7 @@ import enAssets from './locales/en/assets.json';
 import enSchedules from './locales/en/schedules.json';
 import enOnboarding from './locales/en/onboarding.json';
 import enImport from './locales/en/import.json';
+import enInstallHelp from './locales/en/install-help.json';
 
 export const resources = {
   id: {
@@ -85,6 +87,7 @@ export const resources = {
     schedules: idSchedules,
     onboarding: idOnboarding,
     import: idImport,
+    'install-help': idInstallHelp,
   },
   en: {
     common: enCommon,
@@ -113,6 +116,7 @@ export const resources = {
     schedules: enSchedules,
     onboarding: enOnboarding,
     import: enImport,
+    'install-help': enInstallHelp,
   },
 } as const;
 
@@ -143,6 +147,7 @@ export const NAMESPACES = [
   'schedules',
   'onboarding',
   'import',
+  'install-help',
 ] as const;
 
 export const SUPPORTED_LANGUAGES = ['id', 'en'] as const;

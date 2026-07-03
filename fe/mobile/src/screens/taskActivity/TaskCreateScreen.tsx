@@ -11,6 +11,7 @@ import {
   SafeAreaView,
   Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { MainTabScreenProps } from '../../types/navigation.types';
@@ -46,6 +47,7 @@ const AREA_FIXED_ROLES: UserRole[] = ['korlap'];
  * Task Create Screen Component
  */
 export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation<MainTabScreenProps<'TaskCreate'>['navigation']>();
   const { role, canCreateTask } = useRoleAccess();
   const user = useAppSelector((state) => state.auth.user);
@@ -109,10 +111,10 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
 
   useEffect(() => {
     if (!canCreateTask) {
-      NBToast.show({ level: 'danger', title: 'Akses Ditolak', body: 'Anda tidak memiliki izin untuk membuat tugas.' });
+      NBToast.show({ level: 'danger', title: t('tasks:create.accessDenied'), body: t('tasks:create.accessDeniedMessage') });
       (navigation as any).navigate('Tasks');
     }
-  }, [canCreateTask, navigation]);
+  }, [canCreateTask, navigation, t]);
 
   const needsAreaSelection = !isAreaFixed && !form.areaId;
 
@@ -124,11 +126,11 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
       return;
     }
     Alert.alert(
-      'Simpan Draft?',
-      'Anda memiliki perubahan yang belum disimpan.',
+      t('tasks:create.cancelConfirm'),
+      t('tasks:create.cancelConfirm'),
       [
         {
-          text: 'Tidak',
+          text: t('tasks:create.cancelNo'),
           style: 'destructive',
           onPress: async () => {
             await clearDraft();
@@ -137,7 +139,7 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
           },
         },
         {
-          text: 'Ya',
+          text: t('tasks:create.cancelYes'),
           onPress: async () => {
             await saveDraftRef.current?.();
             resetForm();
@@ -152,10 +154,10 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <FieldHomeHeader title="Buat Tugas" onBack={handleLeave} />
+        <FieldHomeHeader title={t('tasks:create.title')} onBack={handleLeave} />
       ),
     });
-  }, [navigation, handleLeave]);
+  }, [navigation, handleLeave, t]);
 
   const handleSubmit = useCallback(async () => {
     if (!validateForm()) {
@@ -180,14 +182,14 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
       if (response.data) {
         await clearDraft();
         resetForm();
-        NBToast.show({ level: 'success', title: 'Berhasil', body: 'Tugas berhasil dibuat.' });
+        NBToast.show({ level: 'success', title: t('tasks:create.successTitle'), body: t('tasks:create.successMessage') });
         (navigation as any).navigate('Tasks');
       } else if (response.error) {
-        NBToast.show({ level: 'danger', title: 'Gagal', body: response.error });
+        NBToast.show({ level: 'danger', title: t('tasks:create.failureTitle'), body: response.error });
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Gagal membuat tugas';
-      NBToast.show({ level: 'danger', title: 'Gagal', body: message });
+      const message = error instanceof Error ? error.message : t('tasks:create.failureMessage');
+      NBToast.show({ level: 'danger', title: t('tasks:create.failureTitle'), body: message });
     } finally {
       setIsSubmitting(false);
     }
@@ -226,7 +228,7 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
                 <MaterialCommunityIcons name="alert-circle-outline" size={14} color={nbColors.danger} />
                 <NBText variant="body-sm" style={styles.errorSummaryTitle}>
                   {' '}
-                  Mohon lengkapi data berikut:
+                  {t('activities:submission.errorSummary')}
                 </NBText>
               </View>
               {Object.values(errors)
@@ -305,7 +307,7 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
           <View style={styles.fabButtonRow}>
             <View style={styles.fabButtonHalf}>
               <NBButton
-                title="Batal"
+                title={t('tasks:actionButtons.cancel')}
                 variant="secondary"
                 onPress={handleLeave}
                 disabled={isSubmitting}
@@ -315,7 +317,7 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
             </View>
             <View style={styles.fabButtonHalf}>
               <NBButton
-                title={isSubmitting ? 'Membuat...' : 'Buat Tugas'}
+                title={isSubmitting ? `${t('common:status.loading')}...` : t('tasks:create.title')}
                 onPress={handleSubmit}
                 loading={isSubmitting}
                 disabled={isSubmitting}

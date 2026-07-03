@@ -100,5 +100,47 @@
     "approveButtonTitle": "Approve",
     "rejectButtonTitle": "Reject",
     "resultsCardTitle": "Review Results"
+  },
+  "actions": {
+    "approve": {
+      "confirm": "Confirm",
+      "question": "Approve this pruning request?",
+      "cancel": "Cancel",
+      "yes": "Approve",
+      "success": "Success",
+      "successMessage": "Request approved.",
+      "failed": "Failed",
+      "failedMessage": "Could not approve request."
+    },
+    "reject": {
+      "reasonRequired": "Reason required",
+      "reasonPrompt": "Please provide a reason for rejecting this request.",
+      "success": "Success",
+      "successMessage": "Request rejected.",
+      "failed": "Failed",
+      "failedMessage": "Could not reject request."
+    },
+    "cancel": {
+      "confirm": "Cancel Request",
+      "question": "Are you sure you want to cancel this request? This action cannot be undone.",
+      "no": "No",
+      "yes": "Yes, Cancel",
+      "success": "Request cancelled",
+      "failed": "Failed to cancel",
+      "failedRetry": "Please try again."
+    },
+    "reschedule": {
+      "title": "Schedule",
+      "selectDate": "Select date",
+      "selectDateHint": "Tap one of the available dates on the calendar.",
+      "helper": "Select a working date for request {{code}}.",
+      "cancel": "Cancel",
+      "saving": "Saving…",
+      "save": "Save",
+      "successTitle": "Schedule updated",
+      "successMessage": "Date scheduled: {{date}}",
+      "failedTitle": "Failed to save",
+      "failedMessage": "Please try again."
+    }
   }
 }

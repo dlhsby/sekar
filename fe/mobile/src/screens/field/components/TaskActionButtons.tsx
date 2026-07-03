@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import {
   NBButton,
   NBSelect,
@@ -31,6 +32,7 @@ export function TaskActionButtons({
   loadingSubordinates,
   onAssignClick,
 }: TaskActionButtonsProps): React.JSX.Element {
+  const { t } = useTranslation();
   const {
     showAccept,
     showDecline,
@@ -73,7 +75,7 @@ export function TaskActionButtons({
       {/* Assign / Reassign buttons */}
       {(showAssign || showReassign || showReassignByCreator) && !showAssignInput && (
         <NBButton
-          title={showAssign ? 'Tugaskan' : 'Tugaskan Ulang'}
+          title={showAssign ? t('tasks:actionButtons.assign') : t('tasks:actionButtons.reassign')}
           variant="primary"
           onPress={onAssignClick}
           disabled={isSubmitting}
@@ -86,15 +88,15 @@ export function TaskActionButtons({
           <NBSelect
             label={
               showDelegate
-                ? 'Disposisi ke Bawahan'
+                ? t('tasks:actionButtons.selectDelegate')
                 : (showReassign || showReassignByCreator)
-                  ? 'Pilih Petugas Pengganti'
-                  : 'Pilih Petugas'
+                  ? t('tasks:actionButtons.selectReplacement')
+                  : t('tasks:actionButtons.selectOfficer')
             }
             value={assigneeId}
             onValueChange={(v) => setAssigneeId(String(v))}
             options={[
-              { label: '— Pilih Petugas —', value: '' },
+              { label: t('tasks:actionButtons.placeholder'), value: '' },
               ...subordinates.map((u) => ({
                 label: formatUser(u),
                 value: u.id,
@@ -106,7 +108,7 @@ export function TaskActionButtons({
           <View style={[styles.buttonRow, { marginTop: 12 }]}>
             <View style={styles.buttonHalf}>
               <NBButton
-                title="Batal"
+                title={t('tasks:actionButtons.cancel')}
                 variant="secondary"
                 onPress={() => { setShowAssignInput(false); setAssigneeId(''); }}
                 disabled={isSubmitting}
@@ -114,7 +116,7 @@ export function TaskActionButtons({
             </View>
             <View style={styles.buttonHalf}>
               <NBButton
-                title="Tugaskan"
+                title={t('tasks:actionButtons.submit')}
                 variant="primary"
                 onPress={actions.handleAssignSubmit}
                 disabled={isSubmitting || !assigneeId}
@@ -130,12 +132,12 @@ export function TaskActionButtons({
         <View style={styles.buttonRow}>
           {showAccept && (
             <View style={styles.buttonHalf}>
-              <NBButton title="Terima" variant="success" onPress={handleAccept} disabled={isSubmitting} loading={isSubmitting} />
+              <NBButton title={t('tasks:actionButtons.accept')} variant="success" onPress={handleAccept} disabled={isSubmitting} loading={isSubmitting} />
             </View>
           )}
           {showDecline && (
             <View style={styles.buttonHalf}>
-              <NBButton title="Tolak" variant="danger" onPress={handleDecline} disabled={isSubmitting} />
+              <NBButton title={t('tasks:actionButtons.decline')} variant="danger" onPress={handleDecline} disabled={isSubmitting} />
             </View>
           )}
         </View>
@@ -144,7 +146,7 @@ export function TaskActionButtons({
       {/* Delegate button */}
       {showDelegate && !showAssignInput && !showDeclineInput && (
         <NBButton
-          title="Disposisi ke Bawahan"
+          title={t('tasks:actionButtons.delegate')}
           variant="info"
           onPress={onAssignClick}
           disabled={isSubmitting}
@@ -155,20 +157,20 @@ export function TaskActionButtons({
       {showDeclineInput && (
         <View style={styles.inputSection}>
           <NBCardTextInput
-            title="📝 Alasan Penolakan"
+            title={`📝 ${t('tasks:actionButtons.declineReason')}`}
             required
             value={declineReason}
             onChangeText={setDeclineReason}
-            placeholder="Jelaskan alasan penolakan tugas ini..."
+            placeholder={t('tasks:actionButtons.declineReasonPlaceholder')}
             maxLength={1000}
             numberOfLines={4}
           />
           <View style={styles.buttonRow}>
             <View style={styles.buttonHalf}>
-              <NBButton title="Batal" variant="secondary" onPress={() => { setShowDeclineInput(false); setDeclineReason(''); }} disabled={isSubmitting} />
+              <NBButton title={t('tasks:actionButtons.cancel')} variant="secondary" onPress={() => { setShowDeclineInput(false); setDeclineReason(''); }} disabled={isSubmitting} />
             </View>
             <View style={styles.buttonHalf}>
-              <NBButton title="Kirim Penolakan" variant="danger" onPress={handleDeclineSubmit} disabled={isSubmitting || !declineReason.trim()} loading={isSubmitting} />
+              <NBButton title={t('tasks:actionButtons.sendDecline')} variant="danger" onPress={handleDeclineSubmit} disabled={isSubmitting || !declineReason.trim()} loading={isSubmitting} />
             </View>
           </View>
         </View>
@@ -176,12 +178,12 @@ export function TaskActionButtons({
 
       {/* Start button */}
       {showStart && (
-        <NBButton title="Mulai Kerjakan" variant="primary" onPress={handleStart} disabled={isSubmitting} loading={isSubmitting} />
+        <NBButton title={t('tasks:actionButtons.start')} variant="primary" onPress={handleStart} disabled={isSubmitting} loading={isSubmitting} />
       )}
 
       {/* Complete button */}
       {showComplete && (
-        <NBButton title="Selesaikan Tugas" variant="success" onPress={handleComplete} disabled={isSubmitting} />
+        <NBButton title={t('tasks:actionButtons.complete')} variant="success" onPress={handleComplete} disabled={isSubmitting} />
       )}
 
       {/* Verify + Revision buttons */}
@@ -189,12 +191,12 @@ export function TaskActionButtons({
         <View style={styles.buttonRow}>
           {showVerify && (
             <View style={styles.buttonHalf}>
-              <NBButton title="Verifikasi" variant="success" onPress={handleVerify} disabled={isSubmitting} loading={isSubmitting} />
+              <NBButton title={t('tasks:actionButtons.verify')} variant="success" onPress={handleVerify} disabled={isSubmitting} loading={isSubmitting} />
             </View>
           )}
           {showRevision && (
             <View style={styles.buttonHalf}>
-              <NBButton title="Minta Revisi" variant="info" onPress={handleRevision} disabled={isSubmitting} />
+              <NBButton title={t('tasks:actionButtons.revision')} variant="info" onPress={handleRevision} disabled={isSubmitting} />
             </View>
           )}
         </View>
@@ -204,20 +206,20 @@ export function TaskActionButtons({
       {showRevisionInput && (
         <View style={styles.inputSection}>
           <NBCardTextInput
-            title="📝 Alasan Revisi"
+            title={`📝 ${t('tasks:actionButtons.revisionReason')}`}
             required
             value={revisionReason}
             onChangeText={setRevisionReason}
-            placeholder="Jelaskan alasan mengapa tugas perlu direvisi..."
+            placeholder={t('tasks:actionButtons.revisionReasonPlaceholder')}
             maxLength={1000}
             numberOfLines={4}
           />
           <View style={styles.buttonRow}>
             <View style={styles.buttonHalf}>
-              <NBButton title="Batal" variant="secondary" onPress={() => { setShowRevisionInput(false); setRevisionReason(''); }} disabled={isSubmitting} />
+              <NBButton title={t('tasks:actionButtons.cancel')} variant="secondary" onPress={() => { setShowRevisionInput(false); setRevisionReason(''); }} disabled={isSubmitting} />
             </View>
             <View style={styles.buttonHalf}>
-              <NBButton title="Kirim Revisi" variant="info" onPress={handleRevisionSubmit} disabled={isSubmitting || !revisionReason.trim()} loading={isSubmitting} />
+              <NBButton title={t('tasks:actionButtons.sendRevision')} variant="info" onPress={handleRevisionSubmit} disabled={isSubmitting || !revisionReason.trim()} loading={isSubmitting} />
             </View>
           </View>
         </View>

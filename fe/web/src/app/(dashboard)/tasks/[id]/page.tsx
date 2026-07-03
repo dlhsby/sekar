@@ -176,14 +176,14 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
               loading={verifyMutation.isPending}
               leftIcon={<Check className="w-4 h-4" />}
             >
-              Verifikasi
+              {t('tasks:detail.verifyButton')}
             </Button>
             <Button
               variant="destructive"
               onClick={() => setShowRevisionForm(true)}
               leftIcon={<RotateCcw className="w-4 h-4" />}
             >
-              Minta Revisi
+              {t('tasks:detail.requestRevisionButton')}
             </Button>
           </div>
         )}
@@ -194,7 +194,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
         <Card variant="elevated">
           <CardContent>
             <div className="space-y-3">
-              <h3 className="font-bold text-nb-black">Alasan Revisi</h3>
+              <h3 className="font-bold text-nb-black">{t('tasks:detail.revisionFormTitle')}</h3>
               <FormInput
                 label={t("tasks:detail.revisionFormLabel")}
                 value={revisionReason}
@@ -209,7 +209,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                   disabled={!revisionReason.trim() || revisionMutation.isPending}
                   loading={revisionMutation.isPending}
                 >
-                  Kirim Revisi
+                  {t('tasks:detail.revisionFormSubmit')}
                 </Button>
                 <Button
                   variant="secondary"
@@ -219,7 +219,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                     setRevisionReason('');
                   }}
                 >
-                  Batal
+                  {t('tasks:detail.revisionFormCancel')}
                 </Button>
               </div>
             </div>
@@ -231,33 +231,33 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
         {/* Task Info */}
         <Card variant="elevated">
           <CardHeader>
-            <h2 className="text-xl font-bold text-nb-black">Informasi Tugas</h2>
+            <h2 className="text-xl font-bold text-nb-black">{t('tasks:sections.taskInfo')}</h2>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {task.description && (
                 <div>
-                  <div className="text-sm font-semibold text-nb-gray-600">Deskripsi</div>
+                  <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.description')}</div>
                   <div className="text-nb-gray-700">{task.description}</div>
                 </div>
               )}
               {task.due_date && (
                 <div>
-                  <div className="text-sm font-semibold text-nb-gray-600">Tenggat Waktu</div>
+                  <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.dueDate')}</div>
                   <div className="font-bold text-nb-black">
                     {new Date(task.due_date).toLocaleDateString('id-ID')}
                   </div>
                 </div>
               )}
               <div>
-                <div className="text-sm font-semibold text-nb-gray-600">Dibuat</div>
+                <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.created')}</div>
                 <div className="font-bold text-nb-black">
                   {new Date(task.created_at).toLocaleString('id-ID')}
                 </div>
               </div>
               {task.activity_type && (
                 <div>
-                  <div className="text-sm font-semibold text-nb-gray-600">Tipe Aktivitas</div>
+                  <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.activityType')}</div>
                   <div className="font-bold text-nb-black">{task.activity_type.name}</div>
                 </div>
               )}
@@ -268,31 +268,31 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
         {/* Assignment Info */}
         <Card variant="elevated">
           <CardHeader>
-            <h2 className="text-xl font-bold text-nb-black">Penugasan</h2>
+            <h2 className="text-xl font-bold text-nb-black">{t('tasks:sections.assignment')}</h2>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {task.creator && (
                 <div>
-                  <div className="text-sm font-semibold text-nb-gray-600">Pembuat</div>
+                  <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.creator')}</div>
                   <div className="font-bold text-nb-black">{task.creator.full_name}</div>
                 </div>
               )}
               {task.assigned_to && (
                 <div>
-                  <div className="text-sm font-semibold text-nb-gray-600">Ditugaskan Ke</div>
+                  <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.assignedTo')}</div>
                   <div className="font-bold text-nb-black">{task.assigned_to.full_name}</div>
                 </div>
               )}
               {task.assigned_by && (
                 <div>
-                  <div className="text-sm font-semibold text-nb-gray-600">Ditugaskan Oleh</div>
+                  <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.assignedBy')}</div>
                   <div className="font-bold text-nb-black">{task.assigned_by.full_name}</div>
                 </div>
               )}
               {task.assigned_at && (
                 <div>
-                  <div className="text-sm font-semibold text-nb-gray-600">Tanggal Penugasan</div>
+                  <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.assignedDate')}</div>
                   <div className="text-nb-black">
                     {new Date(task.assigned_at).toLocaleString('id-ID')}
                   </div>
@@ -300,13 +300,13 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
               )}
               {task.area && (
                 <div>
-                  <div className="text-sm font-semibold text-nb-gray-600">Area</div>
+                  <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.area')}</div>
                   <div className="font-bold text-nb-black">{task.area.name}</div>
                 </div>
               )}
               {task.rayon && (
                 <div>
-                  <div className="text-sm font-semibold text-nb-gray-600">Rayon</div>
+                  <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.rayon')}</div>
                   <div className="font-bold text-nb-black">{task.rayon.name}</div>
                 </div>
               )}
@@ -319,7 +319,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
       {task.tags && task.tags.length > 0 && (
         <Card variant="elevated">
           <CardHeader>
-            <h2 className="text-xl font-bold text-nb-black">Ditandai ({task.tags.length})</h2>
+            <h2 className="text-xl font-bold text-nb-black">{t('tasks:detail.taggedTitle', { count: task.tags.length })}</h2>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -339,7 +339,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                       disabled={untagMutation.isPending}
                       leftIcon={<X className="w-3 h-3" />}
                     >
-                      Hapus Tag
+                      {t('tasks:detail.removeTagButton')}
                     </Button>
                   )}
                 </div>
@@ -353,17 +353,17 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
       {task.status === 'declined' && task.decline_reason && (
         <Card variant="elevated">
           <CardHeader>
-            <h2 className="text-xl font-bold text-nb-black">Penolakan</h2>
+            <h2 className="text-xl font-bold text-nb-black">{t('tasks:sections.decline')}</h2>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div>
-                <div className="text-sm font-semibold text-nb-gray-600">Alasan Penolakan</div>
+                <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.declineReason')}</div>
                 <div className="text-nb-gray-700">{task.decline_reason}</div>
               </div>
               {task.declined_at && (
                 <div>
-                  <div className="text-sm font-semibold text-nb-gray-600">Tanggal Tolak</div>
+                  <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.declineDate')}</div>
                   <div className="text-nb-black">
                     {new Date(task.declined_at).toLocaleString('id-ID')}
                   </div>
@@ -378,19 +378,19 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
       {(task.status === 'completed' || task.status === 'verified') && (
         <Card variant="elevated">
           <CardHeader>
-            <h2 className="text-xl font-bold text-nb-black">Penyelesaian</h2>
+            <h2 className="text-xl font-bold text-nb-black">{t('tasks:sections.completion')}</h2>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {task.completion_notes && (
                 <div>
-                  <div className="text-sm font-semibold text-nb-gray-600">Catatan Penyelesaian</div>
+                  <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.completionNotes')}</div>
                   <div className="text-nb-gray-700">{task.completion_notes}</div>
                 </div>
               )}
               {task.completed_at && (
                 <div>
-                  <div className="text-sm font-semibold text-nb-gray-600">Tanggal Selesai</div>
+                  <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.completionDate')}</div>
                   <div className="text-nb-black">
                     {new Date(task.completed_at).toLocaleString('id-ID')}
                   </div>
@@ -426,19 +426,19 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
       {task.status === 'verified' && (
         <Card variant="elevated">
           <CardHeader>
-            <h2 className="text-xl font-bold text-nb-black">Verifikasi</h2>
+            <h2 className="text-xl font-bold text-nb-black">{t('tasks:sections.verification')}</h2>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {task.verifier && (
                 <div>
-                  <div className="text-sm font-semibold text-nb-gray-600">Diverifikasi Oleh</div>
+                  <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:detail.verifiedBy')}</div>
                   <div className="font-bold text-nb-black">{task.verifier.full_name}</div>
                 </div>
               )}
               {task.verified_at && (
                 <div>
-                  <div className="text-sm font-semibold text-nb-gray-600">Tanggal Verifikasi</div>
+                  <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:detail.verificationDate')}</div>
                   <div className="text-nb-black">
                     {new Date(task.verified_at).toLocaleString('id-ID')}
                   </div>
@@ -453,9 +453,9 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
       {delegations.length > 0 && (
         <Card variant="elevated">
           <CardHeader>
-            <h2 className="text-xl font-bold text-nb-black">Riwayat Penugasan</h2>
+            <h2 className="text-xl font-bold text-nb-black">{t('tasks:sections.delegationHistory')}</h2>
             <p className="text-sm text-nb-gray-600 mt-1">
-              Rangkaian disposisi dari pembuat tugas ke pelaksana akhir.
+              {t('tasks:detail.delegationHistoryDescription')}
             </p>
           </CardHeader>
           <CardContent>
@@ -486,10 +486,9 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
       {canDelegate && (
         <Card variant="elevated">
           <CardHeader>
-            <h2 className="text-xl font-bold text-nb-black">Disposisi Tugas</h2>
+            <h2 className="text-xl font-bold text-nb-black">{t('tasks:sections.disposition')}</h2>
             <p className="text-sm text-nb-gray-600 mt-1">
-              Limpahkan tugas ini ke bawahan Anda sebelum diterima. Setelah disposisi,
-              penerima berikutnya akan menerima notifikasi dan rangkaian dicatat di Riwayat Penugasan.
+              {t('tasks:detail.dispositionDescription')}
             </p>
           </CardHeader>
           <CardContent>
@@ -499,16 +498,16 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                 onClick={() => setShowDelegateForm(true)}
                 leftIcon={<Send className="w-4 h-4" />}
               >
-                Disposisi ke Bawahan
+                {t('tasks:detail.delegateButton')}
               </Button>
             ) : (
               <div className="space-y-3">
                 <FormSelect
-                  label="Penerima Disposisi"
+                  label={t('tasks:detail.delegateRecipientLabel')}
                   value={delegateUserId}
                   onChange={setDelegateUserId}
                   options={[
-                    { value: '', label: 'Pilih penerima…' },
+                    { value: '', label: t('tasks:detail.delegateRecipientPlaceholder') },
                     ...delegateCandidates.map((u) => ({
                       value: u.id,
                       label: `${u.full_name} (${u.role})`,
@@ -517,7 +516,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                 />
                 {delegateCandidates.length === 0 && (
                   <p className="text-sm text-nb-danger">
-                    Tidak ada bawahan yang valid untuk dipilih.
+                    {t('tasks:detail.delegateNoSubordinates')}
                   </p>
                 )}
                 <div className="flex gap-2">
@@ -528,7 +527,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                     disabled={!delegateUserId || assignMutation.isPending}
                     loading={assignMutation.isPending}
                   >
-                    Kirim Disposisi
+                    {t('tasks:detail.delegateSubmitButton')}
                   </Button>
                   <Button
                     variant="secondary"
@@ -538,7 +537,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                       setDelegateUserId('');
                     }}
                   >
-                    Batal
+                    {t('tasks:detail.delegateCancelButton')}
                   </Button>
                 </div>
               </div>
@@ -551,11 +550,11 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
       {task.status === 'revision_needed' && task.revision_reason && (
         <Card variant="elevated">
           <CardHeader>
-            <h2 className="text-xl font-bold text-nb-black">Permintaan Revisi</h2>
+            <h2 className="text-xl font-bold text-nb-black">{t('tasks:sections.revisionRequest')}</h2>
           </CardHeader>
           <CardContent>
             <div>
-              <div className="text-sm font-semibold text-nb-gray-600">Alasan Revisi</div>
+              <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.declineReason')}</div>
               <div className="text-nb-gray-700">{task.revision_reason}</div>
             </div>
           </CardContent>

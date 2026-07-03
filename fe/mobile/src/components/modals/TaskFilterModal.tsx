@@ -12,6 +12,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { NBSelect, NBDatePicker, NBModal } from '../nb';
 import {
@@ -85,6 +86,7 @@ export function TaskFilterModal({
   userAreaId,
   userId,
 }: TaskFilterModalProps): React.JSX.Element {
+  const { t } = useTranslation();
   // satgas, linmas, korlap: area is fixed to their assigned area
   const isAreaFixed = useMemo(() =>
     (userRole === 'satgas' || userRole === 'linmas' || userRole === 'korlap') && !!userAreaId
@@ -296,7 +298,7 @@ export function TaskFilterModal({
     <NBModal
       visible={visible}
       onClose={onClose}
-      title="Filter Tugas"
+      title={t('tasks:filter.title')}
       footer={
         <View style={styles.actionButtons}>
           <TouchableOpacity
@@ -304,34 +306,34 @@ export function TaskFilterModal({
             onPress={handleReset}
             accessibilityRole="button"
           >
-            <Text style={styles.resetButtonText}>Reset</Text>
+            <Text style={styles.resetButtonText}>{t('tasks:filter.reset')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionButton, styles.applyButton]}
             onPress={handleApply}
             accessibilityRole="button"
           >
-            <Text style={styles.applyButtonText}>Terapkan</Text>
+            <Text style={styles.applyButtonText}>{t('tasks:filter.apply')}</Text>
           </TouchableOpacity>
         </View>
       }
     >
       {/* 1. Status */}
       <View style={styles.filterSection}>
-        <Text style={styles.filterLabel}>Status</Text>
+        <Text style={styles.filterLabel}>{t('tasks:filter.status')}</Text>
         <NBSelect
           value={localStatusFilter}
           onValueChange={(v) => setLocalStatusFilter(v as TaskStatus | 'all')}
           options={[
-            { label: 'Semua Status', value: 'all' },
-            { label: 'Menunggu', value: 'pending' },
-            { label: 'Ditugaskan', value: 'assigned' },
-            { label: 'Diterima', value: 'accepted' },
-            { label: 'Ditolak', value: 'declined' },
-            { label: 'Dikerjakan', value: 'in_progress' },
-            { label: 'Menunggu Verifikasi', value: 'completed' },
-            { label: 'Terverifikasi', value: 'verified' },
-            { label: 'Perlu Revisi', value: 'revision_needed' },
+            { label: t('tasks:filter.statusOptions.all'), value: 'all' },
+            { label: t('tasks:filter.statusOptions.pending'), value: 'pending' },
+            { label: t('tasks:filter.statusOptions.assigned'), value: 'assigned' },
+            { label: t('tasks:filter.statusOptions.accepted'), value: 'accepted' },
+            { label: t('tasks:filter.statusOptions.declined'), value: 'declined' },
+            { label: t('tasks:filter.statusOptions.inProgress'), value: 'in_progress' },
+            { label: t('tasks:filter.statusOptions.completed'), value: 'completed' },
+            { label: t('tasks:filter.statusOptions.verified'), value: 'verified' },
+            { label: t('tasks:filter.statusOptions.revisionNeeded'), value: 'revision_needed' },
           ]}
           searchable
         />
@@ -339,13 +341,13 @@ export function TaskFilterModal({
 
       {/* 2. Tanggal Dibuat */}
       <View style={styles.filterSection}>
-        <Text style={styles.filterLabel}>Tanggal Dibuat</Text>
+        <Text style={styles.filterLabel}>{t('tasks:filter.createdDate')}</Text>
         <View style={styles.dateRangeRow}>
           <View style={styles.dateButtonHalf}>
             <NBDatePicker
               value={createdFromParsed}
               onChange={(date) => setLocalCreatedFrom(toFilterDateString(date))}
-              label="Dari"
+              label={t('tasks:filter.dateFrom')}
               maximumDate={createdToParsed ?? undefined}
             />
           </View>
@@ -356,7 +358,7 @@ export function TaskFilterModal({
             <NBDatePicker
               value={createdToParsed}
               onChange={(date) => setLocalCreatedTo(toFilterDateString(date))}
-              label="Sampai"
+              label={t('tasks:filter.dateTo')}
               minimumDate={createdFromParsed ?? undefined}
             />
           </View>
@@ -365,13 +367,13 @@ export function TaskFilterModal({
 
       {/* 3. Deadline */}
       <View style={styles.filterSection}>
-        <Text style={styles.filterLabel}>Deadline</Text>
+        <Text style={styles.filterLabel}>{t('tasks:filter.deadline')}</Text>
         <View style={styles.dateRangeRow}>
           <View style={styles.dateButtonHalf}>
             <NBDatePicker
               value={dateFromParsed}
               onChange={(date) => setLocalDateFrom(toFilterDateString(date))}
-              label="Dari"
+              label={t('tasks:filter.dateFrom')}
               maximumDate={dateToParsed ?? undefined}
             />
           </View>
@@ -382,7 +384,7 @@ export function TaskFilterModal({
             <NBDatePicker
               value={dateToParsed}
               onChange={(date) => setLocalDateTo(toFilterDateString(date))}
-              label="Sampai"
+              label={t('tasks:filter.dateTo')}
               minimumDate={dateFromParsed ?? undefined}
             />
           </View>
@@ -392,12 +394,12 @@ export function TaskFilterModal({
       {/* 4. Rayon — role-gated */}
       {showRayon && (
         <View style={styles.filterSection}>
-          <Text style={styles.filterLabel}>Rayon</Text>
+          <Text style={styles.filterLabel}>{t('tasks:filter.rayon')}</Text>
           {isRayonFixed ? (
             <NBSelect
               value={userRayonId ?? 'all'}
               onValueChange={() => {}}
-              options={[{ label: userRayonId ? 'Rayon Saya' : 'Semua Rayon', value: userRayonId ?? 'all' }]}
+              options={[{ label: userRayonId ? t('tasks:filter.rayonOptions.mine') : t('tasks:filter.rayonOptions.all'), value: userRayonId ?? 'all' }]}
               disabled={true}
             />
           ) : (
@@ -405,7 +407,7 @@ export function TaskFilterModal({
               value={localRayonFilter || 'all'}
               onValueChange={handleRayonChange}
               options={[
-                { label: 'Semua Rayon', value: 'all' },
+                { label: t('tasks:filter.rayonOptions.all'), value: 'all' },
                 ...rayons.map(r => ({ label: r.name, value: r.id })),
               ]}
               disabled={loadingRayons}
@@ -417,12 +419,12 @@ export function TaskFilterModal({
 
       {/* 5. Area */}
       <View style={styles.filterSection}>
-        <Text style={styles.filterLabel}>Area</Text>
+        <Text style={styles.filterLabel}>{t('tasks:filter.area')}</Text>
         {isAreaFixed ? (
           <NBSelect
             value={userAreaId ?? 'all'}
             onValueChange={() => {}}
-            options={[{ label: userAreaId ? 'Area Saya' : 'Semua Area', value: userAreaId ?? 'all' }]}
+            options={[{ label: userAreaId ? t('tasks:filter.areaOptions.mine') : t('tasks:filter.areaOptions.all'), value: userAreaId ?? 'all' }]}
             disabled={true}
           />
         ) : canFilterRayon || isRayonFixed || userRayonId ? (
@@ -430,7 +432,7 @@ export function TaskFilterModal({
             value={localAreaFilter || 'all'}
             onValueChange={handleAreaChange}
             options={[
-              { label: 'Semua Area', value: 'all' },
+              { label: t('tasks:filter.areaOptions.all'), value: 'all' },
               ...areas.map(a => ({ label: a.name, value: a.id })),
             ]}
             disabled={loadingAreas}
@@ -441,16 +443,16 @@ export function TaskFilterModal({
 
       {/* 6. Penugasan */}
       <View style={styles.filterSection}>
-        <Text style={styles.filterLabel}>Penugasan</Text>
+        <Text style={styles.filterLabel}>{t('tasks:filter.assignment')}</Text>
         <NBSelect
           value={localAssigneeFilter}
           onValueChange={(v) => setLocalAssigneeFilter(String(v))}
           options={[
-            { label: 'Semua Petugas (Termasuk Saya)', value: 'all' },
-            { label: 'Ditugaskan Kepada Saya', value: 'assigned' },
-            ...(canCreateTask ? [{ label: 'Dibuat oleh Saya', value: 'created_by_me' }] : []),
-            ...(hasSubordinates ? [{ label: 'Semua Bawahan', value: 'all_subordinates' }] : []),
-            { label: 'Tag Saya', value: 'tagged' },
+            { label: t('tasks:filter.assignmentOptions.all'), value: 'all' },
+            { label: t('tasks:filter.assignmentOptions.assigned'), value: 'assigned' },
+            ...(canCreateTask ? [{ label: t('tasks:filter.assignmentOptions.createdByMe'), value: 'created_by_me' }] : []),
+            ...(hasSubordinates ? [{ label: t('tasks:filter.assignmentOptions.allSubordinates'), value: 'all_subordinates' }] : []),
+            { label: t('tasks:filter.assignmentOptions.tagged'), value: 'tagged' },
             ...users.map((u) => ({
               label: `${toTitleCase(u.role)} - ${u.full_name}`,
               value: u.id,

@@ -5,6 +5,7 @@
 
 import React, { useCallback } from 'react';
 import { Alert, ScrollView } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '../../../store/hooks';
 import {
   reviewPruningRequest,
@@ -25,16 +26,17 @@ export function usePruningRequestActions({
   request,
   scrollViewRef,
 }: UsePruningRequestActionsProps) {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
 
   const handleApprove = useCallback(async () => {
     Alert.alert(
-      'Konfirmasi',
-      'Setujui permohonan perantingan ini?',
+      t('pruning:actions.approve.confirm'),
+      t('pruning:actions.approve.question'),
       [
-        { text: 'Batal', style: 'cancel' },
+        { text: t('pruning:actions.approve.cancel'), style: 'cancel' },
         {
-          text: 'Setuju',
+          text: t('pruning:actions.approve.yes'),
           onPress: async () => {
             try {
               await dispatch(
@@ -42,21 +44,21 @@ export function usePruningRequestActions({
               ).unwrap();
               NBToast.show({
                 level: 'success',
-                title: 'Berhasil',
-                body: 'Permohonan telah disetujui.',
+                title: t('pruning:actions.approve.success'),
+                body: t('pruning:actions.approve.successMessage'),
               });
             } catch (err: any) {
               NBToast.show({
                 level: 'danger',
-                title: 'Gagal',
-                body: err?.message || 'Tidak dapat menyetujui permohonan.',
+                title: t('pruning:actions.approve.failed'),
+                body: err?.message || t('pruning:actions.approve.failedMessage'),
               });
             }
           },
         },
       ],
     );
-  }, [dispatch, requestId]);
+  }, [dispatch, requestId, t]);
 
   const handleRejectPress = useCallback(() => {
     // Delegate state management to caller via onRejectPress callback
@@ -71,8 +73,8 @@ export function usePruningRequestActions({
       if (!rejectReason.trim()) {
         NBToast.show({
           level: 'warning',
-          title: 'Alasan diperlukan',
-          body: 'Mohon isi alasan penolakan permohonan ini.',
+          title: t('pruning:actions.reject.reasonRequired'),
+          body: t('pruning:actions.reject.reasonPrompt'),
         });
         return false;
       }
@@ -86,31 +88,31 @@ export function usePruningRequestActions({
         ).unwrap();
         NBToast.show({
           level: 'success',
-          title: 'Berhasil',
-          body: 'Permohonan telah ditolak.',
+          title: t('pruning:actions.reject.success'),
+          body: t('pruning:actions.reject.successMessage'),
         });
         return true;
       } catch (err: any) {
         NBToast.show({
           level: 'danger',
-          title: 'Gagal',
-          body: err?.message || 'Tidak dapat menolak permohonan.',
+          title: t('pruning:actions.reject.failed'),
+          body: err?.message || t('pruning:actions.reject.failedMessage'),
         });
         return false;
       }
     },
-    [dispatch, requestId],
+    [dispatch, requestId, t],
   );
 
   const handleCancel = useCallback(() => {
     if (!request) return;
     Alert.alert(
-      'Batalkan Permohonan',
-      'Apakah Anda yakin ingin membatalkan permohonan ini? Tindakan ini tidak dapat dibatalkan.',
+      t('pruning:actions.cancel.confirm'),
+      t('pruning:actions.cancel.question'),
       [
-        { text: 'Tidak', style: 'cancel' },
+        { text: t('pruning:actions.cancel.no'), style: 'cancel' },
         {
-          text: 'Ya, Batalkan',
+          text: t('pruning:actions.cancel.yes'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -119,22 +121,22 @@ export function usePruningRequestActions({
               ).unwrap();
               NBToast.show({
                 level: 'success',
-                title: 'Permohonan dibatalkan',
+                title: t('pruning:actions.cancel.success'),
                 body: request.referenceCode || '',
               });
               dispatch(fetchPruningRequestById(request.id));
             } catch (e) {
               NBToast.show({
                 level: 'danger',
-                title: 'Gagal membatalkan',
-                body: e instanceof Error ? e.message : 'Coba lagi.',
+                title: t('pruning:actions.cancel.failed'),
+                body: e instanceof Error ? e.message : t('pruning:actions.cancel.failedRetry'),
               });
             }
           },
         },
       ],
     );
-  }, [dispatch, request]);
+  }, [dispatch, request, t]);
 
   return {
     handleApprove,

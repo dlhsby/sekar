@@ -5,12 +5,12 @@
 
 'use client';
 
-import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/lib/auth/hooks';
 import { useCreateTask, type TaskPriority } from '@/lib/api/tasks';
 import { useUsers } from '@/lib/api/users';
 import { useAreas } from '@/lib/api/areas';
 import { useRayons } from '@/lib/api/rayons';
+import { useTranslation } from 'react-i18next';
 import {
   Card,
   CardHeader,
@@ -36,9 +36,9 @@ import {
 import type { UserRole } from '@/types/models';
 
 export default function CreateTaskPage() {
-  const { t } = useTranslation();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { t } = useTranslation('tasks');
 
   // State hooks - must be called unconditionally (Rules of Hooks)
   const [title, setTitle] = useState('');
@@ -83,7 +83,7 @@ export default function CreateTaskPage() {
     setError('');
 
     if (!title) {
-      setError(t('tasks:form.requiredError'));
+      setError(t('newPage.requiredError'));
       return;
     }
 
@@ -112,10 +112,10 @@ export default function CreateTaskPage() {
   const rayons = rayonsData || [];
 
   const priorityOptions = [
-    { value: 'low', label: t('tasks:form.priorityLow') },
-    { value: 'normal', label: t('tasks:form.priorityNormal') },
-    { value: 'high', label: t('tasks:form.priorityHigh') },
-    { value: 'urgent', label: t('tasks:form.priorityUrgent') },
+    { value: 'low', label: t('form.priorityLow') },
+    { value: 'normal', label: t('form.priorityNormal') },
+    { value: 'high', label: t('form.priorityHigh') },
+    { value: 'urgent', label: t('form.priorityUrgent') },
   ];
 
   return (
@@ -125,22 +125,22 @@ export default function CreateTaskPage() {
         onClick={() => router.push('/tasks')}
         className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wide text-nb-gray-700 transition-colors hover:text-nb-black"
       >
-        <ArrowLeft className="size-4" aria-hidden="true" /> {t("tasks:new.backButton")}
+        <ArrowLeft className="size-4" aria-hidden="true" /> {t('newPage.backButton')}
       </button>
 
       <PageHeader
-        description={t("tasks:new.pageHeader")}
+        description={t('newPage.pageHeader')}
       />
       {assignableRoles.length > 0 && (
         <p className="-mt-2 text-nb-caption text-nb-gray-500">
-          {t("tasks:new.assignableRoles", { roles: assignableRoles.map((r) => ROLE_LABELS[r]).join(', ') })}
+          {t('newPage.pageHeader', { roles: assignableRoles.map((r) => ROLE_LABELS[r]).join(', ') })}
         </p>
       )}
 
       <form onSubmit={handleSubmit}>
         <Card variant="elevated">
           <CardHeader>
-            <h2 className="text-xl font-bold text-nb-black">Informasi Tugas</h2>
+            <h2 className="text-xl font-bold text-nb-black">{t('newPage.cardTitle')}</h2>
           </CardHeader>
           <CardContent>
             {error && (
@@ -151,28 +151,28 @@ export default function CreateTaskPage() {
 
             <div className="space-y-6">
               <FormInput
-                label={t("tasks:form.titleLabel")}
+                label={t('newPage.formTitleLabel')}
                 type="text"
-                placeholder={t("tasks:form.titlePlaceholder")}
+                placeholder={t('newPage.formTitlePlaceholder')}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
               />
 
               <Textarea
-                label={t("tasks:form.descriptionLabel")}
+                label={t('newPage.formDescriptionLabel')}
                 rows={4}
-                placeholder={t("tasks:form.descriptionPlaceholder")}
+                placeholder={t('newPage.formDescriptionPlaceholder')}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
 
               <FormSelect
-                label={t("tasks:form.assignedToLabel")}
+                label={t('newPage.formAssignedToLabel')}
                 value={assignedTo}
                 onChange={(value) => setAssignedTo(value)}
                 options={[
-                  { value: 'none', label: 'Belum ditugaskan' },
+                  { value: 'none', label: t('newPage.formAssignedToPlaceholder') },
                   ...assignableUsers.map((u) => ({
                     value: u.id,
                     label: `${u.full_name || u.username} (${ROLE_LABELS[u.role] || u.role})`,
@@ -181,11 +181,11 @@ export default function CreateTaskPage() {
               />
 
               <FormSelect
-                label={t("tasks:form.rayonLabel")}
+                label={t('newPage.formRayonLabel')}
                 value={rayonId}
                 onChange={(value) => setRayonId(value)}
                 options={[
-                  { value: 'none', label: 'Pilih Rayon' },
+                  { value: 'none', label: t('newPage.formRayonPlaceholder') },
                   ...rayons.map((r) => ({
                     value: r.id,
                     label: r.name,
@@ -194,11 +194,11 @@ export default function CreateTaskPage() {
               />
 
               <FormSelect
-                label={t("tasks:form.areaLabel")}
+                label={t('newPage.formAreaLabel')}
                 value={areaId}
                 onChange={(value) => setAreaId(value)}
                 options={[
-                  { value: 'none', label: 'Pilih Area' },
+                  { value: 'none', label: t('newPage.formAreaPlaceholder') },
                   ...areas.map((a) => ({
                     value: a.id,
                     label: `${a.name} (${a.code})`,
@@ -207,13 +207,13 @@ export default function CreateTaskPage() {
               />
 
               <FormSelect
-                label={t("tasks:form.priorityLabel")}
+                label={t('newPage.formPriorityLabel')}
                 value={priority}
                 onChange={(value) => setPriority(value as TaskPriority)}
                 options={priorityOptions}
               />
 
-              <Field label="Tenggat Waktu (Opsional)">
+              <Field label={t('newPage.formTitleLabel')}>
                 {(p) => (
                   <DateTimePicker
                     id={p.id}
@@ -226,10 +226,10 @@ export default function CreateTaskPage() {
 
             <div className="flex gap-3 mt-6">
               <Button type="submit" loading={createMutation.isPending}>
-                Buat Tugas
+                {t('newPage.submitButton')}
               </Button>
               <Button type="button" variant="secondary" onClick={() => router.push('/tasks')}>
-                Batal
+                {t('newPage.cancelButton')}
               </Button>
             </div>
           </CardContent>

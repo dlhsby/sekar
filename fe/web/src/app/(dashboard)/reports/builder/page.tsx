@@ -23,24 +23,9 @@ import {
   DateRangePicker,
 } from '@/components/ui';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { hasRole } from '@/lib/constants/roles';
-
-const REPORT_TYPE_OPTIONS: FormSelectOption[] = [
-  { value: ReportType.DAILY_OPERATIONS, label: 'Laporan Operasional Harian' },
-  { value: ReportType.WEEKLY_PERFORMANCE, label: 'Laporan Kinerja Mingguan' },
-  { value: ReportType.MONTHLY_SUMMARY, label: 'Ringkasan Bulanan' },
-  { value: ReportType.WORKER_PERFORMANCE, label: 'Kinerja Pekerja' },
-  { value: ReportType.AREA_STATUS, label: 'Status Area' },
-  { value: ReportType.OVERTIME_UTILIZATION, label: 'Penggunaan Lembur' },
-];
-
-const FORMAT_OPTIONS: FormSelectOption[] = [
-  { value: ReportFormat.PDF, label: 'PDF' },
-  { value: ReportFormat.CSV, label: 'CSV' },
-  { value: ReportFormat.XLSX, label: 'Excel' },
-];
 
 interface BuilderState {
   reportType: string;
@@ -53,10 +38,27 @@ interface BuilderState {
 }
 
 export default function ReportBuilderPage() {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['reports', 'common']);
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+
+  // Create report type options dynamically with translations
+  const REPORT_TYPE_OPTIONS = useMemo<FormSelectOption[]>(() => [
+    { value: ReportType.DAILY_OPERATIONS, label: t('types.daily_operations') },
+    { value: ReportType.WEEKLY_PERFORMANCE, label: t('types.weekly_performance') },
+    { value: ReportType.MONTHLY_SUMMARY, label: t('types.monthly_summary') },
+    { value: ReportType.WORKER_PERFORMANCE, label: t('types.worker_performance') },
+    { value: ReportType.AREA_STATUS, label: t('types.area_status') },
+    { value: ReportType.OVERTIME_UTILIZATION, label: t('types.overtime_utilization') },
+  ], [t]);
+
+  // Create format options dynamically with translations
+  const FORMAT_OPTIONS = useMemo<FormSelectOption[]>(() => [
+    { value: ReportFormat.PDF, label: t('formats.pdf') },
+    { value: ReportFormat.CSV, label: t('formats.csv') },
+    { value: ReportFormat.XLSX, label: t('formats.xlsx') },
+  ], [t]);
 
   const [state, setState] = useState<BuilderState>({
     reportType: '',
@@ -101,7 +103,7 @@ export default function ReportBuilderPage() {
   const handleSubmit = async () => {
     // Validate form
     if (!state.reportType || !state.format) {
-      toast({ level: 'warning', title: 'Pilih tipe dan format laporan' });
+      toast({ level: 'warning', title: t('messages.validation') });
       return;
     }
 
@@ -120,8 +122,8 @@ export default function ReportBuilderPage() {
 
       toast({
         level: 'success',
-        title: 'Laporan sedang diproses',
-        body: 'Anda akan dialihkan ke daftar laporan.',
+        title: t('messages.processing'),
+        body: t('messages.processingNote'),
       });
 
       // Redirect to reports list after a short delay
@@ -129,7 +131,7 @@ export default function ReportBuilderPage() {
         router.push('/reports');
       }, 1000);
     } catch (err) {
-      toast({ level: 'danger', title: 'Gagal membuat laporan' });
+      toast({ level: 'danger', title: t('messages.error') });
     }
   };
 
@@ -146,29 +148,29 @@ export default function ReportBuilderPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Buat Laporan"
-        description="Buat laporan baru dengan parameter yang dipilih"
+        title={t('page.title')}
+        description={t('page.description')}
       />
 
       <Card>
         <CardContent className="space-y-4 max-w-2xl">
           <FormSelect
-            label="Tipe Laporan"
+            label={t('builder.typeLabel')}
             options={REPORT_TYPE_OPTIONS}
             value={state.reportType}
             onChange={(value) => setState((s) => ({ ...s, reportType: value }))}
-            placeholder="Pilih tipe laporan"
+            placeholder={t('builder.typePlaceholder')}
           />
 
           <FormSelect
-            label="Format"
+            label={t('builder.formatLabel')}
             options={FORMAT_OPTIONS}
             value={state.format}
             onChange={(value) => setState((s) => ({ ...s, format: value }))}
-            placeholder="Pilih format"
+            placeholder={t('builder.formatPlaceholder')}
           />
 
-          <Field label="Rentang Tanggal">
+          <Field label={t('builder.dateRangeLabel')}>
             {() => (
               <DateRangePicker
                 showSteppers={false}
@@ -184,26 +186,26 @@ export default function ReportBuilderPage() {
           </Field>
 
           <FormInput
-            label="Area (opsional)"
+            label={t('builder.areaLabel')}
             type="text"
-            placeholder="Cari area..."
+            placeholder={t('builder.areaPlaceholder')}
             value={state.areaId}
             onChange={(e) => setState((s) => ({ ...s, areaId: e.target.value }))}
           />
 
           <FormInput
-            label="Rayon (opsional)"
+            label={t('builder.rayonLabel')}
             type="text"
-            placeholder="Cari rayon..."
+            placeholder={t('builder.rayonPlaceholder')}
             value={state.rayonId}
             onChange={(e) => setState((s) => ({ ...s, rayonId: e.target.value }))}
           />
 
           {showWorkerSelect && (
             <FormInput
-              label="Pekerja"
+              label={t('builder.workerLabel')}
               type="text"
-              placeholder="Cari pekerja..."
+              placeholder={t('builder.workerPlaceholder')}
               value={state.workerId}
               onChange={(e) => setState((s) => ({ ...s, workerId: e.target.value }))}
             />
@@ -214,14 +216,14 @@ export default function ReportBuilderPage() {
               variant="outline"
               onClick={() => router.back()}
             >
-              Batal
+              {t('builder.cancelButton')}
             </Button>
             <Button
               onClick={handleSubmit}
               loading={generateReportMutation.isPending}
               disabled={!state.reportType || !state.format}
             >
-              Buat Laporan
+              {t('builder.submitButton')}
             </Button>
           </div>
         </CardContent>
@@ -229,7 +231,7 @@ export default function ReportBuilderPage() {
 
       <Card>
         <CardContent className="space-y-3">
-          <h3 className="text-nb-h3 font-semibold">Informasi Template</h3>
+          <h3 className="text-nb-h3 font-semibold">{t('template.title')}</h3>
           {templatesLoading ? (
             <p className="text-nb-body text-nb-gray-600">{t('common:actions.loading')}</p>
           ) : state.reportType && templates ? (
@@ -240,20 +242,20 @@ export default function ReportBuilderPage() {
               return selectedTemplate ? (
                 <div className="space-y-2">
                   <p>
-                    <span className="font-medium">Nama:</span> {selectedTemplate.name}
+                    <span className="font-medium">{t('template.nameLabel')}</span> {selectedTemplate.name}
                   </p>
                   {selectedTemplate.description && (
                     <p>
-                      <span className="font-medium">Deskripsi:</span> {selectedTemplate.description}
+                      <span className="font-medium">{t('template.descriptionLabel')}</span> {selectedTemplate.description}
                     </p>
                   )}
                 </div>
               ) : (
-                <p className="text-nb-body-sm text-nb-gray-600">Template tidak ditemukan</p>
+                <p className="text-nb-body-sm text-nb-gray-600">{t('template.notFound')}</p>
               );
             })()
           ) : (
-            <p className="text-nb-body-sm text-nb-gray-600">Pilih tipe laporan untuk melihat informasi</p>
+            <p className="text-nb-body-sm text-nb-gray-600">{t('template.selectHint')}</p>
           )}
         </CardContent>
       </Card>

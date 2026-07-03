@@ -127,5 +127,55 @@
       "newDifferentFromOld": "New password must be different from temporary password.",
       "generic": "An error occurred."
     }
+  },
+  "permissions": {
+    "notifications": {
+      "granted": "Notifications enabled",
+      "required": "Notifications are required to receive task and attendance information",
+      "checkFailed": "Failed to check notification permission",
+      "requestSuccess": "Notifications successfully enabled",
+      "requestBlocked": "Notifications blocked. Open Settings to enable",
+      "requestDenied": "Notifications denied. You will not receive important alerts",
+      "requestFailed": "Failed to request notification permission"
+    },
+    "location": {
+      "granted": "Location enabled",
+      "required": "Location is required for attendance and shift tracking",
+      "checkFailed": "Failed to check location permission",
+      "requestSuccess": "Location successfully enabled",
+      "requestBlocked": "Location blocked. Open Settings to enable",
+      "requestDenied": "Location denied. Attendance feature will not work",
+      "requestFailed": "Failed to request location permission"
+    },
+    "backgroundLocation": {
+      "iosNote": "iOS uses foreground location",
+      "androidOldNote": "Background location not required on Android 9 and earlier",
+      "granted": "Background location enabled",
+      "required": "Allow \"Always\" for accurate shift tracking",
+      "checkFailed": "Failed to check background location permission",
+      "foregroundRequired": "Foreground location must be enabled first",
+      "requestSuccess": "Background location successfully enabled",
+      "requestBlocked": "Background location blocked. Open Settings → Permissions → Location → Allow all the time",
+      "requestDenied": "Background location denied. Shift tracking may be inaccurate",
+      "requestFailed": "Failed to request background location permission"
+    },
+    "camera": {
+      "granted": "Camera enabled",
+      "required": "Camera is required for work report photos",
+      "checkFailed": "Failed to check camera permission",
+      "requestSuccess": "Camera successfully enabled",
+      "requestBlocked": "Camera blocked. Open Settings to enable",
+      "requestDenied": "Camera denied. You cannot take report photos",
+      "requestFailed": "Failed to request camera permission"
+    },
+    "gallery": {
+      "granted": "Gallery enabled",
+      "required": "Gallery is required to select report photos from storage",
+      "checkFailed": "Failed to check gallery permission",
+      "requestSuccess": "Gallery successfully enabled",
+      "requestBlocked": "Gallery blocked. Open Settings to enable",
+      "requestDenied": "Gallery denied. You cannot select photos from storage",
+      "requestFailed": "Failed to request gallery permission"
+    }
   }
 }

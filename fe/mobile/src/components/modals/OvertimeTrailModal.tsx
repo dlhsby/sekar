@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   SafeAreaView,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MapView, { Polyline, Marker, Callout, PROVIDER_GOOGLE, type Region } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { getUserLocationHistory } from '../../services/api/monitoringApi';
@@ -64,6 +65,7 @@ export function OvertimeTrailModal({
   userName,
   areaName,
 }: Props): React.JSX.Element {
+  const { t } = useTranslation();
   const mapRef = useRef<MapView>(null);
   const [points, setPoints] = useState<LocationHistoryPoint[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -88,12 +90,12 @@ export function OvertimeTrailModal({
         setError(response.error);
       }
     } catch {
-      setError('Gagal memuat rute lokasi');
+      setError(t('overtime:trail.loadError'));
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [userId, date, shiftId]);
+  }, [userId, date, shiftId, t]);
 
   useEffect(() => {
     if (!visible) { return; }
@@ -170,12 +172,12 @@ export function OvertimeTrailModal({
             onPress={onClose}
             style={styles.closeBtn}
             accessibilityRole="button"
-            accessibilityLabel="Tutup"
+            accessibilityLabel={t('overtime:trail.closeLabel')}
           >
             <MaterialCommunityIcons name="arrow-left" size={24} color={nbColors.black} />
           </TouchableOpacity>
           <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Rute Lembur</Text>
+            <Text style={styles.headerTitle}>{t('overtime:trail.title')}</Text>
             <Text style={styles.headerSubtitle}>{userName}</Text>
           </View>
           <TouchableOpacity
@@ -183,7 +185,7 @@ export function OvertimeTrailModal({
             style={styles.refreshBtn}
             disabled={isLoading || isRefreshing}
             accessibilityRole="button"
-            accessibilityLabel="Refresh rute"
+            accessibilityLabel={t('overtime:trail.refreshLabel')}
           >
             {isRefreshing ? (
               <ActivityIndicator size="small" color={nbColors.primary} />
@@ -199,7 +201,7 @@ export function OvertimeTrailModal({
 
         {/* Stats bar */}
         <View style={styles.statsBar}>
-          <Text style={styles.statsText}>{points.length} titik lokasi</Text>
+          <Text style={styles.statsText}>{points.length} {t('overtime:trail.locationPoints')}</Text>
           {points.length > 0 && (
             <Text style={styles.statsText}>
               {new Date(points[0].logged_at).toLocaleTimeString('id-ID', {
@@ -220,7 +222,7 @@ export function OvertimeTrailModal({
           {isLoading ? (
             <View style={styles.centeredContainer}>
               <ActivityIndicator size="large" color={nbColors.primary} />
-              <Text style={styles.loadingText}>Memuat rute...</Text>
+              <Text style={styles.loadingText}>{t('overtime:trail.loading')}</Text>
             </View>
           ) : error ? (
             <View style={styles.centeredContainer}>
@@ -230,7 +232,7 @@ export function OvertimeTrailModal({
           ) : points.length === 0 ? (
             <View style={styles.centeredContainer}>
               <MaterialCommunityIcons name="map-marker-off" size={48} color={nbColors.gray400} />
-              <Text style={styles.errorText}>Tidak ada data lokasi untuk lembur ini</Text>
+              <Text style={styles.errorText}>{t('overtime:trail.noData')}</Text>
             </View>
           ) : (
             <View style={styles.mapWrapper}>
@@ -255,20 +257,20 @@ export function OvertimeTrailModal({
                     key={`start-${markerPoints[0].logged_at}`}
                     coordinate={{ latitude: markerPoints[0].latitude, longitude: markerPoints[0].longitude }}
                     pinColor="green"
-                    title="Mulai Lembur"
+                    title={t('overtime:trail.startMarker')}
                   >
                     <Callout>
                       <View style={styles.callout}>
                         <Text style={styles.calloutUser}>{userName}</Text>
-                        <Text style={styles.calloutTitle}>Mulai Lembur</Text>
-                        <Text style={styles.calloutText}>Waktu: {formatDateTime(markerPoints[0].logged_at)}</Text>
-                        <Text style={styles.calloutText}>GPS: {markerPoints[0].latitude.toFixed(6)}, {markerPoints[0].longitude.toFixed(6)}</Text>
-                        {markerPoints[0].accuracy != null && <Text style={styles.calloutText}>Akurasi: {Math.round(markerPoints[0].accuracy)}m</Text>}
-                        {markerPoints[0].battery_level != null && <Text style={styles.calloutText}>Baterai: {markerPoints[0].battery_level}%</Text>}
+                        <Text style={styles.calloutTitle}>{t('overtime:trail.startMarker')}</Text>
+                        <Text style={styles.calloutText}>{t('overtime:trail.callout.time')}: {formatDateTime(markerPoints[0].logged_at)}</Text>
+                        <Text style={styles.calloutText}>{t('overtime:trail.callout.gps')}: {markerPoints[0].latitude.toFixed(6)}, {markerPoints[0].longitude.toFixed(6)}</Text>
+                        {markerPoints[0].accuracy != null && <Text style={styles.calloutText}>{t('overtime:trail.callout.accuracy')}: {Math.round(markerPoints[0].accuracy)}m</Text>}
+                        {markerPoints[0].battery_level != null && <Text style={styles.calloutText}>{t('overtime:trail.callout.battery')}: {markerPoints[0].battery_level}%</Text>}
                         <Text style={styles.calloutText}>
-                          Area: {markerPoints[0].is_within_area
-                            ? `Di Dalam Area${areaName ? ` (${areaName})` : ''}`
-                            : 'Di Luar Area'}
+                          {t('overtime:trail.callout.area')}: {markerPoints[0].is_within_area
+                            ? `${t('overtime:trail.callout.withinArea')}${areaName ? ` (${areaName})` : ''}`
+                            : t('overtime:trail.callout.outsideArea')}
                         </Text>
                       </View>
                     </Callout>
@@ -287,14 +289,14 @@ export function OvertimeTrailModal({
                       <View style={styles.callout}>
                         <Text style={styles.calloutUser}>{userName}</Text>
                         <Text style={styles.calloutTitle}>{formatDateTime(point.logged_at)}</Text>
-                        <Text style={styles.calloutText}>Waktu: {formatDateTime(point.logged_at)}</Text>
-                        <Text style={styles.calloutText}>GPS: {point.latitude.toFixed(6)}, {point.longitude.toFixed(6)}</Text>
-                        {point.accuracy != null && <Text style={styles.calloutText}>Akurasi: {Math.round(point.accuracy)}m</Text>}
-                        {point.battery_level != null && <Text style={styles.calloutText}>Baterai: {point.battery_level}%</Text>}
+                        <Text style={styles.calloutText}>{t('overtime:trail.callout.time')}: {formatDateTime(point.logged_at)}</Text>
+                        <Text style={styles.calloutText}>{t('overtime:trail.callout.gps')}: {point.latitude.toFixed(6)}, {point.longitude.toFixed(6)}</Text>
+                        {point.accuracy != null && <Text style={styles.calloutText}>{t('overtime:trail.callout.accuracy')}: {Math.round(point.accuracy)}m</Text>}
+                        {point.battery_level != null && <Text style={styles.calloutText}>{t('overtime:trail.callout.battery')}: {point.battery_level}%</Text>}
                         <Text style={styles.calloutText}>
-                          Area: {point.is_within_area
-                            ? `Di Dalam Area${areaName ? ` (${areaName})` : ''}`
-                            : 'Di Luar Area'}
+                          {t('overtime:trail.callout.area')}: {point.is_within_area
+                            ? `${t('overtime:trail.callout.withinArea')}${areaName ? ` (${areaName})` : ''}`
+                            : t('overtime:trail.callout.outsideArea')}
                         </Text>
                       </View>
                     </Callout>
@@ -307,20 +309,20 @@ export function OvertimeTrailModal({
                     key={`end-${markerPoints[markerPoints.length - 1].logged_at}`}
                     coordinate={{ latitude: markerPoints[markerPoints.length - 1].latitude, longitude: markerPoints[markerPoints.length - 1].longitude }}
                     pinColor="red"
-                    title="Selesai Lembur"
+                    title={t('overtime:trail.endMarker')}
                   >
                     <Callout>
                       <View style={styles.callout}>
                         <Text style={styles.calloutUser}>{userName}</Text>
-                        <Text style={styles.calloutTitle}>Selesai Lembur</Text>
-                        <Text style={styles.calloutText}>Waktu: {formatDateTime(markerPoints[markerPoints.length - 1].logged_at)}</Text>
-                        <Text style={styles.calloutText}>GPS: {markerPoints[markerPoints.length - 1].latitude.toFixed(6)}, {markerPoints[markerPoints.length - 1].longitude.toFixed(6)}</Text>
-                        {markerPoints[markerPoints.length - 1].accuracy != null && <Text style={styles.calloutText}>Akurasi: {Math.round(markerPoints[markerPoints.length - 1].accuracy!)}m</Text>}
-                        {markerPoints[markerPoints.length - 1].battery_level != null && <Text style={styles.calloutText}>Baterai: {markerPoints[markerPoints.length - 1].battery_level}%</Text>}
+                        <Text style={styles.calloutTitle}>{t('overtime:trail.endMarker')}</Text>
+                        <Text style={styles.calloutText}>{t('overtime:trail.callout.time')}: {formatDateTime(markerPoints[markerPoints.length - 1].logged_at)}</Text>
+                        <Text style={styles.calloutText}>{t('overtime:trail.callout.gps')}: {markerPoints[markerPoints.length - 1].latitude.toFixed(6)}, {markerPoints[markerPoints.length - 1].longitude.toFixed(6)}</Text>
+                        {markerPoints[markerPoints.length - 1].accuracy != null && <Text style={styles.calloutText}>{t('overtime:trail.callout.accuracy')}: {Math.round(markerPoints[markerPoints.length - 1].accuracy!)}m</Text>}
+                        {markerPoints[markerPoints.length - 1].battery_level != null && <Text style={styles.calloutText}>{t('overtime:trail.callout.battery')}: {markerPoints[markerPoints.length - 1].battery_level}%</Text>}
                         <Text style={styles.calloutText}>
-                          Area: {markerPoints[markerPoints.length - 1].is_within_area
-                            ? `Di Dalam Area${areaName ? ` (${areaName})` : ''}`
-                            : 'Di Luar Area'}
+                          {t('overtime:trail.callout.area')}: {markerPoints[markerPoints.length - 1].is_within_area
+                            ? `${t('overtime:trail.callout.withinArea')}${areaName ? ` (${areaName})` : ''}`
+                            : t('overtime:trail.callout.outsideArea')}
                         </Text>
                       </View>
                     </Callout>
@@ -334,7 +336,7 @@ export function OvertimeTrailModal({
                   style={styles.zoomBtn}
                   onPress={handleZoomIn}
                   accessibilityRole="button"
-                  accessibilityLabel="Perbesar"
+                  accessibilityLabel={t('overtime:trail.zoom.in')}
                 >
                   <MaterialCommunityIcons name="plus" size={20} color={nbColors.black} />
                 </TouchableOpacity>
@@ -342,7 +344,7 @@ export function OvertimeTrailModal({
                   style={styles.zoomBtn}
                   onPress={handleZoomOut}
                   accessibilityRole="button"
-                  accessibilityLabel="Perkecil"
+                  accessibilityLabel={t('overtime:trail.zoom.out')}
                 >
                   <MaterialCommunityIcons name="minus" size={20} color={nbColors.black} />
                 </TouchableOpacity>

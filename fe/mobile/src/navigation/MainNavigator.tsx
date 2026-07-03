@@ -12,6 +12,7 @@ import { createBottomTabNavigator, type BottomTabBarProps } from '@react-navigat
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import i18n from '../i18n/config';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import type { MainTabParamList, MainStackParamList } from '../types/navigation.types';
 import { nbColors, nbBorders, nbShadows, nbRadius, nbType } from '../constants/nbTokens';
@@ -129,21 +130,21 @@ const headerChrome = { ...NB_HEADER_STYLE, justifyContent: 'center' as const };
 // reference is stable across renders (prevents remount on navigation state updates).
 // Profile is a bottom tab (rendered directly in TabNavigator), so it is NOT wrapped
 // here — the header avatar and the tab both resolve to that single ProfileScreen.
-const ShiftHistoryWithHeader = withProfileHeader(ShiftHistoryScreen, 'Riwayat Shift');
-const MyScheduleWithHeader = withProfileHeader(MyScheduleScreen, 'Jadwal Saya');
-const SettingsWithHeader   = withProfileHeader(SettingsScreen,   'Pengaturan');
+const ShiftHistoryWithHeader = withProfileHeader(ShiftHistoryScreen, i18n.t('profile:menu.shiftHistory'));
+const MyScheduleWithHeader = withProfileHeader(MyScheduleScreen, i18n.t('profile:menu.mySchedule'));
+const SettingsWithHeader   = withProfileHeader(SettingsScreen,   i18n.t('settings:title'));
 const NotificationPreferencesWithHeader = withProfileHeader(
   NotificationPreferencesScreen,
-  'Preferensi Notifikasi',
+  i18n.t('settings:notifications.preferences'),
 );
-const EditProfileWithHeader = withProfileHeader(EditProfileScreen, 'Edit Profil');
-const DiagnosticsWithHeader = withProfileHeader(DiagnosticsScreen, 'Diagnostik');
+const EditProfileWithHeader = withProfileHeader(EditProfileScreen, i18n.t('profile:menu.editProfile'));
+const DiagnosticsWithHeader = withProfileHeader(DiagnosticsScreen, i18n.t('profile:menu.diagnostics'));
 // Back returns to the tab the bell was tapped from (`origin`), or Home as a
 // fallback. Routing to a fixed tab (rather than a stack pop) also keeps the
 // deep-link round-trip — inbox → detail → back → inbox → back — from looping.
 const NotificationsWithHeader = withProfileHeader(
   NotificationsScreen,
-  'Notifikasi',
+  i18n.t('settings:tabs.notifications'),
   (navigation, route) => {
     const origin = (route?.params as { origin?: string } | undefined)?.origin;
     navigation.navigate('Tabs', { screen: origin ?? 'Home' });
@@ -152,7 +153,7 @@ const NotificationsWithHeader = withProfileHeader(
 
 interface TabConfig {
   name: keyof MainTabParamList;
-  label: string;
+  labelKey: string;
   icon: string;
 }
 
@@ -162,9 +163,9 @@ interface TabConfig {
  * Labels are translated dynamically in the tab bar component.
  */
 export const UNIFORM_TAB_CONFIG: TabConfig[] = [
-  { name: 'Home', label: 'Beranda', icon: 'home' },
-  { name: 'Menu', label: 'Menu', icon: 'view-grid-outline' },
-  { name: 'Profile', label: 'Profil', icon: 'account-outline' },
+  { name: 'Home', labelKey: 'menu:tabs.home', icon: 'home' },
+  { name: 'Menu', labelKey: 'menu:tabs.menu', icon: 'view-grid-outline' },
+  { name: 'Profile', labelKey: 'menu:tabs.profile', icon: 'account-outline' },
 ];
 
 function TabBarIcon({ focused, name }: { focused: boolean; name: string }): React.JSX.Element {
@@ -196,13 +197,8 @@ function MainTabBar({ state, navigation }: BottomTabBarProps): React.JSX.Element
   const focusedName = state.routes[state.index]?.name;
 
   // Map tab names to translation keys
-  const getTabLabel = (tabName: string): string => {
-    const labels: Record<string, string> = {
-      Home: t('menu:tabs.home'),
-      Menu: t('menu:tabs.menu'),
-      Profile: t('menu:tabs.profile'),
-    };
-    return labels[tabName] || tabName;
+  const getTabLabel = (tabConfig: TabConfig): string => {
+    return t(tabConfig.labelKey);
   };
 
   return (
@@ -213,7 +209,7 @@ function MainTabBar({ state, navigation }: BottomTabBarProps): React.JSX.Element
           return null;
         }
         const focused = focusedName === tab.name;
-        const label = getTabLabel(tab.name);
+        const label = getTabLabel(tab);
 
         const onPress = () => {
           const event = navigation.emit({
@@ -297,12 +293,22 @@ function TabNavigator(): React.JSX.Element {
       <Tab.Screen
         name="Menu"
         component={MenuScreen}
-        options={{ headerTitle: () => <FieldHomeHeader title="Menu" /> }}
+        options={{
+          headerTitle: function MenuHeaderTitle() {
+            const { t } = useTranslation();
+            return <FieldHomeHeader title={t('menu:tabs.menu')} />;
+          },
+        }}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
-        options={{ headerTitle: () => <FieldHomeHeader title="Profil" /> }}
+        options={{
+          headerTitle: function ProfileHeaderTitle() {
+            const { t } = useTranslation();
+            return <FieldHomeHeader title={t('menu:tabs.profile')} />;
+          },
+        }}
       />
 
       {/* Feature screens — reached from the Menu launcher (hidden from the bar) */}
@@ -313,13 +319,13 @@ function TabNavigator(): React.JSX.Element {
       <Tab.Screen name="Tasks" component={TasksScreen} options={featureScreen('Tugas')} />
       <Tab.Screen name="Activities" component={ActivitiesScreen} options={featureScreen('Aktivitas')} />
       <Tab.Screen name="Monitoring" component={MapDashboardScreen} options={featureScreen('Monitoring')} />
-      <Tab.Screen name="Reports" component={ReportsScreen} options={featureScreen('Laporan')} />
-      <Tab.Screen name="Assets" component={AssetListScreen} options={featureScreen('Aset')} />
-      <Tab.Screen name="WorkerAnalytics" component={WorkerAnalyticsScreen} options={featureScreen('Kinerja')} />
-      <Tab.Screen name="TeamAnalytics" component={TeamAnalyticsScreen} options={featureScreen('Analitik')} />
-      <Tab.Screen name="PlantSeeds" component={PlantSeedsInventoryScreen} options={featureScreen('Bibit')} />
-      <Tab.Screen name="PruningReviewQueue" component={ReviewQueueScreen} options={featureScreen('Perantingan')} />
-      <Tab.Screen name="Perantingan" component={PerantinganListScreen} options={featureScreen('Perantingan')} />
+      <Tab.Screen name="Reports" component={ReportsScreen} options={featureScreen(i18n.t('menu:tiles.reports'))} />
+      <Tab.Screen name="Assets" component={AssetListScreen} options={featureScreen(i18n.t('menu:tiles.assets'))} />
+      <Tab.Screen name="WorkerAnalytics" component={WorkerAnalyticsScreen} options={featureScreen(i18n.t('menu:tiles.performance'))} />
+      <Tab.Screen name="TeamAnalytics" component={TeamAnalyticsScreen} options={featureScreen(i18n.t('menu:tiles.team'))} />
+      <Tab.Screen name="PlantSeeds" component={PlantSeedsInventoryScreen} options={featureScreen(i18n.t('menu:tiles.seeds'))} />
+      <Tab.Screen name="PruningReviewQueue" component={ReviewQueueScreen} options={featureScreen(i18n.t('menu:tiles.pruning'))} />
+      <Tab.Screen name="Perantingan" component={PerantinganListScreen} options={featureScreen(i18n.t('menu:tiles.pruning'))} />
 
       {/* Hidden stack screens */}
 

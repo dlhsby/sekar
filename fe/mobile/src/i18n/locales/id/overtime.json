@@ -91,5 +91,55 @@
     "viewFullSelfieLabel": "Lihat selfie penuh",
     "captureButtonLabel": "Ambil Selfie",
     "retakeButtonLabel": "Ambil Ulang Selfie"
+  },
+  "trail": {
+    "title": "Rute Lembur",
+    "closeLabel": "Tutup",
+    "refreshLabel": "Refresh rute",
+    "loadError": "Gagal memuat rute lokasi",
+    "loading": "Memuat rute...",
+    "noData": "Tidak ada data lokasi untuk lembur ini",
+    "locationPoints": "titik lokasi",
+    "startMarker": "Mulai Lembur",
+    "endMarker": "Selesai Lembur",
+    "callout": {
+      "time": "Waktu",
+      "gps": "GPS",
+      "accuracy": "Akurasi",
+      "battery": "Baterai",
+      "area": "Area",
+      "withinArea": "Di Dalam Area",
+      "outsideArea": "Di Luar Area"
+    },
+    "zoom": {
+      "in": "Perbesar",
+      "out": "Perkecil"
+    }
+  },
+  "startForm": {
+    "draftTitle": "Lanjutkan Draft?",
+    "draftMessage": "Ditemukan form lembur yang belum selesai. Lanjutkan atau hapus?",
+    "draftDiscard": "Hapus Draft",
+    "draftContinue": "Lanjutkan Draft",
+    "locationError": "GPS lokasi diperlukan. Ketuk \"Perbarui GPS\" untuk mencoba lagi.",
+    "activeShiftError": "Anda masih memiliki shift aktif. Selesaikan Clock Out shift biasa sebelum memulai lembur.",
+    "toastStartError": "Gagal Mulai Lembur",
+    "toastError": "Gagal",
+    "toastGenericError": "Gagal memulai lembur",
+    "saveDraftTitle": "Simpan Draft?",
+    "saveDraftMessage": "Simpan data lembur sebagai draft?",
+    "saveDraftNo": "Tidak",
+    "saveDraftYes": "Ya"
+  },
+  "endForm": {
+    "activityTypeError": "Jenis aktivitas harus dipilih",
+    "descriptionError": "Deskripsi harus diisi",
+    "photosError": "Minimal 1 foto diperlukan",
+    "locationError": "GPS lokasi diperlukan. Ketuk \"Perbarui GPS\" untuk mencoba lagi.",
+    "toastSuccess": "Berhasil",
+    "toastSuccessMessage": "Lembur berhasil diselesaikan.",
+    "toastEndError": "Gagal Selesai Lembur",
+    "toastError": "Gagal",
+    "toastGenericError": "Gagal menyelesaikan lembur"
   }
 }

@@ -108,5 +108,58 @@
     "photos": "{{count}} photos",
     "defaultType": "Activity",
     "viewDetailLabel": "View activity details {{name}}"
+  },
+  "actionButtons": {
+    "decline": "Decline",
+    "approve": "Approve",
+    "cancel": "Cancel",
+    "sendDecline": "Send Decline"
+  },
+  "validation": {
+    "photosRequired": "Add at least 1 photo",
+    "descriptionRequired": "Description is required",
+    "descriptionMinLength": "Description must be at least 5 characters",
+    "descriptionMaxLength": "Description must not exceed 500 characters",
+    "activityTypeRequired": "Select activity type",
+    "locationRequired": "GPS location is required"
+  },
+  "locationMessages": {
+    "locationError": "Unable to get GPS location",
+    "permissionDenied": "Location permission denied",
+    "timeoutError": "Timeout. Try in an open area.",
+    "gpsDisabled": "Enable GPS in settings."
+  },
+  "draftMessages": {
+    "found": "Draft Found",
+    "foundMessage": "You have an unsent activity draft. Continue?",
+    "delete": "Delete",
+    "continue": "Continue"
+  },
+  "sections": {
+    "photos": "ACTIVITY PHOTOS",
+    "photosSubtitle": "Add 1-3 photos of the work performed",
+    "activityType": "ACTIVITY TYPE",
+    "loading": "Loading activity types...",
+    "noTypes": "No activity types available",
+    "retryButton": "Retry",
+    "selectActivityType": "Select activity type...",
+    "searchActivityType": "Search activity type...",
+    "taggedUsers": "TAG COLLEAGUES",
+    "taggedUsersSubtitle": "Optional — tag colleagues from the same area who worked on this activity",
+    "loadingTeam": "Loading colleague list...",
+    "selectTeam": "Select colleagues to tag...",
+    "searchTeam": "Search colleague name...",
+    "noTeam": "No colleagues from your area to tag",
+    "description": "Work Description",
+    "descriptionPlaceholder": "Example: Watered plants in area A, trimmed wild grass...",
+    "gps": "GPS LOCATION",
+    "gpsLoading": "Getting location...",
+    "gpsAccuracy": "Accuracy: ±{{accuracy}}m",
+    "getGPSButton": "Get GPS Location",
+    "offlineWarning": "Offline Mode - Activities will be saved and sent when online",
+    "errorSummary": "Please complete the following:",
+    "submitButton": "Submit Activity",
+    "submitOfflineButton": "Save to Sync",
+    "cancelButton": "Cancel"
   }
 }

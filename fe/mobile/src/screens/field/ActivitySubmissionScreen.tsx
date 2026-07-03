@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBAlert, NBBackgroundPattern, NBText } from '../../components/nb';
@@ -27,6 +28,7 @@ import type { MainTabScreenProps } from '../../types/navigation.types';
  * Activity Submission Screen Component
  */
 export function ActivitySubmissionScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const navigation = useNavigation<MainTabScreenProps<'ActivitySubmission'>['navigation']>();
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -95,11 +97,11 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
       return;
     }
     Alert.alert(
-      'Simpan Draft?',
-      'Simpan data aktivitas sebagai draft?',
+      t('activities:submission.saveDraftPrompt'),
+      t('activities:submission.saveDraftMessage'),
       [
         {
-          text: 'Tidak',
+          text: t('activities:submission.saveDraftNo'),
           style: 'destructive',
           onPress: async () => {
             await clearDraft();
@@ -108,7 +110,7 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
           },
         },
         {
-          text: 'Ya',
+          text: t('activities:submission.saveDraftYes'),
           onPress: async () => {
             await saveDraft();
             resetForm();
@@ -117,16 +119,16 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
         },
       ],
     );
-  }, [hasFormData, resetForm, clearDraft, navigateBack, saveDraft]);
+  }, [hasFormData, resetForm, clearDraft, navigateBack, saveDraft, t]);
 
   // Override header back button to use handleLeave with discard/draft prompt
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <FieldHomeHeader title="Buat Aktivitas" onBack={handleLeave} />
+        <FieldHomeHeader title={t('activities:submission.title')} onBack={handleLeave} />
       ),
     });
-  }, [navigation, handleLeave]);
+  }, [navigation, handleLeave, t]);
 
   const onSubmit = useCallback(() => {
     handleSubmit(
@@ -155,7 +157,7 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
             <View style={styles.errorSummary}>
               <View style={styles.errorSummaryTitleRow}>
                 <MaterialCommunityIcons name="alert-circle-outline" size={14} color={nbColors.danger} />
-                <NBText variant="body-sm" style={styles.errorSummaryTitleStyle}> Mohon lengkapi data berikut:</NBText>
+                <NBText variant="body-sm" style={styles.errorSummaryTitleStyle}> {t('activities:sections.errorSummary')}</NBText>
               </View>
               {Object.values(errors).filter(Boolean).map((msg, i) => (
                 <NBText key={i} variant="body-sm" style={styles.errorSummaryItemStyle}>• {msg}</NBText>
@@ -178,7 +180,7 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
           {!isOnline && (
             <NBCard style={styles.offlineWarning}>
               <NBText variant="body-sm" color="warning" style={styles.offlineWarningTextStyle}>
-                Mode Offline - Aktivitas akan disimpan dan dikirim saat online
+                {t('activities:sections.offlineWarning')}
               </NBText>
             </NBCard>
           )}
@@ -188,9 +190,9 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
             <NBCardHeader>
               <View style={styles.sectionTitleRow}>
                 <MaterialCommunityIcons name="camera" size={16} color={nbColors.black} />
-                <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> FOTO AKTIVITAS</NBText>
+                <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> {t('activities:sections.photos')}</NBText>
               </View>
-              <NBText variant="body-sm" style={styles.sectionSubtitleStyle}>Tambahkan 1-3 foto pekerjaan yang dilakukan</NBText>
+              <NBText variant="body-sm" style={styles.sectionSubtitleStyle}>{t('activities:sections.photosSubtitle')}</NBText>
             </NBCardHeader>
             <NBCardContent>
               <PhotoUploader
@@ -205,27 +207,27 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
           {/* Activity Type Picker */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <NBText variant="h3" style={styles.sectionTitleStyle}>🏷️ JENIS AKTIVITAS</NBText>
+              <NBText variant="h3" style={styles.sectionTitleStyle}>🏷️ {t('activities:sections.activityType')}</NBText>
             </NBCardHeader>
             <NBCardContent>
               {isLoadingTypes ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator color={nbColors.primary} />
-                  <NBText variant="body-sm" style={styles.loadingTextStyle}>Memuat jenis aktivitas...</NBText>
+                  <NBText variant="body-sm" style={styles.loadingTextStyle}>{t('activities:sections.loading')}</NBText>
                 </View>
               ) : activityTypeOptions.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                  <NBText variant="body-sm" style={styles.emptyTextStyle}>Tidak ada jenis aktivitas tersedia</NBText>
-                  <NBButton title="Coba Lagi" onPress={loadActivityTypes} variant="secondary" size="sm" />
+                  <NBText variant="body-sm" style={styles.emptyTextStyle}>{t('activities:sections.noTypes')}</NBText>
+                  <NBButton title={t('activities:sections.retryButton')} onPress={loadActivityTypes} variant="secondary" size="sm" />
                 </View>
               ) : (
                 <NBSelect
                   value={form.activityTypeId ?? ''}
                   onValueChange={(v) => setActivityTypeId(String(v))}
                   options={activityTypeOptions}
-                  placeholder="Pilih jenis aktivitas..."
+                  placeholder={t('activities:sections.selectActivityType')}
                   searchable
-                  searchPlaceholder="Cari jenis aktivitas..."
+                  searchPlaceholder={t('activities:sections.searchActivityType')}
                 />
               )}
               {errors.activityType && <NBText variant="body-sm" style={styles.errorTextStyle}>{errors.activityType}</NBText>}
@@ -235,29 +237,29 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
           {/* Tagged Users (optional, ADR-038) */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <NBText variant="h3" style={styles.sectionTitleStyle}>🏷️ TAG REKAN KERJA</NBText>
+              <NBText variant="h3" style={styles.sectionTitleStyle}>🏷️ {t('activities:sections.taggedUsers')}</NBText>
               <NBText variant="body-sm" style={styles.sectionSubtitleStyle}>
-                Opsional — tag rekan satu area yang ikut bekerja pada aktivitas ini
+                {t('activities:sections.taggedUsersSubtitle')}
               </NBText>
             </NBCardHeader>
             <NBCardContent>
               {isLoadingTaggableUsers ? (
                 <View style={styles.loadingContainer}>
                   <ActivityIndicator color={nbColors.primary} />
-                  <NBText variant="body-sm" style={styles.loadingTextStyle}>Memuat daftar rekan...</NBText>
+                  <NBText variant="body-sm" style={styles.loadingTextStyle}>{t('activities:sections.loadingTeam')}</NBText>
                 </View>
               ) : taggableOptions.length > 0 ? (
                 <NBSelect
                   selectedValues={form.taggedUserIds}
                   onValuesChange={setTaggedUserIds}
                   options={taggableOptions}
-                  placeholder="Pilih rekan untuk di-tag..."
+                  placeholder={t('activities:sections.selectTeam')}
                   searchable
-                  searchPlaceholder="Cari nama rekan..."
+                  searchPlaceholder={t('activities:sections.searchTeam')}
                 />
               ) : (
                 <View style={styles.emptyContainer}>
-                  <NBText variant="body-sm" style={styles.emptyTextStyle}>Tidak ada rekan satu area untuk di-tag</NBText>
+                  <NBText variant="body-sm" style={styles.emptyTextStyle}>{t('activities:sections.noTeam')}</NBText>
                 </View>
               )}
             </NBCardContent>
@@ -265,11 +267,11 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
 
           {/* Description */}
           <NBCardTextInput
-            title="📝 Deskripsi Pekerjaan"
+            title={`📝 ${t('activities:sections.description')}`}
             required
             value={form.description}
             onChangeText={setDescription}
-            placeholder="Contoh: Menyiram tanaman di area A, memangkas rumput liar..."
+            placeholder={t('activities:sections.descriptionPlaceholder')}
             numberOfLines={6}
             maxLength={500}
             error={errors.description}
@@ -279,14 +281,14 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
           {/* GPS location */}
           <NBCard style={styles.card}>
             <NBCardHeader>
-              <NBText variant="h3" style={styles.sectionTitleStyle}>📍 LOKASI GPS</NBText>
+              <NBText variant="h3" style={styles.sectionTitleStyle}>📍 {t('activities:sections.gps')}</NBText>
             </NBCardHeader>
             <NBCardContent>
               {errors.location && <NBText variant="body-sm" style={styles.errorTextStyle}>{errors.location}</NBText>}
               {isLoadingLocation ? (
                 <View style={styles.locationLoading}>
                   <ActivityIndicator color={nbColors.primary} />
-                  <NBText variant="body-sm" style={styles.locationLoadingTextStyle}>Mendapatkan lokasi...</NBText>
+                  <NBText variant="body-sm" style={styles.locationLoadingTextStyle}>{t('activities:sections.gpsLoading')}</NBText>
                 </View>
               ) : form.location ? (
                 <View style={styles.locationInfo}>
@@ -294,11 +296,11 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
                     {form.location.latitude.toFixed(6)}, {form.location.longitude.toFixed(6)}
                   </NBText>
                   <NBText variant="body-sm" style={styles.locationAccuracyStyle}>
-                    Akurasi: ±{Math.round(form.location.accuracy)}m
+                    {t('activities:sections.gpsAccuracy', { accuracy: Math.round(form.location.accuracy) })}
                   </NBText>
                 </View>
               ) : (
-                <NBButton title="Dapatkan Lokasi GPS" onPress={getCurrentLocation} variant="secondary" />
+                <NBButton title={t('activities:sections.getGPSButton')} onPress={getCurrentLocation} variant="secondary" />
               )}
             </NBCardContent>
           </NBCard>
@@ -309,7 +311,7 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
           <View style={styles.fabButtonRow}>
             <View style={styles.fabButtonHalf}>
               <NBButton
-                title="Batal"
+                title={t('activities:sections.cancelButton')}
                 variant="secondary"
                 onPress={handleLeave}
                 disabled={isSubmitting}
@@ -319,7 +321,7 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
             </View>
             <View style={styles.fabButtonHalf}>
               <NBButton
-                title={isOnline ? 'Kirim Aktivitas' : 'Simpan untuk Sync'}
+                title={isOnline ? t('activities:sections.submitButton') : t('activities:sections.submitOfflineButton')}
                 onPress={onSubmit}
                 loading={isSubmitting}
                 disabled={isSubmitting}

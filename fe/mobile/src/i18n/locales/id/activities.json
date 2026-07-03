@@ -108,5 +108,58 @@
     "photos": "{{count}} foto",
     "defaultType": "Aktivitas",
     "viewDetailLabel": "Lihat detail aktivitas {{name}}"
+  },
+  "actionButtons": {
+    "decline": "Tolak",
+    "approve": "Setujui",
+    "cancel": "Batal",
+    "sendDecline": "Kirim Penolakan"
+  },
+  "validation": {
+    "photosRequired": "Tambahkan minimal 1 foto",
+    "descriptionRequired": "Deskripsi wajib diisi",
+    "descriptionMinLength": "Deskripsi minimal 5 karakter",
+    "descriptionMaxLength": "Deskripsi maksimal 500 karakter",
+    "activityTypeRequired": "Pilih jenis aktivitas",
+    "locationRequired": "Lokasi GPS diperlukan"
+  },
+  "locationMessages": {
+    "locationError": "Tidak dapat mendapatkan lokasi GPS",
+    "permissionDenied": "Izin lokasi ditolak",
+    "timeoutError": "Waktu habis. Coba di area terbuka.",
+    "gpsDisabled": "Aktifkan GPS di pengaturan."
+  },
+  "draftMessages": {
+    "found": "Draft Ditemukan",
+    "foundMessage": "Anda memiliki draft aktivitas yang belum terkirim. Lanjutkan?",
+    "delete": "Hapus",
+    "continue": "Lanjutkan"
+  },
+  "sections": {
+    "photos": "FOTO AKTIVITAS",
+    "photosSubtitle": "Tambahkan 1-3 foto pekerjaan yang dilakukan",
+    "activityType": "JENIS AKTIVITAS",
+    "loading": "Memuat jenis aktivitas...",
+    "noTypes": "Tidak ada jenis aktivitas tersedia",
+    "retryButton": "Coba Lagi",
+    "selectActivityType": "Pilih jenis aktivitas...",
+    "searchActivityType": "Cari jenis aktivitas...",
+    "taggedUsers": "TAG REKAN KERJA",
+    "taggedUsersSubtitle": "Opsional — tag rekan satu area yang ikut bekerja pada aktivitas ini",
+    "loadingTeam": "Memuat daftar rekan...",
+    "selectTeam": "Pilih rekan untuk di-tag...",
+    "searchTeam": "Cari nama rekan...",
+    "noTeam": "Tidak ada rekan satu area untuk di-tag",
+    "description": "Deskripsi Pekerjaan",
+    "descriptionPlaceholder": "Contoh: Menyiram tanaman di area A, memangkas rumput liar...",
+    "gps": "LOKASI GPS",
+    "gpsLoading": "Mendapatkan lokasi...",
+    "gpsAccuracy": "Akurasi: ±{{accuracy}}m",
+    "getGPSButton": "Dapatkan Lokasi GPS",
+    "offlineWarning": "Mode Offline - Aktivitas akan disimpan dan dikirim saat online",
+    "errorSummary": "Mohon lengkapi data berikut:",
+    "submitButton": "Kirim Aktivitas",
+    "submitOfflineButton": "Simpan untuk Sync",
+    "cancelButton": "Batal"
   }
 }

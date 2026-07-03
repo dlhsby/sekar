@@ -118,5 +118,28 @@
     "justNow": "just now",
     "minutesAgo": "min ago",
     "hoursAgo": "hours ago"
+  },
+  "filterModal": {
+    "title": "Filter Monitoring",
+    "reset": "Reset",
+    "apply": "Apply",
+    "sections": {
+      "location": "Location",
+      "rayon": "Rayon",
+      "area": "Area",
+      "role": "Role",
+      "user": "Search User",
+      "mapLayers": "Map View",
+      "staffing": "Staffing"
+    },
+    "placeholders": {
+      "location": "Select Location",
+      "rayon": "Select Rayon",
+      "area": "Select Area",
+      "role": "Select Role",
+      "user": "Select user",
+      "layers": "Select layers"
+    },
+    "fixedRayon": "Your Rayon"
   }
 }

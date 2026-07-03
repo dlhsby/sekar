@@ -12,10 +12,17 @@
     "statusOptions": {
       "all": "All Status",
       "pending": "Pending",
+      "assigned": "Assigned",
+      "accepted": "Accepted",
       "declined": "Rejected",
-      "completed": "Pending Verification"
+      "inProgress": "In Progress",
+      "completed": "Pending Verification",
+      "verified": "Verified",
+      "revisionNeeded": "Needs Revision"
     },
     "dateRange": "Date Range",
+    "createdDate": "Created Date",
+    "deadline": "Deadline",
     "dateFrom": "From",
     "dateTo": "To",
     "area": "Area",
@@ -27,6 +34,14 @@
     "rayonOptions": {
       "all": "All Rayons",
       "mine": "My Rayon"
+    },
+    "assignment": "Assignment",
+    "assignmentOptions": {
+      "all": "All Officers (Including Me)",
+      "assigned": "Assigned to Me",
+      "createdByMe": "Created by Me",
+      "allSubordinates": "All Subordinates",
+      "tagged": "Tag Me"
     },
     "reset": "Reset",
     "apply": "Apply"
@@ -104,6 +119,51 @@
   "messages": {
     "clockInRequired": "Not Clocked In",
     "clockInRequiredMessage": "You must clock in first to add an activity"
+  },
+  "detail": {
+    "loading": "Loading task...",
+    "notFound": "Task Not Found",
+    "notFoundMessage": "The task you are looking for was not found or has been deleted",
+    "backButtonTitle": "Back",
+    "taskHistory": "Task History",
+    "assignment": "Assignment",
+    "completionDetails": "Completion Details",
+    "assignmentHistory": "Assignment History",
+    "accessibilityLabel": "Task details {{title}}",
+    "taggedOfficers": "Tag Involved Officers",
+    "noTaggedOfficers": "No officers tagged yet. Tap the pencil icon to add.",
+    "noSelectableOfficers": "No officers available to tag.",
+    "selectOfficersLabel": "Select officers to tag",
+    "searchOfficersPlaceholder": "Search & select officers...",
+    "searchOfficersLabel": "Search officer name...",
+    "declineReason": "Rejection Reason",
+    "declinedAt": "Rejected on {{date}}",
+    "revisionReason": "Revision Reason",
+    "verification": "Verification",
+    "verifiedBy": "Verified by {{name}}"
+  },
+  "actionButtons": {
+    "assign": "Assign",
+    "reassign": "Reassign",
+    "selectReplacement": "Select Replacement Officer",
+    "selectOfficer": "Select Officer",
+    "placeholder": "— Select Officer —",
+    "cancel": "Cancel",
+    "submit": "Assign",
+    "accept": "Accept",
+    "decline": "Decline",
+    "start": "Start Working",
+    "complete": "Complete Task",
+    "verify": "Verify",
+    "revision": "Request Revision",
+    "sendRevision": "Send Revision",
+    "declineReason": "Rejection Reason",
+    "declineReasonPlaceholder": "Explain the reason for rejecting this task...",
+    "sendDecline": "Send Decline",
+    "revisionReason": "Revision Reason",
+    "revisionReasonPlaceholder": "Explain why this task needs revision...",
+    "delegate": "Delegate to Subordinate",
+    "selectDelegate": "Delegate to Subordinate"
   },
   "errors": {
     "fetchFailed": "Failed to load schedule",
