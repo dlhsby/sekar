@@ -132,6 +132,11 @@ export class User {
   @UpdateDateColumn()
   updated_at: Date;
 
+  // Not persisted — populated by the users-list query (findAllPaginated) with the
+  // number of permanent area assignments, for the management grid's Area column.
+  @ApiProperty({ description: 'Count of permanent area assignments', required: false })
+  assigned_area_count?: number;
+
   @DeleteDateColumn()
   deleted_at?: Date;
 
