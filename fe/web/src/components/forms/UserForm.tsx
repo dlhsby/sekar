@@ -49,6 +49,9 @@ const userSchema = z.object({
 
 type UserFormData = z.infer<typeof userSchema>;
 
+/** Any UUID version — area ids are deterministic UUID v5. */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export interface UserFormSubmit extends UserFormData {
   area_ids: string[];
 }
@@ -146,9 +149,17 @@ export function UserForm({
   const phoneReg = register('phone_number');
 
   const handleFormSubmit = async (data: UserFormData) => {
-    const submitData: UserFormSubmit = { ...data, area_ids: areaIds };
-    if (!submitData.rayon_id) delete submitData.rayon_id;
-    if (!submitData.shift_definition_id) delete submitData.shift_definition_id;
+    // Rayon/area/shift are optional, but only relevant to roles whose scope
+    // includes them — never submit a field the role doesn't use (avoids stale
+    // values leaking through). area_ids is filtered to valid UUIDs so an empty
+    // or malformed entry can't trip the backend's `@IsUUID(..., {each:true})`.
+    const scope = roleAssignmentScope(data.role);
+    const submitData: UserFormSubmit = {
+      ...data,
+      area_ids: scope.area ? areaIds.filter((id) => UUID_RE.test(id)) : [],
+    };
+    if (!scope.rayon || !submitData.rayon_id) delete submitData.rayon_id;
+    if (!scope.shift || !submitData.shift_definition_id) delete submitData.shift_definition_id;
     await onSubmit(submitData);
   };
 
