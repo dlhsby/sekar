@@ -42,7 +42,10 @@ export function UserFormModal({
   const handleSubmit = async (data: CreateUserDto & UpdateUserDto): Promise<void> => {
     try {
       if (isEdit && user) {
-        await updateMutation.mutateAsync({ id: user.id, data });
+        // username is immutable — UpdateUserDto rejects it (forbidNonWhitelisted).
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { username, ...updateData } = data;
+        await updateMutation.mutateAsync({ id: user.id, data: updateData });
         toast.success(`Pengguna "${data.full_name}" berhasil diperbarui.`);
       } else {
         const created = (await createMutation.mutateAsync(data)) as CreatedUser;
