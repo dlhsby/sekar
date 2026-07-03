@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { X, Smartphone } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/lib/auth/hooks';
 
 const DISMISS_SESSION_KEY = 'sekar_mobile_push_dismissed';
@@ -18,6 +19,7 @@ const NATIVE_APP_ROLES = new Set(['satgas', 'linmas', 'korlap']);
  */
 export function MobileInstallPush() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   // Derive visibility from props + storage instead of a setState-in-effect.
   // Lazy init reads sessionStorage once on the client (false during SSR).
   const [dismissed, setDismissed] = useState(
@@ -58,7 +60,7 @@ export function MobileInstallPush() {
           <button
             onClick={handleDismiss}
             className="shrink-0 rounded-nb-sm border border-nb-black p-1 hover:bg-black/10"
-            aria-label="Tutup"
+            aria-label={t('common:actions.close')}
           >
             <X className="h-4 w-4 text-nb-black" aria-hidden="true" />
           </button>

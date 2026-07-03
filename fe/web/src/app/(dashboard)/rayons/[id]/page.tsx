@@ -6,6 +6,7 @@
 'use client';
 
 import { use, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Search } from 'lucide-react';
@@ -36,6 +37,7 @@ interface RayonDetailPageProps {
 }
 
 export default function RayonDetailPage({ params }: RayonDetailPageProps) {
+  const { t } = useTranslation();
   const { id } = use(params);
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -62,7 +64,7 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
   if (authLoading || !user) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <p className="text-nb-gray-600">Memuat...</p>
+        <p className="text-nb-gray-600">{t('common:actions.loading')}</p>
       </div>
     );
   }

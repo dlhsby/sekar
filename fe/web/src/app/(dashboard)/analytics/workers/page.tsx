@@ -2,6 +2,7 @@
 
 import type { UserRole } from '@/types/models';
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   PageHeader,
   DataTable,
@@ -36,6 +37,7 @@ const GRADE_COLORS: Record<Grade, string> = {
 };
 
 export default function WorkerAnalyticsPage() {
+  const { t } = useTranslation();
   useRequireAuth(ANALYTICS_VIEWERS);
 
   const [search, setSearch] = useState('');
@@ -173,7 +175,7 @@ export default function WorkerAnalyticsPage() {
           </DialogHeader>
 
           {isWorkerLoading ? (
-            <div className="py-8 text-center text-nb-gray-600">Memuat...</div>
+            <div className="py-8 text-center text-nb-gray-600">{t('common:actions.loading')}</div>
           ) : workerDetail ? (
             <div className="space-y-4">
               <Card className="p-4 space-y-3">
@@ -223,7 +225,7 @@ export default function WorkerAnalyticsPage() {
                   <span className="font-medium">{workerDetail.total_activities}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-nb-body-sm text-nb-gray-600">Disetujui</span>
+                  <span className="text-nb-body-sm text-nb-gray-600">{t('status:approved')}</span>
                   <span className="font-medium">{workerDetail.approved_activities}</span>
                 </div>
                 <div className="flex justify-between items-center">

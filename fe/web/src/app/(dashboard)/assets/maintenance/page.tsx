@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   Button,
@@ -36,6 +37,7 @@ const MAINTENANCE_STATUS_LABELS: Record<MaintenanceStatus, string> = {
 };
 
 export default function MaintenanceCalendarPage() {
+  const { t } = useTranslation();
   const now = new Date();
   const [currentMonth, setCurrentMonth] = useState(now.getMonth());
   const [currentYear, setCurrentYear] = useState(now.getFullYear());
@@ -159,7 +161,7 @@ export default function MaintenanceCalendarPage() {
 
       <SectionCard title="Perawatan Mendatang">
         {calendarLoading ? (
-          <div className="p-4">Memuat...</div>
+          <div className="p-4">{t('common:actions.loading')}</div>
         ) : !calendarData.filter((m) => m.status === 'scheduled').length ? (
           <EmptyState variant="noData" />
         ) : (
@@ -182,7 +184,7 @@ export default function MaintenanceCalendarPage() {
       {overdueData.length > 0 && (
         <SectionCard title="Perawatan Terlambat">
           {overdueLoading ? (
-            <div className="p-4">Memuat...</div>
+            <div className="p-4">{t('common:actions.loading')}</div>
           ) : (
             <div className="p-4 space-y-2">
               {overdueData.map((m) => (

@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
+import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils/cn';
 
@@ -40,6 +41,7 @@ export interface SkeletonProps
 
 const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(
   ({ className, variant, count = 1, gap = 'md', ...props }, ref) => {
+    const { t } = useTranslation();
     const gapClasses = {
       sm: 'gap-2',
       md: 'gap-4',
@@ -60,7 +62,7 @@ const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(
       <div
         ref={ref}
         className={cn(skeletonVariants({ variant }), className)}
-        aria-label="Memuat..."
+        aria-label={t('common:actions.loading')}
         role="status"
         {...props}
       />
@@ -73,26 +75,29 @@ Skeleton.displayName = 'Skeleton';
  * Card skeleton for loading card content
  */
 const SkeletonCard = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
-    <div
-      ref={ref}
-      className={cn(
-        'border-2 border-nb-black rounded-nb-base bg-nb-white shadow-nb-sm p-4 space-y-4',
-        className
-      )}
-      aria-label="Memuat kartu..."
-      role="status"
-      {...props}
-    >
-      <Skeleton variant="heading" />
-      <Skeleton variant="text" />
-      <Skeleton variant="text" className="w-3/4" />
-      <div className="flex gap-2 pt-2">
-        <Skeleton variant="button" />
-        <Skeleton variant="button" />
+  ({ className, ...props }, ref) => {
+    const { t } = useTranslation();
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          'border-2 border-nb-black rounded-nb-base bg-nb-white shadow-nb-sm p-4 space-y-4',
+          className
+        )}
+        aria-label={t('common:actions.loading')}
+        role="status"
+        {...props}
+      >
+        <Skeleton variant="heading" />
+        <Skeleton variant="text" />
+        <Skeleton variant="text" className="w-3/4" />
+        <div className="flex gap-2 pt-2">
+          <Skeleton variant="button" />
+          <Skeleton variant="button" />
+        </div>
       </div>
-    </div>
-  )
+    );
+  }
 );
 SkeletonCard.displayName = 'SkeletonCard';
 
@@ -102,32 +107,35 @@ SkeletonCard.displayName = 'SkeletonCard';
 const SkeletonTable = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & { rows?: number }
->(({ className, rows = 5, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn('border-2 border-nb-black rounded-nb-base overflow-hidden', className)}
-    aria-label="Memuat tabel..."
-    role="status"
-    {...props}
-  >
-    {/* Header */}
-    <div className="bg-nb-gray-100 p-4 border-b-2 border-nb-black flex gap-4">
-      <Skeleton className="h-4 w-1/4" />
-      <Skeleton className="h-4 w-1/4" />
-      <Skeleton className="h-4 w-1/4" />
-      <Skeleton className="h-4 w-1/4" />
-    </div>
-    {/* Rows */}
-    {Array.from({ length: rows }).map((_, index) => (
-      <div key={index} className="p-4 border-b-2 border-nb-gray-200 last:border-b-0 flex gap-4">
+>(({ className, rows = 5, ...props }, ref) => {
+  const { t } = useTranslation();
+  return (
+    <div
+      ref={ref}
+      className={cn('border-2 border-nb-black rounded-nb-base overflow-hidden', className)}
+      aria-label={t('common:actions.loading')}
+      role="status"
+      {...props}
+    >
+      {/* Header */}
+      <div className="bg-nb-gray-100 p-4 border-b-2 border-nb-black flex gap-4">
         <Skeleton className="h-4 w-1/4" />
         <Skeleton className="h-4 w-1/4" />
         <Skeleton className="h-4 w-1/4" />
         <Skeleton className="h-4 w-1/4" />
       </div>
-    ))}
-  </div>
-));
+      {/* Rows */}
+      {Array.from({ length: rows }).map((_, index) => (
+        <div key={index} className="p-4 border-b-2 border-nb-gray-200 last:border-b-0 flex gap-4">
+          <Skeleton className="h-4 w-1/4" />
+          <Skeleton className="h-4 w-1/4" />
+          <Skeleton className="h-4 w-1/4" />
+          <Skeleton className="h-4 w-1/4" />
+        </div>
+      ))}
+    </div>
+  );
+});
 SkeletonTable.displayName = 'SkeletonTable';
 
 /**
@@ -136,28 +144,31 @@ SkeletonTable.displayName = 'SkeletonTable';
 const SkeletonList = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> & { items?: number }
->(({ className, items = 5, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn('space-y-3', className)}
-    aria-label="Memuat daftar..."
-    role="status"
-    {...props}
-  >
-    {Array.from({ length: items }).map((_, index) => (
-      <div
-        key={index}
-        className="border-2 border-nb-black rounded-nb-base bg-nb-white p-4 flex items-center gap-4"
-      >
-        <Skeleton variant="avatar" />
-        <div className="flex-1 space-y-2">
-          <Skeleton variant="text" className="w-1/3" />
-          <Skeleton variant="text" className="w-1/2" />
+>(({ className, items = 5, ...props }, ref) => {
+  const { t } = useTranslation();
+  return (
+    <div
+      ref={ref}
+      className={cn('space-y-3', className)}
+      aria-label={t('common:actions.loading')}
+      role="status"
+      {...props}
+    >
+      {Array.from({ length: items }).map((_, index) => (
+        <div
+          key={index}
+          className="border-2 border-nb-black rounded-nb-base bg-nb-white p-4 flex items-center gap-4"
+        >
+          <Skeleton variant="avatar" />
+          <div className="flex-1 space-y-2">
+            <Skeleton variant="text" className="w-1/3" />
+            <Skeleton variant="text" className="w-1/2" />
+          </div>
         </div>
-      </div>
-    ))}
-  </div>
-));
+      ))}
+    </div>
+  );
+});
 SkeletonList.displayName = 'SkeletonList';
 
 export { Skeleton, SkeletonCard, SkeletonTable, SkeletonList, skeletonVariants };

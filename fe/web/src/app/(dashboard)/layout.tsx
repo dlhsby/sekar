@@ -2,6 +2,7 @@
 
 import { useEffect, ReactNode, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { useUIStore } from '@/stores/ui';
 import { Sidebar, SidebarItem } from '@/components/ui';
 import { Header } from '@/components/layout/Header';
@@ -30,6 +31,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const { sidebarOpen, setSidebarOpen } = useUIStore();
   const { user, loading } = useAuth();
+  const { t } = useTranslation();
 
   // On navigation, close the drawer ONLY on mobile — a single sidebar state is
   // shared across breakpoints, so we must not collapse the desktop sidebar.
@@ -67,7 +69,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   if (loading) {
     return (
       <div className="min-h-screen bg-nb-gray-50 flex items-center justify-center">
-        <div className="text-nb-gray-600">Memuat dashboard...</div>
+        <div className="text-nb-gray-600">{t('common:actions.loading')}</div>
       </div>
     );
   }

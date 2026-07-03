@@ -2,6 +2,7 @@
 
 import type { UserRole } from '@/types/models';
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   PageHeader,
   Card,
@@ -42,6 +43,7 @@ function getGrade(score: number): Grade {
 }
 
 export default function AreaAnalyticsPage() {
+  const { t } = useTranslation();
   useRequireAuth(ANALYTICS_VIEWERS);
 
   const [search, setSearch] = useState('');
@@ -153,7 +155,7 @@ export default function AreaAnalyticsPage() {
           </DialogHeader>
 
           {isAreaLoading ? (
-            <div className="py-8 text-center text-nb-gray-600">Memuat...</div>
+            <div className="py-8 text-center text-nb-gray-600">{t('common:actions.loading')}</div>
           ) : areaDetail ? (
             <div className="space-y-4">
               <Card className="p-4 space-y-3">

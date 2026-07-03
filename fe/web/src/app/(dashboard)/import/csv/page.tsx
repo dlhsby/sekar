@@ -39,6 +39,7 @@ function getEntityOptions(t: ReturnType<typeof useTranslation>['t']) {
 }
 
 export default function CsvImportPage() {
+  const { t } = useTranslation();
   const { user, loading } = useAuth();
 
   useEffect(() => {
@@ -50,7 +51,7 @@ export default function CsvImportPage() {
   if (loading || !user) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <p className="text-nb-gray-600">Memuat…</p>
+        <p className="text-nb-gray-600">{t('common:actions.loading')}</p>
       </div>
     );
   }

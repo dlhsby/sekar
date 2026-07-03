@@ -10,6 +10,7 @@
 'use client';
 
 import { use, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/lib/auth/hooks';
@@ -37,6 +38,7 @@ interface CapacityPageProps {
 }
 
 export default function RayonCapacityPage({ params }: CapacityPageProps) {
+  const { t } = useTranslation();
   const { id } = use(params);
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -76,7 +78,7 @@ export default function RayonCapacityPage({ params }: CapacityPageProps) {
   if (authLoading || !user) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <p className="text-nb-gray-600">Memuat...</p>
+        <p className="text-nb-gray-600">{t('common:actions.loading')}</p>
       </div>
     );
   }

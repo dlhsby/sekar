@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { CalendarPlus, ClipboardPlus, UserPlus } from 'lucide-react';
@@ -40,6 +41,7 @@ const ACTIVITY_META: { key: ActivityKey; label: string; color: string }[] = [
 const NUM = '—';
 
 export default function DashboardPage() {
+  const { t } = useTranslation();
   const user = useUser();
   const router = useRouter();
   const isAdmin = !!user && ADMIN_ROLES.has(user.role);
@@ -296,7 +298,7 @@ export default function DashboardPage() {
             }
           >
             {plantSummary.isLoading ? (
-              <p className="text-nb-body-sm text-nb-gray-500">Memuat…</p>
+              <p className="text-nb-body-sm text-nb-gray-500">{t('common:actions.loading')}</p>
             ) : overdueRayons.length === 0 ? (
               <p className="text-nb-body-sm text-nb-gray-600">
                 Semua tanaman terpangkas sesuai jadwal. 🌿

@@ -33,6 +33,7 @@ import {
 } from '@/lib/api/import';
 
 export default function ImportPage() {
+  const { t } = useTranslation();
   const { user, loading } = useAuth();
 
   useEffect(() => {
@@ -44,7 +45,7 @@ export default function ImportPage() {
   if (loading || !user) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <p className="text-nb-gray-600">Memuat…</p>
+        <p className="text-nb-gray-600">{t('common:actions.loading')}</p>
       </div>
     );
   }

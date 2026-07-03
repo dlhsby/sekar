@@ -233,6 +233,11 @@
       "longitudePlaceholder": "Example: 112.75",
       "geometryRequired": "Set at least one: draw the rayon boundary or place a location pin."
     },
+    "stats": {
+      "totalAreas": "Number of Areas",
+      "totalStaff": "Number of Staff",
+      "totalCoverageArea": "Total Coverage Area"
+    },
     "successCreated": "Rayon \"{name}\" created successfully.",
     "successUpdated": "Rayon \"{name}\" updated successfully."
   },

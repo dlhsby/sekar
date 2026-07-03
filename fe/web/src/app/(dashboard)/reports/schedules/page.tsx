@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/lib/auth/hooks';
 import {
   useSchedules,
@@ -55,6 +56,7 @@ interface ScheduleFormState {
 }
 
 export default function SchedulesPage() {
+  const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -310,7 +312,7 @@ export default function SchedulesPage() {
   if (authLoading || !user) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <p className="text-nb-body text-nb-gray-600">Memuat…</p>
+        <p className="text-nb-body text-nb-gray-600">{t('common:actions.loading')}</p>
       </div>
     );
   }
@@ -435,7 +437,7 @@ export default function SchedulesPage() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Hapus Jadwal?</DialogTitle>
+            <DialogTitle>{t('schedules:dialog.deleteTitle')}</DialogTitle>
             <DialogDescription>
               Jadwal laporan akan dihapus dan tidak akan dijalankan lagi.
             </DialogDescription>

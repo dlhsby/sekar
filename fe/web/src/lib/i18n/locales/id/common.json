@@ -27,8 +27,14 @@
     "upload": "Unggah",
     "loading": "Memuat...",
     "saving": "Menyimpan...",
+    "open": "Buka menu",
     "yes": "Ya",
-    "no": "Tidak"
+    "no": "Tidak",
+    "clearFilters": "Hapus Filter",
+    "removeSelection": "Hapus pilihan",
+    "showColumns": "Tampilkan kolom",
+    "columns": "Kolom",
+    "clearAllFilters": "Hapus semua filter kolom"
   },
   "entities": {
     "user": "Pengguna",
@@ -64,6 +70,7 @@
       "title": "Terjadi Kesalahan",
       "description": "Terjadi kesalahan saat memuat data. Silakan coba lagi."
     },
+    "loadError": "Gagal memuat data.",
     "maintenance": {
       "title": "Dalam Perbaikan",
       "description": "Fitur ini sedang dalam perbaikan. Silakan coba lagi nanti."
@@ -83,7 +90,10 @@
     "search": {
       "title": "Mulai Pencarian",
       "description": "Ketik kata kunci untuk mencari data."
-    }
+    },
+    "noHistory": "Tidak ada riwayat",
+    "noBoundary": "Belum ada boundary polygon",
+    "noAreas": "Belum ada area"
   },
   "language": {
     "label": "Bahasa",

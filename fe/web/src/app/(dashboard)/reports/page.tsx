@@ -31,6 +31,7 @@ import {
   type DataTableRowAction,
 } from '@/components/ui';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Plus, Trash2, Download } from 'lucide-react';
@@ -90,6 +91,7 @@ const REPORTING_VIEWERS: UserRole[] = [
 ];
 
 export default function ReportsPage() {
+  const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -187,7 +189,7 @@ export default function ReportsPage() {
   if (authLoading || !user) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <p className="text-nb-body text-nb-gray-600">Memuat…</p>
+        <p className="text-nb-body text-nb-gray-600">{t('common:actions.loading')}</p>
       </div>
     );
   }
@@ -338,7 +340,7 @@ export default function ReportsPage() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Hapus Laporan?</DialogTitle>
+            <DialogTitle>{t('reports:dialog.deleteTitle')}</DialogTitle>
             <DialogDescription>
               Tindakan ini tidak dapat dibatalkan. Laporan akan dihapus secara permanen.
             </DialogDescription>

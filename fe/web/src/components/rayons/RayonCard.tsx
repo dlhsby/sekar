@@ -6,6 +6,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { Rayon, RayonStats } from '@/types/models';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui';
 import { formatArea } from '@/lib/utils/geo';
@@ -18,6 +19,7 @@ interface RayonCardProps {
 }
 
 export default function RayonCard({ rayon, stats, loading }: RayonCardProps) {
+  const { t } = useTranslation();
   if (loading) {
     return (
       <Card variant="elevated">
@@ -55,19 +57,19 @@ export default function RayonCard({ rayon, stats, loading }: RayonCardProps) {
             <div className="grid grid-cols-2 gap-3">
               <div className="border-2 border-nb-black p-3 bg-nb-primary/10 rounded-nb-base">
                 <div className="text-2xl font-bold text-nb-primary">{stats.total_areas}</div>
-                <div className="text-xs font-medium text-nb-gray-600 mt-1">Jumlah Area</div>
+                <div className="text-xs font-medium text-nb-gray-600 mt-1">{t('admin:rayons.stats.totalAreas')}</div>
               </div>
 
               <div className="border-2 border-nb-black p-3 bg-nb-success/10 rounded-nb-base">
                 <div className="text-2xl font-bold text-nb-success">{stats.total_users}</div>
-                <div className="text-xs font-medium text-nb-gray-600 mt-1">Total Petugas</div>
+                <div className="text-xs font-medium text-nb-gray-600 mt-1">{t('admin:rayons.stats.totalStaff')}</div>
               </div>
 
               <div className="border-2 border-nb-black p-3 bg-nb-gray-100 rounded-nb-base col-span-2">
                 <div className="text-lg font-bold text-nb-black">
                   {formatArea(stats.total_coverage_area || 0)}
                 </div>
-                <div className="text-xs font-medium text-nb-gray-600 mt-1">Luas Tutupan Total</div>
+                <div className="text-xs font-medium text-nb-gray-600 mt-1">{t('admin:rayons.stats.totalCoverageArea')}</div>
               </div>
             </div>
           )}

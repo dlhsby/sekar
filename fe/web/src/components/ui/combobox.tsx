@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Check, ChevronsUpDown, Search, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { cn, nbFocusRing } from '@/lib/utils/cn';
 import { useWheelScrollFix } from '@/lib/hooks/useWheelScrollFix';
@@ -54,6 +55,7 @@ export function Combobox({
   'aria-invalid': ariaInvalid,
   'aria-describedby': ariaDescribedBy,
 }: ComboboxProps): React.JSX.Element {
+  const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState('');
   const [activeIndex, setActiveIndex] = React.useState(0);
@@ -142,7 +144,7 @@ export function Combobox({
           {clearable && selected ? (
             <button
               type="button"
-              aria-label="Hapus pilihan"
+              aria-label={t('common:actions.removeSelection')}
               onClick={(e) => {
                 e.stopPropagation();
                 onValueChange?.('');

@@ -8,6 +8,7 @@ import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { getAppDownloadUrl, type AppPlatform } from '@/lib/api/app-releases';
 import { useLatestAppRelease } from '@/lib/hooks/useLatestAppRelease';
 import { useAuth } from '@/lib/auth/hooks';
+import { useTranslation } from 'react-i18next';
 
 function formatBytes(bytes: number | null): string | null {
   if (!bytes || bytes <= 0) return null;
@@ -28,6 +29,7 @@ const PLATFORM_LABEL: Record<AppPlatform, string> = {
  * "coming soon" state instead of an error.
  */
 export function AppInstallPage({ platform }: { platform: AppPlatform }) {
+  const { t } = useTranslation();
   const { data, status } = useLatestAppRelease(platform);
   const { user } = useAuth();
   const Icon = platform === 'ios' ? Apple : Smartphone;
@@ -63,7 +65,7 @@ export function AppInstallPage({ platform }: { platform: AppPlatform }) {
           </div>
 
           {status === 'loading' && (
-            <p className="py-6 text-center text-nb-body-sm text-nb-gray-600">Memuat versi terbaru…</p>
+            <p className="py-6 text-center text-nb-body-sm text-nb-gray-600">{t('common:actions.loading')}</p>
           )}
 
           {status === 'error' && (

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useRouter } from 'next/navigation';
 import { MoreVertical } from 'lucide-react';
 import {
@@ -97,6 +98,7 @@ const MAINTENANCE_STATUS_TONE_MAP: Record<string, 'info' | 'warn' | 'ok' | 'neut
 };
 
 export default function AssetDetailPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
@@ -275,7 +277,7 @@ export default function AssetDetailPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem onClick={handleDelete}>Hapus</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDelete}>{t('common:actions.delete')}</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )
@@ -314,7 +316,7 @@ export default function AssetDetailPage() {
       </div>
 
       <SectionCard title="Riwayat Penggunaan">
-        {assignmentsLoading ? <div className="p-4">Memuat...</div> : !assignments?.length ? <EmptyState variant="noData" title="Tidak ada riwayat" /> : null}
+        {assignmentsLoading ? <div className="p-4">{t('common:actions.loading')}</div> : !assignments?.length ? <EmptyState variant="noData" title={t('common:empty.noHistory')} /> : null}
       </SectionCard>
 
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>

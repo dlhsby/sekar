@@ -24,6 +24,7 @@ import {
 } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { hasRole } from '@/lib/constants/roles';
 
 const REPORT_TYPE_OPTIONS: FormSelectOption[] = [
@@ -52,6 +53,7 @@ interface BuilderState {
 }
 
 export default function ReportBuilderPage() {
+  const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -134,7 +136,7 @@ export default function ReportBuilderPage() {
   if (authLoading || !user) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <p className="text-nb-body text-nb-gray-600">Memuat…</p>
+        <p className="text-nb-body text-nb-gray-600">{t('common:actions.loading')}</p>
       </div>
     );
   }
@@ -229,7 +231,7 @@ export default function ReportBuilderPage() {
         <CardContent className="space-y-3">
           <h3 className="text-nb-h3 font-semibold">Informasi Template</h3>
           {templatesLoading ? (
-            <p className="text-nb-body text-nb-gray-600">Memuat template...</p>
+            <p className="text-nb-body text-nb-gray-600">{t('common:actions.loading')}</p>
           ) : state.reportType && templates ? (
             (() => {
               const selectedTemplate = templates.find(

@@ -233,6 +233,11 @@
       "longitudePlaceholder": "Contoh: 112.75",
       "geometryRequired": "Tentukan minimal salah satu: gambar batas rayon atau tempatkan titik lokasi."
     },
+    "stats": {
+      "totalAreas": "Jumlah Area",
+      "totalStaff": "Total Petugas",
+      "totalCoverageArea": "Luas Tutupan Total"
+    },
     "successCreated": "Rayon \"{name}\" berhasil dibuat.",
     "successUpdated": "Rayon \"{name}\" berhasil diperbarui."
   },

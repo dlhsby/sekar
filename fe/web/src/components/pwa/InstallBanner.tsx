@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { X, Download } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const DISMISS_KEY = 'sekar_install_dismissed';
 const DISMISS_DURATION_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
@@ -20,6 +21,7 @@ interface BeforeInstallPromptEvent extends Event {
  * the app is already running in standalone mode.
  */
 export function InstallBanner() {
+  const { t } = useTranslation();
   const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
 
@@ -94,7 +96,7 @@ export function InstallBanner() {
           <button
             onClick={handleDismiss}
             className="rounded-nb-sm border border-nb-black bg-transparent p-1 text-nb-black hover:bg-black/10"
-            aria-label="Tutup banner instalasi"
+            aria-label={t('common:actions.close')}
           >
             <X className="h-4 w-4" aria-hidden="true" />
           </button>

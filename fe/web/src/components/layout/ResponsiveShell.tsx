@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, ReactNode } from 'react';
 import { X, Menu } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export interface ResponsiveShellProps {
   children: ReactNode;
@@ -24,6 +25,7 @@ export interface ResponsiveShellProps {
  * so page content can apply mobile-specific hints via CSS attribute selectors.
  */
 export function ResponsiveShell({ children, sidebar, header }: ResponsiveShellProps) {
+  const { t } = useTranslation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [railExpanded, setRailExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -85,7 +87,7 @@ export function ResponsiveShell({ children, sidebar, header }: ResponsiveShellPr
             onClick={() => setRailExpanded((prev) => !prev)}
             className="flex items-center justify-center h-14 border-b-2 border-nb-black hover:bg-nb-gray-100 transition-colors"
             aria-expanded={railExpanded}
-            aria-label={railExpanded ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
+            aria-label={railExpanded ? t('common:actions.close') : t('common:actions.open')}
           >
             <Menu className="h-5 w-5 text-nb-black" aria-hidden="true" />
           </button>
@@ -123,7 +125,7 @@ export function ResponsiveShell({ children, sidebar, header }: ResponsiveShellPr
             <button
               onClick={() => setDrawerOpen(false)}
               className="p-1 rounded-nb-sm border border-white/30 text-white hover:bg-white/10"
-              aria-label="Tutup menu navigasi"
+              aria-label={t('common:actions.close')}
             >
               <X className="h-5 w-5" aria-hidden="true" />
             </button>

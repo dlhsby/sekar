@@ -27,8 +27,14 @@
     "upload": "Upload",
     "loading": "Loading...",
     "saving": "Saving...",
+    "open": "Open menu",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "clearFilters": "Clear Filters",
+    "removeSelection": "Remove Selection",
+    "showColumns": "Show Columns",
+    "columns": "Columns",
+    "clearAllFilters": "Clear all column filters"
   },
   "entities": {
     "user": "User",
@@ -64,6 +70,7 @@
       "title": "Something Went Wrong",
       "description": "An error occurred while loading data. Please try again."
     },
+    "loadError": "Failed to load data.",
     "maintenance": {
       "title": "Under Maintenance",
       "description": "This feature is under maintenance. Please try again later."
@@ -83,7 +90,10 @@
     "search": {
       "title": "Start Searching",
       "description": "Type a keyword to search for data."
-    }
+    },
+    "noHistory": "No History",
+    "noBoundary": "No boundary polygon yet",
+    "noAreas": "No areas yet"
   },
   "language": {
     "label": "Language",

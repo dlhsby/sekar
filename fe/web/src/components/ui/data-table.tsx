@@ -24,6 +24,7 @@ import {
   X,
 } from 'lucide-react';
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils/cn';
 
@@ -204,6 +205,7 @@ export function DataTable<TData, TValue>({
   const [showFilters, setShowFilters] = React.useState(false);
   const [searchFocused, setSearchFocused] = React.useState(false);
   const isDesktop = useIsDesktop();
+  const { t } = useTranslation();
 
   // Resolve filter behaviour and append the standardized actions column.
   const resolvedColumns = React.useMemo(() => {
@@ -390,10 +392,10 @@ export function DataTable<TData, TValue>({
                   variant="ghost"
                   size="sm"
                   onClick={() => table.resetColumnFilters()}
-                  title="Hapus semua filter kolom"
+                  title={t('common:actions.clearAllFilters')}
                 >
                   <X className="h-4 w-4" aria-hidden />
-                  <span className="hidden sm:inline">Hapus Filter</span>
+                  <span className="hidden sm:inline">{t('common:actions.clearFilters')}</span>
                 </Button>
               ) : null}
               {enableColumnToggle ? (
@@ -401,11 +403,11 @@ export function DataTable<TData, TValue>({
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm">
                       <SlidersHorizontal className="h-4 w-4" aria-hidden />
-                      <span className="hidden sm:inline">Kolom</span>
+                      <span className="hidden sm:inline">{t('common:actions.columns')}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Tampilkan kolom</DropdownMenuLabel>
+                    <DropdownMenuLabel>{t('common:actions.showColumns')}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     {table
                       .getAllColumns()
@@ -429,11 +431,11 @@ export function DataTable<TData, TValue>({
                   size="sm"
                   onClick={onRefresh}
                   disabled={refreshing}
-                  aria-label="Muat ulang"
-                  title="Muat ulang data"
+                  aria-label={t('common:actions.refresh')}
+                  title={t('common:actions.refresh')}
                 >
                   <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} aria-hidden />
-                  <span className="hidden sm:inline">Muat Ulang</span>
+                  <span className="hidden sm:inline">{t('common:actions.refresh')}</span>
                 </Button>
               ) : null}
               {actions}

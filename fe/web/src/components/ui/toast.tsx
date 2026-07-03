@@ -13,6 +13,7 @@
 
 import * as React from 'react';
 import { AlertCircle, AlertTriangle, CheckCircle2, Info, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils/cn';
 
@@ -66,6 +67,7 @@ const LEVEL_CHROME: Record<
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = React.useState<ActiveToast[]>([]);
   const counter = React.useRef(0);
+  const { t: i18n } = useTranslation();
   const timers = React.useRef(new Map<number, ReturnType<typeof setTimeout>>());
 
   const dismiss = React.useCallback((id: number) => {
@@ -128,7 +130,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={() => dismiss(t.id)}
-                aria-label="Tutup notifikasi"
+                aria-label={i18n('common:actions.close')}
                 className="shrink-0 rounded-nb-sm p-0.5 text-nb-black/60 transition-colors hover:text-nb-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-nb-black"
               >
                 <X className="size-4" aria-hidden="true" />

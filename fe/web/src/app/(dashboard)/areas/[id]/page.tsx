@@ -6,6 +6,7 @@
  */
 
 import { useState, use } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Edit, Trash2, Map as MapIcon } from 'lucide-react';
 import { Button, Badge, Card, CardContent, CardHeader } from '@/components/ui';
@@ -19,6 +20,7 @@ import { formatArea, formatCoordinates } from '@/lib/utils/geo';
 
 export default function AreaDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
   const { data: area, isLoading, error } = useArea(id);
@@ -301,7 +303,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
           ) : (
             <div className="py-8 text-center text-nb-gray-500">
               <MapIcon className="w-10 h-10 mx-auto mb-3 text-nb-gray-300" />
-              <p className="font-semibold">Belum ada boundary polygon</p>
+              <p className="font-semibold">{t('common:empty.noBoundary')}</p>
               <p className="text-sm mt-1">
                 {isAdmin
                   ? 'Klik "Tambah Boundary" untuk menggambar batas area.'

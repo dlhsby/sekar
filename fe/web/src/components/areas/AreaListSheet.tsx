@@ -10,6 +10,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapPin, Search, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils/cn';
 import { Input, Skeleton } from '@/components/ui';
 
@@ -46,6 +47,7 @@ export function AreaListSheet({
   emptyText = 'Belum ada area.',
   onClose,
 }: AreaListSheetProps) {
+  const { t } = useTranslation();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [query, setQuery] = useState('');
 
@@ -108,7 +110,7 @@ export function AreaListSheet({
             ref={closeButtonRef}
             type="button"
             onClick={onClose}
-            aria-label="Tutup panel area"
+            aria-label={t('common:actions.close')}
             className={cn(
               'shrink-0 w-9 h-9 flex items-center justify-center',
               'border-2 border-nb-black rounded-nb-base bg-nb-white',
@@ -138,7 +140,7 @@ export function AreaListSheet({
           {isLoading ? (
             Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)
           ) : isError ? (
-            <p className="text-nb-body-sm text-nb-danger-dark py-6 text-center">Gagal memuat area.</p>
+            <p className="text-nb-body-sm text-nb-danger-dark py-6 text-center">{t('common:empty.loadError')}</p>
           ) : filtered.length === 0 ? (
             <p className="text-nb-body-sm text-nb-gray-600 py-6 text-center">
               {items.length === 0 ? emptyText : 'Tidak ada area yang cocok.'}
