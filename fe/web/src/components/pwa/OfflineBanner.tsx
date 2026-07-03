@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useSyncExternalStore } from 'react';
+import { useTranslation } from 'react-i18next';
 import { intlLocale } from '@/lib/i18n/date-locale';
 import { WifiOff } from 'lucide-react';
 
@@ -36,6 +37,7 @@ function readLastSync(): string | null {
  * screen readers announce the change.
  */
 export function OfflineBanner() {
+  const { t } = useTranslation(['components']);
   const isOffline = useSyncExternalStore(
     subscribeOnline,
     () => !navigator.onLine,
@@ -60,13 +62,13 @@ export function OfflineBanner() {
     <div
       role="status"
       aria-live="polite"
-      aria-label="Aplikasi sedang offline"
+      aria-label={t('components:offlineBanner.ariaLabel')}
       className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-2 bg-nb-warning px-4 py-2 text-nb-black border-b-2 border-nb-black"
     >
       <WifiOff className="h-4 w-4 shrink-0" aria-hidden="true" />
       <span className="text-nb-caption font-semibold uppercase tracking-wide">
-        Mode offline
-        {lastSync ? ` — Data terakhir: ${lastSync}` : ''}
+        {t('components:offlineBanner.status')}
+        {lastSync ? ` — ${t('components:offlineBanner.lastSync', { time: lastSync })}` : ''}
       </span>
     </div>
   );

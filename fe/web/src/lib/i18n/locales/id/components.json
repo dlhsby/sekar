@@ -42,5 +42,18 @@
     "placeholder": "Filter…",
     "filterLabel": "Filter {{label}}",
     "clearLabel": "Hapus filter {{label}}"
+  },
+  "updateToast": {
+    "title": "Versi baru tersedia",
+    "description": "Muat ulang halaman untuk mendapatkan pembaruan.",
+    "actionLabel": "Muat ulang"
+  },
+  "offlineBanner": {
+    "ariaLabel": "Aplikasi sedang offline",
+    "status": "Mode offline",
+    "lastSync": "Data terakhir: {time}"
+  },
+  "responsiveShell": {
+    "mainNavigationLabel": "Navigasi utama"
   }
 }

@@ -119,8 +119,8 @@ export function UserDetailPanel({
           {/* Area / Rayon */}
           {(summary.area_name || summary.rayon_name) && (
             <div className="mt-2 flex flex-wrap gap-2 text-xs text-nb-gray-600">
-              {summary.rayon_name && <span>Rayon: {summary.rayon_name}</span>}
-              {summary.area_name && <span>Area: {summary.area_name}</span>}
+              {summary.rayon_name && <span>{t('monitoring:userDetail.rayonLabel')} {summary.rayon_name}</span>}
+              {summary.area_name && <span>{t('monitoring:userDetail.areaLabel')} {summary.area_name}</span>}
             </div>
           )}
         </div>
@@ -130,29 +130,29 @@ export function UserDetailPanel({
           <div className="border-2 border-nb-black rounded-nb-base p-3 bg-white shadow-nb-sm">
             <h3 className="text-xs font-bold uppercase text-nb-gray-500 mb-2 flex items-center gap-1">
               <Clock className="w-3.5 h-3.5" />
-              Shift Hari Ini
+              {t('monitoring:userDetail.shiftTitle')}
             </h3>
             <p className="font-bold text-nb-black text-sm">{summary.shift.name}</p>
             <div className="mt-1 text-xs text-nb-gray-600 space-y-0.5">
               <div>
-                Masuk:{' '}
+                {t('monitoring:userDetail.clockInLabel')}{' '}
                 <span className="font-semibold">{formatTime(summary.shift.clock_in_time)}</span>
               </div>
               {summary.shift.clock_out_time && (
                 <div>
-                  Keluar:{' '}
+                  {t('monitoring:userDetail.clockOutLabel')}{' '}
                   <span className="font-semibold">{formatTime(summary.shift.clock_out_time)}</span>
                 </div>
               )}
               <div>
-                Durasi:{' '}
+                {t('monitoring:userDetail.durationLabel')}{' '}
                 <span className="font-semibold">
                   {formatDuration(summary.shift.duration_minutes)}
                 </span>
               </div>
               {summary.shift.outside_boundary && (
                 <div className="text-[var(--color-status-outside)] font-semibold">
-                  Di luar batas area
+                  {t('monitoring:userDetail.outsideBoundary')}
                 </div>
               )}
             </div>
@@ -164,7 +164,7 @@ export function UserDetailPanel({
           <div className="border-2 border-nb-black rounded-nb-base p-3 bg-white shadow-nb-sm">
             <h3 className="text-xs font-bold uppercase text-nb-gray-500 mb-2 flex items-center gap-1">
               <MapPin className="w-3.5 h-3.5" />
-              Lokasi Terakhir
+              {t('monitoring:userDetail.locationTitle')}
             </h3>
             <div className="text-xs text-nb-gray-600 space-y-1">
               <div className="font-mono">
@@ -172,7 +172,7 @@ export function UserDetailPanel({
                 {summary.last_location.longitude.toFixed(6)}
               </div>
               {summary.last_location.accuracy !== null && (
-                <div>Akurasi: ±{summary.last_location.accuracy.toFixed(0)}m</div>
+                <div>{t('monitoring:userDetail.accuracyLabel')} ±{summary.last_location.accuracy.toFixed(0)}m</div>
               )}
               {summary.last_location.battery_level !== null && (
                 <div
@@ -195,7 +195,7 @@ export function UserDetailPanel({
                     : 'text-[var(--color-status-outside)]'
                 }
               >
-                {summary.last_location.is_within_area ? 'Dalam area' : 'Di luar area'}
+                {summary.last_location.is_within_area ? t('monitoring:userDetail.withinArea') : t('monitoring:userDetail.outsideArea')}
               </div>
             </div>
             <button
@@ -207,7 +207,7 @@ export function UserDetailPanel({
                 'shadow-nb-xs hover:shadow-nb-sm transition-all duration-150'
               )}
             >
-              Lihat Riwayat Lokasi
+              {t('monitoring:userDetail.viewLocationHistory')}
             </button>
           </div>
         )}
@@ -217,7 +217,7 @@ export function UserDetailPanel({
           <div className="border-2 border-nb-black rounded-nb-base p-3 bg-white shadow-nb-sm">
             <h3 className="text-xs font-bold uppercase text-nb-gray-500 mb-2 flex items-center gap-1">
               <FileText className="w-3.5 h-3.5" />
-              Aktivitas Hari Ini ({summary.activities_today.length})
+              {t('monitoring:userDetail.activitiesTitle')} ({summary.activities_today.length})
             </h3>
             <ul className="space-y-1.5">
               {summary.activities_today.slice(0, 5).map((activity) => (
@@ -241,7 +241,7 @@ export function UserDetailPanel({
           <div className="border-2 border-nb-black rounded-nb-base p-3 bg-white shadow-nb-sm">
             <h3 className="text-xs font-bold uppercase text-nb-gray-500 mb-2 flex items-center gap-1">
               <CheckSquare className="w-3.5 h-3.5" />
-              Tugas Hari Ini ({summary.tasks_today.length})
+              {t('monitoring:userDetail.tasksTitle')} ({summary.tasks_today.length})
             </h3>
             <ul className="space-y-1.5">
               {summary.tasks_today.slice(0, 5).map((task) => (
@@ -266,7 +266,7 @@ export function UserDetailPanel({
         {/* WhatsApp / Call links */}
         {summary.whatsapp_links && (
           <div className="border-2 border-nb-black rounded-nb-base p-3 bg-white shadow-nb-sm">
-            <h3 className="text-xs font-bold uppercase text-nb-gray-500 mb-2">Hubungi</h3>
+            <h3 className="text-xs font-bold uppercase text-nb-gray-500 mb-2">{t('monitoring:userDetail.contactTitle')}</h3>
             <div className="flex gap-2">
               <a
                 href={summary.whatsapp_links.chat}
@@ -290,7 +290,7 @@ export function UserDetailPanel({
                   'shadow-nb-xs hover:shadow-nb-sm transition-all duration-150'
                 )}
               >
-                Telepon
+                {t('monitoring:userDetail.phoneLabel')}
               </a>
             </div>
           </div>

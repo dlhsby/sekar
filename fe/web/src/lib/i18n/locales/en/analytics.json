@@ -102,5 +102,11 @@
   "chartDefaults": {
     "attendanceTrend": "Attendance Trend",
     "taskCompletion": "Task Completion"
+  },
+  "areaComparison": {
+    "title": "Area Comparison",
+    "loading": "Loading...",
+    "noData": "No data",
+    "taskLabel": "Tasks"
   }
 }

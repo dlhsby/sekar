@@ -69,7 +69,7 @@ export function ResponsiveShell({ children, sidebar, header }: ResponsiveShellPr
     >
       {/* ── Desktop sidebar (≥1280px) ── */}
       <nav
-        aria-label="Navigasi utama"
+        aria-label={t('components:responsiveShell.mainNavigationLabel')}
         className="hidden xl:flex xl:flex-col xl:w-64 xl:shrink-0 xl:border-r-2 xl:border-nb-black"
       >
         {sidebar}
@@ -78,7 +78,7 @@ export function ResponsiveShell({ children, sidebar, header }: ResponsiveShellPr
       {/* ── Tablet rail (768–1279px) ── */}
       {isTablet && (
         <nav
-          aria-label="Navigasi utama"
+          aria-label={t('components:responsiveShell.mainNavigationLabel')}
           className="hidden md:flex xl:hidden flex-col shrink-0 border-r-2 border-nb-black transition-all duration-200"
           style={{ width: railExpanded ? 256 : 64 }}
         >
@@ -115,7 +115,7 @@ export function ResponsiveShell({ children, sidebar, header }: ResponsiveShellPr
       {isMobile && (
         <nav
           id="mobile-drawer"
-          aria-label="Navigasi utama"
+          aria-label={t('components:responsiveShell.mainNavigationLabel')}
           aria-hidden={!drawerOpen}
           className="fixed inset-y-0 left-0 z-40 w-72 flex flex-col bg-nb-sidebar border-r-2 border-nb-black shadow-nb-lg transition-transform duration-300"
           style={{ transform: drawerOpen ? 'translateX(0)' : 'translateX(-100%)' }}

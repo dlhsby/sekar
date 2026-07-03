@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 /**
@@ -11,6 +12,7 @@ import { toast } from 'sonner';
  * that sends `SKIP_WAITING` to the SW and reloads the page.
  */
 export function UpdateToast() {
+  const { t } = useTranslation(['components']);
   const shownRef = useRef(false);
 
   useEffect(() => {
@@ -20,11 +22,11 @@ export function UpdateToast() {
       if (shownRef.current) return;
       shownRef.current = true;
 
-      toast('Versi baru tersedia', {
-        description: 'Muat ulang halaman untuk mendapatkan pembaruan.',
+      toast(t('components:updateToast.title'), {
+        description: t('components:updateToast.description'),
         duration: Infinity,
         action: {
-          label: 'Muat ulang',
+          label: t('components:updateToast.actionLabel'),
           onClick: () => {
             registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
             window.location.reload();

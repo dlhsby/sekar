@@ -42,5 +42,18 @@
     "placeholder": "Filter…",
     "filterLabel": "Filter {{label}}",
     "clearLabel": "Clear filter {{label}}"
+  },
+  "updateToast": {
+    "title": "New version available",
+    "description": "Reload the page to get the update.",
+    "actionLabel": "Reload"
+  },
+  "offlineBanner": {
+    "ariaLabel": "App is offline",
+    "status": "Offline mode",
+    "lastSync": "Last synced: {time}"
+  },
+  "responsiveShell": {
+    "mainNavigationLabel": "Main navigation"
   }
 }

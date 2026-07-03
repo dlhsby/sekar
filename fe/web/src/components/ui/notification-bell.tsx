@@ -3,6 +3,7 @@
 import * as React from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { Bell } from 'lucide-react';
 
 import { cn } from '@/lib/utils/cn';
@@ -30,15 +31,16 @@ export function NotificationPanel({
   onSelect,
   onViewAll,
 }: NotificationPanelProps) {
+  const { t } = useTranslation(['notifications']);
   const recent = notifications.slice(0, 5);
 
   return (
     <div className="w-80 max-w-[calc(100vw_-_2rem)]">
       <div className="flex items-center justify-between border-b-2 border-nb-black px-4 py-3">
-        <span className="text-nb-h3 text-nb-black">Notifikasi</span>
+        <span className="text-nb-h3 text-nb-black">{t('notifications:bell.title')}</span>
         {notifications.length > 0 && (
           <span className="font-mono text-nb-mono-sm text-nb-gray-600">
-            {notifications.length} belum dibaca
+            {notifications.length} {t('notifications:bell.unreadCount')}
           </span>
         )}
       </div>
@@ -51,7 +53,7 @@ export function NotificationPanel({
         </div>
       ) : recent.length === 0 ? (
         <p className="px-4 py-8 text-center text-nb-body-sm text-nb-gray-600">
-          Tidak ada notifikasi baru.
+          {t('notifications:bell.noNotifications')}
         </p>
       ) : (
         <ul className="max-h-80 overflow-y-auto">
@@ -85,7 +87,7 @@ export function NotificationPanel({
         onClick={onViewAll}
         className="block w-full border-t-2 border-nb-black px-4 py-3 text-center font-heading text-sm font-bold text-nb-black transition-colors hover:bg-nb-gray-50"
       >
-        Lihat Semua
+        {t('notifications:bell.viewAll')}
       </button>
     </div>
   );
@@ -99,6 +101,7 @@ export function NotificationPanel({
  * canvas top-bar (not the sidebar) so it stays visible at narrow widths.
  */
 export function NotificationBell({ className }: { className?: string }) {
+  const { t } = useTranslation(['notifications']);
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
 
@@ -127,7 +130,7 @@ export function NotificationBell({ className }: { className?: string }) {
       <Popover.Trigger asChild>
         <button
           type="button"
-          aria-label={`Notifikasi, ${unreadCount} belum dibaca`}
+          aria-label={t('notifications:bell.ariaLabel', { count: unreadCount })}
           className={cn(
             'relative inline-flex size-8 items-center justify-center rounded-nb-base border-2 transition-colors',
             'focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-nb-primary focus-visible:outline-offset-2',

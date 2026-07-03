@@ -102,5 +102,11 @@
   "chartDefaults": {
     "attendanceTrend": "Tren Kehadiran",
     "taskCompletion": "Penyelesaian Tugas"
+  },
+  "areaComparison": {
+    "title": "Perbandingan Area",
+    "loading": "Memuat...",
+    "noData": "Tidak ada data",
+    "taskLabel": "Tugas"
   }
 }

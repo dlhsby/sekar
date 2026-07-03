@@ -192,7 +192,23 @@
   "userDetail": {
     "backLabel": "Back to list",
     "backButton": "Back",
-    "noData": "Data not available"
+    "noData": "Data not available",
+    "shiftTitle": "Today's Shift",
+    "clockInLabel": "Clock In:",
+    "clockOutLabel": "Clock Out:",
+    "durationLabel": "Duration:",
+    "outsideBoundary": "Outside area boundary",
+    "locationTitle": "Last Location",
+    "accuracyLabel": "Accuracy:",
+    "withinArea": "Within area",
+    "outsideArea": "Outside area",
+    "viewLocationHistory": "View Location History",
+    "activitiesTitle": "Today's Activities",
+    "tasksTitle": "Today's Tasks",
+    "contactTitle": "Contact",
+    "phoneLabel": "Phone",
+    "rayonLabel": "Rayon:",
+    "areaLabel": "Area:"
   },
   "sidePanel": {
     "title": "Staff",

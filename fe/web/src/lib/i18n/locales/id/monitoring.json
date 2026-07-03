@@ -192,7 +192,23 @@
   "userDetail": {
     "backLabel": "Kembali ke daftar",
     "backButton": "Kembali",
-    "noData": "Data tidak tersedia"
+    "noData": "Data tidak tersedia",
+    "shiftTitle": "Shift Hari Ini",
+    "clockInLabel": "Masuk:",
+    "clockOutLabel": "Keluar:",
+    "durationLabel": "Durasi:",
+    "outsideBoundary": "Di luar batas area",
+    "locationTitle": "Lokasi Terakhir",
+    "accuracyLabel": "Akurasi:",
+    "withinArea": "Dalam area",
+    "outsideArea": "Di luar area",
+    "viewLocationHistory": "Lihat Riwayat Lokasi",
+    "activitiesTitle": "Aktivitas Hari Ini",
+    "tasksTitle": "Tugas Hari Ini",
+    "contactTitle": "Hubungi",
+    "phoneLabel": "Telepon",
+    "rayonLabel": "Rayon:",
+    "areaLabel": "Area:"
   },
   "sidePanel": {
     "title": "Petugas",

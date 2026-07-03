@@ -47,5 +47,12 @@
     "plants": "Buka data tanaman",
     "schedules": "Buka jadwal",
     "default": "Buka data terkait"
+  },
+  "bell": {
+    "title": "Notifikasi",
+    "unreadCount": "belum dibaca",
+    "noNotifications": "Tidak ada notifikasi baru.",
+    "viewAll": "Lihat Semua",
+    "ariaLabel": "Notifikasi, {count} belum dibaca"
   }
 }
