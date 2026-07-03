@@ -47,7 +47,7 @@ import { formatDate } from '@/lib/utils/time';
 import type { Asset, AssetAssignment, AssetMaintenance } from '@/lib/api/assets';
 import type { ColumnDef } from '@/components/ui';
 
-const ASSET_MANAGER_ROLES = ['korlap', 'kepala_rayon', 'admin_system', 'superadmin'];
+const ASSET_MANAGER_ROLES = ['korlap', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'];
 
 const STATUS_LABELS: Record<AssetStatus, string> = {
   available: 'Tersedia',

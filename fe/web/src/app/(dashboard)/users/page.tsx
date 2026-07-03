@@ -7,7 +7,8 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import { Plus, Eye, Pencil, Trash2, Power, KeyRound } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2, Power, KeyRound, MapPin } from 'lucide-react';
+import { UserAreasSheet, type UserAreasSheetTarget } from '@/components/users/UserAreasSheet';
 import { toast } from 'sonner';
 import {
   Button,
@@ -67,6 +68,7 @@ export default function UsersPage() {
   const [tempPwUsername, setTempPwUsername] = useState<string | undefined>(undefined);
   // The user pending a force-reset confirmation (shown before generating).
   const [resetConfirmUser, setResetConfirmUser] = useState<User | null>(null);
+  const [areasSheetUser, setAreasSheetUser] = useState<UserAreasSheetTarget | null>(null);
 
   const handleResetPassword = useCallback(
     async (u: User) => {
@@ -157,6 +159,28 @@ export default function UsersPage() {
         cell: ({ row }) => {
           const id = row.original.rayon_id;
           return <span className="text-nb-body-sm">{id ? (rayonNameById.get(id) ?? '—') : '—'}</span>;
+        },
+      },
+      {
+        id: 'areas',
+        accessorFn: (u) => u.assigned_area_count ?? 0,
+        header: 'Area',
+        meta: { label: 'Area' },
+        cell: ({ row }) => {
+          const u = row.original;
+          const count = u.assigned_area_count ?? 0;
+          if (count === 0) return <span className="text-nb-body-sm text-nb-gray-500">—</span>;
+          return (
+            <button
+              type="button"
+              onClick={() => setAreasSheetUser({ id: u.id, full_name: u.full_name })}
+              aria-label={`Lihat ${count} area yang ditugaskan ke ${u.full_name}`}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border-2 border-nb-black rounded-nb-base bg-nb-white text-nb-body-sm font-bold shadow-nb-xs hover:shadow-nb-sm active:shadow-none transition-shadow duration-100"
+            >
+              <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
+              {count} Area
+            </button>
+          );
         },
       },
       {
@@ -378,6 +402,8 @@ export default function UsersPage() {
           setTempPwUsername(undefined);
         }}
       />
+
+      <UserAreasSheet user={areasSheetUser} onClose={() => setAreasSheetUser(null)} />
     </div>
   );
 }

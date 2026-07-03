@@ -42,6 +42,7 @@ describe('UsersController', () => {
 
   const mockUserAreasService = {
     getEffectiveAreas: jest.fn().mockResolvedValue([]),
+    getPermanentAreas: jest.fn().mockResolvedValue([]),
   };
 
   const mockUserValidationService = {
@@ -179,6 +180,26 @@ describe('UsersController', () => {
 
       expect(result).toEqual(mockUser);
       expect(usersService.findOne).toHaveBeenCalledWith(mockUser.id);
+    });
+  });
+
+  describe('getUserAreas', () => {
+    it("returns the user's permanent areas, sorted by name, unwrapped from UserArea", async () => {
+      mockUserAreasService.getPermanentAreas.mockResolvedValue([
+        { area: { id: 'a2', name: 'Taman Bungkul' } },
+        { area: { id: 'a1', name: 'Jl. Ahmad Yani' } },
+        { area: null }, // orphaned assignment → filtered out
+      ]);
+
+      const result = await controller.getUserAreas(mockUser.id);
+
+      expect(mockUserAreasService.getPermanentAreas).toHaveBeenCalledWith(mockUser.id);
+      expect(result.map((a) => a.name)).toEqual(['Jl. Ahmad Yani', 'Taman Bungkul']);
+    });
+
+    it('returns an empty list when the user has no permanent areas', async () => {
+      mockUserAreasService.getPermanentAreas.mockResolvedValue([]);
+      expect(await controller.getUserAreas(mockUser.id)).toEqual([]);
     });
   });
 

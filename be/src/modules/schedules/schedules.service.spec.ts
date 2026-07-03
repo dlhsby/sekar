@@ -371,7 +371,7 @@ describe('SchedulesService', () => {
       );
     });
 
-    it('top_management can edit a kepala_rayon but NOT a satgas', async () => {
+    it('top_management can edit any role (full admin_system parity) — kepala_rayon and satgas', async () => {
       allowRow({
         id: 'd1',
         user_id: 'A',
@@ -381,16 +381,14 @@ describe('SchedulesService', () => {
       });
       await expect(service.setLeave('d1', 'sick', undefined, TOP)).resolves.toBeDefined();
 
-      rosterRepo.findOne.mockResolvedValueOnce({
+      allowRow({
         id: 'd2',
         user_id: 'B',
         user: { role: UserRole.SATGAS },
         rayon_id: 'r1',
         schedule_areas: [],
       });
-      await expect(service.setLeave('d2', 'sick', undefined, TOP)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.setLeave('d2', 'sick', undefined, TOP)).resolves.toBeDefined();
     });
   });
 

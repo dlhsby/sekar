@@ -17,7 +17,7 @@ import { getErrorMessage } from '@/lib/api/client';
 import type { ColumnDef } from '@/components/ui';
 import type { Asset } from '@/lib/api/assets';
 
-const ASSET_MANAGER_ROLES = ['korlap', 'kepala_rayon', 'admin_system', 'superadmin'];
+const ASSET_MANAGER_ROLES = ['korlap', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'];
 
 export default function QrBatchPage() {
   const { toast } = useToast();

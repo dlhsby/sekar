@@ -31,8 +31,12 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
     user?.role === 'admin_system' || user?.role === 'superadmin' || user?.role === 'top_management';
 
   // Worker assignment matches the backend gate (USER_MANAGERS + kepala_rayon).
+  // top_management has full admin_system parity.
   const canManageWorkers =
-    user?.role === 'admin_system' || user?.role === 'superadmin' || user?.role === 'kepala_rayon';
+    user?.role === 'admin_system' ||
+    user?.role === 'superadmin' ||
+    user?.role === 'top_management' ||
+    user?.role === 'kepala_rayon';
 
   const { data: boundaryData } = useAreaBoundary(id);
   const { mutate: updateBoundary, isPending: isSavingBoundary } = useUpdateAreaBoundary();

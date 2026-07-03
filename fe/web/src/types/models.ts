@@ -37,6 +37,8 @@ export interface User extends Record<string, unknown> {
   shift_definition_id?: string;
   shift_definition?: ShiftDefinition;
   user_areas?: Array<{ id: string; area_id: string; area: Area }>;
+  /** Count of permanent area assignments (from the users-list query) — grid Area column. */
+  assigned_area_count?: number;
   password_must_change?: boolean;
   is_active?: boolean;
   created_at: string;

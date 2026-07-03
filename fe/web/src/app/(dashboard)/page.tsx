@@ -23,7 +23,7 @@ import { usePlantStatusSummary } from '@/lib/api/plants';
 import { formatRelativeTime } from '@/lib/utils/time';
 import { cn } from '@/lib/utils/cn';
 
-const ADMIN_ROLES = new Set(['admin_system', 'superadmin']);
+const ADMIN_ROLES = new Set(['admin_system', 'superadmin', 'top_management']);
 
 // Presence model mirrors the mobile monitoring map (StatusSummaryBar): the
 // three activity states shown on the map are Aktif / Idle / Tidak terdeteksi.

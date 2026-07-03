@@ -18,8 +18,12 @@ export const WEB_ROLES: UserRole[] = [
 /** Phase 3 ADR-033 — staff_kecamatan minimal nav items */
 export const KECAMATAN_ROLES: UserRole[] = ['staff_kecamatan'];
 
-/** Admin roles with full system configuration access */
-export const ADMIN_ROLES: UserRole[] = ['admin_system', 'superadmin'];
+/**
+ * Admin roles with full system configuration + data-management access.
+ * top_management has full parity with admin_system (mirrors the backend
+ * RolesGuard elevation); only superadmin sits above.
+ */
+export const ADMIN_ROLES: UserRole[] = ['admin_system', 'superadmin', 'top_management'];
 
 /** Roles with monitoring access (hierarchical) */
 export const MONITORING_ROLES: UserRole[] = [
@@ -44,6 +48,7 @@ export const TASK_MANAGER_ROLES: UserRole[] = [
 export const SCHEDULE_MANAGER_ROLES: UserRole[] = [
   'admin_system',
   'superadmin',
+  'top_management',
   'korlap',
   'admin_data',
 ];
