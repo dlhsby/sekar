@@ -7,6 +7,13 @@ import type { OvertimeStatus, ActivityStatus, TaskStatus, PruningRequestStatus, 
 import type { StatusTone } from '../components/home/StatusPill';
 import i18n from '../i18n/config';
 
+/**
+ * BCP-47 locale for `toLocale*String` date formatting, driven by the active UI
+ * language. Timezone stays WIB (the app serves Surabaya) — only month names /
+ * ordering localize.
+ */
+const dateLocale = (): string => (i18n.language?.startsWith('en') ? 'en-US' : 'id-ID');
+
 // Overtime status helpers
 export function getOvertimeStatusColor(status: OvertimeStatus): 'success' | 'warning' | 'danger' {
   switch (status) {
@@ -90,19 +97,19 @@ export function getTaskStatusLabel(status: string): string {
 export function formatDate(isoString: string): string {
   if (!isoString) { return '-'; }
   const d = new Date(isoString);
-  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString(dateLocale(), { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 export function formatTime(isoString: string): string {
   if (!isoString) { return '-'; }
   const d = new Date(isoString);
-  return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' });
 }
 
 // Shared date formatter
 export function formatDateIndonesian(dateStr: string): string {
   const date = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00');
-  return date.toLocaleDateString('id-ID', {
+  return date.toLocaleDateString(dateLocale(), {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
@@ -114,13 +121,13 @@ const WIB_TZ = 'Asia/Jakarta';
 // Format ISO 8601 datetime to Indonesian short form: "14 Feb 2026 17:00" (WIB)
 export function formatDateTimeIndonesian(isoString: string): string {
   const date = new Date(isoString);
-  const datePart = date.toLocaleDateString('id-ID', {
+  const datePart = date.toLocaleDateString(dateLocale(), {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
     timeZone: WIB_TZ,
   });
-  const timePart = date.toLocaleTimeString('id-ID', {
+  const timePart = date.toLocaleTimeString(dateLocale(), {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
@@ -137,8 +144,8 @@ export function formatDurationHours(start: string, end: string): string {
   if (diffMs <= 0) { return '-'; }
   const totalHours = diffMs / (1000 * 60 * 60);
   // Use WIB date to correctly detect midnight crossings in Indonesia
-  const startDateWIB = new Date(start).toLocaleDateString('id-ID', { timeZone: WIB_TZ });
-  const endDateWIB = new Date(end).toLocaleDateString('id-ID', { timeZone: WIB_TZ });
+  const startDateWIB = new Date(start).toLocaleDateString(dateLocale(), { timeZone: WIB_TZ });
+  const endDateWIB = new Date(end).toLocaleDateString(dateLocale(), { timeZone: WIB_TZ });
   const crossesMidnight = startDateWIB !== endDateWIB;
   const h = Number.isInteger(totalHours)
     ? totalHours.toString()
