@@ -156,7 +156,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
               return;
             }
             if (response.data) {setActivity(response.data);}
-            Alert.alert('Berhasil', t('activities:detail.successApprove'));
+            Alert.alert(t('activities:detail.successTitle'), t('activities:detail.successApprove'));
           } catch {
             Alert.alert('Error', t('activities:detail.failureApprove'));
           } finally {
@@ -182,7 +182,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
       if (response.data) {setActivity(response.data);}
       setShowRejectInput(false);
       setRejectReason('');
-      Alert.alert('Berhasil', t('activities:detail.successReject'));
+      Alert.alert(t('activities:detail.successTitle'), t('activities:detail.successReject'));
     } catch {
       Alert.alert('Error', t('activities:detail.failureReject'));
     } finally {
@@ -249,12 +249,12 @@ export function ActivityDetailScreen(): React.JSX.Element {
             <NBCardHeader>
               <View style={styles.sectionTitleRow}>
                 <MaterialCommunityIcons name="information-outline" size={16} color={nbColors.black} />
-                <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> INFORMASI UMUM</NBText>
+                <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> {t('activities:detail.sections.generalInfo')}</NBText>
               </View>
             </NBCardHeader>
             <NBCardContent>
               <View style={styles.infoRow}>
-                <NBText variant="body-sm" style={styles.labelStyle}>Tanggal & Waktu</NBText>
+                <NBText variant="body-sm" style={styles.labelStyle}>{t('activities:detail.sections.dateTime')}</NBText>
                 <NBText variant="body" style={styles.valueStyle}>{formatDateTime(activity.created_at)}</NBText>
               </View>
               {activity.user && (
@@ -265,7 +265,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
               )}
               {activity.area?.name && (
                 <View style={styles.infoRow}>
-                  <NBText variant="body-sm" style={styles.labelStyle}>Area</NBText>
+                  <NBText variant="body-sm" style={styles.labelStyle}>{t('activities:detail.sections.area')}</NBText>
                   <NBText variant="body" style={styles.valueStyle}>{activity.area.name}</NBText>
                 </View>
               )}
@@ -278,7 +278,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
               <View style={styles.statusRow}>
                 <View style={styles.sectionTitleRow}>
                   <MaterialCommunityIcons name="check-circle-outline" size={16} color={nbColors.black} />
-                  <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> STATUS</NBText>
+                  <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> {t('activities:detail.sections.status')}</NBText>
                 </View>
                 <NBBadge
                   text={getActivityStatusLabel(activity.status)}
@@ -289,19 +289,19 @@ export function ActivityDetailScreen(): React.JSX.Element {
             <NBCardContent>
               {activity.status === 'rejected' && activity.rejection_reason && (
                 <View style={styles.infoRow}>
-                  <NBText variant="body-sm" style={styles.labelStyle}>Alasan Penolakan</NBText>
+                  <NBText variant="body-sm" style={styles.labelStyle}>{t('activities:detail.sections.rejectionReason')}</NBText>
                   <NBText variant="body" style={styles.valueStyle}>{activity.rejection_reason}</NBText>
                 </View>
               )}
               {activity.reviewer && (
                 <View style={styles.infoRow}>
-                  <NBText variant="body-sm" style={styles.labelStyle}>Direview Oleh</NBText>
+                  <NBText variant="body-sm" style={styles.labelStyle}>{t('activities:detail.sections.reviewedBy')}</NBText>
                   <NBText variant="body" style={styles.valueStyle}>{activity.reviewer.full_name}</NBText>
                 </View>
               )}
               {activity.reviewed_at && (
                 <View style={styles.infoRow}>
-                  <NBText variant="body-sm" style={styles.labelStyle}>Tanggal Review</NBText>
+                  <NBText variant="body-sm" style={styles.labelStyle}>{t('activities:detail.sections.reviewDate')}</NBText>
                   <NBText variant="body" style={styles.valueStyle}>{formatDateTime(activity.reviewed_at)}</NBText>
                 </View>
               )}
@@ -314,9 +314,9 @@ export function ActivityDetailScreen(): React.JSX.Element {
               <NBCardHeader>
                 <View style={styles.sectionTitleRow}>
                   <MaterialCommunityIcons name="camera" size={16} color={nbColors.black} />
-                  <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> FOTO AKTIVITAS</NBText>
+                  <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> {t('activities:detail.sections.photos')}</NBText>
                 </View>
-                <NBText variant="body-sm" style={styles.sectionSubtitleStyle}>{activity.photo_urls.length} foto dilampirkan</NBText>
+                <NBText variant="body-sm" style={styles.sectionSubtitleStyle}>{t('activities:detail.sections.photosAttached', { count: activity.photo_urls.length })}</NBText>
               </NBCardHeader>
               <NBCardContent>
                 <ScrollView
@@ -343,7 +343,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
               <NBCardHeader>
                 <View style={styles.sectionTitleRow}>
                   <MaterialCommunityIcons name="tag-outline" size={16} color={nbColors.black} />
-                  <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> JENIS AKTIVITAS</NBText>
+                  <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> {t('activities:detail.sections.activityType')}</NBText>
                 </View>
               </NBCardHeader>
               <NBCardContent>
@@ -360,7 +360,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
             <NBCardHeader>
               <View style={styles.sectionTitleRow}>
                 <MaterialCommunityIcons name="text-box-outline" size={16} color={nbColors.black} />
-                <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> DESKRIPSI PEKERJAAN</NBText>
+                <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> {t('activities:detail.sections.description')}</NBText>
               </View>
             </NBCardHeader>
             <NBCardContent>
@@ -374,7 +374,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
               <NBCardHeader>
                 <View style={styles.sectionTitleRow}>
                   <MaterialCommunityIcons name="map-marker" size={16} color={nbColors.black} />
-                  <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> LOKASI GPS</NBText>
+                  <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> {t('activities:detail.sections.gpsLocation')}</NBText>
                 </View>
               </NBCardHeader>
               <NBCardContent>
@@ -390,11 +390,11 @@ export function ActivityDetailScreen(): React.JSX.Element {
           {/* Rejection reason input — shown inline in scroll when rejecting */}
           {canApprove && showRejectInput && (
             <NBCardTextInput
-              title="Alasan Penolakan"
+              title={t('activities:detail.rejectionInput.title')}
               required
               value={rejectReason}
               onChangeText={setRejectReason}
-              placeholder="Jelaskan alasan penolakan aktivitas ini..."
+              placeholder={t('activities:detail.rejectionInput.placeholder')}
               maxLength={1000}
               numberOfLines={4}
               style={styles.rejectInputSection}

@@ -46,6 +46,10 @@
     "reset": "Reset",
     "apply": "Apply"
   },
+  "completion": {
+    "completedLabel": "Completed {{dateTime}}",
+    "proofPhotosLabel": "Proof Photos ({{count}})"
+  },
   "assignee": {
     "sectionTitle": "ASSIGNMENT",
     "sectionSubtitle": "Select the assigned officer",

@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBText } from '../../../components/nb';
 import {
   nbColors,
@@ -34,34 +35,37 @@ const OvertimeDurationCard: React.FC<OvertimeDurationCardProps> = ({
   elapsed,
   startTime,
   reason,
-}) => (
-  <View style={[styles.card, styles.durasiCard]}>
-    <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.8, marginBottom: nbSpacing.xs }}>
-      DURASI
-    </NBText>
-    <NBText variant="display-xl" color="statusIdle" style={styles.timerValue}>
-      {elapsed}
-    </NBText>
-    <View style={styles.startTimeRow}>
-      <NBText variant="body-sm" color="gray600" style={styles.startTimeLabel}>
-        Mulai:
+}) => {
+  const { t } = useTranslation();
+  return (
+    <View style={[styles.card, styles.durasiCard]}>
+      <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.8, marginBottom: nbSpacing.xs }}>
+        {t('overtime:components.durationTitle')}
       </NBText>
-      <NBText variant="body-sm" color="black" style={styles.startTimeValue}>
-        {formatTime(startTime)}
+      <NBText variant="display-xl" color="statusIdle" style={styles.timerValue}>
+        {elapsed}
       </NBText>
-    </View>
-    {reason && (
-      <View style={styles.reasonRow}>
+      <View style={styles.startTimeRow}>
         <NBText variant="body-sm" color="gray600" style={styles.startTimeLabel}>
-          Alasan:
+          {t('overtime:components.startTimeLabel')}
         </NBText>
-        <NBText variant="body-sm" color="black" style={styles.reasonValue}>
-          {reason}
+        <NBText variant="body-sm" color="black" style={styles.startTimeValue}>
+          {formatTime(startTime)}
         </NBText>
       </View>
-    )}
-  </View>
-);
+      {reason && (
+        <View style={styles.reasonRow}>
+          <NBText variant="body-sm" color="gray600" style={styles.startTimeLabel}>
+            {t('overtime:components.reasonLabel')}
+          </NBText>
+          <NBText variant="body-sm" color="black" style={styles.reasonValue}>
+            {reason}
+          </NBText>
+        </View>
+      )}
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   card: {

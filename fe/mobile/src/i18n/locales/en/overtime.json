@@ -69,6 +69,8 @@
   },
   "forms": {
     "reasonLabel": "Reason",
+    "reasonTitle": "OVERTIME REASON (OPTIONAL)",
+    "reasonPlaceholder": "Example: Additional work after working hours...",
     "locationError": "GPS location is required",
     "activityTypeLabel": "Activity Type",
     "activityTypePlaceholder": "Select activity type...",
@@ -96,6 +98,9 @@
     "clockOutButtonTitle": "Clock Out Overtime",
     "selfieAlreadyCaptured": "Captured ✓",
     "selfieOptional": "Optional",
+    "selfiePreviewLabel": "View full selfie",
+    "selfiePreviewHint": "Tap to view the photo in full size",
+    "selfiePrompt": "Take a selfie for verification (not required)",
     "selfiePrompt": "Take a selfie for verification",
     "viewFullSelfieLabel": "View full selfie",
     "captureButtonLabel": "Take Selfie",
@@ -106,7 +111,10 @@
     "withinAreaBadge": "IN AREA",
     "outsideAreaBadge": "OUTSIDE AREA",
     "trailTitle": "LOCATION TRAIL",
-    "viewTrailButtonLabel": "View Overtime Location Trail"
+    "viewTrailButtonLabel": "View Overtime Location Trail",
+    "durationTitle": "DURATION",
+    "startTimeLabel": "Started:",
+    "reasonLabel": "Reason:"
   },
   "trail": {
     "title": "Overtime Trail",

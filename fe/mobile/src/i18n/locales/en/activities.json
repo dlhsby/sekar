@@ -92,6 +92,7 @@
     "confirmRejectConfirm": "Reject",
     "rejectReasonLabel": "Rejection Reason (optional)",
     "rejectReasonPlaceholder": "Explain the reason for rejection...",
+    "successTitle": "Success",
     "successApprove": "Activity approved",
     "successReject": "Activity rejected",
     "failureApprove": "Failed to approve activity",

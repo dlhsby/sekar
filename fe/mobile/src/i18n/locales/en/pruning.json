@@ -183,6 +183,16 @@
       "PW": "Citizen Message",
       "Wk": "Mayor"
     },
+    "speciesLabel": "Tree Species *",
+    "speciesCountLabel": "Quantity per Species",
+    "speciesCountAccessibility": "Quantity {{species}}",
+    "notesLabel": "Additional Notes (Optional)",
+    "notesPlaceholder": "Add notes...",
+    "notesAccessibility": "Additional notes",
+    "notesAccessibilityHint": "Free space for additional notes",
+    "submitButtonLabel": "Submit Request",
+    "submitButtonAccessibility": "Submit request",
+    "submitButtonDisabledHint": "Complete all required fields",
     "validationErrors": {
       "caseTypeRequired": "Case type must be selected",
       "pruningActionRequired": "Pruning action must be selected",

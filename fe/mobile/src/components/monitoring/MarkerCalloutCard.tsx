@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBText } from '../nb/NBText';
 import {
@@ -45,6 +46,7 @@ export function MarkerCalloutCard({
   icon,
   presence,
 }: MarkerCalloutCardProps): React.JSX.Element {
+  const { t } = useTranslation();
   const meta = roleText ? `${typeText} · ${roleText}` : typeText;
 
   return (
@@ -83,7 +85,7 @@ export function MarkerCalloutCard({
 
         <View style={styles.footer}>
           <NBText variant="caption" style={[styles.detailText, { color: accent }]}>
-            Lihat detail
+            {t('monitoring:markerPreview.viewDetail')}
           </NBText>
           <MaterialCommunityIcons name="chevron-right" size={16} color={accent} />
         </View>

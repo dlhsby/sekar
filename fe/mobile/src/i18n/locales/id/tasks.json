@@ -46,6 +46,10 @@
     "reset": "Reset",
     "apply": "Terapkan"
   },
+  "completion": {
+    "completedLabel": "Selesai {{dateTime}}",
+    "proofPhotosLabel": "Foto Bukti ({{count}})"
+  },
   "assignee": {
     "sectionTitle": "PENUGASAN",
     "sectionSubtitle": "Pilih petugas yang ditugaskan",

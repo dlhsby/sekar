@@ -14,6 +14,7 @@ import {
   PanResponder,
 } from 'react-native';
 import type { StyleProp, TextStyle } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import {
   BottomSheetModal,
   BottomSheetView,
@@ -106,6 +107,7 @@ function SheetModal({
   children,
   testID,
 }: NBModalProps) {
+  const { t } = useTranslation();
   const sheetRef = useRef<BottomSheetModal>(null);
   const insets = useSafeAreaInsets();
   const screenHeight = Dimensions.get('window').height;
@@ -244,7 +246,7 @@ function SheetModal({
           <TouchableOpacity
             onPress={() => sheetRef.current?.dismiss()}
             style={styles.closeBtnHitArea}
-            accessibilityLabel="Tutup"
+            accessibilityLabel={t('common:actions.close')}
             accessibilityRole="button"
           >
             <View style={styles.closeBtnVisual}>
@@ -271,6 +273,7 @@ function FullscreenModal({
   children,
   testID,
 }: NBModalProps) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
   const body = scrollable ? (
@@ -320,7 +323,7 @@ function FullscreenModal({
             <TouchableOpacity
               onPress={onClose}
               style={styles.backButton}
-              accessibilityLabel="Kembali"
+              accessibilityLabel={t('common:actions.back')}
               accessibilityRole="button"
             >
               <MaterialCommunityIcons name="arrow-left" size={24} color={nbColors.black} />
@@ -368,6 +371,7 @@ function RNSheetModal({
   children,
   testID,
 }: NBModalProps) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const screenHeight = Dimensions.get('window').height;
   // Cap a hug-content sheet below the status bar; honor an explicit sheetHeight.
@@ -423,7 +427,7 @@ function RNSheetModal({
         <Pressable
           style={styles.rnSheetBackdrop}
           onPress={onClose}
-          accessibilityLabel="Tutup"
+          accessibilityLabel={t('common:actions.close')}
           accessibilityRole="button"
         />
         <KeyboardAvoidingView
@@ -453,7 +457,7 @@ function RNSheetModal({
                 <TouchableOpacity
                   onPress={onClose}
                   style={styles.closeBtnHitArea}
-                  accessibilityLabel="Tutup"
+                  accessibilityLabel={t('common:actions.close')}
                   accessibilityRole="button"
                 >
                   <View style={styles.closeBtnVisual}>

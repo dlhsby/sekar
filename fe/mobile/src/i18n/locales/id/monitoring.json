@@ -45,7 +45,8 @@
   "markerPreview": {
     "typeOfficer": "Petugas",
     "typeRayon": "Rayon",
-    "typeArea": "Area"
+    "typeArea": "Area",
+    "viewDetail": "Lihat detail"
   },
   "entityTypes": {
     "area": "Area",
@@ -134,7 +135,8 @@
     "recents": "Terakhir dilihat",
     "clearAll": "Hapus semua",
     "clearAllLabel": "Hapus semua pencarian terakhir",
-    "clear": "Bersihkan"
+    "clear": "Bersihkan",
+    "selectChoice": "Pilih {{name}}"
   },
   "attendance": {
     "title": "Kehadiran",
@@ -196,7 +198,10 @@
     "wayEndLabel": "Akhir",
     "battery": "Baterai:",
     "insideArea": "Di dalam area",
-    "outsideArea": "Di luar area"
+    "outsideArea": "Di luar area",
+    "dateStepperPrevDay": "Hari sebelumnya",
+    "dateStepperSelectDate": "Pilih tanggal",
+    "dateStepperNextDay": "Hari berikutnya"
   },
   "userAttendance": {
     "title": "Detail Kehadiran",

@@ -183,6 +183,16 @@
       "PW": "Pesan Warga",
       "Wk": "Walikota"
     },
+    "speciesLabel": "Spesies Tanaman *",
+    "speciesCountLabel": "Jumlah per Spesies",
+    "speciesCountAccessibility": "Jumlah {{species}}",
+    "notesLabel": "Catatan Tambahan (Opsional)",
+    "notesPlaceholder": "Tambahkan catatan...",
+    "notesAccessibility": "Catatan tambahan",
+    "notesAccessibilityHint": "Ruang bebas untuk catatan tambahan",
+    "submitButtonLabel": "Kirim Pengajuan",
+    "submitButtonAccessibility": "Kirim pengajuan",
+    "submitButtonDisabledHint": "Lengkapi semua bidang yang diperlukan",
     "validationErrors": {
       "caseTypeRequired": "Jenis gangguan harus dipilih",
       "pruningActionRequired": "Jenis pemangkasan harus dipilih",

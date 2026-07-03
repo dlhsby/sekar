@@ -69,6 +69,8 @@
   },
   "forms": {
     "reasonLabel": "Alasan",
+    "reasonTitle": "ALASAN LEMBUR (OPSIONAL)",
+    "reasonPlaceholder": "Contoh: Pekerjaan tambahan setelah jam kerja...",
     "locationError": "Lokasi GPS diperlukan",
     "activityTypeLabel": "Jenis Aktivitas",
     "activityTypePlaceholder": "Pilih jenis aktivitas...",
@@ -96,6 +98,9 @@
     "clockOutButtonTitle": "Clock Out Lembur",
     "selfieAlreadyCaptured": "Sudah diambil ✓",
     "selfieOptional": "Opsional",
+    "selfiePreviewLabel": "Lihat selfie penuh",
+    "selfiePreviewHint": "Ketuk untuk melihat foto dalam ukuran penuh",
+    "selfiePrompt": "Foto selfie untuk verifikasi (tidak wajib)",
     "selfiePrompt": "Ambil selfie untuk verifikasi",
     "viewFullSelfieLabel": "Lihat selfie penuh",
     "captureButtonLabel": "Ambil Selfie",
@@ -106,7 +111,10 @@
     "withinAreaBadge": "DI AREA",
     "outsideAreaBadge": "LUAR AREA",
     "trailTitle": "RUTE LOKASI",
-    "viewTrailButtonLabel": "Lihat Rute Lokasi Lembur"
+    "viewTrailButtonLabel": "Lihat Rute Lokasi Lembur",
+    "durationTitle": "DURASI",
+    "startTimeLabel": "Mulai:",
+    "reasonLabel": "Alasan:"
   },
   "trail": {
     "title": "Rute Lembur",

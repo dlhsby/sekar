@@ -59,6 +59,7 @@ const ResultRow = React.memo(function ResultRow({
   result: SearchResult;
   onPress: () => void;
 }): React.JSX.Element {
+  const { t } = useTranslation();
   const meta = TYPE_META[result.type];
   return (
     <TouchableOpacity
@@ -66,7 +67,7 @@ const ResultRow = React.memo(function ResultRow({
       onPress={onPress}
       activeOpacity={0.7}
       accessibilityRole="button"
-      accessibilityLabel={`Pilih ${result.name}`}
+      accessibilityLabel={t('monitoring:search.selectChoice', { name: result.name })}
       testID={`search-result-${result.type}-${result.id}`}
     >
       <View style={[styles.rowIcon, { backgroundColor: withAlpha(meta.accent, 0.16), borderColor: meta.accent }]}>

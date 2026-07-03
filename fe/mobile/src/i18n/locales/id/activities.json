@@ -92,6 +92,7 @@
     "confirmRejectConfirm": "Tolak",
     "rejectReasonLabel": "Alasan Penolakan (opsional)",
     "rejectReasonPlaceholder": "Jelaskan alasan penolakan...",
+    "successTitle": "Berhasil",
     "successApprove": "Aktivitas disetujui",
     "successReject": "Aktivitas ditolak",
     "failureApprove": "Gagal menyetujui aktivitas",

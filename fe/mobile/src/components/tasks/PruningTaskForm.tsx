@@ -234,7 +234,7 @@ export const PruningTaskForm: React.FC<PruningTaskFormProps> = ({
 
         {/* Species Selection */}
         <View style={styles.section}>
-          <Text style={styles.label}>Spesies Tanaman *</Text>
+          <Text style={styles.label}>{t('pruning:taskForm.speciesLabel')}</Text>
           <SpeciesAutocomplete
             multi={true}
             value={selectedSpecies}
@@ -247,7 +247,7 @@ export const PruningTaskForm: React.FC<PruningTaskFormProps> = ({
         {/* Species Counts */}
         {selectedSpecies.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.label}>Jumlah per Spesies</Text>
+            <Text style={styles.label}>{t('pruning:taskForm.speciesCountLabel')}</Text>
             {selectedSpecies.map((species) => (
               <View key={species.id} style={styles.countRow}>
                 <Text style={styles.countLabel}>{species.nameId}</Text>
@@ -258,7 +258,7 @@ export const PruningTaskForm: React.FC<PruningTaskFormProps> = ({
                   value={String(speciesCounts[species.id] || 1)}
                   onChangeText={(value) => handleCountChange(species.id, value)}
                   editable={!isLoading}
-                  accessibilityLabel={`Jumlah ${species.nameId}`}
+                  accessibilityLabel={t('pruning:taskForm.speciesCountAccessibility', { species: species.nameId })}
                   testID={`${testID}-count-${species.id}`}
                 />
               </View>
@@ -268,18 +268,18 @@ export const PruningTaskForm: React.FC<PruningTaskFormProps> = ({
 
         {/* Notes */}
         <View style={styles.section}>
-          <Text style={styles.label}>Catatan Tambahan (Opsional)</Text>
+          <Text style={styles.label}>{t('pruning:taskForm.notesLabel')}</Text>
           <TextInput
             style={styles.notesInput}
-            placeholder="Tambahkan catatan..."
+            placeholder={t('pruning:taskForm.notesPlaceholder')}
             placeholderTextColor={nbColors.gray50}
             value={notes}
             onChangeText={setNotes}
             multiline
             numberOfLines={4}
             editable={!isLoading}
-            accessibilityLabel="Catatan tambahan"
-            accessibilityHint="Ruang bebas untuk catatan tambahan"
+            accessibilityLabel={t('pruning:taskForm.notesAccessibility')}
+            accessibilityHint={t('pruning:taskForm.notesAccessibilityHint')}
             testID={`${testID}-notes`}
           />
         </View>
@@ -287,13 +287,13 @@ export const PruningTaskForm: React.FC<PruningTaskFormProps> = ({
         {/* Submit Button */}
         <View style={styles.buttonContainer}>
           <NBButton
-            title="Kirim Pengajuan"
+            title={t('pruning:taskForm.submitButtonLabel')}
             onPress={handleSubmit}
             disabled={!isFormValid || isLoading}
             loading={isLoading}
             testID={`${testID}-submit`}
-            accessibilityLabel="Kirim pengajuan"
-            accessibilityHint={!isFormValid ? 'Lengkapi semua bidang yang diperlukan' : undefined}
+            accessibilityLabel={t('pruning:taskForm.submitButtonAccessibility')}
+            accessibilityHint={!isFormValid ? t('pruning:taskForm.submitButtonDisabledHint') : undefined}
           />
         </View>
       </ScrollView>
