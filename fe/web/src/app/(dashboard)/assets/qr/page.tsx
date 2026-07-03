@@ -124,7 +124,7 @@ export default function QrBatchPage() {
       header: '',
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Pilih' },
+      meta: { label: t('assets:maintenance2.selectLabel') },
       cell: ({ row }) => (
         <input
           type="checkbox"

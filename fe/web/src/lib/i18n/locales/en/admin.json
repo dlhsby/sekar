@@ -173,7 +173,8 @@
       "emptyText": "No areas yet.",
       "count": "{count} area{query, select, empty { of {total}} other { of {total}}}",
       "noMatch": "No matching areas."
-    }
+    },
+    "detailNotFound": "The area you are looking for was not found or has been deleted."
   },
   "rayons": {
     "pageTitle": "Rayons",

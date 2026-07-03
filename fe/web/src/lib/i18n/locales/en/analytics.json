@@ -98,5 +98,9 @@
       },
       "error": "Failed to load details"
     }
+  },
+  "chartDefaults": {
+    "attendanceTrend": "Attendance Trend",
+    "taskCompletion": "Task Completion"
   }
 }

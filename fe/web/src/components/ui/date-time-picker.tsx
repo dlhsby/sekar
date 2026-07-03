@@ -4,6 +4,7 @@ import { format, isValid, parse } from 'date-fns';
 import { dateFnsLocale } from '@/lib/i18n/date-locale';
 import { CalendarClock } from 'lucide-react';
 import { forwardRef, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { cn, nbFocusRing } from '@/lib/utils/cn';
 
@@ -96,6 +97,7 @@ export const DateTimePicker = forwardRef<HTMLInputElement, DateTimePickerProps>(
     },
     ref
   ) {
+    const { t } = useTranslation();
     const [open, setOpen] = useState(false);
     const [text, setText] = useState(toDisplay(value));
     const [focused, setFocused] = useState(false);
@@ -148,7 +150,7 @@ export const DateTimePicker = forwardRef<HTMLInputElement, DateTimePickerProps>(
               <button
                 type="button"
                 disabled={disabled}
-                aria-label="Pilih tanggal & waktu"
+                aria-label={t('common:pickers.selectDateTime')}
                 className={cn('absolute inset-y-0 right-0 flex items-center px-3 text-nb-gray-500 hover:text-nb-black disabled:cursor-not-allowed disabled:text-nb-gray-300', nbFocusRing)}
               >
                 <CalendarClock className="h-4 w-4" aria-hidden />
@@ -195,9 +197,7 @@ export const DateTimePicker = forwardRef<HTMLInputElement, DateTimePickerProps>(
               type="button"
               onClick={() => onValueChange?.(`${todayIso} ${time || '00:00'}`)}
               className="rounded-nb-base px-2 py-1.5 text-nb-body-sm font-semibold text-nb-success-dark hover:bg-nb-gray-100"
-            >
-              Hari ini
-            </button>
+            >{t('common:pickers.today')}</button>
             <button
               type="button"
               onClick={() => {

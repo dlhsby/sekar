@@ -102,7 +102,7 @@ export default function MaintenanceCalendarPage() {
     <div className="space-y-6">
       <PageHeader
         title="Perawatan Aset"
-        description="Kelola jadwal perawatan aset"
+        description={t('assets:maintenance2.pageDescription')}
       />
 
       <Card variant="default">

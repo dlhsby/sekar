@@ -35,7 +35,6 @@
     "showColumns": "Tampilkan kolom",
     "columns": "Kolom",
     "clearAllFilters": "Hapus semua filter kolom",
-    "retry": "Coba Lagi",
     "filterPerColumn": "Filter per kolom",
     "activeFilters": "{{count}} filter aktif",
     "profile": "Profil",
@@ -175,5 +174,13 @@
     "previous": "Sebelumnya",
     "next": "Berikutnya",
     "pageOf": "Halaman {page} dari {total}"
+  },
+  "pickers": {
+    "selectTime": "Pilih waktu",
+    "selectDate": "Pilih tanggal",
+    "selectDateTime": "Pilih tanggal & waktu",
+    "prevDay": "Hari sebelumnya",
+    "nextDay": "Hari berikutnya",
+    "today": "Hari ini"
   }
 }

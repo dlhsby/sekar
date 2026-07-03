@@ -34,6 +34,7 @@ export function TimeList({
   onSelect: (time: string) => void;
   className?: string;
 }): React.JSX.Element {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const selectedRef = useRef<HTMLButtonElement>(null);
   // The current time, snapped to the nearest step below (for the "now" marker).
@@ -62,7 +63,7 @@ export function TimeList({
       ref={containerRef}
       className={cn('overflow-y-auto overscroll-contain py-2', className)}
       role="listbox"
-      aria-label="Pilih waktu"
+      aria-label={t('common:pickers.selectTime')}
     >
       {TIME_OPTIONS.map((t) => (
         <button

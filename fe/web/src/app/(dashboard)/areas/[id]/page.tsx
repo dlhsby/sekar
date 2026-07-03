@@ -84,7 +84,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
             <div className="text-4xl mb-4">⚠️</div>
             <h3 className="font-bold text-lg mb-2">Area Tidak Ditemukan</h3>
             <p className="text-sm text-nb-gray-600 mb-4">
-              Area yang Anda cari tidak ditemukan atau telah dihapus.
+              {t('admin:areas.detailNotFound')}
             </p>
             <Button onClick={() => router.push('/areas')}>Kembali ke Daftar Area</Button>
           </CardContent>

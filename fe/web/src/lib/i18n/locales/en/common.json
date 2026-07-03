@@ -16,7 +16,7 @@
     "filter": "Filter",
     "reset": "Reset",
     "refresh": "Refresh",
-    "retry": "Retry",
+    "retry": "Try Again",
     "view": "View",
     "detail": "Detail",
     "approve": "Approve",
@@ -35,7 +35,6 @@
     "showColumns": "Show Columns",
     "columns": "Columns",
     "clearAllFilters": "Clear all column filters",
-    "retry": "Try Again",
     "filterPerColumn": "Filter per column",
     "activeFilters": "{{count}} active filters",
     "profile": "Profile",
@@ -175,5 +174,13 @@
     "previous": "Previous",
     "next": "Next",
     "pageOf": "Page {page} of {total}"
+  },
+  "pickers": {
+    "selectTime": "Select time",
+    "selectDate": "Select date",
+    "selectDateTime": "Select date & time",
+    "prevDay": "Previous day",
+    "nextDay": "Next day",
+    "today": "Today"
   }
 }
