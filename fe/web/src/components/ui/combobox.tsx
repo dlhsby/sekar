@@ -44,9 +44,9 @@ export function Combobox({
   options,
   value,
   onValueChange,
-  placeholder = 'Pilih…',
-  searchPlaceholder = 'Cari…',
-  emptyText = 'Tidak ditemukan',
+  placeholder: _placeholder,
+  searchPlaceholder: _searchPlaceholder,
+  emptyText: _emptyText,
   clearable = false,
   disabled,
   id,
@@ -56,6 +56,9 @@ export function Combobox({
   'aria-describedby': ariaDescribedBy,
 }: ComboboxProps): React.JSX.Element {
   const { t } = useTranslation();
+  const placeholder = _placeholder ?? t('common:ui.combobox.placeholder');
+  const searchPlaceholder = _searchPlaceholder ?? t('common:ui.combobox.searchPlaceholder');
+  const emptyText = _emptyText ?? t('common:ui.combobox.noResults');
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState('');
   const [activeIndex, setActiveIndex] = React.useState(0);
