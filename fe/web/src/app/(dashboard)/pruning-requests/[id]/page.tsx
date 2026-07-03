@@ -11,6 +11,7 @@
 'use client';
 
 import Link from 'next/link';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -163,7 +164,7 @@ export default function PruningRequestDetailPage() {
   };
 
   const expectedLabel = request.expectedDate
-    ? new Date(request.expectedDate).toLocaleDateString('id-ID')
+    ? new Date(request.expectedDate).toLocaleDateString(intlLocale())
     : request.expectedYear && request.expectedIsoWeek
       ? t('pruning:detail.weekLabel', { week: request.expectedIsoWeek, year: request.expectedYear })
       : '-';
@@ -251,7 +252,7 @@ export default function PruningRequestDetailPage() {
                   label={t('pruning:detail.fields.reviewDate')}
                   value={
                     request.reviewedAt
-                      ? new Date(request.reviewedAt).toLocaleString('id-ID')
+                      ? new Date(request.reviewedAt).toLocaleString(intlLocale())
                       : '-'
                   }
                   mono

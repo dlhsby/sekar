@@ -6,6 +6,7 @@
  */
 
 import { use, useMemo } from 'react';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
@@ -147,7 +148,7 @@ export default function AreaPlantsPage({ params }: { params: Promise<{ areaId: s
                     </TableCell>
                     <TableCell className="text-nb-gray-600">
                       {plant.nextDueAt
-                        ? new Date(plant.nextDueAt).toLocaleDateString('id-ID', {
+                        ? new Date(plant.nextDueAt).toLocaleDateString(intlLocale(), {
                             month: 'short',
                             day: 'numeric',
                           })

@@ -6,6 +6,7 @@
 'use client';
 
 import { useAuth } from '@/lib/auth/hooks';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { useActivity, useApproveActivity, useRejectActivity } from '@/lib/api/activities';
 import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardContent, Badge, Button, FormInput } from '@/components/ui';
@@ -195,7 +196,7 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
               <div>
                 <div className="text-sm font-semibold text-nb-gray-600">{t('activities:detail.fields.dateTime')}</div>
                 <div className="font-bold text-nb-black">
-                  {new Date(activity.created_at).toLocaleString('id-ID')}
+                  {new Date(activity.created_at).toLocaleString(intlLocale())}
                 </div>
               </div>
               {(activity.gps_lat || activity.gps_lng) && (
@@ -232,7 +233,7 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
                   <div>
                     <div className="text-sm font-semibold text-nb-gray-600">{t('activities:detail.fields.processDate')}</div>
                     <div className="font-bold text-nb-black">
-                      {new Date(activity.reviewed_at).toLocaleString('id-ID')}
+                      {new Date(activity.reviewed_at).toLocaleString(intlLocale())}
                     </div>
                   </div>
                 )}

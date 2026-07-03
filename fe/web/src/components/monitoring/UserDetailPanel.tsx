@@ -6,6 +6,7 @@
  */
 
 import { useTranslation } from 'react-i18next';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { ArrowLeft, Clock, MapPin, Battery, CheckSquare, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui';
 import { ROLE_LABELS } from '@/lib/constants/roles';
@@ -223,7 +224,7 @@ export function UserDetailPanel({
                   <span className="h-1.5 w-1.5 rounded-full bg-nb-primary flex-shrink-0" />
                   <span className="text-nb-black font-medium truncate">{activity.title}</span>
                   <span className="text-nb-gray-400 flex-shrink-0 ml-auto">
-                    {new Date(activity.created_at).toLocaleTimeString('id-ID', {
+                    {new Date(activity.created_at).toLocaleTimeString(intlLocale(), {
                       hour: '2-digit',
                       minute: '2-digit',
                     })}

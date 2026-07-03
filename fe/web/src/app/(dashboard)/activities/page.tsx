@@ -6,6 +6,7 @@
 'use client';
 
 import type { DetailModalRow } from '@/components/ui';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { useAuth } from '@/lib/auth/hooks';
 import { useActivities, useApproveActivity, useRejectActivity } from '@/lib/api/activities';
 import { useActivityTypes } from '@/lib/api/activity-types';
@@ -195,7 +196,7 @@ export default function ActivitiesPage() {
       enableColumnFilter: false,
       meta: { label: t('activities:list.table.columns.date') },
       cell: ({ row }) => (
-        <div className="text-sm">{new Date(row.original.created_at).toLocaleDateString('id-ID')}</div>
+        <div className="text-sm">{new Date(row.original.created_at).toLocaleDateString(intlLocale())}</div>
       ),
     },
     {
@@ -440,7 +441,7 @@ export default function ActivitiesPage() {
           onOpenChange={view.onOpenChange}
           title={t('activities:list.actions.viewModal')}
           rows={[
-            { label: t('activities:detail.fields.dateTime'), value: new Date(view.item.created_at).toLocaleDateString('id-ID') },
+            { label: t('activities:detail.fields.dateTime'), value: new Date(view.item.created_at).toLocaleDateString(intlLocale()) },
             { label: t('activities:detail.fields.user'), value: view.item.user?.full_name },
             { label: t('activities:detail.fields.activityType'), value: view.item.activity_type?.name },
             { label: t('activities:detail.fields.area'), value: view.item.area?.name },

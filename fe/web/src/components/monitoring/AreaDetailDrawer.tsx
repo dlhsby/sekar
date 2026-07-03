@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useRef, useCallback } from 'react';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils/cn';
 import { WorkerListVirtual, type WorkerListItem } from './WorkerListVirtual';
@@ -252,7 +253,7 @@ function formatDate(iso: string | null | undefined): string {
   if (!iso) return '—';
   try {
     const d = new Date(iso);
-    return d.toLocaleDateString('id-ID', {
+    return d.toLocaleDateString(intlLocale(), {
       day: '2-digit',
       month: 'short',
       year: 'numeric',

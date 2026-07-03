@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
@@ -90,7 +91,7 @@ export default function MaintenanceCalendarPage() {
     }
   };
 
-  const monthName = new Date(currentYear, currentMonth).toLocaleDateString('id-ID', {
+  const monthName = new Date(currentYear, currentMonth).toLocaleDateString(intlLocale(), {
     month: 'long',
     year: 'numeric',
   });

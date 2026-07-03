@@ -1,6 +1,7 @@
 'use client';
 
 import type { UserRole } from '@/types/models';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { useAuth } from '@/lib/auth/hooks';
 import {
   useReports,
@@ -228,7 +229,7 @@ export default function ReportsPage() {
       meta: { label: t('reports:list.columnHeaders.createdAt') },
       cell: ({ row }) => {
         const date = new Date(row.original.created_at);
-        return <span className="text-nb-body-sm">{date.toLocaleDateString('id-ID')}</span>;
+        return <span className="text-nb-body-sm">{date.toLocaleDateString(intlLocale())}</span>;
       },
     },
   ];

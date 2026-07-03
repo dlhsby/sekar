@@ -6,6 +6,7 @@
 'use client';
 
 import { useAuth } from '@/lib/auth/hooks';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { useOvertimes, useApproveOvertime, useRejectOvertime } from '@/lib/api/overtime';
 import { useTranslation } from 'react-i18next';
 import {
@@ -145,8 +146,8 @@ export default function OvertimePage() {
   const formatDateTime = (iso: string) => {
     const d = new Date(iso);
     return {
-      date: d.toLocaleDateString('id-ID'),
-      time: d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+      date: d.toLocaleDateString(intlLocale()),
+      time: d.toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit' }),
     };
   };
 

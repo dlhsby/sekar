@@ -9,6 +9,7 @@
 'use client';
 
 import type { DetailModalRow } from '@/components/ui';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -127,7 +128,7 @@ export default function PruningRequestsPage() {
         cell: ({ row }) => (
           <div className="text-sm">
             {row.original.expectedDate ? (
-              <>{new Date(row.original.expectedDate).toLocaleDateString('id-ID')}</>
+              <>{new Date(row.original.expectedDate).toLocaleDateString(intlLocale())}</>
             ) : row.original.expectedYear && row.original.expectedIsoWeek ? (
               <>
                 W{row.original.expectedIsoWeek}/{row.original.expectedYear}

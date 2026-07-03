@@ -1,7 +1,9 @@
 /**
- * Indonesian relative-time formatting (web mirror of the mobile
+ * Locale-aware relative-time formatting (web mirror of the mobile
  * NotificationsScreen helper). Used by the notification bell + inbox.
  */
+import { intlLocale } from '@/lib/i18n/date-locale';
+
 export function formatRelativeTime(iso: string): string {
   try {
     const then = new Date(iso).getTime();
@@ -11,7 +13,7 @@ export function formatRelativeTime(iso: string): string {
     if (diffSec < 3600) return `${Math.floor(diffSec / 60)} menit lalu`;
     if (diffSec < 86400) return `${Math.floor(diffSec / 3600)} jam lalu`;
     if (diffSec < 7 * 86400) return `${Math.floor(diffSec / 86400)} hari lalu`;
-    return new Date(iso).toLocaleDateString('id-ID', {
+    return new Date(iso).toLocaleDateString(intlLocale(), {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -26,5 +28,5 @@ export function formatDate(iso?: string | Date | null): string {
   if (!iso) return '-';
   const d = iso instanceof Date ? iso : new Date(iso);
   if (Number.isNaN(d.getTime())) return '-';
-  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 }

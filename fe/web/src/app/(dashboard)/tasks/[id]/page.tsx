@@ -6,6 +6,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { useAuth } from '@/lib/auth/hooks';
 import {
   useTask,
@@ -245,14 +246,14 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                 <div>
                   <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.dueDate')}</div>
                   <div className="font-bold text-nb-black">
-                    {new Date(task.due_date).toLocaleDateString('id-ID')}
+                    {new Date(task.due_date).toLocaleDateString(intlLocale())}
                   </div>
                 </div>
               )}
               <div>
                 <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.created')}</div>
                 <div className="font-bold text-nb-black">
-                  {new Date(task.created_at).toLocaleString('id-ID')}
+                  {new Date(task.created_at).toLocaleString(intlLocale())}
                 </div>
               </div>
               {task.activity_type && (
@@ -294,7 +295,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                 <div>
                   <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.assignedDate')}</div>
                   <div className="text-nb-black">
-                    {new Date(task.assigned_at).toLocaleString('id-ID')}
+                    {new Date(task.assigned_at).toLocaleString(intlLocale())}
                   </div>
                 </div>
               )}
@@ -365,7 +366,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                 <div>
                   <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.declineDate')}</div>
                   <div className="text-nb-black">
-                    {new Date(task.declined_at).toLocaleString('id-ID')}
+                    {new Date(task.declined_at).toLocaleString(intlLocale())}
                   </div>
                 </div>
               )}
@@ -392,7 +393,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                 <div>
                   <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.completionDate')}</div>
                   <div className="text-nb-black">
-                    {new Date(task.completed_at).toLocaleString('id-ID')}
+                    {new Date(task.completed_at).toLocaleString(intlLocale())}
                   </div>
                 </div>
               )}
@@ -440,7 +441,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                 <div>
                   <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:detail.verificationDate')}</div>
                   <div className="text-nb-black">
-                    {new Date(task.verified_at).toLocaleString('id-ID')}
+                    {new Date(task.verified_at).toLocaleString(intlLocale())}
                   </div>
                 </div>
               )}
@@ -473,7 +474,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                     {d.to_user.full_name} ({d.to_user.role})
                   </div>
                   <div className="text-xs text-nb-gray-600">
-                    {new Date(d.created_at).toLocaleString('id-ID')}
+                    {new Date(d.created_at).toLocaleString(intlLocale())}
                   </div>
                 </li>
               ))}

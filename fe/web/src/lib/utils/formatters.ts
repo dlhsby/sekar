@@ -1,6 +1,7 @@
 /**
  * Shared formatting utilities for monitoring components
  */
+import { intlLocale } from '@/lib/i18n/date-locale';
 
 export function formatRelativeTime(isoString: string): string {
   const diff = Date.now() - new Date(isoString).getTime();
@@ -20,14 +21,14 @@ export function formatDuration(minutes: number): string {
 }
 
 export function formatTime(isoString: string): string {
-  return new Date(isoString).toLocaleTimeString('id-ID', {
+  return new Date(isoString).toLocaleTimeString(intlLocale(), {
     hour: '2-digit',
     minute: '2-digit',
   });
 }
 
 export function formatTimeWithSeconds(isoString: string): string {
-  return new Date(isoString).toLocaleTimeString('id-ID', {
+  return new Date(isoString).toLocaleTimeString(intlLocale(), {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',

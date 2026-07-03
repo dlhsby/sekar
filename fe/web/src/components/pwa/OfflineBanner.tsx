@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useSyncExternalStore } from 'react';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { WifiOff } from 'lucide-react';
 
 const LAST_SYNC_KEY = 'sekar_last_sync';
@@ -21,7 +22,7 @@ function readLastSync(): string | null {
     if (!stored) return null;
     const ms = parseInt(stored, 10);
     if (Number.isNaN(ms)) return null;
-    return new Date(ms).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    return new Date(ms).toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit' });
   } catch {
     return null;
   }

@@ -6,6 +6,7 @@
 'use client';
 
 import { use, useEffect, useState } from 'react';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
@@ -75,7 +76,7 @@ export default function SeedDetailPage({ params }: SeedDetailPageProps) {
   const totalPages = Math.ceil(total / limit);
 
   const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString('id-ID', {
+    new Date(dateString).toLocaleDateString(intlLocale(), {
       day: '2-digit',
       month: 'short',
       year: 'numeric',

@@ -8,7 +8,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { format, parse } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
+import { dateFnsLocale } from '@/lib/i18n/date-locale';
 import { Plus, Calendar, Pencil, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -451,7 +451,7 @@ export default function SchedulesPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader description={format(parse(selectedDate, 'yyyy-MM-dd', new Date()), 'EEEE, dd MMMM yyyy', { locale: idLocale })} />
+      <PageHeader description={format(parse(selectedDate, 'yyyy-MM-dd', new Date()), 'EEEE, dd MMMM yyyy', { locale: dateFnsLocale() })} />
 
       {/* Date Picker and Generate Button */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

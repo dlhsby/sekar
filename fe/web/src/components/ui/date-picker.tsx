@@ -1,7 +1,7 @@
 'use client';
 
 import { format, isValid, parse } from 'date-fns';
-import { id } from 'date-fns/locale';
+import { dateFnsLocale } from '@/lib/i18n/date-locale';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { forwardRef, useEffect, useState } from 'react';
 
@@ -52,7 +52,7 @@ function parseInput(text: string): string | null {
 
 function toDisplay(value?: string): string {
   const d = parseIso(value);
-  return d ? format(d, 'dd/MM/yyyy', { locale: id }) : '';
+  return d ? format(d, 'dd/MM/yyyy', { locale: dateFnsLocale() }) : '';
 }
 
 /**
@@ -199,7 +199,7 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(function
             onValueChange?.(d ? format(d, 'yyyy-MM-dd') : undefined);
             setOpen(false);
           }}
-          locale={id}
+          locale={dateFnsLocale()}
         />
         <div className="border-t-2 border-nb-black p-1.5">
           <button

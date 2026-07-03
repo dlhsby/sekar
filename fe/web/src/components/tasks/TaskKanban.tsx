@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
+import { intlLocale } from '@/lib/i18n/date-locale';
 
 /**
  * TaskKanban — read-only board view for TSK-1 (hifi-web §06).
@@ -79,7 +80,7 @@ export function TaskKanban({ tasks, loading }: TaskKanbanProps) {
 
 function TaskCard({ task }: { task: Task }) {
   const place = task.area?.name ?? task.rayon?.name ?? null;
-  const due = task.due_date ? new Date(task.due_date).toLocaleDateString('id-ID') : null;
+  const due = task.due_date ? new Date(task.due_date).toLocaleDateString(intlLocale()) : null;
 
   return (
     // Next.js Link already handles modifier/middle-clicks and keyboard activation;

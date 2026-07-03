@@ -13,6 +13,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { redirect } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -257,7 +258,7 @@ function ExportHistory({ jobs, loading }: { jobs: ExportJob[]; loading: boolean 
         header: t('export.columns.date'),
         enableSorting: true,
         meta: { label: t('export.columns.date') },
-        cell: ({ row }) => new Date(row.original.createdAt as string).toLocaleString('id-ID'),
+        cell: ({ row }) => new Date(row.original.createdAt as string).toLocaleString(intlLocale()),
       },
       {
         id: 'entityType',

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { id } from 'date-fns/locale';
+import { dateFnsLocale } from '@/lib/i18n/date-locale';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
 
@@ -22,7 +22,7 @@ export function Calendar({
 }: CalendarProps): React.JSX.Element {
   return (
     <DayPicker
-      locale={id}
+      locale={dateFnsLocale()}
       showOutsideDays={showOutsideDays}
       className={cn('p-3', className)}
       classNames={{

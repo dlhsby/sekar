@@ -1,7 +1,7 @@
 'use client';
 
 import { format, isValid, parse } from 'date-fns';
-import { id } from 'date-fns/locale';
+import { dateFnsLocale } from '@/lib/i18n/date-locale';
 import { CalendarClock } from 'lucide-react';
 import { forwardRef, useEffect, useState } from 'react';
 
@@ -177,7 +177,7 @@ export const DateTimePicker = forwardRef<HTMLInputElement, DateTimePickerProps>(
                 if (!d) return;
                 onValueChange?.(`${format(d, 'yyyy-MM-dd')} ${time || '00:00'}`);
               }}
-              locale={id}
+              locale={dateFnsLocale()}
             />
             <div className="self-stretch border-l-2 border-nb-black">
               <TimeList

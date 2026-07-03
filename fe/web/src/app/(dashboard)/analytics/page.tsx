@@ -1,6 +1,7 @@
 'use client';
 
 import type { UserRole } from '@/types/models';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -184,7 +185,7 @@ function getDayLabels(days: number): string[] {
   for (let i = days - 1; i >= 0; i--) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
-    labels.push(date.toLocaleDateString('id-ID', { month: 'short', day: 'numeric' }));
+    labels.push(date.toLocaleDateString(intlLocale(), { month: 'short', day: 'numeric' }));
   }
   return labels;
 }

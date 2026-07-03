@@ -6,6 +6,7 @@
 'use client';
 
 import { useAuth } from '@/lib/auth/hooks';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { useOvertime, useApproveOvertime, useRejectOvertime } from '@/lib/api/overtime';
 import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardContent, Badge, Button, FormInput } from '@/components/ui';
@@ -182,18 +183,18 @@ export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) 
               <div>
                 <div className="text-sm font-semibold text-nb-gray-600">{t('overtime:detail.fields.date')}</div>
                 <div className="font-bold text-nb-black">
-                  {new Date(overtime.start_datetime).toLocaleDateString('id-ID')}
+                  {new Date(overtime.start_datetime).toLocaleDateString(intlLocale())}
                 </div>
               </div>
               <div>
                 <div className="text-sm font-semibold text-nb-gray-600">{t('overtime:detail.fields.time')}</div>
                 <div className="font-bold text-nb-black font-mono">
-                  {new Date(overtime.start_datetime).toLocaleTimeString('id-ID', {
+                  {new Date(overtime.start_datetime).toLocaleTimeString(intlLocale(), {
                     hour: '2-digit',
                     minute: '2-digit',
                   })}
                   {' - '}
-                  {new Date(overtime.end_datetime).toLocaleTimeString('id-ID', {
+                  {new Date(overtime.end_datetime).toLocaleTimeString(intlLocale(), {
                     hour: '2-digit',
                     minute: '2-digit',
                   })}
@@ -235,7 +236,7 @@ export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) 
                   <div>
                     <div className="text-sm font-semibold text-nb-gray-600">{t('overtime:detail.fields.processDate')}</div>
                     <div className="font-bold text-nb-black">
-                      {new Date(overtime.approved_at).toLocaleString('id-ID')}
+                      {new Date(overtime.approved_at).toLocaleString(intlLocale())}
                     </div>
                   </div>
                 )}

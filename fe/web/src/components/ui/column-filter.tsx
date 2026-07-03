@@ -2,7 +2,7 @@
 
 import { type Column, type FilterFn, type FilterFnOption } from '@tanstack/react-table';
 import { format, isValid, parseISO } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
+import { dateFnsLocale } from '@/lib/i18n/date-locale';
 import { Search, X } from 'lucide-react';
 
 import { cn } from '@/lib/utils/cn';
@@ -16,7 +16,7 @@ export type FilterVariant = 'text' | 'number' | 'date';
 /** `2026-06-24` → `24 Jun 2026` (display) or `24/06/2026` (form), '' if invalid. */
 function formatDateDisplay(iso: string): string {
   const d = parseISO(iso);
-  return isValid(d) ? format(d, 'd MMM yyyy', { locale: idLocale }) : '';
+  return isValid(d) ? format(d, 'd MMM yyyy', { locale: dateFnsLocale() }) : '';
 }
 function formatDateForm(iso: string): string {
   const d = parseISO(iso);

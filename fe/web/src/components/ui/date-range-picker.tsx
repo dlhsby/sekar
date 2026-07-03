@@ -1,7 +1,7 @@
 'use client';
 
 import { format } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
+import { dateFnsLocale } from '@/lib/i18n/date-locale';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { type KeyboardEvent, type MouseEvent, useRef, useState } from 'react';
 import { type DateRange as RdpDateRange } from 'react-day-picker';
@@ -40,7 +40,7 @@ function monthStart(iso: string): string {
 /** Compact `d MMM yy` label, e.g. `24 Jun 26`. */
 function label(value: string): string {
   const d = parseIso(value);
-  return d ? format(d, 'd MMM yy', { locale: idLocale }) : value;
+  return d ? format(d, 'd MMM yy', { locale: dateFnsLocale() }) : value;
 }
 
 /** Self-contained Indonesian quick-range presets. */
@@ -216,7 +216,7 @@ export function DateRangePicker({
             onSelect={onSelect}
             onDayMouseEnter={onDayMouseEnter}
             disabled={disableFuture ? { after: parseIso(today) ?? new Date() } : undefined}
-            locale={idLocale}
+            locale={dateFnsLocale()}
             classNames={{
               months: 'flex flex-col gap-4 sm:flex-row sm:justify-center sm:gap-8',
               month: 'flex flex-col items-center space-y-3',

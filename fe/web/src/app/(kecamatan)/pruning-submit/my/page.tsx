@@ -9,6 +9,7 @@
 'use client';
 
 import Link from 'next/link';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { useRouter } from 'next/navigation';
 import { Plus, TreePine } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -25,7 +26,7 @@ function expectedLabel(req: {
   expectedYear: number | null;
   expectedIsoWeek: number | null;
 }): string {
-  if (req.expectedDate) return new Date(req.expectedDate).toLocaleDateString('id-ID');
+  if (req.expectedDate) return new Date(req.expectedDate).toLocaleDateString(intlLocale());
   if (req.expectedYear && req.expectedIsoWeek) return `Minggu ${req.expectedIsoWeek}/${req.expectedYear}`;
   return 'Belum ditentukan';
 }
@@ -86,7 +87,7 @@ export default function MyPruningRequestsPage() {
                     </div>
                     <p className="mt-1 line-clamp-2 text-nb-body-sm text-nb-gray-700">{req.address}</p>
                     <p className="mt-1 font-mono text-[11px] text-nb-gray-500">
-                      {new Date(req.createdAt).toLocaleDateString('id-ID')} · {expectedLabel(req)}
+                      {new Date(req.createdAt).toLocaleDateString(intlLocale())} · {expectedLabel(req)}
                     </p>
                   </div>
                   <StatusPill tone={PRUNING_REQUEST_STATUS_TONES[req.status]} dot>
