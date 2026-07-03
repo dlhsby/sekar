@@ -57,46 +57,22 @@
     "empty": "No officers can be assigned in this area"
   },
   "actions": {
-    "accept": {
-      "success": "Success",
-      "successMessage": "Task accepted",
-      "error": "Failed to accept task"
-    },
-    "decline": {
-      "reasonRequired": "Reason for declining is required",
-      "success": "Success",
-      "successMessage": "Task declined",
-      "error": "Failed to decline task"
-    },
-    "start": {
-      "success": "Success",
-      "successMessage": "Task started",
-      "error": "Failed to start task"
-    },
-    "verify": {
-      "confirm": "Confirm Verification",
-      "question": "Are you sure you want to verify this task? This action cannot be undone.",
-      "cancel": "Cancel",
-      "yes": "Yes, Verify",
-      "success": "Success",
-      "successMessage": "Task verified successfully",
-      "error": "Failed to verify task"
-    },
-    "revision": {
-      "reasonRequired": "Reason for revision is required",
-      "confirm": "Confirm Request Revision",
-      "question": "Are you sure you want to request revision? The officer will redo this task.",
-      "cancel": "Cancel",
-      "yes": "Yes, Request Revision",
-      "success": "Success",
-      "successMessage": "Revision request sent",
-      "error": "Failed to send revision request"
-    },
-    "assign": {
-      "success": "Success",
-      "successMessage": "Task assigned successfully",
-      "error": "Failed to assign task"
-    }
+    "assign": "Assign",
+    "reassign": "Reassign",
+    "delegate": "Delegate to Subordinate",
+    "selectDelegate": "Delegate to Subordinate",
+    "selectReplacement": "Select Replacement Officer",
+    "selectOfficer": "Select Officer",
+    "placeholder": "— Select Officer —",
+    "cancel": "Cancel",
+    "submit": "Assign",
+    "accept": "Accept",
+    "decline": "Decline",
+    "start": "Start",
+    "verify": "Verify",
+    "revision": "Needs Revision",
+    "selectTagging": "Select officer to tag",
+    "searchTagging": "Search & select officer..."
   },
   "tagged": {
     "sectionTitle": "TAG OFFICERS",
@@ -145,7 +121,18 @@
     "assignment": "Assignment",
     "completionDetails": "Completion Details",
     "assignmentHistory": "Assignment History",
-    "accessibilityLabel": "Task details {{title}}"
+    "accessibilityLabel": "Task details {{title}}",
+    "taggedOfficers": "Tag Involved Officers",
+    "noTaggedOfficers": "No officers tagged yet. Tap the pencil icon to add.",
+    "noSelectableOfficers": "No officers available to tag.",
+    "selectOfficersLabel": "Select officers to tag",
+    "searchOfficersPlaceholder": "Search & select officers...",
+    "searchOfficersLabel": "Search officer name...",
+    "declineReason": "Rejection Reason",
+    "declinedAt": "Rejected on {{date}}",
+    "revisionReason": "Revision Reason",
+    "verification": "Verification",
+    "verifiedBy": "Verified by {{name}}"
   },
   "card": {
     "accessibilityLabel": "Task details {{title}}"
@@ -170,49 +157,9 @@
     "submitButton": "Complete Task",
     "cancelButton": "Cancel"
   },
-  "actions": {
-    "assign": "Assign",
-    "reassign": "Reassign",
-    "delegate": "Delegate to Subordinate",
-    "selectDelegate": "Delegate to Subordinate",
-    "selectReplacement": "Select Replacement Officer",
-    "selectOfficer": "Select Officer",
-    "placeholder": "— Select Officer —",
-    "cancel": "Cancel",
-    "submit": "Assign",
-    "accept": "Accept",
-    "decline": "Decline",
-    "start": "Start",
-    "verify": "Verify",
-    "revision": "Needs Revision",
-    "selectTagging": "Select officer to tag",
-    "searchTagging": "Search & select officer..."
-  },
   "messages": {
     "clockInRequired": "Not Clocked In",
     "clockInRequiredMessage": "You must clock in first to add an activity"
-  },
-  "detail": {
-    "loading": "Loading task...",
-    "notFound": "Task Not Found",
-    "notFoundMessage": "The task you are looking for was not found or has been deleted",
-    "backButtonTitle": "Back",
-    "taskHistory": "Task History",
-    "assignment": "Assignment",
-    "completionDetails": "Completion Details",
-    "assignmentHistory": "Assignment History",
-    "accessibilityLabel": "Task details {{title}}",
-    "taggedOfficers": "Tag Involved Officers",
-    "noTaggedOfficers": "No officers tagged yet. Tap the pencil icon to add.",
-    "noSelectableOfficers": "No officers available to tag.",
-    "selectOfficersLabel": "Select officers to tag",
-    "searchOfficersPlaceholder": "Search & select officers...",
-    "searchOfficersLabel": "Search officer name...",
-    "declineReason": "Rejection Reason",
-    "declinedAt": "Rejected on {{date}}",
-    "revisionReason": "Revision Reason",
-    "verification": "Verification",
-    "verifiedBy": "Verified by {{name}}"
   },
   "actionButtons": {
     "assign": "Assign",
@@ -290,5 +237,37 @@
     "successBody": "Task partially completed",
     "errorFailed": "Failed to complete task partially",
     "validationTitle": "Validation"
+  },
+  "tab": {
+    "tabLoadErrorTitle": "Failed to load tasks",
+    "tabRetry": "Try Again",
+    "tabFilteredHint": "Try changing or resetting the filter",
+    "tabTaggedEmpty": "Tasks that tag you will appear here",
+    "tabCreatedEmpty": "Tasks you create will appear here",
+    "tabAssignedEmpty": "Tasks assigned to you will appear here",
+    "tabNoMatchTitle": "No matching tasks",
+    "tabTaggedEmptyTitle": "No tags yet",
+    "tabCreatedEmptyTitle": "No tasks created yet",
+    "tabEmptyTitle": "No tasks yet",
+    "tabNoTasksAvailable": "No tasks available yet"
+  },
+  "locationSection": {
+    "title": "LOCATION",
+    "autoFromProfile": "Location auto-set from your profile",
+    "selectAssignment": "Select assignment location",
+    "rayonLabel": "Rayon",
+    "loadingRayon": "Loading rayons...",
+    "areaLabel": "Area",
+    "loadingArea": "Loading areas...",
+    "yourRayon": "Your rayon",
+    "yourArea": "Your area",
+    "rayonPlaceholder": "Select rayon...",
+    "areaPlaceholder": "Select area..."
+  },
+  "draft": {
+    "foundTitle": "Draft Found",
+    "foundMessage": "You have an unsent task draft. Continue?",
+    "discard": "Delete",
+    "continueLabel": "Continue"
   }
 }

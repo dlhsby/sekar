@@ -57,46 +57,22 @@
     "empty": "Tidak ada petugas yang dapat ditugaskan di area ini"
   },
   "actions": {
-    "accept": {
-      "success": "Berhasil",
-      "successMessage": "Tugas diterima",
-      "error": "Gagal menerima tugas"
-    },
-    "decline": {
-      "reasonRequired": "Alasan penolakan wajib diisi",
-      "success": "Berhasil",
-      "successMessage": "Tugas ditolak",
-      "error": "Gagal menolak tugas"
-    },
-    "start": {
-      "success": "Berhasil",
-      "successMessage": "Tugas dimulai",
-      "error": "Gagal memulai tugas"
-    },
-    "verify": {
-      "confirm": "Konfirmasi Verifikasi",
-      "question": "Apakah Anda yakin ingin memverifikasi tugas ini? Tindakan ini tidak dapat dibatalkan.",
-      "cancel": "Batal",
-      "yes": "Ya, Verifikasi",
-      "success": "Berhasil",
-      "successMessage": "Tugas berhasil diverifikasi",
-      "error": "Gagal memverifikasi tugas"
-    },
-    "revision": {
-      "reasonRequired": "Alasan revisi wajib diisi",
-      "confirm": "Konfirmasi Minta Revisi",
-      "question": "Apakah Anda yakin ingin meminta revisi? Petugas akan mengerjakan ulang tugas ini.",
-      "cancel": "Batal",
-      "yes": "Ya, Minta Revisi",
-      "success": "Berhasil",
-      "successMessage": "Permintaan revisi terkirim",
-      "error": "Gagal mengirim permintaan revisi"
-    },
-    "assign": {
-      "success": "Berhasil",
-      "successMessage": "Tugas berhasil ditugaskan",
-      "error": "Gagal menugaskan tugas"
-    }
+    "assign": "Tugaskan",
+    "reassign": "Tugaskan Ulang",
+    "delegate": "Disposisi ke Bawahan",
+    "selectDelegate": "Disposisi ke Bawahan",
+    "selectReplacement": "Pilih Petugas Pengganti",
+    "selectOfficer": "Pilih Petugas",
+    "placeholder": "— Pilih Petugas —",
+    "cancel": "Batal",
+    "submit": "Tugaskan",
+    "accept": "Terima",
+    "decline": "Tolak",
+    "start": "Mulai",
+    "verify": "Verifikasi",
+    "revision": "Perlu Revisi",
+    "selectTagging": "Pilih petugas untuk di-tag",
+    "searchTagging": "Cari & pilih petugas..."
   },
   "tagged": {
     "sectionTitle": "TAG PETUGAS",
@@ -145,7 +121,18 @@
     "assignment": "Penugasan",
     "completionDetails": "Detail Penyelesaian",
     "assignmentHistory": "Riwayat Penugasan",
-    "accessibilityLabel": "Detail tugas {{title}}"
+    "accessibilityLabel": "Detail tugas {{title}}",
+    "taggedOfficers": "Tag Petugas Terlibat",
+    "noTaggedOfficers": "Belum ada petugas yang di-tag. Tap ikon pensil untuk menambah.",
+    "noSelectableOfficers": "Tidak ada petugas yang dapat di-tag.",
+    "selectOfficersLabel": "Pilih petugas untuk di-tag",
+    "searchOfficersPlaceholder": "Cari & pilih petugas...",
+    "searchOfficersLabel": "Cari nama petugas...",
+    "declineReason": "Alasan Penolakan",
+    "declinedAt": "Ditolak pada {{date}}",
+    "revisionReason": "Alasan Revisi",
+    "verification": "Verifikasi",
+    "verifiedBy": "Diverifikasi oleh {{name}}"
   },
   "card": {
     "accessibilityLabel": "Detail tugas {{title}}"
@@ -170,49 +157,9 @@
     "submitButton": "Selesaikan Tugas",
     "cancelButton": "Batal"
   },
-  "actions": {
-    "assign": "Tugaskan",
-    "reassign": "Tugaskan Ulang",
-    "delegate": "Disposisi ke Bawahan",
-    "selectDelegate": "Disposisi ke Bawahan",
-    "selectReplacement": "Pilih Petugas Pengganti",
-    "selectOfficer": "Pilih Petugas",
-    "placeholder": "— Pilih Petugas —",
-    "cancel": "Batal",
-    "submit": "Tugaskan",
-    "accept": "Terima",
-    "decline": "Tolak",
-    "start": "Mulai",
-    "verify": "Verifikasi",
-    "revision": "Perlu Revisi",
-    "selectTagging": "Pilih petugas untuk di-tag",
-    "searchTagging": "Cari & pilih petugas..."
-  },
   "messages": {
     "clockInRequired": "Belum Clock In",
     "clockInRequiredMessage": "Anda harus melakukan Clock In terlebih dahulu untuk menambahkan aktivitas"
-  },
-  "detail": {
-    "loading": "Memuat tugas...",
-    "notFound": "Tugas Tidak Ditemukan",
-    "notFoundMessage": "Tugas yang Anda cari tidak ditemukan atau telah dihapus",
-    "backButtonTitle": "Kembali",
-    "taskHistory": "Riwayat Tugas",
-    "assignment": "Penugasan",
-    "completionDetails": "Detail Penyelesaian",
-    "assignmentHistory": "Riwayat Penugasan",
-    "accessibilityLabel": "Detail tugas {{title}}",
-    "taggedOfficers": "Tag Petugas Terlibat",
-    "noTaggedOfficers": "Belum ada petugas yang di-tag. Tap ikon pensil untuk menambah.",
-    "noSelectableOfficers": "Tidak ada petugas yang dapat di-tag.",
-    "selectOfficersLabel": "Pilih petugas untuk di-tag",
-    "searchOfficersPlaceholder": "Cari & pilih petugas...",
-    "searchOfficersLabel": "Cari nama petugas...",
-    "declineReason": "Alasan Penolakan",
-    "declinedAt": "Ditolak pada {{date}}",
-    "revisionReason": "Alasan Revisi",
-    "verification": "Verifikasi",
-    "verifiedBy": "Diverifikasi oleh {{name}}"
   },
   "actionButtons": {
     "assign": "Tugaskan",
@@ -290,5 +237,37 @@
     "successBody": "Tugas sebagian diselesaikan",
     "errorFailed": "Gagal menyelesaikan tugas sebagian",
     "validationTitle": "Validasi"
+  },
+  "tab": {
+    "tabLoadErrorTitle": "Gagal memuat tugas",
+    "tabRetry": "Coba Lagi",
+    "tabFilteredHint": "Coba ubah atau reset filter",
+    "tabTaggedEmpty": "Tugas yang menandai Anda akan muncul di sini",
+    "tabCreatedEmpty": "Tugas yang Anda buat akan muncul di sini",
+    "tabAssignedEmpty": "Tugas yang ditugaskan ke Anda akan muncul di sini",
+    "tabNoMatchTitle": "Tidak ada tugas yang cocok",
+    "tabTaggedEmptyTitle": "Belum ada tag",
+    "tabCreatedEmptyTitle": "Belum ada tugas yang dibuat",
+    "tabEmptyTitle": "Belum ada tugas",
+    "tabNoTasksAvailable": "Belum ada tugas yang tersedia"
+  },
+  "locationSection": {
+    "title": "LOKASI",
+    "autoFromProfile": "Lokasi otomatis dari profil Anda",
+    "selectAssignment": "Pilih lokasi penugasan",
+    "rayonLabel": "Rayon",
+    "loadingRayon": "Memuat rayon...",
+    "areaLabel": "Area",
+    "loadingArea": "Memuat area...",
+    "yourRayon": "Rayon Anda",
+    "yourArea": "Area Anda",
+    "rayonPlaceholder": "Pilih rayon...",
+    "areaPlaceholder": "Pilih area..."
+  },
+  "draft": {
+    "foundTitle": "Draft Ditemukan",
+    "foundMessage": "Anda memiliki draft tugas yang belum terkirim. Lanjutkan?",
+    "discard": "Hapus",
+    "continueLabel": "Lanjutkan"
   }
 }

@@ -95,7 +95,8 @@
     "successApprove": "Activity approved",
     "successReject": "Activity rejected",
     "failureApprove": "Failed to approve activity",
-    "failureReject": "Failed to reject activity"
+    "failureReject": "Failed to reject activity",
+    "officerNameLabel": "Officer Name"
   },
   "messages": {
     "clockInRequired": "Not Clocked In",
@@ -175,5 +176,10 @@
     "failureTitle": "Failed to Send",
     "failureMessage": "An error occurred. Activity saved as draft.",
     "retryButton": "Try Again"
+  },
+  "tab": {
+    "loadTypesError": "Failed to load activity types",
+    "tabEmptyTitle": "No activities yet",
+    "tabEmptyDescription": "Activities you create will appear here"
   }
 }

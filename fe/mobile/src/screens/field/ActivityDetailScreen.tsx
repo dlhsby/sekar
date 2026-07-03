@@ -15,6 +15,7 @@ import {
   BackHandler,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n/config';
 import { useNavigation, useRoute, useFocusEffect, type RouteProp } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import type { MainTabParamList, MainTabScreenProps } from '../../types/navigation.types';
@@ -38,10 +39,10 @@ function formatDateTime(dateStr: string): string {
 
 function getActivityStatusLabel(status?: string): string {
   switch (status) {
-    case 'approved': return 'Disetujui';
-    case 'rejected': return 'Ditolak';
-    case 'pending': return 'Menunggu Persetujuan';
-    default: return 'Menunggu Persetujuan';
+    case 'approved': return i18n.t('status:approved');
+    case 'rejected': return i18n.t('status:rejected');
+    case 'pending': return i18n.t('status:pending_approval');
+    default: return i18n.t('status:pending_approval');
   }
 }
 
@@ -258,7 +259,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
               </View>
               {activity.user && (
                 <View style={styles.infoRow}>
-                  <NBText variant="body-sm" style={styles.labelStyle}>Nama Petugas</NBText>
+                  <NBText variant="body-sm" style={styles.labelStyle}>{t('activities:detail.officerNameLabel')}</NBText>
                   <NBText variant="body" style={styles.valueStyle}>{activity.user.full_name}</NBText>
                 </View>
               )}

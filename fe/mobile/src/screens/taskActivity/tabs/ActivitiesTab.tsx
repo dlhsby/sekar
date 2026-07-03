@@ -5,6 +5,7 @@
  */
 
 import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   StyleSheet,
@@ -47,6 +48,7 @@ export function ActivitiesTab({
   onNavigateToActivity,
   currentUserId,
 }: ActivitiesTabProps): React.JSX.Element {
+  const { t } = useTranslation();
   const renderItem = useCallback(
     ({ item }: { item: Activity }) => (
       <ActivityCard
@@ -92,8 +94,8 @@ export function ActivitiesTab({
           variant="noData"
           illustration="illo-reports"
           style={styles.emptyStateStretch}
-          title="Belum ada aktivitas"
-          description="Aktivitas yang Anda buat akan muncul di sini"
+          title={t('activities:tab.tabEmptyTitle')}
+          description={t('activities:tab.tabEmptyDescription')}
         />
       </ScrollView>
     );

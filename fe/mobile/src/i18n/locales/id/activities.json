@@ -95,7 +95,8 @@
     "successApprove": "Aktivitas disetujui",
     "successReject": "Aktivitas ditolak",
     "failureApprove": "Gagal menyetujui aktivitas",
-    "failureReject": "Gagal menolak aktivitas"
+    "failureReject": "Gagal menolak aktivitas",
+    "officerNameLabel": "Nama Petugas"
   },
   "messages": {
     "clockInRequired": "Belum Clock In",
@@ -175,5 +176,10 @@
     "failureTitle": "Gagal Mengirim",
     "failureMessage": "Terjadi kesalahan. Aktivitas disimpan sebagai draft.",
     "retryButton": "Coba Lagi"
+  },
+  "tab": {
+    "loadTypesError": "Gagal memuat jenis aktivitas",
+    "tabEmptyTitle": "Belum ada aktivitas",
+    "tabEmptyDescription": "Aktivitas yang Anda buat akan muncul di sini"
   }
 }
