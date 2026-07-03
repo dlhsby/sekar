@@ -7,6 +7,7 @@
 
 import { use, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -36,25 +37,35 @@ const ALLOWED_ROLES = [
 
 const READ_ONLY_ROLES = ['kepala_rayon', 'admin_system'];
 
-const transactionSchema = z.object({
-  transactionType: z.enum(['purchase', 'distribution', 'adjustment']),
-  qty: z.number().min(0.01, 'Jumlah harus lebih dari 0'),
-  unitPrice: z.number().optional(),
-  supplier: z.string().optional(),
-  occurredAt: z.string().min(1, 'Tanggal transaksi wajib diisi'),
-  notes: z.string().optional(),
-});
-
-type TransactionFormData = z.infer<typeof transactionSchema>;
+type TransactionFormData = {
+  transactionType: 'purchase' | 'distribution' | 'adjustment';
+  qty: number;
+  unitPrice?: number;
+  supplier?: string;
+  occurredAt: string;
+  notes?: string;
+};
 
 interface TransactionFormPageProps {
   params: Promise<{ id: string }>;
+}
+
+function getTransactionSchema(t: any) {
+  return z.object({
+    transactionType: z.enum(['purchase', 'distribution', 'adjustment']),
+    qty: z.number().min(0.01, t('seeds:transactionFormErrors.qtyRequired')),
+    unitPrice: z.number().optional(),
+    supplier: z.string().optional(),
+    occurredAt: z.string().min(1, t('seeds:transactionFormErrors.dateRequired')),
+    notes: z.string().optional(),
+  });
 }
 
 export default function TransactionFormPage({ params }: TransactionFormPageProps) {
   const { id } = use(params);
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const { t } = useTranslation(['seeds', 'common']);
   const { toast } = useToast();
 
   const { data: seed, isLoading: seedLoading } = useSeedDetail(id);
@@ -62,6 +73,8 @@ export default function TransactionFormPage({ params }: TransactionFormPageProps
 
   const allowed = !!user && ALLOWED_ROLES.includes(user.role);
   const canWrite = !!user && !READ_ONLY_ROLES.includes(user.role);
+
+  const transactionSchema = getTransactionSchema(t);
 
   const {
     register,
@@ -97,20 +110,20 @@ export default function TransactionFormPage({ params }: TransactionFormPageProps
           occurredAt: data.occurredAt,
           notes: data.notes,
         });
-        toast({ level: 'success', title: 'Transaksi berhasil dicatat' });
+        toast({ level: 'success', title: t('seeds:transactionForm.successMessage') });
         router.push(`/seeds/${id}`);
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Gagal mencatat transaksi';
+        const message = error instanceof Error ? error.message : t('seeds:transactionForm.errorMessage');
         toast({ level: 'danger', title: 'Error', body: message });
       }
     },
-    [id, recordMutation, router, toast]
+    [id, recordMutation, router, toast, t]
   );
 
   if (authLoading || !user) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <p className="text-nb-gray-600">Memuat...</p>
+        <p className="text-nb-gray-600">{t('common:actions.loading')}</p>
       </div>
     );
   }
@@ -120,7 +133,7 @@ export default function TransactionFormPage({ params }: TransactionFormPageProps
   return (
     <div className="space-y-5">
       <PageHeader
-        title={seedLoading ? 'Memuat…' : `Catat Transaksi - ${seed?.nameId || ''}`}
+        title={seedLoading ? t('seeds:detail.loadingTitle') : `${t('seeds:transactionForm.title')} - ${seed?.nameId || ''}`}
       />
 
       <Card>
@@ -128,15 +141,15 @@ export default function TransactionFormPage({ params }: TransactionFormPageProps
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <label className="block text-nb-body font-medium text-nb-black mb-1">
-                Tipe Transaksi
+                {t('seeds:transactionForm.typeLabel')}
               </label>
               <select
                 {...register('transactionType')}
                 className="w-full px-3 py-2 border-2 border-nb-black rounded-nb-base font-body text-nb-body"
               >
-                <option value="purchase">Pembelian</option>
-                <option value="distribution">Distribusi</option>
-                <option value="adjustment">Penyesuaian</option>
+                <option value="purchase">{t('seeds:transactionTypes.purchase')}</option>
+                <option value="distribution">{t('seeds:transactionTypes.distribution')}</option>
+                <option value="adjustment">{t('seeds:transactionTypes.adjustment')}</option>
               </select>
               {errors.transactionType?.message && (
                 <p className="mt-1 text-nb-body-sm text-nb-danger">{errors.transactionType.message}</p>
@@ -144,9 +157,9 @@ export default function TransactionFormPage({ params }: TransactionFormPageProps
             </div>
 
             <FormInput
-              label="Jumlah"
+              label={t('seeds:transactionForm.qtyLabel')}
               type="number"
-              placeholder="Masukkan jumlah transaksi"
+              placeholder={t('seeds:transactionForm.qtyPlaceholder')}
               step="0.01"
               min="0"
               error={errors.qty?.message}
@@ -156,9 +169,9 @@ export default function TransactionFormPage({ params }: TransactionFormPageProps
             {transactionType === 'purchase' && (
               <>
                 <FormInput
-                  label="Harga Satuan (Opsional)"
+                  label={t('seeds:transactionForm.unitPriceLabel')}
                   type="number"
-                  placeholder="Harga per unit"
+                  placeholder={t('seeds:transactionForm.unitPricePlaceholder')}
                   step="0.01"
                   min="0"
                   error={errors.unitPrice?.message}
@@ -166,9 +179,9 @@ export default function TransactionFormPage({ params }: TransactionFormPageProps
                 />
 
                 <FormInput
-                  label="Supplier (Opsional)"
+                  label={t('seeds:transactionForm.supplierLabel')}
                   type="text"
-                  placeholder="Nama supplier"
+                  placeholder={t('seeds:transactionForm.supplierPlaceholder')}
                   error={errors.supplier?.message}
                   {...register('supplier')}
                 />
@@ -179,7 +192,7 @@ export default function TransactionFormPage({ params }: TransactionFormPageProps
               control={control}
               name="occurredAt"
               render={({ field }) => (
-                <Field label="Tanggal Transaksi" error={errors.occurredAt?.message}>
+                <Field label={t('seeds:transactionForm.dateLabel')} error={errors.occurredAt?.message}>
                   {(p) => (
                     <DatePicker
                       id={p.id}
@@ -193,10 +206,10 @@ export default function TransactionFormPage({ params }: TransactionFormPageProps
 
             <div>
               <label className="block text-nb-body font-medium text-nb-black mb-1">
-                Catatan (Opsional)
+                {t('seeds:transactionForm.notesLabel')}
               </label>
               <Textarea
-                placeholder="Masukkan catatan tambahan"
+                placeholder={t('seeds:transactionForm.notesPlaceholder')}
                 {...register('notes')}
               />
               {errors.notes?.message && (
@@ -211,14 +224,14 @@ export default function TransactionFormPage({ params }: TransactionFormPageProps
                 disabled={isSubmitting || recordMutation.isPending}
                 loading={isSubmitting || recordMutation.isPending}
               >
-                Simpan Transaksi
+                {t('seeds:transactionForm.submitButton')}
               </Button>
               <Button
                 type="button"
                 variant="secondary"
                 onClick={() => router.push(`/seeds/${id}`)}
               >
-                Batal
+                {t('seeds:transactionForm.cancelButton')}
               </Button>
             </div>
           </form>

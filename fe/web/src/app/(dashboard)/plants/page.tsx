@@ -7,6 +7,7 @@
 
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import {
   Badge,
   Combobox,
@@ -17,15 +18,9 @@ import {
 import { useSpeciesCatalog, type PlantSpeciesRow } from '@/lib/api/plants';
 import { useAreas } from '@/lib/api/areas';
 
-const CATEGORY_LABELS: Record<string, string> = {
-  tree: 'Pohon',
-  shrub: 'Semak',
-  groundcover: 'Penutup Tanah',
-  flower: 'Bunga',
-};
-
 export default function PlantsPage() {
   const router = useRouter();
+  const { t } = useTranslation(['plants', 'common']);
 
   // Fetch the whole catalog once; the DataTable handles search/sort/filter/paging.
   const { data: catalogData, isLoading } = useSpeciesCatalog(1, '', 1000);
@@ -42,9 +37,9 @@ export default function PlantsPage() {
       {
         id: 'id',
         accessorKey: 'id',
-        header: 'ID',
+        header: t('plants:catalogTable.columnId'),
         enableSorting: false,
-        meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+        meta: { label: t('plants:catalogTable.columnId'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
         ),
@@ -52,17 +47,17 @@ export default function PlantsPage() {
       {
         id: 'nameId',
         accessorKey: 'nameId',
-        header: 'Nama',
+        header: t('plants:catalogTable.columnName'),
         enableSorting: true,
-        meta: { label: 'Nama', filterVariant: 'text' },
+        meta: { label: t('plants:catalogTable.columnName'), filterVariant: 'text' },
         cell: ({ row }) => <span className="font-semibold">{row.original.nameId}</span>,
       },
       {
         id: 'nameLatin',
         accessorKey: 'nameLatin',
-        header: 'Nama Latin',
+        header: t('plants:catalogTable.columnNameLatin'),
         enableSorting: true,
-        meta: { label: 'Nama Latin', filterVariant: 'text' },
+        meta: { label: t('plants:catalogTable.columnNameLatin'), filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="italic text-nb-gray-600">{row.original.nameLatin || '—'}</span>
         ),
@@ -70,34 +65,34 @@ export default function PlantsPage() {
       {
         id: 'category',
         accessorKey: 'category',
-        header: 'Kategori',
+        header: t('plants:catalogTable.columnCategory'),
         enableSorting: true,
-        meta: { label: 'Kategori', filterVariant: 'text' },
+        meta: { label: t('plants:catalogTable.columnCategory'), filterVariant: 'text' },
         cell: ({ row }) => (
           <Badge variant="outline" size="sm">
-            {CATEGORY_LABELS[row.original.category] || row.original.category}
+            {t(`plants:categoryLabels.${row.original.category}`) || row.original.category}
           </Badge>
         ),
       },
       {
         id: 'defaultPruningCycleDays',
         accessorKey: 'defaultPruningCycleDays',
-        header: 'Siklus Pangkas (hari)',
+        header: t('plants:catalogTable.columnPruningCycle'),
         enableSorting: true,
-        meta: { label: 'Siklus Pangkas (hari)', filterVariant: 'number', align: 'right' },
+        meta: { label: t('plants:catalogTable.columnPruningCycle'), filterVariant: 'number', align: 'right' },
         cell: ({ row }) => (
           <span className="text-nb-gray-600">{row.original.defaultPruningCycleDays ?? '—'}</span>
         ),
       },
     ],
-    []
+    [t]
   );
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Tanaman"
-        description="Katalog spesies tanaman dan pengelolaan per area"
+        title={t('plants:catalog.title')}
+        description={t('plants:catalog.description')}
         actions={
           <Combobox
             options={areaOptions}
@@ -105,8 +100,8 @@ export default function PlantsPage() {
             onValueChange={(v) => {
               if (v) router.push(`/plants/${v}`);
             }}
-            placeholder="Ke area…"
-            aria-label="Ke area"
+            placeholder={t('plants:catalog.comboboxPlaceholder')}
+            aria-label={t('plants:catalog.comboboxAriaLabel')}
             className="w-56"
           />
         }
@@ -117,9 +112,9 @@ export default function PlantsPage() {
         data={species}
         loading={isLoading}
         getRowId={(r) => r.id}
-        searchPlaceholder="Cari nama atau nama Latin…"
-        emptyTitle="Belum ada spesies"
-        emptyDescription="Katalog tanaman masih kosong."
+        searchPlaceholder={t('plants:catalog.searchPlaceholder')}
+        emptyTitle={t('plants:catalog.emptyTitle')}
+        emptyDescription={t('plants:catalog.emptyDescription')}
       />
     </div>
   );

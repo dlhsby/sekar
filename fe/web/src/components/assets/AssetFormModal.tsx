@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Button,
   DatePicker,
@@ -31,6 +32,7 @@ interface AssetFormModalProps {
  * and the missing /assets/[id]/edit route).
  */
 export function AssetFormModal({ open, onOpenChange, asset, onSuccess }: AssetFormModalProps) {
+  const { t } = useTranslation(['assets']);
   const isEdit = !!asset;
   const { toast } = useToast();
   const { data: categories = [] } = useAssetCategories();
@@ -58,7 +60,7 @@ export function AssetFormModal({ open, onOpenChange, asset, onSuccess }: AssetFo
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     if (!name || !categoryId) {
-      toast({ level: 'danger', title: 'Nama dan kategori harus diisi' });
+      toast({ level: 'danger', title: t('form.validationError') });
       return;
     }
     const payload = {
@@ -71,10 +73,10 @@ export function AssetFormModal({ open, onOpenChange, asset, onSuccess }: AssetFo
     try {
       if (isEdit && asset) {
         await updateMutation.mutateAsync({ id: asset.id, data: payload });
-        toast({ level: 'success', title: 'Aset diperbarui' });
+        toast({ level: 'success', title: t('form.updateSuccess') });
       } else {
         await createMutation.mutateAsync(payload);
-        toast({ level: 'success', title: 'Aset berhasil dibuat' });
+        toast({ level: 'success', title: t('form.createSuccess') });
       }
       onSuccess?.();
       onOpenChange(false);
@@ -87,32 +89,32 @@ export function AssetFormModal({ open, onOpenChange, asset, onSuccess }: AssetFo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="lg">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Ubah Aset' : 'Tambah Aset'}</DialogTitle>
+          <DialogTitle>{isEdit ? t('form.editTitle') : t('form.createTitle')}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <DialogBody className="space-y-4">
             <FormInput
-              label="Nama Aset"
-              placeholder="Sapu Lidi #1"
+              label={t('form.nameLabel')}
+              placeholder={t('form.namePlaceholder')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
             />
             <FormSelect
-              label="Kategori"
-              placeholder="Pilih Kategori"
+              label={t('form.categoryLabel')}
+              placeholder={t('form.categoryPlaceholder')}
               options={categories.map((cat) => ({ value: cat.id, label: cat.name }))}
               value={categoryId}
               onChange={setCategoryId}
               required
             />
             <FormInput
-              label="Deskripsi"
-              placeholder="Deskripsi aset"
+              label={t('form.descriptionLabel')}
+              placeholder={t('form.descriptionPlaceholder')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
-            <Field label="Tanggal Pembelian">
+            <Field label={t('form.purchaseDateLabel')}>
               {(p) => (
                 <DatePicker
                   id={p.id}
@@ -122,19 +124,19 @@ export function AssetFormModal({ open, onOpenChange, asset, onSuccess }: AssetFo
               )}
             </Field>
             <FormInput
-              label="Harga Pembelian"
+              label={t('form.purchasePriceLabel')}
               type="number"
-              placeholder="Harga dalam Rupiah"
+              placeholder={t('form.purchasePricePlaceholder')}
               value={purchasePrice}
               onChange={(e) => setPurchasePrice(e.target.value)}
             />
           </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Batal
+              {t('form.cancel')}
             </Button>
             <Button type="submit" variant="default" loading={mutation.isPending}>
-              {isEdit ? 'Simpan' : 'Buat Aset'}
+              {isEdit ? t('form.save') : t('form.create')}
             </Button>
           </DialogFooter>
         </form>

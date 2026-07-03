@@ -1,16 +1,17 @@
 'use client';
 
 /**
- * PlantStatusBadge — maps AreaPlantStatus to Badge variant + Indonesian label
+ * PlantStatusBadge — maps AreaPlantStatus to Badge variant + localized label
  *
  * Status → variant mapping:
- * - ok → success (Terawat)
- * - due_soon → warning (Segera)
- * - overdue → destructive (Terlambat)
- * - unknown → secondary (Belum Ada Data)
+ * - ok → success (Terawat / Well-maintained)
+ * - due_soon → warning (Segera / Due Soon)
+ * - overdue → destructive (Terlambat / Overdue)
+ * - unknown → secondary (Belum Ada Data / No Data)
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import type { AreaPlantStatus } from '@/lib/api/plants';
 import { cn } from '@/lib/utils/cn';
@@ -20,18 +21,20 @@ export interface PlantStatusBadgeProps {
   className?: string;
 }
 
-const STATUS_MAP: Record<
+const STATUS_VARIANT_MAP: Record<
   AreaPlantStatus,
-  { variant: 'default' | 'success' | 'warning' | 'destructive' | 'secondary' | 'outline'; label: string }
+  'default' | 'success' | 'warning' | 'destructive' | 'secondary' | 'outline'
 > = {
-  ok: { variant: 'success', label: 'Terawat' },
-  due_soon: { variant: 'warning', label: 'Segera' },
-  overdue: { variant: 'destructive', label: 'Terlambat' },
-  unknown: { variant: 'secondary', label: 'Belum Ada Data' },
+  ok: 'success',
+  due_soon: 'warning',
+  overdue: 'destructive',
+  unknown: 'secondary',
 };
 
 export function PlantStatusBadge({ status, className }: PlantStatusBadgeProps) {
-  const { variant, label } = STATUS_MAP[status];
+  const { t } = useTranslation(['plants']);
+  const variant = STATUS_VARIANT_MAP[status];
+  const label = t(`plants:statusBadge.${status}`);
 
   return (
     <Badge variant={variant} size="sm" className={cn('w-fit', className)}>

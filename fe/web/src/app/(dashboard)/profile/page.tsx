@@ -9,6 +9,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Camera, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -23,6 +24,7 @@ const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 export default function ProfilePage() {
+  const { t } = useTranslation(['profile']);
   const { user, loading, refreshUser } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -40,7 +42,7 @@ export default function ProfilePage() {
 
   if (loading || !user) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center text-nb-gray-600">Memuat...</div>
+      <div className="flex min-h-[400px] items-center justify-center text-nb-gray-600">{t('page.loading')}</div>
     );
   }
 
@@ -53,7 +55,7 @@ export default function ProfilePage() {
     try {
       await updateProfile.mutateAsync({ full_name: fullName.trim() });
       await refreshUser();
-      toast.success('Profil diperbarui');
+      toast.success(t('page.updateSuccess'));
     } catch (err) {
       toast.error(getErrorMessage(err));
     }
@@ -62,17 +64,17 @@ export default function ProfilePage() {
   const handlePhoto = async (file: File | undefined) => {
     if (!file) return;
     if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
-      toast.error('Format foto harus JPG, PNG, atau WebP.');
+      toast.error(t('page.photoFormatError'));
       return;
     }
     if (file.size > MAX_PHOTO_BYTES) {
-      toast.error('Ukuran foto maksimal 5 MB.');
+      toast.error(t('page.photoSizeError'));
       return;
     }
     try {
       await uploadPhoto.mutateAsync(file);
       await refreshUser();
-      toast.success('Foto profil diperbarui');
+      toast.success(t('page.photoUpdateSuccess'));
     } catch (err) {
       toast.error(getErrorMessage(err));
     } finally {
@@ -96,7 +98,7 @@ export default function ProfilePage() {
               type="button"
               onClick={() => fileRef.current?.click()}
               disabled={uploadPhoto.isPending}
-              aria-label="Ubah foto profil"
+              aria-label={t('page.photoChangeAriaLabel')}
               className="absolute -bottom-1 -right-1 flex size-7 items-center justify-center rounded-full border-2 border-nb-black bg-nb-primary text-nb-black shadow-nb-xs transition-colors hover:bg-nb-primary-hover disabled:opacity-60"
             >
               {uploadPhoto.isPending ? (
@@ -122,35 +124,35 @@ export default function ProfilePage() {
           </div>
         </div>
         <p className="mt-3 text-xs text-nb-gray-500">
-          Foto profil: JPG, PNG, atau WebP, maksimal 5 MB.
+          {t('page.photoHelper')}
         </p>
       </SectionCard>
 
       {/* Account fields — only the name is self-editable. */}
-      <SectionCard title="Informasi Akun">
+      <SectionCard title={t('page.accountSection')}>
         <div className="space-y-4">
           <FormInput
-            label="Nama Lengkap"
+            label={t('page.fullNameLabel')}
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            placeholder="Nama lengkap"
+            placeholder={t('page.fullNamePlaceholder')}
             maxLength={255}
           />
           <FormInput
-            label="Username"
+            label={t('page.usernameLabel')}
             value={user.username}
             disabled
             readOnly
           />
           <FormInput
-            label="Nomor Telepon"
+            label={t('page.phoneLabel')}
             type="tel"
             value={user.phone_number ?? '—'}
             disabled
             readOnly
           />
           <p className="text-xs text-nb-gray-500">
-            Username dan nomor telepon dikelola oleh administrator.
+            {t('page.adminNote')}
           </p>
 
           <div className="flex justify-end border-t-2 border-nb-gray-200 pt-4">
@@ -160,7 +162,7 @@ export default function ProfilePage() {
               loading={updateProfile.isPending}
               disabled={!dirty || updateProfile.isPending}
             >
-              Simpan Perubahan
+              {t('page.saveButton')}
             </Button>
           </div>
         </div>

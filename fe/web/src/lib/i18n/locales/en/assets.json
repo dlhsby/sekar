@@ -1,1 +1,80 @@
-{}
+{
+  "page": {
+    "title": "Assets",
+    "description": "Manage assets and maintenance"
+  },
+  "status": {
+    "available": "Available",
+    "in_use": "In Use",
+    "maintenance": "Maintenance",
+    "retired": "Retired",
+    "lost": "Lost"
+  },
+  "tabs": {
+    "all": "All",
+    "available": "Available",
+    "in_use": "In Use",
+    "maintenance": "Maintenance"
+  },
+  "list": {
+    "categoryLabel": "Category",
+    "allCategories": "All Categories",
+    "emptyTitle": "No assets",
+    "qrBatch": "QR Batch",
+    "add": "Add",
+    "columns": {
+      "id": "ID",
+      "code": "Code",
+      "name": "Name",
+      "category": "Category",
+      "status": "Status",
+      "location": "Location",
+      "createdAt": "Created",
+      "updatedAt": "Updated",
+      "createdBy": "Created by",
+      "updatedBy": "Updated by"
+    },
+    "actions": {
+      "view": "View",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "pagination": {
+      "page": "Page",
+      "of": "of",
+      "previous": "Previous",
+      "next": "Next"
+    }
+  },
+  "detail": {
+    "title": "Asset Details",
+    "code": "Code",
+    "name": "Name",
+    "category": "Category",
+    "status": "Status",
+    "location": "Location",
+    "createdAt": "Created",
+    "createdBy": "Created by",
+    "updatedAt": "Updated",
+    "updatedBy": "Updated by"
+  },
+  "form": {
+    "editTitle": "Edit Asset",
+    "createTitle": "Add Asset",
+    "nameLabel": "Asset Name",
+    "namePlaceholder": "Broom #1",
+    "categoryLabel": "Category",
+    "categoryPlaceholder": "Select Category",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Asset description",
+    "purchaseDateLabel": "Purchase Date",
+    "purchasePriceLabel": "Purchase Price",
+    "purchasePricePlaceholder": "Price in Rupiah",
+    "validationError": "Name and category are required",
+    "updateSuccess": "Asset updated",
+    "createSuccess": "Asset created successfully",
+    "cancel": "Cancel",
+    "save": "Save",
+    "create": "Create Asset"
+  }
+}

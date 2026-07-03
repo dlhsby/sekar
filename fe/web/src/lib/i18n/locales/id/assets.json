@@ -1,1 +1,80 @@
-{}
+{
+  "page": {
+    "title": "Aset",
+    "description": "Kelola aset dan perawatan"
+  },
+  "status": {
+    "available": "Tersedia",
+    "in_use": "Digunakan",
+    "maintenance": "Perawatan",
+    "retired": "Pensiun",
+    "lost": "Hilang"
+  },
+  "tabs": {
+    "all": "Semua",
+    "available": "Tersedia",
+    "in_use": "Digunakan",
+    "maintenance": "Perawatan"
+  },
+  "list": {
+    "categoryLabel": "Kategori",
+    "allCategories": "Semua Kategori",
+    "emptyTitle": "Tidak ada aset",
+    "qrBatch": "QR Batch",
+    "add": "Tambah",
+    "columns": {
+      "id": "ID",
+      "code": "Kode",
+      "name": "Nama",
+      "category": "Kategori",
+      "status": "Status",
+      "location": "Lokasi",
+      "createdAt": "Dibuat",
+      "updatedAt": "Diperbarui",
+      "createdBy": "Dibuat oleh",
+      "updatedBy": "Diperbarui oleh"
+    },
+    "actions": {
+      "view": "Lihat",
+      "edit": "Ubah",
+      "delete": "Hapus"
+    },
+    "pagination": {
+      "page": "Halaman",
+      "of": "dari",
+      "previous": "Sebelumnya",
+      "next": "Berikutnya"
+    }
+  },
+  "detail": {
+    "title": "Detail Aset",
+    "code": "Kode",
+    "name": "Nama",
+    "category": "Kategori",
+    "status": "Status",
+    "location": "Lokasi",
+    "createdAt": "Dibuat",
+    "createdBy": "Dibuat oleh",
+    "updatedAt": "Diperbarui",
+    "updatedBy": "Diperbarui oleh"
+  },
+  "form": {
+    "editTitle": "Ubah Aset",
+    "createTitle": "Tambah Aset",
+    "nameLabel": "Nama Aset",
+    "namePlaceholder": "Sapu Lidi #1",
+    "categoryLabel": "Kategori",
+    "categoryPlaceholder": "Pilih Kategori",
+    "descriptionLabel": "Deskripsi",
+    "descriptionPlaceholder": "Deskripsi aset",
+    "purchaseDateLabel": "Tanggal Pembelian",
+    "purchasePriceLabel": "Harga Pembelian",
+    "purchasePricePlaceholder": "Harga dalam Rupiah",
+    "validationError": "Nama dan kategori harus diisi",
+    "updateSuccess": "Aset diperbarui",
+    "createSuccess": "Aset berhasil dibuat",
+    "cancel": "Batal",
+    "save": "Simpan",
+    "create": "Buat Aset"
+  }
+}

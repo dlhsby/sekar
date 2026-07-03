@@ -1,1 +1,19 @@
-{}
+{
+  "page": {
+    "loading": "Memuat...",
+    "title": "Profil",
+    "updateSuccess": "Profil diperbarui",
+    "photoUpdateSuccess": "Foto profil diperbarui",
+    "photoFormatError": "Format foto harus JPG, PNG, atau WebP.",
+    "photoSizeError": "Ukuran foto maksimal 5 MB.",
+    "photoChangeAriaLabel": "Ubah foto profil",
+    "photoHelper": "Foto profil: JPG, PNG, atau WebP, maksimal 5 MB.",
+    "accountSection": "Informasi Akun",
+    "fullNameLabel": "Nama Lengkap",
+    "fullNamePlaceholder": "Nama lengkap",
+    "usernameLabel": "Username",
+    "phoneLabel": "Nomor Telepon",
+    "adminNote": "Username dan nomor telepon dikelola oleh administrator.",
+    "saveButton": "Simpan Perubahan"
+  }
+}

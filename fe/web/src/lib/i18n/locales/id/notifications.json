@@ -1,1 +1,51 @@
-{}
+{
+  "tabs": {
+    "all": "Semua",
+    "task": "Tugas",
+    "activity": "Aktivitas",
+    "overtime": "Lembur",
+    "system": "Sistem"
+  },
+  "list": {
+    "loading": "Memuat...",
+    "markAllRead": "Tandai semua dibaca",
+    "filterAriaLabel": "Filter notifikasi",
+    "emptyTitle": "Belum ada notifikasi",
+    "emptyDescription": "Notifikasi tugas, lembur, dan pengumuman akan muncul di sini.",
+    "loadMore": "Muat lebih banyak"
+  },
+  "detail": {
+    "loading": "Memuat...",
+    "backToList": "Kembali ke daftar",
+    "notFound": "Notifikasi tidak ditemukan",
+    "notFoundDescription": "Notifikasi ini mungkin sudah dihapus atau tidak tersedia.",
+    "noRelatedData": "Notifikasi tidak memiliki data terkait untuk dibuka."
+  },
+  "types": {
+    "task_assigned": "Tugas baru",
+    "task_updated": "Tugas diperbarui",
+    "task_completed": "Tugas selesai",
+    "task_declined": "Tugas ditolak",
+    "shift_reminder": "Pengingat jadwal",
+    "report_submitted": "Laporan masuk",
+    "announcement": "Pengumuman",
+    "system": "Sistem",
+    "activity_approved": "Aktivitas disetujui",
+    "activity_rejected": "Aktivitas ditolak",
+    "activity_tagged": "Aktivitas ditandai",
+    "overtime_approved": "Lembur disetujui",
+    "overtime_rejected": "Lembur ditolak",
+    "missing_worker_alert": "Peringatan petugas hilang",
+    "area_plant_overdue": "Tanaman terlambat dipangkas"
+  },
+  "cta": {
+    "tasks": "Buka tugas terkait",
+    "activities": "Buka aktivitas terkait",
+    "overtime": "Buka lembur terkait",
+    "pruningRequests": "Buka permohonan terkait",
+    "monitoring": "Buka monitoring",
+    "plants": "Buka data tanaman",
+    "schedules": "Buka jadwal",
+    "default": "Buka data terkait"
+  }
+}

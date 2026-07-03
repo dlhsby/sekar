@@ -1,1 +1,51 @@
-{}
+{
+  "tabs": {
+    "all": "All",
+    "task": "Tasks",
+    "activity": "Activities",
+    "overtime": "Overtime",
+    "system": "System"
+  },
+  "list": {
+    "loading": "Loading...",
+    "markAllRead": "Mark all as read",
+    "filterAriaLabel": "Filter notifications",
+    "emptyTitle": "No notifications",
+    "emptyDescription": "Task, overtime, and announcement notifications will appear here.",
+    "loadMore": "Load more"
+  },
+  "detail": {
+    "loading": "Loading...",
+    "backToList": "Back to list",
+    "notFound": "Notification not found",
+    "notFoundDescription": "This notification may have been deleted or is unavailable.",
+    "noRelatedData": "This notification has no related data to open."
+  },
+  "types": {
+    "task_assigned": "New task",
+    "task_updated": "Task updated",
+    "task_completed": "Task completed",
+    "task_declined": "Task declined",
+    "shift_reminder": "Shift reminder",
+    "report_submitted": "Report submitted",
+    "announcement": "Announcement",
+    "system": "System",
+    "activity_approved": "Activity approved",
+    "activity_rejected": "Activity rejected",
+    "activity_tagged": "Activity tagged",
+    "overtime_approved": "Overtime approved",
+    "overtime_rejected": "Overtime rejected",
+    "missing_worker_alert": "Missing worker alert",
+    "area_plant_overdue": "Plant overdue for pruning"
+  },
+  "cta": {
+    "tasks": "Open related task",
+    "activities": "Open related activity",
+    "overtime": "Open related overtime",
+    "pruningRequests": "Open related request",
+    "monitoring": "Open monitoring",
+    "plants": "Open plant data",
+    "schedules": "Open schedule",
+    "default": "Open related data"
+  }
+}
