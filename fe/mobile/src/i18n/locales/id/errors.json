@@ -63,5 +63,7 @@
 
   "uploadPhotoFailed": "Gagal mengunggah foto ({{status}})",
   "uploadProfileFailed": "Gagal mengunggah foto profil",
-  "changePasswordFailed": "Gagal mengubah password"
+  "changePasswordFailed": "Gagal mengubah password",
+
+  "SHIFT_DURATION_TOO_SHORT": "Durasi shift terlalu singkat. Minimal {{minutes}} menit diperlukan sebelum Clock Out."
 }

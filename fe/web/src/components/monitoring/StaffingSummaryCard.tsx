@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils/cn';
 import { useStaffingSummary } from '@/lib/api/monitoring';
 import type { BoundariesResponse, DayType, StaffingRoleBreakdown } from '@/lib/api/monitoring';
 import { ROLE_LABELS } from '@/lib/constants/roles';
-import { DAY_TYPE_LABELS } from '@/lib/constants/monitoring';
+import { getDayTypeLabels } from '@/lib/constants/monitoring';
 import { AlertTriangle, Users, ChevronDown, ChevronRight, ArrowRightLeft } from 'lucide-react';
 import type { UserRole } from '@/types/models';
 
@@ -381,6 +381,7 @@ export function StaffingSummaryCard({
   onReassign,
 }: StaffingSummaryCardProps) {
   const { t } = useTranslation(['monitoring']);
+  const dayTypeLabels = getDayTypeLabels();
   const hasAreaFilter = !!filters.area_id;
   const hasRayonFilter = !!filters.rayon_id && !hasAreaFilter;
   const isCityView = !hasAreaFilter && !hasRayonFilter;
@@ -396,16 +397,16 @@ export function StaffingSummaryCard({
           {t('monitoring:staffing.staffingLabel')}
           <span className="text-nb-gray-400 font-normal normal-case">· {viewLabel}</span>
         </h3>
-        {dayType && DAY_TYPE_LABELS[dayType] && (
+        {dayType && dayTypeLabels[dayType] && (
           <span
             className="text-[10px] font-bold px-1.5 py-0.5 rounded-nb-sm border"
             style={{
-              color: DAY_TYPE_LABELS[dayType].color,
-              background: DAY_TYPE_LABELS[dayType].bg,
-              borderColor: DAY_TYPE_LABELS[dayType].color,
+              color: dayTypeLabels[dayType].color,
+              background: dayTypeLabels[dayType].bg,
+              borderColor: dayTypeLabels[dayType].color,
             }}
           >
-            {DAY_TYPE_LABELS[dayType].label}
+            {dayTypeLabels[dayType].label}
           </span>
         )}
       </div>

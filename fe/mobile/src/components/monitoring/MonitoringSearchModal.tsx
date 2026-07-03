@@ -105,7 +105,15 @@ export function MonitoringSearchModal({
   const [tab, setTab] = useState<Tab>('semua');
   const [recents, setRecents] = useState<SearchResult[]>([]);
 
-  const results = useMonitoringSearch(liveUsers, rayons, query);
+  const searchLabels = useMemo(
+    () => ({
+      petugas: t('monitoring:layers.workers'),
+      area: t('monitoring:layers.areas'),
+      rayon: t('monitoring:layers.rayons'),
+    }),
+    [t],
+  );
+  const results = useMonitoringSearch(liveUsers, rayons, query, searchLabels);
   const hasQuery = query.trim().length > 0;
 
   // Load recents + reset query/tab whenever the modal opens. Guard the async

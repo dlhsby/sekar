@@ -15,7 +15,7 @@ import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Check, X } from 'lucide-react';
 import { MONITORING_ROLES, OVERTIME_APPROVER_ROLES, hasRole } from '@/lib/constants/roles';
-import { OVERTIME_STATUS_LABELS, OVERTIME_STATUS_BADGES } from '@/lib/constants/overtime';
+import { getOvertimeStatusLabels, OVERTIME_STATUS_BADGES } from '@/lib/constants/overtime';
 
 interface OvertimeDetailPageProps {
   params: Promise<{ id: string }>;
@@ -23,6 +23,7 @@ interface OvertimeDetailPageProps {
 
 export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) {
   const { t } = useTranslation(['overtime', 'common']);
+  const overtimeLabels = getOvertimeStatusLabels();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [rejectReason, setRejectReason] = useState('');
@@ -106,7 +107,7 @@ export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) 
         <div>
           <h1 className="text-3xl font-bold text-nb-black mb-2">{t('overtime:detail.title')}</h1>
           <Badge variant={OVERTIME_STATUS_BADGES[overtime.status]} size="lg">
-            {OVERTIME_STATUS_LABELS[overtime.status]}
+            {overtimeLabels[overtime.status]}
           </Badge>
         </div>
         {canApprove && (

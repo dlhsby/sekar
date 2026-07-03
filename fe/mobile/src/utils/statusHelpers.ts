@@ -150,7 +150,10 @@ export function formatDurationHours(start: string, end: string): string {
   const h = Number.isInteger(totalHours)
     ? totalHours.toString()
     : totalHours.toFixed(1);
-  return crossesMidnight ? `${h}j (lintas tengah malam)` : `${h}j`;
+  if (crossesMidnight) {
+    return i18n.t('common:time.durationCrossesMidnight', { duration: h });
+  }
+  return i18n.language?.startsWith('en') ? `${h}h` : `${h}j`;
 }
 
 // ─── StatusPill tone mappers (shared list card) ──────────────────────────────

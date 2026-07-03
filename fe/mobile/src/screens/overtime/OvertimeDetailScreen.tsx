@@ -46,6 +46,7 @@ type RouteParams = { overtimeId: string };
 
 export function OvertimeDetailScreen(): React.JSX.Element {
   const { t } = useTranslation('overtime');
+  const { t: tMonitoring } = useTranslation('monitoring');
   const route = useRoute<RouteProp<MainTabParamList, 'OvertimeDetail'>>();
   const navigation = useNavigation<MainTabScreenProps<'OvertimeDetail'>['navigation']>();
   const { overtimeId } = route.params as RouteParams;
@@ -123,7 +124,7 @@ export function OvertimeDetailScreen(): React.JSX.Element {
               userId={overtime.user_id}
               shiftId={overtime.shift_id}
               startDatetime={overtime.start_datetime}
-              userName={overtime.user?.full_name || 'Petugas'}
+              userName={overtime.user?.full_name || tMonitoring('markerPreview.typeOfficer')}
               areaName={overtime.area?.name}
             />
           )}

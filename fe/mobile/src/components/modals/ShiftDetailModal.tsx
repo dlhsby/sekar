@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBModal } from '../nb/NBModal';
@@ -21,6 +22,8 @@ interface ShiftDetailModalProps {
 }
 
 export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalProps) {
+  const { t } = useTranslation('attendance');
+
   const locationStatus = React.useMemo(() => {
     if (
       !shift?.area?.gps_lat ||
@@ -52,7 +55,7 @@ export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalPr
       {!shift ? (
         <View style={styles.empty}>
           <NBText variant="h3" color="gray600" style={styles.emptyText}>
-            Tidak ada shift aktif
+            {t('shifts.noShiftActive')}
           </NBText>
         </View>
       ) : (
@@ -62,7 +65,7 @@ export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalPr
             label="Area"
             even
           >
-            <NBText variant="body" color="black">{shift.area?.name || 'Tidak diketahui'}</NBText>
+            <NBText variant="body" color="black">{shift.area?.name || t('shifts.unknown')}</NBText>
             {!!shift.area?.address && (
               <NBText variant="caption" color="gray600">{shift.area.address}</NBText>
             )}

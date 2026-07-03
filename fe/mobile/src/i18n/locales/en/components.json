@@ -50,7 +50,13 @@
     "notUpdated": "Not updated",
     "justUpdated": "Updated just now",
     "defaultTitle": "Your Location",
-    "defaultMarkerTitle": "Your Location"
+    "defaultMarkerTitle": "Your Location",
+    "areaNotAvailable": "Location not available",
+    "gpsNotAvailable": "GPS not active or not available",
+    "accuracy": "Accuracy: ±{{value}}m",
+    "withinWorkArea": "Within work area",
+    "outsideWorkArea": "Outside work area",
+    "updated": "Updated {{time}}"
   },
   "nbDatePicker": {
     "months": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],

@@ -91,7 +91,10 @@
     },
     "maintenanceStatus": {
       "scheduled": "Terjadwal",
-      "completed": "Selesai"
+      "in_progress": "Sedang Berlangsung",
+      "completed": "Selesai",
+      "cancelled": "Dibatalkan",
+      "overdue": "Terlambat"
     },
     "assignmentTable": {
       "date": "Tanggal",

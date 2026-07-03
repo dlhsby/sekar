@@ -9,7 +9,7 @@ import { Search, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
-import { STATUS_LABELS } from '@/lib/constants/monitoring';
+import { getStatusLabels } from '@/lib/constants/monitoring';
 import { ROLE_LABELS } from '@/lib/constants/roles';
 import type { TrackingStatus } from '@/lib/api/monitoring-types';
 import type { UserRole } from '@/types/models';
@@ -67,6 +67,7 @@ export function MonitoringFilters({
   className,
 }: MonitoringFiltersProps) {
   const { t } = useTranslation();
+  const statusLabels = getStatusLabels();
 
   const toggleStatus = (status: TrackingStatus) => {
     const next = new Set(filters.statuses);
@@ -133,7 +134,7 @@ export function MonitoringFilters({
                   style={{ backgroundColor: color }}
                   aria-hidden="true"
                 />
-                {STATUS_LABELS[status]}
+                {statusLabels[status]}
                 <span className="font-mono tabular-nums opacity-70">{statusCounts[status] ?? 0}</span>
               </button>
             );

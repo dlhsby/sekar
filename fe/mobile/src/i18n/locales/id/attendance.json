@@ -127,5 +127,14 @@
     "accuracyLabel": "Akurasi:",
     "lowAccuracyWarning": "GPS kurang akurat. Pindah ke area terbuka untuk hasil lebih baik.",
     "updateGpsButton": "Perbarui GPS"
+  },
+  "shifts": {
+    "today": "Kehadiran Hari Ini",
+    "empty": "Belum ada shift hari ini",
+    "noShiftActive": "Tidak ada shift aktif",
+    "startShiftHint": "Clock in terlebih dahulu untuk memulai shift",
+    "notClockedIn": "Belum clock in",
+    "workHoursSuffix": "jam kerja",
+    "unknown": "Tidak diketahui"
   }
 }

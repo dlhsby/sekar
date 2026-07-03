@@ -12,7 +12,7 @@ import { Search } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import {
-  STATUS_LABELS as MONITORING_STATUS_LABELS,
+  getStatusLabels,
   STATUS_SEVERITY_ORDER,
 } from '@/lib/constants/monitoring';
 import { ROLE_LABELS } from '@/lib/constants/roles';
@@ -34,13 +34,6 @@ export interface MonitoringSidePanelProps {
   onUserSelect: (user: LiveUser) => void;
 }
 
-const STATUS_CARDS: Array<{ status: TrackingStatus; label: string }> = [
-  { status: 'active', label: MONITORING_STATUS_LABELS.active },
-  { status: 'inactive', label: MONITORING_STATUS_LABELS.inactive },
-  { status: 'outside_area', label: MONITORING_STATUS_LABELS.outside_area },
-  { status: 'missing', label: MONITORING_STATUS_LABELS.missing },
-];
-
 export function MonitoringSidePanel({
   data,
   isLoading,
@@ -48,6 +41,13 @@ export function MonitoringSidePanel({
   onUserSelect,
 }: MonitoringSidePanelProps) {
   const { t } = useTranslation(['monitoring']);
+  const statusLabels = getStatusLabels();
+  const STATUS_CARDS: Array<{ status: TrackingStatus; label: string }> = [
+    { status: 'active', label: statusLabels.active },
+    { status: 'inactive', label: statusLabels.inactive },
+    { status: 'outside_area', label: statusLabels.outside_area },
+    { status: 'missing', label: statusLabels.missing },
+  ];
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<TrackingStatus | null>(null);
   const [roleFilters, setRoleFilters] = useState<Set<string>>(new Set());

@@ -29,16 +29,15 @@ const MAINTENANCE_TYPE_LABELS: Record<MaintenanceType, string> = {
   replacement: 'Penggantian',
 };
 
-const MAINTENANCE_STATUS_LABELS: Record<MaintenanceStatus, string> = {
-  scheduled: 'Terjadwal',
-  in_progress: 'Sedang Berlangsung',
-  completed: 'Selesai',
-  cancelled: 'Dibatalkan',
-  overdue: 'Terlambat',
-};
-
 export default function MaintenanceCalendarPage() {
   const { t } = useTranslation();
+  const maintenanceStatusLabels = {
+    scheduled: t('assets:detail.maintenanceStatus.scheduled'),
+    in_progress: t('assets:detail.maintenanceStatus.in_progress'),
+    completed: t('assets:detail.maintenanceStatus.completed'),
+    cancelled: t('assets:detail.maintenanceStatus.cancelled'),
+    overdue: t('assets:detail.maintenanceStatus.overdue'),
+  };
   const now = new Date();
   const [currentMonth, setCurrentMonth] = useState(now.getMonth());
   const [currentYear, setCurrentYear] = useState(now.getFullYear());
@@ -195,7 +194,7 @@ export default function MaintenanceCalendarPage() {
                     <p className="text-sm text-gray-600">{formatTime(m.scheduled_at)}</p>
                   </div>
                   <StatusPill tone="bad">
-                    {MAINTENANCE_STATUS_LABELS[m.status]}
+                    {maintenanceStatusLabels[m.status]}
                   </StatusPill>
                 </div>
               ))}

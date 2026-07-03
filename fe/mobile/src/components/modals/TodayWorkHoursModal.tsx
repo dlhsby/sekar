@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBModal } from '../nb/NBModal';
 import { NBText } from '../nb/NBText';
 import { nbSpacing } from '../../constants/nbTokens';
@@ -33,6 +34,8 @@ export function TodayWorkHoursModal({
   onShiftPress,
   date,
 }: TodayWorkHoursModalProps): React.JSX.Element {
+  const { t } = useTranslation('attendance');
+
   // Total duration across all shifts (active shift uses current time).
   const totalDuration = shifts.reduce((acc, shift) => {
     const endTime = shift.clock_out_time ? new Date(shift.clock_out_time) : new Date();
@@ -44,7 +47,7 @@ export function TodayWorkHoursModal({
   // Parse a YYYY-MM-DD string as local midnight so the date reads verbatim.
   const headerSource = typeof date === 'string' ? `${date}T00:00:00` : date ?? new Date();
   const dateLine = formatDate(headerSource);
-  const titlePrefix = date ? `Kehadiran ${formatLongDate(headerSource)}` : 'Kehadiran Hari Ini';
+  const titlePrefix = date ? `Kehadiran ${formatLongDate(headerSource)}` : t('shifts.today');
   const titleSuffix = shifts.length > 0 ? ` (${totalHours}j ${totalMinutes}m)` : '';
 
   return (
@@ -62,10 +65,10 @@ export function TodayWorkHoursModal({
       {shifts.length === 0 ? (
         <View style={styles.empty}>
           <NBText variant="h3" color="gray600" align="center">
-            Belum ada shift hari ini
+            {t('shifts.empty')}
           </NBText>
           <NBText variant="body-sm" color="gray500" align="center" style={styles.emptySub}>
-            Clock in terlebih dahulu untuk memulai shift
+            {t('shifts.startShiftHint')}
           </NBText>
         </View>
       ) : (

@@ -127,5 +127,14 @@
     "accuracyLabel": "Accuracy:",
     "lowAccuracyWarning": "GPS accuracy is low. Move to an open area for better results.",
     "updateGpsButton": "Update GPS"
+  },
+  "shifts": {
+    "today": "Attendance Today",
+    "empty": "No shifts scheduled for today",
+    "noShiftActive": "No active shift",
+    "startShiftHint": "Clock in first to start a shift",
+    "notClockedIn": "Not clocked in",
+    "workHoursSuffix": "work hours",
+    "unknown": "Unknown"
   }
 }

@@ -149,7 +149,7 @@ export function MapDashboardScreen(): React.JSX.Element {
     (rayon: RayonBoundary) => {
       showMarkerPreview(
         { latitude: Number(rayon.center_lat), longitude: Number(rayon.center_lng) },
-        { title: rayon.name, typeText: 'Rayon', accent: nbColors.requestUnderReview, icon: 'office-building' },
+        { title: rayon.name, typeText: t('monitoring:entityTypes.rayon'), accent: nbColors.requestUnderReview, icon: 'office-building' },
         18,
         () => {
           setBoundaryDetailType('rayon');
@@ -159,14 +159,14 @@ export function MapDashboardScreen(): React.JSX.Element {
         },
       );
     },
-    [showMarkerPreview, setMarkerPreview],
+    [showMarkerPreview, setMarkerPreview, t],
   );
 
   const handleAreaPress = useCallback(
     (area: AreaBoundary) => {
       showMarkerPreview(
         { latitude: Number(area.center_lat), longitude: Number(area.center_lng) },
-        { title: area.name, typeText: 'Area', accent: nbColors.warning, icon: 'map-marker' },
+        { title: area.name, typeText: t('monitoring:entityTypes.area'), accent: nbColors.warning, icon: 'map-marker' },
         18,
         () => {
           setBoundaryDetailType('area');
@@ -176,7 +176,7 @@ export function MapDashboardScreen(): React.JSX.Element {
         },
       );
     },
-    [showMarkerPreview, setMarkerPreview],
+    [showMarkerPreview, setMarkerPreview, t],
   );
 
   // Search result handler

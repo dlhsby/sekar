@@ -15,7 +15,7 @@ import { Tabs, EmptyState } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
 import { formatRelativeTime } from '@/lib/utils/formatters';
 import { ROLE_LABELS } from '@/lib/constants/roles';
-import { STATUS_LABELS, STATUS_DOT_CLASSES, STATUS_BADGE_CLASSES } from '@/lib/constants/monitoring';
+import { getStatusLabels, STATUS_DOT_CLASSES, STATUS_BADGE_CLASSES } from '@/lib/constants/monitoring';
 import type { SnapshotWorker, SnapshotAreaSummary } from '@/lib/api/monitoring-v2';
 import type { TrackingStatus } from '@/lib/api/monitoring-types';
 import type { UserRole } from '@/types/models';
@@ -46,6 +46,7 @@ function WorkerRow({
   onClick: () => void;
 }) {
   const { t } = useTranslation();
+  const statusLabels = getStatusLabels();
   const dot = STATUS_DOT_CLASSES[worker.status as TrackingStatus] ?? STATUS_DOT_CLASSES.offline;
   const roleLabel = ROLE_LABELS[worker.role as UserRole] ?? worker.role;
   const lowBattery = worker.battery_level !== null && worker.battery_level < 20;
@@ -55,7 +56,7 @@ function WorkerRow({
       type="button"
       onClick={onClick}
       aria-current={selected}
-      aria-label={`${worker.full_name}, ${STATUS_LABELS[worker.status as TrackingStatus] ?? worker.status}`}
+      aria-label={`${worker.full_name}, ${statusLabels[worker.status as TrackingStatus] ?? worker.status}`}
       className={cn(
         'w-full border-b border-nb-gray-200 px-3 py-2.5 text-left transition-colors',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-nb-primary',
@@ -98,6 +99,7 @@ function WorkerRow({
 
 function WorkerDetail({ worker, onBack }: { worker: SnapshotWorker; onBack: () => void }) {
   const { t } = useTranslation();
+  const statusLabels = getStatusLabels();
   const status = worker.status as TrackingStatus;
   const roleLabel = ROLE_LABELS[worker.role as UserRole] ?? worker.role;
 
@@ -128,7 +130,7 @@ function WorkerDetail({ worker, onBack }: { worker: SnapshotWorker; onBack: () =
                 STATUS_BADGE_CLASSES[status] ?? STATUS_BADGE_CLASSES.offline
               )}
             >
-              {STATUS_LABELS[status] ?? worker.status}
+              {statusLabels[status] ?? worker.status}
             </span>
           </div>
           {(worker.rayon_name || worker.area_name) && (

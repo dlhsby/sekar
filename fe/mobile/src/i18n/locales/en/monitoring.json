@@ -10,7 +10,9 @@
       "fetchUserDaySummary": "Failed to load user daily summary",
       "fetchLocationHistory": "Failed to load location history",
       "fetchStaffingSummary": "Failed to load staffing summary",
-      "fetchBoundaries": "Failed to load region boundaries"
+      "fetchBoundaries": "Failed to load region boundaries",
+      "emptySnapshot": "Empty snapshot response",
+      "failedSnapshot": "Failed to load monitoring snapshot"
     }
   },
   "mapDashboard": {
@@ -44,6 +46,10 @@
     "typeOfficer": "Officer",
     "typeRayon": "Rayon",
     "typeArea": "Area"
+  },
+  "entityTypes": {
+    "area": "Area",
+    "rayon": "Rayon"
   },
   "status": {
     "title": "Monitoring Status",

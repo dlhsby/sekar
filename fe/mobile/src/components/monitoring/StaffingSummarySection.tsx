@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -63,6 +64,7 @@ export function StaffingSummarySection({
   isLoading,
   currentDayTypeLabel,
 }: StaffingSummarySectionProps): React.JSX.Element {
+  const { t } = useTranslation('common');
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const toggleExpand = useCallback((id: string) => {
@@ -95,7 +97,7 @@ export function StaffingSummarySection({
         <ActivityIndicator size="small" color={nbColors.primary} />
       ) : items.length === 0 ? (
         <NBText variant="body-sm" color="gray500" style={{ fontStyle: 'italic' }}>
-          Tidak ada data kepegawaian
+          {t('ui.noStaffing')}
         </NBText>
       ) : (
         items.map(item => {

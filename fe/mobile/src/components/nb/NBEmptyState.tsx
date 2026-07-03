@@ -16,6 +16,7 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import {
   nbColors,
   nbShadows,
@@ -76,18 +77,18 @@ const variantIcons: Record<NBEmptyStateVariant, string> = {
   search: '🔎',
 };
 
-// Default descriptions for each variant
-const variantDescriptions: Record<NBEmptyStateVariant, string> = {
-  noData: 'Belum ada data tersedia',
-  noResults: 'Tidak ada hasil yang sesuai',
-  offline: 'Tidak ada koneksi internet',
-  error: 'Terjadi kesalahan',
-  maintenance: 'Sedang dalam pemeliharaan',
-  permission: 'Izin akses diperlukan',
-  empty: 'Folder kosong',
-  complete: 'Semua tugas selesai',
-  search: 'Mulai pencarian',
-};
+// Get default descriptions for each variant using i18n
+const getVariantDescriptions = (t: ReturnType<typeof useTranslation>['t']): Record<NBEmptyStateVariant, string> => ({
+  noData: t('common:empty.noData.description'),
+  noResults: t('common:empty.noResults.description'),
+  offline: t('common:empty.offline.description'),
+  error: t('common:empty.error.description'),
+  maintenance: t('common:empty.maintenance.description'),
+  permission: t('common:empty.noPermission.description'),
+  empty: t('common:empty.emptyFolder.description'),
+  complete: t('common:empty.allDone.description'),
+  search: t('common:empty.search.description'),
+});
 
 /**
  * Neo Brutalism styled empty state component
@@ -131,8 +132,11 @@ export const NBEmptyState: React.FC<NBEmptyStateProps> = ({
   descriptionStyle,
   testID,
 }) => {
+  const { t } = useTranslation();
+
   // Use custom icon if provided, otherwise use variant default
   const displayIcon = icon !== undefined ? icon : variantIcons[variant];
+  const variantDescriptions = getVariantDescriptions(t);
   const displayDescription =
     description !== undefined ? description : variantDescriptions[variant];
 

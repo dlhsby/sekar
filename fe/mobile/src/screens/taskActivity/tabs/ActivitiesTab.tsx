@@ -48,7 +48,7 @@ export function ActivitiesTab({
   onNavigateToActivity,
   currentUserId,
 }: ActivitiesTabProps): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t } = useTranslation('common');
   const renderItem = useCallback(
     ({ item }: { item: Activity }) => (
       <ActivityCard
@@ -120,7 +120,7 @@ export function ActivitiesTab({
           </View>
         ) : !hasMore && activities.length > 0 ? (
           <View style={styles.footerEnd}>
-            <NBText variant="body-sm" color="gray400" style={styles.footerEndText}>Tidak ada lagi</NBText>
+            <NBText variant="body-sm" color="gray400" style={styles.footerEndText}>{t('ui.noMore')}</NBText>
           </View>
         ) : null
       }

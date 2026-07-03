@@ -51,7 +51,7 @@ export function TasksTab({
   onLoadMore,
   onNavigateToTask,
 }: TasksTabProps): React.JSX.Element {
-  const { t } = useTranslation();
+  const { t } = useTranslation('common');
   const renderItem = useCallback(
     ({ item }: { item: Task }) => (
       <TaskCard
@@ -136,7 +136,7 @@ export function TasksTab({
           </View>
         ) : !hasMore && tasks.length > 0 ? (
           <View style={styles.footerEnd}>
-            <NBText variant="body-sm" color="gray400" style={styles.footerEndText}>Tidak ada lagi</NBText>
+            <NBText variant="body-sm" color="gray400" style={styles.footerEndText}>{t('ui.noMore')}</NBText>
           </View>
         ) : null
       }

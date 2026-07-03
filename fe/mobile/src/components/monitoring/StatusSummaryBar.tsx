@@ -14,6 +14,7 @@
 
 import React, { useCallback, useMemo } from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 // react-native-gesture-handler's ScrollView is the correct nested scroller
 // inside @gorhom/bottom-sheet — its native gesture handler coordinates with the
 // sheet's pan handler so horizontal drags aren't swallowed by the sheet's
@@ -66,6 +67,8 @@ export function StatusSummaryBar({
   activeActivity,
   onActivityChange,
 }: StatusSummaryBarProps): React.JSX.Element {
+  const { t } = useTranslation();
+
   // Tally the 3 activity buckets + their dalam/luar split, from the live roster.
   const buckets = useMemo(() => {
     const acc: Record<PresenceActivity, ActivityBucket> = {
@@ -123,6 +126,7 @@ interface ActivityChipProps {
 }
 
 function ActivityChip({ activity, bucket, isActive, onPress }: ActivityChipProps): React.JSX.Element {
+  const { t } = useTranslation();
   const { label } = presenceActivityPill(activity);
   const accent = getActivityColor(activity);
   // Missing has no usable fix → no dalam/luar split line.
@@ -132,11 +136,14 @@ function ActivityChip({ activity, bucket, isActive, onPress }: ActivityChipProps
   const onKey = ACTIVITY_SELECTED_ON[activity];
   const onColor = onKey === 'white' ? nbColors.white : nbColors.black;
 
+  const withinLabel = t('common:ui.withinArea');
+  const outsideLabel = t('common:ui.outsideArea');
+
   return (
     <TouchableOpacity
       onPress={() => onPress(activity)}
       activeOpacity={0.75}
-      accessibilityLabel={`Filter ${label}: ${bucket.total}${hasLocation ? `, ${bucket.dalam} dalam, ${bucket.luar} luar` : ''}`}
+      accessibilityLabel={`Filter ${label}: ${bucket.total}${hasLocation ? `, ${bucket.dalam} ${withinLabel}, ${bucket.luar} ${outsideLabel}` : ''}`}
       accessibilityRole="button"
       accessibilityState={{ selected: isActive }}
       testID={`activity-chip-${activity}`}
@@ -168,7 +175,7 @@ function ActivityChip({ activity, bucket, isActive, onPress }: ActivityChipProps
             color={isActive ? onKey : 'gray600'}
             style={styles.chipSplit}
           >
-            {`${bucket.dalam} dalam · ${bucket.luar} luar`}
+            {`${bucket.dalam} ${withinLabel} · ${bucket.luar} ${outsideLabel}`}
           </NBText>
         ) : (
           // Missing has no dalam/luar — keep an invisible spacer so all three

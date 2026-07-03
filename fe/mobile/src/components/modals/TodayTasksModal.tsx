@@ -3,6 +3,7 @@
  * Opened from the Home "Tugas" Ringkasan tile (mirrors TodayActivitiesModal).
  */
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, StyleSheet } from 'react-native';
 import { NBModal } from '../nb/NBModal';
 import { NBText } from '../nb/NBText';
@@ -25,6 +26,8 @@ export function TodayTasksModal({
   tasks,
   onTaskPress,
 }: TodayTasksModalProps): React.JSX.Element {
+  const { t } = useTranslation('common');
+
   return (
     <NBModal
       visible={visible}
@@ -36,7 +39,7 @@ export function TodayTasksModal({
       {tasks.length === 0 ? (
         <View style={styles.empty}>
           <NBText variant="h3" color="gray600" align="center">
-            Tidak ada tugas aktif hari ini
+            {t('ui.noActiveTasksToday')}
           </NBText>
           <NBText variant="body-sm" color="gray500" align="center" style={styles.emptySub}>
             Tugas yang ditugaskan ke Anda akan muncul di sini.

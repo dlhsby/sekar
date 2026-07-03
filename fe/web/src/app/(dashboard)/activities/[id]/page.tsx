@@ -15,7 +15,7 @@ import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Check, X } from 'lucide-react';
 import { MONITORING_ROLES, ACTIVITY_APPROVER_ROLES, hasRole } from '@/lib/constants/roles';
-import { ACTIVITY_STATUS_LABELS, ACTIVITY_STATUS_BADGES } from '@/lib/constants/activities';
+import { getActivityStatusLabels, ACTIVITY_STATUS_BADGES } from '@/lib/constants/activities';
 
 interface ActivityDetailPageProps {
   params: Promise<{ id: string }>;
@@ -23,6 +23,7 @@ interface ActivityDetailPageProps {
 
 export default function ActivityDetailPage({ params }: ActivityDetailPageProps) {
   const { t } = useTranslation(['activities', 'common']);
+  const activityLabels = getActivityStatusLabels();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [rejectReason, setRejectReason] = useState('');
@@ -110,7 +111,7 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
               {activity.activity_type?.name || 'Unknown'}
             </Badge>
             <Badge variant={ACTIVITY_STATUS_BADGES[activity.status]} size="lg">
-              {ACTIVITY_STATUS_LABELS[activity.status]}
+              {activityLabels[activity.status]}
             </Badge>
           </div>
         </div>

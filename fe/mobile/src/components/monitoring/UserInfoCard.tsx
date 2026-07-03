@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   StyleSheet,
@@ -39,6 +40,7 @@ export function UserInfoCard({
   onClose,
   onViewDetails,
 }: UserInfoCardProps): React.JSX.Element {
+  const { t } = useTranslation('common');
   const translateY = React.useRef(new Animated.Value(CARD_HEIGHT)).current;
 
   React.useEffect(() => {
@@ -69,7 +71,7 @@ export function UserInfoCard({
   const duration = calculateDuration(clockInTime);
   const lastUpdate = user.latest_location
     ? getRelativeTime(user.latest_location.logged_at)
-    : 'Tidak ada data lokasi';
+    : t('ui.noLocation');
 
   return (
     <>

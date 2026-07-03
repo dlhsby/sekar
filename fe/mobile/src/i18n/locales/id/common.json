@@ -125,6 +125,42 @@
     "minutesAgo": "{{count}} menit yang lalu",
     "hoursAgo": "{{count}} jam yang lalu",
     "daysAgo": "{{count}} hari yang lalu",
-    "unavailable": "-"
+    "unavailable": "-",
+    "durationMinutes": "{{count}}m",
+    "durationHours": "{{count}}j",
+    "durationHoursMinutes": "{{count}}j {{minutes}}m",
+    "durationFull": "{{count}} jam {{minutes}} menit",
+    "durationCrossesMidnight": "{{duration}}j (lintas tengah malam)",
+    "inMoment": "sebentar lagi",
+    "justNowPast": "baru saja",
+    "inMinutes": "dalam {{count}} menit",
+    "minutesPast": "{{count}} menit lalu",
+    "inHours": "dalam {{count}} jam",
+    "hoursPast": "{{count}} jam lalu",
+    "inDays": "dalam {{count}} hari",
+    "daysPast": "{{count}} hari lalu"
+  },
+  "calendar": {
+    "days": ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"],
+    "monthsShort": ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"],
+    "monthsFull": ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"],
+    "week": "Minggu"
+  },
+  "ui": {
+    "noPhoto": "Tidak ada foto",
+    "noData": "Tidak ada data",
+    "noDescription": "Tidak ada deskripsi",
+    "noReason": "(Tidak ada alasan)",
+    "notFilled": "(Belum diisi)",
+    "notAssigned": "Belum ditugaskan",
+    "assigned": "(petugas)",
+    "noLocation": "Tidak ada data lokasi",
+    "noStaffing": "Tidak ada data kepegawaian",
+    "noMore": "Tidak ada lagi",
+    "noActiveTasksToday": "Tidak ada tugas aktif hari ini",
+    "error": "Terjadi Kesalahan",
+    "errorOccurred": "Terjadi kesalahan",
+    "withinArea": "dalam",
+    "outsideArea": "luar"
   }
 }

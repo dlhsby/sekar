@@ -16,5 +16,7 @@
   "rayonRequired": "Rayon is required",
   "areaTypeRequired": "Area type is required",
   "boundaryRequired": "Area boundary must be drawn on the map",
-  "rejectionReasonRequired": "Rejection reason must be filled"
+  "rejectionReasonRequired": "Rejection reason must be filled",
+  "taskTitleRequired": "Title must be filled",
+  "taskAssigneeRequired": "Officer must be selected"
 }

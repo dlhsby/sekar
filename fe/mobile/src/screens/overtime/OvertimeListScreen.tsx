@@ -59,6 +59,7 @@ type Props = {
 
 export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
   const { t } = useTranslation('overtime');
+  const { t: tMonitoring } = useTranslation('monitoring');
   const { canSubmitOvertime, canApproveOvertime } = useRoleAccess();
   const user = useAppSelector((state) => state.auth.user);
   const currentShift = useAppSelector((state) => state.shift.currentShift);
@@ -114,11 +115,11 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
       const toDate = filters.to_date;
       chips.push({ text: f && toDate ? `${f.slice(5)} — ${toDate.slice(5)}` : t('list.dateRangeLabel'), tone: 'date' });
     }
-    if (filters.rayon_id) { chips.push({ text: 'Rayon', tone: 'location' }); }
-    if (filters.area_id) { chips.push({ text: 'Area', tone: 'location' }); }
-    if (filters.user_id) { chips.push({ text: 'Petugas', tone: 'assignment' }); }
+    if (filters.rayon_id) { chips.push({ text: tMonitoring('entityTypes.rayon'), tone: 'location' }); }
+    if (filters.area_id) { chips.push({ text: tMonitoring('entityTypes.area'), tone: 'location' }); }
+    if (filters.user_id) { chips.push({ text: tMonitoring('markerPreview.typeOfficer'), tone: 'assignment' }); }
     return chips;
-  }, [filters, t]);
+  }, [filters, t, tMonitoring]);
 
   const buildParams = useCallback((p: number): OvertimeFilter => ({
     ...filters,

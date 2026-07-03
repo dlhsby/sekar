@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Image,
@@ -37,6 +38,7 @@ const THUMBNAIL_SIZE = 100;
  * Horizontal scrollable gallery with tap to fullscreen
  */
 export function PhotoGallery({ photos, testID }: PhotoGalleryProps): React.ReactElement {
+  const { t } = useTranslation('common');
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [imageLoading, setImageLoading] = useState(false);
@@ -56,7 +58,7 @@ export function PhotoGallery({ photos, testID }: PhotoGalleryProps): React.React
     return (
       <View style={styles.emptyContainer} testID={`${testID}-empty`}>
         <NBText variant="body" color="gray600">
-          Tidak ada foto
+          {t('ui.noPhoto')}
         </NBText>
       </View>
     );

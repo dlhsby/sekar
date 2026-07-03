@@ -48,7 +48,8 @@ import { ActionBar } from './components/ActionBar';
 type DetailScreenProps = NativeStackScreenProps<any, 'PruningDetail'>;
 
 export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element {
-  const { t } = useTranslation('pruning');
+  const { t: tPruning } = useTranslation('pruning');
+  const { t } = useTranslation('common');
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
   const { requestId, adminMode = false } = (props.route.params ?? {}) as {
@@ -71,6 +72,9 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
     canConvert,
     showAdminBar,
   } = usePruningRequestDetail(requestId, adminMode);
+
+  // Add the pruning translation reference for compatibility with component usage
+  React.useMemo(() => tPruning, [tPruning]);
 
   // Action handlers
   const scrollViewRef = useRef<ScrollView>(null);
@@ -164,7 +168,7 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
 
           {error ? (
             <View style={styles.errorBanner}>
-              <NBAlert variant="danger" title="Terjadi kesalahan" message={error} />
+              <NBAlert variant="danger" title={t('ui.errorOccurred')} message={error} />
             </View>
           ) : null}
         </ScrollView>

@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils/cn';
 import {
   STATUS_BADGE_CLASSES,
   STATUS_DOT_CLASSES,
-  STATUS_LABELS,
+  getStatusLabels,
 } from '@/lib/constants/monitoring';
 import { formatRelativeTime } from '@/lib/utils/formatters';
 import type { TrackingStatus } from '@/lib/api/monitoring';
@@ -59,6 +59,7 @@ export function WorkerListVirtual({
   'aria-label': ariaLabel,
 }: WorkerListVirtualProps) {
   const { t } = useTranslation(['monitoring']);
+  const statusLabels = getStatusLabels();
   const parentRef = useRef<HTMLDivElement>(null);
 
   const rowVirtualizer = useVirtualizer({
@@ -179,7 +180,7 @@ export function WorkerListVirtual({
                     className={cn('w-1.5 h-1.5 rounded-full', STATUS_DOT_CLASSES[worker.status])}
                     aria-hidden="true"
                   />
-                  {STATUS_LABELS[worker.status]}
+                  {statusLabels[worker.status]}
                 </span>
                 <span className="text-[10px] text-nb-gray-400">
                   {formatRelativeTime(worker.last_update)}

@@ -91,7 +91,10 @@
     },
     "maintenanceStatus": {
       "scheduled": "Scheduled",
-      "completed": "Completed"
+      "in_progress": "In Progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "overdue": "Overdue"
     },
     "assignmentTable": {
       "date": "Date",

@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils/cn';
 import { useLiveUsers, useReassignWorker } from '@/lib/api/monitoring';
 import type { BoundariesResponse, LiveUser } from '@/lib/api/monitoring';
 import { ROLE_LABELS } from '@/lib/constants/roles';
-import { STATUS_BADGE_CLASSES, STATUS_LABELS } from '@/lib/constants/monitoring';
+import { STATUS_BADGE_CLASSES, getStatusLabels } from '@/lib/constants/monitoring';
 import { todayJakartaISODate } from '@/lib/utils/formatters';
 import type { UserRole } from '@/types/models';
 import { toast } from 'sonner';
@@ -63,6 +63,7 @@ export function BulkReassignModal({
   boundaries,
 }: BulkReassignModalProps) {
   const { t } = useTranslation();
+  const statusLabels = getStatusLabels();
   const [sourceAreaId, setSourceAreaId] = useState<string>('');
   const [selectedUserIds, setSelectedUserIds] = useState<ReadonlySet<string>>(new Set());
   const [reason, setReason] = useState<string>('');
@@ -265,7 +266,7 @@ export function BulkReassignModal({
                               statusClass
                             )}
                           >
-                            {STATUS_LABELS[user.status] ?? user.status}
+                            {statusLabels[user.status] ?? user.status}
                           </span>
                         </button>
                       </li>

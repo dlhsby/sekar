@@ -24,6 +24,7 @@
 
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import i18n from '../../i18n/config';
 import { NBButton } from '../nb';
 import { nbColors, nbSpacing, nbType, nbBorders, nbShadows } from '../../constants/nbTokens';
 
@@ -134,7 +135,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         <View style={styles.container}>
           <View style={styles.card}>
             <Text style={styles.icon}>⚠️</Text>
-            <Text style={styles.title}>Terjadi Kesalahan</Text>
+            <Text style={styles.title}>{i18n.t('common:ui.error')}</Text>
             <Text style={styles.message}>
               Aplikasi mengalami kesalahan yang tidak terduga.
             </Text>

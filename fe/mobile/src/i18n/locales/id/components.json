@@ -50,7 +50,13 @@
     "notUpdated": "Belum diperbarui",
     "justUpdated": "Diperbarui baru saja",
     "defaultTitle": "Lokasi Anda",
-    "defaultMarkerTitle": "Lokasi Anda"
+    "defaultMarkerTitle": "Lokasi Anda",
+    "areaNotAvailable": "Lokasi tidak tersedia",
+    "gpsNotAvailable": "GPS tidak aktif atau belum tersedia",
+    "accuracy": "Akurasi: ±{{value}}m",
+    "withinWorkArea": "Di dalam area kerja",
+    "outsideWorkArea": "Di luar area kerja",
+    "updated": "Diperbarui {{time}}"
   },
   "nbDatePicker": {
     "months": ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"],

@@ -125,6 +125,42 @@
     "minutesAgo": "{{count}} minutes ago",
     "hoursAgo": "{{count}} hours ago",
     "daysAgo": "{{count}} days ago",
-    "unavailable": "-"
+    "unavailable": "-",
+    "durationMinutes": "{{count}}m",
+    "durationHours": "{{count}}h",
+    "durationHoursMinutes": "{{count}}h {{minutes}}m",
+    "durationFull": "{{count}} hours {{minutes}} minutes",
+    "durationCrossesMidnight": "{{duration}}h (crosses midnight)",
+    "inMoment": "in a moment",
+    "justNowPast": "just now",
+    "inMinutes": "in {{count}} minutes",
+    "minutesPast": "{{count}} minutes ago",
+    "inHours": "in {{count}} hours",
+    "hoursPast": "{{count}} hours ago",
+    "inDays": "in {{count}} days",
+    "daysPast": "{{count}} days ago"
+  },
+  "calendar": {
+    "days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    "monthsShort": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    "monthsFull": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    "week": "Week"
+  },
+  "ui": {
+    "noPhoto": "No photos",
+    "noData": "No data",
+    "noDescription": "No description",
+    "noReason": "(No reason)",
+    "notFilled": "(Not filled)",
+    "notAssigned": "Not assigned",
+    "assigned": "(assigned)",
+    "noLocation": "No location data",
+    "noStaffing": "No staffing data",
+    "noMore": "No more",
+    "noActiveTasksToday": "No active tasks today",
+    "error": "Something Went Wrong",
+    "errorOccurred": "An error occurred",
+    "withinArea": "within",
+    "outsideArea": "outside"
   }
 }

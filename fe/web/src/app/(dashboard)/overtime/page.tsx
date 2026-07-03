@@ -31,7 +31,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, Check, X, Eye } from 'lucide-react';
 import type { Overtime, OvertimeStatus } from '@/types/models';
 import { MONITORING_ROLES, OVERTIME_APPROVER_ROLES, hasRole } from '@/lib/constants/roles';
-import { OVERTIME_STATUS_LABELS } from '@/lib/constants/overtime';
+import { getOvertimeStatusLabels } from '@/lib/constants/overtime';
 import { formatDate } from '@/lib/utils/time';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
 
@@ -43,7 +43,8 @@ const isValidOvertimeStatus = (value: string): value is OvertimeStatus | 'all' =
 };
 
 export default function OvertimePage() {
-  const { t } = useTranslation(['overtime', 'common', 'status']);
+  const { t } = useTranslation(["overtime", "common", "status"]);
+  const overtimeLabels = getOvertimeStatusLabels();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<OvertimeStatus | 'all'>('all');
@@ -219,7 +220,7 @@ export default function OvertimePage() {
       meta: { label: t('overtime:list.table.columns.status') },
       cell: ({ row }) => (
         <StatusPill tone={statusTone[row.original.status]} dot>
-          {OVERTIME_STATUS_LABELS[row.original.status]}
+          {overtimeLabels[row.original.status]}
         </StatusPill>
       ),
     },
@@ -400,7 +401,7 @@ export default function OvertimePage() {
             label: t('overtime:detail.fields.status'),
             value: (
               <StatusPill tone={statusTone[view.item.status]} dot>
-                {OVERTIME_STATUS_LABELS[view.item.status]}
+                {overtimeLabels[view.item.status]}
               </StatusPill>
             ),
           },

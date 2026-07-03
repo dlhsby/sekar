@@ -10,7 +10,9 @@
       "fetchUserDaySummary": "Gagal memuat ringkasan harian pengguna",
       "fetchLocationHistory": "Gagal memuat riwayat lokasi",
       "fetchStaffingSummary": "Gagal memuat ringkasan kepegawaian",
-      "fetchBoundaries": "Gagal memuat batas wilayah"
+      "fetchBoundaries": "Gagal memuat batas wilayah",
+      "emptySnapshot": "Respons snapshot kosong",
+      "failedSnapshot": "Gagal memuat snapshot monitoring"
     }
   },
   "mapDashboard": {
@@ -44,6 +46,10 @@
     "typeOfficer": "Petugas",
     "typeRayon": "Rayon",
     "typeArea": "Area"
+  },
+  "entityTypes": {
+    "area": "Area",
+    "rayon": "Rayon"
   },
   "status": {
     "title": "Status Pemantauan",

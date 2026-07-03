@@ -32,7 +32,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, Check, X, Eye } from 'lucide-react';
 import type { Activity, ActivityFilters, ActivityStatus } from '@/types/models';
 import { MONITORING_ROLES, ACTIVITY_APPROVER_ROLES, hasRole } from '@/lib/constants/roles';
-import { ACTIVITY_STATUS_LABELS, ACTIVITY_STATUS_BADGES } from '@/lib/constants/activities';
+import { getActivityStatusLabels, ACTIVITY_STATUS_BADGES } from '@/lib/constants/activities';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
 
 const isValidActivityStatus = (value: string): value is ActivityStatus | 'all' => {
@@ -41,6 +41,7 @@ const isValidActivityStatus = (value: string): value is ActivityStatus | 'all' =
 
 export default function ActivitiesPage() {
   const { t } = useTranslation(['activities', 'common', 'status']);
+  const activityLabels = getActivityStatusLabels();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [filters, setFilters] = useState<{
@@ -240,7 +241,7 @@ export default function ActivitiesPage() {
       meta: { label: t('activities:list.table.columns.status') },
       cell: ({ row }) => (
         <Badge variant={ACTIVITY_STATUS_BADGES[row.original.status]} size="sm">
-          {ACTIVITY_STATUS_LABELS[row.original.status]}
+          {activityLabels[row.original.status]}
         </Badge>
       ),
     },
@@ -449,7 +450,7 @@ export default function ActivitiesPage() {
               label: t('activities:list.table.columns.status'),
               value: (
                 <Badge variant={ACTIVITY_STATUS_BADGES[view.item.status]} size="sm">
-                  {ACTIVITY_STATUS_LABELS[view.item.status]}
+                  {activityLabels[view.item.status]}
                 </Badge>
               ),
             },

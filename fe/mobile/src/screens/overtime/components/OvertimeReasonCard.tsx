@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { View } from 'react-native';
 import {
@@ -21,7 +22,10 @@ interface OvertimeReasonCardProps {
   reason?: string;
 }
 
-export const OvertimeReasonCard: React.FC<OvertimeReasonCardProps> = ({ reason }) => (
+export const OvertimeReasonCard: React.FC<OvertimeReasonCardProps> = ({ reason }) => {
+  const { t } = useTranslation('common');
+
+  return (
   <NBCard style={[{ marginHorizontal: nbSpacing.md, marginBottom: nbSpacing.md, ...nbShadows.sm }]}>
     <NBCardHeader>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -35,8 +39,9 @@ export const OvertimeReasonCard: React.FC<OvertimeReasonCardProps> = ({ reason }
         color={!reason ? 'gray400' : 'black'}
         style={[!reason && { fontStyle: 'italic' }]}
       >
-        {reason || '(Tidak ada alasan)'}
+        {reason || t('ui.noReason')}
       </NBText>
     </NBCardContent>
   </NBCard>
-);
+  );
+};

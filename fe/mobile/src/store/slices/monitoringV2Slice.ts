@@ -13,6 +13,7 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import type { LiveUser } from '../../types/models.types';
 import apiClient from '../../services/api/apiClient';
+import i18n from '../../i18n/config';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -99,12 +100,12 @@ export const fetchSnapshot = createAsyncThunk(
 
       const payload = response.data?.data;
       if (!payload) {
-        return rejectWithValue('Respons snapshot kosong');
+        return rejectWithValue(i18n.t('monitoring:screen.error.emptySnapshot'));
       }
 
       return payload;
     } catch {
-      return rejectWithValue('Gagal memuat snapshot monitoring');
+      return rejectWithValue(i18n.t('monitoring:screen.error.failedSnapshot'));
     }
   },
 );
@@ -191,7 +192,7 @@ const monitoringV2Slice = createSlice({
     });
     builder.addCase(fetchSnapshot.rejected, (state, action) => {
       state.loading = false;
-      state.error = action.payload as string ?? 'Terjadi kesalahan';
+      state.error = action.payload as string ?? i18n.t('common:ui.errorOccurred');
     });
   },
 });

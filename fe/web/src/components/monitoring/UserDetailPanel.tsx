@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui';
 import { ROLE_LABELS } from '@/lib/constants/roles';
 import { cn } from '@/lib/utils/cn';
 import { formatRelativeTime, formatDuration, formatTime } from '@/lib/utils/formatters';
-import { STATUS_BADGE_CLASSES, STATUS_LABELS } from '@/lib/constants/monitoring';
+import { STATUS_BADGE_CLASSES, getStatusLabels } from '@/lib/constants/monitoring';
 import type { UserDaySummary } from '@/lib/api/monitoring';
 import type { UserRole } from '@/types/models';
 
@@ -41,6 +41,7 @@ export function UserDetailPanel({
   onViewLocationHistory,
 }: UserDetailPanelProps) {
   const { t } = useTranslation(['monitoring']);
+  const statusLabels = getStatusLabels();
 
   if (isLoading) {
     return (
@@ -72,7 +73,7 @@ export function UserDetailPanel({
   const statusClass =
     STATUS_BADGE_CLASSES[summary.status] ??
     'bg-[var(--color-status-offline-bg)] text-[var(--color-status-offline)] border-[var(--color-status-offline)]';
-  const statusLabel = STATUS_LABELS[summary.status] ?? summary.status;
+  const statusLabel = statusLabels[summary.status] ?? summary.status;
   const roleLabel = ROLE_LABELS[summary.role as UserRole] || summary.role;
 
   return (

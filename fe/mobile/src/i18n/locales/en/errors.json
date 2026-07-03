@@ -63,5 +63,7 @@
 
   "uploadPhotoFailed": "Failed to upload photo ({{status}})",
   "uploadProfileFailed": "Failed to upload profile picture",
-  "changePasswordFailed": "Failed to change password"
+  "changePasswordFailed": "Failed to change password",
+
+  "SHIFT_DURATION_TOO_SHORT": "Shift duration is too short. A minimum of {{minutes}} minutes is required before clocking out."
 }
