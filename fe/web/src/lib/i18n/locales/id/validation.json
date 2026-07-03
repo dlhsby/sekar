@@ -18,5 +18,9 @@
   "boundaryRequired": "Batas area wajib digambar di peta",
   "colorInvalid": "Format warna harus heksadesimal, mis. #RRGGBB",
   "latitudeInvalid": "Latitude harus antara -90 dan 90",
-  "longitudeInvalid": "Longitude harus antara -180 dan 180"
+  "longitudeInvalid": "Longitude harus antara -180 dan 180",
+  "checking": "Memeriksa ketersediaan…",
+  "available": "Tersedia",
+  "taken": "Sudah dipakai",
+  "formatInvalid": "Format tidak valid"
 }

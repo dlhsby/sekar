@@ -2,6 +2,7 @@
  * Locale-aware relative-time formatting (web mirror of the mobile
  * NotificationsScreen helper). Used by the notification bell + inbox.
  */
+import i18n from '@/lib/i18n/config';
 import { intlLocale } from '@/lib/i18n/date-locale';
 
 export function formatRelativeTime(iso: string): string {
@@ -9,10 +10,10 @@ export function formatRelativeTime(iso: string): string {
     const then = new Date(iso).getTime();
     if (Number.isNaN(then)) return '';
     const diffSec = Math.floor((Date.now() - then) / 1000);
-    if (diffSec < 60) return 'Baru saja';
-    if (diffSec < 3600) return `${Math.floor(diffSec / 60)} menit lalu`;
-    if (diffSec < 86400) return `${Math.floor(diffSec / 3600)} jam lalu`;
-    if (diffSec < 7 * 86400) return `${Math.floor(diffSec / 86400)} hari lalu`;
+    if (diffSec < 60) return i18n.t('common:time.relativeJustNow');
+    if (diffSec < 3600) return i18n.t('common:time.relativeMinutesAgo', { count: Math.floor(diffSec / 60) });
+    if (diffSec < 86400) return i18n.t('common:time.relativeHoursAgo', { count: Math.floor(diffSec / 3600) });
+    if (diffSec < 7 * 86400) return i18n.t('common:time.relativeDaysAgo', { count: Math.floor(diffSec / 86400) });
     return new Date(iso).toLocaleDateString(intlLocale(), {
       day: 'numeric',
       month: 'short',

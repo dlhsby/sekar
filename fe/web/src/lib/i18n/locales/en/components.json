@@ -33,5 +33,14 @@
     "last30": "Last 30 Days",
     "thisMonth": "This Month",
     "lastMonth": "Last Month"
+  },
+  "coordinateLink": {
+    "viewLocation": "View location on map",
+    "defaultLabel": "Location"
+  },
+  "columnFilter": {
+    "placeholder": "Filter…",
+    "filterLabel": "Filter {{label}}",
+    "clearLabel": "Clear filter {{label}}"
   }
 }

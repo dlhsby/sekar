@@ -37,5 +37,9 @@
     "title": "Latest Notifications",
     "viewAll": "All →",
     "empty": "No notifications yet"
-  }
+  },
+  "greeting": "Hello",
+  "user": "User",
+  "statusMeta": "{{count}} present · {{rayons}} rayons",
+  "ariaStatus": "{{active}} of {{total}} active officers"
 }

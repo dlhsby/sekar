@@ -75,13 +75,13 @@ export default function RayonCard({ rayon, stats, loading }: RayonCardProps) {
           )}
 
           {!stats && (
-            <div className="text-sm text-nb-gray-500 italic">Statistik tidak tersedia</div>
+            <div className="text-sm text-nb-gray-500 italic">{t('admin:rayons.card.statsUnavailable')}</div>
           )}
         </CardContent>
 
         <CardFooter>
           <div className="flex items-center text-nb-success-dark text-sm font-semibold">
-            Lihat Detail
+            {t('admin:rayons.card.viewDetail')}
             <ChevronRight className="w-4 h-4 ml-1" />
           </div>
         </CardFooter>

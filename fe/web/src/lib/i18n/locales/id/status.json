@@ -17,5 +17,17 @@
     "medium": "Biasa",
     "high": "Tinggi",
     "urgent": "Mendesak"
+  },
+  "tracking": {
+    "active": "Aktif",
+    "inactive": "Idle",
+    "outside_area": "Di Luar Area",
+    "missing": "Tidak Terdeteksi",
+    "offline": "Offline"
+  },
+  "dayType": {
+    "weekday": "Hari Kerja",
+    "weekend": "Akhir Pekan",
+    "holiday": "Hari Libur"
   }
 }

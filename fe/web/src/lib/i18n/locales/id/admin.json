@@ -293,7 +293,16 @@
     "rayonHasAreas": "Rayon \"{name}\" masih memiliki area. Hapus area terlebih dahulu.",
     "noAreas": "Tidak ada area di rayon ini",
     "pageOf": "Halaman {page} / {total} · {count} area",
-    "actions": "Aksi"
+    "actions": "Aksi",
+    "stats": {
+      "totalAreas": "Total Area",
+      "totalStaff": "Total Staf",
+      "totalCoverageArea": "Total Jangkauan"
+    },
+    "card": {
+      "statsUnavailable": "Statistik tidak tersedia",
+      "viewDetail": "Lihat Detail"
+    }
   },
   "dialogs": {
     "tempPassword": {
@@ -344,7 +353,14 @@
       "myLocationTitle": "Lokasi saya",
       "emptyHint": "Tampilan peta.",
       "exploreHint": "Geser/cari peta atau gunakan kontrol lokasi (pojok kanan bawah) untuk menjelajah. Tekan \"Tempatkan/Ubah titik lokasi\" untuk menaruh titik; pin juga bisa diseret.",
-      "areaLabel": "Luas:"
+      "areaLabel": "Luas:",
+      "importButton": "Impor KML",
+      "importTitle": "Impor Batas dari KML",
+      "uploadDescription": "Unggah berkas <b>.kml</b> (ekspor dari Google Earth) atau tempel kode KML/GeoJSON di bawah. Poligon batas akan menggantikan gambar yang ada.",
+      "selectFileButton": "Pilih berkas .kml",
+      "pasteDescription": "Atau tempel kode KML / GeoJSON di sini…",
+      "successMessage": "Batas berhasil diimpor dari KML.",
+      "applyButton": "Terapkan"
     }
   }
 }

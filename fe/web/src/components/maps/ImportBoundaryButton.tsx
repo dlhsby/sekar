@@ -51,7 +51,7 @@ export function ImportBoundaryButton({ onImport, disabled }: ImportBoundaryButto
       return;
     }
     onImport(geometry);
-    toast.success('Batas berhasil diimpor dari KML.');
+    toast.success(t('admin:maps.boundary.successMessage'));
     setOpen(false);
     setText('');
   };
@@ -66,18 +66,17 @@ export function ImportBoundaryButton({ onImport, disabled }: ImportBoundaryButto
         onClick={() => setOpen(true)}
         disabled={disabled}
       >
-        Impor KML
+        {t('admin:maps.boundary.importButton')}
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent size="lg">
           <DialogHeader>
-            <DialogTitle>Impor Batas dari KML</DialogTitle>
+            <DialogTitle>{t('admin:maps.boundary.importTitle')}</DialogTitle>
           </DialogHeader>
           <DialogBody className="space-y-4">
             <p className="text-nb-body-sm text-nb-gray-600">
-              Unggah berkas <b>.kml</b> (ekspor dari Google Earth) atau tempel kode KML/GeoJSON di
-              bawah. Poligon batas akan menggantikan gambar yang ada.
+              {t('admin:maps.boundary.uploadDescription')}
             </p>
 
             <div>
@@ -94,7 +93,7 @@ export function ImportBoundaryButton({ onImport, disabled }: ImportBoundaryButto
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
               >
-                Pilih berkas .kml
+                {t('admin:maps.boundary.selectFileButton')}
               </Button>
             </div>
 
@@ -102,16 +101,16 @@ export function ImportBoundaryButton({ onImport, disabled }: ImportBoundaryButto
               value={text}
               onChange={(e) => setText(e.target.value)}
               rows={8}
-              placeholder="Atau tempel kode KML / GeoJSON di sini…"
+              placeholder={t('admin:maps.boundary.pasteDescription')}
               className="font-mono text-nb-body-sm"
             />
           </DialogBody>
           <DialogFooter>
             <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
-              Batal
+              {t('admin:shared.cancel')}
             </Button>
             <Button type="button" onClick={handleApply} disabled={!text.trim()}>
-              Terapkan
+              {t('admin:maps.boundary.applyButton')}
             </Button>
           </DialogFooter>
         </DialogContent>

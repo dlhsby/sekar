@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MapPin } from 'lucide-react';
 import { cn, nbFocusRing } from '@/lib/utils/cn';
 import { formatLatLng } from '@/lib/utils/geo';
@@ -21,6 +22,7 @@ interface CoordinateLinkProps {
  * is missing. Reused by the Area + Rayon datatables / detail modals.
  */
 export function CoordinateLink({ lat, lng, className, label }: CoordinateLinkProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   const latNum = lat == null || lat === '' ? NaN : Number(lat);
@@ -34,8 +36,8 @@ export function CoordinateLink({ lat, lng, className, label }: CoordinateLinkPro
       <span className="font-mono text-nb-body-sm">{formatLatLng(latNum, lngNum)}</span>
       <button
         type="button"
-        aria-label="Lihat lokasi di peta"
-        title="Lihat lokasi di peta"
+        aria-label={t('components:coordinateLink.viewLocation')}
+        title={t('components:coordinateLink.viewLocation')}
         onClick={(e) => {
           e.stopPropagation();
           setOpen(true);
@@ -49,7 +51,7 @@ export function CoordinateLink({ lat, lng, className, label }: CoordinateLinkPro
         onOpenChange={setOpen}
         lat={latNum}
         lng={lngNum}
-        title={label ?? 'Lokasi'}
+        title={label ?? t('components:coordinateLink.defaultLabel')}
       />
     </span>
   );

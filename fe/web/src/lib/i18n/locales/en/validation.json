@@ -18,5 +18,9 @@
   "boundaryRequired": "Area boundary must be drawn on the map",
   "colorInvalid": "Color format must be hexadecimal, e.g. #RRGGBB",
   "latitudeInvalid": "Latitude must be between -90 and 90",
-  "longitudeInvalid": "Longitude must be between -180 and 180"
+  "longitudeInvalid": "Longitude must be between -180 and 180",
+  "checking": "Checking availability…",
+  "available": "Available",
+  "taken": "Already taken",
+  "formatInvalid": "Invalid format"
 }

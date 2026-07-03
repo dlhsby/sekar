@@ -4,6 +4,7 @@
  * WCAG 2.1 AA compliant hex colors
  */
 
+import i18n from '@/lib/i18n/config';
 import type { TrackingStatus } from '@/lib/api/monitoring';
 
 // Spec-compliant WCAG 2.1 AA colors
@@ -31,6 +32,19 @@ export const STATUS_TEXT_COLORS: Record<TrackingStatus, string> = {
   offline: '#374151',
 };
 
+export function getStatusLabels(): Record<TrackingStatus, string> {
+  return {
+    active: i18n.t('status:tracking.active'),
+    inactive: i18n.t('status:tracking.inactive'),
+    outside_area: i18n.t('status:tracking.outside_area'),
+    missing: i18n.t('status:tracking.missing'),
+    offline: i18n.t('status:tracking.offline'),
+  };
+}
+
+/**
+ * @deprecated Use getStatusLabels() instead
+ */
 export const STATUS_LABELS: Record<TrackingStatus, string> = {
   active: 'Aktif',
   inactive: 'Idle',
@@ -175,7 +189,17 @@ export const CENTER_MARKER_STYLES = {
   area: { bg: '#D97706', size: 28, label: 'A' },
 } as const;
 
-// Day type labels and colors
+export function getDayTypeLabels(): Record<string, { label: string; color: string; bg: string }> {
+  return {
+    weekday: { label: i18n.t('status:dayType.weekday'), color: '#15803D', bg: '#DCFCE7' },
+    weekend: { label: i18n.t('status:dayType.weekend'), color: '#D97706', bg: '#FEF3C7' },
+    holiday: { label: i18n.t('status:dayType.holiday'), color: '#DC2626', bg: '#FEE2E2' },
+  };
+}
+
+/**
+ * @deprecated Use getDayTypeLabels() instead
+ */
 export const DAY_TYPE_LABELS: Record<string, { label: string; color: string; bg: string }> = {
   weekday: { label: 'Hari Kerja', color: '#15803D', bg: '#DCFCE7' },
   weekend: { label: 'Akhir Pekan', color: '#D97706', bg: '#FEF3C7' },

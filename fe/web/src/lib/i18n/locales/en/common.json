@@ -185,5 +185,11 @@
     "prevDay": "Previous day",
     "nextDay": "Next day",
     "today": "Today"
+  },
+  "time": {
+    "relativeJustNow": "Just now",
+    "relativeMinutesAgo": "{{count}} minutes ago",
+    "relativeHoursAgo": "{{count}} hours ago",
+    "relativeDaysAgo": "{{count}} days ago"
   }
 }

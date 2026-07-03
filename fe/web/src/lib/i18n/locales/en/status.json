@@ -17,5 +17,17 @@
     "medium": "Medium",
     "high": "High",
     "urgent": "Urgent"
+  },
+  "tracking": {
+    "active": "Active",
+    "inactive": "Idle",
+    "outside_area": "Outside Area",
+    "missing": "Not Detected",
+    "offline": "Offline"
+  },
+  "dayType": {
+    "weekday": "Weekday",
+    "weekend": "Weekend",
+    "holiday": "Holiday"
   }
 }

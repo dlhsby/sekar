@@ -51,7 +51,7 @@ export function ShiftCard({
       {/* Header: status pill (left) + shift # / date (right) — matches the shared
           ListItemCard anatomy used by Tugas / Aktivitas / Lembur. */}
       <View style={styles.header}>
-        <StatusPill dot tone={isActive ? 'ok' : 'neutral'} label={isActive ? 'Aktif' : 'Selesai'} />
+        <StatusPill dot tone={isActive ? 'ok' : 'neutral'} label={isActive ? t('status:active') : t('status:completed')} />
         {shiftNumber ? (
           <NBText variant="mono-sm" color="gray500" style={styles.rightText}>Shift #{shiftNumber}</NBText>
         ) : null}

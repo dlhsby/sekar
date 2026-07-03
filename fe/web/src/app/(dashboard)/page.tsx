@@ -120,7 +120,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        title={`Halo, ${user?.full_name?.split(' ')[0] ?? 'Pengguna'}`}
+        title={`${t('home:greeting')}, ${user?.full_name?.split(' ')[0] ?? t('home:user')}`}
         description={user ? ROLE_LABELS[user.role] || user.role : undefined}
       />
 
@@ -152,7 +152,7 @@ export default function DashboardPage() {
         {/* Status breakdown */}
         <SectionCard
           title={t('home:statusSection.title')}
-          meta={counts ? `${counts.presensi} hadir · ${perRayon.length} rayon` : undefined}
+          meta={counts ? t('home:statusMeta', { count: counts.presensi, rayons: perRayon.length }) : undefined}
         >
           {!counts ? (
             <p className="py-6 text-center text-nb-body-sm text-nb-gray-600">
@@ -165,7 +165,7 @@ export default function DashboardPage() {
                   className="relative size-32 shrink-0 rounded-full border-2 border-nb-black"
                   style={{ background: donutGradient }}
                   role="img"
-                  aria-label={`${counts.aktif} dari ${counts.presensi} petugas aktif`}
+                  aria-label={t('home:ariaStatus', { active: counts.aktif, total: counts.presensi })}
                 >
                   <div className="absolute inset-[18%] flex flex-col items-center justify-center rounded-full border-2 border-nb-black bg-nb-white">
                     <span className="font-heading text-2xl font-extrabold leading-none text-nb-black">

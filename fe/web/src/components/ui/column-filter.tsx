@@ -2,6 +2,7 @@
 
 import { type Column, type FilterFn, type FilterFnOption } from '@tanstack/react-table';
 import { format, isValid, parseISO } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 import { dateFnsLocale } from '@/lib/i18n/date-locale';
 import { Search, X } from 'lucide-react';
 
@@ -68,6 +69,7 @@ export function ColumnFilter<TData>({
   column,
   label,
 }: ColumnFilterProps<TData>): React.JSX.Element {
+  const { t } = useTranslation();
   const value = (column.getFilterValue() as string | undefined) ?? '';
   return (
     <div className="relative w-full min-w-[8.5rem]">
@@ -80,15 +82,15 @@ export function ColumnFilter<TData>({
         value={value}
         // Empty → undefined so the column drops out of the active-filter count.
         onChange={(e) => column.setFilterValue(e.target.value || undefined)}
-        placeholder="Filter…"
-        aria-label={`Filter ${label}`}
+        placeholder={t('components:columnFilter.placeholder')}
+        aria-label={t('components:columnFilter.filterLabel', { label })}
         className={cn('h-8 w-full pl-7 pr-7 text-nb-body-sm font-normal', value && 'border-nb-info')}
       />
       {value ? (
         <button
           type="button"
           onClick={() => column.setFilterValue(undefined)}
-          aria-label={`Hapus filter ${label}`}
+          aria-label={t('components:columnFilter.clearLabel', { label })}
           className="absolute inset-y-0 right-0 flex items-center pr-2 text-nb-gray-400 transition-colors hover:text-nb-black"
         >
           <X className="h-3.5 w-3.5" aria-hidden />

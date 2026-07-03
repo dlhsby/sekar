@@ -144,7 +144,7 @@ export function ResponsiveShell({ children, sidebar, header }: ResponsiveShellPr
             <button
               onClick={() => setDrawerOpen(true)}
               className="p-1.5 rounded-nb-sm border border-white/30 text-white hover:bg-white/10"
-              aria-label="Buka menu navigasi"
+              aria-label={t('common:actions.open')}
               aria-expanded={drawerOpen}
               aria-controls="mobile-drawer"
             >

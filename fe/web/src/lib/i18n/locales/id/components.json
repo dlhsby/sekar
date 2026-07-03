@@ -33,5 +33,14 @@
     "last30": "30 Hari",
     "thisMonth": "Bulan Ini",
     "lastMonth": "Bulan Lalu"
+  },
+  "coordinateLink": {
+    "viewLocation": "Lihat lokasi di peta",
+    "defaultLabel": "Lokasi"
+  },
+  "columnFilter": {
+    "placeholder": "Filter…",
+    "filterLabel": "Filter {{label}}",
+    "clearLabel": "Hapus filter {{label}}"
   }
 }

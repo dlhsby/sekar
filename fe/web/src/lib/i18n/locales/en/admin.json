@@ -293,7 +293,16 @@
     "rayonHasAreas": "Rayon \"{name}\" still has areas. Please delete the areas first.",
     "noAreas": "No areas in this rayon",
     "pageOf": "Page {page} / {total} · {count} areas",
-    "actions": "Actions"
+    "actions": "Actions",
+    "stats": {
+      "totalAreas": "Total Areas",
+      "totalStaff": "Total Staff",
+      "totalCoverageArea": "Total Coverage"
+    },
+    "card": {
+      "statsUnavailable": "Statistics unavailable",
+      "viewDetail": "View Details"
+    }
   },
   "dialogs": {
     "tempPassword": {
@@ -344,7 +353,14 @@
       "myLocationTitle": "My location",
       "emptyHint": "Map view.",
       "exploreHint": "Pan/search the map or use location control (bottom right) to explore. Press \"Place/Change location pin\" to place the pin; the pin can also be dragged.",
-      "areaLabel": "Area:"
+      "areaLabel": "Area:",
+      "importButton": "Import KML",
+      "importTitle": "Import Boundary from KML",
+      "uploadDescription": "Upload a <b>.kml</b> file (exported from Google Earth) or paste KML/GeoJSON code below. The boundary polygon will replace the existing drawing.",
+      "selectFileButton": "Select .kml file",
+      "pasteDescription": "Or paste KML / GeoJSON code here…",
+      "successMessage": "Boundary successfully imported from KML.",
+      "applyButton": "Apply"
     }
   }
 }

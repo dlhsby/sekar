@@ -93,11 +93,9 @@ function formatTime(isoString: string): string {
   return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 }
 
-const PRIORITY_LABEL: Record<string, string> = {
-  low: 'Rendah',
-  medium: 'Sedang',
-  high: 'Tinggi',
-  urgent: 'Mendesak',
+// Priority labels now use i18n; see statusHelpers.getPriorityLabel()
+const getPriorityLabel = (priority: string): string => {
+  return i18n.t(`status:priority.${priority}`, priority);
 };
 
 const NOOP = () => {};
