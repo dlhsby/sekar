@@ -411,13 +411,13 @@ export class ActivitiesService {
       relations: ['user', 'area'],
     });
     if (!activity) {
-      throw new NotFoundException('Aktivitas tidak ditemukan');
+      throw new NotFoundException('Activity not found');
     }
     if (activity.status !== ActivityStatus.PENDING) {
-      throw new BadRequestException('Aktivitas sudah diproses');
+      throw new BadRequestException('The activity has already been processed');
     }
     if (activity.user_id === reviewerId) {
-      throw new ForbiddenException('Anda tidak dapat mereview aktivitas Anda sendiri');
+      throw new ForbiddenException('You cannot review your own activity');
     }
     return activity;
   }
@@ -438,21 +438,21 @@ export class ActivitiesService {
     if (reviewer.role === UserRole.KEPALA_RAYON) {
       return this.assertKepalaRayonApprovalScope(activity, reviewer);
     }
-    throw new ForbiddenException('Anda tidak memiliki wewenang untuk menyetujui aktivitas');
+    throw new ForbiddenException('You are not authorized to approve activities');
   }
 
   private assertKorlapApprovalScope(activity: Activity, reviewer: User): void {
     if (!['satgas', 'linmas'].includes(activity.user?.role)) {
-      throw new ForbiddenException('Korlap hanya dapat menyetujui aktivitas satgas dan linmas');
+      throw new ForbiddenException('Korlap can only approve satgas and linmas activities');
     }
     if (!reviewer.area_id || activity.area_id !== reviewer.area_id) {
-      throw new ForbiddenException('Anda hanya dapat menyetujui aktivitas di area Anda');
+      throw new ForbiddenException('You can only approve activities in your area');
     }
   }
 
   private assertKepalaRayonApprovalScope(activity: Activity, reviewer: User): void {
     if (!reviewer.rayon_id) {
-      throw new ForbiddenException('Akun Kepala Rayon Anda belum memiliki rayon');
+      throw new ForbiddenException('Your Kepala Rayon account has no rayon assigned');
     }
     const submitterRole = activity.user?.role;
     if (!['korlap', 'admin_data'].includes(submitterRole)) {
@@ -461,13 +461,13 @@ export class ActivitiesService {
       );
     }
     if (submitterRole === 'korlap' && activity.area?.rayon_id !== reviewer.rayon_id) {
-      throw new ForbiddenException('Anda hanya dapat menyetujui aktivitas di rayon Anda');
+      throw new ForbiddenException('You can only approve activities in your rayon');
     }
     if (
       submitterRole === 'admin_data' &&
       (!activity.user.rayon_id || activity.user.rayon_id !== reviewer.rayon_id)
     ) {
-      throw new ForbiddenException('Anda hanya dapat menyetujui aktivitas di rayon Anda');
+      throw new ForbiddenException('You can only approve activities in your rayon');
     }
   }
 

@@ -354,7 +354,7 @@ export class TasksService {
       [taskId, userId],
     )) as Array<unknown>;
     if (rows.length === 0) {
-      throw new ForbiddenException('Anda tidak memiliki akses ke tugas ini');
+      throw new ForbiddenException('You do not have access to this task');
     }
   }
 
@@ -412,7 +412,7 @@ export class TasksService {
 
   private assertUpdateAllowed(task: Task, callerId?: string): void {
     if (callerId && task.created_by !== callerId) {
-      throw new ForbiddenException('Hanya pembuat tugas yang dapat mengedit tugas ini');
+      throw new ForbiddenException('Only the task creator can edit this task');
     }
   }
 

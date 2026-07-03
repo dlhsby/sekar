@@ -123,13 +123,13 @@ export class TaskVerificationService {
 
   private assertIsAssignee(task: Task, userId: string): void {
     if (task.assigned_to !== userId) {
-      throw new ForbiddenException('Anda bukan penerima tugas ini');
+      throw new ForbiddenException('You are not the assignee of this task');
     }
   }
 
   private assertAwaitingResponse(task: Task): void {
     if (task.status !== TaskStatus.ASSIGNED) {
-      throw new BadRequestException('Tugas tidak dalam status ditugaskan');
+      throw new BadRequestException('The task is not in the assigned status');
     }
   }
 
@@ -140,10 +140,10 @@ export class TaskVerificationService {
     selfReviewMessage: string,
   ): void {
     if (task.status !== TaskStatus.COMPLETED) {
-      throw new BadRequestException('Tugas belum diselesaikan');
+      throw new BadRequestException('The task has not been completed');
     }
     if (!task.assigned_to) {
-      throw new BadRequestException('Tugas tidak memiliki penerima');
+      throw new BadRequestException('The task has no assignee');
     }
     if (task.assigned_to === verifierId) {
       throw new ForbiddenException(selfReviewMessage);
@@ -162,28 +162,28 @@ export class TaskVerificationService {
   private assertRoleCanVerify(verifierRole: UserRole, assigneeRole: UserRole): void {
     const allowedAssigneeRoles = VERIFY_MAP[verifierRole];
     if (!allowedAssigneeRoles?.includes(assigneeRole)) {
-      throw new ForbiddenException('Anda tidak berwenang memverifikasi tugas ini');
+      throw new ForbiddenException('You are not authorized to verify this task');
     }
   }
 
   private assertKorlapScope(verifier: User, assignee: User): void {
     if (verifier.role !== UserRole.KORLAP) return;
     if (!verifier.area_id || verifier.area_id !== assignee.area_id) {
-      throw new ForbiddenException('Anda hanya dapat memverifikasi tugas di area Anda');
+      throw new ForbiddenException('You can only verify tasks in your area');
     }
   }
 
   private async assertKepalaRayonScope(verifier: User, assignee: User): Promise<void> {
     if (verifier.role !== UserRole.KEPALA_RAYON) return;
     if (!verifier.rayon_id) {
-      throw new ForbiddenException('Akun Kepala Rayon Anda belum memiliki rayon');
+      throw new ForbiddenException('Your Kepala Rayon account has no rayon assigned');
     }
     if (!assignee.area_id) {
-      throw new ForbiddenException('Penerima tugas tidak memiliki area yang valid');
+      throw new ForbiddenException('The task assignee has no valid area');
     }
     const area = await this.areasService.findOne(assignee.area_id);
     if (area.rayon_id !== verifier.rayon_id) {
-      throw new ForbiddenException('Anda hanya dapat memverifikasi tugas di rayon Anda');
+      throw new ForbiddenException('You can only verify tasks in your rayon');
     }
   }
 

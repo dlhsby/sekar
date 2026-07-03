@@ -221,7 +221,7 @@ export class PruningRequestsService {
     // "approved-without-date" limbo state. Use `under_review` for tentative
     // dispositions instead.
     if (dto.decision === 'approve' && !request.scheduledDate) {
-      throw new ConflictException('Atur jadwal terlebih dahulu sebelum menyetujui permohonan');
+      throw new ConflictException('Set a schedule before approving the request');
     }
   }
 
