@@ -15,11 +15,11 @@ This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-
 | **M1-R** | 3-R2 Token value migration + brand fonts | 100 % | ✅ Complete | web-developer + mobile-developer | Drift fixes + font bundling — landed 2026-04-25 |
 | **M1-R** | 3-R3 NB primitives + NBModal/NBToast/NBText + visreg | 100 % | ✅ Complete | mobile-developer | NBText/NBModal/NBToast + canary screens + nbBorders compat fix — landed 2026-04-25 |
 | **M1-R** | 3-R4 Web PWA shell + responsive scaffolding | 100 % | ✅ Complete | web-developer | Manifest/SW/icons + ResponsiveShell + (kecamatan) layout — landed 2026-04-25 |
-| **M1-R** | 3-R5 Full redesign sweep on non-rewritten screens | 100 % | ✅ Complete | mobile-developer | All non-monitoring screens swept; monitoring palette + Mapbox specs documented in hex-allowlist.txt — landed 2026-04-25 |
+| **M1-R** | 3-R5 Full redesign sweep on non-rewritten screens | 100 % | ✅ Complete | mobile-developer | All non-monitoring screens swept; monitoring palette + Google Maps specs documented in hex-allowlist.txt — landed 2026-04-25 |
 | **M1-S** | 3-1 Spec sync + ADRs 029–037 + obsolete-info cleanup | 100 % | ✅ Complete | docs pass | ADR-029…037 all Accepted; STATUS/CLAUDE.md synced; M1-R reflection done. Final sweep deferred to 3-15. |
 | **M1-S** | 3-2 Schema + role extension | 100 % | ✅ Complete | database-engineer + backend-developer | 2 migrations applied to prod Apr 27, 8 entities (with @Unique decorators added Apr 27), `staff_kecamatan` role live, seed-phase3 (128 species + 4 Phase 3 configs + capacity grid) — bundled into `db:seed:prod` and `db:seed:staging:prod` from `3844974`. |
 | **M2** | 3-3 Monitoring v2 backend | 88 % | 🟡 Partial | backend-developer | RedisService, projector, debouncer, sweeper, Socket.IO adapter done. **Closed Apr 27:** debouncer wired to gateway via `setEmitter()` (events.gateway.ts:99). **Still open:** `status:v2` not emitted from projector (Gap-1); `cluster:update` event not implemented (Gap-3); eager-load rewrite deferred to 3-14 (pool pressure now async, not eliminated); `GET /monitoring/snapshot` `includes` query param missing; Redis health check not wired (Gap-5); `PHASE3_FEATURES_ENABLED` env flag not added (Gap-6). |
-| **M2** | 3-4 Monitoring v2 web | 92 % | 🟡 Partial | web-developer | ClusterLayer, WorkerListVirtual, HierarchyFilterPanel, AreaDetailDrawer, snapshot hook done. **Closed Apr 27:** tests for `HierarchyFilterPanel`, `WorkerListVirtual`, monitoring API hook, and the monitoring page itself (`MonitoringPage.test.tsx` + `page.test.tsx` align with M2 rewrite). **Still open:** no `ClusterLayer.test.tsx` or `AreaDetailDrawer.test.tsx`; ClusterLayer not yet integrated with existing `MonitoringMap` Mapbox component (known limitation — `lngLatToPixel` not exposed); `monitoring/config` page Phase 3 fields not added. |
+| **M2** | 3-4 Monitoring v2 web | 92 % | 🟡 Partial | web-developer | ClusterLayer, WorkerListVirtual, HierarchyFilterPanel, AreaDetailDrawer, snapshot hook done. **Closed Apr 27:** tests for `HierarchyFilterPanel`, `WorkerListVirtual`, monitoring API hook, and the monitoring page itself (`MonitoringPage.test.tsx` + `page.test.tsx` align with M2 rewrite). **Still open:** no `ClusterLayer.test.tsx` or `AreaDetailDrawer.test.tsx`; ClusterLayer not yet integrated with existing `MonitoringMap` Google Maps component (known limitation — `lngLatToPixel` not exposed); `monitoring/config` page Phase 3 fields not added. |
 | **M2** | 3-5 Monitoring v2 mobile | 100 % | ✅ Complete | mobile-developer | monitoringV2Slice, ClusterMarker, ClusteredUserMarkers, MonitoringToggleSheet, AreaStatusOverlay all done. **Closed Apr 26:** `MapDashboardScreen.tsx` wires v2 components (lines 18-20 imports, 468 AreaStatusOverlay, 480-481 ClusteredUserMarkers behind `featureFlags.clusterMarkersV2`, 611 MonitoringToggleSheet). **Closed Apr 26:** component tests exist for `monitoringV2Slice` (31), `ClusterMarker` (11), `ClusteredUserMarkers` (9), `MonitoringToggleSheet` (10). **Correctly deferred:** `plants` Redux slice belongs to 3-8 where plant data exists. **Minor gap (not blocking):** no `AreaStatusOverlay.test.tsx` — covered indirectly via the `MapDashboardScreen.test.tsx` integration test. |
 | **M2** | 3-14 Load test + regression | 0 % | ⏳ Not Started | devops-engineer + backend-developer | k6 harness, 500-worker scenario |
 | **M3** | 3-6 Task typing + custom fields API | 100 % | ✅ Complete | backend-developer + mobile-developer | Backend already in main from 3-2; mobile glue (PartialCompleteSheet + tasksSlice thunks) landed Apr 27 |
@@ -250,7 +250,7 @@ This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-
 | Sweep web pages + non-monitoring components | ✅ | Already clean; `InstallBanner.tsx` CSS var fallback fixed (`--color-nb-accent-yellow` → `--color-bg-accent-yellow`) |
 | Monitoring components (mobile: LocationTrail, BoundaryOverlay partial; web: StaffingSummaryCard, MonitoringMap, etc.) | ⏳ DEFERRED | Status palette `#9333EA` etc. have no NB token; will be resolved when status tokens are added in 3-3/3-4 |
 | Update visual regression snapshots | ⏳ DEFERRED | Phase 4 per unit-only scope |
-| Create `scripts/hex-allowlist.txt` | ✅ | 18 entries; covers Mapbox GL specs, monitoring palette, ImageResponse SVG, Next.js metadata, legacy theme |
+| Create `scripts/hex-allowlist.txt` | ✅ | 18 entries; covers Google Maps specs, monitoring palette, ImageResponse SVG, Next.js metadata, legacy theme |
 | `fe/mobile/eslint.config.js` transitional → permanent allowlist | ✅ | Reduced from ~30 → 7 entries with rationale |
 | `fe/web/eslint.config.mjs` transitional → permanent allowlist | ✅ | Updated with inline category comments |
 | Update `StaffingSummarySection.test.tsx` assertions for new token value | ✅ | `#D97706` → `#E3A018` in test mock + assertions; 27/27 pass |
@@ -279,7 +279,7 @@ This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-
 **Engineering notes:**
 - The monitoring status palette (`#9333EA` outside_area purple, `#D97706` amber-600, `#DC2626` red-600, `#6B7280` cool-gray) is deliberately outside the NB warm-stone token set. These colors are tuned for map contrast and accessibility at small marker sizes. Adding them as semantic status tokens is the right fix — planned for 3-3/3-4 monitoring rebuild.
 - Mobile `theme.ts` (legacy Phase 2 common component palette) is still imported by 8 `components/common/` files (Button, Card, Input, EmptyState, SkeletonLoader, TextInput, SyncStatusIndicator, LoadingSpinner). Those components predate the NB system and will be migrated in Phase 4 / 3-R5 continuation.
-- Mapbox GL layer paint properties and static map URL builders must use literal hex — CSS vars and `var()` are not supported in GL style expressions.
+- Google Maps layer paint properties and static map URL builders must use literal hex — CSS vars and `var()` are not supported in GL style expressions.
 - `ImageResponse` server-side icon generation runs outside the browser; CSS vars cannot be resolved there.
 
 ---
@@ -364,7 +364,7 @@ Two mobile bugs found during user's manual M1-R review; fixed same session. No s
 ## Sub-Phase 3-4: Monitoring v2 web — 🟡 Partial (2026-04-26 → updated 2026-04-27)
 
 **Planned duration:** 6 days · **Actual:** 1 day  
-**Known gap (narrowed Apr 27):** component tests for `HierarchyFilterPanel`, `WorkerListVirtual`, the monitoring API hook, and the monitoring page itself now exist. Still missing: `ClusterLayer.test.tsx` and `AreaDetailDrawer.test.tsx`. Mapbox/`MonitoringMap` integration of `ClusterLayer` remains the documented known limitation.
+**Known gap (narrowed Apr 27):** component tests for `HierarchyFilterPanel`, `WorkerListVirtual`, the monitoring API hook, and the monitoring page itself now exist. Still missing: `ClusterLayer.test.tsx` and `AreaDetailDrawer.test.tsx`. Google Maps/`MonitoringMap` integration of `ClusterLayer` remains the documented known limitation.
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -378,7 +378,7 @@ Two mobile bugs found during user's manual M1-R review; fixed same session. No s
 | `PlantOverlayLayer` | ⏳ | Deferred to sub-phase 3-8 |
 | `monitoring/config` page — new Phase 3 debounce/sweep fields | ⚠️ | Page exists but new fields not added |
 | Unit tests for ClusterLayer, WorkerListVirtual, HierarchyFilterPanel, AreaDetailDrawer, hook | ⚠️ | 3/5 covered: `WorkerListVirtual.test.tsx`, `HierarchyFilterPanel.test.tsx`, monitoring API hook (`fe/web/src/lib/api/__tests__/monitoring*.test.ts*`). Plus `MonitoringPage.test.tsx` + `monitoring/__tests__/page.test.tsx` exercise the integration. **Still missing:** `ClusterLayer.test.tsx`, `AreaDetailDrawer.test.tsx`. **Gap-8 narrowed** (Apr 27). |
-| ClusterLayer integrated with existing `MonitoringMap` Mapbox component | ❌ | Known limitation — `lngLatToPixel` not exposed; cluster pins not on map yet. Deferred. |
+| ClusterLayer integrated with existing `MonitoringMap` Google Maps component | ❌ | Known limitation — `lngLatToPixel` not exposed; cluster pins not on map yet. Deferred. |
 
 ---
 

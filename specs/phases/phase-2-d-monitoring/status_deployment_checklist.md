@@ -240,7 +240,7 @@ cd fe/web && npm test -- --testPathPatterns monitoring
 
 ### Section 5: Web Dashboard
 
-- [ ] `/monitoring` page loads with Mapbox map (65% map + 35% panel)
+- [ ] `/monitoring` page loads with Google Maps map (65% map + 35% panel)
 - [ ] Status cards show correct counts (Active, Inactive, Outside Area, Missing)
 - [ ] Status cards are clickable filters (toggle on/off)
 - [ ] User list displays with status dots, battery level, role badge

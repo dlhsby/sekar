@@ -325,6 +325,71 @@ describe('UserForm', () => {
       });
     });
 
+    it('clears rayon/shift/area (explicit null / []) for a role without that scope', async () => {
+      const onSubmit = jest.fn().mockResolvedValue(undefined);
+      const user = userEvent.setup();
+
+      const initialData: User = {
+        id: '1',
+        username: 'boss',
+        full_name: 'Boss',
+        phone_number: '081200000000',
+        role: 'admin_system', // scope: no rayon / area / shift
+        created_at: '2026-01-01',
+        updated_at: '2026-01-01',
+      };
+
+      render(<UserForm {...defaultProps} initialData={initialData} onSubmit={onSubmit} />, {
+        wrapper: createWrapper(),
+      });
+
+      await user.click(screen.getByRole('button', { name: /simpan/i }));
+
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledWith(
+          expect.objectContaining({
+            role: 'admin_system',
+            rayon_id: null,
+            shift_definition_id: null,
+            area_ids: [],
+          }),
+        );
+      });
+    });
+
+    it('keeps rayon but clears shift for a rayon+area role (korlap)', async () => {
+      const onSubmit = jest.fn().mockResolvedValue(undefined);
+      const user = userEvent.setup();
+
+      const rayonId = '11111111-1111-4111-8111-111111111111';
+      const initialData: User = {
+        id: '1',
+        username: 'koord',
+        full_name: 'Koordinator',
+        phone_number: '081200000000',
+        role: 'korlap', // scope: rayon + area, no shift
+        rayon_id: rayonId,
+        created_at: '2026-01-01',
+        updated_at: '2026-01-01',
+      };
+
+      render(<UserForm {...defaultProps} initialData={initialData} onSubmit={onSubmit} />, {
+        wrapper: createWrapper(),
+      });
+
+      await user.click(screen.getByRole('button', { name: /simpan/i }));
+
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledWith(
+          expect.objectContaining({
+            role: 'korlap',
+            rayon_id: rayonId,
+            shift_definition_id: null,
+          }),
+        );
+      });
+    });
+
     it.skip('should include rayon_id when kepala_rayon is selected', async () => {
       const onSubmit = jest.fn().mockResolvedValue(undefined);
       const user = userEvent.setup();
@@ -415,8 +480,17 @@ describe('UserForm', () => {
         isLoading: true,
       });
 
-      // Rayon field is always shown now (all roles).
-      render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
+      // Rayon is now shown only for roles with a rayon scope — render a satgas
+      // user (rayon + area + shift) so the field is present.
+      const initialData: User = {
+        id: '1',
+        username: 'testuser',
+        full_name: 'Test User',
+        role: 'satgas',
+        created_at: '2026-01-01',
+        updated_at: '2026-01-01',
+      };
+      render(<UserForm {...defaultProps} initialData={initialData} />, { wrapper: createWrapper() });
 
       expect(screen.getByLabelText(/rayon/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/rayon/i)).toBeDisabled();

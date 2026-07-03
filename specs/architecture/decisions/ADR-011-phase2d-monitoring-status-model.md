@@ -32,7 +32,7 @@ Introduce a **materialized status tracking** approach:
 3. **`monitoring_configs` table** — A JSONB key-value store for runtime-adjustable thresholds. The four canonical config keys are:
    - `status_thresholds` — GPS ping age thresholds for each status transition
    - `geofencing` — tolerance meters and outside-area grace period
-   - `map_defaults` — default Mapbox center, zoom, and cluster settings
+   - `map_defaults` — default Google Maps center, zoom, and cluster settings
    - `alerts` — low battery and understaffing notification settings
 
    Thresholds are read by `MonitoringCacheService.getThresholds()` with an in-memory cache (TTL: 60 seconds) to avoid per-request database reads.

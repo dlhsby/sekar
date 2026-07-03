@@ -70,15 +70,8 @@ const eslintConfig = defineConfig([
       "src/components/monitoring/StatusCard.tsx",
       "src/components/monitoring/UserDetailPanel.tsx",
       "src/components/monitoring/LocationTimeline.tsx",
-      // Mapbox layer paint specs require literal hex (CSS vars are not supported in GL style expressions)
-      "src/components/maps/PolygonEditor.tsx",
-      "src/components/monitoring/MonitoringMap.tsx",
-      "src/components/monitoring/monitoringMapHelpers.ts",
-      "src/lib/maps/styles.ts",
-      "src/lib/utils/static-map.ts",
       // Test files — assertions validate rendered hex values
       "src/lib/api/__tests__/rayons.test.tsx",
-      "src/lib/maps/__tests__/styles.test.ts",
     ],
     rules: {
       "sekar-design/no-inline-hex-colors": "off",

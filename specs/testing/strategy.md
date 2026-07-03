@@ -330,33 +330,32 @@ class MockWebSocket {
 
 ### Map Interaction Testing
 
-- Mock Mapbox GL with `jest-mapbox-gl` or custom mock
-- Test marker rendering without actual map tiles
-- Verify click handlers, popup content, fly-to calls
+- Mock `@react-google-maps/api` (and the global `google.maps` namespace) with a custom mock
+- Test marker/polygon rendering without actual map tiles
+- Verify click handlers, InfoWindow content, pan-to calls
 - Test cluster/uncluster at different zoom levels
 
 ```typescript
-// Custom Mapbox GL mock
-jest.mock('mapbox-gl', () => ({
-  Map: jest.fn(() => ({
-    on: jest.fn(),
-    addSource: jest.fn(),
-    addLayer: jest.fn(),
-    flyTo: jest.fn(),
-    remove: jest.fn(),
-    getSource: jest.fn(() => ({ setData: jest.fn() })),
-  })),
-  Marker: jest.fn(() => ({
-    setLngLat: jest.fn().mockReturnThis(),
-    addTo: jest.fn().mockReturnThis(),
-    remove: jest.fn(),
-    getElement: jest.fn(() => document.createElement('div')),
-  })),
-  Popup: jest.fn(() => ({
-    setHTML: jest.fn().mockReturnThis(),
-    addTo: jest.fn().mockReturnThis(),
-  })),
+// Custom Google Maps mock — render lightweight stand-ins for the SDK components.
+jest.mock('@react-google-maps/api', () => ({
+  GoogleMap: ({ children, onClick }: any) => (
+    <div data-testid="gmap" onClick={() => onClick?.({ latLng: { lat: () => -7.25, lng: () => 112.75 } })}>
+      {children}
+    </div>
+  ),
+  Marker: ({ onClick }: any) => <button data-testid="marker" onClick={() => onClick?.()} />,
+  Polygon: () => <div data-testid="polygon" />,
+  InfoWindow: ({ children }: any) => <div data-testid="infowindow">{children}</div>,
 }));
+
+// Provide the parts of the global `google.maps` namespace the code touches.
+global.google = {
+  maps: {
+    SymbolPath: { CIRCLE: 0 },
+    LatLngBounds: class { extend = jest.fn(); },
+    Geocoder: class { geocode = jest.fn().mockResolvedValue({ results: [] }); },
+  },
+} as any;
 ```
 
 ### Status Calculation Testing

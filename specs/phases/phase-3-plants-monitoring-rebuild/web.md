@@ -2,7 +2,7 @@
 
 **Last Updated:** 2026-04-25
 **Status:** ⏳ Not Started
-**Framework:** Next.js 16.1.6, React 19.2.3, TanStack Query 5, Mapbox GL JS 3, supercluster, @tanstack/react-virtual
+**Framework:** Next.js 16.1.6, React 19.2.3, TanStack Query 5, Google Maps 3, supercluster, @tanstack/react-virtual
 **Design foundation:** [specs/ui-ux/design-tokens.md](../../ui-ux/design-tokens.md) — tokens consumed via generated `fe/web/src/app/generated/tokens.css`, imported by `globals.css`.
 **Related ADRs:** [ADR-029](../../architecture/decisions/ADR-029-monitoring-v2-redis.md), [ADR-030](../../architecture/decisions/ADR-030-area-aggregate-plant-inventory.md), [ADR-031](../../architecture/decisions/ADR-031-task-typing-custom-fields.md), [ADR-032](../../architecture/decisions/ADR-032-admin-data-pruning-disposition.md), [ADR-033](../../architecture/decisions/ADR-033-staff-kecamatan-role.md), [ADR-035](../../architecture/decisions/ADR-035-service-capacity-model.md), ADR-036 *(tokens)*, ADR-037 *(PWA)*
 **See also:** [Backend](./backend.md), [UI/UX](./ui-ux.md), [README](./README.md)

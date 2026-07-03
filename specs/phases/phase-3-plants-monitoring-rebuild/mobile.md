@@ -2,7 +2,7 @@
 
 **Last Updated:** 2026-04-27
 **Status:** 🟡 In Progress (3-1 through 3-12 landed; web work deferred)
-**Framework:** React Native 0.83.4, React 19.2.4, Redux Toolkit, @react-native-mapbox-gl/maps
+**Framework:** React Native 0.83.4, React 19.2.4, Redux Toolkit, @react-native-Google Maps/maps
 **Related ADRs:** [ADR-029](../../architecture/decisions/ADR-029-monitoring-v2-redis.md), [ADR-030](../../architecture/decisions/ADR-030-area-aggregate-plant-inventory.md), [ADR-031](../../architecture/decisions/ADR-031-task-typing-custom-fields.md), [ADR-033](../../architecture/decisions/ADR-033-staff-kecamatan-role.md)
 **See also:** [Backend](./backend.md), [UI/UX](./ui-ux.md), [README](./README.md)
 
@@ -259,7 +259,7 @@ Persist `onboardingCompleted: true` in Keychain.
 
 | Screen | Purpose | Key UI |
 |--------|---------|-------|
-| **MN-1** | Default map | Full-bleed Mapbox · polygon fills by `area_plants.status` · cluster bubbles dissolve at zoom ≥14 · FABs: zoom ±, locate, layer toggle · pinned bottom status strip `28 AKTIF · 6 IDLE · 2 OUT · 1 MISS` (mono) |
+| **MN-1** | Default map | Full-bleed Google Maps · polygon fills by `area_plants.status` · cluster bubbles dissolve at zoom ≥14 · FABs: zoom ±, locate, layer toggle · pinned bottom status strip `28 AKTIF · 6 IDLE · 2 OUT · 1 MISS` (mono) |
 | **MN-2** | Worker list sheet | Drag-up sheet (max-height 70%) · tabs "Pekerja (37)" `--accent` active / "Area (8)" · 4 worker rows · map dims to 0.6 while sheet open |
 | **MN-3** | User detail sheet | Avatar + name + role + status badge (`--ok` AKTIF) · cards SHIFT · PING TERAKHIR · AKTIVITAS HARI INI · actions "💬 WA" (`whatsapp://send?phone=...`), "📍 Trail", "📋 Log" |
 | **MN-4** | Location history trail | Header "Trail: {user} · Hari ini · shift pagi" · date/shift filter chips · SVG polyline (dashed) · start dot green / end dot yellow · ping-timeline slider · selected ping `10:24 · dalam area · akurasi 8m` |

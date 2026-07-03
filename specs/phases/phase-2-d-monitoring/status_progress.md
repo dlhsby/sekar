@@ -138,11 +138,11 @@
 ## Sub-Phase 2D-6: Web Monitoring — ✅ COMPLETE
 
 **Duration:** March 4, 2026
-**Status:** ✅ Full Mapbox GL dashboard with real-time updates
+**Status:** ✅ Full Google Maps dashboard with real-time updates
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Create `MonitoringMap` component (Mapbox GL) | ✅ Complete | Custom HTML markers, polygon overlay |
+| Create `MonitoringMap` component (Google Maps) | ✅ Complete | Custom HTML markers, polygon overlay |
 | Create `MonitoringSidePanel` | ✅ Complete | Filters + status cards + user list |
 | Rewrite `/monitoring` page with split layout | ✅ Complete | 65% map + 35% panel, responsive |
 | Create `UserDetailPanel` | ✅ Complete | Shift info, activities, tasks, WA buttons |

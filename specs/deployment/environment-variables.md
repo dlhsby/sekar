@@ -369,8 +369,8 @@ NEXT_PUBLIC_AUTH_STORAGE_KEY=sekar_auth_token
 # NEXTAUTH_SECRET — DEPRECATED (NextAuth removed; see web/authentication.md)
 JWT_SECRET=<same-as-backend>
 
-# Mapbox (Interactive Maps)
-NEXT_PUBLIC_MAPBOX_TOKEN=<your-mapbox-token>
+# Google Maps (Interactive Maps)
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=<your-google-maps-key>
 
 # Sentry (Error Tracking)
 NEXT_PUBLIC_SENTRY_DSN=https://xxxxx@sentry.io/xxxxx

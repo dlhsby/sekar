@@ -157,7 +157,7 @@ Components:     fe/web/src/components/nb/
 ### Monitoring Components (Phase 2D)
 ```
 Web:            fe/web/src/app/(dashboard)/monitoring/
-                ├── MonitoringMap        — Mapbox GL interactive map with markers, polygons, clusters
+                ├── MonitoringMap        — Google Maps interactive map with markers, polygons, clusters
                 ├── MonitoringSidePanel  — Filterable worker list with status counts
                 ├── UserDetailPanel      — Detailed worker view with shift info and actions
                 ├── LocationTimeline     — GPS history trail with date picker

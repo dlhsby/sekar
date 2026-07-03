@@ -36,7 +36,7 @@ This specifications folder is organized by **specialist roles** to enable parall
 | [`phases/phase-1-mvp/`](./phases/phase-1-mvp/) | Phase 1 | Weeks 1-2 | MVP - Clock-in/out, Reports, GPS tracking |
 | [`phases/phase-2-a-enhanced/`](./phases/phase-2-a-enhanced/) | Phase 2 | Weeks 3-4 | Tasks, Notifications, KMZ Import |
 | [`phases/phase-2-c-client-feedback/`](./phases/phase-2-c-client-feedback/) | Phase 2C | 4-6 weeks | Client Feedback: 8-role system, terminology cleanup, polygon geofencing |
-| [`phases/phase-2-d-monitoring/`](./phases/phase-2-d-monitoring/) | Phase 2D | 1 week | Real-Time Monitoring: five-status tracking, Mapbox, location history |
+| [`phases/phase-2-d-monitoring/`](./phases/phase-2-d-monitoring/) | Phase 2D | 1 week | Real-Time Monitoring: five-status tracking, Google Maps, location history |
 | [`phases/phase-2-e-client-feedback-2/`](./phases/phase-2-e-client-feedback-2/) | Phase 2E | 1 day | Client Feedback II: phone login, multi-area, overtime redesign |
 | [`phases/phase-3-plants-monitoring-rebuild/`](./phases/phase-3-plants-monitoring-rebuild/) | Phase 3 | ✅ shipped | Plants Management + Monitoring Rebuild + Public Intake (incl. M1-R Redesign Foundation) |
 | [`phases/phase-4-production-readiness/`](./phases/phase-4-production-readiness/) | Phase 4 | ✅ shipped | Production Readiness: FCM, export, E2E, security, rebrand/UI revamp, polish |
@@ -117,7 +117,7 @@ Start with [`deployment/infrastructure.md`](./deployment/infrastructure.md) for 
 - **State / data:** TanStack Query + Zustand (UI state)
 - **Authentication:** JWT via `AuthContext` (httpOnly cookie; route guard in `src/proxy.ts`)
 - **Forms:** React Hook Form + Zod · **Tables:** TanStack Table · **Charts:** Recharts
-- **Maps:** **Mapbox GL JS** · **Real-time:** Socket.IO client
+- **Maps:** **Google Maps** · **Real-time:** Socket.IO client
 - **PWA:** installable, offline shell (feature-flagged)
 
 ### Infrastructure
@@ -182,7 +182,7 @@ Phase 1-2B: Three roles (Worker, Supervisor, Admin). Phase 2C: Eight roles — s
 ### Deployment & Setup Guides
 - **Deployment Guide:** [`deployment/deployment-guide.md`](./deployment/deployment-guide.md) - Local → staging → production, all scenarios (hub)
 - **Run Locally:** [`deployment/local-development.md`](./deployment/local-development.md) - Docker infra (PostgreSQL, Adminer, MinIO, Redis), per-workspace run, WSL2 device networking
-- **Obtaining Keys:** [`deployment/credentials-setup.md`](./deployment/credentials-setup.md) - Firebase, Google Maps, Mapbox, AWS S3 credentials
+- **Obtaining Keys:** [`deployment/credentials-setup.md`](./deployment/credentials-setup.md) - Firebase, Google Maps, AWS S3 credentials
 - **Operations:** [`deployment/operations.md`](./deployment/operations.md) - Migrations, backup/restore, rollback, incident runbooks
 - **CI/CD & releases:** [`deployment/ci-cd.md`](./deployment/ci-cd.md) - Pipelines, secrets, `sekar-v*` / `mobile-v*` releases, `scripts/release.sh`
 - **Encrypted secrets (dotenvx):** [`deployment/encrypted-secrets.md`](./deployment/encrypted-secrets.md) - Commit encrypted env, decrypt at runtime

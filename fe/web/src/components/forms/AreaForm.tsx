@@ -9,13 +9,13 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { FormInput, FormCombobox, Textarea, Card, CardContent } from '@/components/ui';
+import { FormInput, FormCombobox, Textarea, Card, CardContent, Button } from '@/components/ui';
 import { FormActions } from '@/components/forms/FormActions';
-import { PolygonEditor } from '@/components/maps/PolygonEditor';
-import { GoogleMapPicker } from '@/components/maps/GoogleMapPicker';
+import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
+import { ImportBoundaryButton } from '@/components/maps/ImportBoundaryButton';
 import { useRayons } from '@/lib/api/rayons';
 import { useAreaTypes } from '@/lib/api/area-types';
-import { calculatePolygonCenter, isValidPolygon, formatCoordinates } from '@/lib/utils/geo';
+import { calculatePolygonCenter, isValidPolygon, isBoundaryGeometry, formatCoordinates } from '@/lib/utils/geo';
 import type { Area, CreateAreaDto, UpdateAreaDto } from '@/types/models';
 
 interface LatLng {
@@ -23,8 +23,14 @@ interface LatLng {
   lng: number;
 }
 
-/** Centroid of a polygon as {lat,lng} (calculatePolygonCenter returns [lng,lat]). */
-function polygonCentroid(polygon: GeoJSON.Polygon): LatLng {
+type BoundaryGeometry = GeoJSON.Polygon | GeoJSON.MultiPolygon;
+
+/** Centroid of a boundary as {lat,lng}. For a MultiPolygon, use the first part. */
+function boundaryCentroid(geom: BoundaryGeometry): LatLng {
+  const polygon: GeoJSON.Polygon =
+    geom.type === 'Polygon'
+      ? geom
+      : { type: 'Polygon', coordinates: geom.coordinates[0] ?? [[]] };
   const [lng, lat] = calculatePolygonCenter(polygon);
   return { lat, lng };
 }
@@ -36,13 +42,11 @@ const areaSchema = z.object({
   area_type_id: z.string().uuid('Tipe area wajib dipilih'),
   address: z.string().optional().nullable(),
   boundary_polygon: z
-    .custom<GeoJSON.Polygon>(
-      (val) => {
-        return isValidPolygon(val as GeoJSON.Polygon);
-      },
-      { message: 'Batas area wajib digambar di peta' }
-    )
-    .nullable(),
+    .custom<BoundaryGeometry>((val) => val == null || isBoundaryGeometry(val), {
+      message: 'Batas area tidak valid',
+    })
+    .nullable()
+    .optional(),
 });
 
 type AreaFormData = z.infer<typeof areaSchema>;
@@ -52,19 +56,32 @@ export interface AreaFormProps {
   onSubmit: (data: CreateAreaDto | UpdateAreaDto) => Promise<void>;
   isLoading?: boolean;
   mode: 'create' | 'edit';
+  /** Read-only "Detail" mode — fields disabled, map read-only, no submit. */
+  readOnly?: boolean;
+  /** Close handler for the "Tutup" button in read-only mode. */
+  onCancel?: () => void;
 }
 
-export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: AreaFormProps) {
-  // Center point: defaults to the saved gps / polygon centroid, then tracks the
-  // polygon centroid until the user manually drops/drags the pin.
+export function AreaForm({
+  initialData,
+  onSubmit,
+  isLoading = false,
+  mode,
+  readOnly = false,
+  onCancel,
+}: AreaFormProps) {
+  // The coordinate is an INDEPENDENT point from the boundary — it marks the
+  // office / entrance / representative location and is what the app pans to when
+  // an area is searched. It is NOT tied to the polygon centroid: the centroid is
+  // only used as a convenience default when no coordinate has been set yet, and
+  // editing the boundary never overwrites an existing coordinate.
   const initialCenter: LatLng | null =
     initialData?.gps_lat != null && initialData?.gps_lng != null
       ? { lat: Number(initialData.gps_lat), lng: Number(initialData.gps_lng) }
       : initialData?.boundary_polygon
-        ? polygonCentroid(initialData.boundary_polygon)
+        ? boundaryCentroid(initialData.boundary_polygon)
         : null;
   const [center, setCenter] = useState<LatLng | null>(initialCenter);
-  const [centerOverridden, setCenterOverridden] = useState(false);
 
   // Fetch rayons and area types
   const { data: rayonsData, isLoading: loadingRayons } = useRayons();
@@ -88,44 +105,52 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
     },
   });
 
-  // Handle polygon change — keep the center synced to the centroid unless the
-  // user has manually placed the pin.
+  // Seed geometry for the map editor. Bumping `editorKey` remounts the editor so
+  // an imported boundary (which the editor only reads on mount) is shown + framed.
+  const [seedPolygon, setSeedPolygon] = useState<BoundaryGeometry | null | undefined>(
+    initialData?.boundary_polygon,
+  );
+  const [editorKey, setEditorKey] = useState(0);
+
+  // Boundary and location pin are fully independent — drawing/redrawing a
+  // boundary never touches the pin (the user places it explicitly).
   const handlePolygonChange = (newPolygon: GeoJSON.Polygon | null) => {
-    if (newPolygon && isValidPolygon(newPolygon)) {
-      setValue('boundary_polygon', newPolygon, { shouldValidate: true });
-      if (!centerOverridden) {
-        setCenter(polygonCentroid(newPolygon));
-      }
-    } else {
-      setValue('boundary_polygon', null, { shouldValidate: true });
-    }
+    setValue('boundary_polygon', newPolygon && isValidPolygon(newPolygon) ? newPolygon : null, {
+      shouldValidate: true,
+    });
   };
 
-  // Manual pin placement overrides the auto-centroid.
+  // Import a boundary from KML/GeoJSON: set the form value and remount the editor
+  // (via key) so it re-seeds from and frames the imported geometry.
+  const handleImportBoundary = (geometry: BoundaryGeometry) => {
+    setValue('boundary_polygon', geometry, { shouldValidate: true });
+    setSeedPolygon(geometry);
+    setEditorKey((k) => k + 1);
+  };
+
+  // The pin is set independently — dragging it, placing it, or searching.
   const handlePinChange = ({ lat, lng }: LatLng) => {
-    setCenterOverridden(true);
     setCenter({ lat: Number(lat.toFixed(7)), lng: Number(lng.toFixed(7)) });
   };
 
-  // Mapbox PolygonEditor expects [lng, lat].
-  const editorCenter: [number, number] | undefined = center
-    ? [center.lng, center.lat]
-    : undefined;
+  // At least one of {boundary, location pin} must be set to save.
+  const boundaryValue = watch('boundary_polygon');
+  const hasGeometry = !!center || !!boundaryValue;
 
   // Handle form submission
   const onSubmitForm = async (data: AreaFormData) => {
-    if (!data.boundary_polygon) {
-      return;
-    }
-
-    const finalCenter = center ?? polygonCentroid(data.boundary_polygon);
+    // Areas require a GPS coordinate: use the pin, else fall back to the boundary
+    // centroid. Block when neither is set.
+    const finalCenter =
+      center ?? (data.boundary_polygon ? boundaryCentroid(data.boundary_polygon) : null);
+    if (!finalCenter) return;
 
     const submitData: CreateAreaDto | UpdateAreaDto = {
       name: data.name,
       rayon_id: data.rayon_id,
       area_type_id: data.area_type_id,
       address: data.address || undefined,
-      boundary_polygon: data.boundary_polygon,
+      boundary_polygon: data.boundary_polygon ?? undefined,
       gps_lng: finalCenter.lng,
       gps_lat: finalCenter.lat,
     };
@@ -144,6 +169,7 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
           placeholder="Contoh: Taman Bungkul"
           error={errors.name?.message}
           required
+          disabled={readOnly}
           {...register('name')}
         />
 
@@ -157,7 +183,7 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
           error={errors.rayon_id?.message}
           required
           clearable={false}
-          disabled={loadingRayons}
+          disabled={loadingRayons || readOnly}
         />
 
         <FormCombobox
@@ -173,7 +199,7 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
           error={errors.area_type_id?.message}
           required
           clearable={false}
-          disabled={loadingAreaTypes}
+          disabled={loadingAreaTypes || readOnly}
         />
 
         <div className="space-y-1.5">
@@ -182,16 +208,29 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
             placeholder="Alamat area (opsional)"
             rows={3}
             error={errors.address?.message}
+            disabled={readOnly}
             {...register('address')}
           />
         </div>
       </div>
 
-      {/* Polygon Editor */}
+      {/* Boundary + location pin on a single Google map (two separate settings) */}
       <div className="space-y-4">
-        <h3 className="font-bold text-lg">Batas Area</h3>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-bold text-lg">Batas & Titik Lokasi</h3>
+          {!readOnly && <ImportBoundaryButton onImport={handleImportBoundary} />}
+        </div>
+        {!readOnly && (
+          <p className="text-nb-body-sm text-nb-gray-500">
+            Dua pengaturan terpisah: <b>gambar batas</b> area, lalu <b>tentukan titik lokasi</b> —
+            mis. lokasi kantor, pintu masuk, atau titik hasil pencarian yang dipakai untuk menggeser
+            peta. Titik lokasi terisi otomatis dari pusat batas hanya jika belum diatur; menggambar
+            ulang batas tidak mengubah titik yang sudah ada. Seret pin, cari alamat, atau tekan tombol
+            lokasi untuk menyesuaikan. (Klik peta hanya menambah titik saat menggambar batas.)
+          </p>
+        )}
 
-        {errors.boundary_polygon && (
+        {!readOnly && errors.boundary_polygon && (
           <Card className="border-nb-danger">
             <CardContent className="p-4">
               <p className="text-sm font-bold text-nb-danger">{errors.boundary_polygon.message}</p>
@@ -199,25 +238,14 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
           </Card>
         )}
 
-        <PolygonEditor
-          initialPolygon={initialData?.boundary_polygon}
-          onChange={handlePolygonChange}
-          center={editorCenter}
-          zoom={editorCenter ? 15 : undefined}
-        />
-      </div>
-
-      {/* Center Point (Google Maps drop-pin) */}
-      <div className="space-y-4">
-        <h3 className="font-bold text-lg">Titik Pusat</h3>
-        <p className="text-nb-body-sm text-nb-gray-500">
-          Otomatis dari pusat batas area. Seret pin untuk menyesuaikan (mis. titik pintu masuk).
-        </p>
-
-        <GoogleMapPicker
-          lat={center?.lat ?? null}
-          lng={center?.lng ?? null}
-          onChange={handlePinChange}
+        <GoogleBoundaryEditor
+          key={editorKey}
+          initialPolygon={seedPolygon}
+          onPolygonChange={readOnly ? undefined : handlePolygonChange}
+          pin={center}
+          onPinChange={readOnly ? undefined : handlePinChange}
+          readonly={readOnly}
+          autoLocateOnMount={mode === 'create' && !seedPolygon && !readOnly}
           manualFallback={
             center ? (
               <div className="border-2 border-nb-black bg-nb-gray-100 p-4">
@@ -227,7 +255,7 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
             ) : (
               <div className="border-2 border-nb-black bg-nb-gray-100 p-4">
                 <p className="text-nb-body-sm text-nb-gray-700">
-                  Gambar batas area terlebih dahulu untuk menentukan titik pusat.
+                  Peta tidak tersedia — batas area tidak dapat digambar tanpa Google Maps.
                 </p>
               </div>
             )
@@ -235,19 +263,35 @@ export function AreaForm({ initialData, onSubmit, isLoading = false, mode }: Are
         />
       </div>
 
-      {/* Submit Button */}
-      <FormActions
-        submitLabel={
-          isLoading
-            ? mode === 'create'
-              ? 'Menyimpan...'
-              : 'Memperbarui...'
-            : mode === 'create'
-              ? 'Simpan Area'
-              : 'Perbarui Area'
-        }
-        loading={isLoading}
-      />
+      {/* Footer */}
+      {readOnly ? (
+        <div className="flex gap-3 pt-4">
+          <Button type="button" variant="secondary" onClick={onCancel} className="w-full">
+            Tutup
+          </Button>
+        </div>
+      ) : (
+        <>
+          <FormActions
+            submitLabel={
+              isLoading
+                ? mode === 'create'
+                  ? 'Menyimpan...'
+                  : 'Memperbarui...'
+                : mode === 'create'
+                  ? 'Simpan Area'
+                  : 'Perbarui Area'
+            }
+            loading={isLoading}
+            disabled={!hasGeometry}
+          />
+          {!hasGeometry && (
+            <p className="text-nb-body-sm text-nb-danger">
+              Tentukan minimal salah satu: gambar batas area atau tempatkan titik lokasi.
+            </p>
+          )}
+        </>
+      )}
     </form>
   );
 }

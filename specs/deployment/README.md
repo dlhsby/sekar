@@ -15,7 +15,7 @@ links the focused guides below.
 | Topic | Doc |
 |-------|-----|
 | Run the stack on your machine (Docker infra, MinIO, per-workspace run, WSL2 device networking) | [`local-development.md`](local-development.md) |
-| Obtain & install keys — Firebase/FCM, Google Maps, Mapbox, AWS S3, APNs | [`credentials-setup.md`](credentials-setup.md) |
+| Obtain & install keys — Firebase/FCM, Google Maps, AWS S3, APNs | [`credentials-setup.md`](credentials-setup.md) |
 | Every environment variable, per workspace & environment | [`environment-variables.md`](environment-variables.md) |
 | Day-2 operations — migrations, backup/restore, rollback, incident runbooks | [`operations.md`](operations.md) |
 | Monitoring — dashboards, CloudWatch alarms, log queries | [`monitoring.md`](monitoring.md) |

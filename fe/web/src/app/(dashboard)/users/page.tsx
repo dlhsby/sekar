@@ -33,7 +33,7 @@ import {
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useRayons } from '@/lib/api/rayons';
 import { useUser } from '@/lib/auth/hooks';
-import { ADMIN_ROLES } from '@/lib/constants/roles';
+import { ADMIN_ROLES, ROLE_LABELS } from '@/lib/constants/roles';
 import { formatDate } from '@/lib/utils/time';
 import { getErrorMessage } from '@/lib/api/client';
 import type { User } from '@/types/models';
@@ -135,7 +135,9 @@ export default function UsersPage() {
       },
       {
         id: 'role',
-        accessorKey: 'role',
+        // Filter/sort/search against the human label ("Top Management"), not the
+        // raw enum ("top_management"), so typing the visible text matches.
+        accessorFn: (u) => ROLE_LABELS[u.role] ?? u.role,
         header: 'Role',
         meta: { label: 'Role', filterVariant: 'text' },
         cell: ({ row }) => <RolePill role={row.original.role} />,
@@ -354,6 +356,12 @@ export default function UsersPage() {
         onOpenChange={setFormOpen}
         user={editingUser}
         onSuccess={() => refetch()}
+        onCreated={(u) => {
+          if (u.temp_password) {
+            setTempPwUsername(u.username);
+            setTempPassword(u.temp_password);
+          }
+        }}
       />
 
       <UserFormModal open={viewOpen} onOpenChange={setViewOpen} user={viewingUser} readOnly />

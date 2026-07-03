@@ -546,7 +546,7 @@ npm run lint
 | 305 | Areas - Filter by type | Type filter | [ ] | |
 | 306 | Areas - "Tambah Area" | Navigate to /areas/new | [ ] | |
 | 307 | Areas - Create form | Fields present | [ ] | |
-| 308 | Areas - Create - Map editor | Mapbox displayed | [ ] | |
+| 308 | Areas - Create - Map editor | Google Maps displayed | [ ] | |
 | 309 | Areas - Create - Draw polygon | Drawing tools | [ ] | |
 | 310 | Areas - Create - Complete polygon | Area calculated | [ ] | |
 | 311 | Areas - Create - Submit with polygon | Area created | [ ] | |
@@ -666,7 +666,7 @@ npm run lint
 | # | Test Case | Expected | Status | Verdict |
 |---|-----------|----------|--------|---------|
 | 402 | Monitoring - Access /monitoring (Admin) | City-wide map | [ ] | |
-| 403 | Monitoring - Real-time map | Mapbox, markers | [ ] | |
+| 403 | Monitoring - Real-time map | Google Maps, markers | [ ] | |
 | 404 | Monitoring - Worker marker colors | Green/Gray/Yellow | [ ] | |
 | 405 | Monitoring - Area polygons | Boundaries visible | [ ] | |
 | 406 | Monitoring - Click worker marker | Popup: name, role, area, last update | [ ] | |
@@ -1265,7 +1265,7 @@ docker-compose logs --tail=100 -f backend
 - [ ] Build passing (0 errors)
 - [ ] 0 lint errors
 - [ ] Next.js production build successful
-- [ ] Mapbox GL integration working
+- [ ] Google Maps integration working
 - [ ] WebSocket real-time tested
 - [ ] All 18 pages tested manually
 

@@ -208,8 +208,10 @@ describe('Users API', () => {
       };
 
       const createdUser: User = {
-        ...newUser,
         id: '10',
+        username: newUser.username,
+        full_name: newUser.full_name,
+        role: newUser.role,
         created_at: '2026-02-04T00:00:00Z',
         updated_at: '2026-02-04T00:00:00Z',
       };

@@ -1,6 +1,6 @@
 # Web Dashboard (Next.js 16)
 
-**Purpose:** Web dashboard for supervisors & admins — real-time worker monitoring, task assignment, reporting, Mapbox GL maps, installable PWA.
+**Purpose:** Web dashboard for supervisors & admins — real-time worker monitoring, task assignment, reporting, Google Maps maps, installable PWA.
 
 ## Quick Start
 
@@ -10,7 +10,7 @@ For the full one-command setup, see [`/README.md`](/README.md) (`./scripts/setup
 cd fe/web
 npm install
 cp .env.local.example .env.local
-# Set NEXT_PUBLIC_MAPBOX_TOKEN from https://account.mapbox.com/access-tokens/ (blank = blank map)
+# Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY from https://console.cloud.google.com/google/maps-apis (blank = blank map)
 
 npm run dev              # http://localhost:3001
 ```
@@ -21,7 +21,7 @@ Copy `cp .env.local.example .env.local` (plaintext, gitignored). Key vars:
 
 | Var | Default | Purpose |
 |-----|---------|---------|
-| **`NEXT_PUBLIC_MAPBOX_TOKEN`** | _(empty)_ | Mapbox GL maps (get from https://account.mapbox.com/access-tokens/) |
+| **`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`** | _(empty)_ | Google Maps maps (get from https://console.cloud.google.com/google/maps-apis) |
 | `NEXT_PUBLIC_API_URL` | `http://localhost:3000` | Backend base URL |
 | `NEXT_PUBLIC_WS_URL` | `ws://localhost:3000` | WebSocket monitoring stream |
 | `WEB_PORT` | `3001` | Dev server port |

@@ -409,7 +409,7 @@ All token utilities are plain CSS class names — they work in both.
 | Client Component | Same + `className` composition | `<Button variant="default" size="lg">...` |
 | Inline style (discouraged) | `var(--color-nb-primary)` | `<div style={{ borderColor: 'var(--color-nb-border)' }}>...</div>` |
 
-Inline styles with `var(--*)` are allowed as an escape hatch for dynamic values (e.g., Mapbox paint expressions); they still route through tokens, so they don't break drift guarantees.
+Inline styles with `var(--*)` are allowed as an escape hatch for dynamic values (e.g., Google Maps paint expressions); they still route through tokens, so they don't break drift guarantees.
 
 ---
 

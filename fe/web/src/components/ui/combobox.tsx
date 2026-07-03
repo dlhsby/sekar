@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Check, ChevronsUpDown, Search, X } from 'lucide-react';
 
 import { cn, nbFocusRing } from '@/lib/utils/cn';
+import { useWheelScrollFix } from '@/lib/hooks/useWheelScrollFix';
 import { Popover, PopoverAnchor, PopoverContent } from './popover';
 
 export interface ComboboxOption {
@@ -59,6 +60,7 @@ export function Combobox({
   const reactId = React.useId();
   const listboxId = `${reactId}-listbox`;
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const listboxScrollRef = useWheelScrollFix<HTMLUListElement>();
 
   const selected = options.find((o) => o.value === value);
   const filtered = React.useMemo(() => {
@@ -183,7 +185,7 @@ export function Combobox({
             className="h-11 w-full bg-transparent text-nb-body-sm text-nb-black outline-none placeholder:text-nb-gray-500"
           />
         </div>
-        <ul id={listboxId} role="listbox" className="max-h-60 overflow-y-auto p-1">
+        <ul ref={listboxScrollRef} id={listboxId} role="listbox" className="max-h-60 overflow-y-auto p-1">
           {filtered.length === 0 ? (
             <li className="px-3 py-2 text-nb-body-sm text-nb-gray-500">{emptyText}</li>
           ) : (

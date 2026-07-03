@@ -1332,7 +1332,7 @@ const statusBadgeVariant = {
 |-----------|----------|--------|-------------|
 | Marker appear | 200ms | ease-out | Scale 0→1 on new marker |
 | Status transition | 300ms | ease | Color change on status update |
-| Fly-to | 1000ms | Mapbox default | Camera movement to location |
+| Fly-to | 1000ms | Google Maps default | Camera movement to location |
 | Trail draw | 500ms | linear | Location history path animation |
 | Pulse (missing) | 2000ms | ease-in-out | Repeating pulse on missing markers |
 

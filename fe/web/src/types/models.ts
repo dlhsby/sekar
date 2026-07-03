@@ -60,6 +60,8 @@ export interface Rayon {
   description?: string | null;
   center_lat?: number | string | null;
   center_lng?: number | string | null;
+  /** Official KMZ "Batas Wilayah Kerja Rayon" outline (Polygon or MultiPolygon). */
+  boundary_polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
   created_at: string;
   updated_at: string;
   /** Actor audit — ids of the users who created/updated/soft-deleted the row. */
@@ -99,10 +101,12 @@ export interface CreateUserDto {
   password?: string;
   role: UserRole;
   phone_number?: string;
-  rayon_id?: string;
+  /** `null` explicitly clears the field (roles without a rayon scope). */
+  rayon_id?: string | null;
   /** Permanent area assignments (multi); first becomes the primary area. */
   area_ids?: string[];
-  shift_definition_id?: string;
+  /** `null` explicitly clears the field (roles without a shift scope). */
+  shift_definition_id?: string | null;
 }
 
 /** A created user plus the one-time temp password (only present on create). */
@@ -118,9 +122,11 @@ export interface UpdateUserDto {
   full_name?: string;
   role?: UserRole;
   phone_number?: string;
-  rayon_id?: string;
+  /** `null` explicitly clears the field (roles without a rayon scope). */
+  rayon_id?: string | null;
   area_ids?: string[];
-  shift_definition_id?: string;
+  /** `null` explicitly clears the field (roles without a shift scope). */
+  shift_definition_id?: string | null;
   is_active?: boolean;
 }
 
@@ -163,7 +169,8 @@ export interface Area extends Record<string, unknown> {
   gps_lat?: number | string;
   gps_lng?: number | string;
   radius_meters?: number;
-  boundary_polygon?: GeoJSON.Polygon;
+  // Stored boundaries can be Polygon OR MultiPolygon (KMZ/shapefile imports).
+  boundary_polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon;
   coverage_area?: number;
   address?: string | null;
   is_active?: boolean;
@@ -196,7 +203,7 @@ export interface CreateAreaDto {
   gps_lat?: number;
   gps_lng?: number;
   radius_meters?: number;
-  boundary_polygon?: GeoJSON.Polygon;
+  boundary_polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon;
   address?: string | null;
 }
 
@@ -210,7 +217,7 @@ export interface UpdateAreaDto {
   gps_lat?: number;
   gps_lng?: number;
   radius_meters?: number;
-  boundary_polygon?: GeoJSON.Polygon;
+  boundary_polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon;
   address?: string | null;
 }
 

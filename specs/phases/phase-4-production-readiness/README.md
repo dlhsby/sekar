@@ -236,7 +236,7 @@ Authoritative source: `design/project/hifi-mobile.html` (39 screens) + `design/p
 | E3. Deep linking | Android App Links + iOS Universal Links — handle FCM payload deep-routing into specific screens (task-detail, activity-detail, perantingan-detail) | `fe/mobile/android/app/src/main/AndroidManifest.xml`, `fe/mobile/ios/sekar/Info.plist`, `fe/mobile/src/navigation/linking.ts` |
 | F1. Web SEO | Per-page `<head>` (title, description, OG), structured data on public landing | `fe/web/src/app/(public)/layout.tsx` |
 | F2. Web Lighthouse audit (PWA already shipped) | Target ≥90 Performance / ≥95 Accessibility / ≥95 Best Practices / ≥90 SEO; remediate findings | (audit output) |
-| F3. Bundle analysis | `@next/bundle-analyzer` web, Metro analyzer mobile; identify >100 kB dependencies; lazy-load Mapbox + heavy modules | `fe/web/next.config.ts`, `fe/mobile/metro.config.js` |
+| F3. Bundle analysis | `@next/bundle-analyzer` web, Metro analyzer mobile; identify >100 kB dependencies; lazy-load Google Maps + heavy modules | `fe/web/next.config.ts`, `fe/mobile/metro.config.js` |
 
 ---
 

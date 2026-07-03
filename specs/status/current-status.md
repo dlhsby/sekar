@@ -40,7 +40,7 @@
 - Web: 21 pages (+1 config), 7 monitoring components
 - Database: 20 tables (including user_tracking_status and monitoring_configs)
 - Five-status tracking (active/inactive/outside_area/missing/offline)
-- StatusCalculatorService, WebSocket boundary events, Mapbox GL monitoring dashboard
+- StatusCalculatorService, WebSocket boundary events, Google Maps monitoring dashboard
 - **Fix (Mar 22, 2026):** `LOCATION_BATCH_SIZE` reduced 20→2; `useHomeLocation` subscribes to tracker events for auto-update
 
 **Phase 2D Sub-phases:**

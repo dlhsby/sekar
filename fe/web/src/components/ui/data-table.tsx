@@ -339,7 +339,7 @@ export function DataTable<TData, TValue>({
             <div
               className={cn(
                 'transition-[width] duration-200',
-                searchFocused || search.length > 0 ? 'w-full sm:w-80' : 'w-12'
+                searchFocused || search.length > 0 ? 'w-full sm:w-64 md:w-72' : 'w-12'
               )}
             >
               <Input

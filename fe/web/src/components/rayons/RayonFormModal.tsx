@@ -1,8 +1,10 @@
 'use client';
 
+import { toast } from 'sonner';
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 import { RayonForm } from '@/components/forms/RayonForm';
 import { useCreateRayon, useUpdateRayon, type CreateRayonDto, type UpdateRayonDto } from '@/lib/api/rayons';
+import { getErrorMessage } from '@/lib/api/client';
 import type { Rayon } from '@/types/models';
 
 interface RayonFormModalProps {
@@ -11,48 +13,67 @@ interface RayonFormModalProps {
   /** Present → edit; omitted/null → create. */
   rayon?: Rayon | null;
   onSuccess?: () => void;
+  /** Read-only "Detail" mode — reuses the form disabled, no submit. */
+  readOnly?: boolean;
 }
 
 /**
- * Create / edit a rayon in a modal.
+ * Create / edit / view a rayon in a modal.
  */
-export function RayonFormModal({ open, onOpenChange, rayon, onSuccess }: RayonFormModalProps) {
+export function RayonFormModal({ open, onOpenChange, rayon, onSuccess, readOnly = false }: RayonFormModalProps) {
   const isEdit = !!rayon;
   const createMutation = useCreateRayon();
   const updateMutation = useUpdateRayon();
-  const mutation = isEdit ? updateMutation : createMutation;
 
   const handleSubmit = async (data: CreateRayonDto | UpdateRayonDto): Promise<void> => {
+    // `boundary_polygon` is update-only on the backend (not accepted on create),
+    // so a new rayon is saved in two steps: POST scalars, then PATCH the polygon.
+    const { boundary_polygon, ...scalars } = data as UpdateRayonDto;
     try {
       if (isEdit && rayon) {
-        await updateMutation.mutateAsync({ id: rayon.id, data: data as UpdateRayonDto });
+        await updateMutation.mutateAsync({
+          id: rayon.id,
+          data: { ...scalars, boundary_polygon: boundary_polygon ?? null },
+        });
       } else {
-        await createMutation.mutateAsync(data as CreateRayonDto);
+        const created = await createMutation.mutateAsync(scalars as CreateRayonDto);
+        if (boundary_polygon) {
+          await updateMutation.mutateAsync({
+            id: created.id,
+            data: { boundary_polygon },
+          });
+        }
       }
-    } catch {
-      // Failure is surfaced via the mutation.isError banner below; keep the
-      // modal open so the user can correct and retry. Swallow here so the
-      // rejection doesn't escape react-hook-form as an unhandled rejection.
+    } catch (err) {
+      // Also surfaced via the mutation.isError banner below; keep the modal open.
+      toast.error(getErrorMessage(err));
       return;
     }
+    toast.success(`Rayon "${data.name}" berhasil ${isEdit ? 'diperbarui' : 'dibuat'}.`);
     onSuccess?.();
     onOpenChange(false);
   };
 
+  const failedMutation = createMutation.isError
+    ? createMutation
+    : updateMutation.isError
+      ? updateMutation
+      : null;
   const errorMessage =
-    mutation.isError &&
-    (mutation.error instanceof Error
-      ? mutation.error.message
+    !!failedMutation &&
+    (failedMutation.error instanceof Error
+      ? failedMutation.error.message
       : `Gagal ${isEdit ? 'memperbarui' : 'membuat'} rayon. Silakan coba lagi.`);
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="xl">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Ubah Rayon' : 'Tambah Rayon'}</DialogTitle>
+          <DialogTitle>{readOnly ? 'Detail Rayon' : isEdit ? 'Ubah Rayon' : 'Tambah Rayon'}</DialogTitle>
         </DialogHeader>
         <DialogBody>
-          {errorMessage ? (
+          {errorMessage && !readOnly ? (
             <div
               className="mb-4 border-2 border-nb-danger bg-nb-danger-light px-4 py-3"
               role="alert"
@@ -62,11 +83,13 @@ export function RayonFormModal({ open, onOpenChange, rayon, onSuccess }: RayonFo
             </div>
           ) : null}
           <RayonForm
-            key={rayon?.id ?? 'new'}
+            key={`${rayon?.id ?? 'new'}-${readOnly ? 'view' : 'edit'}`}
             mode={isEdit ? 'edit' : 'create'}
             initialData={rayon ?? undefined}
             onSubmit={handleSubmit}
-            isLoading={mutation.isPending}
+            isLoading={isPending}
+            readOnly={readOnly}
+            onCancel={() => onOpenChange(false)}
           />
         </DialogBody>
       </DialogContent>

@@ -99,7 +99,7 @@ await page.click('button:has-text("Hapus Jadwal")'); // Confirm
 - ✅ Real-time statistics display (workers online, linmas online, active shifts, reports today)
 - ✅ Filter by rayon and area
 - ✅ Reset filters
-- ✅ Map display (placeholder or actual Mapbox)
+- ✅ Map display (placeholder or actual Google Maps)
 - ✅ Workers list with online/offline status
 - ✅ Battery level warnings (< 20%)
 - ✅ Role-based access (4 roles allowed, Worker denied)

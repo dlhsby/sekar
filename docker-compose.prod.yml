@@ -123,8 +123,8 @@ services:
     build:
       context: ./fe/web
       dockerfile: Dockerfile
-      # NEXT_PUBLIC_* (incl. Mapbox) are decrypted from the committed encrypted
-      # fe/web/.env.production by dotenvx during the build (no plaintext build args).
+      # NEXT_PUBLIC_* (incl. the Google Maps key) are decrypted from the committed
+      # encrypted fe/web/.env.production by dotenvx during the build (no plaintext build args).
       args:
         DOTENV_ENV: production
       secrets:

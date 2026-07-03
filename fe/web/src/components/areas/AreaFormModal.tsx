@@ -1,8 +1,10 @@
 'use client';
 
+import { toast } from 'sonner';
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 import { AreaForm } from '@/components/forms/AreaForm';
-import { useCreateArea, useUpdateArea } from '@/lib/api/areas';
+import { useCreateArea, useUpdateArea, useUpdateAreaBoundary } from '@/lib/api/areas';
+import { getErrorMessage } from '@/lib/api/client';
 import type { Area, CreateAreaDto, UpdateAreaDto } from '@/types/models';
 
 interface AreaFormModalProps {
@@ -11,49 +13,89 @@ interface AreaFormModalProps {
   /** Present → edit; omitted/null → create. */
   area?: Area | null;
   onSuccess?: () => void;
+  /** Read-only "Detail" mode — reuses the form disabled, no submit. */
+  readOnly?: boolean;
 }
 
 /**
- * Create / edit an area in a full-screen modal — the AreaForm embeds a Mapbox
- * boundary drawer, so it needs the whole viewport. Replaces the standalone
+ * Create / edit an area in a full-screen modal — the AreaForm embeds a Google
+ * Maps boundary editor, so it needs the whole viewport. Replaces the standalone
  * /areas/new and /areas/[id] form pages.
+ *
+ * Persistence is two-step: `boundary_polygon` is NOT accepted by the create /
+ * update area endpoints (backend whitelist), so scalar fields go through
+ * POST/PATCH `/areas` and the polygon goes through `PUT /areas/:id/boundary`.
  */
-export function AreaFormModal({ open, onOpenChange, area, onSuccess }: AreaFormModalProps) {
+export function AreaFormModal({ open, onOpenChange, area, onSuccess, readOnly = false }: AreaFormModalProps) {
   const isEdit = !!area;
   const createMutation = useCreateArea();
   const updateMutation = useUpdateArea();
-  const mutation = isEdit ? updateMutation : createMutation;
+  const boundaryMutation = useUpdateAreaBoundary();
+  const scalarMutation = isEdit ? updateMutation : createMutation;
 
   const handleSubmit = async (data: CreateAreaDto | UpdateAreaDto): Promise<void> => {
+    // Split out the fields the scalar create/update endpoints reject:
+    //  - boundary_polygon → only via PUT /areas/:id/boundary,
+    //  - area_type_id → create-only (UpdateAreaDto omits it; PATCH 400s on it).
+    const { boundary_polygon, area_type_id, ...rest } = data as CreateAreaDto;
+    const scalars = rest;
     try {
+      // The boundary endpoint accepts a Polygon only. A freshly drawn/edited
+      // boundary is always a single Polygon; an untouched MultiPolygon (KMZ
+      // import) is detected as unchanged and never re-sent here.
+      const polygonForPut =
+        boundary_polygon == null || boundary_polygon.type === 'Polygon' ? boundary_polygon : null;
       if (isEdit && area) {
-        await updateMutation.mutateAsync({ id: area.id, data: data as UpdateAreaDto });
+        await updateMutation.mutateAsync({ id: area.id, data: scalars as UpdateAreaDto });
+        const polygonChanged =
+          JSON.stringify(area.boundary_polygon ?? null) !==
+          JSON.stringify(boundary_polygon ?? null);
+        if (polygonChanged) {
+          await boundaryMutation.mutateAsync({
+            id: area.id,
+            data: { boundary_polygon: polygonForPut ?? null },
+          });
+        }
       } else {
-        await createMutation.mutateAsync(data as CreateAreaDto);
+        // area_type_id is required on create — add it back here.
+        const created = await createMutation.mutateAsync({ ...scalars, area_type_id } as CreateAreaDto);
+        if (polygonForPut) {
+          await boundaryMutation.mutateAsync({
+            id: created.id,
+            data: { boundary_polygon: polygonForPut },
+          });
+        }
       }
-    } catch {
-      // Surfaced via the mutation.isError banner; keep the modal open and stop
-      // the rejection from escaping react-hook-form as an unhandled rejection.
+    } catch (err) {
+      // Also surfaced via the mutation.isError banner; keep the modal open.
+      toast.error(getErrorMessage(err));
       return;
     }
+    toast.success(`Area "${data.name}" berhasil ${isEdit ? 'diperbarui' : 'dibuat'}.`);
     onSuccess?.();
     onOpenChange(false);
   };
 
+  const failedMutation = scalarMutation.isError
+    ? scalarMutation
+    : boundaryMutation.isError
+      ? boundaryMutation
+      : null;
   const errorMessage =
-    mutation.isError &&
-    (mutation.error instanceof Error
-      ? mutation.error.message
+    !!failedMutation &&
+    (failedMutation.error instanceof Error
+      ? failedMutation.error.message
       : `Gagal ${isEdit ? 'memperbarui' : 'membuat'} area. Silakan coba lagi.`);
+  const isPending = scalarMutation.isPending || boundaryMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="xl">
         <DialogHeader>
-          <DialogTitle>{isEdit ? 'Ubah Area' : 'Tambah Area'}</DialogTitle>
+          <DialogTitle>{readOnly ? 'Detail Area' : isEdit ? 'Ubah Area' : 'Tambah Area'}</DialogTitle>
         </DialogHeader>
         <DialogBody>
-          {errorMessage ? (
+          {errorMessage && !readOnly ? (
             <div
               className="mb-4 border-2 border-nb-danger bg-nb-danger-light px-4 py-3"
               role="alert"
@@ -63,11 +105,13 @@ export function AreaFormModal({ open, onOpenChange, area, onSuccess }: AreaFormM
             </div>
           ) : null}
           <AreaForm
-            key={area?.id ?? 'new'}
+            key={`${area?.id ?? 'new'}-${readOnly ? 'view' : 'edit'}`}
             mode={isEdit ? 'edit' : 'create'}
             initialData={area ?? undefined}
             onSubmit={handleSubmit}
-            isLoading={mutation.isPending}
+            isLoading={isPending}
+            readOnly={readOnly}
+            onCancel={() => onOpenChange(false)}
           />
         </DialogBody>
       </DialogContent>

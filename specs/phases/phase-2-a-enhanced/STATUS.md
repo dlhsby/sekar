@@ -81,7 +81,7 @@ This STATUS.md file serves as an **index and quick reference** for Phase 2 imple
 - ✅ **TypeScript: 0 type errors**
 - ✅ **Production build successful**
 - ✅ Next.js 16.1.4, TanStack Query, Zustand
-- ✅ Mapbox GL integration, WebSocket real-time
+- ✅ Google Maps integration, WebSocket real-time
 - ✅ 8 E2E test specs (Playwright) - Added schedules + monitoring tests
 - ✅ Role values standardized to lowercase (matching backend enum)
 - ✅ Type safety improvements (removed `any` types in critical paths)
@@ -186,7 +186,7 @@ See [status_progress.md](./status_progress.md#phase-2c-mobile-updates) for detai
 
 ### Phase 2D: Web Dashboard - ✅ COMPLETE
 
-**Key Achievements:** 18 pages implemented (Users, Areas, Rayons, Schedules, Tasks, Reports, Monitoring), 11 Neo Brutalism components (all with tests), Mapbox GL integration, WebSocket real-time updates
+**Key Achievements:** 18 pages implemented (Users, Areas, Rayons, Schedules, Tasks, Reports, Monitoring), 11 Neo Brutalism components (all with tests), Google Maps integration, WebSocket real-time updates
 
 **Deliverables:** 18 pages, 11 components, 80+ TypeScript files, Next.js 16.1.4, Build passing
 

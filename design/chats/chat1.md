@@ -99,7 +99,7 @@ Got it — I can see everything. Let me summarize what I found:
 
 **What's there:**
 - `sekar/fe/mobile/` — React Native 0.83 app (Neo Brutalism UI, 21 screens, FCM, Redux Toolkit)
-- `sekar/fe/web/` — Next.js 16 dashboard (React 19, Tailwind 4, Mapbox GL, Socket.io, 21 pages)
+- `sekar/fe/web/` — Next.js 16 dashboard (React 19, Tailwind 4, Google Maps, Socket.io, 21 pages)
 - `sekar/specs/ui-ux/` — Design system docs:
   - `neo-brutalism.md` — core visual language
   - `typography.md`, `icons-assets.md`, `accessibility.md`
@@ -344,8 +344,8 @@ I'd structure the design system as **three distinct layers**, only the innermost
 
 **Layer 3 — Platform-divergent patterns (intentionally different)**
 - Mobile-only: bottom nav, pull-to-refresh, selfie camera, offline queue badge, fullscreen modals
-- Web-only: left sidebar, data tables, multi-column dashboards, keyboard shortcuts, Mapbox draw tools, right-hand detail panels
-- Shared-but-different: Map (Mapbox GL JS on web vs. react-native-maps on mobile) renders the same pins + same legend
+- Web-only: left sidebar, data tables, multi-column dashboards, keyboard shortcuts, Google Maps boundary/pin editors, right-hand detail panels
+- Shared-but-different: Map (Google Maps on web vs. react-native-maps on mobile) renders the same pins + same legend
 - Shared-but-different: Task detail (stacked scroll on mobile, 2-column with sticky side panel on web)
 
 ---

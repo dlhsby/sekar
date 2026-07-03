@@ -159,7 +159,7 @@
 - Tailwind CSS 4
 - TanStack Query 5.90.20
 - Zustand 5.0.10
-- Mapbox GL 3.18.1
+- Google Maps 3.18.1
 - Socket.IO Client 4.8.3
 
 **Key Features:**
@@ -167,7 +167,7 @@
 - JWT authentication with httpOnly cookies
 - Role-based access control (6 roles)
 - Real-time updates via WebSocket
-- Map integration with Mapbox GL
+- Map integration with Google Maps
 - Form validation with React Hook Form + Zod
 - Responsive design (mobile-first)
 - Accessibility (WCAG 2.1 AA compliant)

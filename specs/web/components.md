@@ -623,7 +623,7 @@ All components follow WCAG 2.1 AA standards:
 
 | Component | File | Description |
 |-----------|------|-------------|
-| MonitoringMap | `components/monitoring/MonitoringMap.tsx` | Mapbox GL JS map with area polygons, user markers (role-shaped, status-colored), supercluster clustering, hover tooltips, click selection |
+| MonitoringMap | `components/monitoring/MonitoringMap.tsx` | Google Maps map with area polygons, user markers (role-shaped, status-colored), supercluster clustering, hover tooltips, click selection |
 | MonitoringSidePanel | `components/monitoring/MonitoringSidePanel.tsx` | 35% width panel (min 320px, max 480px). Contains filters, 2×2 status cards, virtual-scroll user list. Push navigation for detail/timeline views |
 | UserDetailPanel | `components/monitoring/UserDetailPanel.tsx` | Push navigation within side panel. Shows shift info, last location, activities, tasks, WhatsApp/Call/History action buttons |
 | LocationTimeline | `components/monitoring/LocationTimeline.tsx` | Vertical timeline with distance/time summary. Per-point entries with timestamp, coords, accuracy, battery. Click syncs map. Events highlighted (clock-in, area-exit, area-enter) |

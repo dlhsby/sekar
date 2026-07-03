@@ -1,7 +1,7 @@
 # Web Real-Time Updates Specification
 
 **Last Updated:** 2026-06-20
-**Status:** Phases 4–5 Complete (Socket.IO + AuthContext; NextAuth.js deprecated; Mapbox GL map, NOT react-leaflet)
+**Status:** Phases 4–5 Complete (Socket.IO + AuthContext; NextAuth.js deprecated; Google Maps map, NOT react-leaflet)
 
 ---
 
@@ -243,16 +243,16 @@ export interface TaskEvent {
 
 ## Live Location Tracking
 
-### Map with Real-Time Workers (Phase 2D+ — Mapbox GL, NOT react-leaflet)
+### Map with Real-Time Workers (Phase 2D+ — Google Maps, NOT react-leaflet)
 
-> **Deployed change (Phase 2D, Mar 2026):** SEKAR uses **Mapbox GL** for the monitoring map with full polygon boundaries, real-time worker markers, and search. react-leaflet was prototyped but replaced.
+> **Deployed change (Phase 2D, Mar 2026):** SEKAR uses **Google Maps** for the monitoring map with full polygon boundaries, real-time worker markers, and search. react-leaflet was prototyped but replaced.
 
 ```typescript
 // fe/web/src/components/monitoring/MonitoringMap.tsx
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import mapboxgl, { Map, Marker } from 'mapbox-gl';
+import { useCallback, useState } from 'react';
+import { GoogleMap, Marker, Polygon } from '@react-google-maps/api';
 import { useSocketEvent } from '@/hooks/useSocketEvent';
 import { useSocketRoom } from '@/hooks/useSocketRoom';
 import { LocationUpdate } from '@/types/socket-events';
@@ -266,38 +266,14 @@ interface WorkerMarker {
   lastUpdate: Date;
 }
 
+const SURABAYA = { lat: -7.2756, lng: 112.7138 };
+
+// GeoJSON [lng,lat] ring → Google { lat, lng }[] path.
+const toPath = (poly: GeoJSON.Polygon) =>
+  poly.coordinates[0].map(([lng, lat]) => ({ lat, lng }));
+
 export function MonitoringMap({ areas }: { areas: Area[] }) {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<Map | null>(null);
-  const markers = useRef<Map<string, Marker>>(new Map());
   const [workers, setWorkers] = useState<Map<string, WorkerMarker>>(new Map());
-
-  // Initialize Mapbox map
-  useEffect(() => {
-    if (!mapContainer.current) return;
-
-    mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [112.7138, -7.2756], // Surabaya
-      zoom: 13,
-    });
-
-    // Add area boundaries as GeoJSON
-    areas.forEach((area) => {
-      map.current?.addSource(`area-${area.id}`, {
-        type: 'geojson',
-        data: area.boundary, // GeoJSON polygon
-      });
-      map.current?.addLayer({
-        id: `area-fill-${area.id}`,
-        type: 'fill',
-        source: `area-${area.id}`,
-        paint: { 'fill-color': '#7FBC8C', 'fill-opacity': 0.1 },
-      });
-    });
-  }, [areas]);
 
   // Subscribe to all areas & handle location updates
   areas.forEach((area) => {
@@ -305,8 +281,6 @@ export function MonitoringMap({ areas }: { areas: Area[] }) {
   });
 
   const handleLocationUpdate = useCallback((data: LocationUpdate) => {
-    if (!map.current) return;
-
     setWorkers((prev) => {
       const next = new Map(prev);
       next.set(data.workerId, {
@@ -319,22 +293,30 @@ export function MonitoringMap({ areas }: { areas: Area[] }) {
       });
       return next;
     });
-
-    // Update or create marker
-    let marker = markers.current.get(data.workerId);
-    if (!marker) {
-      marker = new Marker()
-        .setLngLat([data.longitude, data.latitude])
-        .addTo(map.current!);
-      markers.current.set(data.workerId, marker);
-    } else {
-      marker.setLngLat([data.longitude, data.latitude]);
-    }
   }, []);
 
   useSocketEvent<LocationUpdate>('worker:location_update', handleLocationUpdate);
 
-  return <div ref={mapContainer} className="h-[500px] rounded-lg border-2 border-nb-black shadow-nb-md" />;
+  return (
+    <GoogleMap
+      mapContainerClassName="h-[500px] rounded-lg border-2 border-nb-black shadow-nb-md"
+      center={SURABAYA}
+      zoom={13}
+    >
+      {/* Area boundaries */}
+      {areas.map((area) => (
+        <Polygon
+          key={area.id}
+          paths={toPath(area.boundary)}
+          options={{ fillColor: '#7FBC8C', fillOpacity: 0.1, strokeColor: '#1C1917', strokeWeight: 2 }}
+        />
+      ))}
+      {/* Real-time worker markers — React state re-renders drive marker positions */}
+      {[...workers.values()].map((w) => (
+        <Marker key={w.id} position={{ lat: w.lat, lng: w.lng }} title={w.name} />
+      ))}
+    </GoogleMap>
+  );
 ```
 
 ---

@@ -14,7 +14,6 @@ import {
   DataTable,
   PageHeader,
   StatusPill,
-  DetailModal,
   CoordinateLink,
   type ColumnDef,
   type DataTableRowAction,
@@ -330,55 +329,8 @@ export default function AreasPage() {
         onSuccess={() => setDeleteModal({ isOpen: false, area: null })}
       />
 
-      <DetailModal
-        open={view.open}
-        onOpenChange={view.onOpenChange}
-        title="Detail Area"
-        rows={view.item ? [
-          { label: 'Nama', value: view.item.name },
-          { label: 'Rayon', value: view.item.rayon?.name ?? '—' },
-          {
-            label: 'Tipe',
-            value: view.item.areaType ? (
-              <Badge
-                variant={view.item.areaType.category === 'ACTIVE' ? 'success' : 'warning'}
-                size="sm"
-              >
-                {view.item.areaType.name}
-              </Badge>
-            ) : (
-              '—'
-            ),
-          },
-          {
-            label: 'Koordinat',
-            value:
-              view.item.gps_lat && view.item.gps_lng ? (
-                <CoordinateLink
-                  lat={Number(view.item.gps_lat)}
-                  lng={Number(view.item.gps_lng)}
-                  label={view.item.name}
-                />
-              ) : null,
-          },
-          { label: 'Alamat', value: view.item.address ?? null },
-          { label: 'Luas', value: view.item.coverage_area ? formatArea(view.item.coverage_area) : null },
-          { label: 'Radius (m)', value: view.item.radius_meters },
-          {
-            label: 'Status',
-            value: (
-              <StatusPill tone={view.item.is_active ? 'ok' : 'neutral'} dot>
-                {view.item.is_active ? 'Aktif' : 'Nonaktif'}
-              </StatusPill>
-            ),
-          },
-          { label: 'Batas Wilayah', value: view.item.boundary_polygon ? 'Ada' : 'Tidak ada' },
-          { label: 'Dibuat', value: formatDate(view.item.created_at) },
-          { label: 'Dibuat oleh', value: actorName(view.item.created_by) },
-          { label: 'Diperbarui', value: formatDate(view.item.updated_at) },
-          { label: 'Diperbarui oleh', value: actorName(view.item.updated_by) },
-        ] : []}
-      />
+      {/* Detail = the edit form, read-only (shows the map + boundary + pin). */}
+      <AreaFormModal open={view.open} onOpenChange={view.onOpenChange} area={view.item} readOnly />
     </div>
   );
 }

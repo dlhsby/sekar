@@ -19,7 +19,7 @@ const BASE = process.argv[2] || 'https://sekar.wahyutrip.com';
 const OUT = resolve(__dirname, '../static/img/web');
 mkdirSync(OUT, { recursive: true });
 
-// Software WebGL so the Mapbox monitoring map renders in headless.
+// Software WebGL so the Google Maps monitoring map renders in headless.
 const LAUNCH = { args: ['--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist', '--no-sandbox'] };
 const VIEWPORT = { width: 1440, height: 900 };
 

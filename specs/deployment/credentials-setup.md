@@ -1,6 +1,6 @@
 # SEKAR Credentials Setup Guide
 
-**Purpose:** Complete reference for obtaining and installing every external API key and credential (Firebase/FCM, Google Maps, Mapbox, AWS S3, Apple Push Notifications).
+**Purpose:** Complete reference for obtaining and installing every external API key and credential (Firebase/FCM, Google Maps, AWS S3, Apple Push Notifications).
 
 **Last Updated:** June 19, 2026
 
@@ -21,7 +21,7 @@
 | **APNs Key / Certificate** | Apple Developer | Apple Developer Portal | Firebase Console upload (production) | Mobile | Prod iOS | N/A | N/A | Required |
 | **Google Maps API Key** | Google Cloud | Google Cloud Console → Maps SDK | `fe/mobile/.env.local` `GOOGLE_MAPS_API_KEY` | Mobile | Yes | Yes | Yes | Yes |
 | **Maps Key SHA-1 Restriction** | Google Cloud | `cd fe/mobile/android && ./gradlew signingReport` | Google Cloud Console API key restrictions | Mobile | Prod | Optional | Yes | Yes |
-| **Mapbox Token** | Mapbox | https://account.mapbox.com/access-tokens/ | `fe/web/.env.local` `NEXT_PUBLIC_MAPBOX_TOKEN` | Web | Yes | Yes | Yes | Yes |
+| **Google Maps API Key** | Google Maps | https://console.cloud.google.com/google/maps-apis | `fe/web/.env.local` `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Web | Yes | Yes | Yes | Yes |
 | **AWS Access Key ID** | AWS IAM | AWS Console → IAM → Users → `sekar-s3-user` → Security credentials | `.env.staging` / `.env.production` `AWS_ACCESS_KEY_ID` | Backend | Staging only (Prod uses MinIO) | MinIO | Yes (staging) | N/A (MinIO) |
 | **AWS Secret Access Key** | AWS IAM | AWS Console → IAM → Users → `sekar-s3-user` → Security credentials | `.env.staging` / `.env.production` `AWS_SECRET_ACCESS_KEY` | Backend | Staging only (Prod uses MinIO) | MinIO | Yes (staging) | N/A (MinIO) |
 | **S3 Bucket Name** | AWS S3 | AWS Console → S3 → Bucket name | `.env.local` / `.env.staging` / `.env.production` `AWS_S3_BUCKET` | Backend | All environments | `sekar-media-dev` | `sekar-media-staging` (real AWS) | N/A (MinIO, configured in docker-compose.prod.yml) |
@@ -426,31 +426,31 @@ A Maps key was **previously hardcoded and committed** at `AndroidManifest.xml:49
 
 ---
 
-## 3. Mapbox Access Token — Web Maps
+## 3. Google Maps API Key — Web Maps
 
-Mapbox enables the monitoring map view (worker cluster visualization and area boundary editing) in the web dashboard.
+Google Maps is the sole map provider for the web dashboard — the monitoring map, the boundary/pin editors, the coordinate display modal, and address search all use it.
 
-### 3.1 Create or Find Your Token
+### 3.1 Create Your API Key
 
-**In a browser:**
+**In the Google Cloud console:**
 
-1. Go to https://account.mapbox.com/access-tokens/
-2. If you don't have a Mapbox account, sign up
-3. Click **Create a token**
-4. Name it (e.g., `SEKAR Web Dev`)
-5. Check **Public scopes** (for web)
-6. Click **Create token**
-7. Copy the token (e.g., `pk.eyJ...`)
+1. Go to https://console.cloud.google.com/google/maps-apis
+2. Create (or select) a Google Cloud project.
+3. Enable the **Maps JavaScript API** and the **Geocoding API** (both required — the map + the address search).
+4. Under **Keys & Credentials → Create credentials → API key**, create a key (e.g. `SEKAR Web Dev`). It looks like `AIzaSy...`.
+5. Restrict the key: **Application restrictions → HTTP referrers** (e.g. `http://localhost:3001/*` for dev, `https://sekar.wahyutrip.com/*` for prod) and **API restrictions →** the two APIs above.
+
+The same key is shared with the backend (`GOOGLE_MAPS_API_KEY`, used for `seed:geocode` + `GET /config/maps`) and the mobile app.
 
 ### 3.2 Configure Web App
 
 **File:** `fe/web/.env.local`
 
 ```bash
-NEXT_PUBLIC_MAPBOX_TOKEN=pk.eyJ...your-token...
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSy...your-key...
 ```
 
-**Note:** The `NEXT_PUBLIC_` prefix exposes this token to the browser (intentional for client-side maps). Restrict usage in your Mapbox account settings if needed.
+**Note:** The `NEXT_PUBLIC_` prefix inlines this key into the browser bundle (intentional for client-side maps) — keep it referrer-restricted. If it's left unset, the web falls back to the backend-served key (`GET /config/maps`), then to manual lat/lng inputs.
 
 ### 3.3 Verify
 
@@ -460,14 +460,15 @@ cd fe/web
 npm run dev
 
 # Visit http://localhost:3001
-# Navigate to Monitoring or Tasks pages with maps
+# Navigate to Monitoring or the Rayon/Area forms
 # Verify the map renders without blank tiles
 ```
 
 **Troubleshooting:**
 
-- **Map is blank:** Verify the token is set in `.env.local` and the web server has been restarted
-- **"Invalid token" error:** Copy the token again from Mapbox (ensure it includes `pk.` prefix)
+- **Map is blank:** Verify the key is set in `.env.local` and the web server has been restarted
+- **`ApiNotActivatedMapError` / grey map:** Enable the **Maps JavaScript API** on the key's project
+- **`RefererNotAllowedMapError`:** Add your origin to the key's HTTP-referrer restrictions
 
 ---
 
@@ -663,7 +664,7 @@ aws s3 ls s3://sekar-media-staging --recursive
 |---|---|---|---|
 | FCM | Firebase | Optional | Set `FCM_ENABLED=false` to skip; Firebase services disabled locally |
 | Google Maps | Google Cloud | Required | Use dev API key (unrestricted OK locally) |
-| Mapbox | Mapbox | Required | Use dev token |
+| Google Maps | Google Maps | Required | Use dev token |
 | AWS S3 | MinIO (local) | Required | Uses `be/.env.local` with MinIO endpoint; no real AWS keys needed |
 | APNs | Apple | N/A | Not needed for dev (simulator push doesn't work) |
 
@@ -687,7 +688,7 @@ API_BASE_URL=http://10.0.2.2:3000
 
 `fe/web/.env.local`:
 ```bash
-NEXT_PUBLIC_MAPBOX_TOKEN=pk.eyJ...dev-token...
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSy...dev-key...
 NEXT_PUBLIC_API_URL=http://localhost:3000
 ```
 
@@ -697,7 +698,7 @@ NEXT_PUBLIC_API_URL=http://localhost:3000
 |---|---|---|---|
 | FCM | Firebase | Required | `FCM_ENABLED=true`; creds encrypted in `.env.staging` (dotenvx) |
 | Google Maps | Google Cloud | Required | Use staging key; restrict to release SHA-1 of staging APK |
-| Mapbox | Mapbox | Required | Use staging token |
+| Google Maps | Google Maps | Required | Use staging token |
 | AWS S3 | Real AWS | Required | `sekar-media-staging` bucket; restricted IAM user (no instance role) |
 | APNs | Apple | Recommended | Upload to Firebase for iOS push testing |
 
@@ -745,7 +746,7 @@ can fetch it without embedding a static password. Never commit the value to git.
 |---|---|---|---|
 | FCM | Firebase | Required | `FCM_ENABLED=true`; creds encrypted in `.env.production` (dotenvx) |
 | Google Maps | Google Cloud | Required | **Must be restricted to release SHA-1 of production APK** |
-| Mapbox | Mapbox | Required | Production token with appropriate usage limits |
+| Google Maps | Google Maps | Required | Production token with appropriate usage limits |
 | AWS S3 | MinIO (self-hosted) | Required | Uses MinIO in `docker-compose.prod.yml`; NOT real AWS (per project convention) |
 | APNs | Apple | Required | Uploaded to Firebase; required for iOS push in production |
 
@@ -823,7 +824,7 @@ Keep all S3 "Block Public Access" settings enabled. Use signed URLs for private 
 ### API Key Restrictions
 
 - **Google Maps:** Restrict to package `com.wahyutrip.sekar` and release SHA-1
-- **Mapbox:** Enable usage limits in Mapbox account settings
+- **Google Maps:** Enable usage limits in Google Maps account settings
 
 ### Rotate Credentials Regularly
 
@@ -916,7 +917,7 @@ aws s3api put-bucket-logging \
 1. Verify the key/token is set in `.env.local`
 2. Verify the key/token is correct by copying from the console again
 3. Check browser console / logcat for errors
-4. Verify the Maps/Mapbox service is enabled in the respective console
+4. Verify the Maps service is enabled in the respective console
 5. Restart the app
 
 ### FCM token not generated
@@ -951,4 +952,4 @@ aws s3api put-bucket-logging \
 **Last Updated:** June 19, 2026  
 **Maintained By:** SEKAR DevOps Team  
 **Next Review:** December 2026 (annual credential rotation audit)  
-**Scope:** Firebase, Google Maps, Mapbox, AWS S3 (staging), MinIO (dev/prod), dotenvx encryption for secrets
+**Scope:** Firebase, Google Maps, AWS S3 (staging), MinIO (dev/prod), dotenvx encryption for secrets

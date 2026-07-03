@@ -41,7 +41,7 @@ Add **storybook-driven snapshot test** in `fe/mobile/__tests__/visual/` + `fe/we
 ### Accessibility automation
 
 - Mobile: `react-native-accessibility-engine` (or Maestro `assertVisible` with role+label patterns) — assert hit-target ≥ 44 × 44 px on every screen.
-- Web: Playwright `@axe-core/playwright` — fail on AA violations on every revamped page. ✅ **Shipped Jun 11** as `fe/web/e2e/14-a11y.spec.ts` (15 pages, serious/critical gate, mapbox canvas excluded; runs in `web-e2e.yml`).
+- Web: Playwright `@axe-core/playwright` — fail on AA violations on every revamped page. ✅ **Shipped Jun 11** as `fe/web/e2e/14-a11y.spec.ts` (15 pages, serious/critical gate, maps canvas excluded; runs in `web-e2e.yml`).
 
 ---
 

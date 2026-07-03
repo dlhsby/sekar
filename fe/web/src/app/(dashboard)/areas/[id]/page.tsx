@@ -9,16 +9,13 @@ import { useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Edit, Trash2, Map as MapIcon } from 'lucide-react';
 import { Button, Badge, Card, CardContent, CardHeader } from '@/components/ui';
-import { Map } from '@/components/maps/Map';
-import { PolygonEditor } from '@/components/maps/PolygonEditor';
+import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
 import { DeleteAreaModal } from '@/components/areas/DeleteAreaModal';
 import { AreaFormModal } from '@/components/areas/AreaFormModal';
 import { AreaWorkersCard } from '@/components/areas/AreaWorkersCard';
 import { useArea, useAreaBoundary, useUpdateAreaBoundary } from '@/lib/api/areas';
 import { useAuth } from '@/lib/auth/hooks';
-import { formatArea, formatCoordinates, polygonToFeature } from '@/lib/utils/geo';
-import { polygonColors } from '@/lib/maps/styles';
-import type mapboxgl from 'mapbox-gl';
+import { formatArea, formatCoordinates } from '@/lib/utils/geo';
 
 export default function AreaDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -56,49 +53,11 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
     );
   };
 
-  // Handle map load - draw polygon
-  const handleMapLoad = (map: mapboxgl.Map) => {
-    if (!area?.boundary_polygon) return;
-
-    // Add polygon source and layer
-    map.addSource('area-polygon', {
-      type: 'geojson',
-      data: polygonToFeature(area.boundary_polygon),
-    });
-
-    // Add fill layer
-    map.addLayer({
-      id: 'area-fill',
-      type: 'fill',
-      source: 'area-polygon',
-      paint: {
-        'fill-color': polygonColors.fill,
-        'fill-opacity': polygonColors.fillOpacity,
-      },
-    });
-
-    // Add outline layer
-    map.addLayer({
-      id: 'area-outline',
-      type: 'line',
-      source: 'area-polygon',
-      paint: {
-        'line-color': polygonColors.stroke,
-        'line-width': polygonColors.strokeWidth,
-      },
-    });
-
-    // Fit bounds to polygon
-    const coords = area.boundary_polygon.coordinates[0];
-    const bounds = coords.reduce(
-      (bounds, coord) => {
-        return bounds.extend(coord as [number, number]);
-      },
-      new (map as any).constructor.LngLatBounds(coords[0], coords[0])
-    );
-
-    map.fitBounds(bounds, { padding: 50 });
-  };
+  // Center pin for the read-only map + boundary editor reference.
+  const areaCenter =
+    area?.gps_lat != null && area?.gps_lng != null
+      ? { lat: Number(area.gps_lat), lng: Number(area.gps_lng) }
+      : null;
 
   // Loading state
   if (isLoading) {
@@ -188,11 +147,16 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
         </CardHeader>
         <CardContent className="p-4">
           <div aria-label="Peta area">
-            <Map
-              center={[Number(area.gps_lng ?? 0), Number(area.gps_lat ?? 0)]}
-              zoom={15}
-              className="h-full md:h-[500px] min-h-[400px]"
-              onLoad={handleMapLoad}
+            <GoogleBoundaryEditor
+              readonly
+              initialPolygon={area.boundary_polygon}
+              pin={areaCenter}
+              height={480}
+              manualFallback={
+                <div className="border-2 border-nb-black bg-nb-gray-100 p-6 text-center">
+                  <p className="text-nb-body-sm text-nb-gray-700">Peta tidak tersedia.</p>
+                </div>
+              }
             />
           </div>
         </CardContent>
@@ -291,12 +255,18 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
         <CardContent>
           {editingBoundary ? (
             <div className="space-y-4">
-              <PolygonEditor
-                initialPolygon={boundaryDraft ?? undefined}
-                onChange={setBoundaryDraft}
-                center={area && area.gps_lng && area.gps_lat ? [Number(area.gps_lng), Number(area.gps_lat)] : undefined}
-                zoom={15}
-                className="h-[480px]"
+              <GoogleBoundaryEditor
+                initialPolygon={boundaryDraft}
+                onPolygonChange={setBoundaryDraft}
+                pin={areaCenter}
+                height={480}
+                manualFallback={
+                  <div className="border-2 border-nb-black bg-nb-gray-100 p-6 text-center">
+                    <p className="text-nb-body-sm text-nb-gray-700">
+                      Peta tidak tersedia — batas tidak dapat digambar tanpa Google Maps.
+                    </p>
+                  </div>
+                }
               />
               <div className="flex gap-3">
                 <Button
@@ -319,48 +289,14 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
               </div>
             </div>
           ) : boundaryData?.boundary_polygon ? (
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 text-sm text-nb-gray-600">
-                <span>
-                  Polygon aktif dengan{' '}
-                  <strong>{boundaryData.boundary_polygon.coordinates[0].length - 1} titik</strong>
-                </span>
-                {boundaryData.coverage_area && (
-                  <span>· Luas: {formatArea(boundaryData.coverage_area)}</span>
-                )}
-              </div>
-              <div aria-label="Preview batas area">
-                <Map
-                  center={[boundaryData.gps_lng, boundaryData.gps_lat]}
-                  zoom={15}
-                  className="h-[300px]"
-                  onLoad={(map) => {
-                    if (!boundaryData.boundary_polygon) return;
-                    map.addSource('preview-polygon', {
-                      type: 'geojson',
-                      data: polygonToFeature(boundaryData.boundary_polygon as GeoJSON.Polygon),
-                    });
-                    map.addLayer({
-                      id: 'preview-fill',
-                      type: 'fill',
-                      source: 'preview-polygon',
-                      paint: {
-                        'fill-color': polygonColors.fill,
-                        'fill-opacity': polygonColors.fillOpacity,
-                      },
-                    });
-                    map.addLayer({
-                      id: 'preview-outline',
-                      type: 'line',
-                      source: 'preview-polygon',
-                      paint: {
-                        'line-color': polygonColors.stroke,
-                        'line-width': polygonColors.strokeWidth,
-                      },
-                    });
-                  }}
-                />
-              </div>
+            <div className="flex items-center gap-3 text-sm text-nb-gray-600">
+              <span>
+                Polygon aktif dengan{' '}
+                <strong>{boundaryData.boundary_polygon.coordinates[0].length - 1} titik</strong>
+              </span>
+              {boundaryData.coverage_area && (
+                <span>· Luas: {formatArea(boundaryData.coverage_area)}</span>
+              )}
             </div>
           ) : (
             <div className="py-8 text-center text-nb-gray-500">

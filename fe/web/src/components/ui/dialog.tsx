@@ -61,6 +61,11 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(dialogContentVariants({ size }), className)}
+      // Global: a click/drag outside the modal must NOT dismiss it — accidental
+      // taps outside were closing forms and losing input. Close only via the X,
+      // Cancel/Save, or Escape (kept for keyboard a11y). Callers can still opt
+      // back in by passing their own onInteractOutside/onPointerDownOutside.
+      onInteractOutside={(e) => e.preventDefault()}
       {...props}
     >
       {children}

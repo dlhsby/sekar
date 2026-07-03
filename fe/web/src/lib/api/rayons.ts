@@ -140,6 +140,8 @@ export interface UpdateRayonDto {
   description?: string | null;
   center_lat?: number | null;
   center_lng?: number | null;
+  /** Official KMZ outline (Polygon or MultiPolygon). Update-only — not on create. */
+  boundary_polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
 }
 
 /**

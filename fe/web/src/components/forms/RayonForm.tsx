@@ -5,15 +5,18 @@
  * Reusable form for creating and editing rayons
  */
 
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { FormInput, Input, Textarea } from '@/components/ui';
+import { FormInput, Input, Textarea, Button } from '@/components/ui';
 import { FormActions } from '@/components/forms/FormActions';
 import { AvailabilityHint } from '@/components/forms/AvailabilityHint';
-import { GoogleMapPicker } from '@/components/maps/GoogleMapPicker';
+import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
+import { ImportBoundaryButton } from '@/components/maps/ImportBoundaryButton';
 import { useAvailabilityCheck } from '@/lib/hooks/useAvailabilityCheck';
 import { checkRayonName } from '@/lib/api/rayons';
+import { isBoundaryGeometry } from '@/lib/utils/geo';
 import type { Rayon } from '@/types/models';
 import type { CreateRayonDto, UpdateRayonDto } from '@/lib/api/rayons';
 
@@ -52,6 +55,12 @@ const rayonSchema = z.object({
     .max(180, 'Longitude harus antara -180 dan 180')
     .nullable()
     .optional(),
+  boundary_polygon: z
+    .custom<GeoJSON.Polygon | GeoJSON.MultiPolygon>((v) => v == null || isBoundaryGeometry(v), {
+      message: 'Batas rayon tidak valid',
+    })
+    .nullable()
+    .optional(),
 });
 
 type RayonFormData = z.infer<typeof rayonSchema>;
@@ -61,9 +70,20 @@ export interface RayonFormProps {
   onSubmit: (data: CreateRayonDto | UpdateRayonDto) => Promise<void>;
   isLoading?: boolean;
   mode: 'create' | 'edit';
+  /** Read-only "Detail" mode — fields disabled, map read-only, no submit. */
+  readOnly?: boolean;
+  /** Close handler for the "Tutup" button in read-only mode. */
+  onCancel?: () => void;
 }
 
-export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: RayonFormProps) {
+export function RayonForm({
+  initialData,
+  onSubmit,
+  isLoading = false,
+  mode,
+  readOnly = false,
+  onCancel,
+}: RayonFormProps) {
   const {
     register,
     handleSubmit,
@@ -78,6 +98,7 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
       description: initialData?.description || '',
       center_lat: initialData?.center_lat ? Number(initialData.center_lat) : undefined,
       center_lng: initialData?.center_lng ? Number(initialData.center_lng) : undefined,
+      boundary_polygon: initialData?.boundary_polygon ?? null,
     },
   });
 
@@ -93,19 +114,40 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
   const swatchValue = HEX_COLOR_RE.test(colorValue) ? colorValue : DEFAULT_COLOR;
   const centerLat = watch('center_lat');
   const centerLng = watch('center_lng');
+  const boundaryValue = watch('boundary_polygon');
+  // Require at least one of {boundary, location pin} to save.
+  const hasGeometry = (centerLat != null && centerLng != null) || !!boundaryValue;
 
   const handlePinChange = ({ lat, lng }: { lat: number; lng: number }) => {
     setValue('center_lat', Number(lat.toFixed(7)), { shouldValidate: true });
     setValue('center_lng', Number(lng.toFixed(7)), { shouldValidate: true });
   };
 
+  const handlePolygonChange = (polygon: GeoJSON.Polygon | null) => {
+    setValue('boundary_polygon', polygon, { shouldValidate: true });
+  };
+
+  // Seed geometry for the map editor; bump `editorKey` to remount + re-frame it
+  // after a KML import (the editor only reads `initialPolygon` on mount).
+  const [seedPolygon, setSeedPolygon] = useState<
+    GeoJSON.Polygon | GeoJSON.MultiPolygon | null | undefined
+  >(initialData?.boundary_polygon);
+  const [editorKey, setEditorKey] = useState(0);
+
+  const handleImportBoundary = (geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon) => {
+    setValue('boundary_polygon', geometry, { shouldValidate: true });
+    setSeedPolygon(geometry);
+    setEditorKey((k) => k + 1);
+  };
+
   const onSubmitForm = async (data: RayonFormData) => {
-    const submitData: CreateRayonDto | UpdateRayonDto = {
+    const submitData: UpdateRayonDto = {
       name: data.name,
       color: data.color?.trim() || null,
       description: data.description || null,
       center_lat: data.center_lat ?? null,
       center_lng: data.center_lng ?? null,
+      boundary_polygon: data.boundary_polygon ?? null,
     };
 
     await onSubmit(submitData);
@@ -123,6 +165,7 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
             placeholder="Contoh: Rayon 1"
             error={errors.name?.message}
             required
+            disabled={readOnly}
             {...register('name')}
           />
           <AvailabilityHint
@@ -142,7 +185,8 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
               aria-label="Pilih warna rayon"
               value={swatchValue}
               onChange={(e) => setValue('color', e.target.value, { shouldValidate: true })}
-              className="h-12 w-14 shrink-0 cursor-pointer rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm"
+              disabled={readOnly}
+              className="h-12 w-14 shrink-0 cursor-pointer rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm disabled:cursor-not-allowed disabled:opacity-60"
             />
             <Input
               id="rayon-color-hex"
@@ -152,6 +196,7 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
               onChange={(e) => setValue('color', e.target.value, { shouldValidate: true })}
               error={errors.color?.message}
               aria-label="Kode warna heksadesimal"
+              disabled={readOnly}
             />
           </div>
           {errors.color?.message ? (
@@ -170,23 +215,52 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
             placeholder="Deskripsi rayon (opsional)"
             rows={3}
             error={errors.description?.message}
+            disabled={readOnly}
             {...register('description')}
           />
         </div>
       </div>
 
-      {/* Coordinate Information */}
+      {/* Boundary + center pin on a single Google map */}
       <div className="space-y-4">
-        <h3 className="font-bold text-lg">Koordinat Pusat</h3>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-bold text-lg">Batas & Titik Lokasi</h3>
+          {!readOnly && <ImportBoundaryButton onImport={handleImportBoundary} />}
+        </div>
+        {!readOnly && (
+          <p className="text-nb-body-sm text-nb-gray-500">
+            Dua pengaturan terpisah — isi <b>minimal salah satu</b>: <b>gambar batas</b> wilayah rayon,
+            dan/atau <b>tentukan titik lokasi</b> (mis. lokasi kantor rayon atau titik yang dipakai
+            untuk menggeser peta saat pencarian). Titik lokasi tidak harus berada di tengah batas.
+          </p>
+        )}
 
-        <GoogleMapPicker
-          lat={centerLat}
-          lng={centerLng}
-          onChange={handlePinChange}
-          onClear={() => {
-            setValue('center_lat', null, { shouldValidate: true });
-            setValue('center_lng', null, { shouldValidate: true });
-          }}
+        {!readOnly && errors.boundary_polygon && (
+          <p className="text-nb-body-sm font-medium text-nb-danger">
+            {errors.boundary_polygon.message}
+          </p>
+        )}
+
+        <GoogleBoundaryEditor
+          key={editorKey}
+          initialPolygon={seedPolygon}
+          onPolygonChange={readOnly ? undefined : handlePolygonChange}
+          pin={
+            centerLat != null && centerLng != null
+              ? { lat: centerLat, lng: centerLng }
+              : null
+          }
+          onPinChange={readOnly ? undefined : handlePinChange}
+          onClearPin={
+            readOnly
+              ? undefined
+              : () => {
+                  setValue('center_lat', null, { shouldValidate: true });
+                  setValue('center_lng', null, { shouldValidate: true });
+                }
+          }
+          readonly={readOnly}
+          autoLocateOnMount={mode === 'create' && !seedPolygon && !readOnly}
           manualFallback={
             <div className="rounded-nb-base border-2 border-nb-black bg-nb-gray-100 p-3">
               <p className="text-nb-body-sm text-nb-gray-700">
@@ -197,13 +271,14 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
         />
 
         {/* Manual entry / fine-tuning — stays in sync with the pin. Optional. */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FormInput
             label="Latitude"
             type="number"
             placeholder="Contoh: -7.25"
             step="any"
             error={errors.center_lat?.message}
+            disabled={readOnly}
             {...register('center_lat', { setValueAs: toNullableNumber })}
           />
 
@@ -213,24 +288,41 @@ export function RayonForm({ initialData, onSubmit, isLoading = false, mode }: Ra
             placeholder="Contoh: 112.75"
             step="any"
             error={errors.center_lng?.message}
+            disabled={readOnly}
             {...register('center_lng', { setValueAs: toNullableNumber })}
           />
         </div>
       </div>
 
-      {/* Submit Button */}
-      <FormActions
-        submitLabel={
-          isLoading
-            ? mode === 'create'
-              ? 'Menyimpan...'
-              : 'Memperbarui...'
-            : mode === 'create'
-              ? 'Simpan Rayon'
-              : 'Perbarui Rayon'
-        }
-        loading={isLoading}
-      />
+      {/* Footer */}
+      {readOnly ? (
+        <div className="flex gap-3 pt-4">
+          <Button type="button" variant="secondary" onClick={onCancel} className="w-full">
+            Tutup
+          </Button>
+        </div>
+      ) : (
+        <>
+          <FormActions
+            submitLabel={
+              isLoading
+                ? mode === 'create'
+                  ? 'Menyimpan...'
+                  : 'Memperbarui...'
+                : mode === 'create'
+                  ? 'Simpan Rayon'
+                  : 'Perbarui Rayon'
+            }
+            loading={isLoading}
+            disabled={!hasGeometry}
+          />
+          {!hasGeometry && (
+            <p className="text-nb-body-sm text-nb-danger">
+              Tentukan minimal salah satu: gambar batas rayon atau tempatkan titik lokasi.
+            </p>
+          )}
+        </>
+      )}
     </form>
   );
 }
