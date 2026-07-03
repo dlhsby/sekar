@@ -2,8 +2,8 @@ import { canEditTargetRole, isGlobalRosterEditor } from '../schedule-permissions
 
 describe('schedule-permissions (roster edit hierarchy — mirrors backend)', () => {
   describe('canEditTargetRole', () => {
-    it('admin_system / superadmin may edit anyone', () => {
-      for (const admin of ['admin_system', 'superadmin'] as const) {
+    it('admin_system / superadmin / top_management may edit anyone (full parity)', () => {
+      for (const admin of ['admin_system', 'superadmin', 'top_management'] as const) {
         for (const target of [
           'satgas',
           'linmas',
@@ -15,13 +15,6 @@ describe('schedule-permissions (roster edit hierarchy — mirrors backend)', () 
           expect(canEditTargetRole(admin, target)).toBe(true);
         }
       }
-    });
-
-    it('top_management edits only kepala_rayon / admin_data', () => {
-      expect(canEditTargetRole('top_management', 'kepala_rayon')).toBe(true);
-      expect(canEditTargetRole('top_management', 'admin_data')).toBe(true);
-      expect(canEditTargetRole('top_management', 'korlap')).toBe(false);
-      expect(canEditTargetRole('top_management', 'satgas')).toBe(false);
     });
 
     it('kepala_rayon / admin_data edit korlap + satgas + linmas, not peers/up', () => {

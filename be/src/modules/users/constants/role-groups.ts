@@ -164,7 +164,15 @@ export const REPORTING_VIEWERS = [
   UserRole.SUPERADMIN,
 ];
 
-export const REPORTING_ADMINS = [UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN];
+// top_management is listed explicitly (not just granted via the RolesGuard
+// admin_system elevation) because REPORTING_ADMINS is also consulted inside
+// reporting.service (own-reports scoping + schedule create), which the guard
+// doesn't reach. Full admin_system parity — see roles.guard `roleSatisfies`.
+export const REPORTING_ADMINS = [
+  UserRole.ADMIN_SYSTEM,
+  UserRole.SUPERADMIN,
+  UserRole.TOP_MANAGEMENT,
+];
 
 // Phase 5-2 Analytics — dashboard/lists viewers vs view-refresh admins.
 export const ANALYTICS_VIEWERS = [
