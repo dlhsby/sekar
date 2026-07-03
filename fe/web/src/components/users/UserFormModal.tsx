@@ -48,10 +48,10 @@ export function UserFormModal({
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { username, ...updateData } = data;
         await updateMutation.mutateAsync({ id: user.id, data: updateData });
-        toast.success(`Pengguna "${data.full_name}" berhasil diperbarui.`);
+        toast.success(t('admin:messages.userUpdatedSuccess', { name: data.full_name }));
       } else {
         const created = (await createMutation.mutateAsync(data)) as CreatedUser;
-        toast.success(`Pengguna "${created.full_name}" berhasil dibuat.`);
+        toast.success(t('admin:messages.userCreatedSuccess', { name: created.full_name }));
         onCreated?.(created);
       }
     } catch (err) {

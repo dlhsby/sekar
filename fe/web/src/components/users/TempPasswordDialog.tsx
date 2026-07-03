@@ -44,20 +44,18 @@ export function TempPasswordDialog({ password, username, onClose }: TempPassword
     <Dialog open={!!password} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md" aria-labelledby="temp-password-title">
         <DialogHeader>
-          <DialogTitle id="temp-password-title">Password Sementara</DialogTitle>
+          <DialogTitle id="temp-password-title">{t('admin:dialogs.tempPassword.title')}</DialogTitle>
         </DialogHeader>
         <DialogBody className="space-y-4">
           <p className="text-nb-body-sm text-nb-gray-700">
             {username ? (
               <>
-                Berikan password ini kepada <strong>{username}</strong>. Ditampilkan{' '}
-                <strong>sekali saja</strong> — pengguna wajib menggantinya saat login pertama.
+                {t('admin:dialogs.tempPassword.messageWithUsername', { username }).split('<strong>').map((part, i) =>
+                  i === 0 ? part : <strong key={i}>{part.split('</strong>')[0]}</strong>
+                )}
               </>
             ) : (
-              <>
-                Password ini ditampilkan <strong>sekali saja</strong> — pengguna wajib menggantinya
-                saat login pertama.
-              </>
+              t('admin:dialogs.tempPassword.messageWithoutUsername')
             )}
           </p>
           <div className="flex items-center gap-2 rounded-nb-base border-2 border-nb-black bg-nb-gray-50 p-4">
@@ -71,7 +69,7 @@ export function TempPasswordDialog({ password, username, onClose }: TempPassword
               onClick={copy}
               leftIcon={copied ? <Check className="size-4" /> : <Copy className="size-4" />}
             >
-              {copied ? 'Disalin' : 'Salin'}
+              {copied ? t('admin:dialogs.tempPassword.copySuccess') : t('admin:dialogs.tempPassword.copyButton')}
             </Button>
           </div>
         </DialogBody>
