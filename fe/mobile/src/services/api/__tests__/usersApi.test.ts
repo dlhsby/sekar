@@ -2,7 +2,7 @@
  * Users API Tests
  */
 
-import { changePassword } from '../usersApi';
+import { changePassword, getUsers } from '../usersApi';
 import * as apiClient from '../apiClient';
 
 // Mock apiClient
@@ -11,6 +11,36 @@ jest.mock('../apiClient');
 describe('usersApi', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  describe('getUsers', () => {
+    it('walks every page so no users are dropped past the limit cap', async () => {
+      // Regression: staging has >1000 users; a single capped request drops the
+      // tail and assignable-user pickers miss whole rayons. getUsers must page.
+      const mockGet = jest
+        .spyOn(apiClient, 'get')
+        .mockResolvedValueOnce({ data: { data: [{ id: '1' }], meta: { totalPages: 2 } } } as never)
+        .mockResolvedValueOnce({ data: { data: [{ id: '2' }], meta: { totalPages: 2 } } } as never);
+
+      const result = await getUsers();
+
+      expect(mockGet).toHaveBeenCalledTimes(2);
+      expect(mockGet).toHaveBeenNthCalledWith(1, '/users', { page: 1, limit: 100 });
+      expect(mockGet).toHaveBeenNthCalledWith(2, '/users', { page: 2, limit: 100 });
+      expect(result.data).toHaveLength(2);
+      expect(result.data?.map((u) => u.id)).toEqual(['1', '2']);
+    });
+
+    it('returns an error when the first page fails', async () => {
+      jest
+        .spyOn(apiClient, 'get')
+        .mockResolvedValueOnce({ error: 'Network error' } as never);
+
+      const result = await getUsers();
+
+      expect(result.data).toEqual([]);
+      expect(result.error).toBe('Network error');
+    });
   });
 
   describe('changePassword', () => {
