@@ -109,7 +109,7 @@ export function CapacityWeeklyGrid({
       toast.success('Kapasitas disimpan.');
       setEdited(new Map());
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Gagal menyimpan kapasitas.';
+      const message = err instanceof Error ? err.message : t('schedules:capacity.saveError');
       toast.error(message);
     } finally {
       setIsSaving(false);

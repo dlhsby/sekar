@@ -149,6 +149,10 @@
   },
   "maintenance2": {
     "pageDescription": "Manage asset maintenance schedules",
-    "selectLabel": "Select"
+    "selectLabel": "Select",
+    "pageTitle": "Asset Maintenance",
+    "upcoming": "Upcoming Maintenance",
+    "overdue": "Overdue Maintenance",
+    "saveError": "Failed to save capacity."
   }
 }

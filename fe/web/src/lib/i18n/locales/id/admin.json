@@ -174,7 +174,8 @@
       "count": "{count} area{query, select, empty { dari {total}} other { dari {total}}} ditampilkan",
       "noMatch": "Tidak ada area yang cocok."
     },
-    "detailNotFound": "Area yang Anda cari tidak ditemukan atau telah dihapus."
+    "detailNotFound": "Area yang Anda cari tidak ditemukan atau telah dihapus.",
+    "saveBoundary": "Simpan Boundary"
   },
   "rayons": {
     "pageTitle": "Rayon",

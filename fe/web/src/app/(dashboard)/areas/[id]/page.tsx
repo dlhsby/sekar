@@ -136,7 +136,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
               variant="destructive"
               leftIcon={<Trash2 className="w-4 h-4" />}
             >
-              Hapus
+              {t('common:actions.delete')}
             </Button>
           </div>
         )}
@@ -276,7 +276,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
                   loading={isSavingBoundary}
                   disabled={isSavingBoundary}
                 >
-                  Simpan Boundary
+                  {t('admin:areas.saveBoundary')}
                 </Button>
                 <Button
                   variant="secondary"

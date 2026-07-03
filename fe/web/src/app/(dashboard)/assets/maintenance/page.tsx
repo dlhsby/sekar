@@ -101,7 +101,7 @@ export default function MaintenanceCalendarPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Perawatan Aset"
+        title={t('assets:maintenance2.pageTitle')}
         description={t('assets:maintenance2.pageDescription')}
       />
 
@@ -160,7 +160,7 @@ export default function MaintenanceCalendarPage() {
         </div>
       </Card>
 
-      <SectionCard title="Perawatan Mendatang">
+      <SectionCard title={t('assets:maintenance2.upcoming')}>
         {calendarLoading ? (
           <div className="p-4">{t('common:actions.loading')}</div>
         ) : !calendarData.filter((m) => m.status === 'scheduled').length ? (
@@ -183,7 +183,7 @@ export default function MaintenanceCalendarPage() {
       </SectionCard>
 
       {overdueData.length > 0 && (
-        <SectionCard title="Perawatan Terlambat">
+        <SectionCard title={t('assets:maintenance2.overdue')}>
           {overdueLoading ? (
             <div className="p-4">{t('common:actions.loading')}</div>
           ) : (

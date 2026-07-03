@@ -82,5 +82,8 @@
     "generate": "Buat Jadwal",
     "areaCount": "{count} Area",
     "areaCountAriaLabel": "Lihat {count} area untuk {name}"
+  },
+  "capacity": {
+    "saveError": "Gagal menyimpan kapasitas."
   }
 }

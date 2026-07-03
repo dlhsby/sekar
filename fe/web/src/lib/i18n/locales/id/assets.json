@@ -149,6 +149,10 @@
   },
   "maintenance2": {
     "pageDescription": "Kelola jadwal perawatan aset",
-    "selectLabel": "Pilih"
+    "selectLabel": "Pilih",
+    "pageTitle": "Perawatan Aset",
+    "upcoming": "Perawatan Mendatang",
+    "overdue": "Perawatan Terlambat",
+    "saveError": "Gagal menyimpan kapasitas."
   }
 }

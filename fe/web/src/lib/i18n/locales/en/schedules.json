@@ -82,5 +82,8 @@
     "generate": "Generate Schedule",
     "areaCount": "{count} Areas",
     "areaCountAriaLabel": "View {count} areas for {name}"
+  },
+  "capacity": {
+    "saveError": "Failed to save capacity."
   }
 }
