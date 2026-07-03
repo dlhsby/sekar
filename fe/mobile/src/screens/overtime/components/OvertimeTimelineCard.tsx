@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   NBCard,
@@ -82,39 +83,42 @@ interface OvertimeTimelineCardProps {
   overtime: Overtime;
 }
 
-export const OvertimeTimelineCard: React.FC<OvertimeTimelineCardProps> = ({ overtime }) => (
-  <NBCard style={styles.card}>
-    <NBCardHeader>
-      <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>RIWAYAT PENGAJUAN</NBText>
-    </NBCardHeader>
-    <NBCardContent>
-      <TimelineStep
-        done
-        label="Diajukan"
-        timestamp={formatDateTimeIndonesian(overtime.created_at)}
-        note={overtime.user?.full_name}
-        isLast={overtime.status === 'pending' && !overtime.approved_at}
-      />
-      {(overtime.status === 'approved' || overtime.status === 'rejected') && (
+export const OvertimeTimelineCard: React.FC<OvertimeTimelineCardProps> = ({ overtime }) => {
+  const { t } = useTranslation();
+  return (
+    <NBCard style={styles.card}>
+      <NBCardHeader>
+        <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>RIWAYAT PENGAJUAN</NBText>
+      </NBCardHeader>
+      <NBCardContent>
         <TimelineStep
           done
-          label={overtime.status === 'approved' ? 'Disetujui' : 'Ditolak'}
-          timestamp={overtime.approved_at ? formatDateTimeIndonesian(overtime.approved_at) : formatDateTimeIndonesian(overtime.updated_at)}
-          note={overtime.approver?.full_name}
-          isLast={overtime.status === 'rejected'}
+          label="Diajukan"
+          timestamp={formatDateTimeIndonesian(overtime.created_at)}
+          note={overtime.user?.full_name}
+          isLast={overtime.status === 'pending' && !overtime.approved_at}
         />
-      )}
-      {overtime.status === 'approved' && (
-        <TimelineStep
-          done={false}
-          label="Akan dijalankan"
-          timestamp={formatDateTimeIndonesian(overtime.start_datetime)}
-          isLast
-        />
-      )}
-    </NBCardContent>
-  </NBCard>
-);
+        {(overtime.status === 'approved' || overtime.status === 'rejected') && (
+          <TimelineStep
+            done
+            label={overtime.status === 'approved' ? t('status:approved') : t('status:rejected')}
+            timestamp={overtime.approved_at ? formatDateTimeIndonesian(overtime.approved_at) : formatDateTimeIndonesian(overtime.updated_at)}
+            note={overtime.approver?.full_name}
+            isLast={overtime.status === 'rejected'}
+          />
+        )}
+        {overtime.status === 'approved' && (
+          <TimelineStep
+            done={false}
+            label="Akan dijalankan"
+            timestamp={formatDateTimeIndonesian(overtime.start_datetime)}
+            isLast
+          />
+        )}
+      </NBCardContent>
+    </NBCard>
+  );
+};
 
 const styles = StyleSheet.create({
   card: {

@@ -63,6 +63,10 @@
       "noAssignedArea": "You have not been assigned to any area yet."
     }
   },
+  "fallbacks": {
+    "you": "You",
+    "noRayon": "No rayon"
+  },
   "coordinator": {
     "sections": {
       "attendance": "My Attendance"

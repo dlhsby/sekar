@@ -78,7 +78,7 @@ export function UserForm({
   onSubmit,
   onCancel,
   loading = false,
-  submitText = 'Simpan',
+  submitText,
   readOnly = false,
 }: UserFormProps) {
   const { t } = useTranslation();

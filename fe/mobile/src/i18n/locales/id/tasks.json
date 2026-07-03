@@ -286,5 +286,9 @@
     "activityStatusPending": "Menunggu Persetujuan",
     "activityStatusApproved": "Disetujui",
     "activityStatusRejected": "Ditolak"
+  },
+  "modal": {
+    "todayTasks": "Tugas Hari Ini ({{count}})",
+    "todayTasksEmptyMessage": "Tugas yang ditugaskan ke Anda akan muncul di sini."
   }
 }

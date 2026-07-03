@@ -14,15 +14,6 @@ export function getActivityStatusLabels(): Record<ActivityStatus, string> {
   };
 }
 
-/**
- * @deprecated Use getActivityStatusLabels() instead
- */
-export const ACTIVITY_STATUS_LABELS: Record<ActivityStatus, string> = {
-  pending: 'Menunggu',
-  approved: 'Disetujui',
-  rejected: 'Ditolak',
-};
-
 export const ACTIVITY_STATUS_BADGES: Record<ActivityStatus, 'warning' | 'success' | 'destructive'> =
   {
     pending: 'warning',

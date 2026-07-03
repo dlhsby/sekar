@@ -180,5 +180,9 @@
     "errorTitle": "Error",
     "overtimeRejectedMessage": "Lembur ditolak",
     "failedToRejectMessage": "Gagal menolak lembur"
-  }
+  },
+  "gpsCard": {
+    "header": "LOKASI GPS"
+  },
+  "dayNames": ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"]
 }

@@ -45,5 +45,8 @@
   "bell": {
     "label": "Notifikasi",
     "unreadLabel": "Notifikasi ({{count}} belum dibaca)"
+  },
+  "fcm": {
+    "channelName": "Notifikasi SEKAR"
   }
 }

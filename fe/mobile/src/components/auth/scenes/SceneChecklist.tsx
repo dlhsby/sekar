@@ -6,15 +6,9 @@
 
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { nbColors, nbBorders, nbRadius, nbShadows, nbSpacing } from '../../../constants/nbTokens';
 import { NBText } from '../../nb';
-
-const ROWS: { label: string; done: boolean; emphasis?: boolean }[] = [
-  { label: 'Patroli pintu utama', done: true },
-  { label: 'Cek lampu & CCTV', done: true },
-  { label: 'Foto laporan area', done: false, emphasis: true },
-  { label: 'Kunci pos akhir shift', done: false },
-];
 
 function ChecklistRow({ label, done, emphasis }: { label: string; done: boolean; emphasis?: boolean }): React.JSX.Element {
   return (
@@ -34,6 +28,15 @@ function ChecklistRow({ label, done, emphasis }: { label: string; done: boolean;
 }
 
 export function SceneChecklist(): React.JSX.Element {
+  const { t } = useTranslation();
+
+  const ROWS: { label: string; done: boolean; emphasis?: boolean }[] = [
+    { label: t('admin:checklist.mainDoorPatrol'), done: true },
+    { label: t('admin:checklist.checkLightsAndCctv'), done: true },
+    { label: t('admin:checklist.areaPhoto'), done: false, emphasis: true },
+    { label: t('admin:checklist.lockPostEndShift'), done: false },
+  ];
+
   return (
     <View style={styles.root}>
       <View style={styles.card}>

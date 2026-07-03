@@ -21,12 +21,6 @@ import { UserListItem } from './UserListItem';
 import type { LiveUser, LiveUsersResponse, TrackingStatus } from '@/lib/api/monitoring';
 import type { UserRole } from '@/types/models';
 
-const ROLE_CHIPS: Array<{ role: string; label: string }> = [
-  { role: 'satgas', label: 'Satgas' },
-  { role: 'linmas', label: 'Linmas' },
-  { role: 'korlap', label: 'Korlap' },
-];
-
 export interface MonitoringSidePanelProps {
   data: LiveUsersResponse | undefined;
   isLoading: boolean;
@@ -164,7 +158,11 @@ export function MonitoringSidePanel({
           role="group"
           aria-label={t('monitoring:sidePanel.roleFilter')}
         >
-          {ROLE_CHIPS.map(({ role, label }) => (
+          {[
+            { role: 'satgas', label: ROLE_LABELS.satgas },
+            { role: 'linmas', label: ROLE_LABELS.linmas },
+            { role: 'korlap', label: ROLE_LABELS.korlap },
+          ].map(({ role, label }) => (
             <button
               key={role}
               type="button"

@@ -18,6 +18,7 @@
 
 import { Platform } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
+import i18n from '../../i18n/config';
 import {
   getMessaging,
   getToken,
@@ -122,7 +123,7 @@ class FCMService {
       if (Platform.OS === 'android') {
         await notifee.createChannel({
           id: 'sekar-notifications',
-          name: 'Notifikasi SEKAR',
+          name: i18n.t('notifications:fcm.channelName'),
           importance: AndroidImportance.HIGH,
           sound: 'default',
         });

@@ -67,7 +67,7 @@ export function ExecHomeScreen(): React.JSX.Element {
     const map = new Map<string, RayonRow>();
     liveUsers.forEach((u) => {
       const key = u.rayon_id ?? u.rayon_name ?? 'unknown';
-      const name = u.rayon_name ?? 'Tanpa rayon';
+      const name = u.rayon_name ?? t('home:fallbacks.noRayon');
       const entry = map.get(key) ?? { key, name, active: 0, total: 0 };
       entry.total += 1;
       if (u.status === 'active') entry.active += 1;

@@ -137,7 +137,7 @@ export function ReportDetailScreen(): React.JSX.Element {
 
     try {
       await Share.share({
-        message: `Laporan: ${report.title}`,
+        message: t('reports:share.message', { title: report.title }),
         url: report.file_url,
         title: report.title,
       });

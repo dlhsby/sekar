@@ -63,6 +63,10 @@
       "noAssignedArea": "Anda belum ditugaskan ke area manapun."
     }
   },
+  "fallbacks": {
+    "you": "Anda",
+    "noRayon": "Tanpa rayon"
+  },
   "coordinator": {
     "sections": {
       "attendance": "Kehadiran saya"

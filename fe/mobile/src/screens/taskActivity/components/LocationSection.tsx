@@ -119,7 +119,7 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
                   : []
                 : areaOptions
             }
-            placeholder={!rayonId && !isAreaFixed ? 'Pilih rayon terlebih dahulu' : 'Pilih area...'}
+            placeholder={!rayonId && !isAreaFixed ? t('location:selector.selectRayonFirst') : t('location:selector.selectArea')}
             disabled={isAreaFixed || (!isAreaFixed && !rayonId)}
           />
         )}

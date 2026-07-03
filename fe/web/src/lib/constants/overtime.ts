@@ -14,15 +14,6 @@ export function getOvertimeStatusLabels(): Record<OvertimeStatus, string> {
   };
 }
 
-/**
- * @deprecated Use getOvertimeStatusLabels() instead
- */
-export const OVERTIME_STATUS_LABELS: Record<OvertimeStatus, string> = {
-  pending: 'Menunggu',
-  approved: 'Disetujui',
-  rejected: 'Ditolak',
-};
-
 export const OVERTIME_STATUS_BADGES: Record<OvertimeStatus, 'warning' | 'success' | 'destructive'> =
   {
     pending: 'warning',

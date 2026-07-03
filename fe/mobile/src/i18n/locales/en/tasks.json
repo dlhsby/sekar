@@ -286,5 +286,9 @@
     "activityStatusPending": "Pending Approval",
     "activityStatusApproved": "Approved",
     "activityStatusRejected": "Rejected"
+  },
+  "modal": {
+    "todayTasks": "Today's Tasks ({{count}})",
+    "todayTasksEmptyMessage": "Tasks assigned to you will appear here."
   }
 }

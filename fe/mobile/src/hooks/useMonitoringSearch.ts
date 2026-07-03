@@ -7,6 +7,7 @@
  */
 
 import { useMemo } from 'react';
+import i18n from '../i18n/config';
 import { ROLE_LABELS } from '../constants/roles';
 import type { LiveUser, RayonBoundary, UserRole } from '../types/models.types';
 
@@ -97,7 +98,7 @@ export function useMonitoringSearch(
     }
 
     const semua: SearchSection[] = [
-      { title: labels?.petugas ?? 'Petugas', type: 'petugas' as const, data: petugas },
+      { title: labels?.petugas ?? i18n.t('monitoring:search.personnelLabel'), type: 'petugas' as const, data: petugas },
       { title: labels?.area ?? 'Area', type: 'area' as const, data: area },
       { title: labels?.rayon ?? 'Rayon', type: 'rayon' as const, data: rayon },
     ].filter((s) => s.data.length > 0);

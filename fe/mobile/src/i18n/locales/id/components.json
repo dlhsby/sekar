@@ -66,5 +66,12 @@
     "modalTitleTime": "Pilih Waktu",
     "buttonCancel": "Batal",
     "buttonConfirm": "OK"
+  },
+  "characterCounter": {
+    "count": "{{current}}/{{max}} karakter"
+  },
+  "photoGrid": {
+    "photoLabelWithIndex": "{{label}} - Foto {{index}}",
+    "photoIndexOnly": "Foto {{index}} dari {{total}}"
   }
 }

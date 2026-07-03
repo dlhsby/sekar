@@ -163,6 +163,7 @@
     "withinArea": "within",
     "outsideArea": "outside",
     "openProfile": "Open Profile",
-    "defaultUser": "User"
+    "defaultUser": "User",
+    "elapsedTime": "Elapsed time: {{time}}"
   }
 }

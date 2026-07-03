@@ -4,6 +4,7 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
+import i18n from '../../../i18n/config';
 import { getMyActivities, getActivities } from '../../../services/api/activitiesApi';
 import { canMonitor } from '../../../constants/roles';
 import type { Activity, User } from '../../../types/models.types';
@@ -87,7 +88,7 @@ export function useActivitiesFetching(options: UseActivitiesFetchingOptions): Us
       if (__DEV__) {
         console.warn('Failed to fetch activities');
       }
-      setActivitiesError('Gagal memuat aktivitas. Silakan coba lagi.');
+      setActivitiesError(i18n.t('activities:tab.loadError'));
     } finally {
       setLoadingActivities(false);
       setIsLoadingMoreActivities(false);

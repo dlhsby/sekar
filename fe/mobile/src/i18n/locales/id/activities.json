@@ -198,6 +198,7 @@
   },
   "tab": {
     "loadTypesError": "Gagal memuat jenis aktivitas",
+    "loadError": "Gagal memuat aktivitas. Silakan coba lagi.",
     "tabEmptyTitle": "Belum ada aktivitas",
     "tabEmptyDescription": "Aktivitas yang Anda buat akan muncul di sini"
   }

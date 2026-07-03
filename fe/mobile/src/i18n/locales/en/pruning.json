@@ -355,5 +355,11 @@
     "treeUnit": "trees",
     "photoUnit": "photos",
     "cardAccessibility": "Request details {{code}}"
+  },
+  "submitNotes": {
+    "placeholder": "Additional notes for admin reviewer"
+  },
+  "photosSection": {
+    "title": "LOCATION PHOTOS"
   }
 }

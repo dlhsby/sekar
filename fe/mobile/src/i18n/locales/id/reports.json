@@ -102,5 +102,8 @@
     "processing": "Sedang Diproses",
     "completed": "Selesai",
     "failed": "Gagal"
+  },
+  "share": {
+    "message": "Laporan: {{title}}"
   }
 }

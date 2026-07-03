@@ -4,36 +4,45 @@
  */
 
 import type { OvertimeStatus } from '@/types/models';
-import { OVERTIME_STATUS_LABELS, OVERTIME_STATUS_BADGES } from '../overtime';
+import { getOvertimeStatusLabels, OVERTIME_STATUS_BADGES } from '../overtime';
 
 describe('Overtime Constants', () => {
-  describe('OVERTIME_STATUS_LABELS', () => {
+  describe('getOvertimeStatusLabels', () => {
     it('should have labels for all 3 overtime statuses', () => {
-      expect(Object.keys(OVERTIME_STATUS_LABELS)).toHaveLength(3);
+      const labels = getOvertimeStatusLabels();
+      expect(Object.keys(labels)).toHaveLength(3);
     });
 
-    it('should have correct Indonesian label for pending', () => {
-      expect(OVERTIME_STATUS_LABELS.pending).toBe('Menunggu');
+    it('should have label for pending status', () => {
+      const labels = getOvertimeStatusLabels();
+      expect(labels.pending).toBeDefined();
+      expect(typeof labels.pending).toBe('string');
     });
 
-    it('should have correct Indonesian label for approved', () => {
-      expect(OVERTIME_STATUS_LABELS.approved).toBe('Disetujui');
+    it('should have label for approved status', () => {
+      const labels = getOvertimeStatusLabels();
+      expect(labels.approved).toBeDefined();
+      expect(typeof labels.approved).toBe('string');
     });
 
-    it('should have correct Indonesian label for rejected', () => {
-      expect(OVERTIME_STATUS_LABELS.rejected).toBe('Ditolak');
+    it('should have label for rejected status', () => {
+      const labels = getOvertimeStatusLabels();
+      expect(labels.rejected).toBeDefined();
+      expect(typeof labels.rejected).toBe('string');
     });
 
     it('should cover all OvertimeStatus values', () => {
       const statuses: OvertimeStatus[] = ['pending', 'approved', 'rejected'];
+      const labels = getOvertimeStatusLabels();
       statuses.forEach((status) => {
-        expect(OVERTIME_STATUS_LABELS[status]).toBeDefined();
-        expect(typeof OVERTIME_STATUS_LABELS[status]).toBe('string');
+        expect(labels[status]).toBeDefined();
+        expect(typeof labels[status]).toBe('string');
       });
     });
 
     it('should have non-empty labels', () => {
-      Object.values(OVERTIME_STATUS_LABELS).forEach((label) => {
+      const labels = getOvertimeStatusLabels();
+      Object.values(labels).forEach((label) => {
         expect(label.length).toBeGreaterThan(0);
       });
     });
@@ -73,15 +82,17 @@ describe('Overtime Constants', () => {
 
   describe('Label and Badge Consistency', () => {
     it('should have matching keys between labels and badges', () => {
-      const labelKeys = Object.keys(OVERTIME_STATUS_LABELS);
+      const labels = getOvertimeStatusLabels();
+      const labelKeys = Object.keys(labels);
       const badgeKeys = Object.keys(OVERTIME_STATUS_BADGES);
       expect(labelKeys.sort()).toEqual(badgeKeys.sort());
     });
 
     it('should provide both label and badge for each status', () => {
       const statuses: OvertimeStatus[] = ['pending', 'approved', 'rejected'];
+      const labels = getOvertimeStatusLabels();
       statuses.forEach((status) => {
-        expect(OVERTIME_STATUS_LABELS[status]).toBeDefined();
+        expect(labels[status]).toBeDefined();
         expect(OVERTIME_STATUS_BADGES[status]).toBeDefined();
       });
     });
@@ -90,7 +101,8 @@ describe('Overtime Constants', () => {
   describe('Type Safety', () => {
     it('should enforce OvertimeStatus type for labels', () => {
       const status: OvertimeStatus = 'pending';
-      const label = OVERTIME_STATUS_LABELS[status];
+      const labels = getOvertimeStatusLabels();
+      const label = labels[status];
       expect(typeof label).toBe('string');
     });
 

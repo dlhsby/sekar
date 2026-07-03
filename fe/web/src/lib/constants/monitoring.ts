@@ -42,17 +42,6 @@ export function getStatusLabels(): Record<TrackingStatus, string> {
   };
 }
 
-/**
- * @deprecated Use getStatusLabels() instead
- */
-export const STATUS_LABELS: Record<TrackingStatus, string> = {
-  active: 'Aktif',
-  inactive: 'Idle',
-  outside_area: 'Di Luar Area',
-  missing: 'Tidak Terdeteksi',
-  offline: 'Offline',
-};
-
 // Lucide icon names per status for color-blind accessibility
 export const STATUS_ICON_NAMES: Record<TrackingStatus, string> = {
   active: 'check-circle',
@@ -159,18 +148,6 @@ export const ROLE_ABBREVIATIONS: Record<string, string> = {
   superadmin: 'SA',
 };
 
-// Full role labels for expanded marker labels
-export const ROLE_FULL_LABELS: Record<string, string> = {
-  satgas: 'Satgas',
-  linmas: 'Linmas',
-  korlap: 'Korlap',
-  kepala_rayon: 'Kepala Rayon',
-  top_management: 'Top Mgmt',
-  admin_system: 'Admin',
-  admin_data: 'Admin Data',
-  superadmin: 'Superadmin',
-};
-
 // Polygon styles for boundary layers
 export const POLYGON_STYLES = {
   rayon: {
@@ -196,15 +173,6 @@ export function getDayTypeLabels(): Record<string, { label: string; color: strin
     holiday: { label: i18n.t('status:dayType.holiday'), color: '#DC2626', bg: '#FEE2E2' },
   };
 }
-
-/**
- * @deprecated Use getDayTypeLabels() instead
- */
-export const DAY_TYPE_LABELS: Record<string, { label: string; color: string; bg: string }> = {
-  weekday: { label: 'Hari Kerja', color: '#15803D', bg: '#DCFCE7' },
-  weekend: { label: 'Akhir Pekan', color: '#D97706', bg: '#FEF3C7' },
-  holiday: { label: 'Hari Libur', color: '#DC2626', bg: '#FEE2E2' },
-};
 
 // Status severity order (most severe first) for sorting
 export const STATUS_SEVERITY_ORDER: TrackingStatus[] = [

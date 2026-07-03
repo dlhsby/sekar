@@ -102,5 +102,8 @@
     "processing": "Processing",
     "completed": "Completed",
     "failed": "Failed"
+  },
+  "share": {
+    "message": "Report: {{title}}"
   }
 }

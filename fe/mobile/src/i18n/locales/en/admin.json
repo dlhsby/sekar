@@ -1,1 +1,18 @@
-{}
+{
+  "checklist": {
+    "areaPhoto": "Area report photo",
+    "setupLocation": "Setup location",
+    "setupSchedule": "Setup schedule",
+    "setupArea": "Setup area",
+    "mainDoorPatrol": "Patrol main door",
+    "checkLightsAndCctv": "Check lights & CCTV",
+    "lockPostEndShift": "Lock post at end of shift"
+  },
+  "permissions": {
+    "backgroundLocation": "Background location",
+    "camera": "Camera",
+    "photoLibrary": "Photo library",
+    "microphone": "Microphone",
+    "notification": "Notifications"
+  }
+}

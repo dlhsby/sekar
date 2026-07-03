@@ -163,6 +163,7 @@
     "withinArea": "dalam",
     "outsideArea": "luar",
     "openProfile": "Buka Profil",
-    "defaultUser": "Pengguna"
+    "defaultUser": "Pengguna",
+    "elapsedTime": "Waktu berjalan: {{time}}"
   }
 }

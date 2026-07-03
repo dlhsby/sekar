@@ -66,5 +66,12 @@
     "modalTitleTime": "Select Time",
     "buttonCancel": "Cancel",
     "buttonConfirm": "OK"
+  },
+  "characterCounter": {
+    "count": "{{current}}/{{max}} characters"
+  },
+  "photoGrid": {
+    "photoLabelWithIndex": "{{label}} - Photo {{index}}",
+    "photoIndexOnly": "Photo {{index}} of {{total}}"
   }
 }

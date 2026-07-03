@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   NBCard,
@@ -26,6 +27,7 @@ interface OvertimeGpsCardProps {
 }
 
 export const OvertimeGpsCard: React.FC<OvertimeGpsCardProps> = ({ gpsLat, gpsLng }) => {
+  const { t } = useTranslation();
   if (gpsLat == null || gpsLng == null) return null;
 
   return (
@@ -33,7 +35,7 @@ export const OvertimeGpsCard: React.FC<OvertimeGpsCardProps> = ({ gpsLat, gpsLng
       <NBCardHeader>
         <View style={styles.sectionHeaderRow}>
           <MaterialCommunityIcons name="map-marker-outline" size={14} color={nbColors.gray700} style={{ marginRight: nbSpacing.xs }} />
-          <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>LOKASI GPS</NBText>
+          <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>{t('overtime:gpsCard.header')}</NBText>
         </View>
       </NBCardHeader>
       <NBCardContent>

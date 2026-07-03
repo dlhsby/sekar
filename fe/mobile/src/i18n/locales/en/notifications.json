@@ -45,5 +45,8 @@
   "bell": {
     "label": "Notifications",
     "unreadLabel": "Notifications ({{count}} unread)"
+  },
+  "fcm": {
+    "channelName": "SEKAR Notifications"
   }
 }

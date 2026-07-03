@@ -198,6 +198,7 @@
   },
   "tab": {
     "loadTypesError": "Failed to load activity types",
+    "loadError": "Failed to load activities. Please try again.",
     "tabEmptyTitle": "No activities yet",
     "tabEmptyDescription": "Activities you create will appear here"
   }

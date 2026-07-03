@@ -355,5 +355,11 @@
     "treeUnit": "pohon",
     "photoUnit": "foto",
     "cardAccessibility": "Detail permohonan {{code}}"
+  },
+  "submitNotes": {
+    "placeholder": "Catatan tambahan untuk admin reviewer"
+  },
+  "photosSection": {
+    "title": "FOTO LOKASI"
   }
 }

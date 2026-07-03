@@ -180,5 +180,9 @@
     "errorTitle": "Error",
     "overtimeRejectedMessage": "Overtime rejected",
     "failedToRejectMessage": "Failed to reject overtime"
-  }
+  },
+  "gpsCard": {
+    "header": "GPS LOCATION"
+  },
+  "dayNames": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 }

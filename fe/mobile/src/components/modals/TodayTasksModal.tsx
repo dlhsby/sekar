@@ -26,23 +26,23 @@ export function TodayTasksModal({
   tasks,
   onTaskPress,
 }: TodayTasksModalProps): React.JSX.Element {
-  const { t } = useTranslation('common');
+  const { t } = useTranslation();
 
   return (
     <NBModal
       visible={visible}
       onClose={onClose}
-      title={`Tugas Hari Ini (${tasks.length})`}
+      title={t('tasks:modal.todayTasks', { count: tasks.length })}
       type="sheet"
       testID="today-tasks-modal"
     >
       {tasks.length === 0 ? (
         <View style={styles.empty}>
           <NBText variant="h3" color="gray600" align="center">
-            {t('ui.noActiveTasksToday')}
+            {t('common:ui.noActiveTasksToday')}
           </NBText>
           <NBText variant="body-sm" color="gray500" align="center" style={styles.emptySub}>
-            Tugas yang ditugaskan ke Anda akan muncul di sini.
+            {t('tasks:modal.todayTasksEmptyMessage')}
           </NBText>
         </View>
       ) : (

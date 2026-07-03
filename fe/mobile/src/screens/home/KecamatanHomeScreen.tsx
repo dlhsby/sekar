@@ -95,7 +95,7 @@ export function KecamatanHomeScreen(): React.JSX.Element {
     [list]
   );
 
-  const firstName = (user?.full_name ?? '').split(/\s+/)[0] || 'Anda';
+  const firstName = (user?.full_name ?? '').split(/\s+/)[0] || t('home:fallbacks.you');
 
   const goToSubmit = useCallback(() => {
     navigation.navigate('PerantinganSubmit');

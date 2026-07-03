@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   NBCard,
   NBCardContent,
@@ -27,6 +28,7 @@ const styles = {
 };
 
 export function SubmitNotesCard(props: SubmitNotesCardProps) {
+  const { t } = useTranslation();
   const { notes, setNotes } = props;
 
   return (
@@ -36,7 +38,7 @@ export function SubmitNotesCard(props: SubmitNotesCardProps) {
       </NBCardHeader>
       <NBCardContent>
         <NBTextInput
-          placeholder="Catatan tambahan untuk admin reviewer"
+          placeholder={t('pruning:submitNotes.placeholder')}
           value={notes}
           onChangeText={setNotes}
           multiline

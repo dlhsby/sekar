@@ -51,5 +51,9 @@
     "later": "Later",
     "openSettings": "Open Settings"
   },
-  "checkStatusFailed": "Failed to check location status"
+  "checkStatusFailed": "Failed to check location status",
+  "selector": {
+    "selectRayonFirst": "Select a rayon first",
+    "selectArea": "Select area..."
+  }
 }
