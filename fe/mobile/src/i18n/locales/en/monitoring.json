@@ -1,4 +1,9 @@
 {
+  "page": {
+    "backLabel": "Back",
+    "modeSummary": "Summary",
+    "modeAllWorkers": "All Officers"
+  },
   "screen": {
     "title": "Monitoring",
     "loading": "Loading map...",

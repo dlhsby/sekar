@@ -7,7 +7,7 @@
  * Phase 3 M1-R: Refactored for composition with extracted hooks and components.
  */
 
-import React, { useRef, useState, useCallback, useEffect } from 'react';
+import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { View, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
@@ -34,8 +34,20 @@ import { getRoleIcon, SURABAYA_CITY_REGION } from '../../utils/mapUtils';
 import { userAxes } from '../../utils/statusHelpers';
 import { useMapAutoFocus } from '../../hooks/useMapAutoFocus';
 import type { RayonBoundary, AreaBoundary } from '../../types/models.types';
-import { toggleLayer } from '../../store/slices/monitoringV2Slice';
-import type { MonitoringV2VisibleLayers } from '../../store/slices/monitoringV2Slice';
+import {
+  toggleLayer,
+  fetchAggregate,
+  setMode,
+  initMonitoringView,
+  drillTo,
+  drillBack,
+} from '../../store/slices/monitoringV2Slice';
+import type {
+  MonitoringV2VisibleLayers,
+  MonitoringScope,
+  MonitoringMode,
+} from '../../store/slices/monitoringV2Slice';
+import type { AggregateNode } from '../../types/models.types';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import {
@@ -65,6 +77,10 @@ export function MapDashboardScreen(): React.JSX.Element {
     useSelector((state: RootState) => state.monitoring);
   const currentUser = useSelector((state: RootState) => state.auth.user);
   const visibleLayers = useSelector((state: RootState) => state.monitoringV2.visibleLayers);
+  const mode = useSelector((state: RootState) => state.monitoringV2.mode);
+  const view = useSelector((state: RootState) => state.monitoringV2.view);
+  const floor = useSelector((state: RootState) => state.monitoringV2.floor);
+  const aggregate = useSelector((state: RootState) => state.monitoringV2.aggregate);
 
   // Local UI state
   const [mapReady, setMapReady] = useState(false);
@@ -96,11 +112,50 @@ export function MapDashboardScreen(): React.JSX.Element {
     useLiveUsersFiltering(liveUsers, activityFilter, filters, visibleLayers, currentRegion, boundaries);
 
 
-  // Fetch users on mount and filter changes
+  // Initialise the aggregate-first drill view + floor from the viewer's role.
   useEffect(() => {
-    void fetchLiveUsersWithFilters(filters);
+    if (!currentUser) return;
+    const role = currentUser.role;
+    let payload: { view: typeof view; floor: MonitoringScope; mode: MonitoringMode };
+    if (role === 'korlap' && currentUser.area_id) {
+      payload = {
+        view: { scope: 'area', id: currentUser.area_id, rayonId: currentUser.rayon_id ?? null, name: null },
+        floor: 'area',
+        mode: 'workers',
+      };
+    } else if ((role === 'kepala_rayon' || role === 'admin_data') && currentUser.rayon_id) {
+      payload = {
+        view: { scope: 'rayon', id: currentUser.rayon_id, rayonId: currentUser.rayon_id, name: null },
+        floor: 'rayon',
+        mode: 'aggregate',
+      };
+    } else {
+      payload = { view: { scope: 'city', id: null, rayonId: null, name: null }, floor: 'city', mode: 'aggregate' };
+    }
+    dispatch(initMonitoringView(payload));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters]);
+  }, [currentUser?.id]);
+
+  // Aggregate ("Ringkasan") fetch — only when showing bubbles for city/rayon.
+  useEffect(() => {
+    if (mode === 'aggregate' && (view.scope === 'city' || view.scope === 'rayon')) {
+      void dispatch(
+        fetchAggregate({ scope: view.scope, id: view.scope === 'rayon' ? view.id ?? undefined : undefined }),
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, view.scope, view.id]);
+
+  // Fetch workers only in "Semua Petugas" / area-scope mode (aggregate view is
+  // light and never draws individual workers). Also re-runs on filter changes.
+  useEffect(() => {
+    if (mode === 'workers') {
+      void fetchLiveUsersWithFilters(
+        view.scope === 'area' && view.id ? { ...filters, area_id: view.id } : filters,
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, view.scope, view.id, filters]);
 
   // Focus effect: refresh all data and remount boundary overlays
   useFocusEffect(
@@ -215,6 +270,19 @@ export function MapDashboardScreen(): React.JSX.Element {
     [dispatch],
   );
 
+  // Aggregate-first drill handlers
+  const aggregateNodes = useMemo<AggregateNode[]>(() => aggregate?.nodes ?? [], [aggregate]);
+  const handleDrillNode = useCallback(
+    (node: AggregateNode) => {
+      dispatch(drillTo({ id: node.id, type: node.type, name: node.name, rayonId: node.rayon_id ?? null }));
+    },
+    [dispatch],
+  );
+  const handleSetMode = useCallback((m: MonitoringMode) => dispatch(setMode(m)), [dispatch]);
+  const handleDrillBack = useCallback(() => dispatch(drillBack()), [dispatch]);
+  const canToggleMode = view.scope !== 'area';
+  const canDrillBack = view.scope !== floor;
+
   if (isLoading && (!liveUsers || liveUsers.length === 0)) {
     return (
       <NBBackgroundPattern
@@ -293,6 +361,9 @@ export function MapDashboardScreen(): React.JSX.Element {
                 useClustering={useClustering}
                 currentRegion={currentRegion}
                 boundaryKey={boundaryKey}
+                mode={mode}
+                aggregateNodes={aggregateNodes}
+                onDrillNode={handleDrillNode}
                 onRayonPress={handleRayonPress}
                 onAreaPress={handleAreaPress}
                 onMarkerPress={handleMarkerPress}
@@ -304,6 +375,47 @@ export function MapDashboardScreen(): React.JSX.Element {
           {/* Floating search bar — opens the fullscreen search modal */}
           <View style={styles.searchBarOverlay} pointerEvents="box-none">
             <MonitoringSearchBar onPress={() => setSearchModalVisible(true)} />
+          </View>
+
+          {/* Drill breadcrumb + Ringkasan / Semua Petugas toggle */}
+          <View style={styles.drillBar} pointerEvents="box-none">
+            {canDrillBack && (
+              <TouchableOpacity
+                style={styles.backChip}
+                onPress={handleDrillBack}
+                accessibilityRole="button"
+                accessibilityLabel={t('monitoring:page.backLabel')}
+              >
+                <MaterialCommunityIcons name="chevron-left" size={18} color={nbColors.black} />
+                <NBText variant="caption" numberOfLines={1} style={styles.backChipText}>
+                  {view.name ?? t('monitoring:page.backLabel')}
+                </NBText>
+              </TouchableOpacity>
+            )}
+            {canToggleMode && (
+              <View style={styles.modeToggle}>
+                <TouchableOpacity
+                  style={[styles.modeBtn, mode === 'aggregate' && styles.modeBtnActive]}
+                  onPress={() => handleSetMode('aggregate')}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('monitoring:page.modeSummary')}
+                >
+                  <NBText variant="caption" style={mode === 'aggregate' ? styles.modeTextActive : undefined}>
+                    {t('monitoring:page.modeSummary')}
+                  </NBText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modeBtn, mode === 'workers' && styles.modeBtnActive]}
+                  onPress={() => handleSetMode('workers')}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('monitoring:page.modeAllWorkers')}
+                >
+                  <NBText variant="caption" style={mode === 'workers' ? styles.modeTextActive : undefined}>
+                    {t('monitoring:page.modeAllWorkers')}
+                  </NBText>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
           {/* Empty-boundaries warning */}
@@ -400,6 +512,54 @@ const styles = StyleSheet.create({
     top: nbSpacing.sm,
     left: nbSpacing.sm,
     right: nbSpacing.sm,
+  },
+  drillBar: {
+    position: 'absolute',
+    top: 64,
+    left: nbSpacing.sm,
+    right: nbSpacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: nbSpacing.sm,
+  },
+  backChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    maxWidth: '55%',
+    paddingVertical: nbSpacing.xs,
+    paddingHorizontal: nbSpacing.sm,
+    backgroundColor: nbColors.white,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.base,
+    ...nbShadows.xs,
+  },
+  backChipText: {
+    color: nbColors.black,
+    flexShrink: 1,
+  },
+  modeToggle: {
+    flexDirection: 'row',
+    marginLeft: 'auto',
+    padding: 2,
+    backgroundColor: nbColors.white,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.base,
+    ...nbShadows.xs,
+  },
+  modeBtn: {
+    paddingVertical: nbSpacing.xs,
+    paddingHorizontal: nbSpacing.sm,
+    borderRadius: nbRadius.sm,
+  },
+  modeBtnActive: {
+    backgroundColor: nbColors.primary,
+  },
+  modeTextActive: {
+    color: nbColors.black,
+    fontWeight: '700',
   },
   emptyAreaCallout: {
     position: 'absolute',

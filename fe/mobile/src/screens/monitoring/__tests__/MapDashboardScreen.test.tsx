@@ -130,6 +130,11 @@ jest.mock('../../../components/monitoring/MonitoringSearchBar', () => ({
 }));
 jest.mock('../../../store/slices/monitoringV2Slice', () => ({
   toggleLayer: jest.fn((l: any) => ({ type: 'monitoringV2/toggleLayer', payload: l })),
+  fetchAggregate: jest.fn(() => ({ type: 'monitoringV2/fetchAggregate' })),
+  setMode: jest.fn((m: any) => ({ type: 'monitoringV2/setMode', payload: m })),
+  initMonitoringView: jest.fn((p: any) => ({ type: 'monitoringV2/initMonitoringView', payload: p })),
+  drillTo: jest.fn((p: any) => ({ type: 'monitoringV2/drillTo', payload: p })),
+  drillBack: jest.fn(() => ({ type: 'monitoringV2/drillBack' })),
 }));
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -182,6 +187,11 @@ jest.mock('react-redux', () => ({
         loading: false,
         error: null,
         snapshot: { scope: 'city', scope_id: null, workers: [], generated_at: null },
+        mode: 'workers',
+        view: { scope: 'area', id: 'area-1', rayonId: null, name: null },
+        floor: 'area',
+        aggregate: null,
+        aggregateLoading: false,
       },
     }),
 }));

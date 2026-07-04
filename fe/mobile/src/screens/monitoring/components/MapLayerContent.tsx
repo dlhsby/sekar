@@ -12,8 +12,12 @@ import { AreaStatusOverlay } from '../../../components/monitoring/AreaStatusOver
 import { PlantOverlayLayer } from '../../../components/monitoring/PlantOverlayLayer';
 import { BoundaryOverlay } from '../../../components/monitoring/BoundaryOverlay';
 import { UserMarker, type LabelMode } from '../../../components/monitoring/UserMarker';
-import type { LiveUser } from '../../../types/models.types';
-import type { MonitoringV2VisibleLayers } from '../../../store/slices/monitoringV2Slice';
+import { AggregateBubbleLayer } from '../../../components/monitoring/AggregateBubbleLayer';
+import type { LiveUser, AggregateNode } from '../../../types/models.types';
+import type {
+  MonitoringV2VisibleLayers,
+  MonitoringMode,
+} from '../../../store/slices/monitoringV2Slice';
 
 interface MapLayerContentProps {
   mapReady: boolean;
@@ -26,6 +30,10 @@ interface MapLayerContentProps {
   useClustering: boolean;
   currentRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
   boundaryKey: number;
+  /** Aggregate-first flow: 'aggregate' → summary bubbles, 'workers' → worker markers. */
+  mode: MonitoringMode;
+  aggregateNodes: AggregateNode[];
+  onDrillNode: (node: AggregateNode) => void;
   onRayonPress: (rayon: any) => void;
   onAreaPress: (area: any) => void;
   onMarkerPress: (user: LiveUser) => void;
@@ -43,6 +51,9 @@ export function MapLayerContent({
   useClustering,
   currentRegion,
   boundaryKey,
+  mode,
+  aggregateNodes,
+  onDrillNode,
   onRayonPress,
   onAreaPress,
   onMarkerPress,
@@ -76,8 +87,14 @@ export function MapLayerContent({
         <PlantOverlayLayer visible={visibleLayers.plants} />
       )}
 
-      {/* User markers — Phase 3: ClusteredUserMarkers when flag enabled */}
-      {featureFlags.clusterMarkersV2 ? (
+      {/* Aggregate "Ringkasan" bubbles — one per rayon/area, drill on tap. */}
+      {mapReady && mode === 'aggregate' && (
+        <AggregateBubbleLayer nodes={aggregateNodes} onDrill={onDrillNode} />
+      )}
+
+      {/* Worker markers only in "Semua Petugas" / area-scope mode. */}
+      {mode === 'workers' &&
+        (featureFlags.clusterMarkersV2 ? (
         <ClusteredUserMarkers
           workers={visibleUsers}
           zoom={currentRegion.latitudeDelta}
@@ -125,7 +142,7 @@ export function MapLayerContent({
             );
           })}
         </>
-      )}
+        ))}
     </>
   );
 }
