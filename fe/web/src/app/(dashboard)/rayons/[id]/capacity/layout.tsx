@@ -1,10 +1,10 @@
 import { ReactNode } from 'react';
 import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/i18n/server-metadata';
 
-export const metadata: Metadata = {
-  title: 'Kapasitas Layanan · SEKAR',
-  description: 'Kalender kapasitas layanan mingguan per rayon di SEKAR',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata('capacity');
+}
 
 export default function CapacityLayout({ children }: { children: ReactNode }) {
   return children;

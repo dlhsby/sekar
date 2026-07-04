@@ -4,6 +4,8 @@ import './globals.css';
 import { Providers } from './providers';
 import { OfflineBanner } from '@/components/pwa/OfflineBanner';
 import { UpdateToast } from '@/components/pwa/UpdateToast';
+import { resolveServerLang } from '@/lib/i18n/server-metadata';
+import { PAGE_METADATA } from '@/lib/i18n/page-metadata';
 
 const inter = Inter({
   subsets: ['latin', 'latin-ext'],
@@ -29,52 +31,54 @@ const jetbrainsMono = JetBrains_Mono({
 // flag — otherwise staging (FEATURE_PWA=false) still shows an install prompt.
 const pwaEnabled = process.env.NEXT_PUBLIC_FEATURE_PWA === 'true';
 
-export const metadata: Metadata = {
-  // Resolves relative OG/Twitter image URLs (e.g. /og-image.png) against the
-  // real site origin instead of Next's localhost:3000 default.
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://sekar.wahyutrip.com'),
-  title: {
-    template: '%s · SEKAR',
-    default: 'SEKAR - Sistem Evaluasi Kinerja Satgas RTH',
-  },
-  description:
-    'Platform monitoring dan evaluasi kinerja satgas RTH DLH Kota Surabaya. Pelacakan GPS real-time, manajemen tugas, jadwal shift, dan laporan aktivitas untuk pengelolaan taman dan ruang hijau.',
-  keywords: ['SEKAR', 'DLH Surabaya', 'Worker Tracking', 'RTH', 'Park Management', 'Satgas', 'Monitoring'],
-  authors: [{ name: 'DLH Surabaya' }],
-  // Only advertise the manifest when PWA is enabled — its mere presence makes
-  // the page installable in Chromium (SW not required).
-  ...(pwaEnabled ? { manifest: '/manifest.webmanifest' } : {}),
-  robots: {
-    index: false,
-    follow: false,
-  },
-  openGraph: {
-    title: 'SEKAR - Sistem Evaluasi Kinerja Satgas RTH',
-    description:
-      'Platform monitoring dan evaluasi kinerja satgas RTH DLH Kota Surabaya',
-    type: 'website',
-    locale: 'id_ID',
-    siteName: 'SEKAR',
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'SEKAR Dashboard',
-      },
-    ],
-  },
-  // iOS add-to-home-screen affordance — also gated by the PWA flag.
-  ...(pwaEnabled
-    ? {
-        appleWebApp: {
-          capable: true,
-          statusBarStyle: 'black-translucent' as const,
-          title: 'SEKAR',
+export async function generateMetadata(): Promise<Metadata> {
+  const lang = await resolveServerLang();
+  const m = PAGE_METADATA[lang].root;
+  return {
+    // Resolves relative OG/Twitter image URLs (e.g. /og-image.png) against the
+    // real site origin instead of Next's localhost:3000 default.
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://sekar.wahyutrip.com'),
+    title: {
+      template: '%s · SEKAR',
+      default: m.title,
+    },
+    description: m.description,
+    keywords: ['SEKAR', 'DLH Surabaya', 'Worker Tracking', 'RTH', 'Park Management', 'Satgas', 'Monitoring'],
+    authors: [{ name: 'DLH Surabaya' }],
+    // Only advertise the manifest when PWA is enabled — its mere presence makes
+    // the page installable in Chromium (SW not required).
+    ...(pwaEnabled ? { manifest: '/manifest.webmanifest' } : {}),
+    robots: {
+      index: false,
+      follow: false,
+    },
+    openGraph: {
+      title: m.title,
+      description: m.description,
+      type: 'website',
+      locale: m.ogLocale,
+      siteName: 'SEKAR',
+      images: [
+        {
+          url: '/og-image.png',
+          width: 1200,
+          height: 630,
+          alt: 'SEKAR Dashboard',
         },
-      }
-    : {}),
-};
+      ],
+    },
+    // iOS add-to-home-screen affordance — also gated by the PWA flag.
+    ...(pwaEnabled
+      ? {
+          appleWebApp: {
+            capable: true,
+            statusBarStyle: 'black-translucent' as const,
+            title: 'SEKAR',
+          },
+        }
+      : {}),
+  };
+}
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -82,13 +86,14 @@ export const viewport: Viewport = {
   themeColor: '#1A4D2E',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const lang = await resolveServerLang();
   return (
-    <html lang="id" suppressHydrationWarning>
+    <html lang={lang} suppressHydrationWarning>
       <head>
         {pwaEnabled && <link rel="apple-touch-icon" href="/apple-icon.png" />}
         {/* Apply the saved theme before first paint to avoid a flash of the

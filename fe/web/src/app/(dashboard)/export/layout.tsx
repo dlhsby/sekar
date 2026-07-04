@@ -1,10 +1,10 @@
 import { ReactNode } from 'react';
 import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/i18n/server-metadata';
 
-export const metadata: Metadata = {
-  title: 'Export Data · SEKAR',
-  description: 'Export data dari SEKAR dalam format CSV atau XLSX',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata('export');
+}
 
 export default function ExportLayout({ children }: { children: ReactNode }) {
   return children;

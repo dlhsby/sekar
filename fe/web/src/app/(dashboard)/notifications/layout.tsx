@@ -1,10 +1,10 @@
 import { ReactNode } from 'react';
 import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/i18n/server-metadata';
 
-export const metadata: Metadata = {
-  title: 'Notifikasi · SEKAR',
-  description: 'Lihat notifikasi dan pembaruan SEKAR Anda',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata('notifications');
+}
 
 export default function NotificationsLayout({ children }: { children: ReactNode }) {
   return children;

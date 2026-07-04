@@ -1,24 +1,12 @@
 import { ReactNode } from 'react';
 import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/i18n/server-metadata';
 import { SekarMark } from '@/components/brand/SekarMark';
 import { KecamatanNav } from '@/components/layout/KecamatanNav';
 
-export const metadata: Metadata = {
-  title: 'SEKAR — Portal Kecamatan',
-  description: 'Portal pengajuan permintaan pemotongan pohon kepada DLH Kota Surabaya',
-  robots: {
-    index: false,
-    follow: false,
-  },
-  openGraph: {
-    title: 'SEKAR — Portal Kecamatan',
-    description:
-      'Portal pengajuan permintaan pemotongan pohon kepada DLH Kota Surabaya',
-    type: 'website',
-    locale: 'id_ID',
-    siteName: 'SEKAR',
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata('kecamatanPortal');
+}
 
 /**
  * Kecamatan layout
