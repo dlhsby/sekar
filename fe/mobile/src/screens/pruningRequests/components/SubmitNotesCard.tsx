@@ -34,7 +34,7 @@ export function SubmitNotesCard(props: SubmitNotesCardProps) {
   return (
     <NBCard style={styles.card}>
       <NBCardHeader>
-        <NBText variant="h3">Catatan (Opsional)</NBText>
+        <NBText variant="h3">{t("pruning:submit.notesOptional")}</NBText>
       </NBCardHeader>
       <NBCardContent>
         <NBTextInput

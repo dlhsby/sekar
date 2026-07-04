@@ -214,9 +214,7 @@ export function LocationPickerModal({
 
         {/* Hint banner — top */}
         <View style={styles.hintBanner} pointerEvents="none">
-          <NBText variant="caption" color="black" style={styles.hintText}>
-            Geser peta agar penanda jatuh di titik yang Anda inginkan.
-          </NBText>
+          <NBText variant="caption" color="black" style={styles.hintText}>{t("components:locationPicker.dragHint")}</NBText>
         </View>
 
         {/* Zoom controls — top-right floating column */}

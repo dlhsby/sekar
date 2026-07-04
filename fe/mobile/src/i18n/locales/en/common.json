@@ -208,5 +208,13 @@
     "defaultUser": "User",
     "elapsedTime": "Elapsed time: {{time}}"
   },
-  "error": "Error"
+  "error": "Error",
+  "a11y": {
+    "loadingContent": "Loading content"
+  },
+  "gradeLabel": "Grade",
+  "appError": {
+    "appCrashed": "The app encountered an unexpected error.",
+    "devDetail": "Error Detail (Development):"
+  }
 }

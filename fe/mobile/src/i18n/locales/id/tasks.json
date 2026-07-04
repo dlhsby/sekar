@@ -159,7 +159,9 @@
     "photosHeader": "FOTO BUKTI *",
     "photosSubtitle": "Tambahkan 1-3 foto hasil pekerjaan",
     "submitButton": "Selesaikan Tugas",
-    "cancelButton": "Batal"
+    "cancelButton": "Batal",
+    "areaLabel": "Area:",
+    "rayonLabel": "Rayon:"
   },
   "messages": {
     "clockInRequired": "Belum Clock In",

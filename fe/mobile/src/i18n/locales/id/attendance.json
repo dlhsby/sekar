@@ -115,7 +115,9 @@
     "selfiePreviewTitle": "Selfie Clock In",
     "startShiftWithVerification": "Mulai shift kerja dengan verifikasi lokasi",
     "startShiftOutOfArea": "Mulai shift kerja — Anda di luar area, absen tetap dicatat",
-    "endShiftNow": "Akhiri shift kerja saat ini"
+    "endShiftNow": "Akhiri shift kerja saat ini",
+    "shiftTimeLabel": "Waktu Shift:",
+    "clockInColonLabel": "Clock In:"
   },
   "gpsSection": {
     "capturingLocation": "Mendapatkan lokasi...",
@@ -151,7 +153,8 @@
   },
   "shiftCard": {
     "unknownArea": "Area tidak diketahui",
-    "detailHint": "Ketuk untuk melihat detail shift"
+    "detailHint": "Ketuk untuk melihat detail shift",
+    "shiftNumber": "Shift #{{n}}"
   },
   "workHours": {
     "titlePrefix": "Kehadiran {{date}}"

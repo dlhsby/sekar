@@ -136,14 +136,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <View style={styles.card}>
             <Text style={styles.icon}>⚠️</Text>
             <Text style={styles.title}>{i18n.t('common:ui.error')}</Text>
-            <Text style={styles.message}>
-              Aplikasi mengalami kesalahan yang tidak terduga.
-            </Text>
+            <Text style={styles.message}>{i18n.t("common:appError.appCrashed")}</Text>
 
             {/* Show error details in development */}
             {__DEV__ && (
               <View style={styles.errorDetails}>
-                <Text style={styles.errorTitle}>Detail Error (Development):</Text>
+                <Text style={styles.errorTitle}>{i18n.t("common:appError.devDetail")}</Text>
                 <Text style={styles.errorText}>{error.message}</Text>
                 {error.stack && (
                   <Text style={styles.errorStack} numberOfLines={10}>
@@ -154,7 +152,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             )}
 
             <NBButton
-              title="Coba Lagi"
+              title={i18n.t("common:actions.retry")}
               onPress={this.resetError}
               variant="primary"
               fullWidth

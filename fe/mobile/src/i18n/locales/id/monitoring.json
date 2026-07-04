@@ -264,10 +264,12 @@
     "overdueStatusLabel": "LEWAT",
     "almostStatusLabel": "HAMPIR",
     "okStatusLabel": "OK",
-    "neverPrunedLabel": "Belum pernah dipangkas"
+    "neverPrunedLabel": "Belum pernah dipangkas",
+    "treeSeparator": "{{count}} pohon ·"
   },
   "staffing": {
-    "shortBy": "(Kurang {{n}})"
+    "shortBy": "(Kurang {{n}})",
+    "short": "Kurang"
   },
   "statusSheet": {
     "staffedAreas": "{{staffed}} dari {{total}} area"
@@ -275,5 +277,16 @@
   "clusterCountAria": "{{count}} petugas",
   "statusBar": {
     "filterAria": "Filter {{label}}"
+  },
+  "userInfo": {
+    "location": "Lokasi",
+    "checkIn": "Masuk",
+    "workDuration": "Durasi kerja",
+    "locationUpdate": "Update lokasi",
+    "viewDetail": "Lihat Detail"
+  },
+  "workerTile": {
+    "outsideArea": "Luar area",
+    "gpsOff": "GPS mati"
   }
 }

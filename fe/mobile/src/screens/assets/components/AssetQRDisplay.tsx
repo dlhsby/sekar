@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Image, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBText } from '../../../components/nb';
@@ -18,6 +19,7 @@ export function AssetQRDisplay({
   qrCodeUrl,
   assetCode,
 }: AssetQRDisplayProps): React.JSX.Element {
+  const { t } = useTranslation();
   return (
     <View style={styles.container}>
       {qrCodeUrl ? (
@@ -33,9 +35,7 @@ export function AssetQRDisplay({
             size={40}
             color={nbColors.gray500}
           />
-          <NBText variant="body-sm" style={styles.placeholderText}>
-            QR tidak tersedia
-          </NBText>
+          <NBText variant="body-sm" style={styles.placeholderText}>{t("assets:qrUnavailable")}</NBText>
         </View>
       )}
       <NBText variant="caption" style={styles.code}>

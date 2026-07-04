@@ -93,7 +93,7 @@ export const OvertimeTimelineCard: React.FC<OvertimeTimelineCardProps> = ({ over
       <NBCardContent>
         <TimelineStep
           done
-          label="Diajukan"
+          label={t("overtime:timeline.submitted")}
           timestamp={formatDateTimeIndonesian(overtime.created_at)}
           note={overtime.user?.full_name}
           isLast={overtime.status === 'pending' && !overtime.approved_at}

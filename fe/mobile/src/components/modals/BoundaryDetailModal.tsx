@@ -382,7 +382,7 @@ function PlantSummaryBlock({ plants }: PlantSummaryBlockProps): React.JSX.Elemen
             <View style={styles.plantRowLeft}>
               <NBText variant="body-sm" color="black">{speciesName}</NBText>
               <NBText variant="caption" color="gray600">
-                {p.count} pohon · {lastPruned}
+                {i18n.t("monitoring:boundaryDetail.treeSeparator", { count: p.count })} {lastPruned}
               </NBText>
             </View>
             <StatusPill tone={tone} label={label} />

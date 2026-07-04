@@ -16,7 +16,8 @@
     },
     "timeDetails": "Time details",
     "resetFilterAria": "Reset {{label}} filter",
-    "filterAria": "Filter {{label}}"
+    "filterAria": "Filter {{label}}",
+    "dismissAlert": "Dismiss alert"
   },
   "nbselect": {
     "placeholder": "Select...",
@@ -63,7 +64,8 @@
     "title": "Select Location",
     "coordsLabel": "Location: {{lat}}, {{lng}}",
     "cancelButton": "Cancel",
-    "confirmButton": "Use This Location"
+    "confirmButton": "Use This Location",
+    "dragHint": "Drag the map so the marker lands on the point you want."
   },
   "locationMap": {
     "notUpdated": "Not updated",

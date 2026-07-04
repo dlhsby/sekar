@@ -85,7 +85,8 @@
     "photosHint": "Ambil foto pohon yang akan dipangkas",
     "availabilityLabel": "Ketersediaan Minggu Preferensi",
     "weekLabel": "Minggu",
-    "headerTitle": "Buat Permohonan Perantingan"
+    "headerTitle": "Buat Permohonan Perantingan",
+    "notesOptional": "Catatan (Opsional)"
   },
   "calendar": {
     "legendAvailable": "Tersedia",
@@ -149,7 +150,9 @@
     "resultsCardTitle": "Hasil Review",
     "accessDeniedTitle": "Akses Ditolak",
     "accessDeniedDesc": "Anda tidak memiliki izin untuk mengakses halaman ini.",
-    "dateLabel": "Tanggal Review"
+    "dateLabel": "Tanggal Review",
+    "reviewedBy": "Direview Oleh",
+    "notes": "Catatan Review"
   },
   "reassign": {
     "title": "Pindah Petugas",
@@ -366,5 +369,8 @@
   },
   "photosSection": {
     "title": "FOTO LOKASI"
+  },
+  "contact": {
+    "applicant": "Pemohon"
   }
 }

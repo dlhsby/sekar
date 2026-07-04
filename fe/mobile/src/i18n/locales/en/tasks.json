@@ -159,7 +159,9 @@
     "photosHeader": "PROOF PHOTOS *",
     "photosSubtitle": "Add 1-3 photos of the work",
     "submitButton": "Complete Task",
-    "cancelButton": "Cancel"
+    "cancelButton": "Cancel",
+    "areaLabel": "Area:",
+    "rayonLabel": "Rayon:"
   },
   "messages": {
     "clockInRequired": "Not Clocked In",

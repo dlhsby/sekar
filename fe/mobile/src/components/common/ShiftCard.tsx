@@ -55,7 +55,7 @@ export function ShiftCard({
       <View style={styles.header}>
         <StatusPill dot tone={isActive ? 'ok' : 'neutral'} label={isActive ? t('status:active') : t('status:completed')} />
         {shiftNumber ? (
-          <NBText variant="mono-sm" color="gray500" style={styles.rightText}>Shift #{shiftNumber}</NBText>
+          <NBText variant="mono-sm" color="gray500" style={styles.rightText}>{t("attendance:shiftCard.shiftNumber", { n: shiftNumber })}</NBText>
         ) : null}
       </View>
 

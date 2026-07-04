@@ -126,8 +126,7 @@ export function StaffingSummarySection({
                   ) : (
                     <View style={styles.shortageLabel}>
                       <MaterialCommunityIcons name="alert" size={12} color={nbColors.dangerDark} />
-                      <Text style={styles.shortageLabelText}>
-                        Kurang {item.roles.reduce((s, r) => s + Math.max(0, r.total_required - r.active), 0)}
+                      <Text style={styles.shortageLabelText}>{t("monitoring:staffing.short")} {item.roles.reduce((s, r) => s + Math.max(0, r.total_required - r.active), 0)}
                       </Text>
                     </View>
                   )}

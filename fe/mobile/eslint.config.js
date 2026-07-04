@@ -65,6 +65,8 @@ module.exports = [
       // Phase 3 M1-R 3-R1 — design-token discipline (ADR-036)
       'sekar-design/no-inline-hex-colors': 'error',
       'sekar-design/rn-no-shadow-radius': 'error',
+      // i18n discipline — no hardcoded user-facing strings (CLAUDE.md §Internationalization)
+      'sekar-design/no-untranslated-literal': 'error',
       // React Hooks discipline (registered 2026-06-09). rules-of-hooks is a hard
       // error (real bugs); exhaustive-deps is a warning (advisory — some omissions
       // are intentional and carry an inline disable).
@@ -90,6 +92,13 @@ module.exports = [
     rules: {
       'sekar-design/no-inline-hex-colors': 'off',
       'sekar-design/rn-no-shadow-radius': 'off',
+    },
+  },
+  // Doc/example + dev-only files use literal strings intentionally — the i18n rule doesn't apply.
+  {
+    files: ['src/services/sync/INTEGRATION_EXAMPLE.tsx', 'src/navigation/TestNavigator.tsx'],
+    rules: {
+      'sekar-design/no-untranslated-literal': 'off',
     },
   },
   // Phase 3: Ban tracksViewChanges={true} in monitoring/ — it causes bitmap redraw thrash.

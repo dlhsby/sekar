@@ -196,6 +196,11 @@
   "activityTypeLabel": "JENIS AKTIVITAS",
   "reasonLabel": "ALASAN LEMBUR",
   "timeline": {
-    "willRun": "Akan dijalankan"
+    "willRun": "Akan dijalankan",
+    "submitted": "Diajukan"
+  },
+  "status": {
+    "submissionId": "ID Pengajuan",
+    "rejectionReason": "Alasan Penolakan"
   }
 }

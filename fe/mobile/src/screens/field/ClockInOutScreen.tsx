@@ -230,11 +230,11 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             {!isClockIn && currentShift && (
               <View style={styles.clockInInfo}>
                 <View style={styles.timerContainer}>
-                  <NBText variant="body-sm" color="gray600">Waktu Shift:</NBText>
+                  <NBText variant="body-sm" color="gray600">{t("attendance:clockInOut.shiftTimeLabel")}</NBText>
                   <NBText variant="display" color="statusIdle" style={styles.timerValue}>{timer}</NBText>
                 </View>
                 <View style={styles.clockInTimeRow}>
-                  <NBText variant="caption" color="gray600">Clock In:</NBText>
+                  <NBText variant="caption" color="gray600">{t("attendance:clockInOut.clockInColonLabel")}</NBText>
                   <NBText variant="body-sm">{formatDateTime(currentShift.clock_in_time)}</NBText>
                 </View>
               </View>

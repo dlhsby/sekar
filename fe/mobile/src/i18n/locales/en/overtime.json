@@ -196,6 +196,11 @@
   "activityTypeLabel": "ACTIVITY TYPE",
   "reasonLabel": "OVERTIME REASON",
   "timeline": {
-    "willRun": "Will run"
+    "willRun": "Will run",
+    "submitted": "Submitted"
+  },
+  "status": {
+    "submissionId": "Submission ID",
+    "rejectionReason": "Rejection Reason"
   }
 }

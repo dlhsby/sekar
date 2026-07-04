@@ -176,7 +176,7 @@ export function AssetReturnScreen({
           {error && (
             <NBAlert
               variant="warning"
-              title="Kesalahan"
+              title={t("common:error")}
               message={error}
             />
           )}

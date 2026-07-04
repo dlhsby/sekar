@@ -264,10 +264,12 @@
     "overdueStatusLabel": "OVERDUE",
     "almostStatusLabel": "ALMOST",
     "okStatusLabel": "OK",
-    "neverPrunedLabel": "Never pruned"
+    "neverPrunedLabel": "Never pruned",
+    "treeSeparator": "{{count}} trees ·"
   },
   "staffing": {
-    "shortBy": "(Short {{n}})"
+    "shortBy": "(Short {{n}})",
+    "short": "Short"
   },
   "statusSheet": {
     "staffedAreas": "{{staffed}} of {{total}} areas"
@@ -275,5 +277,16 @@
   "clusterCountAria": "{{count}} personnel",
   "statusBar": {
     "filterAria": "Filter {{label}}"
+  },
+  "userInfo": {
+    "location": "Location",
+    "checkIn": "Check-in",
+    "workDuration": "Work duration",
+    "locationUpdate": "Location update",
+    "viewDetail": "View Detail"
+  },
+  "workerTile": {
+    "outsideArea": "Outside area",
+    "gpsOff": "GPS off"
   }
 }

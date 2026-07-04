@@ -123,8 +123,7 @@ export function ScoreGauge({
             fontWeight="600"
             fill={gradeColor}
             textAnchor="middle"
-          >
-            Grade {grade}
+          >{t("common:gradeLabel")} {grade}
           </SvgText>
         </Svg>
       </View>

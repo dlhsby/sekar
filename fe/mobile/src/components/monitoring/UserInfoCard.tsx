@@ -114,36 +114,28 @@ export function UserInfoCard({
           </View>
 
           <View style={styles.infoRow}>
-            <NBText variant="body-sm" color="gray600">
-              Lokasi
-            </NBText>
+            <NBText variant="body-sm" color="gray600">{t("monitoring:userInfo.location")}</NBText>
             <NBText variant="body-sm" style={{ color: nbColors.black, fontWeight: '500' }}>
               {user.shift.area.name}
             </NBText>
           </View>
 
           <View style={styles.infoRow}>
-            <NBText variant="body-sm" color="gray600">
-              Masuk
-            </NBText>
+            <NBText variant="body-sm" color="gray600">{t("monitoring:userInfo.checkIn")}</NBText>
             <NBText variant="body-sm" style={{ color: nbColors.black, fontWeight: '500' }}>
               {formatTime(clockInTime)}
             </NBText>
           </View>
 
           <View style={styles.infoRow}>
-            <NBText variant="body-sm" color="gray600">
-              Durasi kerja
-            </NBText>
+            <NBText variant="body-sm" color="gray600">{t("monitoring:userInfo.workDuration")}</NBText>
             <NBText variant="body-sm" style={{ color: nbColors.black, fontWeight: '500' }}>
               {duration.formatted}
             </NBText>
           </View>
 
           <View style={styles.infoRow}>
-            <NBText variant="body-sm" color="gray600">
-              Update lokasi
-            </NBText>
+            <NBText variant="body-sm" color="gray600">{t("monitoring:userInfo.locationUpdate")}</NBText>
             <NBText variant="body-sm" style={{ color: nbColors.black, fontWeight: '500' }}>
               {lastUpdate}
             </NBText>
@@ -154,9 +146,7 @@ export function UserInfoCard({
               style={styles.detailsButton}
               onPress={onViewDetails}
             >
-              <NBText variant="body-sm" color="white" style={{ fontWeight: '600' }}>
-                Lihat Detail
-              </NBText>
+              <NBText variant="body-sm" color="white" style={{ fontWeight: '600' }}>{t("monitoring:userInfo.viewDetail")}</NBText>
             </TouchableOpacity>
           )}
         </View>

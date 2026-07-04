@@ -102,5 +102,6 @@
     "checkoutAsset": "Failed to borrow asset",
     "returnAsset": "Failed to return asset",
     "fetchAssignments": "Failed to fetch assignment history"
-  }
+  },
+  "qrUnavailable": "QR unavailable"
 }

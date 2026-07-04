@@ -77,7 +77,7 @@ export function ActivitiesTab({
         <View style={styles.centerContentInline}>
           <NBText variant="body" color="danger" style={styles.errorText}>{activitiesError}</NBText>
           <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
-            <NBText variant="body" color="white" style={styles.retryButtonText}>Coba Lagi</NBText>
+            <NBText variant="body" color="white" style={styles.retryButtonText}>{t("common:actions.retry")}</NBText>
           </TouchableOpacity>
         </View>
       </ScrollView>

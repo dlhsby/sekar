@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { NBCard, NBCardHeader, NBCardContent, NBText } from '../../../components/nb';
 import { ContactRow } from './ContactRow';
 import { nbColors } from '../../../constants/nbTokens';
@@ -22,6 +23,7 @@ const styles = StyleSheet.create({
 });
 
 export function ContactSection({ request }: ContactSectionProps): React.JSX.Element {
+  const { t } = useTranslation();
   const hasContact =
     request.requesterName ||
     request.requesterPhone ||
@@ -42,7 +44,7 @@ export function ContactSection({ request }: ContactSectionProps): React.JSX.Elem
       <NBCardContent>
         {request.requesterName || request.requesterPhone ? (
           <ContactRow
-            label="Pemohon"
+            label={t("pruning:contact.applicant")}
             name={request.requesterName}
             phone={request.requesterPhone}
           />

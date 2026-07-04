@@ -66,7 +66,7 @@ Web + mobile are bilingual: **Indonesian (`id`, default) + English (`en`)** via 
 - Reuse shared namespaces: `common` (actions/entities/empty), `status`, `roles`, `validation`, `errors`. **`errors` mirrors the backend `ApiErrorCode` enum** — the API stays **English-canonical**; frontends localize by error `code`. Canonical terms: `specs/ui-ux/GLOSSARY.md`.
 - Components: `const { t } = useTranslation()`. Non-component modules/hooks: `import i18n from '<...>/i18n/config'` then `i18n.t(...)`. Zod schemas: build in-component via `useMemo(() => z.object(...), [t])`.
 - New namespace? Register it in **both** platforms' `resources.ts` (the parity guardrail requires the same namespace set on both).
-- **Verify before commit:** `npm run i18n:check` (root — enforces enum coverage + `id`/`en` parity) and `npx tsc --noEmit` in the changed workspace.
+- **Verify before commit:** `npm run i18n:check` (root — enforces enum coverage + `id`/`en` parity), `npx tsc --noEmit`, and `npm run lint` (the ESLint rule `sekar-design/no-untranslated-literal` fails on any hardcoded user-facing string) in the changed workspace.
 
 ## Conventions
 - Module pattern: controller → service → repository → entity → DTOs. Auth via `@UseGuards(JwtAuthGuard, RolesGuard)`, `@Roles(...)`, `@GetUser()`. Swagger `@Api*` decorators.

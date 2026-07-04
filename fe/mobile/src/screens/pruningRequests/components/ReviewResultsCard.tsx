@@ -39,7 +39,7 @@ export function ReviewResultsCard({ request }: ReviewResultsCardProps): React.JS
       </NBCardHeader>
       <NBCardContent>
         <DetailRow
-          label="Direview Oleh"
+          label={t("pruning:review.reviewedBy")}
           value={request.reviewer?.full_name || 'Admin'}
         />
         <DetailRow
@@ -48,7 +48,7 @@ export function ReviewResultsCard({ request }: ReviewResultsCardProps): React.JS
         />
         {request.reviewNotes ? (
           <DetailRow
-            label="Catatan Review"
+            label={t("pruning:review.notes")}
             value={request.reviewNotes}
             variant="description"
             isLast

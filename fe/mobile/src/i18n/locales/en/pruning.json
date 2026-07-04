@@ -85,7 +85,8 @@
     "photosHint": "Take photos of the tree to be pruned",
     "availabilityLabel": "Preferred Week Availability",
     "weekLabel": "Week",
-    "headerTitle": "Create Pruning Request"
+    "headerTitle": "Create Pruning Request",
+    "notesOptional": "Notes (Optional)"
   },
   "calendar": {
     "legendAvailable": "Available",
@@ -149,7 +150,9 @@
     "resultsCardTitle": "Review Results",
     "accessDeniedTitle": "Access Denied",
     "accessDeniedDesc": "You don't have permission to access this page.",
-    "dateLabel": "Review Date"
+    "dateLabel": "Review Date",
+    "reviewedBy": "Reviewed By",
+    "notes": "Review Notes"
   },
   "reassign": {
     "title": "Reassign Worker",
@@ -366,5 +369,8 @@
   },
   "photosSection": {
     "title": "LOCATION PHOTOS"
+  },
+  "contact": {
+    "applicant": "Applicant"
   }
 }

@@ -208,5 +208,13 @@
     "defaultUser": "Pengguna",
     "elapsedTime": "Waktu berjalan: {{time}}"
   },
-  "error": "Error"
+  "error": "Error",
+  "a11y": {
+    "loadingContent": "Memuat konten"
+  },
+  "gradeLabel": "Grade",
+  "appError": {
+    "appCrashed": "Aplikasi mengalami kesalahan yang tidak terduga.",
+    "devDetail": "Detail Error (Development):"
+  }
 }

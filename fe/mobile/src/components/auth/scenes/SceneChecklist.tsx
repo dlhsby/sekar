@@ -40,9 +40,7 @@ export function SceneChecklist(): React.JSX.Element {
   return (
     <View style={styles.root}>
       <View style={styles.card}>
-        <NBText variant="mono-sm" color="gray500" uppercase style={styles.header}>
-          Checklist Patroli · Pos 04
-        </NBText>
+        <NBText variant="mono-sm" color="gray500" uppercase style={styles.header}>{t("welcome:scenes.checklistDemo")}</NBText>
         <View style={styles.list}>
           {ROWS.map((r) => (
             <ChecklistRow key={r.label} {...r} />

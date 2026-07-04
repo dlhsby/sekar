@@ -16,7 +16,8 @@
     },
     "timeDetails": "Detail waktu",
     "resetFilterAria": "Reset filter {{label}}",
-    "filterAria": "Filter {{label}}"
+    "filterAria": "Filter {{label}}",
+    "dismissAlert": "Tutup peringatan"
   },
   "nbselect": {
     "placeholder": "Pilih...",
@@ -63,7 +64,8 @@
     "title": "Pilih Titik Lokasi",
     "coordsLabel": "Titik: {{lat}}, {{lng}}",
     "cancelButton": "Batal",
-    "confirmButton": "Gunakan Titik Ini"
+    "confirmButton": "Gunakan Titik Ini",
+    "dragHint": "Geser peta agar penanda jatuh di titik yang Anda inginkan."
   },
   "locationMap": {
     "notUpdated": "Belum diperbarui",

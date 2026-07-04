@@ -102,5 +102,6 @@
     "checkoutAsset": "Gagal meminjam aset",
     "returnAsset": "Gagal mengembalikan aset",
     "fetchAssignments": "Gagal mengambil riwayat penugasan"
-  }
+  },
+  "qrUnavailable": "QR tidak tersedia"
 }

@@ -6,6 +6,7 @@
  */
 
 import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TouchableOpacity, View, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBText } from '../nb/NBText';
@@ -32,6 +33,7 @@ export const WorkerTile = React.memo(function WorkerTile({
   user,
   onPress,
 }: WorkerTileProps): React.JSX.Element {
+  const { t } = useTranslation();
   const { activity, location } = userAxes(user);
   const { tone, label } = presenceActivityPill(activity);
   const roleLabel = ROLE_LABELS[user.role as UserRole] ?? user.role;
@@ -66,17 +68,13 @@ export const WorkerTile = React.memo(function WorkerTile({
           {location === 'luar_area' ? (
             <View style={styles.outsideChip}>
               <MaterialCommunityIcons name="map-marker-alert" size={11} color={nbColors.statusOutside} />
-              <NBText variant="caption" color="statusOutside" style={styles.outsideLabel}>
-                Luar area
-              </NBText>
+              <NBText variant="caption" color="statusOutside" style={styles.outsideLabel}>{t("monitoring:workerTile.outsideArea")}</NBText>
             </View>
           ) : null}
           {isStale ? (
             <View style={styles.staleChip}>
               <MaterialCommunityIcons name="wifi-off" size={11} color={nbColors.statusMissing} />
-              <NBText variant="caption" color="statusMissing" style={styles.staleLabel}>
-                GPS mati
-              </NBText>
+              <NBText variant="caption" color="statusMissing" style={styles.staleLabel}>{t("monitoring:workerTile.gpsOff")}</NBText>
             </View>
           ) : null}
         </View>

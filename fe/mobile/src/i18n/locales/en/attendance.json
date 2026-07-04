@@ -115,7 +115,9 @@
     "selfiePreviewTitle": "Selfie Clock In",
     "startShiftWithVerification": "Start shift with location verification",
     "startShiftOutOfArea": "Start shift — You are out of area, attendance will be recorded",
-    "endShiftNow": "End current shift"
+    "endShiftNow": "End current shift",
+    "shiftTimeLabel": "Shift Time:",
+    "clockInColonLabel": "Clock In:"
   },
   "gpsSection": {
     "capturingLocation": "Getting your location...",
@@ -151,7 +153,8 @@
   },
   "shiftCard": {
     "unknownArea": "Unknown area",
-    "detailHint": "Tap to view shift detail"
+    "detailHint": "Tap to view shift detail",
+    "shiftNumber": "Shift #{{n}}"
   },
   "workHours": {
     "titlePrefix": "Attendance {{date}}"
