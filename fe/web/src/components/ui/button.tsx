@@ -1,11 +1,18 @@
 'use client';
 
 import * as React from 'react';
-import { Slot } from '@radix-ui/react-slot';
+import { createSlot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { Loader2 } from 'lucide-react';
 
 import { cn, nbFocusRing } from '@/lib/utils/cn';
+
+// The default `Slot` export types its props as generic `HTMLAttributes`, which
+// omits `disabled` — create a button-typed instance so `asChild` can forward
+// `disabled`/`aria-busy` onto the slotted child (e.g. a disabled-looking Link).
+const ButtonSlot = createSlot<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(
+  'Button'
+);
 
 const buttonVariants = cva(
   `inline-flex items-center justify-center gap-2 whitespace-nowrap font-semibold
@@ -68,40 +75,76 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
-    const Comp = asChild ? Slot : 'button';
     const isGhost = variant === 'ghost' || variant === 'link';
+    const buttonClassName = cn(
+      buttonVariants({ variant, size }),
+      // Neo Brutalism shadow and press animation (not for ghost/link)
+      !isGhost && [
+        'shadow-nb-md',
+        'hover:shadow-nb-hover hover:-translate-x-0.5 hover:-translate-y-0.5',
+        'active:shadow-nb-active active:translate-x-0.5 active:translate-y-0.5',
+      ],
+      fullWidth && 'w-full',
+      className
+    );
+    const content = loading ? (
+      <>
+        <Loader2 className="animate-spin" />
+        {children}
+      </>
+    ) : (
+      <>
+        {leftIcon}
+        {children}
+        {rightIcon}
+      </>
+    );
+
+    if (asChild) {
+      // Radix Slot clones its single child and merges the button's own props
+      // (className, disabled, aria-busy, ref) onto it — that child must be the
+      // real target element (e.g. a <Link>), never a Fragment (Fragments only
+      // accept `key`/`children`/`ref`). So inject the icon/loading content into
+      // the child's OWN children instead of wrapping everything in a Fragment.
+      const child = children as React.ReactElement<{ children?: React.ReactNode }>;
+      return (
+        <ButtonSlot
+          className={buttonClassName}
+          ref={ref}
+          disabled={disabled || loading}
+          aria-busy={loading}
+          {...props}
+        >
+          {React.cloneElement(
+            child,
+            undefined,
+            loading ? (
+              <>
+                <Loader2 className="animate-spin" />
+                {child.props.children}
+              </>
+            ) : (
+              <>
+                {leftIcon}
+                {child.props.children}
+                {rightIcon}
+              </>
+            )
+          )}
+        </ButtonSlot>
+      );
+    }
 
     return (
-      <Comp
-        className={cn(
-          buttonVariants({ variant, size }),
-          // Neo Brutalism shadow and press animation (not for ghost/link)
-          !isGhost && [
-            'shadow-nb-md',
-            'hover:shadow-nb-hover hover:-translate-x-0.5 hover:-translate-y-0.5',
-            'active:shadow-nb-active active:translate-x-0.5 active:translate-y-0.5',
-          ],
-          fullWidth && 'w-full',
-          className
-        )}
+      <button
+        className={buttonClassName}
         ref={ref}
         disabled={disabled || loading}
         aria-busy={loading}
         {...props}
       >
-        {loading ? (
-          <>
-            <Loader2 className="animate-spin" />
-            {children}
-          </>
-        ) : (
-          <>
-            {leftIcon}
-            {children}
-            {rightIcon}
-          </>
-        )}
-      </Comp>
+        {content}
+      </button>
     );
   }
 );

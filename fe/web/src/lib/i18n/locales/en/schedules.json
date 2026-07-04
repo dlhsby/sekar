@@ -2,6 +2,7 @@
   "page": {
     "title": "Schedules",
     "dateLabel": "Date:",
+    "totalCount": "{{count}} schedules today",
     "emptyTitle": "No schedules yet",
     "emptyDescription": "Click \"Generate Schedule\" to create today's schedule.",
     "searchPlaceholder": "Search worker name…"
@@ -62,8 +63,9 @@
       "workerLabel": "Worker",
       "workerPlaceholder": "Select worker…",
       "workerRequired": "Please select a worker",
+      "workerHelper": "Only showing workers who don't already have a schedule today.",
       "shiftLabel": "Shift",
-      "shiftOptional": "Optional — Use worker's default",
+      "shiftOptional": "Optional — No shift assigned",
       "areaLabel": "Areas",
       "areaPlaceholder": "Select areas…",
       "areaHelper": "Optional — Use worker's permanent areas",
@@ -72,10 +74,10 @@
     "edit": {
       "title": "Edit Schedule",
       "workerLabel": "Worker",
+      "workerLocked": "The worker cannot be changed here. To reassign, delete this schedule and create a new one.",
       "rayonLabel": "Rayon",
       "shiftLabel": "Shift",
       "areaLabel": "Areas",
-      "replaceHint": "Changing the worker will replace with the new worker and inherit the original areas & shift.",
       "submit": "Save"
     },
     "areaList": {

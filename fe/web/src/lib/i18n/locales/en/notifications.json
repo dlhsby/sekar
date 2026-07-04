@@ -8,6 +8,7 @@
   },
   "list": {
     "loading": "Loading...",
+    "unreadCount": "{{count}} unread notifications",
     "markAllRead": "Mark all as read",
     "filterAriaLabel": "Filter notifications",
     "emptyTitle": "No notifications",

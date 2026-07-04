@@ -108,7 +108,13 @@ export default function WorkerAnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t('workers.page.title')} />
+      <PageHeader
+        description={
+          listData?.meta.total
+            ? t('workers.page.totalCount', { count: listData.meta.total })
+            : undefined
+        }
+      />
 
       {/* Ranking Chart */}
       <WorkerRankingChart data={chartData} loading={isListLoading} />

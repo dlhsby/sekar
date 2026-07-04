@@ -8,7 +8,6 @@ import {
   Card,
   FormInput,
   FormSelect,
-  PageHeader,
   useToast,
   Field,
   DatePicker,
@@ -79,11 +78,6 @@ export default function CreateAssetPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={t('assets:create.pageTitle')}
-        breadcrumb={t('assets:create.breadcrumb')}
-      />
-
       <Card variant="default" className="max-w-2xl">
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <FormInput

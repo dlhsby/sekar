@@ -252,7 +252,11 @@ export default function TasksPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        description={t('tasks:list.pageHeader')}
+        description={
+          activeQuery.data?.meta.total
+            ? t('tasks:list.totalCount', { count: activeQuery.data.meta.total })
+            : t('tasks:list.pageHeader')
+        }
         actions={
           <Button onClick={() => setFormOpen(true)} leftIcon={<Plus className="size-5" />}>
             {t('tasks:list.createButton')}

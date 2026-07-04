@@ -34,7 +34,8 @@
   "schedules": {
     "page": {
       "title": "Report Schedules",
-      "description": "Manage automatic report schedules"
+      "description": "Manage automatic report schedules",
+      "totalCount": "{{count}} report schedules"
     },
     "table": {
       "id": "ID",
@@ -116,6 +117,7 @@
   "list": {
     "pageTitle": "Reports",
     "pageDescription": "View and manage generated reports",
+    "totalCount": "{{count}} reports",
     "filterTypeLabel": "Report Type",
     "typeOptions": {
       "all": "All Types"

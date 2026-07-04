@@ -168,10 +168,7 @@ export default function SeedsListPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        title={t('seeds:list.title')}
-        description={t('seeds:list.description')}
-      />
+      <PageHeader description={t('seeds:list.description')} />
 
       <Card>
         <CardContent className="p-4">

@@ -133,7 +133,7 @@ export default function CreateTaskPage() {
       />
       {assignableRoles.length > 0 && (
         <p className="-mt-2 text-nb-caption text-nb-gray-500">
-          {t('newPage.pageHeader', { roles: assignableRoles.map((r) => ROLE_LABELS[r]).join(', ') })}
+          {t('newPage.assignableRoles', { roles: assignableRoles.map((r) => ROLE_LABELS[r]).join(', ') })}
         </p>
       )}
 

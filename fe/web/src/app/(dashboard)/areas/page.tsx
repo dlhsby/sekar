@@ -273,8 +273,11 @@ export default function AreasPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t('admin:areas.pageTitle')}
-        description={t('admin:areas.description')}
+        description={
+          areasData?.meta.total
+            ? t('admin:areas.totalCount', { count: areasData.meta.total })
+            : undefined
+        }
       />
 
       <DataTable

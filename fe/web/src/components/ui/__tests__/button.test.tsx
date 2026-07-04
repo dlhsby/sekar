@@ -278,4 +278,57 @@ describe('Button Component', () => {
       expect(button).toHaveClass('disabled:opacity-50', 'disabled:shadow-none');
     });
   });
+
+  describe('asChild', () => {
+    // Regression: Radix Slot clones its single child and merges the button's
+    // props (className/disabled/aria-busy) onto it. If Button wrapped its
+    // content in a `<>` before handing it to Slot, that Fragment — not the
+    // real target element — became the clone target, and React throws
+    // "Invalid prop `className` supplied to React.Fragment".
+    it('renders the child element (a link) instead of a button, with no console error', () => {
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      render(
+        <Button asChild>
+          <a href="/somewhere">Go</a>
+        </Button>
+      );
+
+      const link = screen.getByRole('link', { name: /go/i });
+      expect(link).toBeInTheDocument();
+      expect(link.tagName).toBe('A');
+      expect(screen.queryByRole('button')).not.toBeInTheDocument();
+      expect(errorSpy).not.toHaveBeenCalled();
+      errorSpy.mockRestore();
+    });
+
+    it('merges the button className onto the child element', () => {
+      render(
+        <Button asChild variant="secondary">
+          <a href="/somewhere">Go</a>
+        </Button>
+      );
+      expect(screen.getByRole('link')).toHaveClass('bg-nb-white');
+    });
+
+    it('renders leftIcon/rightIcon inside the child, alongside its own children', () => {
+      render(
+        <Button asChild leftIcon={<span data-testid="left-icon" />}>
+          <a href="/somewhere">Go</a>
+        </Button>
+      );
+      const link = screen.getByRole('link', { name: /go/i });
+      expect(link.querySelector('[data-testid="left-icon"]')).toBeInTheDocument();
+    });
+
+    it('forwards disabled/aria-busy onto the child when loading', () => {
+      render(
+        <Button asChild loading>
+          <a href="/somewhere">Go</a>
+        </Button>
+      );
+      const link = screen.getByRole('link');
+      expect(link).toHaveAttribute('aria-busy', 'true');
+      expect(link).toHaveAttribute('disabled');
+    });
+  });
 });

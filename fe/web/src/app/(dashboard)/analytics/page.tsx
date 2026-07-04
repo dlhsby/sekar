@@ -74,7 +74,6 @@ export default function AnalyticsDashboardPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader title={t('overview.page.title')} />
         <KpiGrid columns={3}>
           <SkeletonCard />
           <SkeletonCard />
@@ -91,7 +90,6 @@ export default function AnalyticsDashboardPage() {
   if (error || !data) {
     return (
       <div className="space-y-6">
-        <PageHeader title={t('overview.page.title')} />
         <EmptyState
           variant="error"
           title={t('overview.error.title')}
@@ -105,32 +103,33 @@ export default function AnalyticsDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <PageHeader title={t('overview.page.title')} />
-        <div className="flex items-center gap-3">
-          <Select value={period} onValueChange={(value) => setPeriod(value as '7' | '30')}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">{t('overview.period.7days')}</SelectItem>
-              <SelectItem value="30">{t('overview.period.30days')}</SelectItem>
-            </SelectContent>
-          </Select>
+      <PageHeader
+        actions={
+          <div className="flex items-center gap-3">
+            <Select value={period} onValueChange={(value) => setPeriod(value as '7' | '30')}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">{t('overview.period.7days')}</SelectItem>
+                <SelectItem value="30">{t('overview.period.30days')}</SelectItem>
+              </SelectContent>
+            </Select>
 
-          {canRefresh && (
-            <Button
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              variant="outline"
-              size="sm"
-              leftIcon={<RefreshCw className="size-4" />}
-            >
-              {isRefreshing ? t('overview.refreshing') : t('overview.refresh')}
-            </Button>
-          )}
-        </div>
-      </div>
+            {canRefresh && (
+              <Button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                variant="outline"
+                size="sm"
+                leftIcon={<RefreshCw className="size-4" />}
+              >
+                {isRefreshing ? t('overview.refreshing') : t('overview.refresh')}
+              </Button>
+            )}
+          </div>
+        }
+      />
 
       {/* Note about stale data */}
       <div className="bg-nb-warning-light/20 border-2 border-nb-warning px-4 py-2 rounded-nb-base text-sm text-nb-black">

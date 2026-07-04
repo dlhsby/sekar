@@ -248,8 +248,11 @@ export default function ReportsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t('reports:list.pageTitle')}
-        description={t('reports:list.pageDescription')}
+        description={
+          reportsData?.meta.total
+            ? t('reports:list.totalCount', { count: reportsData.meta.total })
+            : undefined
+        }
         actions={
           <Link href="/reports/builder">
             <Button leftIcon={<Plus className="h-4 w-4" />}>{t('reports:list.actions.create')}</Button>

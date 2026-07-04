@@ -7,7 +7,8 @@
     "reports": "Laporan", "reportsBuilder": "Buat Laporan", "reportsSchedules": "Jadwal Laporan",
     "pruningRequests": "Permohonan Pemangkasan", "pruningSubmit": "Kirim Permintaan", "pruningMy": "Permintaan Saya",
     "settings": "Pengaturan", "profile": "Profil Saya", "notifications": "Notifikasi",
-    "export": "Ekspor Data", "import": "Impor Data", "importCsv": "Impor CSV"
+    "export": "Ekspor Data", "import": "Impor Data", "importCsv": "Impor CSV",
+    "analytics": "Analitik", "analyticsAreas": "Analitik Area", "analyticsWorkers": "Analitik Pekerja"
   },
   "breadcrumb": {
     "work": "Pekerjaan", "access": "Pengguna & Hak Akses", "data": "Data Master", "kecamatan": "Kecamatan",

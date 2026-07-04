@@ -25,6 +25,8 @@ interface AddScheduleModalProps {
   loading?: boolean;
   date: string;
   allUsers: Array<{ id: string; full_name: string; username: string; role: string; rayon_id?: string | null }>;
+  /** User ids that already have a schedule for `date` — excluded from the worker picker. */
+  scheduledUserIds?: Set<string>;
   shifts: Array<{ id: string; name: string; start_time: string; end_time: string }>;
   allRayons: Array<{ id: string; name: string }>;
   allAreas: Array<{ id: string; name: string; rayon_id: string }>;
@@ -38,6 +40,7 @@ export function AddScheduleModal({
   loading,
   date,
   allUsers,
+  scheduledUserIds,
   shifts,
   allRayons,
   allAreas,
@@ -50,9 +53,11 @@ export function AddScheduleModal({
   const [selectedShiftId, setSelectedShiftId] = useState<string | null>(null);
   const [selectedAreaIds, setSelectedAreaIds] = useState<string[]>([]);
 
-  // Filter schedulable workers (satgas, linmas, korlap)
-  const schedulableUsers = allUsers.filter((u) =>
-    ['satgas', 'linmas', 'korlap'].includes(u.role),
+  // Filter schedulable workers (satgas, linmas, korlap) who don't already have
+  // a schedule for this date — one schedule per worker per day is enforced
+  // server-side, so keep the picker from offering a guaranteed-400 choice.
+  const schedulableUsers = allUsers.filter(
+    (u) => ['satgas', 'linmas', 'korlap'].includes(u.role) && !scheduledUserIds?.has(u.id),
   );
 
   // Default rayon to selected worker's rayon
@@ -127,12 +132,13 @@ export function AddScheduleModal({
             <FormCombobox
               label={t('modals.add.workerLabel')}
               placeholder={t('modals.add.workerPlaceholder')}
+              helperText={t('modals.add.workerHelper')}
               value={selectedUserId}
               onChange={setSelectedUserId}
               required
               options={schedulableUsers.map((u) => ({
                 value: u.id,
-                label: `${u.full_name} (${u.username})`,
+                label: u.full_name,
               }))}
             />
 
@@ -146,6 +152,18 @@ export function AddScheduleModal({
               }))}
             />
 
+            <FormMultiCombobox
+              label={t('modals.add.areaLabel')}
+              options={filteredAreas.map((a) => ({ value: a.id, label: a.name }))}
+              values={selectedAreaIds}
+              onChange={setSelectedAreaIds}
+              placeholder={t('modals.add.areaPlaceholder')}
+              searchPlaceholder={t('modals.areas.searchPlaceholder')}
+              emptyText={t('modals.areas.emptyText')}
+              hideSelectedChips
+              helperText={t('modals.add.areaHelper')}
+            />
+
             <FormSelect
               label={t('modals.add.shiftLabel')}
               value={selectedShiftId ?? 'none'}
@@ -157,18 +175,6 @@ export function AddScheduleModal({
                   label: `${shift.name} (${shift.start_time}-${shift.end_time})`,
                 })),
               ]}
-            />
-
-            <FormMultiCombobox
-              label={t('modals.add.areaLabel')}
-              options={filteredAreas.map((a) => ({ value: a.id, label: a.name }))}
-              values={selectedAreaIds}
-              onChange={setSelectedAreaIds}
-              placeholder={t('modals.add.areaPlaceholder')}
-              searchPlaceholder={t('modals.areas.searchPlaceholder')}
-              emptyText={t('modals.areas.emptyText')}
-              hideSelectedChips
-              helperText={t('modals.add.areaHelper')}
             />
 
             {error && <div className="rounded-nb-base border-2 border-nb-danger bg-nb-danger-light/20 p-3 text-sm text-nb-danger">{error}</div>}

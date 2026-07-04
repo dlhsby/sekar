@@ -100,8 +100,13 @@ export default function MaintenanceCalendarPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t('assets:maintenance2.pageTitle')}
-        description={t('assets:maintenance2.pageDescription')}
+        description={
+          overdueData.length
+            ? t('assets:maintenance2.overdueCount', { count: overdueData.length })
+            : calendarData.length
+              ? t('assets:maintenance2.scheduledCount', { count: calendarData.length })
+              : undefined
+        }
       />
 
       <Card variant="default">

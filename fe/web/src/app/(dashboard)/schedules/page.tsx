@@ -6,9 +6,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import { format, parse } from 'date-fns';
-import { dateFnsLocale } from '@/lib/i18n/date-locale';
-import { Plus, Calendar, Pencil, Trash2, RefreshCw } from 'lucide-react';
+import { Plus, Calendar, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import {
@@ -37,7 +35,6 @@ import {
   useDailyRoster,
   useGenerateRoster,
   useSetLeave,
-  useReplaceWorker,
   useUpdateRosterAreas,
   useUpdateRosterShift,
   useAddSchedule,
@@ -48,6 +45,7 @@ import {
 import { useUser } from '@/lib/auth/hooks';
 import { ADMIN_ROLES } from '@/lib/constants/roles';
 import { useAreas } from '@/lib/api/areas';
+import { useRayons } from '@/lib/api/rayons';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useUsers } from '@/lib/api/users';
 import { useUserAreas } from '@/lib/api/user-areas';
@@ -104,23 +102,25 @@ export default function SchedulesPage() {
 
   const { data: rosters, isLoading, error, refetch } = useDailyRoster(selectedDate);
   const schedules = useMemo(() => rosters ?? [], [rosters]);
+  // Workers who already have a live row for the selected date — excluded from
+  // the "Tambah Jadwal" worker picker so an admin can't try to create a second
+  // schedule for the same worker/day (the backend also rejects it with a 400).
+  const scheduledUserIds = useMemo(
+    () => new Set(schedules.map((s) => s.user_id)),
+    [schedules],
+  );
 
   const { data: areasData } = useAreas({ limit: 1000 });
   const allAreas = useMemo(() => areasData?.data ?? [], [areasData]);
   // O(1) area lookup for the rayon column (avoids a per-row find over all areas).
   const areaById = useMemo(() => new Map(allAreas.map((a) => [a.id, a])), [allAreas]);
 
-  // Rayons that have areas (the cascade source), de-duplicated from the loaded
-  // areas' populated `rayon` relation.
-  const allRayons = useMemo(() => {
-    const rayonMap = new Map<string, { id: string; name: string }>();
-    allAreas.forEach((area) => {
-      if (area.rayon && !rayonMap.has(area.rayon.id)) {
-        rayonMap.set(area.rayon.id, { id: area.rayon.id, name: area.rayon.name });
-      }
-    });
-    return Array.from(rayonMap.values());
-  }, [allAreas]);
+  // All 7 rayons, straight from the authoritative endpoint — NOT derived from
+  // loaded areas. Deriving from areas silently dropped any rayon with zero
+  // areas (or areas outside the page), so the cascade only ever showed the
+  // rayons that happened to have areas loaded.
+  const { data: rayonsData } = useRayons();
+  const allRayons = useMemo(() => rayonsData ?? [], [rayonsData]);
 
   // A korlap edits only rows in their own assigned areas — fetch those to gate
   // the per-row actions (mirrors the backend hierarchy; backend is the real gate).
@@ -157,7 +157,6 @@ export default function SchedulesPage() {
 
   const generateRoster = useGenerateRoster();
   const setLeave = useSetLeave();
-  const replaceWorker = useReplaceWorker();
   const updateAreas = useUpdateRosterAreas();
   const updateShift = useUpdateRosterShift();
   const addSchedule = useAddSchedule();
@@ -229,17 +228,6 @@ export default function SchedulesPage() {
       refetch();
     } catch (err) {
       toast.error(getErrorMessage(err));
-    }
-  };
-
-  const handleReplaceWorker = async (id: string, replacementUserId: string) => {
-    try {
-      await replaceWorker.mutateAsync({
-        id,
-        replacement_user_id: replacementUserId,
-      });
-    } catch (err) {
-      throw err;
     }
   };
 
@@ -458,60 +446,28 @@ export default function SchedulesPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader description={format(parse(selectedDate, 'yyyy-MM-dd', new Date()), 'EEEE, dd MMMM yyyy', { locale: dateFnsLocale() })} />
+      <PageHeader
+        description={schedules.length ? t('page.totalCount', { count: schedules.length }) : undefined}
+      />
 
-      {/* Date Picker and Toolbar */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <label htmlFor="date-picker" className="text-nb-body font-medium">
-            {t('page.dateLabel')}
-          </label>
-          <input
-            id="date-picker"
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="rounded-nb-base border-2 border-nb-black px-3 py-2 text-nb-body"
-          />
-        </div>
-
-        <div className="flex gap-2 flex-wrap sm:flex-nowrap">
-          <Button
-            onClick={() => refetch()}
-            variant="outline"
-            size="sm"
-            leftIcon={<RefreshCw className="h-4 w-4" />}
-          >
-            {t('common:actions.refresh')}
-          </Button>
-
-          {canGenerate && !alreadyGenerated && !isLoading && (
-            <Button
-              onClick={handleGenerate}
-              loading={generateRoster.isPending}
-              size="sm"
-              leftIcon={<Plus className="h-4 w-4" />}
-            >
-              {t('buttons.generate')}
-            </Button>
-          )}
-
-          {canEditRoster(
-            schedules[0] ?? ({ rayon_id: currentUser?.rayon_id } as Schedule)
-          ) && (
-            <Button
-              onClick={() => setAddModalOpen(true)}
-              variant="secondary"
-              size="sm"
-              leftIcon={<Plus className="h-4 w-4" />}
-            >
-              {t('buttons.addOne')}
-            </Button>
-          )}
-        </div>
+      {/* Date Picker */}
+      <div className="flex items-center gap-3">
+        <label htmlFor="date-picker" className="text-nb-body font-medium">
+          {t('page.dateLabel')}
+        </label>
+        <input
+          id="date-picker"
+          type="date"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          className="rounded-nb-base border-2 border-nb-black px-3 py-2 text-nb-body"
+        />
       </div>
 
-      {/* Data Table */}
+      {/* Data Table — refresh/filter/columns live in the table's own toolbar row;
+          "Tambah Jadwal" (and "Buat Jadwal Hari Ini" when applicable) are passed
+          via `actions` so they render rightmost in that SAME row, same as
+          Users/Areas. Do not add a second manual refresh button here. */}
       <DataTable
         columns={columns}
         data={schedules}
@@ -522,6 +478,28 @@ export default function SchedulesPage() {
         getRowId={(r) => r.id}
         searchPlaceholder={t('page.searchPlaceholder')}
         rowActions={rowActions}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {canGenerate && !alreadyGenerated && !isLoading && (
+              <Button
+                onClick={handleGenerate}
+                loading={generateRoster.isPending}
+                variant="outline"
+                leftIcon={<Plus className="h-4 w-4" />}
+              >
+                {t('buttons.generate')}
+              </Button>
+            )}
+
+            {canEditRoster(
+              schedules[0] ?? ({ rayon_id: currentUser?.rayon_id } as Schedule)
+            ) && (
+              <Button onClick={() => setAddModalOpen(true)} leftIcon={<Plus className="h-4 w-4" />}>
+                {t('buttons.addOne')}
+              </Button>
+            )}
+          </div>
+        }
         emptyTitle={schedules.length === 0 ? t('page.emptyTitle') : undefined}
         emptyDescription={schedules.length === 0 ? t('page.emptyDescription') : undefined}
       />
@@ -603,26 +581,23 @@ export default function SchedulesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Schedule Modal */}
+      {/* Edit Schedule Modal — worker is fixed; only shift/areas are editable
+          (see EditScheduleModal for why: changing the worker here could corrupt
+          data, so that's only offered via delete + Tambah Jadwal). */}
       <EditScheduleModal
         open={editModalOpen}
         onClose={() => setEditModalOpen(false)}
         roster={editRoster}
-        onReplaceWorker={handleReplaceWorker}
         onUpdateShift={handleUpdateShiftForEdit}
         onUpdateAreas={handleUpdateAreasForEdit}
-        replaceLoading={replaceWorker.isPending}
         shiftLoading={updateShift.isPending}
         areasLoading={updateAreas.isPending}
-        allUsers={allUsers}
         shifts={shifts}
         allRayons={allRayons}
         allAreas={allAreas}
         error={
-          replaceWorker.isError || updateShift.isError || updateAreas.isError
-            ? getErrorMessage(
-                replaceWorker.error || updateShift.error || updateAreas.error
-              )
+          updateShift.isError || updateAreas.isError
+            ? getErrorMessage(updateShift.error || updateAreas.error)
             : undefined
         }
       />
@@ -635,6 +610,7 @@ export default function SchedulesPage() {
         loading={addSchedule.isPending}
         date={selectedDate}
         allUsers={allUsers}
+        scheduledUserIds={scheduledUserIds}
         shifts={shifts}
         allRayons={allRayons}
         allAreas={allAreas}

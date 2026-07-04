@@ -22,13 +22,10 @@ interface EditScheduleModalProps {
   open: boolean;
   onClose: () => void;
   roster: Schedule | null;
-  onReplaceWorker: (id: string, replacementUserId: string, notes?: string) => Promise<void>;
   onUpdateShift: (id: string, shiftId: string | null) => Promise<void>;
   onUpdateAreas: (id: string, areaIds: string[]) => Promise<void>;
-  replaceLoading?: boolean;
   shiftLoading?: boolean;
   areasLoading?: boolean;
-  allUsers: Array<{ id: string; full_name: string; username: string; role: string; rayon_id?: string | null }>;
   shifts: Array<{ id: string; name: string; start_time: string; end_time: string }>;
   allRayons: Array<{ id: string; name: string }>;
   allAreas: Array<{ id: string; name: string; rayon_id: string }>;
@@ -39,13 +36,10 @@ export function EditScheduleModal({
   open,
   onClose,
   roster,
-  onReplaceWorker,
   onUpdateShift,
   onUpdateAreas,
-  replaceLoading,
   shiftLoading,
   areasLoading,
-  allUsers,
   shifts,
   allRayons,
   allAreas,
@@ -53,15 +47,9 @@ export function EditScheduleModal({
 }: EditScheduleModalProps) {
   const { t } = useTranslation(['schedules', 'common']);
 
-  const [selectedUserId, setSelectedUserId] = useState('');
   const [selectedRayonId, setSelectedRayonId] = useState<string>('');
   const [selectedShiftId, setSelectedShiftId] = useState<string | null>(null);
   const [selectedAreaIds, setSelectedAreaIds] = useState<string[]>([]);
-
-  // Filter schedulable workers
-  const schedulableUsers = allUsers.filter((u) =>
-    ['satgas', 'linmas', 'korlap'].includes(u.role),
-  );
 
   // Filter areas by selected rayon
   const filteredAreas = useMemo(() => {
@@ -81,15 +69,13 @@ export function EditScheduleModal({
 
   useEffect(() => {
     if (roster && open) {
-      setSelectedUserId(roster.user_id);
       setSelectedRayonId(roster.rayon_id || '');
       setSelectedShiftId(roster.shift_definition_id);
       setSelectedAreaIds(roster.schedule_areas.map((a) => a.area_id));
     }
   }, [roster, open]);
 
-  const loading = replaceLoading || shiftLoading || areasLoading;
-  const isWorkerChanged = selectedUserId !== roster?.user_id;
+  const loading = shiftLoading || areasLoading;
   const isShiftChanged = selectedShiftId !== roster?.shift_definition_id;
   const isAreasChanged =
     selectedAreaIds.length !== roster?.schedule_areas.length ||
@@ -101,17 +87,13 @@ export function EditScheduleModal({
     if (!roster) return;
 
     try {
-      if (isWorkerChanged) {
-        // If worker changed, call replace (which handles areas + shift inheritance)
-        await onReplaceWorker(roster.id, selectedUserId);
-      } else {
-        // Otherwise call shift + areas independently if they changed
-        if (isShiftChanged) {
-          await onUpdateShift(roster.id, selectedShiftId);
-        }
-        if (isAreasChanged) {
-          await onUpdateAreas(roster.id, selectedAreaIds);
-        }
+      // The worker is fixed for a schedule row — changing it is not offered
+      // here (see the disabled Pekerja field below); only shift/areas can change.
+      if (isShiftChanged) {
+        await onUpdateShift(roster.id, selectedShiftId);
+      }
+      if (isAreasChanged) {
+        await onUpdateAreas(roster.id, selectedAreaIds);
       }
 
       toast.success(t('messages.editSuccess'));
@@ -133,18 +115,16 @@ export function EditScheduleModal({
           <div className="space-y-4">
             <FormCombobox
               label={t('modals.edit.workerLabel')}
-              value={selectedUserId}
-              onChange={setSelectedUserId}
-              options={schedulableUsers.map((u) => ({
-                value: u.id,
-                label: `${u.full_name} (${u.username})`,
-              }))}
+              value={roster?.user_id ?? ''}
+              onChange={() => {}}
+              disabled
+              helperText={t('modals.edit.workerLocked')}
+              options={
+                roster
+                  ? [{ value: roster.user_id, label: `${roster.user.full_name} (${roster.user.username})` }]
+                  : []
+              }
             />
-            {isWorkerChanged && (
-              <div className="rounded-nb-base border-2 border-nb-warning bg-nb-warning-light/20 p-3 text-sm text-nb-black">
-                {t('modals.edit.replaceHint')}
-              </div>
-            )}
 
             <FormCombobox
               label={t('modals.edit.rayonLabel')}
@@ -154,7 +134,6 @@ export function EditScheduleModal({
                 value: r.id,
                 label: r.name,
               }))}
-              disabled={isWorkerChanged}
             />
 
             <FormSelect
@@ -168,7 +147,6 @@ export function EditScheduleModal({
                   label: `${shift.name} (${shift.start_time}-${shift.end_time})`,
                 })),
               ]}
-              disabled={isWorkerChanged}
             />
 
             <FormMultiCombobox
@@ -180,7 +158,6 @@ export function EditScheduleModal({
               searchPlaceholder={t('modals.areas.searchPlaceholder')}
               emptyText={t('modals.areas.emptyText')}
               hideSelectedChips
-              disabled={isWorkerChanged}
             />
 
             {error && (
@@ -198,7 +175,7 @@ export function EditScheduleModal({
           <Button
             onClick={handleSubmit}
             loading={loading}
-            disabled={!isWorkerChanged && !isShiftChanged && !isAreasChanged}
+            disabled={!isShiftChanged && !isAreasChanged}
           >
             {t('modals.edit.submit')}
           </Button>

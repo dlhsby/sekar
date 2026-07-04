@@ -88,6 +88,7 @@
   "areas": {
     "pageTitle": "Area",
     "description": "Kelola area kerja dan batas wilayah",
+    "totalCount": "{{count}} area",
     "searchPlaceholder": "Cari nama area…",
     "columnId": "ID",
     "columnName": "Nama",
@@ -214,6 +215,9 @@
   "rayons": {
     "pageTitle": "Rayon",
     "description": "Kelola rayon dan struktur organisasi",
+    "totalCount": "{{count}} rayon",
+    "loadingTitle": "Memuat…",
+    "staffCount": "{{count}} petugas",
     "searchPlaceholder": "Cari nama rayon…",
     "columnId": "ID",
     "columnName": "Nama",
