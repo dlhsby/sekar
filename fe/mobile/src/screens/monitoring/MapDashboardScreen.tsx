@@ -146,14 +146,13 @@ export function MapDashboardScreen(): React.JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, view.scope, view.id]);
 
-  // Fetch workers only in "Semua Petugas" / area-scope mode (aggregate view is
-  // light and never draws individual workers). Also re-runs on filter changes.
+  // Always fetch workers for the current scope (even in Ringkasan) so search can
+  // find people in any mode; the map only *renders* worker markers in the
+  // "Semua Petugas" view (MapLayerContent gates on mode).
   useEffect(() => {
-    if (mode === 'workers') {
-      void fetchLiveUsersWithFilters(
-        view.scope === 'area' && view.id ? { ...filters, area_id: view.id } : filters,
-      );
-    }
+    void fetchLiveUsersWithFilters(
+      view.scope === 'area' && view.id ? { ...filters, area_id: view.id } : filters,
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, view.scope, view.id, filters]);
 

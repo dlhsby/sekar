@@ -11,6 +11,8 @@
     "searchLabel": "Search officers, areas, or rayons",
     "filterLabel": "Filter",
     "refreshLabel": "Refresh",
+    "refreshSuccess": "Monitoring data refreshed",
+    "refreshError": "Failed to refresh data",
     "overdueToggleLabel": "Show overdue plants",
     "overdueToggleTitle": "Overdue plants",
     "overdueButtonLabel": "Plants",

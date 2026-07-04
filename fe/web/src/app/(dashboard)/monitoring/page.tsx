@@ -13,6 +13,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { SlidersHorizontal, RefreshCw, X, List, ChevronDown, ChevronLeft, Layers } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth/hooks';
@@ -151,13 +152,19 @@ export default function MonitoringPage() {
     aggregateEnabled
   );
 
-  const snapshotEnabled = canMonitor && effectiveMode === 'workers';
-  const snapshot = useMonitoringSnapshot(view.scope, view.id, snapshotEnabled);
+  // Always fetch the worker snapshot for the current scope (even in Ringkasan)
+  // so search can find people in any mode; the map only *renders* workers in the
+  // "Semua Petugas" view. WS patches keep it fresh; it's cached + a slow poll.
+  const snapshot = useMonitoringSnapshot(view.scope, view.id, canMonitor);
 
   // Progressive boundaries: rayon outlines at city, that rayon's areas when deeper.
   const boundaryLevel: 'rayon' | 'area' = view.scope === 'city' ? 'rayon' : 'area';
   const boundaryRayonId = view.scope === 'city' ? undefined : view.rayonId ?? view.id;
-  const { data: boundaries } = useBoundaries(canMonitor, boundaryLevel, boundaryRayonId);
+  const {
+    data: boundaries,
+    isFetching: boundariesFetching,
+    refetch: refetchBoundaries,
+  } = useBoundaries(canMonitor, boundaryLevel, boundaryRayonId);
 
   const plantSummary = usePlantStatusSummary(canMonitor && showOverdue);
   const overdueByArea = useMemo(() => {
@@ -307,9 +314,22 @@ export default function MonitoringPage() {
   const isLoading = effectiveMode === 'aggregate' ? aggregate.isLoading : snapshot.isLoading;
   const generatedAt =
     effectiveMode === 'aggregate' ? aggregate.data?.generated_at : snapshot.data?.data?.generated_at;
-  const refetch = () => {
-    if (effectiveMode === 'aggregate') aggregate.refetch();
-    else snapshot.refetch();
+  // `isFetching` (not `isLoading`) is what's true during a manual refetch —
+  // drives the spinner. A toast confirms the result since the change is subtle.
+  const isFetching =
+    effectiveMode === 'aggregate'
+      ? aggregate.isFetching || boundariesFetching
+      : snapshot.isFetching || boundariesFetching;
+  const handleRefresh = async () => {
+    try {
+      await Promise.all([
+        effectiveMode === 'aggregate' ? aggregate.refetch() : snapshot.refetch(),
+        refetchBoundaries(),
+      ]);
+      toast.success(t('monitoring:page.refreshSuccess'));
+    } catch {
+      toast.error(t('monitoring:page.refreshError'));
+    }
   };
   const listCount = effectiveMode === 'aggregate' ? filteredNodes.length : filteredWorkers.length;
 
@@ -406,11 +426,12 @@ export default function MonitoringPage() {
           {/* Refresh */}
           <button
             type="button"
-            onClick={refetch}
+            onClick={handleRefresh}
+            disabled={isFetching}
             aria-label={t('monitoring:page.refreshLabel')}
-            className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-nb-base border-2 border-nb-black bg-nb-white text-nb-black shadow-nb-sm transition-colors hover:bg-nb-gray-50"
+            className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-nb-base border-2 border-nb-black bg-nb-white text-nb-black shadow-nb-sm transition-colors hover:bg-nb-gray-50 disabled:opacity-70"
           >
-            <RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
+            <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
           </button>
         </div>
 

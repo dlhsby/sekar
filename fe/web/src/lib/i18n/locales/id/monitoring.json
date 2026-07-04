@@ -11,6 +11,8 @@
     "searchLabel": "Cari petugas, area, atau rayon",
     "filterLabel": "Filter",
     "refreshLabel": "Segarkan",
+    "refreshSuccess": "Data monitoring diperbarui",
+    "refreshError": "Gagal memperbarui data",
     "overdueToggleLabel": "Tampilkan tanaman terlambat dipangkas",
     "overdueToggleTitle": "Tanaman terlambat dipangkas",
     "overdueButtonLabel": "Tanaman",

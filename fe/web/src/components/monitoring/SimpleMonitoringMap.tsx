@@ -58,14 +58,14 @@ const AREA_MARKER = '#D97706';
 const AREA_MARKER_OVERDUE = '#DC2626';
 /* eslint-enable sekar-design/no-inline-hex-colors */
 
-// Native Google Maps controls + gesture UX: keep the native zoom control, use
-// greedy one-finger/scroll panning like the Google Maps app, and a My-Location
-// control (the JS API has no built-in one, so the button below drives it).
+// Native Google Maps gesture UX: greedy scroll/pinch zoom + drag pan (the camera
+// controls are enough, so the +/- zoom buttons are off). The only on-map control
+// is a single My-Location button (added natively in createLocateControl).
 const MAP_OPTIONS: google.maps.MapOptions = {
   streetViewControl: false,
   fullscreenControl: false,
   mapTypeControl: false,
-  zoomControl: true,
+  zoomControl: false,
   gestureHandling: 'greedy',
   clickableIcons: false,
   mapTypeId: 'roadmap',
@@ -151,6 +151,7 @@ function MonitoringMapInner({
   const { t } = useTranslation();
   const mapRef = useRef<google.maps.Map | null>(null);
   const locateMeRef = useRef<() => void>(() => {});
+  const locateAddedRef = useRef(false);
   const didFitRef = useRef(false);
   const [hoverAreaId, setHoverAreaId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
@@ -221,8 +222,12 @@ function MonitoringMapInner({
       mapRef.current = map;
       fitToContent(map);
       syncViewport(map);
-      // Stack the My-Location control with the native zoom control (no overlap).
-      createLocateControl(map, () => locateMeRef.current(), t('monitoring:map.locateMeAriaLabel'));
+      // Add the single My-Location control once (onLoad can fire again on a
+      // remount / Strict-Mode double-invoke — guard against duplicate buttons).
+      if (!locateAddedRef.current) {
+        createLocateControl(map, () => locateMeRef.current(), t('monitoring:map.locateMeAriaLabel'));
+        locateAddedRef.current = true;
+      }
     },
     [fitToContent, syncViewport, t]
   );
