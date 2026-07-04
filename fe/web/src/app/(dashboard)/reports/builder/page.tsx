@@ -15,7 +15,6 @@ import {
   FormInput,
   FormSelect,
   Button,
-  PageHeader,
   EmptyState,
   useToast,
   type FormSelectOption,
@@ -147,11 +146,6 @@ export default function ReportBuilderPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={t('page.title')}
-        description={t('page.description')}
-      />
-
       <Card>
         <CardContent className="space-y-4 max-w-2xl">
           <FormSelect

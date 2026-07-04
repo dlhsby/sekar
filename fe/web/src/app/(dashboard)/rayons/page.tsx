@@ -208,7 +208,9 @@ export default function RayonsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t('admin:rayons.pageTitle')} description={t('admin:rayons.description')} />
+      <PageHeader
+        description={rayons.length ? t('admin:rayons.totalCount', { count: rayons.length }) : undefined}
+      />
 
       <DataTable
         columns={columns}

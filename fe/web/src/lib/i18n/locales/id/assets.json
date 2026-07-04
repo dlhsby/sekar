@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "Aset",
-    "description": "Kelola aset dan perawatan"
+    "description": "Kelola aset dan perawatan",
+    "totalCount": "{{count}} aset"
   },
   "status": {
     "available": "Tersedia",
@@ -159,6 +160,8 @@
   },
   "maintenance2": {
     "pageDescription": "Kelola jadwal perawatan aset",
+    "overdueCount": "{{count}} perawatan terlambat",
+    "scheduledCount": "{{count}} perawatan dijadwalkan bulan ini",
     "selectLabel": "Pilih",
     "pageTitle": "Perawatan Aset",
     "upcoming": "Perawatan Mendatang",

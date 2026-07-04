@@ -73,6 +73,7 @@ export default function NotificationsPage() {
   return (
     <div className="space-y-5">
       <PageHeader
+        description={unreadCount > 0 ? t('list.unreadCount', { count: unreadCount }) : undefined}
         actions={
           unreadCount > 0 ? (
             <Button

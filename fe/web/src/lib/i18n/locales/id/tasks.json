@@ -1,6 +1,7 @@
 {
   "list": {
     "pageHeader": "Kelola penugasan lapangan.",
+    "totalCount": "{{count}} tugas",
     "createButton": "Buat Tugas",
     "scopeTabAll": "Semua Tugas",
     "scopeTabTagged": "Ditandai",
@@ -136,6 +137,7 @@
   "newPage": {
     "backButton": "Kembali ke daftar tugas",
     "pageHeader": "Tugaskan pekerjaan kepada petugas.",
+    "assignableRoles": "Dapat ditugaskan ke: {{roles}}",
     "cardTitle": "Informasi Tugas",
     "formTitleLabel": "Judul Tugas",
     "formTitlePlaceholder": "Contoh: Penyiraman Area Timur",

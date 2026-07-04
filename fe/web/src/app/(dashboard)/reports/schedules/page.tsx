@@ -321,8 +321,11 @@ export default function SchedulesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t('schedules.page.title')}
-        description={t('schedules.page.description')}
+        description={
+          schedulesList.length
+            ? t('schedules.page.totalCount', { count: schedulesList.length })
+            : undefined
+        }
         actions={
           <Button leftIcon={<Plus className="h-4 w-4" />} onClick={handleOpenCreate}>
             {t('schedules.actions.create')}

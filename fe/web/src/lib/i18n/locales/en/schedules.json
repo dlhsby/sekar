@@ -2,6 +2,7 @@
   "page": {
     "title": "Schedules",
     "dateLabel": "Date:",
+    "totalCount": "{{count}} schedules today",
     "emptyTitle": "No schedules yet",
     "emptyDescription": "Click \"Generate Schedule\" to create today's schedule.",
     "searchPlaceholder": "Search worker name…"
@@ -21,34 +22,33 @@
     "absent": "Absent",
     "leave_sick": "Sick Leave",
     "leave_annual": "Annual Leave",
+    "leave_permit": "Permit",
     "replaced": "Replaced",
     "off": "Off"
   },
   "rowActions": {
-    "leave": "Leave",
+    "absence": "Absence",
     "edit": "Edit Schedule",
-    "replace": "Replace Worker",
-    "editAreas": "Edit Areas",
-    "editShift": "Edit Shift"
+    "delete": "Delete"
   },
   "dialog": {
     "deleteTitle": "Delete Schedule?"
   },
   "modals": {
-    "leave": {
-      "title": "Leave",
-      "typeLabel": "Leave Type",
+    "absence": {
+      "title": "Absence",
+      "typeLabel": "Absence Type",
       "typeSick": "Sick",
       "typeAnnual": "Annual",
+      "typePermit": "Permit",
+      "typeOff": "Off",
       "notesLabel": "Notes (optional)",
       "notesPlaceholder": "Enter notes…"
     },
-    "replace": {
-      "title": "Replace Worker",
-      "workerLabel": "Replacement Worker",
-      "workerPlaceholder": "Select worker…",
-      "notesLabel": "Notes (optional)",
-      "notesPlaceholder": "Enter notes…"
+    "delete": {
+      "title": "Delete Schedule?",
+      "confirm": "Delete {{name}}'s schedule for {{date}}?",
+      "warning": "This action cannot be undone."
     },
     "areas": {
       "title": "Edit Areas",
@@ -58,18 +58,14 @@
       "emptyText": "No areas.",
       "helperText": "Leave empty to remove all areas for today."
     },
-    "shift": {
-      "title": "Edit Shift",
-      "label": "Shift",
-      "placeholder": "No Shift"
-    },
     "add": {
       "title": "Add Schedule",
       "workerLabel": "Worker",
       "workerPlaceholder": "Select worker…",
       "workerRequired": "Please select a worker",
+      "workerHelper": "Only showing workers who don't already have a schedule today.",
       "shiftLabel": "Shift",
-      "shiftOptional": "Optional — Use worker's default",
+      "shiftOptional": "Optional — No shift assigned",
       "areaLabel": "Areas",
       "areaPlaceholder": "Select areas…",
       "areaHelper": "Optional — Use worker's permanent areas",
@@ -78,9 +74,10 @@
     "edit": {
       "title": "Edit Schedule",
       "workerLabel": "Worker",
+      "workerLocked": "The worker cannot be changed here. To reassign, delete this schedule and create a new one.",
+      "rayonLabel": "Rayon",
       "shiftLabel": "Shift",
       "areaLabel": "Areas",
-      "replaceHint": "Changing the worker will replace with the new worker and inherit the original areas & shift.",
       "submit": "Save"
     },
     "areaList": {
@@ -90,10 +87,10 @@
   "messages": {
     "generateSuccess": "schedule(s) created successfully",
     "generateError": "Failed to create schedule",
-    "leaveSuccess": "Leave saved successfully",
-    "leaveError": "Failed to save leave",
-    "replaceSuccess": "Replacement worker saved successfully",
-    "replaceError": "Failed to save replacement",
+    "absenceSuccess": "Absence saved successfully",
+    "absenceError": "Failed to save absence",
+    "deleteSuccess": "Schedule deleted successfully",
+    "deleteError": "Failed to delete schedule",
     "areasSuccess": "Areas updated successfully",
     "areasError": "Failed to update areas",
     "shiftSuccess": "Shift updated successfully",

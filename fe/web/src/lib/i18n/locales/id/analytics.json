@@ -23,7 +23,8 @@
   },
   "areas": {
     "page": {
-      "title": "Analitik Area"
+      "title": "Analitik Area",
+      "totalCount": "{{count}} area dianalisis"
     },
     "search": {
       "label": "Cari area",
@@ -51,7 +52,8 @@
   },
   "workers": {
     "page": {
-      "title": "Analitik Pekerja"
+      "title": "Analitik Pekerja",
+      "totalCount": "{{count}} pekerja dianalisis"
     },
     "table": {
       "name": "Nama",

@@ -242,7 +242,13 @@ export default function OvertimePage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader description={t('overtime:list.description')} />
+      <PageHeader
+        description={
+          overtimeData?.meta.total
+            ? t('overtime:list.totalCount', { count: overtimeData.meta.total })
+            : undefined
+        }
+      />
 
       {/* Three-tab approval queue */}
       <Tabs

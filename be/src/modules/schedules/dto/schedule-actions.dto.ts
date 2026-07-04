@@ -11,11 +11,15 @@ export class GenerateRosterDto {
   date: string;
 }
 
-/** Mark a roster row as sick or annual leave. */
+/**
+ * Mark a roster row's absence (Ketidakhadiran). `sakit`→leave_sick,
+ * `cuti`→leave_annual, `izin`→leave_permit (excused, counts as on-leave),
+ * `libur`→off (a deliberate day off; not counted as absent/expected).
+ */
 export class SetLeaveDto {
-  @ApiProperty({ enum: ['sick', 'annual'] })
-  @IsIn(['sick', 'annual'])
-  leave_type: 'sick' | 'annual';
+  @ApiProperty({ enum: ['sick', 'annual', 'permit', 'off'] })
+  @IsIn(['sick', 'annual', 'permit', 'off'])
+  leave_type: 'sick' | 'annual' | 'permit' | 'off';
 
   @ApiProperty({ required: false, description: 'Reason / note' })
   @IsOptional()

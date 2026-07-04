@@ -1,7 +1,8 @@
 {
   "page": {
     "title": "Assets",
-    "description": "Manage assets and maintenance"
+    "description": "Manage assets and maintenance",
+    "totalCount": "{{count}} assets"
   },
   "status": {
     "available": "Available",
@@ -159,6 +160,8 @@
   },
   "maintenance2": {
     "pageDescription": "Manage asset maintenance schedules",
+    "overdueCount": "{{count}} overdue maintenance",
+    "scheduledCount": "{{count}} scheduled this month",
     "selectLabel": "Select",
     "pageTitle": "Asset Maintenance",
     "upcoming": "Upcoming Maintenance",

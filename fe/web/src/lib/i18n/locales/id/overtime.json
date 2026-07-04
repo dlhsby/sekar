@@ -2,6 +2,7 @@
   "list": {
     "title": "Manajemen Lembur",
     "description": "Kelola permintaan lembur",
+    "totalCount": "{{count}} permintaan lembur",
     "tabs": {
       "all": "Semua",
       "pending": "Menunggu",

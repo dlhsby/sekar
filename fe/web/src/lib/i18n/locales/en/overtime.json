@@ -2,6 +2,7 @@
   "list": {
     "title": "Overtime Management",
     "description": "Manage overtime requests",
+    "totalCount": "{{count}} overtime requests",
     "tabs": {
       "all": "All",
       "pending": "Pending",

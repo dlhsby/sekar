@@ -91,7 +91,6 @@ export default function PlantsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title={t('plants:catalog.title')}
         description={t('plants:catalog.description')}
         actions={
           <Combobox

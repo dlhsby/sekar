@@ -1,22 +1,23 @@
 /**
  * Jadwal (Schedules) Page — the daily roster, the single schedule concept
- * (ADR-013): date picker, status tracking, and row actions (leave, replace,
- * areas, shift).
+ * (ADR-013): date picker, status tracking, and row actions (absence, edit, delete).
  */
 
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import { format, parse } from 'date-fns';
-import { dateFnsLocale } from '@/lib/i18n/date-locale';
-import { Plus, Calendar, Pencil, MapPin } from 'lucide-react';
+import { Plus, Calendar, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import {
   Button,
   DataTable,
-  FormCombobox,
-  FormMultiCombobox,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogBody,
+  DialogFooter,
   FormSelect,
   Textarea,
   PageHeader,
@@ -26,7 +27,6 @@ import {
   type DataTableRowAction,
 } from '@/components/ui';
 import { RolePill } from '@/components/users/RolePill';
-import { RosterActionModal } from '@/components/schedules/RosterActionModal';
 import { AddScheduleModal } from '@/components/schedules/AddScheduleModal';
 import { EditScheduleModal } from '@/components/schedules/EditScheduleModal';
 import { AreaListSheet, type AreaListSheetItem } from '@/components/areas/AreaListSheet';
@@ -35,15 +35,17 @@ import {
   useDailyRoster,
   useGenerateRoster,
   useSetLeave,
-  useReplaceWorker,
   useUpdateRosterAreas,
   useUpdateRosterShift,
   useAddSchedule,
+  useDeleteSchedule,
   type Schedule,
+  type LeaveType,
 } from '@/lib/api/schedules';
 import { useUser } from '@/lib/auth/hooks';
 import { ADMIN_ROLES } from '@/lib/constants/roles';
 import { useAreas } from '@/lib/api/areas';
+import { useRayons } from '@/lib/api/rayons';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useUsers } from '@/lib/api/users';
 import { useUserAreas } from '@/lib/api/user-areas';
@@ -63,6 +65,7 @@ function getStatusTone(status: Schedule['status']): 'ok' | 'warn' | 'bad' | 'inf
       return 'bad';
     case 'leave_sick':
     case 'leave_annual':
+    case 'leave_permit':
       return 'warn';
     case 'replaced':
     case 'off':
@@ -72,7 +75,14 @@ function getStatusTone(status: Schedule['status']): 'ok' | 'warn' | 'bad' | 'inf
   }
 }
 
-
+/**
+ * Get area names for a schedule (helper)
+ */
+function getAreaNames(schedule: Schedule, areaById: Map<string, any>): string[] {
+  return schedule.schedule_areas
+    .map((sa) => areaById.get(sa.area_id)?.name)
+    .filter(Boolean) as string[];
+}
 
 export default function SchedulesPage() {
   const { t } = useTranslation(['schedules', 'common']);
@@ -92,11 +102,25 @@ export default function SchedulesPage() {
 
   const { data: rosters, isLoading, error, refetch } = useDailyRoster(selectedDate);
   const schedules = useMemo(() => rosters ?? [], [rosters]);
+  // Workers who already have a live row for the selected date — excluded from
+  // the "Tambah Jadwal" worker picker so an admin can't try to create a second
+  // schedule for the same worker/day (the backend also rejects it with a 400).
+  const scheduledUserIds = useMemo(
+    () => new Set(schedules.map((s) => s.user_id)),
+    [schedules],
+  );
 
   const { data: areasData } = useAreas({ limit: 1000 });
   const allAreas = useMemo(() => areasData?.data ?? [], [areasData]);
   // O(1) area lookup for the rayon column (avoids a per-row find over all areas).
   const areaById = useMemo(() => new Map(allAreas.map((a) => [a.id, a])), [allAreas]);
+
+  // All 7 rayons, straight from the authoritative endpoint — NOT derived from
+  // loaded areas. Deriving from areas silently dropped any rayon with zero
+  // areas (or areas outside the page), so the cascade only ever showed the
+  // rayons that happened to have areas loaded.
+  const { data: rayonsData } = useRayons();
+  const allRayons = useMemo(() => rayonsData ?? [], [rayonsData]);
 
   // A korlap edits only rows in their own assigned areas — fetch those to gate
   // the per-row actions (mirrors the backend hierarchy; backend is the real gate).
@@ -133,73 +157,77 @@ export default function SchedulesPage() {
 
   const generateRoster = useGenerateRoster();
   const setLeave = useSetLeave();
-  const replaceWorker = useReplaceWorker();
   const updateAreas = useUpdateRosterAreas();
   const updateShift = useUpdateRosterShift();
   const addSchedule = useAddSchedule();
+  const deleteSchedule = useDeleteSchedule();
 
   // Modal states
-  const [leaveModalOpen, setLeaveModalOpen] = useState(false);
-  const [leaveRosterId, setLeaveRosterId] = useState<string | null>(null);
-  const [leaveType, setLeaveType] = useState<'sick' | 'annual'>('sick');
-  const [leaveNotes, setLeaveNotes] = useState('');
+  const [absenceModalOpen, setAbsenceModalOpen] = useState(false);
+  const [absenceRosterId, setAbsenceRosterId] = useState<string | null>(null);
+  const [absenceType, setAbsenceType] = useState<'sick' | 'annual' | 'permit' | 'off'>('sick');
+  const [absenceNotes, setAbsenceNotes] = useState('');
+
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteRosterId, setDeleteRosterId] = useState<string | null>(null);
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editRosterId, setEditRosterId] = useState<string | null>(null);
 
   const [addModalOpen, setAddModalOpen] = useState(false);
 
-  // Roster whose areas are shown in the read-only side sheet (Area column).
   const [areasSheetRoster, setAreasSheetRoster] = useState<Schedule | null>(null);
-
-  // Helper to get area names from schedule_areas
-  const getAreaNames = (roster: Schedule): string[] => {
-    return roster.schedule_areas.map((a) => a.area.name);
-  };
-
-  // Areas of the roster shown in the side sheet (name + "Rayon · Tipe").
-  const areasSheetItems: AreaListSheetItem[] = useMemo(() => {
+  const areasSheetItems = useMemo<AreaListSheetItem[]>(() => {
     if (!areasSheetRoster) return [];
     return areasSheetRoster.schedule_areas.map((sa) => {
-      const full = areaById.get(sa.area_id);
+      const area = areaById.get(sa.area_id);
       return {
         id: sa.area_id,
-        name: sa.area?.name ?? full?.name ?? '—',
-        meta: [full?.rayon?.name, full?.areaType?.name].filter(Boolean).join(' · ') || undefined,
+        name: area?.name ?? '—',
       };
     });
   }, [areasSheetRoster, areaById]);
 
-  // Handlers for modals
+  // Delete target: the roster being deleted
+  const deleteTarget = useMemo(
+    () => schedules.find((r) => r.id === deleteRosterId) ?? null,
+    [schedules, deleteRosterId],
+  );
 
-  const handleSetLeave = async () => {
-    if (!leaveRosterId) return;
+  const handleSetAbsence = async () => {
+    if (!absenceRosterId) return;
+
+    // Map UI type to API leave_type
+    const leaveTypeMap: Record<typeof absenceType, LeaveType> = {
+      sick: 'sick',
+      annual: 'annual',
+      permit: 'permit',
+      off: 'off',
+    };
+
     try {
       await setLeave.mutateAsync({
-        id: leaveRosterId,
-        leave_type: leaveType,
-        notes: leaveNotes,
+        id: absenceRosterId,
+        leave_type: leaveTypeMap[absenceType],
+        notes: absenceNotes || undefined,
       });
-      toast.success(t('messages.leaveSuccess'));
-      setLeaveModalOpen(false);
-      setLeaveRosterId(null);
-      setLeaveType('sick');
-      setLeaveNotes('');
+      toast.success(t('messages.absenceSuccess'));
+      setAbsenceModalOpen(false);
+      refetch();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : t('messages.leaveError')
-      );
+      toast.error(getErrorMessage(err));
     }
   };
 
-  const handleReplaceWorker = async (id: string, replacementUserId: string) => {
+  const handleDeleteSchedule = async () => {
+    if (!deleteRosterId) return;
     try {
-      await replaceWorker.mutateAsync({
-        id,
-        replacement_user_id: replacementUserId,
-      });
+      await deleteSchedule.mutateAsync(deleteRosterId);
+      toast.success(t('messages.deleteSuccess'));
+      setDeleteModalOpen(false);
+      refetch();
     } catch (err) {
-      throw err;
+      toast.error(getErrorMessage(err));
     }
   };
 
@@ -229,6 +257,7 @@ export default function SchedulesPage() {
     try {
       await addSchedule.mutateAsync(input);
       setAddModalOpen(false);
+      refetch();
     } catch (err) {
       throw err;
     }
@@ -250,7 +279,6 @@ export default function SchedulesPage() {
     () => [
       {
         id: 'full_name',
-        // Defensive: a row without a joined user must not crash the whole table.
         accessorFn: (row) => row.user?.full_name ?? '',
         header: t('table.worker'),
         meta: { label: t('table.worker'), filterVariant: 'text' },
@@ -312,7 +340,7 @@ export default function SchedulesPage() {
       },
       {
         id: 'areas',
-        accessorFn: (row) => getAreaNames(row).join(', '),
+        accessorFn: (row) => getAreaNames(row, areaById).join(', '),
         header: t('table.area'),
         meta: { label: t('table.area'), filterVariant: 'text' },
         cell: ({ row }) => {
@@ -326,7 +354,7 @@ export default function SchedulesPage() {
               aria-label={t('buttons.areaCountAriaLabel', { count, name: roster.user?.full_name ?? 'pekerja' })}
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border-2 border-nb-black rounded-nb-base bg-nb-white text-nb-body-sm font-bold shadow-nb-xs hover:shadow-nb-sm active:shadow-none transition-shadow duration-100"
             >
-              <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
+              📍
               {t('buttons.areaCount', { count })}
             </button>
           );
@@ -366,16 +394,16 @@ export default function SchedulesPage() {
     (roster: Schedule): DataTableRowAction<Schedule>[] => {
       if (!canEditRoster(roster)) return [];
 
-      return [
+      const actions: DataTableRowAction<Schedule>[] = [
         {
-          key: 'leave',
-          label: t('rowActions.leave'),
+          key: 'absence',
+          label: t('rowActions.absence'),
           icon: Calendar,
           onClick: () => {
-            setLeaveRosterId(roster.id);
-            setLeaveType('sick');
-            setLeaveNotes('');
-            setLeaveModalOpen(true);
+            setAbsenceRosterId(roster.id);
+            setAbsenceType('sick');
+            setAbsenceNotes('');
+            setAbsenceModalOpen(true);
           },
         },
         {
@@ -388,8 +416,23 @@ export default function SchedulesPage() {
           },
         },
       ];
+
+      // Delete action: admin only
+      if (currentUser && ADMIN_ROLES.includes(currentUser.role)) {
+        actions.push({
+          key: 'delete',
+          label: t('rowActions.delete'),
+          icon: Trash2,
+          onClick: () => {
+            setDeleteRosterId(roster.id);
+            setDeleteModalOpen(true);
+          },
+        });
+      }
+
+      return actions;
     },
-    [canEditRoster, t],
+    [canEditRoster, currentUser, t],
   );
 
   // Edit target: the roster being edited in the modal
@@ -403,49 +446,28 @@ export default function SchedulesPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader description={format(parse(selectedDate, 'yyyy-MM-dd', new Date()), 'EEEE, dd MMMM yyyy', { locale: dateFnsLocale() })} />
+      <PageHeader
+        description={schedules.length ? t('page.totalCount', { count: schedules.length }) : undefined}
+      />
 
-      {/* Date Picker and Buttons */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <label htmlFor="date-picker" className="text-nb-body font-medium">
-            {t('page.dateLabel')}
-          </label>
-          <input
-            id="date-picker"
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="rounded-nb-base border-2 border-nb-black px-3 py-2 text-nb-body"
-          />
-        </div>
-
-        <div className="flex gap-2">
-          {canGenerate && !alreadyGenerated && !isLoading && (
-            <Button
-              onClick={handleGenerate}
-              loading={generateRoster.isPending}
-              leftIcon={<Plus className="h-5 w-5" />}
-            >
-              {t('buttons.generate')}
-            </Button>
-          )}
-
-          {canEditRoster(
-            schedules[0] ?? ({ rayon_id: currentUser?.rayon_id } as Schedule)
-          ) && (
-            <Button
-              onClick={() => setAddModalOpen(true)}
-              variant="secondary"
-              leftIcon={<Plus className="h-5 w-5" />}
-            >
-              {t('buttons.addOne')}
-            </Button>
-          )}
-        </div>
+      {/* Date Picker */}
+      <div className="flex items-center gap-3">
+        <label htmlFor="date-picker" className="text-nb-body font-medium">
+          {t('page.dateLabel')}
+        </label>
+        <input
+          id="date-picker"
+          type="date"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          className="rounded-nb-base border-2 border-nb-black px-3 py-2 text-nb-body"
+        />
       </div>
 
-      {/* Data Table */}
+      {/* Data Table — refresh/filter/columns live in the table's own toolbar row;
+          "Tambah Jadwal" (and "Buat Jadwal Hari Ini" when applicable) are passed
+          via `actions` so they render rightmost in that SAME row, same as
+          Users/Areas. Do not add a second manual refresh button here. */}
       <DataTable
         columns={columns}
         data={schedules}
@@ -456,57 +478,126 @@ export default function SchedulesPage() {
         getRowId={(r) => r.id}
         searchPlaceholder={t('page.searchPlaceholder')}
         rowActions={rowActions}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {canGenerate && !alreadyGenerated && !isLoading && (
+              <Button
+                onClick={handleGenerate}
+                loading={generateRoster.isPending}
+                variant="outline"
+                leftIcon={<Plus className="h-4 w-4" />}
+              >
+                {t('buttons.generate')}
+              </Button>
+            )}
+
+            {canEditRoster(
+              schedules[0] ?? ({ rayon_id: currentUser?.rayon_id } as Schedule)
+            ) && (
+              <Button onClick={() => setAddModalOpen(true)} leftIcon={<Plus className="h-4 w-4" />}>
+                {t('buttons.addOne')}
+              </Button>
+            )}
+          </div>
+        }
         emptyTitle={schedules.length === 0 ? t('page.emptyTitle') : undefined}
         emptyDescription={schedules.length === 0 ? t('page.emptyDescription') : undefined}
       />
 
-      {/* Leave Modal */}
-      <RosterActionModal
-        open={leaveModalOpen}
-        title={t('modals.leave.title')}
-        onClose={() => setLeaveModalOpen(false)}
-        onSubmit={handleSetLeave}
-        submitLabel={t('common:actions.save')}
-        loading={setLeave.isPending}
-        error={setLeave.isError && getErrorMessage(setLeave.error)}
-      >
-        <FormSelect
-          label={t('modals.leave.typeLabel')}
-          value={leaveType}
-          onChange={(value) => setLeaveType(value as 'sick' | 'annual')}
-          options={[
-            { value: 'sick', label: t('modals.leave.typeSick') },
-            { value: 'annual', label: t('modals.leave.typeAnnual') },
-          ]}
-        />
-        <Textarea
-          label={t('modals.leave.notesLabel')}
-          value={leaveNotes}
-          onChange={(e) => setLeaveNotes(e.target.value)}
-          placeholder={t('modals.leave.notesPlaceholder')}
-          rows={3}
-        />
-      </RosterActionModal>
+      {/* Absence Modal (Ketidakhadiran) */}
+      <Dialog open={absenceModalOpen} onOpenChange={setAbsenceModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('modals.absence.title')}</DialogTitle>
+          </DialogHeader>
 
-      {/* Edit Schedule Modal (unified) */}
+          <DialogBody>
+            <div className="space-y-4">
+              <FormSelect
+                label={t('modals.absence.typeLabel')}
+                value={absenceType}
+                onChange={(value) => setAbsenceType(value as 'sick' | 'annual' | 'permit' | 'off')}
+                options={[
+                  { value: 'sick', label: t('modals.absence.typeSick') },
+                  { value: 'annual', label: t('modals.absence.typeAnnual') },
+                  { value: 'permit', label: t('modals.absence.typePermit') },
+                  { value: 'off', label: t('modals.absence.typeOff') },
+                ]}
+              />
+              <Textarea
+                label={t('modals.absence.notesLabel')}
+                value={absenceNotes}
+                onChange={(e) => setAbsenceNotes(e.target.value)}
+                placeholder={t('modals.absence.notesPlaceholder')}
+                rows={3}
+              />
+            </div>
+          </DialogBody>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAbsenceModalOpen(false)}>
+              {t('common:actions.cancel')}
+            </Button>
+            <Button onClick={handleSetAbsence} loading={setLeave.isPending}>
+              {t('common:actions.save')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('modals.delete.title')}</DialogTitle>
+          </DialogHeader>
+
+          <DialogBody>
+            <div className="space-y-3">
+              <p className="text-nb-body">
+                {t('modals.delete.confirm', {
+                  name: deleteTarget?.user?.full_name ?? '—',
+                  date: selectedDate,
+                })}
+              </p>
+              <p className="text-nb-body-sm text-nb-gray-600">
+                {t('modals.delete.warning')}
+              </p>
+            </div>
+          </DialogBody>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
+              {t('common:actions.cancel')}
+            </Button>
+            <Button
+              onClick={handleDeleteSchedule}
+              loading={deleteSchedule.isPending}
+              variant="destructive"
+            >
+              {t('modals.delete.title')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Schedule Modal — worker is fixed; only shift/areas are editable
+          (see EditScheduleModal for why: changing the worker here could corrupt
+          data, so that's only offered via delete + Tambah Jadwal). */}
       <EditScheduleModal
         open={editModalOpen}
         onClose={() => setEditModalOpen(false)}
         roster={editRoster}
-        onReplaceWorker={handleReplaceWorker}
         onUpdateShift={handleUpdateShiftForEdit}
         onUpdateAreas={handleUpdateAreasForEdit}
-        replaceLoading={replaceWorker.isPending}
         shiftLoading={updateShift.isPending}
         areasLoading={updateAreas.isPending}
-        allUsers={allUsers}
         shifts={shifts}
+        allRayons={allRayons}
         allAreas={allAreas}
         error={
-          replaceWorker.isError || updateShift.isError || updateAreas.isError
-            ? getErrorMessage(
-                replaceWorker.error || updateShift.error || updateAreas.error
-              )
+          updateShift.isError || updateAreas.isError
+            ? getErrorMessage(updateShift.error || updateAreas.error)
             : undefined
         }
       />
@@ -519,12 +610,14 @@ export default function SchedulesPage() {
         loading={addSchedule.isPending}
         date={selectedDate}
         allUsers={allUsers}
+        scheduledUserIds={scheduledUserIds}
         shifts={shifts}
+        allRayons={allRayons}
         allAreas={allAreas}
         error={addSchedule.isError ? getErrorMessage(addSchedule.error) : undefined}
       />
 
-      {/* Read-only side sheet listing a roster's areas (Area column). */}
+      {/* Read-only side sheet listing a roster's areas */}
       <AreaListSheet
         open={!!areasSheetRoster}
         title={t('modals.areaList.title')}
