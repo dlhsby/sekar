@@ -40,7 +40,7 @@ export function MobileInstallPush() {
     <div className="sm:hidden">
       <div
         role="complementary"
-        aria-label="Unduh aplikasi SEKAR"
+        aria-label={t("common:pwa.downloadAppTitle")}
         className="mt-4 rounded-nb-base border-2 border-nb-black p-4 shadow-nb-sm bg-nb-background"
       >
         <div className="flex items-start justify-between gap-3">
@@ -49,12 +49,8 @@ export function MobileInstallPush() {
               <Smartphone className="h-5 w-5 text-nb-black" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <p className="text-nb-body-sm font-bold uppercase tracking-wide text-nb-black">
-                Unduh Aplikasi SEKAR
-              </p>
-              <p className="text-nb-caption text-nb-gray-600 mt-0.5">
-                Untuk pengalaman lebih baik dengan GPS, kamera, dan notifikasi push
-              </p>
+              <p className="text-nb-body-sm font-bold uppercase tracking-wide text-nb-black">{t("common:pwa.downloadAppTitle")}</p>
+              <p className="text-nb-caption text-nb-gray-600 mt-0.5">{t("common:pwa.gpsHint")}</p>
             </div>
           </div>
           <button

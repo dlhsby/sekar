@@ -68,7 +68,7 @@ export function InstallBanner() {
   return (
     <div
       role="banner"
-      aria-label="Pasang aplikasi SEKAR"
+      aria-label={t("common:pwa.installApp")}
       className="fixed bottom-0 left-0 right-0 z-40 p-3"
     >
       <div
@@ -77,11 +77,9 @@ export function InstallBanner() {
       >
         <div className="flex items-center gap-2 min-w-0">
           <Download className="h-5 w-5 shrink-0 text-nb-black" aria-hidden="true" />
-          <span className="text-nb-body-sm font-semibold uppercase text-nb-black tracking-wide truncate">
-            Pasang Aplikasi
-          </span>
+          <span className="text-nb-body-sm font-semibold uppercase text-nb-black tracking-wide truncate">{t("common:pwa.installTitle")}</span>
           <span className="hidden sm:inline text-nb-body-sm text-nb-black">
-            — Akses lebih cepat tanpa browser
+            {t("common:pwa.installBenefit")}
           </span>
         </div>
 
@@ -89,10 +87,8 @@ export function InstallBanner() {
           <button
             onClick={handleInstall}
             className="rounded-nb-base border-2 border-nb-black bg-nb-primary px-3 py-1 text-nb-caption font-bold uppercase text-nb-black shadow-nb-xs transition-shadow hover:shadow-nb-sm active:shadow-none"
-            aria-label="Pasang aplikasi SEKAR"
-          >
-            Pasang
-          </button>
+            aria-label={t("common:pwa.installApp")}
+          >{t("common:pwa.install")}</button>
           <button
             onClick={handleDismiss}
             className="rounded-nb-sm border border-nb-black bg-transparent p-1 text-nb-black hover:bg-black/10"

@@ -107,7 +107,8 @@
     "taskDetails": "Detail Tugas",
     "cancelButton": "Batal",
     "delegationTitle": "Disposisi Tugas",
-    "delegationDescription": "Limpahkan tugas ini ke bawahan Anda sebelum diterima. Setelah disposisi, penerima berikutnya akan menerima notifikasi dan rangkaian dicatat di Riwayat Penugasan."
+    "delegationDescription": "Limpahkan tugas ini ke bawahan Anda sebelum diterima. Setelah disposisi, penerima berikutnya akan menerima notifikasi dan rangkaian dicatat di Riwayat Penugasan.",
+    "photosLabel": "Foto ({{count}})"
   },
   "form": {
     "titleLabel": "Judul Tugas",

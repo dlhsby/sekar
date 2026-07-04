@@ -190,11 +190,12 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   return (
     <Suspense
       fallback={
         <div className="flex min-h-screen items-center justify-center bg-nb-background">
-          <div className="text-nb-gray-600">Loading...</div>
+          <div className="text-nb-gray-600">{t("common:actions.loading")}</div>
         </div>
       }
     >

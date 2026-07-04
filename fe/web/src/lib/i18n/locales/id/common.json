@@ -190,7 +190,8 @@
     "selectDateTime": "Pilih tanggal & waktu",
     "prevDay": "Hari sebelumnya",
     "nextDay": "Hari berikutnya",
-    "today": "Hari ini"
+    "today": "Hari ini",
+    "now": "Sekarang"
   },
   "time": {
     "relativeJustNow": "Baru saja",
@@ -207,5 +208,34 @@
   "errors2": {
     "unknown": "kesalahan tidak diketahui",
     "userNotFound": "Pengguna tidak ditemukan"
+  },
+  "a11y": {
+    "skipToMain": "Lewati ke konten utama",
+    "loadingDashboard": "Memuat konten dashboard",
+    "pageLoading": "Progres pemuatan halaman",
+    "openNav": "Buka menu navigasi",
+    "toggleSidebar": "Alihkan sidebar",
+    "userMenu": "Menu pengguna",
+    "monitoringPanel": "Panel monitoring"
+  },
+  "appError": {
+    "title": "Terjadi Kesalahan",
+    "authMessage": "Terjadi kesalahan saat memproses autentikasi. Silakan coba lagi atau keluar dan masuk kembali.",
+    "checkingAuth": "Memeriksa autentikasi..."
+  },
+  "offline": {
+    "title": "Anda Sedang Offline",
+    "body": "Tidak dapat memuat halaman ini karena koneksi internet tidak tersedia. Periksa koneksi Anda dan coba lagi.",
+    "cachedNote": "Data yang sudah dimuat sebelumnya masih dapat diakses melalui menu navigasi."
+  },
+  "pwa": {
+    "installTitle": "Pasang Aplikasi",
+    "installApp": "Pasang aplikasi SEKAR",
+    "install": "Pasang",
+    "installBenefit": "— Akses lebih cepat tanpa browser",
+    "downloadAppTitle": "Unduh Aplikasi SEKAR",
+    "downloadAndroid": "Unduh Aplikasi Android",
+    "gpsHint": "Untuk pengalaman lebih baik dengan GPS, kamera, dan notifikasi push",
+    "whatsappChat": "Chat WhatsApp"
   }
 }

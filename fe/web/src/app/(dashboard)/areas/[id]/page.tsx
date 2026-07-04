@@ -128,9 +128,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
               onClick={() => setEditModal(true)}
               variant="secondary"
               leftIcon={<Edit className="w-4 h-4" />}
-            >
-              Edit
-            </Button>
+            >{t("common:actions.edit")}</Button>
             <Button
               onClick={() => setDeleteModal(true)}
               variant="destructive"

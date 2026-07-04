@@ -69,7 +69,8 @@
       "submitCreate": "Create User"
     },
     "areasTitle": "Assigned Areas",
-    "noAreasAssigned": "No assigned areas yet."
+    "noAreasAssigned": "No assigned areas yet.",
+    "areaCount": "{{count}} Areas"
   },
   "areas": {
     "pageTitle": "Areas",

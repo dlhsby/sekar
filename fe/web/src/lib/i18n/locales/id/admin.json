@@ -69,7 +69,8 @@
       "submitCreate": "Buat Pengguna"
     },
     "areasTitle": "Area Ditugaskan",
-    "noAreasAssigned": "Belum ada area yang ditugaskan."
+    "noAreasAssigned": "Belum ada area yang ditugaskan.",
+    "areaCount": "{{count}} Area"
   },
   "areas": {
     "pageTitle": "Area",

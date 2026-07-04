@@ -206,9 +206,7 @@ export const DateTimePicker = forwardRef<HTMLInputElement, DateTimePickerProps>(
                 setOpen(false);
               }}
               className="rounded-nb-base px-2 py-1.5 text-nb-body-sm font-semibold text-nb-success-dark hover:bg-nb-gray-100"
-            >
-              Sekarang
-            </button>
+            >{t("common:pickers.now")}</button>
           </div>
         </PopoverContent>
       </Popover>

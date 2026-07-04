@@ -107,7 +107,8 @@
     "taskDetails": "Task Details",
     "cancelButton": "Cancel",
     "delegationTitle": "Task Delegation",
-    "delegationDescription": "Delegate this task to your subordinate before it is accepted. After delegation, the next recipient will receive a notification and the chain will be recorded in Assignment History."
+    "delegationDescription": "Delegate this task to your subordinate before it is accepted. After delegation, the next recipient will receive a notification and the chain will be recorded in Assignment History.",
+    "photosLabel": "Photos ({{count}})"
   },
   "form": {
     "titleLabel": "Task Title",

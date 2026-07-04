@@ -190,7 +190,8 @@
     "selectDateTime": "Select date & time",
     "prevDay": "Previous day",
     "nextDay": "Next day",
-    "today": "Today"
+    "today": "Today",
+    "now": "Now"
   },
   "time": {
     "relativeJustNow": "Just now",
@@ -207,5 +208,34 @@
   "errors2": {
     "unknown": "unknown error",
     "userNotFound": "User not found"
+  },
+  "a11y": {
+    "skipToMain": "Skip to main content",
+    "loadingDashboard": "Loading dashboard content",
+    "pageLoading": "Page loading progress",
+    "openNav": "Open navigation menu",
+    "toggleSidebar": "Toggle sidebar",
+    "userMenu": "User menu",
+    "monitoringPanel": "Monitoring panel"
+  },
+  "appError": {
+    "title": "An Error Occurred",
+    "authMessage": "An error occurred while processing authentication. Please try again or sign out and back in.",
+    "checkingAuth": "Checking authentication..."
+  },
+  "offline": {
+    "title": "You Are Offline",
+    "body": "This page cannot load because there is no internet connection. Check your connection and try again.",
+    "cachedNote": "Previously loaded data is still accessible via the navigation menu."
+  },
+  "pwa": {
+    "installTitle": "Install App",
+    "installApp": "Install the SEKAR app",
+    "install": "Install",
+    "installBenefit": "— Faster access, no browser",
+    "downloadAppTitle": "Download the SEKAR App",
+    "downloadAndroid": "Download the Android App",
+    "gpsHint": "For a better experience with GPS, camera, and push notifications",
+    "whatsappChat": "WhatsApp Chat"
   }
 }

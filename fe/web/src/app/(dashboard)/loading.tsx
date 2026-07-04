@@ -10,9 +10,12 @@
  * - Matches dashboard layout structure
  * - Accessible (aria-busy, aria-label)
  */
+import { useTranslation } from 'react-i18next';
+
 export default function DashboardLoading() {
+  const { t } = useTranslation();
   return (
-    <div className="animate-pulse" aria-busy="true" aria-label="Loading dashboard content">
+    <div className="animate-pulse" aria-busy="true" aria-label={t("common:a11y.loadingDashboard")}>
       {/* Page title skeleton */}
       <div className="mb-6">
         <div className="h-10 w-64 bg-nb-gray-200 border-2 border-nb-black mb-2" />

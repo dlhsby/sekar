@@ -400,7 +400,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
               {task.completion_photo_urls && task.completion_photo_urls.length > 0 && (
                 <div>
                   <div className="text-sm font-semibold text-nb-gray-600 mb-2">
-                    Foto ({task.completion_photo_urls.length})
+                    {t('tasks:detail.photosLabel', { count: task.completion_photo_urls.length })}
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     {task.completion_photo_urls.map((url, index) => (

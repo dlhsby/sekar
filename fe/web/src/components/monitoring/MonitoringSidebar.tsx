@@ -307,7 +307,7 @@ export function MonitoringSidebar({
               size="sm"
               value={tab}
               onValueChange={(k) => setTab(k as SidebarTab)}
-              aria-label="Panel monitoring"
+              aria-label={t("common:a11y.monitoringPanel")}
               tabs={[
                 { key: 'petugas', label: t('monitoring:sidebar.tabWorkers'), count: workers.length },
                 { key: 'area', label: t('monitoring:sidebar.tabAreas'), count: areaSummaries.length },

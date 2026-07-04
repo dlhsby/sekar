@@ -16,6 +16,7 @@ const noInlineHexColors = require('./rules/no-inline-hex-colors');
 const noTailwindShadowClassesWithBlur = require('./rules/no-tailwind-shadow-classes-with-blur');
 const preferNbShadowUtility = require('./rules/prefer-nb-shadow-utility');
 const rnNoShadowRadius = require('./rules/rn-no-shadow-radius');
+const noUntranslatedLiteral = require('./rules/no-untranslated-literal');
 
 module.exports = {
   meta: {
@@ -27,5 +28,6 @@ module.exports = {
     'no-tailwind-shadow-classes-with-blur': noTailwindShadowClassesWithBlur,
     'prefer-nb-shadow-utility': preferNbShadowUtility,
     'rn-no-shadow-radius': rnNoShadowRadius,
+    'no-untranslated-literal': noUntranslatedLiteral,
   },
 };

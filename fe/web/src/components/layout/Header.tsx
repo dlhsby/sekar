@@ -83,7 +83,7 @@ export function Header({ className, ...props }: HeaderProps) {
             size="icon"
             onClick={toggleSidebar}
             className="lg:hidden"
-            aria-label="Open navigation menu"
+            aria-label={t("common:a11y.openNav")}
           >
             <Menu className="h-5 w-5" />
           </Button>
@@ -94,7 +94,7 @@ export function Header({ className, ...props }: HeaderProps) {
             size="icon"
             onClick={toggleSidebar}
             className="hidden lg:flex"
-            aria-label="Toggle sidebar"
+            aria-label={t("common:a11y.toggleSidebar")}
           >
             <Menu className="h-5 w-5" />
           </Button>
@@ -102,7 +102,7 @@ export function Header({ className, ...props }: HeaderProps) {
           {/* Breadcrumb + page title — the single, consistent masthead for
               every dashboard route (pages no longer render their own). */}
           <div className="min-w-0 flex-1">
-            <nav aria-label="Breadcrumb" className="truncate">
+            <nav aria-label={t("common:nav.breadcrumbAria")} className="truncate">
               <span className="font-mono text-[11px] uppercase leading-none tracking-wide text-nb-gray-500">
                 {breadcrumbTrail.join(' · ')}
               </span>
@@ -134,7 +134,7 @@ export function Header({ className, ...props }: HeaderProps) {
                     'transition-all duration-100',
                     'focus-visible:outline focus-visible:outline-4 focus-visible:outline-nb-primary/50 focus-visible:outline-offset-2'
                   )}
-                  aria-label="User menu"
+                  aria-label={t("common:a11y.userMenu")}
                 >
                   <RoleAvatar
                     name={user.full_name}

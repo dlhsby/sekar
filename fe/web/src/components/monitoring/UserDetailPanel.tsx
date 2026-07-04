@@ -277,9 +277,7 @@ export function UserDetailPanel({
                   'border-2 border-nb-black bg-green-400 text-green-900',
                   'shadow-nb-xs hover:shadow-nb-sm transition-all duration-150'
                 )}
-              >
-                WhatsApp Chat
-              </a>
+              >{t("common:pwa.whatsappChat")}</a>
               <a
                 href={summary.whatsapp_links.call}
                 target="_blank"

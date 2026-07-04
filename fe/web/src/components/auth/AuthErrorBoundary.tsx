@@ -1,6 +1,7 @@
 'use client';
 
 import { Component, ErrorInfo, ReactNode } from 'react';
+import i18n from '@/lib/i18n/config';
 import { Button } from '@/components/ui';
 import { AlertTriangle, RefreshCw, LogOut } from 'lucide-react';
 
@@ -70,15 +71,10 @@ export class AuthErrorBoundary extends Component<Props, State> {
               </div>
 
               {/* Error title */}
-              <h1 className="text-2xl font-bold text-nb-black text-center mb-4">
-                Terjadi Kesalahan
-              </h1>
+              <h1 className="text-2xl font-bold text-nb-black text-center mb-4">{i18n.t("common:appError.title")}</h1>
 
               {/* Error message */}
-              <p className="text-nb-gray-700 text-center mb-6">
-                Terjadi kesalahan saat memproses autentikasi. Silakan coba lagi atau keluar dan
-                masuk kembali.
-              </p>
+              <p className="text-nb-gray-700 text-center mb-6">{i18n.t("common:appError.authMessage")}</p>
 
               {/* Error details (development only) */}
               {process.env.NODE_ENV === 'development' && this.state.error && (
@@ -95,17 +91,13 @@ export class AuthErrorBoundary extends Component<Props, State> {
                   onClick={this.handleRetry}
                   className="w-full"
                   leftIcon={<RefreshCw className="w-4 h-4" />}
-                >
-                  Coba Lagi
-                </Button>
+                >{i18n.t("common:actions.retry")}</Button>
                 <Button
                   variant="secondary"
                   onClick={this.handleLogout}
                   className="w-full"
                   leftIcon={<LogOut className="w-4 h-4" />}
-                >
-                  Keluar
-                </Button>
+                >{i18n.t("common:actions.logout")}</Button>
               </div>
             </div>
           </div>
