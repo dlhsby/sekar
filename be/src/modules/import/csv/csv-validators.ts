@@ -13,7 +13,8 @@ export interface ValidatedUserRow {
   full_name: string;
   phone_number?: string;
   role: UserRole;
-  password: string;
+  /** Optional: when omitted the backend generates a one-time temp password. */
+  password?: string;
   area_id?: string;
   rayon_id?: string;
   employee_id?: string;
@@ -93,7 +94,10 @@ function validateUserRow(
     fail('phone_number', 'Must be E.164 format (+62...)');
   }
 
-  if ((row.password ?? '').length < 8) {
+  // Password is optional: omit it and the backend generates a one-time temp
+  // password (forced change on first login) that is returned so admins can hand
+  // it out. Only validate length when a value is actually supplied.
+  if (row.password && row.password.length < 8) {
     fail('password', 'Password must be at least 8 characters');
   }
 
@@ -114,7 +118,7 @@ function validateUserRow(
     username,
     full_name: fullName,
     role,
-    password: row.password,
+    password: row.password || undefined,
     phone_number: phone || undefined,
     area_id: row.area_id || undefined,
     rayon_id: row.rayon_id || undefined,

@@ -214,6 +214,57 @@ describe('SchedulesService', () => {
     });
   });
 
+  describe('addForDay', () => {
+    it('adds one row, defaulting shift + areas to the worker template', async () => {
+      userRepo.findOne.mockResolvedValue({
+        id: 'W',
+        is_active: true,
+        role: UserRole.SATGAS,
+        rayon_id: 'r1',
+        shift_definition_id: 's1',
+      });
+      rosterRepo.findOne
+        .mockResolvedValueOnce(null) // findByUserAndDate → no existing row
+        .mockResolvedValueOnce({ id: 'new', user_id: 'W' }); // final findOne
+      userAreas.getPermanentAreaIds.mockResolvedValue(['areaP']);
+
+      await service.addForDay({ user_id: 'W', date: '2026-07-04' }, ADMIN);
+
+      const saved = rosterRepo.save.mock.calls[0][0];
+      expect(saved).toMatchObject({
+        user_id: 'W',
+        schedule_date: '2026-07-04',
+        shift_definition_id: 's1',
+        status: ScheduleStatus.PLANNED,
+        source: 'manual',
+      });
+      // Default areas (worker's permanent areas) are applied.
+      expect(areaRepo.save).toHaveBeenCalled();
+    });
+
+    it('rejects when the worker already has a schedule that day (one per day)', async () => {
+      userRepo.findOne.mockResolvedValue({ id: 'W', is_active: true, role: UserRole.SATGAS });
+      rosterRepo.findOne.mockResolvedValueOnce({ id: 'existing', user_id: 'W' });
+
+      await expect(service.addForDay({ user_id: 'W', date: '2026-07-04' }, ADMIN)).rejects.toThrow(
+        'already has a schedule',
+      );
+      expect(rosterRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects a non-schedulable role (staff_kecamatan)', async () => {
+      userRepo.findOne.mockResolvedValue({
+        id: 'K',
+        is_active: true,
+        role: UserRole.STAFF_KECAMATAN,
+      });
+
+      await expect(service.addForDay({ user_id: 'K', date: '2026-07-04' }, ADMIN)).rejects.toThrow(
+        'not schedulable',
+      );
+    });
+  });
+
   describe('updateShift', () => {
     it('clearing the shift flips a PLANNED row to OFF', async () => {
       rosterRepo.findOne

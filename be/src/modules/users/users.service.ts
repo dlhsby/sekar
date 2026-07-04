@@ -22,6 +22,20 @@ import { generateTempPassword } from '../../common/utils/password.util';
 /** A user plus a one-time plaintext password (only present on create/reset). */
 export type UserWithTempPassword = User & { temp_password?: string };
 
+/** A single reset outcome: the identity plus the one-time temp password. */
+export interface ResetCredential {
+  id: string;
+  username: string;
+  phone_number: string | null;
+  temp_password: string;
+}
+
+/** Result of a bulk password reset — successes carry temp passwords to hand out. */
+export interface BulkResetPasswordResult {
+  results: ResetCredential[];
+  failed: Array<{ id: string; reason: string }>;
+}
+
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
@@ -63,9 +77,13 @@ export class UsersService {
       await this.userValidation.assertPhoneAvailable(phone_number);
     }
 
-    // Admins don't set passwords: when none is supplied we generate a one-time
-    // temp password and force a change on first login. An explicit password
-    // (e.g. CSV import) is honoured as-is.
+    // Admins don't own the user's real password: when none is supplied we
+    // generate a one-time temp password. Whether the password is auto-generated
+    // OR explicitly supplied (e.g. CSV import), it is only a bootstrap credential
+    // — always force a change on first login so a value the worker never chose
+    // can't become their standing password. (Regression: UAT CSV imports created
+    // users with `password_must_change=false` + passwords nobody knew, locking
+    // them out.)
     const tempPassword = password ? undefined : generateTempPassword();
     const password_hash = await this.authService.hashPassword(password ?? tempPassword!);
 
@@ -75,7 +93,7 @@ export class UsersService {
       full_name,
       role,
       phone_number: phone_number || null,
-      password_must_change: !password,
+      password_must_change: true,
       rayon_id: rayon_id ?? undefined,
       shift_definition_id: shift_definition_id ?? undefined,
       // Primary area = first assigned area (legacy `users.area_id` fallback).
@@ -111,6 +129,35 @@ export class UsersService {
    * Returns the plaintext temp password once — it is never stored.
    */
   async resetPassword(id: string, actor?: User): Promise<{ temp_password: string }> {
+    const { temp_password } = await this.resetOne(id, actor);
+    return { temp_password };
+  }
+
+  /**
+   * Bulk admin password reset — reset each user to a fresh one-time temp password
+   * and force a change on next login. Never all-or-nothing: a missing/invalid id
+   * is collected in `failed` while the rest succeed. Successes return the temp
+   * password once so admins can distribute them (e.g. to unblock a rayon of
+   * field workers imported without a known password).
+   */
+  async bulkResetPassword(ids: string[], actor?: User): Promise<BulkResetPasswordResult> {
+    const results: ResetCredential[] = [];
+    const failed: Array<{ id: string; reason: string }> = [];
+    for (const id of [...new Set(ids)]) {
+      try {
+        results.push(await this.resetOne(id, actor));
+      } catch (error) {
+        failed.push({ id, reason: error instanceof Error ? error.message : 'Unknown error' });
+      }
+    }
+    this.logger.log(
+      `Bulk password reset by ${actor?.id ?? 'system'}: ${results.length} reset, ${failed.length} failed`,
+    );
+    return { results, failed };
+  }
+
+  /** Reset one user to a fresh temp password + forced change; returns the credential. */
+  private async resetOne(id: string, actor?: User): Promise<ResetCredential> {
     const user = await this.findOne(id);
     const tempPassword = generateTempPassword();
     user.password_hash = await this.authService.hashPassword(tempPassword);
@@ -124,7 +171,12 @@ export class UsersService {
       actor_id: actor?.id ?? id,
       new_value: { password_must_change: true },
     });
-    return { temp_password: tempPassword };
+    return {
+      id,
+      username: user.username,
+      phone_number: user.phone_number ?? null,
+      temp_password: tempPassword,
+    };
   }
 
   /**

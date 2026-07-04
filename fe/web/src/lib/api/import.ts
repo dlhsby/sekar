@@ -29,10 +29,17 @@ export interface CsvValidationResponse {
   sessionId?: string;
 }
 
+export interface ImportedCredential {
+  username: string;
+  phone_number?: string | null;
+  temp_password: string;
+}
+
 export interface CsvCommitResponse {
   imported: number;
   skipped: number;
   skippedReasons?: string[];
+  credentials?: ImportedCredential[];
 }
 
 /** Build a multipart FormData body for a single file upload. */

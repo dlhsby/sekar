@@ -27,6 +27,8 @@ import {
 } from '@/components/ui';
 import { RolePill } from '@/components/users/RolePill';
 import { RosterActionModal } from '@/components/schedules/RosterActionModal';
+import { AddScheduleModal } from '@/components/schedules/AddScheduleModal';
+import { EditScheduleModal } from '@/components/schedules/EditScheduleModal';
 import { AreaListSheet, type AreaListSheetItem } from '@/components/areas/AreaListSheet';
 import { getErrorMessage } from '@/lib/api/client';
 import {
@@ -36,6 +38,7 @@ import {
   useReplaceWorker,
   useUpdateRosterAreas,
   useUpdateRosterShift,
+  useAddSchedule,
   type Schedule,
 } from '@/lib/api/schedules';
 import { useUser } from '@/lib/auth/hooks';
@@ -133,6 +136,7 @@ export default function SchedulesPage() {
   const replaceWorker = useReplaceWorker();
   const updateAreas = useUpdateRosterAreas();
   const updateShift = useUpdateRosterShift();
+  const addSchedule = useAddSchedule();
 
   // Modal states
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
@@ -140,20 +144,13 @@ export default function SchedulesPage() {
   const [leaveType, setLeaveType] = useState<'sick' | 'annual'>('sick');
   const [leaveNotes, setLeaveNotes] = useState('');
 
-  const [replaceModalOpen, setReplaceModalOpen] = useState(false);
-  const [replaceRosterId, setReplaceRosterId] = useState<string | null>(null);
-  const [replacementUserId, setReplacementUserId] = useState('');
-  const [replaceNotes, setReplaceNotes] = useState('');
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editRosterId, setEditRosterId] = useState<string | null>(null);
 
-  const [areasModalOpen, setAreasModalOpen] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+
   // Roster whose areas are shown in the read-only side sheet (Area column).
   const [areasSheetRoster, setAreasSheetRoster] = useState<Schedule | null>(null);
-  const [areasRosterId, setAreasRosterId] = useState<string | null>(null);
-  const [selectedAreaIds, setSelectedAreaIds] = useState<string[]>([]);
-
-  const [shiftModalOpen, setShiftModalOpen] = useState(false);
-  const [shiftRosterId, setShiftRosterId] = useState<string | null>(null);
-  const [selectedShiftId, setSelectedShiftId] = useState<string | null>(null);
 
   // Helper to get area names from schedule_areas
   const getAreaNames = (roster: Schedule): string[] => {
@@ -195,59 +192,45 @@ export default function SchedulesPage() {
     }
   };
 
-  const handleReplace = async () => {
-    if (!replaceRosterId || !replacementUserId) return;
+  const handleReplaceWorker = async (id: string, replacementUserId: string) => {
     try {
       await replaceWorker.mutateAsync({
-        id: replaceRosterId,
+        id,
         replacement_user_id: replacementUserId,
-        notes: replaceNotes,
       });
-      toast.success(t('messages.replaceSuccess'));
-      setReplaceModalOpen(false);
-      setReplaceRosterId(null);
-      setReplacementUserId('');
-      setReplaceNotes('');
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : t('messages.replaceError')
-      );
+      throw err;
     }
   };
 
-  const handleUpdateAreas = async () => {
-    if (!areasRosterId) return;
-    try {
-      await updateAreas.mutateAsync({
-        id: areasRosterId,
-        area_ids: selectedAreaIds,
-      });
-      toast.success(t('messages.areasSuccess'));
-      setAreasModalOpen(false);
-      setAreasRosterId(null);
-      setSelectedAreaIds([]);
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : t('messages.areasError')
-      );
-    }
-  };
-
-  const handleUpdateShift = async () => {
-    if (!shiftRosterId) return;
+  const handleUpdateShiftForEdit = async (id: string, shiftId: string | null) => {
     try {
       await updateShift.mutateAsync({
-        id: shiftRosterId,
-        shift_definition_id: selectedShiftId,
+        id,
+        shift_definition_id: shiftId,
       });
-      toast.success(t('messages.shiftSuccess'));
-      setShiftModalOpen(false);
-      setShiftRosterId(null);
-      setSelectedShiftId(null);
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : t('messages.shiftError')
-      );
+      throw err;
+    }
+  };
+
+  const handleUpdateAreasForEdit = async (id: string, areaIds: string[]) => {
+    try {
+      await updateAreas.mutateAsync({
+        id,
+        area_ids: areaIds,
+      });
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const handleAddSchedule = async (input: { user_id: string; date: string; shift_definition_id?: string | null; area_ids?: string[] }) => {
+    try {
+      await addSchedule.mutateAsync(input);
+      setAddModalOpen(false);
+    } catch (err) {
+      throw err;
     }
   };
 
@@ -396,34 +379,12 @@ export default function SchedulesPage() {
           },
         },
         {
-          key: 'replace',
-          label: t('rowActions.replace'),
+          key: 'edit',
+          label: t('rowActions.edit'),
           icon: Pencil,
           onClick: () => {
-            setReplaceRosterId(roster.id);
-            setReplacementUserId('');
-            setReplaceNotes('');
-            setReplaceModalOpen(true);
-          },
-        },
-        {
-          key: 'areas',
-          label: t('rowActions.editAreas'),
-          icon: Pencil,
-          onClick: () => {
-            setAreasRosterId(roster.id);
-            setSelectedAreaIds(roster.schedule_areas.map((a) => a.area_id));
-            setAreasModalOpen(true);
-          },
-        },
-        {
-          key: 'shift',
-          label: t('rowActions.editShift'),
-          icon: Pencil,
-          onClick: () => {
-            setShiftRosterId(roster.id);
-            setSelectedShiftId(roster.shift_definition_id);
-            setShiftModalOpen(true);
+            setEditRosterId(roster.id);
+            setEditModalOpen(true);
           },
         },
       ];
@@ -431,29 +392,20 @@ export default function SchedulesPage() {
     [canEditRoster, t],
   );
 
-  // Replacement candidates: satgas/linmas in the SAME rayon as the shift being
-  // covered (a cross-rayon replacement makes no operational sense and keeps the
-  // list bounded). Falls back to all schedulable workers if the roster's rayon
-  // is unknown.
-  const replaceRoster = useMemo(
-    () => schedules.find((r) => r.id === replaceRosterId) ?? null,
-    [schedules, replaceRosterId],
+  // Edit target: the roster being edited in the modal
+  const editRoster = useMemo(
+    () => schedules.find((r) => r.id === editRosterId) ?? null,
+    [schedules, editRosterId],
   );
-  const schedulableUsers = useMemo(
-    () =>
-      allUsers.filter(
-        (u) =>
-          ['satgas', 'linmas'].includes(u.role) &&
-          (!replaceRoster?.rayon_id || u.rayon_id === replaceRoster.rayon_id),
-      ),
-    [allUsers, replaceRoster],
-  );
+
+  // Determine if roster is empty (show/hide Generate button)
+  const alreadyGenerated = schedules.length > 0;
 
   return (
     <div className="space-y-5">
       <PageHeader description={format(parse(selectedDate, 'yyyy-MM-dd', new Date()), 'EEEE, dd MMMM yyyy', { locale: dateFnsLocale() })} />
 
-      {/* Date Picker and Generate Button */}
+      {/* Date Picker and Buttons */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <label htmlFor="date-picker" className="text-nb-body font-medium">
@@ -468,15 +420,29 @@ export default function SchedulesPage() {
           />
         </div>
 
-        {canGenerate && (
-          <Button
-            onClick={handleGenerate}
-            loading={generateRoster.isPending}
-            leftIcon={<Plus className="h-5 w-5" />}
-          >
-            {t('buttons.generate')}
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {canGenerate && !alreadyGenerated && !isLoading && (
+            <Button
+              onClick={handleGenerate}
+              loading={generateRoster.isPending}
+              leftIcon={<Plus className="h-5 w-5" />}
+            >
+              {t('buttons.generate')}
+            </Button>
+          )}
+
+          {canEditRoster(
+            schedules[0] ?? ({ rayon_id: currentUser?.rayon_id } as Schedule)
+          ) && (
+            <Button
+              onClick={() => setAddModalOpen(true)}
+              variant="secondary"
+              leftIcon={<Plus className="h-5 w-5" />}
+            >
+              {t('buttons.addOne')}
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Data Table */}
@@ -522,80 +488,41 @@ export default function SchedulesPage() {
         />
       </RosterActionModal>
 
-      {/* Replace Modal */}
-      <RosterActionModal
-        open={replaceModalOpen}
-        title={t('modals.replace.title')}
-        onClose={() => setReplaceModalOpen(false)}
-        onSubmit={handleReplace}
-        submitLabel={t('common:actions.save')}
-        loading={replaceWorker.isPending}
-        submitDisabled={!replacementUserId}
-        error={replaceWorker.isError && getErrorMessage(replaceWorker.error)}
-      >
-        <FormCombobox
-          label={t('modals.replace.workerLabel')}
-          placeholder={t('modals.replace.workerPlaceholder')}
-          value={replacementUserId}
-          onChange={setReplacementUserId}
-          required
-          options={schedulableUsers.map((u) => ({
-            value: u.id,
-            label: `${u.full_name} (${u.username})`,
-          }))}
-        />
-        <Textarea
-          label={t('modals.replace.notesLabel')}
-          value={replaceNotes}
-          onChange={(e) => setReplaceNotes(e.target.value)}
-          placeholder={t('modals.replace.notesPlaceholder')}
-          rows={3}
-        />
-      </RosterActionModal>
+      {/* Edit Schedule Modal (unified) */}
+      <EditScheduleModal
+        open={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        roster={editRoster}
+        onReplaceWorker={handleReplaceWorker}
+        onUpdateShift={handleUpdateShiftForEdit}
+        onUpdateAreas={handleUpdateAreasForEdit}
+        replaceLoading={replaceWorker.isPending}
+        shiftLoading={updateShift.isPending}
+        areasLoading={updateAreas.isPending}
+        allUsers={allUsers}
+        shifts={shifts}
+        allAreas={allAreas}
+        error={
+          replaceWorker.isError || updateShift.isError || updateAreas.isError
+            ? getErrorMessage(
+                replaceWorker.error || updateShift.error || updateAreas.error
+              )
+            : undefined
+        }
+      />
 
-      {/* Areas Modal */}
-      <RosterActionModal
-        open={areasModalOpen}
-        title={t('modals.areas.title')}
-        onClose={() => setAreasModalOpen(false)}
-        onSubmit={handleUpdateAreas}
-        submitLabel={t('common:actions.save')}
-        loading={updateAreas.isPending}
-        error={updateAreas.isError && getErrorMessage(updateAreas.error)}
-      >
-        <FormMultiCombobox
-          label={t('modals.areas.label')}
-          options={allAreas.map((a) => ({ value: a.id, label: a.name }))}
-          values={selectedAreaIds}
-          onChange={setSelectedAreaIds}
-          placeholder={t('modals.areas.placeholder')}
-          searchPlaceholder={t('modals.areas.searchPlaceholder')}
-          emptyText={t('modals.areas.emptyText')}
-          helperText={t('modals.areas.helperText')}
-        />
-      </RosterActionModal>
-
-      {/* Shift Modal */}
-      <RosterActionModal
-        open={shiftModalOpen}
-        title={t('modals.shift.title')}
-        onClose={() => setShiftModalOpen(false)}
-        onSubmit={handleUpdateShift}
-        submitLabel={t('common:actions.save')}
-        loading={updateShift.isPending}
-        error={updateShift.isError && getErrorMessage(updateShift.error)}
-      >
-        <FormCombobox
-          label={t('modals.shift.label')}
-          value={selectedShiftId ?? ''}
-          onChange={(value) => setSelectedShiftId(value || null)}
-          placeholder={t('modals.shift.placeholder')}
-          options={shifts.map((shift) => ({
-            value: shift.id,
-            label: `${shift.name} (${shift.start_time}-${shift.end_time})`,
-          }))}
-        />
-      </RosterActionModal>
+      {/* Add Schedule Modal */}
+      <AddScheduleModal
+        open={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSubmit={handleAddSchedule}
+        loading={addSchedule.isPending}
+        date={selectedDate}
+        allUsers={allUsers}
+        shifts={shifts}
+        allAreas={allAreas}
+        error={addSchedule.isError ? getErrorMessage(addSchedule.error) : undefined}
+      />
 
       {/* Read-only side sheet listing a roster's areas (Area column). */}
       <AreaListSheet

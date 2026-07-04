@@ -120,9 +120,10 @@ export class CsvImportService {
   private async commitUsers(rows: ValidatedUserRow[]): Promise<CsvCommitResponseDto> {
     let imported = 0;
     const skippedReasons: string[] = [];
+    const credentials: CsvCommitResponseDto['credentials'] = [];
     for (const row of rows) {
       try {
-        await this.usersService.create({
+        const created = await this.usersService.create({
           username: row.username,
           password: row.password,
           full_name: row.full_name,
@@ -131,12 +132,26 @@ export class CsvImportService {
           area_ids: row.area_id ? [row.area_id] : undefined,
           rayon_id: row.rayon_id,
         });
+        // A password omitted from the CSV is auto-generated and returned once —
+        // collect it so the admin can hand the temp password to the worker.
+        if (created.temp_password) {
+          credentials.push({
+            username: created.username,
+            phone_number: created.phone_number ?? null,
+            temp_password: created.temp_password,
+          });
+        }
         imported++;
       } catch (error) {
         skippedReasons.push(this.skipReason(row.username, error));
       }
     }
-    return { imported, skipped: skippedReasons.length, skippedReasons };
+    return {
+      imported,
+      skipped: skippedReasons.length,
+      skippedReasons,
+      credentials: credentials.length ? credentials : undefined,
+    };
   }
 
   private async commitAreas(rows: ValidatedAreaRow[]): Promise<CsvCommitResponseDto> {

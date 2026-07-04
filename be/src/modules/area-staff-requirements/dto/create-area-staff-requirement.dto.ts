@@ -17,7 +17,7 @@ export class CreateAreaStaffRequirementDto {
     description: 'Area ID (UUID)',
     example: 'c3d4e5f6-a7b8-9012-cdef-123456789012',
   })
-  @IsUUID('4', { message: 'Area ID must be a valid UUID' })
+  @IsUUID('all', { message: 'Area ID must be a valid UUID' })
   @IsNotEmpty({ message: 'Area ID is required' })
   area_id: string;
 
@@ -30,7 +30,7 @@ export class CreateAreaStaffRequirementDto {
     description: 'Shift definition ID (UUID)',
     example: '22222222-2222-2222-2222-222222222201',
   })
-  @IsUUID('4', { message: 'Shift definition ID must be a valid UUID' })
+  @IsUUID('all', { message: 'Shift definition ID must be a valid UUID' })
   @IsNotEmpty({ message: 'Shift definition ID is required' })
   shift_definition_id: string;
 

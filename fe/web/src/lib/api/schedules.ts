@@ -8,6 +8,13 @@ import { apiClient } from './client';
 
 import type { UserRole } from '@/types/models';
 
+export type AddScheduleInput = {
+  user_id: string;
+  date: string;
+  shift_definition_id?: string | null;
+  area_ids?: string[];
+};
+
 /**
  * Daily Schedule Type (mirrors backend Schedule entity)
  */
@@ -153,6 +160,14 @@ async function updateShift(
 }
 
 /**
+ * Add a single worker to a day's roster (mid-day joiner)
+ */
+async function addSchedule(input: AddScheduleInput): Promise<Schedule> {
+  const response = await apiClient.post<Schedule>('/schedules', input);
+  return response.data;
+}
+
+/**
  * Hook to fetch daily schedules for a specific date
  */
 export function useDailyRoster(date: string, rayonId?: string) {
@@ -242,6 +257,20 @@ export function useUpdateRosterShift() {
   return useMutation({
     mutationFn: ({ id, shift_definition_id }: { id: string; shift_definition_id: string | null }) =>
       updateShift(id, shift_definition_id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
+    },
+  });
+}
+
+/**
+ * Hook to add a single schedule for a worker on a day
+ */
+export function useAddSchedule() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: addSchedule,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
     },

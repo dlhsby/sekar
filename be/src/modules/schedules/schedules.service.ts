@@ -78,6 +78,90 @@ export class SchedulesService {
   }
 
   /**
+   * Authorize scheduling a NEW row for `target` (no existing row to gate on).
+   * Mirrors assertCanEdit's hierarchy + scope, but keyed off the target user's
+   * own rayon / permanent areas rather than a row's.
+   */
+  private async assertCanScheduleUser(editor: User, target: User): Promise<void> {
+    if (!canEditTargetRole(editor.role, target.role)) {
+      throw new ForbiddenException('You cannot schedule this worker');
+    }
+    if (isGlobalRosterEditor(editor.role)) return;
+    if (isRayonManagerRole(editor.role)) {
+      if (!editor.rayon_id) {
+        throw new ForbiddenException('Your account is missing a rayon assignment');
+      }
+      if (target.rayon_id !== editor.rayon_id) {
+        throw new ForbiddenException('This worker is outside your rayon');
+      }
+      return;
+    }
+    // korlap: the worker's permanent areas must overlap the coordinator's.
+    const [editorAreaIds, targetAreaIds] = await Promise.all([
+      this.userAreasService.getPermanentAreaIds(editor.id),
+      this.userAreasService.getPermanentAreaIds(target.id),
+    ]);
+    if (!targetAreaIds.some((a) => editorAreaIds.includes(a))) {
+      throw new ForbiddenException('This worker is outside your assigned areas');
+    }
+  }
+
+  /**
+   * Add a single worker to a day's roster (worker joined mid-day / missed by
+   * generate). Enforces one live row per worker per day: rejects if the worker
+   * already has one. Defaults shift + areas to the worker's template when omitted.
+   */
+  async addForDay(
+    dto: {
+      user_id: string;
+      date: string;
+      shift_definition_id?: string | null;
+      area_ids?: string[];
+    },
+    actor: User,
+  ): Promise<Schedule> {
+    const target = await this.userRepo.findOne({ where: { id: dto.user_id } });
+    if (!target) throw new NotFoundException('Worker not found');
+    if (!target.is_active) throw new BadRequestException('Worker is inactive');
+    if (isNonRosteredRole(target.role)) {
+      throw new BadRequestException('This role is not schedulable');
+    }
+    await this.assertCanScheduleUser(actor, target);
+
+    // One row per worker per day (also guarded by a partial unique index).
+    const existing = await this.findByUserAndDate(dto.user_id, dto.date);
+    if (existing) {
+      throw new BadRequestException('Worker already has a schedule for this day');
+    }
+
+    const shiftId =
+      dto.shift_definition_id !== undefined
+        ? dto.shift_definition_id
+        : (target.shift_definition_id ?? null);
+    const row = await this.rosterRepo.save(
+      this.rosterRepo.create({
+        user_id: dto.user_id,
+        schedule_date: dto.date,
+        rayon_id: target.rayon_id ?? null,
+        shift_definition_id: shiftId,
+        status: shiftId ? ScheduleStatus.PLANNED : ScheduleStatus.OFF,
+        source: 'manual',
+        created_by: actor.id,
+      }),
+    );
+    const areaIds = dto.area_ids ?? (await this.userAreasService.getPermanentAreaIds(dto.user_id));
+    await this.setAreas(row.id, areaIds, actor.id);
+    await this.audit(
+      row,
+      'add_schedule',
+      actor.id,
+      {},
+      { user_id: dto.user_id, shift_definition_id: shiftId, area_ids: areaIds },
+    );
+    return this.findOne(row.id);
+  }
+
+  /**
    * Generate (materialize) the roster for a WIB day from every active user's
    * template. Idempotent: users with an existing live row for the day are
    * skipped, so re-running never duplicates and never overwrites manual edits.

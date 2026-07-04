@@ -56,6 +56,7 @@
     "resultSuccess": "Berhasil mengimpor {{imported}} baris",
     "skipped": "{{count}} dilewati.",
     "importAgain": "Impor Lagi",
+    "viewCredentials": "Lihat Kredensial",
     "loading": "Memuat...",
     "noValidRows": "Tidak ada baris valid untuk diimpor."
   },

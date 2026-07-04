@@ -159,6 +159,30 @@ describe('UsersService', () => {
       );
     });
 
+    it('forces change even when an explicit password is supplied (CSV-import regression)', async () => {
+      // A password an admin/CSV supplies is only a bootstrap credential — the
+      // worker never chose it, so first login must still force a change. The UAT
+      // outage came from persisting these as `password_must_change=false`.
+      mockUserRepository.findOne.mockResolvedValue(null);
+      mockUserRepository.create.mockImplementation((u) => u as User);
+      mockUserRepository.save.mockImplementation(async (u) => ({ ...(u as User), id: 'new-id' }));
+
+      const result = await service.create({
+        username: 'withpass',
+        password: 'ImportedPass1',
+        full_name: 'With Pass',
+        role: UserRole.SATGAS,
+      });
+
+      // Supplied password is honoured (hashed), but change is still forced and no
+      // temp password is surfaced (the admin already knows the supplied one).
+      expect(authService.hashPassword).toHaveBeenCalledWith('ImportedPass1');
+      expect(result.temp_password).toBeUndefined();
+      expect(mockUserRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ password_must_change: true }),
+      );
+    });
+
     it('reconciles permanent areas from area_ids on create', async () => {
       mockUserRepository.findOne.mockResolvedValue(null);
       mockUserRepository.create.mockReturnValue(mockUser);
@@ -717,6 +741,48 @@ describe('UsersService', () => {
       expect(mockAuditLogService.log).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'reset_password' }),
       );
+    });
+  });
+
+  describe('bulkResetPassword', () => {
+    it('resets each user, forces change, and returns temp passwords + identities', async () => {
+      const u1 = { ...mockUser, id: 'u1', username: 'satgas1', phone_number: '081200000001' };
+      const u2 = { ...mockUser, id: 'u2', username: 'satgas2', phone_number: null };
+      mockUserRepository.findOne.mockImplementation(async ({ where }: { where: { id: string } }) =>
+        where.id === 'u1' ? { ...u1 } : where.id === 'u2' ? { ...u2 } : null,
+      );
+      mockUserRepository.save.mockImplementation(async (u) => u as User);
+
+      const result = await service.bulkResetPassword(['u1', 'u2'], {
+        ...mockUser,
+        id: 'admin',
+      } as User);
+
+      expect(result.results).toHaveLength(2);
+      expect(result.failed).toHaveLength(0);
+      expect(result.results[0]).toMatchObject({
+        id: 'u1',
+        username: 'satgas1',
+        phone_number: '081200000001',
+      });
+      expect(result.results[0].temp_password).toEqual(expect.any(String));
+      expect(result.results[1]).toMatchObject({ id: 'u2', phone_number: null });
+      expect(mockUserRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ password_must_change: true }),
+      );
+    });
+
+    it('collects invalid ids into `failed` without aborting the rest', async () => {
+      mockUserRepository.findOne.mockImplementation(async ({ where }: { where: { id: string } }) =>
+        where.id === 'ok' ? { ...mockUser, id: 'ok' } : null,
+      );
+      mockUserRepository.save.mockImplementation(async (u) => u as User);
+
+      const result = await service.bulkResetPassword(['ok', 'missing', 'ok'], undefined);
+
+      // Duplicate 'ok' is de-duped; 'missing' fails but 'ok' still succeeds.
+      expect(result.results.map((r) => r.id)).toEqual(['ok']);
+      expect(result.failed).toEqual([{ id: 'missing', reason: expect.any(String) }]);
     });
   });
 

@@ -26,6 +26,7 @@
   },
   "rowActions": {
     "leave": "Leave",
+    "edit": "Edit Schedule",
     "replace": "Replace Worker",
     "editAreas": "Edit Areas",
     "editShift": "Edit Shift"
@@ -62,6 +63,26 @@
       "label": "Shift",
       "placeholder": "No Shift"
     },
+    "add": {
+      "title": "Add Schedule",
+      "workerLabel": "Worker",
+      "workerPlaceholder": "Select worker…",
+      "workerRequired": "Please select a worker",
+      "shiftLabel": "Shift",
+      "shiftOptional": "Optional — Use worker's default",
+      "areaLabel": "Areas",
+      "areaPlaceholder": "Select areas…",
+      "areaHelper": "Optional — Use worker's permanent areas",
+      "submit": "Add"
+    },
+    "edit": {
+      "title": "Edit Schedule",
+      "workerLabel": "Worker",
+      "shiftLabel": "Shift",
+      "areaLabel": "Areas",
+      "replaceHint": "Changing the worker will replace with the new worker and inherit the original areas & shift.",
+      "submit": "Save"
+    },
     "areaList": {
       "title": "Schedule Areas"
     }
@@ -76,10 +97,13 @@
     "areasSuccess": "Areas updated successfully",
     "areasError": "Failed to update areas",
     "shiftSuccess": "Shift updated successfully",
-    "shiftError": "Failed to update shift"
+    "shiftError": "Failed to update shift",
+    "addSuccess": "Schedule added successfully",
+    "editSuccess": "Schedule updated successfully"
   },
   "buttons": {
-    "generate": "Generate Schedule",
+    "generate": "Generate Today's Roster",
+    "addOne": "Add Schedule",
     "areaCount": "{{count}} Areas",
     "areaCountAriaLabel": "View {{count}} areas for {{name}}"
   },

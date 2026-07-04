@@ -109,31 +109,29 @@ export function sanitizeString(input: string): string {
 }
 
 /**
- * Validate UUID v4 format
- * Prevents invalid UUIDs from being sent to API endpoints
+ * Validate a UUID (any RFC 4122 version, v1–v5).
+ *
+ * IMPORTANT: never version-pin this. SEKAR entity ids are a mix of random v4 and
+ * deterministic v5 (uuidv5 for seeded areas + sheet-imported roster users), so a
+ * v4-only check would wrongly reject real ids (e.g. an area_id sent on clock-in)
+ * and surface as a 400 from the API. Accept any version; the server checks the FK.
  * @param uuid - UUID string to validate
- * @returns True if valid UUID v4 format
+ * @returns True if a well-formed UUID of any version
  */
 export function isValidUUID(uuid: string | null | undefined): boolean {
   if (!uuid) {
     return false;
   }
-  // UUID v4 regex pattern
-  const uuidV4Regex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidV4Regex.test(uuid);
+  // Version-agnostic UUID pattern (v1–v5). Do NOT pin the version nibble to `4`.
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(uuid);
 }
 
 /**
- * Validate any UUID format (v1-v5)
- * @param uuid - UUID string to validate
- * @returns True if valid UUID format
+ * Alias of {@link isValidUUID} (which already accepts any UUID version). Prefer
+ * `isValidUUID`; kept so existing imports keep working.
  */
 export function isValidUUIDAny(uuid: string | null | undefined): boolean {
-  if (!uuid) {
-    return false;
-  }
-  // General UUID regex pattern (accepts v1-v5)
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(uuid);
+  return isValidUUID(uuid);
 }
 
