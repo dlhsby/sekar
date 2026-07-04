@@ -281,30 +281,37 @@ describe('validators', () => {
   });
 
   describe('isValidUUID', () => {
-    it('should return true for valid UUID v4', () => {
+    it('should return true for a valid UUID v4', () => {
       expect(isValidUUID('550e8400-e29b-41d4-a716-446655440000')).toBe(true);
       expect(isValidUUID('6ba7b810-9dad-41d1-80b4-00c04fd430c8')).toBe(true);
       expect(isValidUUID('a3bb189e-8bf9-4da9-9f84-2c3e7e0d3f8c')).toBe(true);
     });
 
-    it('should return true for valid UUID v4 with uppercase', () => {
+    it('should return true for a valid UUID with uppercase', () => {
       expect(isValidUUID('550E8400-E29B-41D4-A716-446655440000')).toBe(true);
     });
 
-    it('should return true for valid UUID v4 with mixed case', () => {
+    it('should return true for a valid UUID with mixed case', () => {
       expect(isValidUUID('550e8400-E29B-41d4-A716-446655440000')).toBe(true);
     });
 
-    it('should return false for UUID v1 (not v4)', () => {
-      expect(isValidUUID('550e8400-e29b-11d4-a716-446655440000')).toBe(false);
+    // Entity ids include deterministic v5 (and legacy v1/v3), so isValidUUID must
+    // accept any RFC 4122 version — pinning to v4 was the source of 400s.
+    it('should accept UUID v1', () => {
+      expect(isValidUUID('550e8400-e29b-11d4-a716-446655440000')).toBe(true);
     });
 
-    it('should return false for UUID v3 (not v4)', () => {
-      expect(isValidUUID('550e8400-e29b-31d4-a716-446655440000')).toBe(false);
+    it('should accept UUID v3', () => {
+      expect(isValidUUID('550e8400-e29b-31d4-a716-446655440000')).toBe(true);
     });
 
-    it('should return false for UUID v5 (not v4)', () => {
-      expect(isValidUUID('550e8400-e29b-51d4-a716-446655440000')).toBe(false);
+    it('should accept UUID v5 (deterministic ids for areas/roster users)', () => {
+      expect(isValidUUID('550e8400-e29b-51d4-a716-446655440000')).toBe(true);
+    });
+
+    it('should return false for a non-UUID version (0 / 6+)', () => {
+      expect(isValidUUID('550e8400-e29b-01d4-a716-446655440000')).toBe(false);
+      expect(isValidUUID('550e8400-e29b-61d4-a716-446655440000')).toBe(false);
     });
 
     it('should return false for invalid UUID format', () => {

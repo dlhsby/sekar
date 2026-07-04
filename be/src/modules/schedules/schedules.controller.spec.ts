@@ -11,6 +11,7 @@ describe('SchedulesController (rayon scoping)', () => {
     findOne: jest.Mock;
     setLeave: jest.Mock;
     generateRoster: jest.Mock;
+    addForDay: jest.Mock;
   };
 
   const kepala = { id: 'k1', role: UserRole.KEPALA_RAYON, rayon_id: 'r1' } as unknown as User;
@@ -23,6 +24,7 @@ describe('SchedulesController (rayon scoping)', () => {
       findOne: jest.fn(),
       setLeave: jest.fn().mockResolvedValue({}),
       generateRoster: jest.fn().mockResolvedValue(3),
+      addForDay: jest.fn().mockResolvedValue({ id: 'new' }),
     };
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SchedulesController],
@@ -58,5 +60,11 @@ describe('SchedulesController (rayon scoping)', () => {
   it('delegates setLeave to the service with the editing user', async () => {
     await controller.setLeave('d1', { leave_type: 'sick', notes: 'x' }, kepala);
     expect(service.setLeave).toHaveBeenCalledWith('d1', 'sick', 'x', kepala);
+  });
+
+  it('delegates addSchedule to the service with the editing user', async () => {
+    const dto = { user_id: 'W', date: '2026-07-04' };
+    await controller.addSchedule(dto, kepala);
+    expect(service.addForDay).toHaveBeenCalledWith(dto, kepala);
   });
 });

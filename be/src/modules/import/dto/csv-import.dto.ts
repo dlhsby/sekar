@@ -27,6 +27,21 @@ export class CsvValidationResponseDto {
   sessionId?: string;
 }
 
+export class ImportedCredentialDto {
+  @ApiProperty({ example: 'satgas_pusat_1' })
+  username: string;
+
+  @ApiPropertyOptional({ example: '081234567890', nullable: true })
+  phone_number?: string | null;
+
+  @ApiProperty({
+    description:
+      'One-time temp password (forced change on first login). Returned once — distribute it.',
+    example: 'X7k9m-Qp2rT',
+  })
+  temp_password: string;
+}
+
 export class CsvCommitResponseDto {
   @ApiProperty({ description: 'Rows successfully inserted' })
   imported: number;
@@ -36,4 +51,11 @@ export class CsvCommitResponseDto {
 
   @ApiPropertyOptional({ type: [String], description: 'Per-row skip reasons' })
   skippedReasons?: string[];
+
+  @ApiPropertyOptional({
+    type: [ImportedCredentialDto],
+    description:
+      'For user imports where a password was auto-generated: the one-time temp password per created user, returned once so admins can hand them out.',
+  })
+  credentials?: ImportedCredentialDto[];
 }

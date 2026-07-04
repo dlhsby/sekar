@@ -12,6 +12,24 @@ import { makeCrudHooks } from './crud-hooks';
 import { collectAllPages } from './paginate';
 
 /**
+ * A single reset outcome: the identity plus the one-time temp password.
+ */
+export interface BulkResetCredential {
+  id: string;
+  username: string;
+  phone_number: string | null;
+  temp_password: string;
+}
+
+/**
+ * Result of bulk password reset — successes + any failures.
+ */
+export interface BulkResetResult {
+  results: BulkResetCredential[];
+  failed: Array<{ id: string; reason: string }>;
+}
+
+/**
  * Query keys for users
  */
 export const userKeys = {
@@ -161,6 +179,19 @@ export const useCreateUser = userCrudHooks.useCreate;
 /** Hook to reset a user's password (admin) — returns a one-time temp password. */
 export function useResetUserPassword() {
   return useMutation({ mutationFn: resetUserPassword });
+}
+
+/** Bulk admin password reset — reset many users to fresh one-time temp passwords. */
+const bulkResetUserPassword = async (userIds: string[]): Promise<BulkResetResult> => {
+  const response = await apiClient.post<BulkResetResult>('/users/bulk-reset-password', {
+    user_ids: userIds,
+  });
+  return response.data;
+};
+
+/** Hook to bulk-reset passwords for many users (admin) — returns temp passwords + failures. */
+export function useBulkResetUserPassword() {
+  return useMutation({ mutationFn: bulkResetUserPassword });
 }
 
 /**

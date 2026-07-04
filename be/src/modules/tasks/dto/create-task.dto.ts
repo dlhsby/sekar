@@ -79,7 +79,7 @@ export class CreateTaskDto {
     example: ['u1u1u1u1-a2b3-4567-abcd-ef1234567890', 'u2u2u2u2-a2b3-4567-abcd-ef1234567890'],
     type: [String],
   })
-  @IsUUID('4', { each: true })
+  @IsUUID('all', { each: true })
   @IsOptional()
   tagged_user_ids?: string[];
 }

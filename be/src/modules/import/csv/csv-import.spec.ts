@@ -50,6 +50,34 @@ describe('validateUsers', () => {
     expect(valid[0].username).toBe('satgas9');
   });
 
+  it('accepts a row with the password omitted (temp password generated on import)', () => {
+    const { valid, errors } = validateUsers([
+      {
+        username: 'satgas9',
+        full_name: 'Budi Worker',
+        phone_number: '+628123456789',
+        role: 'satgas',
+      },
+    ]);
+    expect(errors).toHaveLength(0);
+    expect(valid).toHaveLength(1);
+    expect(valid[0].password).toBeUndefined();
+  });
+
+  it('still rejects a supplied password shorter than 8 chars', () => {
+    const { valid, errors } = validateUsers([
+      {
+        username: 'satgas9',
+        full_name: 'Budi Worker',
+        phone_number: '+628123456789',
+        role: 'satgas',
+        password: 'short',
+      },
+    ]);
+    expect(valid).toHaveLength(0);
+    expect(errors.some((e) => e.column === 'password')).toBe(true);
+  });
+
   it('reports per-cell errors with line numbers (header is line 1)', () => {
     const { valid, errors } = validateUsers([
       { username: 'ab', full_name: 'X', phone_number: '0812', role: 'admin', password: 'short' },
@@ -253,6 +281,38 @@ describe('CsvImportService', () => {
       expect(usersService.create).toHaveBeenCalledTimes(1);
       expect(result).toEqual({ imported: 1, skipped: 0, skippedReasons: [] });
       expect(redisClient.del).toHaveBeenCalledWith('import:sess-1');
+    });
+
+    it('surfaces auto-generated temp passwords as credentials for distribution', async () => {
+      redisClient.get.mockResolvedValue(
+        JSON.stringify({
+          userId: 'user-1',
+          entityType: 'users',
+          // No password → create() generates one and returns it.
+          validRows: [
+            {
+              username: 'satgas9',
+              full_name: 'Budi',
+              role: 'satgas',
+              phone_number: '081234567890',
+            },
+          ],
+          createdAt: new Date().toISOString(),
+        }),
+      );
+      usersService.create.mockResolvedValue({
+        id: 'u1',
+        username: 'satgas9',
+        phone_number: '081234567890',
+        temp_password: 'X7k9m-Qp2rT',
+      });
+
+      const result = await service.confirm('sess-1', 'user-1');
+
+      expect(result.imported).toBe(1);
+      expect(result.credentials).toEqual([
+        { username: 'satgas9', phone_number: '081234567890', temp_password: 'X7k9m-Qp2rT' },
+      ]);
     });
 
     it('counts a failed insert as skipped with a reason', async () => {

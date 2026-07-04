@@ -25,11 +25,14 @@ import { RolePill } from '@/components/users/RolePill';
 import { DeleteUserModal } from '@/components/users/DeleteUserModal';
 import { UserFormModal } from '@/components/users/UserFormModal';
 import { TempPasswordDialog } from '@/components/users/TempPasswordDialog';
+import { BulkCredentialsDialog } from '@/components/users/BulkCredentialsDialog';
 import {
   useUsers,
   useDeactivateUser,
   useActivateUser,
   useResetUserPassword,
+  useBulkResetUserPassword,
+  type BulkResetCredential,
 } from '@/lib/api/users';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useRayons } from '@/lib/api/rayons';
@@ -65,6 +68,51 @@ export default function UsersPage() {
   const [viewOpen, setViewOpen] = useState(false);
   const [viewingUser, setViewingUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [bulkCredentials, setBulkCredentials] = useState<BulkResetCredential[] | null>(null);
+  const [bulkFailed, setBulkFailed] = useState<Array<{ id: string; reason: string }>>();
+  const bulkReset = useBulkResetUserPassword();
+
+  // Bulk reset handler
+  const handleBulkReset = useCallback(
+    async (ids: string[]) => {
+      try {
+        const result = await bulkReset.mutateAsync(ids);
+        setBulkCredentials(result.results);
+        setBulkFailed(result.failed);
+        setSelectedUserIds(new Set());
+        refetch();
+        if (result.results.length > 0) {
+          toast.success(t('admin:messages.bulkResetSuccess', { count: result.results.length }));
+        }
+        if (result.failed.length > 0) {
+          toast.warning(t('admin:messages.bulkResetPartial', { count: result.failed.length }));
+        }
+      } catch (err) {
+        toast.error(getErrorMessage(err));
+      }
+    },
+    [bulkReset, t, refetch]
+  );
+
+  const handleSelectAll = useCallback((checked: boolean) => {
+    if (checked) {
+      setSelectedUserIds(new Set(users.map(u => u.id)));
+    } else {
+      setSelectedUserIds(new Set());
+    }
+  }, [users]);
+
+  const handleSelectUser = useCallback((userId: string, checked: boolean) => {
+    const newSelected = new Set(selectedUserIds);
+    if (checked) {
+      newSelected.add(userId);
+    } else {
+      newSelected.delete(userId);
+    }
+    setSelectedUserIds(newSelected);
+  }, [selectedUserIds]);
+
   // One-time temp password returned by the reset action, shown in a dialog.
   const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [tempPwUsername, setTempPwUsername] = useState<string | undefined>(undefined);
@@ -98,6 +146,29 @@ export default function UsersPage() {
 
   const columns = useMemo<ColumnDef<User>[]>(
     () => [
+    {
+      id: 'select',
+      header: () => (
+        <input
+          type="checkbox"
+          checked={users.length > 0 && selectedUserIds.size === users.length}
+          onChange={(e) => handleSelectAll(e.target.checked)}
+          aria-label={t('admin:users.selectAll')}
+          className="rounded border-nb-black"
+        />
+      ),
+      cell: ({ row }) => (
+        <input
+          type="checkbox"
+          checked={selectedUserIds.has(row.original.id)}
+          onChange={(e) => handleSelectUser(row.original.id, e.target.checked)}
+          aria-label={t('admin:users.selectRow', { name: row.original.username })}
+          className="rounded border-nb-black"
+        />
+      ),
+      size: 50,
+    },
+
       {
         id: 'id',
         accessorKey: 'id',
@@ -270,7 +341,16 @@ export default function UsersPage() {
         ),
       },
     ],
-    [actorName, shiftNameById, rayonNameById]
+    [
+      actorName,
+      shiftNameById,
+      rayonNameById,
+      t,
+      users,
+      selectedUserIds,
+      handleSelectAll,
+      handleSelectUser,
+    ]
   );
 
   const rowActions = useCallback(
@@ -353,6 +433,27 @@ export default function UsersPage() {
         }
       />
 
+      {/* Bulk action bar */}
+      {selectedUserIds.size > 0 && canManage && (
+        <div className="sticky bottom-0 flex items-center gap-3 rounded-nb-base border-2 border-nb-black bg-nb-primary-hover p-4 shadow-nb-md">
+          <span className="flex-1 text-nb-body font-bold">
+            {t('admin:users.bulkResetSelected')} ({selectedUserIds.size})
+          </span>
+          <Button
+            variant="default"
+            onClick={() => {
+              if (selectedUserIds.size > 0) {
+                handleBulkReset(Array.from(selectedUserIds));
+              }
+            }}
+            disabled={bulkReset.isPending}
+            loading={bulkReset.isPending}
+          >
+            {t('admin:users.bulkResetSelected')}
+          </Button>
+        </div>
+      )}
+
       <UserFormModal
         open={formOpen}
         onOpenChange={setFormOpen}
@@ -402,6 +503,16 @@ export default function UsersPage() {
         onClose={() => {
           setTempPassword(null);
           setTempPwUsername(undefined);
+        }}
+      />
+
+
+      <BulkCredentialsDialog
+        credentials={bulkCredentials}
+        failed={bulkFailed}
+        onClose={() => {
+          setBulkCredentials(null);
+          setBulkFailed(undefined);
         }}
       />
 

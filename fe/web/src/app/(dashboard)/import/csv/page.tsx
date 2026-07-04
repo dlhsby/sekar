@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Download, Upload } from 'lucide-react';
 
+import { BulkCredentialsDialog } from '@/components/users/BulkCredentialsDialog';
 import { Button, FormSelect, SectionCard, DataTable, Alert } from '@/components/ui';
 import type { ColumnDef } from '@/components/ui';
 import { useAuth } from '@/lib/auth/hooks';
@@ -255,6 +256,11 @@ function CommitResult({
   onReset: () => void;
   t: ReturnType<typeof useTranslation>['t'];
 }) {
+  const hasCredentials = (result.credentials?.length ?? 0) > 0;
+  // Auto-open the credentials dialog once when an import generated temp passwords;
+  // the admin can reopen it from the button until they leave the page.
+  const [showCredentials, setShowCredentials] = useState(hasCredentials);
+
   return (
     <SectionCard title={t('csv.resultTitle')}>
       <p className="text-nb-body">
@@ -268,11 +274,20 @@ function CommitResult({
           ))}
         </ul>
       )}
-      <div className="mt-4">
+      <div className="mt-4 flex flex-wrap gap-2">
+        {hasCredentials && (
+          <Button variant="secondary" onClick={() => setShowCredentials(true)}>
+            {t('csv.viewCredentials')}
+          </Button>
+        )}
         <Button variant="outline" onClick={onReset}>
           {t('csv.importAgain')}
         </Button>
       </div>
+      <BulkCredentialsDialog
+        credentials={showCredentials ? (result.credentials ?? null) : null}
+        onClose={() => setShowCredentials(false)}
+      />
     </SectionCard>
   );
 }

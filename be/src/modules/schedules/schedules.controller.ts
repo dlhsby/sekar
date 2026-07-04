@@ -22,6 +22,7 @@ import {
 import { SchedulesService } from './schedules.service';
 import { Schedule } from './entities/schedule.entity';
 import {
+  AddScheduleDto,
   GenerateRosterDto,
   ReplaceWorkerDto,
   SetLeaveDto,
@@ -96,6 +97,19 @@ export class SchedulesController {
   ): Promise<{ generated: number }> {
     const generated = await this.service.generateRoster(dto.date, user.id);
     return { generated };
+  }
+
+  @Post()
+  @Roles(...ROSTER_EDITORS)
+  @ApiOperation({
+    summary: 'Add a single worker to a day (mid-day joiner / missed by generate)',
+    description:
+      'Creates one roster row for the worker. Rejects (400) if the worker already has a schedule that day — one schedule per worker per day.',
+  })
+  @ApiResponse({ status: 201, type: Schedule })
+  async addSchedule(@Body() dto: AddScheduleDto, @GetUser() user: User): Promise<Schedule> {
+    // Role hierarchy + rayon/area scope is enforced in the service.
+    return this.service.addForDay(dto, user);
   }
 
   @Patch(':id/leave')

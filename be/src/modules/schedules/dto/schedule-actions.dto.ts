@@ -41,8 +41,45 @@ export class ReplaceWorkerDto {
 export class UpdateRosterAreasDto {
   @ApiProperty({ type: [String], description: 'Area ids for the day (may be empty)' })
   @IsArray()
-  @IsUUID('4', { each: true })
+  // Area ids are deterministic UUID v5 (minted from rayon:name), so accept any
+  // version — 'v4' wrongly rejects every seeded area id (the "Ubah Area" 400).
+  @IsUUID('all', { each: true })
   area_ids: string[];
+}
+
+/**
+ * Add a single worker to a day's roster (e.g. a worker who joined mid-day or was
+ * missed by generate). One row per worker per day is enforced server-side.
+ */
+export class AddScheduleDto {
+  @ApiProperty({ description: 'Worker to schedule' })
+  @IsUUID()
+  user_id: string;
+
+  @ApiProperty({ description: 'WIB day (YYYY-MM-DD)', example: '2026-06-30' })
+  @IsString()
+  @Matches(DATE_REGEX, { message: 'date must be YYYY-MM-DD' })
+  date: string;
+
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    description: "Shift id; omit to use the worker's default",
+  })
+  @IsOptional()
+  @IsUUID()
+  shift_definition_id?: string | null;
+
+  @ApiProperty({
+    type: [String],
+    required: false,
+    description: "Area ids for the day; omit to use the worker's permanent areas",
+  })
+  @IsOptional()
+  @IsArray()
+  // Area ids are deterministic UUID v5 — accept any version ('v4' rejects them).
+  @IsUUID('all', { each: true })
+  area_ids?: string[];
 }
 
 /** Set (or clear) the shift for the day. */
