@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   NBCard,
@@ -30,6 +31,8 @@ export const TaskDetailSection: React.FC<TaskDetailSectionProps> = ({
   description,
   onDescriptionChange,
 }) => {
+  const { t } = useTranslation('components');
+
   return (
     <NBCard style={styles.card}>
       <NBCardHeader>
@@ -37,7 +40,7 @@ export const TaskDetailSection: React.FC<TaskDetailSectionProps> = ({
           <MaterialCommunityIcons name="text-box-outline" size={16} color={nbColors.black} />
           <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}>
             {' '}
-            DETAIL TUGAS
+            {t('taskDetailSection.title')}
             <NBText variant="mono-sm" style={styles.requiredAsterisk}>
               {' '}
               *
@@ -45,29 +48,29 @@ export const TaskDetailSection: React.FC<TaskDetailSectionProps> = ({
           </NBText>
         </View>
         <NBText variant="body-sm" style={styles.sectionSubtitle}>
-          Isi judul dan deskripsi tugas
+          {t('taskDetailSection.subtitle')}
         </NBText>
       </NBCardHeader>
       <NBCardContent>
         <NBTextInput
-          label="Judul *"
+          label={t('taskDetailSection.titleLabel')}
           value={title}
           onChangeText={onTitleChange}
-          placeholder="Masukkan judul tugas..."
+          placeholder={t('taskDetailSection.titlePlaceholder')}
           error={titleError}
         />
 
         <View style={styles.fieldSpacer} />
 
         <NBTextInput
-          label="Deskripsi"
+          label={t('taskDetailSection.descriptionLabel')}
           value={description}
           onChangeText={onDescriptionChange}
-          placeholder="Jelaskan detail tugas..."
+          placeholder={t('taskDetailSection.descriptionPlaceholder')}
           multiline
           numberOfLines={6}
           maxLength={500}
-          helperText={`${description.length}/500 karakter`}
+          helperText={t('taskDetailSection.helperText', { current: description.length })}
           inputStyle={styles.descriptionInput}
           textAlignVertical="top"
         />

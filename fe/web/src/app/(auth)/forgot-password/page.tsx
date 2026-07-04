@@ -1,12 +1,11 @@
+'use client';
+
 import Link from 'next/link';
 import { ArrowLeft, Lock, MessageCircle, Phone } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { BrandLockup } from '@/components/brand/BrandLockup';
 import { SUPPORT_PHONE, SUPPORT_PHONE_TEL, SUPPORT_WHATSAPP } from '@/lib/constants/support';
-
-export const metadata = {
-  title: 'Lupa Sandi',
-};
 
 /**
  * Forgot-password — informational page (mirrors mobile AS-4). No API call: a
@@ -14,6 +13,7 @@ export const metadata = {
  * hotline (WhatsApp + phone) and a link back to login.
  */
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation(['auth']);
   return (
     <div className="flex min-h-screen items-center justify-center bg-nb-background p-4">
       <div className="w-full max-w-md">
@@ -26,10 +26,9 @@ export default function ForgotPasswordPage() {
             <Lock className="size-6 text-nb-black" aria-hidden="true" />
           </div>
 
-          <h1 className="text-nb-h2 text-nb-black">Sandi tidak bisa di-reset sendiri</h1>
+          <h1 className="text-nb-h2 text-nb-black">{t('auth:forgotPassword.title')}</h1>
           <p className="mt-2 text-nb-body-sm text-nb-gray-700">
-            Demi keamanan, sandi hanya bisa diatur ulang oleh admin. Hubungi admin melalui WhatsApp
-            atau telepon untuk mendapatkan sandi sementara.
+            {t('auth:forgotPassword.description')}
           </p>
 
           <div className="mt-5 space-y-3">
@@ -61,7 +60,7 @@ export default function ForgotPasswordPage() {
               </span>
               <span className="min-w-0">
                 <span className="block font-mono text-[10px] font-bold uppercase tracking-wide text-nb-gray-600">
-                  Telepon
+                  {t('auth:forgotPassword.contactViaPhone')}
                 </span>
                 <span className="block text-nb-body-sm font-bold text-nb-black">{SUPPORT_PHONE}</span>
               </span>
@@ -70,8 +69,7 @@ export default function ForgotPasswordPage() {
 
           <div className="mt-5 rounded-nb-base border-2 border-dashed border-nb-gray-400 bg-nb-paper p-3">
             <p className="text-nb-caption text-nb-gray-700">
-              Admin akan memberi sandi sementara. Saat login pertama, Anda akan diminta membuat sandi
-              baru.
+              {t('auth:forgotPassword.adminNote')}
             </p>
           </div>
         </div>
@@ -81,7 +79,7 @@ export default function ForgotPasswordPage() {
             href="/login"
             className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wide text-nb-gray-700 hover:text-nb-black"
           >
-            <ArrowLeft className="size-4" aria-hidden="true" /> Kembali ke Login
+            <ArrowLeft className="size-4" aria-hidden="true" /> {t('auth:forgotPassword.backToLogin')}
           </Link>
         </div>
       </div>

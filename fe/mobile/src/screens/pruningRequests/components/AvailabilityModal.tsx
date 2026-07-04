@@ -8,6 +8,7 @@
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBModal } from '../../../components/nb';
 import { AvailabilityCalendar } from './AvailabilityCalendar';
 import { nbSpacing } from '../../../constants/nbTokens';
@@ -30,6 +31,8 @@ export function AvailabilityModal({
   onSelect,
   loading,
 }: AvailabilityModalProps): React.JSX.Element {
+  const { t } = useTranslation();
+
   const handleSelect = (date: string | null) => {
     // AvailabilityCalendar can emit null (clear); the modal only commits a
     // concrete date pick.
@@ -39,7 +42,7 @@ export function AvailabilityModal({
   };
 
   return (
-    <NBModal visible={visible} onClose={onClose} title="Pilih Tanggal" type="fullscreen">
+    <NBModal visible={visible} onClose={onClose} title={t('pruning:calendar.selectDateLabel')} type="fullscreen">
       <View style={styles.body}>
         <AvailabilityCalendar
           rows={rows}

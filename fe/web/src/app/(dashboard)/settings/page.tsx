@@ -17,10 +17,12 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Moon, Sun, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 import {
   Button,
   FormInput,
+  LanguageSwitcher,
   SectionCard,
   StatusPill,
   Tabs,
@@ -33,7 +35,7 @@ import { getErrorMessage } from '@/lib/api/client';
 import { setAuthCookie } from '@/lib/utils/cookies';
 import { useThemeStore } from '@/stores/theme';
 import {
-  NOTIFICATION_TYPE_LABELS,
+  getNotificationTypeLabel,
   useNotificationPreferences,
   useUpdateNotificationPreferences,
   type NotificationPreference,
@@ -41,15 +43,16 @@ import {
 
 type SettingsTab = 'umum' | 'keamanan' | 'notifikasi';
 
-const TABS: TabItem<SettingsTab>[] = [
-  { key: 'umum', label: 'Umum' },
-  { key: 'keamanan', label: 'Keamanan' },
-  { key: 'notifikasi', label: 'Notifikasi' },
-];
-
 export default function SettingsPage() {
+  const { t } = useTranslation();
   const { user, loading, refreshUser } = useAuth();
   const [tab, setTab] = useState<SettingsTab>('umum');
+
+  const tabs: TabItem<SettingsTab>[] = [
+    { key: 'umum', label: t('settings:tabs.general') },
+    { key: 'keamanan', label: t('settings:tabs.security') },
+    { key: 'notifikasi', label: t('settings:tabs.notifications') },
+  ];
 
   useEffect(() => {
     if (!loading && (!user || !hasRole(user.role, ADMIN_ROLES))) {
@@ -60,7 +63,7 @@ export default function SettingsPage() {
   if (loading || !user) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <p className="text-nb-gray-600">Memuat…</p>
+        <p className="text-nb-gray-600">{t('settings:loading')}</p>
       </div>
     );
   }
@@ -69,7 +72,12 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-5">
-      <Tabs<SettingsTab> tabs={TABS} value={tab} onValueChange={setTab} aria-label="Pengaturan" />
+      <Tabs<SettingsTab>
+        tabs={tabs}
+        value={tab}
+        onValueChange={setTab}
+        aria-label={t('settings:title')}
+      />
 
       {tab === 'umum' && <GeneralTab user={user} />}
       {tab === 'keamanan' && <SecurityTab onChanged={refreshUser} />}
@@ -81,6 +89,7 @@ export default function SettingsPage() {
 /* ── Umum ─────────────────────────────────────────────────────────────────── */
 
 function GeneralTab({ user }: { user: { full_name: string; username: string; role: string } }) {
+  const { t } = useTranslation();
   const theme = useThemeStore((s) => s.theme);
   const init = useThemeStore((s) => s.init);
   const setTheme = useThemeStore((s) => s.setTheme);
@@ -90,46 +99,46 @@ function GeneralTab({ user }: { user: { full_name: string; username: string; rol
   }, [init]);
 
   const isDark = theme === 'dark';
+  const roleLabel = t(`roles:${user.role}`, { defaultValue: user.role.replace(/_/g, ' ') });
 
   return (
     <div className="space-y-5">
       <SectionCard
-        title="Identitas"
+        title={t('settings:general.identity')}
         action={
           <Button asChild variant="secondary" size="sm">
             <Link href="/profile">
-              Ubah profil <ArrowRight className="ml-1 size-4" />
+              {t('settings:general.editProfile')} <ArrowRight className="ml-1 size-4" />
             </Link>
           </Button>
         }
       >
         <dl className="space-y-2.5 text-nb-body-sm">
-          <Row label="Nama Lengkap" value={user.full_name} />
-          <Row label="Username" value={user.username} mono />
+          <Row label={t('settings:general.fullName')} value={user.full_name} />
+          <Row label={t('settings:general.username')} value={user.username} mono />
           <Row
-            label="Peran"
-            value={<StatusPill tone="dark">{user.role.replace(/_/g, ' ')}</StatusPill>}
+            label={t('settings:general.role')}
+            value={<StatusPill tone="dark">{roleLabel}</StatusPill>}
           />
         </dl>
         <p className="mt-3 text-nb-caption text-nb-gray-600">
-          Nama lengkap dan foto profil dapat diubah di halaman Profil. Username dan peran
-          dikelola oleh administrator sistem.
+          {t('settings:general.identityHint')}
         </p>
       </SectionCard>
 
-      <SectionCard title="Tampilan">
+      <SectionCard title={t('settings:general.appearance')}>
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="font-semibold text-nb-black">Mode Gelap</p>
+            <p className="font-semibold text-nb-black">{t('settings:general.darkMode')}</p>
             <p className="text-nb-caption text-nb-gray-600">
-              Beralih antara tema terang dan gelap untuk konsol ini.
+              {t('settings:general.darkModeHint')}
             </p>
           </div>
           <button
             type="button"
             role="switch"
             aria-checked={isDark}
-            aria-label="Mode gelap"
+            aria-label={t('settings:general.darkMode')}
             onClick={() => setTheme(isDark ? 'light' : 'dark')}
             className={`relative inline-flex h-7 w-14 shrink-0 items-center rounded-full border-2 border-nb-black transition-colors ${
               isDark ? 'bg-nb-primary' : 'bg-nb-gray-200'
@@ -145,6 +154,18 @@ function GeneralTab({ user }: { user: { full_name: string; username: string; rol
           </button>
         </div>
       </SectionCard>
+
+      <SectionCard title={t('settings:general.language')}>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="font-semibold text-nb-black">{t('common:language.label')}</p>
+            <p className="text-nb-caption text-nb-gray-600">
+              {t('settings:general.languageHint')}
+            </p>
+          </div>
+          <LanguageSwitcher />
+        </div>
+      </SectionCard>
     </div>
   );
 }
@@ -152,6 +173,7 @@ function GeneralTab({ user }: { user: { full_name: string; username: string; rol
 /* ── Keamanan ─────────────────────────────────────────────────────────────── */
 
 function SecurityTab({ onChanged }: { onChanged: () => Promise<void> }) {
+  const { t } = useTranslation();
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -179,7 +201,7 @@ function SecurityTab({ onChanged }: { onChanged: () => Promise<void> }) {
       setOldPassword('');
       setNewPassword('');
       setConfirm('');
-      toast.success('Kata sandi berhasil diubah');
+      toast.success(t('settings:security.passwordChanged'));
     } catch (err) {
       toast.error(getErrorMessage(err));
     } finally {
@@ -188,34 +210,34 @@ function SecurityTab({ onChanged }: { onChanged: () => Promise<void> }) {
   };
 
   return (
-    <SectionCard title="Ubah Kata Sandi" className="max-w-xl">
+    <SectionCard title={t('settings:security.changePassword')} className="max-w-xl">
       <form className="space-y-4" onSubmit={handleSubmit}>
         <FormInput
-          label="Kata Sandi Saat Ini"
+          label={t('settings:security.currentPassword')}
           type="password"
           autoComplete="current-password"
           value={oldPassword}
           onChange={(e) => setOldPassword(e.target.value)}
         />
         <FormInput
-          label="Kata Sandi Baru"
+          label={t('settings:security.newPassword')}
           type="password"
           autoComplete="new-password"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
-          error={tooShort ? 'Minimal 8 karakter' : undefined}
-          helperText="Minimal 8 karakter"
+          error={tooShort ? t('settings:security.minChars') : undefined}
+          helperText={t('settings:security.minChars')}
         />
         <FormInput
-          label="Konfirmasi Kata Sandi Baru"
+          label={t('settings:security.confirmNewPassword')}
           type="password"
           autoComplete="new-password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
-          error={mismatch ? 'Konfirmasi tidak cocok' : undefined}
+          error={mismatch ? t('settings:security.mismatch') : undefined}
         />
         <Button type="submit" loading={submitting} disabled={!canSubmit}>
-          Simpan Kata Sandi
+          {t('settings:security.savePassword')}
         </Button>
       </form>
     </SectionCard>
@@ -225,6 +247,7 @@ function SecurityTab({ onChanged }: { onChanged: () => Promise<void> }) {
 /* ── Notifikasi ───────────────────────────────────────────────────────────── */
 
 function NotificationsTab({ userId }: { userId: string }) {
+  const { t } = useTranslation();
   const { data, isLoading, isError } = useNotificationPreferences(userId);
   const updateMutation = useUpdateNotificationPreferences(userId);
   // Local toggle overrides keyed by type — derived against the server list at
@@ -249,7 +272,7 @@ function NotificationsTab({ userId }: { userId: string }) {
     try {
       await updateMutation.mutateAsync(effective);
       setOverrides({});
-      toast.success('Preferensi notifikasi disimpan');
+      toast.success(t('settings:notifications.saved'));
     } catch (err) {
       toast.error(getErrorMessage(err));
     }
@@ -257,17 +280,19 @@ function NotificationsTab({ userId }: { userId: string }) {
 
   if (isLoading || !data) {
     return (
-      <SectionCard title="Notifikasi">
-        <p className="py-4 text-nb-body-sm text-nb-gray-600">Memuat preferensi…</p>
+      <SectionCard title={t('settings:notifications.title')}>
+        <p className="py-4 text-nb-body-sm text-nb-gray-600">
+          {t('settings:notifications.loadingPreferences')}
+        </p>
       </SectionCard>
     );
   }
 
   if (isError) {
     return (
-      <SectionCard title="Notifikasi">
+      <SectionCard title={t('settings:notifications.title')}>
         <p className="py-4 text-nb-body-sm text-nb-danger">
-          Gagal memuat preferensi notifikasi. Coba lagi nanti.
+          {t('settings:notifications.loadError')}
         </p>
       </SectionCard>
     );
@@ -275,12 +300,12 @@ function NotificationsTab({ userId }: { userId: string }) {
 
   return (
     <SectionCard
-      title="Preferensi Notifikasi"
-      meta="Push per jenis"
+      title={t('settings:notifications.preferences')}
+      meta={t('settings:notifications.perTypePush')}
       className="max-w-xl"
       action={
         <Button size="sm" onClick={handleSave} loading={updateMutation.isPending} disabled={!dirty}>
-          Simpan
+          {t('common:actions.save')}
         </Button>
       }
     >
@@ -288,13 +313,13 @@ function NotificationsTab({ userId }: { userId: string }) {
         {effective.map((pref) => (
           <li key={pref.type} className="flex items-center justify-between gap-4 py-3">
             <span className="text-nb-body-sm text-nb-black">
-              {NOTIFICATION_TYPE_LABELS[pref.type] ?? pref.type}
+              {getNotificationTypeLabel(pref.type, t) ?? pref.type}
             </span>
             <button
               type="button"
               role="switch"
               aria-checked={pref.enabled}
-              aria-label={NOTIFICATION_TYPE_LABELS[pref.type] ?? pref.type}
+              aria-label={getNotificationTypeLabel(pref.type, t) ?? pref.type}
               onClick={() => toggle(pref.type, pref.enabled)}
               className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border-2 border-nb-black transition-colors ${
                 pref.enabled ? 'bg-nb-primary' : 'bg-nb-gray-200'

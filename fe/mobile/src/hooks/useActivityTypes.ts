@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import i18n from '../i18n/config';
 import type { ActivityType } from '../types/models.types';
 import { getMyActivityTypes } from '../services/api/activityTypesApi';
 
@@ -23,7 +24,7 @@ export function useActivityTypes() {
         setError(response.error);
       }
     } catch {
-      setError('Gagal memuat jenis aktivitas');
+      setError(i18n.t('activities:tab.loadTypesError'));
     } finally {
       setIsLoading(false);
     }

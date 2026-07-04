@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Keyboard,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { searchSpecies } from '../../store/slices/plantsSlice';
 import { PlantSpecies } from '../../types/models.types';
@@ -46,15 +47,17 @@ export const SpeciesAutocomplete: React.FC<SpeciesAutocompleteProps> = ({
   multi = false,
   value,
   onChange,
-  placeholder = 'Cari spesies tanaman...',
+  placeholder,
   style,
   testID,
   areaId: _areaId,
 }) => {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const [searchInput, setSearchInput] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const inputRef = useRef<TextInput>(null);
+  const defaultPlaceholder = placeholder || t('tasks:species.placeholder');
 
   const debouncedSearch = useDebounce(searchInput, 300);
   const searchResults = useAppSelector((state) => state.plants.searchResults);
@@ -121,7 +124,7 @@ export const SpeciesAutocomplete: React.FC<SpeciesAutocompleteProps> = ({
           style={styles.chipsContainer}
           accessible={true}
           accessibilityRole="list"
-          accessibilityLabel="Spesies terpilih"
+          accessibilityLabel={t('tasks:species.selectedLabel')}
         >
           {value.map((species) => (
             <View
@@ -129,7 +132,7 @@ export const SpeciesAutocomplete: React.FC<SpeciesAutocompleteProps> = ({
               style={styles.chip}
               accessible={true}
               accessibilityRole="button"
-              accessibilityLabel={`${species.nameId}, ketuk untuk hapus`}
+              accessibilityLabel={t('tasks:species.chipLabel', { name: species.nameId })}
             >
               <Text
                 style={styles.chipText}
@@ -140,7 +143,7 @@ export const SpeciesAutocomplete: React.FC<SpeciesAutocompleteProps> = ({
               <TouchableOpacity
                 onPress={() => handleRemoveChip(species.id)}
                 style={styles.chipRemoveButton}
-                accessibilityLabel="Hapus"
+                accessibilityLabel={t('common:actions.delete')}
                 accessibilityRole="button"
                 testID={`chip-remove-${species.id}`}
               >
@@ -156,14 +159,14 @@ export const SpeciesAutocomplete: React.FC<SpeciesAutocompleteProps> = ({
         <TextInput
           ref={inputRef}
           style={styles.input}
-          placeholder={placeholder}
+          placeholder={defaultPlaceholder}
           placeholderTextColor={nbColors.gray50}
           value={searchInput}
           onChangeText={setSearchInput}
           onFocus={() => searchInput.trim().length > 0 && setShowDropdown(true)}
           editable={!isLoading}
-          accessibilityLabel="Pencarian spesies tanaman"
-          accessibilityHint="Ketik nama spesies untuk mencari"
+          accessibilityLabel={t('tasks:species.searchLabel')}
+          accessibilityHint={t('tasks:species.searchHint')}
           accessibilityRole="search"
           testID={`${testID}-input`}
         />
@@ -171,7 +174,7 @@ export const SpeciesAutocomplete: React.FC<SpeciesAutocompleteProps> = ({
           <TouchableOpacity
             onPress={handleClearSearch}
             style={styles.clearButton}
-            accessibilityLabel="Hapus pencarian"
+            accessibilityLabel={t('tasks:species.clearLabel')}
             accessibilityRole="button"
             testID={`${testID}-clear`}
           >
@@ -191,7 +194,9 @@ export const SpeciesAutocomplete: React.FC<SpeciesAutocompleteProps> = ({
       {/* Results dropdown */}
       {showDropdown && !isLoading && filteredResults.length === 0 && searchInput.trim() && (
         <View style={styles.emptyMessage}>
-          <Text style={styles.emptyMessageText}>Tidak ada hasil untuk "{searchInput}"</Text>
+          <Text style={styles.emptyMessageText}>
+            {t('tasks:species.noResults', { query: searchInput })}
+          </Text>
         </View>
       )}
 
@@ -208,8 +213,8 @@ export const SpeciesAutocomplete: React.FC<SpeciesAutocompleteProps> = ({
                 <TouchableOpacity
                   onPress={() => handleSpeciesSelect(item)}
                   style={[styles.resultItem, isSelected && styles.resultItemSelected]}
-                  accessibilityLabel={`Pilih ${item.nameId}`}
-                  accessibilityHint={item.nameLatin ? `Latin: ${item.nameLatin}` : undefined}
+                  accessibilityLabel={t('tasks:species.selectLabel', { name: item.nameId })}
+                  accessibilityHint={item.nameLatin ? t('tasks:species.latinHint', { latin: item.nameLatin }) : undefined}
                   accessibilityRole="button"
                   accessibilityState={{ selected: isSelected }}
                   testID={`result-${item.id}`}

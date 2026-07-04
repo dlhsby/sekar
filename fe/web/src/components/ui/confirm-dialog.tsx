@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Button, type ButtonProps } from './button';
 import {
@@ -41,13 +42,16 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmLabel = 'Konfirmasi',
-  cancelLabel = 'Batal',
+  confirmLabel,
+  cancelLabel,
   variant = 'destructive',
   loading = false,
   onConfirm,
   children,
 }: ConfirmDialogProps): React.JSX.Element {
+  const { t } = useTranslation();
+  const displayConfirmLabel = confirmLabel ?? t('common:actions.confirm');
+  const displayCancelLabel = cancelLabel ?? t('common:actions.cancel');
   return (
     // Block dismissal (Escape / overlay) while the action is in flight, but keep
     // a real handler so Radix's controlled state never desyncs.
@@ -69,10 +73,10 @@ export function ConfirmDialog({
             onClick={() => onOpenChange(false)}
             disabled={loading}
           >
-            {cancelLabel}
+            {displayCancelLabel}
           </Button>
           <Button variant={variant} loading={loading} onClick={() => void onConfirm()}>
-            {confirmLabel}
+            {displayConfirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils/cn';
 import { useStaffingSummary } from '@/lib/api/monitoring';
 import type { BoundariesResponse, DayType, StaffingRoleBreakdown } from '@/lib/api/monitoring';
 import { ROLE_LABELS } from '@/lib/constants/roles';
-import { DAY_TYPE_LABELS } from '@/lib/constants/monitoring';
+import { getDayTypeLabels } from '@/lib/constants/monitoring';
 import { AlertTriangle, Users, ChevronDown, ChevronRight, ArrowRightLeft } from 'lucide-react';
 import type { UserRole } from '@/types/models';
 
@@ -25,6 +26,7 @@ interface RoleRowProps {
 }
 
 function RoleRow({ role }: RoleRowProps) {
+  const { t } = useTranslation(['monitoring']);
   const present = role.active + role.idle + role.outside_area;
   const required = role.total_required > 0 ? role.total_required : role.total_assigned;
   const isFullyStaffed = present >= required;
@@ -46,19 +48,19 @@ function RoleRow({ role }: RoleRowProps) {
         {present}/{required}
       </span>
       <div className="flex gap-1 text-[10px] text-nb-gray-400">
-        <span title="Aktif" className="text-[var(--color-status-active)]">
+        <span title={t('monitoring:staffing.activeStatus')} className="text-[var(--color-status-active)]">
           {role.active}
         </span>
         <span>/</span>
-        <span title="Idle" className="text-[var(--color-status-idle)]">
+        <span title={t('monitoring:staffing.idleStatus')} className="text-[var(--color-status-idle)]">
           {role.idle}
         </span>
         <span>/</span>
-        <span title="Di Luar" className="text-[var(--color-status-outside)]">
+        <span title={t('monitoring:staffing.outsideStatus')} className="text-[var(--color-status-outside)]">
           {role.outside_area}
         </span>
         <span>/</span>
-        <span title="Tidak Terdeteksi" className="text-[var(--color-status-missing)]">
+        <span title={t('monitoring:staffing.missingStatus')} className="text-[var(--color-status-missing)]">
           {role.missing}
         </span>
       </div>
@@ -71,10 +73,11 @@ interface UnderstaffedBadgeProps {
 }
 
 function UnderstaffedBadge({ shortage }: UnderstaffedBadgeProps) {
+  const { t } = useTranslation(['monitoring']);
   return (
     <span className="flex items-center gap-1 text-[10px] font-bold text-[var(--color-status-missing)] bg-[var(--color-status-missing-bg)] px-1.5 py-0.5 rounded-nb-sm border border-[var(--color-status-missing)]">
       <AlertTriangle className="w-2.5 h-2.5" />
-      Kurang {shortage}
+      {t('monitoring:staffing.shortageLabel')} {shortage}
     </span>
   );
 }
@@ -89,6 +92,7 @@ interface AreaViewProps {
 }
 
 function AreaView({ areaId, onReassign }: AreaViewProps) {
+  const { t } = useTranslation(['monitoring']);
   const { data, isLoading } = useStaffingSummary({ area_id: areaId });
 
   if (isLoading) {
@@ -96,7 +100,7 @@ function AreaView({ areaId, onReassign }: AreaViewProps) {
   }
 
   const areaItem = data?.items?.find((item) => item.id === areaId);
-  if (!areaItem) return <p className="text-xs text-nb-gray-400 italic">Data tidak tersedia.</p>;
+  if (!areaItem) return <p className="text-xs text-nb-gray-400 italic">{t('monitoring:staffing.dataUnavailable')}</p>;
 
   const totalPresent = areaItem.total_active + areaItem.total_idle + areaItem.total_outside_area;
   const totalAll = totalPresent + areaItem.total_missing + areaItem.total_offline;
@@ -112,7 +116,7 @@ function AreaView({ areaId, onReassign }: AreaViewProps) {
       <div>
         <div className="flex items-center justify-between text-xs mb-1">
           <span className="font-semibold text-nb-black">
-            {totalPresent} / {totalAll} hadir
+            {totalPresent} / {totalAll} {t('monitoring:staffing.presentLabel')}
           </span>
           <span className="text-nb-gray-500">
             {totalAll > 0 ? Math.round((totalPresent / totalAll) * 100) : 0}%
@@ -140,7 +144,7 @@ function AreaView({ areaId, onReassign }: AreaViewProps) {
           className="flex items-center gap-1.5 text-xs font-bold text-nb-white bg-nb-black px-2.5 py-1.5 rounded-nb-base border-2 border-nb-black hover:bg-nb-gray-800 transition-colors w-full justify-center mt-1"
         >
           <ArrowRightLeft className="w-3 h-3" />
-          Pindah Petugas {shortage > 0 ? `(Kurang ${shortage})` : ''}
+          {t('monitoring:staffing.reassignButton')} {shortage > 0 ? `(${t('monitoring:staffing.shortageLabel')} ${shortage})` : ''}
         </button>
       )}
     </div>
@@ -158,11 +162,12 @@ interface RayonViewProps {
 }
 
 function RayonView({ rayonId, boundaries, onReassign }: RayonViewProps) {
+  const { t } = useTranslation(['monitoring']);
   const [expandedAreaIds, setExpandedAreaIds] = useState<Set<string>>(new Set());
   const rayon = boundaries?.rayons.find((r) => r.id === rayonId);
 
   if (!rayon) {
-    return <p className="text-xs text-nb-gray-400 italic">Data rayon tidak tersedia.</p>;
+    return <p className="text-xs text-nb-gray-400 italic">{t('monitoring:staffing.rayonDataUnavailable')}</p>;
   }
 
   const toggleArea = (areaId: string) => {
@@ -244,7 +249,7 @@ function RayonView({ rayonId, boundaries, onReassign }: RayonViewProps) {
                     className="flex items-center gap-1.5 text-xs font-bold text-nb-white bg-nb-black px-2.5 py-1.5 rounded-nb-base border-2 border-nb-black hover:bg-nb-gray-800 transition-colors w-full justify-center mt-1"
                   >
                     <ArrowRightLeft className="w-3 h-3" />
-                    Pindah Petugas
+                    {t('monitoring:staffing.reassignButton')}
                   </button>
                 )}
               </div>
@@ -266,10 +271,11 @@ interface CityViewProps {
 }
 
 function CityView({ boundaries, onReassign }: CityViewProps) {
+  const { t } = useTranslation(['monitoring']);
   const [expandedRayonIds, setExpandedRayonIds] = useState<Set<string>>(new Set());
 
   if (!boundaries?.rayons?.length) {
-    return <p className="text-xs text-nb-gray-400 italic">Data wilayah tidak tersedia.</p>;
+    return <p className="text-xs text-nb-gray-400 italic">{t('monitoring:staffing.cityDataUnavailable')}</p>;
   }
 
   const toggleRayon = (rayonId: string) => {
@@ -374,11 +380,13 @@ export function StaffingSummaryCard({
   dayType,
   onReassign,
 }: StaffingSummaryCardProps) {
+  const { t } = useTranslation(['monitoring']);
+  const dayTypeLabels = getDayTypeLabels();
   const hasAreaFilter = !!filters.area_id;
   const hasRayonFilter = !!filters.rayon_id && !hasAreaFilter;
   const isCityView = !hasAreaFilter && !hasRayonFilter;
 
-  const viewLabel = hasAreaFilter ? 'Area' : hasRayonFilter ? 'Rayon' : 'Seluruh Kota';
+  const viewLabel = hasAreaFilter ? 'Area' : hasRayonFilter ? 'Rayon' : t('monitoring:staffing.cityViewLabel');
 
   return (
     <div className="border-2 border-nb-black rounded-nb-base shadow-nb-sm bg-nb-white overflow-hidden">
@@ -386,19 +394,19 @@ export function StaffingSummaryCard({
       <div className="flex items-center justify-between px-3 py-2 border-b-2 border-nb-black bg-nb-gray-50">
         <h3 className="text-xs font-bold uppercase text-nb-gray-600 flex items-center gap-1.5">
           <Users className="w-3.5 h-3.5" />
-          Ketersediaan Petugas
+          {t('monitoring:staffing.staffingLabel')}
           <span className="text-nb-gray-400 font-normal normal-case">· {viewLabel}</span>
         </h3>
-        {dayType && DAY_TYPE_LABELS[dayType] && (
+        {dayType && dayTypeLabels[dayType] && (
           <span
             className="text-[10px] font-bold px-1.5 py-0.5 rounded-nb-sm border"
             style={{
-              color: DAY_TYPE_LABELS[dayType].color,
-              background: DAY_TYPE_LABELS[dayType].bg,
-              borderColor: DAY_TYPE_LABELS[dayType].color,
+              color: dayTypeLabels[dayType].color,
+              background: dayTypeLabels[dayType].bg,
+              borderColor: dayTypeLabels[dayType].color,
             }}
           >
-            {DAY_TYPE_LABELS[dayType].label}
+            {dayTypeLabels[dayType].label}
           </span>
         )}
       </div>

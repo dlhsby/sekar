@@ -6,6 +6,8 @@
 
 'use client';
 
+import { useTranslation } from 'react-i18next';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { useAuth } from '@/lib/auth/hooks';
 import {
   useTasks,
@@ -38,28 +40,18 @@ import { TaskFormModal } from '@/components/tasks/TaskFormModal';
 import { formatDate } from '@/lib/utils/time';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
 import {
-  TASK_STATUS_LABELS,
+  getTaskStatusLabel,
+  getTaskPriorityLabel,
   TASK_STATUS_TONES,
-  TASK_PRIORITY_LABELS,
   TASK_PRIORITY_TONES,
 } from '@/lib/constants/tasks';
 
 type ActiveTab = 'all' | 'tagged' | 'created';
 type ViewMode = 'kanban' | 'table';
 
-const SCOPE_TABS: TabItem<ActiveTab>[] = [
-  { key: 'all', label: 'Semua Tugas' },
-  { key: 'tagged', label: 'Ditandai' },
-  { key: 'created', label: 'Dibuat Saya' },
-];
-
-const VIEW_TABS: TabItem<ViewMode>[] = [
-  { key: 'kanban', label: 'Papan' },
-  { key: 'table', label: 'Tabel' },
-];
-
 export default function TasksPage() {
   const { user, loading: authLoading } = useAuth();
+  const { t } = useTranslation();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<ActiveTab>('all');
   const [view, setView] = useState<ViewMode>('kanban');
@@ -76,14 +68,14 @@ export default function TasksPage() {
     (task: Task): DataTableRowAction<Task>[] => [
       {
         key: 'view',
-        label: 'Lihat',
+        label: t('tasks:list.rowActionView'),
         icon: Eye,
         onClick: () => {
           viewModal.openWith(task);
         },
       },
     ],
-    [viewModal]
+    [viewModal, t]
   );
 
   useEffect(() => {
@@ -113,7 +105,7 @@ export default function TasksPage() {
   if (authLoading || !user) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <p className="text-nb-gray-600">Memuat…</p>
+        <p className="text-nb-gray-600">{t('common:actions.loading')}</p>
       </div>
     );
   }
@@ -124,18 +116,30 @@ export default function TasksPage() {
   const pagination = activeQuery.data?.meta;
   const isLoading = activeQuery.isLoading;
 
+  // Build tabs and filter options from i18n
+  const scopeTabs: TabItem<ActiveTab>[] = [
+    { key: 'all', label: t('tasks:list.scopeTabAll') },
+    { key: 'tagged', label: t('tasks:list.scopeTabTagged') },
+    { key: 'created', label: t('tasks:list.scopeTabCreated') },
+  ];
+
+  const viewTabs: TabItem<ViewMode>[] = [
+    { key: 'kanban', label: t('tasks:list.viewTabKanban') },
+    { key: 'table', label: t('tasks:list.viewTabTable') },
+  ];
+
   const statusOptions = [
-    { value: 'all', label: 'Semua Status' },
-    ...(Object.keys(TASK_STATUS_LABELS) as TaskStatus[]).map((s) => ({
+    { value: 'all', label: t('tasks:list.filterStatusAll') },
+    ...(Object.keys(TASK_STATUS_TONES) as TaskStatus[]).map((s) => ({
       value: s,
-      label: TASK_STATUS_LABELS[s],
+      label: getTaskStatusLabel(s, t),
     })),
   ];
   const priorityOptions = [
-    { value: 'all', label: 'Semua Prioritas' },
-    ...(Object.keys(TASK_PRIORITY_LABELS) as TaskPriority[]).map((p) => ({
+    { value: 'all', label: t('tasks:list.filterPriorityAll') },
+    ...(Object.keys(TASK_PRIORITY_TONES) as TaskPriority[]).map((p) => ({
       value: p,
-      label: TASK_PRIORITY_LABELS[p],
+      label: getTaskPriorityLabel(p, t),
     })),
   ];
 
@@ -143,81 +147,81 @@ export default function TasksPage() {
     {
       id: 'id',
       accessorKey: 'id',
-      header: 'ID',
+      header: t('tasks:list.tableHeaderId'),
       enableSorting: false,
-      meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+      meta: { label: t('tasks:list.tableHeaderId'), defaultHidden: true, filterVariant: 'text' },
       cell: ({ row }) => (
         <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
       ),
     },
     {
       id: 'title',
-      header: 'Judul Tugas',
+      header: t('tasks:list.tableHeaderTitle'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Judul Tugas' },
+      meta: { label: t('tasks:list.tableHeaderTitle') },
       cell: ({ row }) => <div className="font-semibold text-nb-black">{row.original.title}</div>,
     },
     {
       id: 'assigned_to',
-      header: 'Ditugaskan Ke',
+      header: t('tasks:list.tableHeaderAssignedTo'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Ditugaskan Ke' },
+      meta: { label: t('tasks:list.tableHeaderAssignedTo') },
       cell: ({ row }) => <div className="text-nb-body-sm">{row.original.assigned_to?.full_name ?? '-'}</div>,
     },
     {
       id: 'area',
-      header: 'Area / Rayon',
+      header: t('tasks:list.tableHeaderArea'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Area / Rayon' },
+      meta: { label: t('tasks:list.tableHeaderArea') },
       cell: ({ row }) => (
         <div className="text-nb-body-sm">{row.original.area?.name ?? row.original.rayon?.name ?? '-'}</div>
       ),
     },
     {
       id: 'priority',
-      header: 'Prioritas',
+      header: t('tasks:list.tableHeaderPriority'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Prioritas' },
+      meta: { label: t('tasks:list.tableHeaderPriority') },
       cell: ({ row }) => (
         <StatusPill tone={TASK_PRIORITY_TONES[row.original.priority]}>
-          {TASK_PRIORITY_LABELS[row.original.priority]}
+          {getTaskPriorityLabel(row.original.priority, t)}
         </StatusPill>
       ),
     },
     {
       id: 'status',
-      header: 'Status',
+      header: t('tasks:list.tableHeaderStatus'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Status' },
+      meta: { label: t('tasks:list.tableHeaderStatus') },
       cell: ({ row }) => (
         <StatusPill tone={TASK_STATUS_TONES[row.original.status]} dot>
-          {TASK_STATUS_LABELS[row.original.status]}
+          {getTaskStatusLabel(row.original.status, t)}
         </StatusPill>
       ),
     },
     {
       id: 'due_date',
-      header: 'Tenggat',
+      header: t('tasks:list.tableHeaderDueDate'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Tenggat' },
+      meta: { label: t('tasks:list.tableHeaderDueDate') },
       cell: ({ row }) => (
         <div className="text-nb-body-sm">
-          {row.original.due_date ? new Date(row.original.due_date).toLocaleDateString('id-ID') : '-'}
+          {row.original.due_date ? new Date(row.original.due_date).toLocaleDateString(intlLocale()) : '-'}
         </div>
       ),
     },
     {
       id: 'created_at',
       accessorKey: 'created_at',
-      header: 'Dibuat',
+      header: t('tasks:list.tableHeaderCreated'),
       enableSorting: false,
-      meta: { label: 'Dibuat', defaultHidden: true, filterVariant: 'date' },
+      meta: { label: t('tasks:list.tableHeaderCreated'), defaultHidden: true, filterVariant: 'date' },
       cell: ({ row }) => (
         <span className="text-nb-body-sm text-nb-gray-600">
           {formatDate(row.original.created_at)}
@@ -227,9 +231,9 @@ export default function TasksPage() {
     {
       id: 'updated_at',
       accessorKey: 'updated_at',
-      header: 'Diperbarui',
+      header: t('tasks:list.tableHeaderUpdated'),
       enableSorting: false,
-      meta: { label: 'Diperbarui', defaultHidden: true, filterVariant: 'date' },
+      meta: { label: t('tasks:list.tableHeaderUpdated'), defaultHidden: true, filterVariant: 'date' },
       cell: ({ row }) => (
         <span className="text-nb-body-sm text-nb-gray-600">
           {formatDate(row.original.updated_at)}
@@ -248,30 +252,30 @@ export default function TasksPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        description="Kelola penugasan lapangan."
+        description={t('tasks:list.pageHeader')}
         actions={
           <Button onClick={() => setFormOpen(true)} leftIcon={<Plus className="size-5" />}>
-            Buat Tugas
+            {t('tasks:list.createButton')}
           </Button>
         }
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Tabs<ActiveTab>
-          tabs={SCOPE_TABS}
+          tabs={scopeTabs}
           value={activeTab}
           onValueChange={handleScopeChange}
-          aria-label="Lingkup tugas"
+          aria-label={t('tasks:list.scopeLabel')}
         />
         <Tabs<ViewMode>
-          tabs={VIEW_TABS}
+          tabs={viewTabs}
           value={view}
           onValueChange={(v) => {
             setView(v);
             setPage(1); // avoid landing on an out-of-range page after the toggle
           }}
           size="sm"
-          aria-label="Tampilan"
+          aria-label={t('tasks:list.viewLabel')}
         />
       </div>
 
@@ -279,7 +283,7 @@ export default function TasksPage() {
         <CardContent className="p-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
             <FormSelect
-              label="Filter Status"
+              label={t('tasks:list.filterStatus')}
               value={statusFilter}
               onChange={(value) => {
                 setStatusFilter(value as TaskStatus | 'all');
@@ -288,7 +292,7 @@ export default function TasksPage() {
               options={statusOptions}
             />
             <FormSelect
-              label="Filter Prioritas"
+              label={t('tasks:list.filterPriority')}
               value={priorityFilter}
               onChange={(value) => {
                 setPriorityFilter(value as TaskPriority | 'all');
@@ -305,7 +309,7 @@ export default function TasksPage() {
                   setPage(1);
                 }}
               >
-                Reset Filter
+                {t('tasks:list.resetFilter')}
               </Button>
             )}
           </div>
@@ -324,12 +328,12 @@ export default function TasksPage() {
               enablePagination={false}
               getRowId={(r) => r.id}
               rowActions={rowActions}
-              emptyTitle="Tidak ada tugas"
+              emptyTitle={t("tasks:list.emptyTitle")}
             />
             {pagination && pagination.totalPages > 1 && (
               <div className="mt-4 flex items-center justify-between border-t-2 border-nb-black pt-4">
                 <div className="font-mono text-[11px] text-nb-gray-600">
-                  Halaman {pagination.page} dari {pagination.totalPages} · {pagination.total} total
+                  {t('tasks:list.paginationInfo', { page: pagination.page, total: pagination.totalPages, count: pagination.total })}
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -339,7 +343,7 @@ export default function TasksPage() {
                     disabled={pagination.page === 1}
                     leftIcon={<ChevronLeft className="size-4" />}
                   >
-                    Sebelumnya
+                    {t('tasks:list.paginationPrevious')}
                   </Button>
                   <Button
                     variant="secondary"
@@ -348,7 +352,7 @@ export default function TasksPage() {
                     disabled={pagination.page === pagination.totalPages}
                     rightIcon={<ChevronRight className="size-4" />}
                   >
-                    Selanjutnya
+                    {t('tasks:list.paginationNext')}
                   </Button>
                 </div>
               </div>
@@ -362,24 +366,24 @@ export default function TasksPage() {
       <DetailModal
         open={viewModal.open}
         onOpenChange={viewModal.onOpenChange}
-        title="Detail Tugas"
+        title={t('tasks:detail.taskDetails')}
         rows={viewModal.item ? [
-          { label: 'Judul', value: viewModal.item.title },
-          { label: 'Status', value: (
+          { label: t('tasks:fields.description'), value: viewModal.item.title },
+          { label: t('tasks:list.tableHeaderStatus'), value: (
             <StatusPill tone={TASK_STATUS_TONES[viewModal.item.status]} dot>
-              {TASK_STATUS_LABELS[viewModal.item.status]}
+              {getTaskStatusLabel(viewModal.item.status, t)}
             </StatusPill>
           ) },
-          { label: 'Prioritas', value: (
+          { label: t('tasks:list.tableHeaderPriority'), value: (
             <StatusPill tone={TASK_PRIORITY_TONES[viewModal.item.priority]}>
-              {TASK_PRIORITY_LABELS[viewModal.item.priority]}
+              {getTaskPriorityLabel(viewModal.item.priority, t)}
             </StatusPill>
           ) },
-          { label: 'Ditugaskan Ke', value: viewModal.item.assigned_to?.full_name },
-          { label: 'Area / Rayon', value: viewModal.item.area?.name ?? viewModal.item.rayon?.name },
-          { label: 'Tenggat', value: viewModal.item.due_date ? new Date(viewModal.item.due_date).toLocaleDateString('id-ID') : null },
-          { label: 'Dibuat', value: formatDate(viewModal.item.created_at) },
-          { label: 'Diperbarui', value: formatDate(viewModal.item.updated_at) },
+          { label: t('tasks:list.tableHeaderAssignedTo'), value: viewModal.item.assigned_to?.full_name },
+          { label: t('tasks:list.tableHeaderArea'), value: viewModal.item.area?.name ?? viewModal.item.rayon?.name },
+          { label: t('tasks:list.tableHeaderDueDate'), value: viewModal.item.due_date ? new Date(viewModal.item.due_date).toLocaleDateString(intlLocale()) : null },
+          { label: t('tasks:list.tableHeaderCreated'), value: formatDate(viewModal.item.created_at) },
+          { label: t('tasks:list.tableHeaderUpdated'), value: formatDate(viewModal.item.updated_at) },
         ] : []}
       />
     </div>

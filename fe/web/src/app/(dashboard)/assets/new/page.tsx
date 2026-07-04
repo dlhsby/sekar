@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import {
   Button,
   Card,
@@ -19,6 +20,7 @@ import { getErrorMessage } from '@/lib/api/client';
 const ASSET_MANAGER_ROLES = ['korlap', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'];
 
 export default function CreateAssetPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { toast } = useToast();
   const user = useUser();
@@ -40,7 +42,7 @@ export default function CreateAssetPage() {
     if (!name || !categoryId) {
       toast({
         level: 'danger',
-        title: 'Nama dan kategori harus diisi',
+        title: t('assets:form.validationError'),
       });
       return;
     }
@@ -58,7 +60,7 @@ export default function CreateAssetPage() {
 
       toast({
         level: 'success',
-        title: 'Aset berhasil dibuat',
+        title: t('assets:form.createSuccess'),
       });
 
       router.push(`/assets/${asset.id}`);
@@ -72,29 +74,29 @@ export default function CreateAssetPage() {
 
   // Access guard — placed after all hooks so hook order stays stable (rules-of-hooks).
   if (user && !ASSET_MANAGER_ROLES.includes(user.role)) {
-    return <div><p>Akses ditolak</p></div>;
+    return <div><p>{t('common:errors.noPermission.short')}</p></div>;
   }
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Tambah Aset"
-        breadcrumb="Aset · Tambah"
+        title={t('assets:create.pageTitle')}
+        breadcrumb={t('assets:create.breadcrumb')}
       />
 
       <Card variant="default" className="max-w-2xl">
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <FormInput
-            label="Nama Aset"
-            placeholder="Sapu Lidi #1"
+            label={t('assets:form.nameLabel')}
+            placeholder={t('assets:form.namePlaceholder')}
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
           />
 
           <FormSelect
-            label="Kategori"
-            placeholder="Pilih Kategori"
+            label={t('assets:form.categoryLabel')}
+            placeholder={t('assets:form.categoryPlaceholder')}
             options={categories.map((cat) => ({ value: cat.id, label: cat.name }))}
             value={categoryId}
             onChange={(value) => setCategoryId(value)}
@@ -102,13 +104,13 @@ export default function CreateAssetPage() {
           />
 
           <FormInput
-            label="Deskripsi"
-            placeholder="Deskripsi aset"
+            label={t('assets:form.descriptionLabel')}
+            placeholder={t('assets:form.descriptionPlaceholder')}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
 
-          <Field label="Tanggal Pembelian">
+          <Field label={t('assets:form.purchaseDateLabel')}>
             {(p) => (
               <DatePicker
                 id={p.id}
@@ -119,9 +121,9 @@ export default function CreateAssetPage() {
           </Field>
 
           <FormInput
-            label="Harga Pembelian"
+            label={t('assets:form.purchasePriceLabel')}
             type="number"
-            placeholder="Harga dalam Rupiah"
+            placeholder={t('assets:form.purchasePricePlaceholder')}
             value={purchasePrice}
             onChange={(e) => setPurchasePrice(e.target.value)}
           />
@@ -132,14 +134,14 @@ export default function CreateAssetPage() {
               variant="outline"
               onClick={() => router.back()}
             >
-              Batal
+              {t('common:actions.cancel')}
             </Button>
             <Button
               type="submit"
               variant="default"
               loading={createMutation.isPending}
             >
-              Buat Aset
+              {t('assets:form.create')}
             </Button>
           </div>
         </form>

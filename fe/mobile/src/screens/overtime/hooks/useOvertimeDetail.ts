@@ -5,6 +5,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { Alert, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import i18n from '../../../i18n/config';
 import type { MainTabScreenProps } from '../../../types/navigation.types';
 import { getOvertimeById } from '../../../services/api/overtimeApi';
 import type { Overtime } from '../../../types/models.types';
@@ -38,13 +39,13 @@ export function useOvertimeDetail(overtimeId: string): UseOvertimeDetailReturn {
         setOvertime(response.data);
       } else if (response.error) {
         if (!isRefresh) {
-          Alert.alert('Error', response.error);
+          Alert.alert(i18n.t('common:ui.error'), response.error);
           navigation.navigate('Lembur' as any);
         }
       }
     } catch {
       if (!isRefresh) {
-        Alert.alert('Error', 'Gagal memuat detail lembur');
+        Alert.alert(i18n.t('common:ui.error'), i18n.t('overtime:detail.loadError'));
         navigation.navigate('Lembur' as any);
       }
     } finally {

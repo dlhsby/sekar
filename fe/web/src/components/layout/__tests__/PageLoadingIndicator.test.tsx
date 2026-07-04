@@ -381,7 +381,7 @@ describe('PageLoadingIndicator — working tests', () => {
     const bar = screen.getByRole('progressbar');
     expect(bar).toHaveAttribute('aria-valuemin', '0');
     expect(bar).toHaveAttribute('aria-valuemax', '100');
-    expect(bar).toHaveAttribute('aria-label', 'Page loading progress');
+    expect(bar).toHaveAttribute('aria-label', 'Progres pemuatan halaman');
   });
 
   it('cleans up timers on unmount without errors', async () => {

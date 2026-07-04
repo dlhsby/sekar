@@ -5,6 +5,7 @@
 
 import React, { useCallback, useState, useRef, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAppSelector } from '../../store/hooks';
 import { NBBackgroundPattern } from '../../components/nb';
@@ -24,14 +25,15 @@ type Props = {
   navigation: NativeStackNavigationProp<MainTabParamList, 'Activities'>;
 };
 
-const ACTIVITY_SORT_OPTIONS = [
-  { key: 'created_at_desc', label: 'Terbaru (default)' },
-  { key: 'created_at_asc', label: 'Terlama' },
-];
-
 export function ActivitiesScreen({ navigation }: Props): React.JSX.Element {
+  const { t } = useTranslation();
   const user = useAppSelector((state) => state.auth.user);
   const currentShift = useAppSelector((state) => state.shift.currentShift);
+
+  const ACTIVITY_SORT_OPTIONS = [
+    { key: 'created_at_desc', label: t('activities:sort.newest') },
+    { key: 'created_at_asc', label: t('activities:sort.oldest') },
+  ];
 
   const initialAreaId = user?.area_id ?? currentShift?.area_id ?? null;
 
@@ -86,7 +88,7 @@ export function ActivitiesScreen({ navigation }: Props): React.JSX.Element {
         <View style={[styles.contentWrapper, { paddingBottom: canSubmitActivity ? 80 : nbSpacing.sm }]}>
           {/* Title lives in the navigator header (top bar) — not repeated here. */}
           <FilterBar
-            label="aktivitas"
+            label={t('activities:filter.label')}
             filterCount={activityFilters.activeActivityFilterCount}
             chips={activityChips}
             isSortActive={activitySort !== 'created_at_desc'}
@@ -124,7 +126,7 @@ export function ActivitiesScreen({ navigation }: Props): React.JSX.Element {
         <SortModal
           visible={isSortModalOpen}
           onClose={() => setIsSortModalOpen(false)}
-          title="URUTKAN AKTIVITAS"
+          title={t('activities:header.sort')}
           options={ACTIVITY_SORT_OPTIONS}
           selectedOption={activitySort}
           onSelect={(key) => {

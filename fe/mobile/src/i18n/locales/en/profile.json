@@ -1,0 +1,266 @@
+{
+  "profile": {
+    "loading": "Loading profile...",
+    "about": {
+      "title": "About SEKAR",
+      "subtitle": "Performance Evaluation System for RTH Workers",
+      "version": "Version:",
+      "organization": "DLH Surabaya City"
+    }
+  },
+  "edit": {
+    "title": "Edit Profile",
+    "changePhoto": "Change Profile Photo",
+    "selectSource": "Select photo source",
+    "cancel": "Cancel",
+    "camera": "Camera",
+    "gallery": "Gallery",
+    "photoSelected": "New photo selected",
+    "noPhotoSelected": "Select a new photo first.",
+    "userDataMissing": "User data not available. Please log in again.",
+    "uploadSuccess": "Profile photo updated successfully.",
+    "uploadError": "Failed to upload profile photo.",
+    "cameraError": "Failed to open camera. Check permissions.",
+    "cameraErrorGeneral": "Failed to open camera.",
+    "galleryError": "Failed to open gallery. Check permissions.",
+    "galleryErrorGeneral": "Failed to open gallery.",
+    "saving": "Saving...",
+    "save": "Save Changes",
+    "lockedFields": "Cannot be changed",
+    "lockedNote": "Locked fields can only be changed by system admin. Contact admin for account changes.",
+    "labels": {
+      "fullName": "Full Name",
+      "username": "Username",
+      "roleRayon": "Role & Rayon",
+      "phoneNumber": "Phone Number"
+    },
+    "hints": {
+      "changePhoto": "Change profile photo",
+      "tapToSelect": "Tap to select a new photo from camera or gallery"
+    },
+    "toast": {
+      "info": "Info",
+      "success": "Success",
+      "error": "Failed"
+    }
+  },
+  "header": {
+    "user": "User",
+    "joinedSince": "since"
+  },
+  "menu": {
+    "editProfile": "Edit Profile",
+    "changePassword": "Change Password",
+    "mySchedule": "My Schedule",
+    "shiftHistory": "Shift History",
+    "settings": "Settings",
+    "diagnostics": "Diagnostics & Permissions",
+    "about": "About App",
+    "logout": "Log Out",
+    "account": "Account",
+    "application": "Application"
+  },
+  "logout": {
+    "error": "Error",
+    "failureMessage": "Failed to log out from app",
+    "pendingDataTitle": "Data Not Synced",
+    "pendingDataMessage": "There are {{pendingCount}} pending items and {{failedCount}} failed items that are not synced:\n\n{{description}}\n\nThis data will be lost if you log out.",
+    "cancelButton": "Cancel",
+    "syncButton": "Sync First",
+    "logoutButton": "Log Out Anyway",
+    "noActivityTypes": "None",
+    "clockInLabel": "clock-in",
+    "clockOutLabel": "clock-out",
+    "activityLabel": "activity",
+    "locationLabel": "location",
+    "syncIncompleteTitle": "Sync Incomplete",
+    "syncIncompleteMessage": "There are still {{count}} items that failed to sync. Please try again or choose \"Log Out Anyway\".",
+    "syncTimeoutTitle": "Timeout",
+    "syncTimeoutMessage": "Sync took too long. Please try again or choose \"Log Out Anyway\".",
+    "syncErrorMessage": "Sync failed:",
+    "confirmTitle": "Log Out from Account?",
+    "confirmMessage": "You will be logged out from the SEKAR app",
+    "okButton": "OK"
+  },
+  "stats": {
+    "field": {
+      "present": "Present",
+      "tasks": "Tasks",
+      "hours": "Hours",
+      "period": "this month"
+    },
+    "monitoring": {
+      "team": "Team",
+      "managed": "managed",
+      "areas": "Areas",
+      "monitored": "monitored",
+      "activities": "Activities",
+      "period": "this month"
+    }
+  },
+  "assignedArea": {
+    "title": "Assigned Area",
+    "radiusSuffix": "radius",
+    "noArea": "No area assigned"
+  },
+  "assignedKecamatan": {
+    "title": "Assigned Region",
+    "rayon": "Rayon",
+    "kecamatan": "District",
+    "noArea": "No region assigned yet"
+  },
+  "changePassword": {
+    "title": "Create New Password",
+    "alert": {
+      "title": "Temporary password must be changed",
+      "message": "For security, create a new password before proceeding."
+    },
+    "currentPassword": "Current Password",
+    "currentPasswordPlaceholder": "Enter current password",
+    "newPassword": "New Password",
+    "newPasswordPlaceholder": "Enter new password",
+    "confirmPassword": "Confirm New Password",
+    "confirmPasswordPlaceholder": "Re-enter new password",
+    "rules": {
+      "title": "Password Requirements",
+      "minLength": "At least 8 characters",
+      "alphanumeric": "Contains letters and numbers",
+      "match": "Passwords match"
+    },
+    "submit": "Save & Log In",
+    "submitAction": "Change Password",
+    "logout": "Log Out & Log In As Different User",
+    "success": {
+      "title": "Password saved",
+      "subtitle": "Redirecting to home…"
+    },
+    "validation": {
+      "currentPasswordRequired": "Current password is required",
+      "newPasswordRequired": "New password is required",
+      "newPasswordMinLength": "New password must be at least 8 characters",
+      "newPasswordAlphanumeric": "New password must contain letters and numbers",
+      "newPasswordDifferent": "New password must be different from old password",
+      "confirmPasswordRequired": "Password confirmation is required",
+      "confirmPasswordMatch": "Passwords do not match",
+      "currentPasswordWrong": "Current password is incorrect"
+    },
+    "errors": {
+      "noResponse": "No response from server.",
+      "newDifferentFromOld": "New password must be different from temporary password.",
+      "generic": "An error occurred."
+    }
+  },
+  "permissions": {
+    "notifications": {
+      "granted": "Notifications enabled",
+      "required": "Notifications are required to receive task and attendance information",
+      "checkFailed": "Failed to check notification permission",
+      "requestSuccess": "Notifications successfully enabled",
+      "requestBlocked": "Notifications blocked. Open Settings to enable",
+      "requestDenied": "Notifications denied. You will not receive important alerts",
+      "requestFailed": "Failed to request notification permission"
+    },
+    "location": {
+      "granted": "Location enabled",
+      "required": "Location is required for attendance and shift tracking",
+      "checkFailed": "Failed to check location permission",
+      "requestSuccess": "Location successfully enabled",
+      "requestBlocked": "Location blocked. Open Settings to enable",
+      "requestDenied": "Location denied. Attendance feature will not work",
+      "requestFailed": "Failed to request location permission"
+    },
+    "backgroundLocation": {
+      "iosNote": "iOS uses foreground location",
+      "androidOldNote": "Background location not required on Android 9 and earlier",
+      "granted": "Background location enabled",
+      "required": "Allow \"Always\" for accurate shift tracking",
+      "checkFailed": "Failed to check background location permission",
+      "foregroundRequired": "Foreground location must be enabled first",
+      "requestSuccess": "Background location successfully enabled",
+      "requestBlocked": "Background location blocked. Open Settings → Permissions → Location → Allow all the time",
+      "requestDenied": "Background location denied. Shift tracking may be inaccurate",
+      "requestFailed": "Failed to request background location permission"
+    },
+    "camera": {
+      "granted": "Camera enabled",
+      "required": "Camera is required for work report photos",
+      "checkFailed": "Failed to check camera permission",
+      "requestSuccess": "Camera successfully enabled",
+      "requestBlocked": "Camera blocked. Open Settings to enable",
+      "requestDenied": "Camera denied. You cannot take report photos",
+      "requestFailed": "Failed to request camera permission"
+    },
+    "gallery": {
+      "granted": "Gallery enabled",
+      "required": "Gallery is required to select report photos from storage",
+      "checkFailed": "Failed to check gallery permission",
+      "requestSuccess": "Gallery successfully enabled",
+      "requestBlocked": "Gallery blocked. Open Settings to enable",
+      "requestDenied": "Gallery denied. You cannot select photos from storage",
+      "requestFailed": "Failed to request gallery permission"
+    }
+  },
+  "diagnostics": {
+    "sections": {
+      "permissions": "PERMISSIONS",
+      "connectivity": "CONNECTIVITY",
+      "appVersion": "APP VERSION",
+      "dataSync": "DATA & SYNC"
+    },
+    "permissions": {
+      "notifications": {
+        "title": "Notifications",
+        "why": "Shift & task reminders."
+      },
+      "location": {
+        "title": "Location",
+        "why": "Attendance & area geofence."
+      },
+      "backgroundLocation": {
+        "title": "Background location",
+        "why": "Route tracking during shift."
+      },
+      "camera": {
+        "title": "Camera",
+        "why": "Report photos & clock-in selfie."
+      },
+      "gallery": {
+        "title": "Gallery",
+        "why": "Attach photos from gallery."
+      }
+    },
+    "permissionButtons": {
+      "check": "Check",
+      "openSettings": "Open Settings"
+    },
+    "status": {
+      "granted": "GRANTED",
+      "denied": "DENIED",
+      "online": "ONLINE",
+      "offline": "OFFLINE",
+      "checking": "CHECKING...",
+      "reachable": "CONNECTED",
+      "timeout": "TIMEOUT",
+      "unreachable": "NOT CONNECTED",
+      "unknown": "UNKNOWN",
+      "upToDate": "UP TO DATE",
+      "updateAvailable": "UPDATE"
+    },
+    "connectivity": {
+      "internet": "Internet",
+      "server": "Server",
+      "recheck": "Recheck"
+    },
+    "appVersion": {
+      "installed": "Installed version",
+      "available": "Available version",
+      "status": "Status",
+      "recheck": "Recheck"
+    },
+    "dataSync": {
+      "pendingQueue": "Pending queue",
+      "lastSync": "Last sync",
+      "syncing": "Syncing..."
+    }
+  }
+}

@@ -1,0 +1,162 @@
+{
+  "list": {
+    "title": "Kehadiran",
+    "sortOptions": {
+      "newest": "Tanggal Terbaru",
+      "oldest": "Tanggal Terlama"
+    },
+    "statusChip": {
+      "late": "Terlambat",
+      "onTime": "Tepat Waktu",
+      "active": "Berlangsung"
+    },
+    "filterChips": {
+      "date": "Pilih Tanggal"
+    },
+    "emptyState": {
+      "noAttendance": "Belum ada kehadiran",
+      "attendanceHint": "Riwayat kehadiran Anda akan muncul di sini setelah clock in.",
+      "noResults": "Tidak ada hasil",
+      "noAttendanceMatch": "Tidak ada kehadiran yang sesuai filter"
+    },
+    "button": {
+      "clockIn": "Clock In",
+      "clockOut": "Clock Out"
+    },
+    "a11y": {
+      "clockIn": "Clock in untuk memulai shift",
+      "clockOut": "Clock out dari shift aktif"
+    },
+    "sortModal": {
+      "title": "Urutkan Kehadiran"
+    }
+  },
+  "filter": {
+    "title": "Filter Kehadiran",
+    "statusLabel": "Status",
+    "statusOptions": {
+      "all": "Semua Status",
+      "late": "Terlambat",
+      "onTime": "Tepat Waktu",
+      "active": "Sedang Berlangsung"
+    },
+    "dateRange": "Rentang Tanggal",
+    "dateFrom": "Dari",
+    "dateTo": "Sampai",
+    "reset": "Reset",
+    "apply": "Terapkan"
+  },
+  "detail": {
+    "loading": "Memuat data...",
+    "noAttendance": "Tidak ada kehadiran pada hari ini",
+    "button": {
+      "back": "Kembali",
+      "viewShifts": "Lihat Rincian Shift"
+    },
+    "labels": {
+      "date": "Tanggal",
+      "clockIn": "Masuk",
+      "clockOut": "Keluar",
+      "status": "Status Kehadiran",
+      "duration": "Durasi",
+      "shiftCount": "Jumlah shift"
+    },
+    "status": {
+      "late": "Terlambat",
+      "onTime": "Tepat Waktu"
+    },
+    "shiftCount": "{{count}} shift",
+    "a11y": {
+      "viewShifts": "Lihat rincian shift hari ini"
+    }
+  },
+  "dayCard": {
+    "status": {
+      "active": "Berlangsung",
+      "late": "Terlambat",
+      "onTime": "Tepat Waktu"
+    },
+    "shiftCount": "{{count}} shift",
+    "clockIn": "Masuk {{time}}",
+    "clockOut": "Keluar {{time}}",
+    "a11y": {
+      "label": "Kehadiran {{date}}, {{status}}"
+    }
+  },
+  "clockInOut": {
+    "noAreaAssigned": "Anda belum ditugaskan ke area manapun",
+    "contactSupervisor": "Hubungi supervisor untuk penugasan area",
+    "gettingLocation": "Mendapatkan lokasi Anda...",
+    "attendanceInfo": "Informasi Kehadiran",
+    "gpsLocation": "Lokasi GPS",
+    "currentTime": "Waktu Sekarang",
+    "scheduledShift": "Jadwal Shift",
+    "assignedArea": "Area Ditugaskan",
+    "address": "Alamat",
+    "areaType": "Tipe Area",
+    "gpsCoordinates": "Koordinat GPS",
+    "boundaryRadius": "Radius Batas",
+    "rayonCoverage": "Cakupan Rayon",
+    "noSpecificArea": "Tanpa area spesifik",
+    "inBoundary": "DI AREA",
+    "outOfBoundary": "LUAR AREA",
+    "shiftTime": "Waktu Shift:",
+    "clockInTime": "Clock In:",
+    "selfiePhoto": "Foto Selfie",
+    "captured": "Sudah diambil",
+    "optional": "Opsional",
+    "retakeSelfie": "Ambil Ulang",
+    "captureSelfie": "Ambil Selfie",
+    "captureForVerification": "Ambil selfie untuk verifikasi identitas",
+    "captureForClockOutVerification": "Ambil selfie untuk verifikasi clock out",
+    "offlineBannerClockIn": "Mode Offline - Clock in memerlukan koneksi",
+    "onlineRequiredForClockIn": "Anda harus online untuk clock in. Sambungkan ke internet terlebih dahulu.",
+    "offlineModeClockOut": "Mode offline. Clock out akan disinkronkan saat online.",
+    "selfiePreviewTitle": "Selfie Clock In",
+    "startShiftWithVerification": "Mulai shift kerja dengan verifikasi lokasi",
+    "startShiftOutOfArea": "Mulai shift kerja — Anda di luar area, absen tetap dicatat",
+    "endShiftNow": "Akhiri shift kerja saat ini",
+    "shiftTimeLabel": "Waktu Shift:",
+    "clockInColonLabel": "Clock In:"
+  },
+  "gpsSection": {
+    "capturingLocation": "Mendapatkan lokasi...",
+    "locationUnavailable": "Lokasi tidak tersedia",
+    "accuracy": "akurasi",
+    "withinBoundary": "Anda berada di dalam area kerja",
+    "outsideBoundary": "Anda berada di luar area kerja. Absen tetap dicatat.",
+    "gpsLabel": "GPS:",
+    "accuracyLabel": "Akurasi:",
+    "lowAccuracyWarning": "GPS kurang akurat. Pindah ke area terbuka untuk hasil lebih baik.",
+    "updateGpsButton": "Perbarui GPS"
+  },
+  "shifts": {
+    "today": "Kehadiran Hari Ini",
+    "empty": "Belum ada shift hari ini",
+    "noShiftActive": "Tidak ada shift aktif",
+    "startShiftHint": "Clock in terlebih dahulu untuk memulai shift",
+    "notClockedIn": "Belum clock in",
+    "workHoursSuffix": "jam kerja",
+    "unknown": "Tidak diketahui"
+  },
+  "shiftDetail": {
+    "title": "Detail Shift",
+    "area": "Area",
+    "areaType": "Tipe Area",
+    "clockIn": "Clock In",
+    "gpsClockIn": "GPS Clock In",
+    "validation": "Validasi Lokasi Clock In",
+    "withinArea": "Dalam Area",
+    "outsideArea": "Luar Area",
+    "distance": "Jarak",
+    "radius": "Radius"
+  },
+  "shiftCard": {
+    "unknownArea": "Area tidak diketahui",
+    "detailHint": "Ketuk untuk melihat detail shift",
+    "shiftNumber": "Shift #{{n}}"
+  },
+  "workHours": {
+    "titlePrefix": "Kehadiran {{date}}"
+  }
+}

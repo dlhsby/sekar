@@ -1,6 +1,7 @@
 'use client';
 
 import { HTMLAttributes } from 'react';
+import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { HomeIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
@@ -40,6 +41,7 @@ export function Breadcrumb({
   showHomeIcon = true,
   ...props
 }: BreadcrumbProps) {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const breadcrumbs = getBreadcrumbPath(pathname);
 
@@ -51,7 +53,7 @@ export function Breadcrumb({
 
   return (
     <nav
-      aria-label="Breadcrumb"
+      aria-label={t("common:nav.breadcrumbAria")}
       className={cn('flex items-center space-x-2', className)}
       {...props}
     >

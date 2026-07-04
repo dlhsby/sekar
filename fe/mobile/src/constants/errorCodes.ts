@@ -15,6 +15,8 @@
  * ```
  */
 
+import i18n from '../i18n/config';
+
 export const ApiErrorCode = {
   // ==================== Authentication Errors ====================
   /**
@@ -226,8 +228,10 @@ export const ApiErrorCode = {
 export type ApiErrorCodeType = typeof ApiErrorCode[keyof typeof ApiErrorCode];
 
 /**
- * Indonesian error messages for each error code
- * Maps API error codes to user-friendly Indonesian messages
+ * Legacy Indonesian error copy, kept only as a fallback for any code not present
+ * in the i18n `errors` namespace (e.g. deprecated REPORT_* codes). New copy lives
+ * in `src/i18n/locales/<lng>/errors.json`; `getErrorMessage` prefers i18next.
+ * @deprecated Prefer the i18n `errors` namespace.
  */
 export const ErrorMessages: Record<string, string> = {
   // Authentication Errors
@@ -281,11 +285,19 @@ export const ErrorMessages: Record<string, string> = {
 };
 
 /**
- * Get user-friendly Indonesian error message from error code
+ * Resolve an API error code to a user-facing message in the active language.
+ *
+ * Resolution order: i18n `errors` namespace → legacy `ErrorMessages` fallback
+ * (deprecated codes) → caller default → generic. The backend `code` is the
+ * shared contract; copy is owned entirely by the frontends.
+ *
  * @param code - Error code from API
- * @param defaultMessage - Fallback message if code not found
- * @returns Indonesian error message
+ * @param defaultMessage - Fallback message if the code is unmapped
  */
 export function getErrorMessage(code: string, defaultMessage?: string): string {
-  return ErrorMessages[code] || defaultMessage || 'Terjadi kesalahan';
+  if (code && i18n.exists(`errors:${code}`)) {
+    return i18n.t(`errors:${code}`);
+  }
+   
+  return ErrorMessages[code] || defaultMessage || i18n.t('errors:GENERIC');
 }

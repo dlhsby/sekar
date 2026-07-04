@@ -13,7 +13,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { redirect } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Download } from 'lucide-react';
 
@@ -37,14 +39,16 @@ import {
 /** Roles allowed to reach this page (server enforces the finer scoping). */
 const EXPORT_ROLES: UserRole[] = ['admin_system', 'superadmin', 'top_management', 'kepala_rayon'];
 
-const ENTITY_LABELS: Record<ExportEntityType, string> = {
-  users: 'Pengguna',
-  areas: 'Area',
-  rayons: 'Rayon',
-  tasks: 'Tugas',
-  activities: 'Aktivitas',
-  overtime: 'Lembur',
-};
+function getEntityLabels(t: ReturnType<typeof useTranslation>['t']): Record<ExportEntityType, string> {
+  return {
+    users: t('export.entities.users'),
+    areas: t('export.entities.areas'),
+    rayons: t('export.entities.rayons'),
+    tasks: t('export.entities.tasks'),
+    activities: t('export.entities.activities'),
+    overtime: t('export.entities.overtime'),
+  };
+}
 
 /** Entities a kepala_rayon may export (their own rayon only). */
 const KEPALA_RAYON_ENTITIES: ExportEntityType[] = ['tasks', 'activities', 'overtime'];
@@ -55,15 +59,18 @@ const STATUS_TONE: Record<ExportJob['status'], 'ok' | 'warn' | 'bad'> = {
   failed: 'bad',
 };
 
-const STATUS_LABEL: Record<ExportJob['status'], string> = {
-  completed: 'Selesai',
-  processing: 'Diproses',
-  failed: 'Gagal',
-};
+function getStatusLabels(t: ReturnType<typeof useTranslation>['t']): Record<ExportJob['status'], string> {
+  return {
+    completed: t('export.status.completed'),
+    processing: t('export.status.processing'),
+    failed: t('export.status.failed'),
+  };
+}
 
 const ALL = 'all';
 
 export default function ExportPage() {
+  const { t } = useTranslation(['import']);
   const { user, loading } = useAuth();
 
   useEffect(() => {
@@ -75,7 +82,7 @@ export default function ExportPage() {
   if (loading || !user) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <p className="text-nb-gray-600">Memuat…</p>
+        <p className="text-nb-gray-600">{t('export.loading')}</p>
       </div>
     );
   }
@@ -86,13 +93,17 @@ export default function ExportPage() {
 }
 
 function ExportForm({ role }: { role: UserRole }) {
+  const { t } = useTranslation(['import']);
   const isKepalaRayon = role === 'kepala_rayon';
+  const entityLabels = useMemo(() => getEntityLabels(t), [t]);
+  const statusLabels = useMemo(() => getStatusLabels(t), [t]);
+
   const entityOptions = useMemo(
     () =>
-      (isKepalaRayon ? KEPALA_RAYON_ENTITIES : (Object.keys(ENTITY_LABELS) as ExportEntityType[])).map(
-        (value) => ({ value, label: ENTITY_LABELS[value] }),
+      (isKepalaRayon ? KEPALA_RAYON_ENTITIES : (Object.keys(entityLabels) as ExportEntityType[])).map(
+        (value) => ({ value, label: entityLabels[value] }),
       ),
-    [isKepalaRayon],
+    [isKepalaRayon, entityLabels],
   );
 
   const [entityType, setEntityType] = useState<ExportEntityType>(entityOptions[0].value as ExportEntityType);
@@ -134,15 +145,15 @@ function ExportForm({ role }: { role: UserRole }) {
   useEffect(() => {
     if (!jobStatus) return;
     if (jobStatus === 'completed') {
-      toast.success('Ekspor selesai. Unduhan siap.');
+      toast.success(t('export.successMessage'));
       jobsQuery.refetch();
       setActiveJobId(null);
     } else if (jobStatus === 'failed') {
-      toast.error(`Ekspor gagal: ${jobError ?? 'kesalahan tidak diketahui'}`);
+      toast.error(`${t('export.errorMessage')}: ${jobError ?? t('common:errors2.unknown')}`);
       setActiveJobId(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jobStatus, jobError]);
+  }, [jobStatus, jobError, t]);
 
   const handleExport = async () => {
     try {
@@ -155,45 +166,51 @@ function ExportForm({ role }: { role: UserRole }) {
         areaId: areaId !== ALL ? areaId : undefined,
       });
       if (outcome.kind === 'downloaded') {
-        toast.success(`Berhasil mengunduh ${outcome.filename}`);
+        toast.success(`${t('common:actions.download')} ${outcome.filename}`);
         jobsQuery.refetch();
       } else {
         setActiveJobId(outcome.job.jobId);
-        toast.info('Data besar — ekspor diproses di latar belakang…');
+        toast.info(t('export.largeDataMessage'));
       }
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
   };
 
-  const rayonOptions = [
-    { value: ALL, label: 'Semua Rayon' },
-    ...(rayons ?? []).map((r) => ({ value: r.id, label: r.name })),
-  ];
-  const areaOptions = [
-    { value: ALL, label: 'Semua Area' },
-    ...(areasPage?.data ?? []).map((a) => ({ value: a.id, label: a.name })),
-  ];
+  const rayonOptions = useMemo(
+    () => [
+      { value: ALL, label: t('export.allRayons') },
+      ...(rayons ?? []).map((r) => ({ value: r.id, label: r.name })),
+    ],
+    [rayons, t]
+  );
+  const areaOptions = useMemo(
+    () => [
+      { value: ALL, label: t('export.allAreas') },
+      ...(areasPage?.data ?? []).map((a) => ({ value: a.id, label: a.name })),
+    ],
+    [areasPage, t]
+  );
 
   const polling = !!activeJobId && activeJob.data?.status === 'processing';
 
   return (
     <div className="space-y-5">
-      <SectionCard title="Ekspor Data">
+      <SectionCard title={t('export.title')}>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormSelect
-            label="Jenis Data"
+            label={t('export.entityLabel')}
             options={entityOptions}
             value={entityType}
             onChange={(v) => setEntityType(v as ExportEntityType)}
           />
           <FormSelect
-            label="Format"
+            label={t('export.formatLabel')}
             options={formatOptions}
             value={format}
             onChange={(v) => setFormat(v as ExportFormat)}
           />
-          <Field label="Rentang Tanggal">
+          <Field label={t('export.dateRangeLabel')}>
             {() => (
               <DateRangePicker
                 showSteppers={false}
@@ -208,8 +225,8 @@ function ExportForm({ role }: { role: UserRole }) {
               />
             )}
           </Field>
-          <FormSelect label="Rayon" options={rayonOptions} value={rayonId} onChange={setRayonId} />
-          <FormSelect label="Area" options={areaOptions} value={areaId} onChange={setAreaId} />
+          <FormSelect label={t('export.rayonLabel')} options={rayonOptions} value={rayonId} onChange={setRayonId} />
+          <FormSelect label={t('export.areaLabel')} options={areaOptions} value={areaId} onChange={setAreaId} />
         </div>
 
         <div className="mt-5">
@@ -218,7 +235,7 @@ function ExportForm({ role }: { role: UserRole }) {
             loading={exportData.isPending || polling}
             leftIcon={<Download className="h-4 w-4" />}
           >
-            {polling ? 'Memproses…' : 'Unduh Ekspor'}
+            {polling ? t('export.processingButton') : t('export.exportButton')}
           </Button>
         </div>
       </SectionCard>
@@ -229,79 +246,86 @@ function ExportForm({ role }: { role: UserRole }) {
 }
 
 function ExportHistory({ jobs, loading }: { jobs: ExportJob[]; loading: boolean }) {
-  const columns: ColumnDef<ExportJob & Record<string, unknown>>[] = [
-    {
-      id: 'createdAt',
-      accessorKey: 'createdAt',
-      header: 'Tanggal',
-      enableSorting: true,
-      meta: { label: 'Tanggal' },
-      cell: ({ row }) => new Date(row.original.createdAt as string).toLocaleString('id-ID'),
-    },
-    {
-      id: 'entityType',
-      accessorKey: 'entityType',
-      header: 'Jenis',
-      enableSorting: true,
-      meta: { label: 'Jenis' },
-      cell: ({ row }) => ENTITY_LABELS[row.original.entityType as ExportEntityType],
-    },
-    {
-      id: 'format',
-      accessorKey: 'format',
-      header: 'Format',
-      enableSorting: true,
-      meta: { label: 'Format' },
-      cell: ({ row }) => String(row.original.format).toUpperCase(),
-    },
-    {
-      id: 'rowCount',
-      accessorKey: 'rowCount',
-      header: 'Baris',
-      enableSorting: true,
-      meta: { label: 'Baris' },
-    },
-    {
-      id: 'status',
-      accessorKey: 'status',
-      header: 'Status',
-      enableSorting: true,
-      meta: { label: 'Status' },
-      cell: ({ row }) => {
-        const status = row.original.status as ExportJob['status'];
-        return <StatusPill tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</StatusPill>;
+  const { t } = useTranslation(['import']);
+  const entityLabels = useMemo(() => getEntityLabels(t), [t]);
+  const statusLabels = useMemo(() => getStatusLabels(t), [t]);
+
+  const columns: ColumnDef<ExportJob & Record<string, unknown>>[] = useMemo(
+    () => [
+      {
+        id: 'createdAt',
+        accessorKey: 'createdAt',
+        header: t('export.columns.date'),
+        enableSorting: true,
+        meta: { label: t('export.columns.date') },
+        cell: ({ row }) => new Date(row.original.createdAt as string).toLocaleString(intlLocale()),
       },
-    },
-    {
-      id: 'downloadUrl',
-      header: 'Unduh',
-      enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: 'Unduh', pinRight: true },
-      cell: ({ row }) =>
-        row.original.status === 'completed' && row.original.downloadUrl ? (
-          <a
-            href={row.original.downloadUrl as string}
-            className="text-nb-primary underline"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Unduh
-          </a>
-        ) : (
-          <span className="text-nb-gray-400">—</span>
-        ),
-    },
-  ];
+      {
+        id: 'entityType',
+        accessorKey: 'entityType',
+        header: t('export.columns.entityType'),
+        enableSorting: true,
+        meta: { label: t('export.columns.entityType') },
+        cell: ({ row }) => entityLabels[row.original.entityType as ExportEntityType],
+      },
+      {
+        id: 'format',
+        accessorKey: 'format',
+        header: t('export.columns.format'),
+        enableSorting: true,
+        meta: { label: t('export.columns.format') },
+        cell: ({ row }) => String(row.original.format).toUpperCase(),
+      },
+      {
+        id: 'rowCount',
+        accessorKey: 'rowCount',
+        header: t('export.columns.rowCount'),
+        enableSorting: true,
+        meta: { label: t('export.columns.rowCount') },
+      },
+      {
+        id: 'status',
+        accessorKey: 'status',
+        header: t('export.columns.status'),
+        enableSorting: true,
+        meta: { label: t('export.columns.status') },
+        cell: ({ row }) => {
+          const status = row.original.status as ExportJob['status'];
+          return <StatusPill tone={STATUS_TONE[status]}>{statusLabels[status]}</StatusPill>;
+        },
+      },
+      {
+        id: 'downloadUrl',
+        header: t('export.columns.download'),
+        enableSorting: false,
+        enableColumnFilter: false,
+        meta: { label: t('export.columns.download'), pinRight: true },
+        cell: ({ row }) =>
+          row.original.status === 'completed' && row.original.downloadUrl ? (
+            <a
+              href={row.original.downloadUrl as string}
+              className="text-nb-primary underline"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {t('export.downloadLink')}
+            </a>
+          ) : (
+            <span className="text-nb-gray-400">—</span>
+          ),
+      },
+    ],
+    [t, entityLabels, statusLabels]
+  );
 
   return (
-    <SectionCard title="Riwayat Ekspor" meta="30 hari terakhir">
+    <SectionCard title={t('export.history')} meta={t('export.historyMeta')}>
       <DataTable
         columns={columns}
         data={jobs as (ExportJob & Record<string, unknown>)[]}
         loading={loading}
         getRowId={(r) => r.jobId}
-        emptyTitle="Belum ada ekspor."
+        emptyTitle={t('export.noExports')}
       />
     </SectionCard>
   );

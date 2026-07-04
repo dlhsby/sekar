@@ -15,6 +15,7 @@ import React, { useCallback } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBButton, NBText } from '../../components/nb';
 import { ContactChannelCard } from '../../components/auth/ContactChannelCard';
@@ -28,6 +29,7 @@ const SUPPORT_WHATSAPP = SUPPORT_HOTLINE_WHATSAPP || '081200000000';
 const SUPPORT_PHONE = SUPPORT_HOTLINE_PHONE || '0317788990';
 
 export function ForgotPasswordScreen(): React.JSX.Element {
+  const { t } = useTranslation('auth');
   const navigation = useNavigation();
 
   const openTel = useCallback((phone: string) => {
@@ -48,23 +50,23 @@ export function ForgotPasswordScreen(): React.JSX.Element {
             <MaterialCommunityIcons name="lock-outline" size={36} color={nbColors.black} />
           </View>
           <NBText variant="h2" align="center" style={styles.heroTitle}>
-            Sandi tidak bisa di-reset sendiri
+            {t('forgotPassword.heroTitle')}
           </NBText>
           <NBText variant="body-sm" color="gray600" align="center">
-            Akun Anda dikelola admin SEKAR. Hubungi admin untuk meminta sandi baru.
+            {t('forgotPassword.heroSubtitle')}
           </NBText>
         </View>
 
         <ContactChannelCard
           variant="whatsapp"
-          title="Chat WhatsApp Admin"
+          title={t('forgotPassword.chatWhatsAppTitle')}
           value={SUPPORT_WHATSAPP}
           onPress={() => openWhatsApp(SUPPORT_WHATSAPP)}
           testID="forgot-wa"
         />
         <ContactChannelCard
           variant="phone"
-          title="Telepon Kantor"
+          title={t('forgotPassword.callOfficeTitle')}
           value={SUPPORT_PHONE}
           onPress={() => openTel(SUPPORT_PHONE)}
           testID="forgot-tel"
@@ -72,15 +74,14 @@ export function ForgotPasswordScreen(): React.JSX.Element {
 
         <View style={styles.note}>
           <NBText variant="body-sm" color="gray700">
-            Setelah sandi di-reset, admin mengirim sandi sementara via WhatsApp. Saat masuk
-            pertama kali, Anda wajib membuat sandi baru.
+            {t('forgotPassword.noteText')}
           </NBText>
         </View>
 
         <View style={styles.spacer} />
 
         <NBButton
-          title="Kembali ke Login"
+          title={t('forgotPassword.backButtonTitle')}
           variant="secondary"
           fullWidth
           onPress={() => navigation.goBack()}

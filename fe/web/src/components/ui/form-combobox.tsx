@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils/cn';
 import { Label } from './label';
@@ -35,9 +36,9 @@ export function FormCombobox({
   options,
   value,
   onChange,
-  placeholder = 'Pilih…',
-  searchPlaceholder = 'Cari…',
-  emptyText = 'Tidak ditemukan',
+  placeholder: _placeholder,
+  searchPlaceholder: _searchPlaceholder,
+  emptyText: _emptyText,
   error,
   helperText,
   disabled = false,
@@ -45,6 +46,10 @@ export function FormCombobox({
   clearable = true,
   className,
 }: FormComboboxProps): React.JSX.Element {
+  const { t } = useTranslation();
+  const placeholder = _placeholder ?? t('common:ui.combobox.placeholder');
+  const searchPlaceholder = _searchPlaceholder ?? t('common:ui.combobox.searchPlaceholder');
+  const emptyText = _emptyText ?? t('common:ui.combobox.noResults');
   const id = React.useId();
   const messageId = `${id}-message`;
 

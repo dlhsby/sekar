@@ -1,0 +1,164 @@
+{
+  "page": {
+    "title": "Generate Report",
+    "description": "Create a new report with your selected parameters"
+  },
+  "builder": {
+    "typeLabel": "Report Type",
+    "typePlaceholder": "Select report type",
+    "formatLabel": "Format",
+    "formatPlaceholder": "Select format",
+    "dateRangeLabel": "Date Range",
+    "areaLabel": "Area (optional)",
+    "areaPlaceholder": "Search areas...",
+    "rayonLabel": "Rayon (optional)",
+    "rayonPlaceholder": "Search rayons...",
+    "workerLabel": "Worker",
+    "workerPlaceholder": "Search workers...",
+    "cancelButton": "Cancel",
+    "submitButton": "Generate Report"
+  },
+  "types": {
+    "daily_operations": "Daily Operations Report",
+    "weekly_performance": "Weekly Performance Report",
+    "monthly_summary": "Monthly Summary",
+    "worker_performance": "Worker Performance",
+    "area_status": "Area Status",
+    "overtime_utilization": "Overtime Utilization"
+  },
+  "formats": {
+    "pdf": "PDF",
+    "csv": "CSV",
+    "xlsx": "Excel"
+  },
+  "schedules": {
+    "page": {
+      "title": "Report Schedules",
+      "description": "Manage automatic report schedules"
+    },
+    "table": {
+      "id": "ID",
+      "name": "Name",
+      "frequency": "Frequency",
+      "cron": "Cron",
+      "status": "Status",
+      "createdAt": "Created",
+      "updatedAt": "Updated",
+      "statusActive": "Active",
+      "statusInactive": "Inactive"
+    },
+    "frequencies": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "actions": {
+      "create": "Create Schedule",
+      "edit": "Edit",
+      "delete": "Delete",
+      "activate": "Activate",
+      "deactivate": "Deactivate"
+    },
+    "empty": {
+      "title": "No schedules",
+      "description": "Create automatic report schedules to run reports periodically"
+    },
+    "createDialog": {
+      "title": "Create New Schedule",
+      "description": "Set up automatic scheduling to run reports periodically",
+      "nameLabel": "Schedule Name",
+      "namePlaceholder": "e.g.: Daily Report North Rayon",
+      "templateLabel": "Template",
+      "templatePlaceholder": "Select template",
+      "frequencyLabel": "Frequency",
+      "cronLabel": "Cron Expression",
+      "cronPlaceholder": "0 6 * * * (daily at 6 AM)",
+      "timezoneLabel": "Timezone",
+      "timezonePlaceholder": "Asia/Jakarta",
+      "submitButton": "Create"
+    },
+    "editDialog": {
+      "title": "Edit Schedule",
+      "submitButton": "Save"
+    },
+    "deleteDialog": {
+      "description": "The report schedule will be deleted and will no longer run."
+    },
+    "messages": {
+      "validationError": "Name and template are required",
+      "createSuccess": "Schedule created",
+      "createError": "Failed to create schedule",
+      "updateSuccess": "Schedule updated",
+      "updateError": "Failed to update schedule",
+      "deleteSuccess": "Schedule deleted",
+      "deleteError": "Failed to delete schedule",
+      "activateSuccess": "Schedule activated",
+      "deactivateSuccess": "Schedule deactivated",
+      "toggleError": "Failed to update schedule"
+    }
+  },
+  "messages": {
+    "validation": "Select report type and format",
+    "processing": "Report is being processed",
+    "processingNote": "You will be redirected to the reports list.",
+    "error": "Failed to generate report"
+  },
+  "template": {
+    "title": "Template Information",
+    "nameLabel": "Name:",
+    "descriptionLabel": "Description:",
+    "notFound": "Template not found",
+    "selectHint": "Select report type to view information"
+  },
+  "dialog": {
+    "deleteTitle": "Delete Report?"
+  },
+  "list": {
+    "pageTitle": "Reports",
+    "pageDescription": "View and manage generated reports",
+    "filterTypeLabel": "Report Type",
+    "typeOptions": {
+      "all": "All Types"
+    },
+    "typeLabels": {
+      "daily_operations": "Daily Operations",
+      "weekly_performance": "Weekly Performance",
+      "monthly_summary": "Monthly Summary",
+      "worker_performance": "Worker Performance",
+      "area_status": "Area Status",
+      "overtime_utilization": "Overtime Utilization"
+    },
+    "statusLabels": {
+      "processing": "Processing",
+      "completed": "Completed",
+      "failed": "Failed"
+    },
+    "emptyTitle": "No reports",
+    "emptyDescription": "Start creating reports to see them here",
+    "actions": {
+      "create": "Create Report",
+      "download": "Download",
+      "delete": "Delete"
+    },
+    "pagination": {
+      "previous": "← Previous",
+      "next": "Next →"
+    },
+    "messages": {
+      "notReady": "Report is not ready to download",
+      "deleteSuccess": "Report deleted",
+      "deleteFailed": "Failed to delete report"
+    },
+    "deleteDialog": {
+      "description": "This action cannot be undone. The report will be permanently deleted."
+    },
+    "columnHeaders": {
+      "id": "ID",
+      "title": "Title",
+      "type": "Type",
+      "format": "Format",
+      "status": "Status",
+      "createdAt": "Created"
+    }
+  }
+}

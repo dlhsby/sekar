@@ -12,6 +12,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
 import type { MainTabScreenProps } from '../../types/navigation.types';
@@ -42,6 +43,7 @@ import OvertimeEndForm from './components/OvertimeEndForm';
 export const OvertimeSubmitScreen: React.FC<
   MainTabScreenProps<'OvertimeSubmit'>
 > = () => {
+  const { t } = useTranslation('overtime');
   const navigation = useNavigation<MainTabScreenProps<'OvertimeSubmit'>['navigation']>();
   const isSubmitting = useAppSelector(selectOvertimeSubmitting);
   const assignedArea = useAppSelector((state) => state.auth.assignedArea);
@@ -154,7 +156,7 @@ export const OvertimeSubmitScreen: React.FC<
 
   // ─── Header title ────────────────────────────────────────────────────────
 
-  const screenTitle = activeOvertime ? 'Lembur Aktif' : 'Mulai Lembur';
+  const screenTitle = activeOvertime ? t('submit.activeTitle') : t('submit.startTitle');
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -180,7 +182,7 @@ export const OvertimeSubmitScreen: React.FC<
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
           <NBText variant="body" color="gray600" style={styles.loadingText}>
-            Memeriksa status lembur...
+            {t('submit.loadingMessage')}
           </NBText>
         </View>
       </NBBackgroundPattern>
@@ -217,7 +219,7 @@ export const OvertimeSubmitScreen: React.FC<
               />
 
               <OvertimeSelfieSection
-                label="SELFIE MULAI (OPSIONAL)"
+                label={t('submit.selfieStartLabel')}
                 selfie={startSelfie}
                 onCapture={handleCaptureStartSelfie}
                 onPreview={setPreviewUri}
@@ -252,7 +254,7 @@ export const OvertimeSubmitScreen: React.FC<
               />
 
               <OvertimeSelfieSection
-                label="SELFIE SELESAI (OPSIONAL)"
+                label={t('submit.selfieEndLabel')}
                 selfie={endSelfie}
                 onCapture={handleCaptureEndSelfie}
                 onPreview={setPreviewUri}
@@ -264,13 +266,13 @@ export const OvertimeSubmitScreen: React.FC<
         <ImagePreviewModal
           uri={previewUri}
           onClose={() => setPreviewUri(null)}
-          title="Selfie"
+          title={t('submit.selfieImagePreviewTitle')}
         />
 
         <View style={styles.submitBar}>
           {!activeOvertime ? (
             <NBButton
-              title={isSubmitting ? 'Memulai...' : 'Mulai Lembur'}
+              title={isSubmitting ? t('submit.startButtonLoading') : t('submit.startButtonTitle')}
               onPress={handleStartOvertime}
               variant="primary"
               size="lg"
@@ -280,7 +282,7 @@ export const OvertimeSubmitScreen: React.FC<
             />
           ) : (
             <NBButton
-              title={isSubmitting ? 'Menyelesaikan...' : 'Selesai Lembur'}
+              title={isSubmitting ? t('submit.endButtonLoading') : t('submit.endButtonTitle')}
               onPress={handleEndOvertime}
               variant="danger"
               size="lg"

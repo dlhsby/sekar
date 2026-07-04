@@ -9,12 +9,13 @@
  */
 
 import { useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { cn } from '@/lib/utils/cn';
 import {
   STATUS_BADGE_CLASSES,
   STATUS_DOT_CLASSES,
-  STATUS_LABELS,
+  getStatusLabels,
 } from '@/lib/constants/monitoring';
 import { formatRelativeTime } from '@/lib/utils/formatters';
 import type { TrackingStatus } from '@/lib/api/monitoring';
@@ -57,6 +58,8 @@ export function WorkerListVirtual({
   className,
   'aria-label': ariaLabel,
 }: WorkerListVirtualProps) {
+  const { t } = useTranslation(['monitoring']);
+  const statusLabels = getStatusLabels();
   const parentRef = useRef<HTMLDivElement>(null);
 
   const rowVirtualizer = useVirtualizer({
@@ -86,7 +89,7 @@ export function WorkerListVirtual({
         role="status"
         aria-live="polite"
       >
-        Tidak ada petugas aktif
+        {t('monitoring:workerList.noWorkers')}
       </div>
     );
   }
@@ -97,7 +100,7 @@ export function WorkerListVirtual({
       className={cn('overflow-y-auto overflow-x-hidden overscroll-contain', className)}
       style={{ maxHeight, height: Math.min(workers.length * ROW_HEIGHT, maxHeight) }}
       role="list"
-      aria-label={ariaLabel ?? 'Daftar petugas'}
+      aria-label={ariaLabel ?? t('monitoring:workerList.list')}
     >
       {/* Spacer to give virtualizer its full scroll height */}
       <div
@@ -177,7 +180,7 @@ export function WorkerListVirtual({
                     className={cn('w-1.5 h-1.5 rounded-full', STATUS_DOT_CLASSES[worker.status])}
                     aria-hidden="true"
                   />
-                  {STATUS_LABELS[worker.status]}
+                  {statusLabels[worker.status]}
                 </span>
                 <span className="text-[10px] text-nb-gray-400">
                   {formatRelativeTime(worker.last_update)}

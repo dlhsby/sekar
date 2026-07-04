@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
@@ -38,22 +39,24 @@ interface OvertimeGeneralInfoCardProps {
   overtime: Overtime;
 }
 
-export const OvertimeGeneralInfoCard: React.FC<OvertimeGeneralInfoCardProps> = ({ overtime }) => (
+export const OvertimeGeneralInfoCard: React.FC<OvertimeGeneralInfoCardProps> = ({ overtime }) => {
+  const { t } = useTranslation();
+  return (
   <NBCard style={styles.card}>
     <NBCardHeader>
       <View style={styles.sectionHeaderRow}>
         <MaterialCommunityIcons name="information-outline" size={14} color={nbColors.gray700} style={{ marginRight: nbSpacing.xs }} />
-        <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>INFORMASI UMUM</NBText>
+        <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>{t('overtime:components.generalInfoTitle')}</NBText>
       </View>
     </NBCardHeader>
     <NBCardContent>
       <View style={styles.infoTileRow}>
         <View style={styles.infoTile}>
-          <NBText variant="mono-sm" color="gray500" uppercase style={{ letterSpacing: 0.6, marginBottom: 4 }}>TANGGAL</NBText>
+          <NBText variant="mono-sm" color="gray500" uppercase style={{ letterSpacing: 0.6, marginBottom: 4 }}>{t('overtime:components.dateLabel')}</NBText>
           <NBText variant="body-sm" color="black">{formatDateIndonesian(overtime.start_datetime)}</NBText>
         </View>
         <View style={[styles.infoTile, styles.infoTileJam]}>
-          <NBText variant="mono-sm" color="gray500" uppercase style={{ letterSpacing: 0.6, marginBottom: 4 }}>JAM</NBText>
+          <NBText variant="mono-sm" color="gray500" uppercase style={{ letterSpacing: 0.6, marginBottom: 4 }}>{t('overtime:components.timeLabel')}</NBText>
           <NBText variant="body-sm" color="black">
             {formatTimeShort(overtime.start_datetime)}{overtime.end_datetime ? ` — ${formatTimeShort(overtime.end_datetime)}` : ''}
           </NBText>
@@ -67,20 +70,21 @@ export const OvertimeGeneralInfoCard: React.FC<OvertimeGeneralInfoCardProps> = (
 
       {overtime.user && (
         <DetailRow
-          label="Petugas"
+          label={t('overtime:components.staffLabel')}
           value={`${overtime.user.role} - ${overtime.user.full_name}`}
         />
       )}
       {overtime.area?.name && (
         <DetailRow
-          label="Area"
+          label={t('overtime:components.areaLabel')}
           value={overtime.area.name}
           isLast={!overtime.area?.name}
         />
       )}
     </NBCardContent>
   </NBCard>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   card: {

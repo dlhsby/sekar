@@ -10,6 +10,7 @@ import axios, {
   type AxiosResponse,
   type AxiosError,
 } from 'axios';
+import i18n from '../../i18n/config';
 import config from '../../constants/config';
 import { getToken, setToken, getRefreshToken, setRefreshToken, clearAll } from '../storage/secureStorage';
 import type { ApiError, ApiResponse } from '../../types/api.types';
@@ -154,7 +155,7 @@ apiClient.interceptors.response.use(
       let localizedMessage: string;
       if (errorCode === 'SHIFT_DURATION_TOO_SHORT' && (error.response.data?.details as any)?.minimumRequired != null) {
         const min = (error.response.data.details as any).minimumRequired;
-        localizedMessage = `Durasi shift terlalu singkat. Minimal ${min} menit diperlukan sebelum Clock Out.`;
+        localizedMessage = i18n.t('errors:SHIFT_DURATION_TOO_SHORT', { minutes: min });
       } else {
         // May 13 — NestJS ValidationPipe returns `message` as a string[]
         // of class-validator failures. Previously the array was passed as

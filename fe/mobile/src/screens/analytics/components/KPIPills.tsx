@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBText, NBCard } from '../../../components/nb';
 import { nbSpacing } from '../../../constants/nbTokens';
 
@@ -42,15 +43,17 @@ export function KPIPills({
   taskCompletion,
   areaCompliance,
 }: KPIPillsProps): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.container}>
       <View style={styles.row}>
-        <KPIPill value={attendance} label="Kehadiran" />
-        <KPIPill value={punctuality} label="Ketepatan" />
+        <KPIPill value={attendance} label={t('analytics:kpi.attendance')} />
+        <KPIPill value={punctuality} label={t('analytics:kpi.punctuality')} />
       </View>
       <View style={styles.row}>
-        <KPIPill value={taskCompletion} label="Penyelesaian" />
-        <KPIPill value={areaCompliance} label="Lokasi" />
+        <KPIPill value={taskCompletion} label={t('analytics:kpi.taskCompletion')} />
+        <KPIPill value={areaCompliance} label={t('analytics:kpi.areaCompliance')} />
       </View>
     </View>
   );

@@ -9,42 +9,46 @@
 'use client';
 
 import Link from 'next/link';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { useRouter } from 'next/navigation';
 import { Plus, TreePine } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { Button, EmptyState, SectionCard, SkeletonCard, StatusPill } from '@/components/ui';
 import { useMyPruningRequests } from '@/lib/api/pruning-requests';
 import {
-  PRUNING_REQUEST_STATUS_LABELS,
+  getPruningRequestStatusLabel,
+  PRUNING_REQUEST_STATUS_BADGES,
   PRUNING_REQUEST_STATUS_TONES,
 } from '@/lib/constants/pruning-requests';
 
-function expectedLabel(req: {
-  expectedDate: string | null;
-  expectedYear: number | null;
-  expectedIsoWeek: number | null;
-}): string {
-  if (req.expectedDate) return new Date(req.expectedDate).toLocaleDateString('id-ID');
-  if (req.expectedYear && req.expectedIsoWeek) return `Minggu ${req.expectedIsoWeek}/${req.expectedYear}`;
-  return 'Belum ditentukan';
-}
-
 export default function MyPruningRequestsPage() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { data, isLoading, isError } = useMyPruningRequests();
   const requests = data ?? [];
+
+  const expectedLabel = (req: {
+    expectedDate: string | null;
+    expectedYear: number | null;
+    expectedIsoWeek: number | null;
+  }): string => {
+    if (req.expectedDate) return new Date(req.expectedDate).toLocaleDateString(intlLocale());
+    if (req.expectedYear && req.expectedIsoWeek) return t('pruning:detail.weekLabel', { week: req.expectedIsoWeek, year: req.expectedYear });
+    return t('pruning:detail.undetermined');
+  };
 
   return (
     <div className="mx-auto max-w-2xl space-y-5 px-4 py-6">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-nb-h2 text-nb-black">Permintaan Saya</h1>
+          <h1 className="text-nb-h2 text-nb-black">{t('pruning:myRequests.pageTitle')}</h1>
           <p className="mt-0.5 text-nb-body-sm text-nb-gray-600">
-            Riwayat permintaan pemangkasan yang Anda ajukan.
+            {t('pruning:myRequests.description')}
           </p>
         </div>
         <Button asChild leftIcon={<Plus className="size-4" />}>
-          <Link href="/pruning-submit">Buat Baru</Link>
+          <Link href="/pruning-submit">{t('common:actions.create')}</Link>
         </Button>
       </div>
 
@@ -56,16 +60,16 @@ export default function MyPruningRequestsPage() {
       ) : isError ? (
         <EmptyState
           variant="error"
-          title="Gagal memuat"
-          description="Tidak dapat memuat riwayat permintaan. Coba lagi nanti."
+          title={t('pruning:myRequests.errorTitle')}
+          description={t('pruning:myRequests.errorDescription')}
         />
       ) : requests.length === 0 ? (
         <EmptyState
           variant="noData"
-          title="Belum ada permintaan"
-          description="Anda belum mengirim permintaan pemangkasan."
+          title={t('pruning:myRequests.emptyTitle')}
+          description={t('pruning:myRequests.emptyDescription')}
           action={{
-            label: 'Kirim permintaan pertama',
+            label: t('pruning:myRequests.emptyAction'),
             onClick: () => router.push('/pruning-submit'),
           }}
         />
@@ -84,11 +88,11 @@ export default function MyPruningRequestsPage() {
                     </div>
                     <p className="mt-1 line-clamp-2 text-nb-body-sm text-nb-gray-700">{req.address}</p>
                     <p className="mt-1 font-mono text-[11px] text-nb-gray-500">
-                      {new Date(req.createdAt).toLocaleDateString('id-ID')} · {expectedLabel(req)}
+                      {new Date(req.createdAt).toLocaleDateString(intlLocale())} · {expectedLabel(req)}
                     </p>
                   </div>
                   <StatusPill tone={PRUNING_REQUEST_STATUS_TONES[req.status]} dot>
-                    {PRUNING_REQUEST_STATUS_LABELS[req.status]}
+                    {getPruningRequestStatusLabel(req.status, t)}
                   </StatusPill>
                 </div>
               </SectionCard>

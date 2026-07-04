@@ -1,0 +1,205 @@
+{
+  "sort": {
+    "newest": "Terbaru (default)",
+    "oldest": "Terlama"
+  },
+  "filter": {
+    "label": "aktivitas",
+    "title": "Filter Aktivitas",
+    "status": "Status",
+    "statusOptions": {
+      "all": "Semua Status",
+      "pending": "Menunggu Persetujuan",
+      "approved": "Disetujui",
+      "rejected": "Ditolak"
+    },
+    "dateRange": "Rentang Tanggal",
+    "dateFrom": "Dari",
+    "dateTo": "Sampai",
+    "area": "Area",
+    "areaOptions": {
+      "all": "Semua Area",
+      "mine": "Area Saya"
+    },
+    "rayon": "Rayon",
+    "rayonOptions": {
+      "all": "Semua Rayon",
+      "mine": "Rayon Saya"
+    },
+    "createdBy": "Dibuat Oleh",
+    "createdByOptions": {
+      "all": "Semua Petugas (Termasuk Saya)",
+      "subordinates": "Semua Bawahan",
+      "mine": "Dibuat oleh Saya"
+    },
+    "reset": "Reset",
+    "apply": "Terapkan"
+  },
+  "header": {
+    "sort": "URUTKAN AKTIVITAS"
+  },
+  "fab": {
+    "submit": "+ Tambah Aktivitas"
+  },
+  "card": {
+    "included": "Diikutsertakan",
+    "activity": "Aktivitas",
+    "photoCount": "{{count}} foto",
+    "accessibilityLabel": "Detail aktivitas {{name}}"
+  },
+  "submission": {
+    "title": "Buat Aktivitas",
+    "saveDraftPrompt": "Simpan Draft?",
+    "saveDraftMessage": "Simpan data aktivitas sebagai draft?",
+    "saveDraftNo": "Tidak",
+    "saveDraftYes": "Ya",
+    "errorSummary": "Mohon lengkapi data berikut:",
+    "offlineMode": "Mode Offline - Aktivitas akan disimpan dan dikirim saat online",
+    "photosSection": "FOTO AKTIVITAS",
+    "photosSubtitle": "Tambahkan 1-3 foto pekerjaan yang dilakukan",
+    "activityTypeSection": "JENIS AKTIVITAS",
+    "loadingTypes": "Memuat jenis aktivitas...",
+    "noTypesAvailable": "Tidak ada jenis aktivitas tersedia",
+    "retryButton": "Coba Lagi",
+    "selectActivityType": "Pilih jenis aktivitas...",
+    "searchActivityType": "Cari jenis aktivitas...",
+    "taggingSection": "TAG REKAN KERJA",
+    "taggingSubtitle": "Opsional — tag rekan satu area yang ikut bekerja pada aktivitas ini",
+    "loadingTeam": "Memuat daftar rekan...",
+    "selectTeam": "Pilih rekan untuk di-tag...",
+    "searchTeam": "Cari nama rekan...",
+    "noTeamAvailable": "Tidak ada rekan satu area untuk di-tag",
+    "descriptionSection": "Deskripsi Pekerjaan",
+    "descriptionPlaceholder": "Contoh: Menyiram tanaman di area A, memangkas rumput liar...",
+    "locationSection": "LOKASI GPS",
+    "loadingLocation": "Mendapatkan lokasi...",
+    "getLocationButton": "Dapatkan Lokasi GPS",
+    "accuracyLabel": "Akurasi: ±{{accuracy}}m",
+    "cancelButton": "Batal",
+    "submitButton": "Kirim Aktivitas",
+    "submitOfflineButton": "Simpan untuk Sync"
+  },
+  "detail": {
+    "error": "Error",
+    "loadFailure": "Gagal memuat detail aktivitas",
+    "confirmApprove": "Konfirmasi",
+    "confirmApproveMessage": "Setujui aktivitas ini?",
+    "confirmApproveCancel": "Batal",
+    "confirmApproveConfirm": "Setuju",
+    "confirmReject": "Konfirmasi",
+    "confirmRejectMessage": "Tolak aktivitas ini?",
+    "confirmRejectCancel": "Batal",
+    "confirmRejectConfirm": "Tolak",
+    "rejectReasonLabel": "Alasan Penolakan (opsional)",
+    "rejectReasonPlaceholder": "Jelaskan alasan penolakan...",
+    "successTitle": "Berhasil",
+    "successApprove": "Aktivitas disetujui",
+    "successReject": "Aktivitas ditolak",
+    "failureApprove": "Gagal menyetujui aktivitas",
+    "failureReject": "Gagal menolak aktivitas",
+    "officerNameLabel": "Nama Petugas",
+    "sections": {
+      "generalInfo": "INFORMASI UMUM",
+      "dateTime": "Tanggal & Waktu",
+      "area": "Area",
+      "status": "STATUS",
+      "rejectionReason": "Alasan Penolakan",
+      "reviewedBy": "Direview Oleh",
+      "reviewDate": "Tanggal Review",
+      "photos": "FOTO AKTIVITAS",
+      "photosAttached": "{{count}} foto dilampirkan",
+      "activityType": "JENIS AKTIVITAS",
+      "description": "DESKRIPSI PEKERJAAN",
+      "gpsLocation": "LOKASI GPS"
+    },
+    "rejectionInput": {
+      "title": "Alasan Penolakan",
+      "placeholder": "Jelaskan alasan penolakan aktivitas ini..."
+    }
+  },
+  "messages": {
+    "clockInRequired": "Belum Clock In",
+    "clockInRequiredMessage": "Anda harus melakukan Clock In terlebih dahulu untuk menambahkan aktivitas"
+  },
+  "today": {
+    "title": "Aktivitas Hari Ini ({{count}})",
+    "noActivities": "Belum ada aktivitas hari ini",
+    "noActivitiesDescription": "Aktivitas yang Anda buat akan muncul di sini",
+    "photos": "{{count}} foto",
+    "defaultType": "Aktivitas",
+    "viewDetailLabel": "Lihat detail aktivitas {{name}}"
+  },
+  "actionButtons": {
+    "decline": "Tolak",
+    "approve": "Setujui",
+    "cancel": "Batal",
+    "sendDecline": "Kirim Penolakan"
+  },
+  "validation": {
+    "photosRequired": "Tambahkan minimal 1 foto",
+    "descriptionRequired": "Deskripsi wajib diisi",
+    "descriptionMinLength": "Deskripsi minimal 5 karakter",
+    "descriptionMaxLength": "Deskripsi maksimal 500 karakter",
+    "activityTypeRequired": "Pilih jenis aktivitas",
+    "locationRequired": "Lokasi GPS diperlukan"
+  },
+  "locationMessages": {
+    "locationError": "Tidak dapat mendapatkan lokasi GPS",
+    "permissionDenied": "Izin lokasi ditolak",
+    "timeoutError": "Waktu habis. Coba di area terbuka.",
+    "gpsDisabled": "Aktifkan GPS di pengaturan."
+  },
+  "draftMessages": {
+    "found": "Draft Ditemukan",
+    "foundMessage": "Anda memiliki draft aktivitas yang belum terkirim. Lanjutkan?",
+    "delete": "Hapus",
+    "continue": "Lanjutkan"
+  },
+  "sections": {
+    "photos": "FOTO AKTIVITAS",
+    "photosSubtitle": "Tambahkan 1-3 foto pekerjaan yang dilakukan",
+    "activityType": "JENIS AKTIVITAS",
+    "loading": "Memuat jenis aktivitas...",
+    "noTypes": "Tidak ada jenis aktivitas tersedia",
+    "retryButton": "Coba Lagi",
+    "selectActivityType": "Pilih jenis aktivitas...",
+    "searchActivityType": "Cari jenis aktivitas...",
+    "taggedUsers": "TAG REKAN KERJA",
+    "taggedUsersSubtitle": "Opsional — tag rekan satu area yang ikut bekerja pada aktivitas ini",
+    "loadingTeam": "Memuat daftar rekan...",
+    "selectTeam": "Pilih rekan untuk di-tag...",
+    "searchTeam": "Cari nama rekan...",
+    "noTeam": "Tidak ada rekan satu area untuk di-tag",
+    "description": "Deskripsi Pekerjaan",
+    "descriptionPlaceholder": "Contoh: Menyiram tanaman di area A, memangkas rumput liar...",
+    "gps": "LOKASI GPS",
+    "gpsLoading": "Mendapatkan lokasi...",
+    "gpsAccuracy": "Akurasi: ±{{accuracy}}m",
+    "getGPSButton": "Dapatkan Lokasi GPS",
+    "offlineWarning": "Mode Offline - Aktivitas akan disimpan dan dikirim saat online",
+    "errorSummary": "Mohon lengkapi data berikut:",
+    "submitButton": "Kirim Aktivitas",
+    "submitOfflineButton": "Simpan untuk Sync",
+    "cancelButton": "Batal"
+  },
+  "submitAlerts": {
+    "shiftNotActiveTitle": "Shift Belum Aktif",
+    "shiftNotActiveMessage": "Anda belum clock-in. Clock-in terlebih dahulu untuk membuat aktivitas.",
+    "clockInButton": "Clock In Sekarang",
+    "saveDraftButton": "Simpan Draft",
+    "successTitle": "Berhasil",
+    "successMessage": "Aktivitas berhasil dikirim!",
+    "okButton": "OK",
+    "offlineTitle": "Mode Offline",
+    "offlineMessage": "Aktivitas disimpan dan akan dikirim saat online.",
+    "failureTitle": "Gagal Mengirim",
+    "failureMessage": "Terjadi kesalahan. Aktivitas disimpan sebagai draft.",
+    "retryButton": "Coba Lagi"
+  },
+  "tab": {
+    "loadTypesError": "Gagal memuat jenis aktivitas",
+    "loadError": "Gagal memuat aktivitas. Silakan coba lagi.",
+    "tabEmptyTitle": "Belum ada aktivitas",
+    "tabEmptyDescription": "Aktivitas yang Anda buat akan muncul di sini"
+  }
+}

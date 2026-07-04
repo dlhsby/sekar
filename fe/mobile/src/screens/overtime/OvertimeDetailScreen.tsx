@@ -12,6 +12,7 @@ import {
   SafeAreaView,
   RefreshControl,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ImagePreviewModal } from '../../components/common';
 import { useRoute, useFocusEffect, useNavigation, type RouteProp } from '@react-navigation/native';
 import type { MainTabParamList, MainTabScreenProps } from '../../types/navigation.types';
@@ -44,6 +45,8 @@ import { OvertimeApprovalBar } from './components/OvertimeApprovalBar';
 type RouteParams = { overtimeId: string };
 
 export function OvertimeDetailScreen(): React.JSX.Element {
+  const { t } = useTranslation('overtime');
+  const { t: tMonitoring } = useTranslation('monitoring');
   const route = useRoute<RouteProp<MainTabParamList, 'OvertimeDetail'>>();
   const navigation = useNavigation<MainTabScreenProps<'OvertimeDetail'>['navigation']>();
   const { overtimeId } = route.params as RouteParams;
@@ -72,7 +75,7 @@ export function OvertimeDetailScreen(): React.JSX.Element {
       <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.bgCanvas} patternColor={nbColors.primary} opacity={0.06}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
-          <NBText variant="body" color="gray600">Memuat data...</NBText>
+          <NBText variant="body" color="gray600">{t('detail.loadingMessage')}</NBText>
         </View>
       </NBBackgroundPattern>
     );
@@ -82,8 +85,8 @@ export function OvertimeDetailScreen(): React.JSX.Element {
     return (
       <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.bgCanvas} patternColor={nbColors.primary} opacity={0.06}>
         <View style={styles.loadingContainer}>
-          <NBText variant="body" color="gray600">Lembur tidak ditemukan</NBText>
-          <NBButton title="Kembali" variant="secondary" onPress={() => navigation.navigate('Lembur' as any)} />
+          <NBText variant="body" color="gray600">{t('detail.notFoundMessage')}</NBText>
+          <NBButton title={t('detail.backButtonTitle')} variant="secondary" onPress={() => navigation.navigate('Lembur' as any)} />
         </View>
       </NBBackgroundPattern>
     );
@@ -121,7 +124,7 @@ export function OvertimeDetailScreen(): React.JSX.Element {
               userId={overtime.user_id}
               shiftId={overtime.shift_id}
               startDatetime={overtime.start_datetime}
-              userName={overtime.user?.full_name || 'Petugas'}
+              userName={overtime.user?.full_name || tMonitoring('markerPreview.typeOfficer')}
               areaName={overtime.area?.name}
             />
           )}
@@ -129,7 +132,7 @@ export function OvertimeDetailScreen(): React.JSX.Element {
 
         {actions.canClockOut && <OvertimeClockOutBar onPress={() => navigation.navigate('OvertimeSubmit' as any)} />}
 
-        <ImagePreviewModal uri={previewUri} onClose={() => setPreviewUri(null)} title="Foto Lembur" />
+        <ImagePreviewModal uri={previewUri} onClose={() => setPreviewUri(null)} title={t('detail.photoModalTitle')} />
 
         {actions.canApprove && (
           <OvertimeApprovalBar

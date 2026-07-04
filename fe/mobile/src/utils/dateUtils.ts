@@ -3,6 +3,8 @@
  * Helper functions for date formatting and calculations
  */
 
+import i18n from '../i18n/config';
+
 /**
  * Format date to YYYY-MM-DD
  * @param date - Date object or string (or undefined/null)
@@ -89,11 +91,11 @@ export function formatDateTime(date: Date | string | undefined | null): string {
  */
 export function getRelativeTime(date: Date | string | undefined | null): string {
   if (!date) {
-    return '-';
+    return i18n.t('common:time.unavailable');
   }
   const d = typeof date === 'string' ? new Date(date) : date;
   if (isNaN(d.getTime())) {
-    return '-';
+    return i18n.t('common:time.unavailable');
   }
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
@@ -103,16 +105,16 @@ export function getRelativeTime(date: Date | string | undefined | null): string 
   const diffDay = Math.floor(diffHour / 24);
 
   if (diffSec < 60) {
-    return 'baru saja';
+    return i18n.t('common:time.justNow');
   }
   if (diffMin < 60) {
-    return `${diffMin} menit yang lalu`;
+    return i18n.t('common:time.minutesAgo', { count: diffMin });
   }
   if (diffHour < 24) {
-    return `${diffHour} jam yang lalu`;
+    return i18n.t('common:time.hoursAgo', { count: diffHour });
   }
   if (diffDay < 7) {
-    return `${diffDay} hari yang lalu`;
+    return i18n.t('common:time.daysAgo', { count: diffDay });
   }
   return formatDate(d);
 }
@@ -158,24 +160,24 @@ export function formatHours(hours: number, minutes?: number): string {
   if (minutes !== undefined) {
     // Called with separate hours and minutes
     if (hours === 0 && minutes === 0) {
-      return '0m';
+      return i18n.t('common:time.durationMinutes', { count: 0 });
     }
     if (hours === 0) {
-      return `${minutes}m`;
+      return i18n.t('common:time.durationMinutes', { count: minutes });
     }
     if (minutes === 0) {
-      return `${hours}j`;
+      return i18n.t('common:time.durationHours', { count: hours });
     }
-    return `${hours}j ${minutes}m`;
+    return i18n.t('common:time.durationHoursMinutes', { count: hours, minutes });
   }
 
   // Called with decimal hours
   const h = Math.floor(hours);
   const m = Math.round((hours - h) * 60);
   if (m === 0) {
-    return `${h} jam`;
+    return i18n.t('common:time.durationHours', { count: h });
   }
-  return `${h} jam ${m} menit`;
+  return i18n.t('common:time.durationFull', { count: h, minutes: m });
 }
 
 /**
@@ -249,16 +251,22 @@ export function formatRelativeTime(date: Date | string | undefined | null): stri
   const diffDay = Math.floor(diffHour / 24);
 
   if (diffSec < 60) {
-    return isFuture ? 'sebentar lagi' : 'baru saja';
+    return isFuture ? i18n.t('common:time.inMoment') : i18n.t('common:time.justNowPast');
   }
   if (diffMin < 60) {
-    return isFuture ? `dalam ${diffMin} menit` : `${diffMin} menit lalu`;
+    return isFuture
+      ? i18n.t('common:time.inMinutes', { count: diffMin })
+      : i18n.t('common:time.minutesPast', { count: diffMin });
   }
   if (diffHour < 24) {
-    return isFuture ? `dalam ${diffHour} jam` : `${diffHour} jam lalu`;
+    return isFuture
+      ? i18n.t('common:time.inHours', { count: diffHour })
+      : i18n.t('common:time.hoursPast', { count: diffHour });
   }
   if (diffDay < 7) {
-    return isFuture ? `dalam ${diffDay} hari` : `${diffDay} hari lalu`;
+    return isFuture
+      ? i18n.t('common:time.inDays', { count: diffDay })
+      : i18n.t('common:time.daysPast', { count: diffDay });
   }
   // For dates more than a week away, show the date
   return formatDateLong(d);
@@ -330,7 +338,7 @@ export function getSundayWeekBoundsForIso(
 }
 
 /**
- * Format an ISO year + week as a human-readable Indonesian label using the
+ * Format an ISO year + week as a human-readable label using the
  * **Sunday-start** convention used by the WeekPicker on the kecamatan submit
  * form. e.g. (2026, 21) → "Minggu 21 · 17–23 Mei 2026" (Sun May 17 – Sat
  * May 23) — NOT "18–24 Mei" (which would be the literal ISO Mon–Sun bounds
@@ -338,19 +346,17 @@ export function getSundayWeekBoundsForIso(
  */
 export function formatIsoWeekLabel(year: number, week: number): string {
   const { sunday, saturday } = getSundayWeekBoundsForIso(year, week);
-  const monthsShort = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-    'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
-  ];
+  const monthsShort = i18n.t('common:calendar.monthsShort', { returnObjects: true }) as string[];
+  const weekLabel = i18n.t('common:calendar.week');
   const daySun = sunday.getUTCDate();
   const daySunMonth = monthsShort[sunday.getUTCMonth()];
   const daySat = saturday.getUTCDate();
   const daySatMonth = monthsShort[saturday.getUTCMonth()];
   const daySatYear = saturday.getUTCFullYear();
   if (sunday.getUTCMonth() === saturday.getUTCMonth()) {
-    return `Minggu ${week} · ${daySun}–${daySat} ${daySatMonth} ${daySatYear}`;
+    return `${weekLabel} ${week} · ${daySun}–${daySat} ${daySatMonth} ${daySatYear}`;
   }
-  return `Minggu ${week} · ${daySun} ${daySunMonth} – ${daySat} ${daySatMonth} ${daySatYear}`;
+  return `${weekLabel} ${week} · ${daySun} ${daySunMonth} – ${daySat} ${daySatMonth} ${daySatYear}`;
 }
 
 
@@ -428,11 +434,8 @@ export function isClockOutEarly(
   return clockOutMinutes < scheduledMinutes;
 }
 
-const DAY_NAMES_ID = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-const MONTH_NAMES_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
-
 /**
- * Indonesian long-ish date, e.g. "Senin, 22 Jun 2026". Used by the attendance
+ * Long-ish date format, e.g. "Monday, 22 Jun 2026". Used by the attendance
  * cards' date+time value.
  */
 export function formatLongDate(date: Date | string): string {
@@ -440,5 +443,7 @@ export function formatLongDate(date: Date | string): string {
   if (isNaN(d.getTime())) {
     return '-';
   }
-  return `${DAY_NAMES_ID[d.getDay()]}, ${d.getDate()} ${MONTH_NAMES_ID[d.getMonth()]} ${d.getFullYear()}`;
+  const dayNames = i18n.t('common:calendar.days', { returnObjects: true }) as string[];
+  const monthNames = i18n.t('common:calendar.monthsShort', { returnObjects: true }) as string[];
+  return `${dayNames[d.getDay()]}, ${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
 }

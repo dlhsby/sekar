@@ -7,6 +7,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { ListItemCard } from '../common/ListItemCard';
 import { presencePill } from '../../utils/statusHelpers';
 
@@ -37,9 +38,10 @@ export default function AttendanceCard({
   onPress,
   testID,
 }: AttendanceCardProps): React.JSX.Element {
+  const { t } = useTranslation('attendance');
   const isClockedIn = status === 'clocked_in';
   const pill = presencePill(isClockedIn ? 'active' : 'inactive');
-  const rightText = isClockedIn && clockInTime ? formatTime(clockInTime) : 'Belum clock in';
+  const rightText = isClockedIn && clockInTime ? formatTime(clockInTime) : t('shifts.notClockedIn');
 
   return (
     <ListItemCard

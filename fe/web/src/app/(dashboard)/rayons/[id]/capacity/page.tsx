@@ -10,6 +10,7 @@
 'use client';
 
 import { use, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/lib/auth/hooks';
@@ -37,6 +38,7 @@ interface CapacityPageProps {
 }
 
 export default function RayonCapacityPage({ params }: CapacityPageProps) {
+  const { t } = useTranslation();
   const { id } = use(params);
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -76,7 +78,7 @@ export default function RayonCapacityPage({ params }: CapacityPageProps) {
   if (authLoading || !user) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <p className="text-nb-gray-600">Memuat...</p>
+        <p className="text-nb-gray-600">{t('common:actions.loading')}</p>
       </div>
     );
   }
@@ -87,20 +89,20 @@ export default function RayonCapacityPage({ params }: CapacityPageProps) {
     <div className="space-y-5">
       <PageHeader
         data-testid="page-header"
-        title="Kapasitas Layanan"
+        title={t('schedules:capacity.pageTitle')}
         description={
           rayonLoading
-            ? 'Memuat…'
-            : `Kalender kapasitas mingguan Rayon ${rayon?.name ?? ''}`
+            ? t('schedules:capacity.pageDescriptionLoading')
+            : t('schedules:capacity.pageDescription', { name: rayon?.name ?? '' })
         }
         actions={
-          !canEdit ? <StatusPill tone="neutral">Hanya lihat</StatusPill> : undefined
+          !canEdit ? <StatusPill tone="neutral">{t('schedules:capacity.readOnlyStatus')}</StatusPill> : undefined
         }
       />
 
       <div className="max-w-[160px]">
         <FormSelect
-          label="Tahun"
+          label={t('schedules:capacity.yearLabel')}
           options={yearOptions}
           value={String(year)}
           onChange={(v) => {

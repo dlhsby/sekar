@@ -9,12 +9,23 @@
  * the profile form reflect the change immediately.
  */
 import { useMutation } from '@tanstack/react-query';
+import i18n from '@/lib/i18n/config';
 import { apiClient } from './client';
 import type { User } from './auth';
 
 export interface UpdateMyProfilePayload {
   full_name?: string;
   phone_number?: string;
+  preferred_language?: 'id' | 'en';
+}
+
+/**
+ * Persist the current user's preferred UI language to their profile so the
+ * choice follows them across devices. Best-effort — the local i18n switch is
+ * applied regardless of whether this succeeds.
+ */
+export async function updateMyLanguage(preferred_language: 'id' | 'en'): Promise<void> {
+  await apiClient.patch('/users/me', { preferred_language });
 }
 
 /** Update the current user's own name / phone (self-service, no admin rights). */
@@ -35,7 +46,7 @@ export function useUpdateMyProfile() {
 export function useUploadProfilePicture(userId: string | undefined) {
   return useMutation({
     mutationFn: async (file: File): Promise<{ profile_picture_url: string }> => {
-      if (!userId) throw new Error('Pengguna tidak ditemukan');
+      if (!userId) throw new Error(i18n.t('common:errors2.userNotFound'));
       const form = new FormData();
       form.append('file', file);
       const response = await apiClient.post<{ profile_picture_url: string }>(

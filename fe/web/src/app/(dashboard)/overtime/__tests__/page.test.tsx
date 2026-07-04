@@ -273,7 +273,7 @@ describe('OvertimePage', () => {
       render(<OvertimePage />, { wrapper: createWrapper() });
 
       // Click the kebab trigger
-      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      const triggers = screen.getAllByRole('button', { name: 'Aksi' });
       await user.click(triggers[0]);
 
       // Verify Lihat menu item exists
@@ -334,7 +334,7 @@ describe('OvertimePage', () => {
       render(<OvertimePage />, { wrapper: createWrapper() });
 
       // Click the kebab trigger
-      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      const triggers = screen.getAllByRole('button', { name: 'Aksi' });
       await user.click(triggers[0]);
 
       expect(await screen.findByRole('menuitem', { name: /setujui/i })).toBeInTheDocument();
@@ -348,7 +348,7 @@ describe('OvertimePage', () => {
       render(<OvertimePage />, { wrapper: createWrapper() });
 
       // Click the kebab trigger
-      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      const triggers = screen.getAllByRole('button', { name: 'Aksi' });
       await user.click(triggers[0]);
 
       expect(await screen.findByRole('menuitem', { name: /setujui/i })).toBeInTheDocument();
@@ -362,7 +362,7 @@ describe('OvertimePage', () => {
       render(<OvertimePage />, { wrapper: createWrapper() });
 
       // Click the kebab trigger
-      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      const triggers = screen.getAllByRole('button', { name: 'Aksi' });
       await user.click(triggers[0]);
 
       expect(screen.queryByRole('menuitem', { name: /setujui/i })).not.toBeInTheDocument();
@@ -376,7 +376,7 @@ describe('OvertimePage', () => {
       render(<OvertimePage />, { wrapper: createWrapper() });
 
       // Click the kebab trigger
-      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      const triggers = screen.getAllByRole('button', { name: 'Aksi' });
       await user.click(triggers[0]);
 
       expect(screen.queryByRole('menuitem', { name: /setujui/i })).not.toBeInTheDocument();
@@ -398,7 +398,7 @@ describe('OvertimePage', () => {
       render(<OvertimePage />, { wrapper: createWrapper() });
 
       // Click the kebab trigger
-      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      const triggers = screen.getAllByRole('button', { name: 'Aksi' });
       await user.click(triggers[0]);
 
       expect(screen.queryByRole('menuitem', { name: /setujui/i })).not.toBeInTheDocument();
@@ -411,7 +411,7 @@ describe('OvertimePage', () => {
       render(<OvertimePage />, { wrapper: createWrapper() });
 
       // Click the kebab trigger
-      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      const triggers = screen.getAllByRole('button', { name: 'Aksi' });
       await user.click(triggers[0]);
 
       // Click the Setujui menu item
@@ -428,7 +428,7 @@ describe('OvertimePage', () => {
       render(<OvertimePage />, { wrapper: createWrapper() });
 
       // Click the kebab trigger
-      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      const triggers = screen.getAllByRole('button', { name: 'Aksi' });
       await user.click(triggers[0]);
 
       // Click the Tolak menu item
@@ -449,7 +449,7 @@ describe('OvertimePage', () => {
       render(<OvertimePage />, { wrapper: createWrapper() });
 
       // Click the kebab trigger
-      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      const triggers = screen.getAllByRole('button', { name: 'Aksi' });
       await user.click(triggers[0]);
 
       // Open reject dialog by clicking Tolak menu item
@@ -476,7 +476,7 @@ describe('OvertimePage', () => {
       render(<OvertimePage />, { wrapper: createWrapper() });
 
       // Click the kebab trigger
-      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      const triggers = screen.getAllByRole('button', { name: 'Aksi' });
       await user.click(triggers[0]);
 
       // Click the Tolak menu item
@@ -492,7 +492,7 @@ describe('OvertimePage', () => {
       render(<OvertimePage />, { wrapper: createWrapper() });
 
       // Click the kebab trigger
-      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      const triggers = screen.getAllByRole('button', { name: 'Aksi' });
       await user.click(triggers[0]);
 
       // Click the Tolak menu item
@@ -531,7 +531,7 @@ describe('OvertimePage', () => {
     it('should NOT show the Reset Filter button when no filters are active', () => {
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      expect(screen.queryByRole('button', { name: /reset filter/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /atur ulang/i })).not.toBeInTheDocument();
     });
 
     it('should show the Reset Filter button after a filter has been applied', async () => {
@@ -550,7 +550,7 @@ describe('OvertimePage', () => {
         await user.click(await screen.findByRole('button', { name: '7 Hari' }));
       }
 
-      expect(await screen.findByRole('button', { name: /reset filter/i })).toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: /atur ulang/i })).toBeInTheDocument();
     });
 
     it('should reset all filters when Reset Filter is clicked', async () => {
@@ -569,11 +569,11 @@ describe('OvertimePage', () => {
         await user.click(await screen.findByRole('button', { name: '7 Hari' }));
       }
 
-      const resetButton = await screen.findByRole('button', { name: /reset filter/i });
+      const resetButton = await screen.findByRole('button', { name: /atur ulang/i });
       await user.click(resetButton);
 
       await waitFor(() => {
-        expect(screen.queryByRole('button', { name: /reset filter/i })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /atur ulang/i })).not.toBeInTheDocument();
       });
     });
   });

@@ -8,9 +8,10 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { format, parse } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
+import { dateFnsLocale } from '@/lib/i18n/date-locale';
 import { Plus, Calendar, Pencil, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
   Button,
   DataTable,
@@ -68,27 +69,19 @@ function getStatusTone(status: Schedule['status']): 'ok' | 'warn' | 'bad' | 'inf
   }
 }
 
-/**
- * Format status display
- */
-function formatStatus(status: Schedule['status']): string {
-  const labels: Record<Schedule['status'], string> = {
-    planned: 'Rencana',
-    present: 'Hadir',
-    absent: 'Tidak Hadir',
-    leave_sick: 'Cuti Sakit',
-    leave_annual: 'Cuti Tahunan',
-    replaced: 'Diganti',
-    off: 'Libur',
-  };
-  return labels[status] || status;
-}
 
 
 export default function SchedulesPage() {
+  const { t } = useTranslation(['schedules', 'common']);
   const currentUser = useUser();
   // Only admins generate the roster (backend: USER_MANAGERS).
   const canGenerate = !!currentUser && ADMIN_ROLES.includes(currentUser.role);
+
+  // Format status display — use useMemo to handle t dependency
+  const formatStatus = useCallback((status: Schedule['status']): string => {
+    const statusKey = `status.${status}` as const;
+    return t(statusKey, status);
+  }, [t]);
 
   // Default to "today" in WIB (matches the server's roster date) so the roster
   // isn't empty for browsers outside UTC+7.
@@ -190,14 +183,14 @@ export default function SchedulesPage() {
         leave_type: leaveType,
         notes: leaveNotes,
       });
-      toast.success('Cuti berhasil disimpan');
+      toast.success(t('messages.leaveSuccess'));
       setLeaveModalOpen(false);
       setLeaveRosterId(null);
       setLeaveType('sick');
       setLeaveNotes('');
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : 'Gagal menyimpan cuti'
+        err instanceof Error ? err.message : t('messages.leaveError')
       );
     }
   };
@@ -210,14 +203,14 @@ export default function SchedulesPage() {
         replacement_user_id: replacementUserId,
         notes: replaceNotes,
       });
-      toast.success('Pengganti pekerja berhasil disimpan');
+      toast.success(t('messages.replaceSuccess'));
       setReplaceModalOpen(false);
       setReplaceRosterId(null);
       setReplacementUserId('');
       setReplaceNotes('');
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : 'Gagal menyimpan pengganti'
+        err instanceof Error ? err.message : t('messages.replaceError')
       );
     }
   };
@@ -229,13 +222,13 @@ export default function SchedulesPage() {
         id: areasRosterId,
         area_ids: selectedAreaIds,
       });
-      toast.success('Area berhasil diperbarui');
+      toast.success(t('messages.areasSuccess'));
       setAreasModalOpen(false);
       setAreasRosterId(null);
       setSelectedAreaIds([]);
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : 'Gagal memperbarui area'
+        err instanceof Error ? err.message : t('messages.areasError')
       );
     }
   };
@@ -247,13 +240,13 @@ export default function SchedulesPage() {
         id: shiftRosterId,
         shift_definition_id: selectedShiftId,
       });
-      toast.success('Shift berhasil diperbarui');
+      toast.success(t('messages.shiftSuccess'));
       setShiftModalOpen(false);
       setShiftRosterId(null);
       setSelectedShiftId(null);
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : 'Gagal memperbarui shift'
+        err instanceof Error ? err.message : t('messages.shiftError')
       );
     }
   };
@@ -261,11 +254,11 @@ export default function SchedulesPage() {
   const handleGenerate = async () => {
     try {
       const result = await generateRoster.mutateAsync(selectedDate);
-      toast.success(`${result.generated} jadwal berhasil dibuat`);
+      toast.success(`${result.generated} ${t('messages.generateSuccess')}`);
       refetch();
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : 'Gagal membuat jadwal'
+        err instanceof Error ? err.message : t('messages.generateError')
       );
     }
   };
@@ -276,8 +269,8 @@ export default function SchedulesPage() {
         id: 'full_name',
         // Defensive: a row without a joined user must not crash the whole table.
         accessorFn: (row) => row.user?.full_name ?? '',
-        header: 'Pekerja',
-        meta: { label: 'Pekerja', filterVariant: 'text' },
+        header: t('table.worker'),
+        meta: { label: t('table.worker'), filterVariant: 'text' },
         cell: ({ row }) => {
           const roster = row.original;
           const fullName = roster.user?.full_name ?? '—';
@@ -301,16 +294,16 @@ export default function SchedulesPage() {
       {
         id: 'role',
         accessorFn: (row) => row.user?.role ?? '',
-        header: 'Role',
-        meta: { label: 'Role', filterVariant: 'text', defaultHidden: true },
+        header: t('table.role'),
+        meta: { label: t('table.role'), filterVariant: 'text', defaultHidden: true },
         cell: ({ row }) =>
           row.original.user ? <RolePill role={row.original.user.role} /> : <span>—</span>,
       },
       {
         id: 'status',
         accessorKey: 'status',
-        header: 'Status',
-        meta: { label: 'Status', filterVariant: 'text' },
+        header: t('table.status'),
+        meta: { label: t('table.status'), filterVariant: 'text' },
         cell: ({ row }) => (
           <StatusPill tone={getStatusTone(row.original.status)} dot>
             {formatStatus(row.original.status)}
@@ -323,8 +316,8 @@ export default function SchedulesPage() {
           const shift = row.shift_definition;
           return shift ? `${shift.name} (${shift.start_time}-${shift.end_time})` : '';
         },
-        header: 'Shift',
-        meta: { label: 'Shift', filterVariant: 'text' },
+        header: t('table.shift'),
+        meta: { label: t('table.shift'), filterVariant: 'text' },
         cell: ({ row }) => {
           const shift = row.original.shift_definition;
           return (
@@ -337,8 +330,8 @@ export default function SchedulesPage() {
       {
         id: 'areas',
         accessorFn: (row) => getAreaNames(row).join(', '),
-        header: 'Area',
-        meta: { label: 'Area', filterVariant: 'text' },
+        header: t('table.area'),
+        meta: { label: t('table.area'), filterVariant: 'text' },
         cell: ({ row }) => {
           const roster = row.original;
           const count = roster.schedule_areas.length;
@@ -347,11 +340,11 @@ export default function SchedulesPage() {
             <button
               type="button"
               onClick={() => setAreasSheetRoster(roster)}
-              aria-label={`Lihat ${count} area untuk ${roster.user?.full_name ?? 'pekerja'}`}
+              aria-label={t('buttons.areaCountAriaLabel', { count, name: roster.user?.full_name ?? 'pekerja' })}
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border-2 border-nb-black rounded-nb-base bg-nb-white text-nb-body-sm font-bold shadow-nb-xs hover:shadow-nb-sm active:shadow-none transition-shadow duration-100"
             >
               <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
-              {count} Area
+              {t('buttons.areaCount', { count })}
             </button>
           );
         },
@@ -362,8 +355,8 @@ export default function SchedulesPage() {
           const area = areaById.get(row.schedule_areas[0]?.area_id ?? '');
           return area?.rayon?.name ?? '';
         },
-        header: 'Rayon',
-        meta: { label: 'Rayon', filterVariant: 'text', defaultHidden: true },
+        header: t('table.rayon'),
+        meta: { label: t('table.rayon'), filterVariant: 'text', defaultHidden: true },
         cell: ({ row }) => {
           const area = areaById.get(row.original.schedule_areas[0]?.area_id ?? '');
           return (
@@ -374,8 +367,8 @@ export default function SchedulesPage() {
       {
         id: 'replacement',
         accessorFn: (row) => row.replacement_user?.full_name ?? '',
-        header: 'Pengganti',
-        meta: { label: 'Pengganti', filterVariant: 'text', defaultHidden: true },
+        header: t('table.replacement'),
+        meta: { label: t('table.replacement'), filterVariant: 'text', defaultHidden: true },
         cell: ({ row }) => (
           <span className="text-nb-body-sm">
             {row.original.replacement_user?.full_name ?? '—'}
@@ -383,7 +376,7 @@ export default function SchedulesPage() {
         ),
       },
     ],
-    [areaById],
+    [areaById, t],
   );
 
   const rowActions = useCallback(
@@ -393,7 +386,7 @@ export default function SchedulesPage() {
       return [
         {
           key: 'leave',
-          label: 'Cuti',
+          label: t('rowActions.leave'),
           icon: Calendar,
           onClick: () => {
             setLeaveRosterId(roster.id);
@@ -404,7 +397,7 @@ export default function SchedulesPage() {
         },
         {
           key: 'replace',
-          label: 'Ganti Pekerja',
+          label: t('rowActions.replace'),
           icon: Pencil,
           onClick: () => {
             setReplaceRosterId(roster.id);
@@ -415,7 +408,7 @@ export default function SchedulesPage() {
         },
         {
           key: 'areas',
-          label: 'Ubah Area',
+          label: t('rowActions.editAreas'),
           icon: Pencil,
           onClick: () => {
             setAreasRosterId(roster.id);
@@ -425,7 +418,7 @@ export default function SchedulesPage() {
         },
         {
           key: 'shift',
-          label: 'Ubah Shift',
+          label: t('rowActions.editShift'),
           icon: Pencil,
           onClick: () => {
             setShiftRosterId(roster.id);
@@ -435,7 +428,7 @@ export default function SchedulesPage() {
         },
       ];
     },
-    [canEditRoster],
+    [canEditRoster, t],
   );
 
   // Replacement candidates: satgas/linmas in the SAME rayon as the shift being
@@ -458,13 +451,13 @@ export default function SchedulesPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader description={`Jadwal untuk ${format(parse(selectedDate, 'yyyy-MM-dd', new Date()), 'EEEE, dd MMMM yyyy', { locale: idLocale })}`} />
+      <PageHeader description={format(parse(selectedDate, 'yyyy-MM-dd', new Date()), 'EEEE, dd MMMM yyyy', { locale: dateFnsLocale() })} />
 
       {/* Date Picker and Generate Button */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <label htmlFor="date-picker" className="text-nb-body font-medium">
-            Tanggal:
+            {t('page.dateLabel')}
           </label>
           <input
             id="date-picker"
@@ -481,7 +474,7 @@ export default function SchedulesPage() {
             loading={generateRoster.isPending}
             leftIcon={<Plus className="h-5 w-5" />}
           >
-            Buat Jadwal
+            {t('buttons.generate')}
           </Button>
         )}
       </div>
@@ -495,36 +488,36 @@ export default function SchedulesPage() {
         onRetry={() => refetch()}
         onRefresh={() => refetch()}
         getRowId={(r) => r.id}
-        searchPlaceholder="Cari nama pekerja…"
+        searchPlaceholder={t('page.searchPlaceholder')}
         rowActions={rowActions}
-        emptyTitle={schedules.length === 0 ? 'Belum ada jadwal' : undefined}
-        emptyDescription={schedules.length === 0 ? 'Klik "Buat Jadwal" untuk membuat jadwal hari ini.' : undefined}
+        emptyTitle={schedules.length === 0 ? t('page.emptyTitle') : undefined}
+        emptyDescription={schedules.length === 0 ? t('page.emptyDescription') : undefined}
       />
 
       {/* Leave Modal */}
       <RosterActionModal
         open={leaveModalOpen}
-        title="Cuti"
+        title={t('modals.leave.title')}
         onClose={() => setLeaveModalOpen(false)}
         onSubmit={handleSetLeave}
-        submitLabel="Simpan"
+        submitLabel={t('common:actions.save')}
         loading={setLeave.isPending}
         error={setLeave.isError && getErrorMessage(setLeave.error)}
       >
         <FormSelect
-          label="Jenis Cuti"
+          label={t('modals.leave.typeLabel')}
           value={leaveType}
           onChange={(value) => setLeaveType(value as 'sick' | 'annual')}
           options={[
-            { value: 'sick', label: 'Sakit' },
-            { value: 'annual', label: 'Tahunan' },
+            { value: 'sick', label: t('modals.leave.typeSick') },
+            { value: 'annual', label: t('modals.leave.typeAnnual') },
           ]}
         />
         <Textarea
-          label="Catatan (opsional)"
+          label={t('modals.leave.notesLabel')}
           value={leaveNotes}
           onChange={(e) => setLeaveNotes(e.target.value)}
-          placeholder="Masukkan catatan…"
+          placeholder={t('modals.leave.notesPlaceholder')}
           rows={3}
         />
       </RosterActionModal>
@@ -532,17 +525,17 @@ export default function SchedulesPage() {
       {/* Replace Modal */}
       <RosterActionModal
         open={replaceModalOpen}
-        title="Ganti Pekerja"
+        title={t('modals.replace.title')}
         onClose={() => setReplaceModalOpen(false)}
         onSubmit={handleReplace}
-        submitLabel="Simpan"
+        submitLabel={t('common:actions.save')}
         loading={replaceWorker.isPending}
         submitDisabled={!replacementUserId}
         error={replaceWorker.isError && getErrorMessage(replaceWorker.error)}
       >
         <FormCombobox
-          label="Pekerja Pengganti"
-          placeholder="Pilih pekerja…"
+          label={t('modals.replace.workerLabel')}
+          placeholder={t('modals.replace.workerPlaceholder')}
           value={replacementUserId}
           onChange={setReplacementUserId}
           required
@@ -552,10 +545,10 @@ export default function SchedulesPage() {
           }))}
         />
         <Textarea
-          label="Catatan (opsional)"
+          label={t('modals.replace.notesLabel')}
           value={replaceNotes}
           onChange={(e) => setReplaceNotes(e.target.value)}
-          placeholder="Masukkan catatan…"
+          placeholder={t('modals.replace.notesPlaceholder')}
           rows={3}
         />
       </RosterActionModal>
@@ -563,40 +556,40 @@ export default function SchedulesPage() {
       {/* Areas Modal */}
       <RosterActionModal
         open={areasModalOpen}
-        title="Ubah Area"
+        title={t('modals.areas.title')}
         onClose={() => setAreasModalOpen(false)}
         onSubmit={handleUpdateAreas}
-        submitLabel="Simpan"
+        submitLabel={t('common:actions.save')}
         loading={updateAreas.isPending}
         error={updateAreas.isError && getErrorMessage(updateAreas.error)}
       >
         <FormMultiCombobox
-          label="Area"
+          label={t('modals.areas.label')}
           options={allAreas.map((a) => ({ value: a.id, label: a.name }))}
           values={selectedAreaIds}
           onChange={setSelectedAreaIds}
-          placeholder="Pilih area"
-          searchPlaceholder="Cari area…"
-          emptyText="Tidak ada area."
-          helperText="Kosongkan untuk menghapus semua area hari ini."
+          placeholder={t('modals.areas.placeholder')}
+          searchPlaceholder={t('modals.areas.searchPlaceholder')}
+          emptyText={t('modals.areas.emptyText')}
+          helperText={t('modals.areas.helperText')}
         />
       </RosterActionModal>
 
       {/* Shift Modal */}
       <RosterActionModal
         open={shiftModalOpen}
-        title="Ubah Shift"
+        title={t('modals.shift.title')}
         onClose={() => setShiftModalOpen(false)}
         onSubmit={handleUpdateShift}
-        submitLabel="Simpan"
+        submitLabel={t('common:actions.save')}
         loading={updateShift.isPending}
         error={updateShift.isError && getErrorMessage(updateShift.error)}
       >
         <FormCombobox
-          label="Shift"
+          label={t('modals.shift.label')}
           value={selectedShiftId ?? ''}
           onChange={(value) => setSelectedShiftId(value || null)}
-          placeholder="Tanpa Shift"
+          placeholder={t('modals.shift.placeholder')}
           options={shifts.map((shift) => ({
             value: shift.id,
             label: `${shift.name} (${shift.start_time}-${shift.end_time})`,
@@ -607,7 +600,7 @@ export default function SchedulesPage() {
       {/* Read-only side sheet listing a roster's areas (Area column). */}
       <AreaListSheet
         open={!!areasSheetRoster}
-        title="Area Jadwal"
+        title={t('modals.areaList.title')}
         subtitle={areasSheetRoster?.user?.full_name ?? '—'}
         items={areasSheetItems}
         resetKey={areasSheetRoster?.id}

@@ -13,6 +13,7 @@ import React, { useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 import { NBButton, NBCard, NBText } from '../../components/nb';
 import { PaginationDots } from '../../components/auth/PaginationDots';
 import { nbColors, nbBorders, nbRadius, nbShadows, nbSpacing } from '../../constants/nbTokens';
@@ -29,29 +30,33 @@ function variantFor(role: string | undefined): FlowVariant {
   return 'admin';
 }
 
-const VARIANT_COPY: Record<FlowVariant, { title: string; body: string; cta: string }> = {
-  clockable: {
-    title: 'Area tugas kamu',
-    body: 'Area kerja Anda telah ditetapkan. Tekan Mulai Bekerja untuk membuka dashboard.',
-    cta: 'Mulai Bekerja',
-  },
-  kecamatan: {
-    title: 'Siap mengajukan permohonan?',
-    body: 'Buka daftar permohonan rayon Anda dan ajukan baru kapan pun diperlukan.',
-    cta: 'Kelola Permohonan',
-  },
-  admin: {
-    title: 'Siap memulai?',
-    body: 'Dashboard menampilkan ringkasan tim dan permohonan yang menunggu.',
-    cta: 'Buka Dashboard',
-  },
-};
+function getVariantCopy(t: ReturnType<typeof useTranslation>['t']): Record<FlowVariant, { title: string; body: string; cta: string }> {
+  return {
+    clockable: {
+      title: t('onboarding:areaPreview.clockable.title'),
+      body: t('onboarding:areaPreview.clockable.body'),
+      cta: t('onboarding:areaPreview.clockable.cta'),
+    },
+    kecamatan: {
+      title: t('onboarding:areaPreview.kecamatan.title'),
+      body: t('onboarding:areaPreview.kecamatan.body'),
+      cta: t('onboarding:areaPreview.kecamatan.cta'),
+    },
+    admin: {
+      title: t('onboarding:areaPreview.admin.title'),
+      body: t('onboarding:areaPreview.admin.body'),
+      cta: t('onboarding:areaPreview.admin.cta'),
+    },
+  };
+}
 
 export function OnboardingAreaPreviewScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user);
   const area = useAppSelector((s) => s.auth.assignedArea);
   const variant = variantFor(user?.role);
+  const VARIANT_COPY = getVariantCopy(t);
   const copy = VARIANT_COPY[variant];
 
   const finish = useCallback(async () => {
@@ -73,14 +78,14 @@ export function OnboardingAreaPreviewScreen(): React.JSX.Element {
               {area.radius_meters ? (
                 <View style={styles.radiusChip}>
                   <NBText variant="mono-sm" color="black">
-                    RADIUS {area.radius_meters}m
+                    {t('onboarding:areaPreview.radiusLabel')} {area.radius_meters}m
                   </NBText>
                 </View>
               ) : null}
             </View>
             <NBCard style={styles.card} testID="area-preview-clockable">
               <NBText variant="mono-sm" color="gray600">
-                AREA
+                {t('onboarding:areaPreview.areaLabel')}
               </NBText>
               <NBText variant="h3">{area.name}</NBText>
             </NBCard>

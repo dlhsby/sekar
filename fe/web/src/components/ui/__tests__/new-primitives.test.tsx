@@ -91,7 +91,7 @@ describe('Breadcrumb', () => {
         </BreadcrumbList>
       </Breadcrumb>
     );
-    expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Navigasi breadcrumb' })).toBeInTheDocument();
     expect(screen.getByText('Beranda')).toHaveAttribute('href', '/');
     expect(screen.getByText('Detail')).toHaveAttribute('aria-current', 'page');
   });

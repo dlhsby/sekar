@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { nbColors, nbBorders, nbRadius, nbShadows, nbSpacing } from '../../../constants/nbTokens';
 import { NBText, type NBTextColor } from '../../nb';
 
@@ -22,42 +23,43 @@ function Pill({ label, tone }: { label: string; tone: 'granted' | 'pending' }): 
 }
 
 export function SceneRequests(): React.JSX.Element {
+  const { t } = useTranslation();
   return (
     <View style={styles.root}>
       <View style={styles.cardTop}>
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderText}>
             <NBText variant="mono-sm" color="gray500">
-              PERMOHONAN #1042
+              {t('welcome:scenes.requests.requestLabel')} #1042
             </NBText>
             <NBText variant="body-sm" color="black" style={styles.cardTitle}>
-              Pohon tumbang Jl. Anggrek
+              {t('welcome:scenes.requests.fallentreeLocation')}
             </NBText>
           </View>
-          <Pill label="DISETUJUI" tone="granted" />
+          <Pill label={t('welcome:scenes.requests.approved')} tone="granted" />
         </View>
         <View style={styles.metaRow}>
           <NBText variant="mono-sm" color="gray600">
-            📍 Bekasi 03
+            📍 {t('welcome:scenes.requests.areaLabel')}
           </NBText>
           <NBText variant="mono-sm" color="gray600">
             •
           </NBText>
           <NBText variant="mono-sm" color="gray600">
-            2 jam lalu
+            {t('welcome:scenes.requests.timeAgo')}
           </NBText>
         </View>
       </View>
 
       <View style={styles.cardBottom}>
         <NBText variant="mono-sm" color="gray500">
-          PERMOHONAN #1041
+          {t('welcome:scenes.requests.requestLabel')} #1041
         </NBText>
         <NBText variant="body-sm" color="black" style={styles.cardTitle}>
-          Tebang pohon kering
+          {t('welcome:scenes.requests.dryTreeCutting')}
         </NBText>
         <View style={styles.pillWrap}>
-          <Pill label="DIPROSES" tone="pending" />
+          <Pill label={t('welcome:scenes.requests.inProgress')} tone="pending" />
         </View>
       </View>
     </View>

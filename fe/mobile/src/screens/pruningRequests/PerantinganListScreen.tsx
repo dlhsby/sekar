@@ -25,6 +25,7 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -63,14 +64,6 @@ import type { PruningRequest } from '../../types/models.types';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const SORT_OPTIONS = [
-  { key: 'created_at_desc', label: 'Dibuat Terbaru' },
-  { key: 'created_at_asc',  label: 'Dibuat Terlama' },
-  // ADR-035 amendment 2026-05-01: kecamatan now picks ISO week, not a date.
-  { key: 'expected_asc',    label: 'Minggu Preferensi Terdekat' },
-  { key: 'expected_desc',   label: 'Minggu Preferensi Terjauh' },
-];
-
 type SortKey = 'created_at_desc' | 'created_at_asc' | 'expected_desc' | 'expected_asc';
 
 const DEFAULT_SORT: SortKey = 'created_at_desc';
@@ -78,8 +71,18 @@ const DEFAULT_SORT: SortKey = 'created_at_desc';
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export function PerantinganListScreen(): React.JSX.Element {
+  const { t } = useTranslation('pruning');
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
+
+  // Build sort options with translations
+  const SORT_OPTIONS = useMemo(() => [
+    { key: 'created_at_desc', label: t('list.sortCreatedNewest') },
+    { key: 'created_at_asc', label: t('list.sortCreatedOldest') },
+    // ADR-035 amendment 2026-05-01: kecamatan now picks ISO week, not a date.
+    { key: 'expected_asc', label: t('list.sortExpectedNearest') },
+    { key: 'expected_desc', label: t('list.sortExpectedFarthest') },
+  ], [t]);
 
   const user = useAppSelector((state) => state.auth.user);
   const { mine: requests, isLoading, error } = useAppSelector(
@@ -123,7 +126,7 @@ export function PerantinganListScreen(): React.JSX.Element {
     if (error) {
       NBToast.show({
         level: 'danger',
-        title: 'Gagal memuat permohonan',
+        title: t('list.loadErrorTitle'),
         body: error,
       });
     }
@@ -173,17 +176,17 @@ export function PerantinganListScreen(): React.JSX.Element {
     }
     if (filters.fromDate || filters.toDate) {
       const f = filters.fromDate;
-      const t = filters.toDate;
+      const toDate = filters.toDate;
       chips.push({
-        text: f && t ? `${f.slice(5)} — ${t.slice(5)}` : 'Tanggal',
+        text: f && toDate ? `${f.slice(5)} — ${toDate.slice(5)}` : t('filterChip.dateLabel'),
         chipStyle: 'date',
       });
     }
-    if (filters.rayonId) { chips.push({ text: 'Rayon', chipStyle: 'location' }); }
+    if (filters.rayonId) { chips.push({ text: t('filterChip.rayonLabel'), chipStyle: 'location' }); }
     if (filters.referenceCode) { chips.push({ text: `# ${filters.referenceCode}`, chipStyle: 'status' }); }
     if (filters.requesterName) { chips.push({ text: `🧑 ${filters.requesterName}`, chipStyle: 'status' }); }
     return chips;
-  }, [filters]);
+  }, [filters, t]);
 
   const filteredSorted = useMemo(() => {
     let list = requests;
@@ -232,8 +235,8 @@ export function PerantinganListScreen(): React.JSX.Element {
   }, [requests, filters, sort]);
 
   const activeSortLabel = useMemo(
-    () => SORT_OPTIONS.find((o) => o.key === sort)?.label ?? 'Dibuat Terbaru',
-    [sort],
+    () => SORT_OPTIONS.find((o) => o.key === sort)?.label ?? t('list.sortCreatedNewest'),
+    [sort, t],
   );
   const isSortActive = sort !== DEFAULT_SORT;
 
@@ -261,17 +264,17 @@ export function PerantinganListScreen(): React.JSX.Element {
     if (isLoading) { return null; }
     return (
       <NBEmptyState
-        title="Belum ada permohonan"
+        title={t('list.emptyTitle')}
         description={
           activeFilterCount > 0
-            ? 'Tidak ada permohonan yang sesuai filter.'
-            : 'Permohonan pemangkasan Anda akan muncul di sini.'
+            ? t('list.emptyDescWithFilter')
+            : t('list.emptyDescNoFilter')
         }
-        ctaLabel={activeFilterCount === 0 ? 'Buat Permohonan' : undefined}
+        ctaLabel={activeFilterCount === 0 ? t('list.ctaLabel') : undefined}
         onCTA={activeFilterCount === 0 ? handleSubmit : undefined}
       />
     );
-  }, [isLoading, activeFilterCount, handleSubmit]);
+  }, [isLoading, activeFilterCount, handleSubmit, t]);
 
   if (isLoading && requests.length === 0) {
     return (
@@ -282,7 +285,7 @@ export function PerantinganListScreen(): React.JSX.Element {
         opacity={0.06}
       >
         <SafeAreaView style={styles.safeArea}>
-          <NBPageHeader title="Permohonan Perantingan" />
+          <NBPageHeader title={t('list.title')} />
           <View style={styles.skeletonContainer}>
             <NBSkeleton variant="list" count={5} />
           </View>
@@ -300,7 +303,7 @@ export function PerantinganListScreen(): React.JSX.Element {
     >
       <SafeAreaView style={styles.safeArea}>
         {/* Page Title — same style as Tugas / Aktivitas / Lembur */}
-        <NBPageHeader title="Permohonan Perantingan" />
+        <NBPageHeader title={t('list.title')} />
 
         {/* Filter bar — mini chips (left) + sort/filter icons (right) */}
         <View
@@ -331,14 +334,14 @@ export function PerantinganListScreen(): React.JSX.Element {
                 ))}
               </ScrollView>
             ) : (
-              <NBText variant="body-sm" color="gray400" style={styles.filterBarPlaceholder}>Semua Permohonan</NBText>
+              <NBText variant="body-sm" color="gray400" style={styles.filterBarPlaceholder}>{t('list.allRequestsLabel')}</NBText>
             )}
             {activeFilterCount > 0 && (
               <TouchableOpacity
                 style={styles.filterClearButton}
                 onPress={handleResetFilters}
                 accessibilityRole="button"
-                accessibilityLabel="Reset filter permohonan"
+                accessibilityLabel={t('review.resetFilterLabel')}
               >
                 <MaterialCommunityIcons
                   name="close-circle"
@@ -354,7 +357,7 @@ export function PerantinganListScreen(): React.JSX.Element {
               style={styles.filterIconButton}
               onPress={() => setIsSortModalOpen(true)}
               accessibilityRole="button"
-              accessibilityLabel={`Urutan: ${activeSortLabel}`}
+              accessibilityLabel={t('listScreen.sortLabel', { label: activeSortLabel })}
             >
               <MaterialCommunityIcons
                 name="sort"
@@ -366,8 +369,8 @@ export function PerantinganListScreen(): React.JSX.Element {
               style={styles.filterIconButton}
               onPress={() => setIsFilterModalOpen(true)}
               accessibilityRole="button"
-              accessibilityLabel={`Filter permohonan${
-                activeFilterCount > 0 ? `, ${activeFilterCount} filter aktif` : ''
+              accessibilityLabel={`${t('listScreen.filterLabel')}${
+                activeFilterCount > 0 ? `, ${activeFilterCount} ${t('listScreen.filterActive')}` : ''
               }`}
             >
               <MaterialCommunityIcons
@@ -410,7 +413,7 @@ export function PerantinganListScreen(): React.JSX.Element {
         {/* FAB — Buat Permohonan */}
         <NBFabBar>
           <NBButton
-            title="+ Buat Permohonan"
+            title={t('list.submitFabButtonTitle')}
             variant="primary"
             size="lg"
             fullWidth
@@ -423,7 +426,7 @@ export function PerantinganListScreen(): React.JSX.Element {
         <SortModal
           visible={isSortModalOpen}
           onClose={() => setIsSortModalOpen(false)}
-          title="Urutkan Permohonan"
+          title={t('list.sortModalTitle')}
           options={SORT_OPTIONS}
           selectedOption={sort}
           onSelect={handleSortSelect}

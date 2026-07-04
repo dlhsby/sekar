@@ -4,6 +4,7 @@
  * Phase 2D: Four-status model (active/inactive/outside_area/missing/offline)
  */
 
+import i18n from '../i18n/config';
 import type { ActiveUserData } from '../types/api.types';
 import type { TrackingStatus, LiveUser, PresenceActivity } from '../types/models.types';
 import type { Region } from 'react-native-maps';
@@ -49,17 +50,10 @@ export function getActivityColor(activity: PresenceActivity): string {
 }
 
 /**
- * Get Indonesian display label for a tracking status.
+ * Get localized display label for a tracking status.
  */
 export function getStatusLabel(status: TrackingStatus): string {
-  const labels: Record<TrackingStatus, string> = {
-    active: 'Aktif',
-    inactive: 'Idle',
-    outside_area: 'Di Luar Area',
-    missing: 'Tidak Terdeteksi',
-    offline: 'Offline',
-  };
-  return labels[status] ?? 'Unknown';
+  return i18n.t(`status:tracking.${status}`, { defaultValue: 'Unknown' });
 }
 
 /**

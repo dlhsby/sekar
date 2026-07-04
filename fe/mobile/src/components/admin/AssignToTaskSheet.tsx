@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import {
   assignPruningRequestToTask,
@@ -44,13 +45,7 @@ const ASSIGNABLE_ROLES = [
 
 type AssignableRole = typeof ASSIGNABLE_ROLES[number];
 
-const ROLE_LABELS: Record<AssignableRole, string> = {
-  kepala_rayon: 'Kepala Rayon',
-  admin_data: 'Admin Data',
-  korlap: 'Korlap',
-  satgas: 'Satgas',
-  linmas: 'Linmas',
-};
+// Role labels are dynamically loaded from i18n in the component (see getRoleLabel below)
 
 interface AssignToTaskSheetProps {
   visible: boolean;
@@ -68,6 +63,7 @@ export function AssignToTaskSheet({
   request,
   onSuccess,
 }: AssignToTaskSheetProps): React.JSX.Element {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
 
   const allUsers = useAppSelector((state) => state.users.list);
@@ -147,10 +143,10 @@ export function AssignToTaskSheet({
   const roleOptions = useMemo(
     () =>
       ASSIGNABLE_ROLES.map((r) => ({
-        label: ROLE_LABELS[r],
+        label: t(`roles:${r}`),
         value: r,
       })),
-    [],
+    [t],
   );
   const assigneeOptions = useMemo(
     () =>
@@ -229,8 +225,8 @@ export function AssignToTaskSheet({
 
       NBToast.show({
         level: 'success',
-        title: 'Berhasil',
-        body: 'Tugas berhasil dibuat dari permohonan',
+        title: t('tasks:assignToTask.success'),
+        body: t('tasks:assignToTask.successMessage'),
       });
 
       onClose();
@@ -245,10 +241,10 @@ export function AssignToTaskSheet({
           ? err
           : (err as { error?: string; message?: string })?.error ??
             (err as { message?: string })?.message ??
-            'Gagal menugaskan permohonan. Coba lagi.';
+            t('tasks:assignToTask.failMessage');
       NBToast.show({
         level: 'danger',
-        title: 'Gagal menugaskan',
+        title: t('tasks:assignToTask.failTitle'),
         body: message,
       });
     }
@@ -260,6 +256,7 @@ export function AssignToTaskSheet({
     dispatch,
     onClose,
     onSuccess,
+    t,
   ]);
 
   const handleClose = useCallback(() => {
@@ -271,7 +268,7 @@ export function AssignToTaskSheet({
     <NBModal
       visible={visible}
       onClose={handleClose}
-      title="Tugaskan ke Petugas"
+      title={t('tasks:assignToTask.title')}
       type="sheet"
       avoidKeyboard={true}
     >
@@ -288,7 +285,7 @@ export function AssignToTaskSheet({
             <View style={{ marginBottom: nbSpacing[4] }}>
               <NBAlert
                 variant="danger"
-                title="Terjadi Kesalahan"
+                title={t('tasks:assignToTask.error')}
                 message={pruningError}
               />
             </View>
@@ -302,19 +299,19 @@ export function AssignToTaskSheet({
               starts unselected. */}
           <View style={styles.field}>
             <NBText variant="body-sm" style={{ marginBottom: nbSpacing[2] }}>
-              Jabatan
+              {t('tasks:assignToTask.roleLabel')}
             </NBText>
             <NBSelect
               value={assignedRole}
               onValueChange={(v) => setAssignedRole(v as AssignableRole)}
               options={roleOptions}
-              placeholder="Pilih jabatan"
+              placeholder={t('tasks:assignToTask.rolePlaceholder')}
               searchable
             />
           </View>
           <View style={styles.field}>
             <NBText variant="body-sm" style={{ marginBottom: nbSpacing[2] }}>
-              Ditugaskan Ke
+              {t('tasks:assignToTask.assigneeLabel')}
             </NBText>
             <NBSelect
               value={assignedTo}
@@ -322,8 +319,8 @@ export function AssignToTaskSheet({
               options={assigneeOptions}
               placeholder={
                 assigneeOptions.length === 0
-                  ? `Tidak ada ${ROLE_LABELS[assignedRole]} di rayon ini`
-                  : 'Pilih pengguna'
+                  ? t('tasks:assignToTask.noAssignees', { role: t(`roles:${assignedRole}`) })
+                  : t('tasks:assignToTask.assigneePlaceholder')
               }
               searchable
             />
@@ -334,7 +331,7 @@ export function AssignToTaskSheet({
               uses Atur Ulang Jadwal which cascades correctly post-assign. */}
           <View style={styles.field}>
             <NBText variant="body-sm" style={{ marginBottom: nbSpacing[2] }}>
-              Tanggal Penjadwalan
+              {t('tasks:assignToTask.dateLabel')}
             </NBText>
             <View style={styles.readOnlyChip}>
               <NBText
@@ -343,14 +340,14 @@ export function AssignToTaskSheet({
               >
                 {scheduledDate
                   ? formatDateLong(scheduledDate)
-                  : 'Belum dijadwalkan'}
+                  : t('tasks:assignToTask.notScheduled')}
               </NBText>
             </View>
             <NBText
               variant="caption"
               style={{ color: nbColors.gray700, marginTop: nbSpacing[1] }}
             >
-              Untuk mengubah, gunakan "Atur Ulang Jadwal" setelah penugasan.
+              {t('tasks:assignToTask.dateHint')}
             </NBText>
           </View>
 
@@ -363,7 +360,7 @@ export function AssignToTaskSheet({
               ]}
             >
               <NBText variant="body-sm" style={{ marginBottom: nbSpacing[2] }}>
-                Kapasitas minggu ini:
+                {t('tasks:assignToTask.capacityLabel')}
               </NBText>
               <NBText
                 variant="body"
@@ -372,8 +369,8 @@ export function AssignToTaskSheet({
                   color: capacityExceeded ? nbColors.danger : nbColors.black,
                 }}
               >
-                {(weekCapacity as any).booked_units ?? (weekCapacity as any).bookedUnits ?? 0}/{(weekCapacity as any).capacity_units ?? (weekCapacity as any).capacityUnits ?? 0} unit
-                {capacityExceeded && ' (Melebihi kapasitas)'}
+                {(weekCapacity as any).booked_units ?? (weekCapacity as any).bookedUnits ?? 0}/{(weekCapacity as any).capacity_units ?? (weekCapacity as any).capacityUnits ?? 0}{t('tasks:assignToTask.unit')}
+                {capacityExceeded && t('tasks:assignToTask.capacityExceeded')}
               </NBText>
             </View>
           )}
@@ -385,7 +382,7 @@ export function AssignToTaskSheet({
             <View style={{ flex: 1 }}>
               <NBButton
                 variant="secondary"
-                label="Batal"
+                label={t('common:actions.cancel')}
                 onPress={handleClose}
                 disabled={convertingId === request.id}
                 size="lg"
@@ -396,7 +393,7 @@ export function AssignToTaskSheet({
             <View style={{ flex: 1 }}>
               <NBButton
                 variant="primary"
-                label="Tugaskan"
+                label={t('tasks:assignToTask.assignButton')}
                 onPress={handleSubmit}
                 disabled={!isFormValid || capacityExceeded || convertingId === request.id}
                 loading={convertingId === request.id}

@@ -96,7 +96,7 @@ describe('InstallBanner', () => {
       fireInstallPrompt();
     });
 
-    const dismissButton = screen.getByRole('button', { name: /tutup banner instalasi/i });
+    const dismissButton = screen.getByRole('button', { name: /tutup/i });
     fireEvent.click(dismissButton);
 
     expect(screen.queryByRole('banner')).not.toBeInTheDocument();

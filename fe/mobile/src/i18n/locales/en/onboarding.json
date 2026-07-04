@@ -1,0 +1,75 @@
+{
+  "welcome": {
+    "greeting": "Hi,",
+    "ready": "READY",
+    "body": "SEKAR needs a bit of setup so you can get straight to the field. Just a moment, only once.",
+    "continue": "Continue"
+  },
+  "permissions": {
+    "title": "Give access to your phone",
+    "subtitle": "All permissions below are required for tracking and reporting to work fully.",
+    "button": "Allow",
+    "granted": "GRANTED",
+    "denied": "DENIED",
+    "notifications": {
+      "title": "Notifications",
+      "why": "Shift & assignment reminders."
+    },
+    "location": {
+      "title": "Location",
+      "why": "Attendance & geofence pos."
+    },
+    "backgroundLocation": {
+      "title": "Background location",
+      "why": "Route tracking during shift."
+    },
+    "camera": {
+      "title": "Camera",
+      "why": "Report photos & clock-in selfie."
+    },
+    "gallery": {
+      "title": "Gallery",
+      "why": "Attach photos from gallery."
+    }
+  },
+  "permissionModal": {
+    "header": "App Permissions",
+    "step": "Step {{current}} of {{total}}",
+    "info": "We need these permissions to provide the best experience when using the SEKAR app.",
+    "allow": "Allow",
+    "skip": "Skip",
+    "settings": "Open Settings",
+    "understood": "Got it, Continue",
+    "required": "Required",
+    "notificationsTitle": "Notifications",
+    "notificationsDesc": "Receive important notifications about new tasks, shift reminders, and information from your supervisor.",
+    "locationTitle": "Location",
+    "locationDesc": "Required for digital attendance and to verify you are at the correct work location when clocking in.",
+    "backgroundLocationTitle": "Background Location",
+    "backgroundLocationDesc": "Allow \"All the time\" to track your route during work shifts. This data helps your supervisor monitor completed areas.",
+    "cameraTitle": "Camera",
+    "cameraDesc": "Required to take work report photos. Photos help your supervisor verify completed work.",
+    "galleryTitle": "Photo Gallery",
+    "galleryDesc": "Required to select photos from gallery when completing reports or submitting pruning requests.",
+    "androidNote": "IMPORTANT:\n1. Select \"Allow all the time\" or \"Allow all the time\"\n2. If the option doesn't appear, open Settings → Apps → SEKAR → Permissions → Location\n3. Select \"All the time\" or \"Allow all the time\""
+  },
+  "areaPreview": {
+    "clockable": {
+      "title": "Your work area",
+      "body": "Your work area has been set. Tap Start Working to open the dashboard.",
+      "cta": "Start Working"
+    },
+    "kecamatan": {
+      "title": "Ready to submit requests?",
+      "body": "Open your rayon request list and submit new requests whenever needed.",
+      "cta": "Manage Requests"
+    },
+    "admin": {
+      "title": "Ready to start?",
+      "body": "Dashboard shows team summary and pending requests.",
+      "cta": "Open Dashboard"
+    },
+    "radiusLabel": "RADIUS",
+    "areaLabel": "AREA"
+  }
+}

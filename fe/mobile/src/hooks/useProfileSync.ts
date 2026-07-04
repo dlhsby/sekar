@@ -5,6 +5,7 @@
 
 import { useState, useCallback } from 'react';
 import { Alert } from 'react-native';
+import i18n from '../i18n/config';
 import {
   getPendingCount,
   getPendingCountsByType,
@@ -58,9 +59,9 @@ export function useProfileSync() {
     try {
       await syncManager.processQueue();
       await loadSyncStatus();
-      Alert.alert('Sinkronisasi', 'Data berhasil disinkronkan');
+      Alert.alert(i18n.t('common:sync.alerts.syncTitle'), i18n.t('common:sync.alerts.syncSuccess'));
     } catch (error: any) {
-      Alert.alert('Kesalahan', `Gagal sinkronisasi: ${error.message}`);
+      Alert.alert(i18n.t('common:sync.alerts.error'), `${i18n.t('common:sync.alerts.syncError')} ${error.message}`);
     } finally {
       setIsSyncing(false);
     }
@@ -70,33 +71,33 @@ export function useProfileSync() {
     try {
       const count = await retryFailedItems();
       if (count > 0) {
-        Alert.alert('Berhasil', `${count} item akan dicoba ulang`);
+        Alert.alert(i18n.t('common:sync.alerts.retryTitle'), i18n.t('common:sync.alerts.retryMessage', { count }));
         await syncManager.processQueue();
         await loadSyncStatus();
       } else {
-        Alert.alert('Info', 'Tidak ada item gagal untuk dicoba ulang');
+        Alert.alert(i18n.t('common:sync.alerts.error'), i18n.t('common:sync.alerts.noRetryItems'));
       }
     } catch (error: any) {
-      Alert.alert('Kesalahan', `Gagal mencoba ulang: ${error.message}`);
+      Alert.alert(i18n.t('common:sync.alerts.error'), `${i18n.t('common:sync.alerts.syncError')} ${error.message}`);
     }
   }, [loadSyncStatus]);
 
   const handleClearFailed = useCallback(async () => {
     Alert.alert(
-      'Hapus Item Gagal?',
-      'Data yang gagal akan dihapus permanen dan tidak dapat dikembalikan.',
+      i18n.t('common:sync.alerts.clearTitle'),
+      i18n.t('common:sync.alerts.clearMessage'),
       [
-        { text: 'Batal', style: 'cancel' },
+        { text: i18n.t('common:actions.cancel'), style: 'cancel' },
         {
-          text: 'Hapus',
+          text: i18n.t('common:actions.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               await clearFailedItems();
               await loadSyncStatus();
-              Alert.alert('Berhasil', 'Item gagal telah dihapus');
+              Alert.alert(i18n.t('common:sync.alerts.retryTitle'), i18n.t('common:sync.alerts.clearSuccess'));
             } catch (error: any) {
-              Alert.alert('Kesalahan', `Gagal menghapus: ${error.message}`);
+              Alert.alert(i18n.t('common:sync.alerts.error'), `${i18n.t('common:sync.alerts.clearError')} ${error.message}`);
             }
           },
         },

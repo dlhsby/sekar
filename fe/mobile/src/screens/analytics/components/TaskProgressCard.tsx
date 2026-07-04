@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBCard, NBText } from '../../../components/nb';
 import { nbColors, nbSpacing } from '../../../constants/nbTokens';
 
@@ -19,17 +20,18 @@ export function TaskProgressCard({
   total,
   rate,
 }: TaskProgressCardProps): React.JSX.Element {
+  const { t } = useTranslation();
   const percentage = Math.round(rate * 10) / 10;
 
   return (
     <NBCard style={styles.container}>
       <View style={styles.header}>
-        <NBText variant="h3">Tugas Bulan Ini</NBText>
+        <NBText variant="h3">{t('analytics:tasks.title')}</NBText>
       </View>
 
       <View style={styles.stats}>
         <NBText variant="body" color="gray700">
-          Selesai: {completed} / {total} ({percentage}%)
+          {t('analytics:tasks.completed')}: {completed} / {total} ({percentage}%)
         </NBText>
       </View>
 
@@ -62,10 +64,10 @@ export function TaskProgressCard({
         />
         <NBText variant="body-sm" color="gray600">
           {percentage >= 80
-            ? 'Target tercapai'
+            ? t('analytics:tasks.targetMet')
             : percentage >= 60
-              ? 'Hampir tercapai'
-              : 'Perlu ditingkatkan'}
+              ? t('analytics:tasks.almostMet')
+              : t('analytics:tasks.needsImprovement')}
         </NBText>
       </View>
     </NBCard>

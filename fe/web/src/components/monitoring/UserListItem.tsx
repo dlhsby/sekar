@@ -5,10 +5,11 @@
  * Shows status dot, name, role badge, area, last update, and battery warning
  */
 
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils/cn';
 import { formatRelativeTime } from '@/lib/utils/formatters';
 import { ROLE_LABELS } from '@/lib/constants/roles';
-import { STATUS_DOT_CLASSES, STATUS_LABELS } from '@/lib/constants/monitoring';
+import { STATUS_DOT_CLASSES, getStatusLabels } from '@/lib/constants/monitoring';
 import type { LiveUser } from '@/lib/api/monitoring';
 import type { UserRole } from '@/types/models';
 
@@ -19,8 +20,10 @@ export interface UserListItemProps {
 }
 
 export function UserListItem({ user, isSelected, onClick }: UserListItemProps) {
+  const { t } = useTranslation();
+  const statusLabels = getStatusLabels();
   const dotColor = STATUS_DOT_CLASSES[user.status] ?? 'bg-[var(--color-status-offline)]';
-  const statusLabel = STATUS_LABELS[user.status] ?? user.status;
+  const statusLabel = statusLabels[user.status] ?? user.status;
   const roleLabel = ROLE_LABELS[user.role as UserRole] || user.role;
   const isLowBattery = user.battery_level !== null && user.battery_level < 20;
 
@@ -63,7 +66,7 @@ export function UserListItem({ user, isSelected, onClick }: UserListItemProps) {
           {isLowBattery && (
             <span
               className="text-xs bg-red-100 text-red-700 border border-red-300 px-1.5 py-0.5 rounded-nb-sm font-semibold"
-              aria-label={`Baterai rendah: ${user.battery_level}%`}
+              aria-label={t('monitoring:map.lowBatteryAriaLabel', { level: user.battery_level })}
             >
               {user.battery_level}%
             </span>

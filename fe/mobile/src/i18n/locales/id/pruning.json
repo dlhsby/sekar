@@ -1,0 +1,376 @@
+{
+  "list": {
+    "title": "Permohonan Perantingan",
+    "sortCreatedNewest": "Dibuat Terbaru",
+    "sortCreatedOldest": "Dibuat Terlama",
+    "sortExpectedNearest": "Minggu Preferensi Terdekat",
+    "sortExpectedFarthest": "Minggu Preferensi Terjauh",
+    "sortModalTitle": "Urutkan Permohonan",
+    "filterModalTitle": "Filter Permohonan",
+    "emptyTitle": "Belum ada permohonan",
+    "emptyDescNoFilter": "Permohonan pemangkasan Anda akan muncul di sini.",
+    "emptyDescWithFilter": "Tidak ada permohonan yang sesuai filter.",
+    "submitFabButtonTitle": "+ Buat Permohonan",
+    "allRequestsLabel": "Semua Permohonan",
+    "loadErrorTitle": "Gagal memuat permohonan",
+    "ctaLabel": "Buat Permohonan"
+  },
+  "filter": {
+    "title": "Filter Permohonan",
+    "status": "Status",
+    "statusOptions": {
+      "all": "Semua Status",
+      "submitted": "Menunggu",
+      "under_review": "Direview",
+      "approved": "Disetujui",
+      "rejected": "Ditolak",
+      "assigned": "Ditugaskan",
+      "in_progress": "Diproses",
+      "done": "Selesai",
+      "cancelled": "Dibatalkan"
+    },
+    "dateRange": "Rentang Tanggal",
+    "dateFrom": "Dari",
+    "dateTo": "Sampai",
+    "rayon": "Rayon",
+    "rayonAll": "Semua Rayon",
+    "rayonMine": "Rayon Saya",
+    "referenceCodeLabel": "Nomor Permohonan",
+    "reset": "Reset",
+    "resetLabel": "Reset filter permohonan",
+    "apply": "Terapkan",
+    "requesterNameLabel": "Nama Pemohon",
+    "requesterNamePlaceholder": "Contoh: Budi",
+    "requestCodePlaceholder": "Contoh: PR-2026-..."
+  },
+  "submit": {
+    "pageTitle": "Buat Permohonan Perantingan",
+    "locationCardTitle": "Lokasi Pemangkasan",
+    "locationCardTitleRequired": "Lokasi *",
+    "rayonLabel": "Rayon",
+    "rayonPlaceholder": "Pilih Rayon",
+    "notSetLabel": "Belum diatur",
+    "kecamatanLabel": "Kecamatan",
+    "kecamatanPlaceholder": "Contoh: Tegalsari",
+    "addressLabel": "Alamat Lengkap *",
+    "addressPlaceholder": "Contoh: Jl. Raya Darmo No. 123, RT 02 / RW 05",
+    "gpsCoordinatesLabel": "Koordinat GPS",
+    "gpsDetecting": "Mendeteksi…",
+    "gpsNotAvailable": "Belum tersedia",
+    "gpsLocationLabel": "Lokasi GPS",
+    "gpsUpdateButtonLabel": "Perbarui lokasi GPS",
+    "mapButtonTitle": "Pilih di Peta",
+    "contactCardTitle": "Kontak",
+    "contactHelper": "Informasi kontak untuk permohonan pemangkasan pohon",
+    "requesterLabel": "Pemohon",
+    "requesterNameLabel": "Nama Pemohon *",
+    "requesterNamePlaceholder": "Nama lengkap",
+    "requesterPhoneLabel": "Nomor HP Pemohon *",
+    "requesterPhonePlaceholder": "08xxxxxxxxxx",
+    "rtRwLeaderLabel": "Ketua RT/RW",
+    "rtRwLeaderNameLabel": "Nama Ketua RT/RW *",
+    "rtRwLeaderNamePlaceholder": "Nama lengkap",
+    "rtRwLeaderPhoneLabel": "Nomor HP Ketua RT/RW *",
+    "rtRwLeaderPhonePlaceholder": "08xxxxxxxxxx",
+    "treeDetailsCardTitle": "Detail Pohon",
+    "treeCountLabel": "Jumlah Pohon",
+    "treeCountPlaceholder": "Contoh: 5",
+    "treeTypeLabel": "Jenis Pohon",
+    "treeTypePlaceholder": "Contoh: Mangga, Beringin, dll",
+    "treeConditionLabel": "Kondisi Pohon",
+    "treeConditionPlaceholder": "Contoh: Rusak, Mati, Berbahaya",
+    "reasonLabel": "Alasan Pemangkasan",
+    "reasonPlaceholder": "Jelaskan alasan pemangkasan pohon",
+    "photosLabel": "FOTO POHON",
+    "photosHint": "Ambil foto pohon yang akan dipangkas",
+    "availabilityLabel": "Ketersediaan Minggu Preferensi",
+    "weekLabel": "Minggu",
+    "headerTitle": "Buat Permohonan Perantingan",
+    "notesOptional": "Catatan (Opsional)"
+  },
+  "calendar": {
+    "legendAvailable": "Tersedia",
+    "legendPartial": "Hampir Penuh",
+    "legendFull": "Penuh",
+    "legendUnset": "Belum Diatur",
+    "preferenceWeekLabel": "Minggu Preferensi",
+    "selectedDateLabel": "Tanggal Terpilih",
+    "clearDateLabel": "Hapus tanggal terpilih",
+    "selectDateLabel": "Pilih Tanggal",
+    "selectWeekLabel": "Pilih Minggu Preferensi",
+    "notSelectedYet": "Belum dipilih",
+    "dateFullError": "Tanggal yang dipilih sudah penuh, silakan pilih tanggal lain.",
+    "capacityUnsetError": "Kapasitas minggu ini belum diatur admin. Silakan pilih tanggal lain atau hubungi admin rayon.",
+    "loading": "Memuat kapasitas…",
+    "sundayLabel": "Min",
+    "mondayLabel": "Sen",
+    "tuesdayLabel": "Sel",
+    "wednesdayLabel": "Rab",
+    "thursdayLabel": "Kam",
+    "fridayLabel": "Jum",
+    "saturdayLabel": "Sab",
+    "dayAria": "Tanggal {{date}} status {{status}}",
+    "inPreferredWeekHint": " (di dalam minggu preferensi)",
+    "selectedHint": " (terpilih, ketuk untuk batal)"
+  },
+  "weekPicker": {
+    "statusAvailable": "Tersedia",
+    "statusPartial": "Hampir Penuh",
+    "statusFull": "Penuh",
+    "statusUnset": "Belum Diatur",
+    "loadingCapacity": "Memuat kapasitas…",
+    "footnote": "Admin akan menentukan tanggal pasti dalam minggu yang Anda pilih.",
+    "weekLabel": "Minggu ke-{{week}}, {{year}}",
+    "selectWeekLabel": "Pilih minggu {{week}} tahun {{year}}, status {{status}}"
+  },
+  "detail": {
+    "title": "Detail Permohonan",
+    "loadingMessage": "Memuat data...",
+    "notFoundMessage": "Permohonan tidak ditemukan",
+    "backButtonTitle": "Kembali",
+    "photoModalTitle": "Foto Pohon",
+    "scheduleButtonLabel": "Atur Jadwal",
+    "rescheduleButtonLabel": "Atur Ulang Jadwal",
+    "rejectButtonLabel": "Tolak",
+    "notFoundError": "Permohonan yang Anda cari tidak tersedia.",
+    "locationModalTitle": "Lokasi Perantingan",
+    "locationMarkerTitle": "Lokasi Perantingan",
+    "openMapsLabel": "Buka di Google Maps"
+  },
+  "review": {
+    "title": "Antrian Review",
+    "pageTitle": "Review Permohonan Perantingan",
+    "sortModalTitle": "Urutkan Permohonan",
+    "resetFilterLabel": "Reset filter permohonan",
+    "emptyTitle": "Tidak ada permohonan",
+    "emptyDescNoFilter": "Permohonan perantingan dari kecamatan akan muncul di sini.",
+    "emptyDescWithFilter": "Tidak ada permohonan yang sesuai filter.",
+    "approveButtonTitle": "Setujui",
+    "rejectButtonTitle": "Tolak",
+    "resultsCardTitle": "Hasil Review",
+    "accessDeniedTitle": "Akses Ditolak",
+    "accessDeniedDesc": "Anda tidak memiliki izin untuk mengakses halaman ini.",
+    "dateLabel": "Tanggal Review",
+    "reviewedBy": "Direview Oleh",
+    "notes": "Catatan Review"
+  },
+  "reassign": {
+    "title": "Pindah Petugas",
+    "confirmTitle": "Konfirmasi Pindah",
+    "reasonPlaceholder": "Tuliskan alasan reassign..."
+  },
+  "photoManagement": {
+    "photoLimitTitle": "Batas foto",
+    "photoLimitMessage": "Maksimal {{max}} foto.",
+    "cameraPermissionDeniedTitle": "Izin kamera ditolak",
+    "cameraPermissionDeniedMessage": "Aktifkan izin kamera di Pengaturan untuk mengambil foto.",
+    "settingsButton": "Pengaturan",
+    "cancelButton": "Batal",
+    "capturePhotoErrorTitle": "Gagal mengambil foto",
+    "pickPhotoErrorTitle": "Gagal memilih foto"
+  },
+  "taskForm": {
+    "caseTypeLabel": "Jenis Gangguan *",
+    "caseTypePlaceholder": "Pilih jenis gangguan",
+    "caseTypeOptions": {
+      "GT": "Gangguan Tinggi",
+      "PT": "Pohon Tumbang",
+      "PS": "Pohon Sakit",
+      "PD": "Pohon Diameter Besar",
+      "PK": "Pohon Kering"
+    },
+    "pruningActionLabel": "Jenis Pemangkasan *",
+    "pruningActionPlaceholder": "Pilih jenis pemangkasan",
+    "pruningActionOptions": {
+      "PM": "Pemangkasan Mahkota",
+      "PB": "Pemangkasan Batang",
+      "PC": "Pemangkasan Cabang"
+    },
+    "sourceLabel": "Sumber Pengajuan *",
+    "sourcePlaceholder": "Pilih sumber pengajuan",
+    "sourceOptions": {
+      "TIW": "Tindak Lanjut Inspeksi",
+      "TS": "Temuan Satgas",
+      "CC": "Call Center",
+      "PW": "Pesan Warga",
+      "Wk": "Walikota"
+    },
+    "speciesLabel": "Spesies Tanaman *",
+    "speciesCountLabel": "Jumlah per Spesies",
+    "speciesCountAccessibility": "Jumlah {{species}}",
+    "notesLabel": "Catatan Tambahan (Opsional)",
+    "notesPlaceholder": "Tambahkan catatan...",
+    "notesAccessibility": "Catatan tambahan",
+    "notesAccessibilityHint": "Ruang bebas untuk catatan tambahan",
+    "submitButtonLabel": "Kirim Pengajuan",
+    "submitButtonAccessibility": "Kirim pengajuan",
+    "submitButtonDisabledHint": "Lengkapi semua bidang yang diperlukan",
+    "validationErrors": {
+      "caseTypeRequired": "Jenis gangguan harus dipilih",
+      "pruningActionRequired": "Jenis pemangkasan harus dipilih",
+      "sourceRequired": "Sumber pengajuan harus dipilih",
+      "speciesRequired": "Minimal satu spesies tanaman harus dipilih",
+      "speciesCountRequired": "Semua spesies tanaman harus memiliki jumlah minimal 1",
+      "saveFailed": "Terjadi kesalahan saat menyimpan data"
+    },
+    "validationFailedTitle": "Validasi Gagal"
+  },
+  "actionBar": {
+    "convertLabel": "Tugaskan ke Petugas",
+    "cancelLabel": "Batal",
+    "submittingLabel": "Mengirim…",
+    "submitLabel": "Kirim"
+  },
+  "validation": {
+    "reviewTitle": "Periksa kembali",
+    "gpsErrorMessage": "Koordinat GPS belum terdeteksi. Tekan tombol perbarui pada kartu Lokasi.",
+    "photoErrorMessage": "Minimal 1 foto diperlukan.",
+    "submitSuccess": "Permohonan terkirim",
+    "submitSuccessMessage": "Anda akan diberitahu setelah ditinjau.",
+    "submitError": "Gagal mengirim permohonan",
+    "submitRetry": "Coba lagi."
+  },
+  "actions": {
+    "approve": {
+      "confirm": "Konfirmasi",
+      "question": "Setujui permohonan perantingan ini?",
+      "cancel": "Batal",
+      "yes": "Setuju",
+      "success": "Berhasil",
+      "successMessage": "Permohonan telah disetujui.",
+      "failed": "Gagal",
+      "failedMessage": "Tidak dapat menyetujui permohonan."
+    },
+    "reject": {
+      "reasonRequired": "Alasan diperlukan",
+      "reasonPrompt": "Mohon isi alasan penolakan permohonan ini.",
+      "success": "Berhasil",
+      "successMessage": "Permohonan telah ditolak.",
+      "failed": "Gagal",
+      "failedMessage": "Tidak dapat menolak permohonan."
+    },
+    "cancel": {
+      "confirm": "Batalkan Permohonan",
+      "question": "Apakah Anda yakin ingin membatalkan permohonan ini? Tindakan ini tidak dapat dibatalkan.",
+      "no": "Tidak",
+      "yes": "Ya, Batalkan",
+      "success": "Permohonan dibatalkan",
+      "failed": "Gagal membatalkan",
+      "failedRetry": "Coba lagi."
+    },
+    "reschedule": {
+      "title": "Atur Jadwal",
+      "selectDate": "Pilih tanggal",
+      "selectDateHint": "Tap salah satu tanggal yang tersedia di kalender.",
+      "helper": "Pilih tanggal kerja untuk permohonan {{code}}.",
+      "cancel": "Batal",
+      "saving": "Menyimpan…",
+      "save": "Simpan",
+      "successTitle": "Jadwal diperbarui",
+      "successMessage": "Tanggal dijadwalkan: {{date}}",
+      "failedTitle": "Gagal menyimpan",
+      "failedMessage": "Coba lagi."
+    }
+  },
+  "relatedTask": {
+    "title": "🔗 TUGAS TERKAIT",
+    "viewButton": "Lihat Tugas",
+    "statusMessages": {
+      "done": "Pekerjaan telah selesai. Lihat detail tugas untuk foto bukti dan catatan penyelesaian.",
+      "inProgress": "Tugas sedang dikerjakan oleh petugas.",
+      "default": "Permohonan ini telah dijadwalkan dan tugas kerja telah dibuat."
+    }
+  },
+  "submitForm": {
+    "validationErrors": {
+      "addressRequired": "Alamat (jalan) wajib diisi.",
+      "addressMinLength": "Alamat minimal 5 karakter.",
+      "addressMaxLength": "Alamat maksimal 500 karakter.",
+      "treeCountRequired": "Jumlah pohon harus diisi dengan angka minimal 1.",
+      "treeHeightRequired": "Tinggi pohon (perkiraan) wajib diisi.",
+      "treeDiameterRequired": "Diameter pohon (perkiraan) wajib diisi.",
+      "requesterInfoRequired": "Nama dan nomor HP pemohon wajib diisi.",
+      "requesterPhoneInvalid": "Nomor HP pemohon harus diawali 08 dan 10–14 digit.",
+      "rtLeaderInfoRequired": "Nama dan nomor HP ketua RT/RW wajib diisi.",
+      "rtLeaderPhoneInvalid": "Nomor HP ketua RT/RW harus diawali 08 dan 10–14 digit."
+    }
+  },
+  "detailCard": {
+    "sectionTitle": "🌳 DETAIL PERANTINGAN",
+    "treeCount": "Jumlah Pohon",
+    "treeCountFormat": "{{count}} pohon",
+    "treeHeight": "Tinggi (Perkiraan)",
+    "treeDiameter": "Diameter (Perkiraan)",
+    "preferredWeek": "Minggu Preferensi",
+    "notSpecified": "Tidak ditentukan",
+    "scheduledDate": "Tanggal Dijadwalkan",
+    "notScheduled": "Belum dijadwalkan"
+  },
+  "filterChip": {
+    "dateLabel": "Tanggal",
+    "rayonLabel": "Rayon"
+  },
+  "listScreen": {
+    "sortLabel": "Urutan: {{label}}",
+    "filterLabel": "Filter permohonan",
+    "filterActive": "filter aktif"
+  },
+  "submitWeekCard": {
+    "title": "Minggu Preferensi (Opsional)",
+    "helper": "Pilih minggu yang Anda inginkan. Admin Rayon akan menentukan tanggal pasti sesuai kapasitas tim. Indikator hari pada setiap kartu hanya gambaran ketersediaan minggu tersebut.",
+    "weekLabel": "Minggu",
+    "selectedWeek": "Minggu ke-{{week}}, {{year}}",
+    "placeholder": "Pilih minggu…",
+    "selectButtonLabel": "Pilih minggu preferensi",
+    "legend": "🟢 tersedia · 🟡 hampir penuh · 🔴 penuh · ⚪ belum diatur"
+  },
+  "locationCard": {
+    "sectionTitle": "📍 LOKASI",
+    "kecamatanLabel": "Kecamatan",
+    "rayonLabel": "Rayon",
+    "addressLabel": "Alamat",
+    "gpsLabel": "Koordinat GPS",
+    "mapButtonLabel": "Lihat di Peta",
+    "mapButtonAccessibility": "Lihat lokasi di peta",
+    "gpsUnavailable": "Lokasi belum tersedia untuk dilihat di peta."
+  },
+  "submitTreeDetailsCard": {
+    "title": "Detail Pohon",
+    "treeCountLabel": "Jumlah Pohon *",
+    "treeCountPlaceholder": "Contoh: 3",
+    "treeHeightLabel": "Tinggi Pohon (tertinggi atau rata-rata, meter) *",
+    "treeHeightPlaceholder": "Contoh: 5",
+    "treeDiameterLabel": "Diameter Pohon (tertinggi atau rata-rata, cm) *",
+    "treeDiameterPlaceholder": "Contoh: 30"
+  },
+  "statusCard": {
+    "sectionTitle": "📌 STATUS",
+    "referenceCodeLabel": "Kode Permohonan",
+    "copiedToast": "Disalin",
+    "copyButtonLabel": "Salin kode permohonan",
+    "submittedByLabel": "Diajukan Oleh",
+    "submittedAtLabel": "Diajukan Pada"
+  },
+  "submitPhotoCard": {
+    "title": "Foto Pohon *",
+    "helper": "Minimal {{min}}, maksimal {{max}} foto.",
+    "emptyState": "Belum ada foto. Ambil dari kamera atau pilih dari galeri.",
+    "removeButtonLabel": "Hapus foto {{number}}",
+    "cameraButton": "Kamera",
+    "galleryButton": "Galeri"
+  },
+  "requestCard": {
+    "treeUnit": "pohon",
+    "photoUnit": "foto",
+    "cardAccessibility": "Detail permohonan {{code}}"
+  },
+  "submitNotes": {
+    "placeholder": "Catatan tambahan untuk admin reviewer"
+  },
+  "photosSection": {
+    "title": "FOTO LOKASI"
+  },
+  "contact": {
+    "applicant": "Pemohon"
+  }
+}

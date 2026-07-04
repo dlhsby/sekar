@@ -9,6 +9,7 @@
 import React from 'react';
 import { Modal, View, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBBackgroundPattern, NBText } from '../../../components/nb';
 import { WeekPicker, type PickedWeek } from './WeekPicker';
@@ -42,6 +43,8 @@ export function WeekPickerModal({
   onSelect,
   loading,
 }: WeekPickerModalProps): React.JSX.Element {
+  const { t } = useTranslation();
+
   const handleSelect = (week: PickedWeek) => {
     onSelect(week);
     onClose();
@@ -59,13 +62,13 @@ export function WeekPickerModal({
           <TouchableOpacity
             onPress={onClose}
             style={styles.backBtn}
-            accessibilityLabel="Kembali"
+            accessibilityLabel={t('common:actions.back')}
             accessibilityRole="button"
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <MaterialCommunityIcons name="arrow-left" size={24} color={nbColors.black} />
           </TouchableOpacity>
-          <NBText variant="h3" style={styles.title} numberOfLines={1}>Pilih Minggu Preferensi</NBText>
+          <NBText variant="h3" style={styles.title} numberOfLines={1}>{t('pruning:calendar.selectWeekLabel')}</NBText>
         </View>
         <NBBackgroundPattern>
           <View style={styles.body}>

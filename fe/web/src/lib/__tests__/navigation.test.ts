@@ -336,7 +336,7 @@ describe('Navigation Utilities', () => {
 
       expect(breadcrumbs).toHaveLength(1);
       expect(breadcrumbs[0]).toEqual({
-        label: 'Monitoring',
+        label: 'common:nav.monitoring',
         href: '/monitoring',
       });
     });
@@ -346,7 +346,7 @@ describe('Navigation Utilities', () => {
 
       expect(breadcrumbs).toHaveLength(1);
       expect(breadcrumbs[0]).toEqual({
-        label: 'Laporan',
+        label: 'common:nav.reports',
         href: '/reports',
       });
     });

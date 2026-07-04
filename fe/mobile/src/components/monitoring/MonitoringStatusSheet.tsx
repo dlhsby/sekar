@@ -1,5 +1,6 @@
 import React, { useMemo, useCallback, useState } from 'react';
 import { View, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBText } from '../nb/NBText';
 import { NBModal } from '../nb/NBModal';
@@ -17,6 +18,7 @@ import {
 } from '../../constants/nbTokens';
 import type { LiveUser, PresenceActivity, UserRole } from '../../types/models.types';
 import type { AttendanceResponse } from '../../types/api.types';
+import i18n from '../../i18n/config';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -51,8 +53,8 @@ function formatLastUpdated(iso: string | null): string {
   if (!iso) { return '—'; }
   const diff = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) { return 'baru saja'; }
-  if (minutes < 60) { return `${minutes} mnt lalu`; }
+  if (minutes < 1) { return i18n.t('monitoring:relativeTime.justNow'); }
+  if (minutes < 60) { return `${minutes} ${i18n.t('monitoring:relativeTime.minutesAgo')}`; }
   return new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 }
 
@@ -72,6 +74,7 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
   onUserPress,
   attendance,
 }: MonitoringStatusSheetProps): React.JSX.Element {
+  const { t } = useTranslation();
   const [selectedGroup, setSelectedGroup] = useState<PersonnelGroup | null>(null);
   const [attendanceOpen, setAttendanceOpen] = useState(false);
 
@@ -133,7 +136,7 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
       {attendance && (
         <View style={styles.section}>
           <NBText variant="mono-sm" uppercase color="gray600" style={styles.sectionTitle}>
-            Kehadiran
+            {t('monitoring:status.sections.attendance')}
           </NBText>
           <KehadiranCard
             clockedIn={attendance.clocked_in_count}
@@ -146,30 +149,30 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
       {/* Operasional — info card */}
       <View style={styles.section}>
         <NBText variant="mono-sm" uppercase color="gray600" style={styles.sectionTitle}>
-          Operasional
+          {t('monitoring:status.sections.operations')}
         </NBText>
         <View style={styles.summaryCard}>
           <SummaryRow
             icon="account-group"
-            label="Total Petugas"
+            label={t('monitoring:status.totalOfficers')}
             value={String(liveUsers.length)}
           />
           <SummaryRow
             icon="map-marker-check"
-            label="Area Terjaga"
-            value={`${staffedAreas} dari ${totalAreas} area`}
+            label={t('monitoring:status.coveredAreas')}
+            value={t('monitoring:statusSheet.staffedAreas', { staffed: staffedAreas, total: totalAreas })}
           />
           {staleCount > 0 && (
             <SummaryRow
               icon="wifi-off"
-              label="GPS tidak aktif > 10 mnt"
+              label={t('monitoring:status.staleGps')}
               value={String(staleCount)}
               valueColor={nbColors.statusMissing}
             />
           )}
           <SummaryRow
             icon="clock-outline"
-            label="Terakhir Diperbarui"
+            label={t('monitoring:status.lastUpdated')}
             value={formatLastUpdated(lastUpdated)}
             isLast
           />
@@ -178,8 +181,8 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
 
       {/* Daftar Petugas header */}
       <View style={styles.listHeader}>
-        <NBText variant="h3">Daftar Petugas</NBText>
-        <NBText variant="caption" color="gray500">{liveUsers.length} petugas</NBText>
+        <NBText variant="h3">{t('monitoring:status.sections.staffList')}</NBText>
+        <NBText variant="caption" color="gray500">{liveUsers.length} {t('monitoring:status.staffCount')}</NBText>
       </View>
     </>
   ), [activeActivity, onActivityChange, liveUsers, staffedAreas, totalAreas, staleCount, lastUpdated, attendance]);
@@ -195,7 +198,7 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
         onClose={onClose}
         type="sheet"
         sheetHeight="88%"
-        title="Status Pemantauan"
+        title={t('monitoring:status.title')}
         noPadding
         testID="monitoring-status-sheet"
       >
@@ -209,7 +212,7 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
           ListEmptyComponent={
             <View style={styles.empty}>
               <NBText variant="body-sm" color="gray500" align="center">
-                Belum ada petugas dipantau
+                {t('monitoring:status.empty')}
               </NBText>
             </View>
           }
@@ -284,18 +287,20 @@ function KehadiranCard({
   notClockedIn: number;
   onPress: () => void;
 }): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <TouchableOpacity
       style={styles.kehadiranCard}
       onPress={onPress}
       activeOpacity={0.7}
       accessibilityRole="button"
-      accessibilityLabel={`Kehadiran: ${clockedIn} sudah masuk, ${notClockedIn} belum masuk`}
+      accessibilityLabel={`${t('monitoring:status.sections.attendance')}: ${clockedIn} ${t('monitoring:status.attendance.clockedIn')}, ${notClockedIn} ${t('monitoring:status.attendance.notClockedIn')}`}
       testID="kehadiran-card"
     >
       <View style={styles.attendanceStats}>
-        <AttendanceStat tone="ok" value={clockedIn} label="Sudah Clock In" />
-        <AttendanceStat tone="warn" value={notClockedIn} label="Belum Clock In" />
+        <AttendanceStat tone="ok" value={clockedIn} label={t('monitoring:status.attendance.clockedIn')} />
+        <AttendanceStat tone="warn" value={notClockedIn} label={t('monitoring:status.attendance.notClockedIn')} />
       </View>
       <MaterialCommunityIcons name="chevron-right" size={20} color={nbColors.gray400} />
     </TouchableOpacity>

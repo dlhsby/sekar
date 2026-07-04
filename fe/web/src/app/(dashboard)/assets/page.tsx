@@ -2,6 +2,7 @@
 
 import { useCallback, useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { Plus, QrCode, Eye, Pencil, Trash2 } from 'lucide-react';
 import {
   Button,
@@ -34,15 +35,18 @@ const STATUS_TONE_MAP: Record<AssetStatus, 'ok' | 'info' | 'warn' | 'neutral' | 
   lost: 'bad',
 };
 
-const STATUS_LABELS: Record<AssetStatus, string> = {
-  available: 'Tersedia',
-  in_use: 'Digunakan',
-  maintenance: 'Perawatan',
-  retired: 'Pensiun',
-  lost: 'Hilang',
-};
+function getStatusLabels(t: ReturnType<typeof useTranslation>['t']): Record<AssetStatus, string> {
+  return {
+    available: t('assets:status.available'),
+    in_use: t('assets:status.in_use'),
+    maintenance: t('assets:status.maintenance'),
+    retired: t('assets:status.retired'),
+    lost: t('assets:status.lost'),
+  };
+}
 
 export default function AssetsPage() {
+  const { t } = useTranslation(['assets']);
   const user = useUser();
   const isManager = user && ASSET_MANAGER_ROLES.includes(user.role);
 
@@ -78,11 +82,12 @@ export default function AssetsPage() {
     [userNameById]
   );
 
+  const statusLabels = getStatusLabels(t);
   const statusTabs: TabItem[] = [
-    { key: '', label: 'Semua' },
-    { key: 'available', label: 'Tersedia' },
-    { key: 'in_use', label: 'Digunakan' },
-    { key: 'maintenance', label: 'Perawatan' },
+    { key: '', label: t('list.allCategories') },
+    { key: 'available', label: statusLabels.available },
+    { key: 'in_use', label: statusLabels.in_use },
+    { key: 'maintenance', label: statusLabels.maintenance },
   ];
 
   const handleStatusChange = (key: string) => {
@@ -92,10 +97,10 @@ export default function AssetsPage() {
 
   const categoryOptions = useMemo(
     () => [
-      { value: 'all', label: 'Semua Kategori' },
+      { value: 'all', label: t('list.allCategories') },
       ...(categories?.map((cat) => ({ value: cat.id, label: cat.name })) || []),
     ],
-    [categories]
+    [categories, t]
   );
 
   const columns: ColumnDef<Asset>[] = useMemo(
@@ -103,9 +108,9 @@ export default function AssetsPage() {
       {
         id: 'id',
         accessorKey: 'id',
-        header: 'ID',
+        header: t('list.columns.id'),
         enableSorting: false,
-        meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+        meta: { label: t('list.columns.id'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
         ),
@@ -113,52 +118,52 @@ export default function AssetsPage() {
       {
         id: 'asset_code',
         accessorKey: 'asset_code',
-        header: 'Kode',
+        header: t('list.columns.code'),
         enableSorting: false,
-        meta: { label: 'Kode' },
+        meta: { label: t('list.columns.code') },
         cell: ({ row }) => <span className="font-mono text-nb-body-sm">{row.original.asset_code}</span>,
       },
       {
         id: 'name',
         accessorKey: 'name',
-        header: 'Nama',
+        header: t('list.columns.name'),
         enableSorting: false,
-        meta: { label: 'Nama' },
+        meta: { label: t('list.columns.name') },
       },
       {
         id: 'category',
-        header: 'Kategori',
+        header: t('list.columns.category'),
         enableSorting: false,
         enableColumnFilter: false,
-        meta: { label: 'Kategori' },
+        meta: { label: t('list.columns.category') },
         cell: ({ row }) => row.original.category?.name || '—',
       },
       {
         id: 'status',
         accessorKey: 'status',
-        header: 'Status',
+        header: t('list.columns.status'),
         enableSorting: false,
-        meta: { label: 'Status' },
+        meta: { label: t('list.columns.status') },
         cell: ({ row }) => (
           <StatusPill tone={STATUS_TONE_MAP[row.original.status]}>
-            {STATUS_LABELS[row.original.status]}
+            {statusLabels[row.original.status]}
           </StatusPill>
         ),
       },
       {
         id: 'area',
-        header: 'Lokasi',
+        header: t('list.columns.location'),
         enableSorting: false,
         enableColumnFilter: false,
-        meta: { label: 'Lokasi' },
+        meta: { label: t('list.columns.location') },
         cell: ({ row }) => row.original.area?.name || row.original.rayon?.name || '—',
       },
       {
         id: 'created_at',
         accessorKey: 'created_at',
-        header: 'Dibuat',
+        header: t('list.columns.createdAt'),
         enableSorting: false,
-        meta: { label: 'Dibuat', defaultHidden: true, filterVariant: 'date' },
+        meta: { label: t('list.columns.createdAt'), defaultHidden: true, filterVariant: 'date' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {formatDate(row.original.created_at)}
@@ -168,9 +173,9 @@ export default function AssetsPage() {
       {
         id: 'updated_at',
         accessorKey: 'updated_at',
-        header: 'Diperbarui',
+        header: t('list.columns.updatedAt'),
         enableSorting: false,
-        meta: { label: 'Diperbarui', defaultHidden: true, filterVariant: 'date' },
+        meta: { label: t('list.columns.updatedAt'), defaultHidden: true, filterVariant: 'date' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {formatDate(row.original.updated_at)}
@@ -180,9 +185,9 @@ export default function AssetsPage() {
       {
         id: 'created_by',
         accessorFn: (a) => actorName(a.created_by),
-        header: 'Dibuat oleh',
+        header: t('list.columns.createdBy'),
         enableSorting: false,
-        meta: { label: 'Dibuat oleh', defaultHidden: true, filterVariant: 'text' },
+        meta: { label: t('list.columns.createdBy'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {actorName(row.original.created_by)}
@@ -192,9 +197,9 @@ export default function AssetsPage() {
       {
         id: 'updated_by',
         accessorFn: (a) => actorName(a.updated_by),
-        header: 'Diperbarui oleh',
+        header: t('list.columns.updatedBy'),
         enableSorting: false,
-        meta: { label: 'Diperbarui oleh', defaultHidden: true, filterVariant: 'text' },
+        meta: { label: t('list.columns.updatedBy'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {actorName(row.original.updated_by)}
@@ -202,14 +207,14 @@ export default function AssetsPage() {
         ),
       },
     ],
-    [actorName]
+    [actorName, t, statusLabels]
   );
 
   const rowActions = useCallback(
     (asset: Asset): DataTableRowAction<Asset>[] => [
       {
         key: 'view',
-        label: 'Lihat',
+        label: t('list.actions.view'),
         icon: Eye,
         onClick: () => {
           view.openWith(asset);
@@ -217,7 +222,7 @@ export default function AssetsPage() {
       },
       {
         key: 'edit',
-        label: 'Ubah',
+        label: t('list.actions.edit'),
         icon: Pencil,
         disabled: !isManager,
         onClick: () => {
@@ -227,19 +232,19 @@ export default function AssetsPage() {
       },
       {
         key: 'delete',
-        label: 'Hapus',
+        label: t('list.actions.delete'),
         icon: Trash2,
         variant: 'danger',
         hidden: !isManager,
         onClick: () => deleteAsset(asset.id),
       },
     ],
-    [isManager, deleteAsset, view]
+    [isManager, deleteAsset, view, t]
   );
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Aset" description="Kelola aset dan perawatan" />
+      <PageHeader title={t('page.title')} description={t('page.description')} />
 
       <Card variant="default">
         <div className="p-4 space-y-4">
@@ -252,7 +257,7 @@ export default function AssetsPage() {
           <div className="flex gap-3 items-end">
             <div className="flex-1">
               <FormSelect
-                label="Kategori"
+                label={t('list.categoryLabel')}
                 options={categoryOptions}
                 value={categoryFilter}
                 onChange={(value) => {
@@ -273,13 +278,13 @@ export default function AssetsPage() {
             enablePagination={false}
             getRowId={(asset) => asset.id}
             rowActions={rowActions}
-            emptyTitle="Tidak ada aset"
+            emptyTitle={t('list.emptyTitle')}
             actions={
               isManager ? (
                 <div className="flex gap-2">
                   <Link href="/assets/qr">
                     <Button variant="outline" leftIcon={<QrCode className="w-4 h-4" />}>
-                      QR Batch
+                      {t('list.qrBatch')}
                     </Button>
                   </Link>
                   <Button
@@ -290,7 +295,7 @@ export default function AssetsPage() {
                       setFormOpen(true);
                     }}
                   >
-                    Tambah
+                    {t('list.add')}
                   </Button>
                 </div>
               ) : undefined
@@ -300,7 +305,7 @@ export default function AssetsPage() {
           {assetsData?.meta && assetsData.meta.totalPages > 1 && (
             <div className="p-4 border-t-2 border-nb-black flex justify-between items-center">
               <span className="text-nb-body-sm text-nb-gray-600">
-                Halaman {currentPage} dari {assetsData.meta.totalPages}
+                {t('list.pagination.page')} {currentPage} {t('list.pagination.of')} {assetsData.meta.totalPages}
               </span>
               <div className="flex gap-2">
                 <Button
@@ -309,7 +314,7 @@ export default function AssetsPage() {
                   disabled={currentPage === 1}
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 >
-                  Sebelumnya
+                  {t('list.pagination.previous')}
                 </Button>
                 <Button
                   variant="outline"
@@ -319,7 +324,7 @@ export default function AssetsPage() {
                     setCurrentPage(Math.min(assetsData.meta.totalPages, currentPage + 1))
                   }
                 >
-                  Berikutnya
+                  {t('list.pagination.next')}
                 </Button>
               </div>
             </div>
@@ -331,24 +336,24 @@ export default function AssetsPage() {
       <DetailModal
         open={view.open}
         onOpenChange={view.onOpenChange}
-        title="Detail Aset"
+        title={t('detail.title')}
         rows={view.item ? [
-          { label: 'Kode', value: view.item.asset_code },
-          { label: 'Nama', value: view.item.name },
-          { label: 'Kategori', value: view.item.category?.name },
+          { label: t('detail.code'), value: view.item.asset_code },
+          { label: t('detail.name'), value: view.item.name },
+          { label: t('detail.category'), value: view.item.category?.name },
           {
-            label: 'Status',
+            label: t('detail.status'),
             value: (
               <StatusPill tone={STATUS_TONE_MAP[view.item.status]}>
-                {STATUS_LABELS[view.item.status]}
+                {statusLabels[view.item.status]}
               </StatusPill>
             ),
           },
-          { label: 'Lokasi', value: view.item.area?.name || view.item.rayon?.name },
-          { label: 'Dibuat', value: formatDate(view.item.created_at) },
-          { label: 'Dibuat oleh', value: actorName(view.item.created_by) },
-          { label: 'Diperbarui', value: formatDate(view.item.updated_at) },
-          { label: 'Diperbarui oleh', value: actorName(view.item.updated_by) },
+          { label: t('detail.location'), value: view.item.area?.name || view.item.rayon?.name },
+          { label: t('detail.createdAt'), value: formatDate(view.item.created_at) },
+          { label: t('detail.createdBy'), value: actorName(view.item.created_by) },
+          { label: t('detail.updatedAt'), value: formatDate(view.item.updated_at) },
+          { label: t('detail.updatedBy'), value: actorName(view.item.updated_by) },
         ] : []}
       />
     </div>

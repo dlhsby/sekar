@@ -1,0 +1,72 @@
+{
+  "pending": "Pending",
+  "approved": "Approved",
+  "rejected": "Rejected",
+  "pending_approval": "Pending Approval",
+  "in_progress": "In Progress",
+  "completed": "Completed",
+  "cancelled": "Cancelled",
+  "active": "Active",
+  "inactive": "Inactive",
+  "draft": "Draft",
+  "submitted": "Submitted",
+  "verified": "Verified",
+  "overdue": "Overdue",
+  "recorded": "Recorded",
+  "priority": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "urgent": "Urgent"
+  },
+  "task": {
+    "pending": "Pending",
+    "assigned": "Assigned",
+    "accepted": "Accepted",
+    "declined": "Declined",
+    "in_progress": "In Progress",
+    "completed": "Awaiting Verification",
+    "verified": "Verified",
+    "revision_needed": "Needs Revision"
+  },
+  "presence": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "outside_area": "Outside area",
+    "missing": "Not detected",
+    "offline": "Offline",
+    "online": "Online",
+    "syncing": "Syncing"
+  },
+  "location": {
+    "dalam_area": "Inside area",
+    "luar_area": "Outside area",
+    "unknown": "—"
+  },
+  "pruning": {
+    "submitted": "Pending",
+    "under_review": "Under review",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "assigned": "Assigned",
+    "in_progress": "In progress",
+    "done": "Done",
+    "cancelled": "Cancelled"
+  },
+  "taskPill": {
+    "in_progress": "In Progress",
+    "readyToStart": "Ready to Start",
+    "revision_needed": "Needs Revision",
+    "awaiting_verification": "Awaiting Verification",
+    "verified": "Verified",
+    "declined": "Declined",
+    "pending": "Pending"
+  },
+  "tracking": {
+    "active": "Active",
+    "inactive": "Idle",
+    "outside_area": "Outside Area",
+    "missing": "Not Detected",
+    "offline": "Offline"
+  }
+}

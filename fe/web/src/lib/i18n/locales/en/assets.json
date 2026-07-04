@@ -1,0 +1,168 @@
+{
+  "page": {
+    "title": "Assets",
+    "description": "Manage assets and maintenance"
+  },
+  "status": {
+    "available": "Available",
+    "in_use": "In Use",
+    "maintenance": "Maintenance",
+    "retired": "Retired",
+    "lost": "Lost"
+  },
+  "tabs": {
+    "all": "All",
+    "available": "Available",
+    "in_use": "In Use",
+    "maintenance": "Maintenance"
+  },
+  "list": {
+    "categoryLabel": "Category",
+    "allCategories": "All Categories",
+    "emptyTitle": "No assets",
+    "qrBatch": "QR Batch",
+    "add": "Add",
+    "columns": {
+      "id": "ID",
+      "code": "Code",
+      "name": "Name",
+      "category": "Category",
+      "status": "Status",
+      "location": "Location",
+      "createdAt": "Created",
+      "updatedAt": "Updated",
+      "createdBy": "Created by",
+      "updatedBy": "Updated by"
+    },
+    "actions": {
+      "view": "View",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "pagination": {
+      "page": "Page",
+      "of": "of",
+      "previous": "Previous",
+      "next": "Next"
+    }
+  },
+  "detail": {
+    "notFound": "Asset Not Found",
+    "breadcrumb": "Assets · Details",
+    "delete": "Delete",
+    "infoTitle": "Information",
+    "category": "Category",
+    "status": "Status",
+    "checkoutButton": "Check Out Asset",
+    "returnButton": "Return",
+    "maintenanceButton": "Schedule Maintenance",
+    "usageHistory": "Usage History",
+    "noHistory": "No history",
+    "loading": "Loading...",
+    "checkoutTitle": "Check Out Asset",
+    "checkoutDescription": "Record asset condition at checkout",
+    "conditionLabel": "Condition",
+    "notesLabel": "Notes",
+    "notesPlaceholder": "Additional notes...",
+    "checkoutSuccess": "Asset checked out successfully",
+    "returnTitle": "Return Asset",
+    "returnDescription": "Record asset condition at return",
+    "returnSuccess": "Asset returned successfully",
+    "maintenanceTitle": "Schedule Maintenance",
+    "maintenanceDescription": "Create a maintenance schedule for this asset",
+    "maintenanceTypeLabel": "Maintenance Type",
+    "dateLabel": "Date",
+    "maintenanceSuccess": "Maintenance scheduled successfully",
+    "qrSuccess": "QR code generated successfully",
+    "deleteSuccess": "Asset deleted successfully",
+    "deleteConfirm": "Delete this asset?",
+    "condition": {
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor",
+      "damaged": "Damaged",
+      "unusable": "Unusable"
+    },
+    "maintenanceType": {
+      "routine": "Routine",
+      "repair": "Repair",
+      "inspection": "Inspection",
+      "replacement": "Replacement"
+    },
+    "maintenanceStatus": {
+      "scheduled": "Scheduled",
+      "in_progress": "In Progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "overdue": "Overdue"
+    },
+    "assignmentTable": {
+      "date": "Date",
+      "worker": "Worker",
+      "type": "Type",
+      "return": "Return",
+      "checkout": "Checkout"
+    },
+    "maintenanceTable": {
+      "date": "Date",
+      "type": "Type",
+      "status": "Status",
+      "cost": "Cost"
+    }
+  },
+  "form": {
+    "editTitle": "Edit Asset",
+    "createTitle": "Add Asset",
+    "nameLabel": "Asset Name",
+    "namePlaceholder": "Broom #1",
+    "categoryLabel": "Category",
+    "categoryPlaceholder": "Select Category",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Asset description",
+    "purchaseDateLabel": "Purchase Date",
+    "purchasePriceLabel": "Purchase Price",
+    "purchasePricePlaceholder": "Price in Rupiah",
+    "validationError": "Name and category are required",
+    "updateSuccess": "Asset updated",
+    "createSuccess": "Asset created successfully",
+    "cancel": "Cancel",
+    "save": "Save",
+    "create": "Create Asset"
+  },
+  "qr": {
+    "pageTitle": "QR Code Generator",
+    "breadcrumb": "Assets · QR Code",
+    "selectMinimum": "Select at least 1 asset",
+    "selectAssets": "Select Assets",
+    "selected": "selected",
+    "selectAll": "Select All",
+    "clearSelection": "Clear Selection",
+    "noAssets": "No assets",
+    "generateQr": "Generate QR",
+    "generateSuccess": "{{count}} QR codes generated successfully",
+    "preview": "Preview",
+    "printAll": "Print All",
+    "downloadPdf": "Download PDF",
+    "newBatch": "New Batch",
+    "tableColumns": {
+      "code": "Code",
+      "name": "Name",
+      "category": "Category"
+    },
+    "printTitle": "Asset QR Codes",
+    "selectCheckbox": "Select {{code}}"
+  },
+  "create": {
+    "pageTitle": "Add Asset",
+    "breadcrumb": "Asset · Add",
+    "validationError": "Name and category are required"
+  },
+  "maintenance2": {
+    "pageDescription": "Manage asset maintenance schedules",
+    "selectLabel": "Select",
+    "pageTitle": "Asset Maintenance",
+    "upcoming": "Upcoming Maintenance",
+    "overdue": "Overdue Maintenance",
+    "saveError": "Failed to save capacity."
+  }
+}

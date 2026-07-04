@@ -8,6 +8,7 @@ import {
   Image,
   TouchableOpacity,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   NBCard,
@@ -82,6 +83,7 @@ const styles = {
 };
 
 export function SubmitPhotoCard(props: SubmitPhotoCardProps) {
+  const { t } = useTranslation('pruning');
   const {
     photos,
     handlePickFromCamera,
@@ -93,9 +95,9 @@ export function SubmitPhotoCard(props: SubmitPhotoCardProps) {
   return (
     <NBCard style={styles.card}>
       <NBCardHeader>
-        <NBText variant="h3">Foto Pohon *</NBText>
+        <NBText variant="h3">{t('submitPhotoCard.title')}</NBText>
         <NBText variant="body-sm" style={styles.helper}>
-          Minimal {MIN_PHOTOS}, maksimal {MAX_PHOTOS} foto.
+          {t('submitPhotoCard.helper', { min: MIN_PHOTOS, max: MAX_PHOTOS })}
         </NBText>
       </NBCardHeader>
       <NBCardContent>
@@ -108,7 +110,7 @@ export function SubmitPhotoCard(props: SubmitPhotoCardProps) {
                   onPress={() => handleRemovePhoto(idx)}
                   style={styles.photoRemove}
                   accessibilityRole="button"
-                  accessibilityLabel={`Hapus foto ${idx + 1}`}
+                  accessibilityLabel={t('submitPhotoCard.removeButtonLabel', { number: idx + 1 })}
                 >
                   <MaterialCommunityIcons name="close" size={16} color={nbColors.white} />
                 </TouchableOpacity>
@@ -117,13 +119,13 @@ export function SubmitPhotoCard(props: SubmitPhotoCardProps) {
           </View>
         ) : (
           <NBText variant="body-sm" style={styles.emptyText}>
-            Belum ada foto. Ambil dari kamera atau pilih dari galeri.
+            {t('submitPhotoCard.emptyState')}
           </NBText>
         )}
 
         <View style={styles.photoActions}>
           <NBButton
-            label="Kamera"
+            label={t('submitPhotoCard.cameraButton')}
             leftIcon="camera"
             variant="secondary"
             onPress={handlePickFromCamera}
@@ -131,7 +133,7 @@ export function SubmitPhotoCard(props: SubmitPhotoCardProps) {
             style={{ flex: 1 }}
           />
           <NBButton
-            label="Galeri"
+            label={t('submitPhotoCard.galleryButton')}
             leftIcon="image-multiple"
             variant="secondary"
             onPress={handlePickFromGallery}

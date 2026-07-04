@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Text, StyleSheet } from 'react-native';
+import i18n from '../../i18n/config';
 import {
   nbColors,
   nbType,
@@ -62,7 +63,7 @@ export function CountdownTimer({
           fontSize,
         },
       ]}
-      accessibilityLabel={accessibilityLabel || `Waktu berjalan: ${timer}`}
+      accessibilityLabel={accessibilityLabel || i18n.t('common:ui.elapsedTime', { time: timer })}
       accessibilityRole="timer"
     >
       {timer}

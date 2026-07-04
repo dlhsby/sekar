@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils/cn';
 
@@ -26,18 +27,22 @@ export interface SpinnerProps
 
 /** Spinner — an accessible loading indicator (Neo Brutalism ink). */
 const Spinner = React.forwardRef<HTMLDivElement, SpinnerProps>(
-  ({ className, size, label = 'Memuat…', ...props }, ref) => (
-    <div
-      ref={ref}
-      role="status"
-      aria-live="polite"
-      className={cn('inline-flex items-center justify-center', className)}
-      {...props}
-    >
-      <Loader2 className={cn(spinnerVariants({ size }))} aria-hidden />
-      <span className="sr-only">{label}</span>
-    </div>
-  )
+  ({ className, size, label, ...props }, ref) => {
+    const { t } = useTranslation();
+    const displayLabel = label ?? t('common:actions.loading');
+    return (
+      <div
+        ref={ref}
+        role="status"
+        aria-live="polite"
+        className={cn('inline-flex items-center justify-center', className)}
+        {...props}
+      >
+        <Loader2 className={cn(spinnerVariants({ size }))} aria-hidden />
+        <span className="sr-only">{displayLabel}</span>
+      </div>
+    );
+  }
 );
 Spinner.displayName = 'Spinner';
 

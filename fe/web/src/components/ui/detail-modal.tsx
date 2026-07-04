@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogBody,
@@ -33,6 +34,7 @@ export function DetailModal({
   title,
   rows,
 }: DetailModalProps) {
+  const { t } = useTranslation();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="lg">
@@ -53,7 +55,7 @@ export function DetailModal({
         </DialogBody>
         <DialogFooter>
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
-            Tutup
+            {t('common:actions.close')}
           </Button>
         </DialogFooter>
       </DialogContent>

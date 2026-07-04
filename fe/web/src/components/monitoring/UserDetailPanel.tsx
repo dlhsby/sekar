@@ -5,12 +5,14 @@
  * Shows shift info, location, activities, tasks, and contact links
  */
 
+import { useTranslation } from 'react-i18next';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { ArrowLeft, Clock, MapPin, Battery, CheckSquare, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui';
 import { ROLE_LABELS } from '@/lib/constants/roles';
 import { cn } from '@/lib/utils/cn';
 import { formatRelativeTime, formatDuration, formatTime } from '@/lib/utils/formatters';
-import { STATUS_BADGE_CLASSES, STATUS_LABELS } from '@/lib/constants/monitoring';
+import { STATUS_BADGE_CLASSES, getStatusLabels } from '@/lib/constants/monitoring';
 import type { UserDaySummary } from '@/lib/api/monitoring';
 import type { UserRole } from '@/types/models';
 
@@ -38,6 +40,9 @@ export function UserDetailPanel({
   onBack,
   onViewLocationHistory,
 }: UserDetailPanelProps) {
+  const { t } = useTranslation(['monitoring']);
+  const statusLabels = getStatusLabels();
+
   if (isLoading) {
     return (
       <div className="p-4 space-y-3">
@@ -58,9 +63,9 @@ export function UserDetailPanel({
           className="flex items-center gap-1 text-sm text-nb-gray-600 hover:text-nb-black mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
-          Kembali
+          {t('monitoring:userDetail.backButton')}
         </button>
-        <p className="text-center text-nb-gray-500 mt-8">Data tidak tersedia</p>
+        <p className="text-center text-nb-gray-500 mt-8">{t('monitoring:userDetail.noData')}</p>
       </div>
     );
   }
@@ -68,7 +73,7 @@ export function UserDetailPanel({
   const statusClass =
     STATUS_BADGE_CLASSES[summary.status] ??
     'bg-[var(--color-status-offline-bg)] text-[var(--color-status-offline)] border-[var(--color-status-offline)]';
-  const statusLabel = STATUS_LABELS[summary.status] ?? summary.status;
+  const statusLabel = statusLabels[summary.status] ?? summary.status;
   const roleLabel = ROLE_LABELS[summary.role as UserRole] || summary.role;
 
   return (
@@ -79,10 +84,10 @@ export function UserDetailPanel({
           type="button"
           onClick={onBack}
           className="flex items-center gap-1.5 text-sm font-semibold text-nb-gray-600 hover:text-nb-black transition-colors"
-          aria-label="Kembali ke daftar"
+          aria-label={t('monitoring:userDetail.backLabel')}
         >
           <ArrowLeft className="w-4 h-4" />
-          Kembali
+          {t('monitoring:userDetail.backButton')}
         </button>
       </div>
 
@@ -114,8 +119,8 @@ export function UserDetailPanel({
           {/* Area / Rayon */}
           {(summary.area_name || summary.rayon_name) && (
             <div className="mt-2 flex flex-wrap gap-2 text-xs text-nb-gray-600">
-              {summary.rayon_name && <span>Rayon: {summary.rayon_name}</span>}
-              {summary.area_name && <span>Area: {summary.area_name}</span>}
+              {summary.rayon_name && <span>{t('monitoring:userDetail.rayonLabel')} {summary.rayon_name}</span>}
+              {summary.area_name && <span>{t('monitoring:userDetail.areaLabel')} {summary.area_name}</span>}
             </div>
           )}
         </div>
@@ -125,29 +130,29 @@ export function UserDetailPanel({
           <div className="border-2 border-nb-black rounded-nb-base p-3 bg-white shadow-nb-sm">
             <h3 className="text-xs font-bold uppercase text-nb-gray-500 mb-2 flex items-center gap-1">
               <Clock className="w-3.5 h-3.5" />
-              Shift Hari Ini
+              {t('monitoring:userDetail.shiftTitle')}
             </h3>
             <p className="font-bold text-nb-black text-sm">{summary.shift.name}</p>
             <div className="mt-1 text-xs text-nb-gray-600 space-y-0.5">
               <div>
-                Masuk:{' '}
+                {t('monitoring:userDetail.clockInLabel')}{' '}
                 <span className="font-semibold">{formatTime(summary.shift.clock_in_time)}</span>
               </div>
               {summary.shift.clock_out_time && (
                 <div>
-                  Keluar:{' '}
+                  {t('monitoring:userDetail.clockOutLabel')}{' '}
                   <span className="font-semibold">{formatTime(summary.shift.clock_out_time)}</span>
                 </div>
               )}
               <div>
-                Durasi:{' '}
+                {t('monitoring:userDetail.durationLabel')}{' '}
                 <span className="font-semibold">
                   {formatDuration(summary.shift.duration_minutes)}
                 </span>
               </div>
               {summary.shift.outside_boundary && (
                 <div className="text-[var(--color-status-outside)] font-semibold">
-                  Di luar batas area
+                  {t('monitoring:userDetail.outsideBoundary')}
                 </div>
               )}
             </div>
@@ -159,7 +164,7 @@ export function UserDetailPanel({
           <div className="border-2 border-nb-black rounded-nb-base p-3 bg-white shadow-nb-sm">
             <h3 className="text-xs font-bold uppercase text-nb-gray-500 mb-2 flex items-center gap-1">
               <MapPin className="w-3.5 h-3.5" />
-              Lokasi Terakhir
+              {t('monitoring:userDetail.locationTitle')}
             </h3>
             <div className="text-xs text-nb-gray-600 space-y-1">
               <div className="font-mono">
@@ -167,7 +172,7 @@ export function UserDetailPanel({
                 {summary.last_location.longitude.toFixed(6)}
               </div>
               {summary.last_location.accuracy !== null && (
-                <div>Akurasi: ±{summary.last_location.accuracy.toFixed(0)}m</div>
+                <div>{t('monitoring:userDetail.accuracyLabel')} ±{summary.last_location.accuracy.toFixed(0)}m</div>
               )}
               {summary.last_location.battery_level !== null && (
                 <div
@@ -190,7 +195,7 @@ export function UserDetailPanel({
                     : 'text-[var(--color-status-outside)]'
                 }
               >
-                {summary.last_location.is_within_area ? 'Dalam area' : 'Di luar area'}
+                {summary.last_location.is_within_area ? t('monitoring:userDetail.withinArea') : t('monitoring:userDetail.outsideArea')}
               </div>
             </div>
             <button
@@ -202,7 +207,7 @@ export function UserDetailPanel({
                 'shadow-nb-xs hover:shadow-nb-sm transition-all duration-150'
               )}
             >
-              Lihat Riwayat Lokasi
+              {t('monitoring:userDetail.viewLocationHistory')}
             </button>
           </div>
         )}
@@ -212,7 +217,7 @@ export function UserDetailPanel({
           <div className="border-2 border-nb-black rounded-nb-base p-3 bg-white shadow-nb-sm">
             <h3 className="text-xs font-bold uppercase text-nb-gray-500 mb-2 flex items-center gap-1">
               <FileText className="w-3.5 h-3.5" />
-              Aktivitas Hari Ini ({summary.activities_today.length})
+              {t('monitoring:userDetail.activitiesTitle')} ({summary.activities_today.length})
             </h3>
             <ul className="space-y-1.5">
               {summary.activities_today.slice(0, 5).map((activity) => (
@@ -220,7 +225,7 @@ export function UserDetailPanel({
                   <span className="h-1.5 w-1.5 rounded-full bg-nb-primary flex-shrink-0" />
                   <span className="text-nb-black font-medium truncate">{activity.title}</span>
                   <span className="text-nb-gray-400 flex-shrink-0 ml-auto">
-                    {new Date(activity.created_at).toLocaleTimeString('id-ID', {
+                    {new Date(activity.created_at).toLocaleTimeString(intlLocale(), {
                       hour: '2-digit',
                       minute: '2-digit',
                     })}
@@ -236,7 +241,7 @@ export function UserDetailPanel({
           <div className="border-2 border-nb-black rounded-nb-base p-3 bg-white shadow-nb-sm">
             <h3 className="text-xs font-bold uppercase text-nb-gray-500 mb-2 flex items-center gap-1">
               <CheckSquare className="w-3.5 h-3.5" />
-              Tugas Hari Ini ({summary.tasks_today.length})
+              {t('monitoring:userDetail.tasksTitle')} ({summary.tasks_today.length})
             </h3>
             <ul className="space-y-1.5">
               {summary.tasks_today.slice(0, 5).map((task) => (
@@ -261,7 +266,7 @@ export function UserDetailPanel({
         {/* WhatsApp / Call links */}
         {summary.whatsapp_links && (
           <div className="border-2 border-nb-black rounded-nb-base p-3 bg-white shadow-nb-sm">
-            <h3 className="text-xs font-bold uppercase text-nb-gray-500 mb-2">Hubungi</h3>
+            <h3 className="text-xs font-bold uppercase text-nb-gray-500 mb-2">{t('monitoring:userDetail.contactTitle')}</h3>
             <div className="flex gap-2">
               <a
                 href={summary.whatsapp_links.chat}
@@ -272,9 +277,7 @@ export function UserDetailPanel({
                   'border-2 border-nb-black bg-green-400 text-green-900',
                   'shadow-nb-xs hover:shadow-nb-sm transition-all duration-150'
                 )}
-              >
-                WhatsApp Chat
-              </a>
+              >{t("common:pwa.whatsappChat")}</a>
               <a
                 href={summary.whatsapp_links.call}
                 target="_blank"
@@ -285,7 +288,7 @@ export function UserDetailPanel({
                   'shadow-nb-xs hover:shadow-nb-sm transition-all duration-150'
                 )}
               >
-                Telepon
+                {t('monitoring:userDetail.phoneLabel')}
               </a>
             </div>
           </div>

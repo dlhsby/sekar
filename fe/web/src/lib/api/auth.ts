@@ -20,6 +20,12 @@ export interface User {
    * cleared by POST /auth/change-password. Returned by /auth/login and /auth/me.
    */
   password_must_change?: boolean;
+  /**
+   * Preferred UI language ('id' | 'en'), synced to the profile so the choice
+   * follows the user across devices. Applied by the i18n LanguageSync on load.
+   * Absent → default to Indonesian.
+   */
+  preferred_language?: 'id' | 'en';
   assigned_area?: {
     id: string;
     name: string;

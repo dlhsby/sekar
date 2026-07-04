@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Alert, InteractionManager } from 'react-native';
+import i18n from '../i18n/config';
 import MapView from 'react-native-maps';
 import { getActiveUsers } from '../services/api/monitoringApi';
 import { get } from '../services/api/apiClient';
@@ -61,7 +62,7 @@ export function useMapDashboard(mapRef: React.RefObject<MapView | null>) {
       }
     } catch (err) {
       console.error('Failed to fetch users:', err);
-      setError('Gagal memuat data pengguna');
+      setError(i18n.t('monitoring:screen.error.failedLoadUsers'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -130,15 +131,15 @@ export function useMapDashboard(mapRef: React.RefObject<MapView | null>) {
 
   const handleAreaFilterPress = useCallback(() => {
     Alert.alert(
-      'Filter Area',
-      'Pilih area untuk ditampilkan',
+      i18n.t('monitoring:mapDashboard.filterTitle'),
+      i18n.t('monitoring:mapDashboard.filterPrompt'),
       [
-        { text: 'Semua Area', onPress: () => setSelectedAreaFilter(null) },
+        { text: i18n.t('monitoring:mapDashboard.allAreas'), onPress: () => setSelectedAreaFilter(null) },
         ...areas.map(area => ({
           text: area.name,
           onPress: () => setSelectedAreaFilter(area.id),
         })),
-        { text: 'Batal', style: 'cancel' as const },
+        { text: i18n.t('common:actions.cancel'), style: 'cancel' as const },
       ]
     );
   }, [areas]);

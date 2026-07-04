@@ -26,6 +26,7 @@ import {
   requestNotifications,
 } from 'react-native-permissions';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import i18n from '../../i18n/config';
 
 /**
  * Permission types supported by the app
@@ -173,8 +174,8 @@ class PermissionManager {
         status,
         canRequest,
         message: granted
-          ? 'Notifikasi diizinkan'
-          : 'Notifikasi diperlukan untuk menerima informasi tugas dan absensi',
+          ? i18n.t('profile:permissions.notifications.granted')
+          : i18n.t('profile:permissions.notifications.required'),
       };
     } catch (error) {
       console.error('[PermissionManager] Failed to check notification permission:', error);
@@ -182,7 +183,7 @@ class PermissionManager {
         granted: false,
         status: RESULTS.UNAVAILABLE,
         canRequest: false,
-        message: 'Gagal memeriksa izin notifikasi',
+        message: i18n.t('profile:permissions.notifications.checkFailed'),
       };
     }
   }
@@ -212,10 +213,10 @@ class PermissionManager {
         status,
         canRequest,
         message: granted
-          ? 'Notifikasi berhasil diizinkan'
+          ? i18n.t('profile:permissions.notifications.requestSuccess')
           : status === RESULTS.BLOCKED
-          ? 'Notifikasi diblokir. Buka Pengaturan untuk mengizinkan'
-          : 'Notifikasi ditolak. Anda tidak akan menerima pemberitahuan penting',
+          ? i18n.t('profile:permissions.notifications.requestBlocked')
+          : i18n.t('profile:permissions.notifications.requestDenied'),
       };
     } catch (error) {
       console.error('[PermissionManager] Failed to request notification permission:', error);
@@ -223,7 +224,7 @@ class PermissionManager {
         granted: false,
         status: RESULTS.UNAVAILABLE,
         canRequest: false,
-        message: 'Gagal meminta izin notifikasi',
+        message: i18n.t('profile:permissions.notifications.requestFailed'),
       };
     }
   }
@@ -247,8 +248,8 @@ class PermissionManager {
         status,
         canRequest,
         message: granted
-          ? 'Lokasi diizinkan'
-          : 'Lokasi diperlukan untuk absensi dan pelacakan shift',
+          ? i18n.t('profile:permissions.location.granted')
+          : i18n.t('profile:permissions.location.required'),
       };
     } catch (error) {
       console.error('[PermissionManager] Failed to check location permission:', error);
@@ -256,7 +257,7 @@ class PermissionManager {
         granted: false,
         status: RESULTS.UNAVAILABLE,
         canRequest: false,
-        message: 'Gagal memeriksa izin lokasi',
+        message: i18n.t('profile:permissions.location.checkFailed'),
       };
     }
   }
@@ -291,10 +292,10 @@ class PermissionManager {
         status,
         canRequest,
         message: granted
-          ? 'Lokasi berhasil diizinkan'
+          ? i18n.t('profile:permissions.location.requestSuccess')
           : status === RESULTS.BLOCKED
-          ? 'Lokasi diblokir. Buka Pengaturan untuk mengizinkan'
-          : 'Lokasi ditolak. Fitur absensi tidak akan berfungsi',
+          ? i18n.t('profile:permissions.location.requestBlocked')
+          : i18n.t('profile:permissions.location.requestDenied'),
       };
     } catch (error) {
       console.error('[PermissionManager] Failed to request location permission:', error);
@@ -302,7 +303,7 @@ class PermissionManager {
         granted: false,
         status: RESULTS.UNAVAILABLE,
         canRequest: false,
-        message: 'Gagal meminta izin lokasi',
+        message: i18n.t('profile:permissions.location.requestFailed'),
       };
     }
   }
@@ -317,7 +318,7 @@ class PermissionManager {
         granted: true,
         status: RESULTS.GRANTED,
         canRequest: false,
-        message: 'iOS menggunakan foreground location',
+        message: i18n.t('profile:permissions.backgroundLocation.iosNote'),
       };
     }
 
@@ -327,7 +328,7 @@ class PermissionManager {
         granted: true,
         status: RESULTS.GRANTED,
         canRequest: false,
-        message: 'Background location tidak diperlukan pada Android 9 dan lebih lama',
+        message: i18n.t('profile:permissions.backgroundLocation.androidOldNote'),
       };
     }
 
@@ -341,8 +342,8 @@ class PermissionManager {
         status,
         canRequest,
         message: granted
-          ? 'Lokasi latar belakang diizinkan'
-          : 'Izinkan "Sepanjang waktu" untuk pelacakan shift yang akurat',
+          ? i18n.t('profile:permissions.backgroundLocation.granted')
+          : i18n.t('profile:permissions.backgroundLocation.required'),
       };
     } catch (error) {
       console.error('[PermissionManager] Failed to check background location permission:', error);
@@ -350,7 +351,7 @@ class PermissionManager {
         granted: false,
         status: RESULTS.UNAVAILABLE,
         canRequest: false,
-        message: 'Gagal memeriksa izin lokasi latar belakang',
+        message: i18n.t('profile:permissions.backgroundLocation.checkFailed'),
       };
     }
   }
@@ -366,7 +367,7 @@ class PermissionManager {
         granted: true,
         status: RESULTS.GRANTED,
         canRequest: false,
-        message: 'iOS menggunakan foreground location',
+        message: i18n.t('profile:permissions.backgroundLocation.iosNote'),
       };
     }
 
@@ -376,7 +377,7 @@ class PermissionManager {
         granted: true,
         status: RESULTS.GRANTED,
         canRequest: false,
-        message: 'Background location tidak diperlukan pada Android 9 dan lebih lama',
+        message: i18n.t('profile:permissions.backgroundLocation.androidOldNote'),
       };
     }
 
@@ -390,7 +391,7 @@ class PermissionManager {
           granted: false,
           status: RESULTS.DENIED,
           canRequest: false,
-          message: 'Lokasi foreground harus diizinkan terlebih dahulu',
+          message: i18n.t('profile:permissions.backgroundLocation.foregroundRequired'),
         };
       }
 
@@ -414,10 +415,10 @@ class PermissionManager {
         status,
         canRequest,
         message: granted
-          ? 'Lokasi latar belakang berhasil diizinkan'
+          ? i18n.t('profile:permissions.backgroundLocation.requestSuccess')
           : status === RESULTS.BLOCKED
-          ? 'Lokasi latar belakang diblokir. Buka Pengaturan → Izin → Lokasi → Izinkan sepanjang waktu'
-          : 'Lokasi latar belakang ditolak. Pelacakan shift mungkin tidak akurat',
+          ? i18n.t('profile:permissions.backgroundLocation.requestBlocked')
+          : i18n.t('profile:permissions.backgroundLocation.requestDenied'),
       };
     } catch (error) {
       console.error('[PermissionManager] Failed to request background location permission:', error);
@@ -425,7 +426,7 @@ class PermissionManager {
         granted: false,
         status: RESULTS.UNAVAILABLE,
         canRequest: false,
-        message: 'Gagal meminta izin lokasi latar belakang',
+        message: i18n.t('profile:permissions.backgroundLocation.requestFailed'),
       };
     }
   }
@@ -447,8 +448,8 @@ class PermissionManager {
         status,
         canRequest,
         message: granted
-          ? 'Kamera diizinkan'
-          : 'Kamera diperlukan untuk foto laporan kerja',
+          ? i18n.t('profile:permissions.camera.granted')
+          : i18n.t('profile:permissions.camera.required'),
       };
     } catch (error) {
       console.error('[PermissionManager] Failed to check camera permission:', error);
@@ -456,7 +457,7 @@ class PermissionManager {
         granted: false,
         status: RESULTS.UNAVAILABLE,
         canRequest: false,
-        message: 'Gagal memeriksa izin kamera',
+        message: i18n.t('profile:permissions.camera.checkFailed'),
       };
     }
   }
@@ -489,10 +490,10 @@ class PermissionManager {
         status,
         canRequest,
         message: granted
-          ? 'Kamera berhasil diizinkan'
+          ? i18n.t('profile:permissions.camera.requestSuccess')
           : status === RESULTS.BLOCKED
-          ? 'Kamera diblokir. Buka Pengaturan untuk mengizinkan'
-          : 'Kamera ditolak. Anda tidak dapat mengambil foto laporan',
+          ? i18n.t('profile:permissions.camera.requestBlocked')
+          : i18n.t('profile:permissions.camera.requestDenied'),
       };
     } catch (error) {
       console.error('[PermissionManager] Failed to request camera permission:', error);
@@ -500,7 +501,7 @@ class PermissionManager {
         granted: false,
         status: RESULTS.UNAVAILABLE,
         canRequest: false,
-        message: 'Gagal meminta izin kamera',
+        message: i18n.t('profile:permissions.camera.requestFailed'),
       };
     }
   }
@@ -519,8 +520,8 @@ class PermissionManager {
         status,
         canRequest,
         message: granted
-          ? 'Galeri diizinkan'
-          : 'Galeri diperlukan untuk memilih foto laporan dari penyimpanan',
+          ? i18n.t('profile:permissions.gallery.granted')
+          : i18n.t('profile:permissions.gallery.required'),
       };
     } catch (error) {
       console.error('[PermissionManager] Failed to check gallery permission:', error);
@@ -528,7 +529,7 @@ class PermissionManager {
         granted: false,
         status: RESULTS.UNAVAILABLE,
         canRequest: false,
-        message: 'Gagal memeriksa izin galeri',
+        message: i18n.t('profile:permissions.gallery.checkFailed'),
       };
     }
   }
@@ -555,10 +556,10 @@ class PermissionManager {
         status,
         canRequest,
         message: granted
-          ? 'Galeri berhasil diizinkan'
+          ? i18n.t('profile:permissions.gallery.requestSuccess')
           : status === RESULTS.BLOCKED
-          ? 'Galeri diblokir. Buka Pengaturan untuk mengizinkan'
-          : 'Galeri ditolak. Anda tidak dapat memilih foto dari penyimpanan',
+          ? i18n.t('profile:permissions.gallery.requestBlocked')
+          : i18n.t('profile:permissions.gallery.requestDenied'),
       };
     } catch (error) {
       console.error('[PermissionManager] Failed to request gallery permission:', error);
@@ -566,7 +567,7 @@ class PermissionManager {
         granted: false,
         status: RESULTS.UNAVAILABLE,
         canRequest: false,
-        message: 'Gagal meminta izin galeri',
+        message: i18n.t('profile:permissions.gallery.requestFailed'),
       };
     }
   }

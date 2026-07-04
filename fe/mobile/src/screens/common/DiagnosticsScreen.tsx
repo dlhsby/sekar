@@ -14,6 +14,7 @@ import {
   type AppStateStatus,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { NBBackgroundPattern, NBText, NBButton } from '../../components/nb';
 import { nbColors, nbSpacing, nbRadius, nbBorders, nbShadows } from '../../constants/nbTokens';
 import { useAppSelector } from '../../store/hooks';
@@ -34,45 +35,47 @@ interface PermRow {
   tint: string;
 }
 
-// ─── Permission Rows ──────────────────────────────────────────────────────────
+// ─── Permission Rows (constructed with i18n) ──────────────────────────────────
 
-const PERM_ROWS: PermRow[] = [
-  {
-    key: 'notifications',
-    title: 'Notifikasi',
-    why: 'Pengingat shift & penugasan.',
-    icon: '🔔',
-    tint: nbColors.bgAccentPink,
-  },
-  {
-    key: 'location',
-    title: 'Lokasi',
-    why: 'Presensi & geofence pos.',
-    icon: '📍',
-    tint: nbColors.bgAccentMint,
-  },
-  {
-    key: 'background_location',
-    title: 'Lokasi latar belakang',
-    why: 'Pelacakan rute selama shift.',
-    icon: '🛰️',
-    tint: nbColors.bgAccentGreen,
-  },
-  {
-    key: 'camera',
-    title: 'Kamera',
-    why: 'Foto laporan & swafoto clock-in.',
-    icon: '📷',
-    tint: nbColors.bgAccentYellow,
-  },
-  {
-    key: 'gallery',
-    title: 'Galeri',
-    why: 'Lampirkan foto dari galeri.',
-    icon: '🖼️',
-    tint: nbColors.bgAccentLilac,
-  },
-];
+function getPermissionRows(t: any): PermRow[] {
+  return [
+    {
+      key: 'notifications',
+      title: t('profile:diagnostics.permissions.notifications.title'),
+      why: t('profile:diagnostics.permissions.notifications.why'),
+      icon: '🔔',
+      tint: nbColors.bgAccentPink,
+    },
+    {
+      key: 'location',
+      title: t('profile:diagnostics.permissions.location.title'),
+      why: t('profile:diagnostics.permissions.location.why'),
+      icon: '📍',
+      tint: nbColors.bgAccentMint,
+    },
+    {
+      key: 'background_location',
+      title: t('profile:diagnostics.permissions.backgroundLocation.title'),
+      why: t('profile:diagnostics.permissions.backgroundLocation.why'),
+      icon: '🛰️',
+      tint: nbColors.bgAccentGreen,
+    },
+    {
+      key: 'camera',
+      title: t('profile:diagnostics.permissions.camera.title'),
+      why: t('profile:diagnostics.permissions.camera.why'),
+      icon: '📷',
+      tint: nbColors.bgAccentYellow,
+    },
+    {
+      key: 'gallery',
+      title: t('profile:diagnostics.permissions.gallery.title'),
+      why: t('profile:diagnostics.permissions.gallery.why'),
+      icon: '🖼️',
+      tint: nbColors.bgAccentLilac,
+    },
+  ];
+}
 
 // ─── Server Ping ──────────────────────────────────────────────────────────────
 
@@ -103,6 +106,7 @@ function PermissionRow({
   onRequest: () => Promise<void>;
   onOpenSettings: () => void;
 }): React.JSX.Element {
+  const { t } = useTranslation();
   const [isRequesting, setIsRequesting] = useState(false);
 
   const handleRequest = useCallback(async () => {
@@ -129,7 +133,7 @@ function PermissionRow({
       </View>
       {status === 'pending' ? (
         <NBButton
-          title="Periksa"
+          title={t('profile:diagnostics.permissionButtons.check')}
           variant="primary"
           size="sm"
           onPress={handleRequest}
@@ -138,18 +142,18 @@ function PermissionRow({
       ) : status === 'granted' ? (
         <View style={[styles.pill, { backgroundColor: nbColors.statusActiveBg }]}>
           <NBText variant="mono-sm" color="statusActive">
-            DIBERIKAN
+            {t('profile:diagnostics.status.granted')}
           </NBText>
         </View>
       ) : (
         <View style={{ gap: nbSpacing.sm }}>
           <View style={[styles.pill, { backgroundColor: nbColors.statusMissingBg }]}>
             <NBText variant="mono-sm" color="statusMissing">
-              DITOLAK
+              {t('profile:diagnostics.status.denied')}
             </NBText>
           </View>
           <NBButton
-            title="Buka Pengaturan"
+            title={t('profile:diagnostics.permissionButtons.openSettings')}
             variant="outline"
             size="sm"
             onPress={onOpenSettings}
@@ -170,6 +174,8 @@ function ConnectivityRow({
   label: string;
   status: 'online' | 'offline' | 'checking' | 'reachable' | 'timeout' | 'unreachable';
 }): React.JSX.Element {
+  const { t } = useTranslation();
+
   const statusColor =
     status === 'online' || status === 'reachable'
       ? nbColors.statusActive
@@ -181,16 +187,16 @@ function ConnectivityRow({
 
   const statusLabel =
     status === 'online'
-      ? 'ONLINE'
+      ? t('profile:diagnostics.status.online')
       : status === 'offline'
-      ? 'OFFLINE'
+      ? t('profile:diagnostics.status.offline')
       : status === 'checking'
-      ? 'MEMERIKSA...'
+      ? t('profile:diagnostics.status.checking')
       : status === 'reachable'
-      ? 'TERHUBUNG'
+      ? t('profile:diagnostics.status.reachable')
       : status === 'timeout'
-      ? 'TIMEOUT'
-      : 'TIDAK TERHUBUNG';
+      ? t('profile:diagnostics.status.timeout')
+      : t('profile:diagnostics.status.unreachable');
 
   return (
     <View style={styles.connectivityRow}>
@@ -254,6 +260,7 @@ function DiagSection({
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export function DiagnosticsScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const { bottom: bottomInset } = useSafeAreaInsets();
 
   // Redux state
@@ -263,9 +270,10 @@ export function DiagnosticsScreen(): React.JSX.Element {
   const pendingCount = useAppSelector((state) => selectTotalPendingCount(state));
 
   // Permission states
+  const permRows = getPermissionRows(t);
   const [permStatuses, setPermStatuses] = useState<Record<string, PermStatus>>(() => {
     const init: Record<string, PermStatus> = {};
-    PERM_ROWS.forEach((r) => (init[r.key] = 'pending'));
+    permRows.forEach((r) => (init[r.key] = 'pending'));
     return init;
   });
 
@@ -320,7 +328,7 @@ export function DiagnosticsScreen(): React.JSX.Element {
   const handleRequestPermission = useCallback(
     async (key: string) => {
       try {
-        const row = PERM_ROWS.find((r) => r.key === key);
+        const row = permRows.find((r) => r.key === key);
         if (!row) return;
 
         // Background location needs foreground first
@@ -411,8 +419,8 @@ export function DiagnosticsScreen(): React.JSX.Element {
         ]}
       >
         {/* Section A: Permissions */}
-        <DiagSection title="IZIN AKSES">
-          {PERM_ROWS.map((row) => (
+        <DiagSection title={t('profile:diagnostics.sections.permissions')}>
+          {permRows.map((row) => (
             <PermissionRow
               key={row.key}
               row={row}
@@ -424,14 +432,14 @@ export function DiagnosticsScreen(): React.JSX.Element {
         </DiagSection>
 
         {/* Section B: Connectivity */}
-        <DiagSection title="KONEKTIVITAS">
+        <DiagSection title={t('profile:diagnostics.sections.connectivity')}>
           <ConnectivityRow
-            label="Internet"
+            label={t('profile:diagnostics.connectivity.internet')}
             status={isOnline ? 'online' : 'offline'}
           />
           <View style={styles.divider} />
           <ConnectivityRow
-            label="Server"
+            label={t('profile:diagnostics.connectivity.server')}
             status={serverStatus}
           />
           <NBText
@@ -442,7 +450,7 @@ export function DiagnosticsScreen(): React.JSX.Element {
             {config.API_BASE_URL.replace(/\/api\/v\d+\/?$/, '')}
           </NBText>
           <NBButton
-            title="Periksa Ulang"
+            title={t('profile:diagnostics.connectivity.recheck')}
             variant="outline"
             size="sm"
             onPress={checkServer}
@@ -452,34 +460,34 @@ export function DiagnosticsScreen(): React.JSX.Element {
         </DiagSection>
 
         {/* Section: App version ("doctor") */}
-        <DiagSection title="VERSI APLIKASI">
+        <DiagSection title={t('profile:diagnostics.sections.appVersion')}>
           <SyncStatusRow
-            label="Versi terpasang"
+            label={t('profile:diagnostics.appVersion.installed')}
             value={`v${appUpdate.installed.version} (build ${appUpdate.installed.versionCode})`}
           />
           <View style={styles.divider} />
           <View style={styles.syncRow}>
             <NBText variant="body-sm" color="black">
-              Status
+              {t('profile:diagnostics.appVersion.status')}
             </NBText>
             {appUpdate.status === 'checking' ? (
               <NBText variant="mono-sm" color="gray600">
-                MEMERIKSA...
+                {t('profile:diagnostics.status.checking')}
               </NBText>
             ) : appUpdate.status === 'unknown' ? (
               <NBText variant="mono-sm" color="gray600">
-                TIDAK DIKETAHUI
+                {t('profile:diagnostics.status.unknown')}
               </NBText>
             ) : appUpdate.status === 'upToDate' ? (
               <View style={[styles.pill, { backgroundColor: nbColors.statusActiveBg }]}>
                 <NBText variant="mono-sm" color="statusActive">
-                  TERBARU
+                  {t('profile:diagnostics.status.upToDate')}
                 </NBText>
               </View>
             ) : (
               <View style={[styles.pill, { backgroundColor: nbColors.bgAccentYellow }]}>
                 <NBText variant="mono-sm" color="black">
-                  PERBARUI
+                  {t('profile:diagnostics.status.updateAvailable')}
                 </NBText>
               </View>
             )}
@@ -489,7 +497,7 @@ export function DiagnosticsScreen(): React.JSX.Element {
               <>
                 <View style={styles.divider} />
                 <SyncStatusRow
-                  label="Versi tersedia"
+                  label={t('profile:diagnostics.appVersion.available')}
                   value={`v${appUpdate.latest.version} (build ${appUpdate.latest.versionCode ?? '—'})`}
                 />
               </>
@@ -504,7 +512,7 @@ export function DiagnosticsScreen(): React.JSX.Element {
             />
           )}
           <NBButton
-            title="Periksa Ulang"
+            title={t('profile:diagnostics.appVersion.recheck')}
             variant="outline"
             size="sm"
             onPress={appUpdate.check}
@@ -514,9 +522,9 @@ export function DiagnosticsScreen(): React.JSX.Element {
         </DiagSection>
 
         {/* Section C: Data & Sync */}
-        <DiagSection title="DATA & SINKRONISASI">
+        <DiagSection title={t('profile:diagnostics.sections.dataSync')}>
           <SyncStatusRow
-            label="Antrian tertunda"
+            label={t('profile:diagnostics.dataSync.pendingQueue')}
             value={
               <View
                 style={[
@@ -540,14 +548,14 @@ export function DiagnosticsScreen(): React.JSX.Element {
           />
           <View style={styles.divider} />
           <SyncStatusRow
-            label="Sinkronisasi terakhir"
+            label={t('profile:diagnostics.dataSync.lastSync')}
             value={formatSyncTime(lastSyncTime)}
           />
           {isSyncing && (
             <>
               <View style={styles.divider} />
               <NBText variant="caption" color="gray600" style={styles.syncingText}>
-                Sedang sinkronisasi...
+                {t('profile:diagnostics.dataSync.syncing')}
               </NBText>
             </>
           )}

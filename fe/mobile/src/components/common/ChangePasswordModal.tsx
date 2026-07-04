@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBPasswordInput, NBModal, NBText, NBToast } from '../nb';
 import { changePasswordAndRotate } from '../../services/api/authApi';
 import {
@@ -29,6 +30,7 @@ export function ChangePasswordModal({
   visible,
   onClose,
 }: ChangePasswordModalProps): React.JSX.Element {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -57,28 +59,28 @@ export function ChangePasswordModal({
     const errors: ValidationErrors = {};
 
     if (!currentPassword.trim()) {
-      errors.currentPassword = 'Password saat ini wajib diisi';
+      errors.currentPassword = t('profile:changePassword.validation.currentPasswordRequired');
     }
 
     if (!newPassword.trim()) {
-      errors.newPassword = 'Password baru wajib diisi';
+      errors.newPassword = t('profile:changePassword.validation.newPasswordRequired');
     } else if (newPassword.length < MIN_PASSWORD_LENGTH) {
-      errors.newPassword = `Password baru minimal ${MIN_PASSWORD_LENGTH} karakter`;
+      errors.newPassword = t('profile:changePassword.validation.newPasswordMinLength');
     } else if (!(/[A-Za-z]/.test(newPassword) && /\d/.test(newPassword))) {
-      errors.newPassword = 'Password baru harus berisi huruf dan angka';
+      errors.newPassword = t('profile:changePassword.validation.newPasswordAlphanumeric');
     } else if (newPassword === currentPassword) {
-      errors.newPassword = 'Password baru harus berbeda dari password lama';
+      errors.newPassword = t('profile:changePassword.validation.newPasswordDifferent');
     }
 
     if (!confirmPassword.trim()) {
-      errors.confirmPassword = 'Konfirmasi password wajib diisi';
+      errors.confirmPassword = t('profile:changePassword.validation.confirmPasswordRequired');
     } else if (confirmPassword !== newPassword) {
-      errors.confirmPassword = 'Konfirmasi password tidak cocok';
+      errors.confirmPassword = t('profile:changePassword.validation.confirmPasswordMatch');
     }
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
-  }, [currentPassword, newPassword, confirmPassword]);
+  }, [t, currentPassword, newPassword, confirmPassword]);
 
   const handleSubmit = useCallback(async () => {
     setSuccess(false);
@@ -105,7 +107,7 @@ export function ChangePasswordModal({
         ]);
         dispatch(setUser({ user: data.user }));
         setSuccess(true);
-        NBToast.show({ level: 'success', title: 'Berhasil', body: 'Password berhasil diubah.' });
+        NBToast.show({ level: 'success', title: t('profile:edit.toast.success'), body: t('profile:changePassword.errors.noResponse') });
         setTimeout(() => {
           handleClose();
         }, 1500);
@@ -114,26 +116,26 @@ export function ChangePasswordModal({
 
       // Map known backend failures: field-specific ones inline, generic to a toast.
       const code = response.code ?? '';
-      const message = response.error ?? 'Gagal mengubah password';
+      const message = response.error ?? t('profile:edit.uploadError');
       if (code === 'AUTH_INVALID_CREDENTIALS' || /old password|password lama|incorrect/i.test(message)) {
-        setValidationErrors((prev) => ({ ...prev, currentPassword: 'Password saat ini salah' }));
+        setValidationErrors((prev) => ({ ...prev, currentPassword: t('profile:changePassword.validation.currentPasswordWrong') }));
       } else if (/differ|different|berbeda|sama/i.test(message)) {
-        setValidationErrors((prev) => ({ ...prev, newPassword: 'Password baru harus berbeda dari password lama' }));
+        setValidationErrors((prev) => ({ ...prev, newPassword: t('profile:changePassword.validation.newPasswordDifferent') }));
       } else {
-        NBToast.show({ level: 'danger', title: 'Gagal', body: message });
+        NBToast.show({ level: 'danger', title: t('profile:edit.toast.error'), body: message });
       }
       setIsLoading(false);
     } catch (err: any) {
-      NBToast.show({ level: 'danger', title: 'Gagal', body: err?.message || 'Gagal mengubah password' });
+      NBToast.show({ level: 'danger', title: t('profile:edit.toast.error'), body: err?.message || t('profile:edit.uploadError') });
       setIsLoading(false);
     }
-  }, [currentPassword, newPassword, validateForm, handleClose, dispatch]);
+  }, [t, currentPassword, newPassword, validateForm, handleClose, dispatch]);
 
   return (
     <NBModal
       visible={visible}
       onClose={handleClose}
-      title="Ubah Password"
+      title={t('profile:changePassword.submitAction')}
       avoidKeyboard
       footer={
         <View style={styles.actions}>
@@ -142,10 +144,10 @@ export function ChangePasswordModal({
             onPress={handleClose}
             disabled={isLoading || success}
             accessibilityRole="button"
-            accessibilityLabel="Batal"
+            accessibilityLabel={t('profile:edit.cancel')}
           >
             <NBText variant="body-sm" color="black" uppercase style={styles.actionButtonText}>
-              Batal
+              {t('profile:edit.cancel')}
             </NBText>
           </TouchableOpacity>
           <TouchableOpacity
@@ -153,14 +155,14 @@ export function ChangePasswordModal({
             onPress={handleSubmit}
             disabled={isLoading || success}
             accessibilityRole="button"
-            accessibilityLabel={success ? 'Berhasil' : 'Ubah Password'}
+            accessibilityLabel={success ? t('profile:edit.toast.success') : t('profile:changePassword.submitAction')}
             testID="change-password-submit"
           >
             {isLoading ? (
               <ActivityIndicator size="small" color={nbColors.white} testID="change-password-submit-spinner" />
             ) : (
               <NBText variant="body-sm" color="white" uppercase style={styles.actionButtonText}>
-                {success ? 'Berhasil!' : 'Ubah Password'}
+                {success ? `${t('profile:edit.toast.success')}!` : t('profile:changePassword.submitAction')}
               </NBText>
             )}
           </TouchableOpacity>
@@ -169,38 +171,38 @@ export function ChangePasswordModal({
     >
       <View style={styles.form}>
         <NBPasswordInput
-          label="Password Saat Ini"
+          label={t('profile:changePassword.currentPassword')}
           value={currentPassword}
           onChangeText={setCurrentPassword}
-          placeholder="Password saat ini"
+          placeholder={t('profile:changePassword.currentPasswordPlaceholder')}
           error={validationErrors.currentPassword}
           editable={!isLoading && !success}
           autoCapitalize="none"
-          accessibilityHint="Masukkan password Anda saat ini"
+          accessibilityHint={t('profile:changePassword.currentPasswordPlaceholder')}
           testID="change-password-current"
         />
 
         <NBPasswordInput
-          label="Password Baru"
+          label={t('profile:changePassword.newPassword')}
           value={newPassword}
           onChangeText={setNewPassword}
-          placeholder="Min. 8 karakter"
+          placeholder={t('profile:changePassword.newPasswordPlaceholder')}
           error={validationErrors.newPassword}
           editable={!isLoading && !success}
           autoCapitalize="none"
-          accessibilityHint="Masukkan password baru minimal 6 karakter"
+          accessibilityHint={t('profile:changePassword.newPasswordPlaceholder')}
           testID="change-password-new"
         />
 
         <NBPasswordInput
-          label="Konfirmasi Password Baru"
+          label={t('profile:changePassword.confirmPassword')}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
-          placeholder="Ketik ulang password baru"
+          placeholder={t('profile:changePassword.confirmPasswordPlaceholder')}
           error={validationErrors.confirmPassword}
           editable={!isLoading && !success}
           autoCapitalize="none"
-          accessibilityHint="Ketik ulang password baru untuk konfirmasi"
+          accessibilityHint={t('profile:changePassword.confirmPasswordPlaceholder')}
           testID="change-password-confirm"
         />
       </View>

@@ -7,6 +7,7 @@
  */
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBText } from '../nb';
 import type { NBTextColor } from '../nb/NBText';
 import { formatTime } from '../../utils/dateUtils';
@@ -25,6 +26,7 @@ export function AttendanceSummaryRow({
   isLate,
   isEarlyLeave = false,
 }: AttendanceSummaryRowProps): React.JSX.Element {
+  const { t } = useTranslation();
   const masukColor: NBTextColor = firstClockIn
     ? isLate
       ? 'dangerDark'
@@ -39,21 +41,21 @@ export function AttendanceSummaryRow({
   return (
     <View style={styles.row}>
       <View style={styles.stat}>
-        <NBText variant="caption" color="gray600" uppercase>Masuk</NBText>
+        <NBText variant="caption" color="gray600" uppercase>{t('home:components.attendanceSummary.clockIn')}</NBText>
         <NBText
           variant="h2"
           color={masukColor}
-          accessibilityLabel={firstClockIn ? `Masuk ${formatTime(firstClockIn)}${isLate ? ', terlambat' : ', tepat waktu'}` : undefined}
+          accessibilityLabel={firstClockIn ? t('home:components.attendanceSummary.a11y.clockIn', { time: formatTime(firstClockIn), status: isLate ? t('home:components.attendanceSummary.a11y.late') : t('home:components.attendanceSummary.a11y.onTime') }) : undefined}
         >
           {formatTime(firstClockIn ?? '')}
         </NBText>
       </View>
       <View style={[styles.stat, styles.statEnd]}>
-        <NBText variant="caption" color="gray600" uppercase>Keluar</NBText>
+        <NBText variant="caption" color="gray600" uppercase>{t('home:components.attendanceSummary.clockOut')}</NBText>
         <NBText
           variant="h2"
           color={keluarColor}
-          accessibilityLabel={lastClockOut ? `Keluar ${formatTime(lastClockOut)}${isEarlyLeave ? ', pulang cepat' : ''}` : undefined}
+          accessibilityLabel={lastClockOut ? t('home:components.attendanceSummary.a11y.clockOut', { time: formatTime(lastClockOut), status: isEarlyLeave ? t('home:components.attendanceSummary.a11y.earlyLeave') : '' }) : undefined}
         >
           {lastClockOut ? formatTime(lastClockOut) : '—'}
         </NBText>

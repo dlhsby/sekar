@@ -9,6 +9,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { Area } from '../../types/models.types';
 import { getAreas } from '../../services/api/areasApi';
+import i18n from '../../i18n/config';
 
 interface AreasState {
   list: Area[];
@@ -56,7 +57,7 @@ const areasSlice = createSlice({
       })
       .addCase(fetchAreas.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload ?? 'Gagal memuat daftar area';
+        state.error = action.payload ?? i18n.t('errors:loadAreasFailed');
       });
   },
 });

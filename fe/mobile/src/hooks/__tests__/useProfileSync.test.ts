@@ -226,7 +226,7 @@ describe('useProfileSync', () => {
         await result.current.handleRetryFailed();
       });
 
-      expect(Alert.alert).toHaveBeenCalledWith('Info', 'Tidak ada item gagal untuk dicoba ulang');
+      expect(Alert.alert).toHaveBeenCalledWith('Kesalahan', 'Tidak ada item gagal untuk dicoba ulang');
       expect(mockProcessQueue).not.toHaveBeenCalled();
     });
 
@@ -240,7 +240,7 @@ describe('useProfileSync', () => {
         await result.current.handleRetryFailed();
       });
 
-      expect(Alert.alert).toHaveBeenCalledWith('Kesalahan', 'Gagal mencoba ulang: Database error');
+      expect(Alert.alert).toHaveBeenCalledWith('Kesalahan', 'Gagal sinkronisasi: Database error');
     });
   });
 

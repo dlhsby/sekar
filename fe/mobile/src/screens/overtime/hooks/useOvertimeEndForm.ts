@@ -4,6 +4,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '../../../store/hooks';
 import {
   setSubmitting,
@@ -32,6 +33,7 @@ interface EndErrors {
 }
 
 export function useOvertimeEndForm(location: Coordinates | null) {
+  const { t } = useTranslation();
   const navigation = useNavigation<MainTabScreenProps<'OvertimeSubmit'>['navigation']>();
   const dispatch = useAppDispatch();
 
@@ -44,20 +46,20 @@ export function useOvertimeEndForm(location: Coordinates | null) {
   const validateForm = useCallback((): boolean => {
     const errs: EndErrors = {};
     if (!endActivityTypeId || !UUID_REGEX.test(endActivityTypeId)) {
-      errs.activityType = 'Jenis aktivitas harus dipilih';
+      errs.activityType = t('overtime:endForm.activityTypeError');
     }
     if (!endDescription.trim()) {
-      errs.description = 'Deskripsi harus diisi';
+      errs.description = t('overtime:endForm.descriptionError');
     }
     if (endPhotos.length === 0) {
-      errs.photos = 'Minimal 1 foto diperlukan';
+      errs.photos = t('overtime:endForm.photosError');
     }
     if (!location) {
-      errs.location = 'GPS lokasi diperlukan. Ketuk "Perbarui GPS" untuk mencoba lagi.';
+      errs.location = t('overtime:endForm.locationError');
     }
     setEndErrors(errs);
     return Object.keys(errs).length === 0;
-  }, [endActivityTypeId, endDescription, endPhotos, location]);
+  }, [endActivityTypeId, endDescription, endPhotos, location, t]);
 
   const handleSubmit = useCallback(async () => {
     if (!validateForm()) { return; }
@@ -82,20 +84,20 @@ export function useOvertimeEndForm(location: Coordinates | null) {
         dispatch(addOvertime(response.data));
         locationTracker.stopImmediate();
         dispatch(clockOutSuccess());
-        NBToast.show({ level: 'success', title: 'Berhasil', body: 'Lembur berhasil diselesaikan.' });
+        NBToast.show({ level: 'success', title: t('overtime:endForm.toastSuccess'), body: t('overtime:endForm.toastSuccessMessage') });
         navigation.navigate('Lembur' as any);
       } else if (response.error) {
         dispatch(setError(response.error));
-        NBToast.show({ level: 'danger', title: 'Gagal Selesai Lembur', body: response.error });
+        NBToast.show({ level: 'danger', title: t('overtime:endForm.toastEndError'), body: response.error });
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Gagal menyelesaikan lembur';
+      const msg = err instanceof Error ? err.message : t('overtime:endForm.toastGenericError');
       dispatch(setError(msg));
-      NBToast.show({ level: 'danger', title: 'Gagal', body: msg });
+      NBToast.show({ level: 'danger', title: t('overtime:endForm.toastError'), body: msg });
     } finally {
       dispatch(setSubmitting(false));
     }
-  }, [validateForm, endPhotos, endSelfie, location, endActivityTypeId, endDescription, dispatch, navigation]);
+  }, [validateForm, endPhotos, endSelfie, location, endActivityTypeId, endDescription, dispatch, navigation, t]);
 
   const resetForm = useCallback(() => {
     setEndActivityTypeId('');

@@ -1,0 +1,75 @@
+{
+  "AUTH_INVALID_CREDENTIALS": "Incorrect username or password.",
+  "AUTH_TOKEN_EXPIRED": "Your session has expired. Please sign in again.",
+  "AUTH_TOKEN_INVALID": "Invalid session. Please sign in again.",
+  "AUTH_ACCOUNT_INACTIVE": "Your account is inactive. Please contact an administrator.",
+  "AUTH_USER_NOT_FOUND": "User not found.",
+  "AUTH_010": "Your session has expired. Please sign in again.",
+  "AUTH_011": "Invalid session. Please sign in again.",
+  "AUTH_PASSWORD_CHANGE_REQUIRED": "You must change your password before continuing.",
+
+  "SHIFT_ALREADY_ACTIVE": "You already have an active shift that has not been ended.",
+  "SHIFT_NOT_FOUND": "Shift not found.",
+  "SHIFT_NOT_ACTIVE": "There is no active shift.",
+  "SHIFT_GPS_OUT_OF_BOUNDS": "Your location is outside the work area boundary.",
+  "SHIFT_NOT_ASSIGNED": "You are not assigned to this area.",
+  "SHIFT_PHOTO_UPLOAD_FAILED": "Failed to upload photo. Please try again.",
+  "SHIFT_DURATION_TOO_SHORT": "Shift duration is too short to be ended.",
+
+  "ACTIVITY_SHIFT_REQUIRED": "You must clock in first.",
+  "ACTIVITY_SHIFT_NOT_FOUND": "The shift for this activity was not found.",
+  "ACTIVITY_EDIT_WINDOW_CLOSED": "The window to edit this activity has closed.",
+  "ACTIVITY_PHOTO_REQUIRED": "A photo is required.",
+  "ACTIVITY_NOT_FOUND": "Activity not found.",
+  "ACTIVITY_ACCESS_DENIED": "You do not have access to this activity.",
+  "ACTIVITY_PHOTO_UPLOAD_FAILED": "Failed to upload photo. Please try again.",
+  "ACTIVITY_MUST_CLOCK_IN": "You must clock in first.",
+  "ACTIVITY_ROLE_MISMATCH": "The activity type does not match your role.",
+  "ACTIVITY_MAX_PHOTOS": "The number of photos exceeds the maximum limit.",
+  "ACTIVITY_MIN_PHOTOS": "The number of photos is below the minimum required.",
+
+  "OVERTIME_SUBMIT_AUTH": "You are not authorized to submit this overtime.",
+  "OVERTIME_ALREADY_PROCESSED": "This overtime request has already been processed.",
+  "OVERTIME_AREA_SCOPE": "Overtime is outside your area scope.",
+  "OVERTIME_NOT_FOUND": "Overtime record not found.",
+
+  "TASK_HIER_ROLE": "Your role is not authorized for this task.",
+  "TASK_HIER_RAYON_SCOPE": "The task is outside your rayon scope.",
+  "TASK_HIER_AREA_SCOPE": "The task is outside your area scope.",
+
+  "MONITOR_RAYON_SCOPE": "The data is outside your rayon scope.",
+  "MONITOR_AREA_SCOPE": "The data is outside your area scope.",
+
+  "SYNC_CONFLICT": "A data conflict occurred. Reload and try again.",
+  "SYNC_STALE_DATA": "The data has changed. Please reload the page.",
+  "SYNC_PARTIAL_FAILURE": "Some data failed to sync.",
+
+  "AREA_NOT_FOUND": "Area not found.",
+  "AREA_CODE_DUPLICATE": "The area code is already in use.",
+
+  "ASSIGNMENT_NOT_FOUND": "You are not assigned to any area.",
+  "ASSIGNMENT_ALREADY_EXISTS": "You are already assigned to this area.",
+
+  "VALIDATION_ERROR": "The submitted data is invalid. Please check your entries.",
+  "NOT_FOUND": "Data not found.",
+  "FORBIDDEN": "You do not have permission for this action.",
+  "BAD_REQUEST": "Invalid request. Please check your entries.",
+  "INTERNAL_SERVER_ERROR": "A server error occurred. Please try again later.",
+
+  "NETWORK_ERROR": "Could not connect to the server. Check your internet connection.",
+  "TIMEOUT_ERROR": "The request timed out. Please try again.",
+  "UNKNOWN_ERROR": "Something went wrong. Please try again.",
+  "GENERIC": "Something went wrong. Please try again.",
+
+  "uploadPhotoFailed": "Failed to upload photo ({{status}})",
+  "uploadProfileFailed": "Failed to upload profile picture",
+  "changePasswordFailed": "Failed to change password",
+
+  "SHIFT_DURATION_TOO_SHORT": "Shift duration is too short. A minimum of {{minutes}} minutes is required before clocking out.",
+
+  "loadAreasFailed": "Failed to load areas",
+  "loadUsersFailed": "Failed to load users",
+  "photoCaptureFailed": "Failed to capture photo",
+  "photoLimitExceeded": "Photo limit reached",
+  "photoLimitMessage": "You can only add a maximum of {{maxPhotos}} photos."
+}

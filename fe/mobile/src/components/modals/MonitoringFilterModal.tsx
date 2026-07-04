@@ -14,6 +14,7 @@ import {
   View,
   StyleSheet,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBModal } from '../nb';
 import { NBButton } from '../nb';
@@ -76,6 +77,7 @@ export function MonitoringFilterModal({
   visibleLayers,
   onToggleLayer,
 }: MonitoringFilterModalProps): React.JSX.Element {
+  const { t } = useTranslation();
   const [selectedLocations, setSelectedLocations] = useState<PresenceLocation[]>(
     currentFilters.location ?? [],
   );
@@ -263,13 +265,13 @@ export function MonitoringFilterModal({
   const footerContent = (
     <View style={styles.footerRow}>
       <NBButton
-        title="Reset"
+        title={t('monitoring:filterModal.reset')}
         variant="secondary"
         onPress={handleReset}
         style={styles.footerResetBtn}
       />
       <NBButton
-        title="Terapkan"
+        title={t('monitoring:filterModal.apply')}
         variant="primary"
         onPress={handleApply}
         style={styles.footerApplyBtn}
@@ -281,25 +283,25 @@ export function MonitoringFilterModal({
     <NBModal
       visible={visible}
       onClose={onClose}
-      title="Filter Monitoring"
+      title={t('monitoring:filterModal.title')}
       type="sheet"
       avoidKeyboard
       footer={footerContent}
     >
       <View style={styles.body}>
         {/* Lokasi (location axis) multiselect — activity lives on the peek chips. */}
-        <FilterSection title="Lokasi">
+        <FilterSection title={t('monitoring:filterModal.sections.location')}>
           <NBSelect
             options={locationOptions}
             selectedValues={selectedLocations}
             onValuesChange={(vals: string[]) => setSelectedLocations(vals as PresenceLocation[])}
-            placeholder="Pilih Lokasi"
+            placeholder={t('monitoring:filterModal.placeholders.location')}
           />
         </FilterSection>
 
         {/* Rayon picker */}
         {!hideRayon && (
-          <FilterSection title="Rayon">
+          <FilterSection title={t('monitoring:filterModal.sections.rayon')}>
             {hasFixedRayon ? (
               <View style={styles.fixedValue}>
                 <MaterialCommunityIcons
@@ -308,7 +310,7 @@ export function MonitoringFilterModal({
                   color={nbColors.gray500}
                 />
                 <NBText variant="body-sm" color="gray700">
-                  {currentUser.rayon?.name ?? 'Rayon Anda'}
+                  {currentUser.rayon?.name ?? t('monitoring:filterModal.fixedRayon')}
                 </NBText>
               </View>
             ) : (
@@ -319,42 +321,42 @@ export function MonitoringFilterModal({
                   setSelectedRayonId(val || undefined);
                   setSelectedAreaId(undefined);
                 }}
-                placeholder="Pilih Rayon"
+                placeholder={t('monitoring:filterModal.placeholders.rayon')}
               />
             )}
           </FilterSection>
         )}
 
         {/* Area picker */}
-        <FilterSection title="Area">
+        <FilterSection title={t('monitoring:filterModal.sections.area')}>
           <NBSelect
             options={areaOptions}
             value={selectedAreaId}
             onValueChange={(val: string) => setSelectedAreaId(val || undefined)}
-            placeholder="Pilih Area"
+            placeholder={t('monitoring:filterModal.placeholders.area')}
           />
         </FilterSection>
 
         {/* Role multiselect — only shown when the user supervises sub-roles */}
         {roleOptions.length > 0 && (
-          <FilterSection title="Jabatan">
+          <FilterSection title={t('monitoring:filterModal.sections.role')}>
             <NBSelect
               options={roleOptions}
               selectedValues={selectedRoles}
               onValuesChange={handleRoleToggle}
-              placeholder="Pilih Jabatan"
+              placeholder={t('monitoring:filterModal.placeholders.role')}
               searchable
             />
           </FilterSection>
         )}
 
         {/* Search user — searchable (typeahead) select over the live users */}
-        <FilterSection title="Cari Pengguna">
+        <FilterSection title={t('monitoring:filterModal.sections.user')}>
           <NBSelect
             options={userOptions}
             value={searchText}
             onValueChange={(val: string) => setSearchText(val)}
-            placeholder="Pilih pengguna"
+            placeholder={t('monitoring:filterModal.placeholders.user')}
             searchable
           />
         </FilterSection>
@@ -363,18 +365,18 @@ export function MonitoringFilterModal({
             multi-select. Selected = currently-visible layers (its default state);
             changing the selection dispatches the diff immediately (Redux). */}
         {visibleLayers && onToggleLayer && (
-          <FilterSection title="Tampilan Peta">
+          <FilterSection title={t('monitoring:filterModal.sections.mapLayers')}>
             <NBSelect
               options={layerOptions}
               selectedValues={selectedLayers}
               onValuesChange={handleLayersChange}
-              placeholder="Pilih lapisan"
+              placeholder={t('monitoring:filterModal.placeholders.layers')}
             />
           </FilterSection>
         )}
 
         {/* Staffing summary - always visible */}
-        <FilterSection title="Kepegawaian">
+        <FilterSection title={t('monitoring:filterModal.sections.staffing')}>
           <StaffingSummarySection
             items={staffing}
             isLoading={isLoadingStaffing}

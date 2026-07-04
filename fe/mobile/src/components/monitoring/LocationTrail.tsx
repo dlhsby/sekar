@@ -18,6 +18,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Marker, Polyline, Callout } from 'react-native-maps';
 import type MapView from 'react-native-maps';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   nbColors,
@@ -117,6 +118,7 @@ export function useLocationHistory(
   date: string,
   shiftId?: string,
 ): UseLocationHistoryResult {
+  const { t } = useTranslation();
   const [history, setHistory] = useState<LocationHistory | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -144,14 +146,14 @@ export function useLocationHistory(
         }
       })
       .catch(() => {
-        if (!cancelled) { setError('Gagal memuat riwayat lokasi'); }
+        if (!cancelled) { setError(t('monitoring:locationTrail.loading')); }
       })
       .finally(() => {
         if (!cancelled) { setIsLoading(false); }
       });
 
     return () => { cancelled = true; };
-  }, [userId, date, shiftId, refreshTick]);
+  }, [userId, date, shiftId, refreshTick, t]);
 
   const refresh = useCallback(() => {
     setRefreshTick(t => t + 1);
@@ -172,6 +174,7 @@ interface TrailPointCalloutProps {
  * Eliminates the ~30 lines of duplicated JSX previously inlined in each Marker.
  */
 function TrailPointCallout({ title, point }: TrailPointCalloutProps): React.JSX.Element {
+  const { t } = useTranslation();
   return (
     <Callout tooltip>
       <View style={styles.callout}>
@@ -191,11 +194,11 @@ function TrailPointCallout({ title, point }: TrailPointCalloutProps): React.JSX.
         )}
         {point.battery_level != null && (
           <NBText variant="caption" color="gray400">
-            Baterai: {point.battery_level}%
+            {t('monitoring:locationTrail.battery')} {point.battery_level}%
           </NBText>
         )}
         <NBText variant="caption" color="gray400">
-          {point.is_within_area ? 'Di dalam area' : 'Di luar area'}
+          {point.is_within_area ? t('monitoring:locationTrail.insideArea') : t('monitoring:locationTrail.outsideArea')}
         </NBText>
       </View>
     </Callout>
@@ -215,6 +218,7 @@ export function LocationTrailMapLayers({
   isLoading,
   mapRef,
 }: LocationTrailMapLayersProps): React.JSX.Element | null {
+  const { t } = useTranslation();
   // Stage-1: defer first attach by one animation frame so MapView is fully
   // settled before we add Polyline/Marker children.
   const [mounted, setMounted] = useState(false);
@@ -287,10 +291,10 @@ export function LocationTrailMapLayers({
           <View style={[styles.flagMarker, styles.flagMarkerLight]}>
             <MaterialCommunityIcons name="flag" size={14} color={nbColors.black} />
             <NBText variant="caption" color="black" style={{ fontSize: 9 }}>
-              Mulai {formatTime(startPoint.logged_at)}
+              {t('monitoring:locationTrail.wayStartLabel')} {formatTime(startPoint.logged_at)}
             </NBText>
           </View>
-          <TrailPointCallout title="Titik Mulai" point={startPoint} />
+          <TrailPointCallout title={t('monitoring:locationTrail.startPoint')} point={startPoint} />
         </Marker>
       )}
 
@@ -302,10 +306,10 @@ export function LocationTrailMapLayers({
           <View style={[styles.flagMarker, styles.flagMarkerDark]}>
             <MaterialCommunityIcons name="flag-checkered" size={14} color={nbColors.white} />
             <NBText variant="caption" color="white" style={{ fontSize: 9 }}>
-              Akhir {formatTime(endPoint.logged_at)}
+              {t('monitoring:locationTrail.wayEndLabel')} {formatTime(endPoint.logged_at)}
             </NBText>
           </View>
-          <TrailPointCallout title="Titik Akhir" point={endPoint} />
+          <TrailPointCallout title={t('monitoring:locationTrail.endPoint')} point={endPoint} />
         </Marker>
       )}
 
@@ -323,7 +327,7 @@ export function LocationTrailMapLayers({
                 {displayNum}
               </NBText>
             </View>
-            <TrailPointCallout title={`Titik #${displayNum}`} point={pt} />
+            <TrailPointCallout title={t('monitoring:locationTrail.waypoint', { num: displayNum })} point={pt} />
           </Marker>
         );
       })}
@@ -357,6 +361,7 @@ export function LocationTrailOverlay({
   onRetry,
   bottomInset = 0,
 }: LocationTrailOverlayProps): React.JSX.Element {
+  const { t } = useTranslation();
   const hasPoints = !!history && history.points.length > 0;
   // History loaded for the date but no GPS points were recorded — distinct from
   // a fetch error. Show a "no data" state instead of a misleading all-zero bar.
@@ -373,7 +378,7 @@ export function LocationTrailOverlay({
         <View style={styles.centerOverlay} pointerEvents="none">
           <View style={styles.loadingPill}>
             <NBText variant="body-sm" color="white">
-              Memuat riwayat lokasi…
+              {t('monitoring:locationTrail.loading')}
             </NBText>
           </View>
         </View>
@@ -386,9 +391,9 @@ export function LocationTrailOverlay({
             <NBEmptyState
               variant="error"
               illustration="illo-offline"
-              title="Gagal Memuat Riwayat"
+              title={t('monitoring:locationTrail.loadError')}
               description={error}
-              ctaLabel={onRetry ? 'Coba Lagi' : undefined}
+              ctaLabel={onRetry ? t('common:actions.retry') : undefined}
               onCTA={onRetry}
               testID="trail-error"
             />
@@ -403,8 +408,8 @@ export function LocationTrailOverlay({
             <NBEmptyState
               variant="noData"
               illustration="illo-location"
-              title="Tidak Ada Riwayat"
-              description="Belum ada titik GPS yang terekam untuk tanggal ini."
+              title={t('monitoring:locationTrail.noData')}
+              description={t('monitoring:location.noPoints')}
               testID="trail-empty"
             />
           </View>

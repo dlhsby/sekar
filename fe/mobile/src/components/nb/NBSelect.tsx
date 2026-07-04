@@ -20,6 +20,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   nbColors,
@@ -63,34 +64,40 @@ export function NBSelect({
   selectedValues,
   onValuesChange,
   options,
-  placeholder = 'Pilih...',
+  placeholder,
   label,
   disabled = false,
   searchable = false,
-  searchPlaceholder = 'Cari...',
+  searchPlaceholder,
   clearable = false,
   style,
 }: NBSelectProps): React.ReactElement {
+  const { t } = useTranslation('components');
   const isMulti = selectedValues !== undefined && onValuesChange !== undefined;
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const insets = useSafeAreaInsets();
   const chevronAnim = useRef(new Animated.Value(0)).current;
 
+  const defaultPlaceholder = t('nbselect.placeholder');
+  const defaultSearchPlaceholder = t('nbselect.searchPlaceholder');
+  const finalPlaceholder = placeholder ?? defaultPlaceholder;
+  const finalSearchPlaceholder = searchPlaceholder ?? defaultSearchPlaceholder;
+
   // Display label logic
   const displayLabel = useMemo(() => {
     if (isMulti) {
-      if (!selectedValues || selectedValues.length === 0) return placeholder;
+      if (!selectedValues || selectedValues.length === 0) return finalPlaceholder;
       const names = selectedValues
         .map(v => options.find(o => o.value === v)?.label)
         .filter(Boolean);
       return names.length <= 2
         ? names.join(', ')
-        : `${names.length} dipilih`;
+        : `${names.length} ${t('nbselect.selected')}`;
     }
     const selectedOption = options.find(o => o.value === value);
-    return selectedOption ? selectedOption.label : placeholder;
-  }, [isMulti, value, selectedValues, options, placeholder]);
+    return selectedOption ? selectedOption.label : finalPlaceholder;
+  }, [isMulti, value, selectedValues, options, finalPlaceholder, t]);
 
   const hasSelection = isMulti
     ? (selectedValues && selectedValues.length > 0)
@@ -325,14 +332,14 @@ export function NBSelect({
                   style={styles.clearAllButton}
                   onPress={() => onValuesChange?.([])}
                 >
-                  <Text style={styles.clearAllText}>Hapus Semua</Text>
+                  <Text style={styles.clearAllText}>{t('nbselect.clearAll')}</Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity
                 style={styles.sheetCloseButton}
                 onPress={closeSheet}
                 accessibilityRole="button"
-                accessibilityLabel="Tutup"
+                accessibilityLabel={t('nbselect.close')}
               >
                 <MaterialCommunityIcons
                   name="close"
@@ -356,7 +363,7 @@ export function NBSelect({
                   style={styles.searchInput}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
-                  placeholder={searchPlaceholder}
+                  placeholder={finalSearchPlaceholder}
                   placeholderTextColor={nbColors.gray400}
                   autoFocus
                 />
@@ -385,7 +392,7 @@ export function NBSelect({
                     size={20}
                     color={nbColors.danger}
                   />
-                  <Text style={styles.clearOptionText}>Hapus Pilihan</Text>
+                  <Text style={styles.clearOptionText}>{t('nbselect.clearSelection')}</Text>
                 </TouchableOpacity>
                 <View style={styles.separator} />
               </>
@@ -409,7 +416,7 @@ export function NBSelect({
                   activeOpacity={0.7}
                 >
                   <Text style={styles.doneButtonText}>
-                    Selesai{selectedValues && selectedValues.length > 0 ? ` (${selectedValues.length})` : ''}
+                    {t('nbselect.done')}{selectedValues && selectedValues.length > 0 ? ` (${selectedValues.length})` : ''}
                   </Text>
                 </TouchableOpacity>
               </View>

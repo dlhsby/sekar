@@ -46,7 +46,7 @@ describe('AppInstallPage', () => {
   it('shows a loading state', () => {
     mockUseLatestAppRelease.mockReturnValue({ data: null, status: 'loading' });
     render(<AppInstallPage platform="android" />);
-    expect(screen.getByText(/Memuat versi terbaru/i)).toBeInTheDocument();
+    expect(screen.getByText(/Memuat…/i)).toBeInTheDocument();
   });
 
   it('shows an iOS "coming soon" message when nothing is published', () => {

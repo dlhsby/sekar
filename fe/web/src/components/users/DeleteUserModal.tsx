@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ui';
 import { User } from '@/types/models';
@@ -18,6 +19,7 @@ interface DeleteUserModalProps {
  * Delete User Confirmation Modal
  */
 export function DeleteUserModal({ user, isOpen, onClose, onSuccess }: DeleteUserModalProps) {
+  const { t } = useTranslation();
   const [error, setError] = useState<string>('');
   const deleteUserMutation = useDeleteUser();
 
@@ -28,7 +30,7 @@ export function DeleteUserModal({ user, isOpen, onClose, onSuccess }: DeleteUser
       setError('');
       const name = user.full_name;
       await deleteUserMutation.mutateAsync(user.id);
-      toast.success(`Pengguna "${name}" berhasil dihapus.`);
+      toast.success(t('admin:messages.userDeletedSuccess', { name }));
       onSuccess();
     } catch (err) {
       const errorMessage = getErrorMessage(err);
@@ -46,14 +48,15 @@ export function DeleteUserModal({ user, isOpen, onClose, onSuccess }: DeleteUser
           onClose();
         }
       }}
-      title="Hapus User"
+      title={t('admin:dialogs.deleteUser.title')}
       description={
         <>
-          Apakah Anda yakin ingin menghapus user{' '}
-          <span className="font-bold">{user?.full_name}</span>? Tindakan ini tidak dapat dibatalkan.
+          {t('admin:dialogs.deleteUser.descriptionPrefix')}{' '}
+          <span className="font-bold">{user?.full_name}</span>{' '}
+          {t('admin:dialogs.deleteUser.descriptionSuffix')}
         </>
       }
-      confirmLabel="Hapus"
+      confirmLabel={t('admin:shared.delete')}
       variant="destructive"
       loading={deleteUserMutation.isPending}
       onConfirm={handleDelete}

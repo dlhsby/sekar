@@ -24,6 +24,7 @@ import {
   X,
 } from 'lucide-react';
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils/cn';
 
@@ -172,7 +173,7 @@ export function DataTable<TData, TValue>({
   enableColumnToggle = true,
   enablePagination = true,
   emptyAction,
-  emptyTitle = 'Belum Ada Data',
+  emptyTitle,
   emptyDescription,
   toolbar,
   onRefresh,
@@ -181,7 +182,7 @@ export function DataTable<TData, TValue>({
   onRowClick,
   getRowId,
   rowActions,
-  rowActionsLabel = 'Aksi',
+  rowActionsLabel,
   defaultPageSize = PAGE_SIZES[0],
   className,
 }: DataTableProps<TData, TValue>): React.JSX.Element {
@@ -204,6 +205,11 @@ export function DataTable<TData, TValue>({
   const [showFilters, setShowFilters] = React.useState(false);
   const [searchFocused, setSearchFocused] = React.useState(false);
   const isDesktop = useIsDesktop();
+  const { t } = useTranslation();
+
+  // Use defaults from i18n if not provided
+  const finalEmptyTitle = emptyTitle ?? t('common:empty.noData');
+  const finalRowActionsLabel = rowActionsLabel ?? t('admin:shared.actions');
 
   // Resolve filter behaviour and append the standardized actions column.
   const resolvedColumns = React.useMemo(() => {
@@ -228,11 +234,11 @@ export function DataTable<TData, TValue>({
     if (rowActions) {
       mapped.push({
         id: '__actions',
-        header: rowActionsLabel,
+        header: finalRowActionsLabel,
         enableSorting: false,
         enableColumnFilter: false,
         enableHiding: false,
-        meta: { label: rowActionsLabel, pinRight: true, align: 'center' },
+        meta: { label: finalRowActionsLabel, pinRight: true, align: 'center' },
         cell: ({ row }) => {
           const acts = rowActions(row.original).filter((a) => !a.hidden);
           if (acts.length === 0) return null;
@@ -243,7 +249,7 @@ export function DataTable<TData, TValue>({
                   <Button
                     variant="ghost"
                     size="sm"
-                    aria-label="Aksi baris"
+                    aria-label={finalRowActionsLabel}
                     className="h-8 w-8 p-0"
                   >
                     <MoreHorizontal className="h-4 w-4" aria-hidden />
@@ -350,7 +356,7 @@ export function DataTable<TData, TValue>({
                 onBlur={() => setSearchFocused(false)}
                 placeholder={searchPlaceholder}
                 leftIcon={<Search className="h-4 w-4" aria-hidden />}
-                aria-label="Cari"
+                aria-label={t('common:actions.search')}
                 className="w-full"
               />
             </div>
@@ -366,19 +372,19 @@ export function DataTable<TData, TValue>({
                   aria-pressed={showFilters}
                   title={
                     columnFilters.length > 0
-                      ? `${columnFilters.length} filter aktif`
-                      : 'Filter per kolom'
+                      ? t('common:actions.activeFilters', { count: columnFilters.length })
+                      : t('common:actions.filterPerColumn')
                   }
                   className={cn(
                     (showFilters || columnFilters.length > 0) && 'bg-nb-info-light'
                   )}
                 >
                   <Filter className="h-4 w-4" aria-hidden />
-                  <span className="hidden sm:inline">Filter</span>
+                  <span className="hidden sm:inline">{t('common:table.filter')}</span>
                   {columnFilters.length > 0 ? (
                     <span
                       className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-nb-black bg-nb-warning px-1 text-xs font-bold tabular-nums text-nb-ink"
-                      aria-label={`${columnFilters.length} filter aktif`}
+                      aria-label={t('common:table.activeFilters', { count: columnFilters.length })}
                     >
                       {columnFilters.length}
                     </span>
@@ -390,10 +396,10 @@ export function DataTable<TData, TValue>({
                   variant="ghost"
                   size="sm"
                   onClick={() => table.resetColumnFilters()}
-                  title="Hapus semua filter kolom"
+                  title={t('common:actions.clearAllFilters')}
                 >
                   <X className="h-4 w-4" aria-hidden />
-                  <span className="hidden sm:inline">Hapus Filter</span>
+                  <span className="hidden sm:inline">{t('common:actions.clearFilters')}</span>
                 </Button>
               ) : null}
               {enableColumnToggle ? (
@@ -401,11 +407,11 @@ export function DataTable<TData, TValue>({
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm">
                       <SlidersHorizontal className="h-4 w-4" aria-hidden />
-                      <span className="hidden sm:inline">Kolom</span>
+                      <span className="hidden sm:inline">{t('common:actions.columns')}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Tampilkan kolom</DropdownMenuLabel>
+                    <DropdownMenuLabel>{t('common:actions.showColumns')}</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     {table
                       .getAllColumns()
@@ -429,11 +435,11 @@ export function DataTable<TData, TValue>({
                   size="sm"
                   onClick={onRefresh}
                   disabled={refreshing}
-                  aria-label="Muat ulang"
-                  title="Muat ulang data"
+                  aria-label={t('common:actions.refresh')}
+                  title={t('common:actions.refresh')}
                 >
                   <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} aria-hidden />
-                  <span className="hidden sm:inline">Muat Ulang</span>
+                  <span className="hidden sm:inline">{t('common:actions.refresh')}</span>
                 </Button>
               ) : null}
               {actions}
@@ -481,7 +487,7 @@ export function DataTable<TData, TValue>({
                             <button
                               type="button"
                               onClick={header.column.getToggleSortingHandler()}
-                              title="Klik untuk mengurutkan · Shift+klik untuk beberapa kolom"
+                              title={t('common:actions.sortTooltip')}
                               className="-ml-1 inline-flex w-fit items-center gap-1 rounded-nb-sm px-1 hover:text-nb-success-dark"
                             >
                               {flexRender(header.column.columnDef.header, header.getContext())}
@@ -534,7 +540,7 @@ export function DataTable<TData, TValue>({
                 <TableCell colSpan={colCount} className="border-r-0 p-4">
                   <EmptyState
                     variant="error"
-                    action={onRetry ? { label: 'Coba Lagi', onClick: onRetry } : undefined}
+                    action={onRetry ? { label: t('common:actions.retry'), onClick: onRetry } : undefined}
                   />
                 </TableCell>
               </TableRow>
@@ -600,7 +606,7 @@ export function DataTable<TData, TValue>({
         ) : error ? (
           <EmptyState
             variant="error"
-            action={onRetry ? { label: 'Coba Lagi', onClick: onRetry } : undefined}
+            action={onRetry ? { label: t('common:actions.retry'), onClick: onRetry } : undefined}
           />
         ) : pageRows.length === 0 ? (
           isFiltered ? (
@@ -678,12 +684,13 @@ function DataTablePagination<TData>({
   onPageChange,
   onPageSizeChange,
 }: PaginationBarProps<TData>): React.JSX.Element {
+  const { t } = useTranslation();
   const from = page * pageSize + 1;
   const to = Math.min((page + 1) * pageSize, totalRows);
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <p className="text-nb-body-sm text-nb-gray-600">
-        Menampilkan {from}–{to} dari {totalRows}
+        {t('common:pagination.showing', { from, to, total: totalRows })}
       </p>
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
@@ -693,10 +700,10 @@ function DataTablePagination<TData>({
             disabled={page <= 0}
             onClick={() => onPageChange(page - 1)}
           >
-            Sebelumnya
+            {t('common:pagination.previous')}
           </Button>
           <span className="text-nb-body-sm text-nb-gray-600">
-            Halaman {page + 1} dari {totalPages}
+            {t('common:pagination.pageOf', { page: page + 1, total: totalPages })}
           </span>
           <Button
             variant="outline"
@@ -704,7 +711,7 @@ function DataTablePagination<TData>({
             disabled={page >= totalPages - 1}
             onClick={() => onPageChange(page + 1)}
           >
-            Selanjutnya
+            {t('common:pagination.next')}
           </Button>
         </div>
         <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v))}>
@@ -714,7 +721,7 @@ function DataTablePagination<TData>({
           <SelectContent>
             {PAGE_SIZES.map((s) => (
               <SelectItem key={s} value={String(s)}>
-                {s} / hlm
+                {t('common:pagination.perPage', { count: s })}
               </SelectItem>
             ))}
           </SelectContent>

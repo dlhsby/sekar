@@ -10,6 +10,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { NBButton, NBText } from '../../components/nb';
 import { PaginationDots } from '../../components/auth/PaginationDots';
 import { OnbClockIn } from '../../components/nb/illustrations/onboarding';
@@ -17,6 +18,7 @@ import { nbColors, nbBorders, nbRadius, nbShadows, nbSpacing } from '../../const
 import { useAppSelector } from '../../store/hooks';
 
 export function OnboardingWelcomeScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const user = useAppSelector((s) => s.auth.user);
   const firstName = user?.full_name?.trim().split(' ')[0] ?? '';
@@ -29,13 +31,13 @@ export function OnboardingWelcomeScreen(): React.JSX.Element {
         <View style={styles.illo}>
           <View style={styles.siapPill}>
             <NBText variant="mono-sm" color="successDark">
-              SIAP
+              {t('onboarding:welcome.ready')}
             </NBText>
           </View>
           <OnbClockIn width={240} height={180} />
         </View>
 
-        <NBText variant="h1">Hai,</NBText>
+        <NBText variant="h1">{t('onboarding:welcome.greeting')}</NBText>
         {firstName ? (
           <View style={styles.nameChip}>
             <NBText variant="h1">{firstName}</NBText>
@@ -43,13 +45,13 @@ export function OnboardingWelcomeScreen(): React.JSX.Element {
         ) : null}
 
         <NBText variant="body-sm" color="gray700" style={styles.body}>
-          SEKAR butuh sedikit setup biar kamu bisa langsung ke lapangan. Cuma sebentar, sekali saja.
+          {t('onboarding:welcome.body')}
         </NBText>
 
         <View style={styles.spacer} />
 
         <NBButton
-          title="Lanjut"
+          title={t('onboarding:welcome.continue')}
           variant="primary"
           fullWidth
           onPress={() => navigation.navigate('OnboardingPermissions' as never)}

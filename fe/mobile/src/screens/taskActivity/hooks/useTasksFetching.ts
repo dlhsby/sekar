@@ -4,6 +4,7 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
+import i18n from '../../../i18n/config';
 import { getMyTasks, getTaggedTasks } from '../../../services/api/tasksApi';
 import type { Task, TaskStatus } from '../../../types/models.types';
 
@@ -155,7 +156,7 @@ export function useTasksFetching(options: UseTasksFetchingOptions): UseTasksFetc
       setTaskPage(page);
       setHasMoreTasks(page < totalPages);
     } catch {
-      setTasksError('Gagal memuat tugas');
+      setTasksError(i18n.t('tasks:list.loadError'));
     } finally {
       setLoadingTasks(false);
       setIsLoadingMoreTasks(false);

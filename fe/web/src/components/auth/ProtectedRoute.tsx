@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRequireAuth } from '@/lib/auth/hooks';
 import { UserRole } from '@/lib/api/auth';
 
@@ -37,6 +38,7 @@ export interface ProtectedRouteProps {
  * ```
  */
 export function ProtectedRoute({ children, requiredRoles, loadingFallback }: ProtectedRouteProps) {
+  const { t } = useTranslation();
   const { user, loading } = useRequireAuth(requiredRoles);
 
   // Show loading state
@@ -48,7 +50,7 @@ export function ProtectedRoute({ children, requiredRoles, loadingFallback }: Pro
             <div className="mb-4">
               <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-nb-primary border-r-transparent" />
             </div>
-            <p className="text-nb-gray-600 font-medium">Memeriksa autentikasi...</p>
+            <p className="text-nb-gray-600 font-medium">{t("common:appError.checkingAuth")}</p>
           </div>
         </div>
       )

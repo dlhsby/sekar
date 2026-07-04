@@ -20,6 +20,7 @@ import notifee, {
   AndroidImportance,
   AndroidForegroundServiceType,
 } from '@notifee/react-native';
+import i18n from '../../i18n/config';
 
 const CHANNEL_ID = 'location-tracking';
 const NOTIFICATION_ID = 'sekar-location-tracking';
@@ -62,14 +63,14 @@ export async function startLocationForegroundService(): Promise<void> {
 
     await notifee.createChannel({
       id: CHANNEL_ID,
-      name: 'Pelacakan Lokasi',
+      name: i18n.t('location:foregroundService.channelName'),
       importance: AndroidImportance.LOW, // silent — no sound/heads-up
     });
 
     await notifee.displayNotification({
       id: NOTIFICATION_ID,
-      title: 'SEKAR — Pelacakan lokasi aktif',
-      body: 'Lokasi Anda dipantau selama shift berlangsung.',
+      title: i18n.t('location:foregroundService.notificationTitle'),
+      body: i18n.t('location:foregroundService.notificationBody'),
       android: {
         channelId: CHANNEL_ID,
         asForegroundService: true,

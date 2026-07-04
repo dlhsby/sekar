@@ -22,6 +22,7 @@ import {
   getStaffingSummary,
   getBoundaries,
 } from '../../services/api/monitoringApi';
+import i18n from '../../i18n/config';
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -141,7 +142,7 @@ export const fetchLiveUsers = createAsyncThunk(
       }
       return response.data;
     } catch {
-      return rejectWithValue('Gagal memuat data pengguna aktif');
+      return rejectWithValue(i18n.t('monitoring:screen.error.fetchLiveUsers'));
     }
   },
 );
@@ -156,7 +157,7 @@ export const fetchUserDaySummary = createAsyncThunk(
       }
       return response.data;
     } catch {
-      return rejectWithValue('Gagal memuat ringkasan harian pengguna');
+      return rejectWithValue(i18n.t('monitoring:screen.error.fetchUserDaySummary'));
     }
   },
 );
@@ -178,7 +179,7 @@ export const fetchLocationHistory = createAsyncThunk(
       }
       return response.data;
     } catch {
-      return rejectWithValue('Gagal memuat riwayat lokasi');
+      return rejectWithValue(i18n.t('monitoring:screen.error.fetchLocationHistory'));
     }
   },
 );
@@ -200,7 +201,7 @@ export const fetchStaffingSummary = createAsyncThunk(
         current_day_type_label: (response.data as any)?.current_day_type_label ?? null,
       };
     } catch {
-      return rejectWithValue('Gagal memuat ringkasan kepegawaian');
+      return rejectWithValue(i18n.t('monitoring:screen.error.fetchStaffingSummary'));
     }
   },
 );
@@ -238,7 +239,7 @@ export const fetchBoundaries = createAsyncThunk(
       }
       return data ?? null;
     } catch {
-      return rejectWithValue('Gagal memuat batas wilayah');
+      return rejectWithValue(i18n.t('monitoring:screen.error.fetchBoundaries'));
     }
   },
 );

@@ -5,10 +5,11 @@
  * Reusable form for creating and editing rayons
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import { FormInput, Input, Textarea, Button } from '@/components/ui';
 import { FormActions } from '@/components/forms/FormActions';
 import { AvailabilityHint } from '@/components/forms/AvailabilityHint';
@@ -34,36 +35,14 @@ const toNullableNumber = (v: unknown): number | null => {
   return Number.isNaN(n) ? null : n;
 };
 
-// Validation schema — master data: only this table's own columns.
-const rayonSchema = z.object({
-  name: z.string().min(2, 'Nama minimal 2 karakter'),
-  color: z
-    .string()
-    .optional()
-    .nullable()
-    .refine((v) => !v || HEX_COLOR_RE.test(v), 'Format warna harus heksadesimal, mis. #RRGGBB'),
-  description: z.string().optional().nullable(),
-  center_lat: z
-    .number()
-    .min(-90, 'Latitude harus antara -90 dan 90')
-    .max(90, 'Latitude harus antara -90 dan 90')
-    .nullable()
-    .optional(),
-  center_lng: z
-    .number()
-    .min(-180, 'Longitude harus antara -180 dan 180')
-    .max(180, 'Longitude harus antara -180 dan 180')
-    .nullable()
-    .optional(),
-  boundary_polygon: z
-    .custom<GeoJSON.Polygon | GeoJSON.MultiPolygon>((v) => v == null || isBoundaryGeometry(v), {
-      message: 'Batas rayon tidak valid',
-    })
-    .nullable()
-    .optional(),
-});
-
-type RayonFormData = z.infer<typeof rayonSchema>;
+type RayonFormData = {
+  name: string;
+  color?: string | null;
+  description?: string | null;
+  center_lat?: number | null;
+  center_lng?: number | null;
+  boundary_polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
+};
 
 export interface RayonFormProps {
   initialData?: Rayon;
@@ -84,6 +63,44 @@ export function RayonForm({
   readOnly = false,
   onCancel,
 }: RayonFormProps) {
+  const { t } = useTranslation();
+
+  // Localized validation schema
+  const rayonSchema = useMemo(
+    () =>
+      z.object({
+        name: z.string().min(2, t('validation:nameMin')),
+        color: z
+          .string()
+          .optional()
+          .nullable()
+          .refine(
+            (v) => !v || HEX_COLOR_RE.test(v),
+            t('validation:colorInvalid')
+          ),
+        description: z.string().optional().nullable(),
+        center_lat: z
+          .number()
+          .min(-90, t('validation:latitudeInvalid'))
+          .max(90, t('validation:latitudeInvalid'))
+          .nullable()
+          .optional(),
+        center_lng: z
+          .number()
+          .min(-180, t('validation:longitudeInvalid'))
+          .max(180, t('validation:longitudeInvalid'))
+          .nullable()
+          .optional(),
+        boundary_polygon: z
+          .custom<GeoJSON.Polygon | GeoJSON.MultiPolygon>((v) => v == null || isBoundaryGeometry(v), {
+            message: t('validation:boundaryRequired'),
+          })
+          .nullable()
+          .optional(),
+      }),
+    [t],
+  );
+
   const {
     register,
     handleSubmit,
@@ -157,12 +174,12 @@ export function RayonForm({
     <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
       {/* Basic Information */}
       <div className="space-y-4">
-        <h3 className="font-bold text-lg">Informasi Dasar</h3>
+        <h3 className="font-bold text-lg">{t('admin:rayons.form.basicInfoTitle')}</h3>
 
         <div className="space-y-1">
           <FormInput
-            label="Nama Rayon"
-            placeholder="Contoh: Rayon 1"
+            label={t('admin:rayons.form.name')}
+            placeholder={t('admin:rayons.form.namePlaceholder')}
             error={errors.name?.message}
             required
             disabled={readOnly}
@@ -170,19 +187,22 @@ export function RayonForm({
           />
           <AvailabilityHint
             status={nameStatus}
-            labels={{ available: 'Nama rayon tersedia', taken: 'Nama rayon sudah dipakai' }}
+            labels={{
+              available: t('admin:rayons.form.nameAvailable'),
+              taken: t('admin:rayons.form.nameTaken'),
+            }}
           />
         </div>
 
         {/* Color picker */}
         <div className="space-y-1.5">
           <label className="text-sm font-bold leading-none" htmlFor="rayon-color-hex">
-            Warna
+            {t('admin:rayons.form.color')}
           </label>
           <div className="flex items-center gap-3">
             <input
               type="color"
-              aria-label="Pilih warna rayon"
+              aria-label={t('admin:rayons.form.colorLabel')}
               value={swatchValue}
               onChange={(e) => setValue('color', e.target.value, { shouldValidate: true })}
               disabled={readOnly}
@@ -195,7 +215,7 @@ export function RayonForm({
               value={colorValue}
               onChange={(e) => setValue('color', e.target.value, { shouldValidate: true })}
               error={errors.color?.message}
-              aria-label="Kode warna heksadesimal"
+              aria-label={t('admin:rayons.form.colorHex')}
               disabled={readOnly}
             />
           </div>
@@ -203,16 +223,15 @@ export function RayonForm({
             <p className="text-nb-body-sm text-nb-danger">{errors.color.message}</p>
           ) : (
             <p className="text-nb-body-sm text-nb-gray-500">
-              Pilih dari palet atau masukkan kode heksadesimal (opsional). Dipakai untuk batas
-              rayon di peta monitoring.
+              {t('admin:rayons.form.colorHelper')}
             </p>
           )}
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-sm font-bold leading-none">Deskripsi</label>
+          <label className="text-sm font-bold leading-none">{t('admin:rayons.form.description')}</label>
           <Textarea
-            placeholder="Deskripsi rayon (opsional)"
+            placeholder={t('admin:rayons.form.descriptionPlaceholder')}
             rows={3}
             error={errors.description?.message}
             disabled={readOnly}
@@ -224,14 +243,12 @@ export function RayonForm({
       {/* Boundary + center pin on a single Google map */}
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-bold text-lg">Batas & Titik Lokasi</h3>
+          <h3 className="font-bold text-lg">{t('admin:rayons.form.boundaryTitle')}</h3>
           {!readOnly && <ImportBoundaryButton onImport={handleImportBoundary} />}
         </div>
         {!readOnly && (
           <p className="text-nb-body-sm text-nb-gray-500">
-            Dua pengaturan terpisah — isi <b>minimal salah satu</b>: <b>gambar batas</b> wilayah rayon,
-            dan/atau <b>tentukan titik lokasi</b> (mis. lokasi kantor rayon atau titik yang dipakai
-            untuk menggeser peta saat pencarian). Titik lokasi tidak harus berada di tengah batas.
+            {t('admin:rayons.form.boundaryDescription')}
           </p>
         )}
 
@@ -264,7 +281,7 @@ export function RayonForm({
           manualFallback={
             <div className="rounded-nb-base border-2 border-nb-black bg-nb-gray-100 p-3">
               <p className="text-nb-body-sm text-nb-gray-700">
-                Peta tidak tersedia — masukkan koordinat secara manual di bawah.
+                {t('admin:rayons.form.mapUnavailable')}
               </p>
             </div>
           }
@@ -273,9 +290,9 @@ export function RayonForm({
         {/* Manual entry / fine-tuning — stays in sync with the pin. Optional. */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FormInput
-            label="Latitude"
+            label={t('admin:rayons.form.latitude')}
             type="number"
-            placeholder="Contoh: -7.25"
+            placeholder={t('admin:rayons.form.latitudePlaceholder')}
             step="any"
             error={errors.center_lat?.message}
             disabled={readOnly}
@@ -283,9 +300,9 @@ export function RayonForm({
           />
 
           <FormInput
-            label="Longitude"
+            label={t('admin:rayons.form.longitude')}
             type="number"
-            placeholder="Contoh: 112.75"
+            placeholder={t('admin:rayons.form.longitudePlaceholder')}
             step="any"
             error={errors.center_lng?.message}
             disabled={readOnly}
@@ -298,7 +315,7 @@ export function RayonForm({
       {readOnly ? (
         <div className="flex gap-3 pt-4">
           <Button type="button" variant="secondary" onClick={onCancel} className="w-full">
-            Tutup
+            {t('admin:shared.close')}
           </Button>
         </div>
       ) : (
@@ -307,18 +324,18 @@ export function RayonForm({
             submitLabel={
               isLoading
                 ? mode === 'create'
-                  ? 'Menyimpan...'
-                  : 'Memperbarui...'
+                  ? t('admin:shared.creating')
+                  : t('admin:shared.updating')
                 : mode === 'create'
-                  ? 'Simpan Rayon'
-                  : 'Perbarui Rayon'
+                  ? t('admin:rayons.form.submitNew')
+                  : t('admin:rayons.form.submit')
             }
             loading={isLoading}
             disabled={!hasGeometry}
           />
           {!hasGeometry && (
             <p className="text-nb-body-sm text-nb-danger">
-              Tentukan minimal salah satu: gambar batas rayon atau tempatkan titik lokasi.
+              {t('admin:rayons.form.geometryRequired')}
             </p>
           )}
         </>

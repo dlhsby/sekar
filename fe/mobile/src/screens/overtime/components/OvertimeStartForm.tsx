@@ -8,6 +8,7 @@ import {
   View,
   StyleSheet,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import {
   NBCardTextInput,
   NBCollapsibleCard,
@@ -45,43 +46,45 @@ const OvertimeStartForm: React.FC<OvertimeStartFormProps> = ({
   error,
   isWithinBoundary,
   areaName,
-}) => (
-  <>
-    {error && (
-      <View style={styles.errorSummary}>
-        <NBText variant="body-sm" color="danger" style={styles.errorSummaryTitle}>
-          Mohon lengkapi data berikut:
-        </NBText>
-        <NBText variant="body-sm" color="black" style={styles.errorSummaryItem}>
-          - {error}
-        </NBText>
-      </View>
-    )}
-
-    <NBCardTextInput
-      title="ALASAN LEMBUR (OPSIONAL)"
-      value={reason}
-      onChangeText={onReasonChange}
-      placeholder="Contoh: Pekerjaan tambahan setelah jam kerja..."
-      numberOfLines={4}
-      style={styles.textInputCard}
-    />
-
-    <NBCollapsibleCard
-      style={[styles.selfieCard, styles.gpsCard]}
-      defaultExpanded
-      accessibilityLabel="Lokasi GPS"
-      headerLeft={
-        <View>
-          <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>
-            {'LOKASI GPS '}
-            <NBText variant="mono-sm" color="danger" style={{ textTransform: 'none' }}>*</NBText>
+}) => {
+  const { t } = useTranslation();
+  return (
+    <>
+      {error && (
+        <View style={styles.errorSummary}>
+          <NBText variant="body-sm" color="danger" style={styles.errorSummaryTitle}>
+            {t('overtime:forms.errorSummaryTitle')}
+          </NBText>
+          <NBText variant="body-sm" color="black" style={styles.errorSummaryItem}>
+            - {error}
           </NBText>
         </View>
+      )}
+
+      <NBCardTextInput
+        title={t('overtime:forms.reasonTitle')}
+        value={reason}
+        onChangeText={onReasonChange}
+        placeholder={t('overtime:forms.reasonPlaceholder')}
+        numberOfLines={4}
+        style={styles.textInputCard}
+      />
+
+      <NBCollapsibleCard
+        style={[styles.selfieCard, styles.gpsCard]}
+        defaultExpanded
+        accessibilityLabel={t('overtime:forms.gpsLabel')}
+        headerLeft={
+          <View>
+            <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>
+              {`${t('overtime:forms.gpsLabel')} `}
+              <NBText variant="mono-sm" color="danger" style={{ textTransform: 'none' }}>*</NBText>
+            </NBText>
+          </View>
       }
       headerRight={location != null
         ? <NBBadge
-            text={isWithinBoundary ? 'DI AREA' : 'LUAR AREA'}
+            text={isWithinBoundary ? t('overtime:components.withinAreaBadge') : t('overtime:components.outsideAreaBadge')}
             color={isWithinBoundary ? 'success' : 'danger'}
             size="sm"
           />
@@ -99,8 +102,9 @@ const OvertimeStartForm: React.FC<OvertimeStartFormProps> = ({
         areaName={areaName}
       />
     </NBCollapsibleCard>
-  </>
-);
+    </>
+  );
+};
 
 const styles = StyleSheet.create({
   textInputCard: {

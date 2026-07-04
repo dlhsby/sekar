@@ -14,6 +14,7 @@ import {
   SafeAreaView,
   Dimensions,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBText } from '../nb/NBText';
 import { nbSpacing } from '../../constants/nbTokens';
 
@@ -30,6 +31,8 @@ export function ImagePreviewModal({
   onClose,
   title,
 }: ImagePreviewModalProps): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <Modal
       visible={uri !== null}
@@ -43,7 +46,7 @@ export function ImagePreviewModal({
         style={styles.backdrop}
         activeOpacity={1}
         onPress={onClose}
-        accessibilityLabel="Tutup pratinjau gambar"
+        accessibilityLabel={t('common:ui.closeImagePreview')}
         accessibilityRole="button"
       >
         <SafeAreaView style={styles.safeArea}>
@@ -60,7 +63,7 @@ export function ImagePreviewModal({
               onPress={onClose}
               style={styles.closeButton}
               accessibilityRole="button"
-              accessibilityLabel="Tutup"
+              accessibilityLabel={t('common:actions.close')}
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
               <NBText variant="h3" color="white">✕</NBText>

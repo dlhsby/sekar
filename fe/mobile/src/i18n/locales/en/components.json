@@ -1,0 +1,145 @@
+{
+  "ui": {
+    "all": "All",
+    "sort": "Sort",
+    "activeFilters": "active filters",
+    "dismiss": "Close notification",
+    "tap": {
+      "open": "Tap to open",
+      "close": "Tap to close"
+    },
+    "mapControls": {
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "useMyLocation": "Use my location",
+      "updateHistory": "Update history"
+    },
+    "timeDetails": "Time details",
+    "resetFilterAria": "Reset {{label}} filter",
+    "filterAria": "Filter {{label}}",
+    "dismissAlert": "Dismiss alert"
+  },
+  "nbselect": {
+    "placeholder": "Select...",
+    "searchPlaceholder": "Search...",
+    "selected": "selected",
+    "clearAll": "Clear All",
+    "clearSelection": "Clear Selection",
+    "done": "Done",
+    "close": "Close"
+  },
+  "photoUploader": {
+    "cameraPermissionTitle": "Camera Permission",
+    "capturePhotoError": "Failed to capture photo",
+    "pickPhotoError": "Failed to pick photo",
+    "maxPhotosTitle": "Maximum Photos",
+    "maxPhotosMessage": "You can only add a maximum of {{max}} photos.",
+    "addPhotoTitle": "Add Photo",
+    "addPhotoMessage": "Select photo source:",
+    "cameraOption": "Camera",
+    "galleryOption": "Gallery",
+    "cancelOption": "Cancel",
+    "viewPhotoLabel": "View full photo",
+    "viewPhotoHint": "Tap to view photo at full size",
+    "removePhotoLabel": "Remove photo",
+    "addPhotoLabel": "Add photo",
+    "photoButtonText": "Photo",
+    "previewTitle": "Evidence Photo"
+  },
+  "mediaService": {
+    "noPhotoTaken": "No photo captured",
+    "cameraError": "Camera error: {{message}}",
+    "galleryError": "Gallery error: {{message}}",
+    "photoTooLarge": "Photo too large (max {{maxSize}}MB). Please select a smaller photo.",
+    "storageFull": "Storage full. Free up at least 50MB and try again.",
+    "storageCheckFailed": "Failed to check storage space",
+    "compressionFailed": "Compression failed: {{message}}",
+    "base64ConversionFailed": "Base64 conversion failed: {{message}}",
+    "cameraUnavailable": "Camera is not available on this device",
+    "cameraPermissionDenied": "Camera/gallery permission denied. Please enable in Settings.",
+    "cameraAccessError": "An error occurred while accessing the camera/gallery",
+    "unknownCameraError": "Error: {{errorCode}}"
+  },
+  "locationPicker": {
+    "title": "Select Location",
+    "coordsLabel": "Location: {{lat}}, {{lng}}",
+    "cancelButton": "Cancel",
+    "confirmButton": "Use This Location",
+    "dragHint": "Drag the map so the marker lands on the point you want."
+  },
+  "locationMap": {
+    "notUpdated": "Not updated",
+    "justUpdated": "Updated just now",
+    "defaultTitle": "Your Location",
+    "defaultMarkerTitle": "Your Location",
+    "areaNotAvailable": "Location not available",
+    "gpsNotAvailable": "GPS not active or not available",
+    "accuracy": "Accuracy: ±{{value}}m",
+    "withinWorkArea": "Within work area",
+    "outsideWorkArea": "Outside work area",
+    "updated": "Updated {{time}}",
+    "coordAria": "Coordinates: {{lat}}, {{lng}}"
+  },
+  "nbDatePicker": {
+    "months": [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec"
+    ],
+    "placeholderDate": "Select date",
+    "placeholderTime": "Select time",
+    "modalTitleDate": "Select Date",
+    "modalTitleTime": "Select Time",
+    "buttonCancel": "Cancel",
+    "buttonConfirm": "OK"
+  },
+  "characterCounter": {
+    "count": "{{current}}/{{max}} characters"
+  },
+  "photoGrid": {
+    "photoLabelWithIndex": "{{label}} - Photo {{index}}",
+    "photoIndexOnly": "Photo {{index}} of {{total}}"
+  },
+  "shiftCard": {
+    "areaNotFound": "Area not found",
+    "viewDetailHint": "Tap to view shift details"
+  },
+  "errorBanner": {
+    "closeLabel": "Close error message",
+    "closeHint": "Tap to close this error message"
+  },
+  "updateBanner": {
+    "title": "Update available",
+    "message": "Version {{version}} is available. Update for the latest features & improvements."
+  },
+  "permissionBanner": {
+    "disabledLabel": "{{permissions}} permission disabled",
+    "openSettingsLabel": "OPEN SETTINGS",
+    "accessibilityLabel": "{{permissions}} permission disabled. Tap to open Settings."
+  },
+  "taskDetailSection": {
+    "title": "TASK DETAILS",
+    "subtitle": "Enter title and description for the task",
+    "titleLabel": "Title *",
+    "titlePlaceholder": "Enter task title...",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Explain task details...",
+    "helperText": "{{current}}/500 characters"
+  },
+  "permissions": {
+    "location": "Location",
+    "camera": "Camera",
+    "gallery": "Gallery",
+    "notifications": "Notifications",
+    "backgroundLocation": "Background Location"
+  }
+}

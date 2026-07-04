@@ -8,6 +8,7 @@
  */
 
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Animated,
@@ -67,6 +68,7 @@ export const NBSkeleton: React.FC<NBSkeletonProps> = ({
   style,
   testID,
 }) => {
+  const { t } = useTranslation();
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -152,7 +154,7 @@ export const NBSkeleton: React.FC<NBSkeletonProps> = ({
       testID={testID}
       accessibilityRole="progressbar"
       accessibilityState={{ busy: true }}
-      accessibilityLabel="Loading content"
+      accessibilityLabel={t("common:a11y.loadingContent")}
     >
       {items}
     </View>

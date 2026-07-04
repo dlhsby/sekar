@@ -5,6 +5,7 @@
 
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { RayonStats } from '@/types/models';
 import { Card, CardContent } from '@/components/ui';
 import { formatArea } from '@/lib/utils/geo';
@@ -16,6 +17,8 @@ interface RayonStatsCardsProps {
 }
 
 export default function RayonStatsCards({ stats, loading }: RayonStatsCardsProps) {
+  const { t } = useTranslation();
+
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -34,30 +37,30 @@ export default function RayonStatsCards({ stats, loading }: RayonStatsCardsProps
   }
 
   if (!stats) {
-    return <div className="text-center py-8 text-nb-gray-500">Statistik tidak tersedia</div>;
+    return <div className="text-center py-8 text-nb-gray-500">{t('common:stats.noData')}</div>;
   }
 
   const statCards = [
     {
-      label: 'Total Area',
+      label: t('common:stats.totalArea'),
       value: stats.total_areas,
       color: 'blue',
       icon: <Map className="w-6 h-6" />,
     },
     {
-      label: 'Total Petugas',
+      label: t('admin:rayons.stats.totalUsers'),
       value: stats.total_users,
       color: 'green',
       icon: <Users className="w-6 h-6" />,
     },
     {
-      label: 'Petugas Aktif',
+      label: t('admin:rayons.stats.activeUsers'),
       value: stats.active_users,
       color: 'purple',
       icon: <UserCheck className="w-6 h-6" />,
     },
     {
-      label: 'Luas Tutupan',
+      label: t('admin:rayons.stats.totalCoverageArea'),
       value: formatArea(stats.total_coverage_area || 0),
       color: 'orange',
       icon: <Square className="w-6 h-6" />,

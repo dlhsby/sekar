@@ -7,6 +7,7 @@
 import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../store/hooks';
 import { NBBackgroundPattern, NBMenuCard, NBText } from '../../components/nb';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
@@ -18,6 +19,7 @@ type Props = {
 };
 
 export function MenuScreen({ navigation }: Props): React.JSX.Element {
+  const { t } = useTranslation();
   const role = useAppSelector((state) => state.auth.user?.role) ?? 'satgas';
   const sections = MENU_CONFIGS[role] ?? [];
   // Section headers only add value when there's more than one group; a lone
@@ -40,7 +42,7 @@ export function MenuScreen({ navigation }: Props): React.JSX.Element {
           <View key={section.title} style={styles.section}>
             {showSectionTitles && (
               <NBText variant="h3" color="black" style={styles.sectionTitle}>
-                {section.title}
+                {t(section.title)}
               </NBText>
             )}
             <View style={styles.grid}>
@@ -48,9 +50,9 @@ export function MenuScreen({ navigation }: Props): React.JSX.Element {
                 <View key={`${item.route}:${item.label}`} style={styles.cell}>
                   <NBMenuCard
                     icon={item.icon}
-                    label={item.label}
+                    label={t(item.label)}
                     illustration={item.illustration}
-                    testID={`menu-${item.route}-${item.label}`}
+                    testID={`menu-${item.route}`}
                     onPress={() =>
                       (navigation as any).navigate(item.route, item.params)
                     }

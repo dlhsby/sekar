@@ -5,6 +5,7 @@
  */
 
 import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   StyleSheet,
@@ -50,6 +51,7 @@ export function TasksTab({
   onLoadMore,
   onNavigateToTask,
 }: TasksTabProps): React.JSX.Element {
+  const { t } = useTranslation('common');
   const renderItem = useCallback(
     ({ item }: { item: Task }) => (
       <TaskCard
@@ -78,9 +80,9 @@ export function TasksTab({
           variant="error"
           illustration="illo-offline"
           style={styles.emptyStateStretch}
-          title="Gagal memuat tugas"
+          title={t('tasks:tab.tabLoadErrorTitle')}
           description={tasksError}
-          ctaLabel="Coba Lagi"
+          ctaLabel={t('tasks:tab.tabRetry')}
           onCTA={onRetry}
         />
       </ScrollView>
@@ -98,17 +100,17 @@ export function TasksTab({
           illustration={isFiltered ? 'illo-search' : 'illo-reports'}
           style={styles.emptyStateStretch}
           title={
-            isFiltered ? 'Tidak ada tugas yang cocok' :
-            taskFilter === 'tagged' ? 'Belum ada tag' :
-            taskFilter === 'created_by_me' ? 'Belum ada tugas yang dibuat' :
-            'Belum ada tugas'
+            isFiltered ? t('tasks:tab.tabNoMatchTitle') :
+            taskFilter === 'tagged' ? t('tasks:tab.tabTaggedEmptyTitle') :
+            taskFilter === 'created_by_me' ? t('tasks:tab.tabCreatedEmptyTitle') :
+            t('tasks:tab.tabEmptyTitle')
           }
           description={
-            isFiltered ? 'Coba ubah atau reset filter' :
-            taskFilter === 'tagged' ? 'Tugas yang menandai Anda akan muncul di sini' :
-            taskFilter === 'created_by_me' ? 'Tugas yang Anda buat akan muncul di sini' :
-            taskFilter === 'assigned' ? 'Tugas yang ditugaskan ke Anda akan muncul di sini' :
-            'Belum ada tugas yang tersedia'
+            isFiltered ? t('tasks:tab.tabFilteredHint') :
+            taskFilter === 'tagged' ? t('tasks:tab.tabTaggedEmpty') :
+            taskFilter === 'created_by_me' ? t('tasks:tab.tabCreatedEmpty') :
+            taskFilter === 'assigned' ? t('tasks:tab.tabAssignedEmpty') :
+            t('tasks:tab.tabNoTasksAvailable')
           }
         />
       </ScrollView>
@@ -134,7 +136,7 @@ export function TasksTab({
           </View>
         ) : !hasMore && tasks.length > 0 ? (
           <View style={styles.footerEnd}>
-            <NBText variant="body-sm" color="gray400" style={styles.footerEndText}>Tidak ada lagi</NBText>
+            <NBText variant="body-sm" color="gray400" style={styles.footerEndText}>{t('ui.noMore')}</NBText>
           </View>
         ) : null
       }

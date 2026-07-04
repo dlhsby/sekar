@@ -1,0 +1,103 @@
+{
+  "kmz": {
+    "title": "Import KMZ / KML",
+    "csvLink": "Import CSV",
+    "description": "Upload a KMZ or KML file to create or update areas from polygon boundaries.",
+    "selectFileAriaLabel": "Select KMZ file",
+    "selectFileButton": "Select KMZ File",
+    "noAreasWarning": "No areas found in the file.",
+    "preview": "Preview",
+    "new": "new",
+    "updated": "updates",
+    "areaTypeLabel": "Area Type (for new areas)",
+    "areaTypePlaceholder": "Select area type",
+    "rayonLabel": "Rayon (for new areas)",
+    "rayonPlaceholder": "Select rayon",
+    "requirementsAlert": "Select Area Type and Rayon for new areas before importing.",
+    "columns": {
+      "name": "Area Name",
+      "points": "Points",
+      "status": "Status"
+    },
+    "statusLabels": {
+      "update": "Update",
+      "new": "New"
+    },
+    "cancel": "Cancel",
+    "confirm": "Confirm Import",
+    "successMessage": "Import completed: {{created}} created, {{updated}} updated.",
+    "loading": "Loading..."
+  },
+  "csv": {
+    "title": "Import CSV",
+    "entityLabel": "Data Type",
+    "entities": {
+      "users": "Users",
+      "areas": "Areas"
+    },
+    "downloadTemplate": "Download Template",
+    "selectFileButton": "Select CSV File",
+    "selectFileLabel": "Select CSV file",
+    "selectFileAriaLabel": "Select CSV file",
+    "noAreasWarning": "No areas found in the file.",
+    "validationTitle": "Review Validation",
+    "validLines": "valid rows",
+    "errorCount": "errors",
+    "errorColumns": {
+      "row": "Row",
+      "column": "Column",
+      "value": "Value",
+      "message": "Message"
+    },
+    "noErrors": "No errors.",
+    "allValid": "All rows are valid and ready to import.",
+    "importButton": "Import {{count}} Valid Rows",
+    "resultTitle": "Import Result",
+    "resultSuccess": "Successfully imported {{imported}} rows",
+    "skipped": "{{count}} skipped.",
+    "importAgain": "Import Again",
+    "loading": "Loading...",
+    "noValidRows": "No valid rows to import."
+  },
+  "export": {
+    "title": "Export Data",
+    "entityLabel": "Data Type",
+    "entities": {
+      "users": "Users",
+      "areas": "Areas",
+      "rayons": "Rayons",
+      "tasks": "Tasks",
+      "activities": "Activities",
+      "overtime": "Overtime"
+    },
+    "formatLabel": "Format",
+    "dateRangeLabel": "Date Range",
+    "rayonLabel": "Rayon",
+    "allRayons": "All Rayons",
+    "areaLabel": "Area",
+    "allAreas": "All Areas",
+    "exportButton": "Download Export",
+    "processingButton": "Processing...",
+    "successMessage": "Export completed. Download is ready.",
+    "errorMessage": "Export failed",
+    "largeDataMessage": "Large dataset — export is processing in the background…",
+    "history": "Export History",
+    "historyMeta": "Last 30 days",
+    "noExports": "No exports yet.",
+    "columns": {
+      "date": "Date",
+      "entityType": "Type",
+      "format": "Format",
+      "rowCount": "Rows",
+      "status": "Status",
+      "download": "Download"
+    },
+    "status": {
+      "completed": "Completed",
+      "processing": "Processing",
+      "failed": "Failed"
+    },
+    "downloadLink": "Download",
+    "loading": "Loading..."
+  }
+}

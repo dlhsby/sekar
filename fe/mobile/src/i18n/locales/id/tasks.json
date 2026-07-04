@@ -1,0 +1,353 @@
+{
+  "sort": {
+    "newest": "Terbaru (default)",
+    "oldest": "Terlama",
+    "deadlineNearest": "Deadline Terdekat",
+    "priorityHighest": "Prioritas Tertinggi"
+  },
+  "filter": {
+    "label": "tugas",
+    "title": "Filter Tugas",
+    "status": "Status",
+    "statusOptions": {
+      "all": "Semua Status",
+      "pending": "Menunggu",
+      "assigned": "Ditugaskan",
+      "accepted": "Diterima",
+      "declined": "Ditolak",
+      "inProgress": "Dikerjakan",
+      "completed": "Menunggu Verifikasi",
+      "verified": "Terverifikasi",
+      "revisionNeeded": "Perlu Revisi"
+    },
+    "dateRange": "Rentang Tanggal",
+    "createdDate": "Tanggal Dibuat",
+    "deadline": "Deadline",
+    "dateFrom": "Dari",
+    "dateTo": "Sampai",
+    "area": "Area",
+    "areaOptions": {
+      "all": "Semua Area",
+      "mine": "Area Saya"
+    },
+    "rayon": "Rayon",
+    "rayonOptions": {
+      "all": "Semua Rayon",
+      "mine": "Rayon Saya"
+    },
+    "assignment": "Penugasan",
+    "assignmentOptions": {
+      "all": "Semua Petugas (Termasuk Saya)",
+      "assigned": "Ditugaskan Kepada Saya",
+      "createdByMe": "Dibuat oleh Saya",
+      "allSubordinates": "Semua Bawahan",
+      "tagged": "Tag Saya"
+    },
+    "reset": "Reset",
+    "apply": "Terapkan"
+  },
+  "completion": {
+    "completedLabel": "Selesai {{dateTime}}",
+    "proofPhotosLabel": "Foto Bukti ({{count}})"
+  },
+  "assignee": {
+    "sectionTitle": "PENUGASAN",
+    "sectionSubtitle": "Pilih petugas yang ditugaskan",
+    "label": "Petugas",
+    "placeholder": "Pilih petugas...",
+    "searchPlaceholder": "Cari nama petugas...",
+    "selectAreaFirst": "Pilih lokasi terlebih dahulu",
+    "loading": "Memuat daftar petugas...",
+    "empty": "Tidak ada petugas yang dapat ditugaskan di area ini"
+  },
+  "actions": {
+    "assign": {
+      "success": "Berhasil",
+      "successMessage": "Tugas berhasil ditugaskan",
+      "error": "Gagal menugaskan tugas"
+    },
+    "reassign": "Tugaskan Ulang",
+    "delegate": "Disposisi ke Bawahan",
+    "selectDelegate": "Disposisi ke Bawahan",
+    "selectReplacement": "Pilih Petugas Pengganti",
+    "selectOfficer": "Pilih Petugas",
+    "placeholder": "— Pilih Petugas —",
+    "cancel": "Batal",
+    "submit": "Tugaskan",
+    "accept": {
+      "success": "Berhasil",
+      "successMessage": "Tugas diterima",
+      "error": "Gagal menerima tugas"
+    },
+    "decline": {
+      "success": "Berhasil",
+      "successMessage": "Tugas ditolak",
+      "error": "Gagal menolak tugas",
+      "reasonRequired": "Alasan penolakan wajib diisi"
+    },
+    "start": {
+      "success": "Berhasil",
+      "successMessage": "Tugas dimulai",
+      "error": "Gagal memulai tugas"
+    },
+    "verify": {
+      "confirm": "Konfirmasi Verifikasi",
+      "question": "Apakah Anda yakin ingin memverifikasi tugas ini? Tindakan ini tidak dapat dibatalkan.",
+      "cancel": "Batal",
+      "yes": "Ya, Verifikasi",
+      "success": "Berhasil",
+      "successMessage": "Tugas berhasil diverifikasi",
+      "error": "Gagal memverifikasi tugas"
+    },
+    "revision": {
+      "reasonRequired": "Alasan revisi wajib diisi",
+      "confirm": "Konfirmasi Minta Revisi",
+      "question": "Apakah Anda yakin ingin meminta revisi? Petugas akan mengerjakan ulang tugas ini.",
+      "cancel": "Batal",
+      "yes": "Ya, Minta Revisi",
+      "success": "Berhasil",
+      "successMessage": "Permintaan revisi terkirim",
+      "error": "Gagal mengirim permintaan revisi"
+    },
+    "selectTagging": "Pilih petugas untuk di-tag",
+    "searchTagging": "Cari & pilih petugas..."
+  },
+  "tagged": {
+    "sectionTitle": "TAG PETUGAS",
+    "sectionSubtitle": "Opsional — pilih beberapa petugas untuk di-tag",
+    "label": "Tag Petugas",
+    "placeholder": "Pilih petugas untuk di-tag...",
+    "searchPlaceholder": "Cari nama petugas...",
+    "selectAreaFirst": "Pilih lokasi terlebih dahulu",
+    "loading": "Memuat daftar petugas...",
+    "empty": "Tidak ada petugas yang dapat di-tag di area ini",
+    "emptyOthers": "Tidak ada petugas lain untuk di-tag"
+  },
+  "header": {
+    "sort": "URUTKAN TUGAS"
+  },
+  "fab": {
+    "create": "+ Buat Tugas"
+  },
+  "create": {
+    "title": "Buat Tugas",
+    "accessDenied": "Akses Ditolak",
+    "accessDeniedMessage": "Anda tidak memiliki izin untuk membuat tugas.",
+    "successTitle": "Berhasil",
+    "successMessage": "Tugas berhasil dibuat.",
+    "failureTitle": "Gagal",
+    "failureMessage": "Tugas gagal dibuat. Silakan coba lagi.",
+    "cancelConfirm": "Data yang telah diisi akan hilang.",
+    "cancelNo": "Tidak",
+    "cancelYes": "Ya",
+    "deadline": {
+      "sectionTitle": "BATAS WAKTU",
+      "subtitle": "Opsional — tentukan tenggat tugas (waktu default 23:59)",
+      "dateLabel": "Tanggal",
+      "datePlaceholder": "Pilih tanggal batas waktu...",
+      "timeLabel": "Waktu (opsional, default 23:59)",
+      "timePlaceholder": "Pilih waktu...",
+      "clearButton": "Hapus Batas Waktu"
+    },
+    "cancelConfirmTitle": "Batalkan pembuatan tugas?"
+  },
+  "detail": {
+    "loading": "Memuat tugas...",
+    "notFound": "Tugas Tidak Ditemukan",
+    "notFoundMessage": "Tugas yang Anda cari tidak ditemukan atau telah dihapus",
+    "backButtonTitle": "Kembali",
+    "taskHistory": "Riwayat Tugas",
+    "assignment": "Penugasan",
+    "completionDetails": "Detail Penyelesaian",
+    "assignmentHistory": "Riwayat Penugasan",
+    "accessibilityLabel": "Detail tugas {{title}}",
+    "taggedOfficers": "Tag Petugas Terlibat",
+    "noTaggedOfficers": "Belum ada petugas yang di-tag. Tap ikon pensil untuk menambah.",
+    "noSelectableOfficers": "Tidak ada petugas yang dapat di-tag.",
+    "selectOfficersLabel": "Pilih petugas untuk di-tag",
+    "searchOfficersPlaceholder": "Cari & pilih petugas...",
+    "searchOfficersLabel": "Cari nama petugas...",
+    "declineReason": "Alasan Penolakan",
+    "declinedAt": "Ditolak pada {{date}}",
+    "revisionReason": "Alasan Revisi",
+    "verification": "Verifikasi",
+    "verifiedBy": "Diverifikasi oleh {{name}}"
+  },
+  "card": {
+    "accessibilityLabel": "Detail tugas {{title}}"
+  },
+  "complete": {
+    "title": "Selesaikan Tugas",
+    "loading": "Memuat...",
+    "notFound": "Tugas tidak ditemukan",
+    "taskSection": "Tugas",
+    "description": "Deskripsi Penyelesaian",
+    "descriptionPlaceholder": "Jelaskan hasil pekerjaan...",
+    "photosRequired": "Belum lengkap",
+    "photosRequiredMessage": "Minimal 1 foto bukti penyelesaian wajib diambil.",
+    "descriptionRequired": "Belum lengkap",
+    "descriptionRequiredMessage": "Deskripsi penyelesaian wajib diisi.",
+    "success": "Berhasil",
+    "successMessage": "Tugas berhasil diselesaikan.",
+    "failure": "Gagal",
+    "failureMessage": "Gagal menyelesaikan tugas. Silakan coba lagi.",
+    "photosHeader": "FOTO BUKTI *",
+    "photosSubtitle": "Tambahkan 1-3 foto hasil pekerjaan",
+    "submitButton": "Selesaikan Tugas",
+    "cancelButton": "Batal",
+    "areaLabel": "Area:",
+    "rayonLabel": "Rayon:",
+    "loadingFailed": "Gagal memuat data tugas"
+  },
+  "messages": {
+    "clockInRequired": "Belum Clock In",
+    "clockInRequiredMessage": "Anda harus melakukan Clock In terlebih dahulu untuk menambahkan aktivitas"
+  },
+  "actionButtons": {
+    "assign": "Tugaskan",
+    "reassign": "Tugaskan Ulang",
+    "selectReplacement": "Pilih Petugas Pengganti",
+    "selectOfficer": "Pilih Petugas",
+    "placeholder": "— Pilih Petugas —",
+    "cancel": "Batal",
+    "submit": "Tugaskan",
+    "accept": "Terima",
+    "decline": "Tolak",
+    "start": "Mulai Kerjakan",
+    "complete": "Selesaikan Tugas",
+    "verify": "Verifikasi",
+    "revision": "Minta Revisi",
+    "sendRevision": "Kirim Revisi",
+    "declineReason": "Alasan Penolakan",
+    "declineReasonPlaceholder": "Jelaskan alasan penolakan tugas ini...",
+    "sendDecline": "Kirim Penolakan",
+    "revisionReason": "Alasan Revisi",
+    "revisionReasonPlaceholder": "Jelaskan alasan mengapa tugas perlu direvisi...",
+    "delegate": "Disposisi ke Bawahan",
+    "selectDelegate": "Disposisi ke Bawahan"
+  },
+  "errors": {
+    "fetchFailed": "Gagal memuat jadwal",
+    "scheduleMissing": "Belum ada jadwal hari ini",
+    "loadingFailed": "Gagal memuat detail tugas."
+  },
+  "assignToTask": {
+    "title": "Tugaskan ke Petugas",
+    "roleLabel": "Jabatan",
+    "rolePlaceholder": "Pilih jabatan",
+    "assigneeLabel": "Ditugaskan Ke",
+    "assigneePlaceholder": "Pilih pengguna",
+    "noAssignees": "Tidak ada {{role}} di rayon ini",
+    "dateLabel": "Tanggal Penjadwalan",
+    "notScheduled": "Belum dijadwalkan",
+    "dateHint": "Untuk mengubah, gunakan \"Atur Ulang Jadwal\" setelah penugasan.",
+    "capacityLabel": "Kapasitas minggu ini:",
+    "capacityExceeded": " (Melebihi kapasitas)",
+    "unit": " unit",
+    "assignButton": "Tugaskan",
+    "success": "Berhasil",
+    "successMessage": "Tugas berhasil dibuat dari permohonan",
+    "failTitle": "Gagal menugaskan",
+    "failMessage": "Gagal menugaskan permohonan. Coba lagi.",
+    "error": "Terjadi Kesalahan"
+  },
+  "species": {
+    "placeholder": "Cari spesies tanaman...",
+    "selectedLabel": "Spesies terpilih",
+    "chipLabel": "{{name}}, ketuk untuk hapus",
+    "searchLabel": "Pencarian spesies tanaman",
+    "searchHint": "Ketik nama spesies untuk mencari",
+    "clearLabel": "Hapus pencarian",
+    "noResults": "Tidak ada hasil untuk \"{{query}}\"",
+    "selectLabel": "Pilih {{name}}",
+    "latinHint": "Latin: {{latin}}"
+  },
+  "partial": {
+    "sheetTitle": "Selesai Sebagian",
+    "targetLabel": "Target Tanaman",
+    "completedLabel": "Jumlah Diselesaikan",
+    "remainingLabel": "Sisa untuk dilanjutkan",
+    "resumeButton": "LANJUTKAN BESOK",
+    "resumeButtonActive": "LANJUTKAN BESOK",
+    "resumeLabel": "Buat tugas anak untuk melanjutkan besok: {{status}}",
+    "resumeHint": "Jika diaktifkan, backend akan membuat tugas anak untuk melanjutkan {{count}} tanaman",
+    "notesLabel": "Catatan (Opsional)",
+    "notesPlaceholder": "Masukkan catatan atau kendala...",
+    "errorMinCount": "Jumlah diselesaikan harus lebih dari 0",
+    "errorExceedsTarget": "Tidak boleh melebihi target ({{target}})",
+    "successTitle": "BERHASIL",
+    "successBody": "Tugas sebagian diselesaikan",
+    "errorFailed": "Gagal menyelesaikan tugas sebagian",
+    "validationTitle": "Validasi"
+  },
+  "tab": {
+    "tabLoadErrorTitle": "Gagal memuat tugas",
+    "tabRetry": "Coba Lagi",
+    "tabFilteredHint": "Coba ubah atau reset filter",
+    "tabTaggedEmpty": "Tugas yang menandai Anda akan muncul di sini",
+    "tabCreatedEmpty": "Tugas yang Anda buat akan muncul di sini",
+    "tabAssignedEmpty": "Tugas yang ditugaskan ke Anda akan muncul di sini",
+    "tabNoMatchTitle": "Tidak ada tugas yang cocok",
+    "tabTaggedEmptyTitle": "Belum ada tag",
+    "tabCreatedEmptyTitle": "Belum ada tugas yang dibuat",
+    "tabEmptyTitle": "Belum ada tugas",
+    "tabNoTasksAvailable": "Belum ada tugas yang tersedia"
+  },
+  "locationSection": {
+    "title": "LOKASI",
+    "autoFromProfile": "Lokasi otomatis dari profil Anda",
+    "selectAssignment": "Pilih lokasi penugasan",
+    "rayonLabel": "Rayon",
+    "loadingRayon": "Memuat rayon...",
+    "areaLabel": "Area",
+    "loadingArea": "Memuat area...",
+    "yourRayon": "Rayon Anda",
+    "yourArea": "Area Anda",
+    "rayonPlaceholder": "Pilih rayon...",
+    "areaPlaceholder": "Pilih area..."
+  },
+  "draft": {
+    "foundTitle": "Draft Ditemukan",
+    "foundMessage": "Anda memiliki draft tugas yang belum terkirim. Lanjutkan?",
+    "discard": "Hapus",
+    "continueLabel": "Lanjutkan"
+  },
+  "filterChips": {
+    "all": "Semua",
+    "tagged": "Tag Saya",
+    "createdByMe": "Dibuat Saya",
+    "date": "Tanggal",
+    "rayon": "Rayon",
+    "area": "Area",
+    "type": "Tipe",
+    "rayonSelected": "Rayon dipilih",
+    "activityStatusPending": "Menunggu Persetujuan",
+    "activityStatusApproved": "Disetujui",
+    "activityStatusRejected": "Ditolak"
+  },
+  "modal": {
+    "todayTasks": "Tugas Hari Ini ({{count}})",
+    "todayTasksEmptyMessage": "Tugas yang ditugaskan ke Anda akan muncul di sini."
+  },
+  "audit": {
+    "created": "Dibuat",
+    "assigned": "Ditugaskan",
+    "accepted": "Diterima",
+    "declined": "Ditolak",
+    "started": "Dikerjakan",
+    "completed": "Diselesaikan",
+    "revision": "Diminta Revisi",
+    "verified": "Terverifikasi"
+  },
+  "assignment": {
+    "createdBy": "Dibuat oleh",
+    "assignedTo": "Ditugaskan ke"
+  },
+  "todayModal": {
+    "taskDetailAria": "Detail tugas {{title}}"
+  },
+  "list": {
+    "loadError": "Gagal memuat tugas",
+    "loadDetailError": "Gagal memuat detail tugas"
+  }
+}

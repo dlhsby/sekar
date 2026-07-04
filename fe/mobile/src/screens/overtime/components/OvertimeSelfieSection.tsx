@@ -10,6 +10,7 @@ import {
   Image,
   StyleSheet,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import {
   NBCollapsibleCard,
   NBText,
@@ -39,55 +40,58 @@ const OvertimeSelfieSection: React.FC<OvertimeSelfieProps> = ({
   onPreview,
   retakeButtonLabel = 'Ambil Ulang',
   captureButtonLabel = 'Ambil Selfie',
-}) => (
-  <NBCollapsibleCard
-    style={styles.selfieCard}
-    accessibilityLabel={label}
-    headerLeft={
-      <View>
-        <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>
-          {label}
-        </NBText>
-        {selfie ? (
-          <NBText variant="body-sm" color="success">Sudah diambil ✓</NBText>
-        ) : (
-          <NBText variant="body-sm" color="gray600">Opsional</NBText>
-        )}
-      </View>
-    }
-  >
-    {selfie ? (
-      <View>
-        <TouchableOpacity
-          onPress={() => onPreview(selfie.uri)}
-          accessibilityRole="button"
-          accessibilityLabel="Lihat selfie penuh"
-          accessibilityHint="Ketuk untuk melihat foto dalam ukuran penuh"
-        >
-          <Image source={{ uri: selfie.uri }} style={styles.selfieImage} />
-        </TouchableOpacity>
-        <NBButton
-          title={retakeButtonLabel}
-          onPress={onCapture}
-          variant="secondary"
-          fullWidth
-        />
-      </View>
-    ) : (
-      <View>
-        <NBText variant="body-sm" color="gray600" style={styles.selfiePrompt}>
-          Foto selfie untuk verifikasi (tidak wajib)
-        </NBText>
-        <NBButton
-          title={captureButtonLabel}
-          onPress={onCapture}
-          variant="secondary"
-          fullWidth
-        />
-      </View>
-    )}
-  </NBCollapsibleCard>
-);
+}) => {
+  const { t } = useTranslation();
+  return (
+    <NBCollapsibleCard
+      style={styles.selfieCard}
+      accessibilityLabel={label}
+      headerLeft={
+        <View>
+          <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>
+            {label}
+          </NBText>
+          {selfie ? (
+            <NBText variant="body-sm" color="success">{t('overtime:components.selfieAlreadyCaptured')}</NBText>
+          ) : (
+            <NBText variant="body-sm" color="gray600">{t('overtime:components.selfieOptional')}</NBText>
+          )}
+        </View>
+      }
+    >
+      {selfie ? (
+        <View>
+          <TouchableOpacity
+            onPress={() => onPreview(selfie.uri)}
+            accessibilityRole="button"
+            accessibilityLabel={t('overtime:components.selfiePreviewLabel')}
+            accessibilityHint={t('overtime:components.selfiePreviewHint')}
+          >
+            <Image source={{ uri: selfie.uri }} style={styles.selfieImage} />
+          </TouchableOpacity>
+          <NBButton
+            title={retakeButtonLabel}
+            onPress={onCapture}
+            variant="secondary"
+            fullWidth
+          />
+        </View>
+      ) : (
+        <View>
+          <NBText variant="body-sm" color="gray600" style={styles.selfiePrompt}>
+            {t('overtime:components.selfiePrompt')}
+          </NBText>
+          <NBButton
+            title={captureButtonLabel}
+            onPress={onCapture}
+            variant="secondary"
+            fullWidth
+          />
+        </View>
+      )}
+    </NBCollapsibleCard>
+  );
+};
 
 const styles = StyleSheet.create({
   selfieCard: {

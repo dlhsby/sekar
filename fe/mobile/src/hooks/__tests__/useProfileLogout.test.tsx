@@ -357,7 +357,7 @@ describe('useProfileLogout', () => {
 
       expect(Alert.alert).toHaveBeenLastCalledWith(
         'Sinkronisasi Belum Selesai',
-        expect.stringContaining('Masih ada 3 data yang gagal tersinkronisasi'),
+        expect.stringContaining('Masih ada 3 data yang gagal tersinkronkan'),
         [{ text: 'OK' }]
       );
     });
@@ -565,7 +565,7 @@ describe('useProfileLogout', () => {
 
       let confirmCallback: (() => void) | undefined;
       (Alert.alert as jest.Mock).mockImplementation((title, message, buttons) => {
-        const confirmButton = buttons?.find((b: any) => b.text === 'Keluar');
+        const confirmButton = buttons?.find((b: any) => b.text === 'Keluar Saja');
         if (confirmButton) {
           confirmCallback = confirmButton.onPress;
         }

@@ -1,0 +1,228 @@
+{
+  "actions": {
+    "save": "Simpan",
+    "cancel": "Batal",
+    "delete": "Hapus",
+    "edit": "Ubah",
+    "add": "Tambah",
+    "create": "Buat",
+    "update": "Perbarui",
+    "submit": "Kirim",
+    "confirm": "Konfirmasi",
+    "close": "Tutup",
+    "back": "Kembali",
+    "next": "Lanjut",
+    "search": "Cari",
+    "filter": "Filter",
+    "reset": "Atur Ulang",
+    "refresh": "Muat Ulang",
+    "retry": "Coba Lagi",
+    "view": "Lihat",
+    "detail": "Detail",
+    "approve": "Setujui",
+    "reject": "Tolak",
+    "export": "Ekspor",
+    "import": "Impor",
+    "download": "Unduh",
+    "upload": "Unggah",
+    "loading": "Memuat...",
+    "saving": "Menyimpan...",
+    "yes": "Ya",
+    "no": "Tidak",
+    "error": "Error"
+  },
+  "entities": {
+    "user": "Pengguna",
+    "area": "Area",
+    "rayon": "Rayon",
+    "task": "Tugas",
+    "activity": "Aktivitas",
+    "schedule": "Jadwal",
+    "shift": "Shift",
+    "overtime": "Lembur",
+    "report": "Laporan",
+    "attendance": "Kehadiran",
+    "monitoring": "Pemantauan",
+    "pruningRequest": "Permohonan Pangkas",
+    "plant": "Tanaman",
+    "seed": "Bibit",
+    "setting": "Pengaturan"
+  },
+  "empty": {
+    "noData": {
+      "title": "Belum Ada Data",
+      "description": "Data akan muncul di sini setelah Anda menambahkannya."
+    },
+    "noResults": {
+      "title": "Tidak Ditemukan",
+      "description": "Tidak ada hasil yang cocok dengan pencarian Anda."
+    },
+    "offline": {
+      "title": "Tidak Ada Koneksi",
+      "description": "Periksa koneksi internet Anda dan coba lagi."
+    },
+    "error": {
+      "title": "Terjadi Kesalahan",
+      "description": "Terjadi kesalahan saat memuat data. Silakan coba lagi."
+    },
+    "maintenance": {
+      "title": "Dalam Perbaikan",
+      "description": "Fitur ini sedang dalam perbaikan. Silakan coba lagi nanti."
+    },
+    "noPermission": {
+      "title": "Tidak Memiliki Akses",
+      "description": "Anda tidak memiliki izin untuk mengakses halaman ini."
+    },
+    "emptyFolder": {
+      "title": "Folder Kosong",
+      "description": "Folder ini belum memiliki konten."
+    },
+    "allDone": {
+      "title": "Semua Selesai",
+      "description": "Tidak ada tugas yang perlu dikerjakan."
+    },
+    "search": {
+      "title": "Mulai Pencarian",
+      "description": "Ketik kata kunci untuk mencari data."
+    }
+  },
+  "language": {
+    "label": "Bahasa",
+    "id": "Bahasa Indonesia",
+    "en": "English"
+  },
+  "connectivity": {
+    "noInternet": "Tidak ada koneksi internet",
+    "serverUnreachable": "Server tidak terjangkau, mencoba lagi…"
+  },
+  "sync": {
+    "syncing": "Menyinkronkan...",
+    "syncFailed": "Sinkronisasi gagal",
+    "syncSuccess": "Sinkronisasi berhasil",
+    "statusCard": {
+      "title": "Sinkronisasi Data",
+      "pendingLabel": "Tertunda:",
+      "failedLabel": "Gagal:",
+      "syncButton": "Sinkronkan",
+      "retryButton": "Coba Ulang",
+      "clearButton": "Hapus Gagal"
+    },
+    "alerts": {
+      "syncTitle": "Sinkronisasi",
+      "syncSuccess": "Data berhasil disinkronkan",
+      "syncError": "Gagal sinkronisasi:",
+      "retryTitle": "Berhasil",
+      "retryMessage": "{{count}} item akan dicoba ulang",
+      "noRetryItems": "Tidak ada item gagal untuk dicoba ulang",
+      "clearTitle": "Hapus Item Gagal?",
+      "clearMessage": "Data yang gagal akan dihapus permanen dan tidak dapat dikembalikan.",
+      "clearSuccess": "Item gagal telah dihapus",
+      "clearError": "Gagal menghapus:",
+      "error": "Kesalahan"
+    }
+  },
+  "labels": {
+    "createdBy": "Dibuat oleh",
+    "assignedTo": "Ditugaskan ke",
+    "duration": "Durasi"
+  },
+  "time": {
+    "justNow": "baru saja",
+    "minutesAgo": "{{count}} menit yang lalu",
+    "hoursAgo": "{{count}} jam yang lalu",
+    "daysAgo": "{{count}} hari yang lalu",
+    "unavailable": "-",
+    "durationMinutes": "{{count}}m",
+    "durationHours": "{{count}}j",
+    "durationHoursMinutes": "{{count}}j {{minutes}}m",
+    "durationFull": "{{count}} jam {{minutes}} menit",
+    "durationCrossesMidnight": "{{duration}}j (lintas tengah malam)",
+    "inMoment": "sebentar lagi",
+    "justNowPast": "baru saja",
+    "inMinutes": "dalam {{count}} menit",
+    "minutesPast": "{{count}} menit lalu",
+    "inHours": "dalam {{count}} jam",
+    "hoursPast": "{{count}} jam lalu",
+    "inDays": "dalam {{count}} hari",
+    "daysPast": "{{count}} hari lalu",
+    "secondsAgo": "{{count}} dtk lalu",
+    "minutesAgoShort": "{{count}} mnt lalu",
+    "hoursAgoShort": "{{count}} jam lalu"
+  },
+  "calendar": {
+    "days": [
+      "Minggu",
+      "Senin",
+      "Selasa",
+      "Rabu",
+      "Kamis",
+      "Jumat",
+      "Sabtu"
+    ],
+    "monthsShort": [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "Mei",
+      "Jun",
+      "Jul",
+      "Agu",
+      "Sep",
+      "Okt",
+      "Nov",
+      "Des"
+    ],
+    "monthsFull": [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember"
+    ],
+    "week": "Minggu"
+  },
+  "ui": {
+    "noPhoto": "Tidak ada foto",
+    "noData": "Tidak ada data",
+    "noDescription": "Tidak ada deskripsi",
+    "noReason": "(Tidak ada alasan)",
+    "notFilled": "(Belum diisi)",
+    "notAssigned": "Belum ditugaskan",
+    "assigned": "(petugas)",
+    "noLocation": "Tidak ada data lokasi",
+    "noStaffing": "Tidak ada data kepegawaian",
+    "noMore": "Tidak ada lagi",
+    "noActiveTasksToday": "Tidak ada tugas aktif hari ini",
+    "error": "Terjadi Kesalahan",
+    "errorOccurred": "Terjadi kesalahan",
+    "withinArea": "dalam",
+    "outsideArea": "luar",
+    "openProfile": "Buka Profil",
+    "defaultUser": "Pengguna",
+    "elapsedTime": "Waktu berjalan: {{time}}",
+    "closeImagePreview": "Tutup pratinjau gambar"
+  },
+  "errors": {
+    "failedToLoadData": "Gagal memuat data. Silakan coba lagi."
+  },
+  "status": {
+    "loading": "Memuat..."
+  },
+  "error": "Error",
+  "a11y": {
+    "loadingContent": "Memuat konten"
+  },
+  "gradeLabel": "Grade",
+  "appError": {
+    "appCrashed": "Aplikasi mengalami kesalahan yang tidak terduga.",
+    "devDetail": "Detail Error (Development):"
+  }
+}

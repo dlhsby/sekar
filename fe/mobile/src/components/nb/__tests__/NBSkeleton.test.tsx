@@ -144,7 +144,7 @@ describe('NBSkeleton', () => {
     it('has accessibilityLabel', () => {
       const { getByTestId } = render(<NBSkeleton testID="skeleton" />);
       const skeleton = getByTestId('skeleton');
-      expect(skeleton.props.accessibilityLabel).toBe('Loading content');
+      expect(skeleton.props.accessibilityLabel).toBe('Memuat konten');
     });
   });
 

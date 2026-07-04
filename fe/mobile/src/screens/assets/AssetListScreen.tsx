@@ -15,6 +15,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   NBBackgroundPattern,
@@ -46,13 +47,8 @@ type Props = {
 
 type TabFilter = 'all' | 'available' | 'my-assets';
 
-const TAB_FILTERS: Array<{ key: TabFilter; label: string }> = [
-  { key: 'all', label: 'Semua' },
-  { key: 'available', label: 'Tersedia' },
-  { key: 'my-assets', label: 'Saya' },
-];
-
 export function AssetListScreen({ navigation }: Props): React.JSX.Element {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const assets = useAppSelector(selectAssets);
   const loading = useAppSelector(selectAssetsLoading);
@@ -60,6 +56,12 @@ export function AssetListScreen({ navigation }: Props): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<TabFilter>('all');
   const [searchText, setSearchText] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+
+  const TAB_FILTERS: Array<{ key: TabFilter; label: string }> = [
+    { key: 'all', label: t('assets:list.tabs.all') },
+    { key: 'available', label: t('assets:list.tabs.available') },
+    { key: 'my-assets', label: t('assets:list.tabs.myAssets') },
+  ];
 
   // Fetch categories on mount
   useEffect(() => {
@@ -113,7 +115,7 @@ export function AssetListScreen({ navigation }: Props): React.JSX.Element {
   return (
     <NBBackgroundPattern>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <NBPageHeader title="Aset" />
+        <NBPageHeader title={t('assets:list.title')} />
 
         <FlatList
           data={assets}
@@ -124,7 +126,7 @@ export function AssetListScreen({ navigation }: Props): React.JSX.Element {
           ListHeaderComponent={
             <View style={styles.header}>
               <NBTextInput
-                placeholder="Cari aset..."
+                placeholder={t('assets:list.search')}
                 value={searchText}
                 onChangeText={setSearchText}
               />
@@ -143,8 +145,8 @@ export function AssetListScreen({ navigation }: Props): React.JSX.Element {
               </View>
             ) : (
               <NBEmptyState
-                title="Tidak ada aset"
-                description="Tidak ada aset ditemukan untuk filter ini"
+                title={t('assets:list.empty.title')}
+                description={t('assets:list.empty.description')}
                 variant="noData"
               />
             )

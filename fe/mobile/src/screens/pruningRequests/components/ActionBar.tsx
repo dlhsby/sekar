@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBButton, NBCardTextInput } from '../../../components/nb';
 import { nbSpacing } from '../../../constants/nbTokens';
 import type { PruningRequest } from '../../../types/models.types';
@@ -79,6 +80,8 @@ export function ActionBar({
   onConvert,
   onCancel,
 }: ActionBarProps): React.JSX.Element | null {
+  const { t } = useTranslation('pruning');
+
   if (!showAdminBar && !canCancel) {
     return null;
   }
@@ -90,7 +93,7 @@ export function ActionBar({
           {isReschedulable ? (
             <NBButton
               variant={needsSchedule ? 'primary' : 'secondary'}
-              label={needsSchedule ? 'Atur Jadwal' : 'Atur Ulang Jadwal'}
+              label={needsSchedule ? t('detail.scheduleButtonLabel') : t('detail.rescheduleButtonLabel')}
               leftIcon="calendar-edit"
               onPress={onReschedule}
               testID="perantingan-reschedule-open"
@@ -104,7 +107,7 @@ export function ActionBar({
               <View style={styles.adminButtonHalf}>
                 <NBButton
                   variant="danger"
-                  label="Tolak"
+                  label={t('detail.rejectButtonLabel')}
                   leftIcon="close"
                   onPress={onRejectPress}
                   disabled={reviewingId === requestId}
@@ -115,7 +118,7 @@ export function ActionBar({
               <View style={styles.adminButtonHalf}>
                 <NBButton
                   variant="success"
-                  label="Setujui"
+                  label={t('actions.approve.yes')}
                   leftIcon="check"
                   onPress={onApprove}
                   disabled={!canActApprove || reviewingId === requestId}
@@ -131,7 +134,7 @@ export function ActionBar({
               <View style={styles.adminButtonHalf}>
                 <NBButton
                   variant="secondary"
-                  label="Batal"
+                  label={t('actions.cancel.no')}
                   onPress={onRejectCancel}
                   disabled={reviewingId === requestId}
                   size="lg"
@@ -141,7 +144,7 @@ export function ActionBar({
               <View style={styles.adminButtonHalf}>
                 <NBButton
                   variant="danger"
-                  label="Kirim Penolakan"
+                  label={t('actions.reject.confirm')}
                   leftIcon="close"
                   onPress={onRejectSubmit}
                   disabled={!rejectReason.trim() || reviewingId === requestId}
@@ -155,7 +158,7 @@ export function ActionBar({
           {canAdmin && request.status === 'approved' ? (
             <NBButton
               variant="primary"
-              label="Tugaskan ke Petugas"
+              label={t('actionBar.convertLabel')}
               leftIcon="arrow-right"
               onPress={onConvert}
               disabled={!canConvert}
@@ -170,7 +173,7 @@ export function ActionBar({
         <View style={styles.actionBarStack}>
           <NBButton
             variant="danger"
-            label="Batalkan Permohonan"
+            label={t('actions.cancel.confirm')}
             leftIcon="cancel"
             onPress={onCancel}
             testID="perantingan-cancel-cta"
@@ -182,11 +185,11 @@ export function ActionBar({
 
       {canAdmin && showRejectInput ? (
         <NBCardTextInput
-          title="📝 Alasan Penolakan"
+          title={`📝 ${t('submit.reasonLabel')}`}
           required
           value={rejectReason}
           onChangeText={onRejectReasonChange}
-          placeholder="Jelaskan alasan penolakan permohonan ini…"
+          placeholder={t('reassign.reasonPlaceholder')}
           maxLength={1000}
           numberOfLines={4}
           style={styles.rejectInputSection}

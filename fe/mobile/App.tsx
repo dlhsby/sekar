@@ -24,13 +24,30 @@ import fcmService from './src/services/notifications/fcmService';
 import { NBToastProvider } from './src/components/nb';
 import { ErrorBoundary } from './src/components/common';
 import { locationTracker } from './src/services/location';
-import { useAppSelector } from './src/store/hooks';
+import { useAppSelector, useAppDispatch } from './src/store/hooks';
+import './src/i18n/config'; // initialize i18next (side effect)
+import { bootstrapLanguage, applyLanguage, normalizeLanguage } from './src/i18n/language';
 
 /**
  * Inner App component that initializes services after providers are set up
  */
 function AppContent(): React.JSX.Element {
   const { isAuthenticated, isRestoring } = useAppSelector((state) => state.auth);
+  const preferredLanguage = useAppSelector((state) => state.auth.user?.preferred_language);
+  const dispatch = useAppDispatch();
+
+  // Hydrate the persisted UI language from AsyncStorage on startup.
+  useEffect(() => {
+    void bootstrapLanguage(dispatch);
+  }, [dispatch]);
+
+  // Once signed in, the profile's preferred_language is authoritative — apply it
+  // (no profile re-sync; it already came from the profile).
+  useEffect(() => {
+    if (preferredLanguage) {
+      void applyLanguage(normalizeLanguage(preferredLanguage), dispatch);
+    }
+  }, [preferredLanguage, dispatch]);
 
   useEffect(() => {
     // Initialize sync manager for offline queue processing

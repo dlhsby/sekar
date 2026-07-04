@@ -47,7 +47,7 @@ describe('Toast', () => {
     fireEvent.click(screen.getByText('fire'));
     expect(screen.getByText('Tutup saya')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByLabelText('Tutup notifikasi'));
+    fireEvent.click(screen.getByLabelText('Tutup'));
     await waitFor(() => expect(screen.queryByText('Tutup saya')).not.toBeInTheDocument());
   });
 

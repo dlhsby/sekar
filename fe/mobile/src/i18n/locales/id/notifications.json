@@ -1,0 +1,54 @@
+{
+  "preferences": {
+    "intro": "Pilih notifikasi yang ingin Anda terima. Menonaktifkan sebuah jenis akan menghentikan push untuk jenis tersebut.",
+    "sections": {
+      "tasks": "Tugas",
+      "activities": "Aktivitas",
+      "overtime": "Lembur",
+      "other": "Lainnya"
+    },
+    "types": {
+      "task_assigned": "Tugas baru",
+      "task_completed": "Tugas selesai",
+      "task_updated": "Pembaruan & revisi tugas",
+      "activity_approved": "Aktivitas disetujui",
+      "activity_rejected": "Aktivitas ditolak",
+      "overtime_approved": "Lembur disetujui",
+      "overtime_rejected": "Lembur ditolak",
+      "shift_reminder": "Pengingat shift",
+      "missing_worker_alert": "Peringatan pekerja hilang",
+      "area_plant_overdue": "Tanaman terlambat dipangkas"
+    },
+    "loadFailed": "Gagal memuat preferensi notifikasi.",
+    "saveFailed": "Perubahan tidak tersimpan. Coba lagi."
+  },
+  "categories": {
+    "all": "Semua",
+    "task": "Tugas",
+    "activity": "Aktivitas",
+    "overtime": "Lembur",
+    "system": "Sistem"
+  },
+  "empty": {
+    "title": "Belum ada notifikasi",
+    "description": "Notifikasi tugas, lembur, dan pengumuman akan muncul di sini."
+  },
+  "unread": "{{count}} belum dibaca",
+  "markAllRead": "Tandai semua dibaca",
+  "loadError": "Gagal memuat notifikasi",
+  "relativeTime": {
+    "justNow": "Baru saja",
+    "minutesAgo": "{{count}} menit lalu",
+    "hoursAgo": "{{count}} jam lalu",
+    "daysAgo": "{{count}} hari lalu"
+  },
+  "bell": {
+    "label": "Notifikasi",
+    "unreadLabel": "Notifikasi ({{count}} belum dibaca)"
+  },
+  "fcm": {
+    "channelName": "Notifikasi SEKAR",
+    "defaultTitle": "Notifikasi SEKAR",
+    "notAvailable": "Layanan notifikasi tidak tersedia"
+  }
+}

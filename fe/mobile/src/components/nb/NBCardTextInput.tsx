@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
 import { StyleSheet, type ViewStyle } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBCard, NBCardHeader, NBCardContent } from './NBCard';
 import { NBText } from './NBText';
 import { NBTextInput } from './NBTextInput';
@@ -34,7 +35,8 @@ export const NBCardTextInput = memo(function NBCardTextInput({
   disabled = false,
   testID,
 }: NBCardTextInputProps): React.JSX.Element {
-  const helperText = maxLength ? `${value.length}/${maxLength} karakter` : undefined;
+  const { t } = useTranslation();
+  const helperText = maxLength ? t('components:characterCounter.count', { current: value.length, max: maxLength }) : undefined;
 
   return (
     <NBCard style={style}>

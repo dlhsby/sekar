@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 import { AreaForm } from '@/components/forms/AreaForm';
@@ -27,6 +28,7 @@ interface AreaFormModalProps {
  * POST/PATCH `/areas` and the polygon goes through `PUT /areas/:id/boundary`.
  */
 export function AreaFormModal({ open, onOpenChange, area, onSuccess, readOnly = false }: AreaFormModalProps) {
+  const { t } = useTranslation();
   const isEdit = !!area;
   const createMutation = useCreateArea();
   const updateMutation = useUpdateArea();
@@ -71,7 +73,11 @@ export function AreaFormModal({ open, onOpenChange, area, onSuccess, readOnly = 
       toast.error(getErrorMessage(err));
       return;
     }
-    toast.success(`Area "${data.name}" berhasil ${isEdit ? 'diperbarui' : 'dibuat'}.`);
+    toast.success(
+      isEdit
+        ? t('admin:areas.successUpdated', { name: data.name })
+        : t('admin:areas.successCreated', { name: data.name })
+    );
     onSuccess?.();
     onOpenChange(false);
   };
@@ -85,14 +91,22 @@ export function AreaFormModal({ open, onOpenChange, area, onSuccess, readOnly = 
     !!failedMutation &&
     (failedMutation.error instanceof Error
       ? failedMutation.error.message
-      : `Gagal ${isEdit ? 'memperbarui' : 'membuat'} area. Silakan coba lagi.`);
+      : isEdit
+        ? t('admin:areas.updateErrorMessage')
+        : t('admin:areas.createErrorMessage'));
   const isPending = scalarMutation.isPending || boundaryMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="xl">
         <DialogHeader>
-          <DialogTitle>{readOnly ? 'Detail Area' : isEdit ? 'Ubah Area' : 'Tambah Area'}</DialogTitle>
+          <DialogTitle>
+            {readOnly
+              ? t('admin:areas.detailTitle')
+              : isEdit
+                ? t('admin:areas.actionEdit')
+                : t('admin:areas.buttonAdd')}
+          </DialogTitle>
         </DialogHeader>
         <DialogBody>
           {errorMessage && !readOnly ? (

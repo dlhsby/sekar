@@ -10,6 +10,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBToast } from '../nb/NBToast';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { partialCompleteTask } from '../../store/slices/tasksSlice';
@@ -40,6 +41,7 @@ export function PartialCompleteSheet({
   task,
   onSuccess,
 }: PartialCompleteSheetProps): React.JSX.Element {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const isSubmitting = useAppSelector((state) => state.tasks.isSubmitting);
   const error = useAppSelector((state) => state.tasks.error);
@@ -65,16 +67,16 @@ export function PartialCompleteSheet({
 
   const validateForm = useCallback(() => {
     if (!completedCount || completedNum <= 0) {
-      setValidationError('Jumlah diselesaikan harus lebih dari 0');
+      setValidationError(t('tasks:partial.errorMinCount'));
       return false;
     }
     if (completedNum > targetCount) {
-      setValidationError(`Tidak boleh melebihi target (${targetCount})`);
+      setValidationError(t('tasks:partial.errorExceedsTarget', { target: targetCount }));
       return false;
     }
     setValidationError('');
     return true;
-  }, [completedCount, completedNum, targetCount]);
+  }, [completedCount, completedNum, targetCount, t]);
 
   const handleSubmit = useCallback(async () => {
     if (!task || !validateForm()) {
@@ -95,15 +97,15 @@ export function PartialCompleteSheet({
 
       NBToast.show({
         level: 'success',
-        title: 'BERHASIL',
-        body: 'Tugas sebagian diselesaikan',
+        title: t('tasks:partial.successTitle'),
+        body: t('tasks:partial.successBody'),
       });
       handleClose();
       onSuccess?.();
     } catch {
       Alert.alert(
-        'Error',
-        error || 'Gagal menyelesaikan tugas sebagian',
+        t('common:actions.error') || 'Error',
+        error || t('tasks:partial.errorFailed'),
       );
     }
   }, [task, completedNum, notes, resumeTomorrow, validateForm, dispatch, error, handleClose, onSuccess]);
@@ -111,7 +113,7 @@ export function PartialCompleteSheet({
   const footer = (
     <View style={styles.footerContent}>
       <NBButton
-        title="BATAL"
+        title={t('common:actions.cancel')}
         variant="secondary"
         size="md"
         onPress={handleClose}
@@ -119,7 +121,7 @@ export function PartialCompleteSheet({
         style={styles.cancelButton}
       />
       <NBButton
-        title="SIMPAN"
+        title={t('common:actions.save')}
         variant="primary"
         size="md"
         onPress={handleSubmit}
@@ -134,7 +136,7 @@ export function PartialCompleteSheet({
     <NBModal
       visible={visible}
       onClose={handleClose}
-      title="Selesai Sebagian"
+      title={t('tasks:partial.sheetTitle')}
       type="sheet"
       avoidKeyboard
       footer={footer}
@@ -149,7 +151,7 @@ export function PartialCompleteSheet({
           {/* Target Info */}
           <View style={styles.infoBox}>
             <NBText variant="caption" color="gray500" uppercase>
-              Target Tanaman
+              {t('tasks:partial.targetLabel')}
             </NBText>
             <NBText variant="h2" color="black" style={styles.targetNumber}>
               {targetCount}
@@ -159,7 +161,7 @@ export function PartialCompleteSheet({
           {/* Completed Count Input */}
           <View style={styles.inputSection}>
             <NBCardTextInput
-              title="Jumlah Diselesaikan"
+              title={t('tasks:partial.completedLabel')}
               placeholder="0"
               value={completedCount}
               onChangeText={setCompletedCount}
@@ -172,7 +174,7 @@ export function PartialCompleteSheet({
           {completedNum > 0 && (
             <View style={styles.remainingBox}>
               <NBText variant="body-sm" color="gray600">
-                Sisa untuk dilanjutkan
+                {t('tasks:partial.remainingLabel')}
               </NBText>
               <NBText variant="h3" color="primary" style={styles.remainingNumber}>
                 {remainingCount}
@@ -183,26 +185,26 @@ export function PartialCompleteSheet({
           {/* Resume Tomorrow Toggle */}
           <View style={styles.toggleSection}>
             <NBButton
-              title={resumeTomorrow ? '✓ LANJUTKAN BESOK' : 'LANJUTKAN BESOK'}
+              title={resumeTomorrow ? `✓ ${t('tasks:partial.resumeButtonActive')}` : t('tasks:partial.resumeButton')}
               variant={resumeTomorrow ? 'primary' : 'secondary'}
               size="md"
               onPress={() => setResumeTomorrow(!resumeTomorrow)}
               fullWidth
               testID="resume-tomorrow-toggle"
-              accessibilityLabel={`Buat tugas anak untuk melanjutkan besok: ${resumeTomorrow ? 'aktif' : 'nonaktif'}`}
+              accessibilityLabel={t('tasks:partial.resumeLabel', { status: resumeTomorrow ? 'aktif' : 'nonaktif' })}
               accessibilityRole="switch"
               accessibilityState={{ checked: resumeTomorrow }}
             />
             <NBText variant="caption" color="gray500" style={styles.toggleHint}>
-              Jika diaktifkan, backend akan membuat tugas anak untuk melanjutkan {remainingCount} tanaman
+              {t('tasks:partial.resumeHint', { count: remainingCount })}
             </NBText>
           </View>
 
           {/* Notes Input */}
           <View style={styles.inputSection}>
             <NBCardTextInput
-              title="Catatan (Opsional)"
-              placeholder="Masukkan catatan atau kendala..."
+              title={t('tasks:partial.notesLabel')}
+              placeholder={t('tasks:partial.notesPlaceholder')}
               value={notes}
               onChangeText={setNotes}
               numberOfLines={4}
@@ -215,7 +217,7 @@ export function PartialCompleteSheet({
           {validationError && (
             <NBAlert
               variant="danger"
-              title="Validasi"
+              title={t('tasks:partial.validationTitle')}
               message={validationError}
               style={styles.errorAlert}
               testID="validation-error"
@@ -226,7 +228,7 @@ export function PartialCompleteSheet({
           {error && !validationError && (
             <NBAlert
               variant="danger"
-              title="Error"
+              title={t('common:actions.error')}
               message={error}
               style={styles.errorAlert}
               testID="api-error"

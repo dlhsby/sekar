@@ -6,6 +6,7 @@
 import { useCallback } from 'react';
 import { Alert } from 'react-native';
 import { useDispatch } from 'react-redux';
+import i18n from '../i18n/config';
 import EncryptedStorage from 'react-native-encrypted-storage';
 import { logout, resetState as resetAuthState } from '../store/slices/authSlice';
 import { resetState as resetShiftState } from '../store/slices/shiftSlice';
@@ -62,19 +63,19 @@ export const useProfileLogout = (options: UseProfileLogoutOptions = {}) => {
     const parts: string[] = [];
 
     if (pendingByType['clock-in'] > 0) {
-      parts.push(`${pendingByType['clock-in']} clock-in`);
+      parts.push(`${pendingByType['clock-in']} ${i18n.t('profile:logout.clockInLabel')}`);
     }
     if (pendingByType['clock-out'] > 0) {
-      parts.push(`${pendingByType['clock-out']} clock-out`);
+      parts.push(`${pendingByType['clock-out']} ${i18n.t('profile:logout.clockOutLabel')}`);
     }
     if (pendingByType.activity > 0) {
-      parts.push(`${pendingByType.activity} aktivitas`);
+      parts.push(`${pendingByType.activity} ${i18n.t('profile:logout.activityLabel')}`);
     }
     if (pendingByType.location > 0) {
-      parts.push(`${pendingByType.location} lokasi`);
+      parts.push(`${pendingByType.location} ${i18n.t('profile:logout.locationLabel')}`);
     }
 
-    return parts.length > 0 ? parts.join(', ') : 'Tidak ada';
+    return parts.length > 0 ? parts.join(', ') : i18n.t('profile:logout.noActivityTypes');
   }, []);
 
   /**
@@ -120,7 +121,7 @@ export const useProfileLogout = (options: UseProfileLogoutOptions = {}) => {
       dispatch(logout());
     } catch (error) {
       console.error('[useProfileLogout] Logout error:', error);
-      Alert.alert('Kesalahan', 'Gagal keluar dari aplikasi');
+      Alert.alert(i18n.t('profile:logout.error'), i18n.t('profile:logout.failureMessage'));
     } finally {
       if (setIsLoading) {
         setIsLoading(false);
@@ -157,19 +158,23 @@ export const useProfileLogout = (options: UseProfileLogoutOptions = {}) => {
       if (totalPending > 0) {
         // Show detailed pending breakdown with 3 options
         const description = buildPendingDescription(freshPendingByType);
-        const message = `Ada ${freshPending} data tertunda dan ${freshFailed} data gagal yang belum tersinkronisasi:\n\n${description}\n\nData ini akan hilang jika Anda keluar.`;
+        const message = i18n.t('profile:logout.pendingDataMessage', {
+          pendingCount: freshPending,
+          failedCount: freshFailed,
+          description,
+        });
 
         if (setIsLoading) {
           setIsLoading(false);
         }
 
-        Alert.alert('Data Belum Tersinkronisasi', message, [
+        Alert.alert(i18n.t('profile:logout.pendingDataTitle'), message, [
           {
-            text: 'Batal',
+            text: i18n.t('profile:logout.cancelButton'),
             style: 'cancel',
           },
           {
-            text: 'Sinkronkan Dulu',
+            text: i18n.t('profile:logout.syncButton'),
             onPress: async () => {
               if (setIsLoading) {
                 setIsLoading(true);
@@ -193,9 +198,9 @@ export const useProfileLogout = (options: UseProfileLogoutOptions = {}) => {
                     setIsLoading(false);
                   }
                   Alert.alert(
-                    'Sinkronisasi Belum Selesai',
-                    `Masih ada ${newPending + newFailed} data yang gagal tersinkronisasi. Silakan coba lagi atau pilih "Keluar Saja".`,
-                    [{ text: 'OK' }]
+                    i18n.t('profile:logout.syncIncompleteTitle'),
+                    i18n.t('profile:logout.syncIncompleteMessage', { count: newPending + newFailed }),
+                    [{ text: i18n.t('profile:logout.okButton') }]
                   );
                 }
               } catch (error: any) {
@@ -204,18 +209,18 @@ export const useProfileLogout = (options: UseProfileLogoutOptions = {}) => {
                 }
                 if (error.message === 'Sync timeout') {
                   Alert.alert(
-                    'Timeout',
-                    'Sinkronisasi terlalu lama. Silakan coba lagi atau pilih "Keluar Saja".',
-                    [{ text: 'OK' }]
+                    i18n.t('profile:logout.syncTimeoutTitle'),
+                    i18n.t('profile:logout.syncTimeoutMessage'),
+                    [{ text: i18n.t('profile:logout.okButton') }]
                   );
                 } else {
-                  Alert.alert('Kesalahan', `Sinkronisasi gagal: ${error.message}`);
+                  Alert.alert(i18n.t('profile:logout.error'), `${i18n.t('profile:logout.syncErrorMessage')} ${error.message}`);
                 }
               }
             },
           },
           {
-            text: 'Keluar Saja',
+            text: i18n.t('profile:logout.logoutButton'),
             style: 'destructive',
             onPress: async () => {
               if (setIsLoading) {
@@ -230,10 +235,10 @@ export const useProfileLogout = (options: UseProfileLogoutOptions = {}) => {
         if (setIsLoading) {
           setIsLoading(false);
         }
-        Alert.alert('Keluar dari Akun?', 'Anda akan keluar dari aplikasi SEKAR', [
-          { text: 'Batal', style: 'cancel' },
+        Alert.alert(i18n.t('profile:logout.confirmTitle'), i18n.t('profile:logout.confirmMessage'), [
+          { text: i18n.t('profile:logout.cancelButton'), style: 'cancel' },
           {
-            text: 'Keluar',
+            text: i18n.t('profile:logout.logoutButton'),
             style: 'destructive',
             onPress: async () => {
               if (setIsLoading) {

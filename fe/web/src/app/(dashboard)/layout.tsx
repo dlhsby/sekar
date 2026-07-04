@@ -2,6 +2,7 @@
 
 import { useEffect, ReactNode, useMemo } from 'react';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { useUIStore } from '@/stores/ui';
 import { Sidebar, SidebarItem } from '@/components/ui';
 import { Header } from '@/components/layout/Header';
@@ -30,6 +31,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const { sidebarOpen, setSidebarOpen } = useUIStore();
   const { user, loading } = useAuth();
+  const { t } = useTranslation();
 
   // On navigation, close the drawer ONLY on mobile — a single sidebar state is
   // shared across breakpoints, so we must not collapse the desktop sidebar.
@@ -51,7 +53,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const convertToSidebarItems = (items: typeof navigationItems): SidebarItem[] => {
       return items.map((item) => ({
         id: item.id,
-        label: item.label,
+        label: t(item.label),
         href: item.href,
         icon: <item.icon className="h-5 w-5" />,
         roles: item.roles,
@@ -61,13 +63,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     };
 
     return convertToSidebarItems(filteredNavigation);
-  }, [user]); // Only recreate when user changes
+  }, [user, t]); // Recreate when user or language changes
 
   // Show loading state while checking auth
   if (loading) {
     return (
       <div className="min-h-screen bg-nb-gray-50 flex items-center justify-center">
-        <div className="text-nb-gray-600">Memuat dashboard...</div>
+        <div className="text-nb-gray-600">{t('common:actions.loading')}</div>
       </div>
     );
   }
@@ -84,9 +86,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-nb-primary focus:text-white focus:font-bold focus:border-2 focus:border-nb-black focus:shadow-nb-lg focus:rounded-nb-base"
-      >
-        Skip to main content
-      </a>
+      >{t("common:a11y.skipToMain")}</a>
 
       {/* Page Loading Indicator */}
       <PageLoadingIndicator />

@@ -7,6 +7,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import i18n from '../../i18n/config';
 import {
   nbColors,
   nbType,
@@ -78,11 +79,10 @@ export class MapErrorBoundary extends Component<Props, State> {
               />
             </View>
 
-            <Text style={styles.title}>Gagal Memuat Peta</Text>
+            <Text style={styles.title}>{i18n.t('monitoring:mapError.title')}</Text>
 
             <Text style={styles.description}>
-              Terjadi kesalahan saat memuat peta. Silakan coba lagi atau hubungi
-              administrator jika masalah berlanjut.
+              {i18n.t('monitoring:mapError.message')}
             </Text>
 
             {__DEV__ && this.state.error && (
@@ -97,7 +97,7 @@ export class MapErrorBoundary extends Component<Props, State> {
               style={styles.retryButton}
               onPress={this.handleReset}
               accessibilityRole="button"
-              accessibilityLabel="Coba lagi memuat peta"
+              accessibilityLabel={i18n.t('monitoring:mapError.retryLabel')}
             >
               <MaterialCommunityIcons
                 name="refresh"
@@ -105,7 +105,7 @@ export class MapErrorBoundary extends Component<Props, State> {
                 color={nbColors.bgSurface}
                 style={styles.retryIcon}
               />
-              <Text style={styles.retryButtonText}>Coba Lagi</Text>
+              <Text style={styles.retryButtonText}>{i18n.t('monitoring:mapError.retry')}</Text>
             </TouchableOpacity>
           </View>
         </View>

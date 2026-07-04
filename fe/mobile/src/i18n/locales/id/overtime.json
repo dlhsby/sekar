@@ -1,0 +1,206 @@
+{
+  "filter": {
+    "title": "Filter Lembur",
+    "status": "Status",
+    "statusOptions": {
+      "all": "Semua Status",
+      "pending": "Menunggu Persetujuan",
+      "approved": "Disetujui",
+      "rejected": "Ditolak"
+    },
+    "dateRange": "Rentang Tanggal",
+    "dateFrom": "Dari",
+    "dateTo": "Sampai",
+    "area": "Area",
+    "areaOptions": {
+      "all": "Semua Area",
+      "mine": "Area Saya"
+    },
+    "rayon": "Rayon",
+    "rayonOptions": {
+      "all": "Semua Rayon",
+      "mine": "Rayon Saya"
+    },
+    "createdBy": "Dibuat Oleh",
+    "createdByOptions": {
+      "all": "Semua Petugas (Termasuk Saya)",
+      "subordinates": "Semua Bawahan",
+      "mine": "Dibuat oleh Saya"
+    },
+    "reset": "Reset",
+    "apply": "Terapkan"
+  },
+  "list": {
+    "label": "Lembur",
+    "dateRangeLabel": "Tanggal",
+    "sortNewest": "Tanggal Terbaru",
+    "sortOldest": "Tanggal Terlama",
+    "sortCreatedNewest": "Dibuat Terbaru",
+    "sortCreatedOldest": "Dibuat Terlama",
+    "emptyTitle": "Tidak ada data lembur",
+    "emptyDescNoFilter": "Belum ada pengajuan lembur",
+    "emptyDescWithFilter": "Tidak ada lembur yang sesuai filter",
+    "errorMessage": "Gagal memuat data lembur",
+    "sortModalTitle": "Urutkan Lembur",
+    "clockOutButtonTitle": "Clock Out Lembur",
+    "blockingHint": "Selesaikan Clock Out shift biasa terlebih dahulu",
+    "submitButtonTitle": "+ Ajukan Lembur",
+    "submitButtonLabel": "Ajukan lembur baru",
+    "submitButtonDisabledLabel": "Ajukan lembur dinonaktifkan, selesaikan shift aktif terlebih dahulu",
+    "submitButtonDisabledHint": "Tombol dinonaktifkan karena Anda masih memiliki shift aktif",
+    "defaultTitle": "Lembur",
+    "cardAccessibilityLabelPrefix": "Detail lembur",
+    "photoUnit": "foto"
+  },
+  "detail": {
+    "loadingMessage": "Memuat data...",
+    "notFoundMessage": "Lembur tidak ditemukan",
+    "backButtonTitle": "Kembali",
+    "photoModalTitle": "Foto Lembur",
+    "loadError": "Gagal memuat detail lembur"
+  },
+  "confirmGPSToStart": "Konfirmasi lokasi GPS untuk memulai lembur",
+  "submit": {
+    "startTitle": "Mulai Lembur",
+    "activeTitle": "Lembur Aktif",
+    "loadingMessage": "Memeriksa status lembur...",
+    "selfieStartLabel": "SELFIE MULAI (OPSIONAL)",
+    "selfieEndLabel": "SELFIE SELESAI (OPSIONAL)",
+    "startButtonTitle": "Mulai Lembur",
+    "startButtonLoading": "Memulai...",
+    "endButtonTitle": "Selesai Lembur",
+    "endButtonLoading": "Menyelesaikan...",
+    "selfieImagePreviewTitle": "Selfie"
+  },
+  "forms": {
+    "reasonLabel": "Alasan",
+    "reasonTitle": "ALASAN LEMBUR (OPSIONAL)",
+    "reasonPlaceholder": "Contoh: Pekerjaan tambahan setelah jam kerja...",
+    "locationError": "Lokasi GPS diperlukan",
+    "activityTypeLabel": "Jenis Aktivitas",
+    "activityTypePlaceholder": "Pilih jenis aktivitas...",
+    "activityTypeSearchPlaceholder": "Cari jenis aktivitas...",
+    "noActivityTypesWarning": "Tidak ada jenis aktivitas tersedia. Hubungi administrator.",
+    "errorSummaryTitle": "Mohon lengkapi data berikut:",
+    "descriptionTitle": "DESKRIPSI PEKERJAAN",
+    "descriptionPlaceholder": "Jelaskan aktivitas lembur yang dilakukan...",
+    "photosTitle": "FOTO BUKTI",
+    "photosSubtitle": "{{count}} foto dilampirkan",
+    "photosSubtitleText": "Tambahkan 1-3 foto pekerjaan lembur",
+    "gpsLabel": "Lokasi GPS",
+    "rejectionReasonLabel": "ALASAN PENOLAKAN",
+    "rejectionReasonPlaceholder": "Jelaskan alasan penolakan lembur ini...",
+    "submitRejectionButtonLabel": "Kirim Penolakan"
+  },
+  "components": {
+    "idPengajuanLabel": "ID Pengajuan",
+    "rejectionReasonLabel": "Alasan Penolakan",
+    "staffLabel": "Petugas",
+    "areaLabel": "Area",
+    "photosCount": "{{count}} foto",
+    "notFilledLabel": "(Belum diisi)",
+    "clockOutButtonLabel": "Clock Out Lembur",
+    "clockOutButtonTitle": "Clock Out Lembur",
+    "selfieAlreadyCaptured": "Sudah diambil ✓",
+    "selfieOptional": "Opsional",
+    "selfiePreviewLabel": "Lihat selfie penuh",
+    "selfiePreviewHint": "Ketuk untuk melihat foto dalam ukuran penuh",
+    "selfiePrompt": "Ambil selfie untuk verifikasi",
+    "viewFullSelfieLabel": "Lihat selfie penuh",
+    "captureButtonLabel": "Ambil Selfie",
+    "retakeButtonLabel": "Ambil Ulang Selfie",
+    "generalInfoTitle": "INFORMASI UMUM",
+    "dateLabel": "TANGGAL",
+    "timeLabel": "JAM",
+    "withinAreaBadge": "DI AREA",
+    "outsideAreaBadge": "LUAR AREA",
+    "trailTitle": "RUTE LOKASI",
+    "viewTrailButtonLabel": "Lihat Rute Lokasi Lembur",
+    "durationTitle": "DURASI",
+    "startTimeLabel": "Mulai:",
+    "reasonLabel": "Alasan:"
+  },
+  "trail": {
+    "title": "Rute Lembur",
+    "closeLabel": "Tutup",
+    "refreshLabel": "Refresh rute",
+    "loadError": "Gagal memuat rute lokasi",
+    "loading": "Memuat rute...",
+    "noData": "Tidak ada data lokasi untuk lembur ini",
+    "locationPoints": "titik lokasi",
+    "startMarker": "Mulai Lembur",
+    "endMarker": "Selesai Lembur",
+    "callout": {
+      "time": "Waktu",
+      "gps": "GPS",
+      "accuracy": "Akurasi",
+      "battery": "Baterai",
+      "area": "Area",
+      "withinArea": "Di Dalam Area",
+      "outsideArea": "Di Luar Area"
+    },
+    "zoom": {
+      "in": "Perbesar",
+      "out": "Perkecil"
+    }
+  },
+  "startForm": {
+    "draftTitle": "Lanjutkan Draft?",
+    "draftMessage": "Ditemukan form lembur yang belum selesai. Lanjutkan atau hapus?",
+    "draftDiscard": "Hapus Draft",
+    "draftContinue": "Lanjutkan Draft",
+    "locationError": "GPS lokasi diperlukan. Ketuk \"Perbarui GPS\" untuk mencoba lagi.",
+    "activeShiftError": "Anda masih memiliki shift aktif. Selesaikan Clock Out shift biasa sebelum memulai lembur.",
+    "toastStartError": "Gagal Mulai Lembur",
+    "toastError": "Gagal",
+    "toastGenericError": "Gagal memulai lembur",
+    "saveDraftTitle": "Simpan Draft?",
+    "saveDraftMessage": "Simpan data lembur sebagai draft?",
+    "saveDraftNo": "Tidak",
+    "saveDraftYes": "Ya"
+  },
+  "endForm": {
+    "activityTypeError": "Jenis aktivitas harus dipilih",
+    "descriptionError": "Deskripsi harus diisi",
+    "photosError": "Minimal 1 foto diperlukan",
+    "locationError": "GPS lokasi diperlukan. Ketuk \"Perbarui GPS\" untuk mencoba lagi.",
+    "toastSuccess": "Berhasil",
+    "toastSuccessMessage": "Lembur berhasil diselesaikan.",
+    "toastEndError": "Gagal Selesai Lembur",
+    "toastError": "Gagal",
+    "toastGenericError": "Gagal menyelesaikan lembur"
+  },
+  "alerts": {
+    "confirmTitle": "Konfirmasi",
+    "approveOvertimeMessage": "Setujui pengajuan lembur ini?",
+    "agreeAction": "Setuju",
+    "successTitle": "Berhasil",
+    "overtimeApprovedMessage": "Lembur disetujui",
+    "failedToApproveMessage": "Gagal menyetujui lembur",
+    "errorTitle": "Error",
+    "overtimeRejectedMessage": "Lembur ditolak",
+    "failedToRejectMessage": "Gagal menolak lembur"
+  },
+  "gpsCard": {
+    "header": "LOKASI GPS"
+  },
+  "dayNames": [
+    "Minggu",
+    "Senin",
+    "Selasa",
+    "Rabu",
+    "Kamis",
+    "Jumat",
+    "Sabtu"
+  ],
+  "activityTypeLabel": "JENIS AKTIVITAS",
+  "reasonLabel": "ALASAN LEMBUR",
+  "timeline": {
+    "willRun": "Akan dijalankan",
+    "submitted": "Diajukan"
+  },
+  "status": {
+    "submissionId": "ID Pengajuan",
+    "rejectionReason": "Alasan Penolakan"
+  }
+}

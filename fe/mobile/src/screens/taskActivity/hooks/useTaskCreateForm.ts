@@ -3,6 +3,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { TaskPriority } from '../../../types/models.types';
 
 /**
@@ -42,6 +43,7 @@ const INITIAL_FORM_STATE: FormState = {
  * Hook to manage task creation form state and validation
  */
 export const useTaskCreateForm = (userAreaId?: string, userRayonId?: string) => {
+  const { t } = useTranslation('validation');
   const [form, setForm] = useState<FormState>({
     ...INITIAL_FORM_STATE,
     areaId: userAreaId || '',
@@ -54,16 +56,16 @@ export const useTaskCreateForm = (userAreaId?: string, userRayonId?: string) => 
     const newErrors: FormErrors = {};
 
     if (!form.title.trim()) {
-      newErrors.title = 'Judul harus diisi';
+      newErrors.title = t('taskTitleRequired');
     }
 
     if (!form.assignedTo) {
-      newErrors.assignedTo = 'Petugas harus dipilih';
+      newErrors.assignedTo = t('taskAssigneeRequired');
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [form]);
+  }, [form, t]);
 
   const resetForm = useCallback(() => {
     setForm({

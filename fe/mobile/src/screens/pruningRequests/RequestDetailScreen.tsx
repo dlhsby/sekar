@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 import { useAppDispatch } from '../../store/hooks';
 import { fetchPruningRequestById } from '../../store/slices/pruningRequestsSlice';
@@ -47,6 +48,8 @@ import { ActionBar } from './components/ActionBar';
 type DetailScreenProps = NativeStackScreenProps<any, 'PruningDetail'>;
 
 export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element {
+  const { t: tPruning } = useTranslation('pruning');
+  const { t } = useTranslation('common');
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
   const { requestId, adminMode = false } = (props.route.params ?? {}) as {
@@ -69,6 +72,9 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
     canConvert,
     showAdminBar,
   } = usePruningRequestDetail(requestId, adminMode);
+
+  // Add the pruning translation reference for compatibility with component usage
+  React.useMemo(() => tPruning, [tPruning]);
 
   // Action handlers
   const scrollViewRef = useRef<ScrollView>(null);
@@ -131,8 +137,8 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
         <View style={styles.errorWrap}>
           <NBAlert
             variant="danger"
-            title="Permohonan tidak ditemukan"
-            message="Permohonan yang Anda cari tidak tersedia."
+            title={tPruning('detail.notFoundMessage')}
+            message={tPruning('detail.notFoundError')}
           />
         </View>
       </SafeAreaView>
@@ -162,7 +168,7 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
 
           {error ? (
             <View style={styles.errorBanner}>
-              <NBAlert variant="danger" title="Terjadi kesalahan" message={error} />
+              <NBAlert variant="danger" title={t('ui.errorOccurred')} message={error} />
             </View>
           ) : null}
         </ScrollView>
@@ -195,7 +201,7 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
           visible={photoModalVisible}
           onClose={() => setPhotoModalVisible(false)}
           type="fullscreen"
-          title="Foto Lokasi"
+          title={tPruning('detail.photoModalTitle')}
         >
           <View style={styles.photoViewerWrap}>
             {selectedPhoto ? (
@@ -229,8 +235,8 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
         <LocationMapModal
           visible={locationModalVisible}
           onClose={() => setLocationModalVisible(false)}
-          title="Lokasi Perantingan"
-          markerTitle="Lokasi Perantingan"
+          title={tPruning('detail.locationModalTitle')}
+          markerTitle={tPruning('detail.locationMarkerTitle')}
           hideAreaStatus
           hideUpdatedAt
           location={{
@@ -240,7 +246,7 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
             isWithinArea: false,
             updatedAt: request.createdAt ? new Date(request.createdAt) : null,
           }}
-          footerActionLabel="Buka di Google Maps"
+          footerActionLabel={tPruning('detail.openMapsLabel')}
           onFooterAction={() => {
             if (request.gpsLat != null && request.gpsLng != null) {
               const url = `https://www.google.com/maps/search/?api=1&query=${request.gpsLat},${request.gpsLng}`;

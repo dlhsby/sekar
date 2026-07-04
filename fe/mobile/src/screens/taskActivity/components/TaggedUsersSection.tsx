@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { View, ActivityIndicator } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   NBCard,
@@ -34,6 +35,7 @@ export const TaggedUsersSection: React.FC<TaggedUsersSectionProps> = ({
   assignableUsers,
   assignedTo,
 }) => {
+  const { t } = useTranslation('tasks');
   const taggableOptions: NBSelectOption[] = assignableUsers
     .filter((u) => u.id !== assignedTo)
     .map((u) => ({ label: u.full_name, value: u.id }));
@@ -45,41 +47,41 @@ export const TaggedUsersSection: React.FC<TaggedUsersSectionProps> = ({
           <MaterialCommunityIcons name="tag-multiple-outline" size={16} color={nbColors.black} />
           <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}>
             {' '}
-            TAG PETUGAS
+            {t('tagged.sectionTitle')}
           </NBText>
         </View>
         <NBText variant="body-sm" style={styles.sectionSubtitle}>
-          Opsional — pilih beberapa petugas untuk di-tag
+          {t('tagged.sectionSubtitle')}
         </NBText>
       </NBCardHeader>
       <NBCardContent>
         {needsAreaSelection ? (
           <View style={styles.emptyContainer}>
             <NBText variant="body-sm" color="gray600" style={styles.emptyText}>
-              Pilih lokasi terlebih dahulu
+              {t('tagged.selectAreaFirst')}
             </NBText>
           </View>
         ) : isLoadingUsers ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator color={nbColors.primary} />
             <NBText variant="body-sm" color="gray600" style={styles.loadingText}>
-              Memuat daftar petugas...
+              {t('tagged.loading')}
             </NBText>
           </View>
         ) : taggableOptions.length > 0 ? (
           <NBSelect
-            label="Tag Petugas"
+            label={t('tagged.label')}
             selectedValues={taggedUserIds}
             onValuesChange={onTaggedUsersChange}
             options={taggableOptions}
-            placeholder="Pilih petugas untuk di-tag..."
+            placeholder={t('tagged.placeholder')}
             searchable
-            searchPlaceholder="Cari nama petugas..."
+            searchPlaceholder={t('tagged.searchPlaceholder')}
           />
         ) : (
           <View style={styles.emptyContainer}>
             <NBText variant="body-sm" color="gray600" style={styles.emptyText}>
-              {assignedTo ? 'Tidak ada petugas lain untuk di-tag' : 'Tidak ada petugas yang dapat di-tag di area ini'}
+              {assignedTo ? t('tagged.emptyOthers') : t('tagged.empty')}
             </NBText>
           </View>
         )}

@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, StyleSheet } from 'react-native';
 import {
   NBCard,
@@ -30,13 +31,15 @@ interface OvertimeStatusCardProps {
   overtime: Overtime;
 }
 
-export const OvertimeStatusCard: React.FC<OvertimeStatusCardProps> = ({ overtime }) => (
+export const OvertimeStatusCard: React.FC<OvertimeStatusCardProps> = ({ overtime }) => {
+  const { t } = useTranslation();
+  return (
   <NBCard style={styles.card}>
     <NBCardHeader>
       <View style={styles.statusRow}>
         <View>
           <NBText variant="mono-sm" color="gray500" style={{ letterSpacing: 0.6 }}>{overtimeCode(overtime.id)}</NBText>
-          <NBText variant="body-sm" color="gray600" style={{ marginTop: 1 }}>ID Pengajuan</NBText>
+          <NBText variant="body-sm" color="gray600" style={{ marginTop: 1 }}>{t("overtime:status.submissionId")}</NBText>
         </View>
         <NBBadge
           text={getOvertimeStatusLabel(overtime.status)}
@@ -47,7 +50,7 @@ export const OvertimeStatusCard: React.FC<OvertimeStatusCardProps> = ({ overtime
     <NBCardContent>
       {overtime.status === 'rejected' && overtime.rejection_reason && (
         <DetailRow
-          label="Alasan Penolakan"
+          label={t("overtime:status.rejectionReason")}
           value={overtime.rejection_reason}
           variant="description"
           labelColor="danger"
@@ -55,7 +58,8 @@ export const OvertimeStatusCard: React.FC<OvertimeStatusCardProps> = ({ overtime
       )}
     </NBCardContent>
   </NBCard>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   card: {

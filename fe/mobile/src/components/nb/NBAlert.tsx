@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -134,6 +135,7 @@ export const NBAlert: React.FC<NBAlertProps> = ({
   messageStyle,
   testID,
 }) => {
+  const { t } = useTranslation();
   const variantStyle = variantStyles[variant];
   const displayIcon = icon !== undefined ? icon : variantStyle.icon;
 
@@ -247,7 +249,7 @@ export const NBAlert: React.FC<NBAlertProps> = ({
               style={styles.dismissButton}
               textStyle={styles.dismissButtonText}
               testID={`${testID}-dismiss`}
-              accessibilityLabel="Dismiss alert"
+              accessibilityLabel={t("components:ui.dismissAlert")}
             />
           )}
         </View>

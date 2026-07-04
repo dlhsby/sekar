@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import {
   nbColors,
   nbType,
@@ -28,23 +29,24 @@ export const AssignedKecamatanCard: React.FC<AssignedKecamatanCardProps> = ({
   kecamatanName,
   testID = 'assigned-kecamatan-card',
 }) => {
+  const { t } = useTranslation();
   return (
     <NBCard variant="elevated" style={styles.card} testID={testID}>
-      <Text style={styles.cardTitle}>Wilayah Ditugaskan</Text>
+      <Text style={styles.cardTitle}>{t('profile:assignedKecamatan.title')}</Text>
       {kecamatanName || rayonName ? (
         <View style={styles.body}>
           <View style={styles.row}>
-            <Text style={styles.label}>Rayon</Text>
+            <Text style={styles.label}>{t('profile:assignedKecamatan.rayon')}</Text>
             <Text style={styles.value}>{rayonName ?? '—'}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.row}>
-            <Text style={styles.label}>Kecamatan</Text>
+            <Text style={styles.label}>{t('profile:assignedKecamatan.kecamatan')}</Text>
             <Text style={styles.value}>{kecamatanName ?? '—'}</Text>
           </View>
         </View>
       ) : (
-        <Text style={styles.empty}>Belum ada wilayah ditugaskan</Text>
+        <Text style={styles.empty}>{t('profile:assignedKecamatan.noArea')}</Text>
       )}
     </NBCard>
   );

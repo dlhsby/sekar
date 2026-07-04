@@ -1,0 +1,45 @@
+{
+  "carousel": {
+    "slides": [
+      {
+        "title": "Pantau tim secara real-time",
+        "highlight": "real-time",
+        "body": "Lihat posisi semua satgas di lapangan. Status hidup, langsung dari GPS."
+      },
+      {
+        "title": "Tugas terstruktur tiap shift",
+        "highlight": "terstruktur",
+        "body": "Korlap kasih briefing & checklist. Selesai patroli, tinggal tap."
+      },
+      {
+        "title": "Permohonan kecamatan, cepat",
+        "highlight": "cepat",
+        "body": "Ajukan perantingan langsung dari lapangan. Admin lihat, putuskan."
+      },
+      {
+        "title": "Tetap jalan tanpa sinyal",
+        "highlight": "jalan",
+        "body": "Catatan tersimpan offline. Sinkron otomatis saat sinyal balik."
+      }
+    ],
+    "nextButton": "Lanjut",
+    "lastButton": "Mulai (Masuk)",
+    "skipButton": "Lewati"
+  },
+  "scenes": {
+    "liveMap": {
+      "active": "Aktif",
+      "offArea": "Off-area"
+    },
+    "requests": {
+      "requestLabel": "PERMOHONAN",
+      "fallentreeLocation": "Pohon tumbang Jl. Anggrek",
+      "dryTreeCutting": "Tebang pohon kering",
+      "areaLabel": "Bekasi 03",
+      "timeAgo": "2 jam lalu",
+      "approved": "DISETUJUI",
+      "inProgress": "DIPROSES"
+    },
+    "checklistDemo": "Checklist Patroli · Pos 04"
+  }
+}

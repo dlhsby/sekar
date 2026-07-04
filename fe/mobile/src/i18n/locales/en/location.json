@@ -1,0 +1,60 @@
+{
+  "permission": {
+    "denied": "Location permission denied. Unable to start tracking.",
+    "deniedShort": "Location permission denied. Please enable in settings.",
+    "required": "Location Permission Required",
+    "requiredMessage": "This app requires location permission to track your position during your shift. Please enable it in settings."
+  },
+  "errors": {
+    "bufferAlmostFull": "Location buffer almost full ({{threshold}}/{{max}}). Waiting for network connection.",
+    "permissionDenied": "Location permission denied. Please enable in settings.",
+    "positionUnavailable": "GPS signal not available. Check if location services are enabled.",
+    "timeout": "GPS timeout. Make sure you are in an open area.",
+    "unknown": "Failed to get location. Please try again.",
+    "gpsDisabled": "GPS is not enabled. Please enable location services to continue.",
+    "gpsDisabledTitle": "GPS Not Enabled",
+    "gpsDisabledMessage": "This app requires GPS to track your location. Please enable GPS in your device settings.",
+    "unavailableGeneral": "Unable to get location.",
+    "unavailableClockIn": "Location not available yet. Wait for GPS to acquire location.",
+    "capturePermissionDenied": "Location permission denied. Enable location permission in Settings to automatically capture GPS coordinates.",
+    "getFailed": "Failed to get location:",
+    "captureFailed": "Failed to capture GPS location"
+  },
+  "clockInOut": {
+    "cameraPermissionTitle": "Camera Permission",
+    "cameraPermissionMessage": "Camera access is required. Enable it in app Settings.",
+    "cameraError": "Failed to open camera",
+    "clockInSuccess": "Successfully clocked in!",
+    "clockOutSuccess": "Successfully clocked out!",
+    "clockInFail": "Failed to clock in",
+    "clockOutFail": "Failed to clock out",
+    "clockOutConfirmTitle": "Confirm Clock Out",
+    "clockOutConfirmMessage": "Are you sure you want to end this shift?",
+    "clockOutButton": "Clock Out",
+    "noActiveShift": "No active shift"
+  },
+  "foregroundService": {
+    "channelName": "Location Tracking",
+    "notificationTitle": "SEKAR — Location tracking active",
+    "notificationBody": "Your location is being tracked during your shift."
+  },
+  "noPoints": "No GPS points recorded for this date.",
+  "permissionAlert": {
+    "title": "Location Permission Required",
+    "message": "Location permission has been revoked. The app requires location permission to track your position during your shift. Please enable it in settings.",
+    "later": "Later",
+    "openSettings": "Open Settings"
+  },
+  "gpsAlert": {
+    "title": "GPS Not Active",
+    "message": "GPS has been disabled. Please enable GPS to continue location tracking during your shift.",
+    "later": "Later",
+    "openSettings": "Open Settings"
+  },
+  "checkStatusFailed": "Failed to check location status",
+  "selector": {
+    "selectRayonFirst": "Select a rayon first",
+    "selectArea": "Select area..."
+  },
+  "getFailed": "Failed to get location"
+}

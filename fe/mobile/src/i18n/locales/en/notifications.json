@@ -1,0 +1,54 @@
+{
+  "preferences": {
+    "intro": "Choose which notifications you want to receive. Disabling a type will stop push notifications for that type.",
+    "sections": {
+      "tasks": "Tasks",
+      "activities": "Activities",
+      "overtime": "Overtime",
+      "other": "Other"
+    },
+    "types": {
+      "task_assigned": "New task",
+      "task_completed": "Task completed",
+      "task_updated": "Task updates & revisions",
+      "activity_approved": "Activity approved",
+      "activity_rejected": "Activity rejected",
+      "overtime_approved": "Overtime approved",
+      "overtime_rejected": "Overtime rejected",
+      "shift_reminder": "Shift reminder",
+      "missing_worker_alert": "Missing worker alert",
+      "area_plant_overdue": "Plant overdue for pruning"
+    },
+    "loadFailed": "Failed to load notification preferences.",
+    "saveFailed": "Changes not saved. Please try again."
+  },
+  "categories": {
+    "all": "All",
+    "task": "Tasks",
+    "activity": "Activities",
+    "overtime": "Overtime",
+    "system": "System"
+  },
+  "empty": {
+    "title": "No notifications yet",
+    "description": "Task, overtime, and system notifications will appear here."
+  },
+  "unread": "{{count}} unread",
+  "markAllRead": "Mark all as read",
+  "loadError": "Failed to load notifications",
+  "relativeTime": {
+    "justNow": "Just now",
+    "minutesAgo": "{{count}} minutes ago",
+    "hoursAgo": "{{count}} hours ago",
+    "daysAgo": "{{count}} days ago"
+  },
+  "bell": {
+    "label": "Notifications",
+    "unreadLabel": "Notifications ({{count}} unread)"
+  },
+  "fcm": {
+    "channelName": "SEKAR Notifications",
+    "defaultTitle": "SEKAR Notification",
+    "notAvailable": "Notification service unavailable"
+  }
+}

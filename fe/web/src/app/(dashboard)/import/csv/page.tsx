@@ -12,6 +12,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { redirect } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Download, Upload } from 'lucide-react';
 
@@ -30,12 +31,15 @@ import {
   type ImportValidationError,
 } from '@/lib/api/import';
 
-const ENTITY_OPTIONS = [
-  { value: 'users', label: 'Pengguna' },
-  { value: 'areas', label: 'Area' },
-];
+function getEntityOptions(t: ReturnType<typeof useTranslation>['t']) {
+  return [
+    { value: 'users', label: t('csv.entities.users') },
+    { value: 'areas', label: t('csv.entities.areas') },
+  ];
+}
 
 export default function CsvImportPage() {
+  const { t } = useTranslation();
   const { user, loading } = useAuth();
 
   useEffect(() => {
@@ -47,7 +51,7 @@ export default function CsvImportPage() {
   if (loading || !user) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <p className="text-nb-gray-600">Memuat…</p>
+        <p className="text-nb-gray-600">{t('common:actions.loading')}</p>
       </div>
     );
   }
@@ -58,6 +62,7 @@ export default function CsvImportPage() {
 }
 
 function CsvImportWizard() {
+  const { t } = useTranslation(['import']);
   const [entity, setEntity] = useState<CsvImportEntity>('users');
   const [fileName, setFileName] = useState<string | null>(null);
   const [validation, setValidation] = useState<CsvValidationResponse | null>(null);
@@ -66,6 +71,7 @@ function CsvImportWizard() {
 
   const validateCsv = useValidateCsv();
   const confirmImport = useConfirmCsvImport();
+  const entityOptions = getEntityOptions(t);
 
   const reset = () => {
     setValidation(null);
@@ -92,7 +98,7 @@ function CsvImportWizard() {
       const response = await validateCsv.mutateAsync({ entity, file });
       setValidation(response);
       if (response.validCount === 0) {
-        toast.warning('Tidak ada baris valid untuk diimpor.');
+        toast.warning(t('import:csv.noValidRows'));
       }
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -104,7 +110,7 @@ function CsvImportWizard() {
     try {
       const response = await confirmImport.mutateAsync(validation.sessionId);
       setResult(response);
-      toast.success(`Berhasil mengimpor ${response.imported} baris.`);
+      toast.success(t('csv.resultSuccess', { imported: response.imported }));
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
@@ -112,11 +118,11 @@ function CsvImportWizard() {
 
   return (
     <div className="space-y-5">
-      <SectionCard title="Impor CSV">
+      <SectionCard title={t('csv.title')}>
         <div className="grid gap-4 sm:grid-cols-2">
           <FormSelect
-            label="Jenis Data"
-            options={ENTITY_OPTIONS}
+            label={t('csv.entityLabel')}
+            options={entityOptions}
             value={entity}
             onChange={(v) => {
               setEntity(v as CsvImportEntity);
@@ -129,7 +135,7 @@ function CsvImportWizard() {
               onClick={handleTemplate}
               leftIcon={<Download className="h-4 w-4" />}
             >
-              Unduh Template
+              {t('csv.downloadTemplate')}
             </Button>
           </div>
         </div>
@@ -141,7 +147,7 @@ function CsvImportWizard() {
             accept=".csv"
             onChange={handleFile}
             className="hidden"
-            aria-label="Pilih berkas CSV"
+            aria-label={t('csv.selectFileAriaLabel')}
           />
           <Button
             variant="secondary"
@@ -149,7 +155,7 @@ function CsvImportWizard() {
             loading={validateCsv.isPending}
             leftIcon={<Upload className="h-4 w-4" />}
           >
-            {fileName ?? 'Pilih Berkas CSV'}
+            {fileName ?? t('csv.selectFileButton')}
           </Button>
         </div>
       </SectionCard>
@@ -160,10 +166,11 @@ function CsvImportWizard() {
           committing={confirmImport.isPending}
           onCommit={handleCommit}
           done={!!result}
+          t={t}
         />
       )}
 
-      {result && <CommitResult result={result} onReset={reset} />}
+      {result && <CommitResult result={result} onReset={reset} t={t} />}
     </div>
   );
 }
@@ -173,63 +180,65 @@ function ValidationPreview({
   committing,
   onCommit,
   done,
+  t,
 }: {
   validation: CsvValidationResponse;
   committing: boolean;
   onCommit: () => void;
   done: boolean;
+  t: ReturnType<typeof useTranslation>['t'];
 }) {
   const errorColumns: ColumnDef<ImportValidationError & Record<string, unknown>>[] = [
     {
       id: 'row',
       accessorKey: 'row',
-      header: 'Baris',
+      header: t('csv.errorColumns.row'),
       enableSorting: true,
-      meta: { label: 'Baris' },
+      meta: { label: t('csv.errorColumns.row') },
     },
     {
       id: 'column',
       accessorKey: 'column',
-      header: 'Kolom',
+      header: t('csv.errorColumns.column'),
       enableSorting: true,
-      meta: { label: 'Kolom' },
+      meta: { label: t('csv.errorColumns.column') },
     },
     {
       id: 'value',
       accessorKey: 'value',
-      header: 'Nilai',
+      header: t('csv.errorColumns.value'),
       enableSorting: true,
-      meta: { label: 'Nilai' },
+      meta: { label: t('csv.errorColumns.value') },
     },
     {
       id: 'message',
       accessorKey: 'message',
-      header: 'Pesan',
+      header: t('csv.errorColumns.message'),
       enableSorting: true,
-      meta: { label: 'Pesan' },
+      meta: { label: t('csv.errorColumns.message') },
     },
   ];
 
   return (
     <SectionCard
-      title="Tinjau Validasi"
-      meta={`${validation.validCount} baris valid · ${validation.errors.length} kesalahan`}
+      title={t('csv.validationTitle')}
+      meta={`${validation.validCount} ${t('csv.validLines')} · ${validation.errors.length} ${t('csv.errorCount')}`}
     >
       {validation.errors.length > 0 ? (
         <DataTable
           columns={errorColumns}
           data={validation.errors.map((e, i) => ({ ...e, _k: i }))}
           getRowId={(r) => String(r._k)}
-          emptyTitle="Tidak ada kesalahan."
+          emptyTitle={t('csv.noErrors')}
         />
       ) : (
-        <Alert tone="success">Semua baris valid dan siap diimpor.</Alert>
+        <Alert tone="success">{t('csv.allValid')}</Alert>
       )}
 
       {!done && (
         <div className="mt-4">
           <Button onClick={onCommit} loading={committing} disabled={!validation.sessionId}>
-            Impor {validation.validCount} Baris Valid
+            {t('csv.importButton', { count: validation.validCount })}
           </Button>
         </div>
       )}
@@ -237,12 +246,20 @@ function ValidationPreview({
   );
 }
 
-function CommitResult({ result, onReset }: { result: CsvCommitResponse; onReset: () => void }) {
+function CommitResult({
+  result,
+  onReset,
+  t,
+}: {
+  result: CsvCommitResponse;
+  onReset: () => void;
+  t: ReturnType<typeof useTranslation>['t'];
+}) {
   return (
-    <SectionCard title="Hasil Impor">
+    <SectionCard title={t('csv.resultTitle')}>
       <p className="text-nb-body">
-        Berhasil mengimpor <strong>{result.imported}</strong> baris
-        {result.skipped > 0 ? `, ${result.skipped} dilewati.` : '.'}
+        {t('csv.resultSuccess', { imported: result.imported })}
+        {result.skipped > 0 ? ` ${t('csv.skipped', { count: result.skipped })}` : '.'}
       </p>
       {result.skippedReasons && result.skippedReasons.length > 0 && (
         <ul className="mt-3 list-inside list-disc text-nb-body-sm text-nb-gray-600">
@@ -253,7 +270,7 @@ function CommitResult({ result, onReset }: { result: CsvCommitResponse; onReset:
       )}
       <div className="mt-4">
         <Button variant="outline" onClick={onReset}>
-          Impor Lagi
+          {t('csv.importAgain')}
         </Button>
       </div>
     </SectionCard>

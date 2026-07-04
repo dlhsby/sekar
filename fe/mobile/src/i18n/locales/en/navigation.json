@@ -1,0 +1,26 @@
+{
+  "screens": {
+    "attendance": "Attendance",
+    "attendanceDetail": "Attendance Detail",
+    "clockInOut": "Clock In/Out",
+    "tasks": "Tasks",
+    "activities": "Activities",
+    "monitoring": "Monitoring",
+    "createActivity": "Create Activity",
+    "taskDetail": "Task Detail",
+    "completeTask": "Complete Task",
+    "activityDetail": "Activity Detail",
+    "createTask": "Create Task",
+    "submitOvertime": "Submit Overtime",
+    "overtimeDetail": "Overtime Detail",
+    "pruningDetail": "Request Detail",
+    "createPruning": "Create Request",
+    "seedDetail": "Seed Detail",
+    "recordTransaction": "Record Transaction",
+    "reportDetail": "Report Detail",
+    "assetDetail": "Asset Detail",
+    "scanQR": "Scan QR",
+    "checkoutAsset": "Checkout Asset",
+    "returnAsset": "Return Asset"
+  }
+}

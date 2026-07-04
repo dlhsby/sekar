@@ -7,6 +7,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -28,6 +29,7 @@ import { useViewModal } from '@/lib/hooks/use-view-modal';
 import type { Rayon } from '@/types/models';
 
 export default function RayonsPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const isAdmin = user && ADMIN_ROLES.includes(user.role);
 
@@ -59,9 +61,9 @@ export default function RayonsPage() {
       {
         id: 'id',
         accessorKey: 'id',
-        header: 'ID',
+        header: t('admin:rayons.columnId'),
         enableSorting: false,
-        meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+        meta: { label: t('admin:rayons.columnId'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
         ),
@@ -69,17 +71,17 @@ export default function RayonsPage() {
       {
         id: 'name',
         accessorKey: 'name',
-        header: 'Nama',
+        header: t('admin:rayons.columnName'),
         enableSorting: true,
-        meta: { label: 'Nama', filterVariant: 'text' },
+        meta: { label: t('admin:rayons.columnName'), filterVariant: 'text' },
         cell: ({ row }) => <span className="font-semibold">{row.original.name}</span>,
       },
       {
         id: 'color',
         accessorKey: 'color',
-        header: 'Warna',
+        header: t('admin:rayons.stats.color'),
         enableSorting: false,
-        meta: { label: 'Warna', filterVariant: 'text' },
+        meta: { label: t('admin:rayons.stats.color'), filterVariant: 'text' },
         cell: ({ row }) => {
           const color = row.original.color;
           return (
@@ -103,9 +105,9 @@ export default function RayonsPage() {
       {
         id: 'coordinates',
         accessorFn: (r) => (r.center_lat && r.center_lng ? 'Ada' : '—'),
-        header: 'Koordinat',
+        header: t('admin:areas.columnCoordinates'),
         enableSorting: false,
-        meta: { label: 'Koordinat', filterVariant: 'text' },
+        meta: { label: t('admin:areas.columnCoordinates'), filterVariant: 'text' },
         cell: ({ row }) => (
           <CoordinateLink lat={row.original.center_lat} lng={row.original.center_lng} />
         ),
@@ -113,9 +115,9 @@ export default function RayonsPage() {
       {
         id: 'description',
         accessorKey: 'description',
-        header: 'Deskripsi',
+        header: t('admin:shared.description'),
         enableSorting: true,
-        meta: { label: 'Deskripsi', defaultHidden: true, filterVariant: 'text' },
+        meta: { label: t('admin:shared.description'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {row.original.description ?? '—'}
@@ -125,8 +127,8 @@ export default function RayonsPage() {
       {
         id: 'created_by',
         accessorFn: (r) => actorName(r.created_by),
-        header: 'Dibuat oleh',
-        meta: { label: 'Dibuat oleh', defaultHidden: true, filterVariant: 'text' },
+        header: t('admin:rayons.columnCreatedBy'),
+        meta: { label: t('admin:rayons.columnCreatedBy'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {actorName(row.original.created_by)}
@@ -136,8 +138,8 @@ export default function RayonsPage() {
       {
         id: 'updated_by',
         accessorFn: (r) => actorName(r.updated_by),
-        header: 'Diperbarui oleh',
-        meta: { label: 'Diperbarui oleh', defaultHidden: true, filterVariant: 'text' },
+        header: t('admin:rayons.columnUpdatedBy'),
+        meta: { label: t('admin:rayons.columnUpdatedBy'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {actorName(row.original.updated_by)}
@@ -152,7 +154,7 @@ export default function RayonsPage() {
     (r: Rayon): DataTableRowAction<Rayon>[] => [
       {
         key: 'view',
-        label: 'Lihat',
+        label: t('admin:rayons.actionView'),
         icon: Eye,
         onClick: () => {
           view.openWith(r);
@@ -160,7 +162,7 @@ export default function RayonsPage() {
       },
       {
         key: 'edit',
-        label: 'Ubah',
+        label: t('admin:rayons.actionEdit'),
         icon: Pencil,
         disabled: !isAdmin,
         onClick: () => {
@@ -170,7 +172,7 @@ export default function RayonsPage() {
       },
       {
         key: 'delete',
-        label: 'Hapus',
+        label: t('admin:rayons.actionDelete'),
         icon: Trash2,
         variant: 'danger',
         hidden: !isAdmin,
@@ -180,7 +182,7 @@ export default function RayonsPage() {
         },
       },
     ],
-    [isAdmin, view]
+    [isAdmin, view, t]
   );
 
   const handleDelete = async () => {
@@ -189,7 +191,7 @@ export default function RayonsPage() {
     setDeleteError(null);
     try {
       await deleteRayon.mutateAsync(deletingRayon.id);
-      toast.success(`Rayon "${deletingRayon.name}" berhasil dihapus`);
+      toast.success(t('admin:rayons.successDeleted', { name: deletingRayon.name }));
       setDeleteOpen(false);
       setDeletingRayon(null);
       refetch();
@@ -198,7 +200,7 @@ export default function RayonsPage() {
       // Surface inline (dialog stays open), matching the Area/User delete flows.
       setDeleteError(
         errorMsg.includes('masih memiliki') || errorMsg.includes('area')
-          ? `Rayon "${deletingRayon.name}" masih memiliki area. Hapus area terlebih dahulu.`
+          ? t('admin:shared.rayonHasAreas', { name: deletingRayon.name })
           : errorMsg,
       );
     }
@@ -206,7 +208,7 @@ export default function RayonsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Rayon" description="Kelola 7 rayon di Kota Surabaya" />
+      <PageHeader title={t('admin:rayons.pageTitle')} description={t('admin:rayons.description')} />
 
       <DataTable
         columns={columns}
@@ -216,7 +218,7 @@ export default function RayonsPage() {
         onRetry={() => refetch()}
         onRefresh={() => refetch()}
         getRowId={(r) => r.id}
-        searchPlaceholder="Cari rayon…"
+        searchPlaceholder={t('admin:rayons.searchPlaceholder')}
         rowActions={rowActions}
         actions={
           isAdmin ? (
@@ -227,12 +229,12 @@ export default function RayonsPage() {
               }}
               leftIcon={<Plus className="h-5 w-5" />}
             >
-              Tambah Rayon
+              {t('admin:rayons.buttonAdd')}
             </Button>
           ) : undefined
         }
-        emptyTitle="Belum Ada Rayon"
-        emptyDescription="Mulai dengan menambahkan rayon pertama."
+        emptyTitle={t('admin:rayons.emptyTitle')}
+        emptyDescription={t('admin:rayons.emptyDescription')}
         emptyAction={
           isAdmin ? (
             <Button
@@ -242,7 +244,7 @@ export default function RayonsPage() {
               }}
               leftIcon={<Plus className="h-5 w-5" />}
             >
-              Tambah Rayon Pertama
+              {t('admin:rayons.buttonAddFirst')}
             </Button>
           ) : undefined
         }
@@ -264,17 +266,16 @@ export default function RayonsPage() {
           if (!open) setDeleteError(null);
           setDeleteOpen(open);
         }}
-        title="Hapus Rayon"
+        title={t('admin:shared.deleteRayon')}
         description={
           deletingRayon && (
             <>
-              Anda akan menghapus rayon <strong>{deletingRayon.name}</strong>. Tindakan ini tidak
-              dapat dibatalkan.
+              {t('admin:shared.deleteConfirmation', { name: deletingRayon.name })}
             </>
           )
         }
-        confirmLabel="Hapus"
-        cancelLabel="Batal"
+        confirmLabel={t('admin:shared.delete')}
+        cancelLabel={t('admin:shared.cancel')}
         variant="destructive"
         loading={deleteRayon.isPending}
         onConfirm={handleDelete}

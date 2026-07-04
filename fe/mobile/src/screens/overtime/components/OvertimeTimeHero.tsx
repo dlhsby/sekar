@@ -5,46 +5,50 @@
 
 import React from 'react';
 import { StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import {
   NBCollapsibleCard,
   NBText,
 } from '../../../components/nb';
 
-const DAY_NAMES_ID = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-const MONTH_NAMES_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
-
 function formatTimeHero(d: Date): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-function formatDateHero(d: Date): string {
-  return `${DAY_NAMES_ID[d.getDay()]}, ${d.getDate()} ${MONTH_NAMES_ID[d.getMonth()]}`;
+function formatDateHero(d: Date, dayNames: string[], monthNames: string[]): string {
+  return `${dayNames[d.getDay()]}, ${d.getDate()} ${monthNames[d.getMonth()]}`;
 }
 
 interface OvertimeTimeHeroProps {
   currentTime: Date;
 }
 
-const OvertimeTimeHero: React.FC<OvertimeTimeHeroProps> = ({ currentTime }) => (
-  <NBCollapsibleCard
-    style={styles.selfieCard}
-    headerLeft={
-      <NBText variant="h2" color="black" style={styles.timeHeroTime}>
-        {formatTimeHero(currentTime)}
+const OvertimeTimeHero: React.FC<OvertimeTimeHeroProps> = ({ currentTime }) => {
+  const { t } = useTranslation();
+  const dayNames = t('overtime:dayNames', { returnObjects: true }) as string[];
+  const monthNames = t('common:calendar.monthsShort', { returnObjects: true }) as string[];
+
+  return (
+    <NBCollapsibleCard
+      style={styles.selfieCard}
+      headerLeft={
+        <NBText variant="h2" color="black" style={styles.timeHeroTime}>
+          {formatTimeHero(currentTime)}
+        </NBText>
+      }
+      headerRight={
+        <NBText variant="mono-sm" color="gray600">
+          {formatDateHero(currentTime, dayNames, monthNames)}
+        </NBText>
+      }
+      accessibilityLabel={t('components:ui.timeDetails')}
+    >
+      <NBText variant="body-sm" color="gray600" style={styles.centerText}>
+        {t('overtime:confirmGPSToStart')}
       </NBText>
-    }
-    headerRight={
-      <NBText variant="mono-sm" color="gray600">
-        {formatDateHero(currentTime)}
-      </NBText>
-    }
-    accessibilityLabel="Detail waktu"
-  >
-    <NBText variant="body-sm" color="gray600" style={styles.centerText}>
-      Konfirmasi lokasi GPS untuk memulai lembur
-    </NBText>
-  </NBCollapsibleCard>
-);
+    </NBCollapsibleCard>
+  );
+};
 
 const styles = StyleSheet.create({
   selfieCard: {

@@ -11,9 +11,11 @@
 'use client';
 
 import Link from 'next/link';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, ArrowRight, ExternalLink } from 'lucide-react';
 
 import {
@@ -32,9 +34,10 @@ import { useAuth } from '@/lib/auth/hooks';
 import { hasRole } from '@/lib/constants/roles';
 import type { UserRole } from '@/types/models';
 import {
-  PRUNING_REQUEST_ADMIN_ROLES,
-  PRUNING_REQUEST_STATUS_LABELS,
+  getPruningRequestStatusLabel,
+  PRUNING_REQUEST_STATUS_BADGES,
   PRUNING_REQUEST_STATUS_TONES,
+  PRUNING_REQUEST_ADMIN_ROLES,
 } from '@/lib/constants/pruning-requests';
 import {
   usePruningRequest,
@@ -48,23 +51,10 @@ import { useUsers } from '@/lib/api/users';
 type CaseType = ConvertToTaskDto['caseType'];
 type PruningAction = ConvertToTaskDto['pruningAction'];
 
-const CASE_TYPES: Array<{ label: string; value: CaseType }> = [
-  { label: 'Gawat Darurat', value: 'GT' },
-  { label: 'Pemeliharaan Teratur', value: 'PT' },
-  { label: 'Pemeliharaan Khusus', value: 'PS' },
-  { label: 'Pembersihan Dahan', value: 'PD' },
-  { label: 'Pemangkasan Khusus', value: 'PK' },
-];
-
-const PRUNING_ACTIONS: Array<{ label: string; value: PruningAction }> = [
-  { label: 'Pemangkasan Moderat', value: 'PM' },
-  { label: 'Pemangkasan Berat', value: 'PB' },
-  { label: 'Pemangkasan Cabang', value: 'PC' },
-];
-
 const ASSIGNEE_ROLES: UserRole[] = ['korlap', 'satgas', 'linmas', 'kepala_rayon', 'admin_data'];
 
 export default function PruningRequestDetailPage() {
+  const { t } = useTranslation();
   const params = useParams<{ id: string }>();
   const id = params?.id ?? '';
   const router = useRouter();
@@ -98,6 +88,21 @@ export default function PruningRequestDetailPage() {
       .map((u) => ({ label: `${u.full_name} (${u.role})`, value: u.id }));
   }, [usersResponse, requestRayonId]);
 
+  // Build case types and pruning actions from i18n
+  const caseTypeOptions = useMemo<Array<{ label: string; value: CaseType }>>(() => [
+    { label: t('pruning:detail.caseTypes.GT'), value: 'GT' },
+    { label: t('pruning:detail.caseTypes.PT'), value: 'PT' },
+    { label: t('pruning:detail.caseTypes.PS'), value: 'PS' },
+    { label: t('pruning:detail.caseTypes.PD'), value: 'PD' },
+    { label: t('pruning:detail.caseTypes.PK'), value: 'PK' },
+  ], [t]);
+
+  const pruningActionOptions = useMemo<Array<{ label: string; value: PruningAction }>>(() => [
+    { label: t('pruning:detail.pruningActions.PM'), value: 'PM' },
+    { label: t('pruning:detail.pruningActions.PB'), value: 'PB' },
+    { label: t('pruning:detail.pruningActions.PC'), value: 'PC' },
+  ], [t]);
+
   // Review state
   const [reviewNotes, setReviewNotes] = useState('');
   const reviewMutation = useReviewPruningRequest(id);
@@ -126,13 +131,13 @@ export default function PruningRequestDetailPage() {
     return (
       <div className="space-y-5">
         <div className="rounded-nb-base border-2 border-nb-danger bg-nb-white p-4 text-nb-danger">
-          Gagal memuat permohonan. Coba kembali ke daftar.
+          {t('pruning:detail.loadError')}
         </div>
         <Link
           href="/pruning-requests"
           className="inline-flex items-center gap-1 font-semibold text-nb-primary hover:underline"
         >
-          <ArrowLeft className="size-4" /> Kembali
+          <ArrowLeft className="size-4" /> {t('pruning:detail.backButton')}
         </Link>
       </div>
     );
@@ -160,9 +165,9 @@ export default function PruningRequestDetailPage() {
   };
 
   const expectedLabel = request.expectedDate
-    ? new Date(request.expectedDate).toLocaleDateString('id-ID')
+    ? new Date(request.expectedDate).toLocaleDateString(intlLocale())
     : request.expectedYear && request.expectedIsoWeek
-      ? `Minggu ${request.expectedIsoWeek} / ${request.expectedYear}`
+      ? t('pruning:detail.weekLabel', { week: request.expectedIsoWeek, year: request.expectedYear })
       : '-';
 
   return (
@@ -172,7 +177,7 @@ export default function PruningRequestDetailPage() {
         onClick={() => router.push('/pruning-requests')}
         className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wide text-nb-gray-700 transition-colors hover:text-nb-black"
       >
-        <ArrowLeft className="size-4" aria-hidden="true" /> Kembali ke daftar
+        <ArrowLeft className="size-4" aria-hidden="true" /> {t('pruning:detail.backButton')}
       </button>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -181,40 +186,40 @@ export default function PruningRequestDetailPage() {
           <p className="mt-0.5 text-nb-body-sm text-nb-gray-600">{request.address}</p>
         </div>
         <StatusPill tone={PRUNING_REQUEST_STATUS_TONES[request.status]} dot>
-          {PRUNING_REQUEST_STATUS_LABELS[request.status]}
+          {getPruningRequestStatusLabel(request.status, t)}
         </StatusPill>
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <div className="space-y-5">
-          <SectionCard title="Detail Permohonan">
+          <SectionCard title={t('pruning:detail.sections.details')}>
             <dl className="space-y-2.5 text-nb-body-sm">
-              <Field label="Kecamatan" value={request.kecamatanName ?? '-'} />
-              <Field label="Rayon" value={request.rayon?.name ?? '-'} />
-              <Field label="Pengirim" value={request.submitter?.full_name ?? '-'} />
-              <Field label="Minggu Diharapkan" value={expectedLabel} />
+              <Field label={t('pruning:detail.fields.kecamatan')} value={request.kecamatanName ?? '-'} />
+              <Field label={t('pruning:detail.fields.rayon')} value={request.rayon?.name ?? '-'} />
+              <Field label={t('pruning:detail.fields.submitter')} value={request.submitter?.full_name ?? '-'} />
+              <Field label={t('pruning:detail.fields.expectedWeek')} value={expectedLabel} />
               <Field
-                label="Jumlah Pohon"
+                label={t('pruning:detail.fields.treeCount')}
                 value={String(request.treeCount ?? request.estimatedPlantCount ?? '-')}
               />
-              <Field label="Tinggi Pohon" value={request.treeHeightEstimate ?? '-'} />
-              <Field label="Diameter Batang" value={request.treeDiameterEstimate ?? '-'} />
-              <Field label="Lokasi GPS" value={`${request.gpsLat}, ${request.gpsLng}`} mono />
-              {request.notes && <Field label="Catatan" value={request.notes} />}
+              <Field label={t('pruning:detail.fields.treeHeight')} value={request.treeHeightEstimate ?? '-'} />
+              <Field label={t('pruning:detail.fields.treeDiameter')} value={request.treeDiameterEstimate ?? '-'} />
+              <Field label={t('pruning:detail.fields.gpsLocation')} value={`${request.gpsLat}, ${request.gpsLng}`} mono />
+              {request.notes && <Field label={t('pruning:detail.fields.notes')} value={request.notes} />}
             </dl>
           </SectionCard>
 
-          <SectionCard title="Kontak">
+          <SectionCard title={t('pruning:detail.sections.contacts')}>
             <dl className="space-y-2.5 text-nb-body-sm">
-              <Field label="Pengaju Lapangan" value={request.requesterName ?? '-'} />
-              <Field label="HP Pengaju" value={request.requesterPhone ?? '-'} mono />
-              <Field label="Ketua RT" value={request.rtLeaderName ?? '-'} />
-              <Field label="HP Ketua RT" value={request.rtLeaderPhone ?? '-'} mono />
+              <Field label={t('pruning:detail.fields.requesterName')} value={request.requesterName ?? '-'} />
+              <Field label={t('pruning:detail.fields.requesterPhone')} value={request.requesterPhone ?? '-'} mono />
+              <Field label={t('pruning:detail.fields.rtLeaderName')} value={request.rtLeaderName ?? '-'} />
+              <Field label={t('pruning:detail.fields.rtLeaderPhone')} value={request.rtLeaderPhone ?? '-'} mono />
             </dl>
           </SectionCard>
 
           {request.photoUrls.length > 0 && (
-            <SectionCard title="Foto" meta={`${request.photoUrls.length} foto`}>
+            <SectionCard title={t('pruning:detail.sections.photos')} meta={`${request.photoUrls.length} ${t('pruning:detail.sections.photos').toLowerCase()}`}>
               <div className="grid grid-cols-3 gap-2">
                 {request.photoUrls.map((url, i) => (
                   <button
@@ -222,11 +227,11 @@ export default function PruningRequestDetailPage() {
                     type="button"
                     onClick={() => setLightbox(url)}
                     className="group relative overflow-hidden rounded-nb-base border-2 border-nb-black focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
-                    aria-label={`Perbesar foto ${i + 1}`}
+                    aria-label={t('pruning:detail.photoLabel', { index: i + 1 })}
                   >
                     <Image
                       src={url}
-                      alt={`Foto ${i + 1}`}
+                      alt={t('pruning:detail.photoAlt', { index: i + 1 })}
                       width={160}
                       height={120}
                       className="h-24 w-full object-cover transition-transform group-hover:scale-105"
@@ -241,47 +246,47 @@ export default function PruningRequestDetailPage() {
 
         <div className="space-y-5">
           {request.reviewer && (
-            <SectionCard title="Riwayat Tinjauan">
+            <SectionCard title={t('pruning:detail.sections.review')}>
               <dl className="space-y-2.5 text-nb-body-sm">
-                <Field label="Ditinjau Oleh" value={request.reviewer.full_name} />
+                <Field label={t('pruning:detail.fields.reviewedBy')} value={request.reviewer.full_name} />
                 <Field
-                  label="Tanggal Tinjauan"
+                  label={t('pruning:detail.fields.reviewDate')}
                   value={
                     request.reviewedAt
-                      ? new Date(request.reviewedAt).toLocaleString('id-ID')
+                      ? new Date(request.reviewedAt).toLocaleString(intlLocale())
                       : '-'
                   }
                   mono
                 />
-                <Field label="Catatan Tinjauan" value={request.reviewNotes ?? '-'} />
+                <Field label={t('pruning:detail.fields.reviewNotes')} value={request.reviewNotes ?? '-'} />
               </dl>
             </SectionCard>
           )}
 
           {request.assignedTaskId && (
-            <SectionCard title="Tugas Terkait">
+            <SectionCard title={t('pruning:detail.sections.relatedTask')}>
               <Link
                 href={`/tasks/${request.assignedTaskId}`}
                 className="inline-flex items-center gap-1.5 font-semibold text-nb-primary hover:underline"
               >
-                Lihat tugas terkait <ExternalLink className="size-4" aria-hidden="true" />
+                {t('pruning:detail.relatedTask')} <ExternalLink className="size-4" aria-hidden="true" />
               </Link>
             </SectionCard>
           )}
 
           {canReview && (
-            <SectionCard title="Tinjauan">
+            <SectionCard title={t('pruning:detail.sections.review')}>
               <div className="space-y-3">
                 <Textarea
-                  label="Catatan Tinjauan (opsional)"
+                  label={t('pruning:detail.review.notes')}
                   value={reviewNotes}
                   onChange={(e) => setReviewNotes(e.target.value)}
                   rows={3}
-                  placeholder="Contoh: Lokasi sesuai, prioritaskan minggu ini."
+                  placeholder={t('pruning:detail.review.placeholder')}
                 />
                 {reviewMutation.isError && (
                   <p role="alert" className="text-nb-body-sm text-nb-danger">
-                    Gagal mengirim tinjauan. Coba lagi.
+                    {t('pruning:detail.review.error')}
                   </p>
                 )}
                 <div className="flex gap-2">
@@ -290,14 +295,14 @@ export default function PruningRequestDetailPage() {
                     onClick={() => handleReview('approve')}
                     loading={reviewMutation.isPending}
                   >
-                    Setujui
+                    {t('pruning:detail.review.approve')}
                   </Button>
                   <Button
                     variant="destructive"
                     onClick={() => handleReview('reject')}
                     loading={reviewMutation.isPending}
                   >
-                    Tolak
+                    {t('pruning:detail.review.reject')}
                   </Button>
                 </div>
               </div>
@@ -306,43 +311,43 @@ export default function PruningRequestDetailPage() {
 
           {canConvert && (
             <SectionCard
-              title="Tugaskan ke Petugas"
-              meta="Tanggal kosong dipilih otomatis dalam minggu diminta"
+              title={t('pruning:detail.sections.relatedTask')}
+              meta={t('pruning:detail.assign.meta')}
             >
               {(areaOptions.length === 0 || assigneeOptions.length === 0) && (
                 <p
                   role="alert"
                   className="mb-3 rounded-nb-base border-2 border-nb-warning bg-nb-warning-light px-3 py-2 text-nb-body-sm text-nb-black"
                 >
-                  Tidak ada area atau petugas yang tersedia untuk rayon ini. Hubungi administrator.
+                  {t('pruning:detail.assign.noOptions')}
                 </p>
               )}
               <div className="space-y-3">
                 <FormSelect
-                  label="Area"
+                  label={t('pruning:detail.assign.area')}
                   value={areaId}
                   onChange={setAreaId}
-                  options={[{ label: '— Pilih area —', value: '' }, ...areaOptions]}
+                  options={[{ label: t('pruning:detail.assign.areaPlaceholder'), value: '' }, ...areaOptions]}
                 />
                 <FormSelect
-                  label="Ditugaskan Ke"
+                  label={t('pruning:detail.assign.assignedTo')}
                   value={assignedTo}
                   onChange={setAssignedTo}
-                  options={[{ label: '— Pilih petugas —', value: '' }, ...assigneeOptions]}
+                  options={[{ label: t('pruning:detail.assign.assignedToPlaceholder'), value: '' }, ...assigneeOptions]}
                 />
                 <FormSelect
-                  label="Tipe Kasus"
+                  label={t('pruning:detail.assign.caseType')}
                   value={caseType}
                   onChange={(v) => setCaseType(v as CaseType)}
-                  options={CASE_TYPES}
+                  options={caseTypeOptions}
                 />
                 <FormSelect
-                  label="Aksi Pemangkasan"
+                  label={t('pruning:detail.assign.pruningAction')}
                   value={pruningAction}
                   onChange={(v) => setPruningAction(v as PruningAction)}
-                  options={PRUNING_ACTIONS}
+                  options={pruningActionOptions}
                 />
-                <FormField label="Tanggal Pasti (opsional)">
+                <FormField label={t('pruning:detail.assign.scheduledDate')}>
                   {(p) => (
                     <DatePicker
                       id={p.id}
@@ -353,7 +358,7 @@ export default function PruningRequestDetailPage() {
                 </FormField>
                 {convertMutation.isError && (
                   <p role="alert" className="text-nb-body-sm text-nb-danger">
-                    Gagal mengonversi ke tugas. Periksa kapasitas minggu dan coba lagi.
+                    {t('pruning:detail.assign.error')}
                   </p>
                 )}
                 <Button
@@ -362,7 +367,7 @@ export default function PruningRequestDetailPage() {
                   disabled={!areaId || !assignedTo}
                   rightIcon={<ArrowRight className="size-4" />}
                 >
-                  Buat Tugas
+                  {t('pruning:detail.assign.submit')}
                 </Button>
               </div>
             </SectionCard>
@@ -371,7 +376,7 @@ export default function PruningRequestDetailPage() {
           {!canReview && !canConvert && !request.reviewer && (
             <SectionCard>
               <p className="py-2 text-nb-body-sm text-nb-gray-600">
-                Tidak ada aksi tersedia untuk status saat ini.
+                {t('pruning:detail.noActionAvailable')}
               </p>
             </SectionCard>
           )}
@@ -383,7 +388,7 @@ export default function PruningRequestDetailPage() {
           {lightbox && (
             <Image
               src={lightbox}
-              alt="Pratinjau foto"
+              alt={t('pruning:detail.photoPreview')}
               width={1024}
               height={768}
               className="h-auto w-full rounded-nb-base object-contain"

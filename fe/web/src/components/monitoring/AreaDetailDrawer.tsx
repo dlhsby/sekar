@@ -9,6 +9,8 @@
  */
 
 import { useEffect, useRef, useCallback } from 'react';
+import { intlLocale } from '@/lib/i18n/date-locale';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils/cn';
 import { WorkerListVirtual, type WorkerListItem } from './WorkerListVirtual';
 import type { SnapshotAreaSummary } from '@/lib/api/monitoring-v2';
@@ -47,6 +49,7 @@ export function AreaDetailDrawer({
   selectedUserId,
   className,
 }: AreaDetailDrawerProps) {
+  const { t } = useTranslation(['monitoring']);
   const drawerRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -116,7 +119,7 @@ export function AreaDetailDrawer({
         <div className="flex items-center justify-between px-4 py-3 border-b-2 border-nb-black flex-shrink-0">
           <div className="min-w-0">
             <p className="text-nb-caption text-nb-gray-500 font-bold uppercase tracking-wide">
-              {area?.rayon_name ?? 'Rayon —'}
+              {area?.rayon_name ?? t('monitoring:areaDrawer.rayonFallback')}
             </p>
             <h2 className="text-nb-h3 font-black text-nb-black truncate">
               {area?.area_name ?? '—'}
@@ -126,7 +129,7 @@ export function AreaDetailDrawer({
             ref={closeButtonRef}
             type="button"
             onClick={onClose}
-            aria-label="Tutup drawer detail area"
+            aria-label={t('monitoring:areaDetail.closeLabel')}
             className={cn(
               'shrink-0 ml-3 w-9 h-9 flex items-center justify-center',
               'border-2 border-nb-black rounded-nb-base bg-nb-white',
@@ -149,14 +152,14 @@ export function AreaDetailDrawer({
               aria-labelledby="staffing-heading"
             >
               <h3 id="staffing-heading" className="text-nb-body-sm font-bold text-nb-black mb-2">
-                Ketersediaan Staf
+                {t('monitoring:areaDetail.staffingLabel')}
               </h3>
               <div className="flex items-center gap-3">
                 {/* Circular-style count */}
                 <div
                   className="w-14 h-14 rounded-full border-4 flex items-center justify-center flex-shrink-0"
                   style={{ borderColor: staffingColor }}
-                  aria-label={`${area.active_count} dari ${area.required_count} petugas aktif`}
+                  aria-label={t('monitoring:areaDetail.staffingLabel')}
                 >
                   <span
                     className="text-nb-body-sm font-black leading-none"
@@ -170,11 +173,11 @@ export function AreaDetailDrawer({
                     className="text-nb-body-sm font-bold"
                     style={{ color: staffingColor }}
                   >
-                    {area.is_understaffed ? 'Kekurangan staf' : 'Staf terpenuhi'} ({staffingPercent}
+                    {area.is_understaffed ? t('monitoring:areaDetail.staffingShortage') : t('monitoring:areaDetail.staffingFull')} ({staffingPercent}
                     %)
                   </p>
                   <p className="text-nb-caption text-nb-gray-500">
-                    {area.active_count} aktif dari {area.required_count} yang diperlukan
+                    {area.active_count} {t('monitoring:areaDetail.activeOf')} {area.required_count} {t('monitoring:areaDetail.required')}
                   </p>
                 </div>
               </div>
@@ -199,7 +202,7 @@ export function AreaDetailDrawer({
                   id="workers-heading"
                   className="text-nb-body-sm font-bold text-nb-black"
                 >
-                  Petugas di Area Ini{' '}
+                  {t('monitoring:areaDetail.workersLabel')}{' '}
                   <span className="text-nb-gray-500 font-normal">({workers.length})</span>
                 </h3>
               </div>
@@ -209,7 +212,7 @@ export function AreaDetailDrawer({
                 onSelect={onWorkerSelect}
                 selectedUserId={selectedUserId}
                 maxHeight={320}
-                aria-label="Daftar petugas di area ini"
+                aria-label={t('monitoring:areaDetail.workersList')}
                 className="flex-1"
               />
             </section>
@@ -224,16 +227,18 @@ export function AreaDetailDrawer({
 // PlantStatusSection
 // ---------------------------------------------------------------------------
 
-const PRUNING_STATUS_LABELS: Record<PruningRequestStatus, string> = {
-  submitted: 'Diajukan',
-  under_review: 'Ditinjau',
-  approved: 'Disetujui',
-  rejected: 'Ditolak',
-  assigned: 'Jadi Tugas',
-  in_progress: 'Berjalan',
-  done: 'Selesai',
-  cancelled: 'Dibatalkan',
-};
+function getPruningStatusLabels(t: any): Record<PruningRequestStatus, string> {
+  return {
+    submitted: t('monitoring:pruningStatus.submitted'),
+    under_review: t('monitoring:pruningStatus.underReview'),
+    approved: t('monitoring:pruningStatus.approved'),
+    rejected: t('monitoring:pruningStatus.rejected'),
+    assigned: t('monitoring:pruningStatus.assigned'),
+    in_progress: t('monitoring:pruningStatus.inProgress'),
+    done: t('monitoring:pruningStatus.done'),
+    cancelled: t('monitoring:pruningStatus.cancelled'),
+  };
+}
 
 const PRUNING_STATUS_TONE: Record<PruningRequestStatus, string> = {
   submitted: 'bg-nb-info-light text-nb-black',
@@ -250,7 +255,7 @@ function formatDate(iso: string | null | undefined): string {
   if (!iso) return '—';
   try {
     const d = new Date(iso);
-    return d.toLocaleDateString('id-ID', {
+    return d.toLocaleDateString(intlLocale(), {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -265,6 +270,7 @@ interface PlantStatusSectionProps {
 }
 
 function PlantStatusSection({ areaId }: PlantStatusSectionProps) {
+  const { t } = useTranslation(['monitoring']);
   const { data: plants, isLoading, isError } = useAreaPlants(areaId);
   const { data: notable } = useNotablePlants(areaId);
   const summary = summarizePlantStatuses(plants);
@@ -275,7 +281,7 @@ function PlantStatusSection({ areaId }: PlantStatusSectionProps) {
       aria-labelledby="plant-heading"
     >
       <h3 id="plant-heading" className="text-nb-body-sm font-bold text-nb-black mb-2">
-        Status Tanaman
+        {t('monitoring:areaDetail.plantStatusLabel')}
       </h3>
 
       {isLoading && (
@@ -284,7 +290,7 @@ function PlantStatusSection({ areaId }: PlantStatusSectionProps) {
           role="status"
           aria-live="polite"
         >
-          Memuat data tanaman…
+          {t('monitoring:areaDetail.loadingPlants')}
         </div>
       )}
 
@@ -296,7 +302,7 @@ function PlantStatusSection({ areaId }: PlantStatusSectionProps) {
           )}
           role="alert"
         >
-          Gagal memuat data tanaman.
+          {t('monitoring:areaDetail.errorPlants')}
         </div>
       )}
 
@@ -308,23 +314,23 @@ function PlantStatusSection({ areaId }: PlantStatusSectionProps) {
           )}
           role="note"
         >
-          Belum ada data tanaman terdaftar untuk area ini.
+          {t('monitoring:areaDetail.noPlants')}
         </div>
       )}
 
       {!isLoading && !isError && summary.total_species > 0 && (
         <>
           <div className="grid grid-cols-3 gap-2 mb-3">
-            <PlantStatusBadge label="OK" count={summary.ok} tone="ok" />
-            <PlantStatusBadge label="Hampir" count={summary.due_soon} tone="due" />
-            <PlantStatusBadge label="Lewat" count={summary.overdue} tone="overdue" />
+            <PlantStatusBadge label={t('monitoring:areaDetail.ok')} count={summary.ok} tone="ok" />
+            <PlantStatusBadge label={t('monitoring:areaDetail.almostDue')} count={summary.due_soon} tone="due" />
+            <PlantStatusBadge label={t('monitoring:areaDetail.overdue')} count={summary.overdue} tone="overdue" />
           </div>
 
           <p className="text-nb-caption text-nb-gray-600 mb-2">
-            {summary.total_species} jenis · {summary.total_count} pohon terdata
+            {t('monitoring:areaDetail.speciesCount', { species: summary.total_species })} · {t('monitoring:areaDetail.totalCount', { total: summary.total_count })}
           </p>
 
-          <ul className="flex flex-col gap-1.5" aria-label="Daftar jenis tanaman">
+          <ul className="flex flex-col gap-1.5" aria-label={t('monitoring:areaDetail.plantsList')}>
             {(plants ?? [])
               .slice()
               .sort(plantSeverityOrder)
@@ -337,12 +343,12 @@ function PlantStatusSection({ areaId }: PlantStatusSectionProps) {
           {notable && notable.length > 0 && (
             <div className="mt-3 pt-3 border-t border-nb-gray-200">
               <p className="text-nb-caption font-bold text-nb-gray-700 uppercase tracking-wide mb-1.5">
-                Pohon Heritage ({notable.length})
+                {t('monitoring:areaDetail.heritage', { count: notable.length })}
               </p>
               <ul className="flex flex-col gap-1">
                 {notable.slice(0, 3).map((n) => (
                   <li key={n.id} className="text-nb-caption text-nb-gray-700">
-                    🌳 <span className="font-bold">{n.label ?? 'Tanpa label'}</span>
+                    🌳 <span className="font-bold">{n.label ?? t('monitoring:areaDetail.heritageNoLabel')}</span>
                     {n.species?.nameId ? ` · ${n.species.nameId}` : ''}
                     {n.heritage ? ' · Heritage' : ''}
                   </li>
@@ -396,33 +402,34 @@ interface PlantRowProps {
 }
 
 function PlantRow({ row }: PlantRowProps) {
+  const { t } = useTranslation(['monitoring']);
   const tone =
     row.status === 'overdue'
       ? 'text-nb-danger-dark'
       : row.status === 'due_soon'
         ? 'text-nb-warning'
         : 'text-nb-gray-700';
-  const speciesLabel = row.species?.nameId ?? 'Spesies tidak diketahui';
+  const speciesLabel = row.species?.nameId ?? t('monitoring:areaDetail.unknownSpecies');
   return (
     <li className="flex items-center justify-between text-nb-caption">
       <div className="min-w-0 flex-1">
         <span className="font-bold text-nb-black">{speciesLabel}</span>
-        <span className="text-nb-gray-500"> · {row.count} pohon</span>
+        <span className="text-nb-gray-500"> · {row.count} {t('monitoring:areaDetail.treeUnit')}</span>
       </div>
       <div className={cn('text-right ml-2 shrink-0', tone)}>
         <div className="font-bold">
           {row.status === 'overdue'
-            ? 'Lewat tempo'
+            ? t('monitoring:areaDetail.overduePlantStatus')
             : row.status === 'due_soon'
-              ? 'Hampir tempo'
+              ? t('monitoring:areaDetail.almostDuePlantStatus')
               : row.status === 'ok'
-                ? 'OK'
+                ? t('monitoring:areaDetail.okPlantStatus')
                 : '—'}
         </div>
         <div className="text-nb-gray-500">
           {row.lastPrunedAt
-            ? `Pangkas: ${formatDate(row.lastPrunedAt)}`
-            : 'Belum pernah dipangkas'}
+            ? `${t('monitoring:areaDetail.lastPrunedLabel')}: ${formatDate(row.lastPrunedAt)}`
+            : t('monitoring:areaDetail.neverPruned')}
         </div>
       </div>
     </li>
@@ -439,7 +446,9 @@ interface PruningRequestsSectionProps {
 }
 
 function PruningRequestsSection({ rayonId, areaName }: PruningRequestsSectionProps) {
+  const { t } = useTranslation(['monitoring']);
   const { data, isLoading, isError } = usePruningByRayon(rayonId, { limit: 8 });
+  const statusLabels = getPruningStatusLabels(t);
 
   return (
     <section
@@ -447,15 +456,15 @@ function PruningRequestsSection({ rayonId, areaName }: PruningRequestsSectionPro
       aria-labelledby="pruning-heading"
     >
       <h3 id="pruning-heading" className="text-nb-body-sm font-bold text-nb-black mb-1">
-        Permohonan Pangkas
+        {t('monitoring:areaDetail.pruningTitle', { rayon: areaName })}
       </h3>
       <p className="text-nb-caption text-nb-gray-500 mb-2">
-        Rayon yang mencakup {areaName}
+        {t('monitoring:areaDetail.pruningTitle', { rayon: areaName })}
       </p>
 
       {isLoading && (
         <div className="text-nb-caption text-nb-gray-500" role="status">
-          Memuat permohonan…
+          {t('monitoring:areaDetail.loadingPruning')}
         </div>
       )}
 
@@ -464,7 +473,7 @@ function PruningRequestsSection({ rayonId, areaName }: PruningRequestsSectionPro
           className="text-nb-caption text-nb-danger-dark border-2 border-nb-danger rounded-nb-base bg-nb-danger-light/30 px-3 py-2"
           role="alert"
         >
-          Gagal memuat permohonan pangkas.
+          {t('monitoring:areaDetail.errorPlants')}
         </div>
       )}
 
@@ -473,14 +482,14 @@ function PruningRequestsSection({ rayonId, areaName }: PruningRequestsSectionPro
           className="text-nb-caption text-nb-gray-600 italic border-2 border-nb-gray-200 rounded-nb-base bg-nb-gray-50 px-3 py-2"
           role="note"
         >
-          Tidak ada permohonan pangkas aktif pada rayon ini.
+          {t('monitoring:areaDetail.noPruning')}
         </div>
       )}
 
       {!isLoading && !isError && data && data.length > 0 && (
-        <ul className="flex flex-col gap-1.5" aria-label="Daftar permohonan pangkas">
+        <ul className="flex flex-col gap-1.5" aria-label={t('monitoring:areaDetail.pruningTitle', { rayon: areaName })}>
           {data.slice(0, 5).map((r) => (
-            <PruningRow key={r.id} row={r} />
+            <PruningRow key={r.id} row={r} statusLabels={statusLabels} />
           ))}
         </ul>
       )}
@@ -490,9 +499,11 @@ function PruningRequestsSection({ rayonId, areaName }: PruningRequestsSectionPro
 
 interface PruningRowProps {
   row: PruningRequestRow;
+  statusLabels: Record<PruningRequestStatus, string>;
 }
 
-function PruningRow({ row }: PruningRowProps) {
+function PruningRow({ row, statusLabels }: PruningRowProps) {
+  const { t } = useTranslation(['monitoring']);
   return (
     <li className="border-2 border-nb-gray-200 rounded-nb-base px-2.5 py-2 bg-nb-white">
       <div className="flex items-start justify-between gap-2">
@@ -501,8 +512,8 @@ function PruningRow({ row }: PruningRowProps) {
             {row.kecamatan_name} · {row.address}
           </p>
           <p className="text-nb-caption text-nb-gray-500 truncate">
-            {row.requester_name ?? 'Pemohon tidak diketahui'}
-            {row.tree_count != null ? ` · ${row.tree_count} pohon` : ''}
+            {row.requester_name ?? t('monitoring:areaDetail.unknownRequester')}
+            {row.tree_count != null ? ` · ${row.tree_count} ${t('monitoring:areaDetail.treeUnit')}` : ''}
             {row.expected_date ? ` · ${formatDate(row.expected_date)}` : ''}
           </p>
         </div>
@@ -512,7 +523,7 @@ function PruningRow({ row }: PruningRowProps) {
             PRUNING_STATUS_TONE[row.status]
           )}
         >
-          {PRUNING_STATUS_LABELS[row.status]}
+          {statusLabels[row.status]}
         </span>
       </div>
     </li>

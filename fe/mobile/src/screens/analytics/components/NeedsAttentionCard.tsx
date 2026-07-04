@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBCard, NBText, NBBadge } from '../../../components/nb';
 import { nbColors, nbSpacing } from '../../../constants/nbTokens';
 import type { WorkerAnalytics } from '../../../types/analytics.types';
@@ -16,10 +17,12 @@ interface NeedsAttentionCardProps {
 export function NeedsAttentionCard({
   workers,
 }: NeedsAttentionCardProps): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <NBCard style={styles.container}>
       <NBText variant="h3" style={styles.title} color="gray900">
-        Perlu Perhatian
+        {t('analytics:cards.needsAttention')}
       </NBText>
 
       <View style={styles.list}>
@@ -35,7 +38,7 @@ export function NeedsAttentionCard({
                 {worker.full_name}
               </NBText>
               <NBText variant="body-sm" color="gray600">
-                Skor: {Math.round(worker.performance_score * 10) / 10}
+                {t('analytics:cards.score')}: {Math.round(worker.performance_score * 10) / 10}
               </NBText>
             </View>
             <NBBadge

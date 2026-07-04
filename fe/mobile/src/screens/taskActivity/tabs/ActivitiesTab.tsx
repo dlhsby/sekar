@@ -5,6 +5,7 @@
  */
 
 import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   StyleSheet,
@@ -47,6 +48,7 @@ export function ActivitiesTab({
   onNavigateToActivity,
   currentUserId,
 }: ActivitiesTabProps): React.JSX.Element {
+  const { t } = useTranslation('common');
   const renderItem = useCallback(
     ({ item }: { item: Activity }) => (
       <ActivityCard
@@ -75,7 +77,7 @@ export function ActivitiesTab({
         <View style={styles.centerContentInline}>
           <NBText variant="body" color="danger" style={styles.errorText}>{activitiesError}</NBText>
           <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
-            <NBText variant="body" color="white" style={styles.retryButtonText}>Coba Lagi</NBText>
+            <NBText variant="body" color="white" style={styles.retryButtonText}>{t("common:actions.retry")}</NBText>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -92,8 +94,8 @@ export function ActivitiesTab({
           variant="noData"
           illustration="illo-reports"
           style={styles.emptyStateStretch}
-          title="Belum ada aktivitas"
-          description="Aktivitas yang Anda buat akan muncul di sini"
+          title={t('activities:tab.tabEmptyTitle')}
+          description={t('activities:tab.tabEmptyDescription')}
         />
       </ScrollView>
     );
@@ -118,7 +120,7 @@ export function ActivitiesTab({
           </View>
         ) : !hasMore && activities.length > 0 ? (
           <View style={styles.footerEnd}>
-            <NBText variant="body-sm" color="gray400" style={styles.footerEndText}>Tidak ada lagi</NBText>
+            <NBText variant="body-sm" color="gray400" style={styles.footerEndText}>{t('ui.noMore')}</NBText>
           </View>
         ) : null
       }

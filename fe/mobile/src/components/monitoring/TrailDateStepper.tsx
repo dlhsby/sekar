@@ -12,6 +12,7 @@
 
 import React, { useCallback, useState } from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBText } from '../nb/NBText';
 import { NBDatePicker } from '../nb/NBDatePicker';
@@ -64,6 +65,7 @@ export function TrailDateStepper({
   date,
   onDateChange,
 }: TrailDateStepperProps): React.JSX.Element {
+  const { t } = useTranslation();
   const [pickerVisible, setPickerVisible] = useState(false);
   const atToday = isToday(date);
 
@@ -84,7 +86,7 @@ export function TrailDateStepper({
       <TouchableOpacity
         onPress={handlePrevDay}
         style={styles.stepBtn}
-        accessibilityLabel="Hari sebelumnya"
+        accessibilityLabel={t('monitoring:locationTrail.dateStepperPrevDay')}
         accessibilityRole="button"
         activeOpacity={0.7}
         testID="trail-date-prev"
@@ -95,7 +97,7 @@ export function TrailDateStepper({
       <TouchableOpacity
         onPress={() => setPickerVisible(true)}
         style={styles.labelWrap}
-        accessibilityLabel="Pilih tanggal"
+        accessibilityLabel={t('monitoring:locationTrail.dateStepperSelectDate')}
         accessibilityRole="button"
         activeOpacity={0.7}
         testID="trail-date-label"
@@ -110,7 +112,7 @@ export function TrailDateStepper({
         onPress={handleNextDay}
         style={[styles.stepBtn, atToday && styles.stepBtnDisabled]}
         disabled={atToday}
-        accessibilityLabel="Hari berikutnya"
+        accessibilityLabel={t('monitoring:locationTrail.dateStepperNextDay')}
         accessibilityRole="button"
         activeOpacity={0.7}
         testID="trail-date-next"

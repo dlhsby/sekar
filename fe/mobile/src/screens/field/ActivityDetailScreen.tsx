@@ -14,6 +14,8 @@ import {
   SafeAreaView,
   BackHandler,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n/config';
 import { useNavigation, useRoute, useFocusEffect, type RouteProp } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import type { MainTabParamList, MainTabScreenProps } from '../../types/navigation.types';
@@ -37,10 +39,10 @@ function formatDateTime(dateStr: string): string {
 
 function getActivityStatusLabel(status?: string): string {
   switch (status) {
-    case 'approved': return 'Disetujui';
-    case 'rejected': return 'Ditolak';
-    case 'pending': return 'Menunggu Persetujuan';
-    default: return 'Menunggu Persetujuan';
+    case 'approved': return i18n.t('status:approved');
+    case 'rejected': return i18n.t('status:rejected');
+    case 'pending': return i18n.t('status:pending_approval');
+    default: return i18n.t('status:pending_approval');
   }
 }
 
@@ -53,6 +55,7 @@ function getActivityStatusVariant(status?: string): 'success' | 'danger' | 'gray
 }
 
 export function ActivityDetailScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const navigation = useNavigation<MainTabScreenProps<'ActivityDetail'>['navigation']>();
   const route = useRoute<RouteProp<MainTabParamList, 'ActivityDetail'>>();
   const { activityId } = route.params;
@@ -104,7 +107,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
           navigation.navigate('Activities');
         }
       } catch {
-        Alert.alert('Error', 'Gagal memuat detail aktivitas');
+        Alert.alert('Error', t('activities:detail.loadFailure'));
         navigation.navigate('Activities');
       } finally {
         setIsLoading(false);
@@ -140,10 +143,10 @@ export function ActivityDetailScreen(): React.JSX.Element {
 
   const handleApprove = useCallback(async () => {
     if (!activity || isSubmitting) {return;}
-    Alert.alert('Konfirmasi', 'Setujui aktivitas ini?', [
-      { text: 'Batal', style: 'cancel' },
+    Alert.alert(t('activities:detail.confirmApprove'), t('activities:detail.confirmApproveMessage'), [
+      { text: t('activities:detail.confirmApproveCancel'), style: 'cancel' },
       {
-        text: 'Setuju',
+        text: t('activities:detail.confirmApproveConfirm'),
         onPress: async () => {
           setIsSubmitting(true);
           try {
@@ -153,20 +156,20 @@ export function ActivityDetailScreen(): React.JSX.Element {
               return;
             }
             if (response.data) {setActivity(response.data);}
-            Alert.alert('Berhasil', 'Aktivitas disetujui');
+            Alert.alert(t('activities:detail.successTitle'), t('activities:detail.successApprove'));
           } catch {
-            Alert.alert('Error', 'Gagal menyetujui aktivitas');
+            Alert.alert('Error', t('activities:detail.failureApprove'));
           } finally {
             setIsSubmitting(false);
           }
         },
       },
     ]);
-  }, [activity, isSubmitting]);
+  }, [activity, isSubmitting, t]);
 
   const handleRejectSubmit = useCallback(async () => {
     if (!activity || !rejectReason.trim()) {
-      Alert.alert('Error', 'Alasan penolakan wajib diisi');
+      Alert.alert('Error', t('activities:detail.confirmRejectMessage'));
       return;
     }
     setIsSubmitting(true);
@@ -179,13 +182,13 @@ export function ActivityDetailScreen(): React.JSX.Element {
       if (response.data) {setActivity(response.data);}
       setShowRejectInput(false);
       setRejectReason('');
-      Alert.alert('Berhasil', 'Aktivitas ditolak');
+      Alert.alert(t('activities:detail.successTitle'), t('activities:detail.successReject'));
     } catch {
-      Alert.alert('Error', 'Gagal menolak aktivitas');
+      Alert.alert('Error', t('activities:detail.failureReject'));
     } finally {
       setIsSubmitting(false);
     }
-  }, [activity, rejectReason]);
+  }, [activity, rejectReason, t]);
 
   if (isLoading) {
     return (
@@ -197,7 +200,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
       >
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
-          <NBText variant="body" style={styles.loadingTextMargin}>Memuat data...</NBText>
+          <NBText variant="body" style={styles.loadingTextMargin}>{t('common:status.loading')}</NBText>
         </View>
       </NBBackgroundPattern>
     );
@@ -212,9 +215,9 @@ export function ActivityDetailScreen(): React.JSX.Element {
         opacity={0.06}
       >
         <View style={styles.loadingContainer}>
-          <NBText variant="body" style={styles.loadingTextMargin}>Aktivitas tidak ditemukan</NBText>
+          <NBText variant="body" style={styles.loadingTextMargin}>{t('activities:detail.error')}</NBText>
           <NBButton
-            title="Kembali"
+            title={t('common:actions.back')}
             variant="secondary"
             onPress={handleBack}
           />
@@ -246,23 +249,23 @@ export function ActivityDetailScreen(): React.JSX.Element {
             <NBCardHeader>
               <View style={styles.sectionTitleRow}>
                 <MaterialCommunityIcons name="information-outline" size={16} color={nbColors.black} />
-                <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> INFORMASI UMUM</NBText>
+                <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> {t('activities:detail.sections.generalInfo')}</NBText>
               </View>
             </NBCardHeader>
             <NBCardContent>
               <View style={styles.infoRow}>
-                <NBText variant="body-sm" style={styles.labelStyle}>Tanggal & Waktu</NBText>
+                <NBText variant="body-sm" style={styles.labelStyle}>{t('activities:detail.sections.dateTime')}</NBText>
                 <NBText variant="body" style={styles.valueStyle}>{formatDateTime(activity.created_at)}</NBText>
               </View>
               {activity.user && (
                 <View style={styles.infoRow}>
-                  <NBText variant="body-sm" style={styles.labelStyle}>Nama Petugas</NBText>
+                  <NBText variant="body-sm" style={styles.labelStyle}>{t('activities:detail.officerNameLabel')}</NBText>
                   <NBText variant="body" style={styles.valueStyle}>{activity.user.full_name}</NBText>
                 </View>
               )}
               {activity.area?.name && (
                 <View style={styles.infoRow}>
-                  <NBText variant="body-sm" style={styles.labelStyle}>Area</NBText>
+                  <NBText variant="body-sm" style={styles.labelStyle}>{t('activities:detail.sections.area')}</NBText>
                   <NBText variant="body" style={styles.valueStyle}>{activity.area.name}</NBText>
                 </View>
               )}
@@ -275,7 +278,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
               <View style={styles.statusRow}>
                 <View style={styles.sectionTitleRow}>
                   <MaterialCommunityIcons name="check-circle-outline" size={16} color={nbColors.black} />
-                  <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> STATUS</NBText>
+                  <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> {t('activities:detail.sections.status')}</NBText>
                 </View>
                 <NBBadge
                   text={getActivityStatusLabel(activity.status)}
@@ -286,19 +289,19 @@ export function ActivityDetailScreen(): React.JSX.Element {
             <NBCardContent>
               {activity.status === 'rejected' && activity.rejection_reason && (
                 <View style={styles.infoRow}>
-                  <NBText variant="body-sm" style={styles.labelStyle}>Alasan Penolakan</NBText>
+                  <NBText variant="body-sm" style={styles.labelStyle}>{t('activities:detail.sections.rejectionReason')}</NBText>
                   <NBText variant="body" style={styles.valueStyle}>{activity.rejection_reason}</NBText>
                 </View>
               )}
               {activity.reviewer && (
                 <View style={styles.infoRow}>
-                  <NBText variant="body-sm" style={styles.labelStyle}>Direview Oleh</NBText>
+                  <NBText variant="body-sm" style={styles.labelStyle}>{t('activities:detail.sections.reviewedBy')}</NBText>
                   <NBText variant="body" style={styles.valueStyle}>{activity.reviewer.full_name}</NBText>
                 </View>
               )}
               {activity.reviewed_at && (
                 <View style={styles.infoRow}>
-                  <NBText variant="body-sm" style={styles.labelStyle}>Tanggal Review</NBText>
+                  <NBText variant="body-sm" style={styles.labelStyle}>{t('activities:detail.sections.reviewDate')}</NBText>
                   <NBText variant="body" style={styles.valueStyle}>{formatDateTime(activity.reviewed_at)}</NBText>
                 </View>
               )}
@@ -311,9 +314,9 @@ export function ActivityDetailScreen(): React.JSX.Element {
               <NBCardHeader>
                 <View style={styles.sectionTitleRow}>
                   <MaterialCommunityIcons name="camera" size={16} color={nbColors.black} />
-                  <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> FOTO AKTIVITAS</NBText>
+                  <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> {t('activities:detail.sections.photos')}</NBText>
                 </View>
-                <NBText variant="body-sm" style={styles.sectionSubtitleStyle}>{activity.photo_urls.length} foto dilampirkan</NBText>
+                <NBText variant="body-sm" style={styles.sectionSubtitleStyle}>{t('activities:detail.sections.photosAttached', { count: activity.photo_urls.length })}</NBText>
               </NBCardHeader>
               <NBCardContent>
                 <ScrollView
@@ -340,7 +343,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
               <NBCardHeader>
                 <View style={styles.sectionTitleRow}>
                   <MaterialCommunityIcons name="tag-outline" size={16} color={nbColors.black} />
-                  <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> JENIS AKTIVITAS</NBText>
+                  <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> {t('activities:detail.sections.activityType')}</NBText>
                 </View>
               </NBCardHeader>
               <NBCardContent>
@@ -357,7 +360,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
             <NBCardHeader>
               <View style={styles.sectionTitleRow}>
                 <MaterialCommunityIcons name="text-box-outline" size={16} color={nbColors.black} />
-                <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> DESKRIPSI PEKERJAAN</NBText>
+                <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> {t('activities:detail.sections.description')}</NBText>
               </View>
             </NBCardHeader>
             <NBCardContent>
@@ -371,7 +374,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
               <NBCardHeader>
                 <View style={styles.sectionTitleRow}>
                   <MaterialCommunityIcons name="map-marker" size={16} color={nbColors.black} />
-                  <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> LOKASI GPS</NBText>
+                  <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}> {t('activities:detail.sections.gpsLocation')}</NBText>
                 </View>
               </NBCardHeader>
               <NBCardContent>
@@ -387,11 +390,11 @@ export function ActivityDetailScreen(): React.JSX.Element {
           {/* Rejection reason input — shown inline in scroll when rejecting */}
           {canApprove && showRejectInput && (
             <NBCardTextInput
-              title="Alasan Penolakan"
+              title={t('activities:detail.rejectionInput.title')}
               required
               value={rejectReason}
               onChangeText={setRejectReason}
-              placeholder="Jelaskan alasan penolakan aktivitas ini..."
+              placeholder={t('activities:detail.rejectionInput.placeholder')}
               maxLength={1000}
               numberOfLines={4}
               style={styles.rejectInputSection}
@@ -406,7 +409,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
               <View style={styles.approvalButtonRow}>
                 <View style={styles.approvalButtonHalf}>
                   <NBButton
-                    title="Tolak"
+                    title={t('activities:actionButtons.decline')}
                     variant="danger"
                     onPress={handleTolakPress}
                     disabled={isSubmitting}
@@ -416,7 +419,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
                 </View>
                 <View style={styles.approvalButtonHalf}>
                   <NBButton
-                    title="Setujui"
+                    title={t('activities:actionButtons.approve')}
                     variant="success"
                     onPress={handleApprove}
                     disabled={isSubmitting}
@@ -430,7 +433,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
               <View style={styles.approvalButtonRow}>
                 <View style={styles.approvalButtonHalf}>
                   <NBButton
-                    title="Batal"
+                    title={t('activities:actionButtons.cancel')}
                     variant="secondary"
                     onPress={() => { setShowRejectInput(false); setRejectReason(''); }}
                     fullWidth
@@ -439,7 +442,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
                 </View>
                 <View style={styles.approvalButtonHalf}>
                   <NBButton
-                    title="Kirim Penolakan"
+                    title={t('activities:actionButtons.sendDecline')}
                     variant="danger"
                     onPress={handleRejectSubmit}
                     disabled={isSubmitting || !rejectReason.trim()}

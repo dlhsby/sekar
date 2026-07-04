@@ -13,6 +13,7 @@ import {
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   NBBackgroundPattern,
@@ -33,6 +34,7 @@ type Props = {
 };
 
 export function QRScannerScreen({ navigation }: Props): React.JSX.Element {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const error = useAppSelector(selectAssetsError);
 
@@ -64,7 +66,7 @@ export function QRScannerScreen({ navigation }: Props): React.JSX.Element {
   return (
     <NBBackgroundPattern>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <NBPageHeader title="Scan QR Code" />
+        <NBPageHeader title={t('assets:qrScanner.title')} />
 
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -79,10 +81,10 @@ export function QRScannerScreen({ navigation }: Props): React.JSX.Element {
                 color={nbColors.gray600}
               />
               <NBText variant="body-sm" style={styles.placeholderText}>
-                Arahkan kamera ke QR code aset
+                {t('assets:qrScanner.cameraHint')}
               </NBText>
               <NBText variant="caption" style={styles.deferred}>
-                * Live camera scanning tersedia di build native
+                {t('assets:qrScanner.deferredNote')}
               </NBText>
             </View>
 
@@ -90,7 +92,7 @@ export function QRScannerScreen({ navigation }: Props): React.JSX.Element {
             {error && (
               <NBAlert
                 variant="danger"
-                title="Pemindaian Gagal"
+                title={t('assets:qrScanner.errorTitle')}
                 message={error}
               />
             )}
@@ -98,30 +100,30 @@ export function QRScannerScreen({ navigation }: Props): React.JSX.Element {
             {/* Manual Code Entry */}
             <View style={styles.inputSection}>
               <NBText variant="body" style={styles.inputLabel}>
-                Ketik Kode Manual
+                {t('assets:qrScanner.manualEntry')}
               </NBText>
               <NBTextInput
-                placeholder="SEKAR:AK-RU-001 atau AK-RU-001"
+                placeholder={t('assets:qrScanner.placeholder')}
                 value={code}
                 onChangeText={setCode}
                 editable={!submitting}
               />
               <NBText variant="caption" style={styles.hint}>
-                Format: SEKAR:CODE atau langsung masukkan CODE
+                {t('assets:qrScanner.hint')}
               </NBText>
             </View>
 
             {/* Action Buttons */}
             <View style={styles.buttons}>
               <NBButton
-                label="Pindai"
+                label={t('assets:qrScanner.scan')}
                 onPress={handleScan}
                 variant="primary"
                 disabled={!canSubmit}
                 loading={submitting}
               />
               <NBButton
-                label="Batal"
+                label={t('assets:qrScanner.cancel')}
                 onPress={() => navigation.goBack()}
                 variant="secondary"
                 disabled={submitting}

@@ -24,6 +24,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import {
   markAllAsRead as markAllAsReadLocal,
@@ -47,14 +48,6 @@ import { NBEmptyState, NBSkeleton, NBTab, NBText } from '../../components/nb';
 // Category filter (matches the grouping in NotificationPreferencesScreen).
 type NotifCategory = 'all' | 'task' | 'activity' | 'overtime' | 'system';
 
-const CATEGORY_TABS: { key: NotifCategory; label: string }[] = [
-  { key: 'all', label: 'Semua' },
-  { key: 'task', label: 'Tugas' },
-  { key: 'activity', label: 'Aktivitas' },
-  { key: 'overtime', label: 'Lembur' },
-  { key: 'system', label: 'Sistem' },
-];
-
 /** Map a notification `type` (e.g. `task_assigned`) to its filter category. */
 function categoryOf(type: string): Exclude<NotifCategory, 'all'> {
   if (type.startsWith('task')) return 'task';
@@ -63,14 +56,14 @@ function categoryOf(type: string): Exclude<NotifCategory, 'all'> {
   return 'system';
 }
 
-function formatRelativeTime(iso: string): string {
+function formatRelativeTime(iso: string, t: ReturnType<typeof useTranslation>['t']): string {
   try {
     const then = new Date(iso).getTime();
     const diffSec = Math.floor((Date.now() - then) / 1000);
-    if (diffSec < 60) return 'Baru saja';
-    if (diffSec < 3600) return `${Math.floor(diffSec / 60)} menit lalu`;
-    if (diffSec < 86400) return `${Math.floor(diffSec / 3600)} jam lalu`;
-    if (diffSec < 7 * 86400) return `${Math.floor(diffSec / 86400)} hari lalu`;
+    if (diffSec < 60) return t('notifications:relativeTime.justNow');
+    if (diffSec < 3600) return t('notifications:relativeTime.minutesAgo', { count: Math.floor(diffSec / 60) });
+    if (diffSec < 86400) return t('notifications:relativeTime.hoursAgo', { count: Math.floor(diffSec / 3600) });
+    if (diffSec < 7 * 86400) return t('notifications:relativeTime.daysAgo', { count: Math.floor(diffSec / 86400) });
     return new Date(iso).toLocaleDateString('id-ID');
   } catch {
     return '';
@@ -80,11 +73,13 @@ function formatRelativeTime(iso: string): string {
 interface NotificationRowProps {
   notification: Notification;
   onPress: (n: Notification) => void;
+  t: ReturnType<typeof useTranslation>['t'];
 }
 
 const NotificationRow = React.memo(function NotificationRow({
   notification,
   onPress,
+  t,
 }: NotificationRowProps): React.JSX.Element {
   const handlePress = useCallback(() => onPress(notification), [onPress, notification]);
 
@@ -114,7 +109,7 @@ const NotificationRow = React.memo(function NotificationRow({
           {notification.body}
         </NBText>
         <NBText variant="caption" color="gray500">
-          {formatRelativeTime(notification.created_at)}
+          {formatRelativeTime(notification.created_at, t)}
         </NBText>
       </View>
     </TouchableOpacity>
@@ -122,10 +117,20 @@ const NotificationRow = React.memo(function NotificationRow({
 });
 
 export function NotificationsScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const navigation = useNavigation();
   const route = useRoute();
   const origin = (route.params as { origin?: string } | undefined)?.origin;
+
+  // Build category tabs dynamically using translations
+  const categoryTabs: { key: NotifCategory; label: string }[] = [
+    { key: 'all', label: t('notifications:categories.all') },
+    { key: 'task', label: t('notifications:categories.task') },
+    { key: 'activity', label: t('notifications:categories.activity') },
+    { key: 'overtime', label: t('notifications:categories.overtime') },
+    { key: 'system', label: t('notifications:categories.system') },
+  ];
 
   // Android hardware back + iOS swipe-back bypass the header chevron's onBack
   // (which is owned by MainNavigator's withProfileHeader). Route them through the
@@ -165,10 +170,10 @@ export function NotificationsScreen(): React.JSX.Element {
       const list = (res.data ?? []) as Notification[];
       dispatch(setNotifications(list));
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Gagal memuat notifikasi';
+      const message = err instanceof Error ? err.message : t('notifications:loadError');
       dispatch(setError(message));
     }
-  }, [dispatch]);
+  }, [dispatch, t]);
 
   useEffect(() => {
     fetchPage();
@@ -226,7 +231,7 @@ export function NotificationsScreen(): React.JSX.Element {
     <SafeAreaView style={styles.root} edges={['bottom']} testID="notifications-screen">
       <View style={styles.filterTabsWrap}>
         <NBTab
-          tabs={CATEGORY_TABS}
+          tabs={categoryTabs}
           activeTab={category}
           onTabChange={(key) => setCategory(key as NotifCategory)}
           scrollable
@@ -236,16 +241,16 @@ export function NotificationsScreen(): React.JSX.Element {
       {unreadCount > 0 ? (
         <View style={styles.actionsBar}>
           <NBText variant="mono-sm" color="gray700" uppercase>
-            {unreadCount} belum dibaca
+            {t('notifications:unread', { count: unreadCount })}
           </NBText>
           <TouchableOpacity
             onPress={handleMarkAllRead}
             accessibilityRole="button"
-            accessibilityLabel="Tandai semua notifikasi sebagai dibaca"
+            accessibilityLabel={t('notifications:markAllRead')}
             testID="notifications-mark-all-read"
           >
             <NBText variant="mono-sm" color="primary" uppercase style={styles.actionLink}>
-              Tandai semua dibaca
+              {t('notifications:markAllRead')}
             </NBText>
           </TouchableOpacity>
         </View>
@@ -265,9 +270,9 @@ export function NotificationsScreen(): React.JSX.Element {
         }
         renderItem={useCallback(
           ({ item }: { item: Notification }) => (
-            <NotificationRow notification={item} onPress={handlePress} />
+            <NotificationRow notification={item} onPress={handlePress} t={t} />
           ),
-          [handlePress],
+          [handlePress, t],
         )}
         maxToRenderPerBatch={10}
         windowSize={10}
@@ -279,8 +284,8 @@ export function NotificationsScreen(): React.JSX.Element {
           ) : (
             <NBEmptyState
               variant="noData"
-              title="Belum ada notifikasi"
-              description="Notifikasi tugas, lembur, dan pengumuman akan muncul di sini."
+              title={t('notifications:empty.title')}
+              description={t('notifications:empty.description')}
               testID="notifications-empty"
             />
           )

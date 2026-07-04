@@ -1,0 +1,206 @@
+{
+  "filter": {
+    "title": "Filter Overtime",
+    "status": "Status",
+    "statusOptions": {
+      "all": "All Status",
+      "pending": "Pending Approval",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "dateRange": "Date Range",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "area": "Area",
+    "areaOptions": {
+      "all": "All Areas",
+      "mine": "My Area"
+    },
+    "rayon": "Rayon",
+    "rayonOptions": {
+      "all": "All Rayons",
+      "mine": "My Rayon"
+    },
+    "createdBy": "Created By",
+    "createdByOptions": {
+      "all": "All Officers (Including Me)",
+      "subordinates": "All Subordinates",
+      "mine": "Created by Me"
+    },
+    "reset": "Reset",
+    "apply": "Apply"
+  },
+  "list": {
+    "label": "Overtime",
+    "dateRangeLabel": "Date",
+    "sortNewest": "Newest Date",
+    "sortOldest": "Oldest Date",
+    "sortCreatedNewest": "Newest Created",
+    "sortCreatedOldest": "Oldest Created",
+    "emptyTitle": "No overtime data",
+    "emptyDescNoFilter": "No overtime submissions yet",
+    "emptyDescWithFilter": "No overtime matching the filter",
+    "errorMessage": "Failed to load overtime data",
+    "sortModalTitle": "Sort Overtime",
+    "clockOutButtonTitle": "Clock Out Overtime",
+    "blockingHint": "Please complete regular shift clock out first",
+    "submitButtonTitle": "+ Submit Overtime",
+    "submitButtonLabel": "Submit new overtime",
+    "submitButtonDisabledLabel": "Submit overtime disabled, please complete active shift first",
+    "submitButtonDisabledHint": "Button is disabled because you still have an active shift",
+    "defaultTitle": "Overtime",
+    "cardAccessibilityLabelPrefix": "Overtime detail",
+    "photoUnit": "photos"
+  },
+  "detail": {
+    "loadingMessage": "Loading data...",
+    "notFoundMessage": "Overtime not found",
+    "backButtonTitle": "Back",
+    "photoModalTitle": "Overtime Photo",
+    "loadError": "Failed to load overtime details"
+  },
+  "confirmGPSToStart": "Confirm GPS location to start overtime",
+  "submit": {
+    "startTitle": "Start Overtime",
+    "activeTitle": "Active Overtime",
+    "loadingMessage": "Checking overtime status...",
+    "selfieStartLabel": "START SELFIE (OPTIONAL)",
+    "selfieEndLabel": "END SELFIE (OPTIONAL)",
+    "startButtonTitle": "Start Overtime",
+    "startButtonLoading": "Starting...",
+    "endButtonTitle": "End Overtime",
+    "endButtonLoading": "Ending...",
+    "selfieImagePreviewTitle": "Selfie"
+  },
+  "forms": {
+    "reasonLabel": "Reason",
+    "reasonTitle": "OVERTIME REASON (OPTIONAL)",
+    "reasonPlaceholder": "Example: Additional work after working hours...",
+    "locationError": "GPS location is required",
+    "activityTypeLabel": "Activity Type",
+    "activityTypePlaceholder": "Select activity type...",
+    "activityTypeSearchPlaceholder": "Search activity types...",
+    "noActivityTypesWarning": "No activity types available. Contact administrator.",
+    "errorSummaryTitle": "Please complete the following data:",
+    "descriptionTitle": "WORK DESCRIPTION",
+    "descriptionPlaceholder": "Explain the overtime work performed...",
+    "photosTitle": "PROOF PHOTOS",
+    "photosSubtitle": "{{count}} photos attached",
+    "photosSubtitleText": "Add 1-3 photos of overtime work",
+    "gpsLabel": "GPS Location",
+    "rejectionReasonLabel": "REJECTION REASON",
+    "rejectionReasonPlaceholder": "Explain the reason for rejecting this overtime...",
+    "submitRejectionButtonLabel": "Submit Rejection"
+  },
+  "components": {
+    "idPengajuanLabel": "Submission ID",
+    "rejectionReasonLabel": "Rejection Reason",
+    "staffLabel": "Officer",
+    "areaLabel": "Area",
+    "photosCount": "{{count}} photos",
+    "notFilledLabel": "(Not filled)",
+    "clockOutButtonLabel": "Clock Out Overtime",
+    "clockOutButtonTitle": "Clock Out Overtime",
+    "selfieAlreadyCaptured": "Captured ✓",
+    "selfieOptional": "Optional",
+    "selfiePreviewLabel": "View full selfie",
+    "selfiePreviewHint": "Tap to view the photo in full size",
+    "selfiePrompt": "Take a selfie for verification",
+    "viewFullSelfieLabel": "View full selfie",
+    "captureButtonLabel": "Take Selfie",
+    "retakeButtonLabel": "Retake Selfie",
+    "generalInfoTitle": "GENERAL INFO",
+    "dateLabel": "DATE",
+    "timeLabel": "TIME",
+    "withinAreaBadge": "IN AREA",
+    "outsideAreaBadge": "OUTSIDE AREA",
+    "trailTitle": "LOCATION TRAIL",
+    "viewTrailButtonLabel": "View Overtime Location Trail",
+    "durationTitle": "DURATION",
+    "startTimeLabel": "Started:",
+    "reasonLabel": "Reason:"
+  },
+  "trail": {
+    "title": "Overtime Trail",
+    "closeLabel": "Close",
+    "refreshLabel": "Refresh trail",
+    "loadError": "Failed to load location trail",
+    "loading": "Loading trail...",
+    "noData": "No location data available for this overtime shift",
+    "locationPoints": "location points",
+    "startMarker": "Start Overtime",
+    "endMarker": "End Overtime",
+    "callout": {
+      "time": "Time",
+      "gps": "GPS",
+      "accuracy": "Accuracy",
+      "battery": "Battery",
+      "area": "Area",
+      "withinArea": "Within Area",
+      "outsideArea": "Outside Area"
+    },
+    "zoom": {
+      "in": "Zoom in",
+      "out": "Zoom out"
+    }
+  },
+  "startForm": {
+    "draftTitle": "Continue Draft?",
+    "draftMessage": "An incomplete overtime form was found. Continue or discard?",
+    "draftDiscard": "Discard Draft",
+    "draftContinue": "Continue Draft",
+    "locationError": "GPS location is required. Tap \"Update GPS\" to try again.",
+    "activeShiftError": "You still have an active shift. Please complete regular shift clock out before starting overtime.",
+    "toastStartError": "Failed to Start Overtime",
+    "toastError": "Failed",
+    "toastGenericError": "Failed to start overtime",
+    "saveDraftTitle": "Save Draft?",
+    "saveDraftMessage": "Save overtime data as draft?",
+    "saveDraftNo": "No",
+    "saveDraftYes": "Yes"
+  },
+  "endForm": {
+    "activityTypeError": "Activity type must be selected",
+    "descriptionError": "Description must be filled",
+    "photosError": "At least 1 photo is required",
+    "locationError": "GPS location is required. Tap \"Update GPS\" to try again.",
+    "toastSuccess": "Success",
+    "toastSuccessMessage": "Overtime completed successfully.",
+    "toastEndError": "Failed to End Overtime",
+    "toastError": "Failed",
+    "toastGenericError": "Failed to complete overtime"
+  },
+  "alerts": {
+    "confirmTitle": "Confirm",
+    "approveOvertimeMessage": "Approve this overtime request?",
+    "agreeAction": "Agree",
+    "successTitle": "Success",
+    "overtimeApprovedMessage": "Overtime approved",
+    "failedToApproveMessage": "Failed to approve overtime",
+    "errorTitle": "Error",
+    "overtimeRejectedMessage": "Overtime rejected",
+    "failedToRejectMessage": "Failed to reject overtime"
+  },
+  "gpsCard": {
+    "header": "GPS LOCATION"
+  },
+  "dayNames": [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday"
+  ],
+  "activityTypeLabel": "ACTIVITY TYPE",
+  "reasonLabel": "OVERTIME REASON",
+  "timeline": {
+    "willRun": "Will run",
+    "submitted": "Submitted"
+  },
+  "status": {
+    "submissionId": "Submission ID",
+    "rejectionReason": "Rejection Reason"
+  }
+}

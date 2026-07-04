@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet } from 'react-native';
 import { NBCard, NBCardHeader, NBCardContent, NBText } from '../../../components/nb';
 import { DetailRow } from '../../../components/common/DetailRow';
@@ -24,6 +25,7 @@ const styles = StyleSheet.create({
 });
 
 export function ReviewResultsCard({ request }: ReviewResultsCardProps): React.JSX.Element | null {
+  const { t } = useTranslation();
   if (!request.reviewedAt) {
     return null;
   }
@@ -37,16 +39,16 @@ export function ReviewResultsCard({ request }: ReviewResultsCardProps): React.JS
       </NBCardHeader>
       <NBCardContent>
         <DetailRow
-          label="Direview Oleh"
+          label={t("pruning:review.reviewedBy")}
           value={request.reviewer?.full_name || 'Admin'}
         />
         <DetailRow
-          label="Tanggal Review"
+          label={t("pruning:review.dateLabel")}
           value={formatDateTime(request.reviewedAt)}
         />
         {request.reviewNotes ? (
           <DetailRow
-            label="Catatan Review"
+            label={t("pruning:review.notes")}
             value={request.reviewNotes}
             variant="description"
             isLast

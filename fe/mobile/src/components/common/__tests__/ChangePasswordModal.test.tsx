@@ -46,8 +46,8 @@ describe('ChangePasswordModal', () => {
   it('renders fields when visible', () => {
     const u = renderModal();
     expect(u.getByPlaceholderText('Password saat ini')).toBeTruthy();
-    expect(u.getByPlaceholderText('Min. 8 karakter')).toBeTruthy();
-    expect(u.getByPlaceholderText('Ketik ulang password baru')).toBeTruthy();
+    expect(u.getByPlaceholderText('Masukkan sandi baru')).toBeTruthy();
+    expect(u.getByPlaceholderText('Ulangi sandi baru')).toBeTruthy();
   });
 
   it('does not render the form when visible is false (auto-open regression guard)', () => {
@@ -58,7 +58,7 @@ describe('ChangePasswordModal', () => {
         <ChangePasswordModal visible={false} onClose={onClose} />
       </Provider>,
     );
-    expect(queryByText('Password Saat Ini')).toBeNull();
+    expect(queryByText('Ubah Password')).toBeNull();
   });
 
   it('shows validation errors and does not call the API on empty submit', () => {

@@ -9,20 +9,22 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/lib/auth/hooks';
 import { cn } from '@/lib/utils/cn';
 
 const LINKS = [
-  { href: '/pruning-submit', label: 'Kirim Permintaan' },
-  { href: '/pruning-submit/my', label: 'Permintaan Saya' },
+  { href: '/pruning-submit', label: 'common:nav.submitRequest' },
+  { href: '/pruning-submit/my', label: 'common:nav.myRequests' },
 ];
 
 export function KecamatanNav() {
   const pathname = usePathname();
   const { logout } = useAuth();
+  const { t } = useTranslation();
 
   return (
-    <nav aria-label="Navigasi kecamatan" className="flex items-center gap-1.5">
+    <nav aria-label={t('common:nav.districtNav')} className="flex items-center gap-1.5">
       {LINKS.map((link) => {
         const active = pathname === link.href;
         return (
@@ -37,7 +39,7 @@ export function KecamatanNav() {
                 : 'border-white/30 text-white/80 hover:bg-white/10 hover:text-white',
             )}
           >
-            {link.label}
+            {t(link.label)}
           </Link>
         );
       })}
@@ -46,7 +48,7 @@ export function KecamatanNav() {
         onClick={() => logout()}
         className="rounded-nb-base border-2 border-white/30 px-3 py-1 text-nb-caption font-semibold uppercase tracking-wide text-white hover:bg-white/10"
       >
-        Keluar
+        {t('auth:logout')}
       </button>
     </nav>
   );

@@ -4,6 +4,7 @@
  */
 
 import { useCallback } from 'react';
+import i18n from '../../../i18n/config';
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDraftPersistence as useGenericDraftPersistence } from '../../../hooks/useDraftPersistence';
@@ -32,18 +33,18 @@ export const useDraftPersistence = (
 ) => {
   const handleRestoreDraft = useCallback((draft: Draft) => {
     Alert.alert(
-      'Draft Ditemukan',
-      'Anda memiliki draft tugas yang belum terkirim. Lanjutkan?',
+      i18n.t('tasks:draft.foundTitle'),
+      i18n.t('tasks:draft.foundMessage'),
       [
         {
-          text: 'Hapus',
+          text: i18n.t('tasks:draft.discard'),
           style: 'destructive',
           onPress: async () => {
             await AsyncStorage.removeItem(DRAFT_KEY);
           },
         },
         {
-          text: 'Lanjutkan',
+          text: i18n.t('tasks:draft.continueLabel'),
           onPress: async () => {
             await AsyncStorage.removeItem(DRAFT_KEY);
             onRestoreDraft({

@@ -10,6 +10,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { nbColors, nbBorders, nbShadows } from '../../constants/nbTokens';
 import { NBText } from '../nb/NBText';
 import {
@@ -20,11 +21,6 @@ import {
 export interface ConnectivityBannerProps {
   monitor: ConnectivityMonitor;
 }
-
-const COPY = {
-  NO_INTERNET: 'Tidak ada koneksi internet',
-  SERVER_UNREACHABLE: 'Server tidak terjangkau, mencoba lagi…',
-} as const;
 
 const COLORS = {
   NO_INTERNET: {
@@ -38,6 +34,7 @@ const COLORS = {
 } as const;
 
 export function ConnectivityBanner({ monitor }: ConnectivityBannerProps): React.JSX.Element | null {
+  const { t } = useTranslation('common');
   const [snap, setSnap] = useState<ConnectivityStatusSnapshot>(() => monitor.snapshot());
 
   useEffect(() => {
@@ -48,6 +45,9 @@ export function ConnectivityBanner({ monitor }: ConnectivityBannerProps): React.
   if (snap.status === 'ONLINE') return null;
 
   const palette = COLORS[snap.status];
+  const message = snap.status === 'NO_INTERNET'
+    ? t('connectivity.noInternet')
+    : t('connectivity.serverUnreachable');
 
   return (
     <View
@@ -63,7 +63,7 @@ export function ConnectivityBanner({ monitor }: ConnectivityBannerProps): React.
         style={styles.label}
         numberOfLines={1}
       >
-        {COPY[snap.status]}
+        {message}
       </NBText>
     </View>
   );

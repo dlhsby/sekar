@@ -6,6 +6,7 @@
  * Uses WCAG 2.1 AA compliant colors from monitoring constants
  */
 
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils/cn';
 import { STATUS_CARD_STYLES } from '@/lib/constants/monitoring';
 import type { TrackingStatus } from '@/lib/api/monitoring';
@@ -19,6 +20,7 @@ export interface StatusCardProps {
 }
 
 export function StatusCard({ label, count, status, isActive, onClick }: StatusCardProps) {
+  const { t } = useTranslation();
   const styles = STATUS_CARD_STYLES[status];
 
   return (
@@ -38,7 +40,7 @@ export function StatusCard({ label, count, status, isActive, onClick }: StatusCa
         'p-3'
       )}
       aria-pressed={isActive}
-      aria-label={`Saring ${label}: ${count} petugas`}
+      aria-label={t('monitoring:map.statusFilterAriaLabel', { label, count })}
     >
       <div className="flex items-center justify-between mb-1">
         <span

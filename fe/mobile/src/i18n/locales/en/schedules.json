@@ -1,0 +1,48 @@
+{
+  "mySchedule": {
+    "todayLabel": "Today's Schedule",
+    "today": "Today",
+    "noAreasAssigned": "No areas assigned",
+    "noShiftDefined": "No shift defined",
+    "invalidSession": "Invalid session. Please log in again.",
+    "loadFailed": "Failed to load schedule",
+    "retryLabel": "Retry",
+    "emptyTitle": "No schedule for today",
+    "emptyDescription": "You don't have a schedule for today (you may be working ad-hoc by assignment). You can still clock in."
+  },
+  "status": {
+    "present": "Present",
+    "planned": "Planned",
+    "absent": "Absent",
+    "leave_sick": "Sick Leave",
+    "leave_annual": "Annual Leave",
+    "replaced": "Replaced",
+    "off": "Off"
+  },
+  "shiftHistory": {
+    "filterTitle": "Filter Shift History",
+    "thisWeek": "This week",
+    "apply": "Apply",
+    "dateRange": "Date Range",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "allShifts": "All Shifts",
+    "noShiftHistory": "No Shift History",
+    "noShiftHistoryDesc": "Your shift history will appear here after you complete a shift",
+    "noShiftInRange": "No Shifts",
+    "noShiftInRangeDesc": "No shifts in the selected date range",
+    "failedToLoadShifts": "Failed to load shift history",
+    "totalShifts": "TOTAL SHIFTS",
+    "totalHours": "TOTAL HOURS",
+    "clockIn": "CLOCK IN",
+    "clockOut": "CLOCK OUT",
+    "duration": "DURATION",
+    "active": "Active",
+    "completed": "Completed",
+    "detailAccessibilityHint": "Tap to view shift details",
+    "unknownArea": "Unknown area",
+    "resetFilterAccessibilityLabel": "Reset date filter",
+    "filterDateAccessibilityLabel": "Filter date",
+    "filterActiveLabel": "filter active"
+  }
+}

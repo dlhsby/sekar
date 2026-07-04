@@ -6,20 +6,24 @@
 'use client';
 
 import { useAuth } from '@/lib/auth/hooks';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { useOvertime, useApproveOvertime, useRejectOvertime } from '@/lib/api/overtime';
+import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardContent, Badge, Button, FormInput } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Check, X } from 'lucide-react';
 import { MONITORING_ROLES, OVERTIME_APPROVER_ROLES, hasRole } from '@/lib/constants/roles';
-import { OVERTIME_STATUS_LABELS, OVERTIME_STATUS_BADGES } from '@/lib/constants/overtime';
+import { getOvertimeStatusLabels, OVERTIME_STATUS_BADGES } from '@/lib/constants/overtime';
 
 interface OvertimeDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
 export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) {
+  const { t } = useTranslation(['overtime', 'common']);
+  const overtimeLabels = getOvertimeStatusLabels();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [rejectReason, setRejectReason] = useState('');
@@ -43,7 +47,7 @@ export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) 
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-3 border-nb-primary mx-auto mb-4"></div>
-          <p className="text-nb-gray-600">Memuat...</p>
+          <p className="text-nb-gray-600">{t('common:actions.loading')}</p>
         </div>
       </div>
     );
@@ -55,7 +59,7 @@ export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) 
     return (
       <div className="container mx-auto p-6">
         <div className="text-center py-12">
-          <p className="text-nb-gray-600 font-semibold">Lembur tidak ditemukan</p>
+          <p className="text-nb-gray-600 font-semibold">{t('overtime:notFound')}</p>
         </div>
       </div>
     );
@@ -80,11 +84,11 @@ export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) 
         <ol className="flex items-center space-x-2">
           <li>
             <Link href="/overtime" className="text-nb-primary hover:underline font-semibold">
-              Lembur
+              {t('overtime:detail.breadcrumb')}
             </Link>
           </li>
           <li className="text-nb-gray-400">/</li>
-          <li className="text-nb-gray-600">Detail</li>
+          <li className="text-nb-gray-600">{t('common:actions.detail')}</li>
         </ol>
       </nav>
 
@@ -95,15 +99,15 @@ export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) 
           onClick={() => router.push('/overtime')}
           leftIcon={<ArrowLeft className="w-4 h-4" />}
         >
-          Kembali ke Daftar Lembur
+          {t('overtime:detail.backButton')}
         </Button>
       </div>
 
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-nb-black mb-2">Detail Lembur</h1>
+          <h1 className="text-3xl font-bold text-nb-black mb-2">{t('overtime:detail.title')}</h1>
           <Badge variant={OVERTIME_STATUS_BADGES[overtime.status]} size="lg">
-            {OVERTIME_STATUS_LABELS[overtime.status]}
+            {overtimeLabels[overtime.status]}
           </Badge>
         </div>
         {canApprove && (
@@ -114,14 +118,14 @@ export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) 
               loading={approveMutation.isPending}
               leftIcon={<Check className="w-4 h-4" />}
             >
-              Setujui
+              {t('common:actions.approve')}
             </Button>
             <Button
               variant="destructive"
               onClick={() => setShowRejectForm(true)}
               leftIcon={<X className="w-4 h-4" />}
             >
-              Tolak
+              {t('common:actions.reject')}
             </Button>
           </div>
         )}
@@ -132,12 +136,12 @@ export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) 
         <Card variant="elevated">
           <CardContent>
             <div className="space-y-3">
-              <h3 className="font-bold text-nb-black">Alasan Penolakan</h3>
+              <h3 className="font-bold text-nb-black">{t('overtime:detail.actions.rejectDialog')}</h3>
               <FormInput
-                label="Alasan"
+                label={t('overtime:detail.actions.reasonLabel')}
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="Masukkan alasan penolakan..."
+                placeholder={t('overtime:detail.actions.reasonPlaceholder')}
               />
               <div className="flex gap-2">
                 <Button
@@ -147,7 +151,7 @@ export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) 
                   disabled={!rejectReason.trim() || rejectMutation.isPending}
                   loading={rejectMutation.isPending}
                 >
-                  Tolak Lembur
+                  {t('overtime:detail.actions.rejectButton')}
                 </Button>
                 <Button
                   variant="secondary"
@@ -157,7 +161,7 @@ export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) 
                     setRejectReason('');
                   }}
                 >
-                  Batal
+                  {t('common:actions.cancel')}
                 </Button>
               </div>
             </div>
@@ -168,42 +172,42 @@ export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card variant="elevated">
           <CardHeader>
-            <h2 className="text-xl font-bold text-nb-black">Informasi</h2>
+            <h2 className="text-xl font-bold text-nb-black">{t('overtime:detail.sections.information')}</h2>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div>
-                <div className="text-sm font-semibold text-nb-gray-600">Pengguna</div>
+                <div className="text-sm font-semibold text-nb-gray-600">{t('overtime:detail.fields.user')}</div>
                 <div className="font-bold text-nb-black">{overtime.user?.full_name}</div>
                 <div className="text-sm text-nb-gray-600">{overtime.user?.username}</div>
               </div>
               <div>
-                <div className="text-sm font-semibold text-nb-gray-600">Tanggal</div>
+                <div className="text-sm font-semibold text-nb-gray-600">{t('overtime:detail.fields.date')}</div>
                 <div className="font-bold text-nb-black">
-                  {new Date(overtime.start_datetime).toLocaleDateString('id-ID')}
+                  {new Date(overtime.start_datetime).toLocaleDateString(intlLocale())}
                 </div>
               </div>
               <div>
-                <div className="text-sm font-semibold text-nb-gray-600">Waktu</div>
+                <div className="text-sm font-semibold text-nb-gray-600">{t('overtime:detail.fields.time')}</div>
                 <div className="font-bold text-nb-black font-mono">
-                  {new Date(overtime.start_datetime).toLocaleTimeString('id-ID', {
+                  {new Date(overtime.start_datetime).toLocaleTimeString(intlLocale(), {
                     hour: '2-digit',
                     minute: '2-digit',
                   })}
                   {' - '}
-                  {new Date(overtime.end_datetime).toLocaleTimeString('id-ID', {
+                  {new Date(overtime.end_datetime).toLocaleTimeString(intlLocale(), {
                     hour: '2-digit',
                     minute: '2-digit',
                   })}
                 </div>
               </div>
               <div>
-                <div className="text-sm font-semibold text-nb-gray-600">Area</div>
+                <div className="text-sm font-semibold text-nb-gray-600">{t('overtime:detail.fields.area')}</div>
                 <div className="font-bold text-nb-black">{overtime.area?.name || '-'}</div>
               </div>
               {overtime.activity_type && (
                 <div>
-                  <div className="text-sm font-semibold text-nb-gray-600">Tipe Aktivitas</div>
+                  <div className="text-sm font-semibold text-nb-gray-600">{t('overtime:detail.fields.activityType')}</div>
                   <div className="font-bold text-nb-black">{overtime.activity_type.name}</div>
                 </div>
               )}
@@ -216,28 +220,30 @@ export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) 
           <Card variant="elevated">
             <CardHeader>
               <h2 className="text-xl font-bold text-nb-black">
-                {overtime.status === 'approved' ? 'Persetujuan' : 'Penolakan'}
+                {overtime.status === 'approved'
+                  ? t('overtime:detail.sections.approval')
+                  : t('overtime:detail.sections.rejection')}
               </h2>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {overtime.approver && (
                   <div>
-                    <div className="text-sm font-semibold text-nb-gray-600">Diproses Oleh</div>
+                    <div className="text-sm font-semibold text-nb-gray-600">{t('overtime:detail.fields.processedBy')}</div>
                     <div className="font-bold text-nb-black">{overtime.approver.full_name}</div>
                   </div>
                 )}
                 {overtime.approved_at && (
                   <div>
-                    <div className="text-sm font-semibold text-nb-gray-600">Tanggal Proses</div>
+                    <div className="text-sm font-semibold text-nb-gray-600">{t('overtime:detail.fields.processDate')}</div>
                     <div className="font-bold text-nb-black">
-                      {new Date(overtime.approved_at).toLocaleString('id-ID')}
+                      {new Date(overtime.approved_at).toLocaleString(intlLocale())}
                     </div>
                   </div>
                 )}
                 {overtime.rejection_reason && (
                   <div>
-                    <div className="text-sm font-semibold text-nb-gray-600">Alasan Penolakan</div>
+                    <div className="text-sm font-semibold text-nb-gray-600">{t('overtime:detail.fields.rejectionReason')}</div>
                     <div className="text-nb-gray-700">{overtime.rejection_reason}</div>
                   </div>
                 )}
@@ -251,7 +257,7 @@ export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) 
       {overtime.description && (
         <Card variant="elevated">
           <CardHeader>
-            <h2 className="text-xl font-bold text-nb-black">Deskripsi</h2>
+            <h2 className="text-xl font-bold text-nb-black">{t('overtime:detail.sections.description')}</h2>
           </CardHeader>
           <CardContent>
             <p className="text-nb-gray-700">{overtime.description}</p>
@@ -262,7 +268,9 @@ export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) 
       {overtime.photo_urls && overtime.photo_urls.length > 0 && (
         <Card variant="elevated">
           <CardHeader>
-            <h2 className="text-xl font-bold text-nb-black">Foto ({overtime.photo_urls.length})</h2>
+            <h2 className="text-xl font-bold text-nb-black">
+              {t('overtime:detail.sections.photos')} ({overtime.photo_urls.length})
+            </h2>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -271,7 +279,7 @@ export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) 
                   key={index}
                   className="bg-nb-gray-100 border-2 border-nb-black overflow-hidden"
                 >
-                  <img src={url} alt={`Foto lembur ${index + 1}`} className="w-full h-auto" />
+                  <img src={url} alt={`${t('overtime:detail.sections.photos')} ${index + 1}`} className="w-full h-auto" />
                 </div>
               ))}
             </div>

@@ -2,6 +2,7 @@
 
 import type { UserRole } from '@/types/models';
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   PageHeader,
   DataTable,
@@ -36,6 +37,7 @@ const GRADE_COLORS: Record<Grade, string> = {
 };
 
 export default function WorkerAnalyticsPage() {
+  const { t } = useTranslation(['analytics', 'common']);
   useRequireAuth(ANALYTICS_VIEWERS);
 
   const [search, setSearch] = useState('');
@@ -64,37 +66,37 @@ export default function WorkerAnalyticsPage() {
   }, [listData?.data]);
 
   // Table columns
-  const columns: ColumnDef<WorkerAnalytics>[] = [
+  const columns = useMemo<ColumnDef<WorkerAnalytics>[]>(() => [
     {
       id: 'full_name',
       accessorKey: 'full_name',
-      header: 'Nama',
+      header: t('workers.table.name'),
       enableSorting: false,
-      meta: { label: 'Nama' },
+      meta: { label: t('workers.table.name') },
       cell: ({ row }) => <span className="font-medium">{row.original.full_name}</span>,
     },
     {
       id: 'attended',
       accessorKey: 'attended',
-      header: 'Hadir',
+      header: t('workers.table.attended'),
       enableSorting: false,
-      meta: { label: 'Hadir' },
-      cell: ({ row }) => `${row.original.attended} hari`,
+      meta: { label: t('workers.table.attended') },
+      cell: ({ row }) => `${row.original.attended} ${t('workers.table.attendedUnit')}`,
     },
     {
       id: 'task_completion_rate',
       accessorKey: 'task_completion_rate',
-      header: 'Tugas',
+      header: t('workers.table.taskCompletion'),
       enableSorting: false,
-      meta: { label: 'Tugas' },
+      meta: { label: t('workers.table.taskCompletion') },
       cell: ({ row }) => <span>{row.original.task_completion_rate.toFixed(1)}%</span>,
     },
     {
       id: 'performance_score',
       accessorKey: 'performance_score',
-      header: 'Skor',
+      header: t('workers.table.score'),
       enableSorting: false,
-      meta: { label: 'Skor' },
+      meta: { label: t('workers.table.score') },
       cell: ({ row }) => (
         <div className="flex items-center gap-2">
           <span className="font-semibold">{row.original.performance_score.toFixed(1)}</span>
@@ -102,19 +104,19 @@ export default function WorkerAnalyticsPage() {
         </div>
       ),
     },
-  ];
+  ], [t]);
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Analitik Pekerja" />
+      <PageHeader title={t('workers.page.title')} />
 
       {/* Ranking Chart */}
       <WorkerRankingChart data={chartData} loading={isListLoading} />
 
       {/* Search */}
       <FormInput
-        label="Cari pekerja"
-        placeholder="Cari pekerja..."
+        label={t('workers.search.label')}
+        placeholder={t('workers.search.placeholder')}
         value={search}
         onChange={(e) => {
           setSearch(e.target.value);
@@ -126,7 +128,7 @@ export default function WorkerAnalyticsPage() {
       {isListLoading ? (
         <SkeletonTable rows={5} />
       ) : !listData?.data || listData.data.length === 0 ? (
-        <EmptyState variant="noData" title="Tidak ada data pekerja" />
+        <EmptyState variant="noData" title={t('workers.empty.noData')} />
       ) : (
         <DataTable
           columns={columns}
@@ -145,17 +147,17 @@ export default function WorkerAnalyticsPage() {
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
           >
-            Sebelumnya
+            {t('workers.pagination.previous')}
           </Button>
           <span className="text-nb-body-sm">
-            Halaman {page} dari {Math.ceil(listData.meta.total / limit)}
+            {t('workers.pagination.page', { page, total: Math.ceil(listData.meta.total / limit) })}
           </span>
           <Button
             variant="outline"
             onClick={() => setPage((p) => p + 1)}
             disabled={page >= Math.ceil(listData.meta.total / limit)}
           >
-            Selanjutnya
+            {t('workers.pagination.next')}
           </Button>
         </div>
       )}
@@ -165,7 +167,7 @@ export default function WorkerAnalyticsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
-              <span>Detail Pekerja</span>
+              <span>{t('workers.detail.title')}</span>
               <button onClick={() => setSelectedWorkerId(null)}>
                 <X className="size-5" />
               </button>
@@ -173,16 +175,16 @@ export default function WorkerAnalyticsPage() {
           </DialogHeader>
 
           {isWorkerLoading ? (
-            <div className="py-8 text-center text-nb-gray-600">Memuat...</div>
+            <div className="py-8 text-center text-nb-gray-600">{t('common:actions.loading')}</div>
           ) : workerDetail ? (
             <div className="space-y-4">
               <Card className="p-4 space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-nb-body-sm text-nb-gray-600">Nama</span>
+                  <span className="text-nb-body-sm text-nb-gray-600">{t('workers.detail.name')}</span>
                   <span className="font-medium">{workerDetail.full_name}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-nb-body-sm text-nb-gray-600">Skor</span>
+                  <span className="text-nb-body-sm text-nb-gray-600">{t('workers.detail.score')}</span>
                   <div className="flex items-center gap-2">
                     <span className="font-semibold">{workerDetail.performance_score.toFixed(1)}</span>
                     <Badge className={GRADE_COLORS[workerDetail.grade]}>
@@ -191,61 +193,61 @@ export default function WorkerAnalyticsPage() {
                   </div>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-nb-body-sm text-nb-gray-600">Kehadiran</span>
-                  <span className="font-medium">{workerDetail.attended} hari</span>
+                  <span className="text-nb-body-sm text-nb-gray-600">{t('workers.detail.attendance')}</span>
+                  <span className="font-medium">{workerDetail.attended} {t('workers.table.attendedUnit')}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-nb-body-sm text-nb-gray-600">Lembur</span>
-                  <span className="font-medium">{workerDetail.overtime_hours.toFixed(1)} jam</span>
+                  <span className="text-nb-body-sm text-nb-gray-600">{t('workers.detail.overtime')}</span>
+                  <span className="font-medium">{workerDetail.overtime_hours.toFixed(1)} {t('workers.detail.overtimeUnit')}</span>
                 </div>
               </Card>
 
               <Card className="p-4 space-y-3">
-                <h4 className="font-semibold text-nb-h3">Metrik Tugas</h4>
+                <h4 className="font-semibold text-nb-h3">{t('workers.detail.taskMetrics.title')}</h4>
                 <div className="flex justify-between items-center">
-                  <span className="text-nb-body-sm text-nb-gray-600">Total Tugas</span>
+                  <span className="text-nb-body-sm text-nb-gray-600">{t('workers.detail.taskMetrics.total')}</span>
                   <span className="font-medium">{workerDetail.total_tasks}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-nb-body-sm text-nb-gray-600">Diselesaikan</span>
+                  <span className="text-nb-body-sm text-nb-gray-600">{t('workers.detail.taskMetrics.completed')}</span>
                   <span className="font-medium">{workerDetail.completed_tasks}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-nb-body-sm text-nb-gray-600">Tingkat Penyelesaian</span>
+                  <span className="text-nb-body-sm text-nb-gray-600">{t('workers.detail.taskMetrics.completionRate')}</span>
                   <span className="font-medium">{workerDetail.task_completion_rate.toFixed(1)}%</span>
                 </div>
               </Card>
 
               <Card className="p-4 space-y-3">
-                <h4 className="font-semibold text-nb-h3">Metrik Aktivitas</h4>
+                <h4 className="font-semibold text-nb-h3">{t('workers.detail.activityMetrics.title')}</h4>
                 <div className="flex justify-between items-center">
-                  <span className="text-nb-body-sm text-nb-gray-600">Total Aktivitas</span>
+                  <span className="text-nb-body-sm text-nb-gray-600">{t('workers.detail.activityMetrics.total')}</span>
                   <span className="font-medium">{workerDetail.total_activities}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-nb-body-sm text-nb-gray-600">Disetujui</span>
+                  <span className="text-nb-body-sm text-nb-gray-600">{t('workers.detail.activityMetrics.approved')}</span>
                   <span className="font-medium">{workerDetail.approved_activities}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-nb-body-sm text-nb-gray-600">Tingkat Persetujuan</span>
+                  <span className="text-nb-body-sm text-nb-gray-600">{t('workers.detail.activityMetrics.approvalRate')}</span>
                   <span className="font-medium">{workerDetail.activity_approval_rate.toFixed(1)}%</span>
                 </div>
               </Card>
 
               <Card className="p-4 space-y-3">
-                <h4 className="font-semibold text-nb-h3">Metrik Lokasi</h4>
+                <h4 className="font-semibold text-nb-h3">{t('workers.detail.locationMetrics.title')}</h4>
                 <div className="flex justify-between items-center">
-                  <span className="text-nb-body-sm text-nb-gray-600">Compliance Area</span>
+                  <span className="text-nb-body-sm text-nb-gray-600">{t('workers.detail.locationMetrics.areaCompliance')}</span>
                   <span className="font-medium">{workerDetail.area_compliance.toFixed(1)}%</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-nb-body-sm text-nb-gray-600">GPS Dalam Area</span>
+                  <span className="text-nb-body-sm text-nb-gray-600">{t('workers.detail.locationMetrics.gpsInArea')}</span>
                   <span className="font-medium">{workerDetail.within_area_pings}</span>
                 </div>
               </Card>
             </div>
           ) : (
-            <EmptyState variant="error" title="Gagal memuat detail" />
+            <EmptyState variant="error" title={t('workers.detail.error')} />
           )}
         </DialogContent>
       </Dialog>

@@ -1,0 +1,228 @@
+{
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "create": "Create",
+    "update": "Update",
+    "submit": "Submit",
+    "confirm": "Confirm",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "search": "Search",
+    "filter": "Filter",
+    "reset": "Reset",
+    "refresh": "Refresh",
+    "retry": "Retry",
+    "view": "View",
+    "detail": "Detail",
+    "approve": "Approve",
+    "reject": "Reject",
+    "export": "Export",
+    "import": "Import",
+    "download": "Download",
+    "upload": "Upload",
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "yes": "Yes",
+    "no": "No",
+    "error": "Error"
+  },
+  "entities": {
+    "user": "User",
+    "area": "Area",
+    "rayon": "Rayon",
+    "task": "Task",
+    "activity": "Activity",
+    "schedule": "Schedule",
+    "shift": "Shift",
+    "overtime": "Overtime",
+    "report": "Report",
+    "attendance": "Attendance",
+    "monitoring": "Monitoring",
+    "pruningRequest": "Pruning Request",
+    "plant": "Plant",
+    "seed": "Seed",
+    "setting": "Setting"
+  },
+  "empty": {
+    "noData": {
+      "title": "No Data Yet",
+      "description": "Data will appear here once you add it."
+    },
+    "noResults": {
+      "title": "Not Found",
+      "description": "No results match your search."
+    },
+    "offline": {
+      "title": "No Connection",
+      "description": "Check your internet connection and try again."
+    },
+    "error": {
+      "title": "Something Went Wrong",
+      "description": "An error occurred while loading data. Please try again."
+    },
+    "maintenance": {
+      "title": "Under Maintenance",
+      "description": "This feature is under maintenance. Please try again later."
+    },
+    "noPermission": {
+      "title": "No Access",
+      "description": "You do not have permission to access this page."
+    },
+    "emptyFolder": {
+      "title": "Empty Folder",
+      "description": "This folder has no content yet."
+    },
+    "allDone": {
+      "title": "All Done",
+      "description": "There are no tasks to work on."
+    },
+    "search": {
+      "title": "Start Searching",
+      "description": "Type a keyword to search for data."
+    }
+  },
+  "language": {
+    "label": "Language",
+    "id": "Bahasa Indonesia",
+    "en": "English"
+  },
+  "connectivity": {
+    "noInternet": "No internet connection",
+    "serverUnreachable": "Server unreachable, retrying…"
+  },
+  "sync": {
+    "syncing": "Syncing...",
+    "syncFailed": "Sync failed",
+    "syncSuccess": "Sync successful",
+    "statusCard": {
+      "title": "Sync Data",
+      "pendingLabel": "Pending:",
+      "failedLabel": "Failed:",
+      "syncButton": "Sync",
+      "retryButton": "Retry",
+      "clearButton": "Clear Failed"
+    },
+    "alerts": {
+      "syncTitle": "Sync",
+      "syncSuccess": "Data synced successfully",
+      "syncError": "Sync failed:",
+      "retryTitle": "Success",
+      "retryMessage": "{{count}} item will be retried",
+      "noRetryItems": "No failed items to retry",
+      "clearTitle": "Delete Failed Items?",
+      "clearMessage": "Failed data will be permanently deleted and cannot be recovered.",
+      "clearSuccess": "Failed items have been deleted",
+      "clearError": "Failed to delete:",
+      "error": "Error"
+    }
+  },
+  "labels": {
+    "createdBy": "Created by",
+    "assignedTo": "Assigned to",
+    "duration": "Duration"
+  },
+  "time": {
+    "justNow": "just now",
+    "minutesAgo": "{{count}} minutes ago",
+    "hoursAgo": "{{count}} hours ago",
+    "daysAgo": "{{count}} days ago",
+    "unavailable": "-",
+    "durationMinutes": "{{count}}m",
+    "durationHours": "{{count}}h",
+    "durationHoursMinutes": "{{count}}h {{minutes}}m",
+    "durationFull": "{{count}} hours {{minutes}} minutes",
+    "durationCrossesMidnight": "{{duration}}h (crosses midnight)",
+    "inMoment": "in a moment",
+    "justNowPast": "just now",
+    "inMinutes": "in {{count}} minutes",
+    "minutesPast": "{{count}} minutes ago",
+    "inHours": "in {{count}} hours",
+    "hoursPast": "{{count}} hours ago",
+    "inDays": "in {{count}} days",
+    "daysPast": "{{count}} days ago",
+    "secondsAgo": "{{count}} sec ago",
+    "minutesAgoShort": "{{count}} min ago",
+    "hoursAgoShort": "{{count}} h ago"
+  },
+  "calendar": {
+    "days": [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday"
+    ],
+    "monthsShort": [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec"
+    ],
+    "monthsFull": [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ],
+    "week": "Week"
+  },
+  "ui": {
+    "noPhoto": "No photos",
+    "noData": "No data",
+    "noDescription": "No description",
+    "noReason": "(No reason)",
+    "notFilled": "(Not filled)",
+    "notAssigned": "Not assigned",
+    "assigned": "(assigned)",
+    "noLocation": "No location data",
+    "noStaffing": "No staffing data",
+    "noMore": "No more",
+    "noActiveTasksToday": "No active tasks today",
+    "error": "Something Went Wrong",
+    "errorOccurred": "An error occurred",
+    "withinArea": "within",
+    "outsideArea": "outside",
+    "openProfile": "Open Profile",
+    "defaultUser": "User",
+    "elapsedTime": "Elapsed time: {{time}}",
+    "closeImagePreview": "Close image preview"
+  },
+  "errors": {
+    "failedToLoadData": "Failed to load data. Please try again."
+  },
+  "status": {
+    "loading": "Loading..."
+  },
+  "error": "Error",
+  "a11y": {
+    "loadingContent": "Loading content"
+  },
+  "gradeLabel": "Grade",
+  "appError": {
+    "appCrashed": "The app encountered an unexpected error.",
+    "devDetail": "Error Detail (Development):"
+  }
+}

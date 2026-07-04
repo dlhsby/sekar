@@ -3,6 +3,7 @@
  * Opened from the Home "Tugas" Ringkasan tile (mirrors TodayActivitiesModal).
  */
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, StyleSheet } from 'react-native';
 import { NBModal } from '../nb/NBModal';
 import { NBText } from '../nb/NBText';
@@ -25,21 +26,23 @@ export function TodayTasksModal({
   tasks,
   onTaskPress,
 }: TodayTasksModalProps): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <NBModal
       visible={visible}
       onClose={onClose}
-      title={`Tugas Hari Ini (${tasks.length})`}
+      title={t('tasks:modal.todayTasks', { count: tasks.length })}
       type="sheet"
       testID="today-tasks-modal"
     >
       {tasks.length === 0 ? (
         <View style={styles.empty}>
           <NBText variant="h3" color="gray600" align="center">
-            Tidak ada tugas aktif hari ini
+            {t('common:ui.noActiveTasksToday')}
           </NBText>
           <NBText variant="body-sm" color="gray500" align="center" style={styles.emptySub}>
-            Tugas yang ditugaskan ke Anda akan muncul di sini.
+            {t('tasks:modal.todayTasksEmptyMessage')}
           </NBText>
         </View>
       ) : (
@@ -59,7 +62,7 @@ export function TodayTasksModal({
                 description={task.description || undefined}
                 meta={meta}
                 onPress={() => onTaskPress?.(task)}
-                accessibilityLabel={`Detail tugas ${task.title}`}
+                accessibilityLabel={t('tasks:todayModal.taskDetailAria', { title: task.title })}
                 testID={`today-task-${task.id}`}
               />
             );

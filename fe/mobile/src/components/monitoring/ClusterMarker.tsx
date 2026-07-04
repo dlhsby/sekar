@@ -13,6 +13,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, StyleSheet } from 'react-native';
 import { Marker } from 'react-native-maps';
 import {
@@ -43,6 +44,7 @@ export const ClusterMarker = React.memo(function ClusterMarker({
   count,
   onClusterPress,
 }: ClusterMarkerProps): React.JSX.Element {
+  const { t } = useTranslation();
   return (
     <Marker
       coordinate={coordinate}
@@ -52,7 +54,7 @@ export const ClusterMarker = React.memo(function ClusterMarker({
       zIndex={100}
     >
       <View style={styles.bubble}>
-        <Text style={styles.countText} accessibilityLabel={`${count} petugas`}>
+        <Text style={styles.countText} accessibilityLabel={t('monitoring:clusterCountAria', { count })}>
           {count}
         </Text>
       </View>

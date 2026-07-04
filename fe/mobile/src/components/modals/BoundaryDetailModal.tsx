@@ -14,6 +14,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n/config';
 import { NBText } from '../nb/NBText';
 import { NBButton } from '../nb/NBButton';
 import { NBModal } from '../nb/NBModal';
@@ -54,6 +56,7 @@ export function BoundaryDetailModal({
   onClose,
   onReassign,
 }: BoundaryDetailModalProps): React.JSX.Element {
+  const { t } = useTranslation();
   const isRayon = type === 'rayon';
   const rayonData = !data ? null : isRayon ? (data as RayonBoundary) : null;
   const areaData = !data ? null : !isRayon ? (data as AreaBoundary) : null;
@@ -136,7 +139,7 @@ export function BoundaryDetailModal({
               <StatusPill
                 dot
                 tone={understaffed ? 'bad' : 'ok'}
-                label={understaffed ? 'Understaffed' : 'Cukup'}
+                label={understaffed ? t('monitoring:boundaryDetail.understaffed') : t('monitoring:boundaryDetail.sufficient')}
               />
             </View>
 
@@ -145,12 +148,12 @@ export function BoundaryDetailModal({
               {isRayon && rayonData ? (
                 <>
                   <HomeStatTile
-                    label="Area"
+                    label={t('monitoring:boundaryDetail.areaLabel')}
                     value={rayonData.area_count}
                     testID="boundary-stat-area-count"
                   />
                   <HomeStatTile
-                    label="Kurang Staf"
+                    label={t('monitoring:boundaryDetail.understaffedLabel')}
                     value={rayonData.understaffed_area_count}
                     variant={rayonData.understaffed_area_count > 0 ? 'warn' : 'ok'}
                     testID="boundary-stat-understaffed"
@@ -159,15 +162,15 @@ export function BoundaryDetailModal({
               ) : areaData ? (
                 <>
                   <HomeStatTile
-                    label="Aktif"
+                    label={t('monitoring:boundaryDetail.activeLabel')}
                     value={`${areaData.total_active}/${areaData.total_required}`}
                     variant={areaData.is_understaffed ? 'bad' : 'ok'}
                     testID="boundary-stat-active"
                   />
                   <HomeStatTile
-                    label="Petugas"
+                    label={t('monitoring:boundaryDetail.assignedLabel')}
                     value={areaData.assigned_count}
-                    detail="ditugaskan"
+                    detail={t('monitoring:boundaryDetail.assignedDetail')}
                     testID="boundary-stat-assigned"
                   />
                 </>
@@ -178,11 +181,11 @@ export function BoundaryDetailModal({
             {isRayon && rayonData ? (
               <View style={styles.section}>
                 <NBText variant="mono-sm" uppercase color="gray600" style={styles.sectionTitle}>
-                  Daftar Area ({rayonData.areas.length})
+                  {t('monitoring:boundaryDetail.areaListTitle')} ({rayonData.areas.length})
                 </NBText>
                 {rayonData.areas.length === 0 ? (
                   <NBText variant="body-sm" color="gray500" align="center">
-                    Belum ada area di rayon ini
+                    {t('monitoring:boundaryDetail.noAreasMessage')}
                   </NBText>
                 ) : (
                   rayonData.areas.map(area => (
@@ -190,13 +193,13 @@ export function BoundaryDetailModal({
                       <View style={styles.areaRowLeft}>
                         <NBText variant="body" color="black">{area.name}</NBText>
                         <NBText variant="mono-sm" color="gray600">
-                          {area.total_active}/{area.total_required} aktif
+                          {area.total_active}/{area.total_required} {t('monitoring:boundaryDetail.activeCount')}
                         </NBText>
                       </View>
                       <StatusPill
                         dot
                         tone={area.is_understaffed ? 'bad' : 'ok'}
-                        label={area.is_understaffed ? 'Kurang' : 'Cukup'}
+                        label={area.is_understaffed ? t('monitoring:boundaryDetail.understaffedCount') : t('monitoring:boundaryDetail.sufficient')}
                       />
                     </View>
                   ))
@@ -209,11 +212,11 @@ export function BoundaryDetailModal({
               <>
                 <View style={styles.section}>
                   <NBText variant="mono-sm" uppercase color="gray600" style={styles.sectionTitle}>
-                    Kebutuhan per Jabatan
+                    {t('monitoring:boundaryDetail.staffingTitle')}
                   </NBText>
                   {(areaData.staffing ?? []).length === 0 ? (
                     <NBText variant="body-sm" color="gray500" align="center">
-                      Belum ada kebutuhan jabatan
+                      {t('monitoring:boundaryDetail.noStaffingMessage')}
                     </NBText>
                   ) : (
                     (areaData.staffing ?? []).map(item => {
@@ -240,7 +243,7 @@ export function BoundaryDetailModal({
                 {areaData.is_understaffed && onReassign ? (
                   <NBButton
                     variant="primary"
-                    title="Reassign Petugas"
+                    title={t('monitoring:boundaryDetail.reassignButton')}
                     leftIcon="account-arrow-right"
                     onPress={() => onReassign(areaData)}
                     size="md"
@@ -255,16 +258,16 @@ export function BoundaryDetailModal({
                   onPress={() => setPlantsOpen(true)}
                   activeOpacity={0.7}
                   accessibilityRole="button"
-                  accessibilityLabel="Lihat tanaman"
+                  accessibilityLabel={t('monitoring:boundaryDetail.plantsTrigger')}
                   testID="boundary-tanaman-trigger"
                 >
                   <MaterialCommunityIcons name="tree" size={20} color={nbColors.successDark} />
                   <View style={styles.subSheetTriggerText}>
-                    <NBText variant="body" color="black">Tanaman</NBText>
+                    <NBText variant="body" color="black">{t('monitoring:boundaryDetail.plantsLabel')}</NBText>
                     <NBText variant="mono-sm" color="gray600">
                       {loadingPlants
-                        ? 'Memuat data tanaman…'
-                        : `${plants.length} jenis · ${notable.length} heritage`}
+                        ? t('monitoring:boundaryDetail.plantsLoading')
+                        : t('monitoring:boundaryDetail.plantsCount', { count: plants.length, notable: notable.length })}
                     </NBText>
                   </View>
                   <MaterialCommunityIcons name="chevron-right" size={20} color={nbColors.gray400} />
@@ -281,16 +284,16 @@ export function BoundaryDetailModal({
           visible={plantsOpen}
           onClose={() => setPlantsOpen(false)}
           type="sheet"
-          title={`Tanaman ${areaData.name}`}
+          title={t('monitoring:boundaryDetail.plantsSheetTitle', { name: areaData.name })}
           testID="boundary-tanaman-sheet"
         >
           {loadingPlants ? (
             <NBText variant="body-sm" color="gray600" align="center">
-              Memuat data tanaman…
+              {t('monitoring:boundaryDetail.plantsLoading')}
             </NBText>
           ) : plants.length === 0 ? (
             <NBText variant="body" color="gray600" align="center">
-              Belum ada data tanaman terdaftar untuk area ini.
+              {t('monitoring:boundaryDetail.plantsEmpty')}
             </NBText>
           ) : (
             <PlantSummaryBlock plants={plants} />
@@ -299,13 +302,13 @@ export function BoundaryDetailModal({
           {notable.length > 0 ? (
             <View style={styles.heritageSection}>
               <NBText variant="mono-sm" uppercase color="gray600" style={styles.sectionTitle}>
-                Pohon Heritage ({notable.length})
+                {t('monitoring:boundaryDetail.heritageTitle')} ({notable.length})
               </NBText>
               {notable.map(n => (
                 <View key={n.id} style={styles.heritageRow}>
                   <MaterialCommunityIcons name="tree" size={14} color={nbColors.successDark} />
                   <NBText variant="body-sm" color="gray800" style={styles.heritageLabel}>
-                    {n.label ?? 'Tanpa label'}
+                    {n.label ?? t('monitoring:boundaryDetail.noLabel')}
                     {n.species?.nameId ? ` · ${formatSpeciesName(n.species.nameId)}` : ''}
                   </NBText>
                 </View>
@@ -322,11 +325,11 @@ export function BoundaryDetailModal({
 
 /**
  * Convert backend `name_id` (e.g. `KETAPANG_KENCANA`) into display form
- * (`Ketapang Kencana`). Falls back to a friendly Indonesian label when the
+ * (`Ketapang Kencana`). Falls back to a localized label when the
  * species relation isn't loaded.
  */
 function formatSpeciesName(nameId: string | null | undefined): string {
-  if (!nameId) { return 'Jenis pohon belum diketahui'; }
+  if (!nameId) { return i18n.t('monitoring:boundaryDetail.unknownSpecies'); }
   return nameId
     .toLowerCase()
     .split(/[_\s]+/)
@@ -354,18 +357,18 @@ function PlantSummaryBlock({ plants }: PlantSummaryBlockProps): React.JSX.Elemen
   return (
     <View>
       <View style={styles.statRow}>
-        <HomeStatTile label="OK" value={okCount} variant="ok" />
-        <HomeStatTile label="Hampir" value={dueCount} variant="warn" />
-        <HomeStatTile label="Lewat" value={overdueCount} variant="bad" />
+        <HomeStatTile label={i18n.t('monitoring:boundaryDetail.okLabel')} value={okCount} variant="ok" />
+        <HomeStatTile label={i18n.t('monitoring:boundaryDetail.almostLabel')} value={dueCount} variant="warn" />
+        <HomeStatTile label={i18n.t('monitoring:boundaryDetail.overdueLabel')} value={overdueCount} variant="bad" />
       </View>
       <NBText variant="mono-sm" color="gray600" style={styles.plantSubLabel}>
-        {plants.length} jenis pohon · {totalCount} pohon terdata
+        {plants.length} {i18n.t('monitoring:boundaryDetail.plantTypesLabel')} · {totalCount} {i18n.t('monitoring:boundaryDetail.plantCountLabel')}
       </NBText>
       {plants.slice(0, 5).map(p => {
         const status = p.status as string;
         const tone: 'ok' | 'warn' | 'bad' =
           status === 'overdue' ? 'bad' : status === 'due' || status === 'due_soon' ? 'warn' : 'ok';
-        const label = status === 'overdue' ? 'LEWAT' : status === 'due' || status === 'due_soon' ? 'HAMPIR' : 'OK';
+        const label = status === 'overdue' ? i18n.t('monitoring:boundaryDetail.overdueStatusLabel') : status === 'due' || status === 'due_soon' ? i18n.t('monitoring:boundaryDetail.almostStatusLabel') : i18n.t('monitoring:boundaryDetail.okStatusLabel');
         const speciesName = formatSpeciesName(p.species?.nameId);
         const lastPruned = p.lastPrunedAt
           ? new Date(p.lastPrunedAt).toLocaleDateString('id-ID', {
@@ -373,13 +376,13 @@ function PlantSummaryBlock({ plants }: PlantSummaryBlockProps): React.JSX.Elemen
               month: 'short',
               year: 'numeric',
             })
-          : 'Belum pernah dipangkas';
+          : i18n.t('monitoring:boundaryDetail.neverPrunedLabel');
         return (
           <View key={p.id} style={styles.plantRow}>
             <View style={styles.plantRowLeft}>
               <NBText variant="body-sm" color="black">{speciesName}</NBText>
               <NBText variant="caption" color="gray600">
-                {p.count} pohon · {lastPruned}
+                {i18n.t("monitoring:boundaryDetail.treeSeparator", { count: p.count })} {lastPruned}
               </NBText>
             </View>
             <StatusPill tone={tone} label={label} />

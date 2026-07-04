@@ -6,7 +6,9 @@
  */
 
 import { use, useMemo } from 'react';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
 import {
   Button,
@@ -30,16 +32,10 @@ import { useAreaPlants, useNotablePlants, summarizePlantStatuses } from '@/lib/a
 import { formatRelativeTime } from '@/lib/utils/time';
 import { cn } from '@/lib/utils/cn';
 
-const CATEGORY_LABELS: Record<string, string> = {
-  tree: 'Pohon',
-  shrub: 'Semak',
-  groundcover: 'Penutup Tanah',
-  flower: 'Bunga',
-};
-
 export default function AreaPlantsPage({ params }: { params: Promise<{ areaId: string }> }) {
   const { areaId } = use(params);
   const router = useRouter();
+  const { t } = useTranslation(['plants', 'common']);
 
   // Fetch area info
   const { data: area, isLoading: areaLoading } = useArea(areaId);
@@ -81,9 +77,9 @@ export default function AreaPlantsPage({ params }: { params: Promise<{ areaId: s
     return (
       <EmptyState
         variant="error"
-        title="Area tidak ditemukan"
+        title={t('plants:areaDetail.notFound')}
         action={{
-          label: 'Kembali',
+          label: t('common:actions.back'),
           onClick: () => router.back(),
         }}
       />
@@ -98,7 +94,7 @@ export default function AreaPlantsPage({ params }: { params: Promise<{ areaId: s
           variant="ghost"
           size="sm"
           onClick={() => router.back()}
-          aria-label="Kembali"
+          aria-label={t('plants:areaDetail.backButtonLabel')}
         >
           <ArrowLeft className="size-4" />
         </Button>
@@ -107,10 +103,10 @@ export default function AreaPlantsPage({ params }: { params: Promise<{ areaId: s
 
       {/* Summary Tiles */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-        <SummaryTile label="Total Jenis" value={summary.total_species} />
-        <SummaryTile label="Total Tanaman" value={summary.total_count} />
+        <SummaryTile label={t('plants:areaDetailSummary.totalSpecies')} value={summary.total_species} />
+        <SummaryTile label={t('plants:areaDetailSummary.totalPlants')} value={summary.total_count} />
         <SummaryTile
-          label="Jatuh Tempo"
+          label={t('plants:areaDetailSummary.dueSoon')}
           value={summary.due_soon + summary.overdue}
           tone="danger"
         />
@@ -123,11 +119,11 @@ export default function AreaPlantsPage({ params }: { params: Promise<{ areaId: s
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Spesies</TableHead>
-                  <TableHead className="text-right">Jumlah</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Terakhir Dipangkas</TableHead>
-                  <TableHead>Pangkas Berikutnya</TableHead>
+                  <TableHead>{t('plants:areaDetailTable.columnSpecies')}</TableHead>
+                  <TableHead className="text-right">{t('plants:areaDetailTable.columnQuantity')}</TableHead>
+                  <TableHead>{t('plants:areaDetailTable.columnStatus')}</TableHead>
+                  <TableHead>{t('plants:areaDetailTable.columnLastPruned')}</TableHead>
+                  <TableHead>{t('plants:areaDetailTable.columnNextPruning')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -137,7 +133,7 @@ export default function AreaPlantsPage({ params }: { params: Promise<{ areaId: s
                       <div className="space-y-1">
                         <p className="font-semibold">{plant.species?.nameId || '—'}</p>
                         <p className="text-xs text-nb-gray-600">
-                          {CATEGORY_LABELS[plant.species?.category || ''] || '—'}
+                          {t(`plants:categoryLabels.${plant.species?.category || 'unknown'}`) || '—'}
                         </p>
                       </div>
                     </TableCell>
@@ -148,11 +144,11 @@ export default function AreaPlantsPage({ params }: { params: Promise<{ areaId: s
                     <TableCell className="text-nb-gray-600">
                       {plant.lastPrunedAt
                         ? formatRelativeTime(plant.lastPrunedAt)
-                        : 'Belum dicatat'}
+                        : t('plants:areaDetailTable.notRecorded')}
                     </TableCell>
                     <TableCell className="text-nb-gray-600">
                       {plant.nextDueAt
-                        ? new Date(plant.nextDueAt).toLocaleDateString('id-ID', {
+                        ? new Date(plant.nextDueAt).toLocaleDateString(intlLocale(), {
                             month: 'short',
                             day: 'numeric',
                           })
@@ -165,12 +161,12 @@ export default function AreaPlantsPage({ params }: { params: Promise<{ areaId: s
           </CardContent>
         </Card>
       ) : (
-        <EmptyState variant="noData" title="Belum ada data tanaman" />
+        <EmptyState variant="noData" title={t('plants:areaDetailTable.emptyTitle')} />
       )}
 
       {/* Notable Plants Section */}
       {notablePlants && notablePlants.length > 0 && (
-        <SectionCard title="Tanaman Istimewa" tone="mint">
+        <SectionCard title={t('plants:notablePlants.sectionTitle')} tone="mint">
           <div className="space-y-4">
             {notablePlants.map((plant) => (
               <div
@@ -182,7 +178,7 @@ export default function AreaPlantsPage({ params }: { params: Promise<{ areaId: s
                   <div className="shrink-0">
                     <img
                       src={plant.photoUrls[0]}
-                      alt={plant.label || 'Tanaman istimewa'}
+                      alt={plant.label || t('plants:notablePlants.sectionTitle')}
                       className="size-16 object-cover rounded-nb-base border-2 border-nb-black"
                     />
                   </div>
@@ -194,7 +190,7 @@ export default function AreaPlantsPage({ params }: { params: Promise<{ areaId: s
                     <h4 className="text-nb-body-lg font-semibold">{plant.label}</h4>
                     {plant.heritage && (
                       <span className="text-xs font-bold uppercase tracking-wide px-2 py-0.5 bg-nb-warning rounded-nb-sm border border-nb-black whitespace-nowrap">
-                        Warisan
+                        {t('plants:notablePlants.heritageLabel')}
                       </span>
                     )}
                   </div>

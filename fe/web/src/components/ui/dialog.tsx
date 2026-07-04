@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
@@ -55,7 +56,9 @@ interface DialogContentProps
 const DialogContent = React.forwardRef<
   React.ComponentRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, children, size, ...props }, ref) => (
+>(({ className, children, size, ...props }, ref) => {
+  const { t } = useTranslation();
+  return (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
@@ -71,11 +74,12 @@ const DialogContent = React.forwardRef<
       {children}
       <DialogPrimitive.Close className="absolute right-4 top-4 z-20 rounded-nb-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-nb-primary focus:ring-offset-2 disabled:pointer-events-none">
         <X className="h-5 w-5" />
-        <span className="sr-only">Close</span>
+        <span className="sr-only">{t('common:actions.close')}</span>
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
   </DialogPortal>
-));
+  );
+});
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 // Sticky-within-scroll: header pins to the top and footer to the bottom while

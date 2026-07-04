@@ -21,6 +21,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
+import i18n from '../../i18n/config';
 import { PermissionType, permissionManager } from './PermissionManager';
 
 export interface PermissionMonitorState {
@@ -89,9 +90,9 @@ function sameSet(a: PermissionType[], b: PermissionType[]): boolean {
 }
 
 export const PERMISSION_LABEL: Record<PermissionType, string> = {
-  [PermissionType.LOCATION]: 'Lokasi',
-  [PermissionType.CAMERA]: 'Kamera',
-  [PermissionType.NOTIFICATIONS]: 'Notifikasi',
-  [PermissionType.BACKGROUND_LOCATION]: 'Lokasi latar belakang',
-  [PermissionType.GALLERY]: 'Galeri',
+  [PermissionType.LOCATION]: i18n.t('components:permissions.location'),
+  [PermissionType.CAMERA]: i18n.t('components:permissions.camera'),
+  [PermissionType.NOTIFICATIONS]: i18n.t('components:permissions.notifications'),
+  [PermissionType.BACKGROUND_LOCATION]: i18n.t('components:permissions.backgroundLocation'),
+  [PermissionType.GALLERY]: i18n.t('components:permissions.gallery'),
 };

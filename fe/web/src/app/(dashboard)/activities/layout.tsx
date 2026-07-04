@@ -1,10 +1,10 @@
 import { ReactNode } from 'react';
 import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/i18n/server-metadata';
 
-export const metadata: Metadata = {
-  title: 'Aktivitas · SEKAR',
-  description: 'Lihat dan setujui laporan aktivitas satgas RTH',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata('activities');
+}
 
 export default function ActivitiesLayout({ children }: { children: ReactNode }) {
   return children;

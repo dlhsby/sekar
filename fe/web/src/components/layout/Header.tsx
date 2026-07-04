@@ -2,6 +2,7 @@
 
 import { HTMLAttributes, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { Menu, User, Settings, LogOut, Smartphone } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useUIStore } from '@/stores/ui';
@@ -9,7 +10,7 @@ import { useAuth } from '@/lib/auth/hooks';
 import { NotificationBell } from '@/components/ui/notification-bell';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { RoleAvatar } from '@/components/ui/role-avatar';
-import { getPageTitle, getBreadcrumbTrail } from '@/lib/navigation';
+import { usePageTitle, useBreadcrumbTrail } from '@/hooks/usePageNavigation';
 import { useLatestAppRelease } from '@/lib/hooks/useLatestAppRelease';
 import { ADMIN_ROLES, hasRole } from '@/lib/constants/roles';
 import type { UserRole } from '@/types/models';
@@ -41,10 +42,13 @@ export type HeaderProps = HTMLAttributes<HTMLElement>;
  * - User dropdown menu
  */
 export function Header({ className, ...props }: HeaderProps) {
+  const { t } = useTranslation();
   const { toggleSidebar } = useUIStore();
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const getPageTitle = usePageTitle();
+  const getBreadcrumbTrail = useBreadcrumbTrail();
   const pageTitle = getPageTitle(pathname);
   const breadcrumbTrail = getBreadcrumbTrail(pathname);
   const canOpenSettings = !!user && hasRole(user.role as UserRole, ADMIN_ROLES);
@@ -79,7 +83,7 @@ export function Header({ className, ...props }: HeaderProps) {
             size="icon"
             onClick={toggleSidebar}
             className="lg:hidden"
-            aria-label="Open navigation menu"
+            aria-label={t("common:a11y.openNav")}
           >
             <Menu className="h-5 w-5" />
           </Button>
@@ -90,7 +94,7 @@ export function Header({ className, ...props }: HeaderProps) {
             size="icon"
             onClick={toggleSidebar}
             className="hidden lg:flex"
-            aria-label="Toggle sidebar"
+            aria-label={t("common:a11y.toggleSidebar")}
           >
             <Menu className="h-5 w-5" />
           </Button>
@@ -98,7 +102,7 @@ export function Header({ className, ...props }: HeaderProps) {
           {/* Breadcrumb + page title — the single, consistent masthead for
               every dashboard route (pages no longer render their own). */}
           <div className="min-w-0 flex-1">
-            <nav aria-label="Breadcrumb" className="truncate">
+            <nav aria-label={t("common:nav.breadcrumbAria")} className="truncate">
               <span className="font-mono text-[11px] uppercase leading-none tracking-wide text-nb-gray-500">
                 {breadcrumbTrail.join(' · ')}
               </span>
@@ -130,7 +134,7 @@ export function Header({ className, ...props }: HeaderProps) {
                     'transition-all duration-100',
                     'focus-visible:outline focus-visible:outline-4 focus-visible:outline-nb-primary/50 focus-visible:outline-offset-2'
                   )}
-                  aria-label="User menu"
+                  aria-label={t("common:a11y.userMenu")}
                 >
                   <RoleAvatar
                     name={user.full_name}
@@ -146,22 +150,22 @@ export function Header({ className, ...props }: HeaderProps) {
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={() => router.push('/profile')}>
                   <User className="mr-2 h-4 w-4" />
-                  Profil
+                  {t('common:actions.profile')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push('/android')}>
                   <Smartphone className="mr-2 h-4 w-4" />
-                  Unduh Aplikasi{appVersionLabel}
+                  {t('common:actions.downloadApp')}{appVersionLabel}
                 </DropdownMenuItem>
                 {canOpenSettings && (
                   <DropdownMenuItem onClick={() => router.push('/settings')}>
                     <Settings className="mr-2 h-4 w-4" />
-                    Pengaturan
+                    {t('common:actions.settings')}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem destructive onClick={() => setShowLogoutModal(true)}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  Keluar
+                  {t('common:actions.logout')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -173,9 +177,9 @@ export function Header({ className, ...props }: HeaderProps) {
       <Dialog open={showLogoutModal} onOpenChange={setShowLogoutModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader className="border-b-0">
-            <DialogTitle>Konfirmasi Keluar</DialogTitle>
+            <DialogTitle>{t('common:actions.confirmLogout')}</DialogTitle>
             <DialogDescription>
-              Apakah Anda yakin ingin keluar dari aplikasi?
+              {t('common:actions.confirmLogoutMessage')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
@@ -184,7 +188,7 @@ export function Header({ className, ...props }: HeaderProps) {
               onClick={() => setShowLogoutModal(false)}
               disabled={isLoggingOut}
             >
-              Batal
+              {t('common:actions.cancel')}
             </Button>
             <Button
               variant="destructive"
@@ -192,7 +196,7 @@ export function Header({ className, ...props }: HeaderProps) {
               loading={isLoggingOut}
               disabled={isLoggingOut}
             >
-              Keluar
+              {t('common:actions.logout')}
             </Button>
           </DialogFooter>
         </DialogContent>

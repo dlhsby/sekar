@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { PhotoGridSection } from '../../../components/common/PhotoGridSection';
 
 interface OvertimeSelfiePhotosSectionProps {
@@ -15,14 +16,16 @@ export const OvertimeSelfiePhotosSection: React.FC<OvertimeSelfiePhotosSectionPr
   shift,
   onPhotoPress,
 }) => {
+  const { t } = useTranslation('overtime');
+
   if (!shift || (!shift.clock_in_photo_url && !shift.clock_out_photo_url)) return null;
 
   const photos: Array<{ url: string; label?: string }> = [];
   if (shift.clock_in_photo_url) {
-    photos.push({ url: shift.clock_in_photo_url, label: 'Mulai Lembur' });
+    photos.push({ url: shift.clock_in_photo_url, label: t('components.selfieAlreadyCaptured') });
   }
   if (shift.clock_out_photo_url) {
-    photos.push({ url: shift.clock_out_photo_url, label: 'Selesai Lembur' });
+    photos.push({ url: shift.clock_out_photo_url, label: t('components.selfieAlreadyCaptured') });
   }
 
   return (
@@ -30,7 +33,7 @@ export const OvertimeSelfiePhotosSection: React.FC<OvertimeSelfiePhotosSectionPr
       photos={photos}
       onPhotoPress={onPhotoPress}
       headerType="icon"
-      title="SELFIE VERIFIKASI"
+      title={t('submit.selfieImagePreviewTitle')}
       iconName="account-circle-outline"
     />
   );

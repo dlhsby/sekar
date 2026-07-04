@@ -28,6 +28,8 @@ const eslintConfig = defineConfig([
       "sekar-design/no-inline-hex-colors": "error",
       "sekar-design/no-tailwind-shadow-classes-with-blur": "error",
       "sekar-design/prefer-nb-shadow-utility": "error",
+      // i18n discipline — no hardcoded user-facing strings (CLAUDE.md §Internationalization)
+      "sekar-design/no-untranslated-literal": "error",
     },
   },
   // ClusterLayer — conditional map-canvas shadows must be inline (no utility class equivalent for dynamic values);
@@ -75,6 +77,22 @@ const eslintConfig = defineConfig([
     ],
     rules: {
       "sekar-design/no-inline-hex-colors": "off",
+    },
+  },
+  // Test fixtures & e2e specs deliberately use literal strings — the i18n rule doesn't apply.
+  {
+    files: ["**/*.test.tsx", "**/*.test.ts", "**/*.spec.tsx", "**/*.spec.ts", "**/__tests__/**", "e2e/**"],
+    rules: {
+      "sekar-design/no-untranslated-literal": "off",
+    },
+  },
+  // global-error.tsx is the root crash boundary: it renders its own <html>/<body>
+  // and REPLACES the whole app (including the i18n provider), so t()/i18n are not
+  // reliably available. It intentionally stays in the default language (Indonesian).
+  {
+    files: ["src/app/global-error.tsx"],
+    rules: {
+      "sekar-design/no-untranslated-literal": "off",
     },
   },
   // Override default ignores of eslint-config-next.

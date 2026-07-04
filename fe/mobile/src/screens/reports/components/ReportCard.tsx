@@ -6,6 +6,7 @@
 import React, { useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 import { NBCard, NBText, NBBadge } from '../../../components/nb';
 import { nbColors, nbSpacing, nbRadius } from '../../../constants/nbTokens';
 import type { GeneratedReport, GeneratedReportStatus } from '../../../types/reports.types';
@@ -16,35 +17,37 @@ interface ReportCardProps {
 }
 
 export function ReportCard({ report, onPress }: ReportCardProps): React.JSX.Element {
+  const { t } = useTranslation();
+
   const statusLabel = useMemo(() => {
     const labelMap: Record<GeneratedReportStatus, string> = {
-      processing: 'Sedang Diproses',
-      completed: 'Selesai',
-      failed: 'Gagal',
+      processing: t('reports:statusLabels.processing'),
+      completed: t('reports:statusLabels.completed'),
+      failed: t('reports:statusLabels.failed'),
     };
     return labelMap[report.status] || 'Unknown';
-  }, [report.status]);
+  }, [report.status, t]);
 
   const typeLabel = useMemo(() => {
     const typeMap: Record<string, string> = {
-      daily_operations: 'Laporan Harian',
-      weekly_performance: 'Laporan Mingguan',
-      monthly_summary: 'Laporan Bulanan',
-      worker_performance: 'Kinerja Petugas',
-      area_status: 'Status Area',
-      overtime_utilization: 'Pemanfaatan Lembur',
+      daily_operations: t('reports:typeLabels.daily'),
+      weekly_performance: t('reports:typeLabels.weekly'),
+      monthly_summary: t('reports:typeLabels.monthly'),
+      worker_performance: t('reports:typeLabels.workerPerformance'),
+      area_status: t('reports:typeLabels.areaStatus'),
+      overtime_utilization: t('reports:typeLabels.overtimeUtilization'),
     };
     return typeMap[report.report_type] || report.report_type;
-  }, [report.report_type]);
+  }, [report.report_type, t]);
 
   const formatLabel = useMemo(() => {
     const formatMap: Record<string, string> = {
-      pdf: 'PDF',
-      csv: 'CSV',
-      xlsx: 'XLSX',
+      pdf: t('reports:formatLabels.pdf'),
+      csv: t('reports:formatLabels.csv'),
+      xlsx: t('reports:formatLabels.xlsx'),
     };
     return formatMap[report.format] || report.format.toUpperCase();
-  }, [report.format]);
+  }, [report.format, t]);
 
   const createdDate = useMemo(() => {
     try {

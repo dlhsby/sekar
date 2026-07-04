@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBCard, NBText } from '../../../components/nb';
 import { ScoreGauge } from '../../../components/charts/ScoreGauge';
 import { nbSpacing } from '../../../constants/nbTokens';
@@ -19,15 +20,17 @@ export function PerformanceScoreCard({
   score,
   grade,
 }: PerformanceScoreCardProps): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <NBCard style={styles.container}>
       <View style={styles.content}>
         <View style={styles.textSection}>
           <NBText variant="h2" color="gray900">
-            Skor Kinerja
+            {t('analytics:performance.title')}
           </NBText>
           <NBText variant="body-sm" color="gray600" style={styles.subtitle}>
-            Evaluasi performa keseluruhan
+            {t('analytics:performance.subtitle')}
           </NBText>
         </View>
         <ScoreGauge score={score} grade={grade} size={140} showLabel={true} />

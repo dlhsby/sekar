@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   NBCard,
@@ -27,6 +28,7 @@ export const DeadlineSection: React.FC<DeadlineSectionProps> = ({
   onDeadlineChange,
   onDeadlineClear,
 }) => {
+  const { t } = useTranslation('tasks');
   const handleDateChange = (date: Date) => {
     const d = new Date(date);
     // Preserve existing time if set, otherwise default to end of day (23:59)
@@ -52,19 +54,19 @@ export const DeadlineSection: React.FC<DeadlineSectionProps> = ({
           <MaterialCommunityIcons name="calendar-clock" size={16} color={nbColors.black} />
           <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}>
             {' '}
-            BATAS WAKTU
+            {t('create.deadline.sectionTitle')}
           </NBText>
         </View>
         <NBText variant="body-sm" style={styles.sectionSubtitle}>
-          Opsional — tentukan tenggat tugas (waktu default 23:59)
+          {t('create.deadline.subtitle')}
         </NBText>
       </NBCardHeader>
       <NBCardContent>
         <NBDatePicker
-          label="Tanggal"
+          label={t('create.deadline.dateLabel')}
           value={deadline}
           onChange={handleDateChange}
-          placeholder="Pilih tanggal batas waktu..."
+          placeholder={t('create.deadline.datePlaceholder')}
           minimumDate={new Date()}
         />
 
@@ -72,14 +74,14 @@ export const DeadlineSection: React.FC<DeadlineSectionProps> = ({
           <>
             <View style={styles.fieldSpacer} />
             <NBDatePicker
-              label="Waktu (opsional, default 23:59)"
+              label={t('create.deadline.timeLabel')}
               value={deadline}
               onChange={handleTimeChange}
               mode="time"
-              placeholder="Pilih waktu..."
+              placeholder={t('create.deadline.timePlaceholder')}
             />
             <NBButton
-              title="Hapus Batas Waktu"
+              title={t('create.deadline.clearButton')}
               variant="secondary"
               size="sm"
               onPress={onDeadlineClear}

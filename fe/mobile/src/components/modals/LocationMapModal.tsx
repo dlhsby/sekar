@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import MapView, { Circle, Marker, Polygon, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 import { NBText } from '../nb/NBText';
 import { NBModal } from '../nb';
 import {
@@ -73,15 +74,19 @@ interface LocationMapModalProps {
   markerTitle?: string;
 }
 
-function formatUpdatedAt(date: Date | null): string {
-  if (!date) return 'Belum diperbarui';
+function formatUpdatedAt(date: Date | null, t: (key: string, options?: Record<string, any>) => string): string {
+  if (!date) return t('components:locationMap.notUpdated');
   const now = new Date();
   const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000);
-  if (diffSec < 60) return 'Diperbarui baru saja';
+  if (diffSec < 60) return t('components:locationMap.justUpdated');
   const diffMin = Math.floor(diffSec / 60);
-  if (diffMin < 60) return `Diperbarui ${diffMin} mnt lalu`;
+  if (diffMin < 60) {
+    const timeStr = t('common:time.minutesAgo', { count: diffMin });
+    return t('components:locationMap.updated', { time: timeStr });
+  }
   const diffHr = Math.floor(diffMin / 60);
-  return `Diperbarui ${diffHr} jam lalu`;
+  const timeStr = t('common:time.hoursAgo', { count: diffHr });
+  return t('components:locationMap.updated', { time: timeStr });
 }
 
 const PADDING = 1.4; // extra padding factor around bounding box
@@ -126,11 +131,14 @@ export function LocationMapModal({
   area,
   footerActionLabel,
   onFooterAction,
-  title = 'Lokasi Anda',
+  title,
   hideAreaStatus = false,
   hideUpdatedAt = false,
-  markerTitle = 'Lokasi Anda',
+  markerTitle,
 }: LocationMapModalProps) {
+  const { t } = useTranslation();
+  const defaultTitle = title ?? t('components:locationMap.defaultTitle');
+  const defaultMarkerTitle = markerTitle ?? t('components:locationMap.defaultMarkerTitle');
   // Coerce — backend may emit decimal columns as strings via TypeORM, and
   // some callers pass numeric strings unintentionally. Treat NaN/null/undefined
   // uniformly as "no coords" so the renderer never calls .toFixed on a string.
@@ -217,7 +225,7 @@ export function LocationMapModal({
     <NBModal
       visible={visible}
       onClose={onClose}
-      title={title}
+      title={defaultTitle}
       type="sheet"
       noPadding
       footer={footerContent}
@@ -256,10 +264,10 @@ export function LocationMapModal({
             {hasCoords && (
               <Marker
                 coordinate={{ latitude: lat!, longitude: lng! }}
-                title={markerTitle}
+                title={defaultMarkerTitle}
                 description={
                   location.accuracy !== null
-                    ? `Akurasi: ±${Math.round(location.accuracy)}m`
+                    ? t('components:locationMap.accuracy', { value: Math.round(location.accuracy) })
                     : undefined
                 }
               />
@@ -273,7 +281,7 @@ export function LocationMapModal({
               color={nbColors.gray400}
             />
             <NBText variant="body" color="gray500">
-              Lokasi tidak tersedia
+              {t('components:locationMap.areaNotAvailable')}
             </NBText>
           </View>
         )}
@@ -287,7 +295,7 @@ export function LocationMapModal({
               variant="mono-sm"
               color="black"
               style={styles.coordsFont}
-              accessibilityLabel={`Koordinat: ${lat!.toFixed(6)}, ${lng!.toFixed(6)}`}
+              accessibilityLabel={t('components:locationMap.coordAria', { lat: lat!.toFixed(6), lng: lng!.toFixed(6) })}
             >
               {lat!.toFixed(6)}, {lng!.toFixed(6)}
             </NBText>
@@ -299,7 +307,7 @@ export function LocationMapModal({
                     variant="body-sm"
                     style={[styles.accuracyText, accuracyWarning && styles.accuracyWarning]}
                   >
-                    {accuracyWarning ? '⚠️ ' : ''}Akurasi: ±{Math.round(location.accuracy)}m
+                    {accuracyWarning ? '⚠️ ' : ''}{t('components:locationMap.accuracy', { value: Math.round(location.accuracy) })}
                   </NBText>
                 )}
                 {!hideAreaStatus && (
@@ -318,7 +326,7 @@ export function LocationMapModal({
                           : styles.areaBadgeTextOutside,
                       ]}
                     >
-                      {location.isWithinArea ? 'Di dalam area kerja' : 'Di luar area kerja'}
+                      {location.isWithinArea ? t('components:locationMap.withinWorkArea') : t('components:locationMap.outsideWorkArea')}
                     </NBText>
                   </View>
                 )}
@@ -326,13 +334,13 @@ export function LocationMapModal({
             ) : null}
             {!hideUpdatedAt && (
               <NBText variant="caption" color="gray500" style={styles.updatedTopMargin}>
-                {formatUpdatedAt(location.updatedAt)}
+                {formatUpdatedAt(location.updatedAt, t)}
               </NBText>
             )}
           </>
         ) : (
           <NBText variant="body" color="gray500">
-            GPS tidak aktif atau belum tersedia
+            {t('components:locationMap.gpsNotAvailable')}
           </NBText>
         )}
       </View>

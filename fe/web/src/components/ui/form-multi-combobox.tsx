@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Check, ChevronsUpDown, Search, X } from 'lucide-react';
 
 import { cn, nbFocusRing } from '@/lib/utils/cn';
@@ -36,15 +37,19 @@ export function FormMultiCombobox({
   options,
   values,
   onChange,
-  placeholder = 'Pilih…',
-  searchPlaceholder = 'Cari…',
-  emptyText = 'Tidak ditemukan',
+  placeholder: _placeholder,
+  searchPlaceholder: _searchPlaceholder,
+  emptyText: _emptyText,
   error,
   helperText,
   disabled = false,
   required = false,
   className,
 }: FormMultiComboboxProps): React.JSX.Element {
+  const { t } = useTranslation();
+  const placeholder = _placeholder ?? t('common:ui.combobox.placeholder');
+  const searchPlaceholder = _searchPlaceholder ?? t('common:ui.combobox.searchPlaceholder');
+  const emptyText = _emptyText ?? t('common:ui.combobox.noResults');
   const id = React.useId();
   const messageId = `${id}-message`;
   const listboxId = `${id}-listbox`;
@@ -101,7 +106,7 @@ export function FormMultiCombobox({
             )}
           >
             <span className={cn('truncate', values.length === 0 && 'text-nb-gray-500')}>
-              {values.length === 0 ? placeholder : `${values.length} dipilih`}
+              {values.length === 0 ? placeholder : t('common:ui.multiCombobox.selected', { count: values.length })}
             </span>
             <ChevronsUpDown className="h-4 w-4 shrink-0 text-nb-gray-500" aria-hidden />
           </button>
@@ -165,7 +170,7 @@ export function FormMultiCombobox({
               {!disabled && (
                 <button
                   type="button"
-                  aria-label={`Hapus ${option.label}`}
+                  aria-label={t('common:ui.multiCombobox.removeItem', { label: option.label })}
                   onClick={() => toggle(option.value)}
                   className={cn('text-nb-gray-600 hover:text-nb-black', nbFocusRing)}
                 >

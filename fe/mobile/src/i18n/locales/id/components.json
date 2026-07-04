@@ -1,0 +1,145 @@
+{
+  "ui": {
+    "all": "Semua",
+    "sort": "Urutkan",
+    "activeFilters": "filter aktif",
+    "dismiss": "Tutup notifikasi",
+    "tap": {
+      "open": "Ketuk untuk membuka",
+      "close": "Ketuk untuk menutup"
+    },
+    "mapControls": {
+      "zoomIn": "Perbesar",
+      "zoomOut": "Perkecil",
+      "useMyLocation": "Gunakan lokasi saya",
+      "updateHistory": "Perbarui riwayat"
+    },
+    "timeDetails": "Detail waktu",
+    "resetFilterAria": "Reset filter {{label}}",
+    "filterAria": "Filter {{label}}",
+    "dismissAlert": "Tutup peringatan"
+  },
+  "nbselect": {
+    "placeholder": "Pilih...",
+    "searchPlaceholder": "Cari...",
+    "selected": "dipilih",
+    "clearAll": "Hapus Semua",
+    "clearSelection": "Hapus Pilihan",
+    "done": "Selesai",
+    "close": "Tutup"
+  },
+  "photoUploader": {
+    "cameraPermissionTitle": "Izin Kamera",
+    "capturePhotoError": "Gagal mengambil foto",
+    "pickPhotoError": "Gagal memilih foto",
+    "maxPhotosTitle": "Maksimal Foto",
+    "maxPhotosMessage": "Anda hanya dapat menambahkan maksimal {{max}} foto.",
+    "addPhotoTitle": "Tambah Foto",
+    "addPhotoMessage": "Pilih sumber foto:",
+    "cameraOption": "Kamera",
+    "galleryOption": "Galeri",
+    "cancelOption": "Batal",
+    "viewPhotoLabel": "Lihat foto penuh",
+    "viewPhotoHint": "Ketuk untuk melihat foto dalam ukuran penuh",
+    "removePhotoLabel": "Hapus foto",
+    "addPhotoLabel": "Tambah foto",
+    "photoButtonText": "Foto",
+    "previewTitle": "Foto Bukti"
+  },
+  "mediaService": {
+    "noPhotoTaken": "Tidak ada foto yang diambil",
+    "cameraError": "Kesalahan kamera: {{message}}",
+    "galleryError": "Kesalahan galeri: {{message}}",
+    "photoTooLarge": "Foto terlalu besar (maks {{maxSize}}MB). Pilih foto yang lebih kecil.",
+    "storageFull": "Penyimpanan penuh. Bebaskan minimal 50MB dan coba lagi.",
+    "storageCheckFailed": "Gagal memeriksa ruang penyimpanan",
+    "compressionFailed": "Kompresi gagal: {{message}}",
+    "base64ConversionFailed": "Konversi Base64 gagal: {{message}}",
+    "cameraUnavailable": "Kamera tidak tersedia di perangkat ini",
+    "cameraPermissionDenied": "Izin kamera/galeri ditolak. Aktifkan di Pengaturan.",
+    "cameraAccessError": "Terjadi kesalahan saat mengakses kamera/galeri",
+    "unknownCameraError": "Kesalahan: {{errorCode}}"
+  },
+  "locationPicker": {
+    "title": "Pilih Titik Lokasi",
+    "coordsLabel": "Titik: {{lat}}, {{lng}}",
+    "cancelButton": "Batal",
+    "confirmButton": "Gunakan Titik Ini",
+    "dragHint": "Geser peta agar penanda jatuh di titik yang Anda inginkan."
+  },
+  "locationMap": {
+    "notUpdated": "Belum diperbarui",
+    "justUpdated": "Diperbarui baru saja",
+    "defaultTitle": "Lokasi Anda",
+    "defaultMarkerTitle": "Lokasi Anda",
+    "areaNotAvailable": "Lokasi tidak tersedia",
+    "gpsNotAvailable": "GPS tidak aktif atau belum tersedia",
+    "accuracy": "Akurasi: ±{{value}}m",
+    "withinWorkArea": "Di dalam area kerja",
+    "outsideWorkArea": "Di luar area kerja",
+    "updated": "Diperbarui {{time}}",
+    "coordAria": "Koordinat: {{lat}}, {{lng}}"
+  },
+  "nbDatePicker": {
+    "months": [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "Mei",
+      "Jun",
+      "Jul",
+      "Agt",
+      "Sep",
+      "Okt",
+      "Nov",
+      "Des"
+    ],
+    "placeholderDate": "Pilih tanggal",
+    "placeholderTime": "Pilih waktu",
+    "modalTitleDate": "Pilih Tanggal",
+    "modalTitleTime": "Pilih Waktu",
+    "buttonCancel": "Batal",
+    "buttonConfirm": "OK"
+  },
+  "characterCounter": {
+    "count": "{{current}}/{{max}} karakter"
+  },
+  "photoGrid": {
+    "photoLabelWithIndex": "{{label}} - Foto {{index}}",
+    "photoIndexOnly": "Foto {{index}} dari {{total}}"
+  },
+  "shiftCard": {
+    "areaNotFound": "Area tidak diketahui",
+    "viewDetailHint": "Ketuk untuk melihat detail shift"
+  },
+  "errorBanner": {
+    "closeLabel": "Tutup pesan kesalahan",
+    "closeHint": "Ketuk untuk menutup pesan kesalahan ini"
+  },
+  "updateBanner": {
+    "title": "Pembaruan tersedia",
+    "message": "Versi {{version}} sudah tersedia. Perbarui untuk fitur & perbaikan terbaru."
+  },
+  "permissionBanner": {
+    "disabledLabel": "Izin {{permissions}} dinonaktifkan",
+    "openSettingsLabel": "BUKA PENGATURAN",
+    "accessibilityLabel": "Izin {{permissions}} dinonaktifkan. Ketuk untuk membuka Pengaturan."
+  },
+  "taskDetailSection": {
+    "title": "DETAIL TUGAS",
+    "subtitle": "Isi judul dan deskripsi tugas",
+    "titleLabel": "Judul *",
+    "titlePlaceholder": "Masukkan judul tugas...",
+    "descriptionLabel": "Deskripsi",
+    "descriptionPlaceholder": "Jelaskan detail tugas...",
+    "helperText": "{{current}}/500 karakter"
+  },
+  "permissions": {
+    "location": "Lokasi",
+    "camera": "Kamera",
+    "gallery": "Galeri",
+    "notifications": "Notifikasi",
+    "backgroundLocation": "Lokasi Latar Belakang"
+  }
+}

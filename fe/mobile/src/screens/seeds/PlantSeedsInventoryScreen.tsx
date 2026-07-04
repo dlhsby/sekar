@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { NBBackgroundPattern, NBButton, NBText, NBCard, NBBadge, NBSkeleton } from '../../components/nb';
@@ -28,8 +29,17 @@ interface SeedRowProps {
   onPress: (seed: PlantSeed) => void;
 }
 
-const SeedRow = React.memo(({ seed, onPress }: SeedRowProps) => {
+const SeedRow = React.memo(({ seed, onPress, t }: SeedRowProps & { t: any }) => {
   const isLowStock = seed.stockQty < LOW_STOCK_THRESHOLD;
+
+  const unitLabel = useMemo(() => {
+    const unitMap: Record<string, string> = {
+      gram: t('seeds:units.gram'),
+      piece: t('seeds:units.piece'),
+      packet: t('seeds:units.packet'),
+    };
+    return unitMap[seed.unit] || seed.unit;
+  }, [seed.unit, t]);
 
   return (
     <TouchableOpacity
@@ -45,9 +55,7 @@ const SeedRow = React.memo(({ seed, onPress }: SeedRowProps) => {
             </NBText>
             <View style={styles.unitBadge}>
               <NBText variant="caption" color="gray600">
-                {seed.unit === 'gram' && 'gram'}
-                {seed.unit === 'piece' && 'buah'}
-                {seed.unit === 'packet' && 'paket'}
+                {unitLabel}
               </NBText>
             </View>
           </View>
@@ -59,7 +67,7 @@ const SeedRow = React.memo(({ seed, onPress }: SeedRowProps) => {
               </NBText>
             </View>
             {isLowStock && (
-              <NBBadge text="Rendah" color="warning" size="sm" style={styles.lowStockBadge} />
+              <NBBadge text={t('seeds:units.lowStock')} color="warning" size="sm" style={styles.lowStockBadge} />
             )}
           </View>
         </View>
@@ -71,6 +79,7 @@ const SeedRow = React.memo(({ seed, onPress }: SeedRowProps) => {
 SeedRow.displayName = 'SeedRow';
 
 export function PlantSeedsInventoryScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
 
@@ -117,9 +126,9 @@ export function PlantSeedsInventoryScreen(): React.JSX.Element {
 
   const renderSeed = useCallback(
     ({ item }: { item: PlantSeed; index: number }) => (
-      <SeedRow seed={item} onPress={handleSeedPress} />
+      <SeedRow seed={item} onPress={handleSeedPress} t={t} />
     ),
-    [handleSeedPress]
+    [handleSeedPress, t]
   );
 
   const renderEmpty = useCallback(() => {
@@ -138,13 +147,13 @@ export function PlantSeedsInventoryScreen(): React.JSX.Element {
         <View style={styles.emptyContainer}>
           <MaterialCommunityIcons name="alert-circle-outline" size={40} color={nbColors.danger} />
           <NBText variant="body" color="danger" style={styles.errorText}>
-            Gagal memuat data bibit
+            {t('seeds:inventory.error.title')}
           </NBText>
           <NBText variant="body-sm" color="gray600" style={styles.errorSubtext}>
-            {error.error || 'Silakan coba lagi'}
+            {error.error || t('seeds:inventory.error.description')}
           </NBText>
           <NBButton variant="primary" size="sm" onPress={() => void load()} style={styles.retryButton}>
-            Coba Lagi
+            {t('seeds:inventory.retry')}
           </NBButton>
         </View>
       );
@@ -154,11 +163,11 @@ export function PlantSeedsInventoryScreen(): React.JSX.Element {
       <View style={styles.emptyContainer}>
         <MaterialCommunityIcons name="leaf-outline" size={40} color={nbColors.gray600} />
         <NBText variant="body" color="gray600" style={styles.emptyText}>
-          Tidak ada bibit tersedia
+          {t('seeds:inventory.empty')}
         </NBText>
       </View>
     );
-  }, [isLoading, error, load]);
+  }, [isLoading, error, load, t]);
 
   return (
     <View style={styles.container}>

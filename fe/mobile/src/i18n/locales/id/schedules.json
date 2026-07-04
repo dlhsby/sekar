@@ -1,0 +1,48 @@
+{
+  "mySchedule": {
+    "todayLabel": "Jadwal Hari Ini",
+    "today": "Hari ini",
+    "noAreasAssigned": "Area belum ditetapkan",
+    "noShiftDefined": "Shift belum ditetapkan",
+    "invalidSession": "Sesi tidak valid. Silakan masuk kembali.",
+    "loadFailed": "Gagal memuat jadwal",
+    "retryLabel": "Coba Lagi",
+    "emptyTitle": "Belum ada jadwal hari ini",
+    "emptyDescription": "Anda belum memiliki jadwal untuk hari ini (mungkin bekerja ad-hoc sesuai penugasan). Anda tetap bisa melakukan clock-in."
+  },
+  "status": {
+    "present": "Hadir",
+    "planned": "Direncanakan",
+    "absent": "Tidak Hadir",
+    "leave_sick": "Cuti Sakit",
+    "leave_annual": "Cuti Tahunan",
+    "replaced": "Digantikan",
+    "off": "Libur"
+  },
+  "shiftHistory": {
+    "filterTitle": "Filter Riwayat Shift",
+    "thisWeek": "Minggu ini",
+    "apply": "Terapkan",
+    "dateRange": "Rentang Tanggal",
+    "dateFrom": "Dari",
+    "dateTo": "Sampai",
+    "allShifts": "Semua Shift",
+    "noShiftHistory": "Belum Ada Riwayat Shift",
+    "noShiftHistoryDesc": "Riwayat shift Anda akan muncul di sini setelah Anda menyelesaikan shift",
+    "noShiftInRange": "Tidak Ada Shift",
+    "noShiftInRangeDesc": "Tidak ada shift dalam rentang tanggal yang dipilih",
+    "failedToLoadShifts": "Gagal memuat riwayat shift",
+    "totalShifts": "TOTAL SHIFT",
+    "totalHours": "TOTAL JAM",
+    "clockIn": "CLOCK IN",
+    "clockOut": "CLOCK OUT",
+    "duration": "DURASI",
+    "active": "Aktif",
+    "completed": "Selesai",
+    "detailAccessibilityHint": "Ketuk untuk melihat detail shift",
+    "unknownArea": "Area tidak diketahui",
+    "resetFilterAccessibilityLabel": "Reset filter tanggal",
+    "filterDateAccessibilityLabel": "Filter tanggal",
+    "filterActiveLabel": "filter aktif"
+  }
+}

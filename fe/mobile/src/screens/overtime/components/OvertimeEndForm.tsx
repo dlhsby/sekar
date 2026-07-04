@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   ActivityIndicator,
@@ -73,6 +74,7 @@ const OvertimeEndForm: React.FC<OvertimeEndFormProps> = ({
   isWithinBoundary,
   areaName,
 }) => {
+  const { t } = useTranslation();
   const hasErrors = Object.values(errors).some(Boolean);
 
   return (
@@ -80,7 +82,7 @@ const OvertimeEndForm: React.FC<OvertimeEndFormProps> = ({
       {hasErrors && (
         <View style={styles.errorSummary}>
           <NBText variant="body-sm" color="danger" style={styles.errorSummaryTitle}>
-            Mohon lengkapi data berikut:
+            {t('overtime:forms.errorSummaryTitle')}
           </NBText>
           {Object.values(errors).filter(Boolean).map((msg, i) => (
             <NBText key={i} variant="body-sm" color="black" style={styles.errorSummaryItem}>
@@ -94,23 +96,23 @@ const OvertimeEndForm: React.FC<OvertimeEndFormProps> = ({
 
       <View style={styles.card}>
         <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6, marginBottom: nbSpacing.sm }}>
-          JENIS AKTIVITAS{' '}
+          {t('overtime:forms.activityTypeLabel')}{' '}
           <NBText variant="mono-sm" color="danger" style={{ textTransform: 'none' }}>*</NBText>
         </NBText>
         {loadingActivityTypes ? (
           <ActivityIndicator style={styles.activityIndicator} />
         ) : activityTypeOptions.length === 0 ? (
           <NBText variant="body-sm" color="warning" style={styles.warningText}>
-            Tidak ada jenis aktivitas tersedia. Hubungi administrator.
+            {t('overtime:forms.noActivityTypesWarning')}
           </NBText>
         ) : (
           <NBSelect
             value={endActivityTypeId || ''}
             onValueChange={(v) => onActivityTypeChange(String(v))}
             options={activityTypeOptions}
-            placeholder="Pilih jenis aktivitas..."
+            placeholder={t('overtime:forms.activityTypePlaceholder')}
             searchable
-            searchPlaceholder="Cari jenis aktivitas..."
+            searchPlaceholder={t('overtime:forms.activityTypeSearchPlaceholder')}
           />
         )}
         {errors.activityType && (
@@ -121,11 +123,11 @@ const OvertimeEndForm: React.FC<OvertimeEndFormProps> = ({
       </View>
 
       <NBCardTextInput
-        title="DESKRIPSI PEKERJAAN"
+        title={t('overtime:forms.descriptionTitle')}
         required
         value={endDescription}
         onChangeText={onDescriptionChange}
-        placeholder="Jelaskan aktivitas lembur yang dilakukan..."
+        placeholder={t('overtime:forms.descriptionPlaceholder')}
         numberOfLines={5}
         error={errors.description}
         style={styles.card}
@@ -133,11 +135,11 @@ const OvertimeEndForm: React.FC<OvertimeEndFormProps> = ({
 
       <View style={styles.card}>
         <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6, marginBottom: nbSpacing.xs }}>
-          FOTO BUKTI{' '}
+          {t('overtime:forms.photosTitle')}{' '}
           <NBText variant="mono-sm" color="danger" style={{ textTransform: 'none' }}>*</NBText>
         </NBText>
         <NBText variant="body-sm" color="gray600" style={{ marginBottom: nbSpacing.sm }}>
-          Tambahkan 1-3 foto pekerjaan lembur
+          {t('overtime:forms.photosSubtitleText')}
         </NBText>
         <PhotoUploader
           photos={endPhotos}
@@ -150,18 +152,18 @@ const OvertimeEndForm: React.FC<OvertimeEndFormProps> = ({
       <NBCollapsibleCard
         style={[styles.selfieCard, styles.gpsCard]}
         defaultExpanded
-        accessibilityLabel="Lokasi GPS"
+        accessibilityLabel={t('overtime:forms.gpsLabel')}
         headerLeft={
           <View>
             <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>
-              {'LOKASI GPS '}
+              {t('overtime:forms.gpsLabel')}{' '}
               <NBText variant="mono-sm" color="danger" style={{ textTransform: 'none' }}>*</NBText>
             </NBText>
           </View>
         }
         headerRight={location != null
           ? <NBBadge
-              text={isWithinBoundary ? 'DI AREA' : 'LUAR AREA'}
+              text={isWithinBoundary ? t('overtime:components.withinAreaBadge') : t('overtime:components.outsideAreaBadge')}
               color={isWithinBoundary ? 'success' : 'danger'}
               size="sm"
             />

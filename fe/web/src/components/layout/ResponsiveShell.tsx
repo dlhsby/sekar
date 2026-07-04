@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, ReactNode } from 'react';
 import { X, Menu } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export interface ResponsiveShellProps {
   children: ReactNode;
@@ -24,6 +25,7 @@ export interface ResponsiveShellProps {
  * so page content can apply mobile-specific hints via CSS attribute selectors.
  */
 export function ResponsiveShell({ children, sidebar, header }: ResponsiveShellProps) {
+  const { t } = useTranslation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [railExpanded, setRailExpanded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -67,7 +69,7 @@ export function ResponsiveShell({ children, sidebar, header }: ResponsiveShellPr
     >
       {/* ── Desktop sidebar (≥1280px) ── */}
       <nav
-        aria-label="Navigasi utama"
+        aria-label={t('components:responsiveShell.mainNavigationLabel')}
         className="hidden xl:flex xl:flex-col xl:w-64 xl:shrink-0 xl:border-r-2 xl:border-nb-black"
       >
         {sidebar}
@@ -76,7 +78,7 @@ export function ResponsiveShell({ children, sidebar, header }: ResponsiveShellPr
       {/* ── Tablet rail (768–1279px) ── */}
       {isTablet && (
         <nav
-          aria-label="Navigasi utama"
+          aria-label={t('components:responsiveShell.mainNavigationLabel')}
           className="hidden md:flex xl:hidden flex-col shrink-0 border-r-2 border-nb-black transition-all duration-200"
           style={{ width: railExpanded ? 256 : 64 }}
         >
@@ -85,7 +87,7 @@ export function ResponsiveShell({ children, sidebar, header }: ResponsiveShellPr
             onClick={() => setRailExpanded((prev) => !prev)}
             className="flex items-center justify-center h-14 border-b-2 border-nb-black hover:bg-nb-gray-100 transition-colors"
             aria-expanded={railExpanded}
-            aria-label={railExpanded ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
+            aria-label={railExpanded ? t('common:actions.close') : t('common:actions.open')}
           >
             <Menu className="h-5 w-5 text-nb-black" aria-hidden="true" />
           </button>
@@ -113,7 +115,7 @@ export function ResponsiveShell({ children, sidebar, header }: ResponsiveShellPr
       {isMobile && (
         <nav
           id="mobile-drawer"
-          aria-label="Navigasi utama"
+          aria-label={t('components:responsiveShell.mainNavigationLabel')}
           aria-hidden={!drawerOpen}
           className="fixed inset-y-0 left-0 z-40 w-72 flex flex-col bg-nb-sidebar border-r-2 border-nb-black shadow-nb-lg transition-transform duration-300"
           style={{ transform: drawerOpen ? 'translateX(0)' : 'translateX(-100%)' }}
@@ -123,7 +125,7 @@ export function ResponsiveShell({ children, sidebar, header }: ResponsiveShellPr
             <button
               onClick={() => setDrawerOpen(false)}
               className="p-1 rounded-nb-sm border border-white/30 text-white hover:bg-white/10"
-              aria-label="Tutup menu navigasi"
+              aria-label={t('common:actions.close')}
             >
               <X className="h-5 w-5" aria-hidden="true" />
             </button>
@@ -142,7 +144,7 @@ export function ResponsiveShell({ children, sidebar, header }: ResponsiveShellPr
             <button
               onClick={() => setDrawerOpen(true)}
               className="p-1.5 rounded-nb-sm border border-white/30 text-white hover:bg-white/10"
-              aria-label="Buka menu navigasi"
+              aria-label={t('common:actions.open')}
               aria-expanded={drawerOpen}
               aria-controls="mobile-drawer"
             >

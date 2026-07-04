@@ -1,0 +1,107 @@
+{
+  "list": {
+    "title": "Aset",
+    "search": "Cari aset...",
+    "tabs": {
+      "all": "Semua",
+      "available": "Tersedia",
+      "myAssets": "Saya"
+    },
+    "empty": {
+      "title": "Tidak ada aset",
+      "description": "Tidak ada aset ditemukan untuk filter ini"
+    }
+  },
+  "detail": {
+    "title": "Detail Aset",
+    "notFound": {
+      "title": "Aset tidak ditemukan",
+      "description": "Silakan coba lagi"
+    },
+    "fields": {
+      "code": "Kode",
+      "category": "Kategori",
+      "status": "Status",
+      "condition": "Kondisi",
+      "area": "Area",
+      "description": "Deskripsi"
+    },
+    "assignmentHistory": "Riwayat Penugasan",
+    "noAssignments": "Belum ada riwayat penugasan",
+    "returnedLabel": "Dikembalikan",
+    "checkout": "Pinjam Aset",
+    "return": "Kembalikan Aset"
+  },
+  "status": {
+    "available": "Tersedia",
+    "inUse": "Digunakan",
+    "maintenance": "Perawatan",
+    "retired": "Pensiun",
+    "lost": "Hilang"
+  },
+  "condition": {
+    "good": "Baik",
+    "fair": "Cukup",
+    "poor": "Buruk",
+    "damaged": "Rusak",
+    "unusable": "Tidak Layak"
+  },
+  "checkout": {
+    "title": "Pinjam Aset",
+    "notFound": {
+      "title": "Aset tidak ditemukan",
+      "description": "Silakan coba lagi"
+    },
+    "fields": {
+      "code": "Kode",
+      "category": "Kategori",
+      "area": "Area"
+    },
+    "conditionLabel": "Kondisi Saat Pinjam",
+    "notes": "Catatan (Opsional)",
+    "notesPlaceholder": "Catatan pinjam aset...",
+    "expectedReturnDate": "Tanggal Pengembalian Diharapkan (Opsional)",
+    "datePickerPlaceholder": "Pilih tanggal",
+    "confirm": "Konfirmasi Pinjam",
+    "cancel": "Batal"
+  },
+  "return": {
+    "title": "Kembalikan Aset",
+    "notFound": {
+      "title": "Aset tidak ditemukan",
+      "description": "Silakan coba lagi"
+    },
+    "fields": {
+      "code": "Kode",
+      "category": "Kategori",
+      "area": "Area"
+    },
+    "conditionLabel": "Kondisi Saat Dikembalikan",
+    "notes": "Catatan (Opsional)",
+    "notesPlaceholder": "Catatan pengembalian aset...",
+    "confirm": "Konfirmasi Pengembalian",
+    "cancel": "Batal"
+  },
+  "qrScanner": {
+    "title": "Scan QR Code",
+    "cameraHint": "Arahkan kamera ke QR code aset",
+    "deferredNote": "* Live camera scanning tersedia di build native",
+    "errorTitle": "Pemindaian Gagal",
+    "manualEntry": "Ketik Kode Manual",
+    "placeholder": "SEKAR:AK-RU-001 atau AK-RU-001",
+    "hint": "Format: SEKAR:CODE atau langsung masukkan CODE",
+    "scan": "Pindai",
+    "cancel": "Batal"
+  },
+  "errors": {
+    "notFound": "Aset tidak ditemukan",
+    "fetchCategories": "Gagal mengambil kategori",
+    "fetchAssets": "Gagal mengambil daftar aset",
+    "fetchAsset": "Gagal mengambil detail aset",
+    "fetchMyAssets": "Gagal mengambil aset saya",
+    "checkoutAsset": "Gagal meminjam aset",
+    "returnAsset": "Gagal mengembalikan aset",
+    "fetchAssignments": "Gagal mengambil riwayat penugasan"
+  },
+  "qrUnavailable": "QR tidak tersedia"
+}

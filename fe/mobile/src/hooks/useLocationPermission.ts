@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { AppState, AppStateStatus, Alert, Linking, Platform } from 'react-native';
 import { check, PERMISSIONS, RESULTS, PermissionStatus } from 'react-native-permissions';
 import Geolocation from 'react-native-geolocation-service';
+import i18n from '../i18n/config';
 import { requestLocationPermission } from '../services/permissions/permissionService';
 
 export interface LocationPermissionState {
@@ -154,7 +155,7 @@ export function useLocationPermission(options: UseLocationPermissionOptions = {}
             setState(prev => ({
               ...prev,
               gpsEnabled: !isGpsDisabled,
-              error: isGpsDisabled ? 'GPS tidak aktif' : null,
+              error: isGpsDisabled ? i18n.t('location:errors.gpsDisabled') : null,
             }));
           }
           resolve(!isGpsDisabled);
@@ -240,7 +241,7 @@ export function useLocationPermission(options: UseLocationPermissionOptions = {}
         setState(prev => ({
           ...prev,
           isChecking: false,
-          error: 'Gagal memeriksa status lokasi',
+          error: i18n.t('location:checkStatusFailed'),
         }));
       }
       return { permissionOk: false, gpsOk: false, isAvailable: false };
@@ -256,12 +257,12 @@ export function useLocationPermission(options: UseLocationPermissionOptions = {}
     if (!mountedRef.current) {return;}
 
     Alert.alert(
-      'Izin Lokasi Diperlukan',
-      'Izin lokasi telah dicabut. Aplikasi memerlukan izin lokasi untuk melacak posisi Anda selama shift. Silakan aktifkan di pengaturan.',
+      i18n.t('location:permissionAlert.title'),
+      i18n.t('location:permissionAlert.message'),
       [
-        { text: 'Nanti', style: 'cancel' },
+        { text: i18n.t('location:permissionAlert.later'), style: 'cancel' },
         {
-          text: 'Buka Pengaturan',
+          text: i18n.t('location:permissionAlert.openSettings'),
           onPress: () => {
             // Issue 4: Check mounted before executing callback
             if (mountedRef.current) {
@@ -282,12 +283,12 @@ export function useLocationPermission(options: UseLocationPermissionOptions = {}
     if (!mountedRef.current) {return;}
 
     Alert.alert(
-      'GPS Tidak Aktif',
-      'GPS telah dinonaktifkan. Silakan aktifkan GPS untuk melanjutkan pelacakan lokasi selama shift.',
+      i18n.t('location:gpsAlert.title'),
+      i18n.t('location:gpsAlert.message'),
       [
-        { text: 'Nanti', style: 'cancel' },
+        { text: i18n.t('location:gpsAlert.later'), style: 'cancel' },
         {
-          text: 'Buka Pengaturan',
+          text: i18n.t('location:gpsAlert.openSettings'),
           onPress: () => {
             // Issue 4: Check mounted before executing callback
             if (!mountedRef.current) {return;}

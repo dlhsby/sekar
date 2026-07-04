@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -36,27 +37,29 @@ interface NotifMeta {
 }
 
 /** Per-type presentation (label + icon + accent), mirroring the mobile inbox. */
-const NOTIF_META: Record<NotificationType, NotifMeta> = {
-  task_assigned: { label: 'Tugas baru', icon: ClipboardList, tone: 'info' },
-  task_updated: { label: 'Tugas diperbarui', icon: ClipboardList, tone: 'info' },
-  task_completed: { label: 'Tugas selesai', icon: CheckCircle2, tone: 'ok' },
-  task_declined: { label: 'Tugas ditolak', icon: XCircle, tone: 'danger' },
-  shift_reminder: { label: 'Pengingat jadwal', icon: CalendarClock, tone: 'warn' },
-  report_submitted: { label: 'Laporan masuk', icon: FileText, tone: 'info' },
-  announcement: { label: 'Pengumuman', icon: Megaphone, tone: 'warn' },
-  system: { label: 'Sistem', icon: Settings2, tone: 'neutral' },
-  activity_approved: { label: 'Aktivitas disetujui', icon: CheckCircle2, tone: 'ok' },
-  activity_rejected: { label: 'Aktivitas ditolak', icon: XCircle, tone: 'danger' },
-  activity_tagged: { label: 'Aktivitas ditandai', icon: Tag, tone: 'info' },
-  overtime_approved: { label: 'Lembur disetujui', icon: CheckCircle2, tone: 'ok' },
-  overtime_rejected: { label: 'Lembur ditolak', icon: XCircle, tone: 'danger' },
-  missing_worker_alert: { label: 'Peringatan petugas hilang', icon: AlertTriangle, tone: 'danger' },
-  area_plant_overdue: {
-    label: 'Tanaman terlambat dipangkas',
-    icon: AlertTriangle,
-    tone: 'danger',
-  },
-};
+function getNotifMeta(t: ReturnType<typeof useTranslation>['t']): Record<NotificationType, NotifMeta> {
+  return {
+    task_assigned: { label: t('notifications:types.task_assigned'), icon: ClipboardList, tone: 'info' },
+    task_updated: { label: t('notifications:types.task_updated'), icon: ClipboardList, tone: 'info' },
+    task_completed: { label: t('notifications:types.task_completed'), icon: CheckCircle2, tone: 'ok' },
+    task_declined: { label: t('notifications:types.task_declined'), icon: XCircle, tone: 'danger' },
+    shift_reminder: { label: t('notifications:types.shift_reminder'), icon: CalendarClock, tone: 'warn' },
+    report_submitted: { label: t('notifications:types.report_submitted'), icon: FileText, tone: 'info' },
+    announcement: { label: t('notifications:types.announcement'), icon: Megaphone, tone: 'warn' },
+    system: { label: t('notifications:types.system'), icon: Settings2, tone: 'neutral' },
+    activity_approved: { label: t('notifications:types.activity_approved'), icon: CheckCircle2, tone: 'ok' },
+    activity_rejected: { label: t('notifications:types.activity_rejected'), icon: XCircle, tone: 'danger' },
+    activity_tagged: { label: t('notifications:types.activity_tagged'), icon: Tag, tone: 'info' },
+    overtime_approved: { label: t('notifications:types.overtime_approved'), icon: CheckCircle2, tone: 'ok' },
+    overtime_rejected: { label: t('notifications:types.overtime_rejected'), icon: XCircle, tone: 'danger' },
+    missing_worker_alert: { label: t('notifications:types.missing_worker_alert'), icon: AlertTriangle, tone: 'danger' },
+    area_plant_overdue: {
+      label: t('notifications:types.area_plant_overdue'),
+      icon: AlertTriangle,
+      tone: 'danger',
+    },
+  };
+}
 
 const TONE_CHIP: Record<Tone, string> = {
   ok: 'bg-nb-success-light text-nb-success-dark',
@@ -66,18 +69,20 @@ const TONE_CHIP: Record<Tone, string> = {
   neutral: 'bg-nb-gray-100 text-nb-gray-700',
 };
 
-const FALLBACK_META: NotifMeta = { label: 'Notifikasi', icon: Settings2, tone: 'neutral' };
+function getFallbackMeta(t: ReturnType<typeof useTranslation>['t']): NotifMeta {
+  return { label: t('notifications:detail.notFound'), icon: Settings2, tone: 'neutral' };
+}
 
-/** Indonesian CTA label derived from the deep-link destination. */
-function ctaLabelFor(route: string): string {
-  if (route.startsWith('/tasks')) return 'Buka tugas terkait';
-  if (route.startsWith('/activities')) return 'Buka aktivitas terkait';
-  if (route.startsWith('/overtime')) return 'Buka lembur terkait';
-  if (route.startsWith('/pruning-requests')) return 'Buka permohonan terkait';
-  if (route.startsWith('/monitoring')) return 'Buka monitoring';
-  if (route.startsWith('/plants')) return 'Buka data tanaman';
-  if (route.startsWith('/schedules')) return 'Buka jadwal';
-  return 'Buka data terkait';
+/** CTA label derived from the deep-link destination. */
+function ctaLabelFor(route: string, t: ReturnType<typeof useTranslation>['t']): string {
+  if (route.startsWith('/tasks')) return t('notifications:cta.tasks');
+  if (route.startsWith('/activities')) return t('notifications:cta.activities');
+  if (route.startsWith('/overtime')) return t('notifications:cta.overtime');
+  if (route.startsWith('/pruning-requests')) return t('notifications:cta.pruningRequests');
+  if (route.startsWith('/monitoring')) return t('notifications:cta.monitoring');
+  if (route.startsWith('/plants')) return t('notifications:cta.plants');
+  if (route.startsWith('/schedules')) return t('notifications:cta.schedules');
+  return t('notifications:cta.default');
 }
 
 /**
@@ -88,6 +93,7 @@ function ctaLabelFor(route: string): string {
  * (no dedicated single-GET endpoint exists). Opening marks it read.
  */
 export default function NotificationDetailPage() {
+  const { t } = useTranslation(['notifications']);
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { data: notifications = [], isLoading } = useNotifications();
@@ -117,15 +123,15 @@ export default function NotificationDetailPage() {
       <div className="space-y-5">
         <EmptyState
           variant="noData"
-          title="Notifikasi tidak ditemukan"
-          description="Notifikasi ini mungkin sudah dihapus atau tidak tersedia."
-          action={{ label: 'Kembali ke daftar', onClick: () => router.push('/notifications') }}
+          title={t('detail.notFound')}
+          description={t('detail.notFoundDescription')}
+          action={{ label: t('detail.backToList'), onClick: () => router.push('/notifications') }}
         />
       </div>
     );
   }
 
-  const meta = NOTIF_META[notif.type] ?? FALLBACK_META;
+  const meta = getNotifMeta(t)[notif.type] ?? getFallbackMeta(t);
   const Icon = meta.icon;
   const route = notificationToRoute(notif);
 
@@ -136,7 +142,7 @@ export default function NotificationDetailPage() {
         onClick={() => router.push('/notifications')}
         className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold uppercase tracking-wide text-nb-gray-700 transition-colors hover:text-nb-black"
       >
-        <ArrowLeft className="size-4" aria-hidden="true" /> Kembali ke daftar
+        <ArrowLeft className="size-4" aria-hidden="true" /> {t('detail.backToList')}
       </button>
 
       <SectionCard>
@@ -169,11 +175,11 @@ export default function NotificationDetailPage() {
               rightIcon={<ArrowRight className="size-4" />}
               onClick={() => router.push(route)}
             >
-              {ctaLabelFor(route)}
+              {ctaLabelFor(route, t)}
             </Button>
           ) : (
             <p className="text-nb-body-sm text-nb-gray-500">
-              Notifikasi ini tidak memiliki data terkait untuk dibuka.
+              {t('detail.noRelatedData')}
             </p>
           )}
         </div>

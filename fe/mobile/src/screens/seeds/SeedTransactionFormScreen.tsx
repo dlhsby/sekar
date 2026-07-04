@@ -3,13 +3,14 @@
  * Record a new transaction (purchase, distribution, adjustment)
  */
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import {
   View,
   ScrollView,
   StyleSheet,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 import {
   NBButton,
@@ -27,16 +28,20 @@ import type { MainTabScreenProps } from '../../types/navigation.types';
 
 type Props = MainTabScreenProps<'SeedTransactionForm'>;
 
-const TRANSACTION_TYPES = [
-  { value: 'purchase', label: 'Pembelian' },
-  { value: 'distribution', label: 'Distribusi' },
-  { value: 'adjustment', label: 'Penyesuaian' },
-];
-
 export function SeedTransactionFormScreen({ route }: Props): React.JSX.Element {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
   const { seedId } = route.params;
+
+  const TRANSACTION_TYPES = useMemo(
+    () => [
+      { value: 'purchase', label: t('seeds:transaction.types.purchase') },
+      { value: 'distribution', label: t('seeds:transaction.types.distribution') },
+      { value: 'adjustment', label: t('seeds:transaction.types.adjustment') },
+    ],
+    [t]
+  );
 
   const { isRecording, recordError } = useAppSelector((state) => state.plantSeeds);
 
@@ -52,12 +57,12 @@ export function SeedTransactionFormScreen({ route }: Props): React.JSX.Element {
     const newErrors: Record<string, string> = {};
 
     if (!qty || isNaN(Number(qty)) || Number(qty) <= 0) {
-      newErrors.qty = 'Jumlah harus lebih dari 0';
+      newErrors.qty = t('seeds:form.validation.quantityRequired');
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [qty]);
+  }, [qty, t]);
 
   const handleSubmit = useCallback(async () => {
     if (!validate()) return;
@@ -94,7 +99,7 @@ export function SeedTransactionFormScreen({ route }: Props): React.JSX.Element {
         <NBCard style={styles.card}>
           <View style={styles.cardContent}>
             <NBText variant="h2" style={styles.title}>
-              Catat Transaksi
+              {t('seeds:form.title')}
             </NBText>
 
             {recordError && (
@@ -108,7 +113,7 @@ export function SeedTransactionFormScreen({ route }: Props): React.JSX.Element {
             {/* Transaction Type Select */}
             <View style={styles.formGroup}>
               <NBText variant="body" style={styles.label}>
-                Tipe Transaksi
+                {t('seeds:form.label.type')}
               </NBText>
               <NBSelect
                 options={TRANSACTION_TYPES}
@@ -116,17 +121,17 @@ export function SeedTransactionFormScreen({ route }: Props): React.JSX.Element {
                 onValueChange={(value) =>
                   setTransactionType(value as 'purchase' | 'distribution' | 'adjustment')
                 }
-                placeholder="Pilih tipe transaksi"
+                placeholder={t('seeds:form.placeholder.type')}
               />
             </View>
 
             {/* Quantity Input */}
             <View style={styles.formGroup}>
               <NBText variant="body" style={styles.label}>
-                Jumlah {errors.qty && <NBText color="danger">*</NBText>}
+                {t('seeds:form.label.quantity')} {errors.qty && <NBText color="danger">*</NBText>}
               </NBText>
               <NBTextInput
-                placeholder="Masukkan jumlah"
+                placeholder={t('seeds:form.placeholder.quantity')}
                 value={qty}
                 onChangeText={setQty}
                 keyboardType="decimal-pad"
@@ -141,7 +146,7 @@ export function SeedTransactionFormScreen({ route }: Props): React.JSX.Element {
             {/* Date Picker */}
             <View style={styles.formGroup}>
               <NBText variant="body" style={styles.label}>
-                Tanggal Transaksi
+                {t('seeds:form.label.date')}
               </NBText>
               <NBDatePicker
                 value={occurredAt}
@@ -153,10 +158,10 @@ export function SeedTransactionFormScreen({ route }: Props): React.JSX.Element {
             {/* Notes Input */}
             <View style={styles.formGroup}>
               <NBText variant="body" style={styles.label}>
-                Catatan (Opsional)
+                {t('seeds:form.label.notes')}
               </NBText>
               <NBTextInput
-                placeholder="Masukkan catatan tambahan"
+                placeholder={t('seeds:form.placeholder.notes')}
                 value={notes}
                 onChangeText={setNotes}
                 multiline
@@ -173,14 +178,14 @@ export function SeedTransactionFormScreen({ route }: Props): React.JSX.Element {
                 loading={isRecording}
                 style={styles.submitButton}
               >
-                Simpan Transaksi
+                {t('seeds:form.button.save')}
               </NBButton>
               <NBButton
                 variant="secondary"
                 onPress={() => navigation.goBack()}
                 disabled={isRecording}
               >
-                Batal
+                {t('seeds:form.button.cancel')}
               </NBButton>
             </View>
           </View>

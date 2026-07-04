@@ -59,7 +59,7 @@ describe('RayonForm', () => {
     expect(screen.getByLabelText(/nama rayon/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/kode warna/i)).toBeInTheDocument();
     expect(screen.getByTestId('google-boundary-editor')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /simpan rayon/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /buat rayon/i })).toBeInTheDocument();
   });
 
   it('submits with only a pin (boundary optional) — boundary_polygon is null', async () => {
@@ -69,7 +69,7 @@ describe('RayonForm', () => {
 
     await user.type(screen.getByLabelText(/nama rayon/i), 'Rayon Baru');
     await user.click(screen.getByTestId('place-pin')); // at least one geometry required
-    await user.click(screen.getByRole('button', { name: /simpan rayon/i }));
+    await user.click(screen.getByRole('button', { name: /buat rayon/i }));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
     expect(onSubmit.mock.calls[0][0]).toMatchObject({ name: 'Rayon Baru', boundary_polygon: null });
@@ -81,7 +81,7 @@ describe('RayonForm', () => {
     render(<RayonForm mode="create" onSubmit={onSubmit} />);
 
     await user.type(screen.getByLabelText(/nama rayon/i), 'Rayon Baru');
-    expect(screen.getByRole('button', { name: /simpan rayon/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /buat rayon/i })).toBeDisabled();
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
@@ -93,7 +93,7 @@ describe('RayonForm', () => {
     await user.type(screen.getByLabelText(/nama rayon/i), 'Rayon Baru');
     await user.click(screen.getByTestId('draw-polygon'));
     await user.click(screen.getByTestId('place-pin'));
-    await user.click(screen.getByRole('button', { name: /simpan rayon/i }));
+    await user.click(screen.getByRole('button', { name: /buat rayon/i }));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
     const payload = onSubmit.mock.calls[0][0];

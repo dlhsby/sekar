@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
@@ -21,7 +22,10 @@ interface OvertimeDescriptionCardProps {
   description?: string;
 }
 
-export const OvertimeDescriptionCard: React.FC<OvertimeDescriptionCardProps> = ({ description }) => (
+export const OvertimeDescriptionCard: React.FC<OvertimeDescriptionCardProps> = ({ description }) => {
+  const { t } = useTranslation('common');
+
+  return (
   <NBCard style={[{ marginHorizontal: nbSpacing.md, marginBottom: nbSpacing.md, ...nbShadows.sm }]}>
     <NBCardHeader>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -35,8 +39,9 @@ export const OvertimeDescriptionCard: React.FC<OvertimeDescriptionCardProps> = (
         color={!description ? 'gray400' : 'black'}
         style={[!description && { fontStyle: 'italic' }]}
       >
-        {description || '(Belum diisi)'}
+        {description || t('ui.notFilled')}
       </NBText>
     </NBCardContent>
   </NBCard>
-);
+  );
+};

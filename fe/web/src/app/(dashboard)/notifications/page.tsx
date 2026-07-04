@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { CheckCheck } from 'lucide-react';
 
 import { Button, EmptyState, PageHeader, SkeletonList, Tabs, type TabItem } from '@/components/ui';
@@ -15,13 +16,15 @@ import { cn } from '@/lib/utils/cn';
 
 type NotifCategory = 'all' | 'task' | 'activity' | 'overtime' | 'system';
 
-const CATEGORY_TABS: TabItem<NotifCategory>[] = [
-  { key: 'all', label: 'Semua' },
-  { key: 'task', label: 'Tugas' },
-  { key: 'activity', label: 'Aktivitas' },
-  { key: 'overtime', label: 'Lembur' },
-  { key: 'system', label: 'Sistem' },
-];
+function getCategoryTabs(t: ReturnType<typeof useTranslation>['t']): TabItem<NotifCategory>[] {
+  return [
+    { key: 'all', label: t('notifications:tabs.all') },
+    { key: 'task', label: t('notifications:tabs.task') },
+    { key: 'activity', label: t('notifications:tabs.activity') },
+    { key: 'overtime', label: t('notifications:tabs.overtime') },
+    { key: 'system', label: t('notifications:tabs.system') },
+  ];
+}
 
 /** Map a notification `type` to its filter category (mirrors mobile). */
 function categoryOf(type: string): Exclude<NotifCategory, 'all'> {
@@ -34,6 +37,7 @@ function categoryOf(type: string): Exclude<NotifCategory, 'all'> {
 const PAGE_SIZE = 20;
 
 export default function NotificationsPage() {
+  const { t } = useTranslation(['notifications']);
   const router = useRouter();
   const { data: notifications = [], isLoading } = useNotifications();
   const markAll = useMarkAllNotificationsRead();
@@ -78,17 +82,17 @@ export default function NotificationsPage() {
               loading={markAll.isPending}
               onClick={() => markAll.mutate()}
             >
-              Tandai semua dibaca
+              {t('list.markAllRead')}
             </Button>
           ) : undefined
         }
       />
 
       <Tabs
-        tabs={CATEGORY_TABS}
+        tabs={getCategoryTabs(t)}
         value={category}
         onValueChange={handleCategory}
-        aria-label="Filter notifikasi"
+        aria-label={t('list.filterAriaLabel')}
       />
 
       {isLoading ? (
@@ -96,8 +100,8 @@ export default function NotificationsPage() {
       ) : visible.length === 0 ? (
         <EmptyState
           variant="noData"
-          title="Belum ada notifikasi"
-          description="Notifikasi tugas, lembur, dan pengumuman akan muncul di sini."
+          title={t('list.emptyTitle')}
+          description={t('list.emptyDescription')}
         />
       ) : (
         <>
@@ -144,7 +148,7 @@ export default function NotificationsPage() {
                 variant="outline"
                 onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
               >
-                Muat lebih banyak
+                {t('list.loadMore')}
               </Button>
             </div>
           )}

@@ -9,6 +9,7 @@
 'use client';
 
 import type { DetailModalRow } from '@/components/ui';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -31,10 +32,12 @@ import { hasRole } from '@/lib/constants/roles';
 import { formatDate } from '@/lib/utils/time';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
 import type { UserRole } from '@/types/models';
+import { useTranslation } from 'react-i18next';
 import {
-  PRUNING_REQUEST_ADMIN_ROLES,
-  PRUNING_REQUEST_STATUS_LABELS,
+  getPruningRequestStatusLabel,
+  PRUNING_REQUEST_STATUS_BADGES,
   PRUNING_REQUEST_STATUS_TONES,
+  PRUNING_REQUEST_ADMIN_ROLES,
 } from '@/lib/constants/pruning-requests';
 import {
   usePruningRequests,
@@ -42,25 +45,26 @@ import {
   type PruningRequestStatus,
 } from '@/lib/api/pruning-requests';
 
-const STATUS_FILTER_OPTIONS: Array<{ label: string; value: PruningRequestStatus | 'all' }> = [
-  { label: 'Semua Status', value: 'all' },
-  { label: 'Terkirim', value: 'submitted' },
-  { label: 'Sedang Ditinjau', value: 'under_review' },
-  { label: 'Disetujui', value: 'approved' },
-  { label: 'Ditolak', value: 'rejected' },
-  { label: 'Ditugaskan', value: 'assigned' },
-  { label: 'Sedang Dikerjakan', value: 'in_progress' },
-  { label: 'Selesai', value: 'done' },
-  { label: 'Dibatalkan', value: 'cancelled' },
-];
-
 export default function PruningRequestsPage() {
+  const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<PruningRequestStatus | 'all'>('all');
   const [page, setPage] = useState(1);
   const view = useViewModal<PruningRequest>();
   const limit = 20;
+
+  const statusFilterOptions = useMemo<Array<{ label: string; value: PruningRequestStatus | 'all' }>>(() => [
+    { label: t('pruning:list.statuses.all'), value: 'all' },
+    { label: t('pruning:list.statuses.submitted'), value: 'submitted' },
+    { label: t('pruning:list.statuses.under_review'), value: 'under_review' },
+    { label: t('pruning:list.statuses.approved'), value: 'approved' },
+    { label: t('pruning:list.statuses.rejected'), value: 'rejected' },
+    { label: t('pruning:list.statuses.assigned'), value: 'assigned' },
+    { label: t('pruning:list.statuses.in_progress'), value: 'in_progress' },
+    { label: t('pruning:list.statuses.done'), value: 'done' },
+    { label: t('pruning:list.statuses.cancelled'), value: 'cancelled' },
+  ], [t]);
 
   useEffect(() => {
     if (!authLoading && user && !hasRole(user.role, [...PRUNING_REQUEST_ADMIN_ROLES] as UserRole[])) {
@@ -80,27 +84,27 @@ export default function PruningRequestsPage() {
       {
         id: 'id',
         accessorKey: 'id',
-        header: 'ID',
+        header: t('common:id'),
         enableSorting: false,
-        meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+        meta: { label: t('common:id'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
         ),
       },
       {
         id: 'referenceCode',
-        header: 'Kode Referensi',
+        header: t('pruning:columns.referenceCode'),
         enableSorting: false,
         enableColumnFilter: false,
-        meta: { label: 'Kode Referensi' },
+        meta: { label: t('pruning:columns.referenceCode') },
         cell: ({ row }) => <span className="font-mono text-sm">{row.original.referenceCode}</span>,
       },
       {
         id: 'submitter',
-        header: 'Kecamatan',
+        header: t('pruning:columns.kecamatan'),
         enableSorting: false,
         enableColumnFilter: false,
-        meta: { label: 'Kecamatan' },
+        meta: { label: t('pruning:columns.kecamatan') },
         cell: ({ row }) => (
           <div className="text-sm">
             <div className="font-semibold">{row.original.kecamatanName ?? '-'}</div>
@@ -118,14 +122,14 @@ export default function PruningRequestsPage() {
       },
       {
         id: 'expected',
-        header: 'Minggu / Tanggal',
+        header: t('pruning:columns.dateRange'),
         enableSorting: false,
         enableColumnFilter: false,
-        meta: { label: 'Minggu / Tanggal' },
+        meta: { label: t('pruning:columns.dateRange') },
         cell: ({ row }) => (
           <div className="text-sm">
             {row.original.expectedDate ? (
-              <>{new Date(row.original.expectedDate).toLocaleDateString('id-ID')}</>
+              <>{new Date(row.original.expectedDate).toLocaleDateString(intlLocale())}</>
             ) : row.original.expectedYear && row.original.expectedIsoWeek ? (
               <>
                 W{row.original.expectedIsoWeek}/{row.original.expectedYear}
@@ -138,22 +142,22 @@ export default function PruningRequestsPage() {
       },
       {
         id: 'status',
-        header: 'Status',
+        header: t('pruning:columns.status'),
         enableSorting: false,
         enableColumnFilter: false,
-        meta: { label: 'Status' },
+        meta: { label: t('pruning:columns.status') },
         cell: ({ row }) => (
           <StatusPill tone={PRUNING_REQUEST_STATUS_TONES[row.original.status]} dot>
-            {PRUNING_REQUEST_STATUS_LABELS[row.original.status]}
+            {getPruningRequestStatusLabel(row.original.status, t)}
           </StatusPill>
         ),
       },
       {
         id: 'created_at',
         accessorKey: 'createdAt',
-        header: 'Dibuat',
+        header: t('pruning:columns.createdAt'),
         enableSorting: false,
-        meta: { label: 'Dibuat', defaultHidden: true, filterVariant: 'date' },
+        meta: { label: t('pruning:columns.createdAt'), defaultHidden: true, filterVariant: 'date' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {formatDate(row.original.createdAt)}
@@ -163,9 +167,9 @@ export default function PruningRequestsPage() {
       {
         id: 'updated_at',
         accessorKey: 'updatedAt',
-        header: 'Diperbarui',
+        header: t('pruning:columns.updatedAt'),
         enableSorting: false,
-        meta: { label: 'Diperbarui', defaultHidden: true, filterVariant: 'date' },
+        meta: { label: t('pruning:columns.updatedAt'), defaultHidden: true, filterVariant: 'date' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {formatDate(row.original.updatedAt)}
@@ -173,21 +177,21 @@ export default function PruningRequestsPage() {
         ),
       },
     ],
-    []
+    [t]
   );
 
   const rowActions = useCallback(
     (row: PruningRequest): DataTableRowAction<PruningRequest>[] => [
       {
         key: 'view',
-        label: 'Lihat',
+        label: t('common:actions.view'),
         icon: Eye,
         onClick: () => {
           view.openWith(row);
         },
       },
     ],
-    [view]
+    [view, t]
   );
 
   const handleStatusChange = (val: string) => {
@@ -199,22 +203,22 @@ export default function PruningRequestsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader description="Tinjau dan kelola permohonan pemangkasan dari kecamatan." />
+      <PageHeader description={t('pruning:page.description')} />
 
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div className="md:w-64">
               <FormSelect
-                label="Filter Status"
+                label={t('pruning:page.filterLabel')}
                 value={statusFilter}
                 onChange={handleStatusChange}
-                options={STATUS_FILTER_OPTIONS}
+                options={statusFilterOptions}
               />
             </div>
             {data?.meta && (
               <div className="text-sm text-nb-gray-600">
-                Total: <span className="font-semibold">{data.meta.total}</span> permohonan
+                {t('pruning:page.totalLabel')}: <span className="font-semibold">{data.meta.total}</span> {t('pruning:page.requests')}
               </div>
             )}
           </div>
@@ -222,7 +226,7 @@ export default function PruningRequestsPage() {
         <CardContent>
           {isError ? (
             <div className="py-10 text-center text-nb-danger">
-              Gagal memuat data permohonan. Coba lagi nanti.
+              {t('pruning:page.loadError')}
             </div>
           ) : (
             <DataTable<PruningRequest, unknown>
@@ -232,7 +236,7 @@ export default function PruningRequestsPage() {
               enablePagination={false}
               getRowId={(r) => r.id}
               rowActions={rowActions}
-              emptyTitle="Belum ada permohonan untuk filter ini."
+              emptyTitle={t('pruning:page.emptyTitle')}
             />
           )}
 
@@ -245,10 +249,10 @@ export default function PruningRequestsPage() {
                 disabled={page <= 1 || isLoading}
                 leftIcon={<ChevronLeft className="w-4 h-4" />}
               >
-                Sebelumnya
+                {t('common:pagination.previous')}
               </Button>
               <span className="text-sm text-nb-gray-600">
-                Halaman {page} dari {totalPages}
+                {t('common:pagination.pageOf', { page, total: totalPages })}
               </span>
               <Button
                 variant="secondary"
@@ -257,7 +261,7 @@ export default function PruningRequestsPage() {
                 disabled={page >= totalPages || isLoading}
                 rightIcon={<ChevronRight className="w-4 h-4" />}
               >
-                Berikutnya
+                {t('common:pagination.next')}
               </Button>
             </div>
           )}
@@ -268,24 +272,24 @@ export default function PruningRequestsPage() {
         <DetailModal
           open={view.open}
           onOpenChange={view.onOpenChange}
-          title="Detail Permohonan Pemangkasan"
+          title={t('pruning:page.detailTitle')}
           rows={[
-            { label: 'Kode Referensi', value: view.item.referenceCode },
-            { label: 'Kecamatan', value: view.item.submitter },
+            { label: t('pruning:page.referenceCode'), value: view.item.referenceCode },
+            { label: t('pruning:page.kecamatan'), value: view.item.submitter },
             {
-              label: 'Status',
+              label: t('pruning:page.status'),
               value: (
                 <StatusPill tone={PRUNING_REQUEST_STATUS_TONES[view.item.status]}>
-                  {PRUNING_REQUEST_STATUS_LABELS[view.item.status]}
+                  {getPruningRequestStatusLabel(view.item.status, t)}
                 </StatusPill>
               ),
             },
-            { label: 'Tipe Tanaman', value: view.item.plantSpeciesName },
-            { label: 'Kuantitas', value: view.item.quantity },
-            { label: 'Unit', value: view.item.unit },
-            { label: 'Lokasi', value: view.item.location },
-            { label: 'Catatan', value: view.item.notes },
-            { label: 'Dibuat', value: formatDate(view.item.createdAt) },
+            { label: t('pruning:page.plantSpecies'), value: view.item.plantSpeciesName },
+            { label: t('pruning:page.quantity'), value: view.item.quantity },
+            { label: t('pruning:page.unit'), value: view.item.unit },
+            { label: t('pruning:page.location'), value: view.item.location },
+            { label: t('pruning:page.notes'), value: view.item.notes },
+            { label: t('pruning:page.createdAt'), value: formatDate(view.item.createdAt) },
           ] as DetailModalRow[]}
         />
       )}

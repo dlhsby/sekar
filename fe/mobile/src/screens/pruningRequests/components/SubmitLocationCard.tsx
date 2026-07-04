@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   NBCard,
@@ -87,6 +88,7 @@ const styles = {
 };
 
 export function SubmitLocationCard(props: SubmitLocationCardProps) {
+  const { t } = useTranslation('pruning');
   const {
     user,
     gpsLat,
@@ -126,7 +128,7 @@ export function SubmitLocationCard(props: SubmitLocationCardProps) {
     <>
       <NBCard style={styles.card}>
         <NBCardHeader>
-          <NBText variant="h3">Lokasi *</NBText>
+          <NBText variant="h3">{t('submit.locationCardTitleRequired')}</NBText>
         </NBCardHeader>
         <NBCardContent>
           {/* Rayon + Kecamatan — pre-filled from logged-in user, rendered
@@ -135,11 +137,11 @@ export function SubmitLocationCard(props: SubmitLocationCardProps) {
             <>
               <View style={styles.fieldGroup} testID="perantingan-rayon-readonly">
                 <NBSelect
-                  label="Rayon"
+                  label={t('submit.rayonLabel')}
                   value={rayonId || 'unset'}
                   onValueChange={() => {}}
                   options={[{
-                    label: rayons.find((r) => r.id === rayonId)?.name ?? 'Belum diatur',
+                    label: rayons.find((r) => r.id === rayonId)?.name ?? t('submit.notSetLabel'),
                     value: rayonId || 'unset',
                   }]}
                   disabled
@@ -147,11 +149,11 @@ export function SubmitLocationCard(props: SubmitLocationCardProps) {
               </View>
               <View style={styles.fieldGroup} testID="perantingan-kecamatan-readonly">
                 <NBSelect
-                  label="Kecamatan"
+                  label={t('submit.kecamatanLabel')}
                   value={kecamatanName || 'unset'}
                   onValueChange={() => {}}
                   options={[{
-                    label: kecamatanName || 'Belum diatur',
+                    label: kecamatanName || t('submit.notSetLabel'),
                     value: kecamatanName || 'unset',
                   }]}
                   disabled
@@ -162,7 +164,7 @@ export function SubmitLocationCard(props: SubmitLocationCardProps) {
             <>
               <View style={styles.fieldGroup}>
                 <NBSelect
-                  label="Rayon"
+                  label={t('submit.rayonLabel')}
                   value={rayonId || (rayons[0]?.id ?? '')}
                   onValueChange={(v) => setRayonId(String(v))}
                   options={rayons.map((r) => ({ label: r.name, value: r.id }))}
@@ -172,8 +174,8 @@ export function SubmitLocationCard(props: SubmitLocationCardProps) {
               </View>
               <View style={styles.fieldGroup}>
                 <NBTextInput
-                  label="Kecamatan"
-                  placeholder="Contoh: Tegalsari"
+                  label={t('submit.kecamatanLabel')}
+                  placeholder={t('submit.kecamatanPlaceholder')}
                   value={kecamatanName}
                   onChangeText={setKecamatanName}
                 />
@@ -184,8 +186,8 @@ export function SubmitLocationCard(props: SubmitLocationCardProps) {
           {/* Alamat / Jalan */}
           <View style={styles.fieldGroup}>
             <NBTextInput
-              label="Alamat Lengkap *"
-              placeholder="Contoh: Jl. Raya Darmo No. 123, RT 02 / RW 05"
+              label={t('submit.addressLabel')}
+              placeholder={t('submit.addressPlaceholder')}
               value={address}
               onChangeText={setAddress}
               multiline
@@ -197,7 +199,7 @@ export function SubmitLocationCard(props: SubmitLocationCardProps) {
           {/* GPS auto-capture display + refresh */}
           <View style={styles.gpsRow}>
             <View style={styles.gpsValues}>
-              <NBText variant="caption" style={styles.presetLabel}>Koordinat GPS</NBText>
+              <NBText variant="caption" style={styles.presetLabel}>{t('submit.gpsCoordinatesLabel')}</NBText>
               {gpsLat != null && gpsLng != null ? (
                 <NBText variant="body-sm">
                   {gpsLat.toFixed(6)}, {gpsLng.toFixed(6)}
@@ -205,7 +207,7 @@ export function SubmitLocationCard(props: SubmitLocationCardProps) {
                 </NBText>
               ) : (
                 <NBText variant="body-sm" style={{ color: nbColors.gray600 }}>
-                  {gpsLoading ? 'Mendeteksi…' : 'Belum tersedia'}
+                  {gpsLoading ? t('submit.gpsDetecting') : t('submit.gpsNotAvailable')}
                 </NBText>
               )}
             </View>
@@ -214,7 +216,7 @@ export function SubmitLocationCard(props: SubmitLocationCardProps) {
               disabled={gpsLoading}
               style={styles.gpsRefresh}
               accessibilityRole="button"
-              accessibilityLabel="Perbarui lokasi GPS"
+              accessibilityLabel={t('submit.gpsUpdateButtonLabel')}
             >
               {gpsLoading ? (
                 <ActivityIndicator size="small" color={nbColors.black} />
@@ -227,7 +229,7 @@ export function SubmitLocationCard(props: SubmitLocationCardProps) {
           {/* Map picker button */}
           <View style={{ marginTop: nbSpacing[2] }}>
             <NBButton
-              title="Pilih di Peta"
+              title={t('submit.mapButtonTitle')}
               leftIcon="map-marker-radius"
               variant="secondary"
               onPress={() => setPickerOpen(true)}

@@ -1,10 +1,10 @@
 import { ReactNode } from 'react';
 import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/i18n/server-metadata';
 
-export const metadata: Metadata = {
-  title: 'Ajukan Permohonan · SEKAR',
-  description: 'Ajukan permohonan pemotongan pohon ke DLH Kota Surabaya',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata('pruningSubmit');
+}
 
 export default function PruningSubmitLayout({ children }: { children: ReactNode }) {
   return children;

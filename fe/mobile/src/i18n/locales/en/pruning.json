@@ -1,0 +1,376 @@
+{
+  "list": {
+    "title": "Pruning Requests",
+    "sortCreatedNewest": "Newest Created",
+    "sortCreatedOldest": "Oldest Created",
+    "sortExpectedNearest": "Nearest Preferred Week",
+    "sortExpectedFarthest": "Farthest Preferred Week",
+    "sortModalTitle": "Sort Requests",
+    "filterModalTitle": "Filter Requests",
+    "emptyTitle": "No requests yet",
+    "emptyDescNoFilter": "Your pruning requests will appear here.",
+    "emptyDescWithFilter": "No requests matching the filter.",
+    "submitFabButtonTitle": "+ Create Request",
+    "allRequestsLabel": "All Requests",
+    "loadErrorTitle": "Failed to load requests",
+    "ctaLabel": "Create Request"
+  },
+  "filter": {
+    "title": "Filter Requests",
+    "status": "Status",
+    "statusOptions": {
+      "all": "All Status",
+      "submitted": "Pending",
+      "under_review": "Under Review",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "assigned": "Assigned",
+      "in_progress": "In Progress",
+      "done": "Done",
+      "cancelled": "Cancelled"
+    },
+    "dateRange": "Date Range",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "rayon": "District",
+    "rayonAll": "All Districts",
+    "rayonMine": "My District",
+    "referenceCodeLabel": "Request Number",
+    "reset": "Reset",
+    "resetLabel": "Reset request filter",
+    "apply": "Apply",
+    "requesterNameLabel": "Requester Name",
+    "requesterNamePlaceholder": "Example: John",
+    "requestCodePlaceholder": "Example: PR-2026-..."
+  },
+  "submit": {
+    "pageTitle": "Create Pruning Request",
+    "locationCardTitle": "Pruning Location",
+    "locationCardTitleRequired": "Location *",
+    "rayonLabel": "District",
+    "rayonPlaceholder": "Select District",
+    "notSetLabel": "Not set",
+    "kecamatanLabel": "Sub-district",
+    "kecamatanPlaceholder": "Example: Tegalsari",
+    "addressLabel": "Full Address *",
+    "addressPlaceholder": "Example: Jl. Raya Darmo No. 123, RT 02 / RW 05",
+    "gpsCoordinatesLabel": "GPS Coordinates",
+    "gpsDetecting": "Detecting…",
+    "gpsNotAvailable": "Not available",
+    "gpsLocationLabel": "GPS Location",
+    "gpsUpdateButtonLabel": "Update GPS location",
+    "mapButtonTitle": "Select on Map",
+    "contactCardTitle": "Contact",
+    "contactHelper": "Contact information for the tree pruning request",
+    "requesterLabel": "Requester",
+    "requesterNameLabel": "Requester Name *",
+    "requesterNamePlaceholder": "Full name",
+    "requesterPhoneLabel": "Requester Phone Number *",
+    "requesterPhonePlaceholder": "08xxxxxxxxxx",
+    "rtRwLeaderLabel": "RT/RW Leader",
+    "rtRwLeaderNameLabel": "RT/RW Leader Name *",
+    "rtRwLeaderNamePlaceholder": "Full name",
+    "rtRwLeaderPhoneLabel": "RT/RW Leader Phone Number *",
+    "rtRwLeaderPhonePlaceholder": "08xxxxxxxxxx",
+    "treeDetailsCardTitle": "Tree Details",
+    "treeCountLabel": "Number of Trees",
+    "treeCountPlaceholder": "Example: 5",
+    "treeTypeLabel": "Tree Type",
+    "treeTypePlaceholder": "Example: Mango, Banyan, etc",
+    "treeConditionLabel": "Tree Condition",
+    "treeConditionPlaceholder": "Example: Damaged, Dead, Hazardous",
+    "reasonLabel": "Pruning Reason",
+    "reasonPlaceholder": "Explain the reason for pruning",
+    "photosLabel": "TREE PHOTOS",
+    "photosHint": "Take photos of the tree to be pruned",
+    "availabilityLabel": "Preferred Week Availability",
+    "weekLabel": "Week",
+    "headerTitle": "Create Pruning Request",
+    "notesOptional": "Notes (Optional)"
+  },
+  "calendar": {
+    "legendAvailable": "Available",
+    "legendPartial": "Nearly Full",
+    "legendFull": "Full",
+    "legendUnset": "Not Set",
+    "preferenceWeekLabel": "Preferred Week",
+    "selectedDateLabel": "Selected Date",
+    "clearDateLabel": "Clear selected date",
+    "selectDateLabel": "Select Date",
+    "selectWeekLabel": "Select Preferred Week",
+    "notSelectedYet": "Not selected yet",
+    "dateFullError": "This date is already full. Please select another date.",
+    "capacityUnsetError": "The capacity for this week has not been set by admin. Please select another date or contact your district admin.",
+    "loading": "Loading capacity…",
+    "sundayLabel": "Sun",
+    "mondayLabel": "Mon",
+    "tuesdayLabel": "Tue",
+    "wednesdayLabel": "Wed",
+    "thursdayLabel": "Thu",
+    "fridayLabel": "Fri",
+    "saturdayLabel": "Sat",
+    "dayAria": "Date {{date}} status {{status}}",
+    "inPreferredWeekHint": " (within preferred week)",
+    "selectedHint": " (selected, tap to deselect)"
+  },
+  "weekPicker": {
+    "statusAvailable": "Available",
+    "statusPartial": "Nearly Full",
+    "statusFull": "Full",
+    "statusUnset": "Not Set",
+    "loadingCapacity": "Loading capacity…",
+    "footnote": "Admin will determine the exact date within the week you select.",
+    "weekLabel": "Week {{week}}, {{year}}",
+    "selectWeekLabel": "Select week {{week}} of {{year}}, status {{status}}"
+  },
+  "detail": {
+    "title": "Request Details",
+    "loadingMessage": "Loading data...",
+    "notFoundMessage": "Request not found",
+    "backButtonTitle": "Back",
+    "photoModalTitle": "Tree Photo",
+    "scheduleButtonLabel": "Schedule",
+    "rescheduleButtonLabel": "Reschedule",
+    "rejectButtonLabel": "Reject",
+    "notFoundError": "The request you are looking for is not available.",
+    "locationModalTitle": "Pruning Location",
+    "locationMarkerTitle": "Pruning Location",
+    "openMapsLabel": "Open in Google Maps"
+  },
+  "review": {
+    "title": "Review Queue",
+    "pageTitle": "Review Pruning Requests",
+    "sortModalTitle": "Sort Requests",
+    "resetFilterLabel": "Reset request filter",
+    "emptyTitle": "No requests",
+    "emptyDescNoFilter": "Pruning requests from sub-districts will appear here.",
+    "emptyDescWithFilter": "No requests matching the filter.",
+    "approveButtonTitle": "Approve",
+    "rejectButtonTitle": "Reject",
+    "resultsCardTitle": "Review Results",
+    "accessDeniedTitle": "Access Denied",
+    "accessDeniedDesc": "You don't have permission to access this page.",
+    "dateLabel": "Review Date",
+    "reviewedBy": "Reviewed By",
+    "notes": "Review Notes"
+  },
+  "reassign": {
+    "title": "Reassign Worker",
+    "confirmTitle": "Confirm Reassignment",
+    "reasonPlaceholder": "Enter reason for reassignment..."
+  },
+  "photoManagement": {
+    "photoLimitTitle": "Photo Limit",
+    "photoLimitMessage": "Maximum {{max}} photos.",
+    "cameraPermissionDeniedTitle": "Camera Permission Denied",
+    "cameraPermissionDeniedMessage": "Enable camera permission in Settings to capture photos.",
+    "settingsButton": "Settings",
+    "cancelButton": "Cancel",
+    "capturePhotoErrorTitle": "Failed to capture photo",
+    "pickPhotoErrorTitle": "Failed to pick photo"
+  },
+  "taskForm": {
+    "caseTypeLabel": "Case Type *",
+    "caseTypePlaceholder": "Select case type",
+    "caseTypeOptions": {
+      "GT": "Height Issue",
+      "PT": "Fallen Tree",
+      "PS": "Diseased Tree",
+      "PD": "Large Diameter Tree",
+      "PK": "Dead Tree"
+    },
+    "pruningActionLabel": "Pruning Action *",
+    "pruningActionPlaceholder": "Select pruning action",
+    "pruningActionOptions": {
+      "PM": "Crown Pruning",
+      "PB": "Trunk Pruning",
+      "PC": "Branch Pruning"
+    },
+    "sourceLabel": "Request Source *",
+    "sourcePlaceholder": "Select request source",
+    "sourceOptions": {
+      "TIW": "Inspection Follow-up",
+      "TS": "Worker Report",
+      "CC": "Call Center",
+      "PW": "Citizen Message",
+      "Wk": "Mayor"
+    },
+    "speciesLabel": "Tree Species *",
+    "speciesCountLabel": "Quantity per Species",
+    "speciesCountAccessibility": "Quantity {{species}}",
+    "notesLabel": "Additional Notes (Optional)",
+    "notesPlaceholder": "Add notes...",
+    "notesAccessibility": "Additional notes",
+    "notesAccessibilityHint": "Free space for additional notes",
+    "submitButtonLabel": "Submit Request",
+    "submitButtonAccessibility": "Submit request",
+    "submitButtonDisabledHint": "Complete all required fields",
+    "validationErrors": {
+      "caseTypeRequired": "Case type must be selected",
+      "pruningActionRequired": "Pruning action must be selected",
+      "sourceRequired": "Request source must be selected",
+      "speciesRequired": "At least one tree species must be selected",
+      "speciesCountRequired": "All tree species must have a count of at least 1",
+      "saveFailed": "Error saving data"
+    },
+    "validationFailedTitle": "Validation Failed"
+  },
+  "actionBar": {
+    "convertLabel": "Assign to Staff",
+    "cancelLabel": "Cancel",
+    "submittingLabel": "Submitting…",
+    "submitLabel": "Submit"
+  },
+  "validation": {
+    "reviewTitle": "Review",
+    "gpsErrorMessage": "GPS coordinates not detected yet. Tap the update button on the Location card.",
+    "photoErrorMessage": "At least 1 photo is required.",
+    "submitSuccess": "Request sent",
+    "submitSuccessMessage": "You will be notified after review.",
+    "submitError": "Failed to send request",
+    "submitRetry": "Try again."
+  },
+  "actions": {
+    "approve": {
+      "confirm": "Confirm",
+      "question": "Approve this pruning request?",
+      "cancel": "Cancel",
+      "yes": "Approve",
+      "success": "Success",
+      "successMessage": "Request approved.",
+      "failed": "Failed",
+      "failedMessage": "Could not approve request."
+    },
+    "reject": {
+      "reasonRequired": "Reason required",
+      "reasonPrompt": "Please provide a reason for rejecting this request.",
+      "success": "Success",
+      "successMessage": "Request rejected.",
+      "failed": "Failed",
+      "failedMessage": "Could not reject request."
+    },
+    "cancel": {
+      "confirm": "Cancel Request",
+      "question": "Are you sure you want to cancel this request? This action cannot be undone.",
+      "no": "No",
+      "yes": "Yes, Cancel",
+      "success": "Request cancelled",
+      "failed": "Failed to cancel",
+      "failedRetry": "Please try again."
+    },
+    "reschedule": {
+      "title": "Schedule",
+      "selectDate": "Select date",
+      "selectDateHint": "Tap one of the available dates on the calendar.",
+      "helper": "Select a working date for request {{code}}.",
+      "cancel": "Cancel",
+      "saving": "Saving…",
+      "save": "Save",
+      "successTitle": "Schedule updated",
+      "successMessage": "Date scheduled: {{date}}",
+      "failedTitle": "Failed to save",
+      "failedMessage": "Please try again."
+    }
+  },
+  "relatedTask": {
+    "title": "🔗 RELATED TASK",
+    "viewButton": "View Task",
+    "statusMessages": {
+      "done": "Work completed. See task details for proof photos and completion notes.",
+      "inProgress": "Task is currently being worked on by the staff.",
+      "default": "This request has been scheduled and a work task has been created."
+    }
+  },
+  "submitForm": {
+    "validationErrors": {
+      "addressRequired": "Address is required.",
+      "addressMinLength": "Address must be at least 5 characters.",
+      "addressMaxLength": "Address must not exceed 500 characters.",
+      "treeCountRequired": "Tree count must be a number of at least 1.",
+      "treeHeightRequired": "Tree height estimate is required.",
+      "treeDiameterRequired": "Tree diameter estimate is required.",
+      "requesterInfoRequired": "Requester name and phone number are required.",
+      "requesterPhoneInvalid": "Phone number must start with 08 and have 10–14 digits.",
+      "rtLeaderInfoRequired": "RT/RW leader name and phone number are required.",
+      "rtLeaderPhoneInvalid": "RT/RW leader phone number must start with 08 and have 10–14 digits."
+    }
+  },
+  "detailCard": {
+    "sectionTitle": "🌳 REQUEST DETAILS",
+    "treeCount": "Number of Trees",
+    "treeCountFormat": "{{count}} trees",
+    "treeHeight": "Height (Estimate)",
+    "treeDiameter": "Diameter (Estimate)",
+    "preferredWeek": "Preferred Week",
+    "notSpecified": "Not specified",
+    "scheduledDate": "Scheduled Date",
+    "notScheduled": "Not scheduled"
+  },
+  "filterChip": {
+    "dateLabel": "Date",
+    "rayonLabel": "District"
+  },
+  "listScreen": {
+    "sortLabel": "Sort: {{label}}",
+    "filterLabel": "Filter requests",
+    "filterActive": "active"
+  },
+  "submitWeekCard": {
+    "title": "Preferred Week (Optional)",
+    "helper": "Select the week you prefer. The District Admin will determine the exact date based on team capacity. Day indicators on each card show availability for that week.",
+    "weekLabel": "Week",
+    "selectedWeek": "Week {{week}}, {{year}}",
+    "placeholder": "Select week…",
+    "selectButtonLabel": "Select preferred week",
+    "legend": "🟢 available · 🟡 nearly full · 🔴 full · ⚪ not set"
+  },
+  "locationCard": {
+    "sectionTitle": "📍 LOCATION",
+    "kecamatanLabel": "Sub-district",
+    "rayonLabel": "District",
+    "addressLabel": "Address",
+    "gpsLabel": "GPS Coordinates",
+    "mapButtonLabel": "View on Map",
+    "mapButtonAccessibility": "View location on map",
+    "gpsUnavailable": "Location is not available to view on map."
+  },
+  "submitTreeDetailsCard": {
+    "title": "Tree Details",
+    "treeCountLabel": "Number of Trees *",
+    "treeCountPlaceholder": "Example: 3",
+    "treeHeightLabel": "Tree Height (highest or average, meters) *",
+    "treeHeightPlaceholder": "Example: 5",
+    "treeDiameterLabel": "Tree Diameter (highest or average, cm) *",
+    "treeDiameterPlaceholder": "Example: 30"
+  },
+  "statusCard": {
+    "sectionTitle": "📌 STATUS",
+    "referenceCodeLabel": "Request Code",
+    "copiedToast": "Copied",
+    "copyButtonLabel": "Copy request code",
+    "submittedByLabel": "Submitted By",
+    "submittedAtLabel": "Submitted At"
+  },
+  "submitPhotoCard": {
+    "title": "Tree Photos *",
+    "helper": "Minimum {{min}}, maximum {{max}} photos.",
+    "emptyState": "No photos yet. Take from camera or select from gallery.",
+    "removeButtonLabel": "Remove photo {{number}}",
+    "cameraButton": "Camera",
+    "galleryButton": "Gallery"
+  },
+  "requestCard": {
+    "treeUnit": "trees",
+    "photoUnit": "photos",
+    "cardAccessibility": "Request details {{code}}"
+  },
+  "submitNotes": {
+    "placeholder": "Additional notes for admin reviewer"
+  },
+  "photosSection": {
+    "title": "LOCATION PHOTOS"
+  },
+  "contact": {
+    "applicant": "Applicant"
+  }
+}

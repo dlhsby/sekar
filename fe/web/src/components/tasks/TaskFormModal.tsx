@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 import {
   Button,
@@ -30,18 +31,14 @@ interface TaskFormModalProps {
   onSuccess?: () => void;
 }
 
-const PRIORITY_OPTIONS = [
-  { value: 'low', label: 'Rendah' },
-  { value: 'normal', label: 'Normal' },
-  { value: 'high', label: 'Tinggi' },
-  { value: 'urgent', label: 'Mendesak' },
-];
+
 
 /**
  * Create a task in a full-screen modal (replaces the standalone /tasks/new
  * page). Full-screen because the form is long (assignment + scope + schedule).
  */
 export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalProps) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const createMutation = useCreateTask();
   const { data: usersData } = useUsers({ limit: 1000 });
@@ -72,6 +69,12 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
   }, [open]);
 
   const assignableRoles = user ? VALID_TASK_ASSIGNMENTS[user.role] || [] : [];
+  const PRIORITY_OPTIONS = [
+    { value: 'low', label: t('tasks:form.priorityLow') },
+    { value: 'normal', label: t('tasks:form.priorityNormal') },
+    { value: 'high', label: t('tasks:form.priorityHigh') },
+    { value: 'urgent', label: t('tasks:form.priorityUrgent') },
+  ];
   const assignableUsers = (usersData?.data || []).filter((u) =>
     assignableRoles.includes(u.role as UserRole)
   );
@@ -82,7 +85,7 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
     e.preventDefault();
     setError('');
     if (!title) {
-      setError('Judul tugas wajib diisi');
+      setError(t('tasks:form.requiredError'));
       return;
     }
     try {
@@ -106,14 +109,14 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="xl">
         <DialogHeader>
-          <DialogTitle>Tambah Tugas</DialogTitle>
+          <DialogTitle>{t('tasks:modal.title')}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <DialogBody>
             <div className="mx-auto max-w-3xl space-y-6">
               {assignableRoles.length > 0 ? (
                 <p className="text-nb-caption text-nb-gray-500">
-                  Dapat ditugaskan ke: {assignableRoles.map((r) => ROLE_LABELS[r]).join(', ')}
+                  {t("tasks:form.assignableRoles", { roles: assignableRoles.map((r) => ROLE_LABELS[r]).join(', ') })}
                 </p>
               ) : null}
               {error ? (
@@ -123,25 +126,25 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
               ) : null}
 
               <FormInput
-                label="Judul Tugas"
-                placeholder="Contoh: Penyiraman Area Timur"
+                label={t("tasks:form.titleLabel")}
+                placeholder={t("tasks:form.titlePlaceholder")}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
               />
               <Textarea
-                label="Deskripsi"
+                label={t("tasks:form.descriptionLabel")}
                 rows={4}
-                placeholder="Detail tugas yang harus dikerjakan..."
+                placeholder={t("tasks:form.descriptionPlaceholder")}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
               <FormSelect
-                label="Ditugaskan Ke (Opsional)"
+                label={t("tasks:form.assignedToLabel")}
                 value={assignedTo}
                 onChange={setAssignedTo}
                 options={[
-                  { value: 'none', label: 'Belum ditugaskan' },
+                  { value: 'none', label: t('tasks:form.assignedToPlaceholder') },
                   ...assignableUsers.map((u) => ({
                     value: u.id,
                     label: `${u.full_name || u.username} (${ROLE_LABELS[u.role] || u.role})`,
@@ -149,20 +152,20 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
                 ]}
               />
               <FormSelect
-                label="Rayon (Opsional)"
+                label={t("tasks:form.rayonLabel")}
                 value={rayonId}
                 onChange={setRayonId}
                 options={[
-                  { value: 'none', label: 'Pilih Rayon' },
+                  { value: 'none', label: t('tasks:form.rayonPlaceholder') },
                   ...rayons.map((r) => ({ value: r.id, label: r.name })),
                 ]}
               />
               <FormSelect
-                label="Area (Opsional)"
+                label={t("tasks:form.areaLabel")}
                 value={areaId}
                 onChange={setAreaId}
                 options={[
-                  { value: 'none', label: 'Pilih Area' },
+                  { value: 'none', label: t('tasks:form.areaPlaceholder') },
                   ...areas.map((a) => ({
                     value: a.id,
                     label: a.areaType?.name ? `${a.name} (${a.areaType.name})` : a.name,
@@ -170,12 +173,12 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
                 ]}
               />
               <FormSelect
-                label="Prioritas"
+                label={t("tasks:form.priorityLabel")}
                 value={priority}
                 onChange={(v) => setPriority(v as TaskPriority)}
                 options={PRIORITY_OPTIONS}
               />
-              <Field label="Tenggat Waktu (Opsional)">
+              <Field label={t("tasks:form.dueDateLabel")}>
                 {(p) => (
                   <DateTimePicker
                     id={p.id}
@@ -188,10 +191,10 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
           </DialogBody>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Batal
+              {t('tasks:modal.cancelButton')}
             </Button>
             <Button type="submit" loading={createMutation.isPending}>
-              Buat Tugas
+              {t('tasks:modal.submitButton')}
             </Button>
           </DialogFooter>
         </form>

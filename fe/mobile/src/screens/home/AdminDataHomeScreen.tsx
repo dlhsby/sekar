@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View, ScrollView, RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 import { LoadingSpinner } from '../../components/common';
 import { NBBackgroundPattern, NBButton, NBText } from '../../components/nb';
 import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
@@ -45,13 +46,14 @@ const EMPTY_COUNTS = {
 
 const INFLIGHT_STATUSES: PruningRequestStatus[] = ['assigned', 'in_progress'];
 
-function inflightPill(status: PruningRequestStatus): { tone: StatusTone; label: string } {
+function inflightPill(status: PruningRequestStatus, t: any): { tone: StatusTone; label: string } {
   return status === 'in_progress'
-    ? { tone: 'ok', label: 'Berjalan' }
-    : { tone: 'warn', label: 'Ditugaskan' };
+    ? { tone: 'ok', label: t('home:adminData.alerts.inProgress') }
+    : { tone: 'warn', label: t('home:adminData.alerts.assigned') };
 }
 
 export function AdminDataHomeScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
   const { adminList, adminListLoading } = useAppSelector((state) => state.pruningRequests);
@@ -243,7 +245,7 @@ export function AdminDataHomeScreen(): React.JSX.Element {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[nbColors.primary]} />}
         >
           {/* Kehadiran saya — clock-in card (matches FieldHomeScreen structure) */}
-          <HomeSectionDivider label="Kehadiran saya" />
+          <HomeSectionDivider label={t('home:adminData.sections.attendance')} />
           {currentShift ? (
             <TouchableOpacity
               style={[styles.absensi, currentShift.is_overtime ? styles.absensiLembur : styles.absensiActive]}
@@ -252,11 +254,11 @@ export function AdminDataHomeScreen(): React.JSX.Element {
               onPress={toggleAbsensiCard}
               accessibilityRole="button"
               accessibilityState={{ expanded: absensiExpanded }}
-              accessibilityLabel={currentShift.is_overtime ? 'Lembur aktif' : 'Sedang bertugas'}
+              accessibilityLabel={currentShift.is_overtime ? t('home:adminData.hero.a11y.overtimeActive') : t('home:adminData.hero.a11y.onDuty')}
             >
               <View style={styles.absensiTopRow}>
                 <NBText variant="mono-sm" color="gray700" uppercase style={styles.absensiLabel}>
-                  {currentShift.is_overtime ? 'Lembur aktif' : 'Sedang bertugas'}
+                  {currentShift.is_overtime ? t('home:adminData.hero.overtimeActive') : t('home:adminData.hero.onDuty')}
                 </NBText>
                 <MaterialCommunityIcons
                   name={absensiExpanded ? 'chevron-up' : 'chevron-down'}
@@ -274,11 +276,11 @@ export function AdminDataHomeScreen(): React.JSX.Element {
               {absensiExpanded && (
                 <>
                   <NBText variant="mono-sm" color="gray700" style={styles.absensiMeta}>
-                    {`Mulai ${formatTime(currentShift.clock_in_time)} · Berjalan ${timer}`}
+                    {t('home:adminData.hero.meta', { time: formatTime(currentShift.clock_in_time), duration: timer })}
                   </NBText>
                   <View style={styles.absensiButton}>
                     <NBButton
-                      title={currentShift.is_overtime ? 'Clock Out Lembur' : 'Clock Out'}
+                      title={currentShift.is_overtime ? t('home:adminData.hero.button.clockOutOvertime') : t('home:adminData.hero.button.clockOut')}
                       onPress={handleClockInOut}
                       variant="danger"
                       size="md"
@@ -293,7 +295,7 @@ export function AdminDataHomeScreen(): React.JSX.Element {
                     testID="shift-detail-link"
                   >
                     <NBText variant="mono-sm" color="gray700" uppercase style={styles.absensiDetailText}>
-                      Detail shift →
+                      {t('home:adminData.hero.link.shiftDetail')}
                     </NBText>
                   </TouchableOpacity>
                 </>
@@ -302,14 +304,14 @@ export function AdminDataHomeScreen(): React.JSX.Element {
           ) : (
             <View style={[styles.absensi, styles.absensiIdle]} testID="absensi-card">
               <NBText variant="mono-sm" color="gray600" uppercase style={styles.absensiLabel}>
-                Belum clock in
+                {t('home:adminData.hero.idle.label')}
               </NBText>
               <NBText variant="h2" color="black" style={styles.absensiIdleTitle}>
-                Mulai shift hari ini
+                {t('home:adminData.hero.idle.title')}
               </NBText>
               <View style={styles.absensiButton}>
                 <NBButton
-                  title="Clock In"
+                  title={t('home:adminData.hero.button.clockIn')}
                   onPress={handleClockInOut}
                   variant="primary"
                   size="md"
@@ -320,19 +322,19 @@ export function AdminDataHomeScreen(): React.JSX.Element {
           )}
 
           {/* Ringkasan hari ini — personal stats + perantingan overview */}
-          <HomeSectionDivider label="Ringkasan hari ini" />
+          <HomeSectionDivider label={t('home:adminData.sections.summary')} />
 
           {/* Personal stat tiles (activities, work hours, tasks) */}
           <View style={styles.statTiles}>
             <HomeStatTile
-              label="Aktivitas"
+              label={t('home:adminData.tiles.activities')}
               value={todayActivitiesCount}
               variant="neutral"
               onPress={() => setActivitiesModalVisible(true)}
               testID="stat-activities"
             />
             <HomeStatTile
-              label="Kehadiran"
+              label={t('home:adminData.tiles.attendance')}
               value={totalTodayDuration}
               variant="yellow"
               onPress={() => setWorkHoursModalVisible(true)}
@@ -340,7 +342,7 @@ export function AdminDataHomeScreen(): React.JSX.Element {
             />
             {isTaskReceiver && (
               <HomeStatTile
-                label="Tugas"
+                label={t('home:adminData.tiles.tasks')}
                 value={activeTasks.length}
                 variant="ok"
                 onPress={() => setTasksModalVisible(true)}
@@ -353,48 +355,48 @@ export function AdminDataHomeScreen(): React.JSX.Element {
           <View style={styles.hero} testID="perantingan-hero">
             <View style={styles.heroTopRow}>
               <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroLabel}>
-                Perantingan masuk
+                {t('home:adminData.hero.label')}
               </NBText>
-              <StatusPill tone={counts.submitted > 0 ? 'warn' : 'neutral'} label={`${counts.submitted} baru`} />
+              <StatusPill tone={counts.submitted > 0 ? 'warn' : 'neutral'} label={t('home:adminData.hero.newCount', { count: counts.submitted })} />
             </View>
             <NBText variant="display" color="black" style={styles.heroValue}>
               {String(incoming)}
             </NBText>
             <NBText variant="mono-sm" color="gray700" style={styles.heroMeta}>
-              menunggu disposisi
+              {t('home:adminData.hero.waitingDisposition')}
             </NBText>
             <View style={styles.heroButton}>
-              <NBButton title="Buka antrian →" onPress={goToQueue} variant="primary" size="md" testID="open-queue" />
+              <NBButton title={t('home:adminData.hero.button.openQueue')} onPress={goToQueue} variant="primary" size="md" testID="open-queue" />
             </View>
           </View>
 
           {/* Disposition breakdown */}
-          <HomeSectionDivider label="Breakdown disposisi" />
+          <HomeSectionDivider label={t('home:adminData.sections.disposition')} />
           <View style={styles.tilesRow}>
-            <HomeStatTile label="Baru masuk" value={counts.submitted} variant="neutral" testID="disp-submitted" />
-            <HomeStatTile label="Review" value={counts.under_review} variant="warn" testID="disp-review" />
+            <HomeStatTile label={t('home:adminData.kpi.newSubmitted')} value={counts.submitted} variant="neutral" testID="disp-submitted" />
+            <HomeStatTile label={t('home:adminData.kpi.review')} value={counts.under_review} variant="warn" testID="disp-review" />
           </View>
           <View style={styles.tilesRow}>
-            <HomeStatTile label="Disetujui" value={counts.approved} variant="ok" testID="disp-approved" />
-            <HomeStatTile label="Ditolak" value={counts.rejected} variant="bad" testID="disp-rejected" />
+            <HomeStatTile label={t('home:adminData.kpi.approved')} value={counts.approved} variant="ok" testID="disp-approved" />
+            <HomeStatTile label={t('home:adminData.kpi.rejected')} value={counts.rejected} variant="bad" testID="disp-rejected" />
           </View>
 
           {/* Perantingan berjalan (assigned + in progress) */}
           {inflight.length > 0 && (
             <>
               <HomeSectionDivider
-                label="Perantingan berjalan"
-                trailing={<StatusPill tone="ok" label={`${inflight.length} aktif`} />}
+                label={t('home:adminData.sections.inflight', { count: inflight.length })}
+                trailing={<StatusPill tone="ok" label={t('home:adminData.inflight.active', { count: inflight.length })} />}
               />
               <View style={styles.list}>
                 {inflight.slice(0, 5).map((req) => {
-                  const p = inflightPill(req.status);
+                  const p = inflightPill(req.status, t);
                   return (
                     <HomeListRow
                       key={req.id}
                       pill={<StatusPill tone={p.tone} label={p.label} />}
                       title={req.kecamatanName || req.referenceCode}
-                      meta={req.scheduledDate ? formatDate(req.scheduledDate) : 'Belum dijadwalkan'}
+                      meta={req.scheduledDate ? formatDate(req.scheduledDate) : t('home:adminData.inflight.notScheduled')}
                       subMeta={req.referenceCode}
                       onPress={() => openRequest(req)}
                       testID={`inflight-${req.id}`}

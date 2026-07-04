@@ -79,7 +79,7 @@ function canEditTags(task: Task, callerId: string): boolean {
 export function assertTaskReadAccess(task: Task, user: User): void {
   const canRead = TASK_READ_RULES[user.role] ?? (() => true);
   if (!canRead(task, user)) {
-    throw new ForbiddenException('Anda tidak memiliki akses ke tugas ini');
+    throw new ForbiddenException('You do not have access to this task');
   }
 }
 

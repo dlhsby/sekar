@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBText } from '../../../components/nb';
@@ -17,10 +18,12 @@ interface TaskAssignmentInfoProps {
 }
 
 export function TaskAssignmentInfo({ task }: TaskAssignmentInfoProps): React.JSX.Element {
+  const { t } = useTranslation('common');
+
   return (
     <View style={styles.assignRow}>
       <View style={styles.assignBlock}>
-        <NBText variant="body-sm" style={styles.assignLabelStyle}>Dibuat oleh</NBText>
+        <NBText variant="body-sm" style={styles.assignLabelStyle}>{t('tasks:assignment.createdBy')}</NBText>
         <View style={styles.assignUserRow}>
           <Icon name="account-circle" size={16} color={nbColors.gray500} />
           <NBText variant="body-sm" style={styles.assignValueStyle}>{formatUser(task.creator)}</NBText>
@@ -35,7 +38,7 @@ export function TaskAssignmentInfo({ task }: TaskAssignmentInfoProps): React.JSX
       </View>
 
       <View style={styles.assignBlock}>
-        <NBText variant="body-sm" style={styles.assignLabelStyle}>Ditugaskan ke</NBText>
+        <NBText variant="body-sm" style={styles.assignLabelStyle}>{t('tasks:assignment.assignedTo')}</NBText>
         <View style={styles.assignUserRow}>
           <Icon
             name={task.assigned_to ? 'account' : 'account-question'}
@@ -43,7 +46,7 @@ export function TaskAssignmentInfo({ task }: TaskAssignmentInfoProps): React.JSX
             color={task.assigned_to ? nbColors.primary : nbColors.gray400}
           />
           <NBText variant="body-sm" style={[styles.assignValueStyle, !task.assigned_to && styles.assignValueEmptyStyle]} color={!task.assigned_to ? 'gray400' : undefined}>
-            {task.assignee ? formatUser(task.assignee) : task.assigned_to ? '(petugas)' : 'Belum ditugaskan'}
+            {task.assignee ? formatUser(task.assignee) : task.assigned_to ? t('ui.assigned') : t('ui.notAssigned')}
           </NBText>
         </View>
         {task.assigned_at && (

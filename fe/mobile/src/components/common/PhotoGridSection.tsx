@@ -5,6 +5,7 @@
 
 import React, { useMemo } from 'react';
 import { ScrollView, TouchableOpacity, Image, View, type ImageStyle, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBCard, NBCardHeader, NBCardContent, NBText } from '../nb';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
@@ -92,6 +93,7 @@ export function PhotoGridSection({
   iconName,
   testID,
 }: PhotoGridSectionProps): React.JSX.Element | null {
+  const { t } = useTranslation();
   const normalizedPhotos = useMemo(() => normalizePhotos(photos), [photos]);
 
   if (normalizedPhotos.length === 0) {
@@ -147,8 +149,8 @@ export function PhotoGridSection({
                 accessibilityRole="button"
                 accessibilityLabel={
                   photo.label
-                    ? `${photo.label} - Foto ${index + 1}`
-                    : `Foto ${index + 1} dari ${normalizedPhotos.length}`
+                    ? t('components:photoGrid.photoLabelWithIndex', { label: photo.label, index: index + 1 })
+                    : t('components:photoGrid.photoIndexOnly', { index: index + 1, total: normalizedPhotos.length })
                 }
               >
                 <Image

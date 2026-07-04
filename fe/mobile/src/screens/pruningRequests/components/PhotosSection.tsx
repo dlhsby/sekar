@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { PhotoGridSection } from '../../../components/common/PhotoGridSection';
 import type { PruningRequest } from '../../../types/models.types';
 
@@ -16,6 +17,7 @@ export function PhotosSection({
   request,
   onPhotoPress,
 }: PhotosSectionProps): React.JSX.Element | null {
+  const { t } = useTranslation();
   if (!request.photoUrls || request.photoUrls.length === 0) {
     return null;
   }
@@ -25,7 +27,7 @@ export function PhotosSection({
       photos={request.photoUrls}
       onPhotoPress={onPhotoPress}
       headerType="emoji"
-      title="FOTO LOKASI"
+      title={t('pruning:photosSection.title')}
       count={request.photoUrls.length}
     />
   );

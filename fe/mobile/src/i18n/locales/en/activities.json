@@ -1,0 +1,205 @@
+{
+  "sort": {
+    "newest": "Newest (default)",
+    "oldest": "Oldest"
+  },
+  "filter": {
+    "label": "activity",
+    "title": "Filter Activities",
+    "status": "Status",
+    "statusOptions": {
+      "all": "All Status",
+      "pending": "Pending Approval",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "dateRange": "Date Range",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "area": "Area",
+    "areaOptions": {
+      "all": "All Areas",
+      "mine": "My Area"
+    },
+    "rayon": "Rayon",
+    "rayonOptions": {
+      "all": "All Rayons",
+      "mine": "My Rayon"
+    },
+    "createdBy": "Created By",
+    "createdByOptions": {
+      "all": "All Officers (Including Me)",
+      "subordinates": "All Subordinates",
+      "mine": "Created by Me"
+    },
+    "reset": "Reset",
+    "apply": "Apply"
+  },
+  "header": {
+    "sort": "SORT ACTIVITIES"
+  },
+  "fab": {
+    "submit": "+ Add Activity"
+  },
+  "card": {
+    "included": "Included",
+    "activity": "Activity",
+    "photoCount": "{{count}} photos",
+    "accessibilityLabel": "Activity details {{name}}"
+  },
+  "submission": {
+    "title": "Create Activity",
+    "saveDraftPrompt": "Save Draft?",
+    "saveDraftMessage": "Save activity data as draft?",
+    "saveDraftNo": "No",
+    "saveDraftYes": "Yes",
+    "errorSummary": "Please complete the following:",
+    "offlineMode": "Offline Mode - Activities will be saved and sent when online",
+    "photosSection": "ACTIVITY PHOTOS",
+    "photosSubtitle": "Add 1-3 photos of the work performed",
+    "activityTypeSection": "ACTIVITY TYPE",
+    "loadingTypes": "Loading activity types...",
+    "noTypesAvailable": "No activity types available",
+    "retryButton": "Retry",
+    "selectActivityType": "Select activity type...",
+    "searchActivityType": "Search activity type...",
+    "taggingSection": "TAG COLLEAGUES",
+    "taggingSubtitle": "Optional — tag colleagues from the same area who worked on this activity",
+    "loadingTeam": "Loading colleague list...",
+    "selectTeam": "Select colleagues to tag...",
+    "searchTeam": "Search colleague name...",
+    "noTeamAvailable": "No colleagues from your area to tag",
+    "descriptionSection": "Work Description",
+    "descriptionPlaceholder": "Example: Watered plants in area A, trimmed wild grass...",
+    "locationSection": "GPS LOCATION",
+    "loadingLocation": "Getting location...",
+    "getLocationButton": "Get GPS Location",
+    "accuracyLabel": "Accuracy: ±{{accuracy}}m",
+    "cancelButton": "Cancel",
+    "submitButton": "Submit Activity",
+    "submitOfflineButton": "Save to Sync"
+  },
+  "detail": {
+    "error": "Error",
+    "loadFailure": "Failed to load activity details",
+    "confirmApprove": "Confirm",
+    "confirmApproveMessage": "Approve this activity?",
+    "confirmApproveCancel": "Cancel",
+    "confirmApproveConfirm": "Approve",
+    "confirmReject": "Confirm",
+    "confirmRejectMessage": "Reject this activity?",
+    "confirmRejectCancel": "Cancel",
+    "confirmRejectConfirm": "Reject",
+    "rejectReasonLabel": "Rejection Reason (optional)",
+    "rejectReasonPlaceholder": "Explain the reason for rejection...",
+    "successTitle": "Success",
+    "successApprove": "Activity approved",
+    "successReject": "Activity rejected",
+    "failureApprove": "Failed to approve activity",
+    "failureReject": "Failed to reject activity",
+    "officerNameLabel": "Officer Name",
+    "sections": {
+      "generalInfo": "GENERAL INFORMATION",
+      "dateTime": "Date & Time",
+      "area": "Area",
+      "status": "STATUS",
+      "rejectionReason": "Rejection Reason",
+      "reviewedBy": "Reviewed By",
+      "reviewDate": "Review Date",
+      "photos": "ACTIVITY PHOTOS",
+      "photosAttached": "{{count}} photos attached",
+      "activityType": "ACTIVITY TYPE",
+      "description": "WORK DESCRIPTION",
+      "gpsLocation": "GPS LOCATION"
+    },
+    "rejectionInput": {
+      "title": "Rejection Reason",
+      "placeholder": "Explain the reason for rejecting this activity..."
+    }
+  },
+  "messages": {
+    "clockInRequired": "Not Clocked In",
+    "clockInRequiredMessage": "You must clock in first to add an activity"
+  },
+  "today": {
+    "title": "Today's Activities ({{count}})",
+    "noActivities": "No activities yet today",
+    "noActivitiesDescription": "Activities you create will appear here",
+    "photos": "{{count}} photos",
+    "defaultType": "Activity",
+    "viewDetailLabel": "View activity details {{name}}"
+  },
+  "actionButtons": {
+    "decline": "Decline",
+    "approve": "Approve",
+    "cancel": "Cancel",
+    "sendDecline": "Send Decline"
+  },
+  "validation": {
+    "photosRequired": "Add at least 1 photo",
+    "descriptionRequired": "Description is required",
+    "descriptionMinLength": "Description must be at least 5 characters",
+    "descriptionMaxLength": "Description must not exceed 500 characters",
+    "activityTypeRequired": "Select activity type",
+    "locationRequired": "GPS location is required"
+  },
+  "locationMessages": {
+    "locationError": "Unable to get GPS location",
+    "permissionDenied": "Location permission denied",
+    "timeoutError": "Timeout. Try in an open area.",
+    "gpsDisabled": "Enable GPS in settings."
+  },
+  "draftMessages": {
+    "found": "Draft Found",
+    "foundMessage": "You have an unsent activity draft. Continue?",
+    "delete": "Delete",
+    "continue": "Continue"
+  },
+  "sections": {
+    "photos": "ACTIVITY PHOTOS",
+    "photosSubtitle": "Add 1-3 photos of the work performed",
+    "activityType": "ACTIVITY TYPE",
+    "loading": "Loading activity types...",
+    "noTypes": "No activity types available",
+    "retryButton": "Retry",
+    "selectActivityType": "Select activity type...",
+    "searchActivityType": "Search activity type...",
+    "taggedUsers": "TAG COLLEAGUES",
+    "taggedUsersSubtitle": "Optional — tag colleagues from the same area who worked on this activity",
+    "loadingTeam": "Loading colleague list...",
+    "selectTeam": "Select colleagues to tag...",
+    "searchTeam": "Search colleague name...",
+    "noTeam": "No colleagues from your area to tag",
+    "description": "Work Description",
+    "descriptionPlaceholder": "Example: Watered plants in area A, trimmed wild grass...",
+    "gps": "GPS LOCATION",
+    "gpsLoading": "Getting location...",
+    "gpsAccuracy": "Accuracy: ±{{accuracy}}m",
+    "getGPSButton": "Get GPS Location",
+    "offlineWarning": "Offline Mode - Activities will be saved and sent when online",
+    "errorSummary": "Please complete the following:",
+    "submitButton": "Submit Activity",
+    "submitOfflineButton": "Save to Sync",
+    "cancelButton": "Cancel"
+  },
+  "submitAlerts": {
+    "shiftNotActiveTitle": "Shift Not Active",
+    "shiftNotActiveMessage": "You have not clocked in. Please clock in first to create an activity.",
+    "clockInButton": "Clock In Now",
+    "saveDraftButton": "Save Draft",
+    "successTitle": "Success",
+    "successMessage": "Activity submitted successfully!",
+    "okButton": "OK",
+    "offlineTitle": "Offline Mode",
+    "offlineMessage": "Activity saved and will be sent when online.",
+    "failureTitle": "Failed to Send",
+    "failureMessage": "An error occurred. Activity saved as draft.",
+    "retryButton": "Try Again"
+  },
+  "tab": {
+    "loadTypesError": "Failed to load activity types",
+    "loadError": "Failed to load activities. Please try again.",
+    "tabEmptyTitle": "No activities yet",
+    "tabEmptyDescription": "Activities you create will appear here"
+  }
+}

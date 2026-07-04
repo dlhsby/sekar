@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { ListItemCard, type ListItemMeta } from '../../../components/common';
 import { nbSpacing } from '../../../constants/nbTokens';
 import { pruningPill, formatDate, formatTime } from '../../../utils/statusHelpers';
@@ -21,33 +22,35 @@ interface PerantinganRequestCardProps {
   extraTag?: React.ReactNode;
 }
 
-// Tree-detail summary line, e.g. "12 pohon · ±5 m · ⌀30 cm" (null parts skipped).
-function buildDescription(request: PruningRequest): string | undefined {
-  const treeCount = request.treeCount ?? request.estimatedPlantCount ?? null;
-  const parts: string[] = [];
-  if (treeCount != null) { parts.push(`${treeCount} pohon`); }
-  if (request.treeHeightEstimate) { parts.push(`±${request.treeHeightEstimate}`); }
-  if (request.treeDiameterEstimate) { parts.push(`⌀${request.treeDiameterEstimate}`); }
-  return parts.length > 0 ? parts.join(' · ') : undefined;
-}
-
-// Meta chips carry the scannable context: reference code (how the citizen cites
-// the request to support), kecamatan (where), and attachment count. The tree
-// count lives in the description line, not here, to avoid duplicating it.
-function buildMeta(request: PruningRequest): ListItemMeta[] {
-  const meta: ListItemMeta[] = [];
-  if (request.referenceCode) { meta.push({ icon: 'bookmark-outline', label: request.referenceCode }); }
-  if (request.kecamatanName) { meta.push({ icon: 'map-marker', label: request.kecamatanName }); }
-  const photoCount = request.photoUrls?.length ?? 0;
-  if (photoCount > 0) { meta.push({ icon: 'camera', label: `${photoCount} foto` }); }
-  return meta;
-}
-
 export function PerantinganRequestCard({
   request,
   onPress,
   extraTag,
 }: PerantinganRequestCardProps): React.JSX.Element {
+  const { t } = useTranslation('pruning');
+
+  // Tree-detail summary line, e.g. "12 pohon · ±5 m · ⌀30 cm" (null parts skipped).
+  const buildDescription = (): string | undefined => {
+    const treeCount = request.treeCount ?? request.estimatedPlantCount ?? null;
+    const parts: string[] = [];
+    if (treeCount != null) { parts.push(`${treeCount} ${t('requestCard.treeUnit')}`); }
+    if (request.treeHeightEstimate) { parts.push(`±${request.treeHeightEstimate}`); }
+    if (request.treeDiameterEstimate) { parts.push(`⌀${request.treeDiameterEstimate}`); }
+    return parts.length > 0 ? parts.join(' · ') : undefined;
+  };
+
+  // Meta chips carry the scannable context: reference code (how the citizen cites
+  // the request to support), kecamatan (where), and attachment count. The tree
+  // count lives in the description line, not here, to avoid duplicating it.
+  const buildMeta = (): ListItemMeta[] => {
+    const meta: ListItemMeta[] = [];
+    if (request.referenceCode) { meta.push({ icon: 'bookmark-outline', label: request.referenceCode }); }
+    if (request.kecamatanName) { meta.push({ icon: 'map-marker', label: request.kecamatanName }); }
+    const photoCount = request.photoUrls?.length ?? 0;
+    if (photoCount > 0) { meta.push({ icon: 'camera', label: `${photoCount} ${t('requestCard.photoUnit')}` }); }
+    return meta;
+  };
+
   const pill = pruningPill(request.status);
   // Address is the most scannable title; fall back to kecamatan, then ref code.
   const title = request.address || request.kecamatanName || request.referenceCode;
@@ -60,12 +63,12 @@ export function PerantinganRequestCard({
       extraTag={extraTag}
       rightText={`${formatDate(request.createdAt)} · ${formatTime(request.createdAt)}`}
       title={title}
-      description={buildDescription(request)}
-      meta={buildMeta(request)}
+      description={buildDescription()}
+      meta={buildMeta()}
       creatorText={creatorText}
       onPress={onPress}
       style={styles.spacing}
-      accessibilityLabel={`Detail permohonan ${request.referenceCode}`}
+      accessibilityLabel={t('requestCard.cardAccessibility', { code: request.referenceCode })}
       testID="pruning-request-card"
     />
   );

@@ -1,10 +1,10 @@
 import { ReactNode } from 'react';
 import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/i18n/server-metadata';
 
-export const metadata: Metadata = {
-  title: 'Lembur · SEKAR',
-  description: 'Kelola dan setujui permintaan lembur satgas RTH',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata('overtime');
+}
 
 export default function OvertimeLayout({ children }: { children: ReactNode }) {
   return children;

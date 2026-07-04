@@ -1,0 +1,103 @@
+{
+  "kmz": {
+    "title": "Impor KMZ / KML",
+    "csvLink": "Impor CSV",
+    "description": "Unggah berkas KMZ atau KML untuk membuat atau memperbarui area dari batas polygon.",
+    "selectFileAriaLabel": "Pilih berkas KMZ",
+    "selectFileButton": "Pilih Berkas KMZ",
+    "noAreasWarning": "Tidak ada area ditemukan dalam berkas.",
+    "preview": "Pratinjau",
+    "new": "baru",
+    "updated": "pembaruan",
+    "areaTypeLabel": "Tipe Area (untuk area baru)",
+    "areaTypePlaceholder": "Pilih tipe area",
+    "rayonLabel": "Rayon (untuk area baru)",
+    "rayonPlaceholder": "Pilih rayon",
+    "requirementsAlert": "Pilih Tipe Area dan Rayon untuk area baru sebelum mengimpor.",
+    "columns": {
+      "name": "Nama Area",
+      "points": "Titik",
+      "status": "Status"
+    },
+    "statusLabels": {
+      "update": "Pembaruan",
+      "new": "Baru"
+    },
+    "cancel": "Batal",
+    "confirm": "Konfirmasi Impor",
+    "successMessage": "Impor selesai: {{created}} dibuat, {{updated}} diperbarui.",
+    "loading": "Memuat..."
+  },
+  "csv": {
+    "title": "Impor CSV",
+    "entityLabel": "Jenis Data",
+    "entities": {
+      "users": "Pengguna",
+      "areas": "Area"
+    },
+    "downloadTemplate": "Unduh Template",
+    "selectFileButton": "Pilih Berkas CSV",
+    "selectFileLabel": "Pilih berkas CSV",
+    "selectFileAriaLabel": "Pilih berkas CSV",
+    "noAreasWarning": "Tidak ada area ditemukan dalam berkas.",
+    "validationTitle": "Tinjau Validasi",
+    "validLines": "baris valid",
+    "errorCount": "kesalahan",
+    "errorColumns": {
+      "row": "Baris",
+      "column": "Kolom",
+      "value": "Nilai",
+      "message": "Pesan"
+    },
+    "noErrors": "Tidak ada kesalahan.",
+    "allValid": "Semua baris valid dan siap diimpor.",
+    "importButton": "Impor {{count}} Baris Valid",
+    "resultTitle": "Hasil Impor",
+    "resultSuccess": "Berhasil mengimpor {{imported}} baris",
+    "skipped": "{{count}} dilewati.",
+    "importAgain": "Impor Lagi",
+    "loading": "Memuat...",
+    "noValidRows": "Tidak ada baris valid untuk diimpor."
+  },
+  "export": {
+    "title": "Ekspor Data",
+    "entityLabel": "Jenis Data",
+    "entities": {
+      "users": "Pengguna",
+      "areas": "Area",
+      "rayons": "Rayon",
+      "tasks": "Tugas",
+      "activities": "Aktivitas",
+      "overtime": "Lembur"
+    },
+    "formatLabel": "Format",
+    "dateRangeLabel": "Rentang Tanggal",
+    "rayonLabel": "Rayon",
+    "allRayons": "Semua Rayon",
+    "areaLabel": "Area",
+    "allAreas": "Semua Area",
+    "exportButton": "Unduh Ekspor",
+    "processingButton": "Memproses...",
+    "successMessage": "Ekspor selesai. Unduhan siap.",
+    "errorMessage": "Ekspor gagal",
+    "largeDataMessage": "Data besar — ekspor diproses di latar belakang…",
+    "history": "Riwayat Ekspor",
+    "historyMeta": "30 hari terakhir",
+    "noExports": "Belum ada ekspor.",
+    "columns": {
+      "date": "Tanggal",
+      "entityType": "Jenis",
+      "format": "Format",
+      "rowCount": "Baris",
+      "status": "Status",
+      "download": "Unduh"
+    },
+    "status": {
+      "completed": "Selesai",
+      "processing": "Diproses",
+      "failed": "Gagal"
+    },
+    "downloadLink": "Unduh",
+    "loading": "Memuat..."
+  }
+}

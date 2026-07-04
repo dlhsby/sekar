@@ -97,7 +97,7 @@ describe('usePhotoCapture', () => {
     });
 
     expect(result.current.photos).toHaveLength(2);
-    expect(Alert.alert).toHaveBeenCalledWith('Batas Foto', 'Maksimal 2 foto');
+    expect(Alert.alert).toHaveBeenCalledWith('Batas foto tercapai', 'Anda hanya dapat menambahkan maksimal 2 foto.');
   });
 
   it('should remove photo by index', async () => {
@@ -153,7 +153,7 @@ describe('usePhotoCapture', () => {
     });
 
     expect(result.current.photos).toEqual([]);
-    expect(Alert.alert).toHaveBeenCalledWith('Error', 'Gagal mengambil foto');
+    expect(Alert.alert).toHaveBeenCalledWith('Terjadi Kesalahan', 'Gagal mengambil foto');
   });
 
   it('should use default max of 3 photos', () => {

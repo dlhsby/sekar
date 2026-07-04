@@ -198,10 +198,10 @@ describe('MainNavigator', () => {
       expect(UNIFORM_TAB_CONFIG.map((t) => t.name)).toEqual(['Home', 'Menu', 'Profile']);
     });
 
-    it('every tab has name/label/icon strings', () => {
+    it('every tab has name/labelKey/icon strings', () => {
       UNIFORM_TAB_CONFIG.forEach((tab) => {
         expect(typeof tab.name).toBe('string');
-        expect(typeof tab.label).toBe('string');
+        expect(typeof tab.labelKey).toBe('string');
         expect(typeof tab.icon).toBe('string');
       });
     });

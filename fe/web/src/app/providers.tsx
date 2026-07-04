@@ -4,6 +4,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode, useState, useEffect } from 'react';
 import { AuthProvider } from '@/lib/auth/context';
 import { ToastProvider } from '@/components/ui/toast';
+import { I18nProvider, LanguageSync } from '@/lib/i18n/provider';
+import { useAuth } from '@/lib/auth/hooks';
+
+/** Applies the signed-in user's saved language once the profile loads. */
+function AuthLanguageSync() {
+  const { user } = useAuth();
+  return <LanguageSync preferredLanguage={user?.preferred_language} />;
+}
 
 /**
  * Providers component wrapping the app with necessary providers
@@ -59,10 +67,15 @@ export function Providers({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        <AuthProvider>{children}</AuthProvider>
-      </ToastProvider>
-    </QueryClientProvider>
+    <I18nProvider>
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <AuthProvider>
+            <AuthLanguageSync />
+            {children}
+          </AuthProvider>
+        </ToastProvider>
+      </QueryClientProvider>
+    </I18nProvider>
   );
 }

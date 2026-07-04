@@ -1,0 +1,19 @@
+{
+  "page": {
+    "loading": "Loading...",
+    "title": "Profile",
+    "updateSuccess": "Profile updated",
+    "photoUpdateSuccess": "Profile photo updated",
+    "photoFormatError": "Photo format must be JPG, PNG, or WebP.",
+    "photoSizeError": "Photo size must not exceed 5 MB.",
+    "photoChangeAriaLabel": "Change profile photo",
+    "photoHelper": "Profile photo: JPG, PNG, or WebP, maximum 5 MB.",
+    "accountSection": "Account Information",
+    "fullNameLabel": "Full Name",
+    "fullNamePlaceholder": "Full name",
+    "usernameLabel": "Username",
+    "phoneLabel": "Phone Number",
+    "adminNote": "Username and phone number are managed by an administrator.",
+    "saveButton": "Save Changes"
+  }
+}

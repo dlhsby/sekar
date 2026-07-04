@@ -32,6 +32,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBText } from '../../../components/nb/NBText';
 import {
   nbColors,
@@ -65,12 +66,9 @@ const STATUS_COLOR: Record<DayStatus, string> = {
 };
 
 // Sunday-start labels (Indonesian convention).
-const DAY_LABELS = ['M', 'S', 'S', 'R', 'K', 'J', 'S']; // Minggu..Sabtu
-
-const MONTH_LABELS_ID = [
-  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
-];
+// These are static abbreviations used as grid headers — keep these unchanged.
+// Full month names are localized via i18n in the component
+const DAY_LABELS = ['M', 'S', 'S', 'R', 'K', 'J', 'S']; // Minggu..Sabtu (abbreviations)
 
 interface AvailabilityCalendarProps {
   rows: RawCapacityRow[];
@@ -166,6 +164,7 @@ export function AvailabilityCalendar({
   rangeEnd,
   preferredWeek,
 }: AvailabilityCalendarProps): React.JSX.Element {
+  const { t } = useTranslation('pruning');
   const today = useMemo(() => startOfDay(new Date()), []);
 
   const months = useMemo(() => {
@@ -201,15 +200,15 @@ export function AvailabilityCalendar({
     }
     if (day.status === 'full') {
       Alert.alert(
-        'Penuh',
-        'Tanggal yang dipilih sudah penuh, silakan pilih tanggal lain.',
+        t('calendar.legendFull'),
+        t('calendar.dateFullError'),
       );
       return;
     }
     if (day.status === 'unknown') {
       Alert.alert(
-        'Belum Tersedia',
-        'Kapasitas minggu ini belum diatur admin. Silakan pilih tanggal lain atau hubungi admin rayon.',
+        t('calendar.legendUnset'),
+        t('calendar.capacityUnsetError'),
       );
       return;
     }
@@ -225,7 +224,7 @@ export function AvailabilityCalendar({
           to ~80 dp while keeping both pieces of information glanceable. */}
       {preferredWeek ? (
         <View style={styles.infoStripRow}>
-          <NBText style={styles.infoStripLabel}>Minggu Preferensi</NBText>
+          <NBText style={styles.infoStripLabel}>{t('calendar.preferenceWeekLabel')}</NBText>
           <NBText style={styles.infoStripValue} numberOfLines={1}>
             {formatIsoWeekLabel(preferredWeek.year, preferredWeek.week)}
           </NBText>
@@ -244,7 +243,7 @@ export function AvailabilityCalendar({
             selectedDate && styles.infoStripLabelOnDark,
           ]}
         >
-          Tanggal Terpilih
+          {t('calendar.selectedDateLabel')}
         </NBText>
         <NBText
           style={[
@@ -253,29 +252,29 @@ export function AvailabilityCalendar({
           ]}
           numberOfLines={1}
         >
-          {selectedDate ? formatDateLong(selectedDate) : 'Belum dipilih'}
+          {selectedDate ? formatDateLong(selectedDate) : t('calendar.notSelectedYet')}
         </NBText>
         {selectedDate ? (
           <TouchableOpacity
             onPress={() => onSelect(null)}
             accessibilityRole="button"
-            accessibilityLabel="Hapus tanggal terpilih"
+            accessibilityLabel={t('calendar.clearDateLabel')}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             style={styles.infoStripClear}
             testID="perantingan-calendar-clear"
           >
-            <NBText style={styles.infoStripClearText}>Hapus</NBText>
+            <NBText style={styles.infoStripClearText}>{t('calendar.clearDateLabel')}</NBText>
           </TouchableOpacity>
         ) : null}
       </View>
 
       <View style={styles.legend}>
-        <LegendDot color={STATUS_COLOR.available} label="Tersedia" />
-        <LegendDot color={STATUS_COLOR.partial} label="Hampir Penuh" />
-        <LegendDot color={STATUS_COLOR.full} label="Penuh" />
-        <LegendDot color={STATUS_COLOR.unknown} label="Belum Diatur" />
+        <LegendDot color={STATUS_COLOR.available} label={t('calendar.legendAvailable')} />
+        <LegendDot color={STATUS_COLOR.partial} label={t('calendar.legendPartial')} />
+        <LegendDot color={STATUS_COLOR.full} label={t('calendar.legendFull')} />
+        <LegendDot color={STATUS_COLOR.unknown} label={t('calendar.legendUnset')} />
         {preferredWeek ? (
-          <LegendRing color={nbColors.info} label="Minggu Preferensi" />
+          <LegendRing color={nbColors.info} label={t('calendar.preferenceWeekLabel')} />
         ) : null}
       </View>
 
@@ -297,16 +296,18 @@ export function AvailabilityCalendar({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {loading && <NBText style={styles.loading}>Memuat kapasitas…</NBText>}
+        {loading && <NBText style={styles.loading}>{t('calendar.loading')}</NBText>}
         {months.map((bucket) => {
           const matrix = buildMonthMatrix(bucket);
+          const monthDate = new Date(bucket.year, bucket.month, 1);
+          const monthName = monthDate.toLocaleDateString('id-ID', { month: 'long' });
           return (
             <View
               key={`${bucket.year}-${bucket.month}`}
               style={styles.monthBlock}
             >
               <NBText style={styles.monthHeader}>
-                {MONTH_LABELS_ID[bucket.month]} {bucket.year}
+                {monthName} {bucket.year}
               </NBText>
               {matrix.map((row, rowIdx) => (
                 <View
@@ -351,9 +352,9 @@ export function AvailabilityCalendar({
                       <View key={day.date} style={styles.col}>
                         <TouchableOpacity
                           accessibilityLabel={
-                            `Tanggal ${day.date} status ${day.status}` +
-                            (inPreferredWeek ? ' (di dalam minggu preferensi)' : '') +
-                            (selected ? ' (terpilih, ketuk untuk batal)' : '')
+                            t('pruning:calendar.dayAria', { date: day.date, status: day.status }) +
+                            (inPreferredWeek ? t('pruning:calendar.inPreferredWeekHint') : '') +
+                            (selected ? t('pruning:calendar.selectedHint') : '')
                           }
                           onPress={() => handlePress(day)}
                           disabled={past}

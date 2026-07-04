@@ -1,0 +1,353 @@
+{
+  "sort": {
+    "newest": "Newest (default)",
+    "oldest": "Oldest",
+    "deadlineNearest": "Nearest Deadline",
+    "priorityHighest": "Highest Priority"
+  },
+  "filter": {
+    "label": "task",
+    "title": "Filter Tasks",
+    "status": "Status",
+    "statusOptions": {
+      "all": "All Status",
+      "pending": "Pending",
+      "assigned": "Assigned",
+      "accepted": "Accepted",
+      "declined": "Rejected",
+      "inProgress": "In Progress",
+      "completed": "Pending Verification",
+      "verified": "Verified",
+      "revisionNeeded": "Needs Revision"
+    },
+    "dateRange": "Date Range",
+    "createdDate": "Created Date",
+    "deadline": "Deadline",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "area": "Area",
+    "areaOptions": {
+      "all": "All Areas",
+      "mine": "My Area"
+    },
+    "rayon": "Rayon",
+    "rayonOptions": {
+      "all": "All Rayons",
+      "mine": "My Rayon"
+    },
+    "assignment": "Assignment",
+    "assignmentOptions": {
+      "all": "All Officers (Including Me)",
+      "assigned": "Assigned to Me",
+      "createdByMe": "Created by Me",
+      "allSubordinates": "All Subordinates",
+      "tagged": "Tag Me"
+    },
+    "reset": "Reset",
+    "apply": "Apply"
+  },
+  "completion": {
+    "completedLabel": "Completed {{dateTime}}",
+    "proofPhotosLabel": "Proof Photos ({{count}})"
+  },
+  "assignee": {
+    "sectionTitle": "ASSIGNMENT",
+    "sectionSubtitle": "Select the assigned officer",
+    "label": "Officer",
+    "placeholder": "Select officer...",
+    "searchPlaceholder": "Search officer name...",
+    "selectAreaFirst": "Select location first",
+    "loading": "Loading officer list...",
+    "empty": "No officers can be assigned in this area"
+  },
+  "actions": {
+    "assign": {
+      "success": "Success",
+      "successMessage": "Task assigned successfully",
+      "error": "Failed to assign task"
+    },
+    "reassign": "Reassign",
+    "delegate": "Delegate to Subordinate",
+    "selectDelegate": "Delegate to Subordinate",
+    "selectReplacement": "Select Replacement Officer",
+    "selectOfficer": "Select Officer",
+    "placeholder": "— Select Officer —",
+    "cancel": "Cancel",
+    "submit": "Assign",
+    "accept": {
+      "success": "Success",
+      "successMessage": "Task accepted",
+      "error": "Failed to accept task"
+    },
+    "decline": {
+      "success": "Success",
+      "successMessage": "Task rejected",
+      "error": "Failed to reject task",
+      "reasonRequired": "Rejection reason is required"
+    },
+    "start": {
+      "success": "Success",
+      "successMessage": "Task started",
+      "error": "Failed to start task"
+    },
+    "verify": {
+      "confirm": "Confirm Verification",
+      "question": "Are you sure you want to verify this task? This action cannot be undone.",
+      "cancel": "Cancel",
+      "yes": "Yes, Verify",
+      "success": "Success",
+      "successMessage": "Task verified successfully",
+      "error": "Failed to verify task"
+    },
+    "revision": {
+      "reasonRequired": "Revision reason is required",
+      "confirm": "Confirm Revision Request",
+      "question": "Are you sure you want to request a revision? The worker will redo this task.",
+      "cancel": "Cancel",
+      "yes": "Yes, Request Revision",
+      "success": "Success",
+      "successMessage": "Revision request sent",
+      "error": "Failed to send revision request"
+    },
+    "selectTagging": "Select officer to tag",
+    "searchTagging": "Search & select officer..."
+  },
+  "tagged": {
+    "sectionTitle": "TAG OFFICERS",
+    "sectionSubtitle": "Optional — select multiple officers to tag",
+    "label": "Tag Officers",
+    "placeholder": "Select officers to tag...",
+    "searchPlaceholder": "Search officer name...",
+    "selectAreaFirst": "Select location first",
+    "loading": "Loading officer list...",
+    "empty": "No officers can be tagged in this area",
+    "emptyOthers": "No other officers to tag"
+  },
+  "header": {
+    "sort": "SORT TASKS"
+  },
+  "fab": {
+    "create": "+ Create Task"
+  },
+  "create": {
+    "title": "Create Task",
+    "accessDenied": "Access Denied",
+    "accessDeniedMessage": "You do not have permission to create tasks.",
+    "successTitle": "Success",
+    "successMessage": "Task created successfully.",
+    "failureTitle": "Failed",
+    "failureMessage": "Failed to create task. Please try again.",
+    "cancelConfirm": "Unsaved data will be lost.",
+    "cancelNo": "No",
+    "cancelYes": "Yes",
+    "deadline": {
+      "sectionTitle": "DEADLINE",
+      "subtitle": "Optional — set task deadline (default time 23:59)",
+      "dateLabel": "Date",
+      "datePlaceholder": "Select deadline date...",
+      "timeLabel": "Time (optional, default 23:59)",
+      "timePlaceholder": "Select time...",
+      "clearButton": "Clear Deadline"
+    },
+    "cancelConfirmTitle": "Cancel task creation?"
+  },
+  "detail": {
+    "loading": "Loading task...",
+    "notFound": "Task Not Found",
+    "notFoundMessage": "The task you are looking for was not found or has been deleted",
+    "backButtonTitle": "Back",
+    "taskHistory": "Task History",
+    "assignment": "Assignment",
+    "completionDetails": "Completion Details",
+    "assignmentHistory": "Assignment History",
+    "accessibilityLabel": "Task details {{title}}",
+    "taggedOfficers": "Tag Involved Officers",
+    "noTaggedOfficers": "No officers tagged yet. Tap the pencil icon to add.",
+    "noSelectableOfficers": "No officers available to tag.",
+    "selectOfficersLabel": "Select officers to tag",
+    "searchOfficersPlaceholder": "Search & select officers...",
+    "searchOfficersLabel": "Search officer name...",
+    "declineReason": "Rejection Reason",
+    "declinedAt": "Rejected on {{date}}",
+    "revisionReason": "Revision Reason",
+    "verification": "Verification",
+    "verifiedBy": "Verified by {{name}}"
+  },
+  "card": {
+    "accessibilityLabel": "Task details {{title}}"
+  },
+  "complete": {
+    "title": "Complete Task",
+    "loading": "Loading...",
+    "notFound": "Task not found",
+    "taskSection": "Task",
+    "description": "Completion Description",
+    "descriptionPlaceholder": "Explain the work results...",
+    "photosRequired": "Incomplete",
+    "photosRequiredMessage": "At least 1 proof photo of completion is required.",
+    "descriptionRequired": "Incomplete",
+    "descriptionRequiredMessage": "Completion description is required.",
+    "success": "Success",
+    "successMessage": "Task completed successfully.",
+    "failure": "Failed",
+    "failureMessage": "Failed to complete task. Please try again.",
+    "photosHeader": "PROOF PHOTOS *",
+    "photosSubtitle": "Add 1-3 photos of the work",
+    "submitButton": "Complete Task",
+    "cancelButton": "Cancel",
+    "areaLabel": "Area:",
+    "rayonLabel": "Rayon:",
+    "loadingFailed": "Failed to load task data"
+  },
+  "messages": {
+    "clockInRequired": "Not Clocked In",
+    "clockInRequiredMessage": "You must clock in first to add an activity"
+  },
+  "actionButtons": {
+    "assign": "Assign",
+    "reassign": "Reassign",
+    "selectReplacement": "Select Replacement Officer",
+    "selectOfficer": "Select Officer",
+    "placeholder": "— Select Officer —",
+    "cancel": "Cancel",
+    "submit": "Assign",
+    "accept": "Accept",
+    "decline": "Decline",
+    "start": "Start Working",
+    "complete": "Complete Task",
+    "verify": "Verify",
+    "revision": "Request Revision",
+    "sendRevision": "Send Revision",
+    "declineReason": "Rejection Reason",
+    "declineReasonPlaceholder": "Explain the reason for rejecting this task...",
+    "sendDecline": "Send Decline",
+    "revisionReason": "Revision Reason",
+    "revisionReasonPlaceholder": "Explain why this task needs revision...",
+    "delegate": "Delegate to Subordinate",
+    "selectDelegate": "Delegate to Subordinate"
+  },
+  "errors": {
+    "fetchFailed": "Failed to load schedule",
+    "scheduleMissing": "No schedule for today",
+    "loadingFailed": "Failed to load task details."
+  },
+  "assignToTask": {
+    "title": "Assign to Officer",
+    "roleLabel": "Role",
+    "rolePlaceholder": "Select role",
+    "assigneeLabel": "Assign To",
+    "assigneePlaceholder": "Select user",
+    "noAssignees": "No {{role}} in this rayon",
+    "dateLabel": "Scheduling Date",
+    "notScheduled": "Not scheduled",
+    "dateHint": "To change, use \"Reschedule\" after assignment.",
+    "capacityLabel": "Capacity this week:",
+    "capacityExceeded": " (Capacity exceeded)",
+    "unit": " unit",
+    "assignButton": "Assign",
+    "success": "Success",
+    "successMessage": "Task successfully created from request",
+    "failTitle": "Failed to assign",
+    "failMessage": "Failed to assign request. Try again.",
+    "error": "An Error Occurred"
+  },
+  "species": {
+    "placeholder": "Search plant species...",
+    "selectedLabel": "Selected species",
+    "chipLabel": "{{name}}, tap to delete",
+    "searchLabel": "Plant species search",
+    "searchHint": "Type species name to search",
+    "clearLabel": "Clear search",
+    "noResults": "No results for \"{{query}}\"",
+    "selectLabel": "Select {{name}}",
+    "latinHint": "Latin: {{latin}}"
+  },
+  "partial": {
+    "sheetTitle": "Partial Completion",
+    "targetLabel": "Target Plants",
+    "completedLabel": "Completed Count",
+    "remainingLabel": "Remaining to continue",
+    "resumeButton": "CONTINUE TOMORROW",
+    "resumeButtonActive": "CONTINUE TOMORROW",
+    "resumeLabel": "Create child task to continue tomorrow: {{status}}",
+    "resumeHint": "If enabled, backend will create a child task to continue {{count}} plants",
+    "notesLabel": "Notes (Optional)",
+    "notesPlaceholder": "Enter notes or constraints...",
+    "errorMinCount": "Completed count must be greater than 0",
+    "errorExceedsTarget": "Cannot exceed target ({{target}})",
+    "successTitle": "SUCCESS",
+    "successBody": "Task partially completed",
+    "errorFailed": "Failed to complete task partially",
+    "validationTitle": "Validation"
+  },
+  "tab": {
+    "tabLoadErrorTitle": "Failed to load tasks",
+    "tabRetry": "Try Again",
+    "tabFilteredHint": "Try changing or resetting the filter",
+    "tabTaggedEmpty": "Tasks that tag you will appear here",
+    "tabCreatedEmpty": "Tasks you create will appear here",
+    "tabAssignedEmpty": "Tasks assigned to you will appear here",
+    "tabNoMatchTitle": "No matching tasks",
+    "tabTaggedEmptyTitle": "No tags yet",
+    "tabCreatedEmptyTitle": "No tasks created yet",
+    "tabEmptyTitle": "No tasks yet",
+    "tabNoTasksAvailable": "No tasks available yet"
+  },
+  "locationSection": {
+    "title": "LOCATION",
+    "autoFromProfile": "Location auto-set from your profile",
+    "selectAssignment": "Select assignment location",
+    "rayonLabel": "Rayon",
+    "loadingRayon": "Loading rayons...",
+    "areaLabel": "Area",
+    "loadingArea": "Loading areas...",
+    "yourRayon": "Your rayon",
+    "yourArea": "Your area",
+    "rayonPlaceholder": "Select rayon...",
+    "areaPlaceholder": "Select area..."
+  },
+  "draft": {
+    "foundTitle": "Draft Found",
+    "foundMessage": "You have an unsent task draft. Continue?",
+    "discard": "Delete",
+    "continueLabel": "Continue"
+  },
+  "filterChips": {
+    "all": "All",
+    "tagged": "Tag Me",
+    "createdByMe": "Created by Me",
+    "date": "Date",
+    "rayon": "Rayon",
+    "area": "Area",
+    "type": "Type",
+    "rayonSelected": "Rayon selected",
+    "activityStatusPending": "Pending Approval",
+    "activityStatusApproved": "Approved",
+    "activityStatusRejected": "Rejected"
+  },
+  "modal": {
+    "todayTasks": "Today's Tasks ({{count}})",
+    "todayTasksEmptyMessage": "Tasks assigned to you will appear here."
+  },
+  "audit": {
+    "created": "Created",
+    "assigned": "Assigned",
+    "accepted": "Accepted",
+    "declined": "Declined",
+    "started": "Started",
+    "completed": "Completed",
+    "revision": "Revision Requested",
+    "verified": "Verified"
+  },
+  "assignment": {
+    "createdBy": "Created by",
+    "assignedTo": "Assigned to"
+  },
+  "todayModal": {
+    "taskDetailAria": "Task detail {{title}}"
+  },
+  "list": {
+    "loadError": "Failed to load tasks",
+    "loadDetailError": "Failed to load task detail"
+  }
+}

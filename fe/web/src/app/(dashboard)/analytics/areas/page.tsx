@@ -2,6 +2,7 @@
 
 import type { UserRole } from '@/types/models';
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   PageHeader,
   Card,
@@ -42,6 +43,7 @@ function getGrade(score: number): Grade {
 }
 
 export default function AreaAnalyticsPage() {
+  const { t } = useTranslation('analytics');
   useRequireAuth(ANALYTICS_VIEWERS);
 
   const [search, setSearch] = useState('');
@@ -66,7 +68,7 @@ export default function AreaAnalyticsPage() {
   if (isListLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Analitik Area" />
+        <PageHeader title={t('areas.page.title')} />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <SkeletonCard />
           <SkeletonCard />
@@ -80,20 +82,20 @@ export default function AreaAnalyticsPage() {
   if (!listData?.data || listData.data.length === 0) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Analitik Area" />
-        <EmptyState variant="noData" title="Tidak ada data area" />
+        <PageHeader title={t('areas.page.title')} />
+        <EmptyState variant="noData" title={t('areas.empty.noData')} />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Analitik Area" />
+      <PageHeader title={t('areas.page.title')} />
 
       {/* Search */}
       <FormInput
-        label="Cari area"
-        placeholder="Cari area..."
+        label={t('areas.search.label')}
+        placeholder={t('areas.search.placeholder')}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
@@ -113,15 +115,15 @@ export default function AreaAnalyticsPage() {
 
               <div className="space-y-2 mb-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-nb-body-sm text-nb-gray-600">Staffing</span>
+                  <span className="text-nb-body-sm text-nb-gray-600">{t('areas.card.staffing')}</span>
                   <span className="font-medium">{area.staffing_coverage.toFixed(1)}%</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-nb-body-sm text-nb-gray-600">Tugas Terbuka</span>
+                  <span className="text-nb-body-sm text-nb-gray-600">{t('areas.card.openTasks')}</span>
                   <span className="font-medium">{area.open_tasks}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-nb-body-sm text-nb-gray-600">Skor</span>
+                  <span className="text-nb-body-sm text-nb-gray-600">{t('areas.card.score')}</span>
                   <div className="flex items-center gap-2">
                     <span className="font-semibold">{area.avg_worker_performance.toFixed(1)}</span>
                     <Badge className={GRADE_COLORS[grade]}>{grade}</Badge>
@@ -130,7 +132,7 @@ export default function AreaAnalyticsPage() {
               </div>
 
               <div className="text-xs text-nb-gray-500 pt-3 border-t border-nb-gray-200">
-                {area.attended_workers}/{area.required_workers} pekerja hadir
+                {area.attended_workers}/{area.required_workers} {t('areas.card.workersAttended')}
               </div>
             </Card>
           );
@@ -145,7 +147,7 @@ export default function AreaAnalyticsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
-              <span>Detail Area</span>
+              <span>{t('areas.detail.title')}</span>
               <button onClick={() => setSelectedAreaId(null)}>
                 <X className="size-5" />
               </button>
@@ -153,37 +155,37 @@ export default function AreaAnalyticsPage() {
           </DialogHeader>
 
           {isAreaLoading ? (
-            <div className="py-8 text-center text-nb-gray-600">Memuat...</div>
+            <div className="py-8 text-center text-nb-gray-600">{t('areas.detail.loading')}</div>
           ) : areaDetail ? (
             <div className="space-y-4">
               <Card className="p-4 space-y-3">
                 <h4 className="font-semibold text-nb-h3">{areaDetail.area_name}</h4>
                 <div className="flex justify-between items-center">
-                  <span className="text-nb-body-sm text-nb-gray-600">Staffing Coverage</span>
+                  <span className="text-nb-body-sm text-nb-gray-600">{t('areas.detail.staffingCoverage')}</span>
                   <span className="font-medium">{areaDetail.staffing_coverage.toFixed(1)}%</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-nb-body-sm text-nb-gray-600">Pekerja Hadir</span>
+                  <span className="text-nb-body-sm text-nb-gray-600">{t('areas.detail.workersAttended')}</span>
                   <span className="font-medium">
                     {areaDetail.attended_workers}/{areaDetail.required_workers}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-nb-body-sm text-nb-gray-600">Tugas Terbuka</span>
+                  <span className="text-nb-body-sm text-nb-gray-600">{t('areas.detail.openTasks')}</span>
                   <span className="font-medium">{areaDetail.open_tasks}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-nb-body-sm text-nb-gray-600">Pemeliharaan</span>
+                  <span className="text-nb-body-sm text-nb-gray-600">{t('areas.detail.maintenance')}</span>
                   <span className="font-medium">{areaDetail.maintenance_count}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-nb-body-sm text-nb-gray-600">Skor Kinerja</span>
+                  <span className="text-nb-body-sm text-nb-gray-600">{t('areas.detail.performanceScore')}</span>
                   <span className="font-semibold">{areaDetail.avg_worker_performance.toFixed(1)}</span>
                 </div>
               </Card>
             </div>
           ) : (
-            <EmptyState variant="error" title="Gagal memuat detail" />
+            <EmptyState variant="error" title={t('areas.detail.error')} />
           )}
         </DialogContent>
       </Dialog>

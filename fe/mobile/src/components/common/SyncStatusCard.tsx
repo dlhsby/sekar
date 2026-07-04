@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import {
   nbColors,
   nbType,
@@ -40,6 +41,7 @@ export const SyncStatusCard: React.FC<SyncStatusCardProps> = ({
   onClearFailed,
   testID = 'sync-status-card',
 }) => {
+  const { t } = useTranslation();
   const { pendingCount, failedCount } = syncStatus;
   const hasPendingItems = pendingCount > 0 || failedCount > 0;
 
@@ -50,17 +52,17 @@ export const SyncStatusCard: React.FC<SyncStatusCardProps> = ({
 
   return (
     <NBCard variant="elevated" style={styles.card} testID={testID}>
-      <Text style={styles.cardTitle}>Sinkronisasi Data</Text>
+      <Text style={styles.cardTitle}>{t('common:sync.statusCard.title')}</Text>
 
       <View style={styles.syncStatusRow}>
-        <Text style={styles.syncLabel}>Tertunda:</Text>
+        <Text style={styles.syncLabel}>{t('common:sync.statusCard.pendingLabel')}</Text>
         <Text style={[styles.syncValue, pendingCount > 0 && styles.syncWarning]}>
           {pendingCount}
         </Text>
       </View>
 
       <View style={styles.syncStatusRow}>
-        <Text style={styles.syncLabel}>Gagal:</Text>
+        <Text style={styles.syncLabel}>{t('common:sync.statusCard.failedLabel')}</Text>
         <Text style={[styles.syncValue, failedCount > 0 && styles.syncError]}>
           {failedCount}
         </Text>
@@ -68,7 +70,7 @@ export const SyncStatusCard: React.FC<SyncStatusCardProps> = ({
 
       <View style={styles.syncButtons}>
         <NBButton
-          title="Sinkronkan"
+          title={t('common:sync.statusCard.syncButton')}
           onPress={onSyncNow}
           disabled={isSyncing}
           loading={isSyncing}
@@ -80,14 +82,14 @@ export const SyncStatusCard: React.FC<SyncStatusCardProps> = ({
         {failedCount > 0 && (
           <>
             <NBButton
-              title="Coba Ulang"
+              title={t('common:sync.statusCard.retryButton')}
               onPress={onRetryFailed}
               variant="secondary"
               size="sm"
               testID="retry-failed-button"
             />
             <NBButton
-              title="Hapus Gagal"
+              title={t('common:sync.statusCard.clearButton')}
               onPress={onClearFailed}
               variant="danger"
               size="sm"

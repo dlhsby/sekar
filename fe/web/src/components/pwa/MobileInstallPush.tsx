@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { X, Smartphone } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/lib/auth/hooks';
 
 const DISMISS_SESSION_KEY = 'sekar_mobile_push_dismissed';
@@ -18,6 +19,7 @@ const NATIVE_APP_ROLES = new Set(['satgas', 'linmas', 'korlap']);
  */
 export function MobileInstallPush() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   // Derive visibility from props + storage instead of a setState-in-effect.
   // Lazy init reads sessionStorage once on the client (false during SSR).
   const [dismissed, setDismissed] = useState(
@@ -38,7 +40,7 @@ export function MobileInstallPush() {
     <div className="sm:hidden">
       <div
         role="complementary"
-        aria-label="Unduh aplikasi SEKAR"
+        aria-label={t("common:pwa.downloadAppTitle")}
         className="mt-4 rounded-nb-base border-2 border-nb-black p-4 shadow-nb-sm bg-nb-background"
       >
         <div className="flex items-start justify-between gap-3">
@@ -47,18 +49,14 @@ export function MobileInstallPush() {
               <Smartphone className="h-5 w-5 text-nb-black" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <p className="text-nb-body-sm font-bold uppercase tracking-wide text-nb-black">
-                Unduh Aplikasi SEKAR
-              </p>
-              <p className="text-nb-caption text-nb-gray-600 mt-0.5">
-                Untuk pengalaman lebih baik dengan GPS, kamera, dan notifikasi push
-              </p>
+              <p className="text-nb-body-sm font-bold uppercase tracking-wide text-nb-black">{t("common:pwa.downloadAppTitle")}</p>
+              <p className="text-nb-caption text-nb-gray-600 mt-0.5">{t("common:pwa.gpsHint")}</p>
             </div>
           </div>
           <button
             onClick={handleDismiss}
             className="shrink-0 rounded-nb-sm border border-nb-black p-1 hover:bg-black/10"
-            aria-label="Tutup"
+            aria-label={t('common:actions.close')}
           >
             <X className="h-4 w-4 text-nb-black" aria-hidden="true" />
           </button>

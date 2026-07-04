@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { PlantSpecies } from '../../types/models.types';
 import { SpeciesAutocomplete } from './SpeciesAutocomplete';
 import { NBSelect } from '../nb/NBSelect';
@@ -41,26 +42,26 @@ interface PruningTaskFormProps {
   testID?: string;
 }
 
-const CASE_TYPE_OPTIONS: Array<{ label: string; value: CaseType }> = [
-  { label: 'Gangguan Tinggi', value: 'GT' },
-  { label: 'Pohon Tumbang', value: 'PT' },
-  { label: 'Pohon Sakit', value: 'PS' },
-  { label: 'Pohon Diameter Besar', value: 'PD' },
-  { label: 'Pohon Kering', value: 'PK' },
+const getCaseTypeOptions = (t: ReturnType<typeof useTranslation>['t']) => [
+  { label: t('pruning:taskForm.caseTypeOptions.GT'), value: 'GT' as CaseType },
+  { label: t('pruning:taskForm.caseTypeOptions.PT'), value: 'PT' as CaseType },
+  { label: t('pruning:taskForm.caseTypeOptions.PS'), value: 'PS' as CaseType },
+  { label: t('pruning:taskForm.caseTypeOptions.PD'), value: 'PD' as CaseType },
+  { label: t('pruning:taskForm.caseTypeOptions.PK'), value: 'PK' as CaseType },
 ];
 
-const PRUNING_ACTION_OPTIONS: Array<{ label: string; value: PruningAction }> = [
-  { label: 'Pemangkasan Mahkota', value: 'PM' },
-  { label: 'Pemangkasan Batang', value: 'PB' },
-  { label: 'Pemangkasan Cabang', value: 'PC' },
+const getPruningActionOptions = (t: ReturnType<typeof useTranslation>['t']) => [
+  { label: t('pruning:taskForm.pruningActionOptions.PM'), value: 'PM' as PruningAction },
+  { label: t('pruning:taskForm.pruningActionOptions.PB'), value: 'PB' as PruningAction },
+  { label: t('pruning:taskForm.pruningActionOptions.PC'), value: 'PC' as PruningAction },
 ];
 
-const SOURCE_OPTIONS: Array<{ label: string; value: Source }> = [
-  { label: 'Tindak Lanjut Inspeksi', value: 'TIW' },
-  { label: 'Temuan Satgas', value: 'TS' },
-  { label: 'Call Center', value: 'CC' },
-  { label: 'Pesan Warga', value: 'PW' },
-  { label: 'Walikota', value: 'Wk' },
+const getSourceOptions = (t: ReturnType<typeof useTranslation>['t']) => [
+  { label: t('pruning:taskForm.sourceOptions.TIW'), value: 'TIW' as Source },
+  { label: t('pruning:taskForm.sourceOptions.TS'), value: 'TS' as Source },
+  { label: t('pruning:taskForm.sourceOptions.CC'), value: 'CC' as Source },
+  { label: t('pruning:taskForm.sourceOptions.PW'), value: 'PW' as Source },
+  { label: t('pruning:taskForm.sourceOptions.Wk'), value: 'Wk' as Source },
 ];
 
 /**
@@ -74,6 +75,7 @@ export const PruningTaskForm: React.FC<PruningTaskFormProps> = ({
   isLoading = false,
   testID,
 }) => {
+  const { t } = useTranslation();
   const [caseType, setCaseType] = useState<CaseType | ''>(initialValues?.caseType || '');
   const [pruningAction, setPruningAction] = useState<PruningAction | ''>(initialValues?.pruningAction || '');
   const [source, setSource] = useState<Source | ''>(initialValues?.source || '');
@@ -128,19 +130,19 @@ export const PruningTaskForm: React.FC<PruningTaskFormProps> = ({
 
     // Validate form
     if (!caseType) {
-      setValidationError('Jenis gangguan harus dipilih');
+      setValidationError(t('pruning:taskForm.validationErrors.caseTypeRequired'));
       return;
     }
     if (!pruningAction) {
-      setValidationError('Jenis pemangkasan harus dipilih');
+      setValidationError(t('pruning:taskForm.validationErrors.pruningActionRequired'));
       return;
     }
     if (!source) {
-      setValidationError('Sumber pengajuan harus dipilih');
+      setValidationError(t('pruning:taskForm.validationErrors.sourceRequired'));
       return;
     }
     if (selectedSpecies.length === 0) {
-      setValidationError('Minimal satu spesies tanaman harus dipilih');
+      setValidationError(t('pruning:taskForm.validationErrors.speciesRequired'));
       return;
     }
 
@@ -153,7 +155,7 @@ export const PruningTaskForm: React.FC<PruningTaskFormProps> = ({
       .filter((item) => item.count >= 1);
 
     if (speciesArray.length === 0) {
-      setValidationError('Semua spesies tanaman harus memiliki jumlah minimal 1');
+      setValidationError(t('pruning:taskForm.validationErrors.speciesCountRequired'));
       return;
     }
 
@@ -168,10 +170,10 @@ export const PruningTaskForm: React.FC<PruningTaskFormProps> = ({
       });
     } catch (error) {
       setValidationError(
-        error instanceof Error ? error.message : 'Terjadi kesalahan saat menyimpan data'
+        error instanceof Error ? error.message : t('pruning:taskForm.validationErrors.saveFailed')
       );
     }
-  }, [caseType, pruningAction, source, selectedSpecies, speciesCounts, notes, areaId, onSubmit]);
+  }, [caseType, pruningAction, source, selectedSpecies, speciesCounts, notes, areaId, onSubmit, t]);
 
   return (
     <KeyboardAvoidingView
@@ -183,56 +185,56 @@ export const PruningTaskForm: React.FC<PruningTaskFormProps> = ({
         {validationError && (
           <NBAlert
             variant="danger"
-            title="Validasi Gagal"
+            title={t('pruning:taskForm.validationFailedTitle')}
             message={validationError}
           />
         )}
 
         {/* Case Type Picker */}
         <View style={styles.section}>
-          <Text style={styles.label}>Jenis Gangguan *</Text>
+          <Text style={styles.label}>{t('pruning:taskForm.caseTypeLabel')}</Text>
           <NBSelect
-            options={CASE_TYPE_OPTIONS}
+            options={getCaseTypeOptions(t)}
             value={caseType}
             onValueChange={(value) => {
               setCaseType(value as CaseType);
               setValidationError('');
             }}
-            placeholder="Pilih jenis gangguan"
+            placeholder={t('pruning:taskForm.caseTypePlaceholder')}
           />
         </View>
 
         {/* Pruning Action Picker */}
         <View style={styles.section}>
-          <Text style={styles.label}>Jenis Pemangkasan *</Text>
+          <Text style={styles.label}>{t('pruning:taskForm.pruningActionLabel')}</Text>
           <NBSelect
-            options={PRUNING_ACTION_OPTIONS}
+            options={getPruningActionOptions(t)}
             value={pruningAction}
             onValueChange={(value) => {
               setPruningAction(value as PruningAction);
               setValidationError('');
             }}
-            placeholder="Pilih jenis pemangkasan"
+            placeholder={t('pruning:taskForm.pruningActionPlaceholder')}
           />
         </View>
 
         {/* Source Picker */}
         <View style={styles.section}>
-          <Text style={styles.label}>Sumber Pengajuan *</Text>
+          <Text style={styles.label}>{t('pruning:taskForm.sourceLabel')}</Text>
           <NBSelect
-            options={SOURCE_OPTIONS}
+            options={getSourceOptions(t)}
             value={source}
             onValueChange={(value) => {
               setSource(value as Source);
               setValidationError('');
             }}
-            placeholder="Pilih sumber pengajuan"
+            placeholder={t('pruning:taskForm.sourcePlaceholder')}
           />
         </View>
 
         {/* Species Selection */}
         <View style={styles.section}>
-          <Text style={styles.label}>Spesies Tanaman *</Text>
+          <Text style={styles.label}>{t('pruning:taskForm.speciesLabel')}</Text>
           <SpeciesAutocomplete
             multi={true}
             value={selectedSpecies}
@@ -245,7 +247,7 @@ export const PruningTaskForm: React.FC<PruningTaskFormProps> = ({
         {/* Species Counts */}
         {selectedSpecies.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.label}>Jumlah per Spesies</Text>
+            <Text style={styles.label}>{t('pruning:taskForm.speciesCountLabel')}</Text>
             {selectedSpecies.map((species) => (
               <View key={species.id} style={styles.countRow}>
                 <Text style={styles.countLabel}>{species.nameId}</Text>
@@ -256,7 +258,7 @@ export const PruningTaskForm: React.FC<PruningTaskFormProps> = ({
                   value={String(speciesCounts[species.id] || 1)}
                   onChangeText={(value) => handleCountChange(species.id, value)}
                   editable={!isLoading}
-                  accessibilityLabel={`Jumlah ${species.nameId}`}
+                  accessibilityLabel={t('pruning:taskForm.speciesCountAccessibility', { species: species.nameId })}
                   testID={`${testID}-count-${species.id}`}
                 />
               </View>
@@ -266,18 +268,18 @@ export const PruningTaskForm: React.FC<PruningTaskFormProps> = ({
 
         {/* Notes */}
         <View style={styles.section}>
-          <Text style={styles.label}>Catatan Tambahan (Opsional)</Text>
+          <Text style={styles.label}>{t('pruning:taskForm.notesLabel')}</Text>
           <TextInput
             style={styles.notesInput}
-            placeholder="Tambahkan catatan..."
+            placeholder={t('pruning:taskForm.notesPlaceholder')}
             placeholderTextColor={nbColors.gray50}
             value={notes}
             onChangeText={setNotes}
             multiline
             numberOfLines={4}
             editable={!isLoading}
-            accessibilityLabel="Catatan tambahan"
-            accessibilityHint="Ruang bebas untuk catatan tambahan"
+            accessibilityLabel={t('pruning:taskForm.notesAccessibility')}
+            accessibilityHint={t('pruning:taskForm.notesAccessibilityHint')}
             testID={`${testID}-notes`}
           />
         </View>
@@ -285,13 +287,13 @@ export const PruningTaskForm: React.FC<PruningTaskFormProps> = ({
         {/* Submit Button */}
         <View style={styles.buttonContainer}>
           <NBButton
-            title="Kirim Pengajuan"
+            title={t('pruning:taskForm.submitButtonLabel')}
             onPress={handleSubmit}
             disabled={!isFormValid || isLoading}
             loading={isLoading}
             testID={`${testID}-submit`}
-            accessibilityLabel="Kirim pengajuan"
-            accessibilityHint={!isFormValid ? 'Lengkapi semua bidang yang diperlukan' : undefined}
+            accessibilityLabel={t('pruning:taskForm.submitButtonAccessibility')}
+            accessibilityHint={!isFormValid ? t('pruning:taskForm.submitButtonDisabledHint') : undefined}
           />
         </View>
       </ScrollView>

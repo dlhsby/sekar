@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBText } from '../nb/NBText';
 import { nbColors, nbSpacing, nbRadius, nbBorders, nbShadows } from '../../constants/nbTokens';
@@ -23,14 +24,15 @@ export const AssignedAreaCard: React.FC<AssignedAreaCardProps> = ({
   area,
   testID = 'assigned-area-card',
 }) => {
-  const metaParts = [area?.areaType?.name, area?.radius_meters ? `${area.radius_meters}m radius` : null]
+  const { t } = useTranslation();
+  const metaParts = [area?.areaType?.name, area?.radius_meters ? `${area.radius_meters}m ${t('profile:assignedArea.radiusSuffix')}` : null]
     .filter(Boolean)
     .join(' · ');
 
   return (
     <View style={styles.wrapper} testID={testID}>
       <NBText variant="mono-sm" color="gray600" uppercase style={styles.title}>
-        Area Ditugaskan
+        {t('profile:assignedArea.title')}
       </NBText>
       <View style={styles.card}>
         {area ? (
@@ -56,7 +58,7 @@ export const AssignedAreaCard: React.FC<AssignedAreaCardProps> = ({
           </View>
         ) : (
           <NBText variant="body-sm" color="gray500" align="center" style={styles.noArea}>
-            Tidak ada area ditugaskan
+            {t('profile:assignedArea.noArea')}
           </NBText>
         )}
       </View>

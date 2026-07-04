@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBText } from '../../../components/nb';
 import { nbColors, nbSpacing, nbBorders, nbRadius } from '../../../constants/nbTokens';
 import type { AssetCondition } from '../../../types/assets.types';
@@ -23,14 +24,6 @@ const RETURN_CONDITIONS: AssetCondition[] = [
   'damaged',
   'unusable',
 ];
-
-const CONDITION_LABELS: Record<AssetCondition, string> = {
-  good: 'Baik',
-  fair: 'Cukup',
-  poor: 'Buruk',
-  damaged: 'Rusak',
-  unusable: 'Tidak Layak',
-};
 
 const CONDITION_COLORS: Record<AssetCondition, string> = {
   good: nbColors.success,
@@ -51,9 +44,18 @@ export function ConditionSelector({
   value,
   onSelect,
   isReturn = false,
-  label = 'Kondisi',
+  label,
 }: ConditionSelectorProps): React.JSX.Element {
+  const { t } = useTranslation();
   const conditions = isReturn ? RETURN_CONDITIONS : CHECKOUT_CONDITIONS;
+
+  const CONDITION_LABELS: Record<AssetCondition, string> = {
+    good: t('assets:condition.good'),
+    fair: t('assets:condition.fair'),
+    poor: t('assets:condition.poor'),
+    damaged: t('assets:condition.damaged'),
+    unusable: t('assets:condition.unusable'),
+  };
 
   return (
     <View style={styles.container}>

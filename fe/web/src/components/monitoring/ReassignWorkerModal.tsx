@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +15,7 @@ import { cn } from '@/lib/utils/cn';
 import { useLiveUsers, useReassignWorker } from '@/lib/api/monitoring';
 import type { BoundariesResponse, LiveUser } from '@/lib/api/monitoring';
 import { ROLE_LABELS } from '@/lib/constants/roles';
-import { STATUS_BADGE_CLASSES, STATUS_LABELS } from '@/lib/constants/monitoring';
+import { STATUS_BADGE_CLASSES, getStatusLabels } from '@/lib/constants/monitoring';
 import { todayJakartaISODate } from '@/lib/utils/formatters';
 import type { UserRole } from '@/types/models';
 import { toast } from 'sonner';
@@ -54,6 +55,8 @@ export function ReassignWorkerModal({
   targetAreaName,
   boundaries,
 }: ReassignWorkerModalProps) {
+  const { t } = useTranslation(['monitoring']);
+  const statusLabels = getStatusLabels();
   const [sourceAreaId, setSourceAreaId] = useState<string>('');
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [reason, setReason] = useState<string>('');
@@ -89,10 +92,10 @@ export function ReassignWorkerModal({
         effective_date: effectiveDate,
         end_current_schedule: true,
       });
-      toast.success('Petugas berhasil dipindahkan');
+      toast.success(t('monitoring:reassign.successMessage'));
       handleClose();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Gagal memindahkan petugas';
+      const message = err instanceof Error ? err.message : t('monitoring:reassign.errorMessage');
       toast.error(message);
     }
   }
@@ -103,16 +106,16 @@ export function ReassignWorkerModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ArrowRightLeft className="w-5 h-5 text-nb-primary" />
-            Pindah Petugas ke {targetAreaName}
+            {t('monitoring:reassignModal.title', { area: targetAreaName })}
           </DialogTitle>
-          <DialogDescription>Pilih petugas dari area lain untuk dipindahkan</DialogDescription>
+          <DialogDescription>{t('monitoring:reassignModal.description')}</DialogDescription>
         </DialogHeader>
 
         <div className="px-4 pb-2 space-y-4">
           {/* Source area selector */}
           <div className="space-y-1.5">
             <label htmlFor="source-area" className="text-sm font-bold text-nb-black">
-              Area Asal
+              {t('monitoring:reassignModal.sourceAreaLabel')}
             </label>
             <select
               id="source-area"
@@ -128,7 +131,7 @@ export function ReassignWorkerModal({
                 'disabled:opacity-50 disabled:cursor-not-allowed'
               )}
             >
-              <option value="">-- Pilih area asal --</option>
+              <option value="">{t('monitoring:reassignModal.sourceAreaPlaceholder')}</option>
               {siblingAreas.map((area) => (
                 <option key={area.id} value={area.id}>
                   {area.name}
@@ -136,7 +139,7 @@ export function ReassignWorkerModal({
               ))}
             </select>
             {siblingAreas.length === 0 && (
-              <p className="text-xs text-nb-gray-500">Tidak ada area lain dalam rayon yang sama.</p>
+              <p className="text-xs text-nb-gray-500">{t('monitoring:reassignModal.noOtherAreas')}</p>
             )}
           </div>
 
@@ -145,7 +148,7 @@ export function ReassignWorkerModal({
             <div className="space-y-1.5">
               <p className="text-sm font-bold text-nb-black flex items-center gap-1.5">
                 <Users className="w-4 h-4" />
-                Pilih Petugas
+                {t('monitoring:reassignModal.selectLabel')}
               </p>
               {usersLoading ? (
                 <div className="space-y-2">
@@ -155,7 +158,7 @@ export function ReassignWorkerModal({
                 </div>
               ) : workers.length === 0 ? (
                 <p className="text-xs text-nb-gray-500 py-2">
-                  Tidak ada petugas aktif di area ini.
+                  {t('monitoring:reassignModal.noActiveWorkers')}
                 </p>
               ) : (
                 <ul className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
@@ -200,7 +203,7 @@ export function ReassignWorkerModal({
                               statusClass
                             )}
                           >
-                            {STATUS_LABELS[user.status] ?? user.status}
+                            {statusLabels[user.status] ?? user.status}
                           </span>
                         </button>
                       </li>
@@ -214,13 +217,14 @@ export function ReassignWorkerModal({
           {/* Reason */}
           <div className="space-y-1.5">
             <label htmlFor="reason" className="text-sm font-bold text-nb-black">
-              Alasan <span className="font-normal text-nb-gray-500">(opsional)</span>
+              {t('monitoring:reassignModal.reasonLabel')}{' '}
+              <span className="font-normal text-nb-gray-500">{t('monitoring:reassignModal.optional')}</span>
             </label>
             <textarea
               id="reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Tuliskan alasan pemindahan..."
+              placeholder={t('monitoring:reassignModal.reasonPlaceholder')}
               rows={2}
               className={cn(
                 'w-full px-3 py-2 text-sm rounded-nb-base resize-none',
@@ -232,7 +236,7 @@ export function ReassignWorkerModal({
           </div>
 
           {/* Effective date */}
-          <Field label="Tanggal Berlaku">
+          <Field label={t('monitoring:reassignModal.effectiveDateLabel')}>
             {(p) => (
               <DatePicker
                 id={p.id}
@@ -250,7 +254,7 @@ export function ReassignWorkerModal({
             onClick={handleClose}
             disabled={reassignMutation.isPending}
           >
-            Batal
+            {t('monitoring:reassignModal.cancelButton')}
           </Button>
           <Button
             variant="default"
@@ -259,7 +263,7 @@ export function ReassignWorkerModal({
             disabled={!selectedUserId || reassignMutation.isPending}
             loading={reassignMutation.isPending}
           >
-            Pindahkan
+            {t('monitoring:reassignModal.reassignButton')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,8 +1,9 @@
 /**
  * Shared task-status presentation helpers — the "today's tasks" surfaces
  * (Home Ringkasan tile + TodayTasksModal) map a `TaskStatus` to a status-pill
- * tone + Indonesian label the same way.
+ * tone + localized label.
  */
+import i18n from '../i18n/config';
 import type { StatusTone } from '../components/home/StatusPill';
 import type { TaskStatus } from '../types/models.types';
 
@@ -32,23 +33,23 @@ export function isTaskScopedToday(task: { deadline?: string; created_at?: string
   return within(task.deadline) || within(task.created_at) || within(task.completed_at);
 }
 
-/** Map a task status to a StatusPill tone + Indonesian label. */
+/** Map a task status to a StatusPill tone + localized label. */
 export function taskPill(status: TaskStatus): { tone: StatusTone; label: string } {
   switch (status) {
     case 'in_progress':
-      return { tone: 'ok', label: 'Berjalan' };
+      return { tone: 'ok', label: i18n.t('status:taskPill.in_progress') };
     case 'assigned':
     case 'accepted':
-      return { tone: 'warn', label: 'Siap mulai' };
+      return { tone: 'warn', label: i18n.t('status:taskPill.readyToStart') };
     case 'revision_needed':
-      return { tone: 'bad', label: 'Revisi' };
+      return { tone: 'bad', label: i18n.t('status:taskPill.revision_needed') };
     case 'completed':
-      return { tone: 'info', label: 'Menunggu verifikasi' };
+      return { tone: 'info', label: i18n.t('status:taskPill.awaiting_verification') };
     case 'verified':
-      return { tone: 'ok', label: 'Terverifikasi' };
+      return { tone: 'ok', label: i18n.t('status:taskPill.verified') };
     case 'declined':
-      return { tone: 'bad', label: 'Ditolak' };
+      return { tone: 'bad', label: i18n.t('status:taskPill.declined') };
     default:
-      return { tone: 'neutral', label: 'Menunggu' };
+      return { tone: 'neutral', label: i18n.t('status:taskPill.pending') };
   }
 }

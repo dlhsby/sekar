@@ -1,24 +1,13 @@
 import { ReactNode } from 'react';
 import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/i18n/server-metadata';
+import { resolveServerLang } from '@/lib/i18n/server-metadata';
 import { SekarMark } from '@/components/brand/SekarMark';
 import { KecamatanNav } from '@/components/layout/KecamatanNav';
 
-export const metadata: Metadata = {
-  title: 'SEKAR — Portal Kecamatan',
-  description: 'Portal pengajuan permintaan pemotongan pohon kepada DLH Kota Surabaya',
-  robots: {
-    index: false,
-    follow: false,
-  },
-  openGraph: {
-    title: 'SEKAR — Portal Kecamatan',
-    description:
-      'Portal pengajuan permintaan pemotongan pohon kepada DLH Kota Surabaya',
-    type: 'website',
-    locale: 'id_ID',
-    siteName: 'SEKAR',
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata('kecamatanPortal');
+}
 
 /**
  * Kecamatan layout
@@ -26,7 +15,9 @@ export const metadata: Metadata = {
  * Minimal top-bar shell for the staff_kecamatan role — no dashboard sidebar,
  * just the SEKAR brand + Kirim Permintaan / Permintaan Saya nav and logout.
  */
-export default function KecamatanLayout({ children }: { children: ReactNode }) {
+export default async function KecamatanLayout({ children }: { children: ReactNode }) {
+  const lang = await resolveServerLang();
+  const portalSubtitle = lang === 'en' ? 'District Portal' : 'Portal Kecamatan';
   return (
     <div className="flex min-h-screen flex-col bg-nb-background">
       {/* Top bar */}
@@ -40,9 +31,7 @@ export default function KecamatanLayout({ children }: { children: ReactNode }) {
           </span>
           <div>
             <span className="text-nb-h3 font-bold uppercase tracking-wide text-white">SEKAR</span>
-            <span className="ml-2 hidden text-nb-caption uppercase tracking-wide text-white/70 sm:inline">
-              Portal Kecamatan
-            </span>
+            <span className="ml-2 hidden text-nb-caption uppercase tracking-wide text-white/70 sm:inline">{portalSubtitle}</span>
           </div>
         </div>
 

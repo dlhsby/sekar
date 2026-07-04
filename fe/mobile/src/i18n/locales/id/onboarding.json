@@ -1,0 +1,75 @@
+{
+  "welcome": {
+    "greeting": "Hai,",
+    "ready": "SIAP",
+    "body": "SEKAR butuh sedikit setup biar kamu bisa langsung ke lapangan. Cuma sebentar, sekali saja.",
+    "continue": "Lanjut"
+  },
+  "permissions": {
+    "title": "Beri akses ke HP-mu",
+    "subtitle": "Semua izin di bawah diperlukan agar pelacakan & laporan berfungsi penuh.",
+    "button": "Izinkan",
+    "granted": "DIBERIKAN",
+    "denied": "DITOLAK",
+    "notifications": {
+      "title": "Notifikasi",
+      "why": "Pengingat shift & penugasan."
+    },
+    "location": {
+      "title": "Lokasi",
+      "why": "Presensi & geofence pos."
+    },
+    "backgroundLocation": {
+      "title": "Lokasi latar belakang",
+      "why": "Pelacakan rute selama shift berjalan."
+    },
+    "camera": {
+      "title": "Kamera",
+      "why": "Foto laporan & swafoto clock-in."
+    },
+    "gallery": {
+      "title": "Galeri",
+      "why": "Lampirkan foto dari galeri."
+    }
+  },
+  "permissionModal": {
+    "header": "Izin Aplikasi",
+    "step": "Langkah {{current}} dari {{total}}",
+    "info": "Kami memerlukan izin ini untuk memberikan pengalaman terbaik saat menggunakan aplikasi SEKAR.",
+    "allow": "Izinkan",
+    "skip": "Lewati",
+    "settings": "Buka Pengaturan",
+    "understood": "Mengerti, Lanjutkan",
+    "required": "Wajib",
+    "notificationsTitle": "Notifikasi",
+    "notificationsDesc": "Terima pemberitahuan penting tentang tugas baru, pengingat shift, dan informasi dari supervisor.",
+    "locationTitle": "Lokasi",
+    "locationDesc": "Diperlukan untuk absensi digital dan memverifikasi Anda berada di lokasi kerja yang benar saat clock-in.",
+    "backgroundLocationTitle": "Lokasi Latar Belakang",
+    "backgroundLocationDesc": "Izinkan \"Sepanjang waktu\" untuk melacak rute Anda selama shift kerja. Data ini membantu supervisor memantau area yang sudah dikerjakan.",
+    "cameraTitle": "Kamera",
+    "cameraDesc": "Diperlukan untuk mengambil foto laporan kerja. Foto membantu supervisor memverifikasi pekerjaan yang telah diselesaikan.",
+    "galleryTitle": "Galeri Foto",
+    "galleryDesc": "Diperlukan untuk memilih foto dari galeri saat melengkapi laporan atau permohonan perantingan.",
+    "androidNote": "PENTING:\n1. Pilih \"Izinkan sepanjang waktu\" atau \"Allow all the time\"\n2. Jika opsi tidak muncul, buka Pengaturan → Aplikasi → SEKAR → Izin → Lokasi\n3. Pilih \"Sepanjang waktu\" atau \"Allow all the time\""
+  },
+  "areaPreview": {
+    "clockable": {
+      "title": "Area tugas kamu",
+      "body": "Area kerja Anda telah ditetapkan. Tekan Mulai Bekerja untuk membuka dashboard.",
+      "cta": "Mulai Bekerja"
+    },
+    "kecamatan": {
+      "title": "Siap mengajukan permohonan?",
+      "body": "Buka daftar permohonan rayon Anda dan ajukan baru kapan pun diperlukan.",
+      "cta": "Kelola Permohonan"
+    },
+    "admin": {
+      "title": "Siap memulai?",
+      "body": "Dashboard menampilkan ringkasan tim dan permohonan yang menunggu.",
+      "cta": "Buka Dashboard"
+    },
+    "radiusLabel": "RADIUS",
+    "areaLabel": "AREA"
+  }
+}

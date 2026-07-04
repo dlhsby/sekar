@@ -5,6 +5,10 @@
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
+import { Provider } from 'react-redux';
+import { configureStore } from '@reduxjs/toolkit';
+import authReducer from '../../../store/slices/authSlice';
+import preferencesReducer from '../../../store/slices/preferencesSlice';
 import { SettingsScreen } from '../SettingsScreen';
 
 const mockNavigate = jest.fn();
@@ -31,7 +35,33 @@ jest.mock('../../../services/sync/syncManager', () => ({
 
 import * as offlineQueue from '../../../services/sync/offlineQueue';
 
-const renderScreen = () => render(<SettingsScreen {...({} as any)} />);
+const makeStore = () =>
+  configureStore({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture
+    reducer: { auth: authReducer as any, preferences: preferencesReducer as any },
+    preloadedState: {
+      auth: {
+        user: { id: 'u1', username: 'u', full_name: 'U', role: 'satgas' },
+        token: 't',
+        isAuthenticated: true,
+        loading: false,
+        error: null,
+        assignedArea: null,
+      } as any,
+      preferences: {
+        language: 'id',
+        soundEnabled: false,
+        locationEnabled: false,
+      } as any,
+    },
+  });
+
+const renderScreen = () =>
+  render(
+    <Provider store={makeStore()}>
+      <SettingsScreen {...({} as any)} />
+    </Provider>,
+  );
 
 describe('SettingsScreen', () => {
   beforeEach(() => {

@@ -7,6 +7,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/lib/auth/hooks';
 import {
   useMonitoringConfig,
@@ -39,133 +40,135 @@ interface ConfigSection {
   fields: ConfigField[];
 }
 
-const CONFIG_SECTIONS: ConfigSection[] = [
-  {
-    title: 'Ambang Batas Status',
-    description: 'Konfigurasi waktu untuk perubahan status otomatis',
-    configKey: 'status_thresholds',
-    fields: [
-      {
-        key: 'active_max_age_seconds',
-        label: 'Batas Aktif Maks',
-        type: 'number',
-        min: 60,
-        max: 600,
-        step: 30,
-        unit: 'detik',
-        description: 'Waktu maksimum sebelum status berubah dari aktif',
-      },
-      {
-        key: 'inactive_threshold_seconds',
-        label: 'Ambang Batas Idle',
-        type: 'number',
-        min: 300,
-        max: 3600,
-        step: 60,
-        unit: 'detik',
-        description: 'Waktu sebelum petugas ditandai idle',
-      },
-      {
-        key: 'missing_threshold_seconds',
-        label: 'Ambang Batas Tidak Terdeteksi',
-        type: 'number',
-        min: 1800,
-        max: 7200,
-        step: 300,
-        unit: 'detik',
-        description: 'Waktu sebelum petugas ditandai tidak terdeteksi',
-      },
-    ],
-  },
-  {
-    title: 'Geofencing',
-    description: 'Pengaturan batas area dan toleransi',
-    configKey: 'geofencing',
-    fields: [
-      {
-        key: 'boundary_tolerance_meters',
-        label: 'Toleransi Batas',
-        type: 'number',
-        min: 0,
-        max: 500,
-        step: 10,
-        unit: 'meter',
-        description: 'Toleransi jarak dari batas area',
-      },
-      {
-        key: 'outside_area_grace_period_seconds',
-        label: 'Masa Tenggang Luar Area',
-        type: 'number',
-        min: 0,
-        max: 600,
-        step: 30,
-        unit: 'detik',
-        description: 'Waktu sebelum status berubah saat keluar area',
-      },
-    ],
-  },
-  {
-    title: 'Default Peta',
-    description: 'Pengaturan tampilan peta default',
-    configKey: 'map_defaults',
-    fields: [
-      { key: 'default_zoom', label: 'Zoom Default', type: 'number', min: 8, max: 18, step: 1 },
-      {
-        key: 'cluster_threshold_zoom',
-        label: 'Zoom Klaster',
-        type: 'number',
-        min: 8,
-        max: 18,
-        step: 1,
-        description: 'Di bawah level ini, marker dikelompokkan',
-      },
-      {
-        key: 'default_center_lat',
-        label: 'Latitude Default',
-        type: 'number',
-        min: -90,
-        max: 90,
-        step: 0.0001,
-      },
-      {
-        key: 'default_center_lng',
-        label: 'Longitude Default',
-        type: 'number',
-        min: -180,
-        max: 180,
-        step: 0.0001,
-      },
-    ],
-  },
-  {
-    title: 'Pengaturan Notifikasi',
-    description: 'Konfigurasi peringatan dan notifikasi',
-    configKey: 'alert_settings',
-    fields: [
-      {
-        key: 'low_battery_threshold',
-        label: 'Ambang Batas Baterai Rendah',
-        type: 'number',
-        min: 1,
-        max: 50,
-        step: 1,
-        unit: '%',
-      },
-      {
-        key: 'boundary_alerts_enabled',
-        label: 'Peringatan Batas Area',
-        type: 'toggle',
-        description: 'Kirim notifikasi saat petugas keluar area',
-      },
-      {
-        key: 'missing_worker_alerts_enabled',
-        label: 'Peringatan Petugas Tidak Terdeteksi',
-        type: 'toggle',
-        description: 'Kirim notifikasi saat petugas tidak terdeteksi',
-      },
-    ],
-  },
-];
+function getConfigSections(t: any): ConfigSection[] {
+  return [
+    {
+      title: t('monitoring:config.sections.statusThresholds.title'),
+      description: t('monitoring:config.sections.statusThresholds.description'),
+      configKey: 'status_thresholds',
+      fields: [
+        {
+          key: 'active_max_age_seconds',
+          label: t('monitoring:config.sections.statusThresholds.activeMaxAge'),
+          type: 'number',
+          min: 60,
+          max: 600,
+          step: 30,
+          unit: t('monitoring:config.units.seconds'),
+          description: t('monitoring:config.sections.statusThresholds.activeMaxAgeHelp'),
+        },
+        {
+          key: 'inactive_threshold_seconds',
+          label: t('monitoring:config.sections.statusThresholds.inactiveThreshold'),
+          type: 'number',
+          min: 300,
+          max: 3600,
+          step: 60,
+          unit: t('monitoring:config.units.seconds'),
+          description: t('monitoring:config.sections.statusThresholds.inactiveThresholdHelp'),
+        },
+        {
+          key: 'missing_threshold_seconds',
+          label: t('monitoring:config.sections.statusThresholds.missingThreshold'),
+          type: 'number',
+          min: 1800,
+          max: 7200,
+          step: 300,
+          unit: t('monitoring:config.units.seconds'),
+          description: t('monitoring:config.sections.statusThresholds.missingThresholdHelp'),
+        },
+      ],
+    },
+    {
+      title: t('monitoring:config.sections.geofencing.title'),
+      description: t('monitoring:config.sections.geofencing.description'),
+      configKey: 'geofencing',
+      fields: [
+        {
+          key: 'boundary_tolerance_meters',
+          label: t('monitoring:config.sections.geofencing.boundaryTolerance'),
+          type: 'number',
+          min: 0,
+          max: 500,
+          step: 10,
+          unit: t('monitoring:config.units.meters'),
+          description: t('monitoring:config.sections.geofencing.boundaryToleranceHelp'),
+        },
+        {
+          key: 'outside_area_grace_period_seconds',
+          label: t('monitoring:config.sections.geofencing.gracePeriod'),
+          type: 'number',
+          min: 0,
+          max: 600,
+          step: 30,
+          unit: t('monitoring:config.units.seconds'),
+          description: t('monitoring:config.sections.geofencing.gracePeriodHelp'),
+        },
+      ],
+    },
+    {
+      title: t('monitoring:config.sections.mapDefaults.title'),
+      description: t('monitoring:config.sections.mapDefaults.description'),
+      configKey: 'map_defaults',
+      fields: [
+        { key: 'default_zoom', label: t('monitoring:config.sections.mapDefaults.defaultZoom'), type: 'number', min: 8, max: 18, step: 1 },
+        {
+          key: 'cluster_threshold_zoom',
+          label: t('monitoring:config.sections.mapDefaults.clusterZoom'),
+          type: 'number',
+          min: 8,
+          max: 18,
+          step: 1,
+          description: t('monitoring:config.sections.mapDefaults.clusterZoomHelp'),
+        },
+        {
+          key: 'default_center_lat',
+          label: t('monitoring:config.sections.mapDefaults.centerLat'),
+          type: 'number',
+          min: -90,
+          max: 90,
+          step: 0.0001,
+        },
+        {
+          key: 'default_center_lng',
+          label: t('monitoring:config.sections.mapDefaults.centerLng'),
+          type: 'number',
+          min: -180,
+          max: 180,
+          step: 0.0001,
+        },
+      ],
+    },
+    {
+      title: t('monitoring:config.sections.alertSettings.title'),
+      description: t('monitoring:config.sections.alertSettings.description'),
+      configKey: 'alert_settings',
+      fields: [
+        {
+          key: 'low_battery_threshold',
+          label: t('monitoring:config.sections.alertSettings.lowBatteryThreshold'),
+          type: 'number',
+          min: 1,
+          max: 50,
+          step: 1,
+          unit: t('monitoring:config.units.percent'),
+        },
+        {
+          key: 'boundary_alerts_enabled',
+          label: t('monitoring:config.sections.alertSettings.boundaryAlerts'),
+          type: 'toggle',
+          description: t('monitoring:config.sections.alertSettings.boundaryAlertsHelp'),
+        },
+        {
+          key: 'missing_worker_alerts_enabled',
+          label: t('monitoring:config.sections.alertSettings.missingWorkerAlerts'),
+          type: 'toggle',
+          description: t('monitoring:config.sections.alertSettings.missingWorkerAlertsHelp'),
+        },
+      ],
+    },
+  ];
+}
 
 interface FieldInputProps {
   field: ConfigField;
@@ -175,6 +178,8 @@ interface FieldInputProps {
 }
 
 function FieldInput({ field, value, onChange, error }: FieldInputProps) {
+  const { t } = useTranslation();
+
   if (field.type === 'toggle') {
     const isOn = !!value;
     return (
@@ -242,7 +247,7 @@ function FieldInput({ field, value, onChange, error }: FieldInputProps) {
       {isOutOfRange && (
         <p className="mt-1 text-xs text-nb-danger flex items-center gap-1">
           <AlertCircle className="w-3 h-3" />
-          Rentang valid: {field.min} - {field.max}
+          {t('monitoring:config.rangeValid', { min: field.min, max: field.max })}
         </p>
       )}
       {error && !isOutOfRange && (
@@ -256,10 +261,12 @@ function FieldInput({ field, value, onChange, error }: FieldInputProps) {
 }
 
 export default function MonitoringConfigPage() {
+  const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { data, isLoading, error } = useMonitoringConfig();
   const { mutate: updateConfig, isPending } = useUpdateMonitoringConfig();
+  const CONFIG_SECTIONS = getConfigSections(t);
 
   // Drafts: configKey -> { fieldKey: value }
   const [drafts, setDrafts] = useState<Record<string, Record<string, unknown>>>({});
@@ -356,11 +363,11 @@ export default function MonitoringConfigPage() {
         <Card variant="outlined" className="border-nb-danger">
           <CardContent className="p-8 text-center">
             <AlertCircle className="w-12 h-12 mx-auto text-nb-danger mb-3" />
-            <h2 className="font-bold text-lg mb-2">Akses Ditolak</h2>
+            <h2 className="font-bold text-lg mb-2">{t('monitoring:config.accessDenied')}</h2>
             <p className="text-nb-gray-600 text-sm mb-4">
-              Halaman ini hanya dapat diakses oleh Admin Sistem dan Superadmin.
+              {t('monitoring:config.accessDeniedMessage')}
             </p>
-            <Button onClick={() => router.push('/monitoring')}>Kembali ke Monitoring</Button>
+            <Button onClick={() => router.push('/monitoring')}>{t('monitoring:config.backButton')}</Button>
           </CardContent>
         </Card>
       </div>
@@ -373,9 +380,9 @@ export default function MonitoringConfigPage() {
       <div className="flex items-center gap-3">
         <Settings className="w-7 h-7 text-nb-black" />
         <div>
-          <h1 className="text-2xl font-black text-nb-black">Konfigurasi Monitoring</h1>
+          <h1 className="text-2xl font-black text-nb-black">{t('monitoring:config.pageTitle')}</h1>
           <p className="text-nb-gray-500 text-sm mt-0.5">
-            Kelola pengaturan sistem monitoring real-time
+            {t('monitoring:config.pageDescription')}
           </p>
         </div>
       </div>
@@ -394,8 +401,8 @@ export default function MonitoringConfigPage() {
         <Card variant="outlined" className="border-nb-danger">
           <CardContent className="p-6 text-center">
             <AlertCircle className="w-8 h-8 mx-auto text-nb-danger mb-2" />
-            <p className="font-semibold">Gagal memuat konfigurasi</p>
-            <p className="text-sm text-nb-gray-500 mt-1">Periksa koneksi atau coba lagi</p>
+            <p className="font-semibold">{t('monitoring:config.error')}</p>
+            <p className="text-sm text-nb-gray-500 mt-1">{t('monitoring:config.errorHelper')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -419,7 +426,7 @@ export default function MonitoringConfigPage() {
                       {isSuccess && (
                         <span className="flex items-center gap-1 text-xs font-bold text-green-700">
                           <Check className="w-3.5 h-3.5" />
-                          Disimpan
+                          {t('monitoring:config.saved')}
                         </span>
                       )}
                       {sectionModified && !sectionHasErrors && (
@@ -428,9 +435,9 @@ export default function MonitoringConfigPage() {
                           onClick={() => handleSave(section)}
                           loading={isSaving}
                           leftIcon={<Save className="w-3.5 h-3.5" />}
-                          aria-label={`Simpan konfigurasi ${section.title}`}
+                          aria-label={t('monitoring:config.saveButton')}
                         >
-                          Simpan
+                          {t('monitoring:config.saveButton')}
                         </Button>
                       )}
                     </div>

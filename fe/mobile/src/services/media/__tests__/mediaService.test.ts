@@ -190,7 +190,7 @@ describe('MediaService', () => {
     it('should handle non-Error exceptions', async () => {
       mockLaunchCamera.mockRejectedValue('String error');
 
-      await expect(mediaService.capturePhoto()).rejects.toThrow('Kesalahan kamera: Kesalahan tidak diketahui');
+      await expect(mediaService.capturePhoto()).rejects.toThrow('Kesalahan kamera: Kesalahan: unknown');
     });
   });
 
@@ -428,7 +428,7 @@ describe('MediaService', () => {
       mockUnlink.mockRejectedValueOnce(diskFullError);
 
       await expect(mediaService.compressPhoto('file:///path/to/original.jpg'))
-        .rejects.toThrow('Penyimpanan penuh. Bebaskan ruang dan coba lagi.');
+        .rejects.toThrow('Penyimpanan penuh. Bebaskan minimal 50MB dan coba lagi.');
     });
 
     it('should handle disk full error during compression', async () => {
@@ -437,7 +437,7 @@ describe('MediaService', () => {
       mockImageResizer.mockRejectedValue(diskFullError);
 
       await expect(mediaService.compressPhoto('file:///path/to/original.jpg'))
-        .rejects.toThrow('Penyimpanan penuh. Bebaskan ruang dan coba lagi.');
+        .rejects.toThrow('Penyimpanan penuh. Bebaskan minimal 50MB dan coba lagi.');
     });
 
     it('should rethrow localized storage errors from compression', async () => {
@@ -460,7 +460,7 @@ describe('MediaService', () => {
       mockImageResizer.mockRejectedValue('String error');
 
       await expect(mediaService.compressPhoto('file:///path/to/original.jpg'))
-        .rejects.toThrow('Kompresi gagal: Kesalahan tidak diketahui');
+        .rejects.toThrow('Kompresi gagal: Kesalahan: unknown');
     });
   });
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 import { UserForm } from '@/components/forms/UserForm';
@@ -34,6 +35,7 @@ export function UserFormModal({
   onCreated,
   readOnly = false,
 }: UserFormModalProps) {
+  const { t } = useTranslation();
   const isEdit = !!user;
   const createMutation = useCreateUser();
   const updateMutation = useUpdateUser();
@@ -46,10 +48,10 @@ export function UserFormModal({
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { username, ...updateData } = data;
         await updateMutation.mutateAsync({ id: user.id, data: updateData });
-        toast.success(`Pengguna "${data.full_name}" berhasil diperbarui.`);
+        toast.success(t('admin:messages.userUpdatedSuccess', { name: data.full_name }));
       } else {
         const created = (await createMutation.mutateAsync(data)) as CreatedUser;
-        toast.success(`Pengguna "${created.full_name}" berhasil dibuat.`);
+        toast.success(t('admin:messages.userCreatedSuccess', { name: created.full_name }));
         onCreated?.(created);
       }
     } catch (err) {
@@ -65,14 +67,14 @@ export function UserFormModal({
     mutation.isError &&
     (mutation.error instanceof Error
       ? mutation.error.message
-      : `Gagal ${isEdit ? 'memperbarui' : 'membuat'} pengguna. Silakan coba lagi.`);
+      : t(`admin:users.${isEdit ? 'updateErrorMessage' : 'createErrorMessage'}`));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>
-            {readOnly ? 'Detail Pengguna' : isEdit ? 'Ubah Pengguna' : 'Tambah Pengguna'}
+            {readOnly ? t('admin:users.detailTitle') : isEdit ? t('admin:users.actionEdit') : t('admin:users.buttonAdd')}
           </DialogTitle>
         </DialogHeader>
         <DialogBody>
@@ -92,7 +94,7 @@ export function UserFormModal({
             onSubmit={handleSubmit}
             onCancel={() => onOpenChange(false)}
             loading={mutation.isPending}
-            submitText={isEdit ? 'Simpan' : 'Buat Pengguna'}
+            submitText={isEdit ? t('admin:users.form.submitEdit') : t('admin:users.form.submitCreate')}
             readOnly={readOnly}
           />
         </DialogBody>

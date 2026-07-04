@@ -4,6 +4,7 @@
  * WCAG 2.1 AA compliant hex colors
  */
 
+import i18n from '@/lib/i18n/config';
 import type { TrackingStatus } from '@/lib/api/monitoring';
 
 // Spec-compliant WCAG 2.1 AA colors
@@ -31,13 +32,15 @@ export const STATUS_TEXT_COLORS: Record<TrackingStatus, string> = {
   offline: '#374151',
 };
 
-export const STATUS_LABELS: Record<TrackingStatus, string> = {
-  active: 'Aktif',
-  inactive: 'Idle',
-  outside_area: 'Di Luar Area',
-  missing: 'Tidak Terdeteksi',
-  offline: 'Offline',
-};
+export function getStatusLabels(): Record<TrackingStatus, string> {
+  return {
+    active: i18n.t('status:tracking.active'),
+    inactive: i18n.t('status:tracking.inactive'),
+    outside_area: i18n.t('status:tracking.outside_area'),
+    missing: i18n.t('status:tracking.missing'),
+    offline: i18n.t('status:tracking.offline'),
+  };
+}
 
 // Lucide icon names per status for color-blind accessibility
 export const STATUS_ICON_NAMES: Record<TrackingStatus, string> = {
@@ -145,18 +148,6 @@ export const ROLE_ABBREVIATIONS: Record<string, string> = {
   superadmin: 'SA',
 };
 
-// Full role labels for expanded marker labels
-export const ROLE_FULL_LABELS: Record<string, string> = {
-  satgas: 'Satgas',
-  linmas: 'Linmas',
-  korlap: 'Korlap',
-  kepala_rayon: 'Kepala Rayon',
-  top_management: 'Top Mgmt',
-  admin_system: 'Admin',
-  admin_data: 'Admin Data',
-  superadmin: 'Superadmin',
-};
-
 // Polygon styles for boundary layers
 export const POLYGON_STYLES = {
   rayon: {
@@ -175,12 +166,13 @@ export const CENTER_MARKER_STYLES = {
   area: { bg: '#D97706', size: 28, label: 'A' },
 } as const;
 
-// Day type labels and colors
-export const DAY_TYPE_LABELS: Record<string, { label: string; color: string; bg: string }> = {
-  weekday: { label: 'Hari Kerja', color: '#15803D', bg: '#DCFCE7' },
-  weekend: { label: 'Akhir Pekan', color: '#D97706', bg: '#FEF3C7' },
-  holiday: { label: 'Hari Libur', color: '#DC2626', bg: '#FEE2E2' },
-};
+export function getDayTypeLabels(): Record<string, { label: string; color: string; bg: string }> {
+  return {
+    weekday: { label: i18n.t('status:dayType.weekday'), color: '#15803D', bg: '#DCFCE7' },
+    weekend: { label: i18n.t('status:dayType.weekend'), color: '#D97706', bg: '#FEF3C7' },
+    holiday: { label: i18n.t('status:dayType.holiday'), color: '#DC2626', bg: '#FEE2E2' },
+  };
+}
 
 // Status severity order (most severe first) for sorting
 export const STATUS_SEVERITY_ORDER: TrackingStatus[] = [

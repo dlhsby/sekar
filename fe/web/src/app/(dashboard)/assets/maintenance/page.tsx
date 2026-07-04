@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { intlLocale } from '@/lib/i18n/date-locale';
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   Button,
@@ -27,15 +29,15 @@ const MAINTENANCE_TYPE_LABELS: Record<MaintenanceType, string> = {
   replacement: 'Penggantian',
 };
 
-const MAINTENANCE_STATUS_LABELS: Record<MaintenanceStatus, string> = {
-  scheduled: 'Terjadwal',
-  in_progress: 'Sedang Berlangsung',
-  completed: 'Selesai',
-  cancelled: 'Dibatalkan',
-  overdue: 'Terlambat',
-};
-
 export default function MaintenanceCalendarPage() {
+  const { t } = useTranslation();
+  const maintenanceStatusLabels = {
+    scheduled: t('assets:detail.maintenanceStatus.scheduled'),
+    in_progress: t('assets:detail.maintenanceStatus.in_progress'),
+    completed: t('assets:detail.maintenanceStatus.completed'),
+    cancelled: t('assets:detail.maintenanceStatus.cancelled'),
+    overdue: t('assets:detail.maintenanceStatus.overdue'),
+  };
   const now = new Date();
   const [currentMonth, setCurrentMonth] = useState(now.getMonth());
   const [currentYear, setCurrentYear] = useState(now.getFullYear());
@@ -88,7 +90,7 @@ export default function MaintenanceCalendarPage() {
     }
   };
 
-  const monthName = new Date(currentYear, currentMonth).toLocaleDateString('id-ID', {
+  const monthName = new Date(currentYear, currentMonth).toLocaleDateString(intlLocale(), {
     month: 'long',
     year: 'numeric',
   });
@@ -98,8 +100,8 @@ export default function MaintenanceCalendarPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Perawatan Aset"
-        description="Kelola jadwal perawatan aset"
+        title={t('assets:maintenance2.pageTitle')}
+        description={t('assets:maintenance2.pageDescription')}
       />
 
       <Card variant="default">
@@ -157,9 +159,9 @@ export default function MaintenanceCalendarPage() {
         </div>
       </Card>
 
-      <SectionCard title="Perawatan Mendatang">
+      <SectionCard title={t('assets:maintenance2.upcoming')}>
         {calendarLoading ? (
-          <div className="p-4">Memuat...</div>
+          <div className="p-4">{t('common:actions.loading')}</div>
         ) : !calendarData.filter((m) => m.status === 'scheduled').length ? (
           <EmptyState variant="noData" />
         ) : (
@@ -180,9 +182,9 @@ export default function MaintenanceCalendarPage() {
       </SectionCard>
 
       {overdueData.length > 0 && (
-        <SectionCard title="Perawatan Terlambat">
+        <SectionCard title={t('assets:maintenance2.overdue')}>
           {overdueLoading ? (
-            <div className="p-4">Memuat...</div>
+            <div className="p-4">{t('common:actions.loading')}</div>
           ) : (
             <div className="p-4 space-y-2">
               {overdueData.map((m) => (
@@ -192,7 +194,7 @@ export default function MaintenanceCalendarPage() {
                     <p className="text-sm text-gray-600">{formatTime(m.scheduled_at)}</p>
                   </div>
                   <StatusPill tone="bad">
-                    {MAINTENANCE_STATUS_LABELS[m.status]}
+                    {maintenanceStatusLabels[m.status]}
                   </StatusPill>
                 </div>
               ))}

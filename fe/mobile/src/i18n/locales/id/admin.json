@@ -1,0 +1,18 @@
+{
+  "checklist": {
+    "areaPhoto": "Foto laporan area",
+    "setupLocation": "Setup lokasi",
+    "setupSchedule": "Setup jadwal",
+    "setupArea": "Setup area",
+    "mainDoorPatrol": "Patroli pintu utama",
+    "checkLightsAndCctv": "Cek lampu & CCTV",
+    "lockPostEndShift": "Kunci pos akhir shift"
+  },
+  "permissions": {
+    "backgroundLocation": "Lokasi latar belakang",
+    "camera": "Kamera",
+    "photoLibrary": "Perpustakaan foto",
+    "microphone": "Mikrofon",
+    "notification": "Notifikasi"
+  }
+}

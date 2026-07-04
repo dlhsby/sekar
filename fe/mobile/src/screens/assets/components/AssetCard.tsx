@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBCard, NBText, NBBadge } from '../../../components/nb';
 import type { NBBadgeColor } from '../../../components/nb';
@@ -32,27 +33,12 @@ const STATUS_COLORS: Record<string, NBBadgeColor> = {
   lost: 'danger',
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  available: 'Tersedia',
-  in_use: 'Digunakan',
-  maintenance: 'Perawatan',
-  retired: 'Pensiun',
-  lost: 'Hilang',
-};
-
-const CONDITION_LABELS: Record<string, string> = {
-  good: 'Baik',
-  fair: 'Cukup',
-  poor: 'Buruk',
-  damaged: 'Rusak',
-  unusable: 'Tidak Layak',
-};
-
 export function AssetCard({ asset, onPress }: AssetCardProps): React.JSX.Element {
+  const { t } = useTranslation('assets');
   const statusColor: NBBadgeColor = STATUS_COLORS[asset.status] || 'gray';
-  const statusLabel = STATUS_LABELS[asset.status] || asset.status;
+  const statusLabel = t(`status.${asset.status}`, asset.status);
   const conditionColor: NBBadgeColor = CONDITION_COLORS[asset.condition] || 'gray';
-  const conditionLabel = CONDITION_LABELS[asset.condition] || asset.condition;
+  const conditionLabel = t(`condition.${asset.condition}`, asset.condition);
 
   return (
     <TouchableOpacity activeOpacity={0.7} onPress={onPress}>

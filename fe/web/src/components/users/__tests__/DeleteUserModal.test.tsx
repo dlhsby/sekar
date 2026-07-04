@@ -46,7 +46,7 @@ describe('DeleteUserModal', () => {
       />
     );
 
-    expect(screen.getByText('Hapus User')).toBeInTheDocument();
+    expect(screen.getByText('Hapus Pengguna')).toBeInTheDocument();
     expect(screen.getByText(/testuser/i)).toBeInTheDocument();
   });
 
@@ -60,7 +60,7 @@ describe('DeleteUserModal', () => {
       />
     );
 
-    expect(screen.queryByText('Hapus User')).not.toBeInTheDocument();
+    expect(screen.queryByText('Hapus Pengguna')).not.toBeInTheDocument();
   });
 
   it('should call onClose when cancel button clicked', async () => {
@@ -150,6 +150,6 @@ describe('DeleteUserModal', () => {
       <DeleteUserModal user={null} isOpen={true} onClose={mockOnClose} onSuccess={mockOnSuccess} />
     );
 
-    expect(screen.getByText('Hapus User')).toBeInTheDocument();
+    expect(screen.getByText('Hapus Pengguna')).toBeInTheDocument();
   });
 });

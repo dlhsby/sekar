@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { Search, Eye } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth/hooks';
@@ -40,6 +41,7 @@ const LOW_STOCK_THRESHOLD = 10;
 export default function SeedsListPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const { t } = useTranslation(['seeds', 'common']);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const view = useViewModal<PlantSeedRow>();
@@ -57,14 +59,14 @@ export default function SeedsListPage() {
     (row: PlantSeedRow): DataTableRowAction<PlantSeedRow>[] => [
       {
         key: 'view',
-        label: 'Lihat',
+        label: t('common:actions.view'),
         icon: Eye,
         onClick: () => {
           view.openWith(row);
         },
       },
     ],
-    [view]
+    [view, t]
   );
 
   useEffect(() => {
@@ -76,7 +78,7 @@ export default function SeedsListPage() {
   if (authLoading || !user) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <p className="text-nb-gray-600">Memuat...</p>
+        <p className="text-nb-gray-600">{t('common:actions.loading')}</p>
       </div>
     );
   }
@@ -91,44 +93,39 @@ export default function SeedsListPage() {
     {
       id: 'id',
       accessorKey: 'id',
-      header: 'ID',
+      header: t('seeds:listTable.columnId'),
       enableSorting: false,
-      meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+      meta: { label: t('seeds:listTable.columnId'), defaultHidden: true, filterVariant: 'text' },
       cell: ({ row }) => (
         <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
       ),
     },
     {
       id: 'nameId',
-      header: 'Nama Bibit',
+      header: t('seeds:listTable.columnName'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Nama Bibit' },
+      meta: { label: t('seeds:listTable.columnName') },
       cell: ({ row }) => (
         <span className="font-semibold text-nb-black">{row.original.nameId}</span>
       ),
     },
     {
       id: 'unit',
-      header: 'Satuan',
+      header: t('seeds:listTable.columnUnit'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Satuan' },
+      meta: { label: t('seeds:listTable.columnUnit') },
       cell: ({ row }) => {
-        const unitLabels: Record<string, string> = {
-          gram: 'gram',
-          piece: 'buah',
-          packet: 'paket',
-        };
-        return <span className="text-nb-body-sm">{unitLabels[row.original.unit] || row.original.unit}</span>;
+        return <span className="text-nb-body-sm">{t(`seeds:units.${row.original.unit}`) || row.original.unit}</span>;
       },
     },
     {
       id: 'stockQty',
-      header: 'Stok',
+      header: t('seeds:listTable.columnStock'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: 'Stok' },
+      meta: { label: t('seeds:listTable.columnStock') },
       cell: ({ row }) => {
         const isLowStock = row.original.stockQty < LOW_STOCK_THRESHOLD;
         return (
@@ -136,7 +133,7 @@ export default function SeedsListPage() {
             <span className="font-mono text-nb-body-sm">{row.original.stockQty}</span>
             {isLowStock && (
               <Badge variant="warning" size="sm">
-                Rendah
+                {t('seeds:stockIndicator.lowStockLabel')}
               </Badge>
             )}
           </div>
@@ -146,9 +143,9 @@ export default function SeedsListPage() {
     {
       id: 'createdAt',
       accessorKey: 'createdAt',
-      header: 'Dibuat',
+      header: t('seeds:listTable.columnCreatedAt'),
       enableSorting: false,
-      meta: { label: 'Dibuat', defaultHidden: true, filterVariant: 'date' },
+      meta: { label: t('seeds:listTable.columnCreatedAt'), defaultHidden: true, filterVariant: 'date' },
       cell: ({ row }) => (
         <span className="text-nb-body-sm text-nb-gray-600">
           {formatDate(row.original.createdAt)}
@@ -158,9 +155,9 @@ export default function SeedsListPage() {
     {
       id: 'updatedAt',
       accessorKey: 'updatedAt',
-      header: 'Diperbarui',
+      header: t('seeds:listTable.columnUpdatedAt'),
       enableSorting: false,
-      meta: { label: 'Diperbarui', defaultHidden: true, filterVariant: 'date' },
+      meta: { label: t('seeds:listTable.columnUpdatedAt'), defaultHidden: true, filterVariant: 'date' },
       cell: ({ row }) => (
         <span className="text-nb-body-sm text-nb-gray-600">
           {formatDate(row.original.updatedAt)}
@@ -172,17 +169,17 @@ export default function SeedsListPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        title="Manajemen Bibit"
-        description="Kelola inventaris bibit dan transaksi"
+        title={t('seeds:list.title')}
+        description={t('seeds:list.description')}
       />
 
       <Card>
         <CardContent className="p-4">
           <div className="mb-4">
             <FormInput
-              label="Cari bibit"
+              label={t('seeds:list.searchLabel')}
               type="text"
-              placeholder="Cari bibit berdasarkan nama…"
+              placeholder={t('seeds:list.searchPlaceholder')}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -199,13 +196,13 @@ export default function SeedsListPage() {
             enablePagination={false}
             getRowId={(s) => s.id}
             rowActions={rowActions}
-            emptyTitle="Tidak ada bibit tersedia"
+            emptyTitle={t('seeds:list.emptyTitle')}
           />
 
           {totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between font-mono text-[11px] text-nb-gray-600">
               <span>
-                Halaman <b className="text-nb-black">{page}</b> / {totalPages} · {total} bibit
+                {t('seeds:listPagination.pageLabel')} <b className="text-nb-black">{page}</b> / {totalPages} · {total} {t('seeds:listPagination.itemsLabel')}
               </span>
               <div className="flex gap-2">
                 <Button
@@ -233,32 +230,28 @@ export default function SeedsListPage() {
       <DetailModal
         open={view.open}
         onOpenChange={view.onOpenChange}
-        title="Detail Bibit"
+        title={t('seeds:listModal.title')}
         rows={view.item ? [
-          { label: 'Nama Bibit', value: view.item.nameId },
+          { label: t('seeds:listModal.labelName'), value: view.item.nameId },
           {
-            label: 'Satuan',
-            value: ({
-              gram: 'gram',
-              piece: 'buah',
-              packet: 'paket',
-            } as Record<string, string>)[view.item.unit] || view.item.unit,
+            label: t('seeds:listModal.labelUnit'),
+            value: t(`seeds:units.${view.item.unit}`) || view.item.unit,
           },
           {
-            label: 'Stok',
+            label: t('seeds:listModal.labelStock'),
             value: (
               <div className="flex items-center gap-2">
                 <span>{view.item.stockQty}</span>
                 {view.item.stockQty < LOW_STOCK_THRESHOLD && (
                   <Badge variant="warning" size="sm">
-                    Rendah
+                    {t('seeds:stockIndicator.lowStockLabel')}
                   </Badge>
                 )}
               </div>
             ),
           },
-          { label: 'Dibuat', value: formatDate(view.item.createdAt) },
-          { label: 'Diperbarui', value: formatDate(view.item.updatedAt) },
+          { label: t('seeds:listModal.labelCreatedAt'), value: formatDate(view.item.createdAt) },
+          { label: t('seeds:listModal.labelUpdatedAt'), value: formatDate(view.item.updatedAt) },
         ] : []}
       />
     </div>

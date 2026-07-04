@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { ScrollView, TouchableOpacity, View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { nbColors, nbSpacing, nbBorders, nbRadius } from '../../../constants/nbTokens';
 import { NBText } from '../../../components/nb/NBText';
@@ -52,6 +53,8 @@ export function ToolsOverlay({
   filterModalVisible,
   setFilterModalVisible,
 }: ToolsOverlayProps): React.JSX.Element {
+  const { t } = useTranslation();
+
   return (
     <ScrollView
       style={styles.toolsOverlay}
@@ -60,31 +63,31 @@ export function ToolsOverlay({
     >
       {/* Map controls */}
       <NBText variant="mono-sm" uppercase style={styles.toolsHeader}>
-        Peta
+        {t('monitoring:tools.mapSection')}
       </NBText>
       <ToolActionRow
         icon="compass-outline"
-        label="Arah utara"
+        label={t('monitoring:tools.resetHeading')}
         onPress={resetHeading}
       />
       <ToolActionRow
         icon="magnify-plus-outline"
-        label="Perbesar"
+        label={t('monitoring:tools.zoomIn')}
         onPress={handleZoomIn}
       />
       <ToolActionRow
         icon="magnify-minus-outline"
-        label="Perkecil"
+        label={t('monitoring:tools.zoomOut')}
         onPress={handleZoomOut}
       />
 
       {/* Filter (status / area / jabatan / layer visibility) */}
       <NBText variant="mono-sm" uppercase style={styles.toolsHeader}>
-        Filter
+        {t('monitoring:tools.filterSection')}
       </NBText>
       <ToolActionRow
         icon="filter-variant"
-        label="Filter monitoring"
+        label={t('monitoring:tools.filter')}
         active={filterModalVisible}
         onPress={() => setFilterModalVisible(true)}
       />

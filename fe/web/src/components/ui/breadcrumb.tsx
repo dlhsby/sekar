@@ -2,14 +2,18 @@
 
 import * as React from 'react';
 import { ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { cn, nbFocusRing } from '@/lib/utils/cn';
 
 /** Breadcrumb — semantic navigation trail (Neo Brutalism mono styling). */
 const Breadcrumb = React.forwardRef<HTMLElement, React.ComponentPropsWithoutRef<'nav'>>(
-  ({ className, ...props }, ref) => (
-    <nav ref={ref} aria-label="Breadcrumb" className={cn('w-full', className)} {...props} />
-  )
+  ({ className, ...props }, ref) => {
+    const { t } = useTranslation();
+    return (
+      <nav ref={ref} aria-label={t('common:nav.breadcrumbAria')} className={cn('w-full', className)} {...props} />
+    );
+  }
 );
 Breadcrumb.displayName = 'Breadcrumb';
 

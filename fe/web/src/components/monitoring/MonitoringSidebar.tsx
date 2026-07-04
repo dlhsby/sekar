@@ -9,12 +9,13 @@
  * All data is the unified snapshot; no legacy day-summary call.
  */
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, ArrowRightLeft, Battery, MapPin, AlertTriangle, Users } from 'lucide-react';
 import { Tabs, EmptyState } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
 import { formatRelativeTime } from '@/lib/utils/formatters';
 import { ROLE_LABELS } from '@/lib/constants/roles';
-import { STATUS_LABELS, STATUS_DOT_CLASSES, STATUS_BADGE_CLASSES } from '@/lib/constants/monitoring';
+import { getStatusLabels, STATUS_DOT_CLASSES, STATUS_BADGE_CLASSES } from '@/lib/constants/monitoring';
 import type { SnapshotWorker, SnapshotAreaSummary } from '@/lib/api/monitoring-v2';
 import type { TrackingStatus } from '@/lib/api/monitoring-types';
 import type { UserRole } from '@/types/models';
@@ -44,6 +45,8 @@ function WorkerRow({
   selected: boolean;
   onClick: () => void;
 }) {
+  const { t } = useTranslation();
+  const statusLabels = getStatusLabels();
   const dot = STATUS_DOT_CLASSES[worker.status as TrackingStatus] ?? STATUS_DOT_CLASSES.offline;
   const roleLabel = ROLE_LABELS[worker.role as UserRole] ?? worker.role;
   const lowBattery = worker.battery_level !== null && worker.battery_level < 20;
@@ -53,7 +56,7 @@ function WorkerRow({
       type="button"
       onClick={onClick}
       aria-current={selected}
-      aria-label={`${worker.full_name}, ${STATUS_LABELS[worker.status as TrackingStatus] ?? worker.status}`}
+      aria-label={`${worker.full_name}, ${statusLabels[worker.status as TrackingStatus] ?? worker.status}`}
       className={cn(
         'w-full border-b border-nb-gray-200 px-3 py-2.5 text-left transition-colors',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-nb-primary',
@@ -80,7 +83,7 @@ function WorkerRow({
         {lowBattery && (
           <span
             className="flex-shrink-0 rounded-nb-sm border border-nb-danger bg-nb-danger-light/30 px-1.5 py-0.5 text-xs font-semibold text-nb-danger-dark"
-            aria-label={`Baterai ${worker.battery_level} persen`}
+            aria-label={t('monitoring:sidebar.batteryLabel', { level: worker.battery_level })}
           >
             {worker.battery_level}%
           </span>
@@ -95,6 +98,8 @@ function WorkerRow({
 // ---------------------------------------------------------------------------
 
 function WorkerDetail({ worker, onBack }: { worker: SnapshotWorker; onBack: () => void }) {
+  const { t } = useTranslation();
+  const statusLabels = getStatusLabels();
   const status = worker.status as TrackingStatus;
   const roleLabel = ROLE_LABELS[worker.role as UserRole] ?? worker.role;
 
@@ -107,7 +112,7 @@ function WorkerDetail({ worker, onBack }: { worker: SnapshotWorker; onBack: () =
           className="flex items-center gap-1.5 text-sm font-semibold text-nb-gray-600 hover:text-nb-black"
         >
           <ArrowLeft className="h-4 w-4" />
-          Kembali ke daftar
+          {t('monitoring:sidebar.backToList')}
         </button>
       </div>
 
@@ -125,19 +130,19 @@ function WorkerDetail({ worker, onBack }: { worker: SnapshotWorker; onBack: () =
                 STATUS_BADGE_CLASSES[status] ?? STATUS_BADGE_CLASSES.offline
               )}
             >
-              {STATUS_LABELS[status] ?? worker.status}
+              {statusLabels[status] ?? worker.status}
             </span>
           </div>
           {(worker.rayon_name || worker.area_name) && (
             <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-nb-gray-600">
               {worker.rayon_name && (
                 <span>
-                  Rayon: <strong className="text-nb-black">{worker.rayon_name}</strong>
+                  {t('monitoring:sidebar.rayonLabel')} <strong className="text-nb-black">{worker.rayon_name}</strong>
                 </span>
               )}
               {worker.area_name && (
                 <span>
-                  Area: <strong className="text-nb-black">{worker.area_name}</strong>
+                  {t('monitoring:sidebar.areaLabel')} <strong className="text-nb-black">{worker.area_name}</strong>
                 </span>
               )}
             </div>
@@ -148,7 +153,7 @@ function WorkerDetail({ worker, onBack }: { worker: SnapshotWorker; onBack: () =
         <div className="rounded-nb-base border-2 border-nb-black bg-nb-white p-3 shadow-nb-sm">
           <h3 className="mb-2 flex items-center gap-1 text-xs font-bold uppercase text-nb-gray-500">
             <MapPin className="h-3.5 w-3.5" />
-            Lokasi
+            {t('monitoring:sidebar.location')}
           </h3>
           <div className="space-y-1 text-xs text-nb-gray-600">
             <div className="font-mono">
@@ -162,7 +167,7 @@ function WorkerDetail({ worker, onBack }: { worker: SnapshotWorker; onBack: () =
                   : 'font-semibold text-[var(--color-status-outside)]'
               }
             >
-              {worker.is_within_area ? 'Dalam area' : 'Di luar area'}
+              {worker.is_within_area ? t('monitoring:sidebar.withinArea') : t('monitoring:sidebar.outsideArea')}
             </div>
             {worker.battery_level !== null && (
               <div
@@ -193,10 +198,12 @@ function AreaSummaryList({
   summaries: SnapshotAreaSummary[];
   onBulkReassign?: (area: SnapshotAreaSummary) => void;
 }) {
+  const { t } = useTranslation();
+
   if (summaries.length === 0) {
     return (
       <div className="p-4">
-        <EmptyState variant="noData" title="Tidak ada data area" description="Belum ada ringkasan area untuk cakupan ini." />
+        <EmptyState variant="noData" title={t('monitoring:sidebar.noAreasData')} description={t('monitoring:sidebar.noAreasSummary')} />
       </div>
     );
   }
@@ -243,7 +250,7 @@ function AreaSummaryList({
               {area.is_understaffed && shortage > 0 ? (
                 <span className="inline-flex items-center gap-1 rounded-nb-sm border border-[var(--color-status-missing)] bg-[var(--color-status-missing-bg)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--color-status-missing)]">
                   <AlertTriangle className="h-2.5 w-2.5" />
-                  Kurang {shortage}
+                  {t('monitoring:sidebar.staffingShortage', { shortage })}
                 </span>
               ) : (
                 <span />
@@ -252,11 +259,11 @@ function AreaSummaryList({
                 <button
                   type="button"
                   onClick={() => onBulkReassign(area)}
-                  aria-label={`Pindah massal petugas ke ${area.area_name}`}
+                  aria-label={t('monitoring:sidebar.bulkReassignLabel', { area: area.area_name })}
                   className="inline-flex items-center gap-1 rounded-nb-sm border border-nb-black bg-nb-white px-1.5 py-0.5 text-[10px] font-bold text-nb-black shadow-nb-xs hover:bg-nb-gray-50"
                 >
                   <ArrowRightLeft className="h-2.5 w-2.5" />
-                  Pindah Massal
+                  {t('monitoring:sidebar.bulkReassignButton')}
                 </button>
               )}
             </div>
@@ -279,6 +286,7 @@ export function MonitoringSidebar({
   onBulkReassign,
   className,
 }: MonitoringSidebarProps) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<SidebarTab>('petugas');
   const selectedWorker = selectedId ? workers.find((w) => w.user_id === selectedId) ?? null : null;
 
@@ -299,10 +307,10 @@ export function MonitoringSidebar({
               size="sm"
               value={tab}
               onValueChange={(k) => setTab(k as SidebarTab)}
-              aria-label="Panel monitoring"
+              aria-label={t("common:a11y.monitoringPanel")}
               tabs={[
-                { key: 'petugas', label: 'Petugas', count: workers.length },
-                { key: 'area', label: 'Area', count: areaSummaries.length },
+                { key: 'petugas', label: t('monitoring:sidebar.tabWorkers'), count: workers.length },
+                { key: 'area', label: t('monitoring:sidebar.tabAreas'), count: areaSummaries.length },
               ]}
             />
           </div>
@@ -313,8 +321,8 @@ export function MonitoringSidebar({
                 <div className="p-4">
                   <EmptyState
                     variant="noResults"
-                    title="Tidak ada petugas"
-                    description="Tidak ada petugas yang cocok dengan filter."
+                    title={t('monitoring:sidebar.noWorkers')}
+                    description={t('monitoring:sidebar.noWorkersMatch')}
                   />
                 </div>
               ) : (
@@ -341,7 +349,7 @@ export function MonitoringSidebar({
       {!selectedWorker && (
         <div className="flex-shrink-0 border-t-2 border-nb-gray-200 px-3 py-2 text-[11px] text-nb-gray-400">
           <Users className="mr-1 inline h-3 w-3" />
-          Klik petugas untuk fokus di peta
+          {t('monitoring:sidebar.clickToFocus')}
         </div>
       )}
     </div>

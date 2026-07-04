@@ -57,6 +57,17 @@ Phase 3 additions (ADR-032/033): `staff_kecamatan` (external, non-clockable, sub
 
 Code uses English; Indonesian only for UI labels / user-facing messages. `Activity`/`/activities` = Aktivitas · `Schedule`/`/schedules` = Jadwal · `Overtime`/`/overtime` = Lembur. **Dropped:** `WorkerAssignment`, `OvertimeAktivitas`, `Report` entity, `/aktivitas`, `/worker-schedules`.
 
+## Internationalization (i18n) — MANDATORY when touching the UI
+
+Web + mobile are bilingual: **Indonesian (`id`, default) + English (`en`)** via `react-i18next`. **Whenever you add or change any user-facing UI string, you MUST localize it** — never hardcode a display string.
+
+- **Never** hardcode a user-facing string (JSX text, `label`/`placeholder`/`title`/`aria-label`, toast/`Alert`/`NBToast` text, empty/error states, table headers, option labels, zod messages). Use `t('<namespace>:<key>')`.
+- Add the key to **both** `id` and `en` JSON with identical key sets — web: `fe/web/src/lib/i18n/locales/{id,en}/<ns>.json`; mobile: `fe/mobile/src/i18n/locales/{id,en}/<ns>.json`. `id` = the Indonesian copy, `en` = a natural English translation.
+- Reuse shared namespaces: `common` (actions/entities/empty), `status`, `roles`, `validation`, `errors`. **`errors` mirrors the backend `ApiErrorCode` enum** — the API stays **English-canonical**; frontends localize by error `code`. Canonical terms: `specs/ui-ux/GLOSSARY.md`.
+- Components: `const { t } = useTranslation()`. Non-component modules/hooks: `import i18n from '<...>/i18n/config'` then `i18n.t(...)`. Zod schemas: build in-component via `useMemo(() => z.object(...), [t])`.
+- New namespace? Register it in **both** platforms' `resources.ts` (the parity guardrail requires the same namespace set on both).
+- **Verify before commit:** `npm run i18n:check` (root — enforces enum coverage + `id`/`en` parity), `npx tsc --noEmit`, and `npm run lint` (the ESLint rule `sekar-design/no-untranslated-literal` fails on any hardcoded user-facing string) in the changed workspace.
+
 ## Conventions
 - Module pattern: controller → service → repository → entity → DTOs. Auth via `@UseGuards(JwtAuthGuard, RolesGuard)`, `@Roles(...)`, `@GetUser()`. Swagger `@Api*` decorators.
 - Check ADRs in `specs/architecture/decisions/` before major changes. SOLID, concise TypeScript, descriptive names.
@@ -90,6 +101,7 @@ Code uses English; Indonesian only for UI labels / user-facing messages. `Activi
 | Architecture + ADRs | `specs/architecture/` · `specs/architecture/decisions/` |
 | Security + dependency audit | `specs/architecture/security.md` |
 | Design tokens (source of truth) | `specs/ui-ux/design-tokens.md` · `tokens.json` |
+| **i18n (bilingual id/en) + terminology glossary** | `specs/ui-ux/i18n.md` · `specs/ui-ux/GLOSSARY.md` · locales `fe/{web,mobile}/src/**/i18n/locales` · check: `npm run i18n:check` |
 | Web PWA | `specs/phases/phase-3-plants-monitoring-rebuild/web.md` §PWA |
 | **Deployment (authoritative, start-to-finish)** | `specs/deployment/deployment-guide.md` (self-hosted Docker + AWS appendix) |
 | iOS / Android release runbooks | `specs/deployment/ios-release-guide.md` · `android-release-guide.md` |

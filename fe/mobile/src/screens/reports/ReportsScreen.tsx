@@ -17,6 +17,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import {
   NBBackgroundPattern,
@@ -52,29 +53,36 @@ import type { GeneratedReportStatus, ReportType, ReportFormat } from '../../type
 
 const REPORTS_PAGE_LIMIT = 10;
 
-const STATUS_FILTER_OPTIONS = [
-  { key: 'all', label: 'Semua' },
-  { key: 'processing', label: 'Sedang Diproses' },
-  { key: 'completed', label: 'Selesai' },
-  { key: 'failed', label: 'Gagal' },
-];
-
-const TYPE_FILTER_OPTIONS = [
-  { key: 'all', label: 'Semua' },
-  { key: 'daily_operations', label: 'Harian' },
-  { key: 'weekly_performance', label: 'Mingguan' },
-  { key: 'monthly_summary', label: 'Bulanan' },
-  { key: 'worker_performance', label: 'Kinerja Petugas' },
-  { key: 'area_status', label: 'Status Area' },
-  { key: 'overtime_utilization', label: 'Lembur' },
-];
-
 type Props = {
   navigation: NativeStackNavigationProp<MainTabParamList, 'Reports'>;
 };
 
 export function ReportsScreen({ navigation }: Props): React.JSX.Element {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
+
+  const STATUS_FILTER_OPTIONS = useMemo(
+    () => [
+      { key: 'all', label: t('reports:filters.status.all') },
+      { key: 'processing', label: t('reports:filters.status.processing') },
+      { key: 'completed', label: t('reports:filters.status.completed') },
+      { key: 'failed', label: t('reports:filters.status.failed') },
+    ],
+    [t]
+  );
+
+  const TYPE_FILTER_OPTIONS = useMemo(
+    () => [
+      { key: 'all', label: t('reports:filters.type.all') },
+      { key: 'daily_operations', label: t('reports:filters.type.daily') },
+      { key: 'weekly_performance', label: t('reports:filters.type.weekly') },
+      { key: 'monthly_summary', label: t('reports:filters.type.monthly') },
+      { key: 'worker_performance', label: t('reports:filters.type.workerPerformance') },
+      { key: 'area_status', label: t('reports:filters.type.areaStatus') },
+      { key: 'overtime_utilization', label: t('reports:filters.type.overtime') },
+    ],
+    [t]
+  );
 
   const reports = useAppSelector(selectReports);
   const templates = useAppSelector(selectTemplates);
@@ -117,11 +125,11 @@ export function ReportsScreen({ navigation }: Props): React.JSX.Element {
       NBToast.show({
         level: 'danger',
         title: error,
-        body: 'Terjadi kesalahan saat memproses laporan.',
+        body: t('reports:toast.processing'),
       });
       dispatch(clearError());
     }
-  }, [error, dispatch]);
+  }, [error, dispatch, t]);
 
   const handleRefresh = useCallback(() => {
     setCurrentPage(1);
@@ -155,14 +163,14 @@ export function ReportsScreen({ navigation }: Props): React.JSX.Element {
         setIsGenerateSheetVisible(false);
         NBToast.show({
           level: 'success',
-          title: 'Laporan sedang diproses',
-          body: 'Laporan akan muncul di daftar ketika selesai.',
+          title: t('reports:toast.generating.title'),
+          body: t('reports:toast.generating.description'),
         });
       } catch {
         // Error is handled by the slice and redux state
       }
     },
-    [dispatch],
+    [dispatch, t],
   );
 
   const handleReportPress = useCallback(
@@ -175,9 +183,9 @@ export function ReportsScreen({ navigation }: Props): React.JSX.Element {
   const renderEmptyState = () => (
     <NBEmptyState
       variant="empty"
-      title="Belum Ada Laporan"
-      description="Buat laporan baru untuk melihat daftarnya di sini"
-      ctaLabel="Buat Laporan"
+      title={t('reports:emptyState.title')}
+      description={t('reports:emptyState.description')}
+      ctaLabel={t('reports:emptyState.cta')}
       onCTA={() => setIsGenerateSheetVisible(true)}
     />
   );
@@ -197,7 +205,7 @@ export function ReportsScreen({ navigation }: Props): React.JSX.Element {
       opacity={0.06}
     >
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <NBPageHeader title="Laporan" />
+        <NBPageHeader title={t('reports:pageTitle')} />
 
         {/* Status Filter Tabs */}
         <ScrollView
@@ -256,7 +264,7 @@ export function ReportsScreen({ navigation }: Props): React.JSX.Element {
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={nbColors.primary} />
             <NBText variant="body-sm" color="gray600" style={styles.loadingText}>
-              Memuat laporan...
+              {t('reports:loading')}
             </NBText>
           </View>
         ) : filteredReports.length === 0 ? (
@@ -292,7 +300,7 @@ export function ReportsScreen({ navigation }: Props): React.JSX.Element {
         {/* FAB Bar */}
         <NBFabBar>
           <NBButton
-            title="Buat Laporan"
+            title={t('reports:createButton')}
             variant="primary"
             size="lg"
             onPress={() => setIsGenerateSheetVisible(true)}

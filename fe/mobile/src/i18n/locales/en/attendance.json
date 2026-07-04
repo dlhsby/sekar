@@ -1,0 +1,162 @@
+{
+  "list": {
+    "title": "Attendance",
+    "sortOptions": {
+      "newest": "Newest Date",
+      "oldest": "Oldest Date"
+    },
+    "statusChip": {
+      "late": "Late",
+      "onTime": "On Time",
+      "active": "In Progress"
+    },
+    "filterChips": {
+      "date": "Select Date"
+    },
+    "emptyState": {
+      "noAttendance": "No attendance yet",
+      "attendanceHint": "Your attendance history will appear here after you clock in.",
+      "noResults": "No results",
+      "noAttendanceMatch": "No attendance matches your filters"
+    },
+    "button": {
+      "clockIn": "Clock In",
+      "clockOut": "Clock Out"
+    },
+    "a11y": {
+      "clockIn": "Clock in to start your shift",
+      "clockOut": "Clock out from active shift"
+    },
+    "sortModal": {
+      "title": "Sort Attendance"
+    }
+  },
+  "filter": {
+    "title": "Filter Attendance",
+    "statusLabel": "Status",
+    "statusOptions": {
+      "all": "All Status",
+      "late": "Late",
+      "onTime": "On Time",
+      "active": "In Progress"
+    },
+    "dateRange": "Date Range",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "reset": "Reset",
+    "apply": "Apply"
+  },
+  "detail": {
+    "loading": "Loading data...",
+    "noAttendance": "No attendance today",
+    "button": {
+      "back": "Back",
+      "viewShifts": "View Shift Details"
+    },
+    "labels": {
+      "date": "Date",
+      "clockIn": "Clock In",
+      "clockOut": "Clock Out",
+      "status": "Attendance Status",
+      "duration": "Duration",
+      "shiftCount": "Number of shifts"
+    },
+    "status": {
+      "late": "Late",
+      "onTime": "On Time"
+    },
+    "shiftCount": "{{count}} shift",
+    "a11y": {
+      "viewShifts": "View shift details for today"
+    }
+  },
+  "dayCard": {
+    "status": {
+      "active": "In Progress",
+      "late": "Late",
+      "onTime": "On Time"
+    },
+    "shiftCount": "{{count}} shift",
+    "clockIn": "In {{time}}",
+    "clockOut": "Out {{time}}",
+    "a11y": {
+      "label": "Attendance {{date}}, {{status}}"
+    }
+  },
+  "clockInOut": {
+    "noAreaAssigned": "You have not been assigned to any area",
+    "contactSupervisor": "Contact your supervisor for area assignment",
+    "gettingLocation": "Getting your location...",
+    "attendanceInfo": "Attendance Information",
+    "gpsLocation": "GPS Location",
+    "currentTime": "Current Time",
+    "scheduledShift": "Scheduled Shift",
+    "assignedArea": "Assigned Area",
+    "address": "Address",
+    "areaType": "Area Type",
+    "gpsCoordinates": "GPS Coordinates",
+    "boundaryRadius": "Boundary Radius",
+    "rayonCoverage": "Rayon Coverage",
+    "noSpecificArea": "No specific area",
+    "inBoundary": "IN AREA",
+    "outOfBoundary": "OUT OF AREA",
+    "shiftTime": "Shift Time:",
+    "clockInTime": "Clock In:",
+    "selfiePhoto": "Selfie Photo",
+    "captured": "Captured",
+    "optional": "Optional",
+    "retakeSelfie": "Retake",
+    "captureSelfie": "Capture Selfie",
+    "captureForVerification": "Capture selfie for identity verification",
+    "captureForClockOutVerification": "Capture selfie to verify clock out",
+    "offlineBannerClockIn": "Offline Mode - Clock in requires internet connection",
+    "onlineRequiredForClockIn": "You must be online to clock in. Connect to the internet first.",
+    "offlineModeClockOut": "Offline mode. Clock out will sync when online.",
+    "selfiePreviewTitle": "Selfie Clock In",
+    "startShiftWithVerification": "Start shift with location verification",
+    "startShiftOutOfArea": "Start shift — You are out of area, attendance will be recorded",
+    "endShiftNow": "End current shift",
+    "shiftTimeLabel": "Shift Time:",
+    "clockInColonLabel": "Clock In:"
+  },
+  "gpsSection": {
+    "capturingLocation": "Getting your location...",
+    "locationUnavailable": "Location unavailable",
+    "accuracy": "accuracy",
+    "withinBoundary": "You are within the work area",
+    "outsideBoundary": "You are outside the work area. Attendance will still be recorded.",
+    "gpsLabel": "GPS:",
+    "accuracyLabel": "Accuracy:",
+    "lowAccuracyWarning": "GPS accuracy is low. Move to an open area for better results.",
+    "updateGpsButton": "Update GPS"
+  },
+  "shifts": {
+    "today": "Attendance Today",
+    "empty": "No shifts scheduled for today",
+    "noShiftActive": "No active shift",
+    "startShiftHint": "Clock in first to start a shift",
+    "notClockedIn": "Not clocked in",
+    "workHoursSuffix": "work hours",
+    "unknown": "Unknown"
+  },
+  "shiftDetail": {
+    "title": "Shift Details",
+    "area": "Area",
+    "areaType": "Area Type",
+    "clockIn": "Clock In",
+    "gpsClockIn": "GPS Clock In",
+    "validation": "Clock In Location Validation",
+    "withinArea": "Within Area",
+    "outsideArea": "Outside Area",
+    "distance": "Distance",
+    "radius": "Radius"
+  },
+  "shiftCard": {
+    "unknownArea": "Unknown area",
+    "detailHint": "Tap to view shift detail",
+    "shiftNumber": "Shift #{{n}}"
+  },
+  "workHours": {
+    "titlePrefix": "Attendance {{date}}"
+  }
+}

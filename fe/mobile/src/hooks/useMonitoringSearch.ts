@@ -7,6 +7,7 @@
  */
 
 import { useMemo } from 'react';
+import i18n from '../i18n/config';
 import { ROLE_LABELS } from '../constants/roles';
 import type { LiveUser, RayonBoundary, UserRole } from '../types/models.types';
 
@@ -47,6 +48,7 @@ export function useMonitoringSearch(
   liveUsers: LiveUser[],
   rayons: RayonBoundary[] | undefined,
   query: string,
+  labels?: { petugas: string; area: string; rayon: string },
 ): MonitoringSearchResults {
   return useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -96,11 +98,11 @@ export function useMonitoringSearch(
     }
 
     const semua: SearchSection[] = [
-      { title: 'Petugas', type: 'petugas' as const, data: petugas },
-      { title: 'Area', type: 'area' as const, data: area },
-      { title: 'Rayon', type: 'rayon' as const, data: rayon },
+      { title: labels?.petugas ?? i18n.t('monitoring:search.personnelLabel'), type: 'petugas' as const, data: petugas },
+      { title: labels?.area ?? 'Area', type: 'area' as const, data: area },
+      { title: labels?.rayon ?? 'Rayon', type: 'rayon' as const, data: rayon },
     ].filter((s) => s.data.length > 0);
 
     return { petugas, area, rayon, semua, total: petugas.length + area.length + rayon.length };
-  }, [liveUsers, rayons, query]);
+  }, [liveUsers, rayons, query, labels]);
 }

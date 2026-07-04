@@ -126,6 +126,12 @@ export class User {
   @Column({ name: 'password_must_change', type: 'boolean', default: false })
   password_must_change: boolean;
 
+  // Preferred UI language for web + mobile ('id' | 'en'), synced from the client
+  // so the choice follows the user across devices. Defaults to Indonesian.
+  // The API itself stays English-canonical; only the frontends localize.
+  @Column({ name: 'preferred_language', type: 'varchar', length: 2, default: 'id' })
+  preferred_language?: string;
+
   @CreateDateColumn()
   created_at: Date;
 

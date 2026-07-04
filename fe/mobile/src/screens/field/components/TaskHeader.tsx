@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, StyleSheet } from 'react-native';
 import {
   NBBadge,
@@ -18,6 +19,8 @@ interface TaskHeaderProps {
 }
 
 export function TaskHeader({ task }: TaskHeaderProps): React.JSX.Element {
+  const { t } = useTranslation('common');
+
   return (
     <View>
       {/* Status + Priority row */}
@@ -33,7 +36,7 @@ export function TaskHeader({ task }: TaskHeaderProps): React.JSX.Element {
       {task.description ? (
         <NBText variant="body" style={styles.descriptionStyle}>{task.description}</NBText>
       ) : (
-        <NBText variant="body-sm" style={styles.descriptionEmptyStyle}>Tidak ada deskripsi</NBText>
+        <NBText variant="body-sm" style={styles.descriptionEmptyStyle}>{t('ui.noDescription')}</NBText>
       )}
     </View>
   );

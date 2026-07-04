@@ -1,0 +1,272 @@
+{
+  "field": {
+    "a11y": {
+      "shiftTime": "Shift time: {{hours}} hours {{minutes}} minutes"
+    },
+    "sections": {
+      "attendance": "My Attendance",
+      "summary": "Today's Summary"
+    },
+    "alerts": {
+      "permissionRevoked": "Location permission was revoked. Location tracking is inactive.",
+      "gpsDisabled": "GPS is disabled. Location tracking is inactive.",
+      "locationUnavailable": "Location unavailable. Check your GPS settings.",
+      "fix": "Fix"
+    },
+    "hero": {
+      "onDuty": "On duty",
+      "overtimeActive": "Overtime active",
+      "location": {
+        "loading": "Location…",
+        "inArea": "In area",
+        "outArea": "Out of area",
+        "searching": "Getting location…",
+        "unavailable": "Location unavailable",
+        "unknownArea": "Unknown area"
+      },
+      "labels": {
+        "clockInStart": "Clock in start",
+        "status": "Attendance Status",
+        "assignedArea": "Assigned Area",
+        "duration": "Current shift duration",
+        "currentLocation": "Current location"
+      },
+      "status": {
+        "late": "Late",
+        "onTime": "On Time"
+      },
+      "button": {
+        "clockIn": "Clock In",
+        "clockOut": "Clock Out",
+        "clockOutOvertime": "Clock Out Overtime"
+      },
+      "link": {
+        "shiftDetail": "Shift details →"
+      },
+      "idle": {
+        "label": "Not clocked in",
+        "title": "Start shift today",
+        "assignedArea": "Area: {{area}}"
+      },
+      "a11y": {
+        "onDuty": "On duty",
+        "overtimeActive": "Overtime active",
+        "tapToOpen": "Tap to expand details",
+        "tapToClose": "Tap to collapse details",
+        "locationStatus": "Location status: {{status}}. Tap for map.",
+        "refreshLocation": "Update location"
+      }
+    },
+    "tiles": {
+      "attendance": "Attendance",
+      "tasks": "Tasks",
+      "activities": "Activities"
+    },
+    "warning": {
+      "noAssignedArea": "You have not been assigned to any area yet."
+    }
+  },
+  "fallbacks": {
+    "you": "You",
+    "noRayon": "No rayon"
+  },
+  "coordinator": {
+    "sections": {
+      "attendance": "My Attendance",
+      "summary": "Today's Summary"
+    },
+    "alerts": {
+      "outOfArea": "Out of area",
+      "outOfAreaTitle": "{{name}} left area",
+      "absent": "Not present",
+      "absentTitle": "{{name}} is not present"
+    },
+    "hero": {
+      "onDuty": "On duty",
+      "overtimeActive": "Overtime active",
+      "meta": "Started {{time}} · Running {{duration}}",
+      "button": {
+        "clockIn": "Clock In",
+        "clockOut": "Clock Out",
+        "clockOutOvertime": "Clock Out Overtime",
+        "seeAll": "See All"
+      },
+      "link": {
+        "shiftDetail": "Shift details →"
+      },
+      "idle": {
+        "label": "Not clocked in",
+        "title": "Start shift today"
+      },
+      "a11y": {
+        "onDuty": "On duty",
+        "overtimeActive": "Overtime active"
+      },
+      "label": "Team Today",
+      "status": "{{active}}/{{total}} Active",
+      "moreCount": "+{{count}}",
+      "empty": "No active team members."
+    },
+    "kpi": {
+      "active": "Active Team",
+      "activeDetail": "of {{total}}",
+      "outOfArea": "Out of Area",
+      "absent": "Absent",
+      "offline": "Offline"
+    },
+    "section": {
+      "alerts": "Alerts · {{count}}"
+    },
+    "tiles": {
+      "activities": "Activities",
+      "attendance": "Attendance",
+      "tasks": "Tasks"
+    }
+  },
+  "adminData": {
+    "sections": {
+      "attendance": "My Attendance",
+      "summary": "Today's Summary",
+      "disposition": "Disposition Breakdown",
+      "inflight": "Active Dispositions"
+    },
+    "alerts": {
+      "assigned": "Assigned",
+      "inProgress": "In Progress"
+    },
+    "hero": {
+      "a11y": {
+        "onDuty": "On Duty",
+        "overtimeActive": "Overtime Active"
+      },
+      "button": {
+        "clockIn": "Clock In",
+        "clockOut": "Clock Out",
+        "clockOutOvertime": "Clock Out Overtime",
+        "openQueue": "Open Queue"
+      },
+      "idle": {
+        "label": "Not Clocked In",
+        "title": "Start Shift Today"
+      },
+      "label": "Incoming Dispositions",
+      "link": {
+        "shiftDetail": "Shift Details"
+      },
+      "meta": "Started {{time}} · Running {{duration}}",
+      "newCount": "{{count}} new",
+      "onDuty": "On Duty",
+      "overtimeActive": "Overtime Active",
+      "waitingDisposition": "Awaiting Disposition"
+    },
+    "inflight": {
+      "active": "{{count}} Active",
+      "notScheduled": "Not Scheduled"
+    },
+    "kpi": {
+      "approved": "Approved",
+      "newSubmitted": "New Submissions",
+      "rejected": "Rejected",
+      "review": "Under Review"
+    },
+    "tiles": {
+      "activities": "Activities",
+      "attendance": "Attendance",
+      "tasks": "Tasks"
+    }
+  },
+  "exec": {
+    "sections": {
+      "summary": "Today's Summary",
+      "perRayon": "By Rayon"
+    },
+    "hero": {
+      "button": {
+        "seeMap": "View Map"
+      },
+      "label": "City Monitoring",
+      "status": "{{active}}/{{total}} Active",
+      "subtitle": "Officers Monitored Today"
+    },
+    "kpi": {
+      "absent": "Absent",
+      "active": "Active Officers",
+      "activeDetail": "of {{total}}",
+      "offline": "Offline",
+      "outOfArea": "Out of Area"
+    },
+    "rayon": {
+      "detail": "{{active}} Active of {{total}} Officers",
+      "status": "{{active}}/{{total}}"
+    }
+  },
+  "kecamatan": {
+    "empty": {
+      "hint": "No requests yet."
+    },
+    "hero": {
+      "button": {
+        "submit": "Submit Request"
+      },
+      "label": "Today's Summary",
+      "processingCount": "{{count}} Processing",
+      "subtitle": "Your Requests"
+    },
+    "kpi": {
+      "approved": "Approved",
+      "done": "Done",
+      "scheduled": "Scheduled",
+      "waiting": "Waiting"
+    },
+    "sections": {
+      "recent": "Recent Requests",
+      "summary": "Today's Summary"
+    },
+    "status": {
+      "approved": "Approved",
+      "cancelled": "Cancelled",
+      "done": "Done",
+      "inProgress": "In Progress",
+      "rejected": "Rejected",
+      "scheduled": "Scheduled",
+      "underReview": "Under Review",
+      "waiting": "Waiting"
+    }
+  },
+  "components": {
+    "attendanceSummary": {
+      "a11y": {
+        "clockIn": "Clock In {{time}}{{late}}",
+        "clockOut": "Clock Out {{time}}{{earlyLeave}}",
+        "earlyLeave": ", Early Leave",
+        "late": ", Late",
+        "onTime": ", On Time"
+      },
+      "clockIn": "Clock In",
+      "clockOut": "Clock Out"
+    },
+    "locationCard": {
+      "a11y": {
+        "accuracy": "GPS Accuracy: ±{{accuracy}} meters",
+        "coordinates": "Coordinates: {{lat}}, {{lng}}",
+        "insideArea": "Inside Work Area",
+        "outsideArea": "Outside Work Area",
+        "refresh": "Update Location",
+        "viewOnMap": "View Location on Map",
+        "viewOnMapHint": "Tap to Open Location Map"
+      },
+      "accuracy": "Accuracy: ±{{accuracy}}m",
+      "insideArea": "Inside Work Area",
+      "loading": "Getting Location...",
+      "outsideArea": "Outside Work Area",
+      "tapHint": "Tap to View on Map",
+      "title": "Your Location",
+      "unavailable": "Location Unavailable",
+      "updatedAt": {
+        "hoursAgo": "{{hours}} hours ago",
+        "justNow": "Just Now",
+        "minutesAgo": "{{minutes}} min ago"
+      }
+    }
+  }
+}

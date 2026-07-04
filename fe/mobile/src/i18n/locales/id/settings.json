@@ -1,0 +1,69 @@
+{
+  "title": "Pengaturan",
+  "loading": "Memuat…",
+  "tabs": {
+    "general": "Umum",
+    "security": "Keamanan",
+    "notifications": "Notifikasi"
+  },
+  "general": {
+    "identity": "Identitas",
+    "editProfile": "Ubah profil",
+    "fullName": "Nama Lengkap",
+    "username": "Username",
+    "role": "Peran",
+    "identityHint": "Nama lengkap dan foto profil dapat diubah di halaman Profil. Username dan peran dikelola oleh administrator sistem.",
+    "appearance": "Tampilan",
+    "darkMode": "Mode Gelap",
+    "darkModeHint": "Beralih antara tema terang dan gelap untuk konsol ini.",
+    "language": "Bahasa",
+    "languageHint": "Pilih bahasa tampilan untuk konsol ini."
+  },
+  "security": {
+    "changePassword": "Ubah Kata Sandi",
+    "currentPassword": "Kata Sandi Saat Ini",
+    "newPassword": "Kata Sandi Baru",
+    "confirmNewPassword": "Konfirmasi Kata Sandi Baru",
+    "minChars": "Minimal 8 karakter",
+    "mismatch": "Konfirmasi tidak cocok",
+    "savePassword": "Simpan Kata Sandi",
+    "passwordChanged": "Kata sandi berhasil diubah"
+  },
+  "notifications": {
+    "title": "Notifikasi",
+    "preferences": "Preferensi Notifikasi",
+    "perTypePush": "Push per jenis",
+    "loadingPreferences": "Memuat preferensi…",
+    "loadError": "Gagal memuat preferensi notifikasi. Coba lagi nanti.",
+    "saved": "Preferensi notifikasi disimpan"
+  },
+  "screen": {
+    "sections": {
+      "notifications": "Notifikasi",
+      "language": "Bahasa",
+      "locationData": "Lokasi & data",
+      "offlineSync": "Offline sync",
+      "about": "Tentang"
+    },
+    "notificationPreferences": "Preferensi notifikasi",
+    "notificationPreferencesHint": "Pilih jenis notifikasi yang ingin diterima",
+    "soundVibrate": "Suara & getar",
+    "languageHint": "Pilih bahasa tampilan aplikasi",
+    "backgroundTracking": "Background tracking",
+    "backgroundTrackingHint": "Saat aplikasi tertutup",
+    "dataSaver": "Hemat data",
+    "syncQueue": "Antrian Sync",
+    "pending": "{{count}} pending",
+    "synced": "tersinkron",
+    "syncDetail": "{{pending}} tertunda · {{failed}} gagal",
+    "allSynced": "Semua data sudah tersinkron.",
+    "syncNow": "Sync sekarang",
+    "version": "Versi",
+    "versionValue": "v{{version}} (build {{build}})",
+    "help": "Bantuan & FAQ",
+    "helpTitle": "Bantuan & FAQ",
+    "helpBody": "Hubungi admin sistem untuk bantuan lebih lanjut.",
+    "tagline": "SEKAR — Sistem Evaluasi Kinerja Satgas RTH",
+    "org": "DLH Surabaya 2026"
+  }
+}

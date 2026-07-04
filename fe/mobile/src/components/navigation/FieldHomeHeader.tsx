@@ -16,6 +16,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../store/store';
 import { selectTotalPendingCount } from '../../store/slices/offlineSlice';
 import { NBText } from '../nb/NBText';
@@ -38,13 +39,14 @@ interface FieldHomeHeaderProps {
 }
 
 export const FieldHomeHeader: React.FC<FieldHomeHeaderProps> = ({ onBack, title }) => {
+  const { t } = useTranslation();
   const { user, assignedArea } = useAppSelector((state) => state.auth);
   const { isOnline, isSyncing } = useAppSelector((state) => state.offline);
   const pendingCount = useAppSelector(selectTotalPendingCount);
   const navigation = useNavigation<any>();
 
-  const roleLabel = user?.role ? ROLE_LABELS[user.role] : 'User';
-  const displayName = user?.full_name ?? 'Pengguna';
+  const roleLabel = user?.role ? ROLE_LABELS[user.role] : t('common:ui.defaultUser');
+  const displayName = user?.full_name ?? t('common:ui.defaultUser');
   const areaSuffix = assignedArea?.name ? ` · ${assignedArea.name}` : '';
 
   return (
@@ -55,7 +57,7 @@ export const FieldHomeHeader: React.FC<FieldHomeHeaderProps> = ({ onBack, title 
         <TouchableOpacity
           onPress={onBack}
           style={styles.backButton}
-          accessibilityLabel="Kembali"
+          accessibilityLabel={t('common:actions.back')}
           accessibilityRole="button"
         >
           <MaterialCommunityIcons name="arrow-left" size={24} color={nbColors.black} />
@@ -64,7 +66,7 @@ export const FieldHomeHeader: React.FC<FieldHomeHeaderProps> = ({ onBack, title 
         <TouchableOpacity
           onPress={() => navigation.navigate('Profile')}
           style={styles.avatarSpacing}
-          accessibilityLabel="Buka Profil"
+          accessibilityLabel={t('common:ui.openProfile')}
           accessibilityRole="button"
           activeOpacity={0.7}
         >
@@ -119,7 +121,7 @@ export const FieldHomeHeader: React.FC<FieldHomeHeaderProps> = ({ onBack, title 
         {isSyncing ? (
           <View style={[styles.statusBadge, styles.syncingBadge]}>
             <View style={styles.syncingDot} />
-            <Text style={styles.statusBadgeText}>Syncing</Text>
+            <Text style={styles.statusBadgeText}>{t('status:presence.syncing')}</Text>
           </View>
         ) : pendingCount > 0 ? (
           <View style={[styles.statusBadge, styles.pendingBadge]}>
@@ -129,7 +131,7 @@ export const FieldHomeHeader: React.FC<FieldHomeHeaderProps> = ({ onBack, title 
         ) : (
           <View style={[styles.statusBadge, isOnline ? styles.onlineBadge : styles.offlineBadge]}>
             <View style={[styles.statusDot, isOnline ? styles.online : styles.offline]} />
-            <Text style={styles.statusBadgeText}>{isOnline ? 'Online' : 'Offline'}</Text>
+            <Text style={styles.statusBadgeText}>{isOnline ? t('status:presence.online') : t('status:presence.offline')}</Text>
           </View>
         )}
         {!onBack ? <NotificationBell /> : null}

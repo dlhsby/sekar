@@ -1,9 +1,10 @@
 'use client';
 
 import { format, isValid, parse } from 'date-fns';
-import { id } from 'date-fns/locale';
+import { dateFnsLocale } from '@/lib/i18n/date-locale';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { forwardRef, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { cn, nbFocusRing } from '@/lib/utils/cn';
 
@@ -52,7 +53,7 @@ function parseInput(text: string): string | null {
 
 function toDisplay(value?: string): string {
   const d = parseIso(value);
-  return d ? format(d, 'dd/MM/yyyy', { locale: id }) : '';
+  return d ? format(d, 'dd/MM/yyyy', { locale: dateFnsLocale() }) : '';
 }
 
 /**
@@ -75,6 +76,7 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(function
   },
   ref
 ) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState(toDisplay(value));
   const [focused, setFocused] = useState(false);
@@ -142,7 +144,7 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(function
           <button
             type="button"
             disabled={disabled}
-            aria-label="Pilih tanggal"
+            aria-label={t('common:pickers.selectDate')}
             className={cn('absolute inset-y-0 right-0 flex items-center px-3 text-nb-gray-500 hover:text-nb-black disabled:cursor-not-allowed disabled:text-nb-gray-300', nbFocusRing)}
           >
             <CalendarIcon className="h-4 w-4" aria-hidden />
@@ -159,7 +161,7 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(function
           <button
             type="button"
             className={stepButton}
-            aria-label="Hari sebelumnya"
+            aria-label={t('common:pickers.prevDay')}
             disabled={disabled || !value}
             onClick={() => step(-1)}
           >
@@ -169,7 +171,7 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(function
           <button
             type="button"
             className={stepButton}
-            aria-label="Hari berikutnya"
+            aria-label={t('common:pickers.nextDay')}
             disabled={disabled || !canStepNext}
             onClick={() => step(1)}
           >
@@ -199,7 +201,7 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(function
             onValueChange?.(d ? format(d, 'yyyy-MM-dd') : undefined);
             setOpen(false);
           }}
-          locale={id}
+          locale={dateFnsLocale()}
         />
         <div className="border-t-2 border-nb-black p-1.5">
           <button
@@ -209,9 +211,7 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(function
               setOpen(false);
             }}
             className="w-full rounded-nb-base px-2 py-1.5 text-nb-body-sm font-semibold text-nb-success-dark hover:bg-nb-gray-100"
-          >
-            Hari ini
-          </button>
+          >{t('common:pickers.today')}</button>
         </div>
       </PopoverContent>
     </Popover>

@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { View, Image, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBText } from '../../../components/nb';
 import { nbColors, nbSpacing, nbBorders, nbRadius } from '../../../constants/nbTokens';
@@ -16,6 +17,7 @@ interface TaskCompletionPhotosProps {
 }
 
 export function TaskCompletionPhotos({ task }: TaskCompletionPhotosProps): React.JSX.Element {
+  const { t } = useTranslation();
   const completionPhotos = task.completion_photo_urls ?? [];
 
   return (
@@ -23,7 +25,7 @@ export function TaskCompletionPhotos({ task }: TaskCompletionPhotosProps): React
       {task.completed_at && (
         <View style={styles.detailRow}>
           <Icon name="check-circle" size={14} color={nbColors.success} />
-          <NBText variant="body-sm" style={styles.detailRowTextStyle}>Selesai {formatDateTime(task.completed_at)}</NBText>
+          <NBText variant="body-sm" style={styles.detailRowTextStyle}>{t('tasks:completion.completedLabel', { dateTime: formatDateTime(task.completed_at) })}</NBText>
         </View>
       )}
       {task.completion_notes && (
@@ -33,7 +35,7 @@ export function TaskCompletionPhotos({ task }: TaskCompletionPhotosProps): React
       {/* Completion photos */}
       {completionPhotos.length > 0 && (
         <View style={styles.photoGrid}>
-          <NBText variant="body-sm" style={styles.photoLabelStyle}>Foto Bukti ({completionPhotos.length})</NBText>
+          <NBText variant="body-sm" style={styles.photoLabelStyle}>{t('tasks:completion.proofPhotosLabel', { count: completionPhotos.length })}</NBText>
           <View style={styles.photoRow}>
             {completionPhotos.map((uri, index) => (
               <Image

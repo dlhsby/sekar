@@ -8,6 +8,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Alert } from 'react-native';
 import Geolocation from 'react-native-geolocation-service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import i18n from '../i18n/config';
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { createActivity } from '../services/api/activitiesApi';
 import { getMyActivityTypes } from '../services/api/activityTypesApi';
@@ -94,7 +95,7 @@ export function useActivityForm() {
         setSortedActivityTypes(sorted);
       }
     } catch (error) {
-      Alert.alert('Error', 'Gagal memuat jenis aktivitas. Coba lagi nanti.');
+      Alert.alert('Error', i18n.t('activities:submission.noTypesAvailable'));
       if (__DEV__) { console.error('Failed to load activity types:', error); }
     } finally {
       setIsLoadingTypes(false);
@@ -143,10 +144,10 @@ export function useActivityForm() {
       },
       (error) => {
         if (__DEV__) { console.error('Location error:', error); }
-        let errorMessage = 'Tidak dapat mendapatkan lokasi GPS';
-        if (error.code === 1) { errorMessage = 'Izin lokasi ditolak'; }
-        else if (error.code === 3) { errorMessage = 'Waktu habis. Coba di area terbuka.'; }
-        else if (error.code === 5) { errorMessage = 'Aktifkan GPS di pengaturan.'; }
+        let errorMessage = i18n.t('activities:locationMessages.locationError');
+        if (error.code === 1) { errorMessage = i18n.t('activities:locationMessages.permissionDenied'); }
+        else if (error.code === 3) { errorMessage = i18n.t('activities:locationMessages.timeoutError'); }
+        else if (error.code === 5) { errorMessage = i18n.t('activities:locationMessages.gpsDisabled'); }
         setErrors((prev) => ({ ...prev, location: errorMessage }));
         setIsLoadingLocation(false);
       },
@@ -179,12 +180,12 @@ export function useActivityForm() {
   // Validate form
   const validateForm = useCallback((): boolean => {
     const newErrors: FormErrors = {};
-    if (form.photos.length === 0) { newErrors.photos = 'Tambahkan minimal 1 foto'; }
-    if (!form.description.trim()) { newErrors.description = 'Deskripsi wajib diisi'; }
-    else if (form.description.length < 5) { newErrors.description = 'Deskripsi minimal 5 karakter'; }
-    else if (form.description.length > 500) { newErrors.description = 'Deskripsi maksimal 500 karakter'; }
-    if (!form.activityTypeId) { newErrors.activityType = 'Pilih jenis aktivitas'; }
-    if (!form.location) { newErrors.location = 'Lokasi GPS diperlukan'; }
+    if (form.photos.length === 0) { newErrors.photos = i18n.t('activities:validation.photosRequired'); }
+    if (!form.description.trim()) { newErrors.description = i18n.t('activities:validation.descriptionRequired'); }
+    else if (form.description.length < 5) { newErrors.description = i18n.t('activities:validation.descriptionMinLength'); }
+    else if (form.description.length > 500) { newErrors.description = i18n.t('activities:validation.descriptionMaxLength'); }
+    if (!form.activityTypeId) { newErrors.activityType = i18n.t('activities:validation.activityTypeRequired'); }
+    if (!form.location) { newErrors.location = i18n.t('activities:validation.locationRequired'); }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }, [form]);
@@ -215,12 +216,12 @@ export function useActivityForm() {
       const draft = JSON.parse(draftStr);
       if (Date.now() - draft.timestamp < 24 * 60 * 60 * 1000) {
         Alert.alert(
-          'Draft Ditemukan',
-          'Anda memiliki draft aktivitas yang belum terkirim. Lanjutkan?',
+          i18n.t('activities:draftMessages.found'),
+          i18n.t('activities:draftMessages.foundMessage'),
           [
-            { text: 'Hapus', style: 'destructive', onPress: () => AsyncStorage.removeItem('activity_draft') },
+            { text: i18n.t('activities:draftMessages.delete'), style: 'destructive', onPress: () => AsyncStorage.removeItem('activity_draft') },
             {
-              text: 'Lanjutkan',
+              text: i18n.t('activities:draftMessages.continue'),
               onPress: () => {
                 setForm((prev) => ({
                   ...prev,
@@ -280,11 +281,11 @@ export function useActivityForm() {
   ) => {
     if (!currentShift) {
       Alert.alert(
-        'Shift Belum Aktif',
-        'Anda belum clock-in. Clock-in terlebih dahulu untuk membuat aktivitas.',
+        i18n.t('activities:submitAlerts.shiftNotActiveTitle'),
+        i18n.t('activities:submitAlerts.shiftNotActiveMessage'),
         [
-          { text: 'Clock In Sekarang', onPress: onNavigateClockIn },
-          { text: 'Simpan Draft', onPress: () => saveDraft() },
+          { text: i18n.t('activities:submitAlerts.clockInButton'), onPress: onNavigateClockIn },
+          { text: i18n.t('activities:submitAlerts.saveDraftButton'), onPress: () => saveDraft() },
         ]
       );
       return;
@@ -323,8 +324,8 @@ export function useActivityForm() {
           await AsyncStorage.removeItem('activity_draft');
           for (const photo of form.photos) { await mediaService.deletePhoto(photo.uri); }
           resetForm();
-          Alert.alert('Berhasil', 'Aktivitas berhasil dikirim!', [
-            { text: 'OK', onPress: onNavigateActivities },
+          Alert.alert(i18n.t('activities:submitAlerts.successTitle'), i18n.t('activities:submitAlerts.successMessage'), [
+            { text: i18n.t('activities:submitAlerts.okButton'), onPress: onNavigateActivities },
           ]);
         }
       } else {
@@ -332,19 +333,19 @@ export function useActivityForm() {
         await AsyncStorage.removeItem('activity_draft');
         resetForm();
         Alert.alert(
-          'Mode Offline',
-          'Aktivitas disimpan dan akan dikirim saat online.',
-          [{ text: 'OK', onPress: onNavigateActivities }]
+          i18n.t('activities:submitAlerts.offlineTitle'),
+          i18n.t('activities:submitAlerts.offlineMessage'),
+          [{ text: i18n.t('activities:submitAlerts.okButton'), onPress: onNavigateActivities }]
         );
       }
     } catch (error) {
-      dispatch(setError(error instanceof Error ? error.message : 'Gagal mengirim aktivitas'));
+      dispatch(setError(error instanceof Error ? error.message : i18n.t('activities:submitAlerts.failureTitle')));
       Alert.alert(
-        'Gagal Mengirim',
-        'Terjadi kesalahan. Aktivitas disimpan sebagai draft.',
+        i18n.t('activities:submitAlerts.failureTitle'),
+        i18n.t('activities:submitAlerts.failureMessage'),
         [
-          { text: 'Coba Lagi', onPress: () => handleSubmit(onNavigateClockIn, onNavigateActivities) },
-          { text: 'Simpan Draft', onPress: () => saveDraft() },
+          { text: i18n.t('activities:submitAlerts.retryButton'), onPress: () => handleSubmit(onNavigateClockIn, onNavigateActivities) },
+          { text: i18n.t('activities:submitAlerts.saveDraftButton'), onPress: () => saveDraft() },
         ]
       );
     } finally {

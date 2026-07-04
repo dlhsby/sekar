@@ -1,0 +1,295 @@
+{
+  "screen": {
+    "title": "Monitoring",
+    "loading": "Loading map...",
+    "error": {
+      "title": "Failed to load region boundaries",
+      "retry": "Try Again",
+      "failedLoadUsers": "Failed to load user data",
+      "fetchLiveUsers": "Failed to load active user data",
+      "fetchUserDaySummary": "Failed to load user daily summary",
+      "fetchLocationHistory": "Failed to load location history",
+      "fetchStaffingSummary": "Failed to load staffing summary",
+      "fetchBoundaries": "Failed to load region boundaries",
+      "emptySnapshot": "Empty snapshot response",
+      "failedSnapshot": "Failed to load monitoring snapshot"
+    }
+  },
+  "mapDashboard": {
+    "filterTitle": "Filter Area",
+    "filterPrompt": "Select area to display",
+    "allAreas": "All Areas"
+  },
+  "layers": {
+    "workers": "Workers",
+    "plants": "Plants",
+    "overdue": "Overdue",
+    "rayons": "Rayon Boundaries",
+    "areas": "Area Boundaries"
+  },
+  "fab": {
+    "status": "Status summary",
+    "tools": "Map tools",
+    "myLocation": "My location",
+    "refresh": "Refresh",
+    "closeTools": "Close map tools"
+  },
+  "tools": {
+    "mapSection": "Map",
+    "resetHeading": "Reset heading",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "filterSection": "Filter",
+    "filter": "Monitoring filter"
+  },
+  "markerPreview": {
+    "typeOfficer": "Officer",
+    "typeRayon": "Rayon",
+    "typeArea": "Area",
+    "viewDetail": "View details"
+  },
+  "entityTypes": {
+    "area": "Area",
+    "rayon": "Rayon"
+  },
+  "status": {
+    "title": "Monitoring Status",
+    "sections": {
+      "attendance": "Attendance",
+      "operations": "Operations",
+      "staffList": "Staff List"
+    },
+    "empty": "No officers being monitored",
+    "staffCount": "officers",
+    "personnelCountLabel": "{{label}}, {{count}} officers",
+    "totalOfficers": "Total Officers",
+    "coveredAreas": "Covered Areas",
+    "staleGps": "GPS inactive > 10 min",
+    "lastUpdated": "Last Updated",
+    "justNow": "just now",
+    "minutesAgo": "min ago",
+    "attendance": {
+      "clockedIn": "Clocked In",
+      "notClockedIn": "Not Clocked In"
+    }
+  },
+  "userDetail": {
+    "location": "Location",
+    "shiftLabel": "Shift",
+    "tasksLabel": "Tasks",
+    "activitiesLabel": "Activities",
+    "today": "today",
+    "outsideArea": "Outside area",
+    "reassignmentHistory": "Reassignment History",
+    "loadingHistory": "Loading history…",
+    "noHistory": "No reassignment history",
+    "call": "Call",
+    "whatsapp": "Chat WhatsApp",
+    "viewTrail": "View trail",
+    "shift": {
+      "title": "Shift Today",
+      "status": {
+        "completed": "Completed",
+        "active": "Active"
+      },
+      "defaultName": "Shift",
+      "startLabel": "Started",
+      "finishLabel": "Finished",
+      "notClockOut": "Not clocked out",
+      "outsideBoundary": "Outside area",
+      "notClockedIn": "Not clocked in today"
+    },
+    "overtime": {
+      "title": "Overtime Today",
+      "loading": "Loading overtime…",
+      "empty": "No overtime today",
+      "defaultName": "Overtime"
+    },
+    "tasks": {
+      "title": "Tasks Today",
+      "loading": "Loading tasks…",
+      "empty": "No tasks today"
+    },
+    "activities": {
+      "title": "Activities Today",
+      "loading": "Loading activities…",
+      "empty": "No activities today"
+    },
+    "photos": "photos",
+    "priorities": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "urgent": "Urgent"
+    }
+  },
+  "search": {
+    "title": "Search",
+    "placeholder": "Search officers, areas, rayons…",
+    "searchLabel": "Search: {{value}}",
+    "clearLabel": "Clear search",
+    "all": "All",
+    "personnelLabel": "Officers",
+    "noResults": "No Results",
+    "noResultsMsg": "Nothing matches \"{{query}}\".",
+    "startSearch": "Start Searching",
+    "startSearchDescription": "Search for officers, areas, or rayons to find them on the map.",
+    "recents": "Recently viewed",
+    "clearAll": "Clear all",
+    "clearAllLabel": "Clear all recent searches",
+    "clear": "Clear",
+    "selectChoice": "Select {{name}}"
+  },
+  "attendance": {
+    "title": "Attendance",
+    "dateLabel": "Date",
+    "emptyClocked": "No one has clocked in on this date.",
+    "emptyNotClocked": "All staff have clocked in on this date.",
+    "emptyData": "No attendance data available for this date.",
+    "error": "Failed to load attendance data."
+  },
+  "relativeTime": {
+    "justNow": "just now",
+    "minutesAgo": "min ago",
+    "hoursAgo": "hours ago"
+  },
+  "trailInfoBar": {
+    "totalDistance": "Total Distance",
+    "insideAreaTime": "Inside Area",
+    "outsideAreaTime": "Outside Area"
+  },
+  "filterModal": {
+    "title": "Filter Monitoring",
+    "reset": "Reset",
+    "apply": "Apply",
+    "sections": {
+      "location": "Location",
+      "rayon": "Rayon",
+      "area": "Area",
+      "role": "Role",
+      "user": "Search User",
+      "mapLayers": "Map View",
+      "staffing": "Staffing"
+    },
+    "placeholders": {
+      "location": "Select Location",
+      "rayon": "Select Rayon",
+      "area": "Select Area",
+      "role": "Select Role",
+      "user": "Select user",
+      "layers": "Select layers"
+    },
+    "fixedRayon": "Your Rayon"
+  },
+  "reassignWorkerModal": {
+    "title": "Reassign Worker",
+    "targetLabel": "Target:",
+    "active": "active",
+    "selectWorkerLabel": "Select Worker",
+    "noWorkersAvailable": "No active workers available for reassignment",
+    "reasonLabel": "Reason (Optional)",
+    "reasonPlaceholder": "Enter reason for reassignment...",
+    "confirmButton": "Confirm Reassignment",
+    "successTitle": "Success",
+    "successMessage": "Successfully reassigned {{name}} to {{area}}",
+    "errorTitle": "Failed"
+  },
+  "locationTrail": {
+    "startPoint": "Start Point",
+    "endPoint": "End Point",
+    "waypoint": "Point #{{num}}",
+    "loadError": "Failed to Load History",
+    "noData": "No History",
+    "loading": "Loading location history…",
+    "wayStartLabel": "Start",
+    "wayEndLabel": "End",
+    "battery": "Battery:",
+    "insideArea": "Inside area",
+    "outsideArea": "Outside area",
+    "dateStepperPrevDay": "Previous day",
+    "dateStepperSelectDate": "Select date",
+    "dateStepperNextDay": "Next day",
+    "defaultTitle": "Location History"
+  },
+  "userAttendance": {
+    "title": "Attendance Detail",
+    "clockedIn": "Clocked In",
+    "notClockedIn": "Not Clocked In",
+    "loadError": "Failed to load attendance detail.",
+    "notClockedInDate": "Not clocked in on this date.",
+    "clockIn": "Clock In",
+    "clockOut": "Clock Out",
+    "notClockedOut": "Not clocked out",
+    "duration": "Duration",
+    "running": "Running",
+    "outsideBoundary": "Outside area",
+    "yes": "Yes",
+    "defaultName": "Officer"
+  },
+  "mapError": {
+    "title": "Failed to Load Map",
+    "message": "An error occurred while loading the map. Please try again or contact your administrator if the problem persists.",
+    "retry": "Try Again",
+    "retryLabel": "Try loading the map again"
+  },
+  "boundaryDetail": {
+    "understaffed": "Understaffed",
+    "sufficient": "Sufficient",
+    "areaLabel": "Area",
+    "understaffedLabel": "Understaffed",
+    "activeLabel": "Active",
+    "assignedLabel": "Officers",
+    "assignedDetail": "assigned",
+    "areaListTitle": "Area List",
+    "noAreasMessage": "No areas in this rayon yet",
+    "activeCount": "active",
+    "understaffedCount": "Understaffed",
+    "staffingTitle": "Staffing by Role",
+    "noStaffingMessage": "No staffing requirements yet",
+    "reassignButton": "Reassign Officer",
+    "plantsTrigger": "View plants",
+    "plantsLabel": "Plants",
+    "plantsLoading": "Loading plant data…",
+    "plantsCount": "{{count}} species · {{notable}} heritage",
+    "plantsSheetTitle": "Plants {{name}}",
+    "plantsEmpty": "No plant data registered for this area yet.",
+    "heritageTitle": "Heritage Trees",
+    "noLabel": "No label",
+    "unknownSpecies": "Unknown tree species",
+    "okLabel": "OK",
+    "almostLabel": "Almost",
+    "overdueLabel": "Overdue",
+    "plantTypesLabel": "tree species",
+    "plantCountLabel": "trees recorded",
+    "overdueStatusLabel": "OVERDUE",
+    "almostStatusLabel": "ALMOST",
+    "okStatusLabel": "OK",
+    "neverPrunedLabel": "Never pruned",
+    "treeSeparator": "{{count}} trees ·"
+  },
+  "staffing": {
+    "shortBy": "(Short {{n}})",
+    "short": "Short"
+  },
+  "statusSheet": {
+    "staffedAreas": "{{staffed}} of {{total}} areas"
+  },
+  "clusterCountAria": "{{count}} personnel",
+  "statusBar": {
+    "filterAria": "Filter {{label}}"
+  },
+  "userInfo": {
+    "location": "Location",
+    "checkIn": "Check-in",
+    "workDuration": "Work duration",
+    "locationUpdate": "Location update",
+    "viewDetail": "View Detail"
+  },
+  "workerTile": {
+    "outsideArea": "Outside area",
+    "gpsOff": "GPS off"
+  },
+  "location": {
+    "noPoints": "No location points"
+  }
+}

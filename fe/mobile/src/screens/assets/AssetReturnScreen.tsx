@@ -14,6 +14,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import {
   NBBackgroundPattern,
   NBButton,
@@ -48,6 +49,7 @@ export function AssetReturnScreen({
   navigation,
   route,
 }: Props): React.JSX.Element {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const { assetId } = route.params;
   const asset = useAppSelector(selectSelectedAsset);
@@ -111,10 +113,10 @@ export function AssetReturnScreen({
     return (
       <NBBackgroundPattern>
         <SafeAreaView style={styles.safeArea}>
-          <NBPageHeader title="Kembalikan Aset" />
+          <NBPageHeader title={t('assets:return.title')} />
           <NBEmptyState
-            title="Aset tidak ditemukan"
-            description="Silakan coba lagi"
+            title={t('assets:return.notFound.title')}
+            description={t('assets:return.notFound.description')}
             variant="error"
           />
         </SafeAreaView>
@@ -125,7 +127,7 @@ export function AssetReturnScreen({
   return (
     <NBBackgroundPattern>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <NBPageHeader title="Kembalikan Aset" />
+        <NBPageHeader title={t('assets:return.title')} />
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -139,7 +141,7 @@ export function AssetReturnScreen({
             <NBCardContent>
               <View style={styles.infoRow}>
                 <NBText variant="caption" style={styles.label}>
-                  Kode
+                  {t('assets:return.fields.code')}
                 </NBText>
                 <NBText variant="body-sm" style={styles.value}>
                   {asset.asset_code}
@@ -149,7 +151,7 @@ export function AssetReturnScreen({
               {asset.category && (
                 <View style={styles.infoRow}>
                   <NBText variant="caption" style={styles.label}>
-                    Kategori
+                    {t('assets:return.fields.category')}
                   </NBText>
                   <NBText variant="body-sm" style={styles.value}>
                     {asset.category.name}
@@ -160,7 +162,7 @@ export function AssetReturnScreen({
               {asset.area && (
                 <View style={styles.infoRow}>
                   <NBText variant="caption" style={styles.label}>
-                    Area
+                    {t('assets:return.fields.area')}
                   </NBText>
                   <NBText variant="body-sm" style={styles.value}>
                     {asset.area.name}
@@ -174,7 +176,7 @@ export function AssetReturnScreen({
           {error && (
             <NBAlert
               variant="warning"
-              title="Kesalahan"
+              title={t("common:error")}
               message={error}
             />
           )}
@@ -184,16 +186,16 @@ export function AssetReturnScreen({
             value={condition}
             onSelect={setCondition}
             isReturn={true}
-            label="Kondisi Saat Pengembalian"
+            label={t('assets:return.conditionLabel')}
           />
 
           {/* Notes */}
           <View style={styles.section}>
             <NBText variant="body" style={styles.sectionLabel}>
-              Catatan (Opsional)
+              {t('assets:return.notes')}
             </NBText>
             <NBTextInput
-              placeholder="Catatan pengembalian aset..."
+              placeholder={t('assets:return.notesPlaceholder')}
               value={notes}
               onChangeText={setNotes}
               multiline
@@ -205,14 +207,14 @@ export function AssetReturnScreen({
           {/* Action Buttons */}
           <View style={styles.actions}>
             <NBButton
-              label="Konfirmasi Pengembalian"
+              label={t('assets:return.confirm')}
               onPress={onReturn}
               variant="primary"
               disabled={!canSubmit}
               loading={submitting}
             />
             <NBButton
-              label="Batal"
+              label={t('assets:return.cancel')}
               onPress={() => navigation.goBack()}
               variant="secondary"
               disabled={submitting}

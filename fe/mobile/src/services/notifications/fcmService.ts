@@ -18,6 +18,7 @@
 
 import { Platform } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
+import i18n from '../../i18n/config';
 import {
   getMessaging,
   getToken,
@@ -122,7 +123,7 @@ class FCMService {
       if (Platform.OS === 'android') {
         await notifee.createChannel({
           id: 'sekar-notifications',
-          name: 'Notifikasi SEKAR',
+          name: i18n.t('notifications:fcm.channelName'),
           importance: AndroidImportance.HIGH,
           sound: 'default',
         });
@@ -157,7 +158,7 @@ class FCMService {
 
       // Dispatch error to Redux
       if (this.reduxStore) {
-        this.reduxStore.dispatch(setError('Firebase Messaging tidak tersedia'));
+        this.reduxStore.dispatch(setError(i18n.t('notifications:fcm.notAvailable')));
       }
     }
   }
@@ -514,7 +515,7 @@ class FCMService {
     return {
       id: remoteMessage.messageId || `local_${Date.now()}`,
       user_id: '', // Will be set by backend when stored
-      title: remoteMessage.notification?.title || 'Notifikasi Baru',
+      title: remoteMessage.notification?.title || i18n.t('notifications:fcm.defaultTitle'),
       body: remoteMessage.notification?.body || '',
       type: typeof remoteMessage.data?.type === 'string' ? remoteMessage.data.type : 'general',
       data: remoteMessage.data as Record<string, any> | undefined,

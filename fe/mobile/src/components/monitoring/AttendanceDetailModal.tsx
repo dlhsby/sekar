@@ -14,6 +14,7 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBModal } from '../nb/NBModal';
 import { NBText } from '../nb/NBText';
 import { NBSkeleton } from '../nb/NBSkeleton';
@@ -47,6 +48,7 @@ export function AttendanceDetailModal({
   onClose,
   initialAttendance,
 }: AttendanceDetailModalProps): React.JSX.Element {
+  const { t } = useTranslation();
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [data, setData] = useState<AttendanceResponse | null>(initialAttendance ?? null);
   const [loading, setLoading] = useState(false);
@@ -106,10 +108,10 @@ export function AttendanceDetailModal({
   }, [data, tab]);
 
   const emptyMessage = tab === 'clocked_in'
-    ? 'Belum ada yang clock in pada tanggal ini.'
+    ? t('monitoring:attendance.emptyClocked')
     : tab === 'not_clocked_in'
-    ? 'Semua petugas sudah clock in pada tanggal ini.'
-    : 'Belum ada data kehadiran pada tanggal ini.';
+    ? t('monitoring:attendance.emptyNotClocked')
+    : t('monitoring:attendance.emptyData');
 
   return (
     <>
@@ -117,14 +119,14 @@ export function AttendanceDetailModal({
         visible={visible}
         onClose={onClose}
         type="sheet"
-        title="Kehadiran"
+        title={t('monitoring:attendance.title')}
         testID="attendance-modal"
       >
         <View style={styles.body}>
           <NBDatePicker
             value={selectedDate}
             onChange={setSelectedDate}
-            label="Tanggal"
+            label={t('monitoring:attendance.dateLabel')}
             mode="date"
             maximumDate={new Date()}
           />
@@ -134,7 +136,7 @@ export function AttendanceDetailModal({
             <SelectableStat
               tone="ok"
               value={clockedInTotal}
-              label="Sudah Clock In"
+              label={t('monitoring:status.attendance.clockedIn')}
               selected={tab === 'clocked_in'}
               onPress={() => toggle('clocked_in')}
               testID="attendance-tab-clocked_in"
@@ -142,7 +144,7 @@ export function AttendanceDetailModal({
             <SelectableStat
               tone="warn"
               value={notClockedInTotal}
-              label="Belum Clock In"
+              label={t('monitoring:status.attendance.notClockedIn')}
               selected={tab === 'not_clocked_in'}
               onPress={() => toggle('not_clocked_in')}
               testID="attendance-tab-not_clocked_in"
@@ -157,7 +159,7 @@ export function AttendanceDetailModal({
             </View>
           ) : error ? (
             <NBText variant="body-sm" color="gray500" align="center" style={styles.msg}>
-              Gagal memuat data kehadiran.
+              {t('monitoring:attendance.error')}
             </NBText>
           ) : rows.length === 0 ? (
             <NBText variant="body-sm" color="gray500" align="center" style={styles.msg}>

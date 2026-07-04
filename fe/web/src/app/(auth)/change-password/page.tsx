@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { FormInput, Button, useToast } from '@/components/ui';
 import { BrandLockup } from '@/components/brand/BrandLockup';
@@ -18,23 +19,31 @@ import { getErrorMessage } from '@/lib/api/client';
  * until a new password is set. `old_password` is intentionally omitted (the
  * JWT + the flag already authorise the change).
  */
-const schema = z
-  .object({
-    new_password: z.string().min(8, 'Sandi baru minimal 8 karakter'),
-    confirm_password: z.string().min(1, 'Konfirmasi sandi wajib diisi'),
-  })
-  .refine((data) => data.new_password === data.confirm_password, {
-    message: 'Konfirmasi sandi tidak cocok',
-    path: ['confirm_password'],
-  });
-
-type FormData = z.infer<typeof schema>;
+type FormData = {
+  new_password: string;
+  confirm_password: string;
+};
 
 export default function ChangePasswordPage() {
   const { user, loading, changePassword, logout } = useAuth();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+
+  const schema = useMemo(
+    () =>
+      z
+        .object({
+          new_password: z.string().min(8, t('auth:changePassword.validationNewPasswordMin')),
+          confirm_password: z.string().min(1, t('auth:changePassword.validationConfirmRequired')),
+        })
+        .refine((data) => data.new_password === data.confirm_password, {
+          message: t('auth:changePassword.validationConfirmMatch'),
+          path: ['confirm_password'],
+        }),
+    [t],
+  );
 
   const {
     register,
@@ -48,16 +57,24 @@ export default function ChangePasswordPage() {
   const onSubmit = async (data: FormData) => {
     try {
       await changePassword({ new_password: data.new_password });
-      toast({ level: 'success', title: 'Sandi diperbarui', body: 'Selamat datang di SEKAR.' });
+      toast({
+        level: 'success',
+        title: t('auth:changePassword.successTitle'),
+        body: t('auth:changePassword.successBody'),
+      });
     } catch (err) {
-      toast({ level: 'danger', title: 'Gagal memperbarui sandi', body: getErrorMessage(err) });
+      toast({
+        level: 'danger',
+        title: t('auth:changePassword.errorTitle'),
+        body: getErrorMessage(err),
+      });
     }
   };
 
   if (loading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-nb-background">
-        <div className="text-nb-gray-600">Memuat...</div>
+        <div className="text-nb-gray-600">{t('auth:loading')}</div>
       </div>
     );
   }
@@ -74,18 +91,17 @@ export default function ChangePasswordPage() {
             <ShieldCheck className="size-6 text-nb-black" aria-hidden="true" />
           </div>
 
-          <h1 className="text-nb-h2 text-nb-black">Buat sandi baru</h1>
+          <h1 className="text-nb-h2 text-nb-black">{t('auth:changePassword.heading')}</h1>
           <p className="mt-2 text-nb-body-sm text-nb-gray-700">
-            Sandi Anda baru saja diatur ulang oleh admin. Demi keamanan, buat sandi baru sebelum
-            melanjutkan.
+            {t('auth:changePassword.description')}
           </p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="mt-5 space-y-4">
             <div className="relative">
               <FormInput
-                label="Sandi baru"
+                label={t('auth:changePassword.newPassword')}
                 type={showNew ? 'text' : 'password'}
-                placeholder="Minimal 8 karakter"
+                placeholder={t('auth:changePassword.newPasswordPlaceholder')}
                 error={errors.new_password?.message}
                 disabled={isSubmitting}
                 {...register('new_password')}
@@ -94,7 +110,7 @@ export default function ChangePasswordPage() {
                 type="button"
                 onClick={() => setShowNew((v) => !v)}
                 className="absolute right-3 top-[34px] rounded-nb-sm p-1 text-nb-gray-500 transition-colors hover:text-nb-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-nb-black focus-visible:-outline-offset-2"
-                aria-label={showNew ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
+                aria-label={showNew ? t('auth:changePassword.hidePassword') : t('auth:changePassword.showPassword')}
               >
                 {showNew ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
@@ -102,9 +118,9 @@ export default function ChangePasswordPage() {
 
             <div className="relative">
               <FormInput
-                label="Konfirmasi sandi baru"
+                label={t('auth:changePassword.confirmPassword')}
                 type={showConfirm ? 'text' : 'password'}
-                placeholder="Ulangi sandi baru"
+                placeholder={t('auth:changePassword.confirmPasswordPlaceholder')}
                 error={errors.confirm_password?.message}
                 disabled={isSubmitting}
                 {...register('confirm_password')}
@@ -113,7 +129,7 @@ export default function ChangePasswordPage() {
                 type="button"
                 onClick={() => setShowConfirm((v) => !v)}
                 className="absolute right-3 top-[34px] rounded-nb-sm p-1 text-nb-gray-500 transition-colors hover:text-nb-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-nb-black focus-visible:-outline-offset-2"
-                aria-label={showConfirm ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
+                aria-label={showConfirm ? t('auth:changePassword.hidePassword') : t('auth:changePassword.showPassword')}
               >
                 {showConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
@@ -126,7 +142,7 @@ export default function ChangePasswordPage() {
               loading={isSubmitting}
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Menyimpan...' : 'Simpan sandi baru'}
+              {isSubmitting ? t('common:actions.saving') : t('auth:changePassword.submit')}
             </Button>
           </form>
 
@@ -136,7 +152,7 @@ export default function ChangePasswordPage() {
               onClick={() => logout()}
               className="font-mono text-[11px] font-bold uppercase tracking-wide text-nb-gray-700 hover:text-nb-black"
             >
-              Keluar
+              {t('auth:logout')}
             </button>
           </div>
         </div>

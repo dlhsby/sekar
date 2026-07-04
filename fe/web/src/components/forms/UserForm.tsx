@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -22,32 +23,35 @@ import { normalizePhone, INDO_MOBILE_REGEX } from '@/lib/utils/phone';
  * No password field — the backend generates a one-time temp password on create
  * and the user is forced to change it on first login; admins use Reset Password.
  */
-const userSchema = z.object({
-  username: z.string().min(2, 'Username minimal 2 karakter'),
-  full_name: z.string().min(2, 'Nama minimal 2 karakter'),
-  phone_number: z
-    .string()
-    .min(1, 'Nomor HP wajib diisi')
-    .regex(INDO_MOBILE_REGEX, 'Nomor HP harus format 08xxxxxxxxxx'),
-  role: z.enum(
-    [
-      'satgas',
-      'linmas',
-      'korlap',
-      'admin_data',
-      'kepala_rayon',
-      'top_management',
-      'admin_system',
-      'superadmin',
-      'staff_kecamatan',
-    ],
-    { error: () => 'Role wajib dipilih' },
-  ),
-  rayon_id: z.string().uuid().optional().or(z.literal('')),
-  shift_definition_id: z.string().uuid().optional().or(z.literal('')),
-});
+type UserFormData = z.infer<ReturnType<typeof createUserSchema>>;
+type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
-type UserFormData = z.infer<typeof userSchema>;
+function createUserSchema(t: TFn) {
+  return z.object({
+    username: z.string().min(2, t('validation:usernameMin', { count: 2 })),
+    full_name: z.string().min(2, t('validation:nameMin', { count: 2 })),
+    phone_number: z
+      .string()
+      .min(1, t('validation:phoneRequired'))
+      .regex(INDO_MOBILE_REGEX, t('validation:invalidPhone')),
+    role: z.enum(
+      [
+        'satgas',
+        'linmas',
+        'korlap',
+        'admin_data',
+        'kepala_rayon',
+        'top_management',
+        'admin_system',
+        'superadmin',
+        'staff_kecamatan',
+      ],
+      { error: () => t('validation:roleRequired') },
+    ),
+    rayon_id: z.string().uuid().optional().or(z.literal('')),
+    shift_definition_id: z.string().uuid().optional().or(z.literal('')),
+  });
+}
 
 /** Any UUID version — area ids are deterministic UUID v5. */
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -74,10 +78,13 @@ export function UserForm({
   onSubmit,
   onCancel,
   loading = false,
-  submitText = 'Simpan',
+  submitText,
   readOnly = false,
 }: UserFormProps) {
+  const { t } = useTranslation();
   const isEditMode = !!initialData;
+
+  const userSchema = useMemo(() => createUserSchema(t), [t]);
 
   const { data: rayons = [], isLoading: rayonsLoading } = useRayons();
   const { data: areasData, isLoading: areasLoading } = useAreas({ limit: 1000 });
@@ -230,8 +237,8 @@ export function UserForm({
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       {/* Nama Lengkap first so "Sarankan" can derive a username from it. */}
       <FormInput
-        label="Nama Lengkap"
-        placeholder="Masukkan nama lengkap"
+        label={t('admin:users.form.fullName')}
+        placeholder={t('admin:users.form.fullNamePlaceholder')}
         error={errors.full_name?.message}
         required
         disabled={fieldsDisabled}
@@ -242,8 +249,8 @@ export function UserForm({
         <div className="flex items-end gap-2">
           <div className="flex-1">
             <FormInput
-              label="Username"
-              placeholder="Masukkan username"
+              label={t('admin:users.form.username')}
+              placeholder={t('admin:users.form.usernamePlaceholder')}
               error={errors.username?.message}
               required
               disabled={fieldsDisabled}
@@ -259,26 +266,26 @@ export function UserForm({
               disabled={busy || !fullNameValue}
               className="mb-[2px] whitespace-nowrap"
             >
-              Sarankan
+              {t('admin:users.form.usernameSuggestButton')}
             </Button>
           )}
         </div>
         <AvailabilityHint
           status={usernameStatus}
           labels={{
-            available: 'Username tersedia',
-            taken: 'Username sudah dipakai',
-            invalid: 'Hanya huruf, angka, garis bawah, dan tanda hubung',
+            available: t('admin:users.form.usernameAvailable'),
+            taken: t('admin:users.form.usernameTaken'),
+            invalid: t('admin:users.form.usernameInvalid'),
           }}
         />
       </div>
 
       <div className="space-y-1">
         <FormInput
-          label="Nomor HP (untuk login)"
-          placeholder="0812xxxxxxxx"
+          label={t('admin:users.form.phoneNumber')}
+          placeholder={t('admin:users.form.phoneNumberPlaceholder')}
           error={errors.phone_number?.message}
-          helperText="Format 08xxxxxxxxxx — bisa dipakai untuk login selain username"
+          helperText={t('admin:users.form.phoneNumberHelper')}
           required
           disabled={fieldsDisabled}
           {...phoneReg}
@@ -290,16 +297,16 @@ export function UserForm({
         />
         <AvailabilityHint
           status={phoneStatus}
-          labels={{ available: 'Nomor HP tersedia', taken: 'Nomor HP sudah dipakai' }}
+          labels={{ available: t('admin:users.form.phoneNumberAvailable'), taken: t('admin:users.form.phoneNumberTaken') }}
         />
       </div>
 
       <FormCombobox
-        label="Role"
+        label={t('admin:users.form.role')}
         options={roleOptions}
         value={selectedRole || ''}
         onChange={(value) => setValue('role', value as UserRole, { shouldValidate: true })}
-        placeholder="Pilih role"
+        placeholder={t('admin:users.form.rolePlaceholder')}
         error={errors.role?.message}
         required
         clearable={false}
@@ -308,11 +315,11 @@ export function UserForm({
 
       {scope.rayon && (
         <FormCombobox
-          label="Rayon"
+          label={t('admin:users.form.rayon')}
           options={rayonOptions}
           value={watch('rayon_id') || ''}
           onChange={(value) => setValue('rayon_id', value)}
-          placeholder={rayonsLoading ? 'Memuat...' : 'Pilih rayon'}
+          placeholder={rayonsLoading ? t('admin:shared.loading') : t('admin:users.form.rayonPlaceholder')}
           error={errors.rayon_id?.message}
           disabled={fieldsDisabled || rayonsLoading}
         />
@@ -322,50 +329,49 @@ export function UserForm({
           permanent assigned areas that drive their roster. */}
       {scope.area && (
         <FormMultiCombobox
-          label="Area Penugasan (bisa lebih dari satu)"
+          label={t('admin:users.form.areaAssignment')}
           options={areaOptions}
           values={areaIds}
           onChange={setAreaIds}
           placeholder={
             !selectedRayonId
-              ? 'Pilih rayon terlebih dahulu'
+              ? t('admin:users.form.areaSelectRayon')
               : areasLoading
-                ? 'Memuat area...'
-                : 'Pilih area penugasan'
+                ? t('admin:users.form.areaLoading')
+                : t('admin:users.form.areaAssignmentPlaceholder')
           }
-          searchPlaceholder="Cari area…"
+          searchPlaceholder={t('admin:users.form.areaSearchPlaceholder')}
           emptyText={
-            selectedRayonId ? 'Tidak ada area di rayon ini.' : 'Pilih rayon terlebih dahulu.'
+            selectedRayonId ? t('admin:users.form.areaEmpty') : t('admin:users.form.areaSelectRayon')
           }
-          helperText="Kosongkan untuk pekerja tanpa area tetap (ad-hoc)."
+          helperText={t('admin:users.form.areaAssignmentHelper')}
           disabled={fieldsDisabled || areasLoading || !selectedRayonId}
         />
       )}
 
       {scope.shift && (
         <FormCombobox
-          label="Shift Kerja"
+          label={t('admin:users.form.shift')}
           options={shiftOptions}
           value={watch('shift_definition_id') || ''}
           onChange={(value) => setValue('shift_definition_id', value)}
-          placeholder="Pilih shift"
+          placeholder={t('admin:users.form.shiftPlaceholder')}
           error={errors.shift_definition_id?.message}
-          helperText="Satu shift per pekerja (berlaku untuk semua areanya)"
+          helperText={t('admin:users.form.shiftHelper')}
           disabled={fieldsDisabled}
         />
       )}
 
       {!isEditMode && !readOnly && (
         <div className="rounded-nb-base border-2 border-nb-info bg-nb-info-light/40 p-3 text-nb-body-sm">
-          Password sementara akan dibuat otomatis dan ditampilkan sekali setelah user dibuat.
-          Pengguna wajib menggantinya saat login pertama.
+          {t('admin:users.form.passwordInfo')}
         </div>
       )}
 
       <div className="flex gap-3 pt-4">
         {readOnly ? (
           <Button type="button" variant="secondary" onClick={onCancel} className="flex-1">
-            Tutup
+            {t('admin:shared.close')}
           </Button>
         ) : (
           <>
@@ -376,10 +382,10 @@ export function UserForm({
               disabled={busy}
               className="flex-1"
             >
-              Batal
+              {t('admin:shared.cancel')}
             </Button>
             <Button type="submit" loading={busy} disabled={busy} className="flex-1">
-              {submitText}
+              {submitText || t('admin:users.form.submitEdit')}
             </Button>
           </>
         )}

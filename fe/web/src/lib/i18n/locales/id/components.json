@@ -1,0 +1,66 @@
+{
+  "nbselect": {
+    "placeholder": "Pilih...",
+    "searchPlaceholder": "Cari...",
+    "selected": "dipilih",
+    "clearAll": "Hapus Semua",
+    "clearSelection": "Hapus Pilihan",
+    "done": "Selesai",
+    "close": "Tutup"
+  },
+  "photoUploader": {
+    "cameraPermissionTitle": "Izin Kamera",
+    "capturePhotoError": "Gagal mengambil foto",
+    "pickPhotoError": "Gagal memilih foto",
+    "maxPhotosTitle": "Maksimal Foto",
+    "maxPhotosMessage": "Anda hanya dapat menambahkan maksimal {{max}} foto.",
+    "addPhotoTitle": "Tambah Foto",
+    "addPhotoMessage": "Pilih sumber foto:",
+    "cameraOption": "Kamera",
+    "galleryOption": "Galeri",
+    "cancelOption": "Batal",
+    "viewPhotoLabel": "Lihat foto penuh",
+    "viewPhotoHint": "Ketuk untuk melihat foto dalam ukuran penuh",
+    "removePhotoLabel": "Hapus foto",
+    "addPhotoLabel": "Tambah foto",
+    "photoButtonText": "Foto",
+    "previewTitle": "Foto Bukti"
+  },
+  "dateRangePicker": {
+    "today": "Hari Ini",
+    "yesterday": "Kemarin",
+    "last7": "7 Hari",
+    "last30": "30 Hari",
+    "thisMonth": "Bulan Ini",
+    "lastMonth": "Bulan Lalu",
+    "previousDay": "Hari sebelumnya",
+    "nextDay": "Hari berikutnya"
+  },
+  "coordinateLink": {
+    "viewLocation": "Lihat lokasi di peta",
+    "defaultLabel": "Lokasi"
+  },
+  "mapDisplayModal": {
+    "title": "Lokasi",
+    "unavailable": "Peta tidak tersedia. Buka koordinat di Google Maps:",
+    "openInGoogleMaps": "Buka di Google Maps"
+  },
+  "columnFilter": {
+    "placeholder": "Filter…",
+    "filterLabel": "Filter {{label}}",
+    "clearLabel": "Hapus filter {{label}}"
+  },
+  "updateToast": {
+    "title": "Versi baru tersedia",
+    "description": "Muat ulang halaman untuk mendapatkan pembaruan.",
+    "actionLabel": "Muat ulang"
+  },
+  "offlineBanner": {
+    "ariaLabel": "Aplikasi sedang offline",
+    "status": "Mode offline",
+    "lastSync": "Data terakhir: {{time}}"
+  },
+  "responsiveShell": {
+    "mainNavigationLabel": "Navigasi utama"
+  }
+}

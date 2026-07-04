@@ -7,6 +7,7 @@
  * Phase 4-R rework (ADR-029)
  */
 
+import { useTranslation } from 'react-i18next';
 import { Skeleton } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
 
@@ -35,6 +36,8 @@ interface StatusChip {
 }
 
 export function MonitoringStatusBar({ totals, className }: MonitoringStatusBarProps) {
+  const { t } = useTranslation(['monitoring']);
+
   if (!totals) {
     return (
       <div className={cn('px-4 py-3 border-b-2 border-nb-black bg-white', className)}>
@@ -53,17 +56,17 @@ export function MonitoringStatusBar({ totals, className }: MonitoringStatusBarPr
   // Tidak terdeteksi = total_missing
   const chips: StatusChip[] = [
     {
-      label: 'Aktif',
+      label: t('monitoring:status.active'),
       count: totals.total_active + totals.total_outside_area,
       color: 'var(--color-status-active)',
     },
     {
-      label: 'Idle',
+      label: t('monitoring:status.inactive'),
       count: totals.total_inactive,
       color: 'var(--color-status-idle)',
     },
     {
-      label: 'Tidak terdeteksi',
+      label: t('monitoring:status.notDetected'),
       count: totals.total_missing,
       color: 'var(--color-status-missing)',
     },
@@ -74,22 +77,22 @@ export function MonitoringStatusBar({ totals, className }: MonitoringStatusBarPr
   const hasRoster = (totals.expected_count ?? 0) > 0 || (totals.on_leave_count ?? 0) > 0;
   const rosterChips: StatusChip[] = [
     {
-      label: 'Hadir',
+      label: t('monitoring:statusBar.present'),
       count: totals.present_count ?? 0,
       color: 'var(--color-status-active)',
     },
     {
-      label: 'Tidak hadir',
+      label: t('monitoring:statusBar.absent'),
       count: totals.absent_count ?? 0,
       color: 'var(--color-nb-danger)',
     },
     {
-      label: 'Cuti',
+      label: t('monitoring:statusBar.leave'),
       count: totals.on_leave_count ?? 0,
       color: 'var(--color-nb-warning)',
     },
     {
-      label: 'Belum dijadwalkan',
+      label: t('monitoring:statusBar.notScheduled'),
       count: totals.off_schedule_count ?? 0,
       color: 'var(--color-status-offline)',
     },
@@ -98,12 +101,12 @@ export function MonitoringStatusBar({ totals, className }: MonitoringStatusBarPr
   // Secondary muted stats
   const secondaryChips: StatusChip[] = [
     {
-      label: 'Di luar area',
+      label: t('monitoring:statusBar.outsideAreaLabel'),
       count: totals.total_outside_area,
       color: 'var(--color-status-outside)',
     },
     {
-      label: 'Offline',
+      label: t('monitoring:status.offline'),
       count: totals.total_offline,
       color: 'var(--color-status-offline)',
     },
@@ -114,7 +117,7 @@ export function MonitoringStatusBar({ totals, className }: MonitoringStatusBarPr
       className={cn('px-4 py-3 border-b-2 border-nb-black bg-white', className)}
       role="region"
       aria-live="polite"
-      aria-label="Status petugas"
+      aria-label={t('monitoring:statusBar.ariaLabel')}
     >
       {/* Primary activity chips */}
       <div className="flex flex-wrap gap-2.5">
@@ -141,7 +144,7 @@ export function MonitoringStatusBar({ totals, className }: MonitoringStatusBarPr
       {hasRoster && (
         <div className="mt-2.5 flex flex-wrap items-center gap-2.5 border-t-2 border-nb-gray-200 pt-2.5">
           <span className="text-[10px] font-bold uppercase text-nb-gray-500">
-            Jadwal hari ini ({totals.expected_count ?? 0} dijadwalkan)
+            {t('monitoring:statusBar.todaysSchedule')} ({totals.expected_count ?? 0} {t('monitoring:statusBar.scheduled')})
           </span>
           {rosterChips.map((chip) => (
             <div

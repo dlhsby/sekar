@@ -1,9 +1,10 @@
 'use client';
 
 import { format } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
+import { dateFnsLocale } from '@/lib/i18n/date-locale';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { type KeyboardEvent, type MouseEvent, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type DateRange as RdpDateRange } from 'react-day-picker';
 
 import { cn } from '@/lib/utils/cn';
@@ -40,26 +41,28 @@ function monthStart(iso: string): string {
 /** Compact `d MMM yy` label, e.g. `24 Jun 26`. */
 function label(value: string): string {
   const d = parseIso(value);
-  return d ? format(d, 'd MMM yy', { locale: idLocale }) : value;
+  return d ? format(d, 'd MMM yy', { locale: dateFnsLocale() }) : value;
 }
 
-/** Self-contained Indonesian quick-range presets. */
-const PRESETS: readonly PresetDef[] = [
-  { key: 'today', label: 'Hari Ini', range: (t) => ({ from: t, to: t }) },
-  { key: 'yesterday', label: 'Kemarin', range: (t) => ({ from: shiftIso(t, -1), to: shiftIso(t, -1) }) },
-  { key: 'last7', label: '7 Hari', range: (t) => ({ from: shiftIso(t, -6), to: t }) },
-  { key: 'last30', label: '30 Hari', range: (t) => ({ from: shiftIso(t, -29), to: t }) },
-  { key: 'thisMonth', label: 'Bulan Ini', range: (t) => ({ from: monthStart(t), to: t }) },
-  {
-    key: 'lastMonth',
-    label: 'Bulan Lalu',
-    range: (t) => {
-      const firstThis = monthStart(t);
-      const lastPrev = shiftIso(firstThis, -1);
-      return { from: monthStart(lastPrev), to: lastPrev };
+/** Quick-range presets (localized via i18n). */
+function getPresets(t: (key: string) => string): readonly PresetDef[] {
+  return [
+    { key: 'today', label: t('components:dateRangePicker.today'), range: (today) => ({ from: today, to: today }) },
+    { key: 'yesterday', label: t('components:dateRangePicker.yesterday'), range: (today) => ({ from: shiftIso(today, -1), to: shiftIso(today, -1) }) },
+    { key: 'last7', label: t('components:dateRangePicker.last7'), range: (today) => ({ from: shiftIso(today, -6), to: today }) },
+    { key: 'last30', label: t('components:dateRangePicker.last30'), range: (today) => ({ from: shiftIso(today, -29), to: today }) },
+    { key: 'thisMonth', label: t('components:dateRangePicker.thisMonth'), range: (today) => ({ from: monthStart(today), to: today }) },
+    {
+      key: 'lastMonth',
+      label: t('components:dateRangePicker.lastMonth'),
+      range: (today) => {
+        const firstThis = monthStart(today);
+        const lastPrev = shiftIso(firstThis, -1);
+        return { from: monthStart(lastPrev), to: lastPrev };
+      },
     },
-  },
-];
+  ];
+}
 
 export interface DateRangePickerProps {
   /** Controlled range value (ISO endpoints). */
@@ -92,6 +95,7 @@ export function DateRangePicker({
   showSteppers = true,
   className,
 }: DateRangePickerProps): React.JSX.Element {
+  const { t } = useTranslation();
   const today = todayProp ?? format(new Date(), 'yyyy-MM-dd');
   const [open, setOpen] = useState(false);
   // Two-click range driven by hand: `start` is the chosen first endpoint and
@@ -104,7 +108,7 @@ export function DateRangePicker({
   const armed = useRef(false);
   const clickPoint = useRef<{ x: number; y: number } | null>(null);
 
-  const activePreset = PRESETS.find((p) => {
+  const activePreset = getPresets(t).find((p) => {
     const r = p.range(today);
     return r.from === value.from && r.to === value.to;
   });
@@ -181,7 +185,7 @@ export function DateRangePicker({
             variant="outline"
             size="sm"
             className="w-10 px-0"
-            aria-label="Hari sebelumnya"
+            aria-label={t('components:dateRangePicker.previousDay')}
             onClick={() => stepDay(-1)}
           >
             <ChevronLeft className="h-4 w-4" aria-hidden />
@@ -198,7 +202,7 @@ export function DateRangePicker({
             variant="outline"
             size="sm"
             className="w-10 px-0"
-            aria-label="Hari berikutnya"
+            aria-label={t('components:dateRangePicker.nextDay')}
             disabled={!canStepNext}
             onClick={() => stepDay(1)}
           >
@@ -216,7 +220,7 @@ export function DateRangePicker({
             onSelect={onSelect}
             onDayMouseEnter={onDayMouseEnter}
             disabled={disableFuture ? { after: parseIso(today) ?? new Date() } : undefined}
-            locale={idLocale}
+            locale={dateFnsLocale()}
             classNames={{
               months: 'flex flex-col gap-4 sm:flex-row sm:justify-center sm:gap-8',
               month: 'flex flex-col items-center space-y-3',
@@ -236,7 +240,7 @@ export function DateRangePicker({
           />
         </div>
         <div className="grid grid-cols-3 gap-1.5 border-t-2 border-nb-black p-2">
-          {PRESETS.map((p) => (
+          {getPresets(t).map((p) => (
             <Button
               key={p.key}
               size="sm"

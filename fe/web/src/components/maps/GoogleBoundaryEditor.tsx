@@ -23,6 +23,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GoogleMap, Marker, Polygon, Polyline } from '@react-google-maps/api';
 import { Search, X, Loader2, Pencil, Trash2, Check, MapPin } from 'lucide-react';
 import { Button, Input } from '@/components/ui';
@@ -156,6 +157,7 @@ function BoundaryMap({
   readonly = false,
   height = 420,
 }: Omit<GoogleBoundaryEditorProps, 'manualFallback'>) {
+  const { t } = useTranslation();
   const editablePolygon = !readonly && !!onPolygonChange;
   const editablePin = !readonly && !!onPinChange;
 
@@ -214,8 +216,8 @@ function BoundaryMap({
       // out next to the native zoom/map-type controls (no overlap). Camera only.
       const locBtn = document.createElement('button');
       locBtn.type = 'button';
-      locBtn.title = 'Lokasi saya';
-      locBtn.setAttribute('aria-label', 'Lokasi saya');
+      locBtn.title = t('admin:maps.boundary.myLocationTitle');
+      locBtn.setAttribute('aria-label', t('admin:maps.boundary.myLocationTitle'));
       /* eslint-disable sekar-design/no-inline-hex-colors -- Google-native map control styling (white control + Google-blue icon), not app tokens */
       locBtn.style.cssText =
         'background:#fff;border:0;border-radius:2px;box-shadow:0 1px 4px -1px rgba(0,0,0,.3);width:40px;height:40px;margin:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;';
@@ -360,14 +362,14 @@ function BoundaryMap({
       const geocoder = new google.maps.Geocoder();
       const { results } = await geocoder.geocode({ address, region: 'ID' });
       if (!results || results.length === 0) {
-        setSearchError('Lokasi tidak ditemukan. Coba kata kunci lain.');
+        setSearchError(t('admin:maps.boundary.locationNotFound'));
         return;
       }
       const loc = results[0].geometry.location;
       mapRef.current?.panTo({ lat: loc.lat(), lng: loc.lng() });
       mapRef.current?.setZoom(Math.max(mapRef.current?.getZoom() ?? 15, 16));
     } catch {
-      setSearchError('Pencarian lokasi gagal. Coba lagi.');
+      setSearchError(t('admin:maps.boundary.searchError'));
     } finally {
       setSearching(false);
     }
@@ -382,7 +384,7 @@ function BoundaryMap({
             <Input
               type="text"
               value={query}
-              placeholder="Cari alamat atau tempat…"
+              placeholder={t('admin:maps.boundary.searchPlaceholder')}
               leftIcon={<Search className="h-4 w-4" />}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
@@ -391,7 +393,7 @@ function BoundaryMap({
                   void handleSearch();
                 }
               }}
-              aria-label="Cari lokasi"
+              aria-label={t('admin:maps.boundary.searchLabel')}
             />
             {searchError && (
               <p className="mt-1 text-nb-body-sm font-medium text-nb-danger" role="alert">
@@ -412,7 +414,7 @@ function BoundaryMap({
               )
             }
           >
-            Cari
+            {t('admin:maps.boundary.searchButton')}
           </Button>
         </div>
       )}
@@ -430,7 +432,7 @@ function BoundaryMap({
                 disabled={draft.length < 3}
                 leftIcon={<Check className="h-4 w-4" />}
               >
-                Selesai ({draft.length})
+                {t('admin:maps.boundary.finishButton')} ({draft.length})
               </Button>
               <Button
                 type="button"
@@ -439,7 +441,7 @@ function BoundaryMap({
                 onClick={undoLastVertex}
                 disabled={draft.length === 0}
               >
-                Batalkan titik
+                {t('admin:maps.boundary.undoButton')}
               </Button>
               <Button
                 type="button"
@@ -448,7 +450,7 @@ function BoundaryMap({
                 onClick={cancelDrawing}
                 leftIcon={<X className="h-4 w-4" />}
               >
-                Batal
+                {t('admin:maps.boundary.cancelButton')}
               </Button>
             </div>
           ) : (
@@ -462,7 +464,7 @@ function BoundaryMap({
                     onClick={startDrawing}
                     leftIcon={<Pencil className="h-4 w-4" />}
                   >
-                    {paths.length > 0 ? 'Gambar ulang batas' : 'Gambar batas'}
+                    {paths.length > 0 ? t('admin:maps.boundary.redrawBoundaryButton') : t('admin:maps.boundary.drawBoundaryButton')}
                   </Button>
                   {paths.length > 0 && (
                     <Button
@@ -472,7 +474,7 @@ function BoundaryMap({
                       onClick={clearPolygon}
                       leftIcon={<Trash2 className="h-4 w-4" />}
                     >
-                      Hapus batas
+                      {t('admin:maps.boundary.deleteBoundaryButton')}
                     </Button>
                   )}
                 </>
@@ -489,10 +491,10 @@ function BoundaryMap({
                     }
                   >
                     {placingPin
-                      ? 'Selesai menempatkan'
+                      ? t('admin:maps.boundary.finishPlacingButton')
                       : point
-                        ? 'Ubah titik lokasi'
-                        : 'Tempatkan titik lokasi'}
+                        ? t('admin:maps.boundary.changePinButton')
+                        : t('admin:maps.boundary.placePinButton')}
                   </Button>
                   {onClearPin && point && (
                     <Button
@@ -502,7 +504,7 @@ function BoundaryMap({
                       onClick={onClearPin}
                       leftIcon={<X className="h-4 w-4" />}
                     >
-                      Hapus titik
+                      {t('admin:maps.boundary.deletePinButton')}
                     </Button>
                   )}
                 </>
@@ -511,8 +513,7 @@ function BoundaryMap({
           )}
           {multiPart && !drawing && (
             <p className="text-nb-body-sm text-nb-warning-dark">
-              Batas terdiri dari {paths.length} bagian — edit titik dinonaktifkan. Gunakan
-              &quot;Gambar ulang batas&quot; untuk menggantinya dengan satu poligon.
+              {t('admin:maps.boundary.multiPartWarning', { count: paths.length })}
             </p>
           )}
         </div>
@@ -581,20 +582,20 @@ function BoundaryMap({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-nb-body-sm text-nb-gray-500">
           {drawing
-            ? 'Klik di peta untuk menambah titik. Klik "Selesai" (min. 3 titik) atau klik dua kali untuk mengakhiri.'
+            ? t('admin:maps.boundary.drawingHint')
             : placingPin
-              ? 'Klik di peta untuk menaruh titik lokasi (bisa diulang). Tekan "Selesai menempatkan" bila sudah.'
+              ? t('admin:maps.boundary.placingPinHint')
               : editablePolygon && paths.length === 0
-                ? 'Tekan "Gambar batas" untuk mulai menggambar poligon.'
+                ? t('admin:maps.boundary.noBoundaryHint')
                 : editablePin
-                  ? 'Geser/cari peta atau gunakan kontrol lokasi (pojok kanan bawah) untuk menjelajah. Tekan "Tempatkan/Ubah titik lokasi" untuk menaruh titik; pin juga bisa diseret.'
-                  : 'Tampilan peta.'}
+                  ? t('admin:maps.boundary.exploreHint')
+                  : t('admin:maps.boundary.emptyHint')}
         </p>
       </div>
 
       {area > 0 && (
         <div className="flex items-center gap-2 border-2 border-nb-black bg-nb-warning/20 px-4 py-2">
-          <span className="font-bold">Luas:</span>
+          <span className="font-bold">{t('admin:maps.boundary.areaLabel')}</span>
           <span className="text-xl font-black">{formatArea(area)}</span>
         </div>
       )}

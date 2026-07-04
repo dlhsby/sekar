@@ -1,10 +1,10 @@
 import { ReactNode } from 'react';
 import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/i18n/server-metadata';
 
-export const metadata: Metadata = {
-  title: 'Pengaturan · SEKAR',
-  description: 'Kelola pengaturan sistem SEKAR',
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata('settings');
+}
 
 export default function SettingsLayout({ children }: { children: ReactNode }) {
   return children;

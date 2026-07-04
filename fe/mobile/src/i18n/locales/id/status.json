@@ -1,0 +1,72 @@
+{
+  "pending": "Menunggu",
+  "approved": "Disetujui",
+  "rejected": "Ditolak",
+  "pending_approval": "Menunggu Persetujuan",
+  "in_progress": "Sedang Berjalan",
+  "completed": "Selesai",
+  "cancelled": "Dibatalkan",
+  "active": "Aktif",
+  "inactive": "Tidak Aktif",
+  "draft": "Draf",
+  "submitted": "Terkirim",
+  "verified": "Terverifikasi",
+  "overdue": "Terlambat",
+  "recorded": "Tercatat",
+  "priority": {
+    "low": "Rendah",
+    "medium": "Biasa",
+    "high": "Tinggi",
+    "urgent": "Mendesak"
+  },
+  "task": {
+    "pending": "Menunggu",
+    "assigned": "Ditugaskan",
+    "accepted": "Diterima",
+    "declined": "Ditolak",
+    "in_progress": "Dikerjakan",
+    "completed": "Menunggu Verifikasi",
+    "verified": "Terverifikasi",
+    "revision_needed": "Perlu Revisi"
+  },
+  "presence": {
+    "active": "Aktif",
+    "inactive": "Tidak aktif",
+    "outside_area": "Luar area",
+    "missing": "Tidak terdeteksi",
+    "offline": "Offline",
+    "online": "Online",
+    "syncing": "Syncing"
+  },
+  "location": {
+    "dalam_area": "Dalam area",
+    "luar_area": "Luar area",
+    "unknown": "—"
+  },
+  "pruning": {
+    "submitted": "Menunggu",
+    "under_review": "Direview",
+    "approved": "Disetujui",
+    "rejected": "Ditolak",
+    "assigned": "Ditugaskan",
+    "in_progress": "Diproses",
+    "done": "Selesai",
+    "cancelled": "Dibatalkan"
+  },
+  "taskPill": {
+    "in_progress": "Berjalan",
+    "readyToStart": "Siap mulai",
+    "revision_needed": "Revisi",
+    "awaiting_verification": "Menunggu verifikasi",
+    "verified": "Terverifikasi",
+    "declined": "Ditolak",
+    "pending": "Menunggu"
+  },
+  "tracking": {
+    "active": "Aktif",
+    "inactive": "Idle",
+    "outside_area": "Di Luar Area",
+    "missing": "Tidak Terdeteksi",
+    "offline": "Offline"
+  }
+}

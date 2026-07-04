@@ -6,9 +6,10 @@
  * Purely client-side over the snapshot worker list. Controlled by the page.
  */
 import { Search, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
-import { STATUS_LABELS } from '@/lib/constants/monitoring';
+import { getStatusLabels } from '@/lib/constants/monitoring';
 import { ROLE_LABELS } from '@/lib/constants/roles';
 import type { TrackingStatus } from '@/lib/api/monitoring-types';
 import type { UserRole } from '@/types/models';
@@ -65,6 +66,9 @@ export function MonitoringFilters({
   showSearch = true,
   className,
 }: MonitoringFiltersProps) {
+  const { t } = useTranslation();
+  const statusLabels = getStatusLabels();
+
   const toggleStatus = (status: TrackingStatus) => {
     const next = new Set(filters.statuses);
     if (next.has(status)) next.delete(status);
@@ -87,7 +91,7 @@ export function MonitoringFilters({
       {showSearch && (
         <div>
           <label className="mb-1 block text-xs font-bold uppercase text-nb-gray-500" htmlFor="mon-search">
-            Cari Petugas
+            {t('monitoring:filters.label')}
           </label>
           <div className="relative">
             <Search
@@ -98,7 +102,7 @@ export function MonitoringFilters({
               id="mon-search"
               value={filters.search}
               onChange={(e) => onChange({ ...filters, search: e.target.value })}
-              placeholder="Nama petugas…"
+              placeholder={t('monitoring:filters.placeholder')}
               className="pl-8"
             />
           </div>
@@ -107,7 +111,7 @@ export function MonitoringFilters({
 
       {/* Status chips */}
       <fieldset>
-        <legend className="mb-1.5 text-xs font-bold uppercase text-nb-gray-500">Status</legend>
+        <legend className="mb-1.5 text-xs font-bold uppercase text-nb-gray-500">{t('monitoring:filters.statusLabel')}</legend>
         <div className="flex flex-wrap gap-1.5">
           {STATUS_ORDER.map((status) => {
             const active = filters.statuses.has(status);
@@ -130,7 +134,7 @@ export function MonitoringFilters({
                   style={{ backgroundColor: color }}
                   aria-hidden="true"
                 />
-                {STATUS_LABELS[status]}
+                {statusLabels[status]}
                 <span className="font-mono tabular-nums opacity-70">{statusCounts[status] ?? 0}</span>
               </button>
             );
@@ -142,7 +146,7 @@ export function MonitoringFilters({
       {rayonOptions.length > 0 && (
         <div>
           <label className="mb-1 block text-xs font-bold uppercase text-nb-gray-500" htmlFor="mon-rayon">
-            Rayon
+            {t('monitoring:filters.rayonLabel')}
           </label>
           <select
             id="mon-rayon"
@@ -150,7 +154,7 @@ export function MonitoringFilters({
             onChange={(e) => onChange({ ...filters, rayonId: e.target.value })}
             className="w-full rounded-nb-base border-2 border-nb-black bg-nb-white px-2.5 py-2 text-sm font-medium text-nb-black focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
           >
-            <option value="all">Semua Rayon</option>
+            <option value="all">{t('monitoring:filters.rayonAllOption')}</option>
             {rayonOptions.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.name}
@@ -164,7 +168,7 @@ export function MonitoringFilters({
       {roleOptions.length > 0 && (
         <div>
           <label className="mb-1 block text-xs font-bold uppercase text-nb-gray-500" htmlFor="mon-role">
-            Peran
+            {t('monitoring:filters.roleLabel')}
           </label>
           <select
             id="mon-role"
@@ -172,7 +176,7 @@ export function MonitoringFilters({
             onChange={(e) => onChange({ ...filters, role: e.target.value })}
             className="w-full rounded-nb-base border-2 border-nb-black bg-nb-white px-2.5 py-2 text-sm font-medium text-nb-black focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
           >
-            <option value="all">Semua Peran</option>
+            <option value="all">{t('monitoring:filters.roleAllOption')}</option>
             {roleOptions.map((role) => (
               <option key={role} value={role}>
                 {ROLE_LABELS[role] ?? role}
@@ -185,7 +189,7 @@ export function MonitoringFilters({
       {/* Footer: match count + reset */}
       <div className="flex items-center justify-between border-t-2 border-nb-gray-200 pt-3 text-xs text-nb-gray-500">
         <span aria-live="polite">
-          <strong className="text-nb-black">{matched}</strong> / {total} petugas
+          {t('monitoring:filters.matchSummary', { matched, total })}
         </span>
         {hasActiveFilters && (
           <button
@@ -194,7 +198,7 @@ export function MonitoringFilters({
             className="flex items-center gap-1 font-semibold text-nb-gray-600 hover:text-nb-black"
           >
             <X className="h-3.5 w-3.5" />
-            Reset
+            {t('monitoring:filters.reset')}
           </button>
         )}
       </div>

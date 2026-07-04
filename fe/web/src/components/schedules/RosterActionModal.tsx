@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import {
   Button,
   Dialog,
@@ -39,6 +40,7 @@ export function RosterActionModal({
   error,
   children,
 }: RosterActionModalProps) {
+  const { t } = useTranslation();
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent size="sm">
@@ -59,7 +61,7 @@ export function RosterActionModal({
         </DialogBody>
         <DialogFooter>
           <Button variant="secondary" onClick={onClose} disabled={loading}>
-            Batalkan
+            {t('common:actions.cancel')}
           </Button>
           <Button onClick={onSubmit} loading={loading} disabled={submitDisabled || loading}>
             {submitLabel}

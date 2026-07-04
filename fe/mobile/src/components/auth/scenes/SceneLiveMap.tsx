@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { StyleSheet, View, type DimensionValue, type StyleProp, type ViewStyle } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import Svg, { Line } from 'react-native-svg';
 import { nbColors, nbBorders, nbRadius, nbShadows, nbSpacing } from '../../../constants/nbTokens';
 import { NBText } from '../../nb';
@@ -50,6 +51,7 @@ function StatChip({
 }
 
 export function SceneLiveMap(): React.JSX.Element {
+  const { t } = useTranslation();
   return (
     <View style={styles.root}>
       {/* Faint map grid */}
@@ -66,8 +68,8 @@ export function SceneLiveMap(): React.JSX.Element {
         <Pin key={i} {...pin} />
       ))}
 
-      <StatChip label="Aktif" value="14" tone="ok" style={styles.chipTopLeft} />
-      <StatChip label="Off-area" value="2" tone="bad" style={styles.chipBottomRight} />
+      <StatChip label={t('status:active')} value="14" tone="ok" style={styles.chipTopLeft} />
+      <StatChip label={t('status:presence.outside_area')} value="2" tone="bad" style={styles.chipBottomRight} />
     </View>
   );
 }

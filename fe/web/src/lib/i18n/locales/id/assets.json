@@ -1,0 +1,168 @@
+{
+  "page": {
+    "title": "Aset",
+    "description": "Kelola aset dan perawatan"
+  },
+  "status": {
+    "available": "Tersedia",
+    "in_use": "Digunakan",
+    "maintenance": "Perawatan",
+    "retired": "Pensiun",
+    "lost": "Hilang"
+  },
+  "tabs": {
+    "all": "Semua",
+    "available": "Tersedia",
+    "in_use": "Digunakan",
+    "maintenance": "Perawatan"
+  },
+  "list": {
+    "categoryLabel": "Kategori",
+    "allCategories": "Semua Kategori",
+    "emptyTitle": "Tidak ada aset",
+    "qrBatch": "QR Batch",
+    "add": "Tambah",
+    "columns": {
+      "id": "ID",
+      "code": "Kode",
+      "name": "Nama",
+      "category": "Kategori",
+      "status": "Status",
+      "location": "Lokasi",
+      "createdAt": "Dibuat",
+      "updatedAt": "Diperbarui",
+      "createdBy": "Dibuat oleh",
+      "updatedBy": "Diperbarui oleh"
+    },
+    "actions": {
+      "view": "Lihat",
+      "edit": "Ubah",
+      "delete": "Hapus"
+    },
+    "pagination": {
+      "page": "Halaman",
+      "of": "dari",
+      "previous": "Sebelumnya",
+      "next": "Berikutnya"
+    }
+  },
+  "detail": {
+    "notFound": "Aset Tidak Ditemukan",
+    "breadcrumb": "Aset · Detail",
+    "delete": "Hapus",
+    "infoTitle": "Informasi",
+    "category": "Kategori",
+    "status": "Status",
+    "checkoutButton": "Ambil Aset",
+    "returnButton": "Kembalikan",
+    "maintenanceButton": "Jadwal Perawatan",
+    "usageHistory": "Riwayat Penggunaan",
+    "noHistory": "Tidak ada riwayat",
+    "loading": "Memuat...",
+    "checkoutTitle": "Ambil Aset",
+    "checkoutDescription": "Catat kondisi aset saat diambil",
+    "conditionLabel": "Kondisi",
+    "notesLabel": "Catatan",
+    "notesPlaceholder": "Catatan tambahan...",
+    "checkoutSuccess": "Aset berhasil diambil",
+    "returnTitle": "Kembalikan Aset",
+    "returnDescription": "Catat kondisi aset saat dikembalikan",
+    "returnSuccess": "Aset berhasil dikembalikan",
+    "maintenanceTitle": "Jadwal Perawatan",
+    "maintenanceDescription": "Buat jadwal perawatan untuk aset ini",
+    "maintenanceTypeLabel": "Tipe Perawatan",
+    "dateLabel": "Tanggal",
+    "maintenanceSuccess": "Perawatan berhasil dijadwalkan",
+    "qrSuccess": "QR code berhasil dibuat",
+    "deleteSuccess": "Aset berhasil dihapus",
+    "deleteConfirm": "Hapus aset ini?",
+    "condition": {
+      "good": "Baik",
+      "fair": "Cukup",
+      "poor": "Buruk",
+      "damaged": "Rusak",
+      "unusable": "Tidak Dapat Digunakan"
+    },
+    "maintenanceType": {
+      "routine": "Rutin",
+      "repair": "Perbaikan",
+      "inspection": "Inspeksi",
+      "replacement": "Penggantian"
+    },
+    "maintenanceStatus": {
+      "scheduled": "Terjadwal",
+      "in_progress": "Sedang Berlangsung",
+      "completed": "Selesai",
+      "cancelled": "Dibatalkan",
+      "overdue": "Terlambat"
+    },
+    "assignmentTable": {
+      "date": "Tanggal",
+      "worker": "Pekerja",
+      "type": "Tipe",
+      "return": "Kembali",
+      "checkout": "Ambil"
+    },
+    "maintenanceTable": {
+      "date": "Tanggal",
+      "type": "Tipe",
+      "status": "Status",
+      "cost": "Biaya"
+    }
+  },
+  "form": {
+    "editTitle": "Ubah Aset",
+    "createTitle": "Tambah Aset",
+    "nameLabel": "Nama Aset",
+    "namePlaceholder": "Sapu Lidi #1",
+    "categoryLabel": "Kategori",
+    "categoryPlaceholder": "Pilih Kategori",
+    "descriptionLabel": "Deskripsi",
+    "descriptionPlaceholder": "Deskripsi aset",
+    "purchaseDateLabel": "Tanggal Pembelian",
+    "purchasePriceLabel": "Harga Pembelian",
+    "purchasePricePlaceholder": "Harga dalam Rupiah",
+    "validationError": "Nama dan kategori harus diisi",
+    "updateSuccess": "Aset diperbarui",
+    "createSuccess": "Aset berhasil dibuat",
+    "cancel": "Batal",
+    "save": "Simpan",
+    "create": "Buat Aset"
+  },
+  "qr": {
+    "pageTitle": "Generator QR Code",
+    "breadcrumb": "Aset · QR Code",
+    "selectMinimum": "Pilih minimal 1 aset",
+    "selectAssets": "Pilih Aset",
+    "selected": "terpilih",
+    "selectAll": "Pilih Semua",
+    "clearSelection": "Hapus Pilihan",
+    "noAssets": "Tidak ada aset",
+    "generateQr": "Generate QR",
+    "generateSuccess": "{{count}} QR code berhasil dibuat",
+    "preview": "Preview",
+    "printAll": "Cetak Semua",
+    "downloadPdf": "Unduh PDF",
+    "newBatch": "Buat Batch Baru",
+    "tableColumns": {
+      "code": "Kode",
+      "name": "Nama",
+      "category": "Kategori"
+    },
+    "printTitle": "QR Code Aset",
+    "selectCheckbox": "Pilih {{code}}"
+  },
+  "create": {
+    "pageTitle": "Tambah Aset",
+    "breadcrumb": "Aset · Tambah",
+    "validationError": "Nama dan kategori harus diisi"
+  },
+  "maintenance2": {
+    "pageDescription": "Kelola jadwal perawatan aset",
+    "selectLabel": "Pilih",
+    "pageTitle": "Perawatan Aset",
+    "upcoming": "Perawatan Mendatang",
+    "overdue": "Perawatan Terlambat",
+    "saveError": "Gagal menyimpan kapasitas."
+  }
+}

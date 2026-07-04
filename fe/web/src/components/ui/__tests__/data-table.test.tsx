@@ -202,7 +202,7 @@ describe('DataTable', () => {
           ]}
         />
       );
-      const triggers = screen.getAllByRole('button', { name: 'Aksi baris' });
+      const triggers = screen.getAllByRole('button', { name: 'Aksi' });
       expect(triggers).toHaveLength(mockData.length);
       await user.click(triggers[0]);
       await user.click(await screen.findByRole('menuitem', { name: 'Lihat' }));
@@ -223,7 +223,7 @@ describe('DataTable', () => {
           ]}
         />
       );
-      await user.click(screen.getAllByRole('button', { name: 'Aksi baris' })[0]);
+      await user.click(screen.getAllByRole('button', { name: 'Aksi' })[0]);
       expect(await screen.findByRole('menuitem', { name: 'Lihat' })).toBeInTheDocument();
       expect(screen.queryByRole('menuitem', { name: 'Rahasia' })).not.toBeInTheDocument();
       expect(screen.getByRole('menuitem', { name: 'Ubah' })).toHaveAttribute(

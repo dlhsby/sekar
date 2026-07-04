@@ -7,6 +7,7 @@ import { useState, useCallback, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAppDispatch } from '../../../store/hooks';
 import {
   setSubmitting,
@@ -44,6 +45,7 @@ export function useOvertimeStartForm(
   activeOvertime: any,
   isFocused: boolean,
 ) {
+  const { t } = useTranslation();
   const navigation = useNavigation<MainTabScreenProps<'OvertimeSubmit'>['navigation']>();
   const dispatch = useAppDispatch();
 
@@ -68,16 +70,16 @@ export function useOvertimeStartForm(
         }
         if (!draft.reason) { return; }
         Alert.alert(
-          'Lanjutkan Draft?',
-          'Ditemukan form lembur yang belum selesai. Lanjutkan atau hapus?',
+          t('overtime:startForm.draftTitle'),
+          t('overtime:startForm.draftMessage'),
           [
             {
-              text: 'Hapus Draft',
+              text: t('overtime:startForm.draftDiscard'),
               style: 'destructive',
               onPress: () => void AsyncStorage.removeItem(DRAFT_KEY),
             },
             {
-              text: 'Lanjutkan Draft',
+              text: t('overtime:startForm.draftContinue'),
               onPress: () => {
                 if (isMounted) { setReason(draft.reason); }
               },
@@ -116,11 +118,11 @@ export function useOvertimeStartForm(
   const validateForm = useCallback((): boolean => {
     const errs: StartErrors = {};
     if (!location) {
-      errs.location = 'GPS lokasi diperlukan. Ketuk "Perbarui GPS" untuk mencoba lagi.';
+      errs.location = t('overtime:startForm.locationError');
     }
     setStartErrors(errs);
     return Object.keys(errs).length === 0;
-  }, [location]);
+  }, [location, t]);
 
   const handleSubmit = useCallback(async () => {
     if (!validateForm()) { return; }
@@ -148,18 +150,18 @@ export function useOvertimeStartForm(
       } else if (response.error) {
         dispatch(setError(response.error));
         const errMsg = response.error.includes('end normal shift')
-          ? 'Anda masih memiliki shift aktif. Selesaikan Clock Out shift biasa sebelum memulai lembur.'
+          ? t('overtime:startForm.activeShiftError')
           : response.error;
-        NBToast.show({ level: 'danger', title: 'Gagal Mulai Lembur', body: errMsg });
+        NBToast.show({ level: 'danger', title: t('overtime:startForm.toastStartError'), body: errMsg });
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Gagal memulai lembur';
+      const msg = err instanceof Error ? err.message : t('overtime:startForm.toastGenericError');
       dispatch(setError(msg));
-      NBToast.show({ level: 'danger', title: 'Gagal', body: msg });
+      NBToast.show({ level: 'danger', title: t('overtime:startForm.toastError'), body: msg });
     } finally {
       dispatch(setSubmitting(false));
     }
-  }, [validateForm, startSelfie, location, reason, dispatch, navigation]);
+  }, [validateForm, startSelfie, location, reason, dispatch, navigation, t]);
 
   const handleLeave = useCallback(() => {
     const hasData = Boolean(reason || startSelfie);
@@ -168,11 +170,11 @@ export function useOvertimeStartForm(
       return;
     }
     Alert.alert(
-      'Simpan Draft?',
-      'Simpan data lembur sebagai draft?',
+      t('overtime:startForm.saveDraftTitle'),
+      t('overtime:startForm.saveDraftMessage'),
       [
         {
-          text: 'Tidak',
+          text: t('overtime:startForm.saveDraftNo'),
           style: 'destructive',
           onPress: () => {
             setReason('');
@@ -182,7 +184,7 @@ export function useOvertimeStartForm(
           },
         },
         {
-          text: 'Ya',
+          text: t('overtime:startForm.saveDraftYes'),
           onPress: () => {
             const draft: StartDraft = {
               reason,
@@ -194,7 +196,7 @@ export function useOvertimeStartForm(
         },
       ],
     );
-  }, [reason, startSelfie, navigation]);
+  }, [reason, startSelfie, navigation, t]);
 
   return {
     reason,

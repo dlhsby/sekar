@@ -12,6 +12,7 @@ import type {
   PaginatedAssetsResponse,
 } from '../../types/assets.types';
 import * as assetsApi from '../../services/api/assetsApi';
+import i18n from '../../i18n/config';
 
 interface AssetsState {
   assets: Asset[];
@@ -71,7 +72,7 @@ export const fetchAsset = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     const response = await assetsApi.getAssetById(id);
     if (response.error || !response.data) {
-      return rejectWithValue(response.error || 'Aset tidak ditemukan');
+      return rejectWithValue(response.error || i18n.t('assets:errors.notFound'));
     }
     return response.data;
   },
@@ -82,7 +83,7 @@ export const scanAsset = createAsyncThunk(
   async (code: string, { rejectWithValue }) => {
     const response = await assetsApi.scanAssetByCode(code);
     if (response.error || !response.data) {
-      return rejectWithValue(response.error || 'Aset tidak ditemukan');
+      return rejectWithValue(response.error || i18n.t('assets:errors.notFound'));
     }
     return response.data;
   },
@@ -113,7 +114,7 @@ export const checkoutAsset = createAsyncThunk(
   ) => {
     const response = await assetsApi.checkoutAsset(assetId, payload);
     if (response.error || !response.data) {
-      return rejectWithValue(response.error || 'Gagal meminjam aset');
+      return rejectWithValue(response.error || i18n.t('assets:errors.checkoutAsset'));
     }
     return response.data;
   },
@@ -133,7 +134,7 @@ export const returnAsset = createAsyncThunk(
   ) => {
     const response = await assetsApi.returnAsset(assetId, payload);
     if (response.error || !response.data) {
-      return rejectWithValue(response.error || 'Gagal mengembalikan aset');
+      return rejectWithValue(response.error || i18n.t('assets:errors.returnAsset'));
     }
     return response.data;
   },
@@ -177,7 +178,7 @@ const assetsSlice = createSlice({
       })
       .addCase(fetchCategories.rejected, (state, action) => {
         state.loading = false;
-        state.error = (action.payload as string) || 'Gagal mengambil kategori';
+        state.error = (action.payload as string) || i18n.t('assets:errors.fetchCategories');
       });
 
     // fetchAssets
@@ -196,7 +197,7 @@ const assetsSlice = createSlice({
       })
       .addCase(fetchAssets.rejected, (state, action) => {
         state.loading = false;
-        state.error = (action.payload as string) || 'Gagal mengambil daftar aset';
+        state.error = (action.payload as string) || i18n.t('assets:errors.fetchAssets');
       });
 
     // fetchAsset
@@ -211,7 +212,7 @@ const assetsSlice = createSlice({
       })
       .addCase(fetchAsset.rejected, (state, action) => {
         state.loading = false;
-        state.error = (action.payload as string) || 'Gagal mengambil detail aset';
+        state.error = (action.payload as string) || i18n.t('assets:errors.fetchAsset');
       });
 
     // scanAsset
@@ -226,7 +227,7 @@ const assetsSlice = createSlice({
       })
       .addCase(scanAsset.rejected, (state, action) => {
         state.loading = false;
-        state.error = (action.payload as string) || 'Aset tidak ditemukan';
+        state.error = (action.payload as string) || i18n.t('assets:errors.notFound');
       });
 
     // fetchMyAssets
@@ -241,7 +242,7 @@ const assetsSlice = createSlice({
       })
       .addCase(fetchMyAssets.rejected, (state, action) => {
         state.loading = false;
-        state.error = (action.payload as string) || 'Gagal mengambil aset saya';
+        state.error = (action.payload as string) || i18n.t('assets:errors.fetchMyAssets');
       });
 
     // checkoutAsset
@@ -262,7 +263,7 @@ const assetsSlice = createSlice({
       })
       .addCase(checkoutAsset.rejected, (state, action) => {
         state.submitting = false;
-        state.error = (action.payload as string) || 'Gagal meminjam aset';
+        state.error = (action.payload as string) || i18n.t('assets:errors.checkoutAsset');
       });
 
     // returnAsset
@@ -285,7 +286,7 @@ const assetsSlice = createSlice({
       })
       .addCase(returnAsset.rejected, (state, action) => {
         state.submitting = false;
-        state.error = (action.payload as string) || 'Gagal mengembalikan aset';
+        state.error = (action.payload as string) || i18n.t('assets:errors.returnAsset');
       });
 
     // fetchAssetAssignments
@@ -299,7 +300,7 @@ const assetsSlice = createSlice({
       })
       .addCase(fetchAssetAssignments.rejected, (state, action) => {
         state.loading = false;
-        state.error = (action.payload as string) || 'Gagal mengambil riwayat penugasan';
+        state.error = (action.payload as string) || i18n.t('assets:errors.fetchAssignments');
       });
   },
 });

@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/lib/auth/hooks';
 import {
   useSchedules,
@@ -39,12 +40,6 @@ import { Plus, Trash2, Pencil, Power } from 'lucide-react';
 import { ADMIN_ROLES, hasRole } from '@/lib/constants/roles';
 import { formatDate } from '@/lib/utils/time';
 
-const FREQUENCY_OPTIONS: FormSelectOption[] = [
-  { value: 'daily', label: 'Harian' },
-  { value: 'weekly', label: 'Mingguan' },
-  { value: 'monthly', label: 'Bulanan' },
-];
-
 interface ScheduleFormState {
   name: string;
   templateId: string;
@@ -55,9 +50,17 @@ interface ScheduleFormState {
 }
 
 export default function SchedulesPage() {
+  const { t } = useTranslation(['reports', 'common']);
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+
+  // Create frequency options dynamically with translations
+  const FREQUENCY_OPTIONS = useMemo<FormSelectOption[]>(() => [
+    { value: 'daily', label: t('schedules.frequencies.daily') },
+    { value: 'weekly', label: t('schedules.frequencies.weekly') },
+    { value: 'monthly', label: t('schedules.frequencies.monthly') },
+  ], [t]);
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -117,7 +120,7 @@ export default function SchedulesPage() {
 
   const handleSaveSchedule = async () => {
     if (!formState.name || !formState.templateId) {
-      toast({ level: 'warning', title: 'Nama dan template diperlukan' });
+      toast({ level: 'warning', title: t('schedules.messages.validationError') });
       return;
     }
 
@@ -132,7 +135,7 @@ export default function SchedulesPage() {
           is_active: formState.isActive,
         };
         await updateScheduleMutation.mutateAsync(updateData);
-        toast({ level: 'success', title: 'Jadwal diperbarui' });
+        toast({ level: 'success', title: t('schedules.messages.updateSuccess') });
         setEditDialogOpen(false);
       } else {
         // Create
@@ -144,13 +147,13 @@ export default function SchedulesPage() {
           timezone: formState.timezone,
         };
         await createScheduleMutation.mutateAsync(createData);
-        toast({ level: 'success', title: 'Jadwal dibuat' });
+        toast({ level: 'success', title: t('schedules.messages.createSuccess') });
         setCreateDialogOpen(false);
       }
     } catch {
       toast({
         level: 'danger',
-        title: editingScheduleId ? 'Gagal memperbarui jadwal' : 'Gagal membuat jadwal',
+        title: editingScheduleId ? t('schedules.messages.updateError') : t('schedules.messages.createError'),
       });
     }
   };
@@ -165,11 +168,11 @@ export default function SchedulesPage() {
 
     try {
       await deleteScheduleMutation.mutateAsync(scheduleToDelete);
-      toast({ level: 'success', title: 'Jadwal dihapus' });
+      toast({ level: 'success', title: t('schedules.messages.deleteSuccess') });
       setDeleteDialogOpen(false);
       setScheduleToDelete(null);
     } catch {
-      toast({ level: 'danger', title: 'Gagal menghapus jadwal' });
+      toast({ level: 'danger', title: t('schedules.messages.deleteError') });
     }
   };
 
@@ -181,13 +184,13 @@ export default function SchedulesPage() {
         });
         toast({
           level: 'success',
-          title: schedule.is_active ? 'Jadwal dinonaktifkan' : 'Jadwal diaktifkan',
+          title: schedule.is_active ? t('schedules.messages.deactivateSuccess') : t('schedules.messages.activateSuccess'),
         });
       } catch {
-        toast({ level: 'danger', title: 'Gagal memperbarui jadwal' });
+        toast({ level: 'danger', title: t('schedules.messages.toggleError') });
       }
     },
-    [updateScheduleMutation, toast]
+    [updateScheduleMutation, toast, t]
   );
 
   const templateOptions: FormSelectOption[] = templates
@@ -199,9 +202,9 @@ export default function SchedulesPage() {
       {
         id: 'id',
         accessorKey: 'id',
-        header: 'ID',
+        header: t('schedules.table.id'),
         enableSorting: false,
-        meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+        meta: { label: t('schedules.table.id'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
         ),
@@ -209,30 +212,30 @@ export default function SchedulesPage() {
       {
         id: 'name',
         accessorKey: 'name',
-        header: 'Nama',
+        header: t('schedules.table.name'),
         enableSorting: true,
-        meta: { label: 'Nama', filterVariant: 'text' },
+        meta: { label: t('schedules.table.name'), filterVariant: 'text' },
         cell: ({ row }) => <span className="text-nb-body font-medium">{row.original.name}</span>,
       },
       {
         id: 'frequency',
         accessorKey: 'frequency',
-        header: 'Frekuensi',
+        header: t('schedules.table.frequency'),
         enableSorting: true,
-        meta: { label: 'Frekuensi', filterVariant: 'text' },
+        meta: { label: t('schedules.table.frequency'), filterVariant: 'text' },
         cell: ({ row }) => {
           const freq = row.original.frequency;
           const freqLabel =
-            freq === 'daily' ? 'Harian' : freq === 'weekly' ? 'Mingguan' : 'Bulanan';
+            freq === 'daily' ? t('schedules.frequencies.daily') : freq === 'weekly' ? t('schedules.frequencies.weekly') : t('schedules.frequencies.monthly');
           return <span className="text-nb-body-sm">{freqLabel}</span>;
         },
       },
       {
         id: 'cron_expression',
         accessorKey: 'cron_expression',
-        header: 'Cron',
+        header: t('schedules.table.cron'),
         enableSorting: true,
-        meta: { label: 'Cron', filterVariant: 'text' },
+        meta: { label: t('schedules.table.cron'), filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm font-mono">{row.original.cron_expression}</span>
         ),
@@ -240,25 +243,25 @@ export default function SchedulesPage() {
       {
         id: 'is_active',
         accessorKey: 'is_active',
-        header: 'Status',
+        header: t('schedules.table.status'),
         enableSorting: true,
-        meta: { label: 'Status', filterVariant: 'text' },
+        meta: { label: t('schedules.table.status'), filterVariant: 'text' },
         cell: ({ row }) =>
           row.original.is_active ? (
             <StatusPill tone="ok" dot>
-              Aktif
+              {t('schedules.table.statusActive')}
             </StatusPill>
           ) : (
             <StatusPill tone="neutral" dot>
-              Nonaktif
+              {t('schedules.table.statusInactive')}
             </StatusPill>
           ),
       },
       {
         id: 'created_at',
         accessorKey: 'created_at',
-        header: 'Dibuat',
-        meta: { label: 'Dibuat', defaultHidden: true, filterVariant: 'date' },
+        header: t('schedules.table.createdAt'),
+        meta: { label: t('schedules.table.createdAt'), defaultHidden: true, filterVariant: 'date' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {formatDate(row.original.created_at)}
@@ -268,8 +271,8 @@ export default function SchedulesPage() {
       {
         id: 'updated_at',
         accessorKey: 'updated_at',
-        header: 'Diperbarui',
-        meta: { label: 'Diperbarui', defaultHidden: true, filterVariant: 'date' },
+        header: t('schedules.table.updatedAt'),
+        meta: { label: t('schedules.table.updatedAt'), defaultHidden: true, filterVariant: 'date' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {formatDate(row.original.updated_at)}
@@ -277,32 +280,32 @@ export default function SchedulesPage() {
         ),
       },
     ],
-    []
+    [t]
   );
 
   const rowActions = useCallback(
     (schedule: ReportSchedule): DataTableRowAction<ReportSchedule>[] => [
       {
         key: 'edit',
-        label: 'Ubah',
+        label: t('schedules.actions.edit'),
         icon: Pencil,
         onClick: () => handleOpenEdit(schedule),
       },
       {
         key: 'toggle',
-        label: schedule.is_active ? 'Nonaktifkan' : 'Aktifkan',
+        label: schedule.is_active ? t('schedules.actions.deactivate') : t('schedules.actions.activate'),
         icon: Power,
         onClick: () => handleToggleActive(schedule),
       },
       {
         key: 'delete',
-        label: 'Hapus',
+        label: t('schedules.actions.delete'),
         icon: Trash2,
         variant: 'danger',
         onClick: () => handleDeleteClick(schedule.id),
       },
     ],
-    [handleToggleActive]
+    [handleToggleActive, t]
   );
 
   const schedulesList = schedules || [];
@@ -310,7 +313,7 @@ export default function SchedulesPage() {
   if (authLoading || !user) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <p className="text-nb-body text-nb-gray-600">Memuat…</p>
+        <p className="text-nb-body text-nb-gray-600">{t('common:actions.loading')}</p>
       </div>
     );
   }
@@ -318,11 +321,11 @@ export default function SchedulesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Jadwal Laporan"
-        description="Kelola jadwal laporan otomatis"
+        title={t('schedules.page.title')}
+        description={t('schedules.page.description')}
         actions={
           <Button leftIcon={<Plus className="h-4 w-4" />} onClick={handleOpenCreate}>
-            Buat Jadwal
+            {t('schedules.actions.create')}
           </Button>
         }
       />
@@ -334,8 +337,8 @@ export default function SchedulesPage() {
           ) : schedulesList.length === 0 ? (
             <EmptyState
               variant="noData"
-              title="Tidak ada jadwal"
-              description="Buat jadwal laporan otomatis untuk menjalankan laporan secara berkala"
+              title={t('schedules.empty.title')}
+              description={t('schedules.empty.description')}
             />
           ) : (
             <DataTable
@@ -358,27 +361,27 @@ export default function SchedulesPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editingScheduleId ? 'Edit Jadwal' : 'Buat Jadwal Baru'}
+              {editingScheduleId ? t('schedules.editDialog.title') : t('schedules.createDialog.title')}
             </DialogTitle>
             {!editingScheduleId && (
               <DialogDescription>
-                Atur jadwal otomatis untuk menjalankan laporan berkala
+                {t('schedules.createDialog.description')}
               </DialogDescription>
             )}
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <FormInput
-              label="Nama Jadwal"
+              label={t('schedules.createDialog.nameLabel')}
               value={formState.name}
               onChange={(e) => setFormState((s) => ({ ...s, name: e.target.value }))}
-              placeholder="cth: Laporan Harian Rayon Utara"
+              placeholder={t('schedules.createDialog.namePlaceholder')}
             />
 
             {!editingScheduleId && (
               <FormSelect
-                label="Template"
-                placeholder="Pilih template"
+                label={t('schedules.createDialog.templateLabel')}
+                placeholder={t('schedules.createDialog.templatePlaceholder')}
                 options={templateOptions}
                 value={formState.templateId}
                 onChange={(value) => setFormState((s) => ({ ...s, templateId: value }))}
@@ -386,26 +389,26 @@ export default function SchedulesPage() {
             )}
 
             <FormSelect
-              label="Frekuensi"
+              label={t('schedules.createDialog.frequencyLabel')}
               options={FREQUENCY_OPTIONS}
               value={formState.frequency}
               onChange={(value) => setFormState((s) => ({ ...s, frequency: value }))}
             />
 
             <FormInput
-              label="Cron Expression"
+              label={t('schedules.createDialog.cronLabel')}
               value={formState.cronExpression}
               onChange={(e) =>
                 setFormState((s) => ({ ...s, cronExpression: e.target.value }))
               }
-              placeholder="0 6 * * * (harian jam 6 pagi)"
+              placeholder={t('schedules.createDialog.cronPlaceholder')}
             />
 
             <FormInput
-              label="Timezone"
+              label={t('schedules.createDialog.timezoneLabel')}
               value={formState.timezone}
               onChange={(e) => setFormState((s) => ({ ...s, timezone: e.target.value }))}
-              placeholder="Asia/Jakarta"
+              placeholder={t('schedules.createDialog.timezonePlaceholder')}
             />
           </div>
 
@@ -417,7 +420,7 @@ export default function SchedulesPage() {
                 setEditDialogOpen(false);
               }}
             >
-              Batal
+              {t('common:actions.cancel')}
             </Button>
             <Button
               onClick={handleSaveSchedule}
@@ -425,7 +428,7 @@ export default function SchedulesPage() {
                 createScheduleMutation.isPending || updateScheduleMutation.isPending
               }
             >
-              {editingScheduleId ? 'Simpan' : 'Buat'}
+              {editingScheduleId ? t('schedules.editDialog.submitButton') : t('schedules.createDialog.submitButton')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -435,21 +438,21 @@ export default function SchedulesPage() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Hapus Jadwal?</DialogTitle>
+            <DialogTitle>{t('schedules:dialog.deleteTitle')}</DialogTitle>
             <DialogDescription>
-              Jadwal laporan akan dihapus dan tidak akan dijalankan lagi.
+              {t('schedules.deleteDialog.description')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-              Batal
+              {t('common:actions.cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={handleConfirmDelete}
               loading={deleteScheduleMutation.isPending}
             >
-              Hapus
+              {t('schedules.actions.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

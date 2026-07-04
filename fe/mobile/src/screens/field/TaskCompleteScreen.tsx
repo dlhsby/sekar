@@ -11,6 +11,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBButton, NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern, NBCardTextInput, NBText, NBToast } from '../../components/nb';
@@ -26,6 +27,7 @@ type TaskCompleteRouteProp = RouteProp<MainTabParamList, 'TaskComplete'>;
 type TaskCompleteNavigationProp = MainTabScreenProps<'TaskComplete'>['navigation'];
 
 export function TaskCompleteScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const navigation = useNavigation<TaskCompleteNavigationProp>();
   const route = useRoute<TaskCompleteRouteProp>();
   const { taskId } = route.params;
@@ -44,14 +46,14 @@ export function TaskCompleteScreen(): React.JSX.Element {
           setTask(response.data);
         }
       } catch {
-        NBToast.show({ level: 'danger', title: 'Gagal', body: 'Gagal memuat detail tugas.' });
+        NBToast.show({ level: 'danger', title: t('tasks:complete.failure'), body: t('tasks:complete.loadingFailed') });
         navigation.goBack();
       } finally {
         setIsLoading(false);
       }
     };
     fetchTask();
-  }, [taskId, navigation]);
+  }, [taskId, navigation, t]);
 
   const handleAddPhoto = useCallback((photo: Photo) => {
     setPhotos((prev) => [...prev, photo]);
@@ -68,23 +70,23 @@ export function TaskCompleteScreen(): React.JSX.Element {
 
   const handleCancel = useCallback(() => {
     if (photos.length > 0 || description.trim().length > 0) {
-      Alert.alert('Batalkan?', 'Data yang telah diisi akan hilang.', [
-        { text: 'Tidak', style: 'cancel' },
-        { text: 'Ya', style: 'destructive', onPress: () => { clearForm(); navigation.goBack(); } },
+      Alert.alert(t('tasks:create.cancelConfirm'), t('tasks:create.cancelConfirm'), [
+        { text: t('tasks:create.cancelNo'), style: 'cancel' },
+        { text: t('tasks:create.cancelYes'), style: 'destructive', onPress: () => { clearForm(); navigation.goBack(); } },
       ]);
     } else {
       navigation.goBack();
     }
-  }, [photos.length, description, clearForm, navigation]);
+  }, [photos.length, description, clearForm, navigation, t]);
 
   const handleSubmit = useCallback(async () => {
     if (!task) return;
     if (photos.length === 0) {
-      NBToast.show({ level: 'danger', title: 'Belum lengkap', body: 'Minimal 1 foto bukti penyelesaian wajib diambil.' });
+      NBToast.show({ level: 'danger', title: t('tasks:complete.photosRequired'), body: t('tasks:complete.photosRequiredMessage') });
       return;
     }
     if (!description.trim()) {
-      NBToast.show({ level: 'danger', title: 'Belum lengkap', body: 'Deskripsi penyelesaian wajib diisi.' });
+      NBToast.show({ level: 'danger', title: t('tasks:complete.descriptionRequired'), body: t('tasks:complete.descriptionRequiredMessage') });
       return;
     }
 
@@ -100,27 +102,27 @@ export function TaskCompleteScreen(): React.JSX.Element {
         completion_photo_urls: photoBase64Array,
       });
       clearForm();
-      NBToast.show({ level: 'success', title: 'Berhasil', body: 'Tugas berhasil diselesaikan.' });
+      NBToast.show({ level: 'success', title: t('tasks:complete.success'), body: t('tasks:complete.successMessage') });
       navigation.navigate('Tasks');
     } catch {
-      NBToast.show({ level: 'danger', title: 'Gagal', body: 'Gagal menyelesaikan tugas. Silakan coba lagi.' });
+      NBToast.show({ level: 'danger', title: t('tasks:complete.failure'), body: t('tasks:complete.failureMessage') });
     } finally {
       setIsSubmitting(false);
     }
-  }, [task, photos, description, navigation, clearForm]);
+  }, [task, photos, description, navigation, clearForm, t]);
 
   useEffect(() => {
     navigation.setOptions({
-      headerTitle: () => <FieldHomeHeader title="Selesaikan Tugas" onBack={handleCancel} />,
+      headerTitle: () => <FieldHomeHeader title={t('tasks:complete.title')} onBack={handleCancel} />,
     });
-  }, [navigation, handleCancel]);
+  }, [navigation, handleCancel, t]);
 
   if (isLoading) {
     return (
       <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.bgCanvas} patternColor={nbColors.primary} opacity={0.06}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={nbColors.primary} />
-          <NBText variant="body" style={styles.loadingTextMargin}>Memuat...</NBText>
+          <NBText variant="body" style={styles.loadingTextMargin}>{t('tasks:complete.loading')}</NBText>
         </View>
       </NBBackgroundPattern>
     );
@@ -130,8 +132,8 @@ export function TaskCompleteScreen(): React.JSX.Element {
     return (
       <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.bgCanvas} patternColor={nbColors.primary} opacity={0.06}>
         <View style={styles.errorContainer}>
-          <NBText variant="body-sm" color="danger" style={styles.errorTextMargin}>Tugas tidak ditemukan</NBText>
-          <NBButton title="Kembali" variant="secondary" onPress={() => navigation.goBack()} />
+          <NBText variant="body-sm" color="danger" style={styles.errorTextMargin}>{t('tasks:complete.notFound')}</NBText>
+          <NBButton title={t('common:actions.back')} variant="secondary" onPress={() => navigation.goBack()} />
         </View>
       </NBBackgroundPattern>
     );
@@ -143,22 +145,22 @@ export function TaskCompleteScreen(): React.JSX.Element {
         {/* Task Info */}
         <NBCard style={styles.card}>
           <NBCardHeader>
-            <NBText variant="h3" style={styles.sectionTitleStyle}>Tugas</NBText>
+            <NBText variant="h3" style={styles.sectionTitleStyle}>{t('tasks:complete.taskSection')}</NBText>
           </NBCardHeader>
           <NBCardContent>
             <NBText variant="body" style={styles.taskTitleStyle}>{task.title}</NBText>
-            {task.area && <NBText variant="body-sm" style={styles.taskAreaStyle}>Area: {task.area.name}</NBText>}
-            {task.rayon && <NBText variant="body-sm" style={styles.taskAreaStyle}>Rayon: {task.rayon.name}</NBText>}
+            {task.area && <NBText variant="body-sm" style={styles.taskAreaStyle}>{t("tasks:complete.areaLabel")} {task.area.name}</NBText>}
+            {task.rayon && <NBText variant="body-sm" style={styles.taskAreaStyle}>{t("tasks:complete.rayonLabel")} {task.rayon.name}</NBText>}
           </NBCardContent>
         </NBCard>
 
         {/* Description (required) */}
         <NBCardTextInput
-          title="Deskripsi Penyelesaian"
+          title={t('tasks:complete.description')}
           required
           value={description}
           onChangeText={setDescription}
-          placeholder="Jelaskan hasil pekerjaan..."
+          placeholder={t('tasks:complete.descriptionPlaceholder')}
           numberOfLines={4}
           style={styles.card}
         />
@@ -168,9 +170,9 @@ export function TaskCompleteScreen(): React.JSX.Element {
           <NBCardHeader>
             <View style={styles.photoHeaderRow}>
               <MaterialCommunityIcons name="camera" size={16} color={nbColors.black} />
-              <NBText variant="mono-sm" style={styles.photoHeaderText}>FOTO BUKTI *</NBText>
+              <NBText variant="mono-sm" style={styles.photoHeaderText}>{t('tasks:complete.photosHeader')}</NBText>
             </View>
-            <NBText variant="body-sm" style={styles.sectionSubtitleStyle}>Tambahkan 1-3 foto hasil pekerjaan</NBText>
+            <NBText variant="body-sm" style={styles.sectionSubtitleStyle}>{t('tasks:complete.photosSubtitle')}</NBText>
           </NBCardHeader>
           <NBCardContent>
             <PhotoUploader
@@ -184,13 +186,13 @@ export function TaskCompleteScreen(): React.JSX.Element {
         {/* Actions */}
         <View style={styles.actionContainer}>
           <NBButton
-            title="Selesaikan Tugas"
+            title={t('tasks:complete.submitButton')}
             variant="success"
             onPress={handleSubmit}
             disabled={isSubmitting || photos.length === 0 || !description.trim()}
             loading={isSubmitting}
           />
-          <NBButton title="Batal" variant="secondary" onPress={handleCancel} disabled={isSubmitting} />
+          <NBButton title={t('tasks:complete.cancelButton')} variant="secondary" onPress={handleCancel} disabled={isSubmitting} />
         </View>
       </ScrollView>
     </NBBackgroundPattern>

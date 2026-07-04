@@ -11,6 +11,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { NBSelect, NBDatePicker, NBModal, NBTextInput, NBText } from '../nb';
 import {
@@ -42,18 +43,6 @@ interface PruningRequestFilterModalProps {
   userRayonId?: string;
 }
 
-const STATUS_OPTIONS: Array<{ label: string; value: PruningRequestStatus | 'all' }> = [
-  { label: 'Semua Status', value: 'all' },
-  { label: 'Menunggu',    value: 'submitted' },
-  { label: 'Direview',    value: 'under_review' },
-  { label: 'Disetujui',   value: 'approved' },
-  { label: 'Ditolak',     value: 'rejected' },
-  { label: 'Ditugaskan',  value: 'assigned' },
-  { label: 'Diproses',    value: 'in_progress' },
-  { label: 'Selesai',     value: 'done' },
-  { label: 'Dibatalkan',  value: 'cancelled' },
-];
-
 export function PruningRequestFilterModal({
   visible,
   onClose,
@@ -63,6 +52,23 @@ export function PruningRequestFilterModal({
   userRole,
   userRayonId,
 }: PruningRequestFilterModalProps): React.JSX.Element {
+  const { t } = useTranslation('pruning');
+
+  const STATUS_OPTIONS: Array<{ label: string; value: PruningRequestStatus | 'all' }> = useMemo(
+    () => [
+      { label: t('filter.statusOptions.all'), value: 'all' },
+      { label: t('filter.statusOptions.submitted'), value: 'submitted' },
+      { label: t('filter.statusOptions.under_review'), value: 'under_review' },
+      { label: t('filter.statusOptions.approved'), value: 'approved' },
+      { label: t('filter.statusOptions.rejected'), value: 'rejected' },
+      { label: t('filter.statusOptions.assigned'), value: 'assigned' },
+      { label: t('filter.statusOptions.in_progress'), value: 'in_progress' },
+      { label: t('filter.statusOptions.done'), value: 'done' },
+      { label: t('filter.statusOptions.cancelled'), value: 'cancelled' },
+    ],
+    [t],
+  );
+
   // staff_kecamatan only sees their own submissions, so rayon picker is hidden.
   // admin_data is rayon-locked to their own rayon (backend forces it anyway).
   // top_management / admin_system / superadmin can pick any rayon.
@@ -146,7 +152,7 @@ export function PruningRequestFilterModal({
     <NBModal
       visible={visible}
       onClose={onClose}
-      title="Filter Permohonan"
+      title={t('filter.title')}
       footer={
         <View style={styles.actionButtons}>
           <TouchableOpacity
@@ -154,32 +160,32 @@ export function PruningRequestFilterModal({
             onPress={handleReset}
             accessibilityRole="button"
           >
-            <NBText variant="body-sm" color="black" style={styles.actionButtonText}>Reset</NBText>
+            <NBText variant="body-sm" color="black" style={styles.actionButtonText}>{t('filter.reset')}</NBText>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionButton, styles.applyButton]}
             onPress={handleApply}
             accessibilityRole="button"
           >
-            <NBText variant="body-sm" color="white" style={styles.actionButtonText}>Terapkan</NBText>
+            <NBText variant="body-sm" color="white" style={styles.actionButtonText}>{t('filter.apply')}</NBText>
           </TouchableOpacity>
         </View>
       }
     >
       {/* 0. Pencarian */}
       <View style={styles.filterSection}>
-        <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>Nomor Permohonan</NBText>
+        <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>{t('filter.referenceCodeLabel')}</NBText>
         <NBTextInput
-          placeholder="Contoh: PR-2026-..."
+          placeholder={t('filter.requestCodePlaceholder')}
           value={localReferenceCode}
           onChangeText={setLocalReferenceCode}
           autoCapitalize="characters"
         />
       </View>
       <View style={styles.filterSection}>
-        <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>Nama Pemohon</NBText>
+        <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>{t('filter.requesterNameLabel')}</NBText>
         <NBTextInput
-          placeholder="Contoh: Budi"
+          placeholder={t('filter.requesterNamePlaceholder')}
           value={localRequesterName}
           onChangeText={setLocalRequesterName}
         />
@@ -187,7 +193,7 @@ export function PruningRequestFilterModal({
 
       {/* 1. Status */}
       <View style={styles.filterSection}>
-        <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>Status</NBText>
+        <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>{t('filter.status')}</NBText>
         <NBSelect
           value={localStatus || 'all'}
           onValueChange={(v) => setLocalStatus(v === 'all' ? '' : String(v))}
@@ -198,13 +204,13 @@ export function PruningRequestFilterModal({
 
       {/* 2. Rentang Tanggal */}
       <View style={styles.filterSection}>
-        <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>Rentang Tanggal</NBText>
+        <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>{t('filter.dateRange')}</NBText>
         <View style={styles.dateRangeRow}>
           <View style={styles.dateButtonHalf}>
             <NBDatePicker
               value={dateFromParsed}
               onChange={(date) => setLocalFromDate(toFilterDateString(date))}
-              label="Dari"
+              label={t('filter.dateFrom')}
               maximumDate={dateToParsed ?? undefined}
             />
           </View>
@@ -213,7 +219,7 @@ export function PruningRequestFilterModal({
             <NBDatePicker
               value={dateToParsed}
               onChange={(date) => setLocalToDate(toFilterDateString(date))}
-              label="Sampai"
+              label={t('filter.dateTo')}
               minimumDate={dateFromParsed ?? undefined}
             />
           </View>
@@ -223,13 +229,13 @@ export function PruningRequestFilterModal({
       {/* 3. Rayon — admin roles only */}
       {showRayon && (
         <View style={styles.filterSection}>
-          <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>Rayon</NBText>
+          <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>{t('filter.rayon')}</NBText>
           {isRayonFixed ? (
             <NBSelect
               value={userRayonId ?? 'all'}
               onValueChange={() => {}}
               options={[
-                { label: userRayonId ? 'Rayon Saya' : 'Semua Rayon', value: userRayonId ?? 'all' },
+                { label: userRayonId ? t('filter.rayonMine') : t('filter.rayonAll'), value: userRayonId ?? 'all' },
               ]}
               disabled
             />
@@ -238,7 +244,7 @@ export function PruningRequestFilterModal({
               value={localRayonId || 'all'}
               onValueChange={(v) => setLocalRayonId(v === 'all' ? '' : String(v))}
               options={[
-                { label: 'Semua Rayon', value: 'all' },
+                { label: t('filter.rayonAll'), value: 'all' },
                 ...rayons.map((r) => ({ label: r.name, value: r.id })),
               ]}
               disabled={loadingRayons}

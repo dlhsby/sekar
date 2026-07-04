@@ -4,6 +4,7 @@
 
 import { useCallback } from 'react';
 import { Alert } from 'react-native';
+import i18n from '../../../i18n/config';
 
 interface UsePruningNavigationHandlersProps {
   navigation: any;
@@ -24,11 +25,11 @@ export function usePruningNavigationHandlers({
       return;
     }
     Alert.alert(
-      'Simpan Draft?',
-      'Anda memiliki perubahan yang belum dikirim.',
+      i18n.t('pruning:actions.cancel.confirm'),
+      i18n.t('pruning:actions.cancel.question'),
       [
         {
-          text: 'Tidak',
+          text: i18n.t('pruning:actions.cancel.no'),
           style: 'destructive',
           onPress: async () => {
             await clearDraft();
@@ -37,7 +38,7 @@ export function usePruningNavigationHandlers({
           },
         },
         {
-          text: 'Ya',
+          text: i18n.t('pruning:actions.cancel.yes'),
           onPress: async () => {
             resetForm();
             navigation.goBack();

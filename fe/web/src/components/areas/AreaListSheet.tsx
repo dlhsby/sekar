@@ -10,6 +10,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapPin, Search, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils/cn';
 import { Input, Skeleton } from '@/components/ui';
 
@@ -43,9 +44,10 @@ export function AreaListSheet({
   resetKey,
   isLoading = false,
   isError = false,
-  emptyText = 'Belum ada area.',
+  emptyText,
   onClose,
 }: AreaListSheetProps) {
+  const { t } = useTranslation();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [query, setQuery] = useState('');
 
@@ -108,7 +110,7 @@ export function AreaListSheet({
             ref={closeButtonRef}
             type="button"
             onClick={onClose}
-            aria-label="Tutup panel area"
+            aria-label={t('common:actions.close')}
             className={cn(
               'shrink-0 w-9 h-9 flex items-center justify-center',
               'border-2 border-nb-black rounded-nb-base bg-nb-white',
@@ -123,13 +125,13 @@ export function AreaListSheet({
         <div className="px-4 pt-3 pb-2 flex-shrink-0">
           <Input
             leftIcon={<Search className="w-4 h-4" />}
-            placeholder="Cari area…"
+            placeholder={t('admin:areas.listSheet.searchPlaceholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            aria-label="Cari area"
+            aria-label={t('admin:areas.listSheet.searchLabel')}
           />
           <p className="mt-2 text-nb-caption text-nb-gray-600" aria-live="polite">
-            {isLoading ? 'Memuat…' : `${filtered.length} area${query ? ` dari ${items.length}` : ''}`}
+            {isLoading ? t('admin:shared.loading') : t('admin:areas.listSheet.count', { count: filtered.length, total: items.length, query })}
           </p>
         </div>
 
@@ -138,10 +140,10 @@ export function AreaListSheet({
           {isLoading ? (
             Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)
           ) : isError ? (
-            <p className="text-nb-body-sm text-nb-danger-dark py-6 text-center">Gagal memuat area.</p>
+            <p className="text-nb-body-sm text-nb-danger-dark py-6 text-center">{t('common:empty.loadError')}</p>
           ) : filtered.length === 0 ? (
             <p className="text-nb-body-sm text-nb-gray-600 py-6 text-center">
-              {items.length === 0 ? emptyText : 'Tidak ada area yang cocok.'}
+              {items.length === 0 ? (emptyText ?? t('admin:areas.emptyShort')) : t('admin:areas.listSheet.noMatch')}
             </p>
           ) : (
             filtered.map((area) => (

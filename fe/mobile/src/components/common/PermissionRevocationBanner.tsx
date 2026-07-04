@@ -16,6 +16,7 @@
  * and returns to the app.
  */
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { nbBorders, nbColors, nbShadows } from '../../constants/nbTokens';
 import {
@@ -31,6 +32,7 @@ export interface PermissionRevocationBannerProps {
 export function PermissionRevocationBanner({
   enabled,
 }: PermissionRevocationBannerProps): React.JSX.Element | null {
+  const { t } = useTranslation('components');
   const { missing, initializing } = usePermissionMonitor(enabled);
 
   if (!enabled || initializing || missing.length === 0) {
@@ -45,7 +47,7 @@ export function PermissionRevocationBanner({
         void permissionManager.openSettings();
       }}
       accessibilityRole="button"
-      accessibilityLabel={`Izin ${labelList} dinonaktifkan. Ketuk untuk membuka Pengaturan.`}
+      accessibilityLabel={t('permissionBanner.accessibilityLabel', { permissions: labelList })}
       testID="permission-revocation-banner"
       style={({ pressed }) => [
         styles.container,
@@ -55,9 +57,9 @@ export function PermissionRevocationBanner({
     >
       <View style={styles.row}>
         <Text style={[styles.label, { color: nbColors.black }]} numberOfLines={2}>
-          Izin {labelList} dinonaktifkan
+          {t('permissionBanner.disabledLabel', { permissions: labelList })}
         </Text>
-        <Text style={[styles.cta, { color: nbColors.black }]}>BUKA PENGATURAN</Text>
+        <Text style={[styles.cta, { color: nbColors.black }]}>{t('permissionBanner.openSettingsLabel')}</Text>
       </View>
     </Pressable>
   );

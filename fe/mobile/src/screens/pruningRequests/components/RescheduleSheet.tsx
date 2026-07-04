@@ -15,6 +15,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBModal, NBButton } from '../../../components/nb';
 import { NBText } from '../../../components/nb/NBText';
 import { NBToast } from '../../../components/nb/NBToast';
@@ -43,6 +44,7 @@ export function RescheduleSheet({
   request,
   onSuccess,
 }: RescheduleSheetProps): React.JSX.Element {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const rayonId = (request as any).rayonId ?? (request as any).rayon_id ?? null;
 
@@ -115,8 +117,8 @@ export function RescheduleSheet({
     if (!selected) {
       NBToast.show({
         level: 'warning',
-        title: 'Pilih tanggal',
-        body: 'Tap salah satu tanggal yang tersedia di kalender.',
+        title: t('pruning:actions.reschedule.selectDate'),
+        body: t('pruning:actions.reschedule.selectDateHint'),
       });
       return;
     }
@@ -126,16 +128,16 @@ export function RescheduleSheet({
       ).unwrap();
       NBToast.show({
         level: 'success',
-        title: 'Jadwal diperbarui',
-        body: `Tanggal dijadwalkan: ${formatDateLong(selected)}`,
+        title: t('pruning:actions.reschedule.successTitle'),
+        body: t('pruning:actions.reschedule.successMessage', { date: formatDateLong(selected) }),
       });
       onSuccess?.();
       onClose();
     } catch (e) {
       NBToast.show({
         level: 'danger',
-        title: 'Gagal menyimpan',
-        body: e instanceof Error ? e.message : 'Coba lagi.',
+        title: t('pruning:actions.reschedule.failedTitle'),
+        body: e instanceof Error ? e.message : t('pruning:actions.reschedule.failedMessage'),
       });
     }
   };
@@ -146,13 +148,13 @@ export function RescheduleSheet({
     <NBModal
       visible={visible}
       onClose={onClose}
-      title="Atur Jadwal"
+      title={t('pruning:actions.reschedule.title')}
       type="fullscreen"
       footer={
         <View style={styles.footer}>
           <View style={{ flex: 1 }}>
             <NBButton
-              title="Batal"
+              title={t('pruning:actions.reschedule.cancel')}
               variant="secondary"
               onPress={onClose}
               disabled={isBusy}
@@ -162,7 +164,7 @@ export function RescheduleSheet({
           </View>
           <View style={{ flex: 1 }}>
             <NBButton
-              title={isBusy ? 'Menyimpan…' : 'Simpan'}
+              title={isBusy ? t('pruning:actions.reschedule.saving') : t('pruning:actions.reschedule.save')}
               onPress={submit}
               loading={isBusy}
               disabled={isBusy || !selected}
@@ -176,7 +178,7 @@ export function RescheduleSheet({
     >
       <View style={styles.body}>
         <NBText variant="caption" style={styles.helper}>
-          Pilih tanggal kerja untuk permohonan {(request as any).referenceCode ?? ''}.
+          {t('pruning:actions.reschedule.helper', { code: (request as any).referenceCode ?? '' })}
         </NBText>
         <AvailabilityCalendar
           rows={capacityRows}

@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronDown, X, ExternalLink } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils/cn';
 import { Button } from './button';
@@ -82,6 +83,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
     const pathname = usePathname();
     const activePath = currentPath || pathname;
     const [expandedItems, setExpandedItems] = React.useState<string[]>([]);
+    const { t } = useTranslation();
 
     // All navigable hrefs (parents + children), used to resolve the most
     // specific match so an index route (e.g. `/analytics`) isn't flagged
@@ -291,7 +293,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
           <nav
             className="flex-1 space-y-0.5 overflow-y-auto p-3"
             role="navigation"
-            aria-label="Navigasi utama"
+            aria-label={t("common:nav.mainNav")}
           >
             {filteredItems.map(renderNode)}
           </nav>
@@ -313,7 +315,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
               size="icon"
               onClick={onClose}
               className="absolute right-3 top-3 border-transparent text-nb-black hover:bg-nb-paper lg:hidden"
-              aria-label="Tutup menu"
+              aria-label={t('common:actions.close')}
             >
               <X className="h-5 w-5" />
             </Button>
@@ -331,6 +333,7 @@ const SidebarTrigger = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof Button>
 >(({ className, ...props }, ref) => {
   const { setIsOpen, isOpen } = useSidebar();
+  const { t } = useTranslation();
 
   return (
     <Button
@@ -339,7 +342,7 @@ const SidebarTrigger = React.forwardRef<
       size="icon"
       className={cn('lg:hidden', className)}
       onClick={() => setIsOpen(!isOpen)}
-      aria-label={isOpen ? 'Tutup menu' : 'Buka menu'}
+      aria-label={isOpen ? t('common:actions.close') : t('common:actions.open')}
       {...props}
     >
       <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

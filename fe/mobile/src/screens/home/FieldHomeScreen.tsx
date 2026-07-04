@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 import { CLOCKABLE_ROLES, TASK_RECEIVERS } from '../../constants/roles';
 import { LoadingSpinner, AppUpdateBanner, InfoTableRow, DateTimeValue } from '../../components/common';
 import { NBAlert, NBBackgroundPattern, NBBadge, NBButton, NBText } from '../../components/nb';
@@ -43,6 +44,7 @@ import type { Activity, Task, Shift } from '../../types/models.types';
 const pad = (num: number): string => String(num).padStart(2, '0');
 
 export function FieldHomeScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
 
@@ -141,7 +143,7 @@ export function FieldHomeScreen(): React.JSX.Element {
       const totalMinutes = hours * 60 + minutes;
       if (totalMinutes > 0 && totalMinutes % 5 === 0 && totalMinutes !== lastAnnouncedMinuteRef.current) {
         lastAnnouncedMinuteRef.current = totalMinutes;
-        AccessibilityInfo.announceForAccessibility(`Waktu shift: ${hours} jam ${minutes} menit`);
+        AccessibilityInfo.announceForAccessibility(t('home:field.a11y.shiftTime', { hours, minutes }));
       }
     };
     updateTimer();
@@ -278,8 +280,8 @@ export function FieldHomeScreen(): React.JSX.Element {
   // In-area pill tone/label for the active-shift hero.
   const locUnknown = homeLocation.loading || homeLocation.latitude === null;
   const areaTone: StatusTone = locUnknown ? 'neutral' : homeLocation.isWithinArea ? 'ok' : 'bad';
-  const areaLabel = locUnknown ? 'Lokasi…' : homeLocation.isWithinArea ? 'Di area' : 'Di luar area';
-  const heroAreaName = currentShift?.area?.name ?? assignedArea?.name ?? 'Area tidak diketahui';
+  const areaLabel = locUnknown ? t('home:field.hero.location.loading') : homeLocation.isWithinArea ? t('home:field.hero.location.inArea') : t('home:field.hero.location.outArea');
+  const heroAreaName = currentShift?.area?.name ?? assignedArea?.name ?? t('home:field.hero.location.unknownArea');
 
   return (
     <NBBackgroundPattern
@@ -306,12 +308,12 @@ export function FieldHomeScreen(): React.JSX.Element {
               variant="warning"
               message={
                 !permissionGranted
-                  ? 'Izin lokasi dicabut. Pelacakan lokasi tidak aktif.'
+                  ? t('home:field.alerts.permissionRevoked')
                   : !gpsEnabled
-                    ? 'GPS tidak aktif. Pelacakan lokasi tidak aktif.'
-                    : 'Lokasi tidak tersedia. Periksa pengaturan GPS.'
+                    ? t('home:field.alerts.gpsDisabled')
+                    : t('home:field.alerts.locationUnavailable')
               }
-              actionLabel="Perbaiki"
+              actionLabel={t('home:field.alerts.fix')}
               onAction={() => {
                 if (!permissionGranted) showPermissionAlert();
                 else if (!gpsEnabled) showGpsAlert();
@@ -323,7 +325,7 @@ export function FieldHomeScreen(): React.JSX.Element {
           )}
 
           {/* Kehadiran saya — clock-in hero first */}
-          <HomeSectionDivider label="Kehadiran saya" />
+          <HomeSectionDivider label={t('home:field.sections.attendance')} />
 
           {/* Kehadiran hero — collapsible; the whole card toggles open/closed. */}
           {currentShift ? (
@@ -334,12 +336,12 @@ export function FieldHomeScreen(): React.JSX.Element {
               onPress={toggleShiftCard}
               accessibilityRole="button"
               accessibilityState={{ expanded: shiftExpanded }}
-              accessibilityLabel={currentShift.is_overtime ? 'Lembur aktif' : 'Sedang bertugas'}
-              accessibilityHint={shiftExpanded ? 'Ketuk untuk tutup detail' : 'Ketuk untuk buka detail'}
+              accessibilityLabel={currentShift.is_overtime ? t('home:field.hero.a11y.overtimeActive') : t('home:field.hero.a11y.onDuty')}
+              accessibilityHint={shiftExpanded ? t('home:field.hero.a11y.tapToClose') : t('home:field.hero.a11y.tapToOpen')}
             >
               <View style={styles.heroTopRow}>
                 <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroLabel}>
-                  {currentShift.is_overtime ? 'Lembur aktif' : 'Sedang bertugas'}
+                  {currentShift.is_overtime ? t('home:field.hero.overtimeActive') : t('home:field.hero.onDuty')}
                 </NBText>
                 <View style={styles.heroStatusRow}>
                   <TouchableOpacity
@@ -347,7 +349,7 @@ export function FieldHomeScreen(): React.JSX.Element {
                     disabled={!hasActiveShift}
                     activeOpacity={0.7}
                     accessibilityRole="button"
-                    accessibilityLabel={`Status lokasi: ${areaLabel}. Ketuk untuk peta.`}
+                    accessibilityLabel={t('home:field.hero.a11y.locationStatus', { status: areaLabel })}
                   >
                     <StatusPill tone={areaTone} label={areaLabel} />
                   </TouchableOpacity>
@@ -367,21 +369,21 @@ export function FieldHomeScreen(): React.JSX.Element {
               />
               {shiftExpanded && (
                 <View style={styles.heroDetails}>
-                  <InfoTableRow label="Mulai clock in" value={<DateTimeValue source={currentShift.clock_in_time} />} />
+                  <InfoTableRow label={t('home:field.hero.labels.clockInStart')} value={<DateTimeValue source={currentShift.clock_in_time} />} />
                   <InfoTableRow
-                    label="Status Kehadiran"
+                    label={t('home:field.hero.labels.status')}
                     value={
                       <NBBadge
-                        text={attendance.isLate ? 'Terlambat' : 'Tepat Waktu'}
+                        text={attendance.isLate ? t('home:field.hero.status.late') : t('home:field.hero.status.onTime')}
                         color={attendance.isLate ? 'danger' : 'success'}
                         size="sm"
                       />
                     }
                   />
-                  <InfoTableRow label="Area Ditugaskan" value={heroAreaName} numberOfLines={1} />
-                  <InfoTableRow label="Durasi shift berjalan" value={timer.slice(0, 5)} />
+                  <InfoTableRow label={t('home:field.hero.labels.assignedArea')} value={heroAreaName} numberOfLines={1} />
+                  <InfoTableRow label={t('home:field.hero.labels.duration')} value={timer.slice(0, 5)} />
                   <InfoTableRow
-                    label="Lokasi sekarang"
+                    label={t('home:field.hero.labels.currentLocation')}
                     value={
                       <>
                         <NBText variant="mono-sm" color="black" numberOfLines={1} style={styles.heroLocText}>
@@ -390,15 +392,15 @@ export function FieldHomeScreen(): React.JSX.Element {
                                 homeLocation.accuracy !== null ? ` ±${Math.round(homeLocation.accuracy)}m` : ''
                               }`
                             : homeLocation.loading
-                            ? 'Mencari lokasi…'
-                            : 'Lokasi tidak tersedia'}
+                            ? t('home:field.hero.location.searching')
+                            : t('home:field.hero.location.unavailable')}
                         </NBText>
                         <TouchableOpacity
                           onPress={refreshLocation}
                           disabled={homeLocation.loading}
                           style={styles.heroGpsRefresh}
                           accessibilityRole="button"
-                          accessibilityLabel="Perbarui lokasi"
+                          accessibilityLabel={t('home:field.hero.a11y.refreshLocation')}
                           testID="hero-refresh-location"
                         >
                           {homeLocation.loading ? (
@@ -418,13 +420,13 @@ export function FieldHomeScreen(): React.JSX.Element {
                     testID="shift-detail-link"
                   >
                     <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroDetailText}>
-                      Detail shift →
+                      {t('home:field.hero.link.shiftDetail')}
                     </NBText>
                   </TouchableOpacity>
                   {isClockable && (
                     <View style={styles.heroButton}>
                       <NBButton
-                        title={currentShift.is_overtime ? 'Clock Out Lembur' : 'Clock Out'}
+                        title={currentShift.is_overtime ? t('home:field.hero.button.clockOutOvertime') : t('home:field.hero.button.clockOut')}
                         onPress={handleClockInOut}
                         variant="danger"
                         size="md"
@@ -438,29 +440,29 @@ export function FieldHomeScreen(): React.JSX.Element {
           ) : (
             <View style={[styles.hero, styles.heroIdle]} testID="absensi-hero">
               <NBText variant="mono-sm" color="gray600" uppercase style={styles.heroLabel}>
-                Belum clock in
+                {t('home:field.hero.idle.label')}
               </NBText>
               <NBText variant="h2" color="black" style={styles.heroIdleTitle}>
-                Mulai shift hari ini
+                {t('home:field.hero.idle.title')}
               </NBText>
               {assignedArea && (
                 <NBText variant="body-sm" color="gray700" style={styles.heroMeta}>
-                  {`Area Ditugaskan: ${assignedArea.name}`}
+                  {t('home:field.hero.idle.assignedArea', { area: assignedArea.name })}
                 </NBText>
               )}
               {isClockable && (
                 <View style={styles.heroButton}>
-                  <NBButton title="Clock In" onPress={handleClockInOut} variant="primary" size="md" testID="clock-button" />
+                  <NBButton title={t('home:field.hero.button.clockIn')} onPress={handleClockInOut} variant="primary" size="md" testID="clock-button" />
                 </View>
               )}
             </View>
           )}
 
           {/* Ringkasan hari ini — at-a-glance counters; each tile opens its detail sheet */}
-          <HomeSectionDivider label="Ringkasan hari ini" />
+          <HomeSectionDivider label={t('home:field.sections.summary')} />
           <View style={styles.tiles}>
             <HomeStatTile
-              label="Kehadiran"
+              label={t('home:field.tiles.attendance')}
               value={totalTodayDuration}
               variant="yellow"
               onPress={() => setWorkHoursModalVisible(true)}
@@ -468,7 +470,7 @@ export function FieldHomeScreen(): React.JSX.Element {
             />
             {isTaskReceiver && (
               <HomeStatTile
-                label="Tugas"
+                label={t('home:field.tiles.tasks')}
                 value={activeTasks.length}
                 variant="ok"
                 onPress={() => setTasksModalVisible(true)}
@@ -476,7 +478,7 @@ export function FieldHomeScreen(): React.JSX.Element {
               />
             )}
             <HomeStatTile
-              label="Aktivitas"
+              label={t('home:field.tiles.activities')}
               value={todayActivitiesCount}
               variant="neutral"
               onPress={() => setActivitiesModalVisible(true)}
@@ -489,7 +491,7 @@ export function FieldHomeScreen(): React.JSX.Element {
             user?.role !== 'admin_data' && user?.role !== 'kepala_rayon' && (
               <View style={styles.warningCard}>
                 <NBText variant="body-sm" color="statusIdle" align="center">
-                  Anda belum ditugaskan ke area manapun. Hubungi supervisor Anda.
+                  {t('home:field.warning.noAssignedArea')}
                 </NBText>
               </View>
             )}

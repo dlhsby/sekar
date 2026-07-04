@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -29,6 +30,7 @@ interface ImportBoundaryButtonProps {
  * it here. Parsing is client-side (see parseKmlToGeometry).
  */
 export function ImportBoundaryButton({ onImport, disabled }: ImportBoundaryButtonProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -38,18 +40,18 @@ export function ImportBoundaryButton({ onImport, disabled }: ImportBoundaryButto
     try {
       setText(await file.text());
     } catch {
-      toast.error('Gagal membaca berkas.');
+      toast.error(t('admin:maps.boundary.fileReadError'));
     }
   };
 
   const handleApply = () => {
     const geometry = parseKmlToGeometry(text);
     if (!geometry) {
-      toast.error('KML/GeoJSON tidak valid — tidak ditemukan poligon batas.');
+      toast.error(t('admin:maps.boundary.invalidKml'));
       return;
     }
     onImport(geometry);
-    toast.success('Batas berhasil diimpor dari KML.');
+    toast.success(t('admin:maps.boundary.successMessage'));
     setOpen(false);
     setText('');
   };
@@ -64,18 +66,17 @@ export function ImportBoundaryButton({ onImport, disabled }: ImportBoundaryButto
         onClick={() => setOpen(true)}
         disabled={disabled}
       >
-        Impor KML
+        {t('admin:maps.boundary.importButton')}
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent size="lg">
           <DialogHeader>
-            <DialogTitle>Impor Batas dari KML</DialogTitle>
+            <DialogTitle>{t('admin:maps.boundary.importTitle')}</DialogTitle>
           </DialogHeader>
           <DialogBody className="space-y-4">
             <p className="text-nb-body-sm text-nb-gray-600">
-              Unggah berkas <b>.kml</b> (ekspor dari Google Earth) atau tempel kode KML/GeoJSON di
-              bawah. Poligon batas akan menggantikan gambar yang ada.
+              {t('admin:maps.boundary.uploadDescription')}
             </p>
 
             <div>
@@ -92,7 +93,7 @@ export function ImportBoundaryButton({ onImport, disabled }: ImportBoundaryButto
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
               >
-                Pilih berkas .kml
+                {t('admin:maps.boundary.selectFileButton')}
               </Button>
             </div>
 
@@ -100,16 +101,16 @@ export function ImportBoundaryButton({ onImport, disabled }: ImportBoundaryButto
               value={text}
               onChange={(e) => setText(e.target.value)}
               rows={8}
-              placeholder="Atau tempel kode KML / GeoJSON di sini…"
+              placeholder={t('admin:maps.boundary.pasteDescription')}
               className="font-mono text-nb-body-sm"
             />
           </DialogBody>
           <DialogFooter>
             <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
-              Batal
+              {t('admin:shared.cancel')}
             </Button>
             <Button type="button" onClick={handleApply} disabled={!text.trim()}>
-              Terapkan
+              {t('admin:maps.boundary.applyButton')}
             </Button>
           </DialogFooter>
         </DialogContent>

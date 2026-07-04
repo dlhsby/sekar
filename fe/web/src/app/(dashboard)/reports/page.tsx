@@ -1,6 +1,7 @@
 'use client';
 
 import type { UserRole } from '@/types/models';
+import { intlLocale } from '@/lib/i18n/date-locale';
 import { useAuth } from '@/lib/auth/hooks';
 import {
   useReports,
@@ -31,46 +32,16 @@ import {
   type DataTableRowAction,
 } from '@/components/ui';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Plus, Trash2, Download } from 'lucide-react';
 import { hasRole } from '@/lib/constants/roles';
 
-const REPORT_TYPE_OPTIONS = [
-  { value: 'all', label: 'Semua Tipe' },
-  { value: ReportType.DAILY_OPERATIONS, label: 'Laporan Harian' },
-  { value: ReportType.WEEKLY_PERFORMANCE, label: 'Laporan Mingguan' },
-  { value: ReportType.MONTHLY_SUMMARY, label: 'Laporan Bulanan' },
-  { value: ReportType.WORKER_PERFORMANCE, label: 'Kinerja Pekerja' },
-  { value: ReportType.AREA_STATUS, label: 'Status Area' },
-  { value: ReportType.OVERTIME_UTILIZATION, label: 'Penggunaan Lembur' },
-];
-
-const REPORT_TYPE_LABELS: Record<ReportType, string> = {
-  [ReportType.DAILY_OPERATIONS]: 'Laporan Harian',
-  [ReportType.WEEKLY_PERFORMANCE]: 'Laporan Mingguan',
-  [ReportType.MONTHLY_SUMMARY]: 'Laporan Bulanan',
-  [ReportType.WORKER_PERFORMANCE]: 'Kinerja Pekerja',
-  [ReportType.AREA_STATUS]: 'Status Area',
-  [ReportType.OVERTIME_UTILIZATION]: 'Penggunaan Lembur',
-};
-
-const REPORT_FORMAT_LABELS: Record<string, string> = {
-  pdf: 'PDF',
-  csv: 'CSV',
-  xlsx: 'Excel',
-};
-
 const STATUS_TONE_MAP: Record<GeneratedReportStatus, 'ok' | 'warn' | 'bad'> = {
   [GeneratedReportStatus.PROCESSING]: 'warn',
   [GeneratedReportStatus.COMPLETED]: 'ok',
   [GeneratedReportStatus.FAILED]: 'bad',
-};
-
-const STATUS_LABELS: Record<GeneratedReportStatus, string> = {
-  [GeneratedReportStatus.PROCESSING]: 'Memproses',
-  [GeneratedReportStatus.COMPLETED]: 'Selesai',
-  [GeneratedReportStatus.FAILED]: 'Gagal',
 };
 
 interface ReportsPageState {
@@ -90,6 +61,7 @@ const REPORTING_VIEWERS: UserRole[] = [
 ];
 
 export default function ReportsPage() {
+  const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -138,13 +110,13 @@ export default function ReportsPage() {
 
   const handleDownload = useCallback((report: GeneratedReport) => {
     if (report.status !== GeneratedReportStatus.COMPLETED || !report.file_url) {
-      toast({ level: 'warning', title: 'Laporan belum siap untuk diunduh' });
+      toast({ level: 'warning', title: t('reports:list.messages.notReady') });
       return;
     }
 
     // Open presigned URL in new tab
     window.open(report.file_url, '_blank');
-  }, [toast]);
+  }, [toast, t]);
 
   const handleDeleteClick = useCallback((reportId: string) => {
     setReportToDelete(reportId);
@@ -156,11 +128,11 @@ export default function ReportsPage() {
 
     try {
       await deleteReportMutation.mutateAsync(reportToDelete);
-      toast({ level: 'success', title: 'Laporan dihapus' });
+      toast({ level: 'success', title: t('reports:list.messages.deleteSuccess') });
       setDeleteDialogOpen(false);
       setReportToDelete(null);
     } catch {
-      toast({ level: 'danger', title: 'Gagal menghapus laporan' });
+      toast({ level: 'danger', title: t('reports:list.messages.deleteFailed') });
     }
   };
 
@@ -168,26 +140,26 @@ export default function ReportsPage() {
     (report: GeneratedReport): DataTableRowAction<GeneratedReport>[] => [
       {
         key: 'download',
-        label: 'Unduh',
+        label: t('reports:list.actions.download'),
         icon: Download,
         onClick: () => handleDownload(report),
         disabled: report.status !== GeneratedReportStatus.COMPLETED,
       },
       {
         key: 'delete',
-        label: 'Hapus',
+        label: t('reports:list.actions.delete'),
         icon: Trash2,
         variant: 'danger',
         onClick: () => handleDeleteClick(report.id),
       },
     ],
-    [handleDownload, handleDeleteClick]
+    [handleDownload, handleDeleteClick, t]
   );
 
   if (authLoading || !user) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <p className="text-nb-body text-nb-gray-600">Memuat…</p>
+        <p className="text-nb-body text-nb-gray-600">{t('common:actions.loading')}</p>
       </div>
     );
   }
@@ -199,9 +171,9 @@ export default function ReportsPage() {
     {
       id: 'id',
       accessorKey: 'id',
-      header: 'ID',
+      header: t('reports:list.columnHeaders.id'),
       enableSorting: false,
-      meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+      meta: { label: t('reports:list.columnHeaders.id'), defaultHidden: true, filterVariant: 'text' },
       cell: ({ row }) => (
         <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
       ),
@@ -209,67 +181,78 @@ export default function ReportsPage() {
     {
       id: 'title',
       accessorKey: 'title',
-      header: 'Judul',
+      header: t('reports:list.columnHeaders.title'),
       enableSorting: true,
-      meta: { label: 'Judul' },
+      meta: { label: t('reports:list.columnHeaders.title') },
       cell: ({ row }) => <span className="text-nb-body font-medium">{row.original.title}</span>,
     },
     {
       id: 'report_type',
       accessorKey: 'report_type',
-      header: 'Tipe',
+      header: t('reports:list.columnHeaders.type'),
       enableSorting: true,
-      meta: { label: 'Tipe' },
+      meta: { label: t('reports:list.columnHeaders.type') },
       cell: ({ row }) => {
         const type = row.original.report_type as ReportType;
-        return <span className="text-nb-body-sm">{REPORT_TYPE_LABELS[type]}</span>;
+        return <span className="text-nb-body-sm">{t(`reports:list.typeLabels.${type}`)}</span>;
       },
     },
     {
       id: 'format',
       accessorKey: 'format',
-      header: 'Format',
+      header: t('reports:list.columnHeaders.format'),
       enableSorting: true,
-      meta: { label: 'Format' },
+      meta: { label: t('reports:list.columnHeaders.format') },
       cell: ({ row }) => {
         const format = row.original.format as string;
-        return <span className="text-nb-body-sm">{REPORT_FORMAT_LABELS[format] || format}</span>;
+        return <span className="text-nb-body-sm">{t(`reports:formats.${format}`) || format}</span>;
       },
     },
     {
       id: 'status',
       accessorKey: 'status',
-      header: 'Status',
+      header: t('reports:list.columnHeaders.status'),
       enableSorting: true,
-      meta: { label: 'Status' },
+      meta: { label: t('reports:list.columnHeaders.status') },
       cell: ({ row }) => {
         const status = row.original.status as GeneratedReportStatus;
         return (
-          <StatusPill tone={STATUS_TONE_MAP[status]}>{STATUS_LABELS[status]}</StatusPill>
+          <StatusPill tone={STATUS_TONE_MAP[status]}>{t(`reports:list.statusLabels.${status}`)}</StatusPill>
         );
       },
     },
     {
       id: 'created_at',
       accessorKey: 'created_at',
-      header: 'Dibuat',
+      header: t('reports:list.columnHeaders.createdAt'),
       enableSorting: true,
-      meta: { label: 'Dibuat' },
+      meta: { label: t('reports:list.columnHeaders.createdAt') },
       cell: ({ row }) => {
         const date = new Date(row.original.created_at);
-        return <span className="text-nb-body-sm">{date.toLocaleDateString('id-ID')}</span>;
+        return <span className="text-nb-body-sm">{date.toLocaleDateString(intlLocale())}</span>;
       },
     },
+  ];
+
+  // Build type options dynamically with i18n
+  const reportTypeOptions = [
+    { value: 'all', label: t('reports:list.typeOptions.all') },
+    { value: ReportType.DAILY_OPERATIONS, label: t('reports:list.typeLabels.daily_operations') },
+    { value: ReportType.WEEKLY_PERFORMANCE, label: t('reports:list.typeLabels.weekly_performance') },
+    { value: ReportType.MONTHLY_SUMMARY, label: t('reports:list.typeLabels.monthly_summary') },
+    { value: ReportType.WORKER_PERFORMANCE, label: t('reports:list.typeLabels.worker_performance') },
+    { value: ReportType.AREA_STATUS, label: t('reports:list.typeLabels.area_status') },
+    { value: ReportType.OVERTIME_UTILIZATION, label: t('reports:list.typeLabels.overtime_utilization') },
   ];
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Laporan"
-        description="Lihat dan kelola laporan yang dihasilkan"
+        title={t('reports:list.pageTitle')}
+        description={t('reports:list.pageDescription')}
         actions={
           <Link href="/reports/builder">
-            <Button leftIcon={<Plus className="h-4 w-4" />}>Buat Laporan</Button>
+            <Button leftIcon={<Plus className="h-4 w-4" />}>{t('reports:list.actions.create')}</Button>
           </Link>
         }
       />
@@ -278,8 +261,8 @@ export default function ReportsPage() {
         <CardContent className="space-y-4">
           <div>
             <FormSelect
-              label="Tipe Laporan"
-              options={REPORT_TYPE_OPTIONS}
+              label={t('reports:list.filterTypeLabel')}
+              options={reportTypeOptions}
               value={state.reportType}
               onChange={(value) =>
                 setState((s) => ({ ...s, reportType: value, page: 1 }))
@@ -294,8 +277,8 @@ export default function ReportsPage() {
           ) : reports.length === 0 ? (
             <EmptyState
               variant="noData"
-              title="Tidak ada laporan"
-              description="Mulai buat laporan baru untuk melihatnya di sini"
+              title={t('reports:list.emptyTitle')}
+              description={t('reports:list.emptyDescription')}
             />
           ) : (
             <>
@@ -315,7 +298,7 @@ export default function ReportsPage() {
                   onClick={() => setState((s) => ({ ...s, page: Math.max(1, s.page - 1) }))}
                   disabled={state.page === 1}
                 >
-                  ← Sebelumnya
+                  {t('reports:list.pagination.previous')}
                 </Button>
                 <span className="text-nb-body-sm">
                   {state.page} / {totalPages}
@@ -326,7 +309,7 @@ export default function ReportsPage() {
                   onClick={() => setState((s) => ({ ...s, page: Math.min(totalPages, s.page + 1) }))}
                   disabled={state.page === totalPages}
                 >
-                  Berikutnya →
+                  {t('reports:list.pagination.next')}
                 </Button>
               </div>
             </>
@@ -338,21 +321,21 @@ export default function ReportsPage() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Hapus Laporan?</DialogTitle>
+            <DialogTitle>{t('reports:dialog.deleteTitle')}</DialogTitle>
             <DialogDescription>
-              Tindakan ini tidak dapat dibatalkan. Laporan akan dihapus secara permanen.
+              {t('reports:list.deleteDialog.description')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-              Batal
+              {t('common:actions.cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={handleConfirmDelete}
               loading={deleteReportMutation.isPending}
             >
-              Hapus
+              {t('reports:list.actions.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -12,6 +12,7 @@
 import React from 'react';
 import { TouchableOpacity, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 import { NBText } from '../nb/NBText';
 import { nbColors, nbBorders, nbRadius, nbSpacing, nbShadows } from '../../constants/nbTokens';
 
@@ -30,10 +31,12 @@ export const MonitoringSearchBar = React.memo(function MonitoringSearchBar({
   onPress,
   value,
   onClear,
-  placeholder = 'Cari petugas, area, rayon…',
+  placeholder,
   testID = 'monitoring-search',
 }: MonitoringSearchBarProps): React.JSX.Element {
+  const { t } = useTranslation();
   const hasValue = !!value && value.length > 0;
+  const displayPlaceholder = placeholder || t('monitoring:search.placeholder');
 
   return (
     <TouchableOpacity
@@ -41,7 +44,7 @@ export const MonitoringSearchBar = React.memo(function MonitoringSearchBar({
       onPress={onPress}
       activeOpacity={0.8}
       accessibilityRole="search"
-      accessibilityLabel={hasValue ? `Pencarian: ${value}` : placeholder}
+      accessibilityLabel={hasValue ? t('monitoring:search.searchLabel', { value }) : displayPlaceholder}
       testID={testID}
     >
       <MaterialCommunityIcons name="magnify" size={20} color={nbColors.gray500} />
@@ -51,14 +54,14 @@ export const MonitoringSearchBar = React.memo(function MonitoringSearchBar({
         numberOfLines={1}
         style={styles.text}
       >
-        {hasValue ? value : placeholder}
+        {hasValue ? value : displayPlaceholder}
       </NBText>
       {hasValue && onClear ? (
         <TouchableOpacity
           onPress={onClear}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityRole="button"
-          accessibilityLabel="Hapus pencarian"
+          accessibilityLabel={t('monitoring:search.clearLabel')}
           testID={`${testID}-clear`}
         >
           <MaterialCommunityIcons name="close-circle" size={18} color={nbColors.gray400} />

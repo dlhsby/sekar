@@ -23,6 +23,7 @@ export { Textarea, textareaVariants, type TextareaProps } from './textarea';
 export { Checkbox, type CheckboxProps } from './checkbox';
 export { Radio, type RadioProps } from './radio';
 export { Switch } from './switch';
+export { LanguageSwitcher } from './LanguageSwitcher';
 export { Field, type FieldProps, type FieldControlProps } from './field';
 export { Badge, badgeVariants, type BadgeProps } from './badge';
 export { StatusPill, statusPillVariants, type StatusPillProps } from './status-pill';

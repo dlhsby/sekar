@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, ActivityIndicator } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
@@ -51,6 +52,7 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
   userAreaId,
   userAreaName,
 }) => {
+  const { t } = useTranslation();
   return (
     <NBCard style={styles.card}>
       <NBCardHeader>
@@ -58,37 +60,37 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
           <MaterialCommunityIcons name="map-marker" size={16} color={nbColors.black} />
           <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}>
             {' '}
-            LOKASI
+            {t('tasks:locationSection.title')}
           </NBText>
         </View>
         <NBText variant="body-sm" style={styles.sectionSubtitle}>
-          {isRayonFixed && isAreaFixed ? 'Lokasi otomatis dari profil Anda' : 'Pilih lokasi penugasan'}
+          {isRayonFixed && isAreaFixed ? t('tasks:locationSection.autoFromProfile') : t('tasks:locationSection.selectAssignment')}
         </NBText>
       </NBCardHeader>
       <NBCardContent>
         <NBText variant="body-sm" style={styles.fieldLabel}>
-          Rayon
+          {t('tasks:locationSection.rayonLabel')}
         </NBText>
         {isLoadingRayons ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator color={nbColors.primary} />
             <NBText variant="body-sm" color="gray600" style={styles.loadingText}>
-              Memuat rayon...
+              {t('tasks:locationSection.loadingRayon')}
             </NBText>
           </View>
         ) : (
           <NBSelect
-            label="Rayon"
+            label={t('tasks:locationSection.rayonLabel')}
             value={rayonId}
             onValueChange={onRayonChange}
             options={
               isRayonFixed
                 ? userRayonId
-                  ? [{ label: userRayonName || 'Rayon Anda', value: userRayonId }]
+                  ? [{ label: userRayonName || t('tasks:locationSection.yourRayon'), value: userRayonId }]
                   : []
                 : rayonOptions
             }
-            placeholder="Pilih rayon..."
+            placeholder={t('tasks:locationSection.rayonPlaceholder')}
             disabled={isRayonFixed}
           />
         )}
@@ -96,28 +98,28 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
         <View style={styles.fieldSpacer} />
 
         <NBText variant="body-sm" style={styles.fieldLabel}>
-          Area
+          {t('tasks:locationSection.areaLabel')}
         </NBText>
         {isLoadingAreas ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator color={nbColors.primary} />
             <NBText variant="body-sm" color="gray600" style={styles.loadingText}>
-              Memuat area...
+              {t('tasks:locationSection.loadingArea')}
             </NBText>
           </View>
         ) : (
           <NBSelect
-            label="Area"
+            label={t('tasks:locationSection.areaLabel')}
             value={areaId}
             onValueChange={onAreaChange}
             options={
               isAreaFixed
                 ? userAreaId
-                  ? [{ label: userAreaName || 'Area Anda', value: userAreaId }]
+                  ? [{ label: userAreaName || t('tasks:locationSection.yourArea'), value: userAreaId }]
                   : []
                 : areaOptions
             }
-            placeholder={!rayonId && !isAreaFixed ? 'Pilih rayon terlebih dahulu' : 'Pilih area...'}
+            placeholder={!rayonId && !isAreaFixed ? t('location:selector.selectRayonFirst') : t('location:selector.selectArea')}
             disabled={isAreaFixed || (!isAreaFixed && !rayonId)}
           />
         )}

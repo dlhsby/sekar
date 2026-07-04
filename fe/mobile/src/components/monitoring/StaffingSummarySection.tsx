@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -63,6 +64,7 @@ export function StaffingSummarySection({
   isLoading,
   currentDayTypeLabel,
 }: StaffingSummarySectionProps): React.JSX.Element {
+  const { t } = useTranslation('common');
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   const toggleExpand = useCallback((id: string) => {
@@ -95,7 +97,7 @@ export function StaffingSummarySection({
         <ActivityIndicator size="small" color={nbColors.primary} />
       ) : items.length === 0 ? (
         <NBText variant="body-sm" color="gray500" style={{ fontStyle: 'italic' }}>
-          Tidak ada data kepegawaian
+          {t('ui.noStaffing')}
         </NBText>
       ) : (
         items.map(item => {
@@ -124,8 +126,7 @@ export function StaffingSummarySection({
                   ) : (
                     <View style={styles.shortageLabel}>
                       <MaterialCommunityIcons name="alert" size={12} color={nbColors.dangerDark} />
-                      <Text style={styles.shortageLabelText}>
-                        Kurang {item.roles.reduce((s, r) => s + Math.max(0, r.total_required - r.active), 0)}
+                      <Text style={styles.shortageLabelText}>{t("monitoring:staffing.short")} {item.roles.reduce((s, r) => s + Math.max(0, r.total_required - r.active), 0)}
                       </Text>
                     </View>
                   )}
@@ -164,7 +165,7 @@ export function StaffingSummarySection({
                           style={[styles.roleValue, { color: met ? nbColors.successDark : nbColors.dangerDark }]}
                         >
                           {role.active}/{role.total_required}
-                          {!met ? ` (Kurang ${role.total_required - role.active})` : ''}
+                          {!met ? ` ${t('monitoring:staffing.shortBy', { n: role.total_required - role.active })}` : ''}
                         </Text>
                       </View>
                     );

@@ -12,6 +12,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
@@ -38,6 +39,7 @@ export function ShiftCard({
   compact = false,
   onPress,
 }: ShiftCardProps): React.JSX.Element {
+  const { t } = useTranslation();
   const isActive = !shift.clock_out_time;
 
   // Calculate duration (use current time if shift is still active)
@@ -51,15 +53,15 @@ export function ShiftCard({
       {/* Header: status pill (left) + shift # / date (right) — matches the shared
           ListItemCard anatomy used by Tugas / Aktivitas / Lembur. */}
       <View style={styles.header}>
-        <StatusPill dot tone={isActive ? 'ok' : 'neutral'} label={isActive ? 'Aktif' : 'Selesai'} />
+        <StatusPill dot tone={isActive ? 'ok' : 'neutral'} label={isActive ? t('status:active') : t('status:completed')} />
         {shiftNumber ? (
-          <NBText variant="mono-sm" color="gray500" style={styles.rightText}>Shift #{shiftNumber}</NBText>
+          <NBText variant="mono-sm" color="gray500" style={styles.rightText}>{t("attendance:shiftCard.shiftNumber", { n: shiftNumber })}</NBText>
         ) : null}
       </View>
 
       {/* Title: area */}
       <NBText variant="body" color="black" numberOfLines={1} style={styles.title}>
-        {shift.area?.name || 'Area tidak diketahui'}
+        {shift.area?.name || t('attendance:shiftCard.unknownArea')}
       </NBText>
       {shift.area?.areaType?.name ? (
         <NBText variant="body-sm" color="gray500" style={styles.areaType}>{shift.area.areaType.name}</NBText>
@@ -127,7 +129,7 @@ export function ShiftCard({
         activeOpacity={0.85}
         accessibilityRole="button"
         accessibilityLabel={`Detail shift ${shift.area?.name ?? ''}`}
-        accessibilityHint="Ketuk untuk melihat detail shift"
+        accessibilityHint={t('attendance:shiftCard.detailHint')}
       >
         {card}
       </TouchableOpacity>

@@ -1,0 +1,16 @@
+{
+  "pageTitle": {
+    "dashboard": "Dashboard", "monitoring": "Monitoring", "tasks": "Tasks", "tasksNew": "New Task",
+    "activities": "Activities", "overtime": "Overtime", "schedules": "Schedules", "users": "Users",
+    "areas": "Areas", "rayons": "Rayons", "plants": "Plants", "seeds": "Seeds", "assets": "Assets",
+    "assetsNew": "New Asset", "assetsQr": "QR Generator", "assetsMaintenance": "Asset Maintenance",
+    "reports": "Reports", "reportsBuilder": "Report Builder", "reportsSchedules": "Report Schedules",
+    "pruningRequests": "Pruning Requests", "pruningSubmit": "Submit Request", "pruningMy": "My Requests",
+    "settings": "Settings", "profile": "My Profile", "notifications": "Notifications",
+    "export": "Export Data", "import": "Import Data", "importCsv": "Import CSV"
+  },
+  "breadcrumb": {
+    "work": "Work", "access": "Users & Access", "data": "Master Data", "kecamatan": "District",
+    "account": "Account", "operations": "Operations", "new": "New", "edit": "Edit", "detail": "Detail"
+  }
+}

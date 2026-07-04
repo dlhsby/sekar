@@ -55,14 +55,14 @@ const DOCS_URL = process.env.NEXT_PUBLIC_DOCS_URL || 'https://docs.sekar.wahyutr
 export const navigationItems: NavItem[] = [
   {
     id: 'dashboard',
-    label: 'Dashboard',
+    label: 'common:nav.dashboard',
     href: '/',
     icon: HomeIcon,
     roles: [...MONITORING_ROLES],
   },
   {
     id: 'monitoring',
-    label: 'Monitoring',
+    label: 'common:nav.monitoring',
     href: '/monitoring',
     icon: MapIcon,
     roles: [...MONITORING_ROLES],
@@ -70,35 +70,35 @@ export const navigationItems: NavItem[] = [
   // ── Pekerjaan: day-to-day work surfaces (tugas / aktivitas / lembur / jadwal)
   {
     id: 'work',
-    label: 'Pekerjaan',
+    label: 'common:nav.work',
     href: '#',
     icon: BriefcaseIcon,
     roles: [...MONITORING_ROLES],
     children: [
       {
         id: 'tasks',
-        label: 'Tugas',
+        label: 'common:nav.tasks',
         href: '/tasks',
         icon: ClipboardDocumentListIcon,
         roles: [...TASK_MANAGER_ROLES],
       },
       {
         id: 'activities',
-        label: 'Aktivitas',
+        label: 'common:nav.activities',
         href: '/activities',
         icon: DocumentTextIcon,
         roles: [...MONITORING_ROLES],
       },
       {
         id: 'overtime',
-        label: 'Lembur',
+        label: 'common:nav.overtime',
         href: '/overtime',
         icon: ClockIcon,
         roles: [...MONITORING_ROLES],
       },
       {
         id: 'schedules',
-        label: 'Jadwal',
+        label: 'common:nav.schedules',
         href: '/schedules',
         icon: CalendarDaysIcon,
         // Managers (admin/kepala_rayon/admin_data) edit; korlap + top_management view.
@@ -107,7 +107,7 @@ export const navigationItems: NavItem[] = [
       // Pruning-request disposition is operational work (ADR-038).
       {
         id: 'pruning-requests',
-        label: 'Permohonan Pemangkasan',
+        label: 'common:nav.pruningRequests',
         href: '/pruning-requests',
         icon: InboxArrowDownIcon,
         roles: ['admin_data', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'],
@@ -118,14 +118,14 @@ export const navigationItems: NavItem[] = [
   // surface, separate from Data Master).
   {
     id: 'access',
-    label: 'Pengguna & Hak Akses',
+    label: 'common:nav.usersAccess',
     href: '#',
     icon: UsersIcon,
     roles: [...ADMIN_ROLES, 'admin_data'],
     children: [
       {
         id: 'users',
-        label: 'Pengguna',
+        label: 'common:nav.users',
         href: '/users',
         icon: UsersIcon,
         roles: [...ADMIN_ROLES, 'admin_data'],
@@ -135,21 +135,21 @@ export const navigationItems: NavItem[] = [
   // ── Data Master: organisation structure, scheduling templates + catalogues.
   {
     id: 'data',
-    label: 'Data Master',
+    label: 'common:nav.masterData',
     href: '#',
     icon: FolderIcon,
     roles: [...ADMIN_ROLES, 'top_management', 'admin_data'],
     children: [
       {
         id: 'areas',
-        label: 'Area',
+        label: 'common:nav.areas',
         href: '/areas',
         icon: MapPinIcon,
         roles: [...ADMIN_ROLES, 'top_management'],
       },
       {
         id: 'rayons',
-        label: 'Rayon',
+        label: 'common:nav.rayons',
         href: '/rayons',
         icon: BuildingOfficeIcon,
         roles: [...ADMIN_ROLES, 'top_management'],
@@ -157,21 +157,21 @@ export const navigationItems: NavItem[] = [
       // Phase 3-8/3-12 web pages (shipped with the phase-3 close-out)
       {
         id: 'plants',
-        label: 'Tanaman',
+        label: 'common:nav.plants',
         href: '/plants',
         icon: SparklesIcon,
         roles: [...ADMIN_ROLES, 'top_management', 'admin_data', 'kepala_rayon'],
       },
       {
         id: 'seeds',
-        label: 'Bibit',
+        label: 'common:nav.seeds',
         href: '/seeds',
         icon: ArchiveBoxIcon,
         roles: [...ADMIN_ROLES, 'top_management', 'admin_data', 'kepala_rayon'],
       },
       {
         id: 'assets',
-        label: 'Aset',
+        label: 'common:nav.assets',
         href: '/assets',
         icon: Square2StackIcon,
         roles: [...ADMIN_ROLES, 'top_management', 'admin_data', 'kepala_rayon'],
@@ -182,28 +182,28 @@ export const navigationItems: NavItem[] = [
   // ── Laporan: reporting (Phase 5-1) ──────────────────────────────────────
   {
     id: 'reports',
-    label: 'Laporan',
+    label: 'common:nav.reports',
     href: '/reports',
     icon: Square2StackIcon,
     roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
     children: [
       {
         id: 'reports-list',
-        label: 'Daftar Laporan',
+        label: 'common:nav.reportsList',
         href: '/reports',
         icon: Square2StackIcon,
         roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
       },
       {
         id: 'reports-builder',
-        label: 'Buat Laporan',
+        label: 'common:nav.reportsBuilder',
         href: '/reports/builder',
         icon: Square2StackIcon,
         roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
       },
       {
         id: 'reports-schedules',
-        label: 'Jadwal Laporan',
+        label: 'common:nav.reportsSchedules',
         href: '/reports/schedules',
         icon: CalendarIcon,
         roles: [...ADMIN_ROLES],
@@ -213,28 +213,28 @@ export const navigationItems: NavItem[] = [
   // ── Analitik: analytics dashboards (Phase 5-2) ─────────────────────────
   {
     id: 'analytics',
-    label: 'Analitik',
+    label: 'common:nav.analytics',
     href: '/analytics',
     icon: ChartBarIcon,
     roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
     children: [
       {
         id: 'analytics-overview',
-        label: 'Ringkasan',
+        label: 'common:nav.analyticsSummary',
         href: '/analytics',
         icon: ChartBarIcon,
         roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
       },
       {
         id: 'analytics-workers',
-        label: 'Kinerja Pekerja',
+        label: 'common:nav.workerPerformance',
         href: '/analytics/workers',
         icon: ChartBarIcon,
         roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
       },
       {
         id: 'analytics-areas',
-        label: 'Perbandingan Area',
+        label: 'common:nav.areaComparison',
         href: '/analytics/areas',
         icon: ChartBarIcon,
         roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
@@ -244,21 +244,21 @@ export const navigationItems: NavItem[] = [
   // ── Operasional: data export / import (Phase 4-5) ──────────────────────
   {
     id: 'operations',
-    label: 'Operasional',
+    label: 'common:nav.operations',
     href: '#',
     icon: CircleStackIcon,
     roles: [...EXPORT_NAV_ROLES],
     children: [
       {
         id: 'export',
-        label: 'Ekspor Data',
+        label: 'common:nav.exportData',
         href: '/export',
         icon: ArrowDownTrayIcon,
         roles: [...EXPORT_NAV_ROLES],
       },
       {
         id: 'import',
-        label: 'Impor Data',
+        label: 'common:nav.importData',
         href: '/import',
         icon: ArrowUpTrayIcon,
         roles: [...ADMIN_ROLES],
@@ -271,7 +271,7 @@ export const navigationItems: NavItem[] = [
   // Jun-30 nav reorder.
   {
     id: 'settings',
-    label: 'Pengaturan',
+    label: 'common:nav.settings',
     href: '/settings',
     icon: Cog6ToothIcon,
     roles: [...MONITORING_ROLES],
@@ -283,14 +283,14 @@ export const navigationItems: NavItem[] = [
   // dashboard (Next.js refuses parallel routes resolving to the same path).
   {
     id: 'pruning-submit',
-    label: 'Kirim Permintaan',
+    label: 'common:nav.submitRequest',
     href: '/pruning-submit',
     icon: InboxArrowDownIcon,
     roles: ['staff_kecamatan'],
   },
   {
     id: 'pruning-my',
-    label: 'Permintaan Saya',
+    label: 'common:nav.myRequests',
     href: '/pruning-submit/my',
     icon: ListBulletIcon,
     roles: ['staff_kecamatan'],
@@ -300,7 +300,7 @@ export const navigationItems: NavItem[] = [
   // tab. Visible to every role so anyone can reach the guide in-context.
   {
     id: 'docs',
-    label: 'Panduan',
+    label: 'common:nav.guide',
     href: DOCS_URL,
     icon: BookOpenIcon,
     roles: ['*'],

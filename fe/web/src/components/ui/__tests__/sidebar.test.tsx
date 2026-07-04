@@ -247,13 +247,13 @@ describe('Sidebar Component', () => {
       const handleClose = jest.fn();
       render(<Sidebar items={mockItems} onClose={handleClose} />);
 
-      expect(screen.getByLabelText('Tutup menu')).toBeInTheDocument();
+      expect(screen.getByLabelText('Tutup')).toBeInTheDocument();
     });
 
     it('should not show close button when onClose not provided', () => {
       render(<Sidebar items={mockItems} />);
 
-      expect(screen.queryByLabelText('Tutup menu')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Tutup')).not.toBeInTheDocument();
     });
 
     it('should call onClose when close button clicked', async () => {
@@ -261,7 +261,7 @@ describe('Sidebar Component', () => {
       const handleClose = jest.fn();
       render(<Sidebar items={mockItems} onClose={handleClose} />);
 
-      await user.click(screen.getByLabelText('Tutup menu'));
+      await user.click(screen.getByLabelText('Tutup'));
       expect(handleClose).toHaveBeenCalledTimes(1);
     });
 
@@ -312,7 +312,7 @@ describe('Sidebar Component', () => {
     it('should have accessible close button', () => {
       render(<Sidebar items={mockItems} onClose={jest.fn()} />);
 
-      const closeButton = screen.getByLabelText('Tutup menu');
+      const closeButton = screen.getByLabelText('Tutup');
       expect(closeButton).toBeInTheDocument();
     });
 
@@ -454,7 +454,7 @@ describe('SidebarTrigger', () => {
         </SidebarProvider>
       );
 
-      expect(screen.getByLabelText('Tutup menu')).toBeInTheDocument();
+      expect(screen.getByLabelText('Tutup')).toBeInTheDocument();
     });
 
     it('should show correct label based on sidebar state', () => {
@@ -501,7 +501,7 @@ describe('SidebarTrigger', () => {
 
       expect(screen.getByTestId('sidebar-state')).toHaveTextContent('open');
 
-      await user.click(screen.getByLabelText('Tutup menu'));
+      await user.click(screen.getByLabelText('Tutup'));
       expect(screen.getByTestId('sidebar-state')).toHaveTextContent('closed');
 
       await user.click(screen.getByLabelText('Buka menu'));
@@ -516,7 +516,7 @@ describe('SidebarTrigger', () => {
         </SidebarProvider>
       );
 
-      const button = screen.getByLabelText('Tutup menu');
+      const button = screen.getByLabelText('Tutup');
       button.focus();
       expect(button).toHaveFocus();
 
@@ -533,7 +533,7 @@ describe('SidebarTrigger', () => {
         </SidebarProvider>
       );
 
-      const button = screen.getByLabelText('Tutup menu');
+      const button = screen.getByLabelText('Tutup');
       expect(button).toHaveClass('custom-trigger');
     });
 

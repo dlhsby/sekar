@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { featureFlags } from '../../../utils/featureFlags';
 import { ClusteredUserMarkers } from '../../../components/monitoring/ClusteredUserMarkers';
 import { AreaStatusOverlay } from '../../../components/monitoring/AreaStatusOverlay';
@@ -47,6 +48,7 @@ export function MapLayerContent({
   onMarkerPress,
   onClusterPress,
 }: MapLayerContentProps): React.JSX.Element {
+  const { t } = useTranslation();
   return (
     <>
       {/* Boundary overlays */}
@@ -108,7 +110,7 @@ export function MapLayerContent({
                   id: cluster.id,
                   latitude: cluster.coordinate.latitude,
                   longitude: cluster.coordinate.longitude,
-                  full_name: `${cluster.pointCount} petugas`,
+                  full_name: t('monitoring:clusterCountAria', { count: cluster.pointCount }),
                 } as unknown as LiveUser
               : null as unknown as LiveUser;
             if (!representative) { return null; }

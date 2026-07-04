@@ -7,6 +7,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Eye, Pencil, Trash2, Power, KeyRound, MapPin } from 'lucide-react';
 import { UserAreasSheet, type UserAreasSheetTarget } from '@/components/users/UserAreasSheet';
 import { toast } from 'sonner';
@@ -39,6 +40,7 @@ import { getErrorMessage } from '@/lib/api/client';
 import type { User } from '@/types/models';
 
 export default function UsersPage() {
+  const { t } = useTranslation();
   const currentUser = useUser();
   // Full management (create/edit/delete) is admin-only; other roles that can
   // reach this page (admin_data) get a view-only kebab.
@@ -99,9 +101,9 @@ export default function UsersPage() {
       {
         id: 'id',
         accessorKey: 'id',
-        header: 'ID',
+        header: t('admin:users.columnId'),
         enableSorting: false,
-        meta: { label: 'ID', defaultHidden: true, filterVariant: 'text' },
+        meta: { label: t('admin:users.columnId'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
         ),
@@ -109,8 +111,8 @@ export default function UsersPage() {
       {
         id: 'full_name',
         accessorKey: 'full_name',
-        header: 'Pengguna',
-        meta: { label: 'Pengguna', filterVariant: 'text' },
+        header: t('admin:users.columnUser'),
+        meta: { label: t('admin:users.columnUser'), filterVariant: 'text' },
         cell: ({ row }) => {
           const u = row.original;
           return (
@@ -127,8 +129,8 @@ export default function UsersPage() {
       {
         id: 'username',
         accessorKey: 'username',
-        header: 'Username',
-        meta: { label: 'Username', defaultHidden: true, filterVariant: 'text' },
+        header: t('admin:users.columnUsername'),
+        meta: { label: t('admin:users.columnUsername'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="font-mono text-nb-body-sm">{row.original.username}</span>
         ),
@@ -138,15 +140,15 @@ export default function UsersPage() {
         // Filter/sort/search against the human label ("Top Management"), not the
         // raw enum ("top_management"), so typing the visible text matches.
         accessorFn: (u) => ROLE_LABELS[u.role] ?? u.role,
-        header: 'Role',
-        meta: { label: 'Role', filterVariant: 'text' },
+        header: t('admin:users.columnRole'),
+        meta: { label: t('admin:users.columnRole'), filterVariant: 'text' },
         cell: ({ row }) => <RolePill role={row.original.role} />,
       },
       {
         id: 'phone_number',
         accessorFn: (u) => u.phone_number ?? '',
-        header: 'No. HP',
-        meta: { label: 'No. HP', filterVariant: 'text' },
+        header: t('admin:users.columnPhone'),
+        meta: { label: t('admin:users.columnPhone'), filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="font-mono text-nb-body-sm">{row.original.phone_number ?? '—'}</span>
         ),
@@ -154,8 +156,8 @@ export default function UsersPage() {
       {
         id: 'rayon',
         accessorFn: (u) => (u.rayon_id ? (rayonNameById.get(u.rayon_id) ?? '') : ''),
-        header: 'Rayon',
-        meta: { label: 'Rayon', filterVariant: 'text' },
+        header: t('admin:users.columnRayon'),
+        meta: { label: t('admin:users.columnRayon'), filterVariant: 'text' },
         cell: ({ row }) => {
           const id = row.original.rayon_id;
           return <span className="text-nb-body-sm">{id ? (rayonNameById.get(id) ?? '—') : '—'}</span>;
@@ -174,11 +176,11 @@ export default function UsersPage() {
             <button
               type="button"
               onClick={() => setAreasSheetUser({ id: u.id, full_name: u.full_name })}
-              aria-label={`Lihat ${count} area yang ditugaskan ke ${u.full_name}`}
+              aria-label={t('admin:areas.viewAssignedAreasAria', { count: count, name: u.full_name })}
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border-2 border-nb-black rounded-nb-base bg-nb-white text-nb-body-sm font-bold shadow-nb-xs hover:shadow-nb-sm active:shadow-none transition-shadow duration-100"
             >
               <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
-              {count} Area
+              {t('admin:users.areaCount', { count })}
             </button>
           );
         },
@@ -186,8 +188,8 @@ export default function UsersPage() {
       {
         id: 'shift',
         accessorFn: (u) => (u.shift_definition_id ? shiftNameById.get(u.shift_definition_id) ?? '' : ''),
-        header: 'Shift',
-        meta: { label: 'Shift', filterVariant: 'text' },
+        header: t('admin:users.columnShift'),
+        meta: { label: t('admin:users.columnShift'), filterVariant: 'text' },
         cell: ({ row }) => {
           const id = row.original.shift_definition_id;
           return <span className="text-nb-body-sm">{id ? shiftNameById.get(id) ?? '—' : '—'}</span>;
@@ -195,39 +197,39 @@ export default function UsersPage() {
       },
       {
         id: 'password_must_change',
-        accessorFn: (u) => (u.password_must_change ? 'Ya' : 'Tidak'),
-        header: 'Wajib Ganti Sandi',
-        meta: { label: 'Wajib Ganti Sandi', filterVariant: 'text' },
+        accessorFn: (u) => (u.password_must_change ? t('admin:users.statusYes') : t('admin:users.statusNo')),
+        header: t('admin:users.columnPasswordMustChange'),
+        meta: { label: t('admin:users.columnPasswordMustChange'), filterVariant: 'text' },
         cell: ({ row }) =>
           row.original.password_must_change ? (
             <StatusPill tone="warn" dot>
-              Ya
+              {t('admin:users.statusYes')}
             </StatusPill>
           ) : (
-            <span className="text-nb-body-sm text-nb-gray-600">Tidak</span>
+            <span className="text-nb-body-sm text-nb-gray-600">{t('admin:users.statusNo')}</span>
           ),
       },
       {
         id: 'status',
-        accessorFn: (u) => (u.is_active ? 'Aktif' : 'Nonaktif'),
-        header: 'Status',
-        meta: { label: 'Status', filterVariant: 'text' },
+        accessorFn: (u) => (u.is_active ? t('admin:users.statusActive') : t('admin:users.statusInactive')),
+        header: t('admin:users.columnStatus'),
+        meta: { label: t('admin:users.columnStatus'), filterVariant: 'text' },
         cell: ({ row }) =>
           row.original.is_active ? (
             <StatusPill tone="ok" dot>
-              Aktif
+              {t('admin:users.statusActive')}
             </StatusPill>
           ) : (
             <StatusPill tone="neutral" dot>
-              Nonaktif
+              {t('admin:users.statusInactive')}
             </StatusPill>
           ),
       },
       {
         id: 'created_at',
         accessorKey: 'created_at',
-        header: 'Dibuat',
-        meta: { label: 'Dibuat', defaultHidden: true, filterVariant: 'date' },
+        header: t('admin:users.columnCreated'),
+        meta: { label: t('admin:users.columnCreated'), defaultHidden: true, filterVariant: 'date' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {formatDate(row.original.created_at)}
@@ -237,8 +239,8 @@ export default function UsersPage() {
       {
         id: 'updated_at',
         accessorKey: 'updated_at',
-        header: 'Diperbarui',
-        meta: { label: 'Diperbarui', defaultHidden: true, filterVariant: 'date' },
+        header: t('admin:users.columnUpdated'),
+        meta: { label: t('admin:users.columnUpdated'), defaultHidden: true, filterVariant: 'date' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {formatDate(row.original.updated_at)}
@@ -248,8 +250,8 @@ export default function UsersPage() {
       {
         id: 'created_by',
         accessorFn: (u) => actorName(u.created_by),
-        header: 'Dibuat oleh',
-        meta: { label: 'Dibuat oleh', defaultHidden: true, filterVariant: 'text' },
+        header: t('admin:users.columnCreatedBy'),
+        meta: { label: t('admin:users.columnCreatedBy'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {actorName(row.original.created_by)}
@@ -259,8 +261,8 @@ export default function UsersPage() {
       {
         id: 'updated_by',
         accessorFn: (u) => actorName(u.updated_by),
-        header: 'Diperbarui oleh',
-        meta: { label: 'Diperbarui oleh', defaultHidden: true, filterVariant: 'text' },
+        header: t('admin:users.columnUpdatedBy'),
+        meta: { label: t('admin:users.columnUpdatedBy'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {actorName(row.original.updated_by)}
@@ -275,7 +277,7 @@ export default function UsersPage() {
     (u: User): DataTableRowAction<User>[] => [
       {
         key: 'view',
-        label: 'Lihat',
+        label: t('admin:users.actionView'),
         icon: Eye,
         onClick: () => {
           setViewingUser(u);
@@ -284,7 +286,7 @@ export default function UsersPage() {
       },
       {
         key: 'edit',
-        label: 'Ubah',
+        label: t('admin:users.actionEdit'),
         icon: Pencil,
         disabled: !canManage,
         onClick: () => {
@@ -294,33 +296,33 @@ export default function UsersPage() {
       },
       {
         key: 'reset-password',
-        label: 'Reset Password',
+        label: t('admin:users.actionResetPassword'),
         icon: KeyRound,
         hidden: !canManage,
         onClick: () => setResetConfirmUser(u),
       },
       {
         key: 'toggle-active',
-        label: u.is_active ? 'Nonaktifkan' : 'Aktifkan',
+        label: u.is_active ? t('admin:users.actionDeactivate') : t('admin:users.actionActivate'),
         icon: Power,
         hidden: !canManage,
         onClick: () => (u.is_active ? deactivateUser.mutate(u.id) : activateUser.mutate(u.id)),
       },
       {
         key: 'delete',
-        label: 'Hapus',
+        label: t('admin:users.actionDelete'),
         icon: Trash2,
         variant: 'danger',
         hidden: !canManage,
         onClick: () => setUserToDelete(u),
       },
     ],
-    [canManage, deactivateUser, activateUser]
+    [canManage, deactivateUser, activateUser, t]
   );
 
   return (
     <div className="space-y-5">
-      <PageHeader description={total ? `${total} pengguna terdaftar` : undefined} />
+      <PageHeader description={total ? t('admin:users.totalCount', { count: total }) : undefined} />
 
       <DataTable
         columns={columns}
@@ -330,7 +332,7 @@ export default function UsersPage() {
         onRetry={() => refetch()}
         onRefresh={() => refetch()}
         getRowId={(u) => u.id}
-        searchPlaceholder="Cari nama atau username…"
+        searchPlaceholder={t('admin:users.searchPlaceholder')}
         rowActions={rowActions}
         actions={
           canManage ? (
@@ -341,13 +343,13 @@ export default function UsersPage() {
               }}
               leftIcon={<Plus className="h-5 w-5" />}
             >
-              Tambah Pengguna
+              {t('admin:users.buttonAdd')}
             </Button>
           ) : undefined
         }
-        emptyTitle="Belum ada pengguna"
+        emptyTitle={t('admin:users.emptyTitle')}
         emptyDescription={
-          canManage ? 'Klik "Tambah Pengguna" untuk membuat yang baru.' : undefined
+          canManage ? t('admin:users.emptyDescription') : undefined
         }
       />
 
@@ -376,13 +378,13 @@ export default function UsersPage() {
       <ConfirmDialog
         open={!!resetConfirmUser}
         onOpenChange={(open) => !open && setResetConfirmUser(null)}
-        title="Paksa Reset Password?"
+        title={t('admin:users.resetPasswordTitle')}
         description={
           resetConfirmUser
-            ? `Password ${resetConfirmUser.full_name} akan direset paksa — password lama tidak bisa dipakai lagi dan pengguna wajib menggantinya saat login pertama.`
+            ? t('admin:users.resetPasswordMessage', { fullName: resetConfirmUser.full_name })
             : undefined
         }
-        confirmLabel="Reset Password"
+        confirmLabel={t('admin:users.resetPasswordConfirm')}
         loading={resetPassword.isPending}
         onConfirm={async () => {
           if (!resetConfirmUser) return;

@@ -10,6 +10,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, TextInput, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBModal } from '../nb/NBModal';
 import { NBText } from '../nb/NBText';
@@ -58,6 +59,7 @@ const ResultRow = React.memo(function ResultRow({
   result: SearchResult;
   onPress: () => void;
 }): React.JSX.Element {
+  const { t } = useTranslation();
   const meta = TYPE_META[result.type];
   return (
     <TouchableOpacity
@@ -65,7 +67,7 @@ const ResultRow = React.memo(function ResultRow({
       onPress={onPress}
       activeOpacity={0.7}
       accessibilityRole="button"
-      accessibilityLabel={`Pilih ${result.name}`}
+      accessibilityLabel={t('monitoring:search.selectChoice', { name: result.name })}
       testID={`search-result-${result.type}-${result.id}`}
     >
       <View style={[styles.rowIcon, { backgroundColor: withAlpha(meta.accent, 0.16), borderColor: meta.accent }]}>
@@ -99,11 +101,20 @@ export function MonitoringSearchModal({
   rayons,
   onSelect,
 }: MonitoringSearchModalProps): React.JSX.Element {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [tab, setTab] = useState<Tab>('semua');
   const [recents, setRecents] = useState<SearchResult[]>([]);
 
-  const results = useMonitoringSearch(liveUsers, rayons, query);
+  const searchLabels = useMemo(
+    () => ({
+      petugas: t('monitoring:layers.workers'),
+      area: t('monitoring:layers.areas'),
+      rayon: t('monitoring:layers.rayons'),
+    }),
+    [t],
+  );
+  const results = useMonitoringSearch(liveUsers, rayons, query, searchLabels);
   const hasQuery = query.trim().length > 0;
 
   // Load recents + reset query/tab whenever the modal opens. Guard the async
@@ -125,12 +136,12 @@ export function MonitoringSearchModal({
 
   const tabs = useMemo(
     () => [
-      { key: 'semua', label: 'Semua', count: results.total },
-      { key: 'petugas', label: 'Petugas', count: results.petugas.length },
-      { key: 'area', label: 'Area', count: results.area.length },
-      { key: 'rayon', label: 'Rayon', count: results.rayon.length },
+      { key: 'semua', label: t('monitoring:search.all'), count: results.total },
+      { key: 'petugas', label: t('monitoring:layers.workers'), count: results.petugas.length },
+      { key: 'area', label: t('monitoring:layers.areas'), count: results.area.length },
+      { key: 'rayon', label: t('monitoring:layers.rayons'), count: results.rayon.length },
     ],
-    [results],
+    [results, t],
   );
 
   // Flattened rows for the active tab (Semua → type-grouped sections).
@@ -157,7 +168,7 @@ export function MonitoringSearchModal({
   );
 
   return (
-    <NBModal visible={visible} onClose={onClose} type="fullscreen" title="Pencarian" noPadding>
+    <NBModal visible={visible} onClose={onClose} type="fullscreen" title={t('monitoring:search.title')} noPadding>
       <View style={styles.body}>
         {/* Search field */}
         <View style={styles.searchField}>
@@ -166,7 +177,7 @@ export function MonitoringSearchModal({
             style={styles.searchInput}
             value={query}
             onChangeText={setQuery}
-            placeholder="Cari petugas, area, rayon…"
+            placeholder={t('monitoring:search.placeholder')}
             placeholderTextColor={nbColors.gray400}
             autoFocus
             autoCorrect={false}
@@ -179,7 +190,7 @@ export function MonitoringSearchModal({
               onPress={() => setQuery('')}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               accessibilityRole="button"
-              accessibilityLabel="Bersihkan"
+              accessibilityLabel={t('monitoring:search.clear')}
               testID="monitoring-search-clear"
             >
               <MaterialCommunityIcons name="close-circle" size={18} color={nbColors.gray400} />
@@ -212,8 +223,8 @@ export function MonitoringSearchModal({
                 <NBEmptyState
                   variant="noData"
                   illustration="illo-search"
-                  title="Tidak Ada Hasil"
-                  description={`Tidak ada yang cocok dengan "${query.trim()}".`}
+                  title={t('monitoring:search.noResults')}
+                  description={`${t('common:empty.noResults.description')}`}
                 />
               }
             />
@@ -232,16 +243,16 @@ export function MonitoringSearchModal({
               recents.length > 0 ? (
                 <View style={styles.recentsHeader}>
                   <NBText variant="mono-sm" uppercase color="gray600">
-                    Terakhir dilihat
+                    {t('monitoring:search.recents')}
                   </NBText>
                   <TouchableOpacity
                     onPress={handleClearAll}
                     accessibilityRole="button"
-                    accessibilityLabel="Hapus semua pencarian terakhir"
+                    accessibilityLabel={t('monitoring:search.clearAll')}
                     testID="recents-clear-all"
                   >
                     <NBText variant="caption" color="danger" style={styles.clearAll}>
-                      Hapus semua
+                      {t('monitoring:search.clearAll')}
                     </NBText>
                   </TouchableOpacity>
                 </View>
@@ -251,8 +262,8 @@ export function MonitoringSearchModal({
               <NBEmptyState
                 variant="noData"
                 illustration="illo-search"
-                title="Mulai Mencari"
-                description="Cari petugas, area, atau rayon untuk menemukannya di peta."
+                title={t('monitoring:search.startSearch')}
+                description={t('monitoring:search.startSearchDescription')}
               />
             }
           />

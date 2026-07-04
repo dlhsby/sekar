@@ -1,0 +1,164 @@
+{
+  "page": {
+    "title": "Buat Laporan",
+    "description": "Buat laporan baru dengan parameter yang dipilih"
+  },
+  "builder": {
+    "typeLabel": "Tipe Laporan",
+    "typePlaceholder": "Pilih tipe laporan",
+    "formatLabel": "Format",
+    "formatPlaceholder": "Pilih format",
+    "dateRangeLabel": "Rentang Tanggal",
+    "areaLabel": "Area (opsional)",
+    "areaPlaceholder": "Cari area...",
+    "rayonLabel": "Rayon (opsional)",
+    "rayonPlaceholder": "Cari rayon...",
+    "workerLabel": "Pekerja",
+    "workerPlaceholder": "Cari pekerja...",
+    "cancelButton": "Batal",
+    "submitButton": "Buat Laporan"
+  },
+  "types": {
+    "daily_operations": "Laporan Operasional Harian",
+    "weekly_performance": "Laporan Kinerja Mingguan",
+    "monthly_summary": "Ringkasan Bulanan",
+    "worker_performance": "Kinerja Pekerja",
+    "area_status": "Status Area",
+    "overtime_utilization": "Penggunaan Lembur"
+  },
+  "formats": {
+    "pdf": "PDF",
+    "csv": "CSV",
+    "xlsx": "Excel"
+  },
+  "schedules": {
+    "page": {
+      "title": "Jadwal Laporan",
+      "description": "Kelola jadwal laporan otomatis"
+    },
+    "table": {
+      "id": "ID",
+      "name": "Nama",
+      "frequency": "Frekuensi",
+      "cron": "Cron",
+      "status": "Status",
+      "createdAt": "Dibuat",
+      "updatedAt": "Diperbarui",
+      "statusActive": "Aktif",
+      "statusInactive": "Nonaktif"
+    },
+    "frequencies": {
+      "daily": "Harian",
+      "weekly": "Mingguan",
+      "monthly": "Bulanan"
+    },
+    "actions": {
+      "create": "Buat Jadwal",
+      "edit": "Ubah",
+      "delete": "Hapus",
+      "activate": "Aktifkan",
+      "deactivate": "Nonaktifkan"
+    },
+    "empty": {
+      "title": "Tidak ada jadwal",
+      "description": "Buat jadwal laporan otomatis untuk menjalankan laporan secara berkala"
+    },
+    "createDialog": {
+      "title": "Buat Jadwal Baru",
+      "description": "Atur jadwal otomatis untuk menjalankan laporan berkala",
+      "nameLabel": "Nama Jadwal",
+      "namePlaceholder": "cth: Laporan Harian Rayon Utara",
+      "templateLabel": "Template",
+      "templatePlaceholder": "Pilih template",
+      "frequencyLabel": "Frekuensi",
+      "cronLabel": "Cron Expression",
+      "cronPlaceholder": "0 6 * * * (harian jam 6 pagi)",
+      "timezoneLabel": "Timezone",
+      "timezonePlaceholder": "Asia/Jakarta",
+      "submitButton": "Buat"
+    },
+    "editDialog": {
+      "title": "Edit Jadwal",
+      "submitButton": "Simpan"
+    },
+    "deleteDialog": {
+      "description": "Jadwal laporan akan dihapus dan tidak akan dijalankan lagi."
+    },
+    "messages": {
+      "validationError": "Nama dan template diperlukan",
+      "createSuccess": "Jadwal dibuat",
+      "createError": "Gagal membuat jadwal",
+      "updateSuccess": "Jadwal diperbarui",
+      "updateError": "Gagal memperbarui jadwal",
+      "deleteSuccess": "Jadwal dihapus",
+      "deleteError": "Gagal menghapus jadwal",
+      "activateSuccess": "Jadwal diaktifkan",
+      "deactivateSuccess": "Jadwal dinonaktifkan",
+      "toggleError": "Gagal memperbarui jadwal"
+    }
+  },
+  "messages": {
+    "validation": "Pilih tipe dan format laporan",
+    "processing": "Laporan sedang diproses",
+    "processingNote": "Anda akan dialihkan ke daftar laporan.",
+    "error": "Gagal membuat laporan"
+  },
+  "template": {
+    "title": "Informasi Template",
+    "nameLabel": "Nama:",
+    "descriptionLabel": "Deskripsi:",
+    "notFound": "Template tidak ditemukan",
+    "selectHint": "Pilih tipe laporan untuk melihat informasi"
+  },
+  "dialog": {
+    "deleteTitle": "Hapus Laporan?"
+  },
+  "list": {
+    "pageTitle": "Laporan",
+    "pageDescription": "Lihat dan kelola laporan yang dihasilkan",
+    "filterTypeLabel": "Tipe Laporan",
+    "typeOptions": {
+      "all": "Semua Tipe"
+    },
+    "typeLabels": {
+      "daily_operations": "Laporan Harian",
+      "weekly_performance": "Laporan Mingguan",
+      "monthly_summary": "Laporan Bulanan",
+      "worker_performance": "Kinerja Pekerja",
+      "area_status": "Status Area",
+      "overtime_utilization": "Penggunaan Lembur"
+    },
+    "statusLabels": {
+      "processing": "Memproses",
+      "completed": "Selesai",
+      "failed": "Gagal"
+    },
+    "emptyTitle": "Tidak ada laporan",
+    "emptyDescription": "Mulai buat laporan baru untuk melihatnya di sini",
+    "actions": {
+      "create": "Buat Laporan",
+      "download": "Unduh",
+      "delete": "Hapus"
+    },
+    "pagination": {
+      "previous": "← Sebelumnya",
+      "next": "Berikutnya →"
+    },
+    "messages": {
+      "notReady": "Laporan belum siap untuk diunduh",
+      "deleteSuccess": "Laporan dihapus",
+      "deleteFailed": "Gagal menghapus laporan"
+    },
+    "deleteDialog": {
+      "description": "Tindakan ini tidak dapat dibatalkan. Laporan akan dihapus secara permanen."
+    },
+    "columnHeaders": {
+      "id": "ID",
+      "title": "Judul",
+      "type": "Tipe",
+      "format": "Format",
+      "status": "Status",
+      "createdAt": "Dibuat"
+    }
+  }
+}

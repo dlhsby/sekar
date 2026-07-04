@@ -7,6 +7,7 @@
 
 import React, { useCallback, useMemo } from 'react';
 import { TouchableOpacity, View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBText } from '../nb/NBText';
 import { roleAccent } from '../common/RoleAvatar';
@@ -42,6 +43,7 @@ export const PersonnelGroupCard = React.memo(function PersonnelGroupCard({
   group,
   onPress,
 }: PersonnelGroupCardProps): React.JSX.Element {
+  const { t } = useTranslation();
   const accent = roleAccent(group.role);
   const label = ROLE_LABELS[group.role as UserRole] ?? group.role;
   const icon = ROLE_ICON[group.role] ?? 'account-group';
@@ -65,7 +67,7 @@ export const PersonnelGroupCard = React.memo(function PersonnelGroupCard({
       onPress={handlePress}
       activeOpacity={0.7}
       accessibilityRole="button"
-      accessibilityLabel={`${label}, ${group.users.length} petugas`}
+      accessibilityLabel={t('monitoring:status.personnelCountLabel', { label, count: group.users.length })}
       testID={`personnel-group-${group.role}`}
     >
       <View

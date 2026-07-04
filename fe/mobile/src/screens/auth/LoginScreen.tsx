@@ -17,6 +17,7 @@ import {
   type TextInput as TextInputType,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { getVersion } from 'react-native-device-info';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
@@ -44,6 +45,7 @@ import type { UserRole } from '../../types/models.types';
 const APP_VERSION = getVersion();
 
 function LoginScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [touchedId, setTouchedId] = useState(false);
@@ -64,15 +66,15 @@ function LoginScreen(): React.JSX.Element {
     ? identifier.trim()
       ? idValid
         ? ''
-        : 'Minimal 3 karakter'
-      : 'No. HP / Username wajib diisi'
+        : t('auth:validation.identifierMin')
+      : t('auth:validation.identifierRequired')
     : '';
   const pwError = touchedPw
     ? password
       ? pwValid
         ? ''
-        : 'Kata Sandi minimal 6 karakter'
-      : 'Kata Sandi wajib diisi'
+        : t('auth:validation.passwordMin')
+      : t('auth:validation.passwordRequired')
     : '';
 
   const handleLogin = useCallback(async () => {
@@ -88,8 +90,8 @@ function LoginScreen(): React.JSX.Element {
         // Generic copy (AS-3) — never reveal which field was wrong.
         NBToast.show({
           level: 'danger',
-          title: 'Gagal Masuk',
-          body: 'No. HP atau Kata Sandi salah. Coba lagi.',
+          title: t('auth:login.failedTitle'),
+          body: t('auth:login.invalidCredentials'),
           durationMs: 4000,
         });
         return;
@@ -100,8 +102,8 @@ function LoginScreen(): React.JSX.Element {
       if (!loginData.access_token) {
         NBToast.show({
           level: 'danger',
-          title: 'Gagal Masuk',
-          body: 'Server bermasalah, coba lagi sebentar lagi.',
+          title: t('auth:login.failedTitle'),
+          body: t('auth:login.serverError'),
           durationMs: 4000,
         });
         return;
@@ -173,14 +175,14 @@ function LoginScreen(): React.JSX.Element {
     } catch {
       NBToast.show({
         level: 'danger',
-        title: 'Gagal Masuk',
-        body: 'Tidak bisa terhubung. Coba lagi.',
+        title: t('auth:login.failedTitle'),
+        body: t('auth:login.connectionError'),
         durationMs: 4000,
       });
     } finally {
       dispatch(setLoading(false));
     }
-  }, [identifier, password, dispatch]);
+  }, [identifier, password, dispatch, t]);
 
   return (
     <NBBackgroundPattern
@@ -203,17 +205,17 @@ function LoginScreen(): React.JSX.Element {
                 </NBText>
               </View>
               <NBText variant="h1" style={styles.heading}>
-                Selamat datang.
+                {t('auth:login.heading')}
               </NBText>
               <NBText variant="body-sm" color="gray600" style={styles.subtitle}>
-                Masuk menggunakan No. HP atau username Anda
+                {t('auth:login.subtitle')}
               </NBText>
             </View>
 
             <View style={styles.form}>
               <NBTextInput
-                label="No. Handphone / Username"
-                placeholder="081234567890"
+                label={t('auth:login.identifier')}
+                placeholder={t('auth:login.identifierPlaceholder')}
                 value={identifier}
                 onChangeText={setIdentifier}
                 onBlur={() => setTouchedId(true)}
@@ -230,8 +232,8 @@ function LoginScreen(): React.JSX.Element {
 
               <NBPasswordInput
                 ref={passwordInputRef}
-                label="Kata Sandi"
-                placeholder="Masukkan kata sandi"
+                label={t('auth:login.password')}
+                placeholder={t('auth:login.passwordPlaceholder')}
                 value={password}
                 onChangeText={setPassword}
                 onBlur={() => setTouchedPw(true)}
@@ -252,7 +254,7 @@ function LoginScreen(): React.JSX.Element {
                 testID="forgot-password-link"
               >
                 <NBText variant="body-sm" color="secondary" style={styles.forgotText}>
-                  Lupa Kata Sandi?
+                  {t('auth:login.forgotPassword')}
                 </NBText>
               </Pressable>
             </View>
@@ -260,7 +262,7 @@ function LoginScreen(): React.JSX.Element {
             <View style={styles.spacer} />
 
             <NBButton
-              title="Masuk"
+              title={t('auth:login.submit')}
               onPress={handleLogin}
               loading={isLoading}
               disabled={!formValid || isLoading}
@@ -269,7 +271,7 @@ function LoginScreen(): React.JSX.Element {
               testID="login-button"
             />
             <NBText variant="mono-sm" color="gray500" align="center" style={styles.version}>
-              v{APP_VERSION}
+              {t('auth:login.version', { version: APP_VERSION })}
             </NBText>
           </View>
         </KeyboardAvoidingView>

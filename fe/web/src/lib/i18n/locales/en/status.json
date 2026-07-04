@@ -1,0 +1,33 @@
+{
+  "pending": "Pending",
+  "approved": "Approved",
+  "rejected": "Rejected",
+  "pending_approval": "Pending Approval",
+  "in_progress": "In Progress",
+  "completed": "Completed",
+  "cancelled": "Cancelled",
+  "active": "Active",
+  "inactive": "Inactive",
+  "draft": "Draft",
+  "submitted": "Submitted",
+  "verified": "Verified",
+  "overdue": "Overdue",
+  "priority": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "urgent": "Urgent"
+  },
+  "tracking": {
+    "active": "Active",
+    "inactive": "Idle",
+    "outside_area": "Outside Area",
+    "missing": "Not Detected",
+    "offline": "Offline"
+  },
+  "dayType": {
+    "weekday": "Weekday",
+    "weekend": "Weekend",
+    "holiday": "Holiday"
+  }
+}

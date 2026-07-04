@@ -4,6 +4,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { Alert, ScrollView } from 'react-native';
+import i18n from '../../../i18n/config';
 import type { Overtime } from '../../../types/models.types';
 import { approveOvertime, rejectOvertime } from '../../../services/api/overtimeApi';
 
@@ -67,22 +68,22 @@ export function useOvertimeActions(
 
   const handleApprove = useCallback(async () => {
     if (!overtime || isSubmitting) return;
-    Alert.alert('Konfirmasi', 'Setujui pengajuan lembur ini?', [
-      { text: 'Batal', style: 'cancel' },
+    Alert.alert(i18n.t('overtime:alerts.confirmTitle'), i18n.t('overtime:alerts.approveOvertimeMessage'), [
+      { text: i18n.t('common:actions.cancel'), style: 'cancel' },
       {
-        text: 'Setuju',
+        text: i18n.t('overtime:alerts.agreeAction'),
         onPress: async () => {
           setIsSubmitting(true);
           try {
             const response = await approveOvertime(overtime.id);
             if (response.error) {
-              Alert.alert('Error', response.error);
+              Alert.alert(i18n.t('overtime:alerts.errorTitle'), response.error);
               return;
             }
             if (response.data) onOvertimeUpdate(response.data);
-            Alert.alert('Berhasil', 'Lembur disetujui');
+            Alert.alert(i18n.t('overtime:alerts.successTitle'), i18n.t('overtime:alerts.overtimeApprovedMessage'));
           } catch {
-            Alert.alert('Error', 'Gagal menyetujui lembur');
+            Alert.alert(i18n.t('overtime:alerts.errorTitle'), i18n.t('overtime:alerts.failedToApproveMessage'));
           } finally {
             setIsSubmitting(false);
           }
@@ -93,22 +94,22 @@ export function useOvertimeActions(
 
   const handleRejectSubmit = useCallback(async () => {
     if (!overtime || !rejectReason.trim()) {
-      Alert.alert('Error', 'Alasan penolakan wajib diisi');
+      Alert.alert(i18n.t('overtime:alerts.errorTitle'), i18n.t('validation:rejectionReasonRequired'));
       return;
     }
     setIsSubmitting(true);
     try {
       const response = await rejectOvertime(overtime.id, rejectReason.trim());
       if (response.error) {
-        Alert.alert('Error', response.error);
+        Alert.alert(i18n.t('overtime:alerts.errorTitle'), response.error);
         return;
       }
       if (response.data) onOvertimeUpdate(response.data);
       setShowRejectInput(false);
       setRejectReason('');
-      Alert.alert('Berhasil', 'Lembur ditolak');
+      Alert.alert(i18n.t('overtime:alerts.successTitle'), i18n.t('overtime:alerts.overtimeRejectedMessage'));
     } catch {
-      Alert.alert('Error', 'Gagal menolak lembur');
+      Alert.alert(i18n.t('overtime:alerts.errorTitle'), i18n.t('overtime:alerts.failedToRejectMessage'));
     } finally {
       setIsSubmitting(false);
     }

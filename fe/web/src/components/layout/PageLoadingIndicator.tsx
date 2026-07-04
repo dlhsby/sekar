@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { usePathname } from 'next/navigation';
 
 /**
@@ -10,6 +11,7 @@ import { usePathname } from 'next/navigation';
  * Inspired by YouTube/GitHub loading bars.
  */
 export function PageLoadingIndicator() {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -57,7 +59,7 @@ export function PageLoadingIndicator() {
       aria-valuenow={progress}
       aria-valuemin={0}
       aria-valuemax={100}
-      aria-label="Page loading progress"
+      aria-label={t("common:a11y.pageLoading")}
     />
   );
 }
