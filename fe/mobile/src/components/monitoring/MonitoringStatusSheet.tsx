@@ -197,6 +197,7 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
         visible={visible}
         onClose={onClose}
         type="sheet"
+        floating
         sheetHeight="88%"
         title={t('monitoring:status.title')}
         noPadding

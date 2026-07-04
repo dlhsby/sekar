@@ -285,6 +285,7 @@ export function MonitoringFilterModal({
       onClose={onClose}
       title={t('monitoring:filterModal.title')}
       type="sheet"
+      floating
       avoidKeyboard
       footer={footerContent}
     >
