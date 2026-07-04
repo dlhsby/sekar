@@ -435,7 +435,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       await waitFor(() => { expect(getByText('Informasi Kehadiran')).toBeTruthy(); });
 
       // Tap the card header to expand it → area details become visible.
-      fireEvent.press(getByLabelText('Informasi kehadiran'));
+      fireEvent.press(getByLabelText('Informasi Kehadiran'));
 
       await waitFor(() => {
         expect(getByText('Tipe Area')).toBeTruthy();

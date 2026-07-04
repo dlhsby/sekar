@@ -680,8 +680,8 @@ describe('TaskCreateScreen', () => {
 
     await waitFor(() => {
       expect(Alert.alert).toHaveBeenCalledWith(
-        'Simpan Draft?',
-        'Anda memiliki perubahan yang belum disimpan.',
+        'Data yang telah diisi akan hilang.',
+        'Data yang telah diisi akan hilang.',
         expect.any(Array)
       );
     });

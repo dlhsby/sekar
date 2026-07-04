@@ -155,7 +155,7 @@ describe('NBEmptyState', () => {
       const { getByText } = render(
         <NBEmptyState variant="noData" title="Test" testID="empty" />,
       );
-      expect(getByText('Belum ada data tersedia')).toBeTruthy();
+      expect(getByText('Data akan muncul di sini setelah Anda menambahkannya.')).toBeTruthy();
     });
 
     it('overrides default description with custom description', () => {

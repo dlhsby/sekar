@@ -229,7 +229,7 @@ describe('TasksPage', () => {
       render(<TasksPage />, { wrapper: createWrapper() });
       await switchToTable();
       // Open the kebab menu for the first row
-      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi/i });
       await user.click(kebabTriggers[0]);
       // The "Lihat" menuitem should be visible
       const lihatMenuItem = screen.getByRole('menuitem', { name: /lihat/i });

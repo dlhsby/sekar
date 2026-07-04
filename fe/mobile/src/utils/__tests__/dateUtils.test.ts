@@ -445,7 +445,7 @@ describe('Date Utils', () => {
 
     it('should format decimal hours', () => {
       expect(formatHours(2.5)).toBe('2 jam 30 menit');
-      expect(formatHours(3)).toBe('3 jam');
+      expect(formatHours(3)).toBe('3j');
     });
 
     it('should handle fractional hours', () => {

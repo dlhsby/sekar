@@ -304,7 +304,7 @@ describe('LocationMapModal', () => {
         <LocationMapModal visible onClose={onClose} location={location} />,
       );
 
-      expect(getByText('Diperbarui 5 mnt lalu')).toBeTruthy();
+      expect(getByText('Diperbarui 5 menit yang lalu')).toBeTruthy();
     });
 
     it('shows "Belum diperbarui" when updatedAt is null', () => {

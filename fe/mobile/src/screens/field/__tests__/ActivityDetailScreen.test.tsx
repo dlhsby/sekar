@@ -102,7 +102,7 @@ describe('ActivityDetailScreen', () => {
       </NavigationContainer>
     );
 
-    expect(getByText('Memuat data...')).toBeTruthy();
+    expect(getByText('Memuat...')).toBeTruthy();
   });
 
   it('renders activity detail after fetch', async () => {

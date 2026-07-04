@@ -93,7 +93,7 @@ describe('Header', () => {
     render(<Header />);
 
     // Click user menu
-    await user.click(screen.getByRole('button', { name: /user menu/i }));
+    await user.click(screen.getByRole('button', { name: /menu pengguna/i }));
 
     // Click logout in dropdown (Indonesian: "Keluar")
     const dropdownLogout = await screen.findByText('Keluar');

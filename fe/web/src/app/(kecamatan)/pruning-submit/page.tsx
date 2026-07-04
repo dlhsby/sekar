@@ -30,16 +30,16 @@ function createFormSchema(t: (key: string) => string) {
     address: z
       .string()
       .trim()
-      .min(5, t('pruning.submit.addressMinError'))
-      .max(500, t('pruning.submit.addressMaxError')),
-    treeCount: z.coerce.number().int().min(1, t('pruning.submit.treeCountError')),
-    treeHeight: z.string().trim().min(1, t('pruning.submit.treeHeightError')),
-    treeDiameter: z.string().trim().min(1, t('pruning.submit.treeDiameterError')),
-    requesterName: z.string().trim().min(1, t('pruning.submit.requesterNameError')),
-    requesterPhone: z.string().trim().min(1, t('pruning.submit.requesterPhoneError')),
-    rtLeaderName: z.string().trim().min(1, t('pruning.submit.rtLeaderNameError')),
-    rtLeaderPhone: z.string().trim().min(1, t('pruning.submit.rtLeaderPhoneError')),
-    notes: z.string().trim().max(1000, t('pruning.submit.notesMaxError')).optional(),
+      .min(5, t('submit.addressMinError'))
+      .max(500, t('submit.addressMaxError')),
+    treeCount: z.coerce.number().int().min(1, t('submit.treeCountError')),
+    treeHeight: z.string().trim().min(1, t('submit.treeHeightError')),
+    treeDiameter: z.string().trim().min(1, t('submit.treeDiameterError')),
+    requesterName: z.string().trim().min(1, t('submit.requesterNameError')),
+    requesterPhone: z.string().trim().min(1, t('submit.requesterPhoneError')),
+    rtLeaderName: z.string().trim().min(1, t('submit.rtLeaderNameError')),
+    rtLeaderPhone: z.string().trim().min(1, t('submit.rtLeaderPhoneError')),
+    notes: z.string().trim().max(1000, t('submit.notesMaxError')).optional(),
   });
 }
 

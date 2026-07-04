@@ -263,7 +263,7 @@ describe('ErrorMessages', () => {
 describe('getErrorMessage', () => {
   it('should return mapped error message for valid code', () => {
     const message = getErrorMessage(ApiErrorCode.AUTH_INVALID_CREDENTIALS);
-    expect(message).toBe('Username atau password salah');
+    expect(message).toBe('Username atau kata sandi salah.');
   });
 
   it('should return default message for unknown code', () => {
@@ -282,7 +282,7 @@ describe('getErrorMessage', () => {
       ApiErrorCode.NETWORK_ERROR,
       'This should not be returned'
     );
-    expect(message).toBe('Tidak ada koneksi internet. Periksa koneksi Anda');
+    expect(message).toBe('Gagal terhubung ke server. Periksa koneksi internet Anda.');
   });
 
   it('should handle all shift error codes', () => {

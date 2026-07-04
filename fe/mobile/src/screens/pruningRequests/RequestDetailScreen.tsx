@@ -48,7 +48,7 @@ import { ActionBar } from './components/ActionBar';
 type DetailScreenProps = NativeStackScreenProps<any, 'PruningDetail'>;
 
 export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element {
-  const { t: tPruning } = useTranslation();
+  const { t: tPruning } = useTranslation('pruning');
   const { t } = useTranslation('common');
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
@@ -137,7 +137,7 @@ export function RequestDetailScreen(props: DetailScreenProps): React.JSX.Element
         <View style={styles.errorWrap}>
           <NBAlert
             variant="danger"
-            title={t('detail.notFoundMessage')}
+            title={tPruning('detail.notFoundMessage')}
             message={tPruning('detail.notFoundError')}
           />
         </View>

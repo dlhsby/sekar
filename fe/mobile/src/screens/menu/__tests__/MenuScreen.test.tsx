@@ -38,7 +38,7 @@ describe('MenuScreen', () => {
   it('renders the section titles for the role', () => {
     const { getByText } = renderMenu('admin_data');
     // section.title holds i18n keys; expect resolved text
-    expect(getByText('Pengawasan')).toBeTruthy(); // menu:sections.supervision
+    expect(getByText('Operasional')).toBeTruthy(); // menu:sections.operations
     expect(getByText('Perawatan Pohon')).toBeTruthy(); // menu:sections.treeCare
     expect(getByText('Laporan & Monitoring')).toBeTruthy(); // menu:sections.reportsMonitoring
   });

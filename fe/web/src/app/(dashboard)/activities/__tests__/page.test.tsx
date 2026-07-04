@@ -364,7 +364,7 @@ describe('ActivitiesPage', () => {
     it('should NOT show Reset Filter button when no filters are active', () => {
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      expect(screen.queryByRole('button', { name: /reset filter/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /atur ulang/i })).not.toBeInTheDocument();
     });
 
     it('should show Reset Filter button when the from-date filter is set', async () => {
@@ -384,7 +384,7 @@ describe('ActivitiesPage', () => {
       }
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /reset filter/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /atur ulang/i })).toBeInTheDocument();
       });
     });
 
@@ -405,13 +405,13 @@ describe('ActivitiesPage', () => {
       }
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /reset filter/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /atur ulang/i })).toBeInTheDocument();
       });
 
-      await user.click(screen.getByRole('button', { name: /reset filter/i }));
+      await user.click(screen.getByRole('button', { name: /atur ulang/i }));
 
       await waitFor(() => {
-        expect(screen.queryByRole('button', { name: /reset filter/i })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /atur ulang/i })).not.toBeInTheDocument();
       });
     });
   });
@@ -471,7 +471,7 @@ describe('ActivitiesPage', () => {
       const user = userEvent.setup();
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi/i });
       expect(kebabTriggers).toHaveLength(3);
 
       // Open first row's kebab menu
@@ -486,7 +486,7 @@ describe('ActivitiesPage', () => {
       const user = userEvent.setup();
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi/i });
       await user.click(kebabTriggers[0]);
 
       const lihatItem = screen.getByRole('menuitem', { name: /lihat/i });
@@ -587,7 +587,7 @@ describe('ActivitiesPage', () => {
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi/i });
       await user.click(kebabTriggers[0]); // Open kebab for first (pending) activity
 
       expect(screen.getByRole('menuitem', { name: /setujui/i })).toBeInTheDocument();
@@ -600,7 +600,7 @@ describe('ActivitiesPage', () => {
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi/i });
       await user.click(kebabTriggers[0]); // Open kebab for first (pending) activity
 
       expect(screen.getByRole('menuitem', { name: /setujui/i })).toBeInTheDocument();
@@ -622,7 +622,7 @@ describe('ActivitiesPage', () => {
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi/i });
       await user.click(kebabTriggers[0]); // Open kebab for first (approved) activity
 
       expect(screen.queryByRole('menuitem', { name: /setujui/i })).not.toBeInTheDocument();
@@ -636,7 +636,7 @@ describe('ActivitiesPage', () => {
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi/i });
       await user.click(kebabTriggers[0]);
 
       const setujuiItem = screen.getByRole('menuitem', { name: /setujui/i });
@@ -651,7 +651,7 @@ describe('ActivitiesPage', () => {
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi/i });
       await user.click(kebabTriggers[0]);
 
       const tolakItem = screen.getByRole('menuitem', { name: /^tolak$/i });
@@ -669,7 +669,7 @@ describe('ActivitiesPage', () => {
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi/i });
       await user.click(kebabTriggers[0]);
 
       const tolakItem = screen.getByRole('menuitem', { name: /^tolak$/i });
@@ -686,7 +686,7 @@ describe('ActivitiesPage', () => {
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi/i });
       await user.click(kebabTriggers[0]);
 
       const tolakItem = screen.getByRole('menuitem', { name: /^tolak$/i });
@@ -709,7 +709,7 @@ describe('ActivitiesPage', () => {
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi/i });
       await user.click(kebabTriggers[0]);
 
       const tolakItem = screen.getByRole('menuitem', { name: /^tolak$/i });
@@ -733,7 +733,7 @@ describe('ActivitiesPage', () => {
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi/i });
       await user.click(kebabTriggers[0]);
 
       const tolakItem = screen.getByRole('menuitem', { name: /^tolak$/i });
@@ -762,7 +762,7 @@ describe('ActivitiesPage', () => {
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi/i });
       await user.click(kebabTriggers[0]); // Open kebab for first (pending) activity
 
       expect(screen.queryByRole('menuitem', { name: /setujui/i })).not.toBeInTheDocument();
@@ -774,7 +774,7 @@ describe('ActivitiesPage', () => {
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi/i });
       await user.click(kebabTriggers[0]); // Open kebab for first (pending) activity
 
       expect(screen.queryByRole('menuitem', { name: /^tolak$/i })).not.toBeInTheDocument();
@@ -786,7 +786,7 @@ describe('ActivitiesPage', () => {
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi/i });
       await user.click(kebabTriggers[0]); // Open kebab for first (pending) activity
 
       expect(screen.queryByRole('menuitem', { name: /setujui/i })).not.toBeInTheDocument();
@@ -798,7 +798,7 @@ describe('ActivitiesPage', () => {
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi/i });
       await user.click(kebabTriggers[0]); // Open kebab for first (pending) activity
 
       expect(screen.queryByRole('menuitem', { name: /^tolak$/i })).not.toBeInTheDocument();
@@ -810,7 +810,7 @@ describe('ActivitiesPage', () => {
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      const kebabTriggers = screen.getAllByRole('button', { name: /aksi baris/i });
+      const kebabTriggers = screen.getAllByRole('button', { name: /aksi/i });
       expect(kebabTriggers).toHaveLength(3);
 
       // Verify all rows have kebab menus with "Lihat"
