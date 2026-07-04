@@ -7,7 +7,9 @@ FROM node:24-slim AS deps
 WORKDIR /app
 
 # Install dependencies only when needed (--omit=dev; --only was removed in npm 11)
-COPY package.json package-lock.json ./
+# .npmrc carries legacy-peer-deps=true (react-i18next's optional TS peer conflicts
+# with TS6); without it `npm ci` validates the lock strictly and rejects it.
+COPY package.json package-lock.json .npmrc ./
 RUN npm ci --omit=dev && \
     npm cache clean --force
 
