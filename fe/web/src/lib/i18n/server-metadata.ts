@@ -11,7 +11,7 @@
  */
 import { cookies } from 'next/headers';
 import type { Metadata } from 'next';
-import { LANGUAGE_STORAGE_KEY } from './config';
+import { LANGUAGE_STORAGE_KEY } from './constants';
 import { PAGE_METADATA, type PageMeta } from './page-metadata';
 
 export async function resolveServerLang(): Promise<'id' | 'en'> {
