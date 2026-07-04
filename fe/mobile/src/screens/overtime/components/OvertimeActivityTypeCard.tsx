@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
@@ -23,6 +24,7 @@ interface OvertimeActivityTypeCardProps {
 }
 
 export const OvertimeActivityTypeCard: React.FC<OvertimeActivityTypeCardProps> = ({ overtime }) => {
+  const { t } = useTranslation();
   if (!overtime.activityType) return null;
 
   return (
@@ -30,7 +32,7 @@ export const OvertimeActivityTypeCard: React.FC<OvertimeActivityTypeCardProps> =
       <NBCardHeader>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <MaterialCommunityIcons name="tag-outline" size={14} color={nbColors.gray700} style={{ marginRight: nbSpacing.xs }} />
-          <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>JENIS AKTIVITAS</NBText>
+          <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>{t('overtime:activityTypeLabel')}</NBText>
         </View>
       </NBCardHeader>
       <NBCardContent>

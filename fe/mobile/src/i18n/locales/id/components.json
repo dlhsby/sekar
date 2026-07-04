@@ -14,7 +14,9 @@
       "useMyLocation": "Gunakan lokasi saya",
       "updateHistory": "Perbarui riwayat"
     },
-    "timeDetails": "Detail waktu"
+    "timeDetails": "Detail waktu",
+    "resetFilterAria": "Reset filter {{label}}",
+    "filterAria": "Filter {{label}}"
   },
   "nbselect": {
     "placeholder": "Pilih...",
@@ -73,7 +75,8 @@
     "accuracy": "Akurasi: ±{{value}}m",
     "withinWorkArea": "Di dalam area kerja",
     "outsideWorkArea": "Di luar area kerja",
-    "updated": "Diperbarui {{time}}"
+    "updated": "Diperbarui {{time}}",
+    "coordAria": "Koordinat: {{lat}}, {{lng}}"
   },
   "nbDatePicker": {
     "months": [

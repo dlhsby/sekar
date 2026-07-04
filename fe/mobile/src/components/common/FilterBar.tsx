@@ -78,7 +78,7 @@ export function FilterBar({
             style={styles.clearButton}
             onPress={onReset}
             accessibilityRole="button"
-            accessibilityLabel={`Reset filter ${label}`}
+            accessibilityLabel={t('components:ui.resetFilterAria', { label })}
           >
             <MaterialCommunityIcons name="close-circle" size={18} color={nbColors.danger} />
           </TouchableOpacity>

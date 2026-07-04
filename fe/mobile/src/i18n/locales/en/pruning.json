@@ -84,7 +84,8 @@
     "photosLabel": "TREE PHOTOS",
     "photosHint": "Take photos of the tree to be pruned",
     "availabilityLabel": "Preferred Week Availability",
-    "weekLabel": "Week"
+    "weekLabel": "Week",
+    "headerTitle": "Create Pruning Request"
   },
   "calendar": {
     "legendAvailable": "Available",
@@ -106,7 +107,10 @@
     "wednesdayLabel": "Wed",
     "thursdayLabel": "Thu",
     "fridayLabel": "Fri",
-    "saturdayLabel": "Sat"
+    "saturdayLabel": "Sat",
+    "dayAria": "Date {{date}} status {{status}}",
+    "inPreferredWeekHint": " (within preferred week)",
+    "selectedHint": " (selected, tap to deselect)"
   },
   "weekPicker": {
     "statusAvailable": "Available",
@@ -144,7 +148,8 @@
     "rejectButtonTitle": "Reject",
     "resultsCardTitle": "Review Results",
     "accessDeniedTitle": "Access Denied",
-    "accessDeniedDesc": "You don't have permission to access this page."
+    "accessDeniedDesc": "You don't have permission to access this page.",
+    "dateLabel": "Review Date"
   },
   "reassign": {
     "title": "Reassign Worker",

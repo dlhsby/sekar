@@ -30,7 +30,7 @@ export const OvertimeReasonCard: React.FC<OvertimeReasonCardProps> = ({ reason }
     <NBCardHeader>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <MaterialCommunityIcons name="message-text-outline" size={14} color={nbColors.gray700} style={{ marginRight: nbSpacing.xs }} />
-        <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>ALASAN LEMBUR</NBText>
+        <NBText variant="mono-sm" color="gray700" uppercase style={{ letterSpacing: 0.6 }}>{t('overtime:reasonLabel')}</NBText>
       </View>
     </NBCardHeader>
     <NBCardContent>

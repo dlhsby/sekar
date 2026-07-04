@@ -55,5 +55,6 @@
   "selector": {
     "selectRayonFirst": "Pilih rayon terlebih dahulu",
     "selectArea": "Pilih area..."
-  }
+  },
+  "getFailed": "Gagal mendapatkan lokasi"
 }

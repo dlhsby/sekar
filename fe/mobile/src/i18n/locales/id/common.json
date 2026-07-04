@@ -207,5 +207,6 @@
     "openProfile": "Buka Profil",
     "defaultUser": "Pengguna",
     "elapsedTime": "Waktu berjalan: {{time}}"
-  }
+  },
+  "error": "Error"
 }

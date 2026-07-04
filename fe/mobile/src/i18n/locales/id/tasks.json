@@ -304,5 +304,12 @@
   "assignment": {
     "createdBy": "Dibuat oleh",
     "assignedTo": "Ditugaskan ke"
+  },
+  "todayModal": {
+    "taskDetailAria": "Detail tugas {{title}}"
+  },
+  "list": {
+    "loadError": "Gagal memuat tugas",
+    "loadDetailError": "Gagal memuat detail tugas"
   }
 }

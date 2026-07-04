@@ -152,5 +152,8 @@
   "shiftCard": {
     "unknownArea": "Unknown area",
     "detailHint": "Tap to view shift detail"
+  },
+  "workHours": {
+    "titlePrefix": "Attendance {{date}}"
   }
 }

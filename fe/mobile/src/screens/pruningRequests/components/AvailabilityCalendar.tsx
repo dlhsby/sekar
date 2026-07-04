@@ -352,9 +352,9 @@ export function AvailabilityCalendar({
                       <View key={day.date} style={styles.col}>
                         <TouchableOpacity
                           accessibilityLabel={
-                            `Tanggal ${day.date} status ${day.status}` +
-                            (inPreferredWeek ? ' (di dalam minggu preferensi)' : '') +
-                            (selected ? ' (terpilih, ketuk untuk batal)' : '')
+                            t('pruning:calendar.dayAria', { date: day.date, status: day.status }) +
+                            (inPreferredWeek ? t('pruning:calendar.inPreferredWeekHint') : '') +
+                            (selected ? t('pruning:calendar.selectedHint') : '')
                           }
                           onPress={() => handlePress(day)}
                           disabled={past}

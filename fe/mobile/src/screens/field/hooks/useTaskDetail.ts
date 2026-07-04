@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import i18n from '../../../i18n/config';
 import { useFocusEffect } from '@react-navigation/native';
 import { Alert } from 'react-native';
 import * as tasksApi from '../../../services/api/tasksApi';
@@ -33,7 +34,7 @@ export function useTaskDetail(taskId: string): UseTaskDetailReturn {
         Alert.alert('Error', response.error);
       }
     } catch {
-      Alert.alert('Error', 'Gagal memuat detail tugas');
+      Alert.alert(i18n.t('common:error'), i18n.t('tasks:list.loadDetailError'));
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);

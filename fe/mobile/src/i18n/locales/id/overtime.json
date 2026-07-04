@@ -105,7 +105,6 @@
     "selfieOptional": "Opsional",
     "selfiePreviewLabel": "Lihat selfie penuh",
     "selfiePreviewHint": "Ketuk untuk melihat foto dalam ukuran penuh",
-    "selfiePrompt": "Foto selfie untuk verifikasi (tidak wajib)",
     "selfiePrompt": "Ambil selfie untuk verifikasi",
     "viewFullSelfieLabel": "Lihat selfie penuh",
     "captureButtonLabel": "Ambil Selfie",
@@ -185,5 +184,18 @@
   "gpsCard": {
     "header": "LOKASI GPS"
   },
-  "dayNames": ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"]
+  "dayNames": [
+    "Minggu",
+    "Senin",
+    "Selasa",
+    "Rabu",
+    "Kamis",
+    "Jumat",
+    "Sabtu"
+  ],
+  "activityTypeLabel": "JENIS AKTIVITAS",
+  "reasonLabel": "ALASAN LEMBUR",
+  "timeline": {
+    "willRun": "Akan dijalankan"
+  }
 }

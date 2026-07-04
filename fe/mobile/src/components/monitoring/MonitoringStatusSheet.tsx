@@ -160,7 +160,7 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
           <SummaryRow
             icon="map-marker-check"
             label={t('monitoring:status.coveredAreas')}
-            value={`${staffedAreas} dari ${totalAreas} area`}
+            value={t('monitoring:statusSheet.staffedAreas', { staffed: staffedAreas, total: totalAreas })}
           />
           {staleCount > 0 && (
             <SummaryRow

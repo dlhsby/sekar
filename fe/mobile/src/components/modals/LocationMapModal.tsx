@@ -295,7 +295,7 @@ export function LocationMapModal({
               variant="mono-sm"
               color="black"
               style={styles.coordsFont}
-              accessibilityLabel={`Koordinat: ${lat!.toFixed(6)}, ${lng!.toFixed(6)}`}
+              accessibilityLabel={t('components:locationMap.coordAria', { lat: lat!.toFixed(6), lng: lng!.toFixed(6) })}
             >
               {lat!.toFixed(6)}, {lng!.toFixed(6)}
             </NBText>

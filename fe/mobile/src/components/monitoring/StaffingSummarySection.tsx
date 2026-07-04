@@ -166,7 +166,7 @@ export function StaffingSummarySection({
                           style={[styles.roleValue, { color: met ? nbColors.successDark : nbColors.dangerDark }]}
                         >
                           {role.active}/{role.total_required}
-                          {!met ? ` (Kurang ${role.total_required - role.active})` : ''}
+                          {!met ? ` ${t('monitoring:staffing.shortBy', { n: role.total_required - role.active })}` : ''}
                         </Text>
                       </View>
                     );

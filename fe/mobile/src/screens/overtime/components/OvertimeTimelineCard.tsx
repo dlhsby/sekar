@@ -110,7 +110,7 @@ export const OvertimeTimelineCard: React.FC<OvertimeTimelineCardProps> = ({ over
         {overtime.status === 'approved' && (
           <TimelineStep
             done={false}
-            label="Akan dijalankan"
+            label={t("overtime:timeline.willRun")}
             timestamp={formatDateTimeIndonesian(overtime.start_datetime)}
             isLast
           />

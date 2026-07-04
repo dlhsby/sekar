@@ -84,7 +84,8 @@
     "photosLabel": "FOTO POHON",
     "photosHint": "Ambil foto pohon yang akan dipangkas",
     "availabilityLabel": "Ketersediaan Minggu Preferensi",
-    "weekLabel": "Minggu"
+    "weekLabel": "Minggu",
+    "headerTitle": "Buat Permohonan Perantingan"
   },
   "calendar": {
     "legendAvailable": "Tersedia",
@@ -106,7 +107,10 @@
     "wednesdayLabel": "Rab",
     "thursdayLabel": "Kam",
     "fridayLabel": "Jum",
-    "saturdayLabel": "Sab"
+    "saturdayLabel": "Sab",
+    "dayAria": "Tanggal {{date}} status {{status}}",
+    "inPreferredWeekHint": " (di dalam minggu preferensi)",
+    "selectedHint": " (terpilih, ketuk untuk batal)"
   },
   "weekPicker": {
     "statusAvailable": "Tersedia",
@@ -144,7 +148,8 @@
     "rejectButtonTitle": "Tolak",
     "resultsCardTitle": "Hasil Review",
     "accessDeniedTitle": "Akses Ditolak",
-    "accessDeniedDesc": "Anda tidak memiliki izin untuk mengakses halaman ini."
+    "accessDeniedDesc": "Anda tidak memiliki izin untuk mengakses halaman ini.",
+    "dateLabel": "Tanggal Review"
   },
   "reassign": {
     "title": "Pindah Petugas",

@@ -5,6 +5,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ScrollView,
   StyleSheet,
@@ -41,6 +42,7 @@ import {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export function SubmitScreen(): React.JSX.Element {
+  const { t } = useTranslation();
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
 
@@ -160,7 +162,7 @@ export function SubmitScreen(): React.JSX.Element {
   useEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <FieldHomeHeader title="Buat Permohonan Perantingan" onBack={handleLeave} />
+        <FieldHomeHeader title={t("pruning:submit.headerTitle")} onBack={handleLeave} />
       ),
     });
   }, [navigation, handleLeave]);

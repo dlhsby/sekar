@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import i18n from '../i18n/config';
 import Geolocation from 'react-native-geolocation-service';
 import { useAppSelector } from '../store/hooks';
 import { isWithinAreaBoundary } from '../utils/gpsUtils';
@@ -62,7 +63,7 @@ export function useHomeLocation() {
         setLocation((prev) => ({
           ...prev,
           loading: false,
-          error: error.message || 'Gagal mendapatkan lokasi',
+          error: error.message || i18n.t('location:getFailed'),
         }));
       },
       {

@@ -304,5 +304,12 @@
   "assignment": {
     "createdBy": "Created by",
     "assignedTo": "Assigned to"
+  },
+  "todayModal": {
+    "taskDetailAria": "Task detail {{title}}"
+  },
+  "list": {
+    "loadError": "Failed to load tasks",
+    "loadDetailError": "Failed to load task detail"
   }
 }

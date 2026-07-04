@@ -55,5 +55,6 @@
   "selector": {
     "selectRayonFirst": "Select a rayon first",
     "selectArea": "Select area..."
-  }
+  },
+  "getFailed": "Failed to get location"
 }

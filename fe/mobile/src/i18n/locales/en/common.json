@@ -207,5 +207,6 @@
     "openProfile": "Open Profile",
     "defaultUser": "User",
     "elapsedTime": "Elapsed time: {{time}}"
-  }
+  },
+  "error": "Error"
 }

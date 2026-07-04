@@ -152,5 +152,8 @@
   "shiftCard": {
     "unknownArea": "Area tidak diketahui",
     "detailHint": "Ketuk untuk melihat detail shift"
+  },
+  "workHours": {
+    "titlePrefix": "Kehadiran {{date}}"
   }
 }

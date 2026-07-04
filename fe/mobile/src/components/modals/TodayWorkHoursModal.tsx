@@ -47,7 +47,7 @@ export function TodayWorkHoursModal({
   // Parse a YYYY-MM-DD string as local midnight so the date reads verbatim.
   const headerSource = typeof date === 'string' ? `${date}T00:00:00` : date ?? new Date();
   const dateLine = formatDate(headerSource);
-  const titlePrefix = date ? `Kehadiran ${formatLongDate(headerSource)}` : t('shifts.today');
+  const titlePrefix = date ? t('attendance:workHours.titlePrefix', { date: formatLongDate(headerSource) }) : t('shifts.today');
   const titleSuffix = shifts.length > 0 ? ` (${totalHours}j ${totalMinutes}m)` : '';
 
   return (

@@ -62,7 +62,7 @@ export function TodayTasksModal({
                 description={task.description || undefined}
                 meta={meta}
                 onPress={() => onTaskPress?.(task)}
-                accessibilityLabel={`Detail tugas ${task.title}`}
+                accessibilityLabel={t('tasks:todayModal.taskDetailAria', { title: task.title })}
                 testID={`today-task-${task.id}`}
               />
             );

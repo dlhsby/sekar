@@ -14,7 +14,9 @@
       "useMyLocation": "Use my location",
       "updateHistory": "Update history"
     },
-    "timeDetails": "Time details"
+    "timeDetails": "Time details",
+    "resetFilterAria": "Reset {{label}} filter",
+    "filterAria": "Filter {{label}}"
   },
   "nbselect": {
     "placeholder": "Select...",
@@ -73,7 +75,8 @@
     "accuracy": "Accuracy: ±{{value}}m",
     "withinWorkArea": "Within work area",
     "outsideWorkArea": "Outside work area",
-    "updated": "Updated {{time}}"
+    "updated": "Updated {{time}}",
+    "coordAria": "Coordinates: {{lat}}, {{lng}}"
   },
   "nbDatePicker": {
     "months": [
