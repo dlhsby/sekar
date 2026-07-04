@@ -1,4 +1,7 @@
 import '@testing-library/jest-dom';
+// Initialize i18next (id default) so components using t() render real copy in tests
+// instead of raw keys. Mirrors the app runtime; no provider needed (global instance).
+import '@/lib/i18n/config';
 
 // Mock environment variables
 process.env.NEXT_PUBLIC_API_URL = 'http://localhost:3000';
