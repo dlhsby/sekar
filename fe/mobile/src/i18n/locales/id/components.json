@@ -59,7 +59,20 @@
     "updated": "Diperbarui {{time}}"
   },
   "nbDatePicker": {
-    "months": ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"],
+    "months": [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "Mei",
+      "Jun",
+      "Jul",
+      "Agt",
+      "Sep",
+      "Okt",
+      "Nov",
+      "Des"
+    ],
     "placeholderDate": "Pilih tanggal",
     "placeholderTime": "Pilih waktu",
     "modalTitleDate": "Pilih Tanggal",
@@ -73,5 +86,31 @@
   "photoGrid": {
     "photoLabelWithIndex": "{{label}} - Foto {{index}}",
     "photoIndexOnly": "Foto {{index}} dari {{total}}"
+  },
+  "shiftCard": {
+    "areaNotFound": "Area tidak diketahui",
+    "viewDetailHint": "Ketuk untuk melihat detail shift"
+  },
+  "errorBanner": {
+    "closeLabel": "Tutup pesan kesalahan",
+    "closeHint": "Ketuk untuk menutup pesan kesalahan ini"
+  },
+  "updateBanner": {
+    "title": "Pembaruan tersedia",
+    "message": "Versi {{version}} sudah tersedia. Perbarui untuk fitur & perbaikan terbaru."
+  },
+  "permissionBanner": {
+    "disabledLabel": "Izin {{permissions}} dinonaktifkan",
+    "openSettingsLabel": "BUKA PENGATURAN",
+    "accessibilityLabel": "Izin {{permissions}} dinonaktifkan. Ketuk untuk membuka Pengaturan."
+  },
+  "taskDetailSection": {
+    "title": "DETAIL TUGAS",
+    "subtitle": "Isi judul dan deskripsi tugas",
+    "titleLabel": "Judul *",
+    "titlePlaceholder": "Masukkan judul tugas...",
+    "descriptionLabel": "Deskripsi",
+    "descriptionPlaceholder": "Jelaskan detail tugas...",
+    "helperText": "{{current}}/500 karakter"
   }
 }

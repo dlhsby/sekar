@@ -153,6 +153,11 @@
     "minutesAgo": "mnt lalu",
     "hoursAgo": "jam lalu"
   },
+  "trailInfoBar": {
+    "totalDistance": "Total Jarak",
+    "insideAreaTime": "Di Area",
+    "outsideAreaTime": "Di Luar"
+  },
   "filterModal": {
     "title": "Filter Monitoring",
     "reset": "Reset",

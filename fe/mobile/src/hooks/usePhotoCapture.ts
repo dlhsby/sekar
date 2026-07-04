@@ -6,6 +6,7 @@
 import { useState, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { launchCamera, type ImagePickerResponse } from 'react-native-image-picker';
+import i18n from '../i18n/config';
 
 const MAX_PHOTOS = 3;
 
@@ -15,7 +16,10 @@ export function usePhotoCapture(maxPhotos: number = MAX_PHOTOS) {
 
   const capturePhoto = useCallback(async () => {
     if (photos.length >= maxPhotos) {
-      Alert.alert('Batas Foto', `Maksimal ${maxPhotos} foto`);
+      Alert.alert(
+        i18n.t('errors:photoLimitExceeded'),
+        i18n.t('errors:photoLimitMessage', { maxPhotos })
+      );
       return;
     }
 
@@ -36,7 +40,10 @@ export function usePhotoCapture(maxPhotos: number = MAX_PHOTOS) {
       const base64 = `data:image/jpeg;base64,${result.assets[0].base64}`;
       setPhotos((prev) => [...prev, base64]);
     } catch {
-      Alert.alert('Error', 'Gagal mengambil foto');
+      Alert.alert(
+        i18n.t('common:ui.error'),
+        i18n.t('errors:photoCaptureFailed')
+      );
     } finally {
       setIsCapturing(false);
     }

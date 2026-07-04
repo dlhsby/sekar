@@ -684,12 +684,13 @@ function DataTablePagination<TData>({
   onPageChange,
   onPageSizeChange,
 }: PaginationBarProps<TData>): React.JSX.Element {
+  const { t } = useTranslation();
   const from = page * pageSize + 1;
   const to = Math.min((page + 1) * pageSize, totalRows);
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <p className="text-nb-body-sm text-nb-gray-600">
-        Menampilkan {from}–{to} dari {totalRows}
+        {t('common:pagination.showing', { from, to, total: totalRows })}
       </p>
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
@@ -699,10 +700,10 @@ function DataTablePagination<TData>({
             disabled={page <= 0}
             onClick={() => onPageChange(page - 1)}
           >
-            Sebelumnya
+            {t('common:pagination.previous')}
           </Button>
           <span className="text-nb-body-sm text-nb-gray-600">
-            Halaman {page + 1} dari {totalPages}
+            {t('common:pagination.pageOf', { page: page + 1, total: totalPages })}
           </span>
           <Button
             variant="outline"
@@ -710,7 +711,7 @@ function DataTablePagination<TData>({
             disabled={page >= totalPages - 1}
             onClick={() => onPageChange(page + 1)}
           >
-            Selanjutnya
+            {t('common:pagination.next')}
           </Button>
         </div>
         <Select value={String(pageSize)} onValueChange={(v) => onPageSizeChange(Number(v))}>
@@ -720,7 +721,7 @@ function DataTablePagination<TData>({
           <SelectContent>
             {PAGE_SIZES.map((s) => (
               <SelectItem key={s} value={String(s)}>
-                {s} / hlm
+                {t('common:pagination.perPage', { count: s })}
               </SelectItem>
             ))}
           </SelectContent>

@@ -153,6 +153,11 @@
     "minutesAgo": "min ago",
     "hoursAgo": "hours ago"
   },
+  "trailInfoBar": {
+    "totalDistance": "Total Distance",
+    "insideAreaTime": "Inside Area",
+    "outsideAreaTime": "Outside Area"
+  },
   "filterModal": {
     "title": "Filter Monitoring",
     "reset": "Reset",

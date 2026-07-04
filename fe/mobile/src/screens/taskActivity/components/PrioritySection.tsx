@@ -2,9 +2,10 @@
  * Priority Section — Priority Selection with Color Coding
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 import {
   NBCard,
   NBCardHeader,
@@ -15,13 +16,6 @@ import { nbColors } from '../../../constants/nbTokens';
 import type { TaskPriority } from '../../../types/models.types';
 import { styles } from '../styles';
 
-const PRIORITY_OPTIONS: { value: TaskPriority; label: string; color: string }[] = [
-  { value: 'low', label: 'Rendah', color: nbColors.gray500 },
-  { value: 'medium', label: 'Biasa', color: nbColors.info },
-  { value: 'high', label: 'Tinggi', color: nbColors.warningLight },
-  { value: 'urgent', label: 'Mendesak', color: nbColors.danger },
-];
-
 interface PrioritySectionProps {
   priority: TaskPriority | '';
   onPriorityChange: (priority: TaskPriority) => void;
@@ -31,6 +25,15 @@ export const PrioritySection: React.FC<PrioritySectionProps> = ({
   priority,
   onPriorityChange,
 }) => {
+  const { t } = useTranslation('status');
+
+  const PRIORITY_OPTIONS: { value: TaskPriority; label: string; color: string }[] = useMemo(() => [
+    { value: 'low', label: t('priority.low'), color: nbColors.gray500 },
+    { value: 'medium', label: t('priority.medium'), color: nbColors.info },
+    { value: 'high', label: t('priority.high'), color: nbColors.warningLight },
+    { value: 'urgent', label: t('priority.urgent'), color: nbColors.danger },
+  ], [t]);
+
   return (
     <NBCard style={styles.card}>
       <NBCardHeader>
@@ -38,7 +41,7 @@ export const PrioritySection: React.FC<PrioritySectionProps> = ({
           <MaterialCommunityIcons name="flag-outline" size={16} color={nbColors.black} />
           <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}>
             {' '}
-            PRIORITAS
+            {t('priority._label', { defaultValue: 'PRIORITAS' })}
           </NBText>
         </View>
       </NBCardHeader>

@@ -59,7 +59,20 @@
     "updated": "Updated {{time}}"
   },
   "nbDatePicker": {
-    "months": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    "months": [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec"
+    ],
     "placeholderDate": "Select date",
     "placeholderTime": "Select time",
     "modalTitleDate": "Select Date",
@@ -73,5 +86,31 @@
   "photoGrid": {
     "photoLabelWithIndex": "{{label}} - Photo {{index}}",
     "photoIndexOnly": "Photo {{index}} of {{total}}"
+  },
+  "shiftCard": {
+    "areaNotFound": "Area not found",
+    "viewDetailHint": "Tap to view shift details"
+  },
+  "errorBanner": {
+    "closeLabel": "Close error message",
+    "closeHint": "Tap to close this error message"
+  },
+  "updateBanner": {
+    "title": "Update available",
+    "message": "Version {{version}} is available. Update for the latest features & improvements."
+  },
+  "permissionBanner": {
+    "disabledLabel": "{{permissions}} permission disabled",
+    "openSettingsLabel": "OPEN SETTINGS",
+    "accessibilityLabel": "{{permissions}} permission disabled. Tap to open Settings."
+  },
+  "taskDetailSection": {
+    "title": "TASK DETAILS",
+    "subtitle": "Enter title and description for the task",
+    "titleLabel": "Title *",
+    "titlePlaceholder": "Enter task title...",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Explain task details...",
+    "helperText": "{{current}}/500 characters"
   }
 }

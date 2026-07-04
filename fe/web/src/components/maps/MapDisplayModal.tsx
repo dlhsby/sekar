@@ -4,10 +4,11 @@
  * Read-only coordinate display modal backed by Google Maps.
  *
  * Shows a single marker at the given coordinate. Falls back to an external
- * "Buka di Google Maps" link when no Google Maps key is configured. Opened by
+ * link when no Google Maps key is configured. Opened by
  * CoordinateLink from the Rayon + Area tables / detail modals.
  */
 
+import { useTranslation } from 'react-i18next';
 import { ExternalLink } from 'lucide-react';
 import { GoogleMap, Marker } from '@react-google-maps/api';
 import {
@@ -37,6 +38,7 @@ export interface MapDisplayModalProps {
 }
 
 function ExternalLinkRow({ lat, lng }: { lat: number; lng: number }) {
+  const { t } = useTranslation();
   return (
     <a
       href={googleMapsUrl(lat, lng)}
@@ -48,7 +50,7 @@ function ExternalLinkRow({ lat, lng }: { lat: number; lng: number }) {
       )}
     >
       <ExternalLink className="h-4 w-4" aria-hidden />
-      Buka di Google Maps
+      {t('components:mapDisplayModal.openInGoogleMaps')}
     </a>
   );
 }
@@ -58,22 +60,24 @@ export function MapDisplayModal({
   onOpenChange,
   lat,
   lng,
-  title = 'Lokasi',
+  title,
 }: MapDisplayModalProps) {
+  const { t } = useTranslation();
   const position = { lat, lng };
+  const modalTitle = title ?? t('components:mapDisplayModal.title');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle>{modalTitle}</DialogTitle>
         </DialogHeader>
         <DialogBody className="space-y-3">
           <GoogleMapsGate
             fallback={
               <div className="rounded-nb-base border-2 border-nb-black bg-nb-gray-100 p-4">
                 <p className="mb-2 text-nb-body-sm text-nb-gray-700">
-                  Peta tidak tersedia. Buka koordinat di Google Maps:
+                  {t('components:mapDisplayModal.unavailable')}
                 </p>
                 <ExternalLinkRow lat={lat} lng={lng} />
               </div>

@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { NBText } from '../nb/NBText';
 import { nbColors, nbSpacing, nbRadius } from '../../constants/nbTokens';
 
@@ -41,6 +42,7 @@ export function ErrorBanner({
   onAction,
   style,
 }: ErrorBannerProps): React.ReactElement {
+  const { t } = useTranslation('components');
   const isWarning = variant === 'warning';
   const containerStyle = [styles.container, { backgroundColor: VARIANT_BG[variant] }, style];
   const textColor = isWarning ? 'black' : 'white';
@@ -66,8 +68,8 @@ export function ErrorBanner({
           onPress={onDismiss}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessibilityRole="button"
-          accessibilityLabel="Tutup pesan kesalahan"
-          accessibilityHint="Ketuk untuk menutup pesan kesalahan ini"
+          accessibilityLabel={t('errorBanner.closeLabel')}
+          accessibilityHint={t('errorBanner.closeHint')}
         >
           <NBText variant="body-lg" color={textColor}>✕</NBText>
         </TouchableOpacity>

@@ -33,6 +33,7 @@
     "resetPasswordTitle": "Force Reset Password?",
     "resetPasswordMessage": "Password for {fullName} will be reset — the old password will no longer work and the user must change it on first login.",
     "resetPasswordConfirm": "Reset Password",
+    "detailTitle": "User Details",
     "createErrorMessage": "Failed to create user. Please try again.",
     "updateErrorMessage": "Failed to update user. Please try again.",
     "form": {

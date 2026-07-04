@@ -22,21 +22,21 @@ import {
   PRUNING_REQUEST_STATUS_TONES,
 } from '@/lib/constants/pruning-requests';
 
-function expectedLabel(req: {
-  expectedDate: string | null;
-  expectedYear: number | null;
-  expectedIsoWeek: number | null;
-}): string {
-  if (req.expectedDate) return new Date(req.expectedDate).toLocaleDateString(intlLocale());
-  if (req.expectedYear && req.expectedIsoWeek) return `Minggu ${req.expectedIsoWeek}/${req.expectedYear}`;
-  return 'Belum ditentukan';
-}
-
 export default function MyPruningRequestsPage() {
   const { t } = useTranslation();
   const router = useRouter();
   const { data, isLoading, isError } = useMyPruningRequests();
   const requests = data ?? [];
+
+  const expectedLabel = (req: {
+    expectedDate: string | null;
+    expectedYear: number | null;
+    expectedIsoWeek: number | null;
+  }): string => {
+    if (req.expectedDate) return new Date(req.expectedDate).toLocaleDateString(intlLocale());
+    if (req.expectedYear && req.expectedIsoWeek) return t('pruning:detail.weekLabel', { week: req.expectedIsoWeek, year: req.expectedYear });
+    return t('pruning:detail.undetermined');
+  };
 
   return (
     <div className="mx-auto max-w-2xl space-y-5 px-4 py-6">

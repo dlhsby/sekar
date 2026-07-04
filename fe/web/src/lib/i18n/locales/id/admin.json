@@ -33,6 +33,7 @@
     "resetPasswordTitle": "Paksa Reset Password?",
     "resetPasswordMessage": "Password {fullName} akan direset paksa — password lama tidak bisa dipakai lagi dan pengguna wajib menggantinya saat login pertama.",
     "resetPasswordConfirm": "Reset Password",
+    "detailTitle": "Detail Pengguna",
     "createErrorMessage": "Gagal membuat pengguna. Silakan coba lagi.",
     "updateErrorMessage": "Gagal memperbarui pengguna. Silakan coba lagi.",
     "form": {

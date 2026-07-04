@@ -148,5 +148,9 @@
     "outsideArea": "Luar Area",
     "distance": "Jarak",
     "radius": "Radius"
+  },
+  "shiftCard": {
+    "unknownArea": "Area tidak diketahui",
+    "detailHint": "Ketuk untuk melihat detail shift"
   }
 }

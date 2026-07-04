@@ -145,7 +145,8 @@
     "photoAlt": "Foto {{index}}",
     "photoPreview": "Pratinjau foto",
     "noActionAvailable": "Tidak ada aksi tersedia untuk status saat ini.",
-    "weekLabel": "Minggu {{week}}/{{year}}"
+    "weekLabel": "Minggu {{week}}/{{year}}",
+    "undetermined": "Belum ditentukan"
   },
   "myRequests": {
     "pageTitle": "Permintaan Saya",

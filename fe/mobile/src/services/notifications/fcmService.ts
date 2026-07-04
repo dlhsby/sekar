@@ -158,7 +158,7 @@ class FCMService {
 
       // Dispatch error to Redux
       if (this.reduxStore) {
-        this.reduxStore.dispatch(setError('Firebase Messaging tidak tersedia'));
+        this.reduxStore.dispatch(setError(i18n.t('notifications:fcm.notAvailable')));
       }
     }
   }
@@ -515,7 +515,7 @@ class FCMService {
     return {
       id: remoteMessage.messageId || `local_${Date.now()}`,
       user_id: '', // Will be set by backend when stored
-      title: remoteMessage.notification?.title || 'Notifikasi Baru',
+      title: remoteMessage.notification?.title || i18n.t('notifications:fcm.defaultTitle'),
       body: remoteMessage.notification?.body || '',
       type: typeof remoteMessage.data?.type === 'string' ? remoteMessage.data.type : 'general',
       data: remoteMessage.data as Record<string, any> | undefined,

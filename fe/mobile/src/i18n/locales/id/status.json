@@ -61,5 +61,12 @@
     "verified": "Terverifikasi",
     "declined": "Ditolak",
     "pending": "Menunggu"
+  },
+  "tracking": {
+    "active": "Aktif",
+    "inactive": "Idle",
+    "outside_area": "Di Luar Area",
+    "missing": "Tidak Terdeteksi",
+    "offline": "Offline"
   }
 }

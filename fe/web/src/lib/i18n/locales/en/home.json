@@ -11,6 +11,8 @@
     "unavailable": "Status unavailable.",
     "presence": "{{count}} present · {{rayons}} rayons",
     "active": "Active",
+    "idle": "Idle",
+    "missing": "Not detected",
     "offline": "Offline (not clocked in)",
     "outsideArea": "Outside Area",
     "todaySchedule": "Today's Schedule",

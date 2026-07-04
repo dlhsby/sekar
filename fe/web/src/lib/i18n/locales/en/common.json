@@ -4,6 +4,7 @@
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
+    "removeLabel": "Remove {{label}}",
     "edit": "Edit",
     "add": "Add",
     "create": "Create",
@@ -46,7 +47,8 @@
     "confirmLogoutMessage": "Are you sure you want to exit the app?",
     "capacity": "Capacity",
     "menuLabel": "Actions",
-    "sortTooltip": "Click to sort · Shift+click for multiple columns"
+    "sortTooltip": "Click to sort · Shift+click for multiple columns",
+    "openMapLink": "Open in Google Maps"
   },
   "entities": {
     "user": "User",
@@ -176,7 +178,9 @@
   "pagination": {
     "previous": "Previous",
     "next": "Next",
-    "pageOf": "Page {page} of {total}"
+    "pageOf": "Page {page} of {total}",
+    "showing": "Showing {from}–{to} of {total}",
+    "perPage": "{count} / page"
   },
   "pickers": {
     "selectTime": "Select time",

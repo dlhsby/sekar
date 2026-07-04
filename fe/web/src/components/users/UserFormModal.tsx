@@ -74,7 +74,7 @@ export function UserFormModal({
       <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>
-            {readOnly ? 'Detail Pengguna' : isEdit ? t('admin:users.actionEdit') : t('admin:users.buttonAdd')}
+            {readOnly ? t('admin:users.detailTitle') : isEdit ? t('admin:users.actionEdit') : t('admin:users.buttonAdd')}
           </DialogTitle>
         </DialogHeader>
         <DialogBody>

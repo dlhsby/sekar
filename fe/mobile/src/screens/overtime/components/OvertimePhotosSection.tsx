@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { PhotoGridSection } from '../../../components/common/PhotoGridSection';
 
 interface OvertimePhotosSectionProps {
@@ -15,6 +16,8 @@ export const OvertimePhotosSection: React.FC<OvertimePhotosSectionProps> = ({
   photoUrls,
   onPhotoPress,
 }) => {
+  const { t } = useTranslation('overtime');
+
   if (!photoUrls || photoUrls.length === 0) return null;
 
   return (
@@ -22,8 +25,8 @@ export const OvertimePhotosSection: React.FC<OvertimePhotosSectionProps> = ({
       photos={photoUrls}
       onPhotoPress={onPhotoPress}
       headerType="icon"
-      title="FOTO BUKTI"
-      subtitle={`${photoUrls.length} foto dilampirkan`}
+      title={t('forms.photosTitle')}
+      subtitle={t('forms.photosSubtitle', { count: photoUrls.length })}
       iconName="image-multiple-outline"
     />
   );

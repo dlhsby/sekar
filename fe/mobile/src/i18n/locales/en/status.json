@@ -61,5 +61,12 @@
     "verified": "Verified",
     "declined": "Declined",
     "pending": "Pending"
+  },
+  "tracking": {
+    "active": "Active",
+    "inactive": "Idle",
+    "outside_area": "Outside Area",
+    "missing": "Not Detected",
+    "offline": "Offline"
   }
 }

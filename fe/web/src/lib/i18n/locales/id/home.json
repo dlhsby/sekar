@@ -11,6 +11,8 @@
     "unavailable": "Status tidak tersedia.",
     "presence": "{{count}} hadir · {{rayons}} rayon",
     "active": "Aktif",
+    "idle": "Menganggur",
+    "missing": "Tidak terdeteksi",
     "offline": "Offline (belum clock-in)",
     "outsideArea": "Di luar area",
     "todaySchedule": "Jadwal hari ini",

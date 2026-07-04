@@ -4,6 +4,7 @@
  * Status/priority formatting is centralized in src/utils/statusHelpers.ts
  */
 
+import i18n from '../../../i18n/config';
 import { nbColors } from '../../../constants/nbTokens';
 import { toTitleCase } from '../../../utils/filterHelpers';
 import type { Task } from '../../../types/models.types';
@@ -31,7 +32,7 @@ export function buildAuditEvents(task: Task | null): AuditEvent[] {
 
   events.push({
     key: 'created',
-    event: 'Dibuat',
+    event: i18n.t('tasks:audit.created'),
     timestamp: task.created_at,
     icon: 'plus-circle',
     color: nbColors.primary,
@@ -41,7 +42,7 @@ export function buildAuditEvents(task: Task | null): AuditEvent[] {
   if (task.assigned_at) {
     events.push({
       key: 'assigned',
-      event: 'Ditugaskan',
+      event: i18n.t('tasks:audit.assigned'),
       timestamp: task.assigned_at,
       icon: 'account-arrow-right',
       color: nbColors.warningLight,
@@ -52,7 +53,7 @@ export function buildAuditEvents(task: Task | null): AuditEvent[] {
   if (task.accepted_at) {
     events.push({
       key: 'accepted',
-      event: 'Diterima',
+      event: i18n.t('tasks:audit.accepted'),
       timestamp: task.accepted_at,
       icon: 'check-circle',
       color: nbColors.success,
@@ -63,7 +64,7 @@ export function buildAuditEvents(task: Task | null): AuditEvent[] {
   if (task.declined_at) {
     events.push({
       key: 'declined',
-      event: 'Ditolak',
+      event: i18n.t('tasks:audit.declined'),
       timestamp: task.declined_at,
       icon: 'close-circle',
       color: nbColors.danger,
@@ -75,7 +76,7 @@ export function buildAuditEvents(task: Task | null): AuditEvent[] {
   if (task.started_at) {
     events.push({
       key: 'started',
-      event: 'Dikerjakan',
+      event: i18n.t('tasks:audit.started'),
       timestamp: task.started_at,
       icon: 'play-circle',
       color: nbColors.primary,
@@ -86,7 +87,7 @@ export function buildAuditEvents(task: Task | null): AuditEvent[] {
   if (task.completed_at) {
     events.push({
       key: 'completed',
-      event: 'Diselesaikan',
+      event: i18n.t('tasks:audit.completed'),
       timestamp: task.completed_at,
       icon: 'check-all',
       color: nbColors.success,
@@ -97,7 +98,7 @@ export function buildAuditEvents(task: Task | null): AuditEvent[] {
   if (task.revision_reason && task.status === 'revision_needed') {
     events.push({
       key: 'revision',
-      event: 'Diminta Revisi',
+      event: i18n.t('tasks:audit.revision'),
       timestamp: task.updated_at,
       icon: 'pencil-circle',
       color: nbColors.warningLight,
@@ -109,7 +110,7 @@ export function buildAuditEvents(task: Task | null): AuditEvent[] {
   if (task.verified_at) {
     events.push({
       key: 'verified',
-      event: 'Terverifikasi',
+      event: i18n.t('tasks:audit.verified'),
       timestamp: task.verified_at,
       icon: 'shield-check',
       color: nbColors.success,

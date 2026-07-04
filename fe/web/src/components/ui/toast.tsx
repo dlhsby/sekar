@@ -6,7 +6,7 @@
  *
  * Usage:
  *   const { toast } = useToast();
- *   toast({ level: 'danger', title: 'Gagal Masuk', body: '...' });
+ *   toast({ level: 'danger', title: t('errors:loginFailed'), body: '...' });
  *
  * Mount `<ToastProvider>` once near the app root (see app/providers.tsx).
  */
@@ -67,7 +67,7 @@ const LEVEL_CHROME: Record<
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = React.useState<ActiveToast[]>([]);
   const counter = React.useRef(0);
-  const { t: i18n } = useTranslation();
+  const { t } = useTranslation();
   const timers = React.useRef(new Map<number, ReturnType<typeof setTimeout>>());
 
   const dismiss = React.useCallback((id: number) => {
@@ -107,16 +107,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       <div
         className="pointer-events-none fixed inset-x-0 top-4 z-[100] flex flex-col items-center gap-2 px-4 sm:inset-x-auto sm:right-4 sm:items-end"
         role="region"
-        aria-label="Notifikasi"
+        aria-label={t('notifications:bell.title')}
       >
-        {toasts.map((t) => {
-          const chrome = LEVEL_CHROME[t.level];
+        {toasts.map((toast) => {
+          const chrome = LEVEL_CHROME[toast.level];
           const Icon = chrome.icon;
           return (
             <div
-              key={t.id}
+              key={toast.id}
               role="alert"
-              aria-live={t.level === 'danger' ? 'assertive' : 'polite'}
+              aria-live={toast.level === 'danger' ? 'assertive' : 'polite'}
               className={cn(
                 'pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-nb-md border-2 p-3 shadow-nb-md',
                 chrome.container
@@ -124,13 +124,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             >
               <Icon className={cn('mt-0.5 size-5 shrink-0', chrome.iconClass)} aria-hidden="true" />
               <div className="min-w-0 flex-1">
-                <p className="text-nb-body-sm font-bold text-nb-black">{t.title}</p>
-                {t.body && <p className="mt-0.5 text-nb-caption text-nb-black/80">{t.body}</p>}
+                <p className="text-nb-body-sm font-bold text-nb-black">{toast.title}</p>
+                {toast.body && <p className="mt-0.5 text-nb-caption text-nb-black/80">{toast.body}</p>}
               </div>
               <button
                 type="button"
-                onClick={() => dismiss(t.id)}
-                aria-label={i18n('common:actions.close')}
+                onClick={() => dismiss(toast.id)}
+                aria-label={t('common:actions.close')}
                 className="shrink-0 rounded-nb-sm p-0.5 text-nb-black/60 transition-colors hover:text-nb-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-nb-black"
               >
                 <X className="size-4" aria-hidden="true" />

@@ -120,6 +120,11 @@
       "error": "Error"
     }
   },
+  "labels": {
+    "createdBy": "Created by",
+    "assignedTo": "Assigned to",
+    "duration": "Duration"
+  },
   "time": {
     "justNow": "just now",
     "minutesAgo": "{{count}} minutes ago",
@@ -138,12 +143,49 @@
     "inHours": "in {{count}} hours",
     "hoursPast": "{{count}} hours ago",
     "inDays": "in {{count}} days",
-    "daysPast": "{{count}} days ago"
+    "daysPast": "{{count}} days ago",
+    "secondsAgo": "{{count}} sec ago",
+    "minutesAgoShort": "{{count}} min ago",
+    "hoursAgoShort": "{{count}} h ago"
   },
   "calendar": {
-    "days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-    "monthsShort": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-    "monthsFull": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    "days": [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday"
+    ],
+    "monthsShort": [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec"
+    ],
+    "monthsFull": [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ],
     "week": "Week"
   },
   "ui": {

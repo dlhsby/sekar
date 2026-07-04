@@ -290,5 +290,19 @@
   "modal": {
     "todayTasks": "Today's Tasks ({{count}})",
     "todayTasksEmptyMessage": "Tasks assigned to you will appear here."
+  },
+  "audit": {
+    "created": "Created",
+    "assigned": "Assigned",
+    "accepted": "Accepted",
+    "declined": "Declined",
+    "started": "Started",
+    "completed": "Completed",
+    "revision": "Revision Requested",
+    "verified": "Verified"
+  },
+  "assignment": {
+    "createdBy": "Created by",
+    "assignedTo": "Assigned to"
   }
 }

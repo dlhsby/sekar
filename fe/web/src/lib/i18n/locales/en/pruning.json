@@ -145,7 +145,8 @@
     "photoAlt": "Photo {{index}}",
     "photoPreview": "Photo preview",
     "noActionAvailable": "No actions available for current status.",
-    "weekLabel": "Week {{week}}/{{year}}"
+    "weekLabel": "Week {{week}}/{{year}}",
+    "undetermined": "Not yet determined"
   },
   "myRequests": {
     "pageTitle": "My Requests",

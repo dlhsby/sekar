@@ -290,5 +290,19 @@
   "modal": {
     "todayTasks": "Tugas Hari Ini ({{count}})",
     "todayTasksEmptyMessage": "Tugas yang ditugaskan ke Anda akan muncul di sini."
+  },
+  "audit": {
+    "created": "Dibuat",
+    "assigned": "Ditugaskan",
+    "accepted": "Diterima",
+    "declined": "Ditolak",
+    "started": "Dikerjakan",
+    "completed": "Diselesaikan",
+    "revision": "Diminta Revisi",
+    "verified": "Terverifikasi"
+  },
+  "assignment": {
+    "createdBy": "Dibuat oleh",
+    "assignedTo": "Ditugaskan ke"
   }
 }

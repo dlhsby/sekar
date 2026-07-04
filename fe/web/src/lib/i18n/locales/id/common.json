@@ -4,6 +4,7 @@
     "save": "Simpan",
     "cancel": "Batal",
     "delete": "Hapus",
+    "removeLabel": "Hapus {{label}}",
     "edit": "Ubah",
     "add": "Tambah",
     "create": "Buat",
@@ -46,7 +47,8 @@
     "confirmLogoutMessage": "Apakah Anda yakin ingin keluar dari aplikasi?",
     "capacity": "Kapasitas",
     "menuLabel": "Aksi",
-    "sortTooltip": "Klik untuk mengurutkan · Shift+klik untuk beberapa kolom"
+    "sortTooltip": "Klik untuk mengurutkan · Shift+klik untuk beberapa kolom",
+    "openMapLink": "Buka di Google Maps"
   },
   "entities": {
     "user": "Pengguna",
@@ -175,8 +177,10 @@
   },
   "pagination": {
     "previous": "Sebelumnya",
-    "next": "Berikutnya",
-    "pageOf": "Halaman {page} dari {total}"
+    "next": "Selanjutnya",
+    "pageOf": "Halaman {page} dari {total}",
+    "showing": "Menampilkan {from}–{to} dari {total}",
+    "perPage": "{count} / hlm"
   },
   "pickers": {
     "selectTime": "Pilih waktu",

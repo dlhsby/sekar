@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   nbColors,
@@ -47,25 +48,27 @@ import { TRAIL_INSIDE_COLOR, TRAIL_OUTSIDE_COLOR } from './trailColors';
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function TrailInfoBar({ history, bottomInset = 0 }: TrailInfoBarProps): React.JSX.Element {
+  const { t } = useTranslation('monitoring');
+
   return (
     <View style={[styles.container, { paddingBottom: nbSpacing.md + bottomInset }]}>
       <Stat
         icon="map-marker-distance"
-        label="Total Jarak"
+        label={t('trailInfoBar.totalDistance')}
         value={formatDistance(history.total_distance_meters)}
         accent={nbColors.black}
       />
       <View style={styles.divider} />
       <Stat
         icon="map-marker-check"
-        label="Di Area"
+        label={t('trailInfoBar.insideAreaTime')}
         value={formatMinutes(history.time_inside_area_minutes)}
         accent={TRAIL_INSIDE_COLOR}
       />
       <View style={styles.divider} />
       <Stat
         icon="map-marker-off"
-        label="Di Luar"
+        label={t('trailInfoBar.outsideAreaTime')}
         value={formatMinutes(history.time_outside_area_minutes)}
         accent={TRAIL_OUTSIDE_COLOR}
       />

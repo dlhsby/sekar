@@ -40,6 +40,11 @@
     "viewLocation": "View location on map",
     "defaultLabel": "Location"
   },
+  "mapDisplayModal": {
+    "title": "Location",
+    "unavailable": "Map unavailable. Open coordinates in Google Maps:",
+    "openInGoogleMaps": "Open in Google Maps"
+  },
   "columnFilter": {
     "placeholder": "Filter…",
     "filterLabel": "Filter {{label}}",

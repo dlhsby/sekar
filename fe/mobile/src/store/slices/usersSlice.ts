@@ -10,6 +10,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { User } from '../../types/models.types';
 import { getUsers } from '../../services/api/usersApi';
+import i18n from '../../i18n/config';
 
 interface UsersState {
   list: User[];
@@ -57,7 +58,7 @@ const usersSlice = createSlice({
       })
       .addCase(fetchUsers.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload ?? 'Gagal memuat daftar pengguna';
+        state.error = action.payload ?? i18n.t('errors:loadUsersFailed');
       });
   },
 });

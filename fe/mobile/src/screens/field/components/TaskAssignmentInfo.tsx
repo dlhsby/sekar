@@ -23,7 +23,7 @@ export function TaskAssignmentInfo({ task }: TaskAssignmentInfoProps): React.JSX
   return (
     <View style={styles.assignRow}>
       <View style={styles.assignBlock}>
-        <NBText variant="body-sm" style={styles.assignLabelStyle}>Dibuat oleh</NBText>
+        <NBText variant="body-sm" style={styles.assignLabelStyle}>{t('tasks:assignment.createdBy')}</NBText>
         <View style={styles.assignUserRow}>
           <Icon name="account-circle" size={16} color={nbColors.gray500} />
           <NBText variant="body-sm" style={styles.assignValueStyle}>{formatUser(task.creator)}</NBText>
@@ -38,7 +38,7 @@ export function TaskAssignmentInfo({ task }: TaskAssignmentInfoProps): React.JSX
       </View>
 
       <View style={styles.assignBlock}>
-        <NBText variant="body-sm" style={styles.assignLabelStyle}>Ditugaskan ke</NBText>
+        <NBText variant="body-sm" style={styles.assignLabelStyle}>{t('tasks:assignment.assignedTo')}</NBText>
         <View style={styles.assignUserRow}>
           <Icon
             name={task.assigned_to ? 'account' : 'account-question'}

@@ -61,7 +61,7 @@ export function ShiftCard({
 
       {/* Title: area */}
       <NBText variant="body" color="black" numberOfLines={1} style={styles.title}>
-        {shift.area?.name || 'Area tidak diketahui'}
+        {shift.area?.name || t('attendance:shiftCard.unknownArea')}
       </NBText>
       {shift.area?.areaType?.name ? (
         <NBText variant="body-sm" color="gray500" style={styles.areaType}>{shift.area.areaType.name}</NBText>
@@ -129,7 +129,7 @@ export function ShiftCard({
         activeOpacity={0.85}
         accessibilityRole="button"
         accessibilityLabel={`Detail shift ${shift.area?.name ?? ''}`}
-        accessibilityHint="Ketuk untuk melihat detail shift"
+        accessibilityHint={t('attendance:shiftCard.detailHint')}
       >
         {card}
       </TouchableOpacity>

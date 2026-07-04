@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
+import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 
 import { cn } from '@/lib/utils/cn';
@@ -41,24 +42,29 @@ export interface BadgeProps
 }
 
 const Badge = React.forwardRef<HTMLDivElement, BadgeProps>(
-  ({ className, variant, size, icon, onRemove, removeLabel, children, ...props }, ref) => (
-    <div className={cn(badgeVariants({ variant, size }), className)} ref={ref} {...props}>
-      {icon && <span className="[&_svg]:size-3">{icon}</span>}
-      {children}
-      {onRemove && (
-        <button
-          type="button"
-          onClick={onRemove}
-          className="ml-1 hover:opacity-70 transition-opacity"
-          aria-label={
-            removeLabel ?? (typeof children === 'string' ? `Hapus ${children}` : 'Hapus')
-          }
-        >
-          <X className="size-3" />
-        </button>
-      )}
-    </div>
-  )
+  ({ className, variant, size, icon, onRemove, removeLabel, children, ...props }, ref) => {
+    const { t } = useTranslation();
+    const defaultRemoveLabel = typeof children === 'string'
+      ? t('common:actions.removeLabel', { label: children })
+      : t('common:actions.delete');
+
+    return (
+      <div className={cn(badgeVariants({ variant, size }), className)} ref={ref} {...props}>
+        {icon && <span className="[&_svg]:size-3">{icon}</span>}
+        {children}
+        {onRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="ml-1 hover:opacity-70 transition-opacity"
+            aria-label={removeLabel ?? defaultRemoveLabel}
+          >
+            <X className="size-3" />
+          </button>
+        )}
+      </div>
+    );
+  }
 );
 
 Badge.displayName = 'Badge';

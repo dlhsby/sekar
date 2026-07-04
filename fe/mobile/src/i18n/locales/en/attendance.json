@@ -148,5 +148,9 @@
     "outsideArea": "Outside Area",
     "distance": "Distance",
     "radius": "Radius"
+  },
+  "shiftCard": {
+    "unknownArea": "Unknown area",
+    "detailHint": "Tap to view shift detail"
   }
 }

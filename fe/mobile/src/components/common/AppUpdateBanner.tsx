@@ -6,11 +6,13 @@
  * (production) via useAppUpdate. Mounted on the field home screen.
  */
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { NBAlert } from '../nb';
 import { useAppUpdate } from '../../hooks/useAppUpdate';
 
 export function AppUpdateBanner({ style }: { style?: StyleProp<ViewStyle> }): React.JSX.Element | null {
+  const { t } = useTranslation('components');
   const { status, latest, openUpdate, updateActionLabel } = useAppUpdate();
 
   if (status !== 'updateAvailable' || !latest) return null;
@@ -18,8 +20,8 @@ export function AppUpdateBanner({ style }: { style?: StyleProp<ViewStyle> }): Re
   return (
     <NBAlert
       variant="info"
-      title="Pembaruan tersedia"
-      message={`Versi ${latest.version} sudah tersedia. Perbarui untuk fitur & perbaikan terbaru.`}
+      title={t('updateBanner.title')}
+      message={t('updateBanner.message', { version: latest.version })}
       actionLabel={updateActionLabel}
       onAction={openUpdate}
       style={style}

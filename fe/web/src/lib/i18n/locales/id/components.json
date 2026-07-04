@@ -40,6 +40,11 @@
     "viewLocation": "Lihat lokasi di peta",
     "defaultLabel": "Lokasi"
   },
+  "mapDisplayModal": {
+    "title": "Lokasi",
+    "unavailable": "Peta tidak tersedia. Buka koordinat di Google Maps:",
+    "openInGoogleMaps": "Buka di Google Maps"
+  },
   "columnFilter": {
     "placeholder": "Filter…",
     "filterLabel": "Filter {{label}}",
