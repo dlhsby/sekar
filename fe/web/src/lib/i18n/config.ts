@@ -20,7 +20,8 @@ import {
   SUPPORTED_LANGUAGES,
 } from './resources';
 
-export const LANGUAGE_STORAGE_KEY = 'sekar_lang';
+import { LANGUAGE_STORAGE_KEY } from './constants';
+export { LANGUAGE_STORAGE_KEY };
 
 if (!i18n.isInitialized) {
   i18n
