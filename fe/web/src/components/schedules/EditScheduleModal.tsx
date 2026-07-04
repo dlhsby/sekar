@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
@@ -8,6 +8,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
+  DialogFooter,
   Button,
   FormCombobox,
   FormSelect,
@@ -20,15 +22,13 @@ interface EditScheduleModalProps {
   open: boolean;
   onClose: () => void;
   roster: Schedule | null;
-  onReplaceWorker: (id: string, replacementUserId: string, notes?: string) => Promise<void>;
   onUpdateShift: (id: string, shiftId: string | null) => Promise<void>;
   onUpdateAreas: (id: string, areaIds: string[]) => Promise<void>;
-  replaceLoading?: boolean;
   shiftLoading?: boolean;
   areasLoading?: boolean;
-  allUsers: Array<{ id: string; full_name: string; username: string; role: string; rayon_id?: string | null }>;
   shifts: Array<{ id: string; name: string; start_time: string; end_time: string }>;
-  allAreas: Array<{ id: string; name: string }>;
+  allRayons: Array<{ id: string; name: string }>;
+  allAreas: Array<{ id: string; name: string; rayon_id: string }>;
   error?: string | null;
 }
 
@@ -36,40 +36,46 @@ export function EditScheduleModal({
   open,
   onClose,
   roster,
-  onReplaceWorker,
   onUpdateShift,
   onUpdateAreas,
-  replaceLoading,
   shiftLoading,
   areasLoading,
-  allUsers,
   shifts,
+  allRayons,
   allAreas,
   error,
 }: EditScheduleModalProps) {
   const { t } = useTranslation(['schedules', 'common']);
 
-  const [selectedUserId, setSelectedUserId] = useState('');
+  const [selectedRayonId, setSelectedRayonId] = useState<string>('');
   const [selectedShiftId, setSelectedShiftId] = useState<string | null>(null);
   const [selectedAreaIds, setSelectedAreaIds] = useState<string[]>([]);
 
-  // Filter schedulable workers (same rayon as the current roster)
-  const rosterRayonId = roster?.rayon_id;
-  const schedulableUsers = allUsers.filter((u) =>
-    ['satgas', 'linmas'].includes(u.role) &&
-    (!rosterRayonId || u.rayon_id === rosterRayonId),
-  );
+  // Filter areas by selected rayon
+  const filteredAreas = useMemo(() => {
+    if (!selectedRayonId) return [];
+    return allAreas.filter((a) => a.rayon_id === selectedRayonId);
+  }, [allAreas, selectedRayonId]);
+
+  // Change rayon → prune any selected areas that don't belong to the new rayon.
+  // Done in the handler (not an effect) so it never fights the preselect effect
+  // or loops on a fresh `.filter()` array reference.
+  const handleRayonChange = (rayonId: string) => {
+    setSelectedRayonId(rayonId);
+    setSelectedAreaIds((prev) =>
+      prev.filter((id) => allAreas.some((a) => a.id === id && a.rayon_id === rayonId)),
+    );
+  };
 
   useEffect(() => {
     if (roster && open) {
-      setSelectedUserId(roster.user_id);
+      setSelectedRayonId(roster.rayon_id || '');
       setSelectedShiftId(roster.shift_definition_id);
       setSelectedAreaIds(roster.schedule_areas.map((a) => a.area_id));
     }
   }, [roster, open]);
 
-  const loading = replaceLoading || shiftLoading || areasLoading;
-  const isWorkerChanged = selectedUserId !== roster?.user_id;
+  const loading = shiftLoading || areasLoading;
   const isShiftChanged = selectedShiftId !== roster?.shift_definition_id;
   const isAreasChanged =
     selectedAreaIds.length !== roster?.schedule_areas.length ||
@@ -81,17 +87,13 @@ export function EditScheduleModal({
     if (!roster) return;
 
     try {
-      if (isWorkerChanged) {
-        // If worker changed, call replace (which handles areas + shift inheritance)
-        await onReplaceWorker(roster.id, selectedUserId);
-      } else {
-        // Otherwise call shift + areas independently if they changed
-        if (isShiftChanged) {
-          await onUpdateShift(roster.id, selectedShiftId);
-        }
-        if (isAreasChanged) {
-          await onUpdateAreas(roster.id, selectedAreaIds);
-        }
+      // The worker is fixed for a schedule row — changing it is not offered
+      // here (see the disabled Pekerja field below); only shift/areas can change.
+      if (isShiftChanged) {
+        await onUpdateShift(roster.id, selectedShiftId);
+      }
+      if (isAreasChanged) {
+        await onUpdateAreas(roster.id, selectedAreaIds);
       }
 
       toast.success(t('messages.editSuccess'));
@@ -109,66 +111,75 @@ export function EditScheduleModal({
           <DialogTitle>{t('modals.edit.title')}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <FormCombobox
-            label={t('modals.edit.workerLabel')}
-            value={selectedUserId}
-            onChange={setSelectedUserId}
-            options={schedulableUsers.map((u) => ({
-              value: u.id,
-              label: `${u.full_name} (${u.username})`,
-            }))}
-          />
-          {isWorkerChanged && (
-            <div className="rounded-nb-base border-2 border-nb-warning bg-nb-warning-light/20 p-3 text-sm text-nb-black">
-              {t('modals.edit.replaceHint')}
-            </div>
-          )}
+        <DialogBody>
+          <div className="space-y-4">
+            <FormCombobox
+              label={t('modals.edit.workerLabel')}
+              value={roster?.user_id ?? ''}
+              onChange={() => {}}
+              disabled
+              helperText={t('modals.edit.workerLocked')}
+              options={
+                roster
+                  ? [{ value: roster.user_id, label: `${roster.user.full_name} (${roster.user.username})` }]
+                  : []
+              }
+            />
 
-          <FormSelect
-            label={t('modals.edit.shiftLabel')}
-            value={selectedShiftId ?? 'none'}
-            onChange={(value) => setSelectedShiftId(value === 'none' ? null : value)}
-            options={[
-              { value: 'none', label: t('modals.add.shiftOptional') },
-              ...shifts.map((shift) => ({
-                value: shift.id,
-                label: `${shift.name} (${shift.start_time}-${shift.end_time})`,
-              })),
-            ]}
-            disabled={isWorkerChanged}
-          />
+            <FormCombobox
+              label={t('modals.edit.rayonLabel')}
+              value={selectedRayonId}
+              onChange={handleRayonChange}
+              options={allRayons.map((r) => ({
+                value: r.id,
+                label: r.name,
+              }))}
+            />
 
-          <FormMultiCombobox
-            label={t('modals.edit.areaLabel')}
-            options={allAreas.map((a) => ({ value: a.id, label: a.name }))}
-            values={selectedAreaIds}
-            onChange={setSelectedAreaIds}
-            placeholder={t('modals.areas.placeholder')}
-            searchPlaceholder={t('modals.areas.searchPlaceholder')}
-            emptyText={t('modals.areas.emptyText')}
-            disabled={isWorkerChanged}
-          />
+            <FormSelect
+              label={t('modals.edit.shiftLabel')}
+              value={selectedShiftId ?? 'none'}
+              onChange={(value) => setSelectedShiftId(value === 'none' ? null : value)}
+              options={[
+                { value: 'none', label: t('modals.add.shiftOptional') },
+                ...shifts.map((shift) => ({
+                  value: shift.id,
+                  label: `${shift.name} (${shift.start_time}-${shift.end_time})`,
+                })),
+              ]}
+            />
 
-          {error && (
-            <div className="rounded-nb-base border-2 border-nb-danger bg-nb-danger-light/20 p-3 text-sm text-nb-danger">
-              {error}
-            </div>
-          )}
-        </div>
+            <FormMultiCombobox
+              label={t('modals.edit.areaLabel')}
+              options={filteredAreas.map((a) => ({ value: a.id, label: a.name }))}
+              values={selectedAreaIds}
+              onChange={setSelectedAreaIds}
+              placeholder={t('modals.areas.placeholder')}
+              searchPlaceholder={t('modals.areas.searchPlaceholder')}
+              emptyText={t('modals.areas.emptyText')}
+              hideSelectedChips
+            />
 
-        <div className="flex justify-end gap-3 pt-4">
+            {error && (
+              <div className="rounded-nb-base border-2 border-nb-danger bg-nb-danger-light/20 p-3 text-sm text-nb-danger">
+                {error}
+              </div>
+            )}
+          </div>
+        </DialogBody>
+
+        <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             {t('common:actions.cancel')}
           </Button>
           <Button
             onClick={handleSubmit}
             loading={loading}
-            disabled={!isWorkerChanged && !isShiftChanged && !isAreasChanged}
+            disabled={!isShiftChanged && !isAreasChanged}
           >
             {t('modals.edit.submit')}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

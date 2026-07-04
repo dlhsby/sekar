@@ -68,7 +68,6 @@ export default function AreaAnalyticsPage() {
   if (isListLoading) {
     return (
       <div className="space-y-6">
-        <PageHeader title={t('areas.page.title')} />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <SkeletonCard />
           <SkeletonCard />
@@ -82,7 +81,6 @@ export default function AreaAnalyticsPage() {
   if (!listData?.data || listData.data.length === 0) {
     return (
       <div className="space-y-6">
-        <PageHeader title={t('areas.page.title')} />
         <EmptyState variant="noData" title={t('areas.empty.noData')} />
       </div>
     );
@@ -90,7 +88,7 @@ export default function AreaAnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t('areas.page.title')} />
+      <PageHeader description={t('areas.page.totalCount', { count: listData.data.length })} />
 
       {/* Search */}
       <FormInput

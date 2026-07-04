@@ -23,7 +23,8 @@
   },
   "areas": {
     "page": {
-      "title": "Area Analytics"
+      "title": "Area Analytics",
+      "totalCount": "{{count}} areas analyzed"
     },
     "search": {
       "label": "Search areas",
@@ -51,7 +52,8 @@
   },
   "workers": {
     "page": {
-      "title": "Worker Analytics"
+      "title": "Worker Analytics",
+      "totalCount": "{{count}} workers analyzed"
     },
     "table": {
       "name": "Name",

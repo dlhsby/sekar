@@ -1,6 +1,7 @@
 {
   "list": {
     "pageHeader": "Manage field assignments.",
+    "totalCount": "{{count}} tasks",
     "createButton": "Create Task",
     "scopeTabAll": "All Tasks",
     "scopeTabTagged": "Tagged",
@@ -136,6 +137,7 @@
   "newPage": {
     "backButton": "Back to task list",
     "pageHeader": "Assign work to officers.",
+    "assignableRoles": "Can be assigned to: {{roles}}",
     "cardTitle": "Task Information",
     "formTitleLabel": "Task Title",
     "formTitlePlaceholder": "Example: Watering East Area",

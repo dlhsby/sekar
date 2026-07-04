@@ -124,10 +124,14 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
   return (
     <div className="space-y-5">
       <PageHeader
-        title={rayonLoading ? 'Memuat…' : `Rayon ${rayon?.name ?? ''}`}
+        title={rayonLoading ? t('admin:rayons.loadingTitle') : `Rayon ${rayon?.name ?? ''}`}
         description={rayon?.description || undefined}
         actions={
-          stats ? <StatusPill tone="neutral">{stats.total_users} petugas</StatusPill> : undefined
+          stats ? (
+            <StatusPill tone="neutral">
+              {t('admin:rayons.staffCount', { count: stats.total_users })}
+            </StatusPill>
+          ) : undefined
         }
       />
 

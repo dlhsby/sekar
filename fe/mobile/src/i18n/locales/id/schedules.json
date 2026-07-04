@@ -17,7 +17,8 @@
     "leave_sick": "Cuti Sakit",
     "leave_annual": "Cuti Tahunan",
     "replaced": "Digantikan",
-    "off": "Libur"
+    "off": "Libur",
+    "leave_permit": "Izin"
   },
   "shiftHistory": {
     "filterTitle": "Filter Riwayat Shift",

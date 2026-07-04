@@ -17,7 +17,8 @@
     "leave_sick": "Sick Leave",
     "leave_annual": "Annual Leave",
     "replaced": "Replaced",
-    "off": "Off"
+    "off": "Off",
+    "leave_permit": "Permit"
   },
   "shiftHistory": {
     "filterTitle": "Filter Shift History",

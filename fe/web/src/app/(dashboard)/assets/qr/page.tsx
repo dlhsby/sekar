@@ -8,7 +8,6 @@ import {
   Card,
   DataTable,
   EmptyState,
-  PageHeader,
   Skeleton,
   useToast,
 } from '@/components/ui';
@@ -166,8 +165,6 @@ export default function QrBatchPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t('assets:qr.pageTitle')} breadcrumb={t('assets:qr.breadcrumb')} />
-
       <Card variant="default">
         <div className="p-4 space-y-4">
           <div className="flex justify-between items-center">

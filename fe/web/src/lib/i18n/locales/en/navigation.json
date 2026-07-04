@@ -7,7 +7,8 @@
     "reports": "Reports", "reportsBuilder": "Report Builder", "reportsSchedules": "Report Schedules",
     "pruningRequests": "Pruning Requests", "pruningSubmit": "Submit Request", "pruningMy": "My Requests",
     "settings": "Settings", "profile": "My Profile", "notifications": "Notifications",
-    "export": "Export Data", "import": "Import Data", "importCsv": "Import CSV"
+    "export": "Export Data", "import": "Import Data", "importCsv": "Import CSV",
+    "analytics": "Analytics", "analyticsAreas": "Area Analytics", "analyticsWorkers": "Worker Analytics"
   },
   "breadcrumb": {
     "work": "Work", "access": "Users & Access", "data": "Master Data", "kecamatan": "District",

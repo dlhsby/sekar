@@ -34,7 +34,8 @@
   "schedules": {
     "page": {
       "title": "Jadwal Laporan",
-      "description": "Kelola jadwal laporan otomatis"
+      "description": "Kelola jadwal laporan otomatis",
+      "totalCount": "{{count}} jadwal laporan"
     },
     "table": {
       "id": "ID",
@@ -116,6 +117,7 @@
   "list": {
     "pageTitle": "Laporan",
     "pageDescription": "Lihat dan kelola laporan yang dihasilkan",
+    "totalCount": "{{count}} laporan",
     "filterTypeLabel": "Tipe Laporan",
     "typeOptions": {
       "all": "Semua Tipe"

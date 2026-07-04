@@ -244,7 +244,13 @@ export default function AssetsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title={t('page.title')} description={t('page.description')} />
+      <PageHeader
+        description={
+          assetsData?.meta.total
+            ? t('page.totalCount', { count: assetsData.meta.total })
+            : undefined
+        }
+      />
 
       <Card variant="default">
         <div className="p-4 space-y-4">

@@ -8,6 +8,7 @@
   },
   "list": {
     "loading": "Memuat...",
+    "unreadCount": "{{count}} notifikasi belum dibaca",
     "markAllRead": "Tandai semua dibaca",
     "filterAriaLabel": "Filter notifikasi",
     "emptyTitle": "Belum ada notifikasi",

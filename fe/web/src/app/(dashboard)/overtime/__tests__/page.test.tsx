@@ -152,7 +152,7 @@ describe('OvertimePage', () => {
 
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      expect(screen.getByText(/kelola permintaan lembur/i)).toBeInTheDocument();
+      expect(screen.getByText(/daftar lembur/i)).toBeInTheDocument();
       expect(mockPush).not.toHaveBeenCalled();
     });
 
@@ -161,7 +161,7 @@ describe('OvertimePage', () => {
 
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      expect(screen.getByText(/kelola permintaan lembur/i)).toBeInTheDocument();
+      expect(screen.getByText(/daftar lembur/i)).toBeInTheDocument();
       expect(mockPush).not.toHaveBeenCalled();
     });
 
@@ -170,7 +170,7 @@ describe('OvertimePage', () => {
 
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      expect(screen.getByText(/kelola permintaan lembur/i)).toBeInTheDocument();
+      expect(screen.getByText(/daftar lembur/i)).toBeInTheDocument();
       expect(mockPush).not.toHaveBeenCalled();
     });
 
@@ -179,7 +179,7 @@ describe('OvertimePage', () => {
 
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      expect(screen.getByText(/kelola permintaan lembur/i)).toBeInTheDocument();
+      expect(screen.getByText(/daftar lembur/i)).toBeInTheDocument();
       expect(mockPush).not.toHaveBeenCalled();
     });
 
@@ -208,11 +208,11 @@ describe('OvertimePage', () => {
       mockUseAuth.mockReturnValue({ user: adminSystemUser, loading: false });
     });
 
-    it('should display the page heading and description', () => {
+    it('should display the page description with the request count', () => {
+      // Default mock data (mockPaginatedResponse) has meta.total: 1.
       render(<OvertimePage />, { wrapper: createWrapper() });
 
-      expect(screen.getByText(/kelola permintaan lembur/i)).toBeInTheDocument();
-      expect(screen.getByText(/kelola permintaan lembur/i)).toBeInTheDocument();
+      expect(screen.getByText(/1 permintaan lembur/i)).toBeInTheDocument();
     });
 
     it('should render the "Daftar Lembur" section heading', () => {

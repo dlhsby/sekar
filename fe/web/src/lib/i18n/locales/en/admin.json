@@ -88,6 +88,7 @@
   "areas": {
     "pageTitle": "Areas",
     "description": "Manage work areas and boundaries",
+    "totalCount": "{{count}} areas",
     "searchPlaceholder": "Search area name…",
     "columnId": "ID",
     "columnName": "Name",
@@ -214,6 +215,9 @@
   "rayons": {
     "pageTitle": "Rayons",
     "description": "Manage rayons and organizational structure",
+    "totalCount": "{{count}} rayons",
+    "loadingTitle": "Loading…",
+    "staffCount": "{{count}} staff",
     "searchPlaceholder": "Search rayon name…",
     "columnId": "ID",
     "columnName": "Name",
