@@ -53,6 +53,6 @@
     "unreadCount": "belum dibaca",
     "noNotifications": "Tidak ada notifikasi baru.",
     "viewAll": "Lihat Semua",
-    "ariaLabel": "Notifikasi, {count} belum dibaca"
+    "ariaLabel": "Notifikasi, {{count}} belum dibaca"
   }
 }

@@ -139,7 +139,7 @@
     "clearSelection": "Hapus Pilihan",
     "noAssets": "Tidak ada aset",
     "generateQr": "Generate QR",
-    "generateSuccess": "{count} QR code berhasil dibuat",
+    "generateSuccess": "{{count}} QR code berhasil dibuat",
     "preview": "Preview",
     "printAll": "Cetak Semua",
     "downloadPdf": "Unduh PDF",
@@ -150,7 +150,7 @@
       "category": "Kategori"
     },
     "printTitle": "QR Code Aset",
-    "selectCheckbox": "Pilih {code}"
+    "selectCheckbox": "Pilih {{code}}"
   },
   "create": {
     "pageTitle": "Tambah Aset",

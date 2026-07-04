@@ -28,7 +28,8 @@
     "loading": "Memuat...",
     "saving": "Menyimpan...",
     "yes": "Ya",
-    "no": "Tidak"
+    "no": "Tidak",
+    "error": "Error"
   },
   "entities": {
     "user": "Pengguna",
@@ -206,7 +207,14 @@
     "outsideArea": "luar",
     "openProfile": "Buka Profil",
     "defaultUser": "Pengguna",
-    "elapsedTime": "Waktu berjalan: {{time}}"
+    "elapsedTime": "Waktu berjalan: {{time}}",
+    "closeImagePreview": "Tutup pratinjau gambar"
+  },
+  "errors": {
+    "failedToLoadData": "Gagal memuat data. Silakan coba lagi."
+  },
+  "status": {
+    "loading": "Memuat..."
   },
   "error": "Error",
   "a11y": {

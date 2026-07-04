@@ -69,7 +69,7 @@
     },
     "pagination": {
       "previous": "Sebelumnya",
-      "page": "Halaman {page} dari {total}",
+      "page": "Halaman {{page}} dari {{total}}",
       "next": "Selanjutnya"
     },
     "detail": {

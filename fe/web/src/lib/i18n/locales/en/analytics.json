@@ -69,7 +69,7 @@
     },
     "pagination": {
       "previous": "Previous",
-      "page": "Page {page} of {total}",
+      "page": "Page {{page}} of {{total}}",
       "next": "Next"
     },
     "detail": {

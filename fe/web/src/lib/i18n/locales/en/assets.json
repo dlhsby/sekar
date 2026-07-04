@@ -139,7 +139,7 @@
     "clearSelection": "Clear Selection",
     "noAssets": "No assets",
     "generateQr": "Generate QR",
-    "generateSuccess": "{count} QR codes generated successfully",
+    "generateSuccess": "{{count}} QR codes generated successfully",
     "preview": "Preview",
     "printAll": "Print All",
     "downloadPdf": "Download PDF",
@@ -150,7 +150,7 @@
       "category": "Category"
     },
     "printTitle": "Asset QR Codes",
-    "selectCheckbox": "Select {code}"
+    "selectCheckbox": "Select {{code}}"
   },
   "create": {
     "pageTitle": "Add Asset",

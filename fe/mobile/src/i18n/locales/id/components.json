@@ -134,5 +134,12 @@
     "descriptionLabel": "Deskripsi",
     "descriptionPlaceholder": "Jelaskan detail tugas...",
     "helperText": "{{current}}/500 karakter"
+  },
+  "permissions": {
+    "location": "Lokasi",
+    "camera": "Kamera",
+    "gallery": "Galeri",
+    "notifications": "Notifikasi",
+    "backgroundLocation": "Lokasi Latar Belakang"
   }
 }

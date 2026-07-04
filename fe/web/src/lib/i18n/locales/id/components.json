@@ -58,7 +58,7 @@
   "offlineBanner": {
     "ariaLabel": "Aplikasi sedang offline",
     "status": "Mode offline",
-    "lastSync": "Data terakhir: {time}"
+    "lastSync": "Data terakhir: {{time}}"
   },
   "responsiveShell": {
     "mainNavigationLabel": "Navigasi utama"

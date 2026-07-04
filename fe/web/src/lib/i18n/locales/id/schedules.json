@@ -80,8 +80,8 @@
   },
   "buttons": {
     "generate": "Buat Jadwal",
-    "areaCount": "{count} Area",
-    "areaCountAriaLabel": "Lihat {count} area untuk {name}"
+    "areaCount": "{{count}} Area",
+    "areaCountAriaLabel": "Lihat {{count}} area untuk {{name}}"
   },
   "capacity": {
     "pageTitle": "Kapasitas Layanan",

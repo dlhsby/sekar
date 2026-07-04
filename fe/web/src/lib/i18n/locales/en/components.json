@@ -58,7 +58,7 @@
   "offlineBanner": {
     "ariaLabel": "App is offline",
     "status": "Offline mode",
-    "lastSync": "Last synced: {time}"
+    "lastSync": "Last synced: {{time}}"
   },
   "responsiveShell": {
     "mainNavigationLabel": "Main navigation"

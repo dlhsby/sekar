@@ -1,5 +1,8 @@
 {
   "field": {
+    "a11y": {
+      "shiftTime": "Waktu shift: {{hours}} jam {{minutes}} menit"
+    },
     "sections": {
       "attendance": "Kehadiran saya",
       "summary": "Ringkasan hari ini"
@@ -69,7 +72,8 @@
   },
   "coordinator": {
     "sections": {
-      "attendance": "Kehadiran saya"
+      "attendance": "Kehadiran saya",
+      "summary": "Ringkasan hari ini"
     },
     "alerts": {
       "outOfArea": "Di luar area",
@@ -84,7 +88,8 @@
       "button": {
         "clockIn": "Clock In",
         "clockOut": "Clock Out",
-        "clockOutOvertime": "Clock Out Lembur"
+        "clockOutOvertime": "Clock Out Lembur",
+        "seeAll": "Lihat semua →"
       },
       "link": {
         "shiftDetail": "Detail shift →"
@@ -96,6 +101,171 @@
       "a11y": {
         "onDuty": "Sedang bertugas",
         "overtimeActive": "Lembur aktif"
+      },
+      "label": "Tim hari ini",
+      "status": "{{active}}/{{total}} aktif",
+      "moreCount": "+{{count}}",
+      "empty": "Belum ada anggota tim aktif."
+    },
+    "kpi": {
+      "active": "Tim aktif",
+      "activeDetail": "dari {{total}}",
+      "outOfArea": "Di luar area",
+      "absent": "Tidak hadir",
+      "offline": "Offline"
+    },
+    "section": {
+      "alerts": "Peringatan · {{count}}"
+    },
+    "tiles": {
+      "activities": "Aktivitas",
+      "attendance": "Kehadiran",
+      "tasks": "Tugas"
+    }
+  },
+  "adminData": {
+    "sections": {
+      "attendance": "Kehadiran saya",
+      "summary": "Ringkasan hari ini",
+      "disposition": "Breakdown disposisi",
+      "inflight": "Perantingan berjalan"
+    },
+    "alerts": {
+      "assigned": "Ditugaskan",
+      "inProgress": "Berjalan"
+    },
+    "hero": {
+      "a11y": {
+        "onDuty": "Sedang bertugas",
+        "overtimeActive": "Lembur aktif"
+      },
+      "button": {
+        "clockIn": "Clock In",
+        "clockOut": "Clock Out",
+        "clockOutOvertime": "Clock Out Lembur",
+        "openQueue": "Buka antrian →"
+      },
+      "idle": {
+        "label": "Belum clock in",
+        "title": "Mulai shift hari ini"
+      },
+      "label": "Perantingan masuk",
+      "link": {
+        "shiftDetail": "Detail shift →"
+      },
+      "meta": "Mulai {{time}} · Berjalan {{duration}}",
+      "newCount": "{{count}} baru",
+      "onDuty": "Sedang bertugas",
+      "overtimeActive": "Lembur aktif",
+      "waitingDisposition": "menunggu disposisi"
+    },
+    "inflight": {
+      "active": "{{count}} aktif",
+      "notScheduled": "Belum dijadwalkan"
+    },
+    "kpi": {
+      "approved": "Disetujui",
+      "newSubmitted": "Baru masuk",
+      "rejected": "Ditolak",
+      "review": "Review"
+    },
+    "tiles": {
+      "activities": "Aktivitas",
+      "attendance": "Kehadiran",
+      "tasks": "Tugas"
+    }
+  },
+  "exec": {
+    "sections": {
+      "summary": "Ringkasan hari ini",
+      "perRayon": "Per rayon"
+    },
+    "hero": {
+      "button": {
+        "seeMap": "Lihat peta →"
+      },
+      "label": "Pantauan kota",
+      "status": "{{active}}/{{total}} aktif",
+      "subtitle": "petugas terpantau hari ini"
+    },
+    "kpi": {
+      "absent": "Tidak hadir",
+      "active": "Petugas aktif",
+      "activeDetail": "dari {{total}}",
+      "offline": "Offline",
+      "outOfArea": "Di luar area"
+    },
+    "rayon": {
+      "detail": "{{active}} aktif dari {{total}} petugas",
+      "status": "{{active}}/{{total}}"
+    }
+  },
+  "kecamatan": {
+    "empty": {
+      "hint": "Belum ada permohonan."
+    },
+    "hero": {
+      "button": {
+        "submit": "Ajukan permohonan →"
+      },
+      "label": "Ringkasan hari ini",
+      "processingCount": "{{count}} diproses",
+      "subtitle": "Permohonan Anda"
+    },
+    "kpi": {
+      "approved": "Disetujui",
+      "done": "Selesai",
+      "scheduled": "Dijadwalkan",
+      "waiting": "Menunggu"
+    },
+    "sections": {
+      "recent": "Permohonan terbaru",
+      "summary": "Ringkasan hari ini"
+    },
+    "status": {
+      "approved": "Disetujui",
+      "cancelled": "Dibatalkan",
+      "done": "Selesai",
+      "inProgress": "Berjalan",
+      "rejected": "Ditolak",
+      "scheduled": "Dijadwalkan",
+      "underReview": "Direview",
+      "waiting": "Menunggu"
+    }
+  },
+  "components": {
+    "attendanceSummary": {
+      "a11y": {
+        "clockIn": "Masuk {{time}}{{late}}",
+        "clockOut": "Keluar {{time}}{{earlyLeave}}",
+        "earlyLeave": ", pulang cepat",
+        "late": ", terlambat",
+        "onTime": ", tepat waktu"
+      },
+      "clockIn": "Masuk",
+      "clockOut": "Keluar"
+    },
+    "locationCard": {
+      "a11y": {
+        "accuracy": "Akurasi GPS: plus minus {{accuracy}} meter",
+        "coordinates": "Koordinat: {{lat}}, {{lng}}",
+        "insideArea": "Di dalam area kerja",
+        "outsideArea": "Di luar area kerja",
+        "refresh": "Perbarui lokasi",
+        "viewOnMap": "Lihat lokasi di peta",
+        "viewOnMapHint": "Ketuk untuk membuka peta lokasi"
+      },
+      "accuracy": "Akurasi: ±{{accuracy}}m",
+      "insideArea": "Di dalam area kerja",
+      "loading": "Mendapatkan lokasi...",
+      "outsideArea": "Di luar area kerja",
+      "tapHint": "Ketuk untuk lihat di peta",
+      "title": "Lokasi Anda",
+      "unavailable": "Lokasi tidak tersedia",
+      "updatedAt": {
+        "hoursAgo": "{{hours}} jam lalu",
+        "justNow": "Baru saja",
+        "minutesAgo": "{{minutes}} mnt lalu"
       }
     }
   }

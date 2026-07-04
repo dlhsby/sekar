@@ -127,8 +127,8 @@
       "now": "Sekarang"
     },
     "multiCombobox": {
-      "selected": "{count} dipilih",
-      "removeItem": "Hapus {label}"
+      "selected": "{{count}} dipilih",
+      "removeItem": "Hapus {{label}}"
     }
   },
   "app": {
@@ -180,9 +180,9 @@
   "pagination": {
     "previous": "Sebelumnya",
     "next": "Selanjutnya",
-    "pageOf": "Halaman {page} dari {total}",
-    "showing": "Menampilkan {from}–{to} dari {total}",
-    "perPage": "{count} / hlm"
+    "pageOf": "Halaman {{page}} dari {{total}}",
+    "showing": "Menampilkan {{from}}–{{to}} dari {{total}}",
+    "perPage": "{{count}} / hlm"
   },
   "pickers": {
     "selectTime": "Pilih waktu",
@@ -237,5 +237,10 @@
     "downloadAndroid": "Unduh Aplikasi Android",
     "gpsHint": "Untuk pengalaman lebih baik dengan GPS, kamera, dan notifikasi push",
     "whatsappChat": "Chat WhatsApp"
+  },
+  "errors": {
+    "noPermission": {
+      "short": "Akses ditolak"
+    }
   }
 }

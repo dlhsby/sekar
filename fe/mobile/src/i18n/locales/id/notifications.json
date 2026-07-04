@@ -47,6 +47,8 @@
     "unreadLabel": "Notifikasi ({{count}} belum dibaca)"
   },
   "fcm": {
-    "channelName": "Notifikasi SEKAR"
+    "channelName": "Notifikasi SEKAR",
+    "defaultTitle": "Notifikasi SEKAR",
+    "notAvailable": "Layanan notifikasi tidak tersedia"
   }
 }

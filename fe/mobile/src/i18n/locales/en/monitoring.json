@@ -131,7 +131,7 @@
     "all": "All",
     "personnelLabel": "Officers",
     "noResults": "No Results",
-    "noResultsMsg": "Nothing matches \"{query}\".",
+    "noResultsMsg": "Nothing matches \"{{query}}\".",
     "startSearch": "Start Searching",
     "startSearchDescription": "Search for officers, areas, or rayons to find them on the map.",
     "recents": "Recently viewed",
@@ -288,5 +288,8 @@
   "workerTile": {
     "outsideArea": "Outside area",
     "gpsOff": "GPS off"
+  },
+  "location": {
+    "noPoints": "No location points"
   }
 }

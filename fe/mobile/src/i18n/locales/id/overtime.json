@@ -59,6 +59,7 @@
     "photoModalTitle": "Foto Lembur",
     "loadError": "Gagal memuat detail lembur"
   },
+  "confirmGPSToStart": "Konfirmasi lokasi GPS untuk memulai lembur",
   "submit": {
     "startTitle": "Mulai Lembur",
     "activeTitle": "Lembur Aktif",
@@ -69,8 +70,7 @@
     "startButtonLoading": "Memulai...",
     "endButtonTitle": "Selesai Lembur",
     "endButtonLoading": "Menyelesaikan...",
-    "selfieImagePreviewTitle": "Selfie",
-    "confirmGPSToStart": "Konfirmasi lokasi GPS untuk memulai lembur"
+    "selfieImagePreviewTitle": "Selfie"
   },
   "forms": {
     "reasonLabel": "Alasan",

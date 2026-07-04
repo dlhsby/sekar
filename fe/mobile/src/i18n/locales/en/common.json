@@ -28,7 +28,8 @@
     "loading": "Loading...",
     "saving": "Saving...",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "error": "Error"
   },
   "entities": {
     "user": "User",
@@ -206,7 +207,14 @@
     "outsideArea": "outside",
     "openProfile": "Open Profile",
     "defaultUser": "User",
-    "elapsedTime": "Elapsed time: {{time}}"
+    "elapsedTime": "Elapsed time: {{time}}",
+    "closeImagePreview": "Close image preview"
+  },
+  "errors": {
+    "failedToLoadData": "Failed to load data. Please try again."
+  },
+  "status": {
+    "loading": "Loading..."
   },
   "error": "Error",
   "a11y": {

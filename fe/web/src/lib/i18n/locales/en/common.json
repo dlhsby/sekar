@@ -127,8 +127,8 @@
       "now": "Now"
     },
     "multiCombobox": {
-      "selected": "{count} selected",
-      "removeItem": "Remove {label}"
+      "selected": "{{count}} selected",
+      "removeItem": "Remove {{label}}"
     }
   },
   "app": {
@@ -180,9 +180,9 @@
   "pagination": {
     "previous": "Previous",
     "next": "Next",
-    "pageOf": "Page {page} of {total}",
-    "showing": "Showing {from}–{to} of {total}",
-    "perPage": "{count} / page"
+    "pageOf": "Page {{page}} of {{total}}",
+    "showing": "Showing {{from}}–{{to}} of {{total}}",
+    "perPage": "{{count}} / page"
   },
   "pickers": {
     "selectTime": "Select time",
@@ -237,5 +237,10 @@
     "downloadAndroid": "Download the Android App",
     "gpsHint": "For a better experience with GPS, camera, and push notifications",
     "whatsappChat": "WhatsApp Chat"
+  },
+  "errors": {
+    "noPermission": {
+      "short": "Access denied"
+    }
   }
 }

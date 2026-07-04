@@ -2,7 +2,7 @@
   "users": {
     "pageTitle": "Pengguna",
     "description": "Kelola akun dan peran pengguna sistem",
-    "totalCount": "{count} pengguna terdaftar",
+    "totalCount": "{{count}} pengguna terdaftar",
     "searchPlaceholder": "Cari nama atau username…",
     "columnId": "ID",
     "columnUser": "Pengguna",
@@ -31,7 +31,7 @@
     "emptyTitle": "Belum ada pengguna",
     "emptyDescription": "Klik \"Tambah Pengguna\" untuk membuat yang baru.",
     "resetPasswordTitle": "Paksa Reset Password?",
-    "resetPasswordMessage": "Password {fullName} akan direset paksa — password lama tidak bisa dipakai lagi dan pengguna wajib menggantinya saat login pertama.",
+    "resetPasswordMessage": "Password {{fullName}} akan direset paksa — password lama tidak bisa dipakai lagi dan pengguna wajib menggantinya saat login pertama.",
     "resetPasswordConfirm": "Reset Password",
     "detailTitle": "Detail Pengguna",
     "createErrorMessage": "Gagal membuat pengguna. Silakan coba lagi.",
@@ -162,19 +162,19 @@
     "assignWorkerTitle": "Tugaskan Pekerja ke Area",
     "assignWorkerHelper": "Hanya satgas/linmas. Untuk shift kerja, gunakan menu Jadwal.",
     "assignAction": "Tugaskan",
-    "removeWorkerAriaLabel": "Lepas {name} dari area",
+    "removeWorkerAriaLabel": "Lepas {{name}} dari area",
     "deleteTitle": "Hapus Area",
-    "deleteConfirmation": "Anda akan menghapus area {areaName}. Tindakan ini tidak dapat dibatalkan.",
-    "successCreated": "Area \"{name}\" berhasil dibuat.",
-    "successUpdated": "Area \"{name}\" berhasil diperbarui.",
-    "successDeleted": "Area \"{name}\" berhasil dihapus.",
+    "deleteConfirmation": "Anda akan menghapus area {{areaName}}. Tindakan ini tidak dapat dibatalkan.",
+    "successCreated": "Area \"{{name}}\" berhasil dibuat.",
+    "successUpdated": "Area \"{{name}}\" berhasil diperbarui.",
+    "successDeleted": "Area \"{{name}}\" berhasil dihapus.",
     "listSheet": {
       "title": "Area",
       "closeLabel": "Tutup panel area",
       "searchPlaceholder": "Cari area…",
       "searchLabel": "Cari area",
       "emptyText": "Belum ada area.",
-      "count": "{count} area{query, select, empty { dari {total}} other { dari {total}}} ditampilkan",
+      "count": "{{count}} area",
       "noMatch": "Tidak ada area yang cocok."
     },
     "detailNotFound": "Area yang Anda cari tidak ditemukan atau telah dihapus.",
@@ -192,7 +192,11 @@
     "addBoundaryHelper": "Klik \"Tambah Boundary\" untuk menggambar batas area.",
     "boundaryNotConfigured": "Boundary polygon belum dikonfigurasi.",
     "emptyShort": "Belum ada area.",
-    "viewAssignedAreasAria": "Lihat {{count}} area yang ditugaskan ke {{name}}"
+    "viewAssignedAreasAria": "Lihat {{count}} area yang ditugaskan ke {{name}}",
+    "basicInfoTitle": "Informasi Dasar",
+    "boundaryTitle": "Batas Area (Boundary)",
+    "coordinatesTitle": "Koordinat Pusat:",
+    "mapUnavailable": "Peta tidak tersedia."
   },
   "rayons": {
     "pageTitle": "Rayon",
@@ -275,8 +279,13 @@
       "areaName": "Nama Area",
       "areaType": "Tipe"
     },
-    "successCreated": "Rayon \"{name}\" berhasil dibuat.",
-    "successUpdated": "Rayon \"{name}\" berhasil diperbarui."
+    "successCreated": "Rayon \"{{name}}\" berhasil dibuat.",
+    "successUpdated": "Rayon \"{{name}}\" berhasil diperbarui.",
+    "card": {
+      "statsUnavailable": "Statistik tidak tersedia",
+      "viewDetail": "Lihat Detail"
+    },
+    "successDeleted": "Rayon {{name}} berhasil dihapus."
   },
   "shared": {
     "loading": "Memuat…",
@@ -295,10 +304,10 @@
     "creating": "Membuat…",
     "description": "Deskripsi",
     "deleteRayon": "Hapus Rayon",
-    "deleteConfirmation": "Anda akan menghapus {name}. Tindakan ini tidak dapat dibatalkan.",
-    "rayonHasAreas": "Rayon \"{name}\" masih memiliki area. Hapus area terlebih dahulu.",
+    "deleteConfirmation": "Anda akan menghapus {{name}}. Tindakan ini tidak dapat dibatalkan.",
+    "rayonHasAreas": "Rayon \"{{name}}\" masih memiliki area. Hapus area terlebih dahulu.",
     "noAreas": "Tidak ada area di rayon ini",
-    "pageOf": "Halaman {page} / {total} · {count} area",
+    "pageOf": "Halaman {{page}} / {{total}} · {{count}} area",
     "actions": "Aksi",
     "stats": {
       "totalAreas": "Total Area",
@@ -313,7 +322,7 @@
   "dialogs": {
     "tempPassword": {
       "title": "Password Sementara",
-      "messageWithUsername": "Berikan password ini kepada <strong>{username}</strong>. Ditampilkan <strong>sekali saja</strong> — pengguna wajib menggantinya saat login pertama.",
+      "messageWithUsername": "Berikan password ini kepada <strong>{{username}}</strong>. Ditampilkan <strong>sekali saja</strong> — pengguna wajib menggantinya saat login pertama.",
       "messageWithoutUsername": "Password ini ditampilkan <strong>sekali saja</strong> — pengguna wajib menggantinya saat login pertama.",
       "copySuccess": "Disalin",
       "copyButton": "Salin",
@@ -327,9 +336,9 @@
     }
   },
   "messages": {
-    "userCreatedSuccess": "Pengguna \"{name}\" berhasil dibuat.",
-    "userUpdatedSuccess": "Pengguna \"{name}\" berhasil diperbarui.",
-    "userDeletedSuccess": "Pengguna \"{name}\" berhasil dihapus.",
+    "userCreatedSuccess": "Pengguna \"{{name}}\" berhasil dibuat.",
+    "userUpdatedSuccess": "Pengguna \"{{name}}\" berhasil diperbarui.",
+    "userDeletedSuccess": "Pengguna \"{{name}}\" berhasil dihapus.",
     "userCreateFailed": "Gagal membuat pengguna. Silakan coba lagi.",
     "userUpdateFailed": "Gagal memperbarui pengguna. Silakan coba lagi."
   },
@@ -352,7 +361,7 @@
       "changePinButton": "Ubah titik lokasi",
       "finishPlacingButton": "Selesai menempatkan",
       "deletePinButton": "Hapus titik",
-      "multiPartWarning": "Batas terdiri dari {count} bagian — edit titik dinonaktifkan. Gunakan \"Gambar ulang batas\" untuk menggantinya dengan satu poligon.",
+      "multiPartWarning": "Batas terdiri dari {{count}} bagian — edit titik dinonaktifkan. Gunakan \"Gambar ulang batas\" untuk menggantinya dengan satu poligon.",
       "drawingHint": "Klik di peta untuk menambah titik. Klik \"Selesai\" (min. 3 titik) atau klik dua kali untuk mengakhiri.",
       "placingPinHint": "Klik di peta untuk menaruh titik lokasi (bisa diulang). Tekan \"Selesai menempatkan\" bila sudah.",
       "noBoundaryHint": "Tekan \"Gambar batas\" untuk mulai menggambar poligon.",

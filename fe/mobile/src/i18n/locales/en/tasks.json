@@ -61,7 +61,11 @@
     "empty": "No officers can be assigned in this area"
   },
   "actions": {
-    "assign": "Assign",
+    "assign": {
+      "success": "Success",
+      "successMessage": "Task assigned successfully",
+      "error": "Failed to assign task"
+    },
     "reassign": "Reassign",
     "delegate": "Delegate to Subordinate",
     "selectDelegate": "Delegate to Subordinate",
@@ -70,11 +74,41 @@
     "placeholder": "— Select Officer —",
     "cancel": "Cancel",
     "submit": "Assign",
-    "accept": "Accept",
-    "decline": "Decline",
-    "start": "Start",
-    "verify": "Verify",
-    "revision": "Needs Revision",
+    "accept": {
+      "success": "Success",
+      "successMessage": "Task accepted",
+      "error": "Failed to accept task"
+    },
+    "decline": {
+      "success": "Success",
+      "successMessage": "Task rejected",
+      "error": "Failed to reject task",
+      "reasonRequired": "Rejection reason is required"
+    },
+    "start": {
+      "success": "Success",
+      "successMessage": "Task started",
+      "error": "Failed to start task"
+    },
+    "verify": {
+      "confirm": "Confirm Verification",
+      "question": "Are you sure you want to verify this task? This action cannot be undone.",
+      "cancel": "Cancel",
+      "yes": "Yes, Verify",
+      "success": "Success",
+      "successMessage": "Task verified successfully",
+      "error": "Failed to verify task"
+    },
+    "revision": {
+      "reasonRequired": "Revision reason is required",
+      "confirm": "Confirm Revision Request",
+      "question": "Are you sure you want to request a revision? The worker will redo this task.",
+      "cancel": "Cancel",
+      "yes": "Yes, Request Revision",
+      "success": "Success",
+      "successMessage": "Revision request sent",
+      "error": "Failed to send revision request"
+    },
     "selectTagging": "Select officer to tag",
     "searchTagging": "Search & select officer..."
   },
@@ -114,7 +148,8 @@
       "timeLabel": "Time (optional, default 23:59)",
       "timePlaceholder": "Select time...",
       "clearButton": "Clear Deadline"
-    }
+    },
+    "cancelConfirmTitle": "Cancel task creation?"
   },
   "detail": {
     "loading": "Loading task...",
@@ -161,7 +196,8 @@
     "submitButton": "Complete Task",
     "cancelButton": "Cancel",
     "areaLabel": "Area:",
-    "rayonLabel": "Rayon:"
+    "rayonLabel": "Rayon:",
+    "loadingFailed": "Failed to load task data"
   },
   "messages": {
     "clockInRequired": "Not Clocked In",

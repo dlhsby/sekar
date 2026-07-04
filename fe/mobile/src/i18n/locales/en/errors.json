@@ -65,5 +65,11 @@
   "uploadProfileFailed": "Failed to upload profile picture",
   "changePasswordFailed": "Failed to change password",
 
-  "SHIFT_DURATION_TOO_SHORT": "Shift duration is too short. A minimum of {{minutes}} minutes is required before clocking out."
+  "SHIFT_DURATION_TOO_SHORT": "Shift duration is too short. A minimum of {{minutes}} minutes is required before clocking out.",
+
+  "loadAreasFailed": "Failed to load areas",
+  "loadUsersFailed": "Failed to load users",
+  "photoCaptureFailed": "Failed to capture photo",
+  "photoLimitExceeded": "Photo limit reached",
+  "photoLimitMessage": "You can only add a maximum of {{maxPhotos}} photos."
 }

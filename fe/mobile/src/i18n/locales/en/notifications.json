@@ -47,6 +47,8 @@
     "unreadLabel": "Notifications ({{count}} unread)"
   },
   "fcm": {
-    "channelName": "SEKAR Notifications"
+    "channelName": "SEKAR Notifications",
+    "defaultTitle": "SEKAR Notification",
+    "notAvailable": "Notification service unavailable"
   }
 }

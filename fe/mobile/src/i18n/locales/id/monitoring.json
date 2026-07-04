@@ -131,7 +131,7 @@
     "all": "Semua",
     "personnelLabel": "Petugas",
     "noResults": "Tidak Ada Hasil",
-    "noResultsMsg": "Tidak ada yang cocok dengan \"{query}\".",
+    "noResultsMsg": "Tidak ada yang cocok dengan \"{{query}}\".",
     "startSearch": "Mulai Mencari",
     "startSearchDescription": "Cari petugas, area, atau rayon untuk menemukannya di peta.",
     "recents": "Terakhir dilihat",
@@ -288,5 +288,8 @@
   "workerTile": {
     "outsideArea": "Luar area",
     "gpsOff": "GPS mati"
+  },
+  "location": {
+    "noPoints": "Tidak ada titik lokasi"
   }
 }

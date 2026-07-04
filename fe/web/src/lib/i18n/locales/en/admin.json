@@ -2,7 +2,7 @@
   "users": {
     "pageTitle": "Users",
     "description": "Manage user accounts and system roles",
-    "totalCount": "{count} users registered",
+    "totalCount": "{{count}} users registered",
     "searchPlaceholder": "Search by name or username…",
     "columnId": "ID",
     "columnUser": "User",
@@ -31,7 +31,7 @@
     "emptyTitle": "No users yet",
     "emptyDescription": "Click \"Add User\" to create a new one.",
     "resetPasswordTitle": "Force Reset Password?",
-    "resetPasswordMessage": "Password for {fullName} will be reset — the old password will no longer work and the user must change it on first login.",
+    "resetPasswordMessage": "Password for {{fullName}} will be reset — the old password will no longer work and the user must change it on first login.",
     "resetPasswordConfirm": "Reset Password",
     "detailTitle": "User Details",
     "createErrorMessage": "Failed to create user. Please try again.",
@@ -162,19 +162,19 @@
     "assignWorkerTitle": "Assign Worker to Area",
     "assignWorkerHelper": "Only field workers and security. For work schedules, use the Schedule menu.",
     "assignAction": "Assign",
-    "removeWorkerAriaLabel": "Remove {name} from area",
+    "removeWorkerAriaLabel": "Remove {{name}} from area",
     "deleteTitle": "Delete Area",
-    "deleteConfirmation": "You will delete the area {areaName}. This action cannot be undone.",
-    "successCreated": "Area \"{name}\" created successfully.",
-    "successUpdated": "Area \"{name}\" updated successfully.",
-    "successDeleted": "Area \"{name}\" deleted successfully.",
+    "deleteConfirmation": "You will delete the area {{areaName}}. This action cannot be undone.",
+    "successCreated": "Area \"{{name}}\" created successfully.",
+    "successUpdated": "Area \"{{name}}\" updated successfully.",
+    "successDeleted": "Area \"{{name}}\" deleted successfully.",
     "listSheet": {
       "title": "Area",
       "closeLabel": "Close area panel",
       "searchPlaceholder": "Search areas…",
       "searchLabel": "Search areas",
       "emptyText": "No areas yet.",
-      "count": "{count} area{query, select, empty { of {total}} other { of {total}}}",
+      "count": "{{count}} areas",
       "noMatch": "No matching areas."
     },
     "detailNotFound": "The area you are looking for was not found or has been deleted.",
@@ -192,7 +192,11 @@
     "addBoundaryHelper": "Click \"Add Boundary\" to draw area boundary.",
     "boundaryNotConfigured": "Boundary polygon is not yet configured.",
     "emptyShort": "No areas yet.",
-    "viewAssignedAreasAria": "View {{count}} areas assigned to {{name}}"
+    "viewAssignedAreasAria": "View {{count}} areas assigned to {{name}}",
+    "basicInfoTitle": "Basic Information",
+    "boundaryTitle": "Area Boundary",
+    "coordinatesTitle": "Center Coordinates:",
+    "mapUnavailable": "Map unavailable."
   },
   "rayons": {
     "pageTitle": "Rayons",
@@ -275,8 +279,13 @@
       "areaName": "Area Name",
       "areaType": "Type"
     },
-    "successCreated": "Rayon \"{name}\" created successfully.",
-    "successUpdated": "Rayon \"{name}\" updated successfully."
+    "successCreated": "Rayon \"{{name}}\" created successfully.",
+    "successUpdated": "Rayon \"{{name}}\" updated successfully.",
+    "card": {
+      "statsUnavailable": "Statistics unavailable",
+      "viewDetail": "View Detail"
+    },
+    "successDeleted": "Rayon {{name}} deleted successfully."
   },
   "shared": {
     "loading": "Loading…",
@@ -295,10 +304,10 @@
     "creating": "Creating…",
     "description": "Description",
     "deleteRayon": "Delete Rayon",
-    "deleteConfirmation": "You will delete {name}. This action cannot be undone.",
-    "rayonHasAreas": "Rayon \"{name}\" still has areas. Please delete the areas first.",
+    "deleteConfirmation": "You will delete {{name}}. This action cannot be undone.",
+    "rayonHasAreas": "Rayon \"{{name}}\" still has areas. Please delete the areas first.",
     "noAreas": "No areas in this rayon",
-    "pageOf": "Page {page} / {total} · {count} areas",
+    "pageOf": "Page {{page}} / {{total}} · {{count}} areas",
     "actions": "Actions",
     "stats": {
       "totalAreas": "Total Areas",
@@ -313,7 +322,7 @@
   "dialogs": {
     "tempPassword": {
       "title": "Temporary Password",
-      "messageWithUsername": "Give this password to <strong>{username}</strong>. Displayed <strong>once only</strong> — the user must change it on first login.",
+      "messageWithUsername": "Give this password to <strong>{{username}}</strong>. Displayed <strong>once only</strong> — the user must change it on first login.",
       "messageWithoutUsername": "This password is displayed <strong>once only</strong> — the user must change it on first login.",
       "copySuccess": "Copied",
       "copyButton": "Copy",
@@ -327,9 +336,9 @@
     }
   },
   "messages": {
-    "userCreatedSuccess": "User \"{name}\" created successfully.",
-    "userUpdatedSuccess": "User \"{name}\" updated successfully.",
-    "userDeletedSuccess": "User \"{name}\" deleted successfully.",
+    "userCreatedSuccess": "User \"{{name}}\" created successfully.",
+    "userUpdatedSuccess": "User \"{{name}}\" updated successfully.",
+    "userDeletedSuccess": "User \"{{name}}\" deleted successfully.",
     "userCreateFailed": "Failed to create user. Please try again.",
     "userUpdateFailed": "Failed to update user. Please try again."
   },
@@ -352,7 +361,7 @@
       "changePinButton": "Change location pin",
       "finishPlacingButton": "Finish placing",
       "deletePinButton": "Delete pin",
-      "multiPartWarning": "Boundary consists of {count} parts — vertex edit disabled. Use \"Redraw boundary\" to replace it with a single polygon.",
+      "multiPartWarning": "Boundary consists of {{count}} parts — vertex edit disabled. Use \"Redraw boundary\" to replace it with a single polygon.",
       "drawingHint": "Click on map to add points. Click \"Finish\" (min. 3 points) or double-click to end.",
       "placingPinHint": "Click on map to place location pin (can be repeated). Press \"Finish placing\" when done.",
       "noBoundaryHint": "Press \"Draw boundary\" to start drawing a polygon.",

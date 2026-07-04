@@ -80,8 +80,8 @@
   },
   "buttons": {
     "generate": "Generate Schedule",
-    "areaCount": "{count} Areas",
-    "areaCountAriaLabel": "View {count} areas for {name}"
+    "areaCount": "{{count}} Areas",
+    "areaCountAriaLabel": "View {{count}} areas for {{name}}"
   },
   "capacity": {
     "pageTitle": "Service Capacity",

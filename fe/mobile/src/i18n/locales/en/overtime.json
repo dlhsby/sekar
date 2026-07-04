@@ -59,6 +59,7 @@
     "photoModalTitle": "Overtime Photo",
     "loadError": "Failed to load overtime details"
   },
+  "confirmGPSToStart": "Confirm GPS location to start overtime",
   "submit": {
     "startTitle": "Start Overtime",
     "activeTitle": "Active Overtime",
@@ -69,8 +70,7 @@
     "startButtonLoading": "Starting...",
     "endButtonTitle": "End Overtime",
     "endButtonLoading": "Ending...",
-    "selfieImagePreviewTitle": "Selfie",
-    "confirmGPSToStart": "Confirm GPS location to start overtime"
+    "selfieImagePreviewTitle": "Selfie"
   },
   "forms": {
     "reasonLabel": "Reason",

@@ -6,7 +6,7 @@
   "page": {
     "loading": "Memuat…",
     "noData": "Tidak ada data",
-    "updated": "Diperbarui {time}",
+    "updated": "Diperbarui {{time}}",
     "searchPlaceholder": "Cari petugas…",
     "searchLabel": "Cari petugas",
     "filterLabel": "Filter",
@@ -35,7 +35,7 @@
     "rayonAllOption": "Semua Rayon",
     "roleLabel": "Peran",
     "roleAllOption": "Semua Peran",
-    "matchSummary": "{matched} / {total} petugas",
+    "matchSummary": "{{matched}} / {{total}} petugas",
     "reset": "Reset",
     "ariaLabel": "Filter monitoring"
   },
@@ -48,28 +48,28 @@
     "outsideArea": "Di luar area",
     "noAreasData": "Tidak ada data area",
     "noAreasSummary": "Belum ada ringkasan area untuk cakupan ini.",
-    "staffingShortage": "Kurang {shortage}",
-    "bulkReassignLabel": "Pindah massal petugas ke {area}",
+    "staffingShortage": "Kurang {{shortage}}",
+    "bulkReassignLabel": "Pindah massal petugas ke {{area}}",
     "bulkReassignButton": "Pindah Massal",
     "tabWorkers": "Petugas",
     "tabAreas": "Area",
     "noWorkers": "Tidak ada petugas",
     "noWorkersMatch": "Tidak ada petugas yang cocok dengan filter.",
     "clickToFocus": "Klik petugas untuk fokus di peta",
-    "batteryLabel": "Baterai {level} persen"
+    "batteryLabel": "Baterai {{level}} persen"
   },
   "reassign": {
     "successMessage": "Petugas berhasil dipindahkan",
     "errorMessage": "Gagal memindahkan petugas"
   },
   "bulkReassign": {
-    "title": "Pindah Massal ke {area}",
+    "title": "Pindah Massal ke {{area}}",
     "description": "Pilih beberapa petugas dari area lain untuk dipindahkan sekaligus",
     "sourceAreaLabel": "Area Asal",
     "selectSourcePlaceholder": "-- Pilih area asal --",
     "noOtherAreas": "Tidak ada area lain dalam rayon yang sama.",
     "selectLabel": "Pilih Petugas",
-    "selectedCount": "({count} dipilih)",
+    "selectedCount": "({{count}} dipilih)",
     "deselectAll": "Batal Pilih Semua",
     "selectAll": "Pilih Semua",
     "noActiveWorkers": "Tidak ada petugas aktif di area ini.",
@@ -78,14 +78,14 @@
     "reasonPlaceholder": "Tuliskan alasan pemindahan…",
     "effectiveDateLabel": "Tanggal Berlaku",
     "cancelButton": "Batal",
-    "reassignButton": "Pindahkan {count} Petugas",
+    "reassignButton": "Pindahkan {{count}} Petugas",
     "reassignButtonDefault": "Pindahkan",
-    "successMessage": "{count} petugas berhasil dipindahkan",
-    "partialErrorMessage": "{successCount} petugas berhasil dipindahkan, {failCount} gagal",
+    "successMessage": "{{count}} petugas berhasil dipindahkan",
+    "partialErrorMessage": "{{successCount}} petugas berhasil dipindahkan, {{failCount}} gagal",
     "errorMessage": "Gagal memindahkan petugas"
   },
   "reassignModal": {
-    "title": "Pindah Petugas ke {area}",
+    "title": "Pindah Petugas ke {{area}}",
     "description": "Pilih petugas dari area lain untuk dipindahkan",
     "sourceAreaLabel": "Area Asal",
     "sourceAreaPlaceholder": "-- Pilih area asal --",
@@ -107,7 +107,7 @@
     "rayonLabel": "Pilih Rayon",
     "areaLabel": "Pilih Area",
     "areaDisabled": "Pilih rayon dulu",
-    "activeCount": "{count} aktif",
+    "activeCount": "{{count}} aktif",
     "resetLabel": "Reset semua filter"
   },
   "toggle": {
@@ -118,16 +118,16 @@
     "overdue": "Jatuh Tempo",
     "rayons": "Batas Rayon",
     "areas": "Batas Area",
-    "showLayer": "Tampilkan {label}"
+    "showLayer": "Tampilkan {{label}}"
   },
   "map": {
     "unavailable": "Peta tidak tersedia — Google Maps belum dikonfigurasi.",
     "locateMeAriaLabel": "Fokus ke lokasi saya",
     "areaMapAriaLabel": "Peta area",
-    "overduePlantLabel": "{count} jenis tanaman terlambat dipangkas",
-    "statusFilterAriaLabel": "Saring {label}: {count} petugas",
-    "locationPointAriaLabel": "Titik lokasi {index} pada {time}",
-    "lowBatteryAriaLabel": "Baterai rendah: {level}%"
+    "overduePlantLabel": "{{count}} jenis tanaman terlambat dipangkas",
+    "statusFilterAriaLabel": "Saring {{label}}: {{count}} petugas",
+    "locationPointAriaLabel": "Titik lokasi {{index}} pada {{time}}",
+    "lowBatteryAriaLabel": "Baterai rendah: {{level}}%"
   },
   "timeline": {
     "backLabel": "Kembali ke detail petugas",
@@ -145,7 +145,7 @@
     "noHistoryHelper": "Pilih tanggal lain atau periksa koneksi",
     "noPoints": "Tidak ada titik lokasi",
     "noPointsHelper": "Tidak ada data GPS pada tanggal ini",
-    "pointsLabel": "{count} titik lokasi",
+    "pointsLabel": "{{count}} titik lokasi",
     "start": "Mulai",
     "end": "Akhir",
     "pointsListLabel": "Riwayat titik lokasi",
@@ -166,14 +166,14 @@
     "ok": "OK",
     "almostDue": "Hampir",
     "overdue": "Lewat",
-    "speciesCount": "{species} jenis",
-    "totalCount": "{total} pohon terdata",
+    "speciesCount": "{{species}} jenis",
+    "totalCount": "{{total}} pohon terdata",
     "plantsList": "Daftar jenis tanaman",
-    "heritage": "Pohon Heritage ({count})",
+    "heritage": "Pohon Heritage ({{count}})",
     "heritageNoLabel": "Tanpa label",
     "workersLabel": "Petugas di Area Ini",
     "workersList": "Daftar petugas di area ini",
-    "pruningTitle": "Permohonan Pangkas di Rayon {rayon}",
+    "pruningTitle": "Permohonan Pangkas di Rayon {{rayon}}",
     "loadingPruning": "Memuat permohonan…",
     "noPruning": "Tidak ada permohonan pangkas aktif pada rayon ini.",
     "unknownSpecies": "Jenis tidak diketahui",
@@ -222,13 +222,13 @@
   },
   "sidePanel": {
     "title": "Petugas",
-    "summary": "{totalOnline} aktif / {totalAll} total",
+    "summary": "{{totalOnline}} aktif / {{totalAll}} total",
     "searchPlaceholder": "Cari petugas atau area...",
     "searchLabel": "Cari petugas",
     "roleFilter": "Filter berdasarkan jabatan",
     "noWorkers": "Tidak ada petugas",
     "resetFilter": "Reset filter",
-    "count": "{count} petugas ditampilkan"
+    "count": "{{count}} petugas ditampilkan"
   },
   "statusBar": {
     "ariaLabel": "Status petugas",
@@ -265,7 +265,7 @@
     "backButton": "Kembali ke Monitoring",
     "saved": "Disimpan",
     "saveButton": "Simpan",
-    "rangeValid": "Rentang valid: {min} - {max}",
+    "rangeValid": "Rentang valid: {{min}} - {{max}}",
     "units": {
       "seconds": "detik",
       "meters": "meter",

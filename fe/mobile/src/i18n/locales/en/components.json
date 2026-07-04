@@ -134,5 +134,12 @@
     "descriptionLabel": "Description",
     "descriptionPlaceholder": "Explain task details...",
     "helperText": "{{current}}/500 characters"
+  },
+  "permissions": {
+    "location": "Location",
+    "camera": "Camera",
+    "gallery": "Gallery",
+    "notifications": "Notifications",
+    "backgroundLocation": "Background Location"
   }
 }

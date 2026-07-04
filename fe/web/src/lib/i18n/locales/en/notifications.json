@@ -53,6 +53,6 @@
     "unreadCount": "unread",
     "noNotifications": "No new notifications.",
     "viewAll": "View All",
-    "ariaLabel": "Notifications, {count} unread"
+    "ariaLabel": "Notifications, {{count}} unread"
   }
 }

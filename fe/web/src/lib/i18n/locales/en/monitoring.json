@@ -6,7 +6,7 @@
   "page": {
     "loading": "Loading…",
     "noData": "No data",
-    "updated": "Updated {time}",
+    "updated": "Updated {{time}}",
     "searchPlaceholder": "Search officers…",
     "searchLabel": "Search officers",
     "filterLabel": "Filter",
@@ -35,7 +35,7 @@
     "rayonAllOption": "All Rayons",
     "roleLabel": "Role",
     "roleAllOption": "All Roles",
-    "matchSummary": "{matched} / {total} officers",
+    "matchSummary": "{{matched}} / {{total}} officers",
     "reset": "Reset",
     "ariaLabel": "Monitoring filter"
   },
@@ -48,28 +48,28 @@
     "outsideArea": "Outside area",
     "noAreasData": "No area data",
     "noAreasSummary": "No area summary available for this scope.",
-    "staffingShortage": "Short {shortage}",
-    "bulkReassignLabel": "Bulk reassign officers to {area}",
+    "staffingShortage": "Short {{shortage}}",
+    "bulkReassignLabel": "Bulk reassign officers to {{area}}",
     "bulkReassignButton": "Bulk Reassign",
     "tabWorkers": "Officers",
     "tabAreas": "Areas",
     "noWorkers": "No officers",
     "noWorkersMatch": "No officers match the filter.",
     "clickToFocus": "Click officer to focus on map",
-    "batteryLabel": "Battery {level} percent"
+    "batteryLabel": "Battery {{level}} percent"
   },
   "reassign": {
     "successMessage": "Worker successfully reassigned",
     "errorMessage": "Failed to reassign worker"
   },
   "bulkReassign": {
-    "title": "Bulk Reassign to {area}",
+    "title": "Bulk Reassign to {{area}}",
     "description": "Select multiple officers from another area to reassign at once",
     "sourceAreaLabel": "Source Area",
     "selectSourcePlaceholder": "-- Select source area --",
     "noOtherAreas": "No other areas in the same rayon.",
     "selectLabel": "Select Officers",
-    "selectedCount": "({count} selected)",
+    "selectedCount": "({{count}} selected)",
     "deselectAll": "Deselect All",
     "selectAll": "Select All",
     "noActiveWorkers": "No active officers in this area.",
@@ -78,14 +78,14 @@
     "reasonPlaceholder": "Enter reassignment reason…",
     "effectiveDateLabel": "Effective Date",
     "cancelButton": "Cancel",
-    "reassignButton": "Reassign {count} Officers",
+    "reassignButton": "Reassign {{count}} Officers",
     "reassignButtonDefault": "Reassign",
-    "successMessage": "{count} officers reassigned successfully",
-    "partialErrorMessage": "{successCount} officers reassigned, {failCount} failed",
+    "successMessage": "{{count}} officers reassigned successfully",
+    "partialErrorMessage": "{{successCount}} officers reassigned, {{failCount}} failed",
     "errorMessage": "Failed to reassign officers"
   },
   "reassignModal": {
-    "title": "Reassign Officer to {area}",
+    "title": "Reassign Officer to {{area}}",
     "description": "Select an officer from another area to reassign",
     "sourceAreaLabel": "Source Area",
     "sourceAreaPlaceholder": "-- Select source area --",
@@ -107,7 +107,7 @@
     "rayonLabel": "Select Rayon",
     "areaLabel": "Select Area",
     "areaDisabled": "Select rayon first",
-    "activeCount": "{count} active",
+    "activeCount": "{{count}} active",
     "resetLabel": "Reset all filters"
   },
   "toggle": {
@@ -118,16 +118,16 @@
     "overdue": "Overdue",
     "rayons": "Rayon Boundaries",
     "areas": "Area Boundaries",
-    "showLayer": "Show {label}"
+    "showLayer": "Show {{label}}"
   },
   "map": {
     "unavailable": "Map is not available — Google Maps is not configured.",
     "locateMeAriaLabel": "Focus on my location",
     "areaMapAriaLabel": "Area map",
-    "overduePlantLabel": "{count} plant species overdue for pruning",
-    "statusFilterAriaLabel": "Filter {label}: {count} officers",
-    "locationPointAriaLabel": "Location point {index} at {time}",
-    "lowBatteryAriaLabel": "Low battery: {level}%"
+    "overduePlantLabel": "{{count}} plant species overdue for pruning",
+    "statusFilterAriaLabel": "Filter {{label}}: {{count}} officers",
+    "locationPointAriaLabel": "Location point {{index}} at {{time}}",
+    "lowBatteryAriaLabel": "Low battery: {{level}}%"
   },
   "timeline": {
     "backLabel": "Back to officer details",
@@ -145,7 +145,7 @@
     "noHistoryHelper": "Select another date or check your connection",
     "noPoints": "No location points",
     "noPointsHelper": "No GPS data on this date",
-    "pointsLabel": "{count} location points",
+    "pointsLabel": "{{count}} location points",
     "start": "Start",
     "end": "End",
     "pointsListLabel": "Location points history",
@@ -166,14 +166,14 @@
     "ok": "OK",
     "almostDue": "Due Soon",
     "overdue": "Overdue",
-    "speciesCount": "{species} species",
-    "totalCount": "{total} plants recorded",
+    "speciesCount": "{{species}} species",
+    "totalCount": "{{total}} plants recorded",
     "plantsList": "Plant species list",
-    "heritage": "Heritage Trees ({count})",
+    "heritage": "Heritage Trees ({{count}})",
     "heritageNoLabel": "No label",
     "workersLabel": "Officers in This Area",
     "workersList": "List of officers in this area",
-    "pruningTitle": "Pruning Requests in Rayon {rayon}",
+    "pruningTitle": "Pruning Requests in Rayon {{rayon}}",
     "loadingPruning": "Loading requests…",
     "noPruning": "No active pruning requests in this rayon.",
     "unknownSpecies": "Unknown species",
@@ -222,13 +222,13 @@
   },
   "sidePanel": {
     "title": "Staff",
-    "summary": "{totalOnline} active / {totalAll} total",
+    "summary": "{{totalOnline}} active / {{totalAll}} total",
     "searchPlaceholder": "Search staff or area...",
     "searchLabel": "Search staff",
     "roleFilter": "Filter by role",
     "noWorkers": "No staff found",
     "resetFilter": "Reset filter",
-    "count": "{count} staff displayed"
+    "count": "{{count}} staff displayed"
   },
   "statusBar": {
     "ariaLabel": "Officer status",
@@ -265,7 +265,7 @@
     "backButton": "Back to Monitoring",
     "saved": "Saved",
     "saveButton": "Save",
-    "rangeValid": "Valid range: {min} - {max}",
+    "rangeValid": "Valid range: {{min}} - {{max}}",
     "units": {
       "seconds": "seconds",
       "meters": "meters",
