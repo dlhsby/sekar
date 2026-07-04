@@ -24,6 +24,12 @@ export interface FormMultiComboboxProps {
   disabled?: boolean;
   required?: boolean;
   className?: string;
+  /**
+   * Hide the removable-chip list below the trigger, keeping only the compact
+   * "N selected" summary. Use when a field can hold many values (e.g. dozens of
+   * areas) and the chip list would overflow the form.
+   */
+  hideSelectedChips?: boolean;
 }
 
 /**
@@ -45,6 +51,7 @@ export function FormMultiCombobox({
   disabled = false,
   required = false,
   className,
+  hideSelectedChips = false,
 }: FormMultiComboboxProps): React.JSX.Element {
   const { t } = useTranslation();
   const placeholder = _placeholder ?? t('common:ui.combobox.placeholder');
@@ -159,7 +166,7 @@ export function FormMultiCombobox({
         </PopoverContent>
       </Popover>
 
-      {selectedOptions.length > 0 && (
+      {!hideSelectedChips && selectedOptions.length > 0 && (
         <div className="flex flex-wrap gap-1.5 pt-1">
           {selectedOptions.map((option) => (
             <span

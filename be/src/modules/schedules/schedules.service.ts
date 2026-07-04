@@ -21,6 +21,27 @@ import {
 } from './schedule-edit.policy';
 
 /**
+ * Absence (Ketidakhadiran) type → roster status. `izin` (permit) is an excused
+ * absence like sick/annual; `libur` reuses OFF (a deliberate day off, not counted
+ * as expected/absent). Keep in sync with the monitoring on-leave filter.
+ */
+const LEAVE_STATUS_BY_TYPE: Record<'sick' | 'annual' | 'permit' | 'off', ScheduleStatus> = {
+  sick: ScheduleStatus.LEAVE_SICK,
+  annual: ScheduleStatus.LEAVE_ANNUAL,
+  permit: ScheduleStatus.LEAVE_PERMIT,
+  off: ScheduleStatus.OFF,
+};
+
+/** Statuses that mean a worker is committed for the day and can't cover another shift. */
+const BUSY_STATUSES = [
+  ScheduleStatus.PLANNED,
+  ScheduleStatus.PRESENT,
+  ScheduleStatus.LEAVE_SICK,
+  ScheduleStatus.LEAVE_ANNUAL,
+  ScheduleStatus.LEAVE_PERMIT,
+];
+
+/**
  * Daily roster service — materializes each worker's standing template into one
  * editable row per WIB day and exposes the per-day edits ops needs (leave,
  * replacement, extra area, shift) plus read helpers for clock-in and monitoring.
@@ -283,7 +304,7 @@ export class SchedulesService {
   /** Mark a row as sick / annual leave. */
   async setLeave(
     id: string,
-    leaveType: 'sick' | 'annual',
+    leaveType: 'sick' | 'annual' | 'permit' | 'off',
     notes: string | undefined,
     actor: User,
   ): Promise<Schedule> {
@@ -291,7 +312,7 @@ export class SchedulesService {
     const row = await this.findOne(id);
     await this.assertCanEdit(actor, row);
     const prevStatus = row.status;
-    row.status = leaveType === 'sick' ? ScheduleStatus.LEAVE_SICK : ScheduleStatus.LEAVE_ANNUAL;
+    row.status = LEAVE_STATUS_BY_TYPE[leaveType];
     row.notes = notes ?? null;
     row.source = 'manual';
     row.updated_by = actorId;
@@ -346,15 +367,7 @@ export class SchedulesService {
     // reject rather than silently overwriting it. An `off`/`replaced` row is
     // free to take over.
     let coverRow = await this.findByUserAndDate(replacementUserId, original.schedule_date);
-    if (
-      coverRow &&
-      [
-        ScheduleStatus.PLANNED,
-        ScheduleStatus.PRESENT,
-        ScheduleStatus.LEAVE_SICK,
-        ScheduleStatus.LEAVE_ANNUAL,
-      ].includes(coverRow.status)
-    ) {
+    if (coverRow && BUSY_STATUSES.includes(coverRow.status)) {
       throw new BadRequestException(
         'Replacement worker already has a schedule or is on leave today',
       );

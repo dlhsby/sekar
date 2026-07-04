@@ -21,34 +21,33 @@
     "absent": "Tidak Hadir",
     "leave_sick": "Cuti Sakit",
     "leave_annual": "Cuti Tahunan",
+    "leave_permit": "Izin",
     "replaced": "Diganti",
     "off": "Libur"
   },
   "rowActions": {
-    "leave": "Cuti",
+    "absence": "Ketidakhadiran",
     "edit": "Ubah Jadwal",
-    "replace": "Ganti Pekerja",
-    "editAreas": "Ubah Area",
-    "editShift": "Ubah Shift"
+    "delete": "Hapus"
   },
   "dialog": {
     "deleteTitle": "Hapus Jadwal?"
   },
   "modals": {
-    "leave": {
-      "title": "Cuti",
-      "typeLabel": "Jenis Cuti",
+    "absence": {
+      "title": "Ketidakhadiran",
+      "typeLabel": "Jenis Ketidakhadiran",
       "typeSick": "Sakit",
-      "typeAnnual": "Tahunan",
+      "typeAnnual": "Cuti",
+      "typePermit": "Izin",
+      "typeOff": "Libur",
       "notesLabel": "Catatan (opsional)",
       "notesPlaceholder": "Masukkan catatan…"
     },
-    "replace": {
-      "title": "Ganti Pekerja",
-      "workerLabel": "Pekerja Pengganti",
-      "workerPlaceholder": "Pilih pekerja…",
-      "notesLabel": "Catatan (opsional)",
-      "notesPlaceholder": "Masukkan catatan…"
+    "delete": {
+      "title": "Hapus Jadwal?",
+      "confirm": "Hapus jadwal {{name}} untuk {{date}}?",
+      "warning": "Tindakan ini tidak dapat dibatalkan."
     },
     "areas": {
       "title": "Ubah Area",
@@ -57,11 +56,6 @@
       "searchPlaceholder": "Cari area…",
       "emptyText": "Tidak ada area.",
       "helperText": "Kosongkan untuk menghapus semua area hari ini."
-    },
-    "shift": {
-      "title": "Ubah Shift",
-      "label": "Shift",
-      "placeholder": "Tanpa Shift"
     },
     "add": {
       "title": "Tambah Jadwal",
@@ -78,6 +72,7 @@
     "edit": {
       "title": "Ubah Jadwal",
       "workerLabel": "Pekerja",
+      "rayonLabel": "Rayon",
       "shiftLabel": "Shift",
       "areaLabel": "Area",
       "replaceHint": "Mengubah pekerja akan mengganti dengan pekerja baru dan mewarisi area & shift yang asli.",
@@ -90,10 +85,10 @@
   "messages": {
     "generateSuccess": "jadwal berhasil dibuat",
     "generateError": "Gagal membuat jadwal",
-    "leaveSuccess": "Cuti berhasil disimpan",
-    "leaveError": "Gagal menyimpan cuti",
-    "replaceSuccess": "Pengganti pekerja berhasil disimpan",
-    "replaceError": "Gagal menyimpan pengganti",
+    "absenceSuccess": "Ketidakhadiran berhasil disimpan",
+    "absenceError": "Gagal menyimpan ketidakhadiran",
+    "deleteSuccess": "Jadwal berhasil dihapus",
+    "deleteError": "Gagal menghapus jadwal",
     "areasSuccess": "Area berhasil diperbarui",
     "areasError": "Gagal memperbarui area",
     "shiftSuccess": "Shift berhasil diperbarui",

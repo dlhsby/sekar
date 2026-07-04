@@ -16,6 +16,12 @@ export type AddScheduleInput = {
 };
 
 /**
+ * Absence (Ketidakhadiran) type set via the leave action.
+ * `sick`→sakit, `annual`→cuti, `permit`→izin, `off`→libur (day off).
+ */
+export type LeaveType = 'sick' | 'annual' | 'permit' | 'off';
+
+/**
  * Daily Schedule Type (mirrors backend Schedule entity)
  */
 export interface Schedule {
@@ -24,7 +30,15 @@ export interface Schedule {
   schedule_date: string; // YYYY-MM-DD
   rayon_id: string;
   shift_definition_id: string | null;
-  status: 'planned' | 'present' | 'absent' | 'leave_sick' | 'leave_annual' | 'replaced' | 'off';
+  status:
+    | 'planned'
+    | 'present'
+    | 'absent'
+    | 'leave_sick'
+    | 'leave_annual'
+    | 'leave_permit'
+    | 'replaced'
+    | 'off';
   replacement_user_id: string | null;
   original_user_id: string | null;
   source: 'template' | 'manual';
@@ -111,7 +125,7 @@ async function generateRoster(date: string): Promise<{ generated: number }> {
  */
 async function setLeave(
   id: string,
-  leave_type: 'sick' | 'annual',
+  leave_type: LeaveType,
   notes?: string,
 ): Promise<Schedule> {
   const response = await apiClient.patch<Schedule>(
@@ -210,7 +224,7 @@ export function useSetLeave() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, leave_type, notes }: { id: string; leave_type: 'sick' | 'annual'; notes?: string }) =>
+    mutationFn: ({ id, leave_type, notes }: { id: string; leave_type: LeaveType; notes?: string }) =>
       setLeave(id, leave_type, notes),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
@@ -271,6 +285,27 @@ export function useAddSchedule() {
 
   return useMutation({
     mutationFn: addSchedule,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
+    },
+  });
+}
+
+/**
+ * Delete (soft) a daily schedule row. Backend gates this to admin roles.
+ */
+async function deleteSchedule(id: string): Promise<void> {
+  await apiClient.delete(`/schedules/${id}`);
+}
+
+/**
+ * Hook to delete a daily schedule row
+ */
+export function useDeleteSchedule() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteSchedule,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
     },

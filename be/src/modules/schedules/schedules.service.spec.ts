@@ -150,6 +150,28 @@ describe('SchedulesService', () => {
         expect.objectContaining({ entity_type: 'schedule', action: 'set_leave' }),
       );
     });
+
+    it.each([
+      ['sick', ScheduleStatus.LEAVE_SICK],
+      ['annual', ScheduleStatus.LEAVE_ANNUAL],
+      ['permit', ScheduleStatus.LEAVE_PERMIT],
+      ['off', ScheduleStatus.OFF],
+    ] as const)('maps absence type %s → %s', async (type, expected) => {
+      rosterRepo.findOne
+        .mockResolvedValueOnce({
+          id: 'd1',
+          status: ScheduleStatus.PLANNED,
+          schedule_date: '2026-06-30',
+          user_id: 'A',
+          user: { role: UserRole.SATGAS },
+          schedule_areas: [],
+        })
+        .mockResolvedValueOnce({ id: 'd1', status: expected });
+
+      await service.setLeave('d1', type, undefined, ADMIN);
+
+      expect(rosterRepo.save.mock.calls[0][0].status).toBe(expected);
+    });
   });
 
   describe('replaceWorker', () => {

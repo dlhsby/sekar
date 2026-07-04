@@ -31,6 +31,7 @@ export enum ScheduleStatus {
   ABSENT = 'absent',
   LEAVE_SICK = 'leave_sick',
   LEAVE_ANNUAL = 'leave_annual',
+  LEAVE_PERMIT = 'leave_permit',
   REPLACED = 'replaced',
   OFF = 'off',
 }
