@@ -13,7 +13,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { Search, SlidersHorizontal, RefreshCw, X, List, ChevronDown, ChevronLeft, Sprout, LayoutGrid, Users } from 'lucide-react';
+import { SlidersHorizontal, RefreshCw, X, List, ChevronDown, ChevronLeft, Layers } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth/hooks';
 import {
@@ -24,12 +24,16 @@ import {
 } from '@/lib/api/monitoring-v2';
 import { useBoundaries } from '@/lib/api/monitoring';
 import { useMonitoringSocket } from '@/lib/monitoring/useMonitoringSocket';
+import { useMonitoringLayers } from '@/lib/monitoring/layers';
+import type { MonitoringSearchResult } from '@/lib/monitoring/useMonitoringSearch';
 import {
   MonitoringFilters,
   type MonitoringFilterState,
   type RayonOption,
 } from '@/components/monitoring/MonitoringFilters';
 import { MonitoringSidebar } from '@/components/monitoring/MonitoringSidebar';
+import { MonitoringSearch } from '@/components/monitoring/MonitoringSearch';
+import { MonitoringLayersPanel } from '@/components/monitoring/MonitoringLayersPanel';
 import { AggregateNodeList } from '@/components/monitoring/AggregateNodeList';
 import { BulkReassignModal } from '@/components/monitoring/BulkReassignModal';
 import { usePlantStatusSummary } from '@/lib/api/plants';
@@ -114,9 +118,19 @@ export default function MonitoringPage() {
   });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [layersOpen, setLayersOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
   const [bulkTarget, setBulkTarget] = useState<SnapshotAreaSummary | null>(null);
-  const [showOverdue, setShowOverdue] = useState(false);
+  const [focusTarget, setFocusTarget] = useState<{
+    lat: number;
+    lng: number;
+    zoom?: number;
+    key: number;
+  } | null>(null);
+
+  // Map layer visibility (persisted). Overdue-plant overlay is a layer now.
+  const { layers, toggleLayer } = useMonitoringLayers();
+  const showOverdue = layers.overdue;
 
   // Keep view/mode in sync when the user (role) resolves.
   useEffect(() => {
@@ -176,6 +190,32 @@ export default function MonitoringPage() {
       setMode('workers');
     }
     setSelectedId(null);
+  };
+
+  // Search result selected → pan/drill to it and select it.
+  const focusOn = (lat: number, lng: number, zoom?: number) =>
+    setFocusTarget({ lat, lng, zoom, key: focusTarget ? focusTarget.key + 1 : 1 });
+
+  const handleSearchSelect = (result: MonitoringSearchResult) => {
+    if (result.type === 'petugas') {
+      setMode('workers');
+      setSelectedId(result.id);
+      setListOpen(true);
+      focusOn(result.latitude, result.longitude, 16);
+    } else if (result.type === 'area') {
+      setView({
+        scope: 'area',
+        id: result.id,
+        rayonId: result.rayonId ?? view.rayonId,
+        name: result.name,
+      });
+      setMode('workers');
+      focusOn(result.latitude, result.longitude, 15);
+    } else {
+      setView({ scope: 'rayon', id: result.id, rayonId: result.id, name: result.name });
+      setMode('aggregate');
+      focusOn(result.latitude, result.longitude, 13);
+    }
   };
 
   const canGoBack = view.scope !== roleView.floor;
@@ -301,6 +341,8 @@ export default function MonitoringPage() {
         selectedId={selectedId}
         onSelect={selectWorker}
         overdueByArea={overdueByArea}
+        layers={layers}
+        focusTarget={focusTarget}
       />
 
       {/* Top overlay: breadcrumb + search + toggle + filter + refresh + status pills */}
@@ -320,54 +362,37 @@ export default function MonitoringPage() {
               </span>
             </button>
           )}
-          {/* Search */}
-          <div className="pointer-events-auto relative max-w-md flex-1">
-            <Search
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-nb-gray-400"
-              aria-hidden="true"
-            />
-            <input
-              type="search"
-              value={filters.search}
-              onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
-              placeholder={t('monitoring:page.searchPlaceholder')}
-              aria-label={t('monitoring:page.searchLabel')}
-              className="h-11 w-full rounded-nb-base border-2 border-nb-black bg-nb-white pl-9 pr-3 text-sm font-medium text-nb-black shadow-nb-sm placeholder:text-nb-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
-            />
-          </div>
-          {/* Ringkasan / Semua Petugas toggle */}
-          {canToggle && (
-            <div className="pointer-events-auto flex h-11 items-center rounded-nb-base border-2 border-nb-black bg-nb-white p-0.5 shadow-nb-sm">
-              <button
-                type="button"
-                onClick={() => setMode('aggregate')}
-                aria-pressed={effectiveMode === 'aggregate'}
-                className={cn(
-                  'flex h-full items-center gap-1 rounded-nb-sm px-2.5 text-sm font-bold transition-colors',
-                  effectiveMode === 'aggregate' ? 'bg-nb-primary text-nb-black' : 'text-nb-gray-600 hover:bg-nb-gray-50'
-                )}
-              >
-                <LayoutGrid className="h-4 w-4" />
-                <span className="hidden md:inline">{t('monitoring:page.modeSummary')}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setMode('workers')}
-                aria-pressed={effectiveMode === 'workers'}
-                className={cn(
-                  'flex h-full items-center gap-1 rounded-nb-sm px-2.5 text-sm font-bold transition-colors',
-                  effectiveMode === 'workers' ? 'bg-nb-primary text-nb-black' : 'text-nb-gray-600 hover:bg-nb-gray-50'
-                )}
-              >
-                <Users className="h-4 w-4" />
-                <span className="hidden md:inline">{t('monitoring:page.modeAllWorkers')}</span>
-              </button>
-            </div>
-          )}
-          {/* Filter toggle */}
+          {/* Search (recent + grouped results + click-to-locate) */}
+          <MonitoringSearch
+            workers={workers}
+            rayons={boundaries?.rayons}
+            onSelect={handleSearchSelect}
+            className="max-w-md flex-1"
+          />
+          {/* Layers control (overlay toggles + Ringkasan/Semua Petugas) */}
           <button
             type="button"
-            onClick={() => setFiltersOpen((v) => !v)}
+            onClick={() => {
+              setLayersOpen((v) => !v);
+              setFiltersOpen(false);
+            }}
+            aria-expanded={layersOpen}
+            aria-label={t('monitoring:layers.title')}
+            className={cn(
+              'pointer-events-auto flex h-11 items-center gap-1.5 rounded-nb-base border-2 border-nb-black px-3 text-sm font-bold shadow-nb-sm transition-colors',
+              layersOpen ? 'bg-nb-primary text-nb-black' : 'bg-nb-white text-nb-black hover:bg-nb-gray-50'
+            )}
+          >
+            <Layers className="h-4 w-4" />
+            <span className="hidden sm:inline">{t('monitoring:layers.title')}</span>
+          </button>
+          {/* Filter toggle (status / role / rayon worker filters) */}
+          <button
+            type="button"
+            onClick={() => {
+              setFiltersOpen((v) => !v);
+              setLayersOpen(false);
+            }}
             aria-expanded={filtersOpen}
             aria-label={t('monitoring:page.filterLabel')}
             className={cn(
@@ -377,21 +402,6 @@ export default function MonitoringPage() {
           >
             <SlidersHorizontal className="h-4 w-4" />
             <span className="hidden sm:inline">{t('monitoring:page.filterLabel')}</span>
-          </button>
-          {/* Plant-overdue overlay toggle */}
-          <button
-            type="button"
-            onClick={() => setShowOverdue((v) => !v)}
-            aria-pressed={showOverdue}
-            aria-label={t('monitoring:page.overdueToggleLabel')}
-            title={t('monitoring:page.overdueToggleTitle')}
-            className={cn(
-              'pointer-events-auto flex h-11 items-center gap-1.5 rounded-nb-base border-2 border-nb-black px-3 text-sm font-bold shadow-nb-sm transition-colors',
-              showOverdue ? 'bg-nb-warning text-nb-black' : 'bg-nb-white text-nb-black hover:bg-nb-gray-50'
-            )}
-          >
-            <Sprout className="h-4 w-4" />
-            <span className="hidden sm:inline">{t('monitoring:page.overdueButtonLabel')}</span>
           </button>
           {/* Refresh */}
           <button
@@ -447,6 +457,18 @@ export default function MonitoringPage() {
             showSearch={false}
           />
         </div>
+      )}
+
+      {/* Layers panel (overlay toggles + view-mode switch) */}
+      {layersOpen && (
+        <MonitoringLayersPanel
+          layers={layers}
+          onToggleLayer={toggleLayer}
+          mode={effectiveMode}
+          onModeChange={setMode}
+          showModeToggle={canToggle}
+          onClose={() => setLayersOpen(false)}
+        />
       )}
 
       {/* Worker/area/node sheet */}

@@ -7,11 +7,14 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { SimpleMonitoringMap, type SimpleWorker } from '../SimpleMonitoringMap';
 import type { BoundariesResponse } from '@/lib/api/monitoring-types';
 
+// Native control stack — createLocateControl pushes the My-Location button here.
+const controlStack: HTMLElement[] = [];
 const fakeMap = {
   fitBounds: jest.fn(),
   panTo: jest.fn(),
   setZoom: jest.fn(),
   getZoom: () => 16,
+  controls: { 3: controlStack },
   getBounds: () => ({
     getNorthEast: () => ({ lat: () => -7.0, lng: () => 113.0 }),
     getSouthWest: () => ({ lat: () => -7.5, lng: () => 112.5 }),
@@ -72,11 +75,15 @@ beforeAll(() => {
         extend = jest.fn();
       },
       Size: class {},
+      ControlPosition: { RIGHT_BOTTOM: 3 },
     },
   };
 });
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  controlStack.length = 0;
+});
 
 const boundaries: BoundariesResponse = {
   generated_at: '2026-01-01T00:00:00Z',
@@ -84,6 +91,7 @@ const boundaries: BoundariesResponse = {
     {
       id: 'r1',
       name: 'Rayon 1',
+      color: '#7FBC8C',
       boundary_polygon: {
         type: 'Polygon',
         coordinates: [
@@ -220,8 +228,30 @@ describe('SimpleMonitoringMap', () => {
     expect(fakeMap.panTo).toHaveBeenCalledWith({ lat: -7.1, lng: 112.6 });
   });
 
-  it('renders a locate-me control', () => {
+  it('registers a native My-Location control (stacked with zoom, no overlap)', () => {
     render(<SimpleMonitoringMap mode="aggregate" workers={[]} boundaries={null} />);
-    expect(screen.getByRole('button', { name: /fokus ke lokasi saya/i })).toBeInTheDocument();
+    // createLocateControl pushes the button into the RIGHT_BOTTOM control stack.
+    expect(controlStack).toHaveLength(1);
+    expect(controlStack[0].getAttribute('aria-label')).toMatch(/fokus ke lokasi saya/i);
+  });
+
+  it('hides worker markers when the petugas layer is off', () => {
+    render(
+      <SimpleMonitoringMap
+        mode="workers"
+        workers={workers}
+        boundaries={boundaries}
+        layers={{
+          rayonBorder: true,
+          rayonFill: true,
+          areaBorder: true,
+          areaPins: false,
+          petugas: false,
+          overdue: false,
+        }}
+      />
+    );
+    // Only the rayon + area polygons (no worker/area markers).
+    expect(screen.queryAllByTestId('marker')).toHaveLength(0);
   });
 });

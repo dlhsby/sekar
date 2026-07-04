@@ -11,11 +11,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GoogleMap, Marker, Polygon, InfoWindow } from '@react-google-maps/api';
 import { useTranslation } from 'react-i18next';
-import { LocateFixed } from 'lucide-react';
 import { GoogleMapsGate } from '@/components/maps/GoogleMapsGate';
 import { POLYGON_STYLES } from '@/lib/constants/monitoring';
 import type { BoundariesResponse } from '@/lib/api/monitoring-types';
 import type { AggregateNode } from '@/lib/api/monitoring-v2';
+import { type MonitoringLayers, DEFAULT_LAYERS } from '@/lib/monitoring/layers';
 import { AggregateBubbleLayer } from './AggregateBubbleLayer';
 import { WorkerClusterLayer, type MapBounds } from './WorkerClusterLayer';
 
@@ -42,6 +42,10 @@ export interface SimpleMonitoringMapProps {
   /** Phase 3-8: per-area overdue plant counts — area markers with overdue
    *  species turn danger-tinted and show the count. */
   overdueByArea?: Record<string, number> | null;
+  /** Which overlays to draw (rayon border/fill, area border/pins, petugas). */
+  layers?: MonitoringLayers;
+  /** Imperative focus target (from search / drill) — pan + zoom to this point. */
+  focusTarget?: { lat: number; lng: number; zoom?: number; key: number } | null;
 }
 
 const SURABAYA = { lat: -7.2575, lng: 112.7521 };
@@ -68,6 +72,8 @@ const MAP_OPTIONS: google.maps.MapOptions = {
 };
 
 const DEFAULT_ZOOM = 11;
+// Alpha for the rayon fill when tinted with its configured color.
+const RAYON_FILL_ALPHA = 0.18;
 
 /** GeoJSON Polygon/MultiPolygon → array of Google outer-ring paths. */
 function geometryToPaths(geom: GeoJSON.Geometry | null): google.maps.LatLngLiteral[][] {
@@ -89,6 +95,47 @@ interface AreaPin {
   understaffed: boolean;
 }
 
+/** Convert a hex color to an `rgba()` string with the given alpha (for fills). */
+function hexToRgba(hex: string, alpha: number): string | null {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return null;
+  const int = parseInt(m[1], 16);
+  return `rgba(${(int >> 16) & 255}, ${(int >> 8) & 255}, ${int & 255}, ${alpha})`;
+}
+
+/**
+ * Build a native-looking My-Location control button and register it in the map's
+ * control stack (RIGHT_BOTTOM) so Google lays it out above the zoom control —
+ * no overlap, Google-app-like UX. Pure DOM (runs once on map load).
+ */
+function createLocateControl(map: google.maps.Map, onClick: () => void, ariaLabel: string): void {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.setAttribute('aria-label', ariaLabel);
+  btn.title = ariaLabel;
+  /* eslint-disable sekar-design/no-inline-hex-colors, sekar-design/prefer-nb-shadow-utility --
+     Native Google Maps control chrome (mimics the built-in zoom control), not app UI. */
+  Object.assign(btn.style, {
+    width: '40px',
+    height: '40px',
+    margin: '0 10px 10px 0',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: '#fff',
+    border: '0',
+    borderRadius: '2px',
+    boxShadow: 'rgba(0,0,0,0.3) 0 1px 4px -1px',
+    cursor: 'pointer',
+  } as CSSStyleDeclaration);
+  // Google-style crosshair location glyph.
+  btn.innerHTML =
+    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5f6368" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>';
+  /* eslint-enable sekar-design/no-inline-hex-colors, sekar-design/prefer-nb-shadow-utility */
+  btn.addEventListener('click', onClick);
+  map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(btn);
+}
+
 function MonitoringMapInner({
   mode,
   aggregateNodes,
@@ -98,9 +145,12 @@ function MonitoringMapInner({
   selectedId,
   onSelect,
   overdueByArea,
+  layers = DEFAULT_LAYERS,
+  focusTarget,
 }: SimpleMonitoringMapProps) {
   const { t } = useTranslation();
   const mapRef = useRef<google.maps.Map | null>(null);
+  const locateMeRef = useRef<() => void>(() => {});
   const didFitRef = useRef(false);
   const [hoverAreaId, setHoverAreaId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
@@ -118,13 +168,16 @@ function MonitoringMapInner({
     }
   }, []);
 
-  // Flatten boundary geometry into renderable pieces.
-  const { rayonPaths, areaPaths, areaPins } = useMemo(() => {
-    const rayonPaths: google.maps.LatLngLiteral[][] = [];
+  // Flatten boundary geometry into renderable pieces. Rayon polygons keep their
+  // configured color so the map can tint the fill/border per rayon.
+  const { rayonPolys, areaPaths, areaPins } = useMemo(() => {
+    const rayonPolys: { paths: google.maps.LatLngLiteral[]; color: string | null }[] = [];
     const areaPaths: google.maps.LatLngLiteral[][] = [];
     const areaPins: AreaPin[] = [];
     for (const rayon of boundaries?.rayons ?? []) {
-      geometryToPaths(rayon.boundary_polygon).forEach((p) => rayonPaths.push(p));
+      geometryToPaths(rayon.boundary_polygon).forEach((p) =>
+        rayonPolys.push({ paths: p, color: rayon.color ?? null })
+      );
       for (const area of rayon.areas) {
         geometryToPaths(area.boundary_polygon).forEach((p) => areaPaths.push(p));
         if (typeof area.center_lat === 'number' && typeof area.center_lng === 'number') {
@@ -138,7 +191,7 @@ function MonitoringMapInner({
         }
       }
     }
-    return { rayonPaths, areaPaths, areaPins };
+    return { rayonPolys, areaPaths, areaPins };
   }, [boundaries]);
 
   // Fit the map to the served region once geometry/markers are available.
@@ -151,7 +204,7 @@ function MonitoringMapInner({
         bounds.extend(p);
         has = true;
       };
-      rayonPaths.forEach((path) => path.forEach(extend));
+      rayonPolys.forEach((poly) => poly.paths.forEach(extend));
       areaPaths.forEach((path) => path.forEach(extend));
       areaPins.forEach((a) => extend({ lat: a.lat, lng: a.lng }));
       workers.forEach((w) => w.lat && w.lng && extend({ lat: w.lat, lng: w.lng }));
@@ -160,7 +213,7 @@ function MonitoringMapInner({
         didFitRef.current = true;
       }
     },
-    [rayonPaths, areaPaths, areaPins, workers]
+    [rayonPolys, areaPaths, areaPins, workers]
   );
 
   const handleMapLoad = useCallback(
@@ -168,8 +221,10 @@ function MonitoringMapInner({
       mapRef.current = map;
       fitToContent(map);
       syncViewport(map);
+      // Stack the My-Location control with the native zoom control (no overlap).
+      createLocateControl(map, () => locateMeRef.current(), t('monitoring:map.locateMeAriaLabel'));
     },
-    [fitToContent, syncViewport]
+    [fitToContent, syncViewport, t]
   );
 
   const handleIdle = useCallback(() => {
@@ -201,13 +256,25 @@ function MonitoringMapInner({
       map.setZoom(Math.max(map.getZoom() ?? 14, 15));
     });
   }, []);
+  useEffect(() => {
+    locateMeRef.current = locateMe;
+  }, [locateMe]);
+
+  // Imperative focus (from search / drill): pan + zoom to a point.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !focusTarget) return;
+    map.panTo({ lat: focusTarget.lat, lng: focusTarget.lng });
+    if (focusTarget.zoom) map.setZoom(Math.max(map.getZoom() ?? 12, focusTarget.zoom));
+  }, [focusTarget]);
 
   const selectedWorker =
     mode === 'workers' && selectedId ? workers.find((w) => w.user_id === selectedId) : null;
   const hoverArea = hoverAreaId ? areaPins.find((a) => a.id === hoverAreaId) : null;
   // Area centre pins only clutter the aggregate view (bubbles already carry
-  // counts); keep them for the drilled worker view or when the plant overlay is on.
-  const showAreaPins = mode === 'workers' || !!overdueByArea;
+  // counts); keep them for the drilled worker view or when the plant overlay is
+  // on — and only when the areaPins layer is enabled.
+  const showAreaPins = layers.areaPins && (mode === 'workers' || !!overdueByArea);
 
   const handleClusterZoom = useCallback((lat: number, lng: number, expansionZoom: number) => {
     const map = mapRef.current;
@@ -226,39 +293,47 @@ function MonitoringMapInner({
         onIdle={handleIdle}
         options={MAP_OPTIONS}
       >
-        {/* Rayon boundaries */}
-        {rayonPaths.map((path, i) => (
-          <Polygon
-            key={`rayon-${i}`}
-            paths={path}
-            options={{
-              strokeColor: POLYGON_STYLES.rayon.stroke,
-              strokeWeight: POLYGON_STYLES.rayon.strokeWidth,
-              strokeOpacity: 0.9,
-              fillColor: POLYGON_STYLES.rayon.fill,
-              fillOpacity: POLYGON_STYLES.rayon.fillOpacity,
-              clickable: false,
-              zIndex: 1,
-            }}
-          />
-        ))}
+        {/* Rayon boundaries — border and/or fill tinted with the rayon's color. */}
+        {(layers.rayonBorder || layers.rayonFill) &&
+          rayonPolys.map((poly, i) => {
+            const stroke = poly.color ?? POLYGON_STYLES.rayon.stroke;
+            const fill =
+              (poly.color && hexToRgba(poly.color, RAYON_FILL_ALPHA)) ??
+              POLYGON_STYLES.rayon.fill;
+            return (
+              <Polygon
+                key={`rayon-${i}`}
+                paths={poly.paths}
+                options={{
+                  strokeColor: stroke,
+                  strokeWeight: layers.rayonBorder ? POLYGON_STYLES.rayon.strokeWidth : 0,
+                  strokeOpacity: layers.rayonBorder ? 0.9 : 0,
+                  fillColor: fill,
+                  fillOpacity: layers.rayonFill ? RAYON_FILL_ALPHA : 0,
+                  clickable: false,
+                  zIndex: 1,
+                }}
+              />
+            );
+          })}
 
         {/* Area boundaries */}
-        {areaPaths.map((path, i) => (
-          <Polygon
-            key={`area-${i}`}
-            paths={path}
-            options={{
-              strokeColor: POLYGON_STYLES.area.stroke,
-              strokeWeight: POLYGON_STYLES.area.strokeWidth,
-              strokeOpacity: 1,
-              fillColor: POLYGON_STYLES.area.fill,
-              fillOpacity: POLYGON_STYLES.area.fillOpacity,
-              clickable: false,
-              zIndex: 2,
-            }}
-          />
-        ))}
+        {layers.areaBorder &&
+          areaPaths.map((path, i) => (
+            <Polygon
+              key={`area-${i}`}
+              paths={path}
+              options={{
+                strokeColor: POLYGON_STYLES.area.stroke,
+                strokeWeight: POLYGON_STYLES.area.strokeWidth,
+                strokeOpacity: 1,
+                fillColor: POLYGON_STYLES.area.fill,
+                fillOpacity: POLYGON_STYLES.area.fillOpacity,
+                clickable: false,
+                zIndex: 2,
+              }}
+            />
+          ))}
 
         {/* Area centre markers */}
         {showAreaPins &&
@@ -293,7 +368,7 @@ function MonitoringMapInner({
         {/* Aggregate bubbles (Ringkasan) or clustered worker pins (Semua Petugas). */}
         {mode === 'aggregate' ? (
           <AggregateBubbleLayer nodes={aggregateNodes ?? []} onDrill={onDrillNode} />
-        ) : (
+        ) : layers.petugas ? (
           <WorkerClusterLayer
             workers={workers}
             zoom={zoom}
@@ -302,7 +377,7 @@ function MonitoringMapInner({
             onSelect={onSelect}
             onClusterClick={handleClusterZoom}
           />
-        )}
+        ) : null}
 
         {/* Info windows */}
         {hoverArea && (
@@ -329,17 +404,8 @@ function MonitoringMapInner({
             <div className="text-xs font-semibold text-nb-black">{selectedWorker.full_name}</div>
           </InfoWindow>
         )}
+        {/* My-Location is a native map control (stacked with zoom, bottom-right). */}
       </GoogleMap>
-
-      {/* Locate-me control */}
-      <button
-        type="button"
-        onClick={locateMe}
-        aria-label={t('monitoring:map.locateMeAriaLabel')}
-        className="absolute bottom-6 right-3 z-10 flex h-10 w-10 items-center justify-center rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm hover:bg-nb-gray-100"
-      >
-        <LocateFixed className="h-5 w-5 text-nb-black" />
-      </button>
     </div>
   );
 }

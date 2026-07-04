@@ -7,8 +7,8 @@
     "loading": "Loading…",
     "noData": "No data",
     "updated": "Updated {{time}}",
-    "searchPlaceholder": "Search officers…",
-    "searchLabel": "Search officers",
+    "searchPlaceholder": "Search officers, areas, rayons…",
+    "searchLabel": "Search officers, areas, or rayons",
     "filterLabel": "Filter",
     "refreshLabel": "Refresh",
     "overdueToggleLabel": "Show overdue plants",
@@ -25,6 +25,26 @@
   "aggregate": {
     "onlineOfRequired": "{{online}}/{{required}} on duty",
     "understaffed": "Understaffed"
+  },
+  "layers": {
+    "title": "Layers",
+    "viewMode": "View",
+    "overlays": "Map Layers",
+    "rayonBorder": "Rayon Border",
+    "rayonFill": "Rayon Color",
+    "areaBorder": "Area Border",
+    "areaPins": "Area Pins",
+    "petugas": "Officers",
+    "overdue": "Overdue Plants"
+  },
+  "search": {
+    "personnelLabel": "Officers",
+    "areaLabel": "Area",
+    "rayonLabel": "Rayon",
+    "recentTitle": "Recent Searches",
+    "clearRecent": "Clear",
+    "recentEmpty": "No recent searches yet",
+    "noResults": "No results"
   },
   "status": {
     "active": "Active",
