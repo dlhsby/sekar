@@ -1,4 +1,21 @@
 {
+  "ui": {
+    "all": "Semua",
+    "sort": "Urutkan",
+    "activeFilters": "filter aktif",
+    "dismiss": "Tutup notifikasi",
+    "tap": {
+      "open": "Ketuk untuk membuka",
+      "close": "Ketuk untuk menutup"
+    },
+    "mapControls": {
+      "zoomIn": "Perbesar",
+      "zoomOut": "Perkecil",
+      "useMyLocation": "Gunakan lokasi saya",
+      "updateHistory": "Perbarui riwayat"
+    },
+    "timeDetails": "Detail waktu"
+  },
   "nbselect": {
     "placeholder": "Pilih...",
     "searchPlaceholder": "Cari...",

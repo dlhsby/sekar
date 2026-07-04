@@ -1,4 +1,21 @@
 {
+  "ui": {
+    "all": "All",
+    "sort": "Sort",
+    "activeFilters": "active filters",
+    "dismiss": "Close notification",
+    "tap": {
+      "open": "Tap to open",
+      "close": "Tap to close"
+    },
+    "mapControls": {
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "useMyLocation": "Use my location",
+      "updateHistory": "Update history"
+    },
+    "timeDetails": "Time details"
+  },
   "nbselect": {
     "placeholder": "Select...",
     "searchPlaceholder": "Search...",

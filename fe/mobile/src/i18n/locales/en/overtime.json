@@ -69,7 +69,8 @@
     "startButtonLoading": "Starting...",
     "endButtonTitle": "End Overtime",
     "endButtonLoading": "Ending...",
-    "selfieImagePreviewTitle": "Selfie"
+    "selfieImagePreviewTitle": "Selfie",
+    "confirmGPSToStart": "Confirm GPS location to start overtime"
   },
   "forms": {
     "reasonLabel": "Reason",

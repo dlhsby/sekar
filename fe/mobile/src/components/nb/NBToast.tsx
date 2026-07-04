@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import ToastLib from 'react-native-toast-message';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import i18n from '../../i18n/config';
 import {
   nbColors,
   nbSpacing,
@@ -107,7 +108,7 @@ function NBToastRenderer({
       <TouchableOpacity
         onPress={hide}
         style={styles.dismissButton}
-        accessibilityLabel="Tutup notifikasi"
+        accessibilityLabel={i18n.t('components:ui.dismiss')}
       >
         <MaterialCommunityIcons name="close" size={16} color={nbColors.black} />
       </TouchableOpacity>

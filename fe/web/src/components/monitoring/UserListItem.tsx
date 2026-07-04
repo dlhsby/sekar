@@ -20,7 +20,7 @@ export interface UserListItemProps {
 }
 
 export function UserListItem({ user, isSelected, onClick }: UserListItemProps) {
-  useTranslation();
+  const { t } = useTranslation();
   const statusLabels = getStatusLabels();
   const dotColor = STATUS_DOT_CLASSES[user.status] ?? 'bg-[var(--color-status-offline)]';
   const statusLabel = statusLabels[user.status] ?? user.status;
@@ -66,7 +66,7 @@ export function UserListItem({ user, isSelected, onClick }: UserListItemProps) {
           {isLowBattery && (
             <span
               className="text-xs bg-red-100 text-red-700 border border-red-300 px-1.5 py-0.5 rounded-nb-sm font-semibold"
-              aria-label={`Baterai rendah: ${user.battery_level}%`}
+              aria-label={t('monitoring:map.lowBatteryAriaLabel', { level: user.battery_level })}
             >
               {user.battery_level}%
             </span>

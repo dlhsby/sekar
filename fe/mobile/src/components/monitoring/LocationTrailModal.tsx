@@ -23,6 +23,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps';
 import { NBModal } from '../nb/NBModal';
@@ -55,6 +56,7 @@ export function LocationTrailModal({
   user,
   onClose,
 }: LocationTrailModalProps): React.JSX.Element {
+  const { t } = useTranslation();
   const mapRef = useRef<MapView>(null);
   // Read here (in the normal tree) — inside gorhom's portal the inset reads 0.
   const insets = useSafeAreaInsets();
@@ -148,7 +150,7 @@ export function LocationTrailModal({
           <MapFab
             icon="refresh"
             onPress={refresh}
-            accessibilityLabel="Perbarui riwayat"
+            accessibilityLabel={t('components:ui.mapControls.updateHistory')}
             disabled={isLoading}
           />
         </View>

@@ -119,6 +119,15 @@
     "areas": "Area Boundaries",
     "showLayer": "Show {label}"
   },
+  "map": {
+    "unavailable": "Map is not available — Google Maps is not configured.",
+    "locateMeAriaLabel": "Focus on my location",
+    "areaMapAriaLabel": "Area map",
+    "overduePlantLabel": "{count} plant species overdue for pruning",
+    "statusFilterAriaLabel": "Filter {label}: {count} officers",
+    "locationPointAriaLabel": "Location point {index} at {time}",
+    "lowBatteryAriaLabel": "Low battery: {level}%"
+  },
   "timeline": {
     "backLabel": "Back to officer details",
     "backButton": "Back",

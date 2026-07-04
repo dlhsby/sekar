@@ -25,5 +25,20 @@
     "nextButton": "Lanjut",
     "lastButton": "Mulai (Masuk)",
     "skipButton": "Lewati"
+  },
+  "scenes": {
+    "liveMap": {
+      "active": "Aktif",
+      "offArea": "Off-area"
+    },
+    "requests": {
+      "requestLabel": "PERMOHONAN",
+      "fallentreeLocation": "Pohon tumbang Jl. Anggrek",
+      "dryTreeCutting": "Tebang pohon kering",
+      "areaLabel": "Bekasi 03",
+      "timeAgo": "2 jam lalu",
+      "approved": "DISETUJUI",
+      "inProgress": "DIPROSES"
+    }
   }
 }

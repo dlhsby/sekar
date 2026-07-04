@@ -25,5 +25,20 @@
     "nextButton": "Next",
     "lastButton": "Start (Sign In)",
     "skipButton": "Skip"
+  },
+  "scenes": {
+    "liveMap": {
+      "active": "Active",
+      "offArea": "Off-area"
+    },
+    "requests": {
+      "requestLabel": "REQUEST",
+      "fallentreeLocation": "Fallen tree on Jl. Anggrek",
+      "dryTreeCutting": "Cut dry tree",
+      "areaLabel": "Bekasi 03",
+      "timeAgo": "2 hours ago",
+      "approved": "APPROVED",
+      "inProgress": "IN PROGRESS"
+    }
   }
 }

@@ -161,6 +161,7 @@
     "assignWorkerTitle": "Assign Worker to Area",
     "assignWorkerHelper": "Only field workers and security. For work schedules, use the Schedule menu.",
     "assignAction": "Assign",
+    "removeWorkerAriaLabel": "Remove {name} from area",
     "deleteTitle": "Delete Area",
     "deleteConfirmation": "You will delete the area {areaName}. This action cannot be undone.",
     "successCreated": "Area \"{name}\" created successfully.",
@@ -255,7 +256,8 @@
       "latitudePlaceholder": "Example: -7.25",
       "longitude": "Longitude",
       "longitudePlaceholder": "Example: 112.75",
-      "geometryRequired": "Set at least one: draw the rayon boundary or place a location pin."
+      "geometryRequired": "Set at least one: draw the rayon boundary or place a location pin.",
+      "mapUnavailable": "Map is not available — enter coordinates manually below."
     },
     "stats": {
       "totalAreas": "Number of Areas",

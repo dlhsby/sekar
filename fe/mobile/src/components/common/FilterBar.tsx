@@ -16,6 +16,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBText } from '../nb';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
@@ -57,6 +58,7 @@ export function FilterBar({
   onReset,
   style,
 }: FilterBarProps): React.JSX.Element {
+  const { t } = useTranslation();
   return (
     <View style={[styles.bar, filterCount > 0 && styles.barActive, style]}>
       <View style={styles.left}>
@@ -69,7 +71,7 @@ export function FilterBar({
             ))}
           </ScrollView>
         ) : (
-          <NBText variant="body-sm" color="gray400" style={styles.placeholder}>Semua {label}</NBText>
+          <NBText variant="body-sm" color="gray400" style={styles.placeholder}>{t('components:ui.all')} {label}</NBText>
         )}
         {filterCount > 0 && (
           <TouchableOpacity
@@ -88,7 +90,7 @@ export function FilterBar({
           style={styles.iconButton}
           onPress={onSortPress}
           accessibilityRole="button"
-          accessibilityLabel="Urutkan"
+          accessibilityLabel={t('components:ui.sort')}
         >
           <MaterialCommunityIcons name="sort" size={22} color={isSortActive ? nbColors.primary : nbColors.black} />
         </TouchableOpacity>
@@ -96,7 +98,7 @@ export function FilterBar({
           style={styles.iconButton}
           onPress={onFilterPress}
           accessibilityRole="button"
-          accessibilityLabel={`Filter ${label}${filterCount > 0 ? `, ${filterCount} filter aktif` : ''}`}
+          accessibilityLabel={`Filter ${label}${filterCount > 0 ? `, ${filterCount} ${t('components:ui.activeFilters')}` : ''}`}
         >
           <MaterialCommunityIcons name="filter-variant" size={22} color={filterCount > 0 ? nbColors.primary : nbColors.black} />
           {filterCount > 0 && (

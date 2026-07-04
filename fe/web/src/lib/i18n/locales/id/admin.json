@@ -161,6 +161,7 @@
     "assignWorkerTitle": "Tugaskan Pekerja ke Area",
     "assignWorkerHelper": "Hanya satgas/linmas. Untuk shift kerja, gunakan menu Jadwal.",
     "assignAction": "Tugaskan",
+    "removeWorkerAriaLabel": "Lepas {name} dari area",
     "deleteTitle": "Hapus Area",
     "deleteConfirmation": "Anda akan menghapus area {areaName}. Tindakan ini tidak dapat dibatalkan.",
     "successCreated": "Area \"{name}\" berhasil dibuat.",
@@ -255,7 +256,8 @@
       "latitudePlaceholder": "Contoh: -7.25",
       "longitude": "Longitude",
       "longitudePlaceholder": "Contoh: 112.75",
-      "geometryRequired": "Tentukan minimal salah satu: gambar batas rayon atau tempatkan titik lokasi."
+      "geometryRequired": "Tentukan minimal salah satu: gambar batas rayon atau tempatkan titik lokasi.",
+      "mapUnavailable": "Peta tidak tersedia — masukkan koordinat secara manual di bawah."
     },
     "stats": {
       "totalAreas": "Jumlah Area",

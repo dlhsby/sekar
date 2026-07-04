@@ -41,10 +41,10 @@ const OvertimeTimeHero: React.FC<OvertimeTimeHeroProps> = ({ currentTime }) => {
           {formatDateHero(currentTime, dayNames, monthNames)}
         </NBText>
       }
-      accessibilityLabel="Detail waktu"
+      accessibilityLabel={t('components:ui.timeDetails')}
     >
       <NBText variant="body-sm" color="gray600" style={styles.centerText}>
-        Konfirmasi lokasi GPS untuk memulai lembur
+        {t('overtime:confirmGPSToStart')}
       </NBText>
     </NBCollapsibleCard>
   );

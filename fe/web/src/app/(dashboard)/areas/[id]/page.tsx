@@ -148,7 +148,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
           <h2 className="font-bold text-lg">{t('admin:areas.mapTitle')}</h2>
         </CardHeader>
         <CardContent className="p-4">
-          <div aria-label="Peta area">
+          <div aria-label={t('monitoring:map.areaMapAriaLabel')}>
             <GoogleBoundaryEditor
               readonly
               initialPolygon={area.boundary_polygon}

@@ -134,7 +134,7 @@ export function AreaWorkersCard({ areaId, canManage }: AreaWorkersCardProps) {
                     <Button
                       variant="destructive"
                       size="sm"
-                      aria-label={`Lepas ${w.full_name} dari area`}
+                      aria-label={t('admin:areas.removeWorkerAriaLabel', { name: w.full_name })}
                       loading={removeMutation.isPending && removeMutation.variables?.userId === w.id}
                       onClick={() => handleRemove(w.id, w.full_name)}
                     >

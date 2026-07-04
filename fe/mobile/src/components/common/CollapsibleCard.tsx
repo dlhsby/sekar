@@ -13,6 +13,7 @@ import {
   StyleSheet,
   LayoutAnimation,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   nbColors,
@@ -38,6 +39,7 @@ export function CollapsibleCard({
   defaultExpanded = false,
   style,
 }: CollapsibleCardProps): React.ReactElement {
+  const { t } = useTranslation();
   // expanded resets to defaultExpanded when the host screen blurs (see useCollapsible).
   const { expanded, toggle } = useCollapsible(defaultExpanded);
   const rotateAnim = useRef(new Animated.Value(defaultExpanded ? 1 : 0)).current;
@@ -87,7 +89,7 @@ export function CollapsibleCard({
         activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityLabel={title}
-        accessibilityHint={expanded ? 'Ketuk untuk menutup' : 'Ketuk untuk membuka'}
+        accessibilityHint={expanded ? t('components:ui.tap.close') : t('components:ui.tap.open')}
         accessibilityState={{ expanded }}
       >
         <Text style={styles.title}>{title}</Text>

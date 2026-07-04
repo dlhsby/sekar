@@ -198,7 +198,7 @@ export function LocationTimeline({
                     className="w-full flex items-start gap-2 px-3 py-2 text-left"
                     onClick={() => onPointSelect?.(index)}
                     aria-pressed={isSelected}
-                    aria-label={`Titik lokasi ${index + 1} pada ${formatTimeWithSeconds(point.logged_at)}`}
+                    aria-label={t('monitoring:map.locationPointAriaLabel', { index: index + 1, time: formatTimeWithSeconds(point.logged_at) })}
                   >
                     {/* Color indicator */}
                     <span

@@ -119,6 +119,15 @@
     "areas": "Batas Area",
     "showLayer": "Tampilkan {label}"
   },
+  "map": {
+    "unavailable": "Peta tidak tersedia — Google Maps belum dikonfigurasi.",
+    "locateMeAriaLabel": "Fokus ke lokasi saya",
+    "areaMapAriaLabel": "Peta area",
+    "overduePlantLabel": "{count} jenis tanaman terlambat dipangkas",
+    "statusFilterAriaLabel": "Saring {label}: {count} petugas",
+    "locationPointAriaLabel": "Titik lokasi {index} pada {time}",
+    "lowBatteryAriaLabel": "Baterai rendah: {level}%"
+  },
   "timeline": {
     "backLabel": "Kembali ke detail petugas",
     "backButton": "Kembali",

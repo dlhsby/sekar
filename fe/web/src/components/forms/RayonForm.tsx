@@ -281,7 +281,7 @@ export function RayonForm({
           manualFallback={
             <div className="rounded-nb-base border-2 border-nb-black bg-nb-gray-100 p-3">
               <p className="text-nb-body-sm text-nb-gray-700">
-                Peta tidak tersedia — masukkan koordinat secara manual di bawah.
+                {t('admin:rayons.form.mapUnavailable')}
               </p>
             </div>
           }

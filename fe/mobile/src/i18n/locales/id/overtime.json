@@ -69,7 +69,8 @@
     "startButtonLoading": "Memulai...",
     "endButtonTitle": "Selesai Lembur",
     "endButtonLoading": "Menyelesaikan...",
-    "selfieImagePreviewTitle": "Selfie"
+    "selfieImagePreviewTitle": "Selfie",
+    "confirmGPSToStart": "Konfirmasi lokasi GPS untuk memulai lembur"
   },
   "forms": {
     "reasonLabel": "Alasan",

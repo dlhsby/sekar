@@ -10,6 +10,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GoogleMap, Marker, Polygon, InfoWindow } from '@react-google-maps/api';
+import { useTranslation } from 'react-i18next';
 import { LocateFixed } from 'lucide-react';
 import { GoogleMapsGate } from '@/components/maps/GoogleMapsGate';
 import { STATUS_COLORS, POLYGON_STYLES } from '@/lib/constants/monitoring';
@@ -83,6 +84,7 @@ function MonitoringMapInner({
   onSelect,
   overdueByArea,
 }: SimpleMonitoringMapProps) {
+  const { t } = useTranslation();
   const mapRef = useRef<google.maps.Map | null>(null);
   const didFitRef = useRef(false);
   const [hoverAreaId, setHoverAreaId] = useState<string | null>(null);
@@ -273,7 +275,7 @@ function MonitoringMapInner({
             <div className="text-xs font-semibold text-nb-black">
               {hoverArea.name}
               {(overdueByArea?.[hoverArea.id] ?? 0) > 0 && (
-                <> · {overdueByArea?.[hoverArea.id]} jenis tanaman terlambat dipangkas</>
+                <> · {t('monitoring:map.overduePlantLabel', { count: overdueByArea?.[hoverArea.id] })}</>
               )}
             </div>
           </InfoWindow>
@@ -294,7 +296,7 @@ function MonitoringMapInner({
       <button
         type="button"
         onClick={locateMe}
-        aria-label="Fokus ke lokasi saya"
+        aria-label={t('monitoring:map.locateMeAriaLabel')}
         className="absolute bottom-6 right-3 z-10 flex h-10 w-10 items-center justify-center rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm hover:bg-nb-gray-100"
       >
         <LocateFixed className="h-5 w-5 text-nb-black" />
@@ -304,12 +306,13 @@ function MonitoringMapInner({
 }
 
 export function SimpleMonitoringMap(props: SimpleMonitoringMapProps) {
+  const { t } = useTranslation();
   return (
     <GoogleMapsGate
       fallback={
         <div className="absolute inset-0 flex items-center justify-center bg-nb-gray-100 p-6 text-center">
           <p className="text-nb-body-sm text-nb-gray-600">
-            Peta tidak tersedia — Google Maps belum dikonfigurasi.
+            {t('monitoring:map.unavailable')}
           </p>
         </div>
       }

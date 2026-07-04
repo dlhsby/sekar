@@ -225,7 +225,7 @@ export function LocationPickerModal({
             style={styles.iconBtn}
             onPress={handleZoomIn}
             accessibilityRole="button"
-            accessibilityLabel="Perbesar"
+            accessibilityLabel={t('components:ui.mapControls.zoomIn')}
           >
             <MaterialCommunityIcons name="plus" size={22} color={nbColors.black} />
           </TouchableOpacity>
@@ -234,7 +234,7 @@ export function LocationPickerModal({
             style={styles.iconBtn}
             onPress={handleZoomOut}
             accessibilityRole="button"
-            accessibilityLabel="Perkecil"
+            accessibilityLabel={t('components:ui.mapControls.zoomOut')}
           >
             <MaterialCommunityIcons name="minus" size={22} color={nbColors.black} />
           </TouchableOpacity>
@@ -246,7 +246,7 @@ export function LocationPickerModal({
           onPress={handleUseMyLocation}
           disabled={gpsLoading}
           accessibilityRole="button"
-          accessibilityLabel="Gunakan lokasi saya"
+          accessibilityLabel={t('components:ui.mapControls.useMyLocation')}
         >
           {gpsLoading ? (
             <ActivityIndicator size="small" color={nbColors.black} />
