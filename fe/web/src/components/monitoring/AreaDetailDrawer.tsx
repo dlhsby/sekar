@@ -119,7 +119,7 @@ export function AreaDetailDrawer({
         <div className="flex items-center justify-between px-4 py-3 border-b-2 border-nb-black flex-shrink-0">
           <div className="min-w-0">
             <p className="text-nb-caption text-nb-gray-500 font-bold uppercase tracking-wide">
-              {area?.rayon_name ?? 'Rayon —'}
+              {area?.rayon_name ?? t('monitoring:areaDrawer.rayonFallback')}
             </p>
             <h2 className="text-nb-h3 font-black text-nb-black truncate">
               {area?.area_name ?? '—'}

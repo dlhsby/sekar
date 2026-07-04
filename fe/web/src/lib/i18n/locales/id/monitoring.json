@@ -36,7 +36,8 @@
     "roleLabel": "Peran",
     "roleAllOption": "Semua Peran",
     "matchSummary": "{matched} / {total} petugas",
-    "reset": "Reset"
+    "reset": "Reset",
+    "ariaLabel": "Filter monitoring"
   },
   "sidebar": {
     "backToList": "Kembali ke daftar",
@@ -308,5 +309,8 @@
         "missingWorkerAlertsHelp": "Kirim notifikasi saat petugas tidak terdeteksi"
       }
     }
+  },
+  "areaDrawer": {
+    "rayonFallback": "Rayon —"
   }
 }

@@ -36,7 +36,8 @@
     "roleLabel": "Role",
     "roleAllOption": "All Roles",
     "matchSummary": "{matched} / {total} officers",
-    "reset": "Reset"
+    "reset": "Reset",
+    "ariaLabel": "Monitoring filter"
   },
   "sidebar": {
     "backToList": "Back to list",
@@ -308,5 +309,8 @@
         "missingWorkerAlertsHelp": "Send notification when officer goes missing"
       }
     }
+  },
+  "areaDrawer": {
+    "rayonFallback": "Rayon —"
   }
 }

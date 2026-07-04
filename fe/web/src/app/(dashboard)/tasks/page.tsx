@@ -328,7 +328,7 @@ export default function TasksPage() {
               enablePagination={false}
               getRowId={(r) => r.id}
               rowActions={rowActions}
-              emptyTitle="Tidak ada tugas"
+              emptyTitle={t("tasks:list.emptyTitle")}
             />
             {pagination && pagination.totalPages > 1 && (
               <div className="mt-4 flex items-center justify-between border-t-2 border-nb-black pt-4">

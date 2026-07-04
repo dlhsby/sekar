@@ -56,7 +56,8 @@
     "resultSuccess": "Successfully imported {{imported}} rows",
     "skipped": "{{count}} skipped.",
     "importAgain": "Import Again",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "noValidRows": "No valid rows to import."
   },
   "export": {
     "title": "Export Data",

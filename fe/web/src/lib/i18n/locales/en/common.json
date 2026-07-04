@@ -173,7 +173,9 @@
     "submitRequest": "Submit Request",
     "myRequests": "My Requests",
     "guide": "Guide",
-    "districtNav": "District navigation"
+    "districtNav": "District navigation",
+    "mainNav": "Main navigation",
+    "breadcrumbAria": "Breadcrumb navigation"
   },
   "pagination": {
     "previous": "Previous",
@@ -197,5 +199,13 @@
     "relativeDaysAgo": "{{count}} days ago",
     "hoursShort": "h",
     "minutesShort": "m"
+  },
+  "table": {
+    "filter": "Filter",
+    "activeFilters": "{{count}} active filters"
+  },
+  "errors2": {
+    "unknown": "unknown error",
+    "userNotFound": "User not found"
   }
 }

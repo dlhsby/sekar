@@ -293,7 +293,7 @@ const Sidebar = React.forwardRef<HTMLElement, SidebarProps>(
           <nav
             className="flex-1 space-y-0.5 overflow-y-auto p-3"
             role="navigation"
-            aria-label="Navigasi utama"
+            aria-label={t("common:nav.mainNav")}
           >
             {filteredItems.map(renderNode)}
           </nav>

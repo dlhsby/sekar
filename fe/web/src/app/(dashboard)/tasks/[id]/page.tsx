@@ -410,7 +410,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                       >
                         <img
                           src={url}
-                          alt={`Foto penyelesaian ${index + 1}`}
+                          alt={t('tasks:detail.completionPhotoAlt', { index: index + 1 })}
                           className="w-full h-auto"
                         />
                       </div>

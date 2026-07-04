@@ -9,6 +9,7 @@
  * the profile form reflect the change immediately.
  */
 import { useMutation } from '@tanstack/react-query';
+import i18n from '@/lib/i18n/config';
 import { apiClient } from './client';
 import type { User } from './auth';
 
@@ -45,7 +46,7 @@ export function useUpdateMyProfile() {
 export function useUploadProfilePicture(userId: string | undefined) {
   return useMutation({
     mutationFn: async (file: File): Promise<{ profile_picture_url: string }> => {
-      if (!userId) throw new Error('Pengguna tidak ditemukan');
+      if (!userId) throw new Error(i18n.t('common:errors2.userNotFound'));
       const form = new FormData();
       form.append('file', file);
       const response = await apiClient.post<{ profile_picture_url: string }>(

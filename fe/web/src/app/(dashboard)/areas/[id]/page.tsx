@@ -98,7 +98,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div className="flex-1">
-          <nav aria-label="Navigasi breadcrumb" className="flex items-center gap-3 mb-2">
+          <nav aria-label={t("common:nav.breadcrumbAria")} className="flex items-center gap-3 mb-2">
             <Button
               onClick={() => router.push('/areas')}
               variant="secondary"

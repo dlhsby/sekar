@@ -60,7 +60,7 @@ export function AttendanceTrendChart({
             strokeWidth={2}
             dot={{ fill: 'var(--color-nb-primary)', r: 4 }}
             activeDot={{ r: 6 }}
-            name="Kehadiran (%)"
+            name={t("analytics:charts.attendancePercent")}
           />
         </LineChart>
       </ResponsiveContainer>

@@ -39,7 +39,8 @@
       "reasonPlaceholder": "Masukkan alasan penolakan...",
       "rejectButton": "Tolak Lembur",
       "viewModal": "Detail Lembur"
-    }
+    },
+    "filterStatusAria": "Filter status lembur"
   },
   "detail": {
     "title": "Detail Lembur",

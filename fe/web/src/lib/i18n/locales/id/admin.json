@@ -189,7 +189,9 @@
     "polygonActive": "Poligon aktif dengan",
     "pointsUnit": "titik",
     "addBoundaryHelper": "Klik \"Tambah Boundary\" untuk menggambar batas area.",
-    "boundaryNotConfigured": "Boundary polygon belum dikonfigurasi."
+    "boundaryNotConfigured": "Boundary polygon belum dikonfigurasi.",
+    "emptyShort": "Belum ada area.",
+    "viewAssignedAreasAria": "Lihat {{count}} area yang ditugaskan ke {{name}}"
   },
   "rayons": {
     "pageTitle": "Rayon",

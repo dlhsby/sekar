@@ -176,7 +176,7 @@ export default function UsersPage() {
             <button
               type="button"
               onClick={() => setAreasSheetUser({ id: u.id, full_name: u.full_name })}
-              aria-label={`Lihat ${count} area yang ditugaskan ke ${u.full_name}`}
+              aria-label={t('admin:areas.viewAssignedAreasAria', { count: count, name: u.full_name })}
               className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border-2 border-nb-black rounded-nb-base bg-nb-white text-nb-body-sm font-bold shadow-nb-xs hover:shadow-nb-sm active:shadow-none transition-shadow duration-100"
             >
               <MapPin className="w-3.5 h-3.5" aria-hidden="true" />

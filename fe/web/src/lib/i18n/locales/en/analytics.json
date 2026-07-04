@@ -101,12 +101,17 @@
   },
   "chartDefaults": {
     "attendanceTrend": "Attendance Trend",
-    "taskCompletion": "Task Completion"
+    "taskCompletion": "Task Completion",
+    "workerRanking": "Performance Ranking"
   },
   "areaComparison": {
     "title": "Area Comparison",
     "loading": "Loading...",
     "noData": "No data",
     "taskLabel": "Tasks"
+  },
+  "charts": {
+    "attendancePercent": "Attendance (%)",
+    "hoursUnit": "{{value}} hrs"
   }
 }

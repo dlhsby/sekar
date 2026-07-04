@@ -101,12 +101,17 @@
   },
   "chartDefaults": {
     "attendanceTrend": "Tren Kehadiran",
-    "taskCompletion": "Penyelesaian Tugas"
+    "taskCompletion": "Penyelesaian Tugas",
+    "workerRanking": "Ranking Kinerja"
   },
   "areaComparison": {
     "title": "Perbandingan Area",
     "loading": "Memuat...",
     "noData": "Tidak ada data",
     "taskLabel": "Tugas"
+  },
+  "charts": {
+    "attendancePercent": "Kehadiran (%)",
+    "hoursUnit": "{{value}} jam"
   }
 }

@@ -380,11 +380,11 @@ export function DataTable<TData, TValue>({
                   )}
                 >
                   <Filter className="h-4 w-4" aria-hidden />
-                  <span className="hidden sm:inline">Filter</span>
+                  <span className="hidden sm:inline">{t('common:table.filter')}</span>
                   {columnFilters.length > 0 ? (
                     <span
                       className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-nb-black bg-nb-warning px-1 text-xs font-bold tabular-nums text-nb-ink"
-                      aria-label={`${columnFilters.length} filter aktif`}
+                      aria-label={t('common:table.activeFilters', { count: columnFilters.length })}
                     >
                       {columnFilters.length}
                     </span>

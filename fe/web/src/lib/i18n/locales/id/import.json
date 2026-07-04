@@ -56,7 +56,8 @@
     "resultSuccess": "Berhasil mengimpor {{imported}} baris",
     "skipped": "{{count}} dilewati.",
     "importAgain": "Impor Lagi",
-    "loading": "Memuat..."
+    "loading": "Memuat...",
+    "noValidRows": "Tidak ada baris valid untuk diimpor."
   },
   "export": {
     "title": "Ekspor Data",

@@ -189,7 +189,9 @@
     "polygonActive": "Active polygon with",
     "pointsUnit": "points",
     "addBoundaryHelper": "Click \"Add Boundary\" to draw area boundary.",
-    "boundaryNotConfigured": "Boundary polygon is not yet configured."
+    "boundaryNotConfigured": "Boundary polygon is not yet configured.",
+    "emptyShort": "No areas yet.",
+    "viewAssignedAreasAria": "View {{count}} areas assigned to {{name}}"
   },
   "rayons": {
     "pageTitle": "Rayons",

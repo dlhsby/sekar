@@ -88,7 +88,7 @@ export function HierarchyFilterPanel({
         className
       )}
       role="search"
-      aria-label="Filter monitoring"
+      aria-label={t("monitoring:filters.ariaLabel")}
     >
       {/* Scope selector */}
       <div

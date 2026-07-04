@@ -153,7 +153,7 @@ export default function AnalyticsDashboardPage() {
         />
         <KpiTile
           label={t('overview.kpi.overtime')}
-          value={`${todayMetrics.overtimeHours.toFixed(1)} jam`}
+          value={t('analytics:charts.hoursUnit', { value: todayMetrics.overtimeHours.toFixed(1) })}
           delta={`${todayMetrics.overtimeHours < 20 ? '−' : '+'}${Math.abs(todayMetrics.overtimeHours - 20).toFixed(1)}`}
           deltaDirection={todayMetrics.overtimeHours < 20 ? 'down' : 'up'}
         />

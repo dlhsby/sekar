@@ -98,7 +98,7 @@ function CsvImportWizard() {
       const response = await validateCsv.mutateAsync({ entity, file });
       setValidation(response);
       if (response.validCount === 0) {
-        toast.warning('Tidak ada baris valid untuk diimpor.');
+        toast.warning(t('import:csv.noValidRows'));
       }
     } catch (error) {
       toast.error(getErrorMessage(error));

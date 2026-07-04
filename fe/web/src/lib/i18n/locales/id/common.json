@@ -173,7 +173,9 @@
     "submitRequest": "Kirim Permintaan",
     "myRequests": "Permintaan Saya",
     "guide": "Panduan",
-    "districtNav": "Navigasi kecamatan"
+    "districtNav": "Navigasi kecamatan",
+    "mainNav": "Navigasi utama",
+    "breadcrumbAria": "Navigasi breadcrumb"
   },
   "pagination": {
     "previous": "Sebelumnya",
@@ -197,5 +199,13 @@
     "relativeDaysAgo": "{{count}} hari lalu",
     "hoursShort": "j",
     "minutesShort": "m"
+  },
+  "table": {
+    "filter": "Filter",
+    "activeFilters": "{{count}} filter aktif"
+  },
+  "errors2": {
+    "unknown": "kesalahan tidak diketahui",
+    "userNotFound": "Pengguna tidak ditemukan"
   }
 }

@@ -44,7 +44,7 @@ export function AreaListSheet({
   resetKey,
   isLoading = false,
   isError = false,
-  emptyText = 'Belum ada area.',
+  emptyText,
   onClose,
 }: AreaListSheetProps) {
   const { t } = useTranslation();
@@ -143,7 +143,7 @@ export function AreaListSheet({
             <p className="text-nb-body-sm text-nb-danger-dark py-6 text-center">{t('common:empty.loadError')}</p>
           ) : filtered.length === 0 ? (
             <p className="text-nb-body-sm text-nb-gray-600 py-6 text-center">
-              {items.length === 0 ? emptyText : t('admin:areas.listSheet.noMatch')}
+              {items.length === 0 ? (emptyText ?? t('admin:areas.emptyShort')) : t('admin:areas.listSheet.noMatch')}
             </p>
           ) : (
             filtered.map((area) => (

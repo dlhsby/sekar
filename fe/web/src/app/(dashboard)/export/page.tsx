@@ -149,7 +149,7 @@ function ExportForm({ role }: { role: UserRole }) {
       jobsQuery.refetch();
       setActiveJobId(null);
     } else if (jobStatus === 'failed') {
-      toast.error(`${t('export.errorMessage')}: ${jobError ?? 'kesalahan tidak diketahui'}`);
+      toast.error(`${t('export.errorMessage')}: ${jobError ?? t('common:errors2.unknown')}`);
       setActiveJobId(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

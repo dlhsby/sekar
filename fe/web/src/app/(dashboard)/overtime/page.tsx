@@ -254,7 +254,7 @@ export default function OvertimePage() {
             setPage(1);
           }
         }}
-        aria-label="Filter status lembur"
+        aria-label={t("overtime:list.filterStatusAria")}
       />
 
       <Card>

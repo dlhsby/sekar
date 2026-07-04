@@ -39,7 +39,8 @@
       "reasonPlaceholder": "Enter rejection reason...",
       "rejectButton": "Reject Overtime",
       "viewModal": "Overtime Details"
-    }
+    },
+    "filterStatusAria": "Filter overtime status"
   },
   "detail": {
     "title": "Overtime Details",
