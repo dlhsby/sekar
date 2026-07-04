@@ -37,27 +37,31 @@ const renderMenu = (role: string, navigate = jest.fn()) => {
 describe('MenuScreen', () => {
   it('renders the section titles for the role', () => {
     const { getByText } = renderMenu('admin_data');
-    MENU_CONFIGS.admin_data.forEach((section) => {
-      expect(getByText(section.title)).toBeTruthy();
-    });
+    // section.title holds i18n keys; expect resolved text
+    expect(getByText('Pengawasan')).toBeTruthy(); // menu:sections.supervision
+    expect(getByText('Perawatan Pohon')).toBeTruthy(); // menu:sections.treeCare
+    expect(getByText('Laporan & Monitoring')).toBeTruthy(); // menu:sections.reportsMonitoring
   });
 
   it('renders a tile for every menu item of a field role', () => {
     const { getByText } = renderMenu('satgas');
-    const labels = MENU_CONFIGS.satgas.flatMap((s) => s.items.map((i) => i.label));
-    labels.forEach((label) => expect(getByText(label)).toBeTruthy());
+    // Labels are i18n keys; expect resolved text
+    expect(getByText('Kehadiran')).toBeTruthy(); // menu:tiles.attendance
+    expect(getByText('Lembur')).toBeTruthy(); // menu:tiles.overtime
+    expect(getByText('Tugas')).toBeTruthy(); // menu:tiles.tasks
+    expect(getByText('Aktivitas')).toBeTruthy(); // menu:tiles.activities
   });
 
   it('navigates to the item route (with params) when a tile is tapped', () => {
     const { getByTestId, navigate } = renderMenu('kepala_rayon');
     // Lembur tile navigates to its own Lembur page.
-    fireEvent.press(getByTestId('menu-Lembur-Lembur'));
+    fireEvent.press(getByTestId('menu-Lembur'));
     expect(navigate).toHaveBeenCalledWith('Lembur', undefined);
   });
 
   it('navigates with undefined params for paramless items', () => {
     const { getByTestId, navigate } = renderMenu('satgas');
-    fireEvent.press(getByTestId('menu-Tasks-Tugas'));
+    fireEvent.press(getByTestId('menu-Tasks'));
     expect(navigate).toHaveBeenCalledWith('Tasks', undefined);
   });
 });

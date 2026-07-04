@@ -188,7 +188,7 @@ describe('UserListItem', () => {
         last_update: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
       };
       render(<UserListItem {...defaultProps} user={user} />);
-      expect(screen.getByText(/5 mnt lalu/)).toBeInTheDocument();
+      expect(screen.getByText(/5 menit lalu/)).toBeInTheDocument();
     });
 
     it('should display hours for updates older than 60 minutes', () => {

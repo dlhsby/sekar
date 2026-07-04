@@ -268,7 +268,7 @@ describe('getErrorMessage', () => {
 
   it('should return default message for unknown code', () => {
     const message = getErrorMessage('UNKNOWN_CODE');
-    expect(message).toBe('Terjadi kesalahan');
+    expect(message).toBe('Terjadi kesalahan. Silakan coba lagi.');
   });
 
   it('should return custom default message when provided', () => {
@@ -286,9 +286,9 @@ describe('getErrorMessage', () => {
   });
 
   it('should handle all shift error codes', () => {
-    expect(getErrorMessage(ApiErrorCode.SHIFT_ALREADY_ACTIVE)).toContain('clock-in');
+    expect(getErrorMessage(ApiErrorCode.SHIFT_ALREADY_ACTIVE)).toContain('shift');
     expect(getErrorMessage(ApiErrorCode.SHIFT_NOT_ACTIVE)).toContain('shift');
-    expect(getErrorMessage(ApiErrorCode.SHIFT_GPS_OUT_OF_BOUNDS)).toContain('area');
+    expect(getErrorMessage(ApiErrorCode.SHIFT_GPS_OUT_OF_BOUNDS)).toContain('luar');
   });
 
   it('should handle all report error codes', () => {
@@ -298,18 +298,18 @@ describe('getErrorMessage', () => {
   });
 
   it('should handle all authentication error codes', () => {
-    expect(getErrorMessage(ApiErrorCode.AUTH_INVALID_CREDENTIALS)).toContain('password');
-    expect(getErrorMessage(ApiErrorCode.AUTH_TOKEN_EXPIRED)).toContain('login');
+    expect(getErrorMessage(ApiErrorCode.AUTH_INVALID_CREDENTIALS)).toContain('salah');
+    expect(getErrorMessage(ApiErrorCode.AUTH_TOKEN_EXPIRED)).toContain('berakhir');
     expect(getErrorMessage(ApiErrorCode.AUTH_ACCOUNT_INACTIVE)).toContain('administrator');
   });
 
   it('should return actionable messages for user errors', () => {
     // Clock-in required errors
-    expect(getErrorMessage(ApiErrorCode.SHIFT_NOT_ACTIVE)).toContain('Clock-in');
+    expect(getErrorMessage(ApiErrorCode.SHIFT_NOT_ACTIVE)).toContain('shift');
     expect(getErrorMessage(ApiErrorCode.REPORT_SHIFT_REQUIRED)).toContain('clock-in');
 
     // Permission errors
-    expect(getErrorMessage(ApiErrorCode.SHIFT_NOT_ASSIGNED)).toContain('supervisor');
+    expect(getErrorMessage(ApiErrorCode.SHIFT_NOT_ASSIGNED)).toContain('ditugaskan');
 
     // Network errors
     expect(getErrorMessage(ApiErrorCode.NETWORK_ERROR)).toContain('koneksi');
@@ -317,17 +317,17 @@ describe('getErrorMessage', () => {
 
   it('should handle empty string code', () => {
     const message = getErrorMessage('');
-    expect(message).toBe('Terjadi kesalahan');
+    expect(message).toBe('Terjadi kesalahan. Silakan coba lagi.');
   });
 
   it('should handle undefined default message', () => {
     const message = getErrorMessage('UNKNOWN_CODE', undefined);
-    expect(message).toBe('Terjadi kesalahan');
+    expect(message).toBe('Terjadi kesalahan. Silakan coba lagi.');
   });
 
   it('should handle empty string default message', () => {
     const message = getErrorMessage('UNKNOWN_CODE', '');
-    expect(message).toBe('Terjadi kesalahan');
+    expect(message).toBe('Terjadi kesalahan. Silakan coba lagi.');
   });
 });
 

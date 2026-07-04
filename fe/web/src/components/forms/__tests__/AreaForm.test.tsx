@@ -122,7 +122,7 @@ describe('AreaForm', () => {
       expect(screen.getByText('Rayon')).toBeInTheDocument();
       expect(screen.getByText('Tipe Area')).toBeInTheDocument();
       expect(screen.getByTestId('google-boundary-editor')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /simpan area/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /buat area/i })).toBeInTheDocument();
     });
 
     it('shows rayons in dropdown', async () => {
@@ -202,7 +202,7 @@ describe('AreaForm', () => {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByRole('button', { name: /perbarui area/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /simpan area/i })).toBeInTheDocument();
     });
 
     it('displays center coordinates when area has boundary', () => {
@@ -233,7 +233,7 @@ describe('AreaForm', () => {
         wrapper: createWrapper(),
       });
 
-      expect(screen.getByRole('button', { name: /menyimpan/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /membuat/i })).toBeInTheDocument();
     });
 
     it('shows updating text in edit mode when isLoading', () => {

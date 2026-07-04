@@ -124,8 +124,8 @@ describe('Dialog Component', () => {
         </Dialog>
       );
 
-      // Close button should have sr-only text "Close"
-      expect(screen.getByText('Close')).toBeInTheDocument();
+      // Close button should have sr-only text "Tutup" (Indonesian)
+      expect(screen.getByText('Tutup')).toBeInTheDocument();
     });
   });
 

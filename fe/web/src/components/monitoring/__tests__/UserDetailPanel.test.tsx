@@ -276,7 +276,7 @@ describe('UserDetailPanel', () => {
   describe('Contact links section', () => {
     it('should render WhatsApp Chat link with correct href', () => {
       render(<UserDetailPanel {...defaultProps} />);
-      const chatLink = screen.getByRole('link', { name: /whatsapp chat/i });
+      const chatLink = screen.getByRole('link', { name: /chat whatsapp/i });
       expect(chatLink).toHaveAttribute('href', 'https://wa.me/6281234567890');
     });
 
@@ -288,7 +288,7 @@ describe('UserDetailPanel', () => {
 
     it('should open links in a new tab', () => {
       render(<UserDetailPanel {...defaultProps} />);
-      const chatLink = screen.getByRole('link', { name: /whatsapp chat/i });
+      const chatLink = screen.getByRole('link', { name: /chat whatsapp/i });
       expect(chatLink).toHaveAttribute('target', '_blank');
       expect(chatLink).toHaveAttribute('rel', 'noopener noreferrer');
     });
@@ -296,7 +296,7 @@ describe('UserDetailPanel', () => {
     it('should not render contact section when whatsapp_links is null', () => {
       const summary = { ...MOCK_SUMMARY, whatsapp_links: null };
       render(<UserDetailPanel {...defaultProps} summary={summary} />);
-      expect(screen.queryByRole('link', { name: /whatsapp chat/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /chat whatsapp/i })).not.toBeInTheDocument();
     });
   });
 });

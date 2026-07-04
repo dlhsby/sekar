@@ -72,7 +72,7 @@ describe('Header', () => {
   it('should render menu trigger button', () => {
     render(<Header />);
 
-    const menuButton = screen.getByRole('button', { name: /open navigation menu/i });
+    const menuButton = screen.getByRole('button', { name: /buka menu navigasi/i });
     expect(menuButton).toBeInTheDocument();
   });
 
@@ -80,7 +80,7 @@ describe('Header', () => {
     const user = userEvent.setup();
     render(<Header />);
 
-    const menuButton = screen.getByRole('button', { name: /user menu/i });
+    const menuButton = screen.getByRole('button', { name: /menu pengguna/i });
     await user.click(menuButton);
 
     // Wait for dropdown to appear (label is Indonesian: "Profil")

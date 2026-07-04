@@ -110,7 +110,7 @@ describe('PartialCompleteSheet', () => {
       </Provider>,
     );
 
-    const submitBtn = screen.getByText('SIMPAN');
+    const submitBtn = screen.getByText('Simpan');
 
     // Button should be disabled initially when no count entered
     expect(submitBtn).toBeTruthy();
@@ -136,7 +136,7 @@ describe('PartialCompleteSheet', () => {
     const input = getByTestId('completed-count-input');
     fireEvent.changeText(input, '25');
 
-    const submitBtn = screen.getByText('SIMPAN');
+    const submitBtn = screen.getByText('Simpan');
     await waitFor(() => {
       // After entering valid count, button should still be present and pressable
       expect(submitBtn).toBeTruthy();
@@ -198,7 +198,7 @@ describe('PartialCompleteSheet', () => {
       </Provider>,
     );
 
-    const cancelBtn = screen.getByText('BATAL');
+    const cancelBtn = screen.getByText('Batal');
     fireEvent.press(cancelBtn);
 
     expect(onClose).toHaveBeenCalled();
@@ -216,7 +216,7 @@ describe('PartialCompleteSheet', () => {
       </Provider>,
     );
 
-    const submitBtn = screen.getByText('SIMPAN');
+    const submitBtn = screen.getByText('Simpan');
     // Button should be present but disabled (validation prevents action)
     expect(submitBtn).toBeTruthy();
   });
@@ -303,7 +303,7 @@ describe('PartialCompleteSheet', () => {
     const input = getByTestId('completed-count-input');
     fireEvent.changeText(input, '100');
 
-    const submitBtn = screen.getByText('SIMPAN');
+    const submitBtn = screen.getByText('Simpan');
     fireEvent.press(submitBtn);
 
     // Should show error alert when exceeding target
@@ -350,7 +350,7 @@ describe('PartialCompleteSheet', () => {
     const input = getByTestId('completed-count-input');
     fireEvent.changeText(input, '25');
 
-    const cancelBtn = screen.getByText('BATAL');
+    const cancelBtn = screen.getByText('Batal');
     fireEvent.press(cancelBtn);
 
     expect(onClose).toHaveBeenCalled();

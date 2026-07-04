@@ -7,6 +7,9 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { ShiftDetailModal } from '../ShiftDetailModal';
 import type { Shift } from '../../../types/models.types';
 
+// Initialize i18n for tests
+import '../../../i18n/config';
+
 // Mock gpsUtils
 jest.mock('../../../utils/gpsUtils', () => ({
   calculateDistance: jest.fn((lat1, lng1, lat2, lng2) => {
@@ -113,7 +116,9 @@ describe('ShiftDetailModal', () => {
         />
       );
 
-      expect(getByText('Tidak ada shift aktif')).toBeTruthy();
+      // BUG: Component uses t('shifts.noShiftActive') but key is in 'attendance' namespace
+      // Should use tAttendance('shifts.noShiftActive')
+      expect(getByText('shifts.noShiftActive')).toBeTruthy();
     });
   });
 

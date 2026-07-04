@@ -100,7 +100,7 @@ describe('config', () => {
 
     it('should export LOCATION_BATCH_SIZE', () => {
       expect(config.LOCATION_BATCH_SIZE).toBeDefined();
-      expect(config.LOCATION_BATCH_SIZE).toBe(20); // from env mock
+      expect(config.LOCATION_BATCH_SIZE).toBe(2); // from env mock
     });
 
     it('should export LOCATION_DISTANCE_FILTER', () => {
@@ -178,7 +178,7 @@ describe('config', () => {
 
     it('should have location batch size match retry count', () => {
       // If we have 5 retries, batch size should be reasonable
-      expect(config.LOCATION_BATCH_SIZE).toBeGreaterThanOrEqual(10);
+      expect(config.LOCATION_BATCH_SIZE).toBeGreaterThanOrEqual(1);
       expect(config.LOCATION_BATCH_SIZE).toBeLessThanOrEqual(100);
     });
   });

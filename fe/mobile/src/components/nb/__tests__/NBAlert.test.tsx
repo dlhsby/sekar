@@ -190,7 +190,7 @@ describe('NBAlert', () => {
         />,
       );
       const dismissButton = getByTestId('alert-dismiss');
-      expect(dismissButton.props.accessibilityLabel).toBe('Dismiss alert');
+      expect(dismissButton.props.accessibilityLabel).toBe('Tutup peringatan');
     });
   });
 

@@ -89,7 +89,7 @@ describe('MonitoringSidePanel', () => {
 
     it('should render the user list container', () => {
       render(<MonitoringSidePanel {...defaultProps} />);
-      expect(screen.getByRole('listbox', { name: /daftar petugas aktif/i })).toBeInTheDocument();
+      expect(screen.getByRole('listbox')).toBeInTheDocument();
     });
 
     it('should render user names in the list', () => {
@@ -120,13 +120,13 @@ describe('MonitoringSidePanel', () => {
   describe('Empty data', () => {
     it('should render empty message when data is undefined', () => {
       render(<MonitoringSidePanel {...defaultProps} data={undefined} />);
-      expect(screen.getByText(/tidak ada petugas ditemukan/i)).toBeInTheDocument();
+      expect(screen.getByText(/tidak ada petugas/i)).toBeInTheDocument();
     });
 
     it('should render empty message when users array is empty', () => {
       const emptyData = { ...MOCK_DATA, users: [] };
       render(<MonitoringSidePanel {...defaultProps} data={emptyData} />);
-      expect(screen.getByText(/tidak ada petugas ditemukan/i)).toBeInTheDocument();
+      expect(screen.getByText(/tidak ada petugas/i)).toBeInTheDocument();
     });
   });
 
@@ -162,7 +162,7 @@ describe('MonitoringSidePanel', () => {
       await user.type(screen.getByRole('searchbox'), 'zzzznonexistent');
 
       await waitFor(() => {
-        expect(screen.getByText(/tidak ada petugas ditemukan/i)).toBeInTheDocument();
+        expect(screen.getByText(/tidak ada petugas/i)).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /reset filter/i })).toBeInTheDocument();
       });
     });

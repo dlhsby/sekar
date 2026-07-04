@@ -342,6 +342,14 @@ global.API_VERSION = 'v1';
 global.GOOGLE_MAPS_API_KEY = 'mock-google-maps-key';
 global.APP_ENV = 'test';
 
+// Initialize i18n for tests before any component tests run
+// This ensures useTranslation() hooks have proper translations available
+beforeAll(() => {
+  // Import the i18n config to initialize it with all resources
+  // eslint-disable-next-line global-require
+  require('./src/i18n/config');
+});
+
 // Global setup hook to ensure Alert and Vibration mocks are always available
 beforeEach(() => {
   // CRITICAL: Restore Alert mock implementation before each test

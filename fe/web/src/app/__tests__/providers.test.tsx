@@ -11,6 +11,11 @@ jest.mock('@/lib/auth/context', () => ({
   AuthProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
+// Mock useAuth hook
+jest.mock('@/lib/auth/hooks', () => ({
+  useAuth: () => ({ user: null }),
+}));
+
 describe('Providers', () => {
   it('should render children', () => {
     render(

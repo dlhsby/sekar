@@ -79,7 +79,7 @@ describe('KecamatanHomeScreen', () => {
     ]);
     await waitFor(() => {
       expect(getByTestId('kecamatan-hero')).toBeTruthy();
-      expect(getByText('Permohonan saya')).toBeTruthy();
+      expect(getByText('Permohonan Anda')).toBeTruthy();
       expect(getByText('3')).toBeTruthy(); // total
       expect(getByTestId('kecamatan-submit')).toBeTruthy();
     });
