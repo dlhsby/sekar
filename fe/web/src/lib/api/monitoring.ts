@@ -70,7 +70,8 @@ export const monitoringKeys = {
   staffingSummary: (filters?: StaffingFilters) =>
     [...monitoringKeys.all, 'staffing-summary', filters] as const,
   config: () => [...monitoringKeys.all, 'config'] as const,
-  boundaries: () => [...monitoringKeys.all, 'boundaries'] as const,
+  boundaries: (level?: 'rayon' | 'area', rayonId?: string) =>
+    [...monitoringKeys.all, 'boundaries', level ?? 'area', rayonId ?? null] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -226,11 +227,28 @@ export function useUpdateMonitoringConfig() {
 // Boundaries Hook (Phase 2D-10 Gap Fix #9)
 // ---------------------------------------------------------------------------
 
-export function useBoundaries(enabled = true) {
+/**
+ * useBoundaries — rayon/area polygons for the map.
+ *
+ * `level='rayon'` returns outlines only (no per-area geometry) — the light
+ * payload for the city view. Drilling into a rayon requests `level='area'`
+ * with `rayonId` so only that rayon's areas load. Geometry is server-simplified
+ * (Douglas–Peucker) and changes rarely, so it caches for 5 minutes.
+ */
+export function useBoundaries(
+  enabled = true,
+  level?: 'rayon' | 'area',
+  rayonId?: string
+) {
   return useQuery({
-    queryKey: monitoringKeys.boundaries(),
+    queryKey: monitoringKeys.boundaries(level, rayonId),
     queryFn: async () => {
-      const response = await apiClient.get<BoundariesResponse>('/monitoring/boundaries');
+      const params: Record<string, string> = {};
+      if (level) params.level = level;
+      if (rayonId) params.rayon_id = rayonId;
+      const response = await apiClient.get<BoundariesResponse>('/monitoring/boundaries', {
+        params,
+      });
       return response.data;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes

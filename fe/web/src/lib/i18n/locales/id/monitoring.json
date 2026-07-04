@@ -17,7 +17,14 @@
     "filterPanelTitle": "Filter Petugas",
     "closePanelLabel": "Tutup filter",
     "listLabel": "Daftar Petugas",
-    "closeListLabel": "Tutup daftar"
+    "closeListLabel": "Tutup daftar",
+    "backLabel": "Kembali",
+    "modeSummary": "Ringkasan",
+    "modeAllWorkers": "Semua Petugas"
+  },
+  "aggregate": {
+    "onlineOfRequired": "{{online}}/{{required}} bertugas",
+    "understaffed": "Kekurangan personel"
   },
   "status": {
     "active": "Aktif",

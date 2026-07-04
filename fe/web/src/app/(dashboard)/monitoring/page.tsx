@@ -1,28 +1,36 @@
 /**
- * Monitoring (Phase 4-R)
+ * Monitoring (revamp)
  *
- * Real-time worker monitoring, mobile-aligned. Full-bleed map with floating
- * overlays: a search bar pinned over the top, a dismissible filter panel, and a
- * dismissible worker/area sheet — so the map is always fully viewable.
- * Rayon + area boundaries render from `/monitoring/boundaries` regardless of
- * live workers; worker pins come from the role-scoped `/monitoring/snapshot`.
+ * Hierarchy-aware, zoom/scope-driven monitoring. Default is an aggregate-first
+ * drill-down (town → rayon → area → workers): the map shows lightweight summary
+ * bubbles, and drilling into an area reveals individual workers. A
+ * [Ringkasan]/[Semua Petugas] toggle switches to a clustered all-workers view.
+ * Worker positions arrive incrementally over WebSocket (no full-refresh flash);
+ * boundaries load progressively per scope. Native Google Maps controls.
  */
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { Search, SlidersHorizontal, RefreshCw, X, List, ChevronDown, Sprout } from 'lucide-react';
+import { Search, SlidersHorizontal, RefreshCw, X, List, ChevronDown, ChevronLeft, Sprout, LayoutGrid, Users } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth/hooks';
-import { useMonitoringSnapshot } from '@/lib/api/monitoring-v2';
+import {
+  useMonitoringSnapshot,
+  useMonitoringAggregate,
+  type AggregateNode,
+  type AggregateStatusCounts,
+} from '@/lib/api/monitoring-v2';
 import { useBoundaries } from '@/lib/api/monitoring';
+import { useMonitoringSocket } from '@/lib/monitoring/useMonitoringSocket';
 import {
   MonitoringFilters,
   type MonitoringFilterState,
   type RayonOption,
 } from '@/components/monitoring/MonitoringFilters';
 import { MonitoringSidebar } from '@/components/monitoring/MonitoringSidebar';
+import { AggregateNodeList } from '@/components/monitoring/AggregateNodeList';
 import { BulkReassignModal } from '@/components/monitoring/BulkReassignModal';
 import { usePlantStatusSummary } from '@/lib/api/plants';
 import { SimpleMonitoringMap } from '@/components/monitoring/SimpleMonitoringMapLazy';
@@ -34,6 +42,16 @@ import { cn } from '@/lib/utils/cn';
 import type { TrackingStatus } from '@/lib/api/monitoring-types';
 import type { UserRole } from '@/types/models';
 
+type Scope = 'city' | 'rayon' | 'area';
+type Mode = 'aggregate' | 'workers';
+
+interface MonitoringView {
+  scope: Scope;
+  id?: string;
+  rayonId?: string;
+  name?: string;
+}
+
 const EMPTY_STATUS_COUNTS: Record<TrackingStatus, number> = {
   active: 0,
   inactive: 0,
@@ -41,6 +59,19 @@ const EMPTY_STATUS_COUNTS: Record<TrackingStatus, number> = {
   missing: 0,
   offline: 0,
 };
+
+function aggregateToStatusCounts(
+  totals: AggregateStatusCounts | undefined
+): Record<TrackingStatus, number> {
+  if (!totals) return { ...EMPTY_STATUS_COUNTS };
+  return {
+    active: totals.active,
+    inactive: totals.inactive,
+    outside_area: totals.outside_area,
+    missing: totals.missing,
+    offline: totals.offline,
+  };
+}
 
 export default function MonitoringPage() {
   const { t } = useTranslation();
@@ -55,6 +86,26 @@ export default function MonitoringPage() {
     { key: 'offline', label: t('monitoring:status.offline'), color: 'var(--color-status-offline)' },
   ];
 
+  const canMonitor = !!user && hasRole(user.role as UserRole, MONITORING_ROLES);
+  const canReassign = !!user && hasRole(user.role as UserRole, REASSIGN_ROLES);
+
+  // Role determines the landing view + the floor the user can never drill above.
+  const roleView = useMemo<{ view: MonitoringView; floor: Scope; mode: Mode }>(() => {
+    if (user?.role === 'korlap' && user.area_id) {
+      return { view: { scope: 'area', id: user.area_id }, floor: 'area', mode: 'workers' };
+    }
+    if ((user?.role === 'kepala_rayon' || user?.role === 'admin_data') && user.rayon_id) {
+      return {
+        view: { scope: 'rayon', id: user.rayon_id, rayonId: user.rayon_id },
+        floor: 'rayon',
+        mode: 'aggregate',
+      };
+    }
+    return { view: { scope: 'city' }, floor: 'city', mode: 'aggregate' };
+  }, [user]);
+
+  const [view, setView] = useState<MonitoringView>(roleView.view);
+  const [mode, setMode] = useState<Mode>(roleView.mode);
   const [filters, setFilters] = useState<MonitoringFilterState>({
     search: '',
     statuses: new Set(),
@@ -65,25 +116,35 @@ export default function MonitoringPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
   const [bulkTarget, setBulkTarget] = useState<SnapshotAreaSummary | null>(null);
-  // Phase 3-8: plant-overdue map overlay toggle
   const [showOverdue, setShowOverdue] = useState(false);
 
-  // Role-scoped snapshot: city for city-level roles, else the user's own
-  // rayon/area (the backend forbids city scope for scoped roles).
-  const { scope, scopeId } = useMemo<{
-    scope: 'city' | 'rayon' | 'area';
-    scopeId?: string;
-  }>(() => {
-    if (user?.role === 'korlap' && user.area_id) return { scope: 'area', scopeId: user.area_id };
-    if ((user?.role === 'kepala_rayon' || user?.role === 'admin_data') && user.rayon_id)
-      return { scope: 'rayon', scopeId: user.rayon_id };
-    return { scope: 'city' };
-  }, [user]);
+  // Keep view/mode in sync when the user (role) resolves.
+  useEffect(() => {
+    setView(roleView.view);
+    setMode(roleView.mode);
+  }, [roleView]);
 
-  const canMonitor = !!user && hasRole(user.role as UserRole, MONITORING_ROLES);
-  const canReassign = !!user && hasRole(user.role as UserRole, REASSIGN_ROLES);
-  const { data, isLoading, refetch } = useMonitoringSnapshot(scope, scopeId);
-  const { data: boundaries } = useBoundaries(canMonitor);
+  // Areas have no sub-aggregate, so the area scope is always the worker view.
+  const effectiveMode: Mode = view.scope === 'area' ? 'workers' : mode;
+  const canToggle = view.scope !== 'area';
+
+  // Data hooks — only the one feeding the current view is enabled.
+  const aggregateEnabled =
+    canMonitor && effectiveMode === 'aggregate' && (view.scope === 'city' || view.scope === 'rayon');
+  const aggregate = useMonitoringAggregate(
+    (view.scope === 'rayon' ? 'rayon' : 'city') as 'city' | 'rayon',
+    view.scope === 'rayon' ? view.id : undefined,
+    aggregateEnabled
+  );
+
+  const snapshotEnabled = canMonitor && effectiveMode === 'workers';
+  const snapshot = useMonitoringSnapshot(view.scope, view.id, snapshotEnabled);
+
+  // Progressive boundaries: rayon outlines at city, that rayon's areas when deeper.
+  const boundaryLevel: 'rayon' | 'area' = view.scope === 'city' ? 'rayon' : 'area';
+  const boundaryRayonId = view.scope === 'city' ? undefined : view.rayonId ?? view.id;
+  const { data: boundaries } = useBoundaries(canMonitor, boundaryLevel, boundaryRayonId);
+
   const plantSummary = usePlantStatusSummary(canMonitor && showOverdue);
   const overdueByArea = useMemo(() => {
     if (!showOverdue || !plantSummary.data) return null;
@@ -94,58 +155,97 @@ export default function MonitoringPage() {
     return map;
   }, [showOverdue, plantSummary.data]);
 
+  // Live incremental updates (replaces the old 30 s full-refresh flash).
+  useMonitoringSocket(canMonitor);
+
   useEffect(() => {
     if (!authLoading && user && !canMonitor) router.push('/');
   }, [user, authLoading, canMonitor, router]);
 
-  // Selecting a worker (from the map or the list) also reveals the sheet.
   const selectWorker = (id: string | null) => {
     setSelectedId(id);
     if (id) setListOpen(true);
   };
 
-  const allWorkers = useMemo(() => data?.data?.workers ?? [], [data]);
-  const areaSummaries = useMemo(() => data?.data?.area_summaries ?? [], [data]);
+  // Drill one level deeper when an aggregate bubble is tapped.
+  const onDrillNode = (node: AggregateNode) => {
+    if (node.type === 'rayon') {
+      setView({ scope: 'rayon', id: node.id, rayonId: node.id, name: node.name });
+    } else {
+      setView({ scope: 'area', id: node.id, rayonId: view.rayonId ?? node.rayon_id ?? undefined, name: node.name });
+      setMode('workers');
+    }
+    setSelectedId(null);
+  };
+
+  const canGoBack = view.scope !== roleView.floor;
+  const goBack = () => {
+    setSelectedId(null);
+    if (view.scope === 'area') {
+      // Back to the parent rayon aggregate (or city if that's the floor).
+      if (roleView.floor === 'city' && view.rayonId) {
+        setView({ scope: 'rayon', id: view.rayonId, rayonId: view.rayonId });
+      } else if (roleView.floor === 'rayon') {
+        setView(roleView.view);
+      } else {
+        setView({ scope: 'rayon', id: view.rayonId, rayonId: view.rayonId });
+      }
+      setMode('aggregate');
+    } else if (view.scope === 'rayon') {
+      setView({ scope: 'city' });
+      setMode('aggregate');
+    }
+  };
+
+  const workers = useMemo(() => snapshot.data?.data?.workers ?? [], [snapshot.data]);
+  const areaSummaries = useMemo(() => snapshot.data?.data?.area_summaries ?? [], [snapshot.data]);
+  const aggregateNodes = useMemo(() => aggregate.data?.nodes ?? [], [aggregate.data]);
 
   const statusCounts = useMemo(() => {
+    if (effectiveMode === 'aggregate') return aggregateToStatusCounts(aggregate.data?.totals);
     const counts = { ...EMPTY_STATUS_COUNTS };
-    for (const w of allWorkers) {
+    for (const w of workers) {
       const s = w.status as TrackingStatus;
       if (s in counts) counts[s] += 1;
     }
     return counts;
-  }, [allWorkers]);
+  }, [effectiveMode, aggregate.data, workers]);
 
   const rayonOptions = useMemo<RayonOption[]>(() => {
     const map = new Map<string, string>();
-    for (const w of allWorkers) {
+    for (const w of workers) {
       if (w.rayon_id && w.rayon_name && !map.has(w.rayon_id)) map.set(w.rayon_id, w.rayon_name);
     }
-    // Fall back to boundary rayons when no live workers yet.
     if (map.size === 0 && boundaries?.rayons) {
       for (const r of boundaries.rayons) if (!map.has(r.id)) map.set(r.id, r.name);
     }
     return [...map.entries()]
       .map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [allWorkers, boundaries]);
+  }, [workers, boundaries]);
 
   const roleOptions = useMemo<UserRole[]>(() => {
     const set = new Set<string>();
-    for (const w of allWorkers) set.add(w.role);
+    for (const w of workers) set.add(w.role);
     return [...set] as UserRole[];
-  }, [allWorkers]);
+  }, [workers]);
 
   const filteredWorkers = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
-    return allWorkers.filter((w) => {
+    return workers.filter((w) => {
       if (filters.statuses.size > 0 && !filters.statuses.has(w.status as TrackingStatus)) return false;
       if (filters.rayonId !== 'all' && w.rayon_id !== filters.rayonId) return false;
       if (filters.role !== 'all' && w.role !== filters.role) return false;
       if (q && !w.full_name.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [allWorkers, filters]);
+  }, [workers, filters]);
+
+  const filteredNodes = useMemo(() => {
+    const q = filters.search.trim().toLowerCase();
+    if (!q) return aggregateNodes;
+    return aggregateNodes.filter((n) => n.name.toLowerCase().includes(q));
+  }, [aggregateNodes, filters.search]);
 
   const filteredAreaSummaries = useMemo(() => {
     if (filters.rayonId === 'all') return areaSummaries;
@@ -164,6 +264,15 @@ export default function MonitoringPage() {
     [filteredWorkers]
   );
 
+  const isLoading = effectiveMode === 'aggregate' ? aggregate.isLoading : snapshot.isLoading;
+  const generatedAt =
+    effectiveMode === 'aggregate' ? aggregate.data?.generated_at : snapshot.data?.data?.generated_at;
+  const refetch = () => {
+    if (effectiveMode === 'aggregate') aggregate.refetch();
+    else snapshot.refetch();
+  };
+  const listCount = effectiveMode === 'aggregate' ? filteredNodes.length : filteredWorkers.length;
+
   if (authLoading || !user) {
     return (
       <div className="flex min-h-[400px] items-center justify-center text-nb-gray-600">
@@ -176,14 +285,17 @@ export default function MonitoringPage() {
 
   const updatedLabel = isLoading
     ? t('monitoring:page.loading')
-    : data?.data?.generated_at
-      ? t('monitoring:page.updated', { time: formatTime(data.data.generated_at) })
+    : generatedAt
+      ? t('monitoring:page.updated', { time: formatTime(generatedAt) })
       : t('monitoring:page.noData');
 
   return (
     <div className="relative h-[calc(100dvh_-_7rem)] min-h-[28rem] w-full overflow-hidden rounded-nb-base border-2 border-nb-black bg-nb-gray-100">
       {/* Map (base layer) */}
       <SimpleMonitoringMap
+        mode={effectiveMode}
+        aggregateNodes={filteredNodes}
+        onDrillNode={onDrillNode}
         workers={mapWorkers}
         boundaries={boundaries ?? null}
         selectedId={selectedId}
@@ -191,11 +303,23 @@ export default function MonitoringPage() {
         overdueByArea={overdueByArea}
       />
 
-      {/* Top overlay: search + filter + refresh + status pills */}
+      {/* Top overlay: breadcrumb + search + toggle + filter + refresh + status pills */}
       <div className="pointer-events-none absolute inset-x-3 top-3 z-20 flex flex-col gap-2">
-        {/* Row is click-through (pointer-events-none) so it never covers the map's
-            top-right zoom control; only the real controls re-enable pointer events. */}
         <div className="pointer-events-none flex items-center gap-2">
+          {/* Back / breadcrumb */}
+          {canGoBack && (
+            <button
+              type="button"
+              onClick={goBack}
+              aria-label={t('monitoring:page.backLabel')}
+              className="pointer-events-auto flex h-11 items-center gap-1 rounded-nb-base border-2 border-nb-black bg-nb-white px-2.5 text-sm font-bold text-nb-black shadow-nb-sm hover:bg-nb-gray-50"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span className="hidden max-w-[8rem] truncate sm:inline">
+                {view.name ?? t('monitoring:page.backLabel')}
+              </span>
+            </button>
+          )}
           {/* Search */}
           <div className="pointer-events-auto relative max-w-md flex-1">
             <Search
@@ -211,6 +335,35 @@ export default function MonitoringPage() {
               className="h-11 w-full rounded-nb-base border-2 border-nb-black bg-nb-white pl-9 pr-3 text-sm font-medium text-nb-black shadow-nb-sm placeholder:text-nb-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
             />
           </div>
+          {/* Ringkasan / Semua Petugas toggle */}
+          {canToggle && (
+            <div className="pointer-events-auto flex h-11 items-center rounded-nb-base border-2 border-nb-black bg-nb-white p-0.5 shadow-nb-sm">
+              <button
+                type="button"
+                onClick={() => setMode('aggregate')}
+                aria-pressed={effectiveMode === 'aggregate'}
+                className={cn(
+                  'flex h-full items-center gap-1 rounded-nb-sm px-2.5 text-sm font-bold transition-colors',
+                  effectiveMode === 'aggregate' ? 'bg-nb-primary text-nb-black' : 'text-nb-gray-600 hover:bg-nb-gray-50'
+                )}
+              >
+                <LayoutGrid className="h-4 w-4" />
+                <span className="hidden md:inline">{t('monitoring:page.modeSummary')}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('workers')}
+                aria-pressed={effectiveMode === 'workers'}
+                className={cn(
+                  'flex h-full items-center gap-1 rounded-nb-sm px-2.5 text-sm font-bold transition-colors',
+                  effectiveMode === 'workers' ? 'bg-nb-primary text-nb-black' : 'text-nb-gray-600 hover:bg-nb-gray-50'
+                )}
+              >
+                <Users className="h-4 w-4" />
+                <span className="hidden md:inline">{t('monitoring:page.modeAllWorkers')}</span>
+              </button>
+            </div>
+          )}
           {/* Filter toggle */}
           <button
             type="button"
@@ -225,7 +378,7 @@ export default function MonitoringPage() {
             <SlidersHorizontal className="h-4 w-4" />
             <span className="hidden sm:inline">{t('monitoring:page.filterLabel')}</span>
           </button>
-          {/* Plant-overdue overlay toggle (Phase 3-8) */}
+          {/* Plant-overdue overlay toggle */}
           <button
             type="button"
             onClick={() => setShowOverdue((v) => !v)}
@@ -243,7 +396,7 @@ export default function MonitoringPage() {
           {/* Refresh */}
           <button
             type="button"
-            onClick={() => refetch()}
+            onClick={refetch}
             aria-label={t('monitoring:page.refreshLabel')}
             className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-nb-base border-2 border-nb-black bg-nb-white text-nb-black shadow-nb-sm transition-colors hover:bg-nb-gray-50"
           >
@@ -251,7 +404,7 @@ export default function MonitoringPage() {
           </button>
         </div>
 
-        {/* Status pills — informational only, so click-through (never covers map controls). */}
+        {/* Status pills */}
         <div className="pointer-events-none flex flex-wrap items-center gap-1.5" aria-live="polite">
           {STATUS_PILLS.map((p) => (
             <span
@@ -269,7 +422,7 @@ export default function MonitoringPage() {
         </div>
       </div>
 
-      {/* Filter panel (floating, dismissible) */}
+      {/* Filter panel */}
       {filtersOpen && (
         <div className="absolute left-3 right-3 top-28 z-30 max-h-[60%] w-auto overflow-y-auto rounded-nb-md border-2 border-nb-black bg-nb-white p-4 shadow-nb-lg sm:right-auto sm:w-80">
           <div className="mb-3 flex items-center justify-between">
@@ -289,14 +442,14 @@ export default function MonitoringPage() {
             statusCounts={statusCounts}
             rayonOptions={rayonOptions}
             roleOptions={roleOptions}
-            total={allWorkers.length}
-            matched={filteredWorkers.length}
+            total={effectiveMode === 'aggregate' ? aggregateNodes.length : workers.length}
+            matched={listCount}
             showSearch={false}
           />
         </div>
       )}
 
-      {/* Worker/area sheet (floating, dismissible) */}
+      {/* Worker/area/node sheet */}
       {listOpen ? (
         <div className="absolute inset-x-3 bottom-3 z-20 flex h-[45vh] max-h-[60%] flex-col sm:inset-x-auto sm:left-3 sm:w-96">
           <div className="mb-1 flex items-center justify-between">
@@ -315,14 +468,22 @@ export default function MonitoringPage() {
               <ChevronDown className="h-4 w-4" />
             </button>
           </div>
-          <MonitoringSidebar
-            workers={filteredWorkers}
-            areaSummaries={filteredAreaSummaries}
-            selectedId={selectedId}
-            onSelect={selectWorker}
-            onBulkReassign={canReassign ? setBulkTarget : undefined}
-            className="min-h-0 flex-1 shadow-nb-lg"
-          />
+          {effectiveMode === 'aggregate' ? (
+            <AggregateNodeList
+              nodes={filteredNodes}
+              onDrill={onDrillNode}
+              className="min-h-0 flex-1 shadow-nb-lg"
+            />
+          ) : (
+            <MonitoringSidebar
+              workers={filteredWorkers}
+              areaSummaries={filteredAreaSummaries}
+              selectedId={selectedId}
+              onSelect={selectWorker}
+              onBulkReassign={canReassign ? setBulkTarget : undefined}
+              className="min-h-0 flex-1 shadow-nb-lg"
+            />
+          )}
         </div>
       ) : (
         <button
@@ -333,12 +494,12 @@ export default function MonitoringPage() {
           <List className="h-4 w-4" />
           {t('monitoring:page.listLabel')}
           <span className="rounded-full bg-nb-black px-1.5 font-mono text-xs text-nb-primary">
-            {filteredWorkers.length}
+            {listCount}
           </span>
         </button>
       )}
 
-      {/* Bulk reassign modal (Phase 4-4) */}
+      {/* Bulk reassign modal */}
       {canReassign && bulkTarget && (
         <BulkReassignModal
           open={!!bulkTarget}

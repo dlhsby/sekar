@@ -88,8 +88,9 @@ export function MapDashboardScreen(): React.JSX.Element {
   const { markerPreview, setMarkerPreview, showMarkerPreview, dismissPreview, setMapLayout } =
     useMarkerPreview(mapRef, currentRegion);
 
-  const { handleMyLocation, resetHeading, handleZoomIn, handleZoomOut, handleClusterPress } =
-    useMapOperations(mapRef, currentRegion);
+  // Zoom + My-Location are native Google controls now; only heading reset +
+  // cluster tap remain custom.
+  const { resetHeading, handleClusterPress } = useMapOperations(mapRef, currentRegion);
 
   const { visibleUsers, useClustering, clusters, labelMode, staffedAreas, totalAreas, lastUpdated } =
     useLiveUsersFiltering(liveUsers, activityFilter, filters, visibleLayers, currentRegion, boundaries);
@@ -265,8 +266,12 @@ export function MapDashboardScreen(): React.JSX.Element {
               userInterfaceStyle="light"
               style={styles.map}
               initialRegion={SURABAYA_CITY_REGION}
-              showsUserLocation={false}
-              showsMyLocationButton={false}
+              // Native Google Maps controls + UX (per revamp): live location dot +
+              // My-Location button, native zoom buttons (Android), and the compass.
+              showsUserLocation={true}
+              showsMyLocationButton={true}
+              zoomControlEnabled={true}
+              showsCompass={true}
               toolbarEnabled={false}
               onMapReady={() => {
                 setMapReady(true);
@@ -314,11 +319,8 @@ export function MapDashboardScreen(): React.JSX.Element {
             toolsExpanded={toolsExpanded}
             setToolsExpanded={setToolsExpanded}
             onOpenStatus={() => setStatusSheetVisible(true)}
-            handleMyLocation={handleMyLocation}
             handleRefresh={() => handleRefresh(setBoundaryKey)}
             resetHeading={resetHeading}
-            handleZoomIn={handleZoomIn}
-            handleZoomOut={handleZoomOut}
             filterModalVisible={filterModalVisible}
             setFilterModalVisible={setFilterModalVisible}
           />

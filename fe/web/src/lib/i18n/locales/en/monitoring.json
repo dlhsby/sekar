@@ -17,7 +17,14 @@
     "filterPanelTitle": "Filter Officers",
     "closePanelLabel": "Close filter",
     "listLabel": "Officer List",
-    "closeListLabel": "Close list"
+    "closeListLabel": "Close list",
+    "backLabel": "Back",
+    "modeSummary": "Summary",
+    "modeAllWorkers": "All Officers"
+  },
+  "aggregate": {
+    "onlineOfRequired": "{{online}}/{{required}} on duty",
+    "understaffed": "Understaffed"
   },
   "status": {
     "active": "Active",

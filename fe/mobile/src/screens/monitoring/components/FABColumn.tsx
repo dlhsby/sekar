@@ -16,11 +16,8 @@ interface FABColumnProps {
   setToolsExpanded: (expanded: boolean) => void;
   /** Opens the monitoring status-summary sheet. */
   onOpenStatus: () => void;
-  handleMyLocation: () => void;
   handleRefresh: () => void;
   resetHeading: () => void;
-  handleZoomIn: () => void;
-  handleZoomOut: () => void;
   filterModalVisible: boolean;
   setFilterModalVisible: (visible: boolean) => void;
 }
@@ -29,11 +26,8 @@ export function FABColumn({
   toolsExpanded,
   setToolsExpanded,
   onOpenStatus,
-  handleMyLocation,
   handleRefresh,
   resetHeading,
-  handleZoomIn,
-  handleZoomOut,
   filterModalVisible,
   setFilterModalVisible,
 }: FABColumnProps): React.JSX.Element {
@@ -58,17 +52,12 @@ export function FABColumn({
           onPress={onOpenStatus}
           accessibilityLabel={t('monitoring:fab.status')}
         />
-        {/* Tools FAB — opens the map-tools overlay (compass, zoom, filter, layers) */}
+        {/* Tools FAB — opens the map-tools overlay (compass, filter, layers).
+            Zoom + My-Location are now the native Google Maps controls. */}
         <MapFab
           icon="wrench"
           onPress={() => setToolsExpanded(!toolsExpanded)}
           accessibilityLabel={t('monitoring:fab.tools')}
-        />
-        {/* Locate me FAB — recenter on a fresh GPS fix */}
-        <MapFab
-          icon="crosshairs-gps"
-          onPress={handleMyLocation}
-          accessibilityLabel={t('monitoring:fab.myLocation')}
         />
         {/* Refresh FAB */}
         <MapFab
@@ -81,8 +70,6 @@ export function FABColumn({
         {toolsExpanded && (
           <ToolsOverlay
             resetHeading={resetHeading}
-            handleZoomIn={handleZoomIn}
-            handleZoomOut={handleZoomOut}
             filterModalVisible={filterModalVisible}
             setFilterModalVisible={setFilterModalVisible}
           />

@@ -318,6 +318,40 @@ export interface BoundariesResponse {
   generated_at: string;
 }
 
+// Aggregate ("Ringkasan") rollup — lightweight per-rayon/per-area summary
+// bubbles for the monitoring map (no individual worker coordinates).
+export interface AggregateStatusCounts {
+  active: number;
+  inactive: number;
+  outside_area: number;
+  missing: number;
+  offline: number;
+}
+
+export interface AggregateNode {
+  id: string;
+  name: string;
+  type: 'rayon' | 'area';
+  center_lat: number | null;
+  center_lng: number | null;
+  counts_by_status: AggregateStatusCounts;
+  counts_by_role: Record<string, number>;
+  worker_count: number;
+  online_count: number;
+  required: number;
+  is_understaffed: boolean;
+  area_count?: number;
+  rayon_id?: string | null;
+}
+
+export interface MonitoringAggregateResponse {
+  scope: 'city' | 'rayon';
+  scope_id: string | null;
+  nodes: AggregateNode[];
+  totals: AggregateStatusCounts;
+  generated_at: string;
+}
+
 // Phase 2D: Staffing summary response wrapper with day type
 export interface StaffingSummaryResponseFull {
   items: StaffingSummaryItem[];

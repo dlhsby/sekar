@@ -13,8 +13,11 @@ import { GoogleMap, Marker, Polygon, InfoWindow } from '@react-google-maps/api';
 import { useTranslation } from 'react-i18next';
 import { LocateFixed } from 'lucide-react';
 import { GoogleMapsGate } from '@/components/maps/GoogleMapsGate';
-import { STATUS_COLORS, POLYGON_STYLES } from '@/lib/constants/monitoring';
-import type { BoundariesResponse, TrackingStatus } from '@/lib/api/monitoring-types';
+import { POLYGON_STYLES } from '@/lib/constants/monitoring';
+import type { BoundariesResponse } from '@/lib/api/monitoring-types';
+import type { AggregateNode } from '@/lib/api/monitoring-v2';
+import { AggregateBubbleLayer } from './AggregateBubbleLayer';
+import { WorkerClusterLayer, type MapBounds } from './WorkerClusterLayer';
 
 export interface SimpleWorker {
   user_id: string;
@@ -25,6 +28,13 @@ export interface SimpleWorker {
 }
 
 export interface SimpleMonitoringMapProps {
+  /**
+   * `aggregate` → render summary bubbles from `aggregateNodes` (the light
+   * default "Ringkasan"). `workers` → cluster the individual worker pins.
+   */
+  mode: 'aggregate' | 'workers';
+  aggregateNodes?: AggregateNode[];
+  onDrillNode?: (node: AggregateNode) => void;
   workers: SimpleWorker[];
   boundaries?: BoundariesResponse | null;
   selectedId?: string | null;
@@ -44,14 +54,20 @@ const AREA_MARKER = '#D97706';
 const AREA_MARKER_OVERDUE = '#DC2626';
 /* eslint-enable sekar-design/no-inline-hex-colors */
 
+// Native Google Maps controls + gesture UX: keep the native zoom control, use
+// greedy one-finger/scroll panning like the Google Maps app, and a My-Location
+// control (the JS API has no built-in one, so the button below drives it).
 const MAP_OPTIONS: google.maps.MapOptions = {
   streetViewControl: false,
   fullscreenControl: false,
   mapTypeControl: false,
   zoomControl: true,
+  gestureHandling: 'greedy',
   clickableIcons: false,
   mapTypeId: 'roadmap',
 };
+
+const DEFAULT_ZOOM = 11;
 
 /** GeoJSON Polygon/MultiPolygon → array of Google outer-ring paths. */
 function geometryToPaths(geom: GeoJSON.Geometry | null): google.maps.LatLngLiteral[][] {
@@ -65,10 +81,6 @@ function geometryToPaths(geom: GeoJSON.Geometry | null): google.maps.LatLngLiter
   return [];
 }
 
-function statusColor(status: string): string {
-  return STATUS_COLORS[status as TrackingStatus] ?? STATUS_COLORS.offline;
-}
-
 interface AreaPin {
   id: string;
   name: string;
@@ -78,6 +90,9 @@ interface AreaPin {
 }
 
 function MonitoringMapInner({
+  mode,
+  aggregateNodes,
+  onDrillNode,
   workers,
   boundaries,
   selectedId,
@@ -88,6 +103,20 @@ function MonitoringMapInner({
   const mapRef = useRef<google.maps.Map | null>(null);
   const didFitRef = useRef(false);
   const [hoverAreaId, setHoverAreaId] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(DEFAULT_ZOOM);
+  const [bounds, setBounds] = useState<MapBounds | null>(null);
+
+  // Track viewport zoom + bounds so supercluster recomputes on pan/zoom.
+  const syncViewport = useCallback((map: google.maps.Map) => {
+    const z = map.getZoom();
+    if (typeof z === 'number') setZoom(z);
+    const b = map.getBounds();
+    if (b) {
+      const ne = b.getNorthEast();
+      const sw = b.getSouthWest();
+      setBounds({ north: ne.lat(), east: ne.lng(), south: sw.lat(), west: sw.lng() });
+    }
+  }, []);
 
   // Flatten boundary geometry into renderable pieces.
   const { rayonPaths, areaPaths, areaPins } = useMemo(() => {
@@ -138,9 +167,14 @@ function MonitoringMapInner({
     (map: google.maps.Map) => {
       mapRef.current = map;
       fitToContent(map);
+      syncViewport(map);
     },
-    [fitToContent]
+    [fitToContent, syncViewport]
   );
+
+  const handleIdle = useCallback(() => {
+    if (mapRef.current) syncViewport(mapRef.current);
+  }, [syncViewport]);
 
   // Fit once content arrives after the map already loaded (async boundaries).
   useEffect(() => {
@@ -168,25 +202,28 @@ function MonitoringMapInner({
     });
   }, []);
 
-  const selectedWorker = selectedId ? workers.find((w) => w.user_id === selectedId) : null;
+  const selectedWorker =
+    mode === 'workers' && selectedId ? workers.find((w) => w.user_id === selectedId) : null;
   const hoverArea = hoverAreaId ? areaPins.find((a) => a.id === hoverAreaId) : null;
+  // Area centre pins only clutter the aggregate view (bubbles already carry
+  // counts); keep them for the drilled worker view or when the plant overlay is on.
+  const showAreaPins = mode === 'workers' || !!overdueByArea;
 
-  const workerSymbol = (status: string, selected: boolean): google.maps.Symbol => ({
-    path: google.maps.SymbolPath.CIRCLE,
-    scale: selected ? 11 : 7,
-    fillColor: statusColor(status),
-    fillOpacity: 1,
-    strokeColor: selected ? BLACK : WHITE,
-    strokeWeight: 2,
-  });
+  const handleClusterZoom = useCallback((lat: number, lng: number, expansionZoom: number) => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.panTo({ lat, lng });
+    map.setZoom(expansionZoom);
+  }, []);
 
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
       <GoogleMap
         mapContainerStyle={{ width: '100%', height: '100%' }}
         center={SURABAYA}
-        zoom={11}
+        zoom={DEFAULT_ZOOM}
         onLoad={handleMapLoad}
+        onIdle={handleIdle}
         options={MAP_OPTIONS}
       >
         {/* Rayon boundaries */}
@@ -224,7 +261,8 @@ function MonitoringMapInner({
         ))}
 
         {/* Area centre markers */}
-        {areaPins.map((area) => {
+        {showAreaPins &&
+          areaPins.map((area) => {
           const overdue = overdueByArea?.[area.id] ?? 0;
           const danger = overdue > 0 || area.understaffed;
           return (
@@ -252,17 +290,18 @@ function MonitoringMapInner({
           );
         })}
 
-        {/* Worker pins */}
-        {workers.map((w) =>
-          w.lat && w.lng ? (
-            <Marker
-              key={`worker-${w.user_id}`}
-              position={{ lat: w.lat, lng: w.lng }}
-              icon={workerSymbol(w.status, w.user_id === selectedId)}
-              onClick={() => onSelect?.(w.user_id)}
-              zIndex={w.user_id === selectedId ? 10 : 4}
-            />
-          ) : null
+        {/* Aggregate bubbles (Ringkasan) or clustered worker pins (Semua Petugas). */}
+        {mode === 'aggregate' ? (
+          <AggregateBubbleLayer nodes={aggregateNodes ?? []} onDrill={onDrillNode} />
+        ) : (
+          <WorkerClusterLayer
+            workers={workers}
+            zoom={zoom}
+            bounds={bounds}
+            selectedId={selectedId}
+            onSelect={onSelect}
+            onClusterClick={handleClusterZoom}
+          />
         )}
 
         {/* Info windows */}

@@ -44,9 +44,16 @@ export class MonitoringCacheService {
   private areaBoundaryCache = new Map<string, CacheEntry<number[][][] | null>>();
   private dayTypeCache: CacheEntry<DayTypeEnum> | null = null;
 
+  // Short-TTL response cache + in-flight dedup for read endpoints (snapshot,
+  // aggregate). Collapses many concurrent identical dashboard reads into one DB
+  // hit within this instance, and serves a fresh-enough result to the rest.
+  private responseCache = new Map<string, CacheEntry<unknown>>();
+  private inFlight = new Map<string, Promise<unknown>>();
+
   private readonly THRESHOLDS_TTL_MS = 60_000;
   private readonly BOUNDARY_TTL_MS = 300_000;
   private readonly DAY_TYPE_TTL_MS = 300_000;
+  private readonly RESPONSE_TTL_MS = 5_000;
 
   private thresholdsLoader: (() => Promise<StatusThresholds>) | null = null;
   private geofencingLoader: (() => Promise<GeofencingConfig>) | null = null;
@@ -164,11 +171,52 @@ export class MonitoringCacheService {
     this.logger.debug('Invalidated day type cache');
   }
 
+  /**
+   * Serve `key` from a short-TTL cache, computing it via `loader` on a miss.
+   * Concurrent misses for the same key share a single in-flight promise, so N
+   * simultaneous identical reads trigger exactly one `loader()` call.
+   */
+  async getOrCompute<T>(
+    key: string,
+    loader: () => Promise<T>,
+    ttlMs: number = this.RESPONSE_TTL_MS,
+  ): Promise<T> {
+    const now = Date.now();
+    const cached = this.responseCache.get(key);
+    if (cached && cached.expiresAt > now) {
+      return cached.data as T;
+    }
+
+    const existing = this.inFlight.get(key);
+    if (existing) {
+      return existing as Promise<T>;
+    }
+
+    const promise = loader()
+      .then((data) => {
+        this.responseCache.set(key, { data, expiresAt: Date.now() + ttlMs });
+        return data;
+      })
+      .finally(() => {
+        this.inFlight.delete(key);
+      });
+
+    this.inFlight.set(key, promise);
+    return promise;
+  }
+
+  invalidateResponses(): void {
+    this.responseCache.clear();
+    this.logger.debug('Invalidated monitoring response cache');
+  }
+
   invalidateAll(): void {
     this.thresholdsCache = null;
     this.geofencingCache = null;
     this.areaBoundaryCache.clear();
     this.dayTypeCache = null;
+    this.responseCache.clear();
+    this.inFlight.clear();
     this.logger.debug('Invalidated all caches');
   }
 }
