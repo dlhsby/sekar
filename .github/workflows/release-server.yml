@@ -40,11 +40,11 @@ jobs:
           set -euo pipefail
           TAG="${GITHUB_REF_NAME}"
           VERSION="${TAG#sekar-v}"
-          BE_VER=$(node -p "require('./be/package.json').version")
-          WEB_VER=$(node -p "require('./fe/web/package.json').version")
+          BE_VER=$(node -p "require('./apps/be/package.json').version")
+          WEB_VER=$(node -p "require('./apps/web/package.json').version")
           echo "Tag=$TAG version=$VERSION · be=$BE_VER · web=$WEB_VER"
           if [ "$VERSION" != "$BE_VER" ] || [ "$VERSION" != "$WEB_VER" ]; then
-            echo "::error::Tag $TAG ($VERSION) must match be/package.json ($BE_VER) and fe/web/package.json ($WEB_VER). Use scripts/release.sh server $VERSION."
+            echo "::error::Tag $TAG ($VERSION) must match apps/be/package.json ($BE_VER) and apps/web/package.json ($WEB_VER). Use scripts/release.sh server $VERSION."
             exit 1
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
@@ -68,7 +68,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./be
-          file: ./be/Dockerfile
+          file: ./apps/be/Dockerfile
           platforms: linux/amd64
           push: true
           build-args: |
@@ -81,8 +81,8 @@ jobs:
       - name: Build & push web (:version, production-configured)
         uses: docker/build-push-action@v6
         with:
-          context: ./fe/web
-          file: ./fe/web/Dockerfile
+          context: ./apps/web
+          file: ./apps/web/Dockerfile
           platforms: linux/amd64
           push: true
           build-args: |

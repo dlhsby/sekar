@@ -45,11 +45,11 @@ Complete screen specifications for SEKAR React Native mobile application (Androi
 | **Total** | | **17** |
 
 > **Design System:** Neo Brutalism 2.1.1 (Phase 4 v2.1 rebrand, May 25 v2.1.1 reconciliation) - See `specs/ui-ux/neo-brutalism.md` and `specs/ui-ux/design-tokens.md`
-> **Tokens:** All screens use generated tokens from `fe/mobile/src/constants/generated/tokens.ts` (never hand-edit)
+> **Tokens:** All screens use generated tokens from `apps/mobile/src/constants/generated/tokens.ts` (never hand-edit)
 
 ### Navigation Header (Phase 2C)
 
-**Component:** `fe/mobile/src/components/navigation/FieldHomeHeader.tsx`
+**Component:** `apps/mobile/src/components/navigation/FieldHomeHeader.tsx`
 
 All screens use a unified 3-column header. Main screens show a leaf icon + greeting; sub-screens show a back arrow + page title. The status badge (Online/Offline/Syncing) is always pinned right.
 
@@ -378,7 +378,7 @@ interface WorkerHomeState {
   - Sync/refresh icon button (triggers captureNow + forceUpload)
 - Hook: `useHomeLocation` — manages location state, refresh, boundary check
 - Pattern: Reuses display pattern from ClockInOutScreen "Lokasi Anda" card
-- Component: `fe/mobile/src/components/home/LocationStatusCard.tsx`
+- Component: `apps/mobile/src/components/home/LocationStatusCard.tsx`
 
 #### Real-Time Updates
 

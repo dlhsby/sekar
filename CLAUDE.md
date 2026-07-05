@@ -21,26 +21,26 @@ Guidance for Claude Code in this repository. **`specs/COMPLETION_STATUS.md` is t
 ./scripts/start.sh          # backend + web in background, Metro foreground (--no-mobile to skip Metro)
 ./scripts/stop.sh           # stop services (--infra to also stop Docker)
 # Single services: ./scripts/start-be.sh · start-web.sh · start-mobile.sh [--android]
-# Ports per project: be/.env.local PORT (default 3000) · fe/web/.env.local WEB_PORT (default 3001)
+# Ports per project: apps/be/.env.local PORT (default 3000) · apps/web/.env.local WEB_PORT (default 3001)
 
 # Manual per-workspace flow
 npm install                 # root tooling (token pipeline + eslint plugin), once per checkout
 
 ./scripts/infra.sh start    # PostgreSQL, Adminer(8080), MinIO S3(9000)+console(9001), Redis; `stop`/`down`/`status` too
 
-# Backend (be/)
+# Backend (apps/be/)
 npm install && cp .env.local.example .env.local
 npm run migration:run && npm run db:seed   # db:seed is destructive (wipes first; fresh DB needs one backend boot first)
 npm run start:dev          # http://localhost:${BE_PORT:-3000}  | API docs /api/v1/docs
 
-# Mobile (fe/mobile/) — cp .env.local.example .env.local; set API_BASE_URL=http://10.0.2.2:<BE_PORT> (emulator) or http://<IP>:<BE_PORT> (device)
+# Mobile (apps/mobile/) — cp .env.local.example .env.local; set API_BASE_URL=http://10.0.2.2:<BE_PORT> (emulator) or http://<IP>:<BE_PORT> (device)
 npm run android            # android:all for all devices | ios (macOS only)
 
-# Web (fe/web/) — cp .env.local.example .env.local (Google Maps API key)
+# Web (apps/web/) — cp .env.local.example .env.local (Google Maps API key)
 npm run dev                # http://localhost:${WEB_PORT:-3001}
 ```
 
-Each workspace (`/`, `be/`, `fe/mobile/`, `fe/web/`) is **fully independent** — `npm install` in one never touches another. Token pipeline (from root): `npm run tokens:build` / `tokens:verify` / `test:tokens` — never hand-edit generated token files.
+Each workspace (`/`, `apps/be/`, `apps/mobile/`, `apps/web/`) is **fully independent** — `npm install` in one never touches another. Token pipeline (from root): `npm run tokens:build` / `tokens:verify` / `test:tokens` — never hand-edit generated token files.
 
 **Tests:** `npm test` (each workspace), `npm run test:cov` (backend, >80% required), `npm run test:e2e` (web).
 **Test users:** `12345678` for all seeded accounts — e.g. `satgas1/12345678`, `admin_system_1/12345678`. Phone login also works (e.g. `081200000006/12345678`). **Exception:** the `superadmin` account uses `SEED_SUPERADMIN_PASSWORD` (falls back to `12345678` locally when unset) and is seeded with **no forced password reset**.
@@ -62,7 +62,7 @@ Code uses English; Indonesian only for UI labels / user-facing messages. `Activi
 Web + mobile are bilingual: **Indonesian (`id`, default) + English (`en`)** via `react-i18next`. **Whenever you add or change any user-facing UI string, you MUST localize it** — never hardcode a display string.
 
 - **Never** hardcode a user-facing string (JSX text, `label`/`placeholder`/`title`/`aria-label`, toast/`Alert`/`NBToast` text, empty/error states, table headers, option labels, zod messages). Use `t('<namespace>:<key>')`.
-- Add the key to **both** `id` and `en` JSON with identical key sets — web: `fe/web/src/lib/i18n/locales/{id,en}/<ns>.json`; mobile: `fe/mobile/src/i18n/locales/{id,en}/<ns>.json`. `id` = the Indonesian copy, `en` = a natural English translation.
+- Add the key to **both** `id` and `en` JSON with identical key sets — web: `apps/web/src/lib/i18n/locales/{id,en}/<ns>.json`; mobile: `apps/mobile/src/i18n/locales/{id,en}/<ns>.json`. `id` = the Indonesian copy, `en` = a natural English translation.
 - Reuse shared namespaces: `common` (actions/entities/empty), `status`, `roles`, `validation`, `errors`. **`errors` mirrors the backend `ApiErrorCode` enum** — the API stays **English-canonical**; frontends localize by error `code`. Canonical terms: `specs/ui-ux/GLOSSARY.md`.
 - Components: `const { t } = useTranslation()`. Non-component modules/hooks: `import i18n from '<...>/i18n/config'` then `i18n.t(...)`. Zod schemas: build in-component via `useMemo(() => z.object(...), [t])`.
 - New namespace? Register it in **both** platforms' `resources.ts` (the parity guardrail requires the same namespace set on both).
@@ -78,9 +78,9 @@ Web + mobile are bilingual: **Indonesian (`id`, default) + English (`en`)** via 
 ## Env file convention (dotenvx — see `specs/deployment/encrypted-secrets.md`)
 **`.env.local`** = local dev, plaintext + gitignored (no key needed). **`.env.staging`** / **`.env.production`** = deploys, committed **encrypted** with [dotenvx](https://dotenvx.com) (secrets are `encrypted:…` ciphertext). The one real secret is the per-file private key in **`.env.keys`** (gitignored, **never commit**; the pre-commit hook + `.gitignore` enforce this). Committed templates: `*.example`.
 - **Loaders:** be `src/config/load-env.ts` → `dotenvx.config()` (decrypts at boot; plaintext `.env.local` passes through). web → `npm run build:staging|production` / `start:*` (= `dotenvx run -f .env.<env> -- next …`). mobile → `ENVFILE` in `babel.config.js` + `scripts/decrypt-env.js` (RN-dotenv can't decrypt, so build scripts decrypt to a temp `.env.runtime`).
-- **Backend _production_ env = repo-root `./.env.production`** (drives `docker-compose.prod.yml`), NOT `be/.env.production`. `be/.env.staging` is baked into the staging image.
+- **Backend _production_ env = repo-root `./.env.production`** (drives `docker-compose.prod.yml`), NOT `apps/be/.env.production`. `apps/be/.env.staging` is baked into the staging image.
 - **Private keys at deploy:** GitHub **Environment** secrets `BE_/WEB_DOTENV_PRIVATE_KEY` (staging + production envs); the AWS staging box reads `BE_` from SSM `/sekar/staging/BE_DOTENV_PRIVATE_KEY` via instance role. Storage names are `*_DOTENV_PRIVATE_KEY`; the runtime var dotenvx needs is `DOTENV_PRIVATE_KEY_<ENV>`.
-- `./scripts/setup.sh` creates the `.env.local` files and reconciles `be/.env.local` `DATABASE_PORT` to `infra/.env` `POSTGRES_PORT`. Infra keeps plain `infra/.env` (Docker-Compose convention).
+- `./scripts/setup.sh` creates the `.env.local` files and reconciles `apps/be/.env.local` `DATABASE_PORT` to `infra/.env` `POSTGRES_PORT`. Infra keeps plain `infra/.env` (Docker-Compose convention).
 
 ## Releasing & versioning (see `specs/deployment/ci-cd.md` §5)
 - **Staging is continuous** — every green push to `main` auto-deploys (SHA-pinned). No tag needed.
@@ -101,7 +101,7 @@ Web + mobile are bilingual: **Indonesian (`id`, default) + English (`en`)** via 
 | Architecture + ADRs | `specs/architecture/` · `specs/architecture/decisions/` |
 | Security + dependency audit | `specs/architecture/security.md` |
 | Design tokens (source of truth) | `specs/ui-ux/design-tokens.md` · `tokens.json` |
-| **i18n (bilingual id/en) + terminology glossary** | `specs/ui-ux/i18n.md` · `specs/ui-ux/GLOSSARY.md` · locales `fe/{web,mobile}/src/**/i18n/locales` · check: `npm run i18n:check` |
+| **i18n (bilingual id/en) + terminology glossary** | `specs/ui-ux/i18n.md` · `specs/ui-ux/GLOSSARY.md` · locales `apps/{web,mobile}/src/**/i18n/locales` · check: `npm run i18n:check` |
 | Web PWA | `specs/phases/phase-3-plants-monitoring-rebuild/web.md` §PWA |
 | **Deployment (authoritative, start-to-finish)** | `specs/deployment/deployment-guide.md` (self-hosted Docker + AWS appendix) |
 | iOS / Android release runbooks | `specs/deployment/ios-release-guide.md` · `android-release-guide.md` |

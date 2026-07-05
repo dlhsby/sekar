@@ -16,5 +16,5 @@ module.exports = {
     ],
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
-  testPathIgnorePatterns: ['/node_modules/', '/be/', '/fe/'],
+  testPathIgnorePatterns: ['/node_modules/', '/apps/be/', '/apps/web/', '/apps/mobile/'],
 };

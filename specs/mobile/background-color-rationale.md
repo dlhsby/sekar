@@ -129,7 +129,7 @@ The cream has higher red, lower blue → warmer perception.
 
 ### Token Update
 
-**File:** `/fe/mobile/src/constants/nbTokens.ts`
+**File:** `/apps/mobile/src/constants/nbTokens.ts`
 
 ```typescript
 export const nbColors = {
@@ -592,7 +592,7 @@ Primary Palette (Neo Brutalism):
 
 #### Step 1: Update Design Token
 
-**File:** `/fe/mobile/src/constants/nbTokens.ts`
+**File:** `/apps/mobile/src/constants/nbTokens.ts`
 
 ```typescript
 export const nbColors = {

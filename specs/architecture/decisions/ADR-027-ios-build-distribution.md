@@ -49,7 +49,7 @@ The app will be distributed via the public App Store (not Apple Business Manager
 GitHub Actions with `macos-latest` runner:
 
 ```yaml
-# Trigger: push to main (paths: fe/mobile/**)
+# Trigger: push to main (paths: apps/mobile/**)
 # Steps: npm ci → pod install → xcodebuild archive → export IPA → upload TestFlight
 ```
 

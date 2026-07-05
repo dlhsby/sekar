@@ -279,8 +279,8 @@ docker-compose up -d
 
 ### Environment Variables
 
-**Staging** — see `be/.env.staging.example`
-**Production** — see `be/.env.production.example`
+**Staging** — see `apps/be/.env.staging.example`
+**Production** — see `apps/be/.env.production.example`
 
 Critical settings for non-dev environments:
 ```env
@@ -431,7 +431,7 @@ aws rds restore-db-instance-from-db-snapshot \
 2. ✅ GitHub Actions triggered backend-ci-cd.yml
 3. ✅ CI/CD: lint → test → build → push ECR → deploy EC2
 4. ⚠️ Migration failed due to missing tables
-5. ✅ Applied workaround: `DATABASE_SYNCHRONIZE=true` in be/.env.production
+5. ✅ Applied workaround: `DATABASE_SYNCHRONIZE=true` in apps/be/.env.production
 6. ✅ Seeded Phase 1 + Phase 2 data
 7. ✅ Health check: PASS
 
@@ -806,7 +806,7 @@ ls -la .env.production
 
 2. Manually create .env.production (emergency only):
    ```bash
-   cp be/.env.example .env.production
+   cp apps/be/.env.example .env.production
    nano .env.production  # Fill in production values (refer to GitHub Secrets)
    chmod 600 .env.production
    docker-compose -f docker-compose.prod.yml restart backend
@@ -979,7 +979,7 @@ docker-compose -f docker-compose.prod.yml restart web
 
 ## Additional Resources
 
-- **Environment Variables:** See `be/.env.example` for local development
+- **Environment Variables:** See `apps/be/.env.example` for local development
 - **Production Secrets:** All 16 secrets documented in Section 1.2 above
 - **Deployment Script:** Run `./scripts/deploy-production.sh` for guided deployment
 - **API Documentation:** http://api.sekar.wahyutrip.com/api/docs

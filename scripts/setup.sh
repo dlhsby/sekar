@@ -48,9 +48,9 @@ print_success "node $NODE_V / npm $NPM_V / docker present"
 
 # 2 — env files (infra/.env is created by scripts/infra.sh)
 print_info "Ensuring env files..."
-ensure_env_file "$ROOT/be/.env.local" "$ROOT/be/.env.local.example" "backend" || true
-ensure_env_file "$ROOT/fe/web/.env.local" "$ROOT/fe/web/.env.local.example" "web" || true
-ensure_env_file "$ROOT/fe/mobile/.env.local" "$ROOT/fe/mobile/.env.local.example" "mobile" || true
+ensure_env_file "$ROOT/apps/be/.env.local" "$ROOT/apps/be/.env.local.example" "backend" || true
+ensure_env_file "$ROOT/apps/web/.env.local" "$ROOT/apps/web/.env.local.example" "web" || true
+ensure_env_file "$ROOT/apps/mobile/.env.local" "$ROOT/apps/mobile/.env.local.example" "mobile" || true
 
 # 3 — root tooling (token pipeline + eslint plugin used by the workspaces)
 print_info "Installing root tooling (npm ci)..."
@@ -64,10 +64,10 @@ sync_backend_infra_ports
 
 # 5 — backend: install + migrate (+ seed on confirmation)
 print_info "Installing backend dependencies..."
-( cd "$ROOT/be" && npm ci --no-audit --no-fund )
+( cd "$ROOT/apps/be" && npm ci --no-audit --no-fund )
 print_info "Running database migrations..."
-if ! ( cd "$ROOT/be" && npm run migration:run ); then
-  print_error "Database migrations failed — check DB connectivity (be/.env.local DATABASE_* vs infra/.env POSTGRES_PORT). Aborting setup."
+if ! ( cd "$ROOT/apps/be" && npm run migration:run ); then
+  print_error "Database migrations failed — check DB connectivity (apps/be/.env.local DATABASE_* vs infra/.env POSTGRES_PORT). Aborting setup."
   exit 1
 fi
 print_success "Backend ready (dependencies + migrations)"
@@ -93,12 +93,12 @@ else
     BOOTED_FOR_SEED=false
     if ! curl -sf -o /dev/null --max-time 2 "http://localhost:$BE_PORT/api/v1/health/live"; then
       print_info "Booting backend once so synchronize completes the schema..."
-      start_bg backend "$ROOT/be" npm run start:dev
+      start_bg backend "$ROOT/apps/be" npm run start:dev
       wait_for_http "http://localhost:$BE_PORT/api/v1/health/live" 120 "Backend (schema sync)"
       BOOTED_FOR_SEED=true
     fi
     print_info "Seeding database (destructive)..."
-    ( cd "$ROOT/be" && npm run db:seed )
+    ( cd "$ROOT/apps/be" && npm run db:seed )
     print_success "Database seeded"
     if [ "$BOOTED_FOR_SEED" = true ]; then
       stop_pid backend "nest start --watch"
@@ -108,12 +108,12 @@ fi
 
 # 6 — web
 print_info "Installing web dependencies..."
-( cd "$ROOT/fe/web" && npm ci --no-audit --no-fund )
+( cd "$ROOT/apps/web" && npm ci --no-audit --no-fund )
 print_success "Web ready"
 
 # 7 — mobile (Android SDK optional — Metro/tests work without it)
 print_info "Installing mobile dependencies..."
-( cd "$ROOT/fe/mobile" && npm ci --no-audit --no-fund )
+( cd "$ROOT/apps/mobile" && npm ci --no-audit --no-fund )
 if [ -z "${ANDROID_HOME:-}${ANDROID_SDK_ROOT:-}" ] && [ ! -d "$HOME/Android/Sdk" ]; then
   print_warning "No Android SDK detected — Metro and tests still work; 'npm run android' needs the SDK"
 else
@@ -129,4 +129,4 @@ echo -e "  Backend only:      ${GREEN}./scripts/start-be.sh${NC}   → http://lo
 echo -e "  Web only:          ${GREEN}./scripts/start-web.sh${NC}  → http://localhost:$WEB_PORT"
 echo -e "  Mobile (Metro):    ${GREEN}./scripts/start-mobile.sh${NC} (--android to build+install)"
 echo -e "  Stop:              ${GREEN}./scripts/stop.sh${NC} (--infra to also stop Docker services)"
-echo -e "  Ports: ${GREEN}be/.env.local${NC} PORT=$BE_PORT · ${GREEN}fe/web/.env.local${NC} WEB_PORT=$WEB_PORT"
+echo -e "  Ports: ${GREEN}apps/be/.env.local${NC} PORT=$BE_PORT · ${GREEN}apps/web/.env.local${NC} WEB_PORT=$WEB_PORT"

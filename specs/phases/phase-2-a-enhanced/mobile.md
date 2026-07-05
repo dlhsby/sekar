@@ -1717,7 +1717,7 @@ Navigates to relevant screen
 **Testing:**
 - Backend: All notification endpoints verified (see `/tmp/notification-test-results.md`)
 - Mobile: FCM service mocked, ready for integration testing on physical device
-- See `fe/mobile/src/services/notifications/README.md` for detailed FCM usage
+- See `apps/mobile/src/services/notifications/README.md` for detailed FCM usage
 
 ---
 

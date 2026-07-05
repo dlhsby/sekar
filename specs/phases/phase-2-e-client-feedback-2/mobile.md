@@ -21,12 +21,12 @@
 | `authSlice.ts` | Plain `createSlice` with synchronous reducers: `setLoading`, `setUser`, `setError`, `clearError`, `logout` — NO async thunks, NO RTK Query |
 | `authApi.ts` | Plain async function `login(credentials)` — NOT an RTK Query mutation |
 | `api.types.ts` | `LoginRequest { username: string; password: string }` |
-| `ProfileScreen` | Located at `fe/mobile/src/screens/common/ProfileScreen.tsx` (NOT `screens/profile/`) |
+| `ProfileScreen` | Located at `apps/mobile/src/screens/common/ProfileScreen.tsx` (NOT `screens/profile/`) |
 | **Existing overtime screens** | `OvertimeListScreen.tsx`, `OvertimeSubmitScreen.tsx` (329 lines, submission-based with draft support), `OvertimeDetailScreen.tsx`, `components/OvertimeCard.tsx` — all at `screens/overtime/` |
 | `overtimeSlice.ts` | Plain `createSlice` with manual reducers (`setLoading`, `setSubmitting`, `addOvertime`, etc.) — NOT RTK Query |
 | `overtimeApi.ts` | `submitOvertime()`, `getMyOvertimes()`, `approveOvertime()`, `rejectOvertime()` — no start/end flow |
 | Navigation (per-role tabs) | satgas: Home, TasksActivities, Overtime, Profile (4 tabs); korlap: Home, Monitoring, TasksActivities, Overtime, Profile (5 tabs); admin_data: TasksActivities, Monitoring, Overtime, Profile (NO Home); kepala_rayon: Monitoring, TasksActivities, Overtime, Profile (NO Home); top_management/admin_system: Monitoring, TasksActivities, Profile (NO Overtime) |
-| Task/Activity detail screens | Located at `fe/mobile/src/screens/field/TaskDetailScreen.tsx` and `ActivityDetailScreen.tsx` (NOT `screens/taskActivity/`) |
+| Task/Activity detail screens | Located at `apps/mobile/src/screens/field/TaskDetailScreen.tsx` and `ActivityDetailScreen.tsx` (NOT `screens/taskActivity/`) |
 
 ---
 
@@ -53,7 +53,7 @@
 
 ## A. Login Screen Update
 
-**File:** `fe/mobile/src/screens/auth/LoginScreen.tsx`
+**File:** `apps/mobile/src/screens/auth/LoginScreen.tsx`
 
 ### Changes
 
@@ -115,7 +115,7 @@ export async function login(credentials: LoginRequest): Promise<LoginResponse> {
 
 ### B1. Profile Screen Enhancement
 
-**File:** `fe/mobile/src/screens/common/ProfileScreen.tsx`
+**File:** `apps/mobile/src/screens/common/ProfileScreen.tsx`
 
 Add profile picture section at top:
 
@@ -153,7 +153,7 @@ const pickProfilePicture = async () => {
 
 ### B3. Monitoring Marker Enhancement
 
-**File:** `fe/mobile/src/components/monitoring/UserMarker.tsx`
+**File:** `apps/mobile/src/components/monitoring/UserMarker.tsx`
 
 Add profile picture to marker (small circular avatar):
 
@@ -175,7 +175,7 @@ Add profile picture to marker (small circular avatar):
 
 ## C. Clock-In/Out Optional Selfie
 
-**File:** `fe/mobile/src/screens/field/ClockInOutScreen.tsx`
+**File:** `apps/mobile/src/screens/field/ClockInOutScreen.tsx`
 
 > **Mar 15 implementation note:** Selfie capture uses `mediaService.capturePhoto(true)` (front camera, `@bam.tech/react-native-image-resizer`) which returns a `Photo` object with a `file://` local URI. State is `selfie: Photo|null`. For display: `<Image source={{ uri: selfie.uri }} />`. For API upload: `await mediaService.convertToBase64(selfie)` converts to `data:image/jpeg;base64,...` string at submission time only. The old approach (`launchCamera({ includeBase64: true })`) stored a raw base64 data URI which caused white/blank images in `<Image>`. Same pattern applies to `OvertimeSubmitScreen` selfies.
 
@@ -223,7 +223,7 @@ Add profile picture to marker (small circular avatar):
 
 ### D1. OvertimeClockInScreen (New — replaces OvertimeSubmitScreen)
 
-**File:** `fe/mobile/src/screens/overtime/OvertimeClockInScreen.tsx`
+**File:** `apps/mobile/src/screens/overtime/OvertimeClockInScreen.tsx`
 
 Same flow as `ClockInOutScreen` but for overtime:
 
@@ -261,7 +261,7 @@ Same flow as `ClockInOutScreen` but for overtime:
 
 ### D2. OvertimeClockOutScreen (New)
 
-**File:** `fe/mobile/src/screens/overtime/OvertimeClockOutScreen.tsx`
+**File:** `apps/mobile/src/screens/overtime/OvertimeClockOutScreen.tsx`
 
 1. GPS location capture
 2. Optional selfie
@@ -313,7 +313,7 @@ Add overtime as accessible from bottom tab or FAB:
 
 ### E1. Multi-Area Korlap Filter
 
-**File:** `fe/mobile/src/components/modals/MonitoringFilterModal.tsx`
+**File:** `apps/mobile/src/components/modals/MonitoringFilterModal.tsx`
 
 For korlap users with multiple assigned areas:
 
@@ -351,7 +351,7 @@ Admin Data already has monitoring tab access from Phase 2C/2D (in `MONITORING_RA
 
 ### F1. AuditTrailView Component (New)
 
-**File:** `fe/mobile/src/components/common/AuditTrailView.tsx`
+**File:** `apps/mobile/src/components/common/AuditTrailView.tsx`
 
 A vertical timeline showing entity change history:
 
@@ -379,7 +379,7 @@ A vertical timeline showing entity change history:
 
 ### F2. Integration in Task Detail
 
-**File:** `fe/mobile/src/screens/field/TaskDetailScreen.tsx`
+**File:** `apps/mobile/src/screens/field/TaskDetailScreen.tsx`
 
 Add "Riwayat Perubahan" section at bottom of task detail:
 
@@ -395,7 +395,7 @@ useEffect(() => {
 
 ### F3. Integration in Activity Detail
 
-**File:** `fe/mobile/src/screens/field/ActivityDetailScreen.tsx`
+**File:** `apps/mobile/src/screens/field/ActivityDetailScreen.tsx`
 
 Same pattern — add audit trail section showing approval/rejection history.
 
@@ -405,7 +405,7 @@ Same pattern — add audit trail section showing approval/rejection history.
 
 ### G1. API Types
 
-**File:** `fe/mobile/src/types/api.types.ts`
+**File:** `apps/mobile/src/types/api.types.ts`
 
 ```typescript
 // Updated
@@ -452,7 +452,7 @@ export interface EndOvertimeRequest {
 
 ### G2. Model Types
 
-**File:** `fe/mobile/src/types/models.types.ts`
+**File:** `apps/mobile/src/types/models.types.ts`
 
 ```typescript
 // Updated User model

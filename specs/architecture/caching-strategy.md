@@ -66,7 +66,7 @@ Cache computed responses to reduce database queries.
 #### Implementation Pattern
 
 ```typescript
-// File: be/src/common/decorators/cache.decorator.ts
+// File: apps/be/src/common/decorators/cache.decorator.ts
 import { applyDecorators, UseInterceptors } from '@nestjs/common';
 import { CacheInterceptor, CacheTTL, CacheKey } from '@nestjs/cache-manager';
 
@@ -305,7 +305,7 @@ redis:
 ### Production (AWS ElastiCache)
 
 ```typescript
-// be/src/config/cache.config.ts
+// apps/be/src/config/cache.config.ts
 export const cacheConfig = {
   store: redisStore,
   host: process.env.REDIS_HOST || 'localhost',
@@ -368,7 +368,7 @@ INFO stats | grep keyspace
 Populate cache with frequently accessed data on application startup.
 
 ```typescript
-// be/src/main.ts
+// apps/be/src/main.ts
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
@@ -381,7 +381,7 @@ async function bootstrap() {
 ```
 
 ```typescript
-// be/src/common/services/cache-warmer.service.ts
+// apps/be/src/common/services/cache-warmer.service.ts
 @Injectable()
 export class CacheWarmerService {
   constructor(

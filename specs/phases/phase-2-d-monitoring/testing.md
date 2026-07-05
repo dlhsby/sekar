@@ -752,13 +752,13 @@ npm test -- --testPathPattern monitoring  # Monitoring module only
 npm test -- --testPathPattern gps        # GpsUtil + GeoJsonValidator
 
 # Mobile
-cd fe/mobile
+cd apps/mobile
 npm test                          # All tests
 npm test -- --testPathPattern monitoring  # Monitoring components
 npm test -- --testPathPattern mapUtils   # Map utilities
 
 # Web
-cd fe/web
+cd apps/web
 npm run test:e2e                  # All Playwright tests
 npm run test:e2e -- --grep monitoring  # Monitoring E2E only
 npm run test:e2e:ui               # With Playwright UI

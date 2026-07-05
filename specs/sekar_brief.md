@@ -744,7 +744,7 @@ npm run build              # Build for production
 ### 11.2 Mobile Commands
 
 ```bash
-cd fe/mobile
+cd apps/mobile
 npm start                  # Start Metro bundler
 npm run android            # Run on Android emulator/device
 npm run ios                # Run on iOS simulator (macOS only)

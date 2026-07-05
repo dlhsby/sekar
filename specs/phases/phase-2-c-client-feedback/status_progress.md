@@ -243,7 +243,7 @@
 **Status:** ✅ Web fully aligned with Phase 2C backend (types, API hooks, pages, tests)
 
 ### Phase 5a: Initial Deployment (Feb 2026)
-- [x] Update UserRole type (8 roles) in `fe/web/src/lib/constants/roles.ts`
+- [x] Update UserRole type (8 roles) in `apps/web/src/lib/constants/roles.ts`
 - [x] Update ROUTE_ACCESS for 8 roles
 - [x] Sidebar role-based navigation updated
 - [x] Deployed to production (sekar.wahyutrip.com)
@@ -286,7 +286,7 @@
 
 ### Phase 5c: Production Hotfix — Monitoring Interface Mismatch (Mar 3, 2026)
 
-**Root cause:** Frontend interfaces in `fe/web/src/lib/api/monitoring.ts` were written against an incorrect assumption of the backend DTO shape. The production crash (korlap gets "Terjadi kesalahan saat memproses autentikasi") was caused by `areaStats.current_shift.definition.name` (no optional chaining) where `current_shift` does not exist in `AreaStatsDto`. The `AuthErrorBoundary` catches any React render error and shows a misleading auth error in production (dev detail hidden by `NODE_ENV` check).
+**Root cause:** Frontend interfaces in `apps/web/src/lib/api/monitoring.ts` were written against an incorrect assumption of the backend DTO shape. The production crash (korlap gets "Terjadi kesalahan saat memproses autentikasi") was caused by `areaStats.current_shift.definition.name` (no optional chaining) where `current_shift` does not exist in `AreaStatsDto`. The `AuthErrorBoundary` catches any React render error and shows a misleading auth error in production (dev detail hidden by `NODE_ENV` check).
 
 **Why it worked locally:** korlap1's `area_id` was null in the Phase 1 local seeder, so the auto-scoping effect (`if (user.role === 'korlap' && user.area_id)`) never fired and area stats were never fetched. In production the seeder sets `area_id`, so area stats loaded and crashed.
 

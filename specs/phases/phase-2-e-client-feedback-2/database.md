@@ -12,16 +12,16 @@
 
 | Fact | Actual Value | File |
 |------|-------------|------|
-| `users` table | UUID PK, username (unique), role, area_id (nullable), rayon_id (nullable), phone (nullable, NOT phone_number) | `be/src/modules/users/entities/user.entity.ts` |
-| `shifts` table | UUID PK, user_id, area_id (nullable), clock_in/out timestamps, GPS, outside_boundary flags, shift_definition_id | `be/src/modules/shifts/entities/shift.entity.ts` |
-| `overtimes` table | UUID PK, user_id, area_id, start_datetime (timestamptz), end_datetime (timestamptz), status (pending/approved/rejected), approved_by, approved_at, rejection_reason, activity_type_id (FK), description, photo_urls (text[]), gps_lat, gps_lng | `be/src/modules/overtime/entities/overtime.entity.ts` |
-| `user_tracking_status` table | user_id PK (FK), status, shift_id, area_id, is_within_area, last_gps_*, updated_at | `be/src/modules/monitoring/entities/user-tracking-status.entity.ts` |
-| `tasks` table | UUID PK, area_id, assigned_to, status, revision_reason | `be/src/modules/tasks/entities/task.entity.ts` |
-| `activities` table | UUID PK, user_id, status, approved_by | `be/src/modules/activities/entities/activity.entity.ts` |
-| `rayons` table | UUID PK, name, boundary_polygon JSONB, center_lat, center_lng, boundary_computed_at | `be/src/modules/rayons/entities/rayon.entity.ts` |
-| `areas` table | UUID PK, name, boundary_polygon JSONB, gps_lat, gps_lng, radius_meters, rayon_id | `be/src/modules/areas/entities/area.entity.ts` |
-| S3 service | Exists for file uploads (selfie photos) | `be/src/shared/services/s3.service.ts` |
-| Existing `phone` column | Users entity has `phone` (varchar, nullable) — NOT used for login | `be/src/modules/users/entities/user.entity.ts` |
+| `users` table | UUID PK, username (unique), role, area_id (nullable), rayon_id (nullable), phone (nullable, NOT phone_number) | `apps/be/src/modules/users/entities/user.entity.ts` |
+| `shifts` table | UUID PK, user_id, area_id (nullable), clock_in/out timestamps, GPS, outside_boundary flags, shift_definition_id | `apps/be/src/modules/shifts/entities/shift.entity.ts` |
+| `overtimes` table | UUID PK, user_id, area_id, start_datetime (timestamptz), end_datetime (timestamptz), status (pending/approved/rejected), approved_by, approved_at, rejection_reason, activity_type_id (FK), description, photo_urls (text[]), gps_lat, gps_lng | `apps/be/src/modules/overtime/entities/overtime.entity.ts` |
+| `user_tracking_status` table | user_id PK (FK), status, shift_id, area_id, is_within_area, last_gps_*, updated_at | `apps/be/src/modules/monitoring/entities/user-tracking-status.entity.ts` |
+| `tasks` table | UUID PK, area_id, assigned_to, status, revision_reason | `apps/be/src/modules/tasks/entities/task.entity.ts` |
+| `activities` table | UUID PK, user_id, status, approved_by | `apps/be/src/modules/activities/entities/activity.entity.ts` |
+| `rayons` table | UUID PK, name, boundary_polygon JSONB, center_lat, center_lng, boundary_computed_at | `apps/be/src/modules/rayons/entities/rayon.entity.ts` |
+| `areas` table | UUID PK, name, boundary_polygon JSONB, gps_lat, gps_lng, radius_meters, rayon_id | `apps/be/src/modules/areas/entities/area.entity.ts` |
+| S3 service | Exists for file uploads (selfie photos) | `apps/be/src/shared/services/s3.service.ts` |
+| Existing `phone` column | Users entity has `phone` (varchar, nullable) — NOT used for login | `apps/be/src/modules/users/entities/user.entity.ts` |
 
 ---
 

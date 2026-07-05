@@ -203,11 +203,11 @@ cd be && npm run build
 # Deploy container (same as Phase 2D + Redis connection)
 
 # Web
-cd fe/web && npm run build
+cd apps/web && npm run build
 # Deploy container
 
 # Mobile
-cd fe/mobile
+cd apps/mobile
 npm run android:release    # Release APK with ProGuard
 # Distribute via internal testing track
 ```
@@ -250,10 +250,10 @@ cd be && npm run start:dev
 cd be && npm run db:seed
 
 # Web dashboard
-cd fe/web && npm run dev
+cd apps/web && npm run dev
 
 # Mobile app
-cd fe/mobile && npm run android
+cd apps/mobile && npm run android
 ```
 
 ---
@@ -270,19 +270,19 @@ cd be && npm run test:cov
 # Expected: >94% stmt (must not drop below 94.51%), >83% branch
 
 # Mobile — all tests must pass
-cd fe/mobile && npm test
+cd apps/mobile && npm test
 # Expected: >4,000 passing
 
 # Web unit tests
-cd fe/web && npm test
+cd apps/web && npm test
 # Expected: >550 passing
 
 # Web E2E tests (requires running backend + web)
-cd fe/web && npm run test:e2e
+cd apps/web && npm run test:e2e
 # Expected: 20+ specs passing
 
 # Mobile E2E tests (requires running backend + emulator)
-cd fe/mobile && maestro test .maestro/flows/
+cd apps/mobile && maestro test .maestro/flows/
 # Expected: 15+ flows passing
 
 # Load tests (staging only)

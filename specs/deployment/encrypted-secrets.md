@@ -35,18 +35,18 @@ therefore cannot decrypt backend secrets. Six private keys total:
 
 | Workspace | `.env.staging` key | `.env.production` key |
 |-----------|--------------------|------------------------|
-| `be` | `DOTENV_PRIVATE_KEY_STAGING` (`be/.env.staging`) | — *(see note)* |
+| `be` | `DOTENV_PRIVATE_KEY_STAGING` (`apps/be/.env.staging`) | — *(see note)* |
 | **root** | — | `DOTENV_PRIVATE_KEY_PRODUCTION` (`./.env.production`) |
-| `fe/web` | `DOTENV_PRIVATE_KEY_STAGING` | `DOTENV_PRIVATE_KEY_PRODUCTION` |
-| `fe/mobile` | `DOTENV_PRIVATE_KEY_STAGING` | `DOTENV_PRIVATE_KEY_PRODUCTION` |
+| `apps/web` | `DOTENV_PRIVATE_KEY_STAGING` | `DOTENV_PRIVATE_KEY_PRODUCTION` |
+| `apps/mobile` | `DOTENV_PRIVATE_KEY_STAGING` | `DOTENV_PRIVATE_KEY_PRODUCTION` |
 
-> **Note — backend production env lives at repo root (`./.env.production`), not `be/`.** In
-> staging, `be/.env.staging` is encrypted and baked into the backend image; decryption happens
+> **Note — backend production env lives at repo root (`./.env.production`), not `apps/be/`.** In
+> staging, `apps/be/.env.staging` is encrypted and baked into the backend image; decryption happens
 > at runtime via `DOTENV_PRIVATE_KEY_STAGING` (fetched from SSM). In production, the encrypted
 > **root `./.env.production`** is the backend's source; `docker-compose.prod.yml` uses it to:
 > (1) populate Postgres/MinIO via `${...}` substitution at compose-parse time (requires
 > plaintext in the deploy environment), and (2) pass encrypted values to the backend container
-> via `env_file`, which decrypts them at runtime. There is no `be/.env.production`.
+> via `env_file`, which decrypts them at runtime. There is no `apps/be/.env.production`.
 
 The env-var **name** repeats across workspaces but the **value differs**. These are stored as
 **GitHub Environment secrets** (not repo-level), so the same secret name carries a different
@@ -77,8 +77,8 @@ Notes:
 | Workspace | When | Mechanism |
 |-----------|------|-----------|
 | **be** (NestJS) | runtime | `src/config/load-env.ts` calls `dotenvx.config()` (drop-in for dotenv). Decrypts if `DOTENV_PRIVATE_KEY_<ENV>` is set; plaintext `.env.local` still works with no key. |
-| **fe/web** (Next.js) | build (`NEXT_PUBLIC_*` inlined) + server runtime | `npm run build:staging` / `start:staging` = `dotenvx run -f .env.staging -- next …`. |
-| **fe/mobile** (RN) | build (babel inlines `@env`) | `react-native-dotenv` reads files directly and can't decrypt, so `scripts/decrypt-env.js` decrypts to a gitignored `.env.runtime`, and `npm run build:android:staging` points `ENVFILE` at it, then deletes it. |
+| **apps/web** (Next.js) | build (`NEXT_PUBLIC_*` inlined) + server runtime | `npm run build:staging` / `start:staging` = `dotenvx run -f .env.staging -- next …`. |
+| **apps/mobile** (RN) | build (babel inlines `@env`) | `react-native-dotenv` reads files directly and can't decrypt, so `scripts/decrypt-env.js` decrypts to a gitignored `.env.runtime`, and `npm run build:android:staging` points `ENVFILE` at it, then deletes it. |
 
 ## 4. First-time setup (you run this — keys never leave your machine)
 
@@ -90,7 +90,7 @@ Notes:
 cd be
 cp .env.staging.example .env.staging        # edit: DB password, JWT secrets, etc.
 cp .env.production.example .env.production
-# (repeat the cp+edit in fe/web and fe/mobile)
+# (repeat the cp+edit in apps/web and apps/mobile)
 
 # 2. Encrypt in place. This generates the keypairs and writes private keys to .env.keys.
 npm run env:encrypt                          # = dotenvx encrypt -f .env.staging -f .env.production
@@ -99,7 +99,7 @@ npm run env:encrypt                          # = dotenvx encrypt -f .env.staging
 cat .env.staging        # values are now encrypted:… ; DOTENV_PUBLIC_KEY_STAGING in header (committable)
 cat .env.keys           # the 2 private keys for THIS workspace — SECRET, gitignored
 
-# 4. Repeat steps 1–3 in fe/web and fe/mobile.
+# 4. Repeat steps 1–3 in apps/web and apps/mobile.
 ```
 
 > **Running the CLI.** `dotenvx` is a *workspace* dependency, not a global command — bare
@@ -107,7 +107,7 @@ cat .env.keys           # the 2 private keys for THIS workspace — SECRET, giti
 > scripts below, or `npm i -g @dotenvx/dotenvx` to install it globally.
 
 Editing / inspecting a secret (never writes plaintext to disk). Per-workspace npm scripts wrap
-the staging file (`be`, `fe/web` have `env:get` / `env:decrypt`; `fe/web` also `env:decrypt:prod`):
+the staging file (`be`, `apps/web` have `env:get` / `env:decrypt`; `apps/web` also `env:decrypt:prod`):
 
 ```bash
 npm run env:get -- DATABASE_PASSWORD      # one decrypted value (or all as JSON if no key)
@@ -130,9 +130,9 @@ After §4, the encrypted files are safe to commit (the `.gitignore` in each work
 allows `.env.staging` / `.env.production` and blocks `.env.keys`, `.env.local`, `.env.runtime`):
 
 ```bash
-git add be/.env.staging be/.env.production \
-        fe/web/.env.staging fe/web/.env.production \
-        fe/mobile/.env.staging fe/mobile/.env.production
+git add apps/be/.env.staging apps/be/.env.production \
+        apps/web/.env.staging apps/web/.env.production \
+        apps/mobile/.env.staging apps/mobile/.env.production
 git status   # confirm NO .env.keys / .env.local is staged
 git commit -m "chore(secrets): commit dotenvx-encrypted staging + production env"
 ```
@@ -143,10 +143,10 @@ git commit -m "chore(secrets): commit dotenvx-encrypted staging + production env
 follows the same shapes once `.env.production` exists.
 
 ### Web build (GitHub Actions) — DONE for staging
-The web image build decrypts `fe/web/.env.staging` during `next build`. The job is scoped to the
+The web image build decrypts `apps/web/.env.staging` during `next build`. The job is scoped to the
 `staging` **GitHub Environment** and reads its env secret **`WEB_DOTENV_PRIVATE_KEY`**, passed as
 a **BuildKit secret** `dotenv_private_key` (not a build-arg, so it never lands in an image layer).
-`fe/web/Dockerfile` is env-agnostic (`ARG DOTENV_ENV=staging`):
+`apps/web/Dockerfile` is env-agnostic (`ARG DOTENV_ENV=staging`):
 
 ```dockerfile
 ARG DOTENV_ENV=staging
@@ -163,11 +163,11 @@ secrets: |
   dotenv_private_key=${{ secrets.WEB_DOTENV_PRIVATE_KEY }}
 ```
 This **replaced** the `NEXT_PUBLIC_*` build-args + the `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` GitHub Secret —
-the Google Maps API key now lives inside the encrypted `fe/web/.env.staging`.
+the Google Maps API key now lives inside the encrypted `apps/web/.env.staging`.
 
 ### AWS box (backend staging runtime) — DONE for staging
-The encrypted `be/.env.staging` is **baked into the backend image** (`be/Dockerfile` COPYs it;
-`be/.dockerignore` allows it). The box fetches only the decryption key from a single SSM
+The encrypted `apps/be/.env.staging` is **baked into the backend image** (`apps/be/Dockerfile` COPYs it;
+`apps/be/.dockerignore` allows it). The box fetches only the decryption key from a single SSM
 SecureString and writes it to `/opt/sekar/.env` (`infra/seed-env-from-ssm.sh`); compose injects
 it + `NODE_ENV=staging`, and `load-env.ts` decrypts the baked file at boot:
 
@@ -192,7 +192,7 @@ from when the files were encrypted). `docker-compose.prod.yml` is already wired:
 - **Backend** gets the encrypted values via `env_file: .env.production` and decrypts them
   in-process (`load-env.ts`) using `DOTENV_PRIVATE_KEY_PRODUCTION`, passed through in its
   `environment:`.
-- **Web** image build decrypts `fe/web/.env.production` via the BuildKit secret
+- **Web** image build decrypts `apps/web/.env.production` via the BuildKit secret
   `dotenv_private_key` (sourced from `DOTENV_PRIVATE_KEY_PRODUCTION`) with build arg
   `DOTENV_ENV=production`.
 
@@ -205,7 +205,7 @@ dotenvx run -f .env.production -- docker compose -f docker-compose.prod.yml up -
 
 Before go-live, finalize real values (the generated starters cover DB/JWT/MinIO secrets; set the
 real domain): `dotenvx set CORS_ORIGIN "https://<prod-domain>" -f .env.production`, and the
-matching `NEXT_PUBLIC_*` in `fe/web/.env.production` + `API_BASE_URL` in `fe/mobile/.env.production`.
+matching `NEXT_PUBLIC_*` in `apps/web/.env.production` + `API_BASE_URL` in `apps/mobile/.env.production`.
 
 ## 7. Rotation
 

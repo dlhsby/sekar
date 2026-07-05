@@ -8,7 +8,7 @@ This document outlines the database migration strategy for SEKAR using TypeORM. 
 **Node Version:** >=24.13
 **TypeScript Version:** 5.x
 **Current Strategy:** Auto-synchronize in development, migrations in production
-**Authority:** Current migrations live in `be/src/database/migrations/` (see `COMPLETION_STATUS.md` for table count)
+**Authority:** Current migrations live in `apps/be/src/database/migrations/` (see `COMPLETION_STATUS.md` for table count)
 
 ---
 
@@ -23,7 +23,7 @@ SEKAR uses two environment variables to control database schema management:
 | `DATABASE_SYNCHRONIZE` | Auto-create tables from entity definitions | `true` / `false` |
 | `DATABASE_MIGRATIONS_RUN` | Auto-run pending migrations on app startup | `true` / `false` |
 
-**Configured in:** `be/src/app.module.ts` (lines 59, 82)
+**Configured in:** `apps/be/src/app.module.ts` (lines 59, 82)
 
 ```typescript
 TypeOrmModule.forRoot({
@@ -132,7 +132,7 @@ docker-compose up -d
 ### Development Configuration
 
 ```typescript
-// be/src/database/typeorm.config.ts (development)
+// apps/be/src/database/typeorm.config.ts (development)
 import { DataSource } from 'typeorm';
 import { config } from 'dotenv';
 
@@ -154,7 +154,7 @@ export const AppDataSource = new DataSource({
 ### Production Configuration
 
 ```typescript
-// be/src/database/typeorm.config.ts (production)
+// apps/be/src/database/typeorm.config.ts (production)
 import { DataSource } from 'typeorm';
 import { config } from 'dotenv';
 
@@ -182,7 +182,7 @@ export const AppDataSource = new DataSource({
 ### Directory Layout
 
 ```
-be/
+apps/be/
 ├── src/
 │   ├── database/
 │   │   ├── migrations/
@@ -846,7 +846,7 @@ Examples:
 **Migration Folder Structure:**
 
 ```
-be/src/database/migrations/
+apps/be/src/database/migrations/
 ├── phase-1/
 │   ├── 1704441600000-Phase1-InitialSchema.ts
 │   ├── 1704528000000-Phase1-AddAreaTypes.ts
@@ -2599,7 +2599,7 @@ DELETE FROM migrations WHERE timestamp = 1704441600000;
 
 ## NPM Scripts
 
-Add these to `be/package.json`:
+Add these to `apps/be/package.json`:
 
 ```json
 {

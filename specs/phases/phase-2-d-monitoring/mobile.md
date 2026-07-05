@@ -42,7 +42,7 @@
 
 ## A. MapDashboardScreen Enhancement
 
-**File:** `fe/mobile/src/screens/monitoring/MapDashboardScreen.tsx`
+**File:** `apps/mobile/src/screens/monitoring/MapDashboardScreen.tsx`
 
 ### Current Behavior
 - Displays `MapView` with clustered `UserMarker` components
@@ -202,7 +202,7 @@ When filters are applied via MonitoringFilterModal, the map automatically adjust
 
 ## B. UserMarker Enhancement
 
-**File:** `fe/mobile/src/components/monitoring/UserMarker.tsx`
+**File:** `apps/mobile/src/components/monitoring/UserMarker.tsx`
 
 ### Current Behavior
 - Simple colored circle (green = online, red = offline)
@@ -283,7 +283,7 @@ interface LiveUser {
 
 ## C. UserDetailSheet (New)
 
-**File:** `fe/mobile/src/components/monitoring/UserDetailSheet.tsx`
+**File:** `apps/mobile/src/components/monitoring/UserDetailSheet.tsx`
 
 Bottom sheet modal that appears when a user marker or list card is tapped.
 
@@ -404,7 +404,7 @@ Modal for reassigning a worker from one area to another.
 
 ## D. LocationTrail Component (New)
 
-**File:** `fe/mobile/src/components/monitoring/LocationTrail.tsx`
+**File:** `apps/mobile/src/components/monitoring/LocationTrail.tsx`
 
 Renders a user's location history as a polyline on the map.
 
@@ -490,7 +490,7 @@ Top bar above trail map showing:
 
 ## E. MonitoringFilterModal (New)
 
-**File:** `fe/mobile/src/components/modals/MonitoringFilterModal.tsx`
+**File:** `apps/mobile/src/components/modals/MonitoringFilterModal.tsx`
 
 Full-screen modal for filtering the monitoring map.
 
@@ -599,10 +599,10 @@ Use bottom-sheet `Modal` pattern matching `ActivityFilterModal`:
 5. **Cari Pengguna** — `NBTextInput` with search icon
 
 **Existing components to reuse:**
-- `fe/mobile/src/components/nb/NBSelect.tsx` — multi-select with checkbox
-- `fe/mobile/src/components/nb/NBCard.tsx` — for detail modals
-- `fe/mobile/src/components/modals/ActivityFilterModal.tsx` — reference pattern
-- `fe/mobile/src/components/nb/NBTextInput.tsx` — search input
+- `apps/mobile/src/components/nb/NBSelect.tsx` — multi-select with checkbox
+- `apps/mobile/src/components/nb/NBCard.tsx` — for detail modals
+- `apps/mobile/src/components/modals/ActivityFilterModal.tsx` — reference pattern
+- `apps/mobile/src/components/nb/NBTextInput.tsx` — search input
 
 #### E2. Staffing Summary (Always Visible)
 
@@ -662,7 +662,7 @@ When filters are applied via the MonitoringFilterModal, the map automatically ad
 
 ## F. mapUtils.ts Updates
 
-**File:** `fe/mobile/src/utils/mapUtils.ts`
+**File:** `apps/mobile/src/utils/mapUtils.ts`
 
 ### F1. Replace `calculateUserStatus()`
 
@@ -1138,7 +1138,7 @@ The `MapDashboardScreen` is already registered as the Monitoring screen target.
 
 ### J1. MONITORING_ROLES Constant
 
-Role-gating for monitoring screens uses a shared constant defined in `fe/mobile/src/constants/roles.ts`:
+Role-gating for monitoring screens uses a shared constant defined in `apps/mobile/src/constants/roles.ts`:
 
 ```typescript
 export const MONITORING_ROLES = ['admin_system', 'top_management', 'kepala_rayon', 'korlap'] as const;
@@ -1153,8 +1153,8 @@ All monitoring-related visibility checks (navigation tabs, filter access, featur
 
 ## J2. Home Screen Location Status Card
 
-**File:** `fe/mobile/src/components/home/LocationStatusCard.tsx`
-**Hook:** `fe/mobile/src/hooks/useHomeLocation.ts`
+**File:** `apps/mobile/src/components/home/LocationStatusCard.tsx`
+**Hook:** `apps/mobile/src/hooks/useHomeLocation.ts`
 
 New card component displayed on the HomeScreen, positioned above the "Shift Aktif" card. Only visible when the user has an active shift.
 
@@ -1221,7 +1221,7 @@ This component reuses the pattern from `ClockInOutScreen`'s "Lokasi Anda" collap
 ## K. File Structure (Phase 2D Mobile Changes)
 
 ```
-fe/mobile/src/
+apps/mobile/src/
   screens/monitoring/
     MapDashboardScreen.tsx                    MODIFIED (major)
 
@@ -1316,32 +1316,32 @@ fe/mobile/src/
 ### Phase 2D-10: Gap Fixes (Mobile) — ✅ COMPLETE (March 7, 2026)
 
 - [x] Update marker labels to "Role - Name" format with zoom-level behavior
-  - File: `fe/mobile/src/components/monitoring/UserMarker.tsx` (section B3)
-  - Use `getRoleAbbreviation()` from `fe/mobile/src/utils/mapUtils.ts`
+  - File: `apps/mobile/src/components/monitoring/UserMarker.tsx` (section B3)
+  - Use `getRoleAbbreviation()` from `apps/mobile/src/utils/mapUtils.ts`
 - [x] Add rayon + area polygon rendering with center markers
-  - File: `fe/mobile/src/screens/monitoring/MapDashboardScreen.tsx` (section A7)
+  - File: `apps/mobile/src/screens/monitoring/MapDashboardScreen.tsx` (section A7)
   - API: `GET /monitoring/boundaries` — returns all rayon/area polygons in one call
 - [x] Add map auto-focus on filter selection
-  - File: `fe/mobile/src/hooks/useMapAutoFocus.ts` (section E6)
+  - File: `apps/mobile/src/hooks/useMapAutoFocus.ts` (section E6)
   - Uses `mapRef.current.fitToCoordinates()` / `animateToRegion()`
 - [x] Enhance LocationTrail with clickable points, first/last markers, hide others, date picker, shift filter
-  - File: `fe/mobile/src/components/monitoring/LocationTrail.tsx` (sections D2-D7)
+  - File: `apps/mobile/src/components/monitoring/LocationTrail.tsx` (sections D2-D7)
   - API: `GET /monitoring/users/:userId/location-history?date=YYYY-MM-DD&shift_id=X`
 - [x] Refactor MonitoringFilterModal to use NB components (NBSelect, bottom-sheet pattern)
-  - File: `fe/mobile/src/components/modals/MonitoringFilterModal.tsx` (section E1)
-  - Reference: `fe/mobile/src/components/modals/ActivityFilterModal.tsx`
+  - File: `apps/mobile/src/components/modals/MonitoringFilterModal.tsx` (section E1)
+  - Reference: `apps/mobile/src/components/modals/ActivityFilterModal.tsx`
 - [x] Make staffing summary always visible in filter modal
-  - File: `fe/mobile/src/components/modals/MonitoringFilterModal.tsx` (section E2)
+  - File: `apps/mobile/src/components/modals/MonitoringFilterModal.tsx` (section E2)
   - API: `GET /monitoring/staffing-summary?rayon_id=X&area_id=Y`
 - [x] Add ReassignWorkerModal component
-  - File: `fe/mobile/src/components/modals/ReassignWorkerModal.tsx` (section C2)
+  - File: `apps/mobile/src/components/modals/ReassignWorkerModal.tsx` (section C2)
   - API: `POST /monitoring/reassign` with `{ user_id, target_area_id, shift_definition_id?, effective_date?, end_current_schedule?, reason? }`
   - WebSocket event: `USER_REASSIGNED`
 - [x] Add day-type badge to staffing display
-  - File: `fe/mobile/src/components/modals/MonitoringFilterModal.tsx` (section E2)
+  - File: `apps/mobile/src/components/modals/MonitoringFilterModal.tsx` (section E2)
   - Uses `current_day_type_label` from staffing-summary response
 - [ ] Add LocationStatusCard to HomeScreen
-  - Files: `fe/mobile/src/components/home/LocationStatusCard.tsx`, `fe/mobile/src/hooks/useHomeLocation.ts` (section J2)
+  - Files: `apps/mobile/src/components/home/LocationStatusCard.tsx`, `apps/mobile/src/hooks/useHomeLocation.ts` (section J2)
   - Integrates with `LocationTrackerService.captureNow()` + `forceUpload()`
 
 ### Phase 2D-12: Backend Alignment Fix (Mobile) — ✅ COMPLETE (March 8, 2026)

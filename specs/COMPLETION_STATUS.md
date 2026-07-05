@@ -92,16 +92,16 @@
 ### Documentation
 - **Current Status (this file):** COMPLETION_STATUS.md (single source of truth)
 - **Specs Navigation:** README.md
-- **Backend Guide:** ../be/README.md
-- **Mobile Guide:** ../fe/mobile/README.md
+- **Backend Guide:** ../apps/be/README.md
+- **Mobile Guide:** ../apps/mobile/README.md
 - **Deployment Guide:** deployment/deployment-guide.md
 - **Architecture Decisions:** architecture/decisions/
 
 ### By Role
 - **Architects:** `architecture/` (ADRs, data-flow, security, caching, cross-cutting concerns)
-- **Backend Devs:** `api/contracts.md` (endpoints), `../be/README.md` (setup)
-- **Mobile Devs:** `../fe/mobile/README.md`, `mobile/`
-- **Web Devs:** `../fe/web/`, `web/`, `ui-ux/`
+- **Backend Devs:** `api/contracts.md` (endpoints), `../apps/be/README.md` (setup)
+- **Mobile Devs:** `../apps/mobile/README.md`, `mobile/`
+- **Web Devs:** `../apps/web/`, `web/`, `ui-ux/`
 - **DevOps:** `deployment/` (deployment-guide, credentials-setup, operations)
 
 ---

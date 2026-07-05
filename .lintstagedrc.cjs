@@ -7,7 +7,7 @@
  * We invoke the workspace's OWN eslint binary directly (node_modules/.bin/eslint)
  * rather than `npx eslint`: `npx` can walk up and resolve the repo-root hoisted
  * eslint (a different major), which then fails to load a workspace's flat config
- * (e.g. fe/web pins eslint 9 whose `eslint/config` export the root's eslint 10
+ * (e.g. apps/web pins eslint 9 whose `eslint/config` export the root's eslint 10
  * can't provide). The direct binary is deterministic and faster.
  */
 const path = require('path');
@@ -25,7 +25,7 @@ const eslintIn = (ws) => (files) => {
 };
 
 module.exports = {
-  'be/**/*.ts': eslintIn('be'),
-  'fe/web/**/*.{ts,tsx}': eslintIn('fe/web'),
-  'fe/mobile/**/*.{ts,tsx}': eslintIn('fe/mobile'),
+  'apps/be/**/*.ts': eslintIn('apps/be'),
+  'apps/web/**/*.{ts,tsx}': eslintIn('apps/web'),
+  'apps/mobile/**/*.{ts,tsx}': eslintIn('apps/mobile'),
 };

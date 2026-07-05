@@ -5,7 +5,7 @@
 
 Design system and visual guidelines for SEKAR mobile and web applications.
 
-> **Phase 3 M1-R update (Apr 25, 2026):** Design tokens are sourced from a single JSON file — see **[design-tokens.md](./design-tokens.md)** and **[tokens.json](./tokens.json)**. Hand-maintained copies in `fe/web/src/app/globals.css` and `fe/mobile/src/constants/nbTokens.ts` are replaced by **generated** artifacts (`fe/web/src/app/generated/tokens.css`, `fe/mobile/src/constants/generated/tokens.ts`) from Phase 3 M1-R sub-phase 3-R2 onward. CI job `tokens-verify` regenerates and diffs every PR; drift fails the build. See [ADR-036](../architecture/decisions/ADR-036-design-tokens-single-source.md).
+> **Phase 3 M1-R update (Apr 25, 2026):** Design tokens are sourced from a single JSON file — see **[design-tokens.md](./design-tokens.md)** and **[tokens.json](./tokens.json)**. Hand-maintained copies in `apps/web/src/app/globals.css` and `apps/mobile/src/constants/nbTokens.ts` are replaced by **generated** artifacts (`apps/web/src/app/generated/tokens.css`, `apps/mobile/src/constants/generated/tokens.ts`) from Phase 3 M1-R sub-phase 3-R2 onward. CI job `tokens-verify` regenerates and diffs every PR; drift fails the build. See [ADR-036](../architecture/decisions/ADR-036-design-tokens-single-source.md).
 >
 > **One visual spine, three presentations.** Mobile native + mobile web (<768 px) + desktop web all consume the same generated tokens. Phase 3 M1-R sub-phase 3-R4 makes the web installable AND mobile-responsive — see [ADR-037](../architecture/decisions/ADR-037-web-pwa.md). Sub-phase 3-R5 sweeps every non-rewritten existing screen onto the new tokens so the entire app shares one visual language by end of M1-R.
 
@@ -16,7 +16,7 @@ Design system and visual guidelines for SEKAR mobile and web applications.
 **Total time: 30 minutes to production-ready**
 
 ### Step 1: Tokens first (5 minutes)
-Read **[design-tokens.md](./design-tokens.md)** — the single source of truth for every color, shadow, radius, and type token used on both platforms. All Layer 1 values live in [`tokens.json`](./tokens.json); generated files (`fe/web/src/app/generated/tokens.css`, `fe/mobile/src/constants/generated/tokens.ts`) are produced by `scripts/build-tokens.ts` and CI-validated for drift.
+Read **[design-tokens.md](./design-tokens.md)** — the single source of truth for every color, shadow, radius, and type token used on both platforms. All Layer 1 values live in [`tokens.json`](./tokens.json); generated files (`apps/web/src/app/generated/tokens.css`, `apps/mobile/src/constants/generated/tokens.ts`) are produced by `scripts/build-tokens.ts` and CI-validated for drift.
 
 ### Step 2: Understand the design language (15 minutes)
 Read **[neo-brutalism.md](./neo-brutalism.md)** Sections 1-6:
@@ -29,9 +29,9 @@ Read **[neo-brutalism.md](./neo-brutalism.md)** Sections 1-6:
 - **Web developers:** Read [neo-brutalism.md](./neo-brutalism.md) Sections 11-12 + [ADR-037](../architecture/decisions/ADR-037-web-pwa.md) if touching the shell
 
 ### Step 4: Start coding
-- **Do not** edit `fe/web/src/app/globals.css` or `fe/mobile/src/constants/nbTokens.ts` by hand from Phase 3 onward — they reference generated files.
+- **Do not** edit `apps/web/src/app/globals.css` or `apps/mobile/src/constants/nbTokens.ts` by hand from Phase 3 onward — they reference generated files.
 - To change a token: edit `specs/ui-ux/tokens.json`, run `npm run tokens:build`, commit generated files.
-- Components: `fe/mobile/src/components/nb/` · `fe/web/src/components/ui/`
+- Components: `apps/mobile/src/components/nb/` · `apps/web/src/components/ui/`
 
 ---
 
@@ -111,10 +111,10 @@ Modern Neo Brutalism features bold aesthetics with excellent usability:
 ### Mobile (React Native 0.83.x)
 ```
 Token source (canonical):    specs/ui-ux/tokens.json
-Generated consumer:          fe/mobile/src/constants/generated/tokens.ts  (CI-validated, never hand-edit)
-Re-export wrapper:           fe/mobile/src/constants/nbTokens.ts          (export * from generated; platform helpers only)
-Brand fonts (.ttf):          fe/mobile/assets/fonts/                      (Space Grotesk, Inter, JetBrains Mono — OFL)
-Components:                  fe/mobile/src/components/nb/
+Generated consumer:          apps/mobile/src/constants/generated/tokens.ts  (CI-validated, never hand-edit)
+Re-export wrapper:           apps/mobile/src/constants/nbTokens.ts          (export * from generated; platform helpers only)
+Brand fonts (.ttf):          apps/mobile/assets/fonts/                      (Space Grotesk, Inter, JetBrains Mono — OFL)
+Components:                  apps/mobile/src/components/nb/
                              ├── NBButton.tsx (+ tests)
                              ├── NBCard.tsx (+ tests)
                              ├── NBBadge.tsx (+ tests)
@@ -128,20 +128,20 @@ Components:                  fe/mobile/src/components/nb/
 ### Web (Next.js 16.1.x + Tailwind CSS 4)
 ```
 Token source (canonical):    specs/ui-ux/tokens.json
-Generated consumer:          fe/web/src/app/generated/tokens.css          (CI-validated, never hand-edit)
-@import wrapper:             fe/web/src/app/globals.css (@import './generated/tokens.css')
-Brand fonts:                 next/font/google in fe/web/src/app/layout.tsx (Space Grotesk, Inter, JetBrains Mono; display: swap)
-PWA assets (NEW in 3-R4):    fe/web/public/manifest.webmanifest
-                             fe/web/public/sw.js (compiled from src/sw/sw.ts)
-                             fe/web/public/icons/{192,512,512-maskable,180}.png
-PWA components (NEW):        fe/web/src/components/pwa/{InstallBanner,OfflineBanner,UpdateToast,MobileInstallPush}.tsx
-Responsive shell (NEW):      fe/web/src/components/layout/ResponsiveShell.tsx (sidebar / icon rail / ☰ drawer)
+Generated consumer:          apps/web/src/app/generated/tokens.css          (CI-validated, never hand-edit)
+@import wrapper:             apps/web/src/app/globals.css (@import './generated/tokens.css')
+Brand fonts:                 next/font/google in apps/web/src/app/layout.tsx (Space Grotesk, Inter, JetBrains Mono; display: swap)
+PWA assets (NEW in 3-R4):    apps/web/public/manifest.webmanifest
+                             apps/web/public/sw.js (compiled from src/sw/sw.ts)
+                             apps/web/public/icons/{192,512,512-maskable,180}.png
+PWA components (NEW):        apps/web/src/components/pwa/{InstallBanner,OfflineBanner,UpdateToast,MobileInstallPush}.tsx
+Responsive shell (NEW):      apps/web/src/components/layout/ResponsiveShell.tsx (sidebar / icon rail / ☰ drawer)
 ```
 
 ### Web (legacy reference — superseded by generated tokens above)
 ```
-Design tokens:  fe/web/src/app/globals.css (@theme inline)
-Components:     fe/web/src/components/nb/
+Design tokens:  apps/web/src/app/globals.css (@theme inline)
+Components:     apps/web/src/components/nb/
                 ├── NBButton.tsx
                 ├── NBCard.tsx
                 ├── NBInput.tsx
@@ -156,14 +156,14 @@ Components:     fe/web/src/components/nb/
 
 ### Monitoring Components (Phase 2D)
 ```
-Web:            fe/web/src/app/(dashboard)/monitoring/
+Web:            apps/web/src/app/(dashboard)/monitoring/
                 ├── MonitoringMap        — Google Maps interactive map with markers, polygons, clusters
                 ├── MonitoringSidePanel  — Filterable worker list with status counts
                 ├── UserDetailPanel      — Detailed worker view with shift info and actions
                 ├── LocationTimeline     — GPS history trail with date picker
                 ├── StatusCard           — Status count cards with filter action
                 └── UserListItem         — Individual worker row with status indicator
-Mobile:         fe/mobile/src/screens/supervisor/
+Mobile:         apps/mobile/src/screens/supervisor/
                 └── LocationStatusCard   — Home screen GPS/boundary status (mobile only)
 ```
 

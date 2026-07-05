@@ -72,13 +72,13 @@ Phase 2D's `status_reviews.md` at `specs/phases/phase-2-d-monitoring/status_revi
 | Gap-2 | HIGH | 3-3 | `staffing-debouncer.service.ts` + `events.gateway.ts` | `StaffingDebouncerService.setEmitter()` never called; debouncer is standalone | Fix in 3-3 follow-up: call `debouncerService.setEmitter(server)` in `EventsGateway.afterInit()` |
 | Gap-3 | MEDIUM | 3-3/3-4 | — | `cluster:update` WS delta event not implemented | Fix in 3-4 follow-up once ClusterLayer integrates with MonitoringMap |
 | Gap-4 | MEDIUM | 3-3 | `status-projector.service.ts` | Projector delegates to unmodified `StatusCalculatorService`; 6+ query pool pressure moved async, not eliminated | Deferred to 3-14 (load test window) — measure first, then optimize |
-| Gap-5 | LOW | 3-3 | `be/src/modules/health/` | Health check not extended to report Redis connectivity or `stream_lag_s` | Fix before M5 rollout |
-| Gap-6 | LOW | 3-3 | `be/.env.example` | `PHASE3_FEATURES_ENABLED` master feature flag not added | Add before deploy |
-| Gap-7 | MEDIUM | 3-5 | `fe/mobile/src/store/slices/` | `plants` Redux slice (`speciesCatalog`, `areaPlantsByArea`, `notableByArea`, `areaStatusById`) not created | Deferred to 3-8 (plant data doesn't exist until 3-8 backend seeds/endpoints) |
-| Gap-8 | MEDIUM | 3-4 | `fe/web/src/components/monitoring/` | No unit/integration tests for `ClusterLayer`, `WorkerListVirtual`, `HierarchyFilterPanel`, `AreaDetailDrawer`, `monitoring-v2` hook | Fix in 3-4 follow-up; coverage target ≥80% |
-| Gap-9 | MEDIUM | 3-5 | `fe/mobile/src/components/monitoring/` | No tests for `ClusterMarker`, `ClusteredUserMarkers`, `MonitoringToggleSheet`, `AreaStatusOverlay`, `monitoringV2Slice` | Fix in 3-5 follow-up; coverage target ≥80% |
-| Gap-10 | LOW | 3-4 | `fe/web/src/app/(dashboard)/monitoring/config/` | `monitoring/config` page not updated with Phase 3 debounce/sweep fields | Minor UX; fix before M5 rollout |
-| Gap-11 | LOW | 3-5 | `fe/mobile/src/screens/monitoring/MapDashboardScreen.tsx` | Integration of v2 components (`ClusteredUserMarkers`, `MonitoringToggleSheet`, `AreaStatusOverlay`) into `MapDashboardScreen` not confirmed | Verify + wire in 3-5 follow-up |
+| Gap-5 | LOW | 3-3 | `apps/be/src/modules/health/` | Health check not extended to report Redis connectivity or `stream_lag_s` | Fix before M5 rollout |
+| Gap-6 | LOW | 3-3 | `apps/be/.env.example` | `PHASE3_FEATURES_ENABLED` master feature flag not added | Add before deploy |
+| Gap-7 | MEDIUM | 3-5 | `apps/mobile/src/store/slices/` | `plants` Redux slice (`speciesCatalog`, `areaPlantsByArea`, `notableByArea`, `areaStatusById`) not created | Deferred to 3-8 (plant data doesn't exist until 3-8 backend seeds/endpoints) |
+| Gap-8 | MEDIUM | 3-4 | `apps/web/src/components/monitoring/` | No unit/integration tests for `ClusterLayer`, `WorkerListVirtual`, `HierarchyFilterPanel`, `AreaDetailDrawer`, `monitoring-v2` hook | Fix in 3-4 follow-up; coverage target ≥80% |
+| Gap-9 | MEDIUM | 3-5 | `apps/mobile/src/components/monitoring/` | No tests for `ClusterMarker`, `ClusteredUserMarkers`, `MonitoringToggleSheet`, `AreaStatusOverlay`, `monitoringV2Slice` | Fix in 3-5 follow-up; coverage target ≥80% |
+| Gap-10 | LOW | 3-4 | `apps/web/src/app/(dashboard)/monitoring/config/` | `monitoring/config` page not updated with Phase 3 debounce/sweep fields | Minor UX; fix before M5 rollout |
+| Gap-11 | LOW | 3-5 | `apps/mobile/src/screens/monitoring/MapDashboardScreen.tsx` | Integration of v2 components (`ClusteredUserMarkers`, `MonitoringToggleSheet`, `AreaStatusOverlay`) into `MapDashboardScreen` not confirmed | Verify + wire in 3-5 follow-up |
 
 ### Pre-Deploy Requirements
 
@@ -86,7 +86,7 @@ The following gaps **must** be closed before deploying M2 to production:
 
 - [ ] **Gap-1** — Wire `status:v2` emission from `StatusProjectorService`
 - [ ] **Gap-2** — Wire `StaffingDebouncerService.setEmitter()` in `EventsGateway.afterInit()`
-- [ ] **Gap-6** — Add `PHASE3_FEATURES_ENABLED` to `be/.env.example` and GitHub Secrets
+- [ ] **Gap-6** — Add `PHASE3_FEATURES_ENABLED` to `apps/be/.env.example` and GitHub Secrets
 
 The remaining gaps are safe to ship in a follow-up (Phase 3 M3 window or 3-14 load test).
 
@@ -106,7 +106,7 @@ Work through this checklist before merging the Phase 3 M2 PR:
 - [ ] `GET /api/v1/monitoring/snapshot?scope=rayon&id=<OTHER_RAYON_UUID>` with kepala_rayon JWT → 403
 
 **Web**
-- [ ] `cd fe/web && npm run build` → 0 errors
+- [ ] `cd apps/web && npm run build` → 0 errors
 - [ ] Monitoring page loads at `/monitoring` without console errors
 - [ ] HierarchyFilterPanel renders (city / rayon / area scope selector)
 - [ ] WorkerListVirtual renders and scrolls (check DevTools → Elements — only ~10 rows in DOM at a time)
@@ -114,16 +114,16 @@ Work through this checklist before merging the Phase 3 M2 PR:
 - [ ] `staff_kecamatan` role login → redirected away from `/monitoring`
 
 **Mobile**
-- [ ] `cd fe/mobile && npm test -- --passWithNoTests` → passes
-- [ ] `cd fe/mobile && npx eslint src/components/monitoring/ --max-warnings=0` → 0 violations (no `tracksViewChanges={true}`)
-- [ ] APK builds without error: `cd fe/mobile/android && ./gradlew assembleRelease`
+- [ ] `cd apps/mobile && npm test -- --passWithNoTests` → passes
+- [ ] `cd apps/mobile && npx eslint src/components/monitoring/ --max-warnings=0` → 0 violations (no `tracksViewChanges={true}`)
+- [ ] APK builds without error: `cd apps/mobile/android && ./gradlew assembleRelease`
 - [ ] MapDashboard loads without crash on device/emulator
 - [ ] `featureFlags.clusterMarkersV2 = false` (default) → existing individual markers shown (no cluster UI)
 - [ ] BoundaryOverlay reloads on tab re-focus (Apr 24 fix preserved)
 
 **Infrastructure**
 - [ ] `infra/docker-compose.yml` includes Redis 7 service with healthcheck
-- [ ] `be/.env.example` has `REDIS_URL`, `REDIS_STREAM_MAX_LEN`, `STAFFING_DEBOUNCE_SECONDS`, `MONITORING_SWEEP_CRON`, `CLUSTER_ZOOM_THRESHOLD`, `MISSING_THRESHOLD_SECONDS`
+- [ ] `apps/be/.env.example` has `REDIS_URL`, `REDIS_STREAM_MAX_LEN`, `STAFFING_DEBOUNCE_SECONDS`, `MONITORING_SWEEP_CRON`, `CLUSTER_ZOOM_THRESHOLD`, `MISSING_THRESHOLD_SECONDS`
 
 ### Deferred
 
@@ -156,9 +156,9 @@ Work through this checklist before merging the Phase 3 M2 PR:
 
 | # | Severity | File | Issue | Fix |
 |---|----------|------|-------|-----|
-| 1 | Medium | `fe/mobile/src/screens/auth/LoginScreen.tsx` | Login error shows both a bottom toast AND an inline Redux error box simultaneously — duplicate feedback | Removed `dispatch(setError(...))` calls + inline error `View`; all API errors now route to toast only; field-validation errors (identifierError/passwordError under inputs) unchanged |
-| 2 | Medium | `fe/mobile/src/screens/auth/LoginScreen.tsx` + `fe/mobile/src/components/nb/NBToast.tsx` | Toast auto-dismissed after 4 s — user couldn't read the error message | Added `persistent?: boolean` to `NBToastOptions`; all login-failure toast calls pass `persistent: true` → `visibilityTime: Number.MAX_SAFE_INTEGER`; user must tap ✕ to dismiss |
-| 3 | Medium | `fe/mobile/src/components/nb/NBModal.tsx` + 6 consumers | NBModal had no built-in content or footer padding — every caller duplicated the same spacing values in a wrapper `<View>`; `ChangePasswordModal` footer used `NBButton` (shadow, 2 px radius) while filter modals used flat `TouchableOpacity` (borderWidth only, minHeight 46) — visually inconsistent across all bottom-sheet modals | Added `noPadding?: boolean` prop; non-scrollable `content` gains `padding: md, paddingBottom: sm` by default; `footerWrap` gains `paddingHorizontal: md, paddingVertical: sm+2`; `SortModal` passes `noPadding` (edge-to-edge rows); `ProfileScreen` drops manual `aboutContent` wrapper; all three filter modals drop redundant padding from `actionButtons`; `ChangePasswordModal` footer migrated from `NBButton` to `TouchableOpacity` matching filter-modal style (borderWidth, minHeight 46, `ActivityIndicator` for loading) |
+| 1 | Medium | `apps/mobile/src/screens/auth/LoginScreen.tsx` | Login error shows both a bottom toast AND an inline Redux error box simultaneously — duplicate feedback | Removed `dispatch(setError(...))` calls + inline error `View`; all API errors now route to toast only; field-validation errors (identifierError/passwordError under inputs) unchanged |
+| 2 | Medium | `apps/mobile/src/screens/auth/LoginScreen.tsx` + `apps/mobile/src/components/nb/NBToast.tsx` | Toast auto-dismissed after 4 s — user couldn't read the error message | Added `persistent?: boolean` to `NBToastOptions`; all login-failure toast calls pass `persistent: true` → `visibilityTime: Number.MAX_SAFE_INTEGER`; user must tap ✕ to dismiss |
+| 3 | Medium | `apps/mobile/src/components/nb/NBModal.tsx` + 6 consumers | NBModal had no built-in content or footer padding — every caller duplicated the same spacing values in a wrapper `<View>`; `ChangePasswordModal` footer used `NBButton` (shadow, 2 px radius) while filter modals used flat `TouchableOpacity` (borderWidth only, minHeight 46) — visually inconsistent across all bottom-sheet modals | Added `noPadding?: boolean` prop; non-scrollable `content` gains `padding: md, paddingBottom: sm` by default; `footerWrap` gains `paddingHorizontal: md, paddingVertical: sm+2`; `SortModal` passes `noPadding` (edge-to-edge rows); `ProfileScreen` drops manual `aboutContent` wrapper; all three filter modals drop redundant padding from `actionButtons`; `ChangePasswordModal` footer migrated from `NBButton` to `TouchableOpacity` matching filter-modal style (borderWidth, minHeight 46, `ActivityIndicator` for loading) |
 | 4 | Low | `specs/phases/phase-3-plants-monitoring-rebuild/STATUS.md` | "Already clean from Phase 2 + 3-R2" for web 3-R5 sweep read like a skip; user couldn't see what web actually got in M1-R | Expanded row to explicitly list 3-R1/3-R2/3-R4 web deliverables and frame 3-R5 as a verification pass |
 
 ### Deferred
@@ -181,14 +181,14 @@ npm run tokens:verify                           # must exit 0
 npm run test:tokens                             # all tests green
 ```
 
-- [ ] `fe/web/src/app/generated/tokens.css` — present, starts with `/* generated`, has `:root { --color-nb-primary`
-- [ ] `fe/mobile/src/constants/generated/tokens.ts` — present, starts with `/* generated`, exports `generatedTokens`
+- [ ] `apps/web/src/app/generated/tokens.css` — present, starts with `/* generated`, has `:root { --color-nb-primary`
+- [ ] `apps/mobile/src/constants/generated/tokens.ts` — present, starts with `/* generated`, exports `generatedTokens`
 
 ### B. ESLint — Zero Violations
 
 ```bash
-cd fe/web   && npx eslint src/ --max-warnings=0   # no-inline-hex-colors, no-tailwind-shadow-classes-with-blur, prefer-nb-shadow-utility
-cd fe/mobile && npx eslint src/ --max-warnings=0  # no-inline-hex-colors, rn-no-shadow-radius
+cd apps/web   && npx eslint src/ --max-warnings=0   # no-inline-hex-colors, no-tailwind-shadow-classes-with-blur, prefer-nb-shadow-utility
+cd apps/mobile && npx eslint src/ --max-warnings=0  # no-inline-hex-colors, rn-no-shadow-radius
 ```
 
 - [ ] Both exit 0 — only allowlisted files in each config
@@ -224,7 +224,7 @@ cd fe/mobile && npx eslint src/ --max-warnings=0  # no-inline-hex-colors, rn-no-
 
 ### E. Web PWA Shell (3-R4)
 
-- [ ] `fe/web/public/manifest.webmanifest` exists, valid JSON
+- [ ] `apps/web/public/manifest.webmanifest` exists, valid JSON
 - [ ] DevTools → Application → Manifest → shows SEKAR name, icons, theme color
 - [ ] `NEXT_PUBLIC_FEATURE_PWA=false` in `.env.local` → no SW in DevTools → Service Workers
 - [ ] `NEXT_PUBLIC_FEATURE_PWA=true`, restart dev → SW registered; disconnect network → offline shell loads
@@ -259,7 +259,7 @@ cd fe/mobile && npx eslint src/ --max-warnings=0  # no-inline-hex-colors, rn-no-
 ### I. CI Gates (simulate locally)
 
 - [ ] Edit hex in non-allowlisted file → `npm run tokens:verify` exits non-zero
-- [ ] Add `className="shadow-md"` to web component → `cd fe/web && npx eslint src/<file>` reports error
+- [ ] Add `className="shadow-md"` to web component → `cd apps/web && npx eslint src/<file>` reports error
 - [ ] Both gates pass on clean branch
 
 ---
@@ -358,8 +358,8 @@ cd fe/mobile && npx eslint src/ --max-warnings=0  # no-inline-hex-colors, rn-no-
 
 | # | Severity | File | Issue | Fix |
 |---|----------|------|-------|-----|
-| 1 | CRITICAL | `be/src/modules/tasks/tasks.service.ts` (cascadePruningRequestStatus, line ~398) | The cascade `UPDATE pruning_requests` only guarded `status <> $1` — it would happily overwrite a `rejected` or `cancelled` request to `in_progress`/`done` if a stray task later completed. Activities-side cascade already had the right guard; tasks-side didn't mirror it. | Added `AND status NOT IN ('done','rejected','cancelled')` to the WHERE clause. New backend spec asserts the exact SQL fragment so a refactor can't quietly drop it. Tests 91/91 ✓. |
-| 2 | MEDIUM | `fe/mobile/src/components/admin/AssignToTaskSheet.tsx` (line ~66) | If `request.rayonId` was null/missing (data corruption), the picker silently fell back to the FULL cross-rayon user list — an admin in Pusat could assign a Pusat-kecamatan permohonan to a satgas in Timur. | Fail-closed: empty list instead of cross-rayon fallback. Rayon FK is NOT NULL by schema so this path is unreachable under normal flow; the guard prevents future schema-relaxation regressions. |
+| 1 | CRITICAL | `apps/be/src/modules/tasks/tasks.service.ts` (cascadePruningRequestStatus, line ~398) | The cascade `UPDATE pruning_requests` only guarded `status <> $1` — it would happily overwrite a `rejected` or `cancelled` request to `in_progress`/`done` if a stray task later completed. Activities-side cascade already had the right guard; tasks-side didn't mirror it. | Added `AND status NOT IN ('done','rejected','cancelled')` to the WHERE clause. New backend spec asserts the exact SQL fragment so a refactor can't quietly drop it. Tests 91/91 ✓. |
+| 2 | MEDIUM | `apps/mobile/src/components/admin/AssignToTaskSheet.tsx` (line ~66) | If `request.rayonId` was null/missing (data corruption), the picker silently fell back to the FULL cross-rayon user list — an admin in Pusat could assign a Pusat-kecamatan permohonan to a satgas in Timur. | Fail-closed: empty list instead of cross-rayon fallback. Rayon FK is NOT NULL by schema so this path is unreachable under normal flow; the guard prevents future schema-relaxation regressions. |
 
 ### False positives (verified by reading source — no fix needed)
 
@@ -551,10 +551,10 @@ If any of these fail, stop and fix before walking the full checklist:
 
 #### 3-R1 & 3-R2 — Token Pipeline + ESLint
 - [ ] `npm run tokens:verify` exits 0 (no drift)
-- [ ] `fe/web/src/app/generated/tokens.css` exists, starts with `/* generated`, contains `:root { --color-nb-primary`
-- [ ] `fe/mobile/src/constants/generated/tokens.ts` exists, starts with `/* generated`, exports `generatedTokens`
-- [ ] `npx eslint fe/web/src --max-warnings=0` exits 0
-- [ ] `npx eslint fe/mobile/src --max-warnings=0` exits 0
+- [ ] `apps/web/src/app/generated/tokens.css` exists, starts with `/* generated`, contains `:root { --color-nb-primary`
+- [ ] `apps/mobile/src/constants/generated/tokens.ts` exists, starts with `/* generated`, exports `generatedTokens`
+- [ ] `npx eslint apps/web/src --max-warnings=0` exits 0
+- [ ] `npx eslint apps/mobile/src --max-warnings=0` exits 0
 - [ ] All hex colors in non-allowlisted files trigger ESLint `no-inline-hex-colors` errors (verify with a test edit)
 
 #### 3-R3 Mobile — NB Primitives + Fonts
@@ -565,7 +565,7 @@ If any of these fail, stop and fix before walking the full checklist:
 - [ ] `NBText` variants (`h1`, `body-sm`, etc.) render with correct sizing + weight
 
 #### 3-R4 Web — PWA Shell + Responsive Scaffolding
-- [ ] `fe/web/public/manifest.webmanifest` is valid JSON with SEKAR name + icons
+- [ ] `apps/web/public/manifest.webmanifest` is valid JSON with SEKAR name + icons
 - [ ] DevTools → Application → Manifest → renders correctly
 - [ ] `NEXT_PUBLIC_FEATURE_PWA=true` → Service Worker registered; offline shell loads
 - [ ] Responsive test (375 / 768 / 1280 px): no horizontal scroll, content readable at all widths
@@ -762,16 +762,16 @@ If any of these fail, stop and fix before walking the full checklist:
 
 | # | Severity | File | Bug | Fix |
 |---|----------|------|-----|-----|
-| 1 | HIGH | `be/notifications.service.ts:414` | Token-deactivation `update()` fire-and-forget; DB failures silently swallowed | Added `.catch(err => logger.error(...))` |
-| 2 | HIGH | `be/notifications.service.ts:411` | Permanent-failure error code set missed `mismatched-sender-id` | Extended Set + documented transient codes |
-| 3 | HIGH | `be/tasks.service.ts:434` | Cascade fired sendToUser with no null guard on submitted_by | Early-return if falsy |
-| 4 | HIGH | `be/tasks.service.ts` (4 sites) | No push on task accept/decline/verify/revision | New `notifyTaskLifecycleParty` helper |
-| 5 | MEDIUM | `be/pruning-requests.service.ts:884` | Reschedule pushed only assignee, not submitter | Added `notifySubmitter` call |
-| 6 | HIGH | `fe/mobile/useProfileLogout.ts` | No unregisterToken on logout; device_tokens row stayed active | `await fcmService.unregisterToken()` before clearing JWT |
-| 7 | MEDIUM | `fe/mobile/useProfileLogout.ts` | NotificationsSlice not reset on logout | Added `resetNotificationsState` dispatch |
-| 8 | HIGH | `fe/mobile/App.tsx` | AppState foreground re-register POSTed every transition | `lastRegisteredTokenRef` idempotency guard |
-| 9 | HIGH | `fe/mobile/RootNavigator.tsx` | Zero deep-link wiring; push taps navigated nowhere | Exported `navigationRef`; `onNotificationOpened` + `getInitialNotification` route on task_id/pruning_request_id |
-| 10 | MEDIUM | `fe/mobile/fcmService.ts:124` | Android notifee channel name in English | "SEKAR Notifications" → "Notifikasi SEKAR" |
+| 1 | HIGH | `apps/be/notifications.service.ts:414` | Token-deactivation `update()` fire-and-forget; DB failures silently swallowed | Added `.catch(err => logger.error(...))` |
+| 2 | HIGH | `apps/be/notifications.service.ts:411` | Permanent-failure error code set missed `mismatched-sender-id` | Extended Set + documented transient codes |
+| 3 | HIGH | `apps/be/tasks.service.ts:434` | Cascade fired sendToUser with no null guard on submitted_by | Early-return if falsy |
+| 4 | HIGH | `apps/be/tasks.service.ts` (4 sites) | No push on task accept/decline/verify/revision | New `notifyTaskLifecycleParty` helper |
+| 5 | MEDIUM | `apps/be/pruning-requests.service.ts:884` | Reschedule pushed only assignee, not submitter | Added `notifySubmitter` call |
+| 6 | HIGH | `apps/mobile/useProfileLogout.ts` | No unregisterToken on logout; device_tokens row stayed active | `await fcmService.unregisterToken()` before clearing JWT |
+| 7 | MEDIUM | `apps/mobile/useProfileLogout.ts` | NotificationsSlice not reset on logout | Added `resetNotificationsState` dispatch |
+| 8 | HIGH | `apps/mobile/App.tsx` | AppState foreground re-register POSTed every transition | `lastRegisteredTokenRef` idempotency guard |
+| 9 | HIGH | `apps/mobile/RootNavigator.tsx` | Zero deep-link wiring; push taps navigated nowhere | Exported `navigationRef`; `onNotificationOpened` + `getInitialNotification` route on task_id/pruning_request_id |
+| 10 | MEDIUM | `apps/mobile/fcmService.ts:124` | Android notifee channel name in English | "SEKAR Notifications" → "Notifikasi SEKAR" |
 
 ### Deferred
 
@@ -893,21 +893,21 @@ If `Deactivated invalid token: …` appears, that token row is now inactive. The
 
 | # | Severity | File | Issue | Fix (commit / file) |
 |---|----------|------|-------|---------------------|
-| C1 | Critical | `be/src/modules/activities/activities.service.spec.ts:560,573` | KORLAP scope check threw `TypeError` not `ApiException` (missing `manager.query` mock) | spec mocks `manager.query`; assertion updated to multi-area `IN (...)` form |
-| C2 | Critical | `be/src/modules/plants/services/plant-due-date.service.spec.ts:240` | `due_soon` 14-day boundary mis-classified once wall-clock advanced past May 7 | `jest.useFakeTimers().setSystemTime('2026-04-27')` pins clock |
-| C3 | Critical | `fe/mobile/src/components/common/__tests__/CollapsibleCard.test.tsx:319` | Test asserted `useNativeDriver: true`, code was `false` | Code keeps `false` (deliberate Fabric race fix); test now asserts `false` with rationale comment |
-| C4 | Critical | `be/src/modules/kecamatans/*` | Module added May 9 with 0 % coverage | `kecamatans.{service,controller}.spec.ts` — 11 tests, 100 % stmts |
-| C5 | Critical | `be/src/modules/pruning-requests/entities/pruning-request.entity.ts:41` | `submitter` `onDelete: CASCADE` mismatch vs migration `RESTRICT` | Entity flipped to `RESTRICT`; comment updated |
-| H1 | High | `be/src/modules/pruning-requests/pruning-requests.service.ts`, `activities.service.ts` | User-relation projections leaked phone/role/PII | `SAFE_PRUNING_REQUEST_SELECT` constant + safe-column QB joins; `findActivityTags` switched to QB |
-| H2 | High | `be/.env.example:141` | `REDIS_URL` `:6379` vs docker-compose `:16379` | Flipped to `:16379` |
-| H6 | High | `fe/web/src/lib/api/{monitoring-v2,plants,pruning-requests}.ts` | Untested API client layer | 3 new spec files — 30 tests across snapshot hooks, plant aggregates, pruning admin flows |
+| C1 | Critical | `apps/be/src/modules/activities/activities.service.spec.ts:560,573` | KORLAP scope check threw `TypeError` not `ApiException` (missing `manager.query` mock) | spec mocks `manager.query`; assertion updated to multi-area `IN (...)` form |
+| C2 | Critical | `apps/be/src/modules/plants/services/plant-due-date.service.spec.ts:240` | `due_soon` 14-day boundary mis-classified once wall-clock advanced past May 7 | `jest.useFakeTimers().setSystemTime('2026-04-27')` pins clock |
+| C3 | Critical | `apps/mobile/src/components/common/__tests__/CollapsibleCard.test.tsx:319` | Test asserted `useNativeDriver: true`, code was `false` | Code keeps `false` (deliberate Fabric race fix); test now asserts `false` with rationale comment |
+| C4 | Critical | `apps/be/src/modules/kecamatans/*` | Module added May 9 with 0 % coverage | `kecamatans.{service,controller}.spec.ts` — 11 tests, 100 % stmts |
+| C5 | Critical | `apps/be/src/modules/pruning-requests/entities/pruning-request.entity.ts:41` | `submitter` `onDelete: CASCADE` mismatch vs migration `RESTRICT` | Entity flipped to `RESTRICT`; comment updated |
+| H1 | High | `apps/be/src/modules/pruning-requests/pruning-requests.service.ts`, `activities.service.ts` | User-relation projections leaked phone/role/PII | `SAFE_PRUNING_REQUEST_SELECT` constant + safe-column QB joins; `findActivityTags` switched to QB |
+| H2 | High | `apps/be/.env.example:141` | `REDIS_URL` `:6379` vs docker-compose `:16379` | Flipped to `:16379` |
+| H6 | High | `apps/web/src/lib/api/{monitoring-v2,plants,pruning-requests}.ts` | Untested API client layer | 3 new spec files — 30 tests across snapshot hooks, plant aggregates, pruning admin flows |
 | H7 | High | 5 mobile + 1 web file, 19 hex literals total | Hardcoded colors bypass token pipeline | Mapped to NB tokens (incl. exact-match `requestUnderReview` `#2563EB`, `plantOverdue` `#DC2626`); WhatsApp brand kept with rule-disable + comment; web hex → `var(--color-status-*)` |
-| H8 | High | `fe/mobile/src/screens/pruningRequests/__tests__/{RequestDetailScreen,SubmitScreen}.test.tsx` | 30 s default timeout caused flake | Per-file `jest.setTimeout(60000)` |
-| H11 | High | (missing) `be/src/database/backfill/pruning-csv-importer.ts` | 5,008-row historical CSV backfill not started | Scaffold shipped: idempotent on `reference_code`, dry-run default, 10-test helper suite; production execution gated on S3 photo rehosting + DLH sign-off |
-| M1 | Medium | `be/src/modules/pruning-requests/pruning-requests.controller.ts:229` | GET `/:id` no method-level `@Roles` | `@Roles(...)` added (defence-in-depth; service-side scope check still runs) |
-| M4 | Medium | `be/src/modules/monitoring/services/staffing-debouncer.service.ts` | Per-process Map double-emits on multi-replica | Redis-backed `SET NX EX` leader election (`tryClaimEmit`); single-replica/no-Redis path stays synchronous |
-| M6 | Medium | `be/src/modules/monitoring/services/status-calculator.service.ts:189` | 3 DB reads per ping (tracking, user, area) | Eager-load `user` + `area` on initial findOne with safe column-select; broadcast helpers consume cache. 3 reads → 1 |
-| M7 | Medium | `be/src/modules/activities/activities.service.ts:140` | `TaskTypeRegistry.validate` not called on activities side | `TasksModule` imported into `ActivitiesModule`, registry injected, validate-by-`case_type` plugged at the boundary |
+| H8 | High | `apps/mobile/src/screens/pruningRequests/__tests__/{RequestDetailScreen,SubmitScreen}.test.tsx` | 30 s default timeout caused flake | Per-file `jest.setTimeout(60000)` |
+| H11 | High | (missing) `apps/be/src/database/backfill/pruning-csv-importer.ts` | 5,008-row historical CSV backfill not started | Scaffold shipped: idempotent on `reference_code`, dry-run default, 10-test helper suite; production execution gated on S3 photo rehosting + DLH sign-off |
+| M1 | Medium | `apps/be/src/modules/pruning-requests/pruning-requests.controller.ts:229` | GET `/:id` no method-level `@Roles` | `@Roles(...)` added (defence-in-depth; service-side scope check still runs) |
+| M4 | Medium | `apps/be/src/modules/monitoring/services/staffing-debouncer.service.ts` | Per-process Map double-emits on multi-replica | Redis-backed `SET NX EX` leader election (`tryClaimEmit`); single-replica/no-Redis path stays synchronous |
+| M6 | Medium | `apps/be/src/modules/monitoring/services/status-calculator.service.ts:189` | 3 DB reads per ping (tracking, user, area) | Eager-load `user` + `area` on initial findOne with safe column-select; broadcast helpers consume cache. 3 reads → 1 |
+| M7 | Medium | `apps/be/src/modules/activities/activities.service.ts:140` | `TaskTypeRegistry.validate` not called on activities side | `TasksModule` imported into `ActivitiesModule`, registry injected, validate-by-`case_type` plugged at the boundary |
 | Spec | Various | `database.md`, `ADR-031` | `area_plants.status` enum drift, `task_delegations.{from_role,to_role}` undocumented, plant_species seed count stale, ADR-031 silent on missing validator | All reconciled (Wave 2 + this review); ADR-031 amended with audit note |
 | ESLint CI | Medium | (missing) `.github/workflows/mobile-quality.yml` | Mobile ESLint design-system rules configured but no PR gate | New lean `mobile-quality.yml` workflow: lint + tsc + jest on mobile path-filtered PRs |
 
@@ -957,14 +957,14 @@ SELECT COUNT(*) FROM activities WHERE reference_code IS NOT NULL;  -- 0 today; 5
 - `POST /api/v1/activities` with malformed `custom_fields` + `case_type: GT` → expect 400 ("custom_fields is invalid for…") (M7 fix)
 - `PATCH /api/v1/pruning-requests/:id/expected-date` with a date inside a full ISO week → expect `409 ConflictException` ("Capacity penuh…") (M3 verification)
 
-**3. Mobile smoke (`cd fe/mobile && npm run android`)**
+**3. Mobile smoke (`cd apps/mobile && npm run android`)**
 - Login `staff_kec_pusat / Password123!` → Perantingan tab → tap "+ Buat Permohonan" → SubmitScreen
 - Fill location pin → upload photo → tap date row → `AvailabilityModal` (8 ISO weeks visible, day labels Sunday-start, full = `plantOverdue` red, partial = `plantDue` amber, available = `plantOk` green — H7 verification)
 - Login `korlap_bungkul / Password123!` → Map → tap a worker → UserDetailSheet → WhatsApp button green; Reassign button = `requestUnderReview` blue (H7)
 - Login `admin / Password123!` → ActivitySubmissionScreen → tag a peer → submit → verify activity_tags row written; satgas's Aktivitas list shows "Diikutsertakan" badge
 - Open a task with delegation history → TaskDetailScreen → "Riwayat Penugasan" card shows role hops
 
-**4. Web smoke (`cd fe/web && npm run dev` → http://localhost:3001)**
+**4. Web smoke (`cd apps/web && npm run dev` → http://localhost:3001)**
 - `/monitoring` → confirm StaffingSummaryCard renders with proper colors (H7 verification: no `bg-[#15803D]` hardcodes in DOM inspector — all `var(--color-status-active)`)
 - `/pruning-requests` admin queue → filter by status → detail page → review (approve/reject) → assign-to-task → confirm POST hits `/assign-to-task` with default `units: 1`
 - PWA: open Chrome devtools → Application → Manifest = `manifest.webmanifest`; Service Workers = `sw.js` active; Install button visible on supported browsers
@@ -987,8 +987,8 @@ npx tsx src/database/backfill/pruning-csv-importer.ts --dry-run    # full 5,007
 **7. Coverage gates (CI mirror)**
 ```
 cd be && npm run test:cov           # branches 77.94 % global (tasks.service.ts legacy drag; all new Phase-3 modules ≥85 %)
-cd fe/mobile && npm test -- --coverage --watchAll=false --ci
-cd fe/web && npm run test:cov
+cd apps/mobile && npm test -- --coverage --watchAll=false --ci
+cd apps/web && npm run test:cov
 ```
 
 ### Sign-off statement

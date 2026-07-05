@@ -526,15 +526,15 @@ Requests/Second: 50
 
 ### Implementation Docs
 - [x] `specs/api/contracts.md` - Complete API reference (single source of truth)
-- [x] `be/README.md` - Backend setup guide
-- [x] `be/DATABASE_HARDENING_SUMMARY.md` - Migration guide (moved to specs/)
-- [x] `be/TESTING_ERROR_CODES.md` - Test coverage (moved to specs/)
+- [x] `apps/be/README.md` - Backend setup guide
+- [x] `apps/be/DATABASE_HARDENING_SUMMARY.md` - Migration guide (moved to specs/)
+- [x] `apps/be/TESTING_ERROR_CODES.md` - Test coverage (moved to specs/)
 
 ### Development Guides
 - [x] `.cursor/rules/001-code-generation.mdc` - Coding standards
 - [x] `.cursor/rules/002-documentation.mdc` - Documentation standards
 - [x] `.cursor/rules/003-unit-testing.mdc` - Testing guidelines
-- [x] `be/.cursor/rules/*.mdc` - NestJS-specific patterns
+- [x] `apps/be/.cursor/rules/*.mdc` - NestJS-specific patterns
 
 ---
 

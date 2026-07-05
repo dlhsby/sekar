@@ -241,7 +241,7 @@ DROP INDEX IF EXISTS idx_tracking_area;
 
 ### C1a. Migration A — Tables & Constraints (Transactional)
 
-**File:** `be/src/database/migrations/1742000000000-Phase3Tables.ts`
+**File:** `apps/be/src/database/migrations/1742000000000-Phase3Tables.ts`
 
 ```typescript
 export class Phase3Tables implements MigrationInterface {
@@ -324,7 +324,7 @@ export class Phase3Tables implements MigrationInterface {
 
 ### C1b. Migration B — Indexes on Existing Tables (Non-Transactional)
 
-**File:** `be/src/database/migrations/1742000001000-Phase3Indexes.ts`
+**File:** `apps/be/src/database/migrations/1742000001000-Phase3Indexes.ts`
 
 > **Note:** Migration B timestamp (`1742000001000`) must be greater than Migration A's (`1742000000000`) to ensure correct execution order.
 
@@ -421,7 +421,7 @@ ON CONFLICT (user_id, date) DO NOTHING;
 
 ### D1. seed-production.ts Structure
 
-**File:** `be/src/database/seeds/seed-production.ts`
+**File:** `apps/be/src/database/seeds/seed-production.ts`
 
 ```
 seed-production.ts

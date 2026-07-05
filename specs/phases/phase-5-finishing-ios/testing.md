@@ -205,7 +205,7 @@ E2E tests require consistent seed data:
 ### F2. Playwright Test Fixtures
 
 ```typescript
-// fe/web/e2e/fixtures/phase4.ts
+// apps/web/e2e/fixtures/phase4.ts
 export const phase4Fixtures = {
   adminUser: { username: 'admin', password: 'Password123!' },
   korlapUser: { username: 'korlap1', password: 'Password123!' },

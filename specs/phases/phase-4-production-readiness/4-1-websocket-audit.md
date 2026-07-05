@@ -1,6 +1,6 @@
 # 4-1 A1 — WebSocket Connection-Stability Audit
 
-**Date:** June 9, 2026 · **Gateway:** `be/src/gateways/events.gateway.ts`
+**Date:** June 9, 2026 · **Gateway:** `apps/be/src/gateways/events.gateway.ts`
 
 Audit of the Socket.IO real-time layer for multi-instance production readiness (the
 substance of sub-phase 4-1 task A1). Outcome: **multi-instance safe**; the one blocking

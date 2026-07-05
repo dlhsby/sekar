@@ -40,7 +40,7 @@
 
 ### A1. MonitoringConfig Entity
 
-**File:** `be/src/modules/monitoring/entities/monitoring-config.entity.ts`
+**File:** `apps/be/src/modules/monitoring/entities/monitoring-config.entity.ts`
 
 ```typescript
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
@@ -69,7 +69,7 @@ export class MonitoringConfig {
 
 ### A2. UserTrackingStatus Entity
 
-**File:** `be/src/modules/monitoring/entities/user-tracking-status.entity.ts`
+**File:** `apps/be/src/modules/monitoring/entities/user-tracking-status.entity.ts`
 
 ```typescript
 import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, UpdateDateColumn } from 'typeorm';
@@ -152,7 +152,7 @@ export class UserTrackingStatus {
 
 ### B1. StatusCalculatorService
 
-**File:** `be/src/modules/monitoring/services/status-calculator.service.ts`
+**File:** `apps/be/src/modules/monitoring/services/status-calculator.service.ts`
 
 Core business logic for computing user tracking status. Called on every location ping and by the cron scheduler.
 
@@ -260,7 +260,7 @@ function calculateStatus(input: StatusInput, thresholds: StatusThresholds, now: 
 
 ### B2. MonitoringSchedulerService
 
-**File:** `be/src/modules/monitoring/services/monitoring-scheduler.service.ts`
+**File:** `apps/be/src/modules/monitoring/services/monitoring-scheduler.service.ts`
 
 Cron job that re-evaluates stale statuses every 60 seconds.
 
@@ -289,7 +289,7 @@ export class MonitoringSchedulerService {
 
 ### B3. MonitoringCacheService
 
-**File:** `be/src/modules/monitoring/services/monitoring-cache.service.ts`
+**File:** `apps/be/src/modules/monitoring/services/monitoring-cache.service.ts`
 
 In-memory cache for config and area boundaries to avoid repeated DB reads.
 
@@ -314,7 +314,7 @@ export class MonitoringCacheService {
 
 ### B4. MonitoringConfigService
 
-**File:** `be/src/modules/monitoring/services/monitoring-config.service.ts`
+**File:** `apps/be/src/modules/monitoring/services/monitoring-config.service.ts`
 
 CRUD for monitoring configuration with Zod validation.
 
@@ -342,7 +342,7 @@ export class MonitoringConfigService {
 
 ### B5. MonitoringStatsService
 
-**File:** `be/src/modules/monitoring/services/monitoring-stats.service.ts`
+**File:** `apps/be/src/modules/monitoring/services/monitoring-stats.service.ts`
 
 Extracted from `MonitoringService` during post-review refactoring. Provides aggregated status counts scoped by role hierarchy.
 
@@ -382,7 +382,7 @@ All three methods return counts broken down by status: `active`, `inactive`, `ou
 
 ### B6. MonitoringUserService
 
-**File:** `be/src/modules/monitoring/services/monitoring-user.service.ts`
+**File:** `apps/be/src/modules/monitoring/services/monitoring-user.service.ts`
 
 Extracted from `MonitoringService` during post-review refactoring. Provides user-level monitoring data.
 
@@ -952,7 +952,7 @@ export class ReassignWorkerResponseDto {
 
 ### E1. Fix Legacy Role Checks
 
-**File:** `be/src/gateways/events.gateway.ts`
+**File:** `apps/be/src/gateways/events.gateway.ts`
 
 ```typescript
 // BEFORE (broken -- line ~87):
@@ -1138,7 +1138,7 @@ Events are broadcast to hierarchical rooms so each role receives only relevant u
 
 ### F1. Trigger Status Update on Batch Upload
 
-**File:** `be/src/modules/location/location.service.ts`
+**File:** `apps/be/src/modules/location/location.service.ts`
 
 After inserting location logs in `createBatchLogs()`, call status calculator:
 
@@ -1168,7 +1168,7 @@ async createBatchLogs(userId: string, dto: CreateLocationBatchDto): Promise<void
 
 ### G1. Link Shift to ShiftDefinition on Clock-In
 
-**File:** `be/src/modules/shifts/shifts.service.ts`
+**File:** `apps/be/src/modules/shifts/shifts.service.ts`
 
 When creating a shift on clock-in, also resolve and store the `shift_definition_id`:
 
@@ -1212,7 +1212,7 @@ async clockOut(userId: string, dto: ClockOutDto): Promise<Shift> {
 
 ## H. GeoJSON Validation Utility
 
-**File:** `be/src/common/utils/geojson-validator.util.ts`
+**File:** `apps/be/src/common/utils/geojson-validator.util.ts`
 
 ```typescript
 export class GeoJsonValidator {
@@ -1235,7 +1235,7 @@ export class GeoJsonValidator {
 ## I. Module File Structure
 
 ```
-be/src/modules/monitoring/
+apps/be/src/modules/monitoring/
   entities/
     monitoring-config.entity.ts                 NEW
     user-tracking-status.entity.ts              NEW
@@ -1263,24 +1263,24 @@ be/src/modules/monitoring/
   monitoring.controller.ts                      MODIFIED
   monitoring.module.ts                          MODIFIED
 
-be/src/gateways/
+apps/be/src/gateways/
   events.gateway.ts                             MODIFIED
   dto/events.dto.ts                             MODIFIED
 
-be/src/modules/shifts/
+apps/be/src/modules/shifts/
   entities/shift.entity.ts                      MODIFIED (add shift_definition_id)
   shifts.service.ts                             MODIFIED (link shift_definition, trigger status)
 
-be/src/modules/location/
+apps/be/src/modules/location/
   location.service.ts                           MODIFIED (trigger status on batch upload)
 
-be/src/modules/areas/
+apps/be/src/modules/areas/
   areas.controller.ts                           MODIFIED (boundary CRUD endpoints)
 
-be/src/common/utils/
+apps/be/src/common/utils/
   geojson-validator.util.ts                     NEW
 
-be/src/database/migrations/
+apps/be/src/database/migrations/
   XXXXXXXXX-Phase2dMonitoringReimpl.ts          NEW
 ```
 

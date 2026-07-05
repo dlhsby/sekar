@@ -124,10 +124,10 @@ cd be && npm run start:dev
 cd be && npm run seed
 
 # Start mobile app
-cd fe/mobile && npm start
+cd apps/mobile && npm start
 
 # Start web dashboard
-cd fe/web && npm run dev
+cd apps/web && npm run dev
 ```
 
 ---
@@ -181,7 +181,7 @@ npm run seed
 | # | Test Case | Expected | Status |
 |---|-----------|----------|--------|
 | 1 | Code Review: `user.entity.ts` UserRole enum | Exactly 8 values: satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin | [ ] |
-| 2 | Code Search: No old role references in `be/src/` | No `worker`, `supervisor`, `admin`, `koordinator_lapangan` strings | [ ] |
+| 2 | Code Search: No old role references in `apps/be/src/` | No `worker`, `supervisor`, `admin`, `koordinator_lapangan` strings | [ ] |
 | 3 | Seed data uses new role names | seed-phase2.ts creates users with new roles | [ ] |
 
 ### 1.2 Role Group Constants
@@ -238,9 +238,9 @@ npm run seed
 
 | # | Test Case | Expected | Status |
 |---|-----------|----------|--------|
-| 30 | `be/src/modules/activities/` directory exists | Replaces `reports/` | [ ] |
-| 31 | `be/src/modules/schedules/` directory exists | Replaces `worker-schedules/` | [ ] |
-| 32 | `be/src/modules/worker-assignments/` deleted | Directory does not exist | [ ] |
+| 30 | `apps/be/src/modules/activities/` directory exists | Replaces `reports/` | [ ] |
+| 31 | `apps/be/src/modules/schedules/` directory exists | Replaces `worker-schedules/` | [ ] |
+| 32 | `apps/be/src/modules/worker-assignments/` deleted | Directory does not exist | [ ] |
 | 33 | `Activity` entity class | Replaces `Report` | [ ] |
 | 34 | `Schedule` entity class | Replaces `WorkerSchedule` | [ ] |
 | 35 | `ActivitiesService` class | Replaces `ReportsService` | [ ] |
@@ -334,7 +334,7 @@ npm run seed
 | # | Test Case | Expected | Status |
 |---|-----------|----------|--------|
 | 73 | Code Review: `task.entity.ts` TaskStatus | Exactly 4: pending, assigned, in_progress, completed | [ ] |
-| 74 | Code Search: No `accepted`/`declined` in `be/src/` | Zero references | [ ] |
+| 74 | Code Search: No `accepted`/`declined` in `apps/be/src/` | Zero references | [ ] |
 | 75 | No `accept()` method in tasks.controller.ts | Method removed | [ ] |
 | 76 | No `decline()` method in tasks.controller.ts | Method removed | [ ] |
 
@@ -544,7 +544,7 @@ npm run seed
 
 | # | Test Case | Expected | Status |
 |---|-----------|----------|--------|
-| 159 | No `TaskStatus.ACCEPTED`/`DECLINED` in `be/src/` | Zero references | [ ] |
+| 159 | No `TaskStatus.ACCEPTED`/`DECLINED` in `apps/be/src/` | Zero references | [ ] |
 | 160 | No `worker_id` in entity definitions (except User FK target) | Renamed to `user_id` | [ ] |
 | 161 | No `AKTIVITAS_SUBMITTERS` references | Renamed to `ACTIVITY_SUBMITTERS` | [ ] |
 | 162 | No `OvertimeAktivitas` entity | Deleted (flat overtime) | [ ] |
@@ -627,7 +627,7 @@ npm run seed
 | # | Test Case | Expected | Status |
 |---|-----------|----------|--------|
 | 169 | `models.types.ts` UserRole type | 8 values: satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin | [ ] |
-| 170 | No `'worker'`, `'supervisor'`, `'admin'` strings in `fe/mobile/src/` | Zero matches (except test mocks) | [ ] |
+| 170 | No `'worker'`, `'supervisor'`, `'admin'` strings in `apps/mobile/src/` | Zero matches (except test mocks) | [ ] |
 | 171 | TaskStatus type | 4 values: pending, assigned, in_progress, completed (no accepted/declined) | [ ] |
 
 ### 11.2 Role Constants (`constants/roles.ts`)
@@ -1085,7 +1085,7 @@ cat backup_pre_phase2c_YYYYMMDD.sql | \
   docker-compose exec -T postgres psql -U postgres -d sekar_db
 
 # Checkout previous version
-git checkout main -- be/src/
+git checkout main -- apps/be/src/
 docker-compose build backend
 docker-compose up -d
 ```

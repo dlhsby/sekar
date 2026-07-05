@@ -109,14 +109,14 @@ This STATUS.md file serves as an **index and quick reference** for Phase 2C impl
 
 ### Files Changed
 
-- `fe/mobile/src/screens/field/TasksActivityScreen.tsx` — Area/rayon filter scoping fix, activeOnly=false
-- `fe/mobile/src/services/api/tasksApi.ts` — Added `activeOnly` to getMyTasks filter type
-- `be/src/modules/auth/auth.controller.ts` — MeResponseDto import, typed return, rayon_id null-safety
-- `be/src/modules/auth/dto/me-response.dto.ts` — New typed DTO
-- `be/src/modules/auth/auth.controller.spec.ts` — Non-null assertion for assigned_area test
-- `fe/mobile/src/hooks/useActivityForm.ts` — __DEV__ gated console calls
-- `fe/mobile/src/providers/AuthProvider.tsx` — __DEV__ gated console calls
-- `fe/mobile/src/screens/field/ActivityDetailScreen.tsx` — Rejection input padding
+- `apps/mobile/src/screens/field/TasksActivityScreen.tsx` — Area/rayon filter scoping fix, activeOnly=false
+- `apps/mobile/src/services/api/tasksApi.ts` — Added `activeOnly` to getMyTasks filter type
+- `apps/be/src/modules/auth/auth.controller.ts` — MeResponseDto import, typed return, rayon_id null-safety
+- `apps/be/src/modules/auth/dto/me-response.dto.ts` — New typed DTO
+- `apps/be/src/modules/auth/auth.controller.spec.ts` — Non-null assertion for assigned_area test
+- `apps/mobile/src/hooks/useActivityForm.ts` — __DEV__ gated console calls
+- `apps/mobile/src/providers/AuthProvider.tsx` — __DEV__ gated console calls
+- `apps/mobile/src/screens/field/ActivityDetailScreen.tsx` — Rejection input padding
 
 **Spec Documents Synced:**
 - `specs/api/error-handling.md` — Added 11 activity + task workflow error codes (31→47 total)
@@ -165,15 +165,15 @@ This STATUS.md file serves as an **index and quick reference** for Phase 2C impl
 
 ### Files Changed
 
-- `fe/mobile/src/screens/field/ActivitySubmissionScreen.tsx` — FAB layout, draft prompt, useFocusEffect fix
-- `fe/mobile/src/screens/field/ActivityDetailScreen.tsx` — Approval FAB, double-tap guard, dead code removal
-- `fe/mobile/src/hooks/useActivityForm.ts` — resetForm/clearDraft separation, GPS on draft restore
-- `fe/mobile/src/navigation/MainNavigator.tsx` — Tab label/icon standardization
-- `be/src/modules/auth/auth.service.ts` — area_id/rayon_id in login/refresh
-- `be/src/modules/auth/dto/auth-response.dto.ts` — DTO fields
-- `be/src/modules/auth/auth.controller.ts` — getMe() area_id/rayon_id
-- `fe/mobile/src/screens/auth/LoginScreen.tsx` — Merge area_id/rayon_id from getMe()
-- `fe/mobile/src/providers/AuthProvider.tsx` — Merge area_id/rayon_id on session restore
+- `apps/mobile/src/screens/field/ActivitySubmissionScreen.tsx` — FAB layout, draft prompt, useFocusEffect fix
+- `apps/mobile/src/screens/field/ActivityDetailScreen.tsx` — Approval FAB, double-tap guard, dead code removal
+- `apps/mobile/src/hooks/useActivityForm.ts` — resetForm/clearDraft separation, GPS on draft restore
+- `apps/mobile/src/navigation/MainNavigator.tsx` — Tab label/icon standardization
+- `apps/be/src/modules/auth/auth.service.ts` — area_id/rayon_id in login/refresh
+- `apps/be/src/modules/auth/dto/auth-response.dto.ts` — DTO fields
+- `apps/be/src/modules/auth/auth.controller.ts` — getMe() area_id/rayon_id
+- `apps/mobile/src/screens/auth/LoginScreen.tsx` — Merge area_id/rayon_id from getMe()
+- `apps/mobile/src/providers/AuthProvider.tsx` — Merge area_id/rayon_id on session restore
 
 ---
 
@@ -217,31 +217,31 @@ This STATUS.md file serves as an **index and quick reference** for Phase 2C impl
 ### Files Changed
 
 **Backend (8 files):**
-- `be/src/modules/activities/entities/activity.entity.ts` — ActivityStatus enum + 4 columns
-- `be/src/modules/activities/activities.service.ts` — approveActivity, rejectActivity methods
-- `be/src/modules/activities/activities.controller.ts` — approve/reject endpoints
-- `be/src/modules/activities/dto/reject-activity.dto.ts` — NEW
-- `be/src/modules/tasks/entities/task.entity.ts` — 8-status enum + 6 columns
-- `be/src/modules/tasks/tasks.service.ts` — accept, decline, verify, requestRevision, scope filtering
-- `be/src/modules/tasks/tasks.controller.ts` — 4 new endpoints + user context on CRUD
-- `be/src/modules/users/constants/role-groups.ts` — ACTIVITY_APPROVERS, TASK_VERIFIERS, VERIFY_MAP
+- `apps/be/src/modules/activities/entities/activity.entity.ts` — ActivityStatus enum + 4 columns
+- `apps/be/src/modules/activities/activities.service.ts` — approveActivity, rejectActivity methods
+- `apps/be/src/modules/activities/activities.controller.ts` — approve/reject endpoints
+- `apps/be/src/modules/activities/dto/reject-activity.dto.ts` — NEW
+- `apps/be/src/modules/tasks/entities/task.entity.ts` — 8-status enum + 6 columns
+- `apps/be/src/modules/tasks/tasks.service.ts` — accept, decline, verify, requestRevision, scope filtering
+- `apps/be/src/modules/tasks/tasks.controller.ts` — 4 new endpoints + user context on CRUD
+- `apps/be/src/modules/users/constants/role-groups.ts` — ACTIVITY_APPROVERS, TASK_VERIFIERS, VERIFY_MAP
 
 **Mobile (8 files):**
-- `fe/mobile/src/screens/field/TaskDetailScreen.tsx` — 8-status action buttons
-- `fe/mobile/src/screens/field/ActivityDetailScreen.tsx` — approval UI + empty state
-- `fe/mobile/src/screens/field/TasksActivityScreen.tsx` — date filter fix
-- `fe/mobile/src/components/modals/TaskFilterModal.tsx` — 8 status options
-- `fe/mobile/src/services/api/tasksApi.ts` — accept/decline/verify/revision APIs
-- `fe/mobile/src/services/api/activitiesApi.ts` — approve/reject APIs
-- `fe/mobile/src/services/api/apiClient.ts` — patch() type fix
-- `fe/mobile/src/types/api.types.ts` — new request/response types
+- `apps/mobile/src/screens/field/TaskDetailScreen.tsx` — 8-status action buttons
+- `apps/mobile/src/screens/field/ActivityDetailScreen.tsx` — approval UI + empty state
+- `apps/mobile/src/screens/field/TasksActivityScreen.tsx` — date filter fix
+- `apps/mobile/src/components/modals/TaskFilterModal.tsx` — 8 status options
+- `apps/mobile/src/services/api/tasksApi.ts` — accept/decline/verify/revision APIs
+- `apps/mobile/src/services/api/activitiesApi.ts` — approve/reject APIs
+- `apps/mobile/src/services/api/apiClient.ts` — patch() type fix
+- `apps/mobile/src/types/api.types.ts` — new request/response types
 
 **Tests:**
-- `be/src/modules/tasks/tasks.controller.spec.ts` — updated for user context params
-- `be/src/modules/tasks/tasks.service.spec.ts` — 27 new tests for approval/verification
-- `be/src/modules/activities/activities.service.spec.ts` — 12 new tests for approval
-- `fe/mobile/src/screens/field/__tests__/TaskDetailScreen.test.tsx` — action button tests
-- `fe/mobile/src/screens/field/__tests__/ActivityDetailScreen.test.tsx` — approval UI tests
+- `apps/be/src/modules/tasks/tasks.controller.spec.ts` — updated for user context params
+- `apps/be/src/modules/tasks/tasks.service.spec.ts` — 27 new tests for approval/verification
+- `apps/be/src/modules/activities/activities.service.spec.ts` — 12 new tests for approval
+- `apps/mobile/src/screens/field/__tests__/TaskDetailScreen.test.tsx` — action button tests
+- `apps/mobile/src/screens/field/__tests__/ActivityDetailScreen.test.tsx` — approval UI tests
 
 ### Test Results
 
@@ -360,13 +360,13 @@ const enabled = authStatus === 1 || authStatus === 2;
 ### Files Changed (6 total)
 
 **Mobile Source (2 files):**
-- `fe/mobile/src/screens/field/HomeScreen.tsx` — added `CLOCKABLE_ROLES` import, role-guarded FAB
-- `fe/mobile/src/services/notifications/fcmService.ts` — numeric literals for AuthorizationStatus
+- `apps/mobile/src/screens/field/HomeScreen.tsx` — added `CLOCKABLE_ROLES` import, role-guarded FAB
+- `apps/mobile/src/services/notifications/fcmService.ts` — numeric literals for AuthorizationStatus
 
 **Tests (4 files):**
-- `fe/mobile/src/screens/field/__tests__/HomeScreen.test.tsx` — added 4 new tests (2 suites)
-- `fe/mobile/src/components/modals/__tests__/ShiftDetailModal.test.tsx` — fixed 5 tests, added 4 new wording tests
-- `fe/mobile/src/hooks/__tests__/useActivityForm.test.ts` — NEW FILE, 15 tests
+- `apps/mobile/src/screens/field/__tests__/HomeScreen.test.tsx` — added 4 new tests (2 suites)
+- `apps/mobile/src/components/modals/__tests__/ShiftDetailModal.test.tsx` — fixed 5 tests, added 4 new wording tests
+- `apps/mobile/src/hooks/__tests__/useActivityForm.test.ts` — NEW FILE, 15 tests
 
 ### Test Results
 
@@ -426,12 +426,12 @@ Replaced simple chip-based toggle with comprehensive filtering system:
 
 **3. Backend Seeder Expansion**
 
-**Updated:** `be/src/database/seeds/seed-tasks.ts`
+**Updated:** `apps/be/src/database/seeds/seed-tasks.ts`
 - Added 4 linmas tasks (security/patrol duties): pending, assigned, in_progress, completed
 - Added 3 korlap tasks (coordination/supervision): assigned, in_progress (rayon-scoped), completed
 - **Total tasks:** 8 → 17 (8 satgas + 4 linmas + 3 korlap + 2 rayon-scoped)
 
-**Created:** `be/src/database/seeds/seed-activities.ts` (NEW FILE)
+**Created:** `apps/be/src/database/seeds/seed-activities.ts` (NEW FILE)
 - 20 comprehensive test activities distributed across 4 weeks (Feb 1-28, 2026)
 - **Distribution:** 12 satgas (60%), 5 linmas (25%), 3 korlap (15%)
 - **Real UUID constants** for reproducibility across database reseeds
@@ -449,7 +449,7 @@ Replaced simple chip-based toggle with comprehensive filtering system:
 - GPS coordinate precision handling
 - Role-based activity type filtering
 
-**Updated:** `be/src/services/api/tasksApi.ts`
+**Updated:** `apps/be/src/services/api/tasksApi.ts`
 - Added `from_date` and `to_date` parameters to `getMyTasks()` and `getTaggedTasks()`
 
 ### Documentation Updates
@@ -462,15 +462,15 @@ Replaced simple chip-based toggle with comprehensive filtering system:
 ### Files Changed (6 total)
 
 **Mobile (2 files):**
-- `fe/mobile/src/screens/field/TasksActivityScreen.tsx` - Enhanced filter UI (+70 lines), added state variables, updated fetch logic
-- `fe/mobile/src/screens/field/ActivityDetailScreen.tsx` - Fixed GPS coordinate display logic (3 lines)
+- `apps/mobile/src/screens/field/TasksActivityScreen.tsx` - Enhanced filter UI (+70 lines), added state variables, updated fetch logic
+- `apps/mobile/src/screens/field/ActivityDetailScreen.tsx` - Fixed GPS coordinate display logic (3 lines)
 
 **Mobile API (1 file):**
-- `fe/mobile/src/services/api/tasksApi.ts` - Added date filter parameters to getMyTasks/getTaggedTasks
+- `apps/mobile/src/services/api/tasksApi.ts` - Added date filter parameters to getMyTasks/getTaggedTasks
 
 **Backend Seeds (2 files):**
-- `be/src/database/seeds/seed-tasks.ts` - Added 7 new tasks for linmas/korlap roles (+150 lines)
-- `be/src/database/seeds/seed-activities.ts` - NEW FILE, 20 comprehensive test activities (+520 lines)
+- `apps/be/src/database/seeds/seed-tasks.ts` - Added 7 new tasks for linmas/korlap roles (+150 lines)
+- `apps/be/src/database/seeds/seed-activities.ts` - NEW FILE, 20 comprehensive test activities (+520 lines)
 
 **Documentation (3 files):**
 - `specs/phases/phase-2-c-client-feedback/mobile.md` - Added filter documentation
@@ -515,7 +515,7 @@ Replaced simple chip-based toggle with comprehensive filtering system:
    - Removed fixed 80px bottom padding for users without FAB access
 
 **Files Modified:**
-- `fe/mobile/src/screens/field/TasksActivityScreen.tsx` (+350 lines, -180 lines)
+- `apps/mobile/src/screens/field/TasksActivityScreen.tsx` (+350 lines, -180 lines)
 
 **Documentation Updated:**
 - `specs/phases/phase-2-c-client-feedback/mobile.md` - Enhanced filter documentation
@@ -571,21 +571,21 @@ Replaced simple chip-based toggle with comprehensive filtering system:
 ### Files Changed (13 total)
 
 **Backend (4 files):**
-- `be/src/modules/auth/auth.controller.ts` - Added Schedule/Area queries to /auth/me endpoint
-- `be/src/modules/auth/auth.module.ts` - Added Schedule & Area to TypeORM imports
-- `be/src/modules/auth/auth.controller.spec.ts` - Added repository mocks + 7 comprehensive test cases for area assignment
-- `be/src/database/seeds/seed-phase2.ts` - Fixed schedule seeding for all clockable roles, updated effective_date to 2026-02-01
+- `apps/be/src/modules/auth/auth.controller.ts` - Added Schedule/Area queries to /auth/me endpoint
+- `apps/be/src/modules/auth/auth.module.ts` - Added Schedule & Area to TypeORM imports
+- `apps/be/src/modules/auth/auth.controller.spec.ts` - Added repository mocks + 7 comprehensive test cases for area assignment
+- `apps/be/src/database/seeds/seed-phase2.ts` - Fixed schedule seeding for all clockable roles, updated effective_date to 2026-02-01
 
 **Mobile (9 files):**
-- `fe/mobile/src/navigation/MainNavigator.tsx` - Merged tabs, added Profile to korlap, changed "Beranda" → "Home" for consistency
-- `fe/mobile/src/types/navigation.types.ts` - Updated Activities/Tasks → TasksActivities unified type
-- `fe/mobile/src/screens/field/TasksActivityScreen.tsx` - Replaced 3-tab UI with filter dropdown, added 2 conditional FAB buttons
-- `fe/mobile/src/screens/field/__tests__/TasksActivityScreen.test.tsx` - Rewrote 4 tests for filter dropdown, added 5 FAB visibility tests (15 total)
-- `fe/mobile/src/navigation/__tests__/MainNavigator.test.tsx` - Updated 11 tests for merged navigation structure (24 total)
-- `fe/mobile/src/utils/mapUtils.ts` - Added Array.isArray() null safety check for boundary_polygon
-- `fe/mobile/src/screens/overtime/OvertimeListScreen.tsx` - Added variant="primary" to FAB button
-- `fe/mobile/src/screens/overtime/OvertimeDetailScreen.tsx` - Fixed rejection card styling with border tokens
-- `fe/mobile/src/screens/monitoring/__tests__/CLAUDE.md` - Documentation update
+- `apps/mobile/src/navigation/MainNavigator.tsx` - Merged tabs, added Profile to korlap, changed "Beranda" → "Home" for consistency
+- `apps/mobile/src/types/navigation.types.ts` - Updated Activities/Tasks → TasksActivities unified type
+- `apps/mobile/src/screens/field/TasksActivityScreen.tsx` - Replaced 3-tab UI with filter dropdown, added 2 conditional FAB buttons
+- `apps/mobile/src/screens/field/__tests__/TasksActivityScreen.test.tsx` - Rewrote 4 tests for filter dropdown, added 5 FAB visibility tests (15 total)
+- `apps/mobile/src/navigation/__tests__/MainNavigator.test.tsx` - Updated 11 tests for merged navigation structure (24 total)
+- `apps/mobile/src/utils/mapUtils.ts` - Added Array.isArray() null safety check for boundary_polygon
+- `apps/mobile/src/screens/overtime/OvertimeListScreen.tsx` - Added variant="primary" to FAB button
+- `apps/mobile/src/screens/overtime/OvertimeDetailScreen.tsx` - Fixed rejection card styling with border tokens
+- `apps/mobile/src/screens/monitoring/__tests__/CLAUDE.md` - Documentation update
 
 **Git Stats:** +356 insertions, -118 deletions across 13 files (including test updates)
 
@@ -728,7 +728,7 @@ Each increment gets its own plan-confirm-implement cycle.
 | 2026-02-18 | Claude | **HEADER SYSTEM REDESIGN COMPLETE (Phase 2C)**: Unified 3-column FieldHomeHeader across all screens. All headerLeft back buttons removed from MainNavigator — FieldHomeHeader owns all 3 columns. Back button 44×44 (WCAG), leaf icon 40×40 (main tabs), spacing 40+8=44+4=48px (center text x-position identical). maxWidth:9999 override for RN title container computed cap. Code review applied: ClockInOut targeted catch, ShiftHistory __DEV__ guards, ActivityDetailScreen typed hooks, TaskCompleteScreen/TaskDetailScreen fixed nav types. Documented in specs/mobile/screens.md + specs/phases/phase-2-c-client-feedback/mobile.md. 3,075 tests passing. |
 | 2026-02-18 | Claude | **MOBILE UX FIXES & TEST UPDATES**: Added role guard (CLOCKABLE_ROLES) to HomeScreen Clock In/Out FAB — top_management/admin_system/superadmin cannot see it (also unreachable via navigation). Fixed ShiftDetailModal tests: VALID→Di Dalam Area, TIDAK VALID→Di Luar Area, Validasi Lokasi→Validasi Lokasi Clock In, Pusat Area row→/Pusat:/ subtext. Added 4 new Phase 2C wording tests to ShiftDetailModal. Added 2 new HomeScreen test suites (FAB visibility + useFocusEffect). Created useActivityForm.test.ts with 15 tests. FCM crash fix: replaced FirebaseMessagingTypes.AuthorizationStatus enum access with numeric literals (1, 2). |
 | 2026-02-17 | Claude | **COVERAGE FIXES (Final)**: BE: Excluded seed-*.ts + config/firebase.config.ts from coverage collection; added 4 supervisor.service tests for `area_id` branch coverage → 961 tests passing, 95.64% stmts / 87.48% branches ✅ (was 76.55%/79.99%⚠️). Web: Excluded components/maps/** (Google Maps WebGL — not testable in jsdom); added hook-level tests for `activity-types.ts` and `overtime.ts` (were at 0%); unskipped `PageLoadingIndicator` tests + added 9 correct timer-based tests; created `AreaForm.test.tsx` (88.46% coverage with mocked PolygonEditor) → 1,213 tests / 60 suites, 1,161 passing (52 skipped), 96.46% stmts / 91.01% branches ✅. Both BE and Web now fully pass 80% thresholds on all 4 metrics. |
-| 2026-02-17 | Claude | **PACKAGE AUDIT & TEST VERIFICATION (Evening)**: npm audit fix applied to `be/` (qs package 1 low vuln → 0). Web: 0 vulnerabilities confirmed. Tests: BE 957/957 ✅, Mobile 3,021/3,028 ✅, Web 1,122/1,174 ✅. Known BE coverage gaps documented (branches 76.55%, lines 79.99% — pre-existing). specs/COMPLETION_STATUS.md updated: Web 0% → 100%, test counts updated, quality metrics corrected. 2 Dependabot PRs pending (#27 be patches, #28 web patches). |
+| 2026-02-17 | Claude | **PACKAGE AUDIT & TEST VERIFICATION (Evening)**: npm audit fix applied to `apps/be/` (qs package 1 low vuln → 0). Web: 0 vulnerabilities confirmed. Tests: BE 957/957 ✅, Mobile 3,021/3,028 ✅, Web 1,122/1,174 ✅. Known BE coverage gaps documented (branches 76.55%, lines 79.99% — pre-existing). specs/COMPLETION_STATUS.md updated: Web 0% → 100%, test counts updated, quality metrics corrected. 2 Dependabot PRs pending (#27 be patches, #28 web patches). |
 | 2026-02-17 | Claude | **PRE-MANUAL-TESTING REVIEW**: Fixed 2 failing auth controller tests (missing `area_type: null` and `relations: ['areaType']` in test expectations). Verified seeder data quality: all 20 activity types use lowercase roles, korlap has area_id, flat overtime structure correct, schedule dates valid (2026-02-01). Console.warn audit passed (no console.log in production code). Web frontend verified as fully Phase 2C compliant: 8-role system, activities/schedules/overtime/tasks pages, monitoring with users_online terminology, role-based access controls, centralized constants. Updated STATUS.md to reflect web completion (was incorrectly marked as "Not Started"). Final test counts: Backend 957/957 passing (54 suites), Mobile 2,926/2,933 passing (7 skipped, 119 suites). **ALL COMPONENTS READY FOR MANUAL TESTING.** |
 | 2026-02-15 | Claude | **MOBILE TERMINOLOGY CLEANUP COMPLETE**: Removed all hardcoded legacy role references (worker, supervisor, admin) from production code and tests. LoginScreen now uses `isClockableRole()` helper for area fetch and shift load (lines 96, 138). ProfileHeader uses `ROLE_LABELS` lookup for all 8 roles dynamically. Updated 12 test files (30+ instances): worker→satgas, supervisor→korlap, admin→admin_system. Fixed LoginScreen test to use `top_management` for non-clockable role test (korlap IS clockable in Phase 2C). Documentation comments updated in SettingsScreen and MainNavigator. All 59 affected tests passing (25/25 LoginScreen, all authSlice, all SettingsScreen). Commit: be21d3e. Refs: ADR-009 (8-role system), ADR-010 (English-only code). |
 | 2026-02-15 | Claude | **COVERAGE IMPROVEMENT**: Added MainNavigator.test.tsx (15 tests for TAB_CONFIGS validation) and useProfileLogout.test.tsx (1 test for hook interface). Exported TAB_CONFIGS from MainNavigator.tsx for testing. Final metrics: 2,342 tests/103 suites, 2,334 passing (99.66%), 1 flaky (TasksActivityScreen timing), 78.67% coverage (1.33% below 80% target). Coverage gap primarily in complex hooks (useProfileLogout async logic), navigation rendering (RootNavigator), and form validation screens (ActivitySubmissionScreen 50%, OvertimeSubmitScreen 42%). All core business logic >90% covered. |
@@ -773,7 +773,7 @@ Each increment gets its own plan-confirm-implement cycle.
 - **ScrollView**: Gets `flex: 1` so content scrolls while buttons stay fixed
 
 **4. New ActivityFilterModal + Tambah Aktivitas Disabled State**
-- **New file**: `fe/mobile/src/components/modals/ActivityFilterModal.tsx`
+- **New file**: `apps/mobile/src/components/modals/ActivityFilterModal.tsx`
   - Filters: date range (single row), Tipe Aktivitas (NBSelect), Area (NBSelect)
   - Loads data from `getMyActivityTypes()` and `getAreas()` APIs
   - Action buttons fixed outside ScrollView
@@ -805,27 +805,27 @@ Each increment gets its own plan-confirm-implement cycle.
 ### Files Changed
 
 **Created (2 files):**
-- `fe/mobile/src/components/modals/ActivityFilterModal.tsx` — new activity filter bottom sheet
-- `fe/mobile/__mocks__/@react-native-community/datetimepicker.js` — global Jest mock for date picker
+- `apps/mobile/src/components/modals/ActivityFilterModal.tsx` — new activity filter bottom sheet
+- `apps/mobile/__mocks__/@react-native-community/datetimepicker.js` — global Jest mock for date picker
 
 **Modified (10 source files):**
-- `fe/mobile/src/types/navigation.types.ts` — `initialTab` param on `TasksActivities`
-- `fe/mobile/src/screens/field/TasksActivityScreen.tsx` — title, tab color, activity filter, FAB disabled
-- `fe/mobile/src/components/modals/TaskFilterModal.tsx` — date row, fixed buttons, direct import
-- `fe/mobile/src/screens/field/ActivitySubmissionScreen.tsx` — fixed submit button, back nav
-- `fe/mobile/src/screens/field/ActivityDetailScreen.tsx` — back nav with `initialTab`
-- `fe/mobile/src/screens/field/TaskDetailScreen.tsx` — back nav with `initialTab`
-- `fe/mobile/src/screens/tasks/TaskCreateScreen.tsx` — back nav with `initialTab`
-- `fe/mobile/src/services/api/activitiesApi.ts` — `getMyActivities` accepts `ActivitiesFilter`
-- `fe/mobile/src/components/modals/index.ts` — export `ActivityFilterModal`
-- `fe/mobile/src/screens/field/HomeScreen.tsx` — paddingBottom 80 → 88
+- `apps/mobile/src/types/navigation.types.ts` — `initialTab` param on `TasksActivities`
+- `apps/mobile/src/screens/field/TasksActivityScreen.tsx` — title, tab color, activity filter, FAB disabled
+- `apps/mobile/src/components/modals/TaskFilterModal.tsx` — date row, fixed buttons, direct import
+- `apps/mobile/src/screens/field/ActivitySubmissionScreen.tsx` — fixed submit button, back nav
+- `apps/mobile/src/screens/field/ActivityDetailScreen.tsx` — back nav with `initialTab`
+- `apps/mobile/src/screens/field/TaskDetailScreen.tsx` — back nav with `initialTab`
+- `apps/mobile/src/screens/tasks/TaskCreateScreen.tsx` — back nav with `initialTab`
+- `apps/mobile/src/services/api/activitiesApi.ts` — `getMyActivities` accepts `ActivitiesFilter`
+- `apps/mobile/src/components/modals/index.ts` — export `ActivityFilterModal`
+- `apps/mobile/src/screens/field/HomeScreen.tsx` — paddingBottom 80 → 88
 
 **Test files (4 updated + 1 created):**
-- `fe/mobile/src/components/modals/__tests__/ActivityFilterModal.test.tsx` — NEW, 12 tests
-- `fe/mobile/src/screens/field/__tests__/ActivityDetailScreen.test.tsx` — updated navigate args
-- `fe/mobile/src/screens/field/__tests__/TaskDetailScreen.test.tsx` — updated to `navigate` (was `goBack`)
-- `fe/mobile/src/screens/field/__tests__/TasksActivityScreen.test.tsx` — updated 2 tests for new behaviors
-- `fe/mobile/src/components/modals/__tests__/TaskFilterModal.test.tsx` — passes unchanged
+- `apps/mobile/src/components/modals/__tests__/ActivityFilterModal.test.tsx` — NEW, 12 tests
+- `apps/mobile/src/screens/field/__tests__/ActivityDetailScreen.test.tsx` — updated navigate args
+- `apps/mobile/src/screens/field/__tests__/TaskDetailScreen.test.tsx` — updated to `navigate` (was `goBack`)
+- `apps/mobile/src/screens/field/__tests__/TasksActivityScreen.test.tsx` — updated 2 tests for new behaviors
+- `apps/mobile/src/components/modals/__tests__/TaskFilterModal.test.tsx` — passes unchanged
 
 ### Test Results
 
@@ -851,7 +851,7 @@ Each increment gets its own plan-confirm-implement cycle.
 - Separator: `marginLeft: 20` to avoid collision with left-border accent zone
 - Disabled: `opacity: 0.6`, thin border (1px), no shadow
 
-**Changes to `fe/mobile/src/components/nb/NBSelect.tsx`:**
+**Changes to `apps/mobile/src/components/nb/NBSelect.tsx`:**
 - Animated chevron rotation (`useRef(Animated.Value)`, `useNativeDriver: true`) 0° → 180° when open
 - Shadow switches: `nbShadows.md` → `nbShadows.active` → `nbShadows.none` (default/open/disabled)
 - Trigger: `minHeight: 48`, `nbBorders.base` (2px) border, `fontWeight: '600'` label

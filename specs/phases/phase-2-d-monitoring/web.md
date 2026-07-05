@@ -39,7 +39,7 @@
 
 ## A. Monitoring Page Layout
 
-**File:** `fe/web/src/app/(dashboard)/monitoring/page.tsx`
+**File:** `apps/web/src/app/(dashboard)/monitoring/page.tsx`
 
 ### Split Layout (Desktop)
 
@@ -93,7 +93,7 @@
 
 ## B. MonitoringMap Component
 
-**File:** `fe/web/src/components/monitoring/MonitoringMap.tsx`
+**File:** `apps/web/src/components/monitoring/MonitoringMap.tsx`
 
 ### Features
 
@@ -198,7 +198,7 @@ interface MonitoringMapProps {
 
 ## C. MonitoringSidePanel Component
 
-**File:** `fe/web/src/components/monitoring/MonitoringSidePanel.tsx`
+**File:** `apps/web/src/components/monitoring/MonitoringSidePanel.tsx`
 
 ### Sub-Sections
 
@@ -262,7 +262,7 @@ Day-type badge: "Hari Kerja" / "Akhir Pekan" / "Hari Libur" shown at top of staf
 
 ## D. UserDetailPanel Component
 
-**File:** `fe/web/src/components/monitoring/UserDetailPanel.tsx`
+**File:** `apps/web/src/components/monitoring/UserDetailPanel.tsx`
 
 Push navigation within the side panel (replaces user list with detail view).
 
@@ -318,7 +318,7 @@ Fetches from `GET /monitoring/users/:userId/day-summary`.
 
 ## E. LocationTimeline Component
 
-**File:** `fe/web/src/components/monitoring/LocationTimeline.tsx`
+**File:** `apps/web/src/components/monitoring/LocationTimeline.tsx`
 
 Vertical timeline showing GPS points for a user on a specific date.
 
@@ -414,7 +414,7 @@ Always visible at top of LocationTimeline:
 
 ## F. API Hooks (TanStack Query)
 
-**File:** `fe/web/src/lib/api/monitoring.ts`
+**File:** `apps/web/src/lib/api/monitoring.ts`
 
 ### Enhanced Existing Hooks
 
@@ -498,7 +498,7 @@ export function useReassignWorker() {
 
 ## G. Type Updates
 
-**File:** `fe/web/src/lib/types.ts`
+**File:** `apps/web/src/lib/types.ts`
 
 ### New/Updated Interfaces
 
@@ -703,7 +703,7 @@ export interface MonitoringFilters {
 
 ## G2. Web Constants File
 
-**File:** `fe/web/src/lib/constants/monitoring.ts`
+**File:** `apps/web/src/lib/constants/monitoring.ts`
 
 Centralizes all monitoring-related constants used across web components:
 
@@ -798,7 +798,7 @@ useEffect(() => {
 
 ## J. Monitoring Config Page (Admin)
 
-**File:** `fe/web/src/app/(dashboard)/monitoring/config/page.tsx`
+**File:** `apps/web/src/app/(dashboard)/monitoring/config/page.tsx`
 
 **Access:** `admin_system`, `superadmin` only
 
@@ -835,7 +835,7 @@ const ROUTE_ACCESS: Record<string, string[]> = {
 ## L. File Structure (Phase 2D Web Changes)
 
 ```
-fe/web/src/
+apps/web/src/
   app/(dashboard)/monitoring/
     page.tsx                                 MODIFIED (major rewrite)
     config/
@@ -913,7 +913,7 @@ fe/web/src/
 
 ### P1. ReassignWorkerModal Component
 
-**File:** `fe/web/src/components/monitoring/ReassignWorkerModal.tsx`
+**File:** `apps/web/src/components/monitoring/ReassignWorkerModal.tsx`
 
 Dialog modal for reassigning workers from overstaffed to understaffed areas.
 

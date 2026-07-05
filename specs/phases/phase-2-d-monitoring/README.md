@@ -249,15 +249,15 @@ Post-implementation review identified 9 gaps between the original brief and the 
 
 | # | Sub-Item | Key Files |
 |---|----------|-----------|
-| 10a | Day-type filtering in staffing queries | `be/src/modules/monitoring/monitoring.service.ts`, `be/src/modules/schedules/schedules.service.ts` |
-| 10b | Rayon convex-hull boundary computation | `be/src/modules/monitoring/utils/convex-hull.util.ts`, `be/src/modules/rayons/rayons.service.ts` |
-| 10c | Map auto-focus on filter selection | `fe/web/src/components/monitoring/MonitoringMap.tsx`, `fe/mobile/src/screens/supervisor/MapDashboardScreen.tsx` |
-| 10d | Worker reassignment modal and endpoint | `be/src/modules/monitoring/monitoring.controller.ts` (`POST /monitoring/reassign`), `fe/web/src/components/monitoring/ReassignWorkerModal.tsx` |
-| 10e | Location history UX (clickable points, date picker, shift filter) | `fe/web/src/components/monitoring/LocationTimeline.tsx`, `fe/mobile/src/components/monitoring/LocationTrail.tsx` |
-| 10f | Zoom-dependent marker labels (role - name) | `fe/mobile/src/components/monitoring/UserMarker.tsx`, `fe/web/src/components/monitoring/MarkerLayer.tsx` |
-| 10g | Enhanced filter modal with staffing summary | `fe/mobile/src/components/monitoring/MonitoringFilterModal.tsx`, `fe/web/src/components/monitoring/MonitoringSidePanel.tsx` |
-| 10h | Standardized icon/color system | `fe/mobile/src/constants/monitoringColors.ts`, `fe/web/src/lib/monitoring-colors.ts`, `specs/phases/phase-2-d-monitoring/ui-ux.md` |
-| 10i | Operational Health Score computation | `be/src/modules/monitoring/monitoring.service.ts` (`getStaffingSummary`), `fe/web/src/components/monitoring/HealthScoreBadge.tsx` |
+| 10a | Day-type filtering in staffing queries | `apps/be/src/modules/monitoring/monitoring.service.ts`, `apps/be/src/modules/schedules/schedules.service.ts` |
+| 10b | Rayon convex-hull boundary computation | `apps/be/src/modules/monitoring/utils/convex-hull.util.ts`, `apps/be/src/modules/rayons/rayons.service.ts` |
+| 10c | Map auto-focus on filter selection | `apps/web/src/components/monitoring/MonitoringMap.tsx`, `apps/mobile/src/screens/supervisor/MapDashboardScreen.tsx` |
+| 10d | Worker reassignment modal and endpoint | `apps/be/src/modules/monitoring/monitoring.controller.ts` (`POST /monitoring/reassign`), `apps/web/src/components/monitoring/ReassignWorkerModal.tsx` |
+| 10e | Location history UX (clickable points, date picker, shift filter) | `apps/web/src/components/monitoring/LocationTimeline.tsx`, `apps/mobile/src/components/monitoring/LocationTrail.tsx` |
+| 10f | Zoom-dependent marker labels (role - name) | `apps/mobile/src/components/monitoring/UserMarker.tsx`, `apps/web/src/components/monitoring/MarkerLayer.tsx` |
+| 10g | Enhanced filter modal with staffing summary | `apps/mobile/src/components/monitoring/MonitoringFilterModal.tsx`, `apps/web/src/components/monitoring/MonitoringSidePanel.tsx` |
+| 10h | Standardized icon/color system | `apps/mobile/src/constants/monitoringColors.ts`, `apps/web/src/lib/monitoring-colors.ts`, `specs/phases/phase-2-d-monitoring/ui-ux.md` |
+| 10i | Operational Health Score computation | `apps/be/src/modules/monitoring/monitoring.service.ts` (`getStaffingSummary`), `apps/web/src/components/monitoring/HealthScoreBadge.tsx` |
 
 ### 2D-11: Home Screen Location Card
 
@@ -265,8 +265,8 @@ A new `LocationStatusCard` component on the worker HomeScreen that provides at-a
 
 **Components:**
 
-- **`LocationStatusCard`** (`fe/mobile/src/components/home/LocationStatusCard.tsx`) -- Displays current GPS coordinates, accuracy in meters, area boundary status (inside/outside/unknown), and last sync timestamp. Uses Neo Brutalism card styling consistent with other HomeScreen cards.
-- **`useHomeLocation` hook** (`fe/mobile/src/hooks/useHomeLocation.ts`) -- Manages location state for the HomeScreen. Subscribes to the location service's last known position, computes whether the user is within their assigned area boundary, and exposes a `refreshLocation()` method.
+- **`LocationStatusCard`** (`apps/mobile/src/components/home/LocationStatusCard.tsx`) -- Displays current GPS coordinates, accuracy in meters, area boundary status (inside/outside/unknown), and last sync timestamp. Uses Neo Brutalism card styling consistent with other HomeScreen cards.
+- **`useHomeLocation` hook** (`apps/mobile/src/hooks/useHomeLocation.ts`) -- Manages location state for the HomeScreen. Subscribes to the location service's last known position, computes whether the user is within their assigned area boundary, and exposes a `refreshLocation()` method.
 
 **Behavior:**
 

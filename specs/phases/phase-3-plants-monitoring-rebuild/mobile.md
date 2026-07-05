@@ -56,8 +56,8 @@ These ship green-field on tokens in their own sub-phase and must NOT be touched 
 
 ### Acceptance criteria
 
-- [ ] `git grep -nE '#[0-9a-fA-F]{6}' fe/mobile/src` returns zero hits outside `generated/` and `scripts/hex-allowlist.txt`.
-- [ ] `git grep -n 'shadowRadius' fe/mobile/src` returns zero literal numbers > 0 outside `generated/`.
+- [ ] `git grep -nE '#[0-9a-fA-F]{6}' apps/mobile/src` returns zero hits outside `generated/` and `scripts/hex-allowlist.txt`.
+- [ ] `git grep -n 'shadowRadius' apps/mobile/src` returns zero literal numbers > 0 outside `generated/`.
 - [ ] Jest snapshots updated for every swept screen; CI green.
 - [ ] Every status indicator across swept screens has icon + text pair.
 - [ ] Visual diff (pre vs post) shows hard-edge shadows and brand fonts on every screen.
@@ -185,7 +185,7 @@ React components react via selectors; map re-renders only dirty cluster/polygon 
 
 ## Feature Flag
 
-`fe/mobile/src/config/featureFlags.ts`:
+`apps/mobile/src/config/featureFlags.ts`:
 
 ```ts
 export const featureFlags = {

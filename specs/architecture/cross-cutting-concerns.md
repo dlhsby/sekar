@@ -35,7 +35,7 @@ This document defines cross-cutting concerns that span all modules in the SEKAR 
 ### Logging Standards
 
 ```typescript
-// File: be/src/common/interceptors/logging.interceptor.ts
+// File: apps/be/src/common/interceptors/logging.interceptor.ts
 import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -137,7 +137,7 @@ logger.log({ ...logEntry, body: redactedBody });
 ### Standardized Error Response
 
 ```typescript
-// File: be/src/common/dto/api-error.dto.ts
+// File: apps/be/src/common/dto/api-error.dto.ts
 export class ApiErrorResponse {
   statusCode: number;
   code: string;  // From ErrorCode enum
@@ -152,7 +152,7 @@ export class ApiErrorResponse {
 ### Global Exception Filter
 
 ```typescript
-// File: be/src/common/filters/http-exception.filter.ts
+// File: apps/be/src/common/filters/http-exception.filter.ts
 import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
 
 @Catch()
@@ -188,7 +188,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 See `specs/testing/error-codes.md` for complete list. All errors must use standardized codes:
 
 ```typescript
-// File: be/src/common/enums/error-codes.enum.ts
+// File: apps/be/src/common/enums/error-codes.enum.ts
 export enum ErrorCode {
   // Authentication (1000-1999)
   INVALID_CREDENTIALS = 'AUTH_1001',
@@ -211,7 +211,7 @@ export enum ErrorCode {
 ### Application Metrics
 
 ```typescript
-// File: be/src/common/interceptors/metrics.interceptor.ts
+// File: apps/be/src/common/interceptors/metrics.interceptor.ts
 import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -277,7 +277,7 @@ export class MetricsInterceptor implements NestInterceptor {
 ### Prometheus Endpoint
 
 ```typescript
-// File: be/src/modules/metrics/metrics.controller.ts
+// File: apps/be/src/modules/metrics/metrics.controller.ts
 import { Controller, Get } from '@nestjs/common';
 import { register } from 'prom-client';
 
@@ -297,7 +297,7 @@ export class MetricsController {
 ### Correlation ID Generation
 
 ```typescript
-// File: be/src/common/middleware/correlation-id.middleware.ts
+// File: apps/be/src/common/middleware/correlation-id.middleware.ts
 import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
@@ -352,7 +352,7 @@ apiClient.defaults.headers.common['X-Correlation-ID'] = correlationId;
 ### Health Check Endpoint
 
 ```typescript
-// File: be/src/modules/health/health.controller.ts
+// File: apps/be/src/modules/health/health.controller.ts
 import { Controller, Get } from '@nestjs/common';
 import {
   HealthCheckService,
@@ -437,7 +437,7 @@ readiness() {
 ### Environment-Based Config
 
 ```typescript
-// File: be/src/config/configuration.ts
+// File: apps/be/src/config/configuration.ts
 export default () => ({
   port: parseInt(process.env.PORT, 10) || 3000,
   database: {
@@ -466,7 +466,7 @@ export default () => ({
 ### Validation
 
 ```typescript
-// File: be/src/config/env.validation.ts
+// File: apps/be/src/config/env.validation.ts
 import { plainToClass } from 'class-transformer';
 import { IsString, IsNumber, validateSync } from 'class-validator';
 

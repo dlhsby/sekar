@@ -4,8 +4,8 @@
 **Version:** Neo Brutalism 2.1 (generated tokens from Phase 3 M1-R sub-phase 3-R2)
 **Single source of truth:** [`specs/ui-ux/tokens.json`](../ui-ux/tokens.json) (validated by [`tokens.schema.json`](../ui-ux/tokens.schema.json))
 **Canonical registry:** [`specs/ui-ux/design-tokens.md`](../ui-ux/design-tokens.md)
-**Generated consumer:** `fe/web/src/app/generated/tokens.css` (emitted by `scripts/build-tokens.ts` — never hand-edit)
-**Imported by:** `fe/web/src/app/globals.css` via `@import './generated/tokens.css'` at the top, before Tailwind layers
+**Generated consumer:** `apps/web/src/app/generated/tokens.css` (emitted by `scripts/build-tokens.ts` — never hand-edit)
+**Imported by:** `apps/web/src/app/globals.css` via `@import './generated/tokens.css'` at the top, before Tailwind layers
 **Related ADRs:** [ADR-036](../architecture/decisions/ADR-036-design-tokens-single-source.md) (single source), [ADR-037](../architecture/decisions/ADR-037-web-pwa.md) (PWA)
 
 > **What this file is.** A **web-platform lens** on the generated token shape — shows how each Layer-1 token from `tokens.json` surfaces inside Tailwind config, CSS custom properties, shadcn/ui primitives, and Next.js server/client components. Values here MUST match `tokens.json`; drift is caught by CI (`npm run tokens:verify`).
@@ -21,11 +21,11 @@ specs/ui-ux/tokens.json
        │
        ▼ scripts/build-tokens.ts --target web
        │
-fe/web/src/app/generated/tokens.css            ← git-tracked, CI-verified
+apps/web/src/app/generated/tokens.css            ← git-tracked, CI-verified
        │
        ▼ @import
        │
-fe/web/src/app/globals.css                     ← handwritten shell: @tailwind layers, global resets
+apps/web/src/app/globals.css                     ← handwritten shell: @tailwind layers, global resets
        │
        ▼ Next.js CSS pipeline
        │
@@ -47,7 +47,7 @@ All layers are reachable from both Server Components (they compile to static CSS
 Each `shadow.*` token emits a CSS custom property + a paired Tailwind utility:
 
 ```css
-/* fe/web/src/app/generated/tokens.css */
+/* apps/web/src/app/generated/tokens.css */
 :root {
   --shadow-nb-xs:   2px 2px 0 var(--color-nb-border);
   --shadow-nb-sm:   4px 4px 0 var(--color-nb-border);
@@ -227,7 +227,7 @@ Web prefers the 4/8/16/24/32 scale; the 48/64 values are for section-level verti
 Fonts load once at the root layout via `next/font/google`:
 
 ```tsx
-// fe/web/src/app/layout.tsx
+// apps/web/src/app/layout.tsx
 import { Space_Grotesk, Inter, JetBrains_Mono } from 'next/font/google';
 
 const displayFont = Space_Grotesk({ subsets: ['latin', 'latin-ext'], weight: ['600','700','800'], variable: '--font-display' });
@@ -299,7 +299,7 @@ Tailwind consumes them as `screens.tablet` / `screens.desktop` (mobile is the de
 ## Tailwind config integration
 
 ```ts
-// fe/web/tailwind.config.ts (Phase 3 M1-R sub-phase 3-R2)
+// apps/web/tailwind.config.ts (Phase 3 M1-R sub-phase 3-R2)
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
@@ -416,7 +416,7 @@ Inline styles with `var(--*)` are allowed as an escape hatch for dynamic values 
 ## How to change a token
 
 1. Edit [`specs/ui-ux/tokens.json`](../ui-ux/tokens.json).
-2. Run `npm run tokens:build` from repo root → regenerates `fe/web/src/app/generated/tokens.css` (and mobile side too).
+2. Run `npm run tokens:build` from repo root → regenerates `apps/web/src/app/generated/tokens.css` (and mobile side too).
 3. Run `npm run tokens:verify` — asserts generator output matches committed files.
 4. If Tailwind utility names changed (rare), also update `tailwind.config.ts`.
 5. Commit generated file + any config updates in the same PR.
@@ -425,7 +425,7 @@ CI steps (`.github/workflows/ci.yml`) enforce:
 
 - `tokens.json` validates against `tokens.schema.json`.
 - Generator run matches committed files (byte-for-byte diff).
-- ESLint rules on `fe/web/src/**/*.{ts,tsx,css}`:
+- ESLint rules on `apps/web/src/**/*.{ts,tsx,css}`:
   - `no-inline-hex-colors` (excludes `src/app/generated/**`)
   - `no-tailwind-shadow-classes-with-blur` (forbids raw `shadow-sm/md/lg/xl/2xl`)
   - `prefer-nb-shadow-utility`

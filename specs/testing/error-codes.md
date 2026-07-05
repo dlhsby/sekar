@@ -26,7 +26,7 @@ This document describes the comprehensive testing strategy for the SEKAR system'
 
 #### 1. ApiErrorCode Enum
 ```typescript
-// be/src/common/enums/api-error-codes.enum.ts
+// apps/be/src/common/enums/api-error-codes.enum.ts
 export enum ApiErrorCode {
   // Authentication (5 codes)
   AUTH_INVALID_CREDENTIALS = 'AUTH_INVALID_CREDENTIALS',
@@ -76,7 +76,7 @@ export enum ApiErrorCode {
 
 #### 2. ApiException Class
 ```typescript
-// be/src/common/exceptions/api.exception.ts
+// apps/be/src/common/exceptions/api.exception.ts
 export class ApiException extends HttpException {
   constructor(
     statusCode: number,
@@ -99,7 +99,7 @@ export class ApiException extends HttpException {
 
 #### 3. ApiExceptionHelpers Utility
 ```typescript
-// be/src/common/exceptions/api.exception.ts
+// apps/be/src/common/exceptions/api.exception.ts
 export class ApiExceptionHelpers {
   static badRequest(code: ApiErrorCode, message: string, details?: any): ApiException {
     return new ApiException(HttpStatus.BAD_REQUEST, code, message, details);
@@ -134,7 +134,7 @@ export class ApiExceptionHelpers {
 
 #### 4. HttpExceptionFilter (Global Handler)
 ```typescript
-// be/src/common/filters/http-exception.filter.ts
+// apps/be/src/common/filters/http-exception.filter.ts
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
@@ -223,7 +223,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
 ### 1. ApiException Unit Tests
 
-**File:** `be/src/common/exceptions/api.exception.spec.ts`
+**File:** `apps/be/src/common/exceptions/api.exception.spec.ts`
 **Test Count:** 17 tests
 
 #### Test Categories
@@ -437,7 +437,7 @@ describe('ApiExceptionHelpers - Real World Scenarios', () => {
 
 ### 3. HttpExceptionFilter Unit Tests
 
-**File:** `be/src/common/filters/http-exception.filter.spec.ts`
+**File:** `apps/be/src/common/filters/http-exception.filter.spec.ts`
 **Test Count:** 10 tests
 
 #### Test Categories
@@ -553,7 +553,7 @@ describe('HttpExceptionFilter', () => {
 
 ### 1. Shifts Service Error Code Tests
 
-**File:** `be/src/modules/shifts/shifts.service.spec.ts`
+**File:** `apps/be/src/modules/shifts/shifts.service.spec.ts`
 **Error Codes:** 5 codes tested
 
 #### SHIFT_ALREADY_ACTIVE
@@ -663,7 +663,7 @@ it('should throw SHIFT_NOT_ACTIVE when trying to clock-out without active shift'
 
 ### 2. Auth Service Error Code Tests
 
-**File:** `be/src/modules/auth/auth.service.spec.ts`
+**File:** `apps/be/src/modules/auth/auth.service.spec.ts`
 **Error Codes:** 3 codes tested
 
 #### AUTH_INVALID_CREDENTIALS
@@ -729,7 +729,7 @@ it('should throw AUTH_USER_NOT_FOUND in JWT validation', async () => {
 
 ### 3. Reports Service Error Code Tests
 
-**File:** `be/src/modules/reports/reports.service.spec.ts`
+**File:** `apps/be/src/modules/reports/reports.service.spec.ts`
 **Error Codes:** 5 codes tested
 
 #### REPORT_SHIFT_NOT_FOUND
@@ -835,7 +835,7 @@ it('should throw REPORT_NOT_FOUND when report does not exist', async () => {
 
 ### 1. Error Codes E2E Tests
 
-**File:** `be/test/error-codes.e2e-spec.ts`
+**File:** `apps/be/test/error-codes.e2e-spec.ts`
 **Test Count:** 14+ scenarios
 
 #### Shift Error Codes
@@ -1007,7 +1007,7 @@ describe('General Error Codes (e2e)', () => {
 
 ### 2. API Versioning E2E Tests
 
-**File:** `be/test/api-versioning.e2e-spec.ts`
+**File:** `apps/be/test/api-versioning.e2e-spec.ts`
 **Test Count:** 10+ scenarios
 
 ```typescript
@@ -1266,9 +1266,9 @@ npm run lint
 
 ## Related Documentation
 
-- **Error Codes Enum:** `be/src/common/enums/api-error-codes.enum.ts`
-- **ApiException Class:** `be/src/common/exceptions/api.exception.ts`
-- **HttpExceptionFilter:** `be/src/common/filters/http-exception.filter.ts`
+- **Error Codes Enum:** `apps/be/src/common/enums/api-error-codes.enum.ts`
+- **ApiException Class:** `apps/be/src/common/exceptions/api.exception.ts`
+- **HttpExceptionFilter:** `apps/be/src/common/filters/http-exception.filter.ts`
 - **API Documentation:** `specs/api/contracts.md`
 - **Testing Guidelines:** `.cursor/rules/003-unit-testing.mdc`
 - **CLAUDE.md:** Project standards and conventions

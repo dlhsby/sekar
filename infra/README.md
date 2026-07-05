@@ -24,7 +24,7 @@ docker-compose down
 - **Redis:** localhost:**16379** (container internal port is 6379; host
   port is offset by `+10000` to avoid colliding with system Redis or
   another project. Override via `REDIS_PORT` in `infra/.env`. The
-  backend's `REDIS_URL` in `be/.env` must match this host port.)
+  backend's `REDIS_URL` in `apps/be/.env` must match this host port.)
 
 ## Documentation
 

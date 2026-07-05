@@ -99,20 +99,20 @@ Capture any 4xx/5xx + UI bugs as a checklist; fix the breaking ones inline; defe
 | `specs/architecture/decisions/ADR-038-pruning-workflow-entry-points.md` | A | NEW — 5 entry points, activity tagging, delegation audit |
 | `specs/architecture/decisions/ADR-031..ADR-035` (existing) | A | Amendment notes |
 | `specs/phases/phase-3-plants-monitoring-rebuild/{backend,mobile,database}.md` | A | New entity tables + endpoints + screens documented |
-| `be/src/database/migrations/{timestamp}-week-booking-and-tagging.ts` | B | Adds `expected_year`, `expected_iso_week`, `activity_tags`, `task_delegations` |
-| `be/src/modules/pruning-requests/dto/create-pruning-request.dto.ts` | B | Add week fields |
-| `be/src/modules/pruning-requests/pruning-requests.service.ts` | B | `create()` + `assignToTask()` logic |
-| `be/src/modules/activities/entities/activity-tag.entity.ts` | B | NEW |
-| `be/src/modules/activities/dto/create-activity.dto.ts` | B | `tagged_user_ids?` |
-| `be/src/modules/activities/activities.service.ts` | B | Tag insert + `?involving_me=true` query |
-| `be/src/modules/tasks/entities/task-delegation.entity.ts` | B | NEW |
-| `be/src/modules/tasks/tasks.service.ts` | B | Log delegation on assign |
-| `be/src/modules/tasks/tasks.controller.ts` | B | `GET /:id/delegation-history` |
-| `fe/mobile/src/screens/pruningRequests/components/WeekPicker.tsx` | C | NEW (replaces `AvailabilityCalendar` for kecamatan) |
-| `fe/mobile/src/screens/pruningRequests/SubmitScreen.tsx` | C | Use WeekPicker |
-| `fe/mobile/src/screens/field/ActivitySubmissionScreen.tsx` | C | Tagged users multi-select |
-| `fe/mobile/src/screens/activities/ActivityListScreen.tsx` | C | Include tagged-in activities |
-| `fe/mobile/src/screens/taskActivity/TaskDetailScreen.tsx` | C | Riwayat Penugasan section |
+| `apps/be/src/database/migrations/{timestamp}-week-booking-and-tagging.ts` | B | Adds `expected_year`, `expected_iso_week`, `activity_tags`, `task_delegations` |
+| `apps/be/src/modules/pruning-requests/dto/create-pruning-request.dto.ts` | B | Add week fields |
+| `apps/be/src/modules/pruning-requests/pruning-requests.service.ts` | B | `create()` + `assignToTask()` logic |
+| `apps/be/src/modules/activities/entities/activity-tag.entity.ts` | B | NEW |
+| `apps/be/src/modules/activities/dto/create-activity.dto.ts` | B | `tagged_user_ids?` |
+| `apps/be/src/modules/activities/activities.service.ts` | B | Tag insert + `?involving_me=true` query |
+| `apps/be/src/modules/tasks/entities/task-delegation.entity.ts` | B | NEW |
+| `apps/be/src/modules/tasks/tasks.service.ts` | B | Log delegation on assign |
+| `apps/be/src/modules/tasks/tasks.controller.ts` | B | `GET /:id/delegation-history` |
+| `apps/mobile/src/screens/pruningRequests/components/WeekPicker.tsx` | C | NEW (replaces `AvailabilityCalendar` for kecamatan) |
+| `apps/mobile/src/screens/pruningRequests/SubmitScreen.tsx` | C | Use WeekPicker |
+| `apps/mobile/src/screens/field/ActivitySubmissionScreen.tsx` | C | Tagged users multi-select |
+| `apps/mobile/src/screens/activities/ActivityListScreen.tsx` | C | Include tagged-in activities |
+| `apps/mobile/src/screens/taskActivity/TaskDetailScreen.tsx` | C | Riwayat Penugasan section |
 
 ---
 

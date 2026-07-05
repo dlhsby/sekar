@@ -5,7 +5,7 @@
 **Priority:** High — Monitoring rebuild unblocks production-scale operation; plants + public intake are client-approved flagship features for this phase; full redesign adoption (NB 2.0 tokens + responsive PWA) precedes feature work.
 **Duration:** ~73 developer-days estimated (5–7 weeks wall-clock with parallel backend/web/mobile developers)
 **Depends On:** Phase 2E (Complete)
-**Design foundation:** [specs/ui-ux/design-tokens.md](../../ui-ux/design-tokens.md) — source of truth for every color, shadow, radius, and type token used by Phase 3 surfaces. M1-R (sub-phases 3-R1…3-R5) is the **redesign-first foundation** that rewires both `fe/mobile` and `fe/web` onto the canonical tokens, bundles brand fonts, ships the web PWA shell, and migrates every screen onto the new visual language **before** any feature work begins.
+**Design foundation:** [specs/ui-ux/design-tokens.md](../../ui-ux/design-tokens.md) — source of truth for every color, shadow, radius, and type token used by Phase 3 surfaces. M1-R (sub-phases 3-R1…3-R5) is the **redesign-first foundation** that rewires both `apps/mobile` and `apps/web` onto the canonical tokens, bundles brand fonts, ships the web PWA shell, and migrates every screen onto the new visual language **before** any feature work begins.
 **Related ADRs:** [ADR-005](../../architecture/decisions/ADR-005-gps-boundary-tolerance.md), [ADR-009](../../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md), [ADR-010](../../architecture/decisions/ADR-010-phase2c-terminology-cleanup.md), [ADR-011](../../architecture/decisions/ADR-011-phase2d-monitoring-status-model.md) (superseded by ADR-029), [ADR-013](../../architecture/decisions/ADR-013-multi-area-korlap-assignments.md), [ADR-016](../../architecture/decisions/ADR-016-redis-websocket-scaling.md) (promoted from Phase 4), [ADR-029](../../architecture/decisions/ADR-029-monitoring-v2-redis.md), [ADR-030](../../architecture/decisions/ADR-030-area-aggregate-plant-inventory.md), [ADR-031](../../architecture/decisions/ADR-031-task-typing-custom-fields.md), [ADR-032](../../architecture/decisions/ADR-032-admin-data-pruning-disposition.md), [ADR-033](../../architecture/decisions/ADR-033-staff-kecamatan-role.md), [ADR-034](../../architecture/decisions/ADR-034-pruning-cycle-prediction.md), [ADR-035](../../architecture/decisions/ADR-035-service-capacity-model.md), [ADR-036](../../architecture/decisions/ADR-036-design-tokens-single-source.md), [ADR-037](../../architecture/decisions/ADR-037-web-pwa.md)
 
 ---
@@ -34,7 +34,7 @@ Phase 3 delivers **four interlocking streams of work**. The first (M1-R Redesign
 | # | Requirement | Source | Sub-Phase |
 |---|-------------|--------|-----------|
 | 1 | Rewrite monitoring pipeline: Redis Streams projector, Socket.IO Redis adapter, debounced staffing events, stale-status sweep, eager-loaded `onLocationPing` | Client (production-scale bugs) | 3-3 |
-| 2 | Add missing `location_logs` indexes; add `user_tracking_status (area_id, updated_at DESC)` and `(is_within_area, area_id)` | Evidence (`be/src/modules/monitoring/services/status-calculator.service.ts:186-263`) | 3-3 |
+| 2 | Add missing `location_logs` indexes; add `user_tracking_status (area_id, updated_at DESC)` and `(is_within_area, area_id)` | Evidence (`apps/be/src/modules/monitoring/services/status-calculator.service.ts:186-263`) | 3-3 |
 | 3 | Web monitoring: supercluster, incremental WS patches, virtualized worker list, hierarchy toggles (rayon/area/worker), plant + overdue overlays | Client | 3-4 |
 | 4 | Mobile monitoring: cluster markers (parallel `ClusterMarker`, keep `UserMarker` intact behind feature flag), overlay toggle sheet, area fill by plant status | Client (preserve Apr 24 fixes) | 3-5 |
 | 5 | `plant_species` catalog + `area_plants` aggregate inventory + optional `notable_plants` | Client (mayor directive) | 3-2, 3-8 |
@@ -74,9 +74,9 @@ Phase 3 delivers **four interlocking streams of work**. The first (M1-R Redesign
 | Tasks | No `task_type`, no `parent_task_id`, no partial-completion columns, 8 statuses | +`task_type`, +`custom_fields` JSONB, +`parent_task_id`, +`target_plant_count`, +`completed_plant_count`. Status simplification (8→4) remains a **Phase 4 backlog item** |
 | Activities | No custom_fields, no plant line items, no reference_code | +`custom_fields` JSONB, +`activity_plant_items` relation, +`reference_code` (preserves CSV IDs), +`photo_before_url` / `photo_after_url`, +`pruning_request_id` |
 | Public intake | Nothing (paper letters) | Full submit → review → convert → outcome loop |
-| Design token source | Hand-maintained: `fe/web/src/app/globals.css` `:root` block + `fe/mobile/src/constants/nbTokens.ts` literals; drift between platforms (primary.hover, secondary, success, info, type scale) | Generated: `scripts/build-tokens.ts` reads `specs/ui-ux/tokens.json` → `fe/web/src/app/generated/tokens.css` + `fe/mobile/src/constants/generated/tokens.ts`; CI `tokens-verify` blocks drift |
+| Design token source | Hand-maintained: `apps/web/src/app/globals.css` `:root` block + `apps/mobile/src/constants/nbTokens.ts` literals; drift between platforms (primary.hover, secondary, success, info, type scale) | Generated: `scripts/build-tokens.ts` reads `specs/ui-ux/tokens.json` → `apps/web/src/app/generated/tokens.css` + `apps/mobile/src/constants/generated/tokens.ts`; CI `tokens-verify` blocks drift |
 | Shadow rendering | Mobile `shadowRadius: 1–4` + `shadowOpacity: 0.15–0.22` (soft blur); web `box-shadow: Xpx Ypx Bpx rgba(28,25,23,.15–.22)` (1–6 px blur) — NB stamp 70 % lost | Both platforms: opaque `#1C1917`, zero blur/radius (mobile `shadowRadius: 0, shadowOpacity: 1`; web `box-shadow: Xpx Ypx 0 #1C1917`); ESLint rule blocks regression |
-| Brand fonts | Not bundled / not loaded — system fallbacks render on both platforms | Mobile: `.ttf` files in `fe/mobile/assets/fonts/` (Space Grotesk 500/600/700/800, Inter 400/500/600/700, JetBrains Mono 400/500/600), linked via `react-native.config.js`. Web: `next/font/google` with `display: swap`, subsets `latin + latin-ext`, CSS vars `--font-display|body|mono` |
+| Brand fonts | Not bundled / not loaded — system fallbacks render on both platforms | Mobile: `.ttf` files in `apps/mobile/assets/fonts/` (Space Grotesk 500/600/700/800, Inter 400/500/600/700, JetBrains Mono 400/500/600), linked via `react-native.config.js`. Web: `next/font/google` with `display: swap`, subsets `latin + latin-ext`, CSS vars `--font-display|body|mono` |
 | Mobile NB primitives | 13 components (NBButton/Card/Badge/TextInput/PasswordInput/CardTextInput/Select/DatePicker/Skeleton/Tab/Alert/EmptyState/BackgroundPattern); no Modal/Toast/Text wrappers | + `NBModal.tsx` (`@gorhom/bottom-sheet` + RN `<Modal>`), `NBToast.tsx` (NB-chromed `react-native-toast-message`), `NBText.tsx` (semantic variants) |
 | Web PWA | None — no manifest, no service worker, no icons, no install path | Installable: `public/manifest.webmanifest`, `public/sw.js` (compiled from `src/sw/sw.ts`), 192/512/512-maskable/180 apple-touch icons, `InstallBanner` / `OfflineBanner` / `UpdateToast` / `MobileInstallPush` / `usePushSubscription` / `/install-help` route, `(kecamatan)` minimal layout, `ResponsiveShell` driving 375/768/1280 px breakpoints |
 | Web responsive | Desktop-only (≥1280 px); mobile/tablet broken or unstyled on most pages | Three layouts on every Phase-3 page: mobile web (<768 px) full-width stacked + ☰ drawer + bottom-sheet filters; tablet (768–1279 px) icon rail + 1-col primary; desktop (≥1280 px) 220 px sidebar + multi-column |
@@ -154,7 +154,7 @@ Phase 3 is broken into **6 demo-able milestones** (M1-R, M1-S, M2, M3, M4, M5) s
 
 | Milestone | Name | Sub-phases | Effort | Demo-able output | Client sign-off gate |
 |-----------|------|------------|--------|------------------|----------------------|
-| **M1-R** | Redesign Foundation | 3-R1, 3-R2, 3-R3, 3-R4, 3-R5 | 14 d | Token pipeline live on CI; both platforms render hard-edge shadows + brand fonts; NBModal/NBToast/NBText shipped; web installable PWA + offline shell + mobile-web responsive; full sweep complete (no screen on old tokens) | CI `tokens:verify` green; ESLint rejects inline hex; Lighthouse PWA ≥ 90 on `/monitoring`; visual regression baseline locked at 375/768/1280 px; `git grep '#[0-9a-fA-F]{6}' fe/{web,mobile}/src` returns only allowlisted exceptions |
+| **M1-R** | Redesign Foundation | 3-R1, 3-R2, 3-R3, 3-R4, 3-R5 | 14 d | Token pipeline live on CI; both platforms render hard-edge shadows + brand fonts; NBModal/NBToast/NBText shipped; web installable PWA + offline shell + mobile-web responsive; full sweep complete (no screen on old tokens) | CI `tokens:verify` green; ESLint rejects inline hex; Lighthouse PWA ≥ 90 on `/monitoring`; visual regression baseline locked at 375/768/1280 px; `git grep '#[0-9a-fA-F]{6}' apps/{web,mobile}/src` returns only allowlisted exceptions |
 | **M1-S** | Schema + Spec Sync | 3-1, 3-2 | 6 d | DB migrations + new roles applied; obsolete docs reconciled; ADR-029…037 all "Accepted" | `staff_kecamatan` login works; `plant_species` returns 131 rows; root + module CLAUDE.md accurate |
 | **M2** | Monitoring v2 | 3-3, 3-4, 3-5, 3-14 | 21 d | Supercluster + plant overlays + incremental WS patches on web + mobile; k6 load test passes at 500 workers | p95 ingest <200 ms, p95 broadcast <500 ms, no marker redraw storms |
 | **M3** | Plants & Typed Tasks | 3-6, 3-7, 3-8, 3-13 | 15 d | Pruning task form (mobile + web); resume-tomorrow lineage; CSV backfill visible on map; overdue alerts fire | Korlap → satgas complete a pruning task end-to-end; overdue area flips red → green |
@@ -207,7 +207,7 @@ M2 / M3 / M4 run in parallel after M1-R + M1-S land. **Every UI PR in M2/M3/M4 m
 - [ ] Mobile-web login banner appears for satgas/linmas/korlap users redirecting to native app install
 - [ ] Visual regression baseline captured at 375 / 768 / 1280 px; CI gate active
 - [ ] ESLint rules active: `no-inline-hex-colors`, `no-tailwind-shadow-classes-with-blur`, `prefer-nb-shadow-utility`, RN `shadowRadius > 0` ban
-- [ ] `git grep -nE '#[0-9a-fA-F]{6}' fe/{mobile,web}/src` returns zero hits outside `generated/` and a documented allowlist
+- [ ] `git grep -nE '#[0-9a-fA-F]{6}' apps/{mobile,web}/src` returns zero hits outside `generated/` and a documented allowlist
 - [ ] `specs/ui-ux/design-tokens.md §Migration plan` table has zero "deferred to Phase 4" rows
 
 **Demo (15 min):**
@@ -237,7 +237,7 @@ M2 / M3 / M4 run in parallel after M1-R + M1-S land. **Every UI PR in M2/M3/M4 m
 - [ ] All 9 ADRs (029–037) marked "Accepted"
 - [ ] Every CLAUDE.md (root + module + spec) accurate for post-M1 state
 - [ ] `grep -rE "deferred to Phase 4.*(migrat|sweep|redesign|token)" specs/` returns zero hits
-- [ ] `grep -r "32 / 1.2" specs/ fe/{web,mobile}/CLAUDE.md` returns zero hits (obsolete h1 size cleared)
+- [ ] `grep -r "32 / 1.2" specs/ apps/{web,mobile}/CLAUDE.md` returns zero hits (obsolete h1 size cleared)
 - [ ] `grep -r "shadowRadius: [1-9]" specs/` returns zero hits (obsolete shadow refs cleared)
 
 **Demo:** Adminer shows 8 new tables; log in as `staff_kecamatan` → minimal shell on both platforms.
@@ -381,7 +381,7 @@ For a new session picking up Phase 3 from scratch, do this in order:
 - ❌ Do NOT write inline hex literals in component code from 3-R1 onward — ESLint blocks; use generated tokens.
 - ❌ Do NOT set `shadowRadius > 0` anywhere on mobile — RN custom lint rule blocks; the NB stamp is hard-edge.
 - ❌ Do NOT re-enable `tracksViewChanges={true}` on `components/monitoring/*` — Apr 24 fix; ESLint blocks.
-- ❌ Do NOT hand-edit `fe/web/src/app/generated/tokens.css` or `fe/mobile/src/constants/generated/tokens.ts` — they regenerate; CI rejects drift.
+- ❌ Do NOT hand-edit `apps/web/src/app/generated/tokens.css` or `apps/mobile/src/constants/generated/tokens.ts` — they regenerate; CI rejects drift.
 - ❌ Do NOT start UI feature work in M2/M3/M4 before M1-R lands — `NBModal`, `NBText`, `ResponsiveShell` are hard dependencies.
 - ❌ Do NOT bypass the visual regression CI gate (`web-visreg`, `mobile-snapshots`) — baseline updates require explicit `[visreg-update]` commit tag + reviewer approval.
 
@@ -456,13 +456,13 @@ Plumbing only — zero user-visible change. After this, no PR can land inline he
 
 | Task | Scope | Key files |
 |------|-------|-----------|
-| Add `scripts/build-tokens.ts` — JSON → (CSS, TS) emitter | hand-rolled ~100-line TS script per ADR-036; reads `specs/ui-ux/tokens.json`; emits `fe/web/src/app/generated/tokens.css` and `fe/mobile/src/constants/generated/tokens.ts` | `scripts/build-tokens.ts` |
+| Add `scripts/build-tokens.ts` — JSON → (CSS, TS) emitter | hand-rolled ~100-line TS script per ADR-036; reads `specs/ui-ux/tokens.json`; emits `apps/web/src/app/generated/tokens.css` and `apps/mobile/src/constants/generated/tokens.ts` | `scripts/build-tokens.ts` |
 | Wire `npm run tokens:build` and `npm run tokens:verify` into root `package.json` | verify = rerun generator + diff against committed output | `package.json` |
 | Add CI step: validate `tokens.json` against `tokens.schema.json`, then run `tokens:verify` | fails build on schema violation or drift | `.github/workflows/ci.yml` |
-| Add ESLint rules: `no-inline-hex-colors` (exclude `generated/**`), `no-tailwind-shadow-classes-with-blur`, `prefer-nb-shadow-utility` | enforcement from 3-R1 onward | `fe/web/eslint.config.mjs`, `fe/mobile/eslint.config.js` |
-| Mobile RN custom rule: ban `shadowRadius: > 0` literal | maintains hard-edge invariant | `fe/mobile/eslint.config.js` |
+| Add ESLint rules: `no-inline-hex-colors` (exclude `generated/**`), `no-tailwind-shadow-classes-with-blur`, `prefer-nb-shadow-utility` | enforcement from 3-R1 onward | `apps/web/eslint.config.mjs`, `apps/mobile/eslint.config.js` |
+| Mobile RN custom rule: ban `shadowRadius: > 0` literal | maintains hard-edge invariant | `apps/mobile/eslint.config.js` |
 | Generator snapshot test fixture | pins generator output; protects against accidental emitter changes | `scripts/build-tokens.test.ts` |
-| Commit initial empty `generated/` artifacts | values arrive in 3-R2 | `fe/web/src/app/generated/`, `fe/mobile/src/constants/generated/` |
+| Commit initial empty `generated/` artifacts | values arrive in 3-R2 | `apps/web/src/app/generated/`, `apps/mobile/src/constants/generated/` |
 
 **Deliverables:**
 - Generator + CI + lint rules live; CI fails on a deliberately-drifted test PR.
@@ -481,10 +481,10 @@ Plumbing only — zero user-visible change. After this, no PR can land inline he
 
 | Task | Scope | Key files |
 |------|-------|-----------|
-| Strip Layer-1 values from `nbTokens.ts`; re-export from `./generated/tokens`; keep platform helpers (`useNBPress`, `pressStyle`) | mobile token source becomes a thin wrapper | `fe/mobile/src/constants/nbTokens.ts` |
-| Rewrite `globals.css` to `@import './generated/tokens.css'` at top; delete Layer-1 from `@theme`; keep utility classes | web token source becomes a thin wrapper | `fe/web/src/app/globals.css` |
-| Bundle OFL fonts on mobile: Space Grotesk (500/600/700/800), Inter (400/500/600/700), JetBrains Mono (400/500/600); add OFL.txt per family; configure `react-native.config.js` `assets` | establishes brand identity on mobile | `fe/mobile/assets/fonts/`, `fe/mobile/react-native.config.js` |
-| Load fonts on web via `next/font/google` with `display: swap`, `subsets: ['latin','latin-ext']`, CSS variables `--font-display|body|mono` | establishes brand identity on web | `fe/web/src/app/layout.tsx` |
+| Strip Layer-1 values from `nbTokens.ts`; re-export from `./generated/tokens`; keep platform helpers (`useNBPress`, `pressStyle`) | mobile token source becomes a thin wrapper | `apps/mobile/src/constants/nbTokens.ts` |
+| Rewrite `globals.css` to `@import './generated/tokens.css'` at top; delete Layer-1 from `@theme`; keep utility classes | web token source becomes a thin wrapper | `apps/web/src/app/globals.css` |
+| Bundle OFL fonts on mobile: Space Grotesk (500/600/700/800), Inter (400/500/600/700), JetBrains Mono (400/500/600); add OFL.txt per family; configure `react-native.config.js` `assets` | establishes brand identity on mobile | `apps/mobile/assets/fonts/`, `apps/mobile/react-native.config.js` |
+| Load fonts on web via `next/font/google` with `display: swap`, `subsets: ['latin','latin-ext']`, CSS variables `--font-display|body|mono` | establishes brand identity on web | `apps/web/src/app/layout.tsx` |
 | Token value drift fixes (mobile + web must converge) | see drift table below | (tokens.json + regenerate) |
 
 **Drift fixes locked in 3-R2:**
@@ -511,7 +511,7 @@ Plumbing only — zero user-visible change. After this, no PR can land inline he
 - Side-by-side device screenshot (pre vs post) shows visibly sharper NB stamp.
 
 **Exit criteria:**
-- [ ] `git grep -nE '#[0-9a-fA-F]{6}' fe/{mobile,web}/src | grep -v generated` returns zero hits (or allowlist-only).
+- [ ] `git grep -nE '#[0-9a-fA-F]{6}' apps/{mobile,web}/src | grep -v generated` returns zero hits (or allowlist-only).
 - [ ] CHANGELOG v2.1.1 appended documenting the value migration.
 - [ ] Obsolete-info banners landed in `specs/mobile/design-tokens.md` + `color-palette-standardization.md`.
 
@@ -523,13 +523,13 @@ Plumbing only — zero user-visible change. After this, no PR can land inline he
 
 | Task | Scope | Key files |
 |------|-------|-----------|
-| Migrate web NB primitives to `shadow-nb-*` utilities + `.nb-focus-ring`; audit for inline hex | parity with mobile per `design-tokens.md §Component Parity Matrix` | `fe/web/src/components/ui/*` |
-| Migrate mobile NB primitives to generated shadow helper + `useNBPress()` | hard-edge press animation; 100ms timing | `fe/mobile/src/components/nb/*` |
-| Build `NBModal.tsx` | wraps `@gorhom/bottom-sheet` for ≤50% viewport content; wraps RN `<Modal>` for full-screen forms (species autocomplete, partial-complete, assign-to-task, seed transaction, photo picker) | `fe/mobile/src/components/nb/NBModal.tsx` |
-| Build `NBToast.tsx` | wraps `react-native-toast-message` with NB chrome (border, hard-edge shadow, uppercase title, Lucide icon pair, bottom position, 4s default) | `fe/mobile/src/components/nb/NBToast.tsx` |
-| Build `NBText.tsx` | typography component; `variant="h1|h2|h3|body-lg|body|body-sm|caption|mono-sm"`; reads from generated `type.*` | `fe/mobile/src/components/nb/NBText.tsx` |
-| Visual regression harness (web): Playwright `toHaveScreenshot` over NB primitives + login + dashboard at 375/768/1280 px; tolerance 0.1% | gates subsequent PRs | `fe/web/e2e/visual-regression.spec.ts`, `fe/web/e2e/__snapshots__/` |
-| Visual regression harness (mobile): extend Jest `react-test-renderer` snapshots to cover every NB primitive incl. new three | gates mobile PRs | `fe/mobile/__tests__/nb/*.test.tsx` |
+| Migrate web NB primitives to `shadow-nb-*` utilities + `.nb-focus-ring`; audit for inline hex | parity with mobile per `design-tokens.md §Component Parity Matrix` | `apps/web/src/components/ui/*` |
+| Migrate mobile NB primitives to generated shadow helper + `useNBPress()` | hard-edge press animation; 100ms timing | `apps/mobile/src/components/nb/*` |
+| Build `NBModal.tsx` | wraps `@gorhom/bottom-sheet` for ≤50% viewport content; wraps RN `<Modal>` for full-screen forms (species autocomplete, partial-complete, assign-to-task, seed transaction, photo picker) | `apps/mobile/src/components/nb/NBModal.tsx` |
+| Build `NBToast.tsx` | wraps `react-native-toast-message` with NB chrome (border, hard-edge shadow, uppercase title, Lucide icon pair, bottom position, 4s default) | `apps/mobile/src/components/nb/NBToast.tsx` |
+| Build `NBText.tsx` | typography component; `variant="h1|h2|h3|body-lg|body|body-sm|caption|mono-sm"`; reads from generated `type.*` | `apps/mobile/src/components/nb/NBText.tsx` |
+| Visual regression harness (web): Playwright `toHaveScreenshot` over NB primitives + login + dashboard at 375/768/1280 px; tolerance 0.1% | gates subsequent PRs | `apps/web/e2e/visual-regression.spec.ts`, `apps/web/e2e/__snapshots__/` |
+| Visual regression harness (mobile): extend Jest `react-test-renderer` snapshots to cover every NB primitive incl. new three | gates mobile PRs | `apps/mobile/__tests__/nb/*.test.tsx` |
 | Add CI jobs `web-visreg` + `mobile-snapshots` | green-required for merge | `.github/workflows/ci.yml` |
 
 **Deliverables:**
@@ -541,7 +541,7 @@ Plumbing only — zero user-visible change. After this, no PR can land inline he
 
 **Exit criteria:**
 - [ ] `web-visreg` + `mobile-snapshots` green.
-- [ ] ESLint zero `no-inline-hex-colors` violations across `fe/{web,mobile}/src/components/`.
+- [ ] ESLint zero `no-inline-hex-colors` violations across `apps/{web,mobile}/src/components/`.
 
 ---
 
@@ -553,18 +553,18 @@ Plumbing only — zero user-visible change. After this, no PR can land inline he
 
 | Task | Scope | Key files |
 |------|-------|-----------|
-| Add PWA manifest | `background: #F5F0EB`, `theme: #1A4D2E`, 192/512/512-maskable icons, 2 shortcuts | `fe/web/public/manifest.webmanifest` |
-| Generate icon set | SEKAR "S" glyph (Space Grotesk 800 on `#7FBC8C`, 2px `#1C1917` border, 4px shadow) at 192/512/512-maskable (20% safe-zone)/180 apple-touch | `fe/web/public/icons/` |
-| Service worker | shell pre-cache (HTML, generated tokens.css, JS bundle, fonts, icons); runtime caching per spec; POST/PUT/DELETE = network-only | `fe/web/src/sw/sw.ts` → `public/sw.js` |
-| Build `InstallBanner` | NB callout (yellow `#FDFD96` bg, 2px border, 4px shadow, `role="dialog"`); `beforeinstallprompt` capture; 14-day localStorage suppression | `fe/web/src/components/pwa/InstallBanner.tsx` |
-| Build `OfflineBanner` | `role="status"` strip when `navigator.onLine === false`; copy "Mode offline — menampilkan data terakhir <X> menit lalu" | `fe/web/src/components/pwa/OfflineBanner.tsx` |
-| Build `UpdateToast` | shown on `registration.waiting`; CTA "Muat ulang" | `fe/web/src/components/pwa/UpdateToast.tsx` |
-| Build `MobileInstallPush` | role-gated <768px login banner for satgas/linmas/korlap directing to native app install | `fe/web/src/components/pwa/MobileInstallPush.tsx` |
-| Build `usePushSubscription` hook | subscribes admin roles on login; POST `/api/push/register` (backend stub specced) | `fe/web/src/hooks/usePushSubscription.ts` |
-| `/install-help` page | static iOS Safari install walkthrough | `fe/web/src/app/install-help/page.tsx` |
-| Build `ResponsiveShell` | sidebar (≥1280) / icon rail (768–1279) / ☰ drawer (<768); every Phase-3 page composes through it | `fe/web/src/components/layout/ResponsiveShell.tsx` |
-| `(kecamatan)` layout scaffold | minimal top-bar shell for `staff_kecamatan`; populated by 3-10 | `fe/web/src/app/(kecamatan)/layout.tsx` |
-| Register manifest + theme-color meta + viewport-fit + safe-area insets in root layout | SW registration in production builds only | `fe/web/src/app/layout.tsx`, `next.config.ts` |
+| Add PWA manifest | `background: #F5F0EB`, `theme: #1A4D2E`, 192/512/512-maskable icons, 2 shortcuts | `apps/web/public/manifest.webmanifest` |
+| Generate icon set | SEKAR "S" glyph (Space Grotesk 800 on `#7FBC8C`, 2px `#1C1917` border, 4px shadow) at 192/512/512-maskable (20% safe-zone)/180 apple-touch | `apps/web/public/icons/` |
+| Service worker | shell pre-cache (HTML, generated tokens.css, JS bundle, fonts, icons); runtime caching per spec; POST/PUT/DELETE = network-only | `apps/web/src/sw/sw.ts` → `public/sw.js` |
+| Build `InstallBanner` | NB callout (yellow `#FDFD96` bg, 2px border, 4px shadow, `role="dialog"`); `beforeinstallprompt` capture; 14-day localStorage suppression | `apps/web/src/components/pwa/InstallBanner.tsx` |
+| Build `OfflineBanner` | `role="status"` strip when `navigator.onLine === false`; copy "Mode offline — menampilkan data terakhir <X> menit lalu" | `apps/web/src/components/pwa/OfflineBanner.tsx` |
+| Build `UpdateToast` | shown on `registration.waiting`; CTA "Muat ulang" | `apps/web/src/components/pwa/UpdateToast.tsx` |
+| Build `MobileInstallPush` | role-gated <768px login banner for satgas/linmas/korlap directing to native app install | `apps/web/src/components/pwa/MobileInstallPush.tsx` |
+| Build `usePushSubscription` hook | subscribes admin roles on login; POST `/api/push/register` (backend stub specced) | `apps/web/src/hooks/usePushSubscription.ts` |
+| `/install-help` page | static iOS Safari install walkthrough | `apps/web/src/app/install-help/page.tsx` |
+| Build `ResponsiveShell` | sidebar (≥1280) / icon rail (768–1279) / ☰ drawer (<768); every Phase-3 page composes through it | `apps/web/src/components/layout/ResponsiveShell.tsx` |
+| `(kecamatan)` layout scaffold | minimal top-bar shell for `staff_kecamatan`; populated by 3-10 | `apps/web/src/app/(kecamatan)/layout.tsx` |
+| Register manifest + theme-color meta + viewport-fit + safe-area insets in root layout | SW registration in production builds only | `apps/web/src/app/layout.tsx`, `next.config.ts` |
 
 **Deliverables:**
 - Lighthouse PWA ≥ 90 on `/monitoring`.
@@ -611,7 +611,7 @@ Plumbing only — zero user-visible change. After this, no PR can land inline he
 - Web: `Sidebar` 9-role gating
 
 **Deliverables:**
-- `git grep -nE '#[0-9a-fA-F]{6}' fe/{mobile,web}/src` returns zero hits outside `generated/` and `scripts/hex-allowlist.txt` exceptions.
+- `git grep -nE '#[0-9a-fA-F]{6}' apps/{mobile,web}/src` returns zero hits outside `generated/` and `scripts/hex-allowlist.txt` exceptions.
 - Every migrated screen has updated visual regression snapshot.
 - Every web page renders correctly at 375 / 768 / 1280 px.
 - `specs/ui-ux/design-tokens.md §Migration plan` table has zero "Phase 4 backlog" rows.
@@ -634,11 +634,11 @@ Plumbing only — zero user-visible change. After this, no PR can land inline he
 
 | Task | Scope | Key Files |
 |------|-------|-----------|
-| Migration `17460000000000-Phase3Schema.ts` | new tables + altered tables + role-enum extension | `be/src/database/migrations/` |
-| Seed `plant_species` (131 rows) | dedupe CSV column 6 | `be/src/database/seeds/seed-plant-species.ts` |
+| Migration `17460000000000-Phase3Schema.ts` | new tables + altered tables + role-enum extension | `apps/be/src/database/migrations/` |
+| Seed `plant_species` (131 rows) | dedupe CSV column 6 | `apps/be/src/database/seeds/seed-plant-species.ts` |
 | Seed `monitoring_configs` additions | staffing_debounce_seconds, stale_status_sweep_cron, cluster_zoom_threshold, redis_stream_max_len | `seed-monitoring-configs.ts` |
-| Add `staff_kecamatan` to `UserRole` enum + `constants/role-groups.ts` | new group `PRUNING_REQUEST_REVIEWERS = [admin_data]` | `be/src/modules/users/enums/role.enum.ts`, `constants/role-groups.ts` |
-| Sweep every `@Roles(...)` decorator | verify `staff_kecamatan` denied where appropriate | `be/src/modules/**/*.controller.ts` |
+| Add `staff_kecamatan` to `UserRole` enum + `constants/role-groups.ts` | new group `PRUNING_REQUEST_REVIEWERS = [admin_data]` | `apps/be/src/modules/users/enums/role.enum.ts`, `constants/role-groups.ts` |
+| Sweep every `@Roles(...)` decorator | verify `staff_kecamatan` denied where appropriate | `apps/be/src/modules/**/*.controller.ts` |
 
 **Deliverables:** 8 new tables, 5 altered tables, enum extension, `PRUNING_REQUEST_REVIEWERS` permission group.
 
@@ -646,14 +646,14 @@ Plumbing only — zero user-visible change. After this, no PR can land inline he
 
 | Task | Scope | Key Files |
 |------|-------|-----------|
-| Redis service + health check + fallback to in-process pub/sub | `REDIS_URL` env, connection-pool with graceful shutdown | `be/src/common/services/redis.service.ts` |
-| Socket.IO Redis adapter wiring | `@socket.io/redis-adapter` on `EventsGateway` | `be/src/gateways/events.gateway.ts` |
+| Redis service + health check + fallback to in-process pub/sub | `REDIS_URL` env, connection-pool with graceful shutdown | `apps/be/src/common/services/redis.service.ts` |
+| Socket.IO Redis adapter wiring | `@socket.io/redis-adapter` on `EventsGateway` | `apps/be/src/gateways/events.gateway.ts` |
 | Redis Streams location→status pipeline | producer on `onLocationPing`, consumer group `monitoring-projector` | new `StatusProjectorService` |
 | `StatusProjectorService` | reads stream, eager-loads user context once, writes `user_tracking_status`, emits events | new service |
 | `StaffingDebouncerService` | collapses bursts within `STAFFING_DEBOUNCE_SECONDS` (default 30) | new service |
 | `StaleStatusSweeperService` | `@Cron('*/5 * * * *')`, flips ACTIVE without recent ping → MISSING | new service |
-| Rewrite `onLocationPing` | single user-context eager-load; queue to Redis stream instead of 6+ DB queries | `be/src/modules/monitoring/services/status-calculator.service.ts:186-263` |
-| Fix batch-ingest bug | iterate batch (or sample), not just latest | `be/src/modules/location/location.service.ts:92-103` |
+| Rewrite `onLocationPing` | single user-context eager-load; queue to Redis stream instead of 6+ DB queries | `apps/be/src/modules/monitoring/services/status-calculator.service.ts:186-263` |
+| Fix batch-ingest bug | iterate batch (or sample), not just latest | `apps/be/src/modules/location/location.service.ts:92-103` |
 | Index migrations | `location_logs` + `user_tracking_status` (see database.md) | `Phase3Schema.ts` |
 | `GET /monitoring/snapshot` unified payload | replaces multiple round-trips; keyed React Query cache | `monitoring.controller.ts` |
 
@@ -663,8 +663,8 @@ Plumbing only — zero user-visible change. After this, no PR can land inline he
 
 | Task | Scope | Key Files |
 |------|-------|-----------|
-| Supercluster layer | Google Maps + `supercluster` npm | `fe/web/src/components/monitoring/ClusterLayer.tsx` |
-| Incremental WS patch handling | React Query cache key `monitoring:snapshot:<scope>:<id>`; apply patches on message | `fe/web/src/app/(dashboard)/monitoring/page.tsx:100-216` |
+| Supercluster layer | Google Maps + `supercluster` npm | `apps/web/src/components/monitoring/ClusterLayer.tsx` |
+| Incremental WS patch handling | React Query cache key `monitoring:snapshot:<scope>:<id>`; apply patches on message | `apps/web/src/app/(dashboard)/monitoring/page.tsx:100-216` |
 | Virtualized worker list | `@tanstack/react-virtual` | `WorkerListVirtual.tsx` |
 | Hierarchy filter panel | rayon / area / worker cascading toggles | `HierarchyFilterPanel.tsx` |
 | Plant overlay + overdue color layer | green/yellow/red area fill by `area_plants.status` | `PlantOverlayLayer.tsx`, `AreaStatusOverlay.tsx` |
@@ -676,9 +676,9 @@ Plumbing only — zero user-visible change. After this, no PR can land inline he
 
 | Task | Scope | Key Files |
 |------|-------|-----------|
-| `ClusterMarker` parallel component | leaves existing `UserMarker` intact | `fe/mobile/src/components/monitoring/ClusterMarker.tsx` |
+| `ClusterMarker` parallel component | leaves existing `UserMarker` intact | `apps/mobile/src/components/monitoring/ClusterMarker.tsx` |
 | Cluster-vs-markers switch by zoom | preserves `tracksViewChanges={false}` + `LabelMode` enum in key | `ClusteredUserMarkers.tsx` |
-| A/B feature flag | `featureFlags.clusterMarkersV2` | `fe/mobile/src/config/featureFlags.ts` |
+| A/B feature flag | `featureFlags.clusterMarkersV2` | `apps/mobile/src/config/featureFlags.ts` |
 | Lint rule | forbid re-enabling `tracksViewChanges={true}` anywhere in `components/monitoring/` | `.eslintrc` custom rule |
 | Overlay toggle sheet | NB bottom sheet, workers/plants/overdue toggles | `MonitoringToggleSheet.tsx` |
 | Area status fill | color by `area_plants.status` | `AreaStatusOverlay.tsx` |
@@ -838,7 +838,7 @@ Storage: string in `activities.custom_fields` JSONB. When the activity originate
 
 ### Notes for implementation
 
-- Codes are stored exactly as listed (uppercase, no expansion). Indonesian labels are rendered from `fe/mobile/src/constants/pruningVocabulary.ts` (mobile) and `fe/web/src/lib/pruningVocabulary.ts` (web), which `import` a single shared object emitted by `scripts/build-tokens.ts` alongside the design tokens (ADR-036 generator extension — co-located so the vocabulary stays in sync between platforms).
+- Codes are stored exactly as listed (uppercase, no expansion). Indonesian labels are rendered from `apps/mobile/src/constants/pruningVocabulary.ts` (mobile) and `apps/web/src/lib/pruningVocabulary.ts` (web), which `import` a single shared object emitted by `scripts/build-tokens.ts` alongside the design tokens (ADR-036 generator extension — co-located so the vocabulary stays in sync between platforms).
 - The CSV backfill seeder (3-13) maps the historical CSV's free-text "Penanganan" column onto these codes; unmappable rows get `case_type = 'GT'` + `source = 'CC'` with a `notes` field preserving the original string for manual review.
 - All 5 case types and all 3 actions appear in the `TaskTypeRegistry` Zod schema for `task_type = 'pruning'`; invalid codes reject at the API boundary with `400 INVALID_CUSTOM_FIELD`.
 

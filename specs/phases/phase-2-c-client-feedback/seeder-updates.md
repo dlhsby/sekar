@@ -16,7 +16,7 @@ Phase 2C seeders required 4 additive updates to provide complete test data cover
 
 ### 1. Korlap User Area Assignment (HIGH)
 
-**File:** `be/src/database/seeds/seed.service.ts`
+**File:** `apps/be/src/database/seeds/seed.service.ts`
 **Lines:** 161-168
 
 All korlap users now have `area_id` populated (required per Phase 2C spec for area-scoped features).
@@ -34,7 +34,7 @@ WHERE username IN ('korlap1', 'korlap2');
 
 ### 2. Overtime Test Data (MEDIUM)
 
-**File:** `be/src/database/seeds/seed-phase2.ts`
+**File:** `apps/be/src/database/seeds/seed-phase2.ts`
 **Lines:** 322-415
 
 Added 3 overtime records demonstrating Phase 2C flat structure (activity fields directly on `overtimes` table).
@@ -51,7 +51,7 @@ Added 3 overtime records demonstrating Phase 2C flat structure (activity fields 
 
 ### 3. Rayon-Scoped Task Examples (MEDIUM)
 
-**File:** `be/src/database/seeds/seed-tasks.ts`
+**File:** `apps/be/src/database/seeds/seed-tasks.ts`
 **Lines:** 310-377
 
 Added 2 rayon-scoped tasks (`rayon_id` set, `area_id = NULL`) assigned by kepala_rayon.
@@ -67,7 +67,7 @@ Added 2 rayon-scoped tasks (`rayon_id` set, `area_id = NULL`) assigned by kepala
 
 ### 4. Boundary Flag Test Data (LOW)
 
-**File:** `be/src/database/seeds/seed.service.ts`
+**File:** `apps/be/src/database/seeds/seed.service.ts`
 **Lines:** 392-406
 
 Updated 1 completed shift with `clock_in_outside_boundary = true`.
@@ -131,9 +131,9 @@ curl http://localhost:3000/monitoring/active-users
 ## Files Modified
 
 ### Seed Scripts (3)
-- `be/src/database/seeds/seed.service.ts` - Korlap area_id + boundary flag
-- `be/src/database/seeds/seed-phase2.ts` - Overtime records
-- `be/src/database/seeds/seed-tasks.ts` - Rayon-scoped tasks
+- `apps/be/src/database/seeds/seed.service.ts` - Korlap area_id + boundary flag
+- `apps/be/src/database/seeds/seed-phase2.ts` - Overtime records
+- `apps/be/src/database/seeds/seed-tasks.ts` - Rayon-scoped tasks
 
 ### Documentation (2)
 - `specs/phases/phase-2-c-client-feedback/database.md` - Test data sections

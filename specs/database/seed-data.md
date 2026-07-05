@@ -10,7 +10,7 @@ This document specifies the seed data for SEKAR database. Seed data is used for 
 - Integration testing with known data
 - Training environment for users
 
-**Authority:** Seed scripts live in `be/src/database/seeds/` (destructive `db:seed` for dev; non-destructive `db:seed:production` for staging/prod) — see [`be/src/database/seeds/README.md`](/be/src/database/seeds/README.md)
+**Authority:** Seed scripts live in `apps/be/src/database/seeds/` (destructive `db:seed` for dev; non-destructive `db:seed:production` for staging/prod) — see [`apps/be/src/database/seeds/README.md`](/apps/be/src/database/seeds/README.md)
 
 **Seeding Strategy:**
 - Automated via NestJS seed service
@@ -24,7 +24,7 @@ This document specifies the seed data for SEKAR database. Seed data is used for 
 ## Staging seeder data sources (client sheet + KMZ) — reload workflow
 
 The staging/UAT seeder (`db:seed:staging`) builds **rayons, areas, and users** from
-committed snapshots under `be/src/database/seeds/data/`, so the dataset can be re-loaded as
+committed snapshots under `apps/be/src/database/seeds/data/`, so the dataset can be re-loaded as
 the client keeps filling their input sheet — without code edits:
 
 | File | Source | Regenerate with |
@@ -54,15 +54,15 @@ Full reload: `npm run seed:extract-kmz` → `npm run db:seed:staging` (destructi
 
 ### Live two-way sheet sync
 
-`be/scripts/sheet-sync.ts` syncs directly with the spreadsheet. Two transports:
+`apps/be/scripts/sheet-sync.ts` syncs directly with the spreadsheet. Two transports:
 
 - **Apps Script web app (preferred — no key).** Works under the
   `iam.disableServiceAccountKeyCreation` org policy that blocks SA keys. Paste
-  `be/scripts/sheet-apps-script.gs` into the sheet (Extensions → Apps Script),
+  `apps/be/scripts/sheet-apps-script.gs` into the sheet (Extensions → Apps Script),
   set a shared token, deploy as a Web App (execute as you, access "Anyone"), and
-  set `SEKAR_SHEET_WEBAPP_URL` + `SEKAR_SHEET_WEBAPP_TOKEN` in `be/.env.local`.
+  set `SEKAR_SHEET_WEBAPP_URL` + `SEKAR_SHEET_WEBAPP_TOKEN` in `apps/be/.env.local`.
 - **Service account (fallback).** Only if your org allows SA keys: share the
-  sheet with the SA email (Editor), drop the JSON key at `be/secrets/sheets-sa.json`
+  sheet with the SA email (Editor), drop the JSON key at `apps/be/secrets/sheets-sa.json`
   (gitignored), set `GOOGLE_SHEETS_SA_KEYFILE`. Either way set `SEKAR_SHEET_ID`.
 
 - `npm run sheet:sync -- --list` — inspect tabs + which carry area/user tables.
@@ -648,7 +648,7 @@ FROM generate_series(0, 9) AS series;
 ### TypeScript Seed Service
 
 ```typescript
-// be/src/database/seeds/seed.service.ts
+// apps/be/src/database/seeds/seed.service.ts
 
 @Injectable()
 export class SeedService {
@@ -1409,7 +1409,7 @@ UPDATE areas SET coverage_area = 8000.00 WHERE name = 'Taman Harmoni';     -- 0.
 ### TypeScript Seed Service Update
 
 ```typescript
-// be/src/database/seeds/phase2-seed.service.ts
+// apps/be/src/database/seeds/phase2-seed.service.ts
 
 @Injectable()
 export class Phase2SeedService {

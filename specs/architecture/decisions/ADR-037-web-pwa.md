@@ -21,7 +21,7 @@ Two Phase 3 realities tip the balance:
 - **Monitoring v2 snapshot payload is expensive** ([ADR-029](./ADR-029-monitoring-v2-event-sourced-redis.md)). Every full-refresh-on-filter today costs ~200 kB + a DB query storm. Stale-while-revalidate caching on the snapshot endpoint is the single largest bandwidth win for supervisors on mobile networks.
 - **Kecamatan submissions come from spotty field connections.** The submission itself still needs the network (we do not queue writes client-side — see ADR-019), but the shell must load offline so staff can at least see their existing requests while waiting for signal.
 
-Native apps are already covered by `fe/mobile`. The web channel doesn't need to *replace* mobile — it needs to be a **decent backup** for field users who don't have the app installed, and a **first-class experience** for desk users who spend all day in it.
+Native apps are already covered by `apps/mobile`. The web channel doesn't need to *replace* mobile — it needs to be a **decent backup** for field users who don't have the app installed, and a **first-class experience** for desk users who spend all day in it.
 
 ## Decision
 
@@ -75,7 +75,7 @@ Native apps are already covered by `fe/mobile`. The web channel doesn't need to 
 ## Alternatives Considered
 
 - **Native-app-only for field roles; ignore mobile-web entirely.** Rejected — kecamatan staff without the app need a submission channel today, and supervisors in transit use a browser even when the app is installed. A half-usable mobile web is strictly better than "use the app" stickers on a desk.
-- **Wrap fe/web in Capacitor as a WebView app.** Rejected — we already have a first-class React Native app for field roles; a WebView wrapper for desk roles solves a problem we don't have and adds App Store overhead.
+- **Wrap apps/web in Capacitor as a WebView app.** Rejected — we already have a first-class React Native app for field roles; a WebView wrapper for desk roles solves a problem we don't have and adds App Store overhead.
 - **Offline writes in the PWA (full queue).** Rejected — second source of truth conflicts with the mobile offline queue (ADR-019). Writes stay online-only on web.
 - **Don't ship a PWA; just make the site mobile-responsive.** Rejected — cache-first snapshot loading is the main bandwidth win, and it needs a service worker. Responsive layout alone leaves supervisors re-downloading 200 kB of payload every filter tap.
 

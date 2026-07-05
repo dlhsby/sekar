@@ -4,7 +4,7 @@ Complete PostgreSQL database schema for SEKAR system with production-ready optim
 
 **Document Owner:** Database Engineer
 **Last Updated:** 2026-06-20
-**Status:** Phase 5 Complete — see `specs/COMPLETION_STATUS.md` for live table/module count; migrations in `be/src/database/migrations/`
+**Status:** Phase 5 Complete — see `specs/COMPLETION_STATUS.md` for live table/module count; migrations in `apps/be/src/database/migrations/`
 
 ---
 
@@ -1577,7 +1577,7 @@ CREATE INDEX idx_bulk_operations_entity ON bulk_operations(entity_type, started_
 **Target:** Single developer, low concurrency
 
 ```typescript
-// be/src/config/typeorm.config.ts (development)
+// apps/be/src/config/typeorm.config.ts (development)
 export const typeOrmConfig: TypeOrmModuleOptions = {
   // ... other config
   extra: {
@@ -1604,7 +1604,7 @@ export const typeOrmConfig: TypeOrmModuleOptions = {
 **Target:** 500 workers, 100-150 concurrent API requests, 4 backend instances
 
 ```typescript
-// be/src/config/typeorm.config.ts (production)
+// apps/be/src/config/typeorm.config.ts (production)
 export const typeOrmConfig: TypeOrmModuleOptions = {
   type: 'postgres',
   host: process.env.DATABASE_HOST,

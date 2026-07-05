@@ -5,7 +5,7 @@ Comprehensive monitoring, logging, and observability specifications for SEKAR pr
 **What's live vs planned (2026-06):**
 - **LIVE:** Health endpoints (`/api/v1/health/live`, `/api/v1/health/ready` with DB + Redis checks), Docker container logs, Redis monitoring
 - **STAGING-ONLY:** CloudWatch metrics/dashboards (AWS EC2 `t3.micro` sole tenant; shared RDS `dlhsby` — SEKAR cannot own RDS-level alarms)
-- **WIRED, DORMANT:** Sentry error tracking — SDK integrated across **backend** (`be/src/common/sentry`), **web** (`fe/web/src/instrumentation*.ts` + `global-error.tsx`), and **mobile** (`fe/mobile/src/services/crashReporting`). All no-op until a DSN is configured (`SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_DSN_MOBILE`). Create a Sentry project and set those to go live.
+- **WIRED, DORMANT:** Sentry error tracking — SDK integrated across **backend** (`apps/be/src/common/sentry`), **web** (`apps/web/src/instrumentation*.ts` + `global-error.tsx`), and **mobile** (`apps/mobile/src/services/crashReporting`). All no-op until a DSN is configured (`SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_DSN_MOBILE`). Create a Sentry project and set those to go live.
 - **PLANNED/NOT LIVE:** dedicated dashboards, production monitoring specification (on-prem Docker logs only for now)
 - **Authoritative hub:** [`deployment-guide.md`](./deployment-guide.md) for infra layout; [`ci-cd.md`](./ci-cd.md) for pipeline.
 
@@ -546,15 +546,15 @@ fields @timestamp, context.gps.accuracy
 
 **Status:** SDK integrated across all three tiers and verified to no-op when no DSN
 is configured (so dev/local and an un-provisioned staging stay quiet):
-- **Backend** — `be/src/common/sentry/sentry.ts`, init before `NestFactory.create`
+- **Backend** — `apps/be/src/common/sentry/sentry.ts`, init before `NestFactory.create`
   in `main.ts`; 5xx capture in `http-exception.filter.ts`. Env: `SENTRY_DSN`,
   `SENTRY_ENVIRONMENT`, `SENTRY_TRACES_SAMPLE_RATE`, `SENTRY_RELEASE`.
-- **Web** — `fe/web/src/instrumentation-client.ts` (browser), `instrumentation.ts`
+- **Web** — `apps/web/src/instrumentation-client.ts` (browser), `instrumentation.ts`
   (server/edge + `onRequestError`), `src/app/global-error.tsx` (React boundary →
   `captureException`), `next.config.ts` wrapped with `withSentryConfig` (source-map
   upload only when `SENTRY_AUTH_TOKEN` is present). Env: `NEXT_PUBLIC_SENTRY_DSN`,
   `NEXT_PUBLIC_SENTRY_ENVIRONMENT`, `NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE`.
-- **Mobile** — `fe/mobile/src/services/crashReporting/sentry.ts`, init in `index.js`
+- **Mobile** — `apps/mobile/src/services/crashReporting/sentry.ts`, init in `index.js`
   + `App.tsx`; `MapErrorBoundary` reports via `captureException`. Env:
   `SENTRY_DSN_MOBILE`, `SENTRY_ENVIRONMENT`, `SENTRY_TRACES_SAMPLE_RATE`.
 

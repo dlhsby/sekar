@@ -18,7 +18,7 @@ The web dashboard uses **React 19 with TypeScript** and **Tailwind CSS v4** for 
 > **Start here (Phase 3 onward):**
 > - [`specs/ui-ux/design-tokens.md`](../ui-ux/design-tokens.md) — single source of truth for every token.
 > - [`specs/ui-ux/tokens.json`](../ui-ux/tokens.json) — machine-readable source; CI-validated by `tokens.schema.json`.
-> - Web tokens are consumed via generated `fe/web/src/app/generated/tokens.css`, imported by `globals.css`. Do not edit `globals.css` hex variables by hand; edit `tokens.json` and rerun `npm run tokens:build`.
+> - Web tokens are consumed via generated `apps/web/src/app/generated/tokens.css`, imported by `globals.css`. Do not edit `globals.css` hex variables by hand; edit `tokens.json` and rerun `npm run tokens:build`.
 > - [ADR-036](../architecture/decisions/ADR-036-design-tokens-single-source.md) locks in the generator pipeline; [ADR-037](../architecture/decisions/ADR-037-web-pwa.md) adds the PWA shell.
 >
 > **Legacy reference:** [`specs/ui-ux/neo-brutalism.md`](../ui-ux/neo-brutalism.md) remains the design-language bible (component patterns, typography rules, NB philosophy). Token *values* now live in `tokens.json`.

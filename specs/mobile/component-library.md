@@ -2,12 +2,12 @@
 
 **Last Updated:** 2026-06-20
 **Version:** Neo Brutalism 2.1.1 (Phase 4 rebrand re-baseline v2.1.1 applied May 25, 2026; generated tokens from `specs/ui-ux/tokens.json` via Phase 3 M1-R sub-phase 3-R2; NBModal/NBToast/NBText via 3-R3)
-**Location:** `fe/mobile/src/components/nb/` + `fe/mobile/src/constants/generated/tokens.ts`
+**Location:** `apps/mobile/src/components/nb/` + `apps/mobile/src/constants/generated/tokens.ts`
 **Phase 5 status:** Reporting (5-1) + Analytics (5-2) + Assets (5-3) screens complete; feature modules shipped Jun 17
 
 This document provides the complete component library reference for the SEKAR mobile application.
 
-> **Phase 3 update:** Token values (colors, shadows, radii, type scale, motion) now come from **generated** `fe/mobile/src/constants/generated/tokens.ts`, emitted from [`specs/ui-ux/tokens.json`](../ui-ux/tokens.json) by `scripts/build-tokens.ts`. Do **not** edit `nbTokens.ts` by hand — it re-exports from the generated file. New NB primitives introduced in Phase 3: `NBModal`, `NBToast`. See [design-tokens.md](../ui-ux/design-tokens.md) and [ADR-036](../architecture/decisions/ADR-036-design-tokens-single-source.md).
+> **Phase 3 update:** Token values (colors, shadows, radii, type scale, motion) now come from **generated** `apps/mobile/src/constants/generated/tokens.ts`, emitted from [`specs/ui-ux/tokens.json`](../ui-ux/tokens.json) by `scripts/build-tokens.ts`. Do **not** edit `nbTokens.ts` by hand — it re-exports from the generated file. New NB primitives introduced in Phase 3: `NBModal`, `NBToast`. See [design-tokens.md](../ui-ux/design-tokens.md) and [ADR-036](../architecture/decisions/ADR-036-design-tokens-single-source.md).
 
 ---
 
@@ -46,7 +46,7 @@ This document provides the complete component library reference for the SEKAR mo
 3. **Indonesian Localization** - Default labels in Indonesian
 4. **Haptic Feedback** - Tactile response on interactions
 5. **Reduce Motion** - Respects system accessibility settings
-6. **Generated tokens** - All colors/shadows/spacing from `fe/mobile/src/constants/generated/tokens.ts` (never hand-edit)
+6. **Generated tokens** - All colors/shadows/spacing from `apps/mobile/src/constants/generated/tokens.ts` (never hand-edit)
 
 ---
 
@@ -625,7 +625,7 @@ describe('NBButton', () => {
 
 ## Phase 2D: Monitoring Components
 
-**Location:** `fe/mobile/src/components/monitoring/`
+**Location:** `apps/mobile/src/components/monitoring/`
 
 ### New Components (6)
 
@@ -646,7 +646,7 @@ describe('NBButton', () => {
 
 ### Design Tokens
 
-Located in `fe/mobile/src/constants/nbTokens.ts` as `monitoringTokens`:
+Located in `apps/mobile/src/constants/nbTokens.ts` as `monitoringTokens`:
 
 ```typescript
 monitoringTokens = {
@@ -673,7 +673,7 @@ Three new mobile NB components ship in Phase 3 M1-R sub-phase 3-R3 to complete t
 
 ### NBModal
 
-**Location:** `fe/mobile/src/components/nb/NBModal.tsx`
+**Location:** `apps/mobile/src/components/nb/NBModal.tsx`
 **Library backbone:** `@gorhom/bottom-sheet` (sheet variant) + React Native `<Modal>` (fullscreen variant).
 **Cross-link:** [Neo Brutalism Modal Guidelines](./neo-brutalism-modal-guidelines.md) — drives sheet vs. fullscreen decision matrix.
 
@@ -706,7 +706,7 @@ Three new mobile NB components ship in Phase 3 M1-R sub-phase 3-R3 to complete t
 
 ### NBToast
 
-**Location:** `fe/mobile/src/components/nb/NBToast.tsx`
+**Location:** `apps/mobile/src/components/nb/NBToast.tsx`
 **Library backbone:** `react-native-toast-message` configured with NB chrome.
 
 ```tsx
@@ -731,7 +731,7 @@ NBToast.show({
 
 ### NBText
 
-**Location:** `fe/mobile/src/components/nb/NBText.tsx`
+**Location:** `apps/mobile/src/components/nb/NBText.tsx`
 **Purpose:** Replaces every hand-set `fontSize`/`fontWeight`/`lineHeight`/`fontFamily` literal in the mobile codebase with a semantic variant prop. Reads font + size + weight + line-height from generated `type.*` tokens.
 
 ```tsx

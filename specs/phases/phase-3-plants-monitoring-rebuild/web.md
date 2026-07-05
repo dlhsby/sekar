@@ -3,7 +3,7 @@
 **Last Updated:** 2026-04-25
 **Status:** ⏳ Not Started
 **Framework:** Next.js 16.1.6, React 19.2.3, TanStack Query 5, Google Maps 3, supercluster, @tanstack/react-virtual
-**Design foundation:** [specs/ui-ux/design-tokens.md](../../ui-ux/design-tokens.md) — tokens consumed via generated `fe/web/src/app/generated/tokens.css`, imported by `globals.css`.
+**Design foundation:** [specs/ui-ux/design-tokens.md](../../ui-ux/design-tokens.md) — tokens consumed via generated `apps/web/src/app/generated/tokens.css`, imported by `globals.css`.
 **Related ADRs:** [ADR-029](../../architecture/decisions/ADR-029-monitoring-v2-redis.md), [ADR-030](../../architecture/decisions/ADR-030-area-aggregate-plant-inventory.md), [ADR-031](../../architecture/decisions/ADR-031-task-typing-custom-fields.md), [ADR-032](../../architecture/decisions/ADR-032-admin-data-pruning-disposition.md), [ADR-033](../../architecture/decisions/ADR-033-staff-kecamatan-role.md), [ADR-035](../../architecture/decisions/ADR-035-service-capacity-model.md), ADR-036 *(tokens)*, ADR-037 *(PWA)*
 **See also:** [Backend](./backend.md), [UI/UX](./ui-ux.md), [README](./README.md)
 
@@ -13,7 +13,7 @@
 
 | Fact | Current state | Target |
 |------|---------------|--------|
-| Monitoring page | `fe/web/src/app/(dashboard)/monitoring/page.tsx:100-216` — full-refresh on filter change; no cluster; un-virtualized list | Incremental WS patches; supercluster; virtualized list |
+| Monitoring page | `apps/web/src/app/(dashboard)/monitoring/page.tsx:100-216` — full-refresh on filter change; no cluster; un-virtualized list | Incremental WS patches; supercluster; virtualized list |
 | Sidebar | 8-role gating (Phase 2E) | 9-role gating (+`staff_kecamatan`, dedicated minimal shell) |
 | Task create page | `(dashboard)/tasks/new/page.tsx` — single form | Dynamic form per `task_type` with species multi-select |
 | Pages | 21 pages (+1 config) | 28 pages (+plants, +pruning-requests, +seeds, +rayons/[id]/capacity) |
@@ -150,8 +150,8 @@ Every web page that is **not** rewritten in 3-4 / 3-7 / 3-8 / 3-10 / 3-11 / 3-12
 
 ### Acceptance criteria
 
-- [ ] `git grep -nE '#[0-9a-fA-F]{6}' fe/web/src` returns zero hits outside `generated/` and `scripts/hex-allowlist.txt`.
-- [ ] `git grep -nE 'shadow-(xs|sm|md|lg|xl)\b' fe/web/src` returns zero hits (only `shadow-nb-*` allowed).
+- [ ] `git grep -nE '#[0-9a-fA-F]{6}' apps/web/src` returns zero hits outside `generated/` and `scripts/hex-allowlist.txt`.
+- [ ] `git grep -nE 'shadow-(xs|sm|md|lg|xl)\b' apps/web/src` returns zero hits (only `shadow-nb-*` allowed).
 - [ ] Every swept page renders correctly at 375 / 768 / 1280 px (visual regression CI green).
 - [ ] Every swept page composes through `ResponsiveShell`.
 
@@ -333,7 +333,7 @@ The dynamic pruning form on `/(dashboard)/tasks/new` (when `task_type='pruning'`
 - **Aksi pangkas** (`pruning_action` radio group, required): PM / PB / PC
 - **Sumber** (`source` select, required): TIW / TS / CC / PW / Wk
 
-Labels rendered from `fe/web/src/lib/pruningVocabulary.ts` (shared with mobile — co-located with the design-token generator output per ADR-036). Form validation uses the same `TaskTypeRegistry` Zod schemas the backend uses (shared via `tsconfig` path alias) so the UI can never submit a value the API will reject.
+Labels rendered from `apps/web/src/lib/pruningVocabulary.ts` (shared with mobile — co-located with the design-token generator output per ADR-036). Form validation uses the same `TaskTypeRegistry` Zod schemas the backend uses (shared via `tsconfig` path alias) so the UI can never submit a value the API will reject.
 
 ### Capacity
 

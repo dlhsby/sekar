@@ -712,7 +712,7 @@ export const selectActiveShift = createSelector(
 **Document Owner:** Mobile Developer
 **Last Updated:** 2026-01-16
 **Status:** Active - Phase 1
-**Implementation:** `fe/mobile/src/store/`
+**Implementation:** `apps/mobile/src/store/`
 **Dependencies:** `@reduxjs/toolkit`, `react-redux`
 
 ---

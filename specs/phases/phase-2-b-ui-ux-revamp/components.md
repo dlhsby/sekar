@@ -94,7 +94,7 @@ This document provides complete specifications for all NB components across web 
 ### NBButton
 
 ```yaml
-file: fe/web/src/components/ui/button.tsx
+file: apps/web/src/components/ui/button.tsx
 description: Primary action button with Neo Brutalism styling
 
 tokens:
@@ -154,7 +154,7 @@ migration:
 ### NBCard
 
 ```yaml
-file: fe/web/src/components/ui/card.tsx
+file: apps/web/src/components/ui/card.tsx
 description: Container component for grouped content
 
 tokens:
@@ -202,7 +202,7 @@ migration:
 ### NBInput
 
 ```yaml
-file: fe/web/src/components/ui/input.tsx
+file: apps/web/src/components/ui/input.tsx
 description: Text input field with validation states
 
 tokens:
@@ -263,7 +263,7 @@ migration:
 ### NBTextarea
 
 ```yaml
-file: fe/web/src/components/ui/textarea.tsx
+file: apps/web/src/components/ui/textarea.tsx
 description: Multi-line text input
 
 tokens:
@@ -285,7 +285,7 @@ migration:
 ### NBSelect
 
 ```yaml
-file: fe/web/src/components/ui/select.tsx
+file: apps/web/src/components/ui/select.tsx
 description: Dropdown select component
 
 trigger:
@@ -322,7 +322,7 @@ migration:
 ### NBBadge
 
 ```yaml
-file: fe/web/src/components/ui/badge.tsx
+file: apps/web/src/components/ui/badge.tsx
 description: Status indicator for labels and counts
 
 tokens:
@@ -358,7 +358,7 @@ migration:
 ### NBDialog
 
 ```yaml
-file: fe/web/src/components/ui/dialog.tsx
+file: apps/web/src/components/ui/dialog.tsx
 description: Modal dialog component
 
 overlay:
@@ -403,7 +403,7 @@ migration:
 ### NBDropdownMenu
 
 ```yaml
-file: fe/web/src/components/ui/dropdown-menu.tsx
+file: apps/web/src/components/ui/dropdown-menu.tsx
 description: Dropdown menu for actions
 
 trigger:
@@ -440,7 +440,7 @@ migration:
 ### NBTable
 
 ```yaml
-file: fe/web/src/components/ui/table.tsx
+file: apps/web/src/components/ui/table.tsx
 description: Data table with NB styling
 
 container:
@@ -487,7 +487,7 @@ migration:
 ### NBDataTable
 
 ```yaml
-file: fe/web/src/components/ui/data-table.tsx
+file: apps/web/src/components/ui/data-table.tsx
 description: Enhanced data table with sorting, selection, pagination
 
 inherits: NBTable
@@ -511,7 +511,7 @@ migration:
 ### NBSidebar
 
 ```yaml
-file: fe/web/src/components/ui/sidebar.tsx
+file: apps/web/src/components/ui/sidebar.tsx
 description: Navigation sidebar for web dashboard
 
 container:
@@ -566,7 +566,7 @@ migration:
 ### NBEmptyState
 
 ```yaml
-file: fe/web/src/components/ui/empty-state.tsx
+file: apps/web/src/components/ui/empty-state.tsx
 description: Empty state placeholder
 
 container:
@@ -606,7 +606,7 @@ migration:
 ### NBSkeleton
 
 ```yaml
-file: fe/web/src/components/ui/skeleton.tsx
+file: apps/web/src/components/ui/skeleton.tsx
 description: Loading placeholder
 
 container:
@@ -631,7 +631,7 @@ migration:
 ### NBFormInput
 
 ```yaml
-file: fe/web/src/components/ui/form-input.tsx
+file: apps/web/src/components/ui/form-input.tsx
 description: Form input with label and error handling
 
 inherits: NBInput
@@ -659,7 +659,7 @@ migration:
 ### NBFormSelect
 
 ```yaml
-file: fe/web/src/components/ui/form-select.tsx
+file: apps/web/src/components/ui/form-select.tsx
 description: Form select with label and error handling
 
 inherits: NBSelect
@@ -686,7 +686,7 @@ migration:
 ### NBLabel
 
 ```yaml
-file: fe/web/src/components/ui/label.tsx
+file: apps/web/src/components/ui/label.tsx
 description: Form label component
 
 tokens:
@@ -709,7 +709,7 @@ migration:
 ### NBButton
 
 ```yaml
-file: fe/mobile/src/components/nb/NBButton.tsx
+file: apps/mobile/src/components/nb/NBButton.tsx
 description: Primary action button for mobile
 
 tokens:
@@ -768,7 +768,7 @@ migration:
 ### NBCard
 
 ```yaml
-file: fe/mobile/src/components/nb/NBCard.tsx
+file: apps/mobile/src/components/nb/NBCard.tsx
 description: Container component for mobile
 
 tokens:
@@ -804,7 +804,7 @@ migration:
 ### NBTextInput
 
 ```yaml
-file: fe/mobile/src/components/nb/NBTextInput.tsx
+file: apps/mobile/src/components/nb/NBTextInput.tsx
 description: Text input for mobile
 
 tokens:
@@ -854,7 +854,7 @@ migration:
 ### NBPasswordInput
 
 ```yaml
-file: fe/mobile/src/components/nb/NBPasswordInput.tsx
+file: apps/mobile/src/components/nb/NBPasswordInput.tsx
 description: Password input with visibility toggle
 
 inherits: NBTextInput
@@ -876,7 +876,7 @@ migration:
 ### NBAlert
 
 ```yaml
-file: fe/mobile/src/components/nb/NBAlert.tsx
+file: apps/mobile/src/components/nb/NBAlert.tsx
 description: Alert/notification component
 
 tokens:
@@ -921,7 +921,7 @@ migration:
 ### NBBadge
 
 ```yaml
-file: fe/mobile/src/components/nb/NBBadge.tsx
+file: apps/mobile/src/components/nb/NBBadge.tsx
 description: Status indicator badge
 
 tokens:
@@ -956,7 +956,7 @@ migration:
 ### NBTab
 
 ```yaml
-file: fe/mobile/src/components/nb/NBTab.tsx
+file: apps/mobile/src/components/nb/NBTab.tsx
 description: Tab button component
 
 tokens:
@@ -991,7 +991,7 @@ migration:
 ### NBSkeleton
 
 ```yaml
-file: fe/mobile/src/components/nb/NBSkeleton.tsx
+file: apps/mobile/src/components/nb/NBSkeleton.tsx
 description: Loading placeholder
 
 tokens:
@@ -1021,7 +1021,7 @@ migration:
 ### NBEmptyState
 
 ```yaml
-file: fe/mobile/src/components/nb/NBEmptyState.tsx
+file: apps/mobile/src/components/nb/NBEmptyState.tsx
 description: Empty state placeholder
 
 tokens:
@@ -1065,7 +1065,7 @@ migration:
 ### NBBackgroundPattern
 
 ```yaml
-file: fe/mobile/src/components/nb/NBBackgroundPattern.tsx
+file: apps/mobile/src/components/nb/NBBackgroundPattern.tsx
 description: Decorative background pattern
 
 types:
@@ -1119,24 +1119,24 @@ migration: No changes required
 
 ```bash
 # Run all UI component tests
-cd fe/web && npm test -- --testPathPattern="components/ui"
+cd apps/web && npm test -- --testPathPattern="components/ui"
 
 # Run specific component test
-cd fe/web && npm test -- button.test
-cd fe/web && npm test -- card.test
-cd fe/web && npm test -- input.test
+cd apps/web && npm test -- button.test
+cd apps/web && npm test -- card.test
+cd apps/web && npm test -- input.test
 ```
 
 ### Mobile Component Tests
 
 ```bash
 # Run all NB component tests
-cd fe/mobile && npm test -- --testPathPattern="components/nb"
+cd apps/mobile && npm test -- --testPathPattern="components/nb"
 
 # Run specific component test
-cd fe/mobile && npm test -- NBButton
-cd fe/mobile && npm test -- NBCard
-cd fe/mobile && npm test -- NBTextInput
+cd apps/mobile && npm test -- NBButton
+cd apps/mobile && npm test -- NBCard
+cd apps/mobile && npm test -- NBTextInput
 ```
 
 ### After Each Component Update
@@ -1153,29 +1153,29 @@ cd fe/mobile && npm test -- NBTextInput
 ### Web Components
 | Component | File Path |
 |-----------|-----------|
-| NBButton | `fe/web/src/components/ui/button.tsx` |
-| NBCard | `fe/web/src/components/ui/card.tsx` |
-| NBInput | `fe/web/src/components/ui/input.tsx` |
-| NBSelect | `fe/web/src/components/ui/select.tsx` |
-| NBDialog | `fe/web/src/components/ui/dialog.tsx` |
-| NBTable | `fe/web/src/components/ui/table.tsx` |
-| NBSidebar | `fe/web/src/components/ui/sidebar.tsx` |
-| NBBadge | `fe/web/src/components/ui/badge.tsx` |
+| NBButton | `apps/web/src/components/ui/button.tsx` |
+| NBCard | `apps/web/src/components/ui/card.tsx` |
+| NBInput | `apps/web/src/components/ui/input.tsx` |
+| NBSelect | `apps/web/src/components/ui/select.tsx` |
+| NBDialog | `apps/web/src/components/ui/dialog.tsx` |
+| NBTable | `apps/web/src/components/ui/table.tsx` |
+| NBSidebar | `apps/web/src/components/ui/sidebar.tsx` |
+| NBBadge | `apps/web/src/components/ui/badge.tsx` |
 
 ### Mobile Components
 | Component | File Path |
 |-----------|-----------|
-| NBButton | `fe/mobile/src/components/nb/NBButton.tsx` |
-| NBCard | `fe/mobile/src/components/nb/NBCard.tsx` |
-| NBTextInput | `fe/mobile/src/components/nb/NBTextInput.tsx` |
-| NBPasswordInput | `fe/mobile/src/components/nb/NBPasswordInput.tsx` |
-| NBAlert | `fe/mobile/src/components/nb/NBAlert.tsx` |
-| NBBadge | `fe/mobile/src/components/nb/NBBadge.tsx` |
-| NBTab | `fe/mobile/src/components/nb/NBTab.tsx` |
-| NBSkeleton | `fe/mobile/src/components/nb/NBSkeleton.tsx` |
+| NBButton | `apps/mobile/src/components/nb/NBButton.tsx` |
+| NBCard | `apps/mobile/src/components/nb/NBCard.tsx` |
+| NBTextInput | `apps/mobile/src/components/nb/NBTextInput.tsx` |
+| NBPasswordInput | `apps/mobile/src/components/nb/NBPasswordInput.tsx` |
+| NBAlert | `apps/mobile/src/components/nb/NBAlert.tsx` |
+| NBBadge | `apps/mobile/src/components/nb/NBBadge.tsx` |
+| NBTab | `apps/mobile/src/components/nb/NBTab.tsx` |
+| NBSkeleton | `apps/mobile/src/components/nb/NBSkeleton.tsx` |
 
 ### Token Files
 | Platform | File Path |
 |----------|-----------|
-| Web | `fe/web/src/app/globals.css` |
-| Mobile | `fe/mobile/src/constants/nbTokens.ts` |
+| Web | `apps/web/src/app/globals.css` |
+| Mobile | `apps/mobile/src/constants/nbTokens.ts` |

@@ -89,17 +89,17 @@ Visual regression locks the look of every NB primitive and every swept screen. *
 
 ### Web — Playwright `toHaveScreenshot`
 
-- File: `fe/web/e2e/visual-regression.spec.ts`
+- File: `apps/web/e2e/visual-regression.spec.ts`
 - Browsers: Chromium pinned (record version in `playwright.config.ts`); single-browser to avoid sub-pixel rendering noise across engines.
 - Viewports: **375 × 667** (mobile web), **768 × 1024** (tablet), **1280 × 800** (desktop).
 - Tolerance: `maxDiffPixelRatio: 0.001` (0.1 %).
-- Baseline directory: `fe/web/e2e/__snapshots__/visual-regression.spec.ts/` — committed to git.
+- Baseline directory: `apps/web/e2e/__snapshots__/visual-regression.spec.ts/` — committed to git.
 - CI job: `web-visreg` in `.github/workflows/ci.yml` runs after build; uploads diff artifacts on failure.
 - Coverage at minimum: NBButton (default/hover/active/disabled/loading), NBCard (4 accent variants), NBBadge (5 status variants), Input (default/focus/error), `<NBText>` h1–caption rendering, `(auth)/login`, `(dashboard)/` home — and every page swept by 3-R5.
 
 ### Mobile — Jest `react-test-renderer` snapshots
 
-- Files: `fe/mobile/__tests__/nb/<Component>.test.tsx` per primitive; `fe/mobile/__tests__/screens/<Screen>.test.tsx` for swept screens.
+- Files: `apps/mobile/__tests__/nb/<Component>.test.tsx` per primitive; `apps/mobile/__tests__/screens/<Screen>.test.tsx` for swept screens.
 - Snapshot directory: `__snapshots__/` next to each test file — committed.
 - CI job: `mobile-snapshots` runs `npm test -- --ci`; fails on snapshot diff.
 - Coverage: every NB primitive (existing + NBModal/NBToast/NBText), plus a smoke snapshot per screen swept in 3-R5.

@@ -122,7 +122,7 @@ Units are domain-specific per service_type but the table doesn't care — capaci
 | `booked_units >= capacity_units * 0.8` | `partial` |
 | otherwise | `available` |
 
-Past dates are filtered at the picker layer. The projection lives in `fe/mobile/src/screens/pruningRequests/utils/capacityCalendar.ts` and is consumed by `AvailabilityCalendar`. **No backend or database change.**
+Past dates are filtered at the picker layer. The projection lives in `apps/mobile/src/screens/pruningRequests/utils/capacityCalendar.ts` and is consumed by `AvailabilityCalendar`. **No backend or database change.**
 
 **Read access widened.** `GET /api/v1/rayons/:id/capacity` now allows `staff_kecamatan` (scoped to their own `rayon_id` exactly like `admin_data`) so the submit calendar can display availability without leaking other rayons' booking data.
 

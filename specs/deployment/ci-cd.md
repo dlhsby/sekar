@@ -53,12 +53,12 @@ and the decrypting `.env.keys` are **never committed** (see [`encrypted-secrets.
 
 | Workflow (`.github/workflows/`) | Trigger | What it does |
 |--------------------------------|---------|--------------|
-| **`deploy-staging.yml`** | push `staging` branch + `workflow_dispatch` · **`staging` env approval-gated** | **Gated on `quality-be` + `quality-web`** (lint/tsc/test) → build backend + web + docs images (with `GIT_SHA`/`BUILD_TIME` build args) → ECR (OIDC) → deploy to EC2 via **SSM Run Command** (also recreates `sekar-caddy`). Web built with `dotenvx run` + BuildKit secret; backend bakes encrypted `be/.env.staging`. Pre-deploy RDS snapshot, SHA-pinned image assertion, smoke test. |
+| **`deploy-staging.yml`** | push `staging` branch + `workflow_dispatch` · **`staging` env approval-gated** | **Gated on `quality-be` + `quality-web`** (lint/tsc/test) → build backend + web + docs images (with `GIT_SHA`/`BUILD_TIME` build args) → ECR (OIDC) → deploy to EC2 via **SSM Run Command** (also recreates `sekar-caddy`). Web built with `dotenvx run` + BuildKit secret; backend bakes encrypted `apps/be/.env.staging`. Pre-deploy RDS snapshot, SHA-pinned image assertion, smoke test. |
 | **`pr-gate.yml`** | **PR** to `main`/`staging`/`develop` (always runs) | **The single REQUIRED merge check (`gate`).** Detects changed components (`dorny/paths-filter`) → runs only the relevant reusable suites below → the `gate` job aggregates (unchanged components are `skipped` = pass; any failed suite = red). Deadlock-proof replacement for path-filtered required checks. |
 | **`release-server.yml`** | push tag `sekar-v*` | Versioned **be+web** release (coupled). Validates the tag matches both `package.json`, builds + pushes `:X.Y.Z` ECR images (web production-configured), creates a GitHub Release with notes. Does **not** deploy (on-prem promotion is manual). |
-| **`backend-quality.yml`** | **reusable** (`workflow_call`) | ESLint + `tsc --noEmit` + Jest. Called by `pr-gate` (when `be/**` changes) and by `deploy-staging` (release gate). |
-| **`web-quality.yml`** | **reusable** (`workflow_call`) | ESLint (incl. design-system rules) + `tsc --noEmit` + Jest. Called by `pr-gate` (when `fe/web/**` changes) and by `deploy-staging`. |
-| **`mobile-quality.yml`** | **reusable** (`workflow_call`) | ESLint (incl. design-system rules) + `tsc --noEmit` + Jest. Called by `pr-gate` when `fe/mobile/**` (or design tokens) change. Provisions `.env.local` from the example. |
+| **`backend-quality.yml`** | **reusable** (`workflow_call`) | ESLint + `tsc --noEmit` + Jest. Called by `pr-gate` (when `apps/be/**` changes) and by `deploy-staging` (release gate). |
+| **`web-quality.yml`** | **reusable** (`workflow_call`) | ESLint (incl. design-system rules) + `tsc --noEmit` + Jest. Called by `pr-gate` (when `apps/web/**` changes) and by `deploy-staging`. |
+| **`mobile-quality.yml`** | **reusable** (`workflow_call`) | ESLint (incl. design-system rules) + `tsc --noEmit` + Jest. Called by `pr-gate` when `apps/mobile/**` (or design tokens) change. Provisions `.env.local` from the example. |
 | **`mobile-release.yml`** | tag `mobile-v*` + `workflow_dispatch` (env=staging) | Build a **signed** release **APK + AAB** for staging, upload a 30-day artifact, and auto-publish to the download registry (S3 + `POST /app-releases`). Tag pushes validate the tag matches `package.json`. See [`android-release-guide.md` §F](./android-release-guide.md). |
 | **`mobile-e2e.yml`** | `workflow_dispatch` | Maestro device flows. |
 | **`web-e2e.yml`** | **`workflow_dispatch`** (manual-only) | Playwright E2E. Manual-only — it installs a browser and is the heaviest job; run before a release or locally (`npm run test:e2e`). |
@@ -85,7 +85,7 @@ Full detail + rationale in [`encrypted-secrets.md`](./encrypted-secrets.md). Sum
 
 `APP_RELEASE_PUBLISH_TOKEN` authorizes `mobile-release.yml` to register a build in the backend
 release registry (`POST /app-releases`, `X-Publish-Token`); it must equal the encrypted
-`APP_RELEASE_PUBLISH_TOKEN` in `be/.env.staging`. The `sekar-gha-deploy` OIDC role also has
+`APP_RELEASE_PUBLISH_TOKEN` in `apps/be/.env.staging`. The `sekar-gha-deploy` OIDC role also has
 `s3:PutObject` on `sekar-media-staging/app-releases/*` so the workflow can upload the APK.
 
 **Repo-level secrets:** `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`,
@@ -122,7 +122,7 @@ separate **`sekar.wahyutrip.com/android_x86`** page — for emulators / WSA / PC
 the ARM `/android` build. So one release run publishes two APKs.
 
 **Tag-driven (implemented).** `mobile-release.yml` also triggers on a **`mobile-v*`** tag and
-validates the tag matches `fe/mobile/package.json`. Cut one with the helper:
+validates the tag matches `apps/mobile/package.json`. Cut one with the helper:
 ```bash
 scripts/release.sh mobile 0.1.0 2     # bumps package.json + versionName + versionCode(2), tags, pushes
 ```
@@ -136,15 +136,15 @@ Manual `workflow_dispatch` stays as a fallback.
 
 ## 5. Monorepo release strategy (3 components, 1 repo)
 
-`be/`, `fe/web/`, `fe/mobile/` ship to **different targets at different cadences** — so they are
+`apps/be/`, `apps/web/`, `apps/mobile/` ship to **different targets at different cadences** — so they are
 released **independently**, not lock-stepped into one version:
 
 Two cadences, two tag lines (no single repo-wide version — the components don't move together):
 
 | Component | Continuous (staging) | Versioned release | Versioning |
 |-----------|----------------------|-------------------|------------|
-| **Backend + Web** (coupled — web calls the API) | release to `staging` branch (or manual) → `deploy-staging` (SHA-pinned, approval-gated) | **`sekar-vX.Y.Z`** tag → `release-server.yml` | one shared semver (`be/package.json` == `fe/web/package.json`) |
-| **Mobile** | — (built on demand) | **`mobile-vX.Y.Z`** tag → `mobile-release.yml` (dispatch = fallback) | semver in `fe/mobile/package.json` + Android `versionCode` |
+| **Backend + Web** (coupled — web calls the API) | release to `staging` branch (or manual) → `deploy-staging` (SHA-pinned, approval-gated) | **`sekar-vX.Y.Z`** tag → `release-server.yml` | one shared semver (`apps/be/package.json` == `apps/web/package.json`) |
+| **Mobile** | — (built on demand) | **`mobile-vX.Y.Z`** tag → `mobile-release.yml` (dispatch = fallback) | semver in `apps/mobile/package.json` + Android `versionCode` |
 
 Principles:
 1. **Path-filtered, independent CI** — `backend-quality` / `web-quality` / `mobile-quality` gate only
@@ -175,7 +175,7 @@ gh pr merge --rebase --auto    # linear history; auto-merges when `gate` is gree
 
 **Backend + Web → versioned release:**
 ```bash
-scripts/release.sh server 0.1.0    # bumps be + fe/web package.json, commits, tags sekar-v0.1.0, pushes
+scripts/release.sh server 0.1.0    # bumps be + apps/web package.json, commits, tags sekar-v0.1.0, pushes
 ```
 `release-server.yml` then validates the versions match, builds + pushes `:0.1.0` images to ECR
 (web = production-configured), and creates the GitHub Release. **Promote to on-prem prod** (when the

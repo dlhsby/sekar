@@ -111,7 +111,7 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4MTI3ZGM4MS05N2NmLTRjNmUtYTFiNC1
 
 ### Implementation
 
-**File:** `be/src/modules/auth/auth.service.ts`
+**File:** `apps/be/src/modules/auth/auth.service.ts`
 
 ```typescript
 import { Injectable, UnauthorizedException } from '@nestjs/common';
@@ -213,7 +213,7 @@ export class AuthService {
 
 ### Implementation
 
-**File:** `be/src/modules/auth/strategies/jwt.strategy.ts`
+**File:** `apps/be/src/modules/auth/strategies/jwt.strategy.ts`
 
 ```typescript
 import { Injectable, UnauthorizedException } from '@nestjs/common';
@@ -298,7 +298,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
 ### JWT Auth Guard
 
-**File:** `be/src/modules/auth/guards/jwt-auth.guard.ts`
+**File:** `apps/be/src/modules/auth/guards/jwt-auth.guard.ts`
 
 ```typescript
 import { Injectable } from '@nestjs/common';
@@ -378,7 +378,7 @@ export enum UserRole {
 
 ### Roles Decorator
 
-**File:** `be/src/modules/auth/decorators/roles.decorator.ts`
+**File:** `apps/be/src/modules/auth/decorators/roles.decorator.ts`
 
 ```typescript
 import { SetMetadata } from '@nestjs/common';
@@ -390,7 +390,7 @@ export const Roles = (...roles: UserRole[]) => SetMetadata(ROLES_KEY, roles);
 
 ### Roles Guard
 
-**File:** `be/src/modules/auth/guards/roles.guard.ts`
+**File:** `apps/be/src/modules/auth/guards/roles.guard.ts`
 
 ```typescript
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
@@ -469,7 +469,7 @@ export class UsersController {
 
 Custom decorator to extract authenticated user from request.
 
-**File:** `be/src/modules/auth/decorators/get-user.decorator.ts`
+**File:** `apps/be/src/modules/auth/decorators/get-user.decorator.ts`
 
 ```typescript
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
@@ -508,7 +508,7 @@ async getMe(@GetUser() user: User): Promise<MeResponseDto> {
 
 ## Permission Matrix (Phase 2C — 8 Roles)
 
-> **Role Groups** are defined in `be/src/modules/users/constants/role-groups.ts`. Endpoints use role group constants (e.g., `FIELD_WORKERS`, `TASK_RECEIVERS`, `ACTIVITY_APPROVERS`) rather than individual roles.
+> **Role Groups** are defined in `apps/be/src/modules/users/constants/role-groups.ts`. Endpoints use role group constants (e.g., `FIELD_WORKERS`, `TASK_RECEIVERS`, `ACTIVITY_APPROVERS`) rather than individual roles.
 
 ### Key Role Groups
 
@@ -633,7 +633,7 @@ Monitoring endpoints enforce scope-based authorization at the service level. The
 
 SEKAR uses **bcrypt** for password hashing with 10 salt rounds.
 
-**File:** `be/src/modules/users/users.service.ts`
+**File:** `apps/be/src/modules/users/users.service.ts`
 
 ```typescript
 import * as bcrypt from 'bcrypt';
@@ -676,7 +676,7 @@ export class UsersService {
 
 ### Password Verification
 
-**File:** `be/src/modules/auth/auth.service.ts`
+**File:** `apps/be/src/modules/auth/auth.service.ts`
 
 ```typescript
 async login(loginDto: LoginDto): Promise<AuthResponseDto> {
@@ -754,7 +754,7 @@ CORS_ORIGIN=http://localhost:3001,http://localhost:19006
 
 ### JWT Module Configuration
 
-**File:** `be/src/modules/auth/auth.module.ts`
+**File:** `apps/be/src/modules/auth/auth.module.ts`
 
 ```typescript
 import { Module } from '@nestjs/common';
@@ -794,7 +794,7 @@ export class AuthModule {}
 
 ### Bearer Authentication
 
-**File:** `be/src/main.ts`
+**File:** `apps/be/src/main.ts`
 
 ```typescript
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -916,7 +916,7 @@ This prevents token replay attacks and limits the impact of stolen refresh token
 #### Implementation
 
 ```typescript
-// File: be/src/modules/auth/auth.controller.ts
+// File: apps/be/src/modules/auth/auth.controller.ts
 @Post('refresh')
 @ApiOperation({ summary: 'Refresh access token' })
 @ApiBody({ type: RefreshTokenDto })
@@ -926,7 +926,7 @@ async refreshToken(@Body() dto: RefreshTokenDto): Promise<AuthResponseDto> {
   return this.authService.refreshAccessToken(dto.refresh_token);
 }
 
-// File: be/src/modules/auth/auth.service.ts
+// File: apps/be/src/modules/auth/auth.service.ts
 async refreshAccessToken(refreshToken: string): Promise<AuthResponseDto> {
   try {
     // 1. Verify refresh token signature
@@ -961,7 +961,7 @@ async refreshAccessToken(refreshToken: string): Promise<AuthResponseDto> {
 #### Mobile Client Implementation
 
 ```typescript
-// File: fe/mobile/src/services/api/apiClient.ts
+// File: apps/mobile/src/services/api/apiClient.ts
 import axios from 'axios';
 
 // Axios interceptor for auto token refresh
@@ -1061,7 +1061,7 @@ app.use((req, res, next) => {
 
 ### 7. CORS Configuration
 
-**File:** `be/src/main.ts`
+**File:** `apps/be/src/main.ts`
 
 ```typescript
 app.enableCors({
@@ -1143,7 +1143,7 @@ export class UnauthorizedExceptionFilter implements ExceptionFilter {
 
 ### Unit Tests
 
-**File:** `be/src/modules/auth/auth.service.spec.ts`
+**File:** `apps/be/src/modules/auth/auth.service.spec.ts`
 
 ```typescript
 describe('AuthService', () => {
@@ -1191,7 +1191,7 @@ curl http://localhost:3000/api/auth/me \
 
 ## Appendix: Constants
 
-**File:** `be/src/common/constants/auth.constants.ts`
+**File:** `apps/be/src/common/constants/auth.constants.ts`
 
 ```typescript
 export const AUTH_CONSTANTS = {

@@ -23,7 +23,7 @@
 
 ### I1. BullMQ on existing Redis (no new infra)
 
-Per [ADR-043](../../architecture/decisions/ADR-043-production-gap-closure.md), Phase 4 adds BullMQ as a job-queue layer over the existing Redis 7 instance. **No new docker-compose service, no new prod cluster.** Implementation lives in `be/`; see [`backend.md § R2`](./backend.md#r2-bullmq-retry-queue-on-existing-redis-per-adr-043).
+Per [ADR-043](../../architecture/decisions/ADR-043-production-gap-closure.md), Phase 4 adds BullMQ as a job-queue layer over the existing Redis 7 instance. **No new docker-compose service, no new prod cluster.** Implementation lives in `apps/be/`; see [`backend.md § R2`](./backend.md#r2-bullmq-retry-queue-on-existing-redis-per-adr-043).
 
 **Operational notes:**
 
@@ -108,7 +108,7 @@ volumes:
 
 ### A2. Backend Redis Configuration
 
-**File:** `be/src/config/redis.config.ts`
+**File:** `apps/be/src/config/redis.config.ts`
 
 ```typescript
 export const redisConfig = {
@@ -175,7 +175,7 @@ HEALTH_CHECK_TIMEOUT_MS=5000
 
 ### B1. Backend Sentry
 
-**File:** `be/src/main.ts`
+**File:** `apps/be/src/main.ts`
 
 ```typescript
 import * as Sentry from '@sentry/nestjs';
@@ -203,7 +203,7 @@ if (process.env.SENTRY_DSN) {
 
 **Dependencies:** `@sentry/react-native`
 
-**File:** `fe/mobile/src/services/crashReporting.ts`
+**File:** `apps/mobile/src/services/crashReporting.ts`
 
 - Initialize before any other code in App.tsx
 - Set user context on login, clear on logout
@@ -233,7 +233,7 @@ name: Mobile E2E (Maestro)
 on:
   push:
     branches: [main]
-    paths: ['fe/mobile/**']
+    paths: ['apps/mobile/**']
   workflow_dispatch:  # Manual trigger for on-demand runs
 
 jobs:
@@ -255,10 +255,10 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: cd fe/mobile && npm ci
+        run: cd apps/mobile && npm ci
 
       - name: Build release APK
-        run: cd fe/mobile/android && ./gradlew assembleRelease
+        run: cd apps/mobile/android && ./gradlew assembleRelease
 
       - name: Install Maestro
         run: curl -Ls "https://get.maestro.mobile.dev" | bash
@@ -275,8 +275,8 @@ jobs:
           api-level: 34
           arch: x86_64
           script: |
-            adb install fe/mobile/android/app/build/outputs/apk/release/app-release.apk
-            ~/.maestro/bin/maestro test fe/mobile/.maestro/flows/ --retry-count=2
+            adb install apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+            ~/.maestro/bin/maestro test apps/mobile/.maestro/flows/ --retry-count=2
 
       - name: Upload results
         if: always()

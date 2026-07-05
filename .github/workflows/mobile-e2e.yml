@@ -1,7 +1,7 @@
 # Mobile E2E (Phase 4-9 A2, ADR-017) — Maestro flows on an Android emulator.
 # workflow_dispatch only: the full stack (postgres + redis + seeded backend +
 # KVM emulator) is heavy, and several flows are device-gated (GPS/selfie/
-# airplane-mode). See fe/mobile/.maestro/README.md for the local/device runbook.
+# airplane-mode). See apps/mobile/.maestro/README.md for the local/device runbook.
 name: Mobile E2E (Maestro)
 
 on:
@@ -26,7 +26,7 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: fe/mobile/package-lock.json
+          cache-dependency-path: apps/mobile/package-lock.json
 
       - name: Setup JDK
         uses: actions/setup-java@v4
@@ -35,14 +35,14 @@ jobs:
           java-version: 17
 
       - name: Install mobile deps
-        working-directory: fe/mobile
+        working-directory: apps/mobile
         run: npm ci
 
       - name: Install Maestro
         run: curl -fsSL https://get.maestro.mobile.dev | bash
 
       - name: Build debug APK
-        working-directory: fe/mobile/android
+        working-directory: apps/mobile/android
         run: ./gradlew assembleDebug
 
       - name: Run Maestro flows on emulator
@@ -51,9 +51,9 @@ jobs:
           api-level: 34
           arch: x86_64
           script: |
-            adb install fe/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+            adb install apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
             export PATH="$PATH:$HOME/.maestro/bin"
-            maestro test fe/mobile/.maestro/flows/ --include-tags "${{ github.event.inputs.tags }}" --format junit --output maestro-results.xml
+            maestro test apps/mobile/.maestro/flows/ --include-tags "${{ github.event.inputs.tags }}" --format junit --output maestro-results.xml
 
       - name: Upload results
         if: always()

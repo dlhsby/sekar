@@ -569,7 +569,7 @@ DROP MATERIALIZED VIEW IF EXISTS operational_metrics_daily;
 
 ### D1. Migration A — Reporting Tables (Sub-Phase 5-1)
 
-**File:** `be/src/database/migrations/1743000000000-Phase4ReportingTables.ts`
+**File:** `apps/be/src/database/migrations/1743000000000-Phase4ReportingTables.ts`
 
 ```typescript
 export class Phase4ReportingTables implements MigrationInterface {
@@ -666,7 +666,7 @@ export class Phase4ReportingTables implements MigrationInterface {
 
 ### D2. Migration B — Asset Tables (Sub-Phase 5-3)
 
-**File:** `be/src/database/migrations/1743000001000-Phase4AssetTables.ts`
+**File:** `apps/be/src/database/migrations/1743000001000-Phase4AssetTables.ts`
 
 ```typescript
 export class Phase4AssetTables implements MigrationInterface {
@@ -787,7 +787,7 @@ export class Phase4AssetTables implements MigrationInterface {
 
 ### D3. Migration C — Analytics Materialized Views (Sub-Phase 5-2)
 
-**File:** `be/src/database/migrations/1743000002000-Phase4AnalyticsViews.ts`
+**File:** `apps/be/src/database/migrations/1743000002000-Phase4AnalyticsViews.ts`
 
 > **Note:** This migration must run AFTER asset tables (D2) because `area_metrics_daily` references the `assets` table.
 
@@ -825,7 +825,7 @@ export class Phase4AnalyticsViews implements MigrationInterface {
 
 ## D-extra. Migration D — Apple Sign-In Column (Sub-Phase 5-4)
 
-**File:** `be/src/database/migrations/1743000003000-Phase4AppleSignIn.ts`
+**File:** `apps/be/src/database/migrations/1743000003000-Phase4AppleSignIn.ts`
 
 > **Note:** Adds `apple_id` column to `users` table for Apple Sign-In (iOS). Independent of other Phase 5 migrations.
 

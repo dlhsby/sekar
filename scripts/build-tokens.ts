@@ -4,8 +4,8 @@
  * Reads specs/ui-ux/tokens.json (validated against tokens.schema.json),
  * emits two byte-identical artifacts:
  *
- *   - fe/web/src/app/generated/tokens.css
- *   - fe/mobile/src/constants/generated/tokens.ts
+ *   - apps/web/src/app/generated/tokens.css
+ *   - apps/mobile/src/constants/generated/tokens.ts
  *
  * Output is deterministic (stable key order, LF line endings, trailing newline)
  * so `tokens:build && git diff --exit-code` is the CI drift check.
@@ -25,8 +25,8 @@ import addFormats from 'ajv-formats';
 const REPO_ROOT = resolve(__dirname, '..');
 const TOKENS_PATH = join(REPO_ROOT, 'specs/ui-ux/tokens.json');
 const SCHEMA_PATH = join(REPO_ROOT, 'specs/ui-ux/tokens.schema.json');
-const WEB_OUT = join(REPO_ROOT, 'fe/web/src/app/generated/tokens.css');
-const MOBILE_OUT = join(REPO_ROOT, 'fe/mobile/src/constants/generated/tokens.ts');
+const WEB_OUT = join(REPO_ROOT, 'apps/web/src/app/generated/tokens.css');
+const MOBILE_OUT = join(REPO_ROOT, 'apps/mobile/src/constants/generated/tokens.ts');
 
 const BANNER_LINES = [
   'GENERATED FILE — DO NOT EDIT.',

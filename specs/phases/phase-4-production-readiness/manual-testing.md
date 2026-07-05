@@ -104,10 +104,10 @@ Same as A with `korlap_bungkul/Password123!`; lands on **HOME-2** with monitorin
 
 Before starting manual testing, ensure the following environment is in place:
 
-- Backend running with fully seeded data (`npm run db:seed` from `be/`)
+- Backend running with fully seeded data (`npm run db:seed` from `apps/be/`)
 - Mobile app configured with test credentials (see `CLAUDE.md` — all users use `Password123!`)
 - `.env` set to correct `API_BASE_URL` (emulator: `http://10.0.2.2:3000`; device: `http://<YOUR_IP>:3000`)
-- Web app running at `http://localhost:3001` (`npm run dev` from `fe/web/`)
+- Web app running at `http://localhost:3001` (`npm run dev` from `apps/web/`)
 - Stable internet connection available for push notification tests
 - Test devices: Android 12+ physical device recommended; Chrome latest for web testing
 

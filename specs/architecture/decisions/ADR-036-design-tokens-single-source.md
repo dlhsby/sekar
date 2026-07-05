@@ -12,8 +12,8 @@ Accepted
 
 Through Phase 2 the SEKAR "Neo Brutalism" language lived in two hand-maintained files:
 
-- `fe/web/src/app/globals.css` — `:root { --color-nb-*: ... }` variables, hard-coded shadows with `rgba()` blur.
-- `fe/mobile/src/constants/nbTokens.ts` — literal hex codes in a TypeScript object, `shadowRadius: 1-4` with soft blur.
+- `apps/web/src/app/globals.css` — `:root { --color-nb-*: ... }` variables, hard-coded shadows with `rgba()` blur.
+- `apps/mobile/src/constants/nbTokens.ts` — literal hex codes in a TypeScript object, `shadowRadius: 1-4` with soft blur.
 
 Visual drift accumulated:
 
@@ -31,8 +31,8 @@ Leaving the two hand-maintained files as-is and hoping new code "matches" has be
 
 Web and mobile consume **generated** files emitted by `scripts/build-tokens.ts`:
 
-- `fe/web/src/app/generated/tokens.css` — `:root { --color-nb-*: … }` and utility-friendly custom properties.
-- `fe/mobile/src/constants/generated/tokens.ts` — `export const nbTokens = { … }` object.
+- `apps/web/src/app/generated/tokens.css` — `:root { --color-nb-*: … }` and utility-friendly custom properties.
+- `apps/mobile/src/constants/generated/tokens.ts` — `export const nbTokens = { … }` object.
 
 Both generated files are committed to git so reviewers see diffs; CI re-runs the generator on every PR and fails the build if the committed output drifts from what the generator produces.
 

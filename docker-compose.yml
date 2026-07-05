@@ -31,9 +31,9 @@ services:
   # Backend API
   backend:
     build:
-      context: ./be
+      context: ./apps/be
       dockerfile: Dockerfile
-      target: runner            # final production stage in be/Dockerfile
+      target: runner            # final production stage in apps/be/Dockerfile
     container_name: sekar-backend
     restart: unless-stopped
     environment:

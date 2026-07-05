@@ -27,7 +27,7 @@
 
 ### A1. ReportsScreen
 
-**File:** `fe/mobile/src/screens/reports/ReportsScreen.tsx`
+**File:** `apps/mobile/src/screens/reports/ReportsScreen.tsx`
 **Navigation:** Bottom tab → "Laporan" (for korlap+)
 
 ```
@@ -60,7 +60,7 @@
 
 ### A2. ReportDetailScreen
 
-**File:** `fe/mobile/src/screens/reports/ReportDetailScreen.tsx`
+**File:** `apps/mobile/src/screens/reports/ReportDetailScreen.tsx`
 
 Shows report metadata + embedded PDF viewer (react-native-pdf) or chart summary for quick view.
 
@@ -70,7 +70,7 @@ Shows report metadata + embedded PDF viewer (react-native-pdf) or chart summary 
 
 ### B1. WorkerAnalyticsScreen
 
-**File:** `fe/mobile/src/screens/analytics/WorkerAnalyticsScreen.tsx`
+**File:** `apps/mobile/src/screens/analytics/WorkerAnalyticsScreen.tsx`
 **Audience:** All workers (own data), korlap (team data)
 
 ```
@@ -101,7 +101,7 @@ Shows report metadata + embedded PDF viewer (react-native-pdf) or chart summary 
 
 ### B2. TeamAnalyticsScreen
 
-**File:** `fe/mobile/src/screens/analytics/TeamAnalyticsScreen.tsx`
+**File:** `apps/mobile/src/screens/analytics/TeamAnalyticsScreen.tsx`
 **Audience:** `korlap`, `kepala_rayon`, admin roles
 
 ```
@@ -132,7 +132,7 @@ Shows report metadata + embedded PDF viewer (react-native-pdf) or chart summary 
 
 ### C1. AssetListScreen
 
-**File:** `fe/mobile/src/screens/assets/AssetListScreen.tsx`
+**File:** `apps/mobile/src/screens/assets/AssetListScreen.tsx`
 
 ```
 ┌─────────────────────────────┐
@@ -160,14 +160,14 @@ Shows report metadata + embedded PDF viewer (react-native-pdf) or chart summary 
 
 ### C2. AssetDetailScreen
 
-**File:** `fe/mobile/src/screens/assets/AssetDetailScreen.tsx`
+**File:** `apps/mobile/src/screens/assets/AssetDetailScreen.tsx`
 
 Shows asset info, QR code, assignment history, maintenance history.
 Buttons: [Pinjam] (if available), [Kembalikan] (if assigned to user).
 
 ### C3. QRScannerScreen
 
-**File:** `fe/mobile/src/screens/assets/QRScannerScreen.tsx`
+**File:** `apps/mobile/src/screens/assets/QRScannerScreen.tsx`
 
 ```
 ┌─────────────────────────────┐
@@ -197,7 +197,7 @@ Buttons: [Pinjam] (if available), [Kembalikan] (if assigned to user).
 
 ### C4. AssetCheckoutScreen
 
-**File:** `fe/mobile/src/screens/assets/AssetCheckoutScreen.tsx`
+**File:** `apps/mobile/src/screens/assets/AssetCheckoutScreen.tsx`
 
 Confirmation screen after QR scan:
 - Asset details displayed
@@ -213,7 +213,7 @@ Confirmation screen after QR scan:
 ### D1. New Slices
 
 ```typescript
-// fe/mobile/src/store/slices/reportsSlice.ts
+// apps/mobile/src/store/slices/reportsSlice.ts
 interface ReportsState {
   reports: GeneratedReport[];
   templates: ReportTemplate[];
@@ -221,7 +221,7 @@ interface ReportsState {
   error: string | null;
 }
 
-// fe/mobile/src/store/slices/analyticsSlice.ts
+// apps/mobile/src/store/slices/analyticsSlice.ts
 interface AnalyticsState {
   workerAnalytics: WorkerAnalyticsDto | null;
   teamAnalytics: WorkerAnalyticsDto[];
@@ -230,7 +230,7 @@ interface AnalyticsState {
   error: string | null;
 }
 
-// fe/mobile/src/store/slices/assetsSlice.ts
+// apps/mobile/src/store/slices/assetsSlice.ts
 interface AssetsState {
   assets: Asset[];
   myAssets: Asset[];
@@ -301,9 +301,9 @@ See [ios.md](./ios.md) for detailed iOS specifications. Key mobile code changes:
 
 | Feature | Files |
 |---------|-------|
-| Apple Sign-In button | `fe/mobile/src/screens/auth/LoginScreen.tsx` (conditional render on iOS) |
-| Biometric auth service | `fe/mobile/src/services/auth/biometricAuth.ts` |
-| APNs token registration | `fe/mobile/src/services/fcm/fcmService.ts` (platform-specific) |
+| Apple Sign-In button | `apps/mobile/src/screens/auth/LoginScreen.tsx` (conditional render on iOS) |
+| Biometric auth service | `apps/mobile/src/services/auth/biometricAuth.ts` |
+| APNs token registration | `apps/mobile/src/services/fcm/fcmService.ts` (platform-specific) |
 
 ---
 

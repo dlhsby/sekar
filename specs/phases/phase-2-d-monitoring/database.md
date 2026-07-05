@@ -12,12 +12,12 @@
 
 | Fact | Actual Value | File |
 |------|-------------|------|
-| `location_logs` table | UUID PK, user_id, shift_id, gps_lat/lng, accuracy_meters, battery_level, logged_at | `be/src/modules/location/entities/location-log.entity.ts` |
-| `shifts` table | UUID PK, user_id, area_id (nullable), clock_in/out timestamps, GPS, outside_boundary flags | `be/src/modules/shifts/entities/shift.entity.ts` |
-| `areas` table | UUID PK, name, gps_lat/lng, radius_meters, boundary_polygon JSONB, rayon_id | `be/src/modules/areas/entities/area.entity.ts` |
-| `shift_definitions` table | UUID PK, name, start_time, end_time, area_id, is_active | `be/src/modules/shifts/entities/shift-definition.entity.ts` |
-| `users` table | UUID PK, role (VARCHAR), area_id, rayon_id, phone (nullable) | `be/src/modules/users/entities/user.entity.ts` |
-| Online threshold | Hardcoded `ONLINE_THRESHOLD_MS = 10 * 60 * 1000` in monitoring service | `be/src/modules/monitoring/monitoring.service.ts` |
+| `location_logs` table | UUID PK, user_id, shift_id, gps_lat/lng, accuracy_meters, battery_level, logged_at | `apps/be/src/modules/location/entities/location-log.entity.ts` |
+| `shifts` table | UUID PK, user_id, area_id (nullable), clock_in/out timestamps, GPS, outside_boundary flags | `apps/be/src/modules/shifts/entities/shift.entity.ts` |
+| `areas` table | UUID PK, name, gps_lat/lng, radius_meters, boundary_polygon JSONB, rayon_id | `apps/be/src/modules/areas/entities/area.entity.ts` |
+| `shift_definitions` table | UUID PK, name, start_time, end_time, area_id, is_active | `apps/be/src/modules/shifts/entities/shift-definition.entity.ts` |
+| `users` table | UUID PK, role (VARCHAR), area_id, rayon_id, phone (nullable) | `apps/be/src/modules/users/entities/user.entity.ts` |
+| Online threshold | Hardcoded `ONLINE_THRESHOLD_MS = 10 * 60 * 1000` in monitoring service | `apps/be/src/modules/monitoring/monitoring.service.ts` |
 | Location partitioning | Range partitioned by `logged_at` month (ADR-006) | `specs/database/schema.md` |
 | Existing indexes | `idx_shifts_worker_date`, `idx_shifts_active`, `idx_shifts_date_range` | `specs/database/schema.md` |
 

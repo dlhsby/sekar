@@ -330,7 +330,7 @@ enum PermissionType {
 
 ## Related Documentation
 
-- **Permission Flow Guide:** `fe/mobile/PERMISSION_FLOW.md` (detailed implementation)
+- **Permission Flow Guide:** `apps/mobile/PERMISSION_FLOW.md` (detailed implementation)
 - **FCM Integration:** `specs/deployment/credentials-setup.md`
 - **Mobile Screens:** `specs/mobile/screens.md`
 - **State Management:** `specs/mobile/state-management.md`

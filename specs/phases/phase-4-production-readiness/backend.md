@@ -11,8 +11,8 @@
 
 | Fact | Updated value |
 |------|---------------|
-| FCM | **Live** — `FCM_ENABLED=true` in `be/.env` and `be/.env.example`; 8 trigger points wired; `sendToUser()` operational |
-| Redis | **Live** — `ioredis@5.10.1` + `@socket.io/redis-adapter@8.3.0` in `be/package.json`; adapter wired in `be/src/gateways/events.gateway.ts:93` |
+| FCM | **Live** — `FCM_ENABLED=true` in `apps/be/.env` and `apps/be/.env.example`; 8 trigger points wired; `sendToUser()` operational |
+| Redis | **Live** — `ioredis@5.10.1` + `@socket.io/redis-adapter@8.3.0` in `apps/be/package.json`; adapter wired in `apps/be/src/gateways/events.gateway.ts:93` |
 | Sentry | Still not integrated — 4-1 B3 |
 | Logging | Still inconsistent console.log / Logger mix — 4-1 B1 |
 | Cron jobs | 1 active (monitoring 60s); 4-3 + 4-6 add 5 more |
@@ -49,9 +49,9 @@
 
 **Files (new):**
 
-- `be/src/queues/bullmq.module.ts` — single module registers all queues + workers
-- `be/src/queues/fcm-retry/fcm-retry.queue.ts`, `fcm-retry.processor.ts`
-- `be/src/queues/export/export.processor.ts` (works with `4-5` `ExportModule`)
+- `apps/be/src/queues/bullmq.module.ts` — single module registers all queues + workers
+- `apps/be/src/queues/fcm-retry/fcm-retry.queue.ts`, `fcm-retry.processor.ts`
+- `apps/be/src/queues/export/export.processor.ts` (works with `4-5` `ExportModule`)
 - Other processors land alongside their feature modules
 
 **Dependency:** `bullmq@^5` (no `bull` legacy). Reuses existing `ioredis` connection — must use a separate connection per BullMQ guidance, but the same Redis instance.
@@ -97,7 +97,7 @@
 
 ### A1. Health Endpoints
 
-**File:** `be/src/modules/health/health.controller.ts`
+**File:** `apps/be/src/modules/health/health.controller.ts`
 
 ```
 GET /health            → { status: 'ok', timestamp: ISO8601 }
@@ -110,7 +110,7 @@ GET /health/full       → { status: 'ok', database: 'connected', redis: 'connec
 ### A2. Health Module Structure
 
 ```
-be/src/modules/health/
+apps/be/src/modules/health/
 ├── health.module.ts
 ├── health.controller.ts
 ├── health.controller.spec.ts
@@ -124,7 +124,7 @@ be/src/modules/health/
 
 ### B1. Logging Interceptor
 
-**File:** `be/src/common/interceptors/logging.interceptor.ts`
+**File:** `apps/be/src/common/interceptors/logging.interceptor.ts`
 
 Log every request in JSON format:
 
@@ -150,7 +150,7 @@ Log every request in JSON format:
 
 ### B2. Request ID Middleware
 
-**File:** `be/src/common/middleware/request-id.middleware.ts`
+**File:** `apps/be/src/common/middleware/request-id.middleware.ts`
 
 - Generate UUID v4 if no `X-Request-ID` header present
 - Attach to request object and response header
@@ -158,7 +158,7 @@ Log every request in JSON format:
 
 ### B3. Slow Query Interceptor
 
-**File:** `be/src/common/interceptors/slow-query.interceptor.ts`
+**File:** `apps/be/src/common/interceptors/slow-query.interceptor.ts`
 
 - Log warning for any request >500ms with full query context
 - Log error for any request >2000ms
@@ -174,14 +174,14 @@ Wire `NotificationsService.sendToUser()` at these locations:
 
 | # | Trigger | Service File | Method | Recipient |
 |---|---------|-------------|--------|-----------|
-| 1 | Task assigned | `be/src/modules/tasks/tasks.service.ts` | `assign()` | Assignee |
-| 2 | Task completed | `be/src/modules/tasks/tasks.service.ts` | `complete()` | Korlap of area |
-| 3 | Task revision requested | `be/src/modules/tasks/tasks.service.ts` | `requestRevision()` | Assignee |
-| 4 | Activity approved | `be/src/modules/activities/activities.service.ts` | `approve()` | Submitter |
-| 5 | Activity rejected | `be/src/modules/activities/activities.service.ts` | `reject()` | Submitter |
-| 6 | Overtime approved | `be/src/modules/overtime/overtime.service.ts` | `approve()` | Requester |
-| 7 | Overtime rejected | `be/src/modules/overtime/overtime.service.ts` | `reject()` | Requester |
-| 8 | Missing worker alert | `be/src/modules/monitoring/services/status-calculator.service.ts` | `calculateStatus()` (when status changes to MISSING) | All korlaps of worker's area + kepala_rayon |
+| 1 | Task assigned | `apps/be/src/modules/tasks/tasks.service.ts` | `assign()` | Assignee |
+| 2 | Task completed | `apps/be/src/modules/tasks/tasks.service.ts` | `complete()` | Korlap of area |
+| 3 | Task revision requested | `apps/be/src/modules/tasks/tasks.service.ts` | `requestRevision()` | Assignee |
+| 4 | Activity approved | `apps/be/src/modules/activities/activities.service.ts` | `approve()` | Submitter |
+| 5 | Activity rejected | `apps/be/src/modules/activities/activities.service.ts` | `reject()` | Submitter |
+| 6 | Overtime approved | `apps/be/src/modules/overtime/overtime.service.ts` | `approve()` | Requester |
+| 7 | Overtime rejected | `apps/be/src/modules/overtime/overtime.service.ts` | `reject()` | Requester |
+| 8 | Missing worker alert | `apps/be/src/modules/monitoring/services/status-calculator.service.ts` | `calculateStatus()` (when status changes to MISSING) | All korlaps of worker's area + kepala_rayon |
 
 > **Missing worker alert recipients (Phase 2E multi-area):** Use `user_areas` junction table to find ALL korlaps assigned to the worker's current area. Also notify `kepala_rayon` of the rayon containing the area.
 
@@ -209,7 +209,7 @@ interface FcmPayload {
 
 ### C3. Shift Reminder Cron
 
-**File:** `be/src/modules/notifications/cron/shift-reminder.cron.ts`
+**File:** `apps/be/src/modules/notifications/cron/shift-reminder.cron.ts`
 
 - Recommended approach: cron runs every 15 minutes, finds schedules where shift starts within the next 15 minutes:
   ```sql
@@ -226,7 +226,7 @@ interface FcmPayload {
 
 ### C4. Stale Status Cleanup Cron
 
-**File:** `be/src/modules/monitoring/cron/stale-status.cron.ts`
+**File:** `apps/be/src/modules/monitoring/cron/stale-status.cron.ts`
 
 - Run every hour
 - Mark stale tracking entries as `offline` using the following SQL (users without an active open shift):
@@ -252,7 +252,7 @@ WHERE updated_at < NOW() - INTERVAL '24 hours'
 
 ### D1. Entity
 
-**File:** `be/src/modules/notifications/entities/notification-preference.entity.ts`
+**File:** `apps/be/src/modules/notifications/entities/notification-preference.entity.ts`
 
 ```typescript
 @Entity('notification_preferences')
@@ -335,7 +335,7 @@ return ALL_TYPES.map(type => ({
 ### E1. Module Structure
 
 ```
-be/src/modules/export/
+apps/be/src/modules/export/
 ├── export.module.ts
 ├── export.controller.ts
 ├── export.controller.spec.ts
@@ -378,7 +378,7 @@ Body: { entityType, format?, startDate?, endDate?, areaId?, rayonId? }
 
 ### E3. Export Job Entity
 
-**File:** `be/src/modules/export/entities/export-job.entity.ts`
+**File:** `apps/be/src/modules/export/entities/export-job.entity.ts`
 
 ```typescript
 @Entity('export_jobs')
@@ -451,7 +451,7 @@ export class ExportJob {
 
 ### F1. New Import Endpoints
 
-**File:** `be/src/modules/import/import.controller.ts`
+**File:** `apps/be/src/modules/import/import.controller.ts`
 
 ```
 POST /import/users/csv     → { valid: UserRow[], errors: ValidationError[] }
@@ -532,7 +532,7 @@ POST /import/:type/commit  → { imported: number, skipped: number }
 
 ### G1. Per-Endpoint Rate Limiting
 
-**File:** `be/src/common/guards/rate-limit.guard.ts`
+**File:** `apps/be/src/common/guards/rate-limit.guard.ts`
 
 | Endpoint Category | Limit | Window |
 |-------------------|-------|--------|
@@ -562,7 +562,7 @@ export class UserThrottlerGuard extends ThrottlerGuard {
 
 ### G2. JWT Refresh Token Rotation
 
-**File:** `be/src/modules/auth/auth.service.ts`
+**File:** `apps/be/src/modules/auth/auth.service.ts`
 
 ```
 POST /auth/login    → { access_token (15min), refresh_token (7d) }
@@ -639,11 +639,11 @@ async function refreshAccessToken(): Promise<string> {
 - All concurrent `401` handlers await the same `refreshPromise`, then retry their original request with the new token
 - If refresh fails, `forceLogout()` clears tokens and navigates to login; all pending retries are rejected
 
-**Note:** This interceptor is documented here (backend spec) because it is a direct counterpart to the `POST /auth/refresh` endpoint. Implementation lives in `fe/mobile/src/services/api/` and `fe/web/src/lib/api/`.
+**Note:** This interceptor is documented here (backend spec) because it is a direct counterpart to the `POST /auth/refresh` endpoint. Implementation lives in `apps/mobile/src/services/api/` and `apps/web/src/lib/api/`.
 
 ### G3. Helmet.js Configuration
 
-**File:** `be/src/main.ts`
+**File:** `apps/be/src/main.ts`
 
 ```typescript
 app.use(helmet({
@@ -663,7 +663,7 @@ app.use(helmet({
 
 ### G4. CORS Tightening
 
-**File:** `be/src/main.ts`
+**File:** `apps/be/src/main.ts`
 
 ```typescript
 // Production
@@ -730,23 +730,23 @@ The following error codes are introduced in Phase 4. Add them to `specs/api/erro
 ### H1. ShiftsService + StatusCalculatorService → BoundaryCheckService
 
 **Extract from BOTH:**
-1. `be/src/modules/shifts/shifts.service.ts` (>400 lines) — clock-in GPS validation
-2. `be/src/modules/monitoring/services/status-calculator.service.ts` — monitoring boundary checks (this is where most polygon logic lives)
+1. `apps/be/src/modules/shifts/shifts.service.ts` (>400 lines) — clock-in GPS validation
+2. `apps/be/src/modules/monitoring/services/status-calculator.service.ts` — monitoring boundary checks (this is where most polygon logic lives)
 
-**Extract to:** `be/src/shared/services/boundary-check.service.ts`
+**Extract to:** `apps/be/src/shared/services/boundary-check.service.ts`
 
 Methods to extract (with source mapping):
 
 ```typescript
-// Source: be/src/modules/monitoring/services/status-calculator.service.ts
+// Source: apps/be/src/modules/monitoring/services/status-calculator.service.ts
 isWithinAreaBoundary(lat: number, lng: number, area: Area): boolean
 // Polygon ray-casting algorithm + radius fallback
 
-// Source: be/src/modules/monitoring/services/status-calculator.service.ts
+// Source: apps/be/src/modules/monitoring/services/status-calculator.service.ts
 findContainingArea(lat: number, lng: number, areas: Area[]): Area | null
 // Returns the first area whose boundary contains the given coordinates
 
-// Source: be/src/modules/shifts/shifts.service.ts (clock-in validation)
+// Source: apps/be/src/modules/shifts/shifts.service.ts (clock-in validation)
 validateClockInLocation(lat: number, lng: number, userAreas: Area[]): { valid: boolean; area: Area | null; distance?: number }
 // Returns validity flag, the matched area, and optional distance from nearest boundary
 ```
@@ -757,8 +757,8 @@ Additional method (existing, keep in BoundaryCheckService):
 
 ### H2. UsersService → UserValidationService
 
-**Current:** `be/src/modules/users/users.service.ts` → `create()` method
-**Extract to:** `be/src/modules/users/services/user-validation.service.ts`
+**Current:** `apps/be/src/modules/users/users.service.ts` → `create()` method
+**Extract to:** `apps/be/src/modules/users/services/user-validation.service.ts`
 
 Concerns to separate:
 1. Phone number uniqueness validation
@@ -767,8 +767,8 @@ Concerns to separate:
 
 ### H3. EventsGateway → RoomJoinService
 
-**Current:** `be/src/gateways/events.gateway.ts` → `handleConnection()` (80+ lines)
-**Extract to:** `be/src/gateways/services/room-join.service.ts`
+**Current:** `apps/be/src/gateways/events.gateway.ts` → `handleConnection()` (80+ lines)
+**Extract to:** `apps/be/src/gateways/services/room-join.service.ts`
 
 Methods to extract:
 - `getRoomsForUser(user)` — compute room list based on role and assignments
@@ -792,7 +792,7 @@ Methods to extract:
 
 The following services load related entities with individual queries per row (N+1 pattern). Fix each with `leftJoinAndSelect` in the `findAll()` query builder:
 
-**TasksService.findAll()** (`be/src/modules/tasks/tasks.service.ts`):
+**TasksService.findAll()** (`apps/be/src/modules/tasks/tasks.service.ts`):
 ```typescript
 // Current (N+1): loads tasks, then loops to load assignee and area per task
 // Fix:
@@ -803,7 +803,7 @@ return this.taskRepo.createQueryBuilder('task')
   .getMany();
 ```
 
-**ActivitiesService.findAll()** (`be/src/modules/activities/activities.service.ts`):
+**ActivitiesService.findAll()** (`apps/be/src/modules/activities/activities.service.ts`):
 ```typescript
 // Current (N+1): loads activities, then loads submitter and activity_type per row
 // Fix:
@@ -814,7 +814,7 @@ return this.activityRepo.createQueryBuilder('activity')
   .getMany();
 ```
 
-**OvertimeService.findAll()** (`be/src/modules/overtime/overtime.service.ts`):
+**OvertimeService.findAll()** (`apps/be/src/modules/overtime/overtime.service.ts`):
 ```typescript
 // Current (N+1): loads overtime records, then loads requester per row
 // Fix:
@@ -837,7 +837,7 @@ return this.taskRepo.find({ where: filters, relations: ['assignee', 'area'] });
 
 ### I1. Location Log Retention
 
-**File:** `be/src/modules/location/cron/retention.cron.ts`
+**File:** `apps/be/src/modules/location/cron/retention.cron.ts`
 
 ```typescript
 @Cron('0 2 * * *', { timeZone: 'Asia/Jakarta' })  // Daily at 2 AM WIB
@@ -851,7 +851,7 @@ async purgeOldLocationLogs() {
 
 ### I2. Soft-Delete Cleanup
 
-**File:** `be/src/modules/users/cron/cleanup.cron.ts`
+**File:** `apps/be/src/modules/users/cron/cleanup.cron.ts`
 
 ```typescript
 @Cron('0 3 * * 0')  // Weekly on Sunday at 3 AM
@@ -907,7 +907,7 @@ interface PaginatedResponse<T> {
 
 ### J1. seed-production.ts
 
-**File:** `be/src/database/seeds/seed-production.ts`
+**File:** `apps/be/src/database/seeds/seed-production.ts`
 
 ```typescript
 // Real DLH Surabaya data
@@ -940,7 +940,7 @@ const SHIFT_DEFINITIONS = [
 
 ### K1. Redis Service
 
-**File:** `be/src/common/services/redis.service.ts`
+**File:** `apps/be/src/common/services/redis.service.ts`
 
 ```typescript
 @Injectable()

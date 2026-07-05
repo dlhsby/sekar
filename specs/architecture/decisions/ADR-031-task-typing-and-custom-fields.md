@@ -12,7 +12,7 @@ Accepted — **Amended May 2026 by [ADR-038](./ADR-038-pruning-workflow-entry-po
 
 ## Context
 
-Phase 3 introduces pruning as the first typed workflow, with watering, planting, removal, and inspection on the near horizon. The existing `tasks` table (`be/src/modules/tasks/entities/task.entity.ts`) is homogeneous: no discriminator, no per-activity-type columns, no partial-completion semantics, no parent/child linkage. ADR-010 unified `activities` as the canonical completion record; `activity.entity.ts` is similarly homogeneous.
+Phase 3 introduces pruning as the first typed workflow, with watering, planting, removal, and inspection on the near horizon. The existing `tasks` table (`apps/be/src/modules/tasks/entities/task.entity.ts`) is homogeneous: no discriminator, no per-activity-type columns, no partial-completion semantics, no parent/child linkage. ADR-010 unified `activities` as the canonical completion record; `activity.entity.ts` is similarly homogeneous.
 
 Concrete Phase 3 requirements:
 
@@ -77,7 +77,7 @@ CREATE INDEX idx_activity_plant_items_activity ON activity_plant_items(activity_
 A service-layer registry keyed by `task_type` holds a Zod schema for `custom_fields`:
 
 ```ts
-// be/src/modules/tasks/registry/task-type-registry.ts
+// apps/be/src/modules/tasks/registry/task-type-registry.ts
 //
 // Pruning vocabulary locked Apr 25, 2026 (client Q1 answer; see Phase 3
 // README §Pruning Vocabulary for full glossary).

@@ -14,7 +14,7 @@ This document provides comprehensive Entity Relationship Diagrams for the SEKAR 
 
 **Authority:**
 - **Current ERD:** below (conceptual model for Phase 2C–5)
-- **Actual schema:** see `schema.md` + migrations in `be/src/database/migrations/`
+- **Actual schema:** see `schema.md` + migrations in `apps/be/src/database/migrations/`
 - **Live database:** reflect `specs/COMPLETION_STATUS.md` (Phase 5 complete, tables include all Phase 3–5 additions)
 
 ---
