@@ -602,7 +602,7 @@ CREATE INDEX idx_activity_types_active ON activity_types(is_active) WHERE is_act
 INSERT INTO activity_types (name, code, description, applicable_roles) VALUES
   ('Penyiraman', 'WATERING', 'Watering plants and grass', ARRAY['Worker']),
   ('Penanaman', 'PLANTING', 'Planting new plants or trees', ARRAY['Worker']),
-  ('Pemangkasan', 'PRUNING', 'Pruning trees and bushes', ARRAY['Worker']),
+  ('Perantingan', 'PRUNING', 'Pruning trees and bushes', ARRAY['Worker']),
   ('Pembersihan', 'CLEANING', 'Cleaning area from debris and trash', ARRAY['Worker', 'Linmas']),
   ('Pemupukan', 'FERTILIZING', 'Applying fertilizer to plants', ARRAY['Worker']),
   ('Perawatan Tanaman', 'PLANT_CARE', 'General plant maintenance', ARRAY['Worker']);

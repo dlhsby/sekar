@@ -160,7 +160,7 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 
 const mockActivityTypes = [
   { id: 'aaaaaaaa-0000-0000-0000-000000000001', name: 'Penyiraman', applicable_roles: ['satgas'] },
-  { id: 'aaaaaaaa-0000-0000-0000-000000000002', name: 'Pemangkasan', applicable_roles: ['satgas'] },
+  { id: 'aaaaaaaa-0000-0000-0000-000000000002', name: 'Perantingan', applicable_roles: ['satgas'] },
   { id: 'aaaaaaaa-0000-0000-0000-000000000003', name: 'Lainnya', applicable_roles: ['satgas'] },
 ];
 

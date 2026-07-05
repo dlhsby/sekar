@@ -88,7 +88,7 @@ Tipe aktivitas harus dipilih untuk mengelompokkan laporan Anda.
 
 **Contoh Deskripsi Baik:**
 - "Membersihkan area Taman Bungkul dari sampah plastik dan daun-daun kering. Menggebok area sekitar playground dan area rekreasi."
-- "Memangkas cabang pohon yang menyapu trotoar di depan pagar Taman Bungkul. Hasil pemangkasan dikumpulkan dan dibawa ke tempat pengumpulan sampah."
+- "Merantingi cabang pohon yang menyapu trotoar di depan pagar Taman Bungkul. Hasil perantingan dikumpulkan dan dibawa ke tempat pengumpulan sampah."
 
 **Jangan:**
 - Terlalu singkat ("Kerja aja")

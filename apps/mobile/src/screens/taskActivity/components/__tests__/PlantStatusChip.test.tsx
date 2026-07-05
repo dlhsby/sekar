@@ -107,7 +107,7 @@ describe('PlantStatusChip', () => {
     });
 
     render(
-      <PlantStatusChip areaId="area-1" taskTitle="Pemangkasan Pohon" />
+      <PlantStatusChip areaId="area-1" taskTitle="Perantingan Pohon" />
     );
 
     await waitFor(() => {

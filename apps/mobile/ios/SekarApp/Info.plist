@@ -49,7 +49,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>SEKAR menggunakan kamera untuk verifikasi kehadiran (foto selfie saat clock-in/out) dan dokumentasi laporan pekerjaan.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>SEKAR memerlukan akses galeri untuk melampirkan foto pada laporan pekerjaan dan permohonan pemangkasan.</string>
+	<string>SEKAR memerlukan akses galeri untuk melampirkan foto pada laporan pekerjaan dan permohonan perantingan.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>SEKAR dapat menyimpan foto dokumentasi pekerjaan ke galeri Anda.</string>
 	<key>NSFaceIDUsageDescription</key>

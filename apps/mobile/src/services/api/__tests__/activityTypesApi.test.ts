@@ -23,7 +23,7 @@ describe('activityTypesApi', () => {
         data: {
           data: [
             { id: '1', name: 'Penyiraman', code: 'WATERING' },
-            { id: '2', name: 'Pemangkasan', code: 'PRUNING' },
+            { id: '2', name: 'Perantingan', code: 'PRUNING' },
           ],
         },
       };

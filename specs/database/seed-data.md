@@ -1071,7 +1071,7 @@ INSERT INTO activity_types (id, name, code, description, applicable_roles, is_ac
   -- Worker-only activities
   ('33333333-3333-3333-3333-333333333301', 'Penyiraman', 'WATERING', 'Penyiraman tanaman dan rumput', ARRAY['Worker'], true, NOW()),
   ('33333333-3333-3333-3333-333333333302', 'Penanaman', 'PLANTING', 'Penanaman tanaman baru atau penggantian tanaman mati', ARRAY['Worker'], true, NOW()),
-  ('33333333-3333-3333-3333-333333333303', 'Pemangkasan', 'PRUNING', 'Pemangkasan pohon, semak, dan rumput', ARRAY['Worker'], true, NOW()),
+  ('33333333-3333-3333-3333-333333333303', 'Perantingan', 'PRUNING', 'Perantingan pohon, semak, dan rumput', ARRAY['Worker'], true, NOW()),
   ('33333333-3333-3333-3333-333333333304', 'Pemupukan', 'FERTILIZING', 'Pemberian pupuk untuk tanaman', ARRAY['Worker'], true, NOW()),
   ('33333333-3333-3333-3333-333333333305', 'Perawatan Tanaman', 'PLANT_CARE', 'Perawatan umum tanaman termasuk penyiangan gulma', ARRAY['Worker'], true, NOW()),
 
@@ -1094,7 +1094,7 @@ ON CONFLICT (code) DO NOTHING;
 |------|-------------------|----------------|-------------|
 | WATERING | Penyiraman | Watering | Watering plants and grass |
 | PLANTING | Penanaman | Planting | Planting new or replacement plants |
-| PRUNING | Pemangkasan | Pruning | Trimming trees, shrubs, and grass |
+| PRUNING | Perantingan | Pruning | Trimming trees, shrubs, and grass |
 | FERTILIZING | Pemupukan | Fertilizing | Applying fertilizer to plants |
 | PLANT_CARE | Perawatan Tanaman | Plant Care | General plant care including weeding |
 
@@ -1545,7 +1545,7 @@ Phase 2C overhauled the role system. The seed data now uses the new role names:
 
 | Role | Activity Types |
 |------|---------------|
-| `satgas` | Penyiraman, Penanaman, Pemangkasan, Pembersihan Taman, Pemupukan, Perawatan Tanaman, Perapian Taman |
+| `satgas` | Penyiraman, Penanaman, Perantingan, Pembersihan Taman, Pemupukan, Perawatan Tanaman, Perapian Taman |
 | `linmas` | Patroli Keamanan, Laporan Insiden, Pemantauan Pengunjung, Pengecekan Fasilitas, Pengamanan Area, Patroli Malam |
 | `korlap` | Inspeksi Lapangan, Koordinasi Tim, Evaluasi Kinerja |
 | `admin_data` | Input Data Tanaman, Pembaruan Data Area, Dokumentasi Aset |
@@ -1558,10 +1558,10 @@ Phase 2C overhauled the role system. The seed data now uses the new role names:
 |------|--------|----------|-------------|
 | Penyiraman Taman Pagi | pending | high | unassigned |
 | Penanaman Bunga Musiman | assigned | medium | satgas1 |
-| Pemangkasan Pohon Tinggi | accepted | urgent | satgas2 |
+| Perantingan Pohon Tinggi | accepted | urgent | satgas2 |
 | Pembersihan Area Playground | in_progress | medium | satgas3 |
 | Penyiraman Taman Sore | completed | low | satgas1 |
-| Pemangkasan Semak Belukar | verified | low | satgas2 |
+| Perantingan Semak Belukar | verified | low | satgas2 |
 | Pembersihan Jalur Jogging | pending | high | unassigned |
 | Perawatan Rumput Taman | assigned | low | satgas3 |
 

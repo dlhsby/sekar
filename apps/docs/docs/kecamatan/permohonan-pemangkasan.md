@@ -1,17 +1,17 @@
 ---
-title: Permohonan Pemangkasan Pohon
+title: Permohonan Perantingan Pohon
 sidebar_position: 1
 ---
 
-# Mengajukan Permohonan Pemangkasan Pohon
+# Mengajukan Permohonan Perantingan Pohon
 
 <p align="center"><img src="/img/illustrations/illo-reports.svg" alt="Ilustrasi laporan" width="240" /></p>
 
-Panduan untuk Staff Kecamatan mengajukan permohonan pemangkasan pohon melalui SEKAR.
+Panduan untuk Staff Kecamatan mengajukan permohonan perantingan pohon melalui SEKAR.
 
-## Apa itu Permohonan Pemangkasan?
+## Apa itu Permohonan Perantingan?
 
-**Permohonan Pemangkasan (Pruning Request)** adalah sistem untuk staff kecamatan (publik/eksternal) mengajukan permintaan pemangkasan pohon yang:
+**Permohonan Perantingan (Pruning Request)** adalah sistem untuk staff kecamatan (publik/eksternal) mengajukan permintaan perantingan pohon yang:
 
 - Berbahaya (cabang menyapu trotoar/jalan)
 - Bermasalah (cabang patah, penyakit)
@@ -21,13 +21,13 @@ Permintaan akan ditinjau dan dijadwalkan oleh Dinas Lingkungan Hidup untuk diker
 
 ---
 
-## Akses Permohonan Pemangkasan
+## Akses Permohonan Perantingan
 
 ### Membuka Web Permohonan
 
 1. Buka browser
 2. Kunjungi: **sekar.wahyutrip.com** (atau link yang diberikan)
-3. Cari menu **"Permohonan Pemangkasan"** atau **"Pruning Request"**
+3. Cari menu **"Permohonan Perantingan"** atau **"Pruning Request"**
 
 ### Login (Jika Diperlukan)
 
@@ -40,15 +40,15 @@ Jika diminta login, gunakan:
 
 ## Membuat Permohonan Baru
 
-![Permohonan pemangkasan web](/img/web/pruning-requests.png)
+![Permohonan perantingan web](/img/web/pruning-requests.png)
 
-*Halaman antrian permohonan pemangkasan pohon untuk validasi admin.*
+*Halaman antrian permohonan perantingan pohon untuk validasi admin.*
 
 ### Form Permohonan
 
 ```
 ┌──────────────────────────────────────┐
-│   FORM PERMOHONAN PEMANGKASAN       │
+│   FORM PERMOHONAN PERANTINGAN       │
 ├──────────────────────────────────────┤
 │                                      │
 │ NAMA PEMOHON *                      │
@@ -174,7 +174,7 @@ Jika ada risiko keselamatan (cabang patah, pohon miring), pilih **URGENT** agar 
    Status: Diterima (Menunggu Verifikasi)
    
    Kami akan menghubungi Anda untuk konfirmasi lokasi
-   dan jadwal pemangkasan dalam 1-2 hari kerja.
+   dan jadwal perantingan dalam 1-2 hari kerja.
    
    Nomor Referensi: REQ-2026-06-001
    ```
@@ -193,7 +193,7 @@ Jika ada risiko keselamatan (cabang patah, pohon miring), pilih **URGENT** agar 
 ```
 PERMOHONAN SAYA (5 total)
 
-1. Pemangkasan Pohon Mangga di Jl. Semeru
+1. Perantingan Pohon Mangga di Jl. Semeru
    Lokasi: Kecamatan Wonokromo
    Tanggal Ajuan: 24 Juni 2026
    Status: ⏳ Menunggu Verifikasi
@@ -206,7 +206,7 @@ PERMOHONAN SAYA (5 total)
    Jadwal: 26 Juni 2026
    Referensi: REQ-2026-06-002
 
-3. Pemangkasan Pohon Pucuk Merah di Taman
+3. Perantingan Pohon Pucuk Merah di Taman
    Lokasi: Kecamatan Dukuh Kupang
    Tanggal Ajuan: 15 Juni 2026
    Status: ✓ Selesai (Dikerjakan)
@@ -220,8 +220,8 @@ PERMOHONAN SAYA (5 total)
 |--------|------|------|
 | **⏳ Menunggu Verifikasi** | Permohonan baru, sedang dicek | Tunggu konfirmasi |
 | **⏳ Scheduled** | Sudah disetujui, menunggu jadwal | Lihat jadwal di bawah |
-| **🔨 Sedang Dikerjakan** | Tim sedang mengerjakan pemangkasan | Tracking progress |
-| **✓ Selesai** | Pemangkasan sudah selesai | Lihat hasil (foto) |
+| **🔨 Sedang Dikerjakan** | Tim sedang mengerjakan perantingan | Tracking progress |
+| **✓ Selesai** | Perantingan sudah selesai | Lihat hasil (foto) |
 | **❌ Ditolak** | Permohonan ditolak dengan alasan | Hubungi admin |
 
 ---
@@ -245,16 +245,16 @@ Setelah mengajukan permohonan:
 
 ---
 
-## Hasil Pemangkasan
+## Hasil Perantingan
 
-### Melihat Hasil Pemangkasan
+### Melihat Hasil Perantingan
 
 Setelah tim selesai mengerjakan:
 
 1. Status akan berubah jadi **"Selesai"**
 2. Ada dokumentasi foto hasil:
-   - Foto area sebelum pemangkasan
-   - Foto area sesudah pemangkasan
+   - Foto area sebelum perantingan
+   - Foto area sesudah perantingan
    - Foto sampah/cabang yang sudah dikumpulkan
 
 3. Anda bisa lihat di aplikasi:
@@ -269,7 +269,7 @@ Setelah tim selesai mengerjakan:
 
 ---
 
-## FAQ Permohonan Pemangkasan
+## FAQ Permohonan Perantingan
 
 **Q: Berapa lama proses permohonan?**
 A: Dari ajuan sampai selesai biasanya 2-4 minggu, tergantung kompleksitas dan prioritas queue.
