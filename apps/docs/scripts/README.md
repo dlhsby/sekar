@@ -12,15 +12,15 @@ under [`../static/img/`](../static/img) and is referenced from the markdown page
 | `capture-mobile.sh` | **Manual** capture from a device/emulator (guided adb screencap), overwriting placeholders | When you'd rather navigate by hand |
 | `mobile-screens.json` | Shared manifest (filename, title, illustration, how-to-reach) for the two mobile scripts | Edit to add/rename a mobile screenshot |
 
-Playwright is reused from the `fe/web` workspace (it owns the dependency + browser),
+Playwright is reused from the `apps/web` workspace (it owns the dependency + browser),
 so install it once there if needed: `cd ../web && npx playwright install chromium`.
 
 ## Web screenshots (automated)
 
 ```bash
 # From repo root. Defaults to staging; pass a base URL to target another env.
-node fe/docs/scripts/capture-web.mjs
-node fe/docs/scripts/capture-web.mjs http://localhost:3001
+node apps/docs/scripts/capture-web.mjs
+node apps/docs/scripts/capture-web.mjs http://localhost:3001
 ```
 
 Logs in as `superadmin` (sees every page) plus a `staff_kecamatan` pass. Update the
@@ -47,8 +47,8 @@ curl -Ls "https://get.maestro.mobile.dev" | bash   # installs to ~/.maestro/bin
 **Run it:**
 
 ```bash
-bash fe/docs/scripts/capture-mobile-auto.sh         # boots emu, installs app, captures
-cd fe/docs && npm run build                         # preview
+bash apps/docs/scripts/capture-mobile-auto.sh         # boots emu, installs app, captures
+cd apps/docs && npm run build                         # preview
 ```
 
 Login uses `edi_santoso` / `Password123!` (a staging field-worker account) — edit the
@@ -71,10 +71,10 @@ with real captures:
 adb devices            # confirm exactly one device is listed
 
 # 2. Walk the guided capture — it tells you which screen to open, you press Enter.
-bash fe/docs/scripts/capture-mobile.sh
+bash apps/docs/scripts/capture-mobile.sh
 
 # 3. Rebuild to preview.
-cd fe/docs && npm run build && npm run serve
+cd apps/docs && npm run build && npm run serve
 ```
 
 Each capture overwrites the same-named PNG (e.g. `static/img/mobile/absen-masuk.png`),

@@ -10,7 +10,7 @@ It is **end-user** documentation, separate from the developer-facing `specs/`.
 ## Preview locally
 
 ```bash
-cd fe/docs
+cd apps/docs
 npm install
 npm start          # http://localhost:3002 (live reload)
 ```

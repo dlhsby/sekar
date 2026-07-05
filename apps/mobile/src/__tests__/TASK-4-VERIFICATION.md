@@ -30,7 +30,7 @@ All files           |   96.82 |    96.42 |   93.54 |   98.18 |
 
 ## 1. MainNavigator Tests ✅
 
-**File:** `fe/mobile/src/navigation/__tests__/MainNavigator.test.tsx`
+**File:** `apps/mobile/src/navigation/__tests__/MainNavigator.test.tsx`
 
 ### admin_data Specific Tests (2 tests)
 
@@ -54,7 +54,7 @@ All files           |   96.82 |    96.42 |   93.54 |   98.18 |
 
 ## 2. Role Constants Tests ✅
 
-**File:** `fe/mobile/src/constants/__tests__/roles.test.ts`
+**File:** `apps/mobile/src/constants/__tests__/roles.test.ts`
 
 ### admin_data Specific Tests (4 tests)
 
@@ -81,7 +81,7 @@ All files           |   96.82 |    96.42 |   93.54 |   98.18 |
 
 ## 3. useRoleAccess Hook Tests ✅
 
-**File:** `fe/mobile/src/hooks/__tests__/useRoleAccess.test.ts`
+**File:** `apps/mobile/src/hooks/__tests__/useRoleAccess.test.ts`
 
 ### admin_data Specific Test (1 comprehensive test)
 
@@ -143,13 +143,13 @@ useRoleAccess.test.ts (11 tests total, 1 admin_data-specific)
 
 Run all admin_data tests:
 ```bash
-cd fe/mobile
+cd apps/mobile
 npm test -- --testNamePattern="admin_data"
 ```
 
 Run with coverage:
 ```bash
-cd fe/mobile
+cd apps/mobile
 npm test -- src/navigation/__tests__/MainNavigator.test.tsx \
              src/constants/__tests__/roles.test.ts \
              src/hooks/__tests__/useRoleAccess.test.ts \

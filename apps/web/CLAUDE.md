@@ -80,9 +80,9 @@ npm run test:e2e                  # Playwright E2E tests
 
 From Phase 3 M1-R sub-phase **3-R2** onward (planned):
 - **Source of truth:** [`specs/ui-ux/tokens.json`](../../specs/ui-ux/tokens.json)
-- **Generated consumer:** `fe/web/src/app/generated/tokens.css` (emitted by `scripts/build-tokens.ts`; CI validates drift via `tokens-verify`)
-- **`@import` wrapper:** `fe/web/src/app/globals.css` becomes `@import './generated/tokens.css';` plus utility classes (`.nb-focus-ring`, `.shadow-nb-*` Tailwind utilities, etc.)
-- **Brand fonts:** `next/font/google` in `fe/web/src/app/layout.tsx` loads Space Grotesk, Inter, JetBrains Mono with `display: 'swap'` and CSS variables `--font-display|body|mono`
+- **Generated consumer:** `apps/web/src/app/generated/tokens.css` (emitted by `scripts/build-tokens.ts`; CI validates drift via `tokens-verify`)
+- **`@import` wrapper:** `apps/web/src/app/globals.css` becomes `@import './generated/tokens.css';` plus utility classes (`.nb-focus-ring`, `.shadow-nb-*` Tailwind utilities, etc.)
+- **Brand fonts:** `next/font/google` in `apps/web/src/app/layout.tsx` loads Space Grotesk, Inter, JetBrains Mono with `display: 'swap'` and CSS variables `--font-display|body|mono`
 
 ESLint rule `no-inline-hex-colors` (added in 3-R1) blocks PRs with raw hex outside `generated/`. To change a token: edit `tokens.json` → `npm run tokens:build` → commit regenerated CSS.
 
@@ -308,7 +308,7 @@ import {
 ## Project Structure
 
 ```
-fe/web/
+apps/web/
 ├── src/
 │   ├── app/
 │   │   ├── (auth)/login/          # Login page

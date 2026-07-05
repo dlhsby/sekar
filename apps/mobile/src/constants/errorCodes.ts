@@ -1,7 +1,7 @@
 /**
  * Backend API Error Codes
  *
- * Must match be/src/common/enums/api-error-codes.enum.ts
+ * Must match apps/be/src/common/enums/api-error-codes.enum.ts
  * These constants enable programmatic error handling in the mobile app.
  *
  * Usage:

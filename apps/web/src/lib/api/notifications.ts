@@ -2,7 +2,7 @@
  * Notifications API Client (Phase 4-R — in-app notification surface on web)
  *
  * Mirrors the mobile notificationsApi but emits TanStack Query hooks for the
- * dashboard bell + inbox page. The backend (`be/src/modules/notifications`)
+ * dashboard bell + inbox page. The backend (`apps/be/src/modules/notifications`)
  * exposes:
  *   GET    /notifications              → Notification[] (newest-first, capped at 100)
  *   GET    /notifications/unread-count → { count }

@@ -292,5 +292,5 @@ npm test -- fcmService.test.ts
 ## See Also
 
 - [Firebase Cloud Messaging Documentation](https://rnfirebase.io/messaging/usage)
-- [Backend Notifications API](../../../../../be/src/modules/notifications/)
+- [Backend Notifications API](../../../../../apps/be/src/modules/notifications/)
 - [Notifications Redux Slice](../../../store/slices/notificationsSlice.ts)

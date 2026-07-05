@@ -14,7 +14,7 @@
  *        - Execute as: Me
  *        - Who has access: Anyone   (the token is what protects it)
  *      Copy the Web app URL.
- *   5. In be/.env.local set:
+ *   5. In apps/be/.env.local set:
  *        SEKAR_SHEET_WEBAPP_URL=<the /exec URL>
  *        SEKAR_SHEET_WEBAPP_TOKEN=<the same SHARED_TOKEN>
  *

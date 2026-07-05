@@ -5,7 +5,7 @@
  * (lib/api/client.ts) calls `localizeApiError`, which resolves the `code` against
  * the active-language `errors` namespace (locales/<lng>/errors.json). Unmapped
  * codes fall back to the backend message, then a generic string. Keys are kept in
- * sync with `be/src/common/enums/api-error-codes.enum.ts`.
+ * sync with `apps/be/src/common/enums/api-error-codes.enum.ts`.
  */
 import i18n from './config';
 

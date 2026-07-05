@@ -5,7 +5,7 @@
  * token directly.
  *
  * Auth: share the sheet with the service-account email (Editor), download its
- * JSON key, and set in be/.env.local:
+ * JSON key, and set in apps/be/.env.local:
  *   GOOGLE_SHEETS_SA_KEYFILE=secrets/sheets-sa.json
  *   SEKAR_SHEET_ID=<spreadsheet id>
  *
@@ -591,7 +591,7 @@ async function list(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  if (!SHEET_ID) throw new Error('SEKAR_SHEET_ID is not set (be/.env.local).');
+  if (!SHEET_ID) throw new Error('SEKAR_SHEET_ID is not set (apps/be/.env.local).');
   if (useSA()) {
     console.log('Transport: Sheets API (service account)');
   } else if (WEBAPP_URL) {

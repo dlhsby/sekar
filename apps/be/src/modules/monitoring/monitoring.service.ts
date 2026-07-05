@@ -24,7 +24,7 @@ import { MonitoringUserService } from './services/monitoring-user.service';
 import { DayTypeService } from './services/day-type.service';
 import { MonitoringCacheService } from './services/monitoring-cache.service';
 
-// Snapshot DTOs for web frontend contract (fe/web/src/lib/api/monitoring-v2.ts)
+// Snapshot DTOs for web frontend contract (apps/web/src/lib/api/monitoring-v2.ts)
 export interface SnapshotWorker {
   user_id: string;
   full_name: string;
@@ -125,7 +125,7 @@ export class MonitoringService {
   /**
    * Returns a combined monitoring snapshot for a given scope.
    * Suitable for initial page load and periodic full-refresh polling.
-   * Contract matches fe/web/src/lib/api/monitoring-v2.ts.
+   * Contract matches apps/web/src/lib/api/monitoring-v2.ts.
    */
   async getSnapshot(
     scope: 'city' | 'rayon' | 'area',

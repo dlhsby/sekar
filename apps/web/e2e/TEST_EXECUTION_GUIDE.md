@@ -11,7 +11,7 @@
 
 ### Run All E2E Tests
 ```bash
-cd fe/web
+cd apps/web
 npm run test:e2e
 ```
 
@@ -462,7 +462,7 @@ Tests automatically run on:
 ### Documentation
 - [Playwright Docs](https://playwright.dev/docs/intro)
 - [Testing Best Practices](https://playwright.dev/docs/best-practices)
-- [SEKAR Web CLAUDE.md](/fe/web/CLAUDE.md)
+- [SEKAR Web CLAUDE.md](/apps/web/CLAUDE.md)
 
 ### Useful Commands
 ```bash

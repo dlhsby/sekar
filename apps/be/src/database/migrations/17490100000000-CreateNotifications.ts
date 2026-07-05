@@ -3,7 +3,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 /**
  * Create the `notifications` table (Jun 20, 2026).
  *
- * The `Notification` entity (be/src/modules/notifications/entities/
+ * The `Notification` entity (apps/be/src/modules/notifications/entities/
  * notification.entity.ts) has been live since Phase 2B but always relied on
  * `synchronize=true` to auto-create the table + its `notifications_type_enum` in
  * dev — no migration ever carried it (see the comment in

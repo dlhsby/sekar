@@ -40,7 +40,7 @@ This directory contains 19 Maestro YAML flows covering Phase 4-9 scenarios for t
 
 1. **Backend running:**
    ```bash
-   cd be/
+   cd apps/be/
    npm run db:seed:staging  # or db:seed for full reset
    npm run start:dev
    ```
@@ -48,7 +48,7 @@ This directory contains 19 Maestro YAML flows covering Phase 4-9 scenarios for t
 
 2. **Mobile .env configured:**
    ```bash
-   cd fe/mobile/
+   cd apps/mobile/
    cp .env.local.example .env.local
    # Set API_BASE_URL for emulator (http://10.0.2.2:3000) or device (http://<your-ip>:3000)
    npm install
@@ -100,14 +100,14 @@ Configured via GitHub Actions workflow (`.github/workflows/mobile-e2e.yml`):
     cd be && npm install && npm run db:seed:staging && npm run start:dev &
 
 - name: Build APK
-  run: cd fe/mobile && npm install && ./android/gradlew assembleDebug
+  run: cd apps/mobile && npm install && ./android/gradlew assembleDebug
 
 - name: Run Maestro tests
   run: |
     maestro test \
       --retry-count=2 \
       --debug-output=./artifacts \
-      fe/mobile/.maestro/flows/
+      apps/mobile/.maestro/flows/
 
 - name: Upload artifacts
   if: always()
@@ -232,7 +232,7 @@ Phone login also works (e.g., `081200000006/Password123!`). Check `specs/deploym
 Before committing, validate all flows for correct YAML syntax:
 
 ```bash
-# Using node's js-yaml (if available in fe/mobile/node_modules)
+# Using node's js-yaml (if available in apps/mobile/node_modules)
 node -e "const yaml = require('js-yaml'); require('fs').readdirSync('.maestro/flows').forEach(f => { console.log('Validating', f); yaml.load(require('fs').readFileSync(\`.maestro/flows/\${f}\`, 'utf-8')); });"
 
 # Or Python (should be available everywhere)
@@ -278,8 +278,8 @@ Triggers:
 ### APK Installation & Test Run
 
 ```bash
-adb install -r fe/mobile/android/app/build/outputs/apk/debug/app-debug.apk
-maestro test --retry-count=2 --debug-output=./artifacts fe/mobile/.maestro/flows/
+adb install -r apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+maestro test --retry-count=2 --debug-output=./artifacts apps/mobile/.maestro/flows/
 ```
 
 ### Artifact Handling

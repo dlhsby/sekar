@@ -1,7 +1,7 @@
 /**
  * ISO 8601 week number utilities.
  *
- * Mirrors be/src/modules/pruning-requests/utils/iso-week.util.ts.
+ * Mirrors apps/be/src/modules/pruning-requests/utils/iso-week.util.ts.
  */
 
 /**

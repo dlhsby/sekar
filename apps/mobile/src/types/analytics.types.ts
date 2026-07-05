@@ -7,7 +7,7 @@ export type Grade = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
 
 /**
  * Worker performance analytics
- * Mirrors: be/src/modules/analytics/dto/worker-analytics.dto.ts
+ * Mirrors: apps/be/src/modules/analytics/dto/worker-analytics.dto.ts
  */
 export interface WorkerAnalytics {
   id: string;
@@ -33,7 +33,7 @@ export interface WorkerAnalytics {
 
 /**
  * Area analytics summary
- * Mirrors: be/src/modules/analytics/dto/area-analytics.dto.ts
+ * Mirrors: apps/be/src/modules/analytics/dto/area-analytics.dto.ts
  */
 export interface AreaAnalytics {
   id: string;
@@ -51,7 +51,7 @@ export interface AreaAnalytics {
 
 /**
  * Today metrics snapshot
- * Mirrors: be/src/modules/analytics/dto/dashboard-summary.dto.ts
+ * Mirrors: apps/be/src/modules/analytics/dto/dashboard-summary.dto.ts
  */
 export interface TodayMetrics {
   attendanceRate: number;
@@ -92,7 +92,7 @@ export interface Alerts {
 
 /**
  * Dashboard summary
- * Mirrors: be/src/modules/analytics/dto/dashboard-summary.dto.ts
+ * Mirrors: apps/be/src/modules/analytics/dto/dashboard-summary.dto.ts
  */
 export interface DashboardSummary {
   today: TodayMetrics;
@@ -113,7 +113,7 @@ export interface WorkersListResponse {
 
 /**
  * Operational analytics
- * Mirrors: be/src/modules/analytics/dto/operational-analytics.dto.ts
+ * Mirrors: apps/be/src/modules/analytics/dto/operational-analytics.dto.ts
  */
 export interface OperationalAnalytics {
   date: string;

@@ -358,8 +358,8 @@ FROM shifts;
 - **Database Spec:** `specs/phases/phase-2-c-client-feedback/database.md`
 - **ADR-009:** Role system overhaul rationale
 - **ADR-010:** Terminology cleanup rationale
-- **Entity Files:** `be/src/modules/*/entities/*.entity.ts`
-- **Seed Files:** `be/src/database/seeds/`
+- **Entity Files:** `apps/be/src/modules/*/entities/*.entity.ts`
+- **Seed Files:** `apps/be/src/database/seeds/`
 
 ---
 

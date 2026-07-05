@@ -8,8 +8,8 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from './client';
 
 // ---------------------------------------------------------------------------
-// Types — mirror the backend entities (be/src/modules/plants/entities/* and
-// be/src/modules/pruning-requests/entities/pruning-request.entity.ts)
+// Types — mirror the backend entities (apps/be/src/modules/plants/entities/* and
+// apps/be/src/modules/pruning-requests/entities/pruning-request.entity.ts)
 // ---------------------------------------------------------------------------
 
 export type AreaPlantStatus = 'ok' | 'due_soon' | 'overdue' | 'unknown';

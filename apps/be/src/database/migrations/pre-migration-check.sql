@@ -1,6 +1,6 @@
 -- Pre-Migration Data Integrity Check
 -- Run this BEFORE executing AddProductionIndexesAndConstraints migration
--- File: be/src/database/migrations/pre-migration-check.sql
+-- File: apps/be/src/database/migrations/pre-migration-check.sql
 
 \echo '=========================================='
 \echo 'Pre-Migration Data Integrity Check'

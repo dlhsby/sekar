@@ -2,7 +2,7 @@
  * Import API client (Phase 4-5).
  *
  * CSV bulk import (validate → confirm) and KMZ area import, backed by
- * `be/src/modules/import`:
+ * `apps/be/src/modules/import`:
  *   GET  /import/template/:entity  → CSV template (header row)
  *   POST /import/users/csv         → { validCount, errors, sessionId? }
  *   POST /import/areas/csv         → { validCount, errors, sessionId? }

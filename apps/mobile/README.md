@@ -7,7 +7,7 @@
 For the full one-command setup, see [`/README.md`](/README.md) (`./scripts/setup.sh` + `./scripts/start.sh`). To work on the mobile app alone:
 
 ```bash
-cd fe/mobile
+cd apps/mobile
 npm install
 cp .env.local.example .env.local
 # Edit .env.local — set API_BASE_URL:
