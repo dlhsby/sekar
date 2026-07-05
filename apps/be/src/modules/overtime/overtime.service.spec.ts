@@ -6,6 +6,7 @@ import { Overtime, OvertimeStatus } from './entities/overtime.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { ActivityType } from '../activity-types/entities/activity-type.entity';
 import { CreateOvertimeDto } from './dto/create-overtime.dto';
+import { UpdateOvertimeDto } from './dto/update-overtime.dto';
 import { StartOvertimeDto } from './dto/start-overtime.dto';
 import { EndOvertimeDto } from './dto/end-overtime.dto';
 import { RejectOvertimeDto } from './dto/reject-overtime.dto';
@@ -26,6 +27,7 @@ describe('OvertimeService', () => {
     save: jest.fn(),
     find: jest.fn(),
     findOne: jest.fn(),
+    remove: jest.fn(),
     createQueryBuilder: jest.fn(),
   };
 
@@ -945,6 +947,204 @@ describe('OvertimeService', () => {
       const result = await service.getActiveOvertime(userId);
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('update', () => {
+    const overtimeId = 'overtime-uuid-1';
+    const userId = 'user-uuid-1';
+    const activityTypeId = 'activity-type-uuid-1';
+    const areaId = 'area-uuid-1';
+
+    const mockExistingOvertime = {
+      id: overtimeId,
+      user_id: userId,
+      area_id: areaId,
+      status: OvertimeStatus.PENDING,
+      start_datetime: new Date('2026-02-14T17:00:00+07:00'),
+      end_datetime: new Date('2026-02-14T20:00:00+07:00'),
+      activity_type_id: activityTypeId,
+      description: 'Original description',
+      photo_urls: ['https://s3.amazonaws.com/photo1.jpg'],
+      gps_lat: -7.250445,
+      gps_lng: 112.768845,
+      activityType: { id: activityTypeId, name: 'Cleaning', is_active: true },
+      user: { id: userId, role: UserRole.SATGAS },
+      area: { id: areaId, rayon_id: 'rayon-uuid-1' },
+      approver: null,
+      shift: null,
+    };
+
+    const mockActivityType = {
+      id: 'activity-type-uuid-2',
+      name: 'New Activity Type',
+      is_active: true,
+      applicable_roles: [UserRole.SATGAS],
+    };
+
+    it('should update overtime description and photo_urls', async () => {
+      const updateDto: UpdateOvertimeDto = {
+        description: 'Updated description',
+        photo_urls: ['https://s3.amazonaws.com/updated-photo.jpg'],
+      };
+
+      mockOvertimeRepo.findOne.mockResolvedValue(mockExistingOvertime);
+      mockOvertimeRepo.save.mockResolvedValue({
+        ...mockExistingOvertime,
+        description: updateDto.description,
+        photo_urls: updateDto.photo_urls,
+      });
+
+      const result = await service.update(overtimeId, updateDto);
+
+      expect(mockOvertimeRepo.save).toHaveBeenCalled();
+      expect(result.description).toBe(updateDto.description);
+      expect(result.photo_urls).toEqual(updateDto.photo_urls);
+    });
+
+    it('should update start and end datetime', async () => {
+      const updateDto: UpdateOvertimeDto = {
+        start_datetime: '2026-02-14T18:00:00+07:00',
+        end_datetime: '2026-02-14T21:00:00+07:00',
+      };
+
+      mockOvertimeRepo.findOne.mockResolvedValue(mockExistingOvertime);
+      const updatedOvertime = {
+        ...mockExistingOvertime,
+        start_datetime: new Date(updateDto.start_datetime!),
+        end_datetime: new Date(updateDto.end_datetime!),
+      };
+      mockOvertimeRepo.save.mockResolvedValue(updatedOvertime);
+
+      const result = await service.update(overtimeId, updateDto);
+
+      expect(result.start_datetime).toEqual(updatedOvertime.start_datetime);
+      expect(result.end_datetime).toEqual(updatedOvertime.end_datetime);
+    });
+
+    it('should update activity_type_id', async () => {
+      const updateDto: UpdateOvertimeDto = {
+        activity_type_id: mockActivityType.id,
+      };
+
+      mockOvertimeRepo.findOne.mockResolvedValue(mockExistingOvertime);
+      mockActivityTypeRepo.findOne.mockResolvedValue(mockActivityType);
+      mockOvertimeRepo.save.mockResolvedValue({
+        ...mockExistingOvertime,
+        activity_type_id: mockActivityType.id,
+      });
+
+      const result = await service.update(overtimeId, updateDto);
+
+      expect(mockActivityTypeRepo.findOne).toHaveBeenCalledWith({
+        where: { id: mockActivityType.id, is_active: true },
+      });
+      expect(result.activity_type_id).toBe(mockActivityType.id);
+    });
+
+    it('should update GPS coordinates', async () => {
+      const updateDto: UpdateOvertimeDto = {
+        gps_lat: -7.3,
+        gps_lng: 112.8,
+      };
+
+      mockOvertimeRepo.findOne.mockResolvedValue(mockExistingOvertime);
+      mockOvertimeRepo.save.mockResolvedValue({
+        ...mockExistingOvertime,
+        gps_lat: updateDto.gps_lat,
+        gps_lng: updateDto.gps_lng,
+      });
+
+      const result = await service.update(overtimeId, updateDto);
+
+      expect(mockOvertimeRepo.save).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException if overtime not found', async () => {
+      mockOvertimeRepo.findOne.mockResolvedValue(null);
+
+      const updateDto: UpdateOvertimeDto = { description: 'Updated' };
+
+      await expect(service.update(overtimeId, updateDto)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should reject update if end_datetime before start_datetime', async () => {
+      const updateDto: UpdateOvertimeDto = {
+        start_datetime: '2026-02-14T21:00:00+07:00',
+        end_datetime: '2026-02-14T18:00:00+07:00',
+      };
+
+      mockOvertimeRepo.findOne.mockResolvedValue(mockExistingOvertime);
+
+      await expect(service.update(overtimeId, updateDto)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should reject update if activity_type not found', async () => {
+      const updateDto: UpdateOvertimeDto = {
+        activity_type_id: 'nonexistent-type-id',
+      };
+
+      mockOvertimeRepo.findOne.mockResolvedValue(mockExistingOvertime);
+      mockActivityTypeRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.update(overtimeId, updateDto)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should update multiple fields at once', async () => {
+      const updateDto: UpdateOvertimeDto = {
+        description: 'Updated description',
+        photo_urls: ['https://s3.amazonaws.com/photo2.jpg'],
+        gps_lat: -7.26,
+        gps_lng: 112.77,
+      };
+
+      mockOvertimeRepo.findOne.mockResolvedValue(mockExistingOvertime);
+      const updatedOvertime = { ...mockExistingOvertime, ...updateDto };
+      mockOvertimeRepo.save.mockResolvedValue(updatedOvertime);
+
+      const result = await service.update(overtimeId, updateDto);
+
+      expect(result.description).toBe(updateDto.description);
+      expect(result.photo_urls).toEqual(updateDto.photo_urls);
+      expect(result.gps_lat).toBe(updateDto.gps_lat);
+      expect(result.gps_lng).toBe(updateDto.gps_lng);
+    });
+  });
+
+  describe('remove', () => {
+    const overtimeId = 'overtime-uuid-1';
+    const userId = 'user-uuid-1';
+    const areaId = 'area-uuid-1';
+
+    const mockOvertime = {
+      id: overtimeId,
+      user_id: userId,
+      area_id: areaId,
+      status: OvertimeStatus.PENDING,
+      start_datetime: new Date('2026-02-14T17:00:00+07:00'),
+      end_datetime: new Date('2026-02-14T20:00:00+07:00'),
+      user: { id: userId, role: UserRole.SATGAS },
+      area: { id: areaId, rayon_id: 'rayon-uuid-1' },
+    };
+
+    it('should remove overtime by id', async () => {
+      mockOvertimeRepo.findOne.mockResolvedValue(mockOvertime);
+      mockOvertimeRepo.remove.mockResolvedValue(undefined);
+
+      await service.remove(overtimeId);
+
+      expect(mockOvertimeRepo.findOne).toHaveBeenCalledWith({
+        where: { id: overtimeId },
+        relations: ['activityType', 'user', 'area', 'approver', 'shift'],
+      });
+      expect(mockOvertimeRepo.remove).toHaveBeenCalledWith(mockOvertime);
+    });
+
+    it('should throw NotFoundException if overtime not found', async () => {
+      mockOvertimeRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.remove(overtimeId)).rejects.toThrow(NotFoundException);
+      expect(mockOvertimeRepo.remove).not.toHaveBeenCalled();
     });
   });
 });

@@ -57,6 +57,7 @@ describe('PlantSeedsController', () => {
             findAll: jest.fn(),
             findOne: jest.fn(),
             createSeed: jest.fn(),
+            updateSeed: jest.fn(),
             recordTransaction: jest.fn(),
             getTransactions: jest.fn(),
           },
@@ -111,6 +112,63 @@ describe('PlantSeedsController', () => {
         nameId: 'Bibit Pucuk Merah A',
         unit: 'gram',
         stockQty: 100,
+      });
+    });
+  });
+
+  describe('updateSeed', () => {
+    it('should update seed with all fields', async () => {
+      const updatedSeed = {
+        ...mockSeed,
+        nameId: 'Bibit Pucuk Merah B',
+        unit: 'piece' as const,
+      };
+      service.updateSeed.mockResolvedValue(updatedSeed);
+
+      const result = await controller.updateSeed(mockSeedId, {
+        nameId: 'Bibit Pucuk Merah B',
+        unit: 'piece',
+      });
+
+      expect(result).toEqual(updatedSeed);
+      expect(service.updateSeed).toHaveBeenCalledWith(mockSeedId, {
+        nameId: 'Bibit Pucuk Merah B',
+        unit: 'piece',
+      });
+    });
+
+    it('should update seed with partial fields', async () => {
+      const updatedSeed = {
+        ...mockSeed,
+        nameId: 'Bibit Pucuk Merah Updated',
+      };
+      service.updateSeed.mockResolvedValue(updatedSeed);
+
+      const result = await controller.updateSeed(mockSeedId, {
+        nameId: 'Bibit Pucuk Merah Updated',
+      });
+
+      expect(result).toEqual(updatedSeed);
+      expect(service.updateSeed).toHaveBeenCalledWith(mockSeedId, {
+        nameId: 'Bibit Pucuk Merah Updated',
+      });
+    });
+
+    it('should update only species id', async () => {
+      const newSpeciesId = 'species-22222222-2222-2222-2222-222222222222';
+      const updatedSeed = {
+        ...mockSeed,
+        speciesId: newSpeciesId,
+      };
+      service.updateSeed.mockResolvedValue(updatedSeed);
+
+      const result = await controller.updateSeed(mockSeedId, {
+        speciesId: newSpeciesId,
+      });
+
+      expect(result).toEqual(updatedSeed);
+      expect(service.updateSeed).toHaveBeenCalledWith(mockSeedId, {
+        speciesId: newSpeciesId,
       });
     });
   });

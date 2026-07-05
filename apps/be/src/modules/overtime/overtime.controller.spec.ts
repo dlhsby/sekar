@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { OvertimeController } from './overtime.controller';
 import { OvertimeService } from './overtime.service';
 import { CreateOvertimeDto } from './dto/create-overtime.dto';
+import { UpdateOvertimeDto } from './dto/update-overtime.dto';
 import { RejectOvertimeDto } from './dto/reject-overtime.dto';
 import { OvertimeFilterDto } from './dto/overtime-filter.dto';
 import { User, UserRole } from '../users/entities/user.entity';
@@ -19,6 +20,8 @@ describe('OvertimeController', () => {
     findOne: jest.fn(),
     approve: jest.fn(),
     reject: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -183,6 +186,62 @@ describe('OvertimeController', () => {
 
       expect(service.reject).toHaveBeenCalledWith(overtimeId, user.id, rejectDto);
       expect(result).toEqual(mockOvertime);
+    });
+  });
+
+  describe('update', () => {
+    it('should call service.update with correct parameters', async () => {
+      const overtimeId = 'overtime-uuid-1';
+      const updateDto: UpdateOvertimeDto = {
+        description: 'Updated description',
+        photo_urls: ['https://s3.amazonaws.com/updated-photo.jpg'],
+      };
+      const mockOvertime = {
+        id: overtimeId,
+        status: OvertimeStatus.PENDING,
+        description: updateDto.description,
+        photo_urls: updateDto.photo_urls,
+      };
+
+      mockOvertimeService.update.mockResolvedValue(mockOvertime);
+
+      const result = await controller.update(overtimeId, updateDto);
+
+      expect(service.update).toHaveBeenCalledWith(overtimeId, updateDto);
+      expect(result).toEqual(mockOvertime);
+    });
+
+    it('should update datetime fields', async () => {
+      const overtimeId = 'overtime-uuid-1';
+      const updateDto: UpdateOvertimeDto = {
+        start_datetime: '2026-02-14T18:00:00+07:00',
+        end_datetime: '2026-02-14T21:00:00+07:00',
+      };
+      const mockOvertime = {
+        id: overtimeId,
+        status: OvertimeStatus.PENDING,
+        start_datetime: updateDto.start_datetime,
+        end_datetime: updateDto.end_datetime,
+      };
+
+      mockOvertimeService.update.mockResolvedValue(mockOvertime);
+
+      const result = await controller.update(overtimeId, updateDto);
+
+      expect(service.update).toHaveBeenCalledWith(overtimeId, updateDto);
+      expect(result).toEqual(mockOvertime);
+    });
+  });
+
+  describe('remove', () => {
+    it('should call service.remove with overtime id', async () => {
+      const overtimeId = 'overtime-uuid-1';
+
+      mockOvertimeService.remove.mockResolvedValue(undefined);
+
+      await controller.remove(overtimeId);
+
+      expect(service.remove).toHaveBeenCalledWith(overtimeId);
     });
   });
 });

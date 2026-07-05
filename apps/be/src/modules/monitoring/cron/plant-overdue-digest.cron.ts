@@ -79,7 +79,7 @@ export class PlantOverdueDigestCron {
       await this.notificationsService
         .sendToUser({
           user_id: user.id,
-          title: 'Tanaman melewati jadwal pemangkasan',
+          title: 'Tanaman melewati jadwal perantingan',
           body: this.buildBody(scoped),
           type: NotificationType.AREA_PLANT_OVERDUE,
           data: {

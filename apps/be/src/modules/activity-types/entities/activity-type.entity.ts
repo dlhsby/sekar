@@ -15,7 +15,7 @@ import { ApiProperty } from '@nestjs/swagger';
  * Activities are role-specific (Worker, Linmas, or both).
  *
  * Phase 2: 10 Activity Types
- * Worker-only: Penyiraman, Penanaman, Pemangkasan, Pemupukan, Perawatan Tanaman
+ * Worker-only: Penyiraman, Penanaman, Perantingan, Pemupukan, Perawatan Tanaman
  * Linmas-only: Patroli Keamanan, Laporan Insiden, Pemantauan Pengunjung, Pengecekan Fasilitas
  * Shared: Pembersihan
  */

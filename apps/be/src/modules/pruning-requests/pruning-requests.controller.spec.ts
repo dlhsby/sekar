@@ -5,6 +5,7 @@ import { PruningRequestsService } from './pruning-requests.service';
 import { PruningRequest } from './entities/pruning-request.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { CreatePruningRequestDto } from './dto/create-pruning-request.dto';
+import { UpdatePruningRequestDto } from './dto/update-pruning-request.dto';
 
 describe('PruningRequestsController', () => {
   let module: TestingModule;
@@ -74,6 +75,7 @@ describe('PruningRequestsController', () => {
     assignToTask: jest.fn(),
     reschedule: jest.fn(),
     findAll: jest.fn(),
+    update: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -481,6 +483,110 @@ describe('PruningRequestsController', () => {
       await expect(
         controller.findAll('invalid', undefined, undefined, {}, mockStaffKecamatan),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('update', () => {
+    const mockAdminUser: User = {
+      ...mockStaffKecamatan,
+      id: '44444444-4444-4444-4444-444444444401',
+      username: 'admin_data_1',
+      role: UserRole.ADMIN_DATA,
+    };
+
+    it('should update a pruning request with provided fields', async () => {
+      const dto = {
+        address: 'Jalan Gatot Subroto No. 456, Surabaya',
+        notes: 'Updated notes',
+      };
+
+      const updatedRequest = {
+        ...mockPruningRequest,
+        ...dto,
+      };
+
+      service.update.mockResolvedValue(updatedRequest);
+
+      const result = await controller.update(mockRequestId, dto, mockAdminUser);
+
+      expect(result).toEqual(updatedRequest);
+      expect(service.update).toHaveBeenCalledWith(mockRequestId, dto, mockAdminUser);
+    });
+
+    it('should update tree details', async () => {
+      const dto = {
+        treeCount: 20,
+        treeHeightEstimate: '8-10 meter',
+        treeDiameterEstimate: '40-60 cm',
+      };
+
+      const updatedRequest = {
+        ...mockPruningRequest,
+        ...dto,
+      };
+
+      service.update.mockResolvedValue(updatedRequest);
+
+      const result = await controller.update(mockRequestId, dto, mockAdminUser);
+
+      expect(result.treeCount).toEqual(20);
+      expect(result.treeHeightEstimate).toEqual('8-10 meter');
+      expect(result.treeDiameterEstimate).toEqual('40-60 cm');
+    });
+
+    it('should update contact information', async () => {
+      const dto = {
+        requesterName: 'Sinta Wijaya',
+        requesterPhone: '081234567891',
+        rtLeaderName: 'Ibu Sari',
+        rtLeaderPhone: '081298765433',
+      };
+
+      const updatedRequest = {
+        ...mockPruningRequest,
+        ...dto,
+      };
+
+      service.update.mockResolvedValue(updatedRequest);
+
+      const result = await controller.update(mockRequestId, dto, mockAdminUser);
+
+      expect(result.requesterName).toEqual('Sinta Wijaya');
+      expect(result.requesterPhone).toEqual('081234567891');
+      expect(result.rtLeaderName).toEqual('Ibu Sari');
+      expect(result.rtLeaderPhone).toEqual('081298765433');
+    });
+
+    it('should pass through service exceptions', async () => {
+      const dto = { address: 'New Address' };
+
+      service.update.mockRejectedValue(new BadRequestException('Invalid input'));
+
+      await expect(controller.update(mockRequestId, dto, mockAdminUser)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should pass ForbiddenException from service', async () => {
+      const dto = { address: 'New Address' };
+
+      service.update.mockRejectedValue(
+        new BadRequestException('You do not have permission to update this pruning request'),
+      );
+
+      await expect(controller.update(mockRequestId, dto, mockAdminUser)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should handle empty DTO', async () => {
+      const dto = {};
+      service.update.mockResolvedValue(mockPruningRequest);
+
+      const result = await controller.update(mockRequestId, dto, mockAdminUser);
+
+      expect(result).toEqual(mockPruningRequest);
+      expect(service.update).toHaveBeenCalledWith(mockRequestId, dto, mockAdminUser);
     });
   });
 });

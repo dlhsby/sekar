@@ -26,6 +26,7 @@ import { ReviewPruningRequestDto } from './dto/review-pruning-request.dto';
 import { AssignPruningRequestDto } from './dto/assign-pruning-request.dto';
 import { ReschedulePruningRequestDto } from './dto/reschedule-pruning-request.dto';
 import { ListPruningRequestsQueryDto } from './dto/list-pruning-requests-query.dto';
+import { UpdatePruningRequestDto } from './dto/update-pruning-request.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -456,5 +457,68 @@ export class PruningRequestsController {
     @Body('reason') reason?: string,
   ): Promise<PruningRequest> {
     return this.pruningRequestsService.cancel(id, user, reason);
+  }
+
+  /**
+   * Update editable fields on a pruning request.
+   *
+   * Only admin_data (rayon-scoped), kepala_rayon, top_management, admin_system,
+   * and superadmin can update. Editable fields are address, notes, tree details
+   * (count, height, diameter), and contact information (requester, RT leader).
+   *
+   * NOT editable: status (use review/assign-to-task/cancel endpoints), GPS
+   * coordinates, photos, reference code, or workflow timestamps.
+   *
+   * @param id - Pruning request ID
+   * @param dto - Fields to update
+   * @param user - Authenticated admin user (injected from JWT)
+   * @returns Updated pruning request
+   */
+  @Patch(':id')
+  @Roles(
+    UserRole.ADMIN_DATA,
+    UserRole.KEPALA_RAYON,
+    UserRole.TOP_MANAGEMENT,
+    UserRole.ADMIN_SYSTEM,
+    UserRole.SUPERADMIN,
+  )
+  @ApiOperation({
+    summary: 'Update pruning request fields',
+    description:
+      'Update editable fields (address, notes, tree details, contact info). Status changes must use workflow endpoints (review/assign-to-task/cancel).',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Pruning request UUID',
+    example: '11111111-1111-1111-1111-111111111101',
+    type: 'string',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Pruning request updated successfully',
+    type: PruningRequest,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Insufficient permissions',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Pruning request not found',
+  })
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdatePruningRequestDto,
+    @GetUser() user: User,
+  ): Promise<PruningRequest> {
+    return this.pruningRequestsService.update(id, dto, user);
   }
 }

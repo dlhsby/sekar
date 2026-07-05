@@ -37,7 +37,7 @@ export async function seedActivityTypes(ctx: SeedContext): Promise<void> {
     INSERT INTO activity_types (id, name, code, description, applicable_roles, is_active) VALUES
       ($1, 'Perawatan', 'perawatan', 'Perawatan tanaman dan area', ARRAY['satgas'], TRUE),
       ($2, 'Penanaman', 'penanaman', 'Penanaman tanaman baru', ARRAY['satgas'], TRUE),
-      ($3, 'Perantingan', 'perantingan', 'Pemangkasan ranting pohon', ARRAY['satgas'], TRUE),
+      ($3, 'Perantingan', 'perantingan', 'Perantingan ranting pohon', ARRAY['satgas'], TRUE),
       ($4, 'Penyiraman', 'penyiraman', 'Penyiraman tanaman', ARRAY['satgas'], TRUE),
       ($5, 'Penyulaman', 'penyulaman', 'Penggantian tanaman mati', ARRAY['satgas'], TRUE),
       ($6, 'Potong Rumput', 'potong_rumput', 'Pemotongan rumput', ARRAY['satgas'], TRUE),

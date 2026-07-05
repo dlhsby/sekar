@@ -13,6 +13,7 @@ import { CreatePruningRequestDto } from './dto/create-pruning-request.dto';
 import { ReviewPruningRequestDto } from './dto/review-pruning-request.dto';
 import { AssignPruningRequestDto } from './dto/assign-pruning-request.dto';
 import { ReschedulePruningRequestDto } from './dto/reschedule-pruning-request.dto';
+import { UpdatePruningRequestDto } from './dto/update-pruning-request.dto';
 import { User, UserRole } from '../users/entities/user.entity';
 import { Task } from '../tasks/entities/task.entity';
 import { getIsoWeek, isoWeekEnd } from './utils/iso-week.util';
@@ -396,6 +397,37 @@ export class PruningRequestsService {
           ? `${request.notes}\n${cancellationNote}`
           : cancellationNote
         : request.notes,
+    };
+  }
+
+  /**
+   * Update editable fields on a pruning request (address, notes, tree details, contacts).
+   * Admin roles only; admin_data is rayon-scoped.
+   */
+  async update(id: string, dto: UpdatePruningRequestDto, user: User): Promise<PruningRequest> {
+    this.logger.log(`Updating pruning request ${id} by user ${user.id}`);
+    const request = await this.finder.getOrFail(id);
+    assertAdminDataRayonScope(request, user, 'update');
+
+    const updated = await this.pruningRequestRepository.save(this.withUpdate(request, dto));
+    this.logger.log(`Pruning request ${id} updated by ${user.id}`);
+    return updated;
+  }
+
+  private withUpdate(request: PruningRequest, dto: UpdatePruningRequestDto): PruningRequest {
+    return {
+      ...request,
+      ...(dto.address !== undefined && { address: dto.address }),
+      ...(dto.notes !== undefined && { notes: dto.notes }),
+      ...(dto.treeCount !== undefined && { treeCount: dto.treeCount }),
+      ...(dto.treeHeightEstimate !== undefined && { treeHeightEstimate: dto.treeHeightEstimate }),
+      ...(dto.treeDiameterEstimate !== undefined && {
+        treeDiameterEstimate: dto.treeDiameterEstimate,
+      }),
+      ...(dto.requesterName !== undefined && { requesterName: dto.requesterName }),
+      ...(dto.requesterPhone !== undefined && { requesterPhone: dto.requesterPhone }),
+      ...(dto.rtLeaderName !== undefined && { rtLeaderName: dto.rtLeaderName }),
+      ...(dto.rtLeaderPhone !== undefined && { rtLeaderPhone: dto.rtLeaderPhone }),
     };
   }
 }

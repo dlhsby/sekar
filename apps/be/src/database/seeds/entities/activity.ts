@@ -179,7 +179,7 @@ export async function seedActivities(ctx: SeedContext): Promise<void> {
             CASE gs.n % 4
               WHEN 0 THEN 'perawatan area taman pagi ini.'
               WHEN 1 THEN 'penyiraman seluruh area taman.'
-              WHEN 2 THEN 'pemangkasan rumput zona A.'
+              WHEN 2 THEN 'perantingan rumput zona A.'
               ELSE 'penanaman bibit baru di area timur.'
             END,
           ARRAY['https://sekar-media-dev.s3.amazonaws.com/activities/today-' || gs.n || '.jpg'],

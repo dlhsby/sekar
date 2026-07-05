@@ -1371,4 +1371,274 @@ describe('PruningRequestsService', () => {
       await expect(service.cancel(mockRequestId, submitter)).rejects.toThrow(NotFoundException);
     });
   });
+
+  describe('update', () => {
+    const baseSave = (overrides = {}) => ({
+      ...mockPruningRequest,
+      ...overrides,
+    });
+
+    it('should update address when provided', async () => {
+      const newAddress = 'Jalan Gatot Subroto No. 456, Surabaya';
+      const dto = { address: newAddress };
+      pruningRequestRepository.findOne.mockResolvedValue(baseSave() as any);
+      pruningRequestRepository.save.mockResolvedValue({
+        ...mockPruningRequest,
+        address: newAddress,
+      });
+
+      const result = await service.update(mockRequestId, dto, mockAdminData);
+
+      expect(result.address).toEqual(newAddress);
+      expect(pruningRequestRepository.save).toHaveBeenCalled();
+      const savedArg = pruningRequestRepository.save.mock.calls[0][0];
+      expect(savedArg.address).toEqual(newAddress);
+    });
+
+    it('should update notes when provided', async () => {
+      const newNotes = 'Updated notes with new information';
+      const dto = { notes: newNotes };
+      pruningRequestRepository.findOne.mockResolvedValue(baseSave() as any);
+      pruningRequestRepository.save.mockResolvedValue({
+        ...mockPruningRequest,
+        notes: newNotes,
+      });
+
+      const result = await service.update(mockRequestId, dto, mockAdminData);
+
+      expect(result.notes).toEqual(newNotes);
+      const savedArg = pruningRequestRepository.save.mock.calls[0][0];
+      expect(savedArg.notes).toEqual(newNotes);
+    });
+
+    it('should update tree details when provided', async () => {
+      const dto = {
+        treeCount: 20,
+        treeHeightEstimate: '8-10 meter',
+        treeDiameterEstimate: '40-60 cm',
+      };
+      pruningRequestRepository.findOne.mockResolvedValue(baseSave() as any);
+      pruningRequestRepository.save.mockResolvedValue({
+        ...mockPruningRequest,
+        ...dto,
+      });
+
+      const result = await service.update(mockRequestId, dto, mockAdminData);
+
+      expect(result.treeCount).toEqual(20);
+      expect(result.treeHeightEstimate).toEqual('8-10 meter');
+      expect(result.treeDiameterEstimate).toEqual('40-60 cm');
+    });
+
+    it('should update requester contact information', async () => {
+      const dto = {
+        requesterName: 'Sinta Wijaya',
+        requesterPhone: '081234567891',
+      };
+      pruningRequestRepository.findOne.mockResolvedValue(baseSave() as any);
+      pruningRequestRepository.save.mockResolvedValue({
+        ...mockPruningRequest,
+        ...dto,
+      });
+
+      const result = await service.update(mockRequestId, dto, mockAdminData);
+
+      expect(result.requesterName).toEqual('Sinta Wijaya');
+      expect(result.requesterPhone).toEqual('081234567891');
+    });
+
+    it('should update RT leader contact information', async () => {
+      const dto = {
+        rtLeaderName: 'Ibu Sari',
+        rtLeaderPhone: '081298765433',
+      };
+      pruningRequestRepository.findOne.mockResolvedValue(baseSave() as any);
+      pruningRequestRepository.save.mockResolvedValue({
+        ...mockPruningRequest,
+        ...dto,
+      });
+
+      const result = await service.update(mockRequestId, dto, mockAdminData);
+
+      expect(result.rtLeaderName).toEqual('Ibu Sari');
+      expect(result.rtLeaderPhone).toEqual('081298765433');
+    });
+
+    it('should update multiple fields simultaneously', async () => {
+      const dto = {
+        address: 'Jalan Gatot Subroto No. 456, Surabaya',
+        notes: 'Updated info',
+        treeCount: 25,
+        requesterName: 'New Requester',
+      };
+      pruningRequestRepository.findOne.mockResolvedValue(baseSave() as any);
+      pruningRequestRepository.save.mockResolvedValue({
+        ...mockPruningRequest,
+        ...dto,
+      });
+
+      const result = await service.update(mockRequestId, dto, mockAdminData);
+
+      expect(result.address).toEqual(dto.address);
+      expect(result.notes).toEqual(dto.notes);
+      expect(result.treeCount).toEqual(dto.treeCount);
+      expect(result.requesterName).toEqual(dto.requesterName);
+    });
+
+    it('should clear fields when passed empty strings or null values', async () => {
+      const dto = {
+        notes: '',
+        treeHeightEstimate: '',
+      };
+      pruningRequestRepository.findOne.mockResolvedValue(baseSave() as any);
+      pruningRequestRepository.save.mockResolvedValue({
+        ...mockPruningRequest,
+        notes: '',
+        treeHeightEstimate: '',
+      });
+
+      const result = await service.update(mockRequestId, dto, mockAdminData);
+
+      expect(result.notes).toEqual('');
+      expect(result.treeHeightEstimate).toEqual('');
+    });
+
+    it('should not modify fields not in the DTO', async () => {
+      const dto = { address: 'New Address' };
+      const originalRequest = baseSave({
+        notes: 'Original notes',
+        treeCount: 15,
+      });
+      pruningRequestRepository.findOne.mockResolvedValue(originalRequest as any);
+      pruningRequestRepository.save.mockResolvedValue({
+        ...originalRequest,
+        address: 'New Address',
+      });
+
+      await service.update(mockRequestId, dto, mockAdminData);
+
+      const savedArg = pruningRequestRepository.save.mock.calls[0][0];
+      // Original fields should be preserved
+      expect(savedArg.notes).toEqual('Original notes');
+      expect(savedArg.treeCount).toEqual(15);
+      // Modified field should be updated
+      expect(savedArg.address).toEqual('New Address');
+    });
+
+    it('should allow admin_data with matching rayon', async () => {
+      const dto = { address: 'New Address' };
+      pruningRequestRepository.findOne.mockResolvedValue(baseSave() as any);
+      pruningRequestRepository.save.mockResolvedValue({
+        ...mockPruningRequest,
+        address: 'New Address',
+      });
+
+      const result = await service.update(mockRequestId, dto, mockAdminData);
+
+      expect(result).toBeDefined();
+      expect(pruningRequestRepository.save).toHaveBeenCalled();
+    });
+
+    it('should deny admin_data with different rayon', async () => {
+      const dto = { address: 'New Address' };
+      const adminDifferentRayon = {
+        ...mockAdminData,
+        rayon_id: 'different-rayon-id',
+      };
+      pruningRequestRepository.findOne.mockResolvedValue(baseSave() as any);
+
+      await expect(service.update(mockRequestId, dto, adminDifferentRayon)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should allow kepala_rayon regardless of rayon', async () => {
+      const dto = { address: 'New Address' };
+      pruningRequestRepository.findOne.mockResolvedValue(baseSave() as any);
+      pruningRequestRepository.save.mockResolvedValue({
+        ...mockPruningRequest,
+        address: 'New Address',
+      });
+
+      const result = await service.update(mockRequestId, dto, mockKepalaRayon);
+
+      expect(result).toBeDefined();
+      expect(pruningRequestRepository.save).toHaveBeenCalled();
+    });
+
+    it('should allow superadmin regardless of rayon', async () => {
+      const dto = { address: 'New Address' };
+      pruningRequestRepository.findOne.mockResolvedValue(baseSave() as any);
+      pruningRequestRepository.save.mockResolvedValue({
+        ...mockPruningRequest,
+        address: 'New Address',
+      });
+
+      const result = await service.update(mockRequestId, dto, mockSuperadmin);
+
+      expect(result).toBeDefined();
+      expect(pruningRequestRepository.save).toHaveBeenCalled();
+    });
+
+    it('should allow top_management regardless of rayon', async () => {
+      const dto = { address: 'New Address' };
+      const topMgmt: User = {
+        ...mockAdminData,
+        id: '88888888-8888-8888-8888-888888888801',
+        username: 'top_mgmt',
+        role: UserRole.TOP_MANAGEMENT,
+      };
+      pruningRequestRepository.findOne.mockResolvedValue(baseSave() as any);
+      pruningRequestRepository.save.mockResolvedValue({
+        ...mockPruningRequest,
+        address: 'New Address',
+      });
+
+      const result = await service.update(mockRequestId, dto, topMgmt);
+
+      expect(result).toBeDefined();
+      expect(pruningRequestRepository.save).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException when request not found', async () => {
+      const dto = { address: 'New Address' };
+      pruningRequestRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.update(mockRequestId, dto, mockAdminData)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should preserve status and other immutable fields', async () => {
+      const dto = { address: 'New Address' };
+      const originalRequest = baseSave({
+        status: 'submitted',
+        referenceCode: 'PR-1704067200000-abc12345',
+      });
+      pruningRequestRepository.findOne.mockResolvedValue(originalRequest as any);
+      pruningRequestRepository.save.mockResolvedValue({
+        ...originalRequest,
+        address: 'New Address',
+      });
+
+      await service.update(mockRequestId, dto, mockAdminData);
+
+      const savedArg = pruningRequestRepository.save.mock.calls[0][0];
+      // Immutable fields should not change
+      expect(savedArg.status).toEqual('submitted');
+      expect(savedArg.referenceCode).toEqual('PR-1704067200000-abc12345');
+    });
+
+    it('should handle empty DTO (no-op update)', async () => {
+      const dto = {};
+      pruningRequestRepository.findOne.mockResolvedValue(baseSave() as any);
+      pruningRequestRepository.save.mockResolvedValue(mockPruningRequest);
+
+      const result = await service.update(mockRequestId, dto, mockAdminData);
+
+      expect(result).toEqual(mockPruningRequest);
+      // Still called, but with unchanged request
+      expect(pruningRequestRepository.save).toHaveBeenCalled();
+    });
+  });
 });

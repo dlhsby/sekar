@@ -2,12 +2,15 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
+  Delete,
   Param,
   Body,
   UseGuards,
   ParseUUIDPipe,
   Query,
   BadRequestException,
+  HttpCode,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -23,6 +26,8 @@ import { AreaPlant } from './entities/area-plant.entity';
 import { NotablePlant } from './entities/notable-plant.entity';
 import { SearchSpeciesDto } from './dto/search-species.dto';
 import { CreateNotablePlantDto } from './dto/create-notable-plant.dto';
+import { CreatePlantSpeciesDto } from './dto/create-plant-species.dto';
+import { UpdatePlantSpeciesDto } from './dto/update-plant-species.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -255,5 +260,137 @@ export class PlantsController {
     }
 
     return this.plantsService.createNotablePlant(dto, user);
+  }
+
+  /**
+   * Create a new plant species
+   *
+   * Only admin_data, admin_system, and superadmin can manage the plant species catalog.
+   *
+   * @param dto Create DTO (nameId, nameLatin, category, defaultPruningCycleDays, notes)
+   * @returns Created plant species
+   */
+  @Post('plant-species')
+  @Roles(UserRole.ADMIN_DATA, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN)
+  @ApiOperation({
+    summary: 'Create plant species',
+    description: 'Add a new plant species to the catalog',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Plant species created',
+    type: PlantSpecies,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid request (e.g., duplicate nameId)',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Insufficient permissions',
+  })
+  async createSpecies(@Body() dto: CreatePlantSpeciesDto): Promise<PlantSpecies> {
+    return this.plantsService.createSpecies(dto);
+  }
+
+  /**
+   * Update an existing plant species
+   *
+   * Only admin_data, admin_system, and superadmin can manage the plant species catalog.
+   * All fields in the update DTO are optional.
+   *
+   * @param id Plant species UUID
+   * @param dto Update DTO (all fields optional)
+   * @returns Updated plant species
+   */
+  @Patch('plant-species/:id')
+  @Roles(UserRole.ADMIN_DATA, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN)
+  @ApiOperation({
+    summary: 'Update plant species',
+    description: 'Modify an existing plant species record (all fields optional)',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Plant species UUID',
+    example: '22222222-2222-2222-2222-222222222201',
+    type: 'string',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Plant species updated',
+    type: PlantSpecies,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid request (e.g., duplicate nameId)',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Insufficient permissions',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Plant species not found',
+  })
+  async updateSpecies(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdatePlantSpeciesDto,
+  ): Promise<PlantSpecies> {
+    return this.plantsService.updateSpecies(id, dto);
+  }
+
+  /**
+   * Delete a plant species (soft delete)
+   *
+   * Only admin_data, admin_system, and superadmin can manage the plant species catalog.
+   * Will reject deletion if the species is referenced by area_plants or notable_plants.
+   *
+   * @param id Plant species UUID
+   */
+  @Delete('plant-species/:id')
+  @Roles(UserRole.ADMIN_DATA, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN)
+  @HttpCode(204)
+  @ApiOperation({
+    summary: 'Delete plant species',
+    description:
+      'Remove a plant species from the catalog (soft delete). Fails if species is in use.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Plant species UUID',
+    example: '22222222-2222-2222-2222-222222222201',
+    type: 'string',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'Plant species deleted',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Insufficient permissions',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Plant species not found',
+  })
+  @ApiResponse({
+    status: 409,
+    description:
+      'Conflict - Plant species is referenced by area inventory or notable plants and cannot be deleted',
+  })
+  async deleteSpecies(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    return this.plantsService.deleteSpecies(id);
   }
 }
