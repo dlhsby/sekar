@@ -48,7 +48,19 @@
   "columnFilter": {
     "placeholder": "Filter…",
     "filterLabel": "Filter {{label}}",
-    "clearLabel": "Clear filter {{label}}"
+    "clearLabel": "Clear filter {{label}}",
+    "enumPlaceholder": "All",
+    "selectedCount": "{{count}} selected",
+    "enumSearchPlaceholder": "Search options...",
+    "enumNoOptions": "No matching options",
+    "selectAll": "Select All",
+    "clearAll": "Clear All",
+    "numberPlaceholder": "All",
+    "numberMinPlaceholder": "Min",
+    "numberMaxPlaceholder": "Max",
+    "datePlaceholder": "All",
+    "dateRangeStartPlaceholder": "Start Date",
+    "dateRangeEndPlaceholder": "End Date"
   },
   "updateToast": {
     "title": "New version available",

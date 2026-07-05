@@ -141,7 +141,10 @@ export {
 export {
   ColumnFilter,
   filterFnForVariant,
-  dateContainsFilterFn,
+  textContainsFilterFn,
+  numberRangeFilterFn,
+  dateRangeFilterFn,
+  enumFilterFn,
   type FilterVariant,
 } from './column-filter';
 

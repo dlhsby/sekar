@@ -5,6 +5,8 @@ import {
   type ColumnFiltersState,
   flexRender,
   getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
   getFilteredRowModel,
   getSortedRowModel,
   type SortingState,
@@ -54,6 +56,14 @@ declare module '@tanstack/react-table' {
     defaultHidden?: boolean;
     /** Column data type — selects the per-column filter control + filterFn. */
     filterVariant?: FilterVariant;
+    /**
+     * Static `enum` filter options. When set, the checklist shows exactly
+     * these values instead of deriving them from the currently loaded rows —
+     * required for server-paginated tables, where the loaded page never
+     * contains every possible value (e.g. a status column whose full value
+     * set the page doesn't have queued for the current fetch).
+     */
+    filterOptions?: { label: string; value: string }[];
     /** Pin to the right edge (sticky) — e.g. an actions column. */
     pinRight?: boolean;
     /** Pin to the left edge (sticky) — e.g. a row-number column. */
@@ -304,6 +314,8 @@ export function DataTable<TData, TValue>({
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
   });
 
   const allRows = table.getRowModel().rows;
