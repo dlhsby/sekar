@@ -114,7 +114,7 @@ export function BoundaryDetailModal({
 
   return (
     <>
-      <NBModal visible={isOpen} onClose={onClose} type="sheet" testID="boundary-detail-sheet">
+      <NBModal visible={isOpen} onClose={onClose} type="sheet" floating testID="boundary-detail-sheet">
         {data ? (
           <>
             {/* Hero header — type-tinted icon chip · name · sub-line · pill */}

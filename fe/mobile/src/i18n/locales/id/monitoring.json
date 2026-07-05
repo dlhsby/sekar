@@ -1,4 +1,9 @@
 {
+  "page": {
+    "backLabel": "Kembali",
+    "modeSummary": "Ringkasan",
+    "modeAllWorkers": "Semua Petugas"
+  },
   "screen": {
     "title": "Pemantauan",
     "loading": "Memuat peta...",

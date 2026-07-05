@@ -253,4 +253,47 @@ describe('MonitoringCacheService', () => {
       // Should not throw
     });
   });
+
+  describe('getOrCompute', () => {
+    it('collapses concurrent identical reads into one loader call', async () => {
+      const loader = jest.fn().mockResolvedValue({ n: 1 });
+      const [a, b, c] = await Promise.all([
+        service.getOrCompute('k', loader),
+        service.getOrCompute('k', loader),
+        service.getOrCompute('k', loader),
+      ]);
+      expect(loader).toHaveBeenCalledTimes(1);
+      expect(a).toEqual({ n: 1 });
+      expect(a).toBe(b);
+      expect(b).toBe(c);
+    });
+
+    it('serves cached value on a subsequent read within TTL', async () => {
+      const loader = jest.fn().mockResolvedValue({ n: 2 });
+      await service.getOrCompute('k2', loader, 10_000);
+      await service.getOrCompute('k2', loader, 10_000);
+      expect(loader).toHaveBeenCalledTimes(1);
+    });
+
+    it('recomputes after TTL expiry', async () => {
+      const loader = jest.fn().mockResolvedValueOnce({ n: 1 }).mockResolvedValueOnce({ n: 2 });
+      const first = await service.getOrCompute('k3', loader, 0);
+      // TTL of 0 → immediately stale.
+      const second = await service.getOrCompute('k3', loader, 0);
+      expect(loader).toHaveBeenCalledTimes(2);
+      expect(first).toEqual({ n: 1 });
+      expect(second).toEqual({ n: 2 });
+    });
+
+    it('does not cache a rejected loader (in-flight cleared)', async () => {
+      const loader = jest
+        .fn()
+        .mockRejectedValueOnce(new Error('boom'))
+        .mockResolvedValueOnce({ ok: true });
+      await expect(service.getOrCompute('k4', loader)).rejects.toThrow('boom');
+      const retry = await service.getOrCompute('k4', loader);
+      expect(retry).toEqual({ ok: true });
+      expect(loader).toHaveBeenCalledTimes(2);
+    });
+  });
 });

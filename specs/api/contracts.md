@@ -3675,6 +3675,42 @@ Authorization: Bearer {token}
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `rayon_id` | UUID | No | Filter to specific rayon (auto-applied for kepala_rayon) |
+| `level` | `rayon` \| `area` | No | `rayon` → rayon outlines only, `areas: []` (lightest payload for the city view). `area` (default) → full per-area geometry. Polygons are server-simplified (Douglas–Peucker). The web/mobile clients request `rayon` at city scope and `area` (+`rayon_id`) after drilling into a rayon. |
+
+> **Aggregate-first monitoring (revamp):** see `GET /monitoring/aggregate` below. Clients render lightweight rayon/area summary bubbles by default and only fetch worker coordinates for a focused area (or when the user opts into the clustered "Semua Petugas" view).
+
+### GET /api/v1/monitoring/aggregate
+
+Lightweight hierarchical rollup for the monitoring map's "Ringkasan" (summary) mode. Returns one node per child of the requested scope — rayons for `scope=city`, areas for `scope=rayon` — with grouped status/role counts and a center point, but **no individual worker coordinates**. Backed by grouped `COUNT` queries and a short-TTL response cache (concurrent identical reads collapse to one DB hit).
+
+**Auth:** JwtAuthGuard + RolesGuard
+**Roles:** `scope=city` → `top_management`, `admin_system`, `superadmin`. `scope=rayon` → also `kepala_rayon`, `admin_data` (forced to their own rayon).
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `scope` | `city` \| `rayon` | No (default `city`) | Aggregation level |
+| `id` | UUID | rayon scope | Rayon id (city roles may target any; rayon-scoped roles are forced to their own) |
+
+**Response `200`:**
+```jsonc
+{
+  "scope": "city",
+  "scope_id": null,
+  "nodes": [
+    {
+      "id": "rayon-uuid", "name": "Rayon Selatan", "type": "rayon",
+      "center_lat": -7.30, "center_lng": 112.72,
+      "counts_by_status": { "active": 12, "inactive": 3, "outside_area": 1, "missing": 2, "offline": 4 },
+      "counts_by_role": { "satgas": 14, "linmas": 4 },
+      "worker_count": 22, "online_count": 16, "required": 18,
+      "is_understaffed": true, "area_count": 15
+    }
+  ],
+  "totals": { "active": 42, "inactive": 8, "outside_area": 3, "missing": 5, "offline": 12 },
+  "generated_at": "2026-07-05T02:30:00Z"
+}
+```
 | `include_staffing` | boolean | No | Include staffing summary per area (default: true) |
 
 **Response (200 OK):**

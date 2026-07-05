@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, IsNull, Not, In } from 'typeorm';
 import { Area } from '../../areas/entities/area.entity';
@@ -8,10 +8,18 @@ import { Activity } from '../../activities/entities/activity.entity';
 import { LocationLog } from '../../location/entities/location-log.entity';
 import { Rayon } from '../../rayons/entities/rayon.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
-import { AreaStaffRequirement } from '../../area-staff-requirements/entities/area-staff-requirement.entity';
+import {
+  AreaStaffRequirement,
+  DayType,
+} from '../../area-staff-requirements/entities/area-staff-requirement.entity';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
 import { CityStatsDto, RayonSummaryDto } from '../dto/city-stats.dto';
 import { RayonStatsDto, AreaSummaryDto, ShiftSummaryDto } from '../dto/rayon-stats.dto';
+import {
+  AggregateResponseDto,
+  AggregateNodeDto,
+  AggregateStatusCountsDto,
+} from '../dto/aggregate.dto';
 import {
   AreaStatsDto,
   UserStatusDto,
@@ -25,6 +33,8 @@ import {
   RoleStaffingItemDto,
 } from '../dto/boundaries.dto';
 import { DayTypeService } from './day-type.service';
+import { simplifyGeometry } from '../../../common/utils/geojson-simplify.util';
+import { MonitoringCacheService } from './monitoring-cache.service';
 
 @Injectable()
 export class MonitoringStatsService {
@@ -50,6 +60,9 @@ export class MonitoringStatsService {
     @InjectRepository(UserTrackingStatus)
     private readonly trackingRepository: Repository<UserTrackingStatus>,
     private readonly dayTypeService: DayTypeService,
+    // Optional: short-TTL response cache. Absent in unit specs; present at runtime.
+    @Optional()
+    private readonly cacheService?: MonitoringCacheService,
   ) {}
 
   async getCityStats(): Promise<CityStatsDto> {
@@ -271,6 +284,275 @@ export class MonitoringStatsService {
       current_day_type_label: this.dayTypeService.getDayTypeLabel(currentDayType),
       generated_at: new Date(),
     };
+  }
+
+  /**
+   * Lightweight aggregate for the monitoring map's "Ringkasan" mode.
+   * `scope=city` → one node per rayon; `scope=rayon` → one node per area in that rayon.
+   * Returns only centers + grouped counts (never worker coordinates), built with a
+   * fixed set of grouped queries (no per-node fan-out).
+   */
+  async getAggregate(scope: 'city' | 'rayon', rayonId?: string): Promise<AggregateResponseDto> {
+    const key = `aggregate:${scope}:${rayonId ?? ''}`;
+    if (typeof this.cacheService?.getOrCompute === 'function') {
+      return this.cacheService.getOrCompute(key, () => this.computeAggregate(scope, rayonId));
+    }
+    return this.computeAggregate(scope, rayonId);
+  }
+
+  private async computeAggregate(
+    scope: 'city' | 'rayon',
+    rayonId?: string,
+  ): Promise<AggregateResponseDto> {
+    const currentShift = await this.getCurrentShiftDefinition();
+    const currentDayType = await this.dayTypeService.getCurrentDayType();
+
+    if (scope === 'rayon') {
+      if (!rayonId) throw new NotFoundException('rayon id is required for rayon scope');
+      const nodes = await this.buildAreaNodes(rayonId, currentShift?.id, currentDayType);
+      return {
+        scope,
+        scope_id: rayonId,
+        nodes,
+        totals: this.sumStatusCounts(nodes),
+        generated_at: new Date(),
+      };
+    }
+
+    const nodes = await this.buildRayonNodes(currentShift?.id, currentDayType);
+    return {
+      scope,
+      scope_id: null,
+      nodes,
+      totals: this.sumStatusCounts(nodes),
+      generated_at: new Date(),
+    };
+  }
+
+  /** City scope: one aggregate node per rayon, grouped by `area.rayon_id`. */
+  private async buildRayonNodes(
+    shiftDefinitionId: string | undefined,
+    dayType: DayType,
+  ): Promise<AggregateNodeDto[]> {
+    const rayons = await this.rayonRepository.find();
+
+    const areas = await this.areaRepository.find({
+      where: { is_active: true },
+      select: ['id', 'rayon_id'],
+    });
+    const areaCountByRayon = new Map<string, number>();
+    for (const a of areas) {
+      if (a.rayon_id) areaCountByRayon.set(a.rayon_id, (areaCountByRayon.get(a.rayon_id) ?? 0) + 1);
+    }
+
+    const [statusRows, roleRows, requiredMap] = await Promise.all([
+      this.trackingRepository
+        .createQueryBuilder('uts')
+        .innerJoin('uts.area', 'area')
+        .select('area.rayon_id', 'group_id')
+        .addSelect('uts.status', 'status')
+        .addSelect('COUNT(*)', 'count')
+        .where('uts.shift_id IS NOT NULL')
+        .groupBy('area.rayon_id')
+        .addGroupBy('uts.status')
+        .getRawMany(),
+      this.trackingRepository
+        .createQueryBuilder('uts')
+        .innerJoin('uts.area', 'area')
+        .innerJoin('uts.user', 'user')
+        .select('area.rayon_id', 'group_id')
+        .addSelect('user.role', 'role')
+        .addSelect('COUNT(*)', 'count')
+        .where('uts.shift_id IS NOT NULL')
+        .groupBy('area.rayon_id')
+        .addGroupBy('user.role')
+        .getRawMany(),
+      this.requiredCountByGroup('rayon', shiftDefinitionId, dayType),
+    ]);
+
+    const statusByGroup = this.indexStatusRows(statusRows);
+    const roleByGroup = this.indexRoleRows(roleRows);
+
+    return rayons.map((rayon) =>
+      this.assembleNode({
+        id: rayon.id,
+        name: rayon.name,
+        type: 'rayon',
+        center_lat: this.toNum(rayon.center_lat),
+        center_lng: this.toNum(rayon.center_lng),
+        counts_by_status: statusByGroup.get(rayon.id),
+        counts_by_role: roleByGroup.get(rayon.id),
+        required: requiredMap.get(rayon.id) ?? 0,
+        area_count: areaCountByRayon.get(rayon.id) ?? 0,
+      }),
+    );
+  }
+
+  /** Rayon scope: one aggregate node per area in the rayon, grouped by `uts.area_id`. */
+  private async buildAreaNodes(
+    rayonId: string,
+    shiftDefinitionId: string | undefined,
+    dayType: DayType,
+  ): Promise<AggregateNodeDto[]> {
+    const areas = await this.areaRepository.find({
+      where: { rayon_id: rayonId, is_active: true },
+    });
+
+    // A rayon can legitimately have zero active areas — skip the grouped
+    // queries entirely (an empty `IN ()` on the uuid column would otherwise
+    // throw) and return no nodes.
+    if (areas.length === 0) return [];
+
+    const areaIds = areas.map((a) => a.id);
+    const [statusRows, roleRows, requiredMap] = await Promise.all([
+      this.trackingRepository
+        .createQueryBuilder('uts')
+        .select('uts.area_id', 'group_id')
+        .addSelect('uts.status', 'status')
+        .addSelect('COUNT(*)', 'count')
+        .where('uts.shift_id IS NOT NULL')
+        .andWhere('(uts.rayon_id = :rayonId OR uts.area_id IN (:...areaIds))', {
+          rayonId,
+          areaIds,
+        })
+        .groupBy('uts.area_id')
+        .addGroupBy('uts.status')
+        .getRawMany(),
+      this.trackingRepository
+        .createQueryBuilder('uts')
+        .innerJoin('uts.user', 'user')
+        .select('uts.area_id', 'group_id')
+        .addSelect('user.role', 'role')
+        .addSelect('COUNT(*)', 'count')
+        .where('uts.shift_id IS NOT NULL')
+        .andWhere('uts.area_id IN (:...areaIds)', {
+          areaIds,
+        })
+        .groupBy('uts.area_id')
+        .addGroupBy('user.role')
+        .getRawMany(),
+      this.requiredCountByGroup('area', shiftDefinitionId, dayType, areaIds),
+    ]);
+
+    const statusByGroup = this.indexStatusRows(statusRows);
+    const roleByGroup = this.indexRoleRows(roleRows);
+
+    return areas.map((area) =>
+      this.assembleNode({
+        id: area.id,
+        name: area.name,
+        type: 'area',
+        center_lat: this.toNum(area.gps_lat),
+        center_lng: this.toNum(area.gps_lng),
+        counts_by_status: statusByGroup.get(area.id),
+        counts_by_role: roleByGroup.get(area.id),
+        required: requiredMap.get(area.id) ?? 0,
+        rayon_id: rayonId,
+      }),
+    );
+  }
+
+  /** Sum required_count grouped by rayon or area for the current shift + day type. */
+  private async requiredCountByGroup(
+    groupBy: 'rayon' | 'area',
+    shiftDefinitionId: string | undefined,
+    dayType: DayType,
+    areaIds?: string[],
+  ): Promise<Map<string, number>> {
+    if (!shiftDefinitionId) return new Map();
+    const qb = this.staffRequirementRepository
+      .createQueryBuilder('req')
+      .addSelect('SUM(req.required_count)', 'total')
+      .where('req.shift_definition_id = :shiftId', { shiftId: shiftDefinitionId })
+      .andWhere('req.day_type = :dayType', { dayType });
+
+    if (groupBy === 'rayon') {
+      qb.innerJoin('req.area', 'area').select('area.rayon_id', 'group_id').groupBy('area.rayon_id');
+    } else {
+      if (!areaIds || areaIds.length === 0) return new Map();
+      qb.select('req.area_id', 'group_id')
+        .andWhere('req.area_id IN (:...areaIds)', { areaIds })
+        .groupBy('req.area_id');
+    }
+
+    const rows = await qb.getRawMany();
+    return new Map(rows.map((r: any) => [r.group_id, parseInt(r.total, 10) || 0]));
+  }
+
+  private indexStatusRows(rows: any[]): Map<string, AggregateStatusCountsDto> {
+    const map = new Map<string, AggregateStatusCountsDto>();
+    for (const row of rows) {
+      if (!row.group_id) continue;
+      const counts = map.get(row.group_id) ?? this.emptyStatusCounts();
+      const status = row.status as keyof AggregateStatusCountsDto;
+      if (status in counts) counts[status] += parseInt(row.count, 10) || 0;
+      map.set(row.group_id, counts);
+    }
+    return map;
+  }
+
+  private indexRoleRows(rows: any[]): Map<string, Record<string, number>> {
+    const map = new Map<string, Record<string, number>>();
+    for (const row of rows) {
+      if (!row.group_id) continue;
+      const roles = map.get(row.group_id) ?? {};
+      roles[row.role] = (roles[row.role] ?? 0) + (parseInt(row.count, 10) || 0);
+      map.set(row.group_id, roles);
+    }
+    return map;
+  }
+
+  private assembleNode(input: {
+    id: string;
+    name: string;
+    type: 'rayon' | 'area';
+    center_lat: number | null;
+    center_lng: number | null;
+    counts_by_status?: AggregateStatusCountsDto;
+    counts_by_role?: Record<string, number>;
+    required: number;
+    area_count?: number;
+    rayon_id?: string | null;
+  }): AggregateNodeDto {
+    const counts = input.counts_by_status ?? this.emptyStatusCounts();
+    const online = counts.active + counts.inactive + counts.outside_area;
+    const worker_count = online + counts.missing + counts.offline;
+    return {
+      id: input.id,
+      name: input.name,
+      type: input.type,
+      center_lat: input.center_lat,
+      center_lng: input.center_lng,
+      counts_by_status: counts,
+      counts_by_role: input.counts_by_role ?? {},
+      worker_count,
+      online_count: online,
+      required: input.required,
+      is_understaffed: online < input.required,
+      ...(input.type === 'rayon' ? { area_count: input.area_count ?? 0 } : {}),
+      ...(input.type === 'area' ? { rayon_id: input.rayon_id ?? null } : {}),
+    };
+  }
+
+  private emptyStatusCounts(): AggregateStatusCountsDto {
+    return { active: 0, inactive: 0, outside_area: 0, missing: 0, offline: 0 };
+  }
+
+  private sumStatusCounts(nodes: AggregateNodeDto[]): AggregateStatusCountsDto {
+    return nodes.reduce((acc, n) => {
+      acc.active += n.counts_by_status.active;
+      acc.inactive += n.counts_by_status.inactive;
+      acc.outside_area += n.counts_by_status.outside_area;
+      acc.missing += n.counts_by_status.missing;
+      acc.offline += n.counts_by_status.offline;
+      return acc;
+    }, this.emptyStatusCounts());
+  }
+
+  private toNum(v: unknown): number | null {
+    if (v === null || v === undefined) return null;
+    const n = parseFloat(v.toString());
+    return Number.isNaN(n) ? null : n;
   }
 
   // ---- Helper methods ----
@@ -579,7 +861,13 @@ export class MonitoringStatsService {
   async getBoundaries(filters?: {
     rayon_id?: string;
     area_ids?: string[];
+    /**
+     * `rayon` → rayon outlines only (area geometry omitted; lightest payload for
+     * the city-level map). `area` (default) → full area geometry for drill-down.
+     */
+    level?: 'rayon' | 'area';
   }): Promise<BoundariesResponseDto> {
+    const level = filters?.level ?? 'area';
     const rayonWhere: Record<string, any> = {};
     if (filters?.rayon_id) {
       rayonWhere.id = filters.rayon_id;
@@ -589,6 +877,34 @@ export class MonitoringStatsService {
 
     const rayonBoundaries: RayonBoundaryDto[] = await Promise.all(
       rayons.map(async (rayon) => {
+        const rayonCenterLat = (rayon as any).center_lat
+          ? parseFloat((rayon as any).center_lat.toString())
+          : null;
+        const rayonCenterLng = (rayon as any).center_lng
+          ? parseFloat((rayon as any).center_lng.toString())
+          : null;
+
+        // Rayon-level payload: outlines only, no area geometry. Staffing rollups
+        // come from /monitoring/aggregate at the city zoom, so this path stays a
+        // single cheap count per rayon.
+        if (level === 'rayon') {
+          const area_count = await this.areaRepository.count({
+            where: { rayon_id: rayon.id, is_active: true },
+          });
+          return {
+            id: rayon.id,
+            name: rayon.name,
+            color: (rayon as any).color ?? null,
+            boundary_polygon: simplifyGeometry((rayon as any).boundary_polygon) || null,
+            center_lat: rayonCenterLat,
+            center_lng: rayonCenterLng,
+            area_count,
+            is_understaffed: false,
+            understaffed_area_count: 0,
+            areas: [],
+          } as RayonBoundaryDto;
+        }
+
         const areaWhere: Record<string, any> = {
           rayon_id: rayon.id,
           is_active: true,
@@ -601,13 +917,9 @@ export class MonitoringStatsService {
               id: rayon.id,
               name: rayon.name,
               color: (rayon as any).color ?? null,
-              boundary_polygon: (rayon as any).boundary_polygon || null,
-              center_lat: (rayon as any).center_lat
-                ? parseFloat((rayon as any).center_lat.toString())
-                : null,
-              center_lng: (rayon as any).center_lng
-                ? parseFloat((rayon as any).center_lng.toString())
-                : null,
+              boundary_polygon: simplifyGeometry((rayon as any).boundary_polygon) || null,
+              center_lat: rayonCenterLat,
+              center_lng: rayonCenterLng,
               area_count: 0,
               is_understaffed: false,
               understaffed_area_count: 0,
@@ -644,7 +956,7 @@ export class MonitoringStatsService {
           return {
             id: area.id,
             name: area.name,
-            boundary_polygon: area.boundary_polygon || null,
+            boundary_polygon: simplifyGeometry(area.boundary_polygon) || null,
             center_lat: parseFloat(area.gps_lat?.toString() || '0'),
             center_lng: parseFloat(area.gps_lng?.toString() || '0'),
             rayon_id: rayon.id,
@@ -662,13 +974,9 @@ export class MonitoringStatsService {
           id: rayon.id,
           name: rayon.name,
           color: (rayon as any).color ?? null,
-          boundary_polygon: (rayon as any).boundary_polygon || null,
-          center_lat: (rayon as any).center_lat
-            ? parseFloat((rayon as any).center_lat.toString())
-            : null,
-          center_lng: (rayon as any).center_lng
-            ? parseFloat((rayon as any).center_lng.toString())
-            : null,
+          boundary_polygon: simplifyGeometry((rayon as any).boundary_polygon) || null,
+          center_lat: rayonCenterLat,
+          center_lng: rayonCenterLng,
           area_count: areas.length,
           is_understaffed: understaffedCount > 0,
           understaffed_area_count: understaffedCount,
@@ -680,9 +988,10 @@ export class MonitoringStatsService {
     // When the caller requested specific area_ids, suppress rayons that
     // ended up with no matching areas (otherwise korlap would still see
     // empty rayon polygons from across the city).
-    const finalRayons = filters?.area_ids
-      ? rayonBoundaries.filter((r) => r.areas.length > 0)
-      : rayonBoundaries;
+    const finalRayons =
+      filters?.area_ids && level === 'area'
+        ? rayonBoundaries.filter((r) => r.areas.length > 0)
+        : rayonBoundaries;
 
     return {
       rayons: finalRayons,

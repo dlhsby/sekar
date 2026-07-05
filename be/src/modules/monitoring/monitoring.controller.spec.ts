@@ -262,6 +262,7 @@ describe('MonitoringController', () => {
           provide: MonitoringStatsService,
           useValue: {
             getBoundaries: jest.fn(),
+            getAggregate: jest.fn(),
           },
         },
         {
@@ -801,6 +802,35 @@ describe('MonitoringController', () => {
       await expect(controller.getAreaPlantStatus('area-other', mockKorlap)).rejects.toThrow(
         ForbiddenException,
       );
+    });
+  });
+
+  describe('getAggregate', () => {
+    let statsService: any;
+    beforeEach(() => {
+      statsService = controller['statsService'];
+      statsService.getAggregate.mockResolvedValue({ scope: 'city', nodes: [] });
+    });
+
+    it('returns city aggregate for city role', async () => {
+      await controller.getAggregate(mockSuperadmin, 'city');
+      expect(statsService.getAggregate).toHaveBeenCalledWith('city', undefined);
+    });
+
+    it('rejects city scope for rayon-scoped role', async () => {
+      await expect(controller.getAggregate(mockKepalaRayon, 'city')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('forces rayon-scoped role to own rayon regardless of requested id', async () => {
+      await controller.getAggregate(mockKepalaRayon, 'rayon', 'rayon-other');
+      expect(statsService.getAggregate).toHaveBeenCalledWith('rayon', 'rayon-1');
+    });
+
+    it('lets city role target any rayon', async () => {
+      await controller.getAggregate(mockSuperadmin, 'rayon', 'rayon-9');
+      expect(statsService.getAggregate).toHaveBeenCalledWith('rayon', 'rayon-9');
     });
   });
 

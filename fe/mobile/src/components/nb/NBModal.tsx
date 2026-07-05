@@ -70,6 +70,13 @@ export interface NBModalProps {
    * must fill the viewport (maps, calendars) rather than scroll.
    */
   scrollable?: boolean;
+  /**
+   * Sheet only. Renders the sheet as a detached "floating" card — inset from the
+   * screen edges with all corners rounded and lifted off the bottom — instead of
+   * the default edge-to-edge bottom-anchored sheet. Useful over a full-bleed map
+   * (monitoring) so the sheet reads as an overlay. No effect on the gorhom path.
+   */
+  floating?: boolean;
   children: React.ReactNode;
   testID?: string;
 }
@@ -368,6 +375,7 @@ function RNSheetModal({
   footer,
   headerRight,
   sheetHeight,
+  floating = false,
   children,
   testID,
 }: NBModalProps) {
@@ -375,9 +383,14 @@ function RNSheetModal({
   const insets = useSafeAreaInsets();
   const screenHeight = Dimensions.get('window').height;
   // Cap a hug-content sheet below the status bar; honor an explicit sheetHeight.
-  const maxHeight = screenHeight - insets.top - nbSpacing.xl;
-  const fixedHeight =
+  // A floating sheet is lifted off the bottom, so subtract that gap from the cap.
+  const floatLift = floating ? insets.bottom + nbSpacing.md : 0;
+  const maxHeight = screenHeight - insets.top - nbSpacing.xl - floatLift;
+  const rawFixedHeight =
     sheetHeight != null ? resolveSnapPx(sheetHeight, screenHeight) : undefined;
+  // A floating sheet is inset + lifted, so a fixed height must still fit the cap.
+  const fixedHeight =
+    rawFixedHeight != null && floating ? Math.min(rawFixedHeight, maxHeight) : rawFixedHeight;
   const fixed = sheetHeight != null;
 
   // Drag-to-close: a vertical pan on the handle slides the card down; releasing
@@ -440,8 +453,16 @@ function RNSheetModal({
             testID="nbmodal-sheet-card"
             style={[
               styles.rnSheetCard,
+              floating && styles.rnSheetCardFloating,
               fixed ? { height: fixedHeight } : { maxHeight },
-              { paddingBottom: insets.bottom, transform: [{ translateY }] },
+              {
+                transform: [{ translateY }],
+                // Floating: lift off the bottom edge (margin), small inner pad.
+                // Anchored: pad the body past the home indicator.
+                ...(floating
+                  ? { marginBottom: insets.bottom + nbSpacing.md, paddingBottom: nbSpacing.sm }
+                  : { paddingBottom: insets.bottom }),
+              },
             ]}
           >
             <View style={styles.rnHandleArea} {...dragResponder.panHandlers}>
@@ -599,6 +620,13 @@ const styles = StyleSheet.create({
     borderColor: nbColors.black,
     ...nbShadows.lg,
     overflow: 'hidden',
+  },
+  // Detached "floating" sheet: inset from the side edges + rounded bottom corners
+  // (top corners already rounded above). The bottom lift is applied inline.
+  rnSheetCardFloating: {
+    marginHorizontal: nbSpacing.md,
+    borderBottomLeftRadius: nbRadius.lg,
+    borderBottomRightRadius: nbRadius.lg,
   },
   rnHandleArea: {
     alignItems: 'center',

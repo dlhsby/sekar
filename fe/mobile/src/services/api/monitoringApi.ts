@@ -24,6 +24,7 @@ import type {
   UserDaySummary,
   LocationHistory,
   BoundariesResponse,
+  MonitoringAggregateResponse,
   ReassignWorkerPayload,
   ReassignWorkerResponse,
   AreaPlantStatusResponse,
@@ -122,15 +123,34 @@ export async function getStaffingSummary(
   return get<StaffingSummaryResponse>('/monitoring/staffing-summary', filters);
 }
 
-// Phase 2D Gap: Boundaries endpoint
+// Phase 2D Gap: Boundaries endpoint.
+// `level='rayon'` returns rayon outlines only (lightest payload for the city
+// view); `level='area'` (+ rayonId) returns that rayon's area geometry.
 export async function getBoundaries(
   rayonId?: string,
+  level?: 'rayon' | 'area',
 ): Promise<ApiResponse<BoundariesResponse>> {
   const params: Record<string, string> = {};
   if (rayonId) {
     params.rayon_id = rayonId;
   }
+  if (level) {
+    params.level = level;
+  }
   return get<BoundariesResponse>('/monitoring/boundaries', params);
+}
+
+// Aggregate ("Ringkasan") rollup — rayon nodes (scope=city) or area nodes
+// (scope=rayon) with grouped status/role counts and centers, no worker coords.
+export async function getMonitoringAggregate(
+  scope: 'city' | 'rayon' = 'city',
+  id?: string,
+): Promise<ApiResponse<MonitoringAggregateResponse>> {
+  const params: Record<string, string> = { scope };
+  if (id) {
+    params.id = id;
+  }
+  return get<MonitoringAggregateResponse>('/monitoring/aggregate', params);
 }
 
 // Phase 2D Gap: Reassign worker endpoint
@@ -175,6 +195,7 @@ export default {
   getUserLocationHistory,
   getStaffingSummary,
   getBoundaries,
+  getMonitoringAggregate,
   reassignWorker,
   getMonitoringConfig,
   getAreaPlantStatus,

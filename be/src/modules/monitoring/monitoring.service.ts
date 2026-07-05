@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
@@ -22,6 +22,7 @@ import {
 import { MonitoringStatsService } from './services/monitoring-stats.service';
 import { MonitoringUserService } from './services/monitoring-user.service';
 import { DayTypeService } from './services/day-type.service';
+import { MonitoringCacheService } from './services/monitoring-cache.service';
 
 // Snapshot DTOs for web frontend contract (fe/web/src/lib/api/monitoring-v2.ts)
 export interface SnapshotWorker {
@@ -83,6 +84,8 @@ export class MonitoringService {
     private readonly statsService: MonitoringStatsService,
     private readonly userService: MonitoringUserService,
     private readonly dayTypeService: DayTypeService,
+    @Optional()
+    private readonly cacheService?: MonitoringCacheService,
   ) {}
 
   // ---- Delegated to MonitoringStatsService ----
@@ -131,6 +134,17 @@ export class MonitoringService {
     success: boolean;
     data: SnapshotData;
   }> {
+    const key = `snapshot:${scope}:${id ?? ''}`;
+    if (typeof this.cacheService?.getOrCompute === 'function') {
+      return this.cacheService.getOrCompute(key, () => this.computeSnapshot(scope, id));
+    }
+    return this.computeSnapshot(scope, id);
+  }
+
+  private async computeSnapshot(
+    scope: 'city' | 'rayon' | 'area',
+    id?: string,
+  ): Promise<{ success: boolean; data: SnapshotData }> {
     const filters: LiveUsersFilterDto = {};
     if (scope === 'rayon' && id) filters.rayon_id = id;
     if (scope === 'area' && id) filters.area_id = id;

@@ -13,8 +13,6 @@ import { NBText } from '../../../components/nb/NBText';
 
 interface ToolsOverlayProps {
   resetHeading: () => void;
-  handleZoomIn: () => void;
-  handleZoomOut: () => void;
   filterModalVisible: boolean;
   setFilterModalVisible: (visible: boolean) => void;
 }
@@ -48,8 +46,6 @@ function ToolActionRow({
 
 export function ToolsOverlay({
   resetHeading,
-  handleZoomIn,
-  handleZoomOut,
   filterModalVisible,
   setFilterModalVisible,
 }: ToolsOverlayProps): React.JSX.Element {
@@ -61,7 +57,7 @@ export function ToolsOverlay({
       contentContainerStyle={styles.toolsOverlayContent}
       showsVerticalScrollIndicator={false}
     >
-      {/* Map controls */}
+      {/* Map controls — zoom is now the native Google control; keep heading reset. */}
       <NBText variant="mono-sm" uppercase style={styles.toolsHeader}>
         {t('monitoring:tools.mapSection')}
       </NBText>
@@ -69,16 +65,6 @@ export function ToolsOverlay({
         icon="compass-outline"
         label={t('monitoring:tools.resetHeading')}
         onPress={resetHeading}
-      />
-      <ToolActionRow
-        icon="magnify-plus-outline"
-        label={t('monitoring:tools.zoomIn')}
-        onPress={handleZoomIn}
-      />
-      <ToolActionRow
-        icon="magnify-minus-outline"
-        label={t('monitoring:tools.zoomOut')}
-        onPress={handleZoomOut}
       />
 
       {/* Filter (status / area / jabatan / layer visibility) */}

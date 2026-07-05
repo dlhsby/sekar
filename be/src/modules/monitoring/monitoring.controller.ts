@@ -37,6 +37,7 @@ import {
 } from './dto/monitoring-config.dto';
 import { StaffingSummaryQueryDto, StaffingSummaryResponseDto } from './dto/staffing-summary.dto';
 import { BoundariesResponseDto } from './dto/boundaries.dto';
+import { AggregateResponseDto } from './dto/aggregate.dto';
 import { ReassignWorkerDto, ReassignWorkerResponseDto } from './dto/reassign-worker.dto';
 import { AreaPlantStatusDto } from './dto/area-plant-status.dto';
 import { AreaPlantStatusService } from './services/area-plant-status.service';
@@ -178,13 +179,26 @@ export class MonitoringController {
   @Get('boundaries')
   @Roles(...MONITORING_AREA)
   @ApiOperation({ summary: 'Get rayon and area boundary polygons' })
+  @ApiQuery({
+    name: 'level',
+    enum: ['rayon', 'area'],
+    required: false,
+    description: 'rayon → outlines only (lightest); area (default) → full area geometry',
+  })
   @ApiResponse({ status: 200, type: BoundariesResponseDto })
   async getBoundaries(
     @Query('rayon_id') rayonId: string | undefined,
     @GetUser() user: User,
+    @Query('level') level?: 'rayon' | 'area',
   ): Promise<BoundariesResponseDto> {
-    const filters: { rayon_id?: string; area_ids?: string[]; area_id?: string } = {};
+    const filters: {
+      rayon_id?: string;
+      area_ids?: string[];
+      area_id?: string;
+      level?: 'rayon' | 'area';
+    } = {};
     if (rayonId) filters.rayon_id = rayonId;
+    if (level === 'rayon' || level === 'area') filters.level = level;
     await this.applyScopeFilters(user, filters);
     // Korlap scope: collapse area_id / area_ids into a single area_ids list so
     // the service only returns assigned areas, not the entire rayon.
@@ -285,6 +299,37 @@ export class MonitoringController {
     const filters: StaffingSummaryQueryDto & { area_ids?: string[] } = { ...query };
     await this.applyScopeFilters(user, filters);
     return this.monitoringService.getStaffingSummary(filters);
+  }
+
+  @Get('aggregate')
+  @Roles(...MONITORING_CITY, ...MONITORING_RAYON)
+  @ApiOperation({
+    summary: 'Aggregate map summary (Ringkasan mode) — rayon or area rollups, no worker coords',
+    description:
+      'scope=city → one node per rayon; scope=rayon → one node per area in the rayon. Returns ' +
+      'grouped status/role counts + centers only, for lightweight drill-down bubbles.',
+  })
+  @ApiQuery({ name: 'scope', enum: ['city', 'rayon'], required: false })
+  @ApiQuery({ name: 'id', required: false, description: 'Rayon UUID (required for rayon scope)' })
+  @ApiResponse({ status: 200, type: AggregateResponseDto })
+  async getAggregate(
+    @GetUser() user: User,
+    @Query('scope') scope: 'city' | 'rayon' = 'city',
+    @Query('id') id?: string,
+  ): Promise<AggregateResponseDto> {
+    // City-scope aggregate is city-role only; rayon-scoped roles are forced to
+    // their own rayon and cannot request the city rollup.
+    if (scope === 'city' && !MONITORING_CITY.includes(user.role as UserRole)) {
+      throw new ForbiddenException('City-scope aggregate requires city-level role');
+    }
+    let rayonId = id;
+    if (scope === 'rayon') {
+      // Rayon-scoped roles always resolve to their own rayon regardless of query.
+      const isCityRole = MONITORING_CITY.includes(user.role as UserRole);
+      rayonId = isCityRole ? id : (user.rayon_id ?? undefined);
+      if (rayonId) this.enforceScopeRayon(user, rayonId);
+    }
+    return this.statsService.getAggregate(scope, rayonId);
   }
 
   @Get('snapshot')

@@ -61,6 +61,75 @@ export interface MonitoringSnapshotResponse {
 }
 
 // ---------------------------------------------------------------------------
+// Aggregate ("Ringkasan") Types — lightweight rollups for the summary bubbles
+// ---------------------------------------------------------------------------
+
+export interface AggregateStatusCounts {
+  active: number;
+  inactive: number;
+  outside_area: number;
+  missing: number;
+  offline: number;
+}
+
+export interface AggregateNode {
+  id: string;
+  name: string;
+  type: 'rayon' | 'area';
+  center_lat: number | null;
+  center_lng: number | null;
+  counts_by_status: AggregateStatusCounts;
+  counts_by_role: Record<string, number>;
+  worker_count: number;
+  online_count: number;
+  required: number;
+  is_understaffed: boolean;
+  area_count?: number;
+  rayon_id?: string | null;
+}
+
+export interface AggregateResponse {
+  scope: 'city' | 'rayon';
+  scope_id: string | null;
+  nodes: AggregateNode[];
+  totals: AggregateStatusCounts;
+  generated_at: string;
+}
+
+export const aggregateKeys = {
+  all: ['monitoring', 'aggregate'] as const,
+  byScope: (scope: string, id?: string) =>
+    [...aggregateKeys.all, scope, id] as const,
+};
+
+/**
+ * useMonitoringAggregate — rayon rollups (city scope) or area rollups (rayon
+ * scope) for the map's "Ringkasan" bubbles. No worker coordinates, so it stays
+ * light even city-wide. WS staffing events invalidate it; a slow poll is the
+ * safety net.
+ */
+export function useMonitoringAggregate(
+  scope: 'city' | 'rayon',
+  id?: string,
+  enabled = true
+) {
+  return useQuery({
+    queryKey: aggregateKeys.byScope(scope, id),
+    queryFn: async () => {
+      const params: Record<string, string> = { scope };
+      if (id) params.id = id;
+      const response = await apiClient.get<AggregateResponse>('/monitoring/aggregate', {
+        params,
+      });
+      return response.data;
+    },
+    refetchInterval: 60_000,
+    staleTime: 15_000,
+    enabled,
+  });
+}
+
+// ---------------------------------------------------------------------------
 // WebSocket v2 Event Types
 // ---------------------------------------------------------------------------
 
@@ -89,12 +158,16 @@ export const snapshotKeys = {
 
 /**
  * useMonitoringSnapshot — fetches the unified monitoring snapshot.
- * Refetches every 30 s; stale after 10 s. Incremental WS patches
- * are applied directly via queryClient.setQueryData in the page component.
+ *
+ * Incremental WebSocket patches (via useMonitoringSocket) keep the worker set
+ * fresh in place, so this is the initial load + a slow safety-net poll (2 min)
+ * rather than the primary freshness mechanism. Previously a 30 s poll that
+ * remounted every marker; the WS path removes that flash.
  */
 export function useMonitoringSnapshot(
   scope: 'city' | 'rayon' | 'area' = 'city',
-  id?: string
+  id?: string,
+  enabled = true
 ) {
   return useQuery({
     queryKey: snapshotKeys.byScope(scope, id),
@@ -107,7 +180,8 @@ export function useMonitoringSnapshot(
       );
       return response.data;
     },
-    refetchInterval: 30_000,
-    staleTime: 10_000,
+    refetchInterval: 120_000,
+    staleTime: 30_000,
+    enabled,
   });
 }

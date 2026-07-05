@@ -7,17 +7,46 @@
     "loading": "Memuat…",
     "noData": "Tidak ada data",
     "updated": "Diperbarui {{time}}",
-    "searchPlaceholder": "Cari petugas…",
-    "searchLabel": "Cari petugas",
+    "searchPlaceholder": "Cari petugas, area, rayon…",
+    "searchLabel": "Cari petugas, area, atau rayon",
     "filterLabel": "Filter",
     "refreshLabel": "Segarkan",
+    "refreshSuccess": "Data monitoring diperbarui",
+    "refreshError": "Gagal memperbarui data",
     "overdueToggleLabel": "Tampilkan tanaman terlambat dipangkas",
     "overdueToggleTitle": "Tanaman terlambat dipangkas",
     "overdueButtonLabel": "Tanaman",
     "filterPanelTitle": "Filter Petugas",
     "closePanelLabel": "Tutup filter",
     "listLabel": "Daftar Petugas",
-    "closeListLabel": "Tutup daftar"
+    "closeListLabel": "Tutup daftar",
+    "backLabel": "Kembali",
+    "modeSummary": "Ringkasan",
+    "modeAllWorkers": "Semua Petugas"
+  },
+  "aggregate": {
+    "onlineOfRequired": "{{online}}/{{required}} bertugas",
+    "understaffed": "Kekurangan personel"
+  },
+  "layers": {
+    "title": "Lapisan",
+    "viewMode": "Tampilan",
+    "overlays": "Lapisan Peta",
+    "rayonBorder": "Batas Rayon",
+    "rayonFill": "Warna Rayon",
+    "areaBorder": "Batas Area",
+    "areaPins": "Titik Area",
+    "petugas": "Petugas",
+    "overdue": "Tanaman Terlambat"
+  },
+  "search": {
+    "personnelLabel": "Petugas",
+    "areaLabel": "Area",
+    "rayonLabel": "Rayon",
+    "recentTitle": "Pencarian Terakhir",
+    "clearRecent": "Hapus",
+    "recentEmpty": "Belum ada pencarian terakhir",
+    "noResults": "Tidak ada hasil"
   },
   "status": {
     "active": "Aktif",

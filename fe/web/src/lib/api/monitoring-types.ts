@@ -317,6 +317,8 @@ export interface AreaBoundary {
 export interface RayonBoundary {
   id: string;
   name: string;
+  /** Hex color configured for the rayon (Rayon settings) — drives the map fill/border. */
+  color?: string | null;
   boundary_polygon: GeoJSON.Geometry | null;
   center_lat: number | null;
   center_lng: number | null;
