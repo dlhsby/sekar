@@ -66,21 +66,25 @@ port_in_use() {
   return 1
 }
 
-collect_used_ports() { # KEY (PORT|WEB_PORT) APP (be|web) — echoes every value found across worktrees
-  local key="$1" app="$2"
-  local f="$ROOT/apps/$app/.env.local"
-  [ -f "$f" ] && env_file_value "$f" "$key"
-  for d in "$WORKTREES_DIR"/*/; do
-    [ -d "$d" ] || continue
-    f="$d/apps/$app/.env.local"
-    [ -f "$f" ] && env_file_value "$f" "$key"
+# Every port already wired to EITHER service (be PORT or web WEB_PORT), across
+# the main checkout and every worktree — BE_PORT and WEB_PORT share one pool
+# so the two can never collide with each other, not just within their own kind.
+collect_used_ports() {
+  local f
+  for f in "$ROOT/apps/be/.env.local" "$ROOT/apps/web/.env.local" "$WORKTREES_DIR"/*/apps/be/.env.local "$WORKTREES_DIR"/*/apps/web/.env.local; do
+    [ -f "$f" ] || continue
+    # env_file_value's tr -d '[:space:]' strips its own trailing newline, so
+    # bare calls in a loop run on into one line — force one value per line.
+    printf '%s\n' "$(env_file_value "$f" PORT)"
+    printf '%s\n' "$(env_file_value "$f" WEB_PORT)"
   done
 }
 
-pick_free_port() { # START KEY APP
-  local port="$1" key="$2" app="$3"
-  local used; used="$(collect_used_ports "$key" "$app")"
-  while echo "$used" | grep -qx "$port" || port_in_use "$port"; do
+pick_free_port() { # START [EXTRA_RESERVED_PORT...]
+  local port="$1"; shift
+  local extra="$*"
+  local used; used="$(collect_used_ports)"
+  while echo "$used" | grep -qx "$port" || echo "$extra" | tr ' ' '\n' | grep -qx "$port" || port_in_use "$port"; do
     port=$((port + 1))
   done
   echo "$port"
@@ -123,8 +127,12 @@ cmd_create() {
   git -C "$ROOT" worktree add -b "$branch" "$dir" "origin/$base"
 
   print_info "Picking ports..."
-  be_port="${be_port:-$(pick_free_port 3000 PORT be)}"
-  web_port="${web_port:-$(pick_free_port 3001 WEB_PORT web)}"
+  be_port="${be_port:-$(pick_free_port 3000)}"
+  web_port="${web_port:-$(pick_free_port 3001 "$be_port")}"
+  if [ "$be_port" = "$web_port" ]; then
+    print_error "BE_PORT and WEB_PORT resolved to the same port ($be_port) — pass --be-port/--web-port explicitly"
+    exit 1
+  fi
   print_success "BE_PORT=$be_port WEB_PORT=$web_port"
 
   print_info "Copying local env files..."
