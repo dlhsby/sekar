@@ -12,7 +12,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { FormInput, Textarea } from '@/components/ui';
-import { FormActions } from '@/components/forms/FormActions';
 import type { PruningRequest } from '@/lib/api/pruning-requests';
 import type { UpdatePruningRequestPayload } from '@/lib/api/pruning-requests';
 
@@ -32,23 +31,22 @@ type PruningRequestFormData = {
 };
 
 export interface PruningRequestFormProps {
+  /** Matches the `<form id>` so the modal's DialogFooter submit button (outside
+   *  this form in the DOM) still submits it via the HTML `form` attribute. */
+  formId: string;
   initialData?: PruningRequest;
   onSubmit: (data: UpdatePruningRequestPayload & { gpsLat?: number; gpsLng?: number }) => Promise<void>;
-  isLoading?: boolean;
   mode: 'create' | 'edit';
   /** Read-only "Detail" mode — fields disabled, no submit. */
   readOnly?: boolean;
-  /** Close handler for the "Tutup" button in read-only mode. */
-  onCancel?: () => void;
 }
 
 export function PruningRequestForm({
+  formId,
   initialData,
   onSubmit,
-  isLoading = false,
   mode,
   readOnly = false,
-  onCancel,
 }: PruningRequestFormProps) {
   const { t } = useTranslation();
 
@@ -100,7 +98,7 @@ export function PruningRequestForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
+    <form id={formId} onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
       {/* Location */}
       <div className="space-y-4">
         <h3 className="font-bold text-lg">{t('pruning:form.locationSection')}</h3>
@@ -222,19 +220,6 @@ export function PruningRequestForm({
           {...register('notes')}
         />
       </div>
-
-      {/* Form Actions */}
-      {!readOnly && (
-        <FormActions
-          loading={isLoading}
-          submitLabel={mode === 'create' ? t('pruning:form.submitButton') : t('pruning:form.updateButton')}
-          onCancel={onCancel}
-        />
-      )}
-
-      {readOnly && (
-        <FormActions readOnly onCancel={onCancel} />
-      )}
     </form>
   );
 }

@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Button,
   DatePicker,
   Dialog,
   DialogBody,
@@ -16,6 +15,7 @@ import {
   FormSelect,
   useToast,
 } from '@/components/ui';
+import { FormActions } from '@/components/forms/FormActions';
 import { useAssetCategories, useCreateAsset, useUpdateAsset, type Asset } from '@/lib/api/assets';
 import { getErrorMessage } from '@/lib/api/client';
 
@@ -33,6 +33,7 @@ interface AssetFormModalProps {
  */
 export function AssetFormModal({ open, onOpenChange, asset, onSuccess }: AssetFormModalProps) {
   const { t } = useTranslation(['assets']);
+  const formId = useId();
   const isEdit = !!asset;
   const { toast } = useToast();
   const { data: categories = [] } = useAssetCategories();
@@ -91,8 +92,8 @@ export function AssetFormModal({ open, onOpenChange, asset, onSuccess }: AssetFo
         <DialogHeader>
           <DialogTitle>{isEdit ? t('form.editTitle') : t('form.createTitle')}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <DialogBody className="space-y-4">
+        <DialogBody className="space-y-4">
+          <form id={formId} onSubmit={handleSubmit}>
             <FormInput
               label={t('form.nameLabel')}
               placeholder={t('form.namePlaceholder')}
@@ -130,16 +131,16 @@ export function AssetFormModal({ open, onOpenChange, asset, onSuccess }: AssetFo
               value={purchasePrice}
               onChange={(e) => setPurchasePrice(e.target.value)}
             />
-          </DialogBody>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              {t('form.cancel')}
-            </Button>
-            <Button type="submit" variant="default" loading={mutation.isPending}>
-              {isEdit ? t('form.save') : t('form.create')}
-            </Button>
-          </DialogFooter>
-        </form>
+          </form>
+        </DialogBody>
+        <DialogFooter>
+          <FormActions
+            formId={formId}
+            submitLabel={isEdit ? t('form.save') : t('form.create')}
+            loading={mutation.isPending}
+            onCancel={() => onOpenChange(false)}
+          />
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

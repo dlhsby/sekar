@@ -96,6 +96,18 @@ function createWrapper() {
   return Wrapper;
 }
 
+const FORM_ID = 'area-form-test';
+
+/** Submit/Cancel live in the modal's DialogFooter, outside this form — mirror
+ *  AreaFormModal's external button wired via the `form` attribute. */
+function ExternalSubmitButton() {
+  return (
+    <button type="submit" form={FORM_ID}>
+      Buat Area
+    </button>
+  );
+}
+
 describe('AreaForm', () => {
   const mockOnSubmit = jest.fn().mockResolvedValue(undefined);
 
@@ -116,7 +128,13 @@ describe('AreaForm', () => {
 
   describe('Create mode', () => {
     it('renders all form fields in create mode', () => {
-      render(<AreaForm mode="create" onSubmit={mockOnSubmit} />, { wrapper: createWrapper() });
+      render(
+        <>
+          <AreaForm formId={FORM_ID} mode="create" onSubmit={mockOnSubmit} />
+          <ExternalSubmitButton />
+        </>,
+        { wrapper: createWrapper() }
+      );
 
       expect(screen.getByLabelText(/nama area/i)).toBeInTheDocument();
       expect(screen.getByText('Rayon')).toBeInTheDocument();
@@ -127,7 +145,9 @@ describe('AreaForm', () => {
 
     it('shows rayons in dropdown', async () => {
       const user = userEvent.setup();
-      render(<AreaForm mode="create" onSubmit={mockOnSubmit} />, { wrapper: createWrapper() });
+      render(<AreaForm formId={FORM_ID} mode="create" onSubmit={mockOnSubmit} />, {
+        wrapper: createWrapper(),
+      });
 
       // FormCombobox renders options in a popover — open the Rayon combobox first.
       await user.click(screen.getAllByRole('combobox')[0]);
@@ -137,7 +157,9 @@ describe('AreaForm', () => {
 
     it('shows area types in dropdown', async () => {
       const user = userEvent.setup();
-      render(<AreaForm mode="create" onSubmit={mockOnSubmit} />, { wrapper: createWrapper() });
+      render(<AreaForm formId={FORM_ID} mode="create" onSubmit={mockOnSubmit} />, {
+        wrapper: createWrapper(),
+      });
 
       // Open the Tipe Area combobox (second combobox trigger).
       await user.click(screen.getAllByRole('combobox')[1]);
@@ -148,7 +170,9 @@ describe('AreaForm', () => {
     it('shows loading state when rayons are loading', () => {
       (useRayons as jest.Mock).mockReturnValue({ data: undefined, isLoading: true });
 
-      render(<AreaForm mode="create" onSubmit={mockOnSubmit} />, { wrapper: createWrapper() });
+      render(<AreaForm formId={FORM_ID} mode="create" onSubmit={mockOnSubmit} />, {
+        wrapper: createWrapper(),
+      });
 
       // Rayon select should show empty options while loading
       const rayonSelects = screen.getAllByRole('combobox');
@@ -158,7 +182,9 @@ describe('AreaForm', () => {
     it('shows loading state when area types are loading', () => {
       (useAreaTypes as jest.Mock).mockReturnValue({ data: undefined, isLoading: true });
 
-      render(<AreaForm mode="create" onSubmit={mockOnSubmit} />, { wrapper: createWrapper() });
+      render(<AreaForm formId={FORM_ID} mode="create" onSubmit={mockOnSubmit} />, {
+        wrapper: createWrapper(),
+      });
 
       expect(screen.getByTestId('google-boundary-editor')).toBeInTheDocument();
     });
@@ -190,23 +216,15 @@ describe('AreaForm', () => {
     };
 
     it('pre-populates form with existing data', () => {
-      render(<AreaForm mode="edit" initialData={mockArea} onSubmit={mockOnSubmit} />, {
+      render(<AreaForm formId={FORM_ID} mode="edit" initialData={mockArea} onSubmit={mockOnSubmit} />, {
         wrapper: createWrapper(),
       });
 
       expect(screen.getByDisplayValue('Taman Bungkul')).toBeInTheDocument();
     });
 
-    it('shows update button in edit mode', () => {
-      render(<AreaForm mode="edit" initialData={mockArea} onSubmit={mockOnSubmit} />, {
-        wrapper: createWrapper(),
-      });
-
-      expect(screen.getByRole('button', { name: /simpan area/i })).toBeInTheDocument();
-    });
-
     it('displays center coordinates when area has boundary', () => {
-      render(<AreaForm mode="edit" initialData={mockArea} onSubmit={mockOnSubmit} />, {
+      render(<AreaForm formId={FORM_ID} mode="edit" initialData={mockArea} onSubmit={mockOnSubmit} />, {
         wrapper: createWrapper(),
       });
 
@@ -216,7 +234,9 @@ describe('AreaForm', () => {
 
   describe('Pin interaction', () => {
     it('shows coordinates after the location pin is placed', async () => {
-      render(<AreaForm mode="create" onSubmit={mockOnSubmit} />, { wrapper: createWrapper() });
+      render(<AreaForm formId={FORM_ID} mode="create" onSubmit={mockOnSubmit} />, {
+        wrapper: createWrapper(),
+      });
 
       // Drawing a boundary no longer sets the pin — placing it explicitly does.
       fireEvent.click(screen.getByTestId('place-pin'));
@@ -227,22 +247,24 @@ describe('AreaForm', () => {
     });
   });
 
-  describe('Loading state', () => {
-    it('shows loading text on submit button when isLoading is true', () => {
-      render(<AreaForm mode="create" onSubmit={mockOnSubmit} isLoading />, {
-        wrapper: createWrapper(),
-      });
+  describe('Geometry validity reporting', () => {
+    it('reports invalid until a pin or boundary is set, then valid', async () => {
+      const onValidityChange = jest.fn();
+      render(
+        <AreaForm
+          formId={FORM_ID}
+          mode="create"
+          onSubmit={mockOnSubmit}
+          onValidityChange={onValidityChange}
+        />,
+        { wrapper: createWrapper() }
+      );
 
-      expect(screen.getByRole('button', { name: /membuat/i })).toBeInTheDocument();
-    });
+      await waitFor(() => expect(onValidityChange).toHaveBeenLastCalledWith(false));
 
-    it('shows updating text in edit mode when isLoading', () => {
-      render(<AreaForm mode="edit" onSubmit={mockOnSubmit} isLoading />, {
-        wrapper: createWrapper(),
-      });
+      fireEvent.click(screen.getByTestId('place-pin'));
 
-      expect(screen.getByRole('button', { name: /memperbarui/i })).toBeInTheDocument();
+      await waitFor(() => expect(onValidityChange).toHaveBeenLastCalledWith(true));
     });
   });
-
 });

@@ -1,9 +1,11 @@
 'use client';
 
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui';
 import { ActivityForm } from '@/components/forms/ActivityForm';
+import { FormActions } from '@/components/forms/FormActions';
 import { useCreateActivity, useUpdateActivity } from '@/lib/api/activities';
 import { getErrorMessage } from '@/lib/api/client';
 import type { Activity, CreateActivityDto, UpdateActivityDto } from '@/types/models';
@@ -24,6 +26,7 @@ export function ActivityFormModal({
   readOnly = false,
 }: ActivityFormModalProps) {
   const { t } = useTranslation();
+  const formId = useId();
   const isEdit = !!activity;
   const createMutation = useCreateActivity();
   const updateMutation = useUpdateActivity();
@@ -85,14 +88,33 @@ export function ActivityFormModal({
           )}
           <ActivityForm
             key={`${activity?.id ?? 'new'}-${readOnly ? 'view' : 'edit'}`}
+            formId={formId}
             mode={isEdit ? 'edit' : 'create'}
             initialData={activity ?? undefined}
             onSubmit={handleSubmit}
-            isLoading={activeMutation.isPending}
             readOnly={readOnly}
-            onCancel={() => onOpenChange(false)}
           />
         </DialogBody>
+        <DialogFooter>
+          {readOnly ? (
+            <FormActions readOnly onCancel={() => onOpenChange(false)} />
+          ) : (
+            <FormActions
+              formId={formId}
+              submitLabel={
+                activeMutation.isPending
+                  ? isEdit
+                    ? t('common:actions.updating')
+                    : t('common:actions.creating')
+                  : isEdit
+                    ? t('activities:form.submit')
+                    : t('activities:form.submitNew')
+              }
+              loading={activeMutation.isPending}
+              onCancel={() => onOpenChange(false)}
+            />
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

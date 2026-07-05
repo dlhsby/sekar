@@ -130,6 +130,26 @@ export default function PruningRequestsPage() {
         cell: ({ row }) => <div className="text-sm">{row.original.rayon?.name ?? '-'}</div>,
       },
       {
+        id: 'expected',
+        header: t('pruning:columns.dateRange'),
+        enableSorting: false,
+        enableColumnFilter: false,
+        meta: { label: t('pruning:columns.dateRange') },
+        cell: ({ row }) => (
+          <div className="text-sm">
+            {row.original.expectedDate ? (
+              formatDate(row.original.expectedDate)
+            ) : row.original.expectedYear && row.original.expectedIsoWeek ? (
+              <>
+                W{row.original.expectedIsoWeek}/{row.original.expectedYear}
+              </>
+            ) : (
+              '-'
+            )}
+          </div>
+        ),
+      },
+      {
         id: 'status',
         accessorKey: 'status',
         header: t('pruning:columns.status'),

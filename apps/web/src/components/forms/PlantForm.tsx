@@ -11,7 +11,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { FormInput, FormCombobox, Textarea } from '@/components/ui';
-import { FormActions } from '@/components/forms/FormActions';
 import type { CreatePlantSpeciesDto, UpdatePlantSpeciesDto } from '@/lib/api/plants';
 import type { PlantSpeciesRow } from '@/lib/api/plants';
 
@@ -24,23 +23,20 @@ type PlantFormData = {
 };
 
 export interface PlantFormProps {
+  /** Matches the `<form id>` so the modal's DialogFooter submit button (outside
+   *  this form in the DOM) still submits it via the HTML `form` attribute. */
+  formId: string;
   initialData?: PlantSpeciesRow;
   onSubmit: (data: CreatePlantSpeciesDto | UpdatePlantSpeciesDto) => Promise<void>;
-  isLoading?: boolean;
-  mode: 'create' | 'edit';
   /** Read-only "Detail" mode — fields disabled, no submit. */
   readOnly?: boolean;
-  /** Close handler for the "Tutup" button in read-only mode. */
-  onCancel?: () => void;
 }
 
 export function PlantForm({
+  formId,
   initialData,
   onSubmit,
-  isLoading = false,
-  mode,
   readOnly = false,
-  onCancel,
 }: PlantFormProps) {
   const { t } = useTranslation(['plants', 'validation', 'common']);
 
@@ -106,7 +102,7 @@ export function PlantForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
+    <form id={formId} onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
       {/* Basic Information */}
       <div className="space-y-4">
         <h3 className="font-bold text-lg">{t('plants:form.basicInfoTitle')}</h3>
@@ -158,25 +154,6 @@ export function PlantForm({
           />
         </div>
       </div>
-
-      {/* Footer */}
-      {readOnly ? (
-        <FormActions readOnly onCancel={onCancel} />
-      ) : (
-        <FormActions
-          submitLabel={
-            isLoading
-              ? mode === 'create'
-                ? t('common:actions.creating')
-                : t('common:actions.updating')
-              : mode === 'create'
-                ? t('plants:form.submitNew')
-                : t('plants:form.submit')
-          }
-          loading={isLoading}
-          onCancel={onCancel}
-        />
-      )}
     </form>
   );
 }

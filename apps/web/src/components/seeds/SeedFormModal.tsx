@@ -1,9 +1,11 @@
 'use client';
 
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui';
 import { SeedForm } from '@/components/forms/SeedForm';
+import { FormActions } from '@/components/forms/FormActions';
 import { useCreateSeed, useUpdateSeed, type CreateSeedInput, type UpdateSeedInput } from '@/lib/api/seeds';
 import { getErrorMessage } from '@/lib/api/client';
 import type { PlantSeedRow } from '@/lib/api/seeds';
@@ -21,6 +23,7 @@ interface SeedFormModalProps {
  */
 export function SeedFormModal({ open, onOpenChange, seed, onSuccess }: SeedFormModalProps) {
   const { t } = useTranslation();
+  const formId = useId();
   const isEdit = !!seed;
   const createMutation = useCreateSeed();
   const updateMutation = useUpdateSeed();
@@ -84,13 +87,21 @@ export function SeedFormModal({ open, onOpenChange, seed, onSuccess }: SeedFormM
           ) : null}
           <SeedForm
             key={`${seed?.id ?? 'new'}-${isEdit ? 'edit' : 'create'}`}
+            formId={formId}
             mode={isEdit ? 'edit' : 'create'}
             initialData={seed ?? undefined}
             onSubmit={handleSubmit}
             isLoading={isPending}
-            onCancel={() => onOpenChange(false)}
           />
         </DialogBody>
+        <DialogFooter>
+          <FormActions
+            formId={formId}
+            submitLabel={t('seeds:form.submitButton')}
+            loading={isPending}
+            onCancel={() => onOpenChange(false)}
+          />
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

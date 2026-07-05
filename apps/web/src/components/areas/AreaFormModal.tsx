@@ -1,9 +1,11 @@
 'use client';
 
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui';
 import { AreaForm } from '@/components/forms/AreaForm';
+import { FormActions } from '@/components/forms/FormActions';
 import { useCreateArea, useUpdateArea, useUpdateAreaBoundary } from '@/lib/api/areas';
 import { getErrorMessage } from '@/lib/api/client';
 import type { Area, CreateAreaDto, UpdateAreaDto } from '@/types/models';
@@ -29,6 +31,8 @@ interface AreaFormModalProps {
  */
 export function AreaFormModal({ open, onOpenChange, area, onSuccess, readOnly = false }: AreaFormModalProps) {
   const { t } = useTranslation();
+  const formId = useId();
+  const [hasGeometry, setHasGeometry] = useState(true);
   const isEdit = !!area;
   const createMutation = useCreateArea();
   const updateMutation = useUpdateArea();
@@ -120,14 +124,35 @@ export function AreaFormModal({ open, onOpenChange, area, onSuccess, readOnly = 
           ) : null}
           <AreaForm
             key={`${area?.id ?? 'new'}-${readOnly ? 'view' : 'edit'}`}
+            formId={formId}
             mode={isEdit ? 'edit' : 'create'}
             initialData={area ?? undefined}
             onSubmit={handleSubmit}
-            isLoading={isPending}
             readOnly={readOnly}
-            onCancel={() => onOpenChange(false)}
+            onValidityChange={setHasGeometry}
           />
         </DialogBody>
+        <DialogFooter>
+          {readOnly ? (
+            <FormActions readOnly onCancel={() => onOpenChange(false)} />
+          ) : (
+            <FormActions
+              formId={formId}
+              submitLabel={
+                isPending
+                  ? isEdit
+                    ? t('admin:shared.updating')
+                    : t('admin:shared.creating')
+                  : isEdit
+                    ? t('admin:areas.form.submit')
+                    : t('admin:areas.form.submitNew')
+              }
+              loading={isPending}
+              disabled={!hasGeometry}
+              onCancel={() => onOpenChange(false)}
+            />
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

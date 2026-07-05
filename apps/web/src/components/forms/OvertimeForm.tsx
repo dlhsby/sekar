@@ -7,17 +7,17 @@ import { z } from 'zod';
 import { isValid, parse } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { FormInput, FormCombobox, Textarea, DateTimePicker } from '@/components/ui';
-import { FormActions } from '@/components/forms/FormActions';
 import { useUsers } from '@/lib/api/users';
 import { useActivityTypes } from '@/lib/api/activity-types';
 import type { Overtime } from '@/types/models';
 
 interface OvertimeFormProps {
+  /** Matches the `<form id>` so the modal's DialogFooter submit button (outside
+   *  this form in the DOM) still submits it via the HTML `form` attribute. */
+  formId: string;
   initialData?: Overtime;
   onSubmit: (data: Record<string, unknown>) => Promise<void>;
   isLoading?: boolean;
-  mode: 'create' | 'edit';
-  onCancel?: () => void;
 }
 
 /** Convert ISO datetime string to yyyy-MM-dd HH:mm format for the DateTimePicker. */
@@ -60,11 +60,10 @@ type OvertimeFormData = {
 };
 
 export function OvertimeForm({
+  formId,
   initialData,
   onSubmit,
   isLoading = false,
-  mode,
-  onCancel,
 }: OvertimeFormProps) {
   const { t } = useTranslation(['overtime', 'validation', 'common']);
 
@@ -119,7 +118,7 @@ export function OvertimeForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
+    <form id={formId} onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
       <div className="space-y-4">
         <FormCombobox
           label={t('overtime:form.user')}
@@ -232,12 +231,6 @@ export function OvertimeForm({
           />
         </div>
       </div>
-
-      <FormActions
-        loading={isLoading}
-        onCancel={onCancel}
-        submitLabel={mode === 'edit' ? t('common:actions.update') : t('common:actions.create')}
-      />
     </form>
   );
 }

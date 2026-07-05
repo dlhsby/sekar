@@ -1,9 +1,11 @@
 'use client';
 
+import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui';
 import { RayonForm } from '@/components/forms/RayonForm';
+import { FormActions } from '@/components/forms/FormActions';
 import { useCreateRayon, useUpdateRayon, type CreateRayonDto, type UpdateRayonDto } from '@/lib/api/rayons';
 import { getErrorMessage } from '@/lib/api/client';
 import type { Rayon } from '@/types/models';
@@ -23,9 +25,11 @@ interface RayonFormModalProps {
  */
 export function RayonFormModal({ open, onOpenChange, rayon, onSuccess, readOnly = false }: RayonFormModalProps) {
   const { t } = useTranslation();
+  const formId = useId();
   const isEdit = !!rayon;
   const createMutation = useCreateRayon();
   const updateMutation = useUpdateRayon();
+  const [hasGeometry, setHasGeometry] = useState(true);
 
   const handleSubmit = async (data: CreateRayonDto | UpdateRayonDto): Promise<void> => {
     // `boundary_polygon` is update-only on the backend (not accepted on create),
@@ -98,14 +102,35 @@ export function RayonFormModal({ open, onOpenChange, rayon, onSuccess, readOnly 
           ) : null}
           <RayonForm
             key={`${rayon?.id ?? 'new'}-${readOnly ? 'view' : 'edit'}`}
+            formId={formId}
             mode={isEdit ? 'edit' : 'create'}
             initialData={rayon ?? undefined}
             onSubmit={handleSubmit}
-            isLoading={isPending}
             readOnly={readOnly}
-            onCancel={() => onOpenChange(false)}
+            onValidityChange={setHasGeometry}
           />
         </DialogBody>
+        <DialogFooter>
+          {readOnly ? (
+            <FormActions readOnly onCancel={() => onOpenChange(false)} />
+          ) : (
+            <FormActions
+              formId={formId}
+              submitLabel={
+                isPending
+                  ? isEdit
+                    ? t('admin:shared.updating')
+                    : t('admin:shared.creating')
+                  : isEdit
+                    ? t('admin:rayons.form.submit')
+                    : t('admin:rayons.form.submitNew')
+              }
+              loading={isPending}
+              disabled={!hasGeometry}
+              onCancel={() => onOpenChange(false)}
+            />
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

@@ -1,9 +1,11 @@
 'use client';
 
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui';
 import { PruningRequestForm } from '@/components/forms/PruningRequestForm';
+import { FormActions } from '@/components/forms/FormActions';
 import {
   useCreatePruningRequestAdmin,
   useUpdatePruningRequest,
@@ -38,6 +40,7 @@ export function PruningRequestFormModal({
   readOnly = false,
 }: PruningRequestFormModalProps) {
   const { t } = useTranslation();
+  const formId = useId();
   const isEdit = !!request;
   const createMutation = useCreatePruningRequestAdmin();
   const updateMutation = useUpdatePruningRequest(request?.id ?? '');
@@ -117,14 +120,33 @@ export function PruningRequestFormModal({
           ) : null}
           <PruningRequestForm
             key={`${request?.id ?? 'new'}-${readOnly ? 'view' : 'edit'}`}
+            formId={formId}
             mode={isEdit ? 'edit' : 'create'}
             initialData={request ?? undefined}
             onSubmit={handleSubmit}
-            isLoading={isPending}
             readOnly={readOnly}
-            onCancel={() => onOpenChange(false)}
           />
         </DialogBody>
+        <DialogFooter>
+          {readOnly ? (
+            <FormActions readOnly onCancel={() => onOpenChange(false)} />
+          ) : (
+            <FormActions
+              formId={formId}
+              submitLabel={
+                isPending
+                  ? isEdit
+                    ? t('pruning:form.updateButton')
+                    : t('pruning:form.submitButton')
+                  : isEdit
+                    ? t('pruning:form.updateButton')
+                    : t('pruning:form.submitButton')
+              }
+              loading={isPending}
+              onCancel={() => onOpenChange(false)}
+            />
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

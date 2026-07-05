@@ -11,7 +11,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { FormInput, FormCombobox, Textarea } from '@/components/ui';
-import { FormActions } from '@/components/forms/FormActions';
 import { useActivityTypes } from '@/lib/api/activity-types';
 import type { Activity, CreateActivityDto, UpdateActivityDto } from '@/types/models';
 
@@ -22,21 +21,21 @@ type ActivityFormData = {
 };
 
 export interface ActivityFormProps {
+  /** Matches the `<form id>` so the modal's DialogFooter submit button (outside
+   *  this form in the DOM) still submits it via the HTML `form` attribute. */
+  formId: string;
   initialData?: Activity;
   onSubmit: (data: CreateActivityDto | UpdateActivityDto) => Promise<void>;
-  isLoading?: boolean;
   mode: 'create' | 'edit';
   readOnly?: boolean;
-  onCancel?: () => void;
 }
 
 export function ActivityForm({
+  formId,
   initialData,
   onSubmit,
-  isLoading = false,
   mode,
   readOnly = false,
-  onCancel,
 }: ActivityFormProps) {
   const { t } = useTranslation();
 
@@ -92,7 +91,7 @@ export function ActivityForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(handleSubmitForm)} className="space-y-6">
+    <form id={formId} onSubmit={handleSubmit(handleSubmitForm)} className="space-y-6">
       <div className="space-y-4">
         <h3 className="font-bold text-lg">{t('activities:form.basicInfoTitle')}</h3>
 
@@ -158,24 +157,6 @@ export function ActivityForm({
           )}
         </div>
       </div>
-
-      {readOnly ? (
-        <FormActions readOnly onCancel={onCancel} />
-      ) : (
-        <FormActions
-          submitLabel={
-            isLoading
-              ? mode === 'create'
-                ? t('common:actions.creating')
-                : t('common:actions.updating')
-              : mode === 'create'
-                ? t('activities:form.submitNew')
-                : t('activities:form.submit')
-          }
-          loading={isLoading}
-          onCancel={onCancel}
-        />
-      )}
     </form>
   );
 }

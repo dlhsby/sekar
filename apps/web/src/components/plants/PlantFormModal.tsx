@@ -1,9 +1,11 @@
 'use client';
 
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui';
 import { PlantForm } from '@/components/forms/PlantForm';
+import { FormActions } from '@/components/forms/FormActions';
 import {
   useCreatePlantSpecies,
   useUpdatePlantSpecies,
@@ -34,6 +36,7 @@ export function PlantFormModal({
   readOnly = false,
 }: PlantFormModalProps) {
   const { t } = useTranslation();
+  const formId = useId();
   const isEdit = !!plant;
   const createMutation = useCreatePlantSpecies();
   const updateMutation = useUpdatePlantSpecies();
@@ -100,14 +103,32 @@ export function PlantFormModal({
           ) : null}
           <PlantForm
             key={`${plant?.id ?? 'new'}-${readOnly ? 'view' : 'edit'}`}
-            mode={isEdit ? 'edit' : 'create'}
+            formId={formId}
             initialData={plant ?? undefined}
             onSubmit={handleSubmit}
-            isLoading={isPending}
             readOnly={readOnly}
-            onCancel={() => onOpenChange(false)}
           />
         </DialogBody>
+        <DialogFooter>
+          {readOnly ? (
+            <FormActions readOnly onCancel={() => onOpenChange(false)} />
+          ) : (
+            <FormActions
+              formId={formId}
+              submitLabel={
+                isPending
+                  ? isEdit
+                    ? t('common:actions.updating')
+                    : t('common:actions.creating')
+                  : isEdit
+                    ? t('plants:form.submit')
+                    : t('plants:form.submitNew')
+              }
+              loading={isPending}
+              onCancel={() => onOpenChange(false)}
+            />
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

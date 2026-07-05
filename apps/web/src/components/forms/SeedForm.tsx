@@ -12,7 +12,6 @@ import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { FormInput } from '@/components/ui';
 import { FormCombobox, type ComboboxOption } from '@/components/ui';
-import { FormActions } from '@/components/forms/FormActions';
 import { useSpeciesCatalog } from '@/lib/api/plants';
 import type { PlantSeedRow, CreateSeedInput, UpdateSeedInput } from '@/lib/api/seeds';
 
@@ -24,20 +23,21 @@ type SeedFormData = {
 };
 
 export interface SeedFormProps {
+  /** Matches the `<form id>` so the modal's DialogFooter submit button (outside
+   *  this form in the DOM) still submits it via the HTML `form` attribute. */
+  formId: string;
   initialData?: PlantSeedRow;
   onSubmit: (data: CreateSeedInput | UpdateSeedInput) => Promise<void>;
   isLoading?: boolean;
   mode: 'create' | 'edit';
-  /** Close handler for the "Batal" button. */
-  onCancel?: () => void;
 }
 
 export function SeedForm({
+  formId,
   initialData,
   onSubmit,
   isLoading = false,
   mode,
-  onCancel,
 }: SeedFormProps) {
   const { t } = useTranslation();
   const { data: speciesCatalog } = useSpeciesCatalog(1, '', 50);
@@ -102,7 +102,7 @@ export function SeedForm({
   });
 
   return (
-    <form onSubmit={handleFormSubmit} className="space-y-4">
+    <form id={formId} onSubmit={handleFormSubmit} className="space-y-4">
       <Controller
         name="nameId"
         control={control}
@@ -171,12 +171,6 @@ export function SeedForm({
           )}
         />
       )}
-
-      <FormActions
-        onCancel={onCancel}
-        submitLabel={t('seeds:form.submitButton')}
-        loading={isLoading}
-      />
     </form>
   );
 }

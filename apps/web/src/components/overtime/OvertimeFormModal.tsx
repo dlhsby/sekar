@@ -1,9 +1,11 @@
 'use client';
 
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui';
 import { OvertimeForm } from '@/components/forms/OvertimeForm';
+import { FormActions } from '@/components/forms/FormActions';
 import { useCreateOvertime, useUpdateOvertime } from '@/lib/api/overtime';
 import { getErrorMessage } from '@/lib/api/client';
 import type { Overtime } from '@/types/models';
@@ -26,6 +28,7 @@ export function OvertimeFormModal({
   onSuccess,
 }: OvertimeFormModalProps) {
   const { t } = useTranslation();
+  const formId = useId();
   const isEdit = !!overtime;
   const createMutation = useCreateOvertime();
   const updateMutation = useUpdateOvertime();
@@ -80,13 +83,28 @@ export function OvertimeFormModal({
           ) : null}
           <OvertimeForm
             key={`${overtime?.id ?? 'new'}`}
-            mode={isEdit ? 'edit' : 'create'}
+            formId={formId}
             initialData={overtime ?? undefined}
             onSubmit={handleSubmit}
             isLoading={isPending}
-            onCancel={() => onOpenChange(false)}
           />
         </DialogBody>
+        <DialogFooter>
+          <FormActions
+            formId={formId}
+            submitLabel={
+              isPending
+                ? isEdit
+                  ? t('admin:shared.updating')
+                  : t('admin:shared.creating')
+                : isEdit
+                  ? t('common:actions.update')
+                  : t('common:actions.create')
+            }
+            loading={isPending}
+            onCancel={() => onOpenChange(false)}
+          />
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
