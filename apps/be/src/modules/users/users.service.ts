@@ -30,12 +30,6 @@ export interface ResetCredential {
   temp_password: string;
 }
 
-/** Result of a bulk password reset — successes carry temp passwords to hand out. */
-export interface BulkResetPasswordResult {
-  results: ResetCredential[];
-  failed: Array<{ id: string; reason: string }>;
-}
-
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
@@ -131,29 +125,6 @@ export class UsersService {
   async resetPassword(id: string, actor?: User): Promise<{ temp_password: string }> {
     const { temp_password } = await this.resetOne(id, actor);
     return { temp_password };
-  }
-
-  /**
-   * Bulk admin password reset — reset each user to a fresh one-time temp password
-   * and force a change on next login. Never all-or-nothing: a missing/invalid id
-   * is collected in `failed` while the rest succeed. Successes return the temp
-   * password once so admins can distribute them (e.g. to unblock a rayon of
-   * field workers imported without a known password).
-   */
-  async bulkResetPassword(ids: string[], actor?: User): Promise<BulkResetPasswordResult> {
-    const results: ResetCredential[] = [];
-    const failed: Array<{ id: string; reason: string }> = [];
-    for (const id of [...new Set(ids)]) {
-      try {
-        results.push(await this.resetOne(id, actor));
-      } catch (error) {
-        failed.push({ id, reason: error instanceof Error ? error.message : 'Unknown error' });
-      }
-    }
-    this.logger.log(
-      `Bulk password reset by ${actor?.id ?? 'system'}: ${results.length} reset, ${failed.length} failed`,
-    );
-    return { results, failed };
   }
 
   /** Reset one user to a fresh temp password + forced change; returns the credential. */

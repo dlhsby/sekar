@@ -36,7 +36,6 @@ describe('UsersController', () => {
     update: jest.fn(),
     remove: jest.fn(),
     resetPassword: jest.fn(),
-    bulkResetPassword: jest.fn(),
     changePassword: jest.fn(),
     updateProfilePicture: jest.fn(),
   };
@@ -227,18 +226,6 @@ describe('UsersController', () => {
       await controller.remove(mockUser.id, mockUser);
 
       expect(usersService.remove).toHaveBeenCalledWith(mockUser.id, mockUser);
-    });
-  });
-
-  describe('bulkResetPassword', () => {
-    it('delegates the ids and actor to the service', async () => {
-      const payload = { results: [], failed: [] };
-      mockUsersService.bulkResetPassword.mockResolvedValue(payload);
-
-      const result = await controller.bulkResetPassword({ user_ids: ['a', 'b'] }, mockUser);
-
-      expect(usersService.bulkResetPassword).toHaveBeenCalledWith(['a', 'b'], mockUser);
-      expect(result).toBe(payload);
     });
   });
 
