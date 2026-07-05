@@ -6,6 +6,7 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogBody,
   DialogTitle,
   DialogDescription,
   DialogFooter,
@@ -111,7 +112,7 @@ export function ReassignWorkerModal({
           <DialogDescription>{t('monitoring:reassignModal.description')}</DialogDescription>
         </DialogHeader>
 
-        <div className="px-4 pb-2 space-y-4">
+        <DialogBody className="space-y-4">
           {/* Source area selector */}
           <div className="space-y-1.5">
             <label htmlFor="source-area" className="text-sm font-bold text-nb-black">
@@ -245,7 +246,7 @@ export function ReassignWorkerModal({
               />
             )}
           </Field>
-        </div>
+        </DialogBody>
 
         <DialogFooter>
           <Button

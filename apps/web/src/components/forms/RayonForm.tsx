@@ -10,7 +10,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
-import { FormInput, Input, Textarea, Button } from '@/components/ui';
+import { FormInput, Input, Textarea } from '@/components/ui';
 import { FormActions } from '@/components/forms/FormActions';
 import { AvailabilityHint } from '@/components/forms/AvailabilityHint';
 import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
@@ -313,11 +313,7 @@ export function RayonForm({
 
       {/* Footer */}
       {readOnly ? (
-        <div className="flex gap-3 pt-4">
-          <Button type="button" variant="secondary" onClick={onCancel} className="w-full">
-            {t('admin:shared.close')}
-          </Button>
-        </div>
+        <FormActions readOnly onCancel={onCancel} />
       ) : (
         <>
           <FormActions
@@ -332,6 +328,7 @@ export function RayonForm({
             }
             loading={isLoading}
             disabled={!hasGeometry}
+            onCancel={onCancel}
           />
           {!hasGeometry && (
             <p className="text-nb-body-sm text-nb-danger">

@@ -10,6 +10,7 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogBody,
   DialogTitle,
   SkeletonCard,
   EmptyState,
@@ -152,6 +153,7 @@ export default function AreaAnalyticsPage() {
             </DialogTitle>
           </DialogHeader>
 
+          <DialogBody>
           {isAreaLoading ? (
             <div className="py-8 text-center text-nb-gray-600">{t('areas.detail.loading')}</div>
           ) : areaDetail ? (
@@ -185,6 +187,7 @@ export default function AreaAnalyticsPage() {
           ) : (
             <EmptyState variant="error" title={t('areas.detail.error')} />
           )}
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </div>

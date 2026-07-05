@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { FormInput, FormCombobox, FormMultiCombobox, Button } from '@/components/ui';
 import { AvailabilityHint } from '@/components/forms/AvailabilityHint';
+import { FormActions } from '@/components/forms/FormActions';
 import type { UserRole, User } from '@/types/models';
 import { useRayons } from '@/lib/api/rayons';
 import { useAreas } from '@/lib/api/areas';
@@ -368,28 +369,15 @@ export function UserForm({
         </div>
       )}
 
-      <div className="flex gap-3 pt-4">
-        {readOnly ? (
-          <Button type="button" variant="secondary" onClick={onCancel} className="flex-1">
-            {t('admin:shared.close')}
-          </Button>
-        ) : (
-          <>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onCancel}
-              disabled={busy}
-              className="flex-1"
-            >
-              {t('admin:shared.cancel')}
-            </Button>
-            <Button type="submit" loading={busy} disabled={busy} className="flex-1">
-              {submitText || t('admin:users.form.submitEdit')}
-            </Button>
-          </>
-        )}
-      </div>
+      {readOnly ? (
+        <FormActions readOnly onCancel={onCancel} />
+      ) : (
+        <FormActions
+          submitLabel={submitText || t('admin:users.form.submitEdit')}
+          loading={busy}
+          onCancel={onCancel}
+        />
+      )}
     </form>
   );
 }

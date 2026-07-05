@@ -173,6 +173,7 @@ export function ActivityForm({
                 : t('activities:form.submit')
           }
           loading={isLoading}
+          onCancel={onCancel}
         />
       )}
     </form>

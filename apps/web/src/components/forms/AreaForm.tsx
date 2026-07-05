@@ -10,7 +10,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
-import { FormInput, FormCombobox, Textarea, Card, CardContent, Button } from '@/components/ui';
+import { FormInput, FormCombobox, Textarea, Card, CardContent } from '@/components/ui';
 import { FormActions } from '@/components/forms/FormActions';
 import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
 import { ImportBoundaryButton } from '@/components/maps/ImportBoundaryButton';
@@ -274,11 +274,7 @@ export function AreaForm({
 
       {/* Footer */}
       {readOnly ? (
-        <div className="flex gap-3 pt-4">
-          <Button type="button" variant="secondary" onClick={onCancel} className="w-full">
-            {t('admin:shared.close')}
-          </Button>
-        </div>
+        <FormActions readOnly onCancel={onCancel} />
       ) : (
         <>
           <FormActions
@@ -293,6 +289,7 @@ export function AreaForm({
             }
             loading={isLoading}
             disabled={!hasGeometry}
+            onCancel={onCancel}
           />
           {!hasGeometry && (
             <p className="text-nb-body-sm text-nb-danger">

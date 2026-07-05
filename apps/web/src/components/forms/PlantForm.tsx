@@ -174,6 +174,7 @@ export function PlantForm({
                 : t('plants:form.submit')
           }
           loading={isLoading}
+          onCancel={onCancel}
         />
       )}
     </form>
