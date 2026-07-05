@@ -10,12 +10,12 @@ Bundle id: `com.dlhsurabaya.sekar` · Display name: **SEKAR** · Phase 5-4 (ADR-
 
 These are committed and ready — a Mac operator does not need to redo them:
 
-- **`Info.plist` permissions** (`fe/mobile/ios/SekarApp/Info.plist`):
+- **`Info.plist` permissions** (`apps/mobile/ios/SekarApp/Info.plist`):
   - Location: `NSLocationWhenInUseUsageDescription`, `NSLocationAlwaysAndWhenInUseUsageDescription`, `UIBackgroundModes: location`.
   - Media (added Phase 5 — the app uses `react-native-image-picker`): `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`, `NSPhotoLibraryAddUsageDescription`. **Without these the app hard-crashes on first camera/photo use and is App-Store-rejected** — they were missing before Phase 5.
   - Biometrics: `NSFaceIDUsageDescription` (for the planned Face ID login).
   - Deep linking: `sekar://` URL scheme.
-- **`GoogleService-Info.plist.example`** (`fe/mobile/ios/`) — template for the Firebase iOS config; the real file is gitignored.
+- **`GoogleService-Info.plist.example`** (`apps/mobile/ios/`) — template for the Firebase iOS config; the real file is gitignored.
 - **`.gitignore`** correctly excludes the real `GoogleService-Info.plist` (was previously a malformed pattern that left it un-ignored — fixed Phase 5).
 - **FCM bridge deps** present: `@react-native-firebase/app` + `@react-native-firebase/messaging` + `@notifee/react-native`.
 
@@ -30,12 +30,12 @@ Everything below requires macOS + Xcode + a physical device + an Apple Developer
 - macOS with the current Xcode (matching React Native 0.86's required Xcode/iOS SDK).
 - CocoaPods: `sudo gem install cocoapods` (or `brew install cocoapods`).
 - Apple Developer Program membership (paid) for the team that owns `com.dlhsurabaya.sekar`.
-- Node ≥ 24.13 + the repo dependencies installed (`cd fe/mobile && npm install`).
+- Node ≥ 24.13 + the repo dependencies installed (`cd apps/mobile && npm install`).
 
 ## 2. First-time native setup
 
 ```bash
-cd fe/mobile
+cd apps/mobile
 npm install
 cd ios && pod install && cd ..          # generates SekarApp.xcworkspace
 ```

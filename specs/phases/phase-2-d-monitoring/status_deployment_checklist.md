@@ -32,7 +32,7 @@ git push origin main
 
 ```bash
 # Run Phase 2D migration (creates user_tracking_status + monitoring_configs tables)
-cd be && npm run typeorm migration:run
+cd apps/be && npm run typeorm migration:run
 
 # OR if using DATABASE_SYNCHRONIZE=true (dev/staging only):
 # Tables auto-created on startup
@@ -49,7 +49,7 @@ cd be && npm run typeorm migration:run
 ### 3. Seed Monitoring Configuration
 
 ```bash
-cd be && npm run seed:phase2d
+cd apps/be && npm run seed:phase2d
 ```
 
 **Seeds 5 config entries:**
@@ -69,15 +69,15 @@ No new environment variables required for Phase 2D. WebSocket and JWT auth use e
 
 ```bash
 # Backend
-cd be && npm run build
+cd apps/be && npm run build
 # Deploy container (same as Phase 2C)
 
 # Web
-cd fe/web && npm run build
+cd apps/web && npm run build
 # Deploy container
 
 # Mobile
-cd fe/mobile
+cd apps/mobile
 # Build APK/IPA for distribution
 ```
 
@@ -111,16 +111,16 @@ cd fe/mobile
 ./scripts/infra.sh start
 
 # Backend
-cd be && npm run start:dev
+cd apps/be && npm run start:dev
 
 # Seed all data (Phase 1 + Phase 2 + Phase 2D)
-cd be && npm run seed && npm run seed:phase2d
+cd apps/be && npm run seed && npm run seed:phase2d
 
 # Web dashboard
-cd fe/web && npm run dev
+cd apps/web && npm run dev
 
 # Mobile app
-cd fe/mobile && npm run android
+cd apps/mobile && npm run android
 ```
 
 ---
@@ -129,19 +129,19 @@ cd fe/mobile && npm run android
 
 ```bash
 # Backend — all 1,095 tests must pass
-cd be && npm test
+cd apps/be && npm test
 # Expected: 1,095 passing, 0 failing
 
 # Backend coverage
-cd be && npm run test:cov
+cd apps/be && npm run test:cov
 # Expected: >92% stmt, >80% branch
 
 # Mobile — all 3,493 tests must pass
-cd fe/mobile && npm test
+cd apps/mobile && npm test
 # Expected: 3,493 passing
 
 # Web — monitoring tests
-cd fe/web && npm test -- --testPathPatterns monitoring
+cd apps/web && npm test -- --testPathPatterns monitoring
 # Expected: all monitoring tests passing
 ```
 

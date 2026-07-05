@@ -14,8 +14,8 @@ Phase 2D introduced a five-status monitoring model (ADR-011) backed by `user_tra
 
 Grounded evidence from code exploration (April 2026):
 
-- **Query explosion per ping.** `StatusCalculatorService.onLocationPing` (`be/src/modules/monitoring/services/status-calculator.service.ts:186-263`) issues **6+ DB queries per ping**: user, shift, area, boundary, last status, threshold config. At 500 workers pinging every 12 s (~42 pings/s), this saturates the 15-connection Postgres pool in ~50 s.
-- **Missed transitions on batch flush.** `LocationService.saveLocationLogs` (`be/src/modules/location/location.service.ts:92-103`) runs status calculation only on the latest location in a batch. Offline batches submitted on reconnect silently drop intermediate status transitions (e.g., a worker who entered and re-exited an area while offline).
+- **Query explosion per ping.** `StatusCalculatorService.onLocationPing` (`apps/be/src/modules/monitoring/services/status-calculator.service.ts:186-263`) issues **6+ DB queries per ping**: user, shift, area, boundary, last status, threshold config. At 500 workers pinging every 12 s (~42 pings/s), this saturates the 15-connection Postgres pool in ~50 s.
+- **Missed transitions on batch flush.** `LocationService.saveLocationLogs` (`apps/be/src/modules/location/location.service.ts:92-103`) runs status calculation only on the latest location in a batch. Offline batches submitted on reconnect silently drop intermediate status transitions (e.g., a worker who entered and re-exited an area while offline).
 - **Missing indexes.** `location_logs` has only the PK index. Missing `(user_id, logged_at DESC)`, `(shift_id, logged_at)`, `(user_id, shift_id, logged_at)`. Query plans fall back to sequential scans at scale.
 - **No stale-status sweep.** A worker who stops pinging (phone off, app killed) stays `ACTIVE` forever. No cron detects this.
 - **Staffing-changed fanout storms.** `EventsGateway.emitStaffingChangedIfNeeded` (`events.gateway.ts:362-418`) emits on every status flip. Noisy GPS near an area boundary produces minute-scale fanout storms.

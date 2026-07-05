@@ -40,7 +40,7 @@ ADR-036's generator architecture is **retained unchanged** — same three-layer 
 Specifically:
 
 1. Regenerate `specs/ui-ux/tokens.json` from `design/project/hifi-shared.css` lines 7-82 (token block). Manual port — the generator does not consume CSS.
-2. Run `npm run tokens:build` from repo root. Commit regenerated `fe/web/src/app/generated/tokens.css` + `fe/mobile/src/constants/generated/tokens.ts`.
+2. Run `npm run tokens:build` from repo root. Commit regenerated `apps/web/src/app/generated/tokens.css` + `apps/mobile/src/constants/generated/tokens.ts`.
 3. Ship pinwheel SVG to both platforms as the primary brand asset; replace iOS AppIcon + Android adaptive icon; replace mobile splash; update web PWA manifest.
 4. Ship the 6 empty-state illustrations + 3 onboarding scenes from `illustrations.html`.
 5. Update `specs/ui-ux/design-tokens.md` with the v2.1 diff and a "v2.0 → v2.1 migration" appendix.

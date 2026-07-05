@@ -13,12 +13,12 @@
 
 | File | Key Facts |
 |------|-----------|
-| `be/src/modules/monitoring/services/status-calculator.service.ts:186-263` | `onLocationPing` issues 6+ DB queries per ping — saturates 15-connection pool at 500 workers in ~50 s |
-| `be/src/modules/location/location.service.ts:92-103` | Only the **latest** location in a batch triggers status recalculation — offline batches silently lose transitions |
-| `be/src/gateways/events.gateway.ts:362-418` | `AREA_STAFFING_CHANGED` emits on every flip, no debounce, no Redis adapter |
-| `be/src/modules/users/enums/role.enum.ts` | 8 roles; `admin_data` excluded from `OVERTIME_APPROVERS` and all approval groups |
-| `be/src/modules/tasks/entities/task.entity.ts` | 8 statuses (ADR-009 debt — deferred); no `task_type` / `custom_fields` / `parent_task_id` / partial-completion |
-| `be/src/modules/activities/` | Canonical work record (ADR-010); no `custom_fields` / `plant_items` relation / `reference_code` |
+| `apps/be/src/modules/monitoring/services/status-calculator.service.ts:186-263` | `onLocationPing` issues 6+ DB queries per ping — saturates 15-connection pool at 500 workers in ~50 s |
+| `apps/be/src/modules/location/location.service.ts:92-103` | Only the **latest** location in a batch triggers status recalculation — offline batches silently lose transitions |
+| `apps/be/src/gateways/events.gateway.ts:362-418` | `AREA_STAFFING_CHANGED` emits on every flip, no debounce, no Redis adapter |
+| `apps/be/src/modules/users/enums/role.enum.ts` | 8 roles; `admin_data` excluded from `OVERTIME_APPROVERS` and all approval groups |
+| `apps/be/src/modules/tasks/entities/task.entity.ts` | 8 statuses (ADR-009 debt — deferred); no `task_type` / `custom_fields` / `parent_task_id` / partial-completion |
+| `apps/be/src/modules/activities/` | Canonical work record (ADR-010); no `custom_fields` / `plant_items` relation / `reference_code` |
 
 ---
 
@@ -160,7 +160,7 @@ See [database.md §tasks](./database.md#tasks-additive). Key backend work:
 
 - `TaskTypeRegistry` (injectable, singleton) — per-type Zod schema for `custom_fields`. Pruning vocabulary locked Apr 25, 2026 (client Q1 answer; full glossary in [README §Pruning Vocabulary](./README.md#pruning-vocabulary-q1--locked-apr-25-2026)):
   ```ts
-  // be/src/modules/tasks/registry/task-type-registry.ts
+  // apps/be/src/modules/tasks/registry/task-type-registry.ts
   export const PRUNING_CASE_TYPES = ['GT', 'PT', 'PS', 'PD', 'PK'] as const;     // case_type column on activities
   export const PRUNING_ACTIONS    = ['PM', 'PB', 'PC'] as const;                  // custom_fields.pruning_action
   export const PRUNING_SOURCES    = ['TIW', 'TS', 'CC', 'PW', 'Wk'] as const;     // custom_fields.source
@@ -274,7 +274,7 @@ Tagged users (`tagged_user_ids`) are written to the `activity_tags` table — se
 New permission constant:
 
 ```ts
-// be/src/modules/users/constants/role-groups.ts
+// apps/be/src/modules/users/constants/role-groups.ts
 export const PRUNING_REQUEST_REVIEWERS = [
   UserRole.ADMIN_DATA,       // rayon-scoped per ADR-032
   UserRole.ADMIN_SYSTEM,
@@ -306,7 +306,7 @@ Transitions emit `request:status-changed` WS event and FCM notification to submi
 
 **Capacity granularity (Q3 Apr 25):** booking is **weekly** (`iso_week`-keyed in `service_capacity`). The day-picker for the actual assignment date lives downstream in the assign-to-task flow — `POST /api/v1/pruning-requests/:id/assign-to-task` accepts `scheduled_date` (a specific calendar day within the booked week) and records it on the resulting task. `service_capacity.booked_units` is incremented at the week granularity regardless of which day inside the week the task is scheduled for.
 
-**Round 4 amendment (Apr 28):** the storage model stays weekly per ADR-035, but the **mobile staff_kecamatan submit screen** projects the weekly grid into a per-day status (`available` / `partial` / `full` / `unknown`) for the preferred-date picker. The projection is UX-only — no schema change, no daily booking column. Projection rule: `capacity_units == 0` → unknown; `booked_units >= capacity_units` → full; `booked_units >= capacity_units * 0.8` → partial; otherwise available. See the 2026-04-28 amendment to ADR-035 and `fe/mobile/src/screens/pruningRequests/utils/capacityCalendar.ts`.
+**Round 4 amendment (Apr 28):** the storage model stays weekly per ADR-035, but the **mobile staff_kecamatan submit screen** projects the weekly grid into a per-day status (`available` / `partial` / `full` / `unknown`) for the preferred-date picker. The projection is UX-only — no schema change, no daily booking column. Projection rule: `capacity_units == 0` → unknown; `booked_units >= capacity_units` → full; `booked_units >= capacity_units * 0.8` → partial; otherwise available. See the 2026-04-28 amendment to ADR-035 and `apps/mobile/src/screens/pruningRequests/utils/capacityCalendar.ts`.
 
 Implicit booking happens on `/pruning-requests/:id/assign-to-task`: `CapacityService.book(rayon_id, iso_week_of(scheduled_for), 'pruning', 1, task_id)`.
 
@@ -329,7 +329,7 @@ Implicit booking happens on `/pruning-requests/:id/assign-to-task`: `CapacitySer
 
 ### H1. Enum extension
 
-`UserRole.STAFF_KECAMATAN = 'staff_kecamatan'` added to `be/src/modules/users/enums/role.enum.ts` per [ADR-033](../../architecture/decisions/ADR-033-staff-kecamatan-role.md).
+`UserRole.STAFF_KECAMATAN = 'staff_kecamatan'` added to `apps/be/src/modules/users/enums/role.enum.ts` per [ADR-033](../../architecture/decisions/ADR-033-staff-kecamatan-role.md).
 
 ### H2. Role-group additions
 

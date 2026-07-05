@@ -42,7 +42,7 @@ This document provides complete specifications for all web dashboard pages.
 
 ```yaml
 route: /login
-file: fe/web/src/app/(auth)/login/page.tsx
+file: apps/web/src/app/(auth)/login/page.tsx
 compliance: 85%
 priority: P1
 
@@ -123,7 +123,7 @@ actions:
 
 ```yaml
 route: /
-file: fe/web/src/app/(dashboard)/page.tsx
+file: apps/web/src/app/(dashboard)/page.tsx
 compliance: 80%
 priority: P1
 
@@ -214,7 +214,7 @@ actions:
 
 ```yaml
 route: /areas
-file: fe/web/src/app/(dashboard)/areas/page.tsx
+file: apps/web/src/app/(dashboard)/areas/page.tsx
 compliance: 75%
 priority: P2
 
@@ -261,7 +261,7 @@ actions:
 
 ```yaml
 route: /areas/[id]
-file: fe/web/src/app/(dashboard)/areas/[id]/page.tsx
+file: apps/web/src/app/(dashboard)/areas/[id]/page.tsx
 compliance: 70%
 priority: P2
 
@@ -316,7 +316,7 @@ actions:
 
 ```yaml
 route: /areas/[id]/edit
-file: fe/web/src/app/(dashboard)/areas/[id]/edit/page.tsx
+file: apps/web/src/app/(dashboard)/areas/[id]/edit/page.tsx
 compliance: 80%
 priority: P3
 
@@ -358,7 +358,7 @@ actions:
 
 ```yaml
 route: /areas/new
-file: fe/web/src/app/(dashboard)/areas/new/page.tsx
+file: apps/web/src/app/(dashboard)/areas/new/page.tsx
 compliance: 80%
 priority: P3
 
@@ -380,7 +380,7 @@ actions:
 
 ```yaml
 route: /rayons
-file: fe/web/src/app/(dashboard)/rayons/page.tsx
+file: apps/web/src/app/(dashboard)/rayons/page.tsx
 compliance: 60%
 priority: P1
 
@@ -433,7 +433,7 @@ actions:
 
 ```yaml
 route: /rayons/[id]
-file: fe/web/src/app/(dashboard)/rayons/[id]/page.tsx
+file: apps/web/src/app/(dashboard)/rayons/[id]/page.tsx
 compliance: 70%
 priority: P2
 
@@ -491,7 +491,7 @@ actions:
 
 ```yaml
 route: /tasks
-file: fe/web/src/app/(dashboard)/tasks/page.tsx
+file: apps/web/src/app/(dashboard)/tasks/page.tsx
 compliance: 75%
 priority: P2
 
@@ -560,7 +560,7 @@ actions:
 
 ```yaml
 route: /tasks/new
-file: fe/web/src/app/(dashboard)/tasks/new/page.tsx
+file: apps/web/src/app/(dashboard)/tasks/new/page.tsx
 compliance: 65%
 priority: P2
 
@@ -618,7 +618,7 @@ actions:
 
 ```yaml
 route: /reports
-file: fe/web/src/app/(dashboard)/reports/page.tsx
+file: apps/web/src/app/(dashboard)/reports/page.tsx
 compliance: 75%
 priority: P2
 
@@ -668,7 +668,7 @@ actions:
 
 ```yaml
 route: /reports/[id]
-file: fe/web/src/app/(dashboard)/reports/[id]/page.tsx
+file: apps/web/src/app/(dashboard)/reports/[id]/page.tsx
 compliance: 65%
 priority: P1
 
@@ -747,7 +747,7 @@ actions:
 
 ```yaml
 route: /monitoring
-file: fe/web/src/app/(dashboard)/monitoring/page.tsx
+file: apps/web/src/app/(dashboard)/monitoring/page.tsx
 compliance: 55%
 priority: P0
 
@@ -837,7 +837,7 @@ actions:
 
 ```yaml
 route: /users
-file: fe/web/src/app/(dashboard)/users/page.tsx
+file: apps/web/src/app/(dashboard)/users/page.tsx
 compliance: 75%
 priority: P2
 
@@ -887,7 +887,7 @@ actions:
 
 ```yaml
 route: /users/new
-file: fe/web/src/app/(dashboard)/users/new/page.tsx
+file: apps/web/src/app/(dashboard)/users/new/page.tsx
 compliance: 80%
 priority: P3
 
@@ -934,7 +934,7 @@ actions:
 
 ```yaml
 route: /users/[id]
-file: fe/web/src/app/(dashboard)/users/[id]/page.tsx
+file: apps/web/src/app/(dashboard)/users/[id]/page.tsx
 compliance: 80%
 priority: P3
 
@@ -959,7 +959,7 @@ actions:
 
 ```yaml
 route: /schedules
-file: fe/web/src/app/(dashboard)/schedules/page.tsx
+file: apps/web/src/app/(dashboard)/schedules/page.tsx
 compliance: 75%
 priority: P2
 
@@ -1004,7 +1004,7 @@ actions:
 
 ```yaml
 route: /schedules/new
-file: fe/web/src/app/(dashboard)/schedules/new/page.tsx
+file: apps/web/src/app/(dashboard)/schedules/new/page.tsx
 compliance: 65%
 priority: P2
 
@@ -1042,7 +1042,7 @@ actions:
 
 ```yaml
 route: /schedules/[id]/edit
-file: fe/web/src/app/(dashboard)/schedules/[id]/edit/page.tsx
+file: apps/web/src/app/(dashboard)/schedules/[id]/edit/page.tsx
 compliance: 65%
 priority: P2
 
@@ -1062,7 +1062,7 @@ actions:
 
 ```yaml
 route: /settings
-file: fe/web/src/app/(dashboard)/settings/page.tsx
+file: apps/web/src/app/(dashboard)/settings/page.tsx
 compliance: 60%
 priority: P0
 
@@ -1134,7 +1134,7 @@ actions:
 ### Dashboard Layout
 
 ```yaml
-file: fe/web/src/app/(dashboard)/layout.tsx
+file: apps/web/src/app/(dashboard)/layout.tsx
 compliance: 85%
 priority: P2
 
@@ -1179,7 +1179,7 @@ actions:
 ### Root Layout
 
 ```yaml
-file: fe/web/src/app/layout.tsx
+file: apps/web/src/app/layout.tsx
 compliance: 95%
 priority: P3
 

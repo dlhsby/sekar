@@ -170,8 +170,8 @@ Per [ADR-040](../../architecture/decisions/ADR-040-design-system-v2.1.md). 8 tea
 
 | Asset | Output | Source |
 |-------|--------|--------|
-| Mobile primary mark | `fe/mobile/src/assets/brand/sekar-mark.svg` (24/36/48/72/96 px) | `illustrations.html` `#sekar-mark` |
-| Web primary mark | `fe/web/public/brand/sekar-mark.svg` + ico/png raster | `illustrations.html` `#sekar-mark` |
+| Mobile primary mark | `apps/mobile/src/assets/brand/sekar-mark.svg` (24/36/48/72/96 px) | `illustrations.html` `#sekar-mark` |
+| Web primary mark | `apps/web/public/brand/sekar-mark.svg` + ico/png raster | `illustrations.html` `#sekar-mark` |
 | Monochrome variant | `*-mono.svg` | `illustrations.html` `#sekar-mark-mono` |
 | Wordmark + mark lockup | `*-lockup.svg` (horizontal + stacked) | hi-fi headers |
 
@@ -181,8 +181,8 @@ Used everywhere `.sekar-mark` class appears in `hifi-shared.css` (line 512: `wid
 
 Replace both platforms:
 
-- **iOS:** `fe/mobile/ios/sekar/Images.xcassets/AppIcon.appiconset/` — 1024 px master + standard size set, pinwheel centered on warm-stone background with 2 px black border + 10 px offset shadow (rounded-square shape).
-- **Android:** `fe/mobile/android/app/src/main/res/mipmap-*/ic_launcher*` (legacy raster) + adaptive icon (`ic_launcher_foreground.xml` = pinwheel SVG; `ic_launcher_background.xml` = warm-stone color).
+- **iOS:** `apps/mobile/ios/sekar/Images.xcassets/AppIcon.appiconset/` — 1024 px master + standard size set, pinwheel centered on warm-stone background with 2 px black border + 10 px offset shadow (rounded-square shape).
+- **Android:** `apps/mobile/android/app/src/main/res/mipmap-*/ic_launcher*` (legacy raster) + adaptive icon (`ic_launcher_foreground.xml` = pinwheel SVG; `ic_launcher_background.xml` = warm-stone color).
 
 ### 3.3 Splash screen (3 variants)
 
@@ -234,7 +234,7 @@ Per `illustrations.html § Splash screen`:
 - **Routing fix:** finishing/skipping onboarding now routes immediately — added a Redux `onboardingCompleted` flag (`authSlice`) that `RootNavigator` reads alongside the durable AsyncStorage flag (which was only read once at login, so the storage-only completion never re-routed → user stuck). Force-change still precedes onboarding (regression test added). Tests: onboarding 3 suites + nav green.
 
 **M3 revamp status — Home shared masthead ✅ (2026-05-25) — Checkpoint 1a of the Home revamp:** `FieldHomeHeader` (the app-wide header on every tab + sub-screen) reconciled to the hi-fi HOME-1/2/3 masthead. Decision **"adopt hi-fi, keep status chip"**: leaf-icon box → **role-colored avatar** (initials from `full_name`, `withAlpha(nbColors.role*, 0.22)` fill + 2px role-accent border, decorative for screen readers); "Halo, {name}!" → **mono uppercase role label** (`ROLE_LABELS`, `· {area}` when `auth.assignedArea` present) **above** the display name; **online/offline + sync/pending chip retained** (no hi-fi equivalent, load-bearing for offline UX), restyled to v2.1. Migrated off legacy token shims. Tests 38/38. **Bell, tab bar, and the role-aware Home dispatcher/bodies (HOME-1/2/3) are the following checkpoints.**
-- **🔴 CRITICAL token fix shipped with this slice:** a stale git-tracked `fe/mobile/src/constants/generated/tokens.js` (NB 1.0 values) was shadowing the canonical `tokens.ts` in both Metro and Jest (`.js` resolves first) — so the **whole app was still rendering NB 1.0 radii/shadows**, silently undoing the v2.1 `tokens.json` reconciliation from the M1+M2 checkpoint and hiding the 9 `role.*` accents. Deleted the cruft `.js` (the pipeline only emits `.ts`); v2.1 tokens now actually render. The two value-lock suites (`nbTokens.test.ts`, `nbShadow.test.tsx`) were realigned from the stale NB 1.0 numbers to canonical v2.1 (radii 10/14/20, shadows 3/4/6, thick 2.5). Full mobile suite green (4146). See `status_progress.md` (2026-05-25 Checkpoint 1a) for detail.
+- **🔴 CRITICAL token fix shipped with this slice:** a stale git-tracked `apps/mobile/src/constants/generated/tokens.js` (NB 1.0 values) was shadowing the canonical `tokens.ts` in both Metro and Jest (`.js` resolves first) — so the **whole app was still rendering NB 1.0 radii/shadows**, silently undoing the v2.1 `tokens.json` reconciliation from the M1+M2 checkpoint and hiding the 9 `role.*` accents. Deleted the cruft `.js` (the pipeline only emits `.ts`); v2.1 tokens now actually render. The two value-lock suites (`nbTokens.test.ts`, `nbShadow.test.tsx`) were realigned from the stale NB 1.0 numbers to canonical v2.1 (radii 10/14/20, shadows 3/4/6, thick 2.5). Full mobile suite green (4146). See `status_progress.md` (2026-05-25 Checkpoint 1a) for detail.
 
 **M3 revamp status — Home bottom tab bar ✅ (2026-05-25) — Checkpoint 1b:** `MainNavigator` tab bar restyled to hi-fi, tokens-only — active icon in a **sage box** (2px border + `sh-xs`), mono `NBText` labels (active black / inactive gray600). No IA change (per-role `TAB_CONFIGS` untouched). **Reconciliation:** labels kept sentence-case (not hi-fi uppercase) to avoid overflow on the app's longer labels (e.g. "Tugas & Aktivitas"). `nav` suites 36/36.
 
@@ -277,11 +277,11 @@ Wire via existing `NBEmptyState` component (mobile + web) — accept `illustrati
 |-------|----------|
 | pin, clock, camera, check, tree, leaf, bell, shield, clipboard, user, users, map, warn, power, sync, trash, search, message, settings (and 10 more) | Use Lucide React (already a dep) where 1:1 match exists. Ship custom SVGs from `illustrations.html` only for icons Lucide doesn't have OR where the brand override is intentional (e.g., the `i-tree` mark used in perantingan + plant species). |
 
-Custom SVGs land in `fe/mobile/src/assets/icons/` + `fe/web/public/icons/`; wire via a thin `BrandIcon` wrapper that falls through to Lucide for unknown names.
+Custom SVGs land in `apps/mobile/src/assets/icons/` + `apps/web/public/icons/`; wire via a thin `BrandIcon` wrapper that falls through to Lucide for unknown names.
 
 ### 3.7 Map marker matrix
 
-Per `illustrations.html § Map markers` — 3 roles (satgas / korlap / linmas) × 5 statuses (active / idle / outside / missing / offline) = 15 marker variants. Codify in `fe/mobile/src/components/monitoring/Marker.tsx` using `--status-*` tokens (see §1.2). Eliminates current ad-hoc colour drift.
+Per `illustrations.html § Map markers` — 3 roles (satgas / korlap / linmas) × 5 statuses (active / idle / outside / missing / offline) = 15 marker variants. Codify in `apps/mobile/src/components/monitoring/Marker.tsx` using `--status-*` tokens (see §1.2). Eliminates current ad-hoc colour drift.
 
 ### 3.8 Brand patterns (5 SVG patterns)
 

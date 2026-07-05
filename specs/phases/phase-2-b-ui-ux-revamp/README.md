@@ -193,7 +193,7 @@ Comprehensive UI/UX revamp applying Neo Brutalism 2.0 design tokens across SEKAR
 
 ### Web Testing
 ```bash
-cd fe/web
+cd apps/web
 npm test                    # Unit tests (505 tests)
 npm run test:e2e            # Playwright E2E tests
 npm run lint                # ESLint check
@@ -202,7 +202,7 @@ npm run build               # Build verification
 
 ### Mobile Testing
 ```bash
-cd fe/mobile
+cd apps/mobile
 npm test                    # Unit tests (2,141 tests)
 npm run lint                # ESLint check
 npm run android             # Build and run on emulator
@@ -211,10 +211,10 @@ npm run android             # Build and run on emulator
 ### Visual Regression
 ```bash
 # Capture baseline screenshots (before changes)
-cd fe/web && npx playwright test --update-snapshots
+cd apps/web && npx playwright test --update-snapshots
 
 # Compare after changes
-cd fe/web && npx playwright test
+cd apps/web && npx playwright test
 ```
 
 ---
@@ -227,8 +227,8 @@ cd fe/web && npx playwright test
 git checkout -- .
 
 # Or revert specific files
-git checkout -- fe/web/src/app/globals.css
-git checkout -- fe/mobile/src/constants/nbTokens.ts
+git checkout -- apps/web/src/app/globals.css
+git checkout -- apps/mobile/src/constants/nbTokens.ts
 ```
 
 ### Partial Rollback
@@ -241,10 +241,10 @@ git revert <commit-hash>    # Revert specific commit
 ### Full Phase Rollback
 ```bash
 # Reset to pre-Phase-2A state
-git checkout main -- fe/web/src/components/ui/
-git checkout main -- fe/mobile/src/components/nb/
-git checkout main -- fe/web/src/app/globals.css
-git checkout main -- fe/mobile/src/constants/nbTokens.ts
+git checkout main -- apps/web/src/components/ui/
+git checkout main -- apps/mobile/src/components/nb/
+git checkout main -- apps/web/src/app/globals.css
+git checkout main -- apps/mobile/src/constants/nbTokens.ts
 ```
 
 ---

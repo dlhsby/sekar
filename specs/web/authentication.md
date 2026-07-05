@@ -13,12 +13,12 @@ references for the source of truth.
 
 | Concern | Implementation |
 |---------|----------------|
-| Session/state | Custom `AuthProvider` (React context) — `fe/web/src/lib/auth/context.tsx` |
-| Hooks | `fe/web/src/lib/auth/hooks.ts` — `useAuth`, `useUser`, `useRequireAuth`, `useHasRole`, `useIsAuthenticated` |
-| Token store | **Client-readable cookies** `access_token` (7-day max-age) + `refresh_token` (30-day) — `fe/web/src/lib/utils/cookies.ts`. `sameSite=lax`, `secure` when `NEXT_PUBLIC_SECURE_COOKIES=true`. **Not httpOnly** (the API client reads them in JS). |
-| API auth | Axios request interceptor adds `Authorization: Bearer <access_token>` — `fe/web/src/lib/api/client.ts` |
+| Session/state | Custom `AuthProvider` (React context) — `apps/web/src/lib/auth/context.tsx` |
+| Hooks | `apps/web/src/lib/auth/hooks.ts` — `useAuth`, `useUser`, `useRequireAuth`, `useHasRole`, `useIsAuthenticated` |
+| Token store | **Client-readable cookies** `access_token` (7-day max-age) + `refresh_token` (30-day) — `apps/web/src/lib/utils/cookies.ts`. `sameSite=lax`, `secure` when `NEXT_PUBLIC_SECURE_COOKIES=true`. **Not httpOnly** (the API client reads them in JS). |
+| API auth | Axios request interceptor adds `Authorization: Bearer <access_token>` — `apps/web/src/lib/api/client.ts` |
 | Token refresh | Response interceptor auto-refreshes on 401 via `POST /auth/refresh`, then retries the original request |
-| Route protection | `fe/web/src/proxy.ts` (Next.js route-guard "proxy" middleware) — default-deny, public allowlist in `fe/web/src/lib/auth/public-paths.ts` |
+| Route protection | `apps/web/src/proxy.ts` (Next.js route-guard "proxy" middleware) — default-deny, public allowlist in `apps/web/src/lib/auth/public-paths.ts` |
 | Backend tokens | JWT 15-min access + 7-day refresh **with rotation** (Passport); logout blacklists both |
 | Roles | 8 + `staff_kecamatan` (lowercase, ADR-009/032) — **not** Admin/Supervisor/Worker |
 
@@ -53,7 +53,7 @@ except `/change-password` there (mirrors the mobile `RootNavigator` gate).
 
 ## AuthContext
 
-`fe/web/src/lib/auth/context.tsx` exposes:
+`apps/web/src/lib/auth/context.tsx` exposes:
 
 ```ts
 interface AuthContextValue {
@@ -68,7 +68,7 @@ interface AuthContextValue {
 }
 ```
 
-Mounted once in the root layout via `Providers` (`fe/web/src/app/providers.tsx`). Consume it with the
+Mounted once in the root layout via `Providers` (`apps/web/src/app/providers.tsx`). Consume it with the
 hooks below — never read cookies or call `/auth/*` directly from components.
 
 ```ts
@@ -83,7 +83,7 @@ useRequireAuth(['kepala_rayon', 'top_management']);    // client guard: redirect
 ## Route protection (`src/proxy.ts`)
 
 Default-deny middleware: every route requires the `access_token` cookie **except** the public
-allowlist. The allowlist is the single shared module `fe/web/src/lib/auth/public-paths.ts` — also
+allowlist. The allowlist is the single shared module `apps/web/src/lib/auth/public-paths.ts` — also
 honored by the API client's 401 guard, so the two can't drift:
 
 ```ts

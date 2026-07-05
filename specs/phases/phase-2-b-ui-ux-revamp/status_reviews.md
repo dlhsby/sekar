@@ -128,7 +128,7 @@ This document contains the visual review and design token compliance audit for t
 - **Before:** `nbColors.background` (#FDFD96 pastel yellow)
 - **After:** `nbColors.backgroundMint` (#DAF5F0 light mint)
 - **Reason:** Cleaner, fresher feel; more professional for government app
-- **File:** `fe/mobile/src/screens/auth/LoginScreen.tsx`
+- **File:** `apps/mobile/src/screens/auth/LoginScreen.tsx`
 
 ### Issue 2: borderRadius: 0 Inconsistency (40 instances across 13 files)
 - **Before:** NB 2.0 changed default from 0px to 6px, but screen files still hardcoded `borderRadius: 0`
@@ -159,7 +159,7 @@ This document contains the visual review and design token compliance audit for t
 ### Issue 4: Stale Comment
 - **Before:** LoginScreen.tsx comment said "2px - softened NB style" for `nbBorderRadius.base`
 - **After:** Updated to "6px - NB 2.0 softened style"
-- **File:** `fe/mobile/src/screens/auth/LoginScreen.tsx`
+- **File:** `apps/mobile/src/screens/auth/LoginScreen.tsx`
 
 ---
 

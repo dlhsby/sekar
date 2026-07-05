@@ -2,13 +2,13 @@
 #
 # Lightweight successor to the parked `mobile-ci-cd.yml.disabled` workflow.
 # Runs the design-system ESLint rules (no-inline-hex-colors, rn-no-shadow-radius,
-# etc. — configured in fe/mobile/eslint.config.js) and the Jest suite on every
+# etc. — configured in apps/mobile/eslint.config.js) and the Jest suite on every
 # PR that touches mobile. Does NOT build an APK; that lives in the disabled
 # workflow until Android signing + release infra is ready.
 
 name: Mobile Quality Gate
 
-# **Reusable** — invoked by `pr-gate.yml` (the single required merge check) when `fe/mobile/**`
+# **Reusable** — invoked by `pr-gate.yml` (the single required merge check) when `apps/mobile/**`
 # (or the design tokens) change on a PR. Does NOT build an APK (see mobile-release.yml).
 on:
   workflow_call: {}
@@ -32,30 +32,30 @@ jobs:
           cache: 'npm'
           cache-dependency-path: |
             package-lock.json
-            fe/mobile/package-lock.json
+            apps/mobile/package-lock.json
 
       - name: Install root tooling (eslint-plugin-sekar-design symlink)
         run: npm ci
 
       - name: Install mobile deps
         run: npm ci
-        working-directory: fe/mobile
+        working-directory: apps/mobile
 
       # react-native-dotenv inlines @env values from .env.local at babel time; without
       # it, config falls back to defaults and env-dependent unit tests fail. Mirror the
       # documented local setup (cp .env.local.example .env.local).
       - name: Provision .env.local for tests
         run: cp .env.local.example .env.local
-        working-directory: fe/mobile
+        working-directory: apps/mobile
 
       - name: ESLint (includes sekar-design rules)
         run: npm run lint
-        working-directory: fe/mobile
+        working-directory: apps/mobile
 
       - name: TypeScript check
         run: npx tsc --noEmit
-        working-directory: fe/mobile
+        working-directory: apps/mobile
 
       - name: Jest
         run: npm test -- --watchAll=false --ci
-        working-directory: fe/mobile
+        working-directory: apps/mobile

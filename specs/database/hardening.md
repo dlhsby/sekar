@@ -340,7 +340,7 @@ FOREIGN KEY ("shift_id") REFERENCES "shifts"("id") ON DELETE CASCADE
 
 **Related Code:**
 ```typescript
-// be/src/modules/shifts/entities/shift.entity.ts
+// apps/be/src/modules/shifts/entities/shift.entity.ts
 @Column({ type: 'timestamptz', nullable: true })
 deleted_at: Date;  // Soft delete pattern
 ```
@@ -625,14 +625,14 @@ docker exec -i sekar-postgres psql -U postgres -d sekar_db < backup_pre_hardenin
 
 ### After Migration, Update TypeORM Entities
 
-#### Shift Entity (be/src/modules/shifts/entities/shift.entity.ts)
+#### Shift Entity (apps/be/src/modules/shifts/entities/shift.entity.ts)
 ```typescript
 // Add soft delete support
 @Column({ type: 'timestamptz', nullable: true })
 deleted_at: Date;
 ```
 
-#### Report Entity (be/src/modules/reports/entities/report.entity.ts)
+#### Report Entity (apps/be/src/modules/reports/entities/report.entity.ts)
 ```typescript
 // Add new columns
 @Column({ type: 'uuid' })
@@ -731,7 +731,7 @@ Migration considered successful when ALL criteria met:
 
 ## Related Documentation
 
-- **Migration Implementation:** `be/src/database/migrations/1737006000000-AddProductionIndexesAndConstraints.ts`
+- **Migration Implementation:** `apps/be/src/database/migrations/1737006000000-AddProductionIndexesAndConstraints.ts`
 - **Database Schema:** `specs/database/schema.md`
 - **API Documentation:** `specs/api/contracts.md`
 - **Action Plan:** `specs/ACTION_PLAN.md` (Sections 1-2)

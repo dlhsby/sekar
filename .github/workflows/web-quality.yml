@@ -1,7 +1,7 @@
 name: Web Quality Gate
 
 # Lint + type-check + unit (Jest) tests for the Next.js web dashboard. **Reusable** —
-# invoked by `pr-gate.yml` (the single required merge check) when `fe/web/**` changes on a
+# invoked by `pr-gate.yml` (the single required merge check) when `apps/web/**` changes on a
 # PR, and re-run as the `quality-web` job inside `deploy-staging.yml` on a release.
 # (Playwright E2E is a separate, manual workflow: web-e2e.yml.)
 on:
@@ -20,18 +20,18 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            fe/web/package-lock.json
+            apps/web/package-lock.json
       - name: Install root tooling (eslint-plugin-sekar-design)
         run: npm ci
       - name: Install web deps
         run: npm ci
-        working-directory: fe/web
+        working-directory: apps/web
       - name: ESLint (incl. sekar-design rules)
         run: npm run lint
-        working-directory: fe/web
+        working-directory: apps/web
       - name: TypeScript check
         run: npx tsc --noEmit
-        working-directory: fe/web
+        working-directory: apps/web
       - name: Unit tests (Jest)
         run: npm test -- --ci
-        working-directory: fe/web
+        working-directory: apps/web

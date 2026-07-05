@@ -7,7 +7,7 @@ name: Seed staging (DESTRUCTIVE)
 #   - ~640 KMZ coverage areas + 43 Taman Aktif parks (committed CSV/JSON, in the image)
 #   - system + per-rayon dummy users  AND  the ~300-row REAL roster
 #
-# The real roster lives in be/src/database/seeds/data/users.csv, which is gitignored
+# The real roster lives in apps/be/src/database/seeds/data/users.csv, which is gitignored
 # (PII) and therefore NOT in the Docker image. This workflow injects it at seed time:
 # its base64 is stored in the `staging` Environment secret STAGING_SEED_USERS_CSV_B64
 # and bind-mounted into the backend container's data dir for the one-off seed run.
@@ -18,7 +18,7 @@ name: Seed staging (DESTRUCTIVE)
 #
 # Required repo Variables: AWS_REGION, AWS_ROLE_ARN, EC2_INSTANCE_ID, RDS_INSTANCE_ID.
 # Required `staging` Environment secret: STAGING_SEED_USERS_CSV_B64
-#   = gzip -9 -c be/src/database/seeds/data/users.csv | base64 -w0
+#   = gzip -9 -c apps/be/src/database/seeds/data/users.csv | base64 -w0
 #   (gzipped because GitHub caps a secret at ~48KB; the plain base64 roster exceeds it).
 
 on:
@@ -87,7 +87,7 @@ jobs:
           if [ -z "${USERS_B64:-}" ]; then
             echo "Missing Environment secret STAGING_SEED_USERS_CSV_B64." >&2
             echo "Set it with: gh secret set STAGING_SEED_USERS_CSV_B64 --env staging \\" >&2
-            echo "  --body \"\$(gzip -9 -c be/src/database/seeds/data/users.csv | base64 -w0)\"" >&2
+            echo "  --body \"\$(gzip -9 -c apps/be/src/database/seeds/data/users.csv | base64 -w0)\"" >&2
             exit 1
           fi
           # Box script writes the roster to a stable path, owned by ec2-user, world-readable

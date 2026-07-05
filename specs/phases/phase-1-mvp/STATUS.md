@@ -235,7 +235,7 @@ npm run seed               # Seed test users
 
 ### Mobile
 ```bash
-cd fe/mobile
+cd apps/mobile
 npm test                   # Run all tests
 npm test -- --coverage     # Coverage report
 npm run lint               # Lint code

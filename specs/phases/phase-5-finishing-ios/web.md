@@ -26,7 +26,7 @@
 
 ### A1. Reports Dashboard — `/dashboard/reports`
 
-**Route:** `fe/web/src/app/(dashboard)/reports/page.tsx`
+**Route:** `apps/web/src/app/(dashboard)/reports/page.tsx`
 **Type:** Server Component with client islands
 
 ```
@@ -57,7 +57,7 @@
 
 ### A2. Report Builder — `/dashboard/reports/builder`
 
-**Route:** `fe/web/src/app/(dashboard)/reports/builder/page.tsx`
+**Route:** `apps/web/src/app/(dashboard)/reports/builder/page.tsx`
 **Type:** Client Component (interactive form)
 
 ```
@@ -86,7 +86,7 @@
 
 ### A3. Report Schedules — `/dashboard/reports/schedules`
 
-**Route:** `fe/web/src/app/(dashboard)/reports/schedules/page.tsx`
+**Route:** `apps/web/src/app/(dashboard)/reports/schedules/page.tsx`
 **Roles:** `admin_system`, `superadmin` only
 
 ```
@@ -109,7 +109,7 @@
 
 ### B1. Analytics Dashboard — `/dashboard/analytics`
 
-**Route:** `fe/web/src/app/(dashboard)/analytics/page.tsx`
+**Route:** `apps/web/src/app/(dashboard)/analytics/page.tsx`
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -139,7 +139,7 @@
 
 ### B2. Worker Analytics — `/dashboard/analytics/workers`
 
-**Route:** `fe/web/src/app/(dashboard)/analytics/workers/page.tsx`
+**Route:** `apps/web/src/app/(dashboard)/analytics/workers/page.tsx`
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -163,7 +163,7 @@
 
 ### B3. Area Analytics — `/dashboard/analytics/areas`
 
-**Route:** `fe/web/src/app/(dashboard)/analytics/areas/page.tsx`
+**Route:** `apps/web/src/app/(dashboard)/analytics/areas/page.tsx`
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -188,7 +188,7 @@
 
 ### C1. Assets List — `/dashboard/assets`
 
-**Route:** `fe/web/src/app/(dashboard)/assets/page.tsx`
+**Route:** `apps/web/src/app/(dashboard)/assets/page.tsx`
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -210,7 +210,7 @@
 
 ### C2. Asset Detail — `/dashboard/assets/[id]`
 
-**Route:** `fe/web/src/app/(dashboard)/assets/[id]/page.tsx`
+**Route:** `apps/web/src/app/(dashboard)/assets/[id]/page.tsx`
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -236,13 +236,13 @@
 
 ### C3. Asset Form — `/dashboard/assets/new`
 
-**Route:** `fe/web/src/app/(dashboard)/assets/new/page.tsx`
+**Route:** `apps/web/src/app/(dashboard)/assets/new/page.tsx`
 
 Form fields: name, category (dropdown), area (dropdown), rayon (auto-filled from area), description, purchase_date, purchase_price, photo (upload).
 
 ### C4. QR Generator — `/dashboard/assets/qr`
 
-**Route:** `fe/web/src/app/(dashboard)/assets/qr/page.tsx`
+**Route:** `apps/web/src/app/(dashboard)/assets/qr/page.tsx`
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -268,7 +268,7 @@ Form fields: name, category (dropdown), area (dropdown), rayon (auto-filled from
 
 ### C5. Maintenance Calendar — `/dashboard/assets/maintenance`
 
-**Route:** `fe/web/src/app/(dashboard)/assets/maintenance/page.tsx`
+**Route:** `apps/web/src/app/(dashboard)/assets/maintenance/page.tsx`
 
 Uses a calendar component (custom NB-styled, not FullCalendar — to maintain Neo Brutalism consistency):
 
@@ -344,12 +344,12 @@ Sub-navigation for assets:
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| `NBKPICard` | `fe/web/src/components/nb/NBKPICard.tsx` | KPI metric card with sparkline and trend arrow |
-| `NBCalendar` | `fe/web/src/components/nb/NBCalendar.tsx` | NB-styled month calendar for maintenance |
-| `NBChart` | `fe/web/src/components/nb/NBChart.tsx` | Wrapper for Recharts with NB styling |
-| `NBReportCard` | `fe/web/src/components/nb/NBReportCard.tsx` | Report item card with download button |
-| `NBAssetCard` | `fe/web/src/components/nb/NBAssetCard.tsx` | Asset summary card with status badge |
-| `NBQRPreview` | `fe/web/src/components/nb/NBQRPreview.tsx` | QR code image with label |
+| `NBKPICard` | `apps/web/src/components/nb/NBKPICard.tsx` | KPI metric card with sparkline and trend arrow |
+| `NBCalendar` | `apps/web/src/components/nb/NBCalendar.tsx` | NB-styled month calendar for maintenance |
+| `NBChart` | `apps/web/src/components/nb/NBChart.tsx` | Wrapper for Recharts with NB styling |
+| `NBReportCard` | `apps/web/src/components/nb/NBReportCard.tsx` | Report item card with download button |
+| `NBAssetCard` | `apps/web/src/components/nb/NBAssetCard.tsx` | Asset summary card with status badge |
+| `NBQRPreview` | `apps/web/src/components/nb/NBQRPreview.tsx` | QR code image with label |
 
 ---
 

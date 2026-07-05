@@ -16,8 +16,8 @@ A new CI job `tokens-verify` enforces zero drift between `specs/ui-ux/tokens.jso
 - **Steps:**
   1. `npm ci`
   2. `npx ajv validate -s specs/ui-ux/tokens.schema.json -d specs/ui-ux/tokens.json` (schema gate)
-  3. `npm run tokens:build` (regenerates `fe/web/src/app/generated/tokens.css` + `fe/mobile/src/constants/generated/tokens.ts`)
-  4. `git diff --exit-code` over `fe/web/src/app/generated/` and `fe/mobile/src/constants/generated/` (drift gate)
+  3. `npm run tokens:build` (regenerates `apps/web/src/app/generated/tokens.css` + `apps/mobile/src/constants/generated/tokens.ts`)
+  4. `git diff --exit-code` over `apps/web/src/app/generated/` and `apps/mobile/src/constants/generated/` (drift gate)
 - **Failure mode:** non-zero diff → fail with diff posted as job summary. Devs fix `tokens.json`, re-run `npm run tokens:build`, and commit the regenerated files.
 - **Artifacts:** generator output is **always committed** (git-tracked). CI re-runs the generator to verify.
 
@@ -25,17 +25,17 @@ A new CI job `tokens-verify` enforces zero drift between `specs/ui-ux/tokens.jso
 
 The web PWA is built by the existing Next.js `build` step plus a service-worker emit.
 
-- **Source:** `fe/web/src/sw/sw.ts` — TypeScript service worker source (Workbox-manifest assisted; library choice locked in ADR-037).
-- **Output:** `fe/web/public/sw.js` — emitted during `next build`; gitignored at `public/sw.js` level (regenerated each build).
-- **Manifest:** `fe/web/public/manifest.webmanifest` — committed.
-- **Icons:** `fe/web/public/icons/` — committed (192/512/512-maskable/180 apple-touch).
+- **Source:** `apps/web/src/sw/sw.ts` — TypeScript service worker source (Workbox-manifest assisted; library choice locked in ADR-037).
+- **Output:** `apps/web/public/sw.js` — emitted during `next build`; gitignored at `public/sw.js` level (regenerated each build).
+- **Manifest:** `apps/web/public/manifest.webmanifest` — committed.
+- **Icons:** `apps/web/public/icons/` — committed (192/512/512-maskable/180 apple-touch).
 - **Feature flag:** `NEXT_PUBLIC_FEATURE_PWA` controls service-worker registration in `app/layout.tsx`. Production-only by default; staging set to enabled after smoke test.
 - **Lighthouse audit (CI):** `npm run lighthouse:pwa` (uses `lighthouserc.json`) on staging URL; PWA score < 90 fails the staging deploy.
 
 ## Visual Regression CI Jobs (M1-R sub-phase 3-R3)
 
-- `web-visreg` — runs `npx playwright test fe/web/e2e/visual-regression.spec.ts` after `npm run build`. Pinned Chromium version. Diff artifacts uploaded on failure for reviewer comparison.
-- `mobile-snapshots` — runs `npm test -- --ci` in `fe/mobile`; fails on Jest snapshot diff. Authors update baselines with explicit `[visreg-update]` commit tag.
+- `web-visreg` — runs `npx playwright test apps/web/e2e/visual-regression.spec.ts` after `npm run build`. Pinned Chromium version. Diff artifacts uploaded on failure for reviewer comparison.
+- `mobile-snapshots` — runs `npm test -- --ci` in `apps/mobile`; fails on Jest snapshot diff. Authors update baselines with explicit `[visreg-update]` commit tag.
 
 ## ESLint CI Gates (M1-R sub-phase 3-R1)
 
@@ -49,13 +49,13 @@ The web PWA is built by the existing Next.js `build` step plus a service-worker 
 | Component | Change | Reason |
 |-----------|--------|--------|
 | `infra/docker-compose.yml` | +`redis:7-alpine` service. Host port `16379` (overridable via `REDIS_PORT` env), container internal `6379`. The `+10000` offset avoids colliding with system Redis or another project on the dev box. | Socket.IO Redis adapter + Redis Streams + cache |
-| `be/src/common/services/redis.service.ts` | New | Connection pool + `/health` report + graceful shutdown |
-| `be/src/gateways/events.gateway.ts` | Wire `@socket.io/redis-adapter` | Horizontal-scale WS (future multi-instance) |
-| `be/src/modules/monitoring/streams/` | New | Redis Streams producer + consumer group for `location:pings` |
-| `be/src/modules/monitoring/cron/` | +2 cron jobs | `MonitoringStaleSweeper` (every 5 min), `PlantDueDateRecalculator` (daily 02:00 WIB) |
+| `apps/be/src/common/services/redis.service.ts` | New | Connection pool + `/health` report + graceful shutdown |
+| `apps/be/src/gateways/events.gateway.ts` | Wire `@socket.io/redis-adapter` | Horizontal-scale WS (future multi-instance) |
+| `apps/be/src/modules/monitoring/streams/` | New | Redis Streams producer + consumer group for `location:pings` |
+| `apps/be/src/modules/monitoring/cron/` | +2 cron jobs | `MonitoringStaleSweeper` (every 5 min), `PlantDueDateRecalculator` (daily 02:00 WIB) |
 | `infra/loadtest/` | New k6 harness | 500-worker / 12-s ping / 30-min simulation |
 | `.env.example` | +5 entries | See below |
-| `be/src/modules/health/` | Extend | Add Redis check to `/health/full` |
+| `apps/be/src/modules/health/` | Extend | Add Redis check to `/health/full` |
 
 ---
 
@@ -127,7 +127,7 @@ The consumer group guarantees at-least-once delivery. The projector is idempoten
 ## Socket.IO Redis Adapter
 
 ```ts
-// be/src/gateways/events.gateway.ts
+// apps/be/src/gateways/events.gateway.ts
 import { createAdapter } from '@socket.io/redis-adapter';
 
 afterInit(server: Server) {

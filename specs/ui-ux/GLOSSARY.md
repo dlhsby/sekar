@@ -6,9 +6,9 @@ Sourced from ADR-009 (roles) and ADR-010 (terminology cleanup). Rule (ADR-010): 
 English; user-facing copy is localized**. Every term below has exactly one translation key so it
 can never drift — the i18n resource files are the enforcement mechanism.
 
-- Web resources: `fe/web/src/lib/i18n/locales/<lng>/*.json`
-- Mobile resources: `fe/mobile/src/i18n/locales/<lng>/*.json`
-- Backend error `code`s (the shared contract): `be/src/common/enums/api-error-codes.enum.ts`
+- Web resources: `apps/web/src/lib/i18n/locales/<lng>/*.json`
+- Mobile resources: `apps/mobile/src/i18n/locales/<lng>/*.json`
+- Backend error `code`s (the shared contract): `apps/be/src/common/enums/api-error-codes.enum.ts`
 
 Default UI language is **Indonesian (`id`)**; English (`en`) is the alternate.
 

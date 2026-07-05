@@ -85,7 +85,7 @@ Introduce a **`user_areas` junction table** with assignment types:
 ## Implementation status
 
 - **Junction table, `getEffectiveAreas`/`getPermanentAreaIds`, korlap monitoring scope, assign/remove endpoints** — implemented (Phase 2C/2D).
-- **§5 task lifecycle sync** — wired June 25, 2026 via `TaskAreaSyncService` (`be/src/modules/tasks/services/task-area-sync.service.ts`). It recomputes the worker's `task_based` set from their currently-active tasks (statuses `assigned/accepted/in_progress/revision_needed`) and calls `syncTaskBasedAreas` on assign/accept/decline/complete/verify and on create-with-assignee. Failures are logged but never block the task transition.
+- **§5 task lifecycle sync** — wired June 25, 2026 via `TaskAreaSyncService` (`apps/be/src/modules/tasks/services/task-area-sync.service.ts`). It recomputes the worker's `task_based` set from their currently-active tasks (statuses `assigned/accepted/in_progress/revision_needed`) and calls `syncTaskBasedAreas` on assign/accept/decline/complete/verify and on create-with-assignee. Failures are logged but never block the task transition.
 - **Geofence honours task areas** — `StatusCalculatorService` now treats a worker as within-area if they are inside any of their effective areas (primary + task_based); the extra lookup only runs when they are outside their primary area.
 
 ### Simplified assignment (Jun 26, 2026)

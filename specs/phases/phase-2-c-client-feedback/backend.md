@@ -47,7 +47,7 @@
 
 ### UserRole Enum Update
 
-**File:** `be/src/modules/users/entities/user.entity.ts`
+**File:** `apps/be/src/modules/users/entities/user.entity.ts`
 
 **Target enum:**
 ```typescript
@@ -78,7 +78,7 @@ area?: Area;
 
 ### Role Group Constants
 
-**File:** `be/src/modules/users/constants/role-groups.ts`
+**File:** `apps/be/src/modules/users/constants/role-groups.ts`
 
 ```typescript
 import { UserRole } from '../entities/user.entity';
@@ -151,7 +151,7 @@ export const VALID_TASK_ASSIGNMENTS: Record<string, string[]> = {
 
 ### Entity Changes
 
-**File:** `be/src/modules/shifts/entities/shift.entity.ts`
+**File:** `apps/be/src/modules/shifts/entities/shift.entity.ts`
 
 - **Rename column:** `worker_id` → `user_id`
 - **Rename relation:** `worker` → `user`
@@ -159,7 +159,7 @@ export const VALID_TASK_ASSIGNMENTS: Record<string, string[]> = {
 
 ### ClockInDto Transformation
 
-**File:** `be/src/modules/shifts/dto/clock-in.dto.ts`
+**File:** `apps/be/src/modules/shifts/dto/clock-in.dto.ts`
 
 ```typescript
 export class ClockInDto {
@@ -206,7 +206,7 @@ async getActiveArea(userId: string): Promise<Area | null> {
 
 ### Polygon Geofencing (Soft Warning)
 
-**New file:** `be/src/common/utils/gps.util.ts` — add methods:
+**New file:** `apps/be/src/common/utils/gps.util.ts` — add methods:
 
 ```typescript
 /**
@@ -300,7 +300,7 @@ Same logic for `clockOut()` → sets `clock_out_outside_boundary`.
 
 | Current | New |
 |---------|-----|
-| `be/src/modules/reports/` | `be/src/modules/activities/` |
+| `apps/be/src/modules/reports/` | `apps/be/src/modules/activities/` |
 | `ReportsModule` | `ActivitiesModule` |
 | `ReportsService` | `ActivitiesService` |
 | `ReportsController` | `ActivitiesController` |
@@ -318,7 +318,7 @@ Same logic for `clockOut()` → sets `clock_out_outside_boundary`.
 
 ### Entity Changes
 
-**File:** `be/src/modules/activities/entities/activity.entity.ts` (renamed from `report.entity.ts`)
+**File:** `apps/be/src/modules/activities/entities/activity.entity.ts` (renamed from `report.entity.ts`)
 
 - **Rename class:** `Report` → `Activity`
 - **Table name:** `activities` (was `work_reports`)
@@ -411,7 +411,7 @@ async createActivity(userId: string, dto: CreateActivityDto): Promise<Activity> 
 
 ### ActivityStatus Enum
 
-**File:** `be/src/modules/activities/entities/activity.entity.ts`
+**File:** `apps/be/src/modules/activities/entities/activity.entity.ts`
 
 ```typescript
 export enum ActivityStatus {
@@ -455,7 +455,7 @@ reviewer: User | null;
 
 ### New Role Group
 
-**File:** `be/src/modules/users/constants/role-groups.ts`
+**File:** `apps/be/src/modules/users/constants/role-groups.ts`
 
 ```typescript
 export const ACTIVITY_APPROVERS = [UserRole.KORLAP, UserRole.KEPALA_RAYON];
@@ -463,7 +463,7 @@ export const ACTIVITY_APPROVERS = [UserRole.KORLAP, UserRole.KEPALA_RAYON];
 
 ### New DTO
 
-**File:** `be/src/modules/activities/dto/reject-activity.dto.ts`
+**File:** `apps/be/src/modules/activities/dto/reject-activity.dto.ts`
 
 ```typescript
 export class RejectActivityDto {
@@ -600,7 +600,7 @@ if (activity.user_id === reviewerId) {
 
 | Current | New |
 |---------|-----|
-| `be/src/modules/worker-schedules/` | `be/src/modules/schedules/` |
+| `apps/be/src/modules/worker-schedules/` | `apps/be/src/modules/schedules/` |
 | `WorkerSchedulesModule` | `SchedulesModule` |
 | `WorkerSchedulesService` | `SchedulesService` |
 | `WorkerSchedulesController` | `SchedulesController` |
@@ -629,7 +629,7 @@ if (activity.user_id === reviewerId) {
 
 The `worker-assignments/` module is **deleted entirely**:
 
-- Delete directory `be/src/modules/worker-assignments/`
+- Delete directory `apps/be/src/modules/worker-assignments/`
 - Remove `WorkerAssignmentsModule` from `app.module.ts` imports
 - Remove `WorkerAssignment` entity from TypeORM `entities` array
 - Remove all `WorkerAssignment` references from `shifts.module.ts` and `shifts.service.ts`
@@ -931,7 +931,7 @@ export class RejectCompletionDto {
 ### Module Structure (Updated)
 
 ```
-be/src/modules/overtime/
+apps/be/src/modules/overtime/
 ├── overtime.module.ts
 ├── overtime.controller.ts
 ├── overtime.service.ts

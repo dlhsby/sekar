@@ -59,7 +59,7 @@ Phase 2 introduces a comprehensive web dashboard for administrators and manageme
 ### Project Structure
 
 ```
-fe/web/
+apps/web/
 ├── src/
 │   ├── app/                     # Next.js App Router
 │   │   ├── (auth)/              # Auth layout group

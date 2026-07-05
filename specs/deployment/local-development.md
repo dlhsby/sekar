@@ -151,7 +151,7 @@ docker-compose up -d
 
 ## Running Each Workspace
 
-Each workspace (`/`, `be/`, `fe/web/`, `fe/mobile/`) is fully independent — `npm install` in one never touches another.
+Each workspace (`/`, `apps/be/`, `apps/web/`, `apps/mobile/`) is fully independent — `npm install` in one never touches another.
 
 ### Root-Level Tooling (One Time)
 
@@ -281,7 +281,7 @@ AUTH_LOGIN_THROTTLE_TTL=60000
 **First Time:**
 
 ```bash
-cd fe/web
+cd apps/web
 
 # Copy environment template
 cp .env.local.example .env.local
@@ -297,7 +297,7 @@ npm install
 **Running:**
 
 ```bash
-cd fe/web
+cd apps/web
 npm run dev
 
 # http://localhost:3001
@@ -306,7 +306,7 @@ npm run dev
 
 **Custom Port:**
 
-Edit `fe/web/.env.local`:
+Edit `apps/web/.env.local`:
 ```bash
 WEB_PORT=3002
 ```
@@ -352,7 +352,7 @@ NEXT_PUBLIC_ENABLE_DEVTOOLS=true
 **First Time:**
 
 ```bash
-cd fe/mobile
+cd apps/mobile
 
 # Copy environment template
 cp .env.local.example .env.local
@@ -369,7 +369,7 @@ npm install
 **Running on Android Emulator:**
 
 ```bash
-cd fe/mobile
+cd apps/mobile
 
 # Start Metro (packager) in foreground
 npm start
@@ -387,7 +387,7 @@ npm start -- --reset-cache
 **Running on iOS (macOS only):**
 
 ```bash
-cd fe/mobile
+cd apps/mobile
 
 npm start          # Metro in foreground
 
@@ -472,7 +472,7 @@ docker-compose exec postgres sh -c \
 
 If you want to skip MinIO entirely and store files on disk (quick testing only, not recommended):
 
-**Edit `be/src/config/configuration.ts`:**
+**Edit `apps/be/src/config/configuration.ts`:**
 ```typescript
 s3: {
   enabled: process.env.S3_ENABLED !== 'false',
@@ -480,13 +480,13 @@ s3: {
 }
 ```
 
-**Set in `be/.env.local`:**
+**Set in `apps/be/.env.local`:**
 ```bash
 S3_ENABLED=false
 UPLOAD_DIR=./uploads
 ```
 
-Files will be saved to `be/uploads/` locally. This requires modifying the S3 service to check the flag; not recommended for production.
+Files will be saved to `apps/be/uploads/` locally. This requires modifying the S3 service to check the flag; not recommended for production.
 
 ---
 
@@ -611,7 +611,7 @@ curl http://192.168.1.100:3000/api/health
 
 ### Step 6: Configure Mobile App
 
-Update `fe/mobile/.env.local`:
+Update `apps/mobile/.env.local`:
 
 ```bash
 API_BASE_URL=http://192.168.1.100:3000
@@ -621,7 +621,7 @@ API_VERSION=v1
 **Rebuild mobile app after changing .env:**
 
 ```bash
-cd fe/mobile
+cd apps/mobile
 
 # Android
 npm run android
@@ -742,7 +742,7 @@ lsof -ti:5432 | xargs kill -9
 
 # Or use a different port in infra/.env
 POSTGRES_PORT=5433
-DATABASE_PORT=5433  # Update be/.env.local to match
+DATABASE_PORT=5433  # Update apps/be/.env.local to match
 ```
 
 #### Docker Compose Command Not Found
@@ -797,7 +797,7 @@ docker-compose ps
 psql -h localhost -p 5432 -U postgres -d sekar_db
 
 # Check backend .env matches docker-compose config
-cat be/.env.local | grep DATABASE_
+cat apps/be/.env.local | grep DATABASE_
 ```
 
 ### Backend
@@ -826,7 +826,7 @@ lsof -ti:3000 | xargs kill -9
 
 ```bash
 # Check backend .env
-cat be/.env.local | grep DATABASE_
+cat apps/be/.env.local | grep DATABASE_
 
 # Verify PostgreSQL is running
 docker-compose ps postgres  # Should show "Up"
@@ -847,8 +847,8 @@ docker-compose exec postgres sh -c \
   'AWS_ACCESS_KEY_ID=minioadmin AWS_SECRET_ACCESS_KEY=minioadmin \
    aws s3 mb s3://sekar-media-dev --endpoint-url http://minio:9000'
 
-# Verify bucket config in be/.env.local
-cat be/.env.local | grep AWS_
+# Verify bucket config in apps/be/.env.local
+cat apps/be/.env.local | grep AWS_
 ```
 
 ### Web Dashboard
@@ -856,8 +856,8 @@ cat be/.env.local | grep AWS_
 #### Cannot Start / Port Conflict
 
 ```bash
-# Check WEB_PORT in fe/web/.env.local
-cat fe/web/.env.local | grep WEB_PORT
+# Check WEB_PORT in apps/web/.env.local
+cat apps/web/.env.local | grep WEB_PORT
 
 # Try different port
 WEB_PORT=3002 npm run dev
@@ -869,8 +869,8 @@ WEB_PORT=3002 npm run dev
 # Verify backend is running
 curl http://localhost:3000/api/health
 
-# Check NEXT_PUBLIC_API_URL in fe/web/.env.local
-cat fe/web/.env.local | grep NEXT_PUBLIC_API_URL
+# Check NEXT_PUBLIC_API_URL in apps/web/.env.local
+cat apps/web/.env.local | grep NEXT_PUBLIC_API_URL
 
 # Should be: http://localhost:3000 (without /api/v1)
 ```
@@ -879,7 +879,7 @@ cat fe/web/.env.local | grep NEXT_PUBLIC_API_URL
 
 ```bash
 # Maps don't work, but dashboard still runs
-# To enable maps, add token to fe/web/.env.local
+# To enable maps, add token to apps/web/.env.local
 # Get from: https://console.cloud.google.com/google/maps-apis
 
 # Set in .env.local
@@ -902,8 +902,8 @@ npm start -- --reset-cache
 # Verify backend is running on port 3000
 curl http://localhost:3000/api/health
 
-# Check API_BASE_URL in fe/mobile/.env.local
-cat fe/mobile/.env.local | grep API_BASE_URL
+# Check API_BASE_URL in apps/mobile/.env.local
+cat apps/mobile/.env.local | grep API_BASE_URL
 
 # For emulator, should be: http://10.0.2.2:3000
 # For physical device: http://YOUR_IP:3000
@@ -914,10 +914,10 @@ cat fe/mobile/.env.local | grep API_BASE_URL
 
 ```bash
 # Clean Gradle cache
-cd fe/mobile/android && ./gradlew clean
+cd apps/mobile/android && ./gradlew clean
 
 # Rebuild
-cd fe/mobile && npm run android
+cd apps/mobile && npm run android
 
 # Or for all devices
 npm run android:all
@@ -996,8 +996,8 @@ Before starting development:
 - [ ] Test database: `psql -h localhost -p 5432 -U postgres -d sekar_db`
 - [ ] Access Adminer: http://localhost:8080 (login with postgres/postgres)
 - [ ] (Optional) Backend started: `cd be && npm run start:dev` (http://localhost:3000)
-- [ ] (Optional) Web started: `cd fe/web && npm run dev` (http://localhost:3001)
-- [ ] (Optional) Mobile Metro: `cd fe/mobile && npm start`
+- [ ] (Optional) Web started: `cd apps/web && npm run dev` (http://localhost:3001)
+- [ ] (Optional) Mobile Metro: `cd apps/mobile && npm start`
 - [ ] Test with `superadmin/12345678` (local) or `satgas1/12345678`
 
 For physical mobile device testing on WSL2, follow [WSL2 Network Setup](#wsl2-network-setup-physical-mobile-devices).

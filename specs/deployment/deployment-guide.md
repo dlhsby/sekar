@@ -73,7 +73,7 @@ The fastest path, from the repo root:
 
 This brings up local infra (PostgreSQL :5432, Adminer :8080, MinIO S3 :9000 + console :9001, Redis :16379) and runs the backend (`http://localhost:3000`, API docs `/api/v1/docs`) and web (`http://localhost:3001`). Test users use `Password123!` (e.g. `admin/Password123!`, `satgas1/Password123!`).
 
-**Two values you must fill** after `setup.sh`: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` in `fe/web/.env.local` and `API_BASE_URL` in `fe/mobile/.env.local` (see §B). Everything else defaults to local infra.
+**Two values you must fill** after `setup.sh`: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` in `apps/web/.env.local` and `API_BASE_URL` in `apps/mobile/.env.local` (see §B). Everything else defaults to local infra.
 
 → **Full detail** — infra services, per-workspace run, local MinIO media, WSL2 device networking, and local troubleshooting: **[`local-development.md`](local-development.md)**.
 
@@ -83,14 +83,14 @@ This brings up local infra (PostgreSQL :5432, Adminer :8080, MinIO S3 :9000 + co
 
 | Credential | Where to get it | Lands in (gitignored) | Needed for |
 |-----------|-----------------|-----------------------|-----------|
-| **Google Maps API key** | console.cloud.google.com/google/maps-apis | `fe/web/.env.local` `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Web maps (blank without it) |
-| **Google Maps key** | Google Cloud Console (Maps SDK) | `fe/mobile/.env.local` `GOOGLE_MAPS_API_KEY` | Mobile native maps |
-| **Firebase service account** | Firebase Console → Service accounts | `be/config/firebase-service-account.json` + `FCM_ENABLED=true` | Backend push sends |
-| **Android FCM** | Firebase → Add Android app `com.sekarapp` | `fe/mobile/android/app/google-services.json` | Android push |
-| **iOS FCM + APNs** | Firebase → Add iOS app + Apple Developer APNs key | `fe/mobile/ios/GoogleService-Info.plist` (+ APNs) | iOS push (needs Mac) |
+| **Google Maps API key** | console.cloud.google.com/google/maps-apis | `apps/web/.env.local` `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Web maps (blank without it) |
+| **Google Maps key** | Google Cloud Console (Maps SDK) | `apps/mobile/.env.local` `GOOGLE_MAPS_API_KEY` | Mobile native maps |
+| **Firebase service account** | Firebase Console → Service accounts | `apps/be/config/firebase-service-account.json` + `FCM_ENABLED=true` | Backend push sends |
+| **Android FCM** | Firebase → Add Android app `com.sekarapp` | `apps/mobile/android/app/google-services.json` | Android push |
+| **iOS FCM + APNs** | Firebase → Add iOS app + Apple Developer APNs key | `apps/mobile/ios/GoogleService-Info.plist` (+ APNs) | iOS push (needs Mac) |
 | **AWS S3 + IAM** | AWS Console (staging/prod media) | `.env.staging` / `.env.production` `AWS_*` | Media storage (dev/prod use MinIO) |
 
-→ **Step-by-step for every credential**, including the dev/staging/prod variance and the **security flag on the committed Maps key** (`fe/mobile/android/app/src/main/AndroidManifest.xml:49`): **[`credentials-setup.md`](credentials-setup.md)**.
+→ **Step-by-step for every credential**, including the dev/staging/prod variance and the **security flag on the committed Maps key** (`apps/mobile/android/app/src/main/AndroidManifest.xml:49`): **[`credentials-setup.md`](credentials-setup.md)**.
 
 ---
 
@@ -101,11 +101,11 @@ All three workspaces share one scheme, managed with **[dotenvx](https://dotenvx.
 **`.env.production`** = deploys, committed **encrypted** (every secret is `encrypted:…`
 ciphertext). The one real secret is the per-file private key in **`.env.keys`** (gitignored,
 **never committed**). Committed templates are `*.example`. Loaders: backend
-`be/src/config/load-env.ts` → `dotenvx.config()` (decrypts the chosen file at boot; plaintext
+`apps/be/src/config/load-env.ts` → `dotenvx.config()` (decrypts the chosen file at boot; plaintext
 `.env.local` passes through); web → `dotenvx run -f .env.<env> -- next …` (`npm run build:<env>` /
 `start:<env>`); mobile → `ENVFILE` in `babel.config.js`, release builds decrypt to a temp file
 (`scripts/decrypt-env.js`). **Backend production env = repo-root `./.env.production`**, not a
-`be/` file.
+`apps/be/` file.
 
 > **Build-time vs run-time:** `NEXT_PUBLIC_*` are compiled into the browser bundle when the `web` image builds — they must be the **public** URLs (through the proxy), not internal service names. Backend `DATABASE_HOST`/`REDIS_URL`/`AWS_ENDPOINT_URL` are overridden to the compose service names inside `docker-compose.prod.yml`, so you don't set those to localhost in deploys.
 
@@ -128,7 +128,7 @@ Authoritative deltas live in [ADR-028 addendum](../architecture/decisions/ADR-02
 - **Adminer (DB UI)** — `https://adminer.wahyutrip.com`, behind Caddy **HTTP basic-auth**
   (user `sekar`; bcrypt hash in `infra/Caddyfile.staging`). Adminer login: System *PostgreSQL*,
   Server pre-filled to the RDS endpoint, User `sekar`, Database `sekar_staging`, Password =
-  `DATABASE_PASSWORD` from the dotenvx-encrypted `be/.env.staging` (decrypt with
+  `DATABASE_PASSWORD` from the dotenvx-encrypted `apps/be/.env.staging` (decrypt with
   `cd be && DOTENV_PRIVATE_KEY_STAGING=$(aws --profile sekar --region ap-southeast-3 ssm
   get-parameter --name /sekar/staging/BE_DOTENV_PRIVATE_KEY --with-decryption --query
   Parameter.Value --output text) npx @dotenvx/dotenvx get DATABASE_PASSWORD -f .env.staging`).
@@ -150,21 +150,21 @@ Authoritative deltas live in [ADR-028 addendum](../architecture/decisions/ADR-02
     **restart** the caddy container after editing the box file — a plain reload is not enough.
 - **Apps:** `backend` + `web` + `docs` (ECR images) + a small `redis` container —
   [`infra/compose.staging.yml`](../../infra/compose.staging.yml), per-container memory limits.
-  - **`docs`** is the public user manual (Docusaurus static site, [`fe/docs/`](../../fe/docs)),
+  - **`docs`** is the public user manual (Docusaurus static site, [`apps/docs/`](../../apps/docs)),
     built into the `sekar-docs` ECR image by CI and served as static HTML by its bundled nginx.
     One-time setup: create the `sekar-docs` ECR repo, add the `ECR_DOCS` repo Variable, and add
     DNS A record `docs.sekar.wahyutrip.com → 16.79.124.63`. Caddy block in
     [`infra/Caddyfile.staging`](../../infra/Caddyfile.staging) is part of SEKAR's config
     and deployed with the SEKAR stack. No auth — anyone can read it. Content edits (markdown under
-    `fe/docs/docs/`) rebuild & redeploy on the next staging release (merge to `staging` / manual run).
+    `apps/docs/docs/`) rebuild & redeploy on the next staging release (merge to `staging` / manual run).
 - **DB:** `sekar_staging` database + `sekar` role on the **shared** RDS `dlhsby` (`DATABASE_SSL=true`).
 - **Media:** S3 `sekar-media-staging` via the **EC2 instance role** — no static AWS keys on the host.
 - **Secrets (dotenvx):** the backend's full staging config lives in the committed, **encrypted**
-  [`be/.env.staging`](../../be/.env.staging) baked into the image. The only thing the box needs
+  [`apps/be/.env.staging`](../../apps/be/.env.staging) baked into the image. The only thing the box needs
   at runtime is the private key to decrypt it — `DOTENV_PRIVATE_KEY_STAGING`, pulled from SSM
   (`/sekar/staging/BE_DOTENV_PRIVATE_KEY`) into `/opt/sekar/.env` by
   [`infra/seed-env-from-ssm.sh`](../../infra/seed-env-from-ssm.sh). Web's `NEXT_PUBLIC_*` are
-  decrypted from `fe/web/.env.staging` at **build** time (BuildKit secret, never in a layer).
+  decrypted from `apps/web/.env.staging` at **build** time (BuildKit secret, never in a layer).
 - **No SSH:** all box operations go through **SSM Run Command**.
 
 ### Routine deploys — GitHub Actions (preferred)
@@ -189,20 +189,20 @@ pinned to the SHA (recreates `sekar-caddy` too) → smoke test.
 
 Required GitHub **Variables**: `AWS_REGION`, `AWS_ROLE_ARN`, `ECR_BACKEND`, `ECR_WEB`,
 `EC2_INSTANCE_ID`, `RDS_INSTANCE_ID`. Required `staging`-environment **Secret**:
-`WEB_DOTENV_PRIVATE_KEY` (decrypts `fe/web/.env.staging` — incl. the Google Maps API key — at build).
+`WEB_DOTENV_PRIVATE_KEY` (decrypts `apps/web/.env.staging` — incl. the Google Maps API key — at build).
 
 ### First-time / manual deploy (mirrors what CI does)
 ```bash
-# 1. Build + push images. Web decrypts NEXT_PUBLIC_* from the encrypted fe/web/.env.staging
+# 1. Build + push images. Web decrypts NEXT_PUBLIC_* from the encrypted apps/web/.env.staging
 #    via dotenvx at build time; the private key is a BuildKit secret, never in a layer.
 aws ecr get-login-password --profile sekar --region ap-southeast-3 \
   | docker login --username AWS --password-stdin 659828096624.dkr.ecr.ap-southeast-3.amazonaws.com
-docker buildx build --platform linux/amd64 -f be/Dockerfile \
-  -t .../sekar-backend:staging --push be          # bakes the encrypted be/.env.staging
-docker buildx build --platform linux/amd64 -f fe/web/Dockerfile \
+docker buildx build --platform linux/amd64 -f apps/be/Dockerfile \
+  -t .../sekar-backend:staging --push be          # bakes the encrypted apps/be/.env.staging
+docker buildx build --platform linux/amd64 -f apps/web/Dockerfile \
   --build-arg DOTENV_ENV=staging \
   --secret id=dotenv_private_key,env=WEB_DOTENV_PRIVATE_KEY \
-  -t .../sekar-web:staging --push fe/web
+  -t .../sekar-web:staging --push apps/web
 
 # 2. On the box (via SSM, as ec2-user): seed the dotenvx key, ensure edge net, pull, up
 bash ~/sekar/infra/seed-env-from-ssm.sh          # writes /opt/sekar/.env (the private key only)
@@ -291,7 +291,7 @@ sudo chown "$USER" infra/certs/*.pem
 ```
 Renewal: re-copy after `certbot renew` (the `certbot-webroot` volume + the Nginx `/.well-known/acme-challenge/` location support webroot renewal without downtime). Edit `server_name` in `infra/nginx.conf` to your domain (both the app and `docs.` server blocks), and add DNS A records for **both** hostnames.
 
-> **Public docs site:** the `docs` service in `docker-compose.prod.yml` serves the user manual ([`fe/docs/`](../../fe/docs)) as static HTML, fronted by Nginx at `docs.<your-domain>`. Rebuild its image with your real domain via the `DOCS_URL`/`APP_URL` build args (and set web's `NEXT_PUBLIC_DOCS_URL` to match). To avoid a second subdomain/cert SAN entirely, use the **path-routed** alternative documented inline in [`infra/nginx.conf`](../../infra/nginx.conf) (serve under `sekar.example.com/docs` with `DOCS_BASE_URL=/docs/`).
+> **Public docs site:** the `docs` service in `docker-compose.prod.yml` serves the user manual ([`apps/docs/`](../../apps/docs)) as static HTML, fronted by Nginx at `docs.<your-domain>`. Rebuild its image with your real domain via the `DOCS_URL`/`APP_URL` build args (and set web's `NEXT_PUBLIC_DOCS_URL` to match). To avoid a second subdomain/cert SAN entirely, use the **path-routed** alternative documented inline in [`infra/nginx.conf`](../../infra/nginx.conf) (serve under `sekar.example.com/docs` with `DOCS_BASE_URL=/docs/`).
 
 ### E.5 Build & start the stack
 

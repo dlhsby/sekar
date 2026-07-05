@@ -37,7 +37,7 @@
 
 ## A. Login Page Update
 
-**File:** `fe/web/src/app/(auth)/login/page.tsx`
+**File:** `apps/web/src/app/(auth)/login/page.tsx`
 
 ### Changes
 
@@ -72,8 +72,8 @@ export interface LoginRequest {
 ### B1. Profile Picture in User Form
 
 **Files:**
-- `fe/web/src/app/(dashboard)/users/[id]/page.tsx`
-- `fe/web/src/app/(dashboard)/users/new/page.tsx`
+- `apps/web/src/app/(dashboard)/users/[id]/page.tsx`
+- `apps/web/src/app/(dashboard)/users/new/page.tsx`
 
 Add profile picture upload field:
 
@@ -131,7 +131,7 @@ This calls `POST /users/:userId/areas` to persist assignments.
 
 ### C1. Profile Pictures in Map Markers
 
-**File:** `fe/web/src/components/maps/MonitoringMap.tsx`
+**File:** `apps/web/src/components/maps/MonitoringMap.tsx`
 
 Show user profile picture in Google Maps markers:
 
@@ -150,7 +150,7 @@ if (user.profile_picture_url) {
 
 ### C2. Multi-Area Filter for Korlap
 
-**File:** `fe/web/src/components/monitoring/MonitoringSidePanel.tsx`
+**File:** `apps/web/src/components/monitoring/MonitoringSidePanel.tsx`
 
 For korlap with multiple areas, show multi-select area filter:
 
@@ -180,7 +180,7 @@ Grant admin_data users access to the monitoring page with rayon-level scope (sam
 
 ### C4. Profile Picture in User Detail Panel
 
-**File:** `fe/web/src/components/monitoring/UserDetailPanel.tsx`
+**File:** `apps/web/src/components/monitoring/UserDetailPanel.tsx`
 
 Show user's profile picture in the detail panel header:
 
@@ -202,7 +202,7 @@ Show user's profile picture in the detail panel header:
 
 ### D1. Overtime List Enhancement
 
-**File:** `fe/web/src/app/(dashboard)/overtime/page.tsx`
+**File:** `apps/web/src/app/(dashboard)/overtime/page.tsx`
 
 Show overtime records with linked shift data (clock-in/out times):
 
@@ -232,7 +232,7 @@ Show linked shift info and mandatory activity in overtime detail:
 
 ### E1. Task Detail Page
 
-**File:** `fe/web/src/app/(dashboard)/tasks/[id]/page.tsx`
+**File:** `apps/web/src/app/(dashboard)/tasks/[id]/page.tsx`
 
 Add "Riwayat Perubahan" section with vertical timeline:
 
@@ -257,7 +257,7 @@ Add "Riwayat Perubahan" section with vertical timeline:
 
 ### E2. Activity Detail Page
 
-**File:** `fe/web/src/app/(dashboard)/activities/[id]/page.tsx`
+**File:** `apps/web/src/app/(dashboard)/activities/[id]/page.tsx`
 
 Same pattern — show approval/rejection history timeline.
 
@@ -286,7 +286,7 @@ Same pattern — show approval/rejection history timeline.
 
 ## H. API Client Updates
 
-**File:** `fe/web/src/lib/api/`
+**File:** `apps/web/src/lib/api/`
 
 ### New API Functions
 

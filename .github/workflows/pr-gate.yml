@@ -33,17 +33,17 @@ jobs:
         with:
           filters: |
             backend:
-              - 'be/**'
+              - 'apps/be/**'
               - '.github/workflows/backend-quality.yml'
               - '.github/workflows/pr-gate.yml'
             web:
-              - 'fe/web/**'
+              - 'apps/web/**'
               - 'specs/ui-ux/tokens.json'
               - 'tools/eslint-plugin-sekar-design/**'
               - '.github/workflows/web-quality.yml'
               - '.github/workflows/pr-gate.yml'
             mobile:
-              - 'fe/mobile/**'
+              - 'apps/mobile/**'
               - 'specs/ui-ux/tokens.json'
               - 'scripts/build-tokens.ts'
               - 'tools/eslint-plugin-sekar-design/**'

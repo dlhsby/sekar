@@ -10,7 +10,7 @@
 ### Code Readiness
 
 - [ ] All Phase 5 features merged to main branch
-- [ ] All unit tests passing (`npm test` in be/, fe/mobile/, fe/web/)
+- [ ] All unit tests passing (`npm test` in apps/be/, apps/mobile/, apps/web/)
 - [ ] Backend coverage >90% statements
 - [ ] Mobile coverage >80% statements
 - [ ] Web coverage >90% statements

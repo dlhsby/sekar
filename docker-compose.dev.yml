@@ -7,13 +7,13 @@ services:
   # Backend API (Development mode with hot reload)
   backend:
     build:
-      context: ./be
+      context: ./apps/be
       dockerfile: Dockerfile.dev   # single-stage; no build target
     environment:
       NODE_ENV: development
       DATABASE_HOST: postgres
     volumes:
-      - ./be:/app
+      - ./apps/be:/app
       - /app/node_modules
       - /app/dist
     command: npm run start:dev

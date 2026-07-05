@@ -377,10 +377,10 @@ npm:               v10.0.0+
 - ✅ Added navigation param type to WorkerTabParamList
 - **Test Results:** 62 tests passing
 - **Files Modified:**
-  - `fe/mobile/src/components/worker/ReportListItem.tsx`
-  - `fe/mobile/src/screens/worker/ReportsListScreen.tsx`
-  - `fe/mobile/src/navigation/WorkerNavigator.tsx`
-  - `fe/mobile/src/types/navigation.types.ts`
+  - `apps/mobile/src/components/worker/ReportListItem.tsx`
+  - `apps/mobile/src/screens/worker/ReportsListScreen.tsx`
+  - `apps/mobile/src/navigation/WorkerNavigator.tsx`
+  - `apps/mobile/src/types/navigation.types.ts`
 
 ### ✅ Feature 2: Change Password - COMPLETE
 
@@ -392,12 +392,12 @@ npm:               v10.0.0+
 - ✅ Custom DTO validator for password difference
 - **Test Results:** 27 tests passing (2 controller + 25 service tests)
 - **Files Created:**
-  - `be/src/modules/users/dto/change-password.dto.ts`
+  - `apps/be/src/modules/users/dto/change-password.dto.ts`
 - **Files Modified:**
-  - `be/src/modules/users/users.controller.ts`
-  - `be/src/modules/users/users.service.ts`
-  - `be/src/modules/users/users.controller.spec.ts`
-  - `be/src/modules/users/users.service.spec.ts`
+  - `apps/be/src/modules/users/users.controller.ts`
+  - `apps/be/src/modules/users/users.service.ts`
+  - `apps/be/src/modules/users/users.controller.spec.ts`
+  - `apps/be/src/modules/users/users.service.spec.ts`
 
 **Mobile:** ✅ IMPLEMENTED
 - ✅ Created `usersApi.changePassword()` function
@@ -409,16 +409,16 @@ npm:               v10.0.0+
 - ✅ Loading states and error handling
 - **Test Results:** 70 tests passing (26 modal + 5 API + 39 screen tests)
 - **Files Created:**
-  - `fe/mobile/src/services/api/usersApi.ts`
-  - `fe/mobile/src/components/common/ChangePasswordModal.tsx`
-  - `fe/mobile/src/services/api/__tests__/usersApi.test.ts`
-  - `fe/mobile/src/components/common/__tests__/ChangePasswordModal.test.tsx`
+  - `apps/mobile/src/services/api/usersApi.ts`
+  - `apps/mobile/src/components/common/ChangePasswordModal.tsx`
+  - `apps/mobile/src/services/api/__tests__/usersApi.test.ts`
+  - `apps/mobile/src/components/common/__tests__/ChangePasswordModal.test.tsx`
 - **Files Modified:**
-  - `fe/mobile/src/screens/worker/ProfileScreen.tsx`
-  - `fe/mobile/src/screens/supervisor/ProfileScreen.tsx`
-  - `fe/mobile/src/types/api.types.ts`
-  - `fe/mobile/src/services/api/index.ts`
-  - `fe/mobile/src/components/common/index.ts`
+  - `apps/mobile/src/screens/worker/ProfileScreen.tsx`
+  - `apps/mobile/src/screens/supervisor/ProfileScreen.tsx`
+  - `apps/mobile/src/types/api.types.ts`
+  - `apps/mobile/src/services/api/index.ts`
+  - `apps/mobile/src/components/common/index.ts`
 
 **Total Implementation Time:** ~8 hours
 **Total Tests Added:** 159 tests (27 backend + 132 mobile)

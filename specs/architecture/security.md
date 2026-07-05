@@ -423,7 +423,7 @@ Rate limiting prevents brute force attacks and API abuse by limiting the number 
 
 #### Global Configuration
 
-**File:** `be/src/app.module.ts`
+**File:** `apps/be/src/app.module.ts`
 
 ```typescript
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
@@ -453,7 +453,7 @@ export class AppModule {}
 
 #### Endpoint-Specific Rate Limits
 
-**File:** `be/src/modules/auth/auth.controller.ts`
+**File:** `apps/be/src/modules/auth/auth.controller.ts`
 
 ```typescript
 import { Throttle } from '@nestjs/throttler';
@@ -516,7 +516,7 @@ Retry-After: 45
 For multi-instance deployments, use Redis for shared rate limit state:
 
 ```typescript
-// File: be/src/config/throttler.config.ts
+// File: apps/be/src/config/throttler.config.ts
 import { ThrottlerModuleOptions } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
 
@@ -841,7 +841,7 @@ if (JailMonkey.isJailBroken()) {
 | Web | **0** | 17 moderate (dev-only) | ✅ Secure (ships clean) |
 | Mobile | (pending — see below) | — | ⏳ |
 
-**Fixed this pass (were HIGH, runtime):** the socket.io / Node-WS stack CVEs — `ws` memory-exhaustion DoS (GHSA, `ws` 8.x), `engine.io`/`engine.io-client` (via `ws`), `socket.io-adapter`, and `form-data` CRLF injection — resolved on backend + web via in-range `npm audit fix`. Backend `@nestjs/swagger`'s transitive `js-yaml@4.1.1` (quadratic-DoS, GHSA-h67p-54hq-rp68, `<=4.1.1`) pinned to `4.2.0` via a scoped `overrides` entry in `be/package.json`.
+**Fixed this pass (were HIGH, runtime):** the socket.io / Node-WS stack CVEs — `ws` memory-exhaustion DoS (GHSA, `ws` 8.x), `engine.io`/`engine.io-client` (via `ws`), `socket.io-adapter`, and `form-data` CRLF injection — resolved on backend + web via in-range `npm audit fix`. Backend `@nestjs/swagger`'s transitive `js-yaml@4.1.1` (quadratic-DoS, GHSA-h67p-54hq-rp68, `<=4.1.1`) pinned to `4.2.0` via a scoped `overrides` entry in `apps/be/package.json`.
 
 ### Known Issues (accepted)
 

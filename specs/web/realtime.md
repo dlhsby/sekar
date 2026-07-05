@@ -248,7 +248,7 @@ export interface TaskEvent {
 > **Deployed change (Phase 2D, Mar 2026):** SEKAR uses **Google Maps** for the monitoring map with full polygon boundaries, real-time worker markers, and search. react-leaflet was prototyped but replaced.
 
 ```typescript
-// fe/web/src/components/monitoring/MonitoringMap.tsx
+// apps/web/src/components/monitoring/MonitoringMap.tsx
 'use client';
 
 import { useCallback, useState } from 'react';

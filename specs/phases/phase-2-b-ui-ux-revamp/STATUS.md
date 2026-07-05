@@ -23,7 +23,7 @@
 ## Phase 1: Token Updates
 
 ### Web Token Updates (globals.css)
-- [x] **CRITICAL:** Update --nb-primary: #0066CC → #7FBC8C (file: `fe/web/src/app/globals.css`)
+- [x] **CRITICAL:** Update --nb-primary: #0066CC → #7FBC8C (file: `apps/web/src/app/globals.css`)
 - [x] Add --nb-sidebar: #1A4D2E
 - [x] Add --nb-sidebar-hover: #2D5233
 - [x] Add --nb-sidebar-active: #0F3520
@@ -266,17 +266,17 @@
 ### After Each Change
 ```bash
 # Web component changes
-cd fe/web && npm test && npm run lint
+cd apps/web && npm test && npm run lint
 
 # Mobile component changes
-cd fe/mobile && npm test && npm run lint
+cd apps/mobile && npm test && npm run lint
 ```
 
 ### After Milestone Completion
 ```bash
 # Full test suite
-cd fe/web && npm test && npm run build && npm run test:e2e
-cd fe/mobile && npm test
+cd apps/web && npm test && npm run build && npm run test:e2e
+cd apps/mobile && npm test
 ```
 
 ### Coverage Requirements
@@ -297,8 +297,8 @@ git checkout HEAD~1 -- <file-path>
 git checkout -- .
 
 # Full rollback to main
-git checkout main -- fe/web/src/components/ui/
-git checkout main -- fe/mobile/src/components/nb/
+git checkout main -- apps/web/src/components/ui/
+git checkout main -- apps/mobile/src/components/nb/
 ```
 
 ---

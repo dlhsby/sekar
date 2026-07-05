@@ -86,7 +86,7 @@ The web dashboard primarily serves **management and admin roles**: top_managemen
 
 ## Navigation Sidebar Updates
 
-**File:** `fe/web/src/components/layout/Sidebar.tsx`
+**File:** `apps/web/src/components/layout/Sidebar.tsx`
 
 ```typescript
 const SIDEBAR_ITEMS: Record<string, SidebarItem[]> = {
@@ -131,7 +131,7 @@ const SIDEBAR_ITEMS: Record<string, SidebarItem[]> = {
 
 ## /activities Page (renamed from /reports)
 
-**File:** `fe/web/src/app/(dashboard)/activities/page.tsx`
+**File:** `apps/web/src/app/(dashboard)/activities/page.tsx`
 
 ### Changes from /reports:
 - Route: `/reports` → `/activities`
@@ -154,7 +154,7 @@ const SIDEBAR_ITEMS: Record<string, SidebarItem[]> = {
 
 ## /overtime Page (NEW)
 
-**File:** `fe/web/src/app/(dashboard)/overtime/page.tsx`
+**File:** `apps/web/src/app/(dashboard)/overtime/page.tsx`
 
 ### Features:
 - Data table: Date (from start_datetime), User, Area, Time Range (start_datetime - end_datetime), Status, Activity Type
@@ -276,7 +276,7 @@ const ROUTE_ACCESS: Record<string, string[]> = {
 
 ## Type Updates
 
-**File:** `fe/web/src/types/models.ts`
+**File:** `apps/web/src/types/models.ts`
 
 ```typescript
 export type UserRole =
@@ -371,7 +371,7 @@ export interface Overtime {
 
 ## API Client Updates
 
-**File:** `fe/web/src/lib/api/`
+**File:** `apps/web/src/lib/api/`
 
 ### Rename: reports.ts → activities.ts
 

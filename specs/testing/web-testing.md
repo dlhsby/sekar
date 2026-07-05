@@ -66,7 +66,7 @@
 ### Installation
 
 ```bash
-cd fe/web
+cd apps/web
 
 # Install dependencies
 npm install
@@ -105,7 +105,7 @@ npm run lint
 ### Directory Structure
 
 ```
-fe/web/
+apps/web/
 ├── src/
 │   ├── lib/
 │   │   ├── api/__tests__/          # 10 API test files (103 tests)
@@ -807,10 +807,10 @@ lsof -ti:3001 | xargs kill -9
 ## References
 
 ### Documentation
-- **Jest Config:** `/fe/web/jest.config.ts`
-- **Playwright Config:** `/fe/web/playwright.config.ts`
+- **Jest Config:** `/apps/web/jest.config.ts`
+- **Playwright Config:** `/apps/web/playwright.config.ts`
 - **Testing Strategy:** `/specs/testing/strategy.md`
-- **Web Guide:** `/fe/web/CLAUDE.md`
+- **Web Guide:** `/apps/web/CLAUDE.md`
 - **Project Status:** `/specs/COMPLETION_STATUS.md`
 
 ### External Resources

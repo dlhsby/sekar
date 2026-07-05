@@ -12,7 +12,7 @@
 | Fact | Updated value |
 |------|---------------|
 | Pages (current) | 21 (+1 config); Phase 4 adds **4 NEW** pages (forgot-password, notifications, import, export) → **26+ total** |
-| PWA | **Shipped in Phase 3 M1-R 3-R4** — manifest, service worker, install prompt, offline shell (`fe/web/src/app/offline/page.tsx`), push subscription scaffold, mobile-web `ResponsiveShell`. Phase 4 polish: Lighthouse audit, OG/SEO, bundle analysis. |
+| PWA | **Shipped in Phase 3 M1-R 3-R4** — manifest, service worker, install prompt, offline shell (`apps/web/src/app/offline/page.tsx`), push subscription scaffold, mobile-web `ResponsiveShell`. Phase 4 polish: Lighthouse audit, OG/SEO, bundle analysis. |
 | Notifications UI | None — added in 4-3 + 4-R |
 | Export | None — added in 4-5 |
 | KMZ import | Backend endpoints exist; no web UI — added in 4-5 |
@@ -58,14 +58,14 @@ Per [`ui-ux.md § 2.3`](./ui-ux.md#2-3-sidebar-redesign-web):
 - Per-item monospace count badge
 - Bottom-pinned user "me" card replacing floating menu
 
-**File:** `fe/web/src/components/nb/Sidebar.tsx` (or current sidebar component).
+**File:** `apps/web/src/components/nb/Sidebar.tsx` (or current sidebar component).
 
 ### Brand assets in web
 
-- `fe/web/public/brand/sekar-mark.svg` + raster derivatives — sidebar + favicon
-- `fe/web/public/favicon.ico` + `apple-touch-icon.png` — pinwheel
-- `fe/web/public/manifest.webmanifest` — `theme_color: #7FBC8C`, maskable icon = pinwheel, icons 192 + 512
-- `fe/web/public/empty/illo-*.svg` — 6 illustrations, wired via web `NBEmptyState`
+- `apps/web/public/brand/sekar-mark.svg` + raster derivatives — sidebar + favicon
+- `apps/web/public/favicon.ico` + `apple-touch-icon.png` — pinwheel
+- `apps/web/public/manifest.webmanifest` — `theme_color: #7FBC8C`, maskable icon = pinwheel, icons 192 + 512
+- `apps/web/public/empty/illo-*.svg` — 6 illustrations, wired via web `NBEmptyState`
 
 ---
 
@@ -97,11 +97,11 @@ Per [`ui-ux.md § 2.3`](./ui-ux.md#2-3-sidebar-redesign-web):
 
 | Component | File | Description |
 |-----------|------|-------------|
-| `ExportDialog` | `fe/web/src/components/nb/ExportDialog.tsx` | Modal dialog for configuring and triggering exports (entity type, format, date range, filters) |
-| `ImportWizard` | `fe/web/src/components/nb/ImportWizard.tsx` | 3-step wizard: **upload** (drag & drop) → **validate** (preview table with row-level status) → **confirm** (commit import) |
-| `NotificationBell` | `fe/web/src/components/nb/NotificationBell.tsx` | Bell icon with unread count badge; click opens `NotificationPanel` popover |
-| `NotificationPanel` | `fe/web/src/components/nb/NotificationPanel.tsx` | Popover showing last 5 unread notifications with "Lihat Semua" link to `/dashboard/notifications` |
-| `ConnectivityBanner` | `fe/web/src/components/nb/ConnectivityBanner.tsx` | Top-of-page banner shown when API is unreachable; auto-dismisses on recovery |
+| `ExportDialog` | `apps/web/src/components/nb/ExportDialog.tsx` | Modal dialog for configuring and triggering exports (entity type, format, date range, filters) |
+| `ImportWizard` | `apps/web/src/components/nb/ImportWizard.tsx` | 3-step wizard: **upload** (drag & drop) → **validate** (preview table with row-level status) → **confirm** (commit import) |
+| `NotificationBell` | `apps/web/src/components/nb/NotificationBell.tsx` | Bell icon with unread count badge; click opens `NotificationPanel` popover |
+| `NotificationPanel` | `apps/web/src/components/nb/NotificationPanel.tsx` | Popover showing last 5 unread notifications with "Lihat Semua" link to `/dashboard/notifications` |
+| `ConnectivityBanner` | `apps/web/src/components/nb/ConnectivityBanner.tsx` | Top-of-page banner shown when API is unreachable; auto-dismisses on recovery |
 
 ### Data Fetching Pattern
 
@@ -119,8 +119,8 @@ Per [`ui-ux.md § 2.3`](./ui-ux.md#2-3-sidebar-redesign-web):
 
 ## Auth Interceptor
 
-- **Next.js middleware** (`fe/web/src/middleware.ts`): checks the access token on every request to protected routes (`/dashboard/*`); redirects to `/login` if the token is absent, expired, AND a refresh attempt with the httpOnly cookie fails
-- **Client-side fetch wrapper** (`fe/web/src/lib/api/fetchWithAuth.ts`): on 401 response → calls `POST /auth/refresh` → retries the original request with the new access token
+- **Next.js middleware** (`apps/web/src/middleware.ts`): checks the access token on every request to protected routes (`/dashboard/*`); redirects to `/login` if the token is absent, expired, AND a refresh attempt with the httpOnly cookie fails
+- **Client-side fetch wrapper** (`apps/web/src/lib/api/fetchWithAuth.ts`): on 401 response → calls `POST /auth/refresh` → retries the original request with the new access token
 - **Refresh token storage:** stored in an **httpOnly cookie** (set by the backend `Set-Cookie` response header); inaccessible to JavaScript — mitigates XSS token theft
 - **Access token storage:** held **in memory only** (React context / module-level variable) — never written to `localStorage` or `sessionStorage`
 - **Mutex for concurrent refresh:** a module-level `Promise` reference ensures only one refresh request is in-flight at a time; concurrent failed requests are queued and resolved after the single refresh completes
@@ -131,7 +131,7 @@ Per [`ui-ux.md § 2.3`](./ui-ux.md#2-3-sidebar-redesign-web):
 
 ### A1. Route
 
-**File:** `fe/web/src/app/(dashboard)/import/page.tsx`
+**File:** `apps/web/src/app/(dashboard)/import/page.tsx`
 
 ### A2. Layout
 
@@ -181,7 +181,7 @@ Per [`ui-ux.md § 2.3`](./ui-ux.md#2-3-sidebar-redesign-web):
 
 ### B1. Route
 
-**File:** `fe/web/src/app/(dashboard)/export/page.tsx`
+**File:** `apps/web/src/app/(dashboard)/export/page.tsx`
 
 ### B2. Layout
 
@@ -239,7 +239,7 @@ Per [`ui-ux.md § 2.3`](./ui-ux.md#2-3-sidebar-redesign-web):
 
 ### C1. Route
 
-**File:** `fe/web/src/app/(dashboard)/import/csv/page.tsx`
+**File:** `apps/web/src/app/(dashboard)/import/csv/page.tsx`
 
 ### C2. Flow
 
@@ -256,7 +256,7 @@ Per [`ui-ux.md § 2.3`](./ui-ux.md#2-3-sidebar-redesign-web):
 
 ### D1. Notification Bell
 
-**File:** `fe/web/src/components/nb/NBNotificationBell.tsx`
+**File:** `apps/web/src/components/nb/NBNotificationBell.tsx`
 
 - Bell icon in dashboard header nav bar
 - Unread count badge (red circle with number, max "99+")
@@ -266,7 +266,7 @@ Per [`ui-ux.md § 2.3`](./ui-ux.md#2-3-sidebar-redesign-web):
 
 ### D2. Notifications Page
 
-**File:** `fe/web/src/app/(dashboard)/notifications/page.tsx`
+**File:** `apps/web/src/app/(dashboard)/notifications/page.tsx`
 
 ```
 ┌─────────────────────────────────────────┐
@@ -330,7 +330,7 @@ Visible on every authenticated dashboard route. The kecamatan-only `(kecamatan)`
 
 ## D-OFFLINE. Web offline behavior matrix
 
-Web is a PWA with a service-worker offline shell shipped in Phase 3 sub-phase 3-R4. The offline page (`fe/web/src/app/offline/page.tsx`) already exists. Phase 4 extends it with the same `OfflineScreen` aesthetic as mobile (illo-offline + retry button) and a per-route behavior matrix:
+Web is a PWA with a service-worker offline shell shipped in Phase 3 sub-phase 3-R4. The offline page (`apps/web/src/app/offline/page.tsx`) already exists. Phase 4 extends it with the same `OfflineScreen` aesthetic as mobile (illo-offline + retry button) and a per-route behavior matrix:
 
 | Route | NO_INTERNET behavior | SERVER_UNREACHABLE behavior |
 |-------|---------------------|------------------------------|
@@ -370,7 +370,7 @@ Web is a PWA with a service-worker offline shell shipped in Phase 3 sub-phase 3-
 
 ### E1. Web App Manifest (HISTORICAL — see Phase 3 sub-phase 3-R4 for canonical implementation)
 
-**File:** `fe/web/src/app/manifest.ts`
+**File:** `apps/web/src/app/manifest.ts`
 
 ```typescript
 export default function manifest() {
@@ -392,7 +392,7 @@ export default function manifest() {
 
 ### E2. Service Worker (HISTORICAL — see Phase 3 sub-phase 3-R4 for canonical implementation)
 
-**File:** `fe/web/public/sw.js`
+**File:** `apps/web/public/sw.js`
 
 > **Implementation note:** Use a hand-written `sw.js` service worker for precise caching control rather than `next-pwa`, which adds unnecessary abstraction. The service worker handles offline page shell caching and API response caching for GET requests only.
 
@@ -412,7 +412,7 @@ export default function manifest() {
 
 ### F1. Root Layout
 
-**File:** `fe/web/src/app/layout.tsx`
+**File:** `apps/web/src/app/layout.tsx`
 
 ```typescript
 export const metadata: Metadata = {
@@ -453,7 +453,7 @@ export const metadata: Metadata = {
 
 ### G1. Analysis Setup
 
-**File:** `fe/web/next.config.ts`
+**File:** `apps/web/next.config.ts`
 
 ```typescript
 const withBundleAnalyzer = require('@next/bundle-analyzer')({
@@ -496,7 +496,7 @@ Run: `ANALYZE=true npm run build`
 
 ### H1. Empty States
 
-**File:** `fe/web/src/components/nb/NBEmptyState.tsx`
+**File:** `apps/web/src/components/nb/NBEmptyState.tsx`
 
 ```typescript
 interface NBEmptyStateProps {
@@ -514,7 +514,7 @@ Each variant has:
 
 ### H2. Loading Skeletons
 
-**File:** `fe/web/src/components/nb/NBSkeleton.tsx`
+**File:** `apps/web/src/components/nb/NBSkeleton.tsx`
 
 Skeleton variants:
 - `NBTableSkeleton` — 5 rows × N columns with pulsing animation
@@ -606,7 +606,7 @@ All 24+ pages must pass:
 
 ### J1. Android App Links
 
-**File:** `fe/web/public/.well-known/assetlinks.json`
+**File:** `apps/web/public/.well-known/assetlinks.json`
 
 ```json
 [{
@@ -624,7 +624,7 @@ All 24+ pages must pass:
 
 ### J2. iOS Universal Links (Phase 5)
 
-**File:** `fe/web/public/.well-known/apple-app-site-association`
+**File:** `apps/web/public/.well-known/apple-app-site-association`
 
 - Reserved for Phase 5 iOS support
 - Will contain app ID and path patterns for Universal Links

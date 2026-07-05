@@ -49,7 +49,7 @@ This document contains implementation reviews for Phase 2D Real-Time Monitoring 
 
 | # | Severity | File | Issue | Fix |
 |---|----------|------|-------|-----|
-| C-1 | HIGH | `fe/web/src/lib/api/__tests__/monitoring.test.ts`, `.tsx`, `page.test.tsx` | All 3 web monitoring test files use outdated Phase 2C data shapes | Rewrote tests for Phase 2D endpoints and response shapes (33 tests) |
+| C-1 | HIGH | `apps/web/src/lib/api/__tests__/monitoring.test.ts`, `.tsx`, `page.test.tsx` | All 3 web monitoring test files use outdated Phase 2C data shapes | Rewrote tests for Phase 2D endpoints and response shapes (33 tests) |
 | C-2 | HIGH | `monitoring/page.tsx` | WebSocket connects without JWT auth token | Added `getCookie('access_token')` and `auth: { token }` to socket.io options |
 | C-3 | MEDIUM | 6 new test files | No unit tests for 6 new web monitoring components | Created tests: StatusCard (25), UserListItem (24), MonitoringSidePanel (27), UserDetailPanel (31), LocationTimeline (27), MonitoringMap (15) — 139 tests total |
 | C-4 | MEDIUM | `MapDashboardScreen.tsx`, `monitoringSlice.ts` | Mobile WebSocket not connected to MapDashboardScreen (polling only) | Added useEffect subscribing to `user:location` and `user:status-changed` events, dispatching `updateLiveUser` |
@@ -85,11 +85,11 @@ cd be && npm test
 ✅ 1,095 tests passing (64 suites)
 
 # Mobile
-cd fe/mobile && npm test
+cd apps/mobile && npm test
 ✅ 3,493 tests passing (3,281 + 212 from 2D-8 mobile review)
 
 # Web component tests
-cd fe/web && npm test
+cd apps/web && npm test
 ✅ 139 new monitoring component tests passing
 ```
 
@@ -140,7 +140,7 @@ cd fe/web && npm test
 ### Verification Results
 
 ```bash
-cd fe/mobile && npm test
+cd apps/mobile && npm test
 ✅ 142 test suites, 3,493 tests passing, 0 failures
 ```
 

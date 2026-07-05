@@ -38,7 +38,7 @@ This document provides complete specifications for all mobile application screen
 
 ```yaml
 route: Login
-file: fe/mobile/src/screens/auth/LoginScreen.tsx
+file: apps/mobile/src/screens/auth/LoginScreen.tsx
 compliance: 70%
 priority: P1
 
@@ -131,7 +131,7 @@ accessibility:
 
 ```yaml
 route: Register
-file: fe/mobile/src/screens/auth/RegisterScreen.tsx
+file: apps/mobile/src/screens/auth/RegisterScreen.tsx
 compliance: 70%
 priority: P1
 
@@ -174,7 +174,7 @@ accessibility:
 
 ```yaml
 route: WorkerHome
-file: fe/mobile/src/screens/worker/WorkerHomeScreen.tsx
+file: apps/mobile/src/screens/worker/WorkerHomeScreen.tsx
 compliance: 70%
 priority: P1
 
@@ -256,7 +256,7 @@ accessibility:
 
 ```yaml
 route: ClockInOut
-file: fe/mobile/src/screens/worker/ClockInOutScreen.tsx
+file: apps/mobile/src/screens/worker/ClockInOutScreen.tsx
 compliance: 75%
 priority: P0
 
@@ -380,7 +380,7 @@ accessibility:
 
 ```yaml
 route: ReportSubmission
-file: fe/mobile/src/screens/worker/ReportSubmissionScreen.tsx
+file: apps/mobile/src/screens/worker/ReportSubmissionScreen.tsx
 compliance: 70%
 priority: P1
 
@@ -470,7 +470,7 @@ accessibility:
 
 ```yaml
 route: WorkReports
-file: fe/mobile/src/screens/worker/WorkReportsScreen.tsx
+file: apps/mobile/src/screens/worker/WorkReportsScreen.tsx
 compliance: 70%
 priority: P2
 
@@ -535,7 +535,7 @@ token_updates:
 
 ```yaml
 route: LocationTracking
-file: fe/mobile/src/screens/worker/LocationTrackingScreen.tsx
+file: apps/mobile/src/screens/worker/LocationTrackingScreen.tsx
 compliance: 65%
 priority: P2
 
@@ -603,7 +603,7 @@ accessibility:
 
 ```yaml
 route: WorkerProfile
-file: fe/mobile/src/screens/worker/WorkerProfileScreen.tsx
+file: apps/mobile/src/screens/worker/WorkerProfileScreen.tsx
 compliance: 75%
 priority: P2
 
@@ -684,7 +684,7 @@ token_updates:
 
 ```yaml
 route: SupervisorMap
-file: fe/mobile/src/screens/supervisor/SupervisorMapScreen.tsx
+file: apps/mobile/src/screens/supervisor/SupervisorMapScreen.tsx
 compliance: 60%
 priority: P1
 
@@ -773,7 +773,7 @@ accessibility:
 
 ```yaml
 route: SupervisorReports
-file: fe/mobile/src/screens/supervisor/SupervisorReportsScreen.tsx
+file: apps/mobile/src/screens/supervisor/SupervisorReportsScreen.tsx
 compliance: 70%
 priority: P2
 
@@ -830,7 +830,7 @@ token_updates:
 
 ```yaml
 route: SupervisorReportDetail
-file: fe/mobile/src/screens/supervisor/SupervisorReportDetailScreen.tsx
+file: apps/mobile/src/screens/supervisor/SupervisorReportDetailScreen.tsx
 compliance: 70%
 priority: P2
 
@@ -903,7 +903,7 @@ token_updates:
 
 ```yaml
 route: SupervisorAttendance
-file: fe/mobile/src/screens/supervisor/SupervisorAttendanceScreen.tsx
+file: apps/mobile/src/screens/supervisor/SupervisorAttendanceScreen.tsx
 compliance: 70%
 priority: P2
 
@@ -966,7 +966,7 @@ token_updates:
 
 ```yaml
 route: TaskDetail
-file: fe/mobile/src/screens/tasks/TaskDetailScreen.tsx
+file: apps/mobile/src/screens/tasks/TaskDetailScreen.tsx
 compliance: 70%
 priority: P1
 
@@ -1049,7 +1049,7 @@ accessibility:
 
 ```yaml
 route: TaskComplete
-file: fe/mobile/src/screens/tasks/TaskCompleteScreen.tsx
+file: apps/mobile/src/screens/tasks/TaskCompleteScreen.tsx
 compliance: 70%
 priority: P1
 
@@ -1113,7 +1113,7 @@ token_updates:
 
 ```yaml
 route: TasksReports
-file: fe/mobile/src/screens/tasks/TasksReportsScreen.tsx
+file: apps/mobile/src/screens/tasks/TasksReportsScreen.tsx
 compliance: 70%
 priority: P2
 
@@ -1168,7 +1168,7 @@ token_updates:
 
 ```yaml
 route: Notifications
-file: fe/mobile/src/screens/common/NotificationsScreen.tsx
+file: apps/mobile/src/screens/common/NotificationsScreen.tsx
 compliance: 70%
 priority: P2
 
@@ -1232,7 +1232,7 @@ token_updates:
 
 ```yaml
 route: Settings
-file: fe/mobile/src/screens/common/SettingsScreen.tsx
+file: apps/mobile/src/screens/common/SettingsScreen.tsx
 compliance: 65%
 priority: P2
 

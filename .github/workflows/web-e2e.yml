@@ -6,7 +6,7 @@ name: Web E2E
 # MANUAL-only to conserve GitHub Actions minutes — Playwright installs a browser and
 # is the heaviest job in the repo. Run it from the Actions tab ("Run workflow") before
 # a staging release, or locally with `npm run test:e2e`. (Previously ran on every push
-# to main touching fe/web/**, which was a big minute drain.)
+# to main touching apps/web/**, which was a big minute drain.)
 on:
   workflow_dispatch:
 
@@ -17,7 +17,7 @@ jobs:
     timeout-minutes: 30
     defaults:
       run:
-        working-directory: fe/web
+        working-directory: apps/web
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: fe/web/package-lock.json
+          cache-dependency-path: apps/web/package-lock.json
 
       - name: Install deps
         run: npm ci
@@ -45,5 +45,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: fe/web/playwright-report/
+          path: apps/web/playwright-report/
           retention-days: 7

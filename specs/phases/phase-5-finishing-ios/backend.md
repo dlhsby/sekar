@@ -29,7 +29,7 @@
 ### A1. Module Structure
 
 ```
-be/src/modules/reporting/
+apps/be/src/modules/reporting/
 ├── reporting.module.ts
 ├── reporting.controller.ts
 ├── reporting.controller.spec.ts
@@ -92,7 +92,7 @@ DELETE /reporting/schedules/:id            → void
 
 ### A3. Generate Report DTO
 
-**File:** `be/src/modules/reporting/dto/create-report.dto.ts`
+**File:** `apps/be/src/modules/reporting/dto/create-report.dto.ts`
 
 ```typescript
 export class CreateReportDto {
@@ -128,7 +128,7 @@ export class CreateReportDto {
 
 ### A4. PDF Generator (ADR-024)
 
-**File:** `be/src/modules/reporting/generators/pdf.generator.ts`
+**File:** `apps/be/src/modules/reporting/generators/pdf.generator.ts`
 
 ```typescript
 @Injectable()
@@ -165,7 +165,7 @@ export class PdfGenerator {
 
 ### A5. Report Scheduler Cron
 
-**File:** `be/src/modules/reporting/cron/report-scheduler.cron.ts`
+**File:** `apps/be/src/modules/reporting/cron/report-scheduler.cron.ts`
 
 ```typescript
 @Cron('* * * * *', { timeZone: 'Asia/Jakarta' })  // Every minute
@@ -201,7 +201,7 @@ async checkSchedules() {
 ### B1. Module Structure
 
 ```
-be/src/modules/analytics/
+apps/be/src/modules/analytics/
 ├── analytics.module.ts
 ├── analytics.controller.ts
 ├── analytics.controller.spec.ts
@@ -363,7 +363,7 @@ export class AnalyticsQueryDto {
 ### C1. Module Structure
 
 ```
-be/src/modules/assets/
+apps/be/src/modules/assets/
 ├── assets.module.ts
 ├── assets.controller.ts
 ├── assets.controller.spec.ts
@@ -432,7 +432,7 @@ GET    /assets/maintenance/overdue          → AssetMaintenance[]
 
 ### C3. QR Code Service (ADR-026)
 
-**File:** `be/src/modules/assets/services/qr-code.service.ts`
+**File:** `apps/be/src/modules/assets/services/qr-code.service.ts`
 
 ```typescript
 @Injectable()

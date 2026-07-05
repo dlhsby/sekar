@@ -305,7 +305,7 @@ Mobile UI
 - **ORM:** TypeORM
 - **Connection Pool:** 10 connections (dev), 50 (prod)
 - **Query Logging:** Enabled in development
-- **Migrations:** Version controlled in `be/src/database/migrations/`
+- **Migrations:** Version controlled in `apps/be/src/database/migrations/`
 
 ### Backend ↔ AWS S3
 - **SDK:** AWS SDK for JavaScript v3

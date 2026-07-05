@@ -352,7 +352,7 @@ Every Phase 3 sub-phase that ships UI runs this checklist at review:
 
 - [ ] No hard-coded hex values in new code (ESLint `no-magic-colors` rule)
 - [ ] No hard-coded shadow values (ESLint `no-inline-shadow` rule)
-- [ ] All new components import from `@sekar/tokens` (web) / `fe/mobile/src/constants/nbTokens` (mobile)
+- [ ] All new components import from `@sekar/tokens` (web) / `apps/mobile/src/constants/nbTokens` (mobile)
 - [ ] Visual regression snapshot captured and reviewed
 - [ ] `npm run tokens:verify` green in CI
 - [ ] Screenshots posted in PR description (mobile + mobile-web + tablet + desktop widths for web changes; mobile only for mobile changes)

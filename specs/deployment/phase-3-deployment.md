@@ -24,7 +24,7 @@ Before pushing the next mobile build, run this 5-minute smoke test against the d
 | 6 | Login web as `admin_pusat / Password123!` → click each sidebar link | All resolve (no 404). Phase 3 routes show "Coming soon" placeholders | ✅ Apr 27 placeholders |
 | 7 | Login web as `staff_kec_pusat` | Sidebar shows "Kirim Permintaan" + "Permintaan Saya"; both routes resolve to placeholders | ✅ Apr 27 placeholders |
 | 8 | Backend `cd be && npm test -- --testPathPattern='modules/(pruning-requests\|service-capacity\|plant-seeds\|plants)'` | 179 tests, 0 failures | ✅ |
-| 9 | Mobile `cd fe/mobile && npx jest src/components/nb/__tests__/NBButton.test.tsx` | 26 tests pass (5 new regression-guard tests for `outline`, `label`, `leftIcon`, unknown-variant fallback, string children) | ✅ |
+| 9 | Mobile `cd apps/mobile && npx jest src/components/nb/__tests__/NBButton.test.tsx` | 26 tests pass (5 new regression-guard tests for `outline`, `label`, `leftIcon`, unknown-variant fallback, string children) | ✅ |
 
 If any row flips ❌ in this table after a future change, **don't deploy** until the regression is identified and either fixed or explicitly accepted by the user.
 
@@ -51,7 +51,7 @@ If any row flips ❌ in this table after a future change, **don't deploy** until
 | 8 | Empty commit + push to redeploy backend with Redis vars | ⏸️ pending | `git commit --allow-empty -m "chore: enable Redis"` |
 | 9 | **Web CI/CD fix** (`eslint-plugin-sekar-design` not found in CI) | ⏸️ pending | runs failing since Apr 26; see "Web CI/CD Fix" below |
 | 10 | Web deploy (after CI fix) | ⏸️ pending | currently the older Phase 2E web image is still serving |
-| 11 | Mobile APK release build | ⏸️ pending | `cd fe/mobile/android && ./gradlew assembleRelease` |
+| 11 | Mobile APK release build | ⏸️ pending | `cd apps/mobile/android && ./gradlew assembleRelease` |
 | 12 | **Rotate `sekar-key.pem`** | ⏸️ pending | private key was exposed in a chat transcript on Apr 27 — treat as compromised. See "Rotate `sekar-key.pem` Before Resuming SSH Ops" section below for the 7-step procedure. |
 
 **To resume:** start at step 6. The backend is fully Phase-3-capable but running with Redis in degraded fallback mode (sync ping processing, in-memory Socket.IO).
@@ -159,7 +159,7 @@ Open http://localhost:3000/api/docs and test:
 #### 3. Start mobile with Phase 3 UI
 
 ```bash
-cd fe/mobile
+cd apps/mobile
 npm install                        # If not already done
 cp .env.example .env               # Set API_BASE_URL=http://10.0.2.2:3000 (emulator) or YOUR_IP:3000 (device)
 npm run android                    # Or: npm run ios (macOS only)
@@ -183,7 +183,7 @@ npm run android                    # Or: npm run ios (macOS only)
 
 ## 🔑 New Environment Variables
 
-Add to `be/.env.production` (and GitHub Secrets `BACKEND_ENV_PRODUCTION`):
+Add to `apps/be/.env.production` (and GitHub Secrets `BACKEND_ENV_PRODUCTION`):
 
 ```env
 # Redis (Phase 3 — M2 Monitoring v2)
@@ -506,8 +506,8 @@ Runs the reference profile (`profiles/reference.ts`) — plant species, monitori
 
 - [ ] All backend tests passing: `cd be && npm test` (1,297 tests expected)
 - [ ] TypeScript clean: `cd be && npx tsc --noEmit`
-- [ ] Web build clean: `cd fe/web && npm run build`
-- [ ] Mobile: `cd fe/mobile && npm test -- --passWithNoTests` (passes)
+- [ ] Web build clean: `cd apps/web && npm run build`
+- [ ] Mobile: `cd apps/mobile && npm test -- --passWithNoTests` (passes)
 - [ ] Token pipeline: `npm run tokens:verify` (no drift)
 - [ ] Database backup taken (RDS automated snapshot or manual `pg_dump`)
 - [ ] Redis provisioned and endpoint noted — Upstash (free) or ElastiCache (paid). See "Infrastructure Changes — Redis 7" section. **Optional for first cut: backend degrades gracefully without Redis.**
@@ -559,7 +559,7 @@ See [`deployment-guide.md`](deployment-guide.md) § **E.7 Health checks** for st
 
 ### Step 5: Deploy web (auto on push to `main`)
 
-The web deploy triggers automatically via `web-ci-cd.yml` when `fe/web/**` changes.
+The web deploy triggers automatically via `web-ci-cd.yml` when `apps/web/**` changes.
 
 **Verify new web features:**
 ```bash
@@ -572,7 +572,7 @@ The web deploy triggers automatically via `web-ci-cd.yml` when `fe/web/**` chang
 ### Step 6: Mobile APK (manual build)
 
 ```bash
-cd fe/mobile
+cd apps/mobile
 npm install
 cd android
 ./gradlew assembleRelease
@@ -676,8 +676,8 @@ cd /path/to/sekar
 cd be && npm run migration:run && npm run db:seed:prod
 cd be && npm run start:dev
 # In separate terminals:
-cd fe/web && npm run dev           # http://localhost:3001
-cd fe/mobile && npm run android    # Or: npm run ios
+cd apps/web && npm run dev           # http://localhost:3001
+cd apps/mobile && npm run android    # Or: npm run ios
 ```
 
 ### UAT Flows by Role
@@ -770,14 +770,14 @@ cd fe/mobile && npm run android    # Or: npm run ios
 The web pipeline has been failing since Apr 26 with:
 ```
 Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'eslint-plugin-sekar-design'
-imported from /home/runner/work/sekar/sekar/fe/web/eslint.config.mjs
+imported from /home/runner/work/sekar/sekar/apps/web/eslint.config.mjs
 ```
 
-**Cause:** the local design-token ESLint plugin is symlinked into `node_modules/eslint-plugin-sekar-design` only when you run `npm install` at the repo root (the root `package.json` has a `postinstall` that does the symlink). The web CI job runs `npm install` only inside `fe/web/`, so the symlink never gets created.
+**Cause:** the local design-token ESLint plugin is symlinked into `node_modules/eslint-plugin-sekar-design` only when you run `npm install` at the repo root (the root `package.json` has a `postinstall` that does the symlink). The web CI job runs `npm install` only inside `apps/web/`, so the symlink never gets created.
 
 **Fix options (any one):**
 
-1. **(Quickest) Add a root-level `npm install` to `web-ci-cd.yml`** before the `cd fe/web` step:
+1. **(Quickest) Add a root-level `npm install` to `web-ci-cd.yml`** before the `cd apps/web` step:
    ```yaml
    - name: Install root tooling (eslint-plugin-sekar-design symlink, token pipeline)
      run: npm install
@@ -785,18 +785,18 @@ imported from /home/runner/work/sekar/sekar/fe/web/eslint.config.mjs
 
    - name: Install web deps
      run: npm install
-     working-directory: fe/web
+     working-directory: apps/web
    ```
 
-2. **(Cleanest) Publish `eslint-plugin-sekar-design` as a versioned local file dep** in `fe/web/package.json`:
+2. **(Cleanest) Publish `eslint-plugin-sekar-design` as a versioned local file dep** in `apps/web/package.json`:
    ```json
    "devDependencies": {
      "eslint-plugin-sekar-design": "file:../../eslint-plugin-sekar-design"
    }
    ```
-   Then drop the root postinstall symlink. Same fix needed in `fe/mobile/package.json` if mobile lint also breaks in CI.
+   Then drop the root postinstall symlink. Same fix needed in `apps/mobile/package.json` if mobile lint also breaks in CI.
 
-3. **(Workaround) Make the rule `optional`** in `fe/web/eslint.config.mjs` by wrapping the import in a try/catch and skipping the plugin if missing. Not recommended — defeats the lint guard.
+3. **(Workaround) Make the rule `optional`** in `apps/web/eslint.config.mjs` by wrapping the import in a try/catch and skipping the plugin if missing. Not recommended — defeats the lint guard.
 
 After the fix lands, re-trigger the web pipeline:
 ```bash

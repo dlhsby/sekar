@@ -101,9 +101,9 @@ echo ""
 FILES=(
     ".github/workflows/backend-ci-cd.yml"
     ".github/workflows/web-ci-cd.yml"
-    "be/docker-compose.prod.yml"
-    "fe/web/docker-compose.prod.yml"
-    "fe/web/Dockerfile"
+    "apps/be/docker-compose.prod.yml"
+    "apps/web/docker-compose.prod.yml"
+    "apps/web/Dockerfile"
 )
 
 for FILE in "${FILES[@]}"; do

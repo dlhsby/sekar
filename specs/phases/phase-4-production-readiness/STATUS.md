@@ -78,7 +78,7 @@
 | B2. Replace app icon (iOS + Android) | ✅ | iOS `AppIcon.appiconset/icon-1024.png`; Android `mipmap-*/ic_launcher*.png` (all densities) via `scripts/generate-app-icon.mjs` |
 | B3. Replace splash screen (light/dark/green) | ✅ | iOS `LaunchScreen.storyboard` + `SekarPinwheel.imageset`; Android `drawable/bootsplash.xml` + `drawable-*/splash_logo.png` via `scripts/generate-splash.mjs` |
 | B4. Ship 6 empty-state SVG illustrations | ✅ | `components/nb/illustrations/index.tsx` — IlloReports/Shifts/Offline/Location/Search/Personnel; used via NBEmptyState |
-| B5. Ship 3 onboarding scene SVGs | ✅ | `fe/mobile/.../illustrations/onboarding.tsx` — `OnbClockIn/OnbPhoto/OnbMonitor` ported to react-native-svg (token-mapped, no inline hex); `OnbClockIn` wired into Welcome hero. Permissions (per-row icons) + AreaPreview (documented hi-fi reconciliation) intentionally retained (Jun 9) |
+| B5. Ship 3 onboarding scene SVGs | ✅ | `apps/mobile/.../illustrations/onboarding.tsx` — `OnbClockIn/OnbPhoto/OnbMonitor` ported to react-native-svg (token-mapped, no inline hex); `OnbClockIn` wired into Welcome hero. Permissions (per-row icons) + AreaPreview (documented hi-fi reconciliation) intentionally retained (Jun 9) |
 | B6. PWA manifest theme/icon update | ✅ | `manifest.webmanifest` themed (`theme_color #1A4D2E`, `background_color #F5F0EB`); **web rebranded to the pinwheel mark everywhere (Jun 9)** — `icons/icon.svg` (full-bleed) + `icon-maskable.svg` (safe-zone) + favicon/apple-touch route handlers (`@/lib/brand/pinwheel`) + `favicon.ico` + in-app `SekarMark` (sidebar + login); matches the mobile app's existing pinwheel |
 | C1. Token-compliance ESLint sweep | ⏳ | Fix repo-wide violations |
 
@@ -164,7 +164,7 @@ See [`status_reviews.md` § Revamp Acceptance Checklist](./status_reviews.md#rev
 
 | Task | Status | Notes |
 |------|--------|-------|
-| A1. ExportModule scaffold | 🟢 | `be/src/modules/export/` (entity, dto, exporters, controller, service, module) |
+| A1. ExportModule scaffold | 🟢 | `apps/be/src/modules/export/` (entity, dto, exporters, controller, service, module) |
 | A2. CSV/Excel export via exceljs (ADR-018) | 🟢 | `exporters/csv.exporter.ts` (RFC-4180 + BOM), `excel.exporter.ts` (exceljs, styled header) |
 | A3. Export endpoint (POST /export) | 🟢 | `POST /export` (sync ≤5000 / 202 async), `GET /export/jobs`, `GET /export/jobs/:id` (15-min presigned URL); 5/min per-user throttle |
 | A4. Async export_jobs table | 🟢 | migration `17480500000000-CreateExportJobs` (run locally); `setImmediate` worker + 5-min retry cron (max 3) |
@@ -174,7 +174,7 @@ See [`status_reviews.md` § Revamp Acceptance Checklist](./status_reviews.md#rev
 | C2. Web export page (/export) | 🟢 | entity/format/date/rayon/area filters + async-job polling (3s) + 30-day history table |
 | C3. Web CSV import page (/import/csv) | 🟢 | 3-step wizard (template → upload → validate preview → commit) |
 
-> **Notes:** routes mount at `/export`, `/import`, `/import/csv` (dashboard group = root, not `/dashboard/*`). Commit route is `POST /import/confirm/:sessionId` (Redis session-keyed); template route is `GET /import/template/:entity`. The areas CSV template adds `area_type_id` (required) + required lat/lng since `areas` enforces those NOT NULL. New "Operasional" sidebar group (admin_system/superadmin; export also kepala_rayon, server-scoped). Tests: backend export 91% / exporters 100% / csv-import 95% (all suites green, 1853 pass); web export/import hooks 10 tests + nav updated (1692 pass); web build green. exceljs added to `be/package.json`.
+> **Notes:** routes mount at `/export`, `/import`, `/import/csv` (dashboard group = root, not `/dashboard/*`). Commit route is `POST /import/confirm/:sessionId` (Redis session-keyed); template route is `GET /import/template/:entity`. The areas CSV template adds `area_type_id` (required) + required lat/lng since `areas` enforces those NOT NULL. New "Operasional" sidebar group (admin_system/superadmin; export also kepala_rayon, server-scoped). Tests: backend export 91% / exporters 100% / csv-import 95% (all suites green, 1853 pass); web export/import hooks 10 tests + nav updated (1692 pass); web build green. exceljs added to `apps/be/package.json`.
 
 ### Sub-Phase 4-6: Real Data Seeder & Data Management ⏳ NOT STARTED
 

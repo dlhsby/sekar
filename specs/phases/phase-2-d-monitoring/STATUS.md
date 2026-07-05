@@ -261,12 +261,12 @@ npm run test:cov                  # With coverage
 npm test -- --testPathPattern monitoring  # Monitoring module only
 
 # Mobile
-cd fe/mobile
+cd apps/mobile
 npm test                          # All tests
 npm test -- --testPathPattern monitoring  # Monitoring only
 
 # Web
-cd fe/web
+cd apps/web
 npm run test:e2e                  # All Playwright tests
 ```
 
@@ -336,7 +336,7 @@ npm run test:e2e                  # All Playwright tests
 
 ## Phase 2E Monitoring UX Hardening (May 2026 retroactive)
 
-Applied as part of Phase 3 M3 monitoring work. All changes in `fe/mobile/`:
+Applied as part of Phase 3 M3 monitoring work. All changes in `apps/mobile/`:
 
 | Change | File | Detail |
 |--------|------|--------|

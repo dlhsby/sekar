@@ -25,7 +25,7 @@ done
 
 echo -e "${GREEN}══ Stopping SEKAR dev services ══${NC}"
 load_ports
-stop_pid backend "nest start --watch|be/dist/src/main"
+stop_pid backend "nest start --watch|apps/be/dist/src/main"
 stop_pid web "next dev|next-server"
 stop_pid metro "react-native start|react-native/cli.js start"
 

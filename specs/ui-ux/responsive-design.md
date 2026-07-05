@@ -616,5 +616,5 @@ const Screen = () => {
 **Document Owner:** UI/UX Designer
 **Last Updated:** 2026-04-25
 **Status:** Active - Updated for Neo Brutalism 2.0 + Phase 2D Monitoring
-**Implementation:** `fe/mobile/src/constants/nbTokens.ts` (breakpoints)
+**Implementation:** `apps/mobile/src/constants/nbTokens.ts` (breakpoints)
 **Related:** [neo-brutalism.md](./neo-brutalism.md) - Primary design system reference

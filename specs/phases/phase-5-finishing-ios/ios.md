@@ -26,7 +26,7 @@
 
 ### A1. Project Configuration
 
-**File:** `fe/mobile/ios/SekarMobile.xcodeproj`
+**File:** `apps/mobile/ios/SekarMobile.xcodeproj`
 
 | Setting | Value |
 |---------|-------|
@@ -66,7 +66,7 @@ Enable in Xcode → Target → Signing & Capabilities:
 
 ### A4. CocoaPods
 
-**File:** `fe/mobile/ios/Podfile`
+**File:** `apps/mobile/ios/Podfile`
 
 ```ruby
 platform :ios, '15.0'
@@ -95,7 +95,7 @@ end
 **Package:** `@invertase/react-native-apple-authentication`
 
 ```typescript
-// fe/mobile/src/services/auth/appleAuth.ts
+// apps/mobile/src/services/auth/appleAuth.ts
 import appleAuth from '@invertase/react-native-apple-authentication';
 
 export async function signInWithApple(): Promise<AppleAuthResponse> {
@@ -119,7 +119,7 @@ export async function signInWithApple(): Promise<AppleAuthResponse> {
 
 ### B2. Login Screen Integration
 
-**File:** `fe/mobile/src/screens/auth/LoginScreen.tsx`
+**File:** `apps/mobile/src/screens/auth/LoginScreen.tsx`
 
 ```typescript
 // Conditional render: Apple Sign-In button only on iOS
@@ -144,7 +144,7 @@ export async function signInWithApple(): Promise<AppleAuthResponse> {
 **Package:** `react-native-biometrics`
 
 ```typescript
-// fe/mobile/src/services/auth/biometricAuth.ts
+// apps/mobile/src/services/auth/biometricAuth.ts
 import ReactNativeBiometrics from 'react-native-biometrics';
 
 const rnBiometrics = new ReactNativeBiometrics();
@@ -195,7 +195,7 @@ Users can enable/disable biometric auth in Settings screen:
 
 ### D2. Token Registration
 
-**File:** `fe/mobile/src/services/fcm/fcmService.ts`
+**File:** `apps/mobile/src/services/fcm/fcmService.ts`
 
 ```typescript
 // iOS-specific: request notification permission
@@ -322,7 +322,7 @@ name: iOS Build
 on:
   push:
     branches: [main]
-    paths: ['fe/mobile/**']
+    paths: ['apps/mobile/**']
   workflow_dispatch:
 
 jobs:
@@ -333,12 +333,12 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '24' }
       - name: Install dependencies
-        run: cd fe/mobile && npm ci
+        run: cd apps/mobile && npm ci
       - name: Install CocoaPods
-        run: cd fe/mobile/ios && pod install
+        run: cd apps/mobile/ios && pod install
       - name: Build iOS
         run: |
-          cd fe/mobile/ios
+          cd apps/mobile/ios
           xcodebuild -workspace SekarMobile.xcworkspace \
             -scheme SekarMobile \
             -configuration Release \

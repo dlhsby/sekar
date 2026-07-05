@@ -16,9 +16,9 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const WEB = join(root, 'fe/web/src/lib/i18n/locales');
-const MOBILE = join(root, 'fe/mobile/src/i18n/locales');
-const ENUM = join(root, 'be/src/common/enums/api-error-codes.enum.ts');
+const WEB = join(root, 'apps/web/src/lib/i18n/locales');
+const MOBILE = join(root, 'apps/mobile/src/i18n/locales');
+const ENUM = join(root, 'apps/be/src/common/enums/api-error-codes.enum.ts');
 
 const errors = [];
 const fail = (m) => errors.push(m);

@@ -13,11 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Shipped
 
-- **3-R1 (Token pipeline + CI + ESLint) — 2026-04-25.** `scripts/build-tokens.ts` generator emits `fe/web/src/app/generated/tokens.css` + `fe/mobile/src/constants/generated/tokens.ts` from `tokens.json`. CI job `tokens-verify` regenerates and `git diff --exit-code`s on every PR. ESLint rules `no-inline-hex-colors`, `no-tailwind-shadow-classes-with-blur`, `prefer-nb-shadow-utility`, RN ban on `shadowRadius > 0`.
+- **3-R1 (Token pipeline + CI + ESLint) — 2026-04-25.** `scripts/build-tokens.ts` generator emits `apps/web/src/app/generated/tokens.css` + `apps/mobile/src/constants/generated/tokens.ts` from `tokens.json`. CI job `tokens-verify` regenerates and `git diff --exit-code`s on every PR. ESLint rules `no-inline-hex-colors`, `no-tailwind-shadow-classes-with-blur`, `prefer-nb-shadow-utility`, RN ban on `shadowRadius > 0`.
 - **3-R2 (Token value migration + brand fonts) — 2026-04-25.** Both platforms consume from `generated/`. `globals.css` imports `generated/tokens.css` and maps via `@theme inline`; `nbTokens.ts` re-exports from `generated/tokens.ts` with backward-compat shims. Drift fixes applied: `color.primary.hover` canonical `#6BA87A` (was `#5A9468`/`#5A9B6F`), `color.info` canonical `#69D2E7` (was `#A7DBD8` on both). Hard-edge shadows now opaque nb-black, zero blur/radius (mobile was `shadowRadius: 1–4`; web was `rgba(…) 1–6 px blur`). Type scale converges on `h1 28/1.2`, `h2 22/1.3`, `h3 18/1.35` (mobile catches up to web canonical). Web focus ring 3 px solid primary, 2 px offset (was 4 px rgba). Brand fonts bundled: mobile `Inter.ttf` (variable) + `SpaceGrotesk.ttf` (variable) + `JetBrainsMono-{Regular,Medium,SemiBold}.ttf` (SIL OFL) via `react-native.config.js`; web `next/font/google` for Inter, Space Grotesk, JetBrains Mono with `display: swap` and `--font-body`/`--font-display`/`--font-mono` CSS variables.
 - **3-R3 (NB primitives + NBModal/NBToast/NBText + visreg) — planned.** All NB primitives migrate to generated tokens. New mobile components: `NBModal` (wraps `@gorhom/bottom-sheet` + RN `<Modal>`), `NBToast` (wraps `react-native-toast-message`), `NBText` (semantic typography variants). Visual regression baselines committed at 375 / 768 / 1280 px (Playwright `toHaveScreenshot` web, Jest `react-test-renderer` mobile).
 - **3-R4 (PWA shell + responsive scaffolding) — planned.** Web installable; offline shell + install banner + push subscription for admin roles + `MobileInstallPush` banner for satgas/linmas/korlap on phone browsers. `(kecamatan)` minimal layout for `staff_kecamatan` role. `ResponsiveShell` component drives sidebar (≥1280) / icon rail (768–1279) / ☰ drawer (<768) on every Phase-3 page.
-- **3-R5 (Full redesign sweep) — planned.** Every existing screen not being rewritten in M2/M3/M4 migrates onto generated tokens with mobile-web responsive layouts. Promoted from prior Phase 4 backlog. After 3-R5, `git grep '#[0-9a-fA-F]{6}' fe/{web,mobile}/src` returns only `scripts/hex-allowlist.txt` exceptions; no screen left on old tokens.
+- **3-R5 (Full redesign sweep) — planned.** Every existing screen not being rewritten in M2/M3/M4 migrates onto generated tokens with mobile-web responsive layouts. Promoted from prior Phase 4 backlog. After 3-R5, `git grep '#[0-9a-fA-F]{6}' apps/{web,mobile}/src` returns only `scripts/hex-allowlist.txt` exceptions; no screen left on old tokens.
 
 ### Compatibility
 
@@ -49,8 +49,8 @@ No breaking API changes for component consumers; visual sharpening only (hard-ed
 
 ### Deprecated
 
-- Hand-editing `fe/web/src/app/globals.css` token variables — replaced by `@import './generated/tokens.css'`.
-- Hand-editing `fe/mobile/src/constants/nbTokens.ts` — becomes a thin `export * from './generated/tokens'`.
+- Hand-editing `apps/web/src/app/globals.css` token variables — replaced by `@import './generated/tokens.css'`.
+- Hand-editing `apps/mobile/src/constants/nbTokens.ts` — becomes a thin `export * from './generated/tokens'`.
 - ESLint rules in Phase 3 M1-R will **fail PRs** that hard-code hex values in component code or that try to use default Tailwind `shadow-*` classes (which include blur).
 
 ### Migration

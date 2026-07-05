@@ -8,9 +8,9 @@
 
 Three new backend-first feature verticals + release/iOS prep (see `specs/phases/phase-5-finishing-ios/STATUS.md`):
 
-- **5-3 Assets** (`be/src/modules/assets/`, ADR-026): 14 endpoints, QR-code service (PNG → MinIO/S3), maintenance-overdue cron; web pages under `fe/web/src/app/(dashboard)/assets/`; mobile screens under `fe/mobile/src/screens/assets/` (QR scanner). Migration: assets tables + 6 categories.
-- **5-1 Reporting** (`be/src/modules/reporting/`, ADR-024): 8 endpoints, **puppeteer-core + handlebars** PDF pipeline, scheduler + cleanup crons. Migration: reporting tables + 6 templates.
-- **5-2 Analytics** (`be/src/modules/analytics/`, ADR-025): 7 endpoints, **3 materialized views**, weighted performance-score service, nightly refresh cron.
+- **5-3 Assets** (`apps/be/src/modules/assets/`, ADR-026): 14 endpoints, QR-code service (PNG → MinIO/S3), maintenance-overdue cron; web pages under `apps/web/src/app/(dashboard)/assets/`; mobile screens under `apps/mobile/src/screens/assets/` (QR scanner). Migration: assets tables + 6 categories.
+- **5-1 Reporting** (`apps/be/src/modules/reporting/`, ADR-024): 8 endpoints, **puppeteer-core + handlebars** PDF pipeline, scheduler + cleanup crons. Migration: reporting tables + 6 templates.
+- **5-2 Analytics** (`apps/be/src/modules/analytics/`, ADR-025): 7 endpoints, **3 materialized views**, weighted performance-score service, nightly refresh cron.
 - **5-4 iOS prep** (~50%): repo-side ready (Info.plist permissions, `GoogleService-Info.plist.example`, FCM bridge deps); native build/signing/APNs deferred to a Mac — see [`ios-release-guide.md`](ios-release-guide.md).
 - **5-5 Deployment**, **5-6 Guides**, **5-7 Evaluation**, **5-8 E2E**: release-prep, doc sync, requirements traceability, web Playwright (37 green) + Maestro flows authored (on-device run pending).
 
@@ -18,7 +18,7 @@ Three new backend-first feature verticals + release/iOS prep (see `specs/phases/
 
 | Delta | Impact |
 |-------|--------|
-| New backend deps: **`puppeteer-core`**, `handlebars`, `qrcode` | The backend Docker image installs **Chromium** for PDF rendering — `apk add chromium nss freetype harfbuzz ca-certificates ttf-freefont` + `PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser` (already in `be/Dockerfile*`). |
+| New backend deps: **`puppeteer-core`**, `handlebars`, `qrcode` | The backend Docker image installs **Chromium** for PDF rendering — `apk add chromium nss freetype harfbuzz ca-certificates ttf-freefont` + `PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser` (already in `apps/be/Dockerfile*`). |
 | **3 new migrations** (assets, reporting, analytics views) | Analytics views reference the `assets` table → assets migration must run first (timestamps already ordered). Materialized views are non-transactional; nightly `REFRESH … CONCURRENTLY` cron. |
 | QR PNGs + generated PDFs | Land in the media bucket (MinIO dev/prod, S3 staging) under `qr-codes/` and `reports/`. |
 | Authz hardening | Per-role area/rayon scope enforced across all asset + analytics endpoints (Jun 17 strict pass). No env change. |

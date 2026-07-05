@@ -14,19 +14,19 @@
 
 | Fact | Actual Value | File |
 |------|-------------|------|
-| `activity_types` role column | `applicable_roles TEXT[]` (array, NOT single `role`) | `be/src/modules/activity-types/entities/activity-type.entity.ts:58` |
-| Current seed role format | PascalCase in ARRAY: `ARRAY['Worker']`, `ARRAY['Linmas']`, `ARRAY['Worker', 'Linmas']` | `be/src/database/seeds/seed-phase2.ts:81-86` |
-| `work_reports.shift_id` | **ALREADY EXISTS** (UUID, NOT NULL, FK to shifts) | `be/src/modules/reports/entities/report.entity.ts:54` |
-| `work_reports.worker_id` | Column name is `worker_id` (NOT `user_id`) — **RENAME to `user_id`** | `be/src/modules/reports/entities/report.entity.ts:50` |
-| `users.area_id` | **DOES NOT EXIST** — users only have `rayon_id` | `be/src/modules/users/entities/user.entity.ts:64` |
-| `worker_schedules` date field | `effective_date` (NOT `start_date`), has `user_id` (NOT `worker_id`) | `be/src/modules/worker-schedules/entities/worker-schedule.entity.ts:59` |
-| `tasks.area_id` | **REQUIRED** (NOT NULL), FK to areas | `be/src/modules/tasks/entities/task.entity.ts:78` |
-| TaskStatus enum | 6 values: `pending, assigned, accepted, in_progress, completed, declined` | `be/src/modules/tasks/entities/task.entity.ts:19-26` |
-| `shifts.worker_id` | Column name is `worker_id` — **RENAME to `user_id`** | `be/src/modules/shifts/entities/shift.entity.ts` |
-| `location_logs.worker_id` | Column name is `worker_id` — **RENAME to `user_id`** | `be/src/modules/location-logs/entities/location-log.entity.ts` |
-| `areas.boundary_polygon` | JSONB column, ALREADY EXISTS (from KMZ import) | `be/src/modules/areas/entities/area.entity.ts` |
-| Report entity class | Named `Report` (NOT `WorkReport`), table `work_reports` — **RENAME to `Activity`, table `activities`** | `be/src/modules/reports/entities/report.entity.ts:43` |
-| ReportType enum | 7 values — **DROP column** (replaced by `activity_type_id`) | `be/src/modules/reports/entities/report.entity.ts:18-28` |
+| `activity_types` role column | `applicable_roles TEXT[]` (array, NOT single `role`) | `apps/be/src/modules/activity-types/entities/activity-type.entity.ts:58` |
+| Current seed role format | PascalCase in ARRAY: `ARRAY['Worker']`, `ARRAY['Linmas']`, `ARRAY['Worker', 'Linmas']` | `apps/be/src/database/seeds/seed-phase2.ts:81-86` |
+| `work_reports.shift_id` | **ALREADY EXISTS** (UUID, NOT NULL, FK to shifts) | `apps/be/src/modules/reports/entities/report.entity.ts:54` |
+| `work_reports.worker_id` | Column name is `worker_id` (NOT `user_id`) — **RENAME to `user_id`** | `apps/be/src/modules/reports/entities/report.entity.ts:50` |
+| `users.area_id` | **DOES NOT EXIST** — users only have `rayon_id` | `apps/be/src/modules/users/entities/user.entity.ts:64` |
+| `worker_schedules` date field | `effective_date` (NOT `start_date`), has `user_id` (NOT `worker_id`) | `apps/be/src/modules/worker-schedules/entities/worker-schedule.entity.ts:59` |
+| `tasks.area_id` | **REQUIRED** (NOT NULL), FK to areas | `apps/be/src/modules/tasks/entities/task.entity.ts:78` |
+| TaskStatus enum | 6 values: `pending, assigned, accepted, in_progress, completed, declined` | `apps/be/src/modules/tasks/entities/task.entity.ts:19-26` |
+| `shifts.worker_id` | Column name is `worker_id` — **RENAME to `user_id`** | `apps/be/src/modules/shifts/entities/shift.entity.ts` |
+| `location_logs.worker_id` | Column name is `worker_id` — **RENAME to `user_id`** | `apps/be/src/modules/location-logs/entities/location-log.entity.ts` |
+| `areas.boundary_polygon` | JSONB column, ALREADY EXISTS (from KMZ import) | `apps/be/src/modules/areas/entities/area.entity.ts` |
+| Report entity class | Named `Report` (NOT `WorkReport`), table `work_reports` — **RENAME to `Activity`, table `activities`** | `apps/be/src/modules/reports/entities/report.entity.ts:43` |
+| ReportType enum | 7 values — **DROP column** (replaced by `activity_type_id`) | `apps/be/src/modules/reports/entities/report.entity.ts:18-28` |
 
 ---
 
@@ -531,7 +531,7 @@ INSERT INTO users (id, username, password_hash, full_name, role, rayon_id, area_
 
 ### TypeORM Seed File Updates Required
 
-- `be/src/database/seeds/seed-phase2.ts`: Update table references (`worker_schedules` → `schedules`, `work_reports` → `activities`), column references (`worker_id` → `user_id`)
+- `apps/be/src/database/seeds/seed-phase2.ts`: Update table references (`worker_schedules` → `schedules`, `work_reports` → `activities`), column references (`worker_id` → `user_id`)
 - Remove `seedWorkerAssignments()` from `seed.service.ts`
 - Update overtime seeds: flat structure (no nested aktivitas array)
 - Activity type seeds: lowercase `applicable_roles` values

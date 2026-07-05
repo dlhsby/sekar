@@ -186,7 +186,7 @@ WHERE datname = 'sekar_db';
 
 ### Connection Pool Tuning
 
-**Application pool** (in `be/src/app.module.ts`):
+**Application pool** (in `apps/be/src/app.module.ts`):
 
 ```typescript
 extra: {
@@ -197,7 +197,7 @@ extra: {
 }
 ```
 
-**Migration CLI pool** (in `be/src/database/data-source.ts`):
+**Migration CLI pool** (in `apps/be/src/database/data-source.ts`):
 
 ```typescript
 extra: {
@@ -621,7 +621,7 @@ psql -h $DATABASE_HOST -U sekar_admin -d sekar_db -c "
 
 **Step 3: Adjust pool size**
 
-Edit `be/src/app.module.ts` and reduce `max` if the app is hogging connections:
+Edit `apps/be/src/app.module.ts` and reduce `max` if the app is hogging connections:
 
 ```typescript
 extra: {
@@ -838,7 +838,7 @@ Set `NEXT_PUBLIC_SECURE_COOKIES=true` during the web image build:
 docker build \
   --build-arg NEXT_PUBLIC_SECURE_COOKIES=true \
   -t sekar-web:latest \
-  fe/web
+  apps/web
 ```
 
 Or in CI/CD:

@@ -57,7 +57,7 @@ With $200 credits, you can run MVP for approximately **5-6 months**.
 ## 1. Pre-Deployment Checklist
 
 ### Code Readiness
-- [x] All tests passing (`npm test` in be/)
+- [x] All tests passing (`npm test` in apps/be/)
 - [x] Test coverage >80% (`npm run test:cov`)
 - [x] No ESLint errors (`npm run lint`)
 - [x] Build successful (`npm run build`)
@@ -475,7 +475,7 @@ aws ecr create-repository \
 
 ```bash
 # Navigate to backend directory
-cd be/
+cd apps/be/
 
 # Get your AWS account ID
 aws sts get-caller-identity --query Account --output text
@@ -582,7 +582,7 @@ openssl rand -base64 32  # Copy output to JWT_REFRESH_SECRET
 
 **⚠️ CRITICAL: Verify `app.module.ts` Configuration**
 
-The backend code must respect the `DATABASE_SYNCHRONIZE` environment variable. Verify this in `be/src/app.module.ts` (around line 59):
+The backend code must respect the `DATABASE_SYNCHRONIZE` environment variable. Verify this in `apps/be/src/app.module.ts` (around line 59):
 
 ```typescript
 // CORRECT - reads from environment variable
@@ -853,13 +853,13 @@ docker-compose up -d
 
 **Solution:**
 
-1. Verify `be/src/app.module.ts` line 59 reads from environment variable (not hardcoded)
+1. Verify `apps/be/src/app.module.ts` line 59 reads from environment variable (not hardcoded)
 2. Rebuild and redeploy Docker image with the fix
 3. Restart container and retry seeding
 
 ```bash
 # Verify the fix is in your codebase
-grep "DATABASE_SYNCHRONIZE" be/src/app.module.ts
+grep "DATABASE_SYNCHRONIZE" apps/be/src/app.module.ts
 # Should show: synchronize: process.env.DATABASE_SYNCHRONIZE === 'true',
 
 # If not, update app.module.ts, rebuild, and redeploy
@@ -1068,7 +1068,7 @@ cat sekar-key-base64.txt
 
 ### 9.1 Update Mobile Configuration
 
-Edit `fe/mobile/.env`:
+Edit `apps/mobile/.env`:
 ```bash
 API_BASE_URL=http://sekar.wahyutrip.com
 API_VERSION=v1
@@ -1077,7 +1077,7 @@ API_VERSION=v1
 ### 9.2 Build Release APK
 
 ```bash
-cd fe/mobile
+cd apps/mobile
 
 # Install dependencies
 npm install
